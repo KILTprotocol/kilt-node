@@ -17,6 +17,7 @@ extern crate sr_primitives as runtime_primitives;
 #[macro_use]
 extern crate serde_derive;
 extern crate substrate_primitives as primitives;
+extern crate parity_codec;
 #[macro_use]
 extern crate parity_codec_derive;
 #[macro_use]
@@ -47,7 +48,9 @@ pub use timestamp::Call as TimestampCall;
 pub use balances::Call as BalancesCall;
 pub use runtime_primitives::{Permill, Perbill};
 pub use timestamp::BlockPeriod;
-pub use srml_support::StorageValue;
+pub use srml_support::{StorageValue, RuntimeMetadata};
+
+mod demo;
 
 /// Alias to Ed25519 pubkey that identifies an account on the chain.
 pub type AccountId = primitives::H256;
@@ -163,6 +166,8 @@ impl balances::Trait for Runtime {
 	type Event = Event;
 }
 
+impl demo::Trait for Runtime {}
+
 construct_runtime!(
 	pub enum Runtime with Log(InternalLog: DigestItem<Hash, AuthorityId>) where
 		Block = Block,
@@ -172,6 +177,7 @@ construct_runtime!(
 		Timestamp: timestamp::{Module, Call, Storage, Config<T>, Inherent},
 		Consensus: consensus::{Module, Call, Storage, Config<T>, Log(AuthoritiesChange), Inherent},
 		Balances: balances,
+		Demo: demo::{Module, Call, Storage, Config<T>},
 	}
 );
 
@@ -207,8 +213,8 @@ impl_apis! {
 		}
 	}
 
-	impl Metadata for Runtime {
-		fn metadata() -> Vec<u8> {
+	impl Metadata<RuntimeMetadata> for Runtime {
+		fn metadata() -> RuntimeMetadata {
 			Runtime::metadata()
 		}
 	}
