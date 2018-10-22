@@ -1,15 +1,9 @@
-/*extern crate sr_std;
-#[cfg(feature = "std")] #[macro_use] extern crate serde_derive;	//< ???
-#[macro_use] extern crate parity_codec_derive; //< ???
-extern crate parity_codec as codec;	//< ???
+// initialise with:
+// post({sender: runtime.balances.ss58Decode('F7Gh'), call: calls.demo.setPayment(1000)}).tie(console.log)
 
-#[macro_use] extern crate srml_support as support;
-extern crate srml_system as system;
-extern crate srml_balances as balances;
-*/
 use parity_codec::Encode;
 use srml_support::{StorageValue, dispatch::Result};
-use runtime_primitives::traits::{As, Hash, OnFinalise};
+use runtime_primitives::traits::{Hash, OnFinalise};
 use {balances, system::{self, ensure_signed}};
 
 pub trait Trait: balances::Trait {}
@@ -17,20 +11,21 @@ pub trait Trait: balances::Trait {}
 decl_module! {
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 		fn play(origin) -> Result;
+		fn set_payment(origin, value: T::Balance) -> Result;
 	}
 }
 
 decl_storage! {
 	trait Store for Module<T: Trait> as Demo {
-		Payment get(payment) config(): T::Balance = T::Balance::sa(1000000);
-		Pot get(pot): T::Balance = T::Balance::sa(1000000);
+		Payment get(payment) config(): Option<T::Balance>;
+		Pot get(pot): T::Balance;
 	}
 }
 
 impl<T: Trait> Module<T> {
 	fn play(origin: T::Origin) -> Result {
 		let sender = ensure_signed(origin)?;
-		let payment = Self::payment();
+		let payment = Self::payment().ok_or("Must have payment amount set")?;
 
 		<balances::Module<T>>::decrease_free_balance(&sender, payment)?;
 
@@ -43,6 +38,14 @@ impl<T: Trait> Module<T> {
 
 		<Pot<T>>::mutate(|pot| *pot += payment);
 
+		Ok(())
+	}
+
+	fn set_payment(_: T::Origin, value: T::Balance) -> Result {
+		if Self::payment().is_none() {
+			<Payment<T>>::put(value);
+			<Pot<T>>::put(value);
+		}
 		Ok(())
 	}
 }

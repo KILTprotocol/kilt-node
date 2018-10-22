@@ -94,7 +94,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: ver_str!("template-node"),
 	impl_name: ver_str!("substrate-template-node"),
 	authoring_version: 1,
-	spec_version: 1,
+	spec_version: 2,
 	impl_version: 0,
 	apis: apis_vec!([
 		(BLOCK_BUILDER, 1),
