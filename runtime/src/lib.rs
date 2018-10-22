@@ -27,6 +27,7 @@ extern crate srml_executive as executive;
 extern crate srml_consensus as consensus;
 extern crate srml_timestamp as timestamp;
 extern crate srml_balances as balances;
+extern crate srml_upgrade_key as upgrade_key;
 
 use rstd::prelude::*;
 #[cfg(feature = "std")]
@@ -166,6 +167,11 @@ impl balances::Trait for Runtime {
 	type Event = Event;
 }
 
+impl upgrade_key::Trait for Runtime {
+	/// The uniquitous event type.
+	type Event = Event;
+}
+
 impl demo::Trait for Runtime {}
 
 construct_runtime!(
@@ -177,13 +183,15 @@ construct_runtime!(
 		Timestamp: timestamp::{Module, Call, Storage, Config<T>, Inherent},
 		Consensus: consensus::{Module, Call, Storage, Config<T>, Log(AuthoritiesChange), Inherent},
 		Balances: balances,
+		UpgradeKey: upgrade_key,
 		Demo: demo::{Module, Call, Storage, Config<T>},
 	}
 );
 
-type Context = system::ChainContext<Runtime>;
-type Address = AccountId;
-
+/// The type used as a helper for interpreting the sender of transactions. 
+type Context = balances::ChainContext<Runtime>;
+/// The address format for describing accounts.
+type Address = balances::Address<Runtime>;
 /// Block header type as expected by this runtime.
 pub type Header = generic::Header<BlockNumber, BlakeTwo256, Log>;
 /// Block type as expected by this runtime.
