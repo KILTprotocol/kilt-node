@@ -54,8 +54,6 @@ pub use srml_support::{RuntimeMetadata, StorageValue};
 pub use timestamp::BlockPeriod;
 pub use timestamp::Call as TimestampCall;
 
-mod demo;
-
 mod ctype;
 
 /// Alias to Ed25519 pubkey that identifies an account on the chain.
@@ -178,7 +176,6 @@ impl upgrade_key::Trait for Runtime {
 	type Event = Event;
 }
 
-impl demo::Trait for Runtime {}
 impl ctype::Trait for Runtime {}
 
 construct_runtime!(
@@ -191,7 +188,6 @@ construct_runtime!(
 		Consensus: consensus::{Module, Call, Storage, Config<T>, Log(AuthoritiesChange), Inherent},
 		Balances: balances,
 		UpgradeKey: upgrade_key,
-		Demo: demo::{Module, Call, Storage, Config<T>},
 		Ctype: ctype::{Module, Call, Storage, Config<T>},
 	}
 );
