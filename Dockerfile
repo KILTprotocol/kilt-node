@@ -50,6 +50,7 @@ ENV LANG=C.UTF-8
 
 COPY . /substrate
 
+RUN pwd && ls -lh
 RUN /bin/bash build.sh
 
 RUN cargo build
