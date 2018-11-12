@@ -3,10 +3,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(not(feature = "std"), feature(alloc))]
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
-#![recursion_limit="256"]
+#![recursion_limit = "256"]
 
-extern crate sr_std as rstd;
 extern crate sr_io as runtime_io;
+extern crate sr_std as rstd;
 #[macro_use]
 extern crate sr_api as runtime_api;
 #[macro_use]
@@ -16,42 +16,47 @@ extern crate sr_primitives as runtime_primitives;
 #[cfg(feature = "std")]
 #[macro_use]
 extern crate serde_derive;
-extern crate substrate_primitives as primitives;
 extern crate parity_codec;
+extern crate substrate_primitives as primitives;
 #[macro_use]
 extern crate parity_codec_derive;
 #[macro_use]
 extern crate sr_version as version;
-extern crate srml_system as system;
-extern crate srml_executive as executive;
-extern crate srml_consensus as consensus;
-extern crate srml_timestamp as timestamp;
 extern crate srml_balances as balances;
+extern crate srml_consensus as consensus;
+extern crate srml_executive as executive;
+extern crate srml_system as system;
+extern crate srml_timestamp as timestamp;
 extern crate srml_upgrade_key as upgrade_key;
 
-use rstd::prelude::*;
 #[cfg(feature = "std")]
 use primitives::bytes;
 use primitives::AuthorityId;
-use runtime_primitives::{ApplyResult, transaction_validity::TransactionValidity,
-	Ed25519Signature, generic, traits::{self, BlakeTwo256, Block as BlockT}
+use rstd::prelude::*;
+use runtime_api::{id::*, runtime::*};
+use runtime_primitives::{
+	generic,
+	traits::{self, BlakeTwo256, Block as BlockT},
+	transaction_validity::TransactionValidity,
+	ApplyResult, Ed25519Signature,
 };
-use runtime_api::{runtime::*, id::*};
-use version::RuntimeVersion;
 #[cfg(feature = "std")]
 use version::NativeVersion;
+use version::RuntimeVersion;
 
 // A few exports that help ease life for downstream crates.
+pub use balances::Call as BalancesCall;
+pub use consensus::Call as ConsensusCall;
 #[cfg(any(feature = "std", test))]
 pub use runtime_primitives::BuildStorage;
-pub use consensus::Call as ConsensusCall;
-pub use timestamp::Call as TimestampCall;
-pub use balances::Call as BalancesCall;
-pub use runtime_primitives::{Permill, Perbill};
+pub use runtime_primitives::{Perbill, Permill};
+pub use srml_support::{RuntimeMetadata, StorageValue};
 pub use timestamp::BlockPeriod;
-pub use srml_support::{StorageValue, RuntimeMetadata};
+pub use timestamp::Call as TimestampCall;
 
 mod demo;
+
+mod ctype;
 
 /// Alias to Ed25519 pubkey that identifies an account on the chain.
 pub type AccountId = primitives::H256;
@@ -75,14 +80,15 @@ pub mod opaque {
 	/// Opaque, encoded, unchecked extrinsic.
 	#[derive(PartialEq, Eq, Clone, Default, Encode, Decode)]
 	#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-	pub struct UncheckedExtrinsic(#[cfg_attr(feature = "std", serde(with="bytes"))] pub Vec<u8>);
+	pub struct UncheckedExtrinsic(#[cfg_attr(feature = "std", serde(with = "bytes"))] pub Vec<u8>);
 	impl traits::Extrinsic for UncheckedExtrinsic {
 		fn is_signed(&self) -> Option<bool> {
 			None
 		}
 	}
 	/// Opaque block header type.
-	pub type Header = generic::Header<BlockNumber, BlakeTwo256, generic::DigestItem<Hash, AuthorityId>>;
+	pub type Header =
+		generic::Header<BlockNumber, BlakeTwo256, generic::DigestItem<Hash, AuthorityId>>;
 	/// Opaque block type.
 	pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 	/// Opaque block identifier type.
@@ -173,6 +179,7 @@ impl upgrade_key::Trait for Runtime {
 }
 
 impl demo::Trait for Runtime {}
+impl ctype::Trait for Runtime {}
 
 construct_runtime!(
 	pub enum Runtime with Log(InternalLog: DigestItem<Hash, AuthorityId>) where
@@ -185,10 +192,11 @@ construct_runtime!(
 		Balances: balances,
 		UpgradeKey: upgrade_key,
 		Demo: demo::{Module, Call, Storage, Config<T>},
+		Ctype: ctype::{Module, Call, Storage, Config<T>},
 	}
 );
 
-/// The type used as a helper for interpreting the sender of transactions. 
+/// The type used as a helper for interpreting the sender of transactions.
 type Context = balances::ChainContext<Runtime>;
 /// The address format for describing accounts.
 type Address = balances::Address<Runtime>;
@@ -199,7 +207,8 @@ pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 /// BlockId type as expected by this runtime.
 pub type BlockId = generic::BlockId<Block>;
 /// Unchecked extrinsic type as expected by this runtime.
-pub type UncheckedExtrinsic = generic::UncheckedMortalExtrinsic<Address, Nonce, Call, Ed25519Signature>;
+pub type UncheckedExtrinsic =
+	generic::UncheckedMortalExtrinsic<Address, Nonce, Call, Ed25519Signature>;
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Nonce, Call>;
 /// Executive: handles dispatch to the various modules.
