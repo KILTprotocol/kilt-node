@@ -1,0 +1,26 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+    - echo Logging in to Amazon ECR...
+    - aws --version
+    - $(aws ecr get-login --region eu-central-1 --no-include-email)
+    - REPOSITORY_URI=348099934012.dkr.ecr.eu-central-1.amazonaws.com/kilt/substrate-poc
+    - 'IMAGE_TAG=$(sed -n ''s/.*"version" = "\(.*\)",/\1/p'' Cargo.toml)'
+  build:
+    commands:
+    - echo Building the docker image...
+    - echo Build started on `date`
+    - docker build -t $REPOSITORY_URI:$IMAGE_TAG .
+    - docker tag $REPOSITORY_URI:$IMAGE_TAG $REPOSITORY_URI:latest
+  post_build:
+    commands:
+    - echo Build completed on `date`
+    - echo Pushing the Docker images...
+    - docker push $REPOSITORY_URI:latest
+    - docker push $REPOSITORY_URI:$IMAGE_TAG
+    - echo Writing image definitions file...
+    - printf '[{"name":"substrate-poc-ui","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+artifacts:
+  files: imagedefinitions.json
