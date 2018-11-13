@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -e
 
+if [ ! -L src ]
+then
+    ln -s ../src src
+fi
+
 if cargo --version | grep -q "nightly"; then
 	CARGO_CMD="cargo"
 else
