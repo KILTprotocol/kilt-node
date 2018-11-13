@@ -60,6 +60,7 @@ mod ctype;
 /// Alias to Ed25519 pubkey that identifies an account on the chain.
 pub type AccountId = primitives::H256;
 
+
 /// A hash of some data used by the chain.
 pub type Hash = primitives::H256;
 
@@ -138,6 +139,7 @@ impl system::Trait for Runtime {
 	type Log = Log;
 	/// The ubiquitous origin type.
 	type Origin = Origin;
+
 }
 
 impl consensus::Trait for Runtime {
@@ -177,7 +179,10 @@ impl upgrade_key::Trait for Runtime {
 	type Event = Event;
 }
 
-impl ctype::Trait for Runtime {}
+impl ctype::Trait for Runtime {
+	type Signature = Ed25519Signature;
+}
+
 
 construct_runtime!(
 	pub enum Runtime with Log(InternalLog: DigestItem<Hash, AuthorityId>) where
