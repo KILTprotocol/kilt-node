@@ -1,18 +1,20 @@
 #!/usr/bin/env bash
 
 set -e
+ls -la
 
-PROJECT_ROOT=`git rev-parse --show-toplevel`
+echo "obtain the project root"
+PROJECT_ROOT=`pwd`
+#PROJECT_ROOT=`git rev-parse --show-toplevel`
 
 export CARGO_INCREMENTAL=0
 
 # Save current directory.
 pushd .
 
-cd $ROOT
-
 for SRC in runtime/wasm
 do
+  echo "$PROJECT_ROOT/$SRC"
   echo "*** Building wasm binaries in $SRC"
   cd "$PROJECT_ROOT/$SRC"
 

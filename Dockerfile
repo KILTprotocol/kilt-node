@@ -57,7 +57,6 @@ RUN cargo build
 
 EXPOSE 30333 9933 9944
 
-RUN ls -l .
-RUN ls -l target/
+RUN ls -la .
 
 CMD ["./target/debug/node", "--dev"]
