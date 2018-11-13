@@ -28,6 +28,7 @@ extern crate srml_executive as executive;
 extern crate srml_system as system;
 extern crate srml_timestamp as timestamp;
 extern crate srml_upgrade_key as upgrade_key;
+extern crate sr_primitives;
 
 #[cfg(feature = "std")]
 use primitives::bytes;

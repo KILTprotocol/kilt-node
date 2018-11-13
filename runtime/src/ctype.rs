@@ -1,9 +1,12 @@
 // initialise with:
 // post({sender: runtime.balances.ss58Decode('F7Gh'), call: calls.demo.setPayment(1000)}).tie(console.log)
+use sr_primitives::verify_encoded_lazy;
 use rstd::prelude::*;
+use primitives::H256;
 use runtime_primitives::Ed25519Signature;
 use srml_support::{StorageValue, dispatch::Result};
 use {balances, system::ensure_signed};
+use balances::Address;
 
 pub trait Trait: balances::Trait {}
 
@@ -16,6 +19,7 @@ pub struct Ctype<T,S,A> {
 
 decl_module! {
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+
 		fn add(origin, hash:T::Hash, signature:Ed25519Signature) -> Result {
 			let sender = ensure_signed(origin)?;
 			let ctype = Ctype {
@@ -23,6 +27,11 @@ decl_module! {
 				signature: signature,
 				origin: sender,
 			};
+
+			//let payload = (hash, sender);
+			// if !verify_encoded_lazy(&signature, &payload, &sender) {
+			//	return Err("bad signature")
+			//}
 
 			let mut ctypes = <CTYPEs<T>>::get();
 			ctypes.push(ctype);
