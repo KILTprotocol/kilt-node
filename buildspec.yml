@@ -12,7 +12,7 @@ phases:
     commands:
     - echo Building the docker image...
     - echo Build started on `date`
-    - docker build -t $REPOSITORY_URI:$IMAGE_TAG .
+    - docker build --cache-from $REPOSITORY_URI:latest -t $REPOSITORY_URI:$IMAGE_TAG .
     - docker tag $REPOSITORY_URI:$IMAGE_TAG $REPOSITORY_URI:latest
   post_build:
     commands:
@@ -21,6 +21,6 @@ phases:
     - docker push $REPOSITORY_URI:latest
     - docker push $REPOSITORY_URI:$IMAGE_TAG
     - echo Writing image definitions file...
-    - printf '[{"name":"substrate-poc-ui","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+    - printf '[{"name":"substrate-poc","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
 artifacts:
   files: imagedefinitions.json
