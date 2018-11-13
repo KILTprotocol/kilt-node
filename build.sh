@@ -18,6 +18,7 @@ do
   echo "*** Building wasm binaries in $SRC"
   cd "$PROJECT_ROOT/$SRC"
 
+  chmod a+x build.sh
   ./build.sh
 
   cd - >> /dev/null
