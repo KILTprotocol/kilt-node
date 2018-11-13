@@ -22,16 +22,16 @@ decl_module! {
 
 		fn add(origin, hash:T::Hash, signature:Ed25519Signature) -> Result {
 			let sender = ensure_signed(origin)?;
+			let payload = (hash, sender.clone());
+			//if !verify_encoded_lazy(&signature, &payload, &sender) {
+			//	return Err("bad signature")
+			//}
+
 			let ctype = Ctype {
 				hash: hash,
 				signature: signature,
 				origin: sender,
 			};
-
-			//let payload = (hash, sender);
-			// if !verify_encoded_lazy(&signature, &payload, &sender) {
-			//	return Err("bad signature")
-			//}
 
 			let mut ctypes = <CTYPEs<T>>::get();
 			ctypes.push(ctype);
