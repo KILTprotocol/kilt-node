@@ -189,7 +189,7 @@ construct_runtime!(
 		Consensus: consensus::{Module, Call, Storage, Config<T>, Log(AuthoritiesChange), Inherent},
 		Balances: balances,
 		UpgradeKey: upgrade_key,
-		Ctype: ctype::{Module, Call, Storage, Config<T>},
+		Ctype: ctype::{Module, Call, Storage},
 	}
 );
 
