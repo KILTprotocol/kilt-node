@@ -4,14 +4,15 @@ use traits::{Verify,Member};
 use sr_primitives::verify_encoded_lazy;
 use runtime_primitives::codec::{Codec};
 use rstd::prelude::*;
-use srml_support::{StorageValue, dispatch::Result};
+use srml_support::{StorageMap, dispatch::Result};
 use {balances, system::ensure_signed};
 
 pub trait Trait: balances::Trait {
-	type Signature: Verify<Signer=Self::AccountId> + Member + Codec;
+	type Signature: Verify<Signer=Self::AccountId> + Member + Codec + Default;
 }
 
 #[derive(PartialEq, Eq, Clone, Encode, Decode)]
+#[derive(Default)]
 pub struct Ctype<T,S,A> {
 	hash: T,
 	signature: S,
@@ -34,17 +35,15 @@ decl_module! {
 				origin: sender,
 			};
 
-			let mut ctypes = <CTYPEs<T>>::get();
-			ctypes.push(ctype);
-			// TODO: is this necessary?
-			<CTYPEs<T>>::put(ctypes);
+			<CTYPEs<T>>::insert(hash, ctype);
 			Ok(())
 		}
+
 	}
 }
 
 decl_storage! {
 	trait Store for Module<T: Trait> as CTYPEModule {
-		CTYPEs get(ctypes): Vec<Ctype<T::Hash,T::Signature,T::AccountId>>;
+		CTYPEs get(ctypes): map T::Hash => Ctype<T::Hash,T::Signature,T::AccountId>;
 	}
 }
