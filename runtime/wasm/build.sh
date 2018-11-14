@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -e
 
-ls -la
 if [ ! -L src ]
 then
     rm -rf src

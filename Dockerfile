@@ -50,13 +50,12 @@ ENV LANG=C.UTF-8
 
 COPY . /substrate
 
-RUN pwd && ls -lh
 RUN /bin/bash build.sh
 
-RUN cargo build
+RUN cargo build && cargo test
 
 EXPOSE 30333 9933 9944
 
 RUN ls -la .
 
-CMD ["./target/debug/node", "--dev"]
+CMD ["cargo", "run", "--", "dev"]

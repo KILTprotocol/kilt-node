@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 
 set -e
-ls -la
 
-echo "obtain the project root"
+echo "obtain the project folder"
 PROJECT_ROOT=`pwd`
 #PROJECT_ROOT=`git rev-parse --show-toplevel`
 
