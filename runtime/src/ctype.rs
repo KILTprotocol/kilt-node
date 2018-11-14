@@ -3,7 +3,6 @@
 use traits::{Verify,Member};
 use sr_primitives::verify_encoded_lazy;
 use runtime_primitives::codec::{Codec};
-use rstd::prelude::*;
 use srml_support::{StorageMap, dispatch::Result};
 use {balances, system::ensure_signed};
 
@@ -24,8 +23,7 @@ decl_module! {
 
 		fn add(origin, hash: T::Hash, signature: T::Signature) -> Result {
 			let sender = ensure_signed(origin)?;
-			let payload = (hash, sender.clone());
-			if !verify_encoded_lazy(&signature, &payload, &sender) {
+			if !verify_encoded_lazy(&signature, &hash, &sender) {
 				return Err("bad signature")
 			}
 
