@@ -57,6 +57,7 @@ pub use timestamp::Call as TimestampCall;
 
 
 mod ctype;
+mod attestation;
 
 /// Alias to Ed25519 pubkey that identifies an account on the chain.
 pub type AccountId = primitives::H256;
@@ -180,6 +181,10 @@ impl upgrade_key::Trait for Runtime {
 	type Event = Event;
 }
 
+impl attestation::Trait for Runtime {
+	type Signature = Ed25519Signature;
+}
+
 impl ctype::Trait for Runtime {
 	type Signature = Ed25519Signature;
 
@@ -205,6 +210,7 @@ construct_runtime!(
 		Balances: balances,
 		UpgradeKey: upgrade_key,
 		Ctype: ctype::{Module, Call, Storage},
+		Attestation: attestation::{Module, Call, Storage},
 	}
 );
 
