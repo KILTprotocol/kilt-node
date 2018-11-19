@@ -55,6 +55,7 @@ pub use srml_support::{RuntimeMetadata, StorageValue};
 pub use timestamp::BlockPeriod;
 pub use timestamp::Call as TimestampCall;
 
+
 mod ctype;
 
 /// Alias to Ed25519 pubkey that identifies an account on the chain.
@@ -181,7 +182,16 @@ impl upgrade_key::Trait for Runtime {
 
 impl ctype::Trait for Runtime {
 	type Signature = Ed25519Signature;
+
+
+	fn print_account(hash : primitives::H256) {
+		::runtime_io::print(&hash.0[..]);
+	}
+	fn print_hash(hash : primitives::H256) {
+		::runtime_io::print(&hash.0[..]);
+	}
 }
+
 
 
 construct_runtime!(
