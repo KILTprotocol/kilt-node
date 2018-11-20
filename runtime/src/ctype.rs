@@ -129,10 +129,6 @@ mod tests {
 				),
 				"bad signature"
 			);
-
-			// assert_eq!(CType::add(origin, hash: T::Hash, signature: T::Signature), 24);
-			// assert_ok!(Example::accumulate_foo(Origin::signed(1), 1));
-			// assert_eq!(Example::foo(), 25);
 		});
 	}
 }
