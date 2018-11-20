@@ -1,14 +1,15 @@
-
-use traits::{Verify,Member};
-use sr_primitives::verify_encoded_lazy;
-use runtime_primitives::codec::{Codec};
-use srml_support::{StorageMap, dispatch::Result};
-use {balances, system::ensure_signed};
 use rstd::prelude::*;
+use runtime_primitives::codec::Codec;
+use sr_primitives::verify_encoded_lazy;
+use srml_support::{dispatch::Result, StorageMap};
+use traits::{Member, Verify};
+use {balances, system::ensure_signed};
 
 pub trait Trait: balances::Trait {
-	type Signature: Verify<Signer=Self::AccountId> + Member + Codec + Default;
+	type Signature: Verify<Signer = Self::AccountId> + Member + Codec + Default;
 }
+
+pub type Revoked = bool;
 
 decl_module! {
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
@@ -20,9 +21,9 @@ decl_module! {
 			}
 
 			let mut existing_attestations_for_claim = <Attestations<T>>::get(claim_hash.clone());
-			let mut last_attested : Option<(T::Hash,T::AccountId,T::Signature,bool)> = None;
+			let mut last_attested : Option<(T::AccountId,T::Signature,Revoked)> = None;
 			for v in existing_attestations_for_claim.clone() {
-				if v.1.eq(&sender) {
+				if v.0.eq(&sender) {
 					last_attested = Some(v);
 					break;
 				}
@@ -30,8 +31,7 @@ decl_module! {
 			match last_attested {
 				Some(_v)	=> return Err("already attested"),
 				None	=> {
-					existing_attestations_for_claim.push((claim_hash.clone(), sender.clone(), signature.clone(), false));
-					<Attestations<T>>::insert(claim_hash.clone(), existing_attestations_for_claim);
+					existing_attestations_for_claim.push((sender.clone(), signature.clone(), false));
 					Ok(())
 				},
 			}
@@ -44,16 +44,16 @@ decl_module! {
 			}
 
 			let existing_attestations_for_claim = <Attestations<T>>::get(claim_hash.clone());
-			let mut last_attested : Option<(T::Hash,T::AccountId,T::Signature,bool)> = None;
+			let mut last_attested : Option<(T::AccountId,T::Signature,Revoked)> = None;
 			for v in existing_attestations_for_claim.clone() {
-				if v.1.eq(&sender) {
+				if v.0.eq(&sender) {
 					last_attested = Some(v);
 				}
 			}
 			match last_attested {
 				None	=> return Err("not attested"),
 				Some(mut v)	=> {
-					v.3 = true;
+					v.2 = false;
 					Ok(())
 				},
 			}
@@ -63,6 +63,6 @@ decl_module! {
 
 decl_storage! {
 	trait Store for Module<T: Trait> as Attestation {
-		Attestations get(attestations): map T::Hash => Vec<(T::Hash,T::AccountId,T::Signature,bool)>;
+		Attestations get(attestations): map T::Hash => Vec<(T::AccountId,T::Signature,Revoked)>;
 	}
 }

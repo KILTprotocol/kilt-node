@@ -22,13 +22,13 @@ extern crate substrate_primitives as primitives;
 extern crate parity_codec_derive;
 #[macro_use]
 extern crate sr_version as version;
+extern crate sr_primitives;
 extern crate srml_balances as balances;
 extern crate srml_consensus as consensus;
 extern crate srml_executive as executive;
 extern crate srml_system as system;
 extern crate srml_timestamp as timestamp;
 extern crate srml_upgrade_key as upgrade_key;
-extern crate sr_primitives;
 
 #[cfg(feature = "std")]
 use primitives::bytes;
@@ -55,13 +55,11 @@ pub use srml_support::{RuntimeMetadata, StorageValue};
 pub use timestamp::BlockPeriod;
 pub use timestamp::Call as TimestampCall;
 
-
-mod ctype;
 mod attestation;
+mod ctype;
 
 /// Alias to Ed25519 pubkey that identifies an account on the chain.
 pub type AccountId = primitives::H256;
-
 
 /// A hash of some data used by the chain.
 pub type Hash = primitives::H256;
@@ -141,7 +139,6 @@ impl system::Trait for Runtime {
 	type Log = Log;
 	/// The ubiquitous origin type.
 	type Origin = Origin;
-
 }
 
 impl consensus::Trait for Runtime {
@@ -188,16 +185,13 @@ impl attestation::Trait for Runtime {
 impl ctype::Trait for Runtime {
 	type Signature = Ed25519Signature;
 
-
-	fn print_account(hash : primitives::H256) {
+	fn print_account(hash: primitives::H256) {
 		::runtime_io::print(&hash.0[..]);
 	}
-	fn print_hash(hash : primitives::H256) {
+	fn print_hash(hash: primitives::H256) {
 		::runtime_io::print(&hash.0[..]);
 	}
 }
-
-
 
 construct_runtime!(
 	pub enum Runtime with Log(InternalLog: DigestItem<Hash, AuthorityId>) where

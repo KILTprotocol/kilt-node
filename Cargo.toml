@@ -1,7 +1,7 @@
 [package]
-name = "substrate-node-template"
+name = "kilt-prototype-chain"
 version = "0.9.0"
-authors = ["Parity Technologies <admin@parity.io>"]
+authors = ["Botlabs <admin@botlabs.org>"]
 build = "build.rs"
 
 [[bin]]
