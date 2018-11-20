@@ -115,10 +115,6 @@ mod tests {
 	fn it_works_for_default_value() {
 		with_externalities(&mut new_test_ext(), || {
 			assert_err!(CType::add(Origin::signed(H256::from(1)), H256::from(2), Ed25519Signature::from(H512::from(3))), "bad signature");
-
-			// assert_eq!(CType::add(origin, hash: T::Hash, signature: T::Signature), 24);
-			// assert_ok!(Example::accumulate_foo(Origin::signed(1), 1));
-			// assert_eq!(Example::foo(), 25);
 		});
 	}
 }
