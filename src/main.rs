@@ -42,7 +42,7 @@ fn run() -> cli::error::Result<()> {
 		version: env!("CARGO_PKG_VERSION"),
 		executable_name: "node",
 		author: "Anonymous <anon@ymous.com>",
-		description: "Substrate Node Template",
+		description: "KILT Node",
 	};
 	cli::run(::std::env::args(), Exit, version)
 }
