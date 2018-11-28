@@ -8,13 +8,16 @@ PROJECT_ROOT=`pwd`
 
 export CARGO_INCREMENTAL=0
 
+bold=$(tput bold)
+normal=$(tput sgr0)
+
 # Save current directory.
-pushd .
+pushd . >/dev/null
 
 for SRC in runtime/wasm
 do
   echo "$PROJECT_ROOT/$SRC"
-  echo "*** Building wasm binaries in $SRC"
+  echo "${bold}Building webassembly binary in $SRC...${normal}"
   cd "$PROJECT_ROOT/$SRC"
 
   chmod a+x build.sh
@@ -24,4 +27,4 @@ do
 done
 
 # Restore initial directory.
-popd
+popd >/dev/null
