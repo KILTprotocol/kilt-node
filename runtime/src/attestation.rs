@@ -51,8 +51,7 @@ decl_module! {
 				}
 			}
 			if last_attested {
-				let copy_of_attestations = (&mut existing_attestations_for_claim).clone();
-				<Attestations<T>>::insert(claim_hash.clone(), copy_of_attestations);
+				<Attestations<T>>::insert(claim_hash.clone(), existing_attestations_for_claim.clone());
 				Ok(())
 			} else {
 				Err("not attested")
