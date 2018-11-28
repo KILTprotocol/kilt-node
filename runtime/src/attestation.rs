@@ -55,7 +55,7 @@ decl_module! {
 				<Attestations<T>>::insert(claim_hash.clone(), existing_attestations_for_claim.clone());
 				Ok(())
 			} else {
-				Err("not attested")
+				Err("no valid attestation found")
 			}
 		}
 	}
@@ -195,7 +195,7 @@ mod tests {
 			let account_hash = H256::from(pair.public().0);
 			assert_ok!(Attestation::add(Origin::signed(account_hash.clone()), hash.clone(), signed.clone()));
 			assert_ok!(Attestation::revoke(Origin::signed(account_hash.clone()), hash.clone(), signed.clone()));
-			assert_err!(Attestation::revoke(Origin::signed(account_hash.clone()), hash.clone(), signed.clone()), "not attested");
+			assert_err!(Attestation::revoke(Origin::signed(account_hash.clone()), hash.clone(), signed.clone()), "no valid attestation found");
 		});
 	}
 }
