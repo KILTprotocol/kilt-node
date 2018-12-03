@@ -58,4 +58,12 @@ EXPOSE 30333 9933 9944
 
 RUN ls -la .
 
-CMD ["cargo", "run", "--", "dev"]
+# boot node for Alice:
+# ./target/debug/node --chain local --key Alice --name "ALICE" --node-key 0000000000000000000000000000000000000000000000000000000000000001 --validator --telemetry-url ws://telemetry-backend.kilt-prototype.tk:1024
+# Alice's address: /ip4/0.0.0.0/tcp/30333/p2p/QmQZ8TjTqeDj3ciwr93EJ95hxfDsb9pEYDizUAbWpigtQN
+
+# boot node for Bob:
+# ./target/debug/node --chain local --key Bob --name "BOB" --node-key 0000000000000000000000000000000000000000000000000000000000000002 --validator --telemetry-url ws://telemetry-backend.kilt-prototype.tk:1024
+# Bobs address: /ip4/0.0.0.0/tcp/30333/p2p/QmXiB3jqqn2rpiKU7k1h7NJYeBg8WNSx9DiTRKz9ti2KSK
+
+CMD ["./target/debug/node", "--chain", "local", "--key", "Alice", "--name", "\"ALICE\"", "--node-key", "0000000000000000000000000000000000000000000000000000000000000001", "--validator"]
