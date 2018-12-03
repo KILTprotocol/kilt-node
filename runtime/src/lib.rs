@@ -190,10 +190,10 @@ impl ctype::Trait for Runtime {
 	type Signature = Ed25519Signature;
 
 	fn print_account(hash: primitives::H256) {
-		::runtime_io::print(&hash.0[..]);
+		::runtime_io::print(&hash.as_bytes()[..]);
 	}
 	fn print_hash(hash: primitives::H256) {
-		::runtime_io::print(&hash.0[..]);
+		::runtime_io::print(&hash.as_bytes()[..]);
 	}
 }
 
