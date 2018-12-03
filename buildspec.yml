@@ -6,7 +6,7 @@ phases:
     - echo Logging in to Amazon ECR...
     - aws --version
     - $(aws ecr get-login --region eu-central-1 --no-include-email)
-    - REPOSITORY_URI=348099934012.dkr.ecr.eu-central-1.amazonaws.com/kilt/substrate-poc
+    - REPOSITORY_URI=348099934012.dkr.ecr.eu-central-1.amazonaws.com/kilt/prototype-chain
     - 'IMAGE_TAG=$(sed -n ''s/version = "\(.*\)"$/\1/p'' Cargo.toml)'
     - docker pull $REPOSITORY_URI:latest || true
   build:
@@ -22,6 +22,6 @@ phases:
     - docker push $REPOSITORY_URI:latest
     - docker push $REPOSITORY_URI:$IMAGE_TAG
     - echo Writing image definitions file...
-    - printf '[{"name":"substrate-poc","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+    - printf '[{"name":"prototype-bootnode-alice","imageUri":"%s"}, {"name":"prototype-bootnode-bob","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
 artifacts:
   files: imagedefinitions.json
