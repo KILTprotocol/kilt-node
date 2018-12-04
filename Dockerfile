@@ -63,7 +63,7 @@ RUN apt -y update && \
   apt install -y --no-install-recommends \
 	software-properties-common curl file binutils binutils-dev snapcraft \
 	ca-certificates zip dpkg-dev python rhash rpm openssl gettext\
-  build-essential pkg-config libssl-dev libudev-dev ruby-dev time
+  build-essential pkg-config libssl-dev libudev-dev ruby-dev time dnsutils
 
 RUN mkdir -p /runtime/target/debug/
 COPY --from=builder /build/target/debug/node ./target/debug/node
