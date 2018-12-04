@@ -1,6 +1,6 @@
-FROM ubuntu:xenial
+FROM ubuntu:xenial as builder
 
-WORKDIR /substrate
+WORKDIR /build
 
 # install tools and dependencies
 RUN apt -y update && \
@@ -48,22 +48,35 @@ ENV CXX g++
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 
-COPY . /substrate
+COPY . /build
 
 RUN /bin/bash build.sh
 
 RUN cargo build && cargo test
 
-EXPOSE 30333 9933 9944
 
+FROM ubuntu:xenial
+
+WORKDIR /runtime
+RUN mkdir -p /runtime/target/debug/
+COPY --from=builder /build/target/debug/node ./target/debug/node
+COPY --from=builder /build/scripts/kilt-node-testnet.sh ./kilt-node-testnet.sh
+COPY --from=builder /build/scripts/lookup-master-bootnode-testnet.sh ./lookup-master-bootnode-testnet.sh
+COPY --from=builder /build/scripts/kilt-master-bootnode-testnet.sh ./kilt-master-bootnode-testnet.sh
+
+RUN chmod a+x *.sh
 RUN ls -la .
 
-# boot node for Alice:
-# ./target/debug/node --chain local --key Alice --name "ALICE" --node-key 0000000000000000000000000000000000000000000000000000000000000001 --validator --telemetry-url ws://telemetry-backend.kilt-prototype.tk:1024
-# Alice's address: /ip4/0.0.0.0/tcp/30333/p2p/QmQZ8TjTqeDj3ciwr93EJ95hxfDsb9pEYDizUAbWpigtQN
+# expose node ports
+EXPOSE 30333 9933 9944
 
-# boot node for Bob:
-# ./target/debug/node --chain local --key Bob --name "BOB" --node-key 0000000000000000000000000000000000000000000000000000000000000002 --validator --telemetry-url ws://telemetry-backend.kilt-prototype.tk:1024
-# Bobs address: /ip4/0.0.0.0/tcp/30333/p2p/QmXiB3jqqn2rpiKU7k1h7NJYeBg8WNSx9DiTRKz9ti2KSK
-
-CMD ["./target/debug/node", "--chain", "local", "--key", "Alice", "--name", "\"ALICE\"", "--node-key", "0000000000000000000000000000000000000000000000000000000000000001", "--validator"]
+#
+# Pass the node start command to the docker run command
+#
+# To start a master boot node (no initial connection to other nodes):
+# ./kilt-master-bootnode-testnet.sh --key Alice --name "ALICE" --node-key 0000000000000000000000000000000000000000000000000000000000000001
+#
+# To start a node that connects to the master bootnode:
+# ./kilt-node-testnet.sh --key Charly --name "CHARLY"
+#
+CMD ["echo","\"Please provide a startup command.\""]
