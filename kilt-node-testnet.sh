@@ -23,5 +23,5 @@ MASTER_BOOT_NODE_IPFS=`./lookup-master-bootnode-testnet.sh`
 
 # Connect to master boot node
 echo "Master boot node: $MASTER_BOOT_NODE_IPFS..."
-./../target/debug/node --chain kilt-testnet --bootnodes $MASTER_BOOT_NODE_IPFS --port 30333 --validator --telemetry-url ws://telemetry-backend.kilt-prototype.tk:1024 "$@"
+./target/debug/node --chain kilt-testnet --bootnodes $MASTER_BOOT_NODE_IPFS --port 30333 --validator --telemetry-url ws://telemetry-backend.kilt-prototype.tk:1024 "$@"
 

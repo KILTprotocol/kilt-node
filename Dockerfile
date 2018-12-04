@@ -58,11 +58,18 @@ RUN cargo build && cargo test
 FROM ubuntu:xenial
 
 WORKDIR /runtime
+
+RUN apt -y update && \
+  apt install -y --no-install-recommends \
+	software-properties-common curl file binutils binutils-dev snapcraft \
+	ca-certificates zip dpkg-dev python rhash rpm openssl gettext\
+  build-essential pkg-config libssl-dev libudev-dev ruby-dev time
+
 RUN mkdir -p /runtime/target/debug/
 COPY --from=builder /build/target/debug/node ./target/debug/node
-COPY --from=builder /build/scripts/kilt-node-testnet.sh ./kilt-node-testnet.sh
-COPY --from=builder /build/scripts/lookup-master-bootnode-testnet.sh ./lookup-master-bootnode-testnet.sh
-COPY --from=builder /build/scripts/kilt-master-bootnode-testnet.sh ./kilt-master-bootnode-testnet.sh
+COPY --from=builder /build/kilt-node-testnet.sh ./kilt-node-testnet.sh
+COPY --from=builder /build/lookup-master-bootnode-testnet.sh ./lookup-master-bootnode-testnet.sh
+COPY --from=builder /build/kilt-master-bootnode-testnet.sh ./kilt-master-bootnode-testnet.sh
 
 RUN chmod a+x *.sh
 RUN ls -la .
