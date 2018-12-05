@@ -8,5 +8,5 @@
 #
 
 echo "Starting KILT master boot node..."
-./target/debug/node --chain kilt-testnet --validator --telemetry-url ws://telemetry-backend.kilt-prototype.tk:1024 "$@"
+./target/debug/node --chain kilt-testnet --validator --port 30333 --ws-port 9944 --ws-external --rpc-external --telemetry-url ws://telemetry-backend.kilt-prototype.tk:1024 "$@"
 
