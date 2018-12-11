@@ -9,10 +9,6 @@ RUN apt -y update && \
 	make cmake ca-certificates g++ zip dpkg-dev python rhash rpm openssl gettext\
   build-essential pkg-config libssl-dev libudev-dev ruby-dev time
 
-#install nodejs
-RUN curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash - && \
-  apt-get install -y nodejs
-
 # install rustup
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 
@@ -61,15 +57,13 @@ WORKDIR /runtime
 
 RUN apt -y update && \
   apt install -y --no-install-recommends \
-	software-properties-common curl file binutils binutils-dev snapcraft \
-	ca-certificates zip dpkg-dev python rhash rpm openssl gettext\
-  build-essential pkg-config libssl-dev libudev-dev ruby-dev time dnsutils
+	openssl \
+	curl \
+    libssl-dev dnsutils
 
 RUN mkdir -p /runtime/target/debug/
 COPY --from=builder /build/target/debug/node ./target/debug/node
-COPY --from=builder /build/kilt-node-testnet.sh ./kilt-node-testnet.sh
-COPY --from=builder /build/lookup-master-bootnode-testnet.sh ./lookup-master-bootnode-testnet.sh
-COPY --from=builder /build/kilt-master-bootnode-testnet.sh ./kilt-master-bootnode-testnet.sh
+COPY --from=builder /build/start-node.sh ./start-node.sh
 
 RUN chmod a+x *.sh
 RUN ls -la .
@@ -80,10 +74,10 @@ EXPOSE 30333 9933 9944
 #
 # Pass the node start command to the docker run command
 #
-# To start a master boot node (no initial connection to other nodes):
-# ./kilt-master-bootnode-testnet.sh --key Alice --name "ALICE" --node-key 0000000000000000000000000000000000000000000000000000000000000001
+# To start Alice boot node:
+# ./start-node --account-name Alice --telemetry
 #
-# To start a node that connects to the master bootnode:
-# ./kilt-node-testnet.sh --key Charly --name "CHARLY"
+# To start a node that connects to Alice:
+# ./start-node.sh --account-name Charly --connect-to Alice -t
 #
 CMD ["echo","\"Please provide a startup command.\""]
