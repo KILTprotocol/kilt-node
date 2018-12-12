@@ -16,7 +16,7 @@ pub enum Alternative {
 	/// Whatever the current runtime is, with just Alice as an auth.
 	Development,
 	/// Whatever the current runtime is, with simple Alice/Bob auths.
-	LocalTestnet,
+	KiltTestnet,
 }
 
 impl Alternative {
@@ -39,9 +39,9 @@ impl Alternative {
 				None,
 				None
 			),
-			Alternative::LocalTestnet => ChainSpec::from_genesis(
-				"Local Testnet",
-				"local_testnet",
+			Alternative::KiltTestnet => ChainSpec::from_genesis(
+				"KILT Testnet",
+				"kilt_testnet",
 				|| testnet_genesis(vec![
 					ed25519::Pair::from_seed(b"Alice                           ").public().into(),
 					ed25519::Pair::from_seed(b"Bob                             ").public().into(),
@@ -67,7 +67,7 @@ impl Alternative {
 	pub(crate) fn from(s: &str) -> Option<Self> {
 		match s {
 			"dev" => Some(Alternative::Development),
-			"local" => Some(Alternative::LocalTestnet),
+			"kilt-testnet" => Some(Alternative::KiltTestnet),
 			_ => None,
 		}
 	}
