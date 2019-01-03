@@ -40,11 +40,12 @@ Usage:
   -c, --connect-to BOOT_NODE_NAME  The name of the boot node to connect to ("alice" | "bob")
   -d, --dry-run Flag indicating to only show the resulting command instead of executing it
   -t, --telemetry Flag indicating whether or not to send data to the telemetry server
+  -p, --purge-userdata Purges all chain-dependend user data in auxiliary services (ctypes, contacts, messages, ...)
 
   Examples:
 
-  Start Alice (boot node):
-  ./start-node.sh -a Alice
+  Start Alice (boot node) and purge all user data in services components:
+  ./start-node.sh -a Alice -p
 
   Start Bob (boot node) that connects to Alice:
   ./start-node.sh -a Bob -c Alice
@@ -61,6 +62,7 @@ bootnode=
 node_name=
 account_name=
 telemetry=0
+purge_userdata=0
 dry_run=0
 
 while [[ "$1" != "" ]]; do
@@ -75,6 +77,8 @@ while [[ "$1" != "" ]]; do
                                 bootnode=$1
                                 ;;
         -t | --telemetry )      telemetry=1
+                                ;;
+        -p | --purge-userdata ) purge_userdata=1
                                 ;;
         -d | --dry-run )        dry_run=1
                                 ;;
@@ -127,6 +131,13 @@ fi
 
 if [[ "$telemetry" = "1" ]]; then
     arg_telemetry=" --telemetry-url ${TELEMETRY_URL}"
+fi
+
+if [[ "$purge_userdata" = "1" ]]; then
+    echo "Purging user data in services..."
+    curl -X DELETE http://services.kilt-prototype.tk:3000/ctype
+    curl -X DELETE http://services.kilt-prototype.tk:3000/messaging
+    curl -X DELETE http://services.kilt-prototype.tk:3000/contacts
 fi
 
 command="./target/debug/node --chain ${CHAIN_NAME} --validator --port 30333 --ws-port 9944 --ws-external --rpc-external${arg_account_name}${arg_node_key}${arg_boot_node_connect}${arg_node_name}${arg_telemetry}"
