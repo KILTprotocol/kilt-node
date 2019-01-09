@@ -1,6 +1,7 @@
 // initialise with:
 // post({sender: runtime.balances.ss58Decode('F7Gh'), call: calls.demo.setPayment(1000)}).tie(console.log)
 
+use rstd::prelude::*;
 use runtime_primitives::codec::Codec;
 use runtime_primitives::verify_encoded_lazy;
 use srml_support::{dispatch::Result, StorageMap};
