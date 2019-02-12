@@ -1,17 +1,19 @@
 // initialise with:
 // post({sender: runtime.balances.ss58Decode('F7Gh'), call: calls.demo.setPayment(1000)}).tie(console.log)
 
+
+
 use runtime_primitives::codec::Codec;
 use runtime_primitives::verify_encoded_lazy;
-use srml_support::{dispatch::Result, StorageMap};
-use traits::{Member, Verify};
+use support::{dispatch::Result, StorageMap, decl_module, decl_storage};
+use runtime_primitives::traits::{Member, Verify};
 use {balances, system::ensure_signed};
 
 pub trait Trait: balances::Trait {
 	type Signature: Verify<Signer = Self::AccountId> + Member + Codec + Default;
 
-	fn print_account(Self::AccountId);
-	fn print_hash(Self::Hash);
+	fn print_account(_: Self::AccountId);
+	fn print_hash(_: Self::Hash);
 }
 
 decl_module! {

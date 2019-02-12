@@ -1,5 +1,8 @@
-use primitives::{AuthorityId, ed25519};
-use template_node_runtime::{AccountId, GenesisConfig, ConsensusConfig, TimestampConfig, BalancesConfig, UpgradeKeyConfig};
+use primitives::{Ed25519AuthorityId, ed25519};
+use node_template_runtime::{
+	AccountId, GenesisConfig, ConsensusConfig, TimestampConfig, BalancesConfig,
+	SudoConfig, IndicesConfig
+};
 use substrate_service;
 
 // Note this is the URL for the telemetry server
@@ -73,17 +76,18 @@ impl Alternative {
 	}
 }
 
-fn testnet_genesis(initial_authorities: Vec<AuthorityId>, endowed_accounts: Vec<AccountId>, upgrade_key: AccountId) -> GenesisConfig {
+fn testnet_genesis(initial_authorities: Vec<Ed25519AuthorityId>, endowed_accounts: Vec<AccountId>, root_key: AccountId) -> GenesisConfig {
 	GenesisConfig {
 		consensus: Some(ConsensusConfig {
-			code: include_bytes!("../runtime/wasm/target/wasm32-unknown-unknown/release/template_node_runtime.compact.wasm").to_vec(),
+			code: include_bytes!("../runtime/wasm/target/wasm32-unknown-unknown/release/node_template_runtime_wasm.compact.wasm").to_vec(),
 			authorities: initial_authorities.clone(),
-			_genesis_phantom_data: Default::default(),
 		}),
 		system: None,
 		timestamp: Some(TimestampConfig {
 			period: 5,					// 5 second block time.
-			_genesis_phantom_data: Default::default(),
+		}),
+		indices: Some(IndicesConfig {
+			ids: endowed_accounts.clone(),
 		}),
 		balances: Some(BalancesConfig {
 			transaction_base_fee: 1,
@@ -91,13 +95,11 @@ fn testnet_genesis(initial_authorities: Vec<AuthorityId>, endowed_accounts: Vec<
 			existential_deposit: 500,
 			transfer_fee: 0,
 			creation_fee: 0,
-			reclaim_rebate: 0,
 			balances: endowed_accounts.iter().map(|&k|(k, (1 << 60))).collect(),
-			_genesis_phantom_data: Default::default(),
+			vesting: vec![],
 		}),
-		upgrade_key: Some(UpgradeKeyConfig {
-			key: upgrade_key,
-			_genesis_phantom_data: Default::default(),
+		sudo: Some(SudoConfig {
+			key: root_key,
 		}),
 	}
 }
