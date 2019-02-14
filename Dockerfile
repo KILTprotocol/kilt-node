@@ -7,7 +7,7 @@ RUN apt -y update && \
   apt install -y --no-install-recommends \
 	software-properties-common curl git file binutils binutils-dev snapcraft \
 	make cmake ca-certificates g++ zip dpkg-dev python rhash rpm openssl gettext\
-  build-essential pkg-config libssl-dev libudev-dev ruby-dev time
+  build-essential pkg-config libssl-dev libudev-dev ruby-dev time clang
 
 # install rustup
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
