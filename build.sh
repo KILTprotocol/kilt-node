@@ -3,8 +3,7 @@
 set -e
 
 echo "obtain the project folder"
-PROJECT_ROOT=`pwd`
-#PROJECT_ROOT=`git rev-parse --show-toplevel`
+PROJECT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
 export CARGO_INCREMENTAL=0
 

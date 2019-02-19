@@ -1,8 +1,8 @@
 use rstd::prelude::*;
 use runtime_primitives::codec::Codec;
-use sr_primitives::verify_encoded_lazy;
-use srml_support::{dispatch::Result, StorageMap};
-use traits::{Member, Verify};
+use runtime_primitives::verify_encoded_lazy;
+use runtime_primitives::traits::{Member, Verify};
+use support::{dispatch::Result, StorageMap, decl_module, decl_storage};
 use {balances, system::ensure_signed};
 
 pub trait Trait: balances::Trait {
