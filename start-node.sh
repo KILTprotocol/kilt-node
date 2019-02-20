@@ -35,12 +35,13 @@ Usage:
 
   If you want to start a boot node, just use "Alice" or "Bob" as account name.
 
-  -a, --account-name ACCOUNT_NAME   The name of the account to start the node with (Alice | Bob | Charly | Dave | Eve | Ferdie).
+  -a, --account-name ACCOUNT_NAME   The name of the account to start the node with (Alice | Bob ).
   -n, --node-name NODE_NAME    The arbitrary name of the node (e.g. "charly-node-1234")
   -c, --connect-to BOOT_NODE_NAME  The name of the boot node to connect to ("alice" | "bob")
   -d, --dry-run Flag indicating to only show the resulting command instead of executing it
   -t, --telemetry Flag indicating whether or not to send data to the telemetry server
   -p, --purge-userdata Purges all chain-dependend user data in auxiliary services (ctypes, contacts, messages, ...)
+  -r, --rpc Whether to activate rpc
 
   Examples:
 
@@ -50,8 +51,8 @@ Usage:
   Start Bob (boot node) that connects to Alice:
   ./start-node.sh -a Bob -c Alice
 
-  Start Charly (normal node) that connects to Alice:
-  ./start-node.sh -a Charly -c Alice -n charly-node-123
+  Start full node that connects to Alice and exposes an rpc endpoint:
+  ./start-node.sh -c Alice -n charly-node-123 --rpc
 HELP_USAGE
 }
 
@@ -64,6 +65,7 @@ account_name=
 telemetry=0
 purge_userdata=0
 dry_run=0
+rpc=0
 
 while [[ "$1" != "" ]]; do
     case $1 in
@@ -82,6 +84,8 @@ while [[ "$1" != "" ]]; do
                                 ;;
         -d | --dry-run )        dry_run=1
                                 ;;
+        -r | --rpc )            rpc=1
+                                ;;
         -h | --help )           usage
                                 exit
                                 ;;
@@ -97,20 +101,22 @@ arg_node_key=
 arg_node_name=
 arg_telemetry=
 arg_account_name=
-
-if [[ -z "$account_name" ]]; then
-    usage
-    exit 1
-fi
+arg_rpc=
 
 if [[ "$account_name" = "Alice" ]]; then
     arg_node_key=" --node-key ${ALICE_BOOT_NODE_KEY}"
 elif [[ "$account_name" = "Bob" ]]; then
     arg_node_key=" --node-key ${BOB_BOOT_NODE_KEY}"
 fi
-arg_account_name=" --key ${account_name}"
 
-echo "Starting KILT node with account '${account_name}'"
+if [[ ! -z "$account_name" ]]; then
+    arg_account_name=" --key ${account_name} --validator"
+    echo "Starting KILT validator node with account '${account_name}'"
+else
+    echo "Starting KILT full node"
+fi
+
+
 if [[ ! -z "$bootnode" ]]; then
 	echo "Trying to connect to boot node '$bootnode'..."
 	lookup_boot_node
@@ -140,7 +146,11 @@ if [[ "$purge_userdata" = "1" ]]; then
     curl -X DELETE http://services.kilt-prototype.tk:3000/contacts
 fi
 
-command="./target/debug/node --chain ${CHAIN_NAME} --validator --port 30333 --ws-port 9944 --ws-external --rpc-external${arg_account_name}${arg_node_key}${arg_boot_node_connect}${arg_node_name}${arg_telemetry}"
+if [[ "$rpc" = "1" ]]; then
+    arg_rpc=" --ws-port 9944 --ws-external --rpc-external"
+fi
+
+command="./target/debug/node --chain ${CHAIN_NAME} --port 30333${arg_rpc}${arg_account_name}${arg_node_key}${arg_boot_node_connect}${arg_node_name}${arg_telemetry}"
 
 if [[ "$dry_run" = "1" ]]; then
     echo "Dry run."
