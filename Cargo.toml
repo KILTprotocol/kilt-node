@@ -1,3 +1,10 @@
+[package]
+name = "kilt-prototype-chain"
+version = "0.9.0"
+edition = "2018"
+authors = ["Botlabs <admin@botlabs.org>"]
+build = "build.rs"
+
 [[bin]]
 name = 'node'
 path = 'src/main.rs'
@@ -8,7 +15,7 @@ exit-future = '0.1'
 futures = '0.1'
 hex-literal = '0.1'
 log = '0.4'
-parity-codec = 
+parity-codec = '3.0'
 parking_lot = '0.7.1'
 slog = '^2'
 tokio = '0.1'
@@ -78,10 +85,3 @@ rev = '6288a4774a5ca57832896f6c501ba04aa6ef398c'
 vergen = '3'
 [profile.release]
 panic = 'unwind'
-
-[package]
-name = "kilt-prototype-chain"
-version = "0.9.0"
-edition = '2018'
-authors = ["Botlabs <admin@botlabs.org>"]
-build = "build.rs"
