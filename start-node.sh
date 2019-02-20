@@ -35,7 +35,7 @@ Usage:
 
   If you want to start a boot node, just use "Alice" or "Bob" as account name.
 
-  -a, --account-name ACCOUNT_NAME   The name of the account to start the node with (Alice | Bob | Charly | Dave | Eve | Ferdie).
+  -a, --account-name ACCOUNT_NAME   The name of the account to start the node with (Alice | Bob ).
   -n, --node-name NODE_NAME    The arbitrary name of the node (e.g. "charly-node-1234")
   -c, --connect-to BOOT_NODE_NAME  The name of the boot node to connect to ("alice" | "bob")
   -d, --dry-run Flag indicating to only show the resulting command instead of executing it
@@ -51,8 +51,8 @@ Usage:
   Start Bob (boot node) that connects to Alice:
   ./start-node.sh -a Bob -c Alice
 
-  Start Charly (normal node) that connects to Alice:
-  ./start-node.sh -a Charly -c Alice -n charly-node-123
+  Start full node that connects to Alice and exposes an rpc endpoint:
+  ./start-node.sh -c Alice -n charly-node-123 --rpc
 HELP_USAGE
 }
 

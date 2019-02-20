@@ -12,10 +12,13 @@ There are master boot nodes running in the KILT testnet:
 To start a node and connect to Alice you can use the shell script `start-node.sh`:
 
 ```
-./start-node.sh --account-name Charly --connect-to Alice
+./start-node.sh --connect-to Alice
 ``` 
 
-You can use any of the accounts declared in the chain spec to connect (Alice, Bob, Charly, Dave, Eve, Ferdie).
+If you want to connect to this node via RPC, add the `--rpc` flag:
+```
+./start-node.sh --connect-to Alice --rpc
+```
 
 Run `./start-node.sh --help` for more information.
 
@@ -41,7 +44,7 @@ docker pull 348099934012.dkr.ecr.eu-central-1.amazonaws.com/kilt/prototype-chain
   a. To run a node and connect it to the KILT testnet: Run the image and pass the command to start a node:
 
 ```
-docker run 348099934012.dkr.ecr.eu-central-1.amazonaws.com/kilt/prototype-chain ./start-node.sh --account-name Charly --connect-to Alice
+docker run 348099934012.dkr.ecr.eu-central-1.amazonaws.com/kilt/prototype-chain ./start-node.sh --connect-to Alice
 ```
 The node should be connected to the KILT testnet.
 
