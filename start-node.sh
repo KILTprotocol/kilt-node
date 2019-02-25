@@ -9,19 +9,25 @@ ALICE_BOOT_NODE_KEY=000000000000000000000000000000000000000000000000000000000000
 ALICE_BOOT_NODE_KEY_HASH=QmQZ8TjTqeDj3ciwr93EJ95hxfDsb9pEYDizUAbWpigtQN
 BOB_BOOT_NODE_KEY=0000000000000000000000000000000000000000000000000000000000000002
 BOB_BOOT_NODE_KEY_HASH=QmXiB3jqqn2rpiKU7k1h7NJYeBg8WNSx9DiTRKz9ti2KSK
+CHARLIE_BOOT_NODE_KEY=0000000000000000000000000000000000000000000000000000000000000003
+CHARLIE_BOOT_NODE_KEY_HASH=QmYcHeEWuqtr6Gb5EbK7zEhnaCm5p6vA2kWcVjFKbhApaC
 TELEMETRY_URL=ws://telemetry-backend.kilt-prototype.tk:1024
 
 ##### Functions
 
 lookup_boot_node() {
-    boot_node_domain="bootnode-${bootnode}.kilt-prototype.tk"
+    node=$1
+    boot_node_domain="bootnode-${node}.kilt-prototype.tk"
     echo "Performing lookup for boot node ${boot_node_domain}"
-    if [[ "$bootnode" = "Alice" ]]; then
+    if [[ "$node" = "Alice" ]]; then
         alice_boot_node_ip=`dig ${boot_node_domain} A +short`
-        boot_node_ipfs=/ip4/${alice_boot_node_ip}/tcp/30333/p2p/${ALICE_BOOT_NODE_KEY_HASH}
-    elif [[ "$bootnode" = "Bob" ]]; then
+        boot_node_ipfs="$boot_node_ipfs /ip4/${alice_boot_node_ip}/tcp/30333/p2p/${ALICE_BOOT_NODE_KEY_HASH}"
+    elif [[ "$node" = "Bob" ]]; then
         bob_boot_node_ip=`dig ${boot_node_domain} A +short`
-        boot_node_ipfs=/ip4/${bob_boot_node_ip}/tcp/30333/p2p/${BOB_BOOT_NODE_KEY_HASH}
+        boot_node_ipfs="$boot_node_ipfs /ip4/${bob_boot_node_ip}/tcp/30333/p2p/${BOB_BOOT_NODE_KEY_HASH}"
+    elif [[ "$node" = "Charlie" ]]; then
+        charlie_boot_node_ip=`dig ${boot_node_domain} A +short`
+        boot_node_ipfs="$boot_node_ipfs /ip4/${charlie_boot_node_ip}/tcp/30333/p2p/${CHARLIE_BOOT_NODE_KEY_HASH}"
     fi
 }
 
@@ -35,9 +41,9 @@ Usage:
 
   If you want to start a boot node, just use "Alice" or "Bob" as account name.
 
-  -a, --account-name ACCOUNT_NAME   The name of the account to start the node with (Alice | Bob ).
+  -a, --account-name ACCOUNT_NAME   The name of the account to start the node with (Alice | Bob | Charlie).
   -n, --node-name NODE_NAME    The arbitrary name of the node (e.g. "charly-node-1234")
-  -c, --connect-to BOOT_NODE_NAME  The name of the boot node to connect to ("alice" | "bob")
+  -c, --connect-to BOOT_NODE_NAME  The names of the boot nodes to connect to, separated with a comma ("alice" | "bob" | "Charlie")
   -d, --dry-run Flag indicating to only show the resulting command instead of executing it
   -t, --telemetry Flag indicating whether or not to send data to the telemetry server
   -p, --purge-userdata Purges all chain-dependend user data in auxiliary services (ctypes, contacts, messages, ...)
@@ -51,15 +57,15 @@ Usage:
   Start Bob (boot node) that connects to Alice:
   ./start-node.sh -a Bob -c Alice
 
-  Start full node that connects to Alice and exposes an rpc endpoint:
-  ./start-node.sh -c Alice -n charly-node-123 --rpc
+  Start full node that connects to Alice and Bob and exposes an rpc endpoint:
+  ./start-node.sh -c Alice,Bob -n charly-node-123 --rpc
 HELP_USAGE
 }
 
 ##### Main
 
 
-bootnode=
+bootnodes=
 node_name=
 account_name=
 telemetry=0
@@ -76,7 +82,7 @@ while [[ "$1" != "" ]]; do
                                 node_name=$1
                                 ;;
         -c | --connect-to )     shift
-                                bootnode=$1
+                                bootnodes=$1
                                 ;;
         -t | --telemetry )      telemetry=1
                                 ;;
@@ -107,6 +113,8 @@ if [[ "$account_name" = "Alice" ]]; then
     arg_node_key=" --node-key ${ALICE_BOOT_NODE_KEY}"
 elif [[ "$account_name" = "Bob" ]]; then
     arg_node_key=" --node-key ${BOB_BOOT_NODE_KEY}"
+elif [[ "$account_name" = "Charlie" ]]; then
+    arg_node_key=" --node-key ${CHARLIE_BOOT_NODE_KEY}"
 fi
 
 if [[ ! -z "$account_name" ]]; then
@@ -117,15 +125,19 @@ else
 fi
 
 
-if [[ ! -z "$bootnode" ]]; then
-	echo "Trying to connect to boot node '$bootnode'..."
-	lookup_boot_node
+if [[ ! -z "$bootnodes" ]]; then
+    boot_node_ipfs=
+	echo "Trying to connect to boot node(s) '$bootnodes'..."
+	for i in $(echo $bootnodes | tr "," "\n")
+	do
+        lookup_boot_node $i
+    done
 	if [[ -z "$boot_node_ipfs" ]]; then
-	    echo "Boot node address lookup failed for boot node named '$bootnode'"
+	    echo "Boot node address lookup failed for boot nodes '$bootnodes'"
 	    exit 1
 	else
-	    echo "Boot-node IPFS location: $boot_node_ipfs"
-	    arg_boot_node_connect=" --bootnodes ${boot_node_ipfs}"
+	    echo "Boot-node IPFS locations: $boot_node_ipfs"
+	    arg_boot_node_connect=" --bootnodes${boot_node_ipfs}"
 	fi
 fi
 
