@@ -14,14 +14,15 @@ TELEMETRY_URL=ws://telemetry-backend.kilt-prototype.tk:1024
 ##### Functions
 
 lookup_boot_node() {
-    boot_node_domain="bootnode-${bootnode}.kilt-prototype.tk"
+    node=$1
+    boot_node_domain="bootnode-${node}.kilt-prototype.tk"
     echo "Performing lookup for boot node ${boot_node_domain}"
-    if [[ "$bootnode" = "Alice" ]]; then
+    if [[ "$node" = "Alice" ]]; then
         alice_boot_node_ip=`dig ${boot_node_domain} A +short`
-        boot_node_ipfs=/ip4/${alice_boot_node_ip}/tcp/30333/p2p/${ALICE_BOOT_NODE_KEY_HASH}
-    elif [[ "$bootnode" = "Bob" ]]; then
+        boot_node_ipfs="$boot_node_ipfs /ip4/${alice_boot_node_ip}/tcp/30333/p2p/${ALICE_BOOT_NODE_KEY_HASH}"
+    elif [[ "$node" = "Bob" ]]; then
         bob_boot_node_ip=`dig ${boot_node_domain} A +short`
-        boot_node_ipfs=/ip4/${bob_boot_node_ip}/tcp/30333/p2p/${BOB_BOOT_NODE_KEY_HASH}
+        boot_node_ipfs="$boot_node_ipfs /ip4/${bob_boot_node_ip}/tcp/30333/p2p/${BOB_BOOT_NODE_KEY_HASH}"
     fi
 }
 
@@ -118,14 +119,18 @@ fi
 
 
 if [[ ! -z "$bootnode" ]]; then
-	echo "Trying to connect to boot node '$bootnode'..."
-	lookup_boot_node
+    boot_node_ipfs=
+	echo "Trying to connect to boot node(s) '$bootnode'..."
+	for i in $(echo $bootnode | tr "," "\n")
+	do
+        lookup_boot_node $i
+    done
 	if [[ -z "$boot_node_ipfs" ]]; then
 	    echo "Boot node address lookup failed for boot node named '$bootnode'"
 	    exit 1
 	else
 	    echo "Boot-node IPFS location: $boot_node_ipfs"
-	    arg_boot_node_connect=" --bootnodes ${boot_node_ipfs}"
+	    arg_boot_node_connect=" --bootnodes${boot_node_ipfs}"
 	fi
 fi
 
