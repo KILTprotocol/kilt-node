@@ -48,6 +48,7 @@ impl Alternative {
 				|| testnet_genesis(vec![
 					ed25519::Pair::from_seed(b"Alice                           ").public().into(),
 					ed25519::Pair::from_seed(b"Bob                             ").public().into(),
+					ed25519::Pair::from_seed(b"Charlie                         ").public().into(),
 				], vec![
 					ed25519::Pair::from_seed(b"Alice                           ").public().0.into(),
 					ed25519::Pair::from_seed(b"Bob                             ").public().0.into(),
