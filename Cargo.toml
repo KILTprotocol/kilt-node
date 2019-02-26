@@ -1,6 +1,6 @@
 [package]
 name = "kilt-prototype-chain"
-version = "0.9.1"
+version = "0.9.2"
 edition = "2018"
 authors = ["Botlabs <admin@botlabs.org>"]
 build = "build.rs"
