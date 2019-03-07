@@ -84,6 +84,10 @@ version = '1.0'
 optional = true
 version = '1.0'
 
+[dependencies.bitflags]
+default-features = false
+version = '1.0.4'
+
 [dependencies.sudo]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'

@@ -1,27 +1,42 @@
 use rstd::prelude::*;
-use runtime_primitives::codec::Codec;
-use runtime_primitives::verify_encoded_lazy;
-use runtime_primitives::traits::{Member, Verify};
 use support::{dispatch::Result, StorageMap, decl_module, decl_storage};
-use {balances, system::ensure_signed};
+use {balances, super::delegation, super::ctype, system::ensure_signed};
 
-pub trait Trait: balances::Trait {
-	type Signature: Verify<Signer = Self::AccountId> + Member + Codec + Default;
+pub trait Trait: balances::Trait + delegation::Trait {
 }
 
 decl_module! {
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 
-		fn add(origin, claim_hash: T::Hash, signature: T::Signature) -> Result {
+		fn add(origin, claim_hash: T::Hash, ctype_hash: T::Hash, delegation_id: Option<T::DelegationNodeId>) -> Result {
 			let sender = ensure_signed(origin)?;
-			if !verify_encoded_lazy(&signature, &claim_hash, &sender) {
-				return Err("bad signature")
+			if !<ctype::CTYPEs<T>>::exists(ctype_hash) {
+				return Err("CTYPE not found")
+			}
+
+			match delegation_id {
+				Some(d) => {
+					let delegation = <delegation::Delegations<T>>::get(d.clone());
+					if delegation.4 {
+						return Err("delgation revoked")
+					} else if delegation.2 != sender {
+						return Err("not delegated to attester")
+					} else if  delegation.3 & delegation::Permissions::ATTEST != delegation::Permissions::ATTEST {
+						return Err("delegation not authorized to attest")
+					} else {
+						let root = <delegation::Root<T>>::get(delegation.0.clone());
+						if root.0 == ctype_hash {
+							return Err("CTYPE of delegation does not match")
+						}
+					}
+				},
+				None => {}
 			}
 
 			let mut existing_attestations_for_claim = <Attestations<T>>::get(claim_hash.clone());
-			let mut last_attested : Option<(T::Hash,T::AccountId,T::Signature,bool)> = None;
+			let mut last_attested : Option<(T::Hash,T::AccountId,Option<T::DelegationNodeId>,bool)> = None;
 			for v in existing_attestations_for_claim.clone() {
-				if v.1.eq(&sender) {
+				if v.1.eq(&sender) && v.2.eq(&delegation_id) {
 					last_attested = Some(v);
 					break;
 				}
@@ -29,18 +44,15 @@ decl_module! {
 			match last_attested {
 				Some(_v)	=> return Err("already attested"),
 				None	=> {
-					existing_attestations_for_claim.push((claim_hash.clone(), sender.clone(), signature.clone(), false));
+					existing_attestations_for_claim.push((ctype_hash.clone(), sender.clone(), delegation_id.clone(), false));
 					<Attestations<T>>::insert(claim_hash.clone(), existing_attestations_for_claim);
 					Ok(())
 				},
 			}
 		}
 
-		fn revoke(origin, claim_hash: T::Hash, signature: T::Signature) -> Result {
+		fn revoke(origin, claim_hash: T::Hash) -> Result {
 			let sender = ensure_signed(origin)?;
-			if !verify_encoded_lazy(&signature, &claim_hash, &sender) {
-				return Err("bad signature")
-			}
 
 			let mut last_attested : bool = false;
 			let mut existing_attestations_for_claim = <Attestations<T>>::get(claim_hash.clone());
@@ -62,7 +74,8 @@ decl_module! {
 
 decl_storage! {
 	trait Store for Module<T: Trait> as Attestation {
-		Attestations get(attestations): map T::Hash => Vec<(T::Hash,T::AccountId,T::Signature,bool)>;
+		// Attestations: claim-hash -> [(ctype-hash, account, delegation-id?, revoked)]
+		Attestations get(attestations): map T::Hash => Vec<(T::Hash,T::AccountId,Option<T::DelegationNodeId>,bool)>;
 	}
 }
 
@@ -127,27 +140,17 @@ mod tests {
 	}
 
 	#[test]
-	fn check_bad_signature() {
-		with_externalities(&mut new_test_ext(), || {
-			assert_err!(Attestation::add(Origin::signed(H256::from(1)), H256::from(2), Ed25519Signature::from(H512::from(3))), "bad signature");
-			assert_err!(Attestation::revoke(Origin::signed(H256::from(1)), H256::from(2), Ed25519Signature::from(H512::from(3))), "bad signature");
-		});
-	}
-
-	#[test]
 	fn check_add_attestation() {
 		with_externalities(&mut new_test_ext(), || {
 			let pair = ed25519::Pair::from_seed(b"Alice                           ");
 			let hash = H256::from(1);
 			let bytes = hash_to_u8(hash);
-			let signed = Ed25519Signature::from(pair.sign(&bytes));
 			let account_hash = H256::from(pair.public().0);
-			assert_ok!(Attestation::add(Origin::signed(account_hash.clone()), hash.clone(), signed.clone()));
+			assert_ok!(Attestation::add(Origin::signed(account_hash.clone()), hash.clone(), None));
 			let existing_attestations_for_claim = Attestation::attestations(hash.clone());
 			assert_eq!(existing_attestations_for_claim.len(), 1);
 			assert_eq!(existing_attestations_for_claim[0].0, hash.clone());
 			assert_eq!(existing_attestations_for_claim[0].1, account_hash.clone());
-			assert_eq!(existing_attestations_for_claim[0].2, signed.clone());
 			assert_eq!(existing_attestations_for_claim[0].3, false);
 		});
 	}
@@ -158,15 +161,13 @@ mod tests {
 			let pair = ed25519::Pair::from_seed(b"Alice                           ");
 			let hash = H256::from(1);
 			let bytes = hash_to_u8(hash);
-			let signed = Ed25519Signature::from(pair.sign(&bytes));
 			let account_hash = H256::from(pair.public().0);
-			assert_ok!(Attestation::add(Origin::signed(account_hash.clone()), hash.clone(), signed.clone()));
-			assert_ok!(Attestation::revoke(Origin::signed(account_hash.clone()), hash.clone(), signed.clone()));
+			assert_ok!(Attestation::add(Origin::signed(account_hash.clone()), hash.clone(), None));
+			assert_ok!(Attestation::revoke(Origin::signed(account_hash.clone()), hash.clone()));
 			let existing_attestations_for_claim = Attestation::attestations(hash.clone());
 			assert_eq!(existing_attestations_for_claim.len(), 1);
 			assert_eq!(existing_attestations_for_claim[0].0, hash.clone());
 			assert_eq!(existing_attestations_for_claim[0].1, account_hash.clone());
-			assert_eq!(existing_attestations_for_claim[0].2, signed.clone());
 			assert_eq!(existing_attestations_for_claim[0].3, true);
 		});
 	}
@@ -177,10 +178,9 @@ mod tests {
 			let pair = ed25519::Pair::from_seed(b"Alice                           ");
 			let hash = H256::from(1);
 			let bytes = hash_to_u8(hash);
-			let signed = Ed25519Signature::from(pair.sign(&bytes));
 			let account_hash = H256::from(pair.public().0);
-			assert_ok!(Attestation::add(Origin::signed(account_hash.clone()), hash.clone(), signed.clone()));
-			assert_err!(Attestation::add(Origin::signed(account_hash.clone()), hash.clone(), signed.clone()), "already attested");
+			assert_ok!(Attestation::add(Origin::signed(account_hash.clone()), hash.clone(), None));
+			assert_err!(Attestation::add(Origin::signed(account_hash.clone()), hash.clone(), None), "already attested");
 		});
 	}
 
@@ -190,11 +190,10 @@ mod tests {
 			let pair = ed25519::Pair::from_seed(b"Alice                           ");
 			let hash = H256::from(1);
 			let bytes = hash_to_u8(hash);
-			let signed = Ed25519Signature::from(pair.sign(&bytes));
 			let account_hash = H256::from(pair.public().0);
-			assert_ok!(Attestation::add(Origin::signed(account_hash.clone()), hash.clone(), signed.clone()));
-			assert_ok!(Attestation::revoke(Origin::signed(account_hash.clone()), hash.clone(), signed.clone()));
-			assert_err!(Attestation::revoke(Origin::signed(account_hash.clone()), hash.clone(), signed.clone()), "no valid attestation found");
+			assert_ok!(Attestation::add(Origin::signed(account_hash.clone()), hash.clone(), None));
+			assert_ok!(Attestation::revoke(Origin::signed(account_hash.clone()), hash.clone()));
+			assert_err!(Attestation::revoke(Origin::signed(account_hash.clone()), hash.clone()), "no valid attestation found");
 		});
 	}
 }

@@ -14,6 +14,8 @@ extern crate parity_codec_derive;
 
 extern crate runtime_io;
 
+#[macro_use]
+extern crate bitflags;
 
 use rstd::prelude::*;
 #[cfg(feature = "std")]
@@ -43,6 +45,7 @@ pub use support::{StorageValue, construct_runtime};
 
 mod ctype;
 mod attestation;
+mod delegation;
 
 
 /// Alias to Ed25519 pubkey that identifies an account on the chain.
@@ -179,7 +182,6 @@ impl sudo::Trait for Runtime {
 }
 
 impl attestation::Trait for Runtime {
-	type Signature = Ed25519Signature;
 }
 
 impl ctype::Trait for Runtime {
@@ -193,6 +195,9 @@ impl ctype::Trait for Runtime {
 	}
 }
 
+impl delegation::Trait for Runtime {
+	type DelegationNodeId = Hash;
+}
 
 construct_runtime!(
 	pub enum Runtime with Log(InternalLog: DigestItem<Hash, Ed25519AuthorityId>) where
@@ -209,6 +214,7 @@ construct_runtime!(
 		Sudo: sudo,
 		Ctype: ctype::{Module, Call, Storage},
 		Attestation: attestation::{Module, Call, Storage},
+		Delegation: delegation::{Module, Call, Storage},
 	}
 );
 

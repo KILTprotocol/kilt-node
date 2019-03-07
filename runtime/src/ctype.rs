@@ -51,7 +51,7 @@ decl_module! {
 
 decl_storage! {
 	trait Store for Module<T: Trait> as Ctype {
-		CTYPEs get(ctypes): map T::Hash => (T::Hash,T::Signature,T::AccountId);
+		pub CTYPEs get(ctypes): map T::Hash => (T::Hash,T::Signature,T::AccountId);
 	}
 }
 
