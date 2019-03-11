@@ -46,7 +46,7 @@ pub use support::{StorageValue, construct_runtime};
 mod ctype;
 mod attestation;
 mod delegation;
-
+mod did;
 
 /// Alias to Ed25519 pubkey that identifies an account on the chain.
 pub type AccountId = primitives::H256;
@@ -185,18 +185,16 @@ impl attestation::Trait for Runtime {
 }
 
 impl ctype::Trait for Runtime {
-	type Signature = Ed25519Signature;
-
-	fn print_account(hash: primitives::H256) {
-		::runtime_io::print(&hash.as_bytes()[..]);
-	}
-	fn print_hash(hash: primitives::H256) {
-		::runtime_io::print(&hash.as_bytes()[..]);
-	}
 }
 
 impl delegation::Trait for Runtime {
+	type Signature = Ed25519Signature;
 	type DelegationNodeId = Hash;
+}
+
+impl did::Trait for Runtime {
+	type PublicSigningKey = primitives::H256;
+	type PublicBoxKey = primitives::H256;
 }
 
 construct_runtime!(
@@ -215,6 +213,7 @@ construct_runtime!(
 		Ctype: ctype::{Module, Call, Storage},
 		Attestation: attestation::{Module, Call, Storage},
 		Delegation: delegation::{Module, Call, Storage},
+		DID: did::{Module, Call, Storage},
 	}
 );
 
