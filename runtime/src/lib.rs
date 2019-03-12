@@ -213,7 +213,7 @@ construct_runtime!(
 		Ctype: ctype::{Module, Call, Storage},
 		Attestation: attestation::{Module, Call, Storage},
 		Delegation: delegation::{Module, Call, Storage},
-		DID: did::{Module, Call, Storage},
+		Did: did::{Module, Call, Storage},
 	}
 );
 
