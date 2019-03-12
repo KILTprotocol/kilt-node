@@ -6,8 +6,6 @@
 #[macro_use]
 extern crate error_chain;
 #[macro_use]
-extern crate log;
-#[macro_use]
 extern crate substrate_network as network;
 #[macro_use]
 extern crate substrate_executor;
