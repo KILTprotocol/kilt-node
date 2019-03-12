@@ -66,17 +66,17 @@ decl_module! {
                 return Err("delegation already exist")
             }
             
-            let mut xts : Vec<Vec<u8>> = Vec::new();
-            xts.push(delegation_id.as_ref().to_vec());
-            xts.push(root_id.as_ref().to_vec());
+            let mut hashed_values : Vec<Vec<u8>> = Vec::new();
+            hashed_values.push(delegation_id.as_ref().to_vec());
+            hashed_values.push(root_id.as_ref().to_vec());
             match parent_id {
-                Some(p) => xts.push(p.as_ref().to_vec()),
+                Some(p) => hashed_values.push(p.as_ref().to_vec()),
                 None => {}
             }
             let p = permissions.as_u8();
-            xts.push((&p).to_vec());
-            let xt = xts.iter().map(Vec::as_slice).collect::<Vec<_>>();
-            let hash_root = T::Hashing::enumerated_trie_root(&xt);
+            hashed_values.push((&p).to_vec());
+            let hashed_value_array = hashed_values.iter().map(Vec::as_slice).collect::<Vec<_>>();
+            let hash_root = T::Hashing::enumerated_trie_root(&hashed_value_array);
             if !verify_encoded_lazy(&delegate_signature, &hash_root, &delegate) {
                 // TODO: abort on signature error
                 ::runtime_io::print("WARNING: SIGNATURE DOES NOT MATCH!");

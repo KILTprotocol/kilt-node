@@ -193,8 +193,8 @@ impl delegation::Trait for Runtime {
 }
 
 impl did::Trait for Runtime {
-	type PublicSigningKey = primitives::H256;
-	type PublicBoxKey = primitives::H256;
+	type PublicSigningKey = Hash;
+	type PublicBoxKey = Hash;
 }
 
 construct_runtime!(

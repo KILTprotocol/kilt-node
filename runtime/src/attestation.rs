@@ -18,14 +18,14 @@ decl_module! {
 				Some(d) => {
 					let delegation = <delegation::Delegations<T>>::get(d.clone());
 					if delegation.4 {
-						return Err("delgation revoked")
+						return Err("delegation revoked")
 					} else if delegation.2 != sender {
 						return Err("not delegated to attester")
 					} else if  delegation.3 & delegation::Permissions::ATTEST != delegation::Permissions::ATTEST {
 						return Err("delegation not authorized to attest")
 					} else {
 						let root = <delegation::Root<T>>::get(delegation.0.clone());
-						if root.0 == ctype_hash {
+						if root.0 != ctype_hash {
 							return Err("CTYPE of delegation does not match")
 						}
 					}
