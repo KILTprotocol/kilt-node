@@ -56,5 +56,5 @@ The node should be connected to the KILT testnet.
 docker build -t prototype-chain .
 
 # run chain in dev mode locally
-docker run -p 9944:9944 prototype-chain ./target/debug/node --dev
+docker run -p 9944:9944 prototype-chain ./target/debug/node --dev --ws-port 9944 --ws-external --rpc-external
 ```
