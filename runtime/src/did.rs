@@ -19,6 +19,12 @@ decl_module! {
 			<DID<T>>::insert(sender.clone(), (sign_key, box_key, doc_ref));
             Ok(())
 		}
+		
+        pub fn remove(origin) -> Result {
+			let sender = ensure_signed(origin)?;
+			<DID<T>>::remove(sender.clone());
+            Ok(())
+		}
 	}
 }
 
