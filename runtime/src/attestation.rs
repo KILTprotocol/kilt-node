@@ -69,7 +69,7 @@ decl_module! {
 			let mut existing_attestations_for_claim = <Attestations<T>>::get(claim_hash.clone());
 			for v in existing_attestations_for_claim.iter_mut() {
 				if !v.3 {
-					if v.1.eq(&sender) && !v.3 {
+					if v.1.eq(&sender) {
 						last_attested = true;
 						v.3 = true;
 					} else {

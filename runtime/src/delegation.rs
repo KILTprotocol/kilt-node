@@ -129,7 +129,7 @@ decl_module! {
                 return Err("not permitted to revoke")
             }
             if !r.2 {
-                r.2 = false;
+                r.2 = true;
                 <Root<T>>::insert(root_id.clone(), r);
                 Self::revoke_children(&root_id);
             }
@@ -172,7 +172,7 @@ impl<T: Trait> Module<T> {
     fn revoke(delegation: &T::DelegationNodeId) {
         let mut d = <Delegations<T>>::get(delegation.clone());
         if !d.4 {
-            d.4 = false;
+            d.4 = true;
             <Delegations<T>>::insert(delegation.clone(), d);
             Self::revoke_children(delegation);
         }
