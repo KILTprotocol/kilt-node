@@ -1,4 +1,5 @@
 
+use rstd::result;
 use rstd::prelude::*;
 use runtime_primitives::traits::{Hash, CheckEqual, SimpleBitOps, Member, Verify, MaybeDisplay};
 use support::{dispatch::Result, StorageMap, Parameter, decl_module, decl_storage};
@@ -89,25 +90,27 @@ decl_module! {
                     Some(p) => {
                         if <Delegations<T>>::exists(p) {
                             let parent = <Delegations<T>>::get(p.clone());
-                            if parent.2 != sender {
+                            if !parent.2.eq(&sender) {
                                 return Err("not owner of parent")
-                            } else if parent.3 & Permissions::DELEGATE != Permissions::DELEGATE {
+                            } else if (parent.3 & Permissions::DELEGATE) != Permissions::DELEGATE {
                                 return Err("not authorized to delegate")
                             } else {
-                                // TODO: check for cycles
+                                // TODO: check for cycles?
                     			::runtime_io::print("insert Delegation with parent");
                                 <Delegations<T>>::insert(delegation_id.clone(), (root_id.clone(), Some(p.clone()), delegate, permissions, false));
+                                Self::add_child(delegation_id.clone(), p.clone());
                             }
                         } else {
                             return Err("parent not found")
                         }
                     },
                     None => {
-                        if root.1 != sender {
+                        if !root.1.eq(&sender) {
                             return Err("not owner of root")        
                         }
                         ::runtime_io::print("insert Delegation without parent");
                         <Delegations<T>>::insert(delegation_id.clone(), (root_id.clone(), None, delegate, permissions, false));
+                        Self::add_child(delegation_id.clone(), root_id.clone());
                     }
                 }
             } else {
@@ -115,6 +118,79 @@ decl_module! {
             }
             return Ok(());
         }
+
+        pub fn revoke_root(origin, root_id: T::DelegationNodeId) -> Result {
+			let sender = ensure_signed(origin)?;
+            if !<Root<T>>::exists(root_id) {
+                return Err("root not found")
+            }
+            let mut r = <Root<T>>::get(root_id.clone());
+            if !r.1.eq(&sender) {
+                return Err("not permitted to revoke")
+            }
+            if !r.2 {
+                r.2 = true;
+                <Root<T>>::insert(root_id.clone(), r);
+                Self::revoke_children(&root_id);
+            }
+
+            return Ok(());
+        }
+
+        pub fn revoke_delegation(origin, delegation_id: T::DelegationNodeId) -> Result {
+			let sender = ensure_signed(origin)?;
+            if !Self::is_delegating(&sender, &delegation_id)? {
+                return Err("not permitted to revoke")
+            }
+            Self::revoke(&delegation_id);
+            return Ok(());
+        }
+    }
+}
+
+impl<T: Trait> Module<T> {
+    pub fn is_delegating(account: &T::AccountId, delegation: &T::DelegationNodeId) -> result::Result<bool, &'static str> {
+        if !<Delegations<T>>::exists(delegation) {
+            return Err("delegation not found")
+        }
+        let d = <Delegations<T>>::get(delegation);
+        if d.2.eq(account) {
+            Ok(true)
+        } else {
+            match d.1 {
+                None => {
+                    let r = <Root<T>>::get(d.0.clone());
+                    Ok(r.1.eq(account))
+                },
+                Some(p) => {
+                    return Self::is_delegating(account, &p)
+                }
+            }
+        }
+    }
+
+    fn revoke(delegation: &T::DelegationNodeId) {
+        let mut d = <Delegations<T>>::get(delegation.clone());
+        if !d.4 {
+            d.4 = true;
+            <Delegations<T>>::insert(delegation.clone(), d);
+            Self::revoke_children(delegation);
+        }
+    }
+
+    fn revoke_children(delegation: &T::DelegationNodeId) {
+        if <Children<T>>::exists(delegation) {
+            let children = <Children<T>>::get(delegation);
+            for child in children {
+                Self::revoke(&child);
+            }
+        }
+    }
+
+    fn add_child(child: T::DelegationNodeId, parent: T::DelegationNodeId) {
+        let mut children = <Children<T>>::get(parent.clone());
+        children.push(child);
+        <Children<T>>::insert(parent, children);
     }
 }
 

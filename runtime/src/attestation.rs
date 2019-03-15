@@ -1,3 +1,5 @@
+
+use rstd::result;
 use rstd::prelude::*;
 use support::{dispatch::Result, StorageMap, decl_module, decl_storage};
 use {system, super::delegation, super::ctype, system::ensure_signed};
@@ -19,13 +21,13 @@ decl_module! {
 					let delegation = <delegation::Delegations<T>>::get(d.clone());
 					if delegation.4 {
 						return Err("delegation revoked")
-					} else if delegation.2 != sender {
+					} else if !delegation.2.eq(&sender) {
 						return Err("not delegated to attester")
-					} else if  delegation.3 & delegation::Permissions::ATTEST != delegation::Permissions::ATTEST {
+					} else if (delegation.3 & delegation::Permissions::ATTEST) != delegation::Permissions::ATTEST {
 						return Err("delegation not authorized to attest")
 					} else {
 						let root = <delegation::Root<T>>::get(delegation.0.clone());
-						if root.0 != ctype_hash {
+						if !root.0.eq(&ctype_hash) {
 							return Err("CTYPE of delegation does not match")
 						}
 					}
@@ -47,6 +49,14 @@ decl_module! {
 					::runtime_io::print("insert Attestation");
 					existing_attestations_for_claim.push((ctype_hash.clone(), sender.clone(), delegation_id.clone(), false));
 					<Attestations<T>>::insert(claim_hash.clone(), existing_attestations_for_claim);
+					match delegation_id {
+						Some(d) => {
+							let mut delegated_attestations = <DelegatedAttestations<T>>::get(d);
+							delegated_attestations.push(claim_hash.clone());
+							<DelegatedAttestations<T>>::insert(d.clone(), delegated_attestations);
+						},
+						None => {}
+					}
 					Ok(())
 				},
 			}
@@ -58,9 +68,22 @@ decl_module! {
 			let mut last_attested : bool = false;
 			let mut existing_attestations_for_claim = <Attestations<T>>::get(claim_hash.clone());
 			for v in existing_attestations_for_claim.iter_mut() {
-				if v.1.eq(&sender) && !v.3 {
-					last_attested = true;
-					v.3 = true;
+				if !v.3 {
+					if v.1.eq(&sender) {
+						last_attested = true;
+						v.3 = true;
+					} else {
+						// check delegator in case of delegation
+						match v.2 {
+							Some(d) => {
+								if Self::is_delegating(&sender, &d)? {
+									last_attested = true;
+									v.3 = true;
+								}
+							},
+							None => {}
+						}
+					}
 				}
 			}
 			if last_attested {
@@ -73,10 +96,18 @@ decl_module! {
 	}
 }
 
+impl<T: Trait> Module<T> {
+    fn is_delegating(account: &T::AccountId, delegation: &T::DelegationNodeId) -> result::Result<bool, &'static str> {
+		<delegation::Module<T>>::is_delegating(account, delegation)
+	}
+}
+
 decl_storage! {
 	trait Store for Module<T: Trait> as Attestation {
 		// Attestations: claim-hash -> [(ctype-hash, account, delegation-id?, revoked)]
 		Attestations get(attestations): map T::Hash => Vec<(T::Hash,T::AccountId,Option<T::DelegationNodeId>,bool)>;
+		// DelegatedAttestations: delegation-id -> [claim-hash]
+		DelegatedAttestations get(delegated_attestations): map T::DelegationNodeId => Vec<T::Hash>;
 	}
 }
 
