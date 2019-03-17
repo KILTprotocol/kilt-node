@@ -16,13 +16,13 @@ decl_module! {
 
 		pub fn add(origin, sign_key: T::PublicSigningKey, box_key: T::PublicBoxKey, doc_ref: Option<Vec<u8>>) -> Result {
 			let sender = ensure_signed(origin)?;
-			<DID<T>>::insert(sender.clone(), (sign_key, box_key, doc_ref));
+			<DIDs<T>>::insert(sender.clone(), (sign_key, box_key, doc_ref));
             Ok(())
 		}
 		
         pub fn remove(origin) -> Result {
 			let sender = ensure_signed(origin)?;
-			<DID<T>>::remove(sender.clone());
+			<DIDs<T>>::remove(sender.clone());
             Ok(())
 		}
 	}
@@ -30,8 +30,8 @@ decl_module! {
 
 decl_storage! {
 	trait Store for Module<T: Trait> as DID {
-		// DID: account-id -> (did-reference?)
-		DID get(dids): map T::AccountId => (T::PublicSigningKey, T::PublicBoxKey, Option<Vec<u8>>);
+		// DID: account-id -> (public-signing-key, public-encryption-key, did-reference?)
+		DIDs get(dids): map T::AccountId => (T::PublicSigningKey, T::PublicBoxKey, Option<Vec<u8>>);
 	}
 }
 
@@ -84,10 +84,20 @@ mod tests {
 	fn check_add_did() {
 		with_externalities(&mut new_test_ext(), || {
 			let pair = ed25519::Pair::from_seed(b"Alice                           ");
-			let hash = H256::from_low_u64_be(1);
+			let signing_key = H256::from_low_u64_be(1);
+			let box_key = H256::from_low_u64_be(2);
 			let account_hash = H256::from(pair.public().0);
 			assert_ok!(DID::add(Origin::signed(account_hash.clone()), 
-                    hash.clone(), hash.clone(), Some(b"http://kilt.org/submit".to_vec())));
+                    signing_key.clone(), box_key.clone(), Some(b"http://kilt.org/submit".to_vec())));
+
+            assert_eq!(<DIDs<Test>>::exists(account_hash), true);
+            let did = DID::dids(account_hash.clone());
+            assert_eq!(did.0, signing_key.clone());
+			assert_eq!(did.1, box_key.clone());
+			assert_eq!(did.2, Some(b"http://kilt.org/submit".to_vec()));
+
+            assert_ok!(DID::remove(Origin::signed(account_hash.clone())));
+            assert_eq!(<DIDs<Test>>::exists(account_hash), false);
 		});
 	}
 }
