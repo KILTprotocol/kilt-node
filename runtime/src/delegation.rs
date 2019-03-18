@@ -41,6 +41,8 @@ pub trait Trait: ctype::Trait + system::Trait {
 	type Signature: Verify<Signer = Self::AccountId> + Member + Codec + Default;
     type DelegationNodeId: Parameter + Member + Codec + MaybeDisplay + SimpleBitOps 
             + Default + Copy + CheckEqual + rstd::hash::Hash + AsRef<[u8]> + AsMut<[u8]>;
+
+    fn print_hash(hash: Self::Hash);
 }
 
 decl_module! {
@@ -68,9 +70,10 @@ decl_module! {
             }
             
             let hash_root = Self::calculate_hash(delegation_id, root_id, parent_id, permissions);
-            if !verify_encoded_lazy(&delegate_signature, &hash_root, &delegate) {
+            if !verify_encoded_lazy(&delegate_signature, &&hash_root, &delegate) {
                 // TODO: abort on signature error
-                ::runtime_io::print("WARNING: SIGNATURE DOES NOT MATCH!");
+                ::runtime_io::print("WARNING: SIGNATURE DOES NOT MATCH, HASH:");
+                T::print_hash(hash_root);
                 return Err("bad delegate signature")
             }
             
@@ -256,6 +259,10 @@ mod tests {
 	impl Trait for Test {
 		type Signature = Ed25519Signature;
 		type DelegationNodeId = H256;
+
+        fn print_hash(hash: Self::Hash) {
+		    ::runtime_io::print(&hash.as_bytes()[..]);
+	    }
 	}
 
 	type Ctype = ctype::Module<Test>;
