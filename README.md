@@ -2,6 +2,16 @@
 
 Substrate node implementation for the KILT prototype
 
+## Updating with latest substrate-node-template
+
+The command `substrate-node-new`, described in https://docs.substrate.dev/docs/creating-a-custom-substrate-chain downloads a node-template, which this repo bases on.
+We just added our modules to the runtime.
+
+To update it, a stable template can be copied from https://github.com/shawntabrizi/substrate-package.
+Just copy the contents of substrate-node-template and add our changes on top.
+
+If the mentioned repo of shawntabrizi isn't updated anymore, the `substrate-node-new` command can still be used to get a fresh node-template. It might need some changes to work, though.
+
 ## Running a local node that connects to KILT prototype testnet in AWS
 
 There are master boot nodes running in the KILT testnet:
