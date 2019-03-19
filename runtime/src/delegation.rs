@@ -72,7 +72,7 @@ decl_module! {
             let hash_root = Self::calculate_hash(delegation_id, root_id, parent_id, permissions);
             if !verify_encoded_lazy(&delegate_signature, &&hash_root, &delegate) {
                 // TODO: abort on signature error
-                ::runtime_io::print("WARNING: SIGNATURE DOES NOT MATCH, HASH:");
+                ::runtime_io::print("Error: signature does not match, hash:");
                 T::print_hash(hash_root);
                 return Err("bad delegate signature")
             }
