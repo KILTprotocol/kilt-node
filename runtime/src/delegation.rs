@@ -27,7 +27,7 @@ impl Permissions {
         let b2 : u8 = ((x >> 16) & 0xff) as u8;
         let b3 : u8 = ((x >> 8) & 0xff) as u8;
         let b4 : u8 = (x & 0xff) as u8;
-        return [b1, b2, b3, b4];
+        return [b4, b3, b2, b1];
     }
 }
 
@@ -146,17 +146,14 @@ impl<T: Trait> Module<T> {
     fn calculate_hash(delegation_id: T::DelegationNodeId, 
                 root_id: T::DelegationNodeId, parent_id: Option<T::DelegationNodeId>, 
                 permissions: Permissions) -> T::Hash {
-        let mut hashed_values : Vec<Vec<u8>> = Vec::new();
-        hashed_values.push(delegation_id.as_ref().to_vec());
-        hashed_values.push(root_id.as_ref().to_vec());
+        let mut hashed_values : Vec<u8> = delegation_id.as_ref().to_vec();
+        hashed_values.extend_from_slice(root_id.as_ref());
         match parent_id {
-            Some(p) => hashed_values.push(p.as_ref().to_vec()),
+            Some(p) => hashed_values.extend_from_slice(p.as_ref()),
             None => {}
         }
-        let p = permissions.as_u8();
-        hashed_values.push((&p).to_vec());
-        let hashed_value_array = hashed_values.iter().map(Vec::as_slice).collect::<Vec<_>>();
-        let hash_root = T::Hashing::enumerated_trie_root(&hashed_value_array);
+        hashed_values.extend_from_slice(permissions.as_u8().as_ref());
+        let hash_root = T::Hashing::hash(&hashed_values);
         return hash_root;
     }
 
@@ -291,6 +288,7 @@ mod tests {
 			let id_level_1 = H256::from_low_u64_be(2);
 			let id_level_2_1 = H256::from_low_u64_be(21);
 			let id_level_2_2 = H256::from_low_u64_be(22);
+
 			assert_ok!(Ctype::add(Origin::signed(account_hash_alice.clone()), ctype_hash.clone()));
 
 			assert_ok!(Delegation::create_root(Origin::signed(account_hash_alice.clone()), id_level_0.clone(), ctype_hash.clone()));
