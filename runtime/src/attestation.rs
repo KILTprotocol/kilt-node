@@ -152,7 +152,10 @@ mod tests {
 	impl delegation::Trait for Test {
 		type Signature = Ed25519Signature;
 		type DelegationNodeId = H256;
-	}
+		fn print_hash(hash: Self::Hash) {
+			::runtime_io::print(&hash.as_bytes()[..]);
+		}
+}
 
 	impl Trait for Test {
 	}

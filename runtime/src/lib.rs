@@ -190,6 +190,11 @@ impl ctype::Trait for Runtime {
 impl delegation::Trait for Runtime {
 	type Signature = Ed25519Signature;
 	type DelegationNodeId = Hash;
+
+	fn print_hash(hash: Hash) {
+		::runtime_io::print(&hash.as_bytes()[..]);
+	}
+
 }
 
 impl did::Trait for Runtime {
