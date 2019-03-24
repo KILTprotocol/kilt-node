@@ -132,6 +132,9 @@ decl_module! {
 
         pub fn revoke_delegation(origin, delegation_id: T::DelegationNodeId) -> Result {
 			let sender = ensure_signed(origin)?;
+            if !<Delegations<T>>::exists(delegation_id) {
+                return Err("delegation not found")
+            }
             if !Self::is_delegating(&sender, &delegation_id)? {
                 return Err("not permitted to revoke")
             }
@@ -143,7 +146,7 @@ decl_module! {
 
 impl<T: Trait> Module<T> {
 
-    fn calculate_hash(delegation_id: T::DelegationNodeId, 
+    pub fn calculate_hash(delegation_id: T::DelegationNodeId, 
                 root_id: T::DelegationNodeId, parent_id: Option<T::DelegationNodeId>, 
                 permissions: Permissions) -> T::Hash {
         let mut hashed_values : Vec<u8> = delegation_id.as_ref().to_vec();
@@ -288,6 +291,7 @@ mod tests {
 			let id_level_1 = H256::from_low_u64_be(2);
 			let id_level_2_1 = H256::from_low_u64_be(21);
 			let id_level_2_2 = H256::from_low_u64_be(22);
+			let id_level_2_2_1 = H256::from_low_u64_be(221);
 
 			assert_ok!(Ctype::add(Origin::signed(account_hash_alice.clone()), ctype_hash.clone()));
 
@@ -346,6 +350,12 @@ mod tests {
                 Ed25519Signature::from(pair_charlie.sign(&hash_to_u8(
                     Delegation::calculate_hash(id_level_2_2.clone(), id_level_0.clone(), Some(id_level_1.clone()), 
                     Permissions::ATTEST | Permissions::DELEGATE))))));
+
+            assert_ok!(Delegation::add_delegation(Origin::signed(account_hash_charlie.clone()), id_level_2_2_1.clone(), id_level_0.clone(), 
+                Some(id_level_2_2.clone()), account_hash_alice.clone(), Permissions::ATTEST, 
+                Ed25519Signature::from(pair_alice.sign(&hash_to_u8(
+                    Delegation::calculate_hash(id_level_2_2_1.clone(), id_level_0.clone(), Some(id_level_2_2.clone()), Permissions::ATTEST))))));
+
             
             let root = Delegation::root(id_level_0.clone());
             assert_eq!(root.0, ctype_hash.clone());
@@ -379,8 +389,24 @@ mod tests {
             assert_eq!(Delegation::is_delegating(&account_hash_charlie, &id_level_1), Ok(false));
             assert_eq!(Delegation::is_delegating(&account_hash_charlie, &id_level_0), Err("delegation not found"));
 
-            // TODO: test revocation with state and errors
-            // TODO: test attestation based on delegation
+            assert_err!(Delegation::revoke_delegation(Origin::signed(account_hash_charlie.clone()), H256::from_low_u64_be(999)),
+                "delegation not found");
+            assert_err!(Delegation::revoke_delegation(Origin::signed(account_hash_charlie.clone()), id_level_1.clone()),
+                "not permitted to revoke");
+            assert_ok!(Delegation::revoke_delegation(Origin::signed(account_hash_charlie.clone()), id_level_2_2.clone()));
+            
+			assert_eq!(Delegation::delegation(id_level_2_2.clone()).4, true);
+			assert_eq!(Delegation::delegation(id_level_2_2_1.clone()).4, true);
+
+            assert_err!(Delegation::revoke_root(Origin::signed(account_hash_bob.clone()), H256::from_low_u64_be(999)),
+                "root not found");
+            assert_err!(Delegation::revoke_root(Origin::signed(account_hash_bob.clone()), id_level_0.clone()),
+                "not permitted to revoke");
+            assert_ok!(Delegation::revoke_root(Origin::signed(account_hash_alice.clone()), id_level_0.clone()));
+            
+			assert_eq!(Delegation::root(id_level_0.clone()).2, true);
+			assert_eq!(Delegation::delegation(id_level_1.clone()).4, true);
+			assert_eq!(Delegation::delegation(id_level_2_1.clone()).4, true);
 		});
 	}
 }
