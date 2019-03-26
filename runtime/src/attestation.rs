@@ -38,63 +38,52 @@ decl_module! {
 				None => {}
 			}
 
-			let mut existing_attestations_for_claim = <Attestations<T>>::get(claim_hash.clone());
-			let mut last_attested : Option<(T::Hash,T::AccountId,Option<T::DelegationNodeId>,bool)> = None;
-			for v in existing_attestations_for_claim.clone() {
-				if v.1.eq(&sender) && v.2.eq(&delegation_id) {
-					last_attested = Some(v);
-					break;
-				}
+			if <Attestations<T>>::exists(claim_hash.clone()) {
+				return Err("already attested")
 			}
-			match last_attested {
-				Some(_v)	=> return Err("already attested"),
-				None	=> {
-					::runtime_io::print("insert Attestation");
-					existing_attestations_for_claim.push((ctype_hash.clone(), sender.clone(), delegation_id.clone(), false));
-					<Attestations<T>>::insert(claim_hash.clone(), existing_attestations_for_claim);
-					match delegation_id {
-						Some(d) => {
-							let mut delegated_attestations = <DelegatedAttestations<T>>::get(d);
-							delegated_attestations.push(claim_hash.clone());
-							<DelegatedAttestations<T>>::insert(d.clone(), delegated_attestations);
-						},
-						None => {}
-					}
-					Ok(())
+
+			::runtime_io::print("insert Attestation");
+			<Attestations<T>>::insert(claim_hash.clone(), (ctype_hash.clone(), sender.clone(), delegation_id.clone(), false));
+			match delegation_id {
+				Some(d) => {
+					let mut delegated_attestations = <DelegatedAttestations<T>>::get(d);
+					delegated_attestations.push(claim_hash.clone());
+					<DelegatedAttestations<T>>::insert(d.clone(), delegated_attestations);
 				},
+				None => {}
 			}
+			Ok(())
 		}
 
 		pub fn revoke(origin, claim_hash: T::Hash) -> Result {
 			let sender = ensure_signed(origin)?;
 
-			let mut last_attested : bool = false;
-			let mut existing_attestations_for_claim = <Attestations<T>>::get(claim_hash.clone());
-			for v in existing_attestations_for_claim.iter_mut() {
-				if !v.3 {
-					if v.1.eq(&sender) {
-						last_attested = true;
-						v.3 = true;
-					} else {
-						// check delegator in case of delegation
-						match v.2 {
-							Some(d) => {
-								if Self::is_delegating(&sender, &d)? {
-									last_attested = true;
-									v.3 = true;
-								}
-							},
-							None => {}
+			if !<Attestations<T>>::exists(claim_hash.clone()) {
+				return Err("no valid attestation found")
+			}
+			
+			let mut existing_attestation = <Attestations<T>>::get(claim_hash.clone());
+			if !existing_attestation.1.eq(&sender) {
+				match existing_attestation.2 {
+					Some(d) => {
+						if !Self::is_delegating(&sender, &d)? {
+							return Err("not permitted to revoke attestation")
 						}
+					},
+					None => {
+						return Err("not permitted to revoke attestation")
 					}
 				}
 			}
-			if last_attested {
-				<Attestations<T>>::insert(claim_hash.clone(), existing_attestations_for_claim.clone());
-				Ok(())
-			} else {
-				Err("no valid attestation found")
+			
+			if existing_attestation.3 {
+				return Err("already revoked")
 			}
+
+			::runtime_io::print("revoking Attestation");
+			existing_attestation.3 = true;
+			<Attestations<T>>::insert(claim_hash.clone(), existing_attestation.clone());
+			Ok(())
 		}
 	}
 }
@@ -108,7 +97,7 @@ impl<T: Trait> Module<T> {
 decl_storage! {
 	trait Store for Module<T: Trait> as Attestation {
 		// Attestations: claim-hash -> [(ctype-hash, account, delegation-id?, revoked)]
-		Attestations get(attestations): map T::Hash => Vec<(T::Hash,T::AccountId,Option<T::DelegationNodeId>,bool)>;
+		Attestations get(attestations): map T::Hash => (T::Hash,T::AccountId,Option<T::DelegationNodeId>,bool);
 		// DelegatedAttestations: delegation-id -> [claim-hash]
 		DelegatedAttestations get(delegated_attestations): map T::DelegationNodeId => Vec<T::Hash>;
 	}
@@ -185,11 +174,10 @@ mod tests {
 			let account_hash = H256::from(pair.public().0);
 			assert_ok!(Ctype::add(Origin::signed(account_hash.clone()), hash.clone()));
 			assert_ok!(Attestation::add(Origin::signed(account_hash.clone()), hash.clone(), hash.clone(), None));
-			let existing_attestations_for_claim = Attestation::attestations(hash.clone());
-			assert_eq!(existing_attestations_for_claim.len(), 1);
-			assert_eq!(existing_attestations_for_claim[0].0, hash.clone());
-			assert_eq!(existing_attestations_for_claim[0].1, account_hash.clone());
-			assert_eq!(existing_attestations_for_claim[0].3, false);
+			let existing_attestation_for_claim = Attestation::attestations(hash.clone());
+			assert_eq!(existing_attestation_for_claim.0, hash.clone());
+			assert_eq!(existing_attestation_for_claim.1, account_hash.clone());
+			assert_eq!(existing_attestation_for_claim.3, false);
 		});
 	}
 
@@ -202,11 +190,10 @@ mod tests {
 			assert_ok!(Ctype::add(Origin::signed(account_hash.clone()), hash.clone()));
 			assert_ok!(Attestation::add(Origin::signed(account_hash.clone()), hash.clone(), hash.clone(), None));
 			assert_ok!(Attestation::revoke(Origin::signed(account_hash.clone()), hash.clone()));
-			let existing_attestations_for_claim = Attestation::attestations(hash.clone());
-			assert_eq!(existing_attestations_for_claim.len(), 1);
-			assert_eq!(existing_attestations_for_claim[0].0, hash.clone());
-			assert_eq!(existing_attestations_for_claim[0].1, account_hash.clone());
-			assert_eq!(existing_attestations_for_claim[0].3, true);
+			let existing_attestation_for_claim = Attestation::attestations(hash.clone());
+			assert_eq!(existing_attestation_for_claim.0, hash.clone());
+			assert_eq!(existing_attestation_for_claim.1, account_hash.clone());
+			assert_eq!(existing_attestation_for_claim.3, true);
 		});
 	}
 
@@ -231,18 +218,43 @@ mod tests {
 			assert_ok!(Ctype::add(Origin::signed(account_hash.clone()), hash.clone()));
 			assert_ok!(Attestation::add(Origin::signed(account_hash.clone()), hash.clone(), hash.clone(), None));
 			assert_ok!(Attestation::revoke(Origin::signed(account_hash.clone()), hash.clone()));
+			assert_err!(Attestation::revoke(Origin::signed(account_hash.clone()), hash.clone()), "already revoked");
+		});
+	}
+
+	#[test]
+	fn check_revoke_unknown() {
+		with_externalities(&mut new_test_ext(), || {
+			let pair = ed25519::Pair::from_seed(b"Alice                           ");
+			let hash = H256::from_low_u64_be(1);
+			let account_hash = H256::from(pair.public().0);
 			assert_err!(Attestation::revoke(Origin::signed(account_hash.clone()), hash.clone()), "no valid attestation found");
 		});
 	}
 
-
 	#[test]
-	fn check_add_attestation_withdelegation() {
+	fn check_revoke_not_permitted() {
 		with_externalities(&mut new_test_ext(), || {
 			let pair_alice = ed25519::Pair::from_seed(b"Alice                           ");
 			let account_hash_alice = H256::from(pair_alice.public().0);
 			let pair_bob = ed25519::Pair::from_seed(b"Bob                             ");
 			let account_hash_bob = H256::from(pair_bob.public().0);
+			let hash = H256::from_low_u64_be(1);
+			assert_ok!(Ctype::add(Origin::signed(account_hash_alice.clone()), hash.clone()));
+			assert_ok!(Attestation::add(Origin::signed(account_hash_alice.clone()), hash.clone(), hash.clone(), None));
+			assert_err!(Attestation::revoke(Origin::signed(account_hash_bob.clone()), hash.clone()), "not permitted to revoke attestation");
+		});
+	}
+
+	#[test]
+	fn check_add_attestation_with_delegation() {
+		with_externalities(&mut new_test_ext(), || {
+			let pair_alice = ed25519::Pair::from_seed(b"Alice                           ");
+			let account_hash_alice = H256::from(pair_alice.public().0);
+			let pair_bob = ed25519::Pair::from_seed(b"Bob                             ");
+			let account_hash_bob = H256::from(pair_bob.public().0);
+			let pair_charlie = ed25519::Pair::from_seed(b"Charlie                         ");
+			let account_hash_charlie = H256::from(pair_charlie.public().0);
 
 			let ctype_hash = H256::from_low_u64_be(1);
 			let other_ctype_hash = H256::from_low_u64_be(2);
@@ -285,6 +297,10 @@ mod tests {
 			assert_ok!(Delegation::revoke_root(Origin::signed(account_hash_alice.clone()), delegation_root.clone()));
 			assert_err!(Attestation::add(Origin::signed(account_hash_bob.clone()), claim_hash.clone(), ctype_hash.clone(), Some(delegation_2)),
 				"delegation revoked");
+
+			assert_err!(Attestation::revoke(Origin::signed(account_hash_charlie.clone()), claim_hash.clone()),
+				"not permitted to revoke attestation");
+			assert_ok!(Attestation::revoke(Origin::signed(account_hash_alice.clone()), claim_hash.clone()));
 		});
 	}
 }
