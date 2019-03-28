@@ -1,123 +1,3 @@
-[dependencies.aura]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-aura'
-rev = '6288a4774a5ca57832896f6c501ba04aa6ef398c'
-
-[dependencies.balances]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-balances'
-rev = '6288a4774a5ca57832896f6c501ba04aa6ef398c'
-
-[dependencies.client]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-client'
-rev = '6288a4774a5ca57832896f6c501ba04aa6ef398c'
-
-[dependencies.consensus]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-consensus'
-rev = '6288a4774a5ca57832896f6c501ba04aa6ef398c'
-
-[dependencies.consensus-aura]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-consensus-aura-primitives'
-rev = '6288a4774a5ca57832896f6c501ba04aa6ef398c'
-
-[dependencies.executive]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-executive'
-rev = '6288a4774a5ca57832896f6c501ba04aa6ef398c'
-
-[dependencies.indices]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-indices'
-rev = '6288a4774a5ca57832896f6c501ba04aa6ef398c'
-
-[dependencies.parity-codec]
-default-features = false
-version = '3.0'
-
-[dependencies.parity-codec-derive]
-default-features = false
-version = '3.0'
-
-[dependencies.primitives]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-primitives'
-rev = '6288a4774a5ca57832896f6c501ba04aa6ef398c'
-
-[dependencies.rstd]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'sr-std'
-rev = '6288a4774a5ca57832896f6c501ba04aa6ef398c'
-
-[dependencies.runtime-io]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'sr-io'
-rev = '6288a4774a5ca57832896f6c501ba04aa6ef398c'
-
-[dependencies.runtime-primitives]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'sr-primitives'
-rev = '6288a4774a5ca57832896f6c501ba04aa6ef398c'
-
-[dependencies.safe-mix]
-default-features = false
-version = '1.0'
-
-[dependencies.serde]
-default-features = false
-version = '1.0'
-
-[dependencies.serde_derive]
-optional = true
-version = '1.0'
-
-[dependencies.bitflags]
-default-features = false
-version = '1.0.4'
-
-[dependencies.sudo]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-sudo'
-rev = '6288a4774a5ca57832896f6c501ba04aa6ef398c'
-
-[dependencies.support]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-support'
-rev = '6288a4774a5ca57832896f6c501ba04aa6ef398c'
-
-[dependencies.system]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-system'
-rev = '6288a4774a5ca57832896f6c501ba04aa6ef398c'
-
-[dependencies.timestamp]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-timestamp'
-rev = '6288a4774a5ca57832896f6c501ba04aa6ef398c'
-
-[dependencies.version]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'sr-version'
-rev = '6288a4774a5ca57832896f6c501ba04aa6ef398c'
-
 [package]
 authors = ['Parity Technologies <admin@parity.io>']
 edition = '2018'
@@ -128,7 +8,6 @@ version = '0.9.0'
 default = ['std']
 std = [
     'parity-codec/std',
-    'parity-codec-derive/std',
     'primitives/std',
     'client/std',
     'rstd/std',
@@ -144,7 +23,123 @@ std = [
     'sudo/std',
     'version/std',
     'serde_derive',
-    'serde/std',
+    'serde',
     'safe-mix/std',
     'consensus-aura/std',
 ]
+[dependencies.aura]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-aura'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+
+[dependencies.balances]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-balances'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+
+[dependencies.client]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'substrate-client'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+
+[dependencies.consensus]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-consensus'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+
+[dependencies.consensus-aura]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'substrate-consensus-aura-primitives'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+
+[dependencies.executive]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-executive'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+
+[dependencies.indices]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-indices'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+
+[dependencies.parity-codec]
+default-features = false
+features = ['derive']
+version = '3.2'
+
+[dependencies.bitflags]
+default-features = false
+version = '1.0.4'
+
+[dependencies.primitives]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'substrate-primitives'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+
+[dependencies.rstd]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'sr-std'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+
+[dependencies.runtime-io]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'sr-io'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+
+[dependencies.runtime-primitives]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'sr-primitives'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+
+[dependencies.safe-mix]
+default-features = false
+version = '1.0'
+
+[dependencies.serde]
+optional = true
+version = '1.0'
+
+[dependencies.serde_derive]
+optional = true
+version = '1.0'
+
+[dependencies.sudo]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-sudo'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+
+[dependencies.support]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-support'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+
+[dependencies.system]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-system'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+
+[dependencies.timestamp]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'srml-timestamp'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'
+
+[dependencies.version]
+default_features = false
+git = 'https://github.com/paritytech/substrate.git'
+package = 'sr-version'
+rev = '2ba93e317c637ffee06153e15ca7c39f6812e88a'

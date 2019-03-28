@@ -83,7 +83,7 @@ mod tests {
 	#[test]
 	fn check_add_did() {
 		with_externalities(&mut new_test_ext(), || {
-			let pair = ed25519::Pair::from_seed(b"Alice                           ");
+			let pair = ed25519::Pair::from_seed(*b"Alice                           ");
 			let signing_key = H256::from_low_u64_be(1);
 			let box_key = H256::from_low_u64_be(2);
 			let account_hash = H256::from(pair.public().0);

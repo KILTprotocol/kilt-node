@@ -109,14 +109,13 @@ mod tests {
 	use super::*;
 	use system;
 	use runtime_io::with_externalities;
-	use primitives::{H256, Blake2Hasher};
-	use runtime_primitives::Ed25519Signature;
+	use primitives::{H256, Blake2Hasher, sr25519};
 	use primitives::*;
 	use support::{impl_outer_origin, assert_ok, assert_err};
 	use parity_codec::Encode;
 
 	use runtime_primitives::{
-		BuildStorage, traits::{BlakeTwo256, IdentityLookup}, testing::{Digest, DigestItem, Header}
+		BuildStorage, traits::{BlakeTwo256, IdentityLookup, Verify}, testing::{Digest, DigestItem, Header}
 	};
 
 	impl_outer_origin! {
@@ -132,23 +131,24 @@ mod tests {
 		type Hash = H256;
 		type Hashing = BlakeTwo256;
 		type Digest = Digest;
-		type AccountId = H256;
+		type AccountId = <sr25519::Signature as Verify>::Signer;
 		type Header = Header;
 		type Event = ();
 		type Log = DigestItem;
-		type Lookup = IdentityLookup<H256>;
+		type Lookup = IdentityLookup<Self::AccountId>;
 	}
 	
 	impl ctype::Trait for Test {
 	}
 
 	impl delegation::Trait for Test {
-		type Signature = Ed25519Signature;
+		type Signature = sr25519::Signature;
+		type Signer = <sr25519::Signature as Verify>::Signer;
 		type DelegationNodeId = H256;
 		fn print_hash(hash: Self::Hash) {
 			::runtime_io::print(&hash.as_bytes()[..]);
 		}
-}
+	}
 
 	impl Trait for Test {
 	}
@@ -169,9 +169,9 @@ mod tests {
 	#[test]
 	fn check_add_attestation() {
 		with_externalities(&mut new_test_ext(), || {
-			let pair = ed25519::Pair::from_seed(b"Alice                           ");
+			let pair = sr25519::Pair::from_seed(*b"Alice                           ");
 			let hash = H256::from_low_u64_be(1);
-			let account_hash = H256::from(pair.public().0);
+			let account_hash = pair.public();
 			assert_ok!(Ctype::add(Origin::signed(account_hash.clone()), hash.clone()));
 			assert_ok!(Attestation::add(Origin::signed(account_hash.clone()), hash.clone(), hash.clone(), None));
 			let existing_attestation_for_claim = Attestation::attestations(hash.clone());
@@ -184,9 +184,9 @@ mod tests {
 	#[test]
 	fn check_revoke_attestation() {
 		with_externalities(&mut new_test_ext(), || {
-			let pair = ed25519::Pair::from_seed(b"Alice                           ");
+			let pair = sr25519::Pair::from_seed(*b"Alice                           ");
 			let hash = H256::from_low_u64_be(1);
-			let account_hash = H256::from(pair.public().0);
+			let account_hash = pair.public();
 			assert_ok!(Ctype::add(Origin::signed(account_hash.clone()), hash.clone()));
 			assert_ok!(Attestation::add(Origin::signed(account_hash.clone()), hash.clone(), hash.clone(), None));
 			assert_ok!(Attestation::revoke(Origin::signed(account_hash.clone()), hash.clone()));
@@ -200,9 +200,9 @@ mod tests {
 	#[test]
 	fn check_double_attestation() {
 		with_externalities(&mut new_test_ext(), || {
-			let pair = ed25519::Pair::from_seed(b"Alice                           ");
+			let pair = sr25519::Pair::from_seed(*b"Alice                           ");
 			let hash = H256::from_low_u64_be(1);
-			let account_hash = H256::from(pair.public().0);
+			let account_hash = pair.public();
 			assert_ok!(Ctype::add(Origin::signed(account_hash.clone()), hash.clone()));
 			assert_ok!(Attestation::add(Origin::signed(account_hash.clone()), hash.clone(), hash.clone(), None));
 			assert_err!(Attestation::add(Origin::signed(account_hash.clone()), hash.clone(), hash.clone(), None), "already attested");
@@ -212,9 +212,9 @@ mod tests {
 	#[test]
 	fn check_double_revoke_attestation() {
 		with_externalities(&mut new_test_ext(), || {
-			let pair = ed25519::Pair::from_seed(b"Alice                           ");
+			let pair = sr25519::Pair::from_seed(*b"Alice                           ");
 			let hash = H256::from_low_u64_be(1);
-			let account_hash = H256::from(pair.public().0);
+			let account_hash = pair.public();
 			assert_ok!(Ctype::add(Origin::signed(account_hash.clone()), hash.clone()));
 			assert_ok!(Attestation::add(Origin::signed(account_hash.clone()), hash.clone(), hash.clone(), None));
 			assert_ok!(Attestation::revoke(Origin::signed(account_hash.clone()), hash.clone()));
@@ -225,9 +225,9 @@ mod tests {
 	#[test]
 	fn check_revoke_unknown() {
 		with_externalities(&mut new_test_ext(), || {
-			let pair = ed25519::Pair::from_seed(b"Alice                           ");
+			let pair = sr25519::Pair::from_seed(*b"Alice                           ");
 			let hash = H256::from_low_u64_be(1);
-			let account_hash = H256::from(pair.public().0);
+			let account_hash = pair.public();
 			assert_err!(Attestation::revoke(Origin::signed(account_hash.clone()), hash.clone()), "no valid attestation found");
 		});
 	}
@@ -235,10 +235,10 @@ mod tests {
 	#[test]
 	fn check_revoke_not_permitted() {
 		with_externalities(&mut new_test_ext(), || {
-			let pair_alice = ed25519::Pair::from_seed(b"Alice                           ");
-			let account_hash_alice = H256::from(pair_alice.public().0);
-			let pair_bob = ed25519::Pair::from_seed(b"Bob                             ");
-			let account_hash_bob = H256::from(pair_bob.public().0);
+			let pair_alice = sr25519::Pair::from_seed(*b"Alice                           ");
+			let account_hash_alice = pair_alice.public();
+			let pair_bob = sr25519::Pair::from_seed(*b"Bob                             ");
+			let account_hash_bob = pair_bob.public();
 			let hash = H256::from_low_u64_be(1);
 			assert_ok!(Ctype::add(Origin::signed(account_hash_alice.clone()), hash.clone()));
 			assert_ok!(Attestation::add(Origin::signed(account_hash_alice.clone()), hash.clone(), hash.clone(), None));
@@ -249,12 +249,12 @@ mod tests {
 	#[test]
 	fn check_add_attestation_with_delegation() {
 		with_externalities(&mut new_test_ext(), || {
-			let pair_alice = ed25519::Pair::from_seed(b"Alice                           ");
-			let account_hash_alice = H256::from(pair_alice.public().0);
-			let pair_bob = ed25519::Pair::from_seed(b"Bob                             ");
-			let account_hash_bob = H256::from(pair_bob.public().0);
-			let pair_charlie = ed25519::Pair::from_seed(b"Charlie                         ");
-			let account_hash_charlie = H256::from(pair_charlie.public().0);
+			let pair_alice = sr25519::Pair::from_seed(*b"Alice                           ");
+			let account_hash_alice = pair_alice.public();
+			let pair_bob = sr25519::Pair::from_seed(*b"Bob                             ");
+			let account_hash_bob = pair_bob.public();
+			let pair_charlie = sr25519::Pair::from_seed(*b"Charlie                         ");
+			let account_hash_charlie = pair_charlie.public();
 
 			let ctype_hash = H256::from_low_u64_be(1);
 			let other_ctype_hash = H256::from_low_u64_be(2);
@@ -272,11 +272,11 @@ mod tests {
 			assert_ok!(Delegation::create_root(Origin::signed(account_hash_alice.clone()), delegation_root.clone(), ctype_hash.clone()));
 			assert_ok!(Delegation::add_delegation(Origin::signed(account_hash_alice.clone()), delegation_1.clone(), delegation_root.clone(), 
                 None, account_hash_bob.clone(), delegation::Permissions::DELEGATE, 
-                Ed25519Signature::from(pair_bob.sign(&hash_to_u8(
+                sr25519::Signature::from(pair_bob.sign(&hash_to_u8(
                     Delegation::calculate_hash(delegation_1.clone(), delegation_root.clone(), None, delegation::Permissions::DELEGATE))))));
 			assert_ok!(Delegation::add_delegation(Origin::signed(account_hash_alice.clone()), delegation_2.clone(), delegation_root.clone(), 
                 None, account_hash_bob.clone(), delegation::Permissions::ATTEST, 
-                Ed25519Signature::from(pair_bob.sign(&hash_to_u8(
+                sr25519::Signature::from(pair_bob.sign(&hash_to_u8(
                     Delegation::calculate_hash(delegation_2.clone(), delegation_root.clone(), None, delegation::Permissions::ATTEST))))));
 
 			assert_err!(Attestation::add(Origin::signed(account_hash_bob.clone()), claim_hash.clone(), other_ctype_hash.clone(), Some(delegation_2)),

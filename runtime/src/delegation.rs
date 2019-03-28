@@ -3,7 +3,7 @@ use rstd::result;
 use rstd::prelude::*;
 use runtime_primitives::traits::{Hash, CheckEqual, SimpleBitOps, Member, Verify, MaybeDisplay};
 use support::{dispatch::Result, StorageMap, Parameter, decl_module, decl_storage};
-use parity_codec_derive::{Encode, Decode};
+use parity_codec::{Encode, Decode};
 use core::default::Default;
 
 use runtime_primitives::codec::Codec;
@@ -38,7 +38,8 @@ impl Default for Permissions {
 }
 
 pub trait Trait: ctype::Trait + system::Trait {
-	type Signature: Verify<Signer = Self::AccountId> + Member + Codec + Default;
+    type Signer: From<Self::AccountId> + Member + Codec;
+	type Signature: Verify<Signer = Self::Signer> + Member + Codec + Default;
     type DelegationNodeId: Parameter + Member + Codec + MaybeDisplay + SimpleBitOps 
             + Default + Copy + CheckEqual + rstd::hash::Hash + AsRef<[u8]> + AsMut<[u8]>;
 
@@ -70,7 +71,7 @@ decl_module! {
             }
             
             let hash_root = Self::calculate_hash(delegation_id, root_id, parent_id, permissions);
-            if !verify_encoded_lazy(&delegate_signature, &&hash_root, &delegate) {
+            if !verify_encoded_lazy(&delegate_signature, &&hash_root, &delegate.clone().into()) {
                 // TODO: abort on signature error
                 ::runtime_io::print("Error: signature does not match, hash:");
                 T::print_hash(hash_root);
@@ -223,8 +224,7 @@ mod tests {
 	use super::*;
 	use system;
 	use runtime_io::with_externalities;
-	use primitives::{H256, H512, Blake2Hasher};
-	use runtime_primitives::Ed25519Signature;
+	use primitives::{H256, H512, Blake2Hasher, sr25519};
 	use primitives::*;
 	use support::{impl_outer_origin, assert_ok, assert_err};
 	use parity_codec::Encode;
@@ -246,18 +246,19 @@ mod tests {
 		type Hash = H256;
 		type Hashing = BlakeTwo256;
 		type Digest = Digest;
-		type AccountId = H256;
+		type AccountId = <sr25519::Signature as Verify>::Signer;
 		type Header = Header;
 		type Event = ();
 		type Log = DigestItem;
-		type Lookup = IdentityLookup<H256>;
+		type Lookup = IdentityLookup<Self::AccountId>;
 	}
 	
 	impl ctype::Trait for Test {
 	}
 
 	impl Trait for Test {
-		type Signature = Ed25519Signature;
+		type Signature = sr25519::Signature;
+        type Signer = <sr25519::Signature as Verify>::Signer;
 		type DelegationNodeId = H256;
 
         fn print_hash(hash: Self::Hash) {
@@ -279,12 +280,12 @@ mod tests {
 	#[test]
 	fn check_add_and_revoke_delegations() {
 		with_externalities(&mut new_test_ext(), || {
-			let pair_alice = ed25519::Pair::from_seed(b"Alice                           ");
-			let account_hash_alice = H256::from(pair_alice.public().0);
-			let pair_bob = ed25519::Pair::from_seed(b"Bob                             ");
-			let account_hash_bob = H256::from(pair_bob.public().0);
-			let pair_charlie = ed25519::Pair::from_seed(b"Charlie                         ");
-			let account_hash_charlie = H256::from(pair_charlie.public().0);
+			let pair_alice = sr25519::Pair::from_seed(*b"Alice                           ");
+			let account_hash_alice = pair_alice.public();
+			let pair_bob = sr25519::Pair::from_seed(*b"Bob                             ");
+			let account_hash_bob = pair_bob.public();
+			let pair_charlie = sr25519::Pair::from_seed(*b"Charlie                         ");
+			let account_hash_charlie = pair_charlie.public();
 
 			let ctype_hash = H256::from_low_u64_be(1);
 			let id_level_0 = H256::from_low_u64_be(1);
@@ -303,57 +304,57 @@ mod tests {
 
 			assert_ok!(Delegation::add_delegation(Origin::signed(account_hash_alice.clone()), id_level_1.clone(), id_level_0.clone(), 
                 None, account_hash_bob.clone(), Permissions::DELEGATE, 
-                Ed25519Signature::from(pair_bob.sign(&hash_to_u8(
+                sr25519::Signature::from(pair_bob.sign(&hash_to_u8(
                     Delegation::calculate_hash(id_level_1.clone(), id_level_0.clone(), None, Permissions::DELEGATE))))));
 			assert_err!(Delegation::add_delegation(Origin::signed(account_hash_alice.clone()), id_level_1.clone(), id_level_0.clone(), 
                 None, account_hash_bob.clone(), Permissions::DELEGATE, 
-                Ed25519Signature::from(pair_bob.sign(&hash_to_u8(
+                sr25519::Signature::from(pair_bob.sign(&hash_to_u8(
                     Delegation::calculate_hash(id_level_1.clone(), id_level_0.clone(), None, Permissions::DELEGATE))))),
                 "delegation already exist");
             assert_err!(Delegation::add_delegation(Origin::signed(account_hash_bob.clone()), id_level_2_1.clone(), id_level_0.clone(), 
-                Some(id_level_1.clone()), account_hash_charlie.clone(), Permissions::ATTEST, Ed25519Signature::from(H512::from_low_u64_be(0))),
+                Some(id_level_1.clone()), account_hash_charlie.clone(), Permissions::ATTEST, sr25519::Signature::from_h512(H512::from_low_u64_be(0))),
                 "bad delegate signature");
 			assert_err!(Delegation::add_delegation(Origin::signed(account_hash_charlie.clone()), id_level_2_1.clone(), id_level_0.clone(), 
                 None, account_hash_bob.clone(), Permissions::DELEGATE, 
-                Ed25519Signature::from(pair_bob.sign(&hash_to_u8(
+                sr25519::Signature::from(pair_bob.sign(&hash_to_u8(
                     Delegation::calculate_hash(id_level_2_1.clone(), id_level_0.clone(), None, Permissions::DELEGATE))))),
                 "not owner of root");
 			assert_err!(Delegation::add_delegation(Origin::signed(account_hash_alice.clone()), id_level_2_1.clone(), id_level_1.clone(), 
                 None, account_hash_bob.clone(), Permissions::DELEGATE, 
-                Ed25519Signature::from(pair_bob.sign(&hash_to_u8(
+                sr25519::Signature::from(pair_bob.sign(&hash_to_u8(
                     Delegation::calculate_hash(id_level_2_1.clone(), id_level_1.clone(), None, Permissions::DELEGATE))))),
                 "root not found");
 
 
 			assert_ok!(Delegation::add_delegation(Origin::signed(account_hash_bob.clone()), id_level_2_1.clone(), id_level_0.clone(), 
                 Some(id_level_1.clone()), account_hash_charlie.clone(), Permissions::ATTEST, 
-                Ed25519Signature::from(pair_charlie.sign(&hash_to_u8(
+                sr25519::Signature::from(pair_charlie.sign(&hash_to_u8(
                     Delegation::calculate_hash(id_level_2_1.clone(), id_level_0.clone(), Some(id_level_1.clone()), Permissions::ATTEST))))));
             assert_err!(Delegation::add_delegation(Origin::signed(account_hash_alice.clone()), id_level_2_2.clone(), id_level_0.clone(), 
                 Some(id_level_1.clone()), account_hash_charlie.clone(), Permissions::ATTEST, 
-                Ed25519Signature::from(pair_charlie.sign(&hash_to_u8(
+                sr25519::Signature::from(pair_charlie.sign(&hash_to_u8(
                     Delegation::calculate_hash(id_level_2_2.clone(), id_level_0.clone(), Some(id_level_1.clone()), Permissions::ATTEST))))),
                 "not owner of parent");
             assert_err!(Delegation::add_delegation(Origin::signed(account_hash_charlie.clone()), id_level_2_2.clone(), id_level_0.clone(), 
                 Some(id_level_2_1.clone()), account_hash_alice.clone(), Permissions::ATTEST, 
-                Ed25519Signature::from(pair_alice.sign(&hash_to_u8(
+                sr25519::Signature::from(pair_alice.sign(&hash_to_u8(
                     Delegation::calculate_hash(id_level_2_2.clone(), id_level_0.clone(), Some(id_level_2_1.clone()), Permissions::ATTEST))))),
                 "not authorized to delegate");
             assert_err!(Delegation::add_delegation(Origin::signed(account_hash_bob.clone()), id_level_2_2.clone(), id_level_0.clone(), 
                 Some(id_level_0.clone()), account_hash_charlie.clone(), Permissions::ATTEST, 
-                Ed25519Signature::from(pair_charlie.sign(&hash_to_u8(
+                sr25519::Signature::from(pair_charlie.sign(&hash_to_u8(
                     Delegation::calculate_hash(id_level_2_2.clone(), id_level_0.clone(), Some(id_level_0.clone()), Permissions::ATTEST))))),
                 "parent not found");
 			
             assert_ok!(Delegation::add_delegation(Origin::signed(account_hash_bob.clone()), id_level_2_2.clone(), id_level_0.clone(), 
                 Some(id_level_1.clone()), account_hash_charlie.clone(), Permissions::ATTEST | Permissions::DELEGATE, 
-                Ed25519Signature::from(pair_charlie.sign(&hash_to_u8(
+                sr25519::Signature::from(pair_charlie.sign(&hash_to_u8(
                     Delegation::calculate_hash(id_level_2_2.clone(), id_level_0.clone(), Some(id_level_1.clone()), 
                     Permissions::ATTEST | Permissions::DELEGATE))))));
 
             assert_ok!(Delegation::add_delegation(Origin::signed(account_hash_charlie.clone()), id_level_2_2_1.clone(), id_level_0.clone(), 
                 Some(id_level_2_2.clone()), account_hash_alice.clone(), Permissions::ATTEST, 
-                Ed25519Signature::from(pair_alice.sign(&hash_to_u8(
+                sr25519::Signature::from(pair_alice.sign(&hash_to_u8(
                     Delegation::calculate_hash(id_level_2_2_1.clone(), id_level_0.clone(), Some(id_level_2_2.clone()), Permissions::ATTEST))))));
 
             
@@ -409,4 +410,5 @@ mod tests {
 			assert_eq!(Delegation::delegation(id_level_2_1.clone()).4, true);
 		});
 	}
+    
 }
