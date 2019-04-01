@@ -68,3 +68,13 @@ docker build -t prototype-chain .
 # run chain in dev mode locally
 docker run -p 9944:9944 prototype-chain ./target/debug/node --dev --ws-port 9944 --ws-external --rpc-external
 ```
+
+### Running a node alternatice way
+
+1. ./init.sh
+
+2. ./build.sh
+
+3. cargo build
+
+4. ./target/debug/node --dev -d ./tmp
