@@ -1,13 +1,13 @@
-[[bin]]
-name = 'template-node'
-path = 'src/main.rs'
-
 [package]
 authors = ['Parity Technologies <admin@parity.io>']
 build = 'build.rs'
 edition = '2018'
 name = 'node-template'
-version = '0.9.0'
+version = '0.10.0'
+
+[[bin]]
+name = 'template-node'
+path = 'src/main.rs'
 
 [dependencies]
 error-chain = '0.12'

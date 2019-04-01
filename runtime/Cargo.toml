@@ -2,13 +2,12 @@
 authors = ['Parity Technologies <admin@parity.io>']
 edition = '2018'
 name = 'node-template-runtime'
-version = '0.9.0'
+version = '0.10.0'
 
 [features]
 default = ['std']
 std = [
     'parity-codec/std',
-    'primitives/std',
     'client/std',
     'rstd/std',
     'runtime-io/std',

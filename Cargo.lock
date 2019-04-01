@@ -1754,7 +1754,7 @@ dependencies = [
 
 [[package]]
 name = "node-template"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "ctrlc 3.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "error-chain 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1762,7 +1762,7 @@ dependencies = [
  "futures 0.1.25 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex-literal 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "node-template-runtime 0.9.0",
+ "node-template-runtime 0.10.0",
  "parity-codec 3.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "sr-io 0.1.0 (git+https://github.com/paritytech/substrate.git?rev=2ba93e317c637ffee06153e15ca7c39f6812e88a)",
@@ -1783,7 +1783,7 @@ dependencies = [
 
 [[package]]
 name = "node-template-runtime"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "bitflags 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "parity-codec 3.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
