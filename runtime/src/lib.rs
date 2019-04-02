@@ -187,12 +187,15 @@ impl sudo::Trait for Runtime {
 }
 
 impl attestation::Trait for Runtime {
+	type Event = Event;
 }
 
 impl ctype::Trait for Runtime {
+	type Event = Event;
 }
 
 impl delegation::Trait for Runtime {
+	type Event = Event;
 	type Signer = AccountId;
 	type Signature = AccountSignature;
 	type DelegationNodeId = Hash;
@@ -204,6 +207,8 @@ impl delegation::Trait for Runtime {
 }
 
 impl did::Trait for Runtime {
+	/// The uniquitous event type.
+	type Event = Event;
 	type PublicSigningKey = Hash;
 	type PublicBoxKey = Hash;
 }
@@ -221,10 +226,10 @@ construct_runtime!(
 		Indices: indices,
 		Balances: balances,
 		Sudo: sudo,
-		Ctype: ctype::{Module, Call, Storage},
-		Attestation: attestation::{Module, Call, Storage},
-		Delegation: delegation::{Module, Call, Storage},
-		Did: did::{Module, Call, Storage},
+		Ctype: ctype::{Module, Call, Storage, Event<T>},
+		Attestation: attestation::{Module, Call, Storage, Event<T>},
+		Delegation: delegation::{Module, Call, Storage, Event<T>},
+		Did: did::{Module, Call, Storage, Event<T>},
 	}
 );
 

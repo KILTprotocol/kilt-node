@@ -2,7 +2,7 @@
 use rstd::result;
 use rstd::prelude::*;
 use runtime_primitives::traits::{Hash, CheckEqual, SimpleBitOps, Member, Verify, MaybeDisplay};
-use support::{dispatch::Result, StorageMap, Parameter, decl_module, decl_storage};
+use support::{dispatch::Result, StorageMap, Parameter, decl_module, decl_storage, decl_event};
 use parity_codec::{Encode, Decode};
 use core::default::Default;
 
@@ -38,6 +38,8 @@ impl Default for Permissions {
 }
 
 pub trait Trait: ctype::Trait + system::Trait {
+    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+
     type Signer: From<Self::AccountId> + Member + Codec;
 	type Signature: Verify<Signer = Self::Signer> + Member + Codec + Default;
     type DelegationNodeId: Parameter + Member + Codec + MaybeDisplay + SimpleBitOps 
@@ -46,8 +48,27 @@ pub trait Trait: ctype::Trait + system::Trait {
     fn print_hash(hash: Self::Hash);
 }
 
+
+decl_event!(
+	pub enum Event<T> where <T as system::Trait>::Hash, <T as system::Trait>::AccountId, 
+            <T as Trait>::DelegationNodeId {
+		/// A new root has been created
+		RootCreated(AccountId, DelegationNodeId, Hash),
+		/// A root has been revoked
+		RootRevoked(AccountId, DelegationNodeId),
+		/// A new delegation has been created
+		DelegationCreated(AccountId, DelegationNodeId, DelegationNodeId, Option<DelegationNodeId>, 
+                AccountId, Permissions),
+		/// A delegation has been revoked
+		DelegationRevoked(AccountId, DelegationNodeId),
+	}
+);
+
 decl_module! {
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+        
+        fn deposit_event<T>() = default;
+
 		pub fn create_root(origin, root_id: T::DelegationNodeId, ctype_hash: T::Hash) -> Result {
 			let sender = ensure_signed(origin)?;
             if <Root<T>>::exists(root_id) {
@@ -59,6 +80,7 @@ decl_module! {
 
 			::runtime_io::print("insert Delegation Root");
 			<Root<T>>::insert(root_id.clone(), (ctype_hash.clone(), sender.clone(), false));
+            Self::deposit_event(RawEvent::RootCreated(sender.clone(), root_id.clone(), ctype_hash.clone()));
             return Ok(());
         }
 		
@@ -91,7 +113,8 @@ decl_module! {
                             } else {
                                 // TODO: check for cycles?
                     			::runtime_io::print("insert Delegation with parent");
-                                <Delegations<T>>::insert(delegation_id.clone(), (root_id.clone(), Some(p.clone()), delegate, permissions, false));
+                                <Delegations<T>>::insert(delegation_id.clone(), (root_id.clone(), 
+                                        Some(p.clone()), delegate.clone(), permissions, false));
                                 Self::add_child(delegation_id.clone(), p.clone());
                             }
                         } else {
@@ -103,13 +126,16 @@ decl_module! {
                             return Err("not owner of root")        
                         }
                         ::runtime_io::print("insert Delegation without parent");
-                        <Delegations<T>>::insert(delegation_id.clone(), (root_id.clone(), None, delegate, permissions, false));
+                        <Delegations<T>>::insert(delegation_id.clone(), (root_id.clone(), 
+                                None, delegate.clone(), permissions, false));
                         Self::add_child(delegation_id.clone(), root_id.clone());
                     }
                 }
             } else {
                 return Err("root not found")
             }
+            Self::deposit_event(RawEvent::DelegationCreated(sender.clone(), delegation_id.clone(), 
+                    root_id.clone(), parent_id.clone(), delegate.clone(), permissions.clone()));
             return Ok(());
         }
 
@@ -125,9 +151,10 @@ decl_module! {
             if !r.2 {
                 r.2 = true;
                 <Root<T>>::insert(root_id.clone(), r);
-                Self::revoke_children(&root_id);
+                Self::revoke_children(&root_id, &sender);
             }
 
+            Self::deposit_event(RawEvent::RootRevoked(sender.clone(), root_id.clone()));
             return Ok(());
         }
 
@@ -139,7 +166,7 @@ decl_module! {
             if !Self::is_delegating(&sender, &delegation_id)? {
                 return Err("not permitted to revoke")
             }
-            Self::revoke(&delegation_id);
+            Self::revoke(&delegation_id, &sender);
             return Ok(());
         }
     }
@@ -181,20 +208,22 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn revoke(delegation: &T::DelegationNodeId) {
+    fn revoke(delegation: &T::DelegationNodeId, sender: &T::AccountId) {
         let mut d = <Delegations<T>>::get(delegation.clone());
         if !d.4 {
             d.4 = true;
             <Delegations<T>>::insert(delegation.clone(), d);
-            Self::revoke_children(delegation);
+            Self::deposit_event(RawEvent::DelegationRevoked(sender.clone(), delegation.clone()));
+
+            Self::revoke_children(delegation, sender);
         }
     }
 
-    fn revoke_children(delegation: &T::DelegationNodeId) {
+    fn revoke_children(delegation: &T::DelegationNodeId, sender: &T::AccountId) {
         if <Children<T>>::exists(delegation) {
             let children = <Children<T>>::get(delegation);
             for child in children {
-                Self::revoke(&child);
+                Self::revoke(&child, sender);
             }
         }
     }
@@ -254,9 +283,11 @@ mod tests {
 	}
 	
 	impl ctype::Trait for Test {
+		type Event = ();
 	}
 
 	impl Trait for Test {
+        type Event = ();
 		type Signature = x25519::Signature;
         type Signer = <x25519::Signature as Verify>::Signer;
 		type DelegationNodeId = H256;

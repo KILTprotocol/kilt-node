@@ -1,14 +1,27 @@
 
 use rstd::result;
 use rstd::prelude::*;
-use support::{dispatch::Result, StorageMap, decl_module, decl_storage};
+use support::{dispatch::Result, StorageMap, decl_module, decl_storage, decl_event};
 use {system, super::delegation, super::ctype, system::ensure_signed};
 
 pub trait Trait: system::Trait + delegation::Trait {
+	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
+
+decl_event!(
+	pub enum Event<T> where <T as system::Trait>::AccountId, <T as system::Trait>::Hash, 
+			<T as delegation::Trait>::DelegationNodeId {
+		/// An attestation has been added
+		AttestationCreated(AccountId, Hash, Hash, Option<DelegationNodeId>),
+		/// An attestation has been revoked
+		AttestationRevoked(AccountId, Hash),
+	}
+);
 
 decl_module! {
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+
+		fn deposit_event<T>() = default;
 
 		pub fn add(origin, claim_hash: T::Hash, ctype_hash: T::Hash, delegation_id: Option<T::DelegationNodeId>) -> Result {
 			let sender = ensure_signed(origin)?;
@@ -52,6 +65,9 @@ decl_module! {
 				},
 				None => {}
 			}
+
+			Self::deposit_event(RawEvent::AttestationCreated(sender.clone(), claim_hash.clone(), 
+					ctype_hash.clone(), delegation_id.clone()));
 			Ok(())
 		}
 
@@ -83,6 +99,7 @@ decl_module! {
 			::runtime_io::print("revoking Attestation");
 			existing_attestation.3 = true;
 			<Attestations<T>>::insert(claim_hash.clone(), existing_attestation.clone());
+			Self::deposit_event(RawEvent::AttestationRevoked(sender.clone(), claim_hash.clone()));
 			Ok(())
 		}
 	}
@@ -139,9 +156,11 @@ mod tests {
 	}
 	
 	impl ctype::Trait for Test {
+		type Event = ();
 	}
 
 	impl delegation::Trait for Test {
+		type Event = ();
 		type Signature = x25519::Signature;
 		type Signer = <x25519::Signature as Verify>::Signer;
 		type DelegationNodeId = H256;
@@ -151,6 +170,7 @@ mod tests {
 	}
 
 	impl Trait for Test {
+		type Event = ();
 	}
 
 	type Attestation = Module<Test>;

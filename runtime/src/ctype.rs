@@ -1,14 +1,24 @@
 // initialise with:
 // post({sender: runtime.balances.ss58Decode('F7Gh'), call: calls.demo.setPayment(1000)}).tie(console.log)
 
-use support::{dispatch::Result, StorageMap, decl_module, decl_storage};
+use support::{dispatch::Result, StorageMap, decl_module, decl_storage, decl_event};
 use {system, system::ensure_signed};
 
 pub trait Trait: system::Trait {
+	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
+
+decl_event!(
+	pub enum Event<T> where <T as system::Trait>::AccountId, <T as system::Trait>::Hash {
+		/// A CTYPE has been added
+		CTypeCreated(AccountId, Hash),
+	}
+);
 
 decl_module! {
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+
+		fn deposit_event<T>() = default;
 
 		pub fn add(origin, hash: T::Hash) -> Result {
 			if <CTYPEs<T>>::exists(hash) {
@@ -17,7 +27,8 @@ decl_module! {
 
 			let sender = ensure_signed(origin)?;
 			::runtime_io::print("insert CTYPE");
-			<CTYPEs<T>>::insert(hash.clone(), (hash.clone(), sender.clone()));
+			<CTYPEs<T>>::insert(hash.clone(), sender.clone());
+			Self::deposit_event(RawEvent::CTypeCreated(sender.clone(), hash.clone()));
 			Ok(())
 		}
 
@@ -26,7 +37,7 @@ decl_module! {
 
 decl_storage! {
 	trait Store for Module<T: Trait> as Ctype {
-		pub CTYPEs get(ctypes): map T::Hash => (T::Hash,T::AccountId);
+		pub CTYPEs get(ctypes): map T::Hash => T::AccountId;
 	}
 }
 
@@ -65,6 +76,7 @@ mod tests {
 	}
 
 	impl Trait for Test {
+		type Event = ();
 	}
 	type CType = Module<Test>;
 
@@ -75,16 +87,20 @@ mod tests {
 	#[test]
 	fn it_works_for_default_value() {
 		with_externalities(&mut new_test_ext(), || {
+			let account = H256::from_low_u64_be(1);
+			let ctype_hash = H256::from_low_u64_be(2);
 			assert_ok!(
 				CType::add(
-					Origin::signed(H256::from_low_u64_be(1)),
-					H256::from_low_u64_be(2)
+					Origin::signed(account.clone()),
+					ctype_hash.clone()
 				)
 			);
+			assert_eq!(<CTYPEs<Test>>::exists(ctype_hash), true);
+            assert_eq!(CType::ctypes(ctype_hash.clone()), account.clone());
 			assert_err!(
 				CType::add(
-					Origin::signed(H256::from_low_u64_be(1)),
-					H256::from_low_u64_be(2)
+					Origin::signed(account.clone()),
+					ctype_hash.clone()
 				),
 				"CTYPE already exists"
 			);
