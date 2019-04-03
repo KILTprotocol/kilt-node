@@ -6,7 +6,7 @@ name = 'node-template'
 version = '0.10.0'
 
 [[bin]]
-name = 'template-node'
+name = 'node'
 path = 'src/main.rs'
 
 [dependencies]
