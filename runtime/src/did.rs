@@ -2,27 +2,41 @@
 
 use rstd::prelude::*;
 use runtime_primitives::traits::{Member};
-use support::{dispatch::Result, StorageMap, Parameter, decl_module, decl_storage};
+use support::{dispatch::Result, StorageMap, Parameter, decl_module, decl_storage, decl_event};
 use runtime_primitives::codec::Codec;
 use {system, system::ensure_signed};
 
 pub trait Trait: system::Trait {
+	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
     type PublicSigningKey : Parameter + Member + Codec + Default;
     type PublicBoxKey : Parameter + Member + Codec + Default;
 }
 
+decl_event!(
+	pub enum Event<T> where <T as system::Trait>::AccountId {
+		/// A did has been created
+		DidCreated(AccountId),
+		/// A did has been removed
+		DidRemoved(AccountId),
+	}
+);
+
 decl_module! {
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+
+		fn deposit_event<T>() = default;
 
 		pub fn add(origin, sign_key: T::PublicSigningKey, box_key: T::PublicBoxKey, doc_ref: Option<Vec<u8>>) -> Result {
 			let sender = ensure_signed(origin)?;
 			<DIDs<T>>::insert(sender.clone(), (sign_key, box_key, doc_ref));
+			Self::deposit_event(RawEvent::DidCreated(sender.clone()));
             Ok(())
 		}
 		
         pub fn remove(origin) -> Result {
 			let sender = ensure_signed(origin)?;
 			<DIDs<T>>::remove(sender.clone());
+			Self::deposit_event(RawEvent::DidRemoved(sender.clone()));
             Ok(())
 		}
 	}
@@ -70,6 +84,7 @@ mod tests {
 	}
 	
 	impl Trait for Test {
+		type Event = ();
         type PublicSigningKey = H256;
         type PublicBoxKey = H256;
 	}
@@ -83,7 +98,7 @@ mod tests {
 	#[test]
 	fn check_add_did() {
 		with_externalities(&mut new_test_ext(), || {
-			let pair = ed25519::Pair::from_seed(b"Alice                           ");
+			let pair = ed25519::Pair::from_seed(*b"Alice                           ");
 			let signing_key = H256::from_low_u64_be(1);
 			let box_key = H256::from_low_u64_be(2);
 			let account_hash = H256::from(pair.public().0);

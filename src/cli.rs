@@ -7,6 +7,7 @@ use substrate_cli::{informant, parse_and_execute, NoCustom};
 use substrate_service::{ServiceFactory, Roles as ServiceRoles};
 use crate::chain_spec;
 use std::ops::Deref;
+use log::info;
 
 /// Parse command line arguments into service configuration.
 pub fn run<I, T, E>(args: I, exit: E, version: VersionInfo) -> error::Result<()> where
@@ -65,6 +66,11 @@ fn run_until_exit<T, C, E>(
 
 	let _ = runtime.block_on(e.into_exit());
 	exit_send.fire();
+
+	// we eagerly drop the service so that the internal exit future is fired,
+	// but we need to keep holding a reference to the global telemetry guard
+	let _telemetry = service.telemetry();
+	drop(service);
 	Ok(())
 }
 
