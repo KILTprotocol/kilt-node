@@ -118,7 +118,7 @@ elif [[ "$account_name" = "Charlie" ]]; then
 fi
 
 if [[ ! -z "$account_name" ]]; then
-    arg_account_name=" --key ${account_name} --validator"
+    arg_account_name=" --key //${account_name} --validator"
     echo "Starting KILT validator node with account '${account_name}'"
 else
     echo "Starting KILT full node"
