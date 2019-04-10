@@ -7,7 +7,7 @@ phases:
     - aws --version
     - $(aws ecr get-login --region eu-central-1 --no-include-email)
     - REPOSITORY_URI=348099934012.dkr.ecr.eu-central-1.amazonaws.com/kilt/prototype-chain
-    - 'IMAGE_TAG=$(sed -n ''s/version = "\(.*\)"$/\1/p'' Cargo.toml)'
+    - IMAGE_TAG=$(cat Cargo.toml | grep version | head -1 | sed 's/[",]//g' | cut -d "=" -f2 | tr -d '[[:space:]]')
     - docker pull $REPOSITORY_URI:latest || true
   build:
     commands:
