@@ -1,6 +1,11 @@
-[profile.release]
-lto = true
-panic = 'abort'
+[workspace]
+members = []
+
+[lib]
+crate-type = ['cdylib']
+[dependencies.node-template-runtime]
+default-features = false
+path = '..'
 
 [package]
 authors = ['Parity Technologies <admin@parity.io>']
@@ -8,15 +13,9 @@ edition = '2018'
 name = 'node-template-runtime-wasm'
 version = '0.9.0'
 
-[workspace]
-members = []
-
-[lib]
-crate-type = ['cdylib']
-
 [features]
 default = []
 std = ['node-template-runtime/std']
-[dependencies.node-template-runtime]
-default-features = false
-path = '..'
+[profile.release]
+lto = true
+panic = 'abort'
