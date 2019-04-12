@@ -37,6 +37,7 @@ pub use runtime_primitives::{Permill, Perbill};
 pub use timestamp::BlockPeriod;
 pub use support::{StorageValue, construct_runtime};
 
+mod error;
 mod ctype;
 mod attestation;
 mod delegation;
@@ -213,6 +214,11 @@ impl did::Trait for Runtime {
 	type PublicBoxKey = Hash;
 }
 
+impl error::Trait for Runtime {
+	type ErrorCode = u16;
+	type Event = Event;
+}
+
 construct_runtime!(
 	pub enum Runtime with Log(InternalLog: DigestItem<Hash, AuthorityId, AuthoritySignature>) where
 		Block = Block,
@@ -230,6 +236,7 @@ construct_runtime!(
 		Attestation: attestation::{Module, Call, Storage, Event<T>},
 		Delegation: delegation::{Module, Call, Storage, Event<T>},
 		Did: did::{Module, Call, Storage, Event<T>},
+		Error: error::{ Module, Call, Event<T>},
 	}
 );
 
