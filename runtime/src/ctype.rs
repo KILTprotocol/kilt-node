@@ -44,8 +44,8 @@ decl_storage! {
 impl<T: Trait> Module<T> {
     
     pub const ERROR_BASE: u16 = 0x0100;
-    pub const ERROR_CTYPE_NOT_FOUND : error::ErrorType = (Self::ERROR_BASE + 4, "CTYPE not found");
-    pub const ERROR_CTYPE_ALREADY_EXISTS : error::ErrorType = (Self::ERROR_BASE + 4, "CTYPE already exists");
+    pub const ERROR_CTYPE_NOT_FOUND : error::ErrorType = (Self::ERROR_BASE + 1, "CTYPE not found");
+    pub const ERROR_CTYPE_ALREADY_EXISTS : error::ErrorType = (Self::ERROR_BASE + 2, "CTYPE already exists");
 
     pub fn error(error_type: error::ErrorType) -> Result {
         return <error::Module<T>>::error(error_type);
