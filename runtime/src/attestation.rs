@@ -107,7 +107,7 @@ decl_module! {
 
 impl<T: Trait> Module<T> {
 
-    const ERROR_BASE: u16 = 0x0200;
+    const ERROR_BASE: u16 = 200;
     const ERROR_ALREADY_ATTESTED : error::ErrorType = (Self::ERROR_BASE + 1, "already attested");
     const ERROR_ALREADY_REVOKED : error::ErrorType = (Self::ERROR_BASE + 2, "already revoked");
     const ERROR_ATTESTATION_NOT_FOUND : error::ErrorType = (Self::ERROR_BASE + 3, "attestation not found");
