@@ -173,7 +173,7 @@ decl_module! {
 
 impl<T: Trait> Module<T> {
     
-    pub const ERROR_BASE: u16 = 300;
+    pub const ERROR_BASE: u16 = 3000;
     pub const ERROR_ROOT_ALREADY_EXISTS : error::ErrorType = (Self::ERROR_BASE + 1, "root already exist");
     pub const ERROR_NOT_PERMITTED_TO_REVOKE : error::ErrorType = (Self::ERROR_BASE + 2, "not permitted to revoke");
     pub const ERROR_DELEGATION_NOT_FOUND : error::ErrorType = (Self::ERROR_BASE + 3, "delegation not found");
