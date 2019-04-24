@@ -2,9 +2,9 @@
 // post({sender: runtime.balances.ss58Decode('F7Gh'), call: calls.demo.setPayment(1000)}).tie(console.log)
 
 use support::{dispatch::Result, StorageMap, decl_module, decl_storage, decl_event};
-use {system, system::ensure_signed};
+use {system, system::ensure_signed, super::error};
 
-pub trait Trait: system::Trait {
+pub trait Trait: system::Trait + error::Trait {
 	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
 
@@ -22,7 +22,7 @@ decl_module! {
 
 		pub fn add(origin, hash: T::Hash) -> Result {
 			if <CTYPEs<T>>::exists(hash) {
-				return Err("CTYPE already exists")
+				return Self::error(Self::ERROR_CTYPE_ALREADY_EXISTS);
 			}
 
 			let sender = ensure_signed(origin)?;
@@ -39,6 +39,17 @@ decl_storage! {
 	trait Store for Module<T: Trait> as Ctype {
 		pub CTYPEs get(ctypes): map T::Hash => T::AccountId;
 	}
+}
+
+impl<T: Trait> Module<T> {
+    
+    pub const ERROR_BASE: u16 = 1000;
+    pub const ERROR_CTYPE_NOT_FOUND : error::ErrorType = (Self::ERROR_BASE + 1, "CTYPE not found");
+    pub const ERROR_CTYPE_ALREADY_EXISTS : error::ErrorType = (Self::ERROR_BASE + 2, "CTYPE already exists");
+
+    pub fn error(error_type: error::ErrorType) -> Result {
+        return <error::Module<T>>::error(error_type);
+    }
 }
 
 #[cfg(test)]
@@ -75,9 +86,15 @@ mod tests {
 		type Lookup = IdentityLookup<H256>;
 	}
 
+	impl error::Trait for Test {
+		type Event = ();
+        type ErrorCode = u16;
+	}
+
 	impl Trait for Test {
 		type Event = ();
 	}
+
 	type CType = Module<Test>;
 
 	fn new_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
@@ -102,7 +119,7 @@ mod tests {
 					Origin::signed(account.clone()),
 					ctype_hash.clone()
 				),
-				"CTYPE already exists"
+				CType::ERROR_CTYPE_ALREADY_EXISTS.1
 			);
 		});
 	}

@@ -1,13 +1,14 @@
 
 use rstd::result;
 use rstd::prelude::*;
-use runtime_primitives::traits::{Hash, CheckEqual, SimpleBitOps, Member, Verify, MaybeDisplay};
+use runtime_primitives::traits::{Hash, CheckEqual, SimpleBitOps, Member, Verify, MaybeDisplay };
+
 use support::{dispatch::Result, StorageMap, Parameter, decl_module, decl_storage, decl_event};
 use parity_codec::{Encode, Decode};
 use core::default::Default;
 
 use runtime_primitives::codec::Codec;
-use {system::{self, ensure_signed}, super::ctype};
+use {system::{self, ensure_signed}, super::ctype, super::error};
 use runtime_primitives::verify_encoded_lazy;
 
 
@@ -37,7 +38,7 @@ impl Default for Permissions {
     }
 }
 
-pub trait Trait: ctype::Trait + system::Trait {
+pub trait Trait: ctype::Trait + system::Trait + error::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type Signer: From<Self::AccountId> + Member + Codec;
@@ -64,18 +65,19 @@ decl_event!(
 	}
 );
 
+
 decl_module! {
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-        
+            
         fn deposit_event<T>() = default;
 
 		pub fn create_root(origin, root_id: T::DelegationNodeId, ctype_hash: T::Hash) -> Result {
 			let sender = ensure_signed(origin)?;
             if <Root<T>>::exists(root_id) {
-                return Err("root already exist")
+                return Self::error(Self::ERROR_ROOT_ALREADY_EXISTS);
             }
             if !<ctype::CTYPEs<T>>::exists(ctype_hash) {
-                return Err("CTYPE does not exist")
+                return Self::error(<ctype::Module<T>>::ERROR_CTYPE_NOT_FOUND);
             }
 
 			::runtime_io::print("insert Delegation Root");
@@ -89,15 +91,12 @@ decl_module! {
                 delegate: T::AccountId, permissions: Permissions, delegate_signature: T::Signature) -> Result {
 			let sender = ensure_signed(origin)?;
             if <Delegations<T>>::exists(delegation_id) {
-                return Err("delegation already exist")
+                return Self::error(Self::ERROR_DELEGATION_ALREADY_EXISTS);
             }
             
             let hash_root = Self::calculate_hash(delegation_id, root_id, parent_id, permissions);
             if !verify_encoded_lazy(&delegate_signature, &&hash_root, &delegate.clone().into()) {
-                // TODO: abort on signature error
-                ::runtime_io::print("Error: signature does not match, hash:");
-                T::print_hash(hash_root);
-                return Err("bad delegate signature")
+                return Self::error(Self::ERROR_BAD_DELEGATION_SIGNATURE);
             }
             
             if <Root<T>>::exists(root_id) {
@@ -107,9 +106,9 @@ decl_module! {
                         if <Delegations<T>>::exists(p) {
                             let parent = <Delegations<T>>::get(p.clone());
                             if !parent.2.eq(&sender) {
-                                return Err("not owner of parent")
+                                return Self::error(Self::ERROR_NOT_OWNER_OF_PARENT);
                             } else if (parent.3 & Permissions::DELEGATE) != Permissions::DELEGATE {
-                                return Err("not authorized to delegate")
+                                return Self::error(Self::ERROR_NOT_AUTHORIZED_TO_DELEGATE);
                             } else {
                                 // TODO: check for cycles?
                     			::runtime_io::print("insert Delegation with parent");
@@ -118,12 +117,12 @@ decl_module! {
                                 Self::add_child(delegation_id.clone(), p.clone());
                             }
                         } else {
-                            return Err("parent not found")
+                            return Self::error(Self::ERROR_PARENT_NOT_FOUND);
                         }
                     },
                     None => {
                         if !root.1.eq(&sender) {
-                            return Err("not owner of root")        
+                            return Self::error(Self::ERROR_NOT_OWNER_OF_ROOT);       
                         }
                         ::runtime_io::print("insert Delegation without parent");
                         <Delegations<T>>::insert(delegation_id.clone(), (root_id.clone(), 
@@ -132,7 +131,7 @@ decl_module! {
                     }
                 }
             } else {
-                return Err("root not found")
+                return Self::error(Self::ERROR_ROOT_NOT_FOUND);
             }
             Self::deposit_event(RawEvent::DelegationCreated(sender.clone(), delegation_id.clone(), 
                     root_id.clone(), parent_id.clone(), delegate.clone(), permissions.clone()));
@@ -142,11 +141,11 @@ decl_module! {
         pub fn revoke_root(origin, root_id: T::DelegationNodeId) -> Result {
 			let sender = ensure_signed(origin)?;
             if !<Root<T>>::exists(root_id) {
-                return Err("root not found")
+                return Self::error(Self::ERROR_ROOT_NOT_FOUND);
             }
             let mut r = <Root<T>>::get(root_id.clone());
             if !r.1.eq(&sender) {
-                return Err("not permitted to revoke")
+                return Self::error(Self::ERROR_NOT_PERMITTED_TO_REVOKE);
             }
             if !r.2 {
                 r.2 = true;
@@ -161,10 +160,10 @@ decl_module! {
         pub fn revoke_delegation(origin, delegation_id: T::DelegationNodeId) -> Result {
 			let sender = ensure_signed(origin)?;
             if !<Delegations<T>>::exists(delegation_id) {
-                return Err("delegation not found")
+                return Self::error(Self::ERROR_DELEGATION_NOT_FOUND)
             }
             if !Self::is_delegating(&sender, &delegation_id)? {
-                return Err("not permitted to revoke")
+                return Self::error(Self::ERROR_NOT_PERMITTED_TO_REVOKE)
             }
             Self::revoke(&delegation_id, &sender);
             return Ok(());
@@ -173,6 +172,22 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    
+    pub const ERROR_BASE: u16 = 3000;
+    pub const ERROR_ROOT_ALREADY_EXISTS : error::ErrorType = (Self::ERROR_BASE + 1, "root already exist");
+    pub const ERROR_NOT_PERMITTED_TO_REVOKE : error::ErrorType = (Self::ERROR_BASE + 2, "not permitted to revoke");
+    pub const ERROR_DELEGATION_NOT_FOUND : error::ErrorType = (Self::ERROR_BASE + 3, "delegation not found");
+    pub const ERROR_DELEGATION_ALREADY_EXISTS : error::ErrorType = (Self::ERROR_BASE + 4, "delegation already exist");
+    pub const ERROR_BAD_DELEGATION_SIGNATURE : error::ErrorType = (Self::ERROR_BASE + 5, "bad delegate signature");
+    pub const ERROR_NOT_OWNER_OF_PARENT : error::ErrorType = (Self::ERROR_BASE + 6, "not owner of parent");
+    pub const ERROR_NOT_AUTHORIZED_TO_DELEGATE : error::ErrorType = (Self::ERROR_BASE + 7, "not authorized to delegate");
+    pub const ERROR_PARENT_NOT_FOUND : error::ErrorType = (Self::ERROR_BASE + 8, "parent not found");
+    pub const ERROR_NOT_OWNER_OF_ROOT : error::ErrorType = (Self::ERROR_BASE + 9, "not owner of root");
+    pub const ERROR_ROOT_NOT_FOUND : error::ErrorType = (Self::ERROR_BASE + 10, "root not found");
+
+    pub fn error(error_type: error::ErrorType) -> Result {
+        return <error::Module<T>>::error(error_type);
+    }
 
     pub fn calculate_hash(delegation_id: T::DelegationNodeId, 
                 root_id: T::DelegationNodeId, parent_id: Option<T::DelegationNodeId>, 
@@ -190,7 +205,7 @@ impl<T: Trait> Module<T> {
 
     pub fn is_delegating(account: &T::AccountId, delegation: &T::DelegationNodeId) -> result::Result<bool, &'static str> {
         if !<Delegations<T>>::exists(delegation) {
-            return Err("delegation not found")
+            Self::error(Self::ERROR_DELEGATION_NOT_FOUND)?
         }
         let d = <Delegations<T>>::get(delegation);
         if d.2.eq(account) {
@@ -247,7 +262,6 @@ decl_storage! {
 }
 
 
-
 #[cfg(test)]
 mod tests {
 	use super::*;
@@ -286,6 +300,11 @@ mod tests {
 		type Event = ();
 	}
 
+    impl error::Trait for Test {
+        type Event = ();
+        type ErrorCode = u16;
+    }
+
 	impl Trait for Test {
         type Event = ();
 		type Signature = x25519::Signature;
@@ -297,7 +316,7 @@ mod tests {
 	    }
 	}
 
-	type Ctype = ctype::Module<Test>;
+	type CType = ctype::Module<Test>;
     type Delegation = Module<Test>;
 
 	fn hash_to_u8<T : Encode> (hash : T) -> Vec<u8>{
@@ -325,13 +344,13 @@ mod tests {
 			let id_level_2_2 = H256::from_low_u64_be(22);
 			let id_level_2_2_1 = H256::from_low_u64_be(221);
 
-			assert_ok!(Ctype::add(Origin::signed(account_hash_alice.clone()), ctype_hash.clone()));
+			assert_ok!(CType::add(Origin::signed(account_hash_alice.clone()), ctype_hash.clone()));
 
 			assert_ok!(Delegation::create_root(Origin::signed(account_hash_alice.clone()), id_level_0.clone(), ctype_hash.clone()));
 			assert_err!(Delegation::create_root(Origin::signed(account_hash_alice.clone()), id_level_0.clone(), ctype_hash.clone()),
-                "root already exist");
+                Delegation::ERROR_ROOT_ALREADY_EXISTS.1);
 			assert_err!(Delegation::create_root(Origin::signed(account_hash_alice.clone()), id_level_1.clone(), H256::from_low_u64_be(2)),
-                "CTYPE does not exist");
+                CType::ERROR_CTYPE_NOT_FOUND.1);
 
 			assert_ok!(Delegation::add_delegation(Origin::signed(account_hash_alice.clone()), id_level_1.clone(), id_level_0.clone(), 
                 None, account_hash_bob.clone(), Permissions::DELEGATE, 
@@ -341,20 +360,20 @@ mod tests {
                 None, account_hash_bob.clone(), Permissions::DELEGATE, 
                 x25519::Signature::from(pair_bob.sign(&hash_to_u8(
                     Delegation::calculate_hash(id_level_1.clone(), id_level_0.clone(), None, Permissions::DELEGATE))))),
-                "delegation already exist");
+                Delegation::ERROR_DELEGATION_ALREADY_EXISTS.1);
             assert_err!(Delegation::add_delegation(Origin::signed(account_hash_bob.clone()), id_level_2_1.clone(), id_level_0.clone(), 
                 Some(id_level_1.clone()), account_hash_charlie.clone(), Permissions::ATTEST, x25519::Signature::from_h512(H512::from_low_u64_be(0))),
-                "bad delegate signature");
+                Delegation::ERROR_BAD_DELEGATION_SIGNATURE.1);
 			assert_err!(Delegation::add_delegation(Origin::signed(account_hash_charlie.clone()), id_level_2_1.clone(), id_level_0.clone(), 
                 None, account_hash_bob.clone(), Permissions::DELEGATE, 
                 x25519::Signature::from(pair_bob.sign(&hash_to_u8(
                     Delegation::calculate_hash(id_level_2_1.clone(), id_level_0.clone(), None, Permissions::DELEGATE))))),
-                "not owner of root");
+                Delegation::ERROR_NOT_OWNER_OF_ROOT.1);
 			assert_err!(Delegation::add_delegation(Origin::signed(account_hash_alice.clone()), id_level_2_1.clone(), id_level_1.clone(), 
                 None, account_hash_bob.clone(), Permissions::DELEGATE, 
                 x25519::Signature::from(pair_bob.sign(&hash_to_u8(
                     Delegation::calculate_hash(id_level_2_1.clone(), id_level_1.clone(), None, Permissions::DELEGATE))))),
-                "root not found");
+                Delegation::ERROR_ROOT_NOT_FOUND.1);
 
 
 			assert_ok!(Delegation::add_delegation(Origin::signed(account_hash_bob.clone()), id_level_2_1.clone(), id_level_0.clone(), 
@@ -365,17 +384,17 @@ mod tests {
                 Some(id_level_1.clone()), account_hash_charlie.clone(), Permissions::ATTEST, 
                 x25519::Signature::from(pair_charlie.sign(&hash_to_u8(
                     Delegation::calculate_hash(id_level_2_2.clone(), id_level_0.clone(), Some(id_level_1.clone()), Permissions::ATTEST))))),
-                "not owner of parent");
+                Delegation::ERROR_NOT_OWNER_OF_PARENT.1);
             assert_err!(Delegation::add_delegation(Origin::signed(account_hash_charlie.clone()), id_level_2_2.clone(), id_level_0.clone(), 
                 Some(id_level_2_1.clone()), account_hash_alice.clone(), Permissions::ATTEST, 
                 x25519::Signature::from(pair_alice.sign(&hash_to_u8(
                     Delegation::calculate_hash(id_level_2_2.clone(), id_level_0.clone(), Some(id_level_2_1.clone()), Permissions::ATTEST))))),
-                "not authorized to delegate");
+                Delegation::ERROR_NOT_AUTHORIZED_TO_DELEGATE.1);
             assert_err!(Delegation::add_delegation(Origin::signed(account_hash_bob.clone()), id_level_2_2.clone(), id_level_0.clone(), 
                 Some(id_level_0.clone()), account_hash_charlie.clone(), Permissions::ATTEST, 
                 x25519::Signature::from(pair_charlie.sign(&hash_to_u8(
                     Delegation::calculate_hash(id_level_2_2.clone(), id_level_0.clone(), Some(id_level_0.clone()), Permissions::ATTEST))))),
-                "parent not found");
+                Delegation::ERROR_PARENT_NOT_FOUND.1);
 			
             assert_ok!(Delegation::add_delegation(Origin::signed(account_hash_bob.clone()), id_level_2_2.clone(), id_level_0.clone(), 
                 Some(id_level_1.clone()), account_hash_charlie.clone(), Permissions::ATTEST | Permissions::DELEGATE, 
@@ -419,21 +438,21 @@ mod tests {
             assert_eq!(Delegation::is_delegating(&account_hash_bob, &id_level_2_1), Ok(true));
             assert_eq!(Delegation::is_delegating(&account_hash_charlie, &id_level_2_1), Ok(true));
             assert_eq!(Delegation::is_delegating(&account_hash_charlie, &id_level_1), Ok(false));
-            assert_eq!(Delegation::is_delegating(&account_hash_charlie, &id_level_0), Err("delegation not found"));
+            assert_err!(Delegation::is_delegating(&account_hash_charlie, &id_level_0), Delegation::ERROR_DELEGATION_NOT_FOUND.1);
 
             assert_err!(Delegation::revoke_delegation(Origin::signed(account_hash_charlie.clone()), H256::from_low_u64_be(999)),
-                "delegation not found");
+                Delegation::ERROR_DELEGATION_NOT_FOUND.1);
             assert_err!(Delegation::revoke_delegation(Origin::signed(account_hash_charlie.clone()), id_level_1.clone()),
-                "not permitted to revoke");
+                Delegation::ERROR_NOT_PERMITTED_TO_REVOKE.1);
             assert_ok!(Delegation::revoke_delegation(Origin::signed(account_hash_charlie.clone()), id_level_2_2.clone()));
             
 			assert_eq!(Delegation::delegation(id_level_2_2.clone()).4, true);
 			assert_eq!(Delegation::delegation(id_level_2_2_1.clone()).4, true);
 
             assert_err!(Delegation::revoke_root(Origin::signed(account_hash_bob.clone()), H256::from_low_u64_be(999)),
-                "root not found");
+                Delegation::ERROR_ROOT_NOT_FOUND.1);
             assert_err!(Delegation::revoke_root(Origin::signed(account_hash_bob.clone()), id_level_0.clone()),
-                "not permitted to revoke");
+                Delegation::ERROR_NOT_PERMITTED_TO_REVOKE.1);
             assert_ok!(Delegation::revoke_root(Origin::signed(account_hash_alice.clone()), id_level_0.clone()));
             
 			assert_eq!(Delegation::root(id_level_0.clone()).2, true);
