@@ -1,4 +1,4 @@
-//! The Substrate Node Template runtime. This can be compiled with `#[no_std]`, ready for Wasm.
+//! The KILT runtime. This can be compiled with `#[no_std]`, ready for Wasm.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(not(feature = "std"), feature(alloc))]
@@ -188,37 +188,40 @@ impl sudo::Trait for Runtime {
 }
 
 impl attestation::Trait for Runtime {
+	/// The uniquitous event type.
 	type Event = Event;
 }
 
 impl ctype::Trait for Runtime {
+	/// The uniquitous event type.
 	type Event = Event;
 }
 
 impl delegation::Trait for Runtime {
+	/// The uniquitous event type.
 	type Event = Event;
 	type Signer = AccountId;
 	type Signature = AccountSignature;
 	type DelegationNodeId = Hash;
-
-	fn print_hash(hash: Hash) {
-		::runtime_io::print(&hash.as_bytes()[..]);
-	}
-
 }
 
 impl did::Trait for Runtime {
 	/// The uniquitous event type.
 	type Event = Event;
+	/// Type for the public signing key in DIDs
 	type PublicSigningKey = Hash;
+	/// Type for the public boxing key in DIDs
 	type PublicBoxKey = Hash;
 }
 
 impl error::Trait for Runtime {
+	/// Error code type
 	type ErrorCode = u16;
+	/// The uniquitous event type.
 	type Event = Event;
 }
 
+// Construct the runtime
 construct_runtime!(
 	pub enum Runtime with Log(InternalLog: DigestItem<Hash, AuthorityId, AuthoritySignature>) where
 		Block = Block,

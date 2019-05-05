@@ -1,0 +1,75 @@
+
+//! CTYPE: Handles CTYPEs on chain,
+//! adding CTYPEs.
+
+/// Test module for CTYPEs
+#[cfg(test)]
+mod tests;
+
+use support::{dispatch::Result, StorageMap, decl_module, decl_storage, decl_event};
+use {system, system::ensure_signed, super::error};
+
+/// The CTYPE trait
+pub trait Trait: system::Trait + error::Trait {
+	/// CTYPE specific event type
+	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+}
+
+decl_event!(
+	/// Events for CTYPEs
+	pub enum Event<T> where <T as system::Trait>::AccountId, <T as system::Trait>::Hash {
+		/// A CTYPE has been added
+		CTypeCreated(AccountId, Hash),
+	}
+);
+
+decl_module! {
+	/// The CTYPE runtime module
+	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+
+		/// Deposit events
+		fn deposit_event<T>() = default;
+
+		/// Adds a CTYPE on chain, where
+		/// origin - the origin of the transaction
+		/// hash - hash of the CTYPE of the claim
+		pub fn add(origin, hash: T::Hash) -> Result {
+			// origin of the transaction needs to be a signed sender account
+			let sender = ensure_signed(origin)?;
+
+			// check if CTYPE already exists
+			if <CTYPEs<T>>::exists(hash) {
+				return Self::error(Self::ERROR_CTYPE_ALREADY_EXISTS);
+			}
+
+			// add CTYPE to storage
+			::runtime_io::print("insert CTYPE");
+			<CTYPEs<T>>::insert(hash.clone(), sender.clone());
+			// deposit event that the CTYPE has been added
+			Self::deposit_event(RawEvent::CTypeCreated(sender.clone(), hash.clone()));
+			Ok(())
+		}
+
+	}
+}
+
+decl_storage! {
+	trait Store for Module<T: Trait> as Ctype {
+		// CTYPEs: ctype-hash -> account-id
+		pub CTYPEs get(ctypes): map T::Hash => T::AccountId;
+	}
+}
+
+/// Implementation of further module constants and functions for CTYPEs
+impl<T: Trait> Module<T> {
+    
+	/// Error types for errors in CTYPE module
+    pub const ERROR_BASE: u16 = 1000;
+    pub const ERROR_CTYPE_NOT_FOUND : error::ErrorType = (Self::ERROR_BASE + 1, "CTYPE not found");
+    pub const ERROR_CTYPE_ALREADY_EXISTS : error::ErrorType = (Self::ERROR_BASE + 2, "CTYPE already exists");
+
+	/// Create an error using the error module
+    pub fn error(error_type: error::ErrorType) -> Result {
+        return <error::Module<T>>::error(error_type);
+    }
+}
