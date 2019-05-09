@@ -36,6 +36,10 @@ fn account_key(s: &str) -> AccountId {
 		.public()
 }
 
+fn public_key(s: &str) -> AccountId {
+	x25519::Public::from_raw(hex!(s))
+}
+
 impl Alternative {
 	/// Get an actual chain config from one of the alternatives.
 	pub(crate) fn load(self) -> Result<ChainSpec, String> {
@@ -46,7 +50,10 @@ impl Alternative {
 				|| testnet_genesis(vec![
 					authority_key("Alice")
 				], vec![
-					account_key("Alice")
+					// Faucet accounts
+					public_key("3ba6e1019a22234a9349eb1d76e02f74fecff31da60a0c8fc1e74a4a3a32b925"),
+					public_key("b7f202703a34a034571696f51e95047417956337c596c889bd4d3c1e162310b6"),
+					public_key("5895c421d0fde063e0758610896453aec306f09081cb2caed9649865728e670a")
 				],
 					account_key("Alice")
 				),
@@ -64,12 +71,10 @@ impl Alternative {
 					authority_key("Bob"),
 					authority_key("Charlie"),
 				], vec![
-					account_key("Alice"),
-					account_key("Bob"),
-					account_key("Charlie"),
-					account_key("Dave"),
-					account_key("Eve"),
-					account_key("Ferdie"),
+					// Faucet accounts
+					public_key("3ba6e1019a22234a9349eb1d76e02f74fecff31da60a0c8fc1e74a4a3a32b925"),
+					public_key("b7f202703a34a034571696f51e95047417956337c596c889bd4d3c1e162310b6"),
+					public_key("5895c421d0fde063e0758610896453aec306f09081cb2caed9649865728e670a")
 				],
 					account_key("Alice"),
 				),
