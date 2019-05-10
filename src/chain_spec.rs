@@ -1,11 +1,11 @@
-use primitives::{ed25519, ed25519 as x25519, Pair};
 use node_template_runtime::{
-	AccountId, GenesisConfig, ConsensusConfig, TimestampConfig, BalancesConfig,
-	SudoConfig, IndicesConfig,
+    AccountId, BalancesConfig, ConsensusConfig, GenesisConfig, IndicesConfig,
+    SudoConfig, TimestampConfig,
 };
 use substrate_service;
 
 use ed25519::Public as AuthorityId;
+use primitives::{ed25519, ed25519 as x25519, Pair};
 
 // Note this is the URL for the telemetry server
 //const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -18,77 +18,76 @@ pub type ChainSpec = substrate_service::ChainSpec<GenesisConfig>;
 /// from a string (`--chain=...`) into a `ChainSpec`.
 #[derive(Clone, Debug)]
 pub enum Alternative {
-	/// Whatever the current runtime is, with just Alice as an auth.
-	Development,
-	/// Whatever the current runtime is, with simple Alice/Bob auths.
-	KiltTestnet,
+    /// Whatever the current runtime is, with just Alice as an auth.
+    Development,
+    /// Whatever the current runtime is, with simple Alice/Bob auths.
+    KiltTestnet,
 }
 
 fn authority_key(s: &str) -> AuthorityId {
-	ed25519::Pair::from_string(&format!("//{}", s), None)
-		.expect("static values are valid; qed")
-		.public()
+    ed25519::Pair::from_string(&format!("//{}", s), None)
+        .expect("static values are valid; qed")
+        .public()
 }
 
 fn account_key(s: &str) -> AccountId {
-	x25519::Pair::from_string(&format!("//{}", s), None)
-		.expect("static values are valid; qed")
-		.public()
+    x25519::Pair::from_string(&format!("//{}", s), None)
+        .expect("static values are valid; qed")
+        .public()
 }
 
 impl Alternative {
-	/// Get an actual chain config from one of the alternatives.
-	pub(crate) fn load(self) -> Result<ChainSpec, String> {
-		Ok(match self {
-			Alternative::Development => ChainSpec::from_genesis(
-				"Development",
-				"development",
-				|| testnet_genesis(vec![
-					authority_key("Alice")
-				], vec![
-					account_key("Alice")
-				],
-					account_key("Alice")
-				),
-				vec![],
-				None,
-				None,
-				None,
-				None
-			),
-			Alternative::KiltTestnet => ChainSpec::from_genesis(
-				"KILT Testnet",
-				"kilt_testnet",
-				|| testnet_genesis(vec![
-					authority_key("Alice"),
-					authority_key("Bob"),
-					authority_key("Charlie"),
-				], vec![
-					account_key("Alice"),
-					account_key("Bob"),
-					account_key("Charlie"),
-					account_key("Dave"),
-					account_key("Eve"),
-					account_key("Ferdie"),
-				],
-					account_key("Alice"),
-				),
-				vec![],
-				None,
-				None,
-				None,
-				None
-			),
-		})
-	}
+    /// Get an actual chain config from one of the alternatives.
+    pub(crate) fn load(self) -> Result<ChainSpec, String> {
+        Ok(match self {
+            Alternative::Development => ChainSpec::from_genesis(
+                "Development",
+                "development",
+                || testnet_genesis(vec![
+                    authority_key("Alice")
+                ], vec![
+                    // Dev Faucet accounts
+                    x25519::Public::from_raw(hex!("edd46b726279b53ea67dee9eeca1d8193de4d78e7e729a6d11a8dea59905f95e"))
+                ],
+                                   account_key("Alice"),
+                ),
+                vec![],
+                None,
+                None,
+                None,
+                None,
+            ),
+            Alternative::KiltTestnet => ChainSpec::from_genesis(
+                "KILT Testnet",
+                "kilt_testnet",
+                || testnet_genesis(vec![
+                    authority_key("Alice"),
+                    authority_key("Bob"),
+                    authority_key("Charlie"),
+                ], vec![
+                    // Testnet Faucet accounts
+                    x25519::Public::from_raw(hex!("3ba6e1019a22234a9349eb1d76e02f74fecff31da60a0c8fc1e74a4a3a32b925")),
+                    x25519::Public::from_raw(hex!("b7f202703a34a034571696f51e95047417956337c596c889bd4d3c1e162310b6")),
+                    x25519::Public::from_raw(hex!("5895c421d0fde063e0758610896453aec306f09081cb2caed9649865728e670a"))
+                ],
+                                   account_key("Alice"),
+                ),
+                vec![],
+                None,
+                None,
+                None,
+                None,
+            ),
+        })
+    }
 
-	pub(crate) fn from(s: &str) -> Option<Self> {
-		match s {
-			"dev" => Some(Alternative::Development),
-			"kilt-testnet" => Some(Alternative::KiltTestnet),
-			_ => None,
-		}
-	}
+    pub(crate) fn from(s: &str) -> Option<Self> {
+        match s {
+            "dev" => Some(Alternative::Development),
+            "kilt-testnet" => Some(Alternative::KiltTestnet),
+            _ => None,
+        }
+    }
 }
 
 fn testnet_genesis(initial_authorities: Vec<AuthorityId>, endowed_accounts: Vec<AccountId>, root_key: AccountId) -> GenesisConfig {
