@@ -46,10 +46,8 @@ impl Alternative {
                 || testnet_genesis(vec![
                     authority_key("Alice")
                 ], vec![
-                    // Faucet accounts
-                    x25519::Public::from_raw(hex!("3ba6e1019a22234a9349eb1d76e02f74fecff31da60a0c8fc1e74a4a3a32b925")),
-                    x25519::Public::from_raw(hex!("b7f202703a34a034571696f51e95047417956337c596c889bd4d3c1e162310b6")),
-                    x25519::Public::from_raw(hex!("5895c421d0fde063e0758610896453aec306f09081cb2caed9649865728e670a"))
+                    // Dev Faucet accounts
+                    x25519::Public::from_raw(hex!("edd46b726279b53ea67dee9eeca1d8193de4d78e7e729a6d11a8dea59905f95e"))
                 ],
                                    account_key("Alice"),
                 ),
@@ -67,7 +65,7 @@ impl Alternative {
                     authority_key("Bob"),
                     authority_key("Charlie"),
                 ], vec![
-                    // Faucet accounts
+                    // Testnet Faucet accounts
                     x25519::Public::from_raw(hex!("3ba6e1019a22234a9349eb1d76e02f74fecff31da60a0c8fc1e74a4a3a32b925")),
                     x25519::Public::from_raw(hex!("b7f202703a34a034571696f51e95047417956337c596c889bd4d3c1e162310b6")),
                     x25519::Public::from_raw(hex!("5895c421d0fde063e0758610896453aec306f09081cb2caed9649865728e670a"))
