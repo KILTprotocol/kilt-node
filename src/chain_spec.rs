@@ -46,7 +46,8 @@ impl Alternative {
                 || testnet_genesis(vec![
                     authority_key("Alice")
                 ], vec![
-                    // Dev Faucet accounts
+                    // Dev Faucet account
+                    // Seed phrase: "receive clutch item involve chaos clutch furnace arrest claw isolate okay together"
                     x25519::Public::from_raw(hex!("edd46b726279b53ea67dee9eeca1d8193de4d78e7e729a6d11a8dea59905f95e"))
                 ],
                                    account_key("Alice"),
