@@ -152,10 +152,11 @@ if [[ "$telemetry" = "1" ]]; then
 fi
 
 if [[ "$purge_userdata" = "1" ]]; then
-    echo "Purging user data in services..."
-    curl -X DELETE http://services.kilt-prototype.tk:3000/ctype
-    curl -X DELETE http://services.kilt-prototype.tk:3000/messaging
-    curl -X DELETE http://services.kilt-prototype.tk:3000/contacts
+    echo "Purging user data in services (SERVICES_SECRET=${SERVICES_SECRET})..."
+
+    curl -X DELETE -H "Authorization: ${SERVICES_SECRET}" https://services.kilt.io/ctype
+    curl -X DELETE -H "Authorization: ${SERVICES_SECRET}" https://services.kilt.io/messaging
+    curl -X DELETE -H "Authorization: ${SERVICES_SECRET}" https://services.kilt.io/contacts
 fi
 
 if [[ "$rpc" = "1" ]]; then
