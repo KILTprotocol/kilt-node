@@ -83,7 +83,7 @@ while [[ "$1" != "" ]]; do
                                 ;;
         -t | --telemetry )      telemetry=1
                                 ;;
-        -v | --validator )      validator=$1
+        -v | --validator )      validator=1
                                 ;;          
         -p | --purge-userdata ) purge_userdata=1
                                 ;;
@@ -114,7 +114,7 @@ if [[ ! -z "$NODE_KEY" ]]; then
 fi
 
 # NODE_SEED = The seed for the validator account to be used. Has to be combined with NODE_KEY
-if [[ ! -z "$validator" ]]; then
+if [[ "$validator" = "1" ]]; then
     arg_validator=" --key ${NODE_SEED} --validator"
     echo "Starting KILT validator node"
 else
