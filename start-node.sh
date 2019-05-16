@@ -5,12 +5,9 @@
 ##### Constants
 
 CHAIN_NAME="kilt-testnet"
-ALICE_BOOT_NODE_KEY=0000000000000000000000000000000000000000000000000000000000000001
-ALICE_BOOT_NODE_KEY_HASH=QmQZ8TjTqeDj3ciwr93EJ95hxfDsb9pEYDizUAbWpigtQN
-BOB_BOOT_NODE_KEY=0000000000000000000000000000000000000000000000000000000000000002
-BOB_BOOT_NODE_KEY_HASH=QmXiB3jqqn2rpiKU7k1h7NJYeBg8WNSx9DiTRKz9ti2KSK
-CHARLIE_BOOT_NODE_KEY=0000000000000000000000000000000000000000000000000000000000000003
-CHARLIE_BOOT_NODE_KEY_HASH=QmYcHeEWuqtr6Gb5EbK7zEhnaCm5p6vA2kWcVjFKbhApaC
+ALICE_BOOT_NODE_HASH=Qmf9Vcxjf5woQP9Znv7xnahCLbA6vXFm8PfnqWcDGgr4Ve
+BOB_BOOT_NODE_HASH=QmTKngF1X4Zawh5Zi5sUq6F6o1NQbTPFnrXY8QpfpnkstH
+CHARLIE_BOOT_NODE_HASH=QmW2U3aNywuG9S2z16HYKJWe83LDSxsiaavBummT2dJh8J
 TELEMETRY_URL=ws://telemetry-backend.kilt-prototype.tk:1024
 
 ##### Functions
@@ -19,15 +16,15 @@ lookup_boot_node() {
     node=$1
     boot_node_domain="bootnode-${node}.kilt-prototype.tk"
     echo "Performing lookup for boot node ${boot_node_domain}"
-    if [[ "$node" = "Alice" ]]; then
+    if [[ "$node" = "alice" ]]; then
         alice_boot_node_ip=`dig ${boot_node_domain} A +short`
-        boot_node_ipfs="$boot_node_ipfs /ip4/${alice_boot_node_ip}/tcp/30333/p2p/${ALICE_BOOT_NODE_KEY_HASH}"
-    elif [[ "$node" = "Bob" ]]; then
+        boot_node_ipfs="$boot_node_ipfs /ip4/${alice_boot_node_ip}/tcp/30333/p2p/${ALICE_BOOT_NODE_HASH}"
+    elif [[ "$node" = "bob" ]]; then
         bob_boot_node_ip=`dig ${boot_node_domain} A +short`
-        boot_node_ipfs="$boot_node_ipfs /ip4/${bob_boot_node_ip}/tcp/30333/p2p/${BOB_BOOT_NODE_KEY_HASH}"
-    elif [[ "$node" = "Charlie" ]]; then
+        boot_node_ipfs="$boot_node_ipfs /ip4/${bob_boot_node_ip}/tcp/30333/p2p/${BOB_BOOT_NODE_HASH}"
+    elif [[ "$node" = "charlie" ]]; then
         charlie_boot_node_ip=`dig ${boot_node_domain} A +short`
-        boot_node_ipfs="$boot_node_ipfs /ip4/${charlie_boot_node_ip}/tcp/30333/p2p/${CHARLIE_BOOT_NODE_KEY_HASH}"
+        boot_node_ipfs="$boot_node_ipfs /ip4/${charlie_boot_node_ip}/tcp/30333/p2p/${CHARLIE_BOOT_NODE_HASH}"
     fi
 }
 
@@ -37,25 +34,27 @@ usage()
 {
 cat <<HELP_USAGE
 Usage:
-  $0  -a <account-name> [...]
+  $0 [...]
 
-  If you want to start a boot node, just use "Alice" or "Bob" as account name.
+  If you want to start a full node, you just have to provide "alice", "bob" and/or "charlie" to connect to the boot nodes.
 
-  -a, --account-name ACCOUNT_NAME   The name of the account to start the node with (Alice | Bob | Charlie).
-  -n, --node-name NODE_NAME    The arbitrary name of the node (e.g. "charly-node-1234")
-  -c, --connect-to BOOT_NODE_NAME  The names of the boot nodes to connect to, separated with a comma ("alice" | "bob" | "Charlie")
-  -d, --dry-run Flag indicating to only show the resulting command instead of executing it
-  -t, --telemetry Flag indicating whether or not to send data to the telemetry server
-  -p, --purge-userdata Purges all chain-dependend user data in auxiliary services (ctypes, contacts, messages, ...)
-  -r, --rpc Whether to activate rpc
+  -c, --connect-to BOOT_NODE_NAME   The names of the boot nodes to connect to, separated with a comma
+                                    ["alice" | "bob" | "charlie"]
+  -n, --node-name NODE_NAME         The arbitrary name of the node (e.g. "charly-node-1234")
+  -d, --dry-run                     Flag indicating to only show the resulting command instead of executing it
+  -t, --telemetry                   Flag indicating whether or not to send data to the telemetry server
+  -r, --rpc                         Whether to activate rpc
+  -v, --validator                   Whether the node should be a validator. Needs NODE_SEED and NODE_KEY environment variables.
+  -p, --purge-userdata              Purges all chain-dependend user data in auxiliary services (ctypes, contacts, messages, ...). 
+                                    Needs SERVICES_SECRET environment variable.
 
   Examples:
 
-  Start Alice (boot node) and purge all user data in services components:
-  ./start-node.sh -a Alice -p
+  Start full node
+  ./start-node.sh
 
-  Start Bob (boot node) that connects to Alice:
-  ./start-node.sh -a Bob -c Alice
+  Start full node that connects to Alice boot node:
+  ./start-node.sh -c Alice
 
   Start full node that connects to Alice and Bob and exposes an rpc endpoint:
   ./start-node.sh -c Alice,Bob -n charly-node-123 --rpc
@@ -72,12 +71,10 @@ telemetry=0
 purge_userdata=0
 dry_run=0
 rpc=0
+validator=0
 
 while [[ "$1" != "" ]]; do
     case $1 in
-        -a | --account-name )   shift
-                                account_name=$1
-                                ;;
         -n | --node-name )      shift
                                 node_name=$1
                                 ;;
@@ -86,6 +83,8 @@ while [[ "$1" != "" ]]; do
                                 ;;
         -t | --telemetry )      telemetry=1
                                 ;;
+        -v | --validator )      validator=$1
+                                ;;          
         -p | --purge-userdata ) purge_userdata=1
                                 ;;
         -d | --dry-run )        dry_run=1
@@ -106,20 +105,18 @@ arg_boot_node_connect=
 arg_node_key=
 arg_node_name=
 arg_telemetry=
-arg_account_name=
+arg_validator=
 arg_rpc=
 
-if [[ "$account_name" = "Alice" ]]; then
-    arg_node_key=" --node-key ${ALICE_BOOT_NODE_KEY}"
-elif [[ "$account_name" = "Bob" ]]; then
-    arg_node_key=" --node-key ${BOB_BOOT_NODE_KEY}"
-elif [[ "$account_name" = "Charlie" ]]; then
-    arg_node_key=" --node-key ${CHARLIE_BOOT_NODE_KEY}"
+# NODE_KEY = The hex-encoded ed25519 key used for libp2p networking.
+if [[ ! -z "$NODE_KEY" ]]; then
+    arg_node_key=" --node-key ${NODE_KEY}"
 fi
 
-if [[ ! -z "$account_name" ]]; then
-    arg_account_name=" --key //${account_name} --validator"
-    echo "Starting KILT validator node with account '${account_name}'"
+# NODE_SEED = The seed for the validator account to be used. Has to be combined with NODE_KEY
+if [[ ! -z "$validator" ]]; then
+    arg_validator=" --key ${NODE_SEED} --validator"
+    echo "Starting KILT validator node"
 else
     echo "Starting KILT full node"
 fi
@@ -163,7 +160,7 @@ if [[ "$rpc" = "1" ]]; then
     arg_rpc=" --ws-port 9944 --ws-external --rpc-external"
 fi
 
-command="./target/debug/node --chain ${CHAIN_NAME} --port 30333${arg_rpc}${arg_account_name}${arg_node_key}${arg_boot_node_connect}${arg_node_name}${arg_telemetry}"
+command="./target/debug/node --chain ${CHAIN_NAME} --port 30333${arg_rpc}${arg_validator}${arg_node_key}${arg_boot_node_connect}${arg_node_name}${arg_telemetry}"
 
 if [[ "$dry_run" = "1" ]]; then
     echo "Dry run."

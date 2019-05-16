@@ -70,7 +70,7 @@ impl Alternative {
                     // Seed phrase: "receive clutch item involve chaos clutch furnace arrest claw isolate okay together"
                     x25519::Public::from_raw(hex!("edd46b726279b53ea67dee9eeca1d8193de4d78e7e729a6d11a8dea59905f95e"))
                 ],
-                                   account_key("Alice"),
+                    account_key("Alice"),
                 ),
                 vec![],
                 None,
@@ -82,16 +82,16 @@ impl Alternative {
                 "KILT Testnet",
                 "kilt_testnet",
                 || testnet_genesis(vec![
-                    authority_key("Alice"),
-                    authority_key("Bob"),
-                    authority_key("Charlie"),
+                    x25519::Public::from_raw(hex!("58d3bb9e9dd245f3dec8d8fab7b97578c00a10cf3ca9d224caaa46456f91c46c")),
+                    x25519::Public::from_raw(hex!("d660b4470a954ecc99496d4e4b012ee9acac3979e403967ef09de20da9bdeb28")),
+                    x25519::Public::from_raw(hex!("2ecb6a4ce4d9bc0faab70441f20603fcd443d6d866e97c9e238a2fb3e982ae2f")),
                 ], vec![
                     // Testnet Faucet accounts
                     x25519::Public::from_raw(hex!("3ba6e1019a22234a9349eb1d76e02f74fecff31da60a0c8fc1e74a4a3a32b925")),
                     x25519::Public::from_raw(hex!("b7f202703a34a034571696f51e95047417956337c596c889bd4d3c1e162310b6")),
                     x25519::Public::from_raw(hex!("5895c421d0fde063e0758610896453aec306f09081cb2caed9649865728e670a"))
                 ],
-                                   account_key("Alice"),
+                    x25519::Public::from_raw(hex!("58d3bb9e9dd245f3dec8d8fab7b97578c00a10cf3ca9d224caaa46456f91c46c")),
                 ),
                 vec![],
                 None,
