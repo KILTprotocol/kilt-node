@@ -43,6 +43,12 @@ You also need to have your docker daemon system running (on mac, just download a
  $(aws ecr get-login --no-include-email --region eu-central-1)
 ```
 
+Copy displayed command string and execute to login
+```
+docker login -u AWS -p <hashpassword>
+```
+
+
 2. Pull the latest image from Amazon ECR
 
 ```
