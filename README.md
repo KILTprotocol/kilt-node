@@ -71,6 +71,9 @@ The node should be connected to the KILT testnet.
 # build docker image (only do if code has changed, takes ~15 min)
 docker build -t prototype-chain .
 
-# run chain in dev mode locally
+# run chain in dev mode locally after building docker image
 docker run -p 9944:9944 prototype-chain ./target/debug/node --dev --ws-port 9944 --ws-external --rpc-external
+
+# run chain in dev mode locall with AWS Image
+docker run -p 9944:9944 348099934012.dkr.ecr.eu-central-1.amazonaws.com/kilt/prototype-chain ./target/debug/node --dev --ws-port 9944 --ws-external --rpc-external
 ```
