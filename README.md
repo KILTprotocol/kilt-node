@@ -4,6 +4,33 @@
 
 Substrate node implementation for the KILT prototype
 
+## Table of Contents
+- [How to use TLDR](#how-to-use-tldr)
+- [How to use](#how-to-use)
+- [Building / Images](#building--images)
+  - [Dockerhub](#dockerhub)
+  - [Building docker image](#building-docker-image)
+  - [Build code without docker](#build-code-without-docker)
+- [Commands](#commands)
+  - [Helper script](#helper-script)
+  - [Node binary](#node-binary)
+- [Examples](#examples)
+  - [Running a local node that connects to KILT prototype testnet in AWS](#running-a-local-node-that-connects-to-kilt-prototype-testnet-in-aws)
+  - [Running a node with local image, which runs a dev-chain](#running-a-node-with-local-image-which-runs-a-dev-chain)
+- [Development with AWS images](#development-with-aws-images)
+- [Updating with latest substrate-node-template](#updating-with-latest-substrate-node-template)
+
+## How to use TLDR
+Start chain and connect to alice bootnode:
+```
+docker run -p 9944:9944 kiltprotocol/mashnet-node ./start-node.sh --connect-to alice
+```
+
+Start dev chain for local development
+```
+docker run -p 9944:9944 kiltprotocol/mashnet-node ./target/debug/node --dev --ws-port 9944 --ws-external --rpc-external
+```
+
 ## How to use
 To start a node, you need to build the code, or use an existing image and decide for a command to execute.
 
@@ -121,7 +148,7 @@ run chain in dev mode locally
 docker run -p 9944:9944 dev/mashnet-node ./target/debug/node --dev --ws-port 9944 --ws-external --rpc-external
 ```
 
-## Development with AWS images:
+## Development with AWS images
 
 Make sure to have the `awscli` installed. Otherwise Install it via `brew install awscli` (Mac).
 You also need to have your docker daemon system running (on mac, just download and install the docker application).
