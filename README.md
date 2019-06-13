@@ -7,16 +7,16 @@ Substrate node implementation for the KILT prototype
 ## Table of Contents
 - [How to use TLDR](#how-to-use-tldr)
 - [How to use](#how-to-use)
-- [Building / Images](#building--images)
-  - [Dockerhub](#dockerhub)
-  - [Building docker image](#building-docker-image)
-  - [Build code without docker](#build-code-without-docker)
-- [Commands](#commands)
-  - [Helper script](#helper-script)
-  - [Node binary](#node-binary)
-- [Examples](#examples)
-  - [Running a local node that connects to KILT prototype testnet in AWS](#running-a-local-node-that-connects-to-kilt-prototype-testnet-in-aws)
-  - [Running a node with local image, which runs a dev-chain](#running-a-node-with-local-image-which-runs-a-dev-chain)
+  - [Building / Images](#building--images)
+    - [Dockerhub](#dockerhub)
+    - [Building docker image](#building-docker-image)
+    - [Build code without docker](#build-code-without-docker)
+  - [Commands](#commands)
+    - [Helper script](#helper-script)
+    - [Node binary](#node-binary)
+  - [Examples](#examples)
+    - [Running a local node that connects to KILT prototype testnet in AWS](#running-a-local-node-that-connects-to-kilt-prototype-testnet-in-aws)
+    - [Running a node with local image, which runs a dev-chain](#running-a-node-with-local-image-which-runs-a-dev-chain)
 - [Development with AWS images](#development-with-aws-images)
 - [Updating with latest substrate-node-template](#updating-with-latest-substrate-node-template)
 
@@ -34,13 +34,13 @@ docker run -p 9944:9944 kiltprotocol/mashnet-node ./target/debug/node --dev --ws
 ## How to use
 To start a node, you need to build the code, or use an existing image and decide for a command to execute.
 
-## Building / Images
+### Building / Images
 To build the code, or get a prebuilt image, you have these options:
 - Docker image from dockerhub
 - Building the docker image yourself
 - Building the code without docker
 
-### Dockerhub
+#### Dockerhub
 To get the image from dockerhub execute following command:
 ```
 docker pull kiltprotocol/mashnet-node
@@ -50,7 +50,7 @@ and run the node by executing:
 docker run -p 9944:9944 kiltprotocol/mashnet-node [node command]
 ```
 
-### Building docker image
+#### Building docker image
 Clone this repo and navigate into it.
 
 Build docker image:
@@ -62,7 +62,7 @@ start, by running:
 docker run -p 9944:9944 local/mashnet-node [node command]
 ```
 
-### Build code without docker
+#### Build code without docker
 You need to have rust and cargo installed and configured properly.
 
 You can build it by executing these commands:
@@ -74,11 +74,11 @@ cargo build
 
 For execution see the section about commands.
 
-## Commands
+### Commands
 To start the node you have following options:
 - start-node.sh helper script
 - executing the node binary directly
-### Helper script
+#### Helper script
 We include a helper script, which sets up the arguments used for the node binary.
 
 Use it by executing:
@@ -99,7 +99,7 @@ or if you build it without docker:
 ./start-node.sh --connect-to alice
 ```
 
-### Node binary
+#### Node binary
 The node binary, which gets build lies in the directory
 ```
 ./target/debug/node [arguments]
@@ -116,9 +116,9 @@ docker run -p 9944:9944 kiltprotocol/mashnet-node ./target/debug/node --dev --ws
 ```
 
 
-## Examples
+### Examples
 
-### Running a local node that connects to KILT prototype testnet in AWS
+#### Running a local node that connects to KILT prototype testnet in AWS
 
 There are master boot nodes running in the KILT testnet:
 
@@ -138,7 +138,7 @@ If you want to connect to this node via RPC, add the `--rpc` flag:
 
 Run `./start-node.sh --help` for more information.
 
-### Running a node with local image, which runs a dev-chain
+#### Running a node with local image, which runs a dev-chain
 build docker image (only do if code has changed, takes ~15 min)
 ```
 docker build -t dev/mashnet-node .
