@@ -145,7 +145,7 @@ docker build -t dev/mashnet-node .
 ```
 run chain in dev mode locally
 ```
-docker run -p 9944:9944 dev/mashnet-node ./target/debug/node --dev --ws-port 9944 --ws-external --rpc-external
+docker run -p 9944:9944 kiltprotocol/mashnet-node ./target/debug/node --dev --ws-port 9944 --ws-external --rpc-external
 ```
 
 ## Development with AWS images
