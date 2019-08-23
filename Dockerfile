@@ -64,6 +64,7 @@ RUN apt -y update && \
 RUN mkdir -p /runtime/target/debug/
 COPY --from=builder /build/target/debug/node ./target/debug/node
 COPY --from=builder /build/start-node.sh ./start-node.sh
+COPY --from=builder /build/chainspec.json ./chainspec.json
 
 RUN chmod a+x *.sh
 RUN ls -la .
