@@ -21,12 +21,15 @@ RUN rustup install nightly
 
 # install wasm toolchain for polkadot
 RUN rustup target add wasm32-unknown-unknown --toolchain nightly
+RUN rustup default nightly-2019-07-14
+RUN rustup target add wasm32-unknown-unknown --toolchain nightly-2019-07-14
+
 # Install wasm-gc. It's useful for stripping slimming down wasm binaries.
 # (polkadot)
 RUN cargo +nightly install --git https://github.com/alexcrichton/wasm-gc
 
 # setup default stable channel
-RUN rustup default nightly
+RUN rustup default nightly-2019-07-14
 
 # show backtraces
 ENV RUST_BACKTRACE 1
