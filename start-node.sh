@@ -4,7 +4,6 @@
 
 ##### Constants
 
-CHAIN_NAME="kilt-testnet"
 ALICE_BOOT_NODE_HASH=Qmf9Vcxjf5woQP9Znv7xnahCLbA6vXFm8PfnqWcDGgr4Ve
 BOB_BOOT_NODE_HASH=QmTKngF1X4Zawh5Zi5sUq6F6o1NQbTPFnrXY8QpfpnkstH
 CHARLIE_BOOT_NODE_HASH=QmW2U3aNywuG9S2z16HYKJWe83LDSxsiaavBummT2dJh8J
@@ -121,7 +120,6 @@ else
     echo "Starting KILT full node"
 fi
 
-
 if [[ ! -z "$bootnodes" ]]; then
     boot_node_ipfs=
 	echo "Trying to connect to boot node(s) '$bootnodes'..."
@@ -160,7 +158,7 @@ if [[ "$rpc" = "1" ]]; then
     arg_rpc=" --ws-port 9944 --ws-external --rpc-external"
 fi
 
-command="./target/debug/node --chain ${CHAIN_NAME} --port 30333${arg_rpc}${arg_validator}${arg_node_key}${arg_boot_node_connect}${arg_node_name}${arg_telemetry}"
+command="./target/debug/node --chain ./chainspec.json --port 30333${arg_rpc}${arg_validator}${arg_node_key}${arg_boot_node_connect}${arg_node_name}${arg_telemetry}"
 
 if [[ "$dry_run" = "1" ]]; then
     echo "Dry run."
