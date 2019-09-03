@@ -28,7 +28,7 @@ docker run -p 9944:9944 kiltprotocol/mashnet-node ./start-node.sh --connect-to a
 
 Start dev chain for local development
 ```
-docker run -p 9944:9944 kiltprotocol/mashnet-node ./target/debug/node --dev --ws-port 9944 --ws-external --rpc-external
+docker run -p 9944:9944 kiltprotocol/mashnet-node ./target/release/node --dev --ws-port 9944 --ws-external --rpc-external
 ```
 
 ## How to use
@@ -69,9 +69,15 @@ You can build it by executing these commands:
 ```
 ./init.sh
 ./build.sh
+```
+for building in dev mode
+```
 cargo build
 ```
-
+for building in release mode
+```
+cargo build --release
+```
 For execution see the section about commands.
 
 ### Commands
@@ -101,18 +107,23 @@ or if you build it without docker:
 
 #### Node binary
 The node binary, which gets build lies in the directory
+(dev mode building)
 ```
 ./target/debug/node [arguments]
 ```
+(release mode building)
+```
+./target/release/node [arguments]
+```
 
-If you want to start a local dev-chain you can execute:
+If you want to start a local dev-chain after building in dev mode you can execute:
 ```
 ./target/debug/node --dev
 ```
 
 If you are using a docker image, run:
 ```
-docker run -p 9944:9944 kiltprotocol/mashnet-node ./target/debug/node --dev --ws-port 9944 --ws-external --rpc-external
+docker run -p 9944:9944 kiltprotocol/mashnet-node ./target/release/node --dev --ws-port 9944 --ws-external --rpc-external
 ```
 
 
@@ -145,7 +156,7 @@ docker build -t dev/mashnet-node .
 ```
 run chain in dev mode locally
 ```
-docker run -p 9944:9944 dev/mashnet-node ./target/debug/node --dev --ws-port 9944 --ws-external --rpc-external
+docker run -p 9944:9944 dev/mashnet-node ./target/release/node --dev --ws-port 9944 --ws-external --rpc-external
 ```
 
 ## Development with AWS images

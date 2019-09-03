@@ -28,9 +28,6 @@ RUN rustup target add wasm32-unknown-unknown --toolchain nightly-2019-07-14
 # (polkadot)
 RUN cargo +nightly install --git https://github.com/alexcrichton/wasm-gc
 
-# setup default stable channel
-RUN rustup default nightly-2019-07-14
-
 # show backtraces
 ENV RUST_BACKTRACE 1
 
@@ -51,7 +48,7 @@ COPY . /build
 
 RUN /bin/bash build.sh
 
-RUN cargo build && cargo test
+RUN cargo build --release && cargo test
 
 
 FROM ubuntu:xenial
@@ -64,8 +61,8 @@ RUN apt -y update && \
 	curl \
     libssl-dev dnsutils
 
-RUN mkdir -p /runtime/target/debug/
-COPY --from=builder /build/target/debug/node ./target/debug/node
+RUN mkdir -p /runtime/target/release/
+COPY --from=builder /build/target/release/node ./target/release/node
 COPY --from=builder /build/start-node.sh ./start-node.sh
 COPY --from=builder /build/chainspec.json ./chainspec.json
 
