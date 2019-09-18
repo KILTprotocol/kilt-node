@@ -158,7 +158,7 @@ if [[ "$rpc" = "1" ]]; then
     arg_rpc=" --ws-port 9944 --ws-external --rpc-external"
 fi
 
-command="./target/release/node --chain ./chainspec.json --port 30333${arg_rpc}${arg_validator}${arg_node_key}${arg_boot_node_connect}${arg_node_name}${arg_telemetry}"
+command="./target/release/mashnet-node --chain ./chainspec.json --port 30333${arg_rpc}${arg_validator}${arg_node_key}${arg_boot_node_connect}${arg_node_name}${arg_telemetry}"
 
 if [[ "$dry_run" = "1" ]]; then
     echo "Dry run."

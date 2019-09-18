@@ -1,21 +1,21 @@
+[package]
+authors = ['Parity Technologies <admin@parity.io>']
+edition = '2018'
+name = 'mashnet-node-runtime-wasm'
+version = '1.0.0'
+[dependencies.mashnet-node-runtime]
+default-features = false
+path = '..'
+
+[features]
+default = []
+std = ['mashnet-node-runtime/std']
+
 [workspace]
 members = []
 
 [lib]
 crate-type = ['cdylib']
-[dependencies.node-template-runtime]
-default-features = false
-path = '..'
-
-[package]
-authors = ['Parity Technologies <admin@parity.io>']
-edition = '2018'
-name = 'node-template-runtime-wasm'
-version = '0.9.0'
-
-[features]
-default = []
-std = ['node-template-runtime/std']
 [profile.release]
 lto = true
 panic = 'abort'

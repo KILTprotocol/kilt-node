@@ -67,8 +67,8 @@ You need to have rust and cargo installed and configured properly.
 
 You can build it by executing these commands:
 ```
-./init.sh
-./build.sh
+./scripts/init.sh
+./scripts/build.sh
 ```
 for building in dev mode
 ```
