@@ -43,7 +43,7 @@ Usage:
   -d, --dry-run                     Flag indicating to only show the resulting command instead of executing it
   -t, --telemetry                   Flag indicating whether or not to send data to the telemetry server
   -r, --rpc                         Whether to activate rpc
-  -v, --validator                   Whether the node should be a validator. Needs NODE_SEED and NODE_KEY environment variables.
+  -v, --validator SEED KEY          Whether the node should be a validator. Needs NODE_SEED and NODE_KEY environment variables.
   -p, --purge-userdata              Purges all chain-dependend user data in auxiliary services (ctypes, contacts, messages, ...). 
                                     Needs SERVICES_SECRET environment variable.
 
@@ -53,10 +53,13 @@ Usage:
   ./start-node.sh
 
   Start full node that connects to Alice boot node:
-  ./start-node.sh -c Alice
+  ./start-node.sh -c alice
 
   Start full node that connects to Alice and Bob and exposes an rpc endpoint:
-  ./start-node.sh -c Alice,Bob -n charly-node-123 --rpc
+  ./start-node.sh -c alice,bob -n charly-node-123 --rpc
+
+  Start validator node that connect to Alice and Bob and exposes an rpc endpoint:
+  ./start-node.sh -v <node_seed> <node_key> -c alice,bob -n charly-node-123 --rpc
 HELP_USAGE
 }
 
@@ -71,6 +74,8 @@ purge_userdata=0
 dry_run=0
 rpc=0
 validator=0
+node_seed=
+node_key=
 
 while [[ "$1" != "" ]]; do
     case $1 in
@@ -82,7 +87,11 @@ while [[ "$1" != "" ]]; do
                                 ;;
         -t | --telemetry )      telemetry=1
                                 ;;
-        -v | --validator )      validator=1
+        -v | --validator )      shift
+                                validator=1
+                                node_seed=$1
+                                shift
+                                node_key=$1
                                 ;;          
         -p | --purge-userdata ) purge_userdata=1
                                 ;;
@@ -108,14 +117,10 @@ arg_validator=
 arg_rpc=
 
 # NODE_KEY = The hex-encoded ed25519 key used for libp2p networking.
-if [[ ! -z "$NODE_KEY" ]]; then
-    arg_node_key=" --node-key ${NODE_KEY}"
-fi
-
 # NODE_SEED = The seed for the validator account to be used. Has to be combined with NODE_KEY
 if [[ "$validator" = "1" ]]; then
-    arg_validator=" --key ${NODE_SEED} --validator"
-    echo "Starting KILT validator node"
+    arg_validator=" --key ${node_seed} --validator --node-key ${node_key}"
+    echo "Starting KILT validator node with NODE_SEED $node_seed and NODE_KEY $node_key"
 else
     echo "Starting KILT full node"
 fi
