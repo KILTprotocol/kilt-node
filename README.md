@@ -3,15 +3,14 @@
 # KILT mashnet-node (previously prototype-chain)
 
 The KILT blockchain nodes use Parity Substrate as the underlying blockchain
-technology stack extended with our DID, CType, Attestation and hierarchical Trust Modules
+technology stack extended with our DID, CType, Attestation and hierarchical Trust Modules.
 Substrate Documentation:
 
-[High Level Docs](https://substrate.dev/docs/en/getting-started/)  
-[JSON-RPC](https://polkadot.js.org/api/substrate/rpc.html)  
-[Reference Rust Docs](https://substrate.dev/rustdocs/v1.0/substrate_service/index.html)  
+[High Level Docs](https://substrate.dev/docs/en/getting-started/)
+[JSON-RPC](https://polkadot.js.org/api/substrate/rpc.html)
+[Reference Rust Docs](https://substrate.dev/rustdocs/v1.0/substrate_service/index.html)
 
-## Table of Contents
-- [How to use TL;DR](#how-to-use-tldr)
+- [How to use TL;DR](#how-to-use-tl-dr)
 - [How to use](#how-to-use)
   * [Images / Building](#images---building)
     + [Dockerhub](#dockerhub)
@@ -28,9 +27,17 @@ Substrate Documentation:
 - [Development with AWS images](#development-with-aws-images)
 - [Node Modules functionalities](#node-modules-functionalities)
   * [DID Module](#did-module)
-  * [CType Module](#ctype-module)
+    + [Add](#add)
+    + [CRUD](#crud)
+  * [CTYPE Module](#ctype-module)
   * [Attestation Module](#attestation-module)
+    + [Add](#add)
+    + [Revoke](#revoke)
+    + [Lookup](#lookup)
   * [Hierarchy of Trust Module](#hierarchy-of-trust-module)
+    + [Create root](#create-root)
+    + [Add delegation](#add-delegation)
+    + [Revoke](#revoke-1)
 - [Updating to latest substrate-node-template](#updating-to-latest-substrate-node-template)
 
 ## How to use TL;DR
@@ -292,7 +299,9 @@ exchanges.
 
 ### DID Module
 
-The KILT blockchain node runtime defines an DID module exposing
+The KILT blockchain node runtime defines an DID module exposing:
+#### Add
+
 ```rust
 add(origin, sign_key: T::PublicSigningKey, box_key: T::PublicBoxKey, doc_ref: Option<Vec<u8>>) -> Result
 ```
@@ -311,10 +320,10 @@ inserts it to the blockchain storage by using a map (done by the substrate frame
 ```rust
 T::AccountId => (T::PublicSigningKey, T::PublicBoxKey, Option<Vec<u8>>)
 ```
-
+#### CRUD
 As DID supports CRUD (Create, Read, Update, Delete) operations, a `get(dids)` method
 reads a DID for an account address, the add function may also be used to update a DID and
-a `remove(origin)` function that takes the owner as a single parameter removes the DID from the
+a `remove(origin) -> Result` function that takes the owner as a single parameter removes the DID from the
 map, so any later read operation call does not return the data of a removed DID.
 
 ### CTYPE Module
@@ -344,7 +353,7 @@ The KILT blockchain node runtime defines an Attestation module exposing function
 - lookup attestations for a delegation (used later in Complex Trust Structures)
 on chain.
 
-Add
+#### Add
 ```rust
 add(origin, claim_hash: T::Hash, ctype_hash: T::Hash, delegation_id: Option<T::DelegationNodeId>) -> Result
 ```
@@ -368,7 +377,7 @@ Delegated Attestations are stored in an additional map:
 T::DelegationNodeId => Vec<T::Hash>
 ```
 
-Revoke
+#### Revoke
 ```rust
 revoke(origin, claim_hash: T::Hash) -> Result
 ```
@@ -377,7 +386,7 @@ The `revoke` function takes the claimHash (which is the key to lookup an attesta
 argument. After looking up the attestation and checking invoker permissions, the revoked
 flag is set to true and the updated attestation is stored on chain.
 
-Lookup
+#### Lookup
 
 The attestation lookup is performed with the `claimHash`, serving as the key to the
 attestation store. The function `get_attestation(claimHash)` is exposed to the outside
@@ -399,7 +408,7 @@ The KILT blockchain node runtime defines a Delegation module exposing functions 
 - lookup children of a delegation `get(children)`
 on chain.
 
-Create root
+#### Create root
 ```rust
 create_root(origin, root_id: T::DelegationNodeId, ctype_hash: T::Hash) -> Result
 ```
@@ -417,7 +426,7 @@ a map:
 T::DelegationNodeId => (T::Hash,T::AccountId,bool)
 ```
 
-Add delegation
+#### Add delegation
 ```rust
 add_delegation(origin, delegation_id: T::DelegationNodeId, root_id: T::DelegationNodeId, parent_id: Option<T::DelegationNodeId>, delegate: T::AccountId, permissions: Permissions, delegate_signature: T::Signature) -> Result
 ```
@@ -449,7 +458,7 @@ parent is updated in the following map that relates parents to their children:
 T::DelegationNodeId => Vec<T::DelegationNodeId>
 ```
 
-Revoke
+#### Revoke
 ```rust
 revoke_root(origin, root_id: T::DelegationNodeId) -> Result
 ```
