@@ -25,6 +25,7 @@ Substrate Documentation:
     + [Running a local node that connects to KILT prototype testnet in AWS](#running-a-local-node-that-connects-to-kilt-prototype-testnet-in-aws)
     + [Running a node with local image, which runs a dev-chain](#running-a-node-with-local-image--which-runs-a-dev-chain)
 - [Development with AWS images](#development-with-aws-images)
+- [Updating to latest substrate-node-template](#updating-to-latest-substrate-node-template)
 - [Node Modules functionalities](#node-modules-functionalities)
   * [DID Module](#did-module)
     + [Add](#add)
@@ -38,7 +39,6 @@ Substrate Documentation:
     + [Create root](#create-root)
     + [Add delegation](#add-delegation)
     + [Revoke](#revoke-1)
-- [Updating to latest substrate-node-template](#updating-to-latest-substrate-node-template)
 
 ## How to use TL;DR
 Start chain and connect to alice bootnode:
@@ -46,13 +46,13 @@ Start chain and connect to alice bootnode:
 docker run -p 9944:9944 kiltprotocol/mashnet-node ./start-node.sh --connect-to alice
 ```
 
-Start dev chain (producing blocks without requirements) for local development with all (default is local) WebSocket Interfaces and Remote Procedure Calls enabled and specified WebSockets RPC server TCP port
+Start dev chain (producing blocks without requirements) for local development with all WebSocket Interfaces and Remote Procedure Calls enabled and specified WebSockets RPC server TCP port. Default would be only Local Procedcure Calls enabled:
 ```
 docker run -p 9944:9944 kiltprotocol/mashnet-node ./target/release/node --dev --ws-port 9944 --ws-external --rpc-external
 ```
 
 ## How to use
-To start a node, you need to use an existing image from [DockerHub](https://hub.docker.com/r/kiltprotocol/mashnet-node), or build the code yourself and decide for a command to execute.
+To start a node, you need to use an existing image from [DockerHub](https://hub.docker.com/r/kiltprotocol/mashnet-node), or build the code yourself and decide on the command to execute.
 
 ### Images / Building
 To build the code, or get a prebuilt image, you have these options:
@@ -112,7 +112,7 @@ start, by running:
 For execution see the section about commands.
 ### Commands
 To start the node you have following options:
-- st<span>art</span>-node.sh helper script
+- start-node.sh helper script
 - executing the node binary directly
 #### Helper script
 We include a helper script, which sets up the arguments used for the node binary.
@@ -215,6 +215,16 @@ docker run 348099934012.dkr.ecr.eu-central-1.amazonaws.com/kilt/prototype-chain 
 ```
 The node should be connected to the KILT testnet.
 
+## Updating to latest substrate-node-template
+
+The command `substrate-node-new` (included in the substrate installation and described in https://substrate.dev/docs/en/tutorials/creating-your-first-substrate-chain) downloads a node-template, which this repo is based on.
+We just added our modules to the runtime.
+
+To update it, a stable template can be copied from https://github.com/shawntabrizi/substrate-package.
+Just copy the contents of substrate-node-template and add our changes on top.
+
+If the mentioned repo of shawntabrizi isn't updated anymore, the `substrate-node-new` command can still be used to get a fresh node-template. It might need some changes to work, though.
+
 ## Node Modules functionalities
 
 The KILT blockchain is the heart and soul behind KILT protocol. It provides the immutable
@@ -239,19 +249,19 @@ Our implementation is based on the [substrate-node-template](https://github.com/
 quickly building a substrate based blockchain), which is linked to the main Substrate
 codebase.
 
-Remote Procedure Calls
+__Remote Procedure Calls__
 
 The Ethereum ecosystem highly leverages [JSON-RPC](https://www.jsonrpc.org/specification) where one can efficiently call methods and parameters directly on the blockchain node. Based on good experiences, developers
 decided to use it in Substrate as well. The [Polkadot API](https://polkadot.js.org/api/) helps with communicating with the JSON-RPC endpoint, and the clients and services never have to talk directly with the endpoint.
 
-Blocktime
+__Blocktime__
 
 The blocktime is currently set to 5 seconds, but this setting is subject to change based on
 further research. We will consider what is affected by this parameter, and in the long term it
 will be fine-tuned to a setting that provides the best performance and user experience for the
 participants of the KILT network.
 
-Extrinsics and Block Storage
+__Extrinsics and Block Storage__
 
 In Substrate, the blockchain transactions are abstracted away and are generalised as
 [extrinsics](https://docs.substrate.dev/docs/extrinsics) in the system. They are called extrinsics since they can represent any piece of information that is regarded as input from “the outside world” (i.e. from users of the network) to the blockchain logic. The blockchain transactions in KILT are implemented through these
@@ -269,14 +279,14 @@ extrinsic method) has. The size of the block is hence dynamic and will depend on
 and type of transactions included in the new block. The valid new blocks are propagated
 through the network and other nodes execute these blocks to update their local state (storage).
 
-Consensus Algorithm
+__Consensus Algorithm__
 
 Since we are the only authority provider in the testnet phase, we use the simple [Aura](https://wiki.parity.io/Aura)
 consensus mechanism. At a later stage, we most likely will change to [GRANDPA](https://github.com/paritytech/substrate#2-description), which
 supposedly will be superior to Aura in many aspects. The consensus mechanism is also
 subject to the future possibility to integrate the KILT network into the Polkadot ecosystem.
 
-Polkadot Integration
+__Polkadot Integration__
 
 As a further great advantage, by basing ourselves on Substrate we can easily connect to the
 Polkadot ecosystem. This could provide security for the KILT network by leveraging the global
@@ -286,7 +296,7 @@ modules into the KILT Validator Node implementation. The exact details of this i
 subject to future agreements between Polkadot and KILT and the technological development
 of Polkadot, Substrate and KILT.
 
-KILT Tokens
+__KILT Tokens__
 
 Coin transfer is implemented as a balance-based mechanism in Substrate. In our testnet,
 every new identity gets 1000 KILT Tokens from a root entity in the system who is wired into
@@ -466,13 +476,3 @@ and
 ```rust
 revoke_delegation(origin, delegation_id: T::DelegationNodeId) -> Result
 ```
-
-## Updating to latest substrate-node-template
-
-The command `substrate-node-new` included in the substrate installation, described in https://substrate.dev/docs/en/tutorials/creating-your-first-substrate-chain downloads a node-template, which this repo bases on.
-We just added our modules to the runtime.
-
-To update it, a stable template can be copied from https://github.com/shawntabrizi/substrate-package.
-Just copy the contents of substrate-node-template and add our changes on top.
-
-If the mentioned repo of shawntabrizi isn't updated anymore, the `substrate-node-new` command can still be used to get a fresh node-template. It might need some changes to work, though.
