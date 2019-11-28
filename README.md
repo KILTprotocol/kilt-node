@@ -46,7 +46,7 @@ Start chain and connect to alice bootnode:
 docker run -p 9944:9944 kiltprotocol/mashnet-node ./start-node.sh --connect-to alice
 ```
 
-Start dev chain (producing blocks without requirements) for local development with all WebSocket Interfaces and Remote Procedure Calls enabled and specified WebSockets RPC server TCP port. Default would be only Local Procedcure Calls enabled:
+Start dev chain (producing blocks without requirements) for local development with all WebSocket Interfaces and Remote Procedure Calls enabled and specified WebSockets RPC server TCP port. Default would be only Local Procedure Calls enabled:
 ```
 docker run -p 9944:9944 kiltprotocol/mashnet-node ./target/release/node --dev --ws-port 9944 --ws-external --rpc-external
 ```
