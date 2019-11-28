@@ -191,7 +191,7 @@ docker run -p 9944:9944 local/mashnet-node ./target/release/node --dev --ws-port
 
 ## Development with AWS images
 
-Make sure to have the `awscli` installed. Otherwise, Install it via `brew install awscli` (Mac).
+Make sure to have the `awscli` installed. Otherwise, install it via `brew install awscli` (Mac).
 You also need to have your docker daemon system running (on mac, just download and install the docker application).
 
 1. Login to Amazon ECR
