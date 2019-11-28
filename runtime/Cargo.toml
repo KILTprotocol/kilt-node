@@ -1,3 +1,9 @@
+[package]
+authors = ['KILT <info@kilt.io>']
+edition = '2018'
+name = 'mashnet-node-runtime'
+version = '0.20.0'
+
 [dependencies.aura]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
@@ -147,9 +153,3 @@ std = [
     'consensus-aura/std',
     'offchain-primitives/std',
 ]
-
-[package]
-authors = ['KILT <info@kilt.io>']
-edition = '2018'
-name = 'mashnet-node-runtime'
-version = '1.0.0'
