@@ -44,7 +44,7 @@ ENV LANG=C.UTF-8
 
 COPY . /build
 
-RUN /bin/bash runtime/wasm/build.sh
+RUN /bin/bash scripts/build.sh
 
 RUN cargo build --release && cargo test
 
