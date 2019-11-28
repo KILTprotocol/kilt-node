@@ -44,7 +44,6 @@ ENV LANG=C.UTF-8
 
 COPY . /build
 
-ENV TERM xterm
 RUN /bin/bash scripts/build.sh
 
 RUN cargo build --release && cargo test
