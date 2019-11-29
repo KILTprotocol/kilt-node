@@ -16,13 +16,11 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 ENV PATH /root/.cargo/bin:$PATH
 
 # setup rust beta and nightly channel's
-RUN rustup install beta
 RUN rustup install nightly
+RUN rustup install stable
 
 # install wasm toolchain for polkadot
 RUN rustup target add wasm32-unknown-unknown --toolchain nightly
-RUN rustup default nightly-2019-07-14
-RUN rustup target add wasm32-unknown-unknown --toolchain nightly-2019-07-14
 
 # Install wasm-gc. It's useful for stripping slimming down wasm binaries.
 # (polkadot)
@@ -46,7 +44,7 @@ ENV LANG=C.UTF-8
 
 COPY . /build
 
-RUN /bin/bash build.sh
+RUN /bin/bash scripts/build.sh
 
 RUN cargo build --release && cargo test
 
@@ -62,7 +60,7 @@ RUN apt -y update && \
     libssl-dev dnsutils
 
 RUN mkdir -p /runtime/target/release/
-COPY --from=builder /build/target/release/node ./target/release/node
+COPY --from=builder /build/target/release/mashnet-node ./target/release/mashnet-node
 COPY --from=builder /build/start-node.sh ./start-node.sh
 COPY --from=builder /build/chainspec.json ./chainspec.json
 
