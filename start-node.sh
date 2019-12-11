@@ -7,13 +7,14 @@
 ALICE_BOOT_NODE_HASH=Qmf9Vcxjf5woQP9Znv7xnahCLbA6vXFm8PfnqWcDGgr4Ve
 BOB_BOOT_NODE_HASH=QmTKngF1X4Zawh5Zi5sUq6F6o1NQbTPFnrXY8QpfpnkstH
 CHARLIE_BOOT_NODE_HASH=QmW2U3aNywuG9S2z16HYKJWe83LDSxsiaavBummT2dJh8J
-TELEMETRY_URL=ws://telemetry-backend.kilt-prototype.tk:1024
+BASE_URL=${BASE_URL:-kilt-prototype.tk}
+TELEMETRY_URL=ws://telemetry-backend.${BASE_URL}:1024
 
 ##### Functions
 
 lookup_boot_node() {
     node=$1
-    boot_node_domain="bootnode-${node}.kilt-prototype.tk"
+    boot_node_domain="bootnode-${node}.${BASE_URL}"
     echo "Performing lookup for boot node ${boot_node_domain}"
     if [[ "$node" = "alice" ]]; then
         alice_boot_node_ip=`dig ${boot_node_domain} A +short`
