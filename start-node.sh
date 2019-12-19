@@ -4,11 +4,17 @@
 
 ##### Constants
 
+# Testnet
 ALICE_BOOT_NODE_HASH=Qmf9Vcxjf5woQP9Znv7xnahCLbA6vXFm8PfnqWcDGgr4Ve
 BOB_BOOT_NODE_HASH=QmTKngF1X4Zawh5Zi5sUq6F6o1NQbTPFnrXY8QpfpnkstH
 CHARLIE_BOOT_NODE_HASH=QmW2U3aNywuG9S2z16HYKJWe83LDSxsiaavBummT2dJh8J
-BASE_URL=${BASE_URL:-kilt-prototype.tk}
-TELEMETRY_URL=ws://telemetry-backend.${BASE_URL}:1024
+# Devnet
+ALICE_DEVNET_HASH=QmZEm67gqWrh8Cxdou4y9BV5p4uiEViFpyzm6i9Utx8PFB
+BOB_DEVNET_HASH=Qme3JwgB4swopf5QNxRxwPmfYQaUuQEfCmbHpSbDkajFYj
+CHARLIE_DEVNET_HASH=QmQbxpvbQ9NomM1a4pV6AU1wGrJ71nKaZzPvUZJFsucP4U
+
+BASE_URL=kilt-prototype.tk
+TELEMETRY_URL=ws://telemetry-backend.kilt-prototype.tk:1024
 
 ##### Functions
 
@@ -47,6 +53,7 @@ Usage:
   -v, --validator                   Whether the node should be a validator. Needs NODE_SEED and NODE_KEY environment variables.
   -p, --purge-userdata              Purges all chain-dependend user data in auxiliary services (ctypes, contacts, messages, ...). 
                                     Needs SERVICES_SECRET environment variable.
+  --devnet                          Use the KILT devnet instead of the testnet
 
   Examples:
 
@@ -72,6 +79,7 @@ purge_userdata=0
 dry_run=0
 rpc=0
 validator=0
+devnet=0
 
 while [[ "$1" != "" ]]; do
     case $1 in
@@ -91,6 +99,8 @@ while [[ "$1" != "" ]]; do
                                 ;;
         -r | --rpc )            rpc=1
                                 ;;
+        --devnet )              devnet=1
+                                ;;
         -h | --help )           usage
                                 exit
                                 ;;
@@ -107,6 +117,7 @@ arg_node_name=
 arg_telemetry=
 arg_validator=
 arg_rpc=
+arg_chain=" --chain ./chainspec.json"
 
 # NODE_KEY = The hex-encoded ed25519 key used for libp2p networking.
 if [[ ! -z "$NODE_KEY" ]]; then
@@ -119,6 +130,14 @@ if [[ "$validator" = "1" ]]; then
     echo "Starting KILT validator node"
 else
     echo "Starting KILT full node"
+fi
+
+if [[ "$devnet" = "1" ]]; then
+    arg_chain=" --chain ./chainspec.devnet.json"
+    BASE_URL="devnet.kilt.io"
+    ALICE_BOOT_NODE_HASH=${ALICE_DEVNET_HASH}
+    BOB_BOOT_NODE_HASH=${BOB_DEVNET_HASH}
+    CHARLIE_BOOT_NODE_HASH=${CHARLIE_DEVNET_HASH}
 fi
 
 if [[ ! -z "$bootnodes" ]]; then
@@ -159,7 +178,7 @@ if [[ "$rpc" = "1" ]]; then
     arg_rpc=" --ws-port 9944 --ws-external --rpc-external"
 fi
 
-command="./target/release/mashnet-node --chain ./chainspec.json --port 30333${arg_rpc}${arg_validator}${arg_node_key}${arg_boot_node_connect}${arg_node_name}${arg_telemetry}"
+command="./target/release/mashnet-node --port 30333${arg_chain}${arg_rpc}${arg_validator}${arg_node_key}${arg_boot_node_connect}${arg_node_name}${arg_telemetry}"
 
 if [[ "$dry_run" = "1" ]]; then
     echo "Dry run."

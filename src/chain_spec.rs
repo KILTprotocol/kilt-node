@@ -42,6 +42,7 @@ pub enum Alternative {
     Development,
     /// Whatever the current runtime is, with simple Alice/Bob auths.
     KiltTestnet,
+    KiltDevnet,
 }
 
 fn authority_key(s: &str) -> AuthorityId {
@@ -99,6 +100,29 @@ impl Alternative {
                 None,
                 None,
             ),
+            Alternative::KiltDevnet => ChainSpec::from_genesis(
+                "KILT Devnet",
+                "kilt_devnet",
+                || testnet_genesis(
+                    // Initial Authorities
+                    vec![
+                        x25519::Public::from_raw(hex!("d44da634611d9c26837e3b5114a7d460a4cb7d688119739000632ed2d3794ae9")),
+                        x25519::Public::from_raw(hex!("06815321f16a5ae0fe246ee19285f8d8858fe60d5c025e060922153fcf8e54f9")),
+                        x25519::Public::from_raw(hex!("6d2d775fdc628134e3613a766459ccc57a29fd380cd410c91c6c79bc9c03b344")),
+                    ], 
+                    // Endowed Accounts
+                    vec![
+                        x25519::Public::from_raw(hex!("d44da634611d9c26837e3b5114a7d460a4cb7d688119739000632ed2d3794ae9")),
+                    ],
+                    // Root
+                        x25519::Public::from_raw(hex!("d44da634611d9c26837e3b5114a7d460a4cb7d688119739000632ed2d3794ae9")),
+                ),
+                vec![],
+                None,
+                None,
+                None,
+                None,
+            ),
         })
     }
 
@@ -106,6 +130,7 @@ impl Alternative {
         match s {
             "dev" => Some(Alternative::Development),
             "kilt-testnet" => Some(Alternative::KiltTestnet),
+            "kilt-devnet" => Some(Alternative::KiltDevnet),
             _ => None,
         }
     }
