@@ -46,7 +46,7 @@ COPY . /build
 
 RUN /bin/bash scripts/build.sh
 
-RUN cargo build --release && cargo test
+RUN cargo build --release && cargo test --release
 
 
 FROM ubuntu:xenial
