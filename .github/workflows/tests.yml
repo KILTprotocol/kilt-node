@@ -1,0 +1,25 @@
+name: Build and Test
+
+on:
+  push:
+    branches: 
+      - develop
+      - master
+    tags:
+      - '*'
+  pull_request:
+    branches: 
+      - develop
+      - master
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+    - name: Build and Test
+      run: |
+        docker build .
