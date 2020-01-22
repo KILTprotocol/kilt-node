@@ -38,4 +38,5 @@ jobs:
         ECR_REPOSITORY: kilt/prototype-chain
         CACHE_IMAGE_TAG: latest
       run: |
+        docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_TAG || true
         docker build --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_TAG .
