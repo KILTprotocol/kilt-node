@@ -32,28 +32,6 @@ jobs:
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
 
-    - name: Build and push
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: kilt/prototype-chain
-        CACHE_IMAGE_TAG: latest-develop
-        CACHE_IMAGE_BUILDER_TAG: latest-develop-builder
-      run: |
-        docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG || true
-        docker build \
-          --target builder \
-          --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
-          -t $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
-          .
-        docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_TAG || true
-        docker build \
-          --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
-          --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_TAG \
-          -t $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_TAG \
-          .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_TAG
-
     - name: Build and Test
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
