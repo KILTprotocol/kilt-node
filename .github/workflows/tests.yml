@@ -49,6 +49,7 @@ jobs:
         docker build \
           --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
           --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_TAG \
+          -t $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_TAG \
           .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_TAG
