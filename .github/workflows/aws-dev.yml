@@ -51,7 +51,7 @@ jobs:
         echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_TAG"
 
     - name: (Alice) Fill in the new image ID in the Amazon ECS task definition
-      id: task-def
+      id: task-def-alice
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
         task-definition: task-definition-alice.json
@@ -61,13 +61,13 @@ jobs:
     - name: (Alice) Deploy Amazon ECS task definition
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
-        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        task-definition: ${{ steps.task-def-alice.outputs.task-definition }}
         service: bootnode-alice
         cluster: kilt-devnet
         wait-for-service-stability: true
 
     - name: (Bob) Fill in the new image ID in the Amazon ECS task definition
-      id: task-def
+      id: task-def-bob
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
         task-definition: task-definition-bob.json
@@ -77,13 +77,13 @@ jobs:
     - name: (Bob) Deploy Amazon ECS task definition
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
-        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        task-definition: ${{ steps.task-def-bob.outputs.task-definition }}
         service: bootnode-bob
         cluster: kilt-devnet
         wait-for-service-stability: true
 
     - name: (Charlie) Fill in the new image ID in the Amazon ECS task definition
-      id: task-def
+      id: task-def-charlie
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
         task-definition: task-definition-charlie.json
@@ -93,13 +93,13 @@ jobs:
     - name: (Charlie) Deploy Amazon ECS task definition
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
-        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        task-definition: ${{ steps.task-def-charlie.outputs.task-definition }}
         service: bootnode-charlie
         cluster: kilt-devnet
         wait-for-service-stability: true
 
     - name: (Full) Fill in the new image ID in the Amazon ECS task definition
-      id: task-def
+      id: task-def-full
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
         task-definition: task-definition-full.json
@@ -109,7 +109,7 @@ jobs:
     - name: (Full) Deploy Amazon ECS task definition
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
-        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        task-definition: ${{ steps.task-def-full.outputs.task-definition }}
         service: full-nodes
         cluster: kilt-devnet
         wait-for-service-stability: true
