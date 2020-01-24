@@ -50,7 +50,7 @@ jobs:
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_TAG
         echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_TAG"
 
-    - name: Fill in the new image ID in the Amazon ECS task definition
+    - name: (Alice) Fill in the new image ID in the Amazon ECS task definition
       id: task-def
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
@@ -58,10 +58,58 @@ jobs:
         container-name: devnet-node
         image: ${{ steps.build-image.outputs.image }}
 
-    - name: Deploy Amazon ECS task definition
+    - name: (Alice) Deploy Amazon ECS task definition
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
         task-definition: ${{ steps.task-def.outputs.task-definition }}
         service: bootnode-alice
+        cluster: kilt-devnet
+        wait-for-service-stability: true
+
+    - name: (Bob) Fill in the new image ID in the Amazon ECS task definition
+      id: task-def
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: task-definition-bob.json
+        container-name: devnet-node
+        image: ${{ steps.build-image.outputs.image }}
+
+    - name: (Bob) Deploy Amazon ECS task definition
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        service: bootnode-bob
+        cluster: kilt-devnet
+        wait-for-service-stability: true
+
+    - name: (Charlie) Fill in the new image ID in the Amazon ECS task definition
+      id: task-def
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: task-definition-charlie.json
+        container-name: devnet-node
+        image: ${{ steps.build-image.outputs.image }}
+
+    - name: (Charlie) Deploy Amazon ECS task definition
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        service: bootnode-charlie
+        cluster: kilt-devnet
+        wait-for-service-stability: true
+
+    - name: (Full) Fill in the new image ID in the Amazon ECS task definition
+      id: task-def
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: task-definition-full.json
+        container-name: devnet-node
+        image: ${{ steps.build-image.outputs.image }}
+
+    - name: (Full) Deploy Amazon ECS task definition
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        service: full-nodes
         cluster: kilt-devnet
         wait-for-service-stability: true

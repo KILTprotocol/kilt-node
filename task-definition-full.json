@@ -1,0 +1,51 @@
+{
+    "family": "devnet-node-full",
+    "taskRoleArn": "arn:aws:iam::348099934012:role/ecsTaskExecutionRole",
+    "executionRoleArn": "arn:aws:iam::348099934012:role/ecsTaskExecutionRole",
+    "containerDefinitions": [
+        {
+            "name": "devnet-node",
+            "image": "348099934012.dkr.ecr.eu-central-1.amazonaws.com/kilt/prototype-chain:0.21.2",
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/devnet-node-full",
+                    "awslogs-region": "eu-central-1",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            },
+            "portMappings": [
+                {
+                    "hostPort": 30333,
+                    "protocol": "tcp",
+                    "containerPort": 30333
+                },
+                {
+                    "hostPort": 9944,
+                    "protocol": "tcp",
+                    "containerPort": 9944
+                },
+                {
+                    "hostPort": 9933,
+                    "protocol": "tcp",
+                    "containerPort": 9933
+                }
+            ],
+            "command": [
+                "./start-node.sh",
+                "--connect-to",
+                "alice,bob,charlie",
+                "--telemetry",
+                "--rpc",
+                "--devnet"
+            ],
+            "essential": true
+        }
+    ],
+    "cpu": "1024",
+    "memory": "2048",
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "networkMode": "awsvpc"
+}
