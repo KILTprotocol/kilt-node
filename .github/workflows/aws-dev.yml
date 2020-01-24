@@ -54,7 +54,7 @@ jobs:
       id: task-def
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
-        task-definition: task-definition.json
+        task-definition: task-definition-alice.json
         container-name: devnet-node
         image: ${{ steps.build-image.outputs.image }}
 
