@@ -87,7 +87,7 @@ jobs:
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
         task-definition: task-definition-charlie.json
-        container-name: devnet-node
+        container-name: devnet-charlie
         image: ${{ steps.build-image.outputs.image }}
 
     - name: (Charlie) Deploy Amazon ECS task definition
