@@ -112,3 +112,11 @@ jobs:
         service: full-nodes
         cluster: kilt-devnet
         wait-for-service-stability: true
+
+    - name: Purge data in demo services
+      env:
+        SERVICES_SECRET: ${{ secrets.SERVICES_SECRET }}
+      run: |
+        curl -X DELETE -H "Authorization: ${SERVICES_SECRET}" https://services.devnet.kilt.io/ctype
+        curl -X DELETE -H "Authorization: ${SERVICES_SECRET}" https://services.devnet.kilt.io/messaging
+        curl -X DELETE -H "Authorization: ${SERVICES_SECRET}" https://services.devnet.kilt.io/contacts
