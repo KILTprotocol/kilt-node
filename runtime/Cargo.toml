@@ -143,7 +143,7 @@ std = [
     'executive/std',
     'aura/std',
     'indices/std',
-    'primitives/std',
+    "runtime-primitives/std",
     'system/std',
     'timestamp/std',
     'sudo/std',
@@ -152,4 +152,5 @@ std = [
     'safe-mix/std',
     'consensus-aura/std',
     'offchain-primitives/std',
+    "consensus_authorities/std",
 ]
