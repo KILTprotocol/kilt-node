@@ -105,7 +105,6 @@ decl_event!(
 decl_module! {
 	/// The delegation runtime module
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-
 		/// Deposit events
 		fn deposit_event<T>() = default;
 
@@ -150,7 +149,6 @@ decl_module! {
 			if <Delegations<T>>::exists(delegation_id) {
 				return Self::error(Self::ERROR_DELEGATION_ALREADY_EXISTS);
 			}
-
 			// calculate the hash root and check if the signature matches
 			let hash_root = Self::calculate_hash(delegation_id, root_id, parent_id, permissions);
 			if !verify_encoded_lazy(&delegate_signature, &&hash_root, &delegate.clone().into()) {

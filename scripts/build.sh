@@ -11,12 +11,12 @@ pushd . >/dev/null
 
 for SRC in runtime/wasm
 do
-  echo "Building webassembly binary in $SRC..."
-  cd "$PROJECT_ROOT/$SRC"
+	echo "Building webassembly binary in $SRC..."
+	cd "$PROJECT_ROOT/$SRC"
 
-  ./build.sh
+	./build.sh
 
-  cd - >> /dev/null
+	cd - >> /dev/null
 done
 
 # Restore initial directory.
