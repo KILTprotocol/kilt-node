@@ -2,7 +2,7 @@
 authors = ['KILT <info@kilt.io>']
 edition = '2018'
 name = 'mashnet-node-runtime'
-version = '0.20.0'
+version = '0.22.0'
 
 [dependencies.aura]
 default_features = false

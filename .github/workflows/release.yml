@@ -5,24 +5,7 @@ on:
 name: Release
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Use Node.js v10
-        uses: actions/setup-node@v1
-        with:
-          node-version: 10.x
-
-      - name: yarn install, lint and test
-        run: |
-          yarn install --frozen-lockfile
-          yarn lint
   buildECR:
-    needs: test
     
     name: Build image and push to Amazon ECR
     runs-on: ubuntu-latest
@@ -58,7 +41,6 @@ jobs:
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
   buildDocker:
-    needs: test
 
     name: Build image and push to Docker Hub
     runs-on: ubuntu-latest
