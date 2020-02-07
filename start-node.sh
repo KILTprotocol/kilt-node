@@ -51,8 +51,6 @@ Usage:
   -t, --telemetry                   Flag indicating whether or not to send data to the telemetry server
   -r, --rpc                         Whether to activate rpc
   -v, --validator                   Whether the node should be a validator. Needs NODE_SEED and NODE_KEY environment variables.
-  -p, --purge-userdata              Purges all chain-dependend user data in auxiliary services (ctypes, contacts, messages, ...). 
-                                    Needs SERVICES_SECRET environment variable.
   --devnet                          Use the KILT devnet instead of the testnet
 
   Examples:
@@ -75,7 +73,6 @@ bootnodes=
 node_name=
 account_name=
 telemetry=0
-purge_userdata=0
 dry_run=0
 rpc=0
 validator=0
@@ -93,8 +90,6 @@ while [[ "$1" != "" ]]; do
                                 ;;
         -v | --validator )      validator=1
                                 ;;          
-        -p | --purge-userdata ) purge_userdata=1
-                                ;;
         -d | --dry-run )        dry_run=1
                                 ;;
         -r | --rpc )            rpc=1
@@ -164,14 +159,6 @@ fi
 
 if [[ "$telemetry" = "1" ]]; then
     arg_telemetry=" --telemetry-url ${TELEMETRY_URL}"
-fi
-
-if [[ "$purge_userdata" = "1" ]]; then
-    echo "Purging user data in services (SERVICES_SECRET=${SERVICES_SECRET})..."
-
-    curl -X DELETE -H "Authorization: ${SERVICES_SECRET}" https://services.kilt.io/ctype
-    curl -X DELETE -H "Authorization: ${SERVICES_SECRET}" https://services.kilt.io/messaging
-    curl -X DELETE -H "Authorization: ${SERVICES_SECRET}" https://services.kilt.io/contacts
 fi
 
 if [[ "$rpc" = "1" ]]; then

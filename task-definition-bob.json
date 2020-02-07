@@ -1,0 +1,53 @@
+{
+  "family": "devnet-node-bob",
+  "taskRoleArn": "arn:aws:iam::348099934012:role/ecsTaskExecutionRole",
+  "executionRoleArn": "arn:aws:iam::348099934012:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "devnet-node",
+      "image": "348099934012.dkr.ecr.eu-central-1.amazonaws.com/kilt/prototype-chain:0.21.2",
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/devnet-node-bob",
+          "awslogs-region": "eu-central-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "portMappings": [
+        {
+          "hostPort": 30333,
+          "protocol": "tcp",
+          "containerPort": 30333
+        }
+      ],
+      "command": [
+        "./start-node.sh",
+        "--validator",
+        "--node-name",
+        "bob",
+        "--connect-to",
+        "alice",
+        "--telemetry",
+        "--devnet"
+      ],
+      "secrets": [
+        {
+          "name": "NODE_KEY",
+          "valueFrom": "arn:aws:ssm:eu-central-1:348099934012:parameter/ECS/devnet/node/bob/key"
+        },
+        {
+          "name": "NODE_SEED",
+          "valueFrom": "arn:aws:ssm:eu-central-1:348099934012:parameter/ECS/devnet/node/bob/seed"
+        }
+      ],
+      "essential": true
+    }
+  ],
+  "cpu": "1024",
+  "memory": "2048",
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "networkMode": "awsvpc"
+}
