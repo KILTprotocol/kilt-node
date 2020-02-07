@@ -2,7 +2,7 @@
 authors = ['Parity Technologies <admin@parity.io>']
 edition = '2018'
 name = 'mashnet-node-runtime-wasm'
-version = '0.20.0'
+version = '0.22.0'
 [dependencies.mashnet-node-runtime]
 default-features = false
 path = '..'
