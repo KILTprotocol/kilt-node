@@ -71,7 +71,11 @@ fn check_add_did() {
                 signing_key.clone(), box_key.clone(), Some(b"http://kilt.org/submit".to_vec())));
 
         assert_eq!(<DIDs<Test>>::exists(account_hash), true);
-        let did = DID::dids(account_hash.clone());
+        let did = {
+            let opt = DID::dids(account_hash.clone());
+            assert!(opt.is_some());
+            opt.unwrap()
+        };
         assert_eq!(did.0, signing_key.clone());
         assert_eq!(did.1, box_key.clone());
         assert_eq!(did.2, Some(b"http://kilt.org/submit".to_vec()));

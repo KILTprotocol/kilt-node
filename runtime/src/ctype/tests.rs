@@ -76,7 +76,7 @@ fn it_works_for_default_value() {
             )
         );
         assert_eq!(<CTYPEs<Test>>::exists(ctype_hash), true);
-        assert_eq!(CType::ctypes(ctype_hash.clone()), account.clone());
+        assert_eq!(CType::ctypes(ctype_hash.clone()), Some(account.clone()));
         assert_err!(
             CType::add(
                 Origin::signed(account.clone()),
