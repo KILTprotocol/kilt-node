@@ -158,13 +158,15 @@ decl_module! {
 			
 			// check if root exists
 			if <Root<T>>::exists(root_id) {
-				let root = <Root<T>>::get(root_id.clone()).ok_or(Self::ERROR_ROOT_NOT_FOUND.1)?;
+				let root = <Root<T>>::get(root_id.clone())
+					.ok_or(Self::error(Self::ERROR_ROOT_NOT_FOUND).err().unwrap())?;
 				// check if this delegation has a parent
 				match parent_id {
 					Some(p) => {
 						// check if the parent exists
 						if <Delegations<T>>::exists(p) {
-							let parent = <Delegations<T>>::get(p.clone()).ok_or(Self::ERROR_DELEGATION_NOT_FOUND.1)?;
+							let parent = <Delegations<T>>::get(p.clone())
+								.ok_or(Self::error(Self::ERROR_DELEGATION_NOT_FOUND).err().unwrap())?;
 							// check if the parent's delegate is the sender of this transaction and has permission to delegate
 							if !parent.2.eq(&sender) {
 								return Self::error(Self::ERROR_NOT_OWNER_OF_PARENT);
@@ -214,7 +216,8 @@ decl_module! {
 			if !<Root<T>>::exists(root_id) {
 				return Self::error(Self::ERROR_ROOT_NOT_FOUND);
 			}
-			let mut r = <Root<T>>::get(root_id.clone()).ok_or(Self::ERROR_ROOT_NOT_FOUND.1)?;
+			let mut r = <Root<T>>::get(root_id.clone())
+				.ok_or(Self::error(Self::ERROR_ROOT_NOT_FOUND).err().unwrap())?;
 			// check if root node has been created by the sender of this transaction
 			if !r.1.eq(&sender) {
 				return Self::error(Self::ERROR_NOT_PERMITTED_TO_REVOKE);
@@ -297,7 +300,8 @@ impl<T: Trait> Module<T> {
 		if !<Delegations<T>>::exists(delegation) {
 			Self::error(Self::ERROR_DELEGATION_NOT_FOUND)?
 		}
-		let d = <Delegations<T>>::get(delegation).ok_or(Self::ERROR_DELEGATION_NOT_FOUND.1)?;
+		let d = <Delegations<T>>::get(delegation)
+			.ok_or(Self::error(Self::ERROR_DELEGATION_NOT_FOUND).err().unwrap())?;
 		// check if the account is the owner of the delegation
 		if d.2.eq(account) {
 			Ok(true)
@@ -306,7 +310,8 @@ impl<T: Trait> Module<T> {
 			match d.1 {
 				None => {
 					// return whether the account is owner of the root
-					let r = <Root<T>>::get(d.0.clone()).ok_or(Self::ERROR_ROOT_NOT_FOUND.1)?;
+					let r = <Root<T>>::get(d.0.clone())
+						.ok_or(Self::error(Self::ERROR_ROOT_NOT_FOUND).err().unwrap())?;
 					Ok(r.1.eq(account))
 				},
 				Some(p) => {
@@ -320,7 +325,8 @@ impl<T: Trait> Module<T> {
 	/// Revoke a delegation an all of its children
 	fn revoke(delegation: &T::DelegationNodeId, sender: &T::AccountId) -> Result {
 		// retrieve delegation node from storage
-		let mut d = <Delegations<T>>::get(delegation.clone()).ok_or(Self::ERROR_DELEGATION_NOT_FOUND.1)?;
+		let mut d = <Delegations<T>>::get(delegation.clone())
+			.ok_or(Self::error(Self::ERROR_DELEGATION_NOT_FOUND).err().unwrap())?;
 		// check if already revoked
 		if !d.4 {
 			// set revoked flag and store delegation node

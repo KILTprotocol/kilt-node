@@ -72,7 +72,8 @@ decl_module! {
 					if !<delegation::Delegations<T>>::exists(d.clone()) {
 						return Self::error(<delegation::Module<T>>::ERROR_DELEGATION_NOT_FOUND);
 					}
-					let delegation = <delegation::Delegations<T>>::get(d.clone()).ok_or(<delegation::Module<T>>::ERROR_DELEGATION_NOT_FOUND.1)?;
+					let delegation = <delegation::Delegations<T>>::get(d.clone())
+						.ok_or(Self::error(<delegation::Module<T>>::ERROR_DELEGATION_NOT_FOUND).err().unwrap())?;
 					if delegation.4 {
 						// delegation has been revoked
 						return Self::error(Self::ERROR_DELEGATION_REVOKED);
@@ -84,7 +85,8 @@ decl_module! {
 						return Self::error(Self::ERROR_DELEGATION_NOT_AUTHORIZED_TO_ATTEST);
 					} else {
 						// check if CTYPE of the delegation is matching the CTYPE of the attestation
-						let root = <delegation::Root<T>>::get(delegation.0.clone()).ok_or(<delegation::Module<T>>::ERROR_ROOT_NOT_FOUND.1)?;
+						let root = <delegation::Root<T>>::get(delegation.0.clone())
+							.ok_or(Self::error(<delegation::Module<T>>::ERROR_ROOT_NOT_FOUND).err().unwrap())?;
 						if !root.0.eq(&ctype_hash) {
 							return Self::error(Self::ERROR_CTYPE_OF_DELEGATION_NOT_MATCHING);
 						}
@@ -131,7 +133,8 @@ decl_module! {
 			}
 			
 			// lookup attestation
-			let mut existing_attestation = <Attestations<T>>::get(claim_hash.clone()).ok_or(Self::ERROR_ATTESTATION_NOT_FOUND.1)?;
+			let mut existing_attestation = <Attestations<T>>::get(claim_hash.clone())
+				.ok_or(Self::error(Self::ERROR_ATTESTATION_NOT_FOUND).err().unwrap())?;
 			// if the sender of the revocation transaction is not the attester, check delegation tree
 			if !existing_attestation.1.eq(&sender) {
 				match existing_attestation.2 {
