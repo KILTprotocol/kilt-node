@@ -24,10 +24,9 @@
 mod tests;
 
 use rstd::prelude::*;
-use runtime_primitives::codec::Codec;
-use runtime_primitives::traits::Member;
+use runtime_primitives::{codec::Codec, traits::Member};
 use support::{decl_event, decl_module, decl_storage, dispatch::Result, Parameter, StorageMap};
-use {system, system::ensure_signed};
+use system::{self, ensure_signed};
 
 /// The DID trait
 pub trait Trait: system::Trait {
