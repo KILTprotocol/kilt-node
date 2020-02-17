@@ -16,18 +16,17 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-
 use super::*;
 
 use primitives::{Blake2Hasher, H256};
 use runtime_io::with_externalities;
-use system;
-use support::{impl_outer_origin, assert_ok, assert_err};
 use runtime_primitives::{
 	testing::{Digest, DigestItem, Header},
-	traits::{BlakeTwo256,IdentityLookup},
+	traits::{BlakeTwo256, IdentityLookup},
 	BuildStorage,
 };
+use support::{assert_err, assert_ok, impl_outer_origin};
+use system;
 
 impl_outer_origin! {
 	pub enum Origin for Test {}
@@ -61,7 +60,11 @@ impl Trait for Test {
 type CType = Module<Test>;
 
 fn new_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
-	system::GenesisConfig::<Test>::default().build_storage().unwrap().0.into()
+	system::GenesisConfig::<Test>::default()
+		.build_storage()
+		.unwrap()
+		.0
+		.into()
 }
 
 #[test]
@@ -69,19 +72,14 @@ fn it_works_for_default_value() {
 	with_externalities(&mut new_test_ext(), || {
 		let account = H256::from_low_u64_be(1);
 		let ctype_hash = H256::from_low_u64_be(2);
-		assert_ok!(
-			CType::add(
-				Origin::signed(account.clone()),
-				ctype_hash.clone()
-			)
-		);
+		assert_ok!(CType::add(
+			Origin::signed(account.clone()),
+			ctype_hash.clone()
+		));
 		assert_eq!(<CTYPEs<Test>>::exists(ctype_hash), true);
 		assert_eq!(CType::ctypes(ctype_hash.clone()), Some(account.clone()));
 		assert_err!(
-			CType::add(
-				Origin::signed(account.clone()),
-				ctype_hash.clone()
-			),
+			CType::add(Origin::signed(account.clone()), ctype_hash.clone()),
 			CType::ERROR_CTYPE_ALREADY_EXISTS.1
 		);
 	});

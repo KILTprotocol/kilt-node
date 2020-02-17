@@ -16,17 +16,18 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-
 use super::*;
-use system;
-use runtime_io::with_externalities;
-use primitives::{H256, H512, Blake2Hasher, ed25519 as x25519};
-use primitives::*;
-use support::{impl_outer_origin, assert_ok, assert_err};
 use parity_codec::Encode;
+use primitives::*;
+use primitives::{ed25519 as x25519, Blake2Hasher, H256, H512};
+use runtime_io::with_externalities;
+use support::{assert_err, assert_ok, impl_outer_origin};
+use system;
 
 use runtime_primitives::{
-	BuildStorage, traits::{BlakeTwo256, IdentityLookup}, testing::{Digest, DigestItem, Header}
+	testing::{Digest, DigestItem, Header},
+	traits::{BlakeTwo256, IdentityLookup},
+	BuildStorage,
 };
 
 impl_outer_origin! {
@@ -68,12 +69,16 @@ impl Trait for Test {
 type CType = ctype::Module<Test>;
 type Delegation = Module<Test>;
 
-fn hash_to_u8<T : Encode> (hash : T) -> Vec<u8>{
+fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
 	return hash.encode();
 }
 
 fn new_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
-	system::GenesisConfig::<Test>::default().build_storage().unwrap().0.into()
+	system::GenesisConfig::<Test>::default()
+		.build_storage()
+		.unwrap()
+		.0
+		.into()
 }
 
 #[test]

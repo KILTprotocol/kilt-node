@@ -21,13 +21,14 @@
 #![warn(missing_docs)]
 #![warn(unused_extern_crates)]
 
-#[macro_use] extern crate hex_literal;
+#[macro_use]
+extern crate hex_literal;
 
 mod chain_spec;
-mod service;
 mod cli;
+mod service;
 
-pub use substrate_cli::{VersionInfo, IntoExit, error};
+pub use substrate_cli::{error, IntoExit, VersionInfo};
 
 fn run() -> cli::error::Result<()> {
 	let version = VersionInfo {
