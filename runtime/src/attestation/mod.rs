@@ -67,59 +67,53 @@ decl_module! {
 				return Self::error(<ctype::Module<T>>::ERROR_CTYPE_NOT_FOUND);
 			}
 
-			match delegation_id {
+			if let Some(d) = delegation_id {
 				// has a delegation
-				Some(d) => {
-					// check if delegation exists
-					let delegation = <error::Module<T>>::ok_or_deposit_err(
-						<delegation::Delegations<T>>::get(d.clone()),
-						<delegation::Module<T>>::ERROR_DELEGATION_NOT_FOUND
+				// check if delegation exists
+				let delegation = <error::Module<T>>::ok_or_deposit_err(
+					<delegation::Delegations<T>>::get(d.clone()),
+					<delegation::Module<T>>::ERROR_DELEGATION_NOT_FOUND
+				)?;
+				if delegation.4 {
+					// delegation has been revoked
+					return Self::error(Self::ERROR_DELEGATION_REVOKED);
+				} else if !delegation.2.eq(&sender) {
+					// delegation is not made up for the sender of this transaction
+					return Self::error(Self::ERROR_NOT_DELEGATED_TO_ATTESTER);
+				} else if (delegation.3 & delegation::Permissions::ATTEST) != delegation::Permissions::ATTEST {
+					// delegation is not set up for attesting claims
+					return Self::error(Self::ERROR_DELEGATION_NOT_AUTHORIZED_TO_ATTEST);
+				} else {
+					// check if CTYPE of the delegation is matching the CTYPE of the attestation
+					let root = <error::Module<T>>::ok_or_deposit_err(
+						<delegation::Root<T>>::get(delegation.0.clone()),
+						<delegation::Module<T>>::ERROR_ROOT_NOT_FOUND
 					)?;
-					if delegation.4 {
-						// delegation has been revoked
-						return Self::error(Self::ERROR_DELEGATION_REVOKED);
-					} else if !delegation.2.eq(&sender) {
-						// delegation is not made up for the sender of this transaction
-						return Self::error(Self::ERROR_NOT_DELEGATED_TO_ATTESTER);
-					} else if (delegation.3 & delegation::Permissions::ATTEST) != delegation::Permissions::ATTEST {
-						// delegation is not set up for attesting claims
-						return Self::error(Self::ERROR_DELEGATION_NOT_AUTHORIZED_TO_ATTEST);
-					} else {
-						// check if CTYPE of the delegation is matching the CTYPE of the attestation
-						let root = <error::Module<T>>::ok_or_deposit_err(
-							<delegation::Root<T>>::get(delegation.0.clone()),
-							<delegation::Module<T>>::ERROR_ROOT_NOT_FOUND
-						)?;
-						if !root.0.eq(&ctype_hash) {
-							return Self::error(Self::ERROR_CTYPE_OF_DELEGATION_NOT_MATCHING);
-						}
+					if !root.0.eq(&ctype_hash) {
+						return Self::error(Self::ERROR_CTYPE_OF_DELEGATION_NOT_MATCHING);
 					}
-				},
-				None => {}
+				}
 			}
 
 			// check if attestation already exists
-			if <Attestations<T>>::exists(claim_hash.clone()) {
+			if <Attestations<T>>::exists(claim_hash) {
 				return Self::error(Self::ERROR_ALREADY_ATTESTED);
 			}
 
 			// insert attestation
 			::runtime_io::print("insert Attestation");
-			<Attestations<T>>::insert(claim_hash.clone(), (ctype_hash.clone(), sender.clone(), delegation_id.clone(), false));
+			<Attestations<T>>::insert(claim_hash, (ctype_hash, sender.clone(), delegation_id, false));
 
-			match delegation_id {
-				Some(d) => {
-					// if attestation is based on a delegation this is stored in a separate map
-					let mut delegated_attestations = <DelegatedAttestations<T>>::get(d);
-					delegated_attestations.push(claim_hash.clone());
-					<DelegatedAttestations<T>>::insert(d.clone(), delegated_attestations);
-				},
-				None => {}
+			if let Some(d) = delegation_id {
+				// if attestation is based on a delegation this is stored in a separate map
+				let mut delegated_attestations = <DelegatedAttestations<T>>::get(d);
+				delegated_attestations.push(claim_hash.clone());
+				<DelegatedAttestations<T>>::insert(d, delegated_attestations);
 			}
 
 			// deposit event that attestation has beed added
-			Self::deposit_event(RawEvent::AttestationCreated(sender.clone(), claim_hash.clone(),
-					ctype_hash.clone(), delegation_id.clone()));
+			Self::deposit_event(RawEvent::AttestationCreated(sender, claim_hash,
+					ctype_hash, delegation_id));
 			Ok(())
 		}
 
@@ -159,10 +153,10 @@ decl_module! {
 			// revoke attestation
 			::runtime_io::print("revoking Attestation");
 			existing_attestation.3 = true;
-			<Attestations<T>>::insert(claim_hash.clone(), existing_attestation.clone());
+			<Attestations<T>>::insert(claim_hash, existing_attestation);
 
 			// deposit event that the attestation has been revoked
-			Self::deposit_event(RawEvent::AttestationRevoked(sender.clone(), claim_hash.clone()));
+			Self::deposit_event(RawEvent::AttestationRevoked(sender, claim_hash));
 			Ok(())
 		}
 	}
@@ -183,7 +177,7 @@ impl<T: Trait> Module<T> {
 
 	/// Create an error using the error module
 	pub fn error(error_type: error::ErrorType) -> Result {
-		return <error::Module<T>>::error(error_type);
+		<error::Module<T>>::error(error_type)
 	}
 
 	/// Check delegation hierarchy using the delegation module

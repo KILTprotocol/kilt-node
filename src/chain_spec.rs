@@ -22,7 +22,7 @@ use mashnet_node_runtime::{
 	AccountId, BalancesConfig, ConsensusConfig, GenesisConfig, IndicesConfig, SudoConfig,
 	TimestampConfig,
 };
-use substrate_service;
+
 
 use ed25519::Public as AuthorityId;
 use primitives::{ed25519, ed25519 as x25519, Pair};
@@ -164,7 +164,7 @@ fn testnet_genesis(
 	GenesisConfig {
 		consensus: Some(ConsensusConfig {
 			code: include_bytes!("../runtime/wasm/target/wasm32-unknown-unknown/release/mashnet_node_runtime_wasm.compact.wasm").to_vec(),
-			authorities: initial_authorities.clone(),
+			authorities: initial_authorities,
 		}),
 		system: None,
 		timestamp: Some(TimestampConfig {
@@ -174,9 +174,9 @@ fn testnet_genesis(
 			ids: endowed_accounts.clone(),
 		}),
 		balances: Some(BalancesConfig {
-			transaction_base_fee: 1000000,
+			transaction_base_fee: 1_000_000,
 			transaction_byte_fee: 0,
-			existential_deposit: 1000000,
+			existential_deposit: 1_000_000,
 			transfer_fee: 0,
 			creation_fee: 0,
 			balances: endowed_accounts.iter().cloned().map(|k|(k, 1 << 60)).collect(),

@@ -84,7 +84,7 @@ construct_service_factory! {
 					let client = service.client();
 					executor.spawn(start_aura(
 						SlotDuration::get_or_compute(&*client)?,
-						key.clone(),
+						key,
 						client.clone(),
 						client,
 						proposer,

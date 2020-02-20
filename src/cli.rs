@@ -87,7 +87,7 @@ where
 	let (exit_send, exit) = exit_future::signal();
 
 	let executor = runtime.executor();
-	informant::start(&service, exit.clone(), executor.clone());
+	informant::start(&service, exit, executor);
 
 	let _ = runtime.block_on(e.into_exit());
 	exit_send.fire();

@@ -58,7 +58,7 @@ impl<T: Trait> Module<T> {
 		Self::deposit_event(RawEvent::ErrorOccurred(T::ErrorCode::sa(
 			error_type.0.into(),
 		)));
-		return Err(error_type.1);
+		Err(error_type.1)
 	}
 
 	/// Create an error, it logs the error, deposits an error event and returns the error message

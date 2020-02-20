@@ -62,9 +62,9 @@ decl_module! {
 
 			// add CTYPE to storage
 			::runtime_io::print("insert CTYPE");
-			<CTYPEs<T>>::insert(hash.clone(), sender.clone());
+			<CTYPEs<T>>::insert(hash, sender.clone());
 			// deposit event that the CTYPE has been added
-			Self::deposit_event(RawEvent::CTypeCreated(sender.clone(), hash.clone()));
+			Self::deposit_event(RawEvent::CTypeCreated(sender, hash));
 			Ok(())
 		}
 
@@ -88,6 +88,6 @@ impl<T: Trait> Module<T> {
 
 	/// Create an error using the error module
 	pub fn error(error_type: error::ErrorType) -> Result {
-		return <error::Module<T>>::error(error_type);
+		<error::Module<T>>::error(error_type)
 	}
 }
