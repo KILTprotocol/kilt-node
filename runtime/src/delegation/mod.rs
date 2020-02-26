@@ -375,9 +375,9 @@ impl<T: Trait> Module<T> {
 
 decl_storage! {
 	trait Store for Module<T: Trait> as Delegation {
-		// Root: root-id => (ctype-hash, account, revoked)
+		// Root: root-id => (ctype-hash, account, revoked)?
 		pub Root get(root): map T::DelegationNodeId => Option<(T::Hash,T::AccountId,bool)>;
-		// Delegations: delegation-id => (root-id, parent-id?, account, permissions, revoked)
+		// Delegations: delegation-id => (root-id, parent-id?, account, permissions, revoked)?
 		pub Delegations get(delegation): map T::DelegationNodeId => Option<(T::DelegationNodeId,Option<T::DelegationNodeId>,T::AccountId,Permissions,bool)>;
 		// Children: root-or-delegation-id => [delegation-id]
 		pub Children get(children): map T::DelegationNodeId => Vec<T::DelegationNodeId>;

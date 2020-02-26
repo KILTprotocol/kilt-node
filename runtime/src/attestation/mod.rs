@@ -199,7 +199,7 @@ impl<T: Trait> Module<T> {
 
 decl_storage! {
 	trait Store for Module<T: Trait> as Attestation {
-		/// Attestations: claim-hash -> [(ctype-hash, account, delegation-id?, revoked)]
+		/// Attestations: claim-hash -> (ctype-hash, account, delegation-id?, revoked)?
 		Attestations get(attestations): map T::Hash => Option<(T::Hash,T::AccountId,Option<T::DelegationNodeId>,bool)>;
 		/// DelegatedAttestations: delegation-id -> [claim-hash]
 		DelegatedAttestations get(delegated_attestations): map T::DelegationNodeId => Vec<T::Hash>;
