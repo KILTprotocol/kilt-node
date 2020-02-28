@@ -89,7 +89,11 @@ fn check_add_attestation() {
         let account_hash = pair.public();
         assert_ok!(CType::add(Origin::signed(account_hash.clone()), hash.clone()));
         assert_ok!(Attestation::add(Origin::signed(account_hash.clone()), hash.clone(), hash.clone(), None));
-        let existing_attestation_for_claim = Attestation::attestations(hash.clone());
+        let existing_attestation_for_claim = {
+            let opt = Attestation::attestations(hash.clone());
+            assert!(opt.is_some());
+            opt.unwrap()
+        };
         assert_eq!(existing_attestation_for_claim.0, hash.clone());
         assert_eq!(existing_attestation_for_claim.1, account_hash.clone());
         assert_eq!(existing_attestation_for_claim.3, false);
@@ -105,7 +109,11 @@ fn check_revoke_attestation() {
         assert_ok!(CType::add(Origin::signed(account_hash.clone()), hash.clone()));
         assert_ok!(Attestation::add(Origin::signed(account_hash.clone()), hash.clone(), hash.clone(), None));
         assert_ok!(Attestation::revoke(Origin::signed(account_hash.clone()), hash.clone()));
-        let existing_attestation_for_claim = Attestation::attestations(hash.clone());
+        let existing_attestation_for_claim = {
+            let opt = Attestation::attestations(hash.clone());
+            assert!(opt.is_some());
+            opt.unwrap()
+        };
         assert_eq!(existing_attestation_for_claim.0, hash.clone());
         assert_eq!(existing_attestation_for_claim.1, account_hash.clone());
         assert_eq!(existing_attestation_for_claim.3, true);
