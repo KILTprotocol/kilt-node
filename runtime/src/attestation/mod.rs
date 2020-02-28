@@ -71,11 +71,10 @@ decl_module! {
 				// has a delegation
 				Some(d) => {
 					// check if delegation exists
-					if !<delegation::Delegations<T>>::exists(d.clone()) {
-						return Self::error(<delegation::Module<T>>::ERROR_DELEGATION_NOT_FOUND);
-					}
-					let delegation = <delegation::Delegations<T>>::get(d.clone())
-						.ok_or_else(||Self::error(<delegation::Module<T>>::ERROR_DELEGATION_NOT_FOUND).err().unwrap())?;
+					let delegation = <error::Module<T>>::ok_or_deposit_err(
+						<delegation::Delegations<T>>::get(d.clone()),
+						<delegation::Module<T>>::ERROR_DELEGATION_NOT_FOUND
+					)?;
 					if delegation.4 {
 						// delegation has been revoked
 						return Self::error(Self::ERROR_DELEGATION_REVOKED);
@@ -87,8 +86,10 @@ decl_module! {
 						return Self::error(Self::ERROR_DELEGATION_NOT_AUTHORIZED_TO_ATTEST);
 					} else {
 						// check if CTYPE of the delegation is matching the CTYPE of the attestation
-						let root = <delegation::Root<T>>::get(delegation.0.clone())
-							.ok_or_else(||Self::error(<delegation::Module<T>>::ERROR_ROOT_NOT_FOUND).err().unwrap())?;
+						let root = <error::Module<T>>::ok_or_deposit_err(
+							<delegation::Root<T>>::get(delegation.0.clone()),
+							<delegation::Module<T>>::ERROR_ROOT_NOT_FOUND
+						)?;
 						if !root.0.eq(&ctype_hash) {
 							return Self::error(Self::ERROR_CTYPE_OF_DELEGATION_NOT_MATCHING);
 						}
@@ -129,14 +130,11 @@ decl_module! {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 
-			// check if the attestation exists
-			if !<Attestations<T>>::exists(claim_hash.clone()) {
-				return Self::error(Self::ERROR_ATTESTATION_NOT_FOUND);
-			}
-
-			// lookup attestation
-			let mut existing_attestation = <Attestations<T>>::get(claim_hash.clone())
-				.ok_or_else(||Self::error(Self::ERROR_ATTESTATION_NOT_FOUND).err().unwrap())?;
+			// lookup attestation & check if the attestation exists
+			let mut existing_attestation = <error::Module<T>>::ok_or_deposit_err(
+				<Attestations<T>>::get(claim_hash.clone()),
+				Self::ERROR_ATTESTATION_NOT_FOUND
+			)?;
 			// if the sender of the revocation transaction is not the attester, check delegation tree
 			if !existing_attestation.1.eq(&sender) {
 				match existing_attestation.2 {

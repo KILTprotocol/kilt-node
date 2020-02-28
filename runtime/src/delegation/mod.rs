@@ -158,48 +158,44 @@ decl_module! {
 			}
 
 			// check if root exists
-			if <Root<T>>::exists(root_id) {
-				let root = <Root<T>>::get(root_id.clone())
-					.ok_or_else(||Self::error(Self::ERROR_ROOT_NOT_FOUND).err().unwrap())?;
-				// check if this delegation has a parent
-				match parent_id {
-					Some(p) => {
-						// check if the parent exists
-						if <Delegations<T>>::exists(p) {
-							let parent = <Delegations<T>>::get(p.clone())
-								.ok_or_else(||Self::error(Self::ERROR_DELEGATION_NOT_FOUND).err().unwrap())?;
-							// check if the parent's delegate is the sender of this transaction and has permission to delegate
-							if !parent.2.eq(&sender) {
-								return Self::error(Self::ERROR_NOT_OWNER_OF_PARENT);
-							} else if (parent.3 & Permissions::DELEGATE) != Permissions::DELEGATE {
-								return Self::error(Self::ERROR_NOT_AUTHORIZED_TO_DELEGATE);
-							} else {
-								// insert delegation
-								::runtime_io::print("insert Delegation with parent");
-								<Delegations<T>>::insert(delegation_id.clone(), (root_id.clone(),
-										Some(p.clone()), delegate.clone(), permissions, false));
-								// add child to tree structure
-								Self::add_child(delegation_id.clone(), p.clone());
-							}
-						} else {
-							return Self::error(Self::ERROR_PARENT_NOT_FOUND);
-						}
-					},
-					None => {
-						// check if the sender of this transaction is the creator of the root node (as no parent is given)
-						if !root.1.eq(&sender) {
-							return Self::error(Self::ERROR_NOT_OWNER_OF_ROOT);
-						}
-						// inser delegation
-						::runtime_io::print("insert Delegation without parent");
+			let root = <error::Module<T>>::ok_or_deposit_err(
+				<Root<T>>::get(root_id.clone()),
+				Self::ERROR_ROOT_NOT_FOUND
+			)?;
+			// check if this delegation has a parent
+			match parent_id {
+				Some(p) => {
+					// check if the parent exists
+					let parent = <error::Module<T>>::ok_or_deposit_err(
+						<Delegations<T>>::get(p.clone()),
+						Self::ERROR_PARENT_NOT_FOUND
+					)?;
+					// check if the parent's delegate is the sender of this transaction and has permission to delegate
+					if !parent.2.eq(&sender) {
+						return Self::error(Self::ERROR_NOT_OWNER_OF_PARENT);
+					} else if (parent.3 & Permissions::DELEGATE) != Permissions::DELEGATE {
+						return Self::error(Self::ERROR_NOT_AUTHORIZED_TO_DELEGATE);
+					} else {
+						// insert delegation
+						::runtime_io::print("insert Delegation with parent");
 						<Delegations<T>>::insert(delegation_id.clone(), (root_id.clone(),
-								None, delegate.clone(), permissions, false));
+								Some(p.clone()), delegate.clone(), permissions, false));
 						// add child to tree structure
-						Self::add_child(delegation_id.clone(), root_id.clone());
+						Self::add_child(delegation_id.clone(), p.clone());
 					}
+				},
+				None => {
+					// check if the sender of this transaction is the creator of the root node (as no parent is given)
+					if !root.1.eq(&sender) {
+						return Self::error(Self::ERROR_NOT_OWNER_OF_ROOT);
+					}
+					// inser delegation
+					::runtime_io::print("insert Delegation without parent");
+					<Delegations<T>>::insert(delegation_id.clone(), (root_id.clone(),
+							None, delegate.clone(), permissions, false));
+					// add child to tree structure
+					Self::add_child(delegation_id.clone(), root_id.clone());
 				}
-			} else {
-				return Self::error(Self::ERROR_ROOT_NOT_FOUND);
 			}
 			// deposit event that the delegation node has been added
 			Self::deposit_event(RawEvent::DelegationCreated(sender.clone(), delegation_id.clone(),
@@ -214,11 +210,10 @@ decl_module! {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 			// check if root node exists
-			if !<Root<T>>::exists(root_id) {
-				return Self::error(Self::ERROR_ROOT_NOT_FOUND);
-			}
-			let mut r = <Root<T>>::get(root_id.clone())
-				.ok_or_else(||Self::error(Self::ERROR_ROOT_NOT_FOUND).err().unwrap())?;
+			let mut r = <error::Module<T>>::ok_or_deposit_err(
+				<Root<T>>::get(root_id.clone()),
+				Self::ERROR_ROOT_NOT_FOUND
+			)?;
 			// check if root node has been created by the sender of this transaction
 			if !r.1.eq(&sender) {
 				return Self::error(Self::ERROR_NOT_PERMITTED_TO_REVOKE);
@@ -303,11 +298,10 @@ impl<T: Trait> Module<T> {
 		delegation: &T::DelegationNodeId,
 	) -> result::Result<bool, &'static str> {
 		// check if delegation exists
-		if !<Delegations<T>>::exists(delegation) {
-			Self::error(Self::ERROR_DELEGATION_NOT_FOUND)?;
-		}
-		let d = <Delegations<T>>::get(delegation)
-			.ok_or_else(|| Self::error(Self::ERROR_DELEGATION_NOT_FOUND).err().unwrap())?;
+		let d = <error::Module<T>>::ok_or_deposit_err(
+			<Delegations<T>>::get(delegation),
+			Self::ERROR_DELEGATION_NOT_FOUND
+		)?;
 		// check if the account is the owner of the delegation
 		if d.2.eq(account) {
 			Ok(true)
@@ -316,8 +310,10 @@ impl<T: Trait> Module<T> {
 			match d.1 {
 				None => {
 					// return whether the account is owner of the root
-					let r = <Root<T>>::get(d.0.clone())
-						.ok_or_else(|| Self::error(Self::ERROR_ROOT_NOT_FOUND).err().unwrap())?;
+					let r = <error::Module<T>>::ok_or_deposit_err(
+						<Root<T>>::get(d.0.clone()),
+						Self::ERROR_ROOT_NOT_FOUND
+					)?;
 					Ok(r.1.eq(account))
 				}
 				Some(p) => {
@@ -331,8 +327,10 @@ impl<T: Trait> Module<T> {
 	/// Revoke a delegation an all of its children
 	fn revoke(delegation: &T::DelegationNodeId, sender: &T::AccountId) -> Result {
 		// retrieve delegation node from storage
-		let mut d = <Delegations<T>>::get(delegation.clone())
-			.ok_or_else(|| Self::error(Self::ERROR_DELEGATION_NOT_FOUND).err().unwrap())?;
+		let mut d = <error::Module<T>>::ok_or_deposit_err(
+			<Delegations<T>>::get(delegation.clone()),
+			Self::ERROR_DELEGATION_NOT_FOUND
+		)?;
 		// check if already revoked
 		if !d.4 {
 			// set revoked flag and store delegation node
