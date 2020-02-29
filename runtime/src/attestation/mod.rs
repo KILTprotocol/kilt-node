@@ -71,7 +71,7 @@ decl_module! {
 				// has a delegation
 				// check if delegation exists
 				let delegation = <error::Module<T>>::ok_or_deposit_err(
-					<delegation::Delegations<T>>::get(d.clone()),
+					<delegation::Delegations<T>>::get(d),
 					<delegation::Module<T>>::ERROR_DELEGATION_NOT_FOUND
 				)?;
 				if delegation.4 {
@@ -86,7 +86,7 @@ decl_module! {
 				} else {
 					// check if CTYPE of the delegation is matching the CTYPE of the attestation
 					let root = <error::Module<T>>::ok_or_deposit_err(
-						<delegation::Root<T>>::get(delegation.0.clone()),
+						<delegation::Root<T>>::get(delegation.0),
 						<delegation::Module<T>>::ERROR_ROOT_NOT_FOUND
 					)?;
 					if !root.0.eq(&ctype_hash) {
@@ -126,7 +126,7 @@ decl_module! {
 
 			// lookup attestation & check if the attestation exists
 			let mut existing_attestation = <error::Module<T>>::ok_or_deposit_err(
-				<Attestations<T>>::get(claim_hash.clone()),
+				<Attestations<T>>::get(claim_hash),
 				Self::ERROR_ATTESTATION_NOT_FOUND
 			)?;
 			// if the sender of the revocation transaction is not the attester, check delegation tree

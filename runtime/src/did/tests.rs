@@ -17,8 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use super::*;
-use primitives::*;
-use primitives::{Blake2Hasher, H256};
+use primitives::{Blake2Hasher, H256, *};
 use runtime_io::with_externalities;
 use support::{assert_ok, impl_outer_origin};
 use system;

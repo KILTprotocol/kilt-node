@@ -54,8 +54,7 @@ pub use consensus::Call as ConsensusCall;
 pub use runtime_primitives::BuildStorage;
 pub use runtime_primitives::{Perbill, Permill};
 pub use support::{construct_runtime, StorageValue};
-pub use timestamp::BlockPeriod;
-pub use timestamp::Call as TimestampCall;
+pub use timestamp::{BlockPeriod, Call as TimestampCall};
 
 mod attestation;
 mod ctype;

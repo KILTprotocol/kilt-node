@@ -18,12 +18,10 @@
 
 //! KILT CLI parser
 
-use crate::chain_spec;
-use crate::service;
+use crate::{chain_spec, service};
 use futures::{future, sync::oneshot, Future};
 use log::info;
-use std::cell::RefCell;
-use std::ops::Deref;
+use std::{cell::RefCell, ops::Deref};
 pub use substrate_cli::{error, IntoExit, VersionInfo};
 use substrate_cli::{informant, parse_and_execute, NoCustom};
 use substrate_service::{Roles as ServiceRoles, ServiceFactory};

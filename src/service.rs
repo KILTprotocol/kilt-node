@@ -30,10 +30,9 @@ use primitives::{ed25519::Pair, Pair as PairT};
 use std::sync::Arc;
 use substrate_client as client;
 use substrate_executor::native_executor_instance;
-use substrate_service::construct_service_factory;
 use substrate_service::{
-	FactoryFullConfiguration, FullBackend, FullClient, FullComponents, FullExecutor, LightBackend,
-	LightClient, LightComponents, LightExecutor, TaskExecutor,
+	construct_service_factory, FactoryFullConfiguration, FullBackend, FullClient, FullComponents,
+	FullExecutor, LightBackend, LightClient, LightComponents, LightExecutor, TaskExecutor,
 };
 use transaction_pool::{self, txpool::Pool as TransactionPool};
 

@@ -18,8 +18,7 @@
 
 use super::*;
 use parity_codec::Encode;
-use primitives::*;
-use primitives::{ed25519 as x25519, Blake2Hasher, H256, H512};
+use primitives::{ed25519 as x25519, Blake2Hasher, H256, H512, *};
 use runtime_io::with_externalities;
 use support::{assert_err, assert_ok, impl_outer_origin};
 use system;
@@ -406,7 +405,6 @@ fn check_add_and_revoke_delegations() {
 			Origin::signed(account_hash_alice.clone()),
 			id_level_0.clone()
 		));
-
 		assert_eq!(Delegation::root(id_level_0.clone()).unwrap().2, true);
 		assert_eq!(Delegation::delegation(id_level_1.clone()).unwrap().4, true);
 		assert_eq!(
