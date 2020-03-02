@@ -23,7 +23,6 @@ use mashnet_node_runtime::{
 	TimestampConfig,
 };
 
-
 use ed25519::Public as AuthorityId;
 use primitives::{ed25519, ed25519 as x25519, Pair};
 

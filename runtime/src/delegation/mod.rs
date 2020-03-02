@@ -82,8 +82,17 @@ pub trait Trait: ctype::Trait + system::Trait + error::Trait {
 	/// Signature of a delegation
 	type Signature: Verify<Signer = Self::Signer> + Member + Codec + Default;
 	/// Delegation node id type
-	type DelegationNodeId: Parameter + Member + Codec + MaybeDisplay + SimpleBitOps
-			+ Default + Copy + CheckEqual + rstd::hash::Hash + AsRef<[u8]> + AsMut<[u8]>;
+	type DelegationNodeId: Parameter
+		+ Member
+		+ Codec
+		+ MaybeDisplay
+		+ SimpleBitOps
+		+ Default
+		+ Copy
+		+ CheckEqual
+		+ rstd::hash::Hash
+		+ AsRef<[u8]>
+		+ AsMut<[u8]>;
 }
 
 decl_event!(
@@ -293,7 +302,7 @@ impl<T: Trait> Module<T> {
 		// check if delegation exists
 		let d = <error::Module<T>>::ok_or_deposit_err(
 			<Delegations<T>>::get(delegation),
-			Self::ERROR_DELEGATION_NOT_FOUND
+			Self::ERROR_DELEGATION_NOT_FOUND,
 		)?;
 		// check if the account is the owner of the delegation
 		if d.2.eq(account) {
@@ -305,7 +314,7 @@ impl<T: Trait> Module<T> {
 					// return whether the account is owner of the root
 					let r = <error::Module<T>>::ok_or_deposit_err(
 						<Root<T>>::get(d.0.clone()),
-						Self::ERROR_ROOT_NOT_FOUND
+						Self::ERROR_ROOT_NOT_FOUND,
 					)?;
 					Ok(r.1.eq(account))
 				}
@@ -322,7 +331,7 @@ impl<T: Trait> Module<T> {
 		// retrieve delegation node from storage
 		let mut d = <error::Module<T>>::ok_or_deposit_err(
 			<Delegations<T>>::get(delegation.clone()),
-			Self::ERROR_DELEGATION_NOT_FOUND
+			Self::ERROR_DELEGATION_NOT_FOUND,
 		)?;
 		// check if already revoked
 		if !d.4 {
@@ -330,10 +339,7 @@ impl<T: Trait> Module<T> {
 			d.4 = true;
 			<Delegations<T>>::insert(*delegation, d);
 			// deposit event that the delegation has been revoked
-			Self::deposit_event(RawEvent::DelegationRevoked(
-				sender.clone(),
-				*delegation,
-			));
+			Self::deposit_event(RawEvent::DelegationRevoked(sender.clone(), *delegation));
 			// revoke all children recursively
 			Self::revoke_children(delegation, sender)?;
 		}

@@ -92,8 +92,16 @@ fn check_add_attestation() {
 		let pair = x25519::Pair::from_seed(*b"Alice                           ");
 		let hash = H256::from_low_u64_be(1);
 		let account_hash = pair.public();
-		assert_ok!(CType::add(Origin::signed(account_hash.clone()), hash.clone()));
-		assert_ok!(Attestation::add(Origin::signed(account_hash.clone()), hash.clone(), hash.clone(), None));
+		assert_ok!(CType::add(
+			Origin::signed(account_hash.clone()),
+			hash.clone()
+		));
+		assert_ok!(Attestation::add(
+			Origin::signed(account_hash.clone()),
+			hash.clone(),
+			hash.clone(),
+			None
+		));
 		let existing_attestation_for_claim = {
 			let opt = Attestation::attestations(hash.clone());
 			assert!(opt.is_some());
@@ -111,9 +119,20 @@ fn check_revoke_attestation() {
 		let pair = x25519::Pair::from_seed(*b"Alice                           ");
 		let hash = H256::from_low_u64_be(1);
 		let account_hash = pair.public();
-		assert_ok!(CType::add(Origin::signed(account_hash.clone()), hash.clone()));
-		assert_ok!(Attestation::add(Origin::signed(account_hash.clone()), hash.clone(), hash.clone(), None));
-		assert_ok!(Attestation::revoke(Origin::signed(account_hash.clone()), hash.clone()));
+		assert_ok!(CType::add(
+			Origin::signed(account_hash.clone()),
+			hash.clone()
+		));
+		assert_ok!(Attestation::add(
+			Origin::signed(account_hash.clone()),
+			hash.clone(),
+			hash.clone(),
+			None
+		));
+		assert_ok!(Attestation::revoke(
+			Origin::signed(account_hash.clone()),
+			hash.clone()
+		));
 		let existing_attestation_for_claim = {
 			let opt = Attestation::attestations(hash.clone());
 			assert!(opt.is_some());

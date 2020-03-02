@@ -97,70 +97,211 @@ fn check_add_and_revoke_delegations() {
 		let id_level_2_1 = H256::from_low_u64_be(21);
 		let id_level_2_2 = H256::from_low_u64_be(22);
 		let id_level_2_2_1 = H256::from_low_u64_be(221);
-		assert_ok!(CType::add(Origin::signed(account_hash_alice.clone()), ctype_hash.clone()));
+		assert_ok!(CType::add(
+			Origin::signed(account_hash_alice.clone()),
+			ctype_hash.clone()
+		));
 
-		assert_ok!(Delegation::create_root(Origin::signed(account_hash_alice.clone()), id_level_0.clone(), ctype_hash.clone()));
-		assert_err!(Delegation::create_root(Origin::signed(account_hash_alice.clone()), id_level_0.clone(), ctype_hash.clone()),
-			Delegation::ERROR_ROOT_ALREADY_EXISTS.1);
-		assert_err!(Delegation::create_root(Origin::signed(account_hash_alice.clone()), id_level_1.clone(), H256::from_low_u64_be(2)),
-			CType::ERROR_CTYPE_NOT_FOUND.1);
+		assert_ok!(Delegation::create_root(
+			Origin::signed(account_hash_alice.clone()),
+			id_level_0.clone(),
+			ctype_hash.clone()
+		));
+		assert_err!(
+			Delegation::create_root(
+				Origin::signed(account_hash_alice.clone()),
+				id_level_0.clone(),
+				ctype_hash.clone()
+			),
+			Delegation::ERROR_ROOT_ALREADY_EXISTS.1
+		);
+		assert_err!(
+			Delegation::create_root(
+				Origin::signed(account_hash_alice.clone()),
+				id_level_1.clone(),
+				H256::from_low_u64_be(2)
+			),
+			CType::ERROR_CTYPE_NOT_FOUND.1
+		);
 
-		assert_ok!(Delegation::add_delegation(Origin::signed(account_hash_alice.clone()), id_level_1.clone(), id_level_0.clone(), 
-			None, account_hash_bob.clone(), Permissions::DELEGATE, 
-			x25519::Signature::from(pair_bob.sign(&hash_to_u8(
-				Delegation::calculate_hash(id_level_1.clone(), id_level_0.clone(), None, Permissions::DELEGATE))))));
-		assert_err!(Delegation::add_delegation(Origin::signed(account_hash_alice.clone()), id_level_1.clone(), id_level_0.clone(), 
-			None, account_hash_bob.clone(), Permissions::DELEGATE, 
-			x25519::Signature::from(pair_bob.sign(&hash_to_u8(
-				Delegation::calculate_hash(id_level_1.clone(), id_level_0.clone(), None, Permissions::DELEGATE))))),
-			Delegation::ERROR_DELEGATION_ALREADY_EXISTS.1);
-		assert_err!(Delegation::add_delegation(Origin::signed(account_hash_bob.clone()), id_level_2_1.clone(), id_level_0.clone(), 
-			Some(id_level_1.clone()), account_hash_charlie.clone(), Permissions::ATTEST, x25519::Signature::from_h512(H512::from_low_u64_be(0))),
-			Delegation::ERROR_BAD_DELEGATION_SIGNATURE.1);
-		assert_err!(Delegation::add_delegation(Origin::signed(account_hash_charlie.clone()), id_level_2_1.clone(), id_level_0.clone(), 
-			None, account_hash_bob.clone(), Permissions::DELEGATE, 
-			x25519::Signature::from(pair_bob.sign(&hash_to_u8(
-				Delegation::calculate_hash(id_level_2_1.clone(), id_level_0.clone(), None, Permissions::DELEGATE))))),
-			Delegation::ERROR_NOT_OWNER_OF_ROOT.1);
-		assert_err!(Delegation::add_delegation(Origin::signed(account_hash_alice.clone()), id_level_2_1.clone(), id_level_1.clone(), 
-			None, account_hash_bob.clone(), Permissions::DELEGATE, 
-			x25519::Signature::from(pair_bob.sign(&hash_to_u8(
-				Delegation::calculate_hash(id_level_2_1.clone(), id_level_1.clone(), None, Permissions::DELEGATE))))),
-			Delegation::ERROR_ROOT_NOT_FOUND.1);
+		assert_ok!(Delegation::add_delegation(
+			Origin::signed(account_hash_alice.clone()),
+			id_level_1.clone(),
+			id_level_0.clone(),
+			None,
+			account_hash_bob.clone(),
+			Permissions::DELEGATE,
+			x25519::Signature::from(pair_bob.sign(&hash_to_u8(Delegation::calculate_hash(
+				id_level_1.clone(),
+				id_level_0.clone(),
+				None,
+				Permissions::DELEGATE
+			))))
+		));
+		assert_err!(
+			Delegation::add_delegation(
+				Origin::signed(account_hash_alice.clone()),
+				id_level_1.clone(),
+				id_level_0.clone(),
+				None,
+				account_hash_bob.clone(),
+				Permissions::DELEGATE,
+				x25519::Signature::from(pair_bob.sign(&hash_to_u8(Delegation::calculate_hash(
+					id_level_1.clone(),
+					id_level_0.clone(),
+					None,
+					Permissions::DELEGATE
+				))))
+			),
+			Delegation::ERROR_DELEGATION_ALREADY_EXISTS.1
+		);
+		assert_err!(
+			Delegation::add_delegation(
+				Origin::signed(account_hash_bob.clone()),
+				id_level_2_1.clone(),
+				id_level_0.clone(),
+				Some(id_level_1.clone()),
+				account_hash_charlie.clone(),
+				Permissions::ATTEST,
+				x25519::Signature::from_h512(H512::from_low_u64_be(0))
+			),
+			Delegation::ERROR_BAD_DELEGATION_SIGNATURE.1
+		);
+		assert_err!(
+			Delegation::add_delegation(
+				Origin::signed(account_hash_charlie.clone()),
+				id_level_2_1.clone(),
+				id_level_0.clone(),
+				None,
+				account_hash_bob.clone(),
+				Permissions::DELEGATE,
+				x25519::Signature::from(pair_bob.sign(&hash_to_u8(Delegation::calculate_hash(
+					id_level_2_1.clone(),
+					id_level_0.clone(),
+					None,
+					Permissions::DELEGATE
+				))))
+			),
+			Delegation::ERROR_NOT_OWNER_OF_ROOT.1
+		);
+		assert_err!(
+			Delegation::add_delegation(
+				Origin::signed(account_hash_alice.clone()),
+				id_level_2_1.clone(),
+				id_level_1.clone(),
+				None,
+				account_hash_bob.clone(),
+				Permissions::DELEGATE,
+				x25519::Signature::from(pair_bob.sign(&hash_to_u8(Delegation::calculate_hash(
+					id_level_2_1.clone(),
+					id_level_1.clone(),
+					None,
+					Permissions::DELEGATE
+				))))
+			),
+			Delegation::ERROR_ROOT_NOT_FOUND.1
+		);
 
+		assert_ok!(Delegation::add_delegation(
+			Origin::signed(account_hash_bob.clone()),
+			id_level_2_1.clone(),
+			id_level_0.clone(),
+			Some(id_level_1.clone()),
+			account_hash_charlie.clone(),
+			Permissions::ATTEST,
+			x25519::Signature::from(pair_charlie.sign(&hash_to_u8(Delegation::calculate_hash(
+				id_level_2_1.clone(),
+				id_level_0.clone(),
+				Some(id_level_1.clone()),
+				Permissions::ATTEST
+			))))
+		));
+		assert_err!(
+			Delegation::add_delegation(
+				Origin::signed(account_hash_alice.clone()),
+				id_level_2_2.clone(),
+				id_level_0.clone(),
+				Some(id_level_1.clone()),
+				account_hash_charlie.clone(),
+				Permissions::ATTEST,
+				x25519::Signature::from(pair_charlie.sign(&hash_to_u8(
+					Delegation::calculate_hash(
+						id_level_2_2.clone(),
+						id_level_0.clone(),
+						Some(id_level_1.clone()),
+						Permissions::ATTEST
+					)
+				)))
+			),
+			Delegation::ERROR_NOT_OWNER_OF_PARENT.1
+		);
+		assert_err!(
+			Delegation::add_delegation(
+				Origin::signed(account_hash_charlie.clone()),
+				id_level_2_2.clone(),
+				id_level_0.clone(),
+				Some(id_level_2_1.clone()),
+				account_hash_alice.clone(),
+				Permissions::ATTEST,
+				x25519::Signature::from(pair_alice.sign(&hash_to_u8(Delegation::calculate_hash(
+					id_level_2_2.clone(),
+					id_level_0.clone(),
+					Some(id_level_2_1.clone()),
+					Permissions::ATTEST
+				))))
+			),
+			Delegation::ERROR_NOT_AUTHORIZED_TO_DELEGATE.1
+		);
+		assert_err!(
+			Delegation::add_delegation(
+				Origin::signed(account_hash_bob.clone()),
+				id_level_2_2.clone(),
+				id_level_0.clone(),
+				Some(id_level_0.clone()),
+				account_hash_charlie.clone(),
+				Permissions::ATTEST,
+				x25519::Signature::from(pair_charlie.sign(&hash_to_u8(
+					Delegation::calculate_hash(
+						id_level_2_2.clone(),
+						id_level_0.clone(),
+						Some(id_level_0.clone()),
+						Permissions::ATTEST
+					)
+				)))
+			),
+			Delegation::ERROR_PARENT_NOT_FOUND.1
+		);
 
-		assert_ok!(Delegation::add_delegation(Origin::signed(account_hash_bob.clone()), id_level_2_1.clone(), id_level_0.clone(), 
-			Some(id_level_1.clone()), account_hash_charlie.clone(), Permissions::ATTEST, 
-			x25519::Signature::from(pair_charlie.sign(&hash_to_u8(
-				Delegation::calculate_hash(id_level_2_1.clone(), id_level_0.clone(), Some(id_level_1.clone()), Permissions::ATTEST))))));
-		assert_err!(Delegation::add_delegation(Origin::signed(account_hash_alice.clone()), id_level_2_2.clone(), id_level_0.clone(), 
-			Some(id_level_1.clone()), account_hash_charlie.clone(), Permissions::ATTEST, 
-			x25519::Signature::from(pair_charlie.sign(&hash_to_u8(
-				Delegation::calculate_hash(id_level_2_2.clone(), id_level_0.clone(), Some(id_level_1.clone()), Permissions::ATTEST))))),
-			Delegation::ERROR_NOT_OWNER_OF_PARENT.1);
-		assert_err!(Delegation::add_delegation(Origin::signed(account_hash_charlie.clone()), id_level_2_2.clone(), id_level_0.clone(), 
-			Some(id_level_2_1.clone()), account_hash_alice.clone(), Permissions::ATTEST, 
-			x25519::Signature::from(pair_alice.sign(&hash_to_u8(
-				Delegation::calculate_hash(id_level_2_2.clone(), id_level_0.clone(), Some(id_level_2_1.clone()), Permissions::ATTEST))))),
-			Delegation::ERROR_NOT_AUTHORIZED_TO_DELEGATE.1);
-		assert_err!(Delegation::add_delegation(Origin::signed(account_hash_bob.clone()), id_level_2_2.clone(), id_level_0.clone(), 
-			Some(id_level_0.clone()), account_hash_charlie.clone(), Permissions::ATTEST, 
-			x25519::Signature::from(pair_charlie.sign(&hash_to_u8(
-				Delegation::calculate_hash(id_level_2_2.clone(), id_level_0.clone(), Some(id_level_0.clone()), Permissions::ATTEST))))),
-			Delegation::ERROR_PARENT_NOT_FOUND.1);
-		
-		assert_ok!(Delegation::add_delegation(Origin::signed(account_hash_bob.clone()), id_level_2_2.clone(), id_level_0.clone(), 
-			Some(id_level_1.clone()), account_hash_charlie.clone(), Permissions::ATTEST | Permissions::DELEGATE, 
-			x25519::Signature::from(pair_charlie.sign(&hash_to_u8(
-				Delegation::calculate_hash(id_level_2_2.clone(), id_level_0.clone(), Some(id_level_1.clone()), 
-				Permissions::ATTEST | Permissions::DELEGATE))))));
+		assert_ok!(Delegation::add_delegation(
+			Origin::signed(account_hash_bob.clone()),
+			id_level_2_2.clone(),
+			id_level_0.clone(),
+			Some(id_level_1.clone()),
+			account_hash_charlie.clone(),
+			Permissions::ATTEST | Permissions::DELEGATE,
+			x25519::Signature::from(pair_charlie.sign(&hash_to_u8(Delegation::calculate_hash(
+				id_level_2_2.clone(),
+				id_level_0.clone(),
+				Some(id_level_1.clone()),
+				Permissions::ATTEST | Permissions::DELEGATE
+			))))
+		));
 
-		assert_ok!(Delegation::add_delegation(Origin::signed(account_hash_charlie.clone()), id_level_2_2_1.clone(), id_level_0.clone(), 
-			Some(id_level_2_2.clone()), account_hash_alice.clone(), Permissions::ATTEST, 
-			x25519::Signature::from(pair_alice.sign(&hash_to_u8(
-				Delegation::calculate_hash(id_level_2_2_1.clone(), id_level_0.clone(), Some(id_level_2_2.clone()), Permissions::ATTEST))))));
+		assert_ok!(Delegation::add_delegation(
+			Origin::signed(account_hash_charlie.clone()),
+			id_level_2_2_1.clone(),
+			id_level_0.clone(),
+			Some(id_level_2_2.clone()),
+			account_hash_alice.clone(),
+			Permissions::ATTEST,
+			x25519::Signature::from(pair_alice.sign(&hash_to_u8(Delegation::calculate_hash(
+				id_level_2_2_1.clone(),
+				id_level_0.clone(),
+				Some(id_level_2_2.clone()),
+				Permissions::ATTEST
+			))))
+		));
 
-		
 		let root = {
 			let opt = Delegation::root(id_level_0.clone());
 			assert!(opt.is_some());
@@ -198,29 +339,79 @@ fn check_add_and_revoke_delegations() {
 		assert_eq!(children[1], id_level_2_2.clone());
 
 		// check is_delgating
-		assert_eq!(Delegation::is_delegating(&account_hash_alice, &id_level_1), Ok(true));
-		assert_eq!(Delegation::is_delegating(&account_hash_alice, &id_level_2_1), Ok(true));
-		assert_eq!(Delegation::is_delegating(&account_hash_bob, &id_level_2_1), Ok(true));
-		assert_eq!(Delegation::is_delegating(&account_hash_charlie, &id_level_2_1), Ok(true));
-		assert_eq!(Delegation::is_delegating(&account_hash_charlie, &id_level_1), Ok(false));
-		assert_err!(Delegation::is_delegating(&account_hash_charlie, &id_level_0), Delegation::ERROR_DELEGATION_NOT_FOUND.1);
+		assert_eq!(
+			Delegation::is_delegating(&account_hash_alice, &id_level_1),
+			Ok(true)
+		);
+		assert_eq!(
+			Delegation::is_delegating(&account_hash_alice, &id_level_2_1),
+			Ok(true)
+		);
+		assert_eq!(
+			Delegation::is_delegating(&account_hash_bob, &id_level_2_1),
+			Ok(true)
+		);
+		assert_eq!(
+			Delegation::is_delegating(&account_hash_charlie, &id_level_2_1),
+			Ok(true)
+		);
+		assert_eq!(
+			Delegation::is_delegating(&account_hash_charlie, &id_level_1),
+			Ok(false)
+		);
+		assert_err!(
+			Delegation::is_delegating(&account_hash_charlie, &id_level_0),
+			Delegation::ERROR_DELEGATION_NOT_FOUND.1
+		);
 
-		assert_err!(Delegation::revoke_delegation(Origin::signed(account_hash_charlie.clone()), H256::from_low_u64_be(999)),
-			Delegation::ERROR_DELEGATION_NOT_FOUND.1);
-		assert_err!(Delegation::revoke_delegation(Origin::signed(account_hash_charlie.clone()), id_level_1.clone()),
-			Delegation::ERROR_NOT_PERMITTED_TO_REVOKE.1);
-		assert_ok!(Delegation::revoke_delegation(Origin::signed(account_hash_charlie.clone()), id_level_2_2.clone()));
-		
-		assert_eq!(Delegation::delegation(id_level_2_2.clone()).unwrap().4, true);
-		assert_eq!(Delegation::delegation(id_level_2_2_1.clone()).unwrap().4, true);
-		assert_err!(Delegation::revoke_root(Origin::signed(account_hash_bob.clone()), H256::from_low_u64_be(999)),
-			Delegation::ERROR_ROOT_NOT_FOUND.1);
-		assert_err!(Delegation::revoke_root(Origin::signed(account_hash_bob.clone()), id_level_0.clone()),
-			Delegation::ERROR_NOT_PERMITTED_TO_REVOKE.1);
-		assert_ok!(Delegation::revoke_root(Origin::signed(account_hash_alice.clone()), id_level_0.clone()));
-		
+		assert_err!(
+			Delegation::revoke_delegation(
+				Origin::signed(account_hash_charlie.clone()),
+				H256::from_low_u64_be(999)
+			),
+			Delegation::ERROR_DELEGATION_NOT_FOUND.1
+		);
+		assert_err!(
+			Delegation::revoke_delegation(
+				Origin::signed(account_hash_charlie.clone()),
+				id_level_1.clone()
+			),
+			Delegation::ERROR_NOT_PERMITTED_TO_REVOKE.1
+		);
+		assert_ok!(Delegation::revoke_delegation(
+			Origin::signed(account_hash_charlie.clone()),
+			id_level_2_2.clone()
+		));
+
+		assert_eq!(
+			Delegation::delegation(id_level_2_2.clone()).unwrap().4,
+			true
+		);
+		assert_eq!(
+			Delegation::delegation(id_level_2_2_1.clone()).unwrap().4,
+			true
+		);
+		assert_err!(
+			Delegation::revoke_root(
+				Origin::signed(account_hash_bob.clone()),
+				H256::from_low_u64_be(999)
+			),
+			Delegation::ERROR_ROOT_NOT_FOUND.1
+		);
+		assert_err!(
+			Delegation::revoke_root(Origin::signed(account_hash_bob.clone()), id_level_0.clone()),
+			Delegation::ERROR_NOT_PERMITTED_TO_REVOKE.1
+		);
+		assert_ok!(Delegation::revoke_root(
+			Origin::signed(account_hash_alice.clone()),
+			id_level_0.clone()
+		));
+
 		assert_eq!(Delegation::root(id_level_0.clone()).unwrap().2, true);
 		assert_eq!(Delegation::delegation(id_level_1.clone()).unwrap().4, true);
-		assert_eq!(Delegation::delegation(id_level_2_1.clone()).unwrap().4, true);
+		assert_eq!(
+			Delegation::delegation(id_level_2_1.clone()).unwrap().4,
+			true
+		);
 	});
 }
