@@ -307,22 +307,16 @@ impl<T: Trait> Module<T> {
 		// check if the account is the owner of the delegation
 		if d.2.eq(account) {
 			Ok(true)
+		} else if let Some(p) = d.1 {
+			// recurse upwards in hierarchy
+			Self::is_delegating(account, &p)
 		} else {
-			// check if there's a parent
-			match d.1 {
-				None => {
-					// return whether the account is owner of the root
-					let r = <error::Module<T>>::ok_or_deposit_err(
-						<Root<T>>::get(d.0.clone()),
-						Self::ERROR_ROOT_NOT_FOUND,
-					)?;
-					Ok(r.1.eq(account))
-				}
-				Some(p) => {
-					// recurse upwards in hierarchy
-					Self::is_delegating(account, &p)
-				}
-			}
+			// return whether the account is owner of the root
+			let r = <error::Module<T>>::ok_or_deposit_err(
+				<Root<T>>::get(d.0.clone()),
+				Self::ERROR_ROOT_NOT_FOUND,
+			)?;
+			Ok(r.1.eq(account))
 		}
 	}
 
