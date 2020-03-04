@@ -16,71 +16,80 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-
 use super::*;
-use system;
-use runtime_io::with_externalities;
-use primitives::{H256, Blake2Hasher};
 use primitives::*;
-use support::{impl_outer_origin, assert_ok};
+use primitives::{Blake2Hasher, H256};
+use runtime_io::with_externalities;
+use support::{assert_ok, impl_outer_origin};
+use system;
 
 use runtime_primitives::{
-    BuildStorage, traits::{BlakeTwo256, IdentityLookup}, testing::{Digest, DigestItem, Header}
+	testing::{Digest, DigestItem, Header},
+	traits::{BlakeTwo256, IdentityLookup},
+	BuildStorage,
 };
 
 impl_outer_origin! {
-    pub enum Origin for Test {}
+	pub enum Origin for Test {}
 }
 
 #[derive(Clone, Eq, PartialEq)]
 pub struct Test;
 impl system::Trait for Test {
-    type Origin = Origin;
-    type Index = u64;
-    type BlockNumber = u64;
-    type Hash = H256;
-    type Hashing = BlakeTwo256;
-    type Digest = Digest;
-    type AccountId = H256;
-    type Header = Header;
-    type Event = ();
-    type Log = DigestItem;
-    type Lookup = IdentityLookup<H256>;
+	type Origin = Origin;
+	type Index = u64;
+	type BlockNumber = u64;
+	type Hash = H256;
+	type Hashing = BlakeTwo256;
+	type Digest = Digest;
+	type AccountId = H256;
+	type Header = Header;
+	type Event = ();
+	type Log = DigestItem;
+	type Lookup = IdentityLookup<H256>;
 }
 
 impl Trait for Test {
-    type Event = ();
-    type PublicSigningKey = H256;
-    type PublicBoxKey = H256;
+	type Event = ();
+	type PublicSigningKey = H256;
+	type PublicBoxKey = H256;
 }
 
 type DID = Module<Test>;
 
 fn new_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
-    system::GenesisConfig::<Test>::default().build_storage().unwrap().0.into()
+	system::GenesisConfig::<Test>::default()
+		.build_storage()
+		.unwrap()
+		.0
+		.into()
 }
 
 #[test]
 fn check_add_did() {
-    with_externalities(&mut new_test_ext(), || {
-        let pair = ed25519::Pair::from_seed(*b"Alice                           ");
-        let signing_key = H256::from_low_u64_be(1);
-        let box_key = H256::from_low_u64_be(2);
-        let account_hash = H256::from(pair.public().0);
-        assert_ok!(DID::add(Origin::signed(account_hash.clone()), 
-                signing_key.clone(), box_key.clone(), Some(b"http://kilt.org/submit".to_vec())));
+	with_externalities(&mut new_test_ext(), || {
+		let pair = ed25519::Pair::from_seed(*b"Alice                           ");
+		let signing_key = H256::from_low_u64_be(1);
+		let box_key = H256::from_low_u64_be(2);
+		let account_hash = H256::from(pair.public().0);
+		assert_ok!(DID::add(
+			Origin::signed(account_hash.clone()),
+			signing_key.clone(),
+			box_key.clone(),
+			Some(b"http://kilt.org/submit".to_vec())
+		));
 
-        assert_eq!(<DIDs<Test>>::exists(account_hash), true);
-        let did = {
-            let opt = DID::dids(account_hash.clone());
-            assert!(opt.is_some());
-            opt.unwrap()
-        };
-        assert_eq!(did.0, signing_key.clone());
-        assert_eq!(did.1, box_key.clone());
-        assert_eq!(did.2, Some(b"http://kilt.org/submit".to_vec()));
+		assert_eq!(<DIDs<Test>>::exists(account_hash), true);
+		let did = {
+			let opt = DID::dids(account_hash.clone());
+			assert!(opt.is_some());
+			opt.unwrap()
+		};
+		assert_eq!(did.0, signing_key.clone());
+		assert_eq!(did.1, box_key.clone());
+		assert_eq!(did.2, Some(b"http://kilt.org/submit".to_vec()));
 
-        assert_ok!(DID::remove(Origin::signed(account_hash.clone())));
-        assert_eq!(<DIDs<Test>>::exists(account_hash), false);
-    });
+		assert_ok!(DID::remove(Origin::signed(account_hash.clone())));
+		assert_eq!(<DIDs<Test>>::exists(account_hash), false);
+	});
 }

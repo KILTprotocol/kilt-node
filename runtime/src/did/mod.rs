@@ -66,7 +66,7 @@ decl_module! {
 			// add DID to the storage
 			<DIDs<T>>::insert(sender.clone(), (sign_key, box_key, doc_ref));
 			// deposit an event that the DID has been created
-			Self::deposit_event(RawEvent::DidCreated(sender.clone()));
+			Self::deposit_event(RawEvent::DidCreated(sender));
 			Ok(())
 		}
 		/// Removes a DID from chain storage, where
@@ -77,7 +77,7 @@ decl_module! {
 			// remove DID from storage
 			<DIDs<T>>::remove(sender.clone());
 			// deposit an event that the DID has been removed
-			Self::deposit_event(RawEvent::DidRemoved(sender.clone()));
+			Self::deposit_event(RawEvent::DidRemoved(sender));
 			Ok(())
 		}
 	}

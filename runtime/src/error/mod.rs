@@ -25,7 +25,12 @@ use support::{decl_event, decl_module, Parameter};
 
 /// The error trait
 pub trait Trait: system::Trait {
-	type ErrorCode: Parameter + Member + MaybeSerializeDebug + MaybeDisplay + SimpleArithmetic + Bounded;
+	type ErrorCode: Parameter
+		+ Member
+		+ MaybeSerializeDebug
+		+ MaybeDisplay
+		+ SimpleArithmetic
+		+ Bounded;
 	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
 
@@ -58,7 +63,7 @@ impl<T: Trait> Module<T> {
 		Self::deposit_event(RawEvent::ErrorOccurred(T::ErrorCode::sa(
 			error_type.0.into(),
 		)));
-		return Err(error_type.1);
+		Err(error_type.1)
 	}
 
 	/// Create an error, it logs the error, deposits an error event and returns the error message

@@ -4,10 +4,10 @@ WORKDIR /build
 
 # install tools and dependencies
 RUN apt -y update && \
-  apt install -y --no-install-recommends \
+	apt install -y --no-install-recommends \
 	software-properties-common curl git file binutils binutils-dev snapcraft \
 	make cmake ca-certificates g++ zip dpkg-dev python rhash rpm openssl gettext\
-  build-essential pkg-config libssl-dev libudev-dev ruby-dev time clang
+	build-essential pkg-config libssl-dev libudev-dev ruby-dev time clang
 
 # install rustup
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
@@ -55,10 +55,10 @@ FROM ubuntu:xenial
 WORKDIR /runtime
 
 RUN apt -y update && \
-  apt install -y --no-install-recommends \
+	apt install -y --no-install-recommends \
 	openssl \
 	curl \
-    libssl-dev dnsutils
+	libssl-dev dnsutils
 
 RUN mkdir -p /runtime/target/release/
 COPY --from=builder /build/target/release/mashnet-node ./target/release/mashnet-node

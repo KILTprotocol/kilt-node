@@ -17,49 +17,51 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 //! The KILT runtime. This can be compiled with `#[no_std]`, ready for Wasm.
-
+#![warn(clippy::all)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(not(feature = "std"), feature(alloc))]
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
-#![recursion_limit="256"]
+#![recursion_limit = "256"]
 
 #[macro_use]
 extern crate bitflags;
 
-#[cfg(feature = "std")]
-use serde::{Serialize, Deserialize};
-use parity_codec::{Encode, Decode};
-use rstd::prelude::*;
+use client::{
+	block_builder::api::{self as block_builder_api, CheckInherentsResult, InherentData},
+	impl_runtime_apis, runtime_api,
+};
+use parity_codec::{Decode, Encode};
 #[cfg(feature = "std")]
 use primitives::bytes;
 use primitives::{ed25519, ed25519 as x25519, OpaqueMetadata};
+use rstd::prelude::*;
 use runtime_primitives::{
-	ApplyResult, transaction_validity::TransactionValidity, generic, create_runtime_str,
-	traits::{self, NumberFor, BlakeTwo256, Block as BlockT, StaticLookup, Verify}
+	create_runtime_str, generic,
+	traits::{self, BlakeTwo256, Block as BlockT, NumberFor, StaticLookup, Verify},
+	transaction_validity::TransactionValidity,
+	ApplyResult,
 };
-use client::{
-	block_builder::api::{CheckInherentsResult, InherentData, self as block_builder_api},
-	runtime_api, impl_runtime_apis
-};
-use version::RuntimeVersion;
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 #[cfg(feature = "std")]
 use version::NativeVersion;
+use version::RuntimeVersion;
 
 // A few exports that help ease life for downstream crates.
+pub use balances::Call as BalancesCall;
+pub use consensus::Call as ConsensusCall;
 #[cfg(any(feature = "std", test))]
 pub use runtime_primitives::BuildStorage;
-pub use consensus::Call as ConsensusCall;
-pub use timestamp::Call as TimestampCall;
-pub use balances::Call as BalancesCall;
-pub use runtime_primitives::{Permill, Perbill};
+pub use runtime_primitives::{Perbill, Permill};
+pub use support::{construct_runtime, StorageValue};
 pub use timestamp::BlockPeriod;
-pub use support::{StorageValue, construct_runtime};
+pub use timestamp::Call as TimestampCall;
 
-mod error;
-mod ctype;
 mod attestation;
+mod ctype;
 mod delegation;
 mod did;
+mod error;
 
 /// The type that is used for identifying authorities.
 pub type AuthorityId = <AuthoritySignature as Verify>::Signer;
@@ -85,14 +87,14 @@ pub type Nonce = u64;
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
-/// to even the core datastructures.
+/// to even the core data structures.
 pub mod opaque {
 	use super::*;
 
 	/// Opaque, encoded, unchecked extrinsic.
 	#[derive(PartialEq, Eq, Clone, Default, Encode, Decode)]
 	#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-	pub struct UncheckedExtrinsic(#[cfg_attr(feature = "std", serde(with="bytes"))] pub Vec<u8>);
+	pub struct UncheckedExtrinsic(#[cfg_attr(feature = "std", serde(with = "bytes"))] pub Vec<u8>);
 	#[cfg(feature = "std")]
 	impl std::fmt::Debug for UncheckedExtrinsic {
 		fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -105,7 +107,11 @@ pub mod opaque {
 		}
 	}
 	/// Opaque block header type.
-	pub type Header = generic::Header<BlockNumber, BlakeTwo256, generic::DigestItem<Hash, AuthorityId, AuthoritySignature>>;
+	pub type Header = generic::Header<
+		BlockNumber,
+		BlakeTwo256,
+		generic::DigestItem<Hash, AuthorityId, AuthoritySignature>,
+	>;
 	/// Opaque block type.
 	pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 	/// Opaque block identifier type.
@@ -124,7 +130,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	apis: RUNTIME_API_VERSIONS,
 };
 
-/// The version infromation used to identify this runtime when compiled natively.
+/// The version information used to identify this runtime when compiled natively.
 #[cfg(feature = "std")]
 pub fn native_version() -> NativeVersion {
 	NativeVersion {
@@ -180,7 +186,7 @@ impl indices::Trait for Runtime {
 	type ResolveHint = indices::SimpleResolveHint<Self::AccountId, Self::AccountIndex>;
 	/// Determine whether an account is dead.
 	type IsDeadAccount = Balances;
-	/// The uniquitous event type.
+	/// The ubiquitous event type.
 	type Event = Event;
 }
 
@@ -197,7 +203,7 @@ impl balances::Trait for Runtime {
 	type OnFreeBalanceZero = ();
 	/// What to do if a new account is created.
 	type OnNewAccount = Indices;
-	/// The uniquitous event type.
+	/// The ubiquitous event type.
 	type Event = Event;
 
 	type TransactionPayment = ();
@@ -206,23 +212,23 @@ impl balances::Trait for Runtime {
 }
 
 impl sudo::Trait for Runtime {
-	/// The uniquitous event type.
+	/// The ubiquitous event type.
 	type Event = Event;
 	type Proposal = Call;
 }
 
 impl attestation::Trait for Runtime {
-	/// The uniquitous event type.
+	/// The ubiquitous event type.
 	type Event = Event;
 }
 
 impl ctype::Trait for Runtime {
-	/// The uniquitous event type.
+	/// The ubiquitous event type.
 	type Event = Event;
 }
 
 impl delegation::Trait for Runtime {
-	/// The uniquitous event type.
+	/// The ubiquitous event type.
 	type Event = Event;
 	type Signer = AccountId;
 	type Signature = AccountSignature;
@@ -230,7 +236,7 @@ impl delegation::Trait for Runtime {
 }
 
 impl did::Trait for Runtime {
-	/// The uniquitous event type.
+	/// The ubiquitous event type.
 	type Event = Event;
 	/// Type for the public signing key in DIDs
 	type PublicSigningKey = Hash;
@@ -241,7 +247,7 @@ impl did::Trait for Runtime {
 impl error::Trait for Runtime {
 	/// Error code type
 	type ErrorCode = u16;
-	/// The uniquitous event type.
+	/// The ubiquitous event type.
 	type Event = Event;
 }
 
@@ -278,7 +284,8 @@ pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 /// BlockId type as expected by this runtime.
 pub type BlockId = generic::BlockId<Block>;
 /// Unchecked extrinsic type as expected by this runtime.
-pub type UncheckedExtrinsic = generic::UncheckedMortalCompactExtrinsic<Address, Nonce, Call, AccountSignature>;
+pub type UncheckedExtrinsic =
+	generic::UncheckedMortalCompactExtrinsic<Address, Nonce, Call, AccountSignature>;
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Nonce, Call>;
 /// Executive: handles dispatch to the various modules.

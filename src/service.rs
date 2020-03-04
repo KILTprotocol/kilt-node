@@ -20,23 +20,22 @@
 
 #![warn(unused_extern_crates)]
 
-use std::sync::Arc;
-use log::info;
-use transaction_pool::{self, txpool::{Pool as TransactionPool}};
-use mashnet_node_runtime::{self, GenesisConfig, opaque::Block, RuntimeApi};
-use substrate_service::{
-	FactoryFullConfiguration, LightComponents, FullComponents, FullBackend,
-	FullClient, LightClient, LightBackend, FullExecutor, LightExecutor,
-	TaskExecutor,
-};
 use basic_authorship::ProposerFactory;
-use consensus::{import_queue, start_aura, AuraImportQueue, SlotDuration, NothingExtra};
-use substrate_client as client;
-use primitives::{ed25519::Pair, Pair as PairT};
+use consensus::{import_queue, start_aura, AuraImportQueue, NothingExtra, SlotDuration};
 use inherents::InherentDataProviders;
+use log::info;
+use mashnet_node_runtime::{self, opaque::Block, GenesisConfig, RuntimeApi};
 use network::construct_simple_protocol;
+use primitives::{ed25519::Pair, Pair as PairT};
+use std::sync::Arc;
+use substrate_client as client;
 use substrate_executor::native_executor_instance;
 use substrate_service::construct_service_factory;
+use substrate_service::{
+	FactoryFullConfiguration, FullBackend, FullClient, FullComponents, FullExecutor, LightBackend,
+	LightClient, LightComponents, LightExecutor, TaskExecutor,
+};
+use transaction_pool::{self, txpool::Pool as TransactionPool};
 
 pub use substrate_executor::NativeExecutor;
 // Our native executor instance.
@@ -85,7 +84,7 @@ construct_service_factory! {
 					let client = service.client();
 					executor.spawn(start_aura(
 						SlotDuration::get_or_compute(&*client)?,
-						key.clone(),
+						key,
 						client.clone(),
 						client,
 						proposer,
