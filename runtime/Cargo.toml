@@ -7,14 +7,14 @@ version = '0.22.0'
 [dependencies.aura]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-aura'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+package = 'pallet-aura'
+rev = 'v2.0.0-alpha.3'
 
 [dependencies.balances]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-balances'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+package = 'pallet-balances'
+rev = 'v2.0.0-alpha.3'
 
 [dependencies.bitflags]
 default-features = false
@@ -23,44 +23,38 @@ version = '1.0.4'
 [dependencies.client]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-client'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
-
-[dependencies.consensus]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-consensus'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+package = 'sc-client'
+rev = 'v2.0.0-alpha.3'
 
 [dependencies.consensus-aura]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-consensus-aura-primitives'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+package = 'sp-consensus-aura'
+rev = 'v2.0.0-alpha.3'
 
 [dependencies.consensus_authorities]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-consensus-authorities'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+package = 'sc-consensus-authorities'
+rev = 'v2.0.0-alpha.3'
 
 [dependencies.executive]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-executive'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+package = 'pallet-executive'
+rev = 'v2.0.0-alpha.3'
 
 [dependencies.indices]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-indices'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+package = 'pallet-indices'
+rev = 'v2.0.0-alpha.3'
 
 [dependencies.offchain-primitives]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-offchain-primitives'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+package = 'sp-offchain'
+rev = 'v2.0.0-alpha.3'
 
 [dependencies.parity-codec]
 default-features = false
@@ -70,26 +64,26 @@ version = '3.5'
 [dependencies.primitives]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-primitives'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+package = 'sp-primitives'
+rev = 'v2.0.0-alpha.3'
 
 [dependencies.rstd]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-std'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+rev = 'v2.0.0-alpha.3'
 
 [dependencies.runtime-io]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-io'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+rev = 'v2.0.0-alpha.3'
 
 [dependencies.runtime-primitives]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-primitives'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+rev = 'v2.0.0-alpha.3'
 
 [dependencies.safe-mix]
 default-features = false
@@ -103,32 +97,32 @@ version = '1.0'
 [dependencies.sudo]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-sudo'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+package = 'pallet-sudo'
+rev = 'v2.0.0-alpha.3'
 
 [dependencies.support]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-support'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+package = 'pallet-support'
+rev = 'v2.0.0-alpha.3'
 
 [dependencies.system]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-system'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+package = 'pallet-system'
+rev = 'v2.0.0-alpha.3'
 
 [dependencies.timestamp]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-timestamp'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+package = 'pallet-timestamp'
+rev = 'v2.0.0-alpha.3'
 
 [dependencies.version]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sr-version'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+rev = 'v2.0.0-alpha.3'
 
 [features]
 default = ['std']

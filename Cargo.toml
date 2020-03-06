@@ -22,13 +22,13 @@ trie-root = '0.12.0'
 
 [dependencies.basic-authorship]
 git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-basic-authorship'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+package = 'sc-basic-authorship'
+rev = 'v2.0.0-alpha.3'
 
 [dependencies.consensus]
 git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-consensus-aura'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+package = 'sc-consensus-aura'
+rev = 'v2.0.0-alpha.3'
 
 [dependencies.ctrlc]
 features = ['termination']
@@ -36,46 +36,46 @@ version = '3.0'
 
 [dependencies.inherents]
 git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-inherents'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+package = 'sp-inherents'
+rev = 'v2.0.0-alpha.3'
 
 [dependencies.network]
 git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-network'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+package = 'sc-network'
+rev = 'v2.0.0-alpha.3'
 
 [dependencies.mashnet-node-runtime]
 path = 'runtime'
 
 [dependencies.primitives]
 git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-primitives'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+package = 'node-primitives'
+rev = 'v2.0.0-alpha.3'
 
-[dependencies.sr-io]
+[dependencies.sp-io]
 git = 'https://github.com/paritytech/substrate.git'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+rev = 'v2.0.0-alpha.3'
 
-[dependencies.substrate-cli]
+[dependencies.sc-cli]
 git = 'https://github.com/paritytech/substrate.git'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+rev = 'v2.0.0-alpha.3'
 
-[dependencies.substrate-client]
+[dependencies.sc-client]
 git = 'https://github.com/paritytech/substrate.git'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+rev = 'v2.0.0-alpha.3'
 
-[dependencies.substrate-executor]
+[dependencies.sc-executor]
 git = 'https://github.com/paritytech/substrate.git'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+rev = 'v2.0.0-alpha.3'
 
-[dependencies.substrate-service]
+[dependencies.sc-service]
 git = 'https://github.com/paritytech/substrate.git'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+rev = 'v2.0.0-alpha.3'
 
 [dependencies.transaction-pool]
 git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-transaction-pool'
-rev = 'cc1d67e973fd02c0c997b164ba516cf041bf21f1'
+package = 'sc-transaction-pool'
+rev = 'v2.0.0-alpha.3'
 
 [build-dependencies]
 vergen = '3'

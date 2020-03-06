@@ -24,6 +24,7 @@
 mod tests;
 
 use super::{ctype, delegation, error};
+use parity_codec::{Decode, Encode};
 use rstd::{
 	prelude::{Clone, PartialEq, Vec},
 	result,
@@ -102,7 +103,7 @@ decl_module! {
 
 			// insert attestation
 			::runtime_io::print("insert Attestation");
-			<Attestations<T>>::insert(claim_hash, (ctype_hash, sender.clone(), delegation_id, false));
+			<Attestations<T>>::insert(claim_hash, StoredAttestation (ctype_hash, sender.clone(), delegation_id, false));
 
 			if let Some(d) = delegation_id {
 				// if attestation is based on a delegation this is stored in a separate map
@@ -168,12 +169,17 @@ impl<T: Trait> Module<T> {
 	const ERROR_BASE: u16 = 2000;
 	const ERROR_ALREADY_ATTESTED: error::ErrorType = (Self::ERROR_BASE + 1, "already attested");
 	const ERROR_ALREADY_REVOKED: error::ErrorType = (Self::ERROR_BASE + 2, "already revoked");
-	const ERROR_ATTESTATION_NOT_FOUND: error::ErrorType = (Self::ERROR_BASE + 3, "attestation not found");
+	const ERROR_ATTESTATION_NOT_FOUND: error::ErrorType =
+		(Self::ERROR_BASE + 3, "attestation not found");
 	const ERROR_DELEGATION_REVOKED: error::ErrorType = (Self::ERROR_BASE + 4, "delegation revoked");
-	const ERROR_NOT_DELEGATED_TO_ATTESTER: error::ErrorType = (Self::ERROR_BASE + 5, "not delegated to attester");
-	const ERROR_DELEGATION_NOT_AUTHORIZED_TO_ATTEST: error::ErrorType = (Self::ERROR_BASE + 6, "delegation not authorized to attest");
-	const ERROR_CTYPE_OF_DELEGATION_NOT_MATCHING: error::ErrorType = (Self::ERROR_BASE + 7, "CTYPE of delegation does not match");
-	const ERROR_NOT_PERMITTED_TO_REVOKE_ATTESTATION: error::ErrorType = (Self::ERROR_BASE + 8, "not permitted to revoke attestation");
+	const ERROR_NOT_DELEGATED_TO_ATTESTER: error::ErrorType =
+		(Self::ERROR_BASE + 5, "not delegated to attester");
+	const ERROR_DELEGATION_NOT_AUTHORIZED_TO_ATTEST: error::ErrorType =
+		(Self::ERROR_BASE + 6, "delegation not authorized to attest");
+	const ERROR_CTYPE_OF_DELEGATION_NOT_MATCHING: error::ErrorType =
+		(Self::ERROR_BASE + 7, "CTYPE of delegation does not match");
+	const ERROR_NOT_PERMITTED_TO_REVOKE_ATTESTATION: error::ErrorType =
+		(Self::ERROR_BASE + 8, "not permitted to revoke attestation");
 
 	/// Create an error using the error module
 	pub fn error(error_type: error::ErrorType) -> Result {
@@ -189,10 +195,13 @@ impl<T: Trait> Module<T> {
 	}
 }
 
+#[derive(Decode, Encode)]
+pub struct StoredAttestation<T: Trait>(T::Hash, T::AccountId, Option<T::DelegationNodeId>, bool);
+
 decl_storage! {
 	trait Store for Module<T: Trait> as Attestation {
 		/// Attestations: claim-hash -> (ctype-hash, account, delegation-id?, revoked)?
-		Attestations get(attestations): map T::Hash => Option<(T::Hash,T::AccountId,Option<T::DelegationNodeId>,bool)>;
+		Attestations get(attestations): map T::Hash => Option<StoredAttestation<T>>;
 		/// DelegatedAttestations: delegation-id -> [claim-hash]
 		DelegatedAttestations get(delegated_attestations): map T::DelegationNodeId => Vec<T::Hash>;
 	}
