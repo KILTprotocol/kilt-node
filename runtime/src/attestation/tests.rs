@@ -21,7 +21,7 @@ use parity_codec::Encode;
 use primitives::{ed25519 as x25519, Blake2Hasher, H256, *};
 use runtime_io::with_externalities;
 use support::{assert_err, assert_ok, impl_outer_origin};
-use system;
+
 
 use runtime_primitives::{
 	testing::{Digest, DigestItem, Header},
@@ -82,7 +82,7 @@ fn new_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
 }
 
 fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
-	return hash.encode();
+	hash.encode()
 }
 
 #[test]
@@ -107,7 +107,7 @@ fn check_add_attestation() {
 			opt.unwrap()
 		};
 		assert_eq!(existing_attestation_for_claim.0, hash.clone());
-		assert_eq!(existing_attestation_for_claim.1, account_hash.clone());
+		assert_eq!(existing_attestation_for_claim.1, account_hash);
 		assert_eq!(existing_attestation_for_claim.3, false);
 	});
 }
@@ -138,7 +138,7 @@ fn check_revoke_attestation() {
 			opt.unwrap()
 		};
 		assert_eq!(existing_attestation_for_claim.0, hash.clone());
-		assert_eq!(existing_attestation_for_claim.1, account_hash.clone());
+		assert_eq!(existing_attestation_for_claim.1, account_hash);
 		assert_eq!(existing_attestation_for_claim.3, true);
 	});
 }
@@ -161,7 +161,7 @@ fn check_double_attestation() {
 		));
 		assert_err!(
 			Attestation::add(
-				Origin::signed(account_hash.clone()),
+				Origin::signed(account_hash),
 				hash.clone(),
 				hash.clone(),
 				None
@@ -192,7 +192,7 @@ fn check_double_revoke_attestation() {
 			hash.clone()
 		));
 		assert_err!(
-			Attestation::revoke(Origin::signed(account_hash.clone()), hash.clone()),
+			Attestation::revoke(Origin::signed(account_hash), hash.clone()),
 			Attestation::ERROR_ALREADY_REVOKED.1
 		);
 	});
@@ -205,7 +205,7 @@ fn check_revoke_unknown() {
 		let hash = H256::from_low_u64_be(1);
 		let account_hash = pair.public();
 		assert_err!(
-			Attestation::revoke(Origin::signed(account_hash.clone()), hash.clone()),
+			Attestation::revoke(Origin::signed(account_hash), hash.clone()),
 			Attestation::ERROR_ATTESTATION_NOT_FOUND.1
 		);
 	});
@@ -224,13 +224,13 @@ fn check_revoke_not_permitted() {
 			hash.clone()
 		));
 		assert_ok!(Attestation::add(
-			Origin::signed(account_hash_alice.clone()),
+			Origin::signed(account_hash_alice),
 			hash.clone(),
 			hash.clone(),
 			None
 		));
 		assert_err!(
-			Attestation::revoke(Origin::signed(account_hash_bob.clone()), hash.clone()),
+			Attestation::revoke(Origin::signed(account_hash_bob), hash.clone()),
 			Attestation::ERROR_NOT_PERMITTED_TO_REVOKE_ATTESTATION.1
 		);
 	});
@@ -281,12 +281,12 @@ fn check_add_attestation_with_delegation() {
 			None,
 			account_hash_bob.clone(),
 			delegation::Permissions::DELEGATE,
-			x25519::Signature::from(pair_bob.sign(&hash_to_u8(Delegation::calculate_hash(
+			pair_bob.sign(&hash_to_u8(Delegation::calculate_hash(
 				delegation_1.clone(),
 				delegation_root.clone(),
 				None,
 				delegation::Permissions::DELEGATE
-			))))
+			)))
 		));
 		assert_ok!(Delegation::add_delegation(
 			Origin::signed(account_hash_alice.clone()),
@@ -295,12 +295,12 @@ fn check_add_attestation_with_delegation() {
 			None,
 			account_hash_bob.clone(),
 			delegation::Permissions::ATTEST,
-			x25519::Signature::from(pair_bob.sign(&hash_to_u8(Delegation::calculate_hash(
+			pair_bob.sign(&hash_to_u8(Delegation::calculate_hash(
 				delegation_2.clone(),
 				delegation_root.clone(),
 				None,
 				delegation::Permissions::ATTEST
-			))))
+			)))
 		));
 
 		assert_err!(
@@ -361,7 +361,7 @@ fn check_add_attestation_with_delegation() {
 		));
 		assert_err!(
 			Attestation::add(
-				Origin::signed(account_hash_bob.clone()),
+				Origin::signed(account_hash_bob),
 				claim_hash.clone(),
 				ctype_hash.clone(),
 				Some(delegation_2)
@@ -371,13 +371,13 @@ fn check_add_attestation_with_delegation() {
 
 		assert_err!(
 			Attestation::revoke(
-				Origin::signed(account_hash_charlie.clone()),
+				Origin::signed(account_hash_charlie),
 				claim_hash.clone()
 			),
 			Attestation::ERROR_NOT_PERMITTED_TO_REVOKE_ATTESTATION.1
 		);
 		assert_ok!(Attestation::revoke(
-			Origin::signed(account_hash_alice.clone()),
+			Origin::signed(account_hash_alice),
 			claim_hash.clone()
 		));
 	});
