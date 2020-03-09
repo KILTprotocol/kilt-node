@@ -9,6 +9,9 @@ version = '0.22.0'
 name = 'mashnet-node'
 path = 'src/main.rs'
 
+[workspace]
+members = ['runtime']
+
 [dependencies]
 error-chain = '0.12'
 exit-future = '0.1'
@@ -79,5 +82,6 @@ rev = 'v2.0.0-alpha.3'
 
 [build-dependencies]
 vergen = '3'
+
 [profile.release]
 panic = 'unwind'
