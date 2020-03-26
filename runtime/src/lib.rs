@@ -252,7 +252,7 @@ impl error::Trait for Runtime {
 
 // Construct the runtime
 construct_runtime!(
-	pub enum Runtime with Log(InternalLog: DigestItem<Hash, AuthorityId, AuthoritySignature>) where
+	pub enum Runtime where Log(InternalLog: DigestItem<Hash, AuthorityId, AuthoritySignature>) where
 		Block = Block,
 		NodeBlock = opaque::Block,
 		UncheckedExtrinsic = UncheckedExtrinsic

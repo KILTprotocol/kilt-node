@@ -74,7 +74,7 @@ decl_module! {
 decl_storage! {
 	trait Store for Module<T: Trait> as Ctype {
 		// CTYPEs: ctype-hash -> account-id?
-		pub CTYPEs get(ctypes): map T::Hash => Option<T::AccountId>;
+		pub CTYPEs get(ctypes):map hasher(blake2_256) T::Hash => Option<T::AccountId>;
 	}
 }
 
