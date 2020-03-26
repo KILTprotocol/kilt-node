@@ -1,10 +1,23 @@
-FROM rustlang/rust:nightly as builder
+FROM ubuntu:xenial as builder
 
 WORKDIR /build
 
-RUN apt-get -y update && \
-	apt-get install -y --no-install-recommends \
-	clang
+# install tools and dependencies
+RUN apt -y update && \
+	apt install -y --no-install-recommends \
+	software-properties-common curl git file binutils binutils-dev snapcraft \
+	make cmake ca-certificates g++ zip dpkg-dev python rhash rpm openssl gettext\
+	build-essential pkg-config libssl-dev libudev-dev ruby-dev time clang
+
+# install rustup
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+
+# rustup directory
+ENV PATH /root/.cargo/bin:$PATH
+
+# setup rust beta and nightly channel's
+RUN rustup install nightly
+RUN rustup install stable
 
 # install wasm toolchain for polkadot
 RUN rustup target add wasm32-unknown-unknown --toolchain nightly
@@ -15,6 +28,11 @@ RUN cargo +nightly install --git https://github.com/alexcrichton/wasm-gc
 
 # show backtraces
 ENV RUST_BACKTRACE 1
+
+# cleanup
+RUN apt autoremove -y
+RUN apt clean -y
+RUN rm -rf /tmp/* /var/tmp/*
 
 #compiler ENV
 ENV CC gcc
@@ -32,7 +50,7 @@ RUN cargo build --release
 RUN cargo test --release -p mashnet-node-runtime
 
 
-FROM debian:stretch
+FROM ubuntu:xenial
 
 WORKDIR /runtime
 
