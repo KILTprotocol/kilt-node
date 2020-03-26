@@ -4,6 +4,10 @@ edition = '2018'
 name = 'mashnet-node-runtime'
 version = '0.22.0'
 
+[build-dependencies.wasm-builder-runner]
+package = 'substrate-wasm-builder-runner'
+version = '1.0.5'
+
 [dependencies.safe-mix]
 default-features = false
 version = '1.0'
@@ -53,10 +57,10 @@ version = '0.8.0-alpha.5'
 # package = 'sp-consensus-aura'
 # version = '2.0.0-alpha.5'
 
-# [dependencies.executive]
-# default_features = false
-# package = 'frame-executive'
-# version = '2.0.0-alpha.5'
+[dependencies.executive]
+default_features = false
+package = 'frame-executive'
+version = '2.0.0-alpha.5'
 
 [dependencies.indices]
 default_features = false

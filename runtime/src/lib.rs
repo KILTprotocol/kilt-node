@@ -39,7 +39,7 @@ use runtime_primitives::{
 	create_runtime_str, generic,
 	traits::{self, BlakeTwo256, Block as BlockT, NumberFor, StaticLookup, Verify},
 	transaction_validity::TransactionValidity,
-	ApplyResult,
+	ApplyExtrinsicResult,
 };
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -252,14 +252,13 @@ impl error::Trait for Runtime {
 
 // Construct the runtime
 construct_runtime!(
-	pub enum Runtime where Log(InternalLog: DigestItem<Hash, AuthorityId, AuthoritySignature>) where
+	pub enum Runtime where
 		Block = Block,
 		NodeBlock = opaque::Block,
 		UncheckedExtrinsic = UncheckedExtrinsic
 	{
-		System: system::{default, Log(ChangesTrieRoot)},
+		System: system::{Module, Call, Config, Storage, Event<T>},
 		Timestamp: timestamp::{Module, Call, Storage, Config<T>, Inherent},
-		Consensus: consensus::{Module, Call, Storage, Config<T>, Log(AuthoritiesChange), Inherent},
 		Aura: aura::{Module},
 		Indices: indices,
 		Balances: balances,
@@ -317,7 +316,7 @@ impl_runtime_apis! {
 	}
 
 	impl sp_block_builder::BlockBuilder<Block> for Runtime {
-		fn apply_extrinsic(extrinsic: <Block as BlockT>::Extrinsic) -> ApplyResult {
+		fn apply_extrinsic(extrinsic: <Block as BlockT>::Extrinsic) -> ApplyExtrinsicResult {
 			Executive::apply_extrinsic(extrinsic)
 		}
 

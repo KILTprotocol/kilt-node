@@ -965,6 +965,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "frame-executive"
+version = "2.0.0-alpha.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2295259d727866604e46c9a24e1e4ba4b5800eb16932a04c3b1f266e122f9445"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "frame-metadata"
 version = "11.0.0-alpha.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2463,6 +2476,7 @@ dependencies = [
  "sp-core",
  "sp-inherents",
  "sp-io",
+ "substrate-build-script-utils",
  "tokio 0.2.13",
  "trie-root",
  "vergen",
@@ -2473,6 +2487,7 @@ name = "mashnet-node-runtime"
 version = "0.22.0"
 dependencies = [
  "bitflags",
+ "frame-executive",
  "frame-support",
  "frame-system",
  "pallet-aura",
@@ -2492,6 +2507,7 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "sp-version",
+ "substrate-wasm-builder-runner",
 ]
 
 [[package]]
@@ -5375,6 +5391,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "substrate-build-script-utils"
+version = "2.0.0-alpha.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "efc616006b44902a803b566592ef11d03a22ba3e1e0a6d1115a0859c105620f4"
+
+[[package]]
 name = "substrate-prometheus-endpoint"
 version = "0.8.0-alpha.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5388,6 +5410,12 @@ dependencies = [
  "prometheus",
  "tokio 0.2.13",
 ]
+
+[[package]]
+name = "substrate-wasm-builder-runner"
+version = "1.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e30c70de7e7d5fd404fe26db1e7a4d6b553e2760b1ac490f249c04a960c483b8"
 
 [[package]]
 name = "subtle"

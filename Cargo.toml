@@ -9,11 +9,18 @@ version = '0.22.0'
 name = 'mashnet-node'
 path = 'src/main.rs'
 
+[profile.release]
+panic = 'unwind'
+
 [workspace]
 members = ['runtime']
 
+[build-dependencies]
+vergen = '3.1.0'
+build-script-utils = { package = 'substrate-build-script-utils', version = '2.0.0-alpha.5' }
+
 [dependencies]
-mashnet-node-runtime = { path = 'runtime'}
+mashnet-node-runtime = { path = 'runtime' }
 error-chain = '0.12'
 exit-future = '0.2'
 futures = '0.3.4'
@@ -23,45 +30,15 @@ parity-codec = '4.1.4'
 parking_lot = '0.9.0'
 tokio = '0.2.13'
 trie-root = '0.16.0'
-
-[dependencies.sc-basic-authorship]
-version = '0.8.0-alpha.5'
-
-[dependencies.sc-consensus-aura]
-version = '0.8.0-alpha.5'
-
-[dependencies.ctrlc]
-features = ['termination']
-version = '3.1.4'
-
-[dependencies.sp-inherents]
-version = '2.0.0-alpha.5'
-
-[dependencies.sc-network]
-version = '0.8.0-alpha.5'
-
-[dependencies.sp-core]
-version = '2.0.0-alpha.5'
-
-[dependencies.sp-io]
-version = '2.0.0-alpha.5'
-
-[dependencies.sc-cli]
-version = '0.8.0-alpha.5'
-
-[dependencies.sc-client]
-version = '0.8.0-alpha.5'
-
-[dependencies.sc-executor]
-version = '0.8.0-alpha.5'
-
-[dependencies.sc-service]
-version = '0.8.0-alpha.5'
-
-[dependencies.sc-transaction-pool]
-version = '2.0.0-alpha.5'
-
-[profile.release]
-panic = 'unwind'
-[build-dependencies]
-vergen = '3.1.0'
+sc-basic-authorship = '0.8.0-alpha.5'
+sc-consensus-aura = '0.8.0-alpha.5'
+ctrlc = { features = ['termination'], version = '3.1.4' }
+sp-inherents = '2.0.0-alpha.5'
+sc-network = '0.8.0-alpha.5'
+sp-core = '2.0.0-alpha.5'
+sp-io = '2.0.0-alpha.5'
+sc-cli = '0.8.0-alpha.5'
+sc-client = '0.8.0-alpha.5'
+sc-executor = '0.8.0-alpha.5'
+sc-service = '0.8.0-alpha.5'
+sc-transaction-pool = '2.0.0-alpha.5'
