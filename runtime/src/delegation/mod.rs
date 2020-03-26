@@ -365,10 +365,10 @@ impl<T: Trait> Module<T> {
 decl_storage! {
 	trait Store for Module<T: Trait> as Delegation {
 		// Root: root-id => (ctype-hash, account, revoked)?
-		pub Root get(root):map hasher(blake2_256) T::DelegationNodeId => Option<(T::Hash,T::AccountId,bool)>;
+		pub Root get(root):map hasher(opaque_blake2_256) T::DelegationNodeId => Option<(T::Hash,T::AccountId,bool)>;
 		// Delegations: delegation-id => (root-id, parent-id?, account, permissions, revoked)?
-		pub Delegations get(delegation):map hasher(blake2_256) T::DelegationNodeId => Option<(T::DelegationNodeId,Option<T::DelegationNodeId>,T::AccountId,Permissions,bool)>;
+		pub Delegations get(delegation):map hasher(opaque_blake2_256) T::DelegationNodeId => Option<(T::DelegationNodeId,Option<T::DelegationNodeId>,T::AccountId,Permissions,bool)>;
 		// Children: root-or-delegation-id => [delegation-id]
-		pub Children get(children):map hasher(blake2_256) T::DelegationNodeId => Vec<T::DelegationNodeId>;
+		pub Children get(children):map hasher(opaque_blake2_256) T::DelegationNodeId => Vec<T::DelegationNodeId>;
 	}
 }

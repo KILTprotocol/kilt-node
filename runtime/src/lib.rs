@@ -26,10 +26,6 @@
 #[macro_use]
 extern crate bitflags;
 
-use client::{
-	block_builder::api::{self as block_builder_api, CheckInherentsResult, InherentData},
-	impl_runtime_apis, runtime_api,
-};
 use parity_codec::{Decode, Encode};
 #[cfg(feature = "std")]
 use primitives::bytes;
@@ -258,6 +254,7 @@ construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic
 	{
 		System: system::{Module, Call, Config, Storage, Event<T>},
+		RandomnessCollectiveFlip: randomness_collective_flip::{Module, Call, Storage},
 		Timestamp: timestamp::{Module, Call, Storage, Config<T>, Inherent},
 		Aura: aura::{Module},
 		Indices: indices,
@@ -324,16 +321,19 @@ impl_runtime_apis! {
 			Executive::finalize_block()
 		}
 
-		fn inherent_extrinsics(data: InherentData) -> Vec<<Block as BlockT>::Extrinsic> {
+		fn inherent_extrinsics(data: sp_inherents::InherentData) -> Vec<<Block as BlockT>::Extrinsic> {
 			data.create_extrinsics()
 		}
 
-		fn check_inherents(block: Block, data: InherentData) -> CheckInherentsResult {
+		fn check_inherents(
+			block: Block,
+			data: sp_inherents::InherentData
+		) -> sp_inherents::CheckInherentsResult {
 			data.check_extrinsics(&block)
 		}
 
 		fn random_seed() -> <Block as BlockT>::Hash {
-			System::random_seed()
+			RandomnessCollectiveFlip::random_seed()
 		}
 	}
 

@@ -973,6 +973,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "parity-scale-codec",
+ "serde",
  "sp-runtime",
  "sp-std",
 ]
@@ -2493,15 +2494,16 @@ dependencies = [
  "pallet-aura",
  "pallet-balances",
  "pallet-indices",
+ "pallet-randomness-collective-flip",
  "pallet-sudo",
  "pallet-timestamp",
  "parity-codec 3.5.4",
  "parity-scale-codec",
  "safe-mix",
- "sc-client",
  "serde",
  "sp-consensus-aura",
  "sp-core",
+ "sp-inherents",
  "sp-io",
  "sp-offchain",
  "sp-runtime",
@@ -2894,6 +2896,20 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-keyring",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-randomness-collective-flip"
+version = "2.0.0-alpha.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0901faf91fdec1afa1810bf6f07678482be066ba79fc9d80095360e2c53e2f03"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "safe-mix",
  "sp-runtime",
  "sp-std",
 ]

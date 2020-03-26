@@ -48,12 +48,7 @@ ENV LANG=C.UTF-8
 
 COPY . /build
 
-RUN /bin/bash scripts/build.sh
-
 RUN cargo build --release
-RUN cargo test --release -p mashnet-node-runtime
-RUN cargo clippy -- -D warnings
-
 
 FROM ubuntu:xenial
 

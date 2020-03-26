@@ -201,8 +201,8 @@ pub struct StoredAttestation<T: Trait>(T::Hash, T::AccountId, Option<T::Delegati
 decl_storage! {
 	trait Store for Module<T: Trait> as Attestation {
 		/// Attestations: claim-hash -> (ctype-hash, account, delegation-id?, revoked)?
-		Attestations get(attestations): map hasher(blake2_256) T::Hash => Option<StoredAttestation<T>>;
+		Attestations get(attestations): map hasher(opaque_blake2_256) T::Hash => Option<StoredAttestation<T>>;
 		/// DelegatedAttestations: delegation-id -> [claim-hash]
-		DelegatedAttestations get(delegated_attestations): map hasher(blake2_256) T::DelegationNodeId => Vec<T::Hash>;
+		DelegatedAttestations get(delegated_attestations): map hasher(opaque_blake2_256) T::DelegationNodeId => Vec<T::Hash>;
 	}
 }
