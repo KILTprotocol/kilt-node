@@ -24,7 +24,7 @@
 mod tests;
 
 use super::error;
-use support::{decl_event, decl_module, decl_storage, dispatch::Result, StorageMap};
+use support::{decl_event, decl_module, decl_storage, dispatch::DispatchResult, StorageMap};
 use system::{self, ensure_signed};
 
 /// The CTYPE trait
@@ -51,7 +51,7 @@ decl_module! {
 		/// Adds a CTYPE on chain, where
 		/// origin - the origin of the transaction
 		/// hash - hash of the CTYPE of the claim
-		pub fn add(origin, hash: T::Hash) -> Result {
+		pub fn add(origin, hash: T::Hash) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 
@@ -87,7 +87,7 @@ impl<T: Trait> Module<T> {
 		(Self::ERROR_BASE + 2, "CTYPE already exists");
 
 	/// Create an error using the error module
-	pub fn error(error_type: error::ErrorType) -> Result {
+	pub fn error(error_type: error::ErrorType) -> DispatchResult {
 		<error::Module<T>>::error(error_type)
 	}
 }

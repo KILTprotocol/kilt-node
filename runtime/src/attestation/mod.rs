@@ -29,7 +29,7 @@ use rstd::{
 	prelude::{Clone, PartialEq, Vec},
 	result,
 };
-use support::{decl_event, decl_module, decl_storage, dispatch::Result, StorageMap};
+use support::{decl_event, decl_module, decl_storage, dispatch::DispatchResult, StorageMap};
 use system::{self, ensure_signed};
 
 /// The attestation trait
@@ -60,7 +60,7 @@ decl_module! {
 		/// claim_hash - hash of the attested claim
 		/// ctype_hash - hash of the CTYPE of the claim
 		/// delegation_id - optional id that refers to a delegation this attestation is based on
-		pub fn add(origin, claim_hash: T::Hash, ctype_hash: T::Hash, delegation_id: Option<T::DelegationNodeId>) -> Result {
+		pub fn add(origin, claim_hash: T::Hash, ctype_hash: T::Hash, delegation_id: Option<T::DelegationNodeId>) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 			// check if the CTYPE exists
@@ -121,7 +121,7 @@ decl_module! {
 		/// Revokes an attestation on chain, where
 		/// origin - the origin of the transaction
 		/// claim_hash - hash of the attested claim
-		pub fn revoke(origin, claim_hash: T::Hash) -> Result {
+		pub fn revoke(origin, claim_hash: T::Hash) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 
@@ -182,7 +182,7 @@ impl<T: Trait> Module<T> {
 		(Self::ERROR_BASE + 8, "not permitted to revoke attestation");
 
 	/// Create an error using the error module
-	pub fn error(error_type: error::ErrorType) -> Result {
+	pub fn error(error_type: error::ErrorType) -> DispatchResult {
 		<error::Module<T>>::error(error_type)
 	}
 

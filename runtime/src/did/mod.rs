@@ -25,7 +25,9 @@ mod tests;
 
 use rstd::prelude::*;
 use runtime_primitives::{codec::Codec, traits::Member};
-use support::{decl_event, decl_module, decl_storage, dispatch::Result, Parameter, StorageMap};
+use support::{
+	decl_event, decl_module, decl_storage, dispatch::DispatchResult, Parameter, StorageMap,
+};
 use system::{self, ensure_signed};
 
 /// The DID trait
@@ -60,7 +62,7 @@ decl_module! {
 		/// sign_key - public signing key of the DID
 		/// box_key - public boxing key of the DID
 		/// doc_ref - optional reference to the DID document storage
-		pub fn add(origin, sign_key: T::PublicSigningKey, box_key: T::PublicBoxKey, doc_ref: Option<Vec<u8>>) -> Result {
+		pub fn add(origin, sign_key: T::PublicSigningKey, box_key: T::PublicBoxKey, doc_ref: Option<Vec<u8>>) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 			// add DID to the storage
@@ -71,7 +73,7 @@ decl_module! {
 		}
 		/// Removes a DID from chain storage, where
 		/// origin - the origin of the transaction
-		pub fn remove(origin) -> Result {
+		pub fn remove(origin) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 			// remove DID from storage
