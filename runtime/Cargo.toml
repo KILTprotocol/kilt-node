@@ -95,6 +95,10 @@ features = [ 'derive' ]
 optional = true
 version = '1.0'
 
+[dependencies.sp-arithmetic]
+default-features = false
+version = '2.0.0-alpha.5'
+
 [dependencies.sudo]
 default_features = false
 package = 'pallet-sudo'

@@ -18,19 +18,13 @@
 
 //! Error: Handles errors for all other runtime modules
 
-use runtime_primitives::traits::{
-	As, Bounded, MaybeDisplay, MaybeSerializeDebug, Member, SimpleArithmetic,
-};
+use runtime_primitives::traits::{Bounded, MaybeDisplay, MaybeSerialize, Member};
+use sp_arithmetic::traits::BaseArithmetic;
 use support::{debug, decl_event, decl_module, Parameter};
 
 /// The error trait
 pub trait Trait: system::Trait {
-	type ErrorCode: Parameter
-		+ Member
-		+ MaybeSerializeDebug
-		+ MaybeDisplay
-		+ SimpleArithmetic
-		+ Bounded;
+	type ErrorCode: Parameter + Member + MaybeSerialize + MaybeDisplay + BaseArithmetic + Bounded;
 	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
 
