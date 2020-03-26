@@ -30,105 +30,88 @@ version = "1.0.0"
 
 [dependencies.aura]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
 package = 'pallet-aura'
-rev = 'v2.0.0-alpha.3'
+version = '2.0.0-alpha.5'
 
 [dependencies.balances]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
 package = 'pallet-balances'
-rev = 'v2.0.0-alpha.3'
+version = '2.0.0-alpha.5'
 
 [dependencies.client]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
 package = 'sc-client'
-rev = 'v2.0.0-alpha.3'
+version = '0.8.0-alpha.5'
 
 [dependencies.consensus-aura]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
 package = 'sp-consensus-aura'
-rev = 'v2.0.0-alpha.3'
+version = '0.8.0-alpha.5'
 
 # [dependencies.consensus_authorities]
 # default-features = false
-# git = 'https://github.com/paritytech/substrate.git'
 # package = 'sp-consensus-aura'
-# rev = 'v2.0.0-alpha.3'
+# version = '2.0.0-alpha.5'
 
 # [dependencies.executive]
 # default_features = false
-# git = 'https://github.com/paritytech/substrate.git'
 # package = 'frame-executive'
-# rev = 'v2.0.0-alpha.3'
+# version = '2.0.0-alpha.5'
 
 [dependencies.indices]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
 package = 'pallet-indices'
-rev = 'v2.0.0-alpha.3'
+version = '2.0.0-alpha.5'
 
 [dependencies.offchain-primitives]
 default-features = false
-git = 'https://github.com/paritytech/substrate.git'
 package = 'sp-offchain'
-rev = 'v2.0.0-alpha.3'
+version = '2.0.0-alpha.5'
 
 [dependencies.primitives]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
 package = 'sp-core'
-rev = 'v2.0.0-alpha.3'
+version = '2.0.0-alpha.5'
 
 [dependencies.rstd]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
 package = 'sp-std'
-rev = 'v2.0.0-alpha.3'
+version = '2.0.0-alpha.5'
 
 [dependencies.runtime-io]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
 package = 'sp-io'
-rev = 'v2.0.0-alpha.3'
+version = '2.0.0-alpha.5'
 
 [dependencies.runtime-primitives]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
 package = 'sp-runtime'
-rev = 'v2.0.0-alpha.3'
+version = '2.0.0-alpha.5'
 
 [dependencies.sudo]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
 package = 'pallet-sudo'
-rev = 'v2.0.0-alpha.3'
+version = '2.0.0-alpha.5'
 
 [dependencies.support]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
 package = 'frame-support'
-rev = 'v2.0.0-alpha.3'
+version = '2.0.0-alpha.5'
 
 [dependencies.system]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
 package = 'frame-system'
-rev = 'v2.0.0-alpha.3'
+version = '2.0.0-alpha.5'
 
 [dependencies.timestamp]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
 package = 'pallet-timestamp'
-rev = 'v2.0.0-alpha.3'
+version = '2.0.0-alpha.5'
 
 [dependencies.version]
 default_features = false
-git = 'https://github.com/paritytech/substrate.git'
 package = 'sp-version'
-rev = 'v2.0.0-alpha.3'
+version = '2.0.0-alpha.5'
 
 [features]
 default = ['std']
