@@ -4,6 +4,30 @@ edition = '2018'
 name = 'mashnet-node-runtime'
 version = '0.22.0'
 
+[dependencies.safe-mix]
+default-features = false
+version = '1.0'
+
+[dependencies.serde]
+features = ['derive']
+optional = true
+version = '1.0'
+
+[dependencies.bitflags]
+default-features = false
+version = '1.0.4'
+
+[dependencies.parity-codec]
+default-features = false
+features = ['derive']
+version = '3.5'
+
+[dependencies.codec]
+default-features = false
+features = ["derive"]
+package = "parity-scale-codec"
+version = "1.0.0"
+
 [dependencies.aura]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
@@ -15,10 +39,6 @@ default_features = false
 git = 'https://github.com/paritytech/substrate.git'
 package = 'pallet-balances'
 rev = 'v2.0.0-alpha.3'
-
-[dependencies.bitflags]
-default-features = false
-version = '1.0.4'
 
 [dependencies.client]
 default_features = false
@@ -32,17 +52,17 @@ git = 'https://github.com/paritytech/substrate.git'
 package = 'sp-consensus-aura'
 rev = 'v2.0.0-alpha.3'
 
-[dependencies.consensus_authorities]
-default-features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'sc-consensus-authorities'
-rev = 'v2.0.0-alpha.3'
+# [dependencies.consensus_authorities]
+# default-features = false
+# git = 'https://github.com/paritytech/substrate.git'
+# package = 'sp-consensus-aura'
+# rev = 'v2.0.0-alpha.3'
 
-[dependencies.executive]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'pallet-executive'
-rev = 'v2.0.0-alpha.3'
+# [dependencies.executive]
+# default_features = false
+# git = 'https://github.com/paritytech/substrate.git'
+# package = 'frame-executive'
+# rev = 'v2.0.0-alpha.3'
 
 [dependencies.indices]
 default_features = false
@@ -56,43 +76,29 @@ git = 'https://github.com/paritytech/substrate.git'
 package = 'sp-offchain'
 rev = 'v2.0.0-alpha.3'
 
-[dependencies.parity-codec]
-default-features = false
-features = ['derive']
-version = '3.5'
-
 [dependencies.primitives]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
-package = 'sp-primitives'
+package = 'sp-core'
 rev = 'v2.0.0-alpha.3'
 
 [dependencies.rstd]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
-package = 'sr-std'
+package = 'sp-std'
 rev = 'v2.0.0-alpha.3'
 
 [dependencies.runtime-io]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
-package = 'sr-io'
+package = 'sp-io'
 rev = 'v2.0.0-alpha.3'
 
 [dependencies.runtime-primitives]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
-package = 'sr-primitives'
+package = 'sp-runtime'
 rev = 'v2.0.0-alpha.3'
-
-[dependencies.safe-mix]
-default-features = false
-version = '1.0'
-
-[dependencies.serde]
-features = ['derive']
-optional = true
-version = '1.0'
 
 [dependencies.sudo]
 default_features = false
@@ -103,13 +109,13 @@ rev = 'v2.0.0-alpha.3'
 [dependencies.support]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
-package = 'pallet-support'
+package = 'frame-support'
 rev = 'v2.0.0-alpha.3'
 
 [dependencies.system]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
-package = 'pallet-system'
+package = 'frame-system'
 rev = 'v2.0.0-alpha.3'
 
 [dependencies.timestamp]
@@ -121,7 +127,7 @@ rev = 'v2.0.0-alpha.3'
 [dependencies.version]
 default_features = false
 git = 'https://github.com/paritytech/substrate.git'
-package = 'sr-version'
+package = 'sp-version'
 rev = 'v2.0.0-alpha.3'
 
 [features]
@@ -129,12 +135,12 @@ default = ['std']
 std = [
 	'parity-codec/std',
 	'primitives/std',
-	'client/std',
+	# 'client/std',
 	'rstd/std',
 	'runtime-io/std',
 	'support/std',
 	'balances/std',
-	'executive/std',
+	# 'executive/std',
 	'aura/std',
 	'indices/std',
 	"runtime-primitives/std",
@@ -146,5 +152,5 @@ std = [
 	'safe-mix/std',
 	'consensus-aura/std',
 	'offchain-primitives/std',
-	"consensus_authorities/std",
+	# "consensus_authorities/std",
 ]

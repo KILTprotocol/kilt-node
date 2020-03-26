@@ -13,6 +13,7 @@ path = 'src/main.rs'
 members = ['runtime']
 
 [dependencies]
+mashnet-node-runtime = { path = 'runtime'}
 error-chain = '0.12'
 exit-future = '0.1'
 futures = '0.1'
@@ -46,9 +47,6 @@ rev = 'v2.0.0-alpha.3'
 git = 'https://github.com/paritytech/substrate.git'
 package = 'sc-network'
 rev = 'v2.0.0-alpha.3'
-
-[dependencies.mashnet-node-runtime]
-path = 'runtime'
 
 [dependencies.primitives]
 git = 'https://github.com/paritytech/substrate.git'
