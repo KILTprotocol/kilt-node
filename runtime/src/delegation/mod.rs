@@ -33,7 +33,7 @@ use runtime_primitives::traits::{CheckEqual, Hash, MaybeDisplay, Member, SimpleB
 use core::default::Default;
 use parity_codec::{Decode, Encode};
 use support::{
-	decl_event, decl_module, decl_storage, dispatch::DispatchResult, Parameter, StorageMap,
+	debug, decl_event, decl_module, decl_storage, dispatch::DispatchResult, Parameter, StorageMap,
 };
 
 use super::{ctype, error};
@@ -134,7 +134,7 @@ decl_module! {
 			}
 
 			// add root node to storage
-			::runtime_io::print("insert Delegation Root");
+			debug::print!("insert Delegation Root");
 			<Root<T>>::insert(root_id, (ctype_hash, sender.clone(), false));
 			// deposit event that the root node has been created
 			Self::deposit_event(RawEvent::RootCreated(sender, root_id, ctype_hash));
@@ -183,7 +183,7 @@ decl_module! {
 					return Self::error(Self::ERROR_NOT_AUTHORIZED_TO_DELEGATE);
 				} else {
 					// insert delegation
-					::runtime_io::print("insert Delegation with parent");
+					debug::print!("insert Delegation with parent");
 					<Delegations<T>>::insert(delegation_id, (root_id,
 							Some(p), delegate.clone(), permissions, false));
 					// add child to tree structure
@@ -195,7 +195,7 @@ decl_module! {
 					return Self::error(Self::ERROR_NOT_OWNER_OF_ROOT);
 				}
 				// inser delegation
-				::runtime_io::print("insert Delegation without parent");
+				debug::print!("insert Delegation without parent");
 				<Delegations<T>>::insert(delegation_id, (root_id,
 						None, delegate.clone(), permissions, false));
 				// add child to tree structure

@@ -21,7 +21,7 @@
 use runtime_primitives::traits::{
 	As, Bounded, MaybeDisplay, MaybeSerializeDebug, Member, SimpleArithmetic,
 };
-use support::{decl_event, decl_module, Parameter};
+use support::{debug, decl_event, decl_module, Parameter};
 
 /// The error trait
 pub trait Trait: system::Trait {
@@ -59,7 +59,7 @@ decl_module! {
 impl<T: Trait> Module<T> {
 	/// Create an error, it logs the error, deposits an error event and returns the error with its message
 	pub fn error(error_type: ErrorType) -> Result<(), &'static str> {
-		::runtime_io::print(error_type.1);
+		debug::print!("{}", error_type.1);
 		Self::deposit_event(RawEvent::ErrorOccurred(T::ErrorCode::sa(
 			error_type.0.into(),
 		)));
@@ -68,7 +68,7 @@ impl<T: Trait> Module<T> {
 
 	/// Create an error, it logs the error, deposits an error event and returns the error message
 	pub fn deposit_err(error_type: ErrorType) -> &'static str {
-		::runtime_io::print(error_type.1);
+		debug::print!("{}", error_type.1);
 		Self::deposit_event(RawEvent::ErrorOccurred(T::ErrorCode::sa(
 			error_type.0.into(),
 		)));

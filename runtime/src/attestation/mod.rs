@@ -29,7 +29,7 @@ use rstd::{
 	prelude::{Clone, PartialEq, Vec},
 	result,
 };
-use support::{decl_event, decl_module, decl_storage, dispatch::DispatchResult, StorageMap};
+use support::{debug, decl_event, decl_module, decl_storage, dispatch::DispatchResult, StorageMap};
 use system::{self, ensure_signed};
 
 /// The attestation trait
@@ -102,7 +102,8 @@ decl_module! {
 			}
 
 			// insert attestation
-			::runtime_io::print("insert Attestation");
+			debug::RuntimeLogger.init();
+			debug::print!("insert Attestation");
 			<Attestations<T>>::insert(claim_hash, StoredAttestation (ctype_hash, sender.clone(), delegation_id, false));
 
 			if let Some(d) = delegation_id {
@@ -152,7 +153,7 @@ decl_module! {
 			}
 
 			// revoke attestation
-			::runtime_io::print("revoking Attestation");
+			debug::print!("revoking Attestation");
 			existing_attestation.3 = true;
 			<Attestations<T>>::insert(claim_hash, existing_attestation);
 

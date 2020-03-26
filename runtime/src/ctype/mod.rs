@@ -24,7 +24,7 @@
 mod tests;
 
 use super::error;
-use support::{decl_event, decl_module, decl_storage, dispatch::DispatchResult, StorageMap};
+use support::{debug, decl_event, decl_module, decl_storage, dispatch::DispatchResult, StorageMap};
 use system::{self, ensure_signed};
 
 /// The CTYPE trait
@@ -61,7 +61,7 @@ decl_module! {
 			}
 
 			// add CTYPE to storage
-			::runtime_io::print("insert CTYPE");
+			debug::print!("insert CTYPE");
 			<CTYPEs<T>>::insert(hash, sender.clone());
 			// deposit event that the CTYPE has been added
 			Self::deposit_event(RawEvent::CTypeCreated(sender, hash));
