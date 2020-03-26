@@ -24,52 +24,41 @@ parking_lot = '0.9.0'
 tokio = '0.2.13'
 trie-root = '0.16.0'
 
-[dependencies.basic-authorship]
-package = 'sc-basic-authorship'
+[dependencies.sc-basic-authorship]
 version = '0.8.0-alpha.5'
 
-[dependencies.consensus]
-package = 'sc-consensus-aura'
+[dependencies.sc-consensus-aura]
 version = '0.8.0-alpha.5'
 
 [dependencies.ctrlc]
 features = ['termination']
 version = '3.1.4'
 
-[dependencies.inherents]
-package = 'sp-inherents'
+[dependencies.sp-inherents]
 version = '2.0.0-alpha.5'
 
-[dependencies.network]
-package = 'sc-network'
+[dependencies.sc-network]
 version = '0.8.0-alpha.5'
 
-[dependencies.primitives]
-package = 'sp-core'
+[dependencies.sp-core]
 version = '2.0.0-alpha.5'
 
 [dependencies.sp-io]
-package = 'sp-io'
 version = '2.0.0-alpha.5'
 
 [dependencies.sc-cli]
-package = 'sc-cli'
 version = '0.8.0-alpha.5'
 
 [dependencies.sc-client]
-package = 'sc-client'
 version = '0.8.0-alpha.5'
 
 [dependencies.sc-executor]
-package = 'sc-executor'
 version = '0.8.0-alpha.5'
 
 [dependencies.sc-service]
-package = 'sc-service'
 version = '0.8.0-alpha.5'
 
-[dependencies.transaction-pool]
-package = 'sc-transaction-pool'
+[dependencies.sc-transaction-pool]
 version = '2.0.0-alpha.5'
 
 [profile.release]
