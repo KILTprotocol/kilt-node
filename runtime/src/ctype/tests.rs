@@ -26,7 +26,6 @@ use runtime_primitives::{
 	BuildStorage,
 };
 use support::{assert_err, assert_ok, impl_outer_origin};
-use system;
 
 impl_outer_origin! {
 	pub enum Origin for Test {}
