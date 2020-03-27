@@ -18,7 +18,7 @@
 
 use super::*;
 use parity_codec::Encode;
-use primitives::{ed25519 as x25519, Blake2Hasher, H256, H512, *};
+use primitives::{ed25519 as x25519, Blake2Hasher, H256, H512, Pair};
 use runtime_io::with_externalities;
 use support::{assert_err, assert_ok, impl_outer_origin};
 use system;
