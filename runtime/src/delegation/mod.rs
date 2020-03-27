@@ -38,7 +38,7 @@ use support::{
 };
 
 use super::{ctype, error};
-use runtime_primitives::{codec::Codec, verify_encoded_lazy};
+use runtime_primitives::{codec::Codec, verify_encoded_lazy, traits::IdentifyAccount};
 use system::{self, ensure_signed};
 
 bitflags! {
@@ -79,7 +79,7 @@ pub trait Trait: ctype::Trait + system::Trait + error::Trait {
 	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
 	/// Signer of a delegation
-	type Signer: From<Self::AccountId> + Member + Codec;
+	type Signer: From<Self::AccountId> + IdentifyAccount + Member + Codec;
 	/// Signature of a delegation
 	type Signature: Verify<Signer = Self::Signer> + Member + Codec + Default;
 	/// Delegation node id type

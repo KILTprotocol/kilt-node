@@ -66,11 +66,11 @@ mod delegation;
 mod did;
 mod error;
 
-/// The type that is used for identifying authorities.
-pub type AuthorityId = <AuthoritySignature as Verify>::Signer;
-
 /// The type used by authorities to prove their ID.
 pub type AuthoritySignature = ed25519::Signature;
+
+/// The type that is used for identifying authorities.
+pub type AuthorityId = <AuthoritySignature as Verify>::Signer;
 
 /// Alias to pubkey that identifies an account on the chain.
 pub type AccountId = <AccountSignature as Verify>::Signer;
