@@ -20,11 +20,12 @@
 
 use runtime_primitives::traits::{Bounded, MaybeDisplay, MaybeSerialize, Member};
 use sp_arithmetic::traits::BaseArithmetic;
-use support::{debug, decl_event, decl_module, Parameter};
+use support::{debug, decl_event, decl_module, Parameter, dispatch};
+use core::convert::From;
 
 /// The error trait
 pub trait Trait: system::Trait {
-	type ErrorCode: Parameter + Member + MaybeSerialize + MaybeDisplay + BaseArithmetic + Bounded;
+	type ErrorCode: Parameter + Member + MaybeSerialize + MaybeDisplay + BaseArithmetic + Bounded + From<u16>;
 	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
 
@@ -52,24 +53,20 @@ decl_module! {
 /// Implementation of further module functions for errors
 impl<T: Trait> Module<T> {
 	/// Create an error, it logs the error, deposits an error event and returns the error with its message
-	pub fn error(error_type: ErrorType) -> Result<(), &'static str> {
-		debug::print!("{}", error_type.1);
-		Self::deposit_event(RawEvent::ErrorOccurred(T::ErrorCode::sa(
-			error_type.0.into(),
-		)));
-		Err(error_type.1)
+	pub fn error(error_type: ErrorType) -> dispatch::DispatchResult {
+		Err(Self::deposit_err(error_type))
 	}
 
 	/// Create an error, it logs the error, deposits an error event and returns the error message
-	pub fn deposit_err(error_type: ErrorType) -> &'static str {
+	pub fn deposit_err(error_type: ErrorType) -> dispatch::DispatchError {
 		debug::print!("{}", error_type.1);
-		Self::deposit_event(RawEvent::ErrorOccurred(T::ErrorCode::sa(
+		Self::deposit_event(RawEvent::ErrorOccurred(
 			error_type.0.into(),
-		)));
-		error_type.1
+		));
+		dispatch::DispatchError::Other(error_type.1)
 	}
 
-	pub fn ok_or_deposit_err<S>(opt: Option<S>, error_type: ErrorType) -> Result<S, &'static str> {
+	pub fn ok_or_deposit_err<S>(opt: Option<S>, error_type: ErrorType) -> Result<S, dispatch::DispatchError> {
 		if let Some(s) = opt {
 			Ok(s)
 		} else {
