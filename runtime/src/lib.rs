@@ -72,6 +72,9 @@ pub type AuthoritySignature = ed25519::Signature;
 /// The type that is used for identifying authorities.
 pub type AuthorityId = <AuthoritySignature as Verify>::Signer;
 
+/// The type used by accounts to prove their ID.
+pub type AccountSignature = x25519::Signature;
+
 /// Alias to pubkey that identifies an account on the chain.
 pub type AccountId = <AccountSignature as Verify>::Signer;
 
@@ -81,9 +84,6 @@ pub type AccountIndex = u32;
 
 /// Balance of an account.
 pub type Balance = u128;
-
-/// The type used by accounts to prove their ID.
-pub type AccountSignature = x25519::Signature;
 
 /// A hash of some data used by the chain.
 pub type Hash = sp_core::H256;

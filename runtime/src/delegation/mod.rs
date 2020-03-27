@@ -78,10 +78,12 @@ pub trait Trait: ctype::Trait + system::Trait + error::Trait {
 	/// Delegation specific event type
 	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-	/// Signer of a delegation
-	type Signer: From<Self::AccountId> + IdentifyAccount + Member + Codec;
 	/// Signature of a delegation
 	type Signature: Verify<Signer = Self::Signer> + Member + Codec + Default;
+
+	/// Signer of a delegation
+	type Signer: From<Self::AccountId> + IdentifyAccount<AccountId = Self::AccountId> + Member + Codec;
+
 	/// Delegation node id type
 	type DelegationNodeId: Parameter
 		+ Member
@@ -161,7 +163,7 @@ decl_module! {
 			}
 			// calculate the hash root and check if the signature matches
 			let hash_root = Self::calculate_hash(delegation_id, root_id, parent_id, permissions);
-			if !verify_encoded_lazy(&delegate_signature, &&hash_root, &delegate.clone().into()) {
+			if !verify_encoded_lazy(&delegate_signature, &&hash_root, &delegate) {
 				return Self::error(Self::ERROR_BAD_DELEGATION_SIGNATURE);
 			}
 
