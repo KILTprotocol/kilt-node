@@ -24,7 +24,7 @@
 mod tests;
 
 use super::{ctype, delegation, error};
-use parity_codec::{Decode, Encode};
+use codec::{Decode, Encode};
 use rstd::{
 	prelude::{Clone, PartialEq, Vec},
 	result,

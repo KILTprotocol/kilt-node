@@ -32,7 +32,7 @@ use rstd::{
 use runtime_primitives::traits::{CheckEqual, Hash, MaybeDisplay, Member, SimpleBitOps, Verify};
 
 use core::default::Default;
-use parity_codec::{Decode, Encode};
+use codec::{Decode, Encode};
 use support::{
 	debug, decl_event, decl_module, decl_storage, dispatch::DispatchResult, Parameter, StorageMap,
 };
