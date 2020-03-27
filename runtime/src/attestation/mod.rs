@@ -102,7 +102,7 @@ decl_module! {
 			}
 
 			// insert attestation
-			debug::RuntimeLogger.init();
+			debug::RuntimeLogger::init();
 			debug::print!("insert Attestation");
 			<Attestations<T>>::insert(claim_hash, StoredAttestation (ctype_hash, sender.clone(), delegation_id, false));
 
