@@ -73,13 +73,13 @@ fn it_works_for_default_value() {
 		let account = H256::from_low_u64_be(1);
 		let ctype_hash = H256::from_low_u64_be(2);
 		assert_ok!(CType::add(
-			Origin::signed(account.clone()),
-			ctype_hash.clone()
+			Origin::signed(account),
+			ctype_hash
 		));
 		assert_eq!(<CTYPEs<Test>>::exists(ctype_hash), true);
-		assert_eq!(CType::ctypes(ctype_hash.clone()), Some(account.clone()));
+		assert_eq!(CType::ctypes(ctype_hash), Some(account));
 		assert_err!(
-			CType::add(Origin::signed(account.clone()), ctype_hash.clone()),
+			CType::add(Origin::signed(account), ctype_hash),
 			CType::ERROR_CTYPE_ALREADY_EXISTS.1
 		);
 	});

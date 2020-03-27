@@ -72,23 +72,23 @@ fn check_add_did() {
 		let box_key = H256::from_low_u64_be(2);
 		let account_hash = H256::from(pair.public().0);
 		assert_ok!(DID::add(
-			Origin::signed(account_hash.clone()),
-			signing_key.clone(),
-			box_key.clone(),
+			Origin::signed(account_hash),
+			signing_key,
+			box_key,
 			Some(b"http://kilt.org/submit".to_vec())
 		));
 
 		assert_eq!(<DIDs<Test>>::exists(account_hash), true);
 		let did = {
-			let opt = DID::dids(account_hash.clone());
+			let opt = DID::dids(account_hash);
 			assert!(opt.is_some());
 			opt.unwrap()
 		};
-		assert_eq!(did.0, signing_key.clone());
-		assert_eq!(did.1, box_key.clone());
+		assert_eq!(did.0, signing_key);
+		assert_eq!(did.1, box_key);
 		assert_eq!(did.2, Some(b"http://kilt.org/submit".to_vec()));
 
-		assert_ok!(DID::remove(Origin::signed(account_hash.clone())));
+		assert_ok!(DID::remove(Origin::signed(account_hash)));
 		assert_eq!(<DIDs<Test>>::exists(account_hash), false);
 	});
 }
