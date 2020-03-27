@@ -64,7 +64,7 @@ decl_module! {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 			// check if the CTYPE exists
-			if !<ctype::CTYPEs<T>>::exists(ctype_hash) {
+			if !<ctype::CTYPEs<T>>::contains_key(ctype_hash) {
 				return Self::error(<ctype::Module<T>>::ERROR_CTYPE_NOT_FOUND);
 			}
 
@@ -97,7 +97,7 @@ decl_module! {
 			}
 
 			// check if attestation already exists
-			if <Attestations<T>>::exists(claim_hash) {
+			if <Attestations<T>>::contains_key(claim_hash) {
 				return Self::error(Self::ERROR_ALREADY_ATTESTED);
 			}
 

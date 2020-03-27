@@ -20,7 +20,7 @@ use super::*;
 
 use primitives::{Blake2Hasher, H256};
 use runtime_io::with_externalities;
-use runtime_primitives::{
+use sp_runtime::{
 	testing::{Digest, DigestItem, Header},
 	traits::{BlakeTwo256, IdentityLookup},
 	BuildStorage,

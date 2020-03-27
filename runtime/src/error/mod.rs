@@ -18,7 +18,7 @@
 
 //! Error: Handles errors for all other runtime modules
 
-use runtime_primitives::traits::{Bounded, MaybeDisplay, MaybeSerialize, Member};
+use sp_runtime::traits::{Bounded, MaybeDisplay, MaybeSerialize, Member};
 use sp_arithmetic::traits::BaseArithmetic;
 use support::{debug, decl_event, decl_module, Parameter, dispatch};
 use core::convert::From;

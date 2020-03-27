@@ -23,7 +23,7 @@ use runtime_io::with_externalities;
 use support::{assert_err, assert_ok, impl_outer_origin};
 
 
-use runtime_primitives::{
+use sp_runtime::{
 	testing::{Digest, DigestItem, Header},
 	traits::{BlakeTwo256, IdentityLookup, Verify},
 	BuildStorage,

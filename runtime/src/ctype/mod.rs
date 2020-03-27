@@ -56,7 +56,7 @@ decl_module! {
 			let sender = ensure_signed(origin)?;
 
 			// check if CTYPE already exists
-			if <CTYPEs<T>>::exists(hash) {
+			if <CTYPEs<T>>::contains_key(hash) {
 				return Self::error(Self::ERROR_CTYPE_ALREADY_EXISTS);
 			}
 

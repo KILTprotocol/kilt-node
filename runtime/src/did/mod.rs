@@ -24,7 +24,7 @@
 mod tests;
 
 use rstd::prelude::*;
-use runtime_primitives::{codec::Codec, traits::Member};
+use sp_runtime::{codec::Codec, traits::Member};
 use support::{
 	decl_event, decl_module, decl_storage, dispatch::DispatchResult, Parameter, StorageMap,
 };

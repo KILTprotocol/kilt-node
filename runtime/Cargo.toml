@@ -63,11 +63,6 @@ default_features = false
 package = 'sp-io'
 version = '2.0.0-alpha.5'
 
-[dependencies.runtime-primitives]
-default_features = false
-package = 'sp-runtime'
-version = '2.0.0-alpha.5'
-
 [dependencies.safe-mix]
 default-features = false
 version = '1.0'
@@ -98,6 +93,18 @@ default_features = false
 version = '2.0.0-alpha.5'
 
 [dependencies.sp-inherents]
+default-features = false
+version = '2.0.0-alpha.5'
+
+[dependencies.sp-offchain]
+default-features = false
+version = '2.0.0-alpha.5'
+
+[dependencies.sp-runtime]
+default_features = false
+version = '2.0.0-alpha.5'
+
+[dependencies.sp-session]
 default-features = false
 version = '2.0.0-alpha.5'
 
@@ -135,12 +142,6 @@ default_features = false
 package = 'sp-version'
 version = '2.0.0-alpha.5'
 
-[dependencies.sp-offchain]
-default-features = false
-version = '2.0.0-alpha.5'
-[dependencies.sp-session]
-default-features = false
-version = '2.0.0-alpha.5'
 [features]
 default = [ 'std' ]
 std = [
@@ -154,7 +155,7 @@ std = [
 	'sp-core/std',
 	'rstd/std',
 	'runtime-io/std',
-	'runtime-primitives/std',
+	'sp-runtime/std',
 	'safe-mix/std',
 	'randomness-collective-flip/std',
 	'serde',
@@ -166,6 +167,6 @@ std = [
 	'sp-block-builder/std',
 	'transaction-payment/std',
 	'sp-transaction-pool/std',
-    'sp-offchain/std',
-    'sp-session/std',
+	'sp-offchain/std',
+	'sp-session/std',
 ]

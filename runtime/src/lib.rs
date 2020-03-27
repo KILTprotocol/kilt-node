@@ -33,7 +33,7 @@ extern crate bitflags;
 use sp_core::bytes;
 use sp_core::{ed25519, ed25519 as x25519, OpaqueMetadata};
 use rstd::prelude::*;
-use runtime_primitives::{
+use sp_runtime::{
 	impl_opaque_keys,
 	create_runtime_str, generic,
 	traits::{BlakeTwo256, Block as BlockT, Verify, IdentityLookup, ConvertInto},
@@ -50,8 +50,8 @@ use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 
 // pub use consensus::Call as ConsensusCall;
 #[cfg(any(feature = "std", test))]
-pub use runtime_primitives::BuildStorage;
-pub use runtime_primitives::{Perbill, Permill};
+pub use sp_runtime::BuildStorage;
+pub use sp_runtime::{Perbill, Permill};
 pub use support::{
 	StorageValue, construct_runtime, parameter_types,
 	traits::Randomness,
@@ -102,7 +102,7 @@ pub mod opaque {
 	use super::*;
 
 	/// Opaque, encoded, unchecked extrinsic.
-	pub use runtime_primitives::OpaqueExtrinsic as UncheckedExtrinsic;
+	pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
 
 	/// Opaque block header type.
 	pub type Header = generic::Header<BlockNumber, BlakeTwo256>;

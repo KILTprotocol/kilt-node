@@ -29,7 +29,7 @@ use rstd::{
 	result,
 };
 
-use runtime_primitives::traits::{CheckEqual, Hash, MaybeDisplay, Member, SimpleBitOps, Verify};
+use sp_runtime::traits::{CheckEqual, Hash, MaybeDisplay, Member, SimpleBitOps, Verify};
 
 use core::default::Default;
 use codec::{Decode, Encode};
@@ -38,7 +38,7 @@ use support::{
 };
 
 use super::{ctype, error};
-use runtime_primitives::{codec::Codec, verify_encoded_lazy, traits::IdentifyAccount};
+use sp_runtime::{codec::Codec, verify_encoded_lazy, traits::IdentifyAccount};
 use system::{self, ensure_signed};
 
 bitflags! {
@@ -128,11 +128,11 @@ decl_module! {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 			// check if a root with the given id already exists
-			if <Root<T>>::exists(root_id) {
+			if <Root<T>>::contains_key(root_id) {
 				return Self::error(Self::ERROR_ROOT_ALREADY_EXISTS);
 			}
 			// check if CTYPE exists
-			if !<ctype::CTYPEs<T>>::exists(ctype_hash) {
+			if !<ctype::CTYPEs<T>>::contains_key(ctype_hash) {
 				return Self::error(<ctype::Module<T>>::ERROR_CTYPE_NOT_FOUND);
 			}
 
@@ -158,7 +158,7 @@ decl_module! {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 			// check if a delegation node with the given identifier already exists
-			if <Delegations<T>>::exists(delegation_id) {
+			if <Delegations<T>>::contains_key(delegation_id) {
 				return Self::error(Self::ERROR_DELEGATION_ALREADY_EXISTS);
 			}
 			// calculate the hash root and check if the signature matches
@@ -200,7 +200,7 @@ decl_module! {
 				// inser delegation
 				debug::print!("insert Delegation without parent");
 				<Delegations<T>>::insert(delegation_id, (root_id,
-						None, delegate.clone(), permissions, false));
+						Option::<T::DelegationNodeId>::None, delegate.clone(), permissions, false));
 				// add child to tree structure
 				Self::add_child(delegation_id, root_id);
 			}
@@ -244,7 +244,7 @@ decl_module! {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 			// check if delegation node exists
-			if !<Delegations<T>>::exists(delegation_id) {
+			if !<Delegations<T>>::contains_key(delegation_id) {
 				return Self::error(Self::ERROR_DELEGATION_NOT_FOUND)
 			}
 			// check if the sender of this transaction is permitted by being the
@@ -354,7 +354,7 @@ impl<T: Trait> Module<T> {
 	/// Revoke all children of a delegation
 	fn revoke_children(delegation: &T::DelegationNodeId, sender: &T::AccountId) -> DispatchResult {
 		// check if there's a child vector in the storage
-		if <Children<T>>::exists(delegation) {
+		if <Children<T>>::contains_key(delegation) {
 			// iterate child vector and revoke all nodes
 			let children = <Children<T>>::get(delegation);
 			for child in children {
