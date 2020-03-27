@@ -19,9 +19,12 @@
 //! The KILT runtime. This can be compiled with `#[no_std]`, ready for Wasm.
 #![warn(clippy::all)]
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(not(feature = "std"), feature(alloc))]
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
+
+// Make the WASM binary available.
+#[cfg(feature = "std")]
+include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 #[macro_use]
 extern crate bitflags;
@@ -42,15 +45,16 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "std")]
 use version::NativeVersion;
 use version::RuntimeVersion;
+use sp_api::impl_runtime_apis;
 
 // A few exports that help ease life for downstream crates.
 pub use balances::Call as BalancesCall;
-pub use consensus::Call as ConsensusCall;
+// pub use consensus::Call as ConsensusCall;
 #[cfg(any(feature = "std", test))]
 pub use runtime_primitives::BuildStorage;
 pub use runtime_primitives::{Perbill, Permill};
 pub use support::{construct_runtime, StorageValue};
-pub use timestamp::{BlockPeriod, Call as TimestampCall};
+pub use timestamp::Call as TimestampCall;
 
 mod attestation;
 mod ctype;

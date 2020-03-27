@@ -2501,6 +2501,7 @@ dependencies = [
  "parity-scale-codec",
  "safe-mix",
  "serde",
+ "sp-api",
  "sp-arithmetic",
  "sp-consensus-aura",
  "sp-core",
