@@ -24,21 +24,19 @@
 #[cfg(test)]
 mod tests;
 
-use rstd::prelude::*;
-use rstd::result;
+use rstd::{
+	prelude::{Clone, Eq, PartialEq, Vec},
+	result,
+};
 use runtime_primitives::traits::{CheckEqual, Hash, MaybeDisplay, Member, SimpleBitOps, Verify};
 
 use core::default::Default;
 use parity_codec::{Decode, Encode};
 use support::{decl_event, decl_module, decl_storage, dispatch::Result, Parameter, StorageMap};
 
-use runtime_primitives::codec::Codec;
-use runtime_primitives::verify_encoded_lazy;
-use {
-	super::ctype,
-	super::error,
-	system::{self, ensure_signed},
-};
+use super::{ctype, error};
+use runtime_primitives::{codec::Codec, verify_encoded_lazy};
+use system::{self, ensure_signed};
 
 bitflags! {
 	/// Bitflags for permissions
@@ -166,14 +164,14 @@ decl_module! {
 
 			// check if root exists
 			let root = <error::Module<T>>::ok_or_deposit_err(
-				<Root<T>>::get(root_id.clone()),
+				<Root<T>>::get(root_id),
 				Self::ERROR_ROOT_NOT_FOUND
 			)?;
 			// check if this delegation has a parent
 			if let Some(p) = parent_id {
 				// check if the parent exists
 				let parent = <error::Module<T>>::ok_or_deposit_err(
-					<Delegations<T>>::get(p.clone()),
+					<Delegations<T>>::get(p),
 					Self::ERROR_PARENT_NOT_FOUND
 				)?;
 				// check if the parent's delegate is the sender of this transaction and has permission to delegate
@@ -184,10 +182,10 @@ decl_module! {
 				} else {
 					// insert delegation
 					::runtime_io::print("insert Delegation with parent");
-					<Delegations<T>>::insert(delegation_id.clone(), (root_id.clone(),
-							Some(p.clone()), delegate.clone(), permissions, false));
+					<Delegations<T>>::insert(delegation_id, (root_id,
+							Some(p), delegate.clone(), permissions, false));
 					// add child to tree structure
-					Self::add_child(delegation_id.clone(), p.clone());
+					Self::add_child(delegation_id, p);
 				}
 			} else {
 				// check if the sender of this transaction is the creator of the root node (as no parent is given)
@@ -196,10 +194,10 @@ decl_module! {
 				}
 				// inser delegation
 				::runtime_io::print("insert Delegation without parent");
-				<Delegations<T>>::insert(delegation_id.clone(), (root_id.clone(),
+				<Delegations<T>>::insert(delegation_id, (root_id,
 						None, delegate.clone(), permissions, false));
 				// add child to tree structure
-				Self::add_child(delegation_id.clone(), root_id.clone());
+				Self::add_child(delegation_id, root_id);
 			}
 			// deposit event that the delegation node has been added
 			Self::deposit_event(RawEvent::DelegationCreated(sender, delegation_id,
@@ -215,7 +213,7 @@ decl_module! {
 			let sender = ensure_signed(origin)?;
 			// check if root node exists
 			let mut r = <error::Module<T>>::ok_or_deposit_err(
-				<Root<T>>::get(root_id.clone()),
+				<Root<T>>::get(root_id),
 				Self::ERROR_ROOT_NOT_FOUND
 			)?;
 			// check if root node has been created by the sender of this transaction
@@ -313,7 +311,7 @@ impl<T: Trait> Module<T> {
 		} else {
 			// return whether the account is owner of the root
 			let r = <error::Module<T>>::ok_or_deposit_err(
-				<Root<T>>::get(d.0.clone()),
+				<Root<T>>::get(d.0),
 				Self::ERROR_ROOT_NOT_FOUND,
 			)?;
 			Ok(r.1.eq(account))
@@ -324,7 +322,7 @@ impl<T: Trait> Module<T> {
 	fn revoke(delegation: &T::DelegationNodeId, sender: &T::AccountId) -> Result {
 		// retrieve delegation node from storage
 		let mut d = <error::Module<T>>::ok_or_deposit_err(
-			<Delegations<T>>::get(delegation.clone()),
+			<Delegations<T>>::get(*delegation),
 			Self::ERROR_DELEGATION_NOT_FOUND,
 		)?;
 		// check if already revoked
