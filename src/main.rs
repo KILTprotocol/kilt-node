@@ -19,10 +19,6 @@
 //! KILT node CLI.
 
 #![warn(missing_docs)]
-
-#[macro_use]
-extern crate hex_literal;
-
 use sc_cli;
 
 mod chain_spec;

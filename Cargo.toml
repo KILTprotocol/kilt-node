@@ -13,7 +13,9 @@ path = 'src/main.rs'
 panic = 'unwind'
 
 [workspace]
-members = [ 'runtime' ]
+members = [
+    'runtime' ,
+]
 
 [build-dependencies]
 build-script-utils = { package = 'substrate-build-script-utils', version = '2.0.0-alpha.5' }
@@ -24,7 +26,8 @@ ctrlc = { features = [ 'termination' ], version = '3.1.4' }
 error-chain = '0.12'
 exit-future = '0.2'
 futures = '0.3'
-hex-literal = '0.2.1'
+grandpa = { package = 'sc-finality-grandpa', version = '0.8.0-alpha.5' }
+grandpa-primitives = { package = 'sp-finality-grandpa', version = '2.0.0-alpha.5' }
 log = '0.4'
 mashnet-node-runtime = { path = 'runtime' }
 parity-codec = '4.1.4'
@@ -32,17 +35,18 @@ parking_lot = '0.9.0'
 sc-basic-authorship = '0.8.0-alpha.5'
 sc-cli = '0.8.0-alpha.5'
 sc-client = '0.8.0-alpha.5'
+sc-client-api = '2.0.0-alpha.5'
 sc-consensus-aura = '0.8.0-alpha.5'
 sc-executor = '0.8.0-alpha.5'
 sc-network = '0.8.0-alpha.5'
 sc-service = '0.8.0-alpha.5'
 sc-transaction-pool = '2.0.0-alpha.5'
+sp-consensus = '0.8.0-alpha.5'
+sp-consensus-aura = '0.8.0-alpha.5'
 sp-core = '2.0.0-alpha.5'
 sp-inherents = '2.0.0-alpha.5'
 sp-io = '2.0.0-alpha.5'
+structopt = '0.3.8'
 tokio = '0.2.13'
 trie-root = '0.16.0'
-sp-consensus = '0.8.0-alpha.5'
-sp-consensus-aura = '0.8.0-alpha.5'
-sc-client-api = '2.0.0-alpha.5'
-structopt = '0.3.8'
+sp-runtime = '2.0.0-alpha.5'

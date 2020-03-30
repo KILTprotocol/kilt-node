@@ -171,6 +171,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "assert_matches"
+version = "1.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7deb0a829ca7bcfaf5da70b073a8d128619259a7be8216a355e23f00763059e5"
+
+[[package]]
 name = "async-std"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -903,6 +909,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0da54a593b34c71b889ee45f5b5bb900c74148c5f7f8c6a9479ee7899f69603c"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "finality-grandpa"
+version = "0.11.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "024517816630be5204eba201e8d1d405042b1255a5e0e3f298b054fc24d59e1d"
+dependencies = [
+ "futures 0.3.4",
+ "futures-timer 2.0.2",
+ "log",
+ "num-traits",
+ "parity-scale-codec",
+ "parking_lot 0.9.0",
 ]
 
 [[package]]
@@ -2465,7 +2485,6 @@ dependencies = [
  "error-chain",
  "exit-future",
  "futures 0.3.4",
- "hex-literal",
  "log",
  "mashnet-node-runtime",
  "parity-codec",
@@ -2476,14 +2495,17 @@ dependencies = [
  "sc-client-api",
  "sc-consensus-aura",
  "sc-executor",
+ "sc-finality-grandpa",
  "sc-network",
  "sc-service",
  "sc-transaction-pool",
  "sp-consensus",
  "sp-consensus-aura",
  "sp-core",
+ "sp-finality-grandpa",
  "sp-inherents",
  "sp-io",
+ "sp-runtime",
  "structopt",
  "substrate-build-script-utils",
  "tokio 0.2.13",
@@ -2501,6 +2523,7 @@ dependencies = [
  "frame-system",
  "pallet-aura",
  "pallet-balances",
+ "pallet-grandpa",
  "pallet-indices",
  "pallet-randomness-collective-flip",
  "pallet-sudo",
@@ -2899,6 +2922,42 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-finality-tracker"
+version = "2.0.0-alpha.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "954b11ebb7de3f1ec5e23b37af4a2d1b7f04bc81b13cde2eb76abb4171300cfc"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "impl-trait-for-tuples",
+ "parity-scale-codec",
+ "serde",
+ "sp-finality-tracker",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-grandpa"
+version = "2.0.0-alpha.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b2ede4c610644a485d9f78dfb4853a2b20efb752fe5ab0e75c78e239313304cb"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-finality-tracker",
+ "pallet-session",
+ "parity-scale-codec",
+ "serde",
+ "sp-core",
+ "sp-finality-grandpa",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-indices"
 version = "2.0.0-alpha.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2940,10 +2999,12 @@ dependencies = [
  "impl-trait-for-tuples",
  "pallet-timestamp",
  "parity-scale-codec",
+ "serde",
  "sp-io",
  "sp-runtime",
  "sp-staking",
  "sp-std",
+ "sp-trie",
 ]
 
 [[package]]
@@ -4206,6 +4267,42 @@ dependencies = [
 ]
 
 [[package]]
+name = "sc-finality-grandpa"
+version = "0.8.0-alpha.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5aad8a1f0d03e8a7c3b1d8cd74050960365e347f739c131715f84f588dd051a4"
+dependencies = [
+ "assert_matches",
+ "finality-grandpa",
+ "fork-tree",
+ "futures 0.3.4",
+ "futures-timer 3.0.2",
+ "log",
+ "parity-scale-codec",
+ "parking_lot 0.10.0",
+ "pin-project",
+ "rand 0.7.3",
+ "sc-block-builder",
+ "sc-client",
+ "sc-client-api",
+ "sc-keystore",
+ "sc-network",
+ "sc-network-gossip",
+ "sc-telemetry",
+ "serde_json",
+ "sp-api",
+ "sp-arithmetic",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-core",
+ "sp-finality-grandpa",
+ "sp-finality-tracker",
+ "sp-inherents",
+ "sp-runtime",
+ "substrate-prometheus-endpoint",
+]
+
+[[package]]
 name = "sc-informant"
 version = "0.8.0-alpha.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4289,6 +4386,22 @@ dependencies = [
  "void",
  "wasm-timer",
  "zeroize",
+]
+
+[[package]]
+name = "sc-network-gossip"
+version = "0.8.0-alpha.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1eb8906bfd2d54f84fad8aba2f4303cff30f5596e7d4b90f97008d5477ea9ce4"
+dependencies = [
+ "futures 0.3.4",
+ "futures-timer 3.0.2",
+ "libp2p",
+ "log",
+ "lru",
+ "sc-network",
+ "sp-runtime",
+ "wasm-timer",
 ]
 
 [[package]]
@@ -5070,6 +5183,31 @@ dependencies = [
  "environmental",
  "sp-std",
  "sp-storage",
+]
+
+[[package]]
+name = "sp-finality-grandpa"
+version = "2.0.0-alpha.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c9b4d96f0aa94da01d3110a20b54d8c35c419b193df6e9fa9127b2aa912afecb"
+dependencies = [
+ "parity-scale-codec",
+ "serde",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "sp-finality-tracker"
+version = "2.0.0-alpha.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0be49e587e5667f747ca743ef468949535fae5640d26c236ac35e44abe595b15"
+dependencies = [
+ "parity-scale-codec",
+ "sp-inherents",
+ "sp-std",
 ]
 
 [[package]]
