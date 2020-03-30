@@ -25,7 +25,13 @@ use support::{debug, decl_event, decl_module, dispatch, Parameter};
 
 /// The error trait
 pub trait Trait: system::Trait {
-	type ErrorCode: Parameter + Member + MaybeSerialize + MaybeDisplay + Bounded + From<u16>;
+	type ErrorCode: BaseArithmetic
+		+ Parameter
+		+ Member
+		+ MaybeSerialize
+		+ MaybeDisplay
+		+ Bounded
+		+ From<u16>;
 	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
 
