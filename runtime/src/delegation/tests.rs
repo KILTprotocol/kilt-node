@@ -19,9 +19,8 @@
 use super::*;
 use parity_codec::Encode;
 use primitives::{ed25519 as x25519, Blake2Hasher, H256, H512, *};
-use runtime_io::with_externalities;
+use sp_externalities::with_externalities;
 use support::{assert_err, assert_ok, impl_outer_origin};
-
 
 use sp_runtime::{
 	testing::{Digest, DigestItem, Header},
@@ -223,14 +222,12 @@ fn check_add_and_revoke_delegations() {
 				Some(id_level_1.clone()),
 				account_hash_charlie.clone(),
 				Permissions::ATTEST,
-				pair_charlie.sign(&hash_to_u8(
-					Delegation::calculate_hash(
-						id_level_2_2.clone(),
-						id_level_0.clone(),
-						Some(id_level_1.clone()),
-						Permissions::ATTEST
-					)
-				))
+				pair_charlie.sign(&hash_to_u8(Delegation::calculate_hash(
+					id_level_2_2.clone(),
+					id_level_0.clone(),
+					Some(id_level_1.clone()),
+					Permissions::ATTEST
+				)))
 			),
 			Delegation::ERROR_NOT_OWNER_OF_PARENT.1
 		);
@@ -259,14 +256,12 @@ fn check_add_and_revoke_delegations() {
 				Some(id_level_0.clone()),
 				account_hash_charlie.clone(),
 				Permissions::ATTEST,
-				pair_charlie.sign(&hash_to_u8(
-					Delegation::calculate_hash(
-						id_level_2_2.clone(),
-						id_level_0.clone(),
-						Some(id_level_0.clone()),
-						Permissions::ATTEST
-					)
-				))
+				pair_charlie.sign(&hash_to_u8(Delegation::calculate_hash(
+					id_level_2_2.clone(),
+					id_level_0.clone(),
+					Some(id_level_0.clone()),
+					Permissions::ATTEST
+				)))
 			),
 			Delegation::ERROR_PARENT_NOT_FOUND.1
 		);

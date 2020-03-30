@@ -19,14 +19,13 @@
 use super::*;
 
 use primitives::{Blake2Hasher, H256};
-use runtime_io::with_externalities;
+use sp_externalities::with_externalities;
 use sp_runtime::{
 	testing::{Digest, DigestItem, Header},
 	traits::{BlakeTwo256, IdentityLookup},
 	BuildStorage,
 };
 use support::{assert_err, assert_ok, impl_outer_origin};
-
 
 impl_outer_origin! {
 	pub enum Origin for Test {}

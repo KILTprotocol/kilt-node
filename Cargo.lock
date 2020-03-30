@@ -328,9 +328,13 @@ checksum = "b67491e1cc6f37da6c4415cd743cb8d2e2c65388acc91ca3094a054cbf3cbd0c"
 
 [[package]]
 name = "bitvec"
-version = "0.15.2"
+version = "0.17.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a993f74b4c99c1908d156b8d2e0fb6277736b0ecbd833982fd1241d39b2766a6"
+checksum = "41262f11d771fd4a61aa3ce019fca363b4b6c282fca9da2a31186d3965a47a5c"
+dependencies = [
+ "either",
+ "radium",
+]
 
 [[package]]
 name = "blake2"
@@ -2464,7 +2468,7 @@ dependencies = [
  "hex-literal",
  "log",
  "mashnet-node-runtime",
- "parity-codec 4.1.4",
+ "parity-codec",
  "parking_lot 0.9.0",
  "sc-basic-authorship",
  "sc-cli",
@@ -2498,7 +2502,7 @@ dependencies = [
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",
- "parity-codec 3.5.4",
+ "parity-codec",
  "parity-scale-codec",
  "safe-mix",
  "serde",
@@ -2507,6 +2511,7 @@ dependencies = [
  "sp-block-builder",
  "sp-consensus-aura",
  "sp-core",
+ "sp-externalities",
  "sp-inherents",
  "sp-io",
  "sp-offchain",
@@ -3000,17 +3005,6 @@ dependencies = [
 
 [[package]]
 name = "parity-codec"
-version = "3.5.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b9df1283109f542d8852cd6b30e9341acc2137481eb6157d2e62af68b0afec9"
-dependencies = [
- "arrayvec 0.4.12",
- "parity-codec-derive",
- "serde",
-]
-
-[[package]]
-name = "parity-codec"
 version = "4.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c1a0e8c54ce49245caa93c1a4e11dc4da1d1e9cc8649ff30e57aa177d4abd55"
@@ -3018,6 +3012,7 @@ dependencies = [
  "arrayvec 0.4.12",
  "bitvec 0.11.3",
  "byte-slice-cast",
+ "parity-codec-derive",
  "serde",
 ]
 
@@ -3068,12 +3063,12 @@ dependencies = [
 
 [[package]]
 name = "parity-scale-codec"
-version = "1.2.0"
+version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f509c5e67ca0605ee17dcd3f91ef41cadd685c75a298fb6261b781a5acb3f910"
+checksum = "329c8f7f4244ddb5c37c103641027a76c530e65e8e4b8240b29f81ea40508b17"
 dependencies = [
  "arrayvec 0.5.1",
- "bitvec 0.15.2",
+ "bitvec 0.17.4",
  "byte-slice-cast",
  "parity-scale-codec-derive",
  "serde",
@@ -3431,9 +3426,9 @@ dependencies = [
 
 [[package]]
 name = "protobuf"
-version = "2.11.0"
+version = "2.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc1b4a8efc42cf150049e8a490f618c7c60e82332405065f202a7e33aa5a1f06"
+checksum = "71964f34fd51cf04882d7ae3325fa0794d4cad66a03d0003f38d8ae4f63ba126"
 
 [[package]]
 name = "quick-error"
@@ -3469,6 +3464,12 @@ checksum = "2bdc6c187c65bca4260c9011c9e3132efe4909da44726bad24cf7572ae338d7f"
 dependencies = [
  "proc-macro2 1.0.9",
 ]
+
+[[package]]
+name = "radium"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "def50a86306165861203e7f84ecffbbdfdea79f0e51039b33de1e952358c47ac"
 
 [[package]]
 name = "rand"
@@ -5634,9 +5635,9 @@ dependencies = [
 
 [[package]]
 name = "tiny-bip39"
-version = "0.7.2"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e255ec4f7d4aaccbede17dffcfb2e71434d17f5c921d5a06823b8e58a2bcd468"
+checksum = "b0165e045cc2ae1660270ca65e1676dbaab60feb0f91b10f7d0665e9b47e31f2"
 dependencies = [
  "failure",
  "hmac",

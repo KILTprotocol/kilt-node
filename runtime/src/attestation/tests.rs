@@ -19,9 +19,8 @@
 use super::*;
 use parity_codec::Encode;
 use primitives::{ed25519 as x25519, Blake2Hasher, H256, *};
-use runtime_io::with_externalities;
+use sp_externalities::with_externalities;
 use support::{assert_err, assert_ok, impl_outer_origin};
-
 
 use sp_runtime::{
 	testing::{Digest, DigestItem, Header},
@@ -370,10 +369,7 @@ fn check_add_attestation_with_delegation() {
 		);
 
 		assert_err!(
-			Attestation::revoke(
-				Origin::signed(account_hash_charlie),
-				claim_hash.clone()
-			),
+			Attestation::revoke(Origin::signed(account_hash_charlie), claim_hash.clone()),
 			Attestation::ERROR_NOT_PERMITTED_TO_REVOKE_ATTESTATION.1
 		);
 		assert_ok!(Attestation::revoke(
