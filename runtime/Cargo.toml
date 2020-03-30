@@ -77,7 +77,7 @@ default-features = false
 version = '2.0.0-alpha.5'
 
 [dependencies.sp-arithmetic]
-default-features = true
+default-features = false
 version = '2.0.0-alpha.5'
 
 [dependencies.sp-block-builder]
@@ -93,8 +93,8 @@ default-features = false
 version = '2.0.0-alpha.5'
 
 [dependencies.sp-externalities]
-default-features = false
 version = '0.8.0-alpha.5'
+optional = true
 
 [dependencies.sp-inherents]
 default-features = false
@@ -176,4 +176,5 @@ std = [
 	'sp-arithmetic/std',
 	'sp-api/std',
 	'sp-inherents/std',
+	'sp-externalities'
 ]
