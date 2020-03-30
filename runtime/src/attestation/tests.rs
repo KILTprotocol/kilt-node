@@ -20,20 +20,27 @@ use super::*;
 use parity_codec::Encode;
 use sp_core::{ed25519 as x25519, H256, *};
 use sp_externalities::with_externalities;
-use support::{assert_err, assert_ok, impl_outer_origin};
-
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup, Verify},
-	BuildStorage,
+	BuildStorage, Perbill,
 };
+use support::{assert_err, assert_ok, impl_outer_origin, parameter_types, weights::Weight};
 
 impl_outer_origin! {
 	pub enum Origin for Test {}
 }
 
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Test;
+
+parameter_types! {
+	pub const BlockHashCount: u64 = 250;
+	pub const MaximumBlockWeight: Weight = 1_000_000_000;
+	pub const MaximumBlockLength: u32 = 5 * 1024 * 1024;
+	pub const AvailableBlockRatio: Perbill = Perbill::from_percent(75);
+}
+
 impl system::Trait for Test {
 	type Origin = Origin;
 	type Call = ();
@@ -45,10 +52,10 @@ impl system::Trait for Test {
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
 	type Event = ();
-	type BlockHashCount = ();
-	type MaximumBlockWeight = ();
-	type MaximumBlockLength = ();
-	type AvailableBlockRatio = ();
+	type BlockHashCount = BlockHashCount;
+	type MaximumBlockWeight = MaximumBlockWeight;
+	type MaximumBlockLength = MaximumBlockLength;
+	type AvailableBlockRatio = AvailableBlockRatio;
 	type Version = ();
 	type ModuleToIndex = ();
 	type AccountData = ();
