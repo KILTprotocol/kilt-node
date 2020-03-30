@@ -24,7 +24,7 @@ use mashnet_node_runtime::{
 };
 
 use ed25519::Public as AuthorityId;
-use primitives::{ed25519, ed25519 as x25519, Pair};
+use sp_core::{ed25519, ed25519 as x25519, Pair};
 
 // Note this is the URL for the telemetry server
 //const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";

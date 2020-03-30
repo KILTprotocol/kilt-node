@@ -18,14 +18,14 @@
 
 //! Error: Handles errors for all other runtime modules
 
-use sp_runtime::traits::{Bounded, MaybeDisplay, MaybeSerialize, Member};
-use sp_arithmetic::traits::BaseArithmetic;
-use support::{debug, decl_event, decl_module, Parameter, dispatch};
 use core::convert::From;
+use sp_arithmetic::traits::BaseArithmetic;
+use sp_runtime::traits::{Bounded, MaybeDisplay, MaybeSerialize, Member};
+use support::{debug, decl_event, decl_module, dispatch, Parameter};
 
 /// The error trait
 pub trait Trait: system::Trait {
-	type ErrorCode: Parameter + Member + MaybeSerialize + MaybeDisplay + BaseArithmetic + Bounded + From<u16>;
+	type ErrorCode: Parameter + Member + MaybeSerialize + MaybeDisplay + Bounded + From<u16>;
 	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
 
@@ -60,13 +60,14 @@ impl<T: Trait> Module<T> {
 	/// Create an error, it logs the error, deposits an error event and returns the error message
 	pub fn deposit_err(error_type: ErrorType) -> dispatch::DispatchError {
 		debug::print!("{}", error_type.1);
-		Self::deposit_event(RawEvent::ErrorOccurred(
-			error_type.0.into(),
-		));
+		Self::deposit_event(RawEvent::ErrorOccurred(error_type.0.into()));
 		dispatch::DispatchError::Other(error_type.1)
 	}
 
-	pub fn ok_or_deposit_err<S>(opt: Option<S>, error_type: ErrorType) -> Result<S, dispatch::DispatchError> {
+	pub fn ok_or_deposit_err<S>(
+		opt: Option<S>,
+		error_type: ErrorType,
+	) -> Result<S, dispatch::DispatchError> {
 		if let Some(s) = opt {
 			Ok(s)
 		} else {

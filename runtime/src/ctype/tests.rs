@@ -18,7 +18,7 @@
 
 use super::*;
 
-use primitives::{Blake2Hasher, H256};
+use sp_core::{Blake2Hasher, H256};
 use sp_externalities::with_externalities;
 use sp_runtime::{
 	testing::{Digest, DigestItem, Header},

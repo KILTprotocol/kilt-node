@@ -26,7 +26,7 @@ use inherents::InherentDataProviders;
 use log::info;
 use mashnet_node_runtime::{self, opaque::Block, GenesisConfig, RuntimeApi};
 use network::construct_simple_protocol;
-use primitives::{ed25519::Pair, Pair as PairT};
+use sp_core::{ed25519::Pair, Pair as PairT};
 use std::sync::Arc;
 use substrate_client as client;
 use substrate_executor::native_executor_instance;

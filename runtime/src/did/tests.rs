@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use super::*;
-use primitives::{Blake2Hasher, H256, *};
+use sp_core::{Blake2Hasher, H256, *};
 use sp_externalities::with_externalities;
 use support::{assert_ok, impl_outer_origin};
 
