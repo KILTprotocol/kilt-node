@@ -19,28 +19,28 @@
 //! KILT node CLI.
 
 #![warn(missing_docs)]
-#![warn(unused_extern_crates)]
 
 #[macro_use]
 extern crate hex_literal;
 
+use sc_cli;
+
 mod chain_spec;
-mod cli;
+#[macro_use]
 mod service;
+mod cli;
+mod command;
 
-pub use substrate_cli::{error, IntoExit, VersionInfo};
-
-fn run() -> cli::error::Result<()> {
-	let version = VersionInfo {
+fn main() -> sc_cli::Result<()> {
+	let version = sc_cli::VersionInfo {
 		name: "KILT Node",
 		commit: env!("VERGEN_SHA_SHORT"),
 		version: env!("CARGO_PKG_VERSION"),
 		executable_name: "node",
-		author: "Anonymous",
-		description: "KILT Node",
+		author: env!("CARGO_PKG_AUTHORS"),
+		description: env!("CARGO_PKG_DESCRIPTION"),
 		support_url: "support.anonymous.an",
+		copyright_start_year: 2019,
 	};
-	cli::run(::std::env::args(), cli::Exit, version)
+	command::run(version)
 }
-
-error_chain::quick_main!(run);
