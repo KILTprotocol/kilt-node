@@ -29,9 +29,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 #[macro_use]
 extern crate bitflags;
 
-#[cfg(feature = "std")]
-use sp_core::bytes;
-use sp_core::{ed25519, ed25519 as x25519, OpaqueMetadata};
+use sp_core::{ed25519 as x25519, OpaqueMetadata};
 use rstd::prelude::*;
 use sp_runtime::{
 	impl_opaque_keys,
@@ -40,8 +38,6 @@ use sp_runtime::{
 	transaction_validity::TransactionValidity,
 	ApplyExtrinsicResult,
 };
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
 #[cfg(feature = "std")]
 use version::NativeVersion;
 use version::RuntimeVersion;
@@ -67,7 +63,7 @@ mod did;
 mod error;
 
 /// The type used by authorities to prove their ID.
-pub type AuthoritySignature = ed25519::Signature;
+pub type AuthoritySignature = x25519::Signature;
 
 /// The type that is used for identifying authorities.
 pub type AuthorityId = <AuthoritySignature as Verify>::Signer;
