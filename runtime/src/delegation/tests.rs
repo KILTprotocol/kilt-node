@@ -18,16 +18,15 @@
 
 use super::*;
 use parity_codec::Encode;
-use sp_core::{ed25519 as x25519, Blake2Hasher, H256, H512, *};
+use sp_core::{ed25519 as x25519, H256, H512, *};
 use sp_externalities::with_externalities;
 use support::{assert_err, assert_ok, impl_outer_origin};
 
 use sp_runtime::{
-	testing::{Digest, DigestItem, Header},
-	traits::{BlakeTwo256, IdentityLookup},
+	testing::Header,
+	traits::{BlakeTwo256, IdentityLookup, Verify},
 	BuildStorage,
 };
-
 impl_outer_origin! {
 	pub enum Origin for Test {}
 }
@@ -36,16 +35,24 @@ impl_outer_origin! {
 pub struct Test;
 impl system::Trait for Test {
 	type Origin = Origin;
+	type Call = ();
 	type Index = u64;
 	type BlockNumber = u64;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
-	type Digest = Digest;
-	type AccountId = <x25519::Signature as Verify>::Signer;
+	type AccountId = u64;
+	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
 	type Event = ();
-	type Log = DigestItem;
-	type Lookup = IdentityLookup<Self::AccountId>;
+	type BlockHashCount = ();
+	type MaximumBlockWeight = Weight;
+	type MaximumBlockLength = ();
+	type AvailableBlockRatio = ();
+	type Version = ();
+	type ModuleToIndex = ();
+	type AccountData = ();
+	type OnNewAccount = ();
+	type OnKilledAccount = ();
 }
 
 impl ctype::Trait for Test {
@@ -71,7 +78,7 @@ fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
 	hash.encode()
 }
 
-fn new_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
+fn new_test_ext() -> runtime_io::TestExternalities {
 	system::GenesisConfig::<Test>::default()
 		.build_storage()
 		.unwrap()

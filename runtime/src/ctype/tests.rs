@@ -18,10 +18,10 @@
 
 use super::*;
 
-use sp_core::{Blake2Hasher, H256};
+use sp_core::H256;
 use sp_externalities::with_externalities;
 use sp_runtime::{
-	testing::{Digest, DigestItem, Header},
+	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
 	BuildStorage,
 };
@@ -33,18 +33,27 @@ impl_outer_origin! {
 
 #[derive(Clone, Eq, PartialEq)]
 pub struct Test;
+
 impl system::Trait for Test {
 	type Origin = Origin;
+	type Call = ();
 	type Index = u64;
 	type BlockNumber = u64;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
-	type Digest = Digest;
-	type AccountId = H256;
+	type AccountId = u64;
+	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
 	type Event = ();
-	type Log = DigestItem;
-	type Lookup = IdentityLookup<H256>;
+	type BlockHashCount = ();
+	type MaximumBlockWeight = Weight;
+	type MaximumBlockLength = ();
+	type AvailableBlockRatio = ();
+	type Version = ();
+	type ModuleToIndex = ();
+	type AccountData = ();
+	type OnNewAccount = ();
+	type OnKilledAccount = ();
 }
 
 impl error::Trait for Test {
@@ -58,7 +67,7 @@ impl Trait for Test {
 
 type CType = Module<Test>;
 
-fn new_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
+fn new_test_ext() -> runtime_io::TestExternalities {
 	system::GenesisConfig::<Test>::default()
 		.build_storage()
 		.unwrap()
