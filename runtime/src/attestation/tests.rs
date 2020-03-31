@@ -19,7 +19,7 @@
 use super::*;
 
 use crate::AccountSignature;
-use parity_codec::Encode;
+use codec::Encode;
 use sp_core::{ed25519 as x25519, H256, *};
 use sp_runtime::{
 	testing::Header,
