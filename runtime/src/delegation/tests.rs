@@ -21,7 +21,6 @@ use super::*;
 use crate::AccountSignature;
 use parity_codec::Encode;
 use sp_core::{ed25519 as x25519, H256, H512, *};
-use sp_externalities::with_externalities;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup, Verify},
@@ -97,7 +96,7 @@ fn new_test_ext() -> runtime_io::TestExternalities {
 
 #[test]
 fn check_add_and_revoke_delegations() {
-	with_externalities(&mut new_test_ext(), || {
+	new_test_ext().execute_with(|| {
 		let pair_alice = x25519::Pair::from_seed(*b"Alice                           ");
 		let account_hash_alice = pair_alice.public();
 		let pair_bob = x25519::Pair::from_seed(*b"Bob                             ");

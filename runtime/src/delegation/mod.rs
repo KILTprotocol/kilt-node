@@ -31,14 +31,14 @@ use rstd::{
 
 use sp_runtime::traits::{CheckEqual, Hash, MaybeDisplay, Member, SimpleBitOps, Verify};
 
-use core::default::Default;
 use codec::{Decode, Encode};
+use core::default::Default;
 use support::{
 	debug, decl_event, decl_module, decl_storage, dispatch::DispatchResult, Parameter, StorageMap,
 };
 
 use super::{ctype, error};
-use sp_runtime::{codec::Codec, verify_encoded_lazy, traits::IdentifyAccount};
+use sp_runtime::{codec::Codec, traits::IdentifyAccount, verify_encoded_lazy};
 use system::{self, ensure_signed};
 
 bitflags! {
@@ -82,7 +82,11 @@ pub trait Trait: ctype::Trait + system::Trait + error::Trait {
 	type Signature: Verify<Signer = Self::Signer> + Member + Codec + Default;
 
 	/// Signer of a delegation
-	type Signer: From<Self::AccountId> + IdentifyAccount<AccountId = Self::AccountId> + Member + Codec;
+	// type Signer: From<Self::AccountId> + IdentifyAccount<AccountId = Self::AccountId>> + Member + Codec;
+	type Signer: From<Self::AccountId>
+		+ IdentifyAccount<AccountId = Self::AccountId>
+		+ Member
+		+ Codec;
 
 	/// Delegation node id type
 	type DelegationNodeId: Parameter

@@ -19,7 +19,6 @@
 use super::*;
 
 use sp_core::H256;
-use sp_externalities::with_externalities;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
@@ -83,7 +82,7 @@ fn new_test_ext() -> runtime_io::TestExternalities {
 
 #[test]
 fn it_works_for_default_value() {
-	with_externalities(&mut new_test_ext(), || {
+	new_test_ext().execute_with(|| {
 		let account = H256::from_low_u64_be(1);
 		let ctype_hash = H256::from_low_u64_be(2);
 		assert_ok!(CType::add(

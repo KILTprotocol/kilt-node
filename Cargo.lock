@@ -2538,7 +2538,6 @@ dependencies = [
  "sp-block-builder",
  "sp-consensus-aura",
  "sp-core",
- "sp-externalities",
  "sp-inherents",
  "sp-io",
  "sp-offchain",
