@@ -79,7 +79,7 @@ fn new_test_ext() -> runtime_io::TestExternalities {
 #[test]
 fn check_add_did() {
 	new_test_ext().execute_with(|| {
-		let pair = ed25519::Pair::from_seed(*b"Alice                           ");
+		let pair = ed25519::Pair::from_seed(&*b"Alice                           ");
 		let signing_key = H256::from_low_u64_be(1);
 		let box_key = H256::from_low_u64_be(2);
 		let account_hash = H256::from(pair.public().0);

@@ -97,11 +97,11 @@ fn new_test_ext() -> runtime_io::TestExternalities {
 #[test]
 fn check_add_and_revoke_delegations() {
 	new_test_ext().execute_with(|| {
-		let pair_alice = x25519::Pair::from_seed(*b"Alice                           ");
+		let pair_alice = x25519::Pair::from_seed(&*b"Alice                           ");
 		let account_hash_alice = pair_alice.public();
-		let pair_bob = x25519::Pair::from_seed(*b"Bob                             ");
+		let pair_bob = x25519::Pair::from_seed(&*b"Bob                             ");
 		let account_hash_bob = pair_bob.public();
-		let pair_charlie = x25519::Pair::from_seed(*b"Charlie                         ");
+		let pair_charlie = x25519::Pair::from_seed(&*b"Charlie                         ");
 		let account_hash_charlie = pair_charlie.public();
 
 		let ctype_hash = H256::from_low_u64_be(1);

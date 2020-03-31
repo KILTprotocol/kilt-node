@@ -102,7 +102,7 @@ fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
 #[test]
 fn check_add_attestation() {
 	new_test_ext().execute_with(|| {
-		let pair = x25519::Pair::from_seed(*b"Alice                           ");
+		let pair = x25519::Pair::from_seed(&*b"Alice                           ");
 		let hash = H256::from_low_u64_be(1);
 		let account_hash = pair.public();
 		assert_ok!(CType::add(
@@ -129,7 +129,7 @@ fn check_add_attestation() {
 #[test]
 fn check_revoke_attestation() {
 	new_test_ext().execute_with(|| {
-		let pair = x25519::Pair::from_seed(*b"Alice                           ");
+		let pair = x25519::Pair::from_seed(&*b"Alice                           ");
 		let hash = H256::from_low_u64_be(1);
 		let account_hash = pair.public();
 		assert_ok!(CType::add(
@@ -160,7 +160,7 @@ fn check_revoke_attestation() {
 #[test]
 fn check_double_attestation() {
 	new_test_ext().execute_with(|| {
-		let pair = x25519::Pair::from_seed(*b"Alice                           ");
+		let pair = x25519::Pair::from_seed(&*b"Alice                           ");
 		let hash = H256::from_low_u64_be(1);
 		let account_hash = pair.public();
 		assert_ok!(CType::add(
@@ -188,7 +188,7 @@ fn check_double_attestation() {
 #[test]
 fn check_double_revoke_attestation() {
 	new_test_ext().execute_with(|| {
-		let pair = x25519::Pair::from_seed(*b"Alice                           ");
+		let pair = x25519::Pair::from_seed(&*b"Alice                           ");
 		let hash = H256::from_low_u64_be(1);
 		let account_hash = pair.public();
 		assert_ok!(CType::add(
@@ -215,7 +215,7 @@ fn check_double_revoke_attestation() {
 #[test]
 fn check_revoke_unknown() {
 	new_test_ext().execute_with(|| {
-		let pair = x25519::Pair::from_seed(*b"Alice                           ");
+		let pair = x25519::Pair::from_seed(&*b"Alice                           ");
 		let hash = H256::from_low_u64_be(1);
 		let account_hash = pair.public();
 		assert_err!(
@@ -228,9 +228,9 @@ fn check_revoke_unknown() {
 #[test]
 fn check_revoke_not_permitted() {
 	new_test_ext().execute_with(|| {
-		let pair_alice = x25519::Pair::from_seed(*b"Alice                           ");
+		let pair_alice = x25519::Pair::from_seed(&*b"Alice                           ");
 		let account_hash_alice = pair_alice.public();
-		let pair_bob = x25519::Pair::from_seed(*b"Bob                             ");
+		let pair_bob = x25519::Pair::from_seed(&*b"Bob                             ");
 		let account_hash_bob = pair_bob.public();
 		let hash = H256::from_low_u64_be(1);
 		assert_ok!(CType::add(
@@ -253,11 +253,11 @@ fn check_revoke_not_permitted() {
 #[test]
 fn check_add_attestation_with_delegation() {
 	new_test_ext().execute_with(|| {
-		let pair_alice = x25519::Pair::from_seed(*b"Alice                           ");
+		let pair_alice = x25519::Pair::from_seed(&*b"Alice                           ");
 		let account_hash_alice = pair_alice.public();
-		let pair_bob = x25519::Pair::from_seed(*b"Bob                             ");
+		let pair_bob = x25519::Pair::from_seed(&*b"Bob                             ");
 		let account_hash_bob = pair_bob.public();
-		let pair_charlie = x25519::Pair::from_seed(*b"Charlie                         ");
+		let pair_charlie = x25519::Pair::from_seed(&*b"Charlie                         ");
 		let account_hash_charlie = pair_charlie.public();
 
 		let ctype_hash = H256::from_low_u64_be(1);
