@@ -17,10 +17,12 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use super::*;
+
+use crate::AccountSignature;
 use sp_core::{H256, *};
 use sp_runtime::{
 	testing::Header,
-	traits::{BlakeTwo256, IdentityLookup},
+	traits::{BlakeTwo256, IdentityLookup, Verify},
 	Perbill,
 };
 use support::{assert_ok, impl_outer_origin, parameter_types, weights::Weight};
@@ -46,7 +48,7 @@ impl system::Trait for Test {
 	type BlockNumber = u64;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
-	type AccountId = u64;
+	type AccountId = <AccountSignature as Verify>::Signer;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
 	type Event = ();
@@ -90,7 +92,7 @@ fn check_add_did() {
 			Some(b"http://kilt.org/submit".to_vec())
 		));
 
-		assert_eq!(<DIDs<Test>>::exists(account_hash), true);
+		assert_eq!(<DIDs<Test>>::contains_key(account_hash), true);
 		let did = {
 			let opt = DID::dids(account_hash.clone());
 			assert!(opt.is_some());
@@ -101,6 +103,6 @@ fn check_add_did() {
 		assert_eq!(did.2, Some(b"http://kilt.org/submit".to_vec()));
 
 		assert_ok!(DID::remove(Origin::signed(account_hash.clone())));
-		assert_eq!(<DIDs<Test>>::exists(account_hash), false);
+		assert_eq!(<DIDs<Test>>::contains_key(account_hash), false);
 	});
 }

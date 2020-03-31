@@ -18,10 +18,11 @@
 
 use super::*;
 
+use crate::AccountSignature;
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
-	traits::{BlakeTwo256, IdentityLookup},
+	traits::{BlakeTwo256, IdentityLookup, Verify},
 	Perbill,
 };
 use support::{assert_err, assert_ok, impl_outer_origin, parameter_types, weights::Weight};
@@ -47,7 +48,7 @@ impl system::Trait for Test {
 	type BlockNumber = u64;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
-	type AccountId = u64;
+	type AccountId = <AccountSignature as Verify>::Signer;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
 	type Event = ();
@@ -89,7 +90,7 @@ fn it_works_for_default_value() {
 			Origin::signed(account.clone()),
 			ctype_hash.clone()
 		));
-		assert_eq!(<CTYPEs<Test>>::exists(ctype_hash), true);
+		assert_eq!(<CTYPEs<Test>>::contains_key(ctype_hash), true);
 		assert_eq!(CType::ctypes(ctype_hash.clone()), Some(account.clone()));
 		assert_err!(
 			CType::add(Origin::signed(account.clone()), ctype_hash.clone()),
