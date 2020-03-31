@@ -19,7 +19,7 @@
 use super::*;
 
 use crate::AccountSignature;
-use sp_core::{H256, *};
+use sp_core::{ed25519, Pair, H256};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup, Verify},
@@ -84,7 +84,7 @@ fn check_add_did() {
 		let pair = ed25519::Pair::from_seed(&*b"Alice                           ");
 		let signing_key = H256::from_low_u64_be(1);
 		let box_key = H256::from_low_u64_be(2);
-		let account_hash = H256::from(pair.public().0);
+		let account_hash = pair.public();
 		assert_ok!(DID::add(
 			Origin::signed(account_hash.clone()),
 			signing_key.clone(),

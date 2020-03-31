@@ -20,7 +20,7 @@ use super::*;
 
 use crate::AccountSignature;
 use codec::Encode;
-use sp_core::{ed25519 as x25519, H256, H512, *};
+use sp_core::{ed25519, Pair, H256, H512};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup, Verify},
@@ -75,8 +75,8 @@ impl error::Trait for Test {
 
 impl Trait for Test {
 	type Event = ();
-	type Signature = x25519::Signature;
-	type Signer = <x25519::Signature as Verify>::Signer;
+	type Signature = ed25519::Signature;
+	type Signer = <ed25519::Signature as Verify>::Signer;
 	type DelegationNodeId = H256;
 }
 
@@ -97,11 +97,11 @@ fn new_test_ext() -> runtime_io::TestExternalities {
 #[test]
 fn check_add_and_revoke_delegations() {
 	new_test_ext().execute_with(|| {
-		let pair_alice = x25519::Pair::from_seed(&*b"Alice                           ");
+		let pair_alice = ed25519::Pair::from_seed(&*b"Alice                           ");
 		let account_hash_alice = pair_alice.public();
-		let pair_bob = x25519::Pair::from_seed(&*b"Bob                             ");
+		let pair_bob = ed25519::Pair::from_seed(&*b"Bob                             ");
 		let account_hash_bob = pair_bob.public();
-		let pair_charlie = x25519::Pair::from_seed(&*b"Charlie                         ");
+		let pair_charlie = ed25519::Pair::from_seed(&*b"Charlie                         ");
 		let account_hash_charlie = pair_charlie.public();
 
 		let ctype_hash = H256::from_low_u64_be(1);
@@ -176,7 +176,7 @@ fn check_add_and_revoke_delegations() {
 				Some(id_level_1.clone()),
 				account_hash_charlie.clone(),
 				Permissions::ATTEST,
-				x25519::Signature::from_h512(H512::from_low_u64_be(0))
+				ed25519::Signature::from_h512(H512::from_low_u64_be(0))
 			),
 			Delegation::ERROR_BAD_DELEGATION_SIGNATURE.1
 		);

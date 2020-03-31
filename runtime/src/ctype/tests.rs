@@ -19,7 +19,7 @@
 use super::*;
 
 use crate::AccountSignature;
-use sp_core::H256;
+use sp_core::{ed25519, Pair, H256};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup, Verify},
@@ -84,16 +84,20 @@ fn new_test_ext() -> runtime_io::TestExternalities {
 #[test]
 fn it_works_for_default_value() {
 	new_test_ext().execute_with(|| {
-		let account = H256::from_low_u64_be(1);
-		let ctype_hash = H256::from_low_u64_be(2);
+		let pair = ed25519::Pair::from_seed(&*b"Alice                           ");
+		let ctype_hash = H256::from_low_u64_be(1);
+		let account_hash = pair.public();
 		assert_ok!(CType::add(
-			Origin::signed(account.clone()),
+			Origin::signed(account_hash.clone()),
 			ctype_hash.clone()
 		));
 		assert_eq!(<CTYPEs<Test>>::contains_key(ctype_hash), true);
-		assert_eq!(CType::ctypes(ctype_hash.clone()), Some(account.clone()));
+		assert_eq!(
+			CType::ctypes(ctype_hash.clone()),
+			Some(account_hash.clone())
+		);
 		assert_err!(
-			CType::add(Origin::signed(account.clone()), ctype_hash.clone()),
+			CType::add(Origin::signed(account_hash.clone()), ctype_hash.clone()),
 			CType::ERROR_CTYPE_ALREADY_EXISTS.1
 		);
 	});
