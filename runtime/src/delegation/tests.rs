@@ -17,6 +17,8 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use super::*;
+
+use crate::AccountSignature;
 use parity_codec::Encode;
 use sp_core::{ed25519 as x25519, H256, H512, *};
 use sp_externalities::with_externalities;
@@ -48,7 +50,7 @@ impl system::Trait for Test {
 	type BlockNumber = u64;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
-	type AccountId = u64;
+	type AccountId = <AccountSignature as Verify>::Signer;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
 	type Event = ();
