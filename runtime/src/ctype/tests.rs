@@ -23,7 +23,7 @@ use sp_externalities::with_externalities;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
-	BuildStorage, Perbill,
+	Perbill,
 };
 use support::{assert_err, assert_ok, impl_outer_origin, parameter_types, weights::Weight};
 
@@ -75,10 +75,9 @@ impl Trait for Test {
 type CType = Module<Test>;
 
 fn new_test_ext() -> runtime_io::TestExternalities {
-	system::GenesisConfig::<Test>::default()
-		.build_storage()
+	system::GenesisConfig::default()
+		.build_storage::<Test>()
 		.unwrap()
-		.0
 		.into()
 }
 

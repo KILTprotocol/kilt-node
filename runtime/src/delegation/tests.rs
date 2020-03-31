@@ -25,7 +25,7 @@ use sp_externalities::with_externalities;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup, Verify},
-	BuildStorage, Perbill,
+	Perbill,
 };
 use support::{assert_err, assert_ok, impl_outer_origin, parameter_types, weights::Weight};
 
@@ -89,10 +89,9 @@ fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
 }
 
 fn new_test_ext() -> runtime_io::TestExternalities {
-	system::GenesisConfig::<Test>::default()
-		.build_storage()
+	system::GenesisConfig::default()
+		.build_storage::<Test>()
 		.unwrap()
-		.0
 		.into()
 }
 
