@@ -24,7 +24,7 @@
 #[cfg(test)]
 mod tests;
 
-use rstd::{
+use sp_std::{
 	prelude::{Clone, Eq, PartialEq, Vec},
 	result,
 };
@@ -97,7 +97,7 @@ pub trait Trait: ctype::Trait + system::Trait + error::Trait {
 		+ Default
 		+ Copy
 		+ CheckEqual
-		+ rstd::hash::Hash
+		+ sp_std::hash::Hash
 		+ AsRef<[u8]>
 		+ AsMut<[u8]>;
 }

@@ -31,19 +31,20 @@ extern crate bitflags;
 
 use grandpa::fg_primitives;
 use grandpa::AuthorityList as GrandpaAuthorityList;
-use rstd::prelude::*;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::ed25519::AuthorityId as AuraId;
 use sp_core::{ed25519, OpaqueMetadata};
-use sp_runtime::{
-	create_runtime_str, generic, impl_opaque_keys,
-	traits::{BlakeTwo256, Block as BlockT, ConvertInto, IdentityLookup, Verify},
-	transaction_validity::TransactionValidity,
-	ApplyExtrinsicResult,
+use sp_runtime::traits::{
+    BlakeTwo256, Block as BlockT, ConvertInto, IdentifyAccount, IdentityLookup, Verify,
 };
+use sp_runtime::{
+    create_runtime_str, generic, impl_opaque_keys, transaction_validity::TransactionValidity,
+    ApplyExtrinsicResult,
+};
+use sp_std::prelude::*;
 #[cfg(feature = "std")]
-use version::NativeVersion;
-use version::RuntimeVersion;
+use sp_version::NativeVersion;
+use sp_version::RuntimeVersion;
 
 // pub use consensus::Call as ConsensusCall;
 pub use balances::Call as BalancesCall;
@@ -61,17 +62,11 @@ mod delegation;
 mod did;
 mod error;
 
-/// The type used by authorities to prove their ID.
-pub type AuthoritySignature = ed25519::Signature;
-
-/// The type that is used for identifying authorities.
-pub type AuthorityId = <AuthoritySignature as Verify>::Signer;
-
 /// The type used by accounts to prove their ID.
 pub type AccountSignature = ed25519::Signature;
 
 /// Alias to pubkey that identifies an account on the chain.
-pub type AccountId = <AccountSignature as Verify>::Signer;
+pub type AccountId = <<AccountSignature as Verify>::Signer as IdentifyAccount>::AccountId;
 
 /// The type for looking up accounts. We don't expect more than 4 billion of them, but you
 /// never know...
@@ -88,6 +83,9 @@ pub type BlockNumber = u64;
 
 /// Index of an account's extrinsic in the chain.
 pub type Index = u64;
+
+/// Digest item type.
+pub type DigestItem = generic::DigestItem<Hash>;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
