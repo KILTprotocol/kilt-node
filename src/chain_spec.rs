@@ -19,14 +19,14 @@
 //! KILT chain specification
 
 use mashnet_node_runtime::{
-	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, AccountSignature,
+	AccountId, AccountSignature, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig,
 	SudoConfig, SystemConfig, WASM_BINARY,
 };
 
 use grandpa_primitives::AuthorityId as GrandpaId;
 use sc_service;
 use sp_consensus_aura::ed25519::AuthorityId as AuraId;
-use sp_core::{ed25519 as x25519, Pair, Public};
+use sp_core::{ed25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 
 // Note this is the URL for the telemetry server
@@ -47,14 +47,14 @@ pub enum Alternative {
 	KiltDevnet,
 }
 
-type AccountPublic = <AccountSignature as Verify>::Signer;
-
 /// Helper function to generate a crypto pair from seed
 pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
 	TPublic::Pair::from_string(seed, None)
-		.expect(&format!("Invalide seed '{}'", seed))
+		.expect(&format!("Invalid seed '{}'", seed))
 		.public()
 }
+
+type AccountPublic = <AccountSignature as Verify>::Signer;
 
 /// Helper function to generate an account ID from seed
 pub fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
@@ -80,20 +80,20 @@ impl Alternative {
 					|| {
 						testnet_genesis(
 							vec![get_authority_keys_from_seed("//Alice")],
-							get_account_id_from_seed::<x25519::Public>("//Alice"),
+							get_account_id_from_seed::<ed25519::Public>("//Alice"),
 							vec![
 					// Dev Faucet account
 					// Seed phrase: "receive clutch item involve chaos clutch furnace arrest claw isolate okay together"
-					get_account_id_from_seed::<x25519::Public>("0xc68fe1b9a33c61070d4803f250932ec9ecf69e22440d3b151c7df1bd8517ef1e"),
-					get_account_id_from_seed::<x25519::Public>("//Bob"),
-					get_account_id_from_seed::<x25519::Public>("//Alice"),
+					get_account_id_from_seed::<ed25519::Public>("0xc68fe1b9a33c61070d4803f250932ec9ecf69e22440d3b151c7df1bd8517ef1e"),
+					get_account_id_from_seed::<ed25519::Public>("//Bob"),
+					get_account_id_from_seed::<ed25519::Public>("//Alice"),
 				],
 							true,
 						)
 					},
 					vec![],
 					None,
-					Some("KILTprotocol"),
+					None,
 					None,
 					None,
 				)
@@ -109,21 +109,21 @@ impl Alternative {
 							get_authority_keys_from_seed("0xd660b4470a954ecc99496d4e4b012ee9acac3979e403967ef09de20da9bdeb28"),
 							get_authority_keys_from_seed("0x2ecb6a4ce4d9bc0faab70441f20603fcd443d6d866e97c9e238a2fb3e982ae2f"),
 						],
-							get_account_id_from_seed::<x25519::Public>(
+							get_account_id_from_seed::<ed25519::Public>(
 								"0x58d3bb9e9dd245f3dec8d8fab7b97578c00a10cf3ca9d224caaa46456f91c46c",
 							),
 							vec![
 					// Testnet Faucet accounts
-					get_account_id_from_seed::<x25519::Public>("0x3ba6e1019a22234a9349eb1d76e02f74fecff31da60a0c8fc1e74a4a3a32b925"),
-					get_account_id_from_seed::<x25519::Public>("0xb7f202703a34a034571696f51e95047417956337c596c889bd4d3c1e162310b6"),
-					get_account_id_from_seed::<x25519::Public>("0x5895c421d0fde063e0758610896453aec306f09081cb2caed9649865728e670a")
+					get_account_id_from_seed::<ed25519::Public>("0x3ba6e1019a22234a9349eb1d76e02f74fecff31da60a0c8fc1e74a4a3a32b925"),
+					get_account_id_from_seed::<ed25519::Public>("0xb7f202703a34a034571696f51e95047417956337c596c889bd4d3c1e162310b6"),
+					get_account_id_from_seed::<ed25519::Public>("0x5895c421d0fde063e0758610896453aec306f09081cb2caed9649865728e670a")
 				],
 							true,
 						)
 					},
 					vec![],
 					None,
-					Some("KILTprotocol"),
+					None,
 					None,
 					None,
 				)
@@ -140,10 +140,10 @@ impl Alternative {
 						get_authority_keys_from_seed("0x06815321f16a5ae0fe246ee19285f8d8858fe60d5c025e060922153fcf8e54f9"),
 						get_authority_keys_from_seed("0x6d2d775fdc628134e3613a766459ccc57a29fd380cd410c91c6c79bc9c03b344"),
 					],
-							get_account_id_from_seed::<x25519::Public>(
+							get_account_id_from_seed::<ed25519::Public>(
 								"0xd44da634611d9c26837e3b5114a7d460a4cb7d688119739000632ed2d3794ae9",
 							),
-							vec![get_account_id_from_seed::<x25519::Public>(
+							vec![get_account_id_from_seed::<ed25519::Public>(
 								"0xd44da634611d9c26837e3b5114a7d460a4cb7d688119739000632ed2d3794ae9",
 							)],
 							true,
@@ -151,7 +151,7 @@ impl Alternative {
 					},
 					vec![],
 					None,
-					Some("KILTprotocol"),
+					None,
 					None,
 					None,
 				)

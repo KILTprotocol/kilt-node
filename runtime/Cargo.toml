@@ -28,19 +28,14 @@ features = [ 'derive' ]
 package = 'parity-scale-codec'
 version = '1.3.0'
 
-# [dependencies.consensus_authorities]
-# default-features = false
-# package = 'sp-consensus-aura'
-# version = '2.0.0-alpha.5'
-
 [dependencies.executive]
 default-features = false
 package = 'frame-executive'
 version = '2.0.0-alpha.5'
 
-[dependencies.indices]
+[dependencies.grandpa]
 default-features = false
-package = 'pallet-indices'
+package = 'pallet-grandpa'
 version = '2.0.0-alpha.5'
 
 [dependencies.randomness-collective-flip]
@@ -48,18 +43,10 @@ default-features = false
 package = 'pallet-randomness-collective-flip'
 version = '2.0.0-alpha.5'
 
-[dependencies.sp-std]
-default-features = false
-version = '2.0.0-alpha.5'
-
 [dependencies.runtime-io]
 default-features = false
 package = 'sp-io'
 version = '2.0.0-alpha.5'
-
-[dependencies.safe-mix]
-default-features = false
-version = '1.0'
 
 [dependencies.serde]
 features = [ 'derive' ]
@@ -102,7 +89,15 @@ version = '2.0.0-alpha.5'
 default-features = false
 version = '2.0.0-alpha.5'
 
+[dependencies.sp-std]
+default-features = false
+version = '2.0.0-alpha.5'
+
 [dependencies.sp-transaction-pool]
+default-features = false
+version = '2.0.0-alpha.5'
+
+[dependencies.sp-version]
 default-features = false
 version = '2.0.0-alpha.5'
 
@@ -131,43 +126,32 @@ default-features = false
 package = 'pallet-transaction-payment'
 version = '2.0.0-alpha.5'
 
-[dependencies.sp-version]
-default-features = false
-version = '2.0.0-alpha.5'
-
-[dependencies.grandpa]
-default-features = false
-package = 'pallet-grandpa'
-version = '2.0.0-alpha.5'
-
 [features]
 default = [ 'std' ]
 std = [
     'grandpa/std',
-	'aura/std',
-	'balances/std',
-	'codec/std',
-	'sp-consensus-aura/std',
-	'executive/std',
-	'indices/std',
-	'sp-core/std',
-	'sp-std/std',
-	'runtime-io/std',
-	'sp-runtime/std',
-	'safe-mix/std',
-	'randomness-collective-flip/std',
-	'serde',
-	'sudo/std',
-	'support/std',
-	'system/std',
-	'timestamp/std',
-	'sp-version/std',
-	'sp-block-builder/std',
-	'transaction-payment/std',
-	'sp-transaction-pool/std',
-	'sp-offchain/std',
-	'sp-session/std',
-	'sp-arithmetic/std',
-	'sp-api/std',
-	'sp-inherents/std',
+    'aura/std',
+    'balances/std',
+    'codec/std',
+    'sp-consensus-aura/std',
+    'executive/std',
+    'sp-core/std',
+    'sp-std/std',
+    'runtime-io/std',
+    'sp-runtime/std',
+    'randomness-collective-flip/std',
+    'serde',
+    'sudo/std',
+    'support/std',
+    'system/std',
+    'timestamp/std',
+    'sp-version/std',
+    'sp-block-builder/std',
+    'transaction-payment/std',
+    'sp-transaction-pool/std',
+    'sp-offchain/std',
+    'sp-session/std',
+    'sp-arithmetic/std',
+    'sp-api/std',
+    'sp-inherents/std',
 ]
