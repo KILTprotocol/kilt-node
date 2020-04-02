@@ -19,7 +19,7 @@
 //! KILT chain specification
 
 use mashnet_node_runtime::{
-	AccountId, AccountSignature, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig,
+	AccountId, Signature, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig,
 	SudoConfig, SystemConfig, WASM_BINARY,
 };
 
@@ -54,7 +54,7 @@ pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Pu
 		.public()
 }
 
-type AccountPublic = <AccountSignature as Verify>::Signer;
+type AccountPublic = <Signature as Verify>::Signer;
 
 /// Helper function to generate an account ID from seed
 pub fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
@@ -83,8 +83,7 @@ impl Alternative {
 							get_account_id_from_seed::<ed25519::Public>("//Alice"),
 							vec![
 					// Dev Faucet account
-					// Seed phrase: "receive clutch item involve chaos clutch furnace arrest claw isolate okay together"
-					get_account_id_from_seed::<ed25519::Public>("0xc68fe1b9a33c61070d4803f250932ec9ecf69e22440d3b151c7df1bd8517ef1e"),
+					get_account_id_from_seed::<ed25519::Public>("receive clutch item involve chaos clutch furnace arrest claw isolate okay together"),
 					get_account_id_from_seed::<ed25519::Public>("//Bob"),
 					get_account_id_from_seed::<ed25519::Public>("//Alice"),
 				],

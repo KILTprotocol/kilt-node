@@ -56,17 +56,20 @@ pub use support::{
 };
 pub use timestamp::Call as TimestampCall;
 
-mod attestation;
-mod ctype;
-mod delegation;
-mod did;
-mod error;
+pub mod attestation;
+pub mod ctype;
+pub mod delegation;
+pub mod did;
+pub mod error;
+
+/// An index to a block.
+pub type BlockNumber = u32;
 
 /// The type used by accounts to prove their ID.
-pub type AccountSignature = ed25519::Signature;
+pub type Signature = ed25519::Signature;
 
 /// Alias to pubkey that identifies an account on the chain.
-pub type AccountId = <<AccountSignature as Verify>::Signer as IdentifyAccount>::AccountId;
+pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 
 /// The type for looking up accounts. We don't expect more than 4 billion of them, but you
 /// never know...
@@ -75,14 +78,11 @@ pub type AccountIndex = u32;
 /// Balance of an account.
 pub type Balance = u128;
 
+/// Index of a transaction in the chain.
+pub type Index = u32;
+
 /// A hash of some data used by the chain.
 pub type Hash = sp_core::H256;
-
-/// Index of a block number in the chain.
-pub type BlockNumber = u64;
-
-/// Index of an account's extrinsic in the chain.
-pub type Index = u64;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem<Hash>;
@@ -94,15 +94,12 @@ pub type DigestItem = generic::DigestItem<Hash>;
 pub mod opaque {
 	use super::*;
 
-	/// Opaque, encoded, unchecked extrinsic.
 	pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
 
 	/// Opaque block header type.
 	pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
-
 	/// Opaque block type.
 	pub type Block = generic::Block<Header, UncheckedExtrinsic>;
-
 	/// Opaque block identifier type.
 	pub type BlockId = generic::BlockId<Block>;
 
@@ -153,7 +150,7 @@ parameter_types! {
 impl system::Trait for Runtime {
 	/// The identifier used to distinguish between accounts.
 	type AccountId = AccountId;
-	/// The lookup mechanism to get account ID from whatever is passed in dispatchers.
+    /// The aggregated dispatch type that is available for extrinsics.
 	type Call = Call;
 	/// The lookup mechanism to get account ID from whatever is passed in dispatchers.
 	type Lookup = IdentityLookup<AccountId>;
@@ -258,8 +255,8 @@ impl ctype::Trait for Runtime {
 impl delegation::Trait for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
-	type Signer = AccountId;
-	type Signature = AccountSignature;
+	type Signature = Signature;
+	type Signer = <Signature as Verify>::Signer;
 	type DelegationNodeId = Hash;
 }
 
@@ -279,7 +276,6 @@ impl error::Trait for Runtime {
 	type Event = Event;
 }
 
-// Construct the runtime
 construct_runtime!(
 	pub enum Runtime where
 		Block = Block,
@@ -324,14 +320,13 @@ pub type SignedExtra = (
 );
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
-	generic::UncheckedExtrinsic<Address, Call, AccountSignature, SignedExtra>;
+	generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various modules.
 pub type Executive =
 	executive::Executive<Runtime, Block, system::ChainContext<Runtime>, Runtime, AllModules>;
 
-// Implement our runtime API endpoints. This is just a bunch of proxying.
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
 		fn version() -> RuntimeVersion {

@@ -29,8 +29,6 @@ use sp_std::{
 	result,
 };
 
-use sp_runtime::traits::{CheckEqual, Hash, MaybeDisplay, Member, SimpleBitOps, Verify};
-
 use codec::{Decode, Encode};
 use core::default::Default;
 use support::{
@@ -38,7 +36,11 @@ use support::{
 };
 
 use super::{ctype, error};
-use sp_runtime::{codec::Codec, traits::IdentifyAccount, verify_encoded_lazy};
+use sp_runtime::{
+	codec::Codec,
+	traits::{CheckEqual, Hash, IdentifyAccount, MaybeDisplay, Member, SimpleBitOps, Verify},
+	verify_encoded_lazy,
+};
 use system::{self, ensure_signed};
 
 bitflags! {
@@ -156,9 +158,15 @@ decl_module! {
 		/// delegate - the delegate account
 		/// permission - the permissions delegated
 		/// delegate_signature - the signature of the delegate to ensure it's done under his permission
-		pub fn add_delegation(origin, delegation_id: T::DelegationNodeId,
-				root_id: T::DelegationNodeId, parent_id: Option<T::DelegationNodeId>,
-				delegate: T::AccountId, permissions: Permissions, delegate_signature: T::Signature) -> DispatchResult {
+		pub fn add_delegation(
+			origin,
+			delegation_id: T::DelegationNodeId,
+			root_id: T::DelegationNodeId,
+			parent_id: Option<T::DelegationNodeId>,
+			delegate: T::AccountId,
+			permissions: Permissions,
+			delegate_signature: T::Signature
+		) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 			// check if a delegation node with the given identifier already exists

@@ -18,7 +18,7 @@
 
 use super::*;
 
-use crate::AccountSignature;
+use crate::Signature;
 use codec::Encode;
 use sp_core::{ed25519, Pair, H256, H512};
 use sp_runtime::{
@@ -49,7 +49,7 @@ impl system::Trait for Test {
 	type BlockNumber = u64;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
-	type AccountId = <AccountSignature as Verify>::Signer;
+	type AccountId = <Signature as Verify>::Signer;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
 	type Event = ();
