@@ -33,13 +33,12 @@ use grandpa::fg_primitives;
 use grandpa::AuthorityList as GrandpaAuthorityList;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::ed25519::AuthorityId as AuraId;
-use sp_core::{ed25519, OpaqueMetadata};
-use sp_runtime::traits::{
-    BlakeTwo256, Block as BlockT, ConvertInto, IdentifyAccount, IdentityLookup, Verify,
-};
+use sp_core::OpaqueMetadata;
 use sp_runtime::{
-    create_runtime_str, generic, impl_opaque_keys, transaction_validity::TransactionValidity,
-    ApplyExtrinsicResult,
+	create_runtime_str, generic, impl_opaque_keys,
+	traits::{BlakeTwo256, Block as BlockT, ConvertInto, IdentifyAccount, IdentityLookup, Verify},
+	transaction_validity::TransactionValidity,
+	ApplyExtrinsicResult, MultiSignature,
 };
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
@@ -66,7 +65,7 @@ pub mod error;
 pub type BlockNumber = u32;
 
 /// The type used by accounts to prove their ID.
-pub type Signature = ed25519::Signature;
+pub type Signature = MultiSignature;
 
 /// Alias to pubkey that identifies an account on the chain.
 pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
@@ -150,7 +149,7 @@ parameter_types! {
 impl system::Trait for Runtime {
 	/// The identifier used to distinguish between accounts.
 	type AccountId = AccountId;
-    /// The aggregated dispatch type that is available for extrinsics.
+	/// The aggregated dispatch type that is available for extrinsics.
 	type Call = Call;
 	/// The lookup mechanism to get account ID from whatever is passed in dispatchers.
 	type Lookup = IdentityLookup<AccountId>;
@@ -319,8 +318,7 @@ pub type SignedExtra = (
 	transaction_payment::ChargeTransactionPayment<Runtime>,
 );
 /// Unchecked extrinsic type as expected by this runtime.
-pub type UncheckedExtrinsic =
-	generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;
+pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various modules.

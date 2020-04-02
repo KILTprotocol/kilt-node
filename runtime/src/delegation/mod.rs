@@ -85,8 +85,7 @@ pub trait Trait: ctype::Trait + system::Trait + error::Trait {
 
 	/// Signer of a delegation
 	// type Signer: From<Self::AccountId> + IdentifyAccount<AccountId = Self::AccountId>> + Member + Codec;
-	type Signer: From<Self::AccountId>
-		+ IdentifyAccount<AccountId = Self::AccountId>
+	type Signer: IdentifyAccount<AccountId = Self::AccountId>
 		+ Member
 		+ Codec;
 
