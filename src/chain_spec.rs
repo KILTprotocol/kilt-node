@@ -19,8 +19,8 @@
 //! KILT chain specification
 
 use mashnet_node_runtime::{
-	AccountId, Signature, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig,
-	SudoConfig, SystemConfig, WASM_BINARY,
+	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig,
+	SystemConfig, WASM_BINARY,
 };
 
 use grandpa_primitives::AuthorityId as GrandpaId;

@@ -14,7 +14,7 @@ panic = 'unwind'
 
 [workspace]
 members = [
-    'runtime' ,
+    'runtime',
 ]
 
 [build-dependencies]

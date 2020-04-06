@@ -29,8 +29,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 #[macro_use]
 extern crate bitflags;
 
-use grandpa::fg_primitives;
-use grandpa::AuthorityList as GrandpaAuthorityList;
+use grandpa::{fg_primitives, AuthorityList as GrandpaAuthorityList};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::ed25519::AuthorityId as AuraId;
 use sp_core::OpaqueMetadata;

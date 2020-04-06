@@ -23,7 +23,7 @@ use sp_core::{ed25519, Pair, H256};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup, Verify},
-	Perbill,
+	MultiSigner, Perbill,
 };
 use support::{assert_err, assert_ok, impl_outer_origin, parameter_types, weights::Weight};
 
@@ -86,7 +86,7 @@ fn it_works_for_default_value() {
 	new_test_ext().execute_with(|| {
 		let pair = ed25519::Pair::from_seed(&*b"Alice                           ");
 		let ctype_hash = H256::from_low_u64_be(1);
-		let account_hash = pair.public();
+		let account_hash = MultiSigner::from(pair.public());
 		assert_ok!(CType::add(
 			Origin::signed(account_hash.clone()),
 			ctype_hash.clone()

@@ -23,8 +23,8 @@
 #[cfg(test)]
 mod tests;
 
-use sp_std::prelude::*;
 use sp_runtime::{codec::Codec, traits::Member};
+use sp_std::prelude::*;
 use support::{
 	decl_event, decl_module, decl_storage, dispatch::DispatchResult, Parameter, StorageMap,
 };

@@ -23,7 +23,7 @@ use sp_core::{ed25519, Pair, H256};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup, Verify},
-	Perbill,
+	MultiSigner, Perbill,
 };
 use support::{assert_ok, impl_outer_origin, parameter_types, weights::Weight};
 
@@ -84,7 +84,7 @@ fn check_add_did() {
 		let pair = ed25519::Pair::from_seed(&*b"Alice                           ");
 		let signing_key = H256::from_low_u64_be(1);
 		let box_key = H256::from_low_u64_be(2);
-		let account_hash = pair.public();
+		let account_hash = MultiSigner::from(pair.public());
 		assert_ok!(DID::add(
 			Origin::signed(account_hash.clone()),
 			signing_key.clone(),
@@ -92,7 +92,7 @@ fn check_add_did() {
 			Some(b"http://kilt.org/submit".to_vec())
 		));
 
-		assert_eq!(<DIDs<Test>>::contains_key(account_hash), true);
+		assert_eq!(<DIDs<Test>>::contains_key(account_hash.clone()), true);
 		let did = {
 			let opt = DID::dids(account_hash.clone());
 			assert!(opt.is_some());
