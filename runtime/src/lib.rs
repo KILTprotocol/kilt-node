@@ -61,7 +61,7 @@ pub mod did;
 pub mod error;
 
 /// An index to a block.
-pub type BlockNumber = u32;
+pub type BlockNumber = u64;
 
 /// The type used by accounts to prove their ID.
 pub type Signature = MultiSignature;
@@ -77,7 +77,7 @@ pub type AccountIndex = u32;
 pub type Balance = u128;
 
 /// Index of a transaction in the chain.
-pub type Index = u32;
+pub type Index = u64;
 
 /// A hash of some data used by the chain.
 pub type Hash = sp_core::H256;
