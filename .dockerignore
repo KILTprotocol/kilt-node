@@ -1,4 +1,10 @@
 .git
 .github
+.gitignore
 task-definition*
 **/target
+docker-compose.yml
+LICENSE
+Dockerfile
+task-definition*
+README*
