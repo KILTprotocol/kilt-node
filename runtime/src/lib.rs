@@ -35,7 +35,7 @@ use sp_consensus_aura::ed25519::AuthorityId as AuraId;
 use sp_core::OpaqueMetadata;
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{BlakeTwo256, Block as BlockT, ConvertInto, IdentifyAccount, IdentityLookup, Verify},
+	traits::{BlakeTwo256, Block as BlockT, IdentifyAccount, IdentityLookup, Verify},
 	transaction_validity::TransactionValidity,
 	ApplyExtrinsicResult, MultiSignature,
 };
@@ -231,7 +231,7 @@ impl transaction_payment::Trait for Runtime {
 	type OnTransactionPayment = ();
 	type TransactionBaseFee = TransactionBaseFee;
 	type TransactionByteFee = TransactionByteFee;
-	type WeightToFee = ConvertInto;
+	type WeightToFee = ();
 	type FeeMultiplierUpdate = ();
 }
 
