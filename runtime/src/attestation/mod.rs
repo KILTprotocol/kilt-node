@@ -104,7 +104,7 @@ decl_module! {
 			// insert attestation
 			debug::RuntimeLogger::init();
 			debug::print!("insert Attestation");
-			<Attestations<T>>::insert(claim_hash, StoredAttestation (ctype_hash, sender.clone(), delegation_id, false));
+			<Attestations<T>>::insert(claim_hash, (ctype_hash, sender.clone(), delegation_id, false));
 
 			if let Some(d) = delegation_id {
 				// if attestation is based on a delegation this is stored in a separate map
@@ -196,13 +196,10 @@ impl<T: Trait> Module<T> {
 	}
 }
 
-#[derive(Decode, Encode)]
-pub struct StoredAttestation<T: Trait>(T::Hash, T::AccountId, Option<T::DelegationNodeId>, bool);
-
 decl_storage! {
 	trait Store for Module<T: Trait> as Attestation {
 		/// Attestations: claim-hash -> (ctype-hash, account, delegation-id?, revoked)?
-		Attestations get(attestations): map hasher(opaque_blake2_256) T::Hash => Option<StoredAttestation<T>>;
+		Attestations get(attestations): map hasher(opaque_blake2_256) T::Hash => Option<(T::Hash, T::AccountId, Option<T::DelegationNodeId>, bool)>;
 		/// DelegatedAttestations: delegation-id -> [claim-hash]
 		DelegatedAttestations get(delegated_attestations): map hasher(opaque_blake2_256) T::DelegationNodeId => Vec<T::Hash>;
 	}
