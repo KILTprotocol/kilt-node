@@ -24,7 +24,6 @@
 mod tests;
 
 use super::{ctype, delegation, error};
-use codec::{Decode, Encode};
 use sp_std::{
 	prelude::{Clone, PartialEq, Vec},
 	result,
