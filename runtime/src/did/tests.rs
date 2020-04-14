@@ -22,7 +22,7 @@ use crate::Signature;
 use sp_core::{ed25519, Pair, H256};
 use sp_runtime::{
 	testing::Header,
-	traits::{BlakeTwo256, IdentityLookup, Verify},
+	traits::{BlakeTwo256, IdentityLookup, Verify, IdentifyAccount},
 	MultiSigner, Perbill,
 };
 use support::{assert_ok, impl_outer_origin, parameter_types, weights::Weight};
@@ -48,7 +48,7 @@ impl system::Trait for Test {
 	type BlockNumber = u64;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
-	type AccountId = <Signature as Verify>::Signer;
+	type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
 	type Event = ();
@@ -84,25 +84,25 @@ fn check_add_did() {
 		let pair = ed25519::Pair::from_seed(&*b"Alice                           ");
 		let signing_key = H256::from_low_u64_be(1);
 		let box_key = H256::from_low_u64_be(2);
-		let account_hash = MultiSigner::from(pair.public());
+		let account = MultiSigner::from(pair.public()).into_account();
 		assert_ok!(DID::add(
-			Origin::signed(account_hash.clone()),
-			signing_key.clone(),
-			box_key.clone(),
+			Origin::signed(account.clone()),
+			signing_key,
+			box_key,
 			Some(b"http://kilt.org/submit".to_vec())
 		));
 
-		assert_eq!(<DIDs<Test>>::contains_key(account_hash.clone()), true);
+		assert_eq!(<DIDs<Test>>::contains_key(account.clone()), true);
 		let did = {
-			let opt = DID::dids(account_hash.clone());
+			let opt = DID::dids(account.clone());
 			assert!(opt.is_some());
 			opt.unwrap()
 		};
-		assert_eq!(did.0, signing_key.clone());
-		assert_eq!(did.1, box_key.clone());
+		assert_eq!(did.0, signing_key);
+		assert_eq!(did.1, box_key);
 		assert_eq!(did.2, Some(b"http://kilt.org/submit".to_vec()));
 
-		assert_ok!(DID::remove(Origin::signed(account_hash.clone())));
-		assert_eq!(<DIDs<Test>>::contains_key(account_hash), false);
+		assert_ok!(DID::remove(Origin::signed(account.clone())));
+		assert_eq!(<DIDs<Test>>::contains_key(account), false);
 	});
 }

@@ -22,7 +22,7 @@ use crate::Signature;
 use sp_core::{ed25519, Pair, H256};
 use sp_runtime::{
 	testing::Header,
-	traits::{BlakeTwo256, IdentityLookup, Verify},
+	traits::{BlakeTwo256, IdentityLookup, Verify, IdentifyAccount},
 	MultiSigner, Perbill,
 };
 use support::{assert_err, assert_ok, impl_outer_origin, parameter_types, weights::Weight};
@@ -48,7 +48,7 @@ impl system::Trait for Test {
 	type BlockNumber = u64;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
-	type AccountId = <Signature as Verify>::Signer;
+	type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
 	type Event = ();
@@ -86,18 +86,15 @@ fn it_works_for_default_value() {
 	new_test_ext().execute_with(|| {
 		let pair = ed25519::Pair::from_seed(&*b"Alice                           ");
 		let ctype_hash = H256::from_low_u64_be(1);
-		let account_hash = MultiSigner::from(pair.public());
+		let account = MultiSigner::from(pair.public()).into_account();
 		assert_ok!(CType::add(
-			Origin::signed(account_hash.clone()),
-			ctype_hash.clone()
+			Origin::signed(account.clone()),
+			ctype_hash
 		));
 		assert_eq!(<CTYPEs<Test>>::contains_key(ctype_hash), true);
-		assert_eq!(
-			CType::ctypes(ctype_hash.clone()),
-			Some(account_hash.clone())
-		);
+		assert_eq!(CType::ctypes(ctype_hash), Some(account.clone()));
 		assert_err!(
-			CType::add(Origin::signed(account_hash.clone()), ctype_hash.clone()),
+			CType::add(Origin::signed(account), ctype_hash),
 			CType::ERROR_CTYPE_ALREADY_EXISTS.1
 		);
 	});
