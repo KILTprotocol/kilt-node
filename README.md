@@ -28,7 +28,6 @@ Substrate Documentation:
       - [Running a local node that connects to KILT prototype testnet in AWS](#running-a-local-node-that-connects-to-kilt-prototype-testnet-in-aws)
       - [Running a node with local image, which runs a dev-chain](#running-a-node-with-local-image-which-runs-a-dev-chain)
   - [Development with AWS images](#development-with-aws-images)
-  - [Updating to latest substrate-node-template](#updating-to-latest-substrate-node-template)
   - [Node Modules functionalities](#node-modules-functionalities)
     - [DID Module](#did-module)
       - [Add](#add)
@@ -217,16 +216,6 @@ To run a node and connect it to the KILT testnet: Run the image and pass the com
 docker run 348099934012.dkr.ecr.eu-central-1.amazonaws.com/kilt/prototype-chain ./start-node.sh --connect-to alice
 ```
 The node should be connected to the KILT testnet.
-
-## Updating to latest substrate-node-template
-
-The command `substrate-node-new` (included in the substrate installation and described in https://substrate.dev/docs/en/tutorials/creating-your-first-substrate-chain) downloads a node-template, which this repo is based on.
-We just added our modules to the runtime.
-
-To update it, a stable template can be copied from https://github.com/shawntabrizi/substrate-package.
-Just copy the contents of substrate-node-template and add our changes on top.
-
-If the mentioned repo of shawntabrizi isn't updated anymore, the `substrate-node-new` command can still be used to get a fresh node-template. It might need some changes to work, though.
 
 ## Node Modules functionalities
 
