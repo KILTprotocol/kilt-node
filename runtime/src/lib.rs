@@ -203,6 +203,17 @@ impl timestamp::Trait for Runtime {
 }
 
 parameter_types! {
+	pub const Deposit: Balance = 1_000;
+}
+
+impl indices::Trait for Runtime {
+	type AccountIndex = Index;
+	type Currency = balances::Module<Runtime>;
+	type Deposit = Deposit;
+	type Event = Event;
+}
+
+parameter_types! {
 	pub const ExistentialDeposit: Balance = 1_000_000;
 }
 
@@ -280,6 +291,7 @@ construct_runtime!(
 		Timestamp: timestamp::{Module, Call, Storage, Inherent},
 		Aura: aura::{Module, Config<T>, Inherent(Timestamp)},
 		Grandpa: grandpa::{Module, Call, Storage, Config, Event},
+		Indices: indices::{Module, Call, Storage, Event<T>},
 		Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
 		TransactionPayment: transaction_payment::{Module, Storage},
 		Sudo: sudo::{Module, Call, Config<T>, Storage, Event<T>},
