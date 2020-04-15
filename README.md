@@ -51,7 +51,7 @@ docker run -p 9944:9944 kiltprotocol/mashnet-node ./start-node.sh --connect-to a
 
 Start dev chain (producing blocks without requirements) for local development with all WebSocket Interfaces and Remote Procedure Calls enabled and specified WebSockets RPC server TCP port. Default would be only Local Procedure Calls enabled:
 ```
-docker run -p 9944:9944 kiltprotocol/mashnet-node ./target/release/node --dev --ws-port 9944 --ws-external --rpc-external
+docker run -p 9944:9944 kiltprotocol/mashnet-node ./target/release/mashnet-node --dev --ws-port 9944 --ws-external --rpc-external
 ```
 
 ## How to use
@@ -100,7 +100,7 @@ cargo build
 ```
 start, by running:
 ```
-./target/debug/node [node command]
+./target/debug/mashnet-node [node command]
 ```
 
 #### Building in performant release mode
@@ -109,7 +109,7 @@ cargo build --release
 ```
 start, by running:
 ```
-./target/release/node [node command]
+./target/release/mashnet-node [node command]
 ```
 
 For execution see the section about commands.
@@ -142,21 +142,21 @@ or if you built it without docker:
 After finished building the node binary can be found in the `./target` directory:
 for dev mode build:
 ```
-./target/debug/node [node command]
+./target/debug/mashnet-node [node command]
 ```
 for release mode build:
 ```
-./target/release/node [node command]
+./target/release/mashnet-node [node command]
 ```
 
 If you want to start a local dev-chain after building in dev mode you can execute:
 ```
-./target/debug/node --dev
+./target/debug/mashnet-node --dev
 ```
 
 If you are using a docker image, run:
 ```
-docker run -p 9944:9944 kiltprotocol/mashnet-node ./target/release/node --dev --ws-port 9944 --ws-external --rpc-external
+docker run -p 9944:9944 kiltprotocol/mashnet-node ./target/release/mashnet-node --dev --ws-port 9944 --ws-external --rpc-external
 ```
 
 
@@ -189,7 +189,7 @@ docker build -t local/mashnet-node .
 ```
 run chain in dev mode locally
 ```
-docker run -p 9944:9944 local/mashnet-node ./target/release/node --dev --ws-port 9944 --ws-external --rpc-external
+docker run -p 9944:9944 local/mashnet-node ./target/release/mashnet-node --dev --ws-port 9944 --ws-external --rpc-external
 ```
 
 ## Development with AWS images
