@@ -280,6 +280,10 @@ impl error::Trait for Runtime {
 	type Event = Event;
 }
 
+impl portablegabi::Trait for Runtime {
+	type Event = Event;
+}
+
 construct_runtime!(
 	pub enum Runtime where
 		Block = Block,
@@ -300,6 +304,7 @@ construct_runtime!(
 		Attestation: attestation::{Module, Call, Storage, Event<T>},
 		Delegation: delegation::{Module, Call, Storage, Event<T>},
 		Did: did::{Module, Call, Storage, Event<T>},
+		Portablegabi: portablegabi::{Module, Call, Storage, Event<T>},
 		Error: error::{ Module, Call, Event<T>},
 	}
 );

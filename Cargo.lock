@@ -2496,6 +2496,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "parity-scale-codec",
+ "portablegabi-pallet",
  "serde",
  "sp-api",
  "sp-arithmetic",
@@ -3264,6 +3265,20 @@ name = "pkg-config"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05da548ad6865900e60eaba7f589cc0783590a92e940c26953ff81ddbab2d677"
+
+[[package]]
+name = "portablegabi-pallet"
+version = "0.1.0"
+source = "git+https://github.com/KILTprotocol/portablegabi-pallet.git?branch=update_substrate#69f36c0ccf88816f6c948c5749713e22863521ef"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "serde",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
 
 [[package]]
 name = "ppv-lite86"

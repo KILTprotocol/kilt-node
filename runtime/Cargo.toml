@@ -131,6 +131,12 @@ default-features = false
 package = 'pallet-indices'
 version = '2.0.0-alpha.5'
 
+[dependencies.portablegabi]
+default-features = false
+package = 'portablegabi-pallet'
+git = "https://github.com/KILTprotocol/portablegabi-pallet.git"
+branch = "update_substrate"
+
 [features]
 default = [ 'std' ]
 std = [
@@ -138,6 +144,7 @@ std = [
     'grandpa/std',
     'aura/std',
     'balances/std',
+    'portablegabi/std',
     'codec/std',
     'sp-consensus-aura/std',
     'executive/std',
