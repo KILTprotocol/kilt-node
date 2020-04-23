@@ -61,6 +61,7 @@ mod ctype;
 mod delegation;
 mod did;
 mod error;
+mod portablegabi;
 
 /// The type that is used for identifying authorities.
 pub type AuthorityId = <AuthoritySignature as Verify>::Signer;
@@ -243,6 +244,11 @@ impl did::Trait for Runtime {
 	type PublicBoxKey = Hash;
 }
 
+impl portablegabi::Trait for Runtime {
+	/// The ubiquitous event type.
+	type Event = Event;
+}
+
 impl error::Trait for Runtime {
 	/// Error code type
 	type ErrorCode = u16;
@@ -268,6 +274,7 @@ construct_runtime!(
 		Attestation: attestation::{Module, Call, Storage, Event<T>},
 		Delegation: delegation::{Module, Call, Storage, Event<T>},
 		Did: did::{Module, Call, Storage, Event<T>},
+		Portablegabi: portablegabi::{Module, Call, Storage, Event<T>},
 		Error: error::{ Module, Call, Event<T>},
 	}
 );
