@@ -1,11 +1,11 @@
-use support::{
-	decl_event, decl_module, decl_storage, ensure, dispatch::Result, StorageMap,
-};
 use rstd::vec::Vec;
+use support::{decl_event, decl_module, decl_storage, dispatch::Result, StorageMap};
 use system::ensure_signed;
 
+use crate::error;
+
 /// The pallet's configuration trait.
-pub trait Trait: system::Trait {
+pub trait Trait: system::Trait + error::Trait {
 	/// The overarching event type.
 	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
@@ -31,22 +31,39 @@ decl_module! {
 		pub fn update_accumulator(origin, accumulator: Vec<u8>) -> Result {
 			let attester = ensure_signed(origin)?;
 
-			let counter = if !<AccumulatorCount<T>>::exists(&attester) {
-				0
+			// if attester didn't store any accumulators, this will be 0
+			// 0 is the default value for new keys.
+			let counter = <AccumulatorCount<T>>::get(&attester);
+
+			// new counter value
+			let next = <error::Module<T>>::ok_or_deposit_err(
+				counter.checked_add(1),
+				Self::ERROR_OVERFLOW
+			)?;
+
+			// set bytes at index `counter` to accumulator
+			// update counter to `next`
+			if !<AccumulatorList<T>>::exists((attester.clone(), counter)) {
+				<AccumulatorList<T>>::insert((attester.clone(), counter), &accumulator);
+				<AccumulatorCount<T>>::insert(&attester, next);
+	
+				Self::deposit_event(RawEvent::Updated(attester, next, accumulator));
+				Ok(())
 			} else {
-				<AccumulatorCount<T>>::get(&attester)
-			};
-
-			let next = counter.checked_add(1).ok_or("Overflow increasing accumulator index")?;
-			ensure!(!<AccumulatorList<T>>::exists((attester.clone(), next)),
-					"Inconsistent accumulator counter");
-
-			<AccumulatorList<T>>::insert((attester.clone(), counter), &accumulator);
-			<AccumulatorCount<T>>::insert(&attester, next);
-
-			Self::deposit_event(RawEvent::Updated(attester, next, accumulator));
-			Ok(())
+				Self::error(Self::ERROR_INCONSISTENT)
+			}
 		}
+	}
+}
+
+impl<T: Trait> Module<T> {
+	pub const ERROR_BASE: u16 = 4000;
+	pub const ERROR_OVERFLOW: error::ErrorType = (Self::ERROR_BASE + 1, "accumulator overflow");
+	pub const ERROR_INCONSISTENT: error::ErrorType = (Self::ERROR_BASE + 1, "inconsistent accumulator counter");
+
+	/// Create an error using the error module
+	pub fn error(error_type: error::ErrorType) -> Result {
+		<error::Module<T>>::error(error_type)
 	}
 }
 
@@ -68,17 +85,17 @@ mod tests {
 	use primitives::{Blake2Hasher, H256};
 	use runtime_io::with_externalities;
 	use support::{assert_ok, impl_outer_origin};
-	
+
 	use runtime_primitives::{
 		testing::{Digest, DigestItem, Header},
 		traits::{BlakeTwo256, IdentityLookup},
 		BuildStorage,
 	};
-	
+
 	impl_outer_origin! {
 		pub enum Origin for Test {}
 	}
-	
+
 	#[derive(Clone, Eq, PartialEq)]
 	pub struct Test;
 	impl system::Trait for Test {
@@ -94,13 +111,18 @@ mod tests {
 		type Digest = Digest;
 		type Log = DigestItem;
 	}
-	
+
 	impl Trait for Test {
 		type Event = ();
 	}
-	
+
+	impl error::Trait for Test {
+		type Event = ();
+		type ErrorCode = u16;
+	}
+
 	type PortablegabiModule = Module<Test>;
-	
+
 	fn new_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
 		system::GenesisConfig::<Test>::default()
 			.build_storage()
