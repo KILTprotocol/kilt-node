@@ -9,7 +9,7 @@ services:
       - 9944:9944
   sdk:
     build:
-      context: https://github.com/KILTprotocol/sdk-js.git#rf-docker-compose
+      context: https://github.com/KILTprotocol/sdk-js.git
     command: yarn test:integration
     environment:
       WS_HOST: ws://dev-node:9944
