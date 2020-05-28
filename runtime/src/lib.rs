@@ -66,6 +66,7 @@ pub mod ctype;
 pub mod delegation;
 pub mod did;
 pub mod error;
+pub mod portablegabi;
 
 /// An index to a block.
 pub type BlockNumber = u64;
@@ -308,6 +309,11 @@ impl did::Trait for Runtime {
 	type PublicBoxKey = Hash;
 }
 
+impl portablegabi::Trait for Runtime {
+	/// The ubiquitous event type.
+	type Event = Event;
+}
+
 impl error::Trait for Runtime {
 	/// Error code type
 	type ErrorCode = u16;
@@ -335,6 +341,7 @@ construct_runtime!(
 		Attestation: attestation::{Module, Call, Storage, Event<T>},
 		Delegation: delegation::{Module, Call, Storage, Event<T>},
 		Did: did::{Module, Call, Storage, Event<T>},
+		Portablegabi: portablegabi::{Module, Call, Storage, Event<T>},
 		Error: error::{ Module, Call, Event<T>},
 	}
 );
