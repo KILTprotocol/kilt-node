@@ -1,6 +1,7 @@
 # the WASM build of the runtime is completely indepedent 
 # we can avoid cache invalidations by running it in an extra container
-FROM rustlang/rust:nightly as wasm_builder
+# FIXME: We need to enfoce a specific nighlty version, since the mashnet node doesn't compile with the newest nightly. Nightlies before (and including) nightly-2020-05-14 are working.
+FROM rustlang/rust@sha256:9ac425a47e25a7a5dac999362b89de2b91b21ce70c557a409c46280393f7b1f1 as wasm_builder
 
 # install wasm toolchain for polkadot
 RUN rustup target add wasm32-unknown-unknown --toolchain nightly
@@ -33,7 +34,7 @@ COPY ./scripts/build.sh /scripts/build.sh
 RUN /bin/bash /scripts/build.sh
 
 # this container builds the mashnet-node binary from source files, the runtime library and the WASM file built previously
-FROM rustlang/rust:nightly as builder
+FROM rustlang/rust@sha256:9ac425a47e25a7a5dac999362b89de2b91b21ce70c557a409c46280393f7b1f1 as builder
 
 WORKDIR /build
 
