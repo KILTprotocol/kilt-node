@@ -59,6 +59,7 @@ decl_module! {
 		/// claim_hash - hash of the attested claim
 		/// ctype_hash - hash of the CTYPE of the claim
 		/// delegation_id - optional id that refers to a delegation this attestation is based on
+		#[weight = 1]
 		pub fn add(origin, claim_hash: T::Hash, ctype_hash: T::Hash, delegation_id: Option<T::DelegationNodeId>) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
@@ -121,6 +122,7 @@ decl_module! {
 		/// Revokes an attestation on chain, where
 		/// origin - the origin of the transaction
 		/// claim_hash - hash of the attested claim
+		#[weight = 1]
 		pub fn revoke(origin, claim_hash: T::Hash) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;

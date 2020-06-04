@@ -51,6 +51,7 @@ decl_module! {
 		/// Adds a CTYPE on chain, where
 		/// origin - the origin of the transaction
 		/// hash - hash of the CTYPE of the claim
+		#[weight = 1]
 		pub fn add(origin, hash: T::Hash) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
