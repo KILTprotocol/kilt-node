@@ -35,7 +35,7 @@ use sp_consensus_aura::ed25519::AuthorityId as AuraId;
 use sp_core::OpaqueMetadata;
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{BlakeTwo256, Block as BlockT, IdentifyAccount, IdentityLookup, Verify},
+	traits::{BlakeTwo256, Block as BlockT, IdentifyAccount, IdentityLookup, Verify, Convert},
 	transaction_validity::TransactionValidity,
 	ApplyExtrinsicResult, MultiSignature,
 };
@@ -50,9 +50,10 @@ pub use balances::Call as BalancesCall;
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
 pub use support::{
-	construct_runtime, parameter_types, traits::Randomness, weights::Weight, StorageValue,
+	construct_runtime, parameter_types, traits::Randomness, weights::{WeightToFeePolynomial, Weight, WeightToFeeCoefficients, WeightToFeeCoefficient}, StorageValue,
 };
 pub use timestamp::Call as TimestampCall;
+use sp_arithmetic::traits::BaseArithmetic;
 
 pub mod attestation;
 pub mod ctype;
@@ -232,12 +233,26 @@ parameter_types! {
 	pub const TransactionByteFee: Balance = 0;
 }
 
+struct WeightToFee {}
+
+impl WeightToFeePolynomial for WeightToFee {
+    type Balance = Balance;
+    fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
+        SmallVec::from_slice(&[WeightToFeeCoefficient{
+            coeff_integer: 1,
+            coeff_frac: 0,
+            negative: false,
+            degree: 1,
+		}])
+    }
+}
+
 impl transaction_payment::Trait for Runtime {
 	type Currency = balances::Module<Runtime>;
 	type OnTransactionPayment = ();
 	type TransactionBaseFee = TransactionBaseFee;
 	type TransactionByteFee = TransactionByteFee;
-	type WeightToFee = ();
+	type WeightToFee = WeightToFee;
 	type FeeMultiplierUpdate = ();
 }
 
