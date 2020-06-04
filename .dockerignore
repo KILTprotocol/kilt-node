@@ -1,4 +1,9 @@
 .git
 .github
+.gitignore
+task-definition*
+**/target
+docker-compose.yml
+Dockerfile
 task-definition*
 **/target/

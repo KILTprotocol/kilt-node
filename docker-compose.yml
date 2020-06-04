@@ -1,0 +1,17 @@
+version: "3"
+
+services:
+  dev-node:
+    build: .
+    image: local/mashnet-node
+    command: ./target/release/mashnet-node --dev --ws-port 9944 --ws-external
+    ports:
+      - 9944:9944
+  sdk:
+    build:
+      context: https://github.com/KILTprotocol/sdk-js.git#develop
+    command: yarn test:integration
+    environment:
+      WS_HOST: ws://dev-node:9944
+    links:
+      - dev-node
