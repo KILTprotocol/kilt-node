@@ -50,7 +50,7 @@ pub enum Alternative {
 /// Helper function to generate a crypto pair from seed
 pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
 	TPublic::Pair::from_string(seed, None)
-		.expect(&format!("Invalid seed '{}'", seed))
+		.unwrap_or_else(|_| panic!("Invalid seed '{}'", seed))
 		.public()
 }
 

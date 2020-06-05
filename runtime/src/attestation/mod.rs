@@ -109,7 +109,7 @@ decl_module! {
 			if let Some(d) = delegation_id {
 				// if attestation is based on a delegation this is stored in a separate map
 				let mut delegated_attestations = <DelegatedAttestations<T>>::get(d);
-				delegated_attestations.push(claim_hash.clone());
+				delegated_attestations.push(claim_hash);
 				<DelegatedAttestations<T>>::insert(d, delegated_attestations);
 			}
 

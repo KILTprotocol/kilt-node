@@ -187,7 +187,7 @@ pub fn new_full(config: Configuration) -> Result<impl AbstractService, ServiceEr
 			config: grandpa_config,
 			link: grandpa_link,
 			network: service.network(),
-			inherent_data_providers: inherent_data_providers.clone(),
+			inherent_data_providers,
 			telemetry_on_connect: Some(service.telemetry_on_connect_stream()),
 			voting_rule: grandpa::VotingRulesBuilder::default().build(),
 			prometheus_registry: service.prometheus_registry(),
@@ -218,7 +218,7 @@ pub fn new_light(config: Configuration) -> Result<impl AbstractService, ServiceE
 			let fetcher = fetcher
 				.ok_or_else(|| "Trying to start light transaction pool without active fetcher")?;
 
-			let pool_api = sc_transaction_pool::LightChainApi::new(client.clone(), fetcher.clone());
+			let pool_api = sc_transaction_pool::LightChainApi::new(client, fetcher);
 			let pool = sc_transaction_pool::BasicPool::with_revalidation_type(
 				config,
 				Arc::new(pool_api),
