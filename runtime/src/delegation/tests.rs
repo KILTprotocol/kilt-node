@@ -20,6 +20,7 @@ use super::*;
 
 use crate::Signature;
 use codec::Encode;
+use sp_arithmetic::traits::Saturating;
 use sp_core::{ed25519, Pair, H256, H512};
 use sp_runtime::{
 	testing::Header,
@@ -33,7 +34,6 @@ use support::{
 		Weight,
 	},
 };
-use sp_arithmetic::traits::Saturating;
 
 impl_outer_origin! {
 	pub enum Origin for Test {}
@@ -251,14 +251,12 @@ fn check_add_and_revoke_delegations() {
 				Some(id_level_1),
 				account_hash_charlie.clone(),
 				Permissions::ATTEST,
-				MultiSignature::from(pair_charlie.sign(&hash_to_u8(
-					Delegation::calculate_hash(
-						id_level_2_2,
-						id_level_0,
-						Some(id_level_1),
-						Permissions::ATTEST
-					)
-				)))
+				MultiSignature::from(pair_charlie.sign(&hash_to_u8(Delegation::calculate_hash(
+					id_level_2_2,
+					id_level_0,
+					Some(id_level_1),
+					Permissions::ATTEST
+				))))
 			),
 			Delegation::ERROR_NOT_OWNER_OF_PARENT.1
 		);
@@ -287,14 +285,12 @@ fn check_add_and_revoke_delegations() {
 				Some(id_level_0),
 				account_hash_charlie.clone(),
 				Permissions::ATTEST,
-				MultiSignature::from(pair_charlie.sign(&hash_to_u8(
-					Delegation::calculate_hash(
-						id_level_2_2,
-						id_level_0,
-						Some(id_level_0),
-						Permissions::ATTEST
-					)
-				)))
+				MultiSignature::from(pair_charlie.sign(&hash_to_u8(Delegation::calculate_hash(
+					id_level_2_2,
+					id_level_0,
+					Some(id_level_0),
+					Permissions::ATTEST
+				))))
 			),
 			Delegation::ERROR_PARENT_NOT_FOUND.1
 		);
@@ -399,10 +395,7 @@ fn check_add_and_revoke_delegations() {
 			Delegation::ERROR_DELEGATION_NOT_FOUND.1
 		);
 		assert_err!(
-			Delegation::revoke_delegation(
-				Origin::signed(account_hash_charlie.clone()),
-				id_level_1
-			),
+			Delegation::revoke_delegation(Origin::signed(account_hash_charlie.clone()), id_level_1),
 			Delegation::ERROR_NOT_PERMITTED_TO_REVOKE.1
 		);
 		assert_ok!(Delegation::revoke_delegation(
@@ -410,14 +403,8 @@ fn check_add_and_revoke_delegations() {
 			id_level_2_2
 		));
 
-		assert_eq!(
-			Delegation::delegation(id_level_2_2).unwrap().4,
-			true
-		);
-		assert_eq!(
-			Delegation::delegation(id_level_2_2_1).unwrap().4,
-			true
-		);
+		assert_eq!(Delegation::delegation(id_level_2_2).unwrap().4, true);
+		assert_eq!(Delegation::delegation(id_level_2_2_1).unwrap().4, true);
 		assert_err!(
 			Delegation::revoke_root(
 				Origin::signed(account_hash_bob.clone()),
@@ -435,9 +422,6 @@ fn check_add_and_revoke_delegations() {
 		));
 		assert_eq!(Delegation::root(id_level_0).unwrap().2, true);
 		assert_eq!(Delegation::delegation(id_level_1).unwrap().4, true);
-		assert_eq!(
-			Delegation::delegation(id_level_2_1).unwrap().4,
-			true
-		);
+		assert_eq!(Delegation::delegation(id_level_2_1).unwrap().4, true);
 	});
 }

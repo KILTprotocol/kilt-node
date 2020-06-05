@@ -20,6 +20,7 @@ use super::*;
 
 use crate::{AccountId, Signature};
 use codec::Encode;
+use sp_arithmetic::traits::Saturating;
 use sp_core::{ed25519, Pair, H256};
 use sp_runtime::{
 	testing::Header,
@@ -33,7 +34,6 @@ use support::{
 		Weight,
 	},
 };
-use sp_arithmetic::traits::Saturating;
 
 impl_outer_origin! {
 	pub enum Origin for Test {}

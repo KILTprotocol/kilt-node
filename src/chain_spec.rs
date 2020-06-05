@@ -24,7 +24,7 @@ use mashnet_node_runtime::{
 };
 
 use grandpa_primitives::AuthorityId as GrandpaId;
-use sc_service::{self, ChainType, };
+use sc_service::{self, ChainType};
 use sp_consensus_aura::ed25519::AuthorityId as AuraId;
 use sp_core::{ed25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
@@ -126,7 +126,7 @@ impl Alternative {
 					None,
 					None,
 					None,
-					None
+					None,
 				)
 			}
 			Alternative::KiltDevnet => {

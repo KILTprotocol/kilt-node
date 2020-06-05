@@ -32,7 +32,7 @@ use sp_std::{
 use codec::{Decode, Encode};
 use core::default::Default;
 use support::{
-	debug, decl_event, decl_module, decl_storage, dispatch::DispatchResult, Parameter, StorageMap
+	debug, decl_event, decl_module, decl_storage, dispatch::DispatchResult, Parameter, StorageMap,
 };
 
 use super::{ctype, error};

@@ -35,8 +35,8 @@ use sp_consensus_aura::ed25519::AuthorityId as AuraId;
 use sp_core::OpaqueMetadata;
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{BlakeTwo256, Block as BlockT, IdentifyAccount, IdentityLookup, Verify, NumberFor},
-	transaction_validity::{TransactionValidity, TransactionSource},
+	traits::{BlakeTwo256, Block as BlockT, IdentifyAccount, IdentityLookup, NumberFor, Verify},
+	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, MultiSignature,
 };
 use sp_std::prelude::*;
@@ -46,18 +46,20 @@ use sp_version::RuntimeVersion;
 
 // pub use consensus::Call as ConsensusCall;
 pub use balances::Call as BalancesCall;
+use sp_arithmetic::traits::Saturating;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
-pub use sp_runtime::{Perbill, Permill, KeyTypeId};
+pub use sp_runtime::{KeyTypeId, Perbill, Permill};
 pub use support::{
-	construct_runtime, parameter_types, traits::{KeyOwnerProofSystem, Randomness}, 
+	construct_runtime, parameter_types,
+	traits::{KeyOwnerProofSystem, Randomness},
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
-		Weight, IdentityFee
-	}, StorageValue,
+		IdentityFee, Weight,
+	},
+	StorageValue,
 };
 pub use timestamp::Call as TimestampCall;
-use sp_arithmetic::traits::Saturating;
 
 pub mod attestation;
 pub mod ctype;
@@ -355,7 +357,7 @@ pub type SignedExtra = (
 	system::CheckEra<Runtime>,
 	system::CheckNonce<Runtime>,
 	system::CheckWeight<Runtime>,
-	transaction_payment::ChargeTransactionPayment<Runtime>
+	transaction_payment::ChargeTransactionPayment<Runtime>,
 );
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;

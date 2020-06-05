@@ -19,10 +19,11 @@
 use super::*;
 
 use crate::Signature;
+use sp_arithmetic::traits::Saturating;
 use sp_core::{ed25519, Pair, H256};
 use sp_runtime::{
 	testing::Header,
-	traits::{BlakeTwo256, IdentityLookup, Verify, IdentifyAccount},
+	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSigner, Perbill,
 };
 use support::{
@@ -32,7 +33,6 @@ use support::{
 		Weight,
 	},
 };
-use sp_arithmetic::traits::Saturating;
 
 impl_outer_origin! {
 	pub enum Origin for Test {}
@@ -101,10 +101,7 @@ fn it_works_for_default_value() {
 		let pair = ed25519::Pair::from_seed(&*b"Alice                           ");
 		let ctype_hash = H256::from_low_u64_be(1);
 		let account = MultiSigner::from(pair.public()).into_account();
-		assert_ok!(CType::add(
-			Origin::signed(account.clone()),
-			ctype_hash
-		));
+		assert_ok!(CType::add(Origin::signed(account.clone()), ctype_hash));
 		assert_eq!(<CTYPEs<Test>>::contains_key(ctype_hash), true);
 		assert_eq!(CType::ctypes(ctype_hash), Some(account.clone()));
 		assert_err!(

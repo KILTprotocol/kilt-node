@@ -1,4 +1,3 @@
-
 // KILT Blockchain – https://botlabs.org
 // Copyright (C) 2019  BOTLabs GmbH
 
