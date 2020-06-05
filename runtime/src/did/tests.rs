@@ -18,20 +18,19 @@
 
 use super::*;
 
-use crate::Signature;
-use sp_arithmetic::traits::Saturating;
+use crate::{
+	AvailableBlockRatio, BlockHashCount, MaximumBlockLength, MaximumBlockWeight,
+	MaximumExtrinsicWeight, Signature,
+};
 use sp_core::{ed25519, Pair, H256};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	MultiSigner, Perbill,
+	MultiSigner,
 };
 use support::{
-	assert_ok, impl_outer_origin, parameter_types,
-	weights::{
-		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
-		Weight,
-	},
+	assert_ok, impl_outer_origin,
+	weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
 };
 
 impl_outer_origin! {
@@ -40,15 +39,6 @@ impl_outer_origin! {
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Test;
-
-parameter_types! {
-	pub const BlockHashCount: u64 = 250;
-	pub const MaximumBlockWeight: Weight = 1_000_000_000;
-	pub const MaximumBlockLength: u32 = 5 * 1024 * 1024;
-	pub const AvailableBlockRatio: Perbill = Perbill::from_percent(75);
-	pub const MaximumExtrinsicWeight: Weight = AvailableBlockRatio::get()
-		.saturating_sub(Perbill::from_percent(10)) * MaximumBlockWeight::get();
-}
 
 impl system::Trait for Test {
 	type Origin = Origin;
