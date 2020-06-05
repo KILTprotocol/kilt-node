@@ -14,28 +14,61 @@
 // You should have received a copy of the GNU General Public License
 // along with Substrate.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::{chain_spec, cli::Cli, service};
-use sc_cli::VersionInfo;
-use sp_consensus_aura::ed25519::AuthorityPair as AuraPair;
+use crate::chain_spec;
+use crate::cli::Cli;
+use crate::service;
+use sc_cli::SubstrateCli;
+
+impl SubstrateCli for Cli {
+	fn impl_name() -> &'static str {
+		"KILT Node"
+	}
+
+	fn impl_version() -> &'static str {
+		"0.22.0"
+	}
+
+	fn description() -> &'static str {
+		env!("CARGO_PKG_DESCRIPTION")
+	}
+
+	fn author() -> &'static str {
+		env!("CARGO_PKG_AUTHORS")
+	}
+
+	fn support_url() -> &'static str {
+		"https://github.com/KILTprotocol/mashnet-node/issues/new"
+	}
+
+	fn copyright_start_year() -> i32 {
+		2019
+	}
+
+	fn executable_name() -> &'static str {
+		env!("CARGO_PKG_NAME")
+	}
+
+	fn load_spec(&self, id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
+		chain_spec::load_spec(id)
+	}
+}
 
 /// Parse and run command line arguments
-pub fn run(version: VersionInfo) -> sc_cli::Result<()> {
-	let opt = sc_cli::from_args::<Cli>(&version);
+pub fn run() -> sc_cli::Result<()> {
+	let cli = Cli::from_args();
 
-	let mut config = sc_service::Configuration::from_version(&version);
-
-	match opt.subcommand {
+	match &cli.subcommand {
 		Some(subcommand) => {
-			subcommand.init(&version)?;
-			subcommand.update_config(&mut config, chain_spec::load_spec, &version)?;
-			subcommand.run(config, |config: _| Ok(new_full_start!(config).0))
+			let runner = cli.create_runner(subcommand)?;
+			runner.run_subcommand(subcommand, |config| Ok(new_full_start!(config).0))
 		}
 		None => {
-			opt.run.init(&version)?;
-			opt.run
-				.update_config(&mut config, chain_spec::load_spec, &version)?;
-			opt.run
-				.run(config, service::new_light, service::new_full, &version)
+			let runner = cli.create_runner(&cli.run)?;
+			runner.run_node(
+				service::new_light,
+				service::new_full,
+				mashnet_node_runtime::VERSION
+			)
 		}
 	}
 }

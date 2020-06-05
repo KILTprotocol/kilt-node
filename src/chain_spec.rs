@@ -24,7 +24,7 @@ use mashnet_node_runtime::{
 };
 
 use grandpa_primitives::AuthorityId as GrandpaId;
-use sc_service;
+use sc_service::{self, ChainType, };
 use sp_consensus_aura::ed25519::AuthorityId as AuraId;
 use sp_core::{ed25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
@@ -77,6 +77,7 @@ impl Alternative {
 				ChainSpec::from_genesis(
 					"Development",
 					"development",
+					ChainType::Development,
 					|| {
 						testnet_genesis(
 							vec![get_authority_keys_from_seed("//Alice")],
@@ -101,6 +102,7 @@ impl Alternative {
 				ChainSpec::from_genesis(
 					"KILT Testnet",
 					"kilt_testnet",
+					ChainType::Live,
 					|| {
 						testnet_genesis(
 							vec![
@@ -124,13 +126,14 @@ impl Alternative {
 					None,
 					None,
 					None,
-					None,
+					None
 				)
 			}
 			Alternative::KiltDevnet => {
 				ChainSpec::from_genesis(
 					"KILT Devnet",
 					"kilt_devnet",
+					ChainType::Live,
 					|| {
 						testnet_genesis(
 							// Initial Authorities
