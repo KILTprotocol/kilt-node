@@ -296,13 +296,11 @@ impl<T: Trait> Module<T> {
 	pub const ERROR_ROOT_NOT_FOUND: error::ErrorType = (Self::ERROR_BASE + 10, "root not found");
 
 	/// Create an error using the error module
-	#[weight = 1]
 	pub fn error(error_type: error::ErrorType) -> DispatchResult {
 		<error::Module<T>>::error(error_type)
 	}
 
 	/// Calculates the hash of all values of a delegation transaction
-	#[weight = 1]
 	pub fn calculate_hash(
 		delegation_id: T::DelegationNodeId,
 		root_id: T::DelegationNodeId,
@@ -321,7 +319,6 @@ impl<T: Trait> Module<T> {
 	}
 
 	/// Check if an account is the owner of the delegation or any delegation up the hierarchy (including the root)
-	#[weight = 1]
 	pub fn is_delegating(
 		account: &T::AccountId,
 		delegation: &T::DelegationNodeId,
@@ -348,7 +345,6 @@ impl<T: Trait> Module<T> {
 	}
 
 	/// Revoke a delegation an all of its children
-	#[weight = 1]
 	fn revoke(delegation: &T::DelegationNodeId, sender: &T::AccountId) -> DispatchResult {
 		// retrieve delegation node from storage
 		let mut d = <error::Module<T>>::ok_or_deposit_err(
@@ -369,7 +365,6 @@ impl<T: Trait> Module<T> {
 	}
 
 	/// Revoke all children of a delegation
-	#[weight = 1]
 	fn revoke_children(delegation: &T::DelegationNodeId, sender: &T::AccountId) -> DispatchResult {
 		// check if there's a child vector in the storage
 		if <Children<T>>::contains_key(delegation) {
@@ -383,7 +378,6 @@ impl<T: Trait> Module<T> {
 	}
 
 	/// Add a child node into the delegation hierarchy
-	#[weight = 1]
 	fn add_child(child: T::DelegationNodeId, parent: T::DelegationNodeId) {
 		// get the children vector
 		let mut children = <Children<T>>::get(parent);
@@ -397,10 +391,10 @@ impl<T: Trait> Module<T> {
 decl_storage! {
 	trait Store for Module<T: Trait> as Delegation {
 		// Root: root-id => (ctype-hash, account, revoked)?
-		pub Root get(root):map hasher(opaque_blake2_256) T::DelegationNodeId => Option<(T::Hash,T::AccountId,bool)>;
+		pub Root get(fn root):map hasher(opaque_blake2_256) T::DelegationNodeId => Option<(T::Hash,T::AccountId,bool)>;
 		// Delegations: delegation-id => (root-id, parent-id?, account, permissions, revoked)?
-		pub Delegations get(delegation):map hasher(opaque_blake2_256) T::DelegationNodeId => Option<(T::DelegationNodeId,Option<T::DelegationNodeId>,T::AccountId,Permissions,bool)>;
+		pub Delegations get(fn delegation):map hasher(opaque_blake2_256) T::DelegationNodeId => Option<(T::DelegationNodeId,Option<T::DelegationNodeId>,T::AccountId,Permissions,bool)>;
 		// Children: root-or-delegation-id => [delegation-id]
-		pub Children get(children):map hasher(opaque_blake2_256) T::DelegationNodeId => Vec<T::DelegationNodeId>;
+		pub Children get(fn children):map hasher(opaque_blake2_256) T::DelegationNodeId => Vec<T::DelegationNodeId>;
 	}
 }

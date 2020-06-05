@@ -68,14 +68,13 @@ decl_module! {
 			Self::deposit_event(RawEvent::CTypeCreated(sender, hash));
 			Ok(())
 		}
-
 	}
 }
 
 decl_storage! {
 	trait Store for Module<T: Trait> as Ctype {
 		// CTYPEs: ctype-hash -> account-id?
-		pub CTYPEs get(ctypes):map hasher(opaque_blake2_256) T::Hash => Option<T::AccountId>;
+		pub CTYPEs get(fn ctypes):map hasher(opaque_blake2_256) T::Hash => Option<T::AccountId>;
 	}
 }
 

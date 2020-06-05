@@ -90,6 +90,6 @@ decl_module! {
 decl_storage! {
 	trait Store for Module<T: Trait> as DID {
 		// DID: account-id -> (public-signing-key, public-encryption-key, did-reference?)?
-		DIDs get(dids):map hasher(opaque_blake2_256) T::AccountId => Option<(T::PublicSigningKey, T::PublicBoxKey, Option<Vec<u8>>)>;
+		DIDs get(fn dids):map hasher(opaque_blake2_256) T::AccountId => Option<(T::PublicSigningKey, T::PublicBoxKey, Option<Vec<u8>>)>;
 	}
 }
