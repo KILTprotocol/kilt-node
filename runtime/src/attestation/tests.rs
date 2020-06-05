@@ -26,7 +26,14 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSignature, MultiSigner, Perbill,
 };
-use support::{assert_err, assert_ok, impl_outer_origin, parameter_types, weights::Weight};
+use support::{
+	assert_err, assert_ok, impl_outer_origin, parameter_types,
+	weights::{
+		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
+		Weight,
+	},
+};
+use sp_arithmetic::traits::Saturating;
 
 impl_outer_origin! {
 	pub enum Origin for Test {}
@@ -40,6 +47,8 @@ parameter_types! {
 	pub const MaximumBlockWeight: Weight = 1_000_000_000;
 	pub const MaximumBlockLength: u32 = 5 * 1024 * 1024;
 	pub const AvailableBlockRatio: Perbill = Perbill::from_percent(75);
+	pub const MaximumExtrinsicWeight: Weight = AvailableBlockRatio::get()
+		.saturating_sub(Perbill::from_percent(10)) * MaximumBlockWeight::get();
 }
 
 impl system::Trait for Test {
@@ -55,9 +64,14 @@ impl system::Trait for Test {
 	type Event = ();
 	type BlockHashCount = BlockHashCount;
 	type MaximumBlockWeight = MaximumBlockWeight;
+	type DbWeight = RocksDbWeight;
+	type BlockExecutionWeight = BlockExecutionWeight;
+	type ExtrinsicBaseWeight = ExtrinsicBaseWeight;
+	type MaximumExtrinsicWeight = MaximumExtrinsicWeight;
 	type MaximumBlockLength = MaximumBlockLength;
 	type AvailableBlockRatio = AvailableBlockRatio;
 	type Version = ();
+
 	type ModuleToIndex = ();
 	type AccountData = ();
 	type OnNewAccount = ();
