@@ -23,20 +23,21 @@ vergen = '3.1.0'
 
 [dependencies]
 futures = '0.3'
-grandpa = { package = 'sc-finality-grandpa', version = '0.8.0-alpha.rc2' }
+grandpa = { package = 'sc-finality-grandpa', version = '0.8.0-rc2' }
 grandpa-primitives = { package = 'sp-finality-grandpa', version = '2.0.0-rc2' }
 log = '0.4'
 mashnet-node-runtime = { path = 'runtime' }
-sc-basic-authorship = '0.8.0-alpha.rc2'
-sc-cli = '0.8.0-alpha.rc2'
+sc-basic-authorship = '0.8.0-rc2'
+sc-cli = '0.8.0-rc2'
 sc-client-api = '2.0.0-rc2'
-sc-consensus-aura = '0.8.0-alpha.rc2'
-sc-executor = '0.8.0-alpha.rc2'
-sc-network = '0.8.0-alpha.rc2'
-sc-service = '0.8.0-alpha.rc2'
+sc-consensus = '0.8.0-rc2'
+sc-consensus-aura = '0.8.0-rc2'
+sc-executor = '0.8.0-rc2'
+sc-network = '0.8.0-rc2'
+sc-service = '0.8.0-rc2'
 sc-transaction-pool = '2.0.0-rc2'
-sp-consensus = '0.8.0-alpha.rc2'
-sp-consensus-aura = '0.8.0-alpha.rc2'
+sp-consensus = '0.8.0-rc2'
+sp-consensus-aura = '0.8.0-rc2'
 sp-core = '2.0.0-rc2'
 sp-inherents = '2.0.0-rc2'
 structopt = '0.3.8'
