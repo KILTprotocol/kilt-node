@@ -1,3 +1,4 @@
+
 // KILT Blockchain – https://botlabs.org
 // Copyright (C) 2019  BOTLabs GmbH
 
@@ -19,7 +20,6 @@
 //! KILT node CLI.
 
 #![warn(missing_docs)]
-use sc_cli;
 
 mod chain_spec;
 #[macro_use]
@@ -28,15 +28,5 @@ mod cli;
 mod command;
 
 fn main() -> sc_cli::Result<()> {
-	let version = sc_cli::VersionInfo {
-		name: "KILT Node",
-		commit: env!("VERGEN_SHA_SHORT"),
-		version: env!("CARGO_PKG_VERSION"),
-		executable_name: "node",
-		author: env!("CARGO_PKG_AUTHORS"),
-		description: env!("CARGO_PKG_DESCRIPTION"),
-		support_url: "support.anonymous.an",
-		copyright_start_year: 2019,
-	};
-	command::run(version)
+	command::run()
 }
