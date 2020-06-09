@@ -28,7 +28,7 @@ use sp_runtime::{
 use support::{
     assert_err, assert_ok, impl_outer_origin, parameter_types,
     weights::{
-        constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
+        constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
         Weight,
     },
 };
@@ -42,13 +42,11 @@ pub struct Test;
 
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
-    pub const MaximumBlockWeight: Weight = 1_000_000_000;
+    pub const MaximumBlockWeight: Weight = 2 * WEIGHT_PER_SECOND;
     pub const MaximumBlockLength: u32 = 5 * 1024 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::from_percent(75);
-    // FIXME: Wait for workaround
-    pub const MaximumExtrinsicWeight: Weight = 2 * WEIGHT_PER_SECOND;
-    // pub const MaximumExtrinsicWeight: Weight = AvailableBlockRatio::get()
-    //     .saturating_sub(Perbill::from_percent(10)) * MaximumBlockWeight::get();
+    pub MaximumExtrinsicWeight: Weight = AvailableBlockRatio::get()
+        .saturating_sub(Perbill::from_percent(10)) * MaximumBlockWeight::get();
 }
 
 impl system::Trait for Test {
