@@ -47,7 +47,7 @@ decl_module! {
 			if !<AccumulatorList<T>>::contains_key((attester.clone(), counter)) {
 				<AccumulatorList<T>>::insert((attester.clone(), counter), &accumulator);
 				<AccumulatorCount<T>>::insert(&attester, next);
-	
+
 				Self::deposit_event(RawEvent::Updated(attester, next, accumulator));
 				Ok(())
 			} else {
@@ -60,7 +60,8 @@ decl_module! {
 impl<T: Trait> Module<T> {
 	pub const ERROR_BASE: u16 = 4000;
 	pub const ERROR_OVERFLOW: error::ErrorType = (Self::ERROR_BASE + 1, "accumulator overflow");
-	pub const ERROR_INCONSISTENT: error::ErrorType = (Self::ERROR_BASE + 1, "inconsistent accumulator counter");
+	pub const ERROR_INCONSISTENT: error::ErrorType =
+		(Self::ERROR_BASE + 1, "inconsistent accumulator counter");
 
 	/// Create an error using the error module
 	pub fn error(error_type: error::ErrorType) -> DispatchResult {
@@ -96,14 +97,14 @@ mod tests {
 		assert_ok, impl_outer_origin,
 		weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
 	};
-	
+
 	impl_outer_origin! {
 		pub enum Origin for Test {}
 	}
-	
+
 	#[derive(Clone, Eq, PartialEq, Debug)]
 	pub struct Test;
-	
+
 	impl system::Trait for Test {
 		type Origin = Origin;
 		type Call = ();
@@ -124,13 +125,13 @@ mod tests {
 		type MaximumBlockLength = MaximumBlockLength;
 		type AvailableBlockRatio = AvailableBlockRatio;
 		type Version = ();
-	
+
 		type ModuleToIndex = ();
 		type AccountData = ();
 		type OnNewAccount = ();
 		type OnKilledAccount = ();
 	}
-	
+
 	impl Trait for Test {
 		type Event = ();
 	}
@@ -151,7 +152,7 @@ mod tests {
 
 	#[test]
 	fn it_works_for_default_value() {
-		new_test_ext().execute_with( || {
+		new_test_ext().execute_with(|| {
 			// Just a dummy test for the dummy function `do_something`
 			// calling the `do_something` function with a value 42
 			assert_ok!(PortablegabiModule::update_accumulator(
