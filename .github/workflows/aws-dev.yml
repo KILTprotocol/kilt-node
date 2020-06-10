@@ -120,3 +120,37 @@ jobs:
         curl -X DELETE -H "Authorization: ${SERVICES_SECRET}" https://services.devnet.kilt.io/ctype
         curl -X DELETE -H "Authorization: ${SERVICES_SECRET}" https://services.devnet.kilt.io/messaging
         curl -X DELETE -H "Authorization: ${SERVICES_SECRET}" https://services.devnet.kilt.io/contacts
+
+  publish_to_docker:
+    name: Publish develop image to docker
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-central-1
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+      
+    - name: Login to Docker Hub
+      env:
+        DOCKER_USER: ${{ secrets.DOCKER_USER }}
+        DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
+      run: |
+        echo $DOCKER_PASS | docker login --username=$DOCKER_USER --password-stdin
+
+    - name: Tag and push dev image to Docker Hub
+      env:
+        SOURCE_IMAGE: ${{ jobs.build.steps.build-image.outputs.image }}
+        DOCKER_REPOSITORY: kiltprotocol/mashnet-node
+        IMAGE_TAG: develop
+      run: |
+        docker pull $SOURCE_IMAGE
+        docker tag $SOURCE_IMAGE $DOCKER_REPOSITORY:$IMAGE_TAG
+        docker push $DOCKER_REPOSITORY:$IMAGE_TAG
