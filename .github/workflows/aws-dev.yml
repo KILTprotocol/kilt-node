@@ -151,10 +151,10 @@ jobs:
     - name: Tag and push dev image to Docker Hub
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        SOURCE_IMAGE: $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
         DOCKER_REPOSITORY: kiltprotocol/mashnet-node
         DOCKER_IMAGE_TAG: develop
       run: |
+        SOURCE_IMAGE=$ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
         docker pull $SOURCE_IMAGE
         docker tag $SOURCE_IMAGE $DOCKER_REPOSITORY:$DOCKER_IMAGE_TAG
         docker push $DOCKER_REPOSITORY:$DOCKER_IMAGE_TAG
