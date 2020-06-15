@@ -47,6 +47,10 @@ macro_rules! new_full_start {
 	($config:expr) => {{
 		use sp_consensus_aura::ed25519::AuthorityPair as AuraPair;
 		use std::sync::Arc;
+		use frame_rpc_system::{FullSystem, SystemApi};
+
+		/// A type representing all RPC extensions.
+		pub type RpcExtension = jsonrpc_core::IoHandler<sc_rpc::Metadata>;
 
 		let mut import_setup = None;
 		let inherent_data_providers = sp_inherents::InherentDataProviders::new();
@@ -98,10 +102,17 @@ macro_rules! new_full_start {
 
 				Ok(import_queue)
 			},
-		)?;
+		)?
+		.with_rpc_extensions(|builder| -> Result<RpcExtension, _> {
+			let mut io = jsonrpc_core::IoHandler::default();
+			io.extend_with(
+				SystemApi::to_delegate(FullSystem::new(builder.client().clone(), builder.pool().clone()))
+			);
+			Ok(io)
+		})?;
 
 		(builder, import_setup, inherent_data_providers)
-		}};
+	}};
 }
 
 /// Builds a new service for a full client.

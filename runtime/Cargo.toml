@@ -131,6 +131,12 @@ default-features = false
 package = 'pallet-indices'
 version = '2.0.0-rc3'
 
+[dependencies.system-rpc-runtime-api]
+default-features = false
+package = "frame-system-rpc-runtime-api"
+version = "2.0.0-rc3"
+
+
 [features]
 default = [ 'std' ]
 std = [
@@ -160,4 +166,5 @@ std = [
     'sp-arithmetic/std',
     'sp-api/std',
     'sp-inherents/std',
+    'system-rpc-runtime-api/std',
 ]

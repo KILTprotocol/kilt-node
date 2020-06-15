@@ -1010,6 +1010,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "frame-system-rpc-runtime-api"
+version = "2.0.0-rc3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "24bca63e679b050857bf4ca36cf95d53f65c324613850872aa2e5343f9805772"
+dependencies = [
+ "parity-scale-codec",
+ "sp-api",
+]
+
+[[package]]
 name = "fs-swap"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2286,6 +2296,7 @@ name = "mashnet-node"
 version = "0.22.0"
 dependencies = [
  "futures 0.3.4",
+ "jsonrpc-core",
  "log",
  "mashnet-node-runtime",
  "sc-basic-authorship",
@@ -2296,6 +2307,7 @@ dependencies = [
  "sc-executor",
  "sc-finality-grandpa",
  "sc-network",
+ "sc-rpc",
  "sc-service",
  "sc-transaction-pool",
  "sp-consensus",
@@ -2306,6 +2318,7 @@ dependencies = [
  "sp-runtime",
  "structopt",
  "substrate-build-script-utils",
+ "substrate-frame-rpc-system",
  "vergen",
 ]
 
@@ -2317,6 +2330,7 @@ dependencies = [
  "frame-executive",
  "frame-support",
  "frame-system",
+ "frame-system-rpc-runtime-api",
  "pallet-aura",
  "pallet-balances",
  "pallet-grandpa",
@@ -5489,6 +5503,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eee118f791e43bd5f6563c678eed9454472f269e60ad907aaa2eb5b33ecbff67"
 dependencies = [
  "platforms",
+]
+
+[[package]]
+name = "substrate-frame-rpc-system"
+version = "2.0.0-rc3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c9e932c515d56cd4f48de81ad3aa200b133c815fbc7d6fd917e7886bd7ae3247"
+dependencies = [
+ "frame-system-rpc-runtime-api",
+ "futures 0.3.4",
+ "jsonrpc-core",
+ "jsonrpc-core-client",
+ "jsonrpc-derive",
+ "log",
+ "parity-scale-codec",
+ "sc-client-api",
+ "serde",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-runtime",
+ "sp-transaction-pool",
 ]
 
 [[package]]
