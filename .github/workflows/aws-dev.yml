@@ -127,7 +127,8 @@ jobs:
     name: Publish develop image to docker
     needs: build
     runs-on: ubuntu-latest
-
+    # this job pulls the develop image just built from our private ECR repository,
+    # then pushes it to the public docker repository under a dedicated tag
     steps:
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
