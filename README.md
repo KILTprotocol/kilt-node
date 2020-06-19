@@ -13,34 +13,34 @@ Substrate Documentation:
 [Reference Rust Docs](https://substrate.dev/rustdocs/v1.0/substrate_service/index.html)
 
 - [KILT mashnet-node (previously prototype-chain)](#kilt-mashnet-node-previously-prototype-chain)
-	- [How to use TL;DR](#how-to-use-tldr)
-	- [How to use](#how-to-use)
-		- [Images / Building](#images--building)
-			- [Dockerhub](#dockerhub)
-			- [Building docker image](#building-docker-image)
-			- [Build code without docker](#build-code-without-docker)
-			- [Building in dev mode](#building-in-dev-mode)
-			- [Building in performant release mode](#building-in-performant-release-mode)
-		- [Commands](#commands)
-			- [Helper script](#helper-script)
-			- [Node binary](#node-binary)
-		- [Examples](#examples)
-			- [Running a local node that connects to KILT prototype testnet in AWS](#running-a-local-node-that-connects-to-kilt-prototype-testnet-in-aws)
-			- [Running a node with local image, which runs a dev-chain](#running-a-node-with-local-image-which-runs-a-dev-chain)
-	- [Development with AWS images](#development-with-aws-images)
-	- [Node Modules functionalities](#node-modules-functionalities)
-		- [DID Module](#did-module)
-			- [Add](#add)
-			- [CRUD](#crud)
-		- [CTYPE Module](#ctype-module)
-		- [Attestation Module](#attestation-module)
-			- [Add](#add-1)
-			- [Revoke](#revoke)
-			- [Lookup](#lookup)
-		- [Hierarchy of Trust Module](#hierarchy-of-trust-module)
-			- [Create root](#create-root)
-			- [Add delegation](#add-delegation)
-			- [Revoke](#revoke-1)
+  - [How to use TL;DR](#how-to-use-tldr)
+  - [How to use](#how-to-use)
+    - [Images / Building](#images--building)
+      - [Dockerhub](#dockerhub)
+      - [Building docker image](#building-docker-image)
+      - [Build code without docker](#build-code-without-docker)
+      - [Building in dev mode](#building-in-dev-mode)
+      - [Building in performant release mode](#building-in-performant-release-mode)
+    - [Commands](#commands)
+      - [Helper script](#helper-script)
+      - [Node binary](#node-binary)
+    - [Examples](#examples)
+      - [Running a local node that connects to KILT prototype testnet in AWS](#running-a-local-node-that-connects-to-kilt-prototype-testnet-in-aws)
+      - [Running a node with local image, which runs a dev-chain](#running-a-node-with-local-image-which-runs-a-dev-chain)
+  - [Development with AWS images](#development-with-aws-images)
+  - [Node Modules functionalities](#node-modules-functionalities)
+    - [DID Module](#did-module)
+      - [Add](#add)
+      - [CRUD](#crud)
+    - [CTYPE Module](#ctype-module)
+    - [Attestation Module](#attestation-module)
+      - [Add](#add-1)
+      - [Revoke](#revoke)
+      - [Lookup](#lookup)
+    - [Hierarchy of Trust Module](#hierarchy-of-trust-module)
+      - [Create root](#create-root)
+      - [Add delegation](#add-delegation)
+      - [Revoke](#revoke-1)
 
 ## How to use TL;DR
 
@@ -323,6 +323,8 @@ We use [Aura](https://wiki.parity.io/Aura) as the authoring algorithm, since we 
 We will probably move to another algorithm in the future (e.g. [BABE](https://w3f-research.readthedocs.io/en/latest/polkadot/BABE.html)).
 
 For consensus we use [GRANDPA](https://github.com/paritytech/substrate#2-description).
+
+At a later stage, we most likely will change to a different consensus algorithm that will incorporate additional features (e.g. proving availability of certain services) and we might leverage concepts from BABE+GRANDPA while designing this new consensus mechanism.
 
 **Polkadot Integration**
 
