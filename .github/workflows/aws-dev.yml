@@ -5,6 +5,10 @@ on:
     branches: 
       - develop
 
+env:
+  ECR_REPOSITORY: kilt/prototype-chain
+  ECR_IMAGE_TAG: latest-develop
+
 jobs:
   build:
 
@@ -29,8 +33,6 @@ jobs:
       id: build-image
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: kilt/prototype-chain
-        CACHE_IMAGE_TAG: latest-develop
         CACHE_IMAGE_BUILDER_TAG: latest-develop-builder
       run: |
         docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG || true
@@ -39,15 +41,15 @@ jobs:
           --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
           -t $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
           .
-        docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_TAG || true
+        docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG || true
         docker build \
           --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
-          --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_TAG \
-          -t $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_TAG \
+          --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG \
+          -t $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG \
           .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_TAG
-        echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_TAG"
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
+        echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG"
 
     - name: (Alice) Fill in the new image ID in the Amazon ECS task definition
       id: task-def-alice
@@ -120,3 +122,39 @@ jobs:
         curl -X DELETE -H "Authorization: ${SERVICES_SECRET}" https://services.devnet.kilt.io/ctype
         curl -X DELETE -H "Authorization: ${SERVICES_SECRET}" https://services.devnet.kilt.io/messaging
         curl -X DELETE -H "Authorization: ${SERVICES_SECRET}" https://services.devnet.kilt.io/contacts
+
+  publish_to_docker:
+    name: Publish develop image to docker
+    needs: build
+    runs-on: ubuntu-latest
+    # this job pulls the develop image just built from our private ECR repository,
+    # then pushes it to the public docker repository under a dedicated tag
+    steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-central-1
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+      
+    - name: Login to Docker Hub
+      env:
+        DOCKER_USER: ${{ secrets.DOCKER_USER }}
+        DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
+      run: |
+        echo $DOCKER_PASS | docker login --username=$DOCKER_USER --password-stdin
+
+    - name: Tag and push dev image to Docker Hub
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        DOCKER_REPOSITORY: kiltprotocol/mashnet-node
+        DOCKER_IMAGE_TAG: develop
+      run: |
+        SOURCE_IMAGE=$ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
+        docker pull $SOURCE_IMAGE
+        docker tag $SOURCE_IMAGE $DOCKER_REPOSITORY:$DOCKER_IMAGE_TAG
+        docker push $DOCKER_REPOSITORY:$DOCKER_IMAGE_TAG
