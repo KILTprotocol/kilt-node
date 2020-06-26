@@ -23,9 +23,11 @@
 #[cfg(test)]
 mod tests;
 
-use rstd::prelude::*;
-use runtime_primitives::{codec::Codec, traits::Member};
-use support::{decl_event, decl_module, decl_storage, dispatch::Result, Parameter, StorageMap};
+use sp_runtime::{codec::Codec, traits::Member};
+use sp_std::prelude::*;
+use support::{
+	decl_event, decl_module, decl_storage, dispatch::DispatchResult, Parameter, StorageMap,
+};
 use system::{self, ensure_signed};
 
 /// The DID trait
@@ -53,14 +55,15 @@ decl_module! {
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 
 		/// Deposit events
-		fn deposit_event<T>() = default;
+		fn deposit_event() = default;
 
 		/// Adds a DID on chain, where
 		/// origin - the origin of the transaction
 		/// sign_key - public signing key of the DID
 		/// box_key - public boxing key of the DID
 		/// doc_ref - optional reference to the DID document storage
-		pub fn add(origin, sign_key: T::PublicSigningKey, box_key: T::PublicBoxKey, doc_ref: Option<Vec<u8>>) -> Result {
+		#[weight = 1]
+		pub fn add(origin, sign_key: T::PublicSigningKey, box_key: T::PublicBoxKey, doc_ref: Option<Vec<u8>>) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 			// add DID to the storage
@@ -71,7 +74,8 @@ decl_module! {
 		}
 		/// Removes a DID from chain storage, where
 		/// origin - the origin of the transaction
-		pub fn remove(origin) -> Result {
+		#[weight = 1]
+		pub fn remove(origin) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 			// remove DID from storage
@@ -86,6 +90,6 @@ decl_module! {
 decl_storage! {
 	trait Store for Module<T: Trait> as DID {
 		// DID: account-id -> (public-signing-key, public-encryption-key, did-reference?)?
-		DIDs get(dids): map T::AccountId => Option<(T::PublicSigningKey, T::PublicBoxKey, Option<Vec<u8>>)>;
+		DIDs get(fn dids):map hasher(opaque_blake2_256) T::AccountId => Option<(T::PublicSigningKey, T::PublicBoxKey, Option<Vec<u8>>)>;
 	}
 }

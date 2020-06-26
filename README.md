@@ -317,12 +317,14 @@ extrinsic method) has. The size of the block is hence dynamic and will depend on
 and type of transactions included in the new block. The valid new blocks are propagated
 through the network and other nodes execute these blocks to update their local state (storage).
 
-**Consensus Algorithm**
+**Authoring & Consensus Algorithm**
 
-Since we are the only authority provider in the testnet phase, we use the simple [Aura](https://wiki.parity.io/Aura)
-consensus mechanism. At a later stage, we most likely will change to [GRANDPA](https://github.com/paritytech/substrate#2-description), which
-supposedly will be superior to Aura in many aspects. The consensus mechanism is also
-subject to the future possibility to integrate the KILT network into the Polkadot ecosystem.
+We use [Aura](https://wiki.parity.io/Aura) as the authoring algorithm, since we are still in a permissioned blockchain mode.
+We will probably move to another algorithm in the future (e.g. [BABE](https://w3f-research.readthedocs.io/en/latest/polkadot/BABE.html)).
+
+For consensus we use [GRANDPA](https://github.com/paritytech/substrate#2-description).
+
+At a later stage, we most likely will change to a different consensus algorithm that will incorporate additional features (e.g. proving availability of certain services) and we might leverage concepts from BABE+GRANDPA while designing this new consensus mechanism.
 
 **Polkadot Integration**
 

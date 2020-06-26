@@ -24,11 +24,11 @@
 mod tests;
 
 use super::{ctype, delegation, error};
-use rstd::{
+use sp_std::{
 	prelude::{Clone, PartialEq, Vec},
 	result,
 };
-use support::{decl_event, decl_module, decl_storage, dispatch::Result, StorageMap};
+use support::{debug, decl_event, decl_module, decl_storage, dispatch::DispatchResult, StorageMap};
 use system::{self, ensure_signed};
 
 /// The attestation trait
@@ -52,18 +52,19 @@ decl_module! {
 	/// The attestation runtime module
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 		/// Deposit events
-		fn deposit_event<T>() = default;
+		fn deposit_event() = default;
 
 		/// Adds an attestation on chain, where
 		/// origin - the origin of the transaction
 		/// claim_hash - hash of the attested claim
 		/// ctype_hash - hash of the CTYPE of the claim
 		/// delegation_id - optional id that refers to a delegation this attestation is based on
-		pub fn add(origin, claim_hash: T::Hash, ctype_hash: T::Hash, delegation_id: Option<T::DelegationNodeId>) -> Result {
+		#[weight = 1]
+		pub fn add(origin, claim_hash: T::Hash, ctype_hash: T::Hash, delegation_id: Option<T::DelegationNodeId>) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 			// check if the CTYPE exists
-			if !<ctype::CTYPEs<T>>::exists(ctype_hash) {
+			if !<ctype::CTYPEs<T>>::contains_key(ctype_hash) {
 				return Self::error(<ctype::Module<T>>::ERROR_CTYPE_NOT_FOUND);
 			}
 
@@ -96,18 +97,19 @@ decl_module! {
 			}
 
 			// check if attestation already exists
-			if <Attestations<T>>::exists(claim_hash) {
+			if <Attestations<T>>::contains_key(claim_hash) {
 				return Self::error(Self::ERROR_ALREADY_ATTESTED);
 			}
 
 			// insert attestation
-			::runtime_io::print("insert Attestation");
+			debug::RuntimeLogger::init();
+			debug::print!("insert Attestation");
 			<Attestations<T>>::insert(claim_hash, (ctype_hash, sender.clone(), delegation_id, false));
 
 			if let Some(d) = delegation_id {
 				// if attestation is based on a delegation this is stored in a separate map
 				let mut delegated_attestations = <DelegatedAttestations<T>>::get(d);
-				delegated_attestations.push(claim_hash.clone());
+				delegated_attestations.push(claim_hash);
 				<DelegatedAttestations<T>>::insert(d, delegated_attestations);
 			}
 
@@ -120,7 +122,8 @@ decl_module! {
 		/// Revokes an attestation on chain, where
 		/// origin - the origin of the transaction
 		/// claim_hash - hash of the attested claim
-		pub fn revoke(origin, claim_hash: T::Hash) -> Result {
+		#[weight = 1]
+		pub fn revoke(origin, claim_hash: T::Hash) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 
@@ -151,7 +154,7 @@ decl_module! {
 			}
 
 			// revoke attestation
-			::runtime_io::print("revoking Attestation");
+			debug::print!("revoking Attestation");
 			existing_attestation.3 = true;
 			<Attestations<T>>::insert(claim_hash, existing_attestation);
 
@@ -168,15 +171,20 @@ impl<T: Trait> Module<T> {
 	const ERROR_BASE: u16 = 2000;
 	const ERROR_ALREADY_ATTESTED: error::ErrorType = (Self::ERROR_BASE + 1, "already attested");
 	const ERROR_ALREADY_REVOKED: error::ErrorType = (Self::ERROR_BASE + 2, "already revoked");
-	const ERROR_ATTESTATION_NOT_FOUND: error::ErrorType = (Self::ERROR_BASE + 3, "attestation not found");
+	const ERROR_ATTESTATION_NOT_FOUND: error::ErrorType =
+		(Self::ERROR_BASE + 3, "attestation not found");
 	const ERROR_DELEGATION_REVOKED: error::ErrorType = (Self::ERROR_BASE + 4, "delegation revoked");
-	const ERROR_NOT_DELEGATED_TO_ATTESTER: error::ErrorType = (Self::ERROR_BASE + 5, "not delegated to attester");
-	const ERROR_DELEGATION_NOT_AUTHORIZED_TO_ATTEST: error::ErrorType = (Self::ERROR_BASE + 6, "delegation not authorized to attest");
-	const ERROR_CTYPE_OF_DELEGATION_NOT_MATCHING: error::ErrorType = (Self::ERROR_BASE + 7, "CTYPE of delegation does not match");
-	const ERROR_NOT_PERMITTED_TO_REVOKE_ATTESTATION: error::ErrorType = (Self::ERROR_BASE + 8, "not permitted to revoke attestation");
+	const ERROR_NOT_DELEGATED_TO_ATTESTER: error::ErrorType =
+		(Self::ERROR_BASE + 5, "not delegated to attester");
+	const ERROR_DELEGATION_NOT_AUTHORIZED_TO_ATTEST: error::ErrorType =
+		(Self::ERROR_BASE + 6, "delegation not authorized to attest");
+	const ERROR_CTYPE_OF_DELEGATION_NOT_MATCHING: error::ErrorType =
+		(Self::ERROR_BASE + 7, "CTYPE of delegation does not match");
+	const ERROR_NOT_PERMITTED_TO_REVOKE_ATTESTATION: error::ErrorType =
+		(Self::ERROR_BASE + 8, "not permitted to revoke attestation");
 
 	/// Create an error using the error module
-	pub fn error(error_type: error::ErrorType) -> Result {
+	pub fn error(error_type: error::ErrorType) -> DispatchResult {
 		<error::Module<T>>::error(error_type)
 	}
 
@@ -191,9 +199,9 @@ impl<T: Trait> Module<T> {
 
 decl_storage! {
 	trait Store for Module<T: Trait> as Attestation {
-		/// Attestations: claim-hash -> (ctype-hash, account, delegation-id?, revoked)?
-		Attestations get(attestations): map T::Hash => Option<(T::Hash,T::AccountId,Option<T::DelegationNodeId>,bool)>;
+		/// Attestations: claim-hash -> (ctype-hash, attester-account, delegation-id?, revoked)?
+		Attestations get(fn attestations): map hasher(opaque_blake2_256) T::Hash => Option<(T::Hash, T::AccountId, Option<T::DelegationNodeId>, bool)>;
 		/// DelegatedAttestations: delegation-id -> [claim-hash]
-		DelegatedAttestations get(delegated_attestations): map T::DelegationNodeId => Vec<T::Hash>;
+		DelegatedAttestations get(fn delegated_attestations): map hasher(opaque_blake2_256) T::DelegationNodeId => Vec<T::Hash>;
 	}
 }

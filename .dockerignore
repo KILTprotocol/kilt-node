@@ -6,3 +6,4 @@ task-definition*
 docker-compose.yml
 Dockerfile
 task-definition*
+**/target/

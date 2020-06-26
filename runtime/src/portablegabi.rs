@@ -1,5 +1,5 @@
-use rstd::vec::Vec;
-use support::{decl_event, decl_module, decl_storage, dispatch::Result, StorageMap};
+use sp_std::vec::Vec;
+use support::{decl_event, decl_module, decl_storage, dispatch::DispatchResult, StorageMap};
 use system::ensure_signed;
 
 use crate::error;
@@ -14,21 +14,22 @@ decl_storage! {
 	trait Store for Module<T: Trait> as TemplateModule {
 		/// The AccumulatorList contains all accumulator. It is a map which
 		/// maps an account id and an index to an accumulator
-		AccumulatorList get(accumulator_list): map (T::AccountId, u64) => Option<Vec<u8>>;
+		AccumulatorList get(fn accumulator_list): map hasher(opaque_blake2_256) (T::AccountId, u64) => Option<Vec<u8>>;
 
 		/// The AccumulatorCounter stores for each attester the number of
 		/// accumulator updates.
-		AccumulatorCount get(accumulator_count): map T::AccountId => u64;
+		AccumulatorCount get(fn accumulator_count): map hasher(opaque_blake2_256) T::AccountId => u64;
 	}
 }
 
 decl_module! {
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 		// Initializing events
-		fn deposit_event<T>() = default;
+		fn deposit_event() = default;
 
 		/// Updates the attestation
-		pub fn update_accumulator(origin, accumulator: Vec<u8>) -> Result {
+		#[weight = 1]
+		pub fn update_accumulator(origin, accumulator: Vec<u8>) -> DispatchResult {
 			let attester = ensure_signed(origin)?;
 
 			// if attester didn't store any accumulators, this will be 0
@@ -43,10 +44,10 @@ decl_module! {
 
 			// set bytes at index `counter` to accumulator
 			// update counter to `next`
-			if !<AccumulatorList<T>>::exists((attester.clone(), counter)) {
+			if !<AccumulatorList<T>>::contains_key((attester.clone(), counter)) {
 				<AccumulatorList<T>>::insert((attester.clone(), counter), &accumulator);
 				<AccumulatorCount<T>>::insert(&attester, next);
-	
+
 				Self::deposit_event(RawEvent::Updated(attester, next, accumulator));
 				Ok(())
 			} else {
@@ -59,10 +60,11 @@ decl_module! {
 impl<T: Trait> Module<T> {
 	pub const ERROR_BASE: u16 = 4000;
 	pub const ERROR_OVERFLOW: error::ErrorType = (Self::ERROR_BASE + 1, "accumulator overflow");
-	pub const ERROR_INCONSISTENT: error::ErrorType = (Self::ERROR_BASE + 1, "inconsistent accumulator counter");
+	pub const ERROR_INCONSISTENT: error::ErrorType =
+		(Self::ERROR_BASE + 1, "inconsistent accumulator counter");
 
 	/// Create an error using the error module
-	pub fn error(error_type: error::ErrorType) -> Result {
+	pub fn error(error_type: error::ErrorType) -> DispatchResult {
 		<error::Module<T>>::error(error_type)
 	}
 }
@@ -82,24 +84,30 @@ decl_event!(
 mod tests {
 	use super::*;
 
-	use primitives::{Blake2Hasher, H256};
-	use runtime_io::with_externalities;
-	use support::{assert_ok, impl_outer_origin};
-
-	use runtime_primitives::{
-		testing::{Digest, DigestItem, Header},
+	use crate::{
+		AvailableBlockRatio, BlockHashCount, MaximumBlockLength, MaximumBlockWeight,
+		MaximumExtrinsicWeight,
+	};
+	use sp_core::H256;
+	use sp_runtime::{
+		testing::Header,
 		traits::{BlakeTwo256, IdentityLookup},
-		BuildStorage,
+	};
+	use support::{
+		assert_ok, impl_outer_origin,
+		weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
 	};
 
 	impl_outer_origin! {
 		pub enum Origin for Test {}
 	}
 
-	#[derive(Clone, Eq, PartialEq)]
+	#[derive(Clone, Eq, PartialEq, Debug)]
 	pub struct Test;
+
 	impl system::Trait for Test {
 		type Origin = Origin;
+		type Call = ();
 		type Index = u64;
 		type BlockNumber = u64;
 		type Hash = H256;
@@ -108,8 +116,21 @@ mod tests {
 		type Lookup = IdentityLookup<Self::AccountId>;
 		type Header = Header;
 		type Event = ();
-		type Digest = Digest;
-		type Log = DigestItem;
+		type BlockHashCount = BlockHashCount;
+		type MaximumBlockWeight = MaximumBlockWeight;
+		type DbWeight = RocksDbWeight;
+		type BlockExecutionWeight = BlockExecutionWeight;
+		type ExtrinsicBaseWeight = ExtrinsicBaseWeight;
+		type MaximumExtrinsicWeight = MaximumExtrinsicWeight;
+		type MaximumBlockLength = MaximumBlockLength;
+		type AvailableBlockRatio = AvailableBlockRatio;
+		type Version = ();
+
+		type ModuleToIndex = ();
+		type AccountData = ();
+		type OnNewAccount = ();
+		type OnKilledAccount = ();
+		type BaseCallFilter = ();
 	}
 
 	impl Trait for Test {
@@ -123,17 +144,16 @@ mod tests {
 
 	type PortablegabiModule = Module<Test>;
 
-	fn new_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
-		system::GenesisConfig::<Test>::default()
-			.build_storage()
+	fn new_test_ext() -> runtime_io::TestExternalities {
+		system::GenesisConfig::default()
+			.build_storage::<Test>()
 			.unwrap()
-			.0
 			.into()
 	}
 
 	#[test]
 	fn it_works_for_default_value() {
-		with_externalities(&mut new_test_ext(), || {
+		new_test_ext().execute_with(|| {
 			// Just a dummy test for the dummy function `do_something`
 			// calling the `do_something` function with a value 42
 			assert_ok!(PortablegabiModule::update_accumulator(

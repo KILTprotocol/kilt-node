@@ -17,34 +17,55 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use super::*;
-use primitives::{ed25519, Blake2Hasher, H256, Pair};
-use runtime_io::with_externalities;
-use support::{assert_ok, impl_outer_origin};
 
-use runtime_primitives::{
-	testing::{Digest, DigestItem, Header},
-	traits::{BlakeTwo256, IdentityLookup},
-	BuildStorage,
+use crate::{
+	AvailableBlockRatio, BlockHashCount, MaximumBlockLength, MaximumBlockWeight,
+	MaximumExtrinsicWeight, Signature,
+};
+use sp_core::{ed25519, Pair, H256};
+use sp_runtime::{
+	testing::Header,
+	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
+	MultiSigner,
+};
+use support::{
+	assert_ok, impl_outer_origin,
+	weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
 };
 
 impl_outer_origin! {
 	pub enum Origin for Test {}
 }
 
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Test;
+
 impl system::Trait for Test {
 	type Origin = Origin;
+	type Call = ();
 	type Index = u64;
 	type BlockNumber = u64;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
-	type Digest = Digest;
-	type AccountId = H256;
+	type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
 	type Event = ();
-	type Log = DigestItem;
-	type Lookup = IdentityLookup<H256>;
+	type BlockHashCount = BlockHashCount;
+	type MaximumBlockWeight = MaximumBlockWeight;
+	type DbWeight = RocksDbWeight;
+	type BlockExecutionWeight = BlockExecutionWeight;
+	type ExtrinsicBaseWeight = ExtrinsicBaseWeight;
+	type MaximumExtrinsicWeight = MaximumExtrinsicWeight;
+	type MaximumBlockLength = MaximumBlockLength;
+	type AvailableBlockRatio = AvailableBlockRatio;
+	type Version = ();
+
+	type ModuleToIndex = ();
+	type AccountData = ();
+	type OnNewAccount = ();
+	type OnKilledAccount = ();
+	type BaseCallFilter = ();
 }
 
 impl Trait for Test {
@@ -55,31 +76,30 @@ impl Trait for Test {
 
 type DID = Module<Test>;
 
-fn new_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
-	system::GenesisConfig::<Test>::default()
-		.build_storage()
+fn new_test_ext() -> runtime_io::TestExternalities {
+	system::GenesisConfig::default()
+		.build_storage::<Test>()
 		.unwrap()
-		.0
 		.into()
 }
 
 #[test]
 fn check_add_did() {
-	with_externalities(&mut new_test_ext(), || {
-		let pair = ed25519::Pair::from_seed(*b"Alice                           ");
+	new_test_ext().execute_with(|| {
+		let pair = ed25519::Pair::from_seed(&*b"Alice                           ");
 		let signing_key = H256::from_low_u64_be(1);
 		let box_key = H256::from_low_u64_be(2);
-		let account_hash = H256::from(pair.public().0);
+		let account = MultiSigner::from(pair.public()).into_account();
 		assert_ok!(DID::add(
-			Origin::signed(account_hash),
+			Origin::signed(account.clone()),
 			signing_key,
 			box_key,
 			Some(b"http://kilt.org/submit".to_vec())
 		));
 
-		assert_eq!(<DIDs<Test>>::exists(account_hash), true);
+		assert_eq!(<DIDs<Test>>::contains_key(account.clone()), true);
 		let did = {
-			let opt = DID::dids(account_hash);
+			let opt = DID::dids(account.clone());
 			assert!(opt.is_some());
 			opt.unwrap()
 		};
@@ -87,7 +107,7 @@ fn check_add_did() {
 		assert_eq!(did.1, box_key);
 		assert_eq!(did.2, Some(b"http://kilt.org/submit".to_vec()));
 
-		assert_ok!(DID::remove(Origin::signed(account_hash)));
-		assert_eq!(<DIDs<Test>>::exists(account_hash), false);
+		assert_ok!(DID::remove(Origin::signed(account.clone())));
+		assert_eq!(<DIDs<Test>>::contains_key(account), false);
 	});
 }

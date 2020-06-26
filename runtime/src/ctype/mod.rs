@@ -24,7 +24,7 @@
 mod tests;
 
 use super::error;
-use support::{decl_event, decl_module, decl_storage, dispatch::Result, StorageMap};
+use support::{debug, decl_event, decl_module, decl_storage, dispatch::DispatchResult, StorageMap};
 use system::{self, ensure_signed};
 
 /// The CTYPE trait
@@ -46,35 +46,35 @@ decl_module! {
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 
 		/// Deposit events
-		fn deposit_event<T>() = default;
+		fn deposit_event() = default;
 
 		/// Adds a CTYPE on chain, where
 		/// origin - the origin of the transaction
 		/// hash - hash of the CTYPE of the claim
-		pub fn add(origin, hash: T::Hash) -> Result {
+		#[weight = 1]
+		pub fn add(origin, hash: T::Hash) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 
 			// check if CTYPE already exists
-			if <CTYPEs<T>>::exists(hash) {
+			if <CTYPEs<T>>::contains_key(hash) {
 				return Self::error(Self::ERROR_CTYPE_ALREADY_EXISTS);
 			}
 
 			// add CTYPE to storage
-			::runtime_io::print("insert CTYPE");
+			debug::print!("insert CTYPE");
 			<CTYPEs<T>>::insert(hash, sender.clone());
 			// deposit event that the CTYPE has been added
 			Self::deposit_event(RawEvent::CTypeCreated(sender, hash));
 			Ok(())
 		}
-
 	}
 }
 
 decl_storage! {
 	trait Store for Module<T: Trait> as Ctype {
 		// CTYPEs: ctype-hash -> account-id?
-		pub CTYPEs get(ctypes): map T::Hash => Option<T::AccountId>;
+		pub CTYPEs get(fn ctypes):map hasher(opaque_blake2_256) T::Hash => Option<T::AccountId>;
 	}
 }
 
@@ -87,7 +87,7 @@ impl<T: Trait> Module<T> {
 		(Self::ERROR_BASE + 2, "CTYPE already exists");
 
 	/// Create an error using the error module
-	pub fn error(error_type: error::ErrorType) -> Result {
+	pub fn error(error_type: error::ErrorType) -> DispatchResult {
 		<error::Module<T>>::error(error_type)
 	}
 }
