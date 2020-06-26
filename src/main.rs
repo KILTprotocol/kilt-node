@@ -25,6 +25,8 @@ mod chain_spec;
 mod service;
 mod cli;
 mod command;
+#[macro_use]
+extern crate hex_literal;
 
 fn main() -> sc_cli::Result<()> {
 	command::run()

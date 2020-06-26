@@ -2319,7 +2319,7 @@ name = "mashnet-node"
 version = "0.22.0"
 dependencies = [
  "futures 0.3.4",
- "hex",
+ "hex-literal",
  "jsonrpc-core",
  "log",
  "mashnet-node-runtime",
