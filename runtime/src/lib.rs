@@ -157,6 +157,8 @@ parameter_types! {
 }
 
 impl system::Trait for Runtime {
+	/// Filters Calls. We currently don't want to filter calls.
+	type BaseCallFilter = ();
 	/// The identifier used to distinguish between accounts.
 	type AccountId = AccountId;
 	/// The aggregated dispatch type that is available for extrinsics.

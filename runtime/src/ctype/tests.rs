@@ -74,6 +74,7 @@ impl system::Trait for Test {
 	type AccountData = ();
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
+	type BaseCallFilter = ();
 }
 
 impl error::Trait for Test {

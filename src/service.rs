@@ -29,6 +29,7 @@ use sc_executor::native_executor_instance;
 pub use sc_executor::NativeExecutor;
 use sc_service::{error::Error as ServiceError, AbstractService, Configuration, ServiceBuilder};
 use sp_consensus_aura::ed25519::AuthorityPair as AuraPair;
+use sp_core::traits::BareCryptoStorePtr;
 use sp_inherents::InherentDataProviders;
 use std::{sync::Arc, time::Duration};
 
@@ -45,9 +46,10 @@ native_executor_instance!(
 /// be able to perform chain operations.
 macro_rules! new_full_start {
 	($config:expr) => {{
+		use frame_rpc_system::{FullSystem, SystemApi};
+		use sc_rpc_api::DenyUnsafe;
 		use sp_consensus_aura::ed25519::AuthorityPair as AuraPair;
 		use std::sync::Arc;
-		use frame_rpc_system::{FullSystem, SystemApi};
 
 		/// A type representing all RPC extensions.
 		pub type RpcExtension = jsonrpc_core::IoHandler<sc_rpc::Metadata>;
@@ -102,17 +104,19 @@ macro_rules! new_full_start {
 
 				Ok(import_queue)
 			},
-		)?
+			)?
 		.with_rpc_extensions(|builder| -> Result<RpcExtension, _> {
 			let mut io = jsonrpc_core::IoHandler::default();
-			io.extend_with(
-				SystemApi::to_delegate(FullSystem::new(builder.client().clone(), builder.pool().clone()))
-			);
+			io.extend_with(SystemApi::to_delegate(FullSystem::new(
+				builder.client().clone(),
+				builder.pool().clone(),
+				DenyUnsafe::Yes,
+			)));
 			Ok(io)
 		})?;
 
 		(builder, import_setup, inherent_data_providers)
-	}};
+		}};
 }
 
 /// Builds a new service for a full client.
@@ -134,7 +138,7 @@ pub fn new_full(config: Configuration) -> Result<impl AbstractService, ServiceEr
 			let provider = client as Arc<dyn StorageAndProofProvider<_, _>>;
 			Ok(Arc::new(GrandpaFinalityProofProvider::new(backend, provider)) as _)
 		})?
-		.build()?;
+		.build_full()?;
 
 	if role.is_authority() {
 		let proposer = sc_basic_authorship::ProposerFactory::new(
@@ -166,13 +170,13 @@ pub fn new_full(config: Configuration) -> Result<impl AbstractService, ServiceEr
 
 		// the AURA authoring task is considered essential, i.e. if it
 		// fails we take down the service with it.
-		service.spawn_essential_task("aura", aura);
+		service.spawn_essential_task_handle().spawn("aura", aura);
 	}
 
 	// if the node isn't actively participating in consensus then it doesn't
 	// need a keystore, regardless of which protocol we use below.
 	let keystore = if role.is_authority() {
-		Some(service.keystore())
+		Some(service.keystore() as BareCryptoStorePtr)
 	} else {
 		None
 	};
@@ -208,7 +212,9 @@ pub fn new_full(config: Configuration) -> Result<impl AbstractService, ServiceEr
 
 		// the GRANDPA voter task is considered infallible, i.e.
 		// if it fails we take down the service with it.
-		service.spawn_essential_task("grandpa-voter", grandpa::run_grandpa_voter(grandpa_config)?);
+		service
+			.spawn_essential_task_handle()
+			.spawn("grandpa-voter", grandpa::run_grandpa_voter(grandpa_config)?);
 	} else {
 		grandpa::setup_disabled_grandpa(
 			service.client(),
@@ -284,5 +290,5 @@ pub fn new_light(config: Configuration) -> Result<impl AbstractService, ServiceE
 			let provider = client as Arc<dyn StorageAndProofProvider<_, _>>;
 			Ok(Arc::new(GrandpaFinalityProofProvider::new(backend, provider)) as _)
 		})?
-		.build()
+		.build_light()
 }
