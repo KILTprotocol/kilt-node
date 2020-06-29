@@ -26,7 +26,7 @@ use mashnet_node_runtime::{
 use grandpa_primitives::AuthorityId as GrandpaId;
 use sc_service::{self, ChainType};
 use sp_consensus_aura::ed25519::AuthorityId as AuraId;
-use sp_core::{ed25519, Pair, Public, crypto::UncheckedInto};
+use sp_core::{crypto::UncheckedInto, ed25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 
 use hex;
@@ -77,10 +77,10 @@ fn get_authority_keys_from_secret(s: &str) -> (AuraId, GrandpaId) {
 /// Build a pair of public keys from a given hex string. This method will panic if the hex string is malformed.
 ///
 /// public_key – the public key formatted as a hex string
-fn as_authority_key(public_key: [u8; 32]) -> (AuraId, GrandpaId) {
+fn as_authority_key(sr_public_key: [u8; 32], ed_public_key: [u8; 32]) -> (AuraId, GrandpaId) {
 	(
-		public_key.unchecked_into(),
-		public_key.unchecked_into(),
+		sr_public_key.unchecked_into(),
+		ed_public_key.unchecked_into(),
 	)
 }
 
@@ -121,18 +121,17 @@ impl Alternative {
 					|| {
 						testnet_genesis(
 							vec![
-								as_authority_key(hex!("58d3bb9e9dd245f3dec8d8fab7b97578c00a10cf3ca9d224caaa46456f91c46c")),
-								as_authority_key(hex!("d660b4470a954ecc99496d4e4b012ee9acac3979e403967ef09de20da9bdeb28")),
-								as_authority_key(hex!("2ecb6a4ce4d9bc0faab70441f20603fcd443d6d866e97c9e238a2fb3e982ae2f")),
+								as_authority_key(hex!("06813719bd07babb9683dbbc899cdfa1322fcac995090976f38bd82cb6945a37"), hex!("a4cc7a000c48e9f3e37113d1ec291fe7b7b52c63a445fab2f37c96d05d20030d")),
+								as_authority_key(hex!("ec5a43ac7191357c152724af94d9e594c24b15cfee0e274d212872604c86bc3b"), hex!("2277c5f1bc8c60eb7bdad1d41e7157eec56ded7feefba7b01f4f6d97a5b1be9d")),
 						],
-							get_account_id_from_secret::<ed25519::Public>(
-								"0x58d3bb9e9dd245f3dec8d8fab7b97578c00a10cf3ca9d224caaa46456f91c46c",
-							),
+						hex!(
+							"a4cc7a000c48e9f3e37113d1ec291fe7b7b52c63a445fab2f37c96d05d20030d"
+						)
+						.into(),
 							vec![
 					// Testnet Faucet accounts
-					hex!("3ba6e1019a22234a9349eb1d76e02f74fecff31da60a0c8fc1e74a4a3a32b925").into(),
-					hex!("b7f202703a34a034571696f51e95047417956337c596c889bd4d3c1e162310b6").into(),
-					hex!("5895c421d0fde063e0758610896453aec306f09081cb2caed9649865728e670a").into()
+					hex!("a4cc7a000c48e9f3e37113d1ec291fe7b7b52c63a445fab2f37c96d05d20030d").into(),
+					hex!("06813719bd07babb9683dbbc899cdfa1322fcac995090976f38bd82cb6945a37").into(),
 				],
 							true,
 						)
@@ -153,16 +152,15 @@ impl Alternative {
 						testnet_genesis(
 							// Initial Authorities
 							vec![
-						as_authority_key(hex!("2c9e9c40e15a2767e2d04dc1f05d824dd76d1d37bada3d7bb1d40eca29f3a4ff")),
-						as_authority_key(hex!("06815321f16a5ae0fe246ee19285f8d8858fe60d5c025e060922153fcf8e54f9")),
-						as_authority_key(hex!("6d2d775fdc628134e3613a766459ccc57a29fd380cd410c91c6c79bc9c03b344")),
+								as_authority_key(hex!("06813719bd07babb9683dbbc899cdfa1322fcac995090976f38bd82cb6945a37"), hex!("a4cc7a000c48e9f3e37113d1ec291fe7b7b52c63a445fab2f37c96d05d20030d")),
+								as_authority_key(hex!("ec5a43ac7191357c152724af94d9e594c24b15cfee0e274d212872604c86bc3b"), hex!("2277c5f1bc8c60eb7bdad1d41e7157eec56ded7feefba7b01f4f6d97a5b1be9d")),
 					],
 							hex!(
-								"2c9e9c40e15a2767e2d04dc1f05d824dd76d1d37bada3d7bb1d40eca29f3a4ff"
+								"a4cc7a000c48e9f3e37113d1ec291fe7b7b52c63a445fab2f37c96d05d20030d"
 							)
 							.into(),
 							vec![hex!(
-								"2c9e9c40e15a2767e2d04dc1f05d824dd76d1d37bada3d7bb1d40eca29f3a4ff"
+								"a4cc7a000c48e9f3e37113d1ec291fe7b7b52c63a445fab2f37c96d05d20030d"
 							)
 							.into()],
 							true,
