@@ -84,6 +84,12 @@ fn as_authority_key(sr_public_key: [u8; 32], ed_public_key: [u8; 32]) -> (AuraId
 	)
 }
 
+const AUTH_A_SR: [u8; 32] = hex!("06813719bd07babb9683dbbc899cdfa1322fcac995090976f38bd82cb6945a37");
+const AUTH_A_ED: [u8; 32] = hex!("a4cc7a000c48e9f3e37113d1ec291fe7b7b52c63a445fab2f37c96d05d20030d");
+
+const AUTH_B_SR: [u8; 32] = hex!("ec5a43ac7191357c152724af94d9e594c24b15cfee0e274d212872604c86bc3b");
+const AUTH_B_ED: [u8; 32] = hex!("2277c5f1bc8c60eb7bdad1d41e7157eec56ded7feefba7b01f4f6d97a5b1be9d");
+
 impl Alternative {
 	/// Get an actual chain config from one of the alternatives.
 	pub(crate) fn load(self) -> Result<ChainSpec, String> {
@@ -121,17 +127,17 @@ impl Alternative {
 					|| {
 						testnet_genesis(
 							vec![
-								as_authority_key(hex!("06813719bd07babb9683dbbc899cdfa1322fcac995090976f38bd82cb6945a37"), hex!("a4cc7a000c48e9f3e37113d1ec291fe7b7b52c63a445fab2f37c96d05d20030d")),
-								as_authority_key(hex!("ec5a43ac7191357c152724af94d9e594c24b15cfee0e274d212872604c86bc3b"), hex!("2277c5f1bc8c60eb7bdad1d41e7157eec56ded7feefba7b01f4f6d97a5b1be9d")),
+								as_authority_key(AUTH_A_SR, AUTH_A_ED),
+								as_authority_key(AUTH_B_SR, AUTH_B_ED),
 						],
-						hex!(
-							"a4cc7a000c48e9f3e37113d1ec291fe7b7b52c63a445fab2f37c96d05d20030d"
-						)
-						.into(),
+
+							AUTH_A_SR.into(),
 							vec![
 					// Testnet Faucet accounts
-					hex!("a4cc7a000c48e9f3e37113d1ec291fe7b7b52c63a445fab2f37c96d05d20030d").into(),
-					hex!("06813719bd07babb9683dbbc899cdfa1322fcac995090976f38bd82cb6945a37").into(),
+					AUTH_B_SR.into(),
+					AUTH_B_ED.into(),
+					AUTH_A_SR.into(),
+					AUTH_A_ED.into(),
 				],
 							true,
 						)
@@ -152,17 +158,12 @@ impl Alternative {
 						testnet_genesis(
 							// Initial Authorities
 							vec![
-								as_authority_key(hex!("06813719bd07babb9683dbbc899cdfa1322fcac995090976f38bd82cb6945a37"), hex!("a4cc7a000c48e9f3e37113d1ec291fe7b7b52c63a445fab2f37c96d05d20030d")),
-								as_authority_key(hex!("ec5a43ac7191357c152724af94d9e594c24b15cfee0e274d212872604c86bc3b"), hex!("2277c5f1bc8c60eb7bdad1d41e7157eec56ded7feefba7b01f4f6d97a5b1be9d")),
+								as_authority_key(AUTH_A_SR, AUTH_A_ED),
+								as_authority_key(AUTH_B_SR, AUTH_B_ED),
 					],
-							hex!(
-								"a4cc7a000c48e9f3e37113d1ec291fe7b7b52c63a445fab2f37c96d05d20030d"
-							)
-							.into(),
-							vec![hex!(
-								"a4cc7a000c48e9f3e37113d1ec291fe7b7b52c63a445fab2f37c96d05d20030d"
-							)
-							.into()],
+							AUTH_A_ED.into(),
+							vec![AUTH_A_ED.into(),
+							AUTH_A_ED.into()],
 							true,
 						)
 					},
