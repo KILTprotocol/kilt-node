@@ -89,7 +89,7 @@ while [[ "$1" != "" ]]; do
 		-t | --telemetry )      telemetry=1
 								;;
 		-v | --validator )      validator=1
-								;;          
+								;;
 		-d | --dry-run )        dry_run=1
 								;;
 		-r | --rpc )            rpc=1
@@ -121,7 +121,7 @@ fi
 
 # NODE_SEED = The seed for the validator account to be used. Has to be combined with NODE_KEY
 if [[ "$validator" = "1" ]]; then
-	arg_validator=" --key ${NODE_SEED} --validator"
+	arg_validator=" --validator"
 	echo "Starting KILT validator node"
 else
 	echo "Starting KILT full node"
