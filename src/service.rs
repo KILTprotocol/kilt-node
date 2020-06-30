@@ -163,6 +163,7 @@ pub fn new_full(config: Configuration) -> Result<impl AbstractService, ServiceEr
 			proposer,
 			service.network(),
 			inherent_data_providers.clone(),
+			// forces the authoring of blocks even if there are no peers
 			force_authoring,
 			service.keystore(),
 			can_author_with,
