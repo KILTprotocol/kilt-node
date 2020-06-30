@@ -127,8 +127,8 @@ fi
 if [[ "$validator" = "1" ]]; then
 	arg_validator=" --validator"
 	mkdir -p db/chains/kilt_testnet/keystore
-	echo $AUTH_SEED > db/chains/kilt_testnet/keystore/$HEX_GRAN$AUTH_PUB_KEY
-	echo $AUTH_SEED > db/chains/kilt_testnet/keystore/$HEX_AURA$AUTH_PUB_KEY
+	echo "\"0x$AUTH_SEED\"" > db/chains/kilt_testnet/keystore/$HEX_GRAN$AUTH_PUB_KEY
+	echo "\"0x$AUTH_SEED\"" > db/chains/kilt_testnet/keystore/$HEX_AURA$AUTH_PUB_KEY
 	echo "Starting KILT validator node"
 else
 	echo "Starting KILT full node"
