@@ -163,6 +163,7 @@ pub fn new_full(config: Configuration) -> Result<impl AbstractService, ServiceEr
 			proposer,
 			service.network(),
 			inherent_data_providers.clone(),
+			// forces the authoring of blocks even if there are no peers
 			force_authoring,
 			service.keystore(),
 			can_author_with,
@@ -170,7 +171,7 @@ pub fn new_full(config: Configuration) -> Result<impl AbstractService, ServiceEr
 
 		// the AURA authoring task is considered essential, i.e. if it
 		// fails we take down the service with it.
-		service.spawn_essential_task_handle().spawn("aura", aura);
+		service.spawn_essential_task_handle().spawn_blocking("aura", aura);
 	}
 
 	// if the node isn't actively participating in consensus then it doesn't
@@ -214,7 +215,7 @@ pub fn new_full(config: Configuration) -> Result<impl AbstractService, ServiceEr
 		// if it fails we take down the service with it.
 		service
 			.spawn_essential_task_handle()
-			.spawn("grandpa-voter", grandpa::run_grandpa_voter(grandpa_config)?);
+			.spawn_blocking("grandpa-voter", grandpa::run_grandpa_voter(grandpa_config)?);
 	} else {
 		grandpa::setup_disabled_grandpa(
 			service.client(),

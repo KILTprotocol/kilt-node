@@ -35,8 +35,12 @@
           "valueFrom": "arn:aws:ssm:eu-central-1:348099934012:parameter/ECS/devnet/node/alice/key"
         },
         {
-          "name": "NODE_SEED",
+          "name": "AUTH_SEED",
           "valueFrom": "arn:aws:ssm:eu-central-1:348099934012:parameter/ECS/devnet/node/alice/seed"
+        },
+        {
+          "name": "AUTH_PUB_KEY",
+          "valueFrom": "arn:aws:ssm:eu-central-1:348099934012:parameter/ECS/devnet/node/alice/pub_key"
         }
       ],
       "essential": true

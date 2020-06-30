@@ -37,8 +37,12 @@
           "valueFrom": "arn:aws:ssm:eu-central-1:348099934012:parameter/ECS/devnet/node/bob/key"
         },
         {
-          "name": "NODE_SEED",
+          "name": "AUTH_SEED",
           "valueFrom": "arn:aws:ssm:eu-central-1:348099934012:parameter/ECS/devnet/node/bob/seed"
+        },
+        {
+          "name": "AUTH_PUB_KEY",
+          "valueFrom": "arn:aws:ssm:eu-central-1:348099934012:parameter/ECS/devnet/node/bob/pub_key"
         }
       ],
       "essential": true

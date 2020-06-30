@@ -16,6 +16,9 @@ CHARLIE_DEVNET_HASH=QmQWsRDKfD5tKyL9U442nPmxpW4Xdnv9uCtano4meay4nv
 BASE_URL=kilt-prototype.tk
 TELEMETRY_URL=ws://telemetry-backend.kilt-prototype.tk:1024
 
+HEX_AURA=61757261
+HEX_GRAN=6772616e
+
 ##### Functions
 
 lookup_boot_node() {
@@ -89,7 +92,7 @@ while [[ "$1" != "" ]]; do
 		-t | --telemetry )      telemetry=1
 								;;
 		-v | --validator )      validator=1
-								;;          
+								;;
 		-d | --dry-run )        dry_run=1
 								;;
 		-r | --rpc )            rpc=1
@@ -113,6 +116,7 @@ arg_telemetry=
 arg_validator=
 arg_rpc=
 arg_chain=" --chain ./chainspec.json"
+arg_base_path=" --base-path db"
 
 # NODE_KEY = The hex-encoded ed25519 key used for libp2p networking.
 if [[ ! -z "$NODE_KEY" ]]; then
@@ -121,7 +125,10 @@ fi
 
 # NODE_SEED = The seed for the validator account to be used. Has to be combined with NODE_KEY
 if [[ "$validator" = "1" ]]; then
-	arg_validator=" --key ${NODE_SEED} --validator"
+	arg_validator=" --validator --keystore-path keystore"
+	mkdir -p keystore
+	echo "\"0x$AUTH_SEED\"" > keystore/$HEX_GRAN$AUTH_PUB_KEY
+	echo "\"0x$AUTH_SEED\"" > keystore/$HEX_AURA$AUTH_PUB_KEY
 	echo "Starting KILT validator node"
 else
 	echo "Starting KILT full node"
@@ -165,7 +172,7 @@ if [[ "$rpc" = "1" ]]; then
 	arg_rpc=" --ws-port 9944 --ws-external --rpc-external"
 fi
 
-command="./target/release/mashnet-node --port 30333${arg_chain}${arg_rpc}${arg_validator}${arg_node_key}${arg_boot_node_connect}${arg_node_name}${arg_telemetry}"
+command="./target/release/mashnet-node --port 30333${arg_chain}${arg_rpc}${arg_validator}${arg_node_key}${arg_boot_node_connect}${arg_node_name}${arg_telemetry}${arg_base_path}"
 
 if [[ "$dry_run" = "1" ]]; then
 	echo "Dry run."

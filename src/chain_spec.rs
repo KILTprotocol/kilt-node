@@ -26,7 +26,7 @@ use mashnet_node_runtime::{
 use grandpa_primitives::AuthorityId as GrandpaId;
 use sc_service::{self, ChainType};
 use sp_consensus_aura::ed25519::AuthorityId as AuraId;
-use sp_core::{ed25519, Pair, Public};
+use sp_core::{crypto::UncheckedInto, ed25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 
 use hex;
@@ -74,23 +74,26 @@ fn get_authority_keys_from_secret(s: &str) -> (AuraId, GrandpaId) {
 	)
 }
 
-/// Build a public key from a given hex string. This method will panic if the hex string is malformed.
-///
-/// public_key – the public key formatted as a hex string
-fn from_public_key<TPublic: Public>(public_key: &[u8]) -> <TPublic::Pair as Pair>::Public {
-	// unwrap here, since we don't handle user input.
-	<TPublic::Pair as Pair>::Public::from_slice(public_key)
-}
-
 /// Build a pair of public keys from a given hex string. This method will panic if the hex string is malformed.
 ///
 /// public_key – the public key formatted as a hex string
-fn as_authority_key(public_key: &[u8]) -> (AuraId, GrandpaId) {
-	(
-		from_public_key::<AuraId>(public_key),
-		from_public_key::<GrandpaId>(public_key),
-	)
+fn as_authority_key(public_key: [u8; 32]) -> (AuraId, GrandpaId) {
+	(public_key.unchecked_into(), public_key.unchecked_into())
 }
+
+const TEST_AUTH_ALICE: [u8; 32] =
+	hex!("58d3bb9e9dd245f3dec8d8fab7b97578c00a10cf3ca9d224caaa46456f91c46c");
+const TEST_AUTH_BOB: [u8; 32] =
+	hex!("d660b4470a954ecc99496d4e4b012ee9acac3979e403967ef09de20da9bdeb28");
+const TEST_AUTH_CHARLIE: [u8; 32] =
+	hex!("2ecb6a4ce4d9bc0faab70441f20603fcd443d6d866e97c9e238a2fb3e982ae2f");
+
+const DEV_AUTH_ALICE: [u8; 32] =
+	hex!("d44da634611d9c26837e3b5114a7d460a4cb7d688119739000632ed2d3794ae9");
+const DEV_AUTH_BOB: [u8; 32] =
+	hex!("06815321f16a5ae0fe246ee19285f8d8858fe60d5c025e060922153fcf8e54f9");
+const DEV_AUTH_CHARLIE: [u8; 32] =
+	hex!("6d2d775fdc628134e3613a766459ccc57a29fd380cd410c91c6c79bc9c03b344");
 
 impl Alternative {
 	/// Get an actual chain config from one of the alternatives.
@@ -111,7 +114,6 @@ impl Alternative {
 					get_account_id_from_secret::<ed25519::Public>("//Bob"),
 					get_account_id_from_secret::<ed25519::Public>("//Alice"),
 				],
-							true,
 						)
 					},
 					vec![],
@@ -129,20 +131,17 @@ impl Alternative {
 					|| {
 						testnet_genesis(
 							vec![
-								as_authority_key(&hex!("58d3bb9e9dd245f3dec8d8fab7b97578c00a10cf3ca9d224caaa46456f91c46c")),
-								as_authority_key(&hex!("d660b4470a954ecc99496d4e4b012ee9acac3979e403967ef09de20da9bdeb28")),
-								as_authority_key(&hex!("2ecb6a4ce4d9bc0faab70441f20603fcd443d6d866e97c9e238a2fb3e982ae2f")),
-						],
-							get_account_id_from_secret::<ed25519::Public>(
-								"0x58d3bb9e9dd245f3dec8d8fab7b97578c00a10cf3ca9d224caaa46456f91c46c",
-							),
+								as_authority_key(TEST_AUTH_ALICE),
+								as_authority_key(TEST_AUTH_BOB),
+								as_authority_key(TEST_AUTH_CHARLIE),
+							],
+							TEST_AUTH_ALICE.into(),
 							vec![
-					// Testnet Faucet accounts
-					hex!("3ba6e1019a22234a9349eb1d76e02f74fecff31da60a0c8fc1e74a4a3a32b925").into(),
-					hex!("b7f202703a34a034571696f51e95047417956337c596c889bd4d3c1e162310b6").into(),
-					hex!("5895c421d0fde063e0758610896453aec306f09081cb2caed9649865728e670a").into()
-				],
-							true,
+								// Testnet Faucet accounts
+								TEST_AUTH_ALICE.into(),
+								TEST_AUTH_BOB.into(),
+								TEST_AUTH_CHARLIE.into(),
+							],
 						)
 					},
 					vec![],
@@ -161,19 +160,16 @@ impl Alternative {
 						testnet_genesis(
 							// Initial Authorities
 							vec![
-						as_authority_key(&hex!("d44da634611d9c26837e3b5114a7d460a4cb7d688119739000632ed2d3794ae9")),
-						as_authority_key(&hex!("06815321f16a5ae0fe246ee19285f8d8858fe60d5c025e060922153fcf8e54f9")),
-						as_authority_key(&hex!("6d2d775fdc628134e3613a766459ccc57a29fd380cd410c91c6c79bc9c03b344")),
-					],
-							hex!(
-								"d44da634611d9c26837e3b5114a7d460a4cb7d688119739000632ed2d3794ae9"
-							)
-							.into(),
-							vec![hex!(
-								"d44da634611d9c26837e3b5114a7d460a4cb7d688119739000632ed2d3794ae9"
-							)
-							.into()],
-							true,
+								as_authority_key(DEV_AUTH_ALICE),
+								as_authority_key(DEV_AUTH_BOB),
+								as_authority_key(DEV_AUTH_CHARLIE),
+							],
+							DEV_AUTH_ALICE.into(),
+							vec![
+								DEV_AUTH_ALICE.into(),
+								DEV_AUTH_BOB.into(),
+								DEV_AUTH_CHARLIE.into(),
+							],
 						)
 					},
 					vec![],
@@ -200,7 +196,6 @@ fn testnet_genesis(
 	initial_authorities: Vec<(AuraId, GrandpaId)>,
 	root_key: AccountId,
 	endowed_accounts: Vec<AccountId>,
-	_enable_println: bool,
 ) -> GenesisConfig {
 	GenesisConfig {
 		system: Some(SystemConfig {
