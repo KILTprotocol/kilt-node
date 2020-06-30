@@ -165,7 +165,7 @@ if [[ ! -z "$node_name" ]]; then
 fi
 
 if [[ "$telemetry" = "1" ]]; then
-	arg_telemetry=" --telemetry-url ${TELEMETRY_URL}"
+	arg_telemetry=" --telemetry-url ${TELEMETRY_URL} 9 "
 fi
 
 if [[ "$rpc" = "1" ]]; then
