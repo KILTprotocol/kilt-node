@@ -125,10 +125,10 @@ fi
 
 # NODE_SEED = The seed for the validator account to be used. Has to be combined with NODE_KEY
 if [[ "$validator" = "1" ]]; then
-	arg_validator=" --validator"
-	mkdir -p db/chains/kilt_testnet/keystore
-	echo "\"0x$AUTH_SEED\"" > db/chains/kilt_testnet/keystore/$HEX_GRAN$AUTH_PUB_KEY
-	echo "\"0x$AUTH_SEED\"" > db/chains/kilt_testnet/keystore/$HEX_AURA$AUTH_PUB_KEY
+	arg_validator=" --validator --keystore-path keystore"
+	mkdir -p keystore
+	echo "\"0x$AUTH_SEED\"" > keystore/$HEX_GRAN$AUTH_PUB_KEY
+	echo "\"0x$AUTH_SEED\"" > keystore/$HEX_AURA$AUTH_PUB_KEY
 	echo "Starting KILT validator node"
 else
 	echo "Starting KILT full node"
