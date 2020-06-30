@@ -37,8 +37,12 @@
           "valueFrom": "arn:aws:ssm:eu-central-1:348099934012:parameter/ECS/devnet/node/charlie/key"
         },
         {
-          "name": "NODE_SEED",
+          "name": "AUTH_SEED",
           "valueFrom": "arn:aws:ssm:eu-central-1:348099934012:parameter/ECS/devnet/node/charlie/seed"
+        },
+        {
+          "name": "AUTH_PUB_KEY",
+          "valueFrom": "arn:aws:ssm:eu-central-1:348099934012:parameter/ECS/devnet/node/charlie/pub_key"
         }
       ],
       "essential": true
