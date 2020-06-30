@@ -77,18 +77,23 @@ fn get_authority_keys_from_secret(s: &str) -> (AuraId, GrandpaId) {
 /// Build a pair of public keys from a given hex string. This method will panic if the hex string is malformed.
 ///
 /// public_key – the public key formatted as a hex string
-fn as_authority_key(sr_public_key: [u8; 32], ed_public_key: [u8; 32]) -> (AuraId, GrandpaId) {
-	(
-		sr_public_key.unchecked_into(),
-		ed_public_key.unchecked_into(),
-	)
+fn as_authority_key(public_key: [u8; 32]) -> (AuraId, GrandpaId) {
+	(public_key.unchecked_into(), public_key.unchecked_into())
 }
 
-const AUTH_A_SR: [u8; 32] = hex!("06813719bd07babb9683dbbc899cdfa1322fcac995090976f38bd82cb6945a37");
-const AUTH_A_ED: [u8; 32] = hex!("a4cc7a000c48e9f3e37113d1ec291fe7b7b52c63a445fab2f37c96d05d20030d");
+const TEST_AUTH_ALICE: [u8; 32] =
+	hex!("58d3bb9e9dd245f3dec8d8fab7b97578c00a10cf3ca9d224caaa46456f91c46c");
+const TEST_AUTH_BOB: [u8; 32] =
+	hex!("d660b4470a954ecc99496d4e4b012ee9acac3979e403967ef09de20da9bdeb28");
+const TEST_AUTH_CHARLIE: [u8; 32] =
+	hex!("2ecb6a4ce4d9bc0faab70441f20603fcd443d6d866e97c9e238a2fb3e982ae2f");
 
-const AUTH_B_SR: [u8; 32] = hex!("ec5a43ac7191357c152724af94d9e594c24b15cfee0e274d212872604c86bc3b");
-const AUTH_B_ED: [u8; 32] = hex!("2277c5f1bc8c60eb7bdad1d41e7157eec56ded7feefba7b01f4f6d97a5b1be9d");
+const DEV_AUTH_ALICE: [u8; 32] =
+	hex!("d44da634611d9c26837e3b5114a7d460a4cb7d688119739000632ed2d3794ae9");
+const DEV_AUTH_BOB: [u8; 32] =
+	hex!("06815321f16a5ae0fe246ee19285f8d8858fe60d5c025e060922153fcf8e54f9");
+const DEV_AUTH_CHARLIE: [u8; 32] =
+	hex!("6d2d775fdc628134e3613a766459ccc57a29fd380cd410c91c6c79bc9c03b344");
 
 impl Alternative {
 	/// Get an actual chain config from one of the alternatives.
@@ -109,7 +114,6 @@ impl Alternative {
 					get_account_id_from_secret::<ed25519::Public>("//Bob"),
 					get_account_id_from_secret::<ed25519::Public>("//Alice"),
 				],
-							true,
 						)
 					},
 					vec![],
@@ -127,19 +131,16 @@ impl Alternative {
 					|| {
 						testnet_genesis(
 							vec![
-								as_authority_key(AUTH_A_SR, AUTH_A_ED),
-								as_authority_key(AUTH_B_SR, AUTH_B_ED),
-						],
-
-							AUTH_A_SR.into(),
+								as_authority_key(TEST_AUTH_ALICE),
+								as_authority_key(TEST_AUTH_BOB),
+								as_authority_key(TEST_AUTH_CHARLIE),
+							],
+							TEST_AUTH_ALICE.into(),
 							vec![
-					// Testnet Faucet accounts
-					AUTH_B_SR.into(),
-					AUTH_B_ED.into(),
-					AUTH_A_SR.into(),
-					AUTH_A_ED.into(),
-				],
-							true,
+								// Testnet Faucet accounts
+								TEST_AUTH_ALICE.into(),
+								TEST_AUTH_BOB.into(),
+							],
 						)
 					},
 					vec![],
@@ -158,13 +159,16 @@ impl Alternative {
 						testnet_genesis(
 							// Initial Authorities
 							vec![
-								as_authority_key(AUTH_A_SR, AUTH_A_ED),
-								as_authority_key(AUTH_B_SR, AUTH_B_ED),
-					],
-							AUTH_A_ED.into(),
-							vec![AUTH_A_ED.into(),
-							AUTH_A_ED.into()],
-							true,
+								as_authority_key(DEV_AUTH_ALICE),
+								as_authority_key(DEV_AUTH_BOB),
+								as_authority_key(DEV_AUTH_CHARLIE),
+							],
+							DEV_AUTH_ALICE.into(),
+							vec![
+								DEV_AUTH_ALICE.into(),
+								DEV_AUTH_BOB.into(),
+								DEV_AUTH_CHARLIE.into(),
+							],
 						)
 					},
 					vec![],
@@ -191,7 +195,6 @@ fn testnet_genesis(
 	initial_authorities: Vec<(AuraId, GrandpaId)>,
 	root_key: AccountId,
 	endowed_accounts: Vec<AccountId>,
-	_enable_println: bool,
 ) -> GenesisConfig {
 	GenesisConfig {
 		system: Some(SystemConfig {
