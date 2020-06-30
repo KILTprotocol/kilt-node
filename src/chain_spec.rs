@@ -140,6 +140,7 @@ impl Alternative {
 								// Testnet Faucet accounts
 								TEST_AUTH_ALICE.into(),
 								TEST_AUTH_BOB.into(),
+								TEST_AUTH_CHARLIE.into(),
 							],
 						)
 					},
