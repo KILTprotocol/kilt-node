@@ -169,7 +169,7 @@ if [[ "$telemetry" = "1" ]]; then
 fi
 
 if [[ "$rpc" = "1" ]]; then
-	arg_rpc=" --ws-port 9944 --ws-external --rpc-external"
+	arg_rpc=" --ws-port 9944 --ws-external --rpc-external --rpc-cors all"
 fi
 
 command="./target/release/mashnet-node --port 30333${arg_chain}${arg_rpc}${arg_validator}${arg_node_key}${arg_boot_node_connect}${arg_node_name}${arg_telemetry}${arg_base_path}"
