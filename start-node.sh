@@ -165,7 +165,7 @@ if [[ ! -z "$node_name" ]]; then
 fi
 
 if [[ "$telemetry" = "1" ]]; then
-	arg_telemetry=" --telemetry-url '${TELEMETRY_URL} 9'"
+	arg_telemetry=" --telemetry-url \"${TELEMETRY_URL} 9\""
 fi
 
 if [[ "$rpc" = "1" ]]; then
@@ -181,4 +181,4 @@ if [[ "$dry_run" = "1" ]]; then
 fi
 
 echo "Running: $command"
-`${command}`
+eval $command
