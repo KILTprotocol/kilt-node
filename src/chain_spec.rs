@@ -212,7 +212,7 @@ fn testnet_genesis(
 			balances: endowed_accounts
 				.iter()
 				.cloned()
-				.map(|k| (k, 1u128 << 60))
+				.map(|k| (k, 1u128 << 90))
 				.collect(),
 		}),
 		aura: Some(AuraConfig {
