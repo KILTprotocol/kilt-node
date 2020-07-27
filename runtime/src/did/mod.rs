@@ -28,12 +28,12 @@ use sp_std::prelude::*;
 use support::{
 	decl_event, decl_module, decl_storage, dispatch::DispatchResult, Parameter, StorageMap,
 };
-use system::{self, ensure_signed};
+use frame_system::{self, ensure_signed};
 
 /// The DID trait
-pub trait Trait: system::Trait {
+pub trait Trait: frame_system::Trait {
 	/// DID specific event type
-	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+	type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 	/// Public signing key type for DIDs
 	type PublicSigningKey: Parameter + Member + Codec + Default;
 	/// Public boxing key type for DIDs
@@ -42,7 +42,7 @@ pub trait Trait: system::Trait {
 
 decl_event!(
 	/// Events for DIDs
-	pub enum Event<T> where <T as system::Trait>::AccountId {
+	pub enum Event<T> where <T as frame_system::Trait>::AccountId {
 		/// A did has been created
 		DidCreated(AccountId),
 		/// A did has been removed

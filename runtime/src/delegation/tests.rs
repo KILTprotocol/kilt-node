@@ -41,7 +41,7 @@ impl_outer_origin! {
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Test;
 
-impl system::Trait for Test {
+impl frame_system::Trait for Test {
 	type Origin = Origin;
 	type Call = ();
 	type Index = u64;
@@ -93,7 +93,7 @@ fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
 }
 
 fn new_test_ext() -> runtime_io::TestExternalities {
-	system::GenesisConfig::default()
+	frame_system::GenesisConfig::default()
 		.build_storage::<Test>()
 		.unwrap()
 		.into()

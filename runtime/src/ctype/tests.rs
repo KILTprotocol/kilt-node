@@ -49,7 +49,7 @@ parameter_types! {
 		.saturating_sub(Perbill::from_percent(10)) * MaximumBlockWeight::get();
 }
 
-impl system::Trait for Test {
+impl frame_system::Trait for Test {
 	type Origin = Origin;
 	type Call = ();
 	type Index = u64;
@@ -89,7 +89,7 @@ impl Trait for Test {
 type CType = Module<Test>;
 
 fn new_test_ext() -> runtime_io::TestExternalities {
-	system::GenesisConfig::default()
+	frame_system::GenesisConfig::default()
 		.build_storage::<Test>()
 		.unwrap()
 		.into()
