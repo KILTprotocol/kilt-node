@@ -75,6 +75,7 @@ impl frame_system::Trait for Test {
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type BaseCallFilter = ();
+	type SystemWeightInfo = ();
 }
 
 impl error::Trait for Test {

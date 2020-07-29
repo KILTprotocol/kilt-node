@@ -131,6 +131,7 @@ mod tests {
 		type OnNewAccount = ();
 		type OnKilledAccount = ();
 		type BaseCallFilter = ();
+		type SystemWeightInfo = ();
 	}
 
 	impl Trait for Test {
