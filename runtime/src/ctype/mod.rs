@@ -25,17 +25,17 @@ mod tests;
 
 use super::error;
 use support::{debug, decl_event, decl_module, decl_storage, dispatch::DispatchResult, StorageMap};
-use system::{self, ensure_signed};
+use frame_system::{self, ensure_signed};
 
 /// The CTYPE trait
-pub trait Trait: system::Trait + error::Trait {
+pub trait Trait: frame_system::Trait + error::Trait {
 	/// CTYPE specific event type
-	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+	type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 }
 
 decl_event!(
 	/// Events for CTYPEs
-	pub enum Event<T> where <T as system::Trait>::AccountId, <T as system::Trait>::Hash {
+	pub enum Event<T> where <T as frame_system::Trait>::AccountId, <T as frame_system::Trait>::Hash {
 		/// A CTYPE has been added
 		CTypeCreated(AccountId, Hash),
 	}

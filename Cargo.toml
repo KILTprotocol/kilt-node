@@ -17,32 +17,32 @@ members = [ "runtime" ,
 ]
 
 [build-dependencies]
-build-script-utils = { package = "substrate-build-script-utils", version = "2.0.0-rc4" }
+build-script-utils = { package = "substrate-build-script-utils", version = "2.0.0-rc5" }
 vergen = "3.1.0"
 
 [dependencies]
-frame-rpc-system = { package = "substrate-frame-rpc-system", version = "2.0.0-rc4" }
+frame-rpc-system = { package = "substrate-frame-rpc-system", version = "2.0.0-rc5" }
 futures = "0.3"
-grandpa = { package = "sc-finality-grandpa", version = "0.8.0-rc4" }
-grandpa-primitives = { package = "sp-finality-grandpa", version = "2.0.0-rc4" }
+sc-finality-grandpa = "0.8.0-rc5"
+sp-finality-grandpa = "2.0.0-rc5"
 hex-literal = "0.2"
 jsonrpc-core = "14.0.3"
 log = "0.4"
 mashnet-node-runtime = { path = "runtime" }
-sc-basic-authorship = "0.8.0-rc4"
-sc-cli = "0.8.0-rc4"
-sc-client-api = "2.0.0-rc4"
-sc-consensus = "0.8.0-rc4"
-sc-consensus-aura = "0.8.0-rc4"
-sc-executor = "0.8.0-rc4"
-sc-network = "0.8.0-rc4"
-sc-rpc = "2.0.0-rc4"
-sc-rpc-api = "0.8.0-rc4"
-sc-service = "0.8.0-rc4"
-sc-transaction-pool = "2.0.0-rc4"
-sp-consensus = "0.8.0-rc4"
-sp-consensus-aura = "0.8.0-rc4"
-sp-core = "2.0.0-rc4"
-sp-inherents = "2.0.0-rc4"
-sp-runtime = "2.0.0-rc4"
+sc-basic-authorship = "0.8.0-rc5"
+sc-cli = "0.8.0-rc5"
+sc-client-api = "2.0.0-rc5"
+sc-consensus = "0.8.0-rc5"
+sc-consensus-aura = "0.8.0-rc5"
+sc-executor = "0.8.0-rc5"
+sc-network = "0.8.0-rc5"
+sc-rpc = "2.0.0-rc5"
+sc-rpc-api = "0.8.0-rc5"
+sc-service = "0.8.0-rc5"
+sc-transaction-pool = "2.0.0-rc5"
+sp-consensus = "0.8.0-rc5"
+sp-consensus-aura = "0.8.0-rc5"
+sp-core = "2.0.0-rc5"
+sp-inherents = "2.0.0-rc5"
+sp-runtime = "2.0.0-rc5"
 structopt = "0.3.8"

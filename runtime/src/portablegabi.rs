@@ -1,13 +1,13 @@
 use sp_std::vec::Vec;
 use support::{decl_event, decl_module, decl_storage, dispatch::DispatchResult, StorageMap};
-use system::ensure_signed;
+use frame_system::ensure_signed;
 
 use crate::error;
 
 /// The pallet's configuration trait.
-pub trait Trait: system::Trait + error::Trait {
+pub trait Trait: frame_system::Trait + error::Trait {
 	/// The overarching event type.
-	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+	type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 }
 
 decl_storage! {
@@ -72,7 +72,7 @@ impl<T: Trait> Module<T> {
 decl_event!(
 	pub enum Event<T>
 	where
-		AccountId = <T as system::Trait>::AccountId,
+		AccountId = <T as frame_system::Trait>::AccountId,
 	{
 		/// An accumulator has been updated. Therefore an attestation has be revoked
 		Updated(AccountId, u64, Vec<u8>),
@@ -105,7 +105,7 @@ mod tests {
 	#[derive(Clone, Eq, PartialEq, Debug)]
 	pub struct Test;
 
-	impl system::Trait for Test {
+	impl frame_system::Trait for Test {
 		type Origin = Origin;
 		type Call = ();
 		type Index = u64;
@@ -131,6 +131,7 @@ mod tests {
 		type OnNewAccount = ();
 		type OnKilledAccount = ();
 		type BaseCallFilter = ();
+		type SystemWeightInfo = ();
 	}
 
 	impl Trait for Test {
@@ -145,7 +146,7 @@ mod tests {
 	type PortablegabiModule = Module<Test>;
 
 	fn new_test_ext() -> runtime_io::TestExternalities {
-		system::GenesisConfig::default()
+		frame_system::GenesisConfig::default()
 			.build_storage::<Test>()
 			.unwrap()
 			.into()

@@ -15,39 +15,44 @@
 // along with Substrate.  If not, see <http://www.gnu.org/licenses/>.
 
 use crate::{chain_spec, cli::Cli, service};
-use sc_cli::SubstrateCli;
+use sc_cli::{SubstrateCli, RuntimeVersion, Role, ChainSpec};
+use sc_service::ServiceParams;
 
 impl SubstrateCli for Cli {
-	fn impl_name() -> &'static str {
-		"KILT Node"
+	fn impl_name() -> String {
+		"KILT Node".to_string()
 	}
 
-	fn impl_version() -> &'static str {
-		"0.22.0"
+	fn impl_version() -> String {
+		"0.22.0".to_string()
 	}
 
-	fn description() -> &'static str {
-		env!("CARGO_PKG_DESCRIPTION")
+	fn description() -> String {
+		env!("CARGO_PKG_DESCRIPTION").to_string()
 	}
 
-	fn author() -> &'static str {
-		env!("CARGO_PKG_AUTHORS")
+	fn author() -> String {
+		env!("CARGO_PKG_AUTHORS").to_string()
 	}
 
-	fn support_url() -> &'static str {
-		"https://github.com/KILTprotocol/mashnet-node/issues/new"
+	fn support_url() -> String {
+		"https://github.com/KILTprotocol/mashnet-node/issues/new".to_string()
 	}
 
 	fn copyright_start_year() -> i32 {
 		2019
 	}
 
-	fn executable_name() -> &'static str {
-		env!("CARGO_PKG_NAME")
+	fn executable_name() -> String {
+		env!("CARGO_PKG_NAME").to_string()
 	}
 
 	fn load_spec(&self, id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
 		chain_spec::load_spec(id)
+	}
+
+	fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
+		&mashnet_node_runtime::VERSION
 	}
 }
 
@@ -58,15 +63,18 @@ pub fn run() -> sc_cli::Result<()> {
 	match &cli.subcommand {
 		Some(subcommand) => {
 			let runner = cli.create_runner(subcommand)?;
-			runner.run_subcommand(subcommand, |config| Ok(new_full_start!(config).0))
+			runner.run_subcommand(subcommand, |config| {
+				let (ServiceParams { client, backend, task_manager, import_queue, .. }, ..)
+					= service::new_full_params(config)?;
+				Ok((client, backend, import_queue, task_manager))
+			})
 		}
 		None => {
 			let runner = cli.create_runner(&cli.run)?;
-			runner.run_node(
-				service::new_light,
-				service::new_full,
-				mashnet_node_runtime::VERSION,
-			)
+			runner.run_node_until_exit(|config| match config.role {
+				Role::Light => service::new_light(config),
+				_ => service::new_full(config),
+			})
 		}
 	}
 }

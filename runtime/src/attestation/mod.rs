@@ -29,17 +29,17 @@ use sp_std::{
 	result,
 };
 use support::{debug, decl_event, decl_module, decl_storage, dispatch::DispatchResult, StorageMap};
-use system::{self, ensure_signed};
+use frame_system::{self, ensure_signed};
 
 /// The attestation trait
-pub trait Trait: system::Trait + delegation::Trait + error::Trait {
+pub trait Trait: frame_system::Trait + delegation::Trait + error::Trait {
 	/// Attestation specific event type
-	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+	type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 }
 
 decl_event!(
 	/// Events for attestations
-	pub enum Event<T> where <T as system::Trait>::AccountId, <T as system::Trait>::Hash,
+	pub enum Event<T> where <T as frame_system::Trait>::AccountId, <T as frame_system::Trait>::Hash,
 			<T as delegation::Trait>::DelegationNodeId {
 		/// An attestation has been added
 		AttestationCreated(AccountId, Hash, Hash, Option<DelegationNodeId>),

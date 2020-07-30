@@ -23,7 +23,7 @@ use mashnet_node_runtime::{
 	SystemConfig, WASM_BINARY,
 };
 
-use grandpa_primitives::AuthorityId as GrandpaId;
+use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sc_service::{self, ChainType};
 use sp_consensus_aura::ed25519::AuthorityId as AuraId;
 use sp_core::{crypto::UncheckedInto, ed25519, Pair, Public};
@@ -102,14 +102,17 @@ const DEV_FAUCET: [u8; 32] =
 impl Alternative {
 	/// Get an actual chain config from one of the alternatives.
 	pub(crate) fn load(self) -> Result<ChainSpec, String> {
+		let wasm_binary = WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
+
 		Ok(match self {
 			Alternative::Development => {
 				ChainSpec::from_genesis(
 					"Development",
 					"development",
 					ChainType::Development,
-					|| {
+					move || {
 						testnet_genesis(
+							wasm_binary,
 							vec![get_authority_keys_from_secret("//Alice")],
 							get_account_id_from_secret::<ed25519::Public>("//Alice"),
 							vec![
@@ -132,8 +135,9 @@ impl Alternative {
 					"KILT Testnet",
 					"kilt_testnet",
 					ChainType::Live,
-					|| {
+					move || {
 						testnet_genesis(
+							wasm_binary,
 							vec![
 								as_authority_key(TEST_AUTH_ALICE),
 								as_authority_key(TEST_AUTH_BOB),
@@ -161,8 +165,9 @@ impl Alternative {
 					"KILT Devnet",
 					"kilt_devnet",
 					ChainType::Live,
-					|| {
+					move || {
 						testnet_genesis(
+							wasm_binary,
 							// Initial Authorities
 							vec![
 								as_authority_key(DEV_AUTH_ALICE),
@@ -199,13 +204,14 @@ impl Alternative {
 }
 
 fn testnet_genesis(
+	wasm_binary: &[u8],
 	initial_authorities: Vec<(AuraId, GrandpaId)>,
 	root_key: AccountId,
 	endowed_accounts: Vec<AccountId>,
 ) -> GenesisConfig {
 	GenesisConfig {
-		system: Some(SystemConfig {
-			code: WASM_BINARY.to_vec(),
+		frame_system: Some(SystemConfig {
+			code: wasm_binary.to_vec(),
 			changes_trie_config: Default::default(),
 		}),
 		balances: Some(BalancesConfig {
