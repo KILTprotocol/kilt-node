@@ -19,8 +19,8 @@
 //! KILT chain specification
 
 use mashnet_node_runtime::{
-	AccountId, BalancesConfig, GenesisConfig, Signature, SudoConfig, SessionConfig,
-	SystemConfig, WASM_BINARY,
+	AccountId, BalancesConfig, GenesisConfig, SessionConfig, Signature, SudoConfig, SystemConfig,
+	WASM_BINARY,
 };
 
 use sc_service::{self, ChainType};
@@ -79,7 +79,11 @@ fn get_authority_keys_from_secret(seed: &str) -> (AccountId, AuraId, GrandpaId) 
 ///
 /// public_key – the public key formatted as a hex string
 fn as_authority_key(public_key: [u8; 32]) -> (AccountId, AuraId, GrandpaId) {
-	(public_key.into(), public_key.unchecked_into(), public_key.unchecked_into())
+	(
+		public_key.into(),
+		public_key.unchecked_into(),
+		public_key.unchecked_into(),
+	)
 }
 
 const TEST_AUTH_ALICE: [u8; 32] =
@@ -223,13 +227,19 @@ fn testnet_genesis(
 				.collect(),
 		}),
 		session: Some(SessionConfig {
-			keys: initial_authorities.iter().map(|x| (
-				x.0.clone(),
-				x.0.clone(),
-				mashnet_node_runtime::opaque::SessionKeys {
-					aura: x.1.clone(),
-					grandpa: x.2.clone() },
-			)).collect::<Vec<_>>(),
+			keys: initial_authorities
+				.iter()
+				.map(|x| {
+					(
+						x.0.clone(),
+						x.0.clone(),
+						mashnet_node_runtime::opaque::SessionKeys {
+							aura: x.1.clone(),
+							grandpa: x.2.clone(),
+						},
+					)
+				})
+				.collect::<Vec<_>>(),
 		}),
 		aura: Some(Default::default()),
 		grandpa: Some(Default::default()),
