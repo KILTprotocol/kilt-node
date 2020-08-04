@@ -382,7 +382,7 @@ impl authorship::Trait for Runtime {
 	type FindAuthor = session::FindAccountFromAuthorIndex<Self, Aura>;
 	type UncleGenerations = UncleGenerations;
 	type FilterUncle = ();
-	type EventHandler = (); // maybe set im_online here
+	type EventHandler = ();
 }
 
 construct_runtime!(
@@ -406,10 +406,8 @@ construct_runtime!(
 		Grandpa: grandpa::{Module, Call, Storage, Config, Event},
 		Sudo: sudo::{Module, Call, Config<T>, Storage, Event<T>},
 
-
 		Indices: pallet_indices::{Module, Call, Storage, Event<T>},
 		Authorship: authorship::{Module, Call, Storage},
-		// Session: session::{Module, Call, Storage, Event, Config<T>},
 		// Finality tracker?
 
 		Error: error::{ Module, Call, Event<T>},
@@ -419,7 +417,6 @@ construct_runtime!(
 		Delegation: delegation::{Module, Call, Storage, Event<T>},
 		Did: did::{Module, Call, Storage, Event<T>},
 		Portablegabi: portablegabi::{Module, Call, Storage, Event<T>},
-
 	}
 );
 
