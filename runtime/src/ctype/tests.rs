@@ -16,73 +16,98 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-
 use super::*;
 
-use primitives::{Blake2Hasher, H256};
-use runtime_io::with_externalities;
-use system;
-use support::{impl_outer_origin, assert_ok, assert_err};
-use runtime_primitives::{
-    testing::{Digest, DigestItem, Header},
-    traits::{BlakeTwo256,IdentityLookup},
-    BuildStorage,
+use crate::Signature;
+use sp_core::{ed25519, Pair, H256};
+use sp_runtime::{
+	testing::Header,
+	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Saturating, Verify},
+	MultiSigner, Perbill,
+};
+use support::{
+	assert_err, assert_ok, impl_outer_origin, parameter_types,
+	weights::{
+		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
+		Weight,
+	},
 };
 
 impl_outer_origin! {
-    pub enum Origin for Test {}
+	pub enum Origin for Test {}
 }
 
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Test;
-impl system::Trait for Test {
-    type Origin = Origin;
-    type Index = u64;
-    type BlockNumber = u64;
-    type Hash = H256;
-    type Hashing = BlakeTwo256;
-    type Digest = Digest;
-    type AccountId = H256;
-    type Header = Header;
-    type Event = ();
-    type Log = DigestItem;
-    type Lookup = IdentityLookup<H256>;
+
+parameter_types! {
+	pub const BlockHashCount: u64 = 250;
+	pub const MaximumBlockWeight: Weight = 2 * WEIGHT_PER_SECOND;
+	pub const MaximumBlockLength: u32 = 5 * 1024 * 1024;
+	pub const AvailableBlockRatio: Perbill = Perbill::from_percent(75);
+	pub MaximumExtrinsicWeight: Weight = AvailableBlockRatio::get()
+		.saturating_sub(Perbill::from_percent(10)) * MaximumBlockWeight::get();
+}
+
+impl frame_system::Trait for Test {
+	type Origin = Origin;
+	type Call = ();
+	type Index = u64;
+	type BlockNumber = u64;
+	type Hash = H256;
+	type Hashing = BlakeTwo256;
+	type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+	type Lookup = IdentityLookup<Self::AccountId>;
+	type Header = Header;
+	type Event = ();
+	type BlockHashCount = BlockHashCount;
+	type MaximumBlockWeight = MaximumBlockWeight;
+	type DbWeight = RocksDbWeight;
+	type BlockExecutionWeight = BlockExecutionWeight;
+	type ExtrinsicBaseWeight = ExtrinsicBaseWeight;
+	type MaximumExtrinsicWeight = MaximumExtrinsicWeight;
+	type MaximumBlockLength = MaximumBlockLength;
+	type AvailableBlockRatio = AvailableBlockRatio;
+	type Version = ();
+
+	type ModuleToIndex = ();
+	type AccountData = ();
+	type OnNewAccount = ();
+	type OnKilledAccount = ();
+	type BaseCallFilter = ();
+	type SystemWeightInfo = ();
 }
 
 impl error::Trait for Test {
-    type Event = ();
-    type ErrorCode = u16;
+	type Event = ();
+	type ErrorCode = u16;
 }
 
 impl Trait for Test {
-    type Event = ();
+	type Event = ();
 }
 
 type CType = Module<Test>;
 
-fn new_test_ext() -> runtime_io::TestExternalities<Blake2Hasher> {
-    system::GenesisConfig::<Test>::default().build_storage().unwrap().0.into()
+fn new_test_ext() -> runtime_io::TestExternalities {
+	frame_system::GenesisConfig::default()
+		.build_storage::<Test>()
+		.unwrap()
+		.into()
 }
 
 #[test]
 fn it_works_for_default_value() {
-    with_externalities(&mut new_test_ext(), || {
-        let account = H256::from_low_u64_be(1);
-        let ctype_hash = H256::from_low_u64_be(2);
-        assert_ok!(
-            CType::add(
-                Origin::signed(account.clone()),
-                ctype_hash.clone()
-            )
-        );
-        assert_eq!(<CTYPEs<Test>>::exists(ctype_hash), true);
-        assert_eq!(CType::ctypes(ctype_hash.clone()), account.clone());
-        assert_err!(
-            CType::add(
-                Origin::signed(account.clone()),
-                ctype_hash.clone()
-            ),
-            CType::ERROR_CTYPE_ALREADY_EXISTS.1
-        );
-    });
+	new_test_ext().execute_with(|| {
+		let pair = ed25519::Pair::from_seed(&*b"Alice                           ");
+		let ctype_hash = H256::from_low_u64_be(1);
+		let account = MultiSigner::from(pair.public()).into_account();
+		assert_ok!(CType::add(Origin::signed(account.clone()), ctype_hash));
+		assert_eq!(<CTYPEs<Test>>::contains_key(ctype_hash), true);
+		assert_eq!(CType::ctypes(ctype_hash), Some(account.clone()));
+		assert_err!(
+			CType::add(Origin::signed(account), ctype_hash),
+			CType::ERROR_CTYPE_ALREADY_EXISTS.1
+		);
+	});
 }

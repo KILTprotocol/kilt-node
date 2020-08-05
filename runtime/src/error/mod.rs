@@ -16,16 +16,23 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-
 //! Error: Handles errors for all other runtime modules
 
-use support::{decl_event, decl_module, Parameter };
-use runtime_primitives::traits::{ SimpleArithmetic, Member, MaybeDisplay, MaybeSerializeDebug, Bounded, As };
+use core::convert::From;
+use sp_arithmetic::traits::BaseArithmetic;
+use sp_runtime::traits::{Bounded, MaybeDisplay, MaybeSerialize, Member};
+use support::{debug, decl_event, decl_module, dispatch, Parameter};
 
 /// The error trait
-pub trait Trait: system::Trait {
-    type ErrorCode : Parameter + Member + MaybeSerializeDebug + MaybeDisplay + SimpleArithmetic + Bounded;
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+pub trait Trait: frame_system::Trait {
+	type ErrorCode: BaseArithmetic
+		+ Parameter
+		+ Member
+		+ MaybeSerialize
+		+ MaybeDisplay
+		+ Bounded
+		+ From<u16>;
+	type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 }
 
 /// The error type is a tuple of error code and an error message
@@ -34,7 +41,7 @@ pub type ErrorType = (u16, &'static str);
 decl_event!(
 	/// Events for errors
 	pub enum Event<T> where <T as Trait>::ErrorCode {
-        // An error occurred
+		// An error occurred
 		ErrorOccurred(ErrorCode),
 	}
 );
@@ -44,18 +51,33 @@ decl_module! {
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 
 		/// Deposit events
-		fn deposit_event<T>() = default;
+		fn deposit_event() = default;
 
 	}
 }
 
 /// Implementation of further module functions for errors
 impl<T: Trait> Module<T> {
-    
-    /// Create an error, it logs the error, deposits an error event and returns the error with its message
-    pub fn error(error_type: ErrorType) -> Result<(), &'static str> {
-        ::runtime_io::print(error_type.1);
-        Self::deposit_event(RawEvent::ErrorOccurred(T::ErrorCode::sa(error_type.0.into())));
-        return Err(error_type.1);
-    }
+	/// Create an error, it logs the error, deposits an error event and returns the error with its message
+	pub fn error(error_type: ErrorType) -> dispatch::DispatchResult {
+		Err(Self::deposit_err(error_type))
+	}
+
+	/// Create an error, it logs the error, deposits an error event and returns the error message
+	pub fn deposit_err(error_type: ErrorType) -> dispatch::DispatchError {
+		debug::print!("{}", error_type.1);
+		Self::deposit_event(RawEvent::ErrorOccurred(error_type.0.into()));
+		dispatch::DispatchError::Other(error_type.1)
+	}
+
+	pub fn ok_or_deposit_err<S>(
+		opt: Option<S>,
+		error_type: ErrorType,
+	) -> Result<S, dispatch::DispatchError> {
+		if let Some(s) = opt {
+			Ok(s)
+		} else {
+			Err(Self::deposit_err(error_type))
+		}
+	}
 }

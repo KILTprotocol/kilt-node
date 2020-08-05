@@ -1,70 +1,50 @@
-FROM ubuntu:xenial as builder
+# this container builds the mashnet-node binary from source files and the runtime library
+# pinned the version to avoid build cache invalidation
+FROM paritytech/ci-linux@sha256:7745e0c755153465fa58f4bf1117df1eb9351f445411083b4b1fb2434852f938 as builder
 
 WORKDIR /build
 
-# install tools and dependencies
-RUN apt -y update && \
-  apt install -y --no-install-recommends \
-	software-properties-common curl git file binutils binutils-dev snapcraft \
-	make cmake ca-certificates g++ zip dpkg-dev python rhash rpm openssl gettext\
-  build-essential pkg-config libssl-dev libudev-dev ruby-dev time clang
+# to avoid early cache invalidation, we build only dependencies first. For this we create fresh crates we are going to overwrite.
+RUN USER=root cargo init --bin --name=mashnet-node
+RUN USER=root cargo new --lib --name=mashnet-node-runtime runtime
+# overwrite cargo.toml with real files
+COPY Cargo.toml Cargo.lock build.rs ./
+COPY ./runtime/Cargo.toml ./runtime/
 
-# install rustup
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
-
-# rustup directory
-ENV PATH /root/.cargo/bin:$PATH
-
-# setup rust beta and nightly channel's
-RUN rustup install nightly
-RUN rustup install stable
-
-# install wasm toolchain for polkadot
-RUN rustup target add wasm32-unknown-unknown --toolchain nightly
-
-# Install wasm-gc. It's useful for stripping slimming down wasm binaries.
-# (polkadot)
-RUN cargo +nightly install --git https://github.com/alexcrichton/wasm-gc
-
-# show backtraces
-ENV RUST_BACKTRACE 1
-
-# cleanup
-RUN apt autoremove -y
-RUN apt clean -y
-RUN rm -rf /tmp/* /var/tmp/*
-
-#compiler ENV
-ENV CC gcc
-ENV CXX g++
-
-#snapcraft ENV
-ENV LC_ALL=C.UTF-8
-ENV LANG=C.UTF-8
-
-COPY . /build
-
-RUN /bin/bash scripts/build.sh
-
+# build depedencies (and bogus source files)
 RUN cargo build --release
+
+# remove bogus build (but keep depedencies)
+RUN cargo clean --release -p mashnet-node-runtime
+
+# copy everything over (cache invalidation will happen here)
+COPY . /build
+# build source again, dependencies are already built
+RUN cargo build --release
+
+# test
 RUN cargo test --release -p mashnet-node-runtime
 
 
-FROM ubuntu:xenial
+FROM debian:stretch
 
 WORKDIR /runtime
 
-RUN apt -y update && \
-  apt install -y --no-install-recommends \
+RUN apt-get -y update && \
+	apt-get install -y --no-install-recommends \
 	openssl \
 	curl \
-    libssl-dev dnsutils
+	libssl-dev dnsutils
+
+# cleanup linux dependencies
+RUN apt-get autoremove -y
+RUN apt-get clean -y
+RUN rm -rf /tmp/* /var/tmp/*
 
 RUN mkdir -p /runtime/target/release/
 COPY --from=builder /build/target/release/mashnet-node ./target/release/mashnet-node
 COPY --from=builder /build/start-node.sh ./start-node.sh
 COPY --from=builder /build/chainspec.json ./chainspec.json
-COPY --from=builder /build/chainspec.devnet.json ./chainspec.devnet.json
 
 RUN chmod a+x *.sh
 RUN ls -la .

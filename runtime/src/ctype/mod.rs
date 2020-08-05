@@ -16,7 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-
 //! CTYPE: Handles CTYPEs on chain,
 //! adding CTYPEs.
 
@@ -24,18 +23,19 @@
 #[cfg(test)]
 mod tests;
 
-use support::{dispatch::Result, StorageMap, decl_module, decl_storage, decl_event};
-use {system, system::ensure_signed, super::error};
+use super::error;
+use support::{debug, decl_event, decl_module, decl_storage, dispatch::DispatchResult, StorageMap};
+use frame_system::{self, ensure_signed};
 
 /// The CTYPE trait
-pub trait Trait: system::Trait + error::Trait {
+pub trait Trait: frame_system::Trait + error::Trait {
 	/// CTYPE specific event type
-	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+	type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 }
 
 decl_event!(
 	/// Events for CTYPEs
-	pub enum Event<T> where <T as system::Trait>::AccountId, <T as system::Trait>::Hash {
+	pub enum Event<T> where <T as frame_system::Trait>::AccountId, <T as frame_system::Trait>::Hash {
 		/// A CTYPE has been added
 		CTypeCreated(AccountId, Hash),
 	}
@@ -46,48 +46,48 @@ decl_module! {
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 
 		/// Deposit events
-		fn deposit_event<T>() = default;
+		fn deposit_event() = default;
 
 		/// Adds a CTYPE on chain, where
 		/// origin - the origin of the transaction
 		/// hash - hash of the CTYPE of the claim
-		pub fn add(origin, hash: T::Hash) -> Result {
+		#[weight = 1]
+		pub fn add(origin, hash: T::Hash) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 
 			// check if CTYPE already exists
-			if <CTYPEs<T>>::exists(hash) {
+			if <CTYPEs<T>>::contains_key(hash) {
 				return Self::error(Self::ERROR_CTYPE_ALREADY_EXISTS);
 			}
 
 			// add CTYPE to storage
-			::runtime_io::print("insert CTYPE");
-			<CTYPEs<T>>::insert(hash.clone(), sender.clone());
+			debug::print!("insert CTYPE");
+			<CTYPEs<T>>::insert(hash, sender.clone());
 			// deposit event that the CTYPE has been added
-			Self::deposit_event(RawEvent::CTypeCreated(sender.clone(), hash.clone()));
+			Self::deposit_event(RawEvent::CTypeCreated(sender, hash));
 			Ok(())
 		}
-
 	}
 }
 
 decl_storage! {
 	trait Store for Module<T: Trait> as Ctype {
-		// CTYPEs: ctype-hash -> account-id
-		pub CTYPEs get(ctypes): map T::Hash => T::AccountId;
+		// CTYPEs: ctype-hash -> account-id?
+		pub CTYPEs get(fn ctypes):map hasher(opaque_blake2_256) T::Hash => Option<T::AccountId>;
 	}
 }
 
 /// Implementation of further module constants and functions for CTYPEs
 impl<T: Trait> Module<T> {
-    
 	/// Error types for errors in CTYPE module
-    pub const ERROR_BASE: u16 = 1000;
-    pub const ERROR_CTYPE_NOT_FOUND : error::ErrorType = (Self::ERROR_BASE + 1, "CTYPE not found");
-    pub const ERROR_CTYPE_ALREADY_EXISTS : error::ErrorType = (Self::ERROR_BASE + 2, "CTYPE already exists");
+	pub const ERROR_BASE: u16 = 1000;
+	pub const ERROR_CTYPE_NOT_FOUND: error::ErrorType = (Self::ERROR_BASE + 1, "CTYPE not found");
+	pub const ERROR_CTYPE_ALREADY_EXISTS: error::ErrorType =
+		(Self::ERROR_BASE + 2, "CTYPE already exists");
 
 	/// Create an error using the error module
-    pub fn error(error_type: error::ErrorType) -> Result {
-        return <error::Module<T>>::error(error_type);
-    }
+	pub fn error(error_type: error::ErrorType) -> DispatchResult {
+		<error::Module<T>>::error(error_type)
+	}
 }
