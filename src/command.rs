@@ -24,7 +24,7 @@ impl SubstrateCli for Cli {
 	}
 
 	fn impl_version() -> String {
-		"0.22.0".to_string()
+		env!("CARGO_PKG_VERSION").to_string()
 	}
 
 	fn description() -> String {
