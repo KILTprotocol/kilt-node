@@ -14,7 +14,7 @@ BOB_DEVNET_HASH=12D3KooWB9v2n2SuqTvXo42U7Z6AFCMvcQcwfRBLByoCz6kmVBNb
 CHARLIE_DEVNET_HASH=12D3KooWQFrwHs2XdnzZd5XuquAb56hEycYSntynSjbjSbZjYAZF
 
 BASE_URL=kilt-prototype.tk
-TELEMETRY_URL=ws://telemetry-backend.kilt-prototype.tk:1024
+TELEMETRY_URL=ws://telemetry-backend.kilt-prototype.tk:8080/submit
 
 HEX_AURA=61757261
 HEX_GRAN=6772616e
