@@ -8,7 +8,7 @@ WORKDIR /build
 RUN USER=root cargo init --bin --name=mashnet-node
 RUN USER=root cargo new --lib --name=mashnet-node-runtime runtime
 # overwrite cargo.toml with real files
-COPY Cargo.toml Cargo.lock ./
+COPY Cargo.toml Cargo.lock build.rs ./
 COPY ./runtime/Cargo.toml ./runtime/
 
 # pallets
