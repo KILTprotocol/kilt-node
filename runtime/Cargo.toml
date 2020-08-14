@@ -53,7 +53,6 @@ version = '2.0.0-rc5'
 
 [dependencies.sp-io]
 default-features = false
-
 version = '2.0.0-rc5'
 
 [dependencies.serde]
@@ -116,7 +115,6 @@ version = '2.0.0-rc5'
 
 [dependencies.frame-support]
 default-features = false
-
 version = '2.0.0-rc5'
 
 [dependencies.frame-system]
@@ -138,11 +136,9 @@ default-features = false
 package = 'pallet-indices'
 version = '2.0.0-rc5'
 
-[dependencies.system-rpc-runtime-api]
+[dependencies.frame-system-rpc-runtime-api]
 default-features = false
-package = "frame-system-rpc-runtime-api"
-version = "2.0.0-rc5"
-
+version = '2.0.0-rc5'
 
 [features]
 default = [ 'std' ]
@@ -179,5 +175,5 @@ std = [
     'sp-arithmetic/std',
     'sp-api/std',
     'sp-inherents/std',
-    'system-rpc-runtime-api/std',
+    'frame-system-rpc-runtime-api/std',
 ]

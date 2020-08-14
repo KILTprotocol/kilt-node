@@ -402,7 +402,7 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
+	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
 		fn account_nonce(account: AccountId) -> Index {
 			frame_system::Module::<Runtime>::account_nonce(&account)
 		}
