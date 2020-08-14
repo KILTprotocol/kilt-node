@@ -24,12 +24,12 @@
 #[cfg(test)]
 mod tests;
 
+use frame_support::{
+	decl_event, decl_module, decl_storage, dispatch::DispatchResult, Parameter, StorageMap,
+};
 use frame_system::{self, ensure_signed};
 use sp_runtime::{codec::Codec, traits::Member};
 use sp_std::prelude::*;
-use support::{
-	decl_event, decl_module, decl_storage, dispatch::DispatchResult, Parameter, StorageMap,
-};
 
 /// The DID trait
 pub trait Trait: frame_system::Trait {

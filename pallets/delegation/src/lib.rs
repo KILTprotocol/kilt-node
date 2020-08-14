@@ -33,6 +33,9 @@ extern crate bitflags;
 
 use codec::{Decode, Encode};
 use core::default::Default;
+use frame_support::{
+	debug, decl_event, decl_module, decl_storage, dispatch::DispatchResult, Parameter, StorageMap,
+};
 use frame_system::{self, ensure_signed};
 use sp_runtime::{
 	codec::Codec,
@@ -42,9 +45,6 @@ use sp_runtime::{
 use sp_std::{
 	prelude::{Clone, Eq, PartialEq, Vec},
 	result,
-};
-use support::{
-	debug, decl_event, decl_module, decl_storage, dispatch::DispatchResult, Parameter, StorageMap,
 };
 
 bitflags! {

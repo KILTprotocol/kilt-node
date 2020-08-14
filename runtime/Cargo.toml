@@ -4,8 +4,8 @@ edition = '2018'
 name = 'mashnet-node-runtime'
 version = '0.23.0'
 
-[build-dependencies.wasm-builder-runner]
-package = 'substrate-wasm-builder-runner'
+[build-dependencies.substrate-wasm-builder-runner]
+
 version = '1.0.6'
 
 [dependencies]
@@ -51,9 +51,9 @@ default-features = false
 package = 'pallet-randomness-collective-flip'
 version = '2.0.0-rc5'
 
-[dependencies.runtime-io]
+[dependencies.sp-io]
 default-features = false
-package = 'sp-io'
+
 version = '2.0.0-rc5'
 
 [dependencies.serde]
@@ -114,9 +114,9 @@ default-features = false
 package = 'pallet-sudo'
 version = '2.0.0-rc5'
 
-[dependencies.support]
+[dependencies.frame-support]
 default-features = false
-package = 'frame-support'
+
 version = '2.0.0-rc5'
 
 [dependencies.frame-system]
@@ -162,12 +162,12 @@ std = [
     'executive/std',
     'sp-core/std',
     'sp-std/std',
-    'runtime-io/std',
+    'sp-io/std',
     'sp-runtime/std',
     'randomness-collective-flip/std',
     'serde',
     'sudo/std',
-    'support/std',
+    'frame-support/std',
     'frame-system/std',
     'timestamp/std',
     'sp-version/std',
