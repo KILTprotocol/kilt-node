@@ -15,7 +15,7 @@
 // along with Substrate.  If not, see <http://www.gnu.org/licenses/>.
 
 use crate::{chain_spec, cli::Cli, service};
-use sc_cli::{SubstrateCli, RuntimeVersion, Role, ChainSpec};
+use sc_cli::{ChainSpec, Role, RuntimeVersion, SubstrateCli};
 use sc_service::ServiceParams;
 
 impl SubstrateCli for Cli {
@@ -64,8 +64,16 @@ pub fn run() -> sc_cli::Result<()> {
 		Some(subcommand) => {
 			let runner = cli.create_runner(subcommand)?;
 			runner.run_subcommand(subcommand, |config| {
-				let (ServiceParams { client, backend, task_manager, import_queue, .. }, ..)
-					= service::new_full_params(config)?;
+				let (
+					ServiceParams {
+						client,
+						backend,
+						task_manager,
+						import_queue,
+						..
+					},
+					..,
+				) = service::new_full_params(config)?;
 				Ok((client, backend, import_queue, task_manager))
 			})
 		}

@@ -16,9 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use super::*;
+use crate::*;
 
-use crate::{
+use mashnet_node_runtime::{
 	AccountId, AvailableBlockRatio, BlockHashCount, MaximumBlockLength, MaximumBlockWeight,
 	MaximumExtrinsicWeight, Signature,
 };

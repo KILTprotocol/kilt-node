@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 //! Error: Handles errors for all other runtime modules
+#![cfg_attr(not(feature = "std"), no_std)]
 
 use core::convert::From;
 use sp_arithmetic::traits::BaseArithmetic;

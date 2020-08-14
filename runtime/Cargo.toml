@@ -8,6 +8,14 @@ version = '0.23.0'
 package = 'substrate-wasm-builder-runner'
 version = '1.0.6'
 
+[dependencies]
+attestation = { version = '0.23.0', default-features = false, path = '../pallets/attestation' }
+ctype = { version = '0.23.0', default-features = false, path = '../pallets/ctype' }
+delegation = { version = '0.23.0', default-features = false, path = '../pallets/delegation' }
+did = { version = '0.23.0', default-features = false, path = '../pallets/did' }
+error = { version = '0.23.0', default-features = false, path = '../pallets/error' }
+portablegabi = { version = '0.23.0', default-features = false, path = '../pallets/portablegabi' }
+
 [dependencies.aura]
 default-features = false
 package = 'pallet-aura'
@@ -139,6 +147,12 @@ version = "2.0.0-rc5"
 [features]
 default = [ 'std' ]
 std = [
+	'attestation/std',
+	'ctype/std',
+	'did/std',
+	'error/std',
+	'delegation/std',
+	'portablegabi/std',
     'indices/std',
     'grandpa/std',
     'aura/std',
