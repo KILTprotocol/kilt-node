@@ -126,14 +126,12 @@ default-features = false
 package = 'pallet-timestamp'
 version = '2.0.0-rc5'
 
-[dependencies.transaction-payment]
+[dependencies.pallet-transaction-payment]
 default-features = false
-package = 'pallet-transaction-payment'
 version = '2.0.0-rc5'
 
-[dependencies.indices]
+[dependencies.pallet-indices]
 default-features = false
-package = 'pallet-indices'
 version = '2.0.0-rc5'
 
 [dependencies.frame-system-rpc-runtime-api]
@@ -149,7 +147,7 @@ std = [
 	'error/std',
 	'delegation/std',
 	'portablegabi/std',
-    'indices/std',
+    'pallet-indices/std',
     'grandpa/std',
     'aura/std',
     'balances/std',
@@ -168,7 +166,7 @@ std = [
     'timestamp/std',
     'sp-version/std',
     'sp-block-builder/std',
-    'transaction-payment/std',
+    'pallet-transaction-payment/std',
     'sp-transaction-pool/std',
     'sp-offchain/std',
     'sp-session/std',
