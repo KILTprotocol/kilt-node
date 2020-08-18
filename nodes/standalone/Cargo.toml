@@ -1,0 +1,58 @@
+[package]
+authors = ["KILT <info@kilt.io>"]
+build = "build.rs"
+edition = "2018"
+name = "mashnet-node"
+version = "0.23.0"
+
+[[bin]]
+name = "mashnet-node"
+path = "src/main.rs"
+
+[build-dependencies]
+build-script-utils = {package = "substrate-build-script-utils", git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+vergen = "3.1.0"
+
+[dependencies]
+futures = "0.3"
+hex-literal = "0.2.1"
+jsonrpc-core = "15.0.0"
+log = "0.4"
+structopt = "0.3.8"
+
+frame-benchmarking = {git = "https://github.com/paritytech/substrate.git", branch = "rococo-v1"}
+frame-benchmarking-cli = {git = "https://github.com/paritytech/substrate.git", branch = "rococo-v1"}
+frame-rpc-system = {package = "substrate-frame-rpc-system", git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+pallet-transaction-payment-rpc = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+sc-basic-authorship = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+sc-cli = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+sc-client-api = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+sc-consensus = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+sc-consensus-aura = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+sc-executor = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+sc-finality-grandpa = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+sc-keystore = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+sc-network = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+sc-rpc = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+sc-rpc-api = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+sc-service = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+sc-telemetry = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+sc-transaction-pool = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+sp-api = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+sp-block-builder = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+sp-blockchain = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+sp-consensus = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+sp-consensus-aura = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+sp-core = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+sp-finality-grandpa = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+sp-inherents = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+sp-runtime = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+sp-transaction-pool = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+
+mashnet-node-runtime = {path = "../../runtimes/standalone"}
+
+[features]
+default = []
+runtime-benchmarks = [
+  "mashnet-node-runtime/runtime-benchmarks",
+]

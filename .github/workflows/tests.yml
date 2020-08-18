@@ -1,47 +1,103 @@
-name: Build and Test
+name: Test Code
 
 on:
   push:
-    branches: 
+    branches:
       - develop
       - master
     tags:
       - '*'
   pull_request:
-    branches: 
+    branches:
       - develop
       - master
 
 jobs:
-  build:
-
-    runs-on: ubuntu-latest
-
+  test-code:
+    runs-on: ubuntu-18.04
     steps:
-    - name: Checkout
-      uses: actions/checkout@v1
+    - name: Checkout Code
+      uses: actions/checkout@v2
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
+      # Steps taken from https://github.com/actions/cache/blob/master/examples.md#rust---cargo
+    - name: Cache cargo registry
+      uses: actions/cache@v2
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: eu-central-1
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
+    - name: Install toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: nightly-2021-02-22
+        target: wasm32-unknown-unknown
+        override: true
+        default: true
 
-    - name: Build and Test
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: kilt/prototype-chain
-        CACHE_IMAGE_TAG: latest-develop
-        CACHE_IMAGE_BUILDER_TAG: latest-develop-builder
-      run: |
-        docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG || true
-        docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_TAG || true
-        docker build \
-          --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
-          --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_TAG \
-          .
+    - name: Test Code
+      run: cargo test --all --all-features
+
+
+  clippy-lint:
+    runs-on: ubuntu-18.04
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2
+
+    - name: Cache cargo registry
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Install toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: nightly-2021-02-22
+        components: clippy
+        target: wasm32-unknown-unknown
+        override: true
+        default: true
+
+    - name: Check Code
+      run: cargo check --all --all-features
+
+    - name: Check Clippy
+      run: cargo clippy --all -- -D warnings
+
+
+  check-fmt:
+    runs-on: ubuntu-18.04
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2
+
+    - name: Cache cargo registry
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Install toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: nightly-2021-02-22
+        components: rustfmt
+        target: wasm32-unknown-unknown
+        override: true
+        default: true
+
+    - name: Check Formatting
+      run: cargo fmt --all -- --check

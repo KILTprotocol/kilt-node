@@ -1,0 +1,101 @@
+name: Deploy to AWS EKS
+
+on:
+  push:
+    branches:
+      - develop
+
+env:
+  ECR_REPOSITORY: kilt/prototype-chain
+  CACHE_IMAGE_BUILDER_TAG: latest-develop-builder
+  ECR_IMAGE_TAG: latest-develop
+  SHA_IMAGE_TAG: ${{ github.sha }}
+  KUBECONFIG: '${{ github.workspace }}/.kube/kubeconfig'
+  ARTIFACT_DEST_PATH: mashnet_node_runtime.compact.wasm
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-central-1
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build, tag, and push image to Amazon ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      run: |
+        docker build \
+          -t $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG \
+          -t $ECR_REGISTRY/$ECR_REPOSITORY:$SHA_IMAGE_TAG \
+          --build-arg NODE_TYPE=mashnet-node \
+          .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$SHA_IMAGE_TAG
+        echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG"
+
+    # Here, we're creating the parent directory and writing out our decoded
+    # kubeconfig to the location we stated above.
+    - name: Configure Kubernetes
+      run: |
+        mkdir -p '${{ github.workspace }}/.kube' \
+          && echo '${{ secrets.KUBE_CONFIG}}' | base64 -d > $KUBECONFIG
+
+    - name: Set new image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      run: |
+        kubectl -n devnet set image deployment/node-alice-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$SHA_IMAGE_TAG
+        kubectl -n devnet set image deployment/node-bob-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$SHA_IMAGE_TAG
+        kubectl -n devnet set image deployment/node-charlie-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$SHA_IMAGE_TAG
+        kubectl -n devnet set image statefulset/node-full-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$SHA_IMAGE_TAG
+
+
+  publish_to_docker:
+    name: Publish develop image to docker
+    needs: build
+    runs-on: ubuntu-latest
+    # this job pulls the develop image just built from our private ECR repository,
+    # then pushes it to the public docker repository under a dedicated tag
+    steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-central-1
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Login to Docker Hub
+      env:
+        DOCKER_USER: ${{ secrets.DOCKER_USER }}
+        DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
+      run: |
+        echo $DOCKER_PASS | docker login --username=$DOCKER_USER --password-stdin
+
+    - name: Tag and push dev image to Docker Hub
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        DOCKER_REPOSITORY: kiltprotocol/mashnet-node
+        DOCKER_IMAGE_TAG: develop
+      run: |
+        SOURCE_IMAGE=$ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
+        docker pull $SOURCE_IMAGE
+        docker tag $SOURCE_IMAGE $DOCKER_REPOSITORY:$DOCKER_IMAGE_TAG
+        docker push $DOCKER_REPOSITORY:$DOCKER_IMAGE_TAG

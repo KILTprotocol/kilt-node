@@ -1,0 +1,17 @@
+[package]
+authors = ["KILT <info@kilt.io>"]
+edition = "2018"
+name = "kilt-primitives"
+version = "0.1.0"
+
+[dependencies]
+# Substrate dependencies
+sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
+sp-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
+
+[features]
+default = ["std"]
+std = [
+	"sp-runtime/std",
+	"sp-core/std"
+]

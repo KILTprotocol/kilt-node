@@ -6,7 +6,7 @@ name: Release
 
 jobs:
   buildECR:
-    
+
     name: Build image and push to Amazon ECR
     runs-on: ubuntu-latest
 
@@ -16,7 +16,7 @@ jobs:
 
     - name: Build image
       run: |
-        docker build -t kilt/mashnet-node .
+        docker build -t kilt/mashnet-node --build-arg NODE_TYPE=mashnet-node .
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
@@ -28,7 +28,7 @@ jobs:
     - name: Login to Amazon ECR
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
-    
+
     - name: Tag, and push image to Amazon ECR
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -51,7 +51,7 @@ jobs:
 
     - name: Build image
       run: |
-        docker build -t kilt/mashnet-node .
+        docker build -t kilt/mashnet-node --build-arg NODE_TYPE=mashnet-node .
 
     - name: Login to Docker Hub
       env:

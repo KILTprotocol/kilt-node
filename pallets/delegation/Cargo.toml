@@ -1,0 +1,98 @@
+[package]
+authors = ["KILT <info@kilt.io>"]
+description = "Enables creating and revoking root nodes of delegation hierarchies; adding and revoking delegation nodes based on root nodes."
+edition = "2018"
+name = "delegation"
+repository = "https://github.com/KILTprotocol/mashnet-node"
+version = "0.23.0"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[build-dependencies.substrate-wasm-builder-runner]
+version = "1.0.6"
+
+[dev-dependencies]
+kilt-primitives = {path = "../../primitives", default-features = false}
+serde = {version = "1.0.101"}
+sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1", version = "3.0.0"}
+sp-keystore = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1", version = "0.9.0"}
+
+# pallets
+[dependencies]
+ctype = {version = "0.23.0", default-features = false, path = "../ctype"}
+
+[dependencies.bitflags]
+default-features = false
+version = "1.2.1"
+
+[dependencies.codec]
+default-features = false
+features = ["derive"]
+package = "parity-scale-codec"
+version = "2.0.0"
+
+[dependencies.frame-support]
+branch = "rococo-v1"
+default-features = false
+git = "https://github.com/paritytech/substrate"
+version = "3.0.0"
+
+[dependencies.frame-system]
+branch = "rococo-v1"
+default-features = false
+git = "https://github.com/paritytech/substrate"
+version = "3.0.0"
+
+[dependencies.sp-runtime]
+branch = "rococo-v1"
+default-features = false
+git = "https://github.com/paritytech/substrate"
+version = "3.0.0"
+
+[dependencies.sp-std]
+branch = "rococo-v1"
+default-features = false
+git = "https://github.com/paritytech/substrate"
+version = "3.0.0"
+
+[dependencies.sp-io]
+branch = "rococo-v1"
+default-features = false
+git = "https://github.com/paritytech/substrate"
+version = "3.0.0"
+
+[dependencies.frame-benchmarking]
+branch = "rococo-v1"
+default-features = false
+git = "https://github.com/paritytech/substrate"
+optional = true
+version = "3.0.0"
+
+[dependencies.sp-core]
+branch = "rococo-v1"
+default-features = false
+git = "https://github.com/paritytech/substrate"
+optional = true
+version = "3.0.0"
+
+[features]
+default = ["std"]
+runtime-benchmarks = [
+  "frame-benchmarking",
+  "sp-core",
+  "frame-support/runtime-benchmarks",
+  "frame-system/runtime-benchmarks",
+  "ctype/runtime-benchmarks",
+]
+std = [
+  "codec/std",
+  "frame-support/std",
+  "frame-system/std",
+  "sp-runtime/std",
+  "sp-io/std",
+  "sp-std/std",
+  "sp-io/std",
+  "ctype/std",
+  "sp-core/std",
+]
