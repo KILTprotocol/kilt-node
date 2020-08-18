@@ -18,18 +18,23 @@
 
 //! Attestation: Handles attestations on chain,
 //! adding and revoking attestations.
+#![cfg_attr(not(feature = "std"), no_std)]
 
 /// Test module for attestations
 #[cfg(test)]
 mod tests;
 
-use super::{ctype, delegation, error};
+use ctype;
+use delegation;
+use error;
+use frame_support::{
+	debug, decl_event, decl_module, decl_storage, dispatch::DispatchResult, StorageMap,
+};
+use frame_system::{self, ensure_signed};
 use sp_std::{
 	prelude::{Clone, PartialEq, Vec},
 	result,
 };
-use support::{debug, decl_event, decl_module, decl_storage, dispatch::DispatchResult, StorageMap};
-use frame_system::{self, ensure_signed};
 
 /// The attestation trait
 pub trait Trait: frame_system::Trait + delegation::Trait + error::Trait {

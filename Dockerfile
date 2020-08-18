@@ -11,11 +11,30 @@ RUN USER=root cargo new --lib --name=mashnet-node-runtime runtime
 COPY Cargo.toml Cargo.lock build.rs ./
 COPY ./runtime/Cargo.toml ./runtime/
 
+# pallets
+RUN USER=root cargo new --lib --name=pallet-attestation pallets/attestation
+RUN USER=root cargo new --lib --name=pallet-ctype pallets/ctype
+RUN USER=root cargo new --lib --name=pallet-delegation pallets/delegation
+RUN USER=root cargo new --lib --name=pallet-did pallets/did
+RUN USER=root cargo new --lib --name=pallet-error pallets/error
+RUN USER=root cargo new --lib --name=pallet-portablegabi pallets/portablegabi
+COPY ./pallets/attestation/Cargo.toml ./pallets/attestation/
+COPY ./pallets/ctype/Cargo.toml ./pallets/ctype/
+COPY ./pallets/delegation/Cargo.toml ./pallets/delegation/
+COPY ./pallets/did/Cargo.toml ./pallets/did/
+COPY ./pallets/error/Cargo.toml ./pallets/error/
+COPY ./pallets/portablegabi/Cargo.toml ./pallets/portablegabi/
+
 # build depedencies (and bogus source files)
 RUN cargo build --release
 
-# remove bogus build (but keep depedencies)
+# remove bogus build (but keep dependencies)
 RUN cargo clean --release -p mashnet-node-runtime
+RUN cargo clean --release -p ctype
+RUN cargo clean --release -p delegation
+RUN cargo clean --release -p did
+RUN cargo clean --release -p error
+RUN cargo clean --release -p portablegabi
 
 # copy everything over (cache invalidation will happen here)
 COPY . /build

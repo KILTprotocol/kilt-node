@@ -31,8 +31,7 @@ use sc_rpc::DenyUnsafe;
 use sc_service::{error::Error as ServiceError, Configuration, ServiceComponents, TaskManager};
 use sp_consensus_aura::ed25519::AuthorityPair as AuraPair;
 use sp_inherents::InherentDataProviders;
-use std::sync::Arc;
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 // Our native executor instance.
 native_executor_instance!(

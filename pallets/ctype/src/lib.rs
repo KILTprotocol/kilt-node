@@ -18,13 +18,16 @@
 
 //! CTYPE: Handles CTYPEs on chain,
 //! adding CTYPEs.
+#![cfg_attr(not(feature = "std"), no_std)]
 
 /// Test module for CTYPEs
 #[cfg(test)]
 mod tests;
 
-use super::error;
-use support::{debug, decl_event, decl_module, decl_storage, dispatch::DispatchResult, StorageMap};
+use error;
+use frame_support::{
+	debug, decl_event, decl_module, decl_storage, dispatch::DispatchResult, StorageMap,
+};
 use frame_system::{self, ensure_signed};
 
 /// The CTYPE trait

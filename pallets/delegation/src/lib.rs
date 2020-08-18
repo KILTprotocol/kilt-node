@@ -19,29 +19,33 @@
 //! Delegation: Handles delegations on chain,
 //! creating and revoking root nodes of delegation hierarchies,
 //! adding and revoking delegation nodes based on root nodes.
+#![cfg_attr(not(feature = "std"), no_std)]
 
 /// Test module for delegations
 #[cfg(test)]
 mod tests;
 
-use sp_std::{
-	prelude::{Clone, Eq, PartialEq, Vec},
-	result,
-};
+use ctype;
+use error;
+
+#[macro_use]
+extern crate bitflags;
 
 use codec::{Decode, Encode};
 use core::default::Default;
-use support::{
+use frame_support::{
 	debug, decl_event, decl_module, decl_storage, dispatch::DispatchResult, Parameter, StorageMap,
 };
-
-use super::{ctype, error};
+use frame_system::{self, ensure_signed};
 use sp_runtime::{
 	codec::Codec,
 	traits::{CheckEqual, Hash, IdentifyAccount, MaybeDisplay, Member, SimpleBitOps, Verify},
 	verify_encoded_lazy,
 };
-use frame_system::{self, ensure_signed};
+use sp_std::{
+	prelude::{Clone, Eq, PartialEq, Vec},
+	result,
+};
 
 bitflags! {
 	/// Bitflags for permissions

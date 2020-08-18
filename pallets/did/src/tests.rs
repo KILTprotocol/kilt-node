@@ -16,9 +16,13 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use super::*;
+use crate::*;
 
-use crate::{
+use frame_support::{
+	assert_ok, impl_outer_origin,
+	weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
+};
+use mashnet_node_runtime::{
 	AvailableBlockRatio, BlockHashCount, MaximumBlockLength, MaximumBlockWeight,
 	MaximumExtrinsicWeight, Signature,
 };
@@ -27,10 +31,6 @@ use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSigner,
-};
-use support::{
-	assert_ok, impl_outer_origin,
-	weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
 };
 
 impl_outer_origin! {
@@ -77,7 +77,7 @@ impl Trait for Test {
 
 type DID = Module<Test>;
 
-fn new_test_ext() -> runtime_io::TestExternalities {
+fn new_test_ext() -> sp_io::TestExternalities {
 	frame_system::GenesisConfig::default()
 		.build_storage::<Test>()
 		.unwrap()

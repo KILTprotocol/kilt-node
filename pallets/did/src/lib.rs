@@ -18,17 +18,18 @@
 
 //! DID: Handles decentralized identifiers on chain,
 //! adding and removing DIDs.
+#![cfg_attr(not(feature = "std"), no_std)]
 
 /// Test module for attestations
 #[cfg(test)]
 mod tests;
 
-use sp_runtime::{codec::Codec, traits::Member};
-use sp_std::prelude::*;
-use support::{
+use frame_support::{
 	decl_event, decl_module, decl_storage, dispatch::DispatchResult, Parameter, StorageMap,
 };
 use frame_system::{self, ensure_signed};
+use sp_runtime::{codec::Codec, traits::Member};
+use sp_std::prelude::*;
 
 /// The DID trait
 pub trait Trait: frame_system::Trait {

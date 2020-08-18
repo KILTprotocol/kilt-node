@@ -23,10 +23,10 @@ use mashnet_node_runtime::{
 	SystemConfig, WASM_BINARY,
 };
 
-use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sc_service::{self, ChainType};
 use sp_consensus_aura::ed25519::AuthorityId as AuraId;
 use sp_core::{crypto::UncheckedInto, ed25519, Pair, Public};
+use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
 
 use hex;

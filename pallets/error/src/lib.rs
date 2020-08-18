@@ -17,11 +17,12 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 //! Error: Handles errors for all other runtime modules
+#![cfg_attr(not(feature = "std"), no_std)]
 
 use core::convert::From;
+use frame_support::{debug, decl_event, decl_module, dispatch, Parameter};
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{Bounded, MaybeDisplay, MaybeSerialize, Member};
-use support::{debug, decl_event, decl_module, dispatch, Parameter};
 
 /// The error trait
 pub trait Trait: frame_system::Trait {

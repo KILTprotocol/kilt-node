@@ -4,9 +4,17 @@ edition = '2018'
 name = 'mashnet-node-runtime'
 version = '0.23.0'
 
-[build-dependencies.wasm-builder-runner]
-package = 'substrate-wasm-builder-runner'
+[build-dependencies.substrate-wasm-builder-runner]
+
 version = '1.0.6'
+
+[dependencies]
+attestation = { version = '0.23.0', default-features = false, path = '../pallets/attestation' }
+ctype = { version = '0.23.0', default-features = false, path = '../pallets/ctype' }
+delegation = { version = '0.23.0', default-features = false, path = '../pallets/delegation' }
+did = { version = '0.23.0', default-features = false, path = '../pallets/did' }
+error = { version = '0.23.0', default-features = false, path = '../pallets/error' }
+portablegabi = { version = '0.23.0', default-features = false, path = '../pallets/portablegabi' }
 
 [dependencies.aura]
 default-features = false
@@ -43,9 +51,8 @@ default-features = false
 package = 'pallet-randomness-collective-flip'
 version = '2.0.0-rc5'
 
-[dependencies.runtime-io]
+[dependencies.sp-io]
 default-features = false
-package = 'sp-io'
 version = '2.0.0-rc5'
 
 [dependencies.serde]
@@ -106,9 +113,8 @@ default-features = false
 package = 'pallet-sudo'
 version = '2.0.0-rc5'
 
-[dependencies.support]
+[dependencies.frame-support]
 default-features = false
-package = 'frame-support'
 version = '2.0.0-rc5'
 
 [dependencies.frame-system]
@@ -120,26 +126,28 @@ default-features = false
 package = 'pallet-timestamp'
 version = '2.0.0-rc5'
 
-[dependencies.transaction-payment]
+[dependencies.pallet-transaction-payment]
 default-features = false
-package = 'pallet-transaction-payment'
 version = '2.0.0-rc5'
 
-[dependencies.indices]
+[dependencies.pallet-indices]
 default-features = false
-package = 'pallet-indices'
 version = '2.0.0-rc5'
 
-[dependencies.system-rpc-runtime-api]
+[dependencies.frame-system-rpc-runtime-api]
 default-features = false
-package = "frame-system-rpc-runtime-api"
-version = "2.0.0-rc5"
-
+version = '2.0.0-rc5'
 
 [features]
 default = [ 'std' ]
 std = [
-    'indices/std',
+	'attestation/std',
+	'ctype/std',
+	'did/std',
+	'error/std',
+	'delegation/std',
+	'portablegabi/std',
+    'pallet-indices/std',
     'grandpa/std',
     'aura/std',
     'balances/std',
@@ -148,22 +156,22 @@ std = [
     'executive/std',
     'sp-core/std',
     'sp-std/std',
-    'runtime-io/std',
+    'sp-io/std',
     'sp-runtime/std',
     'randomness-collective-flip/std',
     'serde',
     'sudo/std',
-    'support/std',
+    'frame-support/std',
     'frame-system/std',
     'timestamp/std',
     'sp-version/std',
     'sp-block-builder/std',
-    'transaction-payment/std',
+    'pallet-transaction-payment/std',
     'sp-transaction-pool/std',
     'sp-offchain/std',
     'sp-session/std',
     'sp-arithmetic/std',
     'sp-api/std',
     'sp-inherents/std',
-    'system-rpc-runtime-api/std',
+    'frame-system-rpc-runtime-api/std',
 ]

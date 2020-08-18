@@ -1,8 +1,29 @@
-use sp_std::vec::Vec;
-use support::{decl_event, decl_module, decl_storage, dispatch::DispatchResult, StorageMap};
-use frame_system::ensure_signed;
+// KILT Blockchain – https://botlabs.org
+// Copyright (C) 2019  BOTLabs GmbH
 
-use crate::error;
+// The KILT Blockchain is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// The KILT Blockchain is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+// If you feel like getting in touch with us, you can do so at info@botlabs.org
+
+//! Portablegabi: Adds accumulator storage for usage in privacy enhancement
+#![cfg_attr(not(feature = "std"), no_std)]
+
+use frame_support::{decl_event, decl_module, decl_storage, dispatch::DispatchResult, StorageMap};
+use frame_system::ensure_signed;
+use sp_std::vec::Vec;
+
+use error;
 
 /// The pallet's configuration trait.
 pub trait Trait: frame_system::Trait + error::Trait {
@@ -82,9 +103,12 @@ decl_event!(
 /// tests for this pallet
 #[cfg(test)]
 mod tests {
-	use super::*;
-
-	use crate::{
+	use crate::*;
+	use frame_support::{
+		assert_ok, impl_outer_origin,
+		weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
+	};
+	use mashnet_node_runtime::{
 		AvailableBlockRatio, BlockHashCount, MaximumBlockLength, MaximumBlockWeight,
 		MaximumExtrinsicWeight,
 	};
@@ -92,10 +116,6 @@ mod tests {
 	use sp_runtime::{
 		testing::Header,
 		traits::{BlakeTwo256, IdentityLookup},
-	};
-	use support::{
-		assert_ok, impl_outer_origin,
-		weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
 	};
 
 	impl_outer_origin! {
@@ -145,7 +165,7 @@ mod tests {
 
 	type PortablegabiModule = Module<Test>;
 
-	fn new_test_ext() -> runtime_io::TestExternalities {
+	fn new_test_ext() -> sp_io::TestExternalities {
 		frame_system::GenesisConfig::default()
 			.build_storage::<Test>()
 			.unwrap()

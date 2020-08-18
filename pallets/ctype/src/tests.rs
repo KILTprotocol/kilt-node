@@ -16,21 +16,21 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use super::*;
+use crate::*;
 
-use crate::Signature;
-use sp_core::{ed25519, Pair, H256};
-use sp_runtime::{
-	testing::Header,
-	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Saturating, Verify},
-	MultiSigner, Perbill,
-};
-use support::{
+use frame_support::{
 	assert_err, assert_ok, impl_outer_origin, parameter_types,
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
 		Weight,
 	},
+};
+use mashnet_node_runtime::Signature;
+use sp_core::{ed25519, Pair, H256};
+use sp_runtime::{
+	testing::Header,
+	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Saturating, Verify},
+	MultiSigner, Perbill,
 };
 
 impl_outer_origin! {
@@ -89,7 +89,7 @@ impl Trait for Test {
 
 type CType = Module<Test>;
 
-fn new_test_ext() -> runtime_io::TestExternalities {
+fn new_test_ext() -> sp_io::TestExternalities {
 	frame_system::GenesisConfig::default()
 		.build_storage::<Test>()
 		.unwrap()
