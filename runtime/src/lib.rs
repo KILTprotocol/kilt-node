@@ -33,8 +33,8 @@ use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{
-		BlakeTwo256, Block as BlockT, IdentifyAccount, IdentityLookup, NumberFor, Saturating,
-		Verify,
+		BlakeTwo256, Block as BlockT, IdentifyAccount, IdentityLookup, NumberFor, OpaqueKeys,
+		Saturating, Verify,
 	},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, MultiSignature,
@@ -45,16 +45,16 @@ use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 
 // pub use consensus::Call as ConsensusCall;
-pub use balances::Call as BalancesCall;
+pub use balances::{Call as BalancesCall, NegativeImbalance};
 
 pub use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{KeyOwnerProofSystem, Randomness},
+	traits::{Currency, FindAuthor, Imbalance, KeyOwnerProofSystem, OnUnbalanced, Randomness},
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
 		IdentityFee, Weight,
 	},
-	StorageValue,
+	ConsensusEngineId, StorageValue,
 };
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -272,13 +272,40 @@ impl balances::Trait for Runtime {
 	type WeightInfo = ();
 }
 
+/// Logic for the author to get a portion of fees.
+pub struct ToAuthor<R>(sp_std::marker::PhantomData<R>);
+
+impl<R> OnUnbalanced<NegativeImbalance<R>> for ToAuthor<R>
+where
+	R: balances::Trait + authorship::Trait,
+	<R as frame_system::Trait>::AccountId: From<AccountId>,
+	<R as frame_system::Trait>::AccountId: Into<AccountId>,
+	<R as frame_system::Trait>::Event: From<
+		balances::RawEvent<
+			<R as frame_system::Trait>::AccountId,
+			<R as balances::Trait>::Balance,
+			balances::DefaultInstance,
+		>,
+	>,
+{
+	fn on_nonzero_unbalanced(amount: NegativeImbalance<R>) {
+		let numeric_amount = amount.peek();
+		let author = <authorship::Module<R>>::author();
+		<balances::Module<R>>::resolve_creating(&author, amount);
+		<frame_system::Module<R>>::deposit_event(balances::RawEvent::Deposit(
+			author,
+			numeric_amount,
+		));
+	}
+}
+
 parameter_types! {
 	pub const TransactionByteFee: Balance = 0;
 }
 
 impl pallet_transaction_payment::Trait for Runtime {
 	type Currency = balances::Module<Runtime>;
-	type OnTransactionPayment = ();
+	type OnTransactionPayment = ToAuthor<Runtime>;
 	type TransactionByteFee = TransactionByteFee;
 	type WeightToFee = IdentityFee<Balance>;
 	type FeeMultiplierUpdate = ();
@@ -328,6 +355,36 @@ impl error::Trait for Runtime {
 	type Event = Event;
 }
 
+parameter_types! {
+	pub const DisabledValidatorsThreshold: Perbill = Perbill::from_percent(17);
+	pub const Period: u64 = 0xFFFF_FFFF_FFFF_FFFF;
+	pub const Offset: u64 = 0xFFFF_FFFF_FFFF_FFFF;
+}
+
+impl session::Trait for Runtime {
+	type Event = Event;
+	type ValidatorId = AccountId;
+	type ValidatorIdOf = ();
+	type ShouldEndSession = session::PeriodicSessions<Period, Offset>;
+	type NextSessionRotation = ();
+	type SessionManager = ();
+	type SessionHandler = <opaque::SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
+	type Keys = opaque::SessionKeys;
+	type DisabledValidatorsThreshold = DisabledValidatorsThreshold;
+	type WeightInfo = ();
+}
+
+parameter_types! {
+	pub const UncleGenerations: u32 = 0;
+}
+
+impl authorship::Trait for Runtime {
+	type FindAuthor = session::FindAccountFromAuthorIndex<Self, Aura>;
+	type UncleGenerations = UncleGenerations;
+	type FilterUncle = ();
+	type EventHandler = ();
+}
+
 construct_runtime!(
 	pub enum Runtime where
 		Block = Block,
@@ -336,20 +393,30 @@ construct_runtime!(
 	{
 		System: frame_system::{Module, Call, Config, Storage, Event<T>},
 		RandomnessCollectiveFlip: randomness_collective_flip::{Module, Call, Storage},
-		Timestamp: timestamp::{Module, Call, Storage, Inherent},
+
+		// Keep block authoring before session?
 		Aura: aura::{Module, Config<T>, Inherent},
-		Grandpa: grandpa::{Module, Call, Storage, Config, Event},
-		Indices: pallet_indices::{Module, Call, Storage, Event<T>},
+
+		// Basic modules
+		Timestamp: timestamp::{Module, Call, Storage, Inherent},
 		Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
 		TransactionPayment: pallet_transaction_payment::{Module, Storage},
+		Session: session::{Module, Call, Storage, Event, Config<T>},
+
+		Grandpa: grandpa::{Module, Call, Storage, Config, Event},
 		Sudo: sudo::{Module, Call, Config<T>, Storage, Event<T>},
+
+		Indices: pallet_indices::{Module, Call, Storage, Event<T>},
+		Authorship: authorship::{Module, Call, Storage},
+		// Finality tracker?
+
+		Error: error::{ Module, Call, Event<T>},
 
 		Ctype: ctype::{Module, Call, Storage, Event<T>},
 		Attestation: attestation::{Module, Call, Storage, Event<T>},
 		Delegation: delegation::{Module, Call, Storage, Event<T>},
 		Did: did::{Module, Call, Storage, Event<T>},
 		Portablegabi: portablegabi::{Module, Call, Storage, Event<T>},
-		Error: error::{ Module, Call, Event<T>},
 	}
 );
 
@@ -448,16 +515,6 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
-		fn slot_duration() -> u64 {
-			Aura::slot_duration()
-		}
-
-		fn authorities() -> Vec<AuraId> {
-			Aura::authorities()
-		}
-	}
-
 	impl sp_session::SessionKeys<Block> for Runtime {
 		fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
 			opaque::SessionKeys::generate(seed)
@@ -465,8 +522,18 @@ impl_runtime_apis! {
 
 		fn decode_session_keys(
 			encoded: Vec<u8>,
-		) -> Option<Vec<(Vec<u8>, KeyTypeId)>> {
+		) -> Option<Vec<(Vec<u8>, sp_core::crypto::KeyTypeId)>> {
 			opaque::SessionKeys::decode_into_raw_public_keys(&encoded)
+		}
+	}
+
+	impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
+		fn slot_duration() -> u64 {
+			Aura::slot_duration()
+		}
+
+		fn authorities() -> Vec<AuraId> {
+			Aura::authorities()
 		}
 	}
 

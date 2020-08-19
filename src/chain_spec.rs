@@ -19,8 +19,8 @@
 //! KILT chain specification
 
 use mashnet_node_runtime::{
-	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig,
-	SystemConfig, WASM_BINARY,
+	AccountId, BalancesConfig, GenesisConfig, SessionConfig, Signature, SudoConfig, SystemConfig,
+	WASM_BINARY,
 };
 
 use sc_service::{self, ChainType};
@@ -67,18 +67,23 @@ where
 }
 
 /// Helper function to generate an authority key for Aura
-fn get_authority_keys_from_secret(s: &str) -> (AuraId, GrandpaId) {
+fn get_authority_keys_from_secret(seed: &str) -> (AccountId, AuraId, GrandpaId) {
 	(
-		get_from_secret::<AuraId>(s),
-		get_from_secret::<GrandpaId>(s),
+		get_account_id_from_secret::<ed25519::Public>(seed),
+		get_from_secret::<AuraId>(seed),
+		get_from_secret::<GrandpaId>(seed),
 	)
 }
 
 /// Build a pair of public keys from a given hex string. This method will panic if the hex string is malformed.
 ///
 /// public_key – the public key formatted as a hex string
-fn as_authority_key(public_key: [u8; 32]) -> (AuraId, GrandpaId) {
-	(public_key.unchecked_into(), public_key.unchecked_into())
+fn as_authority_key(public_key: [u8; 32]) -> (AccountId, AuraId, GrandpaId) {
+	(
+		public_key.into(),
+		public_key.unchecked_into(),
+		public_key.unchecked_into(),
+	)
 }
 
 const TEST_AUTH_ALICE: [u8; 32] =
@@ -205,7 +210,7 @@ impl Alternative {
 
 fn testnet_genesis(
 	wasm_binary: &[u8],
-	initial_authorities: Vec<(AuraId, GrandpaId)>,
+	initial_authorities: Vec<(AccountId, AuraId, GrandpaId)>,
 	root_key: AccountId,
 	endowed_accounts: Vec<AccountId>,
 ) -> GenesisConfig {
@@ -221,15 +226,23 @@ fn testnet_genesis(
 				.map(|k| (k, 1u128 << 90))
 				.collect(),
 		}),
-		aura: Some(AuraConfig {
-			authorities: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
-		}),
-		grandpa: Some(GrandpaConfig {
-			authorities: initial_authorities
+		session: Some(SessionConfig {
+			keys: initial_authorities
 				.iter()
-				.map(|x| (x.1.clone(), 1))
-				.collect(),
+				.map(|x| {
+					(
+						x.0.clone(),
+						x.0.clone(),
+						mashnet_node_runtime::opaque::SessionKeys {
+							aura: x.1.clone(),
+							grandpa: x.2.clone(),
+						},
+					)
+				})
+				.collect::<Vec<_>>(),
 		}),
+		aura: Some(Default::default()),
+		grandpa: Some(Default::default()),
 		sudo: Some(SudoConfig { key: root_key }),
 	}
 }
