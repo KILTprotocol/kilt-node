@@ -135,7 +135,7 @@ else
 fi
 
 if [[ "$devnet" = "1" ]]; then
-	arg_chain=" --chain kilt-devnet"
+	arg_chain=" --chain ./chainspec-devnet.json"
 	BASE_URL="devnet.kilt.io"
 	ALICE_BOOT_NODE_HASH=${ALICE_DEVNET_HASH}
 	BOB_BOOT_NODE_HASH=${BOB_DEVNET_HASH}
