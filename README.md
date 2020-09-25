@@ -1,4 +1,4 @@
-![](https://user-images.githubusercontent.com/1248214/57789522-600fcc00-7739-11e9-86d9-73d7032f40fc.png)
+![](https://user-images.githubusercontent.com/1248214/57789522-600fcc00-7739-11e9-86d9-73d7032f40fc.png) <img src="https://www.parity.io/assets/img/built-on-substrate-badge.svg" height=180/>
 
 [![Build and Test](https://github.com/KILTprotocol/mashnet-node/workflows/Build%20and%20Test/badge.svg)](https://github.com/KILTprotocol/mashnet-node/actions)
 
