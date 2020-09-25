@@ -42,8 +42,11 @@ COPY . /build
 RUN cargo build --release
 
 # test
-RUN cargo test --release -p mashnet-node-runtime
-
+RUN cargo test --release -p ctype
+RUN cargo test --release -p delegation
+RUN cargo test --release -p did
+RUN cargo test --release -p error
+RUN cargo test --release -p portablegabi
 
 FROM debian:stretch
 
