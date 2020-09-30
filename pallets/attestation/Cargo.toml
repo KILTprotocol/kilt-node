@@ -3,7 +3,7 @@ authors = [ 'KILT <info@kilt.io>' ]
 edition = '2018'
 name = 'attestation'
 repository = 'https://github.com/KILTprotocol/mashnet-node'
-version = '0.23.0'
+version = '0.24.0'
 description = 'Enables adding and revoking attestations.'
 
 [package.metadata.docs.rs]
@@ -14,12 +14,12 @@ version = '1.0.6'
 
 # pallets
 [dependencies]
-ctype = { version = '0.23.0', default-features = false, path = '../ctype' }
-delegation = { version = '0.23.0', default-features = false, path = '../delegation' }
-error = { version = '0.23.0', default-features = false, path = '../error' }
+ctype = { version = '0.24.0', default-features = false, path = '../ctype' }
+delegation = { version = '0.24.0', default-features = false, path = '../delegation' }
+error = { version = '0.24.0', default-features = false, path = '../error' }
 
 [dev-dependencies]
-mashnet-node-runtime = { version = '0.23.0', default-features = false, path = '../../runtime' }
+mashnet-node-runtime = { version = '0.24.0', default-features = false, path = '../../runtime' }
 
 [dev-dependencies.sp-core]
 default-features = false

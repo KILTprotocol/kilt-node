@@ -4,7 +4,7 @@ edition = '2018'
 name = 'portablegabi'
 repository = 'https://github.com/KILTprotocol/mashnet-node'
 homepage = 'https://kiltprotocol.github.io/portablegabi-tutorial/'
-version = '0.23.0'
+version = '0.24.0'
 description = 'Enables RSA-B accumulator storage for portablegabi anonymous credentials.'
 
 [package.metadata.docs.rs]
@@ -12,10 +12,10 @@ targets = ['x86_64-unknown-linux-gnu']
 
 # pallets
 [dependencies]
-error = { version = '0.23.0', default-features = false, path = '../error' }
+error = { version = '0.24.0', default-features = false, path = '../error' }
 
 [dev-dependencies]
-mashnet-node-runtime = { version = '0.23.0', default-features = false, path = '../../runtime' }
+mashnet-node-runtime = { version = '0.24.0', default-features = false, path = '../../runtime' }
 
 [dependencies.serde]
 features = ['derive']

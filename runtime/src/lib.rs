@@ -122,7 +122,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 5,
+	spec_version: 6,
 	impl_version: 5,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -253,7 +253,7 @@ parameter_types! {
 
 impl pallet_indices::Trait for Runtime {
 	type AccountIndex = Index;
-	type Currency = balances::Module<Runtime>;
+	type Currency = Balances;
 	type Deposit = Deposit;
 	type Event = Event;
 	type WeightInfo = ();
@@ -307,7 +307,7 @@ parameter_types! {
 }
 
 impl pallet_transaction_payment::Trait for Runtime {
-	type Currency = balances::Module<Runtime>;
+	type Currency = Balances;
 	type OnTransactionPayment = ToAuthor<Runtime>;
 	type TransactionByteFee = TransactionByteFee;
 	type WeightToFee = IdentityFee<Balance>;
