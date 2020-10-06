@@ -8,9 +8,11 @@ The KILT blockchain nodes use Parity Substrate as the underlying blockchain
 technology stack extended with our DID, CType, Attestation and hierarchical Trust Modules.
 Substrate Documentation:
 
-[High Level Docs](https://substrate.dev/docs/en/getting-started/)
-[JSON-RPC](https://polkadot.js.org/api/substrate/rpc.html)
-[Reference Rust Docs](https://substrate.dev/rustdocs/v1.0/substrate_service/index.html)
+[Substrate Tutorials](https://substrate.dev/en/tutorials)
+
+[Substrate JSON-RPC API](https://polkadot.js.org/docs/substrate/rpc)
+
+[Substrate Reference Rust Docs](https://substrate.dev/rustdocs/v2.0.0/sc_service/index.html)
 
 - [KILT mashnet-node (previously prototype-chain)](#kilt-mashnet-node-previously-prototype-chain)
   - [How to use TL;DR](#how-to-use-tldr)
@@ -276,14 +278,14 @@ transaction costs, while incurring a high level of overhead. Instead, we started
 development on [Parity Substrate](https://www.parity.io/substrate/), a general blockchain framework, and built up the KILT blockchain from scratch based on its module library.
 
 Building our blockchain on Parity Substrate has multiple advantages. Substrate has a very
-good fundamental [architecture](https://docs.substrate.dev/docs/architecture-of-a-runtime) and [codebase](https://github.com/paritytech/substrate) created by blockchain experts. Substrate
+good fundamental [architecture](https://substrate.dev/docs/en/knowledgebase/runtime/) and [codebase](https://github.com/paritytech/substrate) created by blockchain experts. Substrate
 framework is developed in Rust, a memory efficient and fast compiled system programming
 language, which provides a secure environment with virtually no runtime errors. Moreover, the
 node runtime is also compiled to WebAssembly, so older version native nodes can always run
 the latest version node runtime in a WebAssembly virtual machine to bypass the problem of a
-blockchain fork. Importantly, there is a vibrant developer community and rich [documentation](https://docs.substrate.dev/).
+blockchain fork. Importantly, there is a vibrant developer community and rich [documentation](https://substrate.dev/).
 
-Our implementation is based on the [substrate-node-template](https://github.com/rstormsf/substrate-node-template) library (skeleton template for
+Our implementation is based on the [substrate-node-template](https://github.com/substrate-developer-hub/substrate-node-template) library (skeleton template for
 quickly building a substrate based blockchain), which is linked to the main Substrate
 codebase.
 
@@ -309,7 +311,7 @@ to write the KILT Protocol specific data entries on the Substrate based KILT blo
 handled by our custom Substrate runtime node modules.
 
 Under the current consensus algorithm, authority validator nodes (whose addresses are listed
-in the genesis block) can create new blocks. These nodes [validate](https://docs.substrate.dev/docs/transaction-lifecycle-in-substrate) incoming transactions, put
+in the genesis block) can create new blocks. These nodes [validate](https://substrate.dev/docs/en/knowledgebase/learn-substrate/tx-pool#transaction-lifecycle) incoming transactions, put
 them into the pool, and include them in a new block. While creating the block, the node
 executes the transactions and stores the resulting state changes in its local storage. Note that
 the size of the entry depends on the number of arguments the transaction, (i.e., the respective
@@ -389,7 +391,7 @@ add(origin, hash: T::Hash) -> Result
 
 This function takes following parameters:
 
-- origin: public [ss58](<https://wiki.parity.io/External-Address-Format-(SS58)>) address of the caller of the method
+- origin: public [ss58](https://substrate.dev/docs/en/knowledgebase/advanced/ss58-address-format) address of the caller of the method
 - hash: CTYPE hash as a [blake2b](https://blake2.net/) string
 
 The blockchain node verifies the transaction signature corresponding to the creator and
@@ -417,7 +419,7 @@ add(origin, claim_hash: T::Hash, ctype_hash: T::Hash, delegation_id: Option<T::D
 
 The `add` function takes following parameters:
 
-- origin: The caller of the method, i.e., public address ([ss58](<https://wiki.parity.io/External-Address-Format-(SS58)>)) of the Attester
+- origin: The caller of the method, i.e., public address ([ss58](https://substrate.dev/docs/en/knowledgebase/advanced/ss58-address-format)) of the Attester
 - claim_hash: The Claim hash as [blake2b](https://blake2.net/) string used as the key of the entry
 - ctype_hash: The [blake2b](https://blake2.net/) hash of CTYPE used when creating the Claim
 - delegation_id: Optional reference to a delegation which this attestation is based
