@@ -65,7 +65,7 @@ jobs:
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
 
-      run: 'kubectl -n devnet set image deployment/mashnet-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG'
+      run: 'kubectl -n devnet set image deployment/mashnet-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG'
 
     # - name: (Alice) Fill in the new image ID in the Amazon ECS task definition
     #   id: task-def-alice
