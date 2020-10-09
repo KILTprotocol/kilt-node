@@ -32,27 +32,27 @@ jobs:
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
 
-    # - name: Build, tag, and push image to Amazon ECR
-    #   id: build-image
-    #   env:
-    #     ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-    #     CACHE_IMAGE_BUILDER_TAG: latest-develop-builder
-    #   run: |
-    #     docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG || true
-    #     docker build \
-    #       --target builder \
-    #       --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
-    #       -t $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
-    #       .
-    #     docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG || true
-    #     docker build \
-    #       --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
-    #       --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG \
-    #       -t $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG \
-    #       .
-    #     docker push $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG
-    #     docker push $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
-    #     echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG"
+    - name: Build, tag, and push image to Amazon ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        CACHE_IMAGE_BUILDER_TAG: latest-develop-builder
+      run: |
+        docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG || true
+        docker build \
+          --target builder \
+          --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
+          -t $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
+          .
+        docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG || true
+        docker build \
+          --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
+          --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG \
+          -t $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG \
+          .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
+        echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG"
 
     # Here, we're creating the parent directory and writing out our decoded
     # kubeconfig to the location we stated above.
@@ -62,7 +62,10 @@ jobs:
           && echo '${{ secrets.KUBE_CONFIG}}' | base64 -d > $KUBECONFIG
 
     - name: Set new image
-      run: 'kubectl version' 
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+
+      run: 'kubectl set image deployment/mashnet-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG'
 
     # - name: (Alice) Fill in the new image ID in the Amazon ECS task definition
     #   id: task-def-alice
