@@ -69,7 +69,7 @@ jobs:
         kubectl -n devnet set image deployment/node-alice-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
         kubectl -n devnet set image deployment/node-bob-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
         kubectl -n devnet set image deployment/node-charlie-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
-        kubectl -n devnet set image deployment/node-full-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
+        kubectl -n devnet set image statefulset/node-full-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
 
     # - name: (Alice) Fill in the new image ID in the Amazon ECS task definition
     #   id: task-def-alice
