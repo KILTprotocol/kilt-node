@@ -8,12 +8,11 @@ on:
 env:
   ECR_REPOSITORY: kilt/prototype-chain
   ECR_IMAGE_TAG: latest-develop
+  SHA_IMAGE_TAG: ${{ github.sha }}
+  KUBECONFIG: '${{ github.workspace }}/.kube/kubeconfig'
 
 jobs:
   build:
-
-    env:
-        KUBECONFIG: '${{ github.workspace }}/.kube/kubeconfig'
 
     runs-on: ubuntu-latest
 
@@ -37,7 +36,6 @@ jobs:
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         CACHE_IMAGE_BUILDER_TAG: latest-develop-builder
-        IMAGE_TAG: ${{ github.sha }}
       run: |
         docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG || true
         docker build \
@@ -50,11 +48,11 @@ jobs:
           --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
           --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG \
           -t $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG \
-          -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+          -t $ECR_REGISTRY/$ECR_REPOSITORY:$SHA_IMAGE_TAG \
           .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$SHA_IMAGE_TAG
         echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG"
 
     # Here, we're creating the parent directory and writing out our decoded
@@ -67,124 +65,45 @@ jobs:
     - name: Set new image
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        IMAGE_TAG: ${{ github.sha }}
       run: |
-        kubectl -n devnet set image deployment/node-alice-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-        kubectl -n devnet set image deployment/node-bob-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-        kubectl -n devnet set image deployment/node-charlie-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-        kubectl -n devnet set image statefulset/node-full-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        kubectl -n devnet set image deployment/node-alice-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$SHA_IMAGE_TAG
+        kubectl -n devnet set image deployment/node-bob-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$SHA_IMAGE_TAG
+        kubectl -n devnet set image deployment/node-charlie-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$SHA_IMAGE_TAG
+        kubectl -n devnet set image statefulset/node-full-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$SHA_IMAGE_TAG
 
-    # - name: (Alice) Fill in the new image ID in the Amazon ECS task definition
-    #   id: task-def-alice
-    #   uses: aws-actions/amazon-ecs-render-task-definition@v1
-    #   with:
-    #     task-definition: task-definition-alice.json
-    #     container-name: devnet-node
-    #     image: ${{ steps.build-image.outputs.image }}
 
-    # - name: Trigger deploy
-    #   uses: Consensys/kubernetes-action@master
-    #   env:
-    #     KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
-    #   with:
-    #     args: set image deployment/$ECR_REPOSITORY $ECR_REPOSITORY=${{ steps.build-image.outputs.image }}
+  publish_to_docker:
+    name: Publish develop image to docker
+    needs: build
+    runs-on: ubuntu-latest
+    # this job pulls the develop image just built from our private ECR repository,
+    # then pushes it to the public docker repository under a dedicated tag
+    steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-central-1
 
-    # - name: (Alice) Deploy Amazon ECS task definition
-    #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-    #   with:
-    #     task-definition: ${{ steps.task-def-alice.outputs.task-definition }}
-    #     service: bootnode-alice
-    #     cluster: kilt-devnet
-    #     wait-for-service-stability: true
-
-    # - name: (Bob) Fill in the new image ID in the Amazon ECS task definition
-    #   id: task-def-bob
-    #   uses: aws-actions/amazon-ecs-render-task-definition@v1
-    #   with:
-    #     task-definition: task-definition-bob.json
-    #     container-name: devnet-node
-    #     image: ${{ steps.build-image.outputs.image }}
-
-    # - name: (Bob) Deploy Amazon ECS task definition
-    #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-    #   with:
-    #     task-definition: ${{ steps.task-def-bob.outputs.task-definition }}
-    #     service: bootnode-bob
-    #     cluster: kilt-devnet
-    #     wait-for-service-stability: true
-
-    # - name: (Charlie) Fill in the new image ID in the Amazon ECS task definition
-    #   id: task-def-charlie
-    #   uses: aws-actions/amazon-ecs-render-task-definition@v1
-    #   with:
-    #     task-definition: task-definition-charlie.json
-    #     container-name: devnet-charlie
-    #     image: ${{ steps.build-image.outputs.image }}
-
-    # - name: (Charlie) Deploy Amazon ECS task definition
-    #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-    #   with:
-    #     task-definition: ${{ steps.task-def-charlie.outputs.task-definition }}
-    #     service: bootnode-charlie
-    #     cluster: kilt-devnet
-    #     wait-for-service-stability: true
-
-    # - name: (Full) Fill in the new image ID in the Amazon ECS task definition
-    #   id: task-def-full
-    #   uses: aws-actions/amazon-ecs-render-task-definition@v1
-    #   with:
-    #     task-definition: task-definition-full.json
-    #     container-name: devnet-node
-    #     image: ${{ steps.build-image.outputs.image }}
-
-    # - name: (Full) Deploy Amazon ECS task definition
-    #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-    #   with:
-    #     task-definition: ${{ steps.task-def-full.outputs.task-definition }}
-    #     service: full-nodes
-    #     cluster: kilt-devnet
-    #     wait-for-service-stability: true
-
-    # - name: Purge data in demo services
-    #   env:
-    #     SERVICES_SECRET: ${{ secrets.SERVICES_SECRET }}
-    #   run: |
-    #     curl -X DELETE -H "Authorization: ${SERVICES_SECRET}" https://services.devnet.kilt.io/ctype
-    #     curl -X DELETE -H "Authorization: ${SERVICES_SECRET}" https://services.devnet.kilt.io/messaging
-    #     curl -X DELETE -H "Authorization: ${SERVICES_SECRET}" https://services.devnet.kilt.io/contacts
-
-  # publish_to_docker:
-  #   name: Publish develop image to docker
-  #   needs: build
-  #   runs-on: ubuntu-latest
-  #   # this job pulls the develop image just built from our private ECR repository,
-  #   # then pushes it to the public docker repository under a dedicated tag
-  #   steps:
-  #   - name: Configure AWS credentials
-  #     uses: aws-actions/configure-aws-credentials@v1
-  #     with:
-  #       aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #       aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #       aws-region: eu-central-1
-
-  #   - name: Login to Amazon ECR
-  #     id: login-ecr
-  #     uses: aws-actions/amazon-ecr-login@v1
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
       
-  #   - name: Login to Docker Hub
-  #     env:
-  #       DOCKER_USER: ${{ secrets.DOCKER_USER }}
-  #       DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
-  #     run: |
-  #       echo $DOCKER_PASS | docker login --username=$DOCKER_USER --password-stdin
+    - name: Login to Docker Hub
+      env:
+        DOCKER_USER: ${{ secrets.DOCKER_USER }}
+        DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
+      run: |
+        echo $DOCKER_PASS | docker login --username=$DOCKER_USER --password-stdin
 
-  #   - name: Tag and push dev image to Docker Hub
-  #     env:
-  #       ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-  #       DOCKER_REPOSITORY: kiltprotocol/mashnet-node
-  #       DOCKER_IMAGE_TAG: develop
-  #     run: |
-  #       SOURCE_IMAGE=$ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
-  #       docker pull $SOURCE_IMAGE
-  #       docker tag $SOURCE_IMAGE $DOCKER_REPOSITORY:$DOCKER_IMAGE_TAG
-  #       docker push $DOCKER_REPOSITORY:$DOCKER_IMAGE_TAG
+    - name: Tag and push dev image to Docker Hub
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        DOCKER_REPOSITORY: kiltprotocol/mashnet-node
+        DOCKER_IMAGE_TAG: develop
+      run: |
+        SOURCE_IMAGE=$ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
+        docker pull $SOURCE_IMAGE
+        docker tag $SOURCE_IMAGE $DOCKER_REPOSITORY:$DOCKER_IMAGE_TAG
+        docker push $DOCKER_REPOSITORY:$DOCKER_IMAGE_TAG
