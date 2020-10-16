@@ -69,6 +69,8 @@ COPY --from=builder /build/chainspec-devnet.json ./chainspec-devnet.json
 RUN chmod a+x *.sh
 RUN ls -la .
 
+RUN echo "Change Digest"
+
 # expose node ports
 EXPOSE 30333 9933 9944
 
