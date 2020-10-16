@@ -37,6 +37,7 @@ jobs:
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         CACHE_IMAGE_BUILDER_TAG: latest-develop-builder
+        IMAGE_TAG: ${{ github.sha }}
       run: |
         docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG || true
         docker build \
@@ -49,6 +50,7 @@ jobs:
           --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
           --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG \
           -t $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG \
+          -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
           .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
@@ -64,12 +66,12 @@ jobs:
     - name: Set new image
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-
+        IMAGE_TAG: ${{ github.sha }}
       run: |
-        kubectl -n devnet set image deployment/node-alice-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
-        kubectl -n devnet set image deployment/node-bob-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
-        kubectl -n devnet set image deployment/node-charlie-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
-        kubectl -n devnet set image statefulset/node-full-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
+        kubectl -n devnet set image deployment/node-alice-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        kubectl -n devnet set image deployment/node-bob-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        kubectl -n devnet set image deployment/node-charlie-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        kubectl -n devnet set image statefulset/node-full-deployment node-container=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
     # - name: (Alice) Fill in the new image ID in the Amazon ECS task definition
     #   id: task-def-alice
