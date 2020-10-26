@@ -66,8 +66,6 @@ COPY --from=builder /build/start-node.sh ./start-node.sh
 COPY --from=builder /build/chainspec.json ./chainspec.json
 COPY --from=builder /build/chainspec-devnet.json ./chainspec-devnet.json
 
-RUN echo "Change digest again"
-
 RUN chmod a+x *.sh
 RUN ls -la .
 
