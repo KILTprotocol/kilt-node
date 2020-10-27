@@ -61,8 +61,10 @@ jobs:
         SOURCE_PATH: /build/target/release/wbuild/mashnet-node-runtime/mashnet_node_runtime.compact.wasm
       run: |
         container_id=$(docker create $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG)
-        docker cp $container_id:$SOURCE_PATH $ARTIFACT_DEST_PATH
-        docker rm -v $container_id
+        echo $container_id
+      #docker cp $container_id:$SOURCE_PATH $ARTIFACT_DEST_PATH
+      #docker rm -v $container_id
+        
     - name: Upload WASM Artifact
       uses: actions/upload-artifact@v2
       with:
