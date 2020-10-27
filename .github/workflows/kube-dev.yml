@@ -7,6 +7,7 @@ on:
 
 env:
   ECR_REPOSITORY: kilt/prototype-chain
+  CACHE_IMAGE_BUILDER_TAG: latest-develop-builder
   ECR_IMAGE_TAG: latest-develop
   SHA_IMAGE_TAG: ${{ github.sha }}
   KUBECONFIG: '${{ github.workspace }}/.kube/kubeconfig'
@@ -36,7 +37,6 @@ jobs:
       id: build-image
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        CACHE_IMAGE_BUILDER_TAG: latest-develop-builder
       run: |
         docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG || true
         docker build \
@@ -58,12 +58,12 @@ jobs:
 
     - name: Extract WASM artifact
       env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         SOURCE_PATH: /build/target/release/wbuild/mashnet-node-runtime/mashnet_node_runtime.compact.wasm
       run: |
         container_id=$(docker create $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG)
-        echo $container_id
-      #docker cp $container_id:$SOURCE_PATH $ARTIFACT_DEST_PATH
-      #docker rm -v $container_id
+        docker cp $container_id:$SOURCE_PATH $ARTIFACT_DEST_PATH
+        docker rm -v $container_id
         
     - name: Upload WASM Artifact
       uses: actions/upload-artifact@v2
