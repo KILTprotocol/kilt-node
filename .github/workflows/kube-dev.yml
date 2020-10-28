@@ -3,7 +3,7 @@ name: Deploy to AWS EKS
 on:
   push:
     branches: 
-      - tw-738-kubernetes
+      - develop
 
 env:
   ECR_REPOSITORY: kilt/prototype-chain
