@@ -317,7 +317,7 @@ checksum = "065374052e7df7ee4047b1160cca5e1467a12351a40b3da123c870ba0b8eda2a"
 
 [[package]]
 name = "attestation"
-version = "0.24.0"
+version = "0.23.0"
 dependencies = [
  "ctype",
  "delegation",
@@ -873,7 +873,7 @@ dependencies = [
 
 [[package]]
 name = "ctype"
-version = "0.24.0"
+version = "0.23.0"
 dependencies = [
  "error",
  "frame-support",
@@ -918,7 +918,7 @@ checksum = "d4d0e2d24e5ee3b23a01de38eefdcd978907890701f08ffffd4cb457ca4ee8d6"
 
 [[package]]
 name = "delegation"
-version = "0.24.0"
+version = "0.23.0"
 dependencies = [
  "bitflags",
  "ctype",
@@ -947,7 +947,7 @@ dependencies = [
 
 [[package]]
 name = "did"
-version = "0.24.0"
+version = "0.23.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -1094,7 +1094,7 @@ dependencies = [
 
 [[package]]
 name = "error"
-version = "0.24.0"
+version = "0.23.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -2884,7 +2884,7 @@ checksum = "adb241df5c4caeb888755363fc95f8a896618dc0d435e9e775f7930cb099beab"
 
 [[package]]
 name = "mashnet-node"
-version = "0.24.0"
+version = "0.23.0"
 dependencies = [
  "futures 0.3.5",
  "hex-literal 0.2.1",
@@ -2922,7 +2922,7 @@ dependencies = [
 
 [[package]]
 name = "mashnet-node-runtime"
-version = "0.24.0"
+version = "0.23.0"
 dependencies = [
  "attestation",
  "bitflags",
@@ -3991,7 +3991,7 @@ dependencies = [
 
 [[package]]
 name = "portablegabi"
-version = "0.24.0"
+version = "0.23.0"
 dependencies = [
  "error",
  "frame-support",

@@ -3,14 +3,14 @@ authors = [ 'KILT <info@kilt.io>' ]
 edition = '2018'
 name = 'did'
 repository = 'https://github.com/KILTprotocol/mashnet-node'
-version = '0.24.0'
+version = '0.23.0'
 description = 'Enables adding and removing decentralized identifiers (DIDs).'
 
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
 
 [dev-dependencies]
-mashnet-node-runtime = { version = '0.24.0', default-features = false, path = '../../runtime' }
+mashnet-node-runtime = { version = '0.23.0', default-features = false, path = '../../runtime' }
 
 [dev-dependencies.sp-core]
 default-features = false

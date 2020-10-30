@@ -3,7 +3,7 @@ authors = [ 'KILT <info@kilt.io>' ]
 edition = '2018'
 name = 'error'
 repository = 'https://github.com/KILTprotocol/mashnet-node'
-version = '0.24.0'
+version = '0.23.0'
 description = 'Handles KILT runtime errors.'
 
 [package.metadata.docs.rs]
