@@ -42,7 +42,7 @@ COPY . /build
 RUN cargo build --release
 
 # test
-RUN cargo test --all
+RUN cargo test --release --all
 
 FROM debian:stretch
 
