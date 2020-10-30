@@ -42,8 +42,7 @@ COPY . /build
 RUN cargo build --release
 
 # test
-RUN cargo test --release -p mashnet-node-runtime
-
+RUN cargo test --release --all
 
 FROM debian:stretch
 
