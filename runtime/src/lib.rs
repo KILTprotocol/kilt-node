@@ -123,7 +123,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
 	spec_version: 6,
-	impl_version: 5,
+	impl_version: 6,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
 };
