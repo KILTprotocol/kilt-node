@@ -1,6 +1,6 @@
 # How to cross compile to arm
 
-Start with Ubuntu 20.04, a rust installation (using rustup)
+Start with Ubuntu 20.04 (x86_64) and a rust installation (using rustup).
 
 download [cross compiler arm-linux-gnueabihf 8.3](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads)
 
