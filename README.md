@@ -29,7 +29,9 @@ Substrate Documentation:
     - [Examples](#examples)
       - [Running a local node that connects to KILT prototype testnet in AWS](#running-a-local-node-that-connects-to-kilt-prototype-testnet-in-aws)
       - [Running a node with local image, which runs a dev-chain](#running-a-node-with-local-image-which-runs-a-dev-chain)
-  - [Development with AWS images](#development-with-aws-images)
+  - [Development](#development)
+    - [Devnet runtime upgrade](#devnet-runtime-upgrade)
+    - [Development with AWS images](#development-with-aws-images)
   - [Node Modules functionalities](#node-modules-functionalities)
     - [DID Module](#did-module)
       - [Add](#add)
@@ -237,8 +239,19 @@ run chain in dev mode locally
 ```
 docker run -p 9944:9944 local/mashnet-node ./target/release/mashnet-node --dev --ws-port 9944 --ws-external --rpc-external
 ```
+## Development
 
-## Development with AWS images
+### Devnet runtime upgrade
+After merging a PR to the develop branch, the devnet images will be built and deployed, while keeping the data of the nodes.
+If the runtime changed, you will have to do a runtime upgrade. Here is how you do that:
+
+1. Go to the ["GitHub Actions" section](https://github.com/KILTprotocol/mashnet-node/actions?query=workflow%3A%22Deploy+to+AWS+EKS%22), find the "Deploy to AWS EKS" workflow on the develop branch with your merged PR.
+2. In the `build` job, you can find the new runtime under "Artifacts" in the top right. Download it.
+3. Go to the chain-explorer and setup the sudo account (which is ALICE in the case of then devnet)
+4. In "Extrinsics" use `sudo.sudoUncheckedWeight` with a low weight (needed because runtime is too big for a normal block) and `system.setCodeWithoutChecks`
+5. Upload the runtime and "Submit Transaction"
+
+### Development with AWS images
 
 Make sure to have the `awscli` installed. Otherwise, install it via `brew install awscli` (Mac).
 You also need to have your docker daemon system running (on mac, just download and install the docker application).
