@@ -1,14 +1,16 @@
 # How to cross compile to arm
 
+Start with Ubuntu 20.04, a rust installation (using rustup)
+
 download [cross compiler arm-linux-gnueabihf 8.3](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads)
 
 setup environment:
 
-```fish
-set -a PATH $HOME/gcc-arm-8.3-2019.03-x86_64-arm-linux-gnueabihf/bin/
-set -a LIBRARY_PATH $HOME/gcc-arm-8.3-2019.03-x86_64-arm-linux-gnueabihf/arm-linux-gnueabihf/libc/lib/
-set -x CXX_armv7_unknown_linux_gnueabihf arm-linux-gnueabihf-g++
-set -x CC_armv7_unknown_linux_gnueabihf arm-linux-gnueabihf-gcc
+```bash
+export PATH=$PATH:$HOME/gcc-arm-8.3-2019.03-x86_64-arm-linux-gnueabihf/bin/
+export LIBRARY_PATH=$LIBRARY_PATH:$HOME/gcc-arm-8.3-2019.03-x86_64-arm-linux-gnueabihf/arm-linux-gnueabihf/libc/lib/
+export CXX_armv7_unknown_linux_gnueabihf=arm-linux-gnueabihf-g++
+export CC_armv7_unknown_linux_gnueabihf=arm-linux-gnueabihf-gcc
 ``` 
 
 edit cargo config `~/.cargo/config`
