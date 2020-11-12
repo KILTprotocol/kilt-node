@@ -23,7 +23,7 @@ use mashnet_node_runtime::{
 	WASM_BINARY,
 };
 
-use sc_service::{self, ChainType};
+use sc_service::{self, ChainType, Properties};
 use sp_consensus_aura::ed25519::AuthorityId as AuraId;
 use sp_core::{crypto::UncheckedInto, ed25519, Pair, Public};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
@@ -108,7 +108,9 @@ impl Alternative {
 	/// Get an actual chain config from one of the alternatives.
 	pub(crate) fn load(self) -> Result<ChainSpec, String> {
 		let wasm_binary = WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
-
+		let mut properties = Properties::new();
+		properties.insert("tokenSymbol".into(), "KILT".into());
+		properties.insert("tokenDecimals".into(), 18.into());
 		Ok(match self {
 			Alternative::Development => {
 				ChainSpec::from_genesis(
@@ -131,7 +133,7 @@ impl Alternative {
 					vec![],
 					None,
 					None,
-					None,
+					Some(properties),
 					None,
 				)
 			}
@@ -161,7 +163,7 @@ impl Alternative {
 					vec![],
 					None,
 					None,
-					None,
+					Some(properties),
 					None,
 				)
 			}
@@ -191,7 +193,7 @@ impl Alternative {
 					vec![],
 					None,
 					None,
-					None,
+					Some(properties),
 					None,
 				)
 			}
