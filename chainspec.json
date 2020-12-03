@@ -6,7 +6,10 @@
   ],
   "telemetryEndpoints": null,
   "protocolId": null,
-  "properties": null,
+  "properties": {
+    "tokenDecimals": 18,
+    "tokenSymbol": "KILT"
+  },
   "consensusEngine": null,
   "genesis": {
     "raw": {
