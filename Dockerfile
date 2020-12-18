@@ -44,7 +44,7 @@ RUN cargo build --release
 # test
 RUN cargo test --release --all
 
-FROM debian:stretch
+FROM debian:stretch-slim
 
 WORKDIR /runtime
 
