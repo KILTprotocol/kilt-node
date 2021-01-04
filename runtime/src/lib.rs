@@ -154,6 +154,7 @@ parameter_types! {
 		.saturating_sub(Perbill::from_percent(10)) * MaximumBlockWeight::get();
 	pub const MaximumBlockLength: u32 = 5 * 1024 * 1024;
 	pub const Version: RuntimeVersion = VERSION;
+	pub const SS58Prefix: u8 = 38;
 }
 
 /// We assume that ~10% of the block weight is consumed by `on_initalize` handlers.
@@ -232,6 +233,7 @@ impl frame_system::Config for Runtime {
 
 	type BlockWeights = RuntimeBlockWeights;
 	type BlockLength = RuntimeBlockLength;
+	type SS58Prefix = SS58Prefix;
 }
 
 impl aura::Config for Runtime {
