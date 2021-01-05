@@ -24,7 +24,6 @@
 #[cfg(test)]
 mod tests;
 
-use error;
 use frame_support::{
 	debug, decl_event, decl_module, decl_storage, dispatch::DispatchResult, StorageMap,
 };

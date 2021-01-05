@@ -23,8 +23,6 @@ use frame_support::{decl_event, decl_module, decl_storage, dispatch::DispatchRes
 use frame_system::ensure_signed;
 use sp_std::vec::Vec;
 
-use error;
-
 /// The pallet's configuration trait.
 pub trait Trait: frame_system::Config + error::Trait {
 	/// The overarching event type.
@@ -161,6 +159,7 @@ mod tests {
 			})
 			.avg_block_initialization(AVERAGE_ON_INITIALIZE_RATIO)
 			.build_or_panic();
+		pub const SS58Prefix: u8 = 38;
 	}
 
 	impl frame_system::Config for Test {
@@ -186,6 +185,7 @@ mod tests {
 		type SystemWeightInfo = ();
 		type BlockWeights = RuntimeBlockWeights;
 		type BlockLength = RuntimeBlockLength;
+		type SS58Prefix = SS58Prefix;
 	}
 
 	impl Trait for Test {

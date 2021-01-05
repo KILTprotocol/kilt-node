@@ -25,9 +25,6 @@
 #[cfg(test)]
 mod tests;
 
-use ctype;
-use error;
-
 #[macro_use]
 extern crate bitflags;
 
