@@ -24,8 +24,8 @@ mod chain_spec;
 #[macro_use]
 mod service;
 mod cli;
-mod rpc;
 mod command;
+mod rpc;
 #[macro_use]
 extern crate hex_literal;
 
