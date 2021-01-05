@@ -18,7 +18,13 @@
 
 use crate::*;
 
-use frame_support::{assert_err, assert_ok, impl_outer_origin, parameter_types, weights::{DispatchClass, Weight, constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND}}};
+use frame_support::{
+	assert_err, assert_ok, impl_outer_origin, parameter_types,
+	weights::{
+		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
+		DispatchClass, Weight,
+	},
+};
 use frame_system::limits::{BlockLength, BlockWeights};
 use mashnet_node_runtime::Signature;
 use sp_core::{ed25519, Pair, H256};
@@ -74,6 +80,7 @@ parameter_types! {
 		})
 		.avg_block_initialization(AVERAGE_ON_INITIALIZE_RATIO)
 		.build_or_panic();
+	pub const SS58Prefix: u8 = 38;
 }
 
 impl frame_system::Config for Test {
@@ -98,7 +105,9 @@ impl frame_system::Config for Test {
 	type BaseCallFilter = ();
 	type SystemWeightInfo = ();
 	type BlockWeights = RuntimeBlockWeights;
-	type BlockLength = RuntimeBlockLength;}
+	type BlockLength = RuntimeBlockLength;
+	type SS58Prefix = SS58Prefix;
+}
 
 impl error::Trait for Test {
 	type Event = ();
