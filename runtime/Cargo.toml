@@ -5,7 +5,6 @@ name = 'mashnet-node-runtime'
 version = '0.23.0'
 
 [build-dependencies.substrate-wasm-builder-runner]
-
 version = '1.0.6'
 
 [dependencies]
@@ -20,25 +19,35 @@ portablegabi = { version = '0.23.0', default-features = false, path = '../pallet
 default-features = false
 package = "pallet-session"
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.sp-session]
 default-features = false
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.authorship]
 default-features = false
 package = "pallet-authorship"
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.aura]
 default-features = false
 package = 'pallet-aura'
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.balances]
 default-features = false
 package = 'pallet-balances'
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.bitflags]
 default-features = false
@@ -54,20 +63,28 @@ version = '1.3.1'
 default-features = false
 package = 'frame-executive'
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.grandpa]
 default-features = false
 package = 'pallet-grandpa'
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.randomness-collective-flip]
 default-features = false
 package = 'pallet-randomness-collective-flip'
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.sp-io]
 default-features = false
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.serde]
 features = ['derive']
@@ -77,80 +94,118 @@ version = '1.0'
 [dependencies.sp-api]
 default-features = false
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.sp-arithmetic]
 default-features = false
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.sp-block-builder]
 default-features = false
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.sp-consensus-aura]
 default-features = false
 version = '0.8.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.sp-core]
 default-features = false
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.sp-inherents]
 default-features = false
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.sp-offchain]
 default-features = false
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.sp-runtime]
 default-features = false
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.sp-std]
 default-features = false
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.sp-transaction-pool]
 default-features = false
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.sp-version]
 default-features = false
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.sudo]
 default-features = false
 package = 'pallet-sudo'
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.frame-support]
 default-features = false
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.frame-system]
 default-features = false
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.timestamp]
 default-features = false
 package = 'pallet-timestamp'
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.pallet-transaction-payment]
 default-features = false
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.pallet-indices]
 default-features = false
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.frame-system-rpc-runtime-api]
 default-features = false
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [dependencies.pallet-transaction-payment-rpc-runtime-api]
 default-features = false
 version = '2.0.0'
+git = 'https://github.com/paritytech/substrate'
+branch = "master"
 
 [features]
 default = ['std']

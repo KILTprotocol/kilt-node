@@ -23,12 +23,10 @@ use frame_support::{decl_event, decl_module, decl_storage, dispatch::DispatchRes
 use frame_system::ensure_signed;
 use sp_std::vec::Vec;
 
-use error;
-
 /// The pallet's configuration trait.
-pub trait Trait: frame_system::Trait + error::Trait {
+pub trait Trait: frame_system::Config + error::Trait {
 	/// The overarching event type.
-	type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+	type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 }
 
 decl_storage! {
@@ -93,7 +91,7 @@ impl<T: Trait> Module<T> {
 decl_event!(
 	pub enum Event<T>
 	where
-		AccountId = <T as frame_system::Trait>::AccountId,
+		AccountId = <T as frame_system::Config>::AccountId,
 	{
 		/// An accumulator has been updated. Therefore an attestation has be revoked
 		Updated(AccountId, u64, Vec<u8>),
@@ -105,17 +103,23 @@ decl_event!(
 mod tests {
 	use crate::*;
 	use frame_support::{
-		assert_ok, impl_outer_origin,
-		weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
+		assert_ok,
+		dispatch::Weight,
+		impl_outer_origin, parameter_types,
+		weights::{
+			constants::{
+				BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND,
+			},
+			DispatchClass,
+		},
 	};
-	use mashnet_node_runtime::{
-		AvailableBlockRatio, BlockHashCount, MaximumBlockLength, MaximumBlockWeight,
-		MaximumExtrinsicWeight,
-	};
+	use frame_system::limits::{BlockLength, BlockWeights};
+	use mashnet_node_runtime::BlockHashCount;
 	use sp_core::H256;
 	use sp_runtime::{
 		testing::Header,
 		traits::{BlakeTwo256, IdentityLookup},
+		Perbill,
 	};
 
 	impl_outer_origin! {
@@ -125,7 +129,40 @@ mod tests {
 	#[derive(Clone, Eq, PartialEq, Debug)]
 	pub struct Test;
 
-	impl frame_system::Trait for Test {
+	/// We assume that ~10% of the block weight is consumed by `on_initalize` handlers.
+	/// This is used to limit the maximal weight of a single extrinsic.
+	const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
+	/// We allow `Normal` extrinsics to fill up the block up to 75%, the rest can be used
+	/// by  Operational  extrinsics.
+	const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
+	/// We allow for 2 seconds of compute with a 6 second average block time.
+	const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
+
+	parameter_types! {
+		pub RuntimeBlockLength: BlockLength =
+			BlockLength::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
+		pub RuntimeBlockWeights: BlockWeights = BlockWeights::builder()
+			.base_block(BlockExecutionWeight::get())
+			.for_class(DispatchClass::all(), |weights| {
+				weights.base_extrinsic = ExtrinsicBaseWeight::get();
+			})
+			.for_class(DispatchClass::Normal, |weights| {
+				weights.max_total = Some(NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT);
+			})
+			.for_class(DispatchClass::Operational, |weights| {
+				weights.max_total = Some(MAXIMUM_BLOCK_WEIGHT);
+				// Operational transactions have some extra reserved space, so that they
+				// are included even if block reached `MAXIMUM_BLOCK_WEIGHT`.
+				weights.reserved = Some(
+					MAXIMUM_BLOCK_WEIGHT - NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT
+				);
+			})
+			.avg_block_initialization(AVERAGE_ON_INITIALIZE_RATIO)
+			.build_or_panic();
+		pub const SS58Prefix: u8 = 38;
+	}
+
+	impl frame_system::Config for Test {
 		type Origin = Origin;
 		type Call = ();
 		type Index = u64;
@@ -137,13 +174,7 @@ mod tests {
 		type Header = Header;
 		type Event = ();
 		type BlockHashCount = BlockHashCount;
-		type MaximumBlockWeight = MaximumBlockWeight;
 		type DbWeight = RocksDbWeight;
-		type BlockExecutionWeight = BlockExecutionWeight;
-		type ExtrinsicBaseWeight = ExtrinsicBaseWeight;
-		type MaximumExtrinsicWeight = MaximumExtrinsicWeight;
-		type MaximumBlockLength = MaximumBlockLength;
-		type AvailableBlockRatio = AvailableBlockRatio;
 		type Version = ();
 
 		type PalletInfo = ();
@@ -152,6 +183,9 @@ mod tests {
 		type OnKilledAccount = ();
 		type BaseCallFilter = ();
 		type SystemWeightInfo = ();
+		type BlockWeights = RuntimeBlockWeights;
+		type BlockLength = RuntimeBlockLength;
+		type SS58Prefix = SS58Prefix;
 	}
 
 	impl Trait for Test {

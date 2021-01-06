@@ -14,7 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Substrate.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::{chain_spec, cli::Cli, cli::Subcommand, service};
+use crate::{
+	chain_spec,
+	cli::{Cli, Subcommand},
+	service,
+};
+use mashnet_node_runtime::opaque::Block;
 use sc_cli::{ChainSpec, Role, RuntimeVersion, SubstrateCli};
 use sc_service::PartialComponents;
 
@@ -127,11 +132,24 @@ pub fn run() -> sc_cli::Result<()> {
 				Ok((cmd.run(client, backend), task_manager))
 			})
 		}
+		Some(Subcommand::Benchmark(cmd)) => {
+			if cfg!(feature = "runtime-benchmarks") {
+				let runner = cli.create_runner(cmd)?;
+
+				runner.sync_run(|config| cmd.run::<Block, service::Executor>(config))
+			} else {
+				Err("Benchmarking wasn't enabled when building the node. \
+                You can enable it with `--features runtime-benchmarks`."
+					.into())
+			}
+		}
 		None => {
 			let runner = cli.create_runner(&cli.run)?;
-			runner.run_node_until_exit(|config| match config.role {
-				Role::Light => service::new_light(config),
-				_ => service::new_full(config),
+			runner.run_node_until_exit(|config| async move {
+				match config.role {
+					Role::Light => service::new_light(config),
+					_ => service::new_full(config),
+				}
 			})
 		}
 	}

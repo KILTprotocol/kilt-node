@@ -1,6 +1,6 @@
 # this container builds the mashnet-node binary from source files and the runtime library
 # pinned the version to avoid build cache invalidation
-FROM paritytech/ci-linux@sha256:7745e0c755153465fa58f4bf1117df1eb9351f445411083b4b1fb2434852f938 as builder
+FROM paritytech/ci-linux:5297d82c-20201107 as builder
 
 WORKDIR /build
 
@@ -44,7 +44,7 @@ RUN cargo build --release
 # test
 RUN cargo test --release --all
 
-FROM debian:stretch
+FROM debian:stretch-slim
 
 WORKDIR /runtime
 
