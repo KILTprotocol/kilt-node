@@ -1,7 +1,7 @@
 [package]
 authors = ['KILT <info@kilt.io>']
 edition = '2018'
-name = 'kilt-parachain-primitives'
+name = 'kilt-primitives'
 version = '0.1.0'
 
 [dependencies]

@@ -3,13 +3,27 @@
 FROM paritytech/ci-linux:5297d82c-20201107 as builder
 
 WORKDIR /build
-
 # to avoid early cache invalidation, we build only dependencies first. For this we create fresh crates we are going to overwrite.
-RUN USER=root cargo init --bin --name=mashnet-node
-RUN USER=root cargo new --lib --name=mashnet-node-runtime runtime
+
+# create runtime & nodes
+RUN USER=root cargo new --bin --name=kilt-parachain nodes/parachain
+RUN USER=root cargo new --bin --name=mashnet-node nodes/standalone
+RUN USER=root cargo new --lib --name=mashnet-node-runtime runtimes/standalone
+RUN USER=root cargo new --lib --name=kilt-parachain-runtime runtimes/parachain
+RUN USER=root cargo new --lib --name=kilt-parachain-primitives primitives
+
 # overwrite cargo.toml with real files
-COPY Cargo.toml Cargo.lock build.rs ./
-COPY ./runtime/Cargo.toml ./runtime/
+COPY Cargo.toml Cargo.lock ./
+COPY ./runtimes/standalone/Cargo.toml ./runtimes/standalone/
+COPY ./runtimes/parachain/Cargo.toml ./runtimes/parachain/
+COPY ./nodes/standalone/Cargo.toml ./nodes/standalone/
+COPY ./nodes/parachain/Cargo.toml ./nodes/parachain/
+COPY ./primitives/Cargo.toml ./primitives/
+
+COPY ./runtimes/standalone/build.rs ./runtimes/standalone/
+COPY ./runtimes/parachain/build.rs ./runtimes/parachain/
+COPY ./nodes/standalone/build.rs ./nodes/standalone/
+COPY ./nodes/parachain/build.rs ./nodes/parachain/
 
 # pallets
 RUN USER=root cargo new --lib --name=pallet-attestation pallets/attestation
@@ -39,10 +53,14 @@ RUN cargo clean --release -p portablegabi
 # copy everything over (cache invalidation will happen here)
 COPY . /build
 # build source again, dependencies are already built
-RUN cargo build --release
 
 # test
 RUN cargo test --release --all
+
+ARG NODE_TYPE=mashnet-node
+
+RUN cargo build --release -p $NODE_TYPE
+
 
 FROM debian:stretch-slim
 
@@ -60,7 +78,7 @@ RUN apt-get clean -y
 RUN rm -rf /tmp/* /var/tmp/*
 
 RUN mkdir -p /runtime/target/release/
-COPY --from=builder /build/target/release/mashnet-node ./target/release/mashnet-node
+COPY --from=builder /build/target/release/$NODE_TYPE ./target/release/$NODE_TYPE
 COPY --from=builder /build/start-node.sh ./start-node.sh
 COPY --from=builder /build/chainspec.json ./chainspec.json
 COPY --from=builder /build/chainspec-devnet.json ./chainspec-devnet.json

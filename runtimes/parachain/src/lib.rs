@@ -30,7 +30,7 @@ use frame_support::weights::{
 	DispatchClass,
 };
 use frame_system::limits::{BlockLength, BlockWeights};
-use kilt_parachain_primitives::*;
+use kilt_primitives::*;
 use sp_api::impl_runtime_apis;
 use sp_core::OpaqueMetadata;
 use sp_runtime::{
@@ -290,7 +290,7 @@ impl error::Trait for Runtime {
 construct_runtime! {
 	pub enum Runtime where
 		Block = Block,
-		NodeBlock = kilt_parachain_primitives::Block,
+		NodeBlock = kilt_primitives::Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system::{Module, Call, Storage, Config, Event<T>},
