@@ -18,15 +18,9 @@
 
 use crate::*;
 
-use frame_support::{
-	assert_ok, impl_outer_origin, parameter_types,
-	weights::{
-		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
-		DispatchClass,
-	},
-};
+use frame_support::{assert_ok, dispatch::Weight, impl_outer_origin, parameter_types, weights::{DispatchClass, constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND}}};
 use frame_system::limits::{BlockLength, BlockWeights};
-use mashnet_node_runtime::{BlockHashCount, Signature, Weight, WEIGHT_PER_SECOND};
+use kilt_primitives::Signature;
 use sp_core::{ed25519, Pair, H256};
 use sp_runtime::{
 	testing::Header,
@@ -72,6 +66,7 @@ parameter_types! {
 		.avg_block_initialization(AVERAGE_ON_INITIALIZE_RATIO)
 		.build_or_panic();
 	pub const SS58Prefix: u8 = 38;
+	pub const BlockHashCount: u64 = 250;
 }
 
 impl frame_system::Config for Test {

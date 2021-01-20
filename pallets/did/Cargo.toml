@@ -9,6 +9,9 @@ description = 'Enables adding and removing decentralized identifiers (DIDs).'
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
 
+[dev-dependencies]
+kilt-primitives = {path = '../../primitives', default-features = false}
+
 [dev-dependencies.sp-core]
 default-features = false
 version = '2.0.0'

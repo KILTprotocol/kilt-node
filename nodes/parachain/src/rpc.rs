@@ -7,7 +7,7 @@
 
 use std::sync::Arc;
 
-use kilt_parachain_primitives::{Block, AccountId, Index};
+use kilt_primitives::{Block, AccountId, Index};
 pub use sc_rpc_api::DenyUnsafe;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;

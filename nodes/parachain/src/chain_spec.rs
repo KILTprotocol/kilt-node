@@ -19,7 +19,7 @@
 //! KILT chain specification
 
 use cumulus_primitives::ParaId;
-use kilt_parachain_primitives::{AccountId, Signature};
+use kilt_primitives::{AccountId, Signature};
 use kilt_parachain_runtime::{
 	BalancesConfig, GenesisConfig, ParachainInfoConfig, SudoConfig, SystemConfig, WASM_BINARY,
 };
