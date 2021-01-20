@@ -29,7 +29,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use frame_support::weights::DispatchClass;
 use frame_system::limits::{BlockLength, BlockWeights};
 use grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
-use pallet_transaction_payment::CurrencyAdapter;
+use pallet_transaction_payment::{FeeDetails, CurrencyAdapter};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::ed25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
@@ -507,6 +507,10 @@ impl_runtime_apis! {
 			len: u32,
 		) -> pallet_transaction_payment_rpc_runtime_api::RuntimeDispatchInfo<Balance> {
 			TransactionPayment::query_info(uxt, len)
+		}
+
+		fn query_fee_details(uxt: <Block as BlockT>::Extrinsic, len: u32) -> FeeDetails<Balance> {
+			TransactionPayment::query_fee_details(uxt, len)
 		}
 	}
 

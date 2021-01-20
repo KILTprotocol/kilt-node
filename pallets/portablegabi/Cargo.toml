@@ -14,9 +14,6 @@ targets = ['x86_64-unknown-linux-gnu']
 [dependencies]
 error = { version = '0.23.0', default-features = false, path = '../error' }
 
-[dev-dependencies]
-mashnet-node-runtime = { version = '0.23.0', default-features = false, path = '../../runtime' }
-
 [dependencies.serde]
 features = ['derive']
 optional = true

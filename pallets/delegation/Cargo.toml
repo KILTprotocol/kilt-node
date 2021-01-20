@@ -17,9 +17,6 @@ version = '1.0.6'
 ctype = { version = '0.23.0', default-features = false, path = '../ctype' }
 error = { version = '0.23.0', default-features = false, path = '../error' }
 
-[dev-dependencies]
-mashnet-node-runtime = { version = '0.23.0', default-features = false, path = '../../runtime' }
-
 [dev-dependencies.sp-core]
 default-features = false
 version = '2.0.0'
