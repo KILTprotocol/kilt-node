@@ -76,5 +76,4 @@ std = [
   'ctype/std',
   'delegation/std',
   'error/std',
-  'kilt-primitives/std',
 ]

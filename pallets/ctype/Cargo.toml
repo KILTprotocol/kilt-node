@@ -72,5 +72,4 @@ std = [
   'sp-std/std',
   'sp-io/std',
   'error/std',
-  'kilt-primitives/std',
 ]

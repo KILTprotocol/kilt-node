@@ -60,6 +60,5 @@ std = [
   'codec/std',
   'frame-support/std',
   'frame-system/std',
-  'kilt-primitives/std',
   'sp-std/std',
 ]

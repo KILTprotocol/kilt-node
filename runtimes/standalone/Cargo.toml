@@ -1,5 +1,5 @@
 [package]
-authors = [ 'KILT <info@kilt.io>' ]
+authors = ['KILT <info@kilt.io>']
 edition = '2018'
 name = 'mashnet-node-runtime'
 version = '0.23.0'
@@ -8,13 +8,13 @@ version = '0.23.0'
 substrate-wasm-builder = '3.0.0'
 
 [dependencies]
-attestation = { default-features = false, path = '../../pallets/attestation' }
-ctype = { default-features = false, path = '../../pallets/ctype' }
-delegation = { default-features = false, path = '../../pallets/delegation' }
-did = { default-features = false, path = '../../pallets/did' }
-error = { default-features = false, path = '../../pallets/error' }
-kilt-primitives = { path = '../../primitives', default-features = false }
-portablegabi = { default-features = false, path = '../../pallets/portablegabi' }
+attestation = {default-features = false, path = '../../pallets/attestation'}
+ctype = {default-features = false, path = '../../pallets/ctype'}
+delegation = {default-features = false, path = '../../pallets/delegation'}
+did = {default-features = false, path = '../../pallets/did'}
+error = {default-features = false, path = '../../pallets/error'}
+kilt-primitives = {path = '../../primitives', default-features = false}
+portablegabi = {default-features = false, path = '../../pallets/portablegabi'}
 
 [dependencies.aura]
 branch = "rococo-v1"
@@ -43,7 +43,7 @@ version = '1.2.1'
 
 [dependencies.codec]
 default-features = false
-features = [ 'derive' ]
+features = ['derive']
 package = 'parity-scale-codec'
 version = '1.3.1'
 
@@ -105,7 +105,7 @@ package = 'pallet-randomness-collective-flip'
 version = '2.0.0'
 
 [dependencies.serde]
-features = [ 'derive' ]
+features = ['derive']
 optional = true
 version = '1.0'
 
@@ -209,41 +209,41 @@ package = 'pallet-timestamp'
 version = '2.0.0'
 
 [features]
+default = ['std']
 std = [
-	'attestation/std',
-	'ctype/std',
-	'did/std',
-	'error/std',
-	'delegation/std',
-	'portablegabi/std',
-	'pallet-indices/std',
-	'grandpa/std',
-	'aura/std',
-	'balances/std',
-	'codec/std',
-	'sp-consensus-aura/std',
-	'executive/std',
-	'sp-core/std',
-	'sp-std/std',
-	'sp-io/std',
-	'sp-runtime/std',
-	'randomness-collective-flip/std',
-	'serde',
-	'sudo/std',
-	'frame-support/std',
-	'frame-system/std',
-	'timestamp/std',
-	'sp-version/std',
-	'sp-block-builder/std',
-	'pallet-transaction-payment/std',
-	'sp-transaction-pool/std',
-	'sp-offchain/std',
-	'sp-arithmetic/std',
-	'sp-api/std',
-	'sp-inherents/std',
-	'sp-session/std',
-	'frame-system-rpc-runtime-api/std',
-	'pallet-transaction-payment-rpc-runtime-api/std',
-	'kilt-primitives/std',
+  'attestation/std',
+  'ctype/std',
+  'did/std',
+  'error/std',
+  'delegation/std',
+  'portablegabi/std',
+  'pallet-indices/std',
+  'grandpa/std',
+  'aura/std',
+  'balances/std',
+  'codec/std',
+  'sp-consensus-aura/std',
+  'executive/std',
+  'sp-core/std',
+  'sp-std/std',
+  'sp-io/std',
+  'sp-runtime/std',
+  'randomness-collective-flip/std',
+  'serde',
+  'sudo/std',
+  'frame-support/std',
+  'frame-system/std',
+  'timestamp/std',
+  'sp-version/std',
+  'sp-block-builder/std',
+  'pallet-transaction-payment/std',
+  'sp-transaction-pool/std',
+  'sp-offchain/std',
+  'sp-arithmetic/std',
+  'sp-api/std',
+  'sp-inherents/std',
+  'sp-session/std',
+  'frame-system-rpc-runtime-api/std',
+  'pallet-transaction-payment-rpc-runtime-api/std',
+  'kilt-primitives/std',
 ]
-default = [ 'std' ]
