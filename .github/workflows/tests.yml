@@ -2,13 +2,13 @@ name: Build and Test
 
 on:
   push:
-    branches: 
+    branches:
       - develop
       - master
     tags:
       - '*'
   pull_request:
-    branches: 
+    branches:
       - develop
       - master
 
@@ -44,4 +44,5 @@ jobs:
         docker build \
           --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
           --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_TAG \
+          -f mashnet.Dockerfile \
           .
