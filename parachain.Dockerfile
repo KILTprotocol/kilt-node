@@ -13,6 +13,7 @@ RUN cargo build --release -p $NODE_TYPE
 
 FROM debian:buster-slim
 LABEL description="This is the 2nd stage: a very small image where we copy the kilt-parachain binary."
+ARG NODE_TYPE
 
 COPY --from=builder /build/target/release/$NODE_TYPE /usr/local/bin/node-executable
 
