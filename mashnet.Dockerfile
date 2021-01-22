@@ -3,64 +3,12 @@
 FROM paritytech/ci-linux:5297d82c-20201107 as builder
 
 WORKDIR /build
-# to avoid early cache invalidation, we build only dependencies first. For this we create fresh crates we are going to overwrite.
-
-# create runtime & nodes
-RUN USER=root cargo new --bin --name=kilt-parachain nodes/parachain
-RUN USER=root cargo new --bin --name=mashnet-node nodes/standalone
-RUN USER=root cargo new --lib --name=mashnet-node-runtime runtimes/standalone
-RUN USER=root cargo new --lib --name=kilt-parachain-runtime runtimes/parachain
-RUN USER=root cargo new --lib --name=kilt-parachain-primitives primitives
-
-# overwrite cargo.toml with real files
-COPY Cargo.toml Cargo.lock ./
-COPY ./runtimes/standalone/Cargo.toml ./runtimes/standalone/
-COPY ./runtimes/parachain/Cargo.toml ./runtimes/parachain/
-COPY ./nodes/standalone/Cargo.toml ./nodes/standalone/
-COPY ./nodes/parachain/Cargo.toml ./nodes/parachain/
-COPY ./primitives/Cargo.toml ./primitives/
-
-COPY ./runtimes/standalone/build.rs ./runtimes/standalone/
-COPY ./runtimes/parachain/build.rs ./runtimes/parachain/
-COPY ./nodes/standalone/build.rs ./nodes/standalone/
-COPY ./nodes/parachain/build.rs ./nodes/parachain/
-
-# pallets
-RUN USER=root cargo new --lib --name=pallet-attestation pallets/attestation
-RUN USER=root cargo new --lib --name=pallet-ctype pallets/ctype
-RUN USER=root cargo new --lib --name=pallet-delegation pallets/delegation
-RUN USER=root cargo new --lib --name=pallet-did pallets/did
-RUN USER=root cargo new --lib --name=pallet-error pallets/error
-RUN USER=root cargo new --lib --name=pallet-portablegabi pallets/portablegabi
-COPY ./pallets/attestation/Cargo.toml ./pallets/attestation/
-COPY ./pallets/ctype/Cargo.toml ./pallets/ctype/
-COPY ./pallets/delegation/Cargo.toml ./pallets/delegation/
-COPY ./pallets/did/Cargo.toml ./pallets/did/
-COPY ./pallets/error/Cargo.toml ./pallets/error/
-COPY ./pallets/portablegabi/Cargo.toml ./pallets/portablegabi/
-
-# build depedencies (and bogus source files)
-RUN cargo build --release
-
-# remove bogus build (but keep dependencies)
-RUN cargo clean --release -p mashnet-node-runtime
-RUN cargo clean --release -p ctype
-RUN cargo clean --release -p delegation
-RUN cargo clean --release -p did
-RUN cargo clean --release -p error
-RUN cargo clean --release -p portablegabi
-
-# copy everything over (cache invalidation will happen here)
 COPY . /build
-# build source again, dependencies are already built
 
-# test
 RUN cargo test --release --all
 
 ARG NODE_TYPE=mashnet-node
-
 RUN cargo build --release -p $NODE_TYPE
-
 
 FROM debian:stretch-slim
 
