@@ -5,10 +5,7 @@ FROM paritytech/ci-linux:5297d82c-20201107 as builder
 WORKDIR /build
 COPY . /build
 
-RUN cargo test --release --all
-
-ARG NODE_TYPE=mashnet-node
-RUN cargo build --release -p $NODE_TYPE
+RUN cargo build --release -p mashnet-node
 
 FROM debian:stretch-slim
 
@@ -26,7 +23,7 @@ RUN apt-get clean -y
 RUN rm -rf /tmp/* /var/tmp/*
 
 RUN mkdir -p /runtime/target/release/
-COPY --from=builder /build/target/release/$NODE_TYPE ./target/release/$NODE_TYPE
+COPY --from=builder /build/target/release/mashnet-node ./target/release/mashnet-node
 COPY --from=builder /build/start-node.sh ./start-node.sh
 COPY --from=builder /build/chainspec.json ./chainspec.json
 COPY --from=builder /build/chainspec-devnet.json ./chainspec-devnet.json
