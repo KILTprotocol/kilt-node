@@ -23,8 +23,8 @@ structopt = '0.3.3'
 trie-root = '0.15.2'
 
 # Parachain dependencies
-kilt-primitives = {path = '../../primitives'}
 kilt-parachain-runtime = {path = '../../runtimes/parachain'}
+kilt-primitives = {path = '../../primitives'}
 
 # Substrate dependencies
 sc-basic-authorship = {git = 'https://github.com/paritytech/substrate', version = '0.8.0', branch = 'rococo-v1'}
@@ -38,6 +38,7 @@ sc-network = {git = 'https://github.com/paritytech/substrate', branch = 'rococo-
 sc-service = {git = 'https://github.com/paritytech/substrate', branch = 'rococo-v1'}
 sc-tracing = {git = 'https://github.com/paritytech/substrate', branch = 'rococo-v1'}
 sc-transaction-pool = {git = 'https://github.com/paritytech/substrate', branch = 'rococo-v1'}
+sc-telemetry = {git = 'https://github.com/paritytech/substrate', branch = 'rococo-v1'}
 sp-block-builder = {git = 'https://github.com/paritytech/substrate', branch = 'rococo-v1'}
 sp-blockchain = {git = 'https://github.com/paritytech/substrate', branch = 'rococo-v1'}
 sp-consensus = {git = 'https://github.com/paritytech/substrate', branch = 'rococo-v1'}

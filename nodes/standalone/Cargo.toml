@@ -37,6 +37,7 @@ sc-rpc = {version = '2.0.0', git = 'https://github.com/paritytech/substrate', br
 sc-rpc-api = {version = '0.8.0', git = 'https://github.com/paritytech/substrate', branch = "rococo-v1"}
 sc-service = {version = '0.8.0', git = 'https://github.com/paritytech/substrate', branch = "rococo-v1"}
 sc-transaction-pool = {version = '2.0.0', git = 'https://github.com/paritytech/substrate', branch = "rococo-v1"}
+sc-telemetry = {version = '2.0.0', git = 'https://github.com/paritytech/substrate', branch = "rococo-v1"}
 sp-api = {version = '2.0.0', git = 'https://github.com/paritytech/substrate', branch = "rococo-v1"}
 sp-block-builder = {version = '2.0.0', git = 'https://github.com/paritytech/substrate', branch = "rococo-v1"}
 sp-blockchain = {version = '2.0.0', git = 'https://github.com/paritytech/substrate', branch = "rococo-v1"}

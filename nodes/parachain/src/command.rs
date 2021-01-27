@@ -27,7 +27,7 @@ use log::info;
 use polkadot_parachain::primitives::AccountIdConversion;
 use sc_cli::{
 	ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
-	NetworkParams, Result, RuntimeVersion, SharedParams, SubstrateCli, InitLoggerParams
+	NetworkParams, Result, RuntimeVersion, SharedParams, SubstrateCli,
 };
 use sc_service::{
 	config::{BasePath, PrometheusConfig},
@@ -211,38 +211,46 @@ pub fn run() -> Result<()> {
 			})
 		}
 		Some(Subcommand::ExportGenesisState(params)) => {
-			sc_cli::init_logger(InitLoggerParams {
-				tracing_receiver: sc_tracing::TracingReceiver::Log,
-				..Default::default()
-			})?;
+			let mut builder = sc_cli::GlobalLoggerBuilder::new("");
+			builder.with_profiling(sc_tracing::TracingReceiver::Log, "");
+			let _ = builder.init();
 
 			let block: Block = generate_genesis_block(&load_spec(
 				&params.chain.clone().unwrap_or_default(),
 				params.parachain_id.into(),
 			)?)?;
-			let header_hex = format!("0x{:?}", HexDisplay::from(&block.header().encode()));
+			let raw_header = block.header().encode();
+			let output_buf = if params.raw {
+				raw_header
+			} else {
+				format!("0x{:?}", HexDisplay::from(&block.header().encode())).into_bytes()
+			};
 
 			if let Some(output) = &params.output {
-				std::fs::write(output, header_hex)?;
+				std::fs::write(output, output_buf)?;
 			} else {
-				print!("{}", header_hex);
+				std::io::stdout().write_all(&output_buf)?;
 			}
 
 			Ok(())
 		}
 		Some(Subcommand::ExportGenesisWasm(params)) => {
-			sc_cli::init_logger(InitLoggerParams {
-				tracing_receiver: sc_tracing::TracingReceiver::Log,
-				..Default::default()
-			})?;
+			let mut builder = sc_cli::GlobalLoggerBuilder::new("");
+			builder.with_profiling(sc_tracing::TracingReceiver::Log, "");
+			let _ = builder.init();
 
-			let wasm_file =
+			let raw_wasm_blob =
 				extract_genesis_wasm(&cli.load_spec(&params.chain.clone().unwrap_or_default())?)?;
+			let output_buf = if params.raw {
+				raw_wasm_blob
+			} else {
+				format!("0x{:?}", HexDisplay::from(&raw_wasm_blob)).into_bytes()
+			};
 
 			if let Some(output) = &params.output {
-				std::fs::write(output, wasm_file)?;
+				std::fs::write(output, output_buf)?;
 			} else {
-				std::io::stdout().write_all(&wasm_file)?;
+				std::io::stdout().write_all(&output_buf)?;
 			}
 
 			Ok(())
@@ -276,9 +284,13 @@ pub fn run() -> Result<()> {
 				let genesis_state = format!("0x{:?}", HexDisplay::from(&block.header().encode()));
 
 				let task_executor = config.task_executor.clone();
-				let polkadot_config =
-					SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, task_executor)
-						.map_err(|err| format!("Relay chain argument error: {}", err))?;
+				let polkadot_config = SubstrateCli::create_configuration(
+					&polkadot_cli,
+					&polkadot_cli,
+					task_executor,
+					None,
+				)
+				.map_err(|err| format!("Relay chain argument error: {}", err))?;
 				let collator = cli.run.base.validator || cli.collator;
 
 				info!("Parachain id: {:?}", id);
@@ -353,7 +365,7 @@ impl CliConfiguration<Self> for RelayChainCli {
 		self.base.base.prometheus_config(default_listen_port)
 	}
 
-	fn init<C: SubstrateCli>(&self) -> Result<()> {
+	fn init<C: SubstrateCli>(&self) -> Result<sc_telemetry::TelemetryWorker> {
 		unreachable!("PolkadotCli is never initialized; qed");
 	}
 
