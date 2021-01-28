@@ -1,57 +1,57 @@
 [package]
-authors = [ 'KILT <info@kilt.io>' ]
+authors = ['KILT <info@kilt.io>']
+description = 'Handles KILT runtime errors.'
 edition = '2018'
 name = 'error'
 repository = 'https://github.com/KILTprotocol/mashnet-node'
 version = '0.23.0'
-description = 'Handles KILT runtime errors.'
 
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
 
 [dependencies.codec]
 default-features = false
-features = [ 'derive' ]
+features = ['derive']
 package = 'parity-scale-codec'
 version = '1.3.1'
 
 [dependencies.frame-system]
+branch = "rococo-v1"
 default-features = false
-version = '2.0.0'
 git = 'https://github.com/paritytech/substrate'
-branch = "master"
+version = '2.0.0'
 
 [dependencies.sp-arithmetic]
+branch = "rococo-v1"
 default-features = false
-version = '2.0.0'
 git = 'https://github.com/paritytech/substrate'
-branch = "master"
+version = '2.0.0'
 
 [dependencies.sp-io]
+branch = "rococo-v1"
 default-features = false
-version = '2.0.0'
 git = 'https://github.com/paritytech/substrate'
-branch = "master"
+version = '2.0.0'
 
 [dependencies.sp-runtime]
+branch = "rococo-v1"
 default-features = false
-version = '2.0.0'
 git = 'https://github.com/paritytech/substrate'
-branch = "master"
+version = '2.0.0'
 
 [dependencies.frame-support]
+branch = "rococo-v1"
 default-features = false
-version = '2.0.0'
 git = 'https://github.com/paritytech/substrate'
-branch = "master"
+version = '2.0.0'
 
 [features]
-default = [ 'std' ]
+default = ['std']
 std = [
-	'codec/std',
-	'frame-system/std',
-	'sp-runtime/std',
-	'sp-io/std',
-	'sp-arithmetic/std',
-	'frame-support/std'
+  'codec/std',
+  'frame-system/std',
+  'sp-runtime/std',
+  'sp-io/std',
+  'sp-arithmetic/std',
+  'frame-support/std',
 ]

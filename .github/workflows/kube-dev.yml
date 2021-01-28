@@ -2,7 +2,7 @@ name: Deploy to AWS EKS
 
 on:
   push:
-    branches: 
+    branches:
       - develop
 
 env:
@@ -43,6 +43,7 @@ jobs:
           --target builder \
           --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
           -t $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
+          -f mashnet.Dockerfile \
           .
         docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG || true
         docker build \
@@ -50,6 +51,7 @@ jobs:
           --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG \
           -t $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG \
           -t $ECR_REGISTRY/$ECR_REPOSITORY:$SHA_IMAGE_TAG \
+          -f mashnet.Dockerfile \
           .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
@@ -64,7 +66,7 @@ jobs:
         container_id=$(docker create $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG)
         docker cp $container_id:$SOURCE_PATH $ARTIFACT_DEST_PATH
         docker rm -v $container_id
-        
+
     - name: Upload WASM Artifact
       uses: actions/upload-artifact@v2
       with:
@@ -107,7 +109,7 @@ jobs:
     - name: Login to Amazon ECR
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
-      
+
     - name: Login to Docker Hub
       env:
         DOCKER_USER: ${{ secrets.DOCKER_USER }}

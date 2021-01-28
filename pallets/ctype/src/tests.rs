@@ -26,7 +26,7 @@ use frame_support::{
 	},
 };
 use frame_system::limits::{BlockLength, BlockWeights};
-use mashnet_node_runtime::Signature;
+use kilt_primitives::Signature;
 use sp_core::{ed25519, Pair, H256};
 use sp_runtime::{
 	testing::Header,

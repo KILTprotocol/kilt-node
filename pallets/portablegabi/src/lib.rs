@@ -114,7 +114,6 @@ mod tests {
 		},
 	};
 	use frame_system::limits::{BlockLength, BlockWeights};
-	use mashnet_node_runtime::BlockHashCount;
 	use sp_core::H256;
 	use sp_runtime::{
 		testing::Header,
@@ -139,6 +138,7 @@ mod tests {
 	const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
 
 	parameter_types! {
+		pub const BlockHashCount: u64 = 250;
 		pub RuntimeBlockLength: BlockLength =
 			BlockLength::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
 		pub RuntimeBlockWeights: BlockWeights = BlockWeights::builder()

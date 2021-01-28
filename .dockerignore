@@ -8,5 +8,5 @@ task-definition*
 .vscode
 .editorconfig
 docker-compose.yml
-Dockerfile
+*Dockerfile
 .dockerignore
