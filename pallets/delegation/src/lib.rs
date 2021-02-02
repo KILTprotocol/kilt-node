@@ -143,7 +143,7 @@ decl_module! {
 
 			// add root node to storage
 			debug::print!("insert Delegation Root");
-			<Root<T>>::insert(root_id, (ctype_hash, sender.clone(), false));
+			<Root<T>>::insert(root_id, DelegationProperties::new(ctype_hash, sender.clone()));
 			// deposit event that the root node has been created
 			Self::deposit_event(RawEvent::RootCreated(sender, root_id, ctype_hash));
 			Ok(())
@@ -210,7 +210,7 @@ decl_module! {
 				}
 			} else {
 				// check if the sender of this transaction is the creator of the root node (as no parent is given)
-				if !root.1.eq(&sender) {
+				if !root.account.eq(&sender) {
 					return Self::error(Self::ERROR_NOT_OWNER_OF_ROOT);
 				}
 				// inser delegation
@@ -238,12 +238,12 @@ decl_module! {
 				Self::ERROR_ROOT_NOT_FOUND
 			)?;
 			// check if root node has been created by the sender of this transaction
-			if !r.1.eq(&sender) {
+			if !r.account.eq(&sender) {
 				return Self::error(Self::ERROR_NOT_PERMITTED_TO_REVOKE);
 			}
-			if !r.2 {
+			if !r.revoked {
 				// store revoked root node
-				r.2 = true;
+				r.revoked = true;
 				<Root<T>>::insert(root_id, r);
 				// recursively revoke all children
 				Self::revoke_children(&root_id, &sender)?;
@@ -344,7 +344,7 @@ impl<T: Trait> Module<T> {
 				<Root<T>>::get(d.root_id),
 				Self::ERROR_ROOT_NOT_FOUND,
 			)?;
-			Ok(r.1.eq(account))
+			Ok(r.account.eq(account))
 		}
 	}
 
@@ -438,14 +438,34 @@ impl<T: Trait> Delegation<T> {
 	}
 }
 
+#[derive(Encode, Decode)]
+pub struct DelegationProperties<T: Trait> {
+	pub ctype_hash: T::Hash,
+	pub account: T::AccountId,
+	pub revoked: bool,
+}
+
+impl<T: Trait> DelegationProperties<T> {
+	fn new(ctype_hash: T::Hash, account: T::AccountId) -> Self {
+		DelegationProperties {
+			ctype_hash,
+			account,
+			revoked: false,
+		}
+	}
+}
+
 decl_storage! {
 	trait Store for Module<T: Trait> as Delegation {
-		// Root: root-id => (ctype-hash, account, revoked)?
-		pub Root get(fn root):map hasher(opaque_blake2_256) T::DelegationNodeId => Option<(T::Hash,T::AccountId,bool)>;
-		// Delegations: delegation-id => (root-id, parent-id?, account, permissions, revoked)?
+
+		// Root: root-id => DelegationProperties?
+		pub Root get(fn root):map hasher(opaque_blake2_256) T::DelegationNodeId => Option<DelegationProperties<T>>;
+
+		// Root: delegation-id => Delegation?
 		pub Delegations get(fn delegation):
 			map hasher(opaque_blake2_256) T::DelegationNodeId
 			=> Option<Delegation<T>>;
+
 		// Children: root-or-delegation-id => [delegation-id]
 		pub Children get(fn children):map hasher(opaque_blake2_256) T::DelegationNodeId => Vec<T::DelegationNodeId>;
 	}

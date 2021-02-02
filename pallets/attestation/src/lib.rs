@@ -95,7 +95,7 @@ decl_module! {
 						<delegation::Root<T>>::get(delegation.root_id),
 						<delegation::Module<T>>::ERROR_ROOT_NOT_FOUND
 					)?;
-					if !root.0.eq(&ctype_hash) {
+					if !root.ctype_hash.eq(&ctype_hash) {
 						return Self::error(Self::ERROR_CTYPE_OF_DELEGATION_NOT_MATCHING);
 					}
 				}
