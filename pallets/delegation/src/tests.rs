@@ -357,7 +357,7 @@ fn check_add_and_revoke_delegations() {
 			opt.unwrap()
 		};
 		assert_eq!(root.ctype_hash, ctype_hash);
-		assert_eq!(root.account, account_hash_alice.clone());
+		assert_eq!(root.owner, account_hash_alice.clone());
 		assert_eq!(root.revoked, false);
 
 		let delegation_1 = {
