@@ -80,19 +80,19 @@ decl_module! {
 					<delegation::Delegations<T>>::get(d),
 					<delegation::Module<T>>::ERROR_DELEGATION_NOT_FOUND
 				)?;
-				if delegation.4 {
+				if delegation.revoked {
 					// delegation has been revoked
 					return Self::error(Self::ERROR_DELEGATION_REVOKED);
-				} else if !delegation.2.eq(&sender) {
+				} else if !delegation.owner.eq(&sender) {
 					// delegation is not made up for the sender of this transaction
 					return Self::error(Self::ERROR_NOT_DELEGATED_TO_ATTESTER);
-				} else if (delegation.3 & delegation::Permissions::ATTEST) != delegation::Permissions::ATTEST {
+				} else if (delegation.permissions & delegation::Permissions::ATTEST) != delegation::Permissions::ATTEST {
 					// delegation is not set up for attesting claims
 					return Self::error(Self::ERROR_DELEGATION_NOT_AUTHORIZED_TO_ATTEST);
 				} else {
 					// check if CTYPE of the delegation is matching the CTYPE of the attestation
 					let root = <error::Module<T>>::ok_or_deposit_err(
-						<delegation::Root<T>>::get(delegation.0),
+						<delegation::Root<T>>::get(delegation.root_id),
 						<delegation::Module<T>>::ERROR_ROOT_NOT_FOUND
 					)?;
 					if !root.0.eq(&ctype_hash) {
