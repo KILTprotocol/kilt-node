@@ -31,10 +31,7 @@ use frame_support::{
 	debug, decl_event, decl_module, decl_storage, dispatch::DispatchResult, StorageMap,
 };
 use frame_system::{self, ensure_signed};
-use sp_std::{
-	prelude::{Clone, PartialEq, Vec},
-	result,
-};
+use sp_std::prelude::{Clone, PartialEq, Vec};
 
 /// The attestation trait
 pub trait Trait: frame_system::Config + delegation::Trait + error::Trait {
@@ -128,7 +125,7 @@ decl_module! {
 		/// origin - the origin of the transaction
 		/// claim_hash - hash of the attested claim
 		#[weight = 1]
-		pub fn revoke(origin, claim_hash: T::Hash) -> DispatchResult {
+		pub fn revoke(origin, claim_hash: T::Hash, max_depth: u64) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 
@@ -141,7 +138,7 @@ decl_module! {
 			if !existing_attestation.1.eq(&sender) {
 				match existing_attestation.2 {
 					Some(d) => {
-						if !Self::is_delegating(&sender, &d)? {
+						if !<delegation::Module<T>>::is_delegating(&sender, &d, max_depth)? {
 							// the sender of the revocation is not a parent in the delegation hierarchy
 							return Self::error(Self::ERROR_NOT_PERMITTED_TO_REVOKE_ATTESTATION);
 						}
@@ -191,14 +188,6 @@ impl<T: Trait> Module<T> {
 	/// Create an error using the error module
 	pub fn error(error_type: error::ErrorType) -> DispatchResult {
 		<error::Module<T>>::error(error_type)
-	}
-
-	/// Check delegation hierarchy using the delegation module
-	fn is_delegating(
-		account: &T::AccountId,
-		delegation: &T::DelegationNodeId,
-	) -> result::Result<bool, &'static str> {
-		<delegation::Module<T>>::is_delegating(account, delegation)
 	}
 }
 

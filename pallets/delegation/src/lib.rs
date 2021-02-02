@@ -257,7 +257,7 @@ decl_module! {
 		/// origin - the origin of the transaction
 		/// delegation_id - id of the delegation node
 		#[weight = 1]
-		pub fn revoke_delegation(origin, delegation_id: T::DelegationNodeId) -> DispatchResult {
+		pub fn revoke_delegation(origin, delegation_id: T::DelegationNodeId, max_depth: u64) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 			// check if delegation node exists
@@ -266,7 +266,7 @@ decl_module! {
 			}
 			// check if the sender of this transaction is permitted by being the
 			// owner of the delegation or of one of its parents
-			if !Self::is_delegating(&sender, &delegation_id)? {
+			if !Self::is_delegating(&sender, &delegation_id, max_depth)? {
 				return Self::error(Self::ERROR_NOT_PERMITTED_TO_REVOKE)
 			}
 			// revoke the delegation and recursively all of its children
@@ -326,7 +326,12 @@ impl<T: Trait> Module<T> {
 	pub fn is_delegating(
 		account: &T::AccountId,
 		delegation: &T::DelegationNodeId,
+		max_depth: u64,
 	) -> result::Result<bool, &'static str> {
+		if max_depth == 0 {
+			return Err("Reached max delegation search depth");
+		}
+
 		// check if delegation exists
 		let d = <error::Module<T>>::ok_or_deposit_err(
 			<Delegations<T>>::get(delegation),
@@ -337,7 +342,7 @@ impl<T: Trait> Module<T> {
 			Ok(true)
 		} else if let Some(p) = d.parent {
 			// recurse upwards in hierarchy
-			Self::is_delegating(account, &p)
+			Self::is_delegating(account, &p, max_depth - 1)
 		} else {
 			// return whether the account is owner of the root
 			let r = <error::Module<T>>::ok_or_deposit_err(
