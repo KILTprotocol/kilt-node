@@ -348,31 +348,31 @@ fn check_add_and_revoke_delegations() {
 			assert!(opt.is_some());
 			opt.unwrap()
 		};
-		assert_eq!(root.0, ctype_hash);
-		assert_eq!(root.1, account_hash_alice.clone());
-		assert_eq!(root.2, false);
+		assert_eq!(root.ctype_hash, ctype_hash);
+		assert_eq!(root.account, account_hash_alice.clone());
+		assert_eq!(root.revoked, false);
 
 		let delegation_1 = {
 			let opt = Delegation::delegation(id_level_1);
 			assert!(opt.is_some());
 			opt.unwrap()
 		};
-		assert_eq!(delegation_1.0, id_level_0);
-		assert_eq!(delegation_1.1, None);
-		assert_eq!(delegation_1.2, account_hash_bob.clone());
-		assert_eq!(delegation_1.3, Permissions::DELEGATE);
-		assert_eq!(delegation_1.4, false);
+		assert_eq!(delegation_1.root_id, id_level_0);
+		assert_eq!(delegation_1.parent, None);
+		assert_eq!(delegation_1.owner, account_hash_bob.clone());
+		assert_eq!(delegation_1.permissions, Permissions::DELEGATE);
+		assert_eq!(delegation_1.revoked, false);
 
 		let delegation_2 = {
 			let opt = Delegation::delegation(id_level_2_2);
 			assert!(opt.is_some());
 			opt.unwrap()
 		};
-		assert_eq!(delegation_2.0, id_level_0);
-		assert_eq!(delegation_2.1, Some(id_level_1));
-		assert_eq!(delegation_2.2, account_hash_charlie.clone());
-		assert_eq!(delegation_2.3, Permissions::ATTEST | Permissions::DELEGATE);
-		assert_eq!(delegation_2.4, false);
+		assert_eq!(delegation_2.root_id, id_level_0);
+		assert_eq!(delegation_2.parent, Some(id_level_1));
+		assert_eq!(delegation_2.owner, account_hash_charlie.clone());
+		assert_eq!(delegation_2.permissions, Permissions::ATTEST | Permissions::DELEGATE);
+		assert_eq!(delegation_2.revoked, false);
 
 		let children = Delegation::children(id_level_1);
 		assert_eq!(children.len(), 2);
@@ -421,8 +421,8 @@ fn check_add_and_revoke_delegations() {
 			id_level_2_2
 		));
 
-		assert_eq!(Delegation::delegation(id_level_2_2).unwrap().4, true);
-		assert_eq!(Delegation::delegation(id_level_2_2_1).unwrap().4, true);
+		assert_eq!(Delegation::delegation(id_level_2_2).unwrap().revoked, true);
+		assert_eq!(Delegation::delegation(id_level_2_2_1).unwrap().revoked, true);
 		assert_err!(
 			Delegation::revoke_root(
 				Origin::signed(account_hash_bob.clone()),
@@ -438,8 +438,8 @@ fn check_add_and_revoke_delegations() {
 			Origin::signed(account_hash_alice),
 			id_level_0
 		));
-		assert_eq!(Delegation::root(id_level_0).unwrap().2, true);
-		assert_eq!(Delegation::delegation(id_level_1).unwrap().4, true);
-		assert_eq!(Delegation::delegation(id_level_2_1).unwrap().4, true);
+		assert_eq!(Delegation::root(id_level_0).unwrap().revoked, true);
+		assert_eq!(Delegation::delegation(id_level_1).unwrap().revoked, true);
+		assert_eq!(Delegation::delegation(id_level_2_1).unwrap().revoked, true);
 	});
 }
