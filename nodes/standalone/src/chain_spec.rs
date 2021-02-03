@@ -29,8 +29,6 @@ use sp_core::{crypto::UncheckedInto, ed25519, Pair, Public};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
 
-use hex;
-
 // Note this is the URL for the telemetry server
 //const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 
@@ -107,7 +105,8 @@ const DEV_FAUCET: [u8; 32] =
 impl Alternative {
 	/// Get an actual chain config from one of the alternatives.
 	pub(crate) fn load(self) -> Result<ChainSpec, String> {
-		let wasm_binary = WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
+		let wasm_binary =
+			WASM_BINARY.ok_or_else(|| "Development wasm binary not available".to_string())?;
 		let mut properties = Properties::new();
 		properties.insert("tokenSymbol".into(), "KILT".into());
 		properties.insert("tokenDecimals".into(), 18.into());

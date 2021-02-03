@@ -42,23 +42,20 @@ native_executor_instance!(
 	kilt_parachain_runtime::native_version,
 );
 
+type PartialConfig = PartialComponents<
+	TFullClient<Block, RuntimeApi, Executor>,
+	TFullBackend<Block>,
+	(),
+	sp_consensus::import_queue::BasicQueue<Block, PrefixedMemoryDB<BlakeTwo256>>,
+	sc_transaction_pool::FullPool<Block, TFullClient<Block, RuntimeApi, Executor>>,
+	Option<sc_telemetry::TelemetrySpan>,
+>;
+
 /// Starts a `ServiceBuilder` for a full service.
 ///
 /// Use this macro if you don't actually need the full service, but just the builder in order to
 /// be able to perform chain operations.
-pub fn new_partial(
-	config: &Configuration,
-) -> Result<
-	PartialComponents<
-		TFullClient<Block, RuntimeApi, Executor>,
-		TFullBackend<Block>,
-		(),
-		sp_consensus::import_queue::BasicQueue<Block, PrefixedMemoryDB<BlakeTwo256>>,
-		sc_transaction_pool::FullPool<Block, TFullClient<Block, RuntimeApi, Executor>>,
-		Option<sc_telemetry::TelemetrySpan>,
-	>,
-	sc_service::Error,
-> {
+pub fn new_partial(config: &Configuration) -> Result<PartialConfig, sc_service::Error> {
 	let inherent_data_providers = sp_inherents::InherentDataProviders::new();
 
 	let (client, backend, keystore_container, task_manager, telemetry_span) =
@@ -79,7 +76,7 @@ pub fn new_partial(
 		client.clone(),
 		inherent_data_providers.clone(),
 		&task_manager.spawn_handle(),
-		registry.clone(),
+		registry,
 	)?;
 
 	let params = PartialComponents {

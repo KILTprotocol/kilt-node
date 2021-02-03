@@ -46,7 +46,7 @@ where
 	} = deps;
 
 	io.extend_with(SystemApi::to_delegate(FullSystem::new(
-		client.clone(),
+		client,
 		pool,
 		deny_unsafe,
 	)));
