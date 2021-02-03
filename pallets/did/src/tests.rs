@@ -18,7 +18,15 @@
 
 use crate::*;
 
-use frame_support::{assert_ok, dispatch::Weight, impl_outer_origin, parameter_types, weights::{DispatchClass, constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND}}};
+use frame_support::{
+	assert_ok,
+	dispatch::Weight,
+	impl_outer_origin, parameter_types,
+	weights::{
+		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
+		DispatchClass,
+	},
+};
 use frame_system::limits::{BlockLength, BlockWeights};
 use kilt_primitives::Signature;
 use sp_core::{ed25519, Pair, H256};

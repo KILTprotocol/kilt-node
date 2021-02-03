@@ -239,7 +239,6 @@ parameter_types! {
 	pub const SelfParaId: u32 = 12623;
 }
 
-
 impl cumulus_parachain_system::Config for Runtime {
 	type Event = Event;
 	type OnValidationData = ();
