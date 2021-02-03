@@ -143,7 +143,7 @@ decl_module! {
 
 			// add root node to storage
 			debug::print!("insert Delegation Root");
-			<Root<T>>::insert(root_id, DelegationProperties::new(ctype_hash, sender.clone()));
+			<Root<T>>::insert(root_id, DelegationRoot::new(ctype_hash, sender.clone()));
 			// deposit event that the root node has been created
 			Self::deposit_event(RawEvent::RootCreated(sender, root_id, ctype_hash));
 			Ok(())
@@ -444,15 +444,15 @@ impl<T: Trait> DelegationNode<T> {
 }
 
 #[derive(Encode, Decode)]
-pub struct DelegationProperties<T: Trait> {
+pub struct DelegationRoot<T: Trait> {
 	pub ctype_hash: T::Hash,
 	pub owner: T::AccountId,
 	pub revoked: bool,
 }
 
-impl<T: Trait> DelegationProperties<T> {
+impl<T: Trait> DelegationRoot<T> {
 	fn new(ctype_hash: T::Hash, owner: T::AccountId) -> Self {
-		DelegationProperties {
+		DelegationRoot {
 			ctype_hash,
 			owner,
 			revoked: false,
@@ -463,8 +463,8 @@ impl<T: Trait> DelegationProperties<T> {
 decl_storage! {
 	trait Store for Module<T: Trait> as Delegation {
 
-		// Root: root-id => DelegationProperties?
-		pub Root get(fn root):map hasher(opaque_blake2_256) T::DelegationNodeId => Option<DelegationProperties<T>>;
+		// Root: root-id => DelegationRoot?
+		pub Root get(fn root):map hasher(opaque_blake2_256) T::DelegationNodeId => Option<DelegationRoot<T>>;
 
 		// Root: delegation-id => Delegation?
 		pub Delegations get(fn delegation):
