@@ -59,6 +59,11 @@ decl_module! {
 		/// Deposit events
 		fn deposit_event() = default;
 
+		// Initializing errors
+		// this includes information about your errors in the node's metadata.
+		// it is needed only if you are using errors in your pallet
+		type Error = Error<T>;
+
 		/// Adds a CTYPE on chain, where
 		/// origin - the origin of the transaction
 		/// hash - hash of the CTYPE of the claim
