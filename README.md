@@ -118,7 +118,7 @@ You can build it by executing these commands:
 #### Building in dev mode
 
 ```
-cargo build
+cargo build -p mashnet-node
 ```
 
 start, by running:
@@ -130,7 +130,7 @@ start, by running:
 #### Building in performant release mode
 
 ```
-cargo build --release
+cargo build --release -p mashnet-node
 ```
 
 start, by running:
