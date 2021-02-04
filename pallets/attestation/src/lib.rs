@@ -104,7 +104,7 @@ decl_module! {
 			// insert attestation
 			debug::RuntimeLogger::init();
 			debug::print!("insert Attestation");
-			<Attestations<T>>::insert(claim_hash, Attestation {ctype_hash, owner: sender.clone(), delegation_id, revoked: false});
+			<Attestations<T>>::insert(claim_hash, Attestation {ctype_hash, attester: sender.clone(), delegation_id, revoked: false});
 
 			if let Some(d) = delegation_id {
 				// if attestation is based on a delegation this is stored in a separate map
@@ -128,12 +128,12 @@ decl_module! {
 			let sender = ensure_signed(origin)?;
 
 			// lookup attestation & check if the attestation exists
-			let Attestation {ctype_hash, owner, delegation_id, revoked, ..} = <error::Module<T>>::ok_or_deposit_err(
+			let Attestation {ctype_hash, attester, delegation_id, revoked, ..} = <error::Module<T>>::ok_or_deposit_err(
 				<Attestations<T>>::get(claim_hash),
 				Self::ERROR_ATTESTATION_NOT_FOUND
 			)?;
 			// if the sender of the revocation transaction is not the attester, check delegation tree
-			if !owner.eq(&sender) {
+			if !attester.eq(&sender) {
 				match delegation_id {
 					Some(delegation_id) => {
 						if !<delegation::Module<T>>::is_delegating(&sender, &delegation_id, max_depth)? {
@@ -157,7 +157,7 @@ decl_module! {
 			debug::print!("revoking Attestation");
 			<Attestations<T>>::insert(claim_hash, Attestation {
 				ctype_hash,
-				owner,
+				attester,
 				delegation_id,
 				revoked: true
 			});
@@ -198,7 +198,7 @@ pub struct Attestation<T: Trait> {
 	// hash of the CTYPE used for this attestation
 	ctype_hash: T::Hash,
 	// the account which executed the attestation
-	owner: T::AccountId,
+	attester: T::AccountId,
 	// id of the delegation node (if existent)
 	delegation_id: Option<T::DelegationNodeId>,
 	// revocation status

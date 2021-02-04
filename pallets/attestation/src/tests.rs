@@ -154,7 +154,7 @@ fn check_add_attestation() {
 		));
 		let Attestation {
 			ctype_hash,
-			owner,
+			attester,
 			revoked,
 			delegation_id,
 		} = {
@@ -163,7 +163,7 @@ fn check_add_attestation() {
 			opt.unwrap()
 		};
 		assert_eq!(ctype_hash, hash);
-		assert_eq!(owner, account_hash);
+		assert_eq!(attester, account_hash);
 		assert_eq!(delegation_id, None);
 		assert_eq!(revoked, false);
 	});
@@ -189,7 +189,7 @@ fn check_revoke_attestation() {
 		));
 		let Attestation {
 			ctype_hash,
-			owner,
+			attester,
 			revoked,
 			delegation_id,
 		} = {
@@ -198,7 +198,7 @@ fn check_revoke_attestation() {
 			opt.unwrap()
 		};
 		assert_eq!(ctype_hash, hash);
-		assert_eq!(owner, account_hash);
+		assert_eq!(attester, account_hash);
 		assert_eq!(delegation_id, None);
 		assert_eq!(revoked, true);
 	});
