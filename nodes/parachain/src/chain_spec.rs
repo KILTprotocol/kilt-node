@@ -19,10 +19,10 @@
 //! KILT chain specification
 
 use cumulus_primitives::ParaId;
-use kilt_primitives::{AccountId, Signature};
 use kilt_parachain_runtime::{
 	BalancesConfig, GenesisConfig, ParachainInfoConfig, SudoConfig, SystemConfig, WASM_BINARY,
 };
+use kilt_primitives::{AccountId, Signature};
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
 use sc_service::{ChainType, Properties};
 use serde::{Deserialize, Serialize};
@@ -53,6 +53,7 @@ pub struct Extensions {
 
 impl Extensions {
 	/// Try to get the extension from the given `ChainSpec`.
+	#[allow(clippy::borrowed_box)]
 	pub fn try_get(chain_spec: &Box<dyn sc_service::ChainSpec>) -> Option<&Self> {
 		sc_chain_spec::get_extension(chain_spec.extensions())
 	}

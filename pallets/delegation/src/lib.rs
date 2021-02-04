@@ -462,7 +462,6 @@ impl<T: Trait> DelegationRoot<T> {
 
 decl_storage! {
 	trait Store for Module<T: Trait> as Delegation {
-
 		// Root: root-id => DelegationRoot?
 		pub Root get(fn root):map hasher(opaque_blake2_256) T::DelegationNodeId => Option<DelegationRoot<T>>;
 

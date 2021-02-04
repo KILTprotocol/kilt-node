@@ -43,9 +43,14 @@ jobs:
     # Enable this for clippy linting.
     # - name: Check and Lint Code
     #   run: cargo +nightly-2020-10-06 clippy -- -D warnings
-
     - name: Check Code
-      run: cargo check --all
+      run: cargo check --all --all-features
+
+    - name: Check Formatting
+      run: cargo fmt --all -- --check
+
+    - name: Check Clippy
+      run: cargo clippy --all -- -D warnings
 
     - name: Test Code
-      run: cargo test --all
+      run: cargo test --all --all-features

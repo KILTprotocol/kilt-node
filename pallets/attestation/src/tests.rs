@@ -19,7 +19,15 @@
 use crate::*;
 
 use codec::Encode;
-use frame_support::{assert_err, assert_ok, dispatch::Weight, impl_outer_origin, parameter_types, weights::{DispatchClass, constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND}}};
+use frame_support::{
+	assert_err, assert_ok,
+	dispatch::Weight,
+	impl_outer_origin, parameter_types,
+	weights::{
+		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
+		DispatchClass,
+	},
+};
 use frame_system::limits::{BlockLength, BlockWeights};
 use kilt_primitives::{AccountId, Signature};
 use sp_core::{ed25519, Pair, H256};
@@ -116,7 +124,7 @@ impl Trait for Test {
 	type Event = ();
 }
 
-type Attestation = Module<Test>;
+type AttestationModule = Module<Test>;
 type CType = ctype::Module<Test>;
 type Delegation = delegation::Module<Test>;
 
@@ -138,20 +146,26 @@ fn check_add_attestation() {
 		let hash = H256::from_low_u64_be(1);
 		let account_hash = MultiSigner::from(pair.public()).into_account();
 		assert_ok!(CType::add(Origin::signed(account_hash.clone()), hash));
-		assert_ok!(Attestation::add(
+		assert_ok!(AttestationModule::add(
 			Origin::signed(account_hash.clone()),
 			hash,
 			hash,
 			None
 		));
-		let existing_attestation_for_claim = {
-			let opt = Attestation::attestations(hash);
+		let Attestation {
+			ctype_hash,
+			attester,
+			revoked,
+			delegation_id,
+		} = {
+			let opt = AttestationModule::attestations(hash);
 			assert!(opt.is_some());
 			opt.unwrap()
 		};
-		assert_eq!(existing_attestation_for_claim.0, hash);
-		assert_eq!(existing_attestation_for_claim.1, account_hash);
-		assert_eq!(existing_attestation_for_claim.3, false);
+		assert_eq!(ctype_hash, hash);
+		assert_eq!(attester, account_hash);
+		assert_eq!(delegation_id, None);
+		assert_eq!(revoked, false);
 	});
 }
 
@@ -162,25 +176,31 @@ fn check_revoke_attestation() {
 		let hash = H256::from_low_u64_be(1);
 		let account_hash = MultiSigner::from(pair.public()).into_account();
 		assert_ok!(CType::add(Origin::signed(account_hash.clone()), hash));
-		assert_ok!(Attestation::add(
+		assert_ok!(AttestationModule::add(
 			Origin::signed(account_hash.clone()),
 			hash,
 			hash,
 			None
 		));
-		assert_ok!(Attestation::revoke(
+		assert_ok!(AttestationModule::revoke(
 			Origin::signed(account_hash.clone()),
 			hash,
 			10
 		));
-		let existing_attestation_for_claim = {
-			let opt = Attestation::attestations(hash);
+		let Attestation {
+			ctype_hash,
+			attester,
+			revoked,
+			delegation_id,
+		} = {
+			let opt = AttestationModule::attestations(hash);
 			assert!(opt.is_some());
 			opt.unwrap()
 		};
-		assert_eq!(existing_attestation_for_claim.0, hash);
-		assert_eq!(existing_attestation_for_claim.1, account_hash);
-		assert_eq!(existing_attestation_for_claim.3, true);
+		assert_eq!(ctype_hash, hash);
+		assert_eq!(attester, account_hash);
+		assert_eq!(delegation_id, None);
+		assert_eq!(revoked, true);
 	});
 }
 
@@ -191,15 +211,15 @@ fn check_double_attestation() {
 		let hash = H256::from_low_u64_be(1);
 		let account_hash = MultiSigner::from(pair.public()).into_account();
 		assert_ok!(CType::add(Origin::signed(account_hash.clone()), hash));
-		assert_ok!(Attestation::add(
+		assert_ok!(AttestationModule::add(
 			Origin::signed(account_hash.clone()),
 			hash,
 			hash,
 			None
 		));
 		assert_err!(
-			Attestation::add(Origin::signed(account_hash), hash, hash, None),
-			Attestation::ERROR_ALREADY_ATTESTED.1
+			AttestationModule::add(Origin::signed(account_hash), hash, hash, None),
+			AttestationModule::ERROR_ALREADY_ATTESTED.1
 		);
 	});
 }
@@ -211,20 +231,20 @@ fn check_double_revoke_attestation() {
 		let hash = H256::from_low_u64_be(1);
 		let account_hash = MultiSigner::from(pair.public()).into_account();
 		assert_ok!(CType::add(Origin::signed(account_hash.clone()), hash));
-		assert_ok!(Attestation::add(
+		assert_ok!(AttestationModule::add(
 			Origin::signed(account_hash.clone()),
 			hash,
 			hash,
 			None
 		));
-		assert_ok!(Attestation::revoke(
+		assert_ok!(AttestationModule::revoke(
 			Origin::signed(account_hash.clone()),
 			hash,
 			10
 		));
 		assert_err!(
-			Attestation::revoke(Origin::signed(account_hash), hash, 10),
-			Attestation::ERROR_ALREADY_REVOKED.1,
+			AttestationModule::revoke(Origin::signed(account_hash), hash, 10),
+			AttestationModule::ERROR_ALREADY_REVOKED.1,
 		);
 	});
 }
@@ -236,8 +256,8 @@ fn check_revoke_unknown() {
 		let hash = H256::from_low_u64_be(1);
 		let account_hash = MultiSigner::from(pair.public()).into_account();
 		assert_err!(
-			Attestation::revoke(Origin::signed(account_hash), hash, 10),
-			Attestation::ERROR_ATTESTATION_NOT_FOUND.1
+			AttestationModule::revoke(Origin::signed(account_hash), hash, 10),
+			AttestationModule::ERROR_ATTESTATION_NOT_FOUND.1
 		);
 	});
 }
@@ -251,15 +271,15 @@ fn check_revoke_not_permitted() {
 		let account_hash_bob = MultiSigner::from(pair_bob.public()).into_account();
 		let hash = H256::from_low_u64_be(1);
 		assert_ok!(CType::add(Origin::signed(account_hash_alice.clone()), hash));
-		assert_ok!(Attestation::add(
+		assert_ok!(AttestationModule::add(
 			Origin::signed(account_hash_alice),
 			hash,
 			hash,
 			None
 		));
 		assert_err!(
-			Attestation::revoke(Origin::signed(account_hash_bob), hash, 10),
-			Attestation::ERROR_NOT_PERMITTED_TO_REVOKE_ATTESTATION.1
+			AttestationModule::revoke(Origin::signed(account_hash_bob), hash, 10),
+			AttestationModule::ERROR_NOT_PERMITTED_TO_REVOKE_ATTESTATION.1
 		);
 	});
 }
@@ -288,7 +308,7 @@ fn check_add_attestation_with_delegation() {
 		));
 
 		assert_err!(
-			Attestation::add(
+			AttestationModule::add(
 				Origin::signed(account_hash_alice.clone()),
 				claim_hash,
 				ctype_hash,
@@ -332,7 +352,7 @@ fn check_add_attestation_with_delegation() {
 		));
 
 		assert_err!(
-			Attestation::add(
+			AttestationModule::add(
 				Origin::signed(account_hash_bob.clone()),
 				claim_hash,
 				other_ctype_hash,
@@ -345,33 +365,33 @@ fn check_add_attestation_with_delegation() {
 			other_ctype_hash
 		));
 		assert_err!(
-			Attestation::add(
+			AttestationModule::add(
 				Origin::signed(account_hash_bob.clone()),
 				claim_hash,
 				other_ctype_hash,
 				Some(delegation_2)
 			),
-			Attestation::ERROR_CTYPE_OF_DELEGATION_NOT_MATCHING.1
+			AttestationModule::ERROR_CTYPE_OF_DELEGATION_NOT_MATCHING.1
 		);
 		assert_err!(
-			Attestation::add(
+			AttestationModule::add(
 				Origin::signed(account_hash_alice.clone()),
 				claim_hash,
 				ctype_hash,
 				Some(delegation_2)
 			),
-			Attestation::ERROR_NOT_DELEGATED_TO_ATTESTER.1
+			AttestationModule::ERROR_NOT_DELEGATED_TO_ATTESTER.1
 		);
 		assert_err!(
-			Attestation::add(
+			AttestationModule::add(
 				Origin::signed(account_hash_bob.clone()),
 				claim_hash,
 				ctype_hash,
 				Some(delegation_1)
 			),
-			Attestation::ERROR_DELEGATION_NOT_AUTHORIZED_TO_ATTEST.1
+			AttestationModule::ERROR_DELEGATION_NOT_AUTHORIZED_TO_ATTEST.1
 		);
-		assert_ok!(Attestation::add(
+		assert_ok!(AttestationModule::add(
 			Origin::signed(account_hash_bob.clone()),
 			claim_hash,
 			ctype_hash,
@@ -379,7 +399,7 @@ fn check_add_attestation_with_delegation() {
 		));
 
 		let existing_attestations_for_delegation =
-			Attestation::delegated_attestations(delegation_2);
+			AttestationModule::delegated_attestations(delegation_2);
 		assert_eq!(existing_attestations_for_delegation.len(), 1);
 		assert_eq!(existing_attestations_for_delegation[0], claim_hash);
 
@@ -388,20 +408,20 @@ fn check_add_attestation_with_delegation() {
 			delegation_root
 		));
 		assert_err!(
-			Attestation::add(
+			AttestationModule::add(
 				Origin::signed(account_hash_bob),
 				claim_hash,
 				ctype_hash,
 				Some(delegation_2)
 			),
-			Attestation::ERROR_DELEGATION_REVOKED.1
+			AttestationModule::ERROR_DELEGATION_REVOKED.1
 		);
 
 		assert_err!(
-			Attestation::revoke(Origin::signed(account_hash_charlie), claim_hash, 10),
-			Attestation::ERROR_NOT_PERMITTED_TO_REVOKE_ATTESTATION.1
+			AttestationModule::revoke(Origin::signed(account_hash_charlie), claim_hash, 10),
+			AttestationModule::ERROR_NOT_PERMITTED_TO_REVOKE_ATTESTATION.1
 		);
-		assert_ok!(Attestation::revoke(
+		assert_ok!(AttestationModule::revoke(
 			Origin::signed(account_hash_alice),
 			claim_hash,
 			10

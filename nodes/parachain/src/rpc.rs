@@ -7,7 +7,7 @@
 
 use std::sync::Arc;
 
-use kilt_primitives::{Block, AccountId, Index};
+use kilt_primitives::{AccountId, Block, Index};
 pub use sc_rpc_api::DenyUnsafe;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
@@ -46,7 +46,7 @@ where
 	} = deps;
 
 	io.extend_with(SystemApi::to_delegate(FullSystem::new(
-		client.clone(),
+		client,
 		pool,
 		deny_unsafe,
 	)));
