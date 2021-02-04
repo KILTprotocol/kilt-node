@@ -20,7 +20,7 @@ use crate::*;
 
 use codec::Encode;
 use frame_support::{
-	assert_err, assert_ok,
+	assert_noop, assert_ok,
 	dispatch::Weight,
 	impl_outer_origin, parameter_types,
 	weights::{
@@ -108,11 +108,6 @@ impl ctype::Trait for Test {
 	type Event = ();
 }
 
-impl error::Trait for Test {
-	type Event = ();
-	type ErrorCode = u16;
-}
-
 impl Trait for Test {
 	type Event = ();
 	type Signature = MultiSignature;
@@ -160,21 +155,21 @@ fn check_add_and_revoke_delegations() {
 			id_level_0,
 			ctype_hash
 		));
-		assert_err!(
+		assert_noop!(
 			Delegation::create_root(
 				Origin::signed(account_hash_alice.clone()),
 				id_level_0,
 				ctype_hash
 			),
-			Delegation::ERROR_ROOT_ALREADY_EXISTS.1
+			Error::<Test>::RootAlreadyExists
 		);
-		assert_err!(
+		assert_noop!(
 			Delegation::create_root(
 				Origin::signed(account_hash_alice.clone()),
 				id_level_1,
 				H256::from_low_u64_be(2)
 			),
-			CType::ERROR_CTYPE_NOT_FOUND.1
+			ctype::Error::<Test>::NotFound
 		);
 
 		assert_ok!(Delegation::add_delegation(
@@ -191,7 +186,7 @@ fn check_add_and_revoke_delegations() {
 				Permissions::DELEGATE
 			))))
 		));
-		assert_err!(
+		assert_noop!(
 			Delegation::add_delegation(
 				Origin::signed(account_hash_alice.clone()),
 				id_level_1,
@@ -206,9 +201,9 @@ fn check_add_and_revoke_delegations() {
 					Permissions::DELEGATE
 				))))
 			),
-			Delegation::ERROR_DELEGATION_ALREADY_EXISTS.1
+			Error::<Test>::AlreadyExists
 		);
-		assert_err!(
+		assert_noop!(
 			Delegation::add_delegation(
 				Origin::signed(account_hash_bob.clone()),
 				id_level_2_1,
@@ -218,9 +213,9 @@ fn check_add_and_revoke_delegations() {
 				Permissions::ATTEST,
 				MultiSignature::from(ed25519::Signature::from_h512(H512::from_low_u64_be(0)))
 			),
-			Delegation::ERROR_BAD_DELEGATION_SIGNATURE.1
+			Error::<Test>::BadSignature,
 		);
-		assert_err!(
+		assert_noop!(
 			Delegation::add_delegation(
 				Origin::signed(account_hash_charlie.clone()),
 				id_level_2_1,
@@ -235,9 +230,9 @@ fn check_add_and_revoke_delegations() {
 					Permissions::DELEGATE
 				))))
 			),
-			Delegation::ERROR_NOT_OWNER_OF_ROOT.1
+			Error::<Test>::NotOwnerOfRoot,
 		);
-		assert_err!(
+		assert_noop!(
 			Delegation::add_delegation(
 				Origin::signed(account_hash_alice.clone()),
 				id_level_2_1,
@@ -252,7 +247,7 @@ fn check_add_and_revoke_delegations() {
 					Permissions::DELEGATE
 				))))
 			),
-			Delegation::ERROR_ROOT_NOT_FOUND.1
+			Error::<Test>::RootNotFound
 		);
 
 		assert_ok!(Delegation::add_delegation(
@@ -269,7 +264,7 @@ fn check_add_and_revoke_delegations() {
 				Permissions::ATTEST
 			))))
 		));
-		assert_err!(
+		assert_noop!(
 			Delegation::add_delegation(
 				Origin::signed(account_hash_alice.clone()),
 				id_level_2_2,
@@ -284,9 +279,9 @@ fn check_add_and_revoke_delegations() {
 					Permissions::ATTEST
 				))))
 			),
-			Delegation::ERROR_NOT_OWNER_OF_PARENT.1
+			Error::<Test>::NotOwnerOfParent
 		);
-		assert_err!(
+		assert_noop!(
 			Delegation::add_delegation(
 				Origin::signed(account_hash_charlie.clone()),
 				id_level_2_2,
@@ -301,9 +296,9 @@ fn check_add_and_revoke_delegations() {
 					Permissions::ATTEST
 				))))
 			),
-			Delegation::ERROR_NOT_AUTHORIZED_TO_DELEGATE.1
+			Error::<Test>::UnauthorizedDelegation
 		);
-		assert_err!(
+		assert_noop!(
 			Delegation::add_delegation(
 				Origin::signed(account_hash_bob.clone()),
 				id_level_2_2,
@@ -318,7 +313,7 @@ fn check_add_and_revoke_delegations() {
 					Permissions::ATTEST
 				))))
 			),
-			Delegation::ERROR_PARENT_NOT_FOUND.1
+			Error::<Test>::ParentNotFound
 		);
 
 		assert_ok!(Delegation::add_delegation(
@@ -413,26 +408,25 @@ fn check_add_and_revoke_delegations() {
 			Delegation::is_delegating(&account_hash_charlie, &id_level_1, 3),
 			Ok(false)
 		);
-		assert_err!(
+		assert_noop!(
 			Delegation::is_delegating(&account_hash_charlie, &id_level_0, 3),
-			Delegation::ERROR_DELEGATION_NOT_FOUND.1
+			Error::<Test>::DelegationNotFound
 		);
-
-		assert_err!(
+		assert_noop!(
 			Delegation::revoke_delegation(
 				Origin::signed(account_hash_charlie.clone()),
 				H256::from_low_u64_be(999),
 				10
 			),
-			Delegation::ERROR_DELEGATION_NOT_FOUND.1
+			Error::<Test>::DelegationNotFound
 		);
-		assert_err!(
+		assert_noop!(
 			Delegation::revoke_delegation(
 				Origin::signed(account_hash_charlie.clone()),
 				id_level_1,
 				10
 			),
-			Delegation::ERROR_NOT_PERMITTED_TO_REVOKE.1,
+			Error::<Test>::UnauthorizedRevocation,
 		);
 		assert_ok!(Delegation::revoke_delegation(
 			Origin::signed(account_hash_charlie),
@@ -445,16 +439,16 @@ fn check_add_and_revoke_delegations() {
 			Delegation::delegation(id_level_2_2_1).unwrap().revoked,
 			true
 		);
-		assert_err!(
+		assert_noop!(
 			Delegation::revoke_root(
 				Origin::signed(account_hash_bob.clone()),
 				H256::from_low_u64_be(999)
 			),
-			Delegation::ERROR_ROOT_NOT_FOUND.1
+			Error::<Test>::RootNotFound
 		);
-		assert_err!(
+		assert_noop!(
 			Delegation::revoke_root(Origin::signed(account_hash_bob), id_level_0),
-			Delegation::ERROR_NOT_PERMITTED_TO_REVOKE.1
+			Error::<Test>::UnauthorizedRevocation
 		);
 		assert_ok!(Delegation::revoke_root(
 			Origin::signed(account_hash_alice),

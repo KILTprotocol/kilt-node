@@ -20,13 +20,14 @@ use crate::*;
 
 use codec::Encode;
 use frame_support::{
-	assert_err, assert_ok,
+	assert_noop, assert_ok,
 	dispatch::Weight,
 	impl_outer_origin, parameter_types,
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
 		DispatchClass,
 	},
+	StorageMap,
 };
 use frame_system::limits::{BlockLength, BlockWeights};
 use kilt_primitives::{AccountId, Signature};
@@ -105,11 +106,6 @@ impl frame_system::Config for Test {
 }
 
 impl ctype::Trait for Test {
-	type Event = ();
-}
-
-impl error::Trait for Test {
-	type ErrorCode = u16;
 	type Event = ();
 }
 
@@ -217,9 +213,9 @@ fn check_double_attestation() {
 			hash,
 			None
 		));
-		assert_err!(
+		assert_noop!(
 			AttestationModule::add(Origin::signed(account_hash), hash, hash, None),
-			AttestationModule::ERROR_ALREADY_ATTESTED.1
+			Error::<Test>::AlreadyAttested
 		);
 	});
 }
@@ -242,9 +238,9 @@ fn check_double_revoke_attestation() {
 			hash,
 			10
 		));
-		assert_err!(
+		assert_noop!(
 			AttestationModule::revoke(Origin::signed(account_hash), hash, 10),
-			AttestationModule::ERROR_ALREADY_REVOKED.1,
+			Error::<Test>::AlreadyRevoked
 		);
 	});
 }
@@ -255,9 +251,9 @@ fn check_revoke_unknown() {
 		let pair = ed25519::Pair::from_seed(&*b"Alice                           ");
 		let hash = H256::from_low_u64_be(1);
 		let account_hash = MultiSigner::from(pair.public()).into_account();
-		assert_err!(
+		assert_noop!(
 			AttestationModule::revoke(Origin::signed(account_hash), hash, 10),
-			AttestationModule::ERROR_ATTESTATION_NOT_FOUND.1
+			Error::<Test>::AttestationNotFound
 		);
 	});
 }
@@ -277,9 +273,9 @@ fn check_revoke_not_permitted() {
 			hash,
 			None
 		));
-		assert_err!(
+		assert_noop!(
 			AttestationModule::revoke(Origin::signed(account_hash_bob), hash, 10),
-			AttestationModule::ERROR_NOT_PERMITTED_TO_REVOKE_ATTESTATION.1
+			Error::<Test>::UnauthorizedRevocation
 		);
 	});
 }
@@ -307,21 +303,25 @@ fn check_add_attestation_with_delegation() {
 			ctype_hash
 		));
 
-		assert_err!(
+		// cannot add attestation based on a missing delegation
+		assert_noop!(
 			AttestationModule::add(
 				Origin::signed(account_hash_alice.clone()),
 				claim_hash,
 				ctype_hash,
-				Some(delegation_1)
+				Some(delegation_root)
 			),
-			Delegation::ERROR_DELEGATION_NOT_FOUND.1
+			delegation::Error::<Test>::DelegationNotFound
 		);
 
+		// add root delegation
 		assert_ok!(Delegation::create_root(
 			Origin::signed(account_hash_alice.clone()),
 			delegation_root,
 			ctype_hash
 		));
+
+		// add delegation_1 as child of root
 		assert_ok!(Delegation::add_delegation(
 			Origin::signed(account_hash_alice.clone()),
 			delegation_1,
@@ -336,6 +336,8 @@ fn check_add_attestation_with_delegation() {
 				delegation::Permissions::DELEGATE
 			))))
 		));
+
+		// add delegation_2 as child of root
 		assert_ok!(Delegation::add_delegation(
 			Origin::signed(account_hash_alice.clone()),
 			delegation_2,
@@ -351,46 +353,56 @@ fn check_add_attestation_with_delegation() {
 			))))
 		));
 
-		assert_err!(
+		// cannot add attestation for missing ctype
+		assert_noop!(
 			AttestationModule::add(
 				Origin::signed(account_hash_bob.clone()),
 				claim_hash,
 				other_ctype_hash,
 				Some(delegation_2)
 			),
-			CType::ERROR_CTYPE_NOT_FOUND.1
+			ctype::Error::<Test>::NotFound
 		);
+
+		// add missing ctype
 		assert_ok!(CType::add(
 			Origin::signed(account_hash_alice.clone()),
 			other_ctype_hash
 		));
-		assert_err!(
+
+		// cannot add attestation with different ctype than in root
+		assert_noop!(
 			AttestationModule::add(
 				Origin::signed(account_hash_bob.clone()),
 				claim_hash,
 				other_ctype_hash,
 				Some(delegation_2)
 			),
-			AttestationModule::ERROR_CTYPE_OF_DELEGATION_NOT_MATCHING.1
+			Error::<Test>::CTypeMismatch
 		);
-		assert_err!(
+
+		// cannot add delegation if not owner (bob is owner of delegation_2)
+		assert_noop!(
 			AttestationModule::add(
 				Origin::signed(account_hash_alice.clone()),
 				claim_hash,
 				ctype_hash,
 				Some(delegation_2)
 			),
-			AttestationModule::ERROR_NOT_DELEGATED_TO_ATTESTER.1
+			Error::<Test>::NotDelegatedToAttester
 		);
-		assert_err!(
+		// cannot add delegation if not owner (alice is owner of delegation_1)
+		assert_noop!(
 			AttestationModule::add(
 				Origin::signed(account_hash_bob.clone()),
 				claim_hash,
 				ctype_hash,
 				Some(delegation_1)
 			),
-			AttestationModule::ERROR_DELEGATION_NOT_AUTHORIZED_TO_ATTEST.1
+			Error::<Test>::DelegationUnauthorizedToAttest
 		);
+
+		// add attestation for delegation_2
 		assert_ok!(AttestationModule::add(
 			Origin::signed(account_hash_bob.clone()),
 			claim_hash,
@@ -403,28 +415,33 @@ fn check_add_attestation_with_delegation() {
 		assert_eq!(existing_attestations_for_delegation.len(), 1);
 		assert_eq!(existing_attestations_for_delegation[0], claim_hash);
 
+		// revoke root delegation
 		assert_ok!(Delegation::revoke_root(
 			Origin::signed(account_hash_alice.clone()),
 			delegation_root
 		));
-		assert_err!(
-			AttestationModule::add(
-				Origin::signed(account_hash_bob),
-				claim_hash,
-				ctype_hash,
-				Some(delegation_2)
-			),
-			AttestationModule::ERROR_DELEGATION_REVOKED.1
-		);
 
-		assert_err!(
+		// cannot revoke attestation if not owner (alice is owner of attestation)
+		assert_noop!(
 			AttestationModule::revoke(Origin::signed(account_hash_charlie), claim_hash, 10),
-			AttestationModule::ERROR_NOT_PERMITTED_TO_REVOKE_ATTESTATION.1
+			Error::<Test>::UnauthorizedRevocation
 		);
 		assert_ok!(AttestationModule::revoke(
 			Origin::signed(account_hash_alice),
 			claim_hash,
 			10
 		));
+
+		// remove attestation to catch for revoked delegation
+		Attestations::<Test>::remove(claim_hash);
+		assert_noop!(
+			AttestationModule::add(
+				Origin::signed(account_hash_bob),
+				claim_hash,
+				ctype_hash,
+				Some(delegation_2)
+			),
+			Error::<Test>::DelegationRevoked
+		);
 	});
 }

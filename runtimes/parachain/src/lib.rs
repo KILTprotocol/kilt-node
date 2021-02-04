@@ -61,8 +61,6 @@ pub use attestation;
 pub use ctype;
 pub use delegation;
 pub use did;
-pub use error;
-pub use portablegabi;
 
 pub type SessionHandlers = ();
 
@@ -276,18 +274,6 @@ impl did::Trait for Runtime {
 	type PublicBoxKey = Hash;
 }
 
-impl portablegabi::Trait for Runtime {
-	/// The ubiquitous event type.
-	type Event = Event;
-}
-
-impl error::Trait for Runtime {
-	/// Error code type
-	type ErrorCode = u16;
-	/// The ubiquitous event type.
-	type Event = Event;
-}
-
 construct_runtime! {
 	pub enum Runtime where
 		Block = Block,
@@ -307,8 +293,6 @@ construct_runtime! {
 		Attestation: attestation::{Module, Call, Storage, Event<T>},
 		Delegation: delegation::{Module, Call, Storage, Event<T>},
 		Did: did::{Module, Call, Storage, Event<T>},
-		Portablegabi: portablegabi::{Module, Call, Storage, Event<T>},
-		Error: error::{ Module, Call, Event<T>},
 	}
 }
 
