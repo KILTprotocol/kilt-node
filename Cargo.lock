@@ -355,7 +355,6 @@ version = "0.23.0"
 dependencies = [
  "ctype",
  "delegation",
- "error",
  "frame-support",
  "frame-system",
  "kilt-primitives",
@@ -1056,7 +1055,6 @@ dependencies = [
 name = "ctype"
 version = "0.23.0"
 dependencies = [
- "error",
  "frame-support",
  "frame-system",
  "kilt-primitives",
@@ -1282,7 +1280,6 @@ version = "0.23.0"
 dependencies = [
  "bitflags",
  "ctype",
- "error",
  "frame-support",
  "frame-system",
  "kilt-primitives",
@@ -1535,18 +1532,6 @@ checksum = "14ca354e36190500e1e1fb267c647932382b54053c50b14970856c0b00a35067"
 dependencies = [
  "gcc",
  "libc",
-]
-
-[[package]]
-name = "error"
-version = "0.23.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "parity-scale-codec",
- "sp-arithmetic",
- "sp-io",
- "sp-runtime",
 ]
 
 [[package]]
@@ -2947,7 +2932,6 @@ dependencies = [
  "cumulus-runtime",
  "delegation",
  "did",
- "error",
  "frame-executive",
  "frame-support",
  "frame-system",
@@ -2961,7 +2945,6 @@ dependencies = [
  "pallet-transaction-payment",
  "parachain-info",
  "parity-scale-codec",
- "portablegabi",
  "serde",
  "sp-api",
  "sp-arithmetic",
@@ -3724,7 +3707,6 @@ dependencies = [
  "ctype",
  "delegation",
  "did",
- "error",
  "frame-executive",
  "frame-support",
  "frame-system",
@@ -3742,7 +3724,6 @@ dependencies = [
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "parity-scale-codec",
- "portablegabi",
  "serde",
  "sp-api",
  "sp-arithmetic",
@@ -6222,23 +6203,6 @@ dependencies = [
  "cpuid-bool 0.2.0",
  "opaque-debug 0.3.0",
  "universal-hash",
-]
-
-[[package]]
-name = "portablegabi"
-version = "0.23.0"
-dependencies = [
- "error",
- "frame-support",
- "frame-system",
- "pallet-balances",
- "parity-scale-codec",
- "serde",
- "sp-arithmetic",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
 ]
 
 [[package]]

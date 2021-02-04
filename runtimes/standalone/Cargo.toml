@@ -12,9 +12,7 @@ attestation = {default-features = false, path = '../../pallets/attestation'}
 ctype = {default-features = false, path = '../../pallets/ctype'}
 delegation = {default-features = false, path = '../../pallets/delegation'}
 did = {default-features = false, path = '../../pallets/did'}
-error = {default-features = false, path = '../../pallets/error'}
 kilt-primitives = {path = '../../primitives', default-features = false}
-portablegabi = {default-features = false, path = '../../pallets/portablegabi'}
 
 [dependencies.aura]
 branch = "rococo-v1"
@@ -214,9 +212,7 @@ std = [
   'attestation/std',
   'ctype/std',
   'did/std',
-  'error/std',
   'delegation/std',
-  'portablegabi/std',
   'pallet-indices/std',
   'grandpa/std',
   'aura/std',

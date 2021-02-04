@@ -24,7 +24,6 @@ version = '1.0.6'
 [dependencies]
 ctype = {version = '0.23.0', default-features = false, path = '../ctype'}
 delegation = {version = '0.23.0', default-features = false, path = '../delegation'}
-error = {version = '0.23.0', default-features = false, path = '../error'}
 
 [dependencies.codec]
 default-features = false
@@ -69,5 +68,4 @@ std = [
   'sp-io/std',
   'ctype/std',
   'delegation/std',
-  'error/std',
 ]
