@@ -31,10 +31,7 @@ use frame_support::{
 	debug, decl_event, decl_module, decl_storage, dispatch::DispatchResult, StorageMap,
 };
 use frame_system::{self, ensure_signed};
-use sp_std::{
-	prelude::{Clone, PartialEq, Vec},
-	result,
-};
+use sp_std::prelude::{Clone, PartialEq, Vec};
 
 /// The attestation trait
 pub trait Trait: frame_system::Config + delegation::Trait + error::Trait {
@@ -80,22 +77,22 @@ decl_module! {
 					<delegation::Delegations<T>>::get(d),
 					<delegation::Module<T>>::ERROR_DELEGATION_NOT_FOUND
 				)?;
-				if delegation.4 {
+				if delegation.revoked {
 					// delegation has been revoked
 					return Self::error(Self::ERROR_DELEGATION_REVOKED);
-				} else if !delegation.2.eq(&sender) {
+				} else if !delegation.owner.eq(&sender) {
 					// delegation is not made up for the sender of this transaction
 					return Self::error(Self::ERROR_NOT_DELEGATED_TO_ATTESTER);
-				} else if (delegation.3 & delegation::Permissions::ATTEST) != delegation::Permissions::ATTEST {
+				} else if (delegation.permissions & delegation::Permissions::ATTEST) != delegation::Permissions::ATTEST {
 					// delegation is not set up for attesting claims
 					return Self::error(Self::ERROR_DELEGATION_NOT_AUTHORIZED_TO_ATTEST);
 				} else {
 					// check if CTYPE of the delegation is matching the CTYPE of the attestation
 					let root = <error::Module<T>>::ok_or_deposit_err(
-						<delegation::Root<T>>::get(delegation.0),
+						<delegation::Root<T>>::get(delegation.root_id),
 						<delegation::Module<T>>::ERROR_ROOT_NOT_FOUND
 					)?;
-					if !root.0.eq(&ctype_hash) {
+					if !root.ctype_hash.eq(&ctype_hash) {
 						return Self::error(Self::ERROR_CTYPE_OF_DELEGATION_NOT_MATCHING);
 					}
 				}
@@ -128,7 +125,7 @@ decl_module! {
 		/// origin - the origin of the transaction
 		/// claim_hash - hash of the attested claim
 		#[weight = 1]
-		pub fn revoke(origin, claim_hash: T::Hash) -> DispatchResult {
+		pub fn revoke(origin, claim_hash: T::Hash, max_depth: u64) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 
@@ -141,7 +138,7 @@ decl_module! {
 			if !existing_attestation.1.eq(&sender) {
 				match existing_attestation.2 {
 					Some(d) => {
-						if !Self::is_delegating(&sender, &d)? {
+						if !<delegation::Module<T>>::is_delegating(&sender, &d, max_depth)? {
 							// the sender of the revocation is not a parent in the delegation hierarchy
 							return Self::error(Self::ERROR_NOT_PERMITTED_TO_REVOKE_ATTESTATION);
 						}
@@ -191,14 +188,6 @@ impl<T: Trait> Module<T> {
 	/// Create an error using the error module
 	pub fn error(error_type: error::ErrorType) -> DispatchResult {
 		<error::Module<T>>::error(error_type)
-	}
-
-	/// Check delegation hierarchy using the delegation module
-	fn is_delegating(
-		account: &T::AccountId,
-		delegation: &T::DelegationNodeId,
-	) -> result::Result<bool, &'static str> {
-		<delegation::Module<T>>::is_delegating(account, delegation)
 	}
 }
 

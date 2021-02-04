@@ -170,7 +170,8 @@ fn check_revoke_attestation() {
 		));
 		assert_ok!(Attestation::revoke(
 			Origin::signed(account_hash.clone()),
-			hash
+			hash,
+			10
 		));
 		let existing_attestation_for_claim = {
 			let opt = Attestation::attestations(hash);
@@ -218,11 +219,12 @@ fn check_double_revoke_attestation() {
 		));
 		assert_ok!(Attestation::revoke(
 			Origin::signed(account_hash.clone()),
-			hash
+			hash,
+			10
 		));
 		assert_err!(
-			Attestation::revoke(Origin::signed(account_hash), hash),
-			Attestation::ERROR_ALREADY_REVOKED.1
+			Attestation::revoke(Origin::signed(account_hash), hash, 10),
+			Attestation::ERROR_ALREADY_REVOKED.1,
 		);
 	});
 }
@@ -234,7 +236,7 @@ fn check_revoke_unknown() {
 		let hash = H256::from_low_u64_be(1);
 		let account_hash = MultiSigner::from(pair.public()).into_account();
 		assert_err!(
-			Attestation::revoke(Origin::signed(account_hash), hash),
+			Attestation::revoke(Origin::signed(account_hash), hash, 10),
 			Attestation::ERROR_ATTESTATION_NOT_FOUND.1
 		);
 	});
@@ -256,7 +258,7 @@ fn check_revoke_not_permitted() {
 			None
 		));
 		assert_err!(
-			Attestation::revoke(Origin::signed(account_hash_bob), hash),
+			Attestation::revoke(Origin::signed(account_hash_bob), hash, 10),
 			Attestation::ERROR_NOT_PERMITTED_TO_REVOKE_ATTESTATION.1
 		);
 	});
@@ -396,12 +398,13 @@ fn check_add_attestation_with_delegation() {
 		);
 
 		assert_err!(
-			Attestation::revoke(Origin::signed(account_hash_charlie), claim_hash),
+			Attestation::revoke(Origin::signed(account_hash_charlie), claim_hash, 10),
 			Attestation::ERROR_NOT_PERMITTED_TO_REVOKE_ATTESTATION.1
 		);
 		assert_ok!(Attestation::revoke(
 			Origin::signed(account_hash_alice),
-			claim_hash
+			claim_hash,
+			10
 		));
 	});
 }
