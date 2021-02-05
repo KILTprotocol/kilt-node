@@ -2,9 +2,7 @@
   "name": "KILT Collator Staging Testnet",
   "id": "kilt_parachain_staging_testnet",
   "chainType": "Live",
-  "bootNodes": [
-    "/ip4/127.0.0.1/tcp/30333/p2p/12D3KooWEimUpy1vdm6GEm7gwpTKZD14ZRrkfSr8JzjrWcYRMNap"
-  ],
+  "bootNodes": [],
   "telemetryEndpoints": [
     [
       "/dns/telemetry-backend.kilt.io/tcp/8080/wss",
