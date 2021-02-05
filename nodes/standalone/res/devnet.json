@@ -2,9 +2,7 @@
   "name": "KILT Devnet",
   "id": "kilt_devnet",
   "chainType": "Live",
-  "bootNodes": [
-    "/ip4/127.0.0.1/tcp/30333/p2p/12D3KooWQHqLzmLAyXf5k83Uo7dDXDJEbh8KGM2UqijZdo3jCKBY"
-  ],
+  "bootNodes": [],
   "telemetryEndpoints": [
     [
       "/dns/telemetry-backend.kilt.io/tcp/8080/wss",
