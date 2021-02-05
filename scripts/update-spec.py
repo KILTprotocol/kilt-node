@@ -2,6 +2,14 @@
 """
 Build the raw chainspec.
 
+Update only test networks:
+`python3 scripts/update-spec.py -ds`
+
+Update all networks:
+`python3 scripts/update-spec.py -tdrs`
+
+!Verify the chainspec after each update!
+
 requires atleast python 3.6
 """
 import argparse
