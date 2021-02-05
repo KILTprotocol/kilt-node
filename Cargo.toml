@@ -9,8 +9,6 @@ members = [
   'pallets/ctype',
   'pallets/delegation',
   'pallets/did',
-  'pallets/error',
-  'pallets/portablegabi',
   'runtimes/parachain',
   'runtimes/standalone',
 ]

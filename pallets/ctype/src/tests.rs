@@ -19,7 +19,7 @@
 use crate::*;
 
 use frame_support::{
-	assert_err, assert_ok, impl_outer_origin, parameter_types,
+	assert_noop, assert_ok, impl_outer_origin, parameter_types,
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
 		DispatchClass, Weight,
@@ -109,11 +109,6 @@ impl frame_system::Config for Test {
 	type SS58Prefix = SS58Prefix;
 }
 
-impl error::Trait for Test {
-	type Event = ();
-	type ErrorCode = u16;
-}
-
 impl Trait for Test {
 	type Event = ();
 }
@@ -136,9 +131,9 @@ fn it_works_for_default_value() {
 		assert_ok!(CType::add(Origin::signed(account.clone()), ctype_hash));
 		assert_eq!(<CTYPEs<Test>>::contains_key(ctype_hash), true);
 		assert_eq!(CType::ctypes(ctype_hash), Some(account.clone()));
-		assert_err!(
+		assert_noop!(
 			CType::add(Origin::signed(account), ctype_hash),
-			CType::ERROR_CTYPE_ALREADY_EXISTS.1
+			Error::<Test>::AlreadyExists
 		);
 	});
 }
