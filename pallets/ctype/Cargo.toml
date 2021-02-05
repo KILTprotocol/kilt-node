@@ -15,10 +15,6 @@ kilt-primitives = {path = '../../primitives', default-features = false}
 [build-dependencies.substrate-wasm-builder-runner]
 version = '1.0.6'
 
-# pallets
-[dependencies]
-error = {version = '0.23.0', default-features = false, path = '../error'}
-
 [dev-dependencies.sp-core]
 branch = "rococo-v1"
 default-features = false
@@ -71,5 +67,4 @@ std = [
   'sp-io/std',
   'sp-std/std',
   'sp-io/std',
-  'error/std',
 ]
