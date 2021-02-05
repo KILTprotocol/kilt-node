@@ -26,8 +26,6 @@ mod service;
 mod cli;
 mod command;
 mod rpc;
-#[macro_use]
-extern crate hex_literal;
 
 fn main() -> sc_cli::Result<()> {
 	command::run()

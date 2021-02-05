@@ -3680,7 +3680,6 @@ dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "futures 0.3.12",
- "hex-literal 0.2.1",
  "jsonrpc-core",
  "log",
  "mashnet-node-runtime",
