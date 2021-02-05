@@ -117,11 +117,11 @@ pub fn get_chain_spec(id: ParaId) -> Result<ChainSpec, String> {
 }
 
 pub fn staging_test_net() -> Result<ChainSpec, String> {
-	ChainSpec::from_json_bytes(&include_bytes!("../res/staging.json")[..])
+	ChainSpec::from_json_bytes(&include_bytes!("../res/kilt-stage.json")[..])
 }
 
 pub fn rococo_net() -> Result<ChainSpec, String> {
-	ChainSpec::from_json_bytes(&include_bytes!("../res/rococo.json")[..])
+	ChainSpec::from_json_bytes(&include_bytes!("../res/kilt-prod.json")[..])
 }
 
 fn testnet_genesis(

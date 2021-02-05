@@ -52,6 +52,18 @@ fn load_spec(
 	}
 }
 
+fn load_relay_spec(id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
+	match id {
+		"kilt-relay-staging" => Ok(Box::new(
+			polkadot_service::RococoChainSpec::from_json_bytes(
+				&include_bytes!("../res/relay-stage.json")[..],
+			)?,
+		)),
+		other_id => polkadot_cli::Cli::from_iter([RelayChainCli::executable_name()].iter())
+			.load_spec(other_id),
+	}
+}
+
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
 		"KILT collator".into()
@@ -122,7 +134,7 @@ impl SubstrateCli for RelayChainCli {
 	}
 
 	fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
-		polkadot_cli::Cli::from_iter([RelayChainCli::executable_name()].iter()).load_spec(id)
+		load_relay_spec(id)
 	}
 
 	fn native_runtime_version(chain_spec: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
