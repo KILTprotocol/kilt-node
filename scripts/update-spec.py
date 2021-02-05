@@ -1,0 +1,234 @@
+#!/usr/bin/env python3
+"""
+Build the raw chainspec.
+
+requires atleast python 3.6
+"""
+import argparse
+import pathlib
+import subprocess
+import typing
+import json
+import uuid
+import logging
+
+
+logger = logging.getLogger(__name__)
+
+
+def build_spec(node, chain, parachain_id=None, raw=False):
+    # cmd = ["cargo", "run", "--release", "-p",
+    #        node, "--", "build-spec", "--chain", chain]
+    cmd = [f"./target/release/{node}", "build-spec",
+           "--disable-default-bootnode", "--chain", chain]
+    if raw:
+        cmd.append("--raw")
+
+    logger.info("exec: '" + " ".join(cmd) + "'")
+    process = subprocess.run(" ".join(cmd), shell=True,
+                             stdout=subprocess.PIPE, close_fds=True)
+    process.check_returncode()
+    printed_stuff = process.stdout.decode("utf-8")
+
+    return json.loads(printed_stuff)
+
+
+def fill_balances(balances, endowed):
+    balances["balances"] = [[acc, money] for acc, money in endowed.items()]
+
+
+def fill_session(session, authorities, session_keys):
+    session["keys"] = [[acc, acc, {
+        k: acc for k in session_keys
+    }] for acc in authorities]
+
+
+def set_root(sudo, account):
+    sudo["key"] = account
+
+
+def fill_spec(spec, authorities, session_keys, endowed, root):
+    runtime = spec["genesis"]["runtime"]
+
+    try:
+        balance_config = runtime["balances"]
+    except KeyError:
+        balance_config = runtime["palletBalances"]
+
+    fill_balances(balance_config, endowed)
+    if authorities and session_keys:
+        fill_session(runtime["session"], authorities, session_keys)
+
+    try:
+        sudo_config = runtime["sudo"]
+    except KeyError:
+        sudo_config = runtime["palletSudo"]
+    set_root(sudo_config, root)
+
+
+def build_and_setup_spec(node, authorities, session_keys, endowed, root, outpath, parachain_id=None, extras=None):
+    chain_spec = build_spec(node, "dev", parachain_id=parachain_id)
+
+    if extras:
+        chain_spec.update(extras)
+
+    fill_spec(chain_spec, authorities, session_keys, endowed, root)
+
+    plain_file = pathlib.Path("/tmp/" + uuid.uuid4().hex)
+    with plain_file.open("w") as f:
+        json.dump(chain_spec, f)
+
+    raw = build_spec(
+        node,
+        plain_file.absolute().as_posix(),
+        raw=True
+    )
+
+    with open(outpath, "w") as f:
+        json.dump(raw, f, indent="  ")
+
+
+if __name__ == "__main__":
+    logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s',
+                        datefmt='%m-%d-%Y %H:%M:%S', level=logging.DEBUG)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--devnet", "-d", action="store_true", dest="devnet",
+                        help="update devnet spec")
+    parser.add_argument("--testnet", "-t", action="store_true", dest="testnet",
+                        help="update testnet spec")
+    parser.add_argument("--rococo", "-r", action="store_true", dest="rococo",
+                        help="update rococo parachain spec")
+    parser.add_argument("--roc-staging", "-s", action="store_true", dest="roc_staging",
+                        help="update rococo staging parachain spec")
+
+    args = parser.parse_args()
+
+    DEFAULT_MONEY = 10 ** 27
+
+    # ##########################################################################
+    # ############################     DEVNET       ############################
+    # ##########################################################################
+
+    DEV_ALICE = "5Gs55Km8u2168cCsMkmarYcx824HzTYEnAL74NK1jj2RKuGz"
+    DEV_BOB = "5CDEZYctMwDKQUXEg42pyuTS7ui3yyTHXtDJBj8YTxctpHnE"
+    DEV_CHARLIE = "5EXram9t3NNzSedQegPZu7eM1CPQAJx6DMcrWJ7C9f1M5VXW"
+    DEV_FAUCET = "5D5D5fSDUFVvn6RroC85zgaKL93oFv7R332RGwdCdBvAQzUn"
+
+    DEVNET_SPEC_PATH = "./nodes/standalone/res/devnet.json"
+
+    if args.devnet:
+        logger.info("update devnet spec")
+        build_and_setup_spec(
+            "mashnet-node",
+            [DEV_ALICE, DEV_BOB, DEV_CHARLIE],
+            ["aura", "grandpa"],
+            {
+                DEV_ALICE: DEFAULT_MONEY,
+                DEV_BOB: DEFAULT_MONEY,
+                DEV_CHARLIE: DEFAULT_MONEY,
+                DEV_FAUCET: DEFAULT_MONEY
+            },
+            DEV_ALICE,
+            DEVNET_SPEC_PATH,
+            extras={
+                "name": "KILT Devnet",
+                "id": "kilt_devnet",
+                "chainType": "Live",
+                "telemetryEndpoints": [["wss://telemetry-backend.kilt.io:8080", 9]]
+            }
+        )
+
+    # ##########################################################################
+    # ############################     TESTNET      ############################
+    # ##########################################################################
+
+    # hex: 0x58d3bb9e9dd245f3dec8d8fab7b97578c00a10cf3ca9d224caaa46456f91c46c
+    TESTNET_ALICE = "5E5Ay9N93vijY5jAZMRcZUAxfyCqqg7a74DYB7zXbEvkr4Ab"
+    # hex: 0xd660b4470a954ecc99496d4e4b012ee9acac3979e403967ef09de20da9bdeb28
+    TESTNET_BOB = "5GunqBt9noWvqLpbehi4b96PauHCWSHM76Mext8QtG9pxnAj"
+    # hex: 0x2ecb6a4ce4d9bc0faab70441f20603fcd443d6d866e97c9e238a2fb3e982ae2f
+    TESTNET_CHARLIE = "5D84VBrtsBX7L9mJkH21Y4eVFRXSCvJUQ88MWxpXu6rfR6s6"
+    # hex: 0x3cd78d9e468030ac8eff5b5d2b40e35aa9db01a9e48997e61f97f0da8c572411
+    TESTNET_FAUCET = "5DSUmChuuD74E84ybM7xerzjD37DHmqEgi1ByvLgPViGvCQD"
+
+    TESTNET_SPEC_PATH = "./nodes/standalone/res/testnet.json"
+
+    if args.testnet:
+        logger.info("update testnet spec")
+        build_and_setup_spec(
+            "mashnet-node",
+            [TESTNET_ALICE, TESTNET_BOB, TESTNET_CHARLIE],
+            ["aura", "grandpa"],
+            {
+                TESTNET_ALICE: DEFAULT_MONEY,
+                TESTNET_BOB: DEFAULT_MONEY,
+                TESTNET_CHARLIE: DEFAULT_MONEY,
+                TESTNET_FAUCET: DEFAULT_MONEY
+            },
+            TESTNET_ALICE,
+            TESTNET_SPEC_PATH,
+            extras={
+                "name": "KILT Testnet",
+                "id": "kilt_testnet",
+                "chainType": "Live",
+                "bootNodes": [
+                    "/dns4/bootnode-alice.kilt-prototype.tk/tcp/30333/p2p/12D3KooWPuXafPUY8E8zo7m4GuWkgj9ByfsanrNUznZShBgJrW4A",
+                    "/dns4/bootnode-bob.kilt-prototype.tk/tcp/30334/p2p/12D3KooWPVLgaJoD4CdGzAFzaZSgiDSBM4jqt34LjH1XdtGnVsss",
+                    "/dns4/bootnode-charlie.kilt-prototype.tk/tcp/30335/p2p/12D3KooWKBLU9T9MTxLJuy6hddPChRdnw91TBk3wYJzDyBQH9dXx",
+                ],
+                "telemetryEndpoints": [["wss://telemetry-backend.kilt.io:8080", 9]]
+            }
+        )
+
+    # ##########################################################################
+    # ############################     ROCOCO       ############################
+    # ##########################################################################
+    if args.rococo:
+        logger.info("update rococo spec")
+        build_and_setup_spec(
+            "kilt-parachain",
+            [],
+            [],
+            {
+                "5H1EZkED258UDeTAGf29UCxeqvz32Aqsk1Pxy9QHccEBYwRo": DEFAULT_MONEY,
+                "5HVZg213KmoLnjStTL5KUVp4iPGVt3MaAWtAcdxUKmSMXGBH": DEFAULT_MONEY,
+            },
+            "5H1EZkED258UDeTAGf29UCxeqvz32Aqsk1Pxy9QHccEBYwRo",
+            "./nodes/parachain/res/rococo.json",
+            parachain_id=12623,
+            extras={
+                "name": "KILT Collator Rococo",
+                "id": "kilt_parachain_rococo",
+                "chainType": "Live",
+                "bootNodes": [],
+                "relay_chain": "rococo_v1",
+            }
+        )
+
+    # ##########################################################################
+    # ############################  ROCOCO STAGING  ############################
+    # ##########################################################################
+    if args.roc_staging:
+        logger.info("update rococo-staging spec")
+        build_and_setup_spec(
+            "kilt-parachain",
+            [],
+            [],
+            {
+                "5Gp5hVw2Q6oBz9DkCB2bfH2gkVQpnMuTxgHpmg72yZBGqXGA": DEFAULT_MONEY,
+                "5GBzZo6jFsG2MyHyxzixThzgSnja3i5dqf8tYjXseSeMNgpQ": DEFAULT_MONEY,
+            },
+            "5Gp5hVw2Q6oBz9DkCB2bfH2gkVQpnMuTxgHpmg72yZBGqXGA",
+            "./nodes/parachain/res/staging.json",
+            parachain_id=300,
+            extras={
+                "name": "KILT Collator Staging Testnet",
+                "id": "kilt_parachain_staging_testnet",
+                "chainType": "Live",
+                "bootNodes": [],
+                "telemetryEndpoints": [["wss://telemetry-backend.kilt.io:8080", 9]],
+                "protocolId": "roc-kilt-stage",
+                "relay_chain": "rococo_staging_testnet",
+            }
+        )
