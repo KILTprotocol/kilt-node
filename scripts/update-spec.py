@@ -47,8 +47,10 @@ def fill_balances(balances, endowed):
 
 def fill_session(session, authorities, session_keys):
     session["keys"] = [[acc, acc, {
-        k: acc for k in session_keys
+        k: mapper(acc) for k, mapper in session_keys.items()
     }] for acc in authorities]
+
+    logger.debug("new sesion keys: ", session)
 
 
 def set_root(sudo, account):
@@ -74,8 +76,8 @@ def fill_spec(spec, authorities, session_keys, endowed, root):
     set_root(sudo_config, root)
 
 
-def build_and_setup_spec(node, authorities, session_keys, endowed, root, outpath, parachain_id=None, extras=None):
-    chain_spec = build_spec(node, "dev", parachain_id=parachain_id)
+def build_and_setup_spec(node, authorities, session_keys, endowed, root, outpath, parachain_id=None, extras=None, chain_spec="dev"):
+    chain_spec = build_spec(node, chain_spec, parachain_id=parachain_id)
 
     if extras:
         chain_spec.update(extras)
@@ -85,6 +87,8 @@ def build_and_setup_spec(node, authorities, session_keys, endowed, root, outpath
     plain_file = pathlib.Path("/tmp/" + uuid.uuid4().hex)
     with plain_file.open("w") as f:
         json.dump(chain_spec, f)
+    logger.info("plain spec stored at %s",
+                plain_file.absolute().as_posix())
 
     raw = build_spec(
         node,
@@ -92,12 +96,28 @@ def build_and_setup_spec(node, authorities, session_keys, endowed, root, outpath
         raw=True
     )
 
-    with open(outpath, "w") as f:
+    with outpath.open("w") as f:
         json.dump(raw, f, indent="  ")
 
 
+def setup_spec(authorities, session_keys, endowed, root, outpath: pathlib.Path, chain_file: pathlib.Path, extras=None):
+    with chain_file.open("r") as f:
+        chain_spec = json.load(chain_spec, f)
+
+    if extras:
+        chain_spec.update(extras)
+
+    fill_spec(chain_spec, authorities, session_keys, endowed, root)
+
+    plain_file = pathlib.Path("/tmp/" + uuid.uuid4().hex)
+    with plain_file.open("w") as f:
+        json.dump(chain_spec, f)
+    logger.info("plain spec stored at %s",
+                plain_file.absolute().as_posix())
+
+
 if __name__ == "__main__":
-    logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s',
+    logging.basicConfig(format='%(asctime)s:%(levelname)s: %(message)s',
                         datefmt='%m-%d-%Y %H:%M:%S', level=logging.DEBUG)
 
     parser = argparse.ArgumentParser(
@@ -111,8 +131,10 @@ if __name__ == "__main__":
                         help="update testnet spec")
     parser.add_argument("--rococo", "-r", action="store_true", dest="rococo",
                         help="update rococo parachain spec")
-    parser.add_argument("--roc-staging", "-s", action="store_true", dest="roc_staging",
+    parser.add_argument("--roc-stage", "-s", action="store_true", dest="roc_staging",
                         help="update rococo staging parachain spec")
+    parser.add_argument("--roc-stage-relay", "-k", dest="roc_staging_relay", type=pathlib.Path,
+                        help="update rococo staging relay spec")
 
     args = parser.parse_args()
 
@@ -127,14 +149,17 @@ if __name__ == "__main__":
     DEV_CHARLIE = "5EXram9t3NNzSedQegPZu7eM1CPQAJx6DMcrWJ7C9f1M5VXW"
     DEV_FAUCET = "5D5D5fSDUFVvn6RroC85zgaKL93oFv7R332RGwdCdBvAQzUn"
 
-    DEVNET_SPEC_PATH = "./nodes/standalone/res/devnet.json"
+    DEVNET_SPEC_PATH = pathlib.Path.cwd() / "nodes/standalone/res/devnet.json"
 
     if args.devnet:
         logger.info("update devnet spec")
         build_and_setup_spec(
             "mashnet-node",
             [DEV_ALICE, DEV_BOB, DEV_CHARLIE],
-            ["aura", "grandpa"],
+            {
+                "aura": lambda x: x,
+                "grandpa": lambda x: x,
+            },
             {
                 DEV_ALICE: DEFAULT_MONEY,
                 DEV_BOB: DEFAULT_MONEY,
@@ -164,14 +189,17 @@ if __name__ == "__main__":
     # hex: 0x3cd78d9e468030ac8eff5b5d2b40e35aa9db01a9e48997e61f97f0da8c572411
     TESTNET_FAUCET = "5DSUmChuuD74E84ybM7xerzjD37DHmqEgi1ByvLgPViGvCQD"
 
-    TESTNET_SPEC_PATH = "./nodes/standalone/res/testnet.json"
+    TESTNET_SPEC_PATH = pathlib.Path.cwd() / "nodes/standalone/res/testnet.json"
 
     if args.testnet:
         logger.info("update testnet spec")
         build_and_setup_spec(
             "mashnet-node",
             [TESTNET_ALICE, TESTNET_BOB, TESTNET_CHARLIE],
-            ["aura", "grandpa"],
+            {
+                "aura": lambda x: x,
+                "grandpa": lambda x: x,
+            },
             {
                 TESTNET_ALICE: DEFAULT_MONEY,
                 TESTNET_BOB: DEFAULT_MONEY,
@@ -194,7 +222,7 @@ if __name__ == "__main__":
         )
 
     # ##########################################################################
-    # ############################     ROCOCO       ############################
+    # ########################### KILT_ROC PRODUCTION ##########################
     # ##########################################################################
     if args.rococo:
         logger.info("update rococo spec")
@@ -207,7 +235,7 @@ if __name__ == "__main__":
                 "5HVZg213KmoLnjStTL5KUVp4iPGVt3MaAWtAcdxUKmSMXGBH": DEFAULT_MONEY,
             },
             "5H1EZkED258UDeTAGf29UCxeqvz32Aqsk1Pxy9QHccEBYwRo",
-            "./nodes/parachain/res/rococo.json",
+            pathlib.Path.cwd() / "nodes/parachain/res/kilt-prod.json",
             parachain_id=12623,
             extras={
                 "name": "KILT Collator Rococo",
@@ -219,7 +247,7 @@ if __name__ == "__main__":
         )
 
     # ##########################################################################
-    # ############################  ROCOCO STAGING  ############################
+    # ############################ KILT_ROC STAGING ############################
     # ##########################################################################
     if args.roc_staging:
         logger.info("update rococo-staging spec")
@@ -232,7 +260,7 @@ if __name__ == "__main__":
                 "5GBzZo6jFsG2MyHyxzixThzgSnja3i5dqf8tYjXseSeMNgpQ": DEFAULT_MONEY,
             },
             "5Gp5hVw2Q6oBz9DkCB2bfH2gkVQpnMuTxgHpmg72yZBGqXGA",
-            "./nodes/parachain/res/staging.json",
+            pathlib.Path.cwd() / "nodes/parachain/res/kilt-stage.json",
             parachain_id=300,
             extras={
                 "name": "KILT Collator Staging Testnet",
@@ -240,7 +268,65 @@ if __name__ == "__main__":
                 "chainType": "Live",
                 "bootNodes": [],
                 "telemetryEndpoints": [["wss://telemetry-backend.kilt.io:8080", 9]],
-                "protocolId": "roc-kilt-stage",
-                "relay_chain": "rococo_staging_testnet",
+                "protocolId": "kilt",
+                "relay_chain": "kilt_staging_relay",
             }
+        )
+
+    # ##########################################################################
+    # ############################# RELAY STAGING ##############################
+    # ##########################################################################
+    if args.roc_staging_relay:
+        logger.info("update rococo-staging relay spec")
+        val_1_pub = "5CA1Ym7i37qggvsK8D6nMAeRGHZo6gz8oEQvZ5qsvNeZdyqy"
+        val_2_pub = "5DjkAWLDGvesjGfvZkcSfaTTZnUUEVgyUFATQv583nqGG1rm"
+        val_3_pub = "5HQBuyGFKqqBkoK2cwv4a6s9dEv34cudoMfoT1wxkEn1xcic"
+
+        # ed25519 public keys
+        ed_pub = {
+            val_1_pub: "5DGcrtir4xLdaBGJSi6zmmmQBHC6RZwPhvvCzNZs6FywsauM",
+            val_2_pub: "5Dmib5zkJtPmYkMRhN5Gtv67s2v4wCvXgG7cVha6sR6Sw9wu",
+            val_3_pub: "5D3WF3GbcW2Boc2byJ43zfFjWavXk6L4hdfZnCxu3XGiHh3A",
+        }
+
+        # sr25519 public keys
+        sr_pub = {
+            val_1_pub: "5Cyjbb9wHLuhihKgDyxF13mu4ybDq2c33YZLF337vaDaZdKC",
+            val_2_pub: "5EJBtjPyUsYADxugWuWEahWsbrs1uSYsaXBXbFguBYWo2wFB",
+            val_3_pub: "5HDqrcoJMLHND2eBhPPrchUXQWdYSTmpB1TfevQtTATkqSpz",
+        }
+        build_and_setup_spec(
+            "kilt-parachain",
+            [
+                val_1_pub,
+                val_2_pub,
+                val_3_pub,
+            ],
+            {
+                "grandpa": lambda x: ed_pub[x],
+                "babe": lambda x: sr_pub[x],
+                "im_online": lambda x: sr_pub[x],
+                "para_validator": lambda x: sr_pub[x],
+                "para_assignment": lambda x: sr_pub[x],
+                "authority_discovery": lambda x: sr_pub[x],
+                "parachain_validator": lambda x: sr_pub[x],
+            },
+            {
+                "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY": DEFAULT_MONEY,
+                "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty": DEFAULT_MONEY,
+                val_1_pub: DEFAULT_MONEY,
+                val_2_pub: DEFAULT_MONEY,
+                val_3_pub: DEFAULT_MONEY,
+            },
+            val_1_pub,
+            pathlib.Path.cwd() / "nodes/parachain/res/relay-stage.json",
+            extras={
+                "name": "KILT Staging Relaychain",
+                "id": "kilt_staging_relay",
+                "chainType": "Live",
+                "bootNodes": [],
+                "telemetryEndpoints": [["wss://telemetry-backend.kilt.io:8080", 9]],
+                "protocolId": "dot",
+            },
+            chain_spec="rococo-local"
         )
