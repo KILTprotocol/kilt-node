@@ -100,7 +100,11 @@ if __name__ == "__main__":
     logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s',
                         datefmt='%m-%d-%Y %H:%M:%S', level=logging.DEBUG)
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description=("Update the chainspec for our networks."
+                     "VERIFY THAT THE SPEC IS CORRECT AFTER USE!!"
+                     "Make sure that the current directory is the project root."),
+        epilog="Example usage: python3 scripts/update-spec.py -ds")
     parser.add_argument("--devnet", "-d", action="store_true", dest="devnet",
                         help="update devnet spec")
     parser.add_argument("--testnet", "-t", action="store_true", dest="testnet",
@@ -115,7 +119,7 @@ if __name__ == "__main__":
     DEFAULT_MONEY = 10 ** 27
 
     # ##########################################################################
-    # ############################     DEVNET       ############################
+    # ############################      DEVNET      ############################
     # ##########################################################################
 
     DEV_ALICE = "5Gs55Km8u2168cCsMkmarYcx824HzTYEnAL74NK1jj2RKuGz"
