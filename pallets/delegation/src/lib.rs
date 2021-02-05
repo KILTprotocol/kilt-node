@@ -205,7 +205,7 @@ decl_module! {
 				// check if the parent's delegate is the sender of this transaction and has permission to delegate
 				ensure!(parent_node.owner.eq(&sender), Error::<T>::NotOwnerOfParent);
 
-				//
+				// check if the parent has permission to delegate
 				ensure!((parent_node.permissions & Permissions::DELEGATE) == Permissions::DELEGATE, Error::<T>::UnauthorizedDelegation);
 
 				// insert delegation
@@ -327,7 +327,8 @@ impl<T: Trait> Module<T> {
 		}
 	}
 
-	/// Revoke a delegation and all of its children
+	/// Revoke a delegation and all of its children recursively
+	/// FIXME: Add bound
 	fn revoke(delegation: &T::DelegationNodeId, sender: &T::AccountId) -> DispatchResult {
 		// retrieve delegation node from storage
 		let mut delegation_node =
