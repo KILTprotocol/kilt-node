@@ -42,25 +42,13 @@ fn load_spec(
 	para_id: ParaId,
 ) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
 	match id {
-		"staging" => Ok(Box::new(chain_spec::staging_test_net()?)),
+		"staging" => Ok(Box::new(chain_spec::staging_test_net(para_id)?)),
 		"rococo" => Ok(Box::new(chain_spec::rococo_net()?)),
 		"dev" => Ok(Box::new(chain_spec::get_chain_spec(para_id)?)),
 		"" => Ok(Box::new(chain_spec::get_chain_spec(para_id)?)),
 		path => Ok(Box::new(chain_spec::ChainSpec::from_json_file(
 			path.into(),
 		)?)),
-	}
-}
-
-fn load_relay_spec(id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
-	match id {
-		"kilt-relay-staging" => Ok(Box::new(
-			polkadot_service::RococoChainSpec::from_json_bytes(
-				&include_bytes!("../res/relay-stage.json")[..],
-			)?,
-		)),
-		other_id => polkadot_cli::Cli::from_iter([RelayChainCli::executable_name()].iter())
-			.load_spec(other_id),
 	}
 }
 
@@ -134,7 +122,7 @@ impl SubstrateCli for RelayChainCli {
 	}
 
 	fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
-		load_relay_spec(id)
+		polkadot_cli::Cli::from_iter([RelayChainCli::executable_name()].iter()).load_spec(id)
 	}
 
 	fn native_runtime_version(chain_spec: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {

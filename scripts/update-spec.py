@@ -149,7 +149,7 @@ if __name__ == "__main__":
     DEV_CHARLIE = "5EXram9t3NNzSedQegPZu7eM1CPQAJx6DMcrWJ7C9f1M5VXW"
     DEV_FAUCET = "5D5D5fSDUFVvn6RroC85zgaKL93oFv7R332RGwdCdBvAQzUn"
 
-    DEVNET_SPEC_PATH = pathlib.Path.cwd() / "nodes/standalone/res/devnet.json"
+    DEVNET_SPEC_PATH = pathlib.Path.cwd() / "dev-spec/mashnet-node/devnet.json"
 
     if args.devnet:
         logger.info("update devnet spec")
@@ -177,51 +177,6 @@ if __name__ == "__main__":
         )
 
     # ##########################################################################
-    # ############################     TESTNET      ############################
-    # ##########################################################################
-
-    # hex: 0x58d3bb9e9dd245f3dec8d8fab7b97578c00a10cf3ca9d224caaa46456f91c46c
-    TESTNET_ALICE = "5E5Ay9N93vijY5jAZMRcZUAxfyCqqg7a74DYB7zXbEvkr4Ab"
-    # hex: 0xd660b4470a954ecc99496d4e4b012ee9acac3979e403967ef09de20da9bdeb28
-    TESTNET_BOB = "5GunqBt9noWvqLpbehi4b96PauHCWSHM76Mext8QtG9pxnAj"
-    # hex: 0x2ecb6a4ce4d9bc0faab70441f20603fcd443d6d866e97c9e238a2fb3e982ae2f
-    TESTNET_CHARLIE = "5D84VBrtsBX7L9mJkH21Y4eVFRXSCvJUQ88MWxpXu6rfR6s6"
-    # hex: 0x3cd78d9e468030ac8eff5b5d2b40e35aa9db01a9e48997e61f97f0da8c572411
-    TESTNET_FAUCET = "5DSUmChuuD74E84ybM7xerzjD37DHmqEgi1ByvLgPViGvCQD"
-
-    TESTNET_SPEC_PATH = pathlib.Path.cwd() / "nodes/standalone/res/testnet.json"
-
-    if args.testnet:
-        logger.info("update testnet spec")
-        build_and_setup_spec(
-            "mashnet-node",
-            [TESTNET_ALICE, TESTNET_BOB, TESTNET_CHARLIE],
-            {
-                "aura": lambda x: x,
-                "grandpa": lambda x: x,
-            },
-            {
-                TESTNET_ALICE: DEFAULT_MONEY,
-                TESTNET_BOB: DEFAULT_MONEY,
-                TESTNET_CHARLIE: DEFAULT_MONEY,
-                TESTNET_FAUCET: DEFAULT_MONEY
-            },
-            TESTNET_ALICE,
-            TESTNET_SPEC_PATH,
-            extras={
-                "name": "KILT Testnet",
-                "id": "kilt_testnet",
-                "chainType": "Live",
-                "bootNodes": [
-                    "/dns4/bootnode-alice.kilt-prototype.tk/tcp/30333/p2p/12D3KooWPuXafPUY8E8zo7m4GuWkgj9ByfsanrNUznZShBgJrW4A",
-                    "/dns4/bootnode-bob.kilt-prototype.tk/tcp/30334/p2p/12D3KooWPVLgaJoD4CdGzAFzaZSgiDSBM4jqt34LjH1XdtGnVsss",
-                    "/dns4/bootnode-charlie.kilt-prototype.tk/tcp/30335/p2p/12D3KooWKBLU9T9MTxLJuy6hddPChRdnw91TBk3wYJzDyBQH9dXx",
-                ],
-                "telemetryEndpoints": [["wss://telemetry-backend.kilt.io:8080", 9]]
-            }
-        )
-
-    # ##########################################################################
     # ########################### KILT_ROC PRODUCTION ##########################
     # ##########################################################################
     if args.rococo:
@@ -243,33 +198,6 @@ if __name__ == "__main__":
                 "chainType": "Live",
                 "bootNodes": [],
                 "relay_chain": "rococo_v1",
-            }
-        )
-
-    # ##########################################################################
-    # ############################ KILT_ROC STAGING ############################
-    # ##########################################################################
-    if args.roc_staging:
-        logger.info("update rococo-staging spec")
-        build_and_setup_spec(
-            "kilt-parachain",
-            [],
-            [],
-            {
-                "5Gp5hVw2Q6oBz9DkCB2bfH2gkVQpnMuTxgHpmg72yZBGqXGA": DEFAULT_MONEY,
-                "5GBzZo6jFsG2MyHyxzixThzgSnja3i5dqf8tYjXseSeMNgpQ": DEFAULT_MONEY,
-            },
-            "5Gp5hVw2Q6oBz9DkCB2bfH2gkVQpnMuTxgHpmg72yZBGqXGA",
-            pathlib.Path.cwd() / "nodes/parachain/res/kilt-stage.json",
-            parachain_id=300,
-            extras={
-                "name": "KILT Collator Staging Testnet",
-                "id": "kilt_parachain_staging_testnet",
-                "chainType": "Live",
-                "bootNodes": [],
-                "telemetryEndpoints": [["wss://telemetry-backend.kilt.io:8080", 9]],
-                "protocolId": "kilt",
-                "relay_chain": "kilt_staging_relay",
             }
         )
 
@@ -319,7 +247,7 @@ if __name__ == "__main__":
                 val_3_pub: DEFAULT_MONEY,
             },
             val_1_pub,
-            pathlib.Path.cwd() / "nodes/parachain/res/relay-stage.json",
+            pathlib.Path.cwd() / "dev-spec/kilt-parachain/relay-stage.json",
             extras={
                 "name": "KILT Staging Relaychain",
                 "id": "kilt_staging_relay",

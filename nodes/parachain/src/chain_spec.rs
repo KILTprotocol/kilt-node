@@ -29,6 +29,8 @@ use serde::{Deserialize, Serialize};
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 
+use hex_literal::hex;
+
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;
 
@@ -116,8 +118,34 @@ pub fn get_chain_spec(id: ParaId) -> Result<ChainSpec, String> {
 	))
 }
 
-pub fn staging_test_net() -> Result<ChainSpec, String> {
-	ChainSpec::from_json_bytes(&include_bytes!("../res/kilt-stage.json")[..])
+pub fn staging_test_net(id: ParaId) -> Result<ChainSpec, String> {
+	let properties = get_properties("KILT", 18, 38);
+	let wasm = WASM_BINARY.ok_or("No WASM")?;
+
+	Ok(ChainSpec::from_genesis(
+		"KILT Collator Staging Testnet",
+		"kilt_parachain_staging_testnet",
+		ChainType::Live,
+		move || {
+			testnet_genesis(
+				wasm,
+				hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].into(),
+				vec![
+					hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].into(),
+					hex!["b67fe6413ffe5cf91ae38a6475c37deea70a25c6c86b3dd17bb82d09efd9b350"].into(),
+				],
+				id,
+			)
+		},
+		Vec::new(),
+		None,
+		None,
+		Some(properties),
+		Extensions {
+			relay_chain: "rococo_staging_testnet".into(),
+			para_id: id.into(),
+		},
+	))
 }
 
 pub fn rococo_net() -> Result<ChainSpec, String> {

@@ -23,9 +23,11 @@ use mashnet_node_runtime::{
 	WASM_BINARY,
 };
 
+use hex_literal::hex;
+
 use sc_service::{self, ChainType, Properties};
 use sp_consensus_aura::ed25519::AuthorityId as AuraId;
-use sp_core::{ed25519, Pair, Public};
+use sp_core::{crypto::UncheckedInto, ed25519, Pair, Public};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
 
@@ -73,14 +75,36 @@ fn get_authority_keys_from_secret(seed: &str) -> (AccountId, AuraId, GrandpaId) 
 	)
 }
 
+/// Build a pair of public keys from a given hex string. This method will panic if the hex string is malformed.
+///
+/// public_key – the public key formatted as a hex string
+fn as_authority_key(public_key: [u8; 32]) -> (AccountId, AuraId, GrandpaId) {
+	(
+		public_key.into(),
+		public_key.unchecked_into(),
+		public_key.unchecked_into(),
+	)
+}
+
+const DEV_AUTH_ALICE: [u8; 32] =
+	hex!("d44da634611d9c26837e3b5114a7d460a4cb7d688119739000632ed2d3794ae9");
+const DEV_AUTH_BOB: [u8; 32] =
+	hex!("06815321f16a5ae0fe246ee19285f8d8858fe60d5c025e060922153fcf8e54f9");
+const DEV_AUTH_CHARLIE: [u8; 32] =
+	hex!("6d2d775fdc628134e3613a766459ccc57a29fd380cd410c91c6c79bc9c03b344");
+const DEV_FAUCET: [u8; 32] =
+	hex!("2c9e9c40e15a2767e2d04dc1f05d824dd76d1d37bada3d7bb1d40eca29f3a4ff");
+
 impl Alternative {
 	/// Get an actual chain config from one of the alternatives.
 	pub(crate) fn load(self) -> Result<ChainSpec, String> {
 		let wasm_binary =
 			WASM_BINARY.ok_or_else(|| "Development wasm binary not available".to_string())?;
+
 		let mut properties = Properties::new();
 		properties.insert("tokenSymbol".into(), "KILT".into());
 		properties.insert("tokenDecimals".into(), 18.into());
+
 		Ok(match self {
 			Alternative::Development => {
 				ChainSpec::from_genesis(
@@ -111,7 +135,34 @@ impl Alternative {
 				ChainSpec::from_json_bytes(&include_bytes!("../res/testnet.json")[..])?
 			}
 			Alternative::KiltDevnet => {
-				ChainSpec::from_json_bytes(&include_bytes!("../res/devnet.json")[..])?
+				ChainSpec::from_genesis(
+					"KILT Devnet",
+					"kilt_devnet",
+					ChainType::Live,
+					move || {
+						testnet_genesis(
+							wasm_binary,
+							// Initial Authorities
+							vec![
+								as_authority_key(DEV_AUTH_ALICE),
+								as_authority_key(DEV_AUTH_BOB),
+								as_authority_key(DEV_AUTH_CHARLIE),
+							],
+							DEV_AUTH_ALICE.into(),
+							vec![
+								DEV_FAUCET.into(),
+								DEV_AUTH_ALICE.into(),
+								DEV_AUTH_BOB.into(),
+								DEV_AUTH_CHARLIE.into(),
+							],
+						)
+					},
+					vec![],
+					None,
+					None,
+					Some(properties),
+					None,
+				)
 			}
 		})
 	}
