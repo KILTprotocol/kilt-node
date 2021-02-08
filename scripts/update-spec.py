@@ -141,42 +141,6 @@ if __name__ == "__main__":
     DEFAULT_MONEY = 10 ** 27
 
     # ##########################################################################
-    # ############################      DEVNET      ############################
-    # ##########################################################################
-
-    DEV_ALICE = "5Gs55Km8u2168cCsMkmarYcx824HzTYEnAL74NK1jj2RKuGz"
-    DEV_BOB = "5CDEZYctMwDKQUXEg42pyuTS7ui3yyTHXtDJBj8YTxctpHnE"
-    DEV_CHARLIE = "5EXram9t3NNzSedQegPZu7eM1CPQAJx6DMcrWJ7C9f1M5VXW"
-    DEV_FAUCET = "5D5D5fSDUFVvn6RroC85zgaKL93oFv7R332RGwdCdBvAQzUn"
-
-    DEVNET_SPEC_PATH = pathlib.Path.cwd() / "dev-spec/mashnet-node/devnet.json"
-
-    if args.devnet:
-        logger.info("update devnet spec")
-        build_and_setup_spec(
-            "mashnet-node",
-            [DEV_ALICE, DEV_BOB, DEV_CHARLIE],
-            {
-                "aura": lambda x: x,
-                "grandpa": lambda x: x,
-            },
-            {
-                DEV_ALICE: DEFAULT_MONEY,
-                DEV_BOB: DEFAULT_MONEY,
-                DEV_CHARLIE: DEFAULT_MONEY,
-                DEV_FAUCET: DEFAULT_MONEY
-            },
-            DEV_ALICE,
-            DEVNET_SPEC_PATH,
-            extras={
-                "name": "KILT Devnet",
-                "id": "kilt_devnet",
-                "chainType": "Live",
-                "telemetryEndpoints": [["wss://telemetry-backend.kilt.io:8080", 9]]
-            }
-        )
-
-    # ##########################################################################
     # ########################### KILT_ROC PRODUCTION ##########################
     # ##########################################################################
     if args.rococo:
@@ -247,7 +211,7 @@ if __name__ == "__main__":
                 val_3_pub: DEFAULT_MONEY,
             },
             val_1_pub,
-            pathlib.Path.cwd() / "dev-spec/kilt-parachain/relay-stage.json",
+            pathlib.Path.cwd() / "dev-specs/kilt-parachain/relay-stage.json",
             extras={
                 "name": "KILT Staging Relaychain",
                 "id": "kilt_staging_relay",
