@@ -16,10 +16,10 @@ sp-arithmetic = {git = 'https://github.com/paritytech/substrate', default-featur
 sp-io = {git = 'https://github.com/paritytech/substrate', default-features = false, branch = 'rococo-v1'}
 
 # KILT pallets & primitives
-attestation = {default-features = false, path = "../../pallets/attestation"}
-ctype = {default-features = false, path = "../../pallets/ctype"}
-delegation = {default-features = false, path = "../../pallets/delegation"}
-did = {default-features = false, path = "../../pallets/did"}
+attestation = {default-features = false, path = '../../pallets/attestation'}
+ctype = {default-features = false, path = '../../pallets/ctype'}
+delegation = {default-features = false, path = '../../pallets/delegation'}
+did = {default-features = false, path = '../../pallets/did'}
 kilt-primitives = {path = '../../primitives', default-features = false}
 
 # Substrate dependencies
@@ -48,6 +48,11 @@ cumulus-parachain-system = {git = 'https://github.com/paritytech/cumulus', defau
 cumulus-primitives = {git = 'https://github.com/paritytech/cumulus', default-features = false, branch = 'rococo-v1'}
 cumulus-runtime = {git = 'https://github.com/paritytech/cumulus', default-features = false, branch = 'rococo-v1'}
 parachain-info = {git = 'https://github.com/paritytech/cumulus', default-features = false, branch = 'rococo-v1'}
+
+# Benchmarking
+frame-benchmarking = {git = 'https://github.com/paritytech/substrate', default-features = false, optional = true, branch = 'rococo-v1'}
+frame-system-benchmarking = {git = 'https://github.com/paritytech/substrate', default-features = false, optional = true, branch = 'rococo-v1'}
+hex-literal = {version = '0.3.1', optional = true}
 
 [build-dependencies]
 substrate-wasm-builder = '3.0.0'
@@ -88,4 +93,9 @@ std = [
   'cumulus-runtime/std',
   'cumulus-parachain-system/std',
   'cumulus-primitives/std',
+]
+runtime-benchmarks = [
+  'frame-benchmarking',
+  'frame-system-benchmarking',
+  'hex-literal',
 ]

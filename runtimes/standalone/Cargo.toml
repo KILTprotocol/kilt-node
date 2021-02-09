@@ -14,6 +14,11 @@ delegation = {default-features = false, path = '../../pallets/delegation'}
 did = {default-features = false, path = '../../pallets/did'}
 kilt-primitives = {path = '../../primitives', default-features = false}
 
+# Benchmarking
+frame-benchmarking = {git = 'https://github.com/paritytech/substrate', default-features = false, optional = true, branch = 'rococo-v1'}
+frame-system-benchmarking = {git = 'https://github.com/paritytech/substrate', default-features = false, optional = true, branch = 'rococo-v1'}
+hex-literal = {version = '0.3.1', optional = true}
+
 [dependencies.aura]
 branch = "rococo-v1"
 default-features = false
@@ -208,6 +213,14 @@ version = '2.0.0'
 
 [features]
 default = ['std']
+runtime-benchmarks = [
+  'frame-benchmarking',
+  'frame-system-benchmarking',
+  'hex-literal',
+  'frame-support/runtime-benchmarks',
+  'frame-system/runtime-benchmarks',
+  'sp-runtime/runtime-benchmarks',
+]
 std = [
   'attestation/std',
   'ctype/std',
