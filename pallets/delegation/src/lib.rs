@@ -31,8 +31,8 @@ extern crate bitflags;
 use codec::{Decode, Encode};
 use core::default::Default;
 use frame_support::{
-	traits::Get,
-	debug, decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure, Parameter, StorageMap,
+	debug, decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure,
+	traits::Get, Parameter, StorageMap,
 };
 use frame_system::{self, ensure_signed};
 use sp_runtime::{
