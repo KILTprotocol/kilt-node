@@ -25,8 +25,6 @@ logger = logging.getLogger(__name__)
 
 
 def build_spec(node, chain, parachain_id=None, raw=False):
-    # cmd = ["cargo", "run", "--release", "-p",
-    #        node, "--", "build-spec", "--chain", chain]
     cmd = [f"./target/release/{node}", "build-spec",
            "--disable-default-bootnode", "--chain", chain]
     if raw:
@@ -124,21 +122,62 @@ if __name__ == "__main__":
         description=("Update the chainspec for our networks."
                      "VERIFY THAT THE SPEC IS CORRECT AFTER USE!!"
                      "Make sure that the current directory is the project root."),
-        epilog="Example usage: python3 scripts/update-spec.py -ds")
-    parser.add_argument("--devnet", "-d", action="store_true", dest="devnet",
-                        help="update devnet spec")
+        epilog="Example usage: python3 scripts/update-spec.py --roc-stage-relay")
     parser.add_argument("--testnet", "-t", action="store_true", dest="testnet",
                         help="update testnet spec")
     parser.add_argument("--rococo", "-r", action="store_true", dest="rococo",
                         help="update rococo parachain spec")
-    parser.add_argument("--roc-stage", "-s", action="store_true", dest="roc_staging",
-                        help="update rococo staging parachain spec")
     parser.add_argument("--roc-stage-relay", "-k", dest="roc_staging_relay", type=pathlib.Path,
                         help="update rococo staging relay spec")
 
     args = parser.parse_args()
 
     DEFAULT_MONEY = 10 ** 27
+
+    # ##########################################################################
+    # ############################     TESTNET      ############################
+    # ##########################################################################
+
+    # hex: 0x58d3bb9e9dd245f3dec8d8fab7b97578c00a10cf3ca9d224caaa46456f91c46c
+    TESTNET_ALICE = "5E5Ay9N93vijY5jAZMRcZUAxfyCqqg7a74DYB7zXbEvkr4Ab"
+    # hex: 0xd660b4470a954ecc99496d4e4b012ee9acac3979e403967ef09de20da9bdeb28
+    TESTNET_BOB = "5GunqBt9noWvqLpbehi4b96PauHCWSHM76Mext8QtG9pxnAj"
+    # hex: 0x2ecb6a4ce4d9bc0faab70441f20603fcd443d6d866e97c9e238a2fb3e982ae2f
+    TESTNET_CHARLIE = "5D84VBrtsBX7L9mJkH21Y4eVFRXSCvJUQ88MWxpXu6rfR6s6"
+    # hex: 0x3cd78d9e468030ac8eff5b5d2b40e35aa9db01a9e48997e61f97f0da8c572411
+    TESTNET_FAUCET = "5DSUmChuuD74E84ybM7xerzjD37DHmqEgi1ByvLgPViGvCQD"
+
+    TESTNET_SPEC_PATH = pathlib.Path.cwd() / "nodes/standalone/res/testnet.json"
+
+    if args.testnet:
+        logger.info("update testnet spec")
+        build_and_setup_spec(
+            "mashnet-node",
+            [TESTNET_ALICE, TESTNET_BOB, TESTNET_CHARLIE],
+            {
+                "aura": lambda x: x,
+                "grandpa": lambda x: x,
+            },
+            {
+                TESTNET_ALICE: DEFAULT_MONEY,
+                TESTNET_BOB: DEFAULT_MONEY,
+                TESTNET_CHARLIE: DEFAULT_MONEY,
+                TESTNET_FAUCET: DEFAULT_MONEY
+            },
+            TESTNET_ALICE,
+            TESTNET_SPEC_PATH,
+            extras={
+                "name": "KILT Testnet",
+                "id": "kilt_testnet",
+                "chainType": "Live",
+                "bootNodes": [
+                    "/dns4/bootnode-alice.kilt-prototype.tk/tcp/30333/p2p/12D3KooWPuXafPUY8E8zo7m4GuWkgj9ByfsanrNUznZShBgJrW4A",
+                    "/dns4/bootnode-bob.kilt-prototype.tk/tcp/30334/p2p/12D3KooWPVLgaJoD4CdGzAFzaZSgiDSBM4jqt34LjH1XdtGnVsss",
+                    "/dns4/bootnode-charlie.kilt-prototype.tk/tcp/30335/p2p/12D3KooWKBLU9T9MTxLJuy6hddPChRdnw91TBk3wYJzDyBQH9dXx",
+                ],
+                "telemetryEndpoints": [["wss://telemetry-backend.kilt.io:8080", 9]]
+            }
+        )
 
     # ##########################################################################
     # ########################### KILT_ROC PRODUCTION ##########################
