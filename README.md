@@ -51,13 +51,13 @@ Substrate Documentation:
 Start chain and connect to alice bootnode:
 
 ```
-docker run -p 9944:9944 kiltprotocol/mashnet-node ./start-node.sh --connect-to alice
+docker run -p 9944:9944 kiltprotocol/mashnet-node --chain kilt-testnet
 ```
 
 Start dev chain (producing blocks without requirements) for local development with all WebSocket Interfaces and Remote Procedure Calls enabled and specified WebSockets RPC server TCP port. Default would be only Local Procedure Calls enabled:
 
 ```
-docker run -p 9944:9944 kiltprotocol/mashnet-node ./target/release/mashnet-node --dev --ws-port 9944 --ws-external --rpc-external
+docker run -p 9944:9944 kiltprotocol/mashnet-node --dev --ws-port 9944 --ws-external --rpc-external --rpc-methods=unsafe
 ```
 
 ## How to use
@@ -93,7 +93,7 @@ Clone this repo and navigate into it.
 Build docker image:
 
 ```
-docker build -t local/mashnet-node .
+docker build --build-arg NODE_TYPE=mashnet-node -t local/mashnet-node .
 ```
 
 start, by running:
@@ -112,133 +112,27 @@ You can build it by executing these commands:
 
 ```
 ./scripts/init.sh
-./scripts/build.sh
 ```
 
-#### Building in dev mode
+#### Building
 
 ```
+# debug builds
 cargo build -p mashnet-node
-```
 
-start, by running:
-
-```
-./target/debug/mashnet-node [node command]
-```
-
-#### Building in performant release mode
-
-```
+# release builds
 cargo build --release -p mashnet-node
+
+# build the parachain
+cargo build --release -p kilt-parachain
 ```
 
 start, by running:
 
 ```
-./target/release/mashnet-node [node command]
+cargo run --release -p mashnet-node -- [node command]
 ```
 
-For execution see the section about commands.
-
-### Commands
-
-To start the node you have following options:
-
-- start-node.sh helper script
-- executing the node binary directly
-
-#### Helper script
-
-We include a helper script, which sets up the arguments used for the node binary.
-
-Use it by executing:
-
-```
-./start-node.sh --help
-```
-
-This can be used in all building strategies (except dev mode built):
-
-```
-docker run -p 9944:9944 kiltprotocol/mashnet-node ./start-node.sh --connect-to alice
-```
-
-or
-
-```
-docker run -p 9944:9944 local/mashnet-node ./start-node.sh --connect-to alice
-```
-
-or if you built it without docker:
-
-```
-./start-node.sh --connect-to alice
-```
-
-#### Node binary
-
-After finished building the node binary can be found in the `./target` directory:
-for dev mode build:
-
-```
-./target/debug/mashnet-node [node command]
-```
-
-for release mode build:
-
-```
-./target/release/mashnet-node [node command]
-```
-
-If you want to start a local dev-chain after building in dev mode you can execute:
-
-```
-./target/debug/mashnet-node --dev
-```
-
-If you are using a docker image, run:
-
-```
-docker run -p 9944:9944 kiltprotocol/mashnet-node ./target/release/mashnet-node --dev --ws-port 9944 --ws-external --rpc-external
-```
-
-### Examples
-
-#### Running a local node that connects to KILT prototype testnet in AWS
-
-There are master boot nodes running in the KILT testnet:
-
-- Alice (bootnode-alice.kilt-prototype.tk)
-- Bob (bootnode-bob.kilt-prototype.tk)
-
-To start a node and connect to alice you can use the shell script `start-node.sh`:
-
-```
-./start-node.sh --connect-to alice
-```
-
-If you want to connect to this node with all (default is local) WebSocket Interfaces and Remote Procedure Calls enabled and specified WebSockets RPC server TCP port
-
-```
-./start-node.sh --connect-to alice --rpc
-```
-
-Run `./start-node.sh --help` for more information.
-
-#### Running a node with local image, which runs a dev-chain
-
-build docker image (only do if code has changed, takes ~15 min)
-
-```
-docker build -t local/mashnet-node .
-```
-
-run chain in dev mode locally
-
-```
-docker run -p 9944:9944 local/mashnet-node ./target/release/mashnet-node --dev --ws-port 9944 --ws-external --rpc-external
-```
 ## Development
 
 ### Devnet runtime upgrade
@@ -273,7 +167,7 @@ docker pull 348099934012.dkr.ecr.eu-central-1.amazonaws.com/kilt/prototype-chain
 To run a node and connect it to the KILT testnet: Run the image and pass the command to start a node:
 
 ```
-docker run 348099934012.dkr.ecr.eu-central-1.amazonaws.com/kilt/prototype-chain ./start-node.sh --connect-to alice
+docker run 348099934012.dkr.ecr.eu-central-1.amazonaws.com/kilt/prototype-chain --chain kilt-testnet
 ```
 
 The node should be connected to the KILT testnet.
