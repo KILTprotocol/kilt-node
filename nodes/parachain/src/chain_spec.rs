@@ -148,34 +148,8 @@ pub fn staging_test_net(id: ParaId) -> Result<ChainSpec, String> {
 	))
 }
 
-pub fn rococo_net(id: ParaId) -> Result<ChainSpec, String> {
-	let properties = get_properties("KILT", 18, 38);
-	let wasm = WASM_BINARY.ok_or("No WASM")?;
-
-	Ok(ChainSpec::from_genesis(
-		"KILT Collator Rococo",
-		"kilt_parachain_rococo",
-		ChainType::Live,
-		move || {
-			testnet_genesis(
-				wasm,
-				hex!["da878f0b4cb36a3024015d47b9b3cc3be1573d8a744922e4ed9ab2665f469306"].into(),
-				vec![
-					hex!["da878f0b4cb36a3024015d47b9b3cc3be1573d8a744922e4ed9ab2665f469306"].into(),
-					hex!["f022c0f9c929bec1a5069d8806feab127f2fc4fc31d3a5d8db56d00aeec0ff3c"].into(),
-				],
-				id,
-			)
-		},
-		Vec::new(),
-		None,
-		None,
-		Some(properties),
-		Extensions {
-			relay_chain: "rococo_v1".into(),
-			para_id: id.into(),
-		},
-	))
+pub fn rococo_net() -> Result<ChainSpec, String> {
+	ChainSpec::from_json_bytes(&include_bytes!("../res/kilt-prod.json")[..])
 }
 
 fn testnet_genesis(

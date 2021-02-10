@@ -43,7 +43,8 @@ fn load_spec(
 ) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
 	match id {
 		"staging" => Ok(Box::new(chain_spec::staging_test_net(para_id)?)),
-		"rococo" => Ok(Box::new(chain_spec::rococo_net(para_id)?)),
+		"rococo" => Ok(Box::new(chain_spec::rococo_net()?)),
+		"dev" => Ok(Box::new(chain_spec::get_chain_spec(para_id)?)),
 		"" => Ok(Box::new(chain_spec::get_chain_spec(para_id)?)),
 		path => Ok(Box::new(chain_spec::ChainSpec::from_json_file(
 			path.into(),

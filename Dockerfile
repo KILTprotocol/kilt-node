@@ -4,17 +4,24 @@ FROM paritytech/ci-linux:5297d82c-20201107 as builder
 
 WORKDIR /build
 
-COPY . /build
+COPY ./nodes /build/nodes
+COPY ./pallets /build/pallets
+COPY ./primitives /build/primitives
+COPY ./runtimes /build/runtimes
+COPY ./Cargo.lock /build/Cargo.lock
+COPY ./Cargo.toml /build/Cargo.toml
 
-ARG NODE_TYPE=kilt-parachain
-RUN cargo build --release -p $NODE_TYPE
+RUN cargo build --release
 
 # ===== SECOND STAGE ======
 
 FROM debian:buster-slim
 LABEL description="This is the 2nd stage: a very small image where we copy the kilt-parachain binary."
+
 ARG NODE_TYPE=kilt-parachain
 
+COPY ./LICENSE /build/LICENSE
+COPY ./README.md /build/README.md
 COPY --from=builder /build/target/release/$NODE_TYPE /usr/local/bin/node-executable
 
 RUN useradd -m -u 1000 -U -s /bin/sh -d /node node && \
@@ -26,6 +33,8 @@ RUN useradd -m -u 1000 -U -s /bin/sh -d /node node && \
 USER node
 EXPOSE 30333 9933 9944
 VOLUME ["/data"]
+
+COPY ./dev-specs /node/dev-specs
 
 ENTRYPOINT ["/usr/local/bin/node-executable"]
 CMD ["--help"]

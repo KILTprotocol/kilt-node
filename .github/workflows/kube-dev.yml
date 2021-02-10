@@ -43,7 +43,7 @@ jobs:
           --target builder \
           --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
           -t $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
-          -f mashnet.Dockerfile \
+          --build-arg NODE_TYPE=mashnet-node \
           .
         docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG || true
         docker build \
@@ -51,7 +51,7 @@ jobs:
           --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG \
           -t $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG \
           -t $ECR_REGISTRY/$ECR_REPOSITORY:$SHA_IMAGE_TAG \
-          -f mashnet.Dockerfile \
+          --build-arg NODE_TYPE=mashnet-node \
           .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
