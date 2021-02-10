@@ -244,6 +244,7 @@ std = [
   'randomness-collective-flip/std',
   'serde',
   'sudo/std',
+  'session/std',
   'frame-support/std',
   'frame-system/std',
   'timestamp/std',
