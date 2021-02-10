@@ -75,7 +75,7 @@ impl Default for Permissions {
 }
 
 /// The delegation trait
-pub trait Trait: ctype::Trait + frame_system::Config {
+pub trait Trait: ctype::Config + frame_system::Config {
 	/// Delegation specific event type
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 

@@ -30,8 +30,8 @@ use frame_support::{
 };
 use frame_system::{self, ensure_signed};
 
-/// The CTYPE trait
-pub trait Trait: frame_system::Config {
+/// The CTYPE Config
+pub trait Config: frame_system::Config {
 	/// CTYPE specific event type
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 }
@@ -46,7 +46,7 @@ decl_event!(
 
 // The pallet's errors
 decl_error! {
-	pub enum Error for Module<T: Trait> {
+	pub enum Error for Module<T: Config> {
 		NotFound,
 		AlreadyExists,
 	}
@@ -54,7 +54,7 @@ decl_error! {
 
 decl_module! {
 	/// The CTYPE runtime module
-	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+	pub struct Module<T: Config> for enum Call where origin: T::Origin {
 
 		/// Deposit events
 		fn deposit_event() = default;
@@ -86,7 +86,7 @@ decl_module! {
 }
 
 decl_storage! {
-	trait Store for Module<T: Trait> as Ctype {
+	trait Store for Module<T: Config> as Ctype {
 		// CTYPEs: ctype-hash -> account-id?
 		pub CTYPEs get(fn ctypes):map hasher(opaque_blake2_256) T::Hash => Option<T::AccountId>;
 	}

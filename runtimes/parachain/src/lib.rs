@@ -252,7 +252,7 @@ impl attestation::Trait for Runtime {
 	type Event = Event;
 }
 
-impl ctype::Trait for Runtime {
+impl ctype::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
 }

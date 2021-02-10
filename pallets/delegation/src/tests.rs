@@ -104,7 +104,7 @@ impl frame_system::Config for Test {
 	type SS58Prefix = SS58Prefix;
 }
 
-impl ctype::Trait for Test {
+impl ctype::Config for Test {
 	type Event = ();
 }
 
