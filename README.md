@@ -51,7 +51,7 @@ Substrate Documentation:
 Start chain and connect to alice bootnode:
 
 ```
-docker run -p 9944:9944 kiltprotocol/mashnet-node --chain kilt-testnet --bootnodes /dns4/bootnode-alice.kilt-prototype.tk/tcp/30333/p2p/12D3KooWPuXafPUY8E8zo7m4GuWkgj9ByfsanrNUznZShBgJrW4A
+docker run -p 9944:9944 kiltprotocol/mashnet-node --chain kilt-testnet
 ```
 
 Start dev chain (producing blocks without requirements) for local development with all WebSocket Interfaces and Remote Procedure Calls enabled and specified WebSockets RPC server TCP port. Default would be only Local Procedure Calls enabled:
@@ -167,7 +167,7 @@ docker pull 348099934012.dkr.ecr.eu-central-1.amazonaws.com/kilt/prototype-chain
 To run a node and connect it to the KILT testnet: Run the image and pass the command to start a node:
 
 ```
-docker run 348099934012.dkr.ecr.eu-central-1.amazonaws.com/kilt/prototype-chain --chain kilt-testnet --bootnodes /dns4/bootnode-alice.kilt-prototype.tk/tcp/30333/p2p/12D3KooWPuXafPUY8E8zo7m4GuWkgj9ByfsanrNUznZShBgJrW4A
+docker run 348099934012.dkr.ecr.eu-central-1.amazonaws.com/kilt/prototype-chain --chain kilt-testnet
 ```
 
 The node should be connected to the KILT testnet.
