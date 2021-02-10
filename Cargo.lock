@@ -1065,6 +1065,7 @@ dependencies = [
 name = "ctype"
 version = "0.23.0"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "kilt-primitives",
@@ -4513,6 +4514,7 @@ name = "pallet-indices"
 version = "2.0.1"
 source = "git+https://github.com/paritytech/substrate?branch=rococo-v1#a0e44efcde6f1adbb4df17f068cfff52593063ad"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "parity-scale-codec",
@@ -4731,6 +4733,7 @@ dependencies = [
  "parity-scale-codec",
  "serde",
  "sp-inherents",
+ "sp-io",
  "sp-runtime",
  "sp-std",
  "sp-timestamp",

@@ -23,6 +23,7 @@
 /// Test module for CTYPEs
 #[cfg(test)]
 mod tests;
+mod benchmarking;
 
 use frame_support::{
 	debug, decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure,
