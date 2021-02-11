@@ -38,14 +38,6 @@ jobs:
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
       run: |
-        docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG || true
-        docker build \
-          --target builder \
-          --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
-          -t $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
-          --build-arg NODE_TYPE=mashnet-node \
-          .
-        docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG || true
         docker build \
           --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
           --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG \
