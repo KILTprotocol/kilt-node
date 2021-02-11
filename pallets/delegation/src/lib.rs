@@ -130,7 +130,7 @@ decl_error! {
 		ParentNotFound,
 		UnauthorizedRevocation,
 		UnauthorizedDelegation,
-		ExeededBounds,
+		ExceededRevocationBounds,
 	}
 }
 
@@ -251,11 +251,14 @@ decl_module! {
 			ensure!(root.owner.eq(&sender), Error::<T>::UnauthorizedRevocation);
 
 			if !root.revoked {
-				// store revoked root node
-				root.revoked = true;
-				<Root<T>>::insert(root_id, root);
 				// recursively revoke all children
-				Self::revoke_children(&root_id, &sender, max_children)?;
+				let remaining_revocations = Self::revoke_children(&root_id, &sender, max_children)?;
+
+				if remaining_revocations > 0 {
+					// store revoked root node
+					root.revoked = true;
+					<Root<T>>::insert(root_id, root);
+				}
 			}
 			// deposit event that the root node has been revoked
 			Self::deposit_event(RawEvent::RootRevoked(sender, root_id));
@@ -356,7 +359,7 @@ impl<T: Trait> Module<T> {
 				Self::deposit_event(RawEvent::DelegationRevoked(sender.clone(), *delegation));
 				revocations += 1;
 			} else {
-				return Err(Error::<T>::ExeededBounds.into());
+				return Err(Error::<T>::ExceededRevocationBounds.into());
 			}
 		}
 		Ok(revocations)
@@ -378,7 +381,7 @@ impl<T: Trait> Module<T> {
 				if remaining_revocations > 0 {
 					revocations += Self::revoke(&child, sender, remaining_revocations)?;
 				} else {
-					return Err(Error::<T>::ExeededBounds.into());
+					return Err(Error::<T>::ExceededRevocationBounds.into());
 				}
 			}
 		}

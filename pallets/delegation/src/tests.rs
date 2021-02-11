@@ -1,4 +1,4 @@
-// KILT Blockchain – https://botlabs.org
+// KILT Blockchain – https://botlabs.o index: (), error: (), message: ()rg
 // Copyright (C) 2019  BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
@@ -20,7 +20,7 @@ use crate::*;
 
 use codec::Encode;
 use frame_support::{
-	assert_noop, assert_ok,
+	assert_err, assert_noop, assert_ok,
 	dispatch::Weight,
 	impl_outer_origin, parameter_types,
 	weights::{
@@ -454,6 +454,13 @@ fn check_add_and_revoke_delegations() {
 			Delegation::revoke_root(Origin::signed(account_hash_bob), id_level_0, 1),
 			Error::<Test>::UnauthorizedRevocation,
 		);
+		let res =
+			Delegation::revoke_root(Origin::signed(account_hash_alice.clone()), id_level_0, 0);
+		assert_err!(
+			res,
+			DispatchError::from(crate::Error::<Test>::ExceededRevocationBounds)
+		);
+
 		assert_ok!(Delegation::revoke_root(
 			Origin::signed(account_hash_alice),
 			id_level_0,
