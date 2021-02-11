@@ -75,7 +75,7 @@ impl Default for Permissions {
 }
 
 /// The delegation trait
-pub trait Trait: ctype::Config + frame_system::Config {
+pub trait Config: ctype::Config + frame_system::Config {
 	/// Delegation specific event type
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
@@ -103,7 +103,7 @@ pub trait Trait: ctype::Config + frame_system::Config {
 decl_event!(
 	/// Events for delegations
 	pub enum Event<T> where <T as frame_system::Config>::Hash, <T as frame_system::Config>::AccountId,
-			<T as Trait>::DelegationNodeId {
+			<T as Config>::DelegationNodeId {
 		/// A new root has been created
 		RootCreated(AccountId, DelegationNodeId, Hash),
 		/// A root has been revoked
@@ -118,7 +118,7 @@ decl_event!(
 
 // The pallet's errors
 decl_error! {
-	pub enum Error for Module<T: Trait> {
+	pub enum Error for Module<T: Config> {
 		AlreadyExists,
 		BadSignature,
 		DelegationNotFound,
@@ -135,7 +135,7 @@ decl_error! {
 
 decl_module! {
 	/// The delegation runtime module
-	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+	pub struct Module<T: Config> for enum Call where origin: T::Origin {
 		/// Deposit events
 		fn deposit_event() = default;
 
@@ -282,7 +282,7 @@ decl_module! {
 }
 
 /// Implementation of further module constants and functions for delegations
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
 	/// Calculates the hash of all values of a delegation transaction
 	pub fn calculate_hash(
 		delegation_id: T::DelegationNodeId,
@@ -372,7 +372,7 @@ impl<T: Trait> Module<T> {
 }
 
 #[derive(Encode, Decode)]
-pub struct DelegationNode<T: Trait> {
+pub struct DelegationNode<T: Config> {
 	pub root_id: T::DelegationNodeId,
 	pub parent: Option<T::DelegationNodeId>,
 	pub owner: T::AccountId,
@@ -380,7 +380,7 @@ pub struct DelegationNode<T: Trait> {
 	pub revoked: bool,
 }
 
-impl<T: Trait> DelegationNode<T> {
+impl<T: Config> DelegationNode<T> {
 	pub fn new_root(
 		root_id: T::DelegationNodeId,
 		owner: T::AccountId,
@@ -418,13 +418,13 @@ impl<T: Trait> DelegationNode<T> {
 }
 
 #[derive(Encode, Decode)]
-pub struct DelegationRoot<T: Trait> {
+pub struct DelegationRoot<T: Config> {
 	pub ctype_hash: T::Hash,
 	pub owner: T::AccountId,
 	pub revoked: bool,
 }
 
-impl<T: Trait> DelegationRoot<T> {
+impl<T: Config> DelegationRoot<T> {
 	fn new(ctype_hash: T::Hash, owner: T::AccountId) -> Self {
 		DelegationRoot {
 			ctype_hash,
@@ -435,7 +435,7 @@ impl<T: Trait> DelegationRoot<T> {
 }
 
 decl_storage! {
-	trait Store for Module<T: Trait> as Delegation {
+	trait Store for Module<T: Config> as Delegation {
 		// Root: root-id => DelegationRoot?
 		pub Root get(fn root):map hasher(opaque_blake2_256) T::DelegationNodeId => Option<DelegationRoot<T>>;
 

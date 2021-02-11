@@ -109,7 +109,7 @@ impl ctype::Config for Test {
 	type Event = ();
 }
 
-impl delegation::Trait for Test {
+impl delegation::Config for Test {
 	type Event = ();
 	type Signature = Signature;
 	type Signer = <Self::Signature as Verify>::Signer;

@@ -350,7 +350,7 @@ impl ctype::Config for Runtime {
 	type Event = Event;
 }
 
-impl delegation::Trait for Runtime {
+impl delegation::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
 	type Signature = Signature;
@@ -616,11 +616,11 @@ impl_runtime_apis! {
 			let mut batches = Vec::<BenchmarkBatch>::new();
 			let params = (&config, &whitelist);
 
-			// TODO: Add pallets
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
 			add_benchmark!(params, batches, ctype, Ctype);
+			add_benchmark!(params, batches, delegation, Delegation);
 
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }

@@ -33,7 +33,7 @@ use frame_system::{self, ensure_signed};
 use sp_std::prelude::{Clone, PartialEq, Vec};
 
 /// The attestation trait
-pub trait Trait: frame_system::Config + delegation::Trait {
+pub trait Trait: frame_system::Config + delegation::Config {
 	/// Attestation specific event type
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 }
@@ -41,7 +41,7 @@ pub trait Trait: frame_system::Config + delegation::Trait {
 decl_event!(
 	/// Events for attestations
 	pub enum Event<T> where <T as frame_system::Config>::AccountId, <T as frame_system::Config>::Hash,
-			<T as delegation::Trait>::DelegationNodeId {
+			<T as delegation::Config>::DelegationNodeId {
 		/// An attestation has been added
 		AttestationCreated(AccountId, Hash, Hash, Option<DelegationNodeId>),
 		/// An attestation has been revoked

@@ -257,7 +257,7 @@ impl ctype::Config for Runtime {
 	type Event = Event;
 }
 
-impl delegation::Trait for Runtime {
+impl delegation::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
 	type Signature = Signature;

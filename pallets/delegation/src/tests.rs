@@ -108,7 +108,7 @@ impl ctype::Config for Test {
 	type Event = ();
 }
 
-impl Trait for Test {
+impl Config for Test {
 	type Event = ();
 	type Signature = MultiSignature;
 	type Signer = <Self::Signature as Verify>::Signer;
