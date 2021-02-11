@@ -344,10 +344,10 @@ impl<T: Trait> Module<T> {
 
 		// check if already revoked
 		if !delegation_node.revoked {
-			// fist revoke all children recursively
+			// first revoke all children recursively
 			revocations += Self::revoke_children(delegation, sender, max_revocations)?;
 
-			// if we run out of revocation gas, we only revoke children. The tree will be changed but still valid.
+			// if we run out of revocation gas, we only revoke children. The tree will be changed but is still valid.
 			if revocations < max_revocations {
 				// set revoked flag and store delegation node
 				delegation_node.revoked = true;
