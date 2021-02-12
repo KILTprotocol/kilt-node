@@ -1,3 +1,4 @@
+#![feature(alloc_error_handler)]
 // KILT Blockchain – https://botlabs.org
 // Copyright (C) 2019  BOTLabs GmbH
 
@@ -24,6 +25,7 @@
 /// Test module for delegations
 #[cfg(test)]
 mod tests;
+mod benchmarking;
 
 #[macro_use]
 extern crate bitflags;

@@ -1291,10 +1291,12 @@ version = "0.23.0"
 dependencies = [
  "bitflags",
  "ctype",
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "kilt-primitives",
  "parity-scale-codec",
+ "sp-application-crypto",
  "sp-core",
  "sp-io",
  "sp-runtime",
