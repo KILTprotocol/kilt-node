@@ -20,7 +20,7 @@ use crate::*;
 
 use codec::Encode;
 use frame_support::{
-	assert_err, assert_noop, assert_ok,
+	assert_noop, assert_ok,
 	dispatch::Weight,
 	impl_outer_origin, parameter_types,
 	weights::{
@@ -454,11 +454,9 @@ fn check_add_and_revoke_delegations() {
 			Delegation::revoke_root(Origin::signed(account_hash_bob), id_level_0, 1),
 			Error::<Test>::UnauthorizedRevocation,
 		);
-		let res =
-			Delegation::revoke_root(Origin::signed(account_hash_alice.clone()), id_level_0, 0);
-		assert_err!(
-			res,
-			DispatchError::from(crate::Error::<Test>::ExceededRevocationBounds)
+		assert_noop!(
+			Delegation::revoke_root(Origin::signed(account_hash_alice.clone()), id_level_0, 0),
+			crate::Error::<Test>::ExceededRevocationBounds,
 		);
 
 		assert_ok!(Delegation::revoke_root(
