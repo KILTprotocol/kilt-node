@@ -418,7 +418,8 @@ fn check_add_attestation_with_delegation() {
 		// revoke root delegation
 		assert_ok!(Delegation::revoke_root(
 			Origin::signed(account_hash_alice.clone()),
-			delegation_root
+			delegation_root,
+			2
 		));
 
 		// cannot revoke attestation if not owner (alice is owner of attestation)
@@ -429,7 +430,7 @@ fn check_add_attestation_with_delegation() {
 		assert_ok!(AttestationModule::revoke(
 			Origin::signed(account_hash_alice),
 			claim_hash,
-			10
+			10,
 		));
 
 		// remove attestation to catch for revoked delegation
