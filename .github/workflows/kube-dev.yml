@@ -38,42 +38,14 @@ jobs:
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
       run: |
-        docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG || true
         docker build \
-          --target builder \
-          --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
-          -t $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
-          --build-arg NODE_TYPE=mashnet-node \
-          .
-        docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG || true
-        docker build \
-          --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG \
-          --cache-from $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG \
           -t $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG \
           -t $ECR_REGISTRY/$ECR_REPOSITORY:$SHA_IMAGE_TAG \
           --build-arg NODE_TYPE=mashnet-node \
           .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$SHA_IMAGE_TAG
         echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$ECR_IMAGE_TAG"
-
-    - name: Extract WASM artifact
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        SOURCE_PATH: /build/target/release/wbuild/mashnet-node-runtime/mashnet_node_runtime.compact.wasm
-      run: |
-        container_id=$(docker create $ECR_REGISTRY/$ECR_REPOSITORY:$CACHE_IMAGE_BUILDER_TAG)
-        docker cp $container_id:$SOURCE_PATH $ARTIFACT_DEST_PATH
-        docker rm -v $container_id
-
-    - name: Upload WASM Artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: runtime-wasm-artifact
-        path: ${{ env.ARTIFACT_DEST_PATH }}
-        retention-days: 5
-        if-no-files-found: error
 
     # Here, we're creating the parent directory and writing out our decoded
     # kubeconfig to the location we stated above.
