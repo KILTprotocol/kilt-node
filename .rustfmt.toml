@@ -1,4 +1,4 @@
 # for possible configuration values see https://github.com/rust-lang/rustfmt/blob/master/Configurations.md
 
-merge_imports = true
+imports_granularity = "Crate"
 hard_tabs = true
