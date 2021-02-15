@@ -20,40 +20,64 @@
 
 use super::*;
 
-use frame_benchmarking::{account, benchmarks, whitelisted_caller};
-use frame_support::{storage::StorageMap, traits::Currency};
-use frame_system::RawOrigin;
-use kilt_primitives::{AccountId, Balance};
-use sp_core::{sr25519, Pair, H256};
-use sp_runtime::{
-	traits::{Bounded, Hash, IdentifyAccount, IdentityLookup, Verify},
-	MultiSignature, MultiSigner,
-};
 use crate::Module as AttestationModule;
-use delegation::Module as Delegation;
-use frame_system::Module as System;
-use pallet_balances::Module as Balances;
-use sp_core::Public;
+use frame_benchmarking::{benchmarks};
+use frame_support::{storage::StorageMap};
+use frame_system::{RawOrigin};
+use sp_core::{sr25519, Pair};
+use sp_runtime::{
+	traits::{Hash},
+};
 
-const SEED: u32 = 0;
-
-fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
-	hash.encode()
-}
+// const MAX_DEPTH: u32 = 100;
+// const MAX_CHILDREN: u32 = 4;
 
 benchmarks! {
-	where_clause { where T::Signature: From<sr25519::Signature>, <T as frame_system::Config>::AccountId: From<sr25519::Public> }
+	where_clause { where T: std::fmt::Debug, T::Signature: From<sr25519::Signature>, <T as frame_system::Config>::AccountId: From<sr25519::Public> }
 
 	add {
-		// create root delegation
+		// let depth in 1 .. MAX_DEPTH;
+		// let children in 1 .. MAX_CHILDREN;
+		let depth: u32 = 1;
+		let children: u32 = 1;
+
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hashing::hash(b"ctype");
 
-		let (root_acc, _, _, delegation_leaf) = delegation::benchmarking::setup_delegations::<T>(1, 1)?;
-		let root_acc_id: <T as frame_system::Config>::AccountId = root_acc.public().into();
-	}: _(RawOrigin::Signed(root_acc_id), claim_hash, ctype_hash, Some(delegation_leaf))
+		let (_, _, delegate, delegation_leaf) = delegation::benchmarking::setup_delegations::<T>(depth.into(), children.into())?;
+		let delegate_id: <T as frame_system::Config>::AccountId = delegate.public().into();
+	}: _(RawOrigin::Signed(delegate_id.clone()), claim_hash, ctype_hash, Some(delegation_leaf))
 	verify {
 		assert!(Attestations::<T>::contains_key(claim_hash));
+		assert_eq!(Attestations::<T>::get(claim_hash), Some(Attestation::<T> {
+			ctype_hash,
+			attester: delegate_id,
+			delegation_id: Some(delegation_leaf),
+			revoked: false,
+		}));
+	}
+
+	revoke {
+		// let depth in 1 .. MAX_DEPTH ;
+		// let children in 1 .. MAX_CHILDREN;
+		let depth: u32 = 1;
+		let children: u32 = 1;
+
+		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
+		let ctype_hash: T::Hash = T::Hashing::hash(b"ctype");
+
+		let (_, _, delegate, delegation_leaf) = delegation::benchmarking::setup_delegations::<T>(depth.into(), children.into())?;
+		let delegate_id: <T as frame_system::Config>::AccountId = delegate.public().into();
+		AttestationModule::<T>::add(RawOrigin::Signed(delegate_id.clone()).into(), claim_hash, ctype_hash, Some(delegation_leaf))?;
+	}: _(RawOrigin::Signed(delegate_id.clone()), claim_hash, depth.into())
+	verify {
+		assert!(Attestations::<T>::contains_key(claim_hash));
+		assert_eq!(Attestations::<T>::get(claim_hash), Some(Attestation::<T> {
+			ctype_hash,
+			attester: delegate_id,
+			delegation_id: Some(delegation_leaf),
+			revoked: true,
+		}));
 	}
 }
 

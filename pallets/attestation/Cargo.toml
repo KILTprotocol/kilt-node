@@ -65,7 +65,8 @@ runtime-benchmarks = [
   'frame-benchmarking',
   'kilt-primitives',
   'pallet-balances',
-  'sp-core'
+  'sp-core',
+  'delegation/runtime-benchmarks'
 ]
 std = [
   'codec/std',

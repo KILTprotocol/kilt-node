@@ -22,10 +22,11 @@
 //! adding and revoking delegation nodes based on root nodes.
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(any(feature = "runtime-benchmarks", test))]
+pub mod benchmarking;
 /// Test module for delegations
 #[cfg(test)]
 mod tests;
-pub mod benchmarking;
 
 #[macro_use]
 extern crate bitflags;

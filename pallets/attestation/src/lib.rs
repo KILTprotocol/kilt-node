@@ -139,7 +139,7 @@ decl_module! {
 			// check if the attestation has already been revoked
 			ensure!(!revoked, Error::<T>::AlreadyRevoked);
 
-			// check delegation treee if the sender of the revocation transaction is not the attester
+			// check delegation tree if the sender of the revocation transaction is not the attester
 			if !attester.eq(&sender) {
 				// check whether the attestation includes a delegation
 				let del_id = delegation_id.ok_or(Error::<T>::UnauthorizedRevocation)?;
@@ -161,7 +161,7 @@ decl_module! {
 	}
 }
 
-#[derive(Encode, Decode)]
+#[derive(Debug, Encode, Decode, PartialEq)]
 pub struct Attestation<T: Config> {
 	// hash of the CTYPE used for this attestation
 	ctype_hash: T::Hash,
