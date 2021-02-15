@@ -23,7 +23,7 @@ ctype = {version = '0.23.0', default-features = false, path = '../ctype'}
 branch = "rococo-v1"
 default-features = false
 git = 'https://github.com/paritytech/substrate'
-version = '2.0.0'
+version = '3.0.0'
 
 [dependencies.bitflags]
 default-features = false
@@ -39,31 +39,31 @@ version = '1.3.0'
 branch = "rococo-v1"
 default-features = false
 git = 'https://github.com/paritytech/substrate'
-version = '2.0.0'
+version = '3.0.0'
 
 [dependencies.frame-system]
 branch = "rococo-v1"
 default-features = false
 git = 'https://github.com/paritytech/substrate'
-version = '2.0.0'
+version = '3.0.0'
 
 [dependencies.sp-runtime]
 branch = "rococo-v1"
 default-features = false
 git = 'https://github.com/paritytech/substrate'
-version = '2.0.0'
+version = '3.0.0'
 
 [dependencies.sp-std]
 branch = "rococo-v1"
 default-features = false
 git = 'https://github.com/paritytech/substrate'
-version = '2.0.0'
+version = '3.0.0'
 
 [dependencies.sp-io]
 branch = "rococo-v1"
 default-features = false
 git = 'https://github.com/paritytech/substrate'
-version = '2.0.0'
+version = '3.0.0'
 
 [features]
 default = ['std']
