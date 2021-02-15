@@ -48,7 +48,7 @@ use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 
 // pub use consensus::Call as ConsensusCall;
-pub use balances::{Call as BalancesCall, NegativeImbalance};
+pub use balances::Call as BalancesCall;
 
 pub use frame_support::{
 	construct_runtime, parameter_types,
@@ -93,6 +93,9 @@ pub type Hash = sp_core::H256;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem<Hash>;
+
+pub type NegativeImbalance<T> =
+	<balances::Module<T> as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
@@ -305,21 +308,16 @@ where
 	R: balances::Config + authorship::Config,
 	<R as frame_system::Config>::AccountId: From<AccountId>,
 	<R as frame_system::Config>::AccountId: Into<AccountId>,
-	<R as frame_system::Config>::Event: From<
-		balances::RawEvent<
-			<R as frame_system::Config>::AccountId,
-			<R as balances::Config>::Balance,
-			balances::DefaultInstance,
-		>,
-	>,
+	<R as frame_system::Config>::Event: From<balances::Event<Runtime>>,
+	<R as balances::Config>::Balance: Into<u128>,
 {
 	fn on_nonzero_unbalanced(amount: NegativeImbalance<R>) {
 		let numeric_amount = amount.peek();
 		let author = <authorship::Module<R>>::author();
 		<balances::Module<R>>::resolve_creating(&author, amount);
-		<frame_system::Module<R>>::deposit_event(balances::RawEvent::Deposit(
-			author,
-			numeric_amount,
+		<frame_system::Module<R>>::deposit_event(balances::Event::Deposit(
+			author.into(),
+			numeric_amount.into(),
 		));
 	}
 }
