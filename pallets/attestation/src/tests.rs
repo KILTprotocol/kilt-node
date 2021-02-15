@@ -116,7 +116,7 @@ impl delegation::Config for Test {
 	type DelegationNodeId = H256;
 }
 
-impl Trait for Test {
+impl Config for Test {
 	type Event = ();
 }
 

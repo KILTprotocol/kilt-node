@@ -247,7 +247,7 @@ impl cumulus_parachain_system::Config for Runtime {
 
 impl parachain_info::Config for Runtime {}
 
-impl attestation::Trait for Runtime {
+impl attestation::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
 }

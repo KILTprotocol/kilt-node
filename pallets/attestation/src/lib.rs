@@ -20,6 +20,8 @@
 //! adding and revoking attestations.
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(any(feature = "runtime-benchmarks", test))]
+pub mod benchmarking;
 /// Test module for attestations
 #[cfg(test)]
 mod tests;
@@ -33,7 +35,7 @@ use frame_system::{self, ensure_signed};
 use sp_std::prelude::{Clone, PartialEq, Vec};
 
 /// The attestation trait
-pub trait Trait: frame_system::Config + delegation::Config {
+pub trait Config: frame_system::Config + delegation::Config {
 	/// Attestation specific event type
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 }
@@ -51,7 +53,7 @@ decl_event!(
 
 // The pallet's errors
 decl_error! {
-	pub enum Error for Module<T: Trait> {
+	pub enum Error for Module<T: Config> {
 		AlreadyAttested,
 		AlreadyRevoked,
 		AttestationNotFound,
@@ -65,7 +67,7 @@ decl_error! {
 
 decl_module! {
 	/// The attestation runtime module
-	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+	pub struct Module<T: Config> for enum Call where origin: T::Origin {
 		/// Deposit events
 		fn deposit_event() = default;
 
@@ -160,7 +162,7 @@ decl_module! {
 }
 
 #[derive(Encode, Decode)]
-pub struct Attestation<T: Trait> {
+pub struct Attestation<T: Config> {
 	// hash of the CTYPE used for this attestation
 	ctype_hash: T::Hash,
 	// the account which executed the attestation
@@ -172,7 +174,7 @@ pub struct Attestation<T: Trait> {
 }
 
 decl_storage! {
-	trait Store for Module<T: Trait> as Attestation {
+	trait Store for Module<T: Config> as Attestation {
 		/// Attestations: claim-hash -> (ctype-hash, attester-account, delegation-id?, revoked)?
 		Attestations get(fn attestations): map hasher(opaque_blake2_256) T::Hash => Option<Attestation<T>>;
 		/// DelegatedAttestations: delegation-id -> [claim-hash]

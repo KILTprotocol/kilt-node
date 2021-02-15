@@ -20,10 +20,10 @@
 //! adding CTYPEs.
 #![cfg_attr(not(feature = "std"), no_std)]
 
+mod benchmarking;
 /// Test module for CTYPEs
 #[cfg(test)]
 mod tests;
-mod benchmarking;
 
 use frame_support::{
 	debug, decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure,

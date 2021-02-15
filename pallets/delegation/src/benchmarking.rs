@@ -94,7 +94,7 @@ where
 	Ok(leaf.unwrap_or((parent_acc, parent_id)))
 }
 
-fn setup_delegations<T: Config>(
+pub fn setup_delegations<T: Config>(
 	levels: u64,
 	children_per_level: u64,
 ) -> Result<

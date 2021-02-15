@@ -340,7 +340,7 @@ impl sudo::Config for Runtime {
 	type Call = Call;
 }
 
-impl attestation::Trait for Runtime {
+impl attestation::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
 }
@@ -403,29 +403,29 @@ construct_runtime!(
 		NodeBlock = opaque::Block,
 		UncheckedExtrinsic = UncheckedExtrinsic
 	{
-		System: frame_system::{Module, Call, Config, Storage, Event<T>},
-		RandomnessCollectiveFlip: randomness_collective_flip::{Module, Call, Storage},
+		System: frame_system::{Module, Call, Config, Storage, Event<T>} = 0,
+		RandomnessCollectiveFlip: randomness_collective_flip::{Module, Call, Storage} = 1,
 
 		// Keep block authoring before session?
-		Aura: aura::{Module, Config<T>, Inherent},
+		Aura: aura::{Module, Config<T>, Inherent} = 2,
 
 		// Basic modules
-		Timestamp: timestamp::{Module, Call, Storage, Inherent},
-		Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
-		TransactionPayment: pallet_transaction_payment::{Module, Storage},
-		Session: session::{Module, Call, Storage, Event, Config<T>},
+		Timestamp: timestamp::{Module, Call, Storage, Inherent} = 3,
+		Balances: balances::{Module, Call, Storage, Config<T>, Event<T>} = 4,
+		TransactionPayment: pallet_transaction_payment::{Module, Storage} = 5,
+		Session: session::{Module, Call, Storage, Event, Config<T>} = 6,
 
-		Grandpa: grandpa::{Module, Call, Storage, Config, Event},
-		Sudo: sudo::{Module, Call, Config<T>, Storage, Event<T>},
+		Grandpa: grandpa::{Module, Call, Storage, Config, Event} = 7,
+		Sudo: sudo::{Module, Call, Config<T>, Storage, Event<T>} = 8,
 
-		Indices: pallet_indices::{Module, Call, Storage, Event<T>},
-		Authorship: authorship::{Module, Call, Storage},
+		Indices: pallet_indices::{Module, Call, Storage, Event<T>} = 9,
+		Authorship: authorship::{Module, Call, Storage} = 10,
 		// Finality tracker?
 
-		Ctype: ctype::{Module, Call, Storage, Event<T>},
-		Attestation: attestation::{Module, Call, Storage, Event<T>},
-		Delegation: delegation::{Module, Call, Storage, Event<T>},
-		Did: did::{Module, Call, Storage, Event<T>},
+		Ctype: ctype::{Module, Call, Storage, Event<T>} = 11,
+		Attestation: attestation::{Module, Call, Storage, Event<T>} = 12,
+		Delegation: delegation::{Module, Call, Storage, Event<T>} = 13,
+		Did: did::{Module, Call, Storage, Event<T>} = 14,
 	}
 );
 
@@ -621,6 +621,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
 			add_benchmark!(params, batches, ctype, Ctype);
 			add_benchmark!(params, batches, delegation, Delegation);
+			add_benchmark!(params, batches, attestation, Attestation);
 
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }

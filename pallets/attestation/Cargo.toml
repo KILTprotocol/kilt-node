@@ -9,11 +9,8 @@ version = '0.23.0'
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
 
-[dev-dependencies]
-kilt-primitives = {path = '../../primitives', default-features = false}
-
 [dev-dependencies.sp-core]
-branch = "rococo-v1"
+branch = 'rococo-v1'
 default-features = false
 git = 'https://github.com/paritytech/substrate'
 
@@ -25,6 +22,12 @@ version = '1.0.6'
 ctype = {version = '0.23.0', default-features = false, path = '../ctype'}
 delegation = {version = '0.23.0', default-features = false, path = '../delegation'}
 
+# Optional imports for benchmarking
+kilt-primitives = {path = '../../primitives', default-features = false, optional = true}
+frame-benchmarking = {git = 'https://github.com/paritytech/substrate', default-features = false, optional = true, branch = 'rococo-v1'}
+pallet-balances = {git = 'https://github.com/paritytech/substrate', default-features = false, optional = true, branch = 'rococo-v1'}
+sp-core = {git = 'https://github.com/paritytech/substrate', default-features = false, optional = true, branch = 'rococo-v1'}
+
 [dependencies.codec]
 default-features = false
 features = ['derive']
@@ -32,32 +35,38 @@ package = 'parity-scale-codec'
 version = '1.3.0'
 
 [dependencies.frame-support]
-branch = "rococo-v1"
+branch = 'rococo-v1'
 default-features = false
 git = 'https://github.com/paritytech/substrate'
 
 [dependencies.frame-system]
-branch = "rococo-v1"
+branch = 'rococo-v1'
 default-features = false
 git = 'https://github.com/paritytech/substrate'
 
 [dependencies.sp-runtime]
-branch = "rococo-v1"
+branch = 'rococo-v1'
 default-features = false
 git = 'https://github.com/paritytech/substrate'
 
 [dependencies.sp-std]
-branch = "rococo-v1"
+branch = 'rococo-v1'
 default-features = false
 git = 'https://github.com/paritytech/substrate'
 
 [dependencies.sp-io]
-branch = "rococo-v1"
+branch = 'rococo-v1'
 default-features = false
 git = 'https://github.com/paritytech/substrate'
 
 [features]
 default = ['std']
+runtime-benchmarks = [
+  'frame-benchmarking',
+  'kilt-primitives',
+  'pallet-balances',
+  'sp-core'
+]
 std = [
   'codec/std',
   'frame-support/std',
