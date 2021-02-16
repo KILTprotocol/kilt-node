@@ -11,7 +11,7 @@
     "tokenDecimals": 18,
     "tokenSymbol": "KILT"
   },
-  "relay_chain": "rococo_staging_testnet",
+  "relay_chain": "rococo_kilt_testnet",
   "para_id": 300,
   "consensusEngine": null,
   "lightSyncState": null,

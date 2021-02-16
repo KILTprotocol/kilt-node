@@ -259,7 +259,6 @@ if __name__ == "__main__":
                 val_3_pub: DEFAULT_MONEY,
             },
             val_1_pub,
-            pathlib.Path.cwd() / "dev-specs/kilt-parachain/relay-stage.json",
             chain_file=args.roc_staging_relay,
             extras={
                 # changing those breaks the chainspec building. :(
