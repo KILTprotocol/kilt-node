@@ -109,7 +109,7 @@ def build_and_setup_spec(node, authorities, session_keys, endowed, root, outpath
         json.dump(raw, f, indent="  ")
 
 
-def setup_spec(authorities, session_keys, endowed, root, outpath: pathlib.Path, chain_file: pathlib.Path, extras=None):
+def setup_spec(authorities, session_keys, endowed, root, chain_file: pathlib.Path, extras=None):
     with chain_file.open("r") as f:
         chain_spec = json.load(f)
 
@@ -250,7 +250,6 @@ if __name__ == "__main__":
                 "para_validator": lambda x: sr_pub[x],
                 "para_assignment": lambda x: sr_pub[x],
                 "authority_discovery": lambda x: sr_pub[x],
-                "parachain_validator": lambda x: sr_pub[x],
             },
             {
                 "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY": DEFAULT_MONEY,
@@ -263,9 +262,10 @@ if __name__ == "__main__":
             pathlib.Path.cwd() / "dev-specs/kilt-parachain/relay-stage.json",
             chain_file=args.roc_staging_relay,
             extras={
-                "name": "KILT Staging Relaychain",
-                "id": "kilt_staging_relay",
-                "chainType": "Live",
+                # changing those breaks the chainspec building. :(
+                # "name": "KILT Staging Relaychain",
+                # "id": "kilt_staging_relay",
+                # "chainType": "Live",
                 "bootNodes": [],
                 "protocolId": "dot",
             },
