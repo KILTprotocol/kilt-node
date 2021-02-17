@@ -1299,7 +1299,6 @@ dependencies = [
  "frame-system",
  "kilt-primitives",
  "parity-scale-codec",
- "sp-application-crypto",
  "sp-core",
  "sp-io",
  "sp-runtime",

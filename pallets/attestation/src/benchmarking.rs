@@ -25,7 +25,7 @@ use delegation::{Delegations, Module as Delegation};
 use frame_benchmarking::benchmarks;
 use frame_support::storage::StorageMap;
 use frame_system::RawOrigin;
-use sp_core::{offchain::KeyTypeId, sr25519, Pair};
+use sp_core::{offchain::KeyTypeId, sr25519};
 use sp_io::crypto::sr25519_generate;
 use sp_runtime::traits::Hash;
 use sp_std::{boxed::Box, vec};
@@ -56,13 +56,13 @@ benchmarks! {
 			None
 		);
 
-		let hash: Vec<u8> = Delegation::<T>::calculate_hash(
+		let hash_root: Vec<u8> = Delegation::<T>::calculate_hash(
 			delegation_id,
 			delegation_root_id,
 			None,
 			delegation::Permissions::ATTEST
 		).encode();
-		let signature: T::Signature = sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &delegate_public, &hash).unwrap().into();
+		let sig: <T as delegation::Config>::Signature = sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &delegate_public, hash_root.as_ref()).ok_or("Error while building signature of delegation.")?.into();
 
 		let _ = Delegation::<T>::create_root(RawOrigin::Signed(root_public.clone().into()).into(), delegation_root_id, ctype_hash);
 		// let delegation =
@@ -73,7 +73,7 @@ benchmarks! {
 			None,
 			delegate_public.into(),
 			delegation::Permissions::ATTEST,
-			signature
+			sig
 		);
 
 		// let (_, _, delegate, delegation_leaf) = delegation::benchmarking::setup_delegations::<T>(depth.into(), children.into())?;

@@ -22,76 +22,113 @@ use super::*;
 
 use frame_benchmarking::{account, benchmarks};
 use frame_system::RawOrigin;
-use sp_core::{sr25519, Pair};
+use sp_core::{offchain::KeyTypeId, sr25519};
+use sp_io::crypto::sr25519_generate;
 use sp_std::{boxed::Box, vec, vec::Vec};
-
-
-/// A default panic handler for WASM environment.
-#[cfg(not(feature = "std"))]
-#[panic_handler]
-#[no_mangle]
-pub fn panic(info: &core::panic::PanicInfo) -> ! {
-	unsafe {
-		core::arch::wasm32::unreachable();
-	}
-}
-
-/// A default OOM handler for WASM environment.
-#[cfg(not(feature = "std"))]
-#[alloc_error_handler]
-pub fn oom(_: core::alloc::Layout) -> ! {
-	unsafe {
-		core::arch::wasm32::unreachable();
-	}
-}
 
 const SEED: u32 = 0;
 
-fn generate_delegation_id<T: Config>(_number: u64) -> T::DelegationNodeId {
-	let delegation = <<T as Config>::DelegationNodeId as Default>::default();
+fn generate_delegation_id<T: Config>(number: u64) -> T::DelegationNodeId
+where
+	T::DelegationNodeId: From<<T as frame_system::Config>::Hash>,
+{
+	let hash: T::Hash = T::Hashing::hash(&number.to_ne_bytes());
+	hash.into()
+}
 
-	delegation
+fn parent_id_check<T: Config>(
+	root_id: T::DelegationNodeId,
+	parent_id: T::DelegationNodeId,
+) -> Option<T::DelegationNodeId> {
+	if parent_id == root_id {
+		None
+	} else {
+		Some(parent_id)
+	}
 }
 
 fn add_children<T: Config>(
-	_root_acc: sr25519::Pair,
-	_root_id: <T as Config>::DelegationNodeId,
-	parent_acc: sr25519::Pair,
+	root_id: <T as Config>::DelegationNodeId,
 	parent_id: <T as Config>::DelegationNodeId,
-	_ctype: <T as frame_system::Config>::Hash,
-	levels: u64,
+	parent_acc_public: sr25519::Public,
+	parent_acc_id: <T as frame_system::Config>::AccountId,
+	level: u64,
 	children_per_level: u64,
-) -> Result<(sr25519::Pair, T::DelegationNodeId), DispatchError>
+) -> Result<
+	(
+		sr25519::Public,
+		<T as frame_system::Config>::AccountId,
+		T::DelegationNodeId,
+	),
+	DispatchError,
+>
 where
 	<T as frame_system::Config>::AccountId: From<sr25519::Public>,
+	<T as Config>::Signature: From<sr25519::Signature>,
+	T::DelegationNodeId: From<<T as frame_system::Config>::Hash>,
 {
-	if levels == 0 {
-		return Ok((parent_acc, parent_id));
+	if level == 0 {
+		return Ok((parent_acc_public, parent_acc_id, parent_id));
 	};
 
 	let mut leaf = None;
 	for c in 0..children_per_level {
-		let node_acc = sr25519::Pair::from_seed_slice(&[0; 32])
-			.map_err(|_| "Error while building node key pair.")?;
-		let _node_acc_id: <T as frame_system::Config>::AccountId = node_acc.public().into();
-		let node_id = generate_delegation_id::<T>(levels * children_per_level + c);
+		let delegation_acc_public = sr25519_generate(KeyTypeId(*b"aura"), None);
+		let delegation_acc_id: <T as frame_system::Config>::AccountId =
+			delegation_acc_public.into();
+		let delegation_id = generate_delegation_id::<T>(level * children_per_level + c);
 
-		// TODO: add delegation
-		// Module::<T>::add_delegation(
-		// 	RawOrigin::Signed(root_acc.clone()).into(),
-		// 	delegation,
-		// 	root,
-		// 	ctype,
-		// )
+		frame_support::debug::RuntimeLogger::init();
+		frame_support::debug::print!(
+			"\niteration l{:?}/c{:?}\n root_id {:?},\n parent_id {:?},\nparent_acc_id {:?}\ndelegation_id {:?},\n delegation_acc_id {:?}",
+			level,
+			c,
+			root_id,
+			parent_id,
+			parent_acc_id,
+			delegation_id,
+			delegation_acc_id
+		);
+
+		// only set parent if not root
+		let parent = parent_id_check::<T>(root_id, parent_id);
+
+		// sign
+		let hash: Vec<u8> = Module::<T>::calculate_hash(
+			delegation_id,
+			root_id,
+			parent,
+			Permissions::ATTEST | Permissions::DELEGATE,
+		)
+		.encode();
+		let sig: <T as Config>::Signature =
+			sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &delegation_acc_public, hash.as_ref())
+				.ok_or("Error while building signature of delegation.")?
+				.into();
+
+		// add delegation from delegate to parent
+		let _ = Module::<T>::add_delegation(
+			RawOrigin::Signed(parent_acc_id.clone()).into(),
+			delegation_id,
+			root_id,
+			parent,
+			delegation_acc_id.clone(),
+			Permissions::ATTEST | Permissions::DELEGATE,
+			sig,
+		)?;
 
 		// only put in a leaf in the the first iteration
-		leaf = leaf.or(Some((node_acc, node_id)));
+		leaf = leaf.or(Some((
+			delegation_acc_public,
+			delegation_acc_id,
+			delegation_id,
+		)));
 	}
 
 	// TODO: only add childen for the first node
 
 	// if we didn't add children, return the parent
-	Ok(leaf.unwrap_or((parent_acc, parent_id)))
+	Ok(leaf.unwrap_or((parent_acc_public, parent_acc_id, parent_id)))
 }
 
 pub fn setup_delegations<T: Config>(
@@ -99,46 +136,51 @@ pub fn setup_delegations<T: Config>(
 	children_per_level: u64,
 ) -> Result<
 	(
-		sr25519::Pair,
+		sr25519::Public,
 		T::DelegationNodeId,
-		sr25519::Pair,
+		sr25519::Public,
 		T::DelegationNodeId,
 	),
 	DispatchError,
 >
 where
 	<T as frame_system::Config>::AccountId: From<sr25519::Public>,
+	<T as Config>::Signature: From<sr25519::Signature>,
+	T::DelegationNodeId: From<<T as frame_system::Config>::Hash>,
 {
-	// let root_acc: <T as frame_system::Config>::AccountId = account("root", 0, SEED);
-	let root_acc = sr25519::Pair::from_seed_slice(&[0; 32])
-		.map_err(|_| "Error while building root key pair.")?;
-	let root_acc_id: <T as frame_system::Config>::AccountId = root_acc.public().into();
+	let root_public = sr25519_generate(KeyTypeId(*b"aura"), None);
+	let root_acc: <T as frame_system::Config>::AccountId = root_public.into();
 
 	let ctype = <<T as frame_system::Config>::Hash as Default>::default();
-	ctype::Module::<T>::add(RawOrigin::Signed(root_acc_id.clone()).into(), ctype)?;
+	ctype::Module::<T>::add(RawOrigin::Signed(root_acc.clone()).into(), ctype)?;
 
 	let root_id = generate_delegation_id::<T>(0);
 	Module::<T>::create_root(
-		RawOrigin::Signed(root_acc_id.clone()).into(),
+		RawOrigin::Signed(root_public.clone().into()).into(),
 		root_id,
 		ctype,
 	)?;
 
-	let (leaf_acc, leaf_id) = add_children::<T>(
-		root_acc.clone(),
-		root_id,
-		root_acc.clone(),
-		root_id,
-		ctype,
-		levels,
-		children_per_level,
-	)?;
+	// iterate levels and start with root
+	let mut leaf_acc_public = root_public;
+	let mut leaf_acc_id = root_acc;
+	let mut leaf_id = root_id;
+	for l in 0..=levels {
+		let (leaf_acc_public, leaf_acc_id, leaf_id) = add_children::<T>(
+			root_id,
+			leaf_id,
+			leaf_acc_public,
+			leaf_acc_id.clone(),
+			l,
+			children_per_level,
+		)?;
+	}
 
-	return Ok((root_acc, root_id, leaf_acc, leaf_id));
+	return Ok((root_public, root_id, leaf_acc_public, leaf_id));
 }
 
 benchmarks! {
-	where_clause { where T::Signature: From<sr25519::Signature>, <T as frame_system::Config>::AccountId: From<sr25519::Public> }
+	where_clause { where T: core::fmt::Debug, T::Signature: From<sr25519::Signature>, <T as frame_system::Config>::AccountId: From<sr25519::Public>, 	T::DelegationNodeId: From<<T as frame_system::Config>::Hash> }
 
 	create_root {
 		let caller: <T as frame_system::Config>::AccountId = account("caller", 0, SEED);
@@ -150,19 +192,23 @@ benchmarks! {
 	}: _(RawOrigin::Signed(caller), delegation, ctype)
 
 	add_delegation {
-		let (root_acc, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(1, 2)?;
-		let delegatee = sr25519::Pair::from_seed_slice(&[0; 32])
-			.map_err(|_| "Error while building delegatee key pair.")?;
+		let (_, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(1, 1)?;
+		let delegate_acc_public = sr25519_generate(
+			KeyTypeId(*b"aura"),
+			None
+		);
+		frame_support::debug::print!("Done with setup! \n Root_id {:?} \n Leaf_id{:?}", root_id, leaf_id);
 		let delegation_id = generate_delegation_id::<T>(u64::MAX);
+		let parent_id = parent_id_check::<T>(root_id, leaf_id);
 
-		let perm: Permissions = Default::default();
-		let hash_root = Module::<T>::calculate_hash(delegation_id, root_id, Some(leaf_id), perm);
-		let sig: <T as Config>::Signature = delegatee.sign(hash_root.as_ref()).into();
+		let perm: Permissions = Permissions::ATTEST | Permissions::DELEGATE;
+		let hash_root = Module::<T>::calculate_hash(delegation_id, root_id, parent_id, perm);
+		let sig: <T as Config>::Signature = sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &delegate_acc_public, hash_root.as_ref()).ok_or("Error while building signature of delegation.")?.into();
 
-		let delegatee_id: <T as frame_system::Config>::AccountId = delegatee.public().into();
-		let leaf_acc_id: <T as frame_system::Config>::AccountId = leaf_acc.public().into();
+		let delegate_acc_id: <T as frame_system::Config>::AccountId = delegate_acc_public.into();
+		let leaf_acc_id: <T as frame_system::Config>::AccountId = leaf_acc.into();
 
-	}: _(RawOrigin::Signed(leaf_acc_id), delegation_id, root_id, Some(leaf_id), delegatee_id, perm, sig)
+	}: _(RawOrigin::Signed(leaf_acc_id), delegation_id, root_id, parent_id, delegate_acc_id, perm, sig)
 
 	// revoke_root {
 	// 	let caller = account("caller", 0, SEED);

@@ -124,7 +124,7 @@ type AttestationModule = Module<Test>;
 type CType = ctype::Module<Test>;
 type Delegation = delegation::Module<Test>;
 
-fn new_test_ext() -> sp_io::TestExternalities {
+pub fn new_test_ext() -> sp_io::TestExternalities {
 	frame_system::GenesisConfig::default()
 		.build_storage::<Test>()
 		.unwrap()

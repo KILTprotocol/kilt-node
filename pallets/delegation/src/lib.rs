@@ -1,4 +1,3 @@
-#![feature(alloc_error_handler)]
 // KILT Blockchain – https://botlabs.org
 // Copyright (C) 2019  BOTLabs GmbH
 
