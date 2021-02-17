@@ -16,13 +16,14 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use crate as pallet_attestation;
 use crate::*;
 
 use codec::Encode;
 use frame_support::{
 	assert_noop, assert_ok,
 	dispatch::Weight,
-	impl_outer_origin, parameter_types,
+	parameter_types,
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
 		DispatchClass,
@@ -38,12 +39,21 @@ use sp_runtime::{
 	MultiSignature, MultiSigner, Perbill,
 };
 
-impl_outer_origin! {
-	pub enum Origin for Test {}
-}
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+type Block = frame_system::mocking::MockBlock<Test>;
 
-#[derive(Clone, Eq, PartialEq, Debug)]
-pub struct Test;
+frame_support::construct_runtime!(
+	pub enum Test where
+		Block = Block,
+		NodeBlock = Block,
+		UncheckedExtrinsic = UncheckedExtrinsic,
+	{
+		System: frame_system::{Module, Call, Config, Storage, Event<T>},
+		PalletAttestation: pallet_attestation::{Module, Call, Storage, Event<T>},
+		Delegation: delegation::{Module, Call, Storage, Event<T>},
+		CType: ctype::{Module, Call, Storage, Event<T>},
+	}
+);
 
 /// We assume that ~10% of the block weight is consumed by `on_initalize` handlers.
 /// This is used to limit the maximal weight of a single extrinsic.
@@ -81,7 +91,7 @@ parameter_types! {
 
 impl frame_system::Config for Test {
 	type Origin = Origin;
-	type Call = ();
+	type Call = Call;
 	type Index = u64;
 	type BlockNumber = u64;
 	type Hash = H256;
@@ -94,7 +104,7 @@ impl frame_system::Config for Test {
 	type DbWeight = RocksDbWeight;
 	type Version = ();
 
-	type PalletInfo = ();
+	type PalletInfo = PalletInfo;
 	type AccountData = ();
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
@@ -120,10 +130,6 @@ impl Trait for Test {
 	type Event = ();
 }
 
-type AttestationModule = Module<Test>;
-type CType = ctype::Module<Test>;
-type Delegation = delegation::Module<Test>;
-
 fn new_test_ext() -> sp_io::TestExternalities {
 	frame_system::GenesisConfig::default()
 		.build_storage::<Test>()
@@ -142,7 +148,7 @@ fn check_add_attestation() {
 		let hash = H256::from_low_u64_be(1);
 		let account_hash = MultiSigner::from(pair.public()).into_account();
 		assert_ok!(CType::add(Origin::signed(account_hash.clone()), hash));
-		assert_ok!(AttestationModule::add(
+		assert_ok!(PalletAttestation::add(
 			Origin::signed(account_hash.clone()),
 			hash,
 			hash,
@@ -154,7 +160,7 @@ fn check_add_attestation() {
 			revoked,
 			delegation_id,
 		} = {
-			let opt = AttestationModule::attestations(hash);
+			let opt = PalletAttestation::attestations(hash);
 			assert!(opt.is_some());
 			opt.unwrap()
 		};
@@ -172,13 +178,13 @@ fn check_revoke_attestation() {
 		let hash = H256::from_low_u64_be(1);
 		let account_hash = MultiSigner::from(pair.public()).into_account();
 		assert_ok!(CType::add(Origin::signed(account_hash.clone()), hash));
-		assert_ok!(AttestationModule::add(
+		assert_ok!(PalletAttestation::add(
 			Origin::signed(account_hash.clone()),
 			hash,
 			hash,
 			None
 		));
-		assert_ok!(AttestationModule::revoke(
+		assert_ok!(PalletAttestation::revoke(
 			Origin::signed(account_hash.clone()),
 			hash,
 			10
@@ -189,7 +195,7 @@ fn check_revoke_attestation() {
 			revoked,
 			delegation_id,
 		} = {
-			let opt = AttestationModule::attestations(hash);
+			let opt = PalletAttestation::attestations(hash);
 			assert!(opt.is_some());
 			opt.unwrap()
 		};
@@ -207,14 +213,14 @@ fn check_double_attestation() {
 		let hash = H256::from_low_u64_be(1);
 		let account_hash = MultiSigner::from(pair.public()).into_account();
 		assert_ok!(CType::add(Origin::signed(account_hash.clone()), hash));
-		assert_ok!(AttestationModule::add(
+		assert_ok!(PalletAttestation::add(
 			Origin::signed(account_hash.clone()),
 			hash,
 			hash,
 			None
 		));
 		assert_noop!(
-			AttestationModule::add(Origin::signed(account_hash), hash, hash, None),
+			PalletAttestation::add(Origin::signed(account_hash), hash, hash, None),
 			Error::<Test>::AlreadyAttested
 		);
 	});
@@ -227,19 +233,19 @@ fn check_double_revoke_attestation() {
 		let hash = H256::from_low_u64_be(1);
 		let account_hash = MultiSigner::from(pair.public()).into_account();
 		assert_ok!(CType::add(Origin::signed(account_hash.clone()), hash));
-		assert_ok!(AttestationModule::add(
+		assert_ok!(PalletAttestation::add(
 			Origin::signed(account_hash.clone()),
 			hash,
 			hash,
 			None
 		));
-		assert_ok!(AttestationModule::revoke(
+		assert_ok!(PalletAttestation::revoke(
 			Origin::signed(account_hash.clone()),
 			hash,
 			10
 		));
 		assert_noop!(
-			AttestationModule::revoke(Origin::signed(account_hash), hash, 10),
+			PalletAttestation::revoke(Origin::signed(account_hash), hash, 10),
 			Error::<Test>::AlreadyRevoked
 		);
 	});
@@ -252,7 +258,7 @@ fn check_revoke_unknown() {
 		let hash = H256::from_low_u64_be(1);
 		let account_hash = MultiSigner::from(pair.public()).into_account();
 		assert_noop!(
-			AttestationModule::revoke(Origin::signed(account_hash), hash, 10),
+			PalletAttestation::revoke(Origin::signed(account_hash), hash, 10),
 			Error::<Test>::AttestationNotFound
 		);
 	});
@@ -267,14 +273,14 @@ fn check_revoke_not_permitted() {
 		let account_hash_bob = MultiSigner::from(pair_bob.public()).into_account();
 		let hash = H256::from_low_u64_be(1);
 		assert_ok!(CType::add(Origin::signed(account_hash_alice.clone()), hash));
-		assert_ok!(AttestationModule::add(
+		assert_ok!(PalletAttestation::add(
 			Origin::signed(account_hash_alice),
 			hash,
 			hash,
 			None
 		));
 		assert_noop!(
-			AttestationModule::revoke(Origin::signed(account_hash_bob), hash, 10),
+			PalletAttestation::revoke(Origin::signed(account_hash_bob), hash, 10),
 			Error::<Test>::UnauthorizedRevocation
 		);
 	});
@@ -305,7 +311,7 @@ fn check_add_attestation_with_delegation() {
 
 		// cannot add attestation based on a missing delegation
 		assert_noop!(
-			AttestationModule::add(
+			PalletAttestation::add(
 				Origin::signed(account_hash_alice.clone()),
 				claim_hash,
 				ctype_hash,
@@ -355,7 +361,7 @@ fn check_add_attestation_with_delegation() {
 
 		// cannot add attestation for missing ctype
 		assert_noop!(
-			AttestationModule::add(
+			PalletAttestation::add(
 				Origin::signed(account_hash_bob.clone()),
 				claim_hash,
 				other_ctype_hash,
@@ -372,7 +378,7 @@ fn check_add_attestation_with_delegation() {
 
 		// cannot add attestation with different ctype than in root
 		assert_noop!(
-			AttestationModule::add(
+			PalletAttestation::add(
 				Origin::signed(account_hash_bob.clone()),
 				claim_hash,
 				other_ctype_hash,
@@ -383,7 +389,7 @@ fn check_add_attestation_with_delegation() {
 
 		// cannot add delegation if not owner (bob is owner of delegation_2)
 		assert_noop!(
-			AttestationModule::add(
+			PalletAttestation::add(
 				Origin::signed(account_hash_alice.clone()),
 				claim_hash,
 				ctype_hash,
@@ -393,7 +399,7 @@ fn check_add_attestation_with_delegation() {
 		);
 		// cannot add delegation if not owner (alice is owner of delegation_1)
 		assert_noop!(
-			AttestationModule::add(
+			PalletAttestation::add(
 				Origin::signed(account_hash_bob.clone()),
 				claim_hash,
 				ctype_hash,
@@ -403,7 +409,7 @@ fn check_add_attestation_with_delegation() {
 		);
 
 		// add attestation for delegation_2
-		assert_ok!(AttestationModule::add(
+		assert_ok!(PalletAttestation::add(
 			Origin::signed(account_hash_bob.clone()),
 			claim_hash,
 			ctype_hash,
@@ -411,7 +417,7 @@ fn check_add_attestation_with_delegation() {
 		));
 
 		let existing_attestations_for_delegation =
-			AttestationModule::delegated_attestations(delegation_2);
+			PalletAttestation::delegated_attestations(delegation_2);
 		assert_eq!(existing_attestations_for_delegation.len(), 1);
 		assert_eq!(existing_attestations_for_delegation[0], claim_hash);
 
@@ -424,10 +430,10 @@ fn check_add_attestation_with_delegation() {
 
 		// cannot revoke attestation if not owner (alice is owner of attestation)
 		assert_noop!(
-			AttestationModule::revoke(Origin::signed(account_hash_charlie), claim_hash, 10),
+			PalletAttestation::revoke(Origin::signed(account_hash_charlie), claim_hash, 10),
 			Error::<Test>::UnauthorizedRevocation
 		);
-		assert_ok!(AttestationModule::revoke(
+		assert_ok!(PalletAttestation::revoke(
 			Origin::signed(account_hash_alice),
 			claim_hash,
 			10,
@@ -436,7 +442,7 @@ fn check_add_attestation_with_delegation() {
 		// remove attestation to catch for revoked delegation
 		Attestations::<Test>::remove(claim_hash);
 		assert_noop!(
-			AttestationModule::add(
+			PalletAttestation::add(
 				Origin::signed(account_hash_bob),
 				claim_hash,
 				ctype_hash,

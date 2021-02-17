@@ -17,7 +17,6 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 //! The KILT runtime. This can be compiled with `#[no_std]`, ready for Wasm.
-#![warn(clippy::all)]
 #![cfg_attr(not(feature = "std"), no_std)]
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
