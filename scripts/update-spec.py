@@ -24,7 +24,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def build_spec(node, chain, parachain_id=None, raw=False):
+def build_spec(node, chain, raw=False):
     cmd = [f"./target/release/{node}", "build-spec",
            "--disable-default-bootnode", "--chain", chain]
     if raw:
@@ -55,8 +55,14 @@ def set_root(sudo, account):
     sudo["key"] = account
 
 
-def fill_spec(spec, authorities, session_keys, endowed, root):
+def fill_spec(spec, authorities, session_keys, endowed, root, parachain_id):
     runtime = spec["genesis"]["runtime"]
+    if "runtime_genesis_config" in runtime:
+        runtime = runtime["runtime_genesis_config"]
+
+    if parachain_id:
+        spec["para_id"] = parachain_id
+        runtime["parachainInfo"]["parachainId"] = parachain_id
 
     try:
         balance_config = runtime["balances"]
@@ -64,8 +70,13 @@ def fill_spec(spec, authorities, session_keys, endowed, root):
         balance_config = runtime["palletBalances"]
 
     fill_balances(balance_config, endowed)
+
+    try:
+        session = runtime["session"]
+    except KeyError:
+        session = runtime["palletSession"]
     if authorities and session_keys:
-        fill_session(runtime["session"], authorities, session_keys)
+        fill_session(session, authorities, session_keys)
 
     try:
         sudo_config = runtime["sudo"]
@@ -75,16 +86,16 @@ def fill_spec(spec, authorities, session_keys, endowed, root):
 
 
 def build_and_setup_spec(node, authorities, session_keys, endowed, root, outpath, parachain_id=None, extras=None, chain_spec="dev"):
-    chain_spec = build_spec(node, chain_spec, parachain_id=parachain_id)
+    chain_spec = build_spec(node, chain_spec)
 
     if extras:
         chain_spec.update(extras)
 
-    fill_spec(chain_spec, authorities, session_keys, endowed, root)
+    fill_spec(chain_spec, authorities, session_keys, endowed, root, parachain_id)
 
     plain_file = pathlib.Path("/tmp/" + uuid.uuid4().hex)
     with plain_file.open("w") as f:
-        json.dump(chain_spec, f)
+        json.dump(chain_spec, f, indent="  ")
     logger.info("plain spec stored at %s",
                 plain_file.absolute().as_posix())
 
@@ -98,18 +109,18 @@ def build_and_setup_spec(node, authorities, session_keys, endowed, root, outpath
         json.dump(raw, f, indent="  ")
 
 
-def setup_spec(authorities, session_keys, endowed, root, outpath: pathlib.Path, chain_file: pathlib.Path, extras=None):
+def setup_spec(authorities, session_keys, endowed, root, chain_file: pathlib.Path, extras=None):
     with chain_file.open("r") as f:
-        chain_spec = json.load(chain_spec, f)
+        chain_spec = json.load(f)
 
     if extras:
         chain_spec.update(extras)
 
-    fill_spec(chain_spec, authorities, session_keys, endowed, root)
+    fill_spec(chain_spec, authorities, session_keys, endowed, root, None)
 
     plain_file = pathlib.Path("/tmp/" + uuid.uuid4().hex)
     with plain_file.open("w") as f:
-        json.dump(chain_spec, f)
+        json.dump(chain_spec, f, indent="  ")
     logger.info("plain spec stored at %s",
                 plain_file.absolute().as_posix())
 
@@ -127,8 +138,8 @@ if __name__ == "__main__":
                         help="update testnet spec")
     parser.add_argument("--rococo", "-r", action="store_true", dest="rococo",
                         help="update rococo parachain spec")
-    parser.add_argument("--roc-stage-relay", "-k", dest="roc_staging_relay", type=pathlib.Path,
-                        help="update rococo staging relay spec")
+    parser.add_argument("--roc-stage-relay", "-k", dest="roc_staging_relay",
+                        help="update rococo staging relay spec", type=pathlib.Path)
 
     args = parser.parse_args()
 
@@ -226,8 +237,7 @@ if __name__ == "__main__":
             val_2_pub: "5EJBtjPyUsYADxugWuWEahWsbrs1uSYsaXBXbFguBYWo2wFB",
             val_3_pub: "5HDqrcoJMLHND2eBhPPrchUXQWdYSTmpB1TfevQtTATkqSpz",
         }
-        build_and_setup_spec(
-            "kilt-parachain",
+        setup_spec(
             [
                 val_1_pub,
                 val_2_pub,
@@ -240,7 +250,6 @@ if __name__ == "__main__":
                 "para_validator": lambda x: sr_pub[x],
                 "para_assignment": lambda x: sr_pub[x],
                 "authority_discovery": lambda x: sr_pub[x],
-                "parachain_validator": lambda x: sr_pub[x],
             },
             {
                 "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY": DEFAULT_MONEY,
@@ -250,14 +259,13 @@ if __name__ == "__main__":
                 val_3_pub: DEFAULT_MONEY,
             },
             val_1_pub,
-            pathlib.Path.cwd() / "dev-specs/kilt-parachain/relay-stage.json",
+            chain_file=args.roc_staging_relay,
             extras={
-                "name": "KILT Staging Relaychain",
-                "id": "kilt_staging_relay",
-                "chainType": "Live",
+                # changing those breaks the chainspec building. :(
+                # "name": "KILT Staging Relaychain",
+                # "id": "kilt_staging_relay",
+                # "chainType": "Live",
                 "bootNodes": [],
-                "telemetryEndpoints": [["wss://telemetry-backend.kilt.io:8080", 9]],
                 "protocolId": "dot",
             },
-            chain_spec="rococo-local"
         )

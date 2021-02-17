@@ -94,7 +94,7 @@ pub const DAYS: BlockNumber = HOURS * 24;
 pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
 
 #[derive(codec::Encode, codec::Decode)]
-pub enum XCMPMessage<XAccountId, XBalance> {
+pub enum XcmpMessage<XAccountId, XBalance> {
 	/// Transfer tokens to the given account from the Parachain account.
 	TransferToken(XAccountId, XBalance),
 }
@@ -408,4 +408,4 @@ impl_runtime_apis! {
 	}
 }
 
-cumulus_runtime::register_validate_block!(Block, Executive);
+cumulus_parachain_system::register_validate_block!(Block, Executive);

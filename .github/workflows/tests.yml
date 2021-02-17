@@ -34,7 +34,7 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: nightly-2020-10-06
+        toolchain: nightly-2021-02-14
         components: rustfmt, clippy
         target: wasm32-unknown-unknown
         override: true
@@ -42,7 +42,7 @@ jobs:
 
     # Enable this for clippy linting.
     # - name: Check and Lint Code
-    #   run: cargo +nightly-2020-10-06 clippy -- -D warnings
+    #   run: cargo +nightly-2021-02-14 clippy -- -D warnings
     - name: Check Code
       run: cargo check --all --all-features
 
