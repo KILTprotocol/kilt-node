@@ -86,6 +86,7 @@ fn add_children<T: Config>(
 	parent_id: <T as Config>::DelegationNodeId,
 	parent_acc_public: sr25519::Public,
 	parent_acc_id: <T as frame_system::Config>::AccountId,
+	permissions: Permissions,
 	level: u64,
 	children_per_level: u64,
 ) -> Result<
@@ -117,13 +118,8 @@ where
 		let parent = parent_id_check::<T>(root_id, parent_id);
 
 		// delegate signs delegation to parent
-		let hash: Vec<u8> = Module::<T>::calculate_hash(
-			delegation_id,
-			root_id,
-			parent,
-			Permissions::ATTEST | Permissions::DELEGATE,
-		)
-		.encode();
+		let hash: Vec<u8> =
+			Module::<T>::calculate_hash(delegation_id, root_id, parent, permissions).encode();
 		let sig: <T as Config>::Signature =
 			sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &delegation_acc_public, hash.as_ref())
 				.ok_or("Error while building signature of delegation.")?
@@ -136,7 +132,7 @@ where
 			root_id,
 			parent,
 			delegation_acc_id.clone(),
-			Permissions::ATTEST | Permissions::DELEGATE,
+			permissions,
 			sig,
 		)?;
 
@@ -157,6 +153,7 @@ where
 		leaf_id,
 		leaf_acc_public,
 		leaf_acc_id,
+		permissions,
 		level - 1,
 		children_per_level,
 	)
@@ -168,6 +165,7 @@ where
 pub fn setup_delegations<T: Config>(
 	levels: u64,
 	children_per_level: u64,
+	permissions: Permissions,
 ) -> Result<
 	(
 		sr25519::Public,
@@ -190,6 +188,7 @@ where
 		root_id,
 		root_public,
 		root_acc.clone(),
+		permissions,
 		levels,
 		children_per_level,
 	)?;
@@ -211,7 +210,7 @@ benchmarks! {
 
 	revoke_root {
 		let depth = 1;
-		let (root_acc, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(5, 1)?;
+		let (root_acc, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(5, 1, Permissions::DELEGATE)?;
 		let root_acc_id: <T as frame_system::Config>::AccountId = root_acc.into();
 	}: _(RawOrigin::Signed(root_acc_id.clone()), root_id)
 	verify {
@@ -228,7 +227,7 @@ benchmarks! {
 	}
 
 	add_delegation {
-		let (_, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(1, 1)?;
+		let (_, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(1, 1, Permissions::DELEGATE)?;
 
 		// add one more delegation
 		let delegate_acc_public = sr25519_generate(
@@ -252,7 +251,7 @@ benchmarks! {
 	// worst case is to revoke child of root delegation
 	revoke_delegation {
 		let depth = 1;
-		let (_, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(depth, 1)?;
+		let (_, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(depth, 1, Permissions::DELEGATE)?;
 		let children: Vec<T::DelegationNodeId> = Children::<T>::get(root_id);
 		let child_id: T::DelegationNodeId = *children.get(0).ok_or("Root should have children")?;
 		let child_delegation = Delegations::<T>::get(child_id).ok_or("Child of root should have delegation id")?;
