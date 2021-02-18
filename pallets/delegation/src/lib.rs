@@ -373,7 +373,7 @@ impl<T: Config> Module<T> {
 	}
 }
 
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, Encode, Decode, PartialEq)]
 pub struct DelegationNode<T: Config> {
 	pub root_id: T::DelegationNodeId,
 	pub parent: Option<T::DelegationNodeId>,
@@ -419,7 +419,7 @@ impl<T: Config> DelegationNode<T> {
 	}
 }
 
-#[derive(Encode, Decode)]
+#[derive(Debug, Encode, Decode, PartialEq)]
 pub struct DelegationRoot<T: Config> {
 	pub ctype_hash: T::Hash,
 	pub owner: T::AccountId,
