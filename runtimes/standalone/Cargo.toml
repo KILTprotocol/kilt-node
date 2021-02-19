@@ -222,6 +222,7 @@ runtime-benchmarks = [
   'sp-runtime/runtime-benchmarks',
   'attestation/runtime-benchmarks',
   'ctype/runtime-benchmarks',
+  'did/runtime-benchmarks',
   'delegation/runtime-benchmarks',
   'balances/runtime-benchmarks',
   'pallet-indices/runtime-benchmarks',

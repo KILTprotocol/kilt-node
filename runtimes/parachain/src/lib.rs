@@ -268,13 +268,14 @@ impl delegation::Config for Runtime {
 	type WeightInfo = ();
 }
 
-impl did::Trait for Runtime {
+impl did::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
 	/// Type for the public signing key in DIDs
 	type PublicSigningKey = Hash;
 	/// Type for the public boxing key in DIDs
 	type PublicBoxKey = Hash;
+	type WeightInfo = ();
 }
 
 construct_runtime! {

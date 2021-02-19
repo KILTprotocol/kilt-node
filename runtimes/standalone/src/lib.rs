@@ -361,13 +361,14 @@ impl delegation::Config for Runtime {
 	type WeightInfo = ();
 }
 
-impl did::Trait for Runtime {
+impl did::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
 	/// Type for the public signing key in DIDs
 	type PublicSigningKey = Hash;
 	/// Type for the public boxing key in DIDs
 	type PublicBoxKey = Hash;
+	type WeightInfo = ();
 }
 
 parameter_types! {
@@ -622,10 +623,10 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
+			add_benchmark!(params, batches, attestation, Attestation);
 			add_benchmark!(params, batches, ctype, Ctype);
 			add_benchmark!(params, batches, delegation, Delegation);
-			add_benchmark!(params, batches, attestation, Attestation);
-
+			add_benchmark!(params, batches, did, Did);
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
 			Ok(batches)
