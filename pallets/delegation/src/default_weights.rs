@@ -52,9 +52,9 @@ use sp_std::marker::PhantomData;
 /// Weight functions needed for delegation.
 pub trait WeightInfo {
 	fn create_root() -> Weight;
-	fn revoke_root() -> Weight;
 	fn add_delegation() -> Weight;
-	fn revoke_delegation() -> Weight;
+	fn revoke_root(_d: u64, _r: u64) -> Weight;
+	fn revoke_delegation(_d: u64, _r: u64) -> Weight;
 }
 
 /// Weights for delegation using the Substrate node and recommended hardware.
@@ -65,21 +65,24 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
-	fn revoke_root() -> Weight {
+	fn add_delegation() -> Weight {
 		(886_930_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(12 as Weight))
 			.saturating_add(T::DbWeight::get().writes(6 as Weight))
 	}
-	fn add_delegation() -> Weight {
+	fn revoke_root(d: u64, r: u64) -> Weight {
 		(308_271_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(d as Weight)))
+			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(r as Weight)))
 	}
-	fn revoke_delegation(d: u64) -> Weight {
+	fn revoke_delegation(d: u64, r: u64) -> Weight {
 		(184_978_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(d as Weight)))
+			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(r as Weight)))
 	}
 }
 
@@ -90,20 +93,23 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(2 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(1 as Weight))
 	}
-	fn revoke_root() -> Weight {
+	fn add_delegation() -> Weight {
 		(886_930_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(12 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(6 as Weight))
 	}
-	fn add_delegation() -> Weight {
+	fn revoke_root(d: u64, r: u64) -> Weight {
 		(308_271_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(4 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(2 as Weight))
+			.saturating_add(RocksDbWeight::get().writes((1 as Weight).saturating_mul(d as Weight)))
+			.saturating_add(RocksDbWeight::get().writes((1 as Weight).saturating_mul(r as Weight)))
 	}
-	fn revoke_delegation(d: u64) -> Weight {
+	fn revoke_delegation(d: u64, r: u64) -> Weight {
 		(184_978_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(2 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(1 as Weight))
 			.saturating_add(RocksDbWeight::get().writes((1 as Weight).saturating_mul(d as Weight)))
+			.saturating_add(RocksDbWeight::get().writes((1 as Weight).saturating_mul(r as Weight)))
 	}
 }

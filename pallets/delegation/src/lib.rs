@@ -247,7 +247,7 @@ decl_module! {
 		/// Revoke the root and therefore a complete hierarchy, where
 		/// origin - the origin of the transaction
 		/// root_id - id of the hierarchy root node
-		#[weight = 1 + T::DbWeight::get().reads_writes(*max_children, *max_children)]
+		#[weight = <T as Config>::WeightInfo::revoke_root(*max_children, *max_children)]
 		pub fn revoke_root(origin, root_id: T::DelegationNodeId, max_children: u64) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
@@ -277,7 +277,7 @@ decl_module! {
 		/// Revoke a delegation node and all its children, where
 		/// origin - the origin of the transaction
 		/// delegation_id - id of the delegation node
-		#[weight = 1 + T::DbWeight::get().reads_writes(*max_revocations, *max_revocations)]
+		#[weight = <T as Config>::WeightInfo::revoke_delegation(*max_depth, *max_revocations)]
 		pub fn revoke_delegation(origin, delegation_id: T::DelegationNodeId, max_depth: u64, max_revocations: u64) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
