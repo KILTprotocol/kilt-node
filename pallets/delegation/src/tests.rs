@@ -1,4 +1,4 @@
-// KILT Blockchain – https://botlabs.org
+// KILT Blockchain – https://botlabs.o index: (), error: (), message: ()rg
 // Copyright (C) 2019  BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
@@ -16,13 +16,14 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use crate as pallet_delegation;
 use crate::*;
 
 use codec::Encode;
 use frame_support::{
 	assert_noop, assert_ok,
 	dispatch::Weight,
-	impl_outer_origin, parameter_types,
+	parameter_types,
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
 		DispatchClass,
@@ -37,12 +38,20 @@ use sp_runtime::{
 	MultiSignature, MultiSigner, Perbill,
 };
 
-impl_outer_origin! {
-	pub enum Origin for Test {}
-}
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+type Block = frame_system::mocking::MockBlock<Test>;
 
-#[derive(Clone, Eq, PartialEq, Debug)]
-pub struct Test;
+frame_support::construct_runtime!(
+	pub enum Test where
+		Block = Block,
+		NodeBlock = Block,
+		UncheckedExtrinsic = UncheckedExtrinsic,
+	{
+		System: frame_system::{Module, Call, Config, Storage, Event<T>},
+		Delegation: pallet_delegation::{Module, Call, Storage, Event<T>},
+		CType: ctype::{Module, Call, Storage, Event<T>},
+	}
+);
 
 /// We assume that ~10% of the block weight is consumed by `on_initalize` handlers.
 /// This is used to limit the maximal weight of a single extrinsic.
@@ -80,7 +89,7 @@ parameter_types! {
 
 impl frame_system::Config for Test {
 	type Origin = Origin;
-	type Call = ();
+	type Call = Call;
 	type Index = u64;
 	type BlockNumber = u64;
 	type Hash = H256;
@@ -93,7 +102,7 @@ impl frame_system::Config for Test {
 	type DbWeight = RocksDbWeight;
 	type Version = ();
 
-	type PalletInfo = ();
+	type PalletInfo = PalletInfo;
 	type AccountData = ();
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
@@ -114,9 +123,6 @@ impl Config for Test {
 	type Signer = <Self::Signature as Verify>::Signer;
 	type DelegationNodeId = H256;
 }
-
-type CType = ctype::Module<Test>;
-type Delegation = Module<Test>;
 
 fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
 	hash.encode()
@@ -416,7 +422,8 @@ fn check_add_and_revoke_delegations() {
 			Delegation::revoke_delegation(
 				Origin::signed(account_hash_charlie.clone()),
 				H256::from_low_u64_be(999),
-				10
+				10,
+				1
 			),
 			Error::<Test>::DelegationNotFound
 		);
@@ -424,14 +431,16 @@ fn check_add_and_revoke_delegations() {
 			Delegation::revoke_delegation(
 				Origin::signed(account_hash_charlie.clone()),
 				id_level_1,
-				10
+				10,
+				1
 			),
 			Error::<Test>::UnauthorizedRevocation,
 		);
 		assert_ok!(Delegation::revoke_delegation(
 			Origin::signed(account_hash_charlie),
 			id_level_2_2,
-			10
+			10,
+			2
 		));
 
 		assert_eq!(Delegation::delegation(id_level_2_2).unwrap().revoked, true);
@@ -442,17 +451,24 @@ fn check_add_and_revoke_delegations() {
 		assert_noop!(
 			Delegation::revoke_root(
 				Origin::signed(account_hash_bob.clone()),
-				H256::from_low_u64_be(999)
+				H256::from_low_u64_be(999),
+				1
 			),
 			Error::<Test>::RootNotFound
 		);
 		assert_noop!(
-			Delegation::revoke_root(Origin::signed(account_hash_bob), id_level_0),
-			Error::<Test>::UnauthorizedRevocation
+			Delegation::revoke_root(Origin::signed(account_hash_bob), id_level_0, 1),
+			Error::<Test>::UnauthorizedRevocation,
 		);
+		assert_noop!(
+			Delegation::revoke_root(Origin::signed(account_hash_alice.clone()), id_level_0, 0),
+			crate::Error::<Test>::ExceededRevocationBounds,
+		);
+
 		assert_ok!(Delegation::revoke_root(
 			Origin::signed(account_hash_alice),
-			id_level_0
+			id_level_0,
+			2
 		));
 		assert_eq!(Delegation::root(id_level_0).unwrap().revoked, true);
 		assert_eq!(Delegation::delegation(id_level_1).unwrap().revoked, true);
