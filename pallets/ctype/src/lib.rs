@@ -25,6 +25,9 @@ mod benchmarking;
 #[cfg(test)]
 mod tests;
 
+pub mod default_weights;
+pub use default_weights::WeightInfo;
+
 use frame_support::{
 	debug, decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure,
 	StorageMap,
@@ -35,6 +38,9 @@ use frame_system::{self, ensure_signed};
 pub trait Config: frame_system::Config {
 	/// CTYPE specific event type
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+
+	/// Weight information for extrinsics in this pallet.
+	type WeightInfo: WeightInfo;
 }
 
 decl_event!(
@@ -68,7 +74,7 @@ decl_module! {
 		/// Adds a CTYPE on chain, where
 		/// origin - the origin of the transaction
 		/// hash - hash of the CTYPE of the claim
-		#[weight = 1]
+		#[weight = <T as Config>::WeightInfo::add()]
 		pub fn add(origin, hash: T::Hash) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;

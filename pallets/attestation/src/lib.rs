@@ -26,6 +26,9 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
+pub mod default_weights;
+pub use default_weights::WeightInfo;
+
 use codec::{Decode, Encode};
 use frame_support::{
 	debug, decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure,
@@ -38,6 +41,9 @@ use sp_std::prelude::{Clone, PartialEq, Vec};
 pub trait Config: frame_system::Config + delegation::Config {
 	/// Attestation specific event type
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+
+	/// Weight information for extrinsics in this pallet.
+	type WeightInfo: WeightInfo;
 }
 
 decl_event!(
@@ -81,7 +87,7 @@ decl_module! {
 		/// claim_hash - hash of the attested claim
 		/// ctype_hash - hash of the CTYPE of the claim
 		/// delegation_id - optional id that refers to a delegation this attestation is based on
-		#[weight = 1]
+		#[weight = <T as Config>::WeightInfo::add()]
 		pub fn add(origin, claim_hash: T::Hash, ctype_hash: T::Hash, delegation_id: Option<T::DelegationNodeId>) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
@@ -128,7 +134,7 @@ decl_module! {
 		/// Revokes an attestation on chain, where
 		/// origin - the origin of the transaction
 		/// claim_hash - hash of the attested claim
-		#[weight = 1]
+		#[weight = <T as Config>::WeightInfo::revoke()]
 		pub fn revoke(origin, claim_hash: T::Hash, max_depth: u64) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;

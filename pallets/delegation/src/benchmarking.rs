@@ -50,7 +50,7 @@ fn parent_id_check<T: Config>(
 }
 
 /// add ctype to storage and root delegation
-fn add_root<T: Config>(
+fn add_root_delegation<T: Config>(
 	number: u64,
 ) -> Result<
 	(
@@ -180,7 +180,7 @@ where
 	<T as Config>::Signature: From<sr25519::Signature>,
 	T::DelegationNodeId: From<<T as frame_system::Config>::Hash>,
 {
-	let (root_public, root_acc, root_id, _) = add_root::<T>(0)?;
+	let (root_public, root_acc, root_id, _) = add_root_delegation::<T>(0)?;
 
 	// iterate levels and start with parent == root
 	let (leaf_acc_public, _, leaf_id) = add_children::<T>(
@@ -209,6 +209,7 @@ benchmarks! {
 	}
 
 	revoke_root {
+		// TODO: Switch to variable depth & children
 		let depth = 1;
 		let (root_acc, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(5, 1, Permissions::DELEGATE)?;
 		let root_acc_id: <T as frame_system::Config>::AccountId = root_acc.into();
@@ -227,6 +228,8 @@ benchmarks! {
 	}
 
 	add_delegation {
+		// TODO: Switch to variable depth & children
+		// do setup
 		let (_, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(1, 1, Permissions::DELEGATE)?;
 
 		// add one more delegation
@@ -250,6 +253,7 @@ benchmarks! {
 
 	// worst case is to revoke child of root delegation
 	revoke_delegation {
+		// TODO: Switch to variable depth & children
 		let depth = 1;
 		let (_, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(depth, 1, Permissions::DELEGATE)?;
 		let children: Vec<T::DelegationNodeId> = Children::<T>::get(root_id);

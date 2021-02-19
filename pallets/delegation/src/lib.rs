@@ -30,6 +30,9 @@ mod tests;
 #[macro_use]
 extern crate bitflags;
 
+pub mod default_weights;
+pub use default_weights::WeightInfo;
+
 use codec::{Decode, Encode};
 use core::default::Default;
 use frame_support::{
@@ -80,6 +83,9 @@ impl Default for Permissions {
 pub trait Config: ctype::Config + frame_system::Config {
 	/// Delegation specific event type
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+
+	/// Weight information for extrinsics in this pallet.
+	type WeightInfo: WeightInfo;
 
 	/// Signature of a delegation
 	type Signature: Verify<Signer = Self::Signer> + Member + Codec + Default;
@@ -150,7 +156,7 @@ decl_module! {
 		/// origin - the origin of the transaction
 		/// root_id - unique identifier of the root node
 		/// ctype_hash - hash of the CTYPE the hierarchy is created for
-		#[weight = 1]
+		#[weight = <T as Config>::WeightInfo::create_root()]
 		pub fn create_root(origin, root_id: T::DelegationNodeId, ctype_hash: T::Hash) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
@@ -176,7 +182,7 @@ decl_module! {
 		/// delegate - the delegate account
 		/// permission - the permissions delegated
 		/// delegate_signature - the signature of the delegate to ensure it's done under his permission
-		#[weight = 1]
+		#[weight = <T as Config>::WeightInfo::add_delegation()]
 		pub fn add_delegation(
 			origin,
 			delegation_id: T::DelegationNodeId,
@@ -240,7 +246,7 @@ decl_module! {
 		/// Revoke the root and therefore a complete hierarchy, where
 		/// origin - the origin of the transaction
 		/// root_id - id of the hierarchy root node
-		#[weight = 1]
+		#[weight = <T as Config>::WeightInfo::revoke_root()]
 		pub fn revoke_root(origin, root_id: T::DelegationNodeId) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
@@ -266,7 +272,7 @@ decl_module! {
 		/// Revoke a delegation node and all its children, where
 		/// origin - the origin of the transaction
 		/// delegation_id - id of the delegation node
-		#[weight = 1]
+		#[weight = <T as Config>::WeightInfo::revoke_delegation()]
 		pub fn revoke_delegation(origin, delegation_id: T::DelegationNodeId, max_depth: u64) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;

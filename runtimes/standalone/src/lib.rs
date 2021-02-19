@@ -343,11 +343,13 @@ impl sudo::Config for Runtime {
 impl attestation::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
+	type WeightInfo = ();
 }
 
 impl ctype::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
+	type WeightInfo = ();
 }
 
 impl delegation::Config for Runtime {
@@ -356,6 +358,7 @@ impl delegation::Config for Runtime {
 	type Signature = Signature;
 	type Signer = <Signature as Verify>::Signer;
 	type DelegationNodeId = Hash;
+	type WeightInfo = ();
 }
 
 impl did::Trait for Runtime {
