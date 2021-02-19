@@ -30,6 +30,7 @@ pub mod default_weights;
 pub use default_weights::WeightInfo;
 
 use codec::{Decode, Encode};
+use delegation::Permissions;
 use frame_support::{
 	debug, decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure,
 	StorageMap,
@@ -108,7 +109,7 @@ decl_module! {
 				ensure!(delegation.owner.eq(&sender), Error::<T>::NotDelegatedToAttester);
 
 				// check whether the delegation is not set up for attesting claims
-				ensure!(delegation.permissions == delegation::Permissions::ATTEST, Error::<T>::DelegationUnauthorizedToAttest);
+				ensure!((delegation.permissions & Permissions::ATTEST) == Permissions::ATTEST, Error::<T>::DelegationUnauthorizedToAttest);
 
 				// check if CTYPE of the delegation is matching the CTYPE of the attestation
 				let root = <delegation::Root<T>>::get(delegation.root_id).ok_or(delegation::Error::<T>::RootNotFound)?;
@@ -134,7 +135,7 @@ decl_module! {
 		/// Revokes an attestation on chain, where
 		/// origin - the origin of the transaction
 		/// claim_hash - hash of the attested claim
-		#[weight = <T as Config>::WeightInfo::revoke()]
+		#[weight = <T as Config>::WeightInfo::revoke(*max_depth)]
 		pub fn revoke(origin, claim_hash: T::Hash, max_depth: u64) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;

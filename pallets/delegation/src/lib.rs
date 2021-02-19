@@ -272,7 +272,7 @@ decl_module! {
 		/// Revoke a delegation node and all its children, where
 		/// origin - the origin of the transaction
 		/// delegation_id - id of the delegation node
-		#[weight = <T as Config>::WeightInfo::revoke_delegation()]
+		#[weight = <T as Config>::WeightInfo::revoke_delegation(*max_depth)]
 		pub fn revoke_delegation(origin, delegation_id: T::DelegationNodeId, max_depth: u64) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;

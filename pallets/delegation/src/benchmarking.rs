@@ -199,7 +199,7 @@ benchmarks! {
 	where_clause { where T: core::fmt::Debug, T::Signature: From<sr25519::Signature>, <T as frame_system::Config>::AccountId: From<sr25519::Public>, 	T::DelegationNodeId: From<<T as frame_system::Config>::Hash> }
 
 	create_root {
-		let caller: <T as frame_system::Config>::AccountId = account("caller", 0, SEED);
+		let caller: T::AccountId = account("caller", 0, SEED);
 		let ctype = <<T as frame_system::Config>::Hash as Default>::default();
 		let delegation = generate_delegation_id::<T>(0);
 		ctype::Module::<T>::add(RawOrigin::Signed(caller.clone()).into(), ctype)?;
@@ -251,15 +251,18 @@ benchmarks! {
 		assert!(Delegations::<T>::contains_key(delegation_id));
 	}
 
-	// worst case is to revoke child of root delegation
-	revoke_delegation {
+	// worst case #1: revoke a child of the root delegation
+	// because all of its children have to be revoked
+	// complexitiy: O(h * c) with h = height of the delegation tree, c = max number of children in a level
+	revoke_delegation_root_child {
 		// TODO: Switch to variable depth & children
-		let depth = 1;
-		let (_, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(depth, 1, Permissions::DELEGATE)?;
+		let depth = 10;
+		let children = 5;
+		let (_, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(depth, children, Permissions::DELEGATE)?;
 		let children: Vec<T::DelegationNodeId> = Children::<T>::get(root_id);
 		let child_id: T::DelegationNodeId = *children.get(0).ok_or("Root should have children")?;
 		let child_delegation = Delegations::<T>::get(child_id).ok_or("Child of root should have delegation id")?;
-	}: _(RawOrigin::Signed(child_delegation.owner.clone()), child_id, depth)
+	}: revoke_delegation(RawOrigin::Signed(child_delegation.owner.clone()), child_id, depth)
 	verify {
 		assert!(Delegations::<T>::contains_key(child_id));
 		let DelegationNode::<T> { revoked, .. } = Delegations::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
@@ -270,6 +273,21 @@ benchmarks! {
 		assert_eq!(leaf_delegation.root_id, root_id);
 		assert_eq!(leaf_delegation.owner, leaf_acc.into());
 		assert_eq!(leaf_delegation.revoked, true);
+	}
+
+	// worst case #2: revoke leaf node as root
+	// because `is_delegating` has to traverse up to the root
+	// complexitiy: O(h) with h = height of the delegation tree
+	revoke_delegation_leaf {
+		// TODO: Switch to variable depth & children
+		let depth = 10;
+		let children = 5;
+		let (root_acc, _, _, leaf_id) = setup_delegations::<T>(depth, children, Permissions::DELEGATE)?;
+	}: revoke_delegation(RawOrigin::Signed(root_acc.clone().into()), leaf_id, depth + 1)
+	verify {
+		assert!(Delegations::<T>::contains_key(leaf_id));
+		let DelegationNode::<T> { revoked, .. } = Delegations::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
+		assert_eq!(revoked, true);
 	}
 }
 

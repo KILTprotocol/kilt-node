@@ -20,7 +20,8 @@
 //! adding CTYPEs.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-mod benchmarking;
+#[cfg(any(feature = "runtime-benchmarks", test))]
+pub mod benchmarking;
 /// Test module for CTYPEs
 #[cfg(test)]
 mod tests;

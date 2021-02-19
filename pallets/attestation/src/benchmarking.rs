@@ -21,17 +21,16 @@
 use super::*;
 
 use crate::Module as AttestationModule;
-use delegation::{benchmarking::setup_delegations, Delegations, Module as Delegation, Permissions};
+use delegation::{benchmarking::setup_delegations, Permissions};
 use frame_benchmarking::benchmarks;
 use frame_support::storage::StorageMap;
 use frame_system::RawOrigin;
-use sp_core::{offchain::KeyTypeId, sr25519};
-use sp_io::crypto::sr25519_generate;
+use sp_core::sr25519;
 use sp_runtime::traits::Hash;
 use sp_std::{boxed::Box, vec};
 
-// const MAX_DEPTH: u32 = 100;
-// const MAX_CHILDREN: u32 = 4;
+const MAX_DEPTH: u32 = 2;
+const MAX_CHILDREN: u32 = 4;
 
 benchmarks! {
 	where_clause { where T: core::fmt::Debug, T::Signature: From<sr25519::Signature>, <T as frame_system::Config>::AccountId: From<sr25519::Public>, 	T::DelegationNodeId: From<<T as frame_system::Config>::Hash> }
@@ -53,22 +52,20 @@ benchmarks! {
 	}
 
 	revoke {
-		// let depth in 1 .. MAX_DEPTH ;
-		// let children in 1 .. MAX_CHILDREN;
-		let depth: u32 = 1;
-		let children: u32 = 1;
+		let d in 1 .. MAX_DEPTH;
+		let children: u32 = 10;
 
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
 
-		let (root_public, _, delegate_public, delegation_id) = setup_delegations::<T>(depth.into(), children.into(), Permissions::ATTEST)?;
+		let (root_public, _, delegate_public, delegation_id) = setup_delegations::<T>(d.into(), children.into(), Permissions::ATTEST | Permissions::DELEGATE)?;
 		let root_acc: T::AccountId = root_public.into();
 		let delegate_acc: T::AccountId = delegate_public.into();
 
 		// attest with leaf account
 		AttestationModule::<T>::add(RawOrigin::Signed(delegate_acc.clone()).into(), claim_hash, ctype_hash, Some(delegation_id))?;
 		// revoke with root account, s.t. delegation tree needs to be traversed
-	}: _(RawOrigin::Signed(root_acc.clone()), claim_hash, depth.into())
+	}: _(RawOrigin::Signed(root_acc.clone()), claim_hash, (d + 1).into())
 	verify {
 		assert!(Attestations::<T>::contains_key(claim_hash));
 		assert_eq!(Attestations::<T>::get(claim_hash), Some(Attestation::<T> {
