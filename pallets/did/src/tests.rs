@@ -111,10 +111,11 @@ impl frame_system::Config for Test {
 	type SS58Prefix = SS58Prefix;
 }
 
-impl Trait for Test {
+impl Config for Test {
 	type Event = ();
 	type PublicSigningKey = H256;
 	type PublicBoxKey = H256;
+	type WeightInfo = ();
 }
 
 type DID = Module<Test>;

@@ -115,6 +115,7 @@ impl frame_system::Config for Test {
 
 impl ctype::Config for Test {
 	type Event = ();
+	type WeightInfo = ();
 }
 
 impl Config for Test {
@@ -122,6 +123,7 @@ impl Config for Test {
 	type Signature = MultiSignature;
 	type Signer = <Self::Signature as Verify>::Signer;
 	type DelegationNodeId = H256;
+	type WeightInfo = ();
 }
 
 fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
@@ -468,7 +470,7 @@ fn check_add_and_revoke_delegations() {
 		assert_ok!(Delegation::revoke_root(
 			Origin::signed(account_hash_alice),
 			id_level_0,
-			2
+			3
 		));
 		assert_eq!(Delegation::root(id_level_0).unwrap().revoked, true);
 		assert_eq!(Delegation::delegation(id_level_1).unwrap().revoked, true);

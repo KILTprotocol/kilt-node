@@ -117,6 +117,7 @@ impl frame_system::Config for Test {
 
 impl ctype::Config for Test {
 	type Event = ();
+	type WeightInfo = ();
 }
 
 impl delegation::Config for Test {
@@ -124,10 +125,12 @@ impl delegation::Config for Test {
 	type Signature = Signature;
 	type Signer = <Self::Signature as Verify>::Signer;
 	type DelegationNodeId = H256;
+	type WeightInfo = ();
 }
 
 impl Config for Test {
 	type Event = ();
+	type WeightInfo = ();
 }
 
 fn new_test_ext() -> sp_io::TestExternalities {
