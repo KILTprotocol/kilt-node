@@ -37,7 +37,7 @@ use codec::{Decode, Encode};
 use core::default::Default;
 use frame_support::{
 	debug, decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure,
-	traits::Get, Parameter, StorageMap,
+	Parameter, StorageMap,
 };
 use frame_system::{self, ensure_signed};
 use sp_runtime::{
@@ -247,8 +247,8 @@ decl_module! {
 		/// Revoke the root and therefore a complete hierarchy, where
 		/// origin - the origin of the transaction
 		/// root_id - id of the hierarchy root node
-		#[weight = <T as Config>::WeightInfo::revoke_root(*max_children, *max_children)]
-		pub fn revoke_root(origin, root_id: T::DelegationNodeId, max_children: u64) -> DispatchResult {
+		#[weight = <T as Config>::WeightInfo::revoke_root(*max_children)]
+		pub fn revoke_root(origin, root_id: T::DelegationNodeId, max_children: u32) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 
@@ -277,8 +277,8 @@ decl_module! {
 		/// Revoke a delegation node and all its children, where
 		/// origin - the origin of the transaction
 		/// delegation_id - id of the delegation node
-		#[weight = <T as Config>::WeightInfo::revoke_delegation(*max_depth, *max_revocations)]
-		pub fn revoke_delegation(origin, delegation_id: T::DelegationNodeId, max_depth: u64, max_revocations: u64) -> DispatchResult {
+		#[weight = <T as Config>::WeightInfo::revoke_delegation_leaf(*max_depth).max(<T as Config>::WeightInfo::revoke_delegation_root_child(*max_depth))]
+		pub fn revoke_delegation(origin, delegation_id: T::DelegationNodeId, max_depth: u32, max_revocations: u32) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 			// check if a delegation node with the given identifier already exists
@@ -319,7 +319,7 @@ impl<T: Config> Module<T> {
 	pub fn is_delegating(
 		account: &T::AccountId,
 		delegation: &T::DelegationNodeId,
-		max_depth: u64,
+		max_depth: u32,
 	) -> Result<bool, DispatchError> {
 		// check for recursion anchor
 		ensure!(max_depth > 0, Error::<T>::MaxSearchDepthReached);
@@ -342,13 +342,12 @@ impl<T: Config> Module<T> {
 	}
 
 	/// Revoke a delegation and all of its children recursively
-	/// FIXME: Add bound
 	fn revoke(
 		delegation: &T::DelegationNodeId,
 		sender: &T::AccountId,
-		max_revocations: u64,
-	) -> Result<u64, DispatchError> {
-		let mut revocations: u64 = 0;
+		max_revocations: u32,
+	) -> Result<u32, DispatchError> {
+		let mut revocations: u32 = 0;
 		// retrieve delegation node from storage
 		let mut delegation_node =
 			<Delegations<T>>::get(*delegation).ok_or(Error::<T>::DelegationNotFound)?;
@@ -356,7 +355,7 @@ impl<T: Config> Module<T> {
 		// check if already revoked
 		if !delegation_node.revoked {
 			// first revoke all children recursively
-			revocations += Self::revoke_children(delegation, sender, max_revocations)?;
+			revocations += Self::revoke_children(delegation, sender, max_revocations - 1)?;
 
 			// if we run out of revocation gas, we only revoke children. The tree will be changed but is still valid.
 			if revocations < max_revocations {
@@ -377,9 +376,9 @@ impl<T: Config> Module<T> {
 	fn revoke_children(
 		delegation: &T::DelegationNodeId,
 		sender: &T::AccountId,
-		max_revocations: u64,
-	) -> Result<u64, DispatchError> {
-		let mut revocations: u64 = 0;
+		max_revocations: u32,
+	) -> Result<u32, DispatchError> {
+		let mut revocations: u32 = 0;
 		// check if there's a child vector in the storage
 		if <Children<T>>::contains_key(delegation) {
 			// iterate child vector and revoke all nodes

@@ -136,7 +136,7 @@ decl_module! {
 		/// origin - the origin of the transaction
 		/// claim_hash - hash of the attested claim
 		#[weight = <T as Config>::WeightInfo::revoke(*max_depth)]
-		pub fn revoke(origin, claim_hash: T::Hash, max_depth: u64) -> DispatchResult {
+		pub fn revoke(origin, claim_hash: T::Hash, max_depth: u32) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 

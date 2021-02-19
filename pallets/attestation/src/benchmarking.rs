@@ -29,8 +29,7 @@ use sp_core::sr25519;
 use sp_runtime::traits::Hash;
 use sp_std::{boxed::Box, vec};
 
-const MAX_DEPTH: u32 = 2;
-const MAX_CHILDREN: u32 = 4;
+const MAX_DEPTH: u32 = 10;
 
 benchmarks! {
 	where_clause { where T: core::fmt::Debug, T::Signature: From<sr25519::Signature>, <T as frame_system::Config>::AccountId: From<sr25519::Public>, 	T::DelegationNodeId: From<<T as frame_system::Config>::Hash> }
@@ -53,12 +52,11 @@ benchmarks! {
 
 	revoke {
 		let d in 1 .. MAX_DEPTH;
-		let children: u32 = 10;
 
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
 
-		let (root_public, _, delegate_public, delegation_id) = setup_delegations::<T>(d.into(), children.into(), Permissions::ATTEST | Permissions::DELEGATE)?;
+		let (root_public, _, delegate_public, delegation_id) = setup_delegations::<T>(d.into(), 1, Permissions::ATTEST | Permissions::DELEGATE)?;
 		let root_acc: T::AccountId = root_public.into();
 		let delegate_acc: T::AccountId = delegate_public.into();
 

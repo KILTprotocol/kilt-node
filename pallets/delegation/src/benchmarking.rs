@@ -27,9 +27,10 @@ use sp_io::crypto::sr25519_generate;
 use sp_std::{boxed::Box, vec, vec::Vec};
 
 const SEED: u32 = 0;
+const MAX_REVOCATIONS: u32 = 5;
 
 /// generats a delegation id from a given number
-fn generate_delegation_id<T: Config>(number: u64) -> T::DelegationNodeId
+fn generate_delegation_id<T: Config>(number: u32) -> T::DelegationNodeId
 where
 	T::DelegationNodeId: From<<T as frame_system::Config>::Hash>,
 {
@@ -51,7 +52,7 @@ fn parent_id_check<T: Config>(
 
 /// add ctype to storage and root delegation
 fn add_root_delegation<T: Config>(
-	number: u64,
+	number: u32,
 ) -> Result<
 	(
 		sr25519::Public,
@@ -87,8 +88,8 @@ fn add_children<T: Config>(
 	parent_acc_public: sr25519::Public,
 	parent_acc_id: <T as frame_system::Config>::AccountId,
 	permissions: Permissions,
-	level: u64,
-	children_per_level: u64,
+	level: u32,
+	children_per_level: u32,
 ) -> Result<
 	(
 		sr25519::Public,
@@ -163,8 +164,8 @@ where
 // 1. create ctype and root delegation
 // 2. create and append children delegations to prior child for each level
 pub fn setup_delegations<T: Config>(
-	levels: u64,
-	children_per_level: u64,
+	levels: u32,
+	children_per_level: u32,
 	permissions: Permissions,
 ) -> Result<
 	(
@@ -209,11 +210,10 @@ benchmarks! {
 	}
 
 	revoke_root {
-		// TODO: Switch to variable depth & children
-		let depth = 1;
-		let (root_acc, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(5, 1, Permissions::DELEGATE)?;
+		let r in 1 .. MAX_REVOCATIONS;
+		let (root_acc, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(r.into(), 1, Permissions::DELEGATE)?;
 		let root_acc_id: <T as frame_system::Config>::AccountId = root_acc.into();
-	}: _(RawOrigin::Signed(root_acc_id.clone()), root_id)
+	}: _(RawOrigin::Signed(root_acc_id.clone()), root_id, r.into())
 	verify {
 		assert!(Root::<T>::contains_key(root_id));
 		let root_delegation = Root::<T>::get(root_id).ok_or("Missing root delegation")?;
@@ -228,7 +228,6 @@ benchmarks! {
 	}
 
 	add_delegation {
-		// TODO: Switch to variable depth & children
 		// do setup
 		let (_, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(1, 1, Permissions::DELEGATE)?;
 
@@ -237,7 +236,7 @@ benchmarks! {
 			KeyTypeId(*b"aura"),
 			None
 		);
-		let delegation_id = generate_delegation_id::<T>(u64::MAX);
+		let delegation_id = generate_delegation_id::<T>(u32::MAX);
 		let parent_id = parent_id_check::<T>(root_id, leaf_id);
 
 		let perm: Permissions = Permissions::ATTEST | Permissions::DELEGATE;
@@ -255,14 +254,12 @@ benchmarks! {
 	// because all of its children have to be revoked
 	// complexitiy: O(h * c) with h = height of the delegation tree, c = max number of children in a level
 	revoke_delegation_root_child {
-		// TODO: Switch to variable depth & children
-		let depth = 10;
-		let children = 5;
-		let (_, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(depth, children, Permissions::DELEGATE)?;
+		let r in 1 .. MAX_REVOCATIONS;
+		let (_, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(r.into(), 1 , Permissions::DELEGATE)?;
 		let children: Vec<T::DelegationNodeId> = Children::<T>::get(root_id);
 		let child_id: T::DelegationNodeId = *children.get(0).ok_or("Root should have children")?;
 		let child_delegation = Delegations::<T>::get(child_id).ok_or("Child of root should have delegation id")?;
-	}: revoke_delegation(RawOrigin::Signed(child_delegation.owner.clone()), child_id, depth)
+	}: revoke_delegation(RawOrigin::Signed(child_delegation.owner.clone()), child_id, r.into(), r.into())
 	verify {
 		assert!(Delegations::<T>::contains_key(child_id));
 		let DelegationNode::<T> { revoked, .. } = Delegations::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
@@ -274,21 +271,21 @@ benchmarks! {
 		assert_eq!(leaf_delegation.owner, leaf_acc.into());
 		assert_eq!(leaf_delegation.revoked, true);
 	}
+	// TODO: Might want to add variant iterating over children instead of depth
 
 	// worst case #2: revoke leaf node as root
 	// because `is_delegating` has to traverse up to the root
 	// complexitiy: O(h) with h = height of the delegation tree
 	revoke_delegation_leaf {
-		// TODO: Switch to variable depth & children
-		let depth = 10;
-		let children = 5;
-		let (root_acc, _, _, leaf_id) = setup_delegations::<T>(depth, children, Permissions::DELEGATE)?;
-	}: revoke_delegation(RawOrigin::Signed(root_acc.clone().into()), leaf_id, depth + 1)
+		let r in 1 .. MAX_REVOCATIONS;
+		let (root_acc, _, _, leaf_id) = setup_delegations::<T>(r.into(), 1, Permissions::DELEGATE)?;
+	}: revoke_delegation(RawOrigin::Signed(root_acc.clone().into()), leaf_id, r.into(), r.into())
 	verify {
 		assert!(Delegations::<T>::contains_key(leaf_id));
 		let DelegationNode::<T> { revoked, .. } = Delegations::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
 		assert_eq!(revoked, true);
 	}
+	// TODO: Might want to add variant iterating over children instead of depth
 }
 
 // TODO: Add tests
