@@ -12,11 +12,8 @@ targets = ['x86_64-unknown-linux-gnu']
 [dev-dependencies]
 kilt-primitives = {path = '../../primitives', default-features = false}
 serde = {version = "1.0.101"}
-
-[dev-dependencies.sp-core]
-branch = "rococo-v1"
-default-features = false
-git = "https://github.com/paritytech/substrate"
+sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1", version = "3.0.0"}
+sp-keystore = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1", version = "0.9.0"}
 
 [build-dependencies.substrate-wasm-builder-runner]
 version = "1.0.6"

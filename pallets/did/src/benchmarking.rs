@@ -43,3 +43,18 @@ benchmarks! {
 		let _ = Module::<T>::add(RawOrigin::Signed(caller.clone()).into(), sign_key, box_key, Some(b"http://kilt.org/submit".to_vec()));
 	}: _(RawOrigin::Signed(caller))
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::tests::{new_test_ext, Test};
+	use frame_support::assert_ok;
+
+	#[test]
+	fn test_benchmarks() {
+		new_test_ext().execute_with(|| {
+			assert_ok!(test_benchmark_add::<Test>());
+			assert_ok!(test_benchmark_remove::<Test>());
+		});
+	}
+}

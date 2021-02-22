@@ -288,4 +288,102 @@ benchmarks! {
 	// TODO: Might want to add variant iterating over children instead of depth
 }
 
-// TODO: Add tests
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::tests::{ExtBuilder, Test};
+	use ctype::CTYPEs;
+	use frame_support::{assert_ok, StorageMap};
+
+	#[test]
+	fn test_benchmark_utils_generate_id() {
+		ExtBuilder::build_with_keystore().execute_with(|| {
+			assert_eq!(
+				generate_delegation_id::<Test>(1),
+				generate_delegation_id::<Test>(1)
+			);
+			assert_ne!(
+				generate_delegation_id::<Test>(1),
+				generate_delegation_id::<Test>(2)
+			);
+			let root = generate_delegation_id::<Test>(1);
+			let parent = generate_delegation_id::<Test>(2);
+			assert_eq!(parent_id_check::<Test>(root, root), None);
+			assert_eq!(parent_id_check::<Test>(root, parent), Some(parent));
+		});
+	}
+	#[test]
+	fn test_benchmark_utils_manual_setup() {
+		ExtBuilder::build_with_keystore().execute_with(|| {
+			let (root_acc_public, root_acc_id, root_id, ctype_hash) =
+				add_root_delegation::<Test>(0).expect("failed to add root delegation");
+			assert_eq!(root_id, generate_delegation_id::<Test>(0));
+			assert!(Root::<Test>::contains_key(root_id));
+			assert!(CTYPEs::<Test>::contains_key(ctype_hash));
+
+			// add "parent" as child delegation of root
+			let (parent_acc_public, parent_acc_id, parent_id) = add_children::<Test>(
+				root_id,
+				root_id,
+				root_acc_public,
+				root_acc_id,
+				Permissions::DELEGATE,
+				1,
+				1,
+			)
+			.expect("failed to add children to root delegation");
+			assert_eq!(
+				Delegations::<Test>::get(parent_id),
+				Some(DelegationNode::<Test> {
+					root_id,
+					parent: None,
+					owner: parent_acc_id.clone(),
+					permissions: Permissions::DELEGATE,
+					revoked: false
+				})
+			);
+
+			// add "leaf" as child delegation of "parent"
+			let (_, leaf_acc_id, leaf_id) = add_children::<Test>(
+				root_id,
+				parent_id,
+				parent_acc_public,
+				parent_acc_id,
+				Permissions::DELEGATE,
+				1,
+				2,
+			)
+			.expect("failed to add children to child of root delegation");
+			assert_eq!(
+				Delegations::<Test>::get(leaf_id),
+				Some(DelegationNode::<Test> {
+					root_id,
+					parent: Some(parent_id),
+					owner: leaf_acc_id,
+					permissions: Permissions::DELEGATE,
+					revoked: false
+				})
+			);
+		});
+	}
+	#[test]
+	fn test_benchmark_utils_auto_setup() {
+		ExtBuilder::build_with_keystore().execute_with(|| {
+			let (_, root_id, _, leaf_id) = setup_delegations::<Test>(2, 2, Permissions::DELEGATE)
+				.expect("failed to run delegation setup");
+			assert!(Root::<Test>::contains_key(root_id));
+			assert!(Delegations::<Test>::contains_key(leaf_id));
+		});
+	}
+
+	#[test]
+	fn test_benchmarks() {
+		ExtBuilder::build_with_keystore().execute_with(|| {
+			assert_ok!(test_benchmark_create_root::<Test>());
+			assert_ok!(test_benchmark_revoke_root::<Test>());
+			assert_ok!(test_benchmark_add_delegation::<Test>());
+			assert_ok!(test_benchmark_revoke_delegation_root_child::<Test>());
+			assert_ok!(test_benchmark_revoke_delegation_leaf::<Test>());
+		});
+	}
+}

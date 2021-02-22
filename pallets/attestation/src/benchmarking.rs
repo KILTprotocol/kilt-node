@@ -78,15 +78,14 @@ benchmarks! {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::tests::{new_test_ext, Test};
+	use crate::tests::{ExtBuilder, Test};
 	use frame_support::assert_ok;
-	// TODO: Init keystore
-	// see: https://github.com/paritytech/substrate/blob/master/bin/node/executor/tests/submit_transaction.rs#L90
 
 	#[test]
 	fn test_benchmarks() {
-		new_test_ext().execute_with(|| {
+		ExtBuilder::build_with_keystore().execute_with(|| {
 			assert_ok!(test_benchmark_add::<Test>());
+			assert_ok!(test_benchmark_revoke::<Test>());
 		});
 	}
 }
