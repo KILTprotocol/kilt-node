@@ -162,16 +162,6 @@ impl ExtBuilder {
 		ext.execute_with(|| System::set_block_number(1));
 		ext
 	}
-
-	pub fn build(self) -> TestExternalities {
-		let storage = frame_system::GenesisConfig::default()
-			.build_storage::<Test>()
-			.unwrap();
-		let mut ext = TestExternalities::from(storage);
-		// events are not emitted on default block number 0
-		ext.execute_with(|| System::set_block_number(1));
-		ext
-	}
 }
 
 #[test]

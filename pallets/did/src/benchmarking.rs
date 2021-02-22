@@ -28,18 +28,18 @@ use sp_std::{boxed::Box, vec, vec::Vec};
 const SEED: u32 = 0;
 
 benchmarks! {
-	where_clause { where T::PublicSigningKey: From<<T as frame_system::Config>::Hash>, T::PublicBoxKey: From<<T as frame_system::Config>::Hash>}
+	where_clause { where T::PublicSigningKey: From<T::Hash>, T::PublicBoxKey: From<T::Hash>}
 
 	add {
-		let caller: <T as frame_system::Config>::AccountId = account("caller", 0, SEED);
-		let sign_key: T::PublicSigningKey = <T as frame_system::Config>::Hashing::hash(b"sign_key").into();
-		let box_key: T::PublicBoxKey = <T as frame_system::Config>::Hashing::hash(b"box_key").into();
+		let caller: T::AccountId = account("caller", 0, SEED);
+		let sign_key: T::PublicSigningKey = T::Hashing::hash(b"sign_key").into();
+		let box_key: T::PublicBoxKey = T::Hashing::hash(b"box_key").into();
 	}: _(RawOrigin::Signed(caller), sign_key, box_key, Some(b"http://kilt.org/submit".to_vec()))
 
 	remove {
-		let caller: <T as frame_system::Config>::AccountId = account("caller", 0, SEED);
-		let sign_key: T::PublicSigningKey = <T as frame_system::Config>::Hashing::hash(b"sign_key").into();
-		let box_key: T::PublicBoxKey = <T as frame_system::Config>::Hashing::hash(b"box_key").into();
+		let caller: T::AccountId = account("caller", 0, SEED);
+		let sign_key: T::PublicSigningKey = T::Hashing::hash(b"sign_key").into();
+		let box_key: T::PublicBoxKey = T::Hashing::hash(b"box_key").into();
 		let _ = Module::<T>::add(RawOrigin::Signed(caller.clone()).into(), sign_key, box_key, Some(b"http://kilt.org/submit".to_vec()));
 	}: _(RawOrigin::Signed(caller))
 }

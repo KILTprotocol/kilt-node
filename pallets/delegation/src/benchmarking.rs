@@ -32,7 +32,7 @@ const MAX_REVOCATIONS: u32 = 5;
 /// generats a delegation id from a given number
 fn generate_delegation_id<T: Config>(number: u32) -> T::DelegationNodeId
 where
-	T::DelegationNodeId: From<<T as frame_system::Config>::Hash>,
+	T::DelegationNodeId: From<T::Hash>,
 {
 	let hash: T::Hash = T::Hashing::hash(&number.to_ne_bytes());
 	hash.into()
@@ -53,22 +53,14 @@ fn parent_id_check<T: Config>(
 /// add ctype to storage and root delegation
 fn add_root_delegation<T: Config>(
 	number: u32,
-) -> Result<
-	(
-		sr25519::Public,
-		<T as frame_system::Config>::AccountId,
-		T::DelegationNodeId,
-		T::Hash,
-	),
-	DispatchError,
->
+) -> Result<(sr25519::Public, T::AccountId, T::DelegationNodeId, T::Hash), DispatchError>
 where
-	<T as frame_system::Config>::AccountId: From<sr25519::Public>,
-	T::DelegationNodeId: From<<T as frame_system::Config>::Hash>,
+	T::AccountId: From<sr25519::Public>,
+	T::DelegationNodeId: From<T::Hash>,
 {
 	let root_public = sr25519_generate(KeyTypeId(*b"aura"), None);
-	let root_acc: <T as frame_system::Config>::AccountId = root_public.into();
-	let ctype_hash = <<T as frame_system::Config>::Hash as Default>::default();
+	let root_acc: T::AccountId = root_public.into();
+	let ctype_hash = <T::Hash as Default>::default();
 	let root_id = generate_delegation_id::<T>(number);
 
 	ctype::Module::<T>::add(RawOrigin::Signed(root_acc.clone()).into(), ctype_hash)?;
@@ -83,25 +75,18 @@ where
 
 /// recursively adds children delegations to a parent delegation for each level until reaching leaf level
 fn add_children<T: Config>(
-	root_id: <T as Config>::DelegationNodeId,
-	parent_id: <T as Config>::DelegationNodeId,
+	root_id: T::DelegationNodeId,
+	parent_id: T::DelegationNodeId,
 	parent_acc_public: sr25519::Public,
-	parent_acc_id: <T as frame_system::Config>::AccountId,
+	parent_acc_id: T::AccountId,
 	permissions: Permissions,
 	level: u32,
 	children_per_level: u32,
-) -> Result<
-	(
-		sr25519::Public,
-		<T as frame_system::Config>::AccountId,
-		T::DelegationNodeId,
-	),
-	DispatchError,
->
+) -> Result<(sr25519::Public, T::AccountId, T::DelegationNodeId), DispatchError>
 where
-	<T as frame_system::Config>::AccountId: From<sr25519::Public>,
-	<T as Config>::Signature: From<sr25519::Signature>,
-	T::DelegationNodeId: From<<T as frame_system::Config>::Hash>,
+	T::AccountId: From<sr25519::Public>,
+	T::Signature: From<sr25519::Signature>,
+	T::DelegationNodeId: From<T::Hash>,
 {
 	if level == 0 {
 		return Ok((parent_acc_public, parent_acc_id, parent_id));
@@ -111,8 +96,7 @@ where
 	for c in 0..children_per_level {
 		// setup delegation account and id
 		let delegation_acc_public = sr25519_generate(KeyTypeId(*b"aura"), None);
-		let delegation_acc_id: <T as frame_system::Config>::AccountId =
-			delegation_acc_public.into();
+		let delegation_acc_id: T::AccountId = delegation_acc_public.into();
 		let delegation_id = generate_delegation_id::<T>(level * children_per_level + c);
 
 		// only set parent if not root
@@ -121,7 +105,7 @@ where
 		// delegate signs delegation to parent
 		let hash: Vec<u8> =
 			Module::<T>::calculate_hash(delegation_id, root_id, parent, permissions).encode();
-		let sig: <T as Config>::Signature =
+		let sig: T::Signature =
 			sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &delegation_acc_public, hash.as_ref())
 				.ok_or("Error while building signature of delegation.")?
 				.into();
@@ -177,9 +161,9 @@ pub fn setup_delegations<T: Config>(
 	DispatchError,
 >
 where
-	<T as frame_system::Config>::AccountId: From<sr25519::Public>,
-	<T as Config>::Signature: From<sr25519::Signature>,
-	T::DelegationNodeId: From<<T as frame_system::Config>::Hash>,
+	T::AccountId: From<sr25519::Public>,
+	T::Signature: From<sr25519::Signature>,
+	T::DelegationNodeId: From<T::Hash>,
 {
 	let (root_public, root_acc, root_id, _) = add_root_delegation::<T>(0)?;
 
@@ -197,11 +181,11 @@ where
 }
 
 benchmarks! {
-	where_clause { where T: core::fmt::Debug, T::Signature: From<sr25519::Signature>, <T as frame_system::Config>::AccountId: From<sr25519::Public>, 	T::DelegationNodeId: From<<T as frame_system::Config>::Hash> }
+	where_clause { where T: core::fmt::Debug, T::Signature: From<sr25519::Signature>, T::AccountId: From<sr25519::Public>, 	T::DelegationNodeId: From<T::Hash> }
 
 	create_root {
 		let caller: T::AccountId = account("caller", 0, SEED);
-		let ctype = <<T as frame_system::Config>::Hash as Default>::default();
+		let ctype = <T::Hash as Default>::default();
 		let delegation = generate_delegation_id::<T>(0);
 		ctype::Module::<T>::add(RawOrigin::Signed(caller.clone()).into(), ctype)?;
 	}: _(RawOrigin::Signed(caller), delegation, ctype)
@@ -212,7 +196,7 @@ benchmarks! {
 	revoke_root {
 		let r in 1 .. MAX_REVOCATIONS;
 		let (root_acc, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(r.into(), 1, Permissions::DELEGATE)?;
-		let root_acc_id: <T as frame_system::Config>::AccountId = root_acc.into();
+		let root_acc_id: T::AccountId = root_acc.into();
 	}: _(RawOrigin::Signed(root_acc_id.clone()), root_id, r.into())
 	verify {
 		assert!(Root::<T>::contains_key(root_id));
@@ -241,10 +225,10 @@ benchmarks! {
 
 		let perm: Permissions = Permissions::ATTEST | Permissions::DELEGATE;
 		let hash_root = Module::<T>::calculate_hash(delegation_id, root_id, parent_id, perm);
-		let sig: <T as Config>::Signature = sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &delegate_acc_public, hash_root.as_ref()).ok_or("Error while building signature of delegation.")?.into();
+		let sig: T::Signature = sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &delegate_acc_public, hash_root.as_ref()).ok_or("Error while building signature of delegation.")?.into();
 
-		let delegate_acc_id: <T as frame_system::Config>::AccountId = delegate_acc_public.into();
-		let leaf_acc_id: <T as frame_system::Config>::AccountId = leaf_acc.into();
+		let delegate_acc_id: T::AccountId = delegate_acc_public.into();
+		let leaf_acc_id: T::AccountId = leaf_acc.into();
 	}: _(RawOrigin::Signed(leaf_acc_id), delegation_id, root_id, parent_id, delegate_acc_id, perm, sig)
 	verify {
 		assert!(Delegations::<T>::contains_key(delegation_id));
@@ -271,7 +255,7 @@ benchmarks! {
 		assert_eq!(leaf_delegation.owner, leaf_acc.into());
 		assert_eq!(leaf_delegation.revoked, true);
 	}
-	// TODO: Might want to add variant iterating over children instead of depth
+	// TODO: Might want to add variant iterating over children instead of depth at some later point
 
 	// worst case #2: revoke leaf node as root
 	// because `is_delegating` has to traverse up to the root
@@ -285,7 +269,7 @@ benchmarks! {
 		let DelegationNode::<T> { revoked, .. } = Delegations::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
 		assert_eq!(revoked, true);
 	}
-	// TODO: Might want to add variant iterating over children instead of depth
+	// TODO: Might want to add variant iterating over children instead of depth at some later point
 }
 
 #[cfg(test)]

@@ -29,7 +29,7 @@ const SEED: u32 = 0;
 benchmarks! {
 	add {
 		let caller = account("caller", 0, SEED);
-		let hash = <<T as frame_system::Config>::Hash as Default>::default();
+		let hash = <T::Hash as Default>::default();
 
 	}: _(RawOrigin::Signed(caller), hash)
 	verify {

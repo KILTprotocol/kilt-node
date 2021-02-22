@@ -32,7 +32,7 @@ use sp_std::{boxed::Box, vec};
 const MAX_DEPTH: u32 = 10;
 
 benchmarks! {
-	where_clause { where T: core::fmt::Debug, T::Signature: From<sr25519::Signature>, <T as frame_system::Config>::AccountId: From<sr25519::Public>, 	T::DelegationNodeId: From<<T as frame_system::Config>::Hash> }
+	where_clause { where T: core::fmt::Debug, T::Signature: From<sr25519::Signature>, T::AccountId: From<sr25519::Public>, 	T::DelegationNodeId: From<T::Hash> }
 
 	add {
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
