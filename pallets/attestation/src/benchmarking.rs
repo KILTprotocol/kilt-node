@@ -27,9 +27,10 @@ use frame_support::storage::StorageMap;
 use frame_system::RawOrigin;
 use sp_core::sr25519;
 use sp_runtime::traits::Hash;
-use sp_std::{boxed::Box, vec};
+use sp_std::{boxed::Box, num::NonZeroU32, vec};
 
 const MAX_DEPTH: u32 = 10;
+const ONE_CHILD_PER_LEVEL: Option<NonZeroU32> = NonZeroU32::new(1);
 
 benchmarks! {
 	where_clause { where T: core::fmt::Debug, T::Signature: From<sr25519::Signature>, T::AccountId: From<sr25519::Public>, 	T::DelegationNodeId: From<T::Hash> }
@@ -37,7 +38,7 @@ benchmarks! {
 	add {
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
-		let (_, _, delegate_public, delegation_id) = setup_delegations::<T>(1, 1, Permissions::ATTEST)?;
+		let (_, _, delegate_public, delegation_id) = setup_delegations::<T>(1, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::ATTEST)?;
 		let delegate_acc: T::AccountId = delegate_public.into();
 	}: _(RawOrigin::Signed(delegate_acc.clone()), claim_hash, ctype_hash, Some(delegation_id))
 	verify {
@@ -56,7 +57,7 @@ benchmarks! {
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
 
-		let (root_public, _, delegate_public, delegation_id) = setup_delegations::<T>(d.into(), 1, Permissions::ATTEST | Permissions::DELEGATE)?;
+		let (root_public, _, delegate_public, delegation_id) = setup_delegations::<T>(d.into(), ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::ATTEST | Permissions::DELEGATE)?;
 		let root_acc: T::AccountId = root_public.into();
 		let delegate_acc: T::AccountId = delegate_public.into();
 
