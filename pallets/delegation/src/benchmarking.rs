@@ -93,7 +93,7 @@ where
 		return Ok((parent_acc_public, parent_acc_id, parent_id));
 	};
 
-	let mut leaf = None;
+	let mut first_leaf = None;
 	for c in 0..children_per_level.get() {
 		// setup delegation account and id
 		let delegation_acc_public = sr25519_generate(KeyTypeId(*b"aura"), None);
@@ -122,16 +122,16 @@ where
 			sig,
 		)?;
 
-		// only put in a leaf in the the first iteration
-		leaf = leaf.or(Some((
+		// only return first leaf
+		first_leaf = first_leaf.or(Some((
 			delegation_acc_public,
 			delegation_acc_id,
 			delegation_id,
 		)));
 	}
-	// if we didn't add children, return the parent
+
 	let (leaf_acc_public, leaf_acc_id, leaf_id) =
-		leaf.unwrap_or((parent_acc_public, parent_acc_id, parent_id));
+		first_leaf.expect("Should not be None due to restricting children_per_level to NonZeroU32");
 
 	// go to next level until we reach level 0
 	add_children::<T>(
