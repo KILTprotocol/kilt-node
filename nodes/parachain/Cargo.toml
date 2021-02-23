@@ -92,3 +92,9 @@ polkadot-test-service = {git = "https://github.com/paritytech/polkadot", branch 
 pallet-sudo = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
 substrate-test-client = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
 substrate-test-runtime-client = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+
+[features]
+default = []
+runtime-benchmarks = [
+  "kilt-parachain-runtime/runtime-benchmarks",
+]

@@ -3053,13 +3053,16 @@ dependencies = [
  "hex-literal 0.3.1",
  "kilt-primitives",
  "pallet-balances",
+ "pallet-collective",
  "pallet-indices",
  "pallet-randomness-collective-flip",
+ "pallet-society",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",
  "parachain-info",
  "parity-scale-codec",
+ "rococo-runtime",
  "serde",
  "sp-api",
  "sp-arithmetic",
@@ -4474,6 +4477,7 @@ name = "pallet-collective"
 version = "3.0.0"
 source = "git+https://github.com/paritytech/substrate?branch=rococo-v1#743accbe3256de2fc615adcaa3ab03ebdbbb4dbd"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "parity-scale-codec",
@@ -4555,6 +4559,7 @@ name = "pallet-im-online"
 version = "3.0.0"
 source = "git+https://github.com/paritytech/substrate?branch=rococo-v1#743accbe3256de2fc615adcaa3ab03ebdbbb4dbd"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-authorship",
@@ -4740,11 +4745,13 @@ name = "pallet-staking"
 version = "3.0.0"
 source = "git+https://github.com/paritytech/substrate?branch=rococo-v1#743accbe3256de2fc615adcaa3ab03ebdbbb4dbd"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-authorship",
  "pallet-session",
  "parity-scale-codec",
+ "rand_chacha 0.2.2",
  "serde",
  "sp-application-crypto",
  "sp-io",
@@ -6004,8 +6011,10 @@ version = "0.8.28"
 source = "git+https://github.com/paritytech/polkadot?branch=rococo-v1#8daf974142f1a29624e6598ccb167c0d238f7134"
 dependencies = [
  "bitvec",
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "libsecp256k1",
  "log",
  "pallet-authorship",
  "pallet-balances",

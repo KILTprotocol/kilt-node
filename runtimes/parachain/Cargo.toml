@@ -52,6 +52,9 @@ parachain-info = {git = "https://github.com/paritytech/cumulus", default-feature
 frame-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "rococo-v1"}
 frame-system-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "rococo-v1"}
 hex-literal = {version = "0.3.1", optional = true}
+pallet-collective = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "rococo-v1"}
+pallet-society = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "rococo-v1"}
+rococo-runtime = {git = "https://github.com/paritytech/polkadot", default-features = false, optional = true, branch = "rococo-v1"}
 
 [build-dependencies]
 substrate-wasm-builder = "3.0.0"
@@ -62,6 +65,19 @@ runtime-benchmarks = [
   "frame-benchmarking",
   "frame-system-benchmarking",
   "hex-literal",
+  "frame-support/runtime-benchmarks",
+  "frame-system/runtime-benchmarks",
+  "sp-runtime/runtime-benchmarks",
+  "attestation/runtime-benchmarks",
+  "ctype/runtime-benchmarks",
+  "did/runtime-benchmarks",
+  "delegation/runtime-benchmarks",
+  "pallet-balances/runtime-benchmarks",
+  "pallet-indices/runtime-benchmarks",
+  "pallet-timestamp/runtime-benchmarks",
+  "pallet-collective/runtime-benchmarks",
+  "pallet-society/runtime-benchmarks",
+  "rococo-runtime/runtime-benchmarks",
 ]
 std = [
   "sp-arithmetic/std",
