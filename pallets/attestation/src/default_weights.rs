@@ -41,17 +41,19 @@
 // --template
 // ../../.maintain/weight-template.hbs
 
-
 #![allow(unused_parens)]
 #![allow(unused_imports)]
 
-use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
+use frame_support::{
+	traits::Get,
+	weights::{constants::RocksDbWeight, Weight},
+};
 use sp_std::marker::PhantomData;
 
 /// Weight functions needed for attestation.
 pub trait WeightInfo {
 	fn add() -> Weight;
-	fn revoke(d: u32, ) -> Weight;
+	fn revoke(d: u32) -> Weight;
 }
 
 /// Weights for attestation using the Substrate node and recommended hardware.
@@ -62,7 +64,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(5_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
-	fn revoke(d: u32, ) -> Weight {
+	fn revoke(d: u32) -> Weight {
 		(150_958_000_u64)
 			// Standard Error: 244_000
 			.saturating_add((45_861_000_u64).saturating_mul(d as Weight))
@@ -79,7 +81,7 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(5_u64))
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
 	}
-	fn revoke(d: u32, ) -> Weight {
+	fn revoke(d: u32) -> Weight {
 		(150_958_000_u64)
 			// Standard Error: 244_000
 			.saturating_add((45_861_000_u64).saturating_mul(d as Weight))

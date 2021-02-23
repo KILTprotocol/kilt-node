@@ -41,20 +41,22 @@
 // --template
 // ../../.maintain/weight-template.hbs
 
-
 #![allow(unused_parens)]
 #![allow(unused_imports)]
 
-use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
+use frame_support::{
+	traits::Get,
+	weights::{constants::RocksDbWeight, Weight},
+};
 use sp_std::marker::PhantomData;
 
 /// Weight functions needed for delegation.
 pub trait WeightInfo {
 	fn create_root() -> Weight;
-	fn revoke_root(r: u32, ) -> Weight;
+	fn revoke_root(r: u32) -> Weight;
 	fn add_delegation() -> Weight;
-	fn revoke_delegation_root_child(r: u32, ) -> Weight;
-	fn revoke_delegation_leaf(r: u32, ) -> Weight;
+	fn revoke_delegation_root_child(r: u32) -> Weight;
+	fn revoke_delegation_leaf(r: u32) -> Weight;
 }
 
 /// Weights for delegation using the Substrate node and recommended hardware.
@@ -65,7 +67,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
-	fn revoke_root(r: u32, ) -> Weight {
+	fn revoke_root(r: u32) -> Weight {
 		(118_328_000_u64)
 			// Standard Error: 761_000
 			.saturating_add((163_338_000_u64).saturating_mul(r as Weight))
@@ -79,14 +81,14 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(4_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
-	fn revoke_delegation_root_child(r: u32, ) -> Weight {
+	fn revoke_delegation_root_child(r: u32) -> Weight {
 		(30_121_000_u64)
 			// Standard Error: 499_000
 			.saturating_add((165_982_000_u64).saturating_mul(r as Weight))
 			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(r as Weight)))
 			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(r as Weight)))
 	}
-	fn revoke_delegation_leaf(r: u32, ) -> Weight {
+	fn revoke_delegation_leaf(r: u32) -> Weight {
 		(275_711_000_u64)
 			// Standard Error: 6_513_000
 			.saturating_add((23_514_000_u64).saturating_mul(r as Weight))
@@ -103,7 +105,7 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(2_u64))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
-	fn revoke_root(r: u32, ) -> Weight {
+	fn revoke_root(r: u32) -> Weight {
 		(118_328_000_u64)
 			// Standard Error: 761_000
 			.saturating_add((163_338_000_u64).saturating_mul(r as Weight))
@@ -117,14 +119,14 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(4_u64))
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
 	}
-	fn revoke_delegation_root_child(r: u32, ) -> Weight {
+	fn revoke_delegation_root_child(r: u32) -> Weight {
 		(30_121_000_u64)
 			// Standard Error: 499_000
 			.saturating_add((165_982_000_u64).saturating_mul(r as Weight))
 			.saturating_add(RocksDbWeight::get().reads((2_u64).saturating_mul(r as Weight)))
 			.saturating_add(RocksDbWeight::get().writes((1_u64).saturating_mul(r as Weight)))
 	}
-	fn revoke_delegation_leaf(r: u32, ) -> Weight {
+	fn revoke_delegation_leaf(r: u32) -> Weight {
 		(275_711_000_u64)
 			// Standard Error: 6_513_000
 			.saturating_add((23_514_000_u64).saturating_mul(r as Weight))
