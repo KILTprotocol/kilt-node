@@ -315,7 +315,7 @@ mod tests {
 				root_acc_id,
 				Permissions::DELEGATE,
 				1,
-				1,
+				NonZeroU32::new(1).expect(">0"),
 			)
 			.expect("failed to add children to root delegation");
 			assert_eq!(
