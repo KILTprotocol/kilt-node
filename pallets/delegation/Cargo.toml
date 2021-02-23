@@ -13,14 +13,14 @@ targets = ["x86_64-unknown-linux-gnu"]
 version = "1.0.6"
 
 [dev-dependencies]
-kilt-primitives = {path = '../../primitives', default-features = false}
+kilt-primitives = {path = "../../primitives", default-features = false}
 serde = {version = "1.0.101"}
 sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1", version = "3.0.0"}
 sp-keystore = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1", version = "0.9.0"}
 
 # pallets
 [dependencies]
-ctype = {version = '0.23.0', default-features = false, path = '../ctype'}
+ctype = {version = "0.23.0", default-features = false, path = "../ctype"}
 
 [dependencies.bitflags]
 default-features = false
@@ -28,33 +28,33 @@ version = "1.2.1"
 
 [dependencies.codec]
 default-features = false
-features = ['derive']
-package = 'parity-scale-codec'
-version = '2.0.0'
+features = ["derive"]
+package = "parity-scale-codec"
+version = "2.0.0"
 
 [dependencies.frame-support]
 branch = "rococo-v1"
 default-features = false
-git = 'https://github.com/paritytech/substrate'
-version = '3.0.0'
+git = "https://github.com/paritytech/substrate"
+version = "3.0.0"
 
 [dependencies.frame-system]
 branch = "rococo-v1"
 default-features = false
-git = 'https://github.com/paritytech/substrate'
-version = '3.0.0'
+git = "https://github.com/paritytech/substrate"
+version = "3.0.0"
 
 [dependencies.sp-runtime]
 branch = "rococo-v1"
 default-features = false
-git = 'https://github.com/paritytech/substrate'
-version = '3.0.0'
+git = "https://github.com/paritytech/substrate"
+version = "3.0.0"
 
 [dependencies.sp-std]
 branch = "rococo-v1"
 default-features = false
-git = 'https://github.com/paritytech/substrate'
-version = '3.0.0'
+git = "https://github.com/paritytech/substrate"
+version = "3.0.0"
 
 [dependencies.sp-io]
 branch = "rococo-v1"

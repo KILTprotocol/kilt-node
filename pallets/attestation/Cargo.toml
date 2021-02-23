@@ -7,10 +7,10 @@ repository = "https://github.com/KILTprotocol/mashnet-node"
 version = "0.23.0"
 
 [package.metadata.docs.rs]
-targets = ['x86_64-unknown-linux-gnu']
+targets = ["x86_64-unknown-linux-gnu"]
 
 [dev-dependencies]
-kilt-primitives = {path = '../../primitives', default-features = false}
+kilt-primitives = {path = "../../primitives", default-features = false}
 serde = {version = "1.0.101"}
 sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1", version = "3.0.0"}
 sp-keystore = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1", version = "0.9.0"}
@@ -29,9 +29,9 @@ sp-core = {git = "https://github.com/paritytech/substrate", default-features = f
 
 [dependencies.codec]
 default-features = false
-features = ['derive']
-package = 'parity-scale-codec'
-version = '2.0.0'
+features = ["derive"]
+package = "parity-scale-codec"
+version = "2.0.0"
 
 [dependencies.frame-support]
 branch = "rococo-v1"
