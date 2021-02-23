@@ -20,9 +20,14 @@
 //! adding CTYPEs.
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(any(feature = "runtime-benchmarks", test))]
+pub mod benchmarking;
 /// Test module for CTYPEs
 #[cfg(test)]
 mod tests;
+
+pub mod default_weights;
+pub use default_weights::WeightInfo;
 
 use frame_support::{
 	debug, decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure,
@@ -30,10 +35,13 @@ use frame_support::{
 };
 use frame_system::{self, ensure_signed};
 
-/// The CTYPE trait
-pub trait Trait: frame_system::Config {
+/// The CTYPE Config
+pub trait Config: frame_system::Config {
 	/// CTYPE specific event type
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+
+	/// Weight information for extrinsics in this pallet.
+	type WeightInfo: WeightInfo;
 }
 
 decl_event!(
@@ -46,7 +54,7 @@ decl_event!(
 
 // The pallet's errors
 decl_error! {
-	pub enum Error for Module<T: Trait> {
+	pub enum Error for Module<T: Config> {
 		NotFound,
 		AlreadyExists,
 	}
@@ -54,7 +62,7 @@ decl_error! {
 
 decl_module! {
 	/// The CTYPE runtime module
-	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+	pub struct Module<T: Config> for enum Call where origin: T::Origin {
 
 		/// Deposit events
 		fn deposit_event() = default;
@@ -67,7 +75,7 @@ decl_module! {
 		/// Adds a CTYPE on chain, where
 		/// origin - the origin of the transaction
 		/// hash - hash of the CTYPE of the claim
-		#[weight = 1]
+		#[weight = <T as Config>::WeightInfo::add()]
 		pub fn add(origin, hash: T::Hash) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
@@ -86,7 +94,7 @@ decl_module! {
 }
 
 decl_storage! {
-	trait Store for Module<T: Trait> as Ctype {
+	trait Store for Module<T: Config> as Ctype {
 		// CTYPEs: ctype-hash -> account-id?
 		pub CTYPEs get(fn ctypes):map hasher(opaque_blake2_256) T::Hash => Option<T::AccountId>;
 	}

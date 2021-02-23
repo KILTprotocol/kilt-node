@@ -21,6 +21,8 @@
 //! adding and revoking delegation nodes based on root nodes.
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(any(feature = "runtime-benchmarks", test))]
+pub mod benchmarking;
 /// Test module for delegations
 #[cfg(test)]
 mod tests;
@@ -28,11 +30,18 @@ mod tests;
 #[macro_use]
 extern crate bitflags;
 
+pub mod default_weights;
+pub use default_weights::WeightInfo;
+
+use crate::sp_api_hidden_includes_decl_storage::hidden_include::traits::Get;
 use codec::{Decode, Encode};
 use core::default::Default;
 use frame_support::{
-	debug, decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure,
-	traits::Get, Parameter, StorageMap,
+	debug, decl_error, decl_event, decl_module, decl_storage,
+	dispatch::DispatchResult,
+	ensure,
+	pallet_prelude::{DispatchResultWithPostInfo, Weight},
+	Parameter, StorageMap,
 };
 use frame_system::{self, ensure_signed};
 use sp_runtime::{
@@ -75,9 +84,12 @@ impl Default for Permissions {
 }
 
 /// The delegation trait
-pub trait Trait: ctype::Trait + frame_system::Config {
+pub trait Config: ctype::Config + frame_system::Config {
 	/// Delegation specific event type
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+
+	/// Weight information for extrinsics in this pallet.
+	type WeightInfo: WeightInfo;
 
 	/// Signature of a delegation
 	type Signature: Verify<Signer = Self::Signer> + Member + Codec + Default;
@@ -103,7 +115,7 @@ pub trait Trait: ctype::Trait + frame_system::Config {
 decl_event!(
 	/// Events for delegations
 	pub enum Event<T> where <T as frame_system::Config>::Hash, <T as frame_system::Config>::AccountId,
-			<T as Trait>::DelegationNodeId {
+			<T as Config>::DelegationNodeId {
 		/// A new root has been created
 		RootCreated(AccountId, DelegationNodeId, Hash),
 		/// A root has been revoked
@@ -118,7 +130,7 @@ decl_event!(
 
 // The pallet's errors
 decl_error! {
-	pub enum Error for Module<T: Trait> {
+	pub enum Error for Module<T: Config> {
 		AlreadyExists,
 		BadSignature,
 		DelegationNotFound,
@@ -136,7 +148,7 @@ decl_error! {
 
 decl_module! {
 	/// The delegation runtime module
-	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+	pub struct Module<T: Config> for enum Call where origin: T::Origin {
 		/// Deposit events
 		fn deposit_event() = default;
 
@@ -149,7 +161,7 @@ decl_module! {
 		/// origin - the origin of the transaction
 		/// root_id - unique identifier of the root node
 		/// ctype_hash - hash of the CTYPE the hierarchy is created for
-		#[weight = 1]
+		#[weight = <T as Config>::WeightInfo::create_root()]
 		pub fn create_root(origin, root_id: T::DelegationNodeId, ctype_hash: T::Hash) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
@@ -175,7 +187,7 @@ decl_module! {
 		/// delegate - the delegate account
 		/// permission - the permissions delegated
 		/// delegate_signature - the signature of the delegate to ensure it's done under his permission
-		#[weight = 1]
+		#[weight = <T as Config>::WeightInfo::add_delegation()]
 		pub fn add_delegation(
 			origin,
 			delegation_id: T::DelegationNodeId,
@@ -239,8 +251,8 @@ decl_module! {
 		/// Revoke the root and therefore a complete hierarchy, where
 		/// origin - the origin of the transaction
 		/// root_id - id of the hierarchy root node
-		#[weight = 1 + T::DbWeight::get().reads_writes(*max_children, *max_children)]
-		pub fn revoke_root(origin, root_id: T::DelegationNodeId, max_children: u64) -> DispatchResult {
+		#[weight = <T as Config>::WeightInfo::revoke_root(*max_children)]
+		pub fn revoke_root(origin, root_id: T::DelegationNodeId, max_children: u32) -> DispatchResultWithPostInfo {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 
@@ -250,27 +262,30 @@ decl_module! {
 			// check if root node has been created by the sender of this transaction
 			ensure!(root.owner.eq(&sender), Error::<T>::UnauthorizedRevocation);
 
-			if !root.revoked {
+			let consumed_weight: Weight = if !root.revoked {
 				// recursively revoke all children
-				let remaining_revocations = Self::revoke_children(&root_id, &sender, max_children)?;
+				let (remaining_revocations, post_weight) = Self::revoke_children(&root_id, &sender, max_children)?;
 
 				if remaining_revocations > 0 {
 					// store revoked root node
 					root.revoked = true;
 					<Root<T>>::insert(root_id, root);
 				}
-			}
+				post_weight + T::DbWeight::get().writes(1)
+			} else {
+				0
+			};
 			// deposit event that the root node has been revoked
 			Self::deposit_event(RawEvent::RootRevoked(sender, root_id));
-			// TODO: post call weight correction
-			Ok(())
+			// post call weight correction
+			Ok(Some(consumed_weight + T::DbWeight::get().reads(1)).into())
 		}
 
 		/// Revoke a delegation node and all its children, where
 		/// origin - the origin of the transaction
 		/// delegation_id - id of the delegation node
-		#[weight = 1 + T::DbWeight::get().reads_writes(*max_revocations, *max_revocations)]
-		pub fn revoke_delegation(origin, delegation_id: T::DelegationNodeId, max_depth: u64, max_revocations: u64) -> DispatchResult {
+		#[weight = <T as Config>::WeightInfo::revoke_delegation_leaf(*max_depth).max(<T as Config>::WeightInfo::revoke_delegation_root_child(*max_depth))]
+		pub fn revoke_delegation(origin, delegation_id: T::DelegationNodeId, max_depth: u32, max_revocations: u32) -> DispatchResultWithPostInfo {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 			// check if a delegation node with the given identifier already exists
@@ -281,14 +296,17 @@ decl_module! {
 			ensure!(Self::is_delegating(&sender, &delegation_id, max_depth)?, Error::<T>::UnauthorizedRevocation);
 
 			// revoke the delegation and recursively all of its children
-			// TODO: post call weight correction
-			Self::revoke(&delegation_id, &sender, max_revocations).map(|_| ())
+			// post call weight correction
+			let (_, consumed_weight) = Self::revoke(&delegation_id, &sender, max_revocations)?;
+
+			// add worst case reads from `is_delegating`
+			Ok(Some(consumed_weight + T::DbWeight::get().reads((1 + max_depth).into())).into())
 		}
 	}
 }
 
 /// Implementation of further module constants and functions for delegations
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
 	/// Calculates the hash of all values of a delegation transaction
 	pub fn calculate_hash(
 		delegation_id: T::DelegationNodeId,
@@ -311,7 +329,7 @@ impl<T: Trait> Module<T> {
 	pub fn is_delegating(
 		account: &T::AccountId,
 		delegation: &T::DelegationNodeId,
-		max_depth: u64,
+		max_depth: u32,
 	) -> Result<bool, DispatchError> {
 		// check for recursion anchor
 		ensure!(max_depth > 0, Error::<T>::MaxSearchDepthReached);
@@ -334,27 +352,32 @@ impl<T: Trait> Module<T> {
 	}
 
 	/// Revoke a delegation and all of its children recursively
-	/// FIXME: Add bound
 	fn revoke(
 		delegation: &T::DelegationNodeId,
 		sender: &T::AccountId,
-		max_revocations: u64,
-	) -> Result<u64, DispatchError> {
-		let mut revocations: u64 = 0;
+		max_revocations: u32,
+	) -> Result<(u32, Weight), DispatchError> {
+		let mut revocations: u32 = 0;
+		let mut consumed_weight: Weight = 0;
 		// retrieve delegation node from storage
 		let mut delegation_node =
 			<Delegations<T>>::get(*delegation).ok_or(Error::<T>::DelegationNotFound)?;
+		consumed_weight += T::DbWeight::get().reads(1);
 
 		// check if already revoked
 		if !delegation_node.revoked {
 			// first revoke all children recursively
-			revocations += Self::revoke_children(delegation, sender, max_revocations)?;
+			Self::revoke_children(delegation, sender, max_revocations - 1).map(|(r, w)| {
+				revocations += r;
+				consumed_weight += w;
+			})?;
 
 			// if we run out of revocation gas, we only revoke children. The tree will be changed but is still valid.
 			if revocations < max_revocations {
 				// set revoked flag and store delegation node
 				delegation_node.revoked = true;
 				<Delegations<T>>::insert(*delegation, delegation_node);
+				consumed_weight += T::DbWeight::get().writes(1);
 				// deposit event that the delegation has been revoked
 				Self::deposit_event(RawEvent::DelegationRevoked(sender.clone(), *delegation));
 				revocations += 1;
@@ -362,30 +385,36 @@ impl<T: Trait> Module<T> {
 				return Err(Error::<T>::ExceededRevocationBounds.into());
 			}
 		}
-		Ok(revocations)
+		Ok((revocations, consumed_weight))
 	}
 
 	/// Revoke all children of a delegation
 	fn revoke_children(
 		delegation: &T::DelegationNodeId,
 		sender: &T::AccountId,
-		max_revocations: u64,
-	) -> Result<u64, DispatchError> {
-		let mut revocations: u64 = 0;
+		max_revocations: u32,
+	) -> Result<(u32, Weight), DispatchError> {
+		let mut revocations: u32 = 0;
+		let mut consumed_weight: Weight = 0;
 		// check if there's a child vector in the storage
 		if <Children<T>>::contains_key(delegation) {
 			// iterate child vector and revoke all nodes
 			let children = <Children<T>>::get(delegation);
+			consumed_weight += T::DbWeight::get().reads(1);
+
 			for child in children {
 				let remaining_revocations = max_revocations.saturating_sub(revocations);
 				if remaining_revocations > 0 {
-					revocations += Self::revoke(&child, sender, remaining_revocations)?;
+					Self::revoke(&child, sender, remaining_revocations).map(|(r, w)| {
+						revocations += r;
+						consumed_weight += w;
+					})?;
 				} else {
 					return Err(Error::<T>::ExceededRevocationBounds.into());
 				}
 			}
 		}
-		Ok(revocations)
+		Ok((revocations, consumed_weight + T::DbWeight::get().reads(1)))
 	}
 
 	/// Add a child node into the delegation hierarchy
@@ -399,8 +428,8 @@ impl<T: Trait> Module<T> {
 	}
 }
 
-#[derive(Encode, Decode)]
-pub struct DelegationNode<T: Trait> {
+#[derive(Debug, Encode, Decode, PartialEq)]
+pub struct DelegationNode<T: Config> {
 	pub root_id: T::DelegationNodeId,
 	pub parent: Option<T::DelegationNodeId>,
 	pub owner: T::AccountId,
@@ -408,7 +437,7 @@ pub struct DelegationNode<T: Trait> {
 	pub revoked: bool,
 }
 
-impl<T: Trait> DelegationNode<T> {
+impl<T: Config> DelegationNode<T> {
 	pub fn new_root(
 		root_id: T::DelegationNodeId,
 		owner: T::AccountId,
@@ -445,14 +474,14 @@ impl<T: Trait> DelegationNode<T> {
 	}
 }
 
-#[derive(Encode, Decode)]
-pub struct DelegationRoot<T: Trait> {
+#[derive(Debug, Encode, Decode, PartialEq)]
+pub struct DelegationRoot<T: Config> {
 	pub ctype_hash: T::Hash,
 	pub owner: T::AccountId,
 	pub revoked: bool,
 }
 
-impl<T: Trait> DelegationRoot<T> {
+impl<T: Config> DelegationRoot<T> {
 	fn new(ctype_hash: T::Hash, owner: T::AccountId) -> Self {
 		DelegationRoot {
 			ctype_hash,
@@ -463,7 +492,7 @@ impl<T: Trait> DelegationRoot<T> {
 }
 
 decl_storage! {
-	trait Store for Module<T: Trait> as Delegation {
+	trait Store for Module<T: Config> as Delegation {
 		// Root: root-id => DelegationRoot?
 		pub Root get(fn root):map hasher(opaque_blake2_256) T::DelegationNodeId => Option<DelegationRoot<T>>;
 

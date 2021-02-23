@@ -117,13 +117,14 @@ impl frame_system::Config for Test {
 	type SS58Prefix = SS58Prefix;
 }
 
-impl Trait for Test {
+impl Config for Test {
 	type Event = ();
+	type WeightInfo = ();
 }
 
 type CType = Module<Test>;
 
-fn new_test_ext() -> sp_io::TestExternalities {
+pub fn new_test_ext() -> sp_io::TestExternalities {
 	frame_system::GenesisConfig::default()
 		.build_storage::<Test>()
 		.unwrap()

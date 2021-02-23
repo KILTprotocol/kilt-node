@@ -24,6 +24,12 @@
 #[cfg(test)]
 mod tests;
 
+#[cfg(any(feature = "runtime-benchmarks", test))]
+pub mod benchmarking;
+
+pub mod default_weights;
+pub use default_weights::WeightInfo;
+
 use frame_support::{
 	decl_event, decl_module, decl_storage, dispatch::DispatchResult, Parameter, StorageMap,
 };
@@ -32,11 +38,16 @@ use sp_runtime::{codec::Codec, traits::Member};
 use sp_std::prelude::*;
 
 /// The DID trait
-pub trait Trait: frame_system::Config {
+pub trait Config: frame_system::Config {
 	/// DID specific event type
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+
+	/// Weight information for extrinsics in this pallet.
+	type WeightInfo: WeightInfo;
+
 	/// Public signing key type for DIDs
 	type PublicSigningKey: Parameter + Member + Codec + Default;
+
 	/// Public boxing key type for DIDs
 	type PublicBoxKey: Parameter + Member + Codec + Default;
 }
@@ -53,7 +64,7 @@ decl_event!(
 
 decl_module! {
 	/// The DID runtime module
-	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+	pub struct Module<T: Config> for enum Call where origin: T::Origin {
 
 		/// Deposit events
 		fn deposit_event() = default;
@@ -63,7 +74,7 @@ decl_module! {
 		/// sign_key - public signing key of the DID
 		/// box_key - public boxing key of the DID
 		/// doc_ref - optional reference to the DID document storage
-		#[weight = 1]
+		#[weight = <T as Config>::WeightInfo::add()]
 		pub fn add(origin, sign_key: T::PublicSigningKey, box_key: T::PublicBoxKey, doc_ref: Option<Vec<u8>>) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
@@ -73,9 +84,10 @@ decl_module! {
 			Self::deposit_event(RawEvent::DidCreated(sender));
 			Ok(())
 		}
+
 		/// Removes a DID from chain storage, where
 		/// origin - the origin of the transaction
-		#[weight = 1]
+		#[weight = <T as Config>::WeightInfo::remove()]
 		pub fn remove(origin) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
@@ -89,7 +101,7 @@ decl_module! {
 }
 
 decl_storage! {
-	trait Store for Module<T: Trait> as DID {
+	trait Store for Module<T: Config> as DID {
 		// DID: account-id -> (public-signing-key, public-encryption-key, did-reference?)?
 		DIDs get(fn dids):map hasher(opaque_blake2_256) T::AccountId => Option<(T::PublicSigningKey, T::PublicBoxKey, Option<Vec<u8>>)>;
 	}

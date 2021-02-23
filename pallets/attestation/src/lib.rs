@@ -20,11 +20,17 @@
 //! adding and revoking attestations.
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(any(feature = "runtime-benchmarks", test))]
+pub mod benchmarking;
 /// Test module for attestations
 #[cfg(test)]
 mod tests;
 
+pub mod default_weights;
+pub use default_weights::WeightInfo;
+
 use codec::{Decode, Encode};
+use delegation::Permissions;
 use frame_support::{
 	debug, decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure,
 	StorageMap,
@@ -33,15 +39,18 @@ use frame_system::{self, ensure_signed};
 use sp_std::prelude::{Clone, PartialEq, Vec};
 
 /// The attestation trait
-pub trait Trait: frame_system::Config + delegation::Trait {
+pub trait Config: frame_system::Config + delegation::Config {
 	/// Attestation specific event type
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+
+	/// Weight information for extrinsics in this pallet.
+	type WeightInfo: WeightInfo;
 }
 
 decl_event!(
 	/// Events for attestations
 	pub enum Event<T> where <T as frame_system::Config>::AccountId, <T as frame_system::Config>::Hash,
-			<T as delegation::Trait>::DelegationNodeId {
+			<T as delegation::Config>::DelegationNodeId {
 		/// An attestation has been added
 		AttestationCreated(AccountId, Hash, Hash, Option<DelegationNodeId>),
 		/// An attestation has been revoked
@@ -51,7 +60,7 @@ decl_event!(
 
 // The pallet's errors
 decl_error! {
-	pub enum Error for Module<T: Trait> {
+	pub enum Error for Module<T: Config> {
 		AlreadyAttested,
 		AlreadyRevoked,
 		AttestationNotFound,
@@ -65,7 +74,7 @@ decl_error! {
 
 decl_module! {
 	/// The attestation runtime module
-	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+	pub struct Module<T: Config> for enum Call where origin: T::Origin {
 		/// Deposit events
 		fn deposit_event() = default;
 
@@ -79,7 +88,7 @@ decl_module! {
 		/// claim_hash - hash of the attested claim
 		/// ctype_hash - hash of the CTYPE of the claim
 		/// delegation_id - optional id that refers to a delegation this attestation is based on
-		#[weight = 1]
+		#[weight = <T as Config>::WeightInfo::add()]
 		pub fn add(origin, claim_hash: T::Hash, ctype_hash: T::Hash, delegation_id: Option<T::DelegationNodeId>) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
@@ -100,7 +109,7 @@ decl_module! {
 				ensure!(delegation.owner.eq(&sender), Error::<T>::NotDelegatedToAttester);
 
 				// check whether the delegation is not set up for attesting claims
-				ensure!(delegation.permissions == delegation::Permissions::ATTEST, Error::<T>::DelegationUnauthorizedToAttest);
+				ensure!((delegation.permissions & Permissions::ATTEST) == Permissions::ATTEST, Error::<T>::DelegationUnauthorizedToAttest);
 
 				// check if CTYPE of the delegation is matching the CTYPE of the attestation
 				let root = <delegation::Root<T>>::get(delegation.root_id).ok_or(delegation::Error::<T>::RootNotFound)?;
@@ -126,8 +135,8 @@ decl_module! {
 		/// Revokes an attestation on chain, where
 		/// origin - the origin of the transaction
 		/// claim_hash - hash of the attested claim
-		#[weight = 1]
-		pub fn revoke(origin, claim_hash: T::Hash, max_depth: u64) -> DispatchResult {
+		#[weight = <T as Config>::WeightInfo::revoke(*max_depth)]
+		pub fn revoke(origin, claim_hash: T::Hash, max_depth: u32) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 
@@ -137,7 +146,7 @@ decl_module! {
 			// check if the attestation has already been revoked
 			ensure!(!revoked, Error::<T>::AlreadyRevoked);
 
-			// check delegation treee if the sender of the revocation transaction is not the attester
+			// check delegation tree if the sender of the revocation transaction is not the attester
 			if !attester.eq(&sender) {
 				// check whether the attestation includes a delegation
 				let del_id = delegation_id.ok_or(Error::<T>::UnauthorizedRevocation)?;
@@ -159,8 +168,8 @@ decl_module! {
 	}
 }
 
-#[derive(Encode, Decode)]
-pub struct Attestation<T: Trait> {
+#[derive(Debug, Encode, Decode, PartialEq)]
+pub struct Attestation<T: Config> {
 	// hash of the CTYPE used for this attestation
 	ctype_hash: T::Hash,
 	// the account which executed the attestation
@@ -172,7 +181,7 @@ pub struct Attestation<T: Trait> {
 }
 
 decl_storage! {
-	trait Store for Module<T: Trait> as Attestation {
+	trait Store for Module<T: Config> as Attestation {
 		/// Attestations: claim-hash -> (ctype-hash, attester-account, delegation-id?, revoked)?
 		Attestations get(fn attestations): map hasher(opaque_blake2_256) T::Hash => Option<Attestation<T>>;
 		/// DelegatedAttestations: delegation-id -> [claim-hash]

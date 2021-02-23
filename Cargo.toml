@@ -1,14 +1,14 @@
 [profile.release]
-panic = 'unwind'
+panic = "unwind"
 
 [workspace]
 members = [
-  'nodes/parachain',
-  'nodes/standalone',
-  'pallets/attestation',
-  'pallets/ctype',
-  'pallets/delegation',
-  'pallets/did',
-  'runtimes/parachain',
-  'runtimes/standalone',
+  "nodes/parachain",
+  "nodes/standalone",
+  "pallets/attestation",
+  "pallets/ctype",
+  "pallets/delegation",
+  "pallets/did",
+  "runtimes/parachain",
+  "runtimes/standalone",
 ]

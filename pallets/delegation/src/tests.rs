@@ -32,11 +32,14 @@ use frame_support::{
 use frame_system::limits::{BlockLength, BlockWeights};
 use kilt_primitives::Signature;
 use sp_core::{ed25519, Pair, H256, H512};
+use sp_io::TestExternalities;
+use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup, Verify},
 	MultiSignature, MultiSigner, Perbill,
 };
+use sp_std::sync::Arc;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -113,22 +116,41 @@ impl frame_system::Config for Test {
 	type SS58Prefix = SS58Prefix;
 }
 
-impl ctype::Trait for Test {
+impl ctype::Config for Test {
 	type Event = ();
+	type WeightInfo = ();
 }
 
-impl Trait for Test {
+impl Config for Test {
 	type Event = ();
 	type Signature = MultiSignature;
 	type Signer = <Self::Signature as Verify>::Signer;
 	type DelegationNodeId = H256;
+	type WeightInfo = ();
 }
 
 fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
 	hash.encode()
 }
 
-fn new_test_ext() -> sp_io::TestExternalities {
+pub struct ExtBuilder;
+
+impl ExtBuilder {
+	pub fn build_with_keystore() -> TestExternalities {
+		let storage = frame_system::GenesisConfig::default()
+			.build_storage::<Test>()
+			.unwrap();
+		let mut ext = TestExternalities::from(storage);
+		// register keystore
+		let keystore = KeyStore::new();
+		ext.register_extension(KeystoreExt(Arc::new(keystore)));
+		// events are not emitted on default block number 0
+		ext.execute_with(|| System::set_block_number(1));
+		ext
+	}
+}
+
+fn new_test_ext() -> TestExternalities {
 	frame_system::GenesisConfig::default()
 		.build_storage::<Test>()
 		.unwrap()
@@ -468,7 +490,7 @@ fn check_add_and_revoke_delegations() {
 		assert_ok!(Delegation::revoke_root(
 			Origin::signed(account_hash_alice),
 			id_level_0,
-			2
+			3
 		));
 		assert_eq!(Delegation::root(id_level_0).unwrap().revoked, true);
 		assert_eq!(Delegation::delegation(id_level_1).unwrap().revoked, true);
