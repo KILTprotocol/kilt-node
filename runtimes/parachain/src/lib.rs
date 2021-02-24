@@ -278,6 +278,7 @@ impl did::Config for Runtime {
 	type WeightInfo = ();
 }
 
+#[allow(clippy::from_over_into)]
 construct_runtime! {
 	pub enum Runtime where
 		Block = Block,
