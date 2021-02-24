@@ -30,6 +30,7 @@ pub mod benchmarking;
 pub mod default_weights;
 pub use default_weights::WeightInfo;
 
+use codec::{Decode, Encode};
 use frame_support::{
 	decl_event, decl_module, decl_storage, dispatch::DispatchResult, Parameter, StorageMap,
 };
@@ -79,7 +80,7 @@ decl_module! {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 			// add DID to the storage
-			<DIDs<T>>::insert(sender.clone(), (sign_key, box_key, doc_ref));
+			<DIDs<T>>::insert(sender.clone(), DidRecord::<T> { sign_key, box_key, doc_ref });
 			// deposit an event that the DID has been created
 			Self::deposit_event(RawEvent::DidCreated(sender));
 			Ok(())
@@ -100,9 +101,19 @@ decl_module! {
 	}
 }
 
+#[derive(Encode, Decode)]
+pub struct DidRecord<T: Config> {
+	// public signing key
+	sign_key: T::PublicSigningKey,
+	// public encryption key
+	box_key: T::PublicBoxKey,
+	// did reference
+	doc_ref: Option<Vec<u8>>,
+}
+
 decl_storage! {
 	trait Store for Module<T: Config> as DID {
 		// DID: account-id -> (public-signing-key, public-encryption-key, did-reference?)?
-		DIDs get(fn dids):map hasher(opaque_blake2_256) T::AccountId => Option<(T::PublicSigningKey, T::PublicBoxKey, Option<Vec<u8>>)>;
+		DIDs get(fn dids):map hasher(opaque_blake2_256) T::AccountId => Option<DidRecord<T>>;
 	}
 }

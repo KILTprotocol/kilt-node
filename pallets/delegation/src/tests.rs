@@ -380,7 +380,7 @@ fn check_add_and_revoke_delegations() {
 			opt.unwrap()
 		};
 		assert_eq!(root.ctype_hash, ctype_hash);
-		assert_eq!(root.owner, account_hash_alice.clone());
+		assert_eq!(root.owner, account_hash_alice);
 		assert_eq!(root.revoked, false);
 
 		let delegation_1 = {
@@ -390,7 +390,7 @@ fn check_add_and_revoke_delegations() {
 		};
 		assert_eq!(delegation_1.root_id, id_level_0);
 		assert_eq!(delegation_1.parent, None);
-		assert_eq!(delegation_1.owner, account_hash_bob.clone());
+		assert_eq!(delegation_1.owner, account_hash_bob);
 		assert_eq!(delegation_1.permissions, Permissions::DELEGATE);
 		assert_eq!(delegation_1.revoked, false);
 
@@ -401,7 +401,7 @@ fn check_add_and_revoke_delegations() {
 		};
 		assert_eq!(delegation_2.root_id, id_level_0);
 		assert_eq!(delegation_2.parent, Some(id_level_1));
-		assert_eq!(delegation_2.owner, account_hash_charlie.clone());
+		assert_eq!(delegation_2.owner, account_hash_charlie);
 		assert_eq!(
 			delegation_2.permissions,
 			Permissions::ATTEST | Permissions::DELEGATE

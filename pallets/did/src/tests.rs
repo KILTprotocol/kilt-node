@@ -118,8 +118,6 @@ impl Config for Test {
 	type WeightInfo = ();
 }
 
-type DID = Module<Test>;
-
 pub fn new_test_ext() -> sp_io::TestExternalities {
 	frame_system::GenesisConfig::default()
 		.build_storage::<Test>()
@@ -134,24 +132,24 @@ fn check_add_did() {
 		let signing_key = H256::from_low_u64_be(1);
 		let box_key = H256::from_low_u64_be(2);
 		let account = MultiSigner::from(pair.public()).into_account();
-		assert_ok!(DID::add(
+		assert_ok!(Did::add(
 			Origin::signed(account.clone()),
 			signing_key,
 			box_key,
-			Some(b"http://kilt.org/submit".to_vec())
+			Some(b"http://kilt.org/submit".to_vec()),
 		));
 
 		assert_eq!(<DIDs<Test>>::contains_key(account.clone()), true);
 		let did = {
-			let opt = DID::dids(account.clone());
+			let opt = Did::dids(account.clone());
 			assert!(opt.is_some());
 			opt.unwrap()
 		};
-		assert_eq!(did.0, signing_key);
-		assert_eq!(did.1, box_key);
-		assert_eq!(did.2, Some(b"http://kilt.org/submit".to_vec()));
+		assert_eq!(did.sign_key, signing_key);
+		assert_eq!(did.box_key, box_key);
+		assert_eq!(did.doc_ref, Some(b"http://kilt.org/submit".to_vec()));
 
-		assert_ok!(DID::remove(Origin::signed(account.clone())));
+		assert_ok!(Did::remove(Origin::signed(account.clone())));
 		assert_eq!(<DIDs<Test>>::contains_key(account), false);
 	});
 }
