@@ -97,7 +97,7 @@ jobs:
       with:
         profile: minimal
         toolchain: nightly-2021-02-22
-        components: fmt
+        components: rustfmt
         target: wasm32-unknown-unknown
         override: true
         default: true
