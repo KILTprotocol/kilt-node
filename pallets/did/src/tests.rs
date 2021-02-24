@@ -138,7 +138,7 @@ fn check_add_did() {
 			Origin::signed(account.clone()),
 			signing_key,
 			box_key,
-			Some(b"http://kilt.org/submit".to_vec())
+			Some(b"http://kilt.org/submit".to_vec()),
 		));
 
 		assert_eq!(<DIDs<Test>>::contains_key(account.clone()), true);
@@ -147,9 +147,9 @@ fn check_add_did() {
 			assert!(opt.is_some());
 			opt.unwrap()
 		};
-		assert_eq!(did.0, signing_key);
-		assert_eq!(did.1, box_key);
-		assert_eq!(did.2, Some(b"http://kilt.org/submit".to_vec()));
+		assert_eq!(did.sign_key, signing_key);
+		assert_eq!(did.box_key, box_key);
+		assert_eq!(did.doc_ref, Some(b"http://kilt.org/submit".to_vec()));
 
 		assert_ok!(DID::remove(Origin::signed(account.clone())));
 		assert_eq!(<DIDs<Test>>::contains_key(account), false);
