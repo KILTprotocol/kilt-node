@@ -35,7 +35,7 @@ jobs:
       with:
         profile: minimal
         toolchain: nightly-2021-02-22
-        components: rustfmt
+        components: clippy
         target: wasm32-unknown-unknown
         override: true
         default: true
@@ -43,8 +43,5 @@ jobs:
     - name: Check Code
       run: cargo check --all --all-features
 
-    - name: Check Formatting
-      run: cargo fmt --all -- --check
-
-    - name: Test Code
-      run: cargo test --all --all-features
+    - name: Check Clippy
+      run: cargo +nightly-2021-02-22  clippy --all -- -D warnings
