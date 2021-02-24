@@ -30,6 +30,12 @@ const SEED: u32 = 0;
 const MAX_REVOCATIONS: u32 = 5;
 const ONE_CHILD_PER_LEVEL: Option<NonZeroU32> = NonZeroU32::new(1);
 
+struct DelegationTriplet<T: Config> {
+	public: sr25519::Public,
+	acc: T::AccountId,
+	delegation_id: T::DelegationNodeId,
+}
+
 /// generats a delegation id from a given number
 fn generate_delegation_id<T: Config>(number: u32) -> T::DelegationNodeId
 where
@@ -54,7 +60,7 @@ fn parent_id_check<T: Config>(
 /// add ctype to storage and root delegation
 fn add_root_delegation<T: Config>(
 	number: u32,
-) -> Result<(sr25519::Public, T::AccountId, T::DelegationNodeId, T::Hash), DispatchError>
+) -> Result<(DelegationTriplet<T>, T::Hash), DispatchError>
 where
 	T::AccountId: From<sr25519::Public>,
 	T::DelegationNodeId: From<T::Hash>,
@@ -71,7 +77,14 @@ where
 		ctype_hash,
 	)?;
 
-	Ok((root_public, root_acc, root_id, ctype_hash))
+	Ok((
+		DelegationTriplet::<T> {
+			public: root_public,
+			acc: root_acc,
+			delegation_id: root_id,
+		},
+		ctype_hash,
+	))
 }
 
 /// recursively adds children delegations to a parent delegation for each level until reaching leaf level
@@ -166,7 +179,14 @@ where
 	T::Signature: From<sr25519::Signature>,
 	T::DelegationNodeId: From<T::Hash>,
 {
-	let (root_public, root_acc, root_id, _) = add_root_delegation::<T>(0)?;
+	let (
+		DelegationTriplet::<T> {
+			public: root_public,
+			acc: root_acc,
+			delegation_id: root_id,
+		},
+		_,
+	) = add_root_delegation::<T>(0)?;
 
 	// iterate levels and start with parent == root
 	let (leaf_acc_public, _, leaf_id) = add_children::<T>(
@@ -301,8 +321,14 @@ mod tests {
 	#[test]
 	fn test_benchmark_utils_manual_setup() {
 		ExtBuilder::build_with_keystore().execute_with(|| {
-			let (root_acc_public, root_acc_id, root_id, ctype_hash) =
-				add_root_delegation::<Test>(0).expect("failed to add root delegation");
+			let (
+				DelegationTriplet::<Test> {
+					public: root_acc_public,
+					acc: root_acc_id,
+					delegation_id: root_id,
+				},
+				ctype_hash,
+			) = add_root_delegation::<Test>(0).expect("failed to add root delegation");
 			assert_eq!(root_id, generate_delegation_id::<Test>(0));
 			assert!(Root::<Test>::contains_key(root_id));
 			assert!(CTYPEs::<Test>::contains_key(ctype_hash));

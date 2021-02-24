@@ -57,14 +57,14 @@ benchmarks! {
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
 
-		let (root_public, _, delegate_public, delegation_id) = setup_delegations::<T>(d.into(), ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::ATTEST | Permissions::DELEGATE)?;
+		let (root_public, _, delegate_public, delegation_id) = setup_delegations::<T>(d, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::ATTEST | Permissions::DELEGATE)?;
 		let root_acc: T::AccountId = root_public.into();
 		let delegate_acc: T::AccountId = delegate_public.into();
 
 		// attest with leaf account
 		AttestationModule::<T>::add(RawOrigin::Signed(delegate_acc.clone()).into(), claim_hash, ctype_hash, Some(delegation_id))?;
 		// revoke with root account, s.t. delegation tree needs to be traversed
-	}: _(RawOrigin::Signed(root_acc.clone()), claim_hash, (d + 1).into())
+	}: _(RawOrigin::Signed(root_acc.clone()), claim_hash, d + 1)
 	verify {
 		assert!(Attestations::<T>::contains_key(claim_hash));
 		assert_eq!(Attestations::<T>::get(claim_hash), Some(Attestation::<T> {
