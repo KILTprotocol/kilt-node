@@ -38,9 +38,6 @@ jobs:
         override: true
         default: true
 
-    - name: Check Code
-      run: cargo check --all --all-features
-
     - name: Test Code
       run: cargo test --all --all-features
 
