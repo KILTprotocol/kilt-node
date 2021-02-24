@@ -40,7 +40,6 @@ use sp_runtime::{
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
-#[allow(clippy::from_over_into)]
 frame_support::construct_runtime!(
 	pub enum Test where
 		Block = Block,
@@ -119,8 +118,6 @@ impl Config for Test {
 	type WeightInfo = ();
 }
 
-type DidModule = Module<Test>;
-
 pub fn new_test_ext() -> sp_io::TestExternalities {
 	frame_system::GenesisConfig::default()
 		.build_storage::<Test>()
@@ -135,7 +132,7 @@ fn check_add_did() {
 		let signing_key = H256::from_low_u64_be(1);
 		let box_key = H256::from_low_u64_be(2);
 		let account = MultiSigner::from(pair.public()).into_account();
-		assert_ok!(DidModule::add(
+		assert_ok!(Did::add(
 			Origin::signed(account.clone()),
 			signing_key,
 			box_key,
@@ -144,7 +141,7 @@ fn check_add_did() {
 
 		assert_eq!(<DIDs<Test>>::contains_key(account.clone()), true);
 		let did = {
-			let opt = DidModule::dids(account.clone());
+			let opt = Did::dids(account.clone());
 			assert!(opt.is_some());
 			opt.unwrap()
 		};
@@ -152,7 +149,7 @@ fn check_add_did() {
 		assert_eq!(did.box_key, box_key);
 		assert_eq!(did.doc_ref, Some(b"http://kilt.org/submit".to_vec()));
 
-		assert_ok!(DidModule::remove(Origin::signed(account.clone())));
+		assert_ok!(Did::remove(Origin::signed(account.clone())));
 		assert_eq!(<DIDs<Test>>::contains_key(account), false);
 	});
 }
