@@ -398,7 +398,6 @@ impl authorship::Config for Runtime {
 	type EventHandler = ();
 }
 
-#[allow(clippy::from_over_into)]
 construct_runtime!(
 	pub enum Runtime where
 		Block = Block,
