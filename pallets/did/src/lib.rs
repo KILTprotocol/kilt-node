@@ -80,7 +80,7 @@ decl_module! {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 			// add DID to the storage
-			<DIDs<T>>::insert(sender.clone(), DidDocument::<T> { sign_key, box_key, doc_ref });
+			<DIDs<T>>::insert(sender.clone(), DidRecord::<T> { sign_key, box_key, doc_ref });
 			// deposit an event that the DID has been created
 			Self::deposit_event(RawEvent::DidCreated(sender));
 			Ok(())
@@ -102,7 +102,7 @@ decl_module! {
 }
 
 #[derive(Encode, Decode)]
-pub struct DidDocument<T: Config> {
+pub struct DidRecord<T: Config> {
 	// public signing key
 	sign_key: T::PublicSigningKey,
 	// public encryption key
@@ -114,6 +114,6 @@ pub struct DidDocument<T: Config> {
 decl_storage! {
 	trait Store for Module<T: Config> as DID {
 		// DID: account-id -> (public-signing-key, public-encryption-key, did-reference?)?
-		DIDs get(fn dids):map hasher(opaque_blake2_256) T::AccountId => Option<DidDocument<T>>;
+		DIDs get(fn dids):map hasher(opaque_blake2_256) T::AccountId => Option<DidRecord<T>>;
 	}
 }
