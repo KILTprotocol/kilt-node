@@ -25,7 +25,7 @@ use frame_support::{migration::StorageKeyIterator, Identity};
 pub fn migrate_to_struct<T: Config>() {
 	let mut count = 0;
 	StorageKeyIterator::<
-		T::Hash,
+		T::DelegationNodeId,
 		Option<(
 			T::DelegationNodeId,
 			Option<T::DelegationNodeId>,
@@ -35,16 +35,18 @@ pub fn migrate_to_struct<T: Config>() {
 		)>,
 		Identity,
 	>::new(Delegations::<T>::module_prefix(), b"Delegation")
-	.for_each(|(node_id, (stake, votes))| {
+	.for_each(|(delegation_id, delegation_node)| {
 		// Insert a new value into the same location, thus no need to do `.drain()`.
-		let voter = DelegationNode {
-			root_id: (),
-			parent: (),
-			owner: (),
-			permissions: (),
-			revoked: (),
-		};
-		Delegations::<T>::insert(node_id, voter);
-		count += 1;
+		if let Some((root_id, parent, owner, permissions, revoked)) = delegation_node {
+			let d = DelegationNode {
+				root_id,
+				parent,
+				owner,
+				permissions,
+				revoked,
+			};
+			Delegations::<T>::insert(delegation_id, d);
+			count += 1;
+		}
 	});
 }
