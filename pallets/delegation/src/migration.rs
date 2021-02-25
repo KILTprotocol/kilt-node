@@ -20,12 +20,12 @@ mod v0 {
 }
 
 use crate::*;
-use frame_support::{migration::StorageKeyIterator, Blake2_256};
+use frame_support::{migration::StorageKeyIterator, Identity};
 
 pub fn migrate_to_struct<T: Config>() {
 	let mut count = 0;
 	StorageKeyIterator::<
-		T::DelegationNodeId,
+		T::Hash,
 		Option<(
 			T::DelegationNodeId,
 			Option<T::DelegationNodeId>,
@@ -33,8 +33,8 @@ pub fn migrate_to_struct<T: Config>() {
 			Permissions,
 			bool,
 		)>,
-		Blake2_256,
-	>::new(Delegations::<T>::module_prefix(), b"Voting")
+		Identity,
+	>::new(Delegations::<T>::module_prefix(), b"Delegation")
 	.for_each(|(node_id, (stake, votes))| {
 		// Insert a new value into the same location, thus no need to do `.drain()`.
 		let voter = DelegationNode {
