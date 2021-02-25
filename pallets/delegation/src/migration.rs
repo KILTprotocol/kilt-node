@@ -1,31 +1,87 @@
-mod v0 {
-	use crate::{Config as Trait, Permissions};
-	use frame_support::{decl_module, decl_storage};
-	use sp_std::vec::Vec;
+use crate::*;
+use frame_support::{
+	storage::types::StorageMap,
+	traits::{GetPalletVersion, PalletVersion},
+	Identity,
+};
+use sp_runtime::traits::{
+	CheckEqual, MaybeDisplay, MaybeSerializeDeserialize, Member, SimpleBitOps,
+};
+use sp_std::fmt::Debug;
 
-	decl_module! {
-		pub struct Module<T: Trait> for enum Call where origin: T::Origin { }
+#[derive(Debug, Encode, Decode, PartialEq)]
+pub struct DelegationNode<DelegationNodeId, AccountId> {
+	pub root_id: DelegationNodeId,
+	pub parent: Option<DelegationNodeId>,
+	pub owner: AccountId,
+	pub permissions: Permissions,
+	pub revoked: bool,
+}
+
+struct __Delegations;
+impl frame_support::traits::StorageInstance for __Delegations {
+	fn pallet_prefix() -> &'static str {
+		"Delegation"
 	}
+	const STORAGE_PREFIX: &'static str = "Delegations";
+}
+pub trait V23ToV24 {
+	type Module: GetPalletVersion;
 
-	decl_storage! {
-		trait Store for Module<T: Trait> as Delegation {
-			// Root: root-id => (ctype-hash, account, revoked)?
-			pub Root get(fn root):map hasher(opaque_blake2_256) T::DelegationNodeId => Option<(T::Hash,T::AccountId,bool)>;
-			// Delegations: delegation-id => (root-id, parent-id?, account, permissions, revoked)?
-			pub Delegations get(fn delegation):map hasher(opaque_blake2_256) T::DelegationNodeId => Option<(T::DelegationNodeId,Option<T::DelegationNodeId>,T::AccountId,Permissions,bool)>;
-			// Children: root-or-delegation-id => [delegation-id]
-			pub Children get(fn children):map hasher(opaque_blake2_256) T::DelegationNodeId => Vec<T::DelegationNodeId>;
+	type DelegationNodeId: Parameter
+		+ Member
+		+ Codec
+		+ MaybeDisplay
+		+ SimpleBitOps
+		+ Default
+		+ Copy
+		+ CheckEqual
+		+ sp_std::hash::Hash
+		+ AsRef<[u8]>
+		+ AsMut<[u8]>;
+
+	/// The user account identifier type for the runtime.
+	type AccountId: Parameter
+		+ Member
+		+ MaybeSerializeDeserialize
+		+ Debug
+		+ MaybeDisplay
+		+ Ord
+		+ Default;
+}
+
+#[allow(type_alias_bounds)]
+type Delegations<T: V23ToV24> = StorageMap<
+	__Delegations,
+	Identity,
+	T::DelegationNodeId,
+	Option<DelegationNode<T::DelegationNodeId, T::AccountId>>,
+>;
+
+pub fn apply<T: V23ToV24>() -> Weight {
+	let maybe_storage_version = <T::Module as GetPalletVersion>::storage_version();
+	frame_support::debug::info!(
+		"Running migration for delegation with storage version {:?}",
+		maybe_storage_version
+	);
+	match maybe_storage_version {
+		Some(storage_version) if storage_version < PalletVersion::new(0, 24, 0) => {
+			migrate_to_struct::<T>();
+			Weight::max_value()
+		}
+		_ => {
+			frame_support::debug::warn!(
+				"Attempted to apply delegation to 0.24.0 but failed because storage version is {:?}",
+				maybe_storage_version
+			);
+			0
 		}
 	}
 }
 
-use crate::*;
-use frame_support::{migration::StorageKeyIterator, Identity};
-
-pub fn migrate_to_struct<T: Config>() {
-	let mut count = 0;
-	StorageKeyIterator::<
-		T::DelegationNodeId,
+/// Migrate from the old legacy voting bond (fixed) to the new one (per-vote dynamic).
+fn migrate_to_struct<T: V23ToV24>() {
+	<Delegations<T>>::translate::<
 		Option<(
 			T::DelegationNodeId,
 			Option<T::DelegationNodeId>,
@@ -33,20 +89,18 @@ pub fn migrate_to_struct<T: Config>() {
 			Permissions,
 			bool,
 		)>,
-		Identity,
-	>::new(Delegations::<T>::module_prefix(), b"Delegation")
-	.for_each(|(delegation_id, delegation_node)| {
-		// Insert a new value into the same location, thus no need to do `.drain()`.
-		if let Some((root_id, parent, owner, permissions, revoked)) = delegation_node {
-			let d = DelegationNode {
+		_,
+	>(|_who, option| {
+		option.map(|(root_id, parent, owner, permissions, revoked)| {
+			Some(DelegationNode {
 				root_id,
 				parent,
 				owner,
 				permissions,
 				revoked,
-			};
-			Delegations::<T>::insert(delegation_id, d);
-			count += 1;
-		}
+			})
+		})
 	});
+
+	frame_support::debug::info!("migrated {} delegations.", <Delegations<T>>::iter().count(),);
 }

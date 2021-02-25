@@ -358,6 +358,18 @@ impl delegation::Config for Runtime {
 	type WeightInfo = ();
 }
 
+pub struct DelegationStructRuntimeUpgrade;
+impl delegation::migration::V23ToV24 for DelegationStructRuntimeUpgrade {
+	type AccountId = AccountId;
+	type DelegationNodeId = Hash;
+	type Module = Delegation;
+}
+impl frame_support::traits::OnRuntimeUpgrade for DelegationStructRuntimeUpgrade {
+	fn on_runtime_upgrade() -> frame_support::weights::Weight {
+		delegation::migration::apply::<Self>()
+	}
+}
+
 impl did::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
@@ -455,8 +467,14 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signatu
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various modules.
-pub type Executive =
-	executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllModules>;
+pub type Executive = executive::Executive<
+	Runtime,
+	Block,
+	frame_system::ChainContext<Runtime>,
+	Runtime,
+	AllModules,
+	(DelegationStructRuntimeUpgrade),
+>;
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
