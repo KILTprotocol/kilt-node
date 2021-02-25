@@ -27,6 +27,8 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
+mod migration;
+
 #[macro_use]
 extern crate bitflags;
 
