@@ -90,7 +90,7 @@ fn migrate_to_struct<T: V23ToV24>() {
 			bool,
 		)>,
 		_,
-	>(|_who, option| {
+	>(|_delegation_id, option| {
 		option.map(|(root_id, parent, owner, permissions, revoked)| {
 			Some(DelegationNode {
 				root_id,
