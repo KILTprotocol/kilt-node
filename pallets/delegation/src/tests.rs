@@ -497,3 +497,81 @@ fn check_add_and_revoke_delegations() {
 		assert_eq!(Delegation::delegation(id_level_2_1).unwrap().revoked, true);
 	});
 }
+
+#[test]
+fn migration_to_v24_should_work() {
+	new_test_ext().execute_with(|| {
+		use frame_support::storage::migration::{get_storage_value, put_storage_value};
+
+		let pair_root = ed25519::Pair::from_seed(&*b"Alice                           ");
+		let root_acc = MultiSigner::from(pair_root.public()).into_account();
+		let pair_delegate = ed25519::Pair::from_seed(&*b"Bob                             ");
+		let acc_delegate = MultiSigner::from(pair_delegate.public()).into_account();
+
+		let ctype_hash = H256::from_low_u64_be(1);
+		let root_id = H256::from_low_u64_be(1);
+		let delegation_id = H256::from_low_u64_be(2);
+		assert_ok!(CType::add(Origin::signed(root_acc.clone()), ctype_hash));
+
+		assert_ok!(Delegation::create_root(
+			Origin::signed(root_acc.clone()),
+			root_id,
+			ctype_hash
+		));
+
+		let signature = MultiSignature::from(pair_delegate.sign(&hash_to_u8(
+			Delegation::calculate_hash(delegation_id, root_id, None, Permissions::DELEGATE),
+		)));
+
+		type DelegationOld = (
+			<Test as Config>::DelegationNodeId,
+			Option<<Test as Config>::DelegationNodeId>,
+			<Test as frame_system::Config>::AccountId,
+			Permissions,
+			bool,
+		);
+
+		let delegation_old: DelegationOld = (
+			root_id,
+			None,
+			acc_delegate.clone(),
+			Permissions::DELEGATE,
+			false,
+		);
+
+		put_storage_value::<Option<DelegationOld>>(
+			b"Delegation",
+			b"Delegations",
+			&[1],
+			Some(delegation_old.clone()),
+		);
+		assert_eq!(
+			get_storage_value(b"Delegation", b"Delegations", &[1]),
+			Some(delegation_old)
+		);
+		// assert_eq!(get_storage_value::Option<(Test::DelegationNodeId, Option<Test::DelegationNodeId>, Test::AccountId, Permissions, bool)>(b"Delegation", b"Delegations", &[]), Some(delegation_old));
+
+		struct DelegationStructRuntimeUpgrade;
+		impl migration::V23ToV24 for DelegationStructRuntimeUpgrade {
+			type AccountId = <Test as frame_system::Config>::AccountId;
+			type DelegationNodeId = <Test as Config>::DelegationNodeId;
+			type Module = Delegation;
+		}
+
+		crate::migration::apply::<DelegationStructRuntimeUpgrade>();
+
+		let delegation_new = DelegationNode::<Test> {
+			root_id,
+			parent: None,
+			owner: acc_delegate.clone(),
+			permissions: Permissions::DELEGATE,
+			revoked: false,
+		};
+
+		assert_eq!(
+			get_storage_value(b"Delegation", b"Delegations", &[]),
+			Some(delegation_new)
+		);
+		// assert_eq!(get_storage_value::Option<DelegationNode<Test>>(b"Delegation", b"Delegations", &[]), Some(delegation_new));
+	});
+}
