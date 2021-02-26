@@ -253,6 +253,19 @@ impl attestation::Config for Runtime {
 	type WeightInfo = ();
 }
 
+pub struct AttestationStructRuntimeUpgrade;
+impl attestation::migration::V23ToV24 for AttestationStructRuntimeUpgrade {
+	type Hash = Hash;
+	type DelegationNodeId = Hash;
+	type AccountId = AccountId;
+	type Module = Attestation;
+}
+impl frame_support::traits::OnRuntimeUpgrade for AttestationStructRuntimeUpgrade {
+	fn on_runtime_upgrade() -> frame_support::weights::Weight {
+		attestation::migration::apply::<Self>()
+	}
+}
+
 impl ctype::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
@@ -268,6 +281,18 @@ impl delegation::Config for Runtime {
 	type WeightInfo = ();
 }
 
+pub struct DelegationStructRuntimeUpgrade;
+impl delegation::migration::V23ToV24 for DelegationStructRuntimeUpgrade {
+	type AccountId = AccountId;
+	type DelegationNodeId = Hash;
+	type Module = Delegation;
+}
+impl frame_support::traits::OnRuntimeUpgrade for DelegationStructRuntimeUpgrade {
+	fn on_runtime_upgrade() -> frame_support::weights::Weight {
+		delegation::migration::apply::<Self>()
+	}
+}
+
 impl did::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
@@ -276,6 +301,19 @@ impl did::Config for Runtime {
 	/// Type for the public boxing key in DIDs
 	type PublicBoxKey = Hash;
 	type WeightInfo = ();
+}
+
+pub struct DidStructRuntimeUpgrade;
+impl did::migration::V23ToV24 for DidStructRuntimeUpgrade {
+	type PublicSigningKey = Hash;
+	type PublicBoxKey = Hash;
+	type AccountId = AccountId;
+	type Module = Attestation;
+}
+impl frame_support::traits::OnRuntimeUpgrade for DidStructRuntimeUpgrade {
+	fn on_runtime_upgrade() -> frame_support::weights::Weight {
+		did::migration::apply::<Self>()
+	}
 }
 
 construct_runtime! {
@@ -331,6 +369,11 @@ pub type Executive = frame_executive::Executive<
 	frame_system::ChainContext<Runtime>,
 	Runtime,
 	AllModules,
+	(
+		DelegationStructRuntimeUpgrade,
+		DidStructRuntimeUpgrade,
+		AttestationStructRuntimeUpgrade,
+	),
 >;
 
 impl_runtime_apis! {
