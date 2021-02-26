@@ -48,6 +48,20 @@ type DIDs<T: V23ToV24> = StorageMap<
 	T::AccountId,
 	Option<DidRecord<T::PublicSigningKey, T::PublicBoxKey>>,
 >;
+// set storage version
+struct ModuleVersion;
+impl GetPalletVersion for ModuleVersion {
+	fn current_version() -> PalletVersion {
+		PalletVersion {
+			major: 0,
+			minor: 23,
+			patch: 0,
+		}
+	}
+	fn storage_version() -> Option<PalletVersion> {
+		Some(Self::current_version())
+	}
+}
 
 pub fn apply<T: V23ToV24>() -> Weight {
 	let maybe_storage_version = <T::Module as GetPalletVersion>::storage_version();
@@ -55,22 +69,20 @@ pub fn apply<T: V23ToV24>() -> Weight {
 		"Running migration for delegation with storage version {:?}",
 		maybe_storage_version
 	);
-	migrate_to_struct::<T>();
-	Weight::max_value()
 
-	// match maybe_storage_version {
-	// 	Some(storage_version) if storage_version < PalletVersion::new(0, 24, 0) => {
-	// 		migrate_to_struct::<T>();
-	// 		Weight::max_value()
-	// 	}
-	// 	_ => {
-	// 		frame_support::debug::warn!(
-	// 			"Attempted to apply delegation to 0.24.0 but failed because storage version is {:?}",
-	// 			maybe_storage_version
-	// 		);
-	// 		0
-	// 	}
-	// }
+	match maybe_storage_version {
+		Some(storage_version) if storage_version < PalletVersion::new(0, 24, 0) => {
+			migrate_to_struct::<T>();
+			Weight::max_value()
+		}
+		_ => {
+			frame_support::debug::warn!(
+				"Attempted to apply delegation to 0.24.0 but failed because storage version is {:?}",
+				maybe_storage_version
+			);
+			0
+		}
+	}
 }
 
 /// Migrate from the old legacy voting bond (fixed) to the new one (per-vote dynamic).
@@ -89,7 +101,6 @@ fn migrate_to_struct<T: V23ToV24>() {
 		},
 	);
 
-	println!("migrated {} did records.", counter,);
 	frame_support::debug::info!("migrated {} did records.", counter,);
 }
 
@@ -137,11 +148,10 @@ mod tests {
 				),
 				Some(Some(did_old))
 			);
-			// assert_eq!(get_storage_value::Option<(Test::DelegationNodeId, Option<Test::DelegationNodeId>, Test::AccountId, Permissions, bool)>(b"Delegation", b"Delegations", &[]), Some(delegation_old));
 
 			struct DidStructRuntimeUpgrade;
 			impl V23ToV24 for DidStructRuntimeUpgrade {
-				type Module = Did;
+				type Module = ModuleVersion;
 
 				type PublicSigningKey = <Test as Config>::PublicSigningKey;
 				type PublicBoxKey = <Test as Config>::PublicBoxKey;
@@ -168,7 +178,6 @@ mod tests {
 				),
 				Some(Some(new_did))
 			);
-			// assert_eq!(get_storage_value::Option<DelegationNode<Test>>(b"Delegation", b"Delegations", &[]), Some(new_did));
 		});
 	}
 }
