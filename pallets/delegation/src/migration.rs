@@ -9,6 +9,9 @@ use sp_runtime::traits::{
 };
 use sp_std::fmt::Debug;
 
+pub const PALLET_PREFIX: &str = "Delegation";
+pub const STORAGE_PREFIX: &str = "Delegations";
+
 #[derive(Debug, Encode, Decode, PartialEq)]
 pub struct DelegationNode<DelegationNodeId, AccountId> {
 	pub root_id: DelegationNodeId,
@@ -21,9 +24,9 @@ pub struct DelegationNode<DelegationNodeId, AccountId> {
 struct __Delegations;
 impl frame_support::traits::StorageInstance for __Delegations {
 	fn pallet_prefix() -> &'static str {
-		"Delegation"
+		PALLET_PREFIX
 	}
-	const STORAGE_PREFIX: &'static str = "Delegations";
+	const STORAGE_PREFIX: &'static str = STORAGE_PREFIX;
 }
 pub trait V23ToV24 {
 	type Module: GetPalletVersion;

@@ -554,13 +554,13 @@ fn migration_to_v24_should_work() {
 			false,
 		);
 		put_storage_value::<Option<DelegationOld>>(
-			b"Delegation",
-			b"Delegations",
+			crate::migration::PALLET_PREFIX.as_bytes(),
+			crate::migration::STORAGE_PREFIX.as_bytes(),
 			&blake_hash,
 			Some(delegation_old.clone()),
 		);
 		assert_eq!(
-			get_storage_value::<Option<DelegationOld>>(b"Delegation", b"Delegations", &blake_hash,),
+			get_storage_value::<Option<DelegationOld>>(crate::migration::PALLET_PREFIX.as_bytes(), crate::migration::STORAGE_PREFIX.as_bytes(), &blake_hash,),
 			Some(Some(delegation_old))
 		);
 
@@ -577,8 +577,8 @@ fn migration_to_v24_should_work() {
 		};
 		assert_eq!(
 			get_storage_value::<Option<DelegationNode::<Test>>>(
-				b"Delegation",
-				b"Delegations",
+				crate::migration::PALLET_PREFIX.as_bytes(),
+				crate::migration::STORAGE_PREFIX.as_bytes(),
 				&blake_hash
 			),
 			Some(Some(delegation_new))
