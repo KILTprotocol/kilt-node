@@ -560,7 +560,11 @@ fn migration_to_v24_should_work() {
 			Some(delegation_old.clone()),
 		);
 		assert_eq!(
-			get_storage_value::<Option<DelegationOld>>(crate::migration::PALLET_PREFIX.as_bytes(), crate::migration::STORAGE_PREFIX.as_bytes(), &blake_hash,),
+			get_storage_value::<Option<DelegationOld>>(
+				crate::migration::PALLET_PREFIX.as_bytes(),
+				crate::migration::STORAGE_PREFIX.as_bytes(),
+				&blake_hash,
+			),
 			Some(Some(delegation_old))
 		);
 

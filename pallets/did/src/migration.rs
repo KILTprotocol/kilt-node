@@ -121,18 +121,19 @@ mod tests {
 						.to_vec(),
 				),
 			);
+			let blake_hash = sp_core::blake2_256(&[1]);
 
 			put_storage_value::<Option<DidRecordOld>>(
 				DID_MODULE_PREFIX.as_bytes(),
 				DID_STORAGE_PREFIX.as_bytes(),
-				&[1],
+				&blake_hash,
 				Some(did_old.clone()),
 			);
 			assert_eq!(
 				get_storage_value::<Option<DidRecordOld>>(
 					DID_MODULE_PREFIX.as_bytes(),
 					DID_STORAGE_PREFIX.as_bytes(),
-					&[1]
+					&blake_hash,
 				),
 				Some(Some(did_old))
 			);
@@ -163,7 +164,7 @@ mod tests {
 				get_storage_value::<Option<DidRecordNew>>(
 					DID_MODULE_PREFIX.as_bytes(),
 					DID_STORAGE_PREFIX.as_bytes(),
-					&[1]
+					&blake_hash,
 				),
 				Some(Some(new_did))
 			);

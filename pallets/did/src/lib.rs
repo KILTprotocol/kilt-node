@@ -27,8 +27,8 @@ mod tests;
 #[cfg(any(feature = "runtime-benchmarks", test))]
 pub mod benchmarking;
 
-pub mod migration;
 pub mod default_weights;
+pub mod migration;
 pub use default_weights::WeightInfo;
 
 use codec::{Decode, Encode};
