@@ -27,6 +27,7 @@ mod tests;
 #[cfg(any(feature = "runtime-benchmarks", test))]
 pub mod benchmarking;
 
+pub mod migration;
 pub mod default_weights;
 pub use default_weights::WeightInfo;
 
