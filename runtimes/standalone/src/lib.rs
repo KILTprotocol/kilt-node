@@ -446,7 +446,7 @@ construct_runtime!(
 		RandomnessCollectiveFlip: randomness_collective_flip::{Module, Call, Storage} = 1,
 
 		// Keep block authoring before session?
-		Aura: aura::{Module, Config<T>},
+		Aura: aura::{Module, Config<T>} = 2,
 
 		// Basic modules
 		Timestamp: timestamp::{Module, Call, Storage, Inherent} = 3,
