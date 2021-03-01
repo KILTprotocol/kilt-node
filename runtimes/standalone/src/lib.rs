@@ -125,8 +125,8 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 7,
-	impl_version: 7,
+	spec_version: 6,
+	impl_version: 6,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
 };
@@ -406,6 +406,21 @@ impl frame_support::traits::OnRuntimeUpgrade for DidStructRuntimeUpgrade {
 	}
 }
 
+pub struct FrameU32RuntimeUpgrade;
+impl frame_support::traits::OnRuntimeUpgrade for FrameU32RuntimeUpgrade {
+	fn on_runtime_upgrade() -> frame_support::weights::Weight {
+		frame_system::Account::<Runtime>::translate::<(<Runtime as frame_system::Config>::Index, u8, <Runtime as frame_system::Config>::AccountData), _>(|_key, (nonce, rc, data)| {
+			Some(frame_system::AccountInfo {
+				nonce,
+				consumers: rc as frame_system::RefCount,
+				providers: 1,
+				data,
+			})
+		});
+		<Runtime as frame_system::Config>::BlockWeights::get().max_block
+	}
+}
+
 parameter_types! {
 	pub const DisabledValidatorsThreshold: Perbill = Perbill::from_percent(17);
 	pub const Period: u64 = 0xFFFF_FFFF_FFFF_FFFF;
@@ -494,6 +509,7 @@ pub type Executive = executive::Executive<
 	Runtime,
 	AllModules,
 	(
+		FrameU32RuntimeUpgrade,
 		DelegationStructRuntimeUpgrade,
 		DidStructRuntimeUpgrade,
 		AttestationStructRuntimeUpgrade,
