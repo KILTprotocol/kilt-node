@@ -122,10 +122,10 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 5,
-	impl_version: 5,
+	spec_version: 6,
+	impl_version: 6,
 	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 1,
+	transaction_version: 2,
 };
 
 pub const MILLISECS_PER_BLOCK: u64 = 10000;
@@ -394,29 +394,23 @@ construct_runtime!(
 		System: frame_system::{Module, Call, Config, Storage, Event<T>},
 		RandomnessCollectiveFlip: randomness_collective_flip::{Module, Call, Storage},
 
-		// Keep block authoring before session?
-		Aura: aura::{Module, Config<T>, Inherent},
-
-		// Basic modules
 		Timestamp: timestamp::{Module, Call, Storage, Inherent},
+		Aura: aura::{Module, Config<T>, Inherent},
+		Grandpa: grandpa::{Module, Call, Storage, Config, Event},
+		Indices: pallet_indices::{Module, Call, Storage, Event<T>},
 		Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
 		TransactionPayment: pallet_transaction_payment::{Module, Storage},
-		Session: session::{Module, Call, Storage, Event, Config<T>},
-
-		Grandpa: grandpa::{Module, Call, Storage, Config, Event},
 		Sudo: sudo::{Module, Call, Config<T>, Storage, Event<T>},
-
-		Indices: pallet_indices::{Module, Call, Storage, Event<T>},
-		Authorship: authorship::{Module, Call, Storage},
-		// Finality tracker?
-
-		Error: error::{ Module, Call, Event<T>},
 
 		Ctype: ctype::{Module, Call, Storage, Event<T>},
 		Attestation: attestation::{Module, Call, Storage, Event<T>},
 		Delegation: delegation::{Module, Call, Storage, Event<T>},
 		Did: did::{Module, Call, Storage, Event<T>},
 		Portablegabi: portablegabi::{Module, Call, Storage, Event<T>},
+		Error: error::{ Module, Call, Event<T>},
+
+		Authorship: authorship::{Module, Call, Storage},
+		Session: session::{Module, Call, Storage, Event, Config<T>},
 	}
 );
 
