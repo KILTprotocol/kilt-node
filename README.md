@@ -21,17 +21,7 @@ Substrate Documentation:
       - [Dockerhub](#dockerhub)
       - [Building docker image](#building-docker-image)
       - [Build code without docker](#build-code-without-docker)
-      - [Building in dev mode](#building-in-dev-mode)
-      - [Building in performant release mode](#building-in-performant-release-mode)
-    - [Commands](#commands)
-      - [Helper script](#helper-script)
-      - [Node binary](#node-binary)
-    - [Examples](#examples)
-      - [Running a local node that connects to KILT prototype testnet in AWS](#running-a-local-node-that-connects-to-kilt-prototype-testnet-in-aws)
-      - [Running a node with local image, which runs a dev-chain](#running-a-node-with-local-image-which-runs-a-dev-chain)
-  - [Development](#development)
-    - [Devnet runtime upgrade](#devnet-runtime-upgrade)
-    - [Development with AWS images](#development-with-aws-images)
+      - [Building](#building)
   - [Node Modules functionalities](#node-modules-functionalities)
     - [DID Module](#did-module)
       - [Add](#add)
@@ -131,43 +121,6 @@ start, by running:
 
 ```
 cargo run --release -p mashnet-node -- [node command]
-```
-
-## Development
-
-### Devnet runtime upgrade
-After merging a PR to the develop branch, the devnet images will be built and deployed, while keeping the data of the nodes.
-If the runtime changed, you will have to do a runtime upgrade. Here is how you do that:
-
-1. Go to the ["GitHub Actions" section](https://github.com/KILTprotocol/mashnet-node/actions?query=workflow%3A%22Deploy+to+AWS+EKS%22), find the "Deploy to AWS EKS" workflow on the develop branch with your merged PR.
-2. In the `build` job, you can find the new runtime under "Artifacts" in the top right. Download it.
-3. Go to the chain-explorer and setup the sudo account (which is ALICE in the case of then devnet)
-4. In "Extrinsics" use `sudo.sudoUncheckedWeight` with a low weight (needed because runtime is too big for a normal block) and `system.setCodeWithoutChecks`
-5. Upload the runtime and "Submit Transaction"
-
-### Development with AWS images
-
-Make sure to have the `awscli` installed. Otherwise, install it via `brew install awscli` (Mac).
-You also need to have your docker daemon system running (on mac, just download and install the docker application).
-
-1. Login to Amazon ECR
-
-```
- $(aws ecr get-login --no-include-email --region eu-central-1)
-```
-
-2. Pull the latest image from Amazon ECR
-
-```
-docker pull 348099934012.dkr.ecr.eu-central-1.amazonaws.com/kilt/prototype-chain:latest
-```
-
-3. Run node
-
-To run a node and connect it to the KILT testnet: Run the image and pass the command to start a node:
-
-```
-docker run 348099934012.dkr.ecr.eu-central-1.amazonaws.com/kilt/prototype-chain --chain kilt-testnet
 ```
 
 The node should be connected to the KILT testnet.
