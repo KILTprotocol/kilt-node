@@ -474,6 +474,7 @@ construct_runtime!(
 		Did: did::{Module, Call, Storage, Event<T>} = 12,
 
 		Session: session::{Module, Call, Storage, Event, Config<T>} = 13,
+		Authorship: authorship::{Module, Call, Storage} = 14,
 	}
 );
 
