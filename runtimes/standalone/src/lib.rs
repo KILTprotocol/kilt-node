@@ -409,7 +409,14 @@ impl frame_support::traits::OnRuntimeUpgrade for DidStructRuntimeUpgrade {
 pub struct FrameU32RuntimeUpgrade;
 impl frame_support::traits::OnRuntimeUpgrade for FrameU32RuntimeUpgrade {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		frame_system::Account::<Runtime>::translate::<(<Runtime as frame_system::Config>::Index, u8, <Runtime as frame_system::Config>::AccountData), _>(|_key, (nonce, rc, data)| {
+		frame_system::Account::<Runtime>::translate::<
+			(
+				<Runtime as frame_system::Config>::Index,
+				u8,
+				<Runtime as frame_system::Config>::AccountData,
+			),
+			_,
+		>(|_key, (nonce, rc, data)| {
 			Some(frame_system::AccountInfo {
 				nonce,
 				consumers: rc as frame_system::RefCount,
