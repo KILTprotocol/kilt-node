@@ -42,8 +42,7 @@ COPY . /build
 RUN cargo build --release
 
 # test
-RUN cargo test --release -p mashnet-node-runtime
-
+RUN cargo test --release --all
 
 FROM debian:stretch
 
@@ -64,7 +63,7 @@ RUN mkdir -p /runtime/target/release/
 COPY --from=builder /build/target/release/mashnet-node ./target/release/mashnet-node
 COPY --from=builder /build/start-node.sh ./start-node.sh
 COPY --from=builder /build/chainspec.json ./chainspec.json
-COPY --from=builder /build/target/release/wbuild/mashnet-node-runtime/mashnet_node_runtime.compact.wasm ./runtime.wasm
+COPY --from=builder /build/chainspec-devnet.json ./chainspec-devnet.json
 
 RUN chmod a+x *.sh
 RUN ls -la .
