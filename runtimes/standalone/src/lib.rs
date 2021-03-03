@@ -468,7 +468,7 @@ construct_runtime!(
 		RandomnessCollectiveFlip: randomness_collective_flip::{Module, Call, Storage} = 1,
 
 		Timestamp: timestamp::{Module, Call, Storage, Inherent} = 2,
-		Aura: aura::{Module, Config<T>} = 3,
+		Aura: aura::{Module, Config<T>, Storage} = 3,
 		Grandpa: grandpa::{Module, Call, Storage, Config, Event} = 4,
 		Indices: pallet_indices::{Module, Call, Storage, Event<T>} = 5,
 		Balances: balances::{Module, Call, Storage, Config<T>, Event<T>} = 6,
@@ -480,8 +480,8 @@ construct_runtime!(
 		Delegation: delegation::{Module, Call, Storage, Event<T>} = 11,
 		Did: did::{Module, Call, Storage, Event<T>} = 12,
 
-		Session: session::{Module, Call, Storage, Event, Config<T>} = 13,
-		Authorship: authorship::{Module, Call, Storage} = 14,
+		Session: session::{Module, Call, Storage, Event, Config<T>} = 15,
+		Authorship: authorship::{Module, Call, Storage} = 16,
 	}
 );
 
