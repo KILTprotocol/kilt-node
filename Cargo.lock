@@ -3163,8 +3163,6 @@ dependencies = [
 [[package]]
 name = "pallet-aura"
 version = "2.0.0-rc5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "066be51e73a4c548d25799e38f64c0758651eb3eafeb43630ad98221477cf157"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3285,8 +3283,6 @@ dependencies = [
 [[package]]
 name = "pallet-session"
 version = "2.0.0-rc5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59fbf97a3984efe5f4f633d560ea22e84e9da914709ce88251b5943fed236f69"
 dependencies = [
  "frame-support",
  "frame-system",
