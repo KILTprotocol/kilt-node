@@ -422,7 +422,7 @@ construct_runtime!(
 pub struct SessionRuntimeUpgrade;
 impl frame_support::traits::OnRuntimeUpgrade for SessionRuntimeUpgrade {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		let aura_authorities: Vec<AuraId> = Aura::authorities();
+		let aura_authorities: Vec<AuraId> = <Aura as aura::Store>::Authorities::take();
 		let acc_authorities: Vec<AccountId> = aura_authorities
 			.iter()
 			.map(|a| {
@@ -431,13 +431,16 @@ impl frame_support::traits::OnRuntimeUpgrade for SessionRuntimeUpgrade {
 				AccountId::from(addr)
 			})
 			.collect();
-		let gran_authorities: Vec<GrandpaId> =
-			storage::unhashed::get(fg_primitives::GRANDPA_AUTHORITIES_KEY).unwrap();
+		let gran_authorities: grandpa::AuthorityList = storage::unhashed::take::<
+			grandpa::VersionedAuthorityList,
+		>(fg_primitives::GRANDPA_AUTHORITIES_KEY)
+		.unwrap()
+		.into();
 
 		let config = acc_authorities
 			.iter()
 			.zip(aura_authorities.iter().zip(gran_authorities.iter()))
-			.map(|(acc, (aura, gran))| {
+			.map(|(acc, (aura, (gran, _)))| {
 				(
 					acc.clone(),
 					acc.clone(),
@@ -448,6 +451,8 @@ impl frame_support::traits::OnRuntimeUpgrade for SessionRuntimeUpgrade {
 				)
 			})
 			.collect::<Vec<_>>();
+
+		frame_support::debug::print!("Authorities for initial session: {:?}", config);
 
 		if <Runtime as session::Trait>::SessionHandler::KEY_TYPE_IDS.len()
 			!= <Runtime as session::Trait>::Keys::key_ids().len()
@@ -551,7 +556,7 @@ pub type Executive = executive::Executive<
 	frame_system::ChainContext<Runtime>,
 	Runtime,
 	AllModules,
-	SessionRuntimeUpgrade,
+	(SessionRuntimeUpgrade,),
 >;
 
 impl_runtime_apis! {
