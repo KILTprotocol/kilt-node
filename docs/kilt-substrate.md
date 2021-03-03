@@ -1,7 +1,7 @@
 # Building on the Parity Substrate Blockchain Framework
 
 During our first whiteboard phase, we were thinking about developing the KILT Protocol on
-Ethereum smart-contracts, but we realised that we would have less **freedom of setting transaction costs**, while incurring a high level of overhead. 
+Ethereum smart-contracts, but we realized that we would have less **freedom of setting transaction costs**, while incurring a high level of overhead. 
 Instead, we started our
 development on [Parity Substrate](https://www.parity.io/substrate/), a general blockchain framework, and built up the KILT blockchain from scratch based on its module library and core functionality.
 
@@ -44,7 +44,7 @@ We will consider what is affected by this parameter, and in the long term it wil
 
 ## Extrinsics and Block Storage
 
-In Substrate, the blockchain transactions are abstracted away and are generalised as[extrinsics](https://docs.substrate.dev/docs/extrinsics) in the system.
+In Substrate, the blockchain transactions are abstracted away and are generalized as[extrinsics](https://docs.substrate.dev/docs/extrinsics) in the system.
 They are called extrinsics since they can represent any piece of information that is regarded as input from “the outside world” (i.e. from users of the network) to the blockchain logic.
 The blockchain transactions in KILT are implemented through these general extrinsics, that are signed by the originator of the transaction.
 We use this framework to write the KILT Protocol specific data entries on the Substrate based KILT blockchain: DIDs, CTypes, Attestations and Delegations.

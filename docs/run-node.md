@@ -84,7 +84,7 @@ The following steps expect you to have cloned our repo and navigated into it.
 
 #### Setup Rust
 
-You might require a specific rust version, we recommand to set this by executing [our init script](../scripts/init.sh): 
+You might require a specific rust version, we recommend to set this by executing [our init script](../scripts/init.sh): 
 
 ```bash
 ./scripts/init.sh
