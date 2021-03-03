@@ -2940,7 +2940,7 @@ dependencies = [
  "pallet-grandpa",
  "pallet-indices",
  "pallet-randomness-collective-flip",
- "pallet-session 2.0.0-rc5",
+ "pallet-session",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",
@@ -3387,11 +3387,13 @@ dependencies = [
 
 [[package]]
 name = "pallet-aura"
-version = "2.0.0-rc5"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8df67bf96a70cecc2c60989381bc3d21172cdb7534c187c20953f4594736a8ac"
 dependencies = [
  "frame-support",
  "frame-system",
- "pallet-session 2.0.0-rc5",
+ "pallet-session",
  "pallet-timestamp",
  "parity-scale-codec",
  "serde",
@@ -3462,7 +3464,7 @@ dependencies = [
  "frame-system",
  "pallet-authorship",
  "pallet-finality-tracker",
- "pallet-session 2.0.1",
+ "pallet-session",
  "parity-scale-codec",
  "serde",
  "sp-application-crypto",
@@ -3503,25 +3505,6 @@ dependencies = [
  "safe-mix",
  "sp-runtime",
  "sp-std",
-]
-
-[[package]]
-name = "pallet-session"
-version = "2.0.0-rc5"
-dependencies = [
- "frame-support",
- "frame-system",
- "impl-trait-for-tuples",
- "pallet-timestamp",
- "parity-scale-codec",
- "serde",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-session",
- "sp-staking",
- "sp-std",
- "sp-trie",
 ]
 
 [[package]]

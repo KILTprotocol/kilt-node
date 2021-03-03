@@ -26,15 +26,10 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use frame_support::storage;
 use grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
-use session::{SessionHandler, SessionManager};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::ed25519::AuthorityId as AuraId;
-use sp_core::{
-	crypto::{KeyTypeId, Public},
-	OpaqueMetadata,
-};
+use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{
@@ -422,112 +417,6 @@ construct_runtime!(
 	}
 );
 
-pub struct SessionRuntimeUpgrade;
-impl frame_support::traits::OnRuntimeUpgrade for SessionRuntimeUpgrade {
-	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		let aura_authorities: Vec<AuraId> = <Aura as aura::Store>::Authorities::take();
-		let acc_authorities: Vec<AccountId> = aura_authorities
-			.iter()
-			.map(|a| {
-				let mut addr: [u8; 32] = [0; 32];
-				addr.copy_from_slice(a.as_slice());
-				AccountId::from(addr)
-			})
-			.collect();
-		let gran_authorities: grandpa::AuthorityList = storage::unhashed::take::<
-			grandpa::VersionedAuthorityList,
-		>(fg_primitives::GRANDPA_AUTHORITIES_KEY)
-		.unwrap()
-		.into();
-
-		let config = acc_authorities
-			.iter()
-			.zip(aura_authorities.iter().zip(gran_authorities.iter()))
-			.map(|(acc, (aura, (gran, _)))| {
-				(
-					acc.clone(),
-					acc.clone(),
-					opaque::SessionKeys {
-						aura: aura.clone(),
-						grandpa: gran.clone(),
-					},
-				)
-			})
-			.collect::<Vec<_>>();
-
-		frame_support::debug::print!("Authorities for initial session: {:?}", config);
-
-		if <Runtime as session::Trait>::SessionHandler::KEY_TYPE_IDS.len()
-			!= <Runtime as session::Trait>::Keys::key_ids().len()
-		{
-			panic!("Number of keys in session handler and session keys does not match");
-		}
-
-		<Runtime as session::Trait>::SessionHandler::KEY_TYPE_IDS
-			.iter()
-			.zip(<Runtime as session::Trait>::Keys::key_ids())
-			.enumerate()
-			.for_each(|(i, (sk, kk))| {
-				if sk != kk {
-					panic!(
-						"Session handler and session key expect different key type at index: {}",
-						i,
-					);
-				}
-			});
-
-		for (account, val, keys) in config.iter().cloned() {
-			session::Module::<Runtime>::inner_set_keys(&val, keys)
-				.expect("genesis config must not contain duplicates; qed");
-			frame_system::Module::<Runtime>::inc_ref(&account);
-		}
-
-		let initial_validators_0 = <Runtime as session::Trait>::SessionManager::new_session(0)
-			.unwrap_or_else(|| {
-				frame_support::print(
-					"No initial validator provided by `SessionManager`, use \
-					session config keys to generate initial validator set.",
-				);
-				config.iter().map(|x| x.1.clone()).collect()
-			});
-		assert!(
-			!initial_validators_0.is_empty(),
-			"Empty validator set for session 0 in genesis block!"
-		);
-
-		let initial_validators_1 = <Runtime as session::Trait>::SessionManager::new_session(1)
-			.unwrap_or_else(|| initial_validators_0.clone());
-		assert!(
-			!initial_validators_1.is_empty(),
-			"Empty validator set for session 1 in genesis block!"
-		);
-
-		let queued_keys: Vec<_> = initial_validators_1
-			.iter()
-			.cloned()
-			.map(|v| {
-				(
-					v.clone(),
-					session::Module::<Runtime>::load_keys(&v).unwrap_or_default(),
-				)
-			})
-			.collect();
-
-		// Tell everyone about the genesis session keys
-		<Runtime as session::Trait>::SessionHandler::on_genesis_session::<
-			<Runtime as session::Trait>::Keys,
-		>(&queued_keys);
-
-		<session::Module<Runtime> as session::Store>::Validators::put(initial_validators_0);
-		<session::Module<Runtime> as session::Store>::QueuedKeys::put(queued_keys);
-
-		<<Runtime as session::Trait>::SessionManager as session::SessionManager<
-			<Runtime as session::Trait>::ValidatorId,
-		>>::start_session(0);
-		<Runtime as frame_system::Trait>::MaximumBlockWeight::get()
-	}
-}
-
 /// The address format for describing accounts.
 pub type Address = AccountId;
 /// Block header type as expected by this runtime.
@@ -553,14 +442,8 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signatu
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various modules.
-pub type Executive = executive::Executive<
-	Runtime,
-	Block,
-	frame_system::ChainContext<Runtime>,
-	Runtime,
-	AllModules,
-	(SessionRuntimeUpgrade,),
->;
+pub type Executive =
+	executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllModules>;
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {

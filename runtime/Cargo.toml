@@ -16,13 +16,10 @@ did = {version = '0.23.0', default-features = false, path = '../pallets/did'}
 error = {version = '0.23.0', default-features = false, path = '../pallets/error'}
 portablegabi = {version = '0.23.0', default-features = false, path = '../pallets/portablegabi'}
 
-aura = {package = "pallet-aura", version = '2.0.0-rc5', default-features = false, path = '../pallets/pallet-aura-2.0.0-rc5'}
-session = {package = "pallet-session", version = '2.0.0-rc5', default-features = false, path = '../pallets/pallet-session-2.0.0-rc5'}
-
-# [dependencies.session]
-# default-features = false
-# package = "pallet-session"
-# version = '2.0.0'
+[dependencies.session]
+default-features = false
+package = "pallet-session"
+version = '2.0.0'
 
 [dependencies.sp-session]
 default-features = false
@@ -33,10 +30,10 @@ default-features = false
 package = "pallet-authorship"
 version = '2.0.0'
 
-# [dependencies.aura]
-# default-features = false
-# package = 'pallet-aura'
-# version = '2.0.0'
+[dependencies.aura]
+default-features = false
+package = 'pallet-aura'
+version = '2.0.0'
 
 [dependencies.balances]
 default-features = false
