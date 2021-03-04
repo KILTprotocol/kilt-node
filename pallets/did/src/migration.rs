@@ -18,8 +18,8 @@ pub struct DidRecord<PublicSigningKey, PublicBoxKey> {
 	doc_ref: Option<Vec<u8>>,
 }
 
-struct __DIDs;
-impl frame_support::traits::StorageInstance for __DIDs {
+struct __Dids;
+impl frame_support::traits::StorageInstance for __Dids {
 	fn pallet_prefix() -> &'static str {
 		DID_MODULE_PREFIX
 	}
@@ -42,8 +42,8 @@ pub trait V23ToV24 {
 }
 
 #[allow(type_alias_bounds)]
-type DIDs<T: V23ToV24> = StorageMap<
-	__DIDs,
+type Dids<T: V23ToV24> = StorageMap<
+	__Dids,
 	Identity,
 	T::AccountId,
 	Option<DidRecord<T::PublicSigningKey, T::PublicBoxKey>>,
@@ -93,7 +93,7 @@ pub fn apply<T: V23ToV24>() -> Weight {
 /// Migrate from the old legacy voting bond (fixed) to the new one (per-vote dynamic).
 fn migrate_to_struct<T: V23ToV24>() {
 	let mut counter = 0;
-	<DIDs<T>>::translate::<Option<(T::PublicSigningKey, T::PublicBoxKey, Option<Vec<u8>>)>, _>(
+	<Dids<T>>::translate::<Option<(T::PublicSigningKey, T::PublicBoxKey, Option<Vec<u8>>)>, _>(
 		|_who, option| {
 			counter += 1;
 			option.map(|(sign_key, box_key, doc_ref)| {
