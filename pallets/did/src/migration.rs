@@ -75,6 +75,11 @@ pub fn apply<T: V23ToV24>() -> Weight {
 			migrate_to_struct::<T>();
 			Weight::max_value()
 		}
+		// pallet versioning is introduced in 3.0.0, thus missing when upgrading from 2.0.0
+		None => {
+			migrate_to_struct::<T>();
+			Weight::max_value()
+		}
 		_ => {
 			frame_support::debug::warn!(
 				"Attempted to apply delegation to 0.24.0 but failed because storage version is {:?}",
