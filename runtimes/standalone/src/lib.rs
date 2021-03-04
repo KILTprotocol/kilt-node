@@ -125,8 +125,8 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 6,
-	impl_version: 6,
+	spec_version: 8,
+	impl_version: 8,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
 };
@@ -405,26 +405,17 @@ impl frame_support::traits::OnRuntimeUpgrade for DidStructRuntimeUpgrade {
 		did::migration::apply::<Self>()
 	}
 }
-
-pub struct FrameU32RuntimeUpgrade;
-impl frame_support::traits::OnRuntimeUpgrade for FrameU32RuntimeUpgrade {
+pub struct PortableGabiRemoval;
+impl did::migration::V23ToV24 for PortableGabiRemoval {
+	type PublicSigningKey = Hash;
+	type PublicBoxKey = Hash;
+	type AccountId = AccountId;
+	type Module = Attestation;
+}
+impl frame_support::traits::OnRuntimeUpgrade for PortableGabiRemoval {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		frame_system::Account::<Runtime>::translate::<
-			(
-				<Runtime as frame_system::Config>::Index,
-				u8,
-				<Runtime as frame_system::Config>::AccountData,
-			),
-			_,
-		>(|_key, (nonce, rc, data)| {
-			Some(frame_system::AccountInfo {
-				nonce,
-				consumers: rc as frame_system::RefCount,
-				providers: 1,
-				data,
-			})
-		});
-		<Runtime as frame_system::Config>::BlockWeights::get().max_block
+		frame_support::storage::unhashed::kill_prefix(&sp_io::hashing::twox_128(b"Portablegabi"));
+		Weight::max_value()
 	}
 }
 
@@ -517,7 +508,7 @@ pub type Executive = executive::Executive<
 	Runtime,
 	AllModules,
 	(
-		FrameU32RuntimeUpgrade,
+		PortableGabiRemoval,
 		DelegationStructRuntimeUpgrade,
 		DidStructRuntimeUpgrade,
 		AttestationStructRuntimeUpgrade,
