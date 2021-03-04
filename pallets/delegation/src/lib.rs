@@ -284,7 +284,7 @@ decl_module! {
 		/// Revoke a delegation node and all its children, where
 		/// origin - the origin of the transaction
 		/// delegation_id - id of the delegation node
-		#[weight = <T as Config>::WeightInfo::revoke_delegation_leaf(*max_depth).max(<T as Config>::WeightInfo::revoke_delegation_root_child(*max_depth))]
+		#[weight = <T as Config>::WeightInfo::revoke_delegation_leaf(*max_depth + 1).max(<T as Config>::WeightInfo::revoke_delegation_root_child(*max_depth + 1))]
 		pub fn revoke_delegation(origin, delegation_id: T::DelegationNodeId, max_depth: u32, max_revocations: u32) -> DispatchResultWithPostInfo {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
@@ -293,14 +293,15 @@ decl_module! {
 
 			// check if the sender of this transaction is permitted by being the
 			// owner of the delegation or of one of its parents
-			ensure!(Self::is_delegating(&sender, &delegation_id, max_depth)?, Error::<T>::UnauthorizedRevocation);
+			// 1 lookup performed for current node + 1 for every parent that is traversed
+			ensure!(Self::is_delegating(&sender, &delegation_id, max_depth + 1)?, Error::<T>::UnauthorizedRevocation);
 
 			// revoke the delegation and recursively all of its children
 			// post call weight correction
 			let (_, consumed_weight) = Self::revoke(&delegation_id, &sender, max_revocations)?;
 
 			// add worst case reads from `is_delegating`
-			Ok(Some(consumed_weight + T::DbWeight::get().reads((1 + max_depth).into())).into())
+			Ok(Some(consumed_weight + T::DbWeight::get().reads((2 + max_depth).into())).into())
 		}
 	}
 }
@@ -329,10 +330,10 @@ impl<T: Config> Module<T> {
 	pub fn is_delegating(
 		account: &T::AccountId,
 		delegation: &T::DelegationNodeId,
-		max_depth: u32,
+		max_lookups: u32,
 	) -> Result<bool, DispatchError> {
 		// check for recursion anchor
-		ensure!(max_depth > 0, Error::<T>::MaxSearchDepthReached);
+		ensure!(max_lookups > 0, Error::<T>::MaxSearchDepthReached);
 
 		// check if delegation exists
 		let delegation_node =
@@ -343,7 +344,7 @@ impl<T: Config> Module<T> {
 			Ok(true)
 		} else if let Some(parent) = delegation_node.parent {
 			// recursively check upwards in hierarchy
-			Self::is_delegating(account, &parent, max_depth - 1)
+			Self::is_delegating(account, &parent, max_lookups - 1)
 		} else {
 			// return whether the given account is the owner of the root
 			let root = <Root<T>>::get(delegation_node.root_id).ok_or(Error::<T>::RootNotFound)?;
