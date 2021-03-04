@@ -26,6 +26,8 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use kilt_primitives::*;
+use orml_currencies::BasicCurrencyAdapter;
+use orml_traits::{arithmetic::Zero, parameter_type_with_key};
 use sp_api::impl_runtime_apis;
 use sp_core::OpaqueMetadata;
 use sp_runtime::{
@@ -347,6 +349,50 @@ impl did::Config for Runtime {
 	type WeightInfo = ();
 }
 
+parameter_type_with_key! {
+	pub ExistentialDeposits: |currency_id: CurrencyId| -> Balance {
+		Zero::zero()
+	};
+}
+
+impl orml_tokens::Config for Runtime {
+	type Event = Event;
+	type Balance = Balance;
+	type Amount = kilt_primitives::Amount;
+	type CurrencyId = CurrencyId;
+	type WeightInfo = ();
+	type ExistentialDeposits = ExistentialDeposits;
+	type OnDust = ();
+}
+
+parameter_types! {
+	pub const GetKiltTokenId: CurrencyId = CurrencyId::LAMI;
+	pub SyntheticCurrencyIds: Vec<CurrencyId> = vec![
+		CurrencyId::FEUR,
+		CurrencyId::FJPY,
+		CurrencyId::FAUD,
+		CurrencyId::FCAD,
+		CurrencyId::FCHF,
+		CurrencyId::FXAU,
+		CurrencyId::FOIL,
+		CurrencyId::FBTC,
+		CurrencyId::FETH,
+	];
+	pub const DefaultExtremeRatio: Permill = Permill::from_percent(1);
+	pub const DefaultLiquidationRatio: Permill = Permill::from_percent(5);
+	pub const DefaultCollateralRatio: Permill = Permill::from_percent(10);
+}
+
+pub type KiltToken = BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber>;
+
+impl orml_currencies::Config for Runtime {
+	type Event = Event;
+	type MultiCurrency = orml_tokens::Module<Runtime>;
+	type NativeCurrency = KiltToken;
+	type GetNativeCurrencyId = GetKiltTokenId;
+	type WeightInfo = ();
+}
+
 construct_runtime! {
 	pub enum Runtime where
 		Block = Block,
@@ -375,8 +421,8 @@ construct_runtime! {
 		ParachainSystem: cumulus_pallet_parachain_system::{Module, Call, Storage, Inherent, Event} = 18,
 		ParachainInfo: parachain_info::{Module, Storage, Config} = 19,
 		XcmHandler: cumulus_pallet_xcm_handler::{Module, Event<T>, Origin} = 20,
-		// Tokens: orml_tokens::{Module, Call, Storage, Event<T>} = 21,
-		// Currencies: orml_currencies::{Module, Call, Storage, Event<T>} = 22,
+		Tokens: orml_tokens::{Module, Call, Storage, Event<T>} = 21,
+		Currencies: orml_currencies::{Module, Call, Storage, Event<T>} = 22,
 		// XTokens: orml_xtokens::{Module, Call, Storage, Event<T>} = 23,
 	}
 }
