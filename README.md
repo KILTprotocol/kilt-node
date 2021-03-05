@@ -1,4 +1,3 @@
-
 # KILT mashnet-node &middot; [![Build and Test](https://github.com/KILTprotocol/mashnet-node/workflows/Build%20and%20Test/badge.svg)](https://github.com/KILTprotocol/mashnet-node/actions)
 
 <p align="center">
@@ -15,3 +14,7 @@ The nodes use Parity Substrate as the underlying blockchain technology stack, ex
 * [About KILT and Substrate in the Polkaverse](./docs/kilt-substrate.md)
 
 
+<br/><br/><br/>
+<p align="center">
+<img src="https://www.parity.io/assets/img/built-on-substrate-badge.svg" height=120/>
+</p>
