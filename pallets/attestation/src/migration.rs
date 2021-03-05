@@ -147,14 +147,13 @@ fn migrate_to_struct<T: V23ToV24>() {
 mod tests {
 	use super::*;
 	use crate::tests::*;
+	use frame_support::storage::migration::{get_storage_value, put_storage_value};
 	use sp_core::{ed25519, Hasher, Pair};
 	use sp_runtime::{traits::IdentifyAccount, MultiSigner};
 
 	#[test]
 	fn migration_to_v24_should_work() {
 		new_test_ext().execute_with(|| {
-			use frame_support::storage::migration::{get_storage_value, put_storage_value};
-
 			type AttestationOld = (
 				<Test as frame_system::Config>::Hash,
 				<Test as frame_system::Config>::AccountId,
@@ -220,7 +219,6 @@ mod tests {
 				),
 				Some(Some(attestation_new))
 			);
-			// assert_eq!(get_storage_value::Option<DelegationNode<Test>>(b"Delegation", b"Delegations", &[]), Some(new_did));
 		});
 	}
 }

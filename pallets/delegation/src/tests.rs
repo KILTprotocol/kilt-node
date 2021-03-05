@@ -150,7 +150,7 @@ impl ExtBuilder {
 	}
 }
 
-fn new_test_ext() -> TestExternalities {
+pub fn new_test_ext() -> TestExternalities {
 	frame_system::GenesisConfig::default()
 		.build_storage::<Test>()
 		.unwrap()
@@ -495,97 +495,5 @@ fn check_add_and_revoke_delegations() {
 		assert_eq!(Delegation::root(id_level_0).unwrap().revoked, true);
 		assert_eq!(Delegation::delegation(id_level_1).unwrap().revoked, true);
 		assert_eq!(Delegation::delegation(id_level_2_1).unwrap().revoked, true);
-	});
-}
-
-#[test]
-fn migration_to_v24_should_work() {
-	use frame_support::{
-		storage::migration::{get_storage_value, put_storage_value},
-		traits::{GetPalletVersion, PalletVersion},
-	};
-
-	// setup migration data
-	type DelegationOld = (
-		<Test as Config>::DelegationNodeId,
-		Option<<Test as Config>::DelegationNodeId>,
-		<Test as frame_system::Config>::AccountId,
-		Permissions,
-		bool,
-	);
-	// set storage version
-	struct ModuleVersion;
-	impl GetPalletVersion for ModuleVersion {
-		fn current_version() -> PalletVersion {
-			PalletVersion {
-				major: 0,
-				minor: 23,
-				patch: 0,
-			}
-		}
-		fn storage_version() -> Option<PalletVersion> {
-			Some(Self::current_version())
-		}
-	}
-	struct DelegationStructRuntimeUpgrade;
-	impl migration::V23ToV24 for DelegationStructRuntimeUpgrade {
-		type AccountId = <Test as frame_system::Config>::AccountId;
-		type DelegationNodeId = <Test as Config>::DelegationNodeId;
-		// Note: Delegation::storage_version() resolves to `None` :(
-		type Module = ModuleVersion;
-	}
-
-	new_test_ext().execute_with(|| {
-		// setup data independent of migration
-		let pair_delegate = ed25519::Pair::from_seed(&*b"Alice                           ");
-		let acc_delegate = MultiSigner::from(pair_delegate.public()).into_account();
-		let root_id: <Test as Config>::DelegationNodeId =
-			<Test as frame_system::Config>::Hashing::hash(&[0]);
-		let delegation_id: <Test as Config>::DelegationNodeId =
-			<Test as frame_system::Config>::Hashing::hash(&[1]);
-		let blake_hash = sp_core::blake2_256(&delegation_id.as_bytes());
-
-		// store and check old DelegationNode type
-		let delegation_old: DelegationOld = (
-			root_id,
-			None,
-			acc_delegate.clone(),
-			Permissions::DELEGATE,
-			false,
-		);
-		put_storage_value::<Option<DelegationOld>>(
-			crate::migration::PALLET_PREFIX.as_bytes(),
-			crate::migration::STORAGE_PREFIX.as_bytes(),
-			&blake_hash,
-			Some(delegation_old.clone()),
-		);
-		assert_eq!(
-			get_storage_value::<Option<DelegationOld>>(
-				crate::migration::PALLET_PREFIX.as_bytes(),
-				crate::migration::STORAGE_PREFIX.as_bytes(),
-				&blake_hash,
-			),
-			Some(Some(delegation_old))
-		);
-
-		// apply migration
-		crate::migration::apply::<DelegationStructRuntimeUpgrade>();
-
-		// setup and check new DelegationNode type
-		let delegation_new = DelegationNode::<Test> {
-			root_id,
-			parent: None,
-			owner: acc_delegate.clone(),
-			permissions: Permissions::DELEGATE,
-			revoked: false,
-		};
-		assert_eq!(
-			get_storage_value::<Option<DelegationNode::<Test>>>(
-				crate::migration::PALLET_PREFIX.as_bytes(),
-				crate::migration::STORAGE_PREFIX.as_bytes(),
-				&blake_hash
-			),
-			Some(Some(delegation_new))
-		);
 	});
 }
