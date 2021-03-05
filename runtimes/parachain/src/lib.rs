@@ -32,11 +32,11 @@ use sp_api::impl_runtime_apis;
 use sp_core::OpaqueMetadata;
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, Convert, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult,
+	ApplyExtrinsicResult, DispatchResult,
 };
-use sp_std::prelude::*;
+use sp_std::{collections::btree_set::BTreeSet, prelude::*};
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
@@ -62,8 +62,10 @@ pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
 
 // XCM imports
+use cumulus_primitives_core::relay_chain::Balance as RelayChainBalance;
+use orml_xcm_support::XcmHandler as XcmHandlerT;
 use polkadot_parachain::primitives::Sibling;
-use xcm::v0::{Junction, MultiLocation, NetworkId};
+use xcm::v0::{Junction, MultiLocation, NetworkId, Xcm};
 use xcm_builder::{
 	AccountId32Aliases, CurrencyAdapter, LocationInverter, ParentIsDefault, RelayChainAsNative,
 	SiblingParachainAsNative, SiblingParachainConvertsVia, SignedAccountId32AsNative,
@@ -271,6 +273,7 @@ parameter_types! {
 	pub Ancestry: MultiLocation = Junction::Parachain {
 		id: ParachainInfo::parachain_id().into()
 	}.into();
+	pub const RelayChainCurrencyId: CurrencyId = CurrencyId::DOT;
 }
 
 type LocationConverter = (
@@ -297,6 +300,15 @@ type LocalOriginConverter = (
 	SignedAccountId32AsNative<RococoNetwork, Origin>,
 );
 
+parameter_types! {
+	pub NativeOrmlTokens: BTreeSet<(Vec<u8>, MultiLocation)> = {
+		let mut t = BTreeSet::new();
+		//TODO: might need to add other assets based on orml-tokens
+		t.insert(("KILT".into(), (Junction::Parent, Junction::Parachain { id: 12623 }).into()));
+		t
+	};
+}
+
 pub struct XcmConfig;
 impl Config for XcmConfig {
 	type Call = Call;
@@ -318,35 +330,42 @@ impl cumulus_pallet_xcm_handler::Config for Runtime {
 	type AccountIdConverter = LocationConverter;
 }
 
-impl attestation::Config for Runtime {
-	/// The ubiquitous event type.
-	type Event = Event;
-	type WeightInfo = ();
+pub struct NativeToRelay;
+impl Convert<Balance, RelayChainBalance> for NativeToRelay {
+	fn convert(val: u128) -> Balance {
+		// native is 18
+		// relay is 12
+		val / 1_000_000
+	}
 }
 
-impl ctype::Config for Runtime {
-	/// The ubiquitous event type.
-	type Event = Event;
-	type WeightInfo = ();
+pub struct AccountId32Convert;
+impl Convert<AccountId, [u8; 32]> for AccountId32Convert {
+	fn convert(account_id: AccountId) -> [u8; 32] {
+		account_id.into()
+	}
 }
 
-impl delegation::Config for Runtime {
-	/// The ubiquitous event type.
-	type Event = Event;
-	type Signature = Signature;
-	type Signer = <Signature as Verify>::Signer;
-	type DelegationNodeId = Hash;
-	type WeightInfo = ();
+parameter_types! {
+	pub const PolkadotNetworkId: NetworkId = NetworkId::Polkadot;
 }
 
-impl did::Config for Runtime {
-	/// The ubiquitous event type.
+pub struct HandleXcm;
+impl XcmHandlerT<AccountId> for HandleXcm {
+	fn execute_xcm(origin: AccountId, xcm: Xcm) -> DispatchResult {
+		XcmHandler::execute_xcm(origin, xcm)
+	}
+}
+
+impl orml_xtokens::Config for Runtime {
 	type Event = Event;
-	/// Type for the public signing key in DIDs
-	type PublicSigningKey = Hash;
-	/// Type for the public boxing key in DIDs
-	type PublicBoxKey = Hash;
-	type WeightInfo = ();
+	type Balance = Balance;
+	type ToRelayChainBalance = NativeToRelay;
+	type AccountId32Convert = AccountId32Convert;
+	//TODO: change network id if kusama
+	type RelayChainNetworkId = PolkadotNetworkId;
+	type ParaId = ParachainInfo;
+	type XcmHandler = HandleXcm;
 }
 
 parameter_type_with_key! {
@@ -393,6 +412,37 @@ impl orml_currencies::Config for Runtime {
 	type WeightInfo = ();
 }
 
+impl attestation::Config for Runtime {
+	/// The ubiquitous event type.
+	type Event = Event;
+	type WeightInfo = ();
+}
+
+impl ctype::Config for Runtime {
+	/// The ubiquitous event type.
+	type Event = Event;
+	type WeightInfo = ();
+}
+
+impl delegation::Config for Runtime {
+	/// The ubiquitous event type.
+	type Event = Event;
+	type Signature = Signature;
+	type Signer = <Signature as Verify>::Signer;
+	type DelegationNodeId = Hash;
+	type WeightInfo = ();
+}
+
+impl did::Config for Runtime {
+	/// The ubiquitous event type.
+	type Event = Event;
+	/// Type for the public signing key in DIDs
+	type PublicSigningKey = Hash;
+	/// Type for the public boxing key in DIDs
+	type PublicBoxKey = Hash;
+	type WeightInfo = ();
+}
+
 construct_runtime! {
 	pub enum Runtime where
 		Block = Block,
@@ -423,7 +473,7 @@ construct_runtime! {
 		XcmHandler: cumulus_pallet_xcm_handler::{Module, Event<T>, Origin} = 20,
 		Tokens: orml_tokens::{Module, Call, Storage, Event<T>} = 21,
 		Currencies: orml_currencies::{Module, Call, Storage, Event<T>} = 22,
-		// XTokens: orml_xtokens::{Module, Call, Storage, Event<T>} = 23,
+		XTokens: orml_xtokens::{Module, Call, Storage, Event<T>} = 23,
 	}
 }
 

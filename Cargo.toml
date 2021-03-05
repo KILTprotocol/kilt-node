@@ -30,3 +30,5 @@ sp-state-machine = {git = "https://github.com/paritytech/substrate", branch = "r
 sp-std = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
 sp-storage = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
 sp-version = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+sc-consensus-aura = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+polkadot-test-runtime = {git = "https://github.com/paritytech/polkadot", branch = "rococo-v1"}
