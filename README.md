@@ -1,20 +1,20 @@
-![](https://user-images.githubusercontent.com/1248214/57789522-600fcc00-7739-11e9-86d9-73d7032f40fc.png) <img src="https://www.parity.io/assets/img/built-on-substrate-badge.svg" height=180/>
+# KILT mashnet-node &middot; [![Build and Test](https://github.com/KILTprotocol/mashnet-node/workflows/Build%20and%20Test/badge.svg)](https://github.com/KILTprotocol/mashnet-node/actions)
 
-[![Build and Test](https://github.com/KILTprotocol/mashnet-node/workflows/Build%20and%20Test/badge.svg)](https://github.com/KILTprotocol/mashnet-node/actions)
+<p align="center">
+  <img src="/docs/media/kilt.png">
+</p>
 
-# KILT mashnet-node (previously prototype-chain)
+The KILT blockchain is the heart and soul behind KILT Protocol.
+It provides the immutable transaction ledger for the various KILT processes in the network.
 
-The KILT blockchain nodes use Parity Substrate as the underlying blockchain
-technology stack extended with our DID, CType, Attestation and hierarchical Trust Modules.
-Substrate Documentation:
-
-[Substrate Tutorials](https://substrate.dev/en/tutorials)
-
-[Substrate JSON-RPC API](https://polkadot.js.org/docs/substrate/rpc)
-
-[Substrate Reference Rust Docs](https://substrate.dev/rustdocs/v2.0.0/sc_service/index.html)
+The nodes use Parity Substrate as the underlying blockchain technology stack, extended with our custom functionality for handling DIDs, CTypes, Attestations and Delegations.
 
 * [How to build and run a KILT node](./docs/run-node.md)
 * [Detailed explanation about KILT node module functionalities](./docs/kilt-pallets-description.md)
 * [About KILT and Substrate in the Polkaverse](./docs/kilt-substrate.md)
 
+
+<br/><br/><br/>
+<p align="center">
+<img src="https://www.parity.io/assets/img/built-on-substrate-badge.svg" height=120/>
+</p>
