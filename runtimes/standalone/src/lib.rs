@@ -406,12 +406,6 @@ impl frame_support::traits::OnRuntimeUpgrade for DidStructRuntimeUpgrade {
 	}
 }
 pub struct PortableGabiRemoval;
-impl did::migration::V23ToV24 for PortableGabiRemoval {
-	type PublicSigningKey = Hash;
-	type PublicBoxKey = Hash;
-	type AccountId = AccountId;
-	type Module = Attestation;
-}
 impl frame_support::traits::OnRuntimeUpgrade for PortableGabiRemoval {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
 		frame_support::storage::unhashed::kill_prefix(&sp_io::hashing::twox_128(b"Portablegabi"));
