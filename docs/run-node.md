@@ -1,4 +1,4 @@
-# How to run and build a node
+# How to run a node
 
 There are several ways to run the node locally.
 In case you haven't made changes to the code, we **recommend to use [our docker images](https://hub.docker.com/r/kiltprotocol/mashnet-node)** which will save you quite some time by not being required to compile for ~10-30 minutes.
@@ -38,7 +38,7 @@ Here's how you would start the chain and connect to the Alice bootnode
 docker run -p 9944:9944 kiltprotocol/mashnet-node --chain $CHAIN
 ```
 
-## How to run and build a node (more detailed)
+## How to build and run a node (more detailed)
 
 To build the code, or get a prebuilt image, you have the following three options:
 
@@ -84,7 +84,7 @@ The following steps expect you to have cloned our repo and navigated into it.
 
 #### Setup Rust
 
-You might require a specific rust version, we recommend to set this by executing [our init script](../scripts/init.sh): 
+Building requires the WASM toolchain and is most reliable with a specific rust version, we recommend to set this by executing [our init script](../scripts/init.sh): 
 
 ```bash
 ./scripts/init.sh
@@ -106,7 +106,7 @@ cargo build -p $RUNTIME
 cargo build --release -p $RUNTIME
 
 # build the standalone mashnet node
-cargo build --release -p kilt-parachain
+cargo build --release -p mashnet-node
 
 # build the kilt-parachain collator node 
 cargo build --release -p kilt-parachain

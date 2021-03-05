@@ -16,9 +16,9 @@ The KILT blockchain node runtime defines a DID module exposing:
 fn add(origin, sign_key: T::PublicSigningKey, box_key: T::PublicBoxKey, doc_ref: Option<Vec<u8>>) -> DispatchResult
 ```
 
-This function takes the following parameters:
+This transaction takes the following parameters:
 
-- `origin`: The public [ss58](<https://wiki.parity.io/External-Address-Format-(SS58)>) address of the caller of the method.
+- `origin`: The public [ss58](<https://substrate.dev/docs/en/knowledgebase/advanced/ss58-address-format>) address of the caller of the method.
 - `sign_key`: The [ed25519](http://ed25519.cr.yp.to/) or [sr25519](https://wiki.polkadot.network/docs/en/learn-cryptography) public signing key of the owner.
 - `box_key`: The [x25519-xsalsa20-poly1305](http://nacl.cr.yp.to/valid.html) public encryption key of the owner.
 - `doc_ref`: An optional u8 byte vector representing the reference (URL) to the DID document.
@@ -119,7 +119,7 @@ fn revoke(origin, claim_hash: T::Hash, max_depth: u32) -> DispatchResult
 
 - `origin`: The caller of the method, i.e. the public address ([ss58](https://substrate.dev/docs/en/knowledgebase/advanced/ss58-address-format)) of the (delegated) Attester.
 - `claim_hash`: The Claim hash as [blake2b](https://blake2.net/) string used as the key of the entry.
-- `max_depth`: The maximum number of parent checks of the Delegation which are supported in this call until finding the owner of the Delegation (or the Root) and ensuring that this is the address of the `origin`. Due to the recursive structure of checking for Delegations, this kind of limit is required (at least) for benchmarks.
+- `max_depth`: The maximum number of parent checks of the Delegation which are supported in this call until finding the owner of the Delegation (or the Root) and ensuring that this is the address of the `origin`. Due to the recursive structure of checking for Delegations, this kind of limit is required for calculating the transaction fees and the weight of the transaction.
 
 The `revoke` function takes the claim hash (which is the key to lookup an attestation) as argument.
 After looking up the attestation and checking the invoker's permissions, the revoked flag is set to true and the updated attestation is stored on chain.
@@ -216,7 +216,7 @@ The `revoke_root` function takes the following parameters:
 
 - `origin`: The caller of the method, i.e. the public address (ss58) of the Delegator.
 - `root_id`: A V4 UUID identifying the associated trust hierarchy.
-- `max_children`: The maximum number of children of the Delegation root which can be revoked with this call. Due to the recursive structure of checking for Children, this kind of limit is required (at least) for benchmarks.
+- `max_children`: The maximum number of children of the Delegation root which can be revoked with this call. Due to the recursive structure of checking for Children, this kind of limit is required for calculating the transaction fees and the weight of the transaction.
 
 ### Revoke a Delegation
 
@@ -229,7 +229,7 @@ The `revoke_delegation` function takes the following parameters:
 - `origin`: The caller of the method, i.e. the public address (ss58) of the Delegator.
 - `delegation_id`: A V4 UUID identifying this delegation.
 - `max_depth`: The maximum number of parent checks of the Delegation which are supported in this call until finding the owner of the Delegation (or the Root) and ensuring that this is the address of the `origin`. Due to the recursive structure of checking for Delegations, this kind of limit is required (at least) for benchmarks.
-- `max_revocations`: The maximum number of children of this Delegation node which can be revoked with this call. Due to the recursive structure of checking for Children, this kind of limit is required (at least) for benchmarks.
+- `max_revocations`: The maximum number of children of this Delegation node which can be revoked with this call. Due to the recursive structure of checking for Children, this kind of limit is required for calculating the transaction fees and the weight of the transaction.
 
 ## The KILT CType Pallet
 
@@ -250,4 +250,3 @@ The CType hash is stored by using a map:
 ```rust
 T::Hash => Option<T::AccountId>
 ```
-
