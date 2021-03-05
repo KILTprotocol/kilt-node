@@ -27,13 +27,14 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
+pub mod migration;
+
 #[macro_use]
 extern crate bitflags;
 
 pub mod default_weights;
 pub use default_weights::WeightInfo;
 
-use crate::sp_api_hidden_includes_decl_storage::hidden_include::traits::Get;
 use codec::{Decode, Encode};
 use core::default::Default;
 use frame_support::{
@@ -41,6 +42,7 @@ use frame_support::{
 	dispatch::DispatchResult,
 	ensure,
 	pallet_prelude::{DispatchResultWithPostInfo, Weight},
+	traits::Get,
 	Parameter, StorageMap,
 };
 use frame_system::{self, ensure_signed};

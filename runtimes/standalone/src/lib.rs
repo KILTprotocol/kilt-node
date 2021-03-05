@@ -343,6 +343,19 @@ impl attestation::Config for Runtime {
 	type WeightInfo = ();
 }
 
+pub struct AttestationStructRuntimeUpgrade;
+impl attestation::migration::V23ToV24 for AttestationStructRuntimeUpgrade {
+	type Hash = Hash;
+	type DelegationNodeId = Hash;
+	type AccountId = AccountId;
+	type Module = Attestation;
+}
+impl frame_support::traits::OnRuntimeUpgrade for AttestationStructRuntimeUpgrade {
+	fn on_runtime_upgrade() -> frame_support::weights::Weight {
+		attestation::migration::apply::<Self>()
+	}
+}
+
 impl ctype::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
@@ -358,6 +371,18 @@ impl delegation::Config for Runtime {
 	type WeightInfo = ();
 }
 
+pub struct DelegationStructRuntimeUpgrade;
+impl delegation::migration::V23ToV24 for DelegationStructRuntimeUpgrade {
+	type AccountId = AccountId;
+	type DelegationNodeId = Hash;
+	type Module = Delegation;
+}
+impl frame_support::traits::OnRuntimeUpgrade for DelegationStructRuntimeUpgrade {
+	fn on_runtime_upgrade() -> frame_support::weights::Weight {
+		delegation::migration::apply::<Self>()
+	}
+}
+
 impl did::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
@@ -366,6 +391,26 @@ impl did::Config for Runtime {
 	/// Type for the public boxing key in DIDs
 	type PublicBoxKey = Hash;
 	type WeightInfo = ();
+}
+
+pub struct DidStructRuntimeUpgrade;
+impl did::migration::V23ToV24 for DidStructRuntimeUpgrade {
+	type PublicSigningKey = Hash;
+	type PublicBoxKey = Hash;
+	type AccountId = AccountId;
+	type Module = Attestation;
+}
+impl frame_support::traits::OnRuntimeUpgrade for DidStructRuntimeUpgrade {
+	fn on_runtime_upgrade() -> frame_support::weights::Weight {
+		did::migration::apply::<Self>()
+	}
+}
+pub struct PortableGabiRemoval;
+impl frame_support::traits::OnRuntimeUpgrade for PortableGabiRemoval {
+	fn on_runtime_upgrade() -> frame_support::weights::Weight {
+		frame_support::storage::unhashed::kill_prefix(&sp_io::hashing::twox_128(b"Portablegabi"));
+		Weight::max_value()
+	}
 }
 
 parameter_types! {
@@ -407,26 +452,21 @@ construct_runtime!(
 		System: frame_system::{Module, Call, Config, Storage, Event<T>} = 0,
 		RandomnessCollectiveFlip: randomness_collective_flip::{Module, Call, Storage} = 1,
 
-		// Keep block authoring before session?
-		Aura: aura::{Module, Config<T>},
-
-		// Basic modules
-		Timestamp: timestamp::{Module, Call, Storage, Inherent} = 3,
-		Balances: balances::{Module, Call, Storage, Config<T>, Event<T>} = 4,
-		TransactionPayment: pallet_transaction_payment::{Module, Storage} = 5,
-		Session: session::{Module, Call, Storage, Event, Config<T>} = 6,
-
-		Grandpa: grandpa::{Module, Call, Storage, Config, Event} = 7,
+		Timestamp: timestamp::{Module, Call, Storage, Inherent} = 2,
+		Aura: aura::{Module, Config<T>, Storage} = 3,
+		Grandpa: grandpa::{Module, Call, Storage, Config, Event} = 4,
+		Indices: pallet_indices::{Module, Call, Storage, Event<T>} = 5,
+		Balances: balances::{Module, Call, Storage, Config<T>, Event<T>} = 6,
+		TransactionPayment: pallet_transaction_payment::{Module, Storage} = 7,
 		Sudo: sudo::{Module, Call, Config<T>, Storage, Event<T>} = 8,
 
-		Indices: pallet_indices::{Module, Call, Storage, Event<T>} = 9,
-		Authorship: authorship::{Module, Call, Storage} = 10,
-		// Finality tracker?
+		Ctype: ctype::{Module, Call, Storage, Event<T>} = 9,
+		Attestation: attestation::{Module, Call, Storage, Event<T>} = 10,
+		Delegation: delegation::{Module, Call, Storage, Event<T>} = 11,
+		Did: did::{Module, Call, Storage, Event<T>} = 12,
 
-		Ctype: ctype::{Module, Call, Storage, Event<T>} = 11,
-		Attestation: attestation::{Module, Call, Storage, Event<T>} = 12,
-		Delegation: delegation::{Module, Call, Storage, Event<T>} = 13,
-		Did: did::{Module, Call, Storage, Event<T>} = 14,
+		Session: session::{Module, Call, Storage, Event, Config<T>} = 15,
+		Authorship: authorship::{Module, Call, Storage} = 16,
 	}
 );
 
@@ -455,8 +495,19 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signatu
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various modules.
-pub type Executive =
-	executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllModules>;
+pub type Executive = executive::Executive<
+	Runtime,
+	Block,
+	frame_system::ChainContext<Runtime>,
+	Runtime,
+	AllModules,
+	(
+		PortableGabiRemoval,
+		DelegationStructRuntimeUpgrade,
+		DidStructRuntimeUpgrade,
+		AttestationStructRuntimeUpgrade,
+	),
+>;
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
