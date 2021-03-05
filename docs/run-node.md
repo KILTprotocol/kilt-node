@@ -25,7 +25,7 @@ docker pull kiltprotocol/mashnet-node
 
 When you start a dev chain, it produces blocks without any requirements like additional validators.
 For local development, we recommend to use the below node options to have 
-*  WebSocket Interface enabled + WebSockets specified 
+* WebSocket Interface enabled + WebSockets specified 
 * Remote Procedure Calls enabled + RPC server specified
 * TPC server specified
 because per default, only Local Procedure Calls would be enabled 
