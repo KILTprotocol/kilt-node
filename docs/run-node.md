@@ -16,8 +16,6 @@ For development, we recommend to run the `mashnet-node`.
 
 To start a node, you need to use an existing image from [DockerHub](https://hub.docker.com/r/kiltprotocol/mashnet-node), or [build the code yourself](#option-3-build-code-without-docker) and decide on the [command](#node-commands) to execute.
 
-### Option 1: Run a node locally
-
 Start a dev chain, which produces blocks without any requirements like additional validators, for local development with all WebSocket Interfaces, Remote Procedure Calls enabled and specified WebSockets + RPC server + TCP port by executing the below command.
 Per default, only Local Procedure Calls would be enabled.
 
@@ -25,14 +23,7 @@ Per default, only Local Procedure Calls would be enabled.
 docker run -p 9944:9944 kiltprotocol/mashnet-node --dev --ws-port 9944 --ws-external --rpc-external --rpc-methods=unsafe
 ```
 
-### Option 2: Connect with a live KILT network
-
-There are two live (test) networks to which you can connect to by setting the `--chain` flag:
-
-1. The KILT Testnet which reflects the `master` branch of this repo: `--chain kilt-testnet`
-2. The KILT DevNet which reflects the `develop` branch of this repo: `--chain kilt-devnet`
-
-Here's how you would start the chain and connect to the Alice bootnode
+Here's how you would start the chain and connect to the Alice, Bob and Charlie bootnodes:
 
 ```bash
 docker run -p 9944:9944 kiltprotocol/mashnet-node --chain $CHAIN
@@ -43,10 +34,10 @@ docker run -p 9944:9944 kiltprotocol/mashnet-node --chain $CHAIN
 To build the code, or get a prebuilt image, you have the following three options:
 
 1. Use a Docker image from [DockerHub](https://hub.docker.com/r/kiltprotocol/mashnet-node)
-2. [Building the docker image yourself](#option-2-build-a-docker-image-yourself)
-3. [Building the code without docker](#option-3-build-code-without-docker)
+2. [Building the docker image yourself](#build-a-docker-image-yourself)
+3. [Building the code without docker](#build-code-without-docker)
 
-### Option 1: Use a pre-compiled docker image from DockerHub
+### Use a pre-compiled docker image from DockerHub
 
 Get the image from DockerHub
 
@@ -62,7 +53,7 @@ docker run -p 9944:9944 kiltprotocol/mashnet-node [node command]
 
 For execution see the sections about [Node Commands](#node-commands) and our [recommendations](#recommendation-for-development).
 
-### Option 2: Build a docker image yourself
+### Build a docker image yourself
 
 1. Clone this repo and navigate into it.
 2. Build docker image:
@@ -77,7 +68,7 @@ docker build --build-arg NODE_TYPE=mashnet-node -t local/mashnet-node .
 docker run -p 9944:9944 local/mashnet-node [node command]
 ```
 
-### Option 3: Build code without docker
+### Build code without docker
 
 You need to have [rust and cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html) installed.
 The following steps expect you to have cloned our repo and navigated into it.
