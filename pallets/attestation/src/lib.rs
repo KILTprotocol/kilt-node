@@ -137,6 +137,7 @@ decl_module! {
 		/// Revokes an attestation on chain, where
 		/// origin - the origin of the transaction
 		/// claim_hash - hash of the attested claim
+		/// max_depth - max number of parent checks of the delegation node supported in this call until finding the owner
 		#[weight = <T as Config>::WeightInfo::revoke(*max_depth)]
 		pub fn revoke(origin, claim_hash: T::Hash, max_depth: u32) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
