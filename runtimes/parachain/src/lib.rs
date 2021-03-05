@@ -253,19 +253,6 @@ impl attestation::Config for Runtime {
 	type WeightInfo = ();
 }
 
-pub struct AttestationStructRuntimeUpgrade;
-impl attestation::migration::V23ToV24 for AttestationStructRuntimeUpgrade {
-	type Hash = Hash;
-	type DelegationNodeId = Hash;
-	type AccountId = AccountId;
-	type Module = Attestation;
-}
-impl frame_support::traits::OnRuntimeUpgrade for AttestationStructRuntimeUpgrade {
-	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		attestation::migration::apply::<Self>()
-	}
-}
-
 impl ctype::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
@@ -281,18 +268,6 @@ impl delegation::Config for Runtime {
 	type WeightInfo = ();
 }
 
-pub struct DelegationStructRuntimeUpgrade;
-impl delegation::migration::V23ToV24 for DelegationStructRuntimeUpgrade {
-	type AccountId = AccountId;
-	type DelegationNodeId = Hash;
-	type Module = Delegation;
-}
-impl frame_support::traits::OnRuntimeUpgrade for DelegationStructRuntimeUpgrade {
-	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		delegation::migration::apply::<Self>()
-	}
-}
-
 impl did::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
@@ -303,38 +278,37 @@ impl did::Config for Runtime {
 	type WeightInfo = ();
 }
 
-pub struct DidStructRuntimeUpgrade;
-impl did::migration::V23ToV24 for DidStructRuntimeUpgrade {
-	type PublicSigningKey = Hash;
-	type PublicBoxKey = Hash;
-	type AccountId = AccountId;
-	type Module = Attestation;
-}
-impl frame_support::traits::OnRuntimeUpgrade for DidStructRuntimeUpgrade {
-	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		did::migration::apply::<Self>()
-	}
-}
-
 construct_runtime! {
 	pub enum Runtime where
 		Block = Block,
 		NodeBlock = kilt_primitives::Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
-		System: frame_system::{Module, Call, Storage, Config, Event<T>},
-		Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
-		Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
-		Sudo: pallet_sudo::{Module, Call, Storage, Config<T>, Event<T>},
-		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
-		ParachainUpgrade: cumulus_parachain_system::{Module, Call, Storage, Inherent, Event},
-		TransactionPayment: pallet_transaction_payment::{Module, Storage},
-		ParachainInfo: parachain_info::{Module, Storage, Config},
-		Indices: pallet_indices::{Module, Call, Storage, Event<T>},
-		Ctype: ctype::{Module, Call, Storage, Event<T>},
-		Attestation: attestation::{Module, Call, Storage, Event<T>},
-		Delegation: delegation::{Module, Call, Storage, Event<T>},
-		Did: did::{Module, Call, Storage, Event<T>},
+		System: frame_system::{Module, Call, Config, Storage, Event<T>} = 0,
+		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage} = 1,
+
+		Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent} = 2,
+		// Aura: aura::{Module, Config<T>, Storage} = 3,
+		// Grandpa: grandpa::{Module, Call, Storage, Config, Event} = 4,
+		Indices: pallet_indices::{Module, Call, Storage, Event<T>} = 5,
+		Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>} = 6,
+		TransactionPayment: pallet_transaction_payment::{Module, Storage} = 7,
+		Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>} = 8,
+
+		Ctype: ctype::{Module, Call, Storage, Event<T>} = 9,
+		Attestation: attestation::{Module, Call, Storage, Event<T>} = 10,
+		Delegation: delegation::{Module, Call, Storage, Event<T>} = 11,
+		Did: did::{Module, Call, Storage, Event<T>} = 12,
+
+		// Session: session::{Module, Call, Storage, Event, Config<T>} = 15,
+		// Authorship: authorship::{Module, Call, Storage} = 16,
+
+		ParachainUpgrade: cumulus_parachain_system::{Module, Call, Storage, Inherent, Event} = 18,
+		ParachainInfo: parachain_info::{Module, Storage, Config} = 19,
+		// Tokens: orml_tokens::{Module, Call, Storage, Event<T>} = 20,
+		// Currencies: orml_currencies::{Module, Call, Storage, Event<T>} = 21,
+		// XcmHandler: cumulus_pallet_xcm_handler::{Module, Event<T>, Origin} = 22,
+		// XTokens: orml_xtokens::{Module, Call, Storage, Event<T>} = 23,
 	}
 }
 
@@ -369,11 +343,7 @@ pub type Executive = frame_executive::Executive<
 	frame_system::ChainContext<Runtime>,
 	Runtime,
 	AllModules,
-	(
-		DelegationStructRuntimeUpgrade,
-		DidStructRuntimeUpgrade,
-		AttestationStructRuntimeUpgrade,
-	),
+	(),
 >;
 
 impl_runtime_apis! {
