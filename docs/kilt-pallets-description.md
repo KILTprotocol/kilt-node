@@ -26,23 +26,19 @@ This transaction takes the following parameters:
 The blockchain node verifies the transaction signature corresponding to the owner and inserts it to the blockchain storage by using a map (done by the substrate framework):
 
 ```rust
-T::AccountId => Option<{
+struct DidRecord<T> {
   sign_key: T::PublicSigningKey,
   box_key: T::PublicBoxKey,
   doc_ref: Option<Vec<u8>>
-  }>
+}
+
+type DidStorage<T> = StorageMap<T::AccountId, Option<DidRecord<T>>>
 ```
-
-#### CRUD
-
-As DID supports CRUD (Create, Read, Update, Delete) operations, a `get(dids)` method
-reads a DID for an account address, the add function may also be used to update a DID.
 
 ### Remove a DID
 
-
 ```rust
-pub fn remove(origin) -> DispatchResult
+fn remove(origin) -> DispatchResult
 ```
 
 This function takes the owner as a single parameter removes the DID from the storage map.
@@ -65,7 +61,7 @@ The blockchain node verifies the transaction signature corresponding to the crea
 inserts it to the blockchain storage by using a map (done by the substrate framework):
 
 ```rust
-T::Hash => Option<T::AccountId>
+type CTypeStorage<T> = StorageMap<T::Hash, Option<T::AccountId>>
 ```
 
 ## The KILT Attestation Pallet
@@ -97,18 +93,20 @@ didn’t already attest the provided claimHash.
 The attestation is stored by using a map:
 
 ```rust
-T::Hash => Option<{
+struct Attestation<T> {
 	ctype_hash: T::Hash,
 	attester: T::AccountId,
 	delegation_id: Option<T::DelegationNodeId>,
 	revoked: bool,
-}>
+}
+
+type AttestationStorage<T> = StorageMap<T::Hash, Option<Attestation<T>>>
 ```
 
 Delegated Attestations are stored in an additional map:
 
 ```rust
-T::DelegationNodeId => Vec<T::Hash>
+type DelegatedAttestationStorage<T> = StorageMap<T::DelegationNodeId, Vec<T::Hash>>
 ```
 
 ### Revoke an Attestation
@@ -154,25 +152,26 @@ The node verifies the transaction signature and inserts it to the state.
 The root is stored by using a map:
 
 ```rust
-T::DelegationNodeId => Option<{
-	pub ctype_hash: T::Hash,
-	pub owner: T::AccountId,
-	pub revoked: bool,
-}>
+struct DelegationRoot<T: Config> {
+	ctype_hash: T::Hash,
+	owner: T::AccountId,
+	revoked: bool,
+}
+type RootStorage = StorageMap<T::DelegationNodeId, Option<DelegationRoot<T>>>
 ```
 
 ### Add a Delegation
 
 ```rust
 fn add_delegation(
-			origin,
-			delegation_id: T::DelegationNodeId,
-			root_id: T::DelegationNodeId,
-			parent_id: Option<T::DelegationNodeId>,
-			delegate: T::AccountId,
-			permissions: Permissions,
-			delegate_signature: T::Signature
-		) -> DispatchResult
+	origin,
+	delegation_id: T::DelegationNodeId,
+	root_id: T::DelegationNodeId,
+	parent_id: Option<T::DelegationNodeId>,
+	delegate: T::AccountId,
+	permissions: Permissions,
+	delegate_signature: T::Signature
+) -> DispatchResult
 ```
 
 The `add_delegation` function takes the following parameters:
@@ -190,20 +189,21 @@ to be valid and the delegator to be permitted and then inserts it to the state. 
 stored by using a map:
 
 ```rust
-T::DelegationNodeId => Option<{
-  pub root_id: T::DelegationNodeId,
-	pub parent: Option<T::DelegationNodeId>,
-	pub owner: T::AccountId,
-	pub permissions: Permissions,
-	pub revoked: bool,
-}>
+struct DelegationNode<T: Config> {
+	root_id: T::DelegationNodeId,
+	parent: Option<T::DelegationNodeId>,
+	owner: T::AccountId,
+	permissions: Permissions,
+	revoked: bool,
+}
+type DelegationsStorage = StorageMap<T::DelegationNodeId, Option<DelegationNode<T>>>
 ```
 
 Additionally, if the delegation has a parent delegation, the information about the children of its
 parent is updated in the following map that relates parents to their children:
 
 ```rust
-T::DelegationNodeId => Vec<T::DelegationNodeId>
+type ChildrenStorage = StorageMap<T::DelegationNodeId, Vec<T::DelegationNodeId>>
 ```
 
 ### Revoke a DelegationRoot
@@ -230,23 +230,3 @@ The `revoke_delegation` function takes the following parameters:
 - `delegation_id`: A V4 UUID identifying this delegation.
 - `max_depth`: The maximum number of parent checks of the Delegation which are supported in this call until finding the owner of the Delegation (or the Root) and ensuring that this is the address of the `origin`. Due to the recursive structure of checking for Delegations, this kind of limit is required (at least) for benchmarks.
 - `max_revocations`: The maximum number of children of this Delegation node which can be revoked with this call. Due to the recursive structure of checking for Children, this kind of limit is required for calculating the transaction fees and the weight of the transaction.
-
-## The KILT CType Pallet
-
-### Add a CType
-
-```rust
-fn add(origin, hash: T::Hash) -> DispatchResult
-```
-
-The `add` function takes the following parameters
-
-- `origin`: The caller of the method, i.e. the public address (ss58) of the entity which wants to create the CType.
-- `ctype_hash`: The [blake2b](https://blake2.net/) hash of CType.
-
-The node verifies the transaction signature and inserts it to the state.
-The CType hash is stored by using a map:
-
-```rust
-T::Hash => Option<T::AccountId>
-```
