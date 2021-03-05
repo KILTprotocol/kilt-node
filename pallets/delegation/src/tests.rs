@@ -133,23 +133,6 @@ fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
 	hash.encode()
 }
 
-pub struct ExtBuilder;
-
-impl ExtBuilder {
-	pub fn build_with_keystore() -> TestExternalities {
-		let storage = frame_system::GenesisConfig::default()
-			.build_storage::<Test>()
-			.unwrap();
-		let mut ext = TestExternalities::from(storage);
-		// register keystore
-		let keystore = KeyStore::new();
-		ext.register_extension(KeystoreExt(Arc::new(keystore)));
-		// events are not emitted on default block number 0
-		ext.execute_with(|| System::set_block_number(1));
-		ext
-	}
-}
-
 fn new_test_ext() -> TestExternalities {
 	frame_system::GenesisConfig::default()
 		.build_storage::<Test>()
