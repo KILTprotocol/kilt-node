@@ -150,7 +150,7 @@ impl ExtBuilder {
 	}
 }
 
-fn new_test_ext() -> TestExternalities {
+pub fn new_test_ext() -> TestExternalities {
 	frame_system::GenesisConfig::default()
 		.build_storage::<Test>()
 		.unwrap()

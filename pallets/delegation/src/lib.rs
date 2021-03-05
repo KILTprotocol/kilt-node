@@ -27,13 +27,14 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
+pub mod migration;
+
 #[macro_use]
 extern crate bitflags;
 
 pub mod default_weights;
 pub use default_weights::WeightInfo;
 
-use crate::sp_api_hidden_includes_decl_storage::hidden_include::traits::Get;
 use codec::{Decode, Encode};
 use core::default::Default;
 use frame_support::{
@@ -41,6 +42,7 @@ use frame_support::{
 	dispatch::DispatchResult,
 	ensure,
 	pallet_prelude::{DispatchResultWithPostInfo, Weight},
+	traits::Get,
 	Parameter, StorageMap,
 };
 use frame_system::{self, ensure_signed};
@@ -296,14 +298,15 @@ decl_module! {
 
 			// check if the sender of this transaction is permitted by being the
 			// owner of the delegation or of one of its parents
-			ensure!(Self::is_delegating(&sender, &delegation_id, max_depth)?, Error::<T>::UnauthorizedRevocation);
+			// 1 lookup performed for current node + 1 for every parent that is traversed
+			ensure!(Self::is_delegating(&sender, &delegation_id, max_depth + 1)?, Error::<T>::UnauthorizedRevocation);
 
 			// revoke the delegation and recursively all of its children
 			// post call weight correction
 			let (_, consumed_weight) = Self::revoke(&delegation_id, &sender, max_revocations)?;
 
 			// add worst case reads from `is_delegating`
-			Ok(Some(consumed_weight + T::DbWeight::get().reads((1 + max_depth).into())).into())
+			Ok(Some(consumed_weight + T::DbWeight::get().reads((2 + max_depth).into())).into())
 		}
 	}
 }
@@ -332,10 +335,10 @@ impl<T: Config> Module<T> {
 	pub fn is_delegating(
 		account: &T::AccountId,
 		delegation: &T::DelegationNodeId,
-		max_depth: u32,
+		max_lookups: u32,
 	) -> Result<bool, DispatchError> {
 		// check for recursion anchor
-		ensure!(max_depth > 0, Error::<T>::MaxSearchDepthReached);
+		ensure!(max_lookups > 0, Error::<T>::MaxSearchDepthReached);
 
 		// check if delegation exists
 		let delegation_node =
@@ -346,7 +349,7 @@ impl<T: Config> Module<T> {
 			Ok(true)
 		} else if let Some(parent) = delegation_node.parent {
 			// recursively check upwards in hierarchy
-			Self::is_delegating(account, &parent, max_depth - 1)
+			Self::is_delegating(account, &parent, max_lookups - 1)
 		} else {
 			// return whether the given account is the owner of the root
 			let root = <Root<T>>::get(delegation_node.root_id).ok_or(Error::<T>::RootNotFound)?;

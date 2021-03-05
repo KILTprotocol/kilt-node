@@ -26,6 +26,8 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
+pub mod migration;
+
 pub mod default_weights;
 pub use default_weights::WeightInfo;
 

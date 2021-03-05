@@ -28,6 +28,7 @@ mod tests;
 pub mod benchmarking;
 
 pub mod default_weights;
+pub mod migration;
 pub use default_weights::WeightInfo;
 
 use codec::{Decode, Encode};
