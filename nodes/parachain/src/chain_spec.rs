@@ -79,7 +79,7 @@ pub fn get_properties(symbol: &str, decimals: u32, ss58format: u32) -> Propertie
 }
 
 pub fn get_chain_spec(id: ParaId) -> Result<ChainSpec, String> {
-	let properties = get_properties("KILT", 12, 38);
+	let properties = get_properties("KILT", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
 
 	Ok(ChainSpec::from_genesis(
@@ -119,7 +119,7 @@ pub fn get_chain_spec(id: ParaId) -> Result<ChainSpec, String> {
 }
 
 pub fn staging_test_net(id: ParaId) -> Result<ChainSpec, String> {
-	let properties = get_properties("KILT", 12, 38);
+	let properties = get_properties("KILT", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
 
 	Ok(ChainSpec::from_genesis(

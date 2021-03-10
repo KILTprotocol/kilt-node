@@ -7,7 +7,7 @@
   "protocolId": null,
   "properties": {
     "ss58Format": 38,
-    "tokenDecimals": 18,
+    "tokenDecimals": 15,
     "tokenSymbol": "KILT"
   },
   "relay_chain": "rococo_v1",
