@@ -103,7 +103,7 @@ impl Alternative {
 
 		let mut properties = Properties::new();
 		properties.insert("tokenSymbol".into(), "KILT".into());
-		properties.insert("tokenDecimals".into(), 18.into());
+		properties.insert("tokenDecimals".into(), 12.into());
 
 		Ok(match self {
 			Alternative::Development => {
