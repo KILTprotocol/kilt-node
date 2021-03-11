@@ -23,7 +23,6 @@ use super::*;
 use frame_benchmarking::{account, benchmarks};
 use frame_system::RawOrigin;
 use sp_runtime::traits::Hash;
-use sp_std::{boxed::Box, vec, vec::Vec};
 
 const SEED: u32 = 0;
 

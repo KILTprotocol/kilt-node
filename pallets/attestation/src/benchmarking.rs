@@ -27,7 +27,7 @@ use frame_support::storage::StorageMap;
 use frame_system::RawOrigin;
 use sp_core::sr25519;
 use sp_runtime::traits::Hash;
-use sp_std::{boxed::Box, num::NonZeroU32, vec};
+use sp_std::num::NonZeroU32;
 
 const MAX_DEPTH: u32 = 10;
 const ONE_CHILD_PER_LEVEL: Option<NonZeroU32> = NonZeroU32::new(1);
