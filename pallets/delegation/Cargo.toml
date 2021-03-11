@@ -4,7 +4,7 @@ description = "Enables creating and revoking root nodes of delegation hierarchie
 edition = "2018"
 name = "delegation"
 repository = "https://github.com/KILTprotocol/mashnet-node"
-version = "0.23.0"
+version = "0.24.0"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
@@ -20,7 +20,7 @@ sp-keystore = {git = "https://github.com/paritytech/substrate", default-features
 
 # pallets
 [dependencies]
-ctype = {version = "0.23.0", default-features = false, path = "../ctype"}
+ctype = {version = "0.24.0", default-features = false, path = "../ctype"}
 
 [dependencies.bitflags]
 default-features = false

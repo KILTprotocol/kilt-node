@@ -2,7 +2,7 @@
 authors = ["KILT <info@kilt.io>"]
 edition = "2018"
 name = "mashnet-node-runtime"
-version = "0.23.0"
+version = "0.24.0"
 
 [build-dependencies]
 substrate-wasm-builder = "3.0.0"

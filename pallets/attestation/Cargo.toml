@@ -4,7 +4,7 @@ description = "Enables adding and revoking attestations."
 edition = "2018"
 name = "attestation"
 repository = "https://github.com/KILTprotocol/mashnet-node"
-version = "0.23.0"
+version = "0.24.0"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
@@ -20,8 +20,8 @@ version = "1.0.6"
 
 # pallets
 [dependencies]
-ctype = {version = "0.23.0", default-features = false, path = "../ctype"}
-delegation = {version = "0.23.0", default-features = false, path = "../delegation"}
+ctype = {version = "0.24.0", default-features = false, path = "../ctype"}
+delegation = {version = "0.24.0", default-features = false, path = "../delegation"}
 
 # Optional imports for benchmarking
 frame-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "rococo-v1"}
