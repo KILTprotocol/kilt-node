@@ -3174,7 +3174,6 @@ dependencies = [
  "substrate-frame-rpc-system",
  "substrate-test-client",
  "substrate-test-runtime-client",
- "tempfile",
  "tokio 0.2.25",
  "trie-root 0.15.2",
 ]
