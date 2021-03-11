@@ -58,6 +58,10 @@ branch = "rococo-v1"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 
+[dependencies.log]
+version = "0.4.14"
+default-features = false
+
 [features]
 default = ["std"]
 runtime-benchmarks = [
@@ -69,6 +73,7 @@ std = [
   "codec/std",
   "frame-support/std",
   "frame-system/std",
+  "log/std",
   "sp-runtime/std",
   "sp-io/std",
   "sp-std/std",

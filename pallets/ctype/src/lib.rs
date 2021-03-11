@@ -30,8 +30,7 @@ pub mod default_weights;
 pub use default_weights::WeightInfo;
 
 use frame_support::{
-	debug, decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure,
-	StorageMap,
+	decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure, StorageMap,
 };
 use frame_system::{self, ensure_signed};
 
@@ -84,7 +83,7 @@ decl_module! {
 			ensure!(!<CTYPEs<T>>::contains_key(hash), Error::<T>::AlreadyExists);
 
 			// add CTYPE to storage
-			debug::print!("insert CTYPE");
+			log::debug!("insert CTYPE");
 			<CTYPEs<T>>::insert(hash, sender.clone());
 			// deposit event that the CTYPE has been added
 			Self::deposit_event(RawEvent::CTypeCreated(sender, hash));

@@ -34,8 +34,7 @@ pub use default_weights::WeightInfo;
 use codec::{Decode, Encode};
 use delegation::Permissions;
 use frame_support::{
-	debug, decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure,
-	StorageMap,
+	decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure, StorageMap,
 };
 use frame_system::{self, ensure_signed};
 use sp_std::prelude::{Clone, PartialEq, Vec};
@@ -119,7 +118,7 @@ decl_module! {
 			}
 
 			// insert attestation
-			debug::print!("insert Attestation");
+			log::debug!("insert Attestation");
 			<Attestations<T>>::insert(claim_hash, Attestation {ctype_hash, attester: sender.clone(), delegation_id, revoked: false});
 
 			if let Some(d) = delegation_id {
@@ -157,7 +156,7 @@ decl_module! {
 				ensure!(<delegation::Module<T>>::is_delegating(&sender, &del_id, max_depth)?, Error::<T>::UnauthorizedRevocation);
 			}
 
-			debug::print!("revoking Attestation");
+			log::debug!("revoking Attestation");
 			<Attestations<T>>::insert(claim_hash, Attestation {
 				ctype_hash,
 				attester,
