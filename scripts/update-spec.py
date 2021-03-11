@@ -72,11 +72,14 @@ def fill_spec(spec, authorities, session_keys, endowed, root, parachain_id):
     fill_balances(balance_config, endowed)
 
     try:
-        session = runtime["session"]
+        try:
+            session = runtime["session"]
+        except KeyError:
+            session = runtime["palletSession"]
+        if authorities and session_keys:
+            fill_session(session, authorities, session_keys)
     except KeyError:
-        session = runtime["palletSession"]
-    if authorities and session_keys:
-        fill_session(session, authorities, session_keys)
+        print("No session pallet found")
 
     try:
         sudo_config = runtime["sudo"]
