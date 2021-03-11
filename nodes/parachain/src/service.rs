@@ -29,7 +29,7 @@ use kilt_primitives::Block;
 use polkadot_primitives::v0::CollatorPair;
 use sc_executor::native_executor_instance;
 pub use sc_executor::NativeExecutor;
-use sc_service::{Configuration, Role, TFullBackend, TFullClient, TaskManager};
+use sc_service::{Configuration, PartialComponents, Role, TFullBackend, TFullClient, TaskManager};
 use sc_telemetry::TelemetrySpan;
 use sp_core::Pair;
 use sp_runtime::traits::BlakeTwo256;
@@ -43,7 +43,7 @@ native_executor_instance!(
 	kilt_parachain_runtime::native_version,
 );
 
-type PartialComponents = sc_service::PartialComponents<
+type PartialComponentsType = sc_service::PartialComponents<
 	TFullClient<Block, RuntimeApi, Executor>,
 	TFullBackend<Block>,
 	(),
@@ -56,7 +56,7 @@ type PartialComponents = sc_service::PartialComponents<
 ///
 /// Use this macro if you don't actually need the full service, but just the builder in order to
 /// be able to perform chain operations.
-pub fn new_partial(config: &Configuration) -> Result<PartialComponents, sc_service::Error> {
+pub fn new_partial(config: &Configuration) -> Result<PartialComponentsType, sc_service::Error> {
 	let inherent_data_providers = sp_inherents::InherentDataProviders::new();
 
 	let (client, backend, keystore_container, task_manager) =
@@ -77,8 +77,8 @@ pub fn new_partial(config: &Configuration) -> Result<PartialComponents, sc_servi
 		client.clone(),
 		client.clone(),
 		inherent_data_providers.clone(),
-		&task_manager.spawn_handle(),
-		registry,
+		&task_manager.spawn_essential_handle(),
+		registry.clone(),
 	)?;
 
 	let params = PartialComponents {
@@ -100,13 +100,21 @@ pub fn new_partial(config: &Configuration) -> Result<PartialComponents, sc_servi
 ///
 /// This is the actual implementation that is abstract over the executor and the runtime api.
 #[sc_tracing::logging::prefix_logs_with("Parachain")]
-async fn start_node_impl(
+async fn start_node_impl<RB>(
 	parachain_config: Configuration,
 	collator_key: CollatorPair,
 	polkadot_config: Configuration,
 	id: ParaId,
 	validator: bool,
-) -> sc_service::error::Result<(TaskManager, Arc<TFullClient<Block, RuntimeApi, Executor>>)> {
+	rpc_ext_builder: RB,
+) -> sc_service::error::Result<(TaskManager, Arc<TFullClient<Block, RuntimeApi, Executor>>)>
+where
+	RB: Fn(
+			Arc<TFullClient<Block, RuntimeApi, Executor>>,
+		) -> jsonrpc_core::IoHandler<sc_rpc::Metadata>
+		+ Send
+		+ 'static,
+{
 	if matches!(parachain_config.role, Role::Light) {
 		return Err("Light client not supported!".into());
 	}
@@ -150,19 +158,8 @@ async fn start_node_impl(
 			block_announce_validator_builder: Some(Box::new(|_| block_announce_validator)),
 		})?;
 
-	let rpc_extensions_builder = {
-		let client = client.clone();
-		let pool = transaction_pool.clone();
-		Box::new(move |deny_unsafe, _| {
-			let deps = crate::rpc::FullDeps {
-				client: client.clone(),
-				pool: pool.clone(),
-				deny_unsafe,
-			};
-
-			crate::rpc::create_full(deps)
-		})
-	};
+	let rpc_client = client.clone();
+	let rpc_extensions_builder = Box::new(move |_, _| rpc_ext_builder(rpc_client.clone()));
 
 	let telemetry_span = TelemetrySpan::new();
 	let _telemetry_span_entered = telemetry_span.enter();
@@ -189,7 +186,7 @@ async fn start_node_impl(
 	};
 
 	if validator {
-		let proposer_factory = sc_basic_authorship::ProposerFactory::new(
+		let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
 			task_manager.spawn_handle(),
 			client.clone(),
 			transaction_pool,
@@ -251,6 +248,7 @@ pub async fn start_node(
 		polkadot_config,
 		id,
 		validator,
+		|_| Default::default(),
 	)
 	.await
 }
