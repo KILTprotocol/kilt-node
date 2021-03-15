@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019  BOTLabs GmbH
+// Copyright (C) 2019-2021 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ pub use default_weights::WeightInfo;
 use codec::{Decode, Encode};
 use core::default::Default;
 use frame_support::{
-	debug, decl_error, decl_event, decl_module, decl_storage,
+	decl_error, decl_event, decl_module, decl_storage,
 	dispatch::DispatchResult,
 	ensure,
 	pallet_prelude::{DispatchResultWithPostInfo, Weight},
@@ -174,7 +174,7 @@ decl_module! {
 			ensure!(<ctype::CTYPEs<T>>::contains_key(ctype_hash), ctype::Error::<T>::NotFound);
 
 			// add root node to storage
-			debug::print!("insert Delegation Root");
+			log::debug!("insert Delegation Root");
 			<Root<T>>::insert(root_id, DelegationRoot::new(ctype_hash, sender.clone()));
 			// deposit event that the root node has been created
 			Self::deposit_event(RawEvent::RootCreated(sender, root_id, ctype_hash));
@@ -224,7 +224,7 @@ decl_module! {
 				ensure!((parent_node.permissions & Permissions::DELEGATE) == Permissions::DELEGATE, Error::<T>::UnauthorizedDelegation);
 
 				// insert delegation
-				debug::print!("insert Delegation with parent");
+				log::debug!("insert Delegation with parent");
 				<Delegations<T>>::insert(delegation_id, DelegationNode::<T>::new_child(
 					root_id,
 					parent_id,
@@ -238,7 +238,7 @@ decl_module! {
 				ensure!(root.owner.eq(&sender), Error::<T>::NotOwnerOfRoot);
 
 				// inser delegation
-				debug::print!("insert Delegation without parent");
+				log::debug!("insert Delegation without parent");
 				<Delegations<T>>::insert(delegation_id, DelegationNode::<T>::new_root(root_id, delegate.clone(), permissions));
 
 				// add child to tree structure

@@ -97,7 +97,7 @@ impl GetPalletVersion for ModuleVersion {
 
 pub fn apply<T: V23ToV24>() -> Weight {
 	let maybe_storage_version = <T::Module as GetPalletVersion>::storage_version();
-	frame_support::debug::info!(
+	log::info!(
 		"Running migration for attestation with storage version {:?}",
 		maybe_storage_version
 	);
@@ -113,7 +113,7 @@ pub fn apply<T: V23ToV24>() -> Weight {
 			Weight::max_value()
 		}
 		_ => {
-			frame_support::debug::warn!(
+			log::warn!(
 				"Attempted to apply attestion to 0.24.0 but failed because storage version is {:?}",
 				maybe_storage_version
 			);
@@ -140,7 +140,7 @@ fn migrate_to_struct<T: V23ToV24>() {
 		})
 	});
 
-	frame_support::debug::info!("migrated {} attestation records.", counter,);
+	log::info!("migrated {} attestation records.", counter,);
 }
 
 #[cfg(test)]

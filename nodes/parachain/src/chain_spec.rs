@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019  BOTLabs GmbH
+// Copyright (C) 2019-2021 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,12 +22,12 @@ use cumulus_primitives_core::ParaId;
 use kilt_parachain_runtime::{
 	BalancesConfig, GenesisConfig, ParachainInfoConfig, SudoConfig, SystemConfig, WASM_BINARY,
 };
-use kilt_primitives::{AccountId, Signature};
+use kilt_primitives::{AccountId, AccountPublic};
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
 use sc_service::{ChainType, Properties};
 use serde::{Deserialize, Serialize};
 use sp_core::{sr25519, Pair, Public};
-use sp_runtime::traits::{IdentifyAccount, Verify};
+use sp_runtime::traits::IdentifyAccount;
 
 use hex_literal::hex;
 
@@ -53,13 +53,10 @@ pub struct Extensions {
 
 impl Extensions {
 	/// Try to get the extension from the given `ChainSpec`.
-	#[allow(clippy::borrowed_box)]
-	pub fn try_get(chain_spec: &Box<dyn sc_service::ChainSpec>) -> Option<&Self> {
+	pub fn try_get(chain_spec: &dyn sc_service::ChainSpec) -> Option<&Self> {
 		sc_chain_spec::get_extension(chain_spec.extensions())
 	}
 }
-
-type AccountPublic = <Signature as Verify>::Signer;
 
 /// Helper function to generate an account ID from seed
 pub fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
@@ -159,18 +156,18 @@ fn testnet_genesis(
 	id: ParaId,
 ) -> GenesisConfig {
 	GenesisConfig {
-		frame_system: Some(SystemConfig {
+		frame_system: SystemConfig {
 			code: wasm_binary.to_vec(),
 			changes_trie_config: Default::default(),
-		}),
-		pallet_balances: Some(BalancesConfig {
+		},
+		pallet_balances: BalancesConfig {
 			balances: endowed_accounts
 				.iter()
 				.cloned()
 				.map(|k| (k, 10000000000000000000000000000_u128))
 				.collect(),
-		}),
-		pallet_sudo: Some(SudoConfig { key: root_key }),
-		parachain_info: Some(ParachainInfoConfig { parachain_id: id }),
+		},
+		pallet_sudo: SudoConfig { key: root_key },
+		parachain_info: ParachainInfoConfig { parachain_id: id },
 	}
 }

@@ -76,6 +76,10 @@ git = "https://github.com/paritytech/substrate"
 optional = true
 version = "3.0.0"
 
+[dependencies.log]
+version = "0.4.14"
+default-features = false
+
 [features]
 default = ["std"]
 runtime-benchmarks = [
@@ -89,6 +93,7 @@ std = [
   "codec/std",
   "frame-support/std",
   "frame-system/std",
+  "log/std",
   "sp-runtime/std",
   "sp-io/std",
   "sp-std/std",

@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019  BOTLabs GmbH
+// Copyright (C) 2019-2021  BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,9 +18,9 @@
 
 //! KILT chain specification
 
+use kilt_primitives::{AccountId, AccountPublic};
 use mashnet_node_runtime::{
-	AccountId, BalancesConfig, GenesisConfig, SessionConfig, Signature, SudoConfig, SystemConfig,
-	WASM_BINARY,
+	BalancesConfig, GenesisConfig, SessionConfig, SudoConfig, SystemConfig, WASM_BINARY,
 };
 
 use hex_literal::hex;
@@ -29,12 +29,10 @@ use sc_service::{self, ChainType, Properties};
 use sp_consensus_aura::ed25519::AuthorityId as AuraId;
 use sp_core::{crypto::UncheckedInto, ed25519, Pair, Public};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
-use sp_runtime::traits::{IdentifyAccount, Verify};
+use sp_runtime::traits::IdentifyAccount;
 
 // Note this is the URL for the telemetry server
 //const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
-
-type AccountPublic = <Signature as Verify>::Signer;
 
 /// Specialised `ChainSpec`. This is a specialisation of the general Substrate ChainSpec type.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
@@ -117,11 +115,12 @@ impl Alternative {
 							vec![get_authority_keys_from_secret("//Alice")],
 							get_account_id_from_secret::<ed25519::Public>("//Alice"),
 							vec![
-					// Dev Faucet account
-					get_account_id_from_secret::<ed25519::Public>("receive clutch item involve chaos clutch furnace arrest claw isolate okay together"),
-					get_account_id_from_secret::<ed25519::Public>("//Bob"),
-					get_account_id_from_secret::<ed25519::Public>("//Alice"),
-				],
+								// Dev Faucet account
+								get_account_id_from_secret::<ed25519::Public>("receive clutch item involve chaos clutch furnace arrest claw isolate okay together"),
+								get_account_id_from_secret::<ed25519::Public>("//Bob"),
+								get_account_id_from_secret::<ed25519::Public>("//Alice"),
+							],
+							true
 						)
 					},
 					vec![],
@@ -155,6 +154,7 @@ impl Alternative {
 								DEV_AUTH_BOB.into(),
 								DEV_AUTH_CHARLIE.into(),
 							],
+							true,
 						)
 					},
 					vec![],
@@ -182,20 +182,21 @@ fn testnet_genesis(
 	initial_authorities: Vec<(AccountId, AuraId, GrandpaId)>,
 	root_key: AccountId,
 	endowed_accounts: Vec<AccountId>,
+	_enable_println: bool,
 ) -> GenesisConfig {
 	GenesisConfig {
-		frame_system: Some(SystemConfig {
+		frame_system: SystemConfig {
 			code: wasm_binary.to_vec(),
 			changes_trie_config: Default::default(),
-		}),
-		balances: Some(BalancesConfig {
+		},
+		balances: BalancesConfig {
 			balances: endowed_accounts
 				.iter()
 				.cloned()
 				.map(|k| (k, 1u128 << 90))
 				.collect(),
-		}),
-		session: Some(SessionConfig {
+		},
+		session: SessionConfig {
 			keys: initial_authorities
 				.iter()
 				.map(|x| {
@@ -209,10 +210,10 @@ fn testnet_genesis(
 					)
 				})
 				.collect::<Vec<_>>(),
-		}),
-		aura: Some(Default::default()),
-		grandpa: Some(Default::default()),
-		sudo: Some(SudoConfig { key: root_key }),
+		},
+		aura: Default::default(),
+		grandpa: Default::default(),
+		sudo: SudoConfig { key: root_key },
 	}
 }
 

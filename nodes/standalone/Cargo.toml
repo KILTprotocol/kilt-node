@@ -50,6 +50,7 @@ sp-runtime = {git = "https://github.com/paritytech/substrate", branch = "rococo-
 sp-transaction-pool = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
 
 mashnet-node-runtime = {path = "../../runtimes/standalone"}
+kilt-primitives = {path = "../../primitives"}
 
 [features]
 default = []

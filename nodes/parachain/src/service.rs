@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019  BOTLabs GmbH
+// Copyright (C) 2019-2021 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ use kilt_primitives::Block;
 use polkadot_primitives::v0::CollatorPair;
 use sc_executor::native_executor_instance;
 pub use sc_executor::NativeExecutor;
-use sc_service::{Configuration, Role, TFullBackend, TFullClient, TaskManager};
+use sc_service::{Configuration, PartialComponents, Role, TFullBackend, TFullClient, TaskManager};
 use sc_telemetry::TelemetrySpan;
 use sp_core::Pair;
 use sp_runtime::traits::BlakeTwo256;
@@ -43,7 +43,7 @@ native_executor_instance!(
 	kilt_parachain_runtime::native_version,
 );
 
-type PartialComponents = sc_service::PartialComponents<
+type PartialComponentsType = sc_service::PartialComponents<
 	TFullClient<Block, RuntimeApi, Executor>,
 	TFullBackend<Block>,
 	(),
@@ -56,7 +56,7 @@ type PartialComponents = sc_service::PartialComponents<
 ///
 /// Use this macro if you don't actually need the full service, but just the builder in order to
 /// be able to perform chain operations.
-pub fn new_partial(config: &Configuration) -> Result<PartialComponents, sc_service::Error> {
+pub fn new_partial(config: &Configuration) -> Result<PartialComponentsType, sc_service::Error> {
 	let inherent_data_providers = sp_inherents::InherentDataProviders::new();
 
 	let (client, backend, keystore_container, task_manager) =
@@ -77,8 +77,8 @@ pub fn new_partial(config: &Configuration) -> Result<PartialComponents, sc_servi
 		client.clone(),
 		client.clone(),
 		inherent_data_providers.clone(),
-		&task_manager.spawn_handle(),
-		registry,
+		&task_manager.spawn_essential_handle(),
+		registry.clone(),
 	)?;
 
 	let params = PartialComponents {
@@ -189,7 +189,7 @@ async fn start_node_impl(
 	};
 
 	if validator {
-		let proposer_factory = sc_basic_authorship::ProposerFactory::new(
+		let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
 			task_manager.spawn_handle(),
 			client.clone(),
 			transaction_pool,

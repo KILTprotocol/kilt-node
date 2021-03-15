@@ -2,7 +2,7 @@
 authors = ["KILT <info@kilt.io>"]
 edition = "2018"
 name = "kilt-parachain-runtime"
-version = "0.1.0"
+version = "0.2.0"
 
 [dependencies]
 codec = {package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"]}
@@ -13,7 +13,6 @@ bitflags = {version = "1.2.1", default-features = false}
 frame-system-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 pallet-indices = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 sp-arithmetic = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
-sp-io = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 
 # KILT pallets & primitives
 attestation = {default-features = false, path = "../../pallets/attestation"}
@@ -23,16 +22,17 @@ did = {default-features = false, path = "../../pallets/did"}
 kilt-primitives = {path = "../../primitives", default-features = false}
 
 # Substrate dependencies
-sp-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
-sp-block-builder = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
-sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
-sp-inherents = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
-sp-offchain = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
-sp-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
-sp-session = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 sp-std = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
-sp-transaction-pool = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
+sp-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
+sp-io = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 sp-version = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
+sp-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
+sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
+sp-session = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
+sp-offchain = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
+sp-block-builder = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
+sp-transaction-pool = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
+sp-inherents = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 
 frame-executive = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 frame-support = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
@@ -44,9 +44,16 @@ pallet-timestamp = {git = "https://github.com/paritytech/substrate", default-fea
 pallet-transaction-payment = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 
 # Cumulus dependencies
-cumulus-parachain-system = {package = "cumulus-pallet-parachain-system", git = "https://github.com/paritytech/cumulus", default-features = false, branch = "rococo-v1"}
-cumulus-primitives = {package = "cumulus-primitives-core", git = "https://github.com/paritytech/cumulus", default-features = false, branch = "rococo-v1"}
+cumulus-pallet-parachain-system = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "rococo-v1"}
+cumulus-primitives-core = {git = "https://github.com/paritytech/cumulus", default-features = false , branch = "rococo-v1"}
+cumulus-pallet-xcm-handler = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "rococo-v1"}
 parachain-info = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "rococo-v1"}
+
+# Polkadot dependencies
+polkadot-parachain = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "rococo-v1"}
+xcm = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "rococo-v1"}
+xcm-builder = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "rococo-v1"}
+xcm-executor = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "rococo-v1"}
 
 # Benchmarking
 frame-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "rococo-v1"}
@@ -110,6 +117,10 @@ std = [
   "pallet-transaction-payment/std",
   "parachain-info/std",
   "kilt-primitives/std",
-  "cumulus-parachain-system/std",
-  "cumulus-primitives/std",
+	"cumulus-pallet-parachain-system/std",
+	"cumulus-primitives-core/std",
+	"cumulus-pallet-xcm-handler/std",
+	"xcm/std",
+	"xcm-builder/std",
+	"xcm-executor/std",
 ]
