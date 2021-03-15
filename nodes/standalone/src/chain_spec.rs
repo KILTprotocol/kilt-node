@@ -18,9 +18,9 @@
 
 //! KILT chain specification
 
+use kilt_primitives::{AccountId, AccountPublic};
 use mashnet_node_runtime::{
-	AccountId, BalancesConfig, GenesisConfig, SessionConfig, Signature, SudoConfig, SystemConfig,
-	WASM_BINARY,
+	BalancesConfig, GenesisConfig, SessionConfig, SudoConfig, SystemConfig, WASM_BINARY,
 };
 
 use hex_literal::hex;
@@ -29,12 +29,10 @@ use sc_service::{self, ChainType, Properties};
 use sp_consensus_aura::ed25519::AuthorityId as AuraId;
 use sp_core::{crypto::UncheckedInto, ed25519, Pair, Public};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
-use sp_runtime::traits::{IdentifyAccount, Verify};
+use sp_runtime::traits::IdentifyAccount;
 
 // Note this is the URL for the telemetry server
 //const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
-
-type AccountPublic = <Signature as Verify>::Signer;
 
 /// Specialised `ChainSpec`. This is a specialisation of the general Substrate ChainSpec type.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;

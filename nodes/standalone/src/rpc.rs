@@ -7,7 +7,8 @@
 
 use std::sync::Arc;
 
-use mashnet_node_runtime::{opaque::Block, AccountId, Balance, Index};
+use kilt_primitives::{AccountId, Balance, Index};
+use mashnet_node_runtime::opaque::Block;
 pub use sc_rpc_api::DenyUnsafe;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;

@@ -22,12 +22,12 @@ use cumulus_primitives_core::ParaId;
 use kilt_parachain_runtime::{
 	BalancesConfig, GenesisConfig, ParachainInfoConfig, SudoConfig, SystemConfig, WASM_BINARY,
 };
-use kilt_primitives::{AccountId, Signature};
+use kilt_primitives::{AccountId, AccountPublic};
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
 use sc_service::{ChainType, Properties};
 use serde::{Deserialize, Serialize};
 use sp_core::{sr25519, Pair, Public};
-use sp_runtime::traits::{IdentifyAccount, Verify};
+use sp_runtime::traits::IdentifyAccount;
 
 use hex_literal::hex;
 
@@ -57,8 +57,6 @@ impl Extensions {
 		sc_chain_spec::get_extension(chain_spec.extensions())
 	}
 }
-
-type AccountPublic = <Signature as Verify>::Signer;
 
 /// Helper function to generate an account ID from seed
 pub fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
@@ -141,7 +139,7 @@ pub fn staging_test_net(id: ParaId) -> Result<ChainSpec, String> {
 		None,
 		Some(properties),
 		Extensions {
-			relay_chain: "rococo_kilt_testnet".into(),
+			relay_chain: "rococo_staging_testnet".into(),
 			para_id: id.into(),
 		},
 	))
