@@ -139,7 +139,7 @@ pub fn staging_test_net(id: ParaId) -> Result<ChainSpec, String> {
 		None,
 		Some(properties),
 		Extensions {
-			relay_chain: "rococo_staging_testnet".into(),
+			relay_chain: "rococo_local_testnet".into(),
 			para_id: id.into(),
 		},
 	))
