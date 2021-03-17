@@ -304,8 +304,8 @@ parameter_types! {
 	pub NativeOrmlTokens: BTreeSet<(Vec<u8>, MultiLocation)> = {
 		let mut t = BTreeSet::new();
 		//TODO: might need to add other assets based on orml-tokens
-		t.insert(("KILT".into(), (Junction::Parent, Junction::Parachain { id: 200 }).into()));
-		t.insert(("AUSD".into(), (Junction::Parent, Junction::Parachain { id: 300 }).into()));
+		t.insert(("KILT".into(), (Junction::Parent, Junction::Parachain { id: 12623 }).into()));
+		t.insert(("AUSD".into(), (Junction::Parent, Junction::Parachain { id: 666 }).into()));
 		t
 	};
 }
@@ -334,9 +334,9 @@ impl cumulus_pallet_xcm_handler::Config for Runtime {
 pub struct NativeToRelay;
 impl Convert<Balance, RelayChainBalance> for NativeToRelay {
 	fn convert(val: u128) -> Balance {
-		// native is 18
+		// native is 15
 		// relay is 12
-		val / 1_000_000
+		val / 1_000
 	}
 }
 
