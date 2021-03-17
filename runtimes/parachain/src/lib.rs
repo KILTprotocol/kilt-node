@@ -304,7 +304,8 @@ parameter_types! {
 	pub NativeOrmlTokens: BTreeSet<(Vec<u8>, MultiLocation)> = {
 		let mut t = BTreeSet::new();
 		//TODO: might need to add other assets based on orml-tokens
-		t.insert(("KILT".into(), (Junction::Parent, Junction::Parachain { id: 12623 }).into()));
+		t.insert(("KILT".into(), (Junction::Parent, Junction::Parachain { id: 200 }).into()));
+		t.insert(("AUSD".into(), (Junction::Parent, Junction::Parachain { id: 300 }).into()));
 		t
 	};
 }
