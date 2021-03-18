@@ -344,10 +344,6 @@ impl frame_support::traits::OnRuntimeUpgrade for DelegationStructRuntimeUpgrade 
 impl did::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
-	/// Type for the public signing key in DIDs
-	type PublicSigningKey = Hash;
-	/// Type for the public boxing key in DIDs
-	type PublicBoxKey = Hash;
 	type WeightInfo = ();
 }
 

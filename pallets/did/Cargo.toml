@@ -25,6 +25,10 @@ default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
+[dependencies.x25519-dalek]
+default-features = false
+version = "1.1"
+
 [dependencies.codec]
 default-features = false
 features = ["derive"]
@@ -38,6 +42,12 @@ git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
 [dependencies.frame-system]
+branch = "rococo-v1"
+default-features = false
+git = "https://github.com/paritytech/substrate"
+version = "3.0.0"
+
+[dependencies.sp-core]
 branch = "rococo-v1"
 default-features = false
 git = "https://github.com/paritytech/substrate"
@@ -77,4 +87,5 @@ std = [
   "frame-system/std",
   "log/std",
   "sp-std/std",
+  "x25519-dalek/std"
 ]
