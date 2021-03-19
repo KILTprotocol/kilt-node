@@ -62,14 +62,14 @@ pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
 
 // XCM imports
-use cumulus_primitives_core::relay_chain::Balance as RelayChainBalance;
-use orml_xcm_support::XcmHandler as XcmHandlerT;
+use cumulus_primitives_core::{relay_chain::Balance as RelayChainBalance, ParaId};
+use orml_xcm_support::{CurrencyIdConverter, IsConcreteWithGeneralKey, MultiCurrencyAdapter, NativePalletAssetOr, XcmHandler as XcmHandlerT};
 use polkadot_parachain::primitives::Sibling;
 use xcm::v0::{Junction, MultiLocation, NetworkId, Xcm};
 use xcm_builder::{
-	AccountId32Aliases, CurrencyAdapter, LocationInverter, ParentIsDefault, RelayChainAsNative,
-	SiblingParachainAsNative, SiblingParachainConvertsVia, SignedAccountId32AsNative,
-	SovereignSignedViaLocation,
+	AccountId32Aliases, ChildParachainConvertsVia, CurrencyAdapter, LocationInverter,
+	ParentIsDefault, RelayChainAsNative, SiblingParachainAsNative, SiblingParachainConvertsVia,
+	SignedAccountId32AsNative, SovereignSignedViaLocation,
 };
 use xcm_executor::{
 	traits::{IsConcrete, NativeAsset},
@@ -267,6 +267,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 impl parachain_info::Config for Runtime {}
 
 parameter_types! {
+	pub KiltNetwork: NetworkId = NetworkId::Named("kilt".into());
 	pub const RococoLocation: MultiLocation = MultiLocation::X1(Junction::Parent);
 	pub const RococoNetwork: NetworkId = NetworkId::Polkadot;
 	pub RelayChainOrigin: Origin = cumulus_pallet_xcm_handler::Origin::Relay.into();
@@ -276,35 +277,34 @@ parameter_types! {
 	pub const RelayChainCurrencyId: CurrencyId = CurrencyId::DOT;
 }
 
-type LocationConverter = (
+pub type LocationConverter = (
 	ParentIsDefault<AccountId>,
 	SiblingParachainConvertsVia<Sibling, AccountId>,
-	AccountId32Aliases<RococoNetwork, AccountId>,
+	ChildParachainConvertsVia<ParaId, AccountId>,
+	AccountId32Aliases<KiltNetwork, AccountId>,
 );
 
-type LocalAssetTransactor = CurrencyAdapter<
-	// Use this currency:
-	Balances,
-	// Use this currency when it is a fungible asset matching the given location or name:
-	IsConcrete<RococoLocation>,
-	// Do a simple punn to convert an AccountId32 MultiLocation into a native chain account ID:
+pub type LocalAssetTransactor = MultiCurrencyAdapter<
+	Currencies,
+	IsConcreteWithGeneralKey<CurrencyId, RelayToNative>,
 	LocationConverter,
-	// Our chain's account ID type (we can't get away without mentioning it explicitly):
 	AccountId,
+	CurrencyIdConverter<CurrencyId, RelayChainCurrencyId>,
+	CurrencyId,
 >;
 
-type LocalOriginConverter = (
+pub type LocalOriginConverter = (
 	SovereignSignedViaLocation<LocationConverter, Origin>,
 	RelayChainAsNative<RelayChainOrigin, Origin>,
 	SiblingParachainAsNative<cumulus_pallet_xcm_handler::Origin, Origin>,
-	SignedAccountId32AsNative<RococoNetwork, Origin>,
+	SignedAccountId32AsNative<KiltNetwork, Origin>,
 );
 
 parameter_types! {
 	pub NativeOrmlTokens: BTreeSet<(Vec<u8>, MultiLocation)> = {
 		let mut t = BTreeSet::new();
 		//TODO: might need to add other assets based on orml-tokens
-		t.insert(("KILT".into(), (Junction::Parent, Junction::Parachain { id: 12623 }).into()));
+		// t.insert(("KILT".into(), (Junction::Parent, Junction::Parachain { id: 12623 }).into()));
 		t.insert(("AUSD".into(), (Junction::Parent, Junction::Parachain { id: 666 }).into()));
 		t
 	};
@@ -317,7 +317,7 @@ impl Config for XcmConfig {
 	// How to withdraw and deposit an asset.
 	type AssetTransactor = LocalAssetTransactor;
 	type OriginConverter = LocalOriginConverter;
-	type IsReserve = NativeAsset;
+	type IsReserve = NativePalletAssetOr<NativeOrmlTokens>;
 	type IsTeleporter = ();
 	type LocationInverter = LocationInverter<Ancestry>;
 }
@@ -329,6 +329,15 @@ impl cumulus_pallet_xcm_handler::Config for Runtime {
 	type HrmpMessageSender = ParachainSystem;
 	type SendXcmOrigin = EnsureRoot<AccountId>;
 	type AccountIdConverter = LocationConverter;
+}
+
+pub struct RelayToNative;
+impl Convert<RelayChainBalance, Balance> for RelayToNative {
+	fn convert(val: u128) -> Balance {
+		// native is 15
+		// relay is 12
+		val * 1_000
+	}
 }
 
 pub struct NativeToRelay;
