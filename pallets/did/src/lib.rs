@@ -28,16 +28,16 @@ mod tests;
 pub mod benchmarking;
 
 pub mod default_weights;
-pub mod migration;
+// pub mod migration;				// Temporary disabled
 
+use codec::{Decode, Encode, WrapperTypeDecode};
 pub use default_weights::WeightInfo;
 
-use frame_support::{codec::{Encode, Decode}, Parameter, StorageMap, decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure};
+use frame_support::{Parameter, StorageMap, decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure};
 use frame_system::{self, ensure_signed};
 use sp_runtime::traits::Verify;
-use sp_std::{prelude::*, convert::TryFrom, collections::btree_set::BTreeSet};
+use sp_std::{prelude::{Clone}, convert::TryFrom, collections::btree_set::BTreeSet};
 use sp_core::{ed25519, sr25519};
-use x25519_dalek;
 
 /// The DID trait
 pub trait Config: frame_system::Config {
@@ -48,13 +48,61 @@ pub trait Config: frame_system::Config {
 	type WeightInfo: WeightInfo;
 }
 
-pub trait DIDPublicKey: Encode {
+pub trait DIDPublicKey {
 	fn get_did_key_description(&self) -> &'static str;
 }
 
-pub trait DIDPublicSigningKey: DIDPublicKey {
-	fn verify_signature(&self, payload: &Payload, signature: &Signature) -> SignatureVerificationResult;
-	fn get_expected_signature_size(&self) -> usize;		// Number of bytes for valid signatures
+#[derive(Encode, Decode, PartialEq, Clone, Ord, Eq, PartialOrd, Debug)]
+pub enum PublicVerificationKey {
+	Ed25519([u8; 32]),
+	Sr25519([u8; 32]),
+}
+
+impl PublicVerificationKey {
+	fn verify_signature(&self, payload: &Payload, signature: &Signature) -> SignatureVerificationResult {
+		ensure!(signature.len() == self.get_expected_signature_size(), SigningKeyError::InvalidSignatureFormat);
+		let signature = signature as &[u8];
+		// Did not find a way to return a Signature object from the match and then call directly verify on that...
+		match self {
+			PublicVerificationKey::Ed25519(raw_key) => {
+				let ed25519_sig = ed25519::Signature::try_from(
+					signature
+				).map_err(|_| SigningKeyError::InvalidSignatureFormat)?;
+				let signer = ed25519::Public(raw_key.clone());
+				Ok(ed25519_sig.verify(payload as &[u8], &signer))
+			}
+			PublicVerificationKey::Sr25519(raw_key) => {
+				let sr25519_sig = sr25519::Signature::try_from(
+					signature
+				).map_err(|_| SigningKeyError::InvalidSignatureFormat)?;
+				let signer = sr25519::Public(raw_key.clone());
+				Ok(sr25519_sig.verify(payload as &[u8], &signer))
+			}
+		}
+    }
+
+    fn get_expected_signature_size(&self) -> usize {
+        match self {
+			PublicVerificationKey::Ed25519(_) | PublicVerificationKey::Sr25519(_) => {
+				64
+			}
+		}
+    }
+}
+
+impl Default for PublicVerificationKey {
+    fn default() -> Self {
+        PublicVerificationKey::Sr25519([0; 32])
+    }
+}
+
+impl DIDPublicKey for PublicVerificationKey {
+    fn get_did_key_description(&self) -> &'static str {
+		match self {
+			PublicVerificationKey::Ed25519(_) => "Ed25519VerificationKey2018",
+			PublicVerificationKey::Sr25519(_) => "Sr25519VerificationKey2020"
+		}
+    }
 }
 
 pub type Payload = Vec<u8>;
@@ -65,114 +113,83 @@ pub type KeyIdentifier = Vec<u8>;
 pub type URL = Vec<u8>;
 pub type SignatureVerificationResult = Result<bool, SigningKeyError>;
 
-// Ed25519 key
-impl DIDPublicKey for ed25519::Public {
-    fn get_did_key_description(&self) -> &'static str {
-        "Ed25519VerificationKey2018"				// From https://w3c.github.io/did-spec-registries/#ed25519verificationkey2018
-    }
+#[derive(Encode, Decode, PartialEq, Clone, Ord, Eq, PartialOrd, Debug)]
+pub enum PublicEncryptionKey {
+	X55519([u8; 32]),
 }
 
-impl DIDPublicSigningKey for ed25519::Public {
-    fn verify_signature(&self, payload: &Payload, signature: &Signature) -> SignatureVerificationResult {
-		ensure!(signature.len() == self.get_expected_signature_size(), SigningKeyError::InvalidSignatureFormat);
-		let signature = signature as &[u8];
-		let ed25519_sig = ed25519::Signature::try_from(
-			signature
-		).map_err(|_| SigningKeyError::InvalidSignatureFormat)?;
-		
-		Ok(ed25519_sig.verify(payload as &[u8], self))
-    }
-
-    fn get_expected_signature_size(&self) -> usize {
-        64
-    }
-}
-
-// SR25519 key
-impl DIDPublicKey for sr25519::Public {
-    fn get_did_key_description(&self) -> &'static str {
-        "Sr25519VerificationKey2020"			// Not official yet. Proposed by Dock https://github.com/w3c-ccg/security-vocab/issues/32
-    }
-}
-
-impl DIDPublicSigningKey for sr25519::Public {
-    fn verify_signature(&self, payload: &Payload, signature: &Signature) -> SignatureVerificationResult {
-		ensure!(signature.len() == self.get_expected_signature_size(), SigningKeyError::InvalidSignatureFormat);
-		let signature = signature as &[u8];
-        let sr25519_sig = sr25519::Signature::try_from(
-			signature
-		).map_err(|_| SigningKeyError::InvalidSignatureFormat)?;
-		
-		Ok(sr25519_sig.verify(payload as &[u8], self))
-    }
-
-	fn get_expected_signature_size(&self) -> usize {
-		64
-	}
-}
-
-// X25519 key
-pub trait DIDPublicEncryptionKey: DIDPublicKey {}
-
-impl DIDPublicEncryptionKey for x25519_dalek::PublicKey {}
-
-impl DIDPublicKey for x25519_dalek::PublicKey {
+impl DIDPublicKey for PublicEncryptionKey {
     fn get_did_key_description(&self) -> &'static str {
         "X25519KeyAgreementKey2019"				// https://w3c.github.io/did-spec-registries/#x25519keyagreementkey2019
     }
 }
 
-#[derive(Encode, Decode, Default, Clone, PartialEq)]
+impl Default for PublicEncryptionKey {
+    fn default() -> Self {
+        PublicEncryptionKey::X55519([0; 32])
+    }
+}
+
+#[derive(Encode, Decode, Clone, PartialEq)]
 pub struct DIDDetails {
-	auth_key: Box<dyn DIDPublicSigningKey>,
-	key_agreement_key: Box<dyn DIDPublicEncryptionKey>,
-	delegation_key: Option<Box<dyn DIDPublicSigningKey>>,
-	attestation_key: Option<Box<dyn DIDPublicSigningKey>>,
-	verification_keys: Option<BTreeSet<Box<dyn DIDPublicSigningKey>>>,
+	auth_key: PublicVerificationKey,
+	key_agreement_key: PublicEncryptionKey,
+	delegation_key: Option<PublicVerificationKey>,
+	attestation_key: Option<PublicVerificationKey>,
+	verification_keys: BTreeSet<PublicVerificationKey>,
 	endpoint_url: Option<URL>,
 	last_tx_counter: u64
 }
 
-pub enum DIDUpdate {
-	ActiveKeyDelete(DIDKeyType),
-	EndpointUpdate(URL),
-	KeyUpdate(DIDKeyType, Box<dyn DIDPublicKey>),
-	VerificationKeyDelete(KeyIdentifier),
+#[derive(Debug, Encode, Decode, Clone, PartialEq)]
+pub enum DIDUpdateAction {
+	SetVerificationKey(DIDVerificationKeyType, PublicVerificationKey),
+	SetEncryptionKey(DIDEncryptionKeyType, PublicEncryptionKey),
+	RemoveSigningKey(DIDVerificationKeyType),
+	RemoveEncryptionKey(DIDEncryptionKeyType),
+	DeleteVerificationKey(KeyIdentifier),
+	SetServiceEndpoint(URL),
+	DeleteServiceEndpoint(),
 }
 
-pub enum DIDKeyType {
+#[derive(Debug, Encode, Decode, Clone, PartialEq)]
+pub enum DIDVerificationKeyType {
 	Authentication,
 	CapabilityDelegation,
 	CapabilityInvocation,           // For future use
 	AssertionMethod,
+}
+
+#[derive(Debug, Encode, Decode, Clone, PartialEq)]
+pub enum DIDEncryptionKeyType {
 	KeyAgreement,
 }
 
-pub trait DIDOperation: Encode {
-	fn get_verification_key_type(&self) -> DIDKeyType;
-	fn get_signature(&self) -> Signature;
-	fn get_did(&self) -> DIDIdentifier;
+pub trait DIDOperation {
+	fn get_verification_key_type(&self) -> DIDVerificationKeyType;
+	fn get_signature(&self) -> &Signature;
+	fn get_did(&self) -> &DIDIdentifier;
 }
 
-#[derive(Encode, Decode, Default, Clone, PartialEq)]
+#[derive(Debug, Encode, Decode, Clone, PartialEq)]
 pub struct DIDUpdateOperation {
 	did: DIDIdentifier,
-	operations: Vec<DIDUpdate>,
+	operations: Vec<DIDUpdateAction>,
 	signature: Signature,
 	txCounter: u64,
 }
 
 impl DIDOperation for DIDUpdateOperation {
-    fn get_verification_key_type(&self) -> DIDKeyType {
-        DIDKeyType::Authentication
+    fn get_verification_key_type(&self) -> DIDVerificationKeyType {
+        DIDVerificationKeyType::Authentication
     }
 
-    fn get_signature(&self) -> Signature {
-        self.signature
+    fn get_signature(&self) -> &Signature {
+        self.signature.as_ref()
     }
 
-    fn get_did(&self) -> DIDIdentifier {
-        self.did
+    fn get_did(&self) -> &DIDIdentifier {
+        self.did.as_ref()
     }
 }
 
@@ -217,22 +234,22 @@ decl_module! {
 	}
 }
 
-// impl<T: Config> Module<T> {
-
-// 	pub fn verify_did_update_operation_signature(op: DIDUpdateOperation) -> SignatureVerificationResult {
-// 		let did_entry = <DIDs<T>>::get(op.did);
-// 		if (!did_entry.is_some()) {
-// 			Ok(true)
-// 		} else {
-// 			Self::verify_did_operation_signature(op)?
-// 			let last_tx_counter = did_entry.last_tx_counter;
-// 			if (last_tx_counter >= op.txCounter) {
-// 				Error(InvalidNonce)
-// 			} else {
-// 				Ok(true)
-// 			}
-// 		}
-// 	}
+impl<T: Config> Module<T> {
+	pub fn verify_did_update_operation_signature(op: DIDUpdateOperation) -> SignatureVerificationResult {
+		Ok(true)
+		// let did_entry = <DIDs<T>>::get(op.did);
+		// if (!did_entry.is_some()) {
+		// 	Ok(true)
+		// } else {
+		// 	Self::verify_did_operation_signature(op)?
+		// 	let last_tx_counter = did_entry.last_tx_counter;
+		// 	if (last_tx_counter >= op.txCounter) {
+		// 		Error(InvalidNonce)
+		// 	} else {
+		// 		Ok(true)
+		// 	}
+		// }
+	}
 
 // 	pub fn verify_did_operation_signature<O: DIDOperation>(op: O) -> SignatureVerificationResult {
 // 		let did_verification_key = Self::retrieve_did_key_for_type(op.get_did(), op.get_verification_key_type());
@@ -258,7 +275,7 @@ decl_module! {
 
 // 		<KeyDetails<T>>::get(key_identifier);
 // 	}
-// }
+}
  
 
 decl_storage! {

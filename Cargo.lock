@@ -1494,7 +1494,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
- "x25519-dalek",
 ]
 
 [[package]]
