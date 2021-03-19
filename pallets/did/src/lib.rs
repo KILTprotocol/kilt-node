@@ -228,33 +228,42 @@ decl_module! {
 		#[weight = <T as Config>::WeightInfo::add()]
 		pub fn submit_did_update_operation(origin, did_operation: DIDUpdateOperation) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
-			let sender = ensure_signed(origin)?;
+			ensure_signed(origin)?;
+
+			let did_entry: Option<DIDDetails> = <DIDs<T>>::get(did);
+
+			if (did_entry.is_none()) {
+
+			} else {
+
+			}
+
+
 			Ok(())
 		}
 	}
 }
 
 impl<T: Config> Module<T> {
-	pub fn verify_did_update_operation_signature(op: DIDUpdateOperation) -> SignatureVerificationResult {
-		Ok(true)
-		// let did_entry = <DIDs<T>>::get(op.did);
-		// if (!did_entry.is_some()) {
-		// 	Ok(true)
-		// } else {
-		// 	Self::verify_did_operation_signature(op)?
-		// 	let last_tx_counter = did_entry.last_tx_counter;
-		// 	if (last_tx_counter >= op.txCounter) {
-		// 		Error(InvalidNonce)
-		// 	} else {
-		// 		Ok(true)
-		// 	}
-		// }
+	// If did_entry is None, it is a new DID and the signature must match the authentication key specified.
+	pub fn verify_did_update_operation_signature(op: DIDUpdateOperation, did_entry: Option<DIDDetails>) -> SignatureVerificationResult {
+		if (did_entry.is_some()) {
+			Ok(true)
+		} else {
+			Self::verify_did_operation_signature(op)?
+			let last_tx_counter = did_entry.last_tx_counter;
+			if (last_tx_counter >= op.txCounter) {
+				Error(InvalidNonce)
+			} else {
+				Ok(true)
+			}
+		}
 	}
 
-// 	pub fn verify_did_operation_signature<O: DIDOperation>(op: O) -> SignatureVerificationResult {
-// 		let did_verification_key = Self::retrieve_did_key_for_type(op.get_did(), op.get_verification_key_type());
-// 		op.get_signature().is_some() && did_verification_key.is_some() && did_verification_key.verify_signature(op.encode().as_ref(), op.get_signature())
-// 	}
+	pub fn verify_did_operation_signature<O: DIDOperation>(op: O) -> SignatureVerificationResult {
+		let did_verification_key = Self::retrieve_did_key_for_type(op.get_did(), op.get_verification_key_type());
+		op.get_signature().is_some() && did_verification_key.is_some() && did_verification_key.verify_signature(op.encode().as_ref(), op.get_signature())
+	}
 
 // 	fn retrieve_did_key_for_type(did: DIDIdentifier, key_type: DIDKeyType) -> Option<DIDKeyEntry> {
 // 		let did_entry = <DIDs<T>>::get(did);
