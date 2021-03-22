@@ -30,12 +30,7 @@ use orml_currencies::BasicCurrencyAdapter;
 use orml_traits::{arithmetic::Zero, parameter_type_with_key};
 use sp_api::impl_runtime_apis;
 use sp_core::OpaqueMetadata;
-use sp_runtime::{
-	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, Convert, Verify},
-	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, DispatchResult,
-};
+use sp_runtime::{ApplyExtrinsicResult, DispatchResult, create_runtime_str, generic, impl_opaque_keys, traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, Convert, Identity, Verify}, transaction_validity::{TransactionSource, TransactionValidity}};
 use sp_std::{collections::btree_set::BTreeSet, prelude::*};
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -63,18 +58,18 @@ pub use sp_runtime::{Perbill, Permill};
 
 // XCM imports
 use cumulus_primitives_core::{relay_chain::Balance as RelayChainBalance, ParaId};
-use orml_xcm_support::{CurrencyIdConverter, IsConcreteWithGeneralKey, MultiCurrencyAdapter, NativePalletAssetOr, XcmHandler as XcmHandlerT};
+use orml_xcm_support::{
+	CurrencyIdConverter, IsConcreteWithGeneralKey, MultiCurrencyAdapter, NativePalletAssetOr,
+	XcmHandler as XcmHandlerT,
+};
 use polkadot_parachain::primitives::Sibling;
 use xcm::v0::{Junction, MultiLocation, NetworkId, Xcm};
 use xcm_builder::{
-	AccountId32Aliases, ChildParachainConvertsVia, CurrencyAdapter, LocationInverter,
-	ParentIsDefault, RelayChainAsNative, SiblingParachainAsNative, SiblingParachainConvertsVia,
+	AccountId32Aliases, ChildParachainConvertsVia, LocationInverter, ParentIsDefault,
+	RelayChainAsNative, SiblingParachainAsNative, SiblingParachainConvertsVia,
 	SignedAccountId32AsNative, SovereignSignedViaLocation,
 };
-use xcm_executor::{
-	traits::{IsConcrete, NativeAsset},
-	Config, XcmExecutor,
-};
+use xcm_executor::{Config, XcmExecutor};
 
 pub use attestation;
 pub use ctype;
@@ -286,7 +281,8 @@ pub type LocationConverter = (
 
 pub type LocalAssetTransactor = MultiCurrencyAdapter<
 	Currencies,
-	IsConcreteWithGeneralKey<CurrencyId, RelayToNative>,
+	UnknownTokens,
+	IsConcreteWithGeneralKey<CurrencyId, Identity>,
 	LocationConverter,
 	AccountId,
 	CurrencyIdConverter<CurrencyId, RelayChainCurrencyId>,
@@ -408,6 +404,10 @@ impl orml_currencies::Config for Runtime {
 	type WeightInfo = ();
 }
 
+impl orml_unknown_tokens::Config for Runtime {
+	type Event = Event;
+}
+
 impl attestation::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
@@ -470,6 +470,7 @@ construct_runtime! {
 		Tokens: orml_tokens::{Module, Call, Storage, Event<T>} = 21,
 		Currencies: orml_currencies::{Module, Call, Storage, Event<T>} = 22,
 		XTokens: orml_xtokens::{Module, Call, Storage, Event<T>} = 23,
+		UnknownTokens: orml_unknown_tokens::{Module, Storage, Event} = 24,
 	}
 }
 
