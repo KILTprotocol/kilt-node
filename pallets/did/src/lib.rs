@@ -356,17 +356,30 @@ decl_module! {
 }
 
 impl<T: Config> Module<T> {
-	pub fn verify_did_operation_signature<O: DIDOperation>(op: &O, signature: &Signature, fail_if_absent: bool) -> DIDSignatureVerificationResult {
+	/**
+	Verify the signature of a generic [DIDOperation](DIDOperation), and returns a [DIDSignatureVerificationResult](DIDSignatureVerificationResult).
+	The paremeters are:
+	- op: a reference to the DID operation;
+	- signature: a reference to the signature;
+	 */
+	pub fn verify_did_operation_signature<O: DIDOperation>(op: &O, signature: &Signature) -> DIDSignatureVerificationResult {
+		// Try to retrieve from the storage the details of the given DID.
 		let did_entry: Option<DIDDetails> = DIDs::get(op.get_did());
 
-		ensure!(did_entry.is_some() || !fail_if_absent, DIDError::DIDNotPresent);
+		// If there is no DID stored, generate a DIDNotPresent error.
+		ensure!(did_entry.is_some(), DIDError::DIDNotPresent);
 
-		if let Some(did_entry) = did_entry {
-			let verification_key = did_entry.get_verification_key_for_key_type(op.get_verification_key_type()).ok_or(DIDError::VerificationkeyNotPresent(op.get_verification_key_type().clone()))?;
-			let is_signature_valid = verification_key.verify_signature(&op.encode(), signature).map_err(|_| DIDError::InvalidSignatureFormat)?;
-			return Ok(is_signature_valid);
-		}
-		Ok(true)		// If no DID entry is present and signature verification should not fail (fail_if_absent is false), return true.
+		// Force unwrap the DID details, as we are sure it is not None.
+		let did_entry = did_entry.unwrap();
+
+		// Retrieves the needed verification key from the DID details, or generate a VerificationkeyNotPresent error if there is no key of the type required.
+		let verification_key = did_entry.get_verification_key_for_key_type(op.get_verification_key_type()).ok_or(DIDError::VerificationkeyNotPresent(op.get_verification_key_type().clone()))?;
+
+		// Verifies that the signature matches the expected format, otherwise generate an InvalidSignatureFormat error.
+		let is_signature_valid = verification_key.verify_signature(&op.encode(), signature).map_err(|_| DIDError::InvalidSignatureFormat)?;
+
+		// Return the result of the signature verification.
+		return Ok(is_signature_valid);
 	}
 }
  
