@@ -30,19 +30,28 @@ pub mod benchmarking;
 pub mod default_weights;
 // pub mod migration;				// Temporary disabled
 
-use codec::{Decode, Encode, WrapperTypeDecode};
+use codec::{Decode, Encode};
 pub use default_weights::WeightInfo;
 
-use frame_support::{Parameter, StorageMap, decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure};
+use frame_support::{StorageMap, decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure};
 use frame_system::{self, ensure_signed};
 use sp_runtime::traits::Verify;
-use sp_std::{prelude::{Clone}, convert::TryFrom, collections::btree_set::BTreeSet};
+use sp_std::{prelude::{Clone}, convert::TryFrom, collections::{btree_set::BTreeSet}, vec::Vec};
 use sp_core::{ed25519, sr25519};
+
+pub type Payload = Vec<u8>;
+pub type Signature = Vec<u8>;
+pub type KeyValue = Vec<u8>;
+pub type DIDIdentifier = Vec<u8>;
+pub type KeyIdentifier = Vec<u8>;
+pub type URL = Vec<u8>;
+pub type SignatureVerificationResult = Result<bool, SignatureError>;
+pub type DIDSignatureVerificationResult = Result<bool, DIDError>;
 
 /// The DID trait
 pub trait Config: frame_system::Config {
 	/// DID specific event type
-	type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+	type Event: From<Event> + Into<<Self as frame_system::Config>::Event>;
 
 	/// Weight information for extrinsics in this pallet.
 	type WeightInfo: WeightInfo;
@@ -52,7 +61,7 @@ pub trait DIDPublicKey {
 	fn get_did_key_description(&self) -> &'static str;
 }
 
-#[derive(Encode, Decode, PartialEq, Clone, Ord, Eq, PartialOrd, Debug)]
+#[derive(Clone, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
 pub enum PublicVerificationKey {
 	Ed25519([u8; 32]),
 	Sr25519([u8; 32]),
@@ -60,21 +69,21 @@ pub enum PublicVerificationKey {
 
 impl PublicVerificationKey {
 	fn verify_signature(&self, payload: &Payload, signature: &Signature) -> SignatureVerificationResult {
-		ensure!(signature.len() == self.get_expected_signature_size(), SigningKeyError::InvalidSignatureFormat);
+		ensure!(signature.len() == self.get_expected_signature_size(), SignatureError::InvalidSignatureFormat);
 		let signature = signature as &[u8];
 		// Did not find a way to return a Signature object from the match and then call directly verify on that...
 		match self {
 			PublicVerificationKey::Ed25519(raw_key) => {
 				let ed25519_sig = ed25519::Signature::try_from(
 					signature
-				).map_err(|_| SigningKeyError::InvalidSignatureFormat)?;
+				).map_err(|_| SignatureError::InvalidSignatureFormat)?;
 				let signer = ed25519::Public(raw_key.clone());
 				Ok(ed25519_sig.verify(payload as &[u8], &signer))
 			}
 			PublicVerificationKey::Sr25519(raw_key) => {
 				let sr25519_sig = sr25519::Signature::try_from(
 					signature
-				).map_err(|_| SigningKeyError::InvalidSignatureFormat)?;
+				).map_err(|_| SignatureError::InvalidSignatureFormat)?;
 				let signer = sr25519::Public(raw_key.clone());
 				Ok(sr25519_sig.verify(payload as &[u8], &signer))
 			}
@@ -105,15 +114,7 @@ impl DIDPublicKey for PublicVerificationKey {
     }
 }
 
-pub type Payload = Vec<u8>;
-pub type Signature = Vec<u8>;
-pub type KeyValue = Vec<u8>;
-pub type DIDIdentifier = Vec<u8>;
-pub type KeyIdentifier = Vec<u8>;
-pub type URL = Vec<u8>;
-pub type SignatureVerificationResult = Result<bool, SigningKeyError>;
-
-#[derive(Encode, Decode, PartialEq, Clone, Ord, Eq, PartialOrd, Debug)]
+#[derive(Clone, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
 pub enum PublicEncryptionKey {
 	X55519([u8; 32]),
 }
@@ -130,7 +131,7 @@ impl Default for PublicEncryptionKey {
     }
 }
 
-#[derive(Encode, Decode, Clone, PartialEq)]
+#[derive(Clone, Decode, Encode, PartialEq)]
 pub struct DIDDetails {
 	auth_key: PublicVerificationKey,
 	key_agreement_key: PublicEncryptionKey,
@@ -141,51 +142,50 @@ pub struct DIDDetails {
 	last_tx_counter: u64
 }
 
-#[derive(Debug, Encode, Decode, Clone, PartialEq)]
-pub enum DIDUpdateAction {
-	SetVerificationKey(DIDVerificationKeyType, PublicVerificationKey),
-	SetEncryptionKey(DIDEncryptionKeyType, PublicEncryptionKey),
-	RemoveSigningKey(DIDVerificationKeyType),
-	RemoveEncryptionKey(DIDEncryptionKeyType),
-	DeleteVerificationKey(KeyIdentifier),
-	SetServiceEndpoint(URL),
-	DeleteServiceEndpoint(),
+impl<'a> From<&'a DIDCreationOperation> for DIDDetails {
+    fn from(op: &DIDCreationOperation) -> Self {
+		DIDDetails {
+			auth_key: op.new_auth_key.clone(),
+			key_agreement_key: op.new_key_agreement_key.clone(),
+			delegation_key: op.new_delegation_key.clone(),
+			attestation_key: op.new_attestation_key.clone(),
+			verification_keys: BTreeSet::new(),
+			endpoint_url: op.new_endpoint_url.clone(),
+			last_tx_counter: 0,
+		}
+    }
 }
 
-#[derive(Debug, Encode, Decode, Clone, PartialEq)]
-pub enum DIDVerificationKeyType {
-	Authentication,
-	CapabilityDelegation,
-	CapabilityInvocation,           // For future use
-	AssertionMethod,
+impl DIDDetails {
+	fn get_verification_key_for_key_type(&self, key_type: DIDVerificationKeyType) -> Option<&PublicVerificationKey> {
+		match key_type {
+			DIDVerificationKeyType::AssertionMethod => Option::from(self.attestation_key.as_ref()),
+			DIDVerificationKeyType::Authentication => Option::from(&self.auth_key),
+			DIDVerificationKeyType::CapabilityDelegation => Option::from(self.delegation_key.as_ref()),
+			_ => None,
+		}
+	}
+
+	// fn get_kencryption_key_for_key_type(&self, key_type: DIDEncryptionKeyType) -> Option<&PublicEncryptionKey> {
+	// 	match key_type {
+	// 		DIDEncryptionKeyType::KeyAgreement => Option::from(&self.key_agreement_key),
+	// 	}
+	// }
 }
 
-#[derive(Debug, Encode, Decode, Clone, PartialEq)]
-pub enum DIDEncryptionKeyType {
-	KeyAgreement,
-}
-
-pub trait DIDOperation {
-	fn get_verification_key_type(&self) -> DIDVerificationKeyType;
-	fn get_signature(&self) -> &Signature;
-	fn get_did(&self) -> &DIDIdentifier;
-}
-
-#[derive(Debug, Encode, Decode, Clone, PartialEq)]
-pub struct DIDUpdateOperation {
+#[derive(Clone, Decode, Debug, Encode, PartialEq)]
+pub struct DIDCreationOperation {
 	did: DIDIdentifier,
-	operations: Vec<DIDUpdateAction>,
-	signature: Signature,
-	txCounter: u64,
+	new_auth_key: PublicVerificationKey,
+	new_key_agreement_key: PublicEncryptionKey,
+	new_attestation_key: Option<PublicVerificationKey>,
+	new_delegation_key: Option<PublicVerificationKey>,
+	new_endpoint_url: Option<URL>,
 }
 
-impl DIDOperation for DIDUpdateOperation {
+impl DIDOperation for DIDCreationOperation {
     fn get_verification_key_type(&self) -> DIDVerificationKeyType {
         DIDVerificationKeyType::Authentication
-    }
-
-    fn get_signature(&self) -> &Signature {
-        self.signature.as_ref()
     }
 
     fn get_did(&self) -> &DIDIdentifier {
@@ -193,23 +193,67 @@ impl DIDOperation for DIDUpdateOperation {
     }
 }
 
-pub enum SigningKeyError {
-	InvalidSignatureFormat
+#[derive(Clone, Debug, Decode, Encode, PartialEq)]
+pub enum DIDVerificationKeyType {
+	Authentication,
+	CapabilityDelegation,
+	CapabilityInvocation,           // For future use
+	AssertionMethod,
+}
+
+#[derive(Clone, Debug, Decode, Encode, PartialEq)]
+pub enum DIDEncryptionKeyType {
+	KeyAgreement,
+}
+
+pub trait DIDOperation: Encode {
+	fn get_verification_key_type(&self) -> DIDVerificationKeyType;
+	fn get_did(&self) -> &DIDIdentifier;
+}
+
+pub enum DIDError {
+	SignatureError(SignatureError),
+	StorageError(StorageError),
+	DIDFormatError(DIDFormatError),
+}
+
+pub enum SignatureError {
+	InvalidSignatureFormat,
+	InvalidSignature,
+}
+
+pub enum StorageError {
+	DIDAlreadyPresent,
+	DIDNotPresent,
+	VerificationkeyNotPresent,
+}
+
+pub enum DIDFormatError {
+	AuhenticationKeyNotPresent,
 }
 
 decl_error! {
+	// TODO: How to add the DIDError enum to here and use within the extrinsics?
 	pub enum Error for Module<T: Config> {
-		SigningKeyError
+		InvalidSignatureFormat,
+		InvalidSignature,
+		StorageError,
+		DIDAlreadyPresent,
+		DIDNotPresent,
+		VerificationkeyNotPresent,
+		AuhenticationKeyNotPresent,
 	}
 }
 
 decl_event!(
 	/// Events for DIDs
-	pub enum Event<T> where <T as frame_system::Config>::AccountId {
+	pub enum Event {
 		/// A did has been created
-		DidCreated(AccountId),
+		DidCreated(DIDIdentifier),
+		/// A did has been updated
+		DidUpdated(DIDIdentifier),
 		/// A did has been removed
-		DidRemoved(AccountId),
+		DidRemoved(DIDIdentifier),
 	}
 );
 
@@ -220,70 +264,41 @@ decl_module! {
 		/// Deposit events
 		fn deposit_event() = default;
 
-		/// Adds a DID on chain, where
-		/// origin - the origin of the transaction
-		/// sign_key - public signing key of the DID
-		/// box_key - public boxing key of the DID
-		/// doc_ref - optional reference to the DID document storage
+		type Error = Error<T>;
+
 		#[weight = <T as Config>::WeightInfo::add()]
-		pub fn submit_did_update_operation(origin, did_operation: DIDUpdateOperation) -> DispatchResult {
+		pub fn submit_did_create_operation(origin, did_creation_operation: DIDCreationOperation, signature: Signature) -> DispatchResult {
 			// origin of the transaction needs to be a signed sender account
 			ensure_signed(origin)?;
 
-			let did_entry: Option<DIDDetails> = <DIDs<T>>::get(did);
+			ensure!(DIDs::contains_key(did_creation_operation.get_did()), <Error<T>>::DIDNotPresent);
 
-			if (did_entry.is_none()) {
+			let did_entry = DIDDetails::from(&did_creation_operation);
 
-			} else {
+			let signature_verification_key = did_entry.get_verification_key_for_key_type(DIDVerificationKeyType::Authentication).ok_or(<Error<T>>::AuhenticationKeyNotPresent)?;
 
-			}
+			let is_signature_valid = signature_verification_key.verify_signature(&did_creation_operation.encode(), &signature).map_err(|_| <Error<T>>::InvalidSignatureFormat)?;
 
+			ensure!(is_signature_valid, <Error<T>>::InvalidSignature);
 
-			Ok(())
+			Ok(())	// Emit relevant event
 		}
 	}
 }
 
 impl<T: Config> Module<T> {
-	// If did_entry is None, it is a new DID and the signature must match the authentication key specified.
-	pub fn verify_did_update_operation_signature(op: DIDUpdateOperation, did_entry: Option<DIDDetails>) -> SignatureVerificationResult {
-		if (did_entry.is_some()) {
-			Ok(true)
-		} else {
-			Self::verify_did_operation_signature(op)?
-			let last_tx_counter = did_entry.last_tx_counter;
-			if (last_tx_counter >= op.txCounter) {
-				Error(InvalidNonce)
-			} else {
-				Ok(true)
-			}
+	pub fn verify_did_operation_signature<O: DIDOperation>(op: &O, signature: &Signature, fail_if_absent: bool) -> DIDSignatureVerificationResult {
+		let did_entry: Option<DIDDetails> = DIDs::get(op.get_did());
+
+		ensure!(did_entry.is_some() || !fail_if_absent, DIDError::StorageError(StorageError::DIDNotPresent));
+
+		if let Some(did_entry) = did_entry {
+			let verification_key = did_entry.get_verification_key_for_key_type(op.get_verification_key_type()).ok_or(DIDError::StorageError(StorageError::VerificationkeyNotPresent))?;
+			let is_signature_valid = verification_key.verify_signature(&op.encode(), signature).map_err(|err| DIDError::SignatureError(err))?;
+			return Ok(is_signature_valid);
 		}
+		Ok(true)		// If no DID entry is present and signature verification should not fail (fail_if_absent is false), return true.
 	}
-
-	pub fn verify_did_operation_signature<O: DIDOperation>(op: O) -> SignatureVerificationResult {
-		let did_verification_key = Self::retrieve_did_key_for_type(op.get_did(), op.get_verification_key_type());
-		op.get_signature().is_some() && did_verification_key.is_some() && did_verification_key.verify_signature(op.encode().as_ref(), op.get_signature())
-	}
-
-// 	fn retrieve_did_key_for_type(did: DIDIdentifier, key_type: DIDKeyType) -> Option<DIDKeyEntry> {
-// 		let did_entry = <DIDs<T>>::get(did);
-// 		if (!did_entry.is_some()) {
-// 			None
-// 		}
-
-// 		let key_identifier: Option<KeyIdentifier> = match key_type {
-// 			DIDKeyType::AssertionMethod => did_entry.attestation_key_id,
-// 			DIDKeyType::Authentication => did_entry.auth_key_id,
-// 			DIDKeyType::CapabilityDelegation => did_entry.delegation_key_id,
-// 			DIDKeyType::KeyAgreement => did_entry.key_agreement_key_id,
-// 			_ => None
-// 		};
-// 		if (!key_identifier.is_some()) {
-// 			None
-// 		}
-
-// 		<KeyDetails<T>>::get(key_identifier);
-// 	}
 }
  
 

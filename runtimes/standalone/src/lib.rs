@@ -347,18 +347,18 @@ impl did::Config for Runtime {
 	type WeightInfo = ();
 }
 
-pub struct DidStructRuntimeUpgrade;
-impl did::migration::V23ToV24 for DidStructRuntimeUpgrade {
-	type PublicSigningKey = Hash;
-	type PublicBoxKey = Hash;
-	type AccountId = AccountId;
-	type Module = Attestation;
-}
-impl frame_support::traits::OnRuntimeUpgrade for DidStructRuntimeUpgrade {
-	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		did::migration::apply::<Self>()
-	}
-}
+// pub struct DidStructRuntimeUpgrade;
+// impl did::migration::V23ToV24 for DidStructRuntimeUpgrade {
+// 	type PublicSigningKey = Hash;
+// 	type PublicBoxKey = Hash;
+// 	type AccountId = AccountId;
+// 	type Module = Attestation;
+// }
+// impl frame_support::traits::OnRuntimeUpgrade for DidStructRuntimeUpgrade {
+// 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
+// 		did::migration::apply::<Self>()
+// 	}
+// }
 pub struct PortableGabiRemoval;
 impl frame_support::traits::OnRuntimeUpgrade for PortableGabiRemoval {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
@@ -417,7 +417,7 @@ construct_runtime!(
 		Ctype: ctype::{Module, Call, Storage, Event<T>} = 9,
 		Attestation: attestation::{Module, Call, Storage, Event<T>} = 10,
 		Delegation: delegation::{Module, Call, Storage, Event<T>} = 11,
-		Did: did::{Module, Call, Storage, Event<T>} = 12,
+		Did: did::{Module, Call, Storage, Event} = 12,
 
 		Session: session::{Module, Call, Storage, Event, Config<T>} = 15,
 		Authorship: authorship::{Module, Call, Storage} = 16,
