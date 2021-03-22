@@ -1,3 +1,21 @@
+// KILT Blockchain – https://botlabs.org
+// Copyright (C) 2019-2021 BOTLabs GmbH
+
+// The KILT Blockchain is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// The KILT Blockchain is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+// If you feel like getting in touch with us, you can do so at info@botlabs.org
+
 use crate::*;
 use frame_support::{
 	dispatch::{Codec, Weight},
@@ -63,13 +81,7 @@ pub trait V23ToV24 {
 		+ AsMut<[u8]>;
 
 	/// The user account identifier type for the runtime.
-	type AccountId: Parameter
-		+ Member
-		+ MaybeSerializeDeserialize
-		+ Debug
-		+ MaybeDisplay
-		+ Ord
-		+ Default;
+	type AccountId: Parameter + Member + MaybeSerializeDeserialize + Debug + MaybeDisplay + Ord + Default;
 }
 
 #[allow(type_alias_bounds)]
@@ -122,23 +134,23 @@ pub fn apply<T: V23ToV24>() -> Weight {
 	}
 }
 
-/// Migrate from the old legacy voting bond (fixed) to the new one (per-vote dynamic).
+/// Migrate from the old legacy voting bond (fixed) to the new one (per-vote
+/// dynamic).
 fn migrate_to_struct<T: V23ToV24>() {
 	let mut counter = 0;
-	<Attestations<T>>::translate::<
-		Option<(T::Hash, T::AccountId, Option<T::DelegationNodeId>, bool)>,
-		_,
-	>(|_who, option| {
-		counter += 1;
-		option.map(|(ctype_hash, attester, delegation_id, revoked)| {
-			Some(AttestationStruct {
-				ctype_hash,
-				attester,
-				delegation_id,
-				revoked,
+	<Attestations<T>>::translate::<Option<(T::Hash, T::AccountId, Option<T::DelegationNodeId>, bool)>, _>(
+		|_who, option| {
+			counter += 1;
+			option.map(|(ctype_hash, attester, delegation_id, revoked)| {
+				Some(AttestationStruct {
+					ctype_hash,
+					attester,
+					delegation_id,
+					revoked,
+				})
 			})
-		})
-	});
+		},
+	);
 
 	log::info!("migrated {} attestation records.", counter,);
 }
@@ -176,8 +188,7 @@ mod tests {
 			let delegation_id: Option<<Test as delegation::Config>::DelegationNodeId> = None;
 			let revoked = false;
 
-			let attestation_old: AttestationOld =
-				(ctype_hash, attester.clone(), delegation_id, revoked);
+			let attestation_old: AttestationOld = (ctype_hash, attester.clone(), delegation_id, revoked);
 
 			put_storage_value::<Option<AttestationOld>>(
 				ATTESTATION_PALLET_PREFIX.as_bytes(),

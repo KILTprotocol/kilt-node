@@ -32,9 +32,7 @@ pub mod migration;
 pub use default_weights::WeightInfo;
 
 use codec::{Decode, Encode};
-use frame_support::{
-	decl_event, decl_module, decl_storage, dispatch::DispatchResult, Parameter, StorageMap,
-};
+use frame_support::{decl_event, decl_module, decl_storage, dispatch::DispatchResult, Parameter, StorageMap};
 use frame_system::{self, ensure_signed};
 use sp_runtime::{codec::Codec, traits::Member};
 use sp_std::prelude::*;

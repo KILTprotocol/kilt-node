@@ -1,12 +1,28 @@
+// KILT Blockchain – https://botlabs.org
+// Copyright (C) 2019-2021 BOTLabs GmbH
+
+// The KILT Blockchain is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// The KILT Blockchain is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+// If you feel like getting in touch with us, you can do so at info@botlabs.org
+
 use crate::*;
 use frame_support::{
 	storage::types::StorageMap,
 	traits::{GetPalletVersion, PalletVersion},
 	Identity,
 };
-use sp_runtime::traits::{
-	CheckEqual, MaybeDisplay, MaybeSerializeDeserialize, Member, SimpleBitOps,
-};
+use sp_runtime::traits::{CheckEqual, MaybeDisplay, MaybeSerializeDeserialize, Member, SimpleBitOps};
 use sp_std::fmt::Debug;
 
 pub const PALLET_PREFIX: &str = "Delegation";
@@ -44,13 +60,7 @@ pub trait V23ToV24 {
 		+ AsMut<[u8]>;
 
 	/// The user account identifier type for the runtime.
-	type AccountId: Parameter
-		+ Member
-		+ MaybeSerializeDeserialize
-		+ Debug
-		+ MaybeDisplay
-		+ Ord
-		+ Default;
+	type AccountId: Parameter + Member + MaybeSerializeDeserialize + Debug + MaybeDisplay + Ord + Default;
 }
 
 #[allow(type_alias_bounds)]
@@ -87,7 +97,8 @@ pub fn apply<T: V23ToV24>() -> Weight {
 	}
 }
 
-/// Migrate from the old legacy voting bond (fixed) to the new one (per-vote dynamic).
+/// Migrate from the old legacy voting bond (fixed) to the new one (per-vote
+/// dynamic).
 fn migrate_to_struct<T: V23ToV24>() {
 	<Delegations<T>>::translate::<
 		Option<(
@@ -160,20 +171,12 @@ mod tests {
 			// setup data independent of migration
 			let pair_delegate = ed25519::Pair::from_seed(&*b"Alice                           ");
 			let acc_delegate = MultiSigner::from(pair_delegate.public()).into_account();
-			let root_id: <Test as Config>::DelegationNodeId =
-				<Test as frame_system::Config>::Hashing::hash(&[0]);
-			let delegation_id: <Test as Config>::DelegationNodeId =
-				<Test as frame_system::Config>::Hashing::hash(&[1]);
+			let root_id: <Test as Config>::DelegationNodeId = <Test as frame_system::Config>::Hashing::hash(&[0]);
+			let delegation_id: <Test as Config>::DelegationNodeId = <Test as frame_system::Config>::Hashing::hash(&[1]);
 			let blake_hash = sp_core::blake2_256(&delegation_id.as_bytes());
 
 			// store and check old DelegationNode type
-			let delegation_old: DelegationOld = (
-				root_id,
-				None,
-				acc_delegate.clone(),
-				Permissions::DELEGATE,
-				false,
-			);
+			let delegation_old: DelegationOld = (root_id, None, acc_delegate.clone(), Permissions::DELEGATE, false);
 			put_storage_value::<Option<DelegationOld>>(
 				crate::migration::PALLET_PREFIX.as_bytes(),
 				crate::migration::STORAGE_PREFIX.as_bytes(),
