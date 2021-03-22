@@ -42,17 +42,11 @@ use sp_core::{ed25519, sr25519};
 /// Type of a payload of data (to verify signatures against).
 pub type Payload = Vec<u8>;
 
-/// Type of a signature.
+/// Type of a signature (variable size as different signature schemes are supported).
 pub type Signature = Vec<u8>;
-
-/// Type for a raw key (either verification or encryption key).
-pub type KeyRawValue = Vec<u8>;
 
 /// Type for a DID identifier.
 pub type DIDIdentifier = Vec<u8>;
-
-/// Type for a public key identifier.
-pub type KeyIdentifier = Vec<u8>;
 
 /// Type for a URL.
 pub type URL = Vec<u8>;
@@ -97,8 +91,7 @@ impl PublicVerificationKey {
 		ensure!(signature.len() == self.get_expected_signature_size(), SignatureError::InvalidSignatureFormat);
 		
 		// Signature::try_from expects a &[u8], so we cast the vec (of the right size) to the expected type.
-		let signature = &signature as &[u8];
-		// TODO: did not find a way to return a Signature object from the match and then call directly verify on that (requires to return a Trait object)...
+		let signature = signature as &[u8];
 		match self {
 			PublicVerificationKey::Ed25519(raw_key) => {
 				// Try to re-create a Signature value or throw an error if raw value is invalid.
@@ -121,19 +114,13 @@ impl PublicVerificationKey {
 		}
     }
 
-	/// Returns the expected signature length for the given verification key type.
+	/// Returns the expected signature length (of bytes) for the given verification key type.
     fn get_expected_signature_size(&self) -> usize {
         match self {
 			PublicVerificationKey::Ed25519(_) | PublicVerificationKey::Sr25519(_) => {
 				64
 			}
 		}
-    }
-}
-
-impl Default for PublicVerificationKey {
-    fn default() -> Self {
-        PublicVerificationKey::Sr25519([0; 32])
     }
 }
 
@@ -156,12 +143,6 @@ pub enum PublicEncryptionKey {
 impl DIDPublicKey for PublicEncryptionKey {
     fn get_did_key_description(&self) -> &'static str {
         "X25519KeyAgreementKey2019"				// https://w3c.github.io/did-spec-registries/#x25519keyagreementkey2019
-    }
-}
-
-impl Default for PublicEncryptionKey {
-    fn default() -> Self {
-        PublicEncryptionKey::X55519([0; 32])
     }
 }
 
@@ -230,7 +211,7 @@ pub trait DIDOperation: Encode {
 pub enum DIDVerificationKeyType {
 	Authentication,
 	CapabilityDelegation,
-	CapabilityInvocation,           // For future use
+	CapabilityInvocation,           // Not used for now, but added for potential future use
 	AssertionMethod,
 }
 
