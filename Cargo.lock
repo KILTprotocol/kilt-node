@@ -4678,14 +4678,17 @@ dependencies = [
 [[package]]
 name = "orml-xtokens"
 version = "0.4.1-dev"
-source = "git+https://github.com/open-web3-stack/open-runtime-module-library?branch=master#68f3081876ea89904ca4b41d30ef3e532e01b288"
 dependencies = [
  "cumulus-primitives-core",
  "frame-support",
  "frame-system",
+ "log",
+ "orml-tokens",
  "orml-xcm-support",
  "parity-scale-codec",
+ "polkadot-core-primitives",
  "serde",
+ "sp-core",
  "sp-io",
  "sp-runtime",
  "sp-std",
