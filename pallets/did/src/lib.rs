@@ -315,7 +315,7 @@ decl_module! {
 		/// Deposit events.
 		fn deposit_event() = default;
 
-		// Initializing errors
+		// Initialize errors.
 		type Error = Error<T>;
 
 		/**
