@@ -1,3 +1,5 @@
+> TODO: REMOVE THIS PALLET WHEN FIX IS MERGED: https://github.com/paritytech/cumulus/commit/8f1ef9d6e171a770622e4f2a9a4de3fa8366183d
+
 # Xtokens Module
 
 ## Overview

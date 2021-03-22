@@ -233,6 +233,8 @@ pub mod module {
 				}],
 				effects: vec![Order::DepositReserveAsset {
 					assets: vec![MultiAsset::All],
+					// FIXME: This is wrong and needs to be changed when the fix for cumulus is merged
+					// https://github.com/paritytech/cumulus/commit/8f1ef9d6e171a770622e4f2a9a4de3fa8366183d
 					dest: MultiLocation::X1(Junction::Parachain { id: para_id.into() }),
 					effects: vec![Order::DepositAsset {
 						assets: vec![MultiAsset::All],
