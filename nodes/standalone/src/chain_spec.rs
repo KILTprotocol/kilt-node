@@ -18,9 +18,10 @@
 
 //! KILT chain specification
 
-use kilt_primitives::{AccountId, AccountPublic};
+use kilt_primitives::{constants::MONTHS, AccountId, AccountPublic, Balance, BlockNumber};
 use mashnet_node_runtime::{
-	BalancesConfig, GenesisConfig, SessionConfig, SudoConfig, SystemConfig, WASM_BINARY,
+	BalanceLocksConfig, BalancesConfig, GenesisConfig, SessionConfig, SudoConfig, SystemConfig,
+	VestingConfig, WASM_BINARY,
 };
 
 use hex_literal::hex;
@@ -184,6 +185,17 @@ fn testnet_genesis(
 	endowed_accounts: Vec<AccountId>,
 	_enable_println: bool,
 ) -> GenesisConfig {
+	type VestingPeriod = BlockNumber;
+	type LockingPeriod = BlockNumber;
+
+	let airdrop_accounts_json =
+		&include_bytes!("../../../dev-specs/genesis-testing/genesis_accounts.json")[..];
+	let airdrop_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
+		serde_json::from_slice(airdrop_accounts_json)
+			.expect("Could not read from genesis_accounts.json");
+	
+	// TODO: Check whether user with 100% vested tokens can stake from beginning, e.g. how to handle tx fee
+
 	GenesisConfig {
 		frame_system: SystemConfig {
 			code: wasm_binary.to_vec(),
@@ -193,7 +205,8 @@ fn testnet_genesis(
 			balances: endowed_accounts
 				.iter()
 				.cloned()
-				.map(|k| (k, 1u128 << 90))
+				.map(|a| (a, 1u128 << 90))
+				.chain(airdrop_accounts.iter().cloned().map(|(a, b, _, _)| (a, b)))
 				.collect(),
 		},
 		session: SessionConfig {
@@ -214,6 +227,24 @@ fn testnet_genesis(
 		aura: Default::default(),
 		grandpa: Default::default(),
 		sudo: SudoConfig { key: root_key },
+		pallet_vesting: VestingConfig {
+			vesting: airdrop_accounts
+				.iter()
+				.cloned()
+				// enable 1 KILT tokent to be spendable apart from vesting to allow the user to call `vest``
+				// which is required to actually remove the lock
+				.map(|(who, _, l, _)| (who, 0u64, l * MONTHS, 1u128))
+				.collect(),
+		},
+		balance_locks: BalanceLocksConfig {
+			balance_locks: airdrop_accounts
+				.iter()
+				.cloned()
+				.map(|(who, _, _, l)| (who.to_owned(), l))
+				.collect(),
+			// TODO: Set this to another address (PRE-LAUNCH)
+			transfer_account: get_account_id_from_secret::<ed25519::Public>("//Alice"),
+		},
 	}
 }
 

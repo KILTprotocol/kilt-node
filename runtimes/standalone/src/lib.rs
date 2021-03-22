@@ -26,14 +26,19 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
-use kilt_primitives::{AccountId, Balance, BlockNumber, Hash, Index, Signature};
+use kilt_primitives::{
+	constants::{MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
+	AccountId, Balance, BlockNumber, Hash, Index, Signature,
+};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::ed25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, NumberFor, OpaqueKeys, Verify},
+	traits::{
+		AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys, Verify,
+	},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult,
 };
@@ -59,6 +64,7 @@ pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
 pub use timestamp::Call as TimestampCall;
 
+mod weights;
 pub use attestation;
 pub use ctype;
 pub use delegation;
@@ -104,21 +110,6 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
 };
-
-/// This determines the average expected block time that we are targetting.
-/// Blocks will be produced at a minimum duration defined by `SLOT_DURATION`.
-/// `SLOT_DURATION` is picked up by `pallet_timestamp` which is in turn picked
-/// up by `pallet_aura` to implement `fn slot_duration()`.
-///
-/// Change this to adjust the block time.
-pub const MILLISECS_PER_BLOCK: u64 = 6000;
-
-pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
-
-// Time is measured by number of blocks.
-pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
-pub const HOURS: BlockNumber = MINUTES * 60;
-pub const DAYS: BlockNumber = HOURS * 24;
 
 /// The version information used to identify this runtime when compiled natively.
 #[cfg(feature = "std")]
@@ -279,6 +270,12 @@ where
 	}
 }
 
+
+impl balance_locks::Config for Runtime {
+	type Event = Event;
+}
+
+
 parameter_types! {
 	pub const TransactionByteFee: Balance = 0;
 }
@@ -401,6 +398,24 @@ impl authorship::Config for Runtime {
 	type EventHandler = ();
 }
 
+parameter_types! {
+	pub const MinVestedTransfer: Balance = MIN_VESTED_TRANSFER_AMOUNT;
+}
+
+impl pallet_vesting::Config for Runtime {
+	type Event = Event;
+	type Currency = Balances;
+	type BlockNumberToBalance = ConvertInto;
+	// disable vested transfers by setting min amount to max balance
+	type MinVestedTransfer = MinVestedTransfer;
+	type WeightInfo = weights::pallet_vesting::WeightInfo<Runtime>;
+}
+
+// pub struct VestingUpgrade;
+// impl frame_support::traits::OnRuntimeUpgrade for VestingUpgrade {
+// 	fn on_runtime_upgrade() -> frame_support::weights::Weight {}
+// }
+
 construct_runtime!(
 	pub enum Runtime where
 		Block = Block,
@@ -425,6 +440,10 @@ construct_runtime!(
 
 		Session: session::{Module, Call, Storage, Event, Config<T>} = 15,
 		Authorship: authorship::{Module, Call, Storage} = 16,
+
+		// Vesting. Usable initially, but removed once all vesting is finished.
+		Vesting: pallet_vesting::{Module, Call, Storage, Event<T>, Config<T>} = 28,
+		BalanceLocks: balance_locks::{Module, Call, Storage, Event<T>, Config<T>} = 29,
 	}
 );
 
@@ -622,6 +641,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, ctype, Ctype);
 			add_benchmark!(params, batches, delegation, Delegation);
 			add_benchmark!(params, batches, did, Did);
+			add_benchmark!(params, batches, pallet_vesting, Vesting);
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
 			Ok(batches)

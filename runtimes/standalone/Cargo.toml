@@ -8,11 +8,16 @@ version = "0.24.0"
 substrate-wasm-builder = "3.0.0"
 
 [dependencies]
+# kilt features
 attestation = {default-features = false, path = "../../pallets/attestation"}
+balance-locks = {default-features = false, path = "../../pallets/balance-locks"}
 ctype = {default-features = false, path = "../../pallets/ctype"}
 delegation = {default-features = false, path = "../../pallets/delegation"}
 did = {default-features = false, path = "../../pallets/did"}
 kilt-primitives = {path = "../../primitives", default-features = false}
+
+# kilt specific
+pallet-vesting = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 
 # Benchmarking
 frame-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "rococo-v1"}
@@ -227,9 +232,11 @@ runtime-benchmarks = [
   "balances/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
   "timestamp/runtime-benchmarks",
+  "pallet-vesting/runtime-benchmarks",
 ]
 std = [
   "attestation/std",
+  "balance-locks/std",
   "ctype/std",
   "did/std",
   "delegation/std",
@@ -263,4 +270,5 @@ std = [
   "frame-system-rpc-runtime-api/std",
   "pallet-transaction-payment-rpc-runtime-api/std",
   "kilt-primitives/std",
+  "pallet-vesting/std",
 ]
