@@ -48,6 +48,7 @@ pallet-sudo = {git = "https://github.com/paritytech/substrate", default-features
 pallet-timestamp = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 pallet-transaction-payment = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 pallet-treasury = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
+pallet-scheduler = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 
 # Cumulus dependencies
 cumulus-pallet-parachain-system = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "rococo-v1"}

@@ -3213,6 +3213,7 @@ dependencies = [
  "pallet-indices",
  "pallet-membership",
  "pallet-randomness-collective-flip",
+ "pallet-scheduler",
  "pallet-society",
  "pallet-sudo",
  "pallet-timestamp",
