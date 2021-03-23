@@ -1481,7 +1481,7 @@ dependencies = [
 
 [[package]]
 name = "did"
-version = "0.24.0"
+version = "1.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
