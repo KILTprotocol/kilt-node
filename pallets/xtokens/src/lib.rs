@@ -43,7 +43,10 @@ pub mod module {
 	#[cfg(test)]
 	impl XCurrencyId {
 		pub fn new(chain_id: ChainId, currency_id: Vec<u8>) -> Self {
-			XCurrencyId { chain_id, currency_id }
+			XCurrencyId {
+				chain_id,
+				currency_id,
+			}
 		}
 	}
 
@@ -157,10 +160,17 @@ pub mod module {
 			}
 
 			let xcm = match x_currency_id.chain_id {
-				ChainId::RelayChain => Self::transfer_relay_chain_tokens_to_parachain(para_id, dest.clone(), amount),
+				ChainId::RelayChain => {
+					Self::transfer_relay_chain_tokens_to_parachain(para_id, dest.clone(), amount)
+				}
 				ChainId::ParaChain(reserve_chain) => {
 					if T::ParaId::get() == reserve_chain {
-						Self::transfer_owned_tokens_to_parachain(x_currency_id.clone(), para_id, dest.clone(), amount)
+						Self::transfer_owned_tokens_to_parachain(
+							x_currency_id.clone(),
+							para_id,
+							dest.clone(),
+							amount,
+						)
 					} else {
 						Self::transfer_non_owned_tokens_to_parachain(
 							reserve_chain,
@@ -186,7 +196,11 @@ pub mod module {
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn transfer_relay_chain_tokens_to_parachain(para_id: ParaId, dest: MultiLocation, amount: T::Balance) -> Xcm {
+		fn transfer_relay_chain_tokens_to_parachain(
+			para_id: ParaId,
+			dest: MultiLocation,
+			amount: T::Balance,
+		) -> Xcm {
 			log::info!(
 				target: "DEBUGDEBUG",
 				"transfer_relay_chain_tokens_to_parachain",
@@ -268,7 +282,10 @@ pub mod module {
 			} else {
 				Order::DepositReserveAsset {
 					assets: vec![MultiAsset::All],
-					dest: MultiLocation::X2(Junction::Parent, Junction::Parachain { id: para_id.into() }),
+					dest: MultiLocation::X2(
+						Junction::Parent,
+						Junction::Parachain { id: para_id.into() },
+					),
 					effects: vec![deposit_to_dest],
 				}
 			};
