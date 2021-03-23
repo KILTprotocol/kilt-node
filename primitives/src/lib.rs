@@ -37,19 +37,21 @@ pub type BlockId = generic::BlockId<Block>;
 /// An index to a block.
 pub type BlockNumber = u64;
 
-/// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
+/// Alias to 512-bit hash when used in the context of a transaction signature on
+/// the chain.
 pub type Signature = MultiSignature;
 
-/// Alias to the public key used for this chain, actually a `MultiSigner`. Like the signature, this
-/// also isn't a fixed size when encoded, as different cryptos have different size public keys.
+/// Alias to the public key used for this chain, actually a `MultiSigner`. Like
+/// the signature, this also isn't a fixed size when encoded, as different
+/// cryptos have different size public keys.
 pub type AccountPublic = <Signature as Verify>::Signer;
 
-/// Alias to the opaque account ID type for this chain, actually a `AccountId32`. This is always
-/// 32 bytes.
+/// Alias to the opaque account ID type for this chain, actually a
+/// `AccountId32`. This is always 32 bytes.
 pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
 
-/// The type for looking up accounts. We don't expect more than 4 billion of them, but you
-/// never know...
+/// The type for looking up accounts. We don't expect more than 4 billion of
+/// them, but you never know...
 pub type AccountIndex = u32;
 
 /// Identifier for a chain. 32-bit should be plenty.

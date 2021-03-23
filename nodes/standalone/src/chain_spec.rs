@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2021  BOTLabs GmbH
+// Copyright (C) 2019-2021 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,9 +19,7 @@
 //! KILT chain specification
 
 use kilt_primitives::{AccountId, AccountPublic};
-use mashnet_node_runtime::{
-	BalancesConfig, GenesisConfig, SessionConfig, SudoConfig, SystemConfig, WASM_BINARY,
-};
+use mashnet_node_runtime::{BalancesConfig, GenesisConfig, SessionConfig, SudoConfig, SystemConfig, WASM_BINARY};
 
 use hex_literal::hex;
 
@@ -34,12 +32,13 @@ use sp_runtime::traits::IdentifyAccount;
 // Note this is the URL for the telemetry server
 //const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 
-/// Specialised `ChainSpec`. This is a specialisation of the general Substrate ChainSpec type.
+/// Specialised `ChainSpec`. This is a specialisation of the general Substrate
+/// ChainSpec type.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
 
 /// The chain specification option. This is expected to come in from the CLI and
-/// is little more than one of a number of alternatives which can easily be converted
-/// from a string (`--chain=...`) into a `ChainSpec`.
+/// is little more than one of a number of alternatives which can easily be
+/// converted from a string (`--chain=...`) into a `ChainSpec`.
 #[derive(Clone, Debug)]
 pub enum Alternative {
 	/// Whatever the current runtime is, with just Alice as an auth.
@@ -73,7 +72,8 @@ fn get_authority_keys_from_secret(seed: &str) -> (AccountId, AuraId, GrandpaId) 
 	)
 }
 
-/// Build a pair of public keys from a given hex string. This method will panic if the hex string is malformed.
+/// Build a pair of public keys from a given hex string. This method will panic
+/// if the hex string is malformed.
 ///
 /// public_key – the public key formatted as a hex string
 fn as_authority_key(public_key: [u8; 32]) -> (AccountId, AuraId, GrandpaId) {
@@ -84,20 +84,15 @@ fn as_authority_key(public_key: [u8; 32]) -> (AccountId, AuraId, GrandpaId) {
 	)
 }
 
-const DEV_AUTH_ALICE: [u8; 32] =
-	hex!("d44da634611d9c26837e3b5114a7d460a4cb7d688119739000632ed2d3794ae9");
-const DEV_AUTH_BOB: [u8; 32] =
-	hex!("06815321f16a5ae0fe246ee19285f8d8858fe60d5c025e060922153fcf8e54f9");
-const DEV_AUTH_CHARLIE: [u8; 32] =
-	hex!("6d2d775fdc628134e3613a766459ccc57a29fd380cd410c91c6c79bc9c03b344");
-const DEV_FAUCET: [u8; 32] =
-	hex!("2c9e9c40e15a2767e2d04dc1f05d824dd76d1d37bada3d7bb1d40eca29f3a4ff");
+const DEV_AUTH_ALICE: [u8; 32] = hex!("d44da634611d9c26837e3b5114a7d460a4cb7d688119739000632ed2d3794ae9");
+const DEV_AUTH_BOB: [u8; 32] = hex!("06815321f16a5ae0fe246ee19285f8d8858fe60d5c025e060922153fcf8e54f9");
+const DEV_AUTH_CHARLIE: [u8; 32] = hex!("6d2d775fdc628134e3613a766459ccc57a29fd380cd410c91c6c79bc9c03b344");
+const DEV_FAUCET: [u8; 32] = hex!("2c9e9c40e15a2767e2d04dc1f05d824dd76d1d37bada3d7bb1d40eca29f3a4ff");
 
 impl Alternative {
 	/// Get an actual chain config from one of the alternatives.
 	pub(crate) fn load(self) -> Result<ChainSpec, String> {
-		let wasm_binary =
-			WASM_BINARY.ok_or_else(|| "Development wasm binary not available".to_string())?;
+		let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm binary not available".to_string())?;
 
 		let mut properties = Properties::new();
 		properties.insert("tokenSymbol".into(), "KILT".into());
@@ -130,9 +125,7 @@ impl Alternative {
 					None,
 				)
 			}
-			Alternative::KiltTestnet => {
-				ChainSpec::from_json_bytes(&include_bytes!("../res/testnet.json")[..])?
-			}
+			Alternative::KiltTestnet => ChainSpec::from_json_bytes(&include_bytes!("../res/testnet.json")[..])?,
 			Alternative::KiltDevnet => {
 				ChainSpec::from_genesis(
 					"KILT Devnet",
@@ -190,11 +183,7 @@ fn testnet_genesis(
 			changes_trie_config: Default::default(),
 		},
 		balances: BalancesConfig {
-			balances: endowed_accounts
-				.iter()
-				.cloned()
-				.map(|k| (k, 1u128 << 90))
-				.collect(),
+			balances: endowed_accounts.iter().cloned().map(|k| (k, 1u128 << 90)).collect(),
 		},
 		session: SessionConfig {
 			keys: initial_authorities

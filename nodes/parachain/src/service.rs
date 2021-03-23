@@ -16,9 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use cumulus_client_consensus_relay_chain::{
-	build_relay_chain_consensus, BuildRelayChainConsensusParams,
-};
+use cumulus_client_consensus_relay_chain::{build_relay_chain_consensus, BuildRelayChainConsensusParams};
 use cumulus_client_network::build_block_announce_validator;
 use cumulus_client_service::{
 	prepare_node_config, start_collator, start_full_node, StartCollatorParams, StartFullNodeParams,
@@ -54,8 +52,8 @@ type PartialComponentsType = sc_service::PartialComponents<
 
 /// Starts a `ServiceBuilder` for a full service.
 ///
-/// Use this macro if you don't actually need the full service, but just the builder in order to
-/// be able to perform chain operations.
+/// Use this macro if you don't actually need the full service, but just the
+/// builder in order to be able to perform chain operations.
 pub fn new_partial(config: &Configuration) -> Result<PartialComponentsType, sc_service::Error> {
 	let inherent_data_providers = sp_inherents::InherentDataProviders::new();
 
@@ -96,9 +94,11 @@ pub fn new_partial(config: &Configuration) -> Result<PartialComponentsType, sc_s
 	Ok(params)
 }
 
-/// Start a node with the given parachain `Configuration` and relay chain `Configuration`.
+/// Start a node with the given parachain `Configuration` and relay chain
+/// `Configuration`.
 ///
-/// This is the actual implementation that is abstract over the executor and the runtime api.
+/// This is the actual implementation that is abstract over the executor and the
+/// runtime api.
 #[sc_tracing::logging::prefix_logs_with("Parachain")]
 async fn start_node_impl(
 	parachain_config: Configuration,
@@ -113,12 +113,11 @@ async fn start_node_impl(
 
 	let parachain_config = prepare_node_config(parachain_config);
 
-	let polkadot_full_node =
-		cumulus_client_service::build_polkadot_full_node(polkadot_config, collator_key.public())
-			.map_err(|e| match e {
-				polkadot_service::Error::Sub(x) => x,
-				s => format!("{}", s).into(),
-			})?;
+	let polkadot_full_node = cumulus_client_service::build_polkadot_full_node(polkadot_config, collator_key.public())
+		.map_err(|e| match e {
+		polkadot_service::Error::Sub(x) => x,
+		s => format!("{}", s).into(),
+	})?;
 
 	let params = new_partial(&parachain_config)?;
 	params
@@ -245,12 +244,5 @@ pub async fn start_node(
 	id: ParaId,
 	validator: bool,
 ) -> sc_service::error::Result<(TaskManager, Arc<TFullClient<Block, RuntimeApi, Executor>>)> {
-	start_node_impl(
-		parachain_config,
-		collator_key,
-		polkadot_config,
-		id,
-		validator,
-	)
-	.await
+	start_node_impl(parachain_config, collator_key, polkadot_config, id, validator).await
 }

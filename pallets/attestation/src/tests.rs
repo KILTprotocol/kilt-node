@@ -58,11 +58,11 @@ frame_support::construct_runtime!(
 	}
 );
 
-/// We assume that ~10% of the block weight is consumed by `on_initalize` handlers.
-/// This is used to limit the maximal weight of a single extrinsic.
+/// We assume that ~10% of the block weight is consumed by `on_initalize`
+/// handlers. This is used to limit the maximal weight of a single extrinsic.
 const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
-/// We allow `Normal` extrinsics to fill up the block up to 75%, the rest can be used
-/// by  Operational  extrinsics.
+/// We allow `Normal` extrinsics to fill up the block up to 75%, the rest can be
+/// used by  Operational  extrinsics.
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 /// We allow for 2 seconds of compute with a 6 second average block time.
 const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
@@ -151,9 +151,7 @@ pub struct ExtBuilder;
 
 impl ExtBuilder {
 	pub fn build_with_keystore() -> TestExternalities {
-		let storage = frame_system::GenesisConfig::default()
-			.build_storage::<Test>()
-			.unwrap();
+		let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 		let mut ext = TestExternalities::from(storage);
 		// register keystore
 		let keystore = KeyStore::new();
@@ -327,10 +325,7 @@ fn check_add_attestation_with_delegation() {
 		let delegation_1 = H256::from_low_u64_be(1);
 		let delegation_2 = H256::from_low_u64_be(2);
 
-		assert_ok!(CType::add(
-			Origin::signed(account_hash_alice.clone()),
-			ctype_hash
-		));
+		assert_ok!(CType::add(Origin::signed(account_hash_alice.clone()), ctype_hash));
 
 		// cannot add attestation based on a missing delegation
 		assert_noop!(
@@ -394,10 +389,7 @@ fn check_add_attestation_with_delegation() {
 		);
 
 		// add missing ctype
-		assert_ok!(CType::add(
-			Origin::signed(account_hash_alice.clone()),
-			other_ctype_hash
-		));
+		assert_ok!(CType::add(Origin::signed(account_hash_alice.clone()), other_ctype_hash));
 
 		// cannot add attestation with different ctype than in root
 		assert_noop!(
@@ -439,8 +431,7 @@ fn check_add_attestation_with_delegation() {
 			Some(delegation_2)
 		));
 
-		let existing_attestations_for_delegation =
-			PalletAttestation::delegated_attestations(delegation_2);
+		let existing_attestations_for_delegation = PalletAttestation::delegated_attestations(delegation_2);
 		assert_eq!(existing_attestations_for_delegation.len(), 1);
 		assert_eq!(existing_attestations_for_delegation[0], claim_hash);
 
