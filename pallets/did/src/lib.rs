@@ -275,7 +275,7 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type Event: From<Event> + IsType<<Self as frame_system::Config>::Event>;
+		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type WeightInfo: WeightInfo;
 	}
 
@@ -292,8 +292,8 @@ pub mod pallet {
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
-	pub enum Event {
-		DidCreated(DIDIdentifierEncoding),
+	pub enum Event<T: Config> {
+		DidCreated(T::AccountId, DIDIdentifierEncoding),
 	}
 
 	#[pallet::error]
@@ -317,7 +317,7 @@ pub mod pallet {
 			signature: SignatureEncoding,
 		) -> DispatchResultWithPostInfo {
 			// origin of the transaction needs to be a signed sender account
-			ensure_signed(origin)?;
+			let sender = ensure_signed(origin)?;
 
 			// There has to be no other DID with the same identifier already saved on chain, otherwise generate a DIDNotPresent error.
 			ensure!(
@@ -346,7 +346,7 @@ pub mod pallet {
 			log::debug!("Creating DID {:?}", did_identifier);
 			<Did<T>>::insert(did_identifier, did_entry);
 
-			Self::deposit_event(Event::DidCreated(did_identifier.to_vec()));
+			Self::deposit_event(Event::DidCreated(sender, did_identifier.to_vec()));
 			Ok(().into())
 		}
 	}
