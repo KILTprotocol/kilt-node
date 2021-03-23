@@ -78,18 +78,18 @@ pub type DigestItem = generic::DigestItem<Hash>;
 #[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub enum CurrencyId {
-	DOT = 0,
-	KSM,
-	KILT,
+	Dot = 0_isize,
+	Ksm,
+	Kilt,
 }
 
 impl TryFrom<Vec<u8>> for CurrencyId {
 	type Error = ();
 	fn try_from(v: Vec<u8>) -> Result<CurrencyId, ()> {
 		match v.as_slice() {
-			b"KILT" => Ok(CurrencyId::KILT),
-			b"DOT" => Ok(CurrencyId::DOT),
-			b"KSM" => Ok(CurrencyId::KSM),
+			b"KILT" => Ok(CurrencyId::Kilt),
+			b"DOT" => Ok(CurrencyId::Dot),
+			b"KSM" => Ok(CurrencyId::Ksm),
 			_ => Err(()),
 		}
 	}

@@ -273,7 +273,7 @@ parameter_types! {
 	pub Ancestry: MultiLocation = Junction::Parachain {
 		id: ParachainInfo::parachain_id().into()
 	}.into();
-	pub const RelayChainCurrencyId: CurrencyId = CurrencyId::DOT;
+	pub const RelayChainCurrencyId: CurrencyId = CurrencyId::Dot;
 }
 
 pub type LocationConverter = (
@@ -385,7 +385,7 @@ impl orml_tokens::Config for Runtime {
 }
 
 parameter_types! {
-	pub const GetKiltTokenId: CurrencyId = CurrencyId::KILT;
+	pub const GetKiltTokenId: CurrencyId = CurrencyId::Kilt;
 }
 
 pub type KiltToken = BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber>;
