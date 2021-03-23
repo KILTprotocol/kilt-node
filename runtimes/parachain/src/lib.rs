@@ -30,8 +30,13 @@ use orml_currencies::BasicCurrencyAdapter;
 use orml_traits::{arithmetic::Zero, parameter_type_with_key};
 use sp_api::impl_runtime_apis;
 use sp_core::OpaqueMetadata;
-use sp_runtime::{ApplyExtrinsicResult, DispatchResult, create_runtime_str, generic, impl_opaque_keys, traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, Convert, Identity, Verify}, transaction_validity::{TransactionSource, TransactionValidity}};
-use sp_std::{collections::btree_set::BTreeSet, prelude::*};
+use sp_runtime::{
+	create_runtime_str, generic, impl_opaque_keys,
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, Convert, Identity, Verify},
+	transaction_validity::{TransactionSource, TransactionValidity},
+	ApplyExtrinsicResult, DispatchResult,
+};
+use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
@@ -59,8 +64,7 @@ pub use sp_runtime::{Perbill, Permill};
 // XCM imports
 use cumulus_primitives_core::{relay_chain::Balance as RelayChainBalance, ParaId};
 use orml_xcm_support::{
-	CurrencyIdConverter, IsConcreteWithGeneralKey, MultiCurrencyAdapter, NativePalletAssetOr,
-	XcmHandler as XcmHandlerT,
+	CurrencyIdConverter, IsConcreteWithGeneralKey, MultiCurrencyAdapter, XcmHandler as XcmHandlerT,
 };
 use polkadot_parachain::primitives::Sibling;
 use xcm::v0::{Junction, MultiLocation, NetworkId, Xcm};
@@ -69,7 +73,7 @@ use xcm_builder::{
 	RelayChainAsNative, SiblingParachainAsNative, SiblingParachainConvertsVia,
 	SignedAccountId32AsNative, SovereignSignedViaLocation,
 };
-use xcm_executor::{Config, XcmExecutor};
+use xcm_executor::{traits::NativeAsset, Config, XcmExecutor};
 
 pub use attestation;
 pub use ctype;
@@ -296,16 +300,6 @@ pub type LocalOriginConverter = (
 	SignedAccountId32AsNative<KiltNetwork, Origin>,
 );
 
-parameter_types! {
-	pub NativeOrmlTokens: BTreeSet<(Vec<u8>, MultiLocation)> = {
-		let mut t = BTreeSet::new();
-		//TODO: might need to add other assets based on orml-tokens
-		// t.insert(("KILT".into(), (Junction::Parent, Junction::Parachain { id: 12623 }).into()));
-		t.insert(("AUSD".into(), (Junction::Parent, Junction::Parachain { id: 666 }).into()));
-		t
-	};
-}
-
 pub struct XcmConfig;
 impl Config for XcmConfig {
 	type Call = Call;
@@ -313,7 +307,7 @@ impl Config for XcmConfig {
 	// How to withdraw and deposit an asset.
 	type AssetTransactor = LocalAssetTransactor;
 	type OriginConverter = LocalOriginConverter;
-	type IsReserve = NativePalletAssetOr<NativeOrmlTokens>;
+	type IsReserve = NativeAsset;
 	type IsTeleporter = ();
 	type LocationInverter = LocationInverter<Ancestry>;
 }

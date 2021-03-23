@@ -78,18 +78,8 @@ pub type DigestItem = generic::DigestItem<Hash>;
 #[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub enum CurrencyId {
-	LAMI = 0,
-	AUSD,
-	DOT,
-	FEUR,
-	FJPY,
-	FBTC,
-	FETH,
-	FAUD,
-	FCAD,
-	FCHF,
-	FXAU,
-	FOIL,
+	DOT = 0,
+	KSM,
 	KILT,
 }
 
@@ -97,19 +87,9 @@ impl TryFrom<Vec<u8>> for CurrencyId {
 	type Error = ();
 	fn try_from(v: Vec<u8>) -> Result<CurrencyId, ()> {
 		match v.as_slice() {
-			b"LAMI" => Ok(CurrencyId::LAMI),
-			b"AUSD" => Ok(CurrencyId::AUSD),
-			b"DOT" => Ok(CurrencyId::DOT),
-			b"FEUR" => Ok(CurrencyId::FEUR),
-			b"FJPY" => Ok(CurrencyId::FJPY),
-			b"FBTC" => Ok(CurrencyId::FBTC),
-			b"FETH" => Ok(CurrencyId::FETH),
-			b"FAUD" => Ok(CurrencyId::FAUD),
-			b"FCAD" => Ok(CurrencyId::FCAD),
-			b"FCHF" => Ok(CurrencyId::FCHF),
-			b"FXAU" => Ok(CurrencyId::FXAU),
-			b"FOIL" => Ok(CurrencyId::FOIL),
 			b"KILT" => Ok(CurrencyId::KILT),
+			b"DOT" => Ok(CurrencyId::DOT),
+			b"KSM" => Ok(CurrencyId::KSM),
 			_ => Err(()),
 		}
 	}
