@@ -27,12 +27,15 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use kilt_primitives::*;
 use sp_api::impl_runtime_apis;
-use sp_core::OpaqueMetadata;
+use sp_core::{
+	u32_trait::{_1, _2, _3, _5},
+	OpaqueMetadata,
+};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult,
+	ApplyExtrinsicResult, ModuleId,
 };
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
@@ -51,7 +54,7 @@ pub use frame_support::{
 };
 use frame_system::{
 	limits::{BlockLength, BlockWeights},
-	EnsureRoot,
+	EnsureOneOf, EnsureRoot,
 };
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
@@ -103,6 +106,8 @@ pub const EPOCH_DURATION_IN_BLOCKS: u64 = 10 * MINUTES;
 pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
+
+pub const DOLLARS: Balance = 10;
 
 // 1 in 4 blocks (on average, not counting collisions) will be primary babe
 // blocks.
@@ -319,6 +324,164 @@ impl cumulus_pallet_xcm_handler::Config for Runtime {
 	type AccountIdConverter = LocationConverter;
 }
 
+// impl pallet_democracy::Config for Runtime {
+// 	type Proposal = Call;
+// 	type Event = Event;
+// 	type Currency = Balances;
+// 	type EnactmentPeriod = EnactmentPeriod;
+// 	type LaunchPeriod = LaunchPeriod;
+// 	type VotingPeriod = VotingPeriod;
+// 	type MinimumDeposit = MinimumDeposit;
+// 	/// A straight majority of the council can decide what their next motion is.
+// 	type ExternalOrigin = pallet_collective::EnsureProportionAtLeast<_1, _2, AccountId, CouncilCollective>;
+// 	/// A majority can have the next scheduled referendum be a straight majority-carries vote.
+// 	type ExternalMajorityOrigin = pallet_collective::EnsureProportionAtLeast<_1, _2, AccountId, CouncilCollective>;
+// 	/// A unanimous council can have the next scheduled referendum be a straight default-carries
+// 	/// (NTB) vote.
+// 	type ExternalDefaultOrigin = pallet_collective::EnsureProportionAtLeast<_1, _1, AccountId, CouncilCollective>;
+// 	/// Two thirds of the technical committee can have an ExternalMajority/ExternalDefault vote
+// 	/// be tabled immediately and with a shorter voting/enactment period.
+// 	type FastTrackOrigin = pallet_collective::EnsureProportionAtLeast<_2, _3, AccountId, TechnicalCollective>;
+// 	type InstantOrigin = pallet_collective::EnsureProportionAtLeast<_1, _1, AccountId, TechnicalCollective>;
+// 	type InstantAllowed = InstantAllowed;
+// 	type FastTrackVotingPeriod = FastTrackVotingPeriod;
+// 	// To cancel a proposal which has been passed, 2/3 of the council must agree to it.
+// 	type CancellationOrigin = EnsureOneOf<
+// 		AccountId,
+// 		EnsureRoot<AccountId>,
+// 		pallet_collective::EnsureProportionAtLeast<_2, _3, AccountId, CouncilCollective>,
+// 	>;
+// 	// To cancel a proposal before it has been passed, the technical committee must be unanimous or
+// 	// Root must agree.
+// 	type CancelProposalOrigin = EnsureOneOf<
+// 		AccountId,
+// 		EnsureRoot<AccountId>,
+// 		pallet_collective::EnsureProportionAtLeast<_1, _1, AccountId, TechnicalCollective>,
+// 	>;
+// 	type BlacklistOrigin = EnsureRoot<AccountId>;
+// 	// Any single technical committee member may veto a coming council proposal, however they can
+// 	// only do it once and it lasts only for the cooloff period.
+// 	type VetoOrigin = pallet_collective::EnsureMember<AccountId, TechnicalCollective>;
+// 	type CooloffPeriod = CooloffPeriod;
+// 	type PreimageByteDeposit = PreimageByteDeposit;
+// 	type Slash = Treasury;
+// 	type Scheduler = Scheduler;
+// 	type PalletsOrigin = OriginCaller;
+// 	type MaxVotes = MaxVotes;
+// 	type OperationalPreimageOrigin = pallet_collective::EnsureMember<AccountId, CouncilCollective>;
+// 	type WeightInfo = weights::pallet_democracy::WeightInfo<Runtime>;
+// 	type MaxProposals = MaxProposals;
+// }
+
+// impl pallet_collective::Config for Runtime {
+// 	type Event = Event;
+// }
+
+// impl pallet_collective::Config for Runtime {
+// 	type Event = Event;
+// }
+
+// impl pallet_elections_phragmen::Config for Runtime {
+// 	type Event = Event;
+// }
+
+// impl pallet_membership::Config for Runtime {
+// 	type Event = Event;
+// }
+
+parameter_types! {
+	pub const ProposalBond: Permill = Permill::from_percent(5);
+	pub const ProposalBondMinimum: Balance = 20 * DOLLARS; // TODO: how much?
+	pub const SpendPeriod: BlockNumber = 6 * DAYS;
+	pub const Burn: Permill = Permill::from_perthousand(2);
+	pub const TreasuryModuleId: ModuleId = ModuleId(*b"py/trsry");
+
+	// pub const TipCountdown: BlockNumber = 1 * DAYS;
+	// pub const TipFindersFee: Percent = Percent::from_percent(20);
+	// pub const TipReportDepositBase: Balance = 1 * DOLLARS;
+	// pub const DataDepositPerByte: Balance = 1 * CENTS;
+	// pub const BountyDepositBase: Balance = 1 * DOLLARS;
+	// pub const BountyDepositPayoutDelay: BlockNumber = 4 * DAYS;
+	// pub const BountyUpdatePeriod: BlockNumber = 90 * DAYS;
+	// pub const MaximumReasonLength: u32 = 16384;
+	// pub const BountyCuratorDeposit: Permill = Permill::from_percent(50);
+	// pub const BountyValueMinimum: Balance = 2 * DOLLARS;
+}
+
+type ApproveOrigin = EnsureOneOf<
+	AccountId,
+	EnsureRoot<AccountId>,
+	pallet_collective::EnsureProportionAtLeast<_3, _5, AccountId, CouncilCollective>,
+>;
+
+type MoreThanHalfCouncil = EnsureOneOf<
+	AccountId,
+	EnsureRoot<AccountId>,
+	pallet_collective::EnsureProportionMoreThan<_1, _2, AccountId, CouncilCollective>
+>;
+
+impl pallet_treasury::Config for Runtime {
+	type ModuleId = TreasuryModuleId;
+	type Currency = Balances;
+	type ApproveOrigin = ApproveOrigin;
+	type RejectOrigin = MoreThanHalfCouncil;
+	type Event = Event;
+	type OnSlash = Treasury;
+	type ProposalBond = ProposalBond;
+	type ProposalBondMinimum = ProposalBondMinimum;
+	type SpendPeriod = SpendPeriod;
+	type Burn = Burn;
+	type BurnDestination = Society;
+	type SpendFunds = ();
+	type WeightInfo = ();
+}
+
+parameter_types! {
+	pub const CandidateDeposit: Balance = 10 * DOLLARS;
+	pub const WrongSideDeduction: Balance = 2 * DOLLARS;
+	pub const MaxStrikes: u32 = 10;
+	pub const RotationPeriod: BlockNumber = 80 * HOURS;
+	pub const PeriodSpend: Balance = 500 * DOLLARS;
+	pub const MaxLockDuration: BlockNumber = 36 * 30 * DAYS;
+	pub const ChallengePeriod: BlockNumber = 7 * DAYS;
+	pub const SocietyModuleId: ModuleId = ModuleId(*b"py/socie");
+}
+
+impl pallet_society::Config for Runtime {
+	type Event = Event;
+	type Currency = Balances;
+	type Randomness = RandomnessCollectiveFlip;
+	type CandidateDeposit = CandidateDeposit;
+	type WrongSideDeduction = WrongSideDeduction;
+	type MaxStrikes = MaxStrikes;
+	type PeriodSpend = PeriodSpend;
+	type MembershipChanged = ();
+	type RotationPeriod = RotationPeriod;
+	type MaxLockDuration = MaxLockDuration;
+	type FounderSetOrigin = pallet_collective::EnsureProportionMoreThan<_1, _2, AccountId, CouncilCollective>;
+	type SuspensionJudgementOrigin = pallet_society::EnsureFounder<Runtime>;
+	type ChallengePeriod = ChallengePeriod;
+	type ModuleId = SocietyModuleId;
+}
+
+parameter_types! {
+	pub const CouncilMotionDuration: BlockNumber = 3 * DAYS;
+	pub const CouncilMaxProposals: u32 = 100;
+	pub const CouncilMaxMembers: u32 = 100;
+}
+
+type CouncilCollective = pallet_collective::Instance1;
+impl pallet_collective::Config<CouncilCollective> for Runtime {
+	type Origin = Origin;
+	type Proposal = Call;
+	type Event = Event;
+	type MotionDuration = CouncilMotionDuration;
+	type MaxProposals = CouncilMaxProposals;
+	type MaxMembers = CouncilMaxMembers;
+	type DefaultVote = pallet_collective::PrimeDefaultVote;
+	type WeightInfo = ();
+}
+
 impl attestation::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
@@ -381,6 +544,18 @@ construct_runtime! {
 		// Tokens: orml_tokens::{Module, Call, Storage, Event<T>} = 21,
 		// Currencies: orml_currencies::{Module, Call, Storage, Event<T>} = 22,
 		// XTokens: orml_xtokens::{Module, Call, Storage, Event<T>} = 23,
+
+		// Governance stuff; uncallable initially.
+		// Democracy: pallet_democracy::{Module, Call, Storage, Config, Event<T>} = 25,
+		Council: pallet_collective::<Instance1>::{Module, Call, Storage, Origin<T>, Event<T>, Config<T>} = 26,
+		// TechnicalCommittee: pallet_collective::<Instance2>::{Module, Call, Storage, Origin<T>, Event<T>, Config<T>} = 27,
+		// ElectionsPhragmen: pallet_elections_phragmen::{Module, Call, Storage, Event<T>, Config<T>} = 28,
+		// TechnicalMembership: pallet_membership::<Instance1>::{Module, Call, Storage, Event<T>, Config<T>} = 29,
+		Treasury: pallet_treasury::{Module, Call, Storage, Config, Event<T>} = 30,
+
+		// Society module.
+		Society: pallet_society::{Module, Call, Storage, Event<T>} = 31,
+
 	}
 }
 
