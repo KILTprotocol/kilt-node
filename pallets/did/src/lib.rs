@@ -28,9 +28,9 @@ mod tests;
 pub mod benchmarking;
 
 pub mod default_weights;
+pub use default_weights::WeightInfo;
 
 use codec::{Decode, Encode};
-pub use default_weights::WeightInfo;
 
 use frame_support::{
 	dispatch::DispatchResult, ensure, storage::types::StorageMap, traits::{IsType, Hooks}, pallet_prelude::*
@@ -274,6 +274,7 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type Event: From<Event> + IsType<<Self as frame_system::Config>::Event>;
+		type WeightInfo: WeightInfo;
 	}
 
 	#[pallet::pallet]
@@ -308,7 +309,7 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
+		#[pallet::weight(<T as Config>::WeightInfo::submit_did_create_operation())]
 		pub fn submit_did_create_operation(
 			origin: OriginFor<T>,
 			did_creation_operation: DIDCreationOperation,

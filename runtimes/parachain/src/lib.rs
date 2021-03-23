@@ -340,7 +340,7 @@ impl delegation::Config for Runtime {
 impl did::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
-	// type WeightInfo = ();		// TODO: restore when needed
+	type WeightInfo = ();
 }
 
 construct_runtime! {
