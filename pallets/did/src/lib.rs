@@ -32,9 +32,7 @@ pub use default_weights::WeightInfo;
 
 use codec::{Decode, Encode};
 
-use frame_support::{
-	dispatch::DispatchResult, ensure, storage::types::StorageMap, traits::{IsType, Hooks}, pallet_prelude::*
-};
+use frame_support::{ensure, storage::types::StorageMap};
 use frame_system::{self, ensure_signed};
 use sp_core::{ed25519, sr25519};
 use sp_runtime::traits::Verify;
@@ -43,22 +41,22 @@ use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom, prelude::Clone,
 pub use pallet::*;
 
 /// Type of a payload of data (to verify signatures against).
-pub type Payload = Vec<u8>;
+pub type PayloadEncoding = Vec<u8>;
 
 /// Reference to a payload of data of variable size.
 pub type PayloadReference<'a> = &'a [u8];
 
 /// Type of a signature (variable size as different signature schemes are supported).
-pub type Signature = Vec<u8>;
+pub type SignatureEncoding = Vec<u8>;
 
 /// Reference to a signature of variable size.
 pub type SignatureReference<'a> = &'a [u8];
 
-/// Type for a DID identifier.
-pub type DIDIdentifier = Vec<u8>;
+/// Type for an encoded DID identifier.
+pub type DIDIdentifierEncoding = Vec<u8>;
 
-/// Type for a URL.
-pub type Url = Vec<u8>;
+/// Type for an encodid URL.
+pub type UrlEncoding = Vec<u8>;
 
 /// Trait representing a public key under the control of a DID subject.
 pub trait DIDPublicKey {
@@ -154,7 +152,7 @@ pub struct DIDDetails {
 	delegation_key: Option<PublicVerificationKey>,
 	attestation_key: Option<PublicVerificationKey>,
 	verification_keys: BTreeSet<PublicVerificationKey>,
-	endpoint_url: Option<Url>,
+	endpoint_url: Option<UrlEncoding>,
 	last_tx_counter: u64,
 }
 
@@ -198,7 +196,7 @@ pub trait DIDOperation: Encode {
 	/// Returns the type of the verification key to be used to validate the operation.
 	fn get_verification_key_type(&self) -> DIDVerificationKeyType;
 	/// Returns the DID identifier of the subject.
-	fn get_did(&self) -> &DIDIdentifier;
+	fn get_did(&self) -> &DIDIdentifierEncoding;
 }
 
 /// An enum describing the different verification methods a verification key can fulfil, according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
@@ -225,12 +223,12 @@ pub enum DIDEncryptionKeyType {
 /// - the optional endpoint URL pointing to the DID service endpoints.
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
 pub struct DIDCreationOperation {
-	did: DIDIdentifier,
+	did: DIDIdentifierEncoding,
 	new_auth_key: PublicVerificationKey,
 	new_key_agreement_key: PublicEncryptionKey,
 	new_attestation_key: Option<PublicVerificationKey>,
 	new_delegation_key: Option<PublicVerificationKey>,
-	new_endpoint_url: Option<Url>,
+	new_endpoint_url: Option<UrlEncoding>,
 }
 
 impl DIDOperation for DIDCreationOperation {
@@ -238,7 +236,7 @@ impl DIDOperation for DIDCreationOperation {
 		DIDVerificationKeyType::Authentication
 	}
 
-	fn get_did(&self) -> &DIDIdentifier {
+	fn get_did(&self) -> &DIDIdentifierEncoding {
 		self.did.as_ref()
 	}
 }
@@ -269,6 +267,10 @@ pub enum SignatureError {
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
+	use frame_support::{
+		pallet_prelude::*,
+		traits::{Hooks, IsType},
+	};
 	use frame_system::pallet_prelude::*;
 
 	#[pallet::config]
@@ -281,19 +283,17 @@ pub mod pallet {
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
 
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
+
 	#[pallet::storage]
 	#[pallet::getter(fn get_did)]
-	pub type Did<T> = StorageMap<
-		_,
-		Blake2_128Concat,
-		DIDIdentifier,
-		DIDDetails,
-	>;
+	pub type Did<T> = StorageMap<_, Blake2_128Concat, DIDIdentifierEncoding, DIDDetails>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event {
-		DidCreated(DIDIdentifier),
+		DidCreated(DIDIdentifierEncoding),
 	}
 
 	#[pallet::error]
@@ -304,32 +304,40 @@ pub mod pallet {
 		VerificationKeyNotPresent,
 	}
 
-	#[pallet::hooks]
-	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
-
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
+		/// Stores a new DID on chain, after verifying the signature associated with the creation operation. The parameters are:
+		/// - origin: the Substrate account submitting the transaction (which can be different from the DID subject);
+		/// - did_creation_operation: a [DIDCreationOperation](DIDCreationOperation) which contains the details of the new DID;
+		/// - signature: a signature over [DIDCreationOperation](DIDCreationOperation) that must be signed with the authentication key associated with the new DID.
 		#[pallet::weight(<T as Config>::WeightInfo::submit_did_create_operation())]
 		pub fn submit_did_create_operation(
 			origin: OriginFor<T>,
 			did_creation_operation: DIDCreationOperation,
-			signature: Signature
-		) -> DispatchResult {
+			signature: SignatureEncoding,
+		) -> DispatchResultWithPostInfo {
 			// origin of the transaction needs to be a signed sender account
 			ensure_signed(origin)?;
 
 			// There has to be no other DID with the same identifier already saved on chain, otherwise generate a DIDNotPresent error.
-			ensure!(<Did<T>>::contains_key(did_creation_operation.get_did()), <Error<T>>::DIDNotPresent);
+			ensure!(
+				<Did<T>>::contains_key(did_creation_operation.get_did()),
+				<Error<T>>::DIDNotPresent
+			);
 
 			// Create a new DID entry from the details provided in the create operation.
 			let did_entry = DIDDetails::from(&did_creation_operation);
 
 			// Retrieve the authentication key of the new DID, otherwise generate a VerificationKeyNotPresent error if it is not specified
 			// (should never happen as the DIDCreateOperation requires the authentication key to be present).
-			let signature_verification_key = did_entry.get_verification_key_for_key_type(DIDVerificationKeyType::Authentication).ok_or(<Error<T>>::VerificationKeyNotPresent)?;
+			let signature_verification_key = did_entry
+				.get_verification_key_for_key_type(DIDVerificationKeyType::Authentication)
+				.ok_or(<Error<T>>::VerificationKeyNotPresent)?;
 
 			// Re-create a Signature object from the authentication key retrieved, or generate a InvalidSignatureFormat error otherwise.
-			let is_signature_valid = signature_verification_key.verify_signature(&did_creation_operation.encode(), &signature).map_err(|_| <Error<T>>::InvalidSignatureFormat)?;
+			let is_signature_valid = signature_verification_key
+				.verify_signature(&did_creation_operation.encode(), &signature)
+				.map_err(|_| <Error<T>>::InvalidSignatureFormat)?;
 
 			// Verify the validity of the signature, or generate an InvalidSignature error otherwise.
 			ensure!(is_signature_valid, <Error<T>>::InvalidSignature);
@@ -339,7 +347,7 @@ pub mod pallet {
 			<Did<T>>::insert(did_identifier, did_entry);
 
 			Self::deposit_event(Event::DidCreated(did_identifier.to_vec()));
-			Ok(())
+			Ok(().into())
 		}
 	}
 }
