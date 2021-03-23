@@ -429,22 +429,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "balance-locks"
-version = "0.1.0"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "pallet-balances",
- "pallet-vesting",
- "parity-scale-codec",
- "serde",
- "sp-core",
- "sp-io",
- "sp-runtime",
-]
-
-[[package]]
 name = "base-x"
 version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3125,6 +3109,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "kilt-launch"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-vesting",
+ "parity-scale-codec",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+]
+
+[[package]]
 name = "kilt-parachain"
 version = "0.2.0"
 dependencies = [
@@ -3992,7 +3992,6 @@ name = "mashnet-node-runtime"
 version = "0.24.0"
 dependencies = [
  "attestation",
- "balance-locks",
  "bitflags",
  "ctype",
  "delegation",
@@ -4004,6 +4003,7 @@ dependencies = [
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "hex-literal 0.3.1",
+ "kilt-launch",
  "kilt-primitives",
  "pallet-aura",
  "pallet-authorship",

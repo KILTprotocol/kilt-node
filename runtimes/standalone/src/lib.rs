@@ -267,7 +267,7 @@ where
 	}
 }
 
-impl balance_locks::Config for Runtime {
+impl kilt_launch::Config for Runtime {
 	type Event = Event;
 }
 
@@ -438,7 +438,7 @@ construct_runtime!(
 
 		// Vesting. Usable initially, but removed once all vesting is finished.
 		Vesting: pallet_vesting::{Module, Call, Storage, Event<T>, Config<T>} = 28,
-		BalanceLocks: balance_locks::{Module, Call, Storage, Event<T>, Config<T>} = 29,
+		KiltLaunch: kilt_launch::{Module, Call, Storage, Event<T>, Config<T>} = 29,
 	}
 );
 

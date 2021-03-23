@@ -10,7 +10,7 @@ substrate-wasm-builder = "3.0.0"
 [dependencies]
 # kilt features
 attestation = {default-features = false, path = "../../pallets/attestation"}
-balance-locks = {default-features = false, path = "../../pallets/balance-locks"}
+kilt-launch = {default-features = false, path = "../../pallets/kilt-launch"}
 ctype = {default-features = false, path = "../../pallets/ctype"}
 delegation = {default-features = false, path = "../../pallets/delegation"}
 did = {default-features = false, path = "../../pallets/did"}
@@ -236,7 +236,7 @@ runtime-benchmarks = [
 ]
 std = [
   "attestation/std",
-  "balance-locks/std",
+  "kilt-launch/std",
   "ctype/std",
   "did/std",
   "delegation/std",

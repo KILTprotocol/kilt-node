@@ -21,7 +21,7 @@
 use frame_benchmarking::Zero;
 use kilt_primitives::{constants::MONTHS, AccountId, AccountPublic, Balance, BlockNumber};
 use mashnet_node_runtime::{
-	BalanceLocksConfig, BalancesConfig, GenesisConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig,
+	BalancesConfig, GenesisConfig, KiltLaunchConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig,
 	WASM_BINARY,
 };
 
@@ -229,8 +229,8 @@ fn testnet_genesis(
 		aura: Default::default(),
 		grandpa: Default::default(),
 		sudo: SudoConfig { key: root_key },
-		balance_locks: BalanceLocksConfig {
-			balance_locks: airdrop_accounts
+		kilt_launch: KiltLaunchConfig {
+			kilt_launch: airdrop_accounts
 				.iter()
 				.cloned()
 				.filter_map(

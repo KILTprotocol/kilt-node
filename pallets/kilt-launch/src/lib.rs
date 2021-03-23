@@ -52,7 +52,7 @@ mod tests;
 // #[cfg(feature = "runtime-benchmarks")]
 // mod benchmarking;
 
-const CUSTOM_LOCK_ID: LockIdentifier = *b"genesis ";
+const KILT_LAUNCH_ID: LockIdentifier = *b"kiltcoin";
 const VESTING_ID: LockIdentifier = *b"vesting ";
 
 #[frame_support::pallet]
@@ -79,7 +79,7 @@ pub mod pallet {
 
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
-		pub balance_locks: Vec<(T::AccountId, T::BlockNumber, <T as pallet_balances::Config>::Balance)>,
+		pub kilt_launch: Vec<(T::AccountId, T::BlockNumber, <T as pallet_balances::Config>::Balance)>,
 		pub transfer_account: T::AccountId,
 		pub vesting: Vec<(T::AccountId, T::BlockNumber, BalanceOf<T>)>,
 	}
@@ -88,7 +88,7 @@ pub mod pallet {
 	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
 			Self {
-				balance_locks: Default::default(),
+				kilt_launch: Default::default(),
 				transfer_account: Default::default(),
 				vesting: Default::default(),
 			}
@@ -106,7 +106,7 @@ pub mod pallet {
 			// * who - Account which setting the custom lock for
 			// * length - Number of blocks from  until removal of the lock
 			// * amount - Number of tokens which are locked
-			for (ref who, length, locked) in self.balance_locks.iter() {
+			for (ref who, length, locked) in self.kilt_launch.iter() {
 				let balance = <pallet_balances::Module<T>>::free_balance(who);
 				assert!(!balance.is_zero(), "Currencies must be init'd before locking");
 				assert!(
@@ -286,7 +286,7 @@ pub mod pallet {
 				// Allow transaction fees to be paid from locked balance, e.g., prohibit all
 				// withdraws except `WithdrawReasons::TRANSACTION_PAYMENT`
 				<pallet_balances::Module<T>>::set_lock(
-					CUSTOM_LOCK_ID,
+					KILT_LAUNCH_ID,
 					&dest,
 					unlock_amount,
 					WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
@@ -305,7 +305,7 @@ impl<T: Config> Pallet<T> {
 		if let Some(unlocking_balance) = <UnlockingAt<T>>::take(block) {
 			// Remove locks for all accounts
 			for account in unlocking_balance.iter() {
-				<pallet_balances::Module<T>>::remove_lock(CUSTOM_LOCK_ID, account);
+				<pallet_balances::Module<T>>::remove_lock(KILT_LAUNCH_ID, account);
 			}
 
 			Self::deposit_event(Event::Unlocked(block, unlocking_balance.len() as u64));

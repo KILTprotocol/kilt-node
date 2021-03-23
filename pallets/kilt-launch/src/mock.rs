@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate as balance_locks;
+use crate as kilt_launch;
 use frame_support::parameter_types;
 use frame_system as system;
 use kilt_primitives::Balance;
@@ -38,7 +38,8 @@ frame_support::construct_runtime!(
 	{
 		System: frame_system::{Module, Call, Config, Storage, Event<T>},
 		Balance: pallet_balances::{Module, Call, Config, Storage, Event<T>}
-		BalanceLocks: balance_locks::{Module, Call, Config, Storage, Event<T>},
+		KiltLaunch: kilt_launch::{Module, Call, Config, Storage, Event<T>},
+		Vesting: pallet_vesting::{Module, Call, Config, Storage, Event<T>}
 	}
 );
 
@@ -89,9 +90,8 @@ impl pallet_balances::Config for Test {
 	type WeightInfo = ();
 }
 
-impl balance_locks::Config for Test {
+impl kilt_launch::Config for Test {
 	type Event = Event;
-	type Currency = Balances;
 }
 
 // Build genesis storage according to the mock runtime.
