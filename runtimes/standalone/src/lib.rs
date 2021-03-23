@@ -36,9 +36,7 @@ use sp_consensus_aura::ed25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{
-		AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys, Verify,
-	},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult,
 };
@@ -112,7 +110,8 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	transaction_version: 2,
 };
 
-/// The version information used to identify this runtime when compiled natively.
+/// The version information used to identify this runtime when compiled
+/// natively.
 #[cfg(feature = "std")]
 pub fn native_version() -> NativeVersion {
 	NativeVersion {
@@ -268,11 +267,9 @@ where
 	}
 }
 
-
 impl balance_locks::Config for Runtime {
 	type Event = Event;
 }
-
 
 parameter_types! {
 	pub const TransactionByteFee: Balance = 0;

@@ -18,12 +18,13 @@
 
 //! # Balance Locks Module
 //!
-//! A simple module providing means of adding balance locks in the genesis block and automatically
-//! removing these afterwards.
+//! A simple module providing means of adding balance locks in the genesis block
+//! and automatically removing these afterwards.
 //!
 //! ### Dispatchable Functions
 //!
-//! - `force_unlock` - Remove all locks for a given block, can only be called by sudo.
+//! - `force_unlock` - Remove all locks for a given block, can only be called by
+//!   sudo.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -34,15 +35,13 @@ use frame_support::{
 	pallet_prelude::*,
 	sp_runtime::traits::Zero,
 	storage::types::StorageMap,
-	traits::{
-		Currency, ExistenceRequirement::AllowDeath, LockIdentifier, LockableCurrency, Vec,
-		WithdrawReasons,
-	},
-	StorageMap as StorageMapTrait,
+	traits::{Currency, ExistenceRequirement::AllowDeath, LockIdentifier, LockableCurrency, Vec, WithdrawReasons},
+	transactional, StorageMap as StorageMapTrait,
 };
 pub use pallet::*;
-use pallet_balances::{BalanceLock, Locks};
-use pallet_vesting::Vesting;
+use pallet_balances::Locks;
+use pallet_vesting::{Vesting, VestingInfo};
+use sp_runtime::traits::Convert;
 
 #[cfg(test)]
 mod mock;
@@ -53,25 +52,25 @@ mod tests;
 // #[cfg(feature = "runtime-benchmarks")]
 // mod benchmarking;
 
-const LOCK_ID: LockIdentifier = *b"InitKilt";
-
-// type BalanceOf<T> =
-// 	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+const CUSTOM_LOCK_ID: LockIdentifier = *b"genesis ";
+const VESTING_ID: LockIdentifier = *b"vesting ";
 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
 	use frame_system::pallet_prelude::*;
 
-	#[pallet::config]
-	// pub trait Config: frame_system::Config + pallet_balances::Config {
-	pub trait Config:
-		frame_system::Config + pallet_balances::Config + pallet_vesting::Config
-	{
-		/// Because this pallet emits events, it depends on the runtime's definition of an event.
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+	#[derive(Debug, Encode, Decode)]
+	pub struct LockedBalance<T: Config> {
+		block: T::BlockNumber,
+		amount: <T as pallet_balances::Config>::Balance,
+	}
 
-		// type Currency =
+	#[pallet::config]
+	pub trait Config: frame_system::Config + pallet_balances::Config + pallet_vesting::Config {
+		/// Because this pallet emits events, it depends on the runtime's
+		/// definition of an event.
+		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 	}
 
 	#[pallet::pallet]
@@ -80,8 +79,9 @@ pub mod pallet {
 
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
-		pub balance_locks: Vec<(T::AccountId, T::BlockNumber)>,
+		pub balance_locks: Vec<(T::AccountId, T::BlockNumber, <T as pallet_balances::Config>::Balance)>,
 		pub transfer_account: T::AccountId,
+		pub vesting: Vec<(T::AccountId, T::BlockNumber, BalanceOf<T>)>,
 	}
 
 	#[cfg(feature = "std")]
@@ -90,37 +90,75 @@ pub mod pallet {
 			Self {
 				balance_locks: Default::default(),
 				transfer_account: Default::default(),
+				vesting: Default::default(),
 			}
 		}
 	}
 
+	// Balance type based on pallet_vesting
+	type BalanceOf<T> =
+		<<T as pallet_vesting::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
-			for (ref who, length) in self.balance_locks.iter() {
+			// Generate initial custom locking configuration
+			// * who - Account which setting the custom lock for
+			// * length - Number of blocks from  until removal of the lock
+			// * amount - Number of tokens which are locked
+			for (ref who, length, locked) in self.balance_locks.iter() {
 				let balance = <pallet_balances::Module<T>>::free_balance(who);
+				assert!(!balance.is_zero(), "Currencies must be init'd before locking");
 				assert!(
-					!balance.is_zero(),
-					"Currencies must be init'd before vesting"
+					balance >= *locked,
+					"Locked balance must not exceed total balance for address {:?}",
+					who
 				);
 
-				// allow transaction fees to be paid from locked balance, e.g.,
-				// prohibit all withdraws except `WithdrawReasons::TRANSACTION_PAYMENT`
-				<pallet_balances::Module<T>>::set_lock(
-					LOCK_ID,
+				// Add unlock block to storage
+				<BalanceLocks<T>>::insert(
 					who,
-					balance,
-					WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
+					LockedBalance::<T> {
+						block: *length,
+						amount: *locked,
+					},
 				);
-				<UnlockingAt<T>>::append(length, who);
-
-				// add unlock block to storage
-				<UnlockingBlock<T>>::insert(who, length);
-
-				// set vesting information
+				// Instead of setting the lock now, we do so in
+				// `claiming_process`
 			}
 
-			// set transfer account which has a subset of the powers the root account has
+			// Generate initial vesting configuration, taken from pallet_vesting
+			// * who - Account which we are generating vesting configuration for
+			// * begin - Block when the account will start to vest
+			// * length - Number of blocks from `begin` until fully vested
+			// * liquid - Number of units which can be spent before vesting begins =
+			//   total_balance - vesting_balance + 1
+			for &(ref who, length, locked) in self.vesting.iter() {
+				let balance = <<T as pallet_vesting::Config>::Currency as Currency<
+					<T as frame_system::Config>::AccountId,
+				>>::free_balance(who);
+				assert!(!balance.is_zero(), "Currencies must be init'd before vesting");
+				assert!(
+					balance >= locked,
+					"Vested balance must not exceed total balance for address {:?}",
+					who
+				);
+				let length_as_balance = T::BlockNumberToBalance::convert(length);
+				let per_block = locked / length_as_balance.max(sp_runtime::traits::One::one());
+
+				Vesting::<T>::insert(
+					who,
+					VestingInfo::<BalanceOf<T>, T::BlockNumber> {
+						locked,
+						per_block,
+						starting_block: T::BlockNumber::zero(),
+					},
+				);
+				// Instead of setting the lock now, we do so in
+				// `claiming_process`
+			}
+
+			// Set the transfer account which has a subset of the powers of root
 			<TransferAccount<T>>::put(self.transfer_account.clone());
 		}
 	}
@@ -132,9 +170,10 @@ pub mod pallet {
 	#[pallet::getter(fn get_transfer_account)]
 	pub type TransferAccount<T> = StorageValue<_, <T as frame_system::Config>::AccountId>;
 
-	/// Maps a block to a account ids.
+	/// Maps a block to account ids which have their balance locked.
 	///
-	/// Required for automatic unlocking once the block number is reached in `on_initialize`.
+	/// Required for automatic unlocking once the block number is reached in
+	/// `on_initialize`.
 	#[pallet::storage]
 	#[pallet::getter(fn get_unlocking_at)]
 	pub type UnlockingAt<T> = StorageMap<
@@ -144,17 +183,14 @@ pub mod pallet {
 		Vec<<T as frame_system::Config>::AccountId>,
 	>;
 
-	/// Maps an account to the block in which balance can be unlocked.
+	/// Maps an account to the (block, balance) pair in which the latter can be
+	/// unlocked.
 	///
 	/// Required for the claiming process.
 	#[pallet::storage]
 	#[pallet::getter(fn get_unlocking_block)]
-	pub type UnlockingBlock<T> = StorageMap<
-		_,
-		Blake2_128Concat,
-		<T as frame_system::Config>::AccountId,
-		<T as frame_system::Config>::BlockNumber,
-	>;
+	pub type BalanceLocks<T> =
+		StorageMap<_, Blake2_128Concat, <T as frame_system::Config>::AccountId, LockedBalance<T>>;
 
 	#[pallet::event]
 	#[pallet::metadata(T::BlockNumber = "BlockNumber")]
@@ -166,7 +202,7 @@ pub mod pallet {
 	#[pallet::error]
 	pub enum Error<T> {
 		Unauthorized,
-		MultipleLocks,
+		UnexpectedLocks,
 		MissingVestingSchedule,
 	}
 
@@ -179,25 +215,28 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		/// Enable removal of KILT balance locks for sudo
+		/// Enable removal of KILT balance locks via sudo
 		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
-		pub fn force_unlock(
-			origin: OriginFor<T>,
-			block: T::BlockNumber,
-		) -> DispatchResultWithPostInfo {
+		pub fn force_unlock(origin: OriginFor<T>, block: T::BlockNumber) -> DispatchResultWithPostInfo {
 			let _ = ensure_root(origin)?;
 
 			Ok(Some(Self::unlock_balance(block)).into())
 		}
 
-		/// Transfer tokens to an account owned by the claimer
+		/// Transfer tokens to an account owned by the claimer.
 		///
 		/// If the source account has vesting or a custom lock enabled,
-		/// everything is migrated automatically.
-		/// Additionally, we unlock the balance which can already be unlocked from vesting.
+		/// everything is migrated automatically. Additionally, we unlock the
+		/// balance which can already be unlocked from vesting. This should
+		/// enable the user to pay the transaction fees for the next call of
+		/// `vest` which is always required to be explicitly called in order to
+		/// unlock balance from vesting.
 		///
-		/// Note: Actually, setting the custom lock only occurs in this call to avoid overhead.
-		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
+		/// Note: Setting the custom lock actually only occurs in this call (and
+		/// not when building the genesis block) to avoid overhead from handling
+		/// locks when migrating.
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(7, 7))]
+		#[transactional]
 		pub fn claiming_process(
 			origin: OriginFor<T>,
 			source: T::AccountId,
@@ -205,72 +244,56 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 
-			ensure!(
-				Some(who) == <TransferAccount<T>>::get(),
-				Error::<T>::Unauthorized
-			);
+			// The extrinsic has to be called by the TransferAccount
+			ensure!(Some(who) == <TransferAccount<T>>::get(), Error::<T>::Unauthorized);
 
-			// get and remove locks from source
-			// potential candidates: vesting, custom lock
-			// TODO: Test whether this automatically removes all locks from the storage
-			let locks = Locks::<T>::take(&source);
-			ensure!(locks.len() <= 1, Error::<T>::MultipleLocks);
-			let transfer_amount = <pallet_balances::Module<T>>::total_balance(&source);
+			// There should be no locks for the source address
+			ensure!(Locks::<T>::get(&source).len().is_zero(), Error::<T>::UnexpectedLocks);
 
-			// there can only be a single lock (from vesting)
-			// the custom lock is set during claiming process
-			// the staking lock can only be actively set by the user after claiming
-			// the voting lock can only be actively set by the user after claiming
-			if let Some(BalanceLock::<<T as pallet_balances::Config>::Balance> { id, .. }) =
-				locks.get(0)
-			{
-				// remove source lock to enable transfer
-				<pallet_balances::Module<T>>::remove_lock(*id, &dest);
+			// Check for vesting and custom locks
+			let vesting_info = Vesting::<T>::take(&source);
 
-				// transfer to dest before migrating vesting schedule
-				let _ = <pallet_balances::Module<T> as Currency<T::AccountId>>::transfer(
-					&source,
-					&dest,
-					transfer_amount,
-					AllowDeath,
-				)?;
+			// Transfer to destination addess
+			let amount = <pallet_balances::Module<T>>::total_balance(&source);
+			let _ =
+				<pallet_balances::Module<T> as Currency<T::AccountId>>::transfer(&source, &dest, amount, AllowDeath)?;
 
-				// migrate lock and vesting schedule
-				// TODO: Check whether take clears the storage
-				let vesting =
-					Vesting::<T>::take(&source).ok_or(Error::<T>::MissingVestingSchedule)?;
+			// Migrate vesting info and set the corresponding vesting lock
+			if let Some(vesting) = vesting_info {
 				Vesting::<T>::insert(&dest, vesting);
-
-				// automatically unlock the current amount which can be unlocked
-				// enables the user to have funds before actively calling `vest`
-				// if claimed after the genesis block
-				// logic taken from pallet_vesting
+				// Only lock funds from now until vesting expires.
+				// Enables the user to have funds before actively calling `vest` if claimed
+				// after the genesis block.
+				//
+				// Logic was taken from pallet_vesting.
 				let reasons = WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE;
 				let now = <frame_system::Module<T>>::block_number();
-				let locked_now =
-					vesting.locked_at::<<T as pallet_vesting::Config>::BlockNumberToBalance>(now);
+				let locked_now = vesting.locked_at::<<T as pallet_vesting::Config>::BlockNumberToBalance>(now);
 				<<T as pallet_vesting::Config>::Currency as LockableCurrency<T::AccountId>>::set_lock(
-					*id,
+					VESTING_ID,
 					&dest,
 					locked_now.into(),
 					reasons,
 				);
-			} else {
-				// transfer to dest
-				let _ = <pallet_balances::Module<T> as Currency<T::AccountId>>::transfer(
-					&source,
+			}
+
+			// Set the KILT custom lock
+			if let Some(LockedBalance::<T> {
+				block: unlock_block,
+				amount: unlock_amount,
+			}) = <BalanceLocks<T>>::take(&dest)
+			{
+				// Allow transaction fees to be paid from locked balance, e.g., prohibit all
+				// withdraws except `WithdrawReasons::TRANSACTION_PAYMENT`
+				<pallet_balances::Module<T>>::set_lock(
+					CUSTOM_LOCK_ID,
 					&dest,
-					transfer_amount,
-					AllowDeath,
-				)?;
+					unlock_amount,
+					WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
+				);
+				<UnlockingAt<T>>::append(unlock_block, &dest);
 			}
-
-			// check for custom lock
-			if let Some(block) = <UnlockingBlock<T>>::take(&dest) {
-				<UnlockingAt<T>>::append(block, &dest);
-			}
-
-			// <T as Currency<T::AccountId>>
+			// TODO: Add meaningful information
 			Ok(Some(0).into())
 		}
 	}
@@ -279,13 +302,11 @@ pub mod pallet {
 impl<T: Config> Pallet<T> {
 	/// Remove KILT balance locks for the specified block
 	fn unlock_balance(block: T::BlockNumber) -> Weight {
-		if let Some(unlocking_balance) = <UnlockingAt<T>>::get(block) {
-			// remove locks for all accounts
+		if let Some(unlocking_balance) = <UnlockingAt<T>>::take(block) {
+			// Remove locks for all accounts
 			for account in unlocking_balance.iter() {
-				<pallet_balances::Module<T>>::remove_lock(LOCK_ID, account);
+				<pallet_balances::Module<T>>::remove_lock(CUSTOM_LOCK_ID, account);
 			}
-			// remove storage entry
-			<UnlockingAt<T>>::remove(block);
 
 			Self::deposit_event(Event::Unlocked(block, unlocking_balance.len() as u64));
 			T::DbWeight::get().reads_writes(1, (unlocking_balance.len() + 1) as u64)
@@ -294,13 +315,3 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 }
-
-// impl From<Reasons> for WithdrawReasons {
-// 	fn from(r: Reasons) -> WithdrawReasons {
-// 		match r {
-// 			Reasons::Fee => WithdrawReasons::TRANSACTION_PAYMENT,
-// 			Reasons::Misc => WithdrawReasons::ALL,
-// 			Reasons::All => WithdrawReasons::ALL,
-// 		}
-// 	}
-// }

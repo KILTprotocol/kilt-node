@@ -18,13 +18,13 @@ frame-system = {git = "https://github.com/paritytech/substrate", default-feature
 frame-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, version = "3.1.0", branch = "rococo-v1", optional = true}
 pallet-balances = {git = "https://github.com/paritytech/substrate", default-features = false, version = "3.0.0", branch = "rococo-v1"}
 pallet-vesting = {git = "https://github.com/paritytech/substrate", default-features = false, version = "3.0.0", branch = "rococo-v1"}
+sp-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, version = "3.0.0", branch = "rococo-v1"}
 
 [dev-dependencies]
 
 pallet-balances = {git = "https://github.com/paritytech/substrate", default-features = false, version = "3.0.0", branch = "rococo-v1"}
 sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, version = "3.0.0", branch = "rococo-v1"}
 sp-io = {git = "https://github.com/paritytech/substrate", default-features = false, version = "3.0.0", branch = "rococo-v1"}
-sp-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, version = "3.0.0", branch = "rococo-v1"}
 
 [features]
 default = ["std"]
@@ -35,7 +35,8 @@ std = [
 	"frame-system/std",
 	"frame-benchmarking/std",
 	"pallet-balances/std",
-	"pallet-vesting/std"
+	"pallet-vesting/std",
+	"sp-runtime/std"
 ]
 runtime-benchmarks = ["frame-benchmarking"]
 try-runtime = ["frame-support/try-runtime"]

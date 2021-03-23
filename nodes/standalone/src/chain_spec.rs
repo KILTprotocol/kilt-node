@@ -18,10 +18,11 @@
 
 //! KILT chain specification
 
+use frame_benchmarking::Zero;
 use kilt_primitives::{constants::MONTHS, AccountId, AccountPublic, Balance, BlockNumber};
 use mashnet_node_runtime::{
-	BalanceLocksConfig, BalancesConfig, GenesisConfig, SessionConfig, SudoConfig, SystemConfig,
-	VestingConfig, WASM_BINARY,
+	BalanceLocksConfig, BalancesConfig, GenesisConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig,
+	WASM_BINARY,
 };
 
 use hex_literal::hex;
@@ -30,7 +31,7 @@ use sc_service::{self, ChainType, Properties};
 use sp_consensus_aura::ed25519::AuthorityId as AuraId;
 use sp_core::{crypto::UncheckedInto, ed25519, Pair, Public};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
-use sp_runtime::traits::IdentifyAccount;
+use sp_runtime::traits::{IdentifyAccount, One};
 
 // Note this is the URL for the telemetry server
 //const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -183,13 +184,14 @@ fn testnet_genesis(
 	type VestingPeriod = BlockNumber;
 	type LockingPeriod = BlockNumber;
 
-	let airdrop_accounts_json =
-		&include_bytes!("../../../dev-specs/genesis-testing/genesis_accounts.json")[..];
-	let airdrop_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
-		serde_json::from_slice(airdrop_accounts_json)
-			.expect("Could not read from genesis_accounts.json");
-	
-	// TODO: Check whether user with 100% vested tokens can stake from beginning, e.g. how to handle tx fee
+	// TODO: We might want to split up the json into three jsons for total balance,
+	// vesting and locks as initially designed
+	let airdrop_accounts_json = &include_bytes!("../../../dev-specs/genesis-testing/genesis_accounts.json")[..];
+	let airdrop_accounts: Vec<(AccountId, Balance, VestingPeriod, Balance, LockingPeriod, Balance)> =
+		serde_json::from_slice(airdrop_accounts_json).expect("Could not read from genesis_accounts.json");
+
+	// TODO: Check whether user with 100% vested tokens can stake from beginning,
+	// e.g. how to handle tx fee
 
 	GenesisConfig {
 		frame_system: SystemConfig {
@@ -201,7 +203,12 @@ fn testnet_genesis(
 				.iter()
 				.cloned()
 				.map(|a| (a, 1u128 << 90))
-				.chain(airdrop_accounts.iter().cloned().map(|(a, b, _, _)| (a, b)))
+				.chain(
+					airdrop_accounts
+						.iter()
+						.cloned()
+						.map(|(who, total, _, _, _, _)| (who, total)),
+				)
 				.collect(),
 		},
 		session: SessionConfig {
@@ -222,24 +229,43 @@ fn testnet_genesis(
 		aura: Default::default(),
 		grandpa: Default::default(),
 		sudo: SudoConfig { key: root_key },
-		pallet_vesting: VestingConfig {
-			vesting: airdrop_accounts
-				.iter()
-				.cloned()
-				// enable 1 KILT tokent to be spendable apart from vesting to allow the user to call `vest``
-				// which is required to actually remove the lock
-				.map(|(who, _, l, _)| (who, 0u64, l * MONTHS, 1u128))
-				.collect(),
-		},
 		balance_locks: BalanceLocksConfig {
 			balance_locks: airdrop_accounts
 				.iter()
 				.cloned()
-				.map(|(who, _, _, l)| (who.to_owned(), l))
+				.filter_map(
+					|(who, _total, _vesting_length, _vested_balance, locking_length, locked_balance)| {
+						if locked_balance.is_zero() || locking_length.is_zero() {
+							None
+						} else {
+							Some((who.to_owned(), locking_length * MONTHS, locked_balance))
+						}
+					},
+				)
+				.collect(),
+			vesting: airdrop_accounts
+				.iter()
+				.cloned()
+				.filter_map(
+					|(who, _total, vesting_length, vested_balance, _locking_length, _locked_balance)| {
+						if vested_balance.is_zero() || vesting_length.is_zero() {
+							None
+						} else {
+							Some((
+								who,
+								vesting_length * MONTHS,
+								// Enable 1 KILT token to be spendable apart from vesting to allow the user to
+								// call `vest`` which is required to actually remove the lock
+								vested_balance.saturating_sub(Balance::one()),
+							))
+						}
+					},
+				)
 				.collect(),
 			// TODO: Set this to another address (PRE-LAUNCH)
 			transfer_account: get_account_id_from_secret::<ed25519::Public>("//Alice"),
 		},
+		pallet_vesting: VestingConfig { vesting: vec![] },
 	}
 }
 
