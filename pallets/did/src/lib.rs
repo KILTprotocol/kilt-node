@@ -40,9 +40,6 @@ use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom, prelude::Clone,
 
 pub use pallet::*;
 
-/// Type of a payload of data (to verify signatures against).
-pub type PayloadEncoding = Vec<u8>;
-
 /// Reference to a payload of data of variable size.
 pub type PayloadReference<'a> = &'a [u8];
 
