@@ -1,4 +1,4 @@
-// KILT Blockchain – https://botlabs.o index: (), error: (), message: ()rg
+// KILT Blockchain – https://botlabs.org
 // Copyright (C) 2019-2021 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
@@ -56,11 +56,11 @@ frame_support::construct_runtime!(
 	}
 );
 
-/// We assume that ~10% of the block weight is consumed by `on_initalize` handlers.
-/// This is used to limit the maximal weight of a single extrinsic.
+/// We assume that ~10% of the block weight is consumed by `on_initalize`
+/// handlers. This is used to limit the maximal weight of a single extrinsic.
 const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
-/// We allow `Normal` extrinsics to fill up the block up to 75%, the rest can be used
-/// by  Operational  extrinsics.
+/// We allow `Normal` extrinsics to fill up the block up to 75%, the rest can be
+/// used by  Operational  extrinsics.
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 /// We allow for 2 seconds of compute with a 6 second average block time.
 const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
@@ -137,9 +137,7 @@ pub struct ExtBuilder;
 
 impl ExtBuilder {
 	pub fn build_with_keystore() -> TestExternalities {
-		let storage = frame_system::GenesisConfig::default()
-			.build_storage::<Test>()
-			.unwrap();
+		let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 		let mut ext = TestExternalities::from(storage);
 		// register keystore
 		let keystore = KeyStore::new();
@@ -173,10 +171,7 @@ fn check_add_and_revoke_delegations() {
 		let id_level_2_1 = H256::from_low_u64_be(21);
 		let id_level_2_2 = H256::from_low_u64_be(22);
 		let id_level_2_2_1 = H256::from_low_u64_be(221);
-		assert_ok!(CType::add(
-			Origin::signed(account_hash_alice.clone()),
-			ctype_hash
-		));
+		assert_ok!(CType::add(Origin::signed(account_hash_alice.clone()), ctype_hash));
 
 		assert_ok!(Delegation::create_root(
 			Origin::signed(account_hash_alice.clone()),
@@ -184,11 +179,7 @@ fn check_add_and_revoke_delegations() {
 			ctype_hash
 		));
 		assert_noop!(
-			Delegation::create_root(
-				Origin::signed(account_hash_alice.clone()),
-				id_level_0,
-				ctype_hash
-			),
+			Delegation::create_root(Origin::signed(account_hash_alice.clone()), id_level_0, ctype_hash),
 			Error::<Test>::RootAlreadyExists
 		);
 		assert_noop!(
@@ -402,10 +393,7 @@ fn check_add_and_revoke_delegations() {
 		assert_eq!(delegation_2.root_id, id_level_0);
 		assert_eq!(delegation_2.parent, Some(id_level_1));
 		assert_eq!(delegation_2.owner, account_hash_charlie);
-		assert_eq!(
-			delegation_2.permissions,
-			Permissions::ATTEST | Permissions::DELEGATE
-		);
+		assert_eq!(delegation_2.permissions, Permissions::ATTEST | Permissions::DELEGATE);
 		assert_eq!(delegation_2.revoked, false);
 
 		let children = Delegation::children(id_level_1);
@@ -414,18 +402,12 @@ fn check_add_and_revoke_delegations() {
 		assert_eq!(children[1], id_level_2_2);
 
 		// check is_delgating
-		assert_eq!(
-			Delegation::is_delegating(&account_hash_alice, &id_level_1, 3),
-			Ok(true)
-		);
+		assert_eq!(Delegation::is_delegating(&account_hash_alice, &id_level_1, 3), Ok(true));
 		assert_eq!(
 			Delegation::is_delegating(&account_hash_alice, &id_level_2_1, 3),
 			Ok(true)
 		);
-		assert_eq!(
-			Delegation::is_delegating(&account_hash_bob, &id_level_2_1, 3),
-			Ok(true)
-		);
+		assert_eq!(Delegation::is_delegating(&account_hash_bob, &id_level_2_1, 3), Ok(true));
 		assert_eq!(
 			Delegation::is_delegating(&account_hash_charlie, &id_level_2_1, 1),
 			Ok(true)
@@ -450,12 +432,7 @@ fn check_add_and_revoke_delegations() {
 			Error::<Test>::DelegationNotFound
 		);
 		assert_noop!(
-			Delegation::revoke_delegation(
-				Origin::signed(account_hash_charlie.clone()),
-				id_level_1,
-				10,
-				1
-			),
+			Delegation::revoke_delegation(Origin::signed(account_hash_charlie.clone()), id_level_1, 10, 1),
 			Error::<Test>::UnauthorizedRevocation,
 		);
 		assert_ok!(Delegation::revoke_delegation(
@@ -466,16 +443,9 @@ fn check_add_and_revoke_delegations() {
 		));
 
 		assert_eq!(Delegation::delegation(id_level_2_2).unwrap().revoked, true);
-		assert_eq!(
-			Delegation::delegation(id_level_2_2_1).unwrap().revoked,
-			true
-		);
+		assert_eq!(Delegation::delegation(id_level_2_2_1).unwrap().revoked, true);
 		assert_noop!(
-			Delegation::revoke_root(
-				Origin::signed(account_hash_bob.clone()),
-				H256::from_low_u64_be(999),
-				1
-			),
+			Delegation::revoke_root(Origin::signed(account_hash_bob.clone()), H256::from_low_u64_be(999), 1),
 			Error::<Test>::RootNotFound
 		);
 		assert_noop!(

@@ -58,9 +58,7 @@ fn parent_id_check<T: Config>(
 }
 
 /// add ctype to storage and root delegation
-fn add_root_delegation<T: Config>(
-	number: u32,
-) -> Result<(DelegationTriplet<T>, T::Hash), DispatchError>
+fn add_root_delegation<T: Config>(number: u32) -> Result<(DelegationTriplet<T>, T::Hash), DispatchError>
 where
 	T::AccountId: From<sr25519::Public>,
 	T::DelegationNodeId: From<T::Hash>,
@@ -71,11 +69,7 @@ where
 	let root_id = generate_delegation_id::<T>(number);
 
 	ctype::Module::<T>::add(RawOrigin::Signed(root_acc.clone()).into(), ctype_hash)?;
-	Module::<T>::create_root(
-		RawOrigin::Signed(root_acc.clone()).into(),
-		root_id,
-		ctype_hash,
-	)?;
+	Module::<T>::create_root(RawOrigin::Signed(root_acc.clone()).into(), root_id, ctype_hash)?;
 
 	Ok((
 		DelegationTriplet::<T> {
@@ -87,7 +81,8 @@ where
 	))
 }
 
-/// recursively adds children delegations to a parent delegation for each level until reaching leaf level
+/// recursively adds children delegations to a parent delegation for each level
+/// until reaching leaf level
 fn add_children<T: Config>(
 	root_id: T::DelegationNodeId,
 	parent_id: T::DelegationNodeId,
@@ -117,12 +112,10 @@ where
 		let parent = parent_id_check::<T>(root_id, parent_id);
 
 		// delegate signs delegation to parent
-		let hash: Vec<u8> =
-			Module::<T>::calculate_hash(delegation_id, root_id, parent, permissions).encode();
-		let sig: T::Signature =
-			sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &delegation_acc_public, hash.as_ref())
-				.ok_or("Error while building signature of delegation.")?
-				.into();
+		let hash: Vec<u8> = Module::<T>::calculate_hash(delegation_id, root_id, parent, permissions).encode();
+		let sig: T::Signature = sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &delegation_acc_public, hash.as_ref())
+			.ok_or("Error while building signature of delegation.")?
+			.into();
 
 		// add delegation from delegate to parent
 		let _ = Module::<T>::add_delegation(
@@ -136,11 +129,7 @@ where
 		)?;
 
 		// only return first leaf
-		first_leaf = first_leaf.or(Some((
-			delegation_acc_public,
-			delegation_acc_id,
-			delegation_id,
-		)));
+		first_leaf = first_leaf.or(Some((delegation_acc_public, delegation_acc_id, delegation_id)));
 	}
 
 	let (leaf_acc_public, leaf_acc_id, leaf_id) =
@@ -304,14 +293,8 @@ mod tests {
 	#[test]
 	fn test_benchmark_utils_generate_id() {
 		ExtBuilder::build_with_keystore().execute_with(|| {
-			assert_eq!(
-				generate_delegation_id::<Test>(1),
-				generate_delegation_id::<Test>(1)
-			);
-			assert_ne!(
-				generate_delegation_id::<Test>(1),
-				generate_delegation_id::<Test>(2)
-			);
+			assert_eq!(generate_delegation_id::<Test>(1), generate_delegation_id::<Test>(1));
+			assert_ne!(generate_delegation_id::<Test>(1), generate_delegation_id::<Test>(2));
 			let root = generate_delegation_id::<Test>(1);
 			let parent = generate_delegation_id::<Test>(2);
 			assert_eq!(parent_id_check::<Test>(root, root), None);
@@ -381,12 +364,9 @@ mod tests {
 	#[test]
 	fn test_benchmark_utils_auto_setup() {
 		ExtBuilder::build_with_keystore().execute_with(|| {
-			let (_, root_id, _, leaf_id) = setup_delegations::<Test>(
-				2,
-				NonZeroU32::new(2).expect(">0"),
-				Permissions::DELEGATE,
-			)
-			.expect("failed to run delegation setup");
+			let (_, root_id, _, leaf_id) =
+				setup_delegations::<Test>(2, NonZeroU32::new(2).expect(">0"), Permissions::DELEGATE)
+					.expect("failed to run delegation setup");
 			assert!(Root::<Test>::contains_key(root_id));
 			assert!(Delegations::<Test>::contains_key(leaf_id));
 		});

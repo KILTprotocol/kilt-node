@@ -29,9 +29,7 @@ mod tests;
 pub mod default_weights;
 pub use default_weights::WeightInfo;
 
-use frame_support::{
-	decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure, StorageMap,
-};
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure, StorageMap};
 use frame_system::{self, ensure_signed};
 
 /// The CTYPE Config
