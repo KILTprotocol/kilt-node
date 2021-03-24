@@ -52,7 +52,7 @@ pub type SignatureReference<'a> = &'a [u8];
 /// Type for an encoded DID identifier.
 pub type DIDIdentifierEncoding = Vec<u8>;
 
-/// Type for an encodid URL.
+/// Type for an encoded URL.
 pub type UrlEncoding = Vec<u8>;
 
 /// Trait representing a public key under the control of a DID subject.
@@ -297,7 +297,7 @@ pub mod pallet {
 	pub enum Error<T> {
 		InvalidSignatureFormat,
 		InvalidSignature,
-		DIDNotPresent,
+		DIDAlreadyPresent,
 		VerificationKeyNotPresent,
 	}
 
@@ -318,8 +318,8 @@ pub mod pallet {
 
 			// There has to be no other DID with the same identifier already saved on chain, otherwise generate a DIDNotPresent error.
 			ensure!(
-				<Did<T>>::contains_key(did_creation_operation.get_did()),
-				<Error<T>>::DIDNotPresent
+				!<Did<T>>::contains_key(did_creation_operation.get_did()),
+				<Error<T>>::DIDAlreadyPresent
 			);
 
 			// Create a new DID entry from the details provided in the create operation.
