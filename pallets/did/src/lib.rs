@@ -35,7 +35,7 @@ use codec::{Decode, Encode};
 use frame_support::{ensure, storage::types::StorageMap};
 use frame_system::{self, ensure_signed};
 use sp_core::{ed25519, sr25519};
-use sp_runtime::{AccountId32, traits::Verify};
+use sp_runtime::{traits::Verify, AccountId32};
 use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom, prelude::Clone, vec::Vec};
 
 pub use pallet::*;
@@ -197,7 +197,7 @@ pub trait DIDOperation: Encode {
 }
 
 /// An enum describing the different verification methods a verification key can fulfil, according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
-#[derive(Clone, Debug, Decode, Encode, PartialEq)]
+#[derive(Clone, Debug, Decode, Encode, PartialEq, Eq)]
 pub enum DIDVerificationKeyType {
 	Authentication,
 	CapabilityDelegation,
@@ -239,11 +239,14 @@ impl DIDOperation for DIDCreationOperation {
 }
 
 /// All the errors that can be generated when evaluating a DID operation.
+#[derive(Debug, Eq, PartialEq)]
 pub enum DIDError {
 	StorageError(StorageError),
 	SignatureError(SignatureError),
 }
 
+// Used internally to handle storage errors.
+#[derive(Debug, Eq, PartialEq)]
 pub enum StorageError {
 	/// The DID being created is already present on chain.
 	DIDAlreadyPresent,
@@ -254,6 +257,7 @@ pub enum StorageError {
 }
 
 // Used internally to handle signature errors.
+#[derive(Debug, Eq, PartialEq)]
 pub enum SignatureError {
 	/// The signature is not in the expected format the verification key expects.
 	InvalidSignatureFormat,
@@ -358,7 +362,7 @@ impl<T: Config> Pallet<T> {
 	pub fn verify_did_operation_signature<O: DIDOperation>(
 		op: &O,
 		signature: SignatureReference,
-	) -> Result<bool, DIDError> {
+	) -> Result<(), DIDError> {
 		// Switch to a slice
 		// Try to retrieve from the storage the details of the given DID.
 		let did_entry: Option<DIDDetails> = <Did<T>>::get(op.get_did());
@@ -386,7 +390,11 @@ impl<T: Config> Pallet<T> {
 			.verify_signature(&op.encode(), signature)
 			.map_err(|_| DIDError::SignatureError(SignatureError::InvalidSignatureFormat))?;
 
-		// Return the result of the signature verification.
-		Ok(is_signature_valid)
+		ensure!(
+			is_signature_valid,
+			DIDError::SignatureError(SignatureError::InvalidSignature)
+		);
+
+		Ok(())
 	}
 }

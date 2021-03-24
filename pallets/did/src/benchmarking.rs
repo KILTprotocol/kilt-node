@@ -26,6 +26,7 @@ use sp_runtime::traits::Hash;
 
 const SEED: u32 = 0;
 
+//TODO: Need to update this to match the latest version of the pallet.
 benchmarks! {
 	where_clause { where T::PublicSigningKey: From<T::Hash>, T::PublicBoxKey: From<T::Hash>}
 
