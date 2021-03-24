@@ -35,7 +35,7 @@ use codec::{Decode, Encode};
 use frame_support::{ensure, storage::types::StorageMap};
 use frame_system::{self, ensure_signed};
 use sp_core::{ed25519, sr25519};
-use sp_runtime::traits::Verify;
+use sp_runtime::{AccountId32, traits::Verify};
 use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom, prelude::Clone, vec::Vec};
 
 pub use pallet::*;
@@ -49,8 +49,8 @@ pub type SignatureEncoding = Vec<u8>;
 /// Reference to a signature of variable size.
 pub type SignatureReference<'a> = &'a [u8];
 
-/// Type for an encoded DID identifier.
-pub type DIDIdentifierEncoding = Vec<u8>;
+/// Type for a DID identifier.
+pub type DIDIdentifier = AccountId32;
 
 /// Type for an encoded URL.
 pub type UrlEncoding = Vec<u8>;
@@ -193,7 +193,7 @@ pub trait DIDOperation: Encode {
 	/// Returns the type of the verification key to be used to validate the operation.
 	fn get_verification_key_type(&self) -> DIDVerificationKeyType;
 	/// Returns the DID identifier of the subject.
-	fn get_did(&self) -> &DIDIdentifierEncoding;
+	fn get_did(&self) -> &DIDIdentifier;
 }
 
 /// An enum describing the different verification methods a verification key can fulfil, according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
@@ -212,7 +212,7 @@ pub enum DIDEncryptionKeyType {
 }
 
 /// A DID creation request. It contains the following values:
-/// - the DID identifier being created;
+/// - the DID identifier being created (only Substrate addresses are allowed in this version of the pallet);
 /// - the new authentication key to use;
 /// - the new encryption key to use;
 /// - the optional attestation key to use;
@@ -220,7 +220,7 @@ pub enum DIDEncryptionKeyType {
 /// - the optional endpoint URL pointing to the DID service endpoints.
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
 pub struct DIDCreationOperation {
-	did: DIDIdentifierEncoding,
+	did: DIDIdentifier,
 	new_auth_key: PublicVerificationKey,
 	new_key_agreement_key: PublicEncryptionKey,
 	new_attestation_key: Option<PublicVerificationKey>,
@@ -233,8 +233,8 @@ impl DIDOperation for DIDCreationOperation {
 		DIDVerificationKeyType::Authentication
 	}
 
-	fn get_did(&self) -> &DIDIdentifierEncoding {
-		self.did.as_ref()
+	fn get_did(&self) -> &DIDIdentifier {
+		&self.did
 	}
 }
 
@@ -285,12 +285,12 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn get_did)]
-	pub type Did<T> = StorageMap<_, Blake2_128Concat, DIDIdentifierEncoding, DIDDetails>;
+	pub type Did<T> = StorageMap<_, Blake2_128Concat, DIDIdentifier, DIDDetails>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		DidCreated(T::AccountId, DIDIdentifierEncoding),
+		DidCreated(T::AccountId, DIDIdentifier),
 	}
 
 	#[pallet::error]
@@ -343,7 +343,8 @@ pub mod pallet {
 			log::debug!("Creating DID {:?}", did_identifier);
 			<Did<T>>::insert(did_identifier, did_entry);
 
-			Self::deposit_event(Event::DidCreated(sender, did_identifier.to_vec()));
+			Self::deposit_event(Event::DidCreated(sender, did_identifier.clone()));
+			//TODO: Return the real weight used
 			Ok(().into())
 		}
 	}

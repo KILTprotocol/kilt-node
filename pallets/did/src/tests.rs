@@ -33,7 +33,6 @@ use frame_system::limits::{BlockLength, BlockWeights};
 use kilt_primitives::Signature;
 use sp_core::{ed25519, Pair, H256};
 use sp_runtime::{
-	app_crypto::RuntimePublic,
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSigner, Perbill,
@@ -129,18 +128,19 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 
 #[test]
 fn check_successful_did_creation() {
-	let did_identifier = [0u8; 32];
+	let did_identifier = AccountId32::from([0u8; 32]);
 	let did_enc_keypair_seed = [1u8; 32];
 	let pair = ed25519::Pair::from_seed(&*b"Alice                           ");
 	let account = MultiSigner::from(pair.public()).into_account();
 
 	// New DID with only ed25519 auth key and x25519 encryptio key.
+	//TODO: Add test for correct event generation.
 	new_test_ext().execute_with(|| {
 		let account = account.clone();
 		let did_auth_keypair_seed = [2u8; 32];
 		let did_auth_keypair = ed25519::Pair::from_seed(&did_auth_keypair_seed);
 		let did_creation_operation = DIDCreationOperation {
-			did: did_identifier.to_vec(),
+			did: did_identifier.clone(),
 			new_auth_key: PublicVerificationKey::Ed25519(did_auth_keypair.public().into()),
 			new_key_agreement_key: PublicEncryptionKey::X55519(did_enc_keypair_seed),
 			new_attestation_key: None,
@@ -155,7 +155,7 @@ fn check_successful_did_creation() {
 		));
 
 		let stored_did: DIDDetails = {
-			let did_details = Did::get_did(did_identifier.to_vec());
+			let did_details = Did::get_did(did_identifier.clone());
 			assert!(did_details.is_some());
 			did_details.unwrap()
 		};
@@ -189,7 +189,7 @@ fn check_successful_did_creation() {
 		let did_auth_keypair_seed = [2u8; 32];
 		let did_auth_keypair = sr25519::Pair::from_seed(&did_auth_keypair_seed);
 		let did_creation_operation = DIDCreationOperation {
-			did: did_identifier.to_vec(),
+			did: did_identifier.clone(),
 			new_auth_key: PublicVerificationKey::Sr25519(did_auth_keypair.public().into()),
 			new_key_agreement_key: PublicEncryptionKey::X55519(did_enc_keypair_seed),
 			new_attestation_key: None,
@@ -204,7 +204,7 @@ fn check_successful_did_creation() {
 		));
 
 		let stored_did: DIDDetails = {
-			let did_details = Did::get_did(did_identifier.to_vec());
+			let did_details = Did::get_did(did_identifier.clone());
 			assert!(did_details.is_some());
 			did_details.unwrap()
 		};
@@ -240,7 +240,7 @@ fn check_successful_did_creation() {
 		let did_attestation_keypair = sr25519::Pair::from_seed(&test_verification_seed);
 		let did_delegation_keypair = ed25519::Pair::from_seed(&test_verification_seed);
 		let did_creation_operation = DIDCreationOperation {
-			did: did_identifier.to_vec(),
+			did: did_identifier.clone(),
 			new_auth_key: PublicVerificationKey::Sr25519(did_auth_keypair.public().into()),
 			new_key_agreement_key: PublicEncryptionKey::X55519(did_enc_keypair_seed),
 			new_attestation_key: Some(PublicVerificationKey::Sr25519(
@@ -259,7 +259,7 @@ fn check_successful_did_creation() {
 		));
 
 		let stored_did: DIDDetails = {
-			let did_details = Did::get_did(did_identifier.to_vec());
+			let did_details = Did::get_did(did_identifier.clone());
 			assert!(did_details.is_some());
 			did_details.unwrap()
 		};
@@ -290,7 +290,7 @@ fn check_successful_did_creation() {
 
 #[test]
 fn check_invalid_did_creation() {
-	let did_identifier = [0u8; 32];
+	let did_identifier = AccountId32::from([0u8; 32]);
 	let pair = ed25519::Pair::from_seed(&*b"Alice                           ");
 	let account = MultiSigner::from(pair.public()).into_account();
 
@@ -302,7 +302,7 @@ fn check_invalid_did_creation() {
 		let did_auth_keypair = ed25519::Pair::from_seed(&did_auth_keypair_seed);
 		let did_enc_keypair_seed = [1u8; 32];
 		let did_creation_operation = DIDCreationOperation {
-			did: did_identifier.to_vec(),
+			did: did_identifier.clone(),
 			new_auth_key: PublicVerificationKey::Ed25519(did_auth_keypair.public().into()),
 			new_key_agreement_key: PublicEncryptionKey::X55519(did_enc_keypair_seed),
 			new_attestation_key: None,
@@ -331,7 +331,7 @@ fn check_invalid_did_creation() {
 		let did_auth_keypair = ed25519::Pair::from_seed(&did_auth_keypair_seed);
 		let did_enc_keypair_seed = [1u8; 32];
 		let did_creation_operation = DIDCreationOperation {
-			did: did_identifier.to_vec(),
+			did: did_identifier.clone(),
 			new_auth_key: PublicVerificationKey::Ed25519(did_auth_keypair.public().into()),
 			new_key_agreement_key: PublicEncryptionKey::X55519(did_enc_keypair_seed),
 			new_attestation_key: None,
