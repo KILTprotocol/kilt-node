@@ -1,3 +1,21 @@
+// KILT Blockchain – https://botlabs.org
+// Copyright (C) 2019-2021 BOTLabs GmbH
+
+// The KILT Blockchain is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// The KILT Blockchain is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+// If you feel like getting in touch with us, you can do so at info@botlabs.org
+
 use crate::*;
 use frame_support::{
 	dispatch::Weight,
@@ -32,22 +50,12 @@ pub trait V23ToV24 {
 	type PublicBoxKey: Parameter + Member + Codec;
 
 	/// The user account identifier type for the runtime.
-	type AccountId: Parameter
-		+ Member
-		+ MaybeSerializeDeserialize
-		+ Debug
-		+ MaybeDisplay
-		+ Ord
-		+ Default;
+	type AccountId: Parameter + Member + MaybeSerializeDeserialize + Debug + MaybeDisplay + Ord + Default;
 }
 
 #[allow(type_alias_bounds)]
-type Dids<T: V23ToV24> = StorageMap<
-	__Dids,
-	Identity,
-	T::AccountId,
-	Option<DidRecord<T::PublicSigningKey, T::PublicBoxKey>>,
->;
+type Dids<T: V23ToV24> =
+	StorageMap<__Dids, Identity, T::AccountId, Option<DidRecord<T::PublicSigningKey, T::PublicBoxKey>>>;
 // set storage version
 struct ModuleVersion;
 impl GetPalletVersion for ModuleVersion {
@@ -90,21 +98,20 @@ pub fn apply<T: V23ToV24>() -> Weight {
 	}
 }
 
-/// Migrate from the old legacy voting bond (fixed) to the new one (per-vote dynamic).
+/// Migrate from the old legacy voting bond (fixed) to the new one (per-vote
+/// dynamic).
 fn migrate_to_struct<T: V23ToV24>() {
 	let mut counter = 0;
-	<Dids<T>>::translate::<Option<(T::PublicSigningKey, T::PublicBoxKey, Option<Vec<u8>>)>, _>(
-		|_who, option| {
-			counter += 1;
-			option.map(|(sign_key, box_key, doc_ref)| {
-				Some(DidRecord {
-					sign_key,
-					box_key,
-					doc_ref,
-				})
+	<Dids<T>>::translate::<Option<(T::PublicSigningKey, T::PublicBoxKey, Option<Vec<u8>>)>, _>(|_who, option| {
+		counter += 1;
+		option.map(|(sign_key, box_key, doc_ref)| {
+			Some(DidRecord {
+				sign_key,
+				box_key,
+				doc_ref,
 			})
-		},
-	);
+		})
+	});
 
 	log::info!("migrated {} did records.", counter,);
 }
@@ -125,17 +132,12 @@ mod tests {
 				Option<Vec<u8>>,
 			);
 
-			type DidRecordNew =
-				DidRecord<<Test as Config>::PublicSigningKey, <Test as Config>::PublicBoxKey>;
+			type DidRecordNew = DidRecord<<Test as Config>::PublicSigningKey, <Test as Config>::PublicBoxKey>;
 
 			let did_old: DidRecordOld = (
 				Default::default(),
 				Default::default(),
-				Some(
-					"lkahsdflöasdhflkjahsdfjkasdjölkjSADÖKkash"
-						.as_bytes()
-						.to_vec(),
-				),
+				Some("lkahsdflöasdhflkjahsdfjkasdjölkjSADÖKkash".as_bytes().to_vec()),
 			);
 			let blake_hash = sp_core::blake2_256(&[1]);
 
@@ -168,11 +170,7 @@ mod tests {
 			let new_did = DidRecordNew {
 				sign_key: Default::default(),
 				box_key: Default::default(),
-				doc_ref: Some(
-					"lkahsdflöasdhflkjahsdfjkasdjölkjSADÖKkash"
-						.as_bytes()
-						.to_vec(),
-				),
+				doc_ref: Some("lkahsdflöasdhflkjahsdfjkasdjölkjSADÖKkash".as_bytes().to_vec()),
 			};
 
 			assert_eq!(

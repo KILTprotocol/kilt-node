@@ -97,7 +97,8 @@ pub trait Config: ctype::Config + frame_system::Config {
 	type Signature: Verify<Signer = Self::Signer> + Member + Codec + Default;
 
 	/// Signer of a delegation
-	// type Signer: From<Self::AccountId> + IdentifyAccount<AccountId = Self::AccountId>> + Member + Codec;
+	// type Signer: From<Self::AccountId> + IdentifyAccount<AccountId =
+	// Self::AccountId>> + Member + Codec;
 	type Signer: IdentifyAccount<AccountId = Self::AccountId> + Member + Codec;
 
 	/// Delegation node id type
@@ -331,7 +332,8 @@ impl<T: Config> Module<T> {
 		T::Hashing::hash(&hashed_values)
 	}
 
-	/// Check if an account is the owner of the delegation or any delegation up the hierarchy (including the root)
+	/// Check if an account is the owner of the delegation or any delegation up
+	/// the hierarchy (including the root)
 	pub fn is_delegating(
 		account: &T::AccountId,
 		delegation: &T::DelegationNodeId,
@@ -341,8 +343,7 @@ impl<T: Config> Module<T> {
 		ensure!(max_lookups > 0, Error::<T>::MaxSearchDepthReached);
 
 		// check if delegation exists
-		let delegation_node =
-			<Delegations<T>>::get(delegation).ok_or(Error::<T>::DelegationNotFound)?;
+		let delegation_node = <Delegations<T>>::get(delegation).ok_or(Error::<T>::DelegationNotFound)?;
 
 		// check if the given account is the owner of the delegation
 		if delegation_node.owner.eq(account) {
@@ -366,8 +367,7 @@ impl<T: Config> Module<T> {
 		let mut revocations: u32 = 0;
 		let mut consumed_weight: Weight = 0;
 		// retrieve delegation node from storage
-		let mut delegation_node =
-			<Delegations<T>>::get(*delegation).ok_or(Error::<T>::DelegationNotFound)?;
+		let mut delegation_node = <Delegations<T>>::get(*delegation).ok_or(Error::<T>::DelegationNotFound)?;
 		consumed_weight += T::DbWeight::get().reads(1);
 
 		// check if already revoked
@@ -378,7 +378,8 @@ impl<T: Config> Module<T> {
 				consumed_weight += w;
 			})?;
 
-			// if we run out of revocation gas, we only revoke children. The tree will be changed but is still valid.
+			// if we run out of revocation gas, we only revoke children. The tree will be
+			// changed but is still valid.
 			if revocations < max_revocations {
 				// set revoked flag and store delegation node
 				delegation_node.revoked = true;
@@ -444,11 +445,7 @@ pub struct DelegationNode<T: Config> {
 }
 
 impl<T: Config> DelegationNode<T> {
-	pub fn new_root(
-		root_id: T::DelegationNodeId,
-		owner: T::AccountId,
-		permissions: Permissions,
-	) -> Self {
+	pub fn new_root(root_id: T::DelegationNodeId, owner: T::AccountId, permissions: Permissions) -> Self {
 		DelegationNode {
 			root_id,
 			owner,
@@ -462,8 +459,8 @@ impl<T: Config> DelegationNode<T> {
 	///
 	/// root_id - the root of the delegation tree
 	/// parent - the parent in the tree
-	/// owner - the owner of the new child root. He will receive the delegated permissions
-	/// permissions - the permissions that are delegated
+	/// owner - the owner of the new child root. He will receive the delegated
+	/// permissions permissions - the permissions that are delegated
 	pub fn new_child(
 		root_id: T::DelegationNodeId,
 		parent: T::DelegationNodeId,

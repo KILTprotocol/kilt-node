@@ -20,7 +20,8 @@
 //!
 //! THIS FILE WAS AUTO-GENERATED USING THE SUBSTRATE BENCHMARK CLI VERSION 3.0.0
 //! DATE: 2021-03-11, STEPS: [10, ], REPEAT: 4, LOW RANGE: [], HIGH RANGE: []
-//! EXECUTION: Some(Wasm), WASM-EXECUTION: Interpreted, CHAIN: None, DB CACHE: 128
+//! EXECUTION: Some(Wasm), WASM-EXECUTION: Interpreted, CHAIN: None, DB CACHE:
+//! 128
 
 // Executed Command:
 // /home/willi/mashnet-node/target/release/mashnet-node

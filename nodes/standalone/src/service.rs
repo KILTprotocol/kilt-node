@@ -1,4 +1,23 @@
-//! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
+// KILT Blockchain – https://botlabs.org
+// Copyright (C) 2019-2021 BOTLabs GmbH
+
+// The KILT Blockchain is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// The KILT Blockchain is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+// If you feel like getting in touch with us, you can do so at info@botlabs.org
+
+//! Service and ServiceFactory implementation. Specialized wrapper over
+//! substrate service.
 
 use mashnet_node_runtime::{self, opaque::Block, RuntimeApi};
 use sc_client_api::{ExecutorProvider, RemoteBackend};
@@ -33,12 +52,7 @@ type PartialConfig = sc_service::PartialComponents<
 		sc_consensus_aura::AuraBlockImport<
 			Block,
 			FullClient,
-			sc_finality_grandpa::GrandpaBlockImport<
-				FullBackend,
-				Block,
-				FullClient,
-				FullSelectChain,
-			>,
+			sc_finality_grandpa::GrandpaBlockImport<FullBackend, Block, FullClient, FullSelectChain>,
 			AuraPair,
 		>,
 		sc_finality_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
@@ -48,9 +62,7 @@ type PartialConfig = sc_service::PartialComponents<
 
 pub fn new_partial(config: &Configuration) -> Result<PartialConfig, ServiceError> {
 	if config.keystore_remote.is_some() {
-		return Err(ServiceError::Other(
-			"Remote Keystores are not supported.".to_owned(),
-		));
+		return Err(ServiceError::Other("Remote Keystores are not supported.".to_owned()));
 	}
 	let inherent_data_providers = sp_inherents::InherentDataProviders::new();
 
@@ -233,8 +245,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 			telemetry.as_ref().map(|x| x.handle()),
 		);
 
-		let can_author_with =
-			sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone());
+		let can_author_with = sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone());
 
 		let aura = sc_consensus_aura::start_aura::<AuraPair, _, _, _, _, _, _, _, _, _>(
 			StartAuraParams {
@@ -256,9 +267,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 
 		// the AURA authoring task is considered essential, i.e. if it
 		// fails we take down the service with it.
-		task_manager
-			.spawn_essential_handle()
-			.spawn_blocking("aura", aura);
+		task_manager.spawn_essential_handle().spawn_blocking("aura", aura);
 	}
 
 	// if the node isn't actively participating in consensus then it doesn't
@@ -299,10 +308,9 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 
 		// the GRANDPA voter task is considered infallible, i.e.
 		// if it fails we take down the service with it.
-		task_manager.spawn_essential_handle().spawn_blocking(
-			"grandpa-voter",
-			sc_finality_grandpa::run_grandpa_voter(grandpa_config)?,
-		);
+		task_manager
+			.spawn_essential_handle()
+			.spawn_blocking("grandpa-voter", sc_finality_grandpa::run_grandpa_voter(grandpa_config)?);
 	}
 
 	network_starter.start_network();

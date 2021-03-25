@@ -108,7 +108,8 @@ pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
 
-// 1 in 4 blocks (on average, not counting collisions) will be primary babe blocks.
+// 1 in 4 blocks (on average, not counting collisions) will be primary babe
+// blocks.
 pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
 
 #[derive(codec::Encode, codec::Decode)]
@@ -117,7 +118,8 @@ pub enum XcmpMessage<XAccountId, XBalance> {
 	TransferToken(XAccountId, XBalance),
 }
 
-/// The version information used to identify this runtime when compiled natively.
+/// The version information used to identify this runtime when compiled
+/// natively.
 #[cfg(feature = "std")]
 pub fn native_version() -> NativeVersion {
 	NativeVersion {
@@ -126,11 +128,11 @@ pub fn native_version() -> NativeVersion {
 	}
 }
 
-/// We assume that ~10% of the block weight is consumed by `on_initalize` handlers.
-/// This is used to limit the maximal weight of a single extrinsic.
+/// We assume that ~10% of the block weight is consumed by `on_initalize`
+/// handlers. This is used to limit the maximal weight of a single extrinsic.
 const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
-/// We allow `Normal` extrinsics to fill up the block up to 75%, the rest can be used
-/// by  Operational  extrinsics.
+/// We allow `Normal` extrinsics to fill up the block up to 75%, the rest can be
+/// used by  Operational  extrinsics.
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 /// We allow for 2 seconds of compute with a 6 second average block time.
 const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
@@ -166,7 +168,8 @@ impl frame_system::Config for Runtime {
 	type AccountId = AccountId;
 	/// The aggregated dispatch type that is available for extrinsics.
 	type Call = Call;
-	/// The lookup mechanism to get account ID from whatever is passed in dispatchers.
+	/// The lookup mechanism to get account ID from whatever is passed in
+	/// dispatchers.
 	type Lookup = AccountIdLookup<AccountId, ()>;
 	/// The index type for storing how many extrinsics an account has signed.
 	type Index = Index;
@@ -182,7 +185,8 @@ impl frame_system::Config for Runtime {
 	type Event = Event;
 	/// The ubiquitous origin type.
 	type Origin = Origin;
-	/// Maximum number of block number to block hash mappings to keep (oldest pruned first).
+	/// Maximum number of block number to block hash mappings to keep (oldest
+	/// pruned first).
 	type BlockHashCount = BlockHashCount;
 	/// Runtime version.
 	type Version = Version;

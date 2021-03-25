@@ -70,10 +70,11 @@ pub type DigestItem = generic::DigestItem<Hash>;
 pub type NegativeImbalance<T> =
 	<balances::Pallet<T> as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
 
-/// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
-/// the specifics of the runtime. They can then be made to be agnostic over specific formats
-/// of data like extrinsics, allowing for them to continue syncing the network through upgrades
-/// to even the core data structures.
+/// Opaque types. These are used by the CLI to instantiate machinery that don't
+/// need to know the specifics of the runtime. They can then be made to be
+/// agnostic over specific formats of data like extrinsics, allowing for them to
+/// continue syncing the network through upgrades to even the core data
+/// structures.
 pub mod opaque {
 	use super::*;
 
@@ -120,7 +121,8 @@ pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
 
-/// The version information used to identify this runtime when compiled natively.
+/// The version information used to identify this runtime when compiled
+/// natively.
 #[cfg(feature = "std")]
 pub fn native_version() -> NativeVersion {
 	NativeVersion {
@@ -155,7 +157,8 @@ impl frame_system::Config for Runtime {
 	type AccountId = AccountId;
 	/// The aggregated dispatch type that is available for extrinsics.
 	type Call = Call;
-	/// The lookup mechanism to get account ID from whatever is passed in dispatchers.
+	/// The lookup mechanism to get account ID from whatever is passed in
+	/// dispatchers.
 	type Lookup = AccountIdLookup<AccountId, ()>;
 	/// The index type for storing how many extrinsics an account has signed.
 	type Index = Index;
@@ -171,7 +174,8 @@ impl frame_system::Config for Runtime {
 	type Event = Event;
 	/// The ubiquitous origin type.
 	type Origin = Origin;
-	/// Maximum number of block number to block hash mappings to keep (oldest pruned first).
+	/// Maximum number of block number to block hash mappings to keep (oldest
+	/// pruned first).
 	type BlockHashCount = BlockHashCount;
 	/// The weight of database operations that the runtime can invoke.
 	type DbWeight = RocksDbWeight;
@@ -189,7 +193,8 @@ impl frame_system::Config for Runtime {
 	type AccountData = balances::AccountData<Balance>;
 	/// Weight information for the extrinsics of this pallet.
 	type SystemWeightInfo = ();
-	/// This is used as an identifier of the chain. 42 is the generic substrate prefix.
+	/// This is used as an identifier of the chain. 42 is the generic substrate
+	/// prefix.
 	type SS58Prefix = SS58Prefix;
 }
 
@@ -203,13 +208,10 @@ impl grandpa::Config for Runtime {
 
 	type KeyOwnerProofSystem = ();
 
-	type KeyOwnerProof =
-		<Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, GrandpaId)>>::Proof;
+	type KeyOwnerProof = <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, GrandpaId)>>::Proof;
 
-	type KeyOwnerIdentification = <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(
-		KeyTypeId,
-		GrandpaId,
-	)>>::IdentificationTuple;
+	type KeyOwnerIdentification =
+		<Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, GrandpaId)>>::IdentificationTuple;
 
 	type HandleEquivocation = ();
 

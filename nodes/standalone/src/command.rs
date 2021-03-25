@@ -1,18 +1,20 @@
-// Copyright 2017-2020 Parity Technologies (UK) Ltd.
-// This file is part of Substrate.
+// KILT Blockchain – https://botlabs.org
+// Copyright (C) 2019-2021 BOTLabs GmbH
 
-// Substrate is free software: you can redistribute it and/or modify
+// The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Substrate is distributed in the hope that it will be useful,
+// The KILT Blockchain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Substrate.  If not, see <http://www.gnu.org/licenses/>.
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+// If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{
 	chain_spec,
@@ -87,9 +89,7 @@ pub fn run() -> sc_cli::Result<()> {
 			let runner = cli.create_runner(cmd)?;
 			runner.async_run(|config| {
 				let PartialComponents {
-					client,
-					task_manager,
-					..
+					client, task_manager, ..
 				} = service::new_partial(&config)?;
 				Ok((cmd.run(client, config.database), task_manager))
 			})
@@ -98,9 +98,7 @@ pub fn run() -> sc_cli::Result<()> {
 			let runner = cli.create_runner(cmd)?;
 			runner.async_run(|config| {
 				let PartialComponents {
-					client,
-					task_manager,
-					..
+					client, task_manager, ..
 				} = service::new_partial(&config)?;
 				Ok((cmd.run(client, config.chain_spec), task_manager))
 			})
