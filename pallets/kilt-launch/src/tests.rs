@@ -16,8 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::{mock::*, Error};
+use crate::{mock::*, BalanceLocks, Error, LockedBalance, UnlockingAt};
 use frame_support::{assert_noop, assert_ok};
+use pallet_balances::Locks;
+use pallet_vesting::VestingInfo;
 
 // TODO: Maybe add a setter function to the pallet for testing
 
@@ -27,20 +29,42 @@ fn it_works_for_default_value() {
 		.one_hundred_for_alice_n_bob()
 		.build()
 		.execute_with(|| {
-			assert_eq!(Balances::free_balance(ALICE), 100);
+			let user1_free_balance = Balances::free_balance(&ALICE);
+			let user2_free_balance = Balances::free_balance(&BOB);
+			assert_eq!(user1_free_balance, 10_000); // Account 1 has free balance
+			assert_eq!(user2_free_balance, 10_000); // Account 2 has free balance
+			let user1_vesting_schedule = VestingInfo {
+				locked: 1000,
+				per_block: 100, // Vesting over 10 blocks
+				starting_block: 0,
+			};
+			let user2_vesting_schedule = VestingInfo {
+				locked: 1000,
+				per_block: 50, // Vesting over 20 blocks
+				starting_block: 0,
+			};
+			assert_eq!(Vesting::vesting(&ALICE), Some(user1_vesting_schedule)); // Account 1 has a vesting schedule
+			assert_eq!(Vesting::vesting(&BOB), Some(user2_vesting_schedule));
+
+			// TEST CUSTOM LOCK
+			let alice_balance_lock = LockedBalance::<Test> {
+				block: 100,
+				amount: 1111,
+			};
+			let bob_balance_lock = LockedBalance::<Test> {
+				block: 1337,
+				amount: 2222,
+			};
+			assert_eq!(BalanceLocks::<Test>::get(&ALICE), Some(alice_balance_lock));
+			assert_eq!(BalanceLocks::<Test>::get(&BOB), Some(bob_balance_lock));
+			assert_eq!(UnlockingAt::<Test>::get(100), None);
+			assert_eq!(UnlockingAt::<Test>::get(1337), None);
+
+			// TEST LOCKS
+			assert_eq!(Locks::<Test>::get(&ALICE).len(), 0);
+			assert_eq!(Locks::<Test>::get(&BOB).len(), 0);
 		});
 }
-
-// #[test]
-// fn correct_error_for_none_value() {
-// 	new_test_ext().execute_with(|| {
-// 		// Ensure the expected error is thrown when no value is present.
-// 		assert_noop!(
-// 			TemplateModule::cause_error(Origin::signed(1)),
-// 			Error::<Test>::NoneValue
-// 		);
-// 	});
-// }
 
 // Test cases
 // Successfully build genesis

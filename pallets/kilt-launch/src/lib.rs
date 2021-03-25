@@ -60,10 +60,10 @@ pub mod pallet {
 	use super::*;
 	use frame_system::pallet_prelude::*;
 
-	#[derive(Debug, Encode, Decode)]
+	#[derive(Debug, Encode, Decode, PartialEq, Eq)]
 	pub struct LockedBalance<T: Config> {
-		block: T::BlockNumber,
-		amount: <T as pallet_balances::Config>::Balance,
+		pub block: T::BlockNumber,
+		pub amount: <T as pallet_balances::Config>::Balance,
 	}
 
 	#[pallet::config]

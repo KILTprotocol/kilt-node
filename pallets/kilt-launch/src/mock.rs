@@ -142,11 +142,11 @@ impl ExtBuilder {
 	}
 
 	pub fn one_hundred_for_alice_n_bob(self) -> Self {
-		self.balances(vec![(ALICE, 100), (BOB, 100)])
+		self.balances(vec![(ALICE, 10_000), (BOB, 10_000)])
 	}
 
 	pub fn one_hundred_for_transfer_account(mut self) -> Self {
-		self.balances(vec![(TRANSFER_ACCOUNT, 100)])
+		self.balances(vec![(TRANSFER_ACCOUNT, 10_000)])
 	}
 
 	pub fn build(self) -> sp_io::TestExternalities {
@@ -159,8 +159,8 @@ impl ExtBuilder {
 		.unwrap();
 
 		kilt_launch::GenesisConfig::<Test> {
-			balance_locks: vec![(ALICE, 10, 1000), (BOB, 100, 2000)],
-			vesting: vec![(ALICE, 1, 1000), (BOB, 2, 1000)],
+			balance_locks: vec![(ALICE, 100, 1111), (BOB, 1337, 2222)],
+			vesting: vec![(ALICE, 10, 1000), (BOB, 20, 1000)],
 			transfer_account: TRANSFER_ACCOUNT,
 		}
 		.assimilate_storage(&mut t)
