@@ -24,9 +24,11 @@ use pallet_vesting::VestingInfo;
 // TODO: Maybe add a setter function to the pallet for testing
 
 #[test]
-fn it_works_for_default_value() {
+fn check_build_genesis_config() {
 	ExtBuilder::default()
 		.one_hundred_for_alice_n_bob()
+		.vest_alice_bob()
+		.lock_alice_bob()
 		.build()
 		.execute_with(|| {
 			let user1_free_balance = Balances::free_balance(&ALICE);
@@ -63,6 +65,28 @@ fn it_works_for_default_value() {
 			// TEST LOCKS
 			assert_eq!(Locks::<Test>::get(&ALICE).len(), 0);
 			assert_eq!(Locks::<Test>::get(&BOB).len(), 0);
+		});
+}
+
+#[test]
+fn check_user_claim() {
+	ExtBuilder::default()
+		.one_hundred_for_alice_n_bob()
+		.vest_alice_bob()
+		.lock_alice_bob()
+		.build()
+		.execute_with(|| {
+			assert_ok!(KiltLaunch::accept_user_account_claim(
+				Origin::signed(TRANSFER_ACCOUNT),
+				ALICE,
+				USER_1
+			));
+			System::set_block_number(2);
+
+			// check for desired death of allocation account
+			assert_eq!(Balances::free_balance(ALICE), 0);
+			assert_eq!(Vesting::vesting(&ALICE), None);
+			assert_eq!(BalanceLocks::<Test>::get(&ALICE), None);
 		});
 }
 

@@ -124,7 +124,7 @@ pub mod pallet {
 					},
 				);
 				// Instead of setting the lock now, we do so in
-				// `claiming_process`
+				// `accept_user_account_claim`
 			}
 
 			// Generate initial vesting configuration, taken from pallet_vesting
@@ -155,7 +155,7 @@ pub mod pallet {
 					},
 				);
 				// Instead of setting the lock now, we do so in
-				// `claiming_process`
+				// `accept_user_account_claim`
 			}
 
 			// Set the transfer account which has a subset of the powers of root
@@ -237,9 +237,11 @@ pub mod pallet {
 		/// locks when migrating.
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(7, 7))]
 		#[transactional]
-		pub fn claiming_process(
+		pub(super) fn accept_user_account_claim(
 			origin: OriginFor<T>,
+			// TODO:  Switch type to LookupSource instead of AccountId
 			source: T::AccountId,
+			// TODO:  Switch type to LookupSource instead of AccountId
 			dest: T::AccountId,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
@@ -281,7 +283,7 @@ pub mod pallet {
 			if let Some(LockedBalance::<T> {
 				block: unlock_block,
 				amount: unlock_amount,
-			}) = <BalanceLocks<T>>::take(&dest)
+			}) = <BalanceLocks<T>>::take(&source)
 			{
 				// Allow transaction fees to be paid from locked balance, e.g., prohibit all
 				// withdraws except `WithdrawReasons::TRANSACTION_PAYMENT`

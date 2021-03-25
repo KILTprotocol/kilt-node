@@ -32,7 +32,9 @@ type Block = frame_system::mocking::MockBlock<Test>;
 
 pub const ALICE: AccountId = AccountId32::new([0u8; 32]);
 pub const BOB: AccountId = AccountId32::new([1u8; 32]);
-pub const TRANSFER_ACCOUNT: AccountId = AccountId32::new([2u8; 32]);
+pub const USER_2: AccountId = AccountId32::new([11u8; 32]);
+pub const USER_1: AccountId = AccountId32::new([10u8; 32]);
+pub const TRANSFER_ACCOUNT: AccountId = AccountId32::new([100u8; 32]);
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
@@ -142,11 +144,25 @@ impl ExtBuilder {
 	}
 
 	pub fn one_hundred_for_alice_n_bob(self) -> Self {
-		self.balances(vec![(ALICE, 10_000), (BOB, 10_000)])
+		self.balances(vec![(ALICE, 10_000), (BOB, 10_000), (TRANSFER_ACCOUNT, 10_000)])
 	}
 
-	pub fn one_hundred_for_transfer_account(mut self) -> Self {
-		self.balances(vec![(TRANSFER_ACCOUNT, 10_000)])
+	pub fn vest(mut self, vesting: Vec<(AccountId, BlockNumber, Balance)>) -> Self {
+		self.vesting = vesting;
+		self
+	}
+
+	pub fn vest_alice_bob(self) -> Self {
+		self.vest(vec![(ALICE, 10, 1000), (BOB, 20, 1000)])
+	}
+
+	pub fn lock_balance(mut self, balance_locks: Vec<(AccountId, BlockNumber, Balance)>) -> Self {
+		self.balance_locks = balance_locks;
+		self
+	}
+
+	pub fn lock_alice_bob(self) -> Self {
+		self.lock_balance(vec![(ALICE, 100, 1111), (BOB, 1337, 2222)])
 	}
 
 	pub fn build(self) -> sp_io::TestExternalities {
@@ -159,8 +175,8 @@ impl ExtBuilder {
 		.unwrap();
 
 		kilt_launch::GenesisConfig::<Test> {
-			balance_locks: vec![(ALICE, 100, 1111), (BOB, 1337, 2222)],
-			vesting: vec![(ALICE, 10, 1000), (BOB, 20, 1000)],
+			balance_locks: self.balance_locks,
+			vesting: self.vesting,
 			transfer_account: TRANSFER_ACCOUNT,
 		}
 		.assimilate_storage(&mut t)
