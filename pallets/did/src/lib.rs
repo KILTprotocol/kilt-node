@@ -20,6 +20,8 @@
 //! adding and removing DIDs.
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(test)]
+mod test_utils;
 /// Test module for attestations
 #[cfg(test)]
 mod tests;
