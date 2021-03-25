@@ -21,15 +21,15 @@ use frame_support::{assert_noop, assert_ok};
 
 // TODO: Maybe add a setter function to the pallet for testing
 
-// #[test]
-// fn it_works_for_default_value() {
-// 	new_test_ext().execute_with(|| {
-// 		// Dispatch a signed extrinsic.
-// 		assert_ok!(KiltLaunch::do_something(Origin::signed(1), 42));
-// 		// Read pallet storage and assert an expected result.
-// 		assert_eq!(TemplateModule::something(), Some(42));
-// 	});
-// }
+#[test]
+fn it_works_for_default_value() {
+	ExtBuilder::default()
+		.one_hundred_for_alice_n_bob()
+		.build()
+		.execute_with(|| {
+			assert_eq!(Balances::free_balance(ALICE), 100);
+		});
+}
 
 // #[test]
 // fn correct_error_for_none_value() {
@@ -41,3 +41,13 @@ use frame_support::{assert_noop, assert_ok};
 // 		);
 // 	});
 // }
+
+// Test cases
+// Successfully build genesis
+// All assertions when building genesis
+// all cases of (balance, vested, locks)
+// claiming_process:
+// storage killed?
+// locks set?
+// free balance available at first block (vesting)
+// force_unlock
