@@ -32,13 +32,16 @@ pub mod benchmarking;
 pub mod default_weights;
 pub use default_weights::WeightInfo;
 
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, WrapperTypeEncode};
 
+use codec::EncodeLike;
 use frame_support::{ensure, storage::types::StorageMap};
 use frame_system::{self, ensure_signed};
 use sp_core::{ed25519, sr25519};
-use sp_runtime::{traits::Verify, AccountId32};
-use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom, prelude::Clone, vec::Vec};
+use sp_runtime::traits::{IdentifyAccount, Verify};
+use sp_std::{
+	collections::btree_set::BTreeSet, convert::TryFrom, fmt::Debug, prelude::Clone, vec::Vec,
+};
 
 pub use pallet::*;
 
@@ -51,8 +54,6 @@ pub type SignatureEncoding = Vec<u8>;
 /// Reference to a signature of variable size.
 pub type SignatureReference<'a> = &'a [u8];
 
-/// Type for a DID identifier.
-pub type DIDIdentifier = AccountId32;
 
 /// Type for an encoded URL.
 pub type UrlEncoding = Vec<u8>;
@@ -61,14 +62,6 @@ pub type UrlEncoding = Vec<u8>;
 pub trait DIDPublicKey {
 	/// Returns the key method description as in the [DID specification](https://w3c.github.io/did-spec-registries/#verification-method-types).
 	fn get_did_key_description(&self) -> &'static str;
-}
-
-/// A trait describing an operation that requires DID authentication.
-pub trait DIDOperation: Encode {
-	/// Returns the type of the verification key to be used to validate the operation.
-	fn get_verification_key_type(&self) -> DIDVerificationKeyType;
-	/// Returns the DID identifier of the subject.
-	fn get_did(&self) -> &DIDIdentifier;
 }
 
 /// An enum describing the different verification methods a verification key can fulfil, according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
@@ -187,6 +180,43 @@ pub enum SignatureError {
 	InvalidSignature,
 }
 
+/// A trait describing an operation that requires DID authentication.
+pub trait DIDOperation<DIDIdentifier: Encode + WrapperTypeEncode>: Encode {
+	/// Returns the type of the verification key to be used to validate the operation.
+	fn get_verification_key_type(&self) -> DIDVerificationKeyType;
+	/// Returns the DID identifier of the subject.
+	fn get_did(&self) -> &DIDIdentifier;
+}
+
+/// A DID creation request. It contains the following values:
+/// - the DID identifier being created (only Substrate addresses are allowed in this version of the pallet);
+/// - the new authentication key to use;
+/// - the new encryption key to use;
+/// - the optional attestation key to use;
+/// - the optional delegation key to use;
+/// - the optional endpoint URL pointing to the DID service endpoints.
+#[derive(Clone, Decode, Debug, Encode, PartialEq)]
+pub struct DIDCreationOperation<DIDIdentifier> {
+	did: DIDIdentifier,
+	new_auth_key: PublicVerificationKey,
+	new_key_agreement_key: PublicEncryptionKey,
+	new_attestation_key: Option<PublicVerificationKey>,
+	new_delegation_key: Option<PublicVerificationKey>,
+	new_endpoint_url: Option<UrlEncoding>,
+}
+
+impl<DIDIdentifier: Encode + WrapperTypeEncode> DIDOperation<DIDIdentifier>
+	for DIDCreationOperation<DIDIdentifier>
+{
+	fn get_verification_key_type(&self) -> DIDVerificationKeyType {
+		DIDVerificationKeyType::Authentication
+	}
+
+	fn get_did(&self) -> &DIDIdentifier {
+		&self.did
+	}
+}
+
 /// The details associated to a DID identity. Specifically:
 /// - the authentication key, used to authenticate DID-related operations;
 /// - the key agreement key, used to encrypt data addressed to the DID subject;
@@ -205,8 +235,8 @@ pub struct DIDDetails {
 	last_tx_counter: u64,
 }
 
-impl From<&DIDCreationOperation> for DIDDetails {
-	fn from(op: &DIDCreationOperation) -> Self {
+impl<DIDIdentifier> From<&DIDCreationOperation<DIDIdentifier>> for DIDDetails {
+	fn from(op: &DIDCreationOperation<DIDIdentifier>) -> Self {
 		DIDDetails {
 			auth_key: op.new_auth_key.clone(),
 			key_agreement_key: op.new_key_agreement_key.clone(),
@@ -240,32 +270,6 @@ impl DIDDetails {
 	// }
 }
 
-/// A DID creation request. It contains the following values:
-/// - the DID identifier being created (only Substrate addresses are allowed in this version of the pallet);
-/// - the new authentication key to use;
-/// - the new encryption key to use;
-/// - the optional attestation key to use;
-/// - the optional delegation key to use;
-/// - the optional endpoint URL pointing to the DID service endpoints.
-#[derive(Clone, Decode, Debug, Encode, PartialEq)]
-pub struct DIDCreationOperation {
-	did: DIDIdentifier,
-	new_auth_key: PublicVerificationKey,
-	new_key_agreement_key: PublicEncryptionKey,
-	new_attestation_key: Option<PublicVerificationKey>,
-	new_delegation_key: Option<PublicVerificationKey>,
-	new_endpoint_url: Option<UrlEncoding>,
-}
-
-impl DIDOperation for DIDCreationOperation {
-	fn get_verification_key_type(&self) -> DIDVerificationKeyType {
-		DIDVerificationKeyType::Authentication
-	}
-
-	fn get_did(&self) -> &DIDIdentifier {
-		&self.did
-	}
-}
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
@@ -279,6 +283,14 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type WeightInfo: WeightInfo;
+		type DIDIdentifier: IdentifyAccount<AccountId = Self::AccountId>
+			+ Clone
+			+ Decode
+			+ Debug
+			+ Encode
+			+ PartialEq
+			+ WrapperTypeEncode
+			+ EncodeLike;
 	}
 
 	#[pallet::pallet]
@@ -290,12 +302,12 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn get_did)]
-	pub type Did<T> = StorageMap<_, Blake2_128Concat, DIDIdentifier, DIDDetails>;
+	pub type Did<T> = StorageMap<_, Blake2_128Concat, <T as Config>::DIDIdentifier, DIDDetails>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		DidCreated(T::AccountId, DIDIdentifier),
+		DidCreated(T::AccountId, T::DIDIdentifier),
 	}
 
 	#[pallet::error]
@@ -315,7 +327,7 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::submit_did_create_operation())]
 		pub fn submit_did_create_operation(
 			origin: OriginFor<T>,
-			did_creation_operation: DIDCreationOperation,
+			did_creation_operation: DIDCreationOperation<T::DIDIdentifier>,
 			signature: SignatureEncoding,
 		) -> DispatchResultWithPostInfo {
 			// origin of the transaction needs to be a signed sender account
@@ -360,7 +372,7 @@ impl<T: Config> Pallet<T> {
 	/// The paremeters are:
 	/// - op: a reference to the DID operation;
 	/// - signature: a reference to the signature;
-	pub fn verify_did_operation_signature<O: DIDOperation>(
+	pub fn verify_did_operation_signature<O: DIDOperation<<T as pallet::Config>::DIDIdentifier>>(
 		op: &O,
 		signature: SignatureReference,
 	) -> Result<(), DIDError> {

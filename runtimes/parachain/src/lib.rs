@@ -341,6 +341,7 @@ impl did::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
 	type WeightInfo = ();
+	type DIDIdentifier = Parameter + Member + Codec + Default;
 }
 
 construct_runtime! {
