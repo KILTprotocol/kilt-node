@@ -230,7 +230,7 @@ fn testnet_genesis(
 		grandpa: Default::default(),
 		sudo: SudoConfig { key: root_key },
 		kilt_launch: KiltLaunchConfig {
-			kilt_launch: airdrop_accounts
+			balance_locks: airdrop_accounts
 				.iter()
 				.cloned()
 				.filter_map(

@@ -79,7 +79,7 @@ pub mod pallet {
 
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
-		pub kilt_launch: Vec<(T::AccountId, T::BlockNumber, <T as pallet_balances::Config>::Balance)>,
+		pub balance_locks: Vec<(T::AccountId, T::BlockNumber, <T as pallet_balances::Config>::Balance)>,
 		pub transfer_account: T::AccountId,
 		pub vesting: Vec<(T::AccountId, T::BlockNumber, BalanceOf<T>)>,
 	}
@@ -88,7 +88,7 @@ pub mod pallet {
 	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
 			Self {
-				kilt_launch: Default::default(),
+				balance_locks: Default::default(),
 				transfer_account: Default::default(),
 				vesting: Default::default(),
 			}
@@ -106,7 +106,7 @@ pub mod pallet {
 			// * who - Account which setting the custom lock for
 			// * length - Number of blocks from  until removal of the lock
 			// * amount - Number of tokens which are locked
-			for (ref who, length, locked) in self.kilt_launch.iter() {
+			for (ref who, length, locked) in self.balance_locks.iter() {
 				let balance = <pallet_balances::Module<T>>::free_balance(who);
 				assert!(!balance.is_zero(), "Currencies must be init'd before locking");
 				assert!(
