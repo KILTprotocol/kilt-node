@@ -221,7 +221,7 @@ parameter_types! {
 
 impl pallet_indices::Config for Runtime {
 	type AccountIndex = Index;
-	type Currency = pallet_balances::Module<Runtime>;
+	type Currency = pallet_balances::Pallet<Runtime>;
 	type Deposit = ExistentialDeposit;
 	type Event = Event;
 	type WeightInfo = ();
@@ -392,7 +392,7 @@ pub type KiltToken = BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber
 
 impl orml_currencies::Config for Runtime {
 	type Event = Event;
-	type MultiCurrency = orml_tokens::Module<Runtime>;
+	type MultiCurrency = orml_tokens::Pallet<Runtime>;
 	type NativeCurrency = KiltToken;
 	type GetNativeCurrencyId = GetKiltTokenId;
 	type WeightInfo = ();
@@ -439,32 +439,32 @@ construct_runtime! {
 		NodeBlock = kilt_primitives::Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
-		System: frame_system::{Module, Call, Config, Storage, Event<T>} = 0,
-		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage} = 1,
+		System: frame_system::{Pallet, Call, Config, Storage, Event<T>} = 0,
+		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Call, Storage} = 1,
 
-		Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent} = 2,
-		// Aura: aura::{Module, Config<T>, Storage} = 3,
-		// Grandpa: grandpa::{Module, Call, Storage, Config, Event} = 4,
-		Indices: pallet_indices::{Module, Call, Storage, Event<T>} = 5,
-		Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>} = 6,
-		TransactionPayment: pallet_transaction_payment::{Module, Storage} = 7,
-		Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>} = 8,
+		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent} = 2,
+		// Aura: aura::{Pallet, Config<T>, Storage} = 3,
+		// Grandpa: grandpa::{Pallet, Call, Storage, Config, Event} = 4,
+		Indices: pallet_indices::{Pallet, Call, Storage, Event<T>} = 5,
+		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>} = 6,
+		TransactionPayment: pallet_transaction_payment::{Pallet, Storage} = 7,
+		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>} = 8,
 
-		Ctype: ctype::{Module, Call, Storage, Event<T>} = 9,
-		Attestation: attestation::{Module, Call, Storage, Event<T>} = 10,
-		Delegation: delegation::{Module, Call, Storage, Event<T>} = 11,
-		Did: did::{Module, Call, Storage, Event<T>} = 12,
+		Ctype: ctype::{Pallet, Call, Storage, Event<T>} = 9,
+		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 10,
+		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 11,
+		Did: did::{Pallet, Call, Storage, Event<T>} = 12,
 
-		// Session: session::{Module, Call, Storage, Event, Config<T>} = 15,
-		// Authorship: authorship::{Module, Call, Storage} = 16,
+		// Session: session::{Pallet, Call, Storage, Event, Config<T>} = 15,
+		// Authorship: authorship::{Pallet, Call, Storage} = 16,
 
-		ParachainSystem: cumulus_pallet_parachain_system::{Module, Call, Storage, Inherent, Event} = 18,
-		ParachainInfo: parachain_info::{Module, Storage, Config} = 19,
-		XcmHandler: cumulus_pallet_xcm_handler::{Module, Call, Event<T>, Origin} = 20,
-		Tokens: orml_tokens::{Module, Call, Storage, Event<T>} = 21,
-		Currencies: orml_currencies::{Module, Call, Storage, Event<T>} = 22,
-		XTokens: orml_xtokens::{Module, Call, Storage, Event<T>} = 23,
-		UnknownTokens: orml_unknown_tokens::{Module, Storage, Event} = 24,
+		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event} = 18,
+		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 19,
+		XcmHandler: cumulus_pallet_xcm_handler::{Pallet, Call, Event<T>, Origin} = 20,
+		Tokens: orml_tokens::{Pallet, Call, Storage, Event<T>} = 21,
+		Currencies: orml_currencies::{Pallet, Call, Storage, Event<T>} = 22,
+		XTokens: orml_xtokens::{Pallet, Call, Storage, Event<T>} = 23,
+		UnknownTokens: orml_unknown_tokens::{Pallet, Storage, Event} = 24,
 	}
 }
 
@@ -497,7 +497,7 @@ pub type Executive = frame_executive::Executive<
 	Block,
 	frame_system::ChainContext<Runtime>,
 	Runtime,
-	AllModules,
+	AllPallets,
 >;
 
 impl_runtime_apis! {
@@ -523,7 +523,7 @@ impl_runtime_apis! {
 
 	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
 		fn account_nonce(account: AccountId) -> Index {
-			frame_system::Module::<Runtime>::account_nonce(&account)
+			frame_system::Pallet::<Runtime>::account_nonce(&account)
 		}
 	}
 
@@ -547,7 +547,7 @@ impl_runtime_apis! {
 		}
 
 		fn random_seed() -> <Block as BlockT>::Hash {
-			RandomnessCollectiveFlip::random_seed()
+			RandomnessCollectiveFlip::random_seed().0
 		}
 	}
 
