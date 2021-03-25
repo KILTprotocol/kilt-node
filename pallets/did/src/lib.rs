@@ -63,6 +63,29 @@ pub trait DIDPublicKey {
 	fn get_did_key_description(&self) -> &'static str;
 }
 
+/// A trait describing an operation that requires DID authentication.
+pub trait DIDOperation: Encode {
+	/// Returns the type of the verification key to be used to validate the operation.
+	fn get_verification_key_type(&self) -> DIDVerificationKeyType;
+	/// Returns the DID identifier of the subject.
+	fn get_did(&self) -> &DIDIdentifier;
+}
+
+/// An enum describing the different verification methods a verification key can fulfil, according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
+#[derive(Clone, Debug, Decode, Encode, PartialEq, Eq)]
+pub enum DIDVerificationKeyType {
+	Authentication,
+	CapabilityDelegation,
+	CapabilityInvocation, // Not used for now, but added for potential future use
+	AssertionMethod,
+}
+
+/// An enum describing the different verification methods an encryption key can fulfil, according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
+#[derive(Clone, Debug, Decode, Encode, PartialEq)]
+pub enum DIDEncryptionKeyType {
+	KeyAgreement,
+}
+
 /// Enum representing the types of verification keys a DID can control.
 #[derive(Clone, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
 pub enum PublicVerificationKey {
@@ -137,6 +160,33 @@ impl DIDPublicKey for PublicEncryptionKey {
 	}
 }
 
+/// All the errors that can be generated when evaluating a DID operation.
+#[derive(Debug, Eq, PartialEq)]
+pub enum DIDError {
+	StorageError(StorageError),
+	SignatureError(SignatureError),
+}
+
+// Used internally to handle storage errors.
+#[derive(Debug, Eq, PartialEq)]
+pub enum StorageError {
+	/// The DID being created is already present on chain.
+	DIDAlreadyPresent,
+	/// The expected DID cannot be found on chain.
+	DIDNotPresent,
+	/// The given DID does not contain the right key to verify the signature of a DID operation.
+	VerificationkeyNotPresent(DIDVerificationKeyType),
+}
+
+// Used internally to handle signature errors.
+#[derive(Debug, Eq, PartialEq)]
+pub enum SignatureError {
+	/// The signature is not in the expected format the verification key expects.
+	InvalidSignatureFormat,
+	/// The signature is invalid for the payload and the verification key provided.
+	InvalidSignature,
+}
+
 /// The details associated to a DID identity. Specifically:
 /// - the authentication key, used to authenticate DID-related operations;
 /// - the key agreement key, used to encrypt data addressed to the DID subject;
@@ -190,29 +240,6 @@ impl DIDDetails {
 	// }
 }
 
-/// A trait describing an operation that requires DID authentication.
-pub trait DIDOperation: Encode {
-	/// Returns the type of the verification key to be used to validate the operation.
-	fn get_verification_key_type(&self) -> DIDVerificationKeyType;
-	/// Returns the DID identifier of the subject.
-	fn get_did(&self) -> &DIDIdentifier;
-}
-
-/// An enum describing the different verification methods a verification key can fulfil, according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
-#[derive(Clone, Debug, Decode, Encode, PartialEq, Eq)]
-pub enum DIDVerificationKeyType {
-	Authentication,
-	CapabilityDelegation,
-	CapabilityInvocation, // Not used for now, but added for potential future use
-	AssertionMethod,
-}
-
-/// An enum describing the different verification methods an encryption key can fulfil, according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
-#[derive(Clone, Debug, Decode, Encode, PartialEq)]
-pub enum DIDEncryptionKeyType {
-	KeyAgreement,
-}
-
 /// A DID creation request. It contains the following values:
 /// - the DID identifier being created (only Substrate addresses are allowed in this version of the pallet);
 /// - the new authentication key to use;
@@ -239,34 +266,6 @@ impl DIDOperation for DIDCreationOperation {
 		&self.did
 	}
 }
-
-/// All the errors that can be generated when evaluating a DID operation.
-#[derive(Debug, Eq, PartialEq)]
-pub enum DIDError {
-	StorageError(StorageError),
-	SignatureError(SignatureError),
-}
-
-// Used internally to handle storage errors.
-#[derive(Debug, Eq, PartialEq)]
-pub enum StorageError {
-	/// The DID being created is already present on chain.
-	DIDAlreadyPresent,
-	/// The expected DID cannot be found on chain.
-	DIDNotPresent,
-	/// The given DID does not contain the right key to verify the signature of a DID operation.
-	VerificationkeyNotPresent(DIDVerificationKeyType),
-}
-
-// Used internally to handle signature errors.
-#[derive(Debug, Eq, PartialEq)]
-pub enum SignatureError {
-	/// The signature is not in the expected format the verification key expects.
-	InvalidSignatureFormat,
-	/// The signature is invalid for the payload and the verification key provided.
-	InvalidSignature,
-}
-
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
