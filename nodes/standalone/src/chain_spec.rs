@@ -18,7 +18,6 @@
 
 //! KILT chain specification
 
-use frame_benchmarking::Zero;
 use kilt_primitives::{constants::MONTHS, AccountId, AccountPublic, Balance, BlockNumber};
 use mashnet_node_runtime::{
 	BalancesConfig, GenesisConfig, KiltLaunchConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig,
@@ -187,7 +186,7 @@ fn testnet_genesis(
 	// TODO: We might want to split up the json into three jsons for total balance,
 	// vesting and locks as initially designed
 	let airdrop_accounts_json = &include_bytes!("../../../dev-specs/genesis-testing/genesis_accounts.json")[..];
-	let airdrop_accounts: Vec<(AccountId, Balance, VestingPeriod, Balance, LockingPeriod, Balance)> =
+	let airdrop_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
 		serde_json::from_slice(airdrop_accounts_json).expect("Could not read from genesis_accounts.json");
 
 	// TODO: Check whether user with 100% vested tokens can stake from beginning,
@@ -203,12 +202,7 @@ fn testnet_genesis(
 				.iter()
 				.cloned()
 				.map(|a| (a, 1u128 << 90))
-				.chain(
-					airdrop_accounts
-						.iter()
-						.cloned()
-						.map(|(who, total, _, _, _, _)| (who, total)),
-				)
+				.chain(airdrop_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
 				.collect(),
 		},
 		session: SessionConfig {
@@ -233,34 +227,20 @@ fn testnet_genesis(
 			balance_locks: airdrop_accounts
 				.iter()
 				.cloned()
-				.filter_map(
-					|(who, _total, _vesting_length, _vested_balance, locking_length, locked_balance)| {
-						if locked_balance.is_zero() || locking_length.is_zero() {
-							None
-						} else {
-							Some((who.to_owned(), locking_length * MONTHS, locked_balance))
-						}
-					},
-				)
+				.map(|(who, amount, _, locking_length)| (who.to_owned(), locking_length * MONTHS, amount))
 				.collect(),
 			vesting: airdrop_accounts
 				.iter()
 				.cloned()
-				.filter_map(
-					|(who, _total, vesting_length, vested_balance, _locking_length, _locked_balance)| {
-						if vested_balance.is_zero() || vesting_length.is_zero() {
-							None
-						} else {
-							Some((
-								who,
-								vesting_length * MONTHS,
-								// Enable 1 KILT token to be spendable apart from vesting to allow the user to
-								// call `vest`` which is required to actually remove the lock
-								vested_balance.saturating_sub(Balance::one()),
-							))
-						}
-					},
-				)
+				.map(|(who, amount, vesting_length, _)| {
+					(
+						who,
+						vesting_length * MONTHS,
+						// Enable 1 KILT token to be spendable for transactions apart from vesting to allow the user to
+						// call `vest`` which is required to actually remove the lock
+						amount.saturating_sub(Balance::one()),
+					)
+				})
 				.collect(),
 			// TODO: Set this to another address (PRE-LAUNCH)
 			transfer_account: get_account_id_from_secret::<ed25519::Public>("//Alice"),
