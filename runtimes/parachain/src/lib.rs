@@ -583,7 +583,7 @@ impl_runtime_apis! {
 		) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
 			use frame_benchmarking::{Benchmarking, BenchmarkBatch, add_benchmark, TrackedStorageKey};
 
-			use frame_system_benchmarking::Module as SystemBench;
+			use frame_system_benchmarking::Pallet as SystemBench;
 			impl frame_system_benchmarking::Config for Runtime {}
 
 			let whitelist: Vec<TrackedStorageKey> = vec![
@@ -614,6 +614,15 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, ctype, Ctype);
 			add_benchmark!(params, batches, delegation, Delegation);
 			add_benchmark!(params, batches, did, Did);
+
+			// No benchmarks for these pallets
+			// add_benchmark!(params, batches, cumulus_pallet_parachain_system, ParachainSystem);
+			// add_benchmark!(params, batches, parachain_info, ParachainInfo);
+			// add_benchmark!(params, batches, cumulus_pallet_xcm_handler, XcmHandler);
+			// add_benchmark!(params, batches, orml_tokens, Tokens);
+			// add_benchmark!(params, batches, orml_currencies, Currencies);
+			// add_benchmark!(params, batches, orml_xtokens, XTokens);
+			// add_benchmark!(params, batches, orml_unknown_tokens, UnknownTokens);
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
 			Ok(batches)
