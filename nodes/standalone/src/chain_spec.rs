@@ -108,12 +108,14 @@ impl Alternative {
 						testnet_genesis(
 							wasm_binary,
 							vec![get_authority_keys_from_secret("//Alice")],
-							get_account_id_from_secret::<sr25519::Public>("//Alice"),
+							get_account_id_from_secret::<ed25519::Public>("//Alice"),
 							vec![
 								// Dev Faucet account
 								get_account_id_from_secret::<ed25519::Public>("receive clutch item involve chaos clutch furnace arrest claw isolate okay together"),
 								get_account_id_from_secret::<sr25519::Public>("//Alice"),
 								get_account_id_from_secret::<sr25519::Public>("//Bob"),
+								get_account_id_from_secret::<ed25519::Public>("//Bob"),
+								get_account_id_from_secret::<ed25519::Public>("//Alice"),
 							],
 							true
 						)
