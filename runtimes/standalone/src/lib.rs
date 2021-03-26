@@ -29,7 +29,7 @@ use grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaA
 use kilt_primitives::{AccountId, Balance, BlockNumber, Hash, Index, Signature};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
 use sp_api::impl_runtime_apis;
-use sp_consensus_aura::ed25519::AuthorityId as AuraId;
+use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
@@ -68,7 +68,7 @@ pub use did;
 pub type DigestItem = generic::DigestItem<Hash>;
 
 pub type NegativeImbalance<T> =
-	<balances::Module<T> as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
+	<balances::Pallet<T> as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't
 /// need to know the specifics of the runtime. They can then be made to be
@@ -272,9 +272,9 @@ where
 {
 	fn on_nonzero_unbalanced(amount: NegativeImbalance<R>) {
 		let numeric_amount = amount.peek();
-		let author = <authorship::Module<R>>::author();
-		<balances::Module<R>>::resolve_creating(&author, amount);
-		<frame_system::Module<R>>::deposit_event(balances::Event::Deposit(author.into(), numeric_amount.into()));
+		let author = <authorship::Pallet<R>>::author();
+		<balances::Pallet<R>>::resolve_creating(&author, amount);
+		<frame_system::Pallet<R>>::deposit_event(balances::Event::Deposit(author.into(), numeric_amount.into()));
 	}
 }
 
@@ -406,24 +406,24 @@ construct_runtime!(
 		NodeBlock = opaque::Block,
 		UncheckedExtrinsic = UncheckedExtrinsic
 	{
-		System: frame_system::{Module, Call, Config, Storage, Event<T>} = 0,
-		RandomnessCollectiveFlip: randomness_collective_flip::{Module, Call, Storage} = 1,
+		System: frame_system::{Pallet, Call, Config, Storage, Event<T>} = 0,
+		RandomnessCollectiveFlip: randomness_collective_flip::{Pallet, Call, Storage} = 1,
 
-		Timestamp: timestamp::{Module, Call, Storage, Inherent} = 2,
-		Aura: aura::{Module, Config<T>, Storage} = 3,
-		Grandpa: grandpa::{Module, Call, Storage, Config, Event} = 4,
-		Indices: pallet_indices::{Module, Call, Storage, Event<T>} = 5,
-		Balances: balances::{Module, Call, Storage, Config<T>, Event<T>} = 6,
-		TransactionPayment: pallet_transaction_payment::{Module, Storage} = 7,
-		Sudo: sudo::{Module, Call, Config<T>, Storage, Event<T>} = 8,
+		Timestamp: timestamp::{Pallet, Call, Storage, Inherent} = 2,
+		Aura: aura::{Pallet, Config<T>, Storage} = 3,
+		Grandpa: grandpa::{Pallet, Call, Storage, Config, Event} = 4,
+		Indices: pallet_indices::{Pallet, Call, Storage, Event<T>} = 5,
+		Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>} = 6,
+		TransactionPayment: pallet_transaction_payment::{Pallet, Storage} = 7,
+		Sudo: sudo::{Pallet, Call, Config<T>, Storage, Event<T>} = 8,
 
-		Ctype: ctype::{Module, Call, Storage, Event<T>} = 9,
-		Attestation: attestation::{Module, Call, Storage, Event<T>} = 10,
-		Delegation: delegation::{Module, Call, Storage, Event<T>} = 11,
-		Did: did::{Module, Call, Storage, Event<T>} = 12,
+		Ctype: ctype::{Pallet, Call, Storage, Event<T>} = 9,
+		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 10,
+		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 11,
+		Did: did::{Pallet, Call, Storage, Event<T>} = 12,
 
-		Session: session::{Module, Call, Storage, Event, Config<T>} = 15,
-		Authorship: authorship::{Module, Call, Storage} = 16,
+		Session: session::{Pallet, Call, Storage, Event, Config<T>} = 15,
+		Authorship: authorship::{Pallet, Call, Storage} = 16,
 	}
 );
 
@@ -452,7 +452,7 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signatu
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various modules.
-pub type Executive = executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllModules>;
+pub type Executive = executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllPallets>;
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
@@ -477,7 +477,7 @@ impl_runtime_apis! {
 
 	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
 		fn account_nonce(account: AccountId) -> Index {
-			frame_system::Module::<Runtime>::account_nonce(&account)
+			frame_system::Pallet::<Runtime>::account_nonce(&account)
 		}
 	}
 
@@ -515,7 +515,7 @@ impl_runtime_apis! {
 		}
 
 		fn random_seed() -> <Block as BlockT>::Hash {
-			RandomnessCollectiveFlip::random_seed()
+			RandomnessCollectiveFlip::random_seed().0
 		}
 	}
 
@@ -547,8 +547,8 @@ impl_runtime_apis! {
 	}
 
 	impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
-		fn slot_duration() -> u64 {
-			Aura::slot_duration()
+		fn slot_duration() -> SlotDuration {
+			SlotDuration::from_millis(Aura::slot_duration())
 		}
 
 		fn authorities() -> Vec<AuraId> {
@@ -589,7 +589,7 @@ impl_runtime_apis! {
 		) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
 			use frame_benchmarking::{Benchmarking, BenchmarkBatch, add_benchmark, TrackedStorageKey};
 
-			use frame_system_benchmarking::Module as SystemBench;
+			use frame_system_benchmarking::Pallet as SystemBench;
 			impl frame_system_benchmarking::Config for Runtime {}
 
 			let whitelist: Vec<TrackedStorageKey> = vec![
