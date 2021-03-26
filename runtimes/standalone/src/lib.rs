@@ -347,18 +347,6 @@ impl did::Config for Runtime {
 	type DIDIdentifier = AccountId;
 }
 
-// pub struct DidStructRuntimeUpgrade;
-// impl did::migration::V23ToV24 for DidStructRuntimeUpgrade {
-// 	type PublicSigningKey = Hash;
-// 	type PublicBoxKey = Hash;
-// 	type AccountId = AccountId;
-// 	type Module = Attestation;
-// }
-// impl frame_support::traits::OnRuntimeUpgrade for DidStructRuntimeUpgrade {
-// 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-// 		did::migration::apply::<Self>()
-// 	}
-// }
 pub struct PortableGabiRemoval;
 impl frame_support::traits::OnRuntimeUpgrade for PortableGabiRemoval {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {

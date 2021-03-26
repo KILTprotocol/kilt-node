@@ -34,24 +34,16 @@ pub use default_weights::WeightInfo;
 
 use codec::{Decode, Encode};
 
-use codec::EncodeLike;
-use frame_support::{ensure, storage::types::StorageMap};
+use frame_support::{Parameter, ensure, storage::types::StorageMap};
 use frame_system::{self, ensure_signed};
 use sp_core::{ed25519, sr25519};
 use sp_runtime::traits::Verify;
-use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom, fmt::Debug, prelude::Clone, vec::Vec};
+use sp_std::{collections::btree_set::BTreeSet, fmt::Debug, prelude::Clone, vec::Vec};
 
 pub use pallet::*;
 
 /// Reference to a payload of data of variable size.
-pub type PayloadReference<'a> = &'a [u8];
-
-/// Type of a signature (variable size as different signature schemes are
-/// supported).
-pub type SignatureEncoding = Vec<u8>;
-
-/// Reference to a signature of variable size.
-pub type SignatureReference<'a> = &'a [u8];
+pub type PayloadSlice = [u8];
 
 /// Type for an encoded URL.
 pub type UrlEncoding = Vec<u8>;
@@ -62,16 +54,19 @@ pub trait DIDPublicKey {
 	fn get_did_key_description(&self) -> &'static str;
 }
 
-/// An enum describing the different verification methods a verification key can fulfil, according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
+/// An enum describing the different verification methods a verification key can fulfil,
+/// according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
 #[derive(Clone, Debug, Decode, Encode, PartialEq, Eq)]
 pub enum DIDVerificationKeyType {
 	Authentication,
 	CapabilityDelegation,
-	CapabilityInvocation, // Not used for now, but added for potential future use
+	// Not used for now, but added for potential future use.
+	CapabilityInvocation,
 	AssertionMethod,
 }
 
-/// An enum describing the different verification methods an encryption key can fulfil, according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
+/// An enum describing the different verification methods an encryption key can fulfil,
+/// according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
 #[derive(Clone, Debug, Decode, Encode, PartialEq)]
 pub enum DIDEncryptionKeyType {
 	KeyAgreement,
@@ -81,9 +76,9 @@ pub enum DIDEncryptionKeyType {
 #[derive(Clone, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
 pub enum PublicVerificationKey {
 	/// An Ed25519 public key.
-	Ed25519([u8; 32]),
+	Ed25519(ed25519::Public),
 	/// A Sr25519 public key.
-	Sr25519([u8; 32]),
+	Sr25519(sr25519::Public),
 }
 
 impl PublicVerificationKey {
@@ -93,41 +88,26 @@ impl PublicVerificationKey {
 	/// verification.
 	fn verify_signature(
 		&self,
-		payload: PayloadReference,
-		signature: SignatureReference,
+		payload: &PayloadSlice,
+		signature: DIDSignature,
 	) -> Result<bool, SignatureError> {
-		// Discard all invalid signatures by comparing them with the expected length of
-		// the specific verification key.
-		ensure!(
-			signature.len() == self.get_expected_signature_size(),
-			SignatureError::InvalidSignatureFormat
-		);
-
 		match self {
-			PublicVerificationKey::Ed25519(raw_key) => {
+			PublicVerificationKey::Ed25519(public_key) => {
 				// Try to re-create a Signature value or throw an error if raw value is invalid.
-				let ed25519_sig =
-					ed25519::Signature::try_from(signature).map_err(|_| SignatureError::InvalidSignatureFormat)?;
-				// Re-create a Public value from the raw value of the key.
-				let signer = ed25519::Public(*raw_key);
-				// Returns the result of the signature verification.
-				Ok(ed25519_sig.verify(payload[..].as_ref(), &signer))
+				if let DIDSignature::Ed25519(sig) = signature {
+					Ok(sig.verify(payload, &public_key))
+				} else {
+					Err(SignatureError::InvalidSignatureFormat)
+				}
 			}
 			// Follows same process as above, but using a Sr25519 instead.
-			PublicVerificationKey::Sr25519(raw_key) => {
-				let sr25519_sig =
-					sr25519::Signature::try_from(signature).map_err(|_| SignatureError::InvalidSignatureFormat)?;
-				let signer = sr25519::Public(*raw_key);
-				Ok(sr25519_sig.verify(payload.as_ref(), &signer))
+			PublicVerificationKey::Sr25519(public_key) => {
+				if let DIDSignature::Sr25519(sig) = signature {
+					Ok(sig.verify(payload, &public_key))
+				} else {
+					Err(SignatureError::InvalidSignatureFormat)
+				}
 			}
-		}
-	}
-
-	/// Returns the expected signature length (of bytes) for the given
-	/// verification key type.
-	fn get_expected_signature_size(&self) -> usize {
-		match self {
-			PublicVerificationKey::Ed25519(_) | PublicVerificationKey::Sr25519(_) => 64,
 		}
 	}
 }
@@ -135,11 +115,21 @@ impl PublicVerificationKey {
 impl DIDPublicKey for PublicVerificationKey {
 	fn get_did_key_description(&self) -> &'static str {
 		match self {
-			PublicVerificationKey::Ed25519(_) => "Ed25519VerificationKey2018", /* https://w3c.github.io/did-spec-registries/#ed25519verificationkey2018 */
-			PublicVerificationKey::Sr25519(_) => "Sr25519VerificationKey2020", /* Not yet defined in the DID
-			                                                                     * specification. */
+			// https://w3c.github.io/did-spec-registries/#ed25519verificationkey2018
+			PublicVerificationKey::Ed25519(_) => "Ed25519VerificationKey2018",
+			// Not yet defined in the DID specification.
+			PublicVerificationKey::Sr25519(_) => "Sr25519VerificationKey2020",
 		}
 	}
+}
+
+/// Enum representing the types of signatures supported by this pallet.
+#[derive(Clone, Decode, Debug, Encode, Eq, PartialEq)]
+pub enum DIDSignature {
+	/// A Ed25519 signature
+	Ed25519(ed25519::Signature),
+	/// A Sr25519 signature
+	Sr25519(sr25519::Signature),
 }
 
 /// Enum representing the types of encryption keys a DID can control.
@@ -151,7 +141,8 @@ pub enum PublicEncryptionKey {
 
 impl DIDPublicKey for PublicEncryptionKey {
 	fn get_did_key_description(&self) -> &'static str {
-		"X25519KeyAgreementKey2019" // https://w3c.github.io/did-spec-registries/#x25519keyagreementkey2019
+		// https://w3c.github.io/did-spec-registries/#x25519keyagreementkey2019
+		"X25519KeyAgreementKey2019"
 	}
 }
 
@@ -188,7 +179,7 @@ pub enum SignatureError {
 /// A trait describing an operation that requires DID authentication.
 pub trait DIDOperation<DIDIdentifier>: Encode
 where
-	DIDIdentifier: Encode + Decode + Clone + Debug + Eq + PartialEq + EncodeLike,
+	DIDIdentifier: Parameter + Encode + Decode + Debug,
 {
 	/// Returns the type of the verification key to be used to validate the
 	/// operation.
@@ -198,17 +189,17 @@ where
 }
 
 /// A DID creation request. It contains the following values:
-/// - the DID identifier being created (only Substrate addresses are allowed in
-///   this version of the pallet);
-/// - the new authentication key to use;
-/// - the new encryption key to use;
-/// - the optional attestation key to use;
-/// - the optional delegation key to use;
-/// - the optional endpoint URL pointing to the DID service endpoints.
+/// * The DID identifier being created (only Substrate addresses are allowed in
+///   this version of the pallet)
+/// * The new authentication key to use
+/// * The new encryption key to use
+/// * The optional attestation key to use
+/// * The optional delegation key to use
+/// * The optional endpoint URL pointing to the DID service endpoints
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
 pub struct DIDCreationOperation<DIDIdentifier>
 where
-	DIDIdentifier: Encode + Decode + Clone + Debug + Eq + PartialEq + EncodeLike,
+	DIDIdentifier: Parameter + Encode + Decode + Debug,
 {
 	did: DIDIdentifier,
 	new_auth_key: PublicVerificationKey,
@@ -220,7 +211,7 @@ where
 
 impl<DIDIdentifier> DIDOperation<DIDIdentifier> for DIDCreationOperation<DIDIdentifier>
 where
-	DIDIdentifier: Encode + Decode + Clone + Debug + Eq + PartialEq + EncodeLike,
+	DIDIdentifier: Parameter + Encode + Decode + Debug,
 {
 	fn get_verification_key_type(&self) -> DIDVerificationKeyType {
 		DIDVerificationKeyType::Authentication
@@ -232,16 +223,16 @@ where
 }
 
 /// The details associated to a DID identity. Specifically:
-/// - the authentication key, used to authenticate DID-related operations;
-/// - the key agreement key, used to encrypt data addressed to the DID subject;
-/// - an optional delegation key, used by the DID subject to sign delegation
-///   nodes before writing them on chain;
-/// - an optional attestation key, used by the DID subject to sign attestations
-///   before writing them on chain;
-/// - an optional URL pointing to the service endpoints the DID subject publicly
-///   exposes;
-/// - a counter used to avoid replay attacks, which is checked and updated upon
-///   each DID-related operation.
+/// * The authentication key, used to authenticate DID-related operations
+/// * The key agreement key, used to encrypt data addressed to the DID subject
+/// * An optional delegation key, used by the DID subject to sign delegation
+///   nodes before writing them on chain
+/// * An optional attestation key, used by the DID subject to sign attestations
+///   before writing them on chain
+/// * An optional URL pointing to the service endpoints the DID subject publicly
+///   exposes
+/// * A counter used to avoid replay attacks, which is checked and updated upon
+///   each DID-related operation
 #[derive(Clone, Decode, Encode, PartialEq)]
 pub struct DIDDetails {
 	auth_key: PublicVerificationKey,
@@ -253,18 +244,18 @@ pub struct DIDDetails {
 	last_tx_counter: u64,
 }
 
-impl<DIDIdentifier> From<&DIDCreationOperation<DIDIdentifier>> for DIDDetails
+impl<DIDIdentifier> From<DIDCreationOperation<DIDIdentifier>> for DIDDetails
 where
-	DIDIdentifier: Encode + Decode + Clone + Debug + Eq + PartialEq + EncodeLike,
+	DIDIdentifier: Parameter + Encode + Decode + Debug,
 {
-	fn from(op: &DIDCreationOperation<DIDIdentifier>) -> Self {
+	fn from(op: DIDCreationOperation<DIDIdentifier>) -> Self {
 		DIDDetails {
-			auth_key: op.new_auth_key.clone(),
-			key_agreement_key: op.new_key_agreement_key.clone(),
-			delegation_key: op.new_delegation_key.clone(),
-			attestation_key: op.new_attestation_key.clone(),
+			auth_key: op.new_auth_key,
+			key_agreement_key: op.new_key_agreement_key,
+			delegation_key: op.new_delegation_key,
+			attestation_key: op.new_attestation_key,
 			verification_keys: BTreeSet::new(),
-			endpoint_url: op.new_endpoint_url.clone(),
+			endpoint_url: op.new_endpoint_url,
 			last_tx_counter: 0,
 		}
 	}
@@ -281,12 +272,6 @@ impl DIDDetails {
 			_ => None,
 		}
 	}
-
-	// fn get_kencryption_key_for_key_type(&self, key_type: DIDEncryptionKeyType) ->
-	// Option<&PublicEncryptionKey> { 	match key_type {
-	// 		DIDEncryptionKeyType::KeyAgreement => Option::from(&self.key_agreement_key),
-	// 	}
-	// }
 }
 
 #[frame_support::pallet]
@@ -302,7 +287,7 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type WeightInfo: WeightInfo;
-		type DIDIdentifier: Encode + Decode + Clone + Debug + Eq + PartialEq + EncodeLike;
+		type DIDIdentifier: Parameter + Encode + Decode + Debug;
 	}
 
 	#[pallet::pallet]
@@ -334,19 +319,19 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		/// Stores a new DID on chain, after verifying the signature associated
 		/// with the creation operation. The parameters are:
-		/// - origin: the Substrate account submitting the transaction (which
-		///   can be different from the DID subject);
-		/// - did_creation_operation: a
+		/// * origin: the Substrate account submitting the transaction (which
+		///   can be different from the DID subject)
+		/// * did_creation_operation: a
 		///   [DIDCreationOperation](DIDCreationOperation) which contains the
-		///   details of the new DID;
-		/// - signature: a signature over
+		///   details of the new DID
+		/// * signature: a signature over
 		///   [DIDCreationOperation](DIDCreationOperation) that must be signed
-		///   with the authentication key associated with the new DID.
+		///   with the authentication key associated with the new DID
 		#[pallet::weight(<T as Config>::WeightInfo::submit_did_create_operation())]
 		pub fn submit_did_create_operation(
 			origin: OriginFor<T>,
 			did_creation_operation: DIDCreationOperation<T::DIDIdentifier>,
-			signature: SignatureEncoding,
+			signature: DIDSignature,
 		) -> DispatchResultWithPostInfo {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
@@ -359,7 +344,7 @@ pub mod pallet {
 			);
 
 			// Create a new DID entry from the details provided in the create operation.
-			let did_entry = DIDDetails::from(&did_creation_operation);
+			let did_entry = DIDDetails::from(did_creation_operation.clone());
 
 			// Retrieve the authentication key of the new DID, otherwise generate a
 			// VerificationKeyNotPresent error if it is not specified (should never happen
@@ -371,7 +356,7 @@ pub mod pallet {
 			// Re-create a Signature object from the authentication key retrieved, or
 			// generate a InvalidSignatureFormat error otherwise.
 			let is_signature_valid = signature_verification_key
-				.verify_signature(&did_creation_operation.encode(), &signature)
+				.verify_signature(&did_creation_operation.encode(), signature)
 				.map_err(|_| <Error<T>>::InvalidSignatureFormat)?;
 
 			// Verify the validity of the signature, or generate an InvalidSignature error
@@ -392,11 +377,11 @@ pub mod pallet {
 impl<T: Config> Pallet<T> {
 	/// Verify the signature of a generic [DIDOperation](DIDOperation), and
 	/// returns either Ok or a [DIDError](DIDError). The paremeters are:
-	/// - op: a reference to the DID operation;
-	/// - signature: a reference to the signature;
+	/// * op: a reference to the DID operation
+	/// * signature: a reference to the signature
 	pub fn verify_did_operation_signature<O: DIDOperation<T::DIDIdentifier>>(
 		op: &O,
-		signature: SignatureReference,
+		signature: DIDSignature,
 	) -> Result<(), DIDError> {
 		// Switch to a slice
 		// Try to retrieve from the storage the details of the given DID.

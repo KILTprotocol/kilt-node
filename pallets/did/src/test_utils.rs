@@ -39,14 +39,15 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 
 // A test DID operation which can be crated to require any dUD verification key
 // type.
-pub struct TestDIDOperation<DIDIdentifier: Encode + Decode + Clone + Debug + Eq + PartialEq + EncodeLike> {
+#[derive(Clone, Decode, Debug, Encode, PartialEq)]
+pub struct TestDIDOperation<DIDIdentifier: Parameter + Encode + Decode + Debug> {
 	pub did: DIDIdentifier,
 	pub verification_key_type: DIDVerificationKeyType,
 }
 
 impl<DIDIdentifier> DIDOperation<DIDIdentifier> for TestDIDOperation<DIDIdentifier>
 where
-	DIDIdentifier: Encode + Decode + Clone + Debug + Eq + PartialEq + EncodeLike,
+	DIDIdentifier: Parameter + Encode + Decode + Debug,
 {
 	fn get_verification_key_type(&self) -> DIDVerificationKeyType {
 		self.verification_key_type.clone()
@@ -54,32 +55,5 @@ where
 
 	fn get_did(&self) -> &DIDIdentifier {
 		&self.did
-	}
-}
-
-impl<DIDIdentifier> Encode for TestDIDOperation<DIDIdentifier>
-where
-	DIDIdentifier: Encode + Decode + Clone + Debug + Eq + PartialEq + EncodeLike,
-{
-	fn size_hint(&self) -> usize {
-		100
-	}
-
-	fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-		self.using_encoded(|buf| dest.write(buf));
-	}
-
-	fn encode(&self) -> Vec<u8> {
-		let mut r = Vec::with_capacity(self.size_hint());
-		self.encode_to(&mut r);
-		r
-	}
-
-	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
-		f([1u8; 100].as_ref())
-	}
-
-	fn encoded_size(&self) -> usize {
-		100
 	}
 }
