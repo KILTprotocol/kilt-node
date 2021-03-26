@@ -349,12 +349,12 @@ impl pallet_scheduler::Config for Runtime {
 }
 
 parameter_types! {
-	pub const LaunchPeriod: BlockNumber = 7 * DAYS;
-	pub const VotingPeriod: BlockNumber = 7 * DAYS;
-	pub const FastTrackVotingPeriod: BlockNumber = 3 * HOURS;
+	pub const LaunchPeriod: BlockNumber = MINUTES; //7 * DAYS;
+	pub const VotingPeriod: BlockNumber = MINUTES; //7 * DAYS;
+	pub const FastTrackVotingPeriod: BlockNumber = 3*MINUTES; // 3 * HOURS;
 	pub const MinimumDeposit: Balance = 1 * DOLLARS;
-	pub const EnactmentPeriod: BlockNumber = 8 * DAYS;
-	pub const CooloffPeriod: BlockNumber = 7 * DAYS;
+	pub const EnactmentPeriod: BlockNumber = 4*MINUTES; //8 * DAYS;
+	pub const CooloffPeriod: BlockNumber = MINUTES; //7 * DAYS;
 	// One cent: $10,000 / MB
 	pub const PreimageByteDeposit: Balance = 10 * MILLICENTS;
 	pub const InstantAllowed: bool = true;
@@ -455,10 +455,10 @@ parameter_types! {
 	pub const CandidateDeposit: Balance = 10 * DOLLARS;
 	pub const WrongSideDeduction: Balance = 2 * DOLLARS;
 	pub const MaxStrikes: u32 = 10;
-	pub const RotationPeriod: BlockNumber = 80 * HOURS;
+	pub const RotationPeriod: BlockNumber = MINUTES / 2; //80 * HOURS;
 	pub const PeriodSpend: Balance = 500 * DOLLARS;
 	pub const MaxLockDuration: BlockNumber = 36 * 30 * DAYS;
-	pub const ChallengePeriod: BlockNumber = 7 * DAYS;
+	pub const ChallengePeriod: BlockNumber = MINUTES; //7 * DAYS;
 	pub const SocietyModuleId: ModuleId = ModuleId(*b"py/socie");
 }
 
@@ -486,7 +486,7 @@ parameter_types! {
 	// additional data per vote is 32 bytes (account id).
 	pub const VotingBondFactor: Balance = deposit(0, 32);
 	/// Daily council elections
-	pub const TermDuration: BlockNumber = 24 * HOURS;
+	pub const TermDuration: BlockNumber = 2*MINUTES; //24 * HOURS;
 	pub const DesiredMembers: u32 = 19;
 	pub const DesiredRunnersUp: u32 = 19;
 	pub const ElectionsPhragmenModuleId: LockIdentifier = *b"phrelect";
@@ -515,7 +515,7 @@ impl pallet_elections_phragmen::Config for Runtime {
 }
 
 parameter_types! {
-	pub const CouncilMotionDuration: BlockNumber = 3 * DAYS;
+	pub const CouncilMotionDuration: BlockNumber = MINUTES; //3 * DAYS;
 	pub const CouncilMaxProposals: u32 = 100;
 	pub const CouncilMaxMembers: u32 = 100;
 }
@@ -533,7 +533,7 @@ impl pallet_collective::Config<CouncilCollective> for Runtime {
 }
 
 parameter_types! {
-	pub const TechnicalMotionDuration: BlockNumber = 3 * DAYS;
+	pub const TechnicalMotionDuration: BlockNumber = 3*MINUTES; //3 * DAYS;
 	pub const TechnicalMaxProposals: u32 = 100;
 	pub const TechnicalMaxMembers: u32 = 100;
 }
@@ -691,6 +691,19 @@ impl_runtime_apis! {
 	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
 		fn account_nonce(account: AccountId) -> Index {
 			frame_system::Module::<Runtime>::account_nonce(&account)
+		}
+	}
+
+	impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance> for Runtime {
+		fn query_info(
+			uxt: <Block as BlockT>::Extrinsic,
+			len: u32,
+		) -> pallet_transaction_payment_rpc_runtime_api::RuntimeDispatchInfo<Balance> {
+			TransactionPayment::query_info(uxt, len)
+		}
+
+		fn query_fee_details(uxt: <Block as BlockT>::Extrinsic, len: u32) -> pallet_transaction_payment::FeeDetails<Balance> {
+			TransactionPayment::query_fee_details(uxt, len)
 		}
 	}
 
