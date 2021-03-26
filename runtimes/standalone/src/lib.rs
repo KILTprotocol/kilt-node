@@ -274,10 +274,7 @@ where
 		let numeric_amount = amount.peek();
 		let author = <authorship::Pallet<R>>::author();
 		<balances::Pallet<R>>::resolve_creating(&author, amount);
-		<frame_system::Pallet<R>>::deposit_event(balances::Event::Deposit(
-			author.into(),
-			numeric_amount.into(),
-		));
+		<frame_system::Pallet<R>>::deposit_event(balances::Event::Deposit(author.into(), numeric_amount.into()));
 	}
 }
 
@@ -455,8 +452,7 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signatu
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various modules.
-pub type Executive =
-	executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllPallets>;
+pub type Executive = executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllPallets>;
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {

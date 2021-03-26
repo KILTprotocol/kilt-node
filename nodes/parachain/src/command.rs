@@ -118,8 +118,7 @@ impl SubstrateCli for RelayChainCli {
 	}
 
 	fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
-		polkadot_cli::Cli::from_iter([RelayChainCli::executable_name().to_string()].iter())
-			.load_spec(id)
+		polkadot_cli::Cli::from_iter([RelayChainCli::executable_name().to_string()].iter()).load_spec(id)
 	}
 
 	fn native_runtime_version(chain_spec: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
@@ -198,12 +197,9 @@ pub fn run() -> Result<()> {
 						.chain(cli.relaychain_args.iter()),
 				);
 
-				let polkadot_config = SubstrateCli::create_configuration(
-					&polkadot_cli,
-					&polkadot_cli,
-					config.task_executor.clone(),
-				)
-				.map_err(|err| format!("Relay chain argument error: {}", err))?;
+				let polkadot_config =
+					SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, config.task_executor.clone())
+						.map_err(|err| format!("Relay chain argument error: {}", err))?;
 
 				cmd.run(config, polkadot_config)
 			})
@@ -288,9 +284,8 @@ pub fn run() -> Result<()> {
 				let genesis_state = format!("0x{:?}", HexDisplay::from(&block.header().encode()));
 
 				let task_executor = config.task_executor.clone();
-				let polkadot_config =
-					SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, task_executor)
-						.map_err(|err| format!("Relay chain argument error: {}", err))?;
+				let polkadot_config = SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, task_executor)
+					.map_err(|err| format!("Relay chain argument error: {}", err))?;
 				let collator = cli.run.base.validator || cli.collator;
 
 				info!("Parachain id: {:?}", id);

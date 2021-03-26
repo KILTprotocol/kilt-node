@@ -69,9 +69,8 @@ use orml_xcm_support::{
 use polkadot_parachain::primitives::Sibling;
 use xcm::v0::{Junction, MultiLocation, NetworkId, Xcm};
 use xcm_builder::{
-	AccountId32Aliases, ChildParachainConvertsVia, LocationInverter, ParentIsDefault,
-	RelayChainAsNative, SiblingParachainAsNative, SiblingParachainConvertsVia,
-	SignedAccountId32AsNative, SovereignSignedViaLocation,
+	AccountId32Aliases, ChildParachainConvertsVia, LocationInverter, ParentIsDefault, RelayChainAsNative,
+	SiblingParachainAsNative, SiblingParachainConvertsVia, SignedAccountId32AsNative, SovereignSignedViaLocation,
 };
 use xcm_executor::{traits::NativeAsset, Config, XcmExecutor};
 
@@ -496,13 +495,8 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signatu
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various modules.
-pub type Executive = frame_executive::Executive<
-	Runtime,
-	Block,
-	frame_system::ChainContext<Runtime>,
-	Runtime,
-	AllPallets,
->;
+pub type Executive =
+	frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllPallets>;
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {

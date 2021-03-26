@@ -68,11 +68,10 @@ pub fn new_partial(config: &Configuration) -> Result<PartialComponentsType, sc_s
 		})
 		.transpose()?;
 
-	let (client, backend, keystore_container, task_manager) =
-		sc_service::new_full_parts::<Block, RuntimeApi, Executor>(
-			&config,
-			telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
-		)?;
+	let (client, backend, keystore_container, task_manager) = sc_service::new_full_parts::<Block, RuntimeApi, Executor>(
+		&config,
+		telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
+	)?;
 	let client = Arc::new(client);
 
 	let telemetry_worker_handle = telemetry.as_ref().map(|(worker, _)| worker.handle());
