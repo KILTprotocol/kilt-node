@@ -20,12 +20,17 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 }
 
 // A test DID operation which can be crated to require any dUD verification key type.
-pub struct TestDIDOperation {
+pub struct TestDIDOperation<
+	DIDIdentifier: Encode + Decode + Clone + Debug + Eq + PartialEq + EncodeLike,
+> {
 	pub did: DIDIdentifier,
 	pub verification_key_type: DIDVerificationKeyType,
 }
 
-impl DIDOperation for TestDIDOperation {
+impl<DIDIdentifier> DIDOperation<DIDIdentifier> for TestDIDOperation<DIDIdentifier>
+where
+	DIDIdentifier: Encode + Decode + Clone + Debug + Eq + PartialEq + EncodeLike,
+{
 	fn get_verification_key_type(&self) -> DIDVerificationKeyType {
 		self.verification_key_type.clone()
 	}
@@ -35,7 +40,10 @@ impl DIDOperation for TestDIDOperation {
 	}
 }
 
-impl Encode for TestDIDOperation {
+impl<DIDIdentifier> Encode for TestDIDOperation<DIDIdentifier>
+where
+	DIDIdentifier: Encode + Decode + Clone + Debug + Eq + PartialEq + EncodeLike,
+{
 	fn size_hint(&self) -> usize {
 		100
 	}

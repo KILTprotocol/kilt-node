@@ -345,6 +345,7 @@ impl did::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
 	type WeightInfo = ();
+	type DIDIdentifier = AccountId;
 }
 
 // pub struct DidStructRuntimeUpgrade;

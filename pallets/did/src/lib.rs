@@ -32,13 +32,13 @@ pub mod benchmarking;
 pub mod default_weights;
 pub use default_weights::WeightInfo;
 
-use codec::{Decode, Encode, WrapperTypeEncode};
+use codec::{Decode, Encode};
 
 use codec::EncodeLike;
 use frame_support::{ensure, storage::types::StorageMap};
 use frame_system::{self, ensure_signed};
 use sp_core::{ed25519, sr25519};
-use sp_runtime::traits::{IdentifyAccount, Verify};
+use sp_runtime::traits::Verify;
 use sp_std::{
 	collections::btree_set::BTreeSet, convert::TryFrom, fmt::Debug, prelude::Clone, vec::Vec,
 };
@@ -53,7 +53,6 @@ pub type SignatureEncoding = Vec<u8>;
 
 /// Reference to a signature of variable size.
 pub type SignatureReference<'a> = &'a [u8];
-
 
 /// Type for an encoded URL.
 pub type UrlEncoding = Vec<u8>;
@@ -181,7 +180,10 @@ pub enum SignatureError {
 }
 
 /// A trait describing an operation that requires DID authentication.
-pub trait DIDOperation<DIDIdentifier: Encode + WrapperTypeEncode>: Encode {
+pub trait DIDOperation<DIDIdentifier>: Encode
+where
+	DIDIdentifier: Encode + Decode + Clone + Debug + Eq + PartialEq + EncodeLike,
+{
 	/// Returns the type of the verification key to be used to validate the operation.
 	fn get_verification_key_type(&self) -> DIDVerificationKeyType;
 	/// Returns the DID identifier of the subject.
@@ -196,7 +198,10 @@ pub trait DIDOperation<DIDIdentifier: Encode + WrapperTypeEncode>: Encode {
 /// - the optional delegation key to use;
 /// - the optional endpoint URL pointing to the DID service endpoints.
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
-pub struct DIDCreationOperation<DIDIdentifier> {
+pub struct DIDCreationOperation<DIDIdentifier>
+where
+	DIDIdentifier: Encode + Decode + Clone + Debug + Eq + PartialEq + EncodeLike,
+{
 	did: DIDIdentifier,
 	new_auth_key: PublicVerificationKey,
 	new_key_agreement_key: PublicEncryptionKey,
@@ -205,8 +210,9 @@ pub struct DIDCreationOperation<DIDIdentifier> {
 	new_endpoint_url: Option<UrlEncoding>,
 }
 
-impl<DIDIdentifier: Encode + WrapperTypeEncode> DIDOperation<DIDIdentifier>
-	for DIDCreationOperation<DIDIdentifier>
+impl<DIDIdentifier> DIDOperation<DIDIdentifier> for DIDCreationOperation<DIDIdentifier>
+where
+	DIDIdentifier: Encode + Decode + Clone + Debug + Eq + PartialEq + EncodeLike,
 {
 	fn get_verification_key_type(&self) -> DIDVerificationKeyType {
 		DIDVerificationKeyType::Authentication
@@ -235,7 +241,10 @@ pub struct DIDDetails {
 	last_tx_counter: u64,
 }
 
-impl<DIDIdentifier> From<&DIDCreationOperation<DIDIdentifier>> for DIDDetails {
+impl<DIDIdentifier> From<&DIDCreationOperation<DIDIdentifier>> for DIDDetails
+where
+	DIDIdentifier: Encode + Decode + Clone + Debug + Eq + PartialEq + EncodeLike,
+{
 	fn from(op: &DIDCreationOperation<DIDIdentifier>) -> Self {
 		DIDDetails {
 			auth_key: op.new_auth_key.clone(),
@@ -283,14 +292,7 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type WeightInfo: WeightInfo;
-		type DIDIdentifier: IdentifyAccount<AccountId = Self::AccountId>
-			+ Clone
-			+ Decode
-			+ Debug
-			+ Encode
-			+ PartialEq
-			+ WrapperTypeEncode
-			+ EncodeLike;
+		type DIDIdentifier: Encode + Decode + Clone + Debug + Eq + PartialEq + EncodeLike;
 	}
 
 	#[pallet::pallet]
@@ -307,7 +309,7 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		DidCreated(T::AccountId, T::DIDIdentifier),
+		DidCreated(<T as frame_system::Config>::AccountId, T::DIDIdentifier),
 	}
 
 	#[pallet::error]
@@ -372,7 +374,7 @@ impl<T: Config> Pallet<T> {
 	/// The paremeters are:
 	/// - op: a reference to the DID operation;
 	/// - signature: a reference to the signature;
-	pub fn verify_did_operation_signature<O: DIDOperation<<T as pallet::Config>::DIDIdentifier>>(
+	pub fn verify_did_operation_signature<O: DIDOperation<T::DIDIdentifier>>(
 		op: &O,
 		signature: SignatureReference,
 	) -> Result<(), DIDError> {

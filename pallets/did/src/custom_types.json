@@ -1,0 +1,65 @@
+{
+	"SignatureEncoding": "Vec<u8>",
+	"UrlEncoding": "Vec<u8>",
+	"DIDIdentifier": "AccountId",
+	"DIDVerificationKeyType": {
+		"_enum": [
+			"Authentication",
+			"CapabilityDelegation",
+			"CapabilityInvocation",
+			"AssertionMethod"
+		]
+	},
+	"DIDEncryptionKeyType": {
+		"_enum": [
+			"KeyAgreement"
+		]
+	},
+	"PublicVerificationKey": {
+		"_enum": {
+			"Ed25519": "[u8; 32]",
+			"Sr25519": "[u8; 32]"
+		}
+	},
+	"PublicEncryptionKey": {
+		"_enum": {
+			"X55519": "[u8; 32]"
+		}
+	},
+	"DIDError": {
+		"_enum": {
+			"StorageError": "StorageError",
+			"SignatureError": "SignatureError"
+		}
+	},
+	"StorageError": {
+		"_enum": {
+			"DIDAlreadyPresent": "null",
+			"DIDNotPresent": "null",
+			"VerificationkeyNotPresent": "DIDVerificationKeyType"
+		}
+	},
+	"SignatureError": {
+		"_enum": [
+			"InvalidSignatureFormat",
+			"InvalidSignature"
+		]
+	},
+	"DIDCreationOperation": {
+		"did": "DIDIdentifier",
+		"new_auth_key": "PublicVerificationKey",
+		"new_key_agreement_key": "PublicEncryptionKey",
+		"new_attestation_key": "Option<PublicVerificationKey>",
+		"new_delegation_key": "Option<PublicVerificationKey>",
+		"new_endpoint_url": "Option<UrlEncoding>"
+	},
+	"DIDDetails": {
+		"auth_key": "PublicVerificationKey",
+		"key_agreement_key": "PublicEncryptionKey",
+		"delegation_key": "Option<PublicVerificationKey>",
+		"attestation_key": "Option<PublicVerificationKey>",
+		"verification_keys": "BTreeSet<PublicVerificationKey>",
+		"endpoint_url": "Option<UrlEncoding>",
+		"last_tx_counter": "u64"
+	}
+}
