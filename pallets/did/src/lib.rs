@@ -345,11 +345,20 @@ impl DIDDetails {
 	/// To note that this method does not perform any checks regarding the validity of the DIDUpdateOperation signature.
 	/// The parameters are:
 	/// * update_operation: The update operation to evaluate against the DID entry
-	fn apply_changes_from_update_operation<DIDIdentifier>(&mut self, update_operation: DIDUpdateOperation<DIDIdentifier>) -> Result<(), DIDError> where DIDIdentifier: Parameter + Encode + Decode + Debug {
+	fn apply_changes_from_update_operation<DIDIdentifier>(
+		&mut self,
+		update_operation: DIDUpdateOperation<DIDIdentifier>,
+	) -> Result<(), DIDError>
+	where
+		DIDIdentifier: Parameter + Encode + Decode + Debug,
+	{
 		if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove.as_ref() {
 			// Checks that all the keys to remove are present on the chain, otherwise generates a DIDError (of type StorageError).
 			verification_keys_to_remove.iter().try_for_each(|key_to_remove| {
-				self.verification_keys.contains(key_to_remove).then(|| ()).ok_or(DIDError::StorageError(StorageError::VerificationKeyNotPresent(key_to_remove.clone())))
+				self.verification_keys
+					.contains(key_to_remove)
+					.then(|| ())
+					.ok_or_else(|| DIDError::StorageError(StorageError::VerificationKeyNotPresent(*key_to_remove)))
 			})?;
 		};
 
@@ -427,13 +436,13 @@ pub mod pallet {
 	}
 
 	impl<T> From<DIDError> for Error<T> {
-    	fn from(error: DIDError) -> Self {
-        	match error {
+		fn from(error: DIDError) -> Self {
+			match error {
 				DIDError::SignatureError(signature_error) => Self::from(signature_error),
 				DIDError::StorageError(storage_error) => Self::from(storage_error),
 				DIDError::OperationError(operation_error) => Self::from(operation_error),
 			}
-    	}
+		}
 	}
 
 	impl<T> From<SignatureError> for Error<T> {
@@ -450,7 +459,9 @@ pub mod pallet {
 			match error {
 				StorageError::DIDNotPresent => Self::DIDNotPresent,
 				StorageError::DIDAlreadyPresent => Self::DIDAlreadyPresent,
-				StorageError::DIDKeyNotPresent(_) | StorageError::VerificationKeyNotPresent(_) => Self::VerificationKeyNotPresent,
+				StorageError::DIDKeyNotPresent(_) | StorageError::VerificationKeyNotPresent(_) => {
+					Self::VerificationKeyNotPresent
+				}
 			}
 		}
 	}
@@ -505,7 +516,7 @@ pub mod pallet {
 			// generate a InvalidSignatureFormat error otherwise.
 			let is_signature_valid = signature_verification_key
 				.verify_signature(&did_creation_operation.encode(), &signature)
-				.map_err(|err| <Error<T>>::from(err))?;
+				.map_err(<Error<T>>::from)?;
 
 			// Verify the validity of the signature, or generate an InvalidSignature error
 			// otherwise.
@@ -541,15 +552,19 @@ pub mod pallet {
 			let sender = ensure_signed(origin)?;
 
 			// If specified DID does not exist, generate a DIDNotPresent error.
-			let mut did_details: DIDDetails = <Did<T>>::get(did_update_operation.get_did()).ok_or(<Error<T>>::DIDNotPresent)?;
+			let mut did_details: DIDDetails =
+				<Did<T>>::get(did_update_operation.get_did()).ok_or(<Error<T>>::DIDNotPresent)?;
 
 			// Verify that the counter is at least as large as the currently saved one.
-			let tx_difference = did_update_operation.tx_counter.checked_sub(did_details.last_tx_counter).ok_or(<Error<T>>::InvalidNonce)?;
+			let tx_difference = did_update_operation
+				.tx_counter
+				.checked_sub(did_details.last_tx_counter)
+				.ok_or(<Error<T>>::InvalidNonce)?;
 
 			// Verify that the counter is actually at least 1 unit larger than the stored one.
 			ensure!(tx_difference > 0u64, <Error<T>>::InvalidNonce);
 
-			Self::verify_did_operation_signature(&did_update_operation, &signature).map_err(|err| <Error<T>>::from(err))?;
+			Self::verify_did_operation_signature(&did_update_operation, &signature).map_err(<Error<T>>::from)?;
 
 			// Retrieve the authentication key of the new DID, otherwise generate a
 			// VerificationKeyNotPresent error if it is not specified (should never happen
@@ -562,7 +577,7 @@ pub mod pallet {
 			// generate a InvalidSignatureFormat error otherwise.
 			let is_signature_valid = signature_verification_key
 				.verify_signature(&did_update_operation.encode(), &signature)
-				.map_err(|err| <Error<T>>::from(err))?;
+				.map_err(<Error<T>>::from)?;
 
 			// Verify the validity of the signature, or generate an InvalidSignature error
 			// otherwise.
@@ -571,7 +586,9 @@ pub mod pallet {
 			// Saved here as the apply_changes_from_update_operation() consumes the input.
 			let did_identifier = did_update_operation.get_did().clone();
 
-			did_details.apply_changes_from_update_operation(did_update_operation).map_err(|_| <Error<T>>::VerificationKeyNotPresent)?;
+			did_details
+				.apply_changes_from_update_operation(did_update_operation)
+				.map_err(|_| <Error<T>>::VerificationKeyNotPresent)?;
 
 			log::debug!("Updating DID {:?}", did_identifier);
 			<Did<T>>::insert(did_identifier.clone(), did_details);
@@ -593,13 +610,14 @@ impl<T: Config> Pallet<T> {
 		signature: &DIDSignature,
 	) -> Result<(), DIDError> {
 		// Try to retrieve from the storage the details of the given DID. If there is no DID stored, generate a DIDNotPresent error.
-		let did_entry: DIDDetails = <Did<T>>::get(op.get_did()).ok_or(DIDError::StorageError(StorageError::DIDNotPresent))?;
+		let did_entry: DIDDetails =
+			<Did<T>>::get(op.get_did()).ok_or(DIDError::StorageError(StorageError::DIDNotPresent))?;
 
 		// Retrieves the needed verification key from the DID details, or generate a
 		// VerificationkeyNotPresent error if there is no key of the type required.
 		let verification_key = did_entry
 			.get_verification_key_for_key_type(op.get_verification_key_type())
-			.ok_or(DIDError::StorageError(StorageError::DIDKeyNotPresent(op.get_verification_key_type())))?;
+			.ok_or_else(|| DIDError::StorageError(StorageError::DIDKeyNotPresent(op.get_verification_key_type())))?;
 
 		// Verifies that the signature matches the expected format, otherwise generate
 		// an InvalidSignatureFormat error.
