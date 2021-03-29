@@ -37,8 +37,6 @@ use sp_runtime::{
 	MultiSigner,
 };
 
-use sp_std::vec::Vec;
-
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
 
@@ -124,7 +122,7 @@ fn check_successful_did_creation() {
 		let did_auth_keypair = ed25519::Pair::from_seed(&did_auth_keypair_seed);
 		let did_creation_operation = DIDCreationOperation {
 			did: did_identifier.clone(),
-			new_auth_key: PublicVerificationKey::Ed25519(did_auth_keypair.public()),
+			new_auth_key: PublicVerificationKey::from(did_auth_keypair.public()),
 			new_key_agreement_key: PublicEncryptionKey::X55519(did_enc_keypair_public_bytes),
 			new_attestation_key: None,
 			new_delegation_key: None,
@@ -136,7 +134,7 @@ fn check_successful_did_creation() {
 		assert_ok!(Did::submit_did_create_operation(
 			Origin::signed(account),
 			did_creation_operation.clone(),
-			DIDSignature::Ed25519(operation_signature),
+			DIDSignature::from(operation_signature),
 		));
 
 		let stored_did: DIDDetails = {
@@ -162,17 +160,19 @@ fn check_successful_did_creation() {
 		let did_auth_keypair = sr25519::Pair::from_seed(&did_auth_keypair_seed);
 		let did_creation_operation = DIDCreationOperation {
 			did: did_identifier.clone(),
-			new_auth_key: PublicVerificationKey::Sr25519(did_auth_keypair.public()),
+			new_auth_key: PublicVerificationKey::from(did_auth_keypair.public()),
 			new_key_agreement_key: PublicEncryptionKey::X55519(did_enc_keypair_public_bytes),
 			new_attestation_key: None,
 			new_delegation_key: None,
 			new_endpoint_url: None,
 		};
+
 		let operation_signature = did_auth_keypair.sign(&did_creation_operation.encode());
+
 		assert_ok!(Did::submit_did_create_operation(
 			Origin::signed(account),
 			did_creation_operation.clone(),
-			DIDSignature::Sr25519(operation_signature)
+			DIDSignature::from(operation_signature),
 		));
 
 		let stored_did: DIDDetails = {
@@ -201,17 +201,19 @@ fn check_successful_did_creation() {
 		let did_delegation_keypair = ed25519::Pair::from_seed(&test_verification_seed);
 		let did_creation_operation = DIDCreationOperation {
 			did: did_identifier.clone(),
-			new_auth_key: PublicVerificationKey::Sr25519(did_auth_keypair.public()),
+			new_auth_key: PublicVerificationKey::from(did_auth_keypair.public()),
 			new_key_agreement_key: PublicEncryptionKey::X55519(did_enc_keypair_public_bytes),
-			new_attestation_key: Some(PublicVerificationKey::Sr25519(did_attestation_keypair.public())),
-			new_delegation_key: Some(PublicVerificationKey::Ed25519(did_delegation_keypair.public())),
+			new_attestation_key: Some(PublicVerificationKey::from(did_attestation_keypair.public())),
+			new_delegation_key: Some(PublicVerificationKey::from(did_delegation_keypair.public())),
 			new_endpoint_url: Some("https://kilt.io".into()),
 		};
+
 		let operation_signature = did_auth_keypair.sign(&did_creation_operation.encode());
+
 		assert_ok!(Did::submit_did_create_operation(
 			Origin::signed(account),
 			did_creation_operation.clone(),
-			DIDSignature::Sr25519(operation_signature)
+			DIDSignature::from(operation_signature),
 		));
 
 		let stored_did: DIDDetails = {
@@ -247,18 +249,19 @@ fn check_invalid_did_creation() {
 		let did_enc_keypair_public_bytes = [1u8; 32];
 		let did_creation_operation = DIDCreationOperation {
 			did: did_identifier.clone(),
-			new_auth_key: PublicVerificationKey::Ed25519(did_auth_keypair.public()),
+			new_auth_key: PublicVerificationKey::from(did_auth_keypair.public()),
 			new_key_agreement_key: PublicEncryptionKey::X55519(did_enc_keypair_public_bytes),
 			new_attestation_key: None,
 			new_delegation_key: None,
 			new_endpoint_url: None,
 		};
+
 		let operation_signature = did_auth_keypair.sign(&did_creation_operation.encode());
 
 		assert_ok!(Did::submit_did_create_operation(
 			Origin::signed(account_copy_1),
 			did_creation_operation.clone(),
-			DIDSignature::Ed25519(operation_signature.clone())
+			DIDSignature::from(operation_signature.clone()),
 		));
 
 		let account_copy_2 = account.clone();
@@ -266,7 +269,7 @@ fn check_invalid_did_creation() {
 			Did::submit_did_create_operation(
 				Origin::signed(account_copy_2),
 				did_creation_operation.clone(),
-				DIDSignature::Ed25519(operation_signature.clone())
+				DIDSignature::from(operation_signature.clone()),
 			),
 			Error::<Test>::DIDAlreadyPresent
 		);
@@ -280,20 +283,22 @@ fn check_invalid_did_creation() {
 		let did_enc_keypair_public_bytes = [1u8; 32];
 		let did_creation_operation = DIDCreationOperation {
 			did: did_identifier.clone(),
-			new_auth_key: PublicVerificationKey::Ed25519(did_auth_keypair.public()),
+			new_auth_key: PublicVerificationKey::from(did_auth_keypair.public()),
 			new_key_agreement_key: PublicEncryptionKey::X55519(did_enc_keypair_public_bytes),
 			new_attestation_key: None,
 			new_delegation_key: None,
 			new_endpoint_url: None,
 		};
+
+		// Expected a Ed25519 key, used a Sr25519 one.
 		let wrong_signing_keypair = sr25519::Pair::from_seed(&did_auth_keypair_seed);
 		let wrong_operation_signature = wrong_signing_keypair.sign(&did_creation_operation.encode());
 
 		assert_noop!(
 			Did::submit_did_create_operation(
-				Origin::signed(account_copy_1),
+				Origin::signed(account),
 				did_creation_operation.clone(),
-				DIDSignature::Sr25519(wrong_operation_signature)
+				DIDSignature::from(wrong_operation_signature)
 			),
 			Error::<Test>::InvalidSignatureFormat
 		);
@@ -307,23 +312,23 @@ fn check_invalid_did_creation() {
 		let did_enc_keypair_public_bytes = [1u8; 32];
 		let did_creation_operation = DIDCreationOperation {
 			did: did_identifier.clone(),
-			new_auth_key: PublicVerificationKey::Ed25519(did_auth_keypair.public()),
+			new_auth_key: PublicVerificationKey::from(did_auth_keypair.public()),
 			new_key_agreement_key: PublicEncryptionKey::X55519(did_enc_keypair_public_bytes),
 			new_attestation_key: None,
 			new_delegation_key: None,
 			new_endpoint_url: None,
 		};
 
-		// Same type of signature but different keypair
-		let wrong_keypair = [255u8;32];
-		let wrong_signing_keypair = sr25519::Pair::from_seed(&wrong_keypair);
+		// Same type of signature as the one expected, but different keypair used.
+		let wrong_keypair = [255u8; 32];
+		let wrong_signing_keypair = ed25519::Pair::from_seed(&wrong_keypair);
 		let wrong_operation_signature = wrong_signing_keypair.sign(&did_creation_operation.encode());
 
 		assert_noop!(
 			Did::submit_did_create_operation(
-				Origin::signed(account_copy_1),
+				Origin::signed(account),
 				did_creation_operation.clone(),
-				DIDSignature::Ed25519(wrong_operation_signature)
+				DIDSignature::from(wrong_operation_signature)
 			),
 			Error::<Test>::InvalidSignature
 		);
@@ -345,10 +350,10 @@ fn check_verify_successful_did_operation_signature() {
 	let did_delegation_keypair = ed25519::Pair::from_seed(&did_delegation_seed);
 	let did_creation_operation = DIDCreationOperation {
 		did: did_identifier.clone(),
-		new_auth_key: PublicVerificationKey::Ed25519(did_auth_keypair.public()),
+		new_auth_key: PublicVerificationKey::from(did_auth_keypair.public()),
 		new_key_agreement_key: PublicEncryptionKey::X55519(did_enc_keypair_public_bytes),
-		new_attestation_key: Some(PublicVerificationKey::Sr25519(did_attestation_keypair.public())),
-		new_delegation_key: Some(PublicVerificationKey::Ed25519(did_delegation_keypair.public())),
+		new_attestation_key: Some(PublicVerificationKey::from(did_attestation_keypair.public())),
+		new_delegation_key: Some(PublicVerificationKey::from(did_delegation_keypair.public())),
 		new_endpoint_url: None,
 	};
 
@@ -357,10 +362,11 @@ fn check_verify_successful_did_operation_signature() {
 	// Valid authentication key
 	new_test_ext().execute_with(|| {
 		let account = MultiSigner::from(pair.public()).into_account();
+		let operation_signature = operation_signature.clone();
 		assert_ok!(Did::submit_did_create_operation(
 			Origin::signed(account),
 			did_creation_operation.clone(),
-			DIDSignature::Ed25519(operation_signature)
+			DIDSignature::from(operation_signature)
 		));
 
 		let test_did_op = TestDIDOperation {
@@ -368,21 +374,21 @@ fn check_verify_successful_did_operation_signature() {
 			verification_key_type: DIDVerificationKeyType::Authentication,
 		};
 		let did_op_signature = did_auth_keypair.sign(&test_did_op.encode());
-		let did_op_signature_encoded = did_op_signature.encode();
 
 		assert_ok!(Did::verify_did_operation_signature::<TestDIDOperation<AccountId>>(
 			&test_did_op,
-			DIDSignature::Ed25519(operation_signature)
+			DIDSignature::from(did_op_signature)
 		));
 	});
 
 	// Valid attestation key
 	new_test_ext().execute_with(|| {
 		let account = MultiSigner::from(pair.public()).into_account();
+		let operation_signature = operation_signature.clone();
 		assert_ok!(Did::submit_did_create_operation(
 			Origin::signed(account),
 			did_creation_operation.clone(),
-			DIDSignature::Ed25519(operation_signature.clone())
+			DIDSignature::from(operation_signature)
 		));
 
 		let test_did_op = TestDIDOperation {
@@ -390,21 +396,21 @@ fn check_verify_successful_did_operation_signature() {
 			verification_key_type: DIDVerificationKeyType::AssertionMethod,
 		};
 		let did_op_signature = did_attestation_keypair.sign(&test_did_op.encode());
-		let did_op_signature_encoded = did_op_signature.encode();
 
 		assert_ok!(Did::verify_did_operation_signature::<TestDIDOperation<AccountId>>(
 			&test_did_op,
-			DIDSignature::Ed25519(did_op_signature.clone())
+			DIDSignature::from(did_op_signature)
 		));
 	});
 
 	// Valid delegation key
 	new_test_ext().execute_with(|| {
 		let account = MultiSigner::from(pair.public()).into_account();
+		let operation_signature = operation_signature.clone();
 		assert_ok!(Did::submit_did_create_operation(
 			Origin::signed(account),
 			did_creation_operation.clone(),
-			DIDSignature::Ed25519(operation_signature.clone())
+			DIDSignature::from(operation_signature)
 		));
 
 		let test_did_op = TestDIDOperation {
@@ -415,7 +421,7 @@ fn check_verify_successful_did_operation_signature() {
 
 		assert_ok!(Did::verify_did_operation_signature::<TestDIDOperation<AccountId>>(
 			&test_did_op,
-			DIDSignature::Ed25519(did_op_signature.clone())
+			DIDSignature::from(did_op_signature.clone())
 		));
 	});
 }
@@ -425,6 +431,7 @@ fn check_verify_invalid_did_operation_signature() {
 	// Create and store a valid DID to use for verifying signatures for the
 	// different operations.
 	let pair = ed25519::Pair::from_seed(&*b"Alice                           ");
+	let account = MultiSigner::from(pair.public()).into_account();
 	let did_identifier = AccountId::from([0u8; 32]);
 	let did_auth_keypair_seed = [1u8; 32];
 	let did_enc_keypair_public_bytes = [2u8; 32];
@@ -435,10 +442,10 @@ fn check_verify_invalid_did_operation_signature() {
 	let did_delegation_keypair = ed25519::Pair::from_seed(&did_delegation_seed);
 	let did_creation_operation = DIDCreationOperation {
 		did: did_identifier.clone(),
-		new_auth_key: PublicVerificationKey::Ed25519(did_auth_keypair.public()),
+		new_auth_key: PublicVerificationKey::from(did_auth_keypair.public()),
 		new_key_agreement_key: PublicEncryptionKey::X55519(did_enc_keypair_public_bytes),
-		new_attestation_key: Some(PublicVerificationKey::Sr25519(did_attestation_keypair.public())),
-		new_delegation_key: Some(PublicVerificationKey::Ed25519(did_delegation_keypair.public())),
+		new_attestation_key: Some(PublicVerificationKey::from(did_attestation_keypair.public())),
+		new_delegation_key: Some(PublicVerificationKey::from(did_delegation_keypair.public())),
 		new_endpoint_url: None,
 	};
 
@@ -454,7 +461,10 @@ fn check_verify_invalid_did_operation_signature() {
 		let did_op_signature = did_auth_keypair.sign(&test_did_op.encode());
 
 		assert_noop!(
-			Did::verify_did_operation_signature::<TestDIDOperation<AccountId>>(&test_did_op, DIDSignature::Ed25519(did_op_signature)),
+			Did::verify_did_operation_signature::<TestDIDOperation<AccountId>>(
+				&test_did_op,
+				DIDSignature::from(did_op_signature)
+			),
 			DIDError::StorageError(StorageError::DIDNotPresent)
 		);
 	});
@@ -463,19 +473,19 @@ fn check_verify_invalid_did_operation_signature() {
 	new_test_ext().execute_with(|| {
 		let did_creation_operation = DIDCreationOperation {
 			did: did_identifier.clone(),
-			new_auth_key: PublicVerificationKey::Ed25519(did_auth_keypair.public()),
+			new_auth_key: PublicVerificationKey::from(did_auth_keypair.public()),
 			new_key_agreement_key: PublicEncryptionKey::X55519(did_enc_keypair_public_bytes),
-			new_attestation_key: Some(PublicVerificationKey::Sr25519(did_attestation_keypair.public())),
+			new_attestation_key: Some(PublicVerificationKey::from(did_attestation_keypair.public())),
 			new_delegation_key: None, // No delegation key specified
 			new_endpoint_url: None,
 		};
 		let operation_signature = did_auth_keypair.sign(&did_creation_operation.encode());
+		let account = account.clone();
 
-		let account = MultiSigner::from(pair.public()).into_account();
 		assert_ok!(Did::submit_did_create_operation(
 			Origin::signed(account),
 			did_creation_operation.clone(),
-			DIDSignature::Ed25519(operation_signature)
+			DIDSignature::from(operation_signature)
 		));
 
 		let test_verification_key_required = DIDVerificationKeyType::CapabilityDelegation;
@@ -484,10 +494,12 @@ fn check_verify_invalid_did_operation_signature() {
 			verification_key_type: test_verification_key_required.clone(),
 		};
 		let did_op_signature = did_delegation_keypair.sign(&test_did_op.encode());
-		let did_op_signature_encoded = did_op_signature.encode();
 
 		assert_noop!(
-			Did::verify_did_operation_signature::<TestDIDOperation<AccountId>>(&test_did_op, DIDSignature::Ed25519(operation_signature)),
+			Did::verify_did_operation_signature::<TestDIDOperation<AccountId>>(
+				&test_did_op,
+				DIDSignature::from(did_op_signature)
+			),
 			DIDError::StorageError(StorageError::VerificationkeyNotPresent(
 				test_verification_key_required.clone()
 			))
@@ -496,11 +508,11 @@ fn check_verify_invalid_did_operation_signature() {
 
 	// Invalid signature format
 	new_test_ext().execute_with(|| {
-		let account = MultiSigner::from(pair.public()).into_account();
+		let account = account.clone();
 		assert_ok!(Did::submit_did_create_operation(
 			Origin::signed(account),
 			did_creation_operation.clone(),
-			DIDSignature::Ed25519(operation_signature)
+			DIDSignature::from(operation_signature.clone())
 		));
 
 		let test_did_op = TestDIDOperation {
@@ -515,7 +527,7 @@ fn check_verify_invalid_did_operation_signature() {
 		assert_noop!(
 			Did::verify_did_operation_signature::<TestDIDOperation<AccountId>>(
 				&test_did_op,
-				DIDSignature::Sr25519(wrong_operation_signature)
+				DIDSignature::from(wrong_operation_signature)
 			),
 			DIDError::SignatureError(SignatureError::InvalidSignatureFormat)
 		);
@@ -523,11 +535,11 @@ fn check_verify_invalid_did_operation_signature() {
 
 	// Invalid signature
 	new_test_ext().execute_with(|| {
-		let account = MultiSigner::from(pair.public()).into_account();
+		let account = account.clone();
 		assert_ok!(Did::submit_did_create_operation(
 			Origin::signed(account),
 			did_creation_operation.clone(),
-			DIDSignature::Ed25519(operation_signature.clone()),
+			DIDSignature::from(operation_signature.clone()),
 		));
 
 		let test_did_op = TestDIDOperation {
@@ -536,14 +548,14 @@ fn check_verify_invalid_did_operation_signature() {
 		};
 
 		// Same type of signature but different keypair
-		let wrong_keypair = [255u8;32];
-		let wrong_signing_keypair = sr25519::Pair::from_seed(&wrong_keypair);
+		let wrong_keypair = [255u8; 32];
+		let wrong_signing_keypair = ed25519::Pair::from_seed(&wrong_keypair);
 		let wrong_operation_signature = wrong_signing_keypair.sign(&did_creation_operation.encode());
 
 		assert_noop!(
 			Did::verify_did_operation_signature::<TestDIDOperation<AccountId>>(
 				&test_did_op,
-				DIDSignature::Sr25519(wrong_operation_signature)
+				DIDSignature::from(wrong_operation_signature)
 			),
 			DIDError::SignatureError(SignatureError::InvalidSignature)
 		);

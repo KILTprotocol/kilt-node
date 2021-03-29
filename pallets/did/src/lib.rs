@@ -34,7 +34,7 @@ pub use default_weights::WeightInfo;
 
 use codec::{Decode, Encode};
 
-use frame_support::{Parameter, ensure, storage::types::StorageMap};
+use frame_support::{ensure, storage::types::StorageMap, Parameter};
 use frame_system::{self, ensure_signed};
 use sp_core::{ed25519, sr25519};
 use sp_runtime::traits::Verify;
@@ -43,7 +43,7 @@ use sp_std::{collections::btree_set::BTreeSet, fmt::Debug, prelude::Clone, vec::
 pub use pallet::*;
 
 /// Reference to a payload of data of variable size.
-pub type PayloadSlice = [u8];
+pub type Payload = [u8];
 
 /// Type for an encoded URL.
 pub type UrlEncoding = Vec<u8>;
@@ -54,8 +54,8 @@ pub trait DIDPublicKey {
 	fn get_did_key_description(&self) -> &'static str;
 }
 
-/// An enum describing the different verification methods a verification key can fulfil,
-/// according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
+/// An enum describing the different verification methods a verification key can
+/// fulfil, according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
 #[derive(Clone, Debug, Decode, Encode, PartialEq, Eq)]
 pub enum DIDVerificationKeyType {
 	Authentication,
@@ -65,8 +65,8 @@ pub enum DIDVerificationKeyType {
 	AssertionMethod,
 }
 
-/// An enum describing the different verification methods an encryption key can fulfil,
-/// according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
+/// An enum describing the different verification methods an encryption key can
+/// fulfil, according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
 #[derive(Clone, Debug, Decode, Encode, PartialEq)]
 pub enum DIDEncryptionKeyType {
 	KeyAgreement,
@@ -81,16 +81,24 @@ pub enum PublicVerificationKey {
 	Sr25519(sr25519::Public),
 }
 
+impl From<ed25519::Public> for PublicVerificationKey {
+	fn from(key: ed25519::Public) -> Self {
+		PublicVerificationKey::Ed25519(key)
+	}
+}
+
+impl From<sr25519::Public> for PublicVerificationKey {
+	fn from(key: sr25519::Public) -> Self {
+		PublicVerificationKey::Sr25519(key)
+	}
+}
+
 impl PublicVerificationKey {
 	/// Given a payload and a signature, the specific public verification key
 	/// will return either a [SignatureError](SignatureError) if the signature
 	/// is not properly formed, or a boolean indicating the result of the
 	/// verification.
-	fn verify_signature(
-		&self,
-		payload: &PayloadSlice,
-		signature: DIDSignature,
-	) -> Result<bool, SignatureError> {
+	fn verify_signature(&self, payload: &Payload, signature: &DIDSignature) -> Result<bool, SignatureError> {
 		match self {
 			PublicVerificationKey::Ed25519(public_key) => {
 				// Try to re-create a Signature value or throw an error if raw value is invalid.
@@ -130,6 +138,18 @@ pub enum DIDSignature {
 	Ed25519(ed25519::Signature),
 	/// A Sr25519 signature
 	Sr25519(sr25519::Signature),
+}
+
+impl From<ed25519::Signature> for DIDSignature {
+	fn from(sig: ed25519::Signature) -> Self {
+		DIDSignature::Ed25519(sig)
+	}
+}
+
+impl From<sr25519::Signature> for DIDSignature {
+	fn from(sig: sr25519::Signature) -> Self {
+		DIDSignature::Sr25519(sig)
+	}
 }
 
 /// Enum representing the types of encryption keys a DID can control.
@@ -179,7 +199,7 @@ pub enum SignatureError {
 /// A trait describing an operation that requires DID authentication.
 pub trait DIDOperation<DIDIdentifier>: Encode
 where
-	DIDIdentifier: Parameter + Encode + Decode + Debug,
+	DIDIdentifier: Encode,
 {
 	/// Returns the type of the verification key to be used to validate the
 	/// operation.
@@ -356,7 +376,7 @@ pub mod pallet {
 			// Re-create a Signature object from the authentication key retrieved, or
 			// generate a InvalidSignatureFormat error otherwise.
 			let is_signature_valid = signature_verification_key
-				.verify_signature(&did_creation_operation.encode(), signature)
+				.verify_signature(&did_creation_operation.encode(), &signature)
 				.map_err(|_| <Error<T>>::InvalidSignatureFormat)?;
 
 			// Verify the validity of the signature, or generate an InvalidSignature error
@@ -404,7 +424,7 @@ impl<T: Config> Pallet<T> {
 		// Verifies that the signature matches the expected format, otherwise generate
 		// an InvalidSignatureFormat error.
 		let is_signature_valid = verification_key
-			.verify_signature(&op.encode(), signature)
+			.verify_signature(&op.encode(), &signature)
 			.map_err(|_| DIDError::SignatureError(SignatureError::InvalidSignatureFormat))?;
 
 		ensure!(
