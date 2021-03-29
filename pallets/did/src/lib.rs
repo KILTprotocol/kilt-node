@@ -95,7 +95,7 @@ impl From<sr25519::Public> for PublicVerificationKey {
 
 impl PublicVerificationKey {
 	/// Given a payload and a signature, the specific public verification key
-	/// will return either a [SignatureError](SignatureError) if the signature
+	/// will return either a SignatureError if the signature
 	/// is not properly formed, or a boolean indicating the result of the
 	/// verification.
 	fn verify_signature(&self, payload: &Payload, signature: &DIDSignature) -> Result<bool, SignatureError> {
@@ -342,10 +342,10 @@ pub mod pallet {
 		/// * origin: the Substrate account submitting the transaction (which
 		///   can be different from the DID subject)
 		/// * did_creation_operation: a
-		///   [DIDCreationOperation](DIDCreationOperation) which contains the
+		///   DIDCreationOperation which contains the
 		///   details of the new DID
 		/// * signature: a signature over
-		///   [DIDCreationOperation](DIDCreationOperation) that must be signed
+		///   DIDCreationOperation that must be signed
 		///   with the authentication key associated with the new DID
 		#[pallet::weight(<T as Config>::WeightInfo::submit_did_create_operation())]
 		pub fn submit_did_create_operation(
@@ -395,8 +395,8 @@ pub mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
-	/// Verify the signature of a generic [DIDOperation](DIDOperation), and
-	/// returns either Ok or a [DIDError](DIDError). The paremeters are:
+	/// Verify the signature of a generic DIDOperation, and
+	/// returns either Ok or a DIDError. The paremeters are:
 	/// * op: a reference to the DID operation
 	/// * signature: a reference to the signature
 	pub fn verify_did_operation_signature<O: DIDOperation<T::DIDIdentifier>>(
