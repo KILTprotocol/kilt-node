@@ -51,10 +51,10 @@ frame_support::construct_runtime!(
 		NodeBlock = Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
-		System: frame_system::{Module, Call, Config, Storage, Event<T>},
-		PalletAttestation: pallet_attestation::{Module, Call, Storage, Event<T>},
-		Delegation: delegation::{Module, Call, Storage, Event<T>},
-		CType: ctype::{Module, Call, Storage, Event<T>},
+		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+		PalletAttestation: pallet_attestation::{Pallet, Call, Storage, Event<T>},
+		Delegation: delegation::{Pallet, Call, Storage, Event<T>},
+		CType: ctype::{Pallet, Call, Storage, Event<T>},
 	}
 );
 
