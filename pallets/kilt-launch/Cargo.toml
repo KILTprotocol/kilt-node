@@ -21,7 +21,7 @@ pallet-vesting = {git = "https://github.com/paritytech/substrate", default-featu
 sp-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, version = "3.0.0", branch = "rococo-v1"}
 
 [dev-dependencies]
-
+kilt-primitives = {path = "../../primitives", default-features = false}
 pallet-balances = {git = "https://github.com/paritytech/substrate", default-features = false, version = "3.0.0", branch = "rococo-v1"}
 sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, version = "3.0.0", branch = "rococo-v1"}
 sp-io = {git = "https://github.com/paritytech/substrate", default-features = false, version = "3.0.0", branch = "rococo-v1"}

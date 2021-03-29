@@ -52,8 +52,8 @@ mod tests;
 // #[cfg(feature = "runtime-benchmarks")]
 // mod benchmarking;
 
-const KILT_LAUNCH_ID: LockIdentifier = *b"kiltcoin";
-const VESTING_ID: LockIdentifier = *b"vesting ";
+pub const KILT_LAUNCH_ID: LockIdentifier = *b"kiltcoin";
+pub const VESTING_ID: LockIdentifier = *b"vesting ";
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -209,6 +209,7 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_initialize(now: T::BlockNumber) -> Weight {
+			println!("hi_initialize {:?}", now);
 			Self::unlock_balance(now)
 		}
 	}
@@ -285,6 +286,7 @@ pub mod pallet {
 				amount: unlock_amount,
 			}) = <BalanceLocks<T>>::take(&source)
 			{
+				println!("{:?}", unlock_amount);
 				// Allow transaction fees to be paid from locked balance, e.g., prohibit all
 				// withdraws except `WithdrawReasons::TRANSACTION_PAYMENT`
 				<pallet_balances::Module<T>>::set_lock(
@@ -293,6 +295,9 @@ pub mod pallet {
 					unlock_amount,
 					WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
 				);
+				// We only want to append the destination to the unlocking vector. We do not set
+				// `BalanceLocks` because that storage is only required for the migration and
+				// would be redundant for any user-owned account.
 				<UnlockingAt<T>>::append(unlock_block, &dest);
 			}
 			// TODO: Add meaningful information
@@ -305,6 +310,7 @@ impl<T: Config> Pallet<T> {
 	/// Remove KILT balance locks for the specified block
 	fn unlock_balance(block: T::BlockNumber) -> Weight {
 		if let Some(unlocking_balance) = <UnlockingAt<T>>::take(block) {
+			println!("hi_unlock");
 			// Remove locks for all accounts
 			for account in unlocking_balance.iter() {
 				<pallet_balances::Module<T>>::remove_lock(KILT_LAUNCH_ID, account);
