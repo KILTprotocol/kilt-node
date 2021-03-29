@@ -357,7 +357,7 @@ pub mod pallet {
 			let sender = ensure_signed(origin)?;
 
 			// There has to be no other DID with the same identifier already saved on chain,
-			// otherwise generate a DIDNotPresent error.
+			// otherwise generate a DIDAlreadyPresent error.
 			ensure!(
 				!<Did<T>>::contains_key(did_creation_operation.get_did()),
 				<Error<T>>::DIDAlreadyPresent
