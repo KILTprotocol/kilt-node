@@ -73,7 +73,7 @@ pub enum DIDEncryptionKeyType {
 }
 
 /// Enum representing the types of verification keys a DID can control.
-#[derive(Clone, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
 pub enum PublicVerificationKey {
 	/// An Ed25519 public key.
 	Ed25519(ed25519::Public),
@@ -153,7 +153,7 @@ impl From<sr25519::Signature> for DIDSignature {
 }
 
 /// Enum representing the types of encryption keys a DID can control.
-#[derive(Clone, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
 pub enum PublicEncryptionKey {
 	/// An X25519 public key.
 	X55519([u8; 32]),
@@ -171,6 +171,7 @@ impl DIDPublicKey for PublicEncryptionKey {
 pub enum DIDError {
 	StorageError(StorageError),
 	SignatureError(SignatureError),
+	OperationError(OperationError),
 }
 
 // Used internally to handle storage errors.
@@ -182,7 +183,9 @@ pub enum StorageError {
 	DIDNotPresent,
 	/// The given DID does not contain the right key to verify the signature of
 	/// a DID operation.
-	VerificationkeyNotPresent(DIDVerificationKeyType),
+	DIDKeyNotPresent(DIDVerificationKeyType),
+	/// The given verification key is not stored in the set of verification keys.
+	VerificationKeyNotPresent(PublicVerificationKey),
 }
 
 // Used internally to handle signature errors.
@@ -194,6 +197,13 @@ pub enum SignatureError {
 	/// The signature is invalid for the payload and the verification key
 	/// provided.
 	InvalidSignature,
+}
+
+// Used internally to handle operation errors.
+#[derive(Debug, Eq, PartialEq)]
+pub enum OperationError {
+	/// The operation nonce is not valid (e.g., reused).
+	InvalidNonce,
 }
 
 /// A trait describing an operation that requires DID authentication.
@@ -230,6 +240,43 @@ where
 }
 
 impl<DIDIdentifier> DIDOperation<DIDIdentifier> for DIDCreationOperation<DIDIdentifier>
+where
+	DIDIdentifier: Parameter + Encode + Decode + Debug,
+{
+	fn get_verification_key_type(&self) -> DIDVerificationKeyType {
+		DIDVerificationKeyType::Authentication
+	}
+
+	fn get_did(&self) -> &DIDIdentifier {
+		&self.did
+	}
+}
+
+/// A DID update request. It contains the following values:
+/// * The DID identifier being updated
+/// * The optional new authentication key to use
+/// * The optional new encryption key to use
+/// * The optional new attestation key to use
+/// * The optional new delegation key to use
+/// * The optional set of old attestation keys to remove
+/// * The optional new endpoint URL pointing to the DID service endpoints
+/// * A counter used to protect against replay attacks
+#[derive(Clone, Decode, Debug, Encode, PartialEq)]
+pub struct DIDUpdateOperation<DIDIdentifier>
+where
+	DIDIdentifier: Parameter + Encode + Decode + Debug,
+{
+	did: DIDIdentifier,
+	new_auth_key: Option<PublicVerificationKey>,
+	new_key_agreement_key: Option<PublicEncryptionKey>,
+	new_attestation_key: Option<PublicVerificationKey>,
+	new_delegation_key: Option<PublicVerificationKey>,
+	verification_keys_to_remove: Option<BTreeSet<PublicVerificationKey>>,
+	new_endpoint_url: Option<UrlEncoding>,
+	tx_counter: u64,
+}
+
+impl<DIDIdentifier> DIDOperation<DIDIdentifier> for DIDUpdateOperation<DIDIdentifier>
 where
 	DIDIdentifier: Parameter + Encode + Decode + Debug,
 {
@@ -292,6 +339,47 @@ impl DIDDetails {
 			_ => None,
 		}
 	}
+
+	/// [MUTATING] Update a DID entry by evaluating the information of a DIDUpdateOperation and consuming it.
+	/// The operation fails if the operation instructs to delete a verification key that is not associated with the DID specified.
+	/// To note that this method does not perform any checks regarding the validity of the DIDUpdateOperation signature.
+	/// The parameters are:
+	/// * update_operation: The update operation to evaluate against the DID entry
+	fn apply_changes_from_update_operation<DIDIdentifier>(&mut self, update_operation: DIDUpdateOperation<DIDIdentifier>) -> Result<(), DIDError> where DIDIdentifier: Parameter + Encode + Decode + Debug {
+		if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove.as_ref() {
+			// Checks that all the keys to remove are present on the chain, otherwise generates a DIDError (of type StorageError).
+			verification_keys_to_remove.iter().try_for_each(|key_to_remove| {
+				self.verification_keys.contains(key_to_remove).then(|| ()).ok_or(DIDError::StorageError(StorageError::VerificationKeyNotPresent(key_to_remove.clone())))
+			})?;
+		};
+
+		if let Some(new_auth_key) = update_operation.new_auth_key {
+			self.auth_key = new_auth_key;
+		}
+		if let Some(new_enc_key) = update_operation.new_key_agreement_key {
+			self.key_agreement_key = new_enc_key;
+		}
+		if let Some(new_attestation_key) = update_operation.new_attestation_key {
+			if let Some(old_attestation_key) = self.attestation_key {
+				self.verification_keys.insert(old_attestation_key);
+			}
+			self.attestation_key = Some(new_attestation_key);
+		}
+		if let Some(new_delegation_key) = update_operation.new_delegation_key {
+			self.delegation_key = Some(new_delegation_key);
+		}
+		if let Some(new_endpoint_url) = update_operation.new_endpoint_url {
+			self.endpoint_url = Some(new_endpoint_url);
+		}
+		if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove.as_ref() {
+			verification_keys_to_remove.iter().for_each(|key_to_remove| {
+				self.verification_keys.remove(key_to_remove);
+			});
+		}
+		self.last_tx_counter = update_operation.tx_counter;
+
+		Ok(())
+	}
 }
 
 #[frame_support::pallet]
@@ -325,6 +413,7 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		DidCreated(<T as frame_system::Config>::AccountId, T::DIDIdentifier),
+		DidUpdated(<T as frame_system::Config>::AccountId, T::DIDIdentifier),
 	}
 
 	#[pallet::error]
@@ -332,7 +421,46 @@ pub mod pallet {
 		InvalidSignatureFormat,
 		InvalidSignature,
 		DIDAlreadyPresent,
+		DIDNotPresent,
 		VerificationKeyNotPresent,
+		InvalidNonce,
+	}
+
+	impl<T> From<DIDError> for Error<T> {
+    	fn from(error: DIDError) -> Self {
+        	match error {
+				DIDError::SignatureError(signature_error) => Self::from(signature_error),
+				DIDError::StorageError(storage_error) => Self::from(storage_error),
+				DIDError::OperationError(operation_error) => Self::from(operation_error),
+			}
+    	}
+	}
+
+	impl<T> From<SignatureError> for Error<T> {
+		fn from(error: SignatureError) -> Self {
+			match error {
+				SignatureError::InvalidSignature => Self::InvalidSignature,
+				SignatureError::InvalidSignatureFormat => Self::InvalidSignatureFormat,
+			}
+		}
+	}
+
+	impl<T> From<StorageError> for Error<T> {
+		fn from(error: StorageError) -> Self {
+			match error {
+				StorageError::DIDNotPresent => Self::DIDNotPresent,
+				StorageError::DIDAlreadyPresent => Self::DIDAlreadyPresent,
+				StorageError::DIDKeyNotPresent(_) | StorageError::VerificationKeyNotPresent(_) => Self::VerificationKeyNotPresent,
+			}
+		}
+	}
+
+	impl<T> From<OperationError> for Error<T> {
+		fn from(error: OperationError) -> Self {
+			match error {
+				OperationError::InvalidNonce => Self::InvalidNonce,
+			}
+		}
 	}
 
 	#[pallet::call]
@@ -377,7 +505,7 @@ pub mod pallet {
 			// generate a InvalidSignatureFormat error otherwise.
 			let is_signature_valid = signature_verification_key
 				.verify_signature(&did_creation_operation.encode(), &signature)
-				.map_err(|_| <Error<T>>::InvalidSignatureFormat)?;
+				.map_err(|err| <Error<T>>::from(err))?;
 
 			// Verify the validity of the signature, or generate an InvalidSignature error
 			// otherwise.
@@ -391,6 +519,67 @@ pub mod pallet {
 			//TODO: Return the real weight used
 			Ok(().into())
 		}
+
+		/// Updates the information associated with a DID on chain, after verifying the signature associated
+		/// with the operation. The parameters are:
+		/// * origin: the Substrate account submitting the transaction (which
+		///   can be different from the DID subject)
+		/// * did_update_operation: a
+		///   DIDUpdateOperation which contains the
+		///   new details of the given DID
+		/// * signature: a signature over
+		///   the operation that must be signed
+		///   with the authentication key associated with the new DID.
+		///	  In case the authentication key is being updated, the key used to verify is the old one that is getting updated.
+		#[pallet::weight(<T as Config>::WeightInfo::submit_did_create_operation())]
+		pub fn submit_did_update_operation(
+			origin: OriginFor<T>,
+			did_update_operation: DIDUpdateOperation<T::DIDIdentifier>,
+			signature: DIDSignature,
+		) -> DispatchResultWithPostInfo {
+			// origin of the transaction needs to be a signed sender account
+			let sender = ensure_signed(origin)?;
+
+			// If specified DID does not exist, generate a DIDNotPresent error.
+			let mut did_details: DIDDetails = <Did<T>>::get(did_update_operation.get_did()).ok_or(<Error<T>>::DIDNotPresent)?;
+
+			// Verify that the counter is at least as large as the currently saved one.
+			let tx_difference = did_update_operation.tx_counter.checked_sub(did_details.last_tx_counter).ok_or(<Error<T>>::InvalidNonce)?;
+
+			// Verify that the counter is actually at least 1 unit larger than the stored one.
+			ensure!(tx_difference > 0u64, <Error<T>>::InvalidNonce);
+
+			Self::verify_did_operation_signature(&did_update_operation, &signature).map_err(|err| <Error<T>>::from(err))?;
+
+			// Retrieve the authentication key of the new DID, otherwise generate a
+			// VerificationKeyNotPresent error if it is not specified (should never happen
+			// as the DIDCreateOperation requires the authentication key to be present).
+			let signature_verification_key = did_details
+				.get_verification_key_for_key_type(DIDVerificationKeyType::Authentication)
+				.ok_or(<Error<T>>::VerificationKeyNotPresent)?;
+
+			// Re-create a Signature object from the authentication key retrieved, or
+			// generate a InvalidSignatureFormat error otherwise.
+			let is_signature_valid = signature_verification_key
+				.verify_signature(&did_update_operation.encode(), &signature)
+				.map_err(|err| <Error<T>>::from(err))?;
+
+			// Verify the validity of the signature, or generate an InvalidSignature error
+			// otherwise.
+			ensure!(is_signature_valid, <Error<T>>::InvalidSignature);
+
+			// Saved here as the apply_changes_from_update_operation() consumes the input.
+			let did_identifier = did_update_operation.get_did().clone();
+
+			did_details.apply_changes_from_update_operation(did_update_operation).map_err(|_| <Error<T>>::VerificationKeyNotPresent)?;
+
+			log::debug!("Updating DID {:?}", did_identifier);
+			<Did<T>>::insert(did_identifier.clone(), did_details);
+
+			Self::deposit_event(Event::DidUpdated(sender, did_identifier));
+			//TODO: Return the real weight used
+			Ok(().into())
+		}
 	}
 }
 
@@ -401,25 +590,16 @@ impl<T: Config> Pallet<T> {
 	/// * signature: a reference to the signature
 	pub fn verify_did_operation_signature<O: DIDOperation<T::DIDIdentifier>>(
 		op: &O,
-		signature: DIDSignature,
+		signature: &DIDSignature,
 	) -> Result<(), DIDError> {
-		// Switch to a slice
-		// Try to retrieve from the storage the details of the given DID.
-		let did_entry: Option<DIDDetails> = <Did<T>>::get(op.get_did());
-
-		// If there is no DID stored, generate a DIDNotPresent error.
-		ensure!(did_entry.is_some(), DIDError::StorageError(StorageError::DIDNotPresent));
-
-		// Force unwrap the DID details, as we are sure it is not None.
-		let did_entry = did_entry.unwrap();
+		// Try to retrieve from the storage the details of the given DID. If there is no DID stored, generate a DIDNotPresent error.
+		let did_entry: DIDDetails = <Did<T>>::get(op.get_did()).ok_or(DIDError::StorageError(StorageError::DIDNotPresent))?;
 
 		// Retrieves the needed verification key from the DID details, or generate a
 		// VerificationkeyNotPresent error if there is no key of the type required.
 		let verification_key = did_entry
 			.get_verification_key_for_key_type(op.get_verification_key_type())
-			.ok_or_else(|| {
-				DIDError::StorageError(StorageError::VerificationkeyNotPresent(op.get_verification_key_type()))
-			})?;
+			.ok_or(DIDError::StorageError(StorageError::DIDKeyNotPresent(op.get_verification_key_type())))?;
 
 		// Verifies that the signature matches the expected format, otherwise generate
 		// an InvalidSignatureFormat error.
