@@ -368,12 +368,10 @@ pub mod pallet {
 		/// with the creation operation. The parameters are:
 		/// * origin: the Substrate account submitting the transaction (which
 		///   can be different from the DID subject)
-		/// * did_creation_operation: a
-		///   DIDCreationOperation which contains the
+		/// * did_creation_operation: a DIDCreationOperation which contains the
 		///   details of the new DID
-		/// * signature: a signature over
-		///   DIDCreationOperation that must be signed
-		///   with the authentication key associated with the new DID
+		/// * signature: a signature over DIDCreationOperation that must be
+		///   signed with the authentication key associated with the new DID
 		#[pallet::weight(<T as Config>::WeightInfo::submit_did_create_operation())]
 		pub fn submit_did_create_operation(
 			origin: OriginFor<T>,
@@ -430,7 +428,8 @@ impl<T: Config> Pallet<T> {
 		op: &O,
 		signature: &DIDSignature,
 	) -> Result<(), DIDError> {
-		// Try to retrieve from the storage the details of the given DID. If there is no DID stored, generate a DIDNotPresent error.
+		// Try to retrieve from the storage the details of the given DID. If there is no
+		// DID stored, generate a DIDNotPresent error.
 		let did_entry: DIDDetails =
 			<Did<T>>::get(op.get_did()).ok_or(DIDError::StorageError(StorageError::DIDNotPresent))?;
 

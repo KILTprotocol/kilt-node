@@ -21,8 +21,7 @@ use crate::*;
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use kilt_primitives::{AccountId, Signature};
-use sp_core::{ed25519, sr25519};
-use sp_core::{Pair, H256};
+use sp_core::{ed25519, sr25519, Pair, H256};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
@@ -222,7 +221,8 @@ pub fn generate_mock_did_details_with_keys(
 	}
 }
 
-// A test DID operation which can be crated to require any DID verification key type.
+// A test DID operation which can be crated to require any DID verification key
+// type.
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
 pub struct TestDIDOperation {
 	pub did: TestDidIdentifier,

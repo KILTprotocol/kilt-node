@@ -202,7 +202,8 @@ fn check_invalid_signature_did_creation() {
 	let enc_key = get_x25519_encryption_key();
 	// Using an Sr25519 key as expected, but from a different seed (default = false)
 	let alternative_key = get_sr25519_authentication_key(false);
-	// DID creation contains auth_key, but signature is generated using alternative_key
+	// DID creation contains auth_key, but signature is generated using
+	// alternative_key
 	let did_creation_operation =
 		generate_simple_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()), enc_key);
 	let signature = alternative_key.sign(did_creation_operation.encode().as_ref());
