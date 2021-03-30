@@ -191,6 +191,7 @@ pub fn generate_complete_did_creation_operation(
 	}
 }
 
+#[allow(dead_code)]
 pub fn generate_mock_did_details() -> did::DIDDetails {
 	did::DIDDetails {
 		auth_key: did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public()),
@@ -203,6 +204,7 @@ pub fn generate_mock_did_details() -> did::DIDDetails {
 	}
 }
 
+#[allow(dead_code)]
 pub fn generate_mock_did_details_with_keys(
 	auth_key: did::PublicVerificationKey,
 	enc_key: did::PublicEncryptionKey,
