@@ -45,9 +45,7 @@ fn check_successful_simple_ed25519_creation() {
 	});
 
 	let stored_did = ext.execute_with(|| {
-		let did_details = Did::get_did(ALICE_DID);
-		assert!(did_details.is_some());
-		did_details.unwrap()
+		Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain.")
 	});
 	assert_eq!(stored_did.auth_key, did_creation_operation.new_auth_key);
 	assert_eq!(
@@ -83,9 +81,7 @@ fn check_successful_simple_sr25519_creation() {
 	});
 
 	let stored_did = ext.execute_with(|| {
-		let did_details = Did::get_did(ALICE_DID);
-		assert!(did_details.is_some());
-		did_details.unwrap()
+		Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain.")
 	});
 	assert_eq!(stored_did.auth_key, did_creation_operation.new_auth_key);
 	assert_eq!(
@@ -129,9 +125,7 @@ fn check_successful_complete_creation() {
 	});
 
 	let stored_did = ext.execute_with(|| {
-		let did_details = Did::get_did(ALICE_DID);
-		assert!(did_details.is_some());
-		did_details.unwrap()
+		Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain.")
 	});
 	assert_eq!(stored_did.auth_key, did_creation_operation.new_auth_key);
 	assert_eq!(
