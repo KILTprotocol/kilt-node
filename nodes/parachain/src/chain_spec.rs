@@ -20,14 +20,15 @@
 
 use cumulus_primitives_core::ParaId;
 use kilt_parachain_runtime::{
-	BalancesConfig, GenesisConfig, ParachainInfoConfig, SudoConfig, SystemConfig, WASM_BINARY,
+	BalancesConfig, GenesisConfig, KiltLaunchConfig, ParachainInfoConfig, SudoConfig, SystemConfig, VestingConfig,
+	WASM_BINARY,
 };
-use kilt_primitives::{AccountId, AccountPublic};
+use kilt_primitives::{constants::MONTHS, AccountId, AccountPublic, Balance, BlockNumber};
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
 use sc_service::{ChainType, Properties};
 use serde::{Deserialize, Serialize};
 use sp_core::{sr25519, Pair, Public};
-use sp_runtime::traits::IdentifyAccount;
+use sp_runtime::traits::{IdentifyAccount, One};
 
 use hex_literal::hex;
 
@@ -155,6 +156,14 @@ fn testnet_genesis(
 	endowed_accounts: Vec<AccountId>,
 	id: ParaId,
 ) -> GenesisConfig {
+	type VestingPeriod = BlockNumber;
+	type LockingPeriod = BlockNumber;
+
+	// vesting and locks as initially designed
+	let airdrop_accounts_json = &include_bytes!("../../../dev-specs/genesis-testing/genesis_accounts.json")[..];
+	let airdrop_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
+		serde_json::from_slice(airdrop_accounts_json).expect("Could not read from genesis_accounts.json");
+
 	GenesisConfig {
 		frame_system: SystemConfig {
 			code: wasm_binary.to_vec(),
@@ -165,9 +174,33 @@ fn testnet_genesis(
 				.iter()
 				.cloned()
 				.map(|k| (k, 10000000000000000000000000000_u128))
+				.chain(airdrop_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
 				.collect(),
 		},
 		pallet_sudo: SudoConfig { key: root_key },
 		parachain_info: ParachainInfoConfig { parachain_id: id },
+		kilt_launch: KiltLaunchConfig {
+			balance_locks: airdrop_accounts
+				.iter()
+				.cloned()
+				.map(|(who, amount, _, locking_length)| (who.to_owned(), locking_length * MONTHS, amount))
+				.collect(),
+			vesting: airdrop_accounts
+				.iter()
+				.cloned()
+				.map(|(who, amount, vesting_length, _)| {
+					(
+						who,
+						vesting_length * MONTHS,
+						// Enable 1 KILT token to be spendable for transactions apart from vesting to allow the user to
+						// call `vest`` which is required to actually remove the lock
+						amount.saturating_sub(Balance::one()),
+					)
+				})
+				.collect(),
+			// TODO: Set this to another address (PRE-LAUNCH)
+			transfer_account: get_account_id_from_seed::<sr25519::Public>("Alice"),
+		},
+		pallet_vesting: VestingConfig { vesting: vec![] },
 	}
 }

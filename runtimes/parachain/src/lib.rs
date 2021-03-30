@@ -25,14 +25,17 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use kilt_primitives::*;
+use kilt_primitives::{
+	constants::{MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
+	AccountId, Amount, Balance, BlockNumber, CurrencyId, Hash, Index, Signature,
+};
 use orml_currencies::BasicCurrencyAdapter;
 use orml_traits::{arithmetic::Zero, parameter_type_with_key};
 use sp_api::impl_runtime_apis;
 use sp_core::OpaqueMetadata;
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, Convert, Identity, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, Convert, ConvertInto, Identity, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, DispatchResult,
 };
@@ -95,17 +98,6 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
 };
-
-pub const MILLISECS_PER_BLOCK: u64 = 6000;
-
-pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
-
-pub const EPOCH_DURATION_IN_BLOCKS: u64 = 10 * MINUTES;
-
-// These time units are defined in number of blocks.
-pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
-pub const HOURS: BlockNumber = MINUTES * 60;
-pub const DAYS: BlockNumber = HOURS * 24;
 
 // 1 in 4 blocks (on average, not counting collisions) will be primary babe
 // blocks.
@@ -267,6 +259,23 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 }
 
 impl parachain_info::Config for Runtime {}
+
+parameter_types! {
+	pub const MinVestedTransfer: Balance = MIN_VESTED_TRANSFER_AMOUNT;
+}
+
+impl pallet_vesting::Config for Runtime {
+	type Event = Event;
+	type Currency = Balances;
+	type BlockNumberToBalance = ConvertInto;
+	// disable vested transfers by setting min amount to max balance
+	type MinVestedTransfer = MinVestedTransfer;
+	type WeightInfo = pallet_vesting::weights::SubstrateWeight<Runtime>;
+}
+
+impl kilt_launch::Config for Runtime {
+	type Event = Event;
+}
 
 parameter_types! {
 	pub KiltNetwork: NetworkId = NetworkId::Named("kilt".into());
@@ -468,6 +477,24 @@ construct_runtime! {
 		Currencies: orml_currencies::{Pallet, Call, Storage, Event<T>} = 22,
 		XTokens: orml_xtokens::{Pallet, Call, Storage, Event<T>} = 23,
 		UnknownTokens: orml_unknown_tokens::{Pallet, Storage, Event} = 24,
+
+		// // Governance stuff; uncallable initially.
+		// Democracy: pallet_democracy::{Module, Call, Storage, Config, Event<T>} = 25,
+		// Council: pallet_collective::<Instance1>::{Module, Call, Storage, Origin<T>, Event<T>, Config<T>} = 26,
+		// TechnicalCommittee: pallet_collective::<Instance2>::{Module, Call, Storage, Origin<T>, Event<T>, Config<T>} = 27,
+		// ElectionsPhragmen: pallet_elections_phragmen::{Module, Call, Storage, Event<T>, Config<T>} = 28,
+		// TechnicalMembership: pallet_membership::{Module, Call, Storage, Event<T>, Config<T>} = 29,
+		// Treasury: pallet_treasury::{Module, Call, Storage, Config, Event<T>} = 30,
+
+		// // Society module.
+		// Society: pallet_society::{Module, Call, Storage, Event<T>} = 31,
+
+		// // System scheduler.
+		// Scheduler: pallet_scheduler::{Module, Call, Storage, Event<T>} = 32,
+
+		// Vesting. Usable initially, but removed once all vesting is finished.
+		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 33,
+		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
 	}
 }
 

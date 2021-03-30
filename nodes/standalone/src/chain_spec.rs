@@ -185,14 +185,10 @@ fn testnet_genesis(
 	type VestingPeriod = BlockNumber;
 	type LockingPeriod = BlockNumber;
 
-	// TODO: We might want to split up the json into three jsons for total balance,
 	// vesting and locks as initially designed
 	let airdrop_accounts_json = &include_bytes!("../../../dev-specs/genesis-testing/genesis_accounts.json")[..];
 	let airdrop_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
 		serde_json::from_slice(airdrop_accounts_json).expect("Could not read from genesis_accounts.json");
-
-	// TODO: Check whether user with 100% vested tokens can stake from beginning,
-	// e.g. how to handle tx fee
 
 	GenesisConfig {
 		frame_system: SystemConfig {
@@ -245,7 +241,7 @@ fn testnet_genesis(
 				})
 				.collect(),
 			// TODO: Set this to another address (PRE-LAUNCH)
-			transfer_account: get_account_id_from_secret::<ed25519::Public>("//Alice"),
+			transfer_account: get_account_id_from_secret::<sr25519::Public>("//Alice"),
 		},
 		pallet_vesting: VestingConfig { vesting: vec![] },
 	}

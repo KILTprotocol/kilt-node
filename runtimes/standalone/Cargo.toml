@@ -231,8 +231,8 @@ runtime-benchmarks = [
   "delegation/runtime-benchmarks",
   "balances/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
-  "timestamp/runtime-benchmarks",
   "pallet-vesting/runtime-benchmarks",
+  "timestamp/runtime-benchmarks",
 ]
 std = [
   "attestation/std",

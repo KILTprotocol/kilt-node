@@ -405,11 +405,6 @@ impl pallet_vesting::Config for Runtime {
 	type WeightInfo = pallet_vesting::weights::SubstrateWeight<Runtime>;
 }
 
-// pub struct VestingUpgrade;
-// impl frame_support::traits::OnRuntimeUpgrade for VestingUpgrade {
-// 	fn on_runtime_upgrade() -> frame_support::weights::Weight {}
-// }
-
 construct_runtime!(
 	pub enum Runtime where
 		Block = Block,
@@ -435,9 +430,23 @@ construct_runtime!(
 		Session: session::{Pallet, Call, Storage, Event, Config<T>} = 15,
 		Authorship: authorship::{Pallet, Call, Storage} = 16,
 
+		// // Governance stuff; uncallable initially.
+		// Democracy: pallet_democracy::{Module, Call, Storage, Config, Event<T>} = 25,
+		// Council: pallet_collective::<Instance1>::{Module, Call, Storage, Origin<T>, Event<T>, Config<T>} = 26,
+		// TechnicalCommittee: pallet_collective::<Instance2>::{Module, Call, Storage, Origin<T>, Event<T>, Config<T>} = 27,
+		// ElectionsPhragmen: pallet_elections_phragmen::{Module, Call, Storage, Event<T>, Config<T>} = 28,
+		// TechnicalMembership: pallet_membership::{Module, Call, Storage, Event<T>, Config<T>} = 29,
+		// Treasury: pallet_treasury::{Module, Call, Storage, Config, Event<T>} = 30,
+
+		// // Society module.
+		// Society: pallet_society::{Module, Call, Storage, Event<T>} = 31,
+
+		// // System scheduler.
+		// Scheduler: pallet_scheduler::{Module, Call, Storage, Event<T>} = 32,
+
 		// Vesting. Usable initially, but removed once all vesting is finished.
-		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 28,
-		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 29,
+		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 33,
+		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
 	}
 );
 
