@@ -17,10 +17,11 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate as kilt_launch;
-use frame_support::{parameter_types, traits::GenesisBuild};
+use frame_support::{assert_ok, parameter_types, traits::GenesisBuild};
 use frame_system as system;
 use kilt_primitives::{constants::MIN_VESTED_TRANSFER_AMOUNT, AccountId, Balance, BlockNumber, Hash, Index};
-use sp_core::H256;
+use pallet_balances::{BalanceLock, Locks, Reasons};
+use pallet_vesting::VestingInfo;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, ConvertInto, IdentityLookup},
@@ -30,9 +31,8 @@ use sp_runtime::{
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
-pub const ALICE: AccountId = AccountId32::new([0u8; 32]);
-pub const BOB: AccountId = AccountId32::new([1u8; 32]);
-pub const USER_2: AccountId = AccountId32::new([11u8; 32]);
+pub const PSEUDO_1: AccountId = AccountId32::new([0u8; 32]);
+pub const PSEUDO_2: AccountId = AccountId32::new([1u8; 32]);
 pub const USER_1: AccountId = AccountId32::new([10u8; 32]);
 pub const TRANSFER_ACCOUNT: AccountId = AccountId32::new([100u8; 32]);
 
@@ -114,15 +114,11 @@ impl pallet_vesting::Config for Test {
 	type WeightInfo = ();
 }
 
-// Build genesis storage according to the mock runtime.
-pub fn new_test_ext() -> sp_io::TestExternalities {
-	system::GenesisConfig::default().build_storage::<Test>().unwrap().into()
-}
-
 pub struct ExtBuilder {
 	endowed_accounts: Vec<(AccountId, Balance)>,
 	balance_locks: Vec<(AccountId, BlockNumber, Balance)>,
 	vesting: Vec<(AccountId, BlockNumber, Balance)>,
+	#[allow(dead_code)]
 	transfer_account: AccountId,
 }
 
@@ -137,14 +133,67 @@ impl Default for ExtBuilder {
 	}
 }
 
+pub fn ensure_migration_works(
+	source: &AccountId,
+	dest: &AccountId,
+	vesting_info: Option<VestingInfo<Balance, BlockNumber>>,
+	locked_info: Option<kilt_launch::LockedBalance<Test>>,
+) {
+	assert_ok!(KiltLaunch::accept_user_account_claim(
+		Origin::signed(TRANSFER_ACCOUNT),
+		source.to_owned(),
+		dest.to_owned()
+	));
+	System::set_block_number(2);
+
+	// Check for desired death of allocation account
+	assert_eq!(Balances::free_balance(source), 0);
+	assert_eq!(Vesting::vesting(source), None);
+	assert_eq!(kilt_launch::BalanceLocks::<Test>::get(source), None);
+	assert!(!frame_system::Account::<Test>::contains_key(source));
+
+	// Check storage migration to dest
+	let mut num_of_locks = 0;
+	if let Some(vesting) = vesting_info {
+		assert_eq!(Vesting::vesting(dest), Some(vesting));
+		num_of_locks += 1;
+	}
+	if let Some(lock) = locked_info.clone() {
+		assert_eq!(kilt_launch::BalanceLocks::<Test>::get(dest), None);
+		assert_eq!(
+			kilt_launch::UnlockingAt::<Test>::get(lock.block),
+			Some(vec![dest.to_owned()])
+		);
+		num_of_locks += 1;
+	}
+
+	// Check correct setting of locks for dest
+	let balance_locks = Locks::<Test>::get(dest);
+	assert_eq!(balance_locks.len(), num_of_locks);
+	for BalanceLock { id, amount, reasons } in balance_locks {
+		match id {
+			crate::VESTING_ID => {
+				let VestingInfo { locked, per_block, .. } = vesting_info.expect("No vesting schedule found");
+				assert_eq!(amount, locked - per_block,);
+				assert_eq!(reasons, Reasons::Misc);
+			}
+			crate::KILT_LAUNCH_ID => {
+				assert_eq!(amount, locked_info.clone().expect("No vesting schedule found").amount);
+				assert_eq!(reasons, Reasons::Misc);
+			}
+			_ => panic!("Unexpected balance lock id {:?}", id),
+		};
+	}
+}
+
 impl ExtBuilder {
 	pub fn balances(mut self, endowed_accounts: Vec<(AccountId, Balance)>) -> Self {
 		self.endowed_accounts = endowed_accounts;
 		self
 	}
 
-	pub fn one_hundred_for_alice_n_bob(self) -> Self {
-		self.balances(vec![(ALICE, 10_000), (BOB, 10_000), (TRANSFER_ACCOUNT, 10_000)])
+	pub fn init_balance_for_pseudos(self) -> Self {
+		self.balances(vec![(PSEUDO_1, 10_000), (PSEUDO_2, 10_000), (TRANSFER_ACCOUNT, 10_000)])
 	}
 
 	pub fn vest(mut self, vesting: Vec<(AccountId, BlockNumber, Balance)>) -> Self {
@@ -152,8 +201,8 @@ impl ExtBuilder {
 		self
 	}
 
-	pub fn vest_alice_bob(self) -> Self {
-		self.vest(vec![(ALICE, 10, 10_000), (BOB, 20, 10_000)])
+	pub fn pseudos_vest_all(self) -> Self {
+		self.vest(vec![(PSEUDO_1, 10, 10_000), (PSEUDO_2, 20, 10_000)])
 	}
 
 	pub fn lock_balance(mut self, balance_locks: Vec<(AccountId, BlockNumber, Balance)>) -> Self {
@@ -161,12 +210,12 @@ impl ExtBuilder {
 		self
 	}
 
-	pub fn lock_some_alice_bob(self) -> Self {
-		self.lock_balance(vec![(ALICE, 100, 1111), (BOB, 1337, 2222)])
+	pub fn pseudos_lock_something(self) -> Self {
+		self.lock_balance(vec![(PSEUDO_1, 100, 1111), (PSEUDO_2, 1337, 2222)])
 	}
 
-	pub fn lock_all_alice_bob(self) -> Self {
-		self.lock_balance(vec![(ALICE, 100, 10_000), (BOB, 1337, 10_000)])
+	pub fn pseudos_lock_all(self) -> Self {
+		self.lock_balance(vec![(PSEUDO_1, 100, 10_000), (PSEUDO_2, 1337, 10_000)])
 	}
 
 	pub fn build(self) -> sp_io::TestExternalities {

@@ -60,7 +60,7 @@ pub mod pallet {
 	use super::*;
 	use frame_system::pallet_prelude::*;
 
-	#[derive(Debug, Encode, Decode, PartialEq, Eq)]
+	#[derive(Debug, Encode, Decode, PartialEq, Eq, Clone)]
 	pub struct LockedBalance<T: Config> {
 		pub block: T::BlockNumber,
 		pub amount: <T as pallet_balances::Config>::Balance,
@@ -249,9 +249,7 @@ pub mod pallet {
 		#[transactional]
 		pub(super) fn accept_user_account_claim(
 			origin: OriginFor<T>,
-			// TODO:  Switch type to LookupSource instead of AccountId
 			source: T::AccountId,
-			// TODO:  Switch type to LookupSource instead of AccountId
 			dest: T::AccountId,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
