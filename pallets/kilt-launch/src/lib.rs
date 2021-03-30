@@ -107,7 +107,7 @@ pub mod pallet {
 			// * length - Number of blocks from  until removal of the lock
 			// * amount - Number of tokens which are locked
 			for (ref who, length, locked) in self.balance_locks.iter() {
-				let balance = <pallet_balances::Module<T>>::free_balance(who);
+				let balance = <pallet_balances::Pallet<T>>::free_balance(who);
 				assert!(!balance.is_zero(), "Currencies must be init'd before locking");
 				assert!(
 					balance >= *locked,
@@ -209,7 +209,6 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_initialize(now: T::BlockNumber) -> Weight {
-			println!("hi_initialize {:?}", now);
 			Self::unlock_balance(now)
 		}
 	}
@@ -222,6 +221,16 @@ pub mod pallet {
 			let _ = ensure_root(origin)?;
 
 			Ok(Some(Self::unlock_balance(block)).into())
+		}
+
+		/// Enable removal of KILT balance locks via sudo
+		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
+		pub fn change_transfer_account(origin: OriginFor<T>, who: T::AccountId) -> DispatchResultWithPostInfo {
+			let _ = ensure_root(origin)?;
+
+			<TransferAccount<T>>::put(who);
+
+			Ok(Some(T::DbWeight::get().writes(1)).into())
 		}
 
 		/// Transfer tokens to an account owned by the claimer.
@@ -257,9 +266,9 @@ pub mod pallet {
 			let vesting_info = Vesting::<T>::take(&source);
 
 			// Transfer to destination addess
-			let amount = <pallet_balances::Module<T>>::total_balance(&source);
+			let amount = <pallet_balances::Pallet<T>>::total_balance(&source);
 			let _ =
-				<pallet_balances::Module<T> as Currency<T::AccountId>>::transfer(&source, &dest, amount, AllowDeath)?;
+				<pallet_balances::Pallet<T> as Currency<T::AccountId>>::transfer(&source, &dest, amount, AllowDeath)?;
 
 			// Migrate vesting info and set the corresponding vesting lock
 			if let Some(vesting) = vesting_info {
@@ -270,7 +279,7 @@ pub mod pallet {
 				//
 				// Logic was taken from pallet_vesting.
 				let reasons = WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE;
-				let now = <frame_system::Module<T>>::block_number();
+				let now = <frame_system::Pallet<T>>::block_number();
 				let locked_now = vesting.locked_at::<<T as pallet_vesting::Config>::BlockNumberToBalance>(now);
 				<<T as pallet_vesting::Config>::Currency as LockableCurrency<T::AccountId>>::set_lock(
 					VESTING_ID,
@@ -286,10 +295,9 @@ pub mod pallet {
 				amount: unlock_amount,
 			}) = <BalanceLocks<T>>::take(&source)
 			{
-				println!("{:?}", unlock_amount);
 				// Allow transaction fees to be paid from locked balance, e.g., prohibit all
 				// withdraws except `WithdrawReasons::TRANSACTION_PAYMENT`
-				<pallet_balances::Module<T>>::set_lock(
+				<pallet_balances::Pallet<T>>::set_lock(
 					KILT_LAUNCH_ID,
 					&dest,
 					unlock_amount,
@@ -310,10 +318,9 @@ impl<T: Config> Pallet<T> {
 	/// Remove KILT balance locks for the specified block
 	fn unlock_balance(block: T::BlockNumber) -> Weight {
 		if let Some(unlocking_balance) = <UnlockingAt<T>>::take(block) {
-			println!("hi_unlock");
 			// Remove locks for all accounts
 			for account in unlocking_balance.iter() {
-				<pallet_balances::Module<T>>::remove_lock(KILT_LAUNCH_ID, account);
+				<pallet_balances::Pallet<T>>::remove_lock(KILT_LAUNCH_ID, account);
 			}
 
 			Self::deposit_event(Event::Unlocked(block, unlocking_balance.len() as u64));

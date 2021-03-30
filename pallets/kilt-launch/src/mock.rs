@@ -43,10 +43,10 @@ frame_support::construct_runtime!(
 		NodeBlock = Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
-		System: frame_system::{Module, Call, Config, Storage, Event<T>},
-		Balances: pallet_balances::{Module, Call, Config<T>, Storage, Event<T>},
-		KiltLaunch: kilt_launch::{Module, Call, Config<T>, Storage, Event<T>},
-		Vesting: pallet_vesting::{Module, Call, Config<T>, Storage, Event<T>},
+		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+		Balances: pallet_balances::{Pallet, Call, Config<T>, Storage, Event<T>},
+		KiltLaunch: kilt_launch::{Pallet, Call, Config<T>, Storage, Event<T>},
+		Vesting: pallet_vesting::{Pallet, Call, Config<T>, Storage, Event<T>},
 	}
 );
 
@@ -153,7 +153,7 @@ impl ExtBuilder {
 	}
 
 	pub fn vest_alice_bob(self) -> Self {
-		self.vest(vec![(ALICE, 10, 1000), (BOB, 20, 1000)])
+		self.vest(vec![(ALICE, 10, 10_000), (BOB, 20, 10_000)])
 	}
 
 	pub fn lock_balance(mut self, balance_locks: Vec<(AccountId, BlockNumber, Balance)>) -> Self {
@@ -161,8 +161,12 @@ impl ExtBuilder {
 		self
 	}
 
-	pub fn lock_alice_bob(self) -> Self {
+	pub fn lock_some_alice_bob(self) -> Self {
 		self.lock_balance(vec![(ALICE, 100, 1111), (BOB, 1337, 2222)])
+	}
+
+	pub fn lock_all_alice_bob(self) -> Self {
+		self.lock_balance(vec![(ALICE, 100, 10_000), (BOB, 1337, 10_000)])
 	}
 
 	pub fn build(self) -> sp_io::TestExternalities {
