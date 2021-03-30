@@ -222,7 +222,7 @@ fn check_authentication_successful_operation_verification() {
 	ext.execute_with(|| {
 		assert_ok!(Did::verify_did_operation_signature::<TestDIDOperation>(
 			&did_operation,
-			did::DIDSignature::from(did_operation_signature)
+			&did::DIDSignature::from(did_operation_signature)
 		));
 	});
 }
@@ -244,7 +244,7 @@ fn check_attestation_successful_operation_verification() {
 	ext.execute_with(|| {
 		assert_ok!(Did::verify_did_operation_signature::<TestDIDOperation>(
 			&did_operation,
-			did::DIDSignature::from(did_operation_signature)
+			&did::DIDSignature::from(did_operation_signature)
 		));
 	});
 }
@@ -266,7 +266,7 @@ fn check_delegation_successful_operation_verification() {
 	ext.execute_with(|| {
 		assert_ok!(Did::verify_did_operation_signature::<TestDIDOperation>(
 			&did_operation,
-			did::DIDSignature::from(did_operation_signature)
+			&did::DIDSignature::from(did_operation_signature)
 		));
 	});
 }
@@ -288,7 +288,7 @@ fn check_did_not_present_operation_verification() {
 		assert_noop!(
 			Did::verify_did_operation_signature::<TestDIDOperation>(
 				&did_operation,
-				did::DIDSignature::from(did_operation_signature)
+				&did::DIDSignature::from(did_operation_signature)
 			),
 			did::DIDError::StorageError(did::StorageError::DIDNotPresent)
 		);
@@ -313,9 +313,9 @@ fn check_verification_key_not_present_operation_verification() {
 		assert_noop!(
 			Did::verify_did_operation_signature::<TestDIDOperation>(
 				&did_operation,
-				did::DIDSignature::from(did_operation_signature)
+				&did::DIDSignature::from(did_operation_signature)
 			),
-			did::DIDError::StorageError(did::StorageError::VerificationkeyNotPresent(
+			did::DIDError::StorageError(did::StorageError::DIDKeyNotPresent (
 				verification_key_required.clone()
 			))
 		);
@@ -341,7 +341,7 @@ fn check_invalid_signature_format_operation_verification() {
 		assert_noop!(
 			Did::verify_did_operation_signature::<TestDIDOperation>(
 				&did_operation,
-				did::DIDSignature::from(did_operation_signature)
+				&did::DIDSignature::from(did_operation_signature)
 			),
 			did::DIDError::SignatureError(did::SignatureError::InvalidSignatureFormat)
 		);
@@ -367,7 +367,7 @@ fn check_invalid_signature_operation_verification() {
 		assert_noop!(
 			Did::verify_did_operation_signature::<TestDIDOperation>(
 				&did_operation,
-				did::DIDSignature::from(did_operation_signature)
+				&did::DIDSignature::from(did_operation_signature)
 			),
 			did::DIDError::SignatureError(did::SignatureError::InvalidSignature)
 		);
