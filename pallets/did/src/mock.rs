@@ -80,12 +80,9 @@ impl did::Config for Test {
 
 pub type TestDidIdentifier = <Test as did::Config>::DIDIdentifier;
 
-#[allow(dead_code)]
 pub const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
 
-#[allow(dead_code)]
 pub const ALICE_DID: TestDidIdentifier = AccountId::new([1u8; 32]);
-#[allow(dead_code)]
 pub const BOB_DID: TestDidIdentifier = AccountId::new([2u8; 32]);
 
 const DEFAULT_AUTH_SEED: [u8; 32] = [3u8; 32];
@@ -96,7 +93,6 @@ const ALTERNATIVE_ATT_SEED: [u8; 32] = [50u8; 32];
 const DEFAULT_DEL_SEED: [u8; 32] = [6u8; 32];
 const ALTERNATIVE_DEL_SEED: [u8; 32] = [60u8; 32];
 
-#[allow(dead_code)]
 pub fn get_ed25519_authentication_key(default: bool) -> ed25519::Pair {
 	if default {
 		ed25519::Pair::from_seed(&DEFAULT_AUTH_SEED)
@@ -105,7 +101,6 @@ pub fn get_ed25519_authentication_key(default: bool) -> ed25519::Pair {
 	}
 }
 
-#[allow(dead_code)]
 pub fn get_sr25519_authentication_key(default: bool) -> sr25519::Pair {
 	if default {
 		sr25519::Pair::from_seed(&DEFAULT_AUTH_SEED)
@@ -114,12 +109,10 @@ pub fn get_sr25519_authentication_key(default: bool) -> sr25519::Pair {
 	}
 }
 
-#[allow(dead_code)]
 pub fn get_x25519_encryption_key() -> PublicEncryptionKey {
 	PublicEncryptionKey::X55519(DEFAULT_ENC_SEED)
 }
 
-#[allow(dead_code)]
 pub fn get_ed25519_attestation_key(default: bool) -> ed25519::Pair {
 	if default {
 		ed25519::Pair::from_seed(&DEFAULT_ATT_SEED)
@@ -128,7 +121,6 @@ pub fn get_ed25519_attestation_key(default: bool) -> ed25519::Pair {
 	}
 }
 
-#[allow(dead_code)]
 pub fn get_sr25519_attestation_key(default: bool) -> sr25519::Pair {
 	if default {
 		sr25519::Pair::from_seed(&DEFAULT_ATT_SEED)
@@ -137,7 +129,6 @@ pub fn get_sr25519_attestation_key(default: bool) -> sr25519::Pair {
 	}
 }
 
-#[allow(dead_code)]
 pub fn get_ed25519_delegation_key(default: bool) -> ed25519::Pair {
 	if default {
 		ed25519::Pair::from_seed(&DEFAULT_DEL_SEED)
@@ -146,7 +137,6 @@ pub fn get_ed25519_delegation_key(default: bool) -> ed25519::Pair {
 	}
 }
 
-#[allow(dead_code)]
 pub fn get_sr25519_delegation_key(default: bool) -> sr25519::Pair {
 	if default {
 		sr25519::Pair::from_seed(&DEFAULT_DEL_SEED)
@@ -155,7 +145,6 @@ pub fn get_sr25519_delegation_key(default: bool) -> sr25519::Pair {
 	}
 }
 
-#[allow(dead_code)]
 pub fn generate_simple_did_creation_operation(
 	did: TestDidIdentifier,
 	auth_key: did::PublicVerificationKey,
@@ -171,7 +160,6 @@ pub fn generate_simple_did_creation_operation(
 	}
 }
 
-#[allow(dead_code)]
 pub fn generate_complete_did_creation_operation(
 	did: TestDidIdentifier,
 	auth_key: did::PublicVerificationKey,
@@ -190,7 +178,6 @@ pub fn generate_complete_did_creation_operation(
 	}
 }
 
-#[allow(dead_code)]
 pub fn generate_mock_did_details() -> did::DIDDetails {
 	did::DIDDetails {
 		auth_key: did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public()),
@@ -203,7 +190,6 @@ pub fn generate_mock_did_details() -> did::DIDDetails {
 	}
 }
 
-#[allow(dead_code)]
 pub fn generate_mock_did_details_with_keys(
 	auth_key: did::PublicVerificationKey,
 	enc_key: did::PublicEncryptionKey,
@@ -250,13 +236,11 @@ impl Default for ExtBuilder {
 }
 
 impl ExtBuilder {
-	#[allow(dead_code)]
 	pub fn with_dids(mut self, dids: Vec<(<Test as did::Config>::DIDIdentifier, did::DIDDetails)>) -> Self {
 		self.dids_stored = dids;
 		self
 	}
 
-	#[allow(dead_code)]
 	pub fn build(self) -> sp_io::TestExternalities {
 		let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 		let mut ext = sp_io::TestExternalities::new(storage);
