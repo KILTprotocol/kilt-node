@@ -199,8 +199,6 @@ pub enum SignatureError {
 
 /// A trait describing an operation that requires DID authentication.
 pub trait DIDOperation<DIDIdentifier>: Encode
-where
-	DIDIdentifier: Encode,
 {
 	/// Returns the type of the verification key to be used to validate the
 	/// operation.

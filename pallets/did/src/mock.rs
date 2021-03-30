@@ -23,7 +23,6 @@ use frame_support::{
 	parameter_types,
 	weights::constants::RocksDbWeight,
 };
-use frame_system::limits::{BlockLength, BlockWeights};
 use kilt_primitives::{AccountId, Signature};
 use sp_core::{H256, Pair};
 use sp_core::{ed25519, sr25519};
@@ -148,6 +147,60 @@ pub fn generate_simple_did_creation_operation(did: TestDidIdentifier, auth_key: 
     }
 }
 
+#[allow(dead_code)]
+pub fn generate_complete_did_creation_operation(did: TestDidIdentifier, auth_key: did::PublicVerificationKey, enc_key: did::PublicEncryptionKey, att_key: Option<did::PublicVerificationKey>, del_key: Option<did::PublicVerificationKey>,
+url: Option<did::UrlEncoding>) -> did::DIDCreationOperation<TestDidIdentifier> {
+    DIDCreationOperation {
+        did: did,
+        new_auth_key: auth_key,
+        new_key_agreement_key: enc_key,
+        new_attestation_key: att_key,
+        new_delegation_key: del_key,
+        new_endpoint_url: url,
+    }
+}
+
+pub fn generate_mock_did_details() -> did::DIDDetails {
+    did::DIDDetails {
+        auth_key: did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public()),
+        key_agreement_key: get_x25519_encryption_key(),
+        attestation_key: None,
+        delegation_key: None,
+        endpoint_url: None,
+        last_tx_counter: 0,
+        verification_keys: BTreeSet::new(),
+    }
+}
+
+pub fn generate_mock_did_details_with_keys(auth_key: did::PublicVerificationKey, enc_key: did::PublicEncryptionKey, att_key: Option<did::PublicVerificationKey>, del_key: Option<did::PublicVerificationKey>) -> did::DIDDetails {
+    did::DIDDetails {
+        auth_key: auth_key,
+        key_agreement_key: enc_key,
+        attestation_key: att_key,
+        delegation_key: del_key,
+        endpoint_url: None,
+        last_tx_counter: 0,
+        verification_keys: BTreeSet::new(),
+    }
+}
+
+// A test DID operation which can be crated to require any DID verification key type.
+#[derive(Clone, Decode, Debug, Encode, PartialEq)]
+pub struct TestDIDOperation {
+	pub did: TestDidIdentifier,
+	pub verification_key_type: DIDVerificationKeyType,
+}
+
+impl DIDOperation<TestDidIdentifier> for TestDIDOperation {
+	fn get_verification_key_type(&self) -> DIDVerificationKeyType {
+		self.verification_key_type.clone()
+	}
+
+	fn get_did(&self) -> &TestDidIdentifier {
+        &self.did
+    }
+}
+
 pub struct ExtBuilder {
     dids_stored: Vec<(<Test as did::Config>::DIDIdentifier, did::DIDDetails)>,
 }
@@ -183,24 +236,3 @@ impl ExtBuilder {
         ext
     }
 }
-
-// // A test DID operation which can be crated to require any dUD verification key
-// // type.
-// #[derive(Clone, Decode, Debug, Encode, PartialEq)]
-// pub struct TestDIDOperation<DIDIdentifier: Parameter + Encode + Decode + Debug> {
-// 	pub did: DIDIdentifier,
-// 	pub verification_key_type: DIDVerificationKeyType,
-// }
-
-// impl<DIDIdentifier> DIDOperation<DIDIdentifier> for TestDIDOperation<DIDIdentifier>
-// where
-// 	DIDIdentifier: Parameter + Encode + Decode + Debug,
-// {
-// 	fn get_verification_key_type(&self) -> DIDVerificationKeyType {
-// 		self.verification_key_type.clone()
-// 	}
-
-// 	fn get_did(&self) -> &DIDIdentifier {
-// 		&self.did
-// 	}
-// }

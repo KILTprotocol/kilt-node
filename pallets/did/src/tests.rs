@@ -18,24 +18,24 @@
 
 use std::collections::BTreeSet;
 
-use frame_support::assert_ok;
-use kilt_primitives::AccountId;
-use sp_core::{ed25519, sr25519};
-use sp_core::{Pair, Public};
+use frame_support::{assert_noop, assert_ok};
+use sp_core::{Pair};
 
 use codec::Encode;
 
 use crate::mock::*;
-use crate::{self as did, DIDCreationOperation};
+use crate as did;
 
 #[test]
-fn check_successfull_simpleed25519_creation() {
-	ExtBuilder::default().build().execute_with(|| {
-		let auth_key = get_ed25519_authentication_key(true);
-		let enc_key = get_x25519_encryption_key();
-		let did_creation_operation = generate_simple_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()), enc_key);
-		let signature = auth_key.sign(did_creation_operation.encode().as_ref());
+fn check_successful_simple_ed25519_creation() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let enc_key = get_x25519_encryption_key();
+	let did_creation_operation = generate_simple_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()), enc_key);
+	let signature = auth_key.sign(did_creation_operation.encode().as_ref());
 
+	let mut ext = ExtBuilder::default().build();
+
+	ext.execute_with(|| {
 		assert_ok!(
 			Did::submit_did_create_operation(
 				Origin::signed(DEFAULT_ACCOUNT),
@@ -43,474 +43,333 @@ fn check_successfull_simpleed25519_creation() {
 				did::DIDSignature::from(signature),
 			)
 		);
+	});
 
-		let stored_did: did::DIDDetails = {
-			let did_details = Did::get_did(ALICE_DID);
-			assert!(did_details.is_some());
-			did_details.unwrap()
-		};
-		assert_eq!(stored_did.auth_key, did_creation_operation.new_auth_key);
-		assert_eq!(
-			stored_did.key_agreement_key,
-			did_creation_operation.new_key_agreement_key
-		);
-		assert_eq!(stored_did.delegation_key, did_creation_operation.new_delegation_key);
-		assert_eq!(stored_did.attestation_key, did_creation_operation.new_attestation_key);
-		assert_eq!(stored_did.verification_keys, <BTreeSet<did::PublicVerificationKey>>::new());
-		assert_eq!(stored_did.endpoint_url, did_creation_operation.new_endpoint_url);
-		assert_eq!(stored_did.last_tx_counter, 0u64);
-	})
+	let stored_did = ext.execute_with(|| {
+		let did_details = Did::get_did(ALICE_DID);
+		assert!(did_details.is_some());
+		did_details.unwrap()
+	});
+	assert_eq!(stored_did.auth_key, did_creation_operation.new_auth_key);
+	assert_eq!(
+		stored_did.key_agreement_key,
+		did_creation_operation.new_key_agreement_key
+	);
+	assert_eq!(stored_did.delegation_key, did_creation_operation.new_delegation_key);
+	assert_eq!(stored_did.attestation_key, did_creation_operation.new_attestation_key);
+	assert_eq!(stored_did.verification_keys, <BTreeSet<did::PublicVerificationKey>>::new());
+	assert_eq!(stored_did.endpoint_url, did_creation_operation.new_endpoint_url);
+	assert_eq!(stored_did.last_tx_counter, 0u64);
 }
-// #[test]
-// fn check_successful_did_creation() {
-// 	let did_identifier = AccountId::from([0u8; 32]);
-// 	let did_auth_keypair_seed = [1u8; 32];
-// 	let did_enc_keypair_public_bytes = [2u8; 32];
-// 	let pair = ed25519::Pair::from_seed(&*b"Alice                           ");
-// 	let account = MultiSigner::from(pair.public()).into_account();
 
-// 	// New DID with only ed25519 auth key and x25519 encryption key.
-// 	new_test_ext().execute_with(|| {
-// 		let account = account.clone();
-// 		let did_auth_keypair = ed25519::Pair::from_seed(&did_auth_keypair_seed);
-// 		let did_creation_operation = DIDCreationOperation {
-// 			did: did_identifier.clone(),
-// 			new_auth_key: PublicVerificationKey::from(did_auth_keypair.public()),
-// 			new_key_agreement_key: PublicEncryptionKey::X55519(did_enc_keypair_public_bytes),
-// 			new_attestation_key: None,
-// 			new_delegation_key: None,
-// 			new_endpoint_url: None,
-// 		};
+#[test]
+fn check_successful_simple_sr25519_creation() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let enc_key = get_x25519_encryption_key();
+	let did_creation_operation = generate_simple_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()), enc_key);
+	let signature = auth_key.sign(did_creation_operation.encode().as_ref());
 
-// 		let operation_signature = did_auth_keypair.sign(&did_creation_operation.encode());
+	let mut ext = ExtBuilder::default().build();
 
-// 		assert_ok!(Did::submit_did_create_operation(
-// 			Origin::signed(account),
-// 			did_creation_operation.clone(),
-// 			DIDSignature::from(operation_signature),
-// 		));
+	ext.execute_with(|| {
+		assert_ok!(
+			Did::submit_did_create_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				did_creation_operation.clone(),
+				did::DIDSignature::from(signature),
+			)
+		);
+	});
+	
+	let stored_did = ext.execute_with(|| {
+		let did_details = Did::get_did(ALICE_DID);
+		assert!(did_details.is_some());
+		did_details.unwrap()
+	});
+	assert_eq!(stored_did.auth_key, did_creation_operation.new_auth_key);
+	assert_eq!(
+		stored_did.key_agreement_key,
+		did_creation_operation.new_key_agreement_key
+	);
+	assert_eq!(stored_did.delegation_key, did_creation_operation.new_delegation_key);
+	assert_eq!(stored_did.attestation_key, did_creation_operation.new_attestation_key);
+	assert_eq!(stored_did.verification_keys, <BTreeSet<did::PublicVerificationKey>>::new());
+	assert_eq!(stored_did.endpoint_url, did_creation_operation.new_endpoint_url);
+	assert_eq!(stored_did.last_tx_counter, 0u64);
+}
 
-// 		let stored_did: DIDDetails = {
-// 			let did_details = Did::get_did(did_identifier.clone());
-// 			assert!(did_details.is_some());
-// 			did_details.unwrap()
-// 		};
-// 		assert_eq!(stored_did.auth_key, did_creation_operation.new_auth_key);
-// 		assert_eq!(
-// 			stored_did.key_agreement_key,
-// 			did_creation_operation.new_key_agreement_key
-// 		);
-// 		assert_eq!(stored_did.delegation_key, did_creation_operation.new_delegation_key);
-// 		assert_eq!(stored_did.attestation_key, did_creation_operation.new_attestation_key);
-// 		assert_eq!(stored_did.verification_keys, <BTreeSet<PublicVerificationKey>>::new());
-// 		assert_eq!(stored_did.endpoint_url, did_creation_operation.new_endpoint_url);
-// 		assert_eq!(stored_did.last_tx_counter, 0u64);
-// 	});
+#[test]
+fn check_successful_complete_creation() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let enc_key = get_x25519_encryption_key();
+	let del_key = get_sr25519_delegation_key(true);
+	let att_key = get_ed25519_attestation_key(true);
+	let did_creation_operation = generate_complete_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()), enc_key, Some(did::PublicVerificationKey::from(att_key.public())), Some(did::PublicVerificationKey::from(del_key.public())), Some("https://kilt.io".into()));
+	let signature = auth_key.sign(did_creation_operation.encode().as_ref());
 
-// 	// New DID with only sr25519 auth key and x25519 encryptio key.
-// 	new_test_ext().execute_with(|| {
-// 		let account = account.clone();
-// 		let did_auth_keypair = sr25519::Pair::from_seed(&did_auth_keypair_seed);
-// 		let did_creation_operation = DIDCreationOperation {
-// 			did: did_identifier.clone(),
-// 			new_auth_key: PublicVerificationKey::from(did_auth_keypair.public()),
-// 			new_key_agreement_key: PublicEncryptionKey::X55519(did_enc_keypair_public_bytes),
-// 			new_attestation_key: None,
-// 			new_delegation_key: None,
-// 			new_endpoint_url: None,
-// 		};
+	let mut ext = ExtBuilder::default().build();
+	
+	ext.execute_with(|| {
+		assert_ok!(
+			Did::submit_did_create_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				did_creation_operation.clone(),
+				did::DIDSignature::from(signature),
+			)
+		);
+	});
 
-// 		let operation_signature = did_auth_keypair.sign(&did_creation_operation.encode());
+	let stored_did = ext.execute_with(|| {
+		let did_details = Did::get_did(ALICE_DID);
+		assert!(did_details.is_some());
+		did_details.unwrap()
+	});
+	assert_eq!(stored_did.auth_key, did_creation_operation.new_auth_key);
+	assert_eq!(
+		stored_did.key_agreement_key,
+		did_creation_operation.new_key_agreement_key
+	);
+	assert_eq!(stored_did.delegation_key, did_creation_operation.new_delegation_key);
+	assert_eq!(stored_did.attestation_key, did_creation_operation.new_attestation_key);
+	assert_eq!(stored_did.verification_keys, <BTreeSet<did::PublicVerificationKey>>::new());
+	assert_eq!(stored_did.endpoint_url, did_creation_operation.new_endpoint_url);
+	assert_eq!(stored_did.last_tx_counter, 0u64);
+}
 
-// 		assert_ok!(Did::submit_did_create_operation(
-// 			Origin::signed(account),
-// 			did_creation_operation.clone(),
-// 			DIDSignature::from(operation_signature),
-// 		));
+#[test]
+fn check_duplicate_did_creation() {
+	let mock_did = generate_mock_did_details();
+	let auth_key = get_sr25519_authentication_key(true);
+	let enc_key = get_x25519_encryption_key();
+	let did_creation_operation = generate_simple_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()), enc_key);
+	let signature = auth_key.sign(did_creation_operation.encode().as_ref());
 
-// 		let stored_did: DIDDetails = {
-// 			let did_details = Did::get_did(did_identifier.clone());
-// 			assert!(did_details.is_some());
-// 			did_details.unwrap()
-// 		};
-// 		assert_eq!(stored_did.auth_key, did_creation_operation.new_auth_key);
-// 		assert_eq!(
-// 			stored_did.key_agreement_key,
-// 			did_creation_operation.new_key_agreement_key
-// 		);
-// 		assert_eq!(stored_did.delegation_key, did_creation_operation.new_delegation_key);
-// 		assert_eq!(stored_did.attestation_key, did_creation_operation.new_attestation_key);
-// 		assert_eq!(stored_did.verification_keys, <BTreeSet<PublicVerificationKey>>::new());
-// 		assert_eq!(stored_did.endpoint_url, did_creation_operation.new_endpoint_url);
-// 		assert_eq!(stored_did.last_tx_counter, 0u64);
-// 	});
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
 
-// 	// New DID with all keys and endpoint URL set.
-// 	new_test_ext().execute_with(|| {
-// 		let account = account.clone();
-// 		let test_verification_seed = did_auth_keypair_seed;
-// 		let did_auth_keypair = sr25519::Pair::from_seed(&test_verification_seed);
-// 		let did_attestation_keypair = sr25519::Pair::from_seed(&test_verification_seed);
-// 		let did_delegation_keypair = ed25519::Pair::from_seed(&test_verification_seed);
-// 		let did_creation_operation = DIDCreationOperation {
-// 			did: did_identifier.clone(),
-// 			new_auth_key: PublicVerificationKey::from(did_auth_keypair.public()),
-// 			new_key_agreement_key: PublicEncryptionKey::X55519(did_enc_keypair_public_bytes),
-// 			new_attestation_key: Some(PublicVerificationKey::from(did_attestation_keypair.public())),
-// 			new_delegation_key: Some(PublicVerificationKey::from(did_delegation_keypair.public())),
-// 			new_endpoint_url: Some("https://kilt.io".into()),
-// 		};
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_create_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				did_creation_operation.clone(),
+				did::DIDSignature::from(signature),
+			),
+			did::Error::<Test>::DIDAlreadyPresent
+		);
+	});
+}
 
-// 		let operation_signature = did_auth_keypair.sign(&did_creation_operation.encode());
+#[test]
+fn check_invalid_signature_format_did_creation() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let enc_key = get_x25519_encryption_key();
+	// Using an Ed25519 key where an Sr25519 is expected
+	let invalid_key = get_ed25519_authentication_key(true);
+	// DID creation contains auth_key, but signature is generated using invalid_key
+	let did_creation_operation = generate_simple_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()), enc_key);
+	let signature = invalid_key.sign(did_creation_operation.encode().as_ref());
 
-// 		assert_ok!(Did::submit_did_create_operation(
-// 			Origin::signed(account),
-// 			did_creation_operation.clone(),
-// 			DIDSignature::from(operation_signature),
-// 		));
+	let mut ext = ExtBuilder::default().build();
 
-// 		let stored_did: DIDDetails = {
-// 			let did_details = Did::get_did(did_identifier.clone());
-// 			assert!(did_details.is_some());
-// 			did_details.unwrap()
-// 		};
-// 		assert_eq!(stored_did.auth_key, did_creation_operation.new_auth_key);
-// 		assert_eq!(
-// 			stored_did.key_agreement_key,
-// 			did_creation_operation.new_key_agreement_key
-// 		);
-// 		assert_eq!(stored_did.delegation_key, did_creation_operation.new_delegation_key);
-// 		assert_eq!(stored_did.attestation_key, did_creation_operation.new_attestation_key);
-// 		assert_eq!(stored_did.verification_keys, <BTreeSet<PublicVerificationKey>>::new());
-// 		assert_eq!(stored_did.endpoint_url, did_creation_operation.new_endpoint_url);
-// 		assert_eq!(stored_did.last_tx_counter, 0u64);
-// 	});
-// }
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_create_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				did_creation_operation.clone(),
+				did::DIDSignature::from(signature),
+			),
+			did::Error::<Test>::InvalidSignatureFormat
+		);
+	});
+}
 
-// #[test]
-// fn check_invalid_did_creation() {
-// 	let did_identifier = AccountId::from([0u8; 32]);
-// 	let pair = ed25519::Pair::from_seed(&*b"Alice                           ");
-// 	let account = MultiSigner::from(pair.public()).into_account();
+#[test]
+fn check_invalid_signature_did_creation() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let enc_key = get_x25519_encryption_key();
+	// Using an Sr25519 key as expected, but from a different seed (default = false)
+	let alternative_key = get_sr25519_authentication_key(false);
+	// DID creation contains auth_key, but signature is generated using alternative_key
+	let did_creation_operation = generate_simple_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()), enc_key);
+	let signature = alternative_key.sign(did_creation_operation.encode().as_ref());
 
-// 	// Duplicate DID creation
-// 	new_test_ext().execute_with(|| {
-// 		let account_copy_1 = account.clone();
+	let mut ext = ExtBuilder::default().build();
 
-// 		let did_auth_keypair_seed = [2u8; 32];
-// 		let did_auth_keypair = ed25519::Pair::from_seed(&did_auth_keypair_seed);
-// 		let did_enc_keypair_public_bytes = [1u8; 32];
-// 		let did_creation_operation = DIDCreationOperation {
-// 			did: did_identifier.clone(),
-// 			new_auth_key: PublicVerificationKey::from(did_auth_keypair.public()),
-// 			new_key_agreement_key: PublicEncryptionKey::X55519(did_enc_keypair_public_bytes),
-// 			new_attestation_key: None,
-// 			new_delegation_key: None,
-// 			new_endpoint_url: None,
-// 		};
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_create_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				did_creation_operation.clone(),
+				did::DIDSignature::from(signature),
+			),
+			did::Error::<Test>::InvalidSignature
+		);
+	});
+}
 
-// 		let operation_signature = did_auth_keypair.sign(&did_creation_operation.encode());
+#[test]
+fn check_authentication_successful_operation_verification() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let enc_key = get_x25519_encryption_key();
+	let mock_did = generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, None);
+	let did_operation = TestDIDOperation {
+		did: ALICE_DID,
+		verification_key_type: did::DIDVerificationKeyType::Authentication,
+	};
+	let did_operation_signature = auth_key.sign(&did_operation.encode());
 
-// 		assert_ok!(Did::submit_did_create_operation(
-// 			Origin::signed(account_copy_1),
-// 			did_creation_operation.clone(),
-// 			DIDSignature::from(operation_signature.clone()),
-// 		));
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
 
-// 		let account_copy_2 = account.clone();
-// 		assert_noop!(
-// 			Did::submit_did_create_operation(
-// 				Origin::signed(account_copy_2),
-// 				did_creation_operation.clone(),
-// 				DIDSignature::from(operation_signature.clone()),
-// 			),
-// 			Error::<Test>::DIDAlreadyPresent
-// 		);
-// 	});
+	ext.execute_with(|| {
+		assert_ok!(Did::verify_did_operation_signature::<TestDIDOperation>(
+			&did_operation,
+			did::DIDSignature::from(did_operation_signature)
+		));
+	});
+}
 
-// 	// Invalid signature format provided
-// 	new_test_ext().execute_with(|| {
-// 		let account = account.clone();
-// 		let did_auth_keypair_seed = [2u8; 32];
-// 		let did_auth_keypair = ed25519::Pair::from_seed(&did_auth_keypair_seed);
-// 		let did_enc_keypair_public_bytes = [1u8; 32];
-// 		let did_creation_operation = DIDCreationOperation {
-// 			did: did_identifier.clone(),
-// 			new_auth_key: PublicVerificationKey::from(did_auth_keypair.public()),
-// 			new_key_agreement_key: PublicEncryptionKey::X55519(did_enc_keypair_public_bytes),
-// 			new_attestation_key: None,
-// 			new_delegation_key: None,
-// 			new_endpoint_url: None,
-// 		};
+#[test]
+fn check_attestation_successful_operation_verification() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let enc_key = get_x25519_encryption_key();
+	let att_key = get_sr25519_attestation_key(true);
+	let mock_did = generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, Some(did::PublicVerificationKey::from(att_key.public())), None);
+	let did_operation = TestDIDOperation {
+		did: ALICE_DID,
+		verification_key_type: did::DIDVerificationKeyType::AssertionMethod,
+	};
+	let did_operation_signature = att_key.sign(&did_operation.encode());
 
-// 		// Expected a Ed25519 key, used a Sr25519 one.
-// 		let wrong_signing_keypair = sr25519::Pair::from_seed(&did_auth_keypair_seed);
-// 		let wrong_operation_signature = wrong_signing_keypair.sign(&did_creation_operation.encode());
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
 
-// 		assert_noop!(
-// 			Did::submit_did_create_operation(
-// 				Origin::signed(account),
-// 				did_creation_operation.clone(),
-// 				DIDSignature::from(wrong_operation_signature)
-// 			),
-// 			Error::<Test>::InvalidSignatureFormat
-// 		);
-// 	});
+	ext.execute_with(|| {
+		assert_ok!(Did::verify_did_operation_signature::<TestDIDOperation>(
+			&did_operation,
+			did::DIDSignature::from(did_operation_signature)
+		));
+	});
+}
 
-// 	// Invalid signature provided
-// 	new_test_ext().execute_with(|| {
-// 		let account = account.clone();
-// 		let did_auth_keypair_seed = [2u8; 32];
-// 		let did_auth_keypair = ed25519::Pair::from_seed(&did_auth_keypair_seed);
-// 		let did_enc_keypair_public_bytes = [1u8; 32];
-// 		let did_creation_operation = DIDCreationOperation {
-// 			did: did_identifier.clone(),
-// 			new_auth_key: PublicVerificationKey::from(did_auth_keypair.public()),
-// 			new_key_agreement_key: PublicEncryptionKey::X55519(did_enc_keypair_public_bytes),
-// 			new_attestation_key: None,
-// 			new_delegation_key: None,
-// 			new_endpoint_url: None,
-// 		};
+#[test]
+fn check_delegation_successful_operation_verification() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let enc_key = get_x25519_encryption_key();
+	let del_key = get_ed25519_delegation_key(true);
+	let mock_did = generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, Some(did::PublicVerificationKey::from(del_key.public())));
+	let did_operation = TestDIDOperation {
+		did: ALICE_DID,
+		verification_key_type: did::DIDVerificationKeyType::CapabilityDelegation,
+	};
+	let did_operation_signature = del_key.sign(&did_operation.encode());
 
-// 		// Same type of signature as the one expected, but different keypair used.
-// 		let wrong_keypair = [255u8; 32];
-// 		let wrong_signing_keypair = ed25519::Pair::from_seed(&wrong_keypair);
-// 		let wrong_operation_signature = wrong_signing_keypair.sign(&did_creation_operation.encode());
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
 
-// 		assert_noop!(
-// 			Did::submit_did_create_operation(
-// 				Origin::signed(account),
-// 				did_creation_operation.clone(),
-// 				DIDSignature::from(wrong_operation_signature)
-// 			),
-// 			Error::<Test>::InvalidSignature
-// 		);
-// 	})
-// }
+	ext.execute_with(|| {
+		assert_ok!(Did::verify_did_operation_signature::<TestDIDOperation>(
+			&did_operation,
+			did::DIDSignature::from(did_operation_signature)
+		));
+	});
+}
 
-// #[test]
-// fn check_verify_successful_did_operation_signature() {
-// 	// Create and store a valid DID to use for verifying signatures for the
-// 	// different operations.
-// 	let pair = ed25519::Pair::from_seed(&*b"Alice                           ");
-// 	let did_identifier = AccountId::from([0u8; 32]);
-// 	let did_auth_keypair_seed = [1u8; 32];
-// 	let did_enc_keypair_public_bytes = [2u8; 32];
-// 	let did_attestation_seed = [3u8; 32];
-// 	let did_delegation_seed = [4u8; 32];
-// 	let did_auth_keypair = ed25519::Pair::from_seed(&did_auth_keypair_seed);
-// 	let did_attestation_keypair = sr25519::Pair::from_seed(&did_attestation_seed);
-// 	let did_delegation_keypair = ed25519::Pair::from_seed(&did_delegation_seed);
-// 	let did_creation_operation = DIDCreationOperation {
-// 		did: did_identifier.clone(),
-// 		new_auth_key: PublicVerificationKey::from(did_auth_keypair.public()),
-// 		new_key_agreement_key: PublicEncryptionKey::X55519(did_enc_keypair_public_bytes),
-// 		new_attestation_key: Some(PublicVerificationKey::from(did_attestation_keypair.public())),
-// 		new_delegation_key: Some(PublicVerificationKey::from(did_delegation_keypair.public())),
-// 		new_endpoint_url: None,
-// 	};
+#[test]
+fn check_did_not_present_operation_verification() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let enc_key = get_x25519_encryption_key();
+	let mock_did = generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, None);
+	let did_operation = TestDIDOperation {
+		did: BOB_DID,
+		verification_key_type: did::DIDVerificationKeyType::Authentication,
+	};
+	let did_operation_signature = auth_key.sign(&did_operation.encode());
 
-// 	let operation_signature = did_auth_keypair.sign(&did_creation_operation.encode());
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
 
-// 	// Valid authentication key
-// 	new_test_ext().execute_with(|| {
-// 		let account = MultiSigner::from(pair.public()).into_account();
-// 		let operation_signature = operation_signature.clone();
-// 		assert_ok!(Did::submit_did_create_operation(
-// 			Origin::signed(account),
-// 			did_creation_operation.clone(),
-// 			DIDSignature::from(operation_signature)
-// 		));
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::verify_did_operation_signature::<TestDIDOperation>(
+				&did_operation,
+				did::DIDSignature::from(did_operation_signature)
+			),
+			did::DIDError::StorageError(did::StorageError::DIDNotPresent)
+		);
+	});
+}
 
-// 		let test_did_op = TestDIDOperation {
-// 			did: did_identifier.clone(),
-// 			verification_key_type: DIDVerificationKeyType::Authentication,
-// 		};
-// 		let did_op_signature = did_auth_keypair.sign(&test_did_op.encode());
+#[test]
+fn check_verification_key_not_present_operation_verification() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let enc_key = get_x25519_encryption_key();
+	let mock_did = generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, None);
+	let verification_key_required = did::DIDVerificationKeyType::CapabilityInvocation;
+	let did_operation = TestDIDOperation {
+		did: ALICE_DID,
+		verification_key_type: verification_key_required.clone(),
+	};
+	let did_operation_signature = auth_key.sign(&did_operation.encode());
 
-// 		assert_ok!(Did::verify_did_operation_signature::<TestDIDOperation<AccountId>>(
-// 			&test_did_op,
-// 			DIDSignature::from(did_op_signature)
-// 		));
-// 	});
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
 
-// 	// Valid attestation key
-// 	new_test_ext().execute_with(|| {
-// 		let account = MultiSigner::from(pair.public()).into_account();
-// 		let operation_signature = operation_signature.clone();
-// 		assert_ok!(Did::submit_did_create_operation(
-// 			Origin::signed(account),
-// 			did_creation_operation.clone(),
-// 			DIDSignature::from(operation_signature)
-// 		));
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::verify_did_operation_signature::<TestDIDOperation>(
+				&did_operation,
+				did::DIDSignature::from(did_operation_signature)
+			),
+			did::DIDError::StorageError(did::StorageError::VerificationkeyNotPresent(
+				verification_key_required.clone()
+			))
+		);
+	});
+}
 
-// 		let test_did_op = TestDIDOperation {
-// 			did: did_identifier.clone(),
-// 			verification_key_type: DIDVerificationKeyType::AssertionMethod,
-// 		};
-// 		let did_op_signature = did_attestation_keypair.sign(&test_did_op.encode());
+#[test]
+fn check_invalid_signature_format_operation_verification() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let enc_key = get_x25519_encryption_key();
+	// Expected an Sr25519, given an Ed25519
+	let invalid_key = get_ed25519_authentication_key(true);
+	let mock_did = generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, None);
+	let did_operation = TestDIDOperation {
+		did: ALICE_DID,
+		verification_key_type: did::DIDVerificationKeyType::Authentication,
+	};
+	let did_operation_signature = invalid_key.sign(&did_operation.encode());
 
-// 		assert_ok!(Did::verify_did_operation_signature::<TestDIDOperation<AccountId>>(
-// 			&test_did_op,
-// 			DIDSignature::from(did_op_signature)
-// 		));
-// 	});
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
 
-// 	// Valid delegation key
-// 	new_test_ext().execute_with(|| {
-// 		let account = MultiSigner::from(pair.public()).into_account();
-// 		let operation_signature = operation_signature.clone();
-// 		assert_ok!(Did::submit_did_create_operation(
-// 			Origin::signed(account),
-// 			did_creation_operation.clone(),
-// 			DIDSignature::from(operation_signature)
-// 		));
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::verify_did_operation_signature::<TestDIDOperation>(
+				&did_operation,
+				did::DIDSignature::from(did_operation_signature)
+			),
+			did::DIDError::SignatureError(did::SignatureError::InvalidSignatureFormat)
+		);
+	});
+}
 
-// 		let test_did_op = TestDIDOperation {
-// 			did: did_identifier.clone(),
-// 			verification_key_type: DIDVerificationKeyType::CapabilityDelegation,
-// 		};
-// 		let did_op_signature = did_delegation_keypair.sign(&test_did_op.encode());
+#[test]
+fn check_invalid_signature_operation_verification() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let enc_key = get_x25519_encryption_key();
+	// Using same key type but different seed (default = false)
+	let alternative_key = get_sr25519_authentication_key(false);
+	let mock_did = generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, None);
+	let did_operation = TestDIDOperation {
+		did: ALICE_DID,
+		verification_key_type: did::DIDVerificationKeyType::Authentication,
+	};
+	let did_operation_signature = alternative_key.sign(&did_operation.encode());
 
-// 		assert_ok!(Did::verify_did_operation_signature::<TestDIDOperation<AccountId>>(
-// 			&test_did_op,
-// 			DIDSignature::from(did_op_signature.clone())
-// 		));
-// 	});
-// }
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
 
-// #[test]
-// fn check_verify_invalid_did_operation_signature() {
-// 	// Create and store a valid DID to use for verifying signatures for the
-// 	// different operations.
-// 	let pair = ed25519::Pair::from_seed(&*b"Alice                           ");
-// 	let account = MultiSigner::from(pair.public()).into_account();
-// 	let did_identifier = AccountId::from([0u8; 32]);
-// 	let did_auth_keypair_seed = [1u8; 32];
-// 	let did_enc_keypair_public_bytes = [2u8; 32];
-// 	let did_attestation_seed = [3u8; 32];
-// 	let did_delegation_seed = [4u8; 32];
-// 	let did_auth_keypair = ed25519::Pair::from_seed(&did_auth_keypair_seed);
-// 	let did_attestation_keypair = sr25519::Pair::from_seed(&did_attestation_seed);
-// 	let did_delegation_keypair = ed25519::Pair::from_seed(&did_delegation_seed);
-// 	let did_creation_operation = DIDCreationOperation {
-// 		did: did_identifier.clone(),
-// 		new_auth_key: PublicVerificationKey::from(did_auth_keypair.public()),
-// 		new_key_agreement_key: PublicEncryptionKey::X55519(did_enc_keypair_public_bytes),
-// 		new_attestation_key: Some(PublicVerificationKey::from(did_attestation_keypair.public())),
-// 		new_delegation_key: Some(PublicVerificationKey::from(did_delegation_keypair.public())),
-// 		new_endpoint_url: None,
-// 	};
-
-// 	let operation_signature = did_auth_keypair.sign(&did_creation_operation.encode());
-
-// 	// DID not present on chain
-// 	new_test_ext().execute_with(|| {
-// 		let unsaved_did_identifier = AccountId::from([0u8; 32]);
-// 		let test_did_op = TestDIDOperation {
-// 			did: unsaved_did_identifier,
-// 			verification_key_type: DIDVerificationKeyType::Authentication,
-// 		};
-// 		let did_op_signature = did_auth_keypair.sign(&test_did_op.encode());
-
-// 		assert_noop!(
-// 			Did::verify_did_operation_signature::<TestDIDOperation<AccountId>>(
-// 				&test_did_op,
-// 				DIDSignature::from(did_op_signature)
-// 			),
-// 			DIDError::StorageError(StorageError::DIDNotPresent)
-// 		);
-// 	});
-
-// 	// Specified verification key not present in the DID document
-// 	new_test_ext().execute_with(|| {
-// 		let did_creation_operation = DIDCreationOperation {
-// 			did: did_identifier.clone(),
-// 			new_auth_key: PublicVerificationKey::from(did_auth_keypair.public()),
-// 			new_key_agreement_key: PublicEncryptionKey::X55519(did_enc_keypair_public_bytes),
-// 			new_attestation_key: Some(PublicVerificationKey::from(did_attestation_keypair.public())),
-// 			new_delegation_key: None, // No delegation key specified
-// 			new_endpoint_url: None,
-// 		};
-// 		let operation_signature = did_auth_keypair.sign(&did_creation_operation.encode());
-// 		let account = account.clone();
-
-// 		assert_ok!(Did::submit_did_create_operation(
-// 			Origin::signed(account),
-// 			did_creation_operation.clone(),
-// 			DIDSignature::from(operation_signature)
-// 		));
-
-// 		let test_verification_key_required = DIDVerificationKeyType::CapabilityDelegation;
-// 		let test_did_op = TestDIDOperation {
-// 			did: did_identifier.clone(),
-// 			verification_key_type: test_verification_key_required.clone(),
-// 		};
-// 		let did_op_signature = did_delegation_keypair.sign(&test_did_op.encode());
-
-// 		assert_noop!(
-// 			Did::verify_did_operation_signature::<TestDIDOperation<AccountId>>(
-// 				&test_did_op,
-// 				DIDSignature::from(did_op_signature)
-// 			),
-// 			DIDError::StorageError(StorageError::VerificationkeyNotPresent(
-// 				test_verification_key_required.clone()
-// 			))
-// 		);
-// 	});
-
-// 	// Invalid signature format
-// 	new_test_ext().execute_with(|| {
-// 		let account = account.clone();
-// 		assert_ok!(Did::submit_did_create_operation(
-// 			Origin::signed(account),
-// 			did_creation_operation.clone(),
-// 			DIDSignature::from(operation_signature.clone())
-// 		));
-
-// 		let test_did_op = TestDIDOperation {
-// 			did: did_identifier.clone(),
-// 			verification_key_type: DIDVerificationKeyType::CapabilityDelegation,
-// 		};
-
-// 		// Expected an Ed25519 signature, but Sr25519 provided.
-// 		let wrong_signing_keypair = sr25519::Pair::from_seed(&did_auth_keypair_seed);
-// 		let wrong_operation_signature = wrong_signing_keypair.sign(&did_creation_operation.encode());
-
-// 		assert_noop!(
-// 			Did::verify_did_operation_signature::<TestDIDOperation<AccountId>>(
-// 				&test_did_op,
-// 				DIDSignature::from(wrong_operation_signature)
-// 			),
-// 			DIDError::SignatureError(SignatureError::InvalidSignatureFormat)
-// 		);
-// 	});
-
-// 	// Invalid signature
-// 	new_test_ext().execute_with(|| {
-// 		let account = account.clone();
-// 		assert_ok!(Did::submit_did_create_operation(
-// 			Origin::signed(account),
-// 			did_creation_operation.clone(),
-// 			DIDSignature::from(operation_signature.clone()),
-// 		));
-
-// 		let test_did_op = TestDIDOperation {
-// 			did: did_identifier.clone(),
-// 			verification_key_type: DIDVerificationKeyType::CapabilityDelegation,
-// 		};
-
-// 		// Same type of signature but different keypair
-// 		let wrong_keypair = [255u8; 32];
-// 		let wrong_signing_keypair = ed25519::Pair::from_seed(&wrong_keypair);
-// 		let wrong_operation_signature = wrong_signing_keypair.sign(&did_creation_operation.encode());
-
-// 		assert_noop!(
-// 			Did::verify_did_operation_signature::<TestDIDOperation<AccountId>>(
-// 				&test_did_op,
-// 				DIDSignature::from(wrong_operation_signature)
-// 			),
-// 			DIDError::SignatureError(SignatureError::InvalidSignature)
-// 		);
-// 	});
-// }
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::verify_did_operation_signature::<TestDIDOperation>(
+				&did_operation,
+				did::DIDSignature::from(did_operation_signature)
+			),
+			did::DIDError::SignatureError(did::SignatureError::InvalidSignature)
+		);
+	});
+}
