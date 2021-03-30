@@ -198,8 +198,7 @@ pub enum SignatureError {
 }
 
 /// A trait describing an operation that requires DID authentication.
-pub trait DIDOperation<DIDIdentifier>: Encode
-{
+pub trait DIDOperation<DIDIdentifier>: Encode {
 	/// Returns the type of the verification key to be used to validate the
 	/// operation.
 	fn get_verification_key_type(&self) -> DIDVerificationKeyType;
@@ -336,12 +335,12 @@ pub mod pallet {
 	}
 
 	impl<T> From<DIDError> for Error<T> {
-    	fn from(error: DIDError) -> Self {
-        	match error {
+		fn from(error: DIDError) -> Self {
+			match error {
 				DIDError::SignatureError(signature_error) => Self::from(signature_error),
-				DIDError::StorageError(storage_error) => Self::from(storage_error)
+				DIDError::StorageError(storage_error) => Self::from(storage_error),
 			}
-    	}
+		}
 	}
 
 	impl<T> From<SignatureError> for Error<T> {
@@ -407,7 +406,6 @@ pub mod pallet {
 				.verify_signature(&did_creation_operation.encode(), &signature)
 				.map_err(<Error<T>>::from)?;
 
-
 			// Verify the validity of the signature, or generate an InvalidSignature error
 			// otherwise.
 			ensure!(is_signature_valid, <Error<T>>::InvalidSignature);
@@ -433,8 +431,8 @@ impl<T: Config> Pallet<T> {
 		signature: &DIDSignature,
 	) -> Result<(), DIDError> {
 		// Try to retrieve from the storage the details of the given DID. If there is no DID stored, generate a DIDNotPresent error.
-		let did_entry: DIDDetails = <Did<T>>::get(op.get_did()).ok_or(DIDError::StorageError(StorageError::DIDNotPresent))?;
-
+		let did_entry: DIDDetails =
+			<Did<T>>::get(op.get_did()).ok_or(DIDError::StorageError(StorageError::DIDNotPresent))?;
 
 		// Retrieves the needed verification key from the DID details, or generate a
 		// VerificationkeyNotPresent error if there is no key of the type required.

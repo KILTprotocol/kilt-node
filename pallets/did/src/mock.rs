@@ -19,16 +19,13 @@
 use crate as did;
 use crate::*;
 
-use frame_support::{
-	parameter_types,
-	weights::constants::RocksDbWeight,
-};
+use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use kilt_primitives::{AccountId, Signature};
-use sp_core::{H256, Pair};
 use sp_core::{ed25519, sr25519};
+use sp_core::{Pair, H256};
 use sp_runtime::{
 	testing::Header,
-	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify}
+	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 };
 
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -102,86 +99,125 @@ const ALTERNATIVE_DEL_SEED: [u8; 32] = [60u8; 32];
 
 #[allow(dead_code)]
 pub fn get_ed25519_authentication_key(default: bool) -> ed25519::Pair {
-    if default { ed25519::Pair::from_seed(&DEFAULT_AUTH_SEED) } else { ed25519::Pair::from_seed(&ALTERNATIVE_AUTH_SEED) }
+	if default {
+		ed25519::Pair::from_seed(&DEFAULT_AUTH_SEED)
+	} else {
+		ed25519::Pair::from_seed(&ALTERNATIVE_AUTH_SEED)
+	}
 }
 
 #[allow(dead_code)]
 pub fn get_sr25519_authentication_key(default: bool) -> sr25519::Pair {
-    if default { sr25519::Pair::from_seed(&DEFAULT_AUTH_SEED) } else { sr25519::Pair::from_seed(&ALTERNATIVE_AUTH_SEED) }
+	if default {
+		sr25519::Pair::from_seed(&DEFAULT_AUTH_SEED)
+	} else {
+		sr25519::Pair::from_seed(&ALTERNATIVE_AUTH_SEED)
+	}
 }
 
 #[allow(dead_code)]
 pub fn get_x25519_encryption_key() -> PublicEncryptionKey {
-    PublicEncryptionKey::X55519(DEFAULT_ENC_SEED)
+	PublicEncryptionKey::X55519(DEFAULT_ENC_SEED)
 }
 
 #[allow(dead_code)]
 pub fn get_ed25519_attestation_key(default: bool) -> ed25519::Pair {
-    if default { ed25519::Pair::from_seed(&DEFAULT_ATT_SEED) } else { ed25519::Pair::from_seed(&ALTERNATIVE_ATT_SEED) }
+	if default {
+		ed25519::Pair::from_seed(&DEFAULT_ATT_SEED)
+	} else {
+		ed25519::Pair::from_seed(&ALTERNATIVE_ATT_SEED)
+	}
 }
 
 #[allow(dead_code)]
 pub fn get_sr25519_attestation_key(default: bool) -> sr25519::Pair {
-    if default { sr25519::Pair::from_seed(&DEFAULT_ATT_SEED) } else { sr25519::Pair::from_seed(&ALTERNATIVE_ATT_SEED) }
+	if default {
+		sr25519::Pair::from_seed(&DEFAULT_ATT_SEED)
+	} else {
+		sr25519::Pair::from_seed(&ALTERNATIVE_ATT_SEED)
+	}
 }
 
 #[allow(dead_code)]
 pub fn get_ed25519_delegation_key(default: bool) -> ed25519::Pair {
-    if default { ed25519::Pair::from_seed(&DEFAULT_DEL_SEED) } else { ed25519::Pair::from_seed(&ALTERNATIVE_DEL_SEED) }
+	if default {
+		ed25519::Pair::from_seed(&DEFAULT_DEL_SEED)
+	} else {
+		ed25519::Pair::from_seed(&ALTERNATIVE_DEL_SEED)
+	}
 }
 
 #[allow(dead_code)]
 pub fn get_sr25519_delegation_key(default: bool) -> sr25519::Pair {
-    if default { sr25519::Pair::from_seed(&DEFAULT_DEL_SEED) } else { sr25519::Pair::from_seed(&ALTERNATIVE_DEL_SEED) }
+	if default {
+		sr25519::Pair::from_seed(&DEFAULT_DEL_SEED)
+	} else {
+		sr25519::Pair::from_seed(&ALTERNATIVE_DEL_SEED)
+	}
 }
 
 #[allow(dead_code)]
-pub fn generate_simple_did_creation_operation(did: TestDidIdentifier, auth_key: did::PublicVerificationKey, enc_key: did::PublicEncryptionKey) -> did::DIDCreationOperation<TestDidIdentifier> {
-    DIDCreationOperation {
-        did: did,
-        new_auth_key: auth_key,
-        new_key_agreement_key: enc_key,
-        new_attestation_key: None,
-        new_delegation_key: None,
-        new_endpoint_url: None,
-    }
+pub fn generate_simple_did_creation_operation(
+	did: TestDidIdentifier,
+	auth_key: did::PublicVerificationKey,
+	enc_key: did::PublicEncryptionKey,
+) -> did::DIDCreationOperation<TestDidIdentifier> {
+	DIDCreationOperation {
+		did: did,
+		new_auth_key: auth_key,
+		new_key_agreement_key: enc_key,
+		new_attestation_key: None,
+		new_delegation_key: None,
+		new_endpoint_url: None,
+	}
 }
 
 #[allow(dead_code)]
-pub fn generate_complete_did_creation_operation(did: TestDidIdentifier, auth_key: did::PublicVerificationKey, enc_key: did::PublicEncryptionKey, att_key: Option<did::PublicVerificationKey>, del_key: Option<did::PublicVerificationKey>,
-url: Option<did::UrlEncoding>) -> did::DIDCreationOperation<TestDidIdentifier> {
-    DIDCreationOperation {
-        did: did,
-        new_auth_key: auth_key,
-        new_key_agreement_key: enc_key,
-        new_attestation_key: att_key,
-        new_delegation_key: del_key,
-        new_endpoint_url: url,
-    }
+pub fn generate_complete_did_creation_operation(
+	did: TestDidIdentifier,
+	auth_key: did::PublicVerificationKey,
+	enc_key: did::PublicEncryptionKey,
+	att_key: Option<did::PublicVerificationKey>,
+	del_key: Option<did::PublicVerificationKey>,
+	url: Option<did::UrlEncoding>,
+) -> did::DIDCreationOperation<TestDidIdentifier> {
+	DIDCreationOperation {
+		did: did,
+		new_auth_key: auth_key,
+		new_key_agreement_key: enc_key,
+		new_attestation_key: att_key,
+		new_delegation_key: del_key,
+		new_endpoint_url: url,
+	}
 }
 
 pub fn generate_mock_did_details() -> did::DIDDetails {
-    did::DIDDetails {
-        auth_key: did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public()),
-        key_agreement_key: get_x25519_encryption_key(),
-        attestation_key: None,
-        delegation_key: None,
-        endpoint_url: None,
-        last_tx_counter: 0,
-        verification_keys: BTreeSet::new(),
-    }
+	did::DIDDetails {
+		auth_key: did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public()),
+		key_agreement_key: get_x25519_encryption_key(),
+		attestation_key: None,
+		delegation_key: None,
+		endpoint_url: None,
+		last_tx_counter: 0,
+		verification_keys: BTreeSet::new(),
+	}
 }
 
-pub fn generate_mock_did_details_with_keys(auth_key: did::PublicVerificationKey, enc_key: did::PublicEncryptionKey, att_key: Option<did::PublicVerificationKey>, del_key: Option<did::PublicVerificationKey>) -> did::DIDDetails {
-    did::DIDDetails {
-        auth_key: auth_key,
-        key_agreement_key: enc_key,
-        attestation_key: att_key,
-        delegation_key: del_key,
-        endpoint_url: None,
-        last_tx_counter: 0,
-        verification_keys: BTreeSet::new(),
-    }
+pub fn generate_mock_did_details_with_keys(
+	auth_key: did::PublicVerificationKey,
+	enc_key: did::PublicEncryptionKey,
+	att_key: Option<did::PublicVerificationKey>,
+	del_key: Option<did::PublicVerificationKey>,
+) -> did::DIDDetails {
+	did::DIDDetails {
+		auth_key: auth_key,
+		key_agreement_key: enc_key,
+		attestation_key: att_key,
+		delegation_key: del_key,
+		endpoint_url: None,
+		last_tx_counter: 0,
+		verification_keys: BTreeSet::new(),
+	}
 }
 
 // A test DID operation which can be crated to require any DID verification key type.
@@ -197,42 +233,40 @@ impl DIDOperation<TestDidIdentifier> for TestDIDOperation {
 	}
 
 	fn get_did(&self) -> &TestDidIdentifier {
-        &self.did
-    }
+		&self.did
+	}
 }
 
 pub struct ExtBuilder {
-    dids_stored: Vec<(<Test as did::Config>::DIDIdentifier, did::DIDDetails)>,
+	dids_stored: Vec<(<Test as did::Config>::DIDIdentifier, did::DIDDetails)>,
 }
 
 impl Default for ExtBuilder {
-    fn default() -> Self {
-        Self {
-            dids_stored: vec![],
-        }
-    }
+	fn default() -> Self {
+		Self { dids_stored: vec![] }
+	}
 }
 
 impl ExtBuilder {
-    #[allow(dead_code)]
-    pub fn with_dids(mut self, dids: Vec<(<Test as did::Config>::DIDIdentifier, did::DIDDetails)>) -> Self {
-        self.dids_stored = dids;
-        self
-    }
+	#[allow(dead_code)]
+	pub fn with_dids(mut self, dids: Vec<(<Test as did::Config>::DIDIdentifier, did::DIDDetails)>) -> Self {
+		self.dids_stored = dids;
+		self
+	}
 
-    #[allow(dead_code)]
-    pub fn build(self) -> sp_io::TestExternalities {
-        let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
-        let mut ext = sp_io::TestExternalities::new(storage);
+	#[allow(dead_code)]
+	pub fn build(self) -> sp_io::TestExternalities {
+		let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+		let mut ext = sp_io::TestExternalities::new(storage);
 
-        if self.dids_stored.len() > 0 {
-            ext.execute_with(|| {
-                self.dids_stored.iter().for_each(|did| {
-                    did::Did::<Test>::insert(did.0.clone(), did.1.clone());
-                })
-            });
-        }
+		if self.dids_stored.len() > 0 {
+			ext.execute_with(|| {
+				self.dids_stored.iter().for_each(|did| {
+					did::Did::<Test>::insert(did.0.clone(), did.1.clone());
+				})
+			});
+		}
 
-        ext
-    }
+		ext
+	}
 }
