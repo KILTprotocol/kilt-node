@@ -74,7 +74,7 @@ pub enum DIDEncryptionKeyType {
 }
 
 /// Enum representing the types of verification keys a DID can control.
-#[derive(Clone, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
 pub enum PublicVerificationKey {
 	/// An Ed25519 public key.
 	Ed25519(ed25519::Public),
@@ -154,7 +154,7 @@ impl From<sr25519::Signature> for DIDSignature {
 }
 
 /// Enum representing the types of encryption keys a DID can control.
-#[derive(Clone, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
 pub enum PublicEncryptionKey {
 	/// An X25519 public key.
 	X55519([u8; 32]),
@@ -183,7 +183,7 @@ pub enum StorageError {
 	DIDNotPresent,
 	/// The given DID does not contain the right key to verify the signature of
 	/// a DID operation.
-	VerificationkeyNotPresent(DIDVerificationKeyType),
+	DIDKeyNotPresent(DIDVerificationKeyType),
 }
 
 // Used internally to handle signature errors.
@@ -331,7 +331,36 @@ pub mod pallet {
 		InvalidSignatureFormat,
 		InvalidSignature,
 		DIDAlreadyPresent,
+		DIDNotPresent,
 		VerificationKeyNotPresent,
+	}
+
+	impl<T> From<DIDError> for Error<T> {
+    	fn from(error: DIDError) -> Self {
+        	match error {
+				DIDError::SignatureError(signature_error) => Self::from(signature_error),
+				DIDError::StorageError(storage_error) => Self::from(storage_error)
+			}
+    	}
+	}
+
+	impl<T> From<SignatureError> for Error<T> {
+		fn from(error: SignatureError) -> Self {
+			match error {
+				SignatureError::InvalidSignature => Self::InvalidSignature,
+				SignatureError::InvalidSignatureFormat => Self::InvalidSignatureFormat,
+			}
+		}
+	}
+
+	impl<T> From<StorageError> for Error<T> {
+		fn from(error: StorageError) -> Self {
+			match error {
+				StorageError::DIDNotPresent => Self::DIDNotPresent,
+				StorageError::DIDAlreadyPresent => Self::DIDAlreadyPresent,
+				StorageError::DIDKeyNotPresent(_) => Self::VerificationKeyNotPresent,
+			}
+		}
 	}
 
 	#[pallet::call]
@@ -376,7 +405,8 @@ pub mod pallet {
 			// generate a InvalidSignatureFormat error otherwise.
 			let is_signature_valid = signature_verification_key
 				.verify_signature(&did_creation_operation.encode(), &signature)
-				.map_err(|_| <Error<T>>::InvalidSignatureFormat)?;
+				.map_err(<Error<T>>::from)?;
+
 
 			// Verify the validity of the signature, or generate an InvalidSignature error
 			// otherwise.
@@ -400,25 +430,17 @@ impl<T: Config> Pallet<T> {
 	/// * signature: a reference to the signature
 	pub fn verify_did_operation_signature<O: DIDOperation<T::DIDIdentifier>>(
 		op: &O,
-		signature: DIDSignature,
+		signature: &DIDSignature,
 	) -> Result<(), DIDError> {
-		// Switch to a slice
-		// Try to retrieve from the storage the details of the given DID.
-		let did_entry: Option<DIDDetails> = <Did<T>>::get(op.get_did());
+		// Try to retrieve from the storage the details of the given DID. If there is no DID stored, generate a DIDNotPresent error.
+		let did_entry: DIDDetails = <Did<T>>::get(op.get_did()).ok_or(DIDError::StorageError(StorageError::DIDNotPresent))?;
 
-		// If there is no DID stored, generate a DIDNotPresent error.
-		ensure!(did_entry.is_some(), DIDError::StorageError(StorageError::DIDNotPresent));
-
-		// Force unwrap the DID details, as we are sure it is not None.
-		let did_entry = did_entry.unwrap();
 
 		// Retrieves the needed verification key from the DID details, or generate a
 		// VerificationkeyNotPresent error if there is no key of the type required.
 		let verification_key = did_entry
 			.get_verification_key_for_key_type(op.get_verification_key_type())
-			.ok_or_else(|| {
-				DIDError::StorageError(StorageError::VerificationkeyNotPresent(op.get_verification_key_type()))
-			})?;
+			.ok_or_else(|| DIDError::StorageError(StorageError::DIDKeyNotPresent(op.get_verification_key_type())))?;
 
 		// Verifies that the signature matches the expected format, otherwise generate
 		// an InvalidSignatureFormat error.
