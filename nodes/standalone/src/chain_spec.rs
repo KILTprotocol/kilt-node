@@ -25,7 +25,7 @@ use hex_literal::hex;
 
 use sc_service::{self, ChainType, Properties};
 use sp_consensus_aura::ed25519::AuthorityId as AuraId;
-use sp_core::{crypto::UncheckedInto, ed25519, Pair, Public};
+use sp_core::{crypto::UncheckedInto, ed25519, sr25519, Pair, Public};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::IdentifyAccount;
 
@@ -108,10 +108,12 @@ impl Alternative {
 						testnet_genesis(
 							wasm_binary,
 							vec![get_authority_keys_from_secret("//Alice")],
-							get_account_id_from_secret::<ed25519::Public>("//Alice"),
+							get_account_id_from_secret::<sr25519::Public>("//Alice"),
 							vec![
 								// Dev Faucet account
 								get_account_id_from_secret::<ed25519::Public>("receive clutch item involve chaos clutch furnace arrest claw isolate okay together"),
+								get_account_id_from_secret::<sr25519::Public>("//Alice"),
+								get_account_id_from_secret::<sr25519::Public>("//Bob"),
 								get_account_id_from_secret::<ed25519::Public>("//Bob"),
 								get_account_id_from_secret::<ed25519::Public>("//Alice"),
 							],

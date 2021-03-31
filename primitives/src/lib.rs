@@ -20,11 +20,18 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use codec::{Decode, Encode};
+use core::convert::TryFrom;
+
 use sp_runtime::{
 	generic,
 	traits::{BlakeTwo256, IdentifyAccount, Verify},
-	MultiSignature,
+	MultiSignature, RuntimeDebug,
 };
+use sp_std::vec::Vec;
+
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 
 pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
 
@@ -59,6 +66,7 @@ pub type ChainId = u32;
 
 /// Balance of an account.
 pub type Balance = u128;
+pub type Amount = i128;
 
 /// Index of a transaction in the chain.
 pub type Index = u64;
@@ -68,3 +76,23 @@ pub type Hash = sp_core::H256;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem<Hash>;
+
+#[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+pub enum CurrencyId {
+	Dot = 0_isize,
+	Ksm,
+	Kilt,
+}
+
+impl TryFrom<Vec<u8>> for CurrencyId {
+	type Error = ();
+	fn try_from(v: Vec<u8>) -> Result<CurrencyId, ()> {
+		match v.as_slice() {
+			b"KILT" => Ok(CurrencyId::Kilt),
+			b"DOT" => Ok(CurrencyId::Dot),
+			b"KSM" => Ok(CurrencyId::Ksm),
+			_ => Err(()),
+		}
+	}
+}
