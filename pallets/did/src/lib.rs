@@ -184,7 +184,7 @@ pub enum StorageError {
 	DidNotPresent,
 	/// The given DID does not contain the right key to verify the signature of
 	/// a DID operation.
-	DIDKeyNotPresent(DIDVerificationKeyType),
+	DidKeyNotPresent(DidVerificationKeyType),
 	/// The given verification key is not stored in the set of verification keys.
 	VerificationKeyNotPresent(PublicVerificationKey),
 }
@@ -260,11 +260,11 @@ where
 /// * The optional new endpoint URL pointing to the DID service endpoints
 /// * A counter used to protect against replay attacks
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
-pub struct DIDUpdateOperation<DIDIdentifier>
+pub struct DidUpdateOperation<DidIdentifier>
 where
-	DIDIdentifier: Parameter + Encode + Decode + Debug,
+DidIdentifier: Parameter + Encode + Decode + Debug,
 {
-	did: DIDIdentifier,
+	did: DidIdentifier,
 	new_auth_key: Option<PublicVerificationKey>,
 	new_key_agreement_key: Option<PublicEncryptionKey>,
 	new_attestation_key: Option<PublicVerificationKey>,
@@ -274,15 +274,15 @@ where
 	tx_counter: u64,
 }
 
-impl<DIDIdentifier> DIDOperation<DIDIdentifier> for DIDUpdateOperation<DIDIdentifier>
+impl<DidIdentifier> DidOperation<DidIdentifier> for DidUpdateOperation<DidIdentifier>
 where
-	DIDIdentifier: Parameter + Encode + Decode + Debug,
+	DidIdentifier: Parameter + Encode + Decode + Debug,
 {
-	fn get_verification_key_type(&self) -> DIDVerificationKeyType {
-		DIDVerificationKeyType::Authentication
+	fn get_verification_key_type(&self) -> DidVerificationKeyType {
+		DidVerificationKeyType::Authentication
 	}
 
-	fn get_did(&self) -> &DIDIdentifier {
+	fn get_did(&self) -> &DidIdentifier {
 		&self.did
 	}
 }
@@ -343,20 +343,20 @@ impl DidDetails {
 	/// To note that this method does not perform any checks regarding the validity of the DIDUpdateOperation signature.
 	/// The parameters are:
 	/// * update_operation: The update operation to evaluate against the DID entry
-	fn apply_changes_from_update_operation<DIDIdentifier>(
+	fn apply_changes_from_update_operation<DidIdentifier>(
 		&mut self,
-		update_operation: DIDUpdateOperation<DIDIdentifier>,
-	) -> Result<(), DIDError>
+		update_operation: DidUpdateOperation<DidIdentifier>,
+	) -> Result<(), DidError>
 	where
-		DIDIdentifier: Parameter + Encode + Decode + Debug,
+		DidIdentifier: Parameter + Encode + Decode + Debug,
 	{
 		if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove.as_ref() {
-			// Checks that all the keys to remove are present on the chain, otherwise generates a DIDError (of type StorageError).
+			// Checks that all the keys to remove are present on the chain, otherwise generates a DidError (of type StorageError).
 			verification_keys_to_remove.iter().try_for_each(|key_to_remove| {
 				self.verification_keys
 					.contains(key_to_remove)
 					.then(|| ())
-					.ok_or_else(|| DIDError::StorageError(StorageError::VerificationKeyNotPresent(*key_to_remove)))
+					.ok_or_else(|| DidError::StorageError(StorageError::VerificationKeyNotPresent(*key_to_remove)))
 			})?;
 		};
 
@@ -419,57 +419,18 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		DidCreated(<T as frame_system::Config>::AccountId, T::DIDIdentifier),
-		DidUpdated(<T as frame_system::Config>::AccountId, T::DIDIdentifier),
+		DidCreated(T::AccountId, T::DidIdentifier),
+		DidUpdated(T::AccountId, T::DidIdentifier),
 	}
 
 	#[pallet::error]
 	pub enum Error<T> {
 		InvalidSignatureFormat,
 		InvalidSignature,
-		DIDAlreadyPresent,
-		DIDNotPresent,
+		DidAlreadyPresent,
+		DidNotPresent,
 		VerificationKeyNotPresent,
 		InvalidNonce,
-	}
-
-	impl<T> From<DIDError> for Error<T> {
-		fn from(error: DIDError) -> Self {
-			match error {
-				DIDError::SignatureError(signature_error) => Self::from(signature_error),
-				DIDError::StorageError(storage_error) => Self::from(storage_error),
-				DIDError::OperationError(operation_error) => Self::from(operation_error),
-			}
-		}
-	}
-
-	impl<T> From<SignatureError> for Error<T> {
-		fn from(error: SignatureError) -> Self {
-			match error {
-				SignatureError::InvalidSignature => Self::InvalidSignature,
-				SignatureError::InvalidSignatureFormat => Self::InvalidSignatureFormat,
-			}
-		}
-	}
-
-	impl<T> From<StorageError> for Error<T> {
-		fn from(error: StorageError) -> Self {
-			match error {
-				StorageError::DIDNotPresent => Self::DIDNotPresent,
-				StorageError::DIDAlreadyPresent => Self::DIDAlreadyPresent,
-				StorageError::DIDKeyNotPresent(_) | StorageError::VerificationKeyNotPresent(_) => {
-					Self::VerificationKeyNotPresent
-				}
-			}
-		}
-	}
-
-	impl<T> From<OperationError> for Error<T> {
-		fn from(error: OperationError) -> Self {
-			match error {
-				OperationError::InvalidNonce => Self::InvalidNonce,
-			}
-		}
 	}
 
 	impl<T> From<DidError> for Error<T> {
@@ -477,6 +438,7 @@ pub mod pallet {
 			match error {
 				DidError::SignatureError(signature_error) => Self::from(signature_error),
 				DidError::StorageError(storage_error) => Self::from(storage_error),
+				DidError::OperationError(operation_error) => Self::from(operation_error),
 			}
 		}
 	}
@@ -495,7 +457,17 @@ pub mod pallet {
 			match error {
 				StorageError::DidNotPresent => Self::DidNotPresent,
 				StorageError::DidAlreadyPresent => Self::DidAlreadyPresent,
-				StorageError::DidKeyNotPresent(_) => Self::VerificationKeyNotPresent,
+				StorageError::DidKeyNotPresent(_) | StorageError::VerificationKeyNotPresent(_) => {
+					Self::VerificationKeyNotPresent
+				}
+			}
+		}
+	}
+
+	impl<T> From<OperationError> for Error<T> {
+		fn from(error: OperationError) -> Self {
+			match error {
+				OperationError::InvalidNonce => Self::InvalidNonce,
 			}
 		}
 	}
@@ -531,7 +503,7 @@ pub mod pallet {
 
 			// Retrieve the authentication key of the new DID, otherwise generate a
 			// VerificationKeyNotPresent error if it is not specified (should never happen
-			// as the DIDCreateOperation requires the authentication key to be present).
+			// as the DidCreateOperation requires the authentication key to be present).
 			let signature_verification_key = did_entry
 				.get_verification_key_for_key_type(DidVerificationKeyType::Authentication)
 				.ok_or(<Error<T>>::VerificationKeyNotPresent)?;
@@ -560,7 +532,7 @@ pub mod pallet {
 		/// * origin: the Substrate account submitting the transaction (which
 		///   can be different from the DID subject)
 		/// * did_update_operation: a
-		///   DIDUpdateOperation which contains the
+		///   DidUpdateOperation which contains the
 		///   new details of the given DID
 		/// * signature: a signature over
 		///   the operation that must be signed
@@ -569,15 +541,15 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::submit_did_create_operation())]
 		pub fn submit_did_update_operation(
 			origin: OriginFor<T>,
-			did_update_operation: DIDUpdateOperation<T::DIDIdentifier>,
-			signature: DIDSignature,
+			did_update_operation: DidUpdateOperation<T::DidIdentifier>,
+			signature: DidSignature,
 		) -> DispatchResultWithPostInfo {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 
-			// If specified DID does not exist, generate a DIDNotPresent error.
-			let mut did_details: DIDDetails =
-				<Did<T>>::get(did_update_operation.get_did()).ok_or(<Error<T>>::DIDNotPresent)?;
+			// If specified DID does not exist, generate a DidNotPresent error.
+			let mut did_details: DidDetails =
+				<Did<T>>::get(did_update_operation.get_did()).ok_or(<Error<T>>::DidNotPresent)?;
 
 			// Verify that the counter is at least as large as the currently saved one.
 			let tx_difference = did_update_operation
@@ -592,9 +564,9 @@ pub mod pallet {
 
 			// Retrieve the authentication key of the new DID, otherwise generate a
 			// VerificationKeyNotPresent error if it is not specified (should never happen
-			// as the DIDCreateOperation requires the authentication key to be present).
+			// as the DidCreateOperation requires the authentication key to be present).
 			let signature_verification_key = did_details
-				.get_verification_key_for_key_type(DIDVerificationKeyType::Authentication)
+				.get_verification_key_for_key_type(DidVerificationKeyType::Authentication)
 				.ok_or(<Error<T>>::VerificationKeyNotPresent)?;
 
 			// Re-create a Signature object from the authentication key retrieved, or
@@ -631,17 +603,17 @@ impl<T: Config> Pallet<T> {
 	/// * signature: a reference to the signature
 	pub fn verify_did_operation_signature<O: DidOperation<T::DidIdentifier>>(
 		op: &O,
-		signature: &DIDSignature,
-	) -> Result<(), DIDError> {
-		// Try to retrieve from the storage the details of the given DID. If there is no DID stored, generate a DIDNotPresent error.
-		let did_entry: DIDDetails =
-			<Did<T>>::get(op.get_did()).ok_or(DIDError::StorageError(StorageError::DIDNotPresent))?;
+		signature: &DidSignature,
+	) -> Result<(), DidError> {
+		// Try to retrieve from the storage the details of the given DID. If there is no DID stored, generate a DidNotPresent error.
+		let did_entry: DidDetails =
+			<Did<T>>::get(op.get_did()).ok_or(DidError::StorageError(StorageError::DidNotPresent))?;
 
 		// Retrieves the needed verification key from the DID details, or generate a
 		// VerificationkeyNotPresent error if there is no key of the type required.
 		let verification_key = did_entry
 			.get_verification_key_for_key_type(op.get_verification_key_type())
-			.ok_or_else(|| DIDError::StorageError(StorageError::DIDKeyNotPresent(op.get_verification_key_type())))?;
+			.ok_or_else(|| DidError::StorageError(StorageError::DidKeyNotPresent(op.get_verification_key_type())))?;
 
 		// Verifies that the signature matches the expected format, otherwise generate
 		// an InvalidSignatureFormat error.
