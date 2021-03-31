@@ -429,11 +429,8 @@ impl delegation::Config for Runtime {
 impl did::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
-	/// Type for the public signing key in DIDs
-	type PublicSigningKey = Hash;
-	/// Type for the public boxing key in DIDs
-	type PublicBoxKey = Hash;
 	type WeightInfo = ();
+	type DidIdentifier = AccountId;
 }
 
 construct_runtime! {
@@ -613,7 +610,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, attestation, Attestation);
 			add_benchmark!(params, batches, ctype, Ctype);
 			add_benchmark!(params, batches, delegation, Delegation);
-			add_benchmark!(params, batches, did, Did);
+			// add_benchmark!(params, batches, did, Did);
 
 			// No benchmarks for these pallets
 			// add_benchmark!(params, batches, cumulus_pallet_parachain_system, ParachainSystem);
