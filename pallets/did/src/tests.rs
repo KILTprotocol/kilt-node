@@ -40,7 +40,7 @@ fn check_successful_simple_ed25519_creation() {
 		assert_ok!(Did::submit_did_create_operation(
 			Origin::signed(DEFAULT_ACCOUNT),
 			did_creation_operation.clone(),
-			did::DIDSignature::from(signature),
+			did::DidSignature::from(signature),
 		));
 	});
 
@@ -74,7 +74,7 @@ fn check_successful_simple_sr25519_creation() {
 		assert_ok!(Did::submit_did_create_operation(
 			Origin::signed(DEFAULT_ACCOUNT),
 			did_creation_operation.clone(),
-			did::DIDSignature::from(signature),
+			did::DidSignature::from(signature),
 		));
 	});
 
@@ -116,7 +116,7 @@ fn check_successful_complete_creation() {
 		assert_ok!(Did::submit_did_create_operation(
 			Origin::signed(DEFAULT_ACCOUNT),
 			did_creation_operation.clone(),
-			did::DIDSignature::from(signature),
+			did::DidSignature::from(signature),
 		));
 	});
 
@@ -152,9 +152,9 @@ fn check_duplicate_did_creation() {
 			Did::submit_did_create_operation(
 				Origin::signed(DEFAULT_ACCOUNT),
 				did_creation_operation.clone(),
-				did::DIDSignature::from(signature),
+				did::DidSignature::from(signature),
 			),
-			did::Error::<Test>::DIDAlreadyPresent
+			did::Error::<Test>::DidAlreadyPresent
 		);
 	});
 }
@@ -177,7 +177,7 @@ fn check_invalid_signature_format_did_creation() {
 			Did::submit_did_create_operation(
 				Origin::signed(DEFAULT_ACCOUNT),
 				did_creation_operation.clone(),
-				did::DIDSignature::from(signature),
+				did::DidSignature::from(signature),
 			),
 			did::Error::<Test>::InvalidSignatureFormat
 		);
@@ -203,7 +203,7 @@ fn check_invalid_signature_did_creation() {
 			Did::submit_did_create_operation(
 				Origin::signed(DEFAULT_ACCOUNT),
 				did_creation_operation.clone(),
-				did::DIDSignature::from(signature),
+				did::DidSignature::from(signature),
 			),
 			did::Error::<Test>::InvalidSignature
 		);
@@ -218,7 +218,7 @@ fn check_authentication_successful_operation_verification() {
 		generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, None);
 	let did_operation = TestDIDOperation {
 		did: ALICE_DID,
-		verification_key_type: did::DIDVerificationKeyType::Authentication,
+		verification_key_type: did::DidVerificationKeyType::Authentication,
 	};
 	let did_operation_signature = auth_key.sign(&did_operation.encode());
 
@@ -227,7 +227,7 @@ fn check_authentication_successful_operation_verification() {
 	ext.execute_with(|| {
 		assert_ok!(Did::verify_did_operation_signature::<TestDIDOperation>(
 			&did_operation,
-			&did::DIDSignature::from(did_operation_signature)
+			&did::DidSignature::from(did_operation_signature)
 		));
 	});
 }
@@ -245,7 +245,7 @@ fn check_attestation_successful_operation_verification() {
 	);
 	let did_operation = TestDIDOperation {
 		did: ALICE_DID,
-		verification_key_type: did::DIDVerificationKeyType::AssertionMethod,
+		verification_key_type: did::DidVerificationKeyType::AssertionMethod,
 	};
 	let did_operation_signature = att_key.sign(&did_operation.encode());
 
@@ -254,7 +254,7 @@ fn check_attestation_successful_operation_verification() {
 	ext.execute_with(|| {
 		assert_ok!(Did::verify_did_operation_signature::<TestDIDOperation>(
 			&did_operation,
-			&did::DIDSignature::from(did_operation_signature)
+			&did::DidSignature::from(did_operation_signature)
 		));
 	});
 }
@@ -272,7 +272,7 @@ fn check_delegation_successful_operation_verification() {
 	);
 	let did_operation = TestDIDOperation {
 		did: ALICE_DID,
-		verification_key_type: did::DIDVerificationKeyType::CapabilityDelegation,
+		verification_key_type: did::DidVerificationKeyType::CapabilityDelegation,
 	};
 	let did_operation_signature = del_key.sign(&did_operation.encode());
 
@@ -281,7 +281,7 @@ fn check_delegation_successful_operation_verification() {
 	ext.execute_with(|| {
 		assert_ok!(Did::verify_did_operation_signature::<TestDIDOperation>(
 			&did_operation,
-			&did::DIDSignature::from(did_operation_signature)
+			&did::DidSignature::from(did_operation_signature)
 		));
 	});
 }
@@ -294,7 +294,7 @@ fn check_did_not_present_operation_verification() {
 		generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, None);
 	let did_operation = TestDIDOperation {
 		did: BOB_DID,
-		verification_key_type: did::DIDVerificationKeyType::Authentication,
+		verification_key_type: did::DidVerificationKeyType::Authentication,
 	};
 	let did_operation_signature = auth_key.sign(&did_operation.encode());
 
@@ -304,9 +304,9 @@ fn check_did_not_present_operation_verification() {
 		assert_noop!(
 			Did::verify_did_operation_signature::<TestDIDOperation>(
 				&did_operation,
-				&did::DIDSignature::from(did_operation_signature)
+				&did::DidSignature::from(did_operation_signature)
 			),
-			did::DIDError::StorageError(did::StorageError::DIDNotPresent)
+			did::DidError::StorageError(did::StorageError::DidNotPresent)
 		);
 	});
 }
@@ -317,7 +317,7 @@ fn check_verification_key_not_present_operation_verification() {
 	let enc_key = get_x25519_encryption_key();
 	let mock_did =
 		generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, None);
-	let verification_key_required = did::DIDVerificationKeyType::CapabilityInvocation;
+	let verification_key_required = did::DidVerificationKeyType::CapabilityInvocation;
 	let did_operation = TestDIDOperation {
 		did: ALICE_DID,
 		verification_key_type: verification_key_required.clone(),
@@ -330,9 +330,9 @@ fn check_verification_key_not_present_operation_verification() {
 		assert_noop!(
 			Did::verify_did_operation_signature::<TestDIDOperation>(
 				&did_operation,
-				&did::DIDSignature::from(did_operation_signature)
+				&did::DidSignature::from(did_operation_signature)
 			),
-			did::DIDError::StorageError(did::StorageError::DIDKeyNotPresent(verification_key_required.clone()))
+			did::DidError::StorageError(did::StorageError::DidKeyNotPresent(verification_key_required.clone()))
 		);
 	});
 }
@@ -347,7 +347,7 @@ fn check_invalid_signature_format_operation_verification() {
 		generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, None);
 	let did_operation = TestDIDOperation {
 		did: ALICE_DID,
-		verification_key_type: did::DIDVerificationKeyType::Authentication,
+		verification_key_type: did::DidVerificationKeyType::Authentication,
 	};
 	let did_operation_signature = invalid_key.sign(&did_operation.encode());
 
@@ -357,9 +357,9 @@ fn check_invalid_signature_format_operation_verification() {
 		assert_noop!(
 			Did::verify_did_operation_signature::<TestDIDOperation>(
 				&did_operation,
-				&did::DIDSignature::from(did_operation_signature)
+				&did::DidSignature::from(did_operation_signature)
 			),
-			did::DIDError::SignatureError(did::SignatureError::InvalidSignatureFormat)
+			did::DidError::SignatureError(did::SignatureError::InvalidSignatureFormat)
 		);
 	});
 }
@@ -374,7 +374,7 @@ fn check_invalid_signature_operation_verification() {
 		generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, None);
 	let did_operation = TestDIDOperation {
 		did: ALICE_DID,
-		verification_key_type: did::DIDVerificationKeyType::Authentication,
+		verification_key_type: did::DidVerificationKeyType::Authentication,
 	};
 	let did_operation_signature = alternative_key.sign(&did_operation.encode());
 
@@ -384,9 +384,9 @@ fn check_invalid_signature_operation_verification() {
 		assert_noop!(
 			Did::verify_did_operation_signature::<TestDIDOperation>(
 				&did_operation,
-				&did::DIDSignature::from(did_operation_signature)
+				&did::DidSignature::from(did_operation_signature)
 			),
-			did::DIDError::SignatureError(did::SignatureError::InvalidSignature)
+			did::DidError::SignatureError(did::SignatureError::InvalidSignature)
 		);
 	});
 }

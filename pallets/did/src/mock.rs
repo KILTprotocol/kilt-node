@@ -149,8 +149,8 @@ pub fn generate_simple_did_creation_operation(
 	did: TestDidIdentifier,
 	auth_key: did::PublicVerificationKey,
 	enc_key: did::PublicEncryptionKey,
-) -> did::DIDCreationOperation<TestDidIdentifier> {
-	DIDCreationOperation {
+) -> did::DidCreationOperation<TestDidIdentifier> {
+	DidCreationOperation {
 		did: did,
 		new_auth_key: auth_key,
 		new_key_agreement_key: enc_key,
@@ -167,8 +167,8 @@ pub fn generate_complete_did_creation_operation(
 	att_key: Option<did::PublicVerificationKey>,
 	del_key: Option<did::PublicVerificationKey>,
 	url: Option<did::UrlEncoding>,
-) -> did::DIDCreationOperation<TestDidIdentifier> {
-	DIDCreationOperation {
+) -> did::DidCreationOperation<TestDidIdentifier> {
+	DidCreationOperation {
 		did: did,
 		new_auth_key: auth_key,
 		new_key_agreement_key: enc_key,
@@ -178,8 +178,8 @@ pub fn generate_complete_did_creation_operation(
 	}
 }
 
-pub fn generate_mock_did_details() -> did::DIDDetails {
-	did::DIDDetails {
+pub fn generate_mock_did_details() -> did::DidDetails {
+	did::DidDetails {
 		auth_key: did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public()),
 		key_agreement_key: get_x25519_encryption_key(),
 		attestation_key: None,
@@ -195,8 +195,8 @@ pub fn generate_mock_did_details_with_keys(
 	enc_key: did::PublicEncryptionKey,
 	att_key: Option<did::PublicVerificationKey>,
 	del_key: Option<did::PublicVerificationKey>,
-) -> did::DIDDetails {
-	did::DIDDetails {
+) -> did::DidDetails {
+	did::DidDetails {
 		auth_key: auth_key,
 		key_agreement_key: enc_key,
 		attestation_key: att_key,
@@ -212,11 +212,11 @@ pub fn generate_mock_did_details_with_keys(
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
 pub struct TestDIDOperation {
 	pub did: TestDidIdentifier,
-	pub verification_key_type: DIDVerificationKeyType,
+	pub verification_key_type: DidVerificationKeyType,
 }
 
-impl DIDOperation<TestDidIdentifier> for TestDIDOperation {
-	fn get_verification_key_type(&self) -> DIDVerificationKeyType {
+impl DidOperation<TestDidIdentifier> for TestDIDOperation {
+	fn get_verification_key_type(&self) -> DidVerificationKeyType {
 		self.verification_key_type.clone()
 	}
 
@@ -226,7 +226,7 @@ impl DIDOperation<TestDidIdentifier> for TestDIDOperation {
 }
 
 pub struct ExtBuilder {
-	dids_stored: Vec<(<Test as did::Config>::DIDIdentifier, did::DIDDetails)>,
+	dids_stored: Vec<(<Test as did::Config>::DIDIdentifier, did::DidDetails)>,
 }
 
 impl Default for ExtBuilder {
@@ -236,7 +236,7 @@ impl Default for ExtBuilder {
 }
 
 impl ExtBuilder {
-	pub fn with_dids(mut self, dids: Vec<(<Test as did::Config>::DIDIdentifier, did::DIDDetails)>) -> Self {
+	pub fn with_dids(mut self, dids: Vec<(<Test as did::Config>::DIDIdentifier, did::DidDetails)>) -> Self {
 		self.dids_stored = dids;
 		self
 	}
