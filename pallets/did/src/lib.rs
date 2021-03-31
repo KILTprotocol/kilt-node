@@ -39,7 +39,7 @@ use frame_support::{ensure, storage::types::StorageMap, Parameter};
 use frame_system::{self, ensure_signed};
 use sp_core::{ed25519, sr25519};
 use sp_runtime::traits::Verify;
-use sp_std::{collections::btree_set::BTreeSet, fmt::Debug, prelude::Clone, vec::Vec};
+use sp_std::{collections::btree_set::BTreeSet, fmt::Debug, prelude::Clone, vec::Vec, convert::TryFrom};
 
 pub use pallet::*;
 
@@ -337,23 +337,25 @@ impl DidDetails {
 			_ => None,
 		}
 	}
+}
 
-	/// [MUTATING] Update a DID entry by evaluating the information of a DIDUpdateOperation and consuming it.
-	/// The operation fails if the operation instructs to delete a verification key that is not associated with the DID specified.
-	/// To note that this method does not perform any checks regarding the validity of the DIDUpdateOperation signature.
-	/// The parameters are:
-	/// * update_operation: The update operation to evaluate against the DID entry
-	fn apply_changes_from_update_operation<DidIdentifier>(
-		&mut self,
-		update_operation: DidUpdateOperation<DidIdentifier>,
-	) -> Result<(), DidError>
-	where
-		DidIdentifier: Parameter + Encode + Decode + Debug,
-	{
-		if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove.as_ref() {
+/// Generates a new DID entry starting from the current one stored in the storage and by applying the changes in the DIDUpdateOperation.
+/// The operation fails if the update operation instructs to delete a verification key that is not associated with the DID.
+/// !!! To note that this method does not perform any checks regarding the validity of the DIDUpdateOperation signature.
+impl<DidIdentifier> TryFrom<(DidDetails, DidUpdateOperation<DidIdentifier>)> for DidDetails where DidIdentifier: Parameter + Encode + Decode + Debug {
+    type Error = DidError;
+
+    fn try_from(value: (DidDetails, DidUpdateOperation<DidIdentifier>)) -> Result<Self, Self::Error> {
+		let (old_details, update_operation) = value;
+		// Old attestation key is used later in the process, so it's saved here.
+		let old_attestation_key = old_details.attestation_key.clone();
+		// Copy old state into new, and apply changes in operation to new state.
+		let mut new_details = old_details;
+
+        if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove.as_ref() {
 			// Checks that all the keys to remove are present on the chain, otherwise generates a DidError (of type StorageError).
 			verification_keys_to_remove.iter().try_for_each(|key_to_remove| {
-				self.verification_keys
+				new_details.verification_keys
 					.contains(key_to_remove)
 					.then(|| ())
 					.ok_or_else(|| DidError::StorageError(StorageError::VerificationKeyNotPresent(*key_to_remove)))
@@ -361,32 +363,32 @@ impl DidDetails {
 		};
 
 		if let Some(new_auth_key) = update_operation.new_auth_key {
-			self.auth_key = new_auth_key;
+			new_details.auth_key = new_auth_key;
 		}
 		if let Some(new_enc_key) = update_operation.new_key_agreement_key {
-			self.key_agreement_key = new_enc_key;
+			new_details.key_agreement_key = new_enc_key;
 		}
 		if let Some(new_attestation_key) = update_operation.new_attestation_key {
-			if let Some(old_attestation_key) = self.attestation_key {
-				self.verification_keys.insert(old_attestation_key);
+			if let Some(old_attestation_key) = old_attestation_key {
+				new_details.verification_keys.insert(old_attestation_key);
 			}
-			self.attestation_key = Some(new_attestation_key);
+			new_details.attestation_key = Some(new_attestation_key);
 		}
 		if let Some(new_delegation_key) = update_operation.new_delegation_key {
-			self.delegation_key = Some(new_delegation_key);
+			new_details.delegation_key = Some(new_delegation_key);
 		}
 		if let Some(new_endpoint_url) = update_operation.new_endpoint_url {
-			self.endpoint_url = Some(new_endpoint_url);
+			new_details.endpoint_url = Some(new_endpoint_url);
 		}
 		if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove.as_ref() {
 			verification_keys_to_remove.iter().for_each(|key_to_remove| {
-				self.verification_keys.remove(key_to_remove);
+				new_details.verification_keys.remove(key_to_remove);
 			});
 		}
-		self.last_tx_counter = update_operation.tx_counter;
+		new_details.last_tx_counter = update_operation.tx_counter;
 
-		Ok(())
-	}
+		Ok(new_details)
+    }
 }
 
 #[frame_support::pallet]
@@ -548,10 +550,11 @@ pub mod pallet {
 			let sender = ensure_signed(origin)?;
 
 			// If specified DID does not exist, generate a DidNotPresent error.
-			let mut did_details: DidDetails =
+			let did_details: DidDetails =
 				<Did<T>>::get(did_update_operation.get_did()).ok_or(<Error<T>>::DidNotPresent)?;
 
-			// Verify that the counter is at least as large as the currently saved one.
+			// Verify that the counter is at least as large as the currently saved one, as
+			// overflow would occurr (hence result = None) if right (last counter value) > left (operation counter value).
 			let tx_difference = did_update_operation
 				.tx_counter
 				.checked_sub(did_details.last_tx_counter)
@@ -564,7 +567,7 @@ pub mod pallet {
 
 			// Retrieve the authentication key of the new DID, otherwise generate a
 			// VerificationKeyNotPresent error if it is not specified (should never happen
-			// as the DidCreateOperation requires the authentication key to be present).
+			// as the DidCreateOperation requires the authentication key to be present and there is no operation to remove an authentication key).
 			let signature_verification_key = did_details
 				.get_verification_key_for_key_type(DidVerificationKeyType::Authentication)
 				.ok_or(<Error<T>>::VerificationKeyNotPresent)?;
@@ -579,15 +582,13 @@ pub mod pallet {
 			// otherwise.
 			ensure!(is_signature_valid, <Error<T>>::InvalidSignature);
 
-			// Saved here as the apply_changes_from_update_operation() consumes the input.
+			// Saved here as it is consumed later when generating the new DidDetails state.
 			let did_identifier = did_update_operation.get_did().clone();
 
-			did_details
-				.apply_changes_from_update_operation(did_update_operation)
-				.map_err(|_| <Error<T>>::VerificationKeyNotPresent)?;
+			let new_did_details = DidDetails::try_from((did_details, did_update_operation)).map_err(<Error<T>>::from)?;
 
 			log::debug!("Updating DID {:?}", did_identifier);
-			<Did<T>>::insert(did_identifier.clone(), did_details);
+			<Did<T>>::insert(did_identifier.clone(), new_did_details);
 
 			Self::deposit_event(Event::DidUpdated(sender, did_identifier));
 			//TODO: Return the real weight used
