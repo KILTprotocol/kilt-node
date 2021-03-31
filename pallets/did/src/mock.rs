@@ -75,10 +75,10 @@ impl frame_system::Config for Test {
 impl did::Config for Test {
 	type Event = ();
 	type WeightInfo = ();
-	type DIDIdentifier = AccountId;
+	type DidIdentifier = AccountId;
 }
 
-pub type TestDidIdentifier = <Test as did::Config>::DIDIdentifier;
+pub type TestDidIdentifier = <Test as did::Config>::DidIdentifier;
 
 pub const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
 
@@ -226,7 +226,7 @@ impl DidOperation<TestDidIdentifier> for TestDIDOperation {
 }
 
 pub struct ExtBuilder {
-	dids_stored: Vec<(<Test as did::Config>::DIDIdentifier, did::DidDetails)>,
+	dids_stored: Vec<(TestDidIdentifier, did::DidDetails)>,
 }
 
 impl Default for ExtBuilder {
@@ -236,7 +236,7 @@ impl Default for ExtBuilder {
 }
 
 impl ExtBuilder {
-	pub fn with_dids(mut self, dids: Vec<(<Test as did::Config>::DIDIdentifier, did::DidDetails)>) -> Self {
+	pub fn with_dids(mut self, dids: Vec<(TestDidIdentifier, did::DidDetails)>) -> Self {
 		self.dids_stored = dids;
 		self
 	}
