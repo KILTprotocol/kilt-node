@@ -430,7 +430,7 @@ impl did::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
 	type WeightInfo = ();
-	type DIDIdentifier = AccountId;
+	type DidIdentifier = AccountId;
 }
 
 construct_runtime! {
