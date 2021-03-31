@@ -39,7 +39,7 @@ use frame_support::{ensure, storage::types::StorageMap, Parameter};
 use frame_system::{self, ensure_signed};
 use sp_core::{ed25519, sr25519};
 use sp_runtime::traits::Verify;
-use sp_std::{collections::btree_set::BTreeSet, fmt::Debug, prelude::Clone, vec::Vec, convert::TryFrom};
+use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom, fmt::Debug, prelude::Clone, vec::Vec};
 
 pub use pallet::*;
 
@@ -185,7 +185,8 @@ pub enum StorageError {
 	/// The given DID does not contain the right key to verify the signature of
 	/// a DID operation.
 	DidKeyNotPresent(DidVerificationKeyType),
-	/// The given verification key is not stored in the set of verification keys.
+	/// The given verification key is not stored in the set of verification
+	/// keys.
 	VerificationKeyNotPresent(PublicVerificationKey),
 }
 
@@ -262,7 +263,7 @@ where
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
 pub struct DidUpdateOperation<DidIdentifier>
 where
-DidIdentifier: Parameter + Encode + Decode + Debug,
+	DidIdentifier: Parameter + Encode + Decode + Debug,
 {
 	did: DidIdentifier,
 	new_auth_key: Option<PublicVerificationKey>,
@@ -339,23 +340,32 @@ impl DidDetails {
 	}
 }
 
-/// Generates a new DID entry starting from the current one stored in the storage and by applying the changes in the DIDUpdateOperation.
-/// The operation fails with a DidError if the update operation instructs to delete a verification key that is not associated with the DID or if the operation counter is not larger than the one stored on chain.
-/// !!! To note that this method does not perform any checks regarding the validity of the DIDUpdateOperation signature.
-impl<DidIdentifier> TryFrom<(DidDetails, DidUpdateOperation<DidIdentifier>)> for DidDetails where DidIdentifier: Parameter + Encode + Decode + Debug {
-    type Error = DidError;
+/// Generates a new DID entry starting from the current one stored in the
+/// storage and by applying the changes in the DIDUpdateOperation. The operation
+/// fails with a DidError if the update operation instructs to delete a
+/// verification key that is not associated with the DID or if the operation
+/// counter is not larger than the one stored on chain. !!! To note that this
+/// method does not perform any checks regarding the validity of the
+/// DIDUpdateOperation signature.
+impl<DidIdentifier> TryFrom<(DidDetails, DidUpdateOperation<DidIdentifier>)> for DidDetails
+where
+	DidIdentifier: Parameter + Encode + Decode + Debug,
+{
+	type Error = DidError;
 
-    fn try_from(value: (DidDetails, DidUpdateOperation<DidIdentifier>)) -> Result<Self, Self::Error> {
+	fn try_from(value: (DidDetails, DidUpdateOperation<DidIdentifier>)) -> Result<Self, Self::Error> {
 		let (old_details, update_operation) = value;
 		// Old attestation key is used later in the process, so it's saved here.
-		let old_attestation_key = old_details.attestation_key.clone();
+		let old_attestation_key = old_details.attestation_key;
 		// Copy old state into new, and apply changes in operation to new state.
 		let mut new_details = old_details;
 
-        if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove.as_ref() {
-			// Checks that all the keys to remove are present on the chain, otherwise generates a DidError (of type StorageError).
+		if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove.as_ref() {
+			// Checks that all the keys to remove are present on the chain, otherwise
+			// generates a DidError (of type StorageError).
 			verification_keys_to_remove.iter().try_for_each(|key_to_remove| {
-				new_details.verification_keys
+				new_details
+					.verification_keys
 					.contains(key_to_remove)
 					.then(|| ())
 					.ok_or_else(|| DidError::StorageError(StorageError::VerificationKeyNotPresent(*key_to_remove)))
@@ -363,14 +373,19 @@ impl<DidIdentifier> TryFrom<(DidDetails, DidUpdateOperation<DidIdentifier>)> for
 		};
 
 		// Verify that the counter is at least as large as the currently saved one, as
-		// overflow would occurr (hence result = None) if right (last counter value) > left (operation counter value).
+		// overflow would occurr (hence result = None) if right (last counter value) >
+		// left (operation counter value).
 		let tx_difference = update_operation
 			.tx_counter
 			.checked_sub(new_details.last_tx_counter)
 			.ok_or(DidError::OperationError(OperationError::InvalidNonce))?;
 
-		// Verify that the counter is actually at least 1 unit larger than the stored one.
-		ensure!(tx_difference > 0u64, DidError::OperationError(OperationError::InvalidNonce));
+		// Verify that the counter is actually at least 1 unit larger than the stored
+		// one.
+		ensure!(
+			tx_difference > 0u64,
+			DidError::OperationError(OperationError::InvalidNonce)
+		);
 
 		// Updates keys, endpoint and tx counter.
 		if let Some(new_auth_key) = update_operation.new_auth_key {
@@ -399,7 +414,7 @@ impl<DidIdentifier> TryFrom<(DidDetails, DidUpdateOperation<DidIdentifier>)> for
 		new_details.last_tx_counter = update_operation.tx_counter;
 
 		Ok(new_details)
-    }
+	}
 }
 
 #[frame_support::pallet]
@@ -540,17 +555,17 @@ pub mod pallet {
 			Ok(().into())
 		}
 
-		/// Updates the information associated with a DID on chain, after verifying the signature associated
-		/// with the operation. The parameters are:
+		/// Updates the information associated with a DID on chain, after
+		/// verifying the signature associated with the operation. The
+		/// parameters are:
 		/// * origin: the Substrate account submitting the transaction (which
 		///   can be different from the DID subject)
-		/// * did_update_operation: a
-		///   DidUpdateOperation which contains the
-		///   new details of the given DID
-		/// * signature: a signature over
-		///   the operation that must be signed
-		///   with the authentication key associated with the new DID.
-		///	  In case the authentication key is being updated, the key used to verify is the old one that is getting updated.
+		/// * did_update_operation: a DidUpdateOperation which contains the new
+		///   details of the given DID
+		/// * signature: a signature over the operation that must be signed with
+		///   the authentication key associated with the new DID. In case the
+		///   authentication key is being updated, the key used to verify is the
+		///   old one that is getting updated.
 		#[pallet::weight(<T as Config>::WeightInfo::submit_did_create_operation())]
 		pub fn submit_did_update_operation(
 			origin: OriginFor<T>,
@@ -564,14 +579,16 @@ pub mod pallet {
 			let did_identifier = did_update_operation.get_did().clone();
 
 			// If specified DID does not exist, generate a DidNotPresent error.
-			let did_details =
-				<Did<T>>::get(&did_identifier).ok_or(<Error<T>>::DidNotPresent)?;
+			let did_details = <Did<T>>::get(&did_identifier).ok_or(<Error<T>>::DidNotPresent)?;
 
 			// Verify the signature of the update operation.
-			Self::verify_operation_signature_for_entry(&did_update_operation, &signature, &did_details).map_err(<Error<T>>::from)?;
+			Self::verify_operation_signature_for_entry(&did_update_operation, &signature, &did_details)
+				.map_err(<Error<T>>::from)?;
 
-			// Generate a new DidDetails object by applying the changes in the update operation to the old object (and consuming both).
-			let new_did_details = DidDetails::try_from((did_details, did_update_operation)).map_err(<Error<T>>::from)?;
+			// Generate a new DidDetails object by applying the changes in the update
+			// operation to the old object (and consuming both).
+			let new_did_details =
+				DidDetails::try_from((did_details, did_update_operation)).map_err(<Error<T>>::from)?;
 
 			log::debug!("Updating DID {:?}", did_identifier);
 			<Did<T>>::insert(&did_identifier, new_did_details);
@@ -592,7 +609,8 @@ impl<T: Config> Pallet<T> {
 		op: &O,
 		signature: &DidSignature,
 	) -> Result<(), DidError> {
-		// Try to retrieve from the storage the details of the given DID. If there is no DID stored, generate a DidNotPresent error.
+		// Try to retrieve from the storage the details of the given DID. If there is no
+		// DID stored, generate a DidNotPresent error.
 		let did_entry: DidDetails =
 			<Did<T>>::get(op.get_did()).ok_or(DidError::StorageError(StorageError::DidNotPresent))?;
 
@@ -602,17 +620,27 @@ impl<T: Config> Pallet<T> {
 	}
 
 	/// Verify the signature of a generic DidOperation, and
-	/// returns either Ok or a DidError. This function expects a storage entry as parameter and will
-	/// not retrieve from storage itself. The paremeters are:
+	/// returns either Ok or a DidError. This function expects a storage entry
+	/// as parameter and will not retrieve from storage itself. The paremeters
+	/// are:
 	/// * did_operation: the operation which signature is to be verified
 	/// * signature: a reference to the signature
-	/// * did_details: an instance of DidDetails as returned by the pallet storage
-	fn verify_operation_signature_for_entry<O: DidOperation<T::DidIdentifier>>(did_operation: &O, signature: &DidSignature, did_details: &DidDetails) -> Result<(), DidError> {
+	/// * did_details: an instance of DidDetails as returned by the pallet
+	///   storage
+	fn verify_operation_signature_for_entry<O: DidOperation<T::DidIdentifier>>(
+		did_operation: &O,
+		signature: &DidSignature,
+		did_details: &DidDetails,
+	) -> Result<(), DidError> {
 		// Retrieves the needed verification key from the DID details, or generate a
 		// VerificationkeyNotPresent error if there is no key of the type required.
 		let verification_key = did_details
 			.get_verification_key_for_key_type(did_operation.get_verification_key_type())
-			.ok_or_else(|| DidError::StorageError(StorageError::DidKeyNotPresent(did_operation.get_verification_key_type())))?;
+			.ok_or_else(|| {
+				DidError::StorageError(StorageError::DidKeyNotPresent(
+					did_operation.get_verification_key_type(),
+				))
+			})?;
 
 		// Verifies that the signature matches the expected format, otherwise generate
 		// an InvalidSignatureFormat error.
