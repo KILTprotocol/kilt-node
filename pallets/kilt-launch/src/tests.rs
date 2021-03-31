@@ -73,7 +73,7 @@ fn check_build_genesis_config() {
 }
 
 #[test]
-fn check_user_claim_locked() {
+fn check_user_claim_locked_single() {
 	ExtBuilder::default()
 		.init_balance_for_pseudos()
 		.pseudos_lock_all()
@@ -113,7 +113,59 @@ fn check_user_claim_locked() {
 		});
 }
 #[test]
-fn check_user_claim_vested() {
+fn check_user_claim_vested_single() {
+	ExtBuilder::default()
+		.init_balance_for_pseudos()
+		.pseudos_vest_all()
+		.build()
+		.execute_with(|| {
+			let user1_vesting_schedule = VestingInfo {
+				locked: 10_000,
+				per_block: 1000, // Vesting over 10 blocks
+				starting_block: 0,
+			};
+
+			// Migration of vesting info and balance locks
+			ensure_migration_works(&PSEUDO_1, &USER_1, Some(user1_vesting_schedule), None);
+
+			// Balance migration
+			let user1_free_balance = Balances::free_balance(&USER_1);
+			assert_eq!(user1_free_balance, 10_000);
+
+			// Should be able to transfer what's unlocked already
+			// Note: In the test we migrate in the 1st block, thus we assert that the first
+			// `per_block` amount is already available for transfers
+			assert_ok!(Balances::transfer(
+				Origin::signed(USER_1),
+				PSEUDO_2,
+				user1_vesting_schedule.per_block
+			));
+			// Should not be able to transfer more than which is unlocked in first block
+			assert_noop!(
+				Balances::transfer(Origin::signed(USER_1), PSEUDO_2, 1001),
+				pallet_balances::Error::<Test, ()>::LiquidityRestrictions
+			);
+
+			// TODO: Add positive check for staking once it has been added
+
+			// Reach vesting limit
+			System::set_block_number(1000);
+			// TODO: Uncomment once `vest` is public which is the case on master
+			// but not on rococo-v1 as of 2021-03-26
+			// assert_ok!(Vesting::vest(Origin::signed(USER_1)));
+			// assert_eq!(Vesting::vesting(&USER_1), None);
+			// assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
+			// // Should be able to transfer the remaining tokens
+			// assert_ok!(Balances::transfer(
+			// 	Origin::signed(USER_1),
+			// 	BOB,
+			// 	user1_vesting_schedule.locked - user1_vesting_schedule.per_block
+			// ));
+		});
+}
+
+#[test]
+fn check_user_claim_vested_multiple() {
 	ExtBuilder::default()
 		.init_balance_for_pseudos()
 		.pseudos_vest_all()

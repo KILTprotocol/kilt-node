@@ -16,14 +16,22 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-//! # Balance Locks Module
+//! # KILT Launch Pallet
 //!
-//! A simple module providing means of adding balance locks in the genesis block
-//! and automatically removing these afterwards.
+//! A simple pallet providing means of setting up custom KILT balance locks and
+//! vesting schedules for unowned accounts in the genesis block. These should
+//! later be migrated to user-owned accounts via the extrinsic
+//! `accept_user_account_claim`.
 //!
 //! ### Dispatchable Functions
 //!
-//! - `force_unlock` - Remove all locks for a given block, can only be called by
+//! - `accept_user_account_claim` - Migrate vesting or the KILT custom lock from
+//!   an unowned account to a user-owned account. Requires signature of a
+//!   special account `TransferAccount` which does not have any other super
+//!   powers.
+//! - `change_transfer_account` - Change the transfer account. Can only be
+//!   called by sudo.
+//! - `force_unlock` - Remove all locks for a given block. Can only be called by
 //!   sudo.
 
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -41,14 +49,14 @@ use frame_support::{
 pub use pallet::*;
 use pallet_balances::Locks;
 use pallet_vesting::{Vesting, VestingInfo};
-use sp_runtime::traits::Convert;
-
+use sp_runtime::traits::{Convert, Saturating};
 #[cfg(test)]
 mod mock;
 
 #[cfg(test)]
 mod tests;
 
+// TODO: Add benchmarking
 // #[cfg(feature = "runtime-benchmarks")]
 // mod benchmarking;
 
@@ -96,7 +104,7 @@ pub mod pallet {
 	}
 
 	// Balance type based on pallet_vesting
-	type BalanceOf<T> =
+	pub type BalanceOf<T> =
 		<<T as pallet_vesting::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
 	#[pallet::genesis_build]
@@ -124,7 +132,7 @@ pub mod pallet {
 					},
 				);
 				// Instead of setting the lock now, we do so in
-				// `accept_user_account_claim`
+				// `accept_user_account_claim`, see below for explanation
 			}
 
 			// Generate initial vesting configuration, taken from pallet_vesting
@@ -155,7 +163,7 @@ pub mod pallet {
 					},
 				);
 				// Instead of setting the lock now, we do so in
-				// `accept_user_account_claim`
+				// `accept_user_account_claim`, see below for explanation
 			}
 
 			// Set the transfer account which has a subset of the powers of root
@@ -183,8 +191,8 @@ pub mod pallet {
 		Vec<<T as frame_system::Config>::AccountId>,
 	>;
 
-	/// Maps an account to the (block, balance) pair in which the latter can be
-	/// unlocked.
+	/// Maps an account id to the (block, balance) pair in which the latter can
+	/// be unlocked.
 	///
 	/// Required for the claiming process.
 	#[pallet::storage]
@@ -204,6 +212,8 @@ pub mod pallet {
 		Unauthorized,
 		UnexpectedLocks,
 		MissingVestingSchedule,
+		ConflictingLockingBlocks,
+		ConflictingVestingStarts,
 	}
 
 	#[pallet::hooks]
@@ -223,7 +233,7 @@ pub mod pallet {
 			Ok(Some(Self::unlock_balance(block)).into())
 		}
 
-		/// Enable removal of KILT balance locks via sudo
+		/// Enable change of the transfer account via sudo
 		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
 		pub fn change_transfer_account(origin: OriginFor<T>, who: T::AccountId) -> DispatchResultWithPostInfo {
 			let _ = ensure_root(origin)?;
@@ -244,8 +254,10 @@ pub mod pallet {
 		///
 		/// Note: Setting the custom lock actually only occurs in this call (and
 		/// not when building the genesis block) to avoid overhead from handling
-		/// locks when migrating.
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(7, 7))]
+		/// locks when migrating. We can do so because all destination accounts
+		/// are not owned by anyone and thus these cannot sign and/or call any
+		/// extrinsics.
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(9, 7))]
 		#[transactional]
 		pub(super) fn accept_user_account_claim(
 			origin: OriginFor<T>,
@@ -260,54 +272,19 @@ pub mod pallet {
 			// There should be no locks for the source address
 			ensure!(Locks::<T>::get(&source).len().is_zero(), Error::<T>::UnexpectedLocks);
 
-			// Check for vesting and custom locks
-			let vesting_info = Vesting::<T>::take(&source);
-
 			// Transfer to destination addess
 			let amount = <pallet_balances::Pallet<T>>::total_balance(&source);
 			let _ =
 				<pallet_balances::Pallet<T> as Currency<T::AccountId>>::transfer(&source, &dest, amount, AllowDeath)?;
 
-			// Migrate vesting info and set the corresponding vesting lock
-			if let Some(vesting) = vesting_info {
-				Vesting::<T>::insert(&dest, vesting);
-				// Only lock funds from now until vesting expires.
-				// Enables the user to have funds before actively calling `vest` if claimed
-				// after the genesis block.
-				//
-				// Logic was taken from pallet_vesting.
-				let reasons = WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE;
-				let now = <frame_system::Pallet<T>>::block_number();
-				let locked_now = vesting.locked_at::<<T as pallet_vesting::Config>::BlockNumberToBalance>(now);
-				<<T as pallet_vesting::Config>::Currency as LockableCurrency<T::AccountId>>::set_lock(
-					VESTING_ID,
-					&dest,
-					locked_now.into(),
-					reasons,
-				);
-			}
+			// Migrate vesting info and set the corresponding vesting lock if necessary
+			let mut post_weight: Weight = Self::migrate_vesting(&source, &dest)?;
 
-			// Set the KILT custom lock
-			if let Some(LockedBalance::<T> {
-				block: unlock_block,
-				amount: unlock_amount,
-			}) = <BalanceLocks<T>>::take(&source)
-			{
-				// Allow transaction fees to be paid from locked balance, e.g., prohibit all
-				// withdraws except `WithdrawReasons::TRANSACTION_PAYMENT`
-				<pallet_balances::Pallet<T>>::set_lock(
-					KILT_LAUNCH_ID,
-					&dest,
-					unlock_amount,
-					WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
-				);
-				// We only want to append the destination to the unlocking vector. We do not set
-				// `BalanceLocks` because that storage is only required for the migration and
-				// would be redundant for any user-owned account.
-				<UnlockingAt<T>>::append(unlock_block, &dest);
-			}
+			// Set the KILT custom lock if necessary
+			post_weight += Self::migrate_kilt_balance_lock(&source, &dest)?;
+
 			// TODO: Add meaningful information
-			Ok(Some(0).into())
+			Ok(Some(post_weight).into())
 		}
 	}
 }
@@ -326,5 +303,109 @@ impl<T: Config> Pallet<T> {
 		} else {
 			T::DbWeight::get().reads(1)
 		}
+	}
+
+	/// Migrate the vesting schedule from one account to another if it was set
+	/// in the GenesisBlock and set the corresponding vesting lock.
+	///
+	/// We automatically unlock all available funds for the current block.
+	fn migrate_vesting(source: &T::AccountId, dest: &T::AccountId) -> Result<Weight, DispatchError> {
+		if let Some(source_vesting) = Vesting::<T>::take(source) {
+			// Check for an already existing vesting schedule on the destination account
+			// which would be the case if the claimer requests migration from multiple
+			// source accounts to the same destination
+			let vesting = if let Some(VestingInfo {
+				locked,
+				per_block,
+				starting_block,
+			}) = Vesting::<T>::take(&dest)
+			{
+				// Should never throw because all source accounts start vesting in genesis block
+				ensure!(
+					starting_block == source_vesting.starting_block,
+					Error::<T>::ConflictingVestingStarts
+				);
+				VestingInfo {
+					// We can simply sum `locked` and `per_block` because of the above requirement
+					locked: locked.saturating_add(source_vesting.locked),
+					per_block: per_block.saturating_add(source_vesting.per_block),
+					starting_block,
+				}
+			}
+			// If vesting hasn't been set up for destination account, we can default to the one of the source
+			// account
+			else {
+				source_vesting
+			};
+			Vesting::<T>::insert(dest, vesting);
+			// Only lock funds from now until vesting expires.
+			// Enables the user to have funds before actively calling `vest` if claimed
+			// after the genesis block.
+			//
+			// Logic was taken from pallet_vesting.
+
+			// TODO: Check whether we want to switch to
+			// WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT) to allow for tx
+			// fees to be paid from vesting-locked tokens
+			let reasons = WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE;
+			let now = <frame_system::Pallet<T>>::block_number();
+			let locked_now = vesting.locked_at::<<T as pallet_vesting::Config>::BlockNumberToBalance>(now);
+			<<T as pallet_vesting::Config>::Currency as LockableCurrency<T::AccountId>>::set_lock(
+				VESTING_ID,
+				dest,
+				locked_now.into(),
+				reasons,
+			);
+		}
+		// TODO: Add meaningful weight
+		Ok(0)
+	}
+
+	/// Set the custom KILT balance lock for a user-owned account when requested
+	/// in the migration claim
+	fn migrate_kilt_balance_lock(source: &T::AccountId, dest: &T::AccountId) -> Result<Weight, DispatchError> {
+		if let Some(source_lock) = <BalanceLocks<T>>::take(&source) {
+			// Check for an already existing custom KILT balance lock on the destination
+			// account which would be the case if the claimer requests migration from
+			// multiple source accounts to the same destination
+			let LockedBalance::<T> {
+				amount: unlock_amount, ..
+			} = if let Some(dest_lock) = <BalanceLocks<T>>::take(&dest) {
+				// Should never throw because there is a single locking periods (6 months)
+				ensure!(
+					dest_lock.block == source_lock.block,
+					Error::<T>::ConflictingLockingBlocks
+				);
+
+				// We don't need to append `UnlockingAt` because we require both locks to end at
+				// the same block
+				LockedBalance::<T> {
+					block: dest_lock.block,
+					// We can simply sum `amount` because of the above requirement
+					amount: dest_lock.amount.saturating_add(source_lock.amount),
+				}
+			}
+			// If no custom lock has been set up for destination account, we can default to the one of the source
+			// account and append it to `UnlockingAt`
+			else {
+				// We only want to append the destination address to the unlocking vector. We do
+				// not set `BalanceLocks` because that storage is only required for the
+				// migration and would be redundant for any user-owned destination account.
+				<UnlockingAt<T>>::append(source_lock.block, &dest);
+
+				source_lock
+			};
+
+			// Allow transaction fees to be paid from locked balance, e.g., prohibit all
+			// withdraws except `WithdrawReasons::TRANSACTION_PAYMENT`
+			<pallet_balances::Pallet<T>>::set_lock(
+				KILT_LAUNCH_ID,
+				&dest,
+				unlock_amount,
+				WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
+			);
+		}
+		// TODO: Add meaningful weight
+		Ok(0)
 	}
 }
