@@ -188,8 +188,8 @@ pub enum StorageError {
 	/// The given DID does not contain the right key to verify the signature of
 	/// a DID operation.
 	DidKeyNotPresent(DidVerificationKeyType),
-	/// One or more verification keys referenced are not stored in the set of verification
-	/// keys.
+	/// One or more verification keys referenced are not stored in the set of
+	/// verification keys.
 	VerificationKeysNotPresent(Vec<PublicVerificationKey>),
 }
 
@@ -364,9 +364,16 @@ where
 		let mut new_details = old_details;
 
 		if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove.as_ref() {
-			// Verify that the set of keys to delete - the set of keys stored is empty (otherwise keys to delete contains some keys not stored on chain -> notify about them to the caller)
+			// Verify that the set of keys to delete - the set of keys stored is empty
+			// (otherwise keys to delete contains some keys not stored on chain -> notify
+			// about them to the caller)
 			let keys_not_present = verification_keys_to_remove.sub(&new_details.verification_keys);
-			ensure!(keys_not_present.is_empty(), DidError::StorageError(StorageError::VerificationKeysNotPresent(keys_not_present.iter().copied().collect())));
+			ensure!(
+				keys_not_present.is_empty(),
+				DidError::StorageError(StorageError::VerificationKeysNotPresent(
+					keys_not_present.iter().copied().collect()
+				))
+			);
 		};
 
 		// Verify that the counter is at least as large as the currently saved one, as
