@@ -21,11 +21,11 @@
 //! A simple pallet providing means of setting up custom KILT balance locks and
 //! vesting schedules for unowned accounts in the genesis block. These should
 //! later be migrated to user-owned accounts via the extrinsic
-//! `accept_user_account_claim`.
+//! `migrate_genesis_account`.
 //!
 //! ### Dispatchable Functions
 //!
-//! - `accept_user_account_claim` - Migrate vesting or the KILT custom lock from
+//! - `migrate_genesis_account` - Migrate vesting or the KILT custom lock from
 //!   an unowned account to a user-owned account. Requires signature of a
 //!   special account `TransferAccount` which does not have any other super
 //!   powers.
@@ -43,7 +43,7 @@ use frame_support::{
 	pallet_prelude::*,
 	sp_runtime::traits::Zero,
 	storage::types::StorageMap,
-	traits::{Currency, ExistenceRequirement::AllowDeath, LockIdentifier, LockableCurrency, Vec, WithdrawReasons},
+	traits::{Currency, ExistenceRequirement::AllowDeath, Get, LockIdentifier, LockableCurrency, Vec, WithdrawReasons},
 	transactional, StorageMap as StorageMapTrait,
 };
 pub use pallet::*;
@@ -79,6 +79,15 @@ pub mod pallet {
 		/// Because this pallet emits events, it depends on the runtime's
 		/// definition of an event.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+
+		/// Maximum number of claims which can be migrated in a single call.
+		/// Used for weight estimation.
+
+		/// NOTE:
+		/// + Benchmarks will need to be re-run and weights adjusted if this
+		/// changes. + This pallet assumes that dependents keep to the limit
+		/// without enforcing it.
+		type MaxClaims: Get<usize>;
 	}
 
 	#[pallet::pallet]
@@ -132,7 +141,7 @@ pub mod pallet {
 					},
 				);
 				// Instead of setting the lock now, we do so in
-				// `accept_user_account_claim`, see below for explanation
+				// `migrate_genesis_account`, see below for explanation
 			}
 
 			// Generate initial vesting configuration, taken from pallet_vesting
@@ -163,7 +172,7 @@ pub mod pallet {
 					},
 				);
 				// Instead of setting the lock now, we do so in
-				// `accept_user_account_claim`, see below for explanation
+				// `migrate_genesis_account`, see below for explanation
 			}
 
 			// Set the transfer account which has a subset of the powers of root
@@ -211,9 +220,9 @@ pub mod pallet {
 	pub enum Error<T> {
 		Unauthorized,
 		UnexpectedLocks,
-		MissingVestingSchedule,
 		ConflictingLockingBlocks,
 		ConflictingVestingStarts,
+		ExceedsMaxClaims,
 	}
 
 	#[pallet::hooks]
@@ -259,7 +268,7 @@ pub mod pallet {
 		/// extrinsics.
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(9, 7))]
 		#[transactional]
-		pub(super) fn accept_user_account_claim(
+		pub(super) fn migrate_genesis_account(
 			origin: OriginFor<T>,
 			source: T::AccountId,
 			dest: T::AccountId,
@@ -269,21 +278,34 @@ pub mod pallet {
 			// The extrinsic has to be called by the TransferAccount
 			ensure!(Some(who) == <TransferAccount<T>>::get(), Error::<T>::Unauthorized);
 
-			// There should be no locks for the source address
-			ensure!(Locks::<T>::get(&source).len().is_zero(), Error::<T>::UnexpectedLocks);
+			Ok(Some(Self::migrate_user(&source, &dest)?).into())
+		}
 
-			// Transfer to destination addess
-			let amount = <pallet_balances::Pallet<T>>::total_balance(&source);
-			let _ =
-				<pallet_balances::Pallet<T> as Currency<T::AccountId>>::transfer(&source, &dest, amount, AllowDeath)?;
+		/// Transfer all balances, vesting and custom locks for multiple source
+		/// addresses to the same destination address.
+		///
+		/// See `migrate_genesis_account` for details as we run the same logic
+		/// for each account id in sources.
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(9, 7))]
+		#[transactional]
+		pub(super) fn migrate_multiple_genesis_accounts(
+			origin: OriginFor<T>,
+			sources: Vec<T::AccountId>,
+			dest: T::AccountId,
+		) -> DispatchResultWithPostInfo {
+			let who = ensure_signed(origin)?;
 
-			// Migrate vesting info and set the corresponding vesting lock if necessary
-			let mut post_weight: Weight = Self::migrate_vesting(&source, &dest)?;
+			// The extrinsic has to be called by the TransferAccount
+			ensure!(Some(who) == <TransferAccount<T>>::get(), Error::<T>::Unauthorized);
 
-			// Set the KILT custom lock if necessary
-			post_weight += Self::migrate_kilt_balance_lock(&source, &dest)?;
+			ensure!(sources.len() < T::MaxClaims::get(), Error::<T>::ExceedsMaxClaims);
 
-			// TODO: Add meaningful information
+			// TODO: How to do this with map?
+			let mut post_weight: Weight = 0;
+			for s in sources.iter() {
+				post_weight += Self::migrate_user(s, &dest)?;
+			}
+
 			Ok(Some(post_weight).into())
 		}
 	}
@@ -296,13 +318,33 @@ impl<T: Config> Pallet<T> {
 			// Remove locks for all accounts
 			for account in unlocking_balance.iter() {
 				<pallet_balances::Pallet<T>>::remove_lock(KILT_LAUNCH_ID, account);
+				<BalanceLocks<T>>::remove(account);
 			}
 
 			Self::deposit_event(Event::Unlocked(block, unlocking_balance.len() as u64));
-			T::DbWeight::get().reads_writes(1, (unlocking_balance.len() + 1) as u64)
+			T::DbWeight::get().reads_writes(1, (2 * unlocking_balance.len() + 1) as u64)
 		} else {
 			T::DbWeight::get().reads(1)
 		}
+	}
+
+	///
+	fn migrate_user(source: &T::AccountId, dest: &T::AccountId) -> Result<Weight, DispatchError> {
+		// There should be no locks for the source address
+		ensure!(Locks::<T>::get(source).len().is_zero(), Error::<T>::UnexpectedLocks);
+
+		// Transfer to destination addess
+		let amount = <pallet_balances::Pallet<T>>::total_balance(source);
+		let _ = <pallet_balances::Pallet<T> as Currency<T::AccountId>>::transfer(source, dest, amount, AllowDeath)?;
+
+		// Migrate vesting info and set the corresponding vesting lock if necessary
+		let mut post_weight: Weight = Self::migrate_vesting(source, dest)?;
+
+		// Set the KILT custom lock if necessary
+		post_weight += Self::migrate_kilt_balance_lock(source, dest)?;
+
+		// TODO: Add meaningful information
+		Ok(post_weight)
 	}
 
 	/// Migrate the vesting schedule from one account to another if it was set
@@ -369,7 +411,9 @@ impl<T: Config> Pallet<T> {
 			// account which would be the case if the claimer requests migration from
 			// multiple source accounts to the same destination
 			let LockedBalance::<T> {
-				amount: unlock_amount, ..
+				amount: unlock_amount,
+				block: unlock_block,
+				..
 			} = if let Some(dest_lock) = <BalanceLocks<T>>::take(&dest) {
 				// Should never throw because there is a single locking periods (6 months)
 				ensure!(
@@ -388,14 +432,20 @@ impl<T: Config> Pallet<T> {
 			// If no custom lock has been set up for destination account, we can default to the one of the source
 			// account and append it to `UnlockingAt`
 			else {
-				// We only want to append the destination address to the unlocking vector. We do
-				// not set `BalanceLocks` because that storage is only required for the
-				// migration and would be redundant for any user-owned destination account.
 				<UnlockingAt<T>>::append(source_lock.block, &dest);
 
 				source_lock
 			};
 
+			// Set lock to in case another account should be migrated to this destination
+			// address
+			<BalanceLocks<T>>::insert(
+				dest,
+				LockedBalance::<T> {
+					amount: unlock_amount,
+					block: unlock_block,
+				},
+			);
 			// Allow transaction fees to be paid from locked balance, e.g., prohibit all
 			// withdraws except `WithdrawReasons::TRANSACTION_PAYMENT`
 			<pallet_balances::Pallet<T>>::set_lock(

@@ -17,14 +17,14 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate as kilt_launch;
-use frame_support::{assert_ok, parameter_types, traits::GenesisBuild};
+use frame_support::{assert_noop, assert_ok, parameter_types, traits::GenesisBuild};
 use frame_system as system;
 use kilt_primitives::{constants::MIN_VESTED_TRANSFER_AMOUNT, AccountId, Balance, BlockNumber, Hash, Index};
 use pallet_balances::{BalanceLock, Locks, Reasons};
 use pallet_vesting::VestingInfo;
 use sp_runtime::{
 	testing::Header,
-	traits::{BlakeTwo256, ConvertInto, IdentityLookup},
+	traits::{BlakeTwo256, ConvertInto, IdentityLookup, Zero},
 	AccountId32,
 };
 
@@ -33,6 +33,8 @@ type Block = frame_system::mocking::MockBlock<Test>;
 
 pub const PSEUDO_1: AccountId = AccountId32::new([0u8; 32]);
 pub const PSEUDO_2: AccountId = AccountId32::new([1u8; 32]);
+pub const PSEUDO_3: AccountId = AccountId32::new([2u8; 32]);
+pub const PSEUDO_4: AccountId = AccountId32::new([3u8; 32]);
 pub const USER_1: AccountId = AccountId32::new([10u8; 32]);
 pub const TRANSFER_ACCOUNT: AccountId = AccountId32::new([100u8; 32]);
 
@@ -97,8 +99,13 @@ impl pallet_balances::Config for Test {
 	type WeightInfo = ();
 }
 
+parameter_types! {
+	pub const MaxClaims: usize = 4;
+}
+
 impl kilt_launch::Config for Test {
 	type Event = Event;
+	type MaxClaims = MaxClaims;
 }
 
 parameter_types! {
@@ -133,18 +140,24 @@ impl Default for ExtBuilder {
 	}
 }
 
-pub fn ensure_migration_works(
+/// Calls `migrate_genesis_account` and checks whether balance, vesting and
+/// balance locks have been migrated properly to the destination address.
+pub fn ensure_single_migration_works(
 	source: &AccountId,
 	dest: &AccountId,
 	vesting_info: Option<VestingInfo<Balance, BlockNumber>>,
 	locked_info: Option<kilt_launch::LockedBalance<Test>>,
 ) {
-	assert_ok!(KiltLaunch::accept_user_account_claim(
+	assert_noop!(
+		KiltLaunch::migrate_genesis_account(Origin::signed(PSEUDO_1), source.to_owned(), dest.to_owned()),
+		kilt_launch::Error::<Test>::Unauthorized
+	);
+	assert_ok!(KiltLaunch::migrate_genesis_account(
 		Origin::signed(TRANSFER_ACCOUNT),
 		source.to_owned(),
 		dest.to_owned()
 	));
-	System::set_block_number(2);
+	let now: u128 = System::block_number().into();
 
 	// Check for desired death of allocation account
 	assert_eq!(Balances::free_balance(source), 0);
@@ -153,28 +166,33 @@ pub fn ensure_migration_works(
 	assert!(!frame_system::Account::<Test>::contains_key(source));
 
 	// Check storage migration to dest
+	let mut locked_balance: Balance = Balance::zero();
 	let mut num_of_locks = 0;
 	if let Some(vesting) = vesting_info {
 		assert_eq!(Vesting::vesting(dest), Some(vesting));
+		locked_balance = vesting.locked;
 		num_of_locks += 1;
 	}
 	if let Some(lock) = locked_info.clone() {
-		assert_eq!(kilt_launch::BalanceLocks::<Test>::get(dest), None);
+		assert_eq!(kilt_launch::BalanceLocks::<Test>::get(dest), Some(lock.clone()));
 		assert_eq!(
 			kilt_launch::UnlockingAt::<Test>::get(lock.block),
 			Some(vec![dest.to_owned()])
 		);
+		locked_balance = locked_balance.max(lock.amount);
 		num_of_locks += 1;
 	}
 
 	// Check correct setting of locks for dest
 	let balance_locks = Locks::<Test>::get(dest);
+	let mut usable_balance: Balance = Balance::zero();
 	assert_eq!(balance_locks.len(), num_of_locks);
 	for BalanceLock { id, amount, reasons } in balance_locks {
 		match id {
 			crate::VESTING_ID => {
 				let VestingInfo { locked, per_block, .. } = vesting_info.expect("No vesting schedule found");
-				assert_eq!(amount, locked - per_block,);
+				usable_balance = per_block * now;
+				assert_eq!(amount, locked - usable_balance);
 				assert_eq!(reasons, Reasons::Misc);
 			}
 			crate::KILT_LAUNCH_ID => {
@@ -183,6 +201,34 @@ pub fn ensure_migration_works(
 			}
 			_ => panic!("Unexpected balance lock id {:?}", id),
 		};
+	}
+
+	if num_of_locks > 0 {
+		assert_noop!(
+			KiltLaunch::migrate_genesis_account(Origin::signed(TRANSFER_ACCOUNT), dest.to_owned(), TRANSFER_ACCOUNT),
+			kilt_launch::Error::<Test>::UnexpectedLocks
+		);
+	}
+
+	// TODO: Add positive check for staking once it has been added
+
+	// Check correct migration of balance
+	// In our tests, vesting and locking is not resolved before the 10th block. At
+	// most times, now should be the first block.
+	if now < 10 {
+		assert_eq!(Balances::free_balance(dest), locked_balance);
+		// locked balance should be usable for fees
+		assert_eq!(Balances::usable_balance_for_fees(dest), locked_balance);
+		// locked balance should not be usable for anything but fees and other locks
+		assert_eq!(Balances::usable_balance(dest), usable_balance);
+		// there should be nothing reserved
+		assert_eq!(Balances::reserved_balance(dest), 0);
+
+		// Should not be able to transfer more than which is unlocked in first block
+		assert_noop!(
+			Balances::transfer(Origin::signed(dest.to_owned()), TRANSFER_ACCOUNT, usable_balance + 1),
+			pallet_balances::Error::<Test, ()>::LiquidityRestrictions
+		);
 	}
 }
 
@@ -193,7 +239,13 @@ impl ExtBuilder {
 	}
 
 	pub fn init_balance_for_pseudos(self) -> Self {
-		self.balances(vec![(PSEUDO_1, 10_000), (PSEUDO_2, 10_000), (TRANSFER_ACCOUNT, 10_000)])
+		self.balances(vec![
+			(PSEUDO_1, 10_000),
+			(PSEUDO_2, 10_000),
+			(PSEUDO_3, 300_000),
+			(PSEUDO_4, 10_000),
+			(TRANSFER_ACCOUNT, 10_000),
+		])
 	}
 
 	pub fn vest(mut self, vesting: Vec<(AccountId, BlockNumber, Balance)>) -> Self {
@@ -202,7 +254,11 @@ impl ExtBuilder {
 	}
 
 	pub fn pseudos_vest_all(self) -> Self {
-		self.vest(vec![(PSEUDO_1, 10, 10_000), (PSEUDO_2, 20, 10_000)])
+		self.vest(vec![
+			(PSEUDO_1, 10, 10_000),
+			(PSEUDO_2, 20, 10_000),
+			(PSEUDO_3, 30, 300_000),
+		])
 	}
 
 	pub fn lock_balance(mut self, balance_locks: Vec<(AccountId, BlockNumber, Balance)>) -> Self {

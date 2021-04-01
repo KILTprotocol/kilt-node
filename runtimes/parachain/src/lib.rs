@@ -273,8 +273,13 @@ impl pallet_vesting::Config for Runtime {
 	type WeightInfo = pallet_vesting::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+	pub const MaxClaims: usize = 300;
+}
+
 impl kilt_launch::Config for Runtime {
 	type Event = Event;
+	type MaxClaims = MaxClaims;
 }
 
 parameter_types! {
