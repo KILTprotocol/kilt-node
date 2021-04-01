@@ -189,7 +189,8 @@ pub enum StorageError {
 	/// One or more verification keys referenced are not stored in the set of
 	/// verification keys.
 	VerificationKeyNotPresent(PublicVerificationKey),
-	/// Duplicate key specified in the vector of keys to delete from the verification keys
+	/// Duplicate key specified in the vector of keys to delete from the
+	/// verification keys
 	DuplicateVerificationKey(PublicVerificationKey),
 }
 
@@ -368,14 +369,22 @@ where
 
 		// If there are some keys to remove...
 		if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove {
-			// Keep track of the keys already seen so far (as we are using a list instead of a set for the keys)
-			let seen_keys = BTreeSet::<PublicVerificationKey>::new();
+			// Keep track of the keys already seen so far (as we are using a list instead of
+			// a set for the keys)
+			let mut seen_keys = BTreeSet::<PublicVerificationKey>::new();
 
 			verification_keys_to_remove.iter().try_for_each(|key| {
 				// Each key to delete must be specified only once in the input list
-				ensure!(!seen_keys.contains(key), DidError::StorageError(StorageError::DuplicateVerificationKey(*key)));
-				// Each key to delete must be present in the set of keys previously stored on chain
-				ensure!(remaining_verification_keys.remove(key), DidError::StorageError(StorageError::VerificationKeyNotPresent(*key)));
+				ensure!(
+					seen_keys.insert(*key),
+					DidError::StorageError(StorageError::DuplicateVerificationKey(*key))
+				);
+				// Each key to delete must be present in the set of keys previously stored on
+				// chain
+				ensure!(
+					remaining_verification_keys.remove(key),
+					DidError::StorageError(StorageError::VerificationKeyNotPresent(*key))
+				);
 				Ok(())
 			})?;
 		};
@@ -383,7 +392,7 @@ where
 		// Verify that the counter is at least as large as the currently saved one, as
 		// overflow would occurr (hence result = None) if right (last counter value) >
 		// left (operation counter value).
-		let tx_difference = update_operation
+		let tx_counter_difference = update_operation
 			.tx_counter
 			.checked_sub(new_details.last_tx_counter)
 			.ok_or(DidError::OperationError(OperationError::InvalidNonce))?;
@@ -391,11 +400,11 @@ where
 		// Verify that the counter is actually at least 1 unit larger than the stored
 		// one.
 		ensure!(
-			tx_difference > 0u64,
+			tx_counter_difference > 0u64,
 			DidError::OperationError(OperationError::InvalidNonce)
 		);
 
-		// Updates keys, endpoint and tx counter.
+		// Update keys, endpoint and tx counter.
 		if let Some(new_auth_key) = update_operation.new_auth_key {
 			new_details.auth_key = new_auth_key;
 		}
@@ -463,7 +472,7 @@ pub mod pallet {
 		DidNotPresent,
 		VerificationKeyNotPresent,
 		InvalidNonce,
-		DuplicateVerificationKey
+		DuplicateVerificationKey,
 	}
 
 	impl<T> From<DidError> for Error<T> {
@@ -492,8 +501,8 @@ pub mod pallet {
 				StorageError::DidAlreadyPresent => Self::DidAlreadyPresent,
 				StorageError::DidKeyNotPresent(_) | StorageError::VerificationKeyNotPresent(_) => {
 					Self::VerificationKeyNotPresent
-				},
-				StorageError::DuplicateVerificationKey(_) => Self::DuplicateVerificationKey
+				}
+				StorageError::DuplicateVerificationKey(_) => Self::DuplicateVerificationKey,
 			}
 		}
 	}
