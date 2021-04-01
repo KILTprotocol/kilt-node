@@ -16,7 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use did::DidUpdateOperation;
 use frame_support::{assert_noop, assert_ok};
 use sp_core::Pair;
 use sp_std::collections::btree_set::BTreeSet;
@@ -33,8 +32,8 @@ use crate::mock::*;
 fn check_successful_simple_ed25519_creation() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let enc_key = get_x25519_encryption_key(true);
-	let did_creation_operation =
-		generate_simple_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()), enc_key);
+	let did_creation_operation = generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()), enc_key);
+
 	let signature = auth_key.sign(did_creation_operation.encode().as_ref());
 
 	let mut ext = ExtBuilder::default().build();
@@ -68,7 +67,8 @@ fn check_successful_simple_sr25519_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let enc_key = get_x25519_encryption_key(true);
 	let did_creation_operation =
-		generate_simple_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()), enc_key);
+		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()), enc_key);
+
 	let signature = auth_key.sign(did_creation_operation.encode().as_ref());
 
 	let mut ext = ExtBuilder::default().build();
@@ -103,14 +103,15 @@ fn check_successful_complete_creation() {
 	let enc_key = get_x25519_encryption_key(true);
 	let del_key = get_sr25519_delegation_key(true);
 	let att_key = get_ed25519_attestation_key(true);
-	let did_creation_operation = generate_complete_did_creation_operation(
+	let mut did_creation_operation = generate_base_did_creation_operation(
 		ALICE_DID,
 		did::PublicVerificationKey::from(auth_key.public()),
 		enc_key,
-		Some(did::PublicVerificationKey::from(att_key.public())),
-		Some(did::PublicVerificationKey::from(del_key.public())),
-		Some("https://kilt.io".into()),
 	);
+	did_creation_operation.new_attestation_key = Some(did::PublicVerificationKey::from(att_key.public()));
+	did_creation_operation.new_delegation_key = Some(did::PublicVerificationKey::from(del_key.public()));
+	did_creation_operation.new_endpoint_url = Some("https://kilt.io".into());
+
 	let signature = auth_key.sign(did_creation_operation.encode().as_ref());
 
 	let mut ext = ExtBuilder::default().build();
@@ -141,11 +142,12 @@ fn check_successful_complete_creation() {
 
 #[test]
 fn check_duplicate_did_creation() {
-	let mock_did = generate_mock_did_details();
 	let auth_key = get_sr25519_authentication_key(true);
 	let enc_key = get_x25519_encryption_key(true);
+	let mock_did = generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key);
 	let did_creation_operation =
-		generate_simple_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()), enc_key);
+		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()), enc_key);
+
 	let signature = auth_key.sign(did_creation_operation.encode().as_ref());
 
 	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
@@ -170,7 +172,8 @@ fn check_invalid_signature_format_did_creation() {
 	let invalid_key = get_ed25519_authentication_key(true);
 	// DID creation contains auth_key, but signature is generated using invalid_key
 	let did_creation_operation =
-		generate_simple_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()), enc_key);
+		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()), enc_key);
+
 	let signature = invalid_key.sign(did_creation_operation.encode().as_ref());
 
 	let mut ext = ExtBuilder::default().build();
@@ -196,7 +199,8 @@ fn check_invalid_signature_did_creation() {
 	// DID creation contains auth_key, but signature is generated using
 	// alternative_key
 	let did_creation_operation =
-		generate_simple_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()), enc_key);
+		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()), enc_key);
+
 	let signature = alternative_key.sign(did_creation_operation.encode().as_ref());
 
 	let mut ext = ExtBuilder::default().build();
@@ -225,19 +229,17 @@ fn check_successful_complete_update() {
 	let new_del_key = get_sr25519_attestation_key(true);
 	let new_url: UrlEncoding = "https://new_kilt.io".into();
 
-	let old_did_details = generate_mock_did_details_with_keys(did::PublicVerificationKey::from(old_auth_key.public()), old_enc_key, None, None, None);
+	let old_did_details = generate_mock_did_details(did::PublicVerificationKey::from(old_auth_key.public()), old_enc_key);
 
 	// Update all keys, URL endpoint and tx counter. No keys are removed in this test
-	let did_update_operation = DidUpdateOperation {
-		did: ALICE_DID,
-		new_auth_key: Some(PublicVerificationKey::from(new_auth_key.public())),
-		new_key_agreement_key: Some(new_enc_key),
-		new_attestation_key: Some(PublicVerificationKey::from(new_att_key.public())),
-		new_delegation_key: Some(PublicVerificationKey::from(new_del_key.public())),
-		verification_keys_to_remove: None,
-		new_endpoint_url: Some(new_url),
-		tx_counter: old_did_details.last_tx_counter + 1u64,
-	};
+	let mut did_update_operation = generate_base_did_update_operation(ALICE_DID);
+	did_update_operation.new_auth_key = Some(PublicVerificationKey::from(new_auth_key.public()));
+	did_update_operation.new_key_agreement_key = Some(new_enc_key);
+	did_update_operation.new_attestation_key = Some(PublicVerificationKey::from(new_att_key.public()));
+	did_update_operation.new_delegation_key = Some(PublicVerificationKey::from(new_del_key.public()));
+	did_update_operation.new_endpoint_url = Some(new_url);
+	did_update_operation.tx_counter = old_did_details.last_tx_counter + 1u64;
+
 	// Generate signature using the old authentication key
 	let signature = old_auth_key.sign(did_update_operation.encode().as_ref());
 
@@ -278,11 +280,13 @@ fn check_successful_verification_keys_deletion() {
 		PublicVerificationKey::from(get_sr25519_attestation_key(false).public()),
 	];
 	let old_verification_keys_set = BTreeSet::from_iter(old_verification_keys_vector.into_iter());
-	let old_did_details = generate_mock_did_details_with_keys(PublicVerificationKey::from(auth_key.public()), enc_key, None, None, Some(old_verification_keys_set.clone()));
+	let mut old_did_details = generate_mock_did_details(PublicVerificationKey::from(auth_key.public()), enc_key);
+	old_did_details.verification_keys = old_verification_keys_set.clone();
 
-	// Remove all verification keys
-	let mut did_update_operation = generate_simple_did_update_operation(ALICE_DID);
+	// Create update operation to remove all verification keys
+	let mut did_update_operation = generate_base_did_update_operation(ALICE_DID);
 	did_update_operation.verification_keys_to_remove = Some(old_verification_keys_set);
+
 	let signature = auth_key.sign(did_update_operation.encode().as_ref());
 
 	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, old_did_details.clone())]).build();
@@ -317,8 +321,9 @@ fn check_successful_verification_keys_deletion() {
 fn check_did_not_present_update() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let enc_key = get_x25519_encryption_key(true);
-	let mock_did = generate_mock_did_details_with_keys(PublicVerificationKey::from(auth_key.public()), enc_key, None, None, None);
-	let did_update_operation = generate_simple_did_update_operation(BOB_DID);
+	let mock_did = generate_mock_did_details(PublicVerificationKey::from(auth_key.public()), enc_key);
+	let did_update_operation = generate_base_did_update_operation(BOB_DID);
+
 	let signature = auth_key.sign(did_update_operation.encode().as_ref());
 
 	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
@@ -337,11 +342,14 @@ fn check_did_not_present_update() {
 
 #[test]
 fn check_invalid_signature_format_did_update() {
-	// Using an Sr25519 key where an Sr25519 is expected
+	let auth_key = get_ed25519_authentication_key(true);
+	let enc_key = get_x25519_encryption_key(true);
+	// Using an Sr25519 key where an Ed25519 is expected
 	let invalid_key = get_sr25519_authentication_key(true);
-	let mock_did = generate_mock_did_details();
+	let mock_did = generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key);
 	// DID update contains auth_key, but signature is generated using invalid_key
-	let did_update_operation = generate_simple_did_update_operation(ALICE_DID);
+	let did_update_operation = generate_base_did_update_operation(ALICE_DID);
+
 	let signature = invalid_key.sign(did_update_operation.encode().as_ref());
 
 	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
@@ -360,10 +368,13 @@ fn check_invalid_signature_format_did_update() {
 
 #[test]
 fn check_invalid_signature_did_update() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let enc_key = get_x25519_encryption_key(true);
 	// Using an Sr25519 key as expected, but from a different seed (default = false)
-	let alternative_key = get_ed25519_authentication_key(false);
-	let mock_did = generate_mock_did_details();
-	let did_update_operation = generate_simple_did_update_operation(ALICE_DID);
+	let alternative_key = get_sr25519_authentication_key(false);
+	let mock_did = generate_mock_did_details(PublicVerificationKey::from(auth_key.public()), enc_key);
+	let did_update_operation = generate_base_did_update_operation(ALICE_DID);
+
 	let signature = alternative_key.sign(did_update_operation.encode().as_ref());
 
 	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
@@ -394,16 +405,18 @@ fn check_invalid_verification_keys_deletion() {
 		key3
 	];
 	let old_verification_keys_set = BTreeSet::from_iter(old_verification_keys_vector.into_iter());
-	let old_did_details = generate_mock_did_details_with_keys(PublicVerificationKey::from(auth_key.public()), enc_key, None, None, Some(old_verification_keys_set.clone()));
+	let mut old_did_details = generate_mock_did_details(PublicVerificationKey::from(auth_key.public()), enc_key);
+	old_did_details.verification_keys = old_verification_keys_set;
 
-	// Remove some verification keys including one not stored on chain
-	let mut did_update_operation = generate_simple_did_update_operation(ALICE_DID);
+	// Remove some verification keys including one not stored on chain (key4)
 	let verification_keys_to_remove = vec![
 		key1,
 		key3,
 		key4
 	];
+	let mut did_update_operation = generate_base_did_update_operation(ALICE_DID);
 	did_update_operation.verification_keys_to_remove = Some(BTreeSet::from_iter(verification_keys_to_remove.into_iter()));
+
 	let signature = auth_key.sign(did_update_operation.encode().as_ref());
 
 	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, old_did_details.clone())]).build();
@@ -425,11 +438,12 @@ fn check_authentication_successful_operation_verification() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let enc_key = get_x25519_encryption_key(true);
 	let mock_did =
-		generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, None, None);
+		generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key);
 	let did_operation = TestDIDOperation {
 		did: ALICE_DID,
 		verification_key_type: did::DidVerificationKeyType::Authentication,
 	};
+
 	let did_operation_signature = auth_key.sign(&did_operation.encode());
 
 	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
@@ -447,17 +461,13 @@ fn check_attestation_successful_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let enc_key = get_x25519_encryption_key(true);
 	let att_key = get_sr25519_attestation_key(true);
-	let mock_did = generate_mock_did_details_with_keys(
-		did::PublicVerificationKey::from(auth_key.public()),
-		enc_key,
-		Some(did::PublicVerificationKey::from(att_key.public())),
-		None,
-		None
-	);
+	let mut mock_did = generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key);
+	mock_did.attestation_key = Some(did::PublicVerificationKey::from(att_key.public()));
 	let did_operation = TestDIDOperation {
 		did: ALICE_DID,
 		verification_key_type: did::DidVerificationKeyType::AssertionMethod,
 	};
+
 	let did_operation_signature = att_key.sign(&did_operation.encode());
 
 	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
@@ -475,13 +485,8 @@ fn check_delegation_successful_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let enc_key = get_x25519_encryption_key(true);
 	let del_key = get_ed25519_delegation_key(true);
-	let mock_did = generate_mock_did_details_with_keys(
-		did::PublicVerificationKey::from(auth_key.public()),
-		enc_key,
-		None,
-		Some(did::PublicVerificationKey::from(del_key.public())),
-		None
-	);
+	let mut mock_did = generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key);
+	mock_did.delegation_key = Some(did::PublicVerificationKey::from(del_key.public()));
 	let did_operation = TestDIDOperation {
 		did: ALICE_DID,
 		verification_key_type: did::DidVerificationKeyType::CapabilityDelegation,
@@ -503,11 +508,12 @@ fn check_did_not_present_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let enc_key = get_x25519_encryption_key(true);
 	let mock_did =
-		generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, None, None);
+		generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key);
 	let did_operation = TestDIDOperation {
 		did: BOB_DID,
 		verification_key_type: did::DidVerificationKeyType::Authentication,
 	};
+
 	let did_operation_signature = auth_key.sign(&did_operation.encode());
 
 	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
@@ -528,12 +534,13 @@ fn check_verification_key_not_present_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let enc_key = get_x25519_encryption_key(true);
 	let mock_did =
-		generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, None, None);
+		generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key);
 	let verification_key_required = did::DidVerificationKeyType::CapabilityInvocation;
 	let did_operation = TestDIDOperation {
 		did: ALICE_DID,
 		verification_key_type: verification_key_required.clone(),
 	};
+
 	let did_operation_signature = auth_key.sign(&did_operation.encode());
 
 	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
@@ -556,11 +563,12 @@ fn check_invalid_signature_format_operation_verification() {
 	// Expected an Sr25519, given an Ed25519
 	let invalid_key = get_ed25519_authentication_key(true);
 	let mock_did =
-		generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, None, None);
+		generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key);
 	let did_operation = TestDIDOperation {
 		did: ALICE_DID,
 		verification_key_type: did::DidVerificationKeyType::Authentication,
 	};
+
 	let did_operation_signature = invalid_key.sign(&did_operation.encode());
 
 	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
@@ -583,11 +591,12 @@ fn check_invalid_signature_operation_verification() {
 	// Using same key type but different seed (default = false)
 	let alternative_key = get_sr25519_authentication_key(false);
 	let mock_did =
-		generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, None, None);
+		generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key);
 	let did_operation = TestDIDOperation {
 		did: ALICE_DID,
 		verification_key_type: did::DidVerificationKeyType::Authentication,
 	};
+
 	let did_operation_signature = alternative_key.sign(&did_operation.encode());
 
 	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();

@@ -150,7 +150,7 @@ pub fn get_sr25519_delegation_key(default: bool) -> sr25519::Pair {
 	}
 }
 
-pub fn generate_simple_did_creation_operation(
+pub fn generate_base_did_creation_operation(
 	did: TestDidIdentifier,
 	auth_key: did::PublicVerificationKey,
 	enc_key: did::PublicEncryptionKey,
@@ -165,25 +165,7 @@ pub fn generate_simple_did_creation_operation(
 	}
 }
 
-pub fn generate_complete_did_creation_operation(
-	did: TestDidIdentifier,
-	auth_key: did::PublicVerificationKey,
-	enc_key: did::PublicEncryptionKey,
-	att_key: Option<did::PublicVerificationKey>,
-	del_key: Option<did::PublicVerificationKey>,
-	url: Option<did::UrlEncoding>,
-) -> did::DidCreationOperation<TestDidIdentifier> {
-	DidCreationOperation {
-		did: did,
-		new_auth_key: auth_key,
-		new_key_agreement_key: enc_key,
-		new_attestation_key: att_key,
-		new_delegation_key: del_key,
-		new_endpoint_url: url,
-	}
-}
-
-pub fn generate_simple_did_update_operation(
+pub fn generate_base_did_update_operation(
 	did: TestDidIdentifier,
 ) -> did::DidUpdateOperation<TestDidIdentifier> {
 	DidUpdateOperation {
@@ -198,33 +180,15 @@ pub fn generate_simple_did_update_operation(
 	}
 }
 
-pub fn generate_mock_did_details() -> did::DidDetails {
+pub fn generate_mock_did_details(auth_key: did::PublicVerificationKey, enc_key: did::PublicEncryptionKey) -> did::DidDetails {
 	did::DidDetails {
-		auth_key: did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public()),
-		key_agreement_key: get_x25519_encryption_key(true),
+		auth_key: auth_key,
+		key_agreement_key: enc_key,
 		attestation_key: None,
 		delegation_key: None,
 		endpoint_url: None,
 		last_tx_counter: 0,
 		verification_keys: BTreeSet::new(),
-	}
-}
-
-pub fn generate_mock_did_details_with_keys(
-	auth_key: did::PublicVerificationKey,
-	enc_key: did::PublicEncryptionKey,
-	att_key: Option<did::PublicVerificationKey>,
-	del_key: Option<did::PublicVerificationKey>,
-	verification_keys: Option<BTreeSet<PublicVerificationKey>>
-) -> did::DidDetails {
-	did::DidDetails {
-		auth_key: auth_key,
-		key_agreement_key: enc_key,
-		attestation_key: att_key,
-		delegation_key: del_key,
-		endpoint_url: None,
-		last_tx_counter: 0,
-		verification_keys: verification_keys.unwrap_or(BTreeSet::new()),
 	}
 }
 
