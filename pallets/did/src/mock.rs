@@ -165,9 +165,7 @@ pub fn generate_base_did_creation_operation(
 	}
 }
 
-pub fn generate_base_did_update_operation(
-	did: TestDidIdentifier,
-) -> did::DidUpdateOperation<TestDidIdentifier> {
+pub fn generate_base_did_update_operation(did: TestDidIdentifier) -> did::DidUpdateOperation<TestDidIdentifier> {
 	DidUpdateOperation {
 		did: did,
 		new_auth_key: None,
@@ -180,7 +178,10 @@ pub fn generate_base_did_update_operation(
 	}
 }
 
-pub fn generate_mock_did_details(auth_key: did::PublicVerificationKey, enc_key: did::PublicEncryptionKey) -> did::DidDetails {
+pub fn generate_mock_did_details(
+	auth_key: did::PublicVerificationKey,
+	enc_key: did::PublicEncryptionKey,
+) -> did::DidDetails {
 	did::DidDetails {
 		auth_key: auth_key,
 		key_agreement_key: enc_key,
