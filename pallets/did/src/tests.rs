@@ -282,13 +282,13 @@ fn check_successful_verification_keys_deletion() {
 		PublicVerificationKey::from(get_sr25519_attestation_key(true).public()),
 		PublicVerificationKey::from(get_sr25519_attestation_key(false).public()),
 	];
-	let old_verification_keys_set = BTreeSet::from_iter(old_verification_keys_vector.into_iter());
+	let old_verification_keys_set = BTreeSet::from_iter(old_verification_keys_vector.clone().into_iter());
 	let mut old_did_details = generate_mock_did_details(PublicVerificationKey::from(auth_key.public()), enc_key);
-	old_did_details.verification_keys = old_verification_keys_set.clone();
+	old_did_details.verification_keys = old_verification_keys_set;
 
 	// Create update operation to remove all verification keys
 	let mut did_update_operation = generate_base_did_update_operation(ALICE_DID);
-	did_update_operation.verification_keys_to_remove = Some(old_verification_keys_set);
+	did_update_operation.verification_keys_to_remove = Some(old_verification_keys_vector);
 
 	let signature = auth_key.sign(did_update_operation.encode().as_ref());
 
@@ -403,11 +403,9 @@ fn check_invalid_verification_keys_deletion() {
 	let mut old_did_details = generate_mock_did_details(PublicVerificationKey::from(auth_key.public()), enc_key);
 	old_did_details.verification_keys = old_verification_keys_set;
 
-	// Remove some verification keys including one not stored on chain (key4)
-	let verification_keys_to_remove = vec![key1, key3, key4];
 	let mut did_update_operation = generate_base_did_update_operation(ALICE_DID);
-	did_update_operation.verification_keys_to_remove =
-		Some(BTreeSet::from_iter(verification_keys_to_remove.into_iter()));
+	// Remove some verification keys including one not stored on chain (key4)
+	did_update_operation.verification_keys_to_remove = Some(vec![key1, key3, key4]);
 
 	let signature = auth_key.sign(did_update_operation.encode().as_ref());
 
@@ -422,7 +420,7 @@ fn check_invalid_verification_keys_deletion() {
 				did_update_operation.clone(),
 				did::DidSignature::from(signature)
 			),
-			did::Error::<Test>::VerificationKeysNotPresent
+			did::Error::<Test>::VerificationKeyNotPresent
 		);
 	});
 }

@@ -36,8 +36,6 @@ pub use default_weights::WeightInfo;
 
 use codec::{Decode, Encode};
 
-use core::ops::Sub;
-
 use frame_support::{ensure, storage::types::StorageMap, Parameter};
 use frame_system::{self, ensure_signed};
 use sp_core::{ed25519, sr25519};
@@ -190,7 +188,9 @@ pub enum StorageError {
 	DidKeyNotPresent(DidVerificationKeyType),
 	/// One or more verification keys referenced are not stored in the set of
 	/// verification keys.
-	VerificationKeysNotPresent(Vec<PublicVerificationKey>),
+	VerificationKeyNotPresent(PublicVerificationKey),
+	/// Duplicate key specified in the vector of keys to delete from the verification keys
+	DuplicateVerificationKey(PublicVerificationKey),
 }
 
 // Used internally to handle signature errors.
@@ -273,7 +273,7 @@ where
 	new_key_agreement_key: Option<PublicEncryptionKey>,
 	new_attestation_key: Option<PublicVerificationKey>,
 	new_delegation_key: Option<PublicVerificationKey>,
-	verification_keys_to_remove: Option<BTreeSet<PublicVerificationKey>>,
+	verification_keys_to_remove: Option<Vec<PublicVerificationKey>>,
 	new_endpoint_url: Option<UrlEncoding>,
 	tx_counter: u64,
 }
@@ -363,17 +363,21 @@ where
 		// Copy old state into new, and apply changes in operation to new state.
 		let mut new_details = old_details;
 
-		if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove.as_ref() {
-			// Verify that the set of keys to delete - the set of keys stored is empty
-			// (otherwise keys to delete contains some keys not stored on chain -> notify
-			// about them to the caller)
-			let keys_not_present = verification_keys_to_remove.sub(&new_details.verification_keys);
-			ensure!(
-				keys_not_present.is_empty(),
-				DidError::StorageError(StorageError::VerificationKeysNotPresent(
-					keys_not_present.iter().copied().collect()
-				))
-			);
+		// Start from all the current verification keys...
+		let mut remaining_verification_keys = new_details.verification_keys;
+
+		// If there are some keys to remove...
+		if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove {
+			// Keep track of the keys already seen so far (as we are using a list instead of a set for the keys)
+			let seen_keys = BTreeSet::<PublicVerificationKey>::new();
+
+			verification_keys_to_remove.iter().try_for_each(|key| {
+				// Each key to delete must be specified only once in the input list
+				ensure!(!seen_keys.contains(key), DidError::StorageError(StorageError::DuplicateVerificationKey(*key)));
+				// Each key to delete must be present in the set of keys previously stored on chain
+				ensure!(remaining_verification_keys.remove(key), DidError::StorageError(StorageError::VerificationKeyNotPresent(*key)));
+				Ok(())
+			})?;
 		};
 
 		// Verify that the counter is at least as large as the currently saved one, as
@@ -400,7 +404,7 @@ where
 		}
 		if let Some(new_attestation_key) = update_operation.new_attestation_key {
 			if let Some(old_attestation_key) = old_attestation_key {
-				new_details.verification_keys.insert(old_attestation_key);
+				remaining_verification_keys.insert(old_attestation_key);
 			}
 			new_details.attestation_key = Some(new_attestation_key);
 		}
@@ -410,9 +414,7 @@ where
 		if let Some(new_endpoint_url) = update_operation.new_endpoint_url {
 			new_details.endpoint_url = Some(new_endpoint_url);
 		}
-		if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove.as_ref() {
-			new_details.verification_keys = new_details.verification_keys.sub(verification_keys_to_remove);
-		}
+		new_details.verification_keys = remaining_verification_keys;
 		new_details.last_tx_counter = update_operation.tx_counter;
 
 		Ok(new_details)
@@ -459,8 +461,9 @@ pub mod pallet {
 		InvalidSignature,
 		DidAlreadyPresent,
 		DidNotPresent,
-		VerificationKeysNotPresent,
+		VerificationKeyNotPresent,
 		InvalidNonce,
+		DuplicateVerificationKey
 	}
 
 	impl<T> From<DidError> for Error<T> {
@@ -487,9 +490,10 @@ pub mod pallet {
 			match error {
 				StorageError::DidNotPresent => Self::DidNotPresent,
 				StorageError::DidAlreadyPresent => Self::DidAlreadyPresent,
-				StorageError::DidKeyNotPresent(_) | StorageError::VerificationKeysNotPresent(_) => {
-					Self::VerificationKeysNotPresent
-				}
+				StorageError::DidKeyNotPresent(_) | StorageError::VerificationKeyNotPresent(_) => {
+					Self::VerificationKeyNotPresent
+				},
+				StorageError::DuplicateVerificationKey(_) => Self::DuplicateVerificationKey
 			}
 		}
 	}
@@ -536,7 +540,7 @@ pub mod pallet {
 			// as the DidCreateOperation requires the authentication key to be present).
 			let signature_verification_key = did_entry
 				.get_verification_key_for_key_type(DidVerificationKeyType::Authentication)
-				.ok_or(<Error<T>>::VerificationKeysNotPresent)?;
+				.ok_or(<Error<T>>::VerificationKeyNotPresent)?;
 
 			// Re-create a Signature object from the authentication key retrieved, or
 			// generate a InvalidSignatureFormat error otherwise.
