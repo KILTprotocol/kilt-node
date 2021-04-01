@@ -31,11 +31,12 @@ mod mock;
 pub mod benchmarking;
 
 pub mod default_weights;
-use std::ops::Sub;
 
 pub use default_weights::WeightInfo;
 
 use codec::{Decode, Encode};
+
+use core::ops::Sub;
 
 use frame_support::{ensure, storage::types::StorageMap, Parameter};
 use frame_system::{self, ensure_signed};
@@ -365,7 +366,7 @@ where
 		if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove.as_ref() {
 			// Verify that the set of keys to delete - the set of keys stored is empty (otherwise keys to delete contains some keys not stored on chain -> notify about them to the caller)
 			let keys_not_present = verification_keys_to_remove.sub(&new_details.verification_keys);
-			ensure!(keys_not_present.is_empty(), DidError::StorageError(StorageError::VerificationKeysNotPresent(keys_not_present.iter().map(|key| key.clone()).collect())));
+			ensure!(keys_not_present.is_empty(), DidError::StorageError(StorageError::VerificationKeysNotPresent(keys_not_present.iter().copied().collect())));
 		};
 
 		// Verify that the counter is at least as large as the currently saved one, as
