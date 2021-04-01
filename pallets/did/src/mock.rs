@@ -183,6 +183,21 @@ pub fn generate_complete_did_creation_operation(
 	}
 }
 
+pub fn generate_simple_did_update_operation(
+	did: TestDidIdentifier,
+) -> did::DidUpdateOperation<TestDidIdentifier> {
+	DidUpdateOperation {
+		did: did,
+		new_auth_key: None,
+		new_key_agreement_key: None,
+		new_attestation_key: None,
+		new_delegation_key: None,
+		new_endpoint_url: None,
+		verification_keys_to_remove: None,
+		tx_counter: 1,
+	}
+}
+
 pub fn generate_mock_did_details() -> did::DidDetails {
 	did::DidDetails {
 		auth_key: did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public()),

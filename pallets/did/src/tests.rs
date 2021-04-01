@@ -281,16 +281,8 @@ fn check_successful_verification_keys_deletion() {
 	let old_did_details = generate_mock_did_details_with_keys(PublicVerificationKey::from(auth_key.public()), enc_key, None, None, Some(old_verification_keys_set.clone()));
 
 	// Remove all verification keys
-	let did_update_operation = DidUpdateOperation {
-		did: ALICE_DID,
-		new_auth_key: None,
-		new_key_agreement_key: None,
-		new_attestation_key: None,
-		new_delegation_key: None,
-		verification_keys_to_remove: Some(old_verification_keys_set),
-		new_endpoint_url: None,
-		tx_counter: old_did_details.last_tx_counter + 1u64,
-	};
+	let mut did_update_operation = generate_simple_did_update_operation(ALICE_DID);
+	did_update_operation.verification_keys_to_remove = Some(old_verification_keys_set);
 	let signature = auth_key.sign(did_update_operation.encode().as_ref());
 
 	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, old_did_details.clone())]).build();
@@ -319,6 +311,111 @@ fn check_successful_verification_keys_deletion() {
 		new_did_details.verification_keys,
 		BTreeSet::new()
 	);
+}
+
+#[test]
+fn check_did_not_present_update() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let enc_key = get_x25519_encryption_key(true);
+	let mock_did = generate_mock_did_details_with_keys(PublicVerificationKey::from(auth_key.public()), enc_key, None, None, None);
+	let did_update_operation = generate_simple_did_update_operation(BOB_DID);
+	let signature = auth_key.sign(did_update_operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_update_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				did_update_operation.clone(),
+				did::DidSignature::from(signature),
+			),
+			did::Error::<Test>::DidNotPresent
+		);
+	});
+}
+
+#[test]
+fn check_invalid_signature_format_did_update() {
+	// Using an Sr25519 key where an Sr25519 is expected
+	let invalid_key = get_sr25519_authentication_key(true);
+	let mock_did = generate_mock_did_details();
+	// DID update contains auth_key, but signature is generated using invalid_key
+	let did_update_operation = generate_simple_did_update_operation(ALICE_DID);
+	let signature = invalid_key.sign(did_update_operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_update_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				did_update_operation.clone(),
+				did::DidSignature::from(signature),
+			),
+			did::Error::<Test>::InvalidSignatureFormat
+		);
+	});
+}
+
+#[test]
+fn check_invalid_signature_did_update() {
+	// Using an Sr25519 key as expected, but from a different seed (default = false)
+	let alternative_key = get_ed25519_authentication_key(false);
+	let mock_did = generate_mock_did_details();
+	let did_update_operation = generate_simple_did_update_operation(ALICE_DID);
+	let signature = alternative_key.sign(did_update_operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_update_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				did_update_operation.clone(),
+				did::DidSignature::from(signature),
+			),
+			did::Error::<Test>::InvalidSignature
+		);
+	});
+}
+
+#[test]
+fn check_invalid_verification_keys_deletion() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let enc_key = get_x25519_encryption_key(true);
+	let key1 = PublicVerificationKey::from(get_ed25519_attestation_key(true).public());
+	let key2 = PublicVerificationKey::from(get_ed25519_attestation_key(false).public());
+	let key3 = PublicVerificationKey::from(get_sr25519_attestation_key(true).public());
+	let key4 = PublicVerificationKey::from(get_sr25519_attestation_key(false).public());
+	let old_verification_keys_vector = vec![
+		key1,
+		key2,
+		key3
+	];
+	let old_verification_keys_set = BTreeSet::from_iter(old_verification_keys_vector.into_iter());
+	let old_did_details = generate_mock_did_details_with_keys(PublicVerificationKey::from(auth_key.public()), enc_key, None, None, Some(old_verification_keys_set.clone()));
+
+	// Remove some verification keys including one not stored on chain
+	let mut did_update_operation = generate_simple_did_update_operation(ALICE_DID);
+	let verification_keys_to_remove = vec![
+		key1,
+		key3,
+		key4
+	];
+	did_update_operation.verification_keys_to_remove = Some(BTreeSet::from_iter(verification_keys_to_remove.into_iter()));
+	let signature = auth_key.sign(did_update_operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, old_did_details.clone())]).build();
+
+	ext.execute_with(|| {
+		assert_noop!(Did::submit_did_update_operation(
+			Origin::signed(DEFAULT_ACCOUNT),
+			did_update_operation.clone(),
+			did::DidSignature::from(signature)
+		),
+		did::Error::<Test>::VerificationKeysNotPresent);
+	});
 }
 
 // Internal function: verify_did_operation_signature

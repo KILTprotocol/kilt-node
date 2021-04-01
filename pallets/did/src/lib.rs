@@ -451,7 +451,7 @@ pub mod pallet {
 		InvalidSignature,
 		DidAlreadyPresent,
 		DidNotPresent,
-		VerificationKeyNotPresent,
+		VerificationKeysNotPresent,
 		InvalidNonce,
 	}
 
@@ -480,7 +480,7 @@ pub mod pallet {
 				StorageError::DidNotPresent => Self::DidNotPresent,
 				StorageError::DidAlreadyPresent => Self::DidAlreadyPresent,
 				StorageError::DidKeyNotPresent(_) | StorageError::VerificationKeysNotPresent(_) => {
-					Self::VerificationKeyNotPresent
+					Self::VerificationKeysNotPresent
 				}
 			}
 		}
@@ -528,7 +528,7 @@ pub mod pallet {
 			// as the DidCreateOperation requires the authentication key to be present).
 			let signature_verification_key = did_entry
 				.get_verification_key_for_key_type(DidVerificationKeyType::Authentication)
-				.ok_or(<Error<T>>::VerificationKeyNotPresent)?;
+				.ok_or(<Error<T>>::VerificationKeysNotPresent)?;
 
 			// Re-create a Signature object from the authentication key retrieved, or
 			// generate a InvalidSignatureFormat error otherwise.
