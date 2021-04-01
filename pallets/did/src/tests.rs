@@ -16,20 +16,23 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use std::collections::BTreeSet;
-
+use did::DidUpdateOperation;
 use frame_support::{assert_noop, assert_ok};
 use sp_core::Pair;
+use sp_std::collections::btree_set::BTreeSet;
+use std::{iter::FromIterator};
 
 use codec::Encode;
 
-use crate as did;
+use crate::{self as did, PublicVerificationKey, UrlEncoding};
 use crate::mock::*;
+
+// submit_did_create_operation
 
 #[test]
 fn check_successful_simple_ed25519_creation() {
 	let auth_key = get_ed25519_authentication_key(true);
-	let enc_key = get_x25519_encryption_key();
+	let enc_key = get_x25519_encryption_key(true);
 	let did_creation_operation =
 		generate_simple_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()), enc_key);
 	let signature = auth_key.sign(did_creation_operation.encode().as_ref());
@@ -63,7 +66,7 @@ fn check_successful_simple_ed25519_creation() {
 #[test]
 fn check_successful_simple_sr25519_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
-	let enc_key = get_x25519_encryption_key();
+	let enc_key = get_x25519_encryption_key(true);
 	let did_creation_operation =
 		generate_simple_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()), enc_key);
 	let signature = auth_key.sign(did_creation_operation.encode().as_ref());
@@ -97,7 +100,7 @@ fn check_successful_simple_sr25519_creation() {
 #[test]
 fn check_successful_complete_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
-	let enc_key = get_x25519_encryption_key();
+	let enc_key = get_x25519_encryption_key(true);
 	let del_key = get_sr25519_delegation_key(true);
 	let att_key = get_ed25519_attestation_key(true);
 	let did_creation_operation = generate_complete_did_creation_operation(
@@ -140,7 +143,7 @@ fn check_successful_complete_creation() {
 fn check_duplicate_did_creation() {
 	let mock_did = generate_mock_did_details();
 	let auth_key = get_sr25519_authentication_key(true);
-	let enc_key = get_x25519_encryption_key();
+	let enc_key = get_x25519_encryption_key(true);
 	let did_creation_operation =
 		generate_simple_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()), enc_key);
 	let signature = auth_key.sign(did_creation_operation.encode().as_ref());
@@ -162,7 +165,7 @@ fn check_duplicate_did_creation() {
 #[test]
 fn check_invalid_signature_format_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
-	let enc_key = get_x25519_encryption_key();
+	let enc_key = get_x25519_encryption_key(true);
 	// Using an Ed25519 key where an Sr25519 is expected
 	let invalid_key = get_ed25519_authentication_key(true);
 	// DID creation contains auth_key, but signature is generated using invalid_key
@@ -187,7 +190,7 @@ fn check_invalid_signature_format_did_creation() {
 #[test]
 fn check_invalid_signature_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
-	let enc_key = get_x25519_encryption_key();
+	let enc_key = get_x25519_encryption_key(true);
 	// Using an Sr25519 key as expected, but from a different seed (default = false)
 	let alternative_key = get_sr25519_authentication_key(false);
 	// DID creation contains auth_key, but signature is generated using
@@ -210,12 +213,122 @@ fn check_invalid_signature_did_creation() {
 	});
 }
 
+// submit_did_update_operation
+
+#[test]
+fn check_successful_complete_update() {
+	let old_auth_key = get_ed25519_authentication_key(true);
+	let new_auth_key = get_ed25519_authentication_key(false);
+	let old_enc_key = get_x25519_encryption_key(true);
+	let new_enc_key = get_x25519_encryption_key(false);
+	let new_att_key = get_ed25519_attestation_key(true);
+	let new_del_key = get_sr25519_attestation_key(true);
+	let new_url: UrlEncoding = "https://new_kilt.io".into();
+
+	let old_did_details = generate_mock_did_details_with_keys(did::PublicVerificationKey::from(old_auth_key.public()), old_enc_key, None, None, None);
+
+	// Update all keys, URL endpoint and tx counter. No keys are removed in this test
+	let did_update_operation = DidUpdateOperation {
+		did: ALICE_DID,
+		new_auth_key: Some(PublicVerificationKey::from(new_auth_key.public())),
+		new_key_agreement_key: Some(new_enc_key),
+		new_attestation_key: Some(PublicVerificationKey::from(new_att_key.public())),
+		new_delegation_key: Some(PublicVerificationKey::from(new_del_key.public())),
+		verification_keys_to_remove: None,
+		new_endpoint_url: Some(new_url),
+		tx_counter: old_did_details.last_tx_counter + 1u64,
+	};
+	// Generate signature using the old authentication key
+	let signature = old_auth_key.sign(did_update_operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, old_did_details.clone())]).build();
+
+	ext.execute_with(|| {
+		assert_ok!(Did::submit_did_update_operation(
+			Origin::signed(DEFAULT_ACCOUNT),
+			did_update_operation.clone(),
+			did::DidSignature::from(signature),
+		));
+	});
+	let new_did_details = ext.execute_with(|| Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain."));
+	assert_eq!(new_did_details.auth_key, did_update_operation.new_auth_key.unwrap());
+	assert_eq!(
+		new_did_details.key_agreement_key,
+		did_update_operation.new_key_agreement_key.unwrap()
+	);
+	assert_eq!(new_did_details.delegation_key, did_update_operation.new_delegation_key);
+	assert_eq!(new_did_details.attestation_key, did_update_operation.new_attestation_key);
+	// Verification keys should be left unchanged.
+	assert_eq!(
+		new_did_details.verification_keys,
+		old_did_details.verification_keys
+	);
+	assert_eq!(new_did_details.endpoint_url, did_update_operation.new_endpoint_url);
+	assert_eq!(new_did_details.last_tx_counter, did_update_operation.tx_counter);
+}
+
+#[test]
+fn check_successful_verification_keys_deletion() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let enc_key = get_x25519_encryption_key(true);
+	let old_verification_keys_vector = vec![
+		PublicVerificationKey::from(get_ed25519_attestation_key(true).public()),
+		PublicVerificationKey::from(get_ed25519_attestation_key(false).public()),
+		PublicVerificationKey::from(get_sr25519_attestation_key(true).public()),
+		PublicVerificationKey::from(get_sr25519_attestation_key(false).public()),
+	];
+	let old_verification_keys_set = BTreeSet::from_iter(old_verification_keys_vector.into_iter());
+	let old_did_details = generate_mock_did_details_with_keys(PublicVerificationKey::from(auth_key.public()), enc_key, None, None, Some(old_verification_keys_set.clone()));
+
+	// Remove all verification keys
+	let did_update_operation = DidUpdateOperation {
+		did: ALICE_DID,
+		new_auth_key: None,
+		new_key_agreement_key: None,
+		new_attestation_key: None,
+		new_delegation_key: None,
+		verification_keys_to_remove: Some(old_verification_keys_set),
+		new_endpoint_url: None,
+		tx_counter: old_did_details.last_tx_counter + 1u64,
+	};
+	let signature = auth_key.sign(did_update_operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, old_did_details.clone())]).build();
+
+	ext.execute_with(|| {
+		assert_ok!(Did::submit_did_update_operation(
+			Origin::signed(DEFAULT_ACCOUNT),
+			did_update_operation.clone(),
+			did::DidSignature::from(signature),
+		));
+	});
+	let new_did_details = ext.execute_with(|| Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain."));
+	// All fields but verification_keys should remain unchanged
+	assert_eq!(new_did_details.auth_key, old_did_details.auth_key);
+	assert_eq!(
+		new_did_details.key_agreement_key,
+		old_did_details.key_agreement_key
+	);
+	assert_eq!(new_did_details.delegation_key, old_did_details.delegation_key);
+	assert_eq!(new_did_details.attestation_key, old_did_details.attestation_key);
+	assert_eq!(new_did_details.endpoint_url, old_did_details.endpoint_url);
+	assert_eq!(new_did_details.last_tx_counter, did_update_operation.tx_counter);
+
+	// Set of verification keys should be empty now
+	assert_eq!(
+		new_did_details.verification_keys,
+		BTreeSet::new()
+	);
+}
+
+// Internal function: verify_did_operation_signature
+
 #[test]
 fn check_authentication_successful_operation_verification() {
 	let auth_key = get_sr25519_authentication_key(true);
-	let enc_key = get_x25519_encryption_key();
+	let enc_key = get_x25519_encryption_key(true);
 	let mock_did =
-		generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, None);
+		generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, None, None);
 	let did_operation = TestDIDOperation {
 		did: ALICE_DID,
 		verification_key_type: did::DidVerificationKeyType::Authentication,
@@ -235,13 +348,14 @@ fn check_authentication_successful_operation_verification() {
 #[test]
 fn check_attestation_successful_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
-	let enc_key = get_x25519_encryption_key();
+	let enc_key = get_x25519_encryption_key(true);
 	let att_key = get_sr25519_attestation_key(true);
 	let mock_did = generate_mock_did_details_with_keys(
 		did::PublicVerificationKey::from(auth_key.public()),
 		enc_key,
 		Some(did::PublicVerificationKey::from(att_key.public())),
 		None,
+		None
 	);
 	let did_operation = TestDIDOperation {
 		did: ALICE_DID,
@@ -262,13 +376,14 @@ fn check_attestation_successful_operation_verification() {
 #[test]
 fn check_delegation_successful_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
-	let enc_key = get_x25519_encryption_key();
+	let enc_key = get_x25519_encryption_key(true);
 	let del_key = get_ed25519_delegation_key(true);
 	let mock_did = generate_mock_did_details_with_keys(
 		did::PublicVerificationKey::from(auth_key.public()),
 		enc_key,
 		None,
 		Some(did::PublicVerificationKey::from(del_key.public())),
+		None
 	);
 	let did_operation = TestDIDOperation {
 		did: ALICE_DID,
@@ -289,9 +404,9 @@ fn check_delegation_successful_operation_verification() {
 #[test]
 fn check_did_not_present_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
-	let enc_key = get_x25519_encryption_key();
+	let enc_key = get_x25519_encryption_key(true);
 	let mock_did =
-		generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, None);
+		generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, None, None);
 	let did_operation = TestDIDOperation {
 		did: BOB_DID,
 		verification_key_type: did::DidVerificationKeyType::Authentication,
@@ -314,9 +429,9 @@ fn check_did_not_present_operation_verification() {
 #[test]
 fn check_verification_key_not_present_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
-	let enc_key = get_x25519_encryption_key();
+	let enc_key = get_x25519_encryption_key(true);
 	let mock_did =
-		generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, None);
+		generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, None, None);
 	let verification_key_required = did::DidVerificationKeyType::CapabilityInvocation;
 	let did_operation = TestDIDOperation {
 		did: ALICE_DID,
@@ -340,11 +455,11 @@ fn check_verification_key_not_present_operation_verification() {
 #[test]
 fn check_invalid_signature_format_operation_verification() {
 	let auth_key = get_sr25519_authentication_key(true);
-	let enc_key = get_x25519_encryption_key();
+	let enc_key = get_x25519_encryption_key(true);
 	// Expected an Sr25519, given an Ed25519
 	let invalid_key = get_ed25519_authentication_key(true);
 	let mock_did =
-		generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, None);
+		generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, None, None);
 	let did_operation = TestDIDOperation {
 		did: ALICE_DID,
 		verification_key_type: did::DidVerificationKeyType::Authentication,
@@ -367,11 +482,11 @@ fn check_invalid_signature_format_operation_verification() {
 #[test]
 fn check_invalid_signature_operation_verification() {
 	let auth_key = get_sr25519_authentication_key(true);
-	let enc_key = get_x25519_encryption_key();
+	let enc_key = get_x25519_encryption_key(true);
 	// Using same key type but different seed (default = false)
 	let alternative_key = get_sr25519_authentication_key(false);
 	let mock_did =
-		generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, None);
+		generate_mock_did_details_with_keys(did::PublicVerificationKey::from(auth_key.public()), enc_key, None, None, None);
 	let did_operation = TestDIDOperation {
 		did: ALICE_DID,
 		verification_key_type: did::DidVerificationKeyType::Authentication,

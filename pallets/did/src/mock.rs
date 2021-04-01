@@ -88,6 +88,7 @@ pub const BOB_DID: TestDidIdentifier = AccountId::new([2u8; 32]);
 const DEFAULT_AUTH_SEED: [u8; 32] = [3u8; 32];
 const ALTERNATIVE_AUTH_SEED: [u8; 32] = [30u8; 32];
 const DEFAULT_ENC_SEED: [u8; 32] = [4u8; 32];
+const ALTERNATIVE_ENC_SEED: [u8; 32] = [40u8; 32];
 const DEFAULT_ATT_SEED: [u8; 32] = [5u8; 32];
 const ALTERNATIVE_ATT_SEED: [u8; 32] = [50u8; 32];
 const DEFAULT_DEL_SEED: [u8; 32] = [6u8; 32];
@@ -109,8 +110,12 @@ pub fn get_sr25519_authentication_key(default: bool) -> sr25519::Pair {
 	}
 }
 
-pub fn get_x25519_encryption_key() -> PublicEncryptionKey {
-	PublicEncryptionKey::X55519(DEFAULT_ENC_SEED)
+pub fn get_x25519_encryption_key(default: bool) -> PublicEncryptionKey {
+	if default {
+		PublicEncryptionKey::X55519(DEFAULT_ENC_SEED)
+	} else {
+		PublicEncryptionKey::X55519(ALTERNATIVE_ENC_SEED)
+	}
 }
 
 pub fn get_ed25519_attestation_key(default: bool) -> ed25519::Pair {
@@ -181,7 +186,7 @@ pub fn generate_complete_did_creation_operation(
 pub fn generate_mock_did_details() -> did::DidDetails {
 	did::DidDetails {
 		auth_key: did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public()),
-		key_agreement_key: get_x25519_encryption_key(),
+		key_agreement_key: get_x25519_encryption_key(true),
 		attestation_key: None,
 		delegation_key: None,
 		endpoint_url: None,
@@ -195,6 +200,7 @@ pub fn generate_mock_did_details_with_keys(
 	enc_key: did::PublicEncryptionKey,
 	att_key: Option<did::PublicVerificationKey>,
 	del_key: Option<did::PublicVerificationKey>,
+	verification_keys: Option<BTreeSet<PublicVerificationKey>>
 ) -> did::DidDetails {
 	did::DidDetails {
 		auth_key: auth_key,
@@ -203,7 +209,7 @@ pub fn generate_mock_did_details_with_keys(
 		delegation_key: del_key,
 		endpoint_url: None,
 		last_tx_counter: 0,
-		verification_keys: BTreeSet::new(),
+		verification_keys: verification_keys.unwrap_or(BTreeSet::new()),
 	}
 }
 

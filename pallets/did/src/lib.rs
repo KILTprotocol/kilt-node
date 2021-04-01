@@ -31,6 +31,8 @@ mod mock;
 pub mod benchmarking;
 
 pub mod default_weights;
+use std::ops::Sub;
+
 pub use default_weights::WeightInfo;
 
 use codec::{Decode, Encode};
@@ -185,9 +187,9 @@ pub enum StorageError {
 	/// The given DID does not contain the right key to verify the signature of
 	/// a DID operation.
 	DidKeyNotPresent(DidVerificationKeyType),
-	/// The given verification key is not stored in the set of verification
+	/// One or more verification keys referenced are not stored in the set of verification
 	/// keys.
-	VerificationKeyNotPresent(PublicVerificationKey),
+	VerificationKeysNotPresent(Vec<PublicVerificationKey>),
 }
 
 // Used internally to handle signature errors.
@@ -361,15 +363,9 @@ where
 		let mut new_details = old_details;
 
 		if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove.as_ref() {
-			// Checks that all the keys to remove are present on the chain, otherwise
-			// generates a DidError (of type StorageError).
-			verification_keys_to_remove.iter().try_for_each(|key_to_remove| {
-				new_details
-					.verification_keys
-					.contains(key_to_remove)
-					.then(|| ())
-					.ok_or_else(|| DidError::StorageError(StorageError::VerificationKeyNotPresent(*key_to_remove)))
-			})?;
+			// Verify that the set of keys to delete - the set of keys stored is empty (otherwise keys to delete contains some keys not stored on chain -> notify about them to the caller)
+			let keys_not_present = verification_keys_to_remove.sub(&new_details.verification_keys);
+			ensure!(keys_not_present.is_empty(), DidError::StorageError(StorageError::VerificationKeysNotPresent(keys_not_present.iter().map(|key| key.clone()).collect())));
 		};
 
 		// Verify that the counter is at least as large as the currently saved one, as
@@ -407,9 +403,7 @@ where
 			new_details.endpoint_url = Some(new_endpoint_url);
 		}
 		if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove.as_ref() {
-			verification_keys_to_remove.iter().for_each(|key_to_remove| {
-				new_details.verification_keys.remove(key_to_remove);
-			});
+			new_details.verification_keys = new_details.verification_keys.sub(verification_keys_to_remove);
 		}
 		new_details.last_tx_counter = update_operation.tx_counter;
 
@@ -485,7 +479,7 @@ pub mod pallet {
 			match error {
 				StorageError::DidNotPresent => Self::DidNotPresent,
 				StorageError::DidAlreadyPresent => Self::DidAlreadyPresent,
-				StorageError::DidKeyNotPresent(_) | StorageError::VerificationKeyNotPresent(_) => {
+				StorageError::DidKeyNotPresent(_) | StorageError::VerificationKeysNotPresent(_) => {
 					Self::VerificationKeyNotPresent
 				}
 			}
@@ -566,7 +560,7 @@ pub mod pallet {
 		///   the authentication key associated with the new DID. In case the
 		///   authentication key is being updated, the key used to verify is the
 		///   old one that is getting updated.
-		#[pallet::weight(<T as Config>::WeightInfo::submit_did_create_operation())]
+		#[pallet::weight(<T as Config>::WeightInfo::submit_did_update_operation())]
 		pub fn submit_did_update_operation(
 			origin: OriginFor<T>,
 			did_update_operation: DidUpdateOperation<T::DidIdentifier>,
