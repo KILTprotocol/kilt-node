@@ -222,12 +222,14 @@ fn check_successful_complete_update() {
 	let new_auth_key = get_ed25519_authentication_key(false);
 	let old_enc_key = get_x25519_encryption_key(true);
 	let new_enc_key = get_x25519_encryption_key(false);
-	let new_att_key = get_ed25519_attestation_key(true);
+	let old_att_key = get_ed25519_attestation_key(true);
+	let new_att_key = get_ed25519_attestation_key(false);
 	let new_del_key = get_sr25519_attestation_key(true);
 	let new_url: UrlEncoding = "https://new_kilt.io".into();
 
-	let old_did_details =
+	let mut old_did_details =
 		generate_mock_did_details(did::PublicVerificationKey::from(old_auth_key.public()), old_enc_key);
+	old_did_details.attestation_key = Some(PublicVerificationKey::from(old_att_key.public()));
 
 	// Update all keys, URL endpoint and tx counter. No keys are removed in this
 	// test
@@ -264,8 +266,8 @@ fn check_successful_complete_update() {
 		new_did_details.attestation_key,
 		did_update_operation.new_attestation_key
 	);
-	// Verification keys should be left unchanged.
-	assert_eq!(new_did_details.verification_keys, old_did_details.verification_keys);
+	// Verification keys should contain the previous attestation key.
+	assert_eq!(new_did_details.verification_keys, BTreeSet::from_iter(vec![PublicVerificationKey::from(old_att_key.public())].into_iter()));
 	assert_eq!(new_did_details.endpoint_url, did_update_operation.new_endpoint_url);
 	assert_eq!(new_did_details.last_tx_counter, did_update_operation.tx_counter);
 }
