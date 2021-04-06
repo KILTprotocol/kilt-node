@@ -490,8 +490,7 @@ fn check_successful_deletion() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let enc_key = get_x25519_encryption_key(true);
 
-	let did_details =
-		generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key);
+	let did_details = generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key);
 
 	// Update all keys, URL endpoint and tx counter. No keys are removed in this
 	// test
@@ -512,10 +511,7 @@ fn check_successful_deletion() {
 		));
 	});
 
-	assert_eq!(
-		ext.execute_with(|| Did::get_did(ALICE_DID)),
-		None
-	);
+	assert_eq!(ext.execute_with(|| Did::get_did(ALICE_DID)), None);
 }
 
 #[test]
@@ -529,16 +525,17 @@ fn check_did_not_present_deletion() {
 	// Generate signature using the old authentication key
 	let signature = auth_key.sign(did_delete_operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default()
-		.build();
+	let mut ext = ExtBuilder::default().build();
 
 	ext.execute_with(|| {
-		assert_noop!(Did::submit_did_delete_operation(
-			Origin::signed(DEFAULT_ACCOUNT),
-			did_delete_operation.clone(),
-			did::DidSignature::from(signature),
-		),
-		did::Error::<Test>::DidNotPresent);
+		assert_noop!(
+			Did::submit_did_delete_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				did_delete_operation.clone(),
+				did::DidSignature::from(signature),
+			),
+			did::Error::<Test>::DidNotPresent
+		);
 	});
 }
 

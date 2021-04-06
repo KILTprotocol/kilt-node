@@ -178,10 +178,8 @@ pub fn generate_base_did_update_operation(did: TestDidIdentifier) -> did::DidUpd
 	}
 }
 
-pub fn generate_base_did_delete_operation(did: TestDidIdentifier) -> did::DidDeletionOperation <TestDidIdentifier> {
-	DidDeletionOperation {
-		did: did
-	}
+pub fn generate_base_did_delete_operation(did: TestDidIdentifier) -> did::DidDeletionOperation<TestDidIdentifier> {
+	DidDeletionOperation { did: did }
 }
 
 pub fn generate_mock_did_details(
