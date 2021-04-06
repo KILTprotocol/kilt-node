@@ -36,6 +36,8 @@ pub use default_weights::WeightInfo;
 
 use codec::{Decode, Encode};
 
+use core::ops::Sub;
+
 use frame_support::{ensure, storage::types::StorageMap, Parameter};
 use frame_system::{self, ensure_signed};
 use sp_core::{ed25519, sr25519};
@@ -188,10 +190,7 @@ pub enum StorageError {
 	DidKeyNotPresent(DidVerificationKeyType),
 	/// One or more verification keys referenced are not stored in the set of
 	/// verification keys.
-	VerificationKeyNotPresent(PublicVerificationKey),
-	/// Duplicate key specified in the vector of keys to delete from the
-	/// verification keys
-	DuplicateVerificationKey(PublicVerificationKey),
+	VerificationKeysNotPresent(Vec<PublicVerificationKey>),
 }
 
 // Used internally to handle signature errors.
@@ -274,7 +273,7 @@ where
 	new_key_agreement_key: Option<PublicEncryptionKey>,
 	new_attestation_key: Option<PublicVerificationKey>,
 	new_delegation_key: Option<PublicVerificationKey>,
-	verification_keys_to_remove: Option<Vec<PublicVerificationKey>>,
+	verification_keys_to_remove: Option<BTreeSet<PublicVerificationKey>>,
 	new_endpoint_url: Option<UrlEncoding>,
 	tx_counter: u64,
 }
@@ -373,63 +372,44 @@ impl DidDetails {
 /// storage and by applying the changes in the DidUpdateOperation. The operation
 /// fails with a DidError if the update operation instructs to delete a
 /// verification key that is not associated with the DID or if the operation
-/// counter is not larger than the one stored on chain. !!! To note that this
-/// method does not perform any checks regarding the validity of the
-/// DidUpdateOperation signature.
+/// counter is not larger than the one stored on chain.
+///
+/// Please note that this method does not perform any checks regarding
+/// the validity of the DidUpdateOperation signature.
 impl<DidIdentifier> TryFrom<(DidDetails, DidUpdateOperation<DidIdentifier>)> for DidDetails
 where
 	DidIdentifier: Parameter + Encode + Decode + Debug,
 {
 	type Error = DidError;
 
-	fn try_from(value: (DidDetails, DidUpdateOperation<DidIdentifier>)) -> Result<Self, Self::Error> {
-		let (old_details, update_operation) = value;
+	fn try_from(
+		(old_details, update_operation): (DidDetails, DidUpdateOperation<DidIdentifier>),
+	) -> Result<Self, Self::Error> {
 		// Old attestation key is used later in the process, so it's saved here.
 		let old_attestation_key = old_details.attestation_key;
 		// Copy old state into new, and apply changes in operation to new state.
 		let mut new_details = old_details;
 
-		// Start from all the current verification keys...
-		let mut remaining_verification_keys = new_details.verification_keys;
-
-		// If there are some keys to remove...
-		if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove {
-			// Keep track of the keys already seen so far (as we are using a list instead of
-			// a set for the keys)
-			let mut seen_keys = BTreeSet::<PublicVerificationKey>::new();
-
-			verification_keys_to_remove.iter().try_for_each(|key| {
-				// Each key to delete must be specified only once in the input list
-				ensure!(
-					seen_keys.insert(*key),
-					DidError::StorageError(StorageError::DuplicateVerificationKey(*key))
-				);
-				// Each key to delete must be present in the set of keys previously stored on
-				// chain
-				ensure!(
-					remaining_verification_keys.remove(key),
-					DidError::StorageError(StorageError::VerificationKeyNotPresent(*key))
-				);
-				Ok(())
-			})?;
+		if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove.as_ref() {
+			// Verify that the set of keys to delete - the set of keys stored is empty
+			// (otherwise keys to delete contains some keys not stored on chain -> notify
+			// about them to the caller)
+			let keys_not_present = verification_keys_to_remove.sub(&new_details.verification_keys);
+			ensure!(
+				keys_not_present.is_empty(),
+				DidError::StorageError(StorageError::VerificationKeysNotPresent(
+					keys_not_present.iter().copied().collect()
+				))
+			);
 		};
 
-		// Verify that the counter is at least as large as the currently saved one, as
-		// overflow would occurr (hence result = None) if right (last counter value) >
-		// left (operation counter value).
-		let tx_counter_difference = update_operation
-			.tx_counter
-			.checked_sub(new_details.last_tx_counter)
-			.ok_or(DidError::OperationError(OperationError::InvalidNonce))?;
-
-		// Verify that the counter is actually at least 1 unit larger than the stored
-		// one.
+		// Verify that the operation counter is greater than the stored
 		ensure!(
-			tx_counter_difference > 0u64,
+			update_operation.tx_counter > new_details.last_tx_counter,
 			DidError::OperationError(OperationError::InvalidNonce)
 		);
 
-		// Update keys, endpoint and tx counter.
+		// Updates keys, endpoint and tx counter.
 		if let Some(new_auth_key) = update_operation.new_auth_key {
 			new_details.auth_key = new_auth_key;
 		}
@@ -438,7 +418,7 @@ where
 		}
 		if let Some(new_attestation_key) = update_operation.new_attestation_key {
 			if let Some(old_attestation_key) = old_attestation_key {
-				remaining_verification_keys.insert(old_attestation_key);
+				new_details.verification_keys.insert(old_attestation_key);
 			}
 			new_details.attestation_key = Some(new_attestation_key);
 		}
@@ -448,7 +428,9 @@ where
 		if let Some(new_endpoint_url) = update_operation.new_endpoint_url {
 			new_details.endpoint_url = Some(new_endpoint_url);
 		}
-		new_details.verification_keys = remaining_verification_keys;
+		if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove.as_ref() {
+			new_details.verification_keys = new_details.verification_keys.sub(verification_keys_to_remove);
+		}
 		new_details.last_tx_counter = update_operation.tx_counter;
 
 		Ok(new_details)
@@ -496,9 +478,8 @@ pub mod pallet {
 		InvalidSignature,
 		DidAlreadyPresent,
 		DidNotPresent,
-		VerificationKeyNotPresent,
+		VerificationKeysNotPresent,
 		InvalidNonce,
-		DuplicateVerificationKey,
 	}
 
 	impl<T> From<DidError> for Error<T> {
@@ -525,10 +506,9 @@ pub mod pallet {
 			match error {
 				StorageError::DidNotPresent => Self::DidNotPresent,
 				StorageError::DidAlreadyPresent => Self::DidAlreadyPresent,
-				StorageError::DidKeyNotPresent(_) | StorageError::VerificationKeyNotPresent(_) => {
-					Self::VerificationKeyNotPresent
+				StorageError::DidKeyNotPresent(_) | StorageError::VerificationKeysNotPresent(_) => {
+					Self::VerificationKeysNotPresent
 				}
-				StorageError::DuplicateVerificationKey(_) => Self::DuplicateVerificationKey,
 			}
 		}
 	}
@@ -575,7 +555,7 @@ pub mod pallet {
 			// as the DidCreateOperation requires the authentication key to be present).
 			let signature_verification_key = did_entry
 				.get_verification_key_for_key_type(DidVerificationKeyType::Authentication)
-				.ok_or(<Error<T>>::VerificationKeyNotPresent)?;
+				.ok_or(<Error<T>>::VerificationKeysNotPresent)?;
 
 			// Re-create a Signature object from the authentication key retrieved, or
 			// generate a InvalidSignatureFormat error otherwise.
@@ -694,8 +674,8 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	/// Verify the signature of a generic DidOperation, and
-	/// returns either Ok or a DidError. This function expects a storage entry
+	/// Verify the signature of a generic DidOperation.
+	/// This function expects a storage entry
 	/// as parameter and will not retrieve from storage itself. The paremeters
 	/// are:
 	/// * did_operation: the operation which signature is to be verified
