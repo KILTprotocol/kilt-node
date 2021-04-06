@@ -624,8 +624,8 @@ pub mod pallet {
 		/// parameters are:
 		/// * origin: the Substrate account submitting the transaction (which
 		///   can be different from the DID subject)
-		/// * did_deletion_operation: a DidDeactivationOperation which
-		///   includes the DID to deactivate
+		/// * did_deletion_operation: a DidDeletionOperation which includes the
+		///   DID to deactivate
 		/// * signature: a signature over the operation that must be signed with
 		///   the authentication key associated with the new DID.
 		#[pallet::weight(<T as Config>::WeightInfo::submit_did_delete_operation())]
