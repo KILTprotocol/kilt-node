@@ -293,14 +293,14 @@ where
 
 /// A DID deletion request. It contains the following values:
 /// * The DID identifier being deleted
-/// As replaying a deletion request does not change the state of the system,
-/// the deletion request does not have a tx counter.
+/// * A counter used to protect against replay attacks
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
 pub struct DidDeletionOperation<DidIdentifier>
 where
 	DidIdentifier: Parameter + Encode + Decode + Debug,
 {
 	did: DidIdentifier,
+	tx_counter: u64,
 }
 
 impl<DidIdentifier> DidOperation<DidIdentifier> for DidDeletionOperation<DidIdentifier>
@@ -403,7 +403,7 @@ where
 			);
 		};
 
-		// Verify that the operation counter is greater than the stored
+		// Verify that the operation counter is greater than the stored one
 		ensure!(
 			update_operation.tx_counter > new_details.last_tx_counter,
 			DidError::OperationError(OperationError::InvalidNonce)
@@ -643,6 +643,12 @@ pub mod pallet {
 			// Verify the signature of the delete operation.
 			Self::verify_operation_signature_for_entry(&did_deletion_operation, &signature, &did_details)
 				.map_err(<Error<T>>::from)?;
+
+			// Verify that the operation counter is greater than the stored one
+			ensure!(
+				did_deletion_operation.tx_counter > did_details.last_tx_counter,
+				<Error<T>>::InvalidNonce
+			);
 
 			log::debug!("Deleting DID {:?}", did_identifier);
 			<Did<T>>::take(&did_identifier);
