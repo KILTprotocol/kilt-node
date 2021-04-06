@@ -53,27 +53,24 @@ use sp_std::marker::PhantomData;
 
 /// Weight functions needed for did.
 pub trait WeightInfo {
-	fn add() -> Weight;
-	fn remove() -> Weight;
+	fn submit_did_create_operation() -> Weight;
 }
 
 /// Weights for did using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
-	fn add() -> Weight {
-		(69_641_000_u64).saturating_add(T::DbWeight::get().writes(1_u64))
-	}
-	fn remove() -> Weight {
-		(50_144_000_u64).saturating_add(T::DbWeight::get().writes(1_u64))
+	fn submit_did_create_operation() -> Weight {
+		(69_641_000_u64)
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+			.saturating_add(T::DbWeight::get().reads(1_u64))
 	}
 }
 
 // For backwards compatibility and tests
 impl WeightInfo for () {
-	fn add() -> Weight {
-		(69_641_000_u64).saturating_add(RocksDbWeight::get().writes(1_u64))
-	}
-	fn remove() -> Weight {
-		(50_144_000_u64).saturating_add(RocksDbWeight::get().writes(1_u64))
+	fn submit_did_create_operation() -> Weight {
+		(69_641_000_u64)
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
+			.saturating_add(RocksDbWeight::get().reads(1u64))
 	}
 }

@@ -43,6 +43,12 @@ default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
+[dependencies.sp-core]
+branch = "rococo-v1"
+default-features = false
+git = "https://github.com/paritytech/substrate"
+version = "3.0.0"
+
 [dependencies.sp-runtime]
 branch = "rococo-v1"
 default-features = false
