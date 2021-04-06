@@ -266,11 +266,8 @@ fn check_successful_complete_update() {
 		new_did_details.attestation_key,
 		did_update_operation.new_attestation_key
 	);
-	// Verification keys should now contain the previous attestation key.
-	assert_eq!(
-		new_did_details.verification_keys,
-		BTreeSet::from_iter(vec![PublicVerificationKey::from(old_att_key.public())].into_iter())
-	);
+	// Verification keys should contain the previous attestation key.
+	assert_eq!(new_did_details.verification_keys, BTreeSet::from_iter(vec![PublicVerificationKey::from(old_att_key.public())].into_iter()));
 	assert_eq!(new_did_details.endpoint_url, did_update_operation.new_endpoint_url);
 	assert_eq!(new_did_details.last_tx_counter, did_update_operation.tx_counter);
 }
@@ -394,40 +391,7 @@ fn check_invalid_signature_did_update() {
 }
 
 #[test]
-fn check_duplicate_verification_keys_deletion() {
-	let auth_key = get_ed25519_authentication_key(true);
-	let enc_key = get_x25519_encryption_key(true);
-	let key1 = PublicVerificationKey::from(get_ed25519_attestation_key(true).public());
-	let key2 = PublicVerificationKey::from(get_ed25519_attestation_key(false).public());
-	let old_verification_keys_vector = vec![key1, key2];
-	let old_verification_keys_set = BTreeSet::from_iter(old_verification_keys_vector.into_iter());
-	let mut old_did_details = generate_mock_did_details(PublicVerificationKey::from(auth_key.public()), enc_key);
-	old_did_details.verification_keys = old_verification_keys_set;
-
-	let mut did_update_operation = generate_base_did_update_operation(ALICE_DID);
-	// Removing both key1 and key2, but key1 is repeated in the vector
-	did_update_operation.verification_keys_to_remove = Some(vec![key1, key2, key1]);
-
-	let signature = auth_key.sign(did_update_operation.encode().as_ref());
-
-	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(ALICE_DID, old_did_details.clone())])
-		.build();
-
-	ext.execute_with(|| {
-		assert_noop!(
-			Did::submit_did_update_operation(
-				Origin::signed(DEFAULT_ACCOUNT),
-				did_update_operation.clone(),
-				did::DidSignature::from(signature)
-			),
-			did::Error::<Test>::DuplicateVerificationKey
-		);
-	});
-}
-
-#[test]
-fn check_verification_key_not_present_deletion() {
+fn check_invalid_verification_keys_deletion() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let enc_key = get_x25519_encryption_key(true);
 	let key1 = PublicVerificationKey::from(get_ed25519_attestation_key(true).public());
