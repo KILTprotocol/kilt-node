@@ -344,12 +344,13 @@ impl DidDetails {
 }
 
 /// Generates a new DID entry starting from the current one stored in the
-/// storage and by applying the changes in the DIDUpdateOperation. The operation
+/// storage and by applying the changes in the DidUpdateOperation. The operation
 /// fails with a DidError if the update operation instructs to delete a
 /// verification key that is not associated with the DID or if the operation
-/// counter is not larger than the one stored on chain. !!! Please note that
-/// this method does not perform any checks regarding the validity of the
-/// DIDUpdateOperation signature.
+/// counter is not larger than the one stored on chain.
+///
+/// Please note that this method does not perform any checks regarding
+/// the validity of the DidUpdateOperation signature.
 impl<DidIdentifier> TryFrom<(DidDetails, DidUpdateOperation<DidIdentifier>)> for DidDetails
 where
 	DidIdentifier: Parameter + Encode + Decode + Debug,
