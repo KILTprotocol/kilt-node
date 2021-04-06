@@ -41,13 +41,13 @@ use frame_support::traits::GenesisBuild;
 use frame_support::{
 	dispatch::DispatchResultWithPostInfo,
 	pallet_prelude::*,
-	sp_runtime::traits::Zero,
+	sp_runtime::traits::{StaticLookup, Zero},
 	storage::types::StorageMap,
 	traits::{Currency, ExistenceRequirement::AllowDeath, Get, LockIdentifier, LockableCurrency, Vec, WithdrawReasons},
 	transactional, StorageMap as StorageMapTrait,
 };
 pub use pallet::*;
-use pallet_balances::Locks;
+use pallet_balances::{BalanceLock, Locks};
 use pallet_vesting::{Vesting, VestingInfo};
 use sp_runtime::traits::{Convert, Saturating};
 #[cfg(test)]
@@ -223,6 +223,10 @@ pub mod pallet {
 		ConflictingLockingBlocks,
 		ConflictingVestingStarts,
 		ExceedsMaxClaims,
+		InsufficientBalance,
+		InsufficientLockedBalance,
+		BalanceLockNotFound,
+		ExpectedLocks,
 	}
 
 	#[pallet::hooks]
@@ -244,10 +248,14 @@ pub mod pallet {
 
 		/// Enable change of the transfer account via sudo
 		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
-		pub fn change_transfer_account(origin: OriginFor<T>, who: T::AccountId) -> DispatchResultWithPostInfo {
-			let _ = ensure_root(origin)?;
+		pub fn change_transfer_account(
+			origin: OriginFor<T>,
+			transfer_account: <T::Lookup as StaticLookup>::Source,
+		) -> DispatchResultWithPostInfo {
+			ensure_root(origin)?;
+			let transfer_account = T::Lookup::lookup(transfer_account)?;
 
-			<TransferAccount<T>>::put(who);
+			<TransferAccount<T>>::put(transfer_account);
 
 			Ok(Some(T::DbWeight::get().writes(1)).into())
 		}
@@ -263,26 +271,28 @@ pub mod pallet {
 		///
 		/// Note: Setting the custom lock actually only occurs in this call (and
 		/// not when building the genesis block) to avoid overhead from handling
-		/// locks when migrating. We can do so because all destination accounts
+		/// locks when migrating. We can do so because all target accounts
 		/// are not owned by anyone and thus these cannot sign and/or call any
 		/// extrinsics.
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(9, 7))]
 		#[transactional]
 		pub(super) fn migrate_genesis_account(
 			origin: OriginFor<T>,
-			source: T::AccountId,
-			dest: T::AccountId,
+			source: <T::Lookup as StaticLookup>::Source,
+			target: <T::Lookup as StaticLookup>::Source,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
+			let source = T::Lookup::lookup(source)?;
+			let target = T::Lookup::lookup(target)?;
 
 			// The extrinsic has to be called by the TransferAccount
 			ensure!(Some(who) == <TransferAccount<T>>::get(), Error::<T>::Unauthorized);
 
-			Ok(Some(Self::migrate_user(&source, &dest)?).into())
+			Ok(Some(Self::migrate_user(&source, &target)?).into())
 		}
 
 		/// Transfer all balances, vesting and custom locks for multiple source
-		/// addresses to the same destination address.
+		/// addresses to the same target address.
 		///
 		/// See `migrate_genesis_account` for details as we run the same logic
 		/// for each account id in sources.
@@ -290,10 +300,11 @@ pub mod pallet {
 		#[transactional]
 		pub(super) fn migrate_multiple_genesis_accounts(
 			origin: OriginFor<T>,
-			sources: Vec<T::AccountId>,
-			dest: T::AccountId,
+			sources: Vec<<T::Lookup as StaticLookup>::Source>,
+			target: <T::Lookup as StaticLookup>::Source,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
+			let target = T::Lookup::lookup(target)?;
 
 			// The extrinsic has to be called by the TransferAccount
 			ensure!(Some(who) == <TransferAccount<T>>::get(), Error::<T>::Unauthorized);
@@ -302,11 +313,65 @@ pub mod pallet {
 
 			// TODO: How to do this with map?
 			let mut post_weight: Weight = 0;
-			for s in sources.iter() {
-				post_weight += Self::migrate_user(s, &dest)?;
+			for s in sources.into_iter() {
+				let source = T::Lookup::lookup(s)?;
+				post_weight += Self::migrate_user(&source, &target)?;
 			}
 
 			Ok(Some(post_weight).into())
+		}
+
+		/// Transfer KILT locked tokens to another account similar to
+		/// `pallet_vesting::vested_transfer`.
+		///
+		/// Expects the source to have a KILT balance lock and at least the
+		/// specified amount available as total balance.
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2, 3))]
+		#[transactional]
+		pub(super) fn kilt_locked_transfer(
+			origin: OriginFor<T>,
+			target: <T::Lookup as StaticLookup>::Source,
+			amount: <T as pallet_balances::Config>::Balance,
+		) -> DispatchResultWithPostInfo {
+			let source = ensure_signed(origin)?;
+			let target = T::Lookup::lookup(target)?;
+
+			ensure!(
+				<pallet_balances::Pallet<T>>::total_balance(&source) >= amount,
+				Error::<T>::InsufficientBalance
+			);
+			ensure!(
+				<BalanceLocks<T>>::get(&source).is_some(),
+				Error::<T>::BalanceLockNotFound
+			);
+
+			let locks = Locks::<T>::get(&source);
+			ensure!(locks.len() > 0, Error::<T>::ExpectedLocks);
+
+			if let Some(lock) = locks
+				.iter()
+				.find(|BalanceLock::<<T as pallet_balances::Config>::Balance> { id, .. }| id == &KILT_LAUNCH_ID)
+			{
+				ensure!(lock.amount >= amount, Error::<T>::InsufficientLockedBalance);
+
+				// Reduce source's lock amount
+				<pallet_balances::Pallet<T>>::set_lock(
+					KILT_LAUNCH_ID,
+					&source,
+					lock.amount - amount,
+					WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
+				);
+
+				// Transfer to target
+				let _ = <pallet_balances::Pallet<T> as Currency<T::AccountId>>::transfer(
+					&source, &target, amount, AllowDeath,
+				)?;
+
+				// Set lock in target
+				Ok(Some(Self::migrate_kilt_balance_lock(&source, &target)?).into())
+			} else {
+				frame_support::fail!(Error::<T>::BalanceLockNotFound)
+			}
 		}
 	}
 }
@@ -329,19 +394,19 @@ impl<T: Config> Pallet<T> {
 	}
 
 	///
-	fn migrate_user(source: &T::AccountId, dest: &T::AccountId) -> Result<Weight, DispatchError> {
+	fn migrate_user(source: &T::AccountId, target: &T::AccountId) -> Result<Weight, DispatchError> {
 		// There should be no locks for the source address
 		ensure!(Locks::<T>::get(source).len().is_zero(), Error::<T>::UnexpectedLocks);
 
-		// Transfer to destination addess
+		// Transfer to target addess
 		let amount = <pallet_balances::Pallet<T>>::total_balance(source);
-		let _ = <pallet_balances::Pallet<T> as Currency<T::AccountId>>::transfer(source, dest, amount, AllowDeath)?;
+		let _ = <pallet_balances::Pallet<T> as Currency<T::AccountId>>::transfer(source, target, amount, AllowDeath)?;
 
 		// Migrate vesting info and set the corresponding vesting lock if necessary
-		let mut post_weight: Weight = Self::migrate_vesting(source, dest)?;
+		let mut post_weight: Weight = Self::migrate_vesting(source, target)?;
 
 		// Set the KILT custom lock if necessary
-		post_weight += Self::migrate_kilt_balance_lock(source, dest)?;
+		post_weight += Self::migrate_kilt_balance_lock(source, target)?;
 
 		// TODO: Add meaningful information
 		Ok(post_weight)
@@ -351,16 +416,16 @@ impl<T: Config> Pallet<T> {
 	/// in the GenesisBlock and set the corresponding vesting lock.
 	///
 	/// We automatically unlock all available funds for the current block.
-	fn migrate_vesting(source: &T::AccountId, dest: &T::AccountId) -> Result<Weight, DispatchError> {
+	fn migrate_vesting(source: &T::AccountId, target: &T::AccountId) -> Result<Weight, DispatchError> {
 		if let Some(source_vesting) = Vesting::<T>::take(source) {
-			// Check for an already existing vesting schedule on the destination account
+			// Check for an already existing vesting schedule on the target account
 			// which would be the case if the claimer requests migration from multiple
-			// source accounts to the same destination
+			// source accounts to the same target
 			let vesting = if let Some(VestingInfo {
 				locked,
 				per_block,
 				starting_block,
-			}) = Vesting::<T>::take(&dest)
+			}) = Vesting::<T>::take(&target)
 			{
 				// Should never throw because all source accounts start vesting in genesis block
 				ensure!(
@@ -374,12 +439,12 @@ impl<T: Config> Pallet<T> {
 					starting_block,
 				}
 			}
-			// If vesting hasn't been set up for destination account, we can default to the one of the source
+			// If vesting hasn't been set up for target account, we can default to the one of the source
 			// account
 			else {
 				source_vesting
 			};
-			Vesting::<T>::insert(dest, vesting);
+			Vesting::<T>::insert(target, vesting);
 			// Only lock funds from now until vesting expires.
 			// Enables the user to have funds before actively calling `vest` if claimed
 			// after the genesis block.
@@ -394,7 +459,7 @@ impl<T: Config> Pallet<T> {
 			let locked_now = vesting.locked_at::<<T as pallet_vesting::Config>::BlockNumberToBalance>(now);
 			<<T as pallet_vesting::Config>::Currency as LockableCurrency<T::AccountId>>::set_lock(
 				VESTING_ID,
-				dest,
+				target,
 				locked_now.into(),
 				reasons,
 			);
@@ -405,42 +470,42 @@ impl<T: Config> Pallet<T> {
 
 	/// Set the custom KILT balance lock for a user-owned account when requested
 	/// in the migration claim
-	fn migrate_kilt_balance_lock(source: &T::AccountId, dest: &T::AccountId) -> Result<Weight, DispatchError> {
+	fn migrate_kilt_balance_lock(source: &T::AccountId, target: &T::AccountId) -> Result<Weight, DispatchError> {
 		if let Some(source_lock) = <BalanceLocks<T>>::take(&source) {
-			// Check for an already existing custom KILT balance lock on the destination
+			// Check for an already existing custom KILT balance lock on the target
 			// account which would be the case if the claimer requests migration from
-			// multiple source accounts to the same destination
+			// multiple source accounts to the same target
 			let LockedBalance::<T> {
 				amount: unlock_amount,
 				block: unlock_block,
 				..
-			} = if let Some(dest_lock) = <BalanceLocks<T>>::take(&dest) {
+			} = if let Some(target_lock) = <BalanceLocks<T>>::take(&target) {
 				// Should never throw because there is a single locking periods (6 months)
 				ensure!(
-					dest_lock.block == source_lock.block,
+					target_lock.block == source_lock.block,
 					Error::<T>::ConflictingLockingBlocks
 				);
 
 				// We don't need to append `UnlockingAt` because we require both locks to end at
 				// the same block
 				LockedBalance::<T> {
-					block: dest_lock.block,
+					block: target_lock.block,
 					// We can simply sum `amount` because of the above requirement
-					amount: dest_lock.amount.saturating_add(source_lock.amount),
+					amount: target_lock.amount.saturating_add(source_lock.amount),
 				}
 			}
-			// If no custom lock has been set up for destination account, we can default to the one of the source
+			// If no custom lock has been set up for target account, we can default to the one of the source
 			// account and append it to `UnlockingAt`
 			else {
-				<UnlockingAt<T>>::append(source_lock.block, &dest);
+				<UnlockingAt<T>>::append(source_lock.block, &target);
 
 				source_lock
 			};
 
-			// Set lock to in case another account should be migrated to this destination
+			// Set lock to in case another account should be migrated to this target
 			// address
 			<BalanceLocks<T>>::insert(
-				dest,
+				target,
 				LockedBalance::<T> {
 					amount: unlock_amount,
 					block: unlock_block,
@@ -450,7 +515,7 @@ impl<T: Config> Pallet<T> {
 			// withdraws except `WithdrawReasons::TRANSACTION_PAYMENT`
 			<pallet_balances::Pallet<T>>::set_lock(
 				KILT_LAUNCH_ID,
-				&dest,
+				&target,
 				unlock_amount,
 				WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
 			);
