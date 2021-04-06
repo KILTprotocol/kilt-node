@@ -347,7 +347,7 @@ impl DidDetails {
 /// storage and by applying the changes in the DIDUpdateOperation. The operation
 /// fails with a DidError if the update operation instructs to delete a
 /// verification key that is not associated with the DID or if the operation
-/// counter is not larger than the one stored on chain. !!! To note that this
+/// counter is not larger than the one stored on chain. !!! Please note that this
 /// method does not perform any checks regarding the validity of the
 /// DIDUpdateOperation signature.
 impl<DidIdentifier> TryFrom<(DidDetails, DidUpdateOperation<DidIdentifier>)> for DidDetails
@@ -356,8 +356,7 @@ where
 {
 	type Error = DidError;
 
-	fn try_from(value: (DidDetails, DidUpdateOperation<DidIdentifier>)) -> Result<Self, Self::Error> {
-		let (old_details, update_operation) = value;
+	fn try_from((old_details, update_operation): (DidDetails, DidUpdateOperation<DidIdentifier>)) -> Result<Self, Self::Error> {
 		// Old attestation key is used later in the process, so it's saved here.
 		let old_attestation_key = old_details.attestation_key;
 		// Copy old state into new, and apply changes in operation to new state.
@@ -612,8 +611,8 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	/// Verify the signature of a generic DidOperation, and
-	/// returns either Ok or a DidError. This function expects a storage entry
+	/// Verify the signature of a generic DidOperation.
+	/// This function expects a storage entry
 	/// as parameter and will not retrieve from storage itself. The paremeters
 	/// are:
 	/// * did_operation: the operation which signature is to be verified
