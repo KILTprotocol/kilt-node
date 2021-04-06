@@ -267,7 +267,10 @@ fn check_successful_complete_update() {
 		did_update_operation.new_attestation_key
 	);
 	// Verification keys should contain the previous attestation key.
-	assert_eq!(new_did_details.verification_keys, BTreeSet::from_iter(vec![PublicVerificationKey::from(old_att_key.public())].into_iter()));
+	assert_eq!(
+		new_did_details.verification_keys,
+		BTreeSet::from_iter(vec![PublicVerificationKey::from(old_att_key.public())].into_iter())
+	);
 	assert_eq!(new_did_details.endpoint_url, did_update_operation.new_endpoint_url);
 	assert_eq!(new_did_details.last_tx_counter, did_update_operation.tx_counter);
 }
