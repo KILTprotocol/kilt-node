@@ -376,18 +376,9 @@ where
 			);
 		};
 
-		// Verify that the counter is at least as large as the currently saved one, as
-		// overflow would occurr (hence result = None) if right (last counter value) >
-		// left (operation counter value).
-		let tx_difference = update_operation
-			.tx_counter
-			.checked_sub(new_details.last_tx_counter)
-			.ok_or(DidError::OperationError(OperationError::InvalidNonce))?;
-
-		// Verify that the counter is actually at least 1 unit larger than the stored
-		// one.
+		// Verify that the operation counter is greater than the stored
 		ensure!(
-			tx_difference > 0u64,
+			update_operation.tx_counter > new_details.last_tx_counter,
 			DidError::OperationError(OperationError::InvalidNonce)
 		);
 
