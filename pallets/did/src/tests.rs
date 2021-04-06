@@ -256,10 +256,15 @@ fn check_successful_complete_update() {
 		));
 	});
 	let new_did_details = ext.execute_with(|| Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain."));
-	assert_eq!(new_did_details.auth_key, did_update_operation.new_auth_key.expect("Missing new auth key."));
+	assert_eq!(
+		new_did_details.auth_key,
+		did_update_operation.new_auth_key.expect("Missing new auth key.")
+	);
 	assert_eq!(
 		new_did_details.key_agreement_key,
-		did_update_operation.new_key_agreement_key.expect("Missing new key agreement key.")
+		did_update_operation
+			.new_key_agreement_key
+			.expect("Missing new key agreement key.")
 	);
 	assert_eq!(new_did_details.delegation_key, did_update_operation.new_delegation_key);
 	assert_eq!(
