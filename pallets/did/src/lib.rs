@@ -624,7 +624,7 @@ pub mod pallet {
 		/// parameters are:
 		/// * origin: the Substrate account submitting the transaction (which
 		///   can be different from the DID subject)
-		/// * did_deactivation_operation: a DidDeactivationOperation which
+		/// * did_deletion_operation: a DidDeactivationOperation which
 		///   includes the DID to deactivate
 		/// * signature: a signature over the operation that must be signed with
 		///   the authentication key associated with the new DID.
@@ -649,7 +649,7 @@ pub mod pallet {
 			log::debug!("Deleting DID {:?}", did_identifier);
 			<Did<T>>::take(&did_identifier);
 
-			Self::deposit_event(Event::DidDeleted(sender, did_identifier.clone()));
+			Self::deposit_event(Event::DidDeleted(sender, did_identifier.to_owned()));
 			//TODO: Return the real weight used
 			Ok(().into())
 		}
