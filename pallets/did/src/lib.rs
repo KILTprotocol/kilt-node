@@ -572,7 +572,6 @@ pub mod pallet {
 			<Did<T>>::insert(did_identifier, did_entry);
 
 			Self::deposit_event(Event::DidCreated(sender, did_identifier.clone()));
-			//TODO: Return the real weight used
 			Ok(().into())
 		}
 
@@ -615,7 +614,6 @@ pub mod pallet {
 			<Did<T>>::insert(&did_identifier, new_did_details);
 
 			Self::deposit_event(Event::DidUpdated(sender, did_identifier));
-			//TODO: Return the real weight used
 			Ok(().into())
 		}
 
@@ -650,7 +648,6 @@ pub mod pallet {
 			<Did<T>>::take(&did_identifier);
 
 			Self::deposit_event(Event::DidDeleted(sender, did_identifier.clone()));
-			//TODO: Return the real weight used
 			Ok(().into())
 		}
 	}
