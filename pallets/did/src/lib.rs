@@ -649,7 +649,7 @@ pub mod pallet {
 			log::debug!("Deleting DID {:?}", did_identifier);
 			<Did<T>>::take(&did_identifier);
 
-			Self::deposit_event(Event::DidDeleted(sender, did_identifier.to_owned()));
+			Self::deposit_event(Event::DidDeleted(sender, did_identifier.clone()));
 			//TODO: Return the real weight used
 			Ok(().into())
 		}

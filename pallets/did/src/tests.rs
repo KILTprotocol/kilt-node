@@ -512,6 +512,25 @@ fn check_successful_deletion() {
 	});
 
 	assert_eq!(ext.execute_with(|| Did::get_did(ALICE_DID)), None);
+
+	// Re-adding the same DID identifier, which should not fail.
+
+	let auth_key = get_sr25519_authentication_key(true);
+	let enc_key = get_x25519_encryption_key(true);
+	let did_creation_operation =
+		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()), enc_key);
+
+	let signature = auth_key.sign(did_creation_operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default().build();
+
+	ext.execute_with(|| {
+		assert_ok!(Did::submit_did_create_operation(
+			Origin::signed(DEFAULT_ACCOUNT),
+			did_creation_operation.clone(),
+			did::DidSignature::from(signature),
+		));
+	});
 }
 
 #[test]
