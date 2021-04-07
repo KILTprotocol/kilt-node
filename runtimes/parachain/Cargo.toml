@@ -140,6 +140,7 @@ std = [
   "pallet-elections-phragmen/std",
   "pallet-democracy/std",
   "pallet-membership/std",
+  "pallet-transaction-payment-rpc-runtime-api/std",
   "parachain-info/std",
   "kilt-primitives/std",
   "cumulus-pallet-parachain-system/std",
