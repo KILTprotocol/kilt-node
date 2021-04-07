@@ -241,7 +241,7 @@ fn testnet_genesis(
 				})
 				.collect(),
 			// TODO: Set this to another address (PRE-LAUNCH)
-			transfer_account: get_account_id_from_secret::<sr25519::Public>("//Alice"),
+			transfer_account: hex!["6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c"].into(),
 		},
 		pallet_vesting: VestingConfig { vesting: vec![] },
 	}
