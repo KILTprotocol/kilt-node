@@ -291,6 +291,31 @@ where
 	}
 }
 
+/// A DID deletion request. It contains the following values:
+/// * The DID identifier being deleted
+/// * A counter used to protect against replay attacks
+#[derive(Clone, Decode, Debug, Encode, PartialEq)]
+pub struct DidDeletionOperation<DidIdentifier>
+where
+	DidIdentifier: Parameter + Encode + Decode + Debug,
+{
+	did: DidIdentifier,
+	tx_counter: u64,
+}
+
+impl<DidIdentifier> DidOperation<DidIdentifier> for DidDeletionOperation<DidIdentifier>
+where
+	DidIdentifier: Parameter + Encode + Decode + Debug,
+{
+	fn get_verification_key_type(&self) -> DidVerificationKeyType {
+		DidVerificationKeyType::Authentication
+	}
+
+	fn get_did(&self) -> &DidIdentifier {
+		&self.did
+	}
+}
+
 /// The details associated to a DID identity. Specifically:
 /// * The authentication key, used to authenticate DID-related operations
 /// * The key agreement key, used to encrypt data addressed to the DID subject
@@ -302,7 +327,7 @@ where
 ///   exposes
 /// * A counter used to avoid replay attacks, which is checked and updated upon
 ///   each DID-related operation
-#[derive(Clone, Decode, Encode, PartialEq)]
+#[derive(Clone, Debug, Decode, Encode, PartialEq)]
 pub struct DidDetails {
 	auth_key: PublicVerificationKey,
 	key_agreement_key: PublicEncryptionKey,
@@ -378,7 +403,7 @@ where
 			);
 		};
 
-		// Verify that the operation counter is greater than the stored
+		// Verify that the operation counter is greater than the stored one
 		ensure!(
 			update_operation.tx_counter > new_details.last_tx_counter,
 			DidError::OperationError(OperationError::InvalidNonce)
@@ -444,6 +469,7 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		DidCreated(T::AccountId, T::DidIdentifier),
 		DidUpdated(T::AccountId, T::DidIdentifier),
+		DidDeleted(T::AccountId, T::DidIdentifier),
 	}
 
 	#[pallet::error]
@@ -546,7 +572,6 @@ pub mod pallet {
 			<Did<T>>::insert(did_identifier, did_entry);
 
 			Self::deposit_event(Event::DidCreated(sender, did_identifier.clone()));
-			//TODO: Return the real weight used
 			Ok(().into())
 		}
 
@@ -589,7 +614,46 @@ pub mod pallet {
 			<Did<T>>::insert(&did_identifier, new_did_details);
 
 			Self::deposit_event(Event::DidUpdated(sender, did_identifier));
-			//TODO: Return the real weight used
+			Ok(().into())
+		}
+
+		/// Deletes all the information associated with a DID on chain, after
+		/// verifying the signature associated with the operation. The
+		/// parameters are:
+		/// * origin: the Substrate account submitting the transaction (which
+		///   can be different from the DID subject)
+		/// * did_deletion_operation: a DidDeletionOperation which includes the
+		///   DID to deactivate
+		/// * signature: a signature over the operation that must be signed with
+		///   the authentication key associated with the new DID.
+		#[pallet::weight(<T as Config>::WeightInfo::submit_did_delete_operation())]
+		pub fn submit_did_delete_operation(
+			origin: OriginFor<T>,
+			did_deletion_operation: DidDeletionOperation<T::DidIdentifier>,
+			signature: DidSignature,
+		) -> DispatchResultWithPostInfo {
+			// origin of the transaction needs to be a signed sender account
+			let sender = ensure_signed(origin)?;
+
+			let did_identifier = did_deletion_operation.get_did();
+
+			// If specified DID does not exist, generate a DidNotPresent error.
+			let did_details = <Did<T>>::get(&did_identifier).ok_or(<Error<T>>::DidNotPresent)?;
+
+			// Verify the signature of the delete operation.
+			Self::verify_operation_signature_for_entry(&did_deletion_operation, &signature, &did_details)
+				.map_err(<Error<T>>::from)?;
+
+			// Verify that the operation counter is greater than the stored one
+			ensure!(
+				did_deletion_operation.tx_counter > did_details.last_tx_counter,
+				<Error<T>>::InvalidNonce
+			);
+
+			log::debug!("Deleting DID {:?}", did_identifier);
+			<Did<T>>::remove(&did_identifier);
+
+			Self::deposit_event(Event::DidDeleted(sender, did_identifier.clone()));
 			Ok(().into())
 		}
 	}

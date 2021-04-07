@@ -483,6 +483,181 @@ fn check_equal_tx_counter_did_update() {
 	});
 }
 
+// submit_did_delete_operation
+
+#[test]
+fn check_successful_deletion() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let enc_key = get_x25519_encryption_key(true);
+
+	let did_details = generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key);
+
+	// Update all keys, URL endpoint and tx counter. No keys are removed in this
+	// test
+	let did_delete_operation = generate_base_did_delete_operation(ALICE_DID);
+
+	// Generate signature using the old authentication key
+	let signature = auth_key.sign(did_delete_operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(ALICE_DID, did_details.clone())])
+		.build();
+
+	ext.execute_with(|| {
+		assert_ok!(Did::submit_did_delete_operation(
+			Origin::signed(DEFAULT_ACCOUNT),
+			did_delete_operation.clone(),
+			did::DidSignature::from(signature),
+		));
+	});
+
+	assert_eq!(ext.execute_with(|| Did::get_did(ALICE_DID)), None);
+
+	// Re-adding the same DID identifier, which should not fail.
+	let auth_key = get_sr25519_authentication_key(true);
+	let enc_key = get_x25519_encryption_key(true);
+	let did_creation_operation =
+		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()), enc_key);
+
+	let signature = auth_key.sign(did_creation_operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default().build();
+
+	ext.execute_with(|| {
+		assert_ok!(Did::submit_did_create_operation(
+			Origin::signed(DEFAULT_ACCOUNT),
+			did_creation_operation.clone(),
+			did::DidSignature::from(signature),
+		));
+	});
+}
+
+#[test]
+fn check_did_not_present_deletion() {
+	let auth_key = get_ed25519_authentication_key(true);
+
+	// Update all keys, URL endpoint and tx counter. No keys are removed in this
+	// test
+	let did_delete_operation = generate_base_did_delete_operation(ALICE_DID);
+
+	// Generate signature using the old authentication key
+	let signature = auth_key.sign(did_delete_operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default().build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_delete_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				did_delete_operation.clone(),
+				did::DidSignature::from(signature),
+			),
+			did::Error::<Test>::DidNotPresent
+		);
+	});
+}
+
+#[test]
+fn check_invalid_signature_format_did_deletion() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let enc_key = get_x25519_encryption_key(true);
+	// Using an Sr25519 key where an Ed25519 is expected
+	let invalid_key = get_sr25519_authentication_key(true);
+	let mock_did = generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key);
+	// DID update contains auth_key, but signature is generated using invalid_key
+	let did_deletion_operation = generate_base_did_delete_operation(ALICE_DID);
+
+	let signature = invalid_key.sign(did_deletion_operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_delete_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				did_deletion_operation.clone(),
+				did::DidSignature::from(signature),
+			),
+			did::Error::<Test>::InvalidSignatureFormat
+		);
+	});
+}
+
+#[test]
+fn check_invalid_signature_did_deletion() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let enc_key = get_x25519_encryption_key(true);
+	// Using an Sr25519 key as expected, but from a different seed (default = false)
+	let alternative_key = get_sr25519_authentication_key(false);
+	let mock_did = generate_mock_did_details(PublicVerificationKey::from(auth_key.public()), enc_key);
+	let did_delete_operation = generate_base_did_delete_operation(ALICE_DID);
+
+	let signature = alternative_key.sign(did_delete_operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_delete_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				did_delete_operation.clone(),
+				did::DidSignature::from(signature),
+			),
+			did::Error::<Test>::InvalidSignature
+		);
+	});
+}
+
+#[test]
+fn check_smaller_tx_counter_did_deletion() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let enc_key = get_x25519_encryption_key(true);
+	let mut mock_did = generate_mock_did_details(PublicVerificationKey::from(auth_key.public()), enc_key);
+	mock_did.last_tx_counter = 1;
+	let mut did_delete_operation = generate_base_did_delete_operation(ALICE_DID);
+	did_delete_operation.tx_counter = 0;
+
+	let signature = auth_key.sign(did_delete_operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_delete_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				did_delete_operation.clone(),
+				did::DidSignature::from(signature),
+			),
+			did::Error::<Test>::InvalidNonce
+		);
+	});
+}
+
+#[test]
+fn check_equal_tx_counter_did_deletion() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let enc_key = get_x25519_encryption_key(true);
+	let mut mock_did = generate_mock_did_details(PublicVerificationKey::from(auth_key.public()), enc_key);
+	mock_did.last_tx_counter = 1;
+	let mut did_delete_operation = generate_base_did_delete_operation(ALICE_DID);
+	did_delete_operation.tx_counter = mock_did.last_tx_counter;
+
+	let signature = auth_key.sign(did_delete_operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_delete_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				did_delete_operation.clone(),
+				did::DidSignature::from(signature),
+			),
+			did::Error::<Test>::InvalidNonce
+		);
+	});
+}
+
 // Internal function: verify_did_operation_signature
 
 #[test]
