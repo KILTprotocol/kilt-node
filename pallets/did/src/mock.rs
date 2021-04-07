@@ -178,6 +178,13 @@ pub fn generate_base_did_update_operation(did: TestDidIdentifier) -> did::DidUpd
 	}
 }
 
+pub fn generate_base_did_delete_operation(did: TestDidIdentifier) -> did::DidDeletionOperation<TestDidIdentifier> {
+	DidDeletionOperation {
+		did: did,
+		tx_counter: u64::MAX,
+	}
+}
+
 pub fn generate_mock_did_details(
 	auth_key: did::PublicVerificationKey,
 	enc_key: did::PublicEncryptionKey,
