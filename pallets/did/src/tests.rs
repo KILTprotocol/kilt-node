@@ -514,7 +514,6 @@ fn check_successful_deletion() {
 	assert_eq!(ext.execute_with(|| Did::get_did(ALICE_DID)), None);
 
 	// Re-adding the same DID identifier, which should not fail.
-
 	let auth_key = get_sr25519_authentication_key(true);
 	let enc_key = get_x25519_encryption_key(true);
 	let did_creation_operation =

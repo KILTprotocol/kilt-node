@@ -651,7 +651,7 @@ pub mod pallet {
 			);
 
 			log::debug!("Deleting DID {:?}", did_identifier);
-			<Did<T>>::take(&did_identifier);
+			<Did<T>>::remove(&did_identifier);
 
 			Self::deposit_event(Event::DidDeleted(sender, did_identifier.clone()));
 			Ok(().into())
