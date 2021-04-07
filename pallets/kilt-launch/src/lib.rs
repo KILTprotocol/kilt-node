@@ -60,7 +60,7 @@ mod tests;
 // #[cfg(feature = "runtime-benchmarks")]
 // mod benchmarking;
 
-pub const KILT_LAUNCH_ID: LockIdentifier = *b"kiltcoin";
+pub const KILT_LAUNCH_ID: LockIdentifier = *b"kiltlock";
 pub const VESTING_ID: LockIdentifier = *b"vesting ";
 
 #[frame_support::pallet]
@@ -124,24 +124,26 @@ pub mod pallet {
 			// * length - Number of blocks from  until removal of the lock
 			// * amount - Number of tokens which are locked
 			for (ref who, length, locked) in self.balance_locks.iter() {
-				let balance = <pallet_balances::Pallet<T>>::free_balance(who);
-				assert!(!balance.is_zero(), "Currencies must be init'd before locking");
-				assert!(
-					balance >= *locked,
-					"Locked balance must not exceed total balance for address {:?}",
-					who
-				);
+				if !length.is_zero() {
+					let balance = <pallet_balances::Pallet<T>>::free_balance(who);
+					assert!(!balance.is_zero(), "Currencies must be init'd before locking");
+					assert!(
+						balance >= *locked,
+						"Locked balance must not exceed total balance for address {:?}",
+						who
+					);
 
-				// Add unlock block to storage
-				<BalanceLocks<T>>::insert(
-					who,
-					LockedBalance::<T> {
-						block: *length,
-						amount: *locked,
-					},
-				);
-				// Instead of setting the lock now, we do so in
-				// `migrate_genesis_account`, see below for explanation
+					// Add unlock block to storage
+					<BalanceLocks<T>>::insert(
+						who,
+						LockedBalance::<T> {
+							block: *length,
+							amount: *locked,
+						},
+					);
+					// Instead of setting the lock now, we do so in
+					// `migrate_genesis_account`, see below for explanation
+				}
 			}
 
 			// Generate initial vesting configuration, taken from pallet_vesting
@@ -151,28 +153,30 @@ pub mod pallet {
 			// * liquid - Number of units which can be spent before vesting begins =
 			//   total_balance - vesting_balance + 1
 			for &(ref who, length, locked) in self.vesting.iter() {
-				let balance = <<T as pallet_vesting::Config>::Currency as Currency<
-					<T as frame_system::Config>::AccountId,
-				>>::free_balance(who);
-				assert!(!balance.is_zero(), "Currencies must be init'd before vesting");
-				assert!(
-					balance >= locked,
-					"Vested balance must not exceed total balance for address {:?}",
-					who
-				);
-				let length_as_balance = T::BlockNumberToBalance::convert(length);
-				let per_block = locked / length_as_balance.max(sp_runtime::traits::One::one());
+				if !length.is_zero() {
+					let balance = <<T as pallet_vesting::Config>::Currency as Currency<
+						<T as frame_system::Config>::AccountId,
+					>>::free_balance(who);
+					assert!(!balance.is_zero(), "Currencies must be init'd before vesting");
+					assert!(
+						balance >= locked,
+						"Vested balance must not exceed total balance for address {:?}",
+						who
+					);
+					let length_as_balance = T::BlockNumberToBalance::convert(length);
+					let per_block = locked / length_as_balance.max(sp_runtime::traits::One::one());
 
-				Vesting::<T>::insert(
-					who,
-					VestingInfo::<BalanceOf<T>, T::BlockNumber> {
-						locked,
-						per_block,
-						starting_block: T::BlockNumber::zero(),
-					},
-				);
-				// Instead of setting the lock now, we do so in
-				// `migrate_genesis_account`, see below for explanation
+					Vesting::<T>::insert(
+						who,
+						VestingInfo::<BalanceOf<T>, T::BlockNumber> {
+							locked,
+							per_block,
+							starting_block: T::BlockNumber::zero(),
+						},
+					);
+					// Instead of setting the lock now, we do so in
+					// `migrate_genesis_account`, see below for explanation
+				}
 			}
 
 			// Set the transfer account which has a subset of the powers of root
@@ -210,10 +214,17 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, <T as frame_system::Config>::AccountId, LockedBalance<T>>;
 
 	#[pallet::event]
-	#[pallet::metadata(T::BlockNumber = "BlockNumber")]
+	#[pallet::metadata(T::BlockNumber = "BlockNumber", T::AccountId = "AccountId", T::Balance = "Balance")]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
+		// A KILT balance lock has been removed in the corresponding block. \[block, len\]
 		Unlocked(T::BlockNumber, u64),
+		// An account transfered their locked balance to another account. \[from, value, target\]
+		LockedTransfer(T::AccountId, T::Balance, T::AccountId),
+		// A KILT balance lock has been set. \[who, value, until\]
+		AddedKiltLock(T::AccountId, T::Balance, T::BlockNumber),
+		// Vesting has been added to an account. \[who, per_block, total\]
+		AddedVesting(T::AccountId, BalanceOf<T>, BalanceOf<T>),
 	}
 
 	#[pallet::error]
@@ -328,7 +339,7 @@ pub mod pallet {
 		/// specified amount available as total balance.
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2, 3))]
 		#[transactional]
-		pub(super) fn kilt_locked_transfer(
+		pub(super) fn locked_transfer(
 			origin: OriginFor<T>,
 			target: <T::Lookup as StaticLookup>::Source,
 			amount: <T as pallet_balances::Config>::Balance,
@@ -336,6 +347,8 @@ pub mod pallet {
 			let source = ensure_signed(origin)?;
 			let target = T::Lookup::lookup(target)?;
 
+			// The correct check would be `ensure_can_withdraw` but since we expect amount
+			// to be locked, we just check the total balance until we remove the lock
 			ensure!(
 				<pallet_balances::Pallet<T>>::total_balance(&source) >= amount,
 				Error::<T>::InsufficientBalance
@@ -354,18 +367,36 @@ pub mod pallet {
 			{
 				ensure!(lock.amount >= amount, Error::<T>::InsufficientLockedBalance);
 
-				// Reduce source's lock amount
-				<pallet_balances::Pallet<T>>::set_lock(
-					KILT_LAUNCH_ID,
-					&source,
-					lock.amount - amount,
-					WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
-				);
+				// We can substract because of the above check
+				let amount_new = T::ExistentialDeposit::get().max(lock.amount - amount);
+				if amount_new <= T::ExistentialDeposit::get() {
+					// If the lock equals the ExistentialDeposit, we want to remove the lock because
+					// if amount_new == 0, `set_lock` would be no-op
+					<pallet_balances::Pallet<T>>::remove_lock(KILT_LAUNCH_ID, &source);
 
-				// Transfer to target
-				let _ = <pallet_balances::Pallet<T> as Currency<T::AccountId>>::transfer(
-					&source, &target, amount, AllowDeath,
-				)?;
+					// Transfer amount + dust to target
+					let _ = <pallet_balances::Pallet<T> as Currency<T::AccountId>>::transfer(
+						&source,
+						&target,
+						lock.amount,
+						AllowDeath,
+					)?;
+				} else {
+					// Reduce source's lock amount
+					<pallet_balances::Pallet<T>>::set_lock(
+						KILT_LAUNCH_ID,
+						&source,
+						amount_new,
+						WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
+					);
+
+					// Transfer amount to target
+					let _ = <pallet_balances::Pallet<T> as Currency<T::AccountId>>::transfer(
+						&source, &target, amount, AllowDeath,
+					)?;
+				}
+
+				Self::deposit_event(Event::LockedTransfer(source.clone(), amount, target.clone()));
 
 				// Set lock in target
 				Ok(Some(Self::migrate_kilt_balance_lock(&source, &target)?).into())
@@ -463,6 +494,7 @@ impl<T: Config> Pallet<T> {
 				locked_now.into(),
 				reasons,
 			);
+			Self::deposit_event(Event::AddedVesting(target.clone(), vesting.per_block, vesting.locked));
 		}
 		// TODO: Add meaningful weight
 		Ok(0)
@@ -519,6 +551,8 @@ impl<T: Config> Pallet<T> {
 				unlock_amount,
 				WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
 			);
+
+			Self::deposit_event(Event::AddedKiltLock(target.clone(), unlock_amount, unlock_block));
 		}
 		// TODO: Add meaningful weight
 		Ok(0)
