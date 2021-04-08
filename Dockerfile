@@ -1,6 +1,6 @@
 # this container builds the kilt-parachain binary from source files and the runtime library
 # pinned the version to avoid build cache invalidation
-FROM paritytech/ci-linux:94420526-20210215 as builder
+FROM paritytech/ci-linux:d34c7950-20210408 as builder
 
 WORKDIR /build
 
