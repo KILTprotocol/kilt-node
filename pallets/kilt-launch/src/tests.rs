@@ -122,9 +122,110 @@ fn check_migrate_single_account_locked() {
 		});
 }
 
-// TODO: Add test for check_migrate_single_account_twice_locked
+#[test]
+fn check_migrate_single_account_locked_twice() {
+	ExtBuilder::default()
+		.init_balance_for_pseudos()
+		.pseudos_lock_all()
+		.build()
+		.execute_with(|| {
+			let mut user_locked_info = LockedBalance {
+				block: 100,
+				amount: 10_000,
+			};
+			// Migrate pseudo1 lock
+			ensure_single_migration_works(&PSEUDO_1, &USER_1, None, Some(user_locked_info));
 
-// TODO: Add test for check_migrate_accounts_locked
+			user_locked_info = LockedBalance {
+				block: 100,
+				amount: 10_000 + 300_000,
+			};
+			// Migrate pseudo2 lock
+			ensure_single_migration_works(&PSEUDO_3, &USER_1, None, Some(user_locked_info));
+
+			// Reach balance lock limit
+			System::set_block_number(100);
+			<KiltLaunch as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
+			assert_eq!(UnlockingAt::<Test>::get(100), None);
+			assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
+
+			// Should be able to transfer all tokens but ExistentialDeposit
+			assert_ok!(Balances::transfer(
+				Origin::signed(USER_1),
+				PSEUDO_2,
+				310_000 - ExistentialDeposit::get()
+			));
+		});
+}
+
+#[test]
+fn check_migrate_accounts_locked() {
+	ExtBuilder::default()
+		.init_balance_for_pseudos()
+		.pseudos_lock_all()
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				KiltLaunch::migrate_multiple_genesis_accounts(
+					Origin::signed(USER_1),
+					vec![PSEUDO_1, PSEUDO_2, PSEUDO_3],
+					USER_1
+				),
+				Error::<Test>::Unauthorized
+			);
+			assert_ok!(KiltLaunch::migrate_multiple_genesis_accounts(
+				Origin::signed(TRANSFER_ACCOUNT),
+				vec![PSEUDO_1, PSEUDO_3],
+				USER_1
+			));
+
+			let locked_info = LockedBalance {
+				block: 100,
+				amount: 10_000 + 300_000,
+			};
+
+			// Check unlocking info migration
+			assert_eq!(UnlockingAt::<Test>::get(100), Some(vec![USER_1]));
+			assert_eq!(BalanceLocks::<Test>::get(&USER_1), Some(locked_info.clone()));
+
+			// Check correct setting of lock
+			let balance_locks = Locks::<Test>::get(&USER_1);
+			assert_eq!(balance_locks.len(), 1);
+			for BalanceLock { id, amount, reasons } in balance_locks {
+				match id {
+					crate::KILT_LAUNCH_ID => {
+						assert_eq!(amount, locked_info.amount);
+						assert_eq!(reasons, Reasons::Misc);
+					}
+					_ => panic!("Unexpected balance lock id {:?}", id),
+				};
+			}
+
+			// Check balance migration
+			assert_eq!(Balances::free_balance(&USER_1), locked_info.amount);
+			// locked balance should be usable for fees
+			assert_eq!(Balances::usable_balance_for_fees(&USER_1), locked_info.amount);
+			// locked balance should not be usable for anything but fees and other locks
+			assert_eq!(Balances::usable_balance(&USER_1), 0);
+			// there should be nothing reserved
+			assert_eq!(Balances::reserved_balance(&USER_1), 0);
+
+			// TODO: Add positive check for staking once it has been added
+
+			// Reach balance lock limit
+			System::set_block_number(100);
+			<KiltLaunch as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
+			assert_eq!(UnlockingAt::<Test>::get(100), None);
+			assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
+
+			// Should be able to transfer all tokens but ExistentialDeposit
+			assert_ok!(Balances::transfer(
+				Origin::signed(USER_1),
+				PSEUDO_2,
+				locked_info.amount - ExistentialDeposit::get()
+			));
+		});
+}
 
 #[test]
 fn check_migrate_single_account_vested() {

@@ -142,7 +142,7 @@ pub mod pallet {
 						},
 					);
 					// Instead of setting the lock now, we do so in
-					// `migrate_genesis_account`, see below for explanation
+					// `migrate_genesis_account`, see there for explanation
 				}
 			}
 
@@ -175,7 +175,7 @@ pub mod pallet {
 						},
 					);
 					// Instead of setting the lock now, we do so in
-					// `migrate_genesis_account`, see below for explanation
+					// `migrate_genesis_account`, see there for explanation
 				}
 			}
 

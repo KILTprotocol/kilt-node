@@ -271,7 +271,11 @@ impl ExtBuilder {
 	}
 
 	pub fn pseudos_lock_all(self) -> Self {
-		self.lock_balance(vec![(PSEUDO_1, 100, 10_000), (PSEUDO_2, 1337, 10_000)])
+		self.lock_balance(vec![
+			(PSEUDO_1, 100, 10_000),
+			(PSEUDO_2, 1337, 10_000),
+			(PSEUDO_3, 100, 300_000),
+		])
 	}
 
 	pub fn build(self) -> sp_io::TestExternalities {
