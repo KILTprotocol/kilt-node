@@ -336,7 +336,10 @@ pub mod pallet {
 		/// `pallet_vesting::vested_transfer`.
 		///
 		/// Expects the source to have a KILT balance lock and at least the
-		/// specified amount available as total balance.
+		/// specified amount available as balance locked with LockId
+		/// `KILT_LAUNCH_ID`.
+		///
+		/// Calls `migrate_kilt_balance_lock` internally.
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2, 3))]
 		#[transactional]
 		pub(super) fn locked_transfer(
@@ -347,8 +350,8 @@ pub mod pallet {
 			let source = ensure_signed(origin)?;
 			let target = T::Lookup::lookup(target)?;
 
-			// The correct check would be `ensure_can_withdraw` but since we expect amount
-			// to be locked, we just check the total balance until we remove the lock
+			// The correct check would be `ensure_can_withdraw` but since we expect `amount`
+			// to be locked, we just check the total balance until we remove the lock below
 			ensure!(
 				<pallet_balances::Pallet<T>>::total_balance(&source) >= amount,
 				Error::<T>::InsufficientBalance
@@ -369,6 +372,7 @@ pub mod pallet {
 
 				// We can substract because of the above check
 				let amount_new = T::ExistentialDeposit::get().max(lock.amount - amount);
+
 				if amount_new <= T::ExistentialDeposit::get() {
 					// If the lock equals the ExistentialDeposit, we want to remove the lock because
 					// if amount_new == 0, `set_lock` would be no-op
@@ -382,7 +386,7 @@ pub mod pallet {
 						AllowDeath,
 					)?;
 				} else {
-					// Reduce source's lock amount
+					// Reduce source's lock amount to enable token transfer
 					<pallet_balances::Pallet<T>>::set_lock(
 						KILT_LAUNCH_ID,
 						&source,
@@ -398,8 +402,8 @@ pub mod pallet {
 
 				Self::deposit_event(Event::LockedTransfer(source.clone(), amount, target.clone()));
 
-				// Set lock in target
-				Ok(Some(Self::migrate_kilt_balance_lock(&source, &target)?).into())
+				// Set locks in target and remove/update storage entries for source
+				Ok(Some(Self::migrate_kilt_balance_lock(&source, &target, Some(amount))?).into())
 			} else {
 				frame_support::fail!(Error::<T>::BalanceLockNotFound)
 			}
@@ -424,7 +428,13 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
+	/// Transfers all balance of the source to the target address and sets up
+	/// vesting or the custom KILT balance lock if any of the two were set up
+	/// for the source address.
 	///
+	/// Note: Expects the source address to be an unowned address which was set
+	/// up in the Genesis block and should be claimed by a user to migrate to
+	/// their account.
 	fn migrate_user(source: &T::AccountId, target: &T::AccountId) -> Result<Weight, DispatchError> {
 		// There should be no locks for the source address
 		ensure!(Locks::<T>::get(source).len().is_zero(), Error::<T>::UnexpectedLocks);
@@ -437,7 +447,7 @@ impl<T: Config> Pallet<T> {
 		let mut post_weight: Weight = Self::migrate_vesting(source, target)?;
 
 		// Set the KILT custom lock if necessary
-		post_weight += Self::migrate_kilt_balance_lock(source, target)?;
+		post_weight += Self::migrate_kilt_balance_lock(source, target, None)?;
 
 		// TODO: Add meaningful information
 		Ok(post_weight)
@@ -446,7 +456,7 @@ impl<T: Config> Pallet<T> {
 	/// Migrate the vesting schedule from one account to another if it was set
 	/// in the GenesisBlock and set the corresponding vesting lock.
 	///
-	/// We automatically unlock all available funds for the current block.
+	/// We already unlock all available funds until the current block.
 	fn migrate_vesting(source: &T::AccountId, target: &T::AccountId) -> Result<Weight, DispatchError> {
 		if let Some(source_vesting) = Vesting::<T>::take(source) {
 			// Check for an already existing vesting schedule on the target account
@@ -500,46 +510,53 @@ impl<T: Config> Pallet<T> {
 		Ok(0)
 	}
 
-	/// Set the custom KILT balance lock for a user-owned account when requested
-	/// in the migration claim
-	fn migrate_kilt_balance_lock(source: &T::AccountId, target: &T::AccountId) -> Result<Weight, DispatchError> {
-		if let Some(source_lock) = <BalanceLocks<T>>::take(&source) {
+	/// Set the custom KILT balance lock for the target address which should
+	/// always be a user-owned account address.
+	///
+	/// Can be called during the migration of unowned "genesis" addresses to
+	/// user-owned account addresses in `migrate_user` as well when an account
+	/// wants to transfer their locked tokens to another oner in
+	/// `locked_transfer`.
+	fn migrate_kilt_balance_lock(
+		source: &T::AccountId,
+		target: &T::AccountId,
+		// Only used for `locked_transfer`
+		max_amount: Option<<T as pallet_balances::Config>::Balance>,
+	) -> Result<Weight, DispatchError> {
+		if let Some(LockedBalance::<T> {
+			block: unlock_block,
+			amount: source_amount,
+		}) = <BalanceLocks<T>>::get(&source)
+		{
+			// In case of a `locked_transfer`, we might only want to unlock a certain amount
+			// Otherwise, this will always be the source's locked amount
+			let max_add_amount = source_amount.min(max_amount.unwrap_or(source_amount));
+
 			// Check for an already existing custom KILT balance lock on the target
 			// account which would be the case if the claimer requests migration from
 			// multiple source accounts to the same target
-			let LockedBalance::<T> {
-				amount: unlock_amount,
-				block: unlock_block,
-				..
-			} = if let Some(target_lock) = <BalanceLocks<T>>::take(&target) {
+			let target_amount = if let Some(target_lock) = <BalanceLocks<T>>::take(&target) {
 				// Should never throw because there is a single locking periods (6 months)
-				ensure!(
-					target_lock.block == source_lock.block,
-					Error::<T>::ConflictingLockingBlocks
-				);
+				ensure!(target_lock.block == unlock_block, Error::<T>::ConflictingLockingBlocks);
 
 				// We don't need to append `UnlockingAt` because we require both locks to end at
 				// the same block
-				LockedBalance::<T> {
-					block: target_lock.block,
-					// We can simply sum `amount` because of the above requirement
-					amount: target_lock.amount.saturating_add(source_lock.amount),
-				}
+				// We can simply sum `amount` because of the above requirement
+				target_lock.amount.saturating_add(max_add_amount)
 			}
 			// If no custom lock has been set up for target account, we can default to the one of the source
 			// account and append it to `UnlockingAt`
 			else {
-				<UnlockingAt<T>>::append(source_lock.block, &target);
-
-				source_lock
+				<UnlockingAt<T>>::append(unlock_block, &target);
+				max_add_amount
 			};
 
-			// Set lock to in case another account should be migrated to this target
-			// address
+			// Set target lock in case another account should be migrated to this target
+			// address at a later stage
 			<BalanceLocks<T>>::insert(
 				target,
 				LockedBalance::<T> {
-					amount: unlock_amount,
+					amount: target_amount,
 					block: unlock_block,
 				},
 			);
@@ -548,11 +565,40 @@ impl<T: Config> Pallet<T> {
 			<pallet_balances::Pallet<T>>::set_lock(
 				KILT_LAUNCH_ID,
 				&target,
-				unlock_amount,
+				target_amount,
 				WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
 			);
 
-			Self::deposit_event(Event::AddedKiltLock(target.clone(), unlock_amount, unlock_block));
+			// Update or remove lock storage items corresponding to the source address
+			if max_add_amount == source_amount {
+				<BalanceLocks<T>>::remove(&source);
+
+				// Only needs to be handled in the case of a `locked_transfer`, e.g., when
+				// `max_amount` is set because else the source address is never added to
+				// `UnlockingAt`
+				if max_amount.is_some() {
+					let remove_source_map: Vec<T::AccountId> = <UnlockingAt<T>>::take(unlock_block)
+						.unwrap_or_default()
+						.into_iter()
+						.filter_map(|acc_id| if &acc_id == source { None } else { Some(acc_id) })
+						.collect();
+					<UnlockingAt<T>>::insert(unlock_block, remove_source_map);
+				}
+			} else {
+				// Reduce the locked amount
+				//
+				// Note: The update of the real balance lock with id `KILT_LAUNCH_ID` already
+				// happens in `locked_transfer` because it is required for the token transfer
+				<BalanceLocks<T>>::insert(
+					&source,
+					LockedBalance::<T> {
+						block: unlock_block,
+						amount: source_amount.saturating_sub(max_add_amount),
+					},
+				)
+			}
+
+			Self::deposit_event(Event::AddedKiltLock(target.clone(), target_amount, unlock_block));
 		}
 		// TODO: Add meaningful weight
 		Ok(0)
