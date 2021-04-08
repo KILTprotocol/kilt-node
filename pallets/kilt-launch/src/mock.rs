@@ -232,6 +232,26 @@ pub fn ensure_single_migration_works(
 	}
 }
 
+pub fn assert_balance(who: AccountId, free: Balance, usable_for_frees: Balance, usable: Balance) {
+	// Check balance after unlocking
+	assert_eq!(Balances::free_balance(&who), free);
+	// locked balance should be usable for fees
+	assert_eq!(Balances::usable_balance_for_fees(&who), usable_for_frees);
+	// locked balance should not be usable for anything but fees and other locks
+	assert_eq!(Balances::usable_balance(&who), usable);
+	// there should be nothing reserved
+	assert_eq!(Balances::reserved_balance(&who), 0);
+
+	if usable > ExistentialDeposit::get() {
+		// Should be able to transfer all tokens but ExistentialDeposit
+		assert_ok!(Balances::transfer(
+			Origin::signed(who.clone()),
+			TRANSFER_ACCOUNT,
+			usable - ExistentialDeposit::get()
+		));
+	}
+}
+
 impl ExtBuilder {
 	pub fn balances(mut self, endowed_accounts: Vec<(AccountId, Balance)>) -> Self {
 		self.endowed_accounts = endowed_accounts;

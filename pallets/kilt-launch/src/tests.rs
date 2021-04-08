@@ -19,7 +19,7 @@
 use crate::{mock::*, BalanceLocks, Error, LockedBalance, TransferAccount, UnlockingAt, KILT_LAUNCH_ID, VESTING_ID};
 use frame_support::{
 	assert_noop, assert_ok,
-	traits::{LockableCurrency, OnInitialize, WithdrawReasons},
+	traits::{Currency, LockableCurrency, OnInitialize, WithdrawReasons},
 	StorageMap,
 };
 use kilt_primitives::{AccountId, BlockNumber};
@@ -173,16 +173,17 @@ fn check_migrate_accounts_locked() {
 				),
 				Error::<Test>::Unauthorized
 			);
+
+			// Migrate two accounts with same end block
+			let locked_info = LockedBalance {
+				block: 100,
+				amount: 10_000 + 300_000,
+			};
 			assert_ok!(KiltLaunch::migrate_multiple_genesis_accounts(
 				Origin::signed(TRANSFER_ACCOUNT),
 				vec![PSEUDO_1, PSEUDO_3],
 				USER_1
 			));
-
-			let locked_info = LockedBalance {
-				block: 100,
-				amount: 10_000 + 300_000,
-			};
 
 			// Check unlocking info migration
 			assert_eq!(UnlockingAt::<Test>::get(100), Some(vec![USER_1]));
@@ -202,13 +203,7 @@ fn check_migrate_accounts_locked() {
 			}
 
 			// Check balance migration
-			assert_eq!(Balances::free_balance(&USER_1), locked_info.amount);
-			// locked balance should be usable for fees
-			assert_eq!(Balances::usable_balance_for_fees(&USER_1), locked_info.amount);
-			// locked balance should not be usable for anything but fees and other locks
-			assert_eq!(Balances::usable_balance(&USER_1), 0);
-			// there should be nothing reserved
-			assert_eq!(Balances::reserved_balance(&USER_1), 0);
+			assert_balance(USER_1, locked_info.amount, locked_info.amount, 0);
 
 			// TODO: Add positive check for staking once it has been added
 
@@ -217,13 +212,101 @@ fn check_migrate_accounts_locked() {
 			<KiltLaunch as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
 			assert_eq!(UnlockingAt::<Test>::get(100), None);
 			assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
+			assert_balance(USER_1, locked_info.amount, locked_info.amount, locked_info.amount);
+		});
+}
 
-			// Should be able to transfer all tokens but ExistentialDeposit
-			assert_ok!(Balances::transfer(
+// TODO: Add Genesis Build Block Test for 0 entries
+
+#[test]
+fn check_locked_transfer() {
+	ExtBuilder::default()
+		.init_balance_for_pseudos()
+		.pseudos_lock_all()
+		.build()
+		.execute_with(|| {
+			let locked_info = LockedBalance {
+				block: 100,
+				amount: 10_000,
+			};
+			// Migration of balance locks
+			ensure_single_migration_works(&PSEUDO_1, &USER_1, None, Some(locked_info.clone()));
+			assert_eq!(
+				Locks::<Test>::get(&USER_1),
+				vec![BalanceLock {
+					id: KILT_LAUNCH_ID,
+					amount: locked_info.amount,
+					reasons: Reasons::Misc,
+				}]
+			);
+
+			// Cannot transfer more than the total balance
+			assert_noop!(
+				KiltLaunch::locked_transfer(Origin::signed(USER_1), PSEUDO_1, locked_info.amount + 1),
+				Error::<Test>::InsufficientBalance
+			);
+
+			// Cannot transfer without a KILT balance lock
+			assert_noop!(
+				KiltLaunch::locked_transfer(Origin::signed(PSEUDO_4), USER_1, 1),
+				Error::<Test>::BalanceLockNotFound
+			);
+
+			// Add 1 free balance to enable to pay for tx fees
+			<<Test as pallet_vesting::Config>::Currency as Currency<<Test as frame_system::Config>::AccountId>>::make_free_balance_be(&USER_1, locked_info.amount + 1);
+			// Cannot transfer more locked than which is locked
+			assert_noop!(
+				KiltLaunch::locked_transfer(Origin::signed(USER_1), PSEUDO_1, locked_info.amount + 1),
+				Error::<Test>::InsufficientLockedBalance
+			);
+
+			// Locked_Transfer everything but 3000
+			assert_ok!(KiltLaunch::locked_transfer(
 				Origin::signed(USER_1),
-				PSEUDO_2,
-				locked_info.amount - ExistentialDeposit::get()
+				PSEUDO_1,
+				locked_info.amount - 3000
 			));
+			assert_eq!(
+				Locks::<Test>::get(&USER_1),
+				vec![BalanceLock {
+					id: KILT_LAUNCH_ID,
+					amount: 3000,
+					reasons: Reasons::Misc,
+				}]
+			);
+			assert_eq!(
+				Locks::<Test>::get(&PSEUDO_1),
+				vec![BalanceLock {
+					id: KILT_LAUNCH_ID,
+					amount: locked_info.amount - 3000,
+					reasons: Reasons::Misc,
+				}]
+			);
+			assert_eq!(UnlockingAt::<Test>::get(100), Some(vec![USER_1, PSEUDO_1]));
+			assert_balance(PSEUDO_1, locked_info.amount - 3000, locked_info.amount - 3000, 0);
+
+			// Locked_Transfer rest
+			assert_ok!(KiltLaunch::locked_transfer(Origin::signed(USER_1), PSEUDO_1, 3000));
+			assert_eq!(Locks::<Test>::get(&USER_1), vec![]);
+			assert_eq!(
+				Locks::<Test>::get(&PSEUDO_1),
+				vec![BalanceLock {
+					id: KILT_LAUNCH_ID,
+					amount: locked_info.amount,
+					reasons: Reasons::Misc,
+				}]
+			);
+			assert_eq!(BalanceLocks::<Test>::get(&USER_1), None);
+			assert_eq!(BalanceLocks::<Test>::get(&PSEUDO_1), Some(locked_info.clone()));
+			assert_eq!(UnlockingAt::<Test>::get(100), Some(vec![PSEUDO_1]));
+			assert_balance(PSEUDO_1, locked_info.amount, locked_info.amount, 0);
+
+			// Reach balance lock limit
+			System::set_block_number(100);
+			<KiltLaunch as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
+			assert_eq!(UnlockingAt::<Test>::get(100), None);
+			assert_eq!(Locks::<Test>::get(&PSEUDO_1).len(), 0);
+			assert_balance(PSEUDO_1, locked_info.amount, locked_info.amount, locked_info.amount);
 		});
 }
 
@@ -357,13 +440,7 @@ fn check_migrate_accounts_vested() {
 			}
 
 			// Check balance migration
-			assert_eq!(Balances::free_balance(&USER_1), vesting_info.locked);
-			// locked balance should be usable for fees
-			assert_eq!(Balances::usable_balance_for_fees(&USER_1), vesting_info.locked);
-			// locked balance should not be usable for anything but fees and other locks
-			assert_eq!(Balances::usable_balance(&USER_1), vesting_info.per_block);
-			// there should be nothing reserved
-			assert_eq!(Balances::reserved_balance(&USER_1), 0);
+			assert_balance(USER_1, vesting_info.locked, vesting_info.locked, vesting_info.per_block);
 
 			// TODO: Add positive check for staking once it has been added
 
