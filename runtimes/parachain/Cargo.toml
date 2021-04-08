@@ -5,14 +5,14 @@ name = "kilt-parachain-runtime"
 version = "0.2.0"
 
 [dependencies]
+bitflags = {version = "1.2.1", default-features = false}
 codec = {package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"]}
 serde = {version = "1.0.101", optional = true, features = ["derive"]}
+static_assertions = "1.1.0"
 
-# KILT dependencies
-bitflags = {version = "1.2.1", default-features = false}
+# RPC
 frame-system-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
-pallet-indices = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
-sp-arithmetic = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
+pallet-transaction-payment-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 
 # KILT pallets & primitives
 attestation = {default-features = false, path = "../../pallets/attestation"}
@@ -34,6 +34,7 @@ orml-xtokens = {git = "https://github.com/open-web3-stack/open-runtime-module-li
 
 # Substrate dependencies
 sp-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
+sp-arithmetic = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 sp-block-builder = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 sp-inherents = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
@@ -49,10 +50,18 @@ frame-executive = {git = "https://github.com/paritytech/substrate", default-feat
 frame-support = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 frame-system = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 pallet-balances = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
+pallet-collective = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
+pallet-democracy = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
+pallet-elections-phragmen = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
+pallet-indices = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
+pallet-membership = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 pallet-randomness-collective-flip = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
+pallet-scheduler = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
+pallet-society = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 pallet-sudo = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 pallet-timestamp = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 pallet-transaction-payment = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
+pallet-treasury = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 
 # Cumulus dependencies
 cumulus-pallet-parachain-system = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "rococo-v1"}
@@ -70,8 +79,6 @@ xcm-executor = {git = "https://github.com/paritytech/polkadot", default-features
 frame-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "rococo-v1"}
 frame-system-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "rococo-v1"}
 hex-literal = {version = "0.3.1", optional = true}
-pallet-collective = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "rococo-v1"}
-pallet-society = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "rococo-v1"}
 rococo-runtime = {git = "https://github.com/paritytech/polkadot", default-features = false, optional = true, branch = "rococo-v1"}
 
 [build-dependencies]
@@ -126,6 +133,14 @@ std = [
   "pallet-timestamp/std",
   "pallet-sudo/std",
   "pallet-transaction-payment/std",
+  "pallet-collective/std",
+  "pallet-scheduler/std",
+  "pallet-treasury/std",
+  "pallet-society/std",
+  "pallet-elections-phragmen/std",
+  "pallet-democracy/std",
+  "pallet-membership/std",
+  "pallet-transaction-payment-rpc-runtime-api/std",
   "parachain-info/std",
   "kilt-primitives/std",
   "cumulus-pallet-parachain-system/std",

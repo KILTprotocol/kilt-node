@@ -20,7 +20,8 @@
 
 use cumulus_primitives_core::ParaId;
 use kilt_parachain_runtime::{
-	BalancesConfig, GenesisConfig, ParachainInfoConfig, SudoConfig, SystemConfig, WASM_BINARY,
+	BalancesConfig, CouncilConfig, GenesisConfig, ParachainInfoConfig, SudoConfig, SystemConfig,
+	TechnicalCommitteeConfig, WASM_BINARY,
 };
 use kilt_primitives::{AccountId, AccountPublic};
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
@@ -169,5 +170,17 @@ fn testnet_genesis(
 		},
 		pallet_sudo: SudoConfig { key: root_key },
 		parachain_info: ParachainInfoConfig { parachain_id: id },
+		pallet_collective_Instance1: CouncilConfig {
+			members: vec![],
+			phantom: Default::default(),
+		},
+		pallet_collective_Instance2: TechnicalCommitteeConfig {
+			members: vec![],
+			phantom: Default::default(),
+		},
+		pallet_treasury: Default::default(),
+		pallet_elections_phragmen: Default::default(),
+		pallet_membership: Default::default(),
+		pallet_democracy: Default::default(),
 	}
 }
