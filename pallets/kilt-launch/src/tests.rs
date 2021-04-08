@@ -20,7 +20,6 @@ use crate::{mock::*, BalanceLocks, Error, LockedBalance, TransferAccount, Unlock
 use frame_support::{
 	assert_noop, assert_ok,
 	traits::{Currency, LockableCurrency, OnInitialize, WithdrawReasons},
-	StorageMap,
 };
 use kilt_primitives::{AccountId, BlockNumber};
 use pallet_balances::{BalanceLock, Locks, Reasons};

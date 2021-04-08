@@ -184,6 +184,8 @@ impl frame_system::Config for Runtime {
 	/// This is used as an identifier of the chain. 42 is the generic substrate
 	/// prefix.
 	type SS58Prefix = SS58Prefix;
+	/// The set code logic, just the default since we're not a parachain.
+	type OnSetCode = ();
 }
 
 impl aura::Config for Runtime {
@@ -340,25 +342,10 @@ impl frame_support::traits::OnRuntimeUpgrade for DelegationStructRuntimeUpgrade 
 impl did::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
-	/// Type for the public signing key in DIDs
-	type PublicSigningKey = Hash;
-	/// Type for the public boxing key in DIDs
-	type PublicBoxKey = Hash;
 	type WeightInfo = ();
+	type DidIdentifier = AccountId;
 }
 
-pub struct DidStructRuntimeUpgrade;
-impl did::migration::V23ToV24 for DidStructRuntimeUpgrade {
-	type PublicSigningKey = Hash;
-	type PublicBoxKey = Hash;
-	type AccountId = AccountId;
-	type Module = Attestation;
-}
-impl frame_support::traits::OnRuntimeUpgrade for DidStructRuntimeUpgrade {
-	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		did::migration::apply::<Self>()
-	}
-}
 pub struct PortableGabiRemoval;
 impl frame_support::traits::OnRuntimeUpgrade for PortableGabiRemoval {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
@@ -647,8 +634,8 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, attestation, Attestation);
 			add_benchmark!(params, batches, ctype, Ctype);
 			add_benchmark!(params, batches, delegation, Delegation);
-			add_benchmark!(params, batches, did, Did);
 			add_benchmark!(params, batches, pallet_vesting, Vesting);
+			// add_benchmark!(params, batches, did, Did);
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
 			Ok(batches)

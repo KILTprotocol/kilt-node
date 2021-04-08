@@ -40,16 +40,18 @@
 use frame_support::traits::GenesisBuild;
 use frame_support::{
 	dispatch::DispatchResultWithPostInfo,
+	inherent::Vec,
 	pallet_prelude::*,
 	sp_runtime::traits::{StaticLookup, Zero},
 	storage::types::StorageMap,
-	traits::{Currency, ExistenceRequirement::AllowDeath, Get, LockIdentifier, LockableCurrency, Vec, WithdrawReasons},
-	transactional, StorageMap as StorageMapTrait,
+	traits::{Currency, ExistenceRequirement::AllowDeath, Get, LockIdentifier, LockableCurrency, WithdrawReasons},
+	transactional,
 };
 pub use pallet::*;
 use pallet_balances::{BalanceLock, Locks};
 use pallet_vesting::{Vesting, VestingInfo};
 use sp_runtime::traits::{Convert, Saturating};
+
 #[cfg(test)]
 mod mock;
 

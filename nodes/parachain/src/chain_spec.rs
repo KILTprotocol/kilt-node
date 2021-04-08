@@ -20,8 +20,8 @@
 
 use cumulus_primitives_core::ParaId;
 use kilt_parachain_runtime::{
-	BalancesConfig, GenesisConfig, KiltLaunchConfig, ParachainInfoConfig, SudoConfig, SystemConfig, VestingConfig,
-	WASM_BINARY,
+	BalancesConfig, CouncilConfig, GenesisConfig, KiltLaunchConfig, ParachainInfoConfig, SudoConfig, SystemConfig,
+	TechnicalCommitteeConfig, VestingConfig, WASM_BINARY,
 };
 use kilt_primitives::{constants::MONTHS, AccountId, AccountPublic, Balance, BlockNumber};
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
@@ -202,5 +202,17 @@ fn testnet_genesis(
 			transfer_account: hex!["6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c"].into(),
 		},
 		pallet_vesting: VestingConfig { vesting: vec![] },
+		pallet_collective_Instance1: CouncilConfig {
+			members: vec![],
+			phantom: Default::default(),
+		},
+		pallet_collective_Instance2: TechnicalCommitteeConfig {
+			members: vec![],
+			phantom: Default::default(),
+		},
+		pallet_treasury: Default::default(),
+		pallet_elections_phragmen: Default::default(),
+		pallet_membership: Default::default(),
+		pallet_democracy: Default::default(),
 	}
 }

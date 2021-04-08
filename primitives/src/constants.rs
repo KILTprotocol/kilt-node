@@ -35,3 +35,11 @@ pub const DAYS: BlockNumber = HOURS * 24;
 pub const MONTHS: BlockNumber = DAYS * 30;
 
 pub const MIN_VESTED_TRANSFER_AMOUNT: Balance = Balance::MAX;
+
+pub const DOLLARS: Balance = 10; // TODO: how much?
+pub const CENTS: Balance = DOLLARS / 100;
+pub const MILLICENTS: Balance = CENTS / 1_000;
+
+// 1 in 4 blocks (on average, not counting collisions) will be primary babe
+// blocks.
+pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
