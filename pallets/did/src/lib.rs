@@ -175,7 +175,7 @@ pub enum DidError {
 	StorageError(StorageError),
 	SignatureError(SignatureError),
 	OperationError(OperationError),
-	UrlError(UrlError)
+	UrlError(UrlError),
 }
 
 // Used internally to handle storage errors.
@@ -332,17 +332,19 @@ pub struct HttpUrl {
 }
 
 impl TryFrom<&[u8]> for HttpUrl {
-    type Error = UrlError;
+	type Error = UrlError;
 
 	// It fails if the URL is not ASCII-encoded or not a valid HTTP URL.
-    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 		let str_url = str::from_utf8(value).map_err(|_| UrlError::InvalidUrlEncoding)?;
 		ensure!(str_url.is_ascii(), UrlError::InvalidUrlEncoding);
 
 		ensure!(utils::get_http_regex().is_match(value), UrlError::InvalidUrlFormat);
 
-		Ok(HttpUrl { payload: value.to_vec() })
-    }
+		Ok(HttpUrl {
+			payload: value.to_vec(),
+		})
+	}
 }
 
 /// A URL following the FTP standard.
@@ -352,17 +354,19 @@ pub struct FtpUrl {
 }
 
 impl TryFrom<&[u8]> for FtpUrl {
-    type Error = UrlError;
+	type Error = UrlError;
 
 	// It fails if the URL is not ASCII-encoded or not a valid FTP URL.
-    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 		let str_url = str::from_utf8(value).map_err(|_| UrlError::InvalidUrlEncoding)?;
 		ensure!(str_url.is_ascii(), UrlError::InvalidUrlEncoding);
 
 		ensure!(utils::get_ftp_regex().is_match(value), UrlError::InvalidUrlFormat);
 
-		Ok(FtpUrl { payload: value.to_vec() })
-    }
+		Ok(FtpUrl {
+			payload: value.to_vec(),
+		})
+	}
 }
 
 /// Enum representing one of the supported URLs.
