@@ -921,25 +921,3 @@ use crate::{self as did, HttpUrl, PublicVerificationKey, Url, mock::*};
 // 	let decoded_url_lowercase = decoded_url.clone().to_ascii_lowercase();
 // 	println!("Decoded URL lowercase: {:?}", decoded_url_lowercase);
 // }
-
-#[test]
-fn test() {
-	let auth_key = get_sr25519_authentication_key(true);
-	let enc_key = get_x25519_encryption_key(true);
-	let mut did_creation_operation =
-		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()), enc_key);
-
-	did_creation_operation.new_endpoint_url = Some(Url::Http(HttpUrl::try_from("https://kilt.io".as_bytes()).unwrap()));
-
-	let signature = auth_key.sign(did_creation_operation.encode().as_ref());
-
-	let mut ext = ExtBuilder::default().build();
-
-	ext.execute_with(|| {
-		assert_ok!(Did::submit_did_create_operation(
-			Origin::signed(DEFAULT_ACCOUNT),
-			did_creation_operation.clone(),
-			did::DidSignature::from(signature),
-		));
-	});
-}

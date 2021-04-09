@@ -18,6 +18,8 @@
 
 use regex_automata::*;
 
+// Forward regex for
+// https?://[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)*\.[a-zA-Z]{2,5}(:\d{1,5})?((/[a-zA-Z0-9]+)+\.[a-zA-Z0-9]{1,5})?
 const HTTP_FWD_ENCODED_DENSE_REGEX: [u8; 29700] = [
 	114, 117, 115, 116, 45, 114, 101, 103, 101, 120, 45, 97, 117, 116, 111, 109, 97, 116, 97, 45, 100, 102, 97, 0, 255,
 	254, 1, 0, 2, 0, 1, 0, 219, 54, 0, 0, 0, 0, 0, 0, 158, 0, 0, 0, 0, 0, 0, 0, 22, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -848,6 +850,8 @@ const HTTP_FWD_ENCODED_DENSE_REGEX: [u8; 29700] = [
 	28, 181, 20, 0, 0,
 ];
 
+// Backward regex for
+// https?://[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)*\.[a-zA-Z]{2,5}(:\d{1,5})?((/[a-zA-Z0-9]+)+\.[a-zA-Z0-9]{1,5})?
 const HTTP_BWD_ENCODED_DENSE_REGEX: [u8; 35160] = [
 	114, 117, 115, 116, 45, 114, 101, 103, 101, 120, 45, 97, 117, 116, 111, 109, 97, 116, 97, 45, 100, 102, 97, 0, 255,
 	254, 1, 0, 2, 0, 3, 0, 88, 22, 0, 0, 0, 0, 0, 0, 198, 0, 0, 0, 0, 0, 0, 0, 88, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1813,6 +1817,8 @@ const HTTP_BWD_ENCODED_DENSE_REGEX: [u8; 35160] = [
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 ];
 
+// Forward regex for
+// ftps?://[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)*\.[a-zA-Z]{2,5}(:\d{1,5})?((/[a-zA-Z0-9]+)+\.[a-zA-Z0-9]{1,5})?
 const FTP_FWD_ENCODED_DENSE_REGEX: [u8; 29142] = [
 	114, 117, 115, 116, 45, 114, 101, 103, 101, 120, 45, 97, 117, 116, 111, 109, 97, 116, 97, 45, 100, 102, 97, 0, 255,
 	254, 1, 0, 2, 0, 1, 0, 33, 54, 0, 0, 0, 0, 0, 0, 155, 0, 0, 0, 0, 0, 0, 0, 22, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -2626,6 +2632,8 @@ const FTP_FWD_ENCODED_DENSE_REGEX: [u8; 29142] = [
 	52, 247, 35, 249, 27, 251, 19, 0, 0,
 ];
 
+// Backward regex for
+// ftps?://[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)*\.[a-zA-Z]{2,5}(:\d{1,5})?((/[a-zA-Z0-9]+)+\.[a-zA-Z0-9]{1,5})?
 const FTP_BWD_ENCODED_DENSE_REGEX: [u8; 34984] = [
 	114, 117, 115, 116, 45, 114, 101, 103, 101, 120, 45, 97, 117, 116, 111, 109, 97, 116, 97, 45, 100, 102, 97, 0, 255,
 	254, 1, 0, 2, 0, 3, 0, 0, 22, 0, 0, 0, 0, 0, 0, 197, 0, 0, 0, 0, 0, 0, 0, 88, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -3586,22 +3594,29 @@ const FTP_BWD_ENCODED_DENSE_REGEX: [u8; 34984] = [
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 ];
 
-// Compiled regex generated from:
+/// Returns a pre-compiled regex that matches against the following rule:
 // https?://[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)*\.[a-zA-Z]{2,5}(:\d{1,5})?((/
 // [a-zA-Z0-9]+)+\.[a-zA-Z0-9]{1,5})?
+// It maches URLs that start with either HTTP or HTTPS, and support any number of subdomain, as long as the top-level domain is long from 2 to 5 characters.
+// The URL can also contain information about the port number.
+// The URL can terminate with a file name, where the extension of the file can be anything that is long from 1 to 5 characters.
+// To test the regex, an online regex tester can be used such as https://www.regextester.com/
 pub fn get_http_regex() -> Regex<DenseDFA<&'static [u16], u16>> {
 	let fwd: DenseDFA<&[u16], u16> = unsafe { DenseDFA::from_bytes(&HTTP_FWD_ENCODED_DENSE_REGEX) };
 	let rev: DenseDFA<&[u16], u16> = unsafe { DenseDFA::from_bytes(&HTTP_BWD_ENCODED_DENSE_REGEX) };
-	let regex = Regex::from_dfas(fwd, rev);
-	regex
+	Regex::from_dfas(fwd, rev)
 }
 
-// Compiled regex generated from:
+/// Returns a pre-compiled regex that matches against the following rule:
 // ftps?://[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)*\.[a-zA-Z]{2,5}(:\d{1,5})?((/
 // [a-zA-Z0-9]+)+\.[a-zA-Z0-9]{1,5})?
+// It maches URLs that start with either FTP or FTPS, and support any number of subdomain, as long as the top-level domain is long from 2 to 5 characters.
+// The URL can also contain information about the port number.
+// The URL supports the specification of a user to access the FTP server, in the form of ftp://domain.org:user/path_to_access.
+// The URL can terminate with a file name, where the extension of the file can be anything that is long from 1 to 5 characters.
+// To test the regex, an online regex tester can be used such as https://www.regextester.com/
 pub fn get_ftp_regex() -> Regex<DenseDFA<&'static [u16], u16>> {
 	let fwd: DenseDFA<&[u16], u16> = unsafe { DenseDFA::from_bytes(&FTP_FWD_ENCODED_DENSE_REGEX) };
 	let rev: DenseDFA<&[u16], u16> = unsafe { DenseDFA::from_bytes(&FTP_BWD_ENCODED_DENSE_REGEX) };
-	let regex = Regex::from_dfas(fwd, rev);
-	regex
+	Regex::from_dfas(fwd, rev)
 }

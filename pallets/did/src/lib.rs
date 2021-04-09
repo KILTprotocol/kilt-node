@@ -211,6 +211,7 @@ pub enum OperationError {
 	InvalidNonce,
 }
 
+// Error generated when invalid URLs are used as encoded URLs.
 #[derive(Debug, Eq, PartialEq)]
 pub enum UrlError {
 	/// The URL specified is not ASCII-encoded.
@@ -324,6 +325,7 @@ where
 	}
 }
 
+/// A URL following the HTTP standard.
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
 pub struct HttpUrl {
 	payload: Vec<u8>,
@@ -332,6 +334,7 @@ pub struct HttpUrl {
 impl TryFrom<&[u8]> for HttpUrl {
     type Error = UrlError;
 
+	// It fails if the URL is not ASCII-encoded or not a valid HTTP URL.
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 		let str_url = str::from_utf8(value).map_err(|_| UrlError::InvalidUrlEncoding)?;
 		ensure!(str_url.is_ascii(), UrlError::InvalidUrlEncoding);
@@ -342,6 +345,7 @@ impl TryFrom<&[u8]> for HttpUrl {
     }
 }
 
+/// A URL following the FTP standard.
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
 pub struct FtpUrl {
 	payload: Vec<u8>,
@@ -350,6 +354,7 @@ pub struct FtpUrl {
 impl TryFrom<&[u8]> for FtpUrl {
     type Error = UrlError;
 
+	// It fails if the URL is not ASCII-encoded or not a valid FTP URL.
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 		let str_url = str::from_utf8(value).map_err(|_| UrlError::InvalidUrlEncoding)?;
 		ensure!(str_url.is_ascii(), UrlError::InvalidUrlEncoding);
@@ -360,7 +365,7 @@ impl TryFrom<&[u8]> for FtpUrl {
     }
 }
 
-/// A valid URL.
+/// Enum representing one of the supported URLs.
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
 pub enum Url {
 	Http(HttpUrl),
