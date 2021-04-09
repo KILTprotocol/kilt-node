@@ -62,7 +62,7 @@ mod tests;
 // #[cfg(feature = "runtime-benchmarks")]
 // mod benchmarking;
 
-pub const KILT_LAUNCH_ID: LockIdentifier = *b"kiltlock";
+pub const KILT_LAUNCH_ID: LockIdentifier = *b"kiltlnch";
 pub const VESTING_ID: LockIdentifier = *b"vesting ";
 
 #[frame_support::pallet]
@@ -84,11 +84,9 @@ pub mod pallet {
 
 		/// Maximum number of claims which can be migrated in a single call.
 		/// Used for weight estimation.
-///
-		/// NOTE:
-		/// + Benchmarks will need to be re-run and weights adjusted if this
-		/// changes. + This pallet assumes that dependents keep to the limit
-		/// without enforcing it.
+		///
+		/// Note: Benchmarks will need to be re-run and weights adjusted if this
+		/// changes.
 		type MaxClaims: Get<usize>;
 	}
 
@@ -134,6 +132,11 @@ pub mod pallet {
 						"Locked balance must not exceed total balance for address {:?}",
 						who
 					);
+					assert!(
+						!<BalanceLocks<T>>::contains_key(who),
+						"Account with address {:?} must not occur twice in locking",
+						who
+					);
 
 					// Add unlock block to storage
 					<BalanceLocks<T>>::insert(
@@ -165,6 +168,12 @@ pub mod pallet {
 						"Vested balance must not exceed total balance for address {:?}",
 						who
 					);
+					assert!(
+						!<Vesting<T>>::contains_key(who),
+						"Account with address {:?} must not occur twice in vesting",
+						who
+					);
+
 					let length_as_balance = T::BlockNumberToBalance::convert(length);
 					let per_block = locked / length_as_balance.max(sp_runtime::traits::One::one());
 
@@ -217,7 +226,7 @@ pub mod pallet {
 
 	#[pallet::event]
 	#[pallet::metadata(T::BlockNumber = "BlockNumber", T::AccountId = "AccountId", T::Balance = "Balance")]
-	#[pallet::generate_deposit(pub(super) fn deposit_event)]
+	#[pallet::generate_deposit(pub fn deposit_event)]
 	pub enum Event<T: Config> {
 		// A KILT balance lock has been removed in the corresponding block. \[block, len\]
 		Unlocked(T::BlockNumber, u64),
@@ -372,8 +381,8 @@ pub mod pallet {
 			{
 				ensure!(lock.amount >= amount, Error::<T>::InsufficientLockedBalance);
 
-				// We can substract because of the above check
-				let amount_new = T::ExistentialDeposit::get().max(lock.amount - amount);
+				// We can substract because of the above check, but let's be safe
+				let amount_new = lock.amount.saturating_sub(amount);
 
 				if amount_new <= T::ExistentialDeposit::get() {
 					// If the lock equals the ExistentialDeposit, we want to remove the lock because
@@ -582,7 +591,7 @@ impl<T: Config> Pallet<T> {
 					let remove_source_map: Vec<T::AccountId> = <UnlockingAt<T>>::take(unlock_block)
 						.unwrap_or_default()
 						.into_iter()
-						.filter(|acc_id| &acc_id == source)
+						.filter(|acc_id| acc_id != source)
 						.collect();
 					<UnlockingAt<T>>::insert(unlock_block, remove_source_map);
 				}
