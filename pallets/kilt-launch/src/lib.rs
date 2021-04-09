@@ -84,7 +84,7 @@ pub mod pallet {
 
 		/// Maximum number of claims which can be migrated in a single call.
 		/// Used for weight estimation.
-
+///
 		/// NOTE:
 		/// + Benchmarks will need to be re-run and weights adjusted if this
 		/// changes. + This pallet assumes that dependents keep to the limit
@@ -254,7 +254,7 @@ pub mod pallet {
 		/// Enable removal of KILT balance locks via sudo
 		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
 		pub fn force_unlock(origin: OriginFor<T>, block: T::BlockNumber) -> DispatchResultWithPostInfo {
-			let _ = ensure_root(origin)?;
+			ensure_root(origin)?;
 
 			Ok(Some(Self::unlock_balance(block)).into())
 		}
@@ -270,7 +270,7 @@ pub mod pallet {
 
 			<TransferAccount<T>>::put(transfer_account);
 
-			Ok(Some(T::DbWeight::get().writes(1)).into())
+			Ok(None.into())
 		}
 
 		/// Transfer tokens to an account owned by the claimer.
@@ -381,7 +381,7 @@ pub mod pallet {
 					<pallet_balances::Pallet<T>>::remove_lock(KILT_LAUNCH_ID, &source);
 
 					// Transfer amount + dust to target
-					let _ = <pallet_balances::Pallet<T> as Currency<T::AccountId>>::transfer(
+					<pallet_balances::Pallet<T> as Currency<T::AccountId>>::transfer(
 						&source,
 						&target,
 						lock.amount,
@@ -397,7 +397,7 @@ pub mod pallet {
 					);
 
 					// Transfer amount to target
-					let _ = <pallet_balances::Pallet<T> as Currency<T::AccountId>>::transfer(
+					<pallet_balances::Pallet<T> as Currency<T::AccountId>>::transfer(
 						&source, &target, amount, AllowDeath,
 					)?;
 				}
@@ -407,7 +407,7 @@ pub mod pallet {
 				// Set locks in target and remove/update storage entries for source
 				Ok(Some(Self::migrate_kilt_balance_lock(&source, &target, Some(amount))?).into())
 			} else {
-				frame_support::fail!(Error::<T>::BalanceLockNotFound)
+				Err(Error::<T>::BalanceLockNotFound.into())
 			}
 		}
 	}
@@ -443,7 +443,7 @@ impl<T: Config> Pallet<T> {
 
 		// Transfer to target addess
 		let amount = <pallet_balances::Pallet<T>>::total_balance(source);
-		let _ = <pallet_balances::Pallet<T> as Currency<T::AccountId>>::transfer(source, target, amount, AllowDeath)?;
+		<pallet_balances::Pallet<T> as Currency<T::AccountId>>::transfer(source, target, amount, AllowDeath)?;
 
 		// Migrate vesting info and set the corresponding vesting lock if necessary
 		let mut post_weight: Weight = Self::migrate_vesting(source, target)?;
@@ -582,7 +582,7 @@ impl<T: Config> Pallet<T> {
 					let remove_source_map: Vec<T::AccountId> = <UnlockingAt<T>>::take(unlock_block)
 						.unwrap_or_default()
 						.into_iter()
-						.filter_map(|acc_id| if &acc_id == source { None } else { Some(acc_id) })
+						.filter(|acc_id| &acc_id == source)
 						.collect();
 					<UnlockingAt<T>>::insert(unlock_block, remove_source_map);
 				}
