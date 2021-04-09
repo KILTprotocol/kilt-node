@@ -72,6 +72,10 @@ version = "3.0.0"
 version = "0.4.14"
 default-features = false
 
+[dependencies.regex-automata]
+version = "0.1.9"
+default-features = false
+
 [features]
 default = ["std"]
 runtime-benchmarks = [
@@ -82,5 +86,6 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "log/std",
+  "regex-automata/std",
   "sp-std/std",
 ]

@@ -32,6 +32,8 @@ pub mod benchmarking;
 
 pub mod default_weights;
 
+mod utils;
+
 pub use default_weights::WeightInfo;
 
 use codec::{Decode, Encode};
@@ -42,15 +44,12 @@ use frame_support::{ensure, storage::types::StorageMap, Parameter};
 use frame_system::{self, ensure_signed};
 use sp_core::{ed25519, sr25519};
 use sp_runtime::traits::Verify;
-use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom, fmt::Debug, prelude::Clone, vec::Vec};
+use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom, fmt::Debug, prelude::Clone, str, vec::Vec};
 
 pub use pallet::*;
 
 /// Reference to a payload of data of variable size.
 pub type Payload = [u8];
-
-/// Type for an encoded URL.
-pub type UrlEncoding = Vec<u8>;
 
 /// Trait representing a public key under the control of a DID subject.
 pub trait DidPublicKey {
@@ -176,6 +175,7 @@ pub enum DidError {
 	StorageError(StorageError),
 	SignatureError(SignatureError),
 	OperationError(OperationError),
+	UrlError(UrlError)
 }
 
 // Used internally to handle storage errors.
@@ -211,6 +211,14 @@ pub enum OperationError {
 	InvalidNonce,
 }
 
+#[derive(Debug, Eq, PartialEq)]
+pub enum UrlError {
+	/// The URL specified is not ASCII-encoded.
+	InvalidUrlEncoding,
+	/// The URL specified is not properly formatted.
+	InvalidUrlFormat,
+}
+
 /// A trait describing an operation that requires DID authentication.
 pub trait DidOperation<DidIdentifier>: Encode {
 	/// Returns the type of the verification key to be used to validate the
@@ -238,7 +246,7 @@ where
 	new_key_agreement_key: PublicEncryptionKey,
 	new_attestation_key: Option<PublicVerificationKey>,
 	new_delegation_key: Option<PublicVerificationKey>,
-	new_endpoint_url: Option<UrlEncoding>,
+	new_endpoint_url: Option<Url>,
 }
 
 impl<DidIdentifier> DidOperation<DidIdentifier> for DidCreationOperation<DidIdentifier>
@@ -274,7 +282,7 @@ where
 	new_attestation_key: Option<PublicVerificationKey>,
 	new_delegation_key: Option<PublicVerificationKey>,
 	verification_keys_to_remove: Option<BTreeSet<PublicVerificationKey>>,
-	new_endpoint_url: Option<UrlEncoding>,
+	new_endpoint_url: Option<Url>,
 	tx_counter: u64,
 }
 
@@ -316,6 +324,49 @@ where
 	}
 }
 
+#[derive(Clone, Decode, Debug, Encode, PartialEq)]
+pub struct HttpUrl {
+	payload: Vec<u8>,
+}
+
+impl TryFrom<&[u8]> for HttpUrl {
+    type Error = UrlError;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+		let str_url = str::from_utf8(value).map_err(|_| UrlError::InvalidUrlEncoding)?;
+		ensure!(str_url.is_ascii(), UrlError::InvalidUrlEncoding);
+
+		ensure!(utils::get_http_regex().is_match(value), UrlError::InvalidUrlFormat);
+
+		Ok(HttpUrl { payload: value.to_vec() })
+    }
+}
+
+#[derive(Clone, Decode, Debug, Encode, PartialEq)]
+pub struct FtpUrl {
+	payload: Vec<u8>,
+}
+
+impl TryFrom<&[u8]> for FtpUrl {
+    type Error = UrlError;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+		let str_url = str::from_utf8(value).map_err(|_| UrlError::InvalidUrlEncoding)?;
+		ensure!(str_url.is_ascii(), UrlError::InvalidUrlEncoding);
+
+		ensure!(utils::get_ftp_regex().is_match(value), UrlError::InvalidUrlFormat);
+
+		Ok(FtpUrl { payload: value.to_vec() })
+    }
+}
+
+/// A valid URL.
+#[derive(Clone, Decode, Debug, Encode, PartialEq)]
+pub enum Url {
+	Http(HttpUrl),
+	Ftp(FtpUrl),
+}
+
 /// The details associated to a DID identity. Specifically:
 /// * The authentication key, used to authenticate DID-related operations
 /// * The key agreement key, used to encrypt data addressed to the DID subject
@@ -334,7 +385,7 @@ pub struct DidDetails {
 	delegation_key: Option<PublicVerificationKey>,
 	attestation_key: Option<PublicVerificationKey>,
 	verification_keys: BTreeSet<PublicVerificationKey>,
-	endpoint_url: Option<UrlEncoding>,
+	endpoint_url: Option<Url>,
 	last_tx_counter: u64,
 }
 
@@ -480,6 +531,8 @@ pub mod pallet {
 		DidNotPresent,
 		VerificationKeysNotPresent,
 		InvalidNonce,
+		InvalidUrlEncoding,
+		InvalidUrlFormat,
 	}
 
 	impl<T> From<DidError> for Error<T> {
@@ -488,6 +541,7 @@ pub mod pallet {
 				DidError::SignatureError(signature_error) => Self::from(signature_error),
 				DidError::StorageError(storage_error) => Self::from(storage_error),
 				DidError::OperationError(operation_error) => Self::from(operation_error),
+				DidError::UrlError(url_error) => Self::from(url_error),
 			}
 		}
 	}
@@ -517,6 +571,15 @@ pub mod pallet {
 		fn from(error: OperationError) -> Self {
 			match error {
 				OperationError::InvalidNonce => Self::InvalidNonce,
+			}
+		}
+	}
+
+	impl<T> From<UrlError> for Error<T> {
+		fn from(error: UrlError) -> Self {
+			match error {
+				UrlError::InvalidUrlEncoding => Self::InvalidUrlEncoding,
+				UrlError::InvalidUrlFormat => Self::InvalidSignatureFormat,
 			}
 		}
 	}
