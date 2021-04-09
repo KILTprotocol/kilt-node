@@ -233,7 +233,9 @@ pub fn ensure_single_migration_works(
 	}
 }
 
-pub fn assert_balance(who: AccountId, free: Balance, usable_for_frees: Balance, usable: Balance) {
+// Checks whether the usable balance meets the expectations and if exists, if it
+// can be transferred which we expect once locks are removed
+pub fn assert_balance(who: AccountId, free: Balance, usable_for_frees: Balance, usable: Balance, do_transfer: bool) {
 	// Check balance after unlocking
 	assert_eq!(Balances::free_balance(&who), free);
 	// locked balance should be usable for fees
@@ -243,7 +245,7 @@ pub fn assert_balance(who: AccountId, free: Balance, usable_for_frees: Balance, 
 	// there should be nothing reserved
 	assert_eq!(Balances::reserved_balance(&who), 0);
 
-	if usable > ExistentialDeposit::get() {
+	if do_transfer && usable > ExistentialDeposit::get() {
 		// Should be able to transfer all tokens but ExistentialDeposit
 		assert_ok!(Balances::transfer(
 			Origin::signed(who.clone()),
@@ -319,5 +321,63 @@ impl ExtBuilder {
 		let mut ext = sp_io::TestExternalities::new(t);
 		ext.execute_with(|| System::set_block_number(1));
 		ext
+	}
+
+	/// Panic builds
+	pub fn init_panic_build(self) -> sp_runtime::Storage {
+		let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+
+		pallet_balances::GenesisConfig::<Test> {
+			balances: vec![(PSEUDO_1, 10_000)],
+		}
+		.assimilate_storage(&mut t)
+		.unwrap();
+
+		t
+	}
+	// TODO: Reduce code
+	pub fn build_locking_panic_amount(self) {
+		let mut t = Self::init_panic_build(self);
+
+		kilt_launch::GenesisConfig::<Test> {
+			balance_locks: vec![(PSEUDO_1, 1, 10_001)],
+			vesting: vec![],
+			transfer_account: TRANSFER_ACCOUNT,
+		}
+		.assimilate_storage(&mut t)
+		.unwrap()
+	}
+	pub fn build_locking_panic_same_acc(self) {
+		let mut t = Self::init_panic_build(self);
+
+		kilt_launch::GenesisConfig::<Test> {
+			balance_locks: vec![(PSEUDO_1, 100, 10_000), (PSEUDO_1, 1337, 10_000)],
+			vesting: vec![],
+			transfer_account: TRANSFER_ACCOUNT,
+		}
+		.assimilate_storage(&mut t)
+		.unwrap()
+	}
+	pub fn build_vesting_panic_amount(self) {
+		let mut t = Self::init_panic_build(self);
+
+		kilt_launch::GenesisConfig::<Test> {
+			balance_locks: vec![],
+			vesting: vec![(PSEUDO_1, 100, 10_001)],
+			transfer_account: TRANSFER_ACCOUNT,
+		}
+		.assimilate_storage(&mut t)
+		.unwrap()
+	}
+	pub fn build_vesting_panic_same_acc(self) {
+		let mut t = Self::init_panic_build(self);
+
+		kilt_launch::GenesisConfig::<Test> {
+			balance_locks: vec![],
+			vesting: vec![(PSEUDO_1, 100, 10_000), (PSEUDO_1, 1337, 10_000)],
+			transfer_account: TRANSFER_ACCOUNT,
+		}
+		.assimilate_storage(&mut t)
+		.unwrap()
 	}
 }

@@ -202,7 +202,7 @@ fn check_migrate_accounts_locked() {
 			}
 
 			// Check balance migration
-			assert_balance(USER_1, locked_info.amount, locked_info.amount, 0);
+			assert_balance(USER_1, locked_info.amount, locked_info.amount, 0, false);
 
 			// TODO: Add positive check for staking once it has been added
 
@@ -211,11 +211,35 @@ fn check_migrate_accounts_locked() {
 			<KiltLaunch as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
 			assert_eq!(UnlockingAt::<Test>::get(100), None);
 			assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
-			assert_balance(USER_1, locked_info.amount, locked_info.amount, locked_info.amount);
+			assert_balance(USER_1, locked_info.amount, locked_info.amount, locked_info.amount, true);
 		});
 }
 
-// TODO: Add Genesis Build Block Test for 0 entries
+// TODO: Add test for init balance
+
+#[test]
+#[should_panic = "Account with address 0000000000000000000000000000000000000000000000000000000000000000 (5C4hrfjw...) must not occur twice in locking"]
+fn check_genesis_panic_locking_same_acc() {
+	ExtBuilder::default().build_locking_panic_same_acc();
+}
+
+#[test]
+#[should_panic = "Locked balance must not exceed total balance for address 0000000000000000000000000000000000000000000000000000000000000000 (5C4hrfjw...)"]
+fn check_genesis_panic_locking_amount() {
+	ExtBuilder::default().build_locking_panic_amount();
+}
+
+#[test]
+#[should_panic = "Account with address 0000000000000000000000000000000000000000000000000000000000000000 (5C4hrfjw...) must not occur twice in vesting"]
+fn check_genesis_vesting_locking_same_acc() {
+	ExtBuilder::default().build_vesting_panic_same_acc();
+}
+
+#[test]
+#[should_panic = "Vested balance must not exceed total balance for address 0000000000000000000000000000000000000000000000000000000000000000 (5C4hrfjw...)"]
+fn check_genesis_panic_vesting_amount() {
+	ExtBuilder::default().build_vesting_panic_amount();
+}
 
 #[test]
 fn check_locked_transfer() {
@@ -282,7 +306,7 @@ fn check_locked_transfer() {
 				}]
 			);
 			assert_eq!(UnlockingAt::<Test>::get(100), Some(vec![USER_1, PSEUDO_1]));
-			assert_balance(PSEUDO_1, locked_info.amount - 3000, locked_info.amount - 3000, 0);
+			assert_balance(PSEUDO_1, locked_info.amount - 3000, locked_info.amount - 3000, 0, false);
 
 			// Locked_Transfer rest
 			assert_ok!(KiltLaunch::locked_transfer(Origin::signed(USER_1), PSEUDO_1, 3000));
@@ -298,14 +322,14 @@ fn check_locked_transfer() {
 			assert_eq!(BalanceLocks::<Test>::get(&USER_1), None);
 			assert_eq!(BalanceLocks::<Test>::get(&PSEUDO_1), Some(locked_info.clone()));
 			assert_eq!(UnlockingAt::<Test>::get(100), Some(vec![PSEUDO_1]));
-			assert_balance(PSEUDO_1, locked_info.amount, locked_info.amount, 0);
+			assert_balance(PSEUDO_1, locked_info.amount, locked_info.amount, 0, false);
 
 			// Reach balance lock limit
 			System::set_block_number(100);
 			<KiltLaunch as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
 			assert_eq!(UnlockingAt::<Test>::get(100), None);
 			assert_eq!(Locks::<Test>::get(&PSEUDO_1).len(), 0);
-			assert_balance(PSEUDO_1, locked_info.amount, locked_info.amount, locked_info.amount);
+			assert_balance(PSEUDO_1, locked_info.amount, locked_info.amount, locked_info.amount, true);
 		});
 }
 
@@ -327,17 +351,16 @@ fn check_migrate_single_account_vested() {
 
 			// Reach vesting limit
 			System::set_block_number(10);
-			// TODO: Uncomment once `vest` is public which is the case on master
-			// but not on rococo-v1 as of 2021-03-26
-			// assert_ok!(Vesting::vest(Origin::signed(USER_1)));
-			// assert_eq!(Vesting::vesting(&USER_1), None);
-			// assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
-			// // Should be able to transfer the remaining tokens
-			// assert_ok!(Balances::transfer(
-			// 	Origin::signed(USER_1),
-			// 	BOB,
-			// 	user1_vesting_schedule.locked - user1_vesting_schedule.per_block
-			// ));
+
+			assert_ok!(Vesting::vest(Origin::signed(USER_1)));
+			assert_eq!(Vesting::vesting(&USER_1), None);
+			assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
+			// Should be able to transfer the remaining tokens
+			assert_ok!(Balances::transfer(
+				Origin::signed(USER_1),
+				PSEUDO_1,
+				user1_vesting_schedule.locked - user1_vesting_schedule.per_block
+			));
 		});
 }
 
@@ -367,31 +390,30 @@ fn check_migrate_single_account_twice_vested() {
 
 			// Reach first vesting limit
 			System::set_block_number(10);
-			// TODO: Uncomment once `vest` is public which is the case on master
-			// but not on rococo-v1 as of 2021-03-26
-			// assert_ok!(Vesting::vest(Origin::signed(USER_1)));
-			// assert_eq!(Vesting::vesting(&USER_1), Some(5000));
-			// assert_eq!(Locks::<Test>::get(&USER_1).len(), 1);
-			// // Should be able to transfer the remaining tokens
-			// assert_ok!(Balances::transfer(
-			// 	Origin::signed(USER_1),
-			// 	BOB,
-			// 	15_000 - user1_vesting_schedule.per_block
-			// ));
+			assert_ok!(Vesting::vest(Origin::signed(USER_1)));
+			assert_eq!(Vesting::vesting(&USER_1), Some(user1_vesting_schedule));
+			assert_eq!(Locks::<Test>::get(&USER_1).len(), 1);
+			assert_balance(
+				USER_1,
+				user1_vesting_schedule.locked,
+				user1_vesting_schedule.locked,
+				user1_vesting_schedule.locked - 500 * 10,
+				false,
+			);
 
 			// Reach second vesting limit
 			System::set_block_number(20);
-			// TODO: Uncomment once `vest` is public which is the case on master
-			// but not on rococo-v1 as of 2021-03-26
-			// assert_ok!(Vesting::vest(Origin::signed(USER_1)));
-			// assert_eq!(Vesting::vesting(&USER_1), None);
-			// assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
-			// // Should be able to transfer the remaining tokens
-			// assert_ok!(Balances::transfer(
-			// 	Origin::signed(USER_1),
-			// 	BOB,
-			// 	5000
-			// ));
+			assert_ok!(Vesting::vest(Origin::signed(USER_1)));
+			assert_eq!(Vesting::vesting(&USER_1), None);
+			assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
+			// Should be able to transfer the remaining tokens
+			assert_balance(
+				USER_1,
+				user1_vesting_schedule.locked,
+				user1_vesting_schedule.locked,
+				user1_vesting_schedule.locked,
+				true,
+			);
 		});
 }
 
@@ -439,26 +461,33 @@ fn check_migrate_accounts_vested() {
 			}
 
 			// Check balance migration
-			assert_balance(USER_1, vesting_info.locked, vesting_info.locked, vesting_info.per_block);
+			assert_balance(
+				USER_1,
+				vesting_info.locked,
+				vesting_info.locked,
+				vesting_info.per_block,
+				false,
+			);
 
 			// TODO: Add positive check for staking once it has been added
 
 			// Reach vesting limits
-			for block in vec![10, 20, 29] {
+			for block in vec![10, 20, 27] {
 				System::set_block_number(block);
-				// TODO: Uncomment once `vest` is public which is the case on
-				// master but not on rococo-v1 as of 2021-03-26
-				// assert_ok!(Vesting::vest(Origin::signed(USER_1)));
-				// assert_eq!(Vesting::vesting(&USER_1),
-				// Some(vesting_info.locked - vesting_info.per_block * block));
-				// // Should be able to transfer the remaining tokens
-				// assert_eq!(Balances::usable_balance(&USER_1),
-				// vesting_info.per_block * block);
+				assert_ok!(Vesting::vest(Origin::signed(USER_1)));
+				assert_eq!(Vesting::vesting(&USER_1), Some(vesting_info));
+				assert_balance(
+					USER_1,
+					vesting_info.locked,
+					vesting_info.locked,
+					vesting_info.per_block * (block as u128),
+					false,
+				);
 			}
 			System::set_block_number(30);
-			// assert_ok!(Vesting::vest(Origin::signed(USER_1)));
-			// assert_eq!(Vesting::vesting(&USER_1), None);
-			// assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
+			assert_ok!(Vesting::vest(Origin::signed(USER_1)));
+			assert_eq!(Vesting::vesting(&USER_1), None);
+			assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
 		});
 }
 
