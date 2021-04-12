@@ -379,7 +379,7 @@ impl TryFrom<&[u8]> for FtpUrl {
 	}
 }
 
-/// An IPFS URL starting with ipfs://. Both v0 and v1 supported.
+/// An IPFS URL starting with ipfs://. Both CIDs v0 and v1 supported.
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
 pub struct IpfsUrl {
 	payload: Vec<u8>,
