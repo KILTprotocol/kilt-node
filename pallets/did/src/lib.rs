@@ -32,8 +32,6 @@ pub mod benchmarking;
 
 pub mod default_weights;
 
-mod utils;
-
 pub use default_weights::WeightInfo;
 
 use codec::{Decode, Encode};
@@ -217,7 +215,7 @@ pub enum UrlError {
 	/// The URL specified is not ASCII-encoded.
 	InvalidUrlEncoding,
 	/// The URL specified is not properly formatted.
-	InvalidUrlFormat,
+	InvalidUrlScheme,
 }
 
 /// A trait describing an operation that requires DID authentication.
@@ -325,7 +323,7 @@ where
 	}
 }
 
-/// A URL following the HTTP standard.
+/// A web URL starting with http:// or https://.
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
 pub struct HttpUrl {
 	payload: Vec<u8>,
@@ -334,12 +332,13 @@ pub struct HttpUrl {
 impl TryFrom<&[u8]> for HttpUrl {
 	type Error = UrlError;
 
-	// It fails if the URL is not ASCII-encoded or not a valid HTTP URL.
+	// It fails if the URL is not ASCII-encoded or does not start with the expected URL scheme.
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 		let str_url = str::from_utf8(value).map_err(|_| UrlError::InvalidUrlEncoding)?;
+
 		ensure!(str_url.is_ascii(), UrlError::InvalidUrlEncoding);
 
-		ensure!(utils::get_http_regex().is_match(value), UrlError::InvalidUrlFormat);
+		ensure!(str_url.starts_with("http://") || str_url.starts_with("https://"), UrlError::InvalidUrlScheme);
 
 		Ok(HttpUrl {
 			payload: value.to_vec(),
@@ -347,7 +346,7 @@ impl TryFrom<&[u8]> for HttpUrl {
 	}
 }
 
-/// A URL following the FTP standard.
+/// An FTP URL starting with ftp:// or ftps://.
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
 pub struct FtpUrl {
 	payload: Vec<u8>,
@@ -356,14 +355,38 @@ pub struct FtpUrl {
 impl TryFrom<&[u8]> for FtpUrl {
 	type Error = UrlError;
 
-	// It fails if the URL is not ASCII-encoded or not a valid FTP URL.
+	// It fails if the URL is not ASCII-encoded or does not start with the expected URL scheme.
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 		let str_url = str::from_utf8(value).map_err(|_| UrlError::InvalidUrlEncoding)?;
+
 		ensure!(str_url.is_ascii(), UrlError::InvalidUrlEncoding);
 
-		ensure!(utils::get_ftp_regex().is_match(value), UrlError::InvalidUrlFormat);
+		ensure!(str_url.starts_with("ftp://") || str_url.starts_with("ftps://"), UrlError::InvalidUrlScheme);
 
 		Ok(FtpUrl {
+			payload: value.to_vec(),
+		})
+	}
+}
+
+/// An IPFS URL starting with ipfs:// or ipns://.
+#[derive(Clone, Decode, Debug, Encode, PartialEq)]
+pub struct IpfsUrl {
+	payload: Vec<u8>,
+}
+
+impl TryFrom<&[u8]> for IpfsUrl {
+	type Error = UrlError;
+
+	// It fails if the URL is not ASCII-encoded or does not start with the expected URL scheme.
+	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+		let str_url = str::from_utf8(value).map_err(|_| UrlError::InvalidUrlEncoding)?;
+
+		ensure!(str_url.is_ascii(), UrlError::InvalidUrlEncoding);
+
+		ensure!(str_url.starts_with("ipfs://") || str_url.starts_with("ipns://"), UrlError::InvalidUrlScheme);
+
+		Ok(IpfsUrl {
 			payload: value.to_vec(),
 		})
 	}
@@ -374,6 +397,25 @@ impl TryFrom<&[u8]> for FtpUrl {
 pub enum Url {
 	Http(HttpUrl),
 	Ftp(FtpUrl),
+	Ipfs(IpfsUrl),
+}
+
+impl From<HttpUrl> for Url {
+    fn from(url: HttpUrl) -> Self {
+		Self::Http(url)
+    }
+}
+
+impl From<FtpUrl> for Url {
+	fn from(url: FtpUrl) -> Self {
+		Self::Ftp(url)
+	}
+}
+
+impl From<IpfsUrl> for Url {
+	fn from(url: IpfsUrl) -> Self {
+		Self::Ipfs(url)
+	}
 }
 
 /// The details associated to a DID identity. Specifically:
@@ -541,7 +583,7 @@ pub mod pallet {
 		VerificationKeysNotPresent,
 		InvalidNonce,
 		InvalidUrlEncoding,
-		InvalidUrlFormat,
+		InvalidUrlScheme,
 	}
 
 	impl<T> From<DidError> for Error<T> {
@@ -588,7 +630,7 @@ pub mod pallet {
 		fn from(error: UrlError) -> Self {
 			match error {
 				UrlError::InvalidUrlEncoding => Self::InvalidUrlEncoding,
-				UrlError::InvalidUrlFormat => Self::InvalidSignatureFormat,
+				UrlError::InvalidUrlScheme => Self::InvalidUrlScheme,
 			}
 		}
 	}
