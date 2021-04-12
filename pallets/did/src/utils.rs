@@ -17,53 +17,44 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 /// Verifies that an input string contains only URL-allowed ASCII characters.
-/// For more info about what those characters are, please visit the official RFC 3986.
+/// For more info about what those characters are, please visit the official RFC
+/// 3986.
 pub fn is_valid_ascii_url(input: &str) -> bool {
 	for c in input.chars() {
-		if !match c {
-			':' | '/' | '?' | '#' | '[' | ']' | '@' | '!' | '$' | '&' | '\'' | '(' | ')' | '*' | '+' | ',' | ';'
-			| '=' | '-' | '.' | '_' | '~' => true,
-			'0'..='9' => true,
-			'a'..='z' => true,
-			'A'..='Z' => true,
-			_ => false,
-		} { return false };
+		// Matches [0-9], [a-z], [A-Z], plus the symbols as in the RFC.
+		if !matches!(c, ':' | '/' | '?' | '#' | '[' | ']' | '@' | '!' | '$' | '&' | '\'' | '(' | ')' | '*' | '+' | ',' | ';'
+		| '=' | '-' | '.' | '_' | '~' | '0'..='9' | 'a'..='z' | 'A'..='Z')
+		{
+			return false;
+		}
 	}
 	true
 }
 
 /// Verifies that an input string contains only Base-32 ASCII characters.
-/// For more info about what those characters are, please visit the official RFC 4648.
+/// For more info about what those characters are, please visit the official RFC
+/// 4648.
 pub fn is_base_32(input: &str) -> bool {
 	for c in input.chars() {
-		if !match c {
-			'A'..='Z' => true,
-			'2'..='7' => true,
-			// Padding character. At the moment, no check is performed the verify that padding characters are only at the end of the char sequence.
-			'=' => true,
-			_ => false,
-		} { return false };
+		// Matches [A-Z], and [2-7].
+		// At the moment, no check is performed the verify that padding characters are
+		// only at the end of the char sequence.
+		if !matches!(c, 'A'..='Z' | '2'..='7' | '=') {
+			return false;
+		}
 	}
 	true
 }
 
 /// Verifies that an input string contains only Base-58 ASCII characters.
-/// For more info about what those characters are, please visit the official IETF draft.
+/// For more info about what those characters are, please visit the official
+/// IETF draft.
 pub fn is_base_58(input: &str) -> bool {
 	for c in input.chars() {
-		if !match c {
-			'A'..='H' => true,
-			// Skip I
-			'J'..='N' => true,
-			// Skip O (capital o)
-			'P'..='Z' => true,
-			'a'..='k' => true,
-			// Skip l (lower L)
-			'm'..='z' => true,
-			// Skip 0 (zero)
-			'1'..='9' => true,
-			_ => false,
-		} { return false };
+		// Matches [A-H], [J-N], [P-Z], [a-k], [m-z], and [1-9].
+		if !matches!(c, 'A'..='H' | 'J'..='N' | 'P'..='Z' | 'a'..='k' | 'm'..='z' | '1'..='9') {
+			return false;
+		};
 	}
 	true
 }

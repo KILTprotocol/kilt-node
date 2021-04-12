@@ -855,9 +855,7 @@ fn check_http_url() {
 	));
 
 	// All other valid ASCII characters
-	assert_ok!(did::HttpUrl::try_from(
-		"http://:/?#[]@!$&'()*+,;=-._~".as_bytes()
-	));
+	assert_ok!(did::HttpUrl::try_from("http://:/?#[]@!$&'()*+,;=-._~".as_bytes()));
 
 	assert_eq!(
 		did::HttpUrl::try_from("".as_bytes()),
@@ -904,9 +902,7 @@ fn check_ftp_url() {
 	));
 
 	// All other valid ASCII characters
-	assert_ok!(did::FtpUrl::try_from(
-		"ftps://:/?#[]@!$&'()*+,;=-._~".as_bytes()
-	));
+	assert_ok!(did::FtpUrl::try_from("ftps://:/?#[]@!$&'()*+,;=-._~".as_bytes()));
 
 	assert_eq!(
 		did::FtpUrl::try_from("".as_bytes()),
@@ -949,7 +945,8 @@ fn check_ipfs_url() {
 		"ipfs://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()
 	));
 
-	// Base32 address (at the moment, padding characters can appear anywhere in the string)
+	// Base32 address (at the moment, padding characters can appear anywhere in the
+	// string)
 	assert_ok!(did::IpfsUrl::try_from(
 		"ipfs://OQQHHHTGMMYDQQ364YB4GDE=HREJQL==".as_bytes()
 	));

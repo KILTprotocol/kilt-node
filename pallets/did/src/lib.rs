@@ -334,8 +334,8 @@ pub struct HttpUrl {
 impl TryFrom<&[u8]> for HttpUrl {
 	type Error = UrlError;
 
-	// It fails if the byte sequence does not result in an ASCII-encoded string or if the resulting string contains characters
-	// that are not allowed in a URL.
+	// It fails if the byte sequence does not result in an ASCII-encoded string or
+	// if the resulting string contains characters that are not allowed in a URL.
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 		let str_url = str::from_utf8(value).map_err(|_| UrlError::InvalidUrlEncoding)?;
 
@@ -361,8 +361,8 @@ pub struct FtpUrl {
 impl TryFrom<&[u8]> for FtpUrl {
 	type Error = UrlError;
 
-	// It fails if the byte sequence does not result in an ASCII-encoded string or if the resulting string contains characters
-	// that are not allowed in a URL.
+	// It fails if the byte sequence does not result in an ASCII-encoded string or
+	// if the resulting string contains characters that are not allowed in a URL.
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 		let str_url = str::from_utf8(value).map_err(|_| UrlError::InvalidUrlEncoding)?;
 
@@ -398,8 +398,12 @@ impl TryFrom<&[u8]> for IpfsUrl {
 		// Remove the first 7 characters (the URL scheme)
 		let slice_to_verify = &str_url[7..];
 
-		// Verify the rest are either only base58 or only base32 characters (according to the IPFS specification, respectively versions 0 and 1).
-		ensure!(utils::is_base_32(slice_to_verify) || utils::is_base_58(slice_to_verify), UrlError::InvalidUrlEncoding);
+		// Verify the rest are either only base58 or only base32 characters (according
+		// to the IPFS specification, respectively versions 0 and 1).
+		ensure!(
+			utils::is_base_32(slice_to_verify) || utils::is_base_58(slice_to_verify),
+			UrlError::InvalidUrlEncoding
+		);
 
 		Ok(IpfsUrl {
 			payload: value.to_vec(),
