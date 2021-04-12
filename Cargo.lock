@@ -1502,7 +1502,6 @@ dependencies = [
  "kilt-primitives",
  "log",
  "parity-scale-codec",
- "regex-automata",
  "serde",
  "sp-core",
  "sp-io",
