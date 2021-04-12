@@ -891,6 +891,8 @@ fn check_http_url() {
 	);
 }
 
+// Internal function: FtpUrl try_from
+
 #[test]
 fn check_ftp_url() {
 	assert_ok!(did::FtpUrl::try_from("ftp://kilt.io".as_bytes()));
@@ -937,6 +939,8 @@ fn check_ftp_url() {
 		Err(did::UrlError::InvalidUrlScheme)
 	);
 }
+
+// Internal function: IpfsUrl try_from
 
 #[test]
 fn check_ipfs_url() {
