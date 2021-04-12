@@ -215,32 +215,6 @@ fn check_migrate_accounts_locked() {
 		});
 }
 
-// TODO: Add test for init balance
-
-#[test]
-#[should_panic = "Account with address 0000000000000000000000000000000000000000000000000000000000000000 (5C4hrfjw...) must not occur twice in locking"]
-fn check_genesis_panic_locking_same_acc() {
-	ExtBuilder::default().build_locking_panic_same_acc();
-}
-
-#[test]
-#[should_panic = "Locked balance must not exceed total balance for address 0000000000000000000000000000000000000000000000000000000000000000 (5C4hrfjw...)"]
-fn check_genesis_panic_locking_amount() {
-	ExtBuilder::default().build_locking_panic_amount();
-}
-
-#[test]
-#[should_panic = "Account with address 0000000000000000000000000000000000000000000000000000000000000000 (5C4hrfjw...) must not occur twice in vesting"]
-fn check_genesis_vesting_locking_same_acc() {
-	ExtBuilder::default().build_vesting_panic_same_acc();
-}
-
-#[test]
-#[should_panic = "Vested balance must not exceed total balance for address 0000000000000000000000000000000000000000000000000000000000000000 (5C4hrfjw...)"]
-fn check_genesis_panic_vesting_amount() {
-	ExtBuilder::default().build_vesting_panic_amount();
-}
-
 #[test]
 fn check_locked_transfer() {
 	ExtBuilder::default()
@@ -599,4 +573,45 @@ fn check_change_transfer_account() {
 			assert_ok!(KiltLaunch::change_transfer_account(Origin::root(), PSEUDO_1));
 			assert_eq!(TransferAccount::<Test>::get(), Some(PSEUDO_1));
 		});
+}
+
+#[test]
+#[should_panic = "Currencies must be init'd before locking"]
+fn check_genesis_panic_locking_balance() {
+	ExtBuilder::default().build_genesis_panic(vec![], vec![(PSEUDO_1, 100, 10_000)], vec![]);
+}
+#[test]
+#[should_panic = "Currencies must be init'd before vesting"]
+fn check_genesis_panic_vesting_balance() {
+	ExtBuilder::default().build_genesis_panic(vec![], vec![], vec![(PSEUDO_1, 100, 10_000)]);
+}
+
+#[test]
+#[should_panic = "Locked balance must not exceed total balance for address \"5C4hrfjw9DjXZTzV3MwzrrAr9P1MJhSrvWGWqi1eSuyUpnhM\""]
+fn check_genesis_panic_locking_amount() {
+	ExtBuilder::default().build_genesis_panic(vec![(PSEUDO_1, 10_000)], vec![(PSEUDO_1, 100, 10_001)], vec![]);
+}
+#[test]
+#[should_panic = "Vested balance must not exceed total balance for address \"5C4hrfjw9DjXZTzV3MwzrrAr9P1MJhSrvWGWqi1eSuyUpnhM\""]
+fn check_genesis_panic_vesting_amount() {
+	ExtBuilder::default().build_genesis_panic(vec![(PSEUDO_1, 10_000)], vec![], vec![(PSEUDO_1, 100, 10_001)]);
+}
+
+#[test]
+#[should_panic = "Account with address \"5C4hrfjw9DjXZTzV3MwzrrAr9P1MJhSrvWGWqi1eSuyUpnhM\" must not occur twice in locking"]
+fn check_genesis_panic_locking_same_acc() {
+	ExtBuilder::default().build_genesis_panic(
+		vec![(PSEUDO_1, 10_000)],
+		vec![(PSEUDO_1, 100, 10_000), (PSEUDO_1, 1337, 10_000)],
+		vec![],
+	);
+}
+#[test]
+#[should_panic = "Account with address \"5C4hrfjw9DjXZTzV3MwzrrAr9P1MJhSrvWGWqi1eSuyUpnhM\" must not occur twice in vesting"]
+fn check_genesis_vesting_locking_same_acc() {
+	ExtBuilder::default().build_genesis_panic(
+		vec![(PSEUDO_1, 10_000)],
+		vec![],
+		vec![(PSEUDO_1, 100, 10_000), (PSEUDO_1, 1337, 10_000)],
+	);
 }

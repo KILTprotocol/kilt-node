@@ -130,12 +130,12 @@ pub mod pallet {
 					assert!(
 						balance >= *locked,
 						"Locked balance must not exceed total balance for address {:?}",
-						who
+						who.to_string()
 					);
 					assert!(
 						!<BalanceLocks<T>>::contains_key(who),
 						"Account with address {:?} must not occur twice in locking",
-						who
+						who.to_string()
 					);
 
 					// Add unlock block to storage
@@ -166,12 +166,12 @@ pub mod pallet {
 					assert!(
 						balance >= locked,
 						"Vested balance must not exceed total balance for address {:?}",
-						who
+						who.to_string()
 					);
 					assert!(
 						!<Vesting<T>>::contains_key(who),
 						"Account with address {:?} must not occur twice in vesting",
-						who
+						who.to_string()
 					);
 
 					let length_as_balance = T::BlockNumberToBalance::convert(length);
