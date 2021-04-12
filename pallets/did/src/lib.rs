@@ -32,6 +32,8 @@ pub mod benchmarking;
 
 pub mod default_weights;
 
+mod utils;
+
 pub use default_weights::WeightInfo;
 
 use codec::{Decode, Encode};
@@ -323,7 +325,7 @@ where
 	}
 }
 
-/// A web URL starting with http:// or https://.
+/// A web URL starting with either http:// or https://.
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
 pub struct HttpUrl {
 	payload: Vec<u8>,
@@ -332,13 +334,17 @@ pub struct HttpUrl {
 impl TryFrom<&[u8]> for HttpUrl {
 	type Error = UrlError;
 
-	// It fails if the URL is not ASCII-encoded or does not start with the expected URL scheme.
+	// It fails if the byte sequence does not result in an ASCII-encoded string or if the resulting string contains characters
+	// that are not allowed in a URL.
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 		let str_url = str::from_utf8(value).map_err(|_| UrlError::InvalidUrlEncoding)?;
 
-		ensure!(str_url.is_ascii(), UrlError::InvalidUrlEncoding);
+		ensure!(
+			str_url.starts_with("http://") || str_url.starts_with("https://"),
+			UrlError::InvalidUrlScheme
+		);
 
-		ensure!(str_url.starts_with("http://") || str_url.starts_with("https://"), UrlError::InvalidUrlScheme);
+		ensure!(utils::is_valid_ascii_url(&str_url), UrlError::InvalidUrlEncoding);
 
 		Ok(HttpUrl {
 			payload: value.to_vec(),
@@ -355,13 +361,17 @@ pub struct FtpUrl {
 impl TryFrom<&[u8]> for FtpUrl {
 	type Error = UrlError;
 
-	// It fails if the URL is not ASCII-encoded or does not start with the expected URL scheme.
+	// It fails if the byte sequence does not result in an ASCII-encoded string or if the resulting string contains characters
+	// that are not allowed in a URL.
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 		let str_url = str::from_utf8(value).map_err(|_| UrlError::InvalidUrlEncoding)?;
 
-		ensure!(str_url.is_ascii(), UrlError::InvalidUrlEncoding);
+		ensure!(
+			str_url.starts_with("ftp://") || str_url.starts_with("ftps://"),
+			UrlError::InvalidUrlScheme
+		);
 
-		ensure!(str_url.starts_with("ftp://") || str_url.starts_with("ftps://"), UrlError::InvalidUrlScheme);
+		ensure!(utils::is_valid_ascii_url(&str_url), UrlError::InvalidUrlEncoding);
 
 		Ok(FtpUrl {
 			payload: value.to_vec(),
@@ -369,7 +379,7 @@ impl TryFrom<&[u8]> for FtpUrl {
 	}
 }
 
-/// An IPFS URL starting with ipfs:// or ipns://.
+/// An IPFS URL starting with ipfs://. Both v0 and v1 supported.
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
 pub struct IpfsUrl {
 	payload: Vec<u8>,
@@ -378,13 +388,18 @@ pub struct IpfsUrl {
 impl TryFrom<&[u8]> for IpfsUrl {
 	type Error = UrlError;
 
-	// It fails if the URL is not ASCII-encoded or does not start with the expected URL scheme.
+	// It fails if the URL is not ASCII-encoded or does not start with the expected
+	// URL scheme.
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 		let str_url = str::from_utf8(value).map_err(|_| UrlError::InvalidUrlEncoding)?;
 
-		ensure!(str_url.is_ascii(), UrlError::InvalidUrlEncoding);
+		ensure!(str_url.starts_with("ipfs://"), UrlError::InvalidUrlScheme);
 
-		ensure!(str_url.starts_with("ipfs://") || str_url.starts_with("ipns://"), UrlError::InvalidUrlScheme);
+		// Remove the first 7 characters (the URL scheme)
+		let slice_to_verify = &str_url[7..];
+
+		// Verify the rest are either only base58 or only base32 characters (according to the IPFS specification, respectively versions 0 and 1).
+		ensure!(utils::is_base_32(slice_to_verify) || utils::is_base_58(slice_to_verify), UrlError::InvalidUrlEncoding);
 
 		Ok(IpfsUrl {
 			payload: value.to_vec(),
@@ -401,9 +416,9 @@ pub enum Url {
 }
 
 impl From<HttpUrl> for Url {
-    fn from(url: HttpUrl) -> Self {
+	fn from(url: HttpUrl) -> Self {
 		Self::Http(url)
-    }
+	}
 }
 
 impl From<FtpUrl> for Url {
