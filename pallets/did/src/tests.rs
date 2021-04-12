@@ -104,7 +104,7 @@ fn check_successful_complete_creation() {
 	let enc_key = get_x25519_encryption_key(true);
 	let del_key = get_sr25519_delegation_key(true);
 	let att_key = get_ed25519_attestation_key(true);
-	let new_url = did::Url::Http(
+	let new_url = did::Url::from(
 		did::HttpUrl::try_from("https://new_kilt.io".as_bytes())
 			.expect("https://new_kilt.io should not be considered an invalid HTTP URL."),
 	);
@@ -230,7 +230,7 @@ fn check_successful_complete_update() {
 	let old_att_key = get_ed25519_attestation_key(true);
 	let new_att_key = get_ed25519_attestation_key(false);
 	let new_del_key = get_sr25519_attestation_key(true);
-	let new_url = did::Url::Http(
+	let new_url = did::Url::from(
 		did::HttpUrl::try_from("https://new_kilt.io".as_bytes())
 			.expect("https://new_kilt.io should not be considered an invalid HTTP URL."),
 	);
