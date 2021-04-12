@@ -425,7 +425,7 @@ dependencies = [
  "sp-keystore",
  "sp-runtime",
  "sp-std",
- "substrate-wasm-builder-runner",
+ "substrate-wasm-builder-runner 3.0.0",
 ]
 
 [[package]]
@@ -1272,7 +1272,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
- "substrate-wasm-builder-runner",
+ "substrate-wasm-builder-runner 3.0.0",
 ]
 
 [[package]]
@@ -1568,7 +1568,7 @@ dependencies = [
  "sp-keystore",
  "sp-runtime",
  "sp-std",
- "substrate-wasm-builder-runner",
+ "substrate-wasm-builder-runner 1.0.6",
 ]
 
 [[package]]
@@ -3428,7 +3428,7 @@ dependencies = [
  "sp-transaction-pool",
  "sp-version",
  "static_assertions",
- "substrate-wasm-builder 3.0.0",
+ "substrate-wasm-builder 4.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "xcm",
  "xcm-builder",
  "xcm-executor",
@@ -4260,7 +4260,7 @@ dependencies = [
  "sp-std",
  "sp-transaction-pool",
  "sp-version",
- "substrate-wasm-builder 3.0.0",
+ "substrate-wasm-builder 4.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -10289,7 +10289,7 @@ dependencies = [
  "sp-transaction-pool",
  "sp-trie",
  "sp-version",
- "substrate-wasm-builder 4.0.0",
+ "substrate-wasm-builder 4.0.0 (git+https://github.com/paritytech/substrate?branch=rococo-v1)",
  "trie-db",
 ]
 
@@ -10347,10 +10347,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "substrate-wasm-builder"
+version = "4.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93a3d51ad6abbc408b03ea962062bfcc959b438a318d7d4bedd181e1effd0610"
+dependencies = [
+ "ansi_term 0.12.1",
+ "atty",
+ "build-helper",
+ "cargo_metadata",
+ "tempfile",
+ "toml",
+ "walkdir",
+ "wasm-gc-api",
+]
+
+[[package]]
 name = "substrate-wasm-builder-runner"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2a965994514ab35d3893e9260245f2947fd1981cdd4fffd2c6e6d1a9ce02e6a"
+
+[[package]]
+name = "substrate-wasm-builder-runner"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "316626afcac0219c95116e6a2518e622484c2814182bd225fbf4da4f67e27e8f"
 
 [[package]]
 name = "subtle"
