@@ -904,7 +904,7 @@ fn check_ftp_url() {
 	));
 
 	// All other valid ASCII characters
-	assert_ok!(did::FtpUrl::try_from("ftps://:/?#[]@!$&'()*+,;=-._~".as_bytes()));
+	assert_ok!(did::FtpUrl::try_from("ftps://:/?#[]@%!$&'()*+,;=-._~".as_bytes()));
 
 	assert_eq!(
 		did::FtpUrl::try_from("".as_bytes()),
