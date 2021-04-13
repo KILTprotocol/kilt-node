@@ -82,7 +82,7 @@ hex-literal = {version = "0.3.1", optional = true}
 rococo-runtime = {git = "https://github.com/paritytech/polkadot", default-features = false, optional = true, branch = "rococo-v1"}
 
 [build-dependencies]
-substrate-wasm-builder = "3.0.0"
+substrate-wasm-builder = "4.0.0"
 
 [features]
 default = ["std"]

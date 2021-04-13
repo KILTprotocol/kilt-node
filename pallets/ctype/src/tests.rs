@@ -115,6 +115,7 @@ impl frame_system::Config for Test {
 	type BlockWeights = RuntimeBlockWeights;
 	type BlockLength = RuntimeBlockLength;
 	type SS58Prefix = SS58Prefix;
+	type OnSetCode = ();
 }
 
 impl Config for Test {
