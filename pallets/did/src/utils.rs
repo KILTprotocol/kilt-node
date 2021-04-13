@@ -21,13 +21,10 @@
 /// 3986.
 pub fn is_valid_ascii_url(input: &str) -> bool {
 	// Matches [0-9], [a-z], [A-Z], plus the symbols as in the RFC.
-	input
-		.chars()
-		.find(|c| {
-			!matches!(c, ':' | '/' | '?' | '#' | '[' | ']' | '@' | '!' | '$' | '&' | '\'' | '(' | ')' | '*' | '+' | ',' | ';'
+	input.chars().all(|c| {
+		matches!(c, ':' | '/' | '?' | '#' | '[' | ']' | '@' | '!' | '$' | '&' | '\'' | '(' | ')' | '*' | '+' | ',' | ';'
 	| '=' | '-' | '.' | '_' | '~' | '%' | '0'..='9' | 'a'..='z' | 'A'..='Z')
-		})
-		.is_none()
+	})
 }
 
 /// Verifies that an input string contains only Base-32 ASCII characters.
@@ -37,10 +34,7 @@ pub fn is_base_32(input: &str) -> bool {
 	// Matches [A-Z], and [2-7].
 	// At the moment, no check is performed the verify that padding characters are
 	// only at the end of the char sequence.
-	input
-		.chars()
-		.find(|c| !matches!(c, 'A'..='Z' | '2'..='7' | '='))
-		.is_none()
+	input.chars().all(|c| matches!(c, 'A'..='Z' | '2'..='7' | '='))
 }
 
 /// Verifies that an input string contains only Base-58 ASCII characters.
@@ -50,8 +44,7 @@ pub fn is_base_58(input: &str) -> bool {
 	// Matches [A-H], [J-N], [P-Z], [a-k], [m-z], and [1-9].
 	input
 		.chars()
-		.find(|c| !matches!(c, 'A'..='H' | 'J'..='N' | 'P'..='Z' | 'a'..='k' | 'm'..='z' | '1'..='9'))
-		.is_none()
+		.all(|c| matches!(c, 'A'..='H' | 'J'..='N' | 'P'..='Z' | 'a'..='k' | 'm'..='z' | '1'..='9'))
 }
 
 #[test]
