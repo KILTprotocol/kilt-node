@@ -69,7 +69,7 @@ fn check_is_valid_ascii_url() {
 		("invalid.châracter.domain.org", false),
 		("âinvalid.character.domain.org", false),
 		("invalid.character.domain.orgâ", false),
-		("",  true),
+		("", true),
 		("kilt.io/<tag>/invalid_ascii.com", false),
 		("<kilt.io/<tag>/invalid_ascii.com", false),
 		("kilt.io/<tag>/invalid_ascii.com>", false),
@@ -78,7 +78,12 @@ fn check_is_valid_ascii_url() {
 	];
 
 	test_cases.iter().for_each(|(input, expected_result)| {
-		assert_eq!(is_valid_ascii_url(input), *expected_result, "Test case for \"{}\" returned wrong result.", input);
+		assert_eq!(
+			is_valid_ascii_url(input),
+			*expected_result,
+			"Test case for \"{}\" returned wrong result.",
+			input
+		);
 	});
 }
 
@@ -114,7 +119,12 @@ fn check_is_base_32() {
 	];
 
 	test_cases.iter().for_each(|(input, expected_result)| {
-		assert_eq!(is_base_32(input), *expected_result, "Test case for \"{}\" returned wrong result.", input);
+		assert_eq!(
+			is_base_32(input),
+			*expected_result,
+			"Test case for \"{}\" returned wrong result.",
+			input
+		);
 	});
 }
 
@@ -141,6 +151,11 @@ fn check_is_base_58() {
 	];
 
 	test_cases.iter().for_each(|(input, expected_result)| {
-		assert_eq!(is_base_58(input), *expected_result, "Test case for \"{}\" returned wrong result.", input);
+		assert_eq!(
+			is_base_58(input),
+			*expected_result,
+			"Test case for \"{}\" returned wrong result.",
+			input
+		);
 	});
 }
