@@ -48,13 +48,24 @@ use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom, fmt::Debug, pre
 
 pub use pallet::*;
 
+/// The expected URI scheme for HTTP endpoints.
+pub const HTTP_URI_SCHEME: &str = "http://";
+/// The expected URI scheme for HTTPS endpoints.
+pub const HTTPS_URI_SCHEME: &str = "https://";
+/// The expected URI scheme for FTP endpoints.
+pub const FTP_URI_SCHEME: &str = "ftp://";
+/// The expected URI scheme for FTPS endpoints.
+pub const FTPS_URI_SCHEME: &str = "ftps://";
+/// The expected URI scheme for IPFS endpoints.
+pub const IPFS_URI_SCHEME: &str = "ipfs://";
+
 /// Reference to a payload of data of variable size.
 pub type Payload = [u8];
 
 /// Trait representing a public key under the control of a DID subject.
 pub trait DidPublicKey {
 	/// Returns the key method description as in the [DID specification](https://w3c.github.io/did-spec-registries/#verification-method-types).
-	fn get_did_key_description(&self) -> &'static str;
+	fn get_did_key_description(&self) -> &str;
 }
 
 /// An enum describing the different verification methods a verification key can
@@ -124,7 +135,7 @@ impl PublicVerificationKey {
 }
 
 impl DidPublicKey for PublicVerificationKey {
-	fn get_did_key_description(&self) -> &'static str {
+	fn get_did_key_description(&self) -> &str {
 		match self {
 			// https://w3c.github.io/did-spec-registries/#ed25519verificationkey2018
 			PublicVerificationKey::Ed25519(_) => "Ed25519VerificationKey2018",
@@ -163,7 +174,7 @@ pub enum PublicEncryptionKey {
 }
 
 impl DidPublicKey for PublicEncryptionKey {
-	fn get_did_key_description(&self) -> &'static str {
+	fn get_did_key_description(&self) -> &str {
 		// https://w3c.github.io/did-spec-registries/#x25519keyagreementkey2019
 		"X25519KeyAgreementKey2019"
 	}
@@ -178,7 +189,7 @@ pub enum DidError {
 	UrlError(UrlError),
 }
 
-// Used internally to handle storage errors.
+/// An error involving the pallet's storage.
 #[derive(Debug, Eq, PartialEq)]
 pub enum StorageError {
 	/// The DID being created is already present on chain.
@@ -193,7 +204,7 @@ pub enum StorageError {
 	VerificationKeysNotPresent(Vec<PublicVerificationKey>),
 }
 
-// Used internally to handle signature errors.
+/// An error regarding the DID operation signature.
 #[derive(Debug, Eq, PartialEq)]
 pub enum SignatureError {
 	/// The signature is not in the expected format the verification key
@@ -204,14 +215,14 @@ pub enum SignatureError {
 	InvalidSignature,
 }
 
-// Used internally to handle operation errors.
+/// An error regarding the DID operation.
 #[derive(Debug, Eq, PartialEq)]
 pub enum OperationError {
 	/// The operation nonce is not valid (e.g., reused).
 	InvalidNonce,
 }
 
-// Error generated when invalid URLs are used as encoded URLs.
+/// An error regarding the encoded endpoint URLs.
 #[derive(Debug, Eq, PartialEq)]
 pub enum UrlError {
 	/// The URL specified is not ASCII-encoded.
@@ -340,7 +351,7 @@ impl TryFrom<&[u8]> for HttpUrl {
 		let str_url = str::from_utf8(value).map_err(|_| UrlError::InvalidUrlEncoding)?;
 
 		ensure!(
-			str_url.starts_with("http://") || str_url.starts_with("https://"),
+			str_url.starts_with(HTTP_URI_SCHEME) || str_url.starts_with(HTTPS_URI_SCHEME),
 			UrlError::InvalidUrlScheme
 		);
 
@@ -367,7 +378,7 @@ impl TryFrom<&[u8]> for FtpUrl {
 		let str_url = str::from_utf8(value).map_err(|_| UrlError::InvalidUrlEncoding)?;
 
 		ensure!(
-			str_url.starts_with("ftp://") || str_url.starts_with("ftps://"),
+			str_url.starts_with(FTP_URI_SCHEME) || str_url.starts_with(FTPS_URI_SCHEME),
 			UrlError::InvalidUrlScheme
 		);
 
@@ -393,10 +404,12 @@ impl TryFrom<&[u8]> for IpfsUrl {
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 		let str_url = str::from_utf8(value).map_err(|_| UrlError::InvalidUrlEncoding)?;
 
-		ensure!(str_url.starts_with("ipfs://"), UrlError::InvalidUrlScheme);
+		ensure!(str_url.starts_with(IPFS_URI_SCHEME), UrlError::InvalidUrlScheme);
 
-		// Remove the first 7 characters (the URL scheme)
-		let slice_to_verify = &str_url[7..];
+		// Remove the characters of the URL scheme
+		let slice_to_verify = str_url
+			.get(IPFS_URI_SCHEME.len()..)
+			.expect("The minimum length was ensured with starts_with.");
 
 		// Verify the rest are either only base58 or only base32 characters (according
 		// to the IPFS specification, respectively versions 0 and 1).
