@@ -1261,6 +1261,7 @@ dependencies = [
 name = "ctype"
 version = "0.24.0"
 dependencies = [
+ "did",
  "frame-benchmarking",
  "frame-support",
  "frame-system",

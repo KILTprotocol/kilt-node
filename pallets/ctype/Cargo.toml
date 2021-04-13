@@ -12,6 +12,10 @@ targets = ["x86_64-unknown-linux-gnu"]
 [build-dependencies.substrate-wasm-builder-runner]
 version = "3.0.0"
 
+# pallets
+[dependencies]
+did = {version = "0.24.0", default-features = false, path = "../did"}
+
 [dev-dependencies]
 kilt-primitives = {path = "../../primitives", default-features = false}
 serde = {version = "1.0.101"}

@@ -512,6 +512,14 @@ pub struct DidDetails {
 	last_tx_counter: u64,
 }
 
+impl DidDetails {
+	pub fn increase_tx_counter(&mut self) -> Result<(), StorageError> {
+		ensure!(self.last_tx_counter < u64::MAX, StorageError::MaxTxCounterValue);
+		self.last_tx_counter += 1;
+		Ok(())
+	}
+}
+
 impl<T: Config> From<DidCreationOperation<T>> for DidDetails {
 	fn from(op: DidCreationOperation<T>) -> Self {
 		DidDetails {
