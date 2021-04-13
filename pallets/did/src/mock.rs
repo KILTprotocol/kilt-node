@@ -155,7 +155,7 @@ pub fn generate_base_did_creation_operation(
 	did: TestDidIdentifier,
 	auth_key: did::PublicVerificationKey,
 	enc_key: did::PublicEncryptionKey,
-) -> did::DidCreationOperation<TestDidIdentifier> {
+) -> did::DidCreationOperation<Test> {
 	DidCreationOperation {
 		did: did,
 		new_auth_key: auth_key,
@@ -166,7 +166,7 @@ pub fn generate_base_did_creation_operation(
 	}
 }
 
-pub fn generate_base_did_update_operation(did: TestDidIdentifier) -> did::DidUpdateOperation<TestDidIdentifier> {
+pub fn generate_base_did_update_operation(did: TestDidIdentifier) -> did::DidUpdateOperation<Test> {
 	DidUpdateOperation {
 		did: did,
 		new_auth_key: None,
@@ -179,10 +179,10 @@ pub fn generate_base_did_update_operation(did: TestDidIdentifier) -> did::DidUpd
 	}
 }
 
-pub fn generate_base_did_delete_operation(did: TestDidIdentifier) -> did::DidDeletionOperation<TestDidIdentifier> {
+pub fn generate_base_did_delete_operation(did: TestDidIdentifier) -> did::DidDeletionOperation<Test> {
 	DidDeletionOperation {
 		did: did,
-		tx_counter: u64::MAX,
+		tx_counter: 1,
 	}
 }
 
@@ -207,15 +207,20 @@ pub fn generate_mock_did_details(
 pub struct TestDIDOperation {
 	pub did: TestDidIdentifier,
 	pub verification_key_type: DidVerificationKeyType,
+	pub tx_counter: u64,
 }
 
-impl DidOperation<TestDidIdentifier> for TestDIDOperation {
+impl DidOperation<Test> for TestDIDOperation {
 	fn get_verification_key_type(&self) -> DidVerificationKeyType {
 		self.verification_key_type.clone()
 	}
 
 	fn get_did(&self) -> &TestDidIdentifier {
 		&self.did
+	}
+
+	fn get_tx_counter(&self) -> u64 {
+		self.tx_counter
 	}
 }
 

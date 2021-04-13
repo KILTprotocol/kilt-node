@@ -180,16 +180,15 @@ impl DidPublicKey for PublicEncryptionKey {
 	}
 }
 
-/// All the errors that can be generated when evaluating a DID operation.
+/// All the errors that can be generated when validating a DID operation.
 #[derive(Debug, Eq, PartialEq)]
 pub enum DidError {
 	StorageError(StorageError),
 	SignatureError(SignatureError),
-	OperationError(OperationError),
 	UrlError(UrlError),
 }
 
-/// An error involving the pallet's storage.
+/// Error involving the pallet's storage.
 #[derive(Debug, Eq, PartialEq)]
 pub enum StorageError {
 	/// The DID being created is already present on chain.
@@ -202,9 +201,12 @@ pub enum StorageError {
 	/// One or more verification keys referenced are not stored in the set of
 	/// verification keys.
 	VerificationKeysNotPresent(Vec<PublicVerificationKey>),
+	/// The maximum supported value for the DID tx counter has been reached.
+	/// No more operations with the DID are allowed.
+	MaxTxCounterValue,
 }
 
-/// An error regarding the DID operation signature.
+/// Error generated when validating a DID operation.
 #[derive(Debug, Eq, PartialEq)]
 pub enum SignatureError {
 	/// The signature is not in the expected format the verification key
@@ -213,16 +215,11 @@ pub enum SignatureError {
 	/// The signature is invalid for the payload and the verification key
 	/// provided.
 	InvalidSignature,
-}
-
-/// An error regarding the DID operation.
-#[derive(Debug, Eq, PartialEq)]
-pub enum OperationError {
-	/// The operation nonce is not valid (e.g., reused).
+	/// The operation nonce is not equal to the current nonce + 1.
 	InvalidNonce,
 }
 
-/// An error regarding the encoded endpoint URLs.
+/// Error generated when validating a byte-encoded endpoint URL.
 #[derive(Debug, Eq, PartialEq)]
 pub enum UrlError {
 	/// The URL specified is not ASCII-encoded.
@@ -232,12 +229,15 @@ pub enum UrlError {
 }
 
 /// A trait describing an operation that requires DID authentication.
-pub trait DidOperation<DidIdentifier>: Encode {
+pub trait DidOperation<T: Config>: Encode {
 	/// Returns the type of the verification key to be used to validate the
 	/// operation.
 	fn get_verification_key_type(&self) -> DidVerificationKeyType;
 	/// Returns the DID identifier of the subject.
-	fn get_did(&self) -> &DidIdentifier;
+	fn get_did(&self) -> &T::DidIdentifier;
+	/// Returns the operation tx counter, used to protect against replay
+	/// attacks.
+	fn get_tx_counter(&self) -> u64;
 }
 
 /// A DID creation request. It contains the following values:
@@ -248,12 +248,9 @@ pub trait DidOperation<DidIdentifier>: Encode {
 /// * The optional attestation key to use
 /// * The optional delegation key to use
 /// * The optional endpoint URL pointing to the DID service endpoints
-#[derive(Clone, Decode, Debug, Encode, PartialEq)]
-pub struct DidCreationOperation<DidIdentifier>
-where
-	DidIdentifier: Parameter + Encode + Decode + Debug,
-{
-	did: DidIdentifier,
+#[derive(Clone, Decode, Encode, PartialEq)]
+pub struct DidCreationOperation<T: Config> {
+	did: T::DidIdentifier,
 	new_auth_key: PublicVerificationKey,
 	new_key_agreement_key: PublicEncryptionKey,
 	new_attestation_key: Option<PublicVerificationKey>,
@@ -261,16 +258,33 @@ where
 	new_endpoint_url: Option<Url>,
 }
 
-impl<DidIdentifier> DidOperation<DidIdentifier> for DidCreationOperation<DidIdentifier>
-where
-	DidIdentifier: Parameter + Encode + Decode + Debug,
-{
+impl<T: Config> DidOperation<T> for DidCreationOperation<T> {
 	fn get_verification_key_type(&self) -> DidVerificationKeyType {
 		DidVerificationKeyType::Authentication
 	}
 
-	fn get_did(&self) -> &DidIdentifier {
+	fn get_did(&self) -> &T::DidIdentifier {
 		&self.did
+	}
+
+	// Irrelevant for creation operations.
+	fn get_tx_counter(&self) -> u64 {
+		0u64
+	}
+}
+
+// Required to use a struct as an extrinsic parameter, and since Config does not
+// implement Debug, the derive macro does not work.
+impl<T: Config> Debug for DidCreationOperation<T> {
+	fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
+		f.debug_tuple("DidCreationOperation")
+			.field(&self.did)
+			.field(&self.new_auth_key)
+			.field(&self.new_key_agreement_key)
+			.field(&self.new_attestation_key)
+			.field(&self.new_delegation_key)
+			.field(&self.new_endpoint_url)
+			.finish()
 	}
 }
 
@@ -283,12 +297,9 @@ where
 /// * The optional set of old attestation keys to remove
 /// * The optional new endpoint URL pointing to the DID service endpoints
 /// * A counter used to protect against replay attacks
-#[derive(Clone, Decode, Debug, Encode, PartialEq)]
-pub struct DidUpdateOperation<DidIdentifier>
-where
-	DidIdentifier: Parameter + Encode + Decode + Debug,
-{
-	did: DidIdentifier,
+#[derive(Clone, Decode, Encode, PartialEq)]
+pub struct DidUpdateOperation<T: Config> {
+	did: T::DidIdentifier,
 	new_auth_key: Option<PublicVerificationKey>,
 	new_key_agreement_key: Option<PublicEncryptionKey>,
 	new_attestation_key: Option<PublicVerificationKey>,
@@ -298,45 +309,73 @@ where
 	tx_counter: u64,
 }
 
-impl<DidIdentifier> DidOperation<DidIdentifier> for DidUpdateOperation<DidIdentifier>
-where
-	DidIdentifier: Parameter + Encode + Decode + Debug,
-{
+impl<T: Config> DidOperation<T> for DidUpdateOperation<T> {
 	fn get_verification_key_type(&self) -> DidVerificationKeyType {
 		DidVerificationKeyType::Authentication
 	}
 
-	fn get_did(&self) -> &DidIdentifier {
+	fn get_did(&self) -> &T::DidIdentifier {
 		&self.did
+	}
+
+	fn get_tx_counter(&self) -> u64 {
+		self.tx_counter
+	}
+}
+
+// Required to use a struct as an extrinsic parameter, and since Config does not
+// implement Debug, the derive macro does not work.
+impl<T: Config> Debug for DidUpdateOperation<T> {
+	fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
+		f.debug_tuple("DidUpdateOperation")
+			.field(&self.did)
+			.field(&self.new_auth_key)
+			.field(&self.new_key_agreement_key)
+			.field(&self.new_attestation_key)
+			.field(&self.new_delegation_key)
+			.field(&self.verification_keys_to_remove)
+			.field(&self.new_endpoint_url)
+			.field(&self.tx_counter)
+			.finish()
 	}
 }
 
 /// A DID deletion request. It contains the following values:
 /// * The DID identifier being deleted
 /// * A counter used to protect against replay attacks
-#[derive(Clone, Decode, Debug, Encode, PartialEq)]
-pub struct DidDeletionOperation<DidIdentifier>
-where
-	DidIdentifier: Parameter + Encode + Decode + Debug,
-{
-	did: DidIdentifier,
+#[derive(Clone, Decode, Encode, PartialEq)]
+pub struct DidDeletionOperation<T: Config> {
+	did: T::DidIdentifier,
 	tx_counter: u64,
 }
 
-impl<DidIdentifier> DidOperation<DidIdentifier> for DidDeletionOperation<DidIdentifier>
-where
-	DidIdentifier: Parameter + Encode + Decode + Debug,
-{
+impl<T: Config> DidOperation<T> for DidDeletionOperation<T> {
 	fn get_verification_key_type(&self) -> DidVerificationKeyType {
 		DidVerificationKeyType::Authentication
 	}
 
-	fn get_did(&self) -> &DidIdentifier {
+	fn get_did(&self) -> &T::DidIdentifier {
 		&self.did
+	}
+
+	fn get_tx_counter(&self) -> u64 {
+		self.tx_counter
 	}
 }
 
-/// A web URL starting with either http:// or https://.
+// Required to use a struct as an extrinsic parameter, and since Config does not
+// implement Debug, the derive macro does not work.
+impl<T: Config> Debug for DidDeletionOperation<T> {
+	fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
+		f.debug_tuple("DidDeletionOperation")
+			.field(&self.did)
+			.field(&self.tx_counter)
+			.finish()
+	}
+}
+
+/// A web URL starting with either http:// or https://
+/// and containing only ASCII URL-encoded characters.
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
 pub struct HttpUrl {
 	payload: Vec<u8>,
@@ -363,7 +402,8 @@ impl TryFrom<&[u8]> for HttpUrl {
 	}
 }
 
-/// An FTP URL starting with ftp:// or ftps://.
+/// An FTP URL starting with ftp:// or ftps://
+/// and containing only ASCII URL-encoded characters.
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
 pub struct FtpUrl {
 	payload: Vec<u8>,
@@ -460,7 +500,7 @@ impl From<IpfsUrl> for Url {
 /// * An optional URL pointing to the service endpoints the DID subject publicly
 ///   exposes
 /// * A counter used to avoid replay attacks, which is checked and updated upon
-///   each DID-related operation
+///   each DID operation execution
 #[derive(Clone, Debug, Decode, Encode, PartialEq)]
 pub struct DidDetails {
 	auth_key: PublicVerificationKey,
@@ -472,11 +512,8 @@ pub struct DidDetails {
 	last_tx_counter: u64,
 }
 
-impl<DidIdentifier> From<DidCreationOperation<DidIdentifier>> for DidDetails
-where
-	DidIdentifier: Parameter + Encode + Decode + Debug,
-{
-	fn from(op: DidCreationOperation<DidIdentifier>) -> Self {
+impl<T: Config> From<DidCreationOperation<T>> for DidDetails {
+	fn from(op: DidCreationOperation<T>) -> Self {
 		DidDetails {
 			auth_key: op.new_auth_key,
 			key_agreement_key: op.new_key_agreement_key,
@@ -505,20 +542,15 @@ impl DidDetails {
 /// Generates a new DID entry starting from the current one stored in the
 /// storage and by applying the changes in the DidUpdateOperation. The operation
 /// fails with a DidError if the update operation instructs to delete a
-/// verification key that is not associated with the DID or if the operation
-/// counter is not larger than the one stored on chain.
+/// verification key that is not associated with the DID.
 ///
 /// Please note that this method does not perform any checks regarding
-/// the validity of the DidUpdateOperation signature.
-impl<DidIdentifier> TryFrom<(DidDetails, DidUpdateOperation<DidIdentifier>)> for DidDetails
-where
-	DidIdentifier: Parameter + Encode + Decode + Debug,
-{
+/// the validity of the DidUpdateOperation signature nor whether the nonce
+/// provided is valid.
+impl<T: Config> TryFrom<(DidDetails, DidUpdateOperation<T>)> for DidDetails {
 	type Error = DidError;
 
-	fn try_from(
-		(old_details, update_operation): (DidDetails, DidUpdateOperation<DidIdentifier>),
-	) -> Result<Self, Self::Error> {
+	fn try_from((old_details, update_operation): (DidDetails, DidUpdateOperation<T>)) -> Result<Self, Self::Error> {
 		// Old attestation key is used later in the process, so it's saved here.
 		let old_attestation_key = old_details.attestation_key;
 		// Copy old state into new, and apply changes in operation to new state.
@@ -536,12 +568,6 @@ where
 				))
 			);
 		};
-
-		// Verify that the operation counter is greater than the stored one
-		ensure!(
-			update_operation.tx_counter > new_details.last_tx_counter,
-			DidError::OperationError(OperationError::InvalidNonce)
-		);
 
 		// Updates keys, endpoint and tx counter.
 		if let Some(new_auth_key) = update_operation.new_auth_key {
@@ -616,24 +642,15 @@ pub mod pallet {
 		InvalidNonce,
 		InvalidUrlEncoding,
 		InvalidUrlScheme,
+		MaxTxCounterValue,
 	}
 
 	impl<T> From<DidError> for Error<T> {
 		fn from(error: DidError) -> Self {
 			match error {
-				DidError::SignatureError(signature_error) => Self::from(signature_error),
 				DidError::StorageError(storage_error) => Self::from(storage_error),
-				DidError::OperationError(operation_error) => Self::from(operation_error),
+				DidError::SignatureError(operation_error) => Self::from(operation_error),
 				DidError::UrlError(url_error) => Self::from(url_error),
-			}
-		}
-	}
-
-	impl<T> From<SignatureError> for Error<T> {
-		fn from(error: SignatureError) -> Self {
-			match error {
-				SignatureError::InvalidSignature => Self::InvalidSignature,
-				SignatureError::InvalidSignatureFormat => Self::InvalidSignatureFormat,
 			}
 		}
 	}
@@ -646,14 +663,17 @@ pub mod pallet {
 				StorageError::DidKeyNotPresent(_) | StorageError::VerificationKeysNotPresent(_) => {
 					Self::VerificationKeysNotPresent
 				}
+				StorageError::MaxTxCounterValue => Self::MaxTxCounterValue,
 			}
 		}
 	}
 
-	impl<T> From<OperationError> for Error<T> {
-		fn from(error: OperationError) -> Self {
+	impl<T> From<SignatureError> for Error<T> {
+		fn from(error: SignatureError) -> Self {
 			match error {
-				OperationError::InvalidNonce => Self::InvalidNonce,
+				SignatureError::InvalidSignature => Self::InvalidSignature,
+				SignatureError::InvalidSignatureFormat => Self::InvalidSignatureFormat,
+				SignatureError::InvalidNonce => Self::InvalidNonce,
 			}
 		}
 	}
@@ -680,7 +700,7 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::submit_did_create_operation())]
 		pub fn submit_did_create_operation(
 			origin: OriginFor<T>,
-			did_creation_operation: DidCreationOperation<T::DidIdentifier>,
+			did_creation_operation: DidCreationOperation<T>,
 			signature: DidSignature,
 		) -> DispatchResultWithPostInfo {
 			// origin of the transaction needs to be a signed sender account
@@ -696,22 +716,8 @@ pub mod pallet {
 			// Create a new DID entry from the details provided in the create operation.
 			let did_entry = DidDetails::from(did_creation_operation.clone());
 
-			// Retrieve the authentication key of the new DID, otherwise generate a
-			// VerificationKeyNotPresent error if it is not specified (should never happen
-			// as the DidCreateOperation requires the authentication key to be present).
-			let signature_verification_key = did_entry
-				.get_verification_key_for_key_type(DidVerificationKeyType::Authentication)
-				.ok_or(<Error<T>>::VerificationKeysNotPresent)?;
-
-			// Re-create a Signature object from the authentication key retrieved, or
-			// generate a InvalidSignatureFormat error otherwise.
-			let is_signature_valid = signature_verification_key
-				.verify_signature(&did_creation_operation.encode(), &signature)
+			Self::verify_operation_signature_for_did(&did_creation_operation, &signature, &did_entry)
 				.map_err(<Error<T>>::from)?;
-
-			// Verify the validity of the signature, or generate an InvalidSignature error
-			// otherwise.
-			ensure!(is_signature_valid, <Error<T>>::InvalidSignature);
 
 			let did_identifier = did_creation_operation.get_did();
 			log::debug!("Creating DID {:?}", did_identifier);
@@ -735,7 +741,7 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::submit_did_update_operation())]
 		pub fn submit_did_update_operation(
 			origin: OriginFor<T>,
-			did_update_operation: DidUpdateOperation<T::DidIdentifier>,
+			did_update_operation: DidUpdateOperation<T>,
 			signature: DidSignature,
 		) -> DispatchResultWithPostInfo {
 			// origin of the transaction needs to be a signed sender account
@@ -747,8 +753,8 @@ pub mod pallet {
 			// If specified DID does not exist, generate a DidNotPresent error.
 			let did_details = <Did<T>>::get(&did_identifier).ok_or(<Error<T>>::DidNotPresent)?;
 
-			// Verify the signature of the update operation.
-			Self::verify_operation_signature_for_entry(&did_update_operation, &signature, &did_details)
+			// Verify the signature and the nonce of the update operation.
+			Self::verify_operation_validity_for_did(&did_update_operation, &signature, &did_details)
 				.map_err(<Error<T>>::from)?;
 
 			// Generate a new DidDetails object by applying the changes in the update
@@ -775,7 +781,7 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::submit_did_delete_operation())]
 		pub fn submit_did_delete_operation(
 			origin: OriginFor<T>,
-			did_deletion_operation: DidDeletionOperation<T::DidIdentifier>,
+			did_deletion_operation: DidDeletionOperation<T>,
 			signature: DidSignature,
 		) -> DispatchResultWithPostInfo {
 			// origin of the transaction needs to be a signed sender account
@@ -786,15 +792,9 @@ pub mod pallet {
 			// If specified DID does not exist, generate a DidNotPresent error.
 			let did_details = <Did<T>>::get(&did_identifier).ok_or(<Error<T>>::DidNotPresent)?;
 
-			// Verify the signature of the delete operation.
-			Self::verify_operation_signature_for_entry(&did_deletion_operation, &signature, &did_details)
+			// Verify the signature and the nonce of the delete operation.
+			Self::verify_operation_validity_for_did(&did_deletion_operation, &signature, &did_details)
 				.map_err(<Error<T>>::from)?;
-
-			// Verify that the operation counter is greater than the stored one
-			ensure!(
-				did_deletion_operation.tx_counter > did_details.last_tx_counter,
-				<Error<T>>::InvalidNonce
-			);
 
 			log::debug!("Deleting DID {:?}", did_identifier);
 			<Did<T>>::remove(&did_identifier);
@@ -806,33 +806,49 @@ pub mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
-	/// Verify the signature of a generic DidOperation, and
-	/// returns either Ok or a DidError. The paremeters are:
-	/// * op: a reference to the DID operation
+	/// Verify the validity (i.e., nonce and signature) of a generic
+	/// DidOperation. This function expects a storage entry
+	/// as parameter and will not read from storage itself. The parameters
+	/// are:
+	/// * did_operation: the refernce to the operation which validity is to be
+	///   verified
 	/// * signature: a reference to the signature
-	pub fn verify_did_operation_signature<O: DidOperation<T::DidIdentifier>>(
-		op: &O,
+	/// * did_details: a reference to an instance of DidDetails as returned by
+	///   the pallet storage
+	pub fn verify_operation_validity_for_did<O: DidOperation<T>>(
+		did_operation: &O,
 		signature: &DidSignature,
+		did_details: &DidDetails,
 	) -> Result<(), DidError> {
-		// Try to retrieve from the storage the details of the given DID. If there is no
-		// DID stored, generate a DidNotPresent error.
-		let did_entry: DidDetails =
-			<Did<T>>::get(op.get_did()).ok_or(DidError::StorageError(StorageError::DidNotPresent))?;
+		Self::verify_operation_counter_for_did(did_operation, did_details)?;
+		Self::verify_operation_signature_for_did(did_operation, signature, did_details)
+	}
 
-		Self::verify_operation_signature_for_entry(op, signature, &did_entry)?;
+	// Perform operation nonce validation.
+	fn verify_operation_counter_for_did<O: DidOperation<T>>(
+		did_operation: &O,
+		did_details: &DidDetails,
+	) -> Result<(), DidError> {
+		// Verify that the DID has not reached the maximum tx counter value
+		ensure!(
+			did_details.last_tx_counter < u64::MAX,
+			DidError::StorageError(StorageError::MaxTxCounterValue)
+		);
+
+		// Verify that the operation counter is equal to the stored one + 1.
+		let expected_nonce_value = did_details
+			.last_tx_counter
+			.checked_add(1)
+			.expect("Checked against overflow in previous step.");
+		ensure!(
+			did_operation.get_tx_counter() == expected_nonce_value,
+			DidError::SignatureError(SignatureError::InvalidNonce)
+		);
 
 		Ok(())
 	}
 
-	/// Verify the signature of a generic DidOperation.
-	/// This function expects a storage entry
-	/// as parameter and will not retrieve from storage itself. The paremeters
-	/// are:
-	/// * did_operation: the operation which signature is to be verified
-	/// * signature: a reference to the signature
-	/// * did_details: an instance of DidDetails as returned by the pallet
-	///   storage
-	fn verify_operation_signature_for_entry<O: DidOperation<T::DidIdentifier>>(
+	fn verify_operation_signature_for_did<O: DidOperation<T>>(
 		did_operation: &O,
 		signature: &DidSignature,
 		did_details: &DidDetails,
