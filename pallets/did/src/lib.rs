@@ -32,6 +32,8 @@ pub mod benchmarking;
 
 pub mod default_weights;
 
+mod utils;
+
 pub use default_weights::WeightInfo;
 
 use codec::{Decode, Encode};
@@ -42,20 +44,28 @@ use frame_support::{ensure, storage::types::StorageMap, Parameter};
 use frame_system::{self, ensure_signed};
 use sp_core::{ed25519, sr25519};
 use sp_runtime::traits::Verify;
-use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom, fmt::Debug, prelude::Clone, vec::Vec};
+use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom, fmt::Debug, prelude::Clone, str, vec::Vec};
 
 pub use pallet::*;
+
+/// The expected URI scheme for HTTP endpoints.
+pub const HTTP_URI_SCHEME: &str = "http://";
+/// The expected URI scheme for HTTPS endpoints.
+pub const HTTPS_URI_SCHEME: &str = "https://";
+/// The expected URI scheme for FTP endpoints.
+pub const FTP_URI_SCHEME: &str = "ftp://";
+/// The expected URI scheme for FTPS endpoints.
+pub const FTPS_URI_SCHEME: &str = "ftps://";
+/// The expected URI scheme for IPFS endpoints.
+pub const IPFS_URI_SCHEME: &str = "ipfs://";
 
 /// Reference to a payload of data of variable size.
 pub type Payload = [u8];
 
-/// Type for an encoded URL.
-pub type UrlEncoding = Vec<u8>;
-
 /// Trait representing a public key under the control of a DID subject.
 pub trait DidPublicKey {
 	/// Returns the key method description as in the [DID specification](https://w3c.github.io/did-spec-registries/#verification-method-types).
-	fn get_did_key_description(&self) -> &'static str;
+	fn get_did_key_description(&self) -> &str;
 }
 
 /// An enum describing the different verification methods a verification key can
@@ -125,7 +135,7 @@ impl PublicVerificationKey {
 }
 
 impl DidPublicKey for PublicVerificationKey {
-	fn get_did_key_description(&self) -> &'static str {
+	fn get_did_key_description(&self) -> &str {
 		match self {
 			// https://w3c.github.io/did-spec-registries/#ed25519verificationkey2018
 			PublicVerificationKey::Ed25519(_) => "Ed25519VerificationKey2018",
@@ -164,7 +174,7 @@ pub enum PublicEncryptionKey {
 }
 
 impl DidPublicKey for PublicEncryptionKey {
-	fn get_did_key_description(&self) -> &'static str {
+	fn get_did_key_description(&self) -> &str {
 		// https://w3c.github.io/did-spec-registries/#x25519keyagreementkey2019
 		"X25519KeyAgreementKey2019"
 	}
@@ -176,9 +186,10 @@ pub enum DidError {
 	StorageError(StorageError),
 	SignatureError(SignatureError),
 	OperationError(OperationError),
+	UrlError(UrlError),
 }
 
-// Used internally to handle storage errors.
+/// An error involving the pallet's storage.
 #[derive(Debug, Eq, PartialEq)]
 pub enum StorageError {
 	/// The DID being created is already present on chain.
@@ -193,7 +204,7 @@ pub enum StorageError {
 	VerificationKeysNotPresent(Vec<PublicVerificationKey>),
 }
 
-// Used internally to handle signature errors.
+/// An error regarding the DID operation signature.
 #[derive(Debug, Eq, PartialEq)]
 pub enum SignatureError {
 	/// The signature is not in the expected format the verification key
@@ -204,11 +215,20 @@ pub enum SignatureError {
 	InvalidSignature,
 }
 
-// Used internally to handle operation errors.
+/// An error regarding the DID operation.
 #[derive(Debug, Eq, PartialEq)]
 pub enum OperationError {
 	/// The operation nonce is not valid (e.g., reused).
 	InvalidNonce,
+}
+
+/// An error regarding the encoded endpoint URLs.
+#[derive(Debug, Eq, PartialEq)]
+pub enum UrlError {
+	/// The URL specified is not ASCII-encoded.
+	InvalidUrlEncoding,
+	/// The URL specified is not properly formatted.
+	InvalidUrlScheme,
 }
 
 /// A trait describing an operation that requires DID authentication.
@@ -238,7 +258,7 @@ where
 	new_key_agreement_key: PublicEncryptionKey,
 	new_attestation_key: Option<PublicVerificationKey>,
 	new_delegation_key: Option<PublicVerificationKey>,
-	new_endpoint_url: Option<UrlEncoding>,
+	new_endpoint_url: Option<Url>,
 }
 
 impl<DidIdentifier> DidOperation<DidIdentifier> for DidCreationOperation<DidIdentifier>
@@ -274,7 +294,7 @@ where
 	new_attestation_key: Option<PublicVerificationKey>,
 	new_delegation_key: Option<PublicVerificationKey>,
 	verification_keys_to_remove: Option<BTreeSet<PublicVerificationKey>>,
-	new_endpoint_url: Option<UrlEncoding>,
+	new_endpoint_url: Option<Url>,
 	tx_counter: u64,
 }
 
@@ -316,6 +336,120 @@ where
 	}
 }
 
+/// A web URL starting with either http:// or https://.
+#[derive(Clone, Decode, Debug, Encode, PartialEq)]
+pub struct HttpUrl {
+	payload: Vec<u8>,
+}
+
+impl TryFrom<&[u8]> for HttpUrl {
+	type Error = UrlError;
+
+	// It fails if the byte sequence does not result in an ASCII-encoded string or
+	// if the resulting string contains characters that are not allowed in a URL.
+	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+		let str_url = str::from_utf8(value).map_err(|_| UrlError::InvalidUrlEncoding)?;
+
+		ensure!(
+			str_url.starts_with(HTTP_URI_SCHEME) || str_url.starts_with(HTTPS_URI_SCHEME),
+			UrlError::InvalidUrlScheme
+		);
+
+		ensure!(utils::is_valid_ascii_url(&str_url), UrlError::InvalidUrlEncoding);
+
+		Ok(HttpUrl {
+			payload: value.to_vec(),
+		})
+	}
+}
+
+/// An FTP URL starting with ftp:// or ftps://.
+#[derive(Clone, Decode, Debug, Encode, PartialEq)]
+pub struct FtpUrl {
+	payload: Vec<u8>,
+}
+
+impl TryFrom<&[u8]> for FtpUrl {
+	type Error = UrlError;
+
+	// It fails if the byte sequence does not result in an ASCII-encoded string or
+	// if the resulting string contains characters that are not allowed in a URL.
+	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+		let str_url = str::from_utf8(value).map_err(|_| UrlError::InvalidUrlEncoding)?;
+
+		ensure!(
+			str_url.starts_with(FTP_URI_SCHEME) || str_url.starts_with(FTPS_URI_SCHEME),
+			UrlError::InvalidUrlScheme
+		);
+
+		ensure!(utils::is_valid_ascii_url(&str_url), UrlError::InvalidUrlEncoding);
+
+		Ok(FtpUrl {
+			payload: value.to_vec(),
+		})
+	}
+}
+
+/// An IPFS URL starting with ipfs://. Both CIDs v0 and v1 supported.
+#[derive(Clone, Decode, Debug, Encode, PartialEq)]
+pub struct IpfsUrl {
+	payload: Vec<u8>,
+}
+
+impl TryFrom<&[u8]> for IpfsUrl {
+	type Error = UrlError;
+
+	// It fails if the URL is not ASCII-encoded or does not start with the expected
+	// URL scheme.
+	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+		let str_url = str::from_utf8(value).map_err(|_| UrlError::InvalidUrlEncoding)?;
+
+		ensure!(str_url.starts_with(IPFS_URI_SCHEME), UrlError::InvalidUrlScheme);
+
+		// Remove the characters of the URL scheme
+		let slice_to_verify = str_url
+			.get(IPFS_URI_SCHEME.len()..)
+			.expect("The minimum length was ensured with starts_with.");
+
+		// Verify the rest are either only base58 or only base32 characters (according
+		// to the IPFS specification, respectively versions 0 and 1).
+		ensure!(
+			utils::is_base_32(slice_to_verify) || utils::is_base_58(slice_to_verify),
+			UrlError::InvalidUrlEncoding
+		);
+
+		Ok(IpfsUrl {
+			payload: value.to_vec(),
+		})
+	}
+}
+
+/// Enum representing one of the supported URLs.
+#[derive(Clone, Decode, Debug, Encode, PartialEq)]
+pub enum Url {
+	Http(HttpUrl),
+	Ftp(FtpUrl),
+	Ipfs(IpfsUrl),
+}
+
+impl From<HttpUrl> for Url {
+	fn from(url: HttpUrl) -> Self {
+		Self::Http(url)
+	}
+}
+
+impl From<FtpUrl> for Url {
+	fn from(url: FtpUrl) -> Self {
+		Self::Ftp(url)
+	}
+}
+
+impl From<IpfsUrl> for Url {
+	fn from(url: IpfsUrl) -> Self {
+		Self::Ipfs(url)
+	}
+}
+
 /// The details associated to a DID identity. Specifically:
 /// * The authentication key, used to authenticate DID-related operations
 /// * The key agreement key, used to encrypt data addressed to the DID subject
@@ -334,7 +468,7 @@ pub struct DidDetails {
 	delegation_key: Option<PublicVerificationKey>,
 	attestation_key: Option<PublicVerificationKey>,
 	verification_keys: BTreeSet<PublicVerificationKey>,
-	endpoint_url: Option<UrlEncoding>,
+	endpoint_url: Option<Url>,
 	last_tx_counter: u64,
 }
 
@@ -480,6 +614,8 @@ pub mod pallet {
 		DidNotPresent,
 		VerificationKeysNotPresent,
 		InvalidNonce,
+		InvalidUrlEncoding,
+		InvalidUrlScheme,
 	}
 
 	impl<T> From<DidError> for Error<T> {
@@ -488,6 +624,7 @@ pub mod pallet {
 				DidError::SignatureError(signature_error) => Self::from(signature_error),
 				DidError::StorageError(storage_error) => Self::from(storage_error),
 				DidError::OperationError(operation_error) => Self::from(operation_error),
+				DidError::UrlError(url_error) => Self::from(url_error),
 			}
 		}
 	}
@@ -517,6 +654,15 @@ pub mod pallet {
 		fn from(error: OperationError) -> Self {
 			match error {
 				OperationError::InvalidNonce => Self::InvalidNonce,
+			}
+		}
+	}
+
+	impl<T> From<UrlError> for Error<T> {
+		fn from(error: UrlError) -> Self {
+			match error {
+				UrlError::InvalidUrlEncoding => Self::InvalidUrlEncoding,
+				UrlError::InvalidUrlScheme => Self::InvalidUrlScheme,
 			}
 		}
 	}
