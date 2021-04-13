@@ -25,10 +25,18 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use codec::{Decode, Encode};
+use cumulus_primitives_core::{relay_chain::Balance as RelayChainBalance, ParaId};
 use frame_support::traits::LockIdentifier;
+use frame_system::{
+	limits::{BlockLength, BlockWeights},
+	EnsureOneOf, EnsureRoot,
+};
 use kilt_primitives::*;
 use orml_currencies::BasicCurrencyAdapter;
 use orml_traits::{arithmetic::Zero, parameter_type_with_key};
+use orml_xcm_support::{IsNativeConcrete, MultiCurrencyAdapter, XcmHandler as XcmHandlerT};
+use polkadot_parachain::primitives::Sibling;
 use sp_api::impl_runtime_apis;
 use sp_core::{
 	u32_trait::{_1, _2, _3, _5},
@@ -36,48 +44,39 @@ use sp_core::{
 };
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, Convert, Identity, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, Convert, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, DispatchResult, ModuleId,
 };
 use sp_std::prelude::*;
-#[cfg(feature = "std")]
-use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 use static_assertions::const_assert;
+use xcm::v0::{Junction, MultiAsset, MultiLocation, NetworkId, Xcm};
+use xcm_builder::{
+	AccountId32Aliases, ChildParachainConvertsVia, LocationInverter, ParentIsDefault, RelayChainAsNative,
+	SiblingParachainAsNative, SiblingParachainConvertsVia, SignedAccountId32AsNative, SovereignSignedViaLocation,
+};
+use xcm_executor::{traits::NativeAsset, Config, XcmExecutor};
+
+#[cfg(feature = "std")]
+use sp_version::NativeVersion;
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
 	construct_runtime, parameter_types,
-	traits::Randomness,
+	traits::{Get, Randomness},
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
 		DispatchClass, IdentityFee, Weight,
 	},
 	StorageValue,
 };
-use frame_system::{
-	limits::{BlockLength, BlockWeights},
-	EnsureOneOf, EnsureRoot,
-};
+
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
-
-// XCM imports
-use cumulus_primitives_core::{relay_chain::Balance as RelayChainBalance, ParaId};
-use orml_xcm_support::{
-	CurrencyIdConverter, IsConcreteWithGeneralKey, MultiCurrencyAdapter, XcmHandler as XcmHandlerT,
-};
-use polkadot_parachain::primitives::Sibling;
-use xcm::v0::{Junction, MultiLocation, NetworkId, Xcm};
-use xcm_builder::{
-	AccountId32Aliases, ChildParachainConvertsVia, LocationInverter, ParentIsDefault, RelayChainAsNative,
-	SiblingParachainAsNative, SiblingParachainConvertsVia, SignedAccountId32AsNative, SovereignSignedViaLocation,
-};
-use xcm_executor::{traits::NativeAsset, Config, XcmExecutor};
 
 pub use attestation;
 pub use ctype;
@@ -213,6 +212,8 @@ impl frame_system::Config for Runtime {
 	type BlockWeights = RuntimeBlockWeights;
 	type BlockLength = RuntimeBlockLength;
 	type SS58Prefix = SS58Prefix;
+	/// The set code logic, just the default since we're not a parachain.
+	type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Runtime>;
 }
 
 parameter_types! {
@@ -276,7 +277,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 	type OnValidationData = ();
 	type SelfParaId = parachain_info::Module<Runtime>;
 	type DownwardMessageHandlers = ();
-	type HrmpMessageHandlers = ();
+	type XcmpMessageHandlers = XcmHandler;
 }
 
 impl parachain_info::Config for Runtime {}
@@ -302,11 +303,11 @@ pub type LocationConverter = (
 pub type LocalAssetTransactor = MultiCurrencyAdapter<
 	Currencies,
 	UnknownTokens,
-	IsConcreteWithGeneralKey<CurrencyId, Identity>,
-	LocationConverter,
+	IsNativeConcrete<CurrencyId, CurrencyIdConvert>,
 	AccountId,
-	CurrencyIdConverter<CurrencyId, RelayChainCurrencyId>,
+	LocationConverter,
 	CurrencyId,
+	CurrencyIdConvert,
 >;
 
 pub type LocalOriginConverter = (
@@ -332,9 +333,9 @@ impl cumulus_pallet_xcm_handler::Config for Runtime {
 	type Event = Event;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type UpwardMessageSender = ParachainSystem;
-	type HrmpMessageSender = ParachainSystem;
-	type SendXcmOrigin = EnsureRoot<AccountId>;
 	type AccountIdConverter = LocationConverter;
+	type XcmpMessageSender = ParachainSystem;
+	type SendXcmOrigin = EnsureRoot<AccountId>;
 }
 
 pub struct RelayToNative;
@@ -373,15 +374,68 @@ impl XcmHandlerT<AccountId> for HandleXcm {
 	}
 }
 
+fn native_currency_location(id: CurrencyId) -> MultiLocation {
+	MultiLocation::X3(
+		Junction::Parent,
+		Junction::Parachain {
+			id: ParachainInfo::get().into(),
+		},
+		Junction::GeneralKey(id.encode()),
+	)
+}
+
+pub struct CurrencyIdConvert;
+impl Convert<CurrencyId, Option<MultiLocation>> for CurrencyIdConvert {
+	fn convert(id: CurrencyId) -> Option<MultiLocation> {
+		match id {
+			CurrencyId::Dot => Some(MultiLocation::X1(Junction::Parent)),
+			// TODO: which relay chain is it?
+			// CurrencyId::Ksm => Some(MultiLocation::X1(Parent)),
+			CurrencyId::Kilt => Some(native_currency_location(id)),
+			_ => None,
+		}
+	}
+}
+impl Convert<MultiLocation, Option<CurrencyId>> for CurrencyIdConvert {
+	fn convert(location: MultiLocation) -> Option<CurrencyId> {
+		match location {
+			MultiLocation::X1(Junction::Parent) => Some(CurrencyId::Dot),
+			MultiLocation::X3(Junction::Parent, Junction::Parachain { id: para_id }, Junction::GeneralKey(key))
+				if para_id == u32::from(ParachainInfo::get()) =>
+			{
+				// decode the general key
+				if let Ok(CurrencyId::Kilt) = CurrencyId::decode(&mut &key[..]) {
+					Some(CurrencyId::Kilt)
+				} else {
+					None
+				}
+			}
+			_ => None,
+		}
+	}
+}
+impl Convert<MultiAsset, Option<CurrencyId>> for CurrencyIdConvert {
+	fn convert(asset: MultiAsset) -> Option<CurrencyId> {
+		if let MultiAsset::ConcreteFungible { id, amount: _ } = asset {
+			Self::convert(id)
+		} else {
+			None
+		}
+	}
+}
+
+parameter_types! {
+	pub SelfLocation: MultiLocation = MultiLocation::X2(Junction::Parent, Junction::Parachain { id: ParachainInfo::get().into() });
+}
+
 impl orml_xtokens::Config for Runtime {
 	type Event = Event;
 	type Balance = Balance;
-	type ToRelayChainBalance = NativeToRelay;
 	type AccountId32Convert = AccountId32Convert;
-	//TODO: change network id if kusama
-	type RelayChainNetworkId = PolkadotNetworkId;
-	type ParaId = ParachainInfo;
 	type XcmHandler = HandleXcm;
+	type CurrencyId = CurrencyId;
+	type CurrencyIdConvert = CurrencyIdConvert;
+	type SelfLocation = SelfLocation;
 }
 
 parameter_type_with_key! {
@@ -545,6 +599,7 @@ parameter_types! {
 	pub const PeriodSpend: Balance = 500 * DOLLARS;
 	pub const MaxLockDuration: BlockNumber = 36 * 30 * DAYS;
 	pub const ChallengePeriod: BlockNumber = 7 * DAYS;
+	pub const MaxCandidateIntake: u32 = 1;
 	pub const SocietyModuleId: ModuleId = ModuleId(*b"py/socie");
 }
 
@@ -562,6 +617,7 @@ impl pallet_society::Config for Runtime {
 	type FounderSetOrigin = pallet_collective::EnsureProportionMoreThan<_1, _2, AccountId, CouncilCollective>;
 	type SuspensionJudgementOrigin = pallet_society::EnsureFounder<Runtime>;
 	type ChallengePeriod = ChallengePeriod;
+	type MaxCandidateIntake = MaxCandidateIntake;
 	type ModuleId = SocietyModuleId;
 }
 

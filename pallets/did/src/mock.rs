@@ -70,6 +70,7 @@ impl frame_system::Config for Test {
 	type BlockWeights = ();
 	type BlockLength = ();
 	type SS58Prefix = SS58Prefix;
+	type OnSetCode = ();
 }
 
 impl did::Config for Test {
