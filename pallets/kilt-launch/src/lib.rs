@@ -58,12 +58,14 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-// TODO: Add benchmarking
-// #[cfg(feature = "runtime-benchmarks")]
-// mod benchmarking;
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
 
 pub const KILT_LAUNCH_ID: LockIdentifier = *b"kiltlnch";
 pub const VESTING_ID: LockIdentifier = *b"vesting ";
+
+// TODO: Convert all pubs to pub(crate)
+// TODO: Improve documentation for input params of extrinsics
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -87,6 +89,8 @@ pub mod pallet {
 		///
 		/// Note: Benchmarks will need to be re-run and weights adjusted if this
 		/// changes.
+		// FIXME: Why does this not work?
+		// #[pallet::constant]
 		type MaxClaims: Get<usize>;
 	}
 
@@ -122,7 +126,7 @@ pub mod pallet {
 			// Generate initial custom locking configuration
 			// * who - Account which setting the custom lock for
 			// * length - Number of blocks from  until removal of the lock
-			// * amount - Number of tokens which are locked
+			// * locked - Number of tokens which are locked
 			for (ref who, length, locked) in self.balance_locks.iter() {
 				if !length.is_zero() {
 					let balance = <pallet_balances::Pallet<T>>::free_balance(who);
@@ -155,8 +159,6 @@ pub mod pallet {
 			// * who - Account which we are generating vesting configuration for
 			// * begin - Block when the account will start to vest
 			// * length - Number of blocks from `begin` until fully vested
-			// * liquid - Number of units which can be spent before vesting begins =
-			//   total_balance - vesting_balance + 1
 			for &(ref who, length, locked) in self.vesting.iter() {
 				if !length.is_zero() {
 					let balance = <<T as pallet_vesting::Config>::Currency as Currency<
@@ -553,6 +555,8 @@ impl<T: Config> Pallet<T> {
 				// We don't need to append `UnlockingAt` because we require both locks to end at
 				// the same block
 				// We can simply sum `amount` because of the above requirement
+				// TODO: If source == target, this doubles the amount. Check whether we might
+				// want to throw in this case in `migrate_user`.
 				target_lock.amount.saturating_add(max_add_amount)
 			}
 			// If no custom lock has been set up for target account, we can default to the one of the source

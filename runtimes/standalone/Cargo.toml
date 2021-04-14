@@ -229,6 +229,7 @@ runtime-benchmarks = [
   "ctype/runtime-benchmarks",
   "did/runtime-benchmarks",
   "delegation/runtime-benchmarks",
+  "kilt-launch/runtime-benchmarks",
   "balances/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
   "pallet-vesting/runtime-benchmarks",

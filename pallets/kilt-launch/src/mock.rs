@@ -158,6 +158,7 @@ pub fn ensure_single_migration_works(
 		source.to_owned(),
 		dest.to_owned()
 	));
+	// TODO: Change to BlockNumber
 	let now: u128 = System::block_number().into();
 
 	// Check for desired death of allocation account
