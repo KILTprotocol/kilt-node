@@ -297,7 +297,7 @@ parameter_types! {
 	pub KiltNetwork: NetworkId = NetworkId::Named("kilt".into());
 	pub const RococoLocation: MultiLocation = MultiLocation::X1(Junction::Parent);
 	pub const RococoNetwork: NetworkId = NetworkId::Polkadot;
-	pub RelayChainOrigin: Origin = cumulus_pallet_xcm_handler::Origin::Relay.into();
+	pub RelayChainOrigin: Origin = cumulus_pallet_xcmp_queue::Origin::Relay.into();
 	pub Ancestry: MultiLocation = Junction::Parachain {
 		id: ParachainInfo::parachain_id().into()
 	}.into();
@@ -324,7 +324,7 @@ pub type LocalAssetTransactor = MultiCurrencyAdapter<
 pub type LocalOriginConverter = (
 	SovereignSignedViaLocation<LocationConverter, Origin>,
 	RelayChainAsNative<RelayChainOrigin, Origin>,
-	SiblingParachainAsNative<cumulus_pallet_xcm_handler::Origin, Origin>,
+	SiblingParachainAsNative<cumulus_pallet_xcmp_queue::Origin, Origin>,
 	SignedAccountId32AsNative<KiltNetwork, Origin>,
 );
 
@@ -340,7 +340,7 @@ impl Config for XcmConfig {
 	type LocationInverter = LocationInverter<Ancestry>;
 }
 
-impl cumulus_pallet_xcm_handler::Config for Runtime {
+impl cumulus_pallet_xcmp_queue::Config for Runtime {
 	type Event = Event;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type UpwardMessageSender = ParachainSystem;
@@ -769,7 +769,7 @@ construct_runtime! {
 
 		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event} = 18,
 		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 19,
-		XcmHandler: cumulus_pallet_xcm_handler::{Pallet, Call, Event<T>, Origin} = 20,
+		XcmHandler: cumulus_pallet_xcmp_queue::{Pallet, Call, Event<T>, Origin} = 20,
 		Tokens: orml_tokens::{Pallet, Call, Storage, Event<T>} = 21,
 		Currencies: orml_currencies::{Pallet, Call, Storage, Event<T>} = 22,
 		XTokens: orml_xtokens::{Pallet, Call, Storage, Event<T>} = 23,
@@ -959,7 +959,7 @@ impl_runtime_apis! {
 			// No benchmarks for these pallets
 			// add_benchmark!(params, batches, cumulus_pallet_parachain_system, ParachainSystem);
 			// add_benchmark!(params, batches, parachain_info, ParachainInfo);
-			// add_benchmark!(params, batches, cumulus_pallet_xcm_handler, XcmHandler);
+			// add_benchmark!(params, batches, cumulus_pallet_xcmp_queue, XcmHandler);
 			// add_benchmark!(params, batches, orml_tokens, Tokens);
 			// add_benchmark!(params, batches, orml_currencies, Currencies);
 			// add_benchmark!(params, batches, orml_xtokens, XTokens);
