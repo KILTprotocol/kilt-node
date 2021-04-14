@@ -13,15 +13,26 @@ targets = ["x86_64-unknown-linux-gnu"]
 kilt-primitives = {path = "../../primitives", default-features = false}
 serde = {version = "1.0.101"}
 
-[dev-dependencies.sp-core]
+[dependencies]
+kilt-primitives = {path = "../../primitives", default-features = false, optional = true}
+serde = {version = "1.0.101", optional = true}
+
+[dev-dependencies.sp-io]
 branch = "rococo-v1"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
-[dev-dependencies.sp-io]
+[dependencies.sp-core]
 branch = "rococo-v1"
 default-features = false
+git = "https://github.com/paritytech/substrate"
+version = "3.0.0"
+
+[dependencies.sp-io]
+branch = "rococo-v1"
+default-features = false
+optional = true
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
@@ -38,12 +49,6 @@ git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
 [dependencies.frame-system]
-branch = "rococo-v1"
-default-features = false
-git = "https://github.com/paritytech/substrate"
-version = "3.0.0"
-
-[dependencies.sp-core]
 branch = "rococo-v1"
 default-features = false
 git = "https://github.com/paritytech/substrate"
@@ -76,6 +81,11 @@ default-features = false
 default = ["std"]
 runtime-benchmarks = [
   "frame-benchmarking",
+]
+mock = [
+  "serde",
+  "kilt-primitives",
+  "sp-io",
 ]
 std = [
   "codec/std",

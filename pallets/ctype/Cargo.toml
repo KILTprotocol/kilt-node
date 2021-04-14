@@ -18,6 +18,7 @@ did = {version = "0.24.0", default-features = false, path = "../did"}
 
 [dev-dependencies]
 kilt-primitives = {path = "../../primitives", default-features = false}
+did = {version = "0.24.0", features = ["mock"], path = "../did"}
 serde = {version = "1.0.101"}
 
 [dev-dependencies.sp-core]

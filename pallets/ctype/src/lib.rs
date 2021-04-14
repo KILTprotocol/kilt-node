@@ -26,6 +26,9 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
+#[cfg(any(feature = "mock", test))]
+mod mock;
+
 pub mod default_weights;
 pub use default_weights::WeightInfo;
 
@@ -54,7 +57,7 @@ decl_event!(
 // The pallet's errors
 decl_error! {
 	pub enum Error for Module<T: Config> {
-		DidOperationError,
+		NotFound,
 		AlreadyExists,
 	}
 }
@@ -115,7 +118,7 @@ decl_module! {
 
 			let mut did_details = <did::Did<T>>::get(&creation_operation.creator_did).ok_or(<did::Error<T>>::DidNotPresent)?;
 
-			did::pallet::Pallet::verify_operation_validity_for_did(&creation_operation, &operation_signature, &did_details).map_err(|_| <Error<T>>::DidOperationError)?;
+			did::pallet::Pallet::verify_operation_validity_for_did(&creation_operation, &operation_signature, &did_details).map_err(<did::Error<T>>::from)?;
 
 			// check if CTYPE already exists
 			ensure!(!<CTYPEs<T>>::contains_key(creation_operation.hash), Error::<T>::AlreadyExists);

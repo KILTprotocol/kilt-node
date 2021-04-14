@@ -24,8 +24,8 @@
 #[cfg(test)]
 mod tests;
 
-#[cfg(test)]
-mod mock;
+#[cfg(any(feature = "mock", test))]
+pub mod mock;
 
 #[cfg(any(feature = "runtime-benchmarks", test))]
 pub mod benchmarking;
@@ -514,8 +514,7 @@ pub struct DidDetails {
 
 impl DidDetails {
 	pub fn increase_tx_counter(&mut self) -> Result<(), StorageError> {
-		ensure!(self.last_tx_counter < u64::MAX, StorageError::MaxTxCounterValue);
-		self.last_tx_counter += 1;
+		self.last_tx_counter.checked_add(1).ok_or(StorageError::MaxTxCounterValue)?;
 		Ok(())
 	}
 }
