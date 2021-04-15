@@ -80,7 +80,7 @@ impl did::Config for Test {
 
 pub type TestDidIdentifier = <Test as did::Config>::DidIdentifier;
 
-pub const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
+pub(crate) const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
 
 pub const ALICE_DID: TestDidIdentifier = AccountId::new([1u8; 32]);
 pub const BOB_DID: TestDidIdentifier = AccountId::new([2u8; 32]);
@@ -223,6 +223,7 @@ impl DidOperation<Test> for TestDIDOperation {
 	}
 }
 
+#[derive(Clone)]
 pub struct ExtBuilder {
 	dids_stored: Vec<(TestDidIdentifier, did::DidDetails)>,
 }

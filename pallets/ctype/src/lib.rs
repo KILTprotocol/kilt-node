@@ -140,7 +140,7 @@ decl_module! {
 
 decl_storage! {
 	trait Store for Module<T: Config> as Ctype {
-		// CTYPEs: ctype-hash -> account-id?
+		// CTYPEs: ctype-hash -> account-did?
 		pub CTYPEs get(fn ctypes):map hasher(opaque_blake2_256) T::Hash => Option<<T as did::Config>::DidIdentifier>;
 	}
 }

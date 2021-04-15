@@ -503,19 +503,28 @@ impl From<IpfsUrl> for Url {
 ///   each DID operation execution
 #[derive(Clone, Debug, Decode, Encode, PartialEq)]
 pub struct DidDetails {
-	auth_key: PublicVerificationKey,
-	key_agreement_key: PublicEncryptionKey,
-	delegation_key: Option<PublicVerificationKey>,
-	attestation_key: Option<PublicVerificationKey>,
-	verification_keys: BTreeSet<PublicVerificationKey>,
-	endpoint_url: Option<Url>,
+	pub auth_key: PublicVerificationKey,
+	pub key_agreement_key: PublicEncryptionKey,
+	pub delegation_key: Option<PublicVerificationKey>,
+	pub attestation_key: Option<PublicVerificationKey>,
+	pub verification_keys: BTreeSet<PublicVerificationKey>,
+	pub endpoint_url: Option<Url>,
 	last_tx_counter: u64,
 }
 
 impl DidDetails {
 	pub fn increase_tx_counter(&mut self) -> Result<(), StorageError> {
-		self.last_tx_counter.checked_add(1).ok_or(StorageError::MaxTxCounterValue)?;
+		self.last_tx_counter = self.last_tx_counter.checked_add(1).ok_or(StorageError::MaxTxCounterValue)?;
 		Ok(())
+	}
+
+	pub fn get_tx_counter_value(&self) -> u64 {
+		self.last_tx_counter
+	}
+
+	#[cfg(any(feature = "mock", test))]
+	pub fn set_tx_counter(&mut self, value: u64) {
+		self.last_tx_counter = value;
 	}
 }
 
