@@ -157,7 +157,6 @@ parameter_types! {
 	pub const SS58Prefix: u8 = 38;
 }
 
-
 /// We assume that ~10% of the block weight is consumed by `on_initalize` handlers.
 /// This is used to limit the maximal weight of a single extrinsic.
 const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
