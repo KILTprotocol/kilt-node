@@ -1,6 +1,9 @@
 on:
   workflow_dispatch:
     types: [created]
+  push:
+    branches:
+      - master
 
 name: Release Release Candidate
 
