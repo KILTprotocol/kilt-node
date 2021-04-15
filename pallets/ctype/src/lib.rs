@@ -33,34 +33,11 @@ pub mod default_weights;
 pub use default_weights::WeightInfo;
 
 use codec::{Decode, Encode};
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure, StorageMap};
+use frame_support::ensure;
 use frame_system::{self, ensure_signed};
 use sp_std::fmt::Debug;
 
-/// The CTYPE Config
-pub trait Config: frame_system::Config + did::Config {
-	/// CTYPE specific event type
-	type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
-
-	/// Weight information for extrinsics in this pallet.
-	type WeightInfo: WeightInfo;
-}
-
-decl_event!(
-	/// Events for CTYPEs
-	pub enum Event<T> where <T as did::Config>::DidIdentifier, <T as frame_system::Config>::Hash {
-		/// A CTYPE has been added
-		CTypeCreated(DidIdentifier, Hash),
-	}
-);
-
-// The pallet's errors
-decl_error! {
-	pub enum Error for Module<T: Config> {
-		NotFound,
-		AlreadyExists,
-	}
-}
+pub use pallet::*;
 
 #[derive(Clone, Decode, Encode, PartialEq)]
 pub struct CtypeCreationOperation<T: Config> {
@@ -96,23 +73,58 @@ impl<T: Config> Debug for CtypeCreationOperation<T> {
 	}
 }
 
-decl_module! {
-	/// The CTYPE runtime module
-	pub struct Module<T: Config> for enum Call where origin: T::Origin {
+#[frame_support::pallet]
+pub mod pallet {
+	use super::*;
+	use frame_support::{
+		pallet_prelude::*,
+		traits::{Hooks, IsType},
+	};
+	use frame_system::pallet_prelude::*;
 
-		/// Deposit events
-		fn deposit_event() = default;
+	#[pallet::config]
+	pub trait Config: frame_system::Config + did::Config {
+		/// CTYPE specific event type
+		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
-		// Initializing errors
-		// this includes information about your errors in the node's metadata.
-		// it is needed only if you are using errors in your pallet
-		type Error = Error<T>;
+		/// Weight information for extrinsics in this pallet.
+		type WeightInfo: WeightInfo;
+	}
 
+	#[pallet::pallet]
+	#[pallet::generate_store(pub(super) trait Store)]
+	pub struct Pallet<T>(_);
+
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
+
+	#[pallet::storage]
+	#[pallet::getter(fn ctypes)]
+	pub type Ctype<T> = StorageMap<_, Blake2_128Concat, <T as frame_system::Config>::Hash, <T as did::Config>::DidIdentifier>;
+
+	#[pallet::event]
+	#[pallet::generate_deposit(pub(super) fn deposit_event)]
+	pub enum Event<T: Config> {
+		CTypeCreated(<T as did::Config>::DidIdentifier, <T as frame_system::Config>::Hash)
+	}
+
+	#[pallet::error]
+	pub enum Error<T> {
+		NotFound,
+		AlreadyExists,
+	}
+
+	#[pallet::call]
+	impl<T: Config> Pallet<T> {
 		/// Adds a CTYPE on chain, where
 		/// origin - the origin of the transaction
 		/// hash - hash of the CTYPE of the claim
-		#[weight = <T as Config>::WeightInfo::add()]
-		pub fn submit_ctype_creation_operation(origin, creation_operation: CtypeCreationOperation<T>, operation_signature: did::DidSignature) -> DispatchResult {
+		#[pallet::weight(<T as Config>::WeightInfo::add())]
+		pub fn submit_ctype_creation_operation(
+			origin: OriginFor<T>,
+			creation_operation: CtypeCreationOperation<T>,
+			operation_signature: did::DidSignature
+		) -> DispatchResultWithPostInfo {
 			// origin of the transaction needs to be a signed sender account
 			ensure_signed(origin)?;
 
@@ -121,26 +133,19 @@ decl_module! {
 			did::pallet::Pallet::verify_operation_validity_for_did(&creation_operation, &operation_signature, &did_details).map_err(<did::Error<T>>::from)?;
 
 			// check if CTYPE already exists
-			ensure!(!<CTYPEs<T>>::contains_key(creation_operation.hash), Error::<T>::AlreadyExists);
+			ensure!(!<Ctype<T>>::contains_key(creation_operation.hash), Error::<T>::AlreadyExists);
 
 			// add CTYPE to storage
 			log::debug!("insert CTYPE");
-			<CTYPEs<T>>::insert(creation_operation.hash, creation_operation.creator_did.clone());
+			<Ctype<T>>::insert(creation_operation.hash, creation_operation.creator_did.clone());
 
 			// Update tx counter in DID details and save to DID pallet
 			did_details.increase_tx_counter().expect("Increasing DID tx counter should be a safe operation.");
 			<did::Did<T>>::insert(creation_operation.creator_did.clone(), did_details);
 
 			// deposit event that the CTYPE has been added
-			Self::deposit_event(RawEvent::CTypeCreated(creation_operation.creator_did, creation_operation.hash));
-			Ok(())
+			Self::deposit_event(Event::CTypeCreated(creation_operation.creator_did, creation_operation.hash));
+			Ok(().into())
 		}
-	}
-}
-
-decl_storage! {
-	trait Store for Module<T: Config> as Ctype {
-		// CTYPEs: ctype-hash -> account-did?
-		pub CTYPEs get(fn ctypes):map hasher(opaque_blake2_256) T::Hash => Option<<T as did::Config>::DidIdentifier>;
 	}
 }

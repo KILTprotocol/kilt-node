@@ -113,7 +113,7 @@ impl ExtBuilder {
 		if self.ctypes_stored.len() > 0 {
 			ext.execute_with(|| {
 				self.ctypes_stored.iter().for_each(|ctype| {
-					ctype::CTYPEs::<Test>::insert(ctype.0.clone(), ctype.1.clone());
+					ctype::Ctype::<Test>::insert(ctype.0.clone(), ctype.1.clone());
 				})
 			});
 		}

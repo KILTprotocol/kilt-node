@@ -80,6 +80,7 @@ impl did::Config for Test {
 
 pub type TestDidIdentifier = <Test as did::Config>::DidIdentifier;
 
+#[allow(dead_code)]
 pub(crate) const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
 
 pub const ALICE_DID: TestDidIdentifier = AccountId::new([1u8; 32]);
@@ -156,7 +157,7 @@ pub fn generate_base_did_creation_operation(
 	enc_key: did::PublicEncryptionKey,
 ) -> did::DidCreationOperation<Test> {
 	DidCreationOperation {
-		did: did,
+		did,
 		new_auth_key: auth_key,
 		new_key_agreement_key: enc_key,
 		new_attestation_key: None,
@@ -167,7 +168,7 @@ pub fn generate_base_did_creation_operation(
 
 pub fn generate_base_did_update_operation(did: TestDidIdentifier) -> did::DidUpdateOperation<Test> {
 	DidUpdateOperation {
-		did: did,
+		did,
 		new_auth_key: None,
 		new_key_agreement_key: None,
 		new_attestation_key: None,
@@ -180,7 +181,7 @@ pub fn generate_base_did_update_operation(did: TestDidIdentifier) -> did::DidUpd
 
 pub fn generate_base_did_delete_operation(did: TestDidIdentifier) -> did::DidDeletionOperation<Test> {
 	DidDeletionOperation {
-		did: did,
+		did,
 		tx_counter: 1,
 	}
 }
@@ -190,7 +191,7 @@ pub fn generate_mock_did_details(
 	enc_key: did::PublicEncryptionKey,
 ) -> did::DidDetails {
 	did::DidDetails {
-		auth_key: auth_key,
+		auth_key,
 		key_agreement_key: enc_key,
 		attestation_key: None,
 		delegation_key: None,
@@ -244,7 +245,7 @@ impl ExtBuilder {
 		let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 		let mut ext = sp_io::TestExternalities::new(storage);
 
-		if self.dids_stored.len() > 0 {
+		if !self.dids_stored.is_empty() {
 			ext.execute_with(|| {
 				self.dids_stored.iter().for_each(|did| {
 					did::Did::<Test>::insert(did.0.clone(), did.1.clone());
