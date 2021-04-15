@@ -24,7 +24,14 @@ default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
-# Regular dependencies
+# Internal dependencies
+
+[dependencies.kilt-primitives]
+path = "../../primitives"
+default-features = false
+optional = true
+
+# External dependencies
 
 [dependencies.codec]
 default-features = false
@@ -50,11 +57,6 @@ branch = "rococo-v1"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
-
-[dependencies.kilt-primitives]
-path = "../../primitives"
-default-features = false
-optional = true
 
 [dependencies.log]
 version = "0.4.14"

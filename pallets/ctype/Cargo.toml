@@ -12,26 +12,41 @@ targets = ["x86_64-unknown-linux-gnu"]
 [build-dependencies.substrate-wasm-builder-runner]
 version = "3.0.0"
 
-# pallets
-[dependencies]
-did = {version = "0.24.0", default-features = false, path = "../did"}
+# Dev dependencies
 
-[dev-dependencies]
-kilt-primitives = {path = "../../primitives", default-features = false}
-did = {version = "0.24.0", features = ["mock"], path = "../did"}
-serde = {version = "1.0.101"}
-
-[dev-dependencies.sp-core]
-branch = "rococo-v1"
+[dev-dependencies.kilt-primitives]
+path = "../../primitives"
 default-features = false
-git = "https://github.com/paritytech/substrate"
-version = "3.0.0"
+
+[dev-dependencies.did]
+path = "../did"
+features = ["mock"]
+version = "0.24.0"
+
+[dev-dependencies.serde]
+version = "1.0.101"
+
+# Internal dependencies
+
+[dependencies.did]
+version = "0.24.0"
+default-features = false
+path = "../did"
+
+# External dependencies
 
 [dependencies.codec]
 default-features = false
 features = ["derive"]
 package = "parity-scale-codec"
 version = "2.0.0"
+
+[dependencies.frame-benchmarking]
+branch = "rococo-v1"
+default-features = false
+git = "https://github.com/paritytech/substrate"
+optional = true
+version = "3.0.0"
 
 [dependencies.frame-support]
 branch = "rococo-v1"
@@ -40,6 +55,22 @@ git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
 [dependencies.frame-system]
+branch = "rococo-v1"
+default-features = false
+git = "https://github.com/paritytech/substrate"
+version = "3.0.0"
+
+[dependencies.log]
+version = "0.4.14"
+default-features = false
+
+[dev-dependencies.sp-core]
+branch = "rococo-v1"
+default-features = false
+git = "https://github.com/paritytech/substrate"
+version = "3.0.0"
+
+[dependencies.sp-io]
 branch = "rococo-v1"
 default-features = false
 git = "https://github.com/paritytech/substrate"
@@ -56,23 +87,6 @@ branch = "rococo-v1"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
-
-[dependencies.sp-io]
-branch = "rococo-v1"
-default-features = false
-git = "https://github.com/paritytech/substrate"
-version = "3.0.0"
-
-[dependencies.frame-benchmarking]
-branch = "rococo-v1"
-default-features = false
-git = "https://github.com/paritytech/substrate"
-optional = true
-version = "3.0.0"
-
-[dependencies.log]
-version = "0.4.14"
-default-features = false
 
 [features]
 default = ["std"]

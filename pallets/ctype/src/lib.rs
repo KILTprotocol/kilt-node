@@ -26,7 +26,7 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
-#[cfg(any(feature = "mock", test))]
+#[cfg(test)]
 mod mock;
 
 pub mod default_weights;
