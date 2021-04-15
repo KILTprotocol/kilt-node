@@ -49,6 +49,7 @@ pub enum Alternative {
 	/// Whatever the current runtime is, with simple Alice/Bob auths.
 	KiltTestnet,
 	KiltDevnet,
+	MashnetStaging,
 }
 
 /// Helper function to generate a crypto pair from seed
@@ -164,6 +165,36 @@ impl Alternative {
 					None,
 				)
 			}
+			Alternative::MashnetStaging => {
+				ChainSpec::from_genesis(
+					"Mashnet Staging",
+					"mashnet_staging",
+					ChainType::Live,
+					move || {
+						testnet_genesis(
+							wasm_binary,
+							// Initial Authorities
+							vec![
+								as_authority_key(DEV_AUTH_ALICE),
+								as_authority_key(DEV_AUTH_BOB),
+								as_authority_key(DEV_AUTH_CHARLIE),
+							],
+							DEV_AUTH_ALICE.into(),
+							vec![
+								DEV_FAUCET.into(),
+								DEV_AUTH_ALICE.into(),
+								DEV_AUTH_BOB.into(),
+								DEV_AUTH_CHARLIE.into(),
+							],
+						)
+					},
+					vec![],
+					None,
+					None,
+					Some(properties),
+					None,
+				)
+			}
 		})
 	}
 
@@ -172,6 +203,7 @@ impl Alternative {
 			"dev" => Some(Alternative::Development),
 			"kilt-testnet" => Some(Alternative::KiltTestnet),
 			"kilt-devnet" => Some(Alternative::KiltDevnet),
+			"mashnet-staging" => Some(Alternative::MashnetStaging),
 			_ => None,
 		}
 	}
