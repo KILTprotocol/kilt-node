@@ -36,8 +36,8 @@ jobs:
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         ECR_REPOSITORY: kilt/prototype-chain
+        IMAGE_TAG: ${{ github.sha }}
       run: |
-        IMAGE_TAG=${GITHUB_REF#refs/tags/}
         docker tag kilt/mashnet-node $ECR_REGISTRY/$ECR_REPOSITORY:latest-rc
         docker tag kilt/mashnet-node $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
@@ -66,8 +66,8 @@ jobs:
     - name: Tag, and push image to Docker Hub
       env:
         DOCKER_REPOSITORY: kiltprotocol/mashnet-node
+        IMAGE_TAG: ${{ github.sha }}
       run: |
-        IMAGE_TAG=${GITHUB_REF#refs/tags/}
         docker tag kilt/mashnet-node $DOCKER_REPOSITORY:latest-rc
         docker tag kilt/mashnet-node $DOCKER_REPOSITORY:$IMAGE_TAG
         docker push $DOCKER_REPOSITORY:$IMAGE_TAG
