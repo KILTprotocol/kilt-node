@@ -39,6 +39,14 @@ use sp_std::fmt::Debug;
 
 pub use pallet::*;
 
+/// An operation to create a new CTYPE.
+/// The struct implements the DidOperation trait, and as such it must contain
+/// information about the creator's DID, the type of DID key required to
+/// verify the operation signature, and the tx counter to protect against replay
+/// attacks. The struct has the following fields:
+/// * creator_did: the DID of the CTYPE creator
+/// * hash: the CTYPE hash
+/// * tx_counter: the DID tx counter to mitigate replay attacks
 #[derive(Clone, Decode, Encode, PartialEq)]
 pub struct CtypeCreationOperation<T: Config> {
 	creator_did: <T as did::Config>::DidIdentifier,
@@ -55,7 +63,6 @@ impl<T: Config> did::DidOperation<T> for CtypeCreationOperation<T> {
 		&self.creator_did
 	}
 
-	// Irrelevant for creation operations.
 	fn get_tx_counter(&self) -> u64 {
 		self.tx_counter
 	}
@@ -100,12 +107,13 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn ctypes)]
-	pub type Ctype<T> = StorageMap<_, Blake2_128Concat, <T as frame_system::Config>::Hash, <T as did::Config>::DidIdentifier>;
+	pub type Ctype<T> =
+		StorageMap<_, Blake2_128Concat, <T as frame_system::Config>::Hash, <T as did::Config>::DidIdentifier>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		CTypeCreated(<T as did::Config>::DidIdentifier, <T as frame_system::Config>::Hash)
+		CTypeCreated(<T as did::Config>::DidIdentifier, <T as frame_system::Config>::Hash),
 	}
 
 	#[pallet::error]
@@ -119,32 +127,46 @@ pub mod pallet {
 		/// Adds a CTYPE on chain, where
 		/// origin - the origin of the transaction
 		/// hash - hash of the CTYPE of the claim
-		#[pallet::weight(<T as Config>::WeightInfo::add())]
+		#[pallet::weight(<T as Config>::WeightInfo::submit_ctype_creation_operation())]
 		pub fn submit_ctype_creation_operation(
 			origin: OriginFor<T>,
 			creation_operation: CtypeCreationOperation<T>,
-			operation_signature: did::DidSignature
+			operation_signature: did::DidSignature,
 		) -> DispatchResultWithPostInfo {
 			// origin of the transaction needs to be a signed sender account
 			ensure_signed(origin)?;
 
-			let mut did_details = <did::Did<T>>::get(&creation_operation.creator_did).ok_or(<did::Error<T>>::DidNotPresent)?;
+			let mut did_details =
+				<did::Did<T>>::get(&creation_operation.creator_did).ok_or(<did::Error<T>>::DidNotPresent)?;
 
-			did::pallet::Pallet::verify_operation_validity_for_did(&creation_operation, &operation_signature, &did_details).map_err(<did::Error<T>>::from)?;
+			did::pallet::Pallet::verify_operation_validity_for_did(
+				&creation_operation,
+				&operation_signature,
+				&did_details,
+			)
+			.map_err(<did::Error<T>>::from)?;
 
 			// check if CTYPE already exists
-			ensure!(!<Ctype<T>>::contains_key(creation_operation.hash), Error::<T>::AlreadyExists);
+			ensure!(
+				!<Ctype<T>>::contains_key(creation_operation.hash),
+				Error::<T>::AlreadyExists
+			);
 
 			// add CTYPE to storage
 			log::debug!("insert CTYPE");
 			<Ctype<T>>::insert(creation_operation.hash, creation_operation.creator_did.clone());
 
 			// Update tx counter in DID details and save to DID pallet
-			did_details.increase_tx_counter().expect("Increasing DID tx counter should be a safe operation.");
+			did_details
+				.increase_tx_counter()
+				.expect("Increasing DID tx counter should be a safe operation.");
 			<did::Did<T>>::insert(creation_operation.creator_did.clone(), did_details);
 
 			// deposit event that the CTYPE has been added
-			Self::deposit_event(Event::CTypeCreated(creation_operation.creator_did, creation_operation.hash));
+			Self::deposit_event(Event::CTypeCreated(
+				creation_operation.creator_did,
+				creation_operation.hash,
+			));
 			Ok(().into())
 		}
 	}

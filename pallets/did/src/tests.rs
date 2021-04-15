@@ -285,7 +285,7 @@ fn check_successful_complete_update() {
 		BTreeSet::from_iter(vec![did::PublicVerificationKey::from(old_att_key.public())].into_iter())
 	);
 	assert_eq!(new_did_details.endpoint_url, did_update_operation.new_endpoint_url);
-	assert_eq!(new_did_details.last_tx_counter, did_update_operation.tx_counter);
+	assert_eq!(new_did_details.last_tx_counter, old_did_details.tx_counter + 1u64);
 }
 
 #[test]
@@ -327,7 +327,7 @@ Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain."));
 	assert_eq!(new_did_details.delegation_key, old_did_details.delegation_key);
 	assert_eq!(new_did_details.attestation_key, old_did_details.attestation_key);
 	assert_eq!(new_did_details.endpoint_url, old_did_details.endpoint_url);
-	assert_eq!(new_did_details.last_tx_counter, did_update_operation.tx_counter);
+	assert_eq!(new_did_details.last_tx_counter, old_did_details.tx_counter + 1u64);
 
 	// Set of verification keys should be empty now
 	assert_eq!(new_did_details.verification_keys, BTreeSet::new());

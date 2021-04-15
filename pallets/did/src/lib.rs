@@ -514,7 +514,10 @@ pub struct DidDetails {
 
 impl DidDetails {
 	pub fn increase_tx_counter(&mut self) -> Result<(), StorageError> {
-		self.last_tx_counter = self.last_tx_counter.checked_add(1).ok_or(StorageError::MaxTxCounterValue)?;
+		self.last_tx_counter = self
+			.last_tx_counter
+			.checked_add(1)
+			.ok_or(StorageError::MaxTxCounterValue)?;
 		Ok(())
 	}
 

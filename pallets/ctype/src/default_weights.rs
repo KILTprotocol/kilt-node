@@ -53,24 +53,24 @@ use sp_std::marker::PhantomData;
 
 /// Weight functions needed for ctype.
 pub trait WeightInfo {
-	fn add() -> Weight;
+	fn submit_ctype_creation_operation() -> Weight;
 }
 
 /// Weights for ctype using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
-	fn add() -> Weight {
+	fn submit_ctype_creation_operation() -> Weight {
 		(85_101_000_u64)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 }
 
 // For backwards compatibility and tests
 impl WeightInfo for () {
-	fn add() -> Weight {
+	fn submit_ctype_creation_operation() -> Weight {
 		(85_101_000_u64)
-			.saturating_add(RocksDbWeight::get().reads(1_u64))
-			.saturating_add(RocksDbWeight::get().writes(1_u64))
+			.saturating_add(RocksDbWeight::get().reads(2_u64))
+			.saturating_add(RocksDbWeight::get().writes(2_u64))
 	}
 }
