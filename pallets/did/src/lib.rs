@@ -735,8 +735,13 @@ pub mod pallet {
 			// Create a new DID entry from the details provided in the create operation.
 			let did_entry = DidDetails::from(did_creation_operation.clone());
 
-			Self::verify_operation_signature_for_did(&did_creation_operation, &signature, &did_entry)
-				.map_err(<Error<T>>::from)?;
+			Self::verify_payload_signature_with_did_key_type(
+				&did_creation_operation.encode(),
+				&signature,
+				&did_entry,
+				did_creation_operation.get_verification_key_type(),
+			)
+			.map_err(<Error<T>>::from)?;
 
 			let did_identifier = did_creation_operation.get_did();
 			log::debug!("Creating DID {:?}", did_identifier);
@@ -840,7 +845,12 @@ impl<T: Config> Pallet<T> {
 		did_details: &DidDetails,
 	) -> Result<(), DidError> {
 		Self::verify_operation_counter_for_did(did_operation, did_details)?;
-		Self::verify_operation_signature_for_did(did_operation, signature, did_details)
+		Self::verify_payload_signature_with_did_key_type(
+			&did_operation.encode(),
+			signature,
+			did_details,
+			did_operation.get_verification_key_type(),
+		)
 	}
 
 	// Perform operation nonce validation.
@@ -867,25 +877,22 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	fn verify_operation_signature_for_did<O: DidOperation<T>>(
-		did_operation: &O,
+	pub fn verify_payload_signature_with_did_key_type(
+		payload: &Payload,
 		signature: &DidSignature,
 		did_details: &DidDetails,
+		key_type: DidVerificationKeyType,
 	) -> Result<(), DidError> {
 		// Retrieves the needed verification key from the DID details, or generate a
 		// VerificationkeyNotPresent error if there is no key of the type required.
 		let verification_key = did_details
-			.get_verification_key_for_key_type(did_operation.get_verification_key_type())
-			.ok_or_else(|| {
-				DidError::StorageError(StorageError::DidKeyNotPresent(
-					did_operation.get_verification_key_type(),
-				))
-			})?;
+			.get_verification_key_for_key_type(key_type.clone())
+			.ok_or(DidError::StorageError(StorageError::DidKeyNotPresent(key_type)))?;
 
 		// Verifies that the signature matches the expected format, otherwise generate
 		// an InvalidSignatureFormat error.
 		let is_signature_valid = verification_key
-			.verify_signature(&did_operation.encode(), &signature)
+			.verify_signature(&payload, &signature)
 			.map_err(|_| DidError::SignatureError(SignatureError::InvalidSignatureFormat))?;
 
 		ensure!(

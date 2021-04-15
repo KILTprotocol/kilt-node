@@ -148,19 +148,19 @@ pub mod pallet {
 
 			// check if CTYPE already exists
 			ensure!(
-				!<Ctype<T>>::contains_key(creation_operation.hash),
+				!<Ctype<T>>::contains_key(&creation_operation.hash),
 				Error::<T>::AlreadyExists
 			);
 
 			// add CTYPE to storage
 			log::debug!("insert CTYPE");
-			<Ctype<T>>::insert(creation_operation.hash, creation_operation.creator_did.clone());
+			<Ctype<T>>::insert(&creation_operation.hash, creation_operation.creator_did.clone());
 
 			// Update tx counter in DID details and save to DID pallet
 			did_details
 				.increase_tx_counter()
 				.expect("Increasing DID tx counter should be a safe operation.");
-			<did::Did<T>>::insert(creation_operation.creator_did.clone(), did_details);
+			<did::Did<T>>::insert(&creation_operation.creator_did, did_details);
 
 			// deposit event that the CTYPE has been added
 			Self::deposit_event(Event::CTypeCreated(
