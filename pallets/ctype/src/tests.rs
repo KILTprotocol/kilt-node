@@ -18,9 +18,8 @@
 
 use crate::{self as ctype, mock::*};
 use did::mock as did_mock;
-use did_mock::{ALICE_DID, BOB_DID};
 use frame_support::{assert_noop, assert_ok};
-use sp_core::{Pair, H256};
+use sp_core::Pair;
 
 use codec::Encode;
 
@@ -35,13 +34,13 @@ fn check_successful_ctype_creation() {
 
 	let ctype_creation_operation = ctype::CtypeCreationOperation {
 		creator_did: did_mock::ALICE_DID,
-		hash: H256::from_low_u64_be(1),
+		hash: get_ctype_hash(true),
 		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
 	};
 
 	let signature = did_att_key.sign(&ctype_creation_operation.encode());
 
-	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did_details.clone())]);
+	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details.clone())]);
 	let ctype_builder = ExtBuilder::from(did_builder);
 
 	let mut ext = ctype_builder.build();
@@ -82,14 +81,14 @@ fn check_duplicate_ctype_creation() {
 
 	let ctype_creation_operation = ctype::CtypeCreationOperation {
 		creator_did: did_mock::ALICE_DID,
-		hash: H256::from_low_u64_be(1),
+		hash: get_ctype_hash(true),
 		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
 	};
 
 	let signature = did_att_key.sign(&ctype_creation_operation.encode());
 
-	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did_details.clone())]);
-	let ctype_builder = ExtBuilder::from(did_builder).with_ctypes(vec![(ctype_creation_operation.hash, ALICE_DID)]);
+	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details.clone())]);
+	let ctype_builder = ExtBuilder::from(did_builder).with_ctypes(vec![(ctype_creation_operation.hash, did_mock::ALICE_DID)]);
 
 	let mut ext = ctype_builder.build();
 
@@ -125,14 +124,14 @@ fn check_did_not_present_ctype_creation() {
 
 	let ctype_creation_operation = ctype::CtypeCreationOperation {
 		creator_did: did_mock::ALICE_DID,
-		hash: H256::from_low_u64_be(1),
+		hash: get_ctype_hash(true),
 		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
 	};
 
 	let signature = did_att_key.sign(&ctype_creation_operation.encode());
 
-	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(BOB_DID, mock_did_details)]);
-	let ctype_builder = ExtBuilder::from(did_builder).with_ctypes(vec![(ctype_creation_operation.hash, ALICE_DID)]);
+	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::BOB_DID, mock_did_details)]);
+	let ctype_builder = ExtBuilder::from(did_builder).with_ctypes(vec![(ctype_creation_operation.hash, did_mock::ALICE_DID)]);
 
 	let mut ext = ctype_builder.build();
 
@@ -160,13 +159,13 @@ fn check_max_did_counter_ctype_creation() {
 
 	let ctype_creation_operation = ctype::CtypeCreationOperation {
 		creator_did: did_mock::ALICE_DID,
-		hash: H256::from_low_u64_be(1),
+		hash: get_ctype_hash(true),
 		tx_counter: mock_did_details.get_tx_counter_value(),
 	};
 
 	let signature = did_att_key.sign(&ctype_creation_operation.encode());
 
-	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did_details)]);
+	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details)]);
 	let ctype_builder = ExtBuilder::from(did_builder);
 
 	let mut ext = ctype_builder.build();
@@ -195,13 +194,13 @@ fn check_smaller_did_counter_ctype_creation() {
 
 	let ctype_creation_operation = ctype::CtypeCreationOperation {
 		creator_did: did_mock::ALICE_DID,
-		hash: H256::from_low_u64_be(1),
+		hash: get_ctype_hash(true),
 		tx_counter: mock_did_details.get_tx_counter_value() - 1u64,
 	};
 
 	let signature = did_att_key.sign(&ctype_creation_operation.encode());
 
-	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did_details)]);
+	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details)]);
 	let ctype_builder = ExtBuilder::from(did_builder);
 
 	let mut ext = ctype_builder.build();
@@ -229,13 +228,13 @@ fn check_equal_did_counter_ctype_creation() {
 
 	let ctype_creation_operation = ctype::CtypeCreationOperation {
 		creator_did: did_mock::ALICE_DID,
-		hash: H256::from_low_u64_be(1),
+		hash: get_ctype_hash(true),
 		tx_counter: mock_did_details.get_tx_counter_value(),
 	};
 
 	let signature = did_att_key.sign(&ctype_creation_operation.encode());
 
-	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did_details)]);
+	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details)]);
 	let ctype_builder = ExtBuilder::from(did_builder);
 
 	let mut ext = ctype_builder.build();
@@ -263,13 +262,13 @@ fn check_too_large_did_counter_ctype_creation() {
 
 	let ctype_creation_operation = ctype::CtypeCreationOperation {
 		creator_did: did_mock::ALICE_DID,
-		hash: H256::from_low_u64_be(1),
+		hash: get_ctype_hash(true),
 		tx_counter: mock_did_details.get_tx_counter_value() + 2u64,
 	};
 
 	let signature = did_att_key.sign(&ctype_creation_operation.encode());
 
-	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did_details)]);
+	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details)]);
 	let ctype_builder = ExtBuilder::from(did_builder);
 
 	let mut ext = ctype_builder.build();
@@ -297,13 +296,13 @@ fn check_no_attestation_key_ctype_creation() {
 
 	let ctype_creation_operation = ctype::CtypeCreationOperation {
 		creator_did: did_mock::ALICE_DID,
-		hash: H256::from_low_u64_be(1),
+		hash: get_ctype_hash(true),
 		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
 	};
 
 	let signature = did_att_key.sign(&ctype_creation_operation.encode());
 
-	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did_details)]);
+	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details)]);
 	let ctype_builder = ExtBuilder::from(did_builder);
 
 	let mut ext = ctype_builder.build();
@@ -332,13 +331,13 @@ fn check_invalid_signature_format_ctype_creation() {
 
 	let ctype_creation_operation = ctype::CtypeCreationOperation {
 		creator_did: did_mock::ALICE_DID,
-		hash: H256::from_low_u64_be(1),
+		hash: get_ctype_hash(true),
 		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
 	};
 
 	let signature = wrong_format_att_key.sign(&ctype_creation_operation.encode());
 
-	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did_details)]);
+	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details)]);
 	let ctype_builder = ExtBuilder::from(did_builder);
 
 	let mut ext = ctype_builder.build();
@@ -367,13 +366,13 @@ fn check_invalid_signature_ctype_creation() {
 
 	let ctype_creation_operation = ctype::CtypeCreationOperation {
 		creator_did: did_mock::ALICE_DID,
-		hash: H256::from_low_u64_be(1),
+		hash: get_ctype_hash(true),
 		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
 	};
 
 	let signature = alternative_seed_att_key.sign(&ctype_creation_operation.encode());
 
-	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did_details)]);
+	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details)]);
 	let ctype_builder = ExtBuilder::from(did_builder);
 
 	let mut ext = ctype_builder.build();

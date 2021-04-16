@@ -27,6 +27,9 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
+#[cfg(test)]
+mod mock;
+
 pub mod migration;
 
 #[macro_use]
@@ -88,7 +91,7 @@ impl Default for Permissions {
 	}
 }
 
-#[derive(Debug, Encode, Decode, PartialEq)]
+#[derive(Clone, Debug, Encode, Decode, PartialEq)]
 pub struct DelegationNode<T: Config> {
 	pub root_id: T::DelegationNodeId,
 	pub parent: Option<T::DelegationNodeId>,
@@ -134,7 +137,7 @@ impl<T: Config> DelegationNode<T> {
 	}
 }
 
-#[derive(Debug, Encode, Decode, PartialEq)]
+#[derive(Clone, Debug, Encode, Decode, PartialEq)]
 pub struct DelegationRoot<T: Config> {
 	pub ctype_hash: T::Hash,
 	pub owner: T::DidIdentifier,
@@ -340,11 +343,11 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
 
 	#[pallet::storage]
-	#[pallet::getter(fn root)]
-	pub type Root<T> = StorageMap<_, Blake2_128Concat, <T as Config>::DelegationNodeId, DelegationRoot<T>>;
+	#[pallet::getter(fn roots)]
+	pub type Roots<T> = StorageMap<_, Blake2_128Concat, <T as Config>::DelegationNodeId, DelegationRoot<T>>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn delegation)]
+	#[pallet::getter(fn delegations)]
 	pub type Delegations<T> = StorageMap<_, Blake2_128Concat, <T as Config>::DelegationNodeId, DelegationNode<T>>;
 
 	#[pallet::storage]
@@ -421,13 +424,16 @@ pub mod pallet {
 
 			// check if a root with the given id already exists
 			ensure!(
-				!<Root<T>>::contains_key(&operation.root_id),
+				!<Roots<T>>::contains_key(&operation.root_id),
 				Error::<T>::RootAlreadyExists
 			);
 
+			// check if CTYPE exists
+			ensure!(<ctype::Ctype<T>>::contains_key(&operation.ctype_hash), <ctype::Error<T>>::NotFound);
+
 			// add root node to storage
 			log::debug!("insert Delegation Root");
-			<Root<T>>::insert(
+			<Roots<T>>::insert(
 				&operation.root_id,
 				DelegationRoot::new(
 					operation.ctype_hash,
@@ -505,7 +511,7 @@ pub mod pallet {
 			);
 
 			// check if root exists
-			let root = <Root<T>>::get(&operation.root_id).ok_or(Error::<T>::RootNotFound)?;
+			let root = <Roots<T>>::get(&operation.root_id).ok_or(Error::<T>::RootNotFound)?;
 
 			// check if this delegation has a parent
 			if let Some(parent_id) = operation.parent_id {
@@ -605,7 +611,7 @@ pub mod pallet {
 			.map_err(<did::Error<T>>::from)?;
 
 			// check if root node exists
-			let mut root = <Root<T>>::get(&operation.root_id).ok_or(Error::<T>::RootNotFound)?;
+			let mut root = <Roots<T>>::get(&operation.root_id).ok_or(Error::<T>::RootNotFound)?;
 
 			// check if root node has been created by the sender of this transaction
 			ensure!(root.owner.eq(&operation.creator_did), Error::<T>::UnauthorizedRevocation);
@@ -617,7 +623,7 @@ pub mod pallet {
 				if remaining_revocations > 0 {
 					// store revoked root node
 					root.revoked = true;
-					<Root<T>>::insert(&operation.root_id, root);
+					<Roots<T>>::insert(&operation.root_id, root);
 				}
 				post_weight + T::DbWeight::get().writes(1)
 			} else {
@@ -716,7 +722,7 @@ impl<T: Config> Pallet<T> {
 			Self::is_delegating(account, &parent, max_lookups - 1)
 		} else {
 			// return whether the given account is the owner of the root
-			let root = <Root<T>>::get(delegation_node.root_id).ok_or(Error::<T>::RootNotFound)?;
+			let root = <Roots<T>>::get(delegation_node.root_id).ok_or(Error::<T>::RootNotFound)?;
 			Ok(root.owner.eq(account))
 		}
 	}

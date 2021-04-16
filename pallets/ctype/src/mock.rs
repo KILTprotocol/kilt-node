@@ -91,6 +91,18 @@ pub type TestDidIdentifier = <Test as did::Config>::DidIdentifier;
 
 pub(crate) const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
 
+const DEFAULT_CTYPE_HASH_SEED: u64 = 1u64;
+const ALTERNATIVE_CTYPE_HASH_SEED: u64 = 2u64;
+
+pub fn get_ctype_hash(default: bool) -> H256 {
+	if default {
+		H256::from_low_u64_be(DEFAULT_CTYPE_HASH_SEED)
+	} else {
+		H256::from_low_u64_be(ALTERNATIVE_CTYPE_HASH_SEED)
+	}
+}
+
+#[derive(Clone)]
 pub struct ExtBuilder {
 	did_builder: Option<did_mock::ExtBuilder>,
 	ctypes_stored: Vec<(TestCtypeHash, TestDidIdentifier)>,
@@ -107,10 +119,9 @@ impl Default for ExtBuilder {
 
 impl From<did_mock::ExtBuilder> for ExtBuilder {
 	fn from(did_builder: did_mock::ExtBuilder) -> Self {
-		Self {
-			did_builder: Some(did_builder),
-			ctypes_stored: vec![],
-		}
+		let mut instance = Self::default();
+		instance.did_builder = Some(did_builder);
+		instance
 	}
 }
 
@@ -128,7 +139,7 @@ impl ExtBuilder {
 			sp_io::TestExternalities::new(storage)
 		};
 
-		if self.ctypes_stored.len() > 0 {
+		if !self.ctypes_stored.is_empty() {
 			ext.execute_with(|| {
 				self.ctypes_stored.iter().for_each(|ctype| {
 					ctype::Ctype::<Test>::insert(ctype.0.clone(), ctype.1.clone());

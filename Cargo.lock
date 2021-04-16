@@ -1567,7 +1567,6 @@ dependencies = [
  "serde",
  "sp-core",
  "sp-io",
- "sp-keystore",
  "sp-runtime",
  "sp-std",
  "substrate-wasm-builder-runner 1.0.6",

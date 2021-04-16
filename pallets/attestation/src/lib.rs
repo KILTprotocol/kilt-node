@@ -111,7 +111,7 @@ decl_module! {
 				ensure!((delegation.permissions & Permissions::ATTEST) == Permissions::ATTEST, Error::<T>::DelegationUnauthorizedToAttest);
 
 				// check if CTYPE of the delegation is matching the CTYPE of the attestation
-				let root = <delegation::Root<T>>::get(delegation.root_id).ok_or(delegation::Error::<T>::RootNotFound)?;
+				let root = <delegation::Roots<T>>::get(delegation.root_id).ok_or(delegation::Error::<T>::RootNotFound)?;
 				ensure!(root.ctype_hash.eq(&ctype_hash), Error::<T>::CTypeMismatch);
 			}
 

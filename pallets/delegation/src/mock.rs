@@ -18,7 +18,6 @@
 
 use crate as delegation;
 use crate::*;
-use did::mock as did_mock;
 use ctype::mock as ctype_mock;
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
@@ -97,3 +96,98 @@ impl did::Config for Test {
 pub type TestDelegationNodeId = <Test as Config>::DelegationNodeId;
 pub type TestCtypeHash = <Test as frame_system::Config>::Hash;
 pub type TestDidIdentifier = <Test as did::Config>::DidIdentifier;
+
+pub(crate) const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
+
+pub struct ExtBuilder {
+	ctype_builder: Option<ctype_mock::ExtBuilder>,
+	root_delegations_stored: Vec<(TestDelegationNodeId, DelegationRoot<Test>)>,
+	delegations_stored: Vec<(TestDelegationNodeId, DelegationNode<Test>)>,
+	children_stored: Vec<(TestDelegationNodeId, Vec<TestDelegationNodeId>)>,
+}
+
+impl Default for ExtBuilder {
+	fn default() -> Self {
+		Self {
+			ctype_builder: None,
+			root_delegations_stored: vec![],
+			delegations_stored: vec![],
+			children_stored: vec![],
+		}
+	}
+}
+
+impl From<ctype_mock::ExtBuilder> for ExtBuilder {
+	fn from(ctype_builder: ctype_mock::ExtBuilder) -> Self {
+		let mut instance = Self::default();
+		instance.ctype_builder = Some(ctype_builder);
+		instance
+	}
+}
+
+impl ExtBuilder {
+	pub fn with_root_delegations(mut self, root_delegations: Vec<(TestDelegationNodeId, DelegationRoot<Test>)>) -> Self {
+		self.root_delegations_stored = root_delegations;
+		self
+	}
+
+	pub fn with_delegations(mut self, delegations: Vec<(TestDelegationNodeId, DelegationNode<Test>)>) -> Self {
+		self.delegations_stored = delegations;
+		self
+	}
+
+	pub fn with_children(mut self, children: Vec<(TestDelegationNodeId, Vec<TestDelegationNodeId>)>) -> Self {
+		self.children_stored = children;
+		self
+	}
+
+	pub fn build(self) -> sp_io::TestExternalities {
+		let mut ext = if let Some(ctype_builder) = self.ctype_builder.clone() {
+			ctype_builder.build()
+		} else {
+			let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+			sp_io::TestExternalities::new(storage)
+		};
+
+		if !self.root_delegations_stored.is_empty() {
+			ext.execute_with(|| {
+				self.root_delegations_stored.iter().for_each(|root_delegation| {
+					delegation::Roots::<Test>::insert(root_delegation.0, root_delegation.1.clone());
+				})
+			});
+		}
+
+		if !self.delegations_stored.is_empty() {
+			ext.execute_with(|| {
+				self.delegations_stored.iter().for_each(|del| {
+					delegation::Delegations::<Test>::insert(del.0, del.1.clone());
+				})
+			});
+		}
+
+		if !self.children_stored.is_empty() {
+			ext.execute_with(|| {
+				self.children_stored.iter().for_each(|child| {
+					delegation::Children::<Test>::insert(child.0, child.1.clone());
+				})
+			});
+		}
+
+		ext
+	}
+}
+
+pub(crate) fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
+	hash.encode()
+}
+
+const DEFAULT_ROOT_ID_SEED: u64 = 1u64;
+const ALTERNATIVE_ROOT_ID_SEED: u64 = 2u64;
+
+pub fn get_delegation_root_id(default: bool) -> H256 {
+	if default {
+		H256::from_low_u64_be(DEFAULT_ROOT_ID_SEED)
+	} else {
+		H256::from_low_u64_be(ALTERNATIVE_ROOT_ID_SEED)
+	}
+}
