@@ -417,12 +417,7 @@ pub mod pallet {
 					)?;
 				} else {
 					// Reduce source's lock amount to enable token transfer
-					<pallet_balances::Pallet<T>>::set_lock(
-						KILT_LAUNCH_ID,
-						&source,
-						amount_new,
-						WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
-					);
+					<pallet_balances::Pallet<T>>::set_lock(KILT_LAUNCH_ID, &source, amount_new, WithdrawReasons::all());
 
 					// Transfer amount to target
 					<pallet_balances::Pallet<T> as Currency<T::AccountId>>::transfer(
@@ -522,10 +517,8 @@ impl<T: Config> Pallet<T> {
 			//
 			// Logic was taken from pallet_vesting.
 
-			// TODO: Check whether we want to switch to
-			// WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT) to allow for tx
-			// fees to be paid from vesting-locked tokens
-			let reasons = WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE;
+			// Disallow anything to be paid by vesting lock
+			let reasons = WithdrawReasons::all();
 			let now = <frame_system::Pallet<T>>::block_number();
 			let locked_now = vesting.locked_at::<<T as pallet_vesting::Config>::BlockNumberToBalance>(now);
 			<<T as pallet_vesting::Config>::Currency as LockableCurrency<T::AccountId>>::set_lock(
@@ -592,14 +585,8 @@ impl<T: Config> Pallet<T> {
 					block: unlock_block,
 				},
 			);
-			// Allow transaction fees to be paid from locked balance, e.g., prohibit all
-			// withdraws except `WithdrawReasons::TRANSACTION_PAYMENT`
-			<pallet_balances::Pallet<T>>::set_lock(
-				KILT_LAUNCH_ID,
-				&target,
-				target_amount,
-				WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
-			);
+			// Disallow anything from being paid by custom lock
+			<pallet_balances::Pallet<T>>::set_lock(KILT_LAUNCH_ID, &target, target_amount, WithdrawReasons::all());
 
 			// Update or remove lock storage items corresponding to the source address
 			if max_add_amount == source_amount {

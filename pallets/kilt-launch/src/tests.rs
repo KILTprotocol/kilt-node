@@ -204,7 +204,7 @@ fn check_migrate_accounts_locked() {
 				match id {
 					crate::KILT_LAUNCH_ID => {
 						assert_eq!(amount, locked_info.amount);
-						assert_eq!(reasons, Reasons::Misc);
+						assert_eq!(reasons, Reasons::All);
 					}
 					_ => panic!("Unexpected balance lock id {:?}", id),
 				};
@@ -214,7 +214,7 @@ fn check_migrate_accounts_locked() {
 			assert_balance(
 				USER_1,
 				locked_info.amount + 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
-				locked_info.amount + 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
+				2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
 				2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
 				false,
 			);
@@ -254,7 +254,7 @@ fn check_locked_transfer() {
 				vec![BalanceLock {
 					id: KILT_LAUNCH_ID,
 					amount: locked_info.amount,
-					reasons: Reasons::Misc,
+					reasons: Reasons::All,
 				}]
 			);
 
@@ -264,7 +264,7 @@ fn check_locked_transfer() {
 				Error::<Test>::BalanceLockNotFound
 			);
 
-			// Add 1 free balance + AvailableGenesisBalance to enable to pay for tx fees
+			// Add 1 free balance to enable to pay for tx fees
 			<<Test as pallet_vesting::Config>::Currency as Currency<<Test as frame_system::Config>::AccountId>>::make_free_balance_be(&USER_1, locked_info.amount + 1 + <Test as crate::Config>::AvailableGenesisBalance::get());
 			// Cannot transfer more locked than which is locked
 			assert_noop!(
@@ -283,7 +283,7 @@ fn check_locked_transfer() {
 				vec![BalanceLock {
 					id: KILT_LAUNCH_ID,
 					amount: 3000,
-					reasons: Reasons::Misc,
+					reasons: Reasons::All,
 				}]
 			);
 			assert_eq!(
@@ -291,11 +291,11 @@ fn check_locked_transfer() {
 				vec![BalanceLock {
 					id: KILT_LAUNCH_ID,
 					amount: locked_info.amount - 3000,
-					reasons: Reasons::Misc,
+					reasons: Reasons::All,
 				}]
 			);
 			assert_eq!(UnlockingAt::<Test>::get(100), Some(vec![USER_1, PSEUDO_1]));
-			assert_balance(PSEUDO_1, locked_info.amount - 3000, locked_info.amount - 3000, 0, false);
+			assert_balance(PSEUDO_1, locked_info.amount - 3000, 0, 0, false);
 
 			// Locked_Transfer rest
 			assert_ok!(KiltLaunch::locked_transfer(Origin::signed(USER_1), PSEUDO_1, 3000));
@@ -305,13 +305,13 @@ fn check_locked_transfer() {
 				vec![BalanceLock {
 					id: KILT_LAUNCH_ID,
 					amount: locked_info.amount,
-					reasons: Reasons::Misc,
+					reasons: Reasons::All,
 				}]
 			);
 			assert_eq!(BalanceLocks::<Test>::get(&USER_1), None);
 			assert_eq!(BalanceLocks::<Test>::get(&PSEUDO_1), Some(locked_info.clone()));
 			assert_eq!(UnlockingAt::<Test>::get(100), Some(vec![PSEUDO_1]));
-			assert_balance(PSEUDO_1, locked_info.amount, locked_info.amount, 0, false);
+			assert_balance(PSEUDO_1, locked_info.amount, 0, 0, false);
 
 			// Reach balance lock limit
 			System::set_block_number(100);
@@ -443,7 +443,7 @@ fn check_migrate_accounts_vested() {
 				match id {
 					crate::VESTING_ID => {
 						assert_eq!(amount, vesting_info.locked - vesting_info.per_block);
-						assert_eq!(reasons, Reasons::Misc);
+						assert_eq!(reasons, Reasons::All);
 					}
 					_ => panic!("Unexpected balance lock id {:?}", id),
 				};
@@ -453,7 +453,7 @@ fn check_migrate_accounts_vested() {
 			assert_balance(
 				USER_1,
 				vesting_info.locked,
-				vesting_info.locked,
+				vesting_info.per_block,
 				vesting_info.per_block,
 				false,
 			);
@@ -461,13 +461,14 @@ fn check_migrate_accounts_vested() {
 			// TODO: Add positive check for staking once it has been added
 
 			// Reach vesting limits
-			for block in vec![10, 20, 27] {
+			for block in vec![2, 3, 4, 5, 10, 20, 27] {
 				System::set_block_number(block);
 				assert_ok!(Vesting::vest(Origin::signed(USER_1)));
 				assert_eq!(Vesting::vesting(&USER_1), Some(vesting_info));
 				assert_balance(
 					USER_1,
 					vesting_info.locked,
+					// FIXME: Should be `usable`
 					vesting_info.locked,
 					vesting_info.per_block * (block as u128),
 					false,
@@ -518,7 +519,7 @@ fn check_negative_migrate_accounts_vested() {
 				VESTING_ID,
 				&PSEUDO_4,
 				1,
-				WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE,
+				WithdrawReasons::all(),
 			);
 			assert_noop!(
 				KiltLaunch::migrate_multiple_genesis_accounts(Origin::signed(TRANSFER_ACCOUNT), vec![PSEUDO_4], USER_1),
@@ -545,12 +546,7 @@ fn check_negative_migrate_accounts_locked() {
 			);
 
 			// Add a lock to pseudo2 which should not be there
-			Balances::set_lock(
-				KILT_LAUNCH_ID,
-				&PSEUDO_2,
-				1,
-				WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE,
-			);
+			Balances::set_lock(KILT_LAUNCH_ID, &PSEUDO_2, 1, WithdrawReasons::all());
 			assert_noop!(
 				KiltLaunch::migrate_multiple_genesis_accounts(Origin::signed(TRANSFER_ACCOUNT), vec![PSEUDO_2], USER_1),
 				Error::<Test>::UnexpectedLocks

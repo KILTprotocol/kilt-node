@@ -198,12 +198,12 @@ pub fn ensure_single_migration_works(
 				let VestingInfo { locked, per_block, .. } = vesting_info.expect("No vesting schedule found");
 				usable_balance = per_block * now;
 				assert_eq!(amount, locked - usable_balance);
-				assert_eq!(reasons, Reasons::Misc);
+				assert_eq!(reasons, Reasons::All);
 			}
 			crate::KILT_LAUNCH_ID => {
 				let (lock, add) = locked_info.clone().expect("No vesting schedule found");
 				assert_eq!(amount, lock.amount);
-				assert_eq!(reasons, Reasons::Misc);
+				assert_eq!(reasons, Reasons::All);
 				maybe_balance = add + <Test as crate::Config>::AvailableGenesisBalance::get();
 			}
 			_ => panic!("Unexpected balance lock id {:?}", id),
@@ -225,7 +225,7 @@ pub fn ensure_single_migration_works(
 	if now < 10 {
 		assert_eq!(Balances::free_balance(dest), locked_balance + maybe_balance);
 		// locked balance should be usable for fees
-		assert_eq!(Balances::usable_balance_for_fees(dest), locked_balance + maybe_balance);
+		assert_eq!(Balances::usable_balance_for_fees(dest), usable_balance + maybe_balance);
 		// locked balance should not be usable for anything but fees and other locks
 		assert_eq!(Balances::usable_balance(dest), usable_balance + maybe_balance);
 		// there should be nothing reserved
