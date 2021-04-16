@@ -712,14 +712,14 @@ pub mod pallet {
 		/// with the creation operation. The parameters are:
 		/// * origin: the Substrate account submitting the transaction (which
 		///   can be different from the DID subject)
-		/// * did_creation_operation: a DidCreationOperation which contains the
+		/// * operation: a DidCreationOperation which contains the
 		///   details of the new DID
 		/// * signature: a signature over DidCreationOperation that must be
 		///   signed with the authentication key associated with the new DID
-		#[pallet::weight(<T as Config>::WeightInfo::submit_did_create_operation())]
+		#[pallet::weight(T::WeightInfo::submit_did_create_operation())]
 		pub fn submit_did_create_operation(
 			origin: OriginFor<T>,
-			did_creation_operation: DidCreationOperation<T>,
+			operation: DidCreationOperation<T>,
 			signature: DidSignature,
 		) -> DispatchResultWithPostInfo {
 			// origin of the transaction needs to be a signed sender account
@@ -728,22 +728,22 @@ pub mod pallet {
 			// There has to be no other DID with the same identifier already saved on chain,
 			// otherwise generate a DidAlreadyPresent error.
 			ensure!(
-				!<Did<T>>::contains_key(did_creation_operation.get_did()),
+				!<Did<T>>::contains_key(operation.get_did()),
 				<Error<T>>::DidAlreadyPresent
 			);
 
 			// Create a new DID entry from the details provided in the create operation.
-			let did_entry = DidDetails::from(did_creation_operation.clone());
+			let did_entry = DidDetails::from(operation.clone());
 
 			Self::verify_payload_signature_with_did_key_type(
-				&did_creation_operation.encode(),
+				&operation.encode(),
 				&signature,
 				&did_entry,
-				did_creation_operation.get_verification_key_type(),
+				operation.get_verification_key_type(),
 			)
 			.map_err(<Error<T>>::from)?;
 
-			let did_identifier = did_creation_operation.get_did();
+			let did_identifier = operation.get_did();
 			log::debug!("Creating DID {:?}", did_identifier);
 			<Did<T>>::insert(did_identifier, did_entry);
 
@@ -756,35 +756,35 @@ pub mod pallet {
 		/// parameters are:
 		/// * origin: the Substrate account submitting the transaction (which
 		///   can be different from the DID subject)
-		/// * did_update_operation: a DidUpdateOperation which contains the new
+		/// * operation: a DidUpdateOperation which contains the new
 		///   details of the given DID
 		/// * signature: a signature over the operation that must be signed with
 		///   the authentication key associated with the new DID. In case the
 		///   authentication key is being updated, the key used to verify is the
 		///   old one that is getting updated.
-		#[pallet::weight(<T as Config>::WeightInfo::submit_did_update_operation())]
+		#[pallet::weight(T::WeightInfo::submit_did_update_operation())]
 		pub fn submit_did_update_operation(
 			origin: OriginFor<T>,
-			did_update_operation: DidUpdateOperation<T>,
+			operation: DidUpdateOperation<T>,
 			signature: DidSignature,
 		) -> DispatchResultWithPostInfo {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 
 			// Saved here as it is consumed later when generating the new DidDetails object.
-			let did_identifier = did_update_operation.get_did().clone();
+			let did_identifier = operation.get_did().clone();
 
 			// If specified DID does not exist, generate a DidNotPresent error.
 			let did_details = <Did<T>>::get(&did_identifier).ok_or(<Error<T>>::DidNotPresent)?;
 
 			// Verify the signature and the nonce of the update operation.
-			Self::verify_operation_validity_for_did(&did_update_operation, &signature, &did_details)
+			Self::verify_operation_validity_for_did(&operation, &signature, &did_details)
 				.map_err(<Error<T>>::from)?;
 
 			// Generate a new DidDetails object by applying the changes in the update
 			// operation to the old object (and consuming both).
 			let new_did_details =
-				DidDetails::try_from((did_details, did_update_operation)).map_err(<Error<T>>::from)?;
+				DidDetails::try_from((did_details, operation)).map_err(<Error<T>>::from)?;
 
 			log::debug!("Updating DID {:?}", did_identifier);
 			<Did<T>>::insert(&did_identifier, new_did_details);
@@ -798,11 +798,11 @@ pub mod pallet {
 		/// parameters are:
 		/// * origin: the Substrate account submitting the transaction (which
 		///   can be different from the DID subject)
-		/// * did_deletion_operation: a DidDeletionOperation which includes the
+		/// * operation: a DidDeletionOperation which includes the
 		///   DID to deactivate
 		/// * signature: a signature over the operation that must be signed with
 		///   the authentication key associated with the new DID.
-		#[pallet::weight(<T as Config>::WeightInfo::submit_did_delete_operation())]
+		#[pallet::weight(T::WeightInfo::submit_did_delete_operation())]
 		pub fn submit_did_delete_operation(
 			origin: OriginFor<T>,
 			did_deletion_operation: DidDeletionOperation<T>,
@@ -840,22 +840,22 @@ impl<T: Config> Pallet<T> {
 	/// * did_details: a reference to an instance of DidDetails as returned by
 	///   the pallet storage
 	pub fn verify_operation_validity_for_did<O: DidOperation<T>>(
-		did_operation: &O,
+		operation: &O,
 		signature: &DidSignature,
 		did_details: &DidDetails,
 	) -> Result<(), DidError> {
-		Self::verify_operation_counter_for_did(did_operation, did_details)?;
+		Self::verify_operation_counter_for_did(operation, did_details)?;
 		Self::verify_payload_signature_with_did_key_type(
-			&did_operation.encode(),
+			&operation.encode(),
 			signature,
 			did_details,
-			did_operation.get_verification_key_type(),
+			operation.get_verification_key_type(),
 		)
 	}
 
 	// Perform operation nonce validation.
 	fn verify_operation_counter_for_did<O: DidOperation<T>>(
-		did_operation: &O,
+		operation: &O,
 		did_details: &DidDetails,
 	) -> Result<(), DidError> {
 		// Verify that the DID has not reached the maximum tx counter value
@@ -870,7 +870,7 @@ impl<T: Config> Pallet<T> {
 			.checked_add(1)
 			.expect("Checked against overflow in previous step.");
 		ensure!(
-			did_operation.get_tx_counter() == expected_nonce_value,
+			operation.get_tx_counter() == expected_nonce_value,
 			DidError::SignatureError(SignatureError::InvalidNonce)
 		);
 
