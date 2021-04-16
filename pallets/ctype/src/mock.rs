@@ -89,6 +89,7 @@ impl did::Config for Test {
 pub type TestCtypeHash = <Test as frame_system::Config>::Hash;
 pub type TestDidIdentifier = <Test as did::Config>::DidIdentifier;
 
+#[cfg(test)]
 pub(crate) const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
 
 const DEFAULT_CTYPE_HASH_SEED: u64 = 1u64;
@@ -119,9 +120,10 @@ impl Default for ExtBuilder {
 
 impl From<did_mock::ExtBuilder> for ExtBuilder {
 	fn from(did_builder: did_mock::ExtBuilder) -> Self {
-		let mut instance = Self::default();
-		instance.did_builder = Some(did_builder);
-		instance
+		ExtBuilder {
+			did_builder: Some(did_builder),
+			..Default::default()
+		}
 	}
 }
 
@@ -142,7 +144,7 @@ impl ExtBuilder {
 		if !self.ctypes_stored.is_empty() {
 			ext.execute_with(|| {
 				self.ctypes_stored.iter().for_each(|ctype| {
-					ctype::Ctype::<Test>::insert(ctype.0.clone(), ctype.1.clone());
+					ctype::Ctypes::<Test>::insert(ctype.0, ctype.1.clone());
 				})
 			});
 		}

@@ -80,20 +80,20 @@ impl did::Config for Test {
 
 pub type TestDidIdentifier = <Test as did::Config>::DidIdentifier;
 
-#[allow(dead_code)]
+#[cfg(test)]
 pub(crate) const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
 
 pub const ALICE_DID: TestDidIdentifier = AccountId::new([1u8; 32]);
 pub const BOB_DID: TestDidIdentifier = AccountId::new([2u8; 32]);
-
-const DEFAULT_AUTH_SEED: [u8; 32] = [3u8; 32];
-const ALTERNATIVE_AUTH_SEED: [u8; 32] = [30u8; 32];
-const DEFAULT_ENC_SEED: [u8; 32] = [4u8; 32];
-const ALTERNATIVE_ENC_SEED: [u8; 32] = [40u8; 32];
-const DEFAULT_ATT_SEED: [u8; 32] = [5u8; 32];
-const ALTERNATIVE_ATT_SEED: [u8; 32] = [50u8; 32];
-const DEFAULT_DEL_SEED: [u8; 32] = [6u8; 32];
-const ALTERNATIVE_DEL_SEED: [u8; 32] = [60u8; 32];
+pub const CHARLIE_DID: TestDidIdentifier = AccountId::new([3u8; 32]);
+const DEFAULT_AUTH_SEED: [u8; 32] = [4u8; 32];
+const ALTERNATIVE_AUTH_SEED: [u8; 32] = [40u8; 32];
+const DEFAULT_ENC_SEED: [u8; 32] = [5u8; 32];
+const ALTERNATIVE_ENC_SEED: [u8; 32] = [50u8; 32];
+const DEFAULT_ATT_SEED: [u8; 32] = [6u8; 32];
+const ALTERNATIVE_ATT_SEED: [u8; 32] = [60u8; 32];
+const DEFAULT_DEL_SEED: [u8; 32] = [7u8; 32];
+const ALTERNATIVE_DEL_SEED: [u8; 32] = [70u8; 32];
 
 pub fn get_ed25519_authentication_key(default: bool) -> ed25519::Pair {
 	if default {

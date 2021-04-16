@@ -93,7 +93,7 @@ decl_module! {
 			let sender = ensure_signed(origin)?;
 
 			// check if the CTYPE exists
-			ensure!(<ctype::CTYPEs<T>>::contains_key(ctype_hash), ctype::Error::<T>::NotFound);
+			ensure!(<ctype::Ctypes<T>>::contains_key(ctype_hash), ctype::Error::<T>::CTypeNotFound);
 
 			// check if attestation already exists
 			ensure!(!<Attestations<T>>::contains_key(claim_hash), Error::<T>::AlreadyAttested);
@@ -151,7 +151,7 @@ decl_module! {
 				// check whether the attestation includes a delegation
 				let del_id = delegation_id.ok_or(Error::<T>::UnauthorizedRevocation)?;
 				// check whether the sender of the revocation is not a parent in the delegation hierarchy
-				ensure!(<delegation::Module<T>>::is_delegating(&sender, &del_id, max_depth)?, Error::<T>::UnauthorizedRevocation);
+				ensure!(<delegation::Pallet<T>>::is_delegating(&sender, &del_id, max_depth)?, Error::<T>::UnauthorizedRevocation);
 			}
 
 			log::debug!("revoking Attestation");

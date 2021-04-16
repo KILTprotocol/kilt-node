@@ -101,11 +101,7 @@ pub struct DelegationNode<T: Config> {
 }
 
 impl<T: Config> DelegationNode<T> {
-	pub fn new_root(
-		root_id: T::DelegationNodeId,
-		owner: T::DidIdentifier,
-		permissions: Permissions,
-	) -> Self {
+	pub fn new_root(root_id: T::DelegationNodeId, owner: T::DidIdentifier, permissions: Permissions) -> Self {
 		DelegationNode {
 			root_id,
 			owner,
@@ -359,11 +355,7 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// A new root has been created
-		RootCreated(
-			T::DidIdentifier,
-			T::DelegationNodeId,
-			T::Hash,
-		),
+		RootCreated(T::DidIdentifier, T::DelegationNodeId, T::Hash),
 		/// A root has been revoked
 		RootRevoked(T::DidIdentifier, T::DelegationNodeId),
 		/// A new delegation has been created
@@ -381,16 +373,16 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
-		AlreadyExists,
-		BadSignature,
+		DelegationAlreadyExists,
+		InvalidDelegateSignature,
 		DelegationNotFound,
 		DelegateNotFound,
 		RootAlreadyExists,
 		RootNotFound,
 		MaxSearchDepthReached,
-		NotOwnerOfParent,
-		NotOwnerOfRoot,
-		ParentNotFound,
+		NotOwnerOfParentDelegation,
+		NotOwnerOfRootDelegation,
+		ParentDelegationNotFound,
 		UnauthorizedRevocation,
 		UnauthorizedDelegation,
 		ExceededRevocationBounds,
@@ -398,11 +390,6 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		/// Creates a delegation hierarchy root on chain, where
-		/// origin - the origin of the transaction
-		/// doperation - the
-		/// DelegationRootCreationOperation to signature - a
-		/// signature over the root delegation creation operation
 		#[pallet::weight(<T as Config>::WeightInfo::submit_delegation_root_creation_operation())]
 		pub fn submit_delegation_root_creation_operation(
 			origin: OriginFor<T>,
@@ -412,15 +399,10 @@ pub mod pallet {
 			// origin of the transaction needs to be a signed sender account
 			ensure_signed(origin)?;
 
-			let mut did_details = <did::Did<T>>::get(&operation.creator_did)
-				.ok_or(<did::Error<T>>::DidNotPresent)?;
+			let mut did_details = <did::Did<T>>::get(&operation.creator_did).ok_or(<did::Error<T>>::DidNotPresent)?;
 
-			did::pallet::Pallet::verify_operation_validity_for_did(
-				&operation,
-				&signature,
-				&did_details,
-			)
-			.map_err(<did::Error<T>>::from)?;
+			did::pallet::Pallet::verify_operation_validity_for_did(&operation, &signature, &did_details)
+				.map_err(<did::Error<T>>::from)?;
 
 			// check if a root with the given id already exists
 			ensure!(
@@ -429,16 +411,16 @@ pub mod pallet {
 			);
 
 			// check if CTYPE exists
-			ensure!(<ctype::Ctype<T>>::contains_key(&operation.ctype_hash), <ctype::Error<T>>::NotFound);
+			ensure!(
+				<ctype::Ctypes<T>>::contains_key(&operation.ctype_hash),
+				<ctype::Error<T>>::CTypeNotFound
+			);
 
 			// add root node to storage
 			log::debug!("insert Delegation Root");
 			<Roots<T>>::insert(
 				&operation.root_id,
-				DelegationRoot::new(
-					operation.ctype_hash,
-					operation.creator_did.clone(),
-				),
+				DelegationRoot::new(operation.ctype_hash, operation.creator_did.clone()),
 			);
 
 			// Update tx counter in DID details and save to DID pallet
@@ -470,18 +452,13 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;
 
-			let mut did_details =
-				<did::Did<T>>::get(&operation.creator_did).ok_or(<did::Error<T>>::DidNotPresent)?;
+			let mut did_details = <did::Did<T>>::get(&operation.creator_did).ok_or(<did::Error<T>>::DidNotPresent)?;
 
-			did::pallet::Pallet::verify_operation_validity_for_did(
-				&operation,
-				&signature,
-				&did_details,
-			)
-			.map_err(<did::Error<T>>::from)?;
+			did::pallet::Pallet::verify_operation_validity_for_did(&operation, &signature, &did_details)
+				.map_err(<did::Error<T>>::from)?;
 
-			let delegate_did_details = <did::Did<T>>::get(&operation.delegate_did)
-				.ok_or(<did::Error<T>>::DidNotPresent)?;
+			let delegate_did_details =
+				<did::Did<T>>::get(&operation.delegate_did).ok_or(Error::<T>::DelegateNotFound)?;
 
 			// Calculate the hash root
 			let hash_root = Self::calculate_hash(
@@ -500,29 +477,30 @@ pub mod pallet {
 				did::DidVerificationKeyType::Authentication,
 			)
 			.map_err(|err| match err {
+				// Should never happen as a DID has always a valid authentication key and UrlErrors are never thrown here.
 				did::DidError::StorageError(_) | did::DidError::UrlError(_) => Error::<T>::DelegateNotFound,
-				did::DidError::SignatureError(_) => Error::<T>::BadSignature,
+				did::DidError::SignatureError(_) => Error::<T>::InvalidDelegateSignature,
 			})?;
 
 			// check if a delegation node with the given identifier already exists
 			ensure!(
 				!<Delegations<T>>::contains_key(&operation.delegation_id),
-				Error::<T>::AlreadyExists
+				Error::<T>::DelegationAlreadyExists
 			);
 
 			// check if root exists
 			let root = <Roots<T>>::get(&operation.root_id).ok_or(Error::<T>::RootNotFound)?;
 
-			// check if this delegation has a parent
-			if let Some(parent_id) = operation.parent_id {
+			// Computes the delegation parent. Either the given parent or the root node.
+			let parent_id = if let Some(parent_id) = operation.parent_id {
 				// check if the parent exists
-				let parent_node = <Delegations<T>>::get(&parent_id).ok_or(Error::<T>::ParentNotFound)?;
+				let parent_node = <Delegations<T>>::get(&parent_id).ok_or(Error::<T>::ParentDelegationNotFound)?;
 
 				// check if the parent's delegate is the creator of this delegation node and has
 				// permission to delegate
 				ensure!(
 					parent_node.owner.eq(&operation.creator_did),
-					Error::<T>::NotOwnerOfParent
+					Error::<T>::NotOwnerOfParentDelegation
 				);
 
 				// check if the parent has permission to delegate
@@ -538,19 +516,15 @@ pub mod pallet {
 					DelegationNode::<T>::new_child(
 						operation.root_id,
 						parent_id,
-						operation.creator_did.clone(),
+						operation.delegate_did.clone(),
 						operation.permissions,
 					),
 				);
-				// add child to tree structure
-				Self::add_child(operation.delegation_id, parent_id);
+				parent_id
 			} else {
 				// check if the creator of this delegation node is the creator of the root node
 				// (as no parent is given)
-				ensure!(
-					root.owner.eq(&operation.creator_did),
-					Error::<T>::NotOwnerOfRoot
-				);
+				ensure!(root.owner.eq(&operation.creator_did), Error::<T>::NotOwnerOfRootDelegation);
 
 				// insert delegation
 				log::debug!("insert Delegation without parent");
@@ -563,12 +537,10 @@ pub mod pallet {
 					),
 				);
 
-				// add child to tree structure
-				Self::add_child(
-					operation.delegation_id,
-					operation.root_id,
-				);
-			}
+				operation.root_id
+			};
+
+			Self::add_child(operation.delegation_id, parent_id);
 
 			did_details
 				.increase_tx_counter()
@@ -591,7 +563,8 @@ pub mod pallet {
 		/// Revoke the root and therefore a complete hierarchy, where
 		/// * origin - the origin of the transaction
 		/// * operation - the DelegationRootDeletionOperation to execute
-		/// * signature - a signature over the delegation root deletion operation
+		/// * signature - a signature over the delegation root deletion
+		///   operation
 		#[pallet::weight(<T as Config>::WeightInfo::submit_delegation_root_revocation_operation(operation.max_children))]
 		pub fn submit_delegation_root_deletion_operation(
 			origin: OriginFor<T>,
@@ -600,25 +573,24 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;
 
-			let mut did_details =
-			<did::Did<T>>::get(&operation.creator_did).ok_or(<did::Error<T>>::DidNotPresent)?;
+			let mut did_details = <did::Did<T>>::get(&operation.creator_did).ok_or(<did::Error<T>>::DidNotPresent)?;
 
-			did::pallet::Pallet::verify_operation_validity_for_did(
-				&operation,
-				&signature,
-				&did_details,
-			)
-			.map_err(<did::Error<T>>::from)?;
+			did::pallet::Pallet::verify_operation_validity_for_did(&operation, &signature, &did_details)
+				.map_err(<did::Error<T>>::from)?;
 
 			// check if root node exists
 			let mut root = <Roots<T>>::get(&operation.root_id).ok_or(Error::<T>::RootNotFound)?;
 
 			// check if root node has been created by the sender of this transaction
-			ensure!(root.owner.eq(&operation.creator_did), Error::<T>::UnauthorizedRevocation);
+			ensure!(
+				root.owner.eq(&operation.creator_did),
+				Error::<T>::UnauthorizedRevocation
+			);
 
 			let consumed_weight: Weight = if !root.revoked {
 				// recursively revoke all children
-				let (remaining_revocations, post_weight) = Self::revoke_children(&operation.root_id, &operation.creator_did, operation.max_children)?;
+				let (remaining_revocations, post_weight) =
+					Self::revoke_children(&operation.root_id, &operation.creator_did, operation.max_children)?;
 
 				if remaining_revocations > 0 {
 					// store revoked root node
@@ -649,27 +621,36 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;
 
-			let mut did_details =
-			<did::Did<T>>::get(&operation.creator_did).ok_or(<did::Error<T>>::DidNotPresent)?;
+			let mut did_details = <did::Did<T>>::get(&operation.creator_did).ok_or(<did::Error<T>>::DidNotPresent)?;
 
-			did::pallet::Pallet::verify_operation_validity_for_did(
-				&operation,
-				&signature,
-				&did_details,
-			)
-			.map_err(<did::Error<T>>::from)?;
+			did::pallet::Pallet::verify_operation_validity_for_did(&operation, &signature, &did_details)
+				.map_err(<did::Error<T>>::from)?;
 
 			// check if a delegation node with the given identifier already exists
-			ensure!(<Delegations<T>>::contains_key(&operation.delegation_id), Error::<T>::DelegationNotFound);
+			ensure!(
+				<Delegations<T>>::contains_key(&operation.delegation_id),
+				Error::<T>::DelegationNotFound
+			);
 
 			// check if the sender of this transaction is permitted by being the
 			// owner of the delegation or of one of its parents
 			// 1 lookup performed for current node + 1 for every parent that is traversed
-			ensure!(Self::is_delegating(&operation.creator_did, &operation.delegation_id, operation.max_depth + 1)?, Error::<T>::UnauthorizedRevocation);
+			ensure!(
+				Self::is_delegating(
+					&operation.creator_did,
+					&operation.delegation_id,
+					operation.max_depth + 1
+				)?,
+				Error::<T>::UnauthorizedRevocation
+			);
 
 			// revoke the delegation and recursively all of its children
 			// post call weight correction
-			let (_, consumed_weight) = Self::revoke(&operation.delegation_id, &operation.creator_did, operation.max_revocations)?;
+			let (_, consumed_weight) = Self::revoke(
+				&operation.delegation_id,
+				&operation.creator_did,
+				operation.max_revocations,
+			)?;
 
 			did_details
 				.increase_tx_counter()
@@ -684,7 +665,7 @@ pub mod pallet {
 
 impl<T: Config> Pallet<T> {
 	/// Calculates the hash of all values of a delegation transaction
-	pub fn calculate_hash(
+	fn calculate_hash(
 		delegation_id: &T::DelegationNodeId,
 		root_id: &T::DelegationNodeId,
 		parent_id: &Option<T::DelegationNodeId>,
@@ -703,7 +684,7 @@ impl<T: Config> Pallet<T> {
 
 	/// Check if an account is the owner of the delegation or any delegation up
 	/// the hierarchy (including the root)
-	pub fn is_delegating(
+	fn is_delegating(
 		account: &T::DidIdentifier,
 		delegation: &T::DelegationNodeId,
 		max_lookups: u32,
@@ -773,9 +754,8 @@ impl<T: Config> Pallet<T> {
 		let mut revocations: u32 = 0;
 		let mut consumed_weight: Weight = 0;
 		// check if there's a child vector in the storage
-		if <Children<T>>::contains_key(delegation) {
+		if let Some(children) = <Children<T>>::get(delegation) {
 			// iterate child vector and revoke all nodes
-			let children = <Children<T>>::get(delegation).unwrap();
 			consumed_weight += T::DbWeight::get().reads(1);
 
 			for child in children {
@@ -796,7 +776,7 @@ impl<T: Config> Pallet<T> {
 	/// Add a child node into the delegation hierarchy
 	fn add_child(child: T::DelegationNodeId, parent: T::DelegationNodeId) {
 		// get the children vector
-		let mut children = <Children<T>>::get(parent).unwrap();
+		let mut children = <Children<T>>::get(parent).unwrap_or_default();
 		// add child element
 		children.push(child);
 		// store vector with new child

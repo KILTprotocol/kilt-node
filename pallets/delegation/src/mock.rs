@@ -126,7 +126,10 @@ impl From<ctype_mock::ExtBuilder> for ExtBuilder {
 }
 
 impl ExtBuilder {
-	pub fn with_root_delegations(mut self, root_delegations: Vec<(TestDelegationNodeId, DelegationRoot<Test>)>) -> Self {
+	pub fn with_root_delegations(
+		mut self,
+		root_delegations: Vec<(TestDelegationNodeId, DelegationRoot<Test>)>,
+	) -> Self {
 		self.root_delegations_stored = root_delegations;
 		self
 	}
@@ -183,11 +186,21 @@ pub(crate) fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
 
 const DEFAULT_ROOT_ID_SEED: u64 = 1u64;
 const ALTERNATIVE_ROOT_ID_SEED: u64 = 2u64;
+const DEFAULT_DELEGATION_ID_SEED: u64 = 3u64;
+const ALTERNATIVE_DELEGATION_ID_SEED: u64 = 4u64;
 
 pub fn get_delegation_root_id(default: bool) -> H256 {
 	if default {
 		H256::from_low_u64_be(DEFAULT_ROOT_ID_SEED)
 	} else {
 		H256::from_low_u64_be(ALTERNATIVE_ROOT_ID_SEED)
+	}
+}
+
+pub fn get_delegation_id(default: bool) -> H256 {
+	if default {
+		H256::from_low_u64_be(DEFAULT_DELEGATION_ID_SEED)
+	} else {
+		H256::from_low_u64_be(ALTERNATIVE_DELEGATION_ID_SEED)
 	}
 }

@@ -99,7 +99,7 @@ fn check_duplicate_ctype_creation() {
 				ctype_creation_operation.clone(),
 				did::DidSignature::from(signature)
 			),
-			ctype::Error::<Test>::AlreadyExists
+			ctype::Error::<Test>::CTypeAlreadyExists
 		);
 	});
 

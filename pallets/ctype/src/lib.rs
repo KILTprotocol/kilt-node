@@ -107,7 +107,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn ctypes)]
-	pub type Ctype<T> =
+	pub type Ctypes<T> =
 		StorageMap<_, Blake2_128Concat, <T as frame_system::Config>::Hash, <T as did::Config>::DidIdentifier>;
 
 	#[pallet::event]
@@ -118,8 +118,8 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
-		NotFound,
-		AlreadyExists,
+		CTypeNotFound,
+		CTypeAlreadyExists,
 	}
 
 	#[pallet::call]
@@ -148,13 +148,13 @@ pub mod pallet {
 
 			// check if CTYPE already exists
 			ensure!(
-				!<Ctype<T>>::contains_key(&operation.hash),
-				Error::<T>::AlreadyExists
+				!<Ctypes<T>>::contains_key(&operation.hash),
+				Error::<T>::CTypeAlreadyExists
 			);
 
 			// add CTYPE to storage
 			log::debug!("insert CTYPE");
-			<Ctype<T>>::insert(&operation.hash, operation.creator_did.clone());
+			<Ctypes<T>>::insert(&operation.hash, operation.creator_did.clone());
 
 			// Update tx counter in DID details and save to DID pallet
 			did_details

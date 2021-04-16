@@ -22,8 +22,8 @@
 // 	traits::{GetPalletVersion, PalletVersion},
 // 	Identity,
 // };
-// use sp_runtime::traits::{CheckEqual, MaybeDisplay, MaybeSerializeDeserialize, Member, SimpleBitOps};
-// use sp_std::fmt::Debug;
+// use sp_runtime::traits::{CheckEqual, MaybeDisplay, MaybeSerializeDeserialize,
+// Member, SimpleBitOps}; use sp_std::fmt::Debug;
 
 // pub const PALLET_PREFIX: &str = "Delegation";
 // pub const STORAGE_PREFIX: &str = "Delegations";
@@ -60,8 +60,8 @@
 // 		+ AsMut<[u8]>;
 
 // 	/// The user account identifier type for the runtime.
-// 	type AccountId: Parameter + Member + MaybeSerializeDeserialize + Debug + MaybeDisplay + Ord + Default;
-// }
+// 	type AccountId: Parameter + Member + MaybeSerializeDeserialize + Debug +
+// MaybeDisplay + Ord + Default; }
 
 // #[allow(type_alias_bounds)]
 // type Delegations<T: V23ToV24> = StorageMap<
@@ -72,8 +72,8 @@
 // >;
 
 // pub fn apply<T: V23ToV24>() -> Weight {
-// 	let maybe_storage_version = <T::Module as GetPalletVersion>::storage_version();
-// 	log::info!(
+// 	let maybe_storage_version = <T::Module as
+// GetPalletVersion>::storage_version(); 	log::info!(
 // 		"Running migration for delegation with storage version {:?}",
 // 		maybe_storage_version
 // 	);
@@ -82,15 +82,15 @@
 // 			migrate_to_struct::<T>();
 // 			Weight::max_value()
 // 		}
-// 		// pallet versioning is introduced in 3.0.0, thus missing when upgrading from 2.0.0
-// 		None => {
+// 		// pallet versioning is introduced in 3.0.0, thus missing when upgrading from
+// 2.0.0 		None => {
 // 			migrate_to_struct::<T>();
 // 			Weight::max_value()
 // 		}
 // 		_ => {
 // 			log::warn!(
-// 				"Attempted to apply delegation to 0.24.0 but failed because storage version is {:?}",
-// 				maybe_storage_version
+// 				"Attempted to apply delegation to 0.24.0 but failed because storage version
+// is {:?}", 				maybe_storage_version
 // 			);
 // 			0
 // 		}
@@ -169,15 +169,18 @@
 
 // 		new_test_ext().execute_with(|| {
 // 			// setup data independent of migration
-// 			let pair_delegate = ed25519::Pair::from_seed(&*b"Alice                           ");
-// 			let acc_delegate = MultiSigner::from(pair_delegate.public()).into_account();
-// 			let root_id: <Test as Config>::DelegationNodeId = <Test as frame_system::Config>::Hashing::hash(&[0]);
-// 			let delegation_id: <Test as Config>::DelegationNodeId = <Test as frame_system::Config>::Hashing::hash(&[1]);
-// 			let blake_hash = sp_core::blake2_256(&delegation_id.as_bytes());
+// 			let pair_delegate = ed25519::Pair::from_seed(&*b"Alice
+// "); 			let acc_delegate =
+// MultiSigner::from(pair_delegate.public()).into_account(); 			let root_id: <Test
+// as Config>::DelegationNodeId = <Test as
+// frame_system::Config>::Hashing::hash(&[0]); 			let delegation_id: <Test as
+// Config>::DelegationNodeId = <Test as
+// frame_system::Config>::Hashing::hash(&[1]); 			let blake_hash =
+// sp_core::blake2_256(&delegation_id.as_bytes());
 
 // 			// store and check old DelegationNode type
-// 			let delegation_old: DelegationOld = (root_id, None, acc_delegate.clone(), Permissions::DELEGATE, false);
-// 			put_storage_value::<Option<DelegationOld>>(
+// 			let delegation_old: DelegationOld = (root_id, None, acc_delegate.clone(),
+// Permissions::DELEGATE, false); 			put_storage_value::<Option<DelegationOld>>(
 // 				crate::migration::PALLET_PREFIX.as_bytes(),
 // 				crate::migration::STORAGE_PREFIX.as_bytes(),
 // 				&blake_hash,

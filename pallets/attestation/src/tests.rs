@@ -386,7 +386,7 @@ fn check_add_attestation_with_delegation() {
 				other_ctype_hash,
 				Some(delegation_2)
 			),
-			ctype::Error::<Test>::NotFound
+			ctype::Error::<Test>::CTypeNotFound
 		);
 
 		// add missing ctype
