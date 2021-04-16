@@ -73,11 +73,11 @@ fn check_build_genesis_config() {
 			// Check balance locks
 			let pseudo_1_lock = LockedBalance::<Test> {
 				block: 100,
-				amount: 1111,
+				amount: 1111 - <Test as crate::Config>::AvailableGenesisBalance::get(),
 			};
 			let pseudo_2_lock = LockedBalance::<Test> {
 				block: 1337,
-				amount: 2222,
+				amount: 2222 - <Test as crate::Config>::AvailableGenesisBalance::get(),
 			};
 			assert_eq!(BalanceLocks::<Test>::get(&PSEUDO_1), Some(pseudo_1_lock));
 			assert_eq!(BalanceLocks::<Test>::get(&PSEUDO_2), Some(pseudo_2_lock));
@@ -101,10 +101,10 @@ fn check_migrate_single_account_locked() {
 		.execute_with(|| {
 			let user1_locked_info = LockedBalance {
 				block: 100,
-				amount: 10_000,
+				amount: 10_000 - <Test as crate::Config>::AvailableGenesisBalance::get(),
 			};
 			// Migration of balance locks
-			ensure_single_migration_works(&PSEUDO_1, &USER_1, None, Some(user1_locked_info));
+			ensure_single_migration_works(&PSEUDO_1, &USER_1, None, Some((user1_locked_info, 0)));
 
 			// Reach balance lock limit
 			System::set_block_number(100);
@@ -130,17 +130,26 @@ fn check_migrate_single_account_locked_twice() {
 		.execute_with(|| {
 			let mut user_locked_info = LockedBalance {
 				block: 100,
-				amount: 10_000,
+				amount: 10_000 - <Test as crate::Config>::AvailableGenesisBalance::get(),
 			};
 			// Migrate pseudo1 lock
-			ensure_single_migration_works(&PSEUDO_1, &USER_1, None, Some(user_locked_info));
+			ensure_single_migration_works(&PSEUDO_1, &USER_1, None, Some((user_locked_info, 0)));
 
 			user_locked_info = LockedBalance {
 				block: 100,
-				amount: 10_000 + 300_000,
+				amount: 10_000 + 300_000 - 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
 			};
 			// Migrate pseudo2 lock
-			ensure_single_migration_works(&PSEUDO_3, &USER_1, None, Some(user_locked_info));
+			ensure_single_migration_works(
+				&PSEUDO_3,
+				&USER_1,
+				None,
+				Some((
+					user_locked_info,
+					// Since we migrated twice, we need to account for the extra AvailableGenesisBalance when asserting
+					<Test as crate::Config>::AvailableGenesisBalance::get(),
+				)),
+			);
 
 			// Reach balance lock limit
 			System::set_block_number(100);
@@ -176,7 +185,7 @@ fn check_migrate_accounts_locked() {
 			// Migrate two accounts with same end block
 			let locked_info = LockedBalance {
 				block: 100,
-				amount: 10_000 + 300_000,
+				amount: 10_000 + 300_000 - 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
 			};
 			assert_ok!(KiltLaunch::migrate_multiple_genesis_accounts(
 				Origin::signed(TRANSFER_ACCOUNT),
@@ -202,7 +211,13 @@ fn check_migrate_accounts_locked() {
 			}
 
 			// Check balance migration
-			assert_balance(USER_1, locked_info.amount, locked_info.amount, 0, false);
+			assert_balance(
+				USER_1,
+				locked_info.amount + 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
+				locked_info.amount + 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
+				2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
+				false,
+			);
 
 			// TODO: Add positive check for staking once it has been added
 
@@ -211,7 +226,13 @@ fn check_migrate_accounts_locked() {
 			<KiltLaunch as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
 			assert_eq!(UnlockingAt::<Test>::get(100), None);
 			assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
-			assert_balance(USER_1, locked_info.amount, locked_info.amount, locked_info.amount, true);
+			assert_balance(
+				USER_1,
+				locked_info.amount + 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
+				locked_info.amount + 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
+				locked_info.amount + 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
+				true,
+			);
 		});
 }
 
@@ -224,10 +245,10 @@ fn check_locked_transfer() {
 		.execute_with(|| {
 			let locked_info = LockedBalance {
 				block: 100,
-				amount: 10_000,
+				amount: 10_000 - <Test as crate::Config>::AvailableGenesisBalance::get(),
 			};
 			// Migration of balance locks
-			ensure_single_migration_works(&PSEUDO_1, &USER_1, None, Some(locked_info.clone()));
+			ensure_single_migration_works(&PSEUDO_1, &USER_1, None, Some((locked_info.clone(), 0)));
 			assert_eq!(
 				Locks::<Test>::get(&USER_1),
 				vec![BalanceLock {
@@ -237,23 +258,17 @@ fn check_locked_transfer() {
 				}]
 			);
 
-			// Cannot transfer more than the total balance
-			assert_noop!(
-				KiltLaunch::locked_transfer(Origin::signed(USER_1), PSEUDO_1, locked_info.amount + 1),
-				Error::<Test>::InsufficientBalance
-			);
-
 			// Cannot transfer without a KILT balance lock
 			assert_noop!(
 				KiltLaunch::locked_transfer(Origin::signed(PSEUDO_4), USER_1, 1),
 				Error::<Test>::BalanceLockNotFound
 			);
 
-			// Add 1 free balance to enable to pay for tx fees
-			<<Test as pallet_vesting::Config>::Currency as Currency<<Test as frame_system::Config>::AccountId>>::make_free_balance_be(&USER_1, locked_info.amount + 1);
+			// Add 1 free balance + AvailableGenesisBalance to enable to pay for tx fees
+			<<Test as pallet_vesting::Config>::Currency as Currency<<Test as frame_system::Config>::AccountId>>::make_free_balance_be(&USER_1, locked_info.amount + 1 + <Test as crate::Config>::AvailableGenesisBalance::get());
 			// Cannot transfer more locked than which is locked
 			assert_noop!(
-				KiltLaunch::locked_transfer(Origin::signed(USER_1), PSEUDO_1, locked_info.amount + 1),
+				KiltLaunch::locked_transfer(Origin::signed(USER_1), PSEUDO_1, locked_info.amount + 1 + <Test as crate::Config>::AvailableGenesisBalance::get()),
 				Error::<Test>::InsufficientLockedBalance
 			);
 
@@ -552,9 +567,9 @@ fn check_force_unlock() {
 		.execute_with(|| {
 			let user1_locked_info = LockedBalance {
 				block: 100,
-				amount: 10_000,
+				amount: 10_000 - <Test as crate::Config>::AvailableGenesisBalance::get(),
 			};
-			ensure_single_migration_works(&PSEUDO_1, &USER_1, None, Some(user1_locked_info));
+			ensure_single_migration_works(&PSEUDO_1, &USER_1, None, Some((user1_locked_info, 0)));
 
 			assert_ok!(KiltLaunch::force_unlock(Origin::root(), 100));
 			assert_eq!(BalanceLocks::<Test>::get(&USER_1), None);

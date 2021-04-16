@@ -27,7 +27,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use kilt_primitives::{
-	constants::{MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
+	constants::{DOLLARS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
 	AccountId, Balance, BlockNumber, Hash, Index, Signature,
 };
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
@@ -270,11 +270,13 @@ where
 
 parameter_types! {
 	pub const MaxClaims: usize = 300;
+	pub const AvailableGenesisBalance: Balance = DOLLARS;
 }
 
 impl kilt_launch::Config for Runtime {
 	type Event = Event;
 	type MaxClaims = MaxClaims;
+	type AvailableGenesisBalance = AvailableGenesisBalance;
 }
 
 parameter_types! {

@@ -92,6 +92,23 @@ pub mod pallet {
 		// FIXME: Why does this not work?
 		// #[pallet::constant]
 		type MaxClaims: Get<usize>;
+
+		/// Amount of Balance which will be made available for each account
+		/// which has either vesting or locking such that transaction fees can
+		/// be paid from this.
+		// type AvailableGenesisBalance: Get<
+		// 	<<Self as pallet_vesting::Config>::Currency as
+		// frame_support::traits::Currency< 		<Self as frame_system::Config>::AccountId,
+		// 	>>::Balance,
+		// >;
+		// Get<
+		// 	<<
+		// 		<Self as pallet_vesting::Config>
+		// 	::Currency as frame_support::traits::Currency<
+		// 		<Self as frame_system::Config>::AccountId
+		// 	>>::Balance
+		// >;
+		type AvailableGenesisBalance: Get<<Self as pallet_balances::Config>::Balance>;
 	}
 
 	#[pallet::pallet]
@@ -147,7 +164,7 @@ pub mod pallet {
 						who,
 						LockedBalance::<T> {
 							block: *length,
-							amount: *locked,
+							amount: (*locked).saturating_sub(T::AvailableGenesisBalance::get()),
 						},
 					);
 					// Instead of setting the lock now, we do so in

@@ -28,7 +28,7 @@ use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
 use sc_service::{ChainType, Properties};
 use serde::{Deserialize, Serialize};
 use sp_core::{sr25519, Pair, Public};
-use sp_runtime::traits::{IdentifyAccount, One};
+use sp_runtime::traits::IdentifyAccount;
 
 use hex_literal::hex;
 
@@ -188,15 +188,7 @@ fn testnet_genesis(
 			vesting: airdrop_accounts
 				.iter()
 				.cloned()
-				.map(|(who, amount, vesting_length, _)| {
-					(
-						who,
-						vesting_length * MONTHS,
-						// Enable 1 KILT token to be spendable for transactions apart from vesting to allow the user to
-						// call `vest`` which is required to actually remove the lock
-						amount.saturating_sub(Balance::one()),
-					)
-				})
+				.map(|(who, amount, vesting_length, _)| (who, vesting_length * MONTHS, amount))
 				.collect(),
 			// TODO: Set this to another address (PRE-LAUNCH)
 			transfer_account: hex!["6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c"].into(),

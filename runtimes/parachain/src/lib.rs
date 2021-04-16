@@ -281,11 +281,13 @@ impl pallet_vesting::Config for Runtime {
 
 parameter_types! {
 	pub const MaxClaims: usize = 300;
+	pub const AvailableGenesisBalance: Balance = DOLLARS;
 }
 
 impl kilt_launch::Config for Runtime {
 	type Event = Event;
 	type MaxClaims = MaxClaims;
+	type AvailableGenesisBalance = AvailableGenesisBalance;
 }
 
 parameter_types! {

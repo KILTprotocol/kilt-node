@@ -102,11 +102,13 @@ impl pallet_balances::Config for Test {
 
 parameter_types! {
 	pub const MaxClaims: usize = 4;
+	pub const AvailableGenesisBalance: Balance = 1;
 }
 
 impl kilt_launch::Config for Test {
 	type Event = Event;
 	type MaxClaims = MaxClaims;
+	type AvailableGenesisBalance = AvailableGenesisBalance;
 }
 
 parameter_types! {
@@ -147,7 +149,7 @@ pub fn ensure_single_migration_works(
 	source: &AccountId,
 	dest: &AccountId,
 	vesting_info: Option<VestingInfo<Balance, BlockNumber>>,
-	locked_info: Option<kilt_launch::LockedBalance<Test>>,
+	locked_info: Option<(kilt_launch::LockedBalance<Test>, Balance)>,
 ) {
 	assert_noop!(
 		KiltLaunch::migrate_genesis_account(Origin::signed(PSEUDO_1), source.to_owned(), dest.to_owned()),
@@ -175,7 +177,7 @@ pub fn ensure_single_migration_works(
 		locked_balance = vesting.locked;
 		num_of_locks += 1;
 	}
-	if let Some(lock) = locked_info.clone() {
+	if let Some((lock, _)) = locked_info.clone() {
 		assert_eq!(kilt_launch::BalanceLocks::<Test>::get(dest), Some(lock.clone()));
 		assert_eq!(
 			kilt_launch::UnlockingAt::<Test>::get(lock.block),
@@ -188,6 +190,7 @@ pub fn ensure_single_migration_works(
 	// Check correct setting of locks for dest
 	let balance_locks = Locks::<Test>::get(dest);
 	let mut usable_balance: Balance = Balance::zero();
+	let mut maybe_balance: Balance = Balance::zero();
 	assert_eq!(balance_locks.len(), num_of_locks);
 	for BalanceLock { id, amount, reasons } in balance_locks {
 		match id {
@@ -198,8 +201,10 @@ pub fn ensure_single_migration_works(
 				assert_eq!(reasons, Reasons::Misc);
 			}
 			crate::KILT_LAUNCH_ID => {
-				assert_eq!(amount, locked_info.clone().expect("No vesting schedule found").amount);
+				let (lock, add) = locked_info.clone().expect("No vesting schedule found");
+				assert_eq!(amount, lock.amount);
 				assert_eq!(reasons, Reasons::Misc);
+				maybe_balance = add + <Test as crate::Config>::AvailableGenesisBalance::get();
 			}
 			_ => panic!("Unexpected balance lock id {:?}", id),
 		};
@@ -218,17 +223,21 @@ pub fn ensure_single_migration_works(
 	// In our tests, vesting and locking is not resolved before the 10th block. At
 	// most times, now should be the first block.
 	if now < 10 {
-		assert_eq!(Balances::free_balance(dest), locked_balance);
+		assert_eq!(Balances::free_balance(dest), locked_balance + maybe_balance);
 		// locked balance should be usable for fees
-		assert_eq!(Balances::usable_balance_for_fees(dest), locked_balance);
+		assert_eq!(Balances::usable_balance_for_fees(dest), locked_balance + maybe_balance);
 		// locked balance should not be usable for anything but fees and other locks
-		assert_eq!(Balances::usable_balance(dest), usable_balance);
+		assert_eq!(Balances::usable_balance(dest), usable_balance + maybe_balance);
 		// there should be nothing reserved
 		assert_eq!(Balances::reserved_balance(dest), 0);
 
 		// Should not be able to transfer more than which is unlocked in first block
 		assert_noop!(
-			Balances::transfer(Origin::signed(dest.to_owned()), TRANSFER_ACCOUNT, usable_balance + 1),
+			Balances::transfer(
+				Origin::signed(dest.to_owned()),
+				TRANSFER_ACCOUNT,
+				usable_balance + maybe_balance + 1
+			),
 			pallet_balances::Error::<Test, ()>::LiquidityRestrictions
 		);
 	}
@@ -236,11 +245,11 @@ pub fn ensure_single_migration_works(
 
 // Checks whether the usable balance meets the expectations and if exists, if it
 // can be transferred which we expect once locks are removed
-pub fn assert_balance(who: AccountId, free: Balance, usable_for_frees: Balance, usable: Balance, do_transfer: bool) {
+pub fn assert_balance(who: AccountId, free: Balance, usable_for_fees: Balance, usable: Balance, do_transfer: bool) {
 	// Check balance after unlocking
 	assert_eq!(Balances::free_balance(&who), free);
 	// locked balance should be usable for fees
-	assert_eq!(Balances::usable_balance_for_fees(&who), usable_for_frees);
+	assert_eq!(Balances::usable_balance_for_fees(&who), usable_for_fees);
 	// locked balance should not be usable for anything but fees and other locks
 	assert_eq!(Balances::usable_balance(&who), usable);
 	// there should be nothing reserved
