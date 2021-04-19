@@ -94,8 +94,6 @@ impl did::Config for Test {
 }
 
 pub type TestDelegationNodeId = <Test as Config>::DelegationNodeId;
-pub type TestCtypeHash = <Test as frame_system::Config>::Hash;
-pub type TestDidIdentifier = <Test as did::Config>::DidIdentifier;
 
 pub(crate) const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
 
