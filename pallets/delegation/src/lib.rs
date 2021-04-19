@@ -93,7 +93,8 @@ impl Default for Permissions {
 ///
 /// It contains the following information:
 /// * ctype_hash: the credential CTYPE that can be issued with this delegation
-/// * owner: the owner of the delegation root, which has the capability to remove all of its children delegations
+/// * owner: the owner of the delegation root, which has the capability to
+///   remove all of its children delegations
 /// * revoked: boolean flag indicating whether the delegation is revoked or not
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
 pub struct DelegationRoot<T: Config> {
@@ -116,8 +117,10 @@ impl<T: Config> DelegationRoot<T> {
 ///
 /// It contains the following information:
 /// * root_id: the root node ID of which this node is a descendent of
-/// * parent: an optional parent of this node. If None, this node is a direct descendent of the root node
-/// * owner: the owner of the delegation node, which has the capability to remove all of its children delegations
+/// * parent: an optional parent of this node. If None, this node is a direct
+///   descendent of the root node
+/// * owner: the owner of the delegation node, which has the capability to
+///   remove all of its children delegations
 /// * permissions: indicates what kinds of actions the delegate can perform
 /// * revoked: boolean flag indicating whether the delegation is revoked or not
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
@@ -130,7 +133,8 @@ pub struct DelegationNode<T: Config> {
 }
 
 impl<T: Config> DelegationNode<T> {
-	/// Create a new delegation node that is a direct descendent of the given root.
+	/// Create a new delegation node that is a direct descendent of the given
+	/// root.
 	///
 	/// * root_id: the unique ID of the root node this node will be a child of
 	/// * owner: the owner of the delegation
@@ -145,7 +149,8 @@ impl<T: Config> DelegationNode<T> {
 		}
 	}
 
-	/// Creates a new delegation node that is a direct descendent of the given node.
+	/// Creates a new delegation node that is a direct descendent of the given
+	/// node.
 	///
 	/// * root_id: the unique ID of the root node this node will be a child of
 	/// * parent - the unique ID of the parent node this node will be a child of
@@ -215,10 +220,12 @@ impl<T: Config> Debug for DelegationRootCreationOperation<T> {
 /// * caller_did: the DID of the new root owner
 /// * delegation_id: unique ID of the delegation node to be added
 /// * root_id: ID of the hierarchy root node
-/// * parent_id: optional identifier of a parent node this delegation node is created under
+/// * parent_id: optional identifier of a parent node this delegation node is
+///   created under
 /// * delegate_did: the DID of the delegate entity
 /// * permissions: the permissions delegated
-/// * delegate_signature: the signature of the delegate to ensure it's done under his permission
+/// * delegate_signature: the signature of the delegate to ensure it's done
+///   under his permission
 /// * tx_counter: a DID counter used to mitigate replay attacks
 #[derive(Clone, Decode, Encode, PartialEq)]
 pub struct DelegationCreationOperation<T: Config> {
@@ -268,7 +275,8 @@ impl<T: Config> Debug for DelegationCreationOperation<T> {
 /// It contains the following information:
 /// * caller_did: the DID of the root owner
 /// * root_id: ID of the hierarchy root node
-/// * max_children: max number of children of the root which can be revoked with this call
+/// * max_children: max number of children of the root which can be revoked with
+///   this call
 /// * tx_counter: a DID counter used to mitigate replay attacks
 #[derive(Clone, Decode, Encode, PartialEq)]
 pub struct DelegationRootRevocationOperation<T: Config> {
@@ -310,8 +318,11 @@ impl<T: Config> Debug for DelegationRootRevocationOperation<T> {
 /// It contains the following information:
 /// * caller_did: the DID of the root owner
 /// * delegation_id: ID of the delegation node
-/// * max_parent_checks: max number of parent checks of the delegation node supported in this call to verify that the caller of this operation is allowed to revoke the specified node
-/// * max_revocations: max number of children of the delegation node which can be revoked with this call
+/// * max_parent_checks: max number of parent checks of the delegation node
+///   supported in this call to verify that the caller of this operation is
+///   allowed to revoke the specified node
+/// * max_revocations: max number of children of the delegation node which can
+///   be revoked with this call
 /// * tx_counter: a DID counter used to mitigate replay attacks
 #[derive(Clone, Decode, Encode, PartialEq)]
 pub struct DelegationRevocationOperation<T: Config> {
@@ -585,7 +596,7 @@ pub mod pallet {
 						parent_id,
 						operation.delegate_did.clone(),
 						operation.permissions,
-					)
+					),
 				);
 				// Return parent_id as the result of this if branch
 				parent_id
@@ -716,7 +727,10 @@ pub mod pallet {
 			// owner of the delegation or of one of its parents
 			// 1 lookup performed for current node + 1 for every parent that is traversed
 			// If the value is already the max given, do not perform +1.
-			let max_parent_checks = operation.max_parent_checks.checked_add(1).unwrap_or(operation.max_parent_checks);
+			let max_parent_checks = operation
+				.max_parent_checks
+				.checked_add(1)
+				.unwrap_or(operation.max_parent_checks);
 			ensure!(
 				Self::is_delegating(&operation.caller_did, &operation.delegation_id, max_parent_checks)?,
 				Error::<T>::UnauthorizedRevocation
@@ -771,7 +785,8 @@ impl<T: Config> Pallet<T> {
 		if delegation_node.owner.eq(account) {
 			Ok(true)
 		} else if let Some(parent) = delegation_node.parent {
-			// This case should never happen as we check in the beginning that max_lookups > 0
+			// This case should never happen as we check in the beginning that max_lookups >
+			// 0
 			let remaining_lookups = max_lookups.checked_sub(1).ok_or(Error::<T>::MaxSearchDepthReached)?;
 			// Recursively check upwards in hierarchy
 			Self::is_delegating(account, &parent, remaining_lookups)
@@ -797,7 +812,9 @@ impl<T: Config> Pallet<T> {
 		// Check if already revoked
 		if !delegation_node.revoked {
 			// First revoke all children recursively
-			let remaining_revocations = max_revocations.checked_sub(1).ok_or(Error::<T>::ExceededRevocationBounds)?;
+			let remaining_revocations = max_revocations
+				.checked_sub(1)
+				.ok_or(Error::<T>::ExceededRevocationBounds)?;
 			Self::revoke_children(delegation, sender, remaining_revocations).map(|(r, w)| {
 				revocations += r;
 				consumed_weight += w;
@@ -832,7 +849,9 @@ impl<T: Config> Pallet<T> {
 
 			// Iterate child vector and revoke all nodes
 			for child in children {
-				let remaining_revocations = max_revocations.checked_sub(revocations).ok_or(Error::<T>::ExceededRevocationBounds)?;
+				let remaining_revocations = max_revocations
+					.checked_sub(revocations)
+					.ok_or(Error::<T>::ExceededRevocationBounds)?;
 
 				// Check whether we ran out of gas
 				ensure!(remaining_revocations > 0, Error::<T>::ExceededRevocationBounds);

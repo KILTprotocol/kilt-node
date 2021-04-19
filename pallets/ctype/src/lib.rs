@@ -124,9 +124,11 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		/// Adds a CTYPE on chain, where
-		/// origin - the origin of the transaction
-		/// hash - hash of the CTYPE of the claim
+		/// Submits a new CtypeCreationOperation operation.
+		///
+		/// origin: the origin of the transaction
+		/// operation: the CtypeCreationOperation operation
+		/// signature: the signature over the byte-encoded operation
 		#[pallet::weight(<T as Config>::WeightInfo::submit_ctype_creation_operation())]
 		pub fn submit_ctype_creation_operation(
 			origin: OriginFor<T>,

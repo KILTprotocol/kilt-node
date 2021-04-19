@@ -4428,21 +4428,17 @@ fn check_delegation_not_found_submit_delegation_revocation_operation_successful(
 			},
 		)])
 		// Root -> Delegation 1
-		.with_delegations(vec![
-			(
-				alternative_delegation_id,
-				delegation::DelegationNode {
-					owner: alternative_delegation_owner_did.clone(),
-					parent: None,
-					root_id: root_id,
-					permissions: delegation::Permissions::DELEGATE,
-					revoked: false,
-				},
-			),
-		])
-		.with_children(vec![
-			(root_id, vec![delegation_id]),
-		]);
+		.with_delegations(vec![(
+			alternative_delegation_id,
+			delegation::DelegationNode {
+				owner: alternative_delegation_owner_did.clone(),
+				parent: None,
+				root_id: root_id,
+				permissions: delegation::Permissions::DELEGATE,
+				revoked: false,
+			},
+		)])
+		.with_children(vec![(root_id, vec![delegation_id])]);
 
 	let mut ext = builder.build();
 
@@ -4512,21 +4508,17 @@ fn check_not_delegating_submit_delegation_revocation_operation_successful() {
 			},
 		)])
 		// Root -> Delegation 1
-		.with_delegations(vec![
-			(
-				delegation_id,
-				delegation::DelegationNode {
-					owner: alternative_delegation_owner_did.clone(),
-					parent: None,
-					root_id: root_id,
-					permissions: delegation::Permissions::DELEGATE,
-					revoked: false,
-				},
-			),
-		])
-		.with_children(vec![
-			(root_id, vec![delegation_id]),
-		]);
+		.with_delegations(vec![(
+			delegation_id,
+			delegation::DelegationNode {
+				owner: alternative_delegation_owner_did.clone(),
+				parent: None,
+				root_id: root_id,
+				permissions: delegation::Permissions::DELEGATE,
+				revoked: false,
+			},
+		)])
+		.with_children(vec![(root_id, vec![delegation_id])]);
 
 	let mut ext = builder.build();
 
