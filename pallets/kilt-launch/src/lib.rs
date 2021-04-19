@@ -352,7 +352,6 @@ pub mod pallet {
 
 			ensure!(sources.len() < T::MaxClaims::get(), Error::<T>::ExceedsMaxClaims);
 
-			// TODO: How to do this with map?
 			let mut post_weight: Weight = 0;
 			for s in sources.into_iter() {
 				let source = T::Lookup::lookup(s)?;
