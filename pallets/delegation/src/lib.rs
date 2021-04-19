@@ -696,6 +696,8 @@ impl<T: Config> Pallet<T> {
 		if delegation_node.owner.eq(account) {
 			Ok(true)
 		} else if let Some(parent) = delegation_node.parent {
+			// This case should never happen as we check in the beginning that max_lookups > 0
+			let remaining_lookups = max_lookups.checked_sub(1).ok_or(Error::<T>::MaxSearchDepthReached);
 			// recursively check upwards in hierarchy
 			Self::is_delegating(account, &parent, max_lookups - 1)
 		} else {
@@ -720,7 +722,8 @@ impl<T: Config> Pallet<T> {
 		// check if already revoked
 		if !delegation_node.revoked {
 			// first revoke all children recursively
-			Self::revoke_children(delegation, sender, max_revocations - 1).map(|(r, w)| {
+			let remaining_revocations = max_revocations.checked_sub(1).ok_or(Error::<T>::ExceededRevocationBounds)?;
+			Self::revoke_children(delegation, sender, remaining_revocations).map(|(r, w)| {
 				revocations += r;
 				consumed_weight += w;
 			})?;
