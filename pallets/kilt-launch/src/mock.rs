@@ -125,7 +125,6 @@ impl pallet_vesting::Config for Test {
 }
 
 pub struct ExtBuilder {
-	endowed_accounts: Vec<(AccountId, Balance)>,
 	balance_locks: Vec<(AccountId, BlockNumber, Balance)>,
 	vesting: Vec<(AccountId, BlockNumber, Balance)>,
 	#[allow(dead_code)]
@@ -135,7 +134,6 @@ pub struct ExtBuilder {
 impl Default for ExtBuilder {
 	fn default() -> Self {
 		Self {
-			endowed_accounts: vec![],
 			balance_locks: vec![],
 			vesting: vec![],
 			transfer_account: TRANSFER_ACCOUNT,
@@ -272,21 +270,6 @@ pub fn assert_balance(who: AccountId, free: Balance, usable_for_fees: Balance, u
 }
 
 impl ExtBuilder {
-	pub fn balances(mut self, endowed_accounts: Vec<(AccountId, Balance)>) -> Self {
-		self.endowed_accounts = endowed_accounts;
-		self
-	}
-
-	pub fn init_balance_for_pseudos(self) -> Self {
-		self.balances(vec![
-			(PSEUDO_1, 10_000),
-			(PSEUDO_2, 10_000),
-			(PSEUDO_3, 300_000),
-			(PSEUDO_4, 10_000),
-			(TRANSFER_ACCOUNT, 10_000),
-		])
-	}
-
 	pub fn vest(mut self, vesting: Vec<(AccountId, BlockNumber, Balance)>) -> Self {
 		self.vesting = vesting;
 		self
@@ -321,7 +304,13 @@ impl ExtBuilder {
 		let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 
 		pallet_balances::GenesisConfig::<Test> {
-			balances: self.endowed_accounts,
+			balances: vec![
+				(PSEUDO_1, 10_000),
+				(PSEUDO_2, 10_000),
+				(PSEUDO_3, 300_000),
+				(PSEUDO_4, 10_000),
+				(TRANSFER_ACCOUNT, 10_000),
+			],
 		}
 		.assimilate_storage(&mut t)
 		.unwrap();
@@ -339,7 +328,7 @@ impl ExtBuilder {
 		ext
 	}
 
-	pub fn build_genesis_panic(
+	pub fn build_panic(
 		self,
 		balances: Vec<(AccountId, Balance)>,
 		balance_locks: Vec<(AccountId, BlockNumber, Balance)>,

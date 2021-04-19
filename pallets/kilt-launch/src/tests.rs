@@ -29,7 +29,6 @@ use pallet_vesting::{Call::vest, Vesting as VestingStorage, VestingInfo};
 #[test]
 fn check_build_genesis_config() {
 	ExtBuilder::default()
-		.init_balance_for_pseudos()
 		.pseudos_vest_all()
 		.pseudos_lock_something()
 		.build()
@@ -94,152 +93,139 @@ fn check_build_genesis_config() {
 
 #[test]
 fn check_migrate_single_account_locked() {
-	ExtBuilder::default()
-		.init_balance_for_pseudos()
-		.pseudos_lock_all()
-		.build()
-		.execute_with(|| {
-			let user1_locked_info = LockedBalance {
-				block: 100,
-				amount: 10_000 - <Test as crate::Config>::AvailableGenesisBalance::get(),
-			};
-			// Migration of balance locks
-			ensure_single_migration_works(&PSEUDO_1, &USER_1, None, Some((user1_locked_info, 0)));
+	ExtBuilder::default().pseudos_lock_all().build().execute_with(|| {
+		let user1_locked_info = LockedBalance {
+			block: 100,
+			amount: 10_000 - <Test as crate::Config>::AvailableGenesisBalance::get(),
+		};
+		// Migration of balance locks
+		ensure_single_migration_works(&PSEUDO_1, &USER_1, None, Some((user1_locked_info, 0)));
 
-			// Reach balance lock limit
-			System::set_block_number(100);
-			<KiltLaunch as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
-			assert_eq!(UnlockingAt::<Test>::get(100), None);
-			assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
+		// Reach balance lock limit
+		System::set_block_number(100);
+		<KiltLaunch as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
+		assert_eq!(UnlockingAt::<Test>::get(100), None);
+		assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
 
-			// Should be able to transfer all tokens but ExistentialDeposit
-			assert_ok!(Balances::transfer(
-				Origin::signed(USER_1),
-				PSEUDO_2,
-				10_000 - ExistentialDeposit::get()
-			));
-		});
+		// Should be able to transfer all tokens but ExistentialDeposit
+		assert_ok!(Balances::transfer(
+			Origin::signed(USER_1),
+			PSEUDO_2,
+			10_000 - ExistentialDeposit::get()
+		));
+	});
 }
 
 #[test]
 fn check_migrate_single_account_locked_twice() {
-	ExtBuilder::default()
-		.init_balance_for_pseudos()
-		.pseudos_lock_all()
-		.build()
-		.execute_with(|| {
-			let mut user_locked_info = LockedBalance {
-				block: 100,
-				amount: 10_000 - <Test as crate::Config>::AvailableGenesisBalance::get(),
-			};
-			// Migrate pseudo1 lock
-			ensure_single_migration_works(&PSEUDO_1, &USER_1, None, Some((user_locked_info, 0)));
+	ExtBuilder::default().pseudos_lock_all().build().execute_with(|| {
+		let mut user_locked_info = LockedBalance {
+			block: 100,
+			amount: 10_000 - <Test as crate::Config>::AvailableGenesisBalance::get(),
+		};
+		// Migrate pseudo1 lock
+		ensure_single_migration_works(&PSEUDO_1, &USER_1, None, Some((user_locked_info, 0)));
 
-			user_locked_info = LockedBalance {
-				block: 100,
-				amount: 10_000 + 300_000 - 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
-			};
-			// Migrate pseudo2 lock
-			ensure_single_migration_works(
-				&PSEUDO_3,
-				&USER_1,
-				None,
-				Some((
-					user_locked_info,
-					// Since we migrated twice, we need to account for the extra AvailableGenesisBalance when asserting
-					<Test as crate::Config>::AvailableGenesisBalance::get(),
-				)),
-			);
+		user_locked_info = LockedBalance {
+			block: 100,
+			amount: 10_000 + 300_000 - 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
+		};
+		// Migrate pseudo2 lock
+		ensure_single_migration_works(
+			&PSEUDO_3,
+			&USER_1,
+			None,
+			Some((
+				user_locked_info,
+				// Since we migrated twice, we need to account for the extra AvailableGenesisBalance when asserting
+				<Test as crate::Config>::AvailableGenesisBalance::get(),
+			)),
+		);
 
-			// Reach balance lock limit
-			System::set_block_number(100);
-			<KiltLaunch as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
-			assert_eq!(UnlockingAt::<Test>::get(100), None);
-			assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
+		// Reach balance lock limit
+		System::set_block_number(100);
+		<KiltLaunch as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
+		assert_eq!(UnlockingAt::<Test>::get(100), None);
+		assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
 
-			// Should be able to transfer all tokens but ExistentialDeposit
-			assert_ok!(Balances::transfer(
-				Origin::signed(USER_1),
-				PSEUDO_2,
-				310_000 - ExistentialDeposit::get()
-			));
-		});
+		// Should be able to transfer all tokens but ExistentialDeposit
+		assert_ok!(Balances::transfer(
+			Origin::signed(USER_1),
+			PSEUDO_2,
+			310_000 - ExistentialDeposit::get()
+		));
+	});
 }
 
 #[test]
 fn check_migrate_accounts_locked() {
-	ExtBuilder::default()
-		.init_balance_for_pseudos()
-		.pseudos_lock_all()
-		.build()
-		.execute_with(|| {
-			assert_noop!(
-				KiltLaunch::migrate_multiple_genesis_accounts(
-					Origin::signed(USER_1),
-					vec![PSEUDO_1, PSEUDO_2, PSEUDO_3],
-					USER_1
-				),
-				Error::<Test>::Unauthorized
-			);
-
-			// Migrate two accounts with same end block
-			let locked_info = LockedBalance {
-				block: 100,
-				amount: 10_000 + 300_000 - 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
-			};
-			assert_ok!(KiltLaunch::migrate_multiple_genesis_accounts(
-				Origin::signed(TRANSFER_ACCOUNT),
-				vec![PSEUDO_1, PSEUDO_3],
+	ExtBuilder::default().pseudos_lock_all().build().execute_with(|| {
+		assert_noop!(
+			KiltLaunch::migrate_multiple_genesis_accounts(
+				Origin::signed(USER_1),
+				vec![PSEUDO_1, PSEUDO_2, PSEUDO_3],
 				USER_1
-			));
+			),
+			Error::<Test>::Unauthorized
+		);
 
-			// Check unlocking info migration
-			assert_eq!(UnlockingAt::<Test>::get(100), Some(vec![USER_1]));
-			assert_eq!(BalanceLocks::<Test>::get(&USER_1), Some(locked_info.clone()));
+		// Migrate two accounts with same end block
+		let locked_info = LockedBalance {
+			block: 100,
+			amount: 10_000 + 300_000 - 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
+		};
+		assert_ok!(KiltLaunch::migrate_multiple_genesis_accounts(
+			Origin::signed(TRANSFER_ACCOUNT),
+			vec![PSEUDO_1, PSEUDO_3],
+			USER_1
+		));
 
-			// Check correct setting of lock
-			let balance_locks = Locks::<Test>::get(&USER_1);
-			assert_eq!(balance_locks.len(), 1);
-			for BalanceLock { id, amount, reasons } in balance_locks {
-				match id {
-					crate::KILT_LAUNCH_ID => {
-						assert_eq!(amount, locked_info.amount);
-						assert_eq!(reasons, Reasons::All);
-					}
-					_ => panic!("Unexpected balance lock id {:?}", id),
-				};
-			}
+		// Check unlocking info migration
+		assert_eq!(UnlockingAt::<Test>::get(100), Some(vec![USER_1]));
+		assert_eq!(BalanceLocks::<Test>::get(&USER_1), Some(locked_info.clone()));
 
-			// Check balance migration
-			assert_balance(
-				USER_1,
-				locked_info.amount + 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
-				2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
-				2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
-				false,
-			);
+		// Check correct setting of lock
+		let balance_locks = Locks::<Test>::get(&USER_1);
+		assert_eq!(balance_locks.len(), 1);
+		for BalanceLock { id, amount, reasons } in balance_locks {
+			match id {
+				crate::KILT_LAUNCH_ID => {
+					assert_eq!(amount, locked_info.amount);
+					assert_eq!(reasons, Reasons::All);
+				}
+				_ => panic!("Unexpected balance lock id {:?}", id),
+			};
+		}
 
-			// TODO: Add positive check for staking once it has been added
+		// Check balance migration
+		assert_balance(
+			USER_1,
+			locked_info.amount + 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
+			2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
+			2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
+			false,
+		);
 
-			// Reach balance lock limit
-			System::set_block_number(100);
-			<KiltLaunch as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
-			assert_eq!(UnlockingAt::<Test>::get(100), None);
-			assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
-			assert_balance(
-				USER_1,
-				locked_info.amount + 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
-				locked_info.amount + 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
-				locked_info.amount + 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
-				true,
-			);
-		});
+		// TODO: Add positive check for staking once it has been added
+
+		// Reach balance lock limit
+		System::set_block_number(100);
+		<KiltLaunch as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
+		assert_eq!(UnlockingAt::<Test>::get(100), None);
+		assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
+		assert_balance(
+			USER_1,
+			locked_info.amount + 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
+			locked_info.amount + 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
+			locked_info.amount + 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
+			true,
+		);
+	});
 }
 
 #[test]
 fn check_locked_transfer() {
 	ExtBuilder::default()
-		.init_balance_for_pseudos()
 		.pseudos_lock_all()
 		.build()
 		.execute_with(|| {
@@ -324,301 +310,274 @@ fn check_locked_transfer() {
 
 #[test]
 fn check_migrate_single_account_vested() {
-	ExtBuilder::default()
-		.init_balance_for_pseudos()
-		.pseudos_vest_all()
-		.build()
-		.execute_with(|| {
-			let user1_vesting_schedule = VestingInfo {
-				locked: 10_000,
-				per_block: 1000, // Vesting over 10 blocks
-				starting_block: 0,
-			};
+	ExtBuilder::default().pseudos_vest_all().build().execute_with(|| {
+		let user1_vesting_schedule = VestingInfo {
+			locked: 10_000,
+			per_block: 1000, // Vesting over 10 blocks
+			starting_block: 0,
+		};
 
-			// Migration of vesting info and balance locks
-			ensure_single_migration_works(&PSEUDO_1, &USER_1, Some(user1_vesting_schedule), None);
+		// Migration of vesting info and balance locks
+		ensure_single_migration_works(&PSEUDO_1, &USER_1, Some(user1_vesting_schedule), None);
 
-			// Reach vesting limit
-			System::set_block_number(10);
+		// Reach vesting limit
+		System::set_block_number(10);
 
-			assert_ok!(Vesting::vest(Origin::signed(USER_1)));
-			assert_eq!(Vesting::vesting(&USER_1), None);
-			assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
-			// Should be able to transfer the remaining tokens
-			assert_ok!(Balances::transfer(
-				Origin::signed(USER_1),
-				PSEUDO_1,
-				user1_vesting_schedule.locked - user1_vesting_schedule.per_block
-			));
-		});
+		assert_ok!(Vesting::vest(Origin::signed(USER_1)));
+		assert_eq!(Vesting::vesting(&USER_1), None);
+		assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
+		// Should be able to transfer the remaining tokens
+		assert_ok!(Balances::transfer(
+			Origin::signed(USER_1),
+			PSEUDO_1,
+			user1_vesting_schedule.locked - user1_vesting_schedule.per_block
+		));
+	});
 }
 
 #[test]
 fn check_migrate_single_account_twice_vested() {
-	ExtBuilder::default()
-		.init_balance_for_pseudos()
-		.pseudos_vest_all()
-		.build()
-		.execute_with(|| {
-			// Migration of vesting info from pseudo_1 to user_1
-			let mut user1_vesting_schedule = VestingInfo {
-				locked: 10_000,
-				per_block: 1000, // Vesting over 10 blocks
-				starting_block: 0,
-			};
-			ensure_single_migration_works(&PSEUDO_1, &USER_1, Some(user1_vesting_schedule), None);
+	ExtBuilder::default().pseudos_vest_all().build().execute_with(|| {
+		// Migration of vesting info from pseudo_1 to user_1
+		let mut user1_vesting_schedule = VestingInfo {
+			locked: 10_000,
+			per_block: 1000, // Vesting over 10 blocks
+			starting_block: 0,
+		};
+		ensure_single_migration_works(&PSEUDO_1, &USER_1, Some(user1_vesting_schedule), None);
 
-			// Migration of vesting info from pseudo_2 with different vesting period to
-			// user_1
-			user1_vesting_schedule = VestingInfo {
-				locked: user1_vesting_schedule.locked + 10_000,
-				per_block: user1_vesting_schedule.per_block + 500, // Vesting over 10 blocks
-				starting_block: 0,
-			};
-			ensure_single_migration_works(&PSEUDO_2, &USER_1, Some(user1_vesting_schedule), None);
+		// Migration of vesting info from pseudo_2 with different vesting period to
+		// user_1
+		user1_vesting_schedule = VestingInfo {
+			locked: user1_vesting_schedule.locked + 10_000,
+			per_block: user1_vesting_schedule.per_block + 500, // Vesting over 10 blocks
+			starting_block: 0,
+		};
+		ensure_single_migration_works(&PSEUDO_2, &USER_1, Some(user1_vesting_schedule), None);
 
-			// Reach first vesting limit
-			System::set_block_number(10);
-			assert_ok!(Vesting::vest(Origin::signed(USER_1)));
-			assert_eq!(Vesting::vesting(&USER_1), Some(user1_vesting_schedule));
-			assert_eq!(Locks::<Test>::get(&USER_1).len(), 1);
-			assert_balance(
-				USER_1,
-				user1_vesting_schedule.locked,
-				user1_vesting_schedule.locked,
-				user1_vesting_schedule.locked - 500 * 10,
-				false,
-			);
+		// Reach first vesting limit
+		System::set_block_number(10);
+		assert_ok!(Vesting::vest(Origin::signed(USER_1)));
+		assert_eq!(Vesting::vesting(&USER_1), Some(user1_vesting_schedule));
+		assert_eq!(Locks::<Test>::get(&USER_1).len(), 1);
+		assert_balance(
+			USER_1,
+			user1_vesting_schedule.locked,
+			user1_vesting_schedule.locked,
+			user1_vesting_schedule.locked - 500 * 10,
+			false,
+		);
 
-			// Reach second vesting limit
-			System::set_block_number(20);
-			assert_ok!(Vesting::vest(Origin::signed(USER_1)));
-			assert_eq!(Vesting::vesting(&USER_1), None);
-			assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
-			// Should be able to transfer the remaining tokens
-			assert_balance(
-				USER_1,
-				user1_vesting_schedule.locked,
-				user1_vesting_schedule.locked,
-				user1_vesting_schedule.locked,
-				true,
-			);
-		});
+		// Reach second vesting limit
+		System::set_block_number(20);
+		assert_ok!(Vesting::vest(Origin::signed(USER_1)));
+		assert_eq!(Vesting::vesting(&USER_1), None);
+		assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
+		// Should be able to transfer the remaining tokens
+		assert_balance(
+			USER_1,
+			user1_vesting_schedule.locked,
+			user1_vesting_schedule.locked,
+			user1_vesting_schedule.locked,
+			true,
+		);
+	});
 }
 
 #[test]
 fn check_migrate_accounts_vested() {
-	ExtBuilder::default()
-		.init_balance_for_pseudos()
-		.pseudos_vest_all()
-		.build()
-		.execute_with(|| {
-			assert_noop!(
-				KiltLaunch::migrate_multiple_genesis_accounts(
-					Origin::signed(USER_1),
-					vec![PSEUDO_1, PSEUDO_2, PSEUDO_3],
-					USER_1
-				),
-				Error::<Test>::Unauthorized
-			);
-			assert_ok!(KiltLaunch::migrate_multiple_genesis_accounts(
-				Origin::signed(TRANSFER_ACCOUNT),
+	ExtBuilder::default().pseudos_vest_all().build().execute_with(|| {
+		assert_noop!(
+			KiltLaunch::migrate_multiple_genesis_accounts(
+				Origin::signed(USER_1),
 				vec![PSEUDO_1, PSEUDO_2, PSEUDO_3],
 				USER_1
-			));
+			),
+			Error::<Test>::Unauthorized
+		);
+		assert_ok!(KiltLaunch::migrate_multiple_genesis_accounts(
+			Origin::signed(TRANSFER_ACCOUNT),
+			vec![PSEUDO_1, PSEUDO_2, PSEUDO_3],
+			USER_1
+		));
 
-			let vesting_info = VestingInfo {
-				locked: 10_000 + 10_000 + 300_000,
-				per_block: 10_000 / 10 + 10_000 / 20 + 300_000 / 30,
-				starting_block: 0,
+		let vesting_info = VestingInfo {
+			locked: 10_000 + 10_000 + 300_000,
+			per_block: 10_000 / 10 + 10_000 / 20 + 300_000 / 30,
+			starting_block: 0,
+		};
+
+		// Check vesting info migration
+		assert_eq!(Vesting::vesting(&USER_1), Some(vesting_info));
+
+		// Check correct setting of lock
+		let balance_locks = Locks::<Test>::get(&USER_1);
+		assert_eq!(balance_locks.len(), 1);
+		for BalanceLock { id, amount, reasons } in balance_locks {
+			match id {
+				crate::VESTING_ID => {
+					assert_eq!(amount, vesting_info.locked - vesting_info.per_block);
+					assert_eq!(reasons, Reasons::Misc);
+				}
+				_ => panic!("Unexpected balance lock id {:?}", id),
 			};
+		}
 
-			// Check vesting info migration
+		// Check balance migration
+		assert_balance(
+			USER_1,
+			vesting_info.locked,
+			vesting_info.locked,
+			vesting_info.per_block,
+			false,
+		);
+
+		// TODO: Add positive check for staking once it has been added
+
+		// Reach vesting limits
+		for block in vec![9, 10, 15, 20, 27] {
+			System::set_block_number(block);
+			assert_ok!(Vesting::vest(Origin::signed(USER_1)));
+			assert_eq!(
+				Locks::<Test>::get(USER_1),
+				vec![BalanceLock {
+					id: VESTING_ID,
+					amount: vesting_info.locked - vesting_info.per_block * (block as u128),
+					reasons: Reasons::Misc
+				}]
+			);
 			assert_eq!(Vesting::vesting(&USER_1), Some(vesting_info));
-
-			// Check correct setting of lock
-			let balance_locks = Locks::<Test>::get(&USER_1);
-			assert_eq!(balance_locks.len(), 1);
-			for BalanceLock { id, amount, reasons } in balance_locks {
-				match id {
-					crate::VESTING_ID => {
-						assert_eq!(amount, vesting_info.locked - vesting_info.per_block);
-						assert_eq!(reasons, Reasons::Misc);
-					}
-					_ => panic!("Unexpected balance lock id {:?}", id),
-				};
-			}
-
-			// Check balance migration
 			assert_balance(
 				USER_1,
 				vesting_info.locked,
 				vesting_info.locked,
-				vesting_info.per_block,
+				vesting_info.per_block * (block as u128),
 				false,
 			);
-
-			// TODO: Add positive check for staking once it has been added
-
-			// Reach vesting limits
-			for block in vec![9, 10, 15, 20, 27] {
-				System::set_block_number(block);
-				assert_ok!(Vesting::vest(Origin::signed(USER_1)));
-				assert_eq!(
-					Locks::<Test>::get(USER_1),
-					vec![BalanceLock {
-						id: VESTING_ID,
-						amount: vesting_info.locked - vesting_info.per_block * (block as u128),
-						reasons: Reasons::Misc
-					}]
-				);
-				assert_eq!(Vesting::vesting(&USER_1), Some(vesting_info));
-				assert_balance(
-					USER_1,
-					vesting_info.locked,
-					vesting_info.locked,
-					vesting_info.per_block * (block as u128),
-					false,
-				);
-			}
-			System::set_block_number(30);
-			assert_ok!(Vesting::vest(Origin::signed(USER_1)));
-			assert_eq!(Vesting::vesting(&USER_1), None);
-			assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
-		});
+		}
+		System::set_block_number(30);
+		assert_ok!(Vesting::vest(Origin::signed(USER_1)));
+		assert_eq!(Vesting::vesting(&USER_1), None);
+		assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
+	});
 }
 
 #[test]
 fn check_negative_migrate_accounts_vested() {
-	ExtBuilder::default()
-		.init_balance_for_pseudos()
-		.pseudos_vest_all()
-		.build()
-		.execute_with(|| {
-			// Migrate too many accounts
-			assert_noop!(
-				KiltLaunch::migrate_multiple_genesis_accounts(
-					Origin::signed(TRANSFER_ACCOUNT),
-					vec![PSEUDO_1, PSEUDO_2, PSEUDO_3, PSEUDO_4],
-					USER_1
-				),
-				Error::<Test>::ExceedsMaxClaims
-			);
+	ExtBuilder::default().pseudos_vest_all().build().execute_with(|| {
+		// Migrate too many accounts
+		assert_noop!(
+			KiltLaunch::migrate_multiple_genesis_accounts(
+				Origin::signed(TRANSFER_ACCOUNT),
+				vec![PSEUDO_1, PSEUDO_2, PSEUDO_3, PSEUDO_4],
+				USER_1
+			),
+			Error::<Test>::ExceedsMaxClaims
+		);
 
-			// Set up vesting with conflicting start block
-			let pseudo_4_vesting = VestingInfo {
-				locked: 10_000,
-				per_block: 1,
-				starting_block: 1,
-			};
-			VestingStorage::<Test>::insert(PSEUDO_4, pseudo_4_vesting);
-			assert_noop!(
-				KiltLaunch::migrate_multiple_genesis_accounts(
-					Origin::signed(TRANSFER_ACCOUNT),
-					vec![PSEUDO_1, PSEUDO_4],
-					USER_1
-				),
-				Error::<Test>::ConflictingVestingStarts
-			);
+		// Set up vesting with conflicting start block
+		let pseudo_4_vesting = VestingInfo {
+			locked: 10_000,
+			per_block: 1,
+			starting_block: 1,
+		};
+		VestingStorage::<Test>::insert(PSEUDO_4, pseudo_4_vesting);
+		assert_noop!(
+			KiltLaunch::migrate_multiple_genesis_accounts(
+				Origin::signed(TRANSFER_ACCOUNT),
+				vec![PSEUDO_1, PSEUDO_4],
+				USER_1
+			),
+			Error::<Test>::ConflictingVestingStarts
+		);
 
-			// Set a vesting lock which should not be there from the Genesis builder
-			<<Test as pallet_vesting::Config>::Currency as LockableCurrency<AccountId>>::set_lock(
-				VESTING_ID,
-				&PSEUDO_4,
-				1,
-				WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE,
-			);
-			assert_noop!(
-				KiltLaunch::migrate_multiple_genesis_accounts(Origin::signed(TRANSFER_ACCOUNT), vec![PSEUDO_4], USER_1),
-				Error::<Test>::UnexpectedLocks
-			);
-		});
+		// Set a vesting lock which should not be there from the Genesis builder
+		<<Test as pallet_vesting::Config>::Currency as LockableCurrency<AccountId>>::set_lock(
+			VESTING_ID,
+			&PSEUDO_4,
+			1,
+			WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE,
+		);
+		assert_noop!(
+			KiltLaunch::migrate_multiple_genesis_accounts(Origin::signed(TRANSFER_ACCOUNT), vec![PSEUDO_4], USER_1),
+			Error::<Test>::UnexpectedLocks
+		);
+	});
 }
 
 #[test]
 fn check_negative_migrate_accounts_locked() {
-	ExtBuilder::default()
-		.init_balance_for_pseudos()
-		.pseudos_lock_all()
-		.build()
-		.execute_with(|| {
-			// Migrate two accounts with different ending blocks
-			assert_noop!(
-				KiltLaunch::migrate_multiple_genesis_accounts(
-					Origin::signed(TRANSFER_ACCOUNT),
-					vec![PSEUDO_1, PSEUDO_2],
-					USER_1
-				),
-				Error::<Test>::ConflictingLockingBlocks
-			);
+	ExtBuilder::default().pseudos_lock_all().build().execute_with(|| {
+		// Migrate two accounts with different ending blocks
+		assert_noop!(
+			KiltLaunch::migrate_multiple_genesis_accounts(
+				Origin::signed(TRANSFER_ACCOUNT),
+				vec![PSEUDO_1, PSEUDO_2],
+				USER_1
+			),
+			Error::<Test>::ConflictingLockingBlocks
+		);
 
-			// Add a lock to pseudo2 which should not be there
-			Balances::set_lock(KILT_LAUNCH_ID, &PSEUDO_2, 1, WithdrawReasons::all());
-			assert_noop!(
-				KiltLaunch::migrate_multiple_genesis_accounts(Origin::signed(TRANSFER_ACCOUNT), vec![PSEUDO_2], USER_1),
-				Error::<Test>::UnexpectedLocks
-			);
-		});
+		// Add a lock to pseudo2 which should not be there
+		Balances::set_lock(KILT_LAUNCH_ID, &PSEUDO_2, 1, WithdrawReasons::all());
+		assert_noop!(
+			KiltLaunch::migrate_multiple_genesis_accounts(Origin::signed(TRANSFER_ACCOUNT), vec![PSEUDO_2], USER_1),
+			Error::<Test>::UnexpectedLocks
+		);
+	});
 }
 
 #[test]
 fn check_force_unlock() {
-	ExtBuilder::default()
-		.init_balance_for_pseudos()
-		.pseudos_lock_all()
-		.build()
-		.execute_with(|| {
-			let user1_locked_info = LockedBalance {
-				block: 100,
-				amount: 10_000 - <Test as crate::Config>::AvailableGenesisBalance::get(),
-			};
-			ensure_single_migration_works(&PSEUDO_1, &USER_1, None, Some((user1_locked_info, 0)));
+	ExtBuilder::default().pseudos_lock_all().build().execute_with(|| {
+		let user1_locked_info = LockedBalance {
+			block: 100,
+			amount: 10_000 - <Test as crate::Config>::AvailableGenesisBalance::get(),
+		};
+		ensure_single_migration_works(&PSEUDO_1, &USER_1, None, Some((user1_locked_info, 0)));
 
-			assert_ok!(KiltLaunch::force_unlock(Origin::root(), 100));
-			assert_eq!(BalanceLocks::<Test>::get(&USER_1), None);
-			assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
-			assert_eq!(Balances::usable_balance(&USER_1), 10_000);
-		});
+		assert_ok!(KiltLaunch::force_unlock(Origin::root(), 100));
+		assert_eq!(BalanceLocks::<Test>::get(&USER_1), None);
+		assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
+		assert_eq!(Balances::usable_balance(&USER_1), 10_000);
+	});
 }
 
 #[test]
 fn check_change_transfer_account() {
-	ExtBuilder::default()
-		.init_balance_for_pseudos()
-		.build()
-		.execute_with(|| {
-			assert_eq!(TransferAccount::<Test>::get(), Some(TRANSFER_ACCOUNT));
-			assert_ok!(KiltLaunch::change_transfer_account(Origin::root(), PSEUDO_1));
-			assert_eq!(TransferAccount::<Test>::get(), Some(PSEUDO_1));
-		});
+	ExtBuilder::default().build().execute_with(|| {
+		assert_eq!(TransferAccount::<Test>::get(), Some(TRANSFER_ACCOUNT));
+		assert_ok!(KiltLaunch::change_transfer_account(Origin::root(), PSEUDO_1));
+		assert_eq!(TransferAccount::<Test>::get(), Some(PSEUDO_1));
+	});
 }
 
 #[test]
 #[should_panic = "Currencies must be init'd before locking"]
 fn check_genesis_panic_locking_balance() {
-	ExtBuilder::default().build_genesis_panic(vec![], vec![(PSEUDO_1, 100, 10_000)], vec![]);
+	ExtBuilder::default().build_panic(vec![], vec![(PSEUDO_1, 100, 10_000)], vec![]);
 }
 #[test]
 #[should_panic = "Currencies must be init'd before vesting"]
 fn check_genesis_panic_vesting_balance() {
-	ExtBuilder::default().build_genesis_panic(vec![], vec![], vec![(PSEUDO_1, 100, 10_000)]);
+	ExtBuilder::default().build_panic(vec![], vec![], vec![(PSEUDO_1, 100, 10_000)]);
 }
 
 #[test]
 #[should_panic = "Locked balance must not exceed total balance for address \"5C4hrfjw9DjXZTzV3MwzrrAr9P1MJhSrvWGWqi1eSuyUpnhM\""]
 fn check_genesis_panic_locking_amount() {
-	ExtBuilder::default().build_genesis_panic(vec![(PSEUDO_1, 10_000)], vec![(PSEUDO_1, 100, 10_001)], vec![]);
+	ExtBuilder::default().build_panic(vec![(PSEUDO_1, 10_000)], vec![(PSEUDO_1, 100, 10_001)], vec![]);
 }
 #[test]
 #[should_panic = "Vested balance must not exceed total balance for address \"5C4hrfjw9DjXZTzV3MwzrrAr9P1MJhSrvWGWqi1eSuyUpnhM\""]
 fn check_genesis_panic_vesting_amount() {
-	ExtBuilder::default().build_genesis_panic(vec![(PSEUDO_1, 10_000)], vec![], vec![(PSEUDO_1, 100, 10_001)]);
+	ExtBuilder::default().build_panic(vec![(PSEUDO_1, 10_000)], vec![], vec![(PSEUDO_1, 100, 10_001)]);
 }
 
 #[test]
 #[should_panic = "Account with address \"5C4hrfjw9DjXZTzV3MwzrrAr9P1MJhSrvWGWqi1eSuyUpnhM\" must not occur twice in locking"]
 fn check_genesis_panic_locking_same_acc() {
-	ExtBuilder::default().build_genesis_panic(
+	ExtBuilder::default().build_panic(
 		vec![(PSEUDO_1, 10_000)],
 		vec![(PSEUDO_1, 100, 10_000), (PSEUDO_1, 1337, 10_000)],
 		vec![],
@@ -627,7 +586,7 @@ fn check_genesis_panic_locking_same_acc() {
 #[test]
 #[should_panic = "Account with address \"5C4hrfjw9DjXZTzV3MwzrrAr9P1MJhSrvWGWqi1eSuyUpnhM\" must not occur twice in vesting"]
 fn check_genesis_vesting_locking_same_acc() {
-	ExtBuilder::default().build_genesis_panic(
+	ExtBuilder::default().build_panic(
 		vec![(PSEUDO_1, 10_000)],
 		vec![],
 		vec![(PSEUDO_1, 100, 10_000), (PSEUDO_1, 1337, 10_000)],
