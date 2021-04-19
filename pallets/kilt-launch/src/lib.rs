@@ -517,8 +517,8 @@ impl<T: Config> Pallet<T> {
 			//
 			// Logic was taken from pallet_vesting.
 
-			// Disallow anything to be paid by vesting lock
-			let reasons = WithdrawReasons::all();
+			// Disallow transfers and reserves from vested tokens which are still locked
+			let reasons = WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE;
 			let now = <frame_system::Pallet<T>>::block_number();
 			let locked_now = vesting.locked_at::<<T as pallet_vesting::Config>::BlockNumberToBalance>(now);
 			<<T as pallet_vesting::Config>::Currency as LockableCurrency<T::AccountId>>::set_lock(

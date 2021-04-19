@@ -160,8 +160,7 @@ pub fn ensure_single_migration_works(
 		source.to_owned(),
 		dest.to_owned()
 	));
-	// TODO: Change to BlockNumber
-	let now: u128 = System::block_number().into();
+	let now: BlockNumber = System::block_number().into();
 
 	// Check for desired death of allocation account
 	assert_eq!(Balances::free_balance(source), 0);
@@ -189,16 +188,17 @@ pub fn ensure_single_migration_works(
 
 	// Check correct setting of locks for dest
 	let balance_locks = Locks::<Test>::get(dest);
-	let mut usable_balance: Balance = Balance::zero();
+	let mut fee_balance: Balance = Balance::zero();
 	let mut maybe_balance: Balance = Balance::zero();
+	let mut usable_balance: Balance = Balance::zero();
 	assert_eq!(balance_locks.len(), num_of_locks);
 	for BalanceLock { id, amount, reasons } in balance_locks {
 		match id {
 			crate::VESTING_ID => {
 				let VestingInfo { locked, per_block, .. } = vesting_info.expect("No vesting schedule found");
-				usable_balance = per_block * now;
-				assert_eq!(amount, locked - usable_balance);
-				assert_eq!(reasons, Reasons::All);
+				fee_balance = locked;
+				usable_balance = per_block;
+				assert_eq!(reasons, Reasons::Misc);
 			}
 			crate::KILT_LAUNCH_ID => {
 				let (lock, add) = locked_info.clone().expect("No vesting schedule found");
@@ -223,10 +223,16 @@ pub fn ensure_single_migration_works(
 	// In our tests, vesting and locking is not resolved before the 10th block. At
 	// most times, now should be the first block.
 	if now < 10 {
+		// locked balance should be free
+		// custom locks: + AvailableGenesisBalance
 		assert_eq!(Balances::free_balance(dest), locked_balance + maybe_balance);
-		// locked balance should be usable for fees
-		assert_eq!(Balances::usable_balance_for_fees(dest), usable_balance + maybe_balance);
-		// locked balance should not be usable for anything but fees and other locks
+		// balance which is usable for fees
+		// vesting: locked_balance
+		// custom lock: AvailableGenesisBalance
+		assert_eq!(Balances::usable_balance_for_fees(dest), fee_balance + maybe_balance);
+		// balance which is usable for anything but fees and other
+		// vesting: per_block * now
+		// locks custom locked: AvailableGenesisBalance
 		assert_eq!(Balances::usable_balance(dest), usable_balance + maybe_balance);
 		// there should be nothing reserved
 		assert_eq!(Balances::reserved_balance(dest), 0);

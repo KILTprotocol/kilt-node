@@ -443,7 +443,7 @@ fn check_migrate_accounts_vested() {
 				match id {
 					crate::VESTING_ID => {
 						assert_eq!(amount, vesting_info.locked - vesting_info.per_block);
-						assert_eq!(reasons, Reasons::All);
+						assert_eq!(reasons, Reasons::Misc);
 					}
 					_ => panic!("Unexpected balance lock id {:?}", id),
 				};
@@ -453,7 +453,7 @@ fn check_migrate_accounts_vested() {
 			assert_balance(
 				USER_1,
 				vesting_info.locked,
-				vesting_info.per_block,
+				vesting_info.locked,
 				vesting_info.per_block,
 				false,
 			);
@@ -461,14 +461,21 @@ fn check_migrate_accounts_vested() {
 			// TODO: Add positive check for staking once it has been added
 
 			// Reach vesting limits
-			for block in vec![2, 3, 4, 5, 10, 20, 27] {
+			for block in vec![9, 10, 15, 20, 27] {
 				System::set_block_number(block);
 				assert_ok!(Vesting::vest(Origin::signed(USER_1)));
+				assert_eq!(
+					Locks::<Test>::get(USER_1),
+					vec![BalanceLock {
+						id: VESTING_ID,
+						amount: vesting_info.locked - vesting_info.per_block * (block as u128),
+						reasons: Reasons::Misc
+					}]
+				);
 				assert_eq!(Vesting::vesting(&USER_1), Some(vesting_info));
 				assert_balance(
 					USER_1,
 					vesting_info.locked,
-					// FIXME: Should be `usable`
 					vesting_info.locked,
 					vesting_info.per_block * (block as u128),
 					false,
@@ -519,7 +526,7 @@ fn check_negative_migrate_accounts_vested() {
 				VESTING_ID,
 				&PSEUDO_4,
 				1,
-				WithdrawReasons::all(),
+				WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE,
 			);
 			assert_noop!(
 				KiltLaunch::migrate_multiple_genesis_accounts(Origin::signed(TRANSFER_ACCOUNT), vec![PSEUDO_4], USER_1),
