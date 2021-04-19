@@ -32,37 +32,36 @@ fn check_successful_ctype_creation() {
 		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
-	let ctype_creation_operation = ctype::CtypeCreationOperation {
+	let operation = ctype::CtypeCreationOperation {
 		creator_did: did_mock::ALICE_DID,
 		hash: get_ctype_hash(true),
 		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
 	};
+	let signature = did_att_key.sign(&operation.encode());
 
-	let signature = did_att_key.sign(&ctype_creation_operation.encode());
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details.clone())]);
+	let builder = ExtBuilder::from(builder);
 
-	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details.clone())]);
-	let ctype_builder = ExtBuilder::from(did_builder);
-
-	let mut ext = ctype_builder.build();
+	let mut ext = builder.build();
 
 	// Write CTYPE on chain
 	ext.execute_with(|| {
 		assert_ok!(Ctype::submit_ctype_creation_operation(
 			Origin::signed(DEFAULT_ACCOUNT),
-			ctype_creation_operation.clone(),
+			operation.clone(),
 			did::DidSignature::from(signature)
 		));
 	});
 
 	// Verify the CTYPE has the right owner DID
 	let stored_ctype_creator = ext.execute_with(|| {
-		Ctype::ctypes(&ctype_creation_operation.hash).expect("CTYPE hash should be present on chain.")
+		Ctype::ctypes(&operation.hash).expect("CTYPE hash should be present on chain.")
 	});
-	assert_eq!(stored_ctype_creator, ctype_creation_operation.creator_did);
+	assert_eq!(stored_ctype_creator, operation.creator_did);
 
 	// Verify that the DID tx counter has increased
 	let ctype_creator_details = ext.execute_with(|| {
-		Did::get_did(&ctype_creation_operation.creator_did).expect("CTYPE creator should be present on chain.")
+		Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain.")
 	});
 	assert_eq!(
 		ctype_creator_details.get_tx_counter_value(),
@@ -79,25 +78,24 @@ fn check_duplicate_ctype_creation() {
 		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
-	let ctype_creation_operation = ctype::CtypeCreationOperation {
+	let operation = ctype::CtypeCreationOperation {
 		creator_did: did_mock::ALICE_DID,
 		hash: get_ctype_hash(true),
 		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
 	};
+	let signature = did_att_key.sign(&operation.encode());
 
-	let signature = did_att_key.sign(&ctype_creation_operation.encode());
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details.clone())]);
+	let builder =
+		ExtBuilder::from(builder).with_ctypes(vec![(operation.hash, did_mock::ALICE_DID)]);
 
-	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details.clone())]);
-	let ctype_builder =
-		ExtBuilder::from(did_builder).with_ctypes(vec![(ctype_creation_operation.hash, did_mock::ALICE_DID)]);
-
-	let mut ext = ctype_builder.build();
+	let mut ext = builder.build();
 
 	ext.execute_with(|| {
 		assert_err!(
 			Ctype::submit_ctype_creation_operation(
 				Origin::signed(DEFAULT_ACCOUNT),
-				ctype_creation_operation.clone(),
+				operation.clone(),
 				did::DidSignature::from(signature)
 			),
 			ctype::Error::<Test>::CTypeAlreadyExists
@@ -106,7 +104,7 @@ fn check_duplicate_ctype_creation() {
 
 	// Verify that the DID tx counter has increased
 	let ctype_creator_details = ext.execute_with(|| {
-		Did::get_did(&ctype_creation_operation.creator_did).expect("CTYPE creator should be present on chain.")
+		Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain.")
 	});
 	assert_eq!(
 		ctype_creator_details.get_tx_counter_value(),
@@ -123,25 +121,24 @@ fn check_did_not_present_ctype_creation() {
 		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
-	let ctype_creation_operation = ctype::CtypeCreationOperation {
+	let operation = ctype::CtypeCreationOperation {
 		creator_did: did_mock::ALICE_DID,
 		hash: get_ctype_hash(true),
 		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
 	};
+	let signature = did_att_key.sign(&operation.encode());
 
-	let signature = did_att_key.sign(&ctype_creation_operation.encode());
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::BOB_DID, mock_did_details)]);
+	let builder =
+		ExtBuilder::from(builder).with_ctypes(vec![(operation.hash, did_mock::ALICE_DID)]);
 
-	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::BOB_DID, mock_did_details)]);
-	let ctype_builder =
-		ExtBuilder::from(did_builder).with_ctypes(vec![(ctype_creation_operation.hash, did_mock::ALICE_DID)]);
-
-	let mut ext = ctype_builder.build();
+	let mut ext = builder.build();
 
 	ext.execute_with(|| {
 		assert_noop!(
 			Ctype::submit_ctype_creation_operation(
 				Origin::signed(DEFAULT_ACCOUNT),
-				ctype_creation_operation.clone(),
+				operation.clone(),
 				did::DidSignature::from(signature)
 			),
 			did::Error::<Test>::DidNotPresent
@@ -159,29 +156,37 @@ fn check_max_did_counter_ctype_creation() {
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 	mock_did_details.set_tx_counter(u64::MAX);
 
-	let ctype_creation_operation = ctype::CtypeCreationOperation {
+	let operation = ctype::CtypeCreationOperation {
 		creator_did: did_mock::ALICE_DID,
 		hash: get_ctype_hash(true),
 		tx_counter: mock_did_details.get_tx_counter_value(),
 	};
+	let signature = did_att_key.sign(&operation.encode());
 
-	let signature = did_att_key.sign(&ctype_creation_operation.encode());
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details.clone())]);
+	let builder = ExtBuilder::from(builder);
 
-	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details)]);
-	let ctype_builder = ExtBuilder::from(did_builder);
-
-	let mut ext = ctype_builder.build();
+	let mut ext = builder.build();
 
 	ext.execute_with(|| {
 		assert_noop!(
 			Ctype::submit_ctype_creation_operation(
 				Origin::signed(DEFAULT_ACCOUNT),
-				ctype_creation_operation.clone(),
+				operation.clone(),
 				did::DidSignature::from(signature)
 			),
 			did::Error::<Test>::MaxTxCounterValue
 		);
 	});
+
+	// Verify that the DID tx counter has NOT increased
+	let ctype_creator_details = ext.execute_with(|| {
+		Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain.")
+	});
+	assert_eq!(
+		ctype_creator_details.get_tx_counter_value(),
+		mock_did_details.get_tx_counter_value()
+	);
 }
 
 #[test]
@@ -194,29 +199,37 @@ fn check_smaller_did_counter_ctype_creation() {
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 	mock_did_details.set_tx_counter(1u64);
 
-	let ctype_creation_operation = ctype::CtypeCreationOperation {
+	let operation = ctype::CtypeCreationOperation {
 		creator_did: did_mock::ALICE_DID,
 		hash: get_ctype_hash(true),
 		tx_counter: mock_did_details.get_tx_counter_value() - 1u64,
 	};
+	let signature = did_att_key.sign(&operation.encode());
 
-	let signature = did_att_key.sign(&ctype_creation_operation.encode());
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details.clone())]);
+	let builder = ExtBuilder::from(builder);
 
-	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details)]);
-	let ctype_builder = ExtBuilder::from(did_builder);
-
-	let mut ext = ctype_builder.build();
+	let mut ext = builder.build();
 
 	ext.execute_with(|| {
 		assert_noop!(
 			Ctype::submit_ctype_creation_operation(
 				Origin::signed(DEFAULT_ACCOUNT),
-				ctype_creation_operation.clone(),
+				operation.clone(),
 				did::DidSignature::from(signature)
 			),
 			did::Error::<Test>::InvalidNonce
 		);
 	});
+
+	// Verify that the DID tx counter has NOT increased
+	let ctype_creator_details = ext.execute_with(|| {
+		Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain.")
+	});
+	assert_eq!(
+		ctype_creator_details.get_tx_counter_value(),
+		mock_did_details.get_tx_counter_value()
+	);
 }
 
 #[test]
@@ -228,29 +241,37 @@ fn check_equal_did_counter_ctype_creation() {
 		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
-	let ctype_creation_operation = ctype::CtypeCreationOperation {
+	let operation = ctype::CtypeCreationOperation {
 		creator_did: did_mock::ALICE_DID,
 		hash: get_ctype_hash(true),
 		tx_counter: mock_did_details.get_tx_counter_value(),
 	};
+	let signature = did_att_key.sign(&operation.encode());
 
-	let signature = did_att_key.sign(&ctype_creation_operation.encode());
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details.clone())]);
+	let builder = ExtBuilder::from(builder);
 
-	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details)]);
-	let ctype_builder = ExtBuilder::from(did_builder);
-
-	let mut ext = ctype_builder.build();
+	let mut ext = builder.build();
 
 	ext.execute_with(|| {
 		assert_noop!(
 			Ctype::submit_ctype_creation_operation(
 				Origin::signed(DEFAULT_ACCOUNT),
-				ctype_creation_operation.clone(),
+				operation.clone(),
 				did::DidSignature::from(signature)
 			),
 			did::Error::<Test>::InvalidNonce
 		);
 	});
+
+	// Verify that the DID tx counter has NOT increased
+	let ctype_creator_details = ext.execute_with(|| {
+		Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain.")
+	});
+	assert_eq!(
+		ctype_creator_details.get_tx_counter_value(),
+		mock_did_details.get_tx_counter_value()
+	);
 }
 
 #[test]
@@ -262,29 +283,37 @@ fn check_too_large_did_counter_ctype_creation() {
 		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
-	let ctype_creation_operation = ctype::CtypeCreationOperation {
+	let operation = ctype::CtypeCreationOperation {
 		creator_did: did_mock::ALICE_DID,
 		hash: get_ctype_hash(true),
 		tx_counter: mock_did_details.get_tx_counter_value() + 2u64,
 	};
+	let signature = did_att_key.sign(&operation.encode());
 
-	let signature = did_att_key.sign(&ctype_creation_operation.encode());
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details.clone())]);
+	let builder = ExtBuilder::from(builder);
 
-	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details)]);
-	let ctype_builder = ExtBuilder::from(did_builder);
-
-	let mut ext = ctype_builder.build();
+	let mut ext = builder.build();
 
 	ext.execute_with(|| {
 		assert_noop!(
 			Ctype::submit_ctype_creation_operation(
 				Origin::signed(DEFAULT_ACCOUNT),
-				ctype_creation_operation.clone(),
+				operation.clone(),
 				did::DidSignature::from(signature)
 			),
 			did::Error::<Test>::InvalidNonce
 		);
 	});
+
+	// Verify that the DID tx counter has NOT increased
+	let ctype_creator_details = ext.execute_with(|| {
+		Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain.")
+	});
+	assert_eq!(
+		ctype_creator_details.get_tx_counter_value(),
+		mock_did_details.get_tx_counter_value()
+	);
 }
 
 #[test]
@@ -296,29 +325,37 @@ fn check_no_attestation_key_ctype_creation() {
 	let mock_did_details =
 		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 
-	let ctype_creation_operation = ctype::CtypeCreationOperation {
+	let operation = ctype::CtypeCreationOperation {
 		creator_did: did_mock::ALICE_DID,
 		hash: get_ctype_hash(true),
 		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
 	};
+	let signature = did_att_key.sign(&operation.encode());
 
-	let signature = did_att_key.sign(&ctype_creation_operation.encode());
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details.clone())]);
+	let builder = ExtBuilder::from(builder);
 
-	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details)]);
-	let ctype_builder = ExtBuilder::from(did_builder);
-
-	let mut ext = ctype_builder.build();
+	let mut ext = builder.build();
 
 	ext.execute_with(|| {
 		assert_noop!(
 			Ctype::submit_ctype_creation_operation(
 				Origin::signed(DEFAULT_ACCOUNT),
-				ctype_creation_operation.clone(),
+				operation.clone(),
 				did::DidSignature::from(signature)
 			),
 			did::Error::<Test>::VerificationKeysNotPresent
 		);
 	});
+
+	// Verify that the DID tx counter has NOT increased
+	let ctype_creator_details = ext.execute_with(|| {
+		Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain.")
+	});
+	assert_eq!(
+		ctype_creator_details.get_tx_counter_value(),
+		mock_did_details.get_tx_counter_value()
+	);
 }
 
 #[test]
@@ -331,29 +368,37 @@ fn check_invalid_signature_format_ctype_creation() {
 		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
-	let ctype_creation_operation = ctype::CtypeCreationOperation {
+	let operation = ctype::CtypeCreationOperation {
 		creator_did: did_mock::ALICE_DID,
 		hash: get_ctype_hash(true),
 		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
 	};
+	let signature = wrong_format_att_key.sign(&operation.encode());
 
-	let signature = wrong_format_att_key.sign(&ctype_creation_operation.encode());
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details.clone())]);
+	let builder = ExtBuilder::from(builder);
 
-	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details)]);
-	let ctype_builder = ExtBuilder::from(did_builder);
-
-	let mut ext = ctype_builder.build();
+	let mut ext = builder.build();
 
 	ext.execute_with(|| {
 		assert_noop!(
 			Ctype::submit_ctype_creation_operation(
 				Origin::signed(DEFAULT_ACCOUNT),
-				ctype_creation_operation.clone(),
+				operation.clone(),
 				did::DidSignature::from(signature)
 			),
 			did::Error::<Test>::InvalidSignatureFormat
 		);
 	});
+
+	// Verify that the DID tx counter has NOT increased
+	let ctype_creator_details = ext.execute_with(|| {
+		Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain.")
+	});
+	assert_eq!(
+		ctype_creator_details.get_tx_counter_value(),
+		mock_did_details.get_tx_counter_value()
+	);
 }
 
 #[test]
@@ -366,27 +411,35 @@ fn check_invalid_signature_ctype_creation() {
 		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
-	let ctype_creation_operation = ctype::CtypeCreationOperation {
+	let operation = ctype::CtypeCreationOperation {
 		creator_did: did_mock::ALICE_DID,
 		hash: get_ctype_hash(true),
 		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
 	};
+	let signature = alternative_seed_att_key.sign(&operation.encode());
 
-	let signature = alternative_seed_att_key.sign(&ctype_creation_operation.encode());
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details.clone())]);
+	let builder = ExtBuilder::from(builder);
 
-	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details)]);
-	let ctype_builder = ExtBuilder::from(did_builder);
-
-	let mut ext = ctype_builder.build();
+	let mut ext = builder.build();
 
 	ext.execute_with(|| {
 		assert_noop!(
 			Ctype::submit_ctype_creation_operation(
 				Origin::signed(DEFAULT_ACCOUNT),
-				ctype_creation_operation.clone(),
+				operation.clone(),
 				did::DidSignature::from(signature)
 			),
 			did::Error::<Test>::InvalidSignature
 		);
 	});
+
+	// Verify that the DID tx counter has NOT increased
+	let ctype_creator_details = ext.execute_with(|| {
+		Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain.")
+	});
+	assert_eq!(
+		ctype_creator_details.get_tx_counter_value(),
+		mock_did_details.get_tx_counter_value()
+	);
 }
