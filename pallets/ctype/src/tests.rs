@@ -18,7 +18,7 @@
 
 use crate::{self as ctype, mock::*};
 use did::mock as did_mock;
-use frame_support::{assert_noop, assert_ok};
+use frame_support::{assert_err, assert_noop, assert_ok};
 use sp_core::Pair;
 
 use codec::Encode;
@@ -88,12 +88,13 @@ fn check_duplicate_ctype_creation() {
 	let signature = did_att_key.sign(&ctype_creation_operation.encode());
 
 	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details.clone())]);
-	let ctype_builder = ExtBuilder::from(did_builder).with_ctypes(vec![(ctype_creation_operation.hash, did_mock::ALICE_DID)]);
+	let ctype_builder =
+		ExtBuilder::from(did_builder).with_ctypes(vec![(ctype_creation_operation.hash, did_mock::ALICE_DID)]);
 
 	let mut ext = ctype_builder.build();
 
 	ext.execute_with(|| {
-		assert_noop!(
+		assert_err!(
 			Ctype::submit_ctype_creation_operation(
 				Origin::signed(DEFAULT_ACCOUNT),
 				ctype_creation_operation.clone(),
@@ -103,13 +104,13 @@ fn check_duplicate_ctype_creation() {
 		);
 	});
 
-	// Verify that the DID tx counter has NOT increased
+	// Verify that the DID tx counter has increased
 	let ctype_creator_details = ext.execute_with(|| {
 		Did::get_did(&ctype_creation_operation.creator_did).expect("CTYPE creator should be present on chain.")
 	});
 	assert_eq!(
 		ctype_creator_details.get_tx_counter_value(),
-		mock_did_details.get_tx_counter_value()
+		mock_did_details.get_tx_counter_value() + 1u64
 	);
 }
 
@@ -131,7 +132,8 @@ fn check_did_not_present_ctype_creation() {
 	let signature = did_att_key.sign(&ctype_creation_operation.encode());
 
 	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::BOB_DID, mock_did_details)]);
-	let ctype_builder = ExtBuilder::from(did_builder).with_ctypes(vec![(ctype_creation_operation.hash, did_mock::ALICE_DID)]);
+	let ctype_builder =
+		ExtBuilder::from(did_builder).with_ctypes(vec![(ctype_creation_operation.hash, did_mock::ALICE_DID)]);
 
 	let mut ext = ctype_builder.build();
 

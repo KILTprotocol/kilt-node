@@ -138,15 +138,10 @@ pub mod pallet {
 			// origin of the transaction needs to be a signed sender account
 			ensure_signed(origin)?;
 
-			let mut did_details =
-				<did::Did<T>>::get(&operation.creator_did).ok_or(<did::Error<T>>::DidNotPresent)?;
+			let mut did_details = <did::Did<T>>::get(&operation.creator_did).ok_or(<did::Error<T>>::DidNotPresent)?;
 
-			did::pallet::Pallet::verify_operation_validity_for_did(
-				&operation,
-				&signature,
-				&did_details,
-			)
-			.map_err(<did::Error<T>>::from)?;
+			did::pallet::Pallet::verify_operation_validity_for_did(&operation, &signature, &did_details)
+				.map_err(<did::Error<T>>::from)?;
 
 			// Update tx counter in DID details and save to DID pallet
 			did_details
@@ -165,10 +160,7 @@ pub mod pallet {
 			<Ctypes<T>>::insert(&operation.hash, operation.creator_did.clone());
 
 			// deposit event that the CTYPE has been added
-			Self::deposit_event(Event::CTypeCreated(
-				operation.creator_did,
-				operation.hash,
-			));
+			Self::deposit_event(Event::CTypeCreated(operation.creator_did, operation.hash));
 			Ok(().into())
 		}
 	}

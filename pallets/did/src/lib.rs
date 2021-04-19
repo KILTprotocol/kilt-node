@@ -712,8 +712,8 @@ pub mod pallet {
 		/// with the creation operation. The parameters are:
 		/// * origin: the Substrate account submitting the transaction (which
 		///   can be different from the DID subject)
-		/// * operation: a DidCreationOperation which contains the
-		///   details of the new DID
+		/// * operation: a DidCreationOperation which contains the details of
+		///   the new DID
 		/// * signature: a signature over DidCreationOperation that must be
 		///   signed with the authentication key associated with the new DID
 		#[pallet::weight(T::WeightInfo::submit_did_create_operation())]
@@ -756,8 +756,8 @@ pub mod pallet {
 		/// parameters are:
 		/// * origin: the Substrate account submitting the transaction (which
 		///   can be different from the DID subject)
-		/// * operation: a DidUpdateOperation which contains the new
-		///   details of the given DID
+		/// * operation: a DidUpdateOperation which contains the new details of
+		///   the given DID
 		/// * signature: a signature over the operation that must be signed with
 		///   the authentication key associated with the new DID. In case the
 		///   authentication key is being updated, the key used to verify is the
@@ -778,13 +778,11 @@ pub mod pallet {
 			let did_details = <Did<T>>::get(&did_identifier).ok_or(<Error<T>>::DidNotPresent)?;
 
 			// Verify the signature and the nonce of the update operation.
-			Self::verify_operation_validity_for_did(&operation, &signature, &did_details)
-				.map_err(<Error<T>>::from)?;
+			Self::verify_operation_validity_for_did(&operation, &signature, &did_details).map_err(<Error<T>>::from)?;
 
 			// Generate a new DidDetails object by applying the changes in the update
 			// operation to the old object (and consuming both).
-			let new_did_details =
-				DidDetails::try_from((did_details, operation)).map_err(<Error<T>>::from)?;
+			let new_did_details = DidDetails::try_from((did_details, operation)).map_err(<Error<T>>::from)?;
 
 			log::debug!("Updating DID {:?}", did_identifier);
 			<Did<T>>::insert(&did_identifier, new_did_details);
@@ -798,27 +796,26 @@ pub mod pallet {
 		/// parameters are:
 		/// * origin: the Substrate account submitting the transaction (which
 		///   can be different from the DID subject)
-		/// * operation: a DidDeletionOperation which includes the
-		///   DID to deactivate
+		/// * operation: a DidDeletionOperation which includes the DID to
+		///   deactivate
 		/// * signature: a signature over the operation that must be signed with
 		///   the authentication key associated with the new DID.
 		#[pallet::weight(T::WeightInfo::submit_did_delete_operation())]
 		pub fn submit_did_delete_operation(
 			origin: OriginFor<T>,
-			did_deletion_operation: DidDeletionOperation<T>,
+			operation: DidDeletionOperation<T>,
 			signature: DidSignature,
 		) -> DispatchResultWithPostInfo {
 			// origin of the transaction needs to be a signed sender account
 			let sender = ensure_signed(origin)?;
 
-			let did_identifier = did_deletion_operation.get_did();
+			let did_identifier = operation.get_did();
 
 			// If specified DID does not exist, generate a DidNotPresent error.
 			let did_details = <Did<T>>::get(&did_identifier).ok_or(<Error<T>>::DidNotPresent)?;
 
 			// Verify the signature and the nonce of the delete operation.
-			Self::verify_operation_validity_for_did(&did_deletion_operation, &signature, &did_details)
-				.map_err(<Error<T>>::from)?;
+			Self::verify_operation_validity_for_did(&operation, &signature, &did_details).map_err(<Error<T>>::from)?;
 
 			log::debug!("Deleting DID {:?}", did_identifier);
 			<Did<T>>::remove(&did_identifier);
