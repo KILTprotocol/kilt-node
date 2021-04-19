@@ -3253,7 +3253,7 @@ fn check_too_small_max_revocations_submit_delegation_root_revocation_operation_s
 
 	let delegator_did = did_mock::ALICE_DID;
 	let ctype_hash = ctype_mock::get_ctype_hash(true);
-	let max_children = 1u32;
+	let max_children = 0u32;
 	let root_id = get_delegation_root_id(true);
 	let delegation_1_id = get_delegation_id(true);
 	let delegation_1_owner_did = did_mock::BOB_DID;
@@ -3476,7 +3476,7 @@ fn check_direct_owner_submit_delegation_revocation_operation_successful() {
 
 	let delegator_did = did_mock::ALICE_DID;
 	let ctype_hash = ctype_mock::get_ctype_hash(true);
-	let max_depth = 1u32;
+	let max_depth = 0u32;
 	let max_revocations = 2u32;
 	let root_id = get_delegation_root_id(true);
 	let delegation_1_id = get_delegation_id(true);
@@ -3487,7 +3487,7 @@ fn check_direct_owner_submit_delegation_revocation_operation_successful() {
 	let operation = delegation::DelegationRevocationOperation {
 		caller_did: delegation_1_owner_did.clone(),
 		delegation_id: delegation_1_id,
-		max_depth: max_depth,
+		max_parent_checks: max_depth,
 		max_revocations: max_revocations,
 		tx_counter: delegator_details.get_tx_counter_value() + 1u64,
 	};
@@ -3589,7 +3589,7 @@ fn check_parent_owner_submit_delegation_revocation_operation_successful() {
 		caller_did: delegation_1_owner_did.clone(),
 		// Removing delegation_2, a child of delegation_1
 		delegation_id: delegation_2_id,
-		max_depth: max_depth,
+		max_parent_checks: max_depth,
 		max_revocations: max_revocations,
 		tx_counter: delegator_details.get_tx_counter_value() + 1u64,
 	};
@@ -3692,7 +3692,7 @@ fn check_delegator_did_not_present_submit_delegation_revocation_operation_succes
 		caller_did: delegator_did.clone(),
 		// Removing delegation_2, a child of delegation_1
 		delegation_id: delegation_2_id,
-		max_depth: max_depth,
+		max_parent_checks: max_depth,
 		max_revocations: max_revocations,
 		tx_counter: delegator_details.get_tx_counter_value() + 1u64,
 	};
@@ -3782,7 +3782,7 @@ fn check_did_max_tx_counter_submit_delegation_revocation_operation() {
 		caller_did: delegator_did.clone(),
 		// Removing delegation_2, a child of delegation_1
 		delegation_id: delegation_2_id,
-		max_depth: max_depth,
+		max_parent_checks: max_depth,
 		max_revocations: max_revocations,
 		tx_counter: delegator_details.get_tx_counter_value(),
 	};
@@ -3872,7 +3872,7 @@ fn check_delegator_too_small_tx_counter_submit_delegation_revocation_operation()
 		caller_did: delegator_did.clone(),
 		// Removing delegation_2, a child of delegation_1
 		delegation_id: delegation_2_id,
-		max_depth: max_depth,
+		max_parent_checks: max_depth,
 		max_revocations: max_revocations,
 		tx_counter: delegator_details.get_tx_counter_value() - 1u64,
 	};
@@ -3961,7 +3961,7 @@ fn check_delegator_equal_tx_counter_submit_delegation_revocation_operation() {
 		caller_did: delegator_did.clone(),
 		// Removing delegation_2, a child of delegation_1
 		delegation_id: delegation_2_id,
-		max_depth: max_depth,
+		max_parent_checks: max_depth,
 		max_revocations: max_revocations,
 		tx_counter: delegator_details.get_tx_counter_value(),
 	};
@@ -4050,7 +4050,7 @@ fn check_delegator_too_large_tx_counter_submit_delegation_revocation_operation()
 		caller_did: delegator_did.clone(),
 		// Removing delegation_2, a child of delegation_1
 		delegation_id: delegation_2_id,
-		max_depth: max_depth,
+		max_parent_checks: max_depth,
 		max_revocations: max_revocations,
 		tx_counter: delegator_details.get_tx_counter_value() + 2u64,
 	};
@@ -4139,7 +4139,7 @@ fn check_delegator_delegation_key_not_present_submit_delegation_revocation_opera
 		caller_did: delegator_did.clone(),
 		// Removing delegation_2, a child of delegation_1
 		delegation_id: delegation_2_id,
-		max_depth: max_depth,
+		max_parent_checks: max_depth,
 		max_revocations: max_revocations,
 		tx_counter: delegator_details.get_tx_counter_value() + 1u64,
 	};
@@ -4229,7 +4229,7 @@ fn check_invalid_signature_format_submit_delegation_revocation_operation() {
 		caller_did: delegator_did.clone(),
 		// Removing delegation_2, a child of delegation_1
 		delegation_id: delegation_2_id,
-		max_depth: max_depth,
+		max_parent_checks: max_depth,
 		max_revocations: max_revocations,
 		tx_counter: delegator_details.get_tx_counter_value() + 1u64,
 	};
@@ -4319,7 +4319,7 @@ fn check_invalid_signature_submit_delegation_revocation_operation() {
 		caller_did: delegator_did.clone(),
 		// Removing delegation_2, a child of delegation_1
 		delegation_id: delegation_2_id,
-		max_depth: max_depth,
+		max_parent_checks: max_depth,
 		max_revocations: max_revocations,
 		tx_counter: delegator_details.get_tx_counter_value() + 1u64,
 	};
@@ -4407,7 +4407,7 @@ fn check_delegation_not_found_submit_delegation_revocation_operation_successful(
 	let operation = delegation::DelegationRevocationOperation {
 		caller_did: delegation_owner_did.clone(),
 		delegation_id: delegation_id,
-		max_depth: max_depth,
+		max_parent_checks: max_depth,
 		max_revocations: max_revocations,
 		tx_counter: delegator_details.get_tx_counter_value() + 1u64,
 	};
@@ -4490,7 +4490,7 @@ fn check_not_delegating_submit_delegation_revocation_operation_successful() {
 	let operation = delegation::DelegationRevocationOperation {
 		caller_did: delegation_owner_did.clone(),
 		delegation_id: delegation_id,
-		max_depth: max_depth,
+		max_parent_checks: max_depth,
 		max_revocations: max_revocations,
 		tx_counter: delegator_details.get_tx_counter_value() + 1u64,
 	};
@@ -4576,7 +4576,7 @@ fn check_parent_too_far_submit_delegation_revocation_operation_successful() {
 		caller_did: delegator_did.clone(),
 		// Root delegator tries to delete delegation 2, where root -> delegation 1 -> delegation 2
 		delegation_id: delegation_2_id,
-		max_depth: max_depth,
+		max_parent_checks: max_depth,
 		max_revocations: max_revocations,
 		tx_counter: delegator_details.get_tx_counter_value() + 1u64,
 	};
@@ -4673,7 +4673,7 @@ fn check_too_many_revocations_submit_delegation_revocation_operation_successful(
 		caller_did: delegation_1_owner_did.clone(),
 		// Delegator 1 trying to delete delegation 2
 		delegation_id: delegation_2_id,
-		max_depth: max_depth,
+		max_parent_checks: max_depth,
 		max_revocations: max_revocations,
 		tx_counter: delegator_details.get_tx_counter_value() + 1u64,
 	};

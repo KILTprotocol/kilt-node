@@ -65,7 +65,7 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn submit_delegation_root_creation_operation() -> Weight {
 		(100_067_000_u64)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	fn submit_delegation_creation_operation() -> Weight {
@@ -104,7 +104,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 impl WeightInfo for () {
 	fn submit_delegation_root_creation_operation() -> Weight {
 		(100_067_000_u64)
-			.saturating_add(RocksDbWeight::get().reads(2_u64))
+			.saturating_add(RocksDbWeight::get().reads(3_u64))
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
 	}
 	fn submit_delegation_creation_operation() -> Weight {
