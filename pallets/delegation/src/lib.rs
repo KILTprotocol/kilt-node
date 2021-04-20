@@ -770,7 +770,7 @@ impl<T: Config> Pallet<T> {
 
 	// Check if an account is the owner of the delegation or any delegation up
 	// the hierarchy (including the root), up to `max_lookups` nodes.
-	fn is_delegating(
+	pub fn is_delegating(
 		account: &T::DidIdentifier,
 		delegation: &T::DelegationNodeId,
 		max_lookups: u32,

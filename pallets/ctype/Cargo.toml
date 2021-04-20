@@ -9,6 +9,8 @@ version = "0.24.0"
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
+# Build dependencies
+
 [build-dependencies.substrate-wasm-builder-runner]
 version = "3.0.0"
 
