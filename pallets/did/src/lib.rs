@@ -170,7 +170,7 @@ impl From<sr25519::Signature> for DidSignature {
 #[derive(Clone, Copy, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
 pub enum PublicEncryptionKey {
 	/// An X25519 public key.
-	X55519([u8; 32]),
+	X25519([u8; 32]),
 }
 
 impl DidPublicKey for PublicEncryptionKey {
