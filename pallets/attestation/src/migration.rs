@@ -1,20 +1,20 @@
-// // KILT Blockchain – https://botlabs.org
-// // Copyright (C) 2019-2021 BOTLabs GmbH
+// KILT Blockchain – https://botlabs.org
+// Copyright (C) 2019-2021 BOTLabs GmbH
 
-// // The KILT Blockchain is free software: you can redistribute it and/or modify
-// // it under the terms of the GNU General Public License as published by
-// // the Free Software Foundation, either version 3 of the License, or
-// // (at your option) any later version.
+// The KILT Blockchain is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 
-// // The KILT Blockchain is distributed in the hope that it will be useful,
-// // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// // GNU General Public License for more details.
+// The KILT Blockchain is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
 
-// // You should have received a copy of the GNU General Public License
-// // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// // If you feel like getting in touch with us, you can do so at info@botlabs.org
+// If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 // use crate::*;
 // use frame_support::{
@@ -24,8 +24,8 @@
 // 	Identity, Parameter,
 // };
 // use sp_runtime::traits::{
-// 	CheckEqual, MaybeDisplay, MaybeMallocSizeOf, MaybeSerializeDeserialize, Member, SimpleBitOps,
-// };
+// 	CheckEqual, MaybeDisplay, MaybeMallocSizeOf, MaybeSerializeDeserialize,
+// Member, SimpleBitOps, };
 // use sp_std::fmt::Debug;
 
 // pub const ATTESTATION_PALLET_PREFIX: &str = "Attestation";
@@ -81,8 +81,8 @@
 // 		+ AsMut<[u8]>;
 
 // 	/// The user account identifier type for the runtime.
-// 	type AccountId: Parameter + Member + MaybeSerializeDeserialize + Debug + MaybeDisplay + Ord + Default;
-// }
+// 	type AccountId: Parameter + Member + MaybeSerializeDeserialize + Debug +
+// MaybeDisplay + Ord + Default; }
 
 // #[allow(type_alias_bounds)]
 // type Attestations<T: V23ToV24> = StorageMap<
@@ -108,8 +108,8 @@
 // }
 
 // pub fn apply<T: V23ToV24>() -> Weight {
-// 	let maybe_storage_version = <T::Module as GetPalletVersion>::storage_version();
-// 	log::info!(
+// 	let maybe_storage_version = <T::Module as
+// GetPalletVersion>::storage_version(); 	log::info!(
 // 		"Running migration for attestation with storage version {:?}",
 // 		maybe_storage_version
 // 	);
@@ -119,15 +119,15 @@
 // 			migrate_to_struct::<T>();
 // 			Weight::max_value()
 // 		}
-// 		// pallet versioning is introduced in 3.0.0, thus missing when upgrading from 2.0.0
-// 		None => {
+// 		// pallet versioning is introduced in 3.0.0, thus missing when upgrading from
+// 2.0.0 		None => {
 // 			migrate_to_struct::<T>();
 // 			Weight::max_value()
 // 		}
 // 		_ => {
 // 			log::warn!(
-// 				"Attempted to apply attestion to 0.24.0 but failed because storage version is {:?}",
-// 				maybe_storage_version
+// 				"Attempted to apply attestion to 0.24.0 but failed because storage version is
+// {:?}", 				maybe_storage_version
 // 			);
 // 			0
 // 		}
@@ -138,8 +138,8 @@
 // /// dynamic).
 // fn migrate_to_struct<T: V23ToV24>() {
 // 	let mut counter = 0;
-// 	<Attestations<T>>::translate::<Option<(T::Hash, T::AccountId, Option<T::DelegationNodeId>, bool)>, _>(
-// 		|_who, option| {
+// 	<Attestations<T>>::translate::<Option<(T::Hash, T::AccountId,
+// Option<T::DelegationNodeId>, bool)>, _>( 		|_who, option| {
 // 			counter += 1;
 // 			option.map(|(ctype_hash, attester, delegation_id, revoked)| {
 // 				Some(AttestationStruct {
@@ -159,8 +159,8 @@
 // mod tests {
 // 	use super::*;
 // 	use crate::tests::*;
-// 	use frame_support::storage::migration::{get_storage_value, put_storage_value};
-// 	use sp_core::{ed25519, Hasher, Pair};
+// 	use frame_support::storage::migration::{get_storage_value,
+// put_storage_value}; 	use sp_core::{ed25519, Hasher, Pair};
 // 	use sp_runtime::{traits::IdentifyAccount, MultiSigner};
 
 // 	#[test]
@@ -182,13 +182,14 @@
 // 			let blake_hash = sp_core::blake2_256(&[1]);
 // 			let ctype_hash: <Test as frame_system::Config>::Hash =
 // 				<Test as frame_system::Config>::Hashing::hash(b"ctype");
-// 			let pair_attester = ed25519::Pair::from_seed(&*b"Alice                           ");
-// 			let attester: <Test as frame_system::Config>::AccountId =
+// 			let pair_attester = ed25519::Pair::from_seed(&*b"Alice
+// "); 			let attester: <Test as frame_system::Config>::AccountId =
 // 				MultiSigner::from(pair_attester.public()).into_account();
-// 			let delegation_id: Option<<Test as delegation::Config>::DelegationNodeId> = None;
-// 			let revoked = false;
+// 			let delegation_id: Option<<Test as delegation::Config>::DelegationNodeId> =
+// None; 			let revoked = false;
 
-// 			let attestation_old: AttestationOld = (ctype_hash, attester.clone(), delegation_id, revoked);
+// 			let attestation_old: AttestationOld = (ctype_hash, attester.clone(),
+// delegation_id, revoked);
 
 // 			put_storage_value::<Option<AttestationOld>>(
 // 				ATTESTATION_PALLET_PREFIX.as_bytes(),

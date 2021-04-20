@@ -23,6 +23,8 @@ use sp_core::Pair;
 
 use codec::Encode;
 
+// submit_ctype_creation_operation
+
 #[test]
 fn check_successful_ctype_creation() {
 	let did_auth_key = did_mock::get_ed25519_authentication_key(true);

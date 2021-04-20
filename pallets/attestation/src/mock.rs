@@ -103,6 +103,16 @@ pub type TestHash = <Test as frame_system::Config>::Hash;
 pub type TestDelegationNodeId = <Test as delegation::Config>::DelegationNodeId;
 
 pub(crate) const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
+const DEFAULT_CLAIM_HASH_SEED: u64 = 1u64;
+const ALTERNATIVE_CLAIM_HASH_SEED: u64 = 2u64;
+
+pub fn get_claim_hash(default: bool) -> H256 {
+	if default {
+		H256::from_low_u64_be(DEFAULT_CLAIM_HASH_SEED)
+	} else {
+		H256::from_low_u64_be(ALTERNATIVE_CLAIM_HASH_SEED)
+	}
+}
 
 #[derive(Clone)]
 pub struct ExtBuilder {
@@ -130,15 +140,15 @@ impl From<delegation_mock::ExtBuilder> for ExtBuilder {
 }
 
 impl ExtBuilder {
-	pub fn with_attestations(
-		mut self,
-		attestations: Vec<(TestHash, attestation::Attestation<Test>)>,
-	) -> Self {
+	pub fn with_attestations(mut self, attestations: Vec<(TestHash, attestation::Attestation<Test>)>) -> Self {
 		self.attestations_stored = attestations;
 		self
 	}
 
-	pub fn with_delegated_attestations(mut self, delegated_attestations: Vec<(TestDelegationNodeId, Vec<TestHash>)>) -> Self {
+	pub fn with_delegated_attestations(
+		mut self,
+		delegated_attestations: Vec<(TestDelegationNodeId, Vec<TestHash>)>,
+	) -> Self {
 		self.delegated_attestations_stored = delegated_attestations;
 		self
 	}
@@ -161,9 +171,14 @@ impl ExtBuilder {
 
 		if !self.delegated_attestations_stored.is_empty() {
 			ext.execute_with(|| {
-				self.delegated_attestations_stored.iter().for_each(|delegated_attestation| {
-					attestation::DelegatedAttestations::<Test>::insert(delegated_attestation.0, delegated_attestation.1.clone());
-				})
+				self.delegated_attestations_stored
+					.iter()
+					.for_each(|delegated_attestation| {
+						attestation::DelegatedAttestations::<Test>::insert(
+							delegated_attestation.0,
+							delegated_attestation.1.clone(),
+						);
+					})
 			});
 		}
 

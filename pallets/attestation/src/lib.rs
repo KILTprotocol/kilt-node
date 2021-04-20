@@ -38,8 +38,10 @@ use codec::{Decode, Encode};
 use delegation::Permissions;
 use frame_support::ensure;
 use frame_system::{self, ensure_signed};
-use sp_std::prelude::{Clone, PartialEq, Vec};
-use sp_std::fmt::Debug;
+use sp_std::{
+	fmt::Debug,
+	prelude::{Clone, PartialEq, Vec},
+};
 
 pub use pallet::*;
 
@@ -63,7 +65,8 @@ pub struct Attestation<T: Config> {
 /// * creator_did: the DID of the attestation creator
 /// * claim_hash: the hash of the attested claim
 /// * ctype_hash: the hash of the attested claim CTYPE
-/// * delegation_id: optional ID that refers to a delegation this attestation is based on
+/// * delegation_id: optional ID that refers to a delegation this attestation is
+///   based on
 /// * tx_counter: the DID tx counter to mitigate replay attacks
 #[derive(Clone, Decode, Encode, PartialEq)]
 pub struct AttestationCreationOperation<T: Config> {
@@ -109,7 +112,9 @@ impl<T: Config> Debug for AttestationCreationOperation<T> {
 /// attacks. The struct has the following fields:
 /// * caller_did: the DID of the attestation creator
 /// * claim_hash: the hash of the claim to revoke
-/// * max_depth: max number of parent checks of the delegation node supported in this call to verify that the caller of this operation is allowed to revoke the specified node
+/// * max_depth: max number of parent checks of the delegation node supported in
+///   this call to verify that the caller of this operation is allowed to revoke
+///   the specified node
 /// * tx_counter: the DID tx counter to mitigate replay attacks
 #[derive(Clone, Decode, Encode, PartialEq)]
 pub struct AttestationRevocationOperation<T: Config> {
@@ -171,17 +176,21 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
 
-	/// Attestations: claim-hash -> (ctype-hash, attester-account, delegation-id?, revoked)?
+	/// Attestations: claim-hash -> (ctype-hash, attester-account,
+	/// delegation-id?, revoked)?
 	#[pallet::storage]
 	#[pallet::getter(fn attestations)]
-	pub type Attestations<T> =
-		StorageMap<_, Blake2_128Concat, <T as frame_system::Config>::Hash, Attestation<T>>;
+	pub type Attestations<T> = StorageMap<_, Blake2_128Concat, <T as frame_system::Config>::Hash, Attestation<T>>;
 
 	/// DelegatedAttestations: delegation-id -> [claim-hash]
 	#[pallet::storage]
 	#[pallet::getter(fn delegated_attestations)]
-	pub type DelegatedAttestations<T> =
-		StorageMap<_, Blake2_128Concat, <T as delegation::Config>::DelegationNodeId, Vec<<T as frame_system::Config>::Hash>>;
+	pub type DelegatedAttestations<T> = StorageMap<
+		_,
+		Blake2_128Concat,
+		<T as delegation::Config>::DelegationNodeId,
+		Vec<<T as frame_system::Config>::Hash>,
+	>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -210,7 +219,7 @@ pub mod pallet {
 		pub fn submit_attestation_creation_operation(
 			origin: OriginFor<T>,
 			operation: AttestationCreationOperation<T>,
-			signature: did::DidSignature
+			signature: did::DidSignature,
 		) -> DispatchResultWithPostInfo {
 			// Origin of the transaction needs to be a signed sender account
 			ensure_signed(origin)?;
@@ -228,31 +237,53 @@ pub mod pallet {
 			<did::Did<T>>::insert(&operation.caller_did, did_details);
 
 			// Check if the CTYPE exists
-			ensure!(<ctype::Ctypes<T>>::contains_key(&operation.ctype_hash), ctype::Error::<T>::CTypeNotFound);
+			ensure!(
+				<ctype::Ctypes<T>>::contains_key(&operation.ctype_hash),
+				ctype::Error::<T>::CTypeNotFound
+			);
 
 			// Check if attestation already exists
-			ensure!(!<Attestations<T>>::contains_key(&operation.claim_hash), Error::<T>::AlreadyAttested);
+			ensure!(
+				!<Attestations<T>>::contains_key(&operation.claim_hash),
+				Error::<T>::AlreadyAttested
+			);
 
 			if let Some(delegation_id) = operation.delegation_id {
 				// Check if delegation exists
-				let delegation = <delegation::Delegations<T>>::get(delegation_id).ok_or(delegation::Error::<T>::DelegationNotFound)?;
+				let delegation = <delegation::Delegations<T>>::get(delegation_id)
+					.ok_or(delegation::Error::<T>::DelegationNotFound)?;
 				// Check whether delegation has been revoked already
 				ensure!(!delegation.revoked, Error::<T>::DelegationRevoked);
 
 				// Check whether the owner of the delegation is the sender of this transaction
-				ensure!(delegation.owner.eq(&operation.caller_did), Error::<T>::NotDelegatedToAttester);
+				ensure!(
+					delegation.owner.eq(&operation.caller_did),
+					Error::<T>::NotDelegatedToAttester
+				);
 
 				// Check whether the delegation is not set up for attesting claims
-				ensure!((delegation.permissions & Permissions::ATTEST) == Permissions::ATTEST, Error::<T>::DelegationUnauthorizedToAttest);
+				ensure!(
+					(delegation.permissions & Permissions::ATTEST) == Permissions::ATTEST,
+					Error::<T>::DelegationUnauthorizedToAttest
+				);
 
 				// Check if CTYPE of the delegation is matching the CTYPE of the attestation
-				let root = <delegation::Roots<T>>::get(delegation.root_id).ok_or(delegation::Error::<T>::RootNotFound)?;
+				let root =
+					<delegation::Roots<T>>::get(delegation.root_id).ok_or(delegation::Error::<T>::RootNotFound)?;
 				ensure!(root.ctype_hash.eq(&operation.ctype_hash), Error::<T>::CTypeMismatch);
 			}
 
 			// Insert attestation
 			log::debug!("insert Attestation");
-			<Attestations<T>>::insert(&operation.claim_hash, Attestation {ctype_hash: operation.ctype_hash, attester: operation.caller_did.clone(), delegation_id: operation.delegation_id, revoked: false});
+			<Attestations<T>>::insert(
+				&operation.claim_hash,
+				Attestation {
+					ctype_hash: operation.ctype_hash,
+					attester: operation.caller_did.clone(),
+					delegation_id: operation.delegation_id,
+					revoked: false,
+				},
+			);
 
 			if let Some(delegation_id) = operation.delegation_id {
 				// If attestation is based on a delegation, store separately
@@ -262,7 +293,12 @@ pub mod pallet {
 			}
 
 			// Deposit event that attestation has beed added
-			Self::deposit_event(Event::AttestationCreated(operation.caller_did, operation.claim_hash, operation.ctype_hash, operation.delegation_id));
+			Self::deposit_event(Event::AttestationCreated(
+				operation.caller_did,
+				operation.claim_hash,
+				operation.ctype_hash,
+				operation.delegation_id,
+			));
 			Ok(().into())
 		}
 
@@ -270,7 +306,7 @@ pub mod pallet {
 		pub fn submit_attestation_revocation_operation(
 			origin: OriginFor<T>,
 			operation: AttestationRevocationOperation<T>,
-			signature: did::DidSignature
+			signature: did::DidSignature,
 		) -> DispatchResultWithPostInfo {
 			// Origin of the transaction needs to be a signed sender account
 			ensure_signed(origin)?;
@@ -293,19 +329,27 @@ pub mod pallet {
 			// Check if the attestation has already been revoked
 			ensure!(!attestation.revoked, Error::<T>::AlreadyRevoked);
 
-			// Check delegation tree if the sender of the revocation transaction is not the attester
+			// Check delegation tree if the sender of the revocation transaction is not the
+			// attester
 			if !attestation.attester.eq(&operation.caller_did) {
 				// Check whether the attestation includes a delegation
 				let delegation_id = attestation.delegation_id.ok_or(Error::<T>::UnauthorizedRevocation)?;
-				// Check whether the sender of the revocation is not a parent in the delegation hierarchy
-				ensure!(<delegation::Pallet<T>>::is_delegating(&operation.caller_did, &delegation_id, operation.max_depth)?, Error::<T>::UnauthorizedRevocation);
+				// Check whether the sender of the revocation is not a parent in the delegation
+				// hierarchy
+				ensure!(
+					<delegation::Pallet<T>>::is_delegating(&operation.caller_did, &delegation_id, operation.max_depth)?,
+					Error::<T>::UnauthorizedRevocation
+				);
 			}
 
 			log::debug!("revoking Attestation");
-			<Attestations<T>>::insert(&operation.claim_hash, Attestation {
-				revoked: true,
-				..attestation
-			});
+			<Attestations<T>>::insert(
+				&operation.claim_hash,
+				Attestation {
+					revoked: true,
+					..attestation
+				},
+			);
 
 			Self::deposit_event(Event::AttestationRevoked(operation.caller_did, operation.claim_hash));
 
