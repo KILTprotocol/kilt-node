@@ -270,13 +270,14 @@ where
 
 parameter_types! {
 	pub const MaxClaims: usize = 300;
-	pub const AvailableGenesisBalance: Balance = DOLLARS;
+	pub const UsableBalance: Balance = DOLLARS;
 }
 
 impl kilt_launch::Config for Runtime {
 	type Event = Event;
 	type MaxClaims = MaxClaims;
-	type AvailableGenesisBalance = AvailableGenesisBalance;
+	type UsableBalance = UsableBalance;
+	type WeightInfo = kilt_launch::default_weights::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {

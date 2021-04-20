@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019  BOTLabs GmbH
+// Copyright (C) 2019-2021 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,7 +20,8 @@
 //!
 //! THIS FILE WAS AUTO-GENERATED USING THE SUBSTRATE BENCHMARK CLI VERSION 3.0.0
 //! DATE: 2021-04-19, STEPS: [10, ], REPEAT: 4, LOW RANGE: [], HIGH RANGE: []
-//! EXECUTION: Some(Wasm), WASM-EXECUTION: Interpreted, CHAIN: None, DB CACHE: 128
+//! EXECUTION: Some(Wasm), WASM-EXECUTION: Interpreted, CHAIN: None, DB CACHE:
+//! 128
 
 // Executed Command:
 // /home/willi/mashnet-node/target/release/mashnet-node
@@ -37,32 +38,33 @@
 // --template
 // ../../.maintain/weight-template.hbs
 
-
 #![allow(unused_parens)]
 #![allow(unused_imports)]
 
-use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
+use frame_support::{
+	traits::Get,
+	weights::{constants::RocksDbWeight, Weight},
+};
 use sp_std::marker::PhantomData;
 
 /// Weight functions needed for kilt_launch.
 pub trait WeightInfo {
 	fn change_transfer_account() -> Weight;
-	fn force_unlock(n: u32, ) -> Weight;
+	fn force_unlock(n: u32) -> Weight;
 	fn locked_transfer() -> Weight;
 	fn migrate_genesis_account_vesting() -> Weight;
 	fn migrate_genesis_account_locking() -> Weight;
-	fn migrate_multiple_genesis_accounts_vesting(n: u32, ) -> Weight;
-	fn migrate_multiple_genesis_accounts_locking(n: u32, ) -> Weight;
+	fn migrate_multiple_genesis_accounts_vesting(n: u32) -> Weight;
+	fn migrate_multiple_genesis_accounts_locking(n: u32) -> Weight;
 }
 
 /// Weights for kilt_launch using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn change_transfer_account() -> Weight {
-		(9_919_000_u64)
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		(9_919_000_u64).saturating_add(T::DbWeight::get().writes(1_u64))
 	}
-	fn force_unlock(n: u32, ) -> Weight {
+	fn force_unlock(n: u32) -> Weight {
 		(64_756_000_u64)
 			// Standard Error: 2_445_000
 			.saturating_add((208_281_000_u64).saturating_mul(n as Weight))
@@ -86,7 +88,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(9_u64))
 			.saturating_add(T::DbWeight::get().writes(6_u64))
 	}
-	fn migrate_multiple_genesis_accounts_vesting(n: u32, ) -> Weight {
+	fn migrate_multiple_genesis_accounts_vesting(n: u32) -> Weight {
 		(189_961_000_u64)
 			// Standard Error: 2_550_000
 			.saturating_add((572_775_000_u64).saturating_mul(n as Weight))
@@ -95,7 +97,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(n as Weight)))
 	}
-	fn migrate_multiple_genesis_accounts_locking(n: u32, ) -> Weight {
+	fn migrate_multiple_genesis_accounts_locking(n: u32) -> Weight {
 		(210_912_000_u64)
 			// Standard Error: 9_494_000
 			.saturating_add((570_320_000_u64).saturating_mul(n as Weight))
@@ -109,10 +111,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 // For backwards compatibility and tests
 impl WeightInfo for () {
 	fn change_transfer_account() -> Weight {
-		(9_919_000_u64)
-			.saturating_add(RocksDbWeight::get().writes(1_u64))
+		(9_919_000_u64).saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
-	fn force_unlock(n: u32, ) -> Weight {
+	fn force_unlock(n: u32) -> Weight {
 		(64_756_000_u64)
 			// Standard Error: 2_445_000
 			.saturating_add((208_281_000_u64).saturating_mul(n as Weight))
@@ -136,7 +137,7 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(9_u64))
 			.saturating_add(RocksDbWeight::get().writes(6_u64))
 	}
-	fn migrate_multiple_genesis_accounts_vesting(n: u32, ) -> Weight {
+	fn migrate_multiple_genesis_accounts_vesting(n: u32) -> Weight {
 		(189_961_000_u64)
 			// Standard Error: 2_550_000
 			.saturating_add((572_775_000_u64).saturating_mul(n as Weight))
@@ -145,7 +146,7 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
 			.saturating_add(RocksDbWeight::get().writes((2_u64).saturating_mul(n as Weight)))
 	}
-	fn migrate_multiple_genesis_accounts_locking(n: u32, ) -> Weight {
+	fn migrate_multiple_genesis_accounts_locking(n: u32) -> Weight {
 		(210_912_000_u64)
 			// Standard Error: 9_494_000
 			.saturating_add((570_320_000_u64).saturating_mul(n as Weight))

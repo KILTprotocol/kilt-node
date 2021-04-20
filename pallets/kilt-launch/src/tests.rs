@@ -72,11 +72,11 @@ fn check_build_genesis_config() {
 			// Check balance locks
 			let pseudo_1_lock = LockedBalance::<Test> {
 				block: 100,
-				amount: 1111 - <Test as crate::Config>::AvailableGenesisBalance::get(),
+				amount: 1111 - <Test as crate::Config>::UsableBalance::get(),
 			};
 			let pseudo_2_lock = LockedBalance::<Test> {
 				block: 1337,
-				amount: 2222 - <Test as crate::Config>::AvailableGenesisBalance::get(),
+				amount: 2222 - <Test as crate::Config>::UsableBalance::get(),
 			};
 			assert_eq!(BalanceLocks::<Test>::get(&PSEUDO_1), Some(pseudo_1_lock));
 			assert_eq!(BalanceLocks::<Test>::get(&PSEUDO_2), Some(pseudo_2_lock));
@@ -96,7 +96,7 @@ fn check_migrate_single_account_locked() {
 	ExtBuilder::default().pseudos_lock_all().build().execute_with(|| {
 		let user1_locked_info = LockedBalance {
 			block: 100,
-			amount: 10_000 - <Test as crate::Config>::AvailableGenesisBalance::get(),
+			amount: 10_000 - <Test as crate::Config>::UsableBalance::get(),
 		};
 		// Migration of balance locks
 		ensure_single_migration_works(&PSEUDO_1, &USER_1, None, Some((user1_locked_info, 0)));
@@ -121,14 +121,14 @@ fn check_migrate_single_account_locked_twice() {
 	ExtBuilder::default().pseudos_lock_all().build().execute_with(|| {
 		let mut user_locked_info = LockedBalance {
 			block: 100,
-			amount: 10_000 - <Test as crate::Config>::AvailableGenesisBalance::get(),
+			amount: 10_000 - <Test as crate::Config>::UsableBalance::get(),
 		};
 		// Migrate pseudo1 lock
 		ensure_single_migration_works(&PSEUDO_1, &USER_1, None, Some((user_locked_info, 0)));
 
 		user_locked_info = LockedBalance {
 			block: 100,
-			amount: 10_000 + 300_000 - 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
+			amount: 10_000 + 300_000 - 2 * <Test as crate::Config>::UsableBalance::get(),
 		};
 		// Migrate pseudo2 lock
 		ensure_single_migration_works(
@@ -137,8 +137,8 @@ fn check_migrate_single_account_locked_twice() {
 			None,
 			Some((
 				user_locked_info,
-				// Since we migrated twice, we need to account for the extra AvailableGenesisBalance when asserting
-				<Test as crate::Config>::AvailableGenesisBalance::get(),
+				// Since we migrated twice, we need to account for the extra UsableBalance when asserting
+				<Test as crate::Config>::UsableBalance::get(),
 			)),
 		);
 
@@ -172,7 +172,7 @@ fn check_migrate_accounts_locked() {
 		// Migrate two accounts with same end block
 		let locked_info = LockedBalance {
 			block: 100,
-			amount: 10_000 + 300_000 - 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
+			amount: 10_000 + 300_000 - 2 * <Test as crate::Config>::UsableBalance::get(),
 		};
 		assert_ok!(KiltLaunch::migrate_multiple_genesis_accounts(
 			Origin::signed(TRANSFER_ACCOUNT),
@@ -200,9 +200,9 @@ fn check_migrate_accounts_locked() {
 		// Check balance migration
 		assert_balance(
 			USER_1,
-			locked_info.amount + 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
-			2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
-			2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
+			locked_info.amount + 2 * <Test as crate::Config>::UsableBalance::get(),
+			2 * <Test as crate::Config>::UsableBalance::get(),
+			2 * <Test as crate::Config>::UsableBalance::get(),
 			false,
 		);
 
@@ -215,9 +215,9 @@ fn check_migrate_accounts_locked() {
 		assert_eq!(Locks::<Test>::get(&USER_1).len(), 0);
 		assert_balance(
 			USER_1,
-			locked_info.amount + 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
-			locked_info.amount + 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
-			locked_info.amount + 2 * <Test as crate::Config>::AvailableGenesisBalance::get(),
+			locked_info.amount + 2 * <Test as crate::Config>::UsableBalance::get(),
+			locked_info.amount + 2 * <Test as crate::Config>::UsableBalance::get(),
+			locked_info.amount + 2 * <Test as crate::Config>::UsableBalance::get(),
 			true,
 		);
 	});
@@ -231,7 +231,7 @@ fn check_locked_transfer() {
 		.execute_with(|| {
 			let locked_info = LockedBalance {
 				block: 100,
-				amount: 10_000 - <Test as crate::Config>::AvailableGenesisBalance::get(),
+				amount: 10_000 - <Test as crate::Config>::UsableBalance::get(),
 			};
 			// Migration of balance locks
 			ensure_single_migration_works(&PSEUDO_1, &USER_1, None, Some((locked_info.clone(), 0)));
@@ -251,10 +251,10 @@ fn check_locked_transfer() {
 			);
 
 			// Add 1 free balance to enable to pay for tx fees
-			<<Test as pallet_vesting::Config>::Currency as Currency<<Test as frame_system::Config>::AccountId>>::make_free_balance_be(&USER_1, locked_info.amount + 1 + <Test as crate::Config>::AvailableGenesisBalance::get());
+			<<Test as pallet_vesting::Config>::Currency as Currency<<Test as frame_system::Config>::AccountId>>::make_free_balance_be(&USER_1, locked_info.amount + 1 + <Test as crate::Config>::UsableBalance::get());
 			// Cannot transfer more locked than which is locked
 			assert_noop!(
-				KiltLaunch::locked_transfer(Origin::signed(USER_1), PSEUDO_1, locked_info.amount + 1 + <Test as crate::Config>::AvailableGenesisBalance::get()),
+				KiltLaunch::locked_transfer(Origin::signed(USER_1), PSEUDO_1, locked_info.amount + 1 + <Test as crate::Config>::UsableBalance::get()),
 				Error::<Test>::InsufficientLockedBalance
 			);
 
@@ -532,7 +532,7 @@ fn check_force_unlock() {
 	ExtBuilder::default().pseudos_lock_all().build().execute_with(|| {
 		let user1_locked_info = LockedBalance {
 			block: 100,
-			amount: 10_000 - <Test as crate::Config>::AvailableGenesisBalance::get(),
+			amount: 10_000 - <Test as crate::Config>::UsableBalance::get(),
 		};
 		ensure_single_migration_works(&PSEUDO_1, &USER_1, None, Some((user1_locked_info, 0)));
 

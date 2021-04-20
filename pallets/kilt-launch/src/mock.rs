@@ -102,13 +102,13 @@ impl pallet_balances::Config for Test {
 
 parameter_types! {
 	pub const MaxClaims: usize = 4;
-	pub const AvailableGenesisBalance: Balance = 1;
+	pub const UsableBalance: Balance = 1;
 }
 
 impl kilt_launch::Config for Test {
 	type Event = Event;
 	type MaxClaims = MaxClaims;
-	type AvailableGenesisBalance = AvailableGenesisBalance;
+	type UsableBalance = UsableBalance;
 }
 
 parameter_types! {
@@ -202,7 +202,7 @@ pub fn ensure_single_migration_works(
 				let (lock, add) = locked_info.clone().expect("No vesting schedule found");
 				assert_eq!(amount, lock.amount);
 				assert_eq!(reasons, Reasons::All);
-				maybe_balance = add + <Test as crate::Config>::AvailableGenesisBalance::get();
+				maybe_balance = add + <Test as crate::Config>::UsableBalance::get();
 			}
 			_ => panic!("Unexpected balance lock id {:?}", id),
 		};
@@ -222,15 +222,15 @@ pub fn ensure_single_migration_works(
 	// most times, now should be the first block.
 	if now < 10 {
 		// locked balance should be free
-		// custom locks: + AvailableGenesisBalance
+		// custom locks: + UsableBalance
 		assert_eq!(Balances::free_balance(dest), locked_balance + maybe_balance);
 		// balance which is usable for fees
 		// vesting: locked_balance
-		// custom lock: AvailableGenesisBalance
+		// custom lock: UsableBalance
 		assert_eq!(Balances::usable_balance_for_fees(dest), fee_balance + maybe_balance);
 		// balance which is usable for anything but fees and other
 		// vesting: per_block * now
-		// locks custom locked: AvailableGenesisBalance
+		// locks custom locked: UsableBalance
 		assert_eq!(Balances::usable_balance(dest), usable_balance + maybe_balance);
 		// there should be nothing reserved
 		assert_eq!(Balances::reserved_balance(dest), 0);

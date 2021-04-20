@@ -36,6 +36,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+pub use default_weights::WeightInfo;
 #[cfg(feature = "std")]
 use frame_support::traits::GenesisBuild;
 use frame_support::{
@@ -59,12 +60,12 @@ mod mock;
 mod tests;
 
 #[cfg(feature = "runtime-benchmarks")]
-mod benchmarking;
+pub mod benchmarking;
+pub mod default_weights;
 
 pub const KILT_LAUNCH_ID: LockIdentifier = *b"kiltlnch";
 pub const VESTING_ID: LockIdentifier = *b"vesting ";
 
-// TODO: Convert all pubs to pub(crate)
 // TODO: Improve documentation for input params of extrinsics
 
 #[frame_support::pallet]
@@ -96,19 +97,10 @@ pub mod pallet {
 		/// Amount of Balance which will be made available for each account
 		/// which has either vesting or locking such that transaction fees can
 		/// be paid from this.
-		// type AvailableGenesisBalance: Get<
-		// 	<<Self as pallet_vesting::Config>::Currency as
-		// frame_support::traits::Currency< 		<Self as frame_system::Config>::AccountId,
-		// 	>>::Balance,
-		// >;
-		// Get<
-		// 	<<
-		// 		<Self as pallet_vesting::Config>
-		// 	::Currency as frame_support::traits::Currency<
-		// 		<Self as frame_system::Config>::AccountId
-		// 	>>::Balance
-		// >;
-		type AvailableGenesisBalance: Get<<Self as pallet_balances::Config>::Balance>;
+		type UsableBalance: Get<<Self as pallet_balances::Config>::Balance>;
+
+		/// Weight information for extrinsics in this pallet.
+		type WeightInfo: WeightInfo;
 	}
 
 	#[pallet::pallet]
@@ -164,7 +156,7 @@ pub mod pallet {
 						who,
 						LockedBalance::<T> {
 							block: *length,
-							amount: (*locked).saturating_sub(T::AvailableGenesisBalance::get()),
+							amount: (*locked).saturating_sub(T::UsableBalance::get()),
 						},
 					);
 					// Instead of setting the lock now, we do so in
@@ -273,22 +265,27 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_initialize(now: T::BlockNumber) -> Weight {
-			Self::unlock_balance(now)
+			Self::unlock_balance(now).into()
 		}
 	}
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		/// Enable removal of KILT balance locks via sudo
-		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::force_unlock(T::MaxClaims::get() as u32))]
 		pub fn force_unlock(origin: OriginFor<T>, block: T::BlockNumber) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
 
-			Ok(Some(Self::unlock_balance(block)).into())
+			Ok(
+				Some(<T as pallet::Config>::WeightInfo::force_unlock(Self::unlock_balance(
+					block,
+				)))
+				.into(),
+			)
 		}
 
 		/// Enable change of the transfer account via sudo
-		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::change_transfer_account())]
 		pub fn change_transfer_account(
 			origin: OriginFor<T>,
 			transfer_account: <T::Lookup as StaticLookup>::Source,
@@ -315,9 +312,9 @@ pub mod pallet {
 		/// locks when migrating. We can do so because all target accounts
 		/// are not owned by anyone and thus these cannot sign and/or call any
 		/// extrinsics.
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(9, 7))]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::migrate_genesis_account_vesting().max(<T as pallet::Config>::WeightInfo::migrate_genesis_account_locking()))]
 		#[transactional]
-		pub(super) fn migrate_genesis_account(
+		pub fn migrate_genesis_account(
 			origin: OriginFor<T>,
 			source: <T::Lookup as StaticLookup>::Source,
 			target: <T::Lookup as StaticLookup>::Source,
@@ -337,9 +334,9 @@ pub mod pallet {
 		///
 		/// See `migrate_genesis_account` for details as we run the same logic
 		/// for each account id in sources.
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(9, 7))]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::migrate_multiple_genesis_accounts_vesting(T::MaxClaims::get() as u32).max(<T as pallet::Config>::WeightInfo::migrate_multiple_genesis_accounts_locking(T::MaxClaims::get() as u32)))]
 		#[transactional]
-		pub(super) fn migrate_multiple_genesis_accounts(
+		pub fn migrate_multiple_genesis_accounts(
 			origin: OriginFor<T>,
 			sources: Vec<<T::Lookup as StaticLookup>::Source>,
 			target: <T::Lookup as StaticLookup>::Source,
@@ -353,8 +350,9 @@ pub mod pallet {
 			ensure!(sources.len() < T::MaxClaims::get(), Error::<T>::ExceedsMaxClaims);
 
 			let mut post_weight: Weight = 0;
-			for s in sources.into_iter() {
+			for s in sources.clone().into_iter() {
 				let source = T::Lookup::lookup(s)?;
+				// post_weight +=
 				post_weight += Self::migrate_user(&source, &target)?;
 			}
 
@@ -369,9 +367,9 @@ pub mod pallet {
 		/// `KILT_LAUNCH_ID`.
 		///
 		/// Calls `migrate_kilt_balance_lock` internally.
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2, 3))]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::locked_transfer())]
 		#[transactional]
-		pub(super) fn locked_transfer(
+		pub fn locked_transfer(
 			origin: OriginFor<T>,
 			target: <T::Lookup as StaticLookup>::Source,
 			amount: <T as pallet_balances::Config>::Balance,
@@ -437,7 +435,7 @@ pub mod pallet {
 
 impl<T: Config> Pallet<T> {
 	/// Remove KILT balance locks for the specified block
-	fn unlock_balance(block: T::BlockNumber) -> Weight {
+	fn unlock_balance(block: T::BlockNumber) -> u32 {
 		if let Some(unlocking_balance) = <UnlockingAt<T>>::take(block) {
 			// Remove locks for all accounts
 			for account in unlocking_balance.iter() {
@@ -446,9 +444,10 @@ impl<T: Config> Pallet<T> {
 			}
 
 			Self::deposit_event(Event::Unlocked(block, unlocking_balance.len() as u64));
-			T::DbWeight::get().reads_writes(1, (2 * unlocking_balance.len() + 1) as u64)
+			// Safe because `UnlockingAt` will be ~6 in our case
+			unlocking_balance.len() as u32
 		} else {
-			T::DbWeight::get().reads(1)
+			0
 		}
 	}
 
@@ -473,7 +472,6 @@ impl<T: Config> Pallet<T> {
 		// Set the KILT custom lock if necessary
 		post_weight += Self::migrate_kilt_balance_lock(source, target, None)?;
 
-		// TODO: Add meaningful information
 		Ok(post_weight)
 	}
 
@@ -527,9 +525,10 @@ impl<T: Config> Pallet<T> {
 				reasons,
 			);
 			Self::deposit_event(Event::AddedVesting(target.clone(), vesting.per_block, vesting.locked));
+			Ok(<T as pallet::Config>::WeightInfo::migrate_genesis_account_vesting())
+		} else {
+			Ok(T::DbWeight::get().reads(1))
 		}
-		// TODO: Add meaningful weight
-		Ok(0)
 	}
 
 	/// Set the custom KILT balance lock for the target address which should
@@ -617,8 +616,9 @@ impl<T: Config> Pallet<T> {
 			}
 
 			Self::deposit_event(Event::AddedKiltLock(target.clone(), target_amount, unlock_block));
+			Ok(<T as pallet::Config>::WeightInfo::migrate_genesis_account_locking())
+		} else {
+			Ok(T::DbWeight::get().reads(1))
 		}
-		// TODO: Add meaningful weight
-		Ok(0)
 	}
 }
