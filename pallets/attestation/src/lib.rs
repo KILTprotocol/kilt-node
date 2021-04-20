@@ -26,6 +26,9 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
+#[cfg(any(feature = "mock", test))]
+pub mod mock;
+
 pub mod migration;
 
 pub mod default_weights;
@@ -40,7 +43,7 @@ use sp_std::fmt::Debug;
 
 pub use pallet::*;
 
-#[derive(Debug, Encode, Decode, PartialEq)]
+#[derive(Clone, Debug, Encode, Decode, PartialEq)]
 pub struct Attestation<T: Config> {
 	// Hash of the CTYPE used for this attestation
 	ctype_hash: T::Hash,
@@ -203,7 +206,7 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		#[pallet::weight(<T as Config>::WeightInfo::add())]
+		#[pallet::weight(<T as Config>::WeightInfo::submit_attestation_creation_operation())]
 		pub fn submit_attestation_creation_operation(
 			origin: OriginFor<T>,
 			operation: AttestationCreationOperation<T>,
@@ -263,7 +266,7 @@ pub mod pallet {
 			Ok(().into())
 		}
 
-		#[pallet::weight(<T as Config>::WeightInfo::revoke(operation.max_depth))]
+		#[pallet::weight(<T as Config>::WeightInfo::submit_attestation_revocation_operation(operation.max_depth))]
 		pub fn submit_attestation_revocation_operation(
 			origin: OriginFor<T>,
 			operation: AttestationRevocationOperation<T>,

@@ -27,8 +27,8 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
-#[cfg(test)]
-mod mock;
+#[cfg(any(feature = "mock", test))]
+pub mod mock;
 
 pub mod migration;
 

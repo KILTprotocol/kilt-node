@@ -53,19 +53,19 @@ use sp_std::marker::PhantomData;
 
 /// Weight functions needed for attestation.
 pub trait WeightInfo {
-	fn add() -> Weight;
-	fn revoke(d: u32) -> Weight;
+	fn submit_attestation_creation_operation() -> Weight;
+	fn submit_attestation_revocation_operation(d: u32) -> Weight;
 }
 
 /// Weights for attestation using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
-	fn add() -> Weight {
+	fn submit_attestation_creation_operation() -> Weight {
 		(244_341_000_u64)
 			.saturating_add(T::DbWeight::get().reads(5_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
-	fn revoke(d: u32) -> Weight {
+	fn submit_attestation_revocation_operation(d: u32) -> Weight {
 		(150_958_000_u64)
 			// Standard Error: 244_000
 			.saturating_add((45_861_000_u64).saturating_mul(d as Weight))
@@ -77,12 +77,12 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 
 // For backwards compatibility and tests
 impl WeightInfo for () {
-	fn add() -> Weight {
+	fn submit_attestation_creation_operation() -> Weight {
 		(244_341_000_u64)
 			.saturating_add(RocksDbWeight::get().reads(5_u64))
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
 	}
-	fn revoke(d: u32) -> Weight {
+	fn submit_attestation_revocation_operation(d: u32) -> Weight {
 		(150_958_000_u64)
 			// Standard Error: 244_000
 			.saturating_add((45_861_000_u64).saturating_mul(d as Weight))

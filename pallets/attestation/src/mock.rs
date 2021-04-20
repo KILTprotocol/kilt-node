@@ -16,9 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate as delegation;
+use crate as attestation;
 use crate::*;
-use ctype::mock as ctype_mock;
+use delegation::mock as delegation_mock;
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use kilt_primitives::{AccountId, Signature};
@@ -38,6 +38,7 @@ frame_support::construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+		Attestation: attestation::{Pallet, Call, Storage, Event<T>},
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>},
 		Did: did::{Pallet, Call, Storage, Event<T>},
@@ -79,12 +80,17 @@ impl frame_system::Config for Test {
 impl Config for Test {
 	type Event = ();
 	type WeightInfo = ();
-	type DelegationNodeId = H256;
 }
 
 impl ctype::Config for Test {
 	type Event = ();
 	type WeightInfo = ();
+}
+
+impl delegation::Config for Test {
+	type Event = ();
+	type WeightInfo = ();
+	type DelegationNodeId = H256;
 }
 
 impl did::Config for Test {
@@ -93,113 +99,74 @@ impl did::Config for Test {
 	type DidIdentifier = AccountId;
 }
 
-pub type TestDelegationNodeId = <Test as Config>::DelegationNodeId;
+pub type TestHash = <Test as frame_system::Config>::Hash;
+pub type TestDelegationNodeId = <Test as delegation::Config>::DelegationNodeId;
 
 pub(crate) const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
 
 #[derive(Clone)]
 pub struct ExtBuilder {
-	ctype_builder: Option<ctype_mock::ExtBuilder>,
-	root_delegations_stored: Vec<(TestDelegationNodeId, DelegationRoot<Test>)>,
-	delegations_stored: Vec<(TestDelegationNodeId, DelegationNode<Test>)>,
-	children_stored: Vec<(TestDelegationNodeId, Vec<TestDelegationNodeId>)>,
+	delegation_builder: Option<delegation_mock::ExtBuilder>,
+	attestations_stored: Vec<(TestHash, attestation::Attestation<Test>)>,
+	delegated_attestations_stored: Vec<(TestDelegationNodeId, Vec<TestHash>)>,
 }
 
 impl Default for ExtBuilder {
 	fn default() -> Self {
 		Self {
-			ctype_builder: None,
-			root_delegations_stored: vec![],
-			delegations_stored: vec![],
-			children_stored: vec![],
+			delegation_builder: None,
+			attestations_stored: vec![],
+			delegated_attestations_stored: vec![],
 		}
 	}
 }
 
-impl From<ctype_mock::ExtBuilder> for ExtBuilder {
-	fn from(ctype_builder: ctype_mock::ExtBuilder) -> Self {
+impl From<delegation_mock::ExtBuilder> for ExtBuilder {
+	fn from(delegation_builder: delegation_mock::ExtBuilder) -> Self {
 		let mut instance = Self::default();
-		instance.ctype_builder = Some(ctype_builder);
+		instance.delegation_builder = Some(delegation_builder);
 		instance
 	}
 }
 
 impl ExtBuilder {
-	pub fn with_root_delegations(
+	pub fn with_attestations(
 		mut self,
-		root_delegations: Vec<(TestDelegationNodeId, DelegationRoot<Test>)>,
+		attestations: Vec<(TestHash, attestation::Attestation<Test>)>,
 	) -> Self {
-		self.root_delegations_stored = root_delegations;
+		self.attestations_stored = attestations;
 		self
 	}
 
-	pub fn with_delegations(mut self, delegations: Vec<(TestDelegationNodeId, DelegationNode<Test>)>) -> Self {
-		self.delegations_stored = delegations;
-		self
-	}
-
-	pub fn with_children(mut self, children: Vec<(TestDelegationNodeId, Vec<TestDelegationNodeId>)>) -> Self {
-		self.children_stored = children;
+	pub fn with_delegated_attestations(mut self, delegated_attestations: Vec<(TestDelegationNodeId, Vec<TestHash>)>) -> Self {
+		self.delegated_attestations_stored = delegated_attestations;
 		self
 	}
 
 	pub fn build(self) -> sp_io::TestExternalities {
-		let mut ext = if let Some(ctype_builder) = self.ctype_builder.clone() {
-			ctype_builder.build()
+		let mut ext = if let Some(delegation_builder) = self.delegation_builder.clone() {
+			delegation_builder.build()
 		} else {
 			let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 			sp_io::TestExternalities::new(storage)
 		};
 
-		if !self.root_delegations_stored.is_empty() {
+		if !self.attestations_stored.is_empty() {
 			ext.execute_with(|| {
-				self.root_delegations_stored.iter().for_each(|root_delegation| {
-					delegation::Roots::<Test>::insert(root_delegation.0, root_delegation.1.clone());
+				self.attestations_stored.iter().for_each(|attestation| {
+					attestation::Attestations::<Test>::insert(attestation.0, attestation.1.clone());
 				})
 			});
 		}
 
-		if !self.delegations_stored.is_empty() {
+		if !self.delegated_attestations_stored.is_empty() {
 			ext.execute_with(|| {
-				self.delegations_stored.iter().for_each(|del| {
-					delegation::Delegations::<Test>::insert(del.0, del.1.clone());
-				})
-			});
-		}
-
-		if !self.children_stored.is_empty() {
-			ext.execute_with(|| {
-				self.children_stored.iter().for_each(|child| {
-					delegation::Children::<Test>::insert(child.0, child.1.clone());
+				self.delegated_attestations_stored.iter().for_each(|delegated_attestation| {
+					attestation::DelegatedAttestations::<Test>::insert(delegated_attestation.0, delegated_attestation.1.clone());
 				})
 			});
 		}
 
 		ext
-	}
-}
-
-pub(crate) fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
-	hash.encode()
-}
-
-const DEFAULT_ROOT_ID_SEED: u64 = 1u64;
-const ALTERNATIVE_ROOT_ID_SEED: u64 = 2u64;
-const DEFAULT_DELEGATION_ID_SEED: u64 = 3u64;
-const ALTERNATIVE_DELEGATION_ID_SEED: u64 = 4u64;
-
-pub fn get_delegation_root_id(default: bool) -> H256 {
-	if default {
-		H256::from_low_u64_be(DEFAULT_ROOT_ID_SEED)
-	} else {
-		H256::from_low_u64_be(ALTERNATIVE_ROOT_ID_SEED)
-	}
-}
-
-pub fn get_delegation_id(default: bool) -> H256 {
-	if default {
-		H256::from_low_u64_be(DEFAULT_DELEGATION_ID_SEED)
-	} else {
-		H256::from_low_u64_be(ALTERNATIVE_DELEGATION_ID_SEED)
 	}
 }

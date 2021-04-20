@@ -49,6 +49,11 @@ version = "0.24.0"
 default-features = false
 path = "../did"
 
+[dependencies.kilt-primitives]
+path = "../../primitives"
+optional = true
+default-features = false
+
 # External dependencies
 
 [dependencies.bitflags]
@@ -84,16 +89,21 @@ version = "3.0.0"
 version = "0.4.14"
 default-features = false
 
+[dependencies.serde]
+version = "1.0.101"
+optional = true
+
 [dependencies.sp-core]
 branch = "rococo-v1"
 default-features = false
-git = "https://github.com/paritytech/substrate"
 optional = true
+git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
 [dependencies.sp-io]
 branch = "rococo-v1"
 default-features = false
+optional = true
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
@@ -111,6 +121,12 @@ version = "3.0.0"
 
 [features]
 default = ["std"]
+mock = [
+  "serde",
+  "kilt-primitives",
+  "sp-io",
+  "sp-core",
+]
 runtime-benchmarks = [
   "frame-benchmarking",
   "sp-core",
