@@ -52,8 +52,6 @@ fn check_no_delegation_submit_attestation_creation_operation() {
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
 	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(ctype_hash.clone(), caller_did.clone())]);
-	let builder = delegation_mock::ExtBuilder::from(builder);
-	let builder = ExtBuilder::from(builder);
 
 	let mut ext = builder.build();
 
@@ -1249,6 +1247,940 @@ fn check_root_ctype_mismatch_submit_attestation_creation_operation() {
 	});
 
 	// Verify that the DID tx counter has increased
+	let new_mock_details =
+		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+	assert_eq!(
+		new_mock_details.get_tx_counter_value(),
+		mock_did_details.get_tx_counter_value() + 1u64
+	);
+}
+
+// submit_attestation_revocation_operation
+
+#[test]
+fn check_successful_direct_attestation_submit_attestation_revocation_operation() {
+	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
+	let did_enc_key = did_mock::get_x25519_encryption_key(true);
+	let did_att_key = did_mock::get_sr25519_attestation_key(true);
+	let mut mock_did_details =
+		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
+
+	let caller_did = did_mock::ALICE_DID;
+	let claim_hash = get_claim_hash(true);
+	let ctype_hash = ctype_mock::get_ctype_hash(true);
+	let max_parent_checks = 1u32;
+	let delegation_id: Option<TestDelegationNodeId> = None;
+
+	let operation = attestation::AttestationRevocationOperation {
+		caller_did: caller_did.clone(),
+		claim_hash: claim_hash,
+		max_parent_checks: max_parent_checks,
+		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
+	};
+	let signature = did_att_key.sign(&operation.encode());
+
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(ctype_hash.clone(), caller_did.clone())]);
+	let builder = delegation_mock::ExtBuilder::from(builder);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(
+		claim_hash,
+		attestation::Attestation {
+			attester: caller_did.clone(),
+			ctype_hash: ctype_hash,
+			delegation_id: delegation_id,
+			revoked: false,
+		},
+	)]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_ok!(Attestation::submit_attestation_revocation_operation(
+			Origin::signed(DEFAULT_ACCOUNT),
+			operation.clone(),
+			did::DidSignature::from(signature)
+		));
+	});
+
+	let stored_attestation =
+		ext.execute_with(|| Attestation::attestations(claim_hash).expect("Attestation should be present on chain."));
+
+	assert_eq!(stored_attestation.revoked, true);
+
+	// Verify that the DID tx counter has increased
+	let new_attester_details =
+		ext.execute_with(|| Did::get_did(caller_did).expect("DID submitter should be present on chain."));
+	assert_eq!(
+		new_attester_details.get_tx_counter_value(),
+		mock_did_details.get_tx_counter_value() + 1u64
+	);
+}
+
+#[test]
+fn check_successful_parent_delegation_submit_attestation_revocation_operation() {
+	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
+	let did_enc_key = did_mock::get_x25519_encryption_key(true);
+	let did_att_key = did_mock::get_sr25519_attestation_key(true);
+	let mut mock_did_details =
+		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
+
+	let caller_did = did_mock::ALICE_DID;
+	let alternative_attestation_owner_did = did_mock::BOB_DID;
+	let claim_hash = get_claim_hash(true);
+	let ctype_hash = ctype_mock::get_ctype_hash(true);
+	let max_parent_checks = 1u32;
+	let root_id = delegation_mock::get_delegation_root_id(true);
+	let delegation_id: Option<TestDelegationNodeId> = Some(delegation_mock::get_delegation_id(true));
+
+	let operation = attestation::AttestationRevocationOperation {
+		caller_did: caller_did.clone(),
+		claim_hash: claim_hash,
+		max_parent_checks: max_parent_checks,
+		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
+	};
+	let signature = did_att_key.sign(&operation.encode());
+
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![
+		(caller_did.clone(), mock_did_details.clone()),
+		(alternative_attestation_owner_did.clone(), mock_did_details.clone()),
+	]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(ctype_hash.clone(), caller_did.clone())]);
+	// Add a root and a delegation of which the revoker is an owner
+	let builder = delegation_mock::ExtBuilder::from(builder)
+		.with_root_delegations(vec![(
+			root_id,
+			delegation::DelegationRoot {
+				owner: caller_did.clone(),
+				ctype_hash: ctype_hash,
+				revoked: false,
+			},
+		)])
+		.with_delegations(vec![(
+			delegation_id.unwrap(),
+			delegation::DelegationNode {
+				owner: caller_did.clone(),
+				parent: None,
+				root_id: root_id,
+				permissions: delegation::Permissions::DELEGATE,
+				revoked: false,
+			},
+		)]);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(
+		claim_hash,
+		attestation::Attestation {
+			// Attestation owner is a different entity, but main entity controls the delegation node.
+			attester: alternative_attestation_owner_did.clone(),
+			ctype_hash: ctype_hash,
+			delegation_id: delegation_id,
+			revoked: false,
+		},
+	)]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_ok!(Attestation::submit_attestation_revocation_operation(
+			Origin::signed(DEFAULT_ACCOUNT),
+			operation.clone(),
+			did::DidSignature::from(signature)
+		));
+	});
+
+	let stored_attestation =
+		ext.execute_with(|| Attestation::attestations(claim_hash).expect("Attestation should be present on chain."));
+
+	assert_eq!(stored_attestation.revoked, true);
+
+	// Verify that the DID tx counter has increased
+	let new_attester_details =
+		ext.execute_with(|| Did::get_did(caller_did).expect("DID submitter should be present on chain."));
+	assert_eq!(
+		new_attester_details.get_tx_counter_value(),
+		mock_did_details.get_tx_counter_value() + 1u64
+	);
+}
+
+#[test]
+fn check_did_not_present_submit_attestation_revocation_operation() {
+	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
+	let did_enc_key = did_mock::get_x25519_encryption_key(true);
+	let did_att_key = did_mock::get_sr25519_attestation_key(true);
+	let mut mock_did_details =
+		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
+
+	let caller_did = did_mock::ALICE_DID;
+	let alternative_did = did_mock::BOB_DID;
+	let claim_hash = get_claim_hash(true);
+	let ctype_hash = ctype_mock::get_ctype_hash(true);
+	let max_parent_checks = 1u32;
+	let delegation_id: Option<TestDelegationNodeId> = None;
+
+	let operation = attestation::AttestationRevocationOperation {
+		caller_did: alternative_did.clone(),
+		claim_hash: claim_hash,
+		max_parent_checks: max_parent_checks,
+		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
+	};
+	let signature = did_att_key.sign(&operation.encode());
+
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(ctype_hash.clone(), caller_did.clone())]);
+	let builder = delegation_mock::ExtBuilder::from(builder);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(
+		claim_hash,
+		attestation::Attestation {
+			attester: caller_did.clone(),
+			ctype_hash: ctype_hash,
+			delegation_id: delegation_id,
+			revoked: false,
+		},
+	)]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Attestation::submit_attestation_revocation_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::DidNotPresent
+		);
+	});
+}
+
+#[test]
+fn check_did_max_tx_counter_submit_attestation_revocation_operation() {
+	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
+	let did_enc_key = did_mock::get_x25519_encryption_key(true);
+	let did_att_key = did_mock::get_sr25519_attestation_key(true);
+	let mut mock_did_details =
+		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
+	mock_did_details.set_tx_counter(u64::MAX);
+
+	let caller_did = did_mock::ALICE_DID;
+	let claim_hash = get_claim_hash(true);
+	let ctype_hash = ctype_mock::get_ctype_hash(true);
+	let max_parent_checks = 1u32;
+	let delegation_id: Option<TestDelegationNodeId> = None;
+
+	let operation = attestation::AttestationRevocationOperation {
+		caller_did: caller_did.clone(),
+		claim_hash: claim_hash,
+		max_parent_checks: max_parent_checks,
+		tx_counter: mock_did_details.get_tx_counter_value(),
+	};
+	let signature = did_att_key.sign(&operation.encode());
+
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(ctype_hash.clone(), caller_did.clone())]);
+	let builder = delegation_mock::ExtBuilder::from(builder);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(
+		claim_hash,
+		attestation::Attestation {
+			attester: caller_did.clone(),
+			ctype_hash: ctype_hash,
+			delegation_id: delegation_id,
+			revoked: false,
+		},
+	)]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Attestation::submit_attestation_revocation_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::MaxTxCounterValue
+		);
+	});
+
+	// Verify that the DID tx counter has not increased
+	let new_mock_details =
+		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+	assert_eq!(
+		new_mock_details.get_tx_counter_value(),
+		mock_did_details.get_tx_counter_value()
+	);
+}
+
+#[test]
+fn check_too_small_tx_counter_submit_attestation_revocation_operation() {
+	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
+	let did_enc_key = did_mock::get_x25519_encryption_key(true);
+	let did_att_key = did_mock::get_sr25519_attestation_key(true);
+	let mut mock_did_details =
+		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
+	mock_did_details.set_tx_counter(1u64);
+
+	let caller_did = did_mock::ALICE_DID;
+	let claim_hash = get_claim_hash(true);
+	let ctype_hash = ctype_mock::get_ctype_hash(true);
+	let max_parent_checks = 1u32;
+	let delegation_id: Option<TestDelegationNodeId> = None;
+
+	let operation = attestation::AttestationRevocationOperation {
+		caller_did: caller_did.clone(),
+		claim_hash: claim_hash,
+		max_parent_checks: max_parent_checks,
+		tx_counter: mock_did_details.get_tx_counter_value() - 1u64,
+	};
+	let signature = did_att_key.sign(&operation.encode());
+
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(ctype_hash.clone(), caller_did.clone())]);
+	let builder = delegation_mock::ExtBuilder::from(builder);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(
+		claim_hash,
+		attestation::Attestation {
+			attester: caller_did.clone(),
+			ctype_hash: ctype_hash,
+			delegation_id: delegation_id,
+			revoked: false,
+		},
+	)]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Attestation::submit_attestation_revocation_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::InvalidNonce
+		);
+	});
+
+	// Verify that the DID tx counter has not increased
+	let new_mock_details =
+		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+	assert_eq!(
+		new_mock_details.get_tx_counter_value(),
+		mock_did_details.get_tx_counter_value()
+	);
+}
+
+#[test]
+fn check_equal_tx_counter_submit_attestation_revocation_operation() {
+	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
+	let did_enc_key = did_mock::get_x25519_encryption_key(true);
+	let did_att_key = did_mock::get_sr25519_attestation_key(true);
+	let mut mock_did_details =
+		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
+
+	let caller_did = did_mock::ALICE_DID;
+	let claim_hash = get_claim_hash(true);
+	let ctype_hash = ctype_mock::get_ctype_hash(true);
+	let max_parent_checks = 1u32;
+	let delegation_id: Option<TestDelegationNodeId> = None;
+
+	let operation = attestation::AttestationRevocationOperation {
+		caller_did: caller_did.clone(),
+		claim_hash: claim_hash,
+		max_parent_checks: max_parent_checks,
+		tx_counter: mock_did_details.get_tx_counter_value(),
+	};
+	let signature = did_att_key.sign(&operation.encode());
+
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(ctype_hash.clone(), caller_did.clone())]);
+	let builder = delegation_mock::ExtBuilder::from(builder);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(
+		claim_hash,
+		attestation::Attestation {
+			attester: caller_did.clone(),
+			ctype_hash: ctype_hash,
+			delegation_id: delegation_id,
+			revoked: false,
+		},
+	)]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Attestation::submit_attestation_revocation_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::InvalidNonce
+		);
+	});
+
+	// Verify that the DID tx counter has not increased
+	let new_mock_details =
+		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+	assert_eq!(
+		new_mock_details.get_tx_counter_value(),
+		mock_did_details.get_tx_counter_value()
+	);
+}
+
+#[test]
+fn check_too_large_tx_counter_submit_attestation_revocation_operation() {
+	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
+	let did_enc_key = did_mock::get_x25519_encryption_key(true);
+	let did_att_key = did_mock::get_sr25519_attestation_key(true);
+	let mut mock_did_details =
+		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
+
+	let caller_did = did_mock::ALICE_DID;
+	let claim_hash = get_claim_hash(true);
+	let ctype_hash = ctype_mock::get_ctype_hash(true);
+	let max_parent_checks = 1u32;
+	let delegation_id: Option<TestDelegationNodeId> = None;
+
+	let operation = attestation::AttestationRevocationOperation {
+		caller_did: caller_did.clone(),
+		claim_hash: claim_hash,
+		max_parent_checks: max_parent_checks,
+		tx_counter: mock_did_details.get_tx_counter_value() + 2u64,
+	};
+	let signature = did_att_key.sign(&operation.encode());
+
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(ctype_hash.clone(), caller_did.clone())]);
+	let builder = delegation_mock::ExtBuilder::from(builder);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(
+		claim_hash,
+		attestation::Attestation {
+			attester: caller_did.clone(),
+			ctype_hash: ctype_hash,
+			delegation_id: delegation_id,
+			revoked: false,
+		},
+	)]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Attestation::submit_attestation_revocation_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::InvalidNonce
+		);
+	});
+
+	// Verify that the DID tx counter has not increased
+	let new_mock_details =
+		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+	assert_eq!(
+		new_mock_details.get_tx_counter_value(),
+		mock_did_details.get_tx_counter_value()
+	);
+}
+
+#[test]
+fn check_attestation_key_not_present_submit_attestation_revocation_operation() {
+	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
+	let did_enc_key = did_mock::get_x25519_encryption_key(true);
+	let did_att_key = did_mock::get_sr25519_attestation_key(true);
+	let mock_did_details =
+		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+	// No attestation key set
+
+	let caller_did = did_mock::ALICE_DID;
+	let claim_hash = get_claim_hash(true);
+	let ctype_hash = ctype_mock::get_ctype_hash(true);
+	let max_parent_checks = 1u32;
+	let delegation_id: Option<TestDelegationNodeId> = None;
+
+	let operation = attestation::AttestationRevocationOperation {
+		caller_did: caller_did.clone(),
+		claim_hash: claim_hash,
+		max_parent_checks: max_parent_checks,
+		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
+	};
+	let signature = did_att_key.sign(&operation.encode());
+
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(ctype_hash.clone(), caller_did.clone())]);
+	let builder = delegation_mock::ExtBuilder::from(builder);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(
+		claim_hash,
+		attestation::Attestation {
+			attester: caller_did.clone(),
+			ctype_hash: ctype_hash,
+			delegation_id: delegation_id,
+			revoked: false,
+		},
+	)]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Attestation::submit_attestation_revocation_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::VerificationKeysNotPresent
+		);
+	});
+
+	// Verify that the DID tx counter has not increased
+	let new_mock_details =
+		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+	assert_eq!(
+		new_mock_details.get_tx_counter_value(),
+		mock_did_details.get_tx_counter_value()
+	);
+}
+
+#[test]
+fn check_invalid_signature_format_submit_attestation_revocation_operation() {
+	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
+	let did_enc_key = did_mock::get_x25519_encryption_key(true);
+	let did_att_key = did_mock::get_sr25519_attestation_key(true);
+	let alternative_att_key = did_mock::get_ed25519_attestation_key(true);
+	let mut mock_did_details =
+		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
+
+	let caller_did = did_mock::ALICE_DID;
+	let claim_hash = get_claim_hash(true);
+	let ctype_hash = ctype_mock::get_ctype_hash(true);
+	let max_parent_checks = 1u32;
+	let delegation_id: Option<TestDelegationNodeId> = None;
+
+	let operation = attestation::AttestationRevocationOperation {
+		caller_did: caller_did.clone(),
+		claim_hash: claim_hash,
+		max_parent_checks: max_parent_checks,
+		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
+	};
+	let signature = alternative_att_key.sign(&operation.encode());
+
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(ctype_hash.clone(), caller_did.clone())]);
+	let builder = delegation_mock::ExtBuilder::from(builder);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(
+		claim_hash,
+		attestation::Attestation {
+			attester: caller_did.clone(),
+			ctype_hash: ctype_hash,
+			delegation_id: delegation_id,
+			revoked: false,
+		},
+	)]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Attestation::submit_attestation_revocation_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::InvalidSignatureFormat
+		);
+	});
+
+	// Verify that the DID tx counter has not increased
+	let new_mock_details =
+		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+	assert_eq!(
+		new_mock_details.get_tx_counter_value(),
+		mock_did_details.get_tx_counter_value()
+	);
+}
+
+#[test]
+fn check_invalid_signature_submit_attestation_revocation_operation() {
+	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
+	let did_enc_key = did_mock::get_x25519_encryption_key(true);
+	let did_att_key = did_mock::get_sr25519_attestation_key(true);
+	let alternative_att_key = did_mock::get_sr25519_attestation_key(false);
+	let mut mock_did_details =
+		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
+
+	let caller_did = did_mock::ALICE_DID;
+	let claim_hash = get_claim_hash(true);
+	let ctype_hash = ctype_mock::get_ctype_hash(true);
+	let max_parent_checks = 1u32;
+	let delegation_id: Option<TestDelegationNodeId> = None;
+
+	let operation = attestation::AttestationRevocationOperation {
+		caller_did: caller_did.clone(),
+		claim_hash: claim_hash,
+		max_parent_checks: max_parent_checks,
+		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
+	};
+	let signature = alternative_att_key.sign(&operation.encode());
+
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(ctype_hash.clone(), caller_did.clone())]);
+	let builder = delegation_mock::ExtBuilder::from(builder);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(
+		claim_hash,
+		attestation::Attestation {
+			attester: caller_did.clone(),
+			ctype_hash: ctype_hash,
+			delegation_id: delegation_id,
+			revoked: false,
+		},
+	)]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Attestation::submit_attestation_revocation_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::InvalidSignature
+		);
+	});
+
+	// Verify that the DID tx counter has not increased
+	let new_mock_details =
+		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+	assert_eq!(
+		new_mock_details.get_tx_counter_value(),
+		mock_did_details.get_tx_counter_value()
+	);
+}
+
+#[test]
+fn check_attestation_not_present_submit_attestation_revocation_operation() {
+	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
+	let did_enc_key = did_mock::get_x25519_encryption_key(true);
+	let did_att_key = did_mock::get_sr25519_attestation_key(true);
+	let mut mock_did_details =
+		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
+
+	let caller_did = did_mock::ALICE_DID;
+	let claim_hash = get_claim_hash(true);
+	let ctype_hash = ctype_mock::get_ctype_hash(true);
+	let max_parent_checks = 1u32;
+
+	let operation = attestation::AttestationRevocationOperation {
+		caller_did: caller_did.clone(),
+		claim_hash: claim_hash,
+		max_parent_checks: max_parent_checks,
+		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
+	};
+	let signature = did_att_key.sign(&operation.encode());
+
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(ctype_hash.clone(), caller_did.clone())]);
+	// No attestation set to mock storage
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_err!(
+			Attestation::submit_attestation_revocation_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature)
+			),
+			attestation::Error::<Test>::AttestationNotFound
+		);
+	});
+
+	// Verify that the DID tx counter has increased
+	let new_mock_details =
+		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+	assert_eq!(
+		new_mock_details.get_tx_counter_value(),
+		mock_did_details.get_tx_counter_value() + 1u64
+	);
+}
+
+#[test]
+fn check_already_revoked_attestation_submit_attestation_revocation_operation() {
+	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
+	let did_enc_key = did_mock::get_x25519_encryption_key(true);
+	let did_att_key = did_mock::get_sr25519_attestation_key(true);
+	let mut mock_did_details =
+		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
+
+	let caller_did = did_mock::ALICE_DID;
+	let claim_hash = get_claim_hash(true);
+	let ctype_hash = ctype_mock::get_ctype_hash(true);
+	let max_parent_checks = 1u32;
+	let delegation_id: Option<TestDelegationNodeId> = None;
+
+	let operation = attestation::AttestationRevocationOperation {
+		caller_did: caller_did.clone(),
+		claim_hash: claim_hash,
+		max_parent_checks: max_parent_checks,
+		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
+	};
+	let signature = did_att_key.sign(&operation.encode());
+
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(ctype_hash.clone(), caller_did.clone())]);
+	let builder = delegation_mock::ExtBuilder::from(builder);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(
+		claim_hash,
+		attestation::Attestation {
+			attester: caller_did.clone(),
+			ctype_hash: ctype_hash,
+			delegation_id: delegation_id,
+			// Already revoked
+			revoked: true,
+		},
+	)]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_err!(
+			Attestation::submit_attestation_revocation_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature)
+			),
+			attestation::Error::<Test>::AlreadyRevoked
+		);
+	});
+
+	// Verify that the DID tx counter has not increased
+	let new_mock_details =
+		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+	assert_eq!(
+		new_mock_details.get_tx_counter_value(),
+		mock_did_details.get_tx_counter_value() + 1u64
+	);
+}
+
+#[test]
+fn check_unauthorised_attestation_no_delegation_submit_attestation_revocation_operation() {
+	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
+	let did_enc_key = did_mock::get_x25519_encryption_key(true);
+	let did_att_key = did_mock::get_sr25519_attestation_key(true);
+	let mut mock_did_details =
+		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
+
+	let caller_did = did_mock::ALICE_DID;
+	let alternative_did = did_mock::BOB_DID;
+	let claim_hash = get_claim_hash(true);
+	let ctype_hash = ctype_mock::get_ctype_hash(true);
+	let max_parent_checks = 1u32;
+	let delegation_id: Option<TestDelegationNodeId> = None;
+
+	let operation = attestation::AttestationRevocationOperation {
+		caller_did: caller_did.clone(),
+		claim_hash: claim_hash,
+		max_parent_checks: max_parent_checks,
+		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
+	};
+	let signature = did_att_key.sign(&operation.encode());
+
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(ctype_hash.clone(), caller_did.clone())]);
+	let builder = delegation_mock::ExtBuilder::from(builder);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(
+		claim_hash,
+		attestation::Attestation {
+			// Alternative attester ID
+			attester: alternative_did.clone(),
+			ctype_hash: ctype_hash,
+			delegation_id: delegation_id,
+			revoked: false,
+		},
+	)]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_err!(
+			Attestation::submit_attestation_revocation_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature)
+			),
+			attestation::Error::<Test>::UnauthorizedRevocation
+		);
+	});
+
+	// Verify that the DID tx counter has not increased
+	let new_mock_details =
+		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+	assert_eq!(
+		new_mock_details.get_tx_counter_value(),
+		mock_did_details.get_tx_counter_value() + 1u64
+	);
+}
+
+#[test]
+fn check_max_parent_lookups_submit_attestation_revocation_operation() {
+	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
+	let did_enc_key = did_mock::get_x25519_encryption_key(true);
+	let did_att_key = did_mock::get_sr25519_attestation_key(true);
+	let mut mock_did_details =
+		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
+
+	let caller_did = did_mock::ALICE_DID;
+	let alternative_did = did_mock::BOB_DID;
+	let claim_hash = get_claim_hash(true);
+	let ctype_hash = ctype_mock::get_ctype_hash(true);
+	let root_id = delegation_mock::get_delegation_root_id(true);
+	let max_parent_checks = 0u32;
+	let delegation_id: Option<TestDelegationNodeId> = Some(delegation_mock::get_delegation_id(true));
+
+	let operation = attestation::AttestationRevocationOperation {
+		caller_did: caller_did.clone(),
+		claim_hash: claim_hash,
+		max_parent_checks: max_parent_checks,
+		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
+	};
+	let signature = did_att_key.sign(&operation.encode());
+
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(ctype_hash.clone(), caller_did.clone())]);
+	let builder = delegation_mock::ExtBuilder::from(builder)
+		.with_root_delegations(vec![(
+			root_id,
+			delegation::DelegationRoot {
+				ctype_hash: ctype_hash,
+				owner: alternative_did.clone(),
+				revoked: false,
+			},
+		)])
+		.with_delegations(vec![(
+			delegation_id.unwrap(),
+			delegation::DelegationNode {
+				owner: caller_did.clone(),
+				parent: None,
+				root_id: root_id,
+				permissions: delegation::Permissions::ATTEST,
+				revoked: false,
+			},
+		)]);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(
+		claim_hash,
+		attestation::Attestation {
+			// Alternative attester ID
+			attester: alternative_did.clone(),
+			ctype_hash: ctype_hash,
+			delegation_id: delegation_id,
+			revoked: false,
+		},
+	)]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_err!(
+			Attestation::submit_attestation_revocation_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature)
+			),
+			delegation::Error::<Test>::MaxSearchDepthReached
+		);
+	});
+
+	// Verify that the DID tx counter has not increased
+	let new_mock_details =
+		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+	assert_eq!(
+		new_mock_details.get_tx_counter_value(),
+		mock_did_details.get_tx_counter_value() + 1u64
+	);
+}
+
+#[test]
+fn check_revoked_delegation_submit_attestation_revocation_operation() {
+	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
+	let did_enc_key = did_mock::get_x25519_encryption_key(true);
+	let did_att_key = did_mock::get_sr25519_attestation_key(true);
+	let mut mock_did_details =
+		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
+
+	let caller_did = did_mock::ALICE_DID;
+	let alternative_did = did_mock::BOB_DID;
+	let claim_hash = get_claim_hash(true);
+	let ctype_hash = ctype_mock::get_ctype_hash(true);
+	let root_id = delegation_mock::get_delegation_root_id(true);
+	let max_parent_checks = 2u32;
+	let delegation_id: Option<TestDelegationNodeId> = Some(delegation_mock::get_delegation_id(true));
+
+	let operation = attestation::AttestationRevocationOperation {
+		caller_did: caller_did.clone(),
+		claim_hash: claim_hash,
+		max_parent_checks: max_parent_checks,
+		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
+	};
+	let signature = did_att_key.sign(&operation.encode());
+
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(ctype_hash.clone(), caller_did.clone())]);
+	let builder = delegation_mock::ExtBuilder::from(builder)
+		.with_root_delegations(vec![(
+			root_id,
+			delegation::DelegationRoot {
+				ctype_hash: ctype_hash,
+				owner: alternative_did.clone(),
+				revoked: false,
+			},
+		)])
+		.with_delegations(vec![(
+			delegation_id.unwrap(),
+			delegation::DelegationNode {
+				owner: caller_did.clone(),
+				parent: None,
+				root_id: root_id,
+				permissions: delegation::Permissions::ATTEST,
+				// Delegation revoked
+				revoked: true,
+			},
+		)]);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(
+		claim_hash,
+		attestation::Attestation {
+			// Alternative attester ID
+			attester: alternative_did.clone(),
+			ctype_hash: ctype_hash,
+			delegation_id: delegation_id,
+			revoked: false,
+		},
+	)]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_err!(
+			Attestation::submit_attestation_revocation_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature)
+			),
+			attestation::Error::<Test>::UnauthorizedRevocation
+		);
+	});
+
+	// Verify that the DID tx counter has not increased
 	let new_mock_details =
 		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
 	assert_eq!(

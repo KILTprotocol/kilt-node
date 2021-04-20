@@ -112,15 +112,15 @@ impl<T: Config> Debug for AttestationCreationOperation<T> {
 /// attacks. The struct has the following fields:
 /// * caller_did: the DID of the attestation creator
 /// * claim_hash: the hash of the claim to revoke
-/// * max_depth: max number of parent checks of the delegation node supported in
-///   this call to verify that the caller of this operation is allowed to revoke
-///   the specified node
+/// * max_parent_checks: max number of parent checks of the delegation node
+///   supported in this call to verify that the caller of this operation is
+///   allowed to revoke the specified node
 /// * tx_counter: the DID tx counter to mitigate replay attacks
 #[derive(Clone, Decode, Encode, PartialEq)]
 pub struct AttestationRevocationOperation<T: Config> {
 	caller_did: T::DidIdentifier,
 	claim_hash: T::Hash,
-	max_depth: u32,
+	max_parent_checks: u32,
 	tx_counter: u64,
 }
 
@@ -145,7 +145,7 @@ impl<T: Config> Debug for AttestationRevocationOperation<T> {
 		f.debug_tuple("AttestationRevocationOperation")
 			.field(&self.caller_did)
 			.field(&self.claim_hash)
-			.field(&self.max_depth)
+			.field(&self.max_parent_checks)
 			.field(&self.tx_counter)
 			.finish()
 	}
@@ -255,7 +255,7 @@ pub mod pallet {
 				// Check whether delegation has been revoked already
 				ensure!(!delegation.revoked, Error::<T>::DelegationRevoked);
 
-				// Check whether the owner of the delegation is the sender of this transaction
+				// Check whether the owner of the delegation is the submitter of this operation
 				ensure!(
 					delegation.owner.eq(&operation.caller_did),
 					Error::<T>::NotDelegatedToAttester
@@ -302,7 +302,7 @@ pub mod pallet {
 			Ok(().into())
 		}
 
-		#[pallet::weight(<T as Config>::WeightInfo::submit_attestation_revocation_operation(operation.max_depth))]
+		#[pallet::weight(<T as Config>::WeightInfo::submit_attestation_revocation_operation(operation.max_parent_checks))]
 		pub fn submit_attestation_revocation_operation(
 			origin: OriginFor<T>,
 			operation: AttestationRevocationOperation<T>,
@@ -329,7 +329,7 @@ pub mod pallet {
 			// Check if the attestation has already been revoked
 			ensure!(!attestation.revoked, Error::<T>::AlreadyRevoked);
 
-			// Check delegation tree if the sender of the revocation transaction is not the
+			// Check delegation tree if the sender of the revocation operation is not the
 			// attester
 			if !attestation.attester.eq(&operation.caller_did) {
 				// Check whether the attestation includes a delegation
@@ -337,7 +337,11 @@ pub mod pallet {
 				// Check whether the sender of the revocation is not a parent in the delegation
 				// hierarchy
 				ensure!(
-					<delegation::Pallet<T>>::is_delegating(&operation.caller_did, &delegation_id, operation.max_depth)?,
+					<delegation::Pallet<T>>::is_delegating(
+						&operation.caller_did,
+						&delegation_id,
+						operation.max_parent_checks
+					)?,
 					Error::<T>::UnauthorizedRevocation
 				);
 			}
