@@ -31,7 +31,7 @@ fn check_successful_ctype_creation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let operation = ctype::CtypeCreationOperation {
@@ -75,7 +75,7 @@ fn check_duplicate_ctype_creation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let operation = ctype::CtypeCreationOperation {
@@ -116,7 +116,7 @@ fn check_did_not_present_ctype_creation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let operation = ctype::CtypeCreationOperation {
@@ -149,7 +149,7 @@ fn check_max_did_counter_ctype_creation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 	mock_did_details.set_tx_counter(u64::MAX);
 
@@ -191,7 +191,7 @@ fn check_smaller_did_counter_ctype_creation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 	mock_did_details.set_tx_counter(1u64);
 
@@ -233,7 +233,7 @@ fn check_equal_did_counter_ctype_creation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let operation = ctype::CtypeCreationOperation {
@@ -274,7 +274,7 @@ fn check_too_large_did_counter_ctype_creation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let operation = ctype::CtypeCreationOperation {
@@ -316,7 +316,7 @@ fn check_no_attestation_key_ctype_creation() {
 	// Created but not added to the mock DID details
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 
 	let operation = ctype::CtypeCreationOperation {
 		creator_did: did_mock::ALICE_DID,
@@ -357,7 +357,7 @@ fn check_invalid_signature_format_ctype_creation() {
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let wrong_format_att_key = did_mock::get_ed25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let operation = ctype::CtypeCreationOperation {
@@ -399,7 +399,7 @@ fn check_invalid_signature_ctype_creation() {
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let alternative_seed_att_key = did_mock::get_sr25519_attestation_key(false);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let operation = ctype::CtypeCreationOperation {

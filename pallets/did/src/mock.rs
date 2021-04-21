@@ -153,13 +153,12 @@ pub fn get_sr25519_delegation_key(default: bool) -> sr25519::Pair {
 
 pub fn generate_base_did_creation_operation(
 	did: TestDidIdentifier,
-	auth_key: did::PublicVerificationKey,
-	enc_key: did::PublicEncryptionKey,
+	new_auth_key: did::PublicVerificationKey,
 ) -> did::DidCreationOperation<Test> {
 	DidCreationOperation {
 		did,
-		new_auth_key: auth_key,
-		new_key_agreement_key: enc_key,
+		new_auth_key,
+		new_key_agreement_key: get_x25519_encryption_key(true),
 		new_attestation_key: None,
 		new_delegation_key: None,
 		new_endpoint_url: None,
@@ -183,13 +182,10 @@ pub fn generate_base_did_delete_operation(did: TestDidIdentifier) -> did::DidDel
 	DidDeletionOperation { did, tx_counter: 1 }
 }
 
-pub fn generate_mock_did_details(
-	auth_key: did::PublicVerificationKey,
-	enc_key: did::PublicEncryptionKey,
-) -> did::DidDetails {
+pub fn generate_base_did_details(auth_key: did::PublicVerificationKey) -> did::DidDetails {
 	did::DidDetails {
 		auth_key,
-		key_agreement_key: enc_key,
+		key_agreement_key: get_x25519_encryption_key(true),
 		attestation_key: None,
 		delegation_key: None,
 		endpoint_url: None,

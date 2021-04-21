@@ -33,7 +33,7 @@ fn check_no_delegation_submit_attestation_creation_operation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -86,7 +86,7 @@ fn check_with_delegation_submit_attestation_creation_operation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -166,7 +166,7 @@ fn check_did_not_present_submit_attestation_creation_operation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -227,7 +227,7 @@ fn check_did_max_tx_counter_submit_attestation_creation_operation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 	mock_did_details.set_tx_counter(u64::MAX);
 
@@ -296,7 +296,7 @@ fn check_did_too_small_tx_counter_submit_attestation_creation_operation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 	mock_did_details.set_tx_counter(1u64);
 
@@ -365,7 +365,7 @@ fn check_did_equal_tx_counter_submit_attestation_creation_operation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -433,7 +433,7 @@ fn check_did_too_large_tx_counter_submit_attestation_creation_operation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -501,7 +501,7 @@ fn check_did_attestation_key_not_present_submit_attestation_creation_operation()
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	// No attestation key added
 
 	let caller_did = did_mock::ALICE_DID;
@@ -570,7 +570,7 @@ fn check_did_invalid_signature_format_submit_attestation_creation_operation() {
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let alternative_att_key = did_mock::get_ed25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -639,7 +639,7 @@ fn check_did_invalid_signature_submit_attestation_creation_operation() {
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let alternative_att_key = did_mock::get_sr25519_attestation_key(false);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -707,7 +707,7 @@ fn check_ctype_not_present_submit_attestation_creation_operation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -776,7 +776,7 @@ fn check_duplicate_attestation_submit_attestation_creation_operation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -853,7 +853,7 @@ fn check_delegation_not_found_submit_attestation_creation_operation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -922,7 +922,7 @@ fn check_delegation_revoked_submit_attestation_creation_operation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -991,7 +991,7 @@ fn check_not_delegation_owner_submit_attestation_creation_operation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -1061,7 +1061,7 @@ fn check_unauthorised_permissions_submit_attestation_creation_operation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -1130,7 +1130,7 @@ fn check_root_not_present_submit_attestation_creation_operation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -1191,7 +1191,7 @@ fn check_root_ctype_mismatch_submit_attestation_creation_operation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -1263,7 +1263,7 @@ fn check_successful_direct_attestation_submit_attestation_revocation_operation()
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -1323,7 +1323,7 @@ fn check_successful_parent_delegation_submit_attestation_revocation_operation() 
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -1408,7 +1408,7 @@ fn check_did_not_present_submit_attestation_revocation_operation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -1459,7 +1459,7 @@ fn check_did_max_tx_counter_submit_attestation_revocation_operation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 	mock_did_details.set_tx_counter(u64::MAX);
 
@@ -1518,7 +1518,7 @@ fn check_too_small_tx_counter_submit_attestation_revocation_operation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 	mock_did_details.set_tx_counter(1u64);
 
@@ -1577,7 +1577,7 @@ fn check_equal_tx_counter_submit_attestation_revocation_operation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -1635,7 +1635,7 @@ fn check_too_large_tx_counter_submit_attestation_revocation_operation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -1693,7 +1693,7 @@ fn check_attestation_key_not_present_submit_attestation_revocation_operation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	// No attestation key set
 
 	let caller_did = did_mock::ALICE_DID;
@@ -1752,7 +1752,7 @@ fn check_invalid_signature_format_submit_attestation_revocation_operation() {
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let alternative_att_key = did_mock::get_ed25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -1811,7 +1811,7 @@ fn check_invalid_signature_submit_attestation_revocation_operation() {
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let alternative_att_key = did_mock::get_sr25519_attestation_key(false);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -1869,7 +1869,7 @@ fn check_attestation_not_present_submit_attestation_revocation_operation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -1917,7 +1917,7 @@ fn check_already_revoked_attestation_submit_attestation_revocation_operation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -1976,7 +1976,7 @@ fn check_unauthorised_attestation_no_delegation_submit_attestation_revocation_op
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -2036,7 +2036,7 @@ fn check_max_parent_lookups_submit_attestation_revocation_operation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
@@ -2115,7 +2115,7 @@ fn check_revoked_delegation_submit_attestation_revocation_operation() {
 	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_mock_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
 	let caller_did = did_mock::ALICE_DID;
