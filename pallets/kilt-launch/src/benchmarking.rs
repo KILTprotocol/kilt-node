@@ -107,7 +107,7 @@ benchmarks! {
 
 	// Worst case: UnlockingAt has MaxClaims entries
 	force_unlock {
-		let n in 1 .. T::MaxClaims::get();
+		let n in 1 .. T::MaxClaims::get() - 1;
 
 		let ((transfer, _), _, s) = genesis_setup::<T>(n).expect("Genesis setup failure");
 		whitelist_account!(transfer);
@@ -203,7 +203,7 @@ benchmarks! {
 	}
 
 	migrate_multiple_genesis_accounts_vesting {
-		let n in 1 .. T::MaxClaims::get();
+		let n in 1 .. T::MaxClaims::get() - 1;
 
 		let target: T::AccountId = account("target", 0, SEED);
 		let target_lookup: <T::Lookup as StaticLookup>::Source = as_lookup::<T>(target.clone());
@@ -221,7 +221,7 @@ benchmarks! {
 	}
 
 	migrate_multiple_genesis_accounts_locking {
-		let n in 1 .. T::MaxClaims::get();
+		let n in 1 .. T::MaxClaims::get() - 1;
 
 		let target: T::AccountId = account("target", 0, SEED);
 		let target_lookup: <T::Lookup as StaticLookup>::Source = as_lookup::<T>(target.clone());

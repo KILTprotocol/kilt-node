@@ -254,7 +254,7 @@ fn testnet_genesis(
 			balance_locks: airdrop_accounts
 				.iter()
 				.cloned()
-				.map(|(who, amount, _, locking_length)| (who.to_owned(), locking_length * MONTHS, amount))
+				.map(|(who, amount, _, locking_length)| (who, locking_length * MONTHS, amount))
 				.collect(),
 			vesting: airdrop_accounts
 				.iter()

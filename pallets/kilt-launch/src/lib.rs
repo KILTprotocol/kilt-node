@@ -539,7 +539,6 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::locked_transfer())]
 		#[transactional]
-		// #[cfg(feature = "post-sudo-removal")]
 		pub fn locked_transfer(
 			origin: OriginFor<T>,
 			target: <T::Lookup as StaticLookup>::Source,
@@ -562,7 +561,7 @@ pub mod pallet {
 			);
 
 			let locks = Locks::<T>::get(&source);
-			ensure!(locks.len() > 0, Error::<T>::ExpectedLocks);
+			ensure!(!locks.is_empty(), Error::<T>::ExpectedLocks);
 
 			if let Some(lock) = locks
 				.iter()
@@ -696,10 +695,7 @@ impl<T: Config> Pallet<T> {
 			let now = <frame_system::Pallet<T>>::block_number();
 			let locked_now = vesting.locked_at::<<T as pallet_vesting::Config>::BlockNumberToBalance>(now);
 			<<T as pallet_vesting::Config>::Currency as LockableCurrency<T::AccountId>>::set_lock(
-				VESTING_ID,
-				target,
-				locked_now.into(),
-				reasons,
+				VESTING_ID, target, locked_now, reasons,
 			);
 			Self::deposit_event(Event::AddedVesting(target.clone(), vesting.per_block, vesting.locked));
 			Ok(<T as pallet::Config>::WeightInfo::migrate_genesis_account_vesting())
