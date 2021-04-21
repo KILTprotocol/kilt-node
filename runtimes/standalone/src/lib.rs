@@ -269,7 +269,7 @@ where
 }
 
 parameter_types! {
-	pub const MaxClaims: usize = 300;
+	pub const MaxClaims: u32 = 300;
 	pub const UsableBalance: Balance = DOLLARS;
 }
 

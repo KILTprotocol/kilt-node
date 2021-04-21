@@ -157,8 +157,8 @@ pub mod pallet {
 		/// Note: Benchmarks will need to be re-run and weights adjusted if this
 		/// changes.
 		// FIXME: Why does this not work?
-		// #[pallet::constant]
-		type MaxClaims: Get<usize>;
+		#[pallet::constant]
+		type MaxClaims: Get<u32>;
 
 		/// Amount of Balance which will be made available for each account
 		/// which has either vesting or locking such that transaction fees can
@@ -373,7 +373,7 @@ pub mod pallet {
 		/// - Kills: UnlockingAt (if N > 0), Locks (if N > 0), BalanceLocks (if
 		///   N > 0)
 		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::force_unlock(T::MaxClaims::get() as u32))]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::force_unlock(T::MaxClaims::get()))]
 		pub fn force_unlock(origin: OriginFor<T>, block: T::BlockNumber) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
 
@@ -486,7 +486,7 @@ pub mod pallet {
 		/// - Kills (for sources): Locks, Balance, Vesting (if any source is
 		///   vesting), BalanceLocks (if any source is locking)
 		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::migrate_multiple_genesis_accounts_vesting(T::MaxClaims::get() as u32).max(<T as pallet::Config>::WeightInfo::migrate_multiple_genesis_accounts_locking(T::MaxClaims::get() as u32)))]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::migrate_multiple_genesis_accounts_vesting(T::MaxClaims::get()).max(<T as pallet::Config>::WeightInfo::migrate_multiple_genesis_accounts_locking(T::MaxClaims::get())))]
 		#[transactional]
 		pub fn migrate_multiple_genesis_accounts(
 			origin: OriginFor<T>,
@@ -499,7 +499,10 @@ pub mod pallet {
 			// The extrinsic has to be called by the TransferAccount
 			ensure!(Some(who) == <TransferAccount<T>>::get(), Error::<T>::Unauthorized);
 
-			ensure!(sources.len() < T::MaxClaims::get(), Error::<T>::ExceedsMaxClaims);
+			ensure!(
+				sources.len() < T::MaxClaims::get() as usize,
+				Error::<T>::ExceedsMaxClaims
+			);
 
 			let mut post_weight: Weight = 0;
 			for s in sources.clone().into_iter() {
