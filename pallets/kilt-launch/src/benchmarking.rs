@@ -20,7 +20,7 @@ use super::*;
 
 #[allow(unused)]
 use crate::{BalanceLocks, BalanceOf, LockedBalance, Pallet as KiltLaunch, KILT_LAUNCH_ID};
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, vec};
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, vec, whitelist_account};
 use frame_support::inherent::Vec;
 use frame_system::{Pallet as System, RawOrigin};
 use pallet_vesting::{Vesting, VestingInfo};
@@ -107,10 +107,10 @@ benchmarks! {
 
 	// Worst case: UnlockingAt has MaxClaims entries
 	force_unlock {
-		// let n in 1 .. T::MaxClaims::get() as u32;
-		let n in 1 .. 2;
+		let n in 1 .. T::MaxClaims::get();
 
 		let ((transfer, _), _, s) = genesis_setup::<T>(n).expect("Genesis setup failure");
+		whitelist_account!(transfer);
 		let mut c = 0;
 
 		// Migrate balance locks 1 by 1 to fill UnlockingAt
@@ -129,6 +129,7 @@ benchmarks! {
 	// Worst case: target already has locked balance pre-transfer, source still has locked balance left post-transfer
 	locked_transfer {
 		let ((transfer, _), _, s) = genesis_setup::<T>(3).expect("Genesis setup failure");
+		whitelist_account!(transfer);
 		let mut locked_lookups: Vec<<T::Lookup as StaticLookup>::Source> = s.into_iter().map(|(_, lookup)| lookup).collect();
 		let locked_lookup = locked_lookups.split_off(2);
 
@@ -171,6 +172,7 @@ benchmarks! {
 		let target_lookup: <T::Lookup as StaticLookup>::Source = as_lookup::<T>(target.clone());
 
 		let ((transfer, transfer_lookup), s, _) = genesis_setup::<T>(1).expect("Genesis setup failure");
+		whitelist_account!(transfer);
 		let (source, source_lookup) = s.get(0).expect("Locking source should not be empty").clone();
 	}: migrate_genesis_account(RawOrigin::Signed(transfer), source_lookup.clone(), target_lookup)
 	verify {
@@ -188,6 +190,7 @@ benchmarks! {
 		let target_lookup: <T::Lookup as StaticLookup>::Source = as_lookup::<T>(target.clone());
 
 		let ((transfer, transfer_lookup), _, s) = genesis_setup::<T>(1).expect("Genesis setup failure");
+		whitelist_account!(transfer);
 		let (source, source_lookup) = s.get(0).expect("Locking source should not be empty").clone();
 	}: migrate_genesis_account(RawOrigin::Signed(transfer), source_lookup.clone(), target_lookup)
 	verify {
@@ -200,8 +203,7 @@ benchmarks! {
 	}
 
 	migrate_multiple_genesis_accounts_vesting {
-		// let n in 1 .. T::MaxClaims::get() as u32;
-		let n in 1 .. 2;
+		let n in 1 .. T::MaxClaims::get();
 
 		let target: T::AccountId = account("target", 0, SEED);
 		let target_lookup: <T::Lookup as StaticLookup>::Source = as_lookup::<T>(target.clone());
@@ -219,13 +221,13 @@ benchmarks! {
 	}
 
 	migrate_multiple_genesis_accounts_locking {
-		// let n in 1 .. T::MaxClaims::get() as u32;
-		let n in 1 .. 2;
+		let n in 1 .. T::MaxClaims::get();
 
 		let target: T::AccountId = account("target", 0, SEED);
 		let target_lookup: <T::Lookup as StaticLookup>::Source = as_lookup::<T>(target.clone());
 
 		let ((transfer, transfer_lookup), _, s) = genesis_setup::<T>(n).expect("Genesis setup failure");
+		whitelist_account!(transfer);
 		let source_lookups: Vec<<T::Lookup as StaticLookup>::Source> = s.into_iter().map(|(_, lookup)| lookup).collect();
 	}: migrate_multiple_genesis_accounts(RawOrigin::Signed(transfer), source_lookups.clone(), target_lookup)
 	verify {

@@ -626,6 +626,8 @@ impl_runtime_apis! {
 				// System Events
 				hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7")
 					.to_vec().into(),
+				// KiltLaunch transfer account
+				hex_literal::hex!("6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c").to_vec().into(),
 			];
 
 			let mut batches = Vec::<BenchmarkBatch>::new();
@@ -637,9 +639,9 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, attestation, Attestation);
 			add_benchmark!(params, batches, ctype, Ctype);
 			add_benchmark!(params, batches, delegation, Delegation);
-			add_benchmark!(params, batches, pallet_vesting, Vesting);
-			add_benchmark!(params, batches, kilt_launch, KiltLaunch);
 			// add_benchmark!(params, batches, did, Did);
+			add_benchmark!(params, batches, kilt_launch, KiltLaunch);
+			add_benchmark!(params, batches, pallet_vesting, Vesting);
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
 			Ok(batches)

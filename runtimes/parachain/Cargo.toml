@@ -99,6 +99,7 @@ runtime-benchmarks = [
   "ctype/runtime-benchmarks",
   "did/runtime-benchmarks",
   "delegation/runtime-benchmarks",
+  "kilt-launch/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-collective/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
