@@ -18,21 +18,89 @@
 
 //! # KILT Launch Pallet
 //!
-//! A simple pallet providing means of setting up custom KILT balance locks and
+//! A simple pallet providing means of setting up KILT balance locks and
 //! vesting schedules for unowned accounts in the genesis block. These should
 //! later be migrated to user-owned accounts via the extrinsic
-//! `migrate_genesis_account`.
+//! `migrate_genesis_account` which has to be signed by a specific account
+//! called `TransferAccount`. The latter is set also set in the genesis block
+//! and can be changed by calling the sudo extrinsic `change_transfer_account`.
+//!
+//! - [`Config`]
+//! - [`Call`]
+//! - [`Pallet`]
+//!
+//! ## Overview
+//!
+//! The Balances pallet provides functions for:
+//!
+//! - Setting vesting information and KILT balance lock for unowned accounts in
+//!   genesis block.
+//! - Migrating vesting/KILT balance lock from unowned accounts to user-owned
+//!   accounts.
+//! - Transfer locked tokens from user-owned account to another. NOTE: This will
+//!   be made available shortly before we remove the sudo key.
+//! - Forcely (requires sudo) changing the `TransferAccount`.
+//! - Forcely (requires sudo) removing the KILT balance lock.
+//!
+//! ### Terminology
+//!
+//! - **Lock:** A freeze on a specified amount of an account's free balance
+//!   until a specified block number. Multiple
+//! locks always operate over the same funds, so they "overlay" rather than
+//! "stack".
+//!
+//! - **KILT balance lock:** A Lock with a KILT specific identifier which is
+//!   automatically removed when reaching the specified block number.
+//!
+//! - **Unowned account:** An endowed account for which potentially vesting or
+//!   the KILT balance lock is set up in the genesis block.
+//!
+//! - **User-owned account:** A regular account which was created by an entity
+//!   which wants to claim their tokens (potentially with vesting/KILT balance
+//!   lock) from an unowned account.
+//!
+//! ## Interface
 //!
 //! ### Dispatchable Functions
 //!
-//! - `migrate_genesis_account` - Migrate vesting or the KILT custom lock from
+//! - `migrate_genesis_account` - Migrate vesting or the KILT balance lock from
 //!   an unowned account to a user-owned account. Requires signature of a
 //!   special account `TransferAccount` which does not have any other super
 //!   powers.
+//! - `migrate_multiple_genesis_accounts` - Migrate vesting or the KILT balance
+//!   lock from a list of unowned accounts to the same targed user-owned
+//!   account. Requires signature of a special account `TransferAccount` which
+//!   does not have any other super powers.
+//! - `locked_transfer` - Transfer locked tokens from one user-owned account to
+//!   another user-owned account. This will be made available shortly before
+//!   removing the sudo key because we the purpose of the lock is that the
+//!   amount is not transferrable at all.
 //! - `change_transfer_account` - Change the transfer account. Can only be
 //!   called by sudo.
 //! - `force_unlock` - Remove all locks for a given block. Can only be called by
 //!   sudo.
+//!
+//! ## Genesis config
+//!
+//! The KiltLaunch pallet depends on the [`GenesisConfig`].
+//!
+//! ## Assumptions
+//!
+//! * All accounts provided with balance and potentially vesting or a KILT
+//!   balance lock in the genesis block are not owned by anyone and have to be
+//!   migrated to accounts which are owned by users.
+//! * All unowned accounts have either vesting, the KILT balance lock or neither
+//!   of both. This assumption is neither checked, nor forced, nor does any code
+//!   break if it does not hold true.
+//! * Vesting starts at genesis block for all unowned addresses which should be
+//!   migrated to user-owned accounts. This assumption is checked during
+//!   migration.
+//! * All KILT balance locks end at the same block for all unowned addresses
+//!   which should be migrated to user-owned accounts. This assumption is
+//!   checked during migration and locked transfer.
+//! * The total number of accounts for which a KILT balance lock is set up is at
+//!   most `MaxClaims`, for us it will be ~6. This assumption is not checked
+//!   when appending to `UnlockedAt`.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -65,8 +133,6 @@ pub mod default_weights;
 
 pub const KILT_LAUNCH_ID: LockIdentifier = *b"kiltlnch";
 pub const VESTING_ID: LockIdentifier = *b"vesting ";
-
-// TODO: Improve documentation for input params of extrinsics
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -239,26 +305,44 @@ pub mod pallet {
 	#[pallet::metadata(T::BlockNumber = "BlockNumber", T::AccountId = "AccountId", T::Balance = "Balance")]
 	#[pallet::generate_deposit(pub fn deposit_event)]
 	pub enum Event<T: Config> {
-		// A KILT balance lock has been removed in the corresponding block. \[block, len\]
+		/// A KILT balance lock has been removed in the corresponding block.
+		/// \[block, len\]
 		Unlocked(T::BlockNumber, u64),
-		// An account transfered their locked balance to another account. \[from, value, target\]
+		/// An account transfered their locked balance to another account.
+		/// \[from, value, target\]
 		LockedTransfer(T::AccountId, T::Balance, T::AccountId),
-		// A KILT balance lock has been set. \[who, value, until\]
+		/// A KILT balance lock has been set. \[who, value, until\]
 		AddedKiltLock(T::AccountId, T::Balance, T::BlockNumber),
-		// Vesting has been added to an account. \[who, per_block, total\]
+		/// Vesting has been added to an account. \[who, per_block, total\]
 		AddedVesting(T::AccountId, BalanceOf<T>, BalanceOf<T>),
 	}
 
 	#[pallet::error]
 	pub enum Error<T> {
+		/// The signing account is not the transfer account.
 		Unauthorized,
+		/// The source address has a balance lock and thus cannot be migrated.
 		UnexpectedLocks,
+		/// The source and destination address have limits for their custom KILT
+		/// balance lock and thus cannot be merged. Should never be thrown.
 		ConflictingLockingBlocks,
+		/// The source and destination address differ in their vesting starting
+		/// blocks and thus cannot be merged. Should never be thrown.
 		ConflictingVestingStarts,
+		/// When migrating multiple accounts to the same target, the size of the
+		/// list of source addresses should never exceed `MaxClaims`.
 		ExceedsMaxClaims,
+		/// The source address has less balance available than the locked amount
+		/// which should be transferred in `locked_transfer`.
 		InsufficientBalance,
+		/// The source address has less locked balance than the amount which
+		/// should be transferred in `locked_transfer`.
 		InsufficientLockedBalance,
+		/// The source address does not have KILT balance lock which is
+		/// required for `locked_transfer`.
 		BalanceLockNotFound,
+		/// The source address does not have any balance lock at all which is
+		/// required for `locked_transfer`.
 		ExpectedLocks,
 	}
 
@@ -271,7 +355,24 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		/// Enable removal of KILT balance locks via sudo
+		/// Forcely remove KILT balance locks via sudo for the specified block
+		/// number.
+		///
+		/// The dispatch origin must be Root.
+		///
+		/// Emits `Unlocked`.
+		///
+		/// # <weight>
+		/// - The transaction's complexity is proportional to the size of
+		///   storage entries in `UnlockingAt` (N) which is practically uncapped
+		///   but in theory it should be `MaxClaims` at most.
+		/// ---------
+		/// Weight: O(N) where N is the number of accounts for which the lock
+		/// will be removed for the given block.
+		/// - Reads: UnlockingAt, [Origin Account]
+		/// - Kills: UnlockingAt (if N > 0), Locks (if N > 0), BalanceLocks (if
+		///   N > 0)
+		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::force_unlock(T::MaxClaims::get() as u32))]
 		pub fn force_unlock(origin: OriginFor<T>, block: T::BlockNumber) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
@@ -284,7 +385,15 @@ pub mod pallet {
 			)
 		}
 
-		/// Enable change of the transfer account via sudo
+		/// Forcely change the transfer account to the specified account.
+		///
+		/// The dispatch origin must be Root.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account]
+		/// - Writes: TransferAccount
+		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::change_transfer_account())]
 		pub fn change_transfer_account(
 			origin: OriginFor<T>,
@@ -298,20 +407,43 @@ pub mod pallet {
 			Ok(None.into())
 		}
 
-		/// Transfer tokens to an account owned by the claimer.
+		/// Transfer tokens and vesting information or the KILT balance lock
+		/// from an unowned source address to an account owned by the target.
 		///
-		/// If the source account has vesting or a custom lock enabled,
-		/// everything is migrated automatically. Additionally, we unlock the
-		/// balance which can already be unlocked from vesting. This should
-		/// enable the user to pay the transaction fees for the next call of
-		/// `vest` which is always required to be explicitly called in order to
-		/// unlock balance from vesting.
+		/// If vesting info or a KILT balance lock has been set up for the
+		/// source account in the genesis block via `GenesisBuild`, then
+		/// the corresponding locked/vested information and balance is migrated
+		/// automatically. Please note that even though this extrinsic supports
+		/// migrating both the KILT balance lock as well as vesting in one call,
+		/// all source accounts should only contain either a KILT balance lock
+		/// or vesting.
 		///
-		/// Note: Setting the custom lock actually only occurs in this call (and
-		/// not when building the genesis block) to avoid overhead from handling
-		/// locks when migrating. We can do so because all target accounts
-		/// are not owned by anyone and thus these cannot sign and/or call any
-		/// extrinsics.
+		/// Additionally, for vesting we already unlock the
+		/// usable balance until the current block. This should enable the user
+		/// to pay the transaction fees for the next call of `vest` which is
+		/// always required to be explicitly called in order to unlock (more)
+		/// balance from vesting.
+		///
+		/// NOTE: Setting the KILT balance lock actually only occurs in this
+		/// call (and not when building the genesis block in `GenesisBuild`) to
+		/// avoid overhead from handling locks when migrating. We can do so
+		/// because all target accounts are not owned by anyone and thus these
+		/// cannot sign and/or call any extrinsics.
+		///
+		/// The dispatch origin must be TransferAccount.
+		///
+		/// Emits either `AddedVesting` or `AddedKiltLock`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], TransferAccount, Locks, Balance, Vesting,
+		///   BalanceLocks
+		/// - Writes: Locks, Balance, Vesting (if source is vesting),
+		///   BalanceLocks (if source is locking), UnlockingAt (if source is
+		///   locking)
+		/// - Kills (for source): Locks, Balance, Vesting (if source is
+		///   vesting), BalanceLocks (if source is locking)
+		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::migrate_genesis_account_vesting().max(<T as pallet::Config>::WeightInfo::migrate_genesis_account_locking()))]
 		#[transactional]
 		pub fn migrate_genesis_account(
@@ -320,20 +452,40 @@ pub mod pallet {
 			target: <T::Lookup as StaticLookup>::Source,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
-			let source = T::Lookup::lookup(source)?;
-			let target = T::Lookup::lookup(target)?;
 
 			// The extrinsic has to be called by the TransferAccount
 			ensure!(Some(who) == <TransferAccount<T>>::get(), Error::<T>::Unauthorized);
 
+			let source = T::Lookup::lookup(source)?;
+			let target = T::Lookup::lookup(target)?;
+
 			Ok(Some(Self::migrate_user(&source, &target)?).into())
 		}
 
-		/// Transfer all balances, vesting and custom locks for multiple source
-		/// addresses to the same target address.
+		/// Transfer all balances, vesting information and KILT balance locks
+		/// from multiple source addresses to the same target address.
 		///
 		/// See `migrate_genesis_account` for details as we run the same logic
-		/// for each account id in sources.
+		/// for each source address.
+		///
+		/// The dispatch origin must be TransferAccount.
+		///
+		/// Emits N events which are either `AddedVesting` or `AddedKiltLock`.
+		///
+		/// # <weight>
+		/// - The transaction's complexity is proportional to the size of
+		///   `sources` (N) which is capped at CompactAssignments::LIMIT
+		///   (MaxClaims)
+		/// ---------
+		/// Weight: O(N) where N is the number of source addresses.
+		/// - Reads: [Origin Account], TransferAccount, Locks, Balance, Vesting,
+		///   BalanceLocks
+		/// - Writes: Locks, Balance, Vesting (if any source is vesting),
+		///   BalanceLocks (if aby source is locking), UnlockingAt (if any
+		///   source is locking)
+		/// - Kills (for sources): Locks, Balance, Vesting (if any source is
+		///   vesting), BalanceLocks (if any source is locking)
+		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::migrate_multiple_genesis_accounts_vesting(T::MaxClaims::get() as u32).max(<T as pallet::Config>::WeightInfo::migrate_multiple_genesis_accounts_locking(T::MaxClaims::get() as u32)))]
 		#[transactional]
 		pub fn migrate_multiple_genesis_accounts(
@@ -352,7 +504,6 @@ pub mod pallet {
 			let mut post_weight: Weight = 0;
 			for s in sources.clone().into_iter() {
 				let source = T::Lookup::lookup(s)?;
-				// post_weight +=
 				post_weight += Self::migrate_user(&source, &target)?;
 			}
 
@@ -367,6 +518,17 @@ pub mod pallet {
 		/// `KILT_LAUNCH_ID`.
 		///
 		/// Calls `migrate_kilt_balance_lock` internally.
+		///
+		/// Emits `LockedTransfer` and (if target does not have KILT balance
+		/// lockp prior to transfer) `AddedKiltLock`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Locks, Balance, BalanceLocks, UnlockingAt
+		/// - Writes: Locks, Balance, BalanceLocks, UnlockingAt
+		/// - Kills (if source transfers all locked balance): Locks,
+		///   BalanceLocks, UnlockingAt
+		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::locked_transfer())]
 		#[transactional]
 		pub fn locked_transfer(
@@ -452,12 +614,12 @@ impl<T: Config> Pallet<T> {
 	}
 
 	/// Transfers all balance of the source to the target address and sets up
-	/// vesting or the custom KILT balance lock if any of the two were set up
+	/// vesting or the KILT balance lock if any of the two were set up
 	/// for the source address.
 	///
 	/// Note: Expects the source address to be an unowned address which was set
-	/// up in the Genesis block and should be claimed by a user to migrate to
-	/// their account.
+	/// up in the fenesis block via `GenesisBuild` and should be claimed by a
+	/// user to migrate to their account.
 	fn migrate_user(source: &T::AccountId, target: &T::AccountId) -> Result<Weight, DispatchError> {
 		// There should be no locks for the source address
 		ensure!(Locks::<T>::get(source).len().is_zero(), Error::<T>::UnexpectedLocks);
@@ -475,13 +637,17 @@ impl<T: Config> Pallet<T> {
 		Ok(post_weight)
 	}
 
-	/// Migrate the vesting schedule from one account to another if it was set
-	/// in the GenesisBlock and set the corresponding vesting lock.
+	/// Migrate the vesting schedule from one account to another, if it was set
+	/// in the genesis block via `GenesisBuild`, and set the corresponding
+	/// vesting lock.
 	///
-	/// We already unlock all available funds until the current block.
+	/// We already unlock all available funds between the starting and the
+	/// current block. This enables the user to be able to pay for transactions.
+	/// One of these would be `pallet_vesting::vest()` which has to be called
+	/// actively to unlock more of the vested funds.
 	fn migrate_vesting(source: &T::AccountId, target: &T::AccountId) -> Result<Weight, DispatchError> {
 		if let Some(source_vesting) = Vesting::<T>::take(source) {
-			// Check for an already existing vesting schedule on the target account
+			// Check for an already existing vesting schedule for the target account
 			// which would be the case if the claimer requests migration from multiple
 			// source accounts to the same target
 			let vesting = if let Some(VestingInfo {
@@ -531,17 +697,17 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
-	/// Set the custom KILT balance lock for the target address which should
+	/// Set the KILT balance lock for the target address which should
 	/// always be a user-owned account address.
 	///
 	/// Can be called during the migration of unowned "genesis" addresses to
 	/// user-owned account addresses in `migrate_user` as well when an account
-	/// wants to transfer their locked tokens to another oner in
+	/// wants to transfer their locked tokens to another account in
 	/// `locked_transfer`.
 	fn migrate_kilt_balance_lock(
 		source: &T::AccountId,
 		target: &T::AccountId,
-		// Only used for `locked_transfer`
+		// Only used for `locked_transfer`, e.g., it is `None` for migration
 		max_amount: Option<<T as pallet_balances::Config>::Balance>,
 	) -> Result<Weight, DispatchError> {
 		if let Some(LockedBalance::<T> {
@@ -553,11 +719,11 @@ impl<T: Config> Pallet<T> {
 			// Otherwise, this will always be the source's locked amount
 			let max_add_amount = source_amount.min(max_amount.unwrap_or(source_amount));
 
-			// Check for an already existing custom KILT balance lock on the target
+			// Check for an already existing KILT balance lock on the target
 			// account which would be the case if the claimer requests migration from
 			// multiple source accounts to the same target
 			let target_amount = if let Some(target_lock) = <BalanceLocks<T>>::take(&target) {
-				// Should never throw because there is a single locking periods (6 months)
+				// Should never throw because there is a single locking period (6 months)
 				ensure!(target_lock.block == unlock_block, Error::<T>::ConflictingLockingBlocks);
 
 				// We don't need to append `UnlockingAt` because we require both locks to end at
