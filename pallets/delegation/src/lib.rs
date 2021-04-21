@@ -787,7 +787,7 @@ impl<T: Config> Pallet<T> {
 		// It should be changed in the future to stop when a matching node is found,
 		// after we ensure there is only one delegation
 		if delegation_node.owner.eq(account) && !delegation_node.revoked {
-			return Ok(true);
+			Ok(true)
 		} else if let Some(parent) = delegation_node.parent {
 			// This case should never happen as we check in the beginning that max_lookups >
 			// 0

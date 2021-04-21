@@ -145,9 +145,10 @@ impl Default for ExtBuilder {
 
 impl From<ctype_mock::ExtBuilder> for ExtBuilder {
 	fn from(ctype_builder: ctype_mock::ExtBuilder) -> Self {
-		let mut instance = Self::default();
-		instance.ctype_builder = Some(ctype_builder);
-		instance
+		Self {
+			ctype_builder: Some(ctype_builder),
+			..Default::default()
+		}
 	}
 }
 

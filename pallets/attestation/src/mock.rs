@@ -134,9 +134,10 @@ impl Default for ExtBuilder {
 
 impl From<delegation_mock::ExtBuilder> for ExtBuilder {
 	fn from(delegation_builder: delegation_mock::ExtBuilder) -> Self {
-		let mut instance = Self::default();
-		instance.delegation_builder = Some(delegation_builder);
-		instance
+		Self {
+			delegation_builder: Some(delegation_builder),
+			..Default::default()
+		}
 	}
 }
 
