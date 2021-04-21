@@ -94,6 +94,7 @@ impl did::Config for Test {
 }
 
 pub type TestDelegationNodeId = <Test as Config>::DelegationNodeId;
+pub type TestDidIdentifier = <Test as did::Config>::DidIdentifier;
 
 #[cfg(test)]
 pub(crate) const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
@@ -122,6 +123,76 @@ pub fn get_delegation_id(default: bool) -> H256 {
 #[cfg(test)]
 pub(crate) fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
 	hash.encode()
+}
+
+pub fn generate_base_delegation_root_creation_operation(
+	root_id: TestDelegationNodeId,
+	root_node: DelegationRoot<Test>
+) -> DelegationRootCreationOperation<Test> {
+	DelegationRootCreationOperation {
+		caller_did: root_node.owner,
+		ctype_hash: root_node.ctype_hash,
+		root_id: root_id,
+		tx_counter: 1u64,
+	}
+}
+
+pub fn generate_base_delegation_creation_operation(
+	delegator_did: TestDidIdentifier,
+	delegation_id: TestDelegationNodeId,
+	delegate_signature: did::DidSignature,
+	delegation_node: DelegationNode<Test>
+) -> DelegationCreationOperation<Test> {
+	DelegationCreationOperation {
+		caller_did: delegator_did,
+		delegate_did: delegation_node.owner,
+		delegate_signature: delegate_signature,
+		delegation_id: delegation_id,
+		parent_id: delegation_node.parent,
+		root_id: delegation_node.root_id,
+		permissions: delegation_node.permissions,
+		tx_counter: 1u64,
+	}
+}
+
+pub fn generate_base_delegation_root_revocation_operation(
+	root_id: TestDelegationNodeId,
+	root_node: DelegationRoot<Test>
+) -> DelegationRootRevocationOperation<Test> {
+	DelegationRootRevocationOperation {
+		caller_did: root_node.owner,
+		root_id: root_id,
+		max_children: 1u32,
+		tx_counter: 1u64,
+	}
+}
+
+pub fn generate_base_delegation_revocation_operation(delegation_id: TestDelegationNodeId, delegation_node: DelegationNode<Test>) -> DelegationRevocationOperation<Test> {
+	DelegationRevocationOperation {
+		caller_did: delegation_node.owner,
+		delegation_id: delegation_id,
+		max_parent_checks: 1u32,
+		max_revocations: 1u32,
+		tx_counter: 1u64,
+	}
+}
+
+pub fn generate_base_delegation_root(owner: TestDidIdentifier) -> DelegationRoot<Test> {
+	DelegationRoot {
+		owner: owner,
+		ctype_hash: ctype_mock::get_ctype_hash(true),
+		revoked: false,
+	}
+}
+
+pub fn generate_base_delegation_node(root_id: TestDelegationNodeId, owner: TestDidIdentifier) -> DelegationNode<Test> {
+	DelegationNode {
+		owner: owner,
+		parent: None,
+		root_id: root_id,
+		permissions: Permissions::DELEGATE,
+		revoked: false,
+	}
 }
 
 #[derive(Clone)]

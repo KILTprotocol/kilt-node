@@ -153,9 +153,9 @@ impl ExtBuilder {
 	}
 }
 
-pub fn generate_base_ctype_creation_operation(did: TestDidIdentifier) -> CtypeCreationOperation<Test> {
+pub fn generate_base_ctype_creation_operation(creator: TestDidIdentifier) -> CtypeCreationOperation<Test> {
 	CtypeCreationOperation {
-		creator_did: did,
+		creator_did: creator,
 		hash: get_ctype_hash(true),
 		tx_counter: 1u64,
 	}

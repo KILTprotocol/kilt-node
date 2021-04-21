@@ -466,17 +466,10 @@ pub mod pallet {
 			// Origin of the transaction needs to be a signed sender account
 			ensure_signed(origin)?;
 
-			let mut did_details = <did::Did<T>>::get(&operation.caller_did).ok_or(<did::Error<T>>::DidNotPresent)?;
-
-			// Verify both tx counter and signature validity
-			did::pallet::Pallet::verify_operation_validity_for_did(&operation, &signature, &did_details)
+			// Check if DID exists, if counter is valid, if signature is valid, and increase
+			// DID tx counter
+			did::pallet::Pallet::verify_operation_validity_and_increase_did_nonce(&operation, &signature)
 				.map_err(<did::Error<T>>::from)?;
-
-			// Update tx counter in DID details and save to DID pallet
-			did_details
-				.increase_tx_counter()
-				.expect("Increasing DID tx counter should be a safe operation.");
-			<did::Did<T>>::insert(&operation.caller_did, did_details);
 
 			// Check if a root with the given id already exists
 			ensure!(
@@ -521,17 +514,10 @@ pub mod pallet {
 			// Origin of the transaction needs to be a signed sender account
 			ensure_signed(origin)?;
 
-			let mut did_details = <did::Did<T>>::get(&operation.caller_did).ok_or(<did::Error<T>>::DidNotPresent)?;
-
-			// Verify both tx counter and signature validity
-			did::pallet::Pallet::verify_operation_validity_for_did(&operation, &signature, &did_details)
+			// Check if DID exists, if counter is valid, if signature is valid, and increase
+			// DID tx counter
+			did::pallet::Pallet::verify_operation_validity_and_increase_did_nonce(&operation, &signature)
 				.map_err(<did::Error<T>>::from)?;
-
-			// Update tx counter in DID details and save to DID pallet
-			did_details
-				.increase_tx_counter()
-				.expect("Increasing DID tx counter should be a safe operation.");
-			<did::Did<T>>::insert(&operation.caller_did, did_details);
 
 			// Retrieve delegate DID details for signature verification
 			let delegate_did_details =
@@ -652,17 +638,10 @@ pub mod pallet {
 			// Origin of the transaction needs to be a signed sender account
 			ensure_signed(origin)?;
 
-			let mut did_details = <did::Did<T>>::get(&operation.caller_did).ok_or(<did::Error<T>>::DidNotPresent)?;
-
-			// Verify both tx counter and signature validity
-			did::pallet::Pallet::verify_operation_validity_for_did(&operation, &signature, &did_details)
+			// Check if DID exists, if counter is valid, if signature is valid, and increase
+			// DID tx counter
+			did::pallet::Pallet::verify_operation_validity_and_increase_did_nonce(&operation, &signature)
 				.map_err(<did::Error<T>>::from)?;
-
-			// Update tx counter in DID details and save to DID pallet
-			did_details
-				.increase_tx_counter()
-				.expect("Increasing DID tx counter should be a safe operation.");
-			<did::Did<T>>::insert(&operation.caller_did, did_details);
 
 			// Check if root node exists
 			let mut root = <Roots<T>>::get(&operation.root_id).ok_or(Error::<T>::RootNotFound)?;
@@ -705,17 +684,10 @@ pub mod pallet {
 			// Origin of the transaction needs to be a signed sender account
 			ensure_signed(origin)?;
 
-			let mut did_details = <did::Did<T>>::get(&operation.caller_did).ok_or(<did::Error<T>>::DidNotPresent)?;
-
-			// Verify both tx counter and signature validity
-			did::pallet::Pallet::verify_operation_validity_for_did(&operation, &signature, &did_details)
+			// Check if DID exists, if counter is valid, if signature is valid, and increase
+			// DID tx counter
+			did::pallet::Pallet::verify_operation_validity_and_increase_did_nonce(&operation, &signature)
 				.map_err(<did::Error<T>>::from)?;
-
-			// Update tx counter in DID details and save to DID pallet
-			did_details
-				.increase_tx_counter()
-				.expect("Increasing DID tx counter should be a safe operation.");
-			<did::Did<T>>::insert(&operation.caller_did, did_details);
 
 			// Check if a delegation node with the given identifier already exists
 			ensure!(
