@@ -828,15 +828,32 @@ pub mod pallet {
 
 impl<T: Config> Pallet<T> {
 	/// Verify the validity (i.e., nonce and signature) of a generic
-	/// DidOperation. This function expects a storage entry
-	/// as parameter and will not read from storage itself. The parameters
-	/// are:
-	/// * did_operation: the refernce to the operation which validity is to be
+	/// DidOperation and, if valid, update the DID state with the latest nonce.
+	/// The parameters are:
+	/// * operation: the reference to the operation which validity is to be
 	///   verified
 	/// * signature: a reference to the signature
-	/// * did_details: a reference to an instance of DidDetails as returned by
-	///   the pallet storage
-	pub fn verify_operation_validity_for_did<O: DidOperation<T>>(
+	/// * did: the identifier to verify the operation signature for
+	pub fn verify_operation_validity_and_increase_did_nonce<O: DidOperation<T>>(
+		operation: &O,
+		signature: &DidSignature,
+	) -> Result<(), DidError> {
+		let mut did_details =
+			<Did<T>>::get(&operation.get_did()).ok_or(DidError::StorageError(StorageError::DidNotPresent))?;
+
+		Self::verify_operation_validity_for_did(operation, &signature, &did_details)?;
+
+		// Update tx counter in DID details and save to DID pallet
+		did_details
+			.increase_tx_counter()
+			.expect("Increasing DID tx counter should be a safe operation.");
+		<Did<T>>::insert(&operation.get_did(), did_details);
+
+		Ok(())
+	}
+
+	// Internally verifies operation nonce and operation signature
+	fn verify_operation_validity_for_did<O: DidOperation<T>>(
 		operation: &O,
 		signature: &DidSignature,
 		did_details: &DidDetails,
@@ -874,6 +891,7 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
+	// Verifies a generic payload signature
 	pub fn verify_payload_signature_with_did_key_type(
 		payload: &Payload,
 		signature: &DidSignature,

@@ -729,7 +729,7 @@ fn check_invalid_signature_did_deletion() {
 	});
 }
 
-// Internal function: verify_operation_validity_for_did
+// Internal function: verify_operation_validity_and_increase_did_nonce
 
 #[test]
 fn check_authentication_successful_operation_verification() {
@@ -748,12 +748,20 @@ fn check_authentication_successful_operation_verification() {
 		.build();
 
 	ext.execute_with(|| {
-		assert_ok!(Did::verify_operation_validity_for_did::<TestDIDOperation>(
-			&operation,
-			&did::DidSignature::from(signature),
-			&mock_did
-		));
+		assert_ok!(
+			Did::verify_operation_validity_and_increase_did_nonce::<TestDIDOperation>(
+				&operation,
+				&did::DidSignature::from(signature)
+			)
+		);
 	});
+
+	// Verify that the DID tx counter has increased
+	let did_details = ext.execute_with(|| Did::get_did(&operation.did).expect("DID should be present on chain."));
+	assert_eq!(
+		did_details.get_tx_counter_value(),
+		mock_did.get_tx_counter_value() + 1u64
+	);
 }
 
 #[test]
@@ -775,12 +783,20 @@ fn check_attestation_successful_operation_verification() {
 		.build();
 
 	ext.execute_with(|| {
-		assert_ok!(Did::verify_operation_validity_for_did::<TestDIDOperation>(
-			&operation,
-			&did::DidSignature::from(signature),
-			&mock_did
-		));
+		assert_ok!(
+			Did::verify_operation_validity_and_increase_did_nonce::<TestDIDOperation>(
+				&operation,
+				&did::DidSignature::from(signature)
+			)
+		);
 	});
+
+	// Verify that the DID tx counter has increased
+	let did_details = ext.execute_with(|| Did::get_did(&operation.did).expect("DID should be present on chain."));
+	assert_eq!(
+		did_details.get_tx_counter_value(),
+		mock_did.get_tx_counter_value() + 1u64
+	);
 }
 
 #[test]
@@ -801,11 +817,45 @@ fn check_delegation_successful_operation_verification() {
 		.build();
 
 	ext.execute_with(|| {
-		assert_ok!(Did::verify_operation_validity_for_did::<TestDIDOperation>(
-			&operation,
-			&did::DidSignature::from(signature),
-			&mock_did
-		));
+		assert_ok!(
+			Did::verify_operation_validity_and_increase_did_nonce::<TestDIDOperation>(
+				&operation,
+				&did::DidSignature::from(signature)
+			)
+		);
+	});
+
+	// Verify that the DID tx counter has increased
+	let did_details = ext.execute_with(|| Did::get_did(&operation.did).expect("DID should be present on chain."));
+	assert_eq!(
+		did_details.get_tx_counter_value(),
+		mock_did.get_tx_counter_value() + 1u64
+	);
+}
+
+#[test]
+fn check_did_not_present_operation_verification() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let del_key = get_ed25519_delegation_key(true);
+	let mut mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
+	mock_did.delegation_key = Some(did::PublicVerificationKey::from(del_key.public()));
+	let operation = TestDIDOperation {
+		did: ALICE_DID,
+		verification_key_type: did::DidVerificationKeyType::CapabilityDelegation,
+		tx_counter: mock_did.last_tx_counter + 1,
+	};
+	let signature = del_key.sign(&operation.encode());
+
+	let mut ext = ExtBuilder::default().build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::verify_operation_validity_and_increase_did_nonce::<TestDIDOperation>(
+				&operation,
+				&did::DidSignature::from(signature)
+			),
+			did::DidError::StorageError(did::StorageError::DidNotPresent)
+		);
 	});
 }
 
@@ -827,14 +877,17 @@ fn check_max_tx_counter_operation_verification() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::verify_operation_validity_for_did::<TestDIDOperation>(
+			Did::verify_operation_validity_and_increase_did_nonce::<TestDIDOperation>(
 				&operation,
-				&did::DidSignature::from(signature),
-				&mock_did
+				&did::DidSignature::from(signature)
 			),
 			did::DidError::StorageError(did::StorageError::MaxTxCounterValue)
 		);
 	});
+
+	// Verify that the DID tx counter has not increased
+	let did_details = ext.execute_with(|| Did::get_did(&operation.did).expect("DID should be present on chain."));
+	assert_eq!(did_details.get_tx_counter_value(), mock_did.get_tx_counter_value());
 }
 
 #[test]
@@ -855,14 +908,17 @@ fn check_smaller_counter_operation_verification() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::verify_operation_validity_for_did::<TestDIDOperation>(
+			Did::verify_operation_validity_and_increase_did_nonce::<TestDIDOperation>(
 				&operation,
-				&did::DidSignature::from(signature),
-				&mock_did
+				&did::DidSignature::from(signature)
 			),
 			did::DidError::SignatureError(did::SignatureError::InvalidNonce)
 		);
 	});
+
+	// Verify that the DID tx counter has not increased
+	let did_details = ext.execute_with(|| Did::get_did(&operation.did).expect("DID should be present on chain."));
+	assert_eq!(did_details.get_tx_counter_value(), mock_did.get_tx_counter_value());
 }
 
 #[test]
@@ -882,14 +938,17 @@ fn check_equal_counter_operation_verification() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::verify_operation_validity_for_did::<TestDIDOperation>(
+			Did::verify_operation_validity_and_increase_did_nonce::<TestDIDOperation>(
 				&operation,
-				&did::DidSignature::from(signature),
-				&mock_did
+				&did::DidSignature::from(signature)
 			),
 			did::DidError::SignatureError(did::SignatureError::InvalidNonce)
 		);
 	});
+
+	// Verify that the DID tx counter has not increased
+	let did_details = ext.execute_with(|| Did::get_did(&operation.did).expect("DID should be present on chain."));
+	assert_eq!(did_details.get_tx_counter_value(), mock_did.get_tx_counter_value());
 }
 
 #[test]
@@ -909,14 +968,17 @@ fn check_too_large_counter_operation_verification() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::verify_operation_validity_for_did::<TestDIDOperation>(
+			Did::verify_operation_validity_and_increase_did_nonce::<TestDIDOperation>(
 				&operation,
-				&did::DidSignature::from(signature),
-				&mock_did
+				&did::DidSignature::from(signature)
 			),
 			did::DidError::SignatureError(did::SignatureError::InvalidNonce)
 		);
 	});
+
+	// Verify that the DID tx counter has not increased
+	let did_details = ext.execute_with(|| Did::get_did(&operation.did).expect("DID should be present on chain."));
+	assert_eq!(did_details.get_tx_counter_value(), mock_did.get_tx_counter_value());
 }
 
 #[test]
@@ -938,14 +1000,17 @@ fn check_verification_key_not_present_operation_verification() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::verify_operation_validity_for_did::<TestDIDOperation>(
+			Did::verify_operation_validity_and_increase_did_nonce::<TestDIDOperation>(
 				&operation,
-				&did::DidSignature::from(signature),
-				&mock_did
+				&did::DidSignature::from(signature)
 			),
 			did::DidError::StorageError(did::StorageError::DidKeyNotPresent(verification_key_required.clone()))
 		);
 	});
+
+	// Verify that the DID tx counter has not increased
+	let did_details = ext.execute_with(|| Did::get_did(&operation.did).expect("DID should be present on chain."));
+	assert_eq!(did_details.get_tx_counter_value(), mock_did.get_tx_counter_value());
 }
 
 #[test]
@@ -968,14 +1033,17 @@ fn check_invalid_signature_format_operation_verification() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::verify_operation_validity_for_did::<TestDIDOperation>(
+			Did::verify_operation_validity_and_increase_did_nonce::<TestDIDOperation>(
 				&operation,
-				&did::DidSignature::from(signature),
-				&mock_did
+				&did::DidSignature::from(signature)
 			),
 			did::DidError::SignatureError(did::SignatureError::InvalidSignatureFormat)
 		);
 	});
+
+	// Verify that the DID tx counter has not increased
+	let did_details = ext.execute_with(|| Did::get_did(&operation.did).expect("DID should be present on chain."));
+	assert_eq!(did_details.get_tx_counter_value(), mock_did.get_tx_counter_value());
 }
 
 #[test]
@@ -998,14 +1066,17 @@ fn check_invalid_signature_operation_verification() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::verify_operation_validity_for_did::<TestDIDOperation>(
+			Did::verify_operation_validity_and_increase_did_nonce::<TestDIDOperation>(
 				&operation,
-				&did::DidSignature::from(signature),
-				&mock_did
+				&did::DidSignature::from(signature)
 			),
 			did::DidError::SignatureError(did::SignatureError::InvalidSignature)
 		);
 	});
+
+	// Verify that the DID tx counter has not increased
+	let did_details = ext.execute_with(|| Did::get_did(&operation.did).expect("DID should be present on chain."));
+	assert_eq!(did_details.get_tx_counter_value(), mock_did.get_tx_counter_value());
 }
 
 // Internal function: HttpUrl try_from
