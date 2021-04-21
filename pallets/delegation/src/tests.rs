@@ -558,583 +558,592 @@ fn check_submit_delegation_no_parent_creation_operation_successful() {
 	);
 }
 
-// #[test]
-// fn check_submit_delegation_with_parent_creation_operation_successful() {
-// 	let delegator_auth_key = did_mock::get_ed25519_authentication_key(true);
-// 	let delegator_del_key = did_mock::get_sr25519_delegation_key(true);
-// 	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
-
-// 	let mut delegator_details =
-// 		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegator_auth_key.public()));
-// 	delegator_details.delegation_key = Some(did::PublicVerificationKey::from(delegator_del_key.public()));
-
-// 	let delegate_details =
-// 		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegate_auth_key.public()));
-
-// 	let delegator_did = did_mock::ALICE_DID;
-// 	let delegate_did = did_mock::BOB_DID;
-// 	let (root_id, root_node) = (
-// 		get_delegation_root_id(true),
-// 		generate_base_delegation_root(delegator_did.clone()),
-// 	);
-// 	let (parent_delegation_id, parent_delegation_node) = (
-// 		get_delegation_id(true),
-// 		generate_base_delegation_node(delegator_did.clone()),
-// 	);
-// 	let (delegation_id, mut delegation_node) =(
-// 		get_delegation_id(false),
-// 		generate_base_delegation_node(delegate_did.clone()),
-// 	);
-// 	delegation_node.parent = Some(parent_delegation_id);
-
-// 	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
-// 		&delegation_id,
-// 		&delegation_node.root_id,
-// 		&delegation_node.parent,
-// 		&delegation_node.permissions,
-// 	))));
-
-// 	let operation = generate_base_delegation_creation_operation(
-// 		delegator_did.clone(),
-// 		delegate_signature.clone(),
-// 		delegation_node.clone(),
-// 	);
-// 	let signature = delegator_del_key.sign(&operation.encode());
-
-// 	let builder = did_mock::ExtBuilder::default().with_dids(vec![
-// 		(delegator_did.clone(), delegator_details.clone()),
-// 		(delegate_did.clone(), delegate_details.clone()),
-// 	]);
-// 	let builder =
-// 		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
-// 	let builder = ExtBuilder::from(builder)
-// 		.with_root_delegations(vec![(root_id, root_node.clone())])
-// 		.with_delegations(vec![(parent_delegation_id, parent_delegation_node.clone())]);
-
-// 	let mut ext = builder.build();
-
-// 	ext.execute_with(|| {
-// 		assert_ok!(Delegation::submit_delegation_creation_operation(
-// 			Origin::signed(DEFAULT_ACCOUNT),
-// 			operation.clone(),
-// 			did::DidSignature::from(signature)
-// 		));
-// 	});
-
-// 	let stored_delegation = ext.execute_with(|| {
-// 		Delegation::delegations(&operation.delegation_id).expect("Delegation should be present on chain.")
-// 	});
-
-// 	assert_eq!(stored_delegation.root_id, operation.root_id);
-// 	assert_eq!(stored_delegation.parent, operation.parent_id);
-// 	assert_eq!(stored_delegation.owner, operation.delegate_did);
-// 	assert_eq!(stored_delegation.permissions, operation.permissions);
-// 	assert_eq!(stored_delegation.revoked, false);
-
-// 	// Verify that the parent has the new delegation among its children
-// 	let stored_parent_children = ext.execute_with(|| {
-// 		Delegation::children(&operation.parent_id.unwrap())
-// 			.expect("Delegation parent children should be present on chain.")
-// 	});
-
-// 	assert_eq!(stored_parent_children, vec![delegation_id]);
-
-// 	// Verify that the DID tx counter has increased
-// 	let new_delegator_details =
-// 		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
-// 	assert_eq!(
-// 		new_delegator_details.get_tx_counter_value(),
-// 		delegator_details.get_tx_counter_value() + 1u64
-// 	);
-// }
-
-// #[test]
-// fn check_delegator_did_not_found_submit_delegation_creation_operation() {
-// 	let delegator_auth_key = did_mock::get_ed25519_authentication_key(true);
-// 	let delegator_del_key = did_mock::get_sr25519_delegation_key(true);
-// 	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
-
-// 	let mut delegator_details =
-// 		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegator_auth_key.public()));
-// 	delegator_details.delegation_key = Some(did::PublicVerificationKey::from(delegator_del_key.public()));
-
-// 	let delegate_details =
-// 		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegate_auth_key.public()));
-
-// 	let delegator_did = did_mock::ALICE_DID;
-// 	let alternative_did = did_mock::CHARLIE_DID;
-// 	let delegate_did = did_mock::BOB_DID;
-// 	let (root_id, root_node) = (
-// 		get_delegation_root_id(true),
-// 		generate_base_delegation_root(alternative_did.clone()),
-// 	);
-// 	let (delegation_id, delegation_node) = (
-// 		get_delegation_id(true),
-// 		generate_base_delegation_node(delegate_did.clone()),
-// 	);
-
-// 	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
-// 		&delegation_id,
-// 		&delegation_node.root_id,
-// 		&delegation_node.parent,
-// 		&delegation_node.permissions,
-// 	))));
-
-// 	let operation = generate_base_delegation_creation_operation(
-// 		delegator_did.clone(),
-// 		delegate_did.clone(),
-// 		delegate_signature.clone(),
-// 	);
-// 	let signature = delegator_del_key.sign(&operation.encode());
-
-// 	let builder = did_mock::ExtBuilder::default().with_dids(vec![
-// 		(alternative_did.clone(), delegator_details.clone()),
-// 		(delegate_did.clone(), delegate_details.clone()),
-// 	]);
-// 	let builder = ctype_mock::ExtBuilder::from(builder)
-// 		.with_ctypes(vec![(root_node.ctype_hash.clone(), alternative_did.clone())]);
-// 	let builder = ExtBuilder::from(builder).with_root_delegations(vec![(root_id, root_node.clone())]);
-
-// 	let mut ext = builder.build();
-
-// 	ext.execute_with(|| {
-// 		assert_noop!(
-// 			Delegation::submit_delegation_creation_operation(
-// 				Origin::signed(DEFAULT_ACCOUNT),
-// 				operation.clone(),
-// 				did::DidSignature::from(signature)
-// 			),
-// 			did::Error::<Test>::DidNotPresent
-// 		);
-// 	});
-// }
-
-// #[test]
-// fn check_delegator_max_tx_counter_value_submit_delegation_creation_operation() {
-// 	let delegator_auth_key = did_mock::get_ed25519_authentication_key(true);
-// 	let delegator_del_key = did_mock::get_sr25519_delegation_key(true);
-// 	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
-
-// 	let mut delegator_details =
-// 		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegator_auth_key.public()));
-// 	delegator_details.delegation_key = Some(did::PublicVerificationKey::from(delegator_del_key.public()));
-// 	delegator_details.set_tx_counter(u64::MAX);
-
-// 	let delegate_details =
-// 		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegate_auth_key.public()));
-
-// 	let delegator_did = did_mock::ALICE_DID;
-// 	let delegate_did = did_mock::BOB_DID;
-// 	let (root_id, root_node) = (
-// 		get_delegation_root_id(true),
-// 		generate_base_delegation_root(delegator_did.clone()),
-// 	);
-// 	let (delegation_id, delegation_node) = (
-// 		get_delegation_id(true),
-// 		generate_base_delegation_node(delegate_did.clone()),
-// 	);
-
-// 	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
-// 		&delegation_id,
-// 		&delegation_node.root_id,
-// 		&delegation_node.parent,
-// 		&delegation_node.permissions,
-// 	))));
-
-// 	let operation = generate_base_delegation_creation_operation(
-// 		delegator_did.clone(),
-// 		delegate_did.clone(),
-// 		delegate_signature.clone(),
-// 	);
-// 	let signature = delegator_del_key.sign(&operation.encode());
-
-// 	let builder = did_mock::ExtBuilder::default().with_dids(vec![
-// 		(delegator_did.clone(), delegator_details.clone()),
-// 		(delegate_did.clone(), delegate_details.clone()),
-// 	]);
-// 	let builder =
-// 		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
-// 	let builder = ExtBuilder::from(builder).with_root_delegations(vec![(root_id, root_node.clone())]);
-
-// 	let mut ext = builder.build();
-
-// 	ext.execute_with(|| {
-// 		assert_noop!(
-// 			Delegation::submit_delegation_creation_operation(
-// 				Origin::signed(DEFAULT_ACCOUNT),
-// 				operation.clone(),
-// 				did::DidSignature::from(signature)
-// 			),
-// 			did::Error::<Test>::MaxTxCounterValue
-// 		);
-// 	});
-// }
-
-// #[test]
-// fn check_delegator_too_small_tx_counter_submit_delegation_creation_operation() {
-// 	let delegator_auth_key = did_mock::get_ed25519_authentication_key(true);
-// 	let delegator_del_key = did_mock::get_sr25519_delegation_key(true);
-// 	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
-
-// 	let mut delegator_details =
-// 		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegator_auth_key.public()));
-// 	delegator_details.delegation_key = Some(did::PublicVerificationKey::from(delegator_del_key.public()));
-// 	delegator_details.set_tx_counter(1u64);
-
-// 	let delegate_details =
-// 		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegate_auth_key.public()));
-
-// 	let delegator_did = did_mock::ALICE_DID;
-// 	let delegate_did = did_mock::BOB_DID;
-// 	let (root_id, root_node) = (
-// 		get_delegation_root_id(true),
-// 		generate_base_delegation_root(delegator_did.clone()),
-// 	);
-// 	let (delegation_id, delegation_node) = (
-// 		get_delegation_id(true),
-// 		generate_base_delegation_node(delegate_did.clone()),
-// 	);
-
-// 	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
-// 		&delegation_id,
-// 		&delegation_node.root_id,
-// 		&delegation_node.parent,
-// 		&delegation_node.permissions,
-// 	))));
-
-// 	let mut operation = generate_base_delegation_creation_operation(
-// 		delegator_did.clone(),
-// 		delegate_did.clone(),
-// 		delegate_signature.clone(),
-// 	);
-// 	operation.tx_counter = delegator_details.get_tx_counter_value() - 1u64;
-// 	let signature = delegator_del_key.sign(&operation.encode());
-
-// 	let builder = did_mock::ExtBuilder::default().with_dids(vec![
-// 		(delegator_did.clone(), delegator_details.clone()),
-// 		(delegate_did.clone(), delegate_details.clone()),
-// 	]);
-// 	let builder =
-// 		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
-// 	let builder = ExtBuilder::from(builder).with_root_delegations(vec![(root_id, root_node.clone())]);
-
-// 	let mut ext = builder.build();
-
-// 	ext.execute_with(|| {
-// 		assert_noop!(
-// 			Delegation::submit_delegation_creation_operation(
-// 				Origin::signed(DEFAULT_ACCOUNT),
-// 				operation.clone(),
-// 				did::DidSignature::from(signature)
-// 			),
-// 			did::Error::<Test>::InvalidNonce
-// 		);
-// 	});
-// }
-
-// #[test]
-// fn check_delegator_equal_tx_counter_submit_delegation_creation_operation() {
-// 	let delegator_auth_key = did_mock::get_ed25519_authentication_key(true);
-// 	let delegator_del_key = did_mock::get_sr25519_delegation_key(true);
-// 	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
-
-// 	let mut delegator_details =
-// 		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegator_auth_key.public()));
-// 	delegator_details.delegation_key = Some(did::PublicVerificationKey::from(delegator_del_key.public()));
-
-// 	let delegate_details =
-// 		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegate_auth_key.public()));
-
-// 	let delegator_did = did_mock::ALICE_DID;
-// 	let delegate_did = did_mock::BOB_DID;
-// 	let (root_id, root_node) = (
-// 		get_delegation_root_id(true),
-// 		generate_base_delegation_root(delegator_did.clone()),
-// 	);
-// 	let (delegation_id, delegation_node) = (
-// 		get_delegation_id(true),
-// 		generate_base_delegation_node(delegate_did.clone()),
-// 	);
-
-// 	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
-// 		&delegation_id,
-// 		&delegation_node.root_id,
-// 		&delegation_node.parent,
-// 		&delegation_node.permissions,
-// 	))));
-
-// 	let mut operation = generate_base_delegation_creation_operation(
-// 		delegator_did.clone(),
-// 		delegate_did.clone(),
-// 		delegate_signature.clone(),
-// 	);
-// 	operation.tx_counter = delegator_details.get_tx_counter_value();
-// 	let signature = delegator_del_key.sign(&operation.encode());
-
-// 	let builder = did_mock::ExtBuilder::default().with_dids(vec![
-// 		(delegator_did.clone(), delegator_details.clone()),
-// 		(delegate_did.clone(), delegate_details.clone()),
-// 	]);
-// 	let builder =
-// 		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
-// 	let builder = ExtBuilder::from(builder).with_root_delegations(vec![(root_id, root_node.clone())]);
-
-// 	let mut ext = builder.build();
-
-// 	ext.execute_with(|| {
-// 		assert_noop!(
-// 			Delegation::submit_delegation_creation_operation(
-// 				Origin::signed(DEFAULT_ACCOUNT),
-// 				operation.clone(),
-// 				did::DidSignature::from(signature)
-// 			),
-// 			did::Error::<Test>::InvalidNonce
-// 		);
-// 	});
-// }
-
-// #[test]
-// fn check_delegator_too_large_tx_counter_submit_delegation_creation_operation() {
-// 	let delegator_auth_key = did_mock::get_ed25519_authentication_key(true);
-// 	let delegator_del_key = did_mock::get_sr25519_delegation_key(true);
-// 	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
-
-// 	let mut delegator_details =
-// 		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegator_auth_key.public()));
-// 	delegator_details.delegation_key = Some(did::PublicVerificationKey::from(delegator_del_key.public()));
-
-// 	let delegate_details =
-// 		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegate_auth_key.public()));
-
-// 	let delegator_did = did_mock::ALICE_DID;
-// 	let delegate_did = did_mock::BOB_DID;
-// 	let (root_id, root_node) = (
-// 		get_delegation_root_id(true),
-// 		generate_base_delegation_root(delegator_did.clone()),
-// 	);
-// 	let (delegation_id, delegation_node) = (
-// 		get_delegation_id(true),
-// 		generate_base_delegation_node(delegate_did.clone()),
-// 	);
-
-// 	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
-// 		&delegation_id,
-// 		&delegation_node.root_id,
-// 		&delegation_node.parent,
-// 		&delegation_node.permissions,
-// 	))));
-
-// 	let mut operation = generate_base_delegation_creation_operation(
-// 		delegator_did.clone(),
-// 		delegate_did.clone(),
-// 		delegate_signature.clone(),
-// 	);
-// 	operation.tx_counter = delegator_details.get_tx_counter_value() + 2u64;
-// 	let signature = delegator_del_key.sign(&operation.encode());
-
-// 	let builder = did_mock::ExtBuilder::default().with_dids(vec![
-// 		(delegator_did.clone(), delegator_details.clone()),
-// 		(delegate_did.clone(), delegate_details.clone()),
-// 	]);
-// 	let builder =
-// 		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
-// 	let builder = ExtBuilder::from(builder).with_root_delegations(vec![(root_id, root_node.clone())]);
-
-// 	let mut ext = builder.build();
-
-// 	ext.execute_with(|| {
-// 		assert_noop!(
-// 			Delegation::submit_delegation_creation_operation(
-// 				Origin::signed(DEFAULT_ACCOUNT),
-// 				operation.clone(),
-// 				did::DidSignature::from(signature)
-// 			),
-// 			did::Error::<Test>::InvalidNonce
-// 		);
-// 	});
-// }
-
-// #[test]
-// fn check_delegator_delegation_key_not_present_submit_delegation_creation_operation() {
-// 	let delegator_auth_key = did_mock::get_ed25519_authentication_key(true);
-// 	let delegator_del_key = did_mock::get_sr25519_delegation_key(true);
-// 	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
-
-// 	let delegator_details =
-// 		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegator_auth_key.public()));
-// 	// No delegation key specified
-
-// 	let delegate_details =
-// 		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegate_auth_key.public()));
-
-// 	let delegator_did = did_mock::ALICE_DID;
-// 	let delegate_did = did_mock::BOB_DID;
-// 	let (root_id, root_node) = (
-// 		get_delegation_root_id(true),
-// 		generate_base_delegation_root(delegator_did.clone()),
-// 	);
-// 	let (delegation_id, delegation_node) = (
-// 		get_delegation_id(true),
-// 		generate_base_delegation_node(delegate_did.clone()),
-// 	);
-
-// 	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
-// 		&delegation_id,
-// 		&delegation_node.root_id,
-// 		&delegation_node.parent,
-// 		&delegation_node.permissions,
-// 	))));
-
-// 	let operation = generate_base_delegation_creation_operation(
-// 		delegator_did.clone(),
-// 		delegate_did.clone(),
-// 		delegate_signature.clone(),
-// 	);
-// 	let signature = delegator_del_key.sign(&operation.encode());
-
-// 	let builder = did_mock::ExtBuilder::default().with_dids(vec![
-// 		(delegator_did.clone(), delegator_details.clone()),
-// 		(delegate_did.clone(), delegate_details.clone()),
-// 	]);
-// 	let builder =
-// 		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
-// 	let builder = ExtBuilder::from(builder).with_root_delegations(vec![(root_id, root_node.clone())]);
-
-// 	let mut ext = builder.build();
-
-// 	ext.execute_with(|| {
-// 		assert_noop!(
-// 			Delegation::submit_delegation_creation_operation(
-// 				Origin::signed(DEFAULT_ACCOUNT),
-// 				operation.clone(),
-// 				did::DidSignature::from(signature)
-// 			),
-// 			did::Error::<Test>::VerificationKeysNotPresent
-// 		);
-// 	});
-// }
-
-// #[test]
-// fn check_delegator_invalid_signature_format_submit_delegation_creation_operation() {
-// 	let delegator_auth_key = did_mock::get_ed25519_authentication_key(true);
-// 	let delegator_del_key = did_mock::get_sr25519_delegation_key(true);
-// 	let alternative_del_key = did_mock::get_ed25519_delegation_key(true);
-// 	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
-
-// 	let mut delegator_details =
-// 		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegator_auth_key.public()));
-// 	delegator_details.delegation_key = Some(did::PublicVerificationKey::from(delegator_del_key.public()));
-
-// 	let delegate_details =
-// 		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegate_auth_key.public()));
-
-// 	let delegator_did = did_mock::ALICE_DID;
-// 	let delegate_did = did_mock::BOB_DID;
-// 	let (root_id, root_node) = (
-// 		get_delegation_root_id(true),
-// 		generate_base_delegation_root(delegator_did.clone()),
-// 	);
-// 	let (delegation_id, delegation_node) = (
-// 		get_delegation_id(true),
-// 		generate_base_delegation_node(delegate_did.clone()),
-// 	);
-
-// 	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
-// 		&delegation_id,
-// 		&delegation_node.root_id,
-// 		&delegation_node.parent,
-// 		&delegation_node.permissions,
-// 	))));
-
-// 	let operation = generate_base_delegation_creation_operation(
-// 		delegator_did.clone(),
-// 		delegate_did.clone(),
-// 		delegate_signature.clone(),
-// 	);
-// 	let signature = alternative_del_key.sign(&operation.encode());
-
-// 	let builder = did_mock::ExtBuilder::default().with_dids(vec![
-// 		(delegator_did.clone(), delegator_details.clone()),
-// 		(delegate_did.clone(), delegate_details.clone()),
-// 	]);
-// 	let builder =
-// 		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
-// 	let builder = ExtBuilder::from(builder).with_root_delegations(vec![(root_id, root_node.clone())]);
-
-// 	let mut ext = builder.build();
-
-// 	ext.execute_with(|| {
-// 		assert_noop!(
-// 			Delegation::submit_delegation_creation_operation(
-// 				Origin::signed(DEFAULT_ACCOUNT),
-// 				operation.clone(),
-// 				did::DidSignature::from(signature)
-// 			),
-// 			did::Error::<Test>::InvalidSignatureFormat
-// 		);
-// 	});
-// }
-
-// #[test]
-// fn check_delegator_invalid_signature_submit_delegation_creation_operation() {
-// 	let delegator_auth_key = did_mock::get_ed25519_authentication_key(true);
-// 	let delegator_del_key = did_mock::get_sr25519_delegation_key(true);
-// 	let alternative_del_key = did_mock::get_sr25519_delegation_key(false);
-// 	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
-
-// 	let mut delegator_details =
-// 		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegator_auth_key.public()));
-// 	delegator_details.delegation_key = Some(did::PublicVerificationKey::from(delegator_del_key.public()));
-
-// 	let delegate_details =
-// 		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegate_auth_key.public()));
-
-// 	let delegator_did = did_mock::ALICE_DID;
-// 	let delegate_did = did_mock::BOB_DID;
-// 	let (root_id, root_node) = (
-// 		get_delegation_root_id(true),
-// 		generate_base_delegation_root(delegator_did.clone()),
-// 	);
-// 	let (delegation_id, delegation_node) = (
-// 		get_delegation_id(true),
-// 		generate_base_delegation_node(delegate_did.clone()),
-// 	);
-
-// 	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
-// 		&delegation_id,
-// 		&delegation_node.root_id,
-// 		&delegation_node.parent,
-// 		&delegation_node.permissions,
-// 	))));
-
-// 	let operation = generate_base_delegation_creation_operation(
-// 		delegator_did.clone(),
-// 		delegate_did.clone(),
-// 		delegate_signature.clone(),
-// 	);
-// 	let signature = alternative_del_key.sign(&operation.encode());
-
-// 	let builder = did_mock::ExtBuilder::default().with_dids(vec![
-// 		(delegator_did.clone(), delegator_details.clone()),
-// 		(delegate_did.clone(), delegate_details.clone()),
-// 	]);
-// 	let builder =
-// 		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
-// 	let builder = ExtBuilder::from(builder).with_root_delegations(vec![(root_id, root_node.clone())]);
-
-// 	let mut ext = builder.build();
-
-// 	ext.execute_with(|| {
-// 		assert_noop!(
-// 			Delegation::submit_delegation_creation_operation(
-// 				Origin::signed(DEFAULT_ACCOUNT),
-// 				operation.clone(),
-// 				did::DidSignature::from(signature)
-// 			),
-// 			did::Error::<Test>::InvalidSignature
-// 		);
-// 	});
-// }
+#[test]
+fn check_submit_delegation_with_parent_creation_operation_successful() {
+	let delegator_auth_key = did_mock::get_ed25519_authentication_key(true);
+	let delegator_del_key = did_mock::get_sr25519_delegation_key(true);
+	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
+
+	let mut delegator_details =
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegator_auth_key.public()));
+	delegator_details.delegation_key = Some(did::PublicVerificationKey::from(delegator_del_key.public()));
+
+	let delegate_details =
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegate_auth_key.public()));
+
+	let delegator_did = did_mock::ALICE_DID;
+	let delegate_did = did_mock::BOB_DID;
+	let (root_id, root_node) = (
+		get_delegation_root_id(true),
+		generate_base_delegation_root(delegator_did.clone()),
+	);
+	let (parent_delegation_id, parent_delegation_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(root_id, delegator_did.clone()),
+	);
+	let (delegation_id, mut delegation_node) =(
+		get_delegation_id(false),
+		generate_base_delegation_node(root_id, delegate_did.clone()),
+	);
+	delegation_node.parent = Some(parent_delegation_id);
+
+	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
+		&delegation_id,
+		&delegation_node.root_id,
+		&delegation_node.parent,
+		&delegation_node.permissions,
+	))));
+
+	let operation = generate_base_delegation_creation_operation(
+		delegator_did.clone(),
+		delegation_id,
+		delegate_signature.clone(),
+		delegation_node.clone(),
+	);
+	let signature = delegator_del_key.sign(&operation.encode());
+
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![
+		(delegator_did.clone(), delegator_details.clone()),
+		(delegate_did.clone(), delegate_details.clone()),
+	]);
+	let builder =
+		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
+	let builder = ExtBuilder::from(builder)
+		.with_root_delegations(vec![(root_id, root_node.clone())])
+		.with_delegations(vec![(parent_delegation_id, parent_delegation_node.clone())]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_ok!(Delegation::submit_delegation_creation_operation(
+			Origin::signed(DEFAULT_ACCOUNT),
+			operation.clone(),
+			did::DidSignature::from(signature)
+		));
+	});
+
+	let stored_delegation = ext.execute_with(|| {
+		Delegation::delegations(&operation.delegation_id).expect("Delegation should be present on chain.")
+	});
+
+	assert_eq!(stored_delegation.root_id, operation.root_id);
+	assert_eq!(stored_delegation.parent, operation.parent_id);
+	assert_eq!(stored_delegation.owner, operation.delegate_did);
+	assert_eq!(stored_delegation.permissions, operation.permissions);
+	assert_eq!(stored_delegation.revoked, false);
+
+	// Verify that the parent has the new delegation among its children
+	let stored_parent_children = ext.execute_with(|| {
+		Delegation::children(&operation.parent_id.unwrap())
+			.expect("Delegation parent children should be present on chain.")
+	});
+
+	assert_eq!(stored_parent_children, vec![delegation_id]);
+
+	// Verify that the DID tx counter has increased
+	let new_delegator_details =
+		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+	assert_eq!(
+		new_delegator_details.get_tx_counter_value(),
+		delegator_details.get_tx_counter_value() + 1u64
+	);
+}
+
+#[test]
+fn check_delegator_did_not_found_submit_delegation_creation_operation() {
+	let delegator_auth_key = did_mock::get_ed25519_authentication_key(true);
+	let delegator_del_key = did_mock::get_sr25519_delegation_key(true);
+	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
+
+	let mut delegator_details =
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegator_auth_key.public()));
+	delegator_details.delegation_key = Some(did::PublicVerificationKey::from(delegator_del_key.public()));
+
+	let delegate_details =
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegate_auth_key.public()));
+
+	let delegator_did = did_mock::ALICE_DID;
+	let alternative_did = did_mock::CHARLIE_DID;
+	let delegate_did = did_mock::BOB_DID;
+	let (root_id, root_node) = (
+		get_delegation_root_id(true),
+		generate_base_delegation_root(alternative_did.clone()),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(root_id, delegate_did.clone()),
+	);
+
+	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
+		&delegation_id,
+		&delegation_node.root_id,
+		&delegation_node.parent,
+		&delegation_node.permissions,
+	))));
+
+	let operation = generate_base_delegation_creation_operation(
+		delegator_did.clone(),
+		delegation_id,
+		delegate_signature.clone(),
+		delegation_node.clone(),
+	);
+	let signature = delegator_del_key.sign(&operation.encode());
+
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![
+		(alternative_did.clone(), delegator_details.clone()),
+		(delegate_did.clone(), delegate_details.clone()),
+	]);
+	let builder = ctype_mock::ExtBuilder::from(builder)
+		.with_ctypes(vec![(root_node.ctype_hash.clone(), alternative_did.clone())]);
+	let builder = ExtBuilder::from(builder).with_root_delegations(vec![(root_id, root_node.clone())]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Delegation::submit_delegation_creation_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::DidNotPresent
+		);
+	});
+}
+
+#[test]
+fn check_delegator_max_tx_counter_value_submit_delegation_creation_operation() {
+	let delegator_auth_key = did_mock::get_ed25519_authentication_key(true);
+	let delegator_del_key = did_mock::get_sr25519_delegation_key(true);
+	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
+
+	let mut delegator_details =
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegator_auth_key.public()));
+	delegator_details.delegation_key = Some(did::PublicVerificationKey::from(delegator_del_key.public()));
+	delegator_details.set_tx_counter(u64::MAX);
+
+	let delegate_details =
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegate_auth_key.public()));
+
+	let delegator_did = did_mock::ALICE_DID;
+	let delegate_did = did_mock::BOB_DID;
+	let (root_id, root_node) = (
+		get_delegation_root_id(true),
+		generate_base_delegation_root(delegator_did.clone()),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(root_id, delegate_did.clone()),
+	);
+
+	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
+		&delegation_id,
+		&delegation_node.root_id,
+		&delegation_node.parent,
+		&delegation_node.permissions,
+	))));
+
+	let operation = generate_base_delegation_creation_operation(
+		delegator_did.clone(),
+		delegation_id,
+		delegate_signature.clone(),
+		delegation_node.clone(),
+	);
+	let signature = delegator_del_key.sign(&operation.encode());
+
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![
+		(delegator_did.clone(), delegator_details.clone()),
+		(delegate_did.clone(), delegate_details.clone()),
+	]);
+	let builder =
+		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
+	let builder = ExtBuilder::from(builder).with_root_delegations(vec![(root_id, root_node.clone())]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Delegation::submit_delegation_creation_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::MaxTxCounterValue
+		);
+	});
+}
+
+#[test]
+fn check_delegator_too_small_tx_counter_submit_delegation_creation_operation() {
+	let delegator_auth_key = did_mock::get_ed25519_authentication_key(true);
+	let delegator_del_key = did_mock::get_sr25519_delegation_key(true);
+	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
+
+	let mut delegator_details =
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegator_auth_key.public()));
+	delegator_details.delegation_key = Some(did::PublicVerificationKey::from(delegator_del_key.public()));
+	delegator_details.set_tx_counter(1u64);
+
+	let delegate_details =
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegate_auth_key.public()));
+
+	let delegator_did = did_mock::ALICE_DID;
+	let delegate_did = did_mock::BOB_DID;
+	let (root_id, root_node) = (
+		get_delegation_root_id(true),
+		generate_base_delegation_root(delegator_did.clone()),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(root_id, delegate_did.clone()),
+	);
+
+	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
+		&delegation_id,
+		&delegation_node.root_id,
+		&delegation_node.parent,
+		&delegation_node.permissions,
+	))));
+
+	let mut operation = generate_base_delegation_creation_operation(
+		delegator_did.clone(),
+		delegation_id,
+		delegate_signature.clone(),
+		delegation_node.clone(),
+	);
+	operation.tx_counter = delegator_details.get_tx_counter_value() - 1u64;
+	let signature = delegator_del_key.sign(&operation.encode());
+
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![
+		(delegator_did.clone(), delegator_details.clone()),
+		(delegate_did.clone(), delegate_details.clone()),
+	]);
+	let builder =
+		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
+	let builder = ExtBuilder::from(builder).with_root_delegations(vec![(root_id, root_node.clone())]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Delegation::submit_delegation_creation_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::InvalidNonce
+		);
+	});
+}
+
+#[test]
+fn check_delegator_equal_tx_counter_submit_delegation_creation_operation() {
+	let delegator_auth_key = did_mock::get_ed25519_authentication_key(true);
+	let delegator_del_key = did_mock::get_sr25519_delegation_key(true);
+	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
+
+	let mut delegator_details =
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegator_auth_key.public()));
+	delegator_details.delegation_key = Some(did::PublicVerificationKey::from(delegator_del_key.public()));
+
+	let delegate_details =
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegate_auth_key.public()));
+
+	let delegator_did = did_mock::ALICE_DID;
+	let delegate_did = did_mock::BOB_DID;
+	let (root_id, root_node) = (
+		get_delegation_root_id(true),
+		generate_base_delegation_root(delegator_did.clone()),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(root_id, delegate_did.clone()),
+	);
+
+	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
+		&delegation_id,
+		&delegation_node.root_id,
+		&delegation_node.parent,
+		&delegation_node.permissions,
+	))));
+
+	let mut operation = generate_base_delegation_creation_operation(
+		delegator_did.clone(),
+		delegation_id,
+		delegate_signature.clone(),
+		delegation_node.clone(),
+	);
+	operation.tx_counter = delegator_details.get_tx_counter_value();
+	let signature = delegator_del_key.sign(&operation.encode());
+
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![
+		(delegator_did.clone(), delegator_details.clone()),
+		(delegate_did.clone(), delegate_details.clone()),
+	]);
+	let builder =
+		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
+	let builder = ExtBuilder::from(builder).with_root_delegations(vec![(root_id, root_node.clone())]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Delegation::submit_delegation_creation_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::InvalidNonce
+		);
+	});
+}
+
+#[test]
+fn check_delegator_too_large_tx_counter_submit_delegation_creation_operation() {
+	let delegator_auth_key = did_mock::get_ed25519_authentication_key(true);
+	let delegator_del_key = did_mock::get_sr25519_delegation_key(true);
+	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
+
+	let mut delegator_details =
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegator_auth_key.public()));
+	delegator_details.delegation_key = Some(did::PublicVerificationKey::from(delegator_del_key.public()));
+
+	let delegate_details =
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegate_auth_key.public()));
+
+	let delegator_did = did_mock::ALICE_DID;
+	let delegate_did = did_mock::BOB_DID;
+	let (root_id, root_node) = (
+		get_delegation_root_id(true),
+		generate_base_delegation_root(delegator_did.clone()),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(root_id, delegate_did.clone()),
+	);
+
+	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
+		&delegation_id,
+		&delegation_node.root_id,
+		&delegation_node.parent,
+		&delegation_node.permissions,
+	))));
+
+	let mut operation = generate_base_delegation_creation_operation(
+		delegator_did.clone(),
+		delegation_id,
+		delegate_signature.clone(),
+		delegation_node.clone(),
+	);
+	operation.tx_counter = delegator_details.get_tx_counter_value() + 2u64;
+	let signature = delegator_del_key.sign(&operation.encode());
+
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![
+		(delegator_did.clone(), delegator_details.clone()),
+		(delegate_did.clone(), delegate_details.clone()),
+	]);
+	let builder =
+		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
+	let builder = ExtBuilder::from(builder).with_root_delegations(vec![(root_id, root_node.clone())]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Delegation::submit_delegation_creation_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::InvalidNonce
+		);
+	});
+}
+
+#[test]
+fn check_delegator_delegation_key_not_present_submit_delegation_creation_operation() {
+	let delegator_auth_key = did_mock::get_ed25519_authentication_key(true);
+	let delegator_del_key = did_mock::get_sr25519_delegation_key(true);
+	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
+
+	let delegator_details =
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegator_auth_key.public()));
+	// No delegation key specified
+
+	let delegate_details =
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegate_auth_key.public()));
+
+	let delegator_did = did_mock::ALICE_DID;
+	let delegate_did = did_mock::BOB_DID;
+	let (root_id, root_node) = (
+		get_delegation_root_id(true),
+		generate_base_delegation_root( delegator_did.clone()),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(root_id, delegate_did.clone()),
+	);
+
+	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
+		&delegation_id,
+		&delegation_node.root_id,
+		&delegation_node.parent,
+		&delegation_node.permissions,
+	))));
+
+	let operation = generate_base_delegation_creation_operation(
+		delegator_did.clone(),
+		delegation_id,
+		delegate_signature.clone(),
+		delegation_node.clone(),
+	);
+	let signature = delegator_del_key.sign(&operation.encode());
+
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![
+		(delegator_did.clone(), delegator_details.clone()),
+		(delegate_did.clone(), delegate_details.clone()),
+	]);
+	let builder =
+		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
+	let builder = ExtBuilder::from(builder).with_root_delegations(vec![(root_id, root_node.clone())]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Delegation::submit_delegation_creation_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::VerificationKeysNotPresent
+		);
+	});
+}
+
+#[test]
+fn check_delegator_invalid_signature_format_submit_delegation_creation_operation() {
+	let delegator_auth_key = did_mock::get_ed25519_authentication_key(true);
+	let delegator_del_key = did_mock::get_sr25519_delegation_key(true);
+	let alternative_del_key = did_mock::get_ed25519_delegation_key(true);
+	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
+
+	let mut delegator_details =
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegator_auth_key.public()));
+	delegator_details.delegation_key = Some(did::PublicVerificationKey::from(delegator_del_key.public()));
+
+	let delegate_details =
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegate_auth_key.public()));
+
+	let delegator_did = did_mock::ALICE_DID;
+	let delegate_did = did_mock::BOB_DID;
+	let (root_id, root_node) = (
+		get_delegation_root_id(true),
+		generate_base_delegation_root(delegator_did.clone()),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(root_id, delegate_did.clone()),
+	);
+
+	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
+		&delegation_id,
+		&delegation_node.root_id,
+		&delegation_node.parent,
+		&delegation_node.permissions,
+	))));
+
+	let operation = generate_base_delegation_creation_operation(
+		delegator_did.clone(),
+		delegation_id,
+		delegate_signature.clone(),
+		delegation_node.clone(),
+	);
+	let signature = alternative_del_key.sign(&operation.encode());
+
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![
+		(delegator_did.clone(), delegator_details.clone()),
+		(delegate_did.clone(), delegate_details.clone()),
+	]);
+	let builder =
+		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
+	let builder = ExtBuilder::from(builder).with_root_delegations(vec![(root_id, root_node.clone())]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Delegation::submit_delegation_creation_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::InvalidSignatureFormat
+		);
+	});
+}
+
+#[test]
+fn check_delegator_invalid_signature_submit_delegation_creation_operation() {
+	let delegator_auth_key = did_mock::get_ed25519_authentication_key(true);
+	let delegator_del_key = did_mock::get_sr25519_delegation_key(true);
+	let alternative_del_key = did_mock::get_sr25519_delegation_key(false);
+	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
+
+	let mut delegator_details =
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegator_auth_key.public()));
+	delegator_details.delegation_key = Some(did::PublicVerificationKey::from(delegator_del_key.public()));
+
+	let delegate_details =
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(delegate_auth_key.public()));
+
+	let delegator_did = did_mock::ALICE_DID;
+	let delegate_did = did_mock::BOB_DID;
+	let (root_id, root_node) = (
+		get_delegation_root_id(true),
+		generate_base_delegation_root(delegator_did.clone()),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(root_id, delegate_did.clone()),
+	);
+
+	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
+		&delegation_id,
+		&delegation_node.root_id,
+		&delegation_node.parent,
+		&delegation_node.permissions,
+	))));
+
+	let operation = generate_base_delegation_creation_operation(
+		delegator_did.clone(),
+		delegation_id,
+		delegate_signature.clone(),
+		delegation_node.clone(),
+	);
+	let signature = alternative_del_key.sign(&operation.encode());
+
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![
+		(delegator_did.clone(), delegator_details.clone()),
+		(delegate_did.clone(), delegate_details.clone()),
+	]);
+	let builder =
+		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
+	let builder = ExtBuilder::from(builder).with_root_delegations(vec![(root_id, root_node.clone())]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Delegation::submit_delegation_creation_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::InvalidSignature
+		);
+	});
+}
 
 // #[test]
 // fn check_delegate_did_not_found_submit_delegation_creation_operation() {
