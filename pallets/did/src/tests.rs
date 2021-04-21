@@ -16,14 +16,15 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use std::{convert::TryFrom, iter::FromIterator};
+
 use frame_support::{assert_noop, assert_ok};
 use sp_core::Pair;
 use sp_std::collections::btree_set::BTreeSet;
-use std::iter::FromIterator;
 
 use codec::Encode;
 
-use crate::{self as did, mock::*, PublicVerificationKey, UrlEncoding};
+use crate::{self as did, mock::*};
 
 // submit_did_create_operation
 
@@ -103,11 +104,15 @@ fn check_successful_complete_creation() {
 	let enc_key = get_x25519_encryption_key(true);
 	let del_key = get_sr25519_delegation_key(true);
 	let att_key = get_ed25519_attestation_key(true);
+	let new_url = did::Url::from(
+		did::HttpUrl::try_from("https://new_kilt.io".as_bytes())
+			.expect("https://new_kilt.io should not be considered an invalid HTTP URL."),
+	);
 	let mut did_creation_operation =
 		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()), enc_key);
 	did_creation_operation.new_attestation_key = Some(did::PublicVerificationKey::from(att_key.public()));
 	did_creation_operation.new_delegation_key = Some(did::PublicVerificationKey::from(del_key.public()));
-	did_creation_operation.new_endpoint_url = Some("https://kilt.io".into());
+	did_creation_operation.new_endpoint_url = Some(new_url);
 
 	let signature = auth_key.sign(did_creation_operation.encode().as_ref());
 
@@ -225,19 +230,22 @@ fn check_successful_complete_update() {
 	let old_att_key = get_ed25519_attestation_key(true);
 	let new_att_key = get_ed25519_attestation_key(false);
 	let new_del_key = get_sr25519_attestation_key(true);
-	let new_url: UrlEncoding = "https://new_kilt.io".into();
+	let new_url = did::Url::from(
+		did::HttpUrl::try_from("https://new_kilt.io".as_bytes())
+			.expect("https://new_kilt.io should not be considered an invalid HTTP URL."),
+	);
 
 	let mut old_did_details =
 		generate_mock_did_details(did::PublicVerificationKey::from(old_auth_key.public()), old_enc_key);
-	old_did_details.attestation_key = Some(PublicVerificationKey::from(old_att_key.public()));
+	old_did_details.attestation_key = Some(did::PublicVerificationKey::from(old_att_key.public()));
 
 	// Update all keys, URL endpoint and tx counter. No keys are removed in this
 	// test
 	let mut did_update_operation = generate_base_did_update_operation(ALICE_DID);
-	did_update_operation.new_auth_key = Some(PublicVerificationKey::from(new_auth_key.public()));
+	did_update_operation.new_auth_key = Some(did::PublicVerificationKey::from(new_auth_key.public()));
 	did_update_operation.new_key_agreement_key = Some(new_enc_key);
-	did_update_operation.new_attestation_key = Some(PublicVerificationKey::from(new_att_key.public()));
-	did_update_operation.new_delegation_key = Some(PublicVerificationKey::from(new_del_key.public()));
+	did_update_operation.new_attestation_key = Some(did::PublicVerificationKey::from(new_att_key.public()));
+	did_update_operation.new_delegation_key = Some(did::PublicVerificationKey::from(new_del_key.public()));
 	did_update_operation.new_endpoint_url = Some(new_url);
 	did_update_operation.tx_counter = old_did_details.last_tx_counter + 1u64;
 
@@ -274,7 +282,7 @@ fn check_successful_complete_update() {
 	// Verification keys should contain the previous attestation key.
 	assert_eq!(
 		new_did_details.verification_keys,
-		BTreeSet::from_iter(vec![PublicVerificationKey::from(old_att_key.public())].into_iter())
+		BTreeSet::from_iter(vec![did::PublicVerificationKey::from(old_att_key.public())].into_iter())
 	);
 	assert_eq!(new_did_details.endpoint_url, did_update_operation.new_endpoint_url);
 	assert_eq!(new_did_details.last_tx_counter, did_update_operation.tx_counter);
@@ -285,13 +293,13 @@ fn check_successful_verification_keys_deletion() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let enc_key = get_x25519_encryption_key(true);
 	let old_verification_keys_vector = vec![
-		PublicVerificationKey::from(get_ed25519_attestation_key(true).public()),
-		PublicVerificationKey::from(get_ed25519_attestation_key(false).public()),
-		PublicVerificationKey::from(get_sr25519_attestation_key(true).public()),
-		PublicVerificationKey::from(get_sr25519_attestation_key(false).public()),
+		did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public()),
+		did::PublicVerificationKey::from(get_ed25519_attestation_key(false).public()),
+		did::PublicVerificationKey::from(get_sr25519_attestation_key(true).public()),
+		did::PublicVerificationKey::from(get_sr25519_attestation_key(false).public()),
 	];
 	let old_verification_keys_set = BTreeSet::from_iter(old_verification_keys_vector.into_iter());
-	let mut old_did_details = generate_mock_did_details(PublicVerificationKey::from(auth_key.public()), enc_key);
+	let mut old_did_details = generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key);
 	old_did_details.verification_keys = old_verification_keys_set.clone();
 
 	// Create update operation to remove all verification keys
@@ -311,8 +319,9 @@ fn check_successful_verification_keys_deletion() {
 			did::DidSignature::from(signature),
 		));
 	});
-	let new_did_details = ext.execute_with(|| Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain."));
-	// All fields but verification_keys should remain unchanged
+	let new_did_details = ext.execute_with(||
+		 	//All fields but verification_keys should remain unchanged
+Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain."));
 	assert_eq!(new_did_details.auth_key, old_did_details.auth_key);
 	assert_eq!(new_did_details.key_agreement_key, old_did_details.key_agreement_key);
 	assert_eq!(new_did_details.delegation_key, old_did_details.delegation_key);
@@ -328,7 +337,7 @@ fn check_successful_verification_keys_deletion() {
 fn check_did_not_present_update() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let enc_key = get_x25519_encryption_key(true);
-	let mock_did = generate_mock_did_details(PublicVerificationKey::from(auth_key.public()), enc_key);
+	let mock_did = generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key);
 	let did_update_operation = generate_base_did_update_operation(BOB_DID);
 
 	let signature = auth_key.sign(did_update_operation.encode().as_ref());
@@ -353,8 +362,8 @@ fn check_invalid_signature_format_did_update() {
 	let enc_key = get_x25519_encryption_key(true);
 	// Using an Sr25519 key where an Ed25519 is expected
 	let invalid_key = get_sr25519_authentication_key(true);
-	let mock_did = generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key);
 	// DID update contains auth_key, but signature is generated using invalid_key
+	let mock_did = generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key);
 	let did_update_operation = generate_base_did_update_operation(ALICE_DID);
 
 	let signature = invalid_key.sign(did_update_operation.encode().as_ref());
@@ -379,7 +388,7 @@ fn check_invalid_signature_did_update() {
 	let enc_key = get_x25519_encryption_key(true);
 	// Using an Sr25519 key as expected, but from a different seed (default = false)
 	let alternative_key = get_sr25519_authentication_key(false);
-	let mock_did = generate_mock_did_details(PublicVerificationKey::from(auth_key.public()), enc_key);
+	let mock_did = generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key);
 	let did_update_operation = generate_base_did_update_operation(ALICE_DID);
 
 	let signature = alternative_key.sign(did_update_operation.encode().as_ref());
@@ -402,13 +411,13 @@ fn check_invalid_signature_did_update() {
 fn check_invalid_verification_keys_deletion() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let enc_key = get_x25519_encryption_key(true);
-	let key1 = PublicVerificationKey::from(get_ed25519_attestation_key(true).public());
-	let key2 = PublicVerificationKey::from(get_ed25519_attestation_key(false).public());
-	let key3 = PublicVerificationKey::from(get_sr25519_attestation_key(true).public());
-	let key4 = PublicVerificationKey::from(get_sr25519_attestation_key(false).public());
+	let key1 = did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public());
+	let key2 = did::PublicVerificationKey::from(get_ed25519_attestation_key(false).public());
+	let key3 = did::PublicVerificationKey::from(get_sr25519_attestation_key(true).public());
+	let key4 = did::PublicVerificationKey::from(get_sr25519_attestation_key(false).public());
 	let old_verification_keys_vector = vec![key1, key2, key3];
 	let old_verification_keys_set = BTreeSet::from_iter(old_verification_keys_vector.into_iter());
-	let mut old_did_details = generate_mock_did_details(PublicVerificationKey::from(auth_key.public()), enc_key);
+	let mut old_did_details = generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key);
 	old_did_details.verification_keys = old_verification_keys_set;
 
 	// Remove some verification keys including one not stored on chain (key4)
@@ -439,7 +448,7 @@ fn check_invalid_verification_keys_deletion() {
 fn check_smaller_tx_counter_did_update() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let enc_key = get_x25519_encryption_key(true);
-	let mock_did = generate_mock_did_details(PublicVerificationKey::from(auth_key.public()), enc_key);
+	let mock_did = generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key);
 	let mut did_update_operation = generate_base_did_update_operation(ALICE_DID);
 	did_update_operation.tx_counter = 0;
 
@@ -463,7 +472,7 @@ fn check_smaller_tx_counter_did_update() {
 fn check_equal_tx_counter_did_update() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let enc_key = get_x25519_encryption_key(true);
-	let mock_did = generate_mock_did_details(PublicVerificationKey::from(auth_key.public()), enc_key);
+	let mock_did = generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key);
 	let mut did_update_operation = generate_base_did_update_operation(ALICE_DID);
 	did_update_operation.tx_counter = mock_did.last_tx_counter;
 
@@ -563,8 +572,7 @@ fn check_invalid_signature_format_did_deletion() {
 	let enc_key = get_x25519_encryption_key(true);
 	// Using an Sr25519 key where an Ed25519 is expected
 	let invalid_key = get_sr25519_authentication_key(true);
-	let mock_did = generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key);
-	// DID update contains auth_key, but signature is generated using invalid_key
+	let mock_did = generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key); // DID update contains auth_key, but signature is generated using invalid_key
 	let did_deletion_operation = generate_base_did_delete_operation(ALICE_DID);
 
 	let signature = invalid_key.sign(did_deletion_operation.encode().as_ref());
@@ -589,7 +597,7 @@ fn check_invalid_signature_did_deletion() {
 	let enc_key = get_x25519_encryption_key(true);
 	// Using an Sr25519 key as expected, but from a different seed (default = false)
 	let alternative_key = get_sr25519_authentication_key(false);
-	let mock_did = generate_mock_did_details(PublicVerificationKey::from(auth_key.public()), enc_key);
+	let mock_did = generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key);
 	let did_delete_operation = generate_base_did_delete_operation(ALICE_DID);
 
 	let signature = alternative_key.sign(did_delete_operation.encode().as_ref());
@@ -612,7 +620,7 @@ fn check_invalid_signature_did_deletion() {
 fn check_smaller_tx_counter_did_deletion() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let enc_key = get_x25519_encryption_key(true);
-	let mut mock_did = generate_mock_did_details(PublicVerificationKey::from(auth_key.public()), enc_key);
+	let mut mock_did = generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key);
 	mock_did.last_tx_counter = 1;
 	let mut did_delete_operation = generate_base_did_delete_operation(ALICE_DID);
 	did_delete_operation.tx_counter = 0;
@@ -637,7 +645,7 @@ fn check_smaller_tx_counter_did_deletion() {
 fn check_equal_tx_counter_did_deletion() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let enc_key = get_x25519_encryption_key(true);
-	let mut mock_did = generate_mock_did_details(PublicVerificationKey::from(auth_key.public()), enc_key);
+	let mut mock_did = generate_mock_did_details(did::PublicVerificationKey::from(auth_key.public()), enc_key);
 	mock_did.last_tx_counter = 1;
 	let mut did_delete_operation = generate_base_did_delete_operation(ALICE_DID);
 	did_delete_operation.tx_counter = mock_did.last_tx_counter;
@@ -832,4 +840,138 @@ fn check_invalid_signature_operation_verification() {
 			did::DidError::SignatureError(did::SignatureError::InvalidSignature)
 		);
 	});
+}
+
+// Internal function: HttpUrl try_from
+
+#[test]
+fn check_http_url() {
+	assert_ok!(did::HttpUrl::try_from("http://kilt.io".as_bytes()));
+
+	assert_ok!(did::HttpUrl::try_from("https://kilt.io".as_bytes()));
+
+	assert_ok!(did::HttpUrl::try_from(
+		"https://super.long.domain.kilt.io:12345/public/files/test.txt".as_bytes()
+	));
+
+	// All other valid ASCII characters
+	assert_ok!(did::HttpUrl::try_from("http://:/?#[]@!$&'()*+,;=-._~".as_bytes()));
+
+	assert_eq!(
+		did::HttpUrl::try_from("".as_bytes()),
+		Err(did::UrlError::InvalidUrlScheme)
+	);
+
+	// Non-printable ASCII characters
+	assert_eq!(
+		did::HttpUrl::try_from("http://kilt.io/\x00".as_bytes()),
+		Err(did::UrlError::InvalidUrlEncoding)
+	);
+
+	// Some invalid ASCII characters
+	assert_eq!(
+		did::HttpUrl::try_from("http://kilt.io/<tag>".as_bytes()),
+		Err(did::UrlError::InvalidUrlEncoding)
+	);
+
+	// Non-ASCII characters
+	assert_eq!(
+		did::HttpUrl::try_from("http://¶.com".as_bytes()),
+		Err(did::UrlError::InvalidUrlEncoding)
+	);
+
+	assert_eq!(
+		did::HttpUrl::try_from("htt://kilt.io".as_bytes()),
+		Err(did::UrlError::InvalidUrlScheme)
+	);
+
+	assert_eq!(
+		did::HttpUrl::try_from("httpss://kilt.io".as_bytes()),
+		Err(did::UrlError::InvalidUrlScheme)
+	);
+}
+
+// Internal function: FtpUrl try_from
+
+#[test]
+fn check_ftp_url() {
+	assert_ok!(did::FtpUrl::try_from("ftp://kilt.io".as_bytes()));
+
+	assert_ok!(did::FtpUrl::try_from("ftps://kilt.io".as_bytes()));
+
+	assert_ok!(did::FtpUrl::try_from(
+		"ftps://user@super.long.domain.kilt.io:12345/public/files/test.txt".as_bytes()
+	));
+
+	// All other valid ASCII characters
+	assert_ok!(did::FtpUrl::try_from("ftps://:/?#[]@%!$&'()*+,;=-._~".as_bytes()));
+
+	assert_eq!(
+		did::FtpUrl::try_from("".as_bytes()),
+		Err(did::UrlError::InvalidUrlScheme)
+	);
+
+	// Non-printable ASCII characters
+	assert_eq!(
+		did::HttpUrl::try_from("http://kilt.io/\x00".as_bytes()),
+		Err(did::UrlError::InvalidUrlEncoding)
+	);
+
+	// Some invalid ASCII characters
+	assert_eq!(
+		did::FtpUrl::try_from("ftp://kilt.io/<tag>".as_bytes()),
+		Err(did::UrlError::InvalidUrlEncoding)
+	);
+
+	// Non-ASCII characters
+	assert_eq!(
+		did::FtpUrl::try_from("ftps://¶.com".as_bytes()),
+		Err(did::UrlError::InvalidUrlEncoding)
+	);
+
+	assert_eq!(
+		did::FtpUrl::try_from("ft://kilt.io".as_bytes()),
+		Err(did::UrlError::InvalidUrlScheme)
+	);
+
+	assert_eq!(
+		did::HttpUrl::try_from("ftpss://kilt.io".as_bytes()),
+		Err(did::UrlError::InvalidUrlScheme)
+	);
+}
+
+// Internal function: IpfsUrl try_from
+
+#[test]
+fn check_ipfs_url() {
+	// Base58 address
+	assert_ok!(did::IpfsUrl::try_from(
+		"ipfs://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()
+	));
+
+	// Base32 address (at the moment, padding characters can appear anywhere in the
+	// string)
+	assert_ok!(did::IpfsUrl::try_from(
+		"ipfs://OQQHHHTGMMYDQQ364YB4GDE=HREJQL==".as_bytes()
+	));
+
+	assert_eq!(
+		did::IpfsUrl::try_from("".as_bytes()),
+		Err(did::UrlError::InvalidUrlScheme)
+	);
+
+	assert_eq!(
+		did::IpfsUrl::try_from("ipfs://¶QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()),
+		Err(did::UrlError::InvalidUrlEncoding)
+	);
+
+	assert_eq!(
+		did::IpfsUrl::try_from("ipf://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()),
+		Err(did::UrlError::InvalidUrlScheme)
+	);
+
+	assert_eq!(
+		did::IpfsUrl::try_from("ipfss://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()),
+		Err(did::UrlError::InvalidUrlScheme)
+	);
 }
