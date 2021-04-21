@@ -28,20 +28,17 @@ use codec::Encode;
 #[test]
 fn check_successful_ctype_creation() {
 	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
-	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()));
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
-	let operation = ctype::CtypeCreationOperation {
-		creator_did: did_mock::ALICE_DID,
-		hash: get_ctype_hash(true),
-		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
-	};
+	let did = did_mock::ALICE_DID;
+
+	let operation = generate_base_ctype_creation_operation(did.clone());
 	let signature = did_att_key.sign(&operation.encode());
 
-	let builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details.clone())]);
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(did, mock_did_details.clone())]);
 	let builder = ExtBuilder::from(builder);
 
 	let mut ext = builder.build();
@@ -72,21 +69,19 @@ fn check_successful_ctype_creation() {
 #[test]
 fn check_duplicate_ctype_creation() {
 	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
-	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()));
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
-	let operation = ctype::CtypeCreationOperation {
-		creator_did: did_mock::ALICE_DID,
-		hash: get_ctype_hash(true),
-		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
-	};
+	let did = did_mock::ALICE_DID;
+
+	let operation = generate_base_ctype_creation_operation(did.clone());
 	let signature = did_att_key.sign(&operation.encode());
 
-	let builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details.clone())]);
-	let builder = ExtBuilder::from(builder).with_ctypes(vec![(operation.hash, did_mock::ALICE_DID)]);
+	let builder =
+		did_mock::ExtBuilder::default().with_dids(vec![(operation.creator_did.clone(), mock_did_details.clone())]);
+	let builder = ExtBuilder::from(builder).with_ctypes(vec![(operation.hash, operation.creator_did.clone())]);
 
 	let mut ext = builder.build();
 
@@ -113,21 +108,19 @@ fn check_duplicate_ctype_creation() {
 #[test]
 fn check_did_not_present_ctype_creation() {
 	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
-	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()));
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
-	let operation = ctype::CtypeCreationOperation {
-		creator_did: did_mock::ALICE_DID,
-		hash: get_ctype_hash(true),
-		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
-	};
+	let did = did_mock::ALICE_DID;
+	let alternative_did = did_mock::BOB_DID;
+
+	let operation = generate_base_ctype_creation_operation(did.clone());
 	let signature = did_att_key.sign(&operation.encode());
 
-	let builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::BOB_DID, mock_did_details)]);
-	let builder = ExtBuilder::from(builder).with_ctypes(vec![(operation.hash, did_mock::ALICE_DID)]);
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(alternative_did.clone(), mock_did_details)]);
+	let builder = ExtBuilder::from(builder).with_ctypes(vec![(operation.hash, alternative_did.clone())]);
 
 	let mut ext = builder.build();
 
@@ -146,21 +139,19 @@ fn check_did_not_present_ctype_creation() {
 #[test]
 fn check_max_did_counter_ctype_creation() {
 	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
-	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()));
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 	mock_did_details.set_tx_counter(u64::MAX);
 
-	let operation = ctype::CtypeCreationOperation {
-		creator_did: did_mock::ALICE_DID,
-		hash: get_ctype_hash(true),
-		tx_counter: mock_did_details.get_tx_counter_value(),
-	};
+	let did = did_mock::ALICE_DID;
+
+	let operation = generate_base_ctype_creation_operation(did.clone());
 	let signature = did_att_key.sign(&operation.encode());
 
-	let builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details.clone())]);
+	let builder =
+		did_mock::ExtBuilder::default().with_dids(vec![(operation.creator_did.clone(), mock_did_details.clone())]);
 	let builder = ExtBuilder::from(builder);
 
 	let mut ext = builder.build();
@@ -188,21 +179,20 @@ fn check_max_did_counter_ctype_creation() {
 #[test]
 fn check_smaller_did_counter_ctype_creation() {
 	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
-	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()));
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 	mock_did_details.set_tx_counter(1u64);
 
-	let operation = ctype::CtypeCreationOperation {
-		creator_did: did_mock::ALICE_DID,
-		hash: get_ctype_hash(true),
-		tx_counter: mock_did_details.get_tx_counter_value() - 1u64,
-	};
+	let did = did_mock::ALICE_DID;
+
+	let mut operation = generate_base_ctype_creation_operation(did.clone());
+	operation.tx_counter = mock_did_details.get_tx_counter_value() - 1u64;
 	let signature = did_att_key.sign(&operation.encode());
 
-	let builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details.clone())]);
+	let builder =
+		did_mock::ExtBuilder::default().with_dids(vec![(operation.creator_did.clone(), mock_did_details.clone())]);
 	let builder = ExtBuilder::from(builder);
 
 	let mut ext = builder.build();
@@ -230,20 +220,19 @@ fn check_smaller_did_counter_ctype_creation() {
 #[test]
 fn check_equal_did_counter_ctype_creation() {
 	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
-	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()));
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
-	let operation = ctype::CtypeCreationOperation {
-		creator_did: did_mock::ALICE_DID,
-		hash: get_ctype_hash(true),
-		tx_counter: mock_did_details.get_tx_counter_value(),
-	};
+	let did = did_mock::ALICE_DID;
+
+	let mut operation = generate_base_ctype_creation_operation(did.clone());
+	operation.tx_counter = mock_did_details.get_tx_counter_value();
 	let signature = did_att_key.sign(&operation.encode());
 
-	let builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details.clone())]);
+	let builder =
+		did_mock::ExtBuilder::default().with_dids(vec![(operation.creator_did.clone(), mock_did_details.clone())]);
 	let builder = ExtBuilder::from(builder);
 
 	let mut ext = builder.build();
@@ -271,20 +260,20 @@ fn check_equal_did_counter_ctype_creation() {
 #[test]
 fn check_too_large_did_counter_ctype_creation() {
 	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
-	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()));
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
+	mock_did_details.set_tx_counter(1u64);
 
-	let operation = ctype::CtypeCreationOperation {
-		creator_did: did_mock::ALICE_DID,
-		hash: get_ctype_hash(true),
-		tx_counter: mock_did_details.get_tx_counter_value() + 2u64,
-	};
+	let did = did_mock::ALICE_DID;
+
+	let mut operation = generate_base_ctype_creation_operation(did.clone());
+	operation.tx_counter = mock_did_details.get_tx_counter_value() + 2u64;
 	let signature = did_att_key.sign(&operation.encode());
 
-	let builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details.clone())]);
+	let builder =
+		did_mock::ExtBuilder::default().with_dids(vec![(operation.creator_did.clone(), mock_did_details.clone())]);
 	let builder = ExtBuilder::from(builder);
 
 	let mut ext = builder.build();
@@ -312,20 +301,17 @@ fn check_too_large_did_counter_ctype_creation() {
 #[test]
 fn check_no_attestation_key_ctype_creation() {
 	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
-	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	// Created but not added to the mock DID details
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
-	let mock_did_details =
-		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+	let mock_did_details = did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()));
 
-	let operation = ctype::CtypeCreationOperation {
-		creator_did: did_mock::ALICE_DID,
-		hash: get_ctype_hash(true),
-		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
-	};
+	let did = did_mock::ALICE_DID;
+
+	let operation = generate_base_ctype_creation_operation(did.clone());
 	let signature = did_att_key.sign(&operation.encode());
 
-	let builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details.clone())]);
+	let builder =
+		did_mock::ExtBuilder::default().with_dids(vec![(operation.creator_did.clone(), mock_did_details.clone())]);
 	let builder = ExtBuilder::from(builder);
 
 	let mut ext = builder.build();
@@ -353,21 +339,19 @@ fn check_no_attestation_key_ctype_creation() {
 #[test]
 fn check_invalid_signature_format_ctype_creation() {
 	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
-	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let wrong_format_att_key = did_mock::get_ed25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()));
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
-	let operation = ctype::CtypeCreationOperation {
-		creator_did: did_mock::ALICE_DID,
-		hash: get_ctype_hash(true),
-		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
-	};
+	let did = did_mock::ALICE_DID;
+
+	let operation = generate_base_ctype_creation_operation(did.clone());
 	let signature = wrong_format_att_key.sign(&operation.encode());
 
-	let builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details.clone())]);
+	let builder =
+		did_mock::ExtBuilder::default().with_dids(vec![(operation.creator_did.clone(), mock_did_details.clone())]);
 	let builder = ExtBuilder::from(builder);
 
 	let mut ext = builder.build();
@@ -395,21 +379,19 @@ fn check_invalid_signature_format_ctype_creation() {
 #[test]
 fn check_invalid_signature_ctype_creation() {
 	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
-	let did_enc_key = did_mock::get_x25519_encryption_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let alternative_seed_att_key = did_mock::get_sr25519_attestation_key(false);
 	let mut mock_did_details =
-		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()), did_enc_key);
+		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()));
 	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
 
-	let operation = ctype::CtypeCreationOperation {
-		creator_did: did_mock::ALICE_DID,
-		hash: get_ctype_hash(true),
-		tx_counter: mock_did_details.get_tx_counter_value() + 1u64,
-	};
+	let did = did_mock::ALICE_DID;
+
+	let operation = generate_base_ctype_creation_operation(did.clone());
 	let signature = alternative_seed_att_key.sign(&operation.encode());
 
-	let builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details.clone())]);
+	let builder =
+		did_mock::ExtBuilder::default().with_dids(vec![(operation.creator_did.clone(), mock_did_details.clone())]);
 	let builder = ExtBuilder::from(builder);
 
 	let mut ext = builder.build();

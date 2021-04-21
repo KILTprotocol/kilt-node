@@ -112,8 +112,8 @@ pub struct ExtBuilder {
 impl Default for ExtBuilder {
 	fn default() -> Self {
 		Self {
-			did_builder: None,
 			ctypes_stored: vec![],
+			did_builder: None,
 		}
 	}
 }
@@ -150,5 +150,13 @@ impl ExtBuilder {
 		}
 
 		ext
+	}
+}
+
+pub fn generate_base_ctype_creation_operation(did: TestDidIdentifier) -> CtypeCreationOperation<Test> {
+	CtypeCreationOperation {
+		creator_did: did,
+		hash: get_ctype_hash(true),
+		tx_counter: 1u64,
 	}
 }
