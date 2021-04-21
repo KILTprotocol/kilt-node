@@ -319,10 +319,9 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
-		/// The signing account is not the transfer account.
-		Unauthorized,
-		/// The source address has a balance lock and thus cannot be migrated.
-		UnexpectedLocks,
+		/// The source address does not have KILT balance lock which is
+		/// required for `locked_transfer`.
+		BalanceLockNotFound,
 		/// The source and destination address have limits for their custom KILT
 		/// balance lock and thus cannot be merged. Should never be thrown.
 		ConflictingLockingBlocks,
@@ -332,18 +331,21 @@ pub mod pallet {
 		/// When migrating multiple accounts to the same target, the size of the
 		/// list of source addresses should never exceed `MaxClaims`.
 		ExceedsMaxClaims,
+		/// The source address does not have any balance lock at all which is
+		/// required for `locked_transfer`.
+		ExpectedLocks,
 		/// The source address has less balance available than the locked amount
 		/// which should be transferred in `locked_transfer`.
 		InsufficientBalance,
 		/// The source address has less locked balance than the amount which
 		/// should be transferred in `locked_transfer`.
 		InsufficientLockedBalance,
-		/// The source address does not have KILT balance lock which is
-		/// required for `locked_transfer`.
-		BalanceLockNotFound,
-		/// The source address does not have any balance lock at all which is
-		/// required for `locked_transfer`.
-		ExpectedLocks,
+		/// The target address should not be the source address.
+		SameDestination,
+		/// The signing account is not the transfer account.
+		Unauthorized,
+		/// The source address has a balance lock and thus cannot be migrated.
+		UnexpectedLocks,
 	}
 
 	#[pallet::hooks]
@@ -459,6 +461,8 @@ pub mod pallet {
 			let source = T::Lookup::lookup(source)?;
 			let target = T::Lookup::lookup(target)?;
 
+			ensure!(source != target, Error::<T>::SameDestination);
+
 			Ok(Some(Self::migrate_user(&source, &target)?).into())
 		}
 
@@ -507,6 +511,7 @@ pub mod pallet {
 			let mut post_weight: Weight = 0;
 			for s in sources.clone().into_iter() {
 				let source = T::Lookup::lookup(s)?;
+				ensure!(source != target, Error::<T>::SameDestination);
 				post_weight += Self::migrate_user(&source, &target)?;
 			}
 
@@ -534,6 +539,7 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::locked_transfer())]
 		#[transactional]
+		// #[cfg(feature = "post-sudo-removal")]
 		pub fn locked_transfer(
 			origin: OriginFor<T>,
 			target: <T::Lookup as StaticLookup>::Source,
@@ -541,6 +547,8 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let source = ensure_signed(origin)?;
 			let target = T::Lookup::lookup(target)?;
+
+			ensure!(target != source, Error::<T>::SameDestination);
 
 			// The correct check would be `ensure_can_withdraw` but since we expect `amount`
 			// to be locked, we just check the total balance until we remove the lock below
@@ -731,9 +739,8 @@ impl<T: Config> Pallet<T> {
 
 				// We don't need to append `UnlockingAt` because we require both locks to end at
 				// the same block
-				// We can simply sum `amount` because of the above requirement
-				// TODO: If source == target, this doubles the amount. Check whether we might
-				// want to throw in this case in `migrate_user`.
+				// We can simply sum `amount` because of the above requirement and the check
+				// that source != target in the corresponding extrinsics
 				target_lock.amount.saturating_add(max_add_amount)
 			}
 			// If no custom lock has been set up for target account, we can default to the one of the source

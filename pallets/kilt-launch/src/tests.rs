@@ -94,6 +94,11 @@ fn check_build_genesis_config() {
 #[test]
 fn check_migrate_single_account_locked() {
 	ExtBuilder::default().pseudos_lock_all().build().execute_with(|| {
+		assert_noop!(
+			KiltLaunch::migrate_genesis_account(Origin::signed(TRANSFER_ACCOUNT), PSEUDO_1, PSEUDO_1),
+			Error::<Test>::SameDestination
+		);
+
 		let user_locked_info = LockedBalance {
 			block: 100,
 			amount: 10_000 - <Test as crate::Config>::UsableBalance::get(),
@@ -244,6 +249,12 @@ fn check_locked_transfer() {
 				}]
 			);
 
+			// Cannot transfer from source to source
+			assert_noop!(
+				KiltLaunch::locked_transfer(Origin::signed(USER), USER, 1),
+				Error::<Test>::SameDestination
+			);
+
 			// Cannot transfer without a KILT balance lock
 			assert_noop!(
 				KiltLaunch::locked_transfer(Origin::signed(PSEUDO_4), USER, 1),
@@ -311,6 +322,11 @@ fn check_locked_transfer() {
 #[test]
 fn check_migrate_single_account_vested() {
 	ExtBuilder::default().pseudos_vest_all().build().execute_with(|| {
+		assert_noop!(
+			KiltLaunch::migrate_genesis_account(Origin::signed(TRANSFER_ACCOUNT), PSEUDO_1, PSEUDO_1),
+			Error::<Test>::SameDestination
+		);
+
 		let user_vesting_schedule = VestingInfo {
 			locked: 10_000,
 			per_block: 1000, // Vesting over 10 blocks
@@ -465,6 +481,12 @@ fn check_migrate_accounts_vested() {
 #[test]
 fn check_negative_migrate_accounts_vested() {
 	ExtBuilder::default().pseudos_vest_all().build().execute_with(|| {
+		// Migrate from source to source
+		assert_noop!(
+			KiltLaunch::migrate_multiple_genesis_accounts(Origin::signed(TRANSFER_ACCOUNT), vec![PSEUDO_1, USER], USER),
+			Error::<Test>::SameDestination
+		);
+
 		// Migrate too many accounts
 		assert_noop!(
 			KiltLaunch::migrate_multiple_genesis_accounts(
@@ -508,6 +530,12 @@ fn check_negative_migrate_accounts_vested() {
 #[test]
 fn check_negative_migrate_accounts_locked() {
 	ExtBuilder::default().pseudos_lock_all().build().execute_with(|| {
+		// Migrate from source to source
+		assert_noop!(
+			KiltLaunch::migrate_multiple_genesis_accounts(Origin::signed(TRANSFER_ACCOUNT), vec![PSEUDO_1, USER], USER),
+			Error::<Test>::SameDestination
+		);
+
 		// Migrate two accounts with different ending blocks
 		assert_noop!(
 			KiltLaunch::migrate_multiple_genesis_accounts(
