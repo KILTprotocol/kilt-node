@@ -113,9 +113,9 @@ pub fn get_sr25519_authentication_key(default: bool) -> sr25519::Pair {
 
 pub fn get_x25519_encryption_key(default: bool) -> PublicEncryptionKey {
 	if default {
-		PublicEncryptionKey::X55519(DEFAULT_ENC_SEED)
+		PublicEncryptionKey::X25519(DEFAULT_ENC_SEED)
 	} else {
-		PublicEncryptionKey::X55519(ALTERNATIVE_ENC_SEED)
+		PublicEncryptionKey::X25519(ALTERNATIVE_ENC_SEED)
 	}
 }
 

@@ -95,6 +95,7 @@ impl did::Config for Test {
 
 pub type TestDelegationNodeId = <Test as Config>::DelegationNodeId;
 
+#[cfg(test)]
 pub(crate) const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
 
 const DEFAULT_ROOT_ID_SEED: u64 = 1u64;
@@ -118,6 +119,7 @@ pub fn get_delegation_id(default: bool) -> H256 {
 	}
 }
 
+#[cfg(test)]
 pub(crate) fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
 	hash.encode()
 }

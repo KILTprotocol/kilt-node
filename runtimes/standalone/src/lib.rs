@@ -33,7 +33,7 @@ use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, NumberFor, OpaqueKeys, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, NumberFor, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult,
 };
@@ -302,19 +302,6 @@ impl attestation::Config for Runtime {
 	type WeightInfo = ();
 }
 
-pub struct AttestationStructRuntimeUpgrade;
-impl attestation::migration::V23ToV24 for AttestationStructRuntimeUpgrade {
-	type Hash = Hash;
-	type DelegationNodeId = Hash;
-	type AccountId = AccountId;
-	type Module = Attestation;
-}
-impl frame_support::traits::OnRuntimeUpgrade for AttestationStructRuntimeUpgrade {
-	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		attestation::migration::apply::<Self>()
-	}
-}
-
 impl ctype::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
@@ -324,22 +311,8 @@ impl ctype::Config for Runtime {
 impl delegation::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
-	type Signature = Signature;
-	type Signer = <Signature as Verify>::Signer;
 	type DelegationNodeId = Hash;
 	type WeightInfo = ();
-}
-
-pub struct DelegationStructRuntimeUpgrade;
-impl delegation::migration::V23ToV24 for DelegationStructRuntimeUpgrade {
-	type AccountId = AccountId;
-	type DelegationNodeId = Hash;
-	type Module = Delegation;
-}
-impl frame_support::traits::OnRuntimeUpgrade for DelegationStructRuntimeUpgrade {
-	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		delegation::migration::apply::<Self>()
-	}
 }
 
 impl did::Config for Runtime {
@@ -603,9 +576,9 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
-			add_benchmark!(params, batches, attestation, Attestation);
-			add_benchmark!(params, batches, ctype, Ctype);
-			add_benchmark!(params, batches, delegation, Delegation);
+			// add_benchmark!(params, batches, attestation, Attestation);
+			// add_benchmark!(params, batches, ctype, Ctype);
+			// add_benchmark!(params, batches, delegation, Delegation);
 			// add_benchmark!(params, batches, did, Did);
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }

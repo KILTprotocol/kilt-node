@@ -56,15 +56,13 @@ fn check_successful_ctype_creation() {
 	});
 
 	// Verify the CTYPE has the right owner DID
-	let stored_ctype_creator = ext.execute_with(|| {
-		Ctype::ctypes(&operation.hash).expect("CTYPE hash should be present on chain.")
-	});
+	let stored_ctype_creator =
+		ext.execute_with(|| Ctype::ctypes(&operation.hash).expect("CTYPE hash should be present on chain."));
 	assert_eq!(stored_ctype_creator, operation.creator_did);
 
 	// Verify that the DID tx counter has increased
-	let ctype_creator_details = ext.execute_with(|| {
-		Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain.")
-	});
+	let ctype_creator_details =
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain."));
 	assert_eq!(
 		ctype_creator_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value() + 1u64
@@ -88,8 +86,7 @@ fn check_duplicate_ctype_creation() {
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::ALICE_DID, mock_did_details.clone())]);
-	let builder =
-		ExtBuilder::from(builder).with_ctypes(vec![(operation.hash, did_mock::ALICE_DID)]);
+	let builder = ExtBuilder::from(builder).with_ctypes(vec![(operation.hash, did_mock::ALICE_DID)]);
 
 	let mut ext = builder.build();
 
@@ -105,9 +102,8 @@ fn check_duplicate_ctype_creation() {
 	});
 
 	// Verify that the DID tx counter has increased
-	let ctype_creator_details = ext.execute_with(|| {
-		Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain.")
-	});
+	let ctype_creator_details =
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain."));
 	assert_eq!(
 		ctype_creator_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value() + 1u64
@@ -131,8 +127,7 @@ fn check_did_not_present_ctype_creation() {
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(did_mock::BOB_DID, mock_did_details)]);
-	let builder =
-		ExtBuilder::from(builder).with_ctypes(vec![(operation.hash, did_mock::ALICE_DID)]);
+	let builder = ExtBuilder::from(builder).with_ctypes(vec![(operation.hash, did_mock::ALICE_DID)]);
 
 	let mut ext = builder.build();
 
@@ -182,9 +177,8 @@ fn check_max_did_counter_ctype_creation() {
 	});
 
 	// Verify that the DID tx counter has NOT increased
-	let ctype_creator_details = ext.execute_with(|| {
-		Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain.")
-	});
+	let ctype_creator_details =
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain."));
 	assert_eq!(
 		ctype_creator_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value()
@@ -225,9 +219,8 @@ fn check_smaller_did_counter_ctype_creation() {
 	});
 
 	// Verify that the DID tx counter has NOT increased
-	let ctype_creator_details = ext.execute_with(|| {
-		Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain.")
-	});
+	let ctype_creator_details =
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain."));
 	assert_eq!(
 		ctype_creator_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value()
@@ -267,9 +260,8 @@ fn check_equal_did_counter_ctype_creation() {
 	});
 
 	// Verify that the DID tx counter has NOT increased
-	let ctype_creator_details = ext.execute_with(|| {
-		Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain.")
-	});
+	let ctype_creator_details =
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain."));
 	assert_eq!(
 		ctype_creator_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value()
@@ -309,9 +301,8 @@ fn check_too_large_did_counter_ctype_creation() {
 	});
 
 	// Verify that the DID tx counter has NOT increased
-	let ctype_creator_details = ext.execute_with(|| {
-		Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain.")
-	});
+	let ctype_creator_details =
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain."));
 	assert_eq!(
 		ctype_creator_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value()
@@ -351,9 +342,8 @@ fn check_no_attestation_key_ctype_creation() {
 	});
 
 	// Verify that the DID tx counter has NOT increased
-	let ctype_creator_details = ext.execute_with(|| {
-		Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain.")
-	});
+	let ctype_creator_details =
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain."));
 	assert_eq!(
 		ctype_creator_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value()
@@ -394,9 +384,8 @@ fn check_invalid_signature_format_ctype_creation() {
 	});
 
 	// Verify that the DID tx counter has NOT increased
-	let ctype_creator_details = ext.execute_with(|| {
-		Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain.")
-	});
+	let ctype_creator_details =
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain."));
 	assert_eq!(
 		ctype_creator_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value()
@@ -437,9 +426,8 @@ fn check_invalid_signature_ctype_creation() {
 	});
 
 	// Verify that the DID tx counter has NOT increased
-	let ctype_creator_details = ext.execute_with(|| {
-		Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain.")
-	});
+	let ctype_creator_details =
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("CTYPE creator should be present on chain."));
 	assert_eq!(
 		ctype_creator_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value()

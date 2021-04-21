@@ -781,9 +781,11 @@ impl<T: Config> Pallet<T> {
 		// Check if delegation exists
 		let delegation_node = <Delegations<T>>::get(delegation).ok_or(Error::<T>::DelegationNotFound)?;
 
-		// Check if the given account is the owner of the delegation and that the delegation has not been removed
-		// Else: since at the moment there might be another node up the hierarchy, we keep searching for a valid one.
-		// It should be changed in the future to stop when a matching node is found, after we ensure there is only one delegation
+		// Check if the given account is the owner of the delegation and that the
+		// delegation has not been removed Else: since at the moment there might be
+		// another node up the hierarchy, we keep searching for a valid one.
+		// It should be changed in the future to stop when a matching node is found,
+		// after we ensure there is only one delegation
 		if delegation_node.owner.eq(account) && !delegation_node.revoked {
 			return Ok(true);
 		} else if let Some(parent) = delegation_node.parent {
@@ -793,7 +795,8 @@ impl<T: Config> Pallet<T> {
 			// Recursively check upwards in hierarchy
 			Self::is_delegating(account, &parent, remaining_lookups)
 		} else {
-			// Return whether the given account is the owner of the root and the root has not been revoked
+			// Return whether the given account is the owner of the root and the root has
+			// not been revoked
 			let root = <Roots<T>>::get(delegation_node.root_id).ok_or(Error::<T>::RootNotFound)?;
 			Ok(root.owner.eq(account) && !root.revoked)
 		}

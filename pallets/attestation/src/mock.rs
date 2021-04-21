@@ -102,6 +102,7 @@ impl did::Config for Test {
 pub type TestHash = <Test as frame_system::Config>::Hash;
 pub type TestDelegationNodeId = <Test as delegation::Config>::DelegationNodeId;
 
+#[cfg(test)]
 pub(crate) const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
 const DEFAULT_CLAIM_HASH_SEED: u64 = 1u64;
 const ALTERNATIVE_CLAIM_HASH_SEED: u64 = 2u64;
