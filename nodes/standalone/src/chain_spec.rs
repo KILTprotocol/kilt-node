@@ -46,6 +46,7 @@ pub enum Alternative {
 	/// Whatever the current runtime is, with simple Alice/Bob auths.
 	KiltTestnet,
 	KiltDevnet,
+	MashnetStaging,
 }
 
 /// Helper function to generate a crypto pair from seed
@@ -108,16 +109,15 @@ impl Alternative {
 						testnet_genesis(
 							wasm_binary,
 							vec![get_authority_keys_from_secret("//Alice")],
-							get_account_id_from_secret::<sr25519::Public>("//Alice"),
+							get_account_id_from_secret::<ed25519::Public>("//Alice"),
 							vec![
-								// Dev Faucet account
-								get_account_id_from_secret::<ed25519::Public>("receive clutch item involve chaos clutch furnace arrest claw isolate okay together"),
-								get_account_id_from_secret::<sr25519::Public>("//Alice"),
-								get_account_id_from_secret::<sr25519::Public>("//Bob"),
-								get_account_id_from_secret::<ed25519::Public>("//Bob"),
-								get_account_id_from_secret::<ed25519::Public>("//Alice"),
-							],
-							true
+					// Dev Faucet account
+					get_account_id_from_secret::<ed25519::Public>("receive clutch item involve chaos clutch furnace arrest claw isolate okay together"),
+					get_account_id_from_secret::<ed25519::Public>("//Alice"),
+					get_account_id_from_secret::<ed25519::Public>("//Bob"),
+					get_account_id_from_secret::<sr25519::Public>("//Alice"),
+					get_account_id_from_secret::<sr25519::Public>("//Bob"),
+	],
 						)
 					},
 					vec![],
@@ -149,7 +149,36 @@ impl Alternative {
 								DEV_AUTH_BOB.into(),
 								DEV_AUTH_CHARLIE.into(),
 							],
-							true,
+						)
+					},
+					vec![],
+					None,
+					None,
+					Some(properties),
+					None,
+				)
+			}
+			Alternative::MashnetStaging => {
+				ChainSpec::from_genesis(
+					"Mashnet Staging",
+					"mashnet_staging",
+					ChainType::Live,
+					move || {
+						testnet_genesis(
+							wasm_binary,
+							// Initial Authorities
+							vec![
+								as_authority_key(DEV_AUTH_ALICE),
+								as_authority_key(DEV_AUTH_BOB),
+								as_authority_key(DEV_AUTH_CHARLIE),
+							],
+							DEV_AUTH_ALICE.into(),
+							vec![
+								DEV_FAUCET.into(),
+								DEV_AUTH_ALICE.into(),
+								DEV_AUTH_BOB.into(),
+								DEV_AUTH_CHARLIE.into(),
+							],
 						)
 					},
 					vec![],
@@ -167,6 +196,7 @@ impl Alternative {
 			"dev" => Some(Alternative::Development),
 			"kilt-testnet" => Some(Alternative::KiltTestnet),
 			"kilt-devnet" => Some(Alternative::KiltDevnet),
+			"mashnet-staging" => Some(Alternative::MashnetStaging),
 			_ => None,
 		}
 	}
@@ -177,7 +207,6 @@ fn testnet_genesis(
 	initial_authorities: Vec<(AccountId, AuraId, GrandpaId)>,
 	root_key: AccountId,
 	endowed_accounts: Vec<AccountId>,
-	_enable_println: bool,
 ) -> GenesisConfig {
 	GenesisConfig {
 		frame_system: SystemConfig {
