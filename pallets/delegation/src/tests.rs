@@ -3058,8 +3058,8 @@ fn check_did_max_tx_counter_submit_delegation_revocation_operation() {
 		(delegator_did.clone(), delegator_details.clone()),
 		(delegate_did.clone(), delegate_details.clone()),
 	]);
-	let builder = ctype_mock::ExtBuilder::from(builder)
-		.with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
+	let builder =
+		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
 	let builder = ExtBuilder::from(builder)
 		.with_root_delegations(vec![(root_id, root_node.clone())])
 		.with_delegations(vec![
@@ -3122,8 +3122,8 @@ fn check_delegator_too_small_tx_counter_submit_delegation_revocation_operation()
 		(delegator_did.clone(), delegator_details.clone()),
 		(delegate_did.clone(), delegate_details.clone()),
 	]);
-	let builder = ctype_mock::ExtBuilder::from(builder)
-		.with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
+	let builder =
+		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
 	let builder = ExtBuilder::from(builder)
 		.with_root_delegations(vec![(root_id, root_node.clone())])
 		.with_delegations(vec![
@@ -3193,8 +3193,8 @@ fn check_delegator_equal_tx_counter_submit_delegation_revocation_operation() {
 		(delegator_did.clone(), delegator_details.clone()),
 		(delegate_did.clone(), delegate_details.clone()),
 	]);
-	let builder = ctype_mock::ExtBuilder::from(builder)
-		.with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
+	let builder =
+		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
 	let builder = ExtBuilder::from(builder)
 		.with_root_delegations(vec![(root_id, root_node.clone())])
 		.with_delegations(vec![
@@ -3264,8 +3264,8 @@ fn check_delegator_too_large_tx_counter_submit_delegation_revocation_operation()
 		(delegator_did.clone(), delegator_details.clone()),
 		(delegate_did.clone(), delegate_details.clone()),
 	]);
-	let builder = ctype_mock::ExtBuilder::from(builder)
-		.with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
+	let builder =
+		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
 	let builder = ExtBuilder::from(builder)
 		.with_root_delegations(vec![(root_id, root_node.clone())])
 		.with_delegations(vec![
@@ -3334,8 +3334,8 @@ fn check_delegator_delegation_key_not_present_submit_delegation_revocation_opera
 		(delegator_did.clone(), delegator_details.clone()),
 		(delegate_did.clone(), delegate_details.clone()),
 	]);
-	let builder = ctype_mock::ExtBuilder::from(builder)
-		.with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
+	let builder =
+		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
 	let builder = ExtBuilder::from(builder)
 		.with_root_delegations(vec![(root_id, root_node.clone())])
 		.with_delegations(vec![
@@ -3405,8 +3405,8 @@ fn check_invalid_signature_format_submit_delegation_revocation_operation() {
 		(delegator_did.clone(), delegator_details.clone()),
 		(delegate_did.clone(), delegate_details.clone()),
 	]);
-	let builder = ctype_mock::ExtBuilder::from(builder)
-		.with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
+	let builder =
+		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
 	let builder = ExtBuilder::from(builder)
 		.with_root_delegations(vec![(root_id, root_node.clone())])
 		.with_delegations(vec![
@@ -3476,8 +3476,8 @@ fn check_invalid_signature_submit_delegation_revocation_operation() {
 		(delegator_did.clone(), delegator_details.clone()),
 		(delegate_did.clone(), delegate_details.clone()),
 	]);
-	let builder = ctype_mock::ExtBuilder::from(builder)
-		.with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
+	let builder =
+		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
 	let builder = ExtBuilder::from(builder)
 		.with_root_delegations(vec![(root_id, root_node.clone())])
 		.with_delegations(vec![
@@ -3548,8 +3548,8 @@ fn check_delegation_not_found_submit_delegation_revocation_operation() {
 		(delegator_did.clone(), delegator_details.clone()),
 		(delegate_did.clone(), delegate_details.clone()),
 	]);
-	let builder = ctype_mock::ExtBuilder::from(builder)
-		.with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
+	let builder =
+		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
 	let builder = ExtBuilder::from(builder)
 		.with_root_delegations(vec![(root_id, root_node.clone())])
 		.with_delegations(vec![
@@ -3684,8 +3684,7 @@ fn check_parent_too_far_submit_delegation_revocation_operation() {
 	);
 	delegation_node.parent = Some(parent_delegation_id);
 
-	let mut operation =
-		generate_base_delegation_revocation_operation(delegation_id, delegation_node.clone());
+	let mut operation = generate_base_delegation_revocation_operation(delegation_id, delegation_node.clone());
 	operation.caller_did = delegator_did.clone();
 	operation.max_parent_checks = 0u32;
 	let signature = delegator_del_key.sign(&operation.encode());
@@ -3728,7 +3727,8 @@ fn check_parent_too_far_submit_delegation_revocation_operation() {
 }
 
 #[test]
-fn check_too_many_revocations_submit_delegation_revocation_operation() {	let delegator_auth_key = did_mock::get_ed25519_authentication_key(true);
+fn check_too_many_revocations_submit_delegation_revocation_operation() {
+	let delegator_auth_key = did_mock::get_ed25519_authentication_key(true);
 	let delegator_del_key = did_mock::get_sr25519_delegation_key(true);
 	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
 
@@ -3755,8 +3755,7 @@ fn check_too_many_revocations_submit_delegation_revocation_operation() {	let del
 	);
 	delegation_node.parent = Some(parent_delegation_id);
 
-	let mut operation =
-		generate_base_delegation_revocation_operation(delegation_id, delegation_node.clone());
+	let mut operation = generate_base_delegation_revocation_operation(delegation_id, delegation_node.clone());
 	operation.caller_did = delegator_did.clone();
 	operation.max_revocations = 0u32;
 	let signature = delegator_del_key.sign(&operation.encode());
@@ -3765,8 +3764,8 @@ fn check_too_many_revocations_submit_delegation_revocation_operation() {	let del
 		(delegator_did.clone(), delegator_details.clone()),
 		(delegate_did.clone(), delegate_details.clone()),
 	]);
-	let builder = ctype_mock::ExtBuilder::from(builder)
-		.with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
+	let builder =
+		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), delegator_did.clone())]);
 	let builder = ExtBuilder::from(builder)
 		.with_root_delegations(vec![(root_id, root_node.clone())])
 		.with_delegations(vec![

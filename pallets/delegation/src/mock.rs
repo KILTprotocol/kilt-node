@@ -132,7 +132,7 @@ pub fn generate_base_delegation_root_creation_operation(
 	DelegationRootCreationOperation {
 		caller_did: root_node.owner,
 		ctype_hash: root_node.ctype_hash,
-		root_id: root_id,
+		root_id,
 		tx_counter: 1u64,
 	}
 }
@@ -146,8 +146,8 @@ pub fn generate_base_delegation_creation_operation(
 	DelegationCreationOperation {
 		caller_did: delegator_did,
 		delegate_did: delegation_node.owner,
-		delegate_signature: delegate_signature,
-		delegation_id: delegation_id,
+		delegate_signature,
+		delegation_id,
 		parent_id: delegation_node.parent,
 		root_id: delegation_node.root_id,
 		permissions: delegation_node.permissions,
@@ -161,7 +161,7 @@ pub fn generate_base_delegation_root_revocation_operation(
 ) -> DelegationRootRevocationOperation<Test> {
 	DelegationRootRevocationOperation {
 		caller_did: root_node.owner,
-		root_id: root_id,
+		root_id,
 		max_children: 1u32,
 		tx_counter: 1u64,
 	}
@@ -173,7 +173,7 @@ pub fn generate_base_delegation_revocation_operation(
 ) -> DelegationRevocationOperation<Test> {
 	DelegationRevocationOperation {
 		caller_did: delegation_node.owner,
-		delegation_id: delegation_id,
+		delegation_id,
 		max_parent_checks: 1u32,
 		max_revocations: 1u32,
 		tx_counter: 1u64,
@@ -182,7 +182,7 @@ pub fn generate_base_delegation_revocation_operation(
 
 pub fn generate_base_delegation_root(owner: TestDidIdentifier) -> DelegationRoot<Test> {
 	DelegationRoot {
-		owner: owner,
+		owner,
 		ctype_hash: ctype_mock::get_ctype_hash(true),
 		revoked: false,
 	}
@@ -190,9 +190,9 @@ pub fn generate_base_delegation_root(owner: TestDidIdentifier) -> DelegationRoot
 
 pub fn generate_base_delegation_node(root_id: TestDelegationNodeId, owner: TestDidIdentifier) -> DelegationNode<Test> {
 	DelegationNode {
-		owner: owner,
+		owner,
 		parent: None,
-		root_id: root_id,
+		root_id,
 		permissions: Permissions::DELEGATE,
 		revoked: false,
 	}

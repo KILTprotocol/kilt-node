@@ -264,6 +264,11 @@ pub mod pallet {
 				let root =
 					<delegation::Roots<T>>::get(delegation.root_id).ok_or(delegation::Error::<T>::RootNotFound)?;
 				ensure!(root.ctype_hash.eq(&operation.ctype_hash), Error::<T>::CTypeMismatch);
+
+				// If attestation is based on a delegation, store separately
+				let mut delegated_attestations = <DelegatedAttestations<T>>::get(delegation_id).unwrap_or_default();
+				delegated_attestations.push(operation.claim_hash);
+				<DelegatedAttestations<T>>::insert(delegation_id, delegated_attestations);
 			}
 
 			// Insert attestation
@@ -278,14 +283,6 @@ pub mod pallet {
 				},
 			);
 
-			if let Some(delegation_id) = operation.delegation_id {
-				// If attestation is based on a delegation, store separately
-				let mut delegated_attestations = <DelegatedAttestations<T>>::get(delegation_id).unwrap_or_default();
-				delegated_attestations.push(operation.claim_hash);
-				<DelegatedAttestations<T>>::insert(delegation_id, delegated_attestations);
-			}
-
-			// Deposit event that attestation has beed added
 			Self::deposit_event(Event::AttestationCreated(
 				operation.caller_did,
 				operation.claim_hash,

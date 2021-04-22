@@ -1463,7 +1463,10 @@ fn check_max_parent_lookups_submit_attestation_revocation_operation() {
 	operation.max_parent_checks = 0u32;
 	let signature = did_att_key.sign(&operation.encode());
 
-	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone()), (alternative_did.clone(), mock_did_details.clone())]);
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![
+		(caller_did.clone(), mock_did_details.clone()),
+		(alternative_did.clone(), mock_did_details.clone()),
+	]);
 	let builder =
 		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), caller_did.clone())]);
 	let builder = delegation_mock::ExtBuilder::from(builder)
