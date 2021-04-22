@@ -4,6 +4,11 @@ FROM paritytech/ci-linux:d34c7950-20210408 as builder
 
 WORKDIR /build
 
+ARG GIT_COMMIT
+ENV GIT_COMMIT=$GIT_COMMIT
+
+ARG FEATURES=
+
 COPY ./nodes /build/nodes
 COPY ./pallets /build/pallets
 COPY ./primitives /build/primitives
@@ -11,7 +16,7 @@ COPY ./runtimes /build/runtimes
 COPY ./Cargo.lock /build/Cargo.lock
 COPY ./Cargo.toml /build/Cargo.toml
 
-RUN cargo build --release
+RUN cargo build --release --features $FEATURES
 
 # ===== SECOND STAGE ======
 
