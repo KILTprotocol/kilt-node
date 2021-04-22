@@ -17,7 +17,6 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::chain_spec;
-use sc_cli;
 use std::path::PathBuf;
 use structopt::StructOpt;
 

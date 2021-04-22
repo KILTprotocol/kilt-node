@@ -19,6 +19,7 @@
 //! DID: Handles decentralized identifiers on chain,
 //! adding and removing DIDs.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
 
 /// Test module for attestations
 #[cfg(test)]
