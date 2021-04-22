@@ -16,8 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate as attestation;
-use crate::*;
+use crate::{self as attestation, Attestation as AttestationStruct, *};
+use ctype::mock as ctype_mock;
 use delegation::mock as delegation_mock;
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
@@ -100,7 +100,9 @@ impl did::Config for Test {
 }
 
 pub type TestHash = <Test as frame_system::Config>::Hash;
+pub type TestCtypeHash = <Test as frame_system::Config>::Hash;
 pub type TestDelegationNodeId = <Test as delegation::Config>::DelegationNodeId;
+pub type TestDidIdentifier = <Test as did::Config>::DidIdentifier;
 
 #[cfg(test)]
 pub(crate) const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
@@ -115,10 +117,44 @@ pub fn get_claim_hash(default: bool) -> H256 {
 	}
 }
 
+pub fn generate_base_attestation_creation_operation(
+	claim_hash: TestHash,
+	attestation: AttestationStruct<Test>,
+) -> AttestationCreationOperation<Test> {
+	AttestationCreationOperation {
+		caller_did: attestation.attester,
+		claim_hash,
+		ctype_hash: attestation.ctype_hash,
+		delegation_id: attestation.delegation_id,
+		tx_counter: 1u64,
+	}
+}
+
+pub fn generate_base_attestation_revocation_operation(
+	claim_hash: TestHash,
+	attestation: AttestationStruct<Test>,
+) -> AttestationRevocationOperation<Test> {
+	AttestationRevocationOperation {
+		caller_did: attestation.attester,
+		claim_hash,
+		max_parent_checks: 1u32,
+		tx_counter: 1u64,
+	}
+}
+
+pub fn generate_base_attestation(attester: TestDidIdentifier) -> AttestationStruct<Test> {
+	AttestationStruct {
+		attester,
+		delegation_id: None,
+		ctype_hash: ctype_mock::get_ctype_hash(true),
+		revoked: false,
+	}
+}
+
 #[derive(Clone)]
 pub struct ExtBuilder {
 	delegation_builder: Option<delegation_mock::ExtBuilder>,
-	attestations_stored: Vec<(TestHash, attestation::Attestation<Test>)>,
+	attestations_stored: Vec<(TestHash, AttestationStruct<Test>)>,
 	delegated_attestations_stored: Vec<(TestDelegationNodeId, Vec<TestHash>)>,
 }
 
@@ -142,7 +178,7 @@ impl From<delegation_mock::ExtBuilder> for ExtBuilder {
 }
 
 impl ExtBuilder {
-	pub fn with_attestations(mut self, attestations: Vec<(TestHash, attestation::Attestation<Test>)>) -> Self {
+	pub fn with_attestations(mut self, attestations: Vec<(TestHash, AttestationStruct<Test>)>) -> Self {
 		self.attestations_stored = attestations;
 		self
 	}
