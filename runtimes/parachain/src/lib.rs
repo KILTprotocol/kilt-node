@@ -20,6 +20,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
+// The `from_over_into` warning originates from `construct_runtime` macro.
+#![allow(clippy::from_over_into)]
 
 // Make the WASM binary available.
 #[cfg(feature = "std")]
@@ -32,7 +34,10 @@ use frame_system::{
 	limits::{BlockLength, BlockWeights},
 	EnsureOneOf, EnsureRoot,
 };
-use kilt_primitives::*;
+use kilt_primitives::{
+	constants::{DAYS, DOLLARS, HOURS, MILLICENTS, SLOT_DURATION},
+	AccountId, Amount, Balance, BlockNumber, CurrencyId, Hash, Index, Signature,
+};
 use orml_currencies::BasicCurrencyAdapter;
 use orml_traits::{arithmetic::Zero, parameter_type_with_key};
 use orml_xcm_support::{IsNativeConcrete, MultiCurrencyAdapter, XcmHandler as XcmHandlerT};
@@ -100,28 +105,9 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	transaction_version: 1,
 };
 
-pub const MILLISECS_PER_BLOCK: u64 = 6000;
-
-pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
-
-pub const EPOCH_DURATION_IN_BLOCKS: u64 = 10 * MINUTES;
-
-// These time units are defined in number of blocks.
-pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
-pub const HOURS: BlockNumber = MINUTES * 60;
-pub const DAYS: BlockNumber = HOURS * 24;
-
-pub const DOLLARS: Balance = 10; // TODO: how much?
-pub const CENTS: Balance = DOLLARS / 100;
-pub const MILLICENTS: Balance = CENTS / 1_000;
-
 pub const fn deposit(items: u32, bytes: u32) -> Balance {
 	items as Balance * 20 * DOLLARS + (bytes as Balance) * 100 * MILLICENTS
 }
-
-// 1 in 4 blocks (on average, not counting collisions) will be primary babe
-// blocks.
-pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
 
 #[derive(codec::Encode, codec::Decode)]
 pub enum XcmpMessage<XAccountId, XBalance> {
@@ -492,7 +478,7 @@ parameter_types! {
 	pub const LaunchPeriod: BlockNumber = 7 * DAYS;
 	pub const VotingPeriod: BlockNumber = 7 * DAYS;
 	pub const FastTrackVotingPeriod: BlockNumber =  3 * HOURS;
-	pub const MinimumDeposit: Balance = 1 * DOLLARS;
+	pub const MinimumDeposit: Balance = 2 * DOLLARS;
 	pub const EnactmentPeriod: BlockNumber = 8 * DAYS;
 	pub const CooloffPeriod: BlockNumber = 7 * DAYS;
 	// One cent: $10,000 / MB
@@ -622,7 +608,7 @@ impl pallet_society::Config for Runtime {
 }
 
 parameter_types! {
-	pub const CandidacyBond: Balance = 1 * DOLLARS;
+	pub const CandidacyBond: Balance = 2 * DOLLARS;
 	// 1 storage item created, key size is 32 bytes, value size is 16+16.
 	pub const VotingBondBase: Balance = deposit(1, 64);
 	// additional data per vote is 32 bytes (account id).
