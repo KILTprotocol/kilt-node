@@ -103,6 +103,7 @@
 //!   when appending to `UnlockedAt`.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
 
 pub use default_weights::WeightInfo;
 #[cfg(feature = "std")]

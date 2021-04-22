@@ -20,6 +20,7 @@
 //! creating and revoking root nodes of delegation hierarchies,
 //! adding and revoking delegation nodes based on root nodes.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
 
 #[cfg(any(feature = "runtime-benchmarks", test))]
 pub mod benchmarking;
