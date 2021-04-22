@@ -14,9 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Moonbeam.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Pallet that allows block authors to include their identity in a block via an inherent.
-//! Currently the author does not _prove_ their identity, just states it. So it should not be used,
-//! for things like equivocation slashing that require authenticated authorship information.
+//! Pallet that allows block authors to include their identity in a block via an
+//! inherent. Currently the author does not _prove_ their identity, just states
+//! it. So it should not be used, for things like equivocation slashing that
+//! require authenticated authorship information.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -47,8 +48,8 @@ pub trait CanAuthor<AccountId> {
 	fn can_author(account: &AccountId) -> bool;
 }
 
-/// Default implementation where anyone can author, see `stake` and `author-filter` pallets for
-/// additional implementations.
+/// Default implementation where anyone can author, see `stake` and
+/// `author-filter` pallets for additional implementations.
 impl<T> CanAuthor<T> for () {
 	fn can_author(_: &T) -> bool {
 		true
@@ -59,17 +60,19 @@ pub trait Config: System {
 	/// Other pallets that want to be informed about block authorship
 	type EventHandler: EventHandler<Self::AccountId>;
 
-	/// A preliminary means of checking the validity of this author. This check is run before
-	/// block execution begins when data from previous inherent is unavailable. This is meant to
-	/// quickly invalidate blocks from obviously-invalid authors, although it need not rule out all
-	/// invlaid authors. The final check will be made when executing the inherent.
+	/// A preliminary means of checking the validity of this author. This check
+	/// is run before block execution begins when data from previous inherent is
+	/// unavailable. This is meant to quickly invalidate blocks from
+	/// obviously-invalid authors, although it need not rule out all
+	/// invalid authors. The final check will be made when executing the
+	/// inherent.
 	type PreliminaryCanAuthor: CanAuthor<Self::AccountId>;
 
 	/// The final word on whether the reported author can author at this height.
-	/// This will be used when executing the inherent. This check is often stricter than the
-	/// Preliminary check, because it can use more data.
-	/// If the pallet that implements this trait depends on an inherent, that inherent **must**
-	/// be included before this one.
+	/// This will be used when executing the inherent. This check is often
+	/// stricter than the Preliminary check, because it can use more data.
+	/// If the pallet that implements this trait depends on an inherent, that
+	/// inherent **must** be included before this one.
 	type FinalCanAuthor: CanAuthor<Self::AccountId>;
 }
 
@@ -149,7 +152,8 @@ impl<T: Config> FindAuthor<T::AccountId> for Module<T> {
 		I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
 	{
 		// We don't use the digests at all.
-		// This will only return the correct author _after_ the authorship inherent is processed.
+		// This will only return the correct author _after_ the authorship inherent is
+		// processed.
 		<Author<T>>::get()
 	}
 }
@@ -199,10 +203,7 @@ impl ProvideInherentData for InherentDataProvider {
 		&INHERENT_IDENTIFIER
 	}
 
-	fn provide_inherent_data(
-		&self,
-		inherent_data: &mut InherentData,
-	) -> Result<(), sp_inherents::Error> {
+	fn provide_inherent_data(&self, inherent_data: &mut InherentData) -> Result<(), sp_inherents::Error> {
 		inherent_data.put_data(INHERENT_IDENTIFIER, &self.0)
 	}
 
@@ -217,11 +218,11 @@ impl<T: Config> ProvideInherent for Module<T> {
 	const INHERENT_IDENTIFIER: InherentIdentifier = INHERENT_IDENTIFIER;
 
 	fn is_inherent_required(_: &InherentData) -> Result<Option<Self::Error>, Self::Error> {
-		// Return Ok(Some(_)) unconditionally because this inherent is required in every block
-		// If it is not found, throw an AuthorInherentRequired error.
-		Ok(Some(InherentError::Other(
-			sp_runtime::RuntimeString::Borrowed("AuthorInherentRequired"),
-		)))
+		// Return Ok(Some(_)) unconditionally because this inherent is required in every
+		// block If it is not found, throw an AuthorInherentRequired error.
+		Ok(Some(InherentError::Other(sp_runtime::RuntimeString::Borrowed(
+			"AuthorInherentRequired",
+		))))
 	}
 
 	fn create_inherent(data: &InherentData) -> Option<Self::Call> {
@@ -234,8 +235,7 @@ impl<T: Config> ProvideInherent for Module<T> {
 		// we should have them sign something here. Best idea so far: parent block hash.
 
 		// Decode the Vec<u8> into an account Id
-		let author =
-			T::AccountId::decode(&mut &author_raw[..]).expect("Decodes author raw inherent data");
+		let author = T::AccountId::decode(&mut &author_raw[..]).expect("Decodes author raw inherent data");
 
 		Some(Call::set_author(author))
 	}
@@ -274,9 +274,7 @@ mod tests {
 	};
 
 	pub fn new_test_ext() -> TestExternalities {
-		let t = frame_system::GenesisConfig::default()
-			.build_storage::<Test>()
-			.unwrap();
+		let t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 		TestExternalities::new(t)
 	}
 
@@ -321,6 +319,7 @@ mod tests {
 		type OnKilledAccount = ();
 		type SystemWeightInfo = ();
 		type SS58Prefix = ();
+		type OnSetCode = ();
 	}
 	impl Config for Test {
 		type EventHandler = ();

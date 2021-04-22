@@ -86,8 +86,6 @@ pub mod pallet {
 				// Third one will not be necessary once we leverage the relay chain's
 				// randomness.
 				let subject: [u8; 8] = [b'f', b'i', b'l', b't', b'e', b'r', i as u8, relay_height as u8];
-				let foo = H256::from_low_u64_be(1);
-				let bar: u64 = foo.to_low_u64_be();
 				let randomness = T::RandomnessSource::random(&subject).0;
 				// Cast to u32 first so we get the same result on wasm and 64-bit platforms.
 				let index = (randomness.to_low_u64_be() as u32) as usize;

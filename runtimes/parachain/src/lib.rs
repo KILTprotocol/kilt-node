@@ -41,7 +41,7 @@ use kilt_primitives::{
 use orml_currencies::BasicCurrencyAdapter;
 use orml_traits::{arithmetic::Zero, parameter_type_with_key};
 use orml_xcm_support::{IsNativeConcrete, MultiCurrencyAdapter, XcmHandler as XcmHandlerT};
-use parachain_staking::{InflationInfo, Range};
+pub use parachain_staking::{InflationInfo, Range};
 use polkadot_parachain::primitives::Sibling;
 use sp_api::impl_runtime_apis;
 use sp_core::{
@@ -718,6 +718,27 @@ impl did::Config for Runtime {
 	type DidIdentifier = AccountId;
 }
 
+parameter_types! {
+	/// Minimum round length is 2 minutes (20 * 6 second block times)
+	pub const MinBlocksPerRound: u32 = 20;
+	/// Default BlocksPerRound is every hour (600 * 6 second block times)
+	pub const DefaultBlocksPerRound: u32 = 600;
+	/// Reward payments and collator exit requests are delayed by 2 hours (2 * 600 * block_time)
+	pub const BondDuration: u32 = 2;
+	/// Minimum 8 collators selected per round, default at genesis and minimum forever after
+	pub const MinSelectedCandidates: u32 = 8;
+	/// Maximum 10 nominators per collator
+	pub const MaxNominatorsPerCollator: u32 = 10;
+	/// Maximum 25 collators per nominator
+	pub const MaxCollatorsPerNominator: u32 = 25;
+	/// The fixed percent a collator takes off the top of due rewards is 20%
+	pub const DefaultCollatorCommission: Perbill = Perbill::from_percent(20);
+	/// Minimum stake required to be reserved to be a collator is 1_000
+	pub const MinCollatorStk: u128 = 1_000 * DOLLARS;
+	/// Minimum stake required to be reserved to be a nominator is 5
+	pub const MinNominatorStk: u128 = 5 * DOLLARS;
+}
+
 impl parachain_staking::Config for Runtime {
 	type Event = Event;
 	type Currency = Balances;
@@ -736,12 +757,12 @@ impl parachain_staking::Config for Runtime {
 
 // TODO: Replace with Aura once available
 impl author_inherent::Config for Runtime {
-	type EventHandler = Staking;
+	type EventHandler = ParachainStaking;
 	// We cannot run the full filtered author checking logic in the preliminary
 	// check because it depends on entropy from the relay chain. Instead we just
 	// make sure that the author is staked in the preliminary check. The final check
 	// including the filtering happens during execution.
-	type PreliminaryCanAuthor = Staking;
+	type PreliminaryCanAuthor = ParachainStaking;
 	type FinalCanAuthor = AuthorFilter;
 }
 
@@ -799,7 +820,7 @@ construct_runtime! {
 		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 32,
 
 		// TODO: Add meaningful index
-		ParachainStaking: parachain_parachain_staking::{Pallet, Call, Storage, Event<T>, Config<T>} = 99,
+		ParachainStaking: parachain_staking::{Pallet, Call, Storage, Event<T>, Config<T>} = 99,
 		AuthorInherent: author_inherent::{Pallet, Call, Storage, Inherent} = 100,
 		AuthorFilter: pallet_author_filter::{Pallet, Call, Storage, Event<T>} = 101,
 	}

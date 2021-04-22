@@ -4968,6 +4968,7 @@ dependencies = [
  "frame-system",
  "parachain-staking",
  "parity-scale-codec",
+ "primitive-types",
  "sp-core",
  "sp-runtime",
 ]

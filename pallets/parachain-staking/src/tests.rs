@@ -17,12 +17,13 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 //! Unit testing
-use crate::mock::{
-	events, five_collators_five_nominators, five_collators_no_nominators, last_event,
-	one_collator_two_nominators, roll_to, set_author, two_collators_four_nominators, Balances,
-	Event as MetaEvent, Origin, Stake, System, Test,
+use crate::{
+	mock::{
+		events, five_collators_five_nominators, five_collators_no_nominators, last_event, one_collator_two_nominators,
+		roll_to, set_author, two_collators_four_nominators, Balances, Event as MetaEvent, Origin, Stake, System, Test,
+	},
+	CollatorStatus, Error, Event,
 };
-use crate::{CollatorStatus, Error, Event};
 use frame_support::{assert_noop, assert_ok};
 use sp_runtime::{traits::Zero, DispatchError};
 
@@ -78,24 +79,12 @@ fn geneses() {
 fn online_offline_works() {
 	two_collators_four_nominators().execute_with(|| {
 		roll_to(4);
-		assert_noop!(
-			Stake::go_offline(Origin::signed(3)),
-			Error::<Test>::CandidateDNE
-		);
+		assert_noop!(Stake::go_offline(Origin::signed(3)), Error::<Test>::CandidateDNE);
 		roll_to(11);
-		assert_noop!(
-			Stake::go_online(Origin::signed(3)),
-			Error::<Test>::CandidateDNE
-		);
-		assert_noop!(
-			Stake::go_online(Origin::signed(2)),
-			Error::<Test>::AlreadyActive
-		);
+		assert_noop!(Stake::go_online(Origin::signed(3)), Error::<Test>::CandidateDNE);
+		assert_noop!(Stake::go_online(Origin::signed(2)), Error::<Test>::AlreadyActive);
 		assert_ok!(Stake::go_offline(Origin::signed(2)));
-		assert_eq!(
-			last_event(),
-			MetaEvent::stake(Event::CollatorWentOffline(3, 2))
-		);
+		assert_eq!(last_event(), MetaEvent::stake(Event::CollatorWentOffline(3, 2)));
 		roll_to(21);
 		let mut expected = vec![
 			Event::CollatorChosen(2, 1, 700),
@@ -111,15 +100,9 @@ fn online_offline_works() {
 			Event::NewRound(20, 5, 1, 700),
 		];
 		assert_eq!(events(), expected);
-		assert_noop!(
-			Stake::go_offline(Origin::signed(2)),
-			Error::<Test>::AlreadyOffline
-		);
+		assert_noop!(Stake::go_offline(Origin::signed(2)), Error::<Test>::AlreadyOffline);
 		assert_ok!(Stake::go_online(Origin::signed(2)));
-		assert_eq!(
-			last_event(),
-			MetaEvent::stake(Event::CollatorBackOnline(5, 2))
-		);
+		assert_eq!(last_event(), MetaEvent::stake(Event::CollatorBackOnline(5, 2)));
 		expected.push(Event::CollatorBackOnline(5, 2));
 		roll_to(26);
 		expected.push(Event::CollatorChosen(6, 1, 700));
@@ -165,16 +148,10 @@ fn join_collator_candidates() {
 fn collator_exit_executes_after_delay() {
 	two_collators_four_nominators().execute_with(|| {
 		roll_to(4);
-		assert_noop!(
-			Stake::leave_candidates(Origin::signed(3)),
-			Error::<Test>::CandidateDNE
-		);
+		assert_noop!(Stake::leave_candidates(Origin::signed(3)), Error::<Test>::CandidateDNE);
 		roll_to(11);
 		assert_ok!(Stake::leave_candidates(Origin::signed(2)));
-		assert_eq!(
-			last_event(),
-			MetaEvent::stake(Event::CollatorScheduledExit(3, 2, 5))
-		);
+		assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(3, 2, 5)));
 		let info = Stake::collator_state(&2).unwrap();
 		assert_eq!(info.state, CollatorStatus::Leaving(5));
 		roll_to(21);
@@ -214,10 +191,7 @@ fn collator_selection_chooses_top_candidates() {
 		];
 		assert_eq!(events(), expected);
 		assert_ok!(Stake::leave_candidates(Origin::signed(6)));
-		assert_eq!(
-			last_event(),
-			MetaEvent::stake(Event::CollatorScheduledExit(2, 6, 4))
-		);
+		assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(2, 6, 4)));
 		roll_to(21);
 		assert_ok!(Stake::join_candidates(Origin::signed(6), 69u128));
 		assert_eq!(
@@ -280,22 +254,13 @@ fn exit_queue() {
 		];
 		assert_eq!(events(), expected);
 		assert_ok!(Stake::leave_candidates(Origin::signed(6)));
-		assert_eq!(
-			last_event(),
-			MetaEvent::stake(Event::CollatorScheduledExit(2, 6, 4))
-		);
+		assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(2, 6, 4)));
 		roll_to(11);
 		assert_ok!(Stake::leave_candidates(Origin::signed(5)));
-		assert_eq!(
-			last_event(),
-			MetaEvent::stake(Event::CollatorScheduledExit(3, 5, 5))
-		);
+		assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(3, 5, 5)));
 		roll_to(16);
 		assert_ok!(Stake::leave_candidates(Origin::signed(4)));
-		assert_eq!(
-			last_event(),
-			MetaEvent::stake(Event::CollatorScheduledExit(4, 4, 6))
-		);
+		assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(4, 4, 6)));
 		assert_noop!(
 			Stake::leave_candidates(Origin::signed(4)),
 			Error::<Test>::AlreadyLeaving
@@ -433,10 +398,7 @@ fn collator_commission() {
 	one_collator_two_nominators().execute_with(|| {
 		roll_to(8);
 		// chooses top TotalSelectedCandidates (5), in order
-		let mut expected = vec![
-			Event::CollatorChosen(2, 1, 40),
-			Event::NewRound(5, 2, 1, 40),
-		];
+		let mut expected = vec![Event::CollatorChosen(2, 1, 40), Event::NewRound(5, 2, 1, 40)];
 		assert_eq!(events(), expected);
 		assert_ok!(Stake::join_candidates(Origin::signed(4), 20u128));
 		assert_eq!(
@@ -560,10 +522,7 @@ fn multiple_nominations() {
 		expected.append(&mut new2);
 		assert_eq!(events(), expected);
 		assert_ok!(Stake::leave_candidates(Origin::signed(2)));
-		assert_eq!(
-			last_event(),
-			MetaEvent::stake(Event::CollatorScheduledExit(6, 2, 8))
-		);
+		assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(6, 2, 8)));
 		roll_to(31);
 		let mut new3 = vec![
 			Event::CollatorScheduledExit(6, 2, 8),
@@ -577,15 +536,9 @@ fn multiple_nominations() {
 		assert_eq!(events(), expected);
 		// verify that nominations are removed after collator leaves, not before
 		assert_eq!(Stake::nominator_state(7).unwrap().total, 90);
-		assert_eq!(
-			Stake::nominator_state(7).unwrap().nominations.0.len(),
-			2usize
-		);
+		assert_eq!(Stake::nominator_state(7).unwrap().nominations.0.len(), 2usize);
 		assert_eq!(Stake::nominator_state(6).unwrap().total, 40);
-		assert_eq!(
-			Stake::nominator_state(6).unwrap().nominations.0.len(),
-			4usize
-		);
+		assert_eq!(Stake::nominator_state(6).unwrap().nominations.0.len(), 4usize);
 		assert_eq!(Balances::reserved_balance(&6), 40);
 		assert_eq!(Balances::reserved_balance(&7), 90);
 		assert_eq!(Balances::free_balance(&6), 60);
@@ -593,14 +546,8 @@ fn multiple_nominations() {
 		roll_to(40);
 		assert_eq!(Stake::nominator_state(7).unwrap().total, 10);
 		assert_eq!(Stake::nominator_state(6).unwrap().total, 30);
-		assert_eq!(
-			Stake::nominator_state(7).unwrap().nominations.0.len(),
-			1usize
-		);
-		assert_eq!(
-			Stake::nominator_state(6).unwrap().nominations.0.len(),
-			3usize
-		);
+		assert_eq!(Stake::nominator_state(7).unwrap().nominations.0.len(), 1usize);
+		assert_eq!(Stake::nominator_state(6).unwrap().nominations.0.len(), 3usize);
 		assert_eq!(Balances::reserved_balance(&6), 30);
 		assert_eq!(Balances::reserved_balance(&7), 10);
 		assert_eq!(Balances::free_balance(&6), 70);
@@ -721,14 +668,12 @@ fn revoke_nomination_or_leave_nominators() {
 			Stake::revoke_nomination(Origin::signed(6), 2),
 			Error::<Test>::NominationDNE
 		);
-		assert_noop!(
-			Stake::leave_nominators(Origin::signed(1)),
-			Error::<Test>::NominatorDNE
-		);
+		assert_noop!(Stake::leave_nominators(Origin::signed(1)), Error::<Test>::NominatorDNE);
 		assert_ok!(Stake::nominate(Origin::signed(6), 2, 3));
 		assert_ok!(Stake::nominate(Origin::signed(6), 3, 3));
 		assert_ok!(Stake::revoke_nomination(Origin::signed(6), 1));
-		// cannot revoke nomination because would leave remaining total below MinNominatorStk
+		// cannot revoke nomination because would leave remaining total below
+		// MinNominatorStk
 		assert_noop!(
 			Stake::revoke_nomination(Origin::signed(6), 2),
 			Error::<Test>::NomBondBelowMin
@@ -786,13 +731,11 @@ fn payouts_follow_nomination_changes() {
 		set_author(3, 1, 100);
 		set_author(4, 1, 100);
 		// 1. ensure nominators are paid for 2 rounds after they leave
-		assert_noop!(
-			Stake::leave_nominators(Origin::signed(66)),
-			Error::<Test>::NominatorDNE
-		);
+		assert_noop!(Stake::leave_nominators(Origin::signed(66)), Error::<Test>::NominatorDNE);
 		assert_ok!(Stake::leave_nominators(Origin::signed(6)));
 		roll_to(21);
-		// keep paying 6 (note: inflation is in terms of total issuance so that's why 1 is 21)
+		// keep paying 6 (note: inflation is in terms of total issuance so that's why 1
+		// is 21)
 		let mut new2 = vec![
 			Event::NominatorLeftCollator(6, 1, 10, 40),
 			Event::NominatorLeft(6, 10),
@@ -878,7 +821,8 @@ fn payouts_follow_nomination_changes() {
 		expected.append(&mut new6);
 		assert_eq!(events(), expected);
 		roll_to(46);
-		// new nomination is rewarded for first time, 2 rounds after joining (`BondDuration` = 2)
+		// new nomination is rewarded for first time, 2 rounds after joining
+		// (`BondDuration` = 2)
 		let mut new7 = vec![
 			Event::Rewarded(1, 35),
 			Event::Rewarded(7, 11),
@@ -900,58 +844,40 @@ fn payouts_follow_nomination_changes() {
 fn round_transitions() {
 	// round_immediately_jumps_if_current_duration_exceeds_new_blocks_per_round
 	one_collator_two_nominators().execute_with(|| {
-		// Default round every 5 blocks, but MinBlocksPerRound is 3 and we set it to min 3 blocks
+		// Default round every 5 blocks, but MinBlocksPerRound is 3 and we set it to min
+		// 3 blocks
 		roll_to(8);
 		// chooses top TotalSelectedCandidates (5), in order
-		let init = vec![
-			Event::CollatorChosen(2, 1, 40),
-			Event::NewRound(5, 2, 1, 40),
-		];
+		let init = vec![Event::CollatorChosen(2, 1, 40), Event::NewRound(5, 2, 1, 40)];
 		assert_eq!(events(), init);
 		assert_ok!(Stake::set_blocks_per_round(Origin::root(), 3u32));
-		assert_eq!(
-			last_event(),
-			MetaEvent::stake(Event::BlocksPerRoundSet(2, 5, 5, 3))
-		);
+		assert_eq!(last_event(), MetaEvent::stake(Event::BlocksPerRoundSet(2, 5, 5, 3)));
 		roll_to(9);
 		assert_eq!(last_event(), MetaEvent::stake(Event::NewRound(8, 3, 1, 40)));
 	});
 	// round_immediately_jumps_if_current_duration_exceeds_new_blocks_per_round
 	one_collator_two_nominators().execute_with(|| {
 		roll_to(9);
-		let init = vec![
-			Event::CollatorChosen(2, 1, 40),
-			Event::NewRound(5, 2, 1, 40),
-		];
+		let init = vec![Event::CollatorChosen(2, 1, 40), Event::NewRound(5, 2, 1, 40)];
 		assert_eq!(events(), init);
 		assert_ok!(Stake::set_blocks_per_round(Origin::root(), 3u32));
-		assert_eq!(
-			last_event(),
-			MetaEvent::stake(Event::BlocksPerRoundSet(2, 5, 5, 3))
-		);
+		assert_eq!(last_event(), MetaEvent::stake(Event::BlocksPerRoundSet(2, 5, 5, 3)));
 		roll_to(10);
 		assert_eq!(last_event(), MetaEvent::stake(Event::NewRound(9, 3, 1, 40)));
 	});
-	// if current duration less than new blocks per round (bpr), round waits until new bpr passes
+	// if current duration less than new blocks per round (bpr), round waits until
+	// new bpr passes
 	one_collator_two_nominators().execute_with(|| {
-		// Default round every 5 blocks, but MinBlocksPerRound is 3 and we set it to min 3 blocks
+		// Default round every 5 blocks, but MinBlocksPerRound is 3 and we set it to min
+		// 3 blocks
 		roll_to(6);
 		// chooses top TotalSelectedCandidates (5), in order
-		let init = vec![
-			Event::CollatorChosen(2, 1, 40),
-			Event::NewRound(5, 2, 1, 40),
-		];
+		let init = vec![Event::CollatorChosen(2, 1, 40), Event::NewRound(5, 2, 1, 40)];
 		assert_eq!(events(), init);
 		assert_ok!(Stake::set_blocks_per_round(Origin::root(), 3u32));
-		assert_eq!(
-			last_event(),
-			MetaEvent::stake(Event::BlocksPerRoundSet(2, 5, 5, 3))
-		);
+		assert_eq!(last_event(), MetaEvent::stake(Event::BlocksPerRoundSet(2, 5, 5, 3)));
 		roll_to(8);
-		assert_eq!(
-			last_event(),
-			MetaEvent::stake(Event::BlocksPerRoundSet(2, 5, 5, 3))
-		);
+		assert_eq!(last_event(), MetaEvent::stake(Event::BlocksPerRoundSet(2, 5, 5, 3)));
 		roll_to(9);
 		assert_eq!(last_event(), MetaEvent::stake(Event::NewRound(8, 3, 1, 40)));
 	});

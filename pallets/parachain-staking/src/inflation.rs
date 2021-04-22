@@ -67,7 +67,8 @@ pub fn annual_to_round<T: Config>(annual: Range<Perbill>) -> Range<Perbill> {
 	}
 }
 
-/// Compute round issuance range from round inflation range and current total issuance
+/// Compute round issuance range from round inflation range and current total
+/// issuance
 pub fn round_issuance_range<T: Config>(round: Range<Perbill>) -> Range<BalanceOf<T>> {
 	let circulating = T::Currency::total_issuance();
 	Range {
@@ -87,10 +88,7 @@ pub struct InflationInfo<Balance> {
 }
 
 impl<Balance> InflationInfo<Balance> {
-	pub fn new<T: Config>(
-		annual: Range<Perbill>,
-		expect: Range<Balance>,
-	) -> InflationInfo<Balance> {
+	pub fn new<T: Config>(annual: Range<Perbill>, expect: Range<Balance>) -> InflationInfo<Balance> {
 		InflationInfo {
 			expect,
 			round: annual_to_round::<T>(annual),

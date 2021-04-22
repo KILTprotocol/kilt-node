@@ -80,6 +80,7 @@ impl frame_system::Config for Test {
 	type BlockWeights = ();
 	type BlockLength = ();
 	type SS58Prefix = SS58Prefix;
+	type OnSetCode = ();
 }
 parameter_types! {
 	pub const ExistentialDeposit: u128 = 1;
@@ -130,16 +131,15 @@ fn genesis(
 		ideal: 700,
 		max: 700,
 	};
-	// very unrealistic test parameterization, would be dumb to have per-round inflation this high
+	// very unrealistic test parameterization, would be dumb to have per-round
+	// inflation this high
 	let round: Range<Perbill> = Range {
 		min: Perbill::from_percent(5),
 		ideal: Perbill::from_percent(5),
 		max: Perbill::from_percent(5),
 	};
 	let inflation_config: InflationInfo<Balance> = InflationInfo { expect, round };
-	let mut storage = frame_system::GenesisConfig::default()
-		.build_storage::<Test>()
-		.unwrap();
+	let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 	pallet_balances::GenesisConfig::<Test> { balances }
 		.assimilate_storage(&mut storage)
 		.unwrap();
@@ -269,13 +269,7 @@ pub(crate) fn events() -> Vec<pallet::Event<Test>> {
 	System::events()
 		.into_iter()
 		.map(|r| r.event)
-		.filter_map(|e| {
-			if let Event::stake(inner) = e {
-				Some(inner)
-			} else {
-				None
-			}
-		})
+		.filter_map(|e| if let Event::stake(inner) = e { Some(inner) } else { None })
 		.collect::<Vec<_>>()
 }
 

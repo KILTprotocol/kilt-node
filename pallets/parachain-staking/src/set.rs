@@ -16,7 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-/* TODO: use orml_utilities::OrderedSet without leaking substrate v2.0 dependencies*/
+/* TODO: use orml_utilities::OrderedSet without leaking substrate v2.0
+ * dependencies */
 use parity_scale_codec::{Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
