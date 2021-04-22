@@ -41,6 +41,7 @@ use kilt_primitives::{
 use orml_currencies::BasicCurrencyAdapter;
 use orml_traits::{arithmetic::Zero, parameter_type_with_key};
 use orml_xcm_support::{IsNativeConcrete, MultiCurrencyAdapter, XcmHandler as XcmHandlerT};
+use parachain_staking::{InflationInfo, Range};
 use polkadot_parachain::primitives::Sibling;
 use sp_api::impl_runtime_apis;
 use sp_core::{
@@ -717,6 +718,39 @@ impl did::Config for Runtime {
 	type DidIdentifier = AccountId;
 }
 
+impl parachain_staking::Config for Runtime {
+	type Event = Event;
+	type Currency = Balances;
+	type MinBlocksPerRound = MinBlocksPerRound;
+	type DefaultBlocksPerRound = DefaultBlocksPerRound;
+	type BondDuration = BondDuration;
+	type MinSelectedCandidates = MinSelectedCandidates;
+	type MaxNominatorsPerCollator = MaxNominatorsPerCollator;
+	type MaxCollatorsPerNominator = MaxCollatorsPerNominator;
+	type DefaultCollatorCommission = DefaultCollatorCommission;
+	type MinCollatorStk = MinCollatorStk;
+	type MinCollatorCandidateStk = MinCollatorStk;
+	type MinNomination = MinNominatorStk;
+	type MinNominatorStk = MinNominatorStk;
+}
+
+// TODO: Replace with Aura once available
+impl author_inherent::Config for Runtime {
+	type EventHandler = Staking;
+	// We cannot run the full filtered author checking logic in the preliminary
+	// check because it depends on entropy from the relay chain. Instead we just
+	// make sure that the author is staked in the preliminary check. The final check
+	// including the filtering happens during execution.
+	type PreliminaryCanAuthor = Staking;
+	type FinalCanAuthor = AuthorFilter;
+}
+
+// TODO: Replace with Aura once available
+impl pallet_author_filter::Config for Runtime {
+	type Event = Event;
+	type RandomnessSource = RandomnessCollectiveFlip;
+}
+
 construct_runtime! {
 	pub enum Runtime where
 		Block = Block,
@@ -763,6 +797,11 @@ construct_runtime! {
 
 		// System scheduler.
 		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 32,
+
+		// TODO: Add meaningful index
+		ParachainStaking: parachain_parachain_staking::{Pallet, Call, Storage, Event<T>, Config<T>} = 99,
+		AuthorInherent: author_inherent::{Pallet, Call, Storage, Inherent} = 100,
+		AuthorFilter: pallet_author_filter::{Pallet, Call, Storage, Event<T>} = 101,
 	}
 }
 

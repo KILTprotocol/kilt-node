@@ -19,7 +19,11 @@ attestation = {default-features = false, path = "../../pallets/attestation"}
 ctype = {default-features = false, path = "../../pallets/ctype"}
 delegation = {default-features = false, path = "../../pallets/delegation"}
 did = {default-features = false, path = "../../pallets/did"}
+parachain-staking = {default-features = false, path = "../../pallets/parachain-staking"}
+pallet-author-filter = {default-features = false, path = "../../pallets/author-filter"}
+author-inherent = {default-features = false, path = "../../pallets/author-inherent"}
 kilt-primitives = {path = "../../primitives", default-features = false}
+
 
 # Xtokens
 orml-benchmarking = {git = "https://github.com/open-web3-stack/open-runtime-module-library", branch = "master", default-features = false}
@@ -105,6 +109,9 @@ runtime-benchmarks = [
   "rococo-runtime/runtime-benchmarks",
 ]
 std = [
+  "parachain-staking/std",
+  "pallet-author-filter/std",
+  "author-inherent/std",
   "sp-arithmetic/std",
   "pallet-indices/std",
   "frame-system-rpc-runtime-api/std",
