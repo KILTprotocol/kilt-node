@@ -701,8 +701,7 @@ pub mod pallet {
 			// If the value is already the max given, do not perform +1.
 			let max_parent_checks = operation
 				.max_parent_checks
-				.checked_add(1)
-				.unwrap_or(operation.max_parent_checks);
+				.saturating_add(1);
 			ensure!(
 				Self::is_delegating(&operation.caller_did, &operation.delegation_id, max_parent_checks)?,
 				Error::<T>::UnauthorizedRevocation
@@ -716,7 +715,8 @@ pub mod pallet {
 			)?;
 
 			// Add worst case reads from `is_delegating`
-			Ok(Some(consumed_weight + T::DbWeight::get().reads((2 + operation.max_parent_checks).into())).into())
+			//TODO: Return proper weight consumption.
+			Ok(Some(consumed_weight + T::DbWeight::get().reads((operation.max_parent_checks.saturating_add(2)).into())).into())
 		}
 	}
 }

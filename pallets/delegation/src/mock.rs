@@ -127,7 +127,7 @@ pub(crate) fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
 
 pub fn generate_base_delegation_root_creation_operation(
 	root_id: TestDelegationNodeId,
-	root_node: DelegationRoot<Test>
+	root_node: DelegationRoot<Test>,
 ) -> DelegationRootCreationOperation<Test> {
 	DelegationRootCreationOperation {
 		caller_did: root_node.owner,
@@ -141,7 +141,7 @@ pub fn generate_base_delegation_creation_operation(
 	delegator_did: TestDidIdentifier,
 	delegation_id: TestDelegationNodeId,
 	delegate_signature: did::DidSignature,
-	delegation_node: DelegationNode<Test>
+	delegation_node: DelegationNode<Test>,
 ) -> DelegationCreationOperation<Test> {
 	DelegationCreationOperation {
 		caller_did: delegator_did,
@@ -157,7 +157,7 @@ pub fn generate_base_delegation_creation_operation(
 
 pub fn generate_base_delegation_root_revocation_operation(
 	root_id: TestDelegationNodeId,
-	root_node: DelegationRoot<Test>
+	root_node: DelegationRoot<Test>,
 ) -> DelegationRootRevocationOperation<Test> {
 	DelegationRootRevocationOperation {
 		caller_did: root_node.owner,
@@ -167,7 +167,10 @@ pub fn generate_base_delegation_root_revocation_operation(
 	}
 }
 
-pub fn generate_base_delegation_revocation_operation(delegation_id: TestDelegationNodeId, delegation_node: DelegationNode<Test>) -> DelegationRevocationOperation<Test> {
+pub fn generate_base_delegation_revocation_operation(
+	delegation_id: TestDelegationNodeId,
+	delegation_node: DelegationNode<Test>,
+) -> DelegationRevocationOperation<Test> {
 	DelegationRevocationOperation {
 		caller_did: delegation_node.owner,
 		delegation_id: delegation_id,
