@@ -176,7 +176,7 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
 
-	/// Attestations: claim-hash -> (ctype-hash, attester-account,
+	/// Attestations: claim-hash -> (ctype-hash, attesteraccount,
 	/// delegation-id?, revoked)?
 	#[pallet::storage]
 	#[pallet::getter(fn attestations)]

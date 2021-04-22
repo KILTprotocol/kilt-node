@@ -659,7 +659,7 @@ pub mod pallet {
 					root.revoked = true;
 					<Roots<T>>::insert(&operation.root_id, root);
 				}
-				post_weight + T::DbWeight::get().writes(1)
+				post_weight.saturating_add(T::DbWeight::get().writes(1))
 			} else {
 				0
 			};
@@ -667,7 +667,7 @@ pub mod pallet {
 			// Deposit event that the root node has been revoked
 			Self::deposit_event(Event::RootRevoked(operation.caller_did, operation.root_id));
 			// Post call weight correction
-			Ok(Some(consumed_weight + T::DbWeight::get().reads(1)).into())
+			Ok(Some(consumed_weight.saturating_add(T::DbWeight::get().reads(1))).into())
 		}
 
 		/// Submits a new DelegationRevocationOperation operation.
@@ -675,7 +675,7 @@ pub mod pallet {
 		/// origin: the origin of the transaction
 		/// operation: the DelegationRevocationOperation operation
 		/// signature: the signature over the byte-encoded operation
-		#[pallet::weight(<T as Config>::WeightInfo::revoke_delegation_leaf(operation.max_parent_checks + 1).max(<T as Config>::WeightInfo::submit_delegation_revocation_operation(operation.max_parent_checks + 1)))]
+		#[pallet::weight(<T as Config>::WeightInfo::revoke_delegation_leaf(operation.max_parent_checks.saturating_add(1)).max(<T as Config>::WeightInfo::submit_delegation_revocation_operation(operation.max_parent_checks.saturating_add(1))))]
 		pub fn submit_delegation_revocation_operation(
 			origin: OriginFor<T>,
 			operation: DelegationRevocationOperation<T>,
@@ -716,7 +716,7 @@ pub mod pallet {
 			//TODO: Return proper weight consumption.
 			Ok(
 				Some(
-					consumed_weight + T::DbWeight::get().reads((operation.max_parent_checks.saturating_add(2)).into()),
+					consumed_weight.saturating_add(T::DbWeight::get().reads((operation.max_parent_checks.saturating_add(2)) as u64)),
 				)
 				.into(),
 			)
@@ -842,7 +842,7 @@ impl<T: Config> Pallet<T> {
 				})?;
 			}
 		}
-		Ok((revocations, consumed_weight + T::DbWeight::get().reads(1)))
+		Ok((revocations, consumed_weight.saturating_add( T::DbWeight::get().reads(1))))
 	}
 
 	// Add a child node into the delegation hierarchy

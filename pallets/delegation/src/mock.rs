@@ -103,6 +103,8 @@ const DEFAULT_ROOT_ID_SEED: u64 = 1u64;
 const ALTERNATIVE_ROOT_ID_SEED: u64 = 2u64;
 const DEFAULT_DELEGATION_ID_SEED: u64 = 3u64;
 const ALTERNATIVE_DELEGATION_ID_SEED: u64 = 4u64;
+const DEFAULT_DELEGATION_ID_2_SEED: u64 = 3u64;
+const ALTERNATIVE_DELEGATION_ID_2_SEED: u64 = 4u64;
 
 pub fn get_delegation_root_id(default: bool) -> H256 {
 	if default {
@@ -117,6 +119,14 @@ pub fn get_delegation_id(default: bool) -> H256 {
 		H256::from_low_u64_be(DEFAULT_DELEGATION_ID_SEED)
 	} else {
 		H256::from_low_u64_be(ALTERNATIVE_DELEGATION_ID_SEED)
+	}
+}
+
+pub fn get_delegation_id_2(default: bool) -> H256 {
+	if default {
+		H256::from_low_u64_be(DEFAULT_DELEGATION_ID_2_SEED)
+	} else {
+		H256::from_low_u64_be(ALTERNATIVE_DELEGATION_ID_2_SEED)
 	}
 }
 
