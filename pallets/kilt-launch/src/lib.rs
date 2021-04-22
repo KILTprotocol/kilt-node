@@ -39,8 +39,8 @@
 //!   accounts.
 //! - Transfer locked tokens from user-owned account to another. NOTE: This will
 //!   be made available shortly before we remove the sudo key.
-//! - Forcely (requires sudo) changing the `TransferAccount`.
-//! - Forcely (requires sudo) removing the KILT balance lock.
+//! - Forcedly (requires sudo) changing the `TransferAccount`.
+//! - Forcedly (requires sudo) removing the KILT balance lock.
 //!
 //! ### Terminology
 //!
@@ -68,13 +68,13 @@
 //!   special account `TransferAccount` which does not have any other super
 //!   powers.
 //! - `migrate_multiple_genesis_accounts` - Migrate vesting or the KILT balance
-//!   lock from a list of unowned accounts to the same targed user-owned
+//!   lock from a list of unowned accounts to the same target user-owned
 //!   account. Requires signature of a special account `TransferAccount` which
 //!   does not have any other super powers.
 //! - `locked_transfer` - Transfer locked tokens from one user-owned account to
 //!   another user-owned account. This will be made available shortly before
-//!   removing the sudo key because we the purpose of the lock is that the
-//!   amount is not transferrable at all.
+//!   removing the sudo key because the purpose of the lock to disable
+//!   transferability of the amount.
 //! - `change_transfer_account` - Change the transfer account. Can only be
 //!   called by sudo.
 //! - `force_unlock` - Remove all locks for a given block. Can only be called by
@@ -387,7 +387,7 @@ pub mod pallet {
 			)
 		}
 
-		/// Forcely change the transfer account to the specified account.
+		/// Forcedly change the transfer account to the specified account.
 		///
 		/// The dispatch origin must be Root.
 		///
@@ -528,7 +528,7 @@ pub mod pallet {
 		/// Calls `migrate_kilt_balance_lock` internally.
 		///
 		/// Emits `LockedTransfer` and (if target does not have KILT balance
-		/// lockp prior to transfer) `AddedKiltLock`.
+		/// lockup prior to transfer) `AddedKiltLock`.
 		///
 		/// # <weight>
 		/// Weight: O(1)
@@ -569,7 +569,7 @@ pub mod pallet {
 			{
 				ensure!(lock.amount >= amount, Error::<T>::InsufficientLockedBalance);
 
-				// We can substract because of the above check, but let's be safe
+				// We can subtract because of the above check, but let's be safe
 				let amount_new = lock.amount.saturating_sub(amount);
 
 				if amount_new <= T::ExistentialDeposit::get() {
@@ -628,13 +628,13 @@ impl<T: Config> Pallet<T> {
 	/// for the source address.
 	///
 	/// Note: Expects the source address to be an unowned address which was set
-	/// up in the fenesis block via `GenesisBuild` and should be claimed by a
+	/// up in the genesis block via `GenesisBuild` and should be claimed by a
 	/// user to migrate to their account.
 	fn migrate_user(source: &T::AccountId, target: &T::AccountId) -> Result<Weight, DispatchError> {
 		// There should be no locks for the source address
 		ensure!(Locks::<T>::get(source).len().is_zero(), Error::<T>::UnexpectedLocks);
 
-		// Transfer to target addess
+		// Transfer to target address
 		let amount = <pallet_balances::Pallet<T>>::total_balance(source);
 		<pallet_balances::Pallet<T> as Currency<T::AccountId>>::transfer(source, target, amount, AllowDeath)?;
 
