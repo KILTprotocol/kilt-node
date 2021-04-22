@@ -34,6 +34,7 @@ use sp_std::vec::Vec;
 use serde::{Deserialize, Serialize};
 
 pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
+pub mod constants;
 
 /// Opaque block header type.
 pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
