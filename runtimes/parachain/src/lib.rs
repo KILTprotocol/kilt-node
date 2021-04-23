@@ -41,7 +41,7 @@ use kilt_primitives::{
 use orml_currencies::BasicCurrencyAdapter;
 use orml_traits::{arithmetic::Zero, parameter_type_with_key};
 use orml_xcm_support::{IsNativeConcrete, MultiCurrencyAdapter, XcmHandler as XcmHandlerT};
-pub use parachain_staking::{InflationInfo, Range};
+pub use parachain_staking::{InflationInfo, StakingInfo, StakingRates};
 use polkadot_parachain::primitives::Sibling;
 use sp_api::impl_runtime_apis;
 use sp_core::{

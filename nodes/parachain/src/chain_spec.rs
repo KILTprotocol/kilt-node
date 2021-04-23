@@ -20,8 +20,8 @@
 
 use cumulus_primitives_core::ParaId;
 use kilt_parachain_runtime::{
-	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, ParachainInfoConfig, ParachainStakingConfig, Perbill,
-	Range, SudoConfig, SystemConfig, TechnicalCommitteeConfig, WASM_BINARY,
+	BalancesConfig, CouncilConfig, GenesisConfig, ParachainInfoConfig, ParachainStakingConfig, Perbill, StakingInfo,
+	StakingRates, SudoConfig, SystemConfig, TechnicalCommitteeConfig, WASM_BINARY,
 };
 use kilt_primitives::{constants::DOLLARS, AccountId, AccountPublic, Balance};
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
@@ -93,7 +93,7 @@ pub fn get_chain_spec(id: ParaId) -> Result<ChainSpec, String> {
 					None,
 					1_000 * DOLLARS,
 				)],
-				kilt_inflation_config(),
+				kilt_staking_config(),
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
 				vec![
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
@@ -140,7 +140,7 @@ pub fn staging_test_net(id: ParaId) -> Result<ChainSpec, String> {
 					None,
 					1_000 * DOLLARS,
 				)],
-				kilt_inflation_config(),
+				kilt_staking_config(),
 				hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].into(),
 				vec![
 					hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].into(),
@@ -164,18 +164,15 @@ pub fn rococo_net() -> Result<ChainSpec, String> {
 	ChainSpec::from_json_bytes(&include_bytes!("../res/kilt-prod.json")[..])
 }
 
-pub fn kilt_inflation_config() -> InflationInfo<Balance> {
-	InflationInfo {
-		expect: Range {
-			min: 100_000 * DOLLARS,
-			ideal: 200_000 * DOLLARS,
-			max: 500_000 * DOLLARS,
+pub fn kilt_staking_config() -> StakingInfo {
+	StakingInfo {
+		collator: StakingRates {
+			max_rate: Perbill::from_parts(Perbill::from_percent(10).deconstruct() / 8766),
+			reward_rate: Perbill::from_parts(Perbill::from_percent(15).deconstruct() / 8766),
 		},
-		// 8766 rounds (hours) in a year
-		round: Range {
-			min: Perbill::from_parts(Perbill::from_percent(4).deconstruct() / 8766),
-			ideal: Perbill::from_parts(Perbill::from_percent(5).deconstruct() / 8766),
-			max: Perbill::from_parts(Perbill::from_percent(5).deconstruct() / 8766),
+		delegator: StakingRates {
+			max_rate: Perbill::from_parts(Perbill::from_percent(40).deconstruct() / 8766),
+			reward_rate: Perbill::from_parts(Perbill::from_percent(10).deconstruct() / 8766),
 		},
 	}
 }
@@ -183,7 +180,7 @@ pub fn kilt_inflation_config() -> InflationInfo<Balance> {
 fn testnet_genesis(
 	wasm_binary: &[u8],
 	stakers: Vec<(AccountId, Option<AccountId>, Balance)>,
-	inflation_config: InflationInfo<Balance>,
+	staking_config: StakingInfo,
 	root_key: AccountId,
 	endowed_accounts: Vec<AccountId>,
 	id: ParaId,
@@ -216,7 +213,7 @@ fn testnet_genesis(
 		pallet_democracy: Default::default(),
 		parachain_staking: ParachainStakingConfig {
 			stakers,
-			inflation_config,
+			staking_config,
 		},
 	}
 }
