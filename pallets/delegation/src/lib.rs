@@ -697,7 +697,7 @@ pub mod pallet {
 			);
 
 			ensure!(
-				Self::is_delegating(
+				Self::is_actively_delegating(
 					&operation.caller_did,
 					&operation.delegation_id,
 					operation.max_parent_checks
@@ -743,8 +743,8 @@ impl<T: Config> Pallet<T> {
 	}
 
 	// Check if an account is the owner of the delegation or any delegation up
-	// the hierarchy, up to `max_parent_checks` nodes.
-	pub fn is_delegating(
+	// the hierarchy, and if the delegation has not been yet revoked, up to `max_parent_checks` nodes.
+	pub fn is_actively_delegating(
 		account: &T::DidIdentifier,
 		delegation: &T::DelegationNodeId,
 		max_parent_checks: u32,
@@ -765,7 +765,7 @@ impl<T: Config> Pallet<T> {
 
 			if let Some(parent) = delegation_node.parent {
 				// Recursively check upwards in hierarchy
-				Self::is_delegating(account, &parent, remaining_lookups)
+				Self::is_actively_delegating(account, &parent, remaining_lookups)
 			} else {
 				// Return whether the given account is the owner of the root and the root has
 				// not been revoked

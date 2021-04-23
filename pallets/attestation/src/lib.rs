@@ -321,7 +321,7 @@ pub mod pallet {
 				// Check whether the sender of the revocation is not a parent in the delegation
 				// hierarchy
 				ensure!(
-					<delegation::Pallet<T>>::is_delegating(
+					<delegation::Pallet<T>>::is_actively_delegating(
 						&operation.caller_did,
 						&delegation_id,
 						operation.max_parent_checks

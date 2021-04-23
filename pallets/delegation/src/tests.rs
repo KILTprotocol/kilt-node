@@ -3860,10 +3860,10 @@ fn check_too_many_revocations_submit_delegation_revocation_operation() {
 	);
 }
 
-// Internal function: is_delegating()
+// Internal function: is_actively_delegating()
 
 #[test]
-fn check_is_delegating_direct_not_revoked() {
+fn check_is_actively_delegating_direct_not_revoked() {
 	let actor_did = did_mock::ALICE_DID;
 	let alternative_did_1 = did_mock::BOB_DID;
 	let alternative_did_2 = did_mock::CHARLIE_DID;
@@ -3897,18 +3897,18 @@ fn check_is_delegating_direct_not_revoked() {
 
 	let mut ext = builder.build();
 
-	let is_delegating = ext.execute_with(|| {
-		Delegation::is_delegating(
+	let is_actively_delegating = ext.execute_with(|| {
+		Delegation::is_actively_delegating(
 			&alternative_did_2,
 			&delegation_id_2,
 			max_parent_checks
 		)
 	});
-	assert_eq!(is_delegating, Ok(true));
+	assert_eq!(is_actively_delegating, Ok(true));
 }
 
 #[test]
-fn check_is_delegating_direct_not_revoked_max_parent_checks_value() {
+fn check_is_actively_delegating_direct_not_revoked_max_parent_checks_value() {
 	let actor_did = did_mock::ALICE_DID;
 	let alternative_did_1 = did_mock::BOB_DID;
 	let alternative_did_2 = did_mock::CHARLIE_DID;
@@ -3942,18 +3942,18 @@ fn check_is_delegating_direct_not_revoked_max_parent_checks_value() {
 
 	let mut ext = builder.build();
 
-	let is_delegating = ext.execute_with(|| {
-		Delegation::is_delegating(
+	let is_actively_delegating = ext.execute_with(|| {
+		Delegation::is_actively_delegating(
 			&alternative_did_2,
 			&delegation_id_2,
 			max_parent_checks
 		)
 	});
-	assert_eq!(is_delegating, Ok(true));
+	assert_eq!(is_actively_delegating, Ok(true));
 }
 
 #[test]
-fn check_is_delegating_direct_revoked() {
+fn check_is_actively_delegating_direct_revoked() {
 	let actor_did = did_mock::ALICE_DID;
 	let alternative_did_1 = did_mock::BOB_DID;
 	let alternative_did_2 = did_mock::CHARLIE_DID;
@@ -3988,18 +3988,18 @@ fn check_is_delegating_direct_revoked() {
 
 	let mut ext = builder.build();
 
-	let is_delegating = ext.execute_with(|| {
-		Delegation::is_delegating(
+	let is_actively_delegating = ext.execute_with(|| {
+		Delegation::is_actively_delegating(
 			&alternative_did_2,
 			&delegation_id_2,
 			max_parent_checks
 		)
 	});
-	assert_eq!(is_delegating, Ok(false));
+	assert_eq!(is_actively_delegating, Ok(false));
 }
 
 #[test]
-fn check_is_delegating_direct_revoked_max_parent_checks_value() {
+fn check_is_actively_delegating_direct_revoked_max_parent_checks_value() {
 	let actor_did = did_mock::ALICE_DID;
 	let alternative_did_1 = did_mock::BOB_DID;
 	let alternative_did_2 = did_mock::CHARLIE_DID;
@@ -4034,18 +4034,18 @@ fn check_is_delegating_direct_revoked_max_parent_checks_value() {
 
 	let mut ext = builder.build();
 
-	let is_delegating = ext.execute_with(|| {
-		Delegation::is_delegating(
+	let is_actively_delegating = ext.execute_with(|| {
+		Delegation::is_actively_delegating(
 			&alternative_did_2,
 			&delegation_id_2,
 			max_parent_checks
 		)
 	});
-	assert_eq!(is_delegating, Ok(false));
+	assert_eq!(is_actively_delegating, Ok(false));
 }
 
 #[test]
-fn check_is_delegating_max_parent_not_revoked() {
+fn check_is_actively_delegating_max_parent_not_revoked() {
 	let actor_did = did_mock::ALICE_DID;
 	let alternative_did_1 = did_mock::BOB_DID;
 	let alternative_did_2 = did_mock::CHARLIE_DID;
@@ -4079,18 +4079,18 @@ fn check_is_delegating_max_parent_not_revoked() {
 
 	let mut ext = builder.build();
 
-	let is_delegating = ext.execute_with(|| {
-		Delegation::is_delegating(
+	let is_actively_delegating = ext.execute_with(|| {
+		Delegation::is_actively_delegating(
 			&alternative_did_1,
 			&delegation_id_2,
 			max_parent_checks
 		)
 	});
-	assert_eq!(is_delegating, Ok(true));
+	assert_eq!(is_actively_delegating, Ok(true));
 }
 
 #[test]
-fn check_is_delegating_max_parent_revoked() {
+fn check_is_actively_delegating_max_parent_revoked() {
 	let actor_did = did_mock::ALICE_DID;
 	let alternative_did_1 = did_mock::BOB_DID;
 	let alternative_did_2 = did_mock::CHARLIE_DID;
@@ -4125,18 +4125,18 @@ fn check_is_delegating_max_parent_revoked() {
 
 	let mut ext = builder.build();
 
-	let is_delegating = ext.execute_with(|| {
-		Delegation::is_delegating(
+	let is_actively_delegating = ext.execute_with(|| {
+		Delegation::is_actively_delegating(
 			&alternative_did_1,
 			&delegation_id_2,
 			max_parent_checks
 		)
 	});
-	assert_eq!(is_delegating, Ok(false));
+	assert_eq!(is_actively_delegating, Ok(false));
 }
 
 #[test]
-fn check_is_delegating_root_owner_not_revoked() {
+fn check_is_actively_delegating_root_owner_not_revoked() {
 	let actor_did = did_mock::ALICE_DID;
 	let alternative_did_1 = did_mock::BOB_DID;
 	let alternative_did_2 = did_mock::CHARLIE_DID;
@@ -4170,18 +4170,18 @@ fn check_is_delegating_root_owner_not_revoked() {
 
 	let mut ext = builder.build();
 
-	let is_delegating = ext.execute_with(|| {
-		Delegation::is_delegating(
+	let is_actively_delegating = ext.execute_with(|| {
+		Delegation::is_actively_delegating(
 			&actor_did,
 			&delegation_id_2,
 			max_parent_checks
 		)
 	});
-	assert_eq!(is_delegating, Ok(true));
+	assert_eq!(is_actively_delegating, Ok(true));
 }
 
 #[test]
-fn check_is_delegating_root_owner_revoked() {
+fn check_is_actively_delegating_root_owner_revoked() {
 	let actor_did = did_mock::ALICE_DID;
 	let alternative_did_1 = did_mock::BOB_DID;
 	let alternative_did_2 = did_mock::CHARLIE_DID;
@@ -4216,18 +4216,18 @@ fn check_is_delegating_root_owner_revoked() {
 
 	let mut ext = builder.build();
 
-	let is_delegating = ext.execute_with(|| {
-		Delegation::is_delegating(
+	let is_actively_delegating = ext.execute_with(|| {
+		Delegation::is_actively_delegating(
 			&actor_did,
 			&delegation_id_2,
 			max_parent_checks
 		)
 	});
-	assert_eq!(is_delegating, Ok(false));
+	assert_eq!(is_actively_delegating, Ok(false));
 }
 
 #[test]
-fn check_is_delegating_delegation_not_found() {
+fn check_is_actively_delegating_delegation_not_found() {
 	let actor_did = did_mock::ALICE_DID;
 	let alternative_did_1 = did_mock::BOB_DID;
 	let alternative_did_2 = did_mock::CHARLIE_DID;
@@ -4257,14 +4257,14 @@ fn check_is_delegating_delegation_not_found() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Delegation::is_delegating(&actor_did, &delegation_id_2, max_parent_checks),
+			Delegation::is_actively_delegating(&actor_did, &delegation_id_2, max_parent_checks),
 			delegation::Error::<Test>::DelegationNotFound
 		);
 	});
 }
 
 #[test]
-fn check_is_delegating_root_after_max_limit() {
+fn check_is_actively_delegating_root_after_max_limit() {
 	let actor_did = did_mock::ALICE_DID;
 	let alternative_did_1 = did_mock::BOB_DID;
 	let alternative_did_2 = did_mock::CHARLIE_DID;
@@ -4301,7 +4301,7 @@ fn check_is_delegating_root_after_max_limit() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Delegation::is_delegating(
+			Delegation::is_actively_delegating(
 				&actor_did,
 				&delegation_id_2,
 				max_parent_checks
