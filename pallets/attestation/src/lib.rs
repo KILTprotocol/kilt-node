@@ -19,6 +19,7 @@
 //! Attestation: Handles attestations on chain,
 //! adding and revoking attestations.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
 
 #[cfg(any(feature = "runtime-benchmarks", test))]
 pub mod benchmarking;
