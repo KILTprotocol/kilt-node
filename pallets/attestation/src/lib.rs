@@ -343,7 +343,7 @@ pub mod pallet {
 				// Check whether the sender of the revocation controls the delegation node
 				// specified, and that its status has not been revoked
 				ensure!(
-					<delegation::Pallet<T>>::is_actively_delegating(
+					<delegation::Pallet<T>>::is_delegating(
 						&operation.revoker_did,
 						&delegation_id,
 						operation.max_parent_checks

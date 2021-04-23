@@ -3899,8 +3899,8 @@ fn check_is_actively_delegating_direct_not_revoked() {
 
 	let mut ext = builder.build();
 
-	let is_actively_delegating = ext
-		.execute_with(|| Delegation::is_actively_delegating(&alternative_did_2, &delegation_id_2, max_parent_checks));
+	let is_actively_delegating =
+		ext.execute_with(|| Delegation::is_delegating(&alternative_did_2, &delegation_id_2, max_parent_checks));
 	assert_eq!(is_actively_delegating, Ok(true));
 }
 
@@ -3939,8 +3939,8 @@ fn check_is_actively_delegating_direct_not_revoked_max_parent_checks_value() {
 
 	let mut ext = builder.build();
 
-	let is_actively_delegating = ext
-		.execute_with(|| Delegation::is_actively_delegating(&alternative_did_2, &delegation_id_2, max_parent_checks));
+	let is_actively_delegating =
+		ext.execute_with(|| Delegation::is_delegating(&alternative_did_2, &delegation_id_2, max_parent_checks));
 	assert_eq!(is_actively_delegating, Ok(true));
 }
 
@@ -3980,8 +3980,8 @@ fn check_is_actively_delegating_direct_revoked() {
 
 	let mut ext = builder.build();
 
-	let is_actively_delegating = ext
-		.execute_with(|| Delegation::is_actively_delegating(&alternative_did_2, &delegation_id_2, max_parent_checks));
+	let is_actively_delegating =
+		ext.execute_with(|| Delegation::is_delegating(&alternative_did_2, &delegation_id_2, max_parent_checks));
 	assert_eq!(is_actively_delegating, Ok(false));
 }
 
@@ -4021,8 +4021,8 @@ fn check_is_actively_delegating_direct_revoked_max_parent_checks_value() {
 
 	let mut ext = builder.build();
 
-	let is_actively_delegating = ext
-		.execute_with(|| Delegation::is_actively_delegating(&alternative_did_2, &delegation_id_2, max_parent_checks));
+	let is_actively_delegating =
+		ext.execute_with(|| Delegation::is_delegating(&alternative_did_2, &delegation_id_2, max_parent_checks));
 	assert_eq!(is_actively_delegating, Ok(false));
 }
 
@@ -4061,8 +4061,8 @@ fn check_is_actively_delegating_max_parent_not_revoked() {
 
 	let mut ext = builder.build();
 
-	let is_actively_delegating = ext
-		.execute_with(|| Delegation::is_actively_delegating(&alternative_did_1, &delegation_id_2, max_parent_checks));
+	let is_actively_delegating =
+		ext.execute_with(|| Delegation::is_delegating(&alternative_did_1, &delegation_id_2, max_parent_checks));
 	assert_eq!(is_actively_delegating, Ok(true));
 }
 
@@ -4102,8 +4102,8 @@ fn check_is_actively_delegating_max_parent_revoked() {
 
 	let mut ext = builder.build();
 
-	let is_actively_delegating = ext
-		.execute_with(|| Delegation::is_actively_delegating(&alternative_did_1, &delegation_id_2, max_parent_checks));
+	let is_actively_delegating =
+		ext.execute_with(|| Delegation::is_delegating(&alternative_did_1, &delegation_id_2, max_parent_checks));
 	assert_eq!(is_actively_delegating, Ok(false));
 }
 
@@ -4143,7 +4143,7 @@ fn check_is_actively_delegating_root_owner_not_revoked() {
 	let mut ext = builder.build();
 
 	let is_actively_delegating =
-		ext.execute_with(|| Delegation::is_actively_delegating(&actor_did, &delegation_id_2, max_parent_checks));
+		ext.execute_with(|| Delegation::is_delegating(&actor_did, &delegation_id_2, max_parent_checks));
 	assert_eq!(is_actively_delegating, Ok(true));
 }
 
@@ -4184,7 +4184,7 @@ fn check_is_actively_delegating_root_owner_revoked() {
 	let mut ext = builder.build();
 
 	let is_actively_delegating =
-		ext.execute_with(|| Delegation::is_actively_delegating(&actor_did, &delegation_id_2, max_parent_checks));
+		ext.execute_with(|| Delegation::is_delegating(&actor_did, &delegation_id_2, max_parent_checks));
 	assert_eq!(is_actively_delegating, Ok(false));
 }
 
@@ -4219,7 +4219,7 @@ fn check_is_actively_delegating_delegation_not_found() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Delegation::is_actively_delegating(&actor_did, &delegation_id_2, max_parent_checks),
+			Delegation::is_delegating(&actor_did, &delegation_id_2, max_parent_checks),
 			delegation::Error::<Test>::DelegationNotFound
 		);
 	});
@@ -4263,7 +4263,7 @@ fn check_is_actively_delegating_root_after_max_limit() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Delegation::is_actively_delegating(&actor_did, &delegation_id_2, max_parent_checks),
+			Delegation::is_delegating(&actor_did, &delegation_id_2, max_parent_checks),
 			delegation::Error::<Test>::MaxSearchDepthReached
 		);
 	});

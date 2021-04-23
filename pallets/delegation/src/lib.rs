@@ -727,7 +727,7 @@ pub mod pallet {
 			);
 
 			ensure!(
-				Self::is_actively_delegating(
+				Self::is_delegating(
 					&operation.revoker_did,
 					&operation.delegation_id,
 					operation.max_parent_checks
@@ -779,7 +779,7 @@ impl<T: Config> Pallet<T> {
 	/// otherwise it goes up up to `max_parent_checks` nodes, including the root
 	/// node, to check whether the given identity is a valid delegator of the
 	/// given delegation.
-	pub fn is_actively_delegating(
+	pub fn is_delegating(
 		identity: &T::DidIdentifier,
 		delegation: &T::DelegationNodeId,
 		max_parent_checks: u32,
@@ -800,7 +800,7 @@ impl<T: Config> Pallet<T> {
 
 			if let Some(parent) = delegation_node.parent {
 				// Recursively check upwards in hierarchy
-				Self::is_actively_delegating(identity, &parent, remaining_lookups)
+				Self::is_delegating(identity, &parent, remaining_lookups)
 			} else {
 				// Return whether the given account is the owner of the root and the root has
 				// not been revoked
