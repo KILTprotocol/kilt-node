@@ -9,103 +9,32 @@ version = "0.24.0"
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
-# Build dependencies
+[build-dependencies]
+substrate-wasm-builder-runner =  {version = "3.0.0"}
 
-[build-dependencies.substrate-wasm-builder-runner]
-version = "3.0.0"
+[dev-dependencies]
+did = {features = ["mock"], path = "../did", version = "0.24.0"}
+kilt-primitives = {default-features = false, path = "../../primitives"}
+serde = {version = "1.0.101"}
+sp-core = {branch = "rococo-v1",  default-features = false, git = "https://github.com/paritytech/substrate", version = "3.0.0"}
 
-# Dev dependencies
-
-[dev-dependencies.did]
-path = "../did"
-features = ["mock"]
-version = "0.24.0"
-
-[dev-dependencies.kilt-primitives]
-path = "../../primitives"
-default-features = false
-
-[dev-dependencies.serde]
-version = "1.0.101"
-
-[dev-dependencies.sp-core]
-branch = "rococo-v1"
-default-features = false
-git = "https://github.com/paritytech/substrate"
-version = "3.0.0"
-
+[dependencies]
 # Internal dependencies
+did = {default-features = false, path = "../did", version = "0.24.0"}
+kilt-primitives = {default-features = false, optional = true, path = "../../primitives"}
 
-[dependencies.kilt-primitives]
-path = "../../primitives"
-optional = true
-default-features = false
+frame-benchmarking = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+sp-core = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
 
-[dependencies.did]
-version = "0.24.0"
-default-features = false
-path = "../did"
-
-# External dependencies
-
-[dependencies.codec]
-default-features = false
-features = ["derive"]
-package = "parity-scale-codec"
-version = "2.0.0"
-
-[dependencies.frame-benchmarking]
-branch = "rococo-v1"
-default-features = false
-git = "https://github.com/paritytech/substrate"
-optional = true
-version = "3.0.0"
-
-[dependencies.frame-support]
-branch = "rococo-v1"
-default-features = false
-git = "https://github.com/paritytech/substrate"
-version = "3.0.0"
-
-[dependencies.frame-system]
-branch = "rococo-v1"
-default-features = false
-git = "https://github.com/paritytech/substrate"
-version = "3.0.0"
-
-[dependencies.log]
-version = "0.4.14"
-default-features = false
-
-[dependencies.serde]
-optional = true
-version = "1.0.101"
-
-[dependencies.sp-core]
-branch = "rococo-v1"
-default-features = false
-optional = true
-git = "https://github.com/paritytech/substrate"
-version = "3.0.0"
-
-[dependencies.sp-io]
-branch = "rococo-v1"
-default-features = false
-optional = true
-git = "https://github.com/paritytech/substrate"
-version = "3.0.0"
-
-[dependencies.sp-runtime]
-branch = "rococo-v1"
-default-features = false
-git = "https://github.com/paritytech/substrate"
-version = "3.0.0"
-
-[dependencies.sp-std]
-branch = "rococo-v1"
-default-features = false
-git = "https://github.com/paritytech/substrate"
-version = "3.0.0"
+#External dependencies
+codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.0.0"}
+frame-support = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-system = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate"}
+log = {default-features = false, version = "0.4.14"}
+serde = {optional = true, version = "1.0.101"}
+sp-io = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+sp-runtime = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-std = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [features]
 default = ["std"]
@@ -115,18 +44,18 @@ runtime-benchmarks = [
   "frame-system/runtime-benchmarks",
 ]
 mock = [
-  "serde",
   "kilt-primitives",
-  "sp-io",
+  "serde",
   "sp-core",
+  "sp-io",
 ]
 std = [
   "codec/std",
   "frame-support/std",
   "frame-system/std",
   "log/std",
+  "sp-core/std",
+  "sp-io/std",
   "sp-runtime/std",
-  "sp-io/std",
   "sp-std/std",
-  "sp-io/std",
 ]
