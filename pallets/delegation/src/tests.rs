@@ -3897,13 +3897,151 @@ fn check_is_delegating_direct_not_revoked() {
 
 	let mut ext = builder.build();
 
-	ext.execute_with(|| {
-		assert_ok!(Delegation::is_delegating(
+	let is_delegating = ext.execute_with(|| {
+		Delegation::is_delegating(
 			&alternative_did_2,
 			&delegation_id_2,
 			max_parent_checks
-		));
+		)
 	});
+	assert_eq!(is_delegating, Ok(true));
+}
+
+#[test]
+fn check_is_delegating_direct_not_revoked_max_parent_checks_value() {
+	let actor_did = did_mock::ALICE_DID;
+	let alternative_did_1 = did_mock::BOB_DID;
+	let alternative_did_2 = did_mock::CHARLIE_DID;
+
+	let (root_id, root_node) = (
+		get_delegation_root_id(true),
+		generate_base_delegation_root(actor_did.clone()),
+	);
+	let (delegation_id_1, delegation_node_1) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(root_id, alternative_did_1.clone()),
+	);
+	let (delegation_id_2, mut delegation_node_2) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(root_id, alternative_did_2.clone()),
+	);
+	delegation_node_2.parent = Some(delegation_id_1);
+	let max_parent_checks = u32::MAX;
+
+	// Root -> Delegation 1 -> Delegation 2
+	let builder = ExtBuilder::default()
+		.with_root_delegations(vec![(root_id, root_node.clone())])
+		.with_delegations(vec![
+			(delegation_id_1, delegation_node_1.clone()),
+			(delegation_id_2, delegation_node_2.clone()),
+		])
+		.with_children(vec![
+			(root_id, vec![delegation_id_1]),
+			(delegation_id_1, vec![delegation_id_2]),
+		]);
+
+	let mut ext = builder.build();
+
+	let is_delegating = ext.execute_with(|| {
+		Delegation::is_delegating(
+			&alternative_did_2,
+			&delegation_id_2,
+			max_parent_checks
+		)
+	});
+	assert_eq!(is_delegating, Ok(true));
+}
+
+#[test]
+fn check_is_delegating_direct_revoked() {
+	let actor_did = did_mock::ALICE_DID;
+	let alternative_did_1 = did_mock::BOB_DID;
+	let alternative_did_2 = did_mock::CHARLIE_DID;
+
+	let (root_id, root_node) = (
+		get_delegation_root_id(true),
+		generate_base_delegation_root(actor_did.clone()),
+	);
+	let (delegation_id_1, delegation_node_1) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(root_id, alternative_did_1.clone()),
+	);
+	let (delegation_id_2, mut delegation_node_2) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(root_id, alternative_did_2.clone()),
+	);
+	delegation_node_2.parent = Some(delegation_id_1);
+	delegation_node_2.revoked = true;
+	let max_parent_checks = 0u32;
+
+	// Root -> Delegation 1 -> Delegation 2
+	let builder = ExtBuilder::default()
+		.with_root_delegations(vec![(root_id, root_node.clone())])
+		.with_delegations(vec![
+			(delegation_id_1, delegation_node_1.clone()),
+			(delegation_id_2, delegation_node_2.clone()),
+		])
+		.with_children(vec![
+			(root_id, vec![delegation_id_1]),
+			(delegation_id_1, vec![delegation_id_2]),
+		]);
+
+	let mut ext = builder.build();
+
+	let is_delegating = ext.execute_with(|| {
+		Delegation::is_delegating(
+			&alternative_did_2,
+			&delegation_id_2,
+			max_parent_checks
+		)
+	});
+	assert_eq!(is_delegating, Ok(false));
+}
+
+#[test]
+fn check_is_delegating_direct_revoked_max_parent_checks_value() {
+	let actor_did = did_mock::ALICE_DID;
+	let alternative_did_1 = did_mock::BOB_DID;
+	let alternative_did_2 = did_mock::CHARLIE_DID;
+
+	let (root_id, root_node) = (
+		get_delegation_root_id(true),
+		generate_base_delegation_root(actor_did.clone()),
+	);
+	let (delegation_id_1, delegation_node_1) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(root_id, alternative_did_1.clone()),
+	);
+	let (delegation_id_2, mut delegation_node_2) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(root_id, alternative_did_2.clone()),
+	);
+	delegation_node_2.parent = Some(delegation_id_1);
+	delegation_node_2.revoked = true;
+	let max_parent_checks = u32::MAX;
+
+	// Root -> Delegation 1 -> Delegation 2
+	let builder = ExtBuilder::default()
+		.with_root_delegations(vec![(root_id, root_node.clone())])
+		.with_delegations(vec![
+			(delegation_id_1, delegation_node_1.clone()),
+			(delegation_id_2, delegation_node_2.clone()),
+		])
+		.with_children(vec![
+			(root_id, vec![delegation_id_1]),
+			(delegation_id_1, vec![delegation_id_2]),
+		]);
+
+	let mut ext = builder.build();
+
+	let is_delegating = ext.execute_with(|| {
+		Delegation::is_delegating(
+			&alternative_did_2,
+			&delegation_id_2,
+			max_parent_checks
+		)
+	});
+	assert_eq!(is_delegating, Ok(false));
 }
 
 #[test]
@@ -3941,11 +4079,234 @@ fn check_is_delegating_max_parent_not_revoked() {
 
 	let mut ext = builder.build();
 
-	ext.execute_with(|| {
-		assert_ok!(Delegation::is_delegating(
+	let is_delegating = ext.execute_with(|| {
+		Delegation::is_delegating(
+			&alternative_did_1,
+			&delegation_id_2,
+			max_parent_checks
+		)
+	});
+	assert_eq!(is_delegating, Ok(true));
+}
+
+#[test]
+fn check_is_delegating_max_parent_revoked() {
+	let actor_did = did_mock::ALICE_DID;
+	let alternative_did_1 = did_mock::BOB_DID;
+	let alternative_did_2 = did_mock::CHARLIE_DID;
+
+	let (root_id, root_node) = (
+		get_delegation_root_id(true),
+		generate_base_delegation_root(actor_did.clone()),
+	);
+	let (delegation_id_1, mut delegation_node_1) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(root_id, alternative_did_1.clone()),
+	);
+	delegation_node_1.revoked = true;
+	let (delegation_id_2, mut delegation_node_2) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(root_id, alternative_did_2.clone()),
+	);
+	delegation_node_2.parent = Some(delegation_id_1);
+	let max_parent_checks = 2u32;
+
+	// Root -> Delegation 1 -> Delegation 2
+	let builder = ExtBuilder::default()
+		.with_root_delegations(vec![(root_id, root_node.clone())])
+		.with_delegations(vec![
+			(delegation_id_1, delegation_node_1.clone()),
+			(delegation_id_2, delegation_node_2.clone()),
+		])
+		.with_children(vec![
+			(root_id, vec![delegation_id_1]),
+			(delegation_id_1, vec![delegation_id_2]),
+		]);
+
+	let mut ext = builder.build();
+
+	let is_delegating = ext.execute_with(|| {
+		Delegation::is_delegating(
+			&alternative_did_1,
+			&delegation_id_2,
+			max_parent_checks
+		)
+	});
+	assert_eq!(is_delegating, Ok(false));
+}
+
+#[test]
+fn check_is_delegating_root_owner_not_revoked() {
+	let actor_did = did_mock::ALICE_DID;
+	let alternative_did_1 = did_mock::BOB_DID;
+	let alternative_did_2 = did_mock::CHARLIE_DID;
+
+	let (root_id, root_node) = (
+		get_delegation_root_id(true),
+		generate_base_delegation_root(actor_did.clone()),
+	);
+	let (delegation_id_1, delegation_node_1) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(root_id, alternative_did_1.clone()),
+	);
+	let (delegation_id_2, mut delegation_node_2) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(root_id, alternative_did_2.clone()),
+	);
+	delegation_node_2.parent = Some(delegation_id_1);
+	let max_parent_checks = 2u32;
+
+	// Root -> Delegation 1 -> Delegation 2
+	let builder = ExtBuilder::default()
+		.with_root_delegations(vec![(root_id, root_node.clone())])
+		.with_delegations(vec![
+			(delegation_id_1, delegation_node_1.clone()),
+			(delegation_id_2, delegation_node_2.clone()),
+		])
+		.with_children(vec![
+			(root_id, vec![delegation_id_1]),
+			(delegation_id_1, vec![delegation_id_2]),
+		]);
+
+	let mut ext = builder.build();
+
+	let is_delegating = ext.execute_with(|| {
+		Delegation::is_delegating(
 			&actor_did,
 			&delegation_id_2,
 			max_parent_checks
-		));
+		)
+	});
+	assert_eq!(is_delegating, Ok(true));
+}
+
+#[test]
+fn check_is_delegating_root_owner_revoked() {
+	let actor_did = did_mock::ALICE_DID;
+	let alternative_did_1 = did_mock::BOB_DID;
+	let alternative_did_2 = did_mock::CHARLIE_DID;
+
+	let (root_id, mut root_node) = (
+		get_delegation_root_id(true),
+		generate_base_delegation_root(actor_did.clone()),
+	);
+	root_node.revoked = true;
+	let (delegation_id_1, delegation_node_1) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(root_id, alternative_did_1.clone()),
+	);
+	let (delegation_id_2, mut delegation_node_2) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(root_id, alternative_did_2.clone()),
+	);
+	delegation_node_2.parent = Some(delegation_id_1);
+	let max_parent_checks = u32::MAX;
+
+	// Root -> Delegation 1 -> Delegation 2
+	let builder = ExtBuilder::default()
+		.with_root_delegations(vec![(root_id, root_node.clone())])
+		.with_delegations(vec![
+			(delegation_id_1, delegation_node_1.clone()),
+			(delegation_id_2, delegation_node_2.clone()),
+		])
+		.with_children(vec![
+			(root_id, vec![delegation_id_1]),
+			(delegation_id_1, vec![delegation_id_2]),
+		]);
+
+	let mut ext = builder.build();
+
+	let is_delegating = ext.execute_with(|| {
+		Delegation::is_delegating(
+			&actor_did,
+			&delegation_id_2,
+			max_parent_checks
+		)
+	});
+	assert_eq!(is_delegating, Ok(false));
+}
+
+#[test]
+fn check_is_delegating_delegation_not_found() {
+	let actor_did = did_mock::ALICE_DID;
+	let alternative_did_1 = did_mock::BOB_DID;
+	let alternative_did_2 = did_mock::CHARLIE_DID;
+
+	let (root_id, root_node) = (
+		get_delegation_root_id(true),
+		generate_base_delegation_root(actor_did.clone()),
+	);
+	let (delegation_id_1, delegation_node_1) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(root_id, alternative_did_1.clone()),
+	);
+	let (delegation_id_2, mut delegation_node_2) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(root_id, alternative_did_2.clone()),
+	);
+	delegation_node_2.parent = Some(delegation_id_1);
+	let max_parent_checks = 2u32;
+
+	// Root -> Delegation 1
+	let builder = ExtBuilder::default()
+		.with_root_delegations(vec![(root_id, root_node.clone())])
+		.with_delegations(vec![(delegation_id_1, delegation_node_1.clone())])
+		.with_children(vec![(root_id, vec![delegation_id_1])]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Delegation::is_delegating(&actor_did, &delegation_id_2, max_parent_checks),
+			delegation::Error::<Test>::DelegationNotFound
+		);
+	});
+}
+
+#[test]
+fn check_is_delegating_root_after_max_limit() {
+	let actor_did = did_mock::ALICE_DID;
+	let alternative_did_1 = did_mock::BOB_DID;
+	let alternative_did_2 = did_mock::CHARLIE_DID;
+
+	let (root_id, root_node) = (
+		get_delegation_root_id(true),
+		generate_base_delegation_root(actor_did.clone()),
+	);
+	let (delegation_id_1, delegation_node_1) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(root_id, alternative_did_1.clone()),
+	);
+	let (delegation_id_2, mut delegation_node_2) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(root_id, alternative_did_2.clone()),
+	);
+	delegation_node_2.parent = Some(delegation_id_1);
+	// 1 less than needed
+	let max_parent_checks = 1u32;
+
+	// Root -> Delegation 1 -> Delegation 2
+	let builder = ExtBuilder::default()
+		.with_root_delegations(vec![(root_id, root_node.clone())])
+		.with_delegations(vec![
+			(delegation_id_1, delegation_node_1.clone()),
+			(delegation_id_2, delegation_node_2.clone()),
+		])
+		.with_children(vec![
+			(root_id, vec![delegation_id_1]),
+			(delegation_id_1, vec![delegation_id_2]),
+		]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Delegation::is_delegating(
+				&actor_did,
+				&delegation_id_2,
+				max_parent_checks
+			),
+			delegation::Error::<Test>::MaxSearchDepthReached
+		);
 	});
 }

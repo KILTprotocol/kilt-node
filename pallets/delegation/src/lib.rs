@@ -743,7 +743,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 	// Check if an account is the owner of the delegation or any delegation up
-	// the hierarchy (including the root), up to `max_parent_checks` nodes.
+	// the hierarchy, up to `max_parent_checks` nodes.
 	pub fn is_delegating(
 		account: &T::DidIdentifier,
 		delegation: &T::DelegationNodeId,
@@ -756,17 +756,22 @@ impl<T: Config> Pallet<T> {
 		// delegation has not been removed
 		if delegation_node.owner.eq(account) {
 			Ok(!delegation_node.revoked)
-		} else if let Some(parent) = delegation_node.parent {
+		} else {
+			// Counter is decreased regardless of whether we are checking the parent node next of the root node,
+			// as the root node is indeed the top parent's node.
 			let remaining_lookups = max_parent_checks
 				.checked_sub(1)
 				.ok_or(Error::<T>::MaxSearchDepthReached)?;
-			// Recursively check upwards in hierarchy
-			Self::is_delegating(account, &parent, remaining_lookups)
-		} else {
-			// Return whether the given account is the owner of the root and the root has
-			// not been revoked
-			let root = <Roots<T>>::get(delegation_node.root_id).ok_or(Error::<T>::RootNotFound)?;
-			Ok(root.owner.eq(account) && !root.revoked)
+
+			if let Some(parent) = delegation_node.parent {
+				// Recursively check upwards in hierarchy
+				Self::is_delegating(account, &parent, remaining_lookups)
+			} else {
+				// Return whether the given account is the owner of the root and the root has
+				// not been revoked
+				let root = <Roots<T>>::get(delegation_node.root_id).ok_or(Error::<T>::RootNotFound)?;
+				Ok(root.owner.eq(account) && !root.revoked)
+			}
 		}
 	}
 
