@@ -514,7 +514,7 @@ fn check_ctype_not_found_submit_delegation_root_creation_operation() {
 // submit_delegation_creation_operation()
 
 #[test]
-fn check_submit_delegation_no_parent_creation_operation_successful() {
+fn check_submit_delegation_no_parent_creation_operation() {
 	let delegator_auth_key = did_mock::get_ed25519_authentication_key(true);
 	let delegator_del_key = did_mock::get_sr25519_delegation_key(true);
 	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
@@ -2697,7 +2697,7 @@ fn check_different_root_creator_submit_delegation_root_revocation_operation() {
 }
 
 #[test]
-fn check_too_small_max_revocations_submit_delegation_root_revocation_operation_successful() {
+fn check_too_small_max_revocations_submit_delegation_root_revocation_operation() {
 	let delegator_auth_key = did_mock::get_ed25519_authentication_key(true);
 	let delegator_del_key = did_mock::get_sr25519_delegation_key(true);
 	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
@@ -2762,7 +2762,7 @@ fn check_too_small_max_revocations_submit_delegation_root_revocation_operation_s
 }
 
 #[test]
-fn check_exact_children_max_revocations_submit_delegation_root_revocation_operation_successful() {
+fn check_exact_children_max_revocations_submit_delegation_root_revocation_operation() {
 	let delegator_auth_key = did_mock::get_ed25519_authentication_key(true);
 	let delegator_del_key = did_mock::get_sr25519_delegation_key(true);
 	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
@@ -2813,7 +2813,7 @@ fn check_exact_children_max_revocations_submit_delegation_root_revocation_operat
 			(delegation_id_3, delegation_node_3.clone()),
 		])
 		.with_children(vec![
-			// Root -> Delegation 1 -> Delegation 2
+			// Root -> Delegation 1 -> Delegation 2 && Delegation 3
 			(root_id, vec![delegation_id_1]),
 			(delegation_id_1, vec![delegation_id_2, delegation_id_3]),
 		]);
@@ -3013,7 +3013,7 @@ fn check_parent_owner_submit_delegation_revocation_operation_successful() {
 }
 
 #[test]
-fn check_delegator_did_not_present_submit_delegation_revocation_operation_successful() {
+fn check_delegator_did_not_present_submit_delegation_revocation_operation() {
 	let delegator_auth_key = did_mock::get_ed25519_authentication_key(true);
 	let delegator_del_key = did_mock::get_sr25519_delegation_key(true);
 	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
