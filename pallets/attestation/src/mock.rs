@@ -16,7 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::{self as attestation, Attestation as AttestationStruct, *};
+#![allow(clippy::from_over_into)]
+
+use crate::{self as attestation, Attestation as AttestationStruct};
 use ctype::mock as ctype_mock;
 use delegation::mock as delegation_mock;
 
@@ -77,7 +79,7 @@ impl frame_system::Config for Test {
 	type OnSetCode = ();
 }
 
-impl Config for Test {
+impl attestation::Config for Test {
 	type Event = ();
 	type WeightInfo = ();
 }
@@ -120,8 +122,8 @@ pub fn get_claim_hash(default: bool) -> H256 {
 pub fn generate_base_attestation_creation_operation(
 	claim_hash: TestHash,
 	attestation: AttestationStruct<Test>,
-) -> AttestationCreationOperation<Test> {
-	AttestationCreationOperation {
+) -> attestation::AttestationCreationOperation<Test> {
+	attestation::AttestationCreationOperation {
 		caller_did: attestation.attester,
 		claim_hash,
 		ctype_hash: attestation.ctype_hash,
@@ -133,8 +135,8 @@ pub fn generate_base_attestation_creation_operation(
 pub fn generate_base_attestation_revocation_operation(
 	claim_hash: TestHash,
 	attestation: AttestationStruct<Test>,
-) -> AttestationRevocationOperation<Test> {
-	AttestationRevocationOperation {
+) -> attestation::AttestationRevocationOperation<Test> {
+	attestation::AttestationRevocationOperation {
 		caller_did: attestation.attester,
 		claim_hash,
 		max_parent_checks: 1u32,

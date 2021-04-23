@@ -16,6 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+#![allow(clippy::from_over_into)]
+
 use crate as ctype;
 use crate::*;
 use did::mock as did_mock;
