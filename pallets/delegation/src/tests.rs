@@ -62,12 +62,12 @@ fn check_submit_delegation_root_creation_operation_successful() {
 		.execute_with(|| Delegation::roots(&operation.root_id).expect("Delegation root should be present on chain."));
 
 	assert_eq!(stored_delegation_root.ctype_hash, operation.ctype_hash);
-	assert_eq!(stored_delegation_root.owner, operation.caller_did);
+	assert_eq!(stored_delegation_root.owner, operation.creator_did);
 	assert_eq!(stored_delegation_root.revoked, false);
 
 	// Verify that the DID tx counter has increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value() + 1u64
@@ -147,7 +147,7 @@ fn check_did_max_tx_counter_submit_delegation_root_creation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -193,7 +193,7 @@ fn check_did_too_small_tx_counter_submit_delegation_root_creation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -238,7 +238,7 @@ fn check_did_equal_tx_counter_submit_delegation_root_creation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -283,7 +283,7 @@ fn check_did_too_large_tx_counter_submit_delegation_root_creation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -326,7 +326,7 @@ fn check_did_delegation_key_not_present_submit_delegation_root_creation_operatio
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -371,7 +371,7 @@ fn check_did_invalid_signature_format_submit_delegation_root_creation_operation(
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -416,7 +416,7 @@ fn check_did_invalid_signature_submit_delegation_root_creation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -461,7 +461,7 @@ fn check_duplicate_submit_delegation_root_creation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value() + 1u64
@@ -504,7 +504,7 @@ fn check_ctype_not_found_submit_delegation_root_creation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value() + 1u64
@@ -589,7 +589,7 @@ fn check_submit_delegation_no_parent_creation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value() + 1u64
@@ -680,7 +680,7 @@ fn check_submit_delegation_with_parent_creation_operation_successful() {
 
 	// Verify that the DID tx counter has increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value() + 1u64
@@ -812,7 +812,7 @@ fn check_delegator_max_tx_counter_value_submit_delegation_creation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -883,7 +883,7 @@ fn check_delegator_too_small_tx_counter_submit_delegation_creation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -953,7 +953,7 @@ fn check_delegator_equal_tx_counter_submit_delegation_creation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -1023,7 +1023,7 @@ fn check_delegator_too_large_tx_counter_submit_delegation_creation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -1092,7 +1092,7 @@ fn check_delegator_delegation_key_not_present_submit_delegation_creation_operati
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -1162,7 +1162,7 @@ fn check_delegator_invalid_signature_format_submit_delegation_creation_operation
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -1232,7 +1232,7 @@ fn check_delegator_invalid_signature_submit_delegation_creation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -1299,7 +1299,7 @@ fn check_delegate_did_not_found_submit_delegation_creation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -1370,7 +1370,7 @@ fn check_invalid_delegate_signature_submit_delegation_creation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value() + 1u64
@@ -1441,7 +1441,7 @@ fn check_duplicate_delegation_submit_delegation_creation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value() + 1u64
@@ -1512,7 +1512,7 @@ fn check_root_not_existing_submit_delegation_creation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value() + 1u64
@@ -1583,7 +1583,7 @@ fn check_parent_not_existing_submit_delegation_creation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value() + 1u64
@@ -1662,7 +1662,7 @@ fn check_not_owner_of_parent_submit_delegation_creation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value() + 1u64
@@ -1738,8 +1738,8 @@ fn check_unauthorised_delegation_submit_delegation_creation_operation() {
 	});
 
 	// Verify that the DID tx counter has increased
-	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter // should be present on chain."));
+	let new_delegator_details = ext
+		.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter // should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value() + 1u64
@@ -1810,7 +1810,7 @@ fn check_not_owner_of_root_delegation_submit_delegation_creation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.creator_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value() + 1u64
@@ -1895,7 +1895,7 @@ fn check_list_hierarchy_submit_delegation_root_revocation_operation_successful()
 
 	// Verify that the DID tx counter has increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value() + 1u64
@@ -1975,7 +1975,7 @@ fn check_tree_hierarchy_submit_delegation_root_revocation_operation_successful()
 
 	// Verify that the DID tx counter has increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value() + 1u64
@@ -2045,7 +2045,7 @@ fn check_greater_max_revocations_submit_delegation_root_revocation_operation_suc
 
 	// Verify that the DID tx counter has increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value() + 1u64
@@ -2167,7 +2167,7 @@ fn check_max_did_tx_counter_submit_delegation_root_revocation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -2233,7 +2233,7 @@ fn check_too_small_did_tx_counter_submit_delegation_root_revocation_operation() 
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -2298,7 +2298,7 @@ fn check_equal_did_tx_counter_submit_delegation_root_revocation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -2363,7 +2363,7 @@ fn check_too_large_did_tx_counter_submit_delegation_root_revocation_operation() 
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -2427,7 +2427,7 @@ fn check_delegation_key_not_present_submit_delegation_root_revocation_operation(
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -2492,7 +2492,7 @@ fn check_invalid_signature_format_submit_delegation_root_revocation_operation() 
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -2557,7 +2557,7 @@ fn check_invalid_signature_submit_delegation_root_revocation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -2622,7 +2622,7 @@ fn check_root_not_found_submit_delegation_root_revocation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value() + 1u64
@@ -2656,7 +2656,7 @@ fn check_different_root_creator_submit_delegation_root_revocation_operation() {
 	);
 
 	let mut operation = generate_base_delegation_root_revocation_operation(root_id, root_node.clone());
-	operation.caller_did = delegator_did.clone();
+	operation.revoker_did = delegator_did.clone();
 	let signature = delegator_del_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![
@@ -2689,7 +2689,7 @@ fn check_different_root_creator_submit_delegation_root_revocation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value() + 1u64
@@ -2754,7 +2754,7 @@ fn check_too_small_max_revocations_submit_delegation_root_revocation_operation()
 
 	// Verify that the DID tx counter has increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value() + 1u64
@@ -2851,7 +2851,7 @@ fn check_exact_children_max_revocations_submit_delegation_root_revocation_operat
 
 	// Verify that the DID tx counter has increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value() + 1u64
@@ -2930,7 +2930,7 @@ fn check_direct_owner_submit_delegation_revocation_operation_successful() {
 
 	// Verify that the DID tx counter has increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value() + 1u64
@@ -2966,7 +2966,9 @@ fn check_parent_owner_submit_delegation_revocation_operation_successful() {
 	);
 	delegation_node.parent = Some(parent_delegation_id);
 
-	let operation = generate_base_delegation_revocation_operation(delegation_id, parent_delegation_node.clone());
+	let mut operation = generate_base_delegation_revocation_operation(delegation_id, parent_delegation_node.clone());
+	operation.max_parent_checks = 1u32;
+	operation.max_revocations = 1u32;
 	let signature = delegator_del_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![
@@ -3005,7 +3007,7 @@ fn check_parent_owner_submit_delegation_revocation_operation_successful() {
 
 	// Verify that the DID tx counter has increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value() + 1u64
@@ -3139,7 +3141,7 @@ fn check_did_max_tx_counter_submit_delegation_revocation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -3211,7 +3213,7 @@ fn check_delegator_too_small_tx_counter_submit_delegation_revocation_operation()
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -3282,7 +3284,7 @@ fn check_delegator_equal_tx_counter_submit_delegation_revocation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -3353,7 +3355,7 @@ fn check_delegator_too_large_tx_counter_submit_delegation_revocation_operation()
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -3423,7 +3425,7 @@ fn check_delegator_delegation_key_not_present_submit_delegation_revocation_opera
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -3494,7 +3496,7 @@ fn check_invalid_signature_format_submit_delegation_revocation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -3565,7 +3567,7 @@ fn check_invalid_signature_submit_delegation_revocation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value()
@@ -3637,7 +3639,7 @@ fn check_delegation_not_found_submit_delegation_revocation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value() + 1u64
@@ -3676,7 +3678,7 @@ fn check_not_delegating_submit_delegation_revocation_operation() {
 
 	let mut operation =
 		generate_base_delegation_revocation_operation(parent_delegation_id, parent_delegation_node.clone());
-	operation.caller_did = delegator_did.clone();
+	operation.revoker_did = delegator_did.clone();
 	operation.max_parent_checks = u32::MAX;
 	operation.max_revocations = 2u32;
 	let signature = delegator_del_key.sign(&operation.encode());
@@ -3711,7 +3713,7 @@ fn check_not_delegating_submit_delegation_revocation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value() + 1u64
@@ -3749,7 +3751,7 @@ fn check_parent_too_far_submit_delegation_revocation_operation() {
 	delegation_node.parent = Some(parent_delegation_id);
 
 	let mut operation = generate_base_delegation_revocation_operation(delegation_id, delegation_node.clone());
-	operation.caller_did = delegator_did.clone();
+	operation.revoker_did = delegator_did.clone();
 	operation.max_parent_checks = 0u32;
 	let signature = delegator_del_key.sign(&operation.encode());
 
@@ -3783,7 +3785,7 @@ fn check_parent_too_far_submit_delegation_revocation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value() + 1u64
@@ -3820,8 +3822,8 @@ fn check_too_many_revocations_submit_delegation_revocation_operation() {
 	delegation_node.parent = Some(parent_delegation_id);
 
 	let mut operation = generate_base_delegation_revocation_operation(delegation_id, delegation_node.clone());
-	operation.caller_did = delegator_did.clone();
-	operation.max_revocations = 0u32;
+	operation.revoker_did = delegator_did.clone();
+	operation.max_parent_checks = 1u32;
 	let signature = delegator_del_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![
@@ -3853,7 +3855,7 @@ fn check_too_many_revocations_submit_delegation_revocation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_delegator_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_delegator_details.get_tx_counter_value(),
 		delegator_details.get_tx_counter_value() + 1u64
@@ -3897,13 +3899,8 @@ fn check_is_actively_delegating_direct_not_revoked() {
 
 	let mut ext = builder.build();
 
-	let is_actively_delegating = ext.execute_with(|| {
-		Delegation::is_actively_delegating(
-			&alternative_did_2,
-			&delegation_id_2,
-			max_parent_checks
-		)
-	});
+	let is_actively_delegating = ext
+		.execute_with(|| Delegation::is_actively_delegating(&alternative_did_2, &delegation_id_2, max_parent_checks));
 	assert_eq!(is_actively_delegating, Ok(true));
 }
 
@@ -3942,13 +3939,8 @@ fn check_is_actively_delegating_direct_not_revoked_max_parent_checks_value() {
 
 	let mut ext = builder.build();
 
-	let is_actively_delegating = ext.execute_with(|| {
-		Delegation::is_actively_delegating(
-			&alternative_did_2,
-			&delegation_id_2,
-			max_parent_checks
-		)
-	});
+	let is_actively_delegating = ext
+		.execute_with(|| Delegation::is_actively_delegating(&alternative_did_2, &delegation_id_2, max_parent_checks));
 	assert_eq!(is_actively_delegating, Ok(true));
 }
 
@@ -3988,13 +3980,8 @@ fn check_is_actively_delegating_direct_revoked() {
 
 	let mut ext = builder.build();
 
-	let is_actively_delegating = ext.execute_with(|| {
-		Delegation::is_actively_delegating(
-			&alternative_did_2,
-			&delegation_id_2,
-			max_parent_checks
-		)
-	});
+	let is_actively_delegating = ext
+		.execute_with(|| Delegation::is_actively_delegating(&alternative_did_2, &delegation_id_2, max_parent_checks));
 	assert_eq!(is_actively_delegating, Ok(false));
 }
 
@@ -4034,13 +4021,8 @@ fn check_is_actively_delegating_direct_revoked_max_parent_checks_value() {
 
 	let mut ext = builder.build();
 
-	let is_actively_delegating = ext.execute_with(|| {
-		Delegation::is_actively_delegating(
-			&alternative_did_2,
-			&delegation_id_2,
-			max_parent_checks
-		)
-	});
+	let is_actively_delegating = ext
+		.execute_with(|| Delegation::is_actively_delegating(&alternative_did_2, &delegation_id_2, max_parent_checks));
 	assert_eq!(is_actively_delegating, Ok(false));
 }
 
@@ -4079,13 +4061,8 @@ fn check_is_actively_delegating_max_parent_not_revoked() {
 
 	let mut ext = builder.build();
 
-	let is_actively_delegating = ext.execute_with(|| {
-		Delegation::is_actively_delegating(
-			&alternative_did_1,
-			&delegation_id_2,
-			max_parent_checks
-		)
-	});
+	let is_actively_delegating = ext
+		.execute_with(|| Delegation::is_actively_delegating(&alternative_did_1, &delegation_id_2, max_parent_checks));
 	assert_eq!(is_actively_delegating, Ok(true));
 }
 
@@ -4125,13 +4102,8 @@ fn check_is_actively_delegating_max_parent_revoked() {
 
 	let mut ext = builder.build();
 
-	let is_actively_delegating = ext.execute_with(|| {
-		Delegation::is_actively_delegating(
-			&alternative_did_1,
-			&delegation_id_2,
-			max_parent_checks
-		)
-	});
+	let is_actively_delegating = ext
+		.execute_with(|| Delegation::is_actively_delegating(&alternative_did_1, &delegation_id_2, max_parent_checks));
 	assert_eq!(is_actively_delegating, Ok(false));
 }
 
@@ -4170,13 +4142,8 @@ fn check_is_actively_delegating_root_owner_not_revoked() {
 
 	let mut ext = builder.build();
 
-	let is_actively_delegating = ext.execute_with(|| {
-		Delegation::is_actively_delegating(
-			&actor_did,
-			&delegation_id_2,
-			max_parent_checks
-		)
-	});
+	let is_actively_delegating =
+		ext.execute_with(|| Delegation::is_actively_delegating(&actor_did, &delegation_id_2, max_parent_checks));
 	assert_eq!(is_actively_delegating, Ok(true));
 }
 
@@ -4216,13 +4183,8 @@ fn check_is_actively_delegating_root_owner_revoked() {
 
 	let mut ext = builder.build();
 
-	let is_actively_delegating = ext.execute_with(|| {
-		Delegation::is_actively_delegating(
-			&actor_did,
-			&delegation_id_2,
-			max_parent_checks
-		)
-	});
+	let is_actively_delegating =
+		ext.execute_with(|| Delegation::is_actively_delegating(&actor_did, &delegation_id_2, max_parent_checks));
 	assert_eq!(is_actively_delegating, Ok(false));
 }
 
@@ -4301,11 +4263,7 @@ fn check_is_actively_delegating_root_after_max_limit() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Delegation::is_actively_delegating(
-				&actor_did,
-				&delegation_id_2,
-				max_parent_checks
-			),
+			Delegation::is_actively_delegating(&actor_did, &delegation_id_2, max_parent_checks),
 			delegation::Error::<Test>::MaxSearchDepthReached
 		);
 	});

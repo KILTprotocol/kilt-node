@@ -60,7 +60,7 @@ fn check_no_delegation_submit_attestation_creation_operation_successful() {
 		ext.execute_with(|| Attestation::attestations(claim_hash).expect("Attestation should be present on chain."));
 
 	assert_eq!(stored_attestation.ctype_hash, operation.ctype_hash);
-	assert_eq!(stored_attestation.attester, operation.caller_did);
+	assert_eq!(stored_attestation.attester, operation.attester_did);
 	assert_eq!(stored_attestation.delegation_id, operation.delegation_id);
 	assert_eq!(stored_attestation.revoked, false);
 
@@ -119,7 +119,7 @@ fn check_with_delegation_submit_attestation_creation_operation_successful() {
 		ext.execute_with(|| Attestation::attestations(claim_hash).expect("Attestation should be present on chain."));
 
 	assert_eq!(stored_attestation.ctype_hash, operation.ctype_hash);
-	assert_eq!(stored_attestation.attester, operation.caller_did);
+	assert_eq!(stored_attestation.attester, operation.attester_did);
 	assert_eq!(stored_attestation.delegation_id, operation.delegation_id);
 	assert_eq!(stored_attestation.revoked, false);
 
@@ -207,7 +207,7 @@ fn check_did_max_tx_counter_submit_attestation_creation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.attester_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value()
@@ -250,7 +250,7 @@ fn check_did_too_small_tx_counter_submit_attestation_creation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.attester_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value()
@@ -292,7 +292,7 @@ fn check_did_equal_tx_counter_submit_attestation_creation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.attester_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value()
@@ -334,7 +334,7 @@ fn check_did_too_large_tx_counter_submit_attestation_creation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.attester_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value()
@@ -374,7 +374,7 @@ fn check_did_attestation_key_not_present_submit_attestation_creation_operation()
 
 	// Verify that the DID tx counter has not increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.attester_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value()
@@ -416,7 +416,7 @@ fn check_did_invalid_signature_format_submit_attestation_creation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.attester_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value()
@@ -458,7 +458,7 @@ fn check_did_invalid_signature_submit_attestation_creation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.attester_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value()
@@ -500,7 +500,7 @@ fn check_ctype_not_present_submit_attestation_creation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.attester_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value() + 1u64
@@ -543,7 +543,7 @@ fn check_duplicate_attestation_submit_attestation_creation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.attester_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value() + 1u64
@@ -586,7 +586,7 @@ fn check_delegation_not_found_submit_attestation_creation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.attester_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value() + 1u64
@@ -641,7 +641,7 @@ fn check_delegation_revoked_submit_attestation_creation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.attester_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value() + 1u64
@@ -696,7 +696,7 @@ fn check_not_delegation_owner_submit_attestation_creation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.attester_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value() + 1u64
@@ -750,7 +750,7 @@ fn check_unauthorised_permissions_submit_attestation_creation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.attester_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value() + 1u64
@@ -805,7 +805,7 @@ fn check_root_not_present_submit_attestation_creation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.attester_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value() + 1u64
@@ -861,7 +861,7 @@ fn check_root_ctype_mismatch_submit_attestation_creation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.attester_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value() + 1u64
@@ -907,7 +907,7 @@ fn check_direct_attestation_submit_attestation_revocation_operation_successful()
 
 	// Verify that the DID tx counter has increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value() + 1u64
@@ -934,12 +934,13 @@ fn check_direct_delegation_submit_attestation_revocation_operation_successful() 
 		delegation_mock::generate_base_delegation_node(root_id, caller_did.clone()),
 	);
 	delegation_node.permissions = delegation::Permissions::ATTEST;
-	// Attestation owned by a different user, but delegation owned by the user submitting the operation.
+	// Attestation owned by a different user, but delegation owned by the user
+	// submitting the operation.
 	let mut attestation = generate_base_attestation(alternative_did.clone());
 	attestation.delegation_id = Some(delegation_id);
 
 	let mut operation = generate_base_attestation_revocation_operation(claim_hash, attestation.clone());
-	operation.caller_did = caller_did.clone();
+	operation.revoker_did = caller_did.clone();
 	// Set to 0 as we only need to check the delegation node itself and no parent.
 	operation.max_parent_checks = 0u32;
 	let signature = did_att_key.sign(&operation.encode());
@@ -968,7 +969,7 @@ fn check_direct_delegation_submit_attestation_revocation_operation_successful() 
 
 	// Verify that the DID tx counter has increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value() + 1u64
@@ -1004,8 +1005,9 @@ fn check_parent_delegation_submit_attestation_revocation_operation_successful() 
 	attestation.delegation_id = Some(delegation_id);
 
 	let mut operation = generate_base_attestation_revocation_operation(claim_hash, attestation.clone());
-	operation.caller_did = caller_did.clone();
-	// Set to 1 as the delegation referenced in the attestation is the child of the node we want to use
+	operation.revoker_did = caller_did.clone();
+	// Set to 1 as the delegation referenced in the attestation is the child of the
+	// node we want to use
 	operation.max_parent_checks = 1u32;
 	let signature = did_att_key.sign(&operation.encode());
 
@@ -1013,7 +1015,10 @@ fn check_parent_delegation_submit_attestation_revocation_operation_successful() 
 	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did.clone())]);
 	let builder = delegation_mock::ExtBuilder::from(builder)
 		.with_root_delegations(vec![(root_id, root_node.clone())])
-		.with_delegations(vec![(parent_id, parent_node.clone()), (delegation_id, delegation_node.clone())]);
+		.with_delegations(vec![
+			(parent_id, parent_node.clone()),
+			(delegation_id, delegation_node.clone()),
+		]);
 	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation.clone())]);
 
 	let mut ext = builder.build();
@@ -1033,7 +1038,7 @@ fn check_parent_delegation_submit_attestation_revocation_operation_successful() 
 
 	// Verify that the DID tx counter has increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value() + 1u64
@@ -1059,8 +1064,8 @@ fn check_parent_delegation_no_attestation_permissions_submit_attestation_revocat
 		delegation_mock::get_delegation_id(true),
 		delegation_mock::generate_base_delegation_node(root_id, caller_did.clone()),
 	);
-	// Parent node has only permissions to delegate, and we are testing whether it could also revoke
-	// attestations issued by its children
+	// Parent node has only permissions to delegate, and we are testing whether it
+	// could also revoke attestations issued by its children
 	parent_node.permissions = delegation::Permissions::DELEGATE;
 	let (delegation_id, delegation_node) = (
 		delegation_mock::get_delegation_id(false),
@@ -1071,8 +1076,9 @@ fn check_parent_delegation_no_attestation_permissions_submit_attestation_revocat
 	attestation.delegation_id = Some(delegation_id);
 
 	let mut operation = generate_base_attestation_revocation_operation(claim_hash, attestation.clone());
-	operation.caller_did = caller_did.clone();
-	// Set to 1 as the delegation referenced in the attestation is the child of the node we want to use
+	operation.revoker_did = caller_did.clone();
+	// Set to 1 as the delegation referenced in the attestation is the child of the
+	// node we want to use
 	operation.max_parent_checks = 1u32;
 	let signature = did_att_key.sign(&operation.encode());
 
@@ -1080,7 +1086,10 @@ fn check_parent_delegation_no_attestation_permissions_submit_attestation_revocat
 	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did.clone())]);
 	let builder = delegation_mock::ExtBuilder::from(builder)
 		.with_root_delegations(vec![(root_id, root_node.clone())])
-		.with_delegations(vec![(parent_id, parent_node.clone()), (delegation_id, delegation_node.clone())]);
+		.with_delegations(vec![
+			(parent_id, parent_node.clone()),
+			(delegation_id, delegation_node.clone()),
+		]);
 	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation.clone())]);
 
 	let mut ext = builder.build();
@@ -1100,7 +1109,7 @@ fn check_parent_delegation_no_attestation_permissions_submit_attestation_revocat
 
 	// Verify that the DID tx counter has increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value() + 1u64
@@ -1131,15 +1140,17 @@ fn check_parent_delegation_with_direct_delegation_revoked_submit_attestation_rev
 		delegation_mock::get_delegation_id(false),
 		delegation_mock::generate_base_delegation_node(root_id, alternative_did.clone()),
 	);
-	// Set the direct delegation node as revoked, but the one that is needed (its parent) is not
+	// Set the direct delegation node as revoked, but the one that is needed (its
+	// parent) is not
 	delegation_node.revoked = true;
 	// Attestation owned by a different user
 	let mut attestation = generate_base_attestation(alternative_did.clone());
 	attestation.delegation_id = Some(delegation_id);
 
 	let mut operation = generate_base_attestation_revocation_operation(claim_hash, attestation.clone());
-	operation.caller_did = caller_did.clone();
-	// Set to 1 as the delegation referenced in the attestation is the child of the node we want to use
+	operation.revoker_did = caller_did.clone();
+	// Set to 1 as the delegation referenced in the attestation is the child of the
+	// node we want to use
 	operation.max_parent_checks = 1u32;
 	let signature = did_att_key.sign(&operation.encode());
 
@@ -1147,7 +1158,10 @@ fn check_parent_delegation_with_direct_delegation_revoked_submit_attestation_rev
 	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did.clone())]);
 	let builder = delegation_mock::ExtBuilder::from(builder)
 		.with_root_delegations(vec![(root_id, root_node.clone())])
-		.with_delegations(vec![(parent_id, parent_node.clone()), (delegation_id, delegation_node.clone())]);
+		.with_delegations(vec![
+			(parent_id, parent_node.clone()),
+			(delegation_id, delegation_node.clone()),
+		]);
 	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation.clone())]);
 
 	let mut ext = builder.build();
@@ -1167,7 +1181,7 @@ fn check_parent_delegation_with_direct_delegation_revoked_submit_attestation_rev
 
 	// Verify that the DID tx counter has increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value() + 1u64
@@ -1245,7 +1259,7 @@ fn check_did_max_tx_counter_submit_attestation_revocation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value()
@@ -1289,7 +1303,7 @@ fn check_too_small_tx_counter_submit_attestation_revocation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value()
@@ -1332,7 +1346,7 @@ fn check_equal_tx_counter_submit_attestation_revocation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value()
@@ -1375,7 +1389,7 @@ fn check_too_large_tx_counter_submit_attestation_revocation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value()
@@ -1416,7 +1430,7 @@ fn check_attestation_key_not_present_submit_attestation_revocation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value()
@@ -1459,7 +1473,7 @@ fn check_invalid_signature_format_submit_attestation_revocation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value()
@@ -1502,7 +1516,7 @@ fn check_invalid_signature_submit_attestation_revocation_operation() {
 
 	// Verify that the DID tx counter has not increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value()
@@ -1542,7 +1556,7 @@ fn check_attestation_not_present_submit_attestation_revocation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value() + 1u64
@@ -1585,7 +1599,7 @@ fn check_already_revoked_attestation_submit_attestation_revocation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value() + 1u64
@@ -1606,7 +1620,7 @@ fn check_unauthorised_attestation_no_delegation_submit_attestation_revocation_op
 	let attestation = generate_base_attestation(alternative_did.clone());
 
 	let mut operation = generate_base_attestation_revocation_operation(claim_hash, attestation.clone());
-	operation.caller_did = caller_did.clone();
+	operation.revoker_did = caller_did.clone();
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![
@@ -1632,7 +1646,7 @@ fn check_unauthorised_attestation_no_delegation_submit_attestation_revocation_op
 
 	// Verify that the DID tx counter has increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value() + 1u64
@@ -1668,7 +1682,7 @@ fn check_max_parent_lookups_submit_attestation_revocation_operation() {
 	attestation.delegation_id = Some(delegation_id);
 
 	let mut operation = generate_base_attestation_revocation_operation(claim_hash, attestation.clone());
-	operation.caller_did = caller_did.clone();
+	operation.revoker_did = caller_did.clone();
 	operation.max_parent_checks = 0u32;
 	let signature = did_att_key.sign(&operation.encode());
 
@@ -1705,7 +1719,7 @@ fn check_max_parent_lookups_submit_attestation_revocation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value() + 1u64
@@ -1737,7 +1751,7 @@ fn check_revoked_delegation_submit_attestation_revocation_operation() {
 	attestation.delegation_id = Some(delegation_id);
 
 	let mut operation = generate_base_attestation_revocation_operation(claim_hash, attestation.clone());
-	operation.caller_did = caller_did.clone();
+	operation.revoker_did = caller_did.clone();
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
@@ -1763,7 +1777,7 @@ fn check_revoked_delegation_submit_attestation_revocation_operation() {
 
 	// Verify that the DID tx counter has increased
 	let new_mock_details =
-		ext.execute_with(|| Did::get_did(&operation.caller_did).expect("DID submitter should be present on chain."));
+		ext.execute_with(|| Did::get_did(&operation.revoker_did).expect("DID submitter should be present on chain."));
 	assert_eq!(
 		new_mock_details.get_tx_counter_value(),
 		mock_did_details.get_tx_counter_value() + 1u64

@@ -154,6 +154,9 @@ pub fn get_sr25519_delegation_key(default: bool) -> sr25519::Pair {
 	}
 }
 
+// Given a DID identifier and an authentication key, it returns a
+// DidCreationOperation that would successfully write the new DID on chain using
+// a default key agreement key.
 pub fn generate_base_did_creation_operation(
 	did: TestDidIdentifier,
 	new_auth_key: did::PublicVerificationKey,
@@ -168,6 +171,8 @@ pub fn generate_base_did_creation_operation(
 	}
 }
 
+// Given a DID identifier, it returns a DidUpdateOperation
+// that does not update any information for the DID.
 pub fn generate_base_did_update_operation(did: TestDidIdentifier) -> did::DidUpdateOperation<Test> {
 	DidUpdateOperation {
 		did,
@@ -181,10 +186,14 @@ pub fn generate_base_did_update_operation(did: TestDidIdentifier) -> did::DidUpd
 	}
 }
 
+// Given a DID identifier, it returns a DidDeletionOperation
+// that would remove the DID from chain.
 pub fn generate_base_did_delete_operation(did: TestDidIdentifier) -> did::DidDeletionOperation<Test> {
 	DidDeletionOperation { did, tx_counter: 1 }
 }
 
+// Given an authentication key, it generates a DidDetails object with the given
+// key and a default key agreement key.
 pub fn generate_base_did_details(auth_key: did::PublicVerificationKey) -> did::DidDetails {
 	did::DidDetails {
 		auth_key,

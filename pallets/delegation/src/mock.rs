@@ -137,18 +137,23 @@ pub(crate) fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
 	hash.encode()
 }
 
+// Given a root ID and a root node, it returns a DelegationRootCreationOperation
+// that would result in the provided root node being written on chain.
 pub fn generate_base_delegation_root_creation_operation(
 	root_id: TestDelegationNodeId,
 	root_node: DelegationRoot<Test>,
 ) -> DelegationRootCreationOperation<Test> {
 	DelegationRootCreationOperation {
-		caller_did: root_node.owner,
+		creator_did: root_node.owner,
 		ctype_hash: root_node.ctype_hash,
 		root_id,
 		tx_counter: 1u64,
 	}
 }
 
+// Given a delegator DID, a delegation ID, a delegate's signature and a
+// delegation node, it returns a DelegationCreationOperation that would result
+// in the provided delegation node being written on chain.
 pub fn generate_base_delegation_creation_operation(
 	delegator_did: TestDidIdentifier,
 	delegation_id: TestDelegationNodeId,
@@ -156,7 +161,7 @@ pub fn generate_base_delegation_creation_operation(
 	delegation_node: DelegationNode<Test>,
 ) -> DelegationCreationOperation<Test> {
 	DelegationCreationOperation {
-		caller_did: delegator_did,
+		creator_did: delegator_did,
 		delegate_did: delegation_node.owner,
 		delegate_signature,
 		delegation_id,
@@ -167,31 +172,40 @@ pub fn generate_base_delegation_creation_operation(
 	}
 }
 
+// Given a root ID and a root node, it returns a
+// DelegationRootRevocationOperation that would successfully revoke the root
+// node from the chain, using the root node's owner as the revoker and no
+// children revocation support (max_children = 0).
 pub fn generate_base_delegation_root_revocation_operation(
 	root_id: TestDelegationNodeId,
 	root_node: DelegationRoot<Test>,
 ) -> DelegationRootRevocationOperation<Test> {
 	DelegationRootRevocationOperation {
-		caller_did: root_node.owner,
+		revoker_did: root_node.owner,
 		root_id,
-		max_children: 1u32,
+		max_children: 0u32,
 		tx_counter: 1u64,
 	}
 }
 
+// Given a root ID and a root node, it returns a
+// DelegationRootRevocationOperation that would successfully revoke the root
+// node from the chain, using the root node's owner as the revoker and no
+// children revocation support (max_revocations = 0).
 pub fn generate_base_delegation_revocation_operation(
 	delegation_id: TestDelegationNodeId,
 	delegation_node: DelegationNode<Test>,
 ) -> DelegationRevocationOperation<Test> {
 	DelegationRevocationOperation {
-		caller_did: delegation_node.owner,
+		revoker_did: delegation_node.owner,
 		delegation_id,
-		max_parent_checks: 1u32,
-		max_revocations: 1u32,
+		max_parent_checks: 0u32,
+		max_revocations: 0u32,
 		tx_counter: 1u64,
 	}
 }
 
+// Given an owner, it generates a DelegationRoot using a default CTYPE hash.
 pub fn generate_base_delegation_root(owner: TestDidIdentifier) -> DelegationRoot<Test> {
 	DelegationRoot {
 		owner,
@@ -200,6 +214,8 @@ pub fn generate_base_delegation_root(owner: TestDidIdentifier) -> DelegationRoot
 	}
 }
 
+// Given a root_id and an owner, it generates a DelegationNode with no parent
+// and a permission to delegate.
 pub fn generate_base_delegation_node(root_id: TestDelegationNodeId, owner: TestDidIdentifier) -> DelegationNode<Test> {
 	DelegationNode {
 		owner,

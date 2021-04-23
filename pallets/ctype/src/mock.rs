@@ -19,7 +19,6 @@
 #![allow(clippy::from_over_into)]
 
 use crate as ctype;
-use crate::*;
 use did::mock as did_mock;
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
@@ -77,7 +76,7 @@ impl frame_system::Config for Test {
 	type OnSetCode = ();
 }
 
-impl Config for Test {
+impl ctype::Config for Test {
 	type Event = ();
 	type WeightInfo = ();
 }
@@ -102,6 +101,16 @@ pub fn get_ctype_hash(default: bool) -> H256 {
 		H256::from_low_u64_be(DEFAULT_CTYPE_HASH_SEED)
 	} else {
 		H256::from_low_u64_be(ALTERNATIVE_CTYPE_HASH_SEED)
+	}
+}
+
+// Given a creator DID, it returns a CtypeCreationOperation
+// that would result in a CTYPE with a default hash being written on chain.
+pub fn generate_base_ctype_creation_operation(creator: TestDidIdentifier) -> ctype::CtypeCreationOperation<Test> {
+	ctype::CtypeCreationOperation {
+		creator_did: creator,
+		hash: get_ctype_hash(true),
+		tx_counter: 1u64,
 	}
 }
 
@@ -152,13 +161,5 @@ impl ExtBuilder {
 		}
 
 		ext
-	}
-}
-
-pub fn generate_base_ctype_creation_operation(creator: TestDidIdentifier) -> CtypeCreationOperation<Test> {
-	CtypeCreationOperation {
-		creator_did: creator,
-		hash: get_ctype_hash(true),
-		tx_counter: 1u64,
 	}
 }

@@ -119,12 +119,15 @@ pub fn get_claim_hash(default: bool) -> H256 {
 	}
 }
 
+// Given a claim hash and an attestation, it returns an
+// AttestationCreationOperation that would result in the provided attestation
+// being written on chain.
 pub fn generate_base_attestation_creation_operation(
 	claim_hash: TestHash,
 	attestation: AttestationStruct<Test>,
 ) -> attestation::AttestationCreationOperation<Test> {
 	attestation::AttestationCreationOperation {
-		caller_did: attestation.attester,
+		attester_did: attestation.attester,
 		claim_hash,
 		ctype_hash: attestation.ctype_hash,
 		delegation_id: attestation.delegation_id,
@@ -132,18 +135,24 @@ pub fn generate_base_attestation_creation_operation(
 	}
 }
 
+// Given a claim hash and an attestation, it returns an
+// AttestationRevocationOperation that would successfully revoke the attestation
+// from the chain, using the attestation owner as the default revoker, and no
+// gas to check for parent delegations.
 pub fn generate_base_attestation_revocation_operation(
 	claim_hash: TestHash,
 	attestation: AttestationStruct<Test>,
 ) -> attestation::AttestationRevocationOperation<Test> {
 	attestation::AttestationRevocationOperation {
-		caller_did: attestation.attester,
+		revoker_did: attestation.attester,
 		claim_hash,
-		max_parent_checks: 1u32,
+		max_parent_checks: 0u32,
 		tx_counter: 1u64,
 	}
 }
 
+// Given an attester, it generates an Attestation using no delegation and a
+// default CTYPE hash.
 pub fn generate_base_attestation(attester: TestDidIdentifier) -> AttestationStruct<Test> {
 	AttestationStruct {
 		attester,
