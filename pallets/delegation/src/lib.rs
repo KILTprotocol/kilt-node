@@ -696,13 +696,12 @@ pub mod pallet {
 				Error::<T>::DelegationNotFound
 			);
 
-			// Check if the sender of this transaction is permitted by being the
-			// owner of the delegation or of one of its parents
-			// 1 lookup performed for current node + 1 for every parent that is traversed
-			// If the value is already the max given, do not perform +1.
-			let max_parent_checks = operation.max_parent_checks.saturating_add(1);
 			ensure!(
-				Self::is_delegating(&operation.caller_did, &operation.delegation_id, max_parent_checks)?,
+				Self::is_delegating(
+					&operation.caller_did,
+					&operation.delegation_id,
+					operation.max_parent_checks
+				)?,
 				Error::<T>::UnauthorizedRevocation
 			);
 
@@ -715,12 +714,11 @@ pub mod pallet {
 
 			// Add worst case reads from `is_delegating`
 			//TODO: Return proper weight consumption.
-			Ok(
-				Some(
-					consumed_weight.saturating_add(T::DbWeight::get().reads((operation.max_parent_checks.saturating_add(2)) as u64)),
-				)
-				.into(),
+			Ok(Some(
+				consumed_weight
+					.saturating_add(T::DbWeight::get().reads((operation.max_parent_checks.saturating_add(2)) as u64)),
 			)
+			.into())
 		}
 	}
 }
@@ -745,15 +743,12 @@ impl<T: Config> Pallet<T> {
 	}
 
 	// Check if an account is the owner of the delegation or any delegation up
-	// the hierarchy (including the root), up to `max_lookups` nodes.
+	// the hierarchy (including the root), up to `max_parent_checks` nodes.
 	pub fn is_delegating(
 		account: &T::DidIdentifier,
 		delegation: &T::DelegationNodeId,
-		max_lookups: u32,
+		max_parent_checks: u32,
 	) -> Result<bool, DispatchError> {
-		// Check for recursion anchor
-		ensure!(max_lookups > 0, Error::<T>::MaxSearchDepthReached);
-
 		// Check if delegation exists
 		let delegation_node = <Delegations<T>>::get(delegation).ok_or(Error::<T>::DelegationNotFound)?;
 
@@ -762,9 +757,9 @@ impl<T: Config> Pallet<T> {
 		if delegation_node.owner.eq(account) {
 			Ok(!delegation_node.revoked)
 		} else if let Some(parent) = delegation_node.parent {
-			// This case should never happen as we check in the beginning that max_lookups >
-			// 0
-			let remaining_lookups = max_lookups.checked_sub(1).ok_or(Error::<T>::MaxSearchDepthReached)?;
+			let remaining_lookups = max_parent_checks
+				.checked_sub(1)
+				.ok_or(Error::<T>::MaxSearchDepthReached)?;
 			// Recursively check upwards in hierarchy
 			Self::is_delegating(account, &parent, remaining_lookups)
 		} else {
@@ -840,7 +835,7 @@ impl<T: Config> Pallet<T> {
 				})?;
 			}
 		}
-		Ok((revocations, consumed_weight.saturating_add( T::DbWeight::get().reads(1))))
+		Ok((revocations, consumed_weight.saturating_add(T::DbWeight::get().reads(1))))
 	}
 
 	// Add a child node into the delegation hierarchy

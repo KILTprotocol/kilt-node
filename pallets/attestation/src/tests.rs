@@ -1450,11 +1450,16 @@ fn check_max_parent_lookups_submit_attestation_revocation_operation() {
 		delegation_mock::get_delegation_root_id(true),
 		delegation_mock::generate_base_delegation_root(alternative_did.clone()),
 	);
+	let (parent_delegation_id, parent_delegation_node) = (
+		delegation_mock::get_delegation_id(true),
+		delegation_mock::generate_base_delegation_node(root_id, caller_did.clone()),
+	);
 	let (delegation_id, mut delegation_node) = (
 		delegation_mock::get_delegation_id(true),
 		delegation_mock::generate_base_delegation_node(root_id, alternative_did.clone()),
 	);
 	delegation_node.permissions = delegation::Permissions::ATTEST;
+	delegation_node.parent = Some(parent_delegation_id);
 	let mut attestation = generate_base_attestation(alternative_did.clone());
 	attestation.delegation_id = Some(delegation_id);
 
@@ -1471,7 +1476,14 @@ fn check_max_parent_lookups_submit_attestation_revocation_operation() {
 		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), caller_did.clone())]);
 	let builder = delegation_mock::ExtBuilder::from(builder)
 		.with_root_delegations(vec![(root_id, root_node.clone())])
-		.with_delegations(vec![(delegation_id, delegation_node.clone())]);
+		.with_delegations(vec![
+			(parent_delegation_id, parent_delegation_node.clone()),
+			(delegation_id, delegation_node.clone()),
+		])
+		.with_children(vec![
+			(root_id, vec![parent_delegation_id]),
+			(parent_delegation_id, vec![delegation_id]),
+		]);
 	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation.clone())]);
 
 	let mut ext = builder.build();

@@ -48,10 +48,7 @@ fn check_successful_simple_ed25519_creation() {
 
 	let stored_did = ext.execute_with(|| Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain."));
 	assert_eq!(stored_did.auth_key, operation.new_auth_key);
-	assert_eq!(
-		stored_did.key_agreement_key,
-		operation.new_key_agreement_key
-	);
+	assert_eq!(stored_did.key_agreement_key, operation.new_key_agreement_key);
 	assert_eq!(stored_did.delegation_key, operation.new_delegation_key);
 	assert_eq!(stored_did.attestation_key, operation.new_attestation_key);
 	assert_eq!(
@@ -82,10 +79,7 @@ fn check_successful_simple_sr25519_creation() {
 
 	let stored_did = ext.execute_with(|| Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain."));
 	assert_eq!(stored_did.auth_key, operation.new_auth_key);
-	assert_eq!(
-		stored_did.key_agreement_key,
-		operation.new_key_agreement_key
-	);
+	assert_eq!(stored_did.key_agreement_key, operation.new_key_agreement_key);
 	assert_eq!(stored_did.delegation_key, operation.new_delegation_key);
 	assert_eq!(stored_did.attestation_key, operation.new_attestation_key);
 	assert_eq!(
@@ -107,9 +101,9 @@ fn check_successful_complete_creation() {
 	);
 	let mut operation =
 		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()));
-		operation.new_attestation_key = Some(did::PublicVerificationKey::from(att_key.public()));
-		operation.new_delegation_key = Some(did::PublicVerificationKey::from(del_key.public()));
-		operation.new_endpoint_url = Some(new_url);
+	operation.new_attestation_key = Some(did::PublicVerificationKey::from(att_key.public()));
+	operation.new_delegation_key = Some(did::PublicVerificationKey::from(del_key.public()));
+	operation.new_endpoint_url = Some(new_url);
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
@@ -125,10 +119,7 @@ fn check_successful_complete_creation() {
 
 	let stored_did = ext.execute_with(|| Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain."));
 	assert_eq!(stored_did.auth_key, operation.new_auth_key);
-	assert_eq!(
-		stored_did.key_agreement_key,
-		operation.new_key_agreement_key
-	);
+	assert_eq!(stored_did.key_agreement_key, operation.new_key_agreement_key);
 	assert_eq!(stored_did.delegation_key, operation.new_delegation_key);
 	assert_eq!(stored_did.attestation_key, operation.new_attestation_key);
 	assert_eq!(
