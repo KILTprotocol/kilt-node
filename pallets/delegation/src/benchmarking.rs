@@ -68,7 +68,7 @@ where
 	let ctype_hash = <T::Hash as Default>::default();
 	let root_id = generate_delegation_id::<T>(number);
 
-	ctype::Module::<T>::add(RawOrigin::Signed(root_acc.clone()).into(), ctype_hash)?;
+	ctype::Pallet::<T>::add(RawOrigin::Signed(root_acc.clone()).into(), ctype_hash)?;
 	Module::<T>::create_root(RawOrigin::Signed(root_acc.clone()).into(), root_id, ctype_hash)?;
 
 	Ok((
@@ -197,7 +197,7 @@ benchmarks! {
 		let caller: T::AccountId = account("caller", 0, SEED);
 		let ctype = <T::Hash as Default>::default();
 		let delegation = generate_delegation_id::<T>(0);
-		ctype::Module::<T>::add(RawOrigin::Signed(caller.clone()).into(), ctype)?;
+		ctype::Pallet::<T>::add(RawOrigin::Signed(caller.clone()).into(), ctype)?;
 	}: _(RawOrigin::Signed(caller), delegation, ctype)
 	verify {
 		assert!(Root::<T>::contains_key(delegation));

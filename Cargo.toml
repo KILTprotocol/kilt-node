@@ -6,6 +6,7 @@ members = [
   "nodes/parachain",
   "nodes/standalone",
   "pallets/attestation",
+  "pallets/kilt-launch",
   "pallets/ctype",
   "pallets/delegation",
   "pallets/did",

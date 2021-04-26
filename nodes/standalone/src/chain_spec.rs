@@ -18,8 +18,11 @@
 
 //! KILT chain specification
 
-use kilt_primitives::{AccountId, AccountPublic};
-use mashnet_node_runtime::{BalancesConfig, GenesisConfig, SessionConfig, SudoConfig, SystemConfig, WASM_BINARY};
+use kilt_primitives::{constants::MONTHS, AccountId, AccountPublic, Balance, BlockNumber};
+use mashnet_node_runtime::{
+	BalancesConfig, GenesisConfig, KiltLaunchConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig,
+	WASM_BINARY,
+};
 
 use hex_literal::hex;
 
@@ -208,13 +211,26 @@ fn testnet_genesis(
 	root_key: AccountId,
 	endowed_accounts: Vec<AccountId>,
 ) -> GenesisConfig {
+	type VestingPeriod = BlockNumber;
+	type LockingPeriod = BlockNumber;
+
+	// vesting and locks as initially designed
+	let airdrop_accounts_json = &include_bytes!("../../../dev-specs/genesis-testing/genesis_accounts.json")[..];
+	let airdrop_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
+		serde_json::from_slice(airdrop_accounts_json).expect("Could not read from genesis_accounts.json");
+
 	GenesisConfig {
 		frame_system: SystemConfig {
 			code: wasm_binary.to_vec(),
 			changes_trie_config: Default::default(),
 		},
 		balances: BalancesConfig {
-			balances: endowed_accounts.iter().cloned().map(|k| (k, 1u128 << 90)).collect(),
+			balances: endowed_accounts
+				.iter()
+				.cloned()
+				.map(|a| (a, 1u128 << 90))
+				.chain(airdrop_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
+				.collect(),
 		},
 		session: SessionConfig {
 			keys: initial_authorities
@@ -234,6 +250,21 @@ fn testnet_genesis(
 		aura: Default::default(),
 		grandpa: Default::default(),
 		sudo: SudoConfig { key: root_key },
+		kilt_launch: KiltLaunchConfig {
+			balance_locks: airdrop_accounts
+				.iter()
+				.cloned()
+				.map(|(who, amount, _, locking_length)| (who, locking_length * MONTHS, amount))
+				.collect(),
+			vesting: airdrop_accounts
+				.iter()
+				.cloned()
+				.map(|(who, amount, vesting_length, _)| (who, vesting_length * MONTHS, amount))
+				.collect(),
+			// TODO: Set this to another address (PRE-LAUNCH)
+			transfer_account: hex!["6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c"].into(),
+		},
+		pallet_vesting: VestingConfig { vesting: vec![] },
 	}
 }
 

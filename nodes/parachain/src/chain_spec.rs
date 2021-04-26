@@ -20,10 +20,10 @@
 
 use cumulus_primitives_core::ParaId;
 use kilt_parachain_runtime::{
-	BalancesConfig, CouncilConfig, GenesisConfig, ParachainInfoConfig, SudoConfig, SystemConfig,
-	TechnicalCommitteeConfig, WASM_BINARY,
+	BalancesConfig, CouncilConfig, GenesisConfig, KiltLaunchConfig, ParachainInfoConfig, SudoConfig, SystemConfig,
+	TechnicalCommitteeConfig, VestingConfig, WASM_BINARY,
 };
-use kilt_primitives::{AccountId, AccountPublic};
+use kilt_primitives::{constants::MONTHS, AccountId, AccountPublic, Balance, BlockNumber};
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
 use sc_service::{ChainType, Properties};
 use serde::{Deserialize, Serialize};
@@ -156,6 +156,14 @@ fn testnet_genesis(
 	endowed_accounts: Vec<AccountId>,
 	id: ParaId,
 ) -> GenesisConfig {
+	type VestingPeriod = BlockNumber;
+	type LockingPeriod = BlockNumber;
+
+	// vesting and locks as initially designed
+	let airdrop_accounts_json = &include_bytes!("../../../dev-specs/genesis-testing/genesis_accounts.json")[..];
+	let airdrop_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
+		serde_json::from_slice(airdrop_accounts_json).expect("Could not read from genesis_accounts.json");
+
 	GenesisConfig {
 		frame_system: SystemConfig {
 			code: wasm_binary.to_vec(),
@@ -166,10 +174,26 @@ fn testnet_genesis(
 				.iter()
 				.cloned()
 				.map(|k| (k, 10000000000000000000000000000_u128))
+				.chain(airdrop_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
 				.collect(),
 		},
 		pallet_sudo: SudoConfig { key: root_key },
 		parachain_info: ParachainInfoConfig { parachain_id: id },
+		kilt_launch: KiltLaunchConfig {
+			balance_locks: airdrop_accounts
+				.iter()
+				.cloned()
+				.map(|(who, amount, _, locking_length)| (who, locking_length * MONTHS, amount))
+				.collect(),
+			vesting: airdrop_accounts
+				.iter()
+				.cloned()
+				.map(|(who, amount, vesting_length, _)| (who, vesting_length * MONTHS, amount))
+				.collect(),
+			// TODO: Set this to another address (PRE-LAUNCH)
+			transfer_account: hex!["6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c"].into(),
+		},
+		pallet_vesting: VestingConfig { vesting: vec![] },
 		pallet_collective_Instance1: CouncilConfig {
 			members: vec![],
 			phantom: Default::default(),

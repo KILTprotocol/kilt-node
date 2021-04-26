@@ -35,7 +35,7 @@ use frame_system::{
 	EnsureOneOf, EnsureRoot,
 };
 use kilt_primitives::{
-	constants::{DAYS, DOLLARS, HOURS, MILLICENTS, SLOT_DURATION},
+	constants::{DAYS, DOLLARS, HOURS, MILLICENTS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
 	AccountId, Amount, Balance, BlockNumber, CurrencyId, Hash, Index, Signature,
 };
 use orml_currencies::BasicCurrencyAdapter;
@@ -49,7 +49,7 @@ use sp_core::{
 };
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, Convert, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, Convert, ConvertInto, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, DispatchResult, ModuleId,
 };
@@ -261,12 +261,37 @@ parameter_types! {
 impl cumulus_pallet_parachain_system::Config for Runtime {
 	type Event = Event;
 	type OnValidationData = ();
-	type SelfParaId = parachain_info::Module<Runtime>;
+	type SelfParaId = parachain_info::Pallet<Runtime>;
 	type DownwardMessageHandlers = ();
 	type XcmpMessageHandlers = XcmHandler;
 }
 
 impl parachain_info::Config for Runtime {}
+
+parameter_types! {
+	pub const MinVestedTransfer: Balance = MIN_VESTED_TRANSFER_AMOUNT;
+}
+
+impl pallet_vesting::Config for Runtime {
+	type Event = Event;
+	type Currency = Balances;
+	type BlockNumberToBalance = ConvertInto;
+	// disable vested transfers by setting min amount to max balance
+	type MinVestedTransfer = MinVestedTransfer;
+	type WeightInfo = pallet_vesting::weights::SubstrateWeight<Runtime>;
+}
+
+parameter_types! {
+	pub const MaxClaims: u32 = 300;
+	pub const UsableBalance: Balance = DOLLARS;
+}
+
+impl kilt_launch::Config for Runtime {
+	type Event = Event;
+	type MaxClaims = MaxClaims;
+	type UsableBalance = UsableBalance;
+	type WeightInfo = kilt_launch::default_weights::SubstrateWeight<Runtime>;
+}
 
 parameter_types! {
 	pub KiltNetwork: NetworkId = NetworkId::Named("kilt".into());
@@ -763,6 +788,10 @@ construct_runtime! {
 
 		// System scheduler.
 		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 32,
+
+		// Vesting. Usable initially, but removed once all vesting is finished.
+		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 33,
+		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
 	}
 }
 
@@ -910,6 +939,8 @@ impl_runtime_apis! {
 				// System Events
 				hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7")
 					.to_vec().into(),
+				// KiltLaunch transfer account
+				hex_literal::hex!("6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c").to_vec().into(),
 			];
 
 			let mut batches = Vec::<BenchmarkBatch>::new();
@@ -922,6 +953,8 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, ctype, Ctype);
 			add_benchmark!(params, batches, delegation, Delegation);
 			// add_benchmark!(params, batches, did, Did);
+			add_benchmark!(params, batches, kilt_launch, KiltLaunch);
+			add_benchmark!(params, batches, pallet_vesting, Vesting);
 
 			// No benchmarks for these pallets
 			// add_benchmark!(params, batches, cumulus_pallet_parachain_system, ParachainSystem);
