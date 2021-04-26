@@ -209,13 +209,13 @@ pub fn generate_base_did_details(auth_key: did::PublicVerificationKey) -> did::D
 // A test DID operation which can be crated to require any DID verification key
 // type.
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
-pub struct TestDIDOperation {
+pub struct TestDidOperation {
 	pub did: TestDidIdentifier,
 	pub verification_key_type: DidVerificationKeyType,
 	pub tx_counter: u64,
 }
 
-impl DidOperation<Test> for TestDIDOperation {
+impl DidOperation<Test> for TestDidOperation {
 	fn get_verification_key_type(&self) -> DidVerificationKeyType {
 		self.verification_key_type.clone()
 	}

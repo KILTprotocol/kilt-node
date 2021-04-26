@@ -726,7 +726,7 @@ fn check_invalid_signature_did_deletion() {
 fn check_authentication_successful_operation_verification() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
-	let operation = TestDIDOperation {
+	let operation = TestDidOperation {
 		did: ALICE_DID,
 		verification_key_type: did::DidVerificationKeyType::Authentication,
 		tx_counter: mock_did.last_tx_counter + 1,
@@ -740,7 +740,7 @@ fn check_authentication_successful_operation_verification() {
 
 	ext.execute_with(|| {
 		assert_ok!(
-			Did::verify_operation_validity_and_increase_did_nonce::<TestDIDOperation>(
+			Did::verify_operation_validity_and_increase_did_nonce::<TestDidOperation>(
 				&operation,
 				&did::DidSignature::from(signature)
 			)
@@ -761,7 +761,7 @@ fn check_attestation_successful_operation_verification() {
 	let att_key = get_sr25519_attestation_key(true);
 	let mut mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
 	mock_did.attestation_key = Some(did::PublicVerificationKey::from(att_key.public()));
-	let operation = TestDIDOperation {
+	let operation = TestDidOperation {
 		did: ALICE_DID,
 		verification_key_type: did::DidVerificationKeyType::AssertionMethod,
 		tx_counter: mock_did.last_tx_counter + 1,
@@ -775,7 +775,7 @@ fn check_attestation_successful_operation_verification() {
 
 	ext.execute_with(|| {
 		assert_ok!(
-			Did::verify_operation_validity_and_increase_did_nonce::<TestDIDOperation>(
+			Did::verify_operation_validity_and_increase_did_nonce::<TestDidOperation>(
 				&operation,
 				&did::DidSignature::from(signature)
 			)
@@ -796,7 +796,7 @@ fn check_delegation_successful_operation_verification() {
 	let del_key = get_ed25519_delegation_key(true);
 	let mut mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
 	mock_did.delegation_key = Some(did::PublicVerificationKey::from(del_key.public()));
-	let operation = TestDIDOperation {
+	let operation = TestDidOperation {
 		did: ALICE_DID,
 		verification_key_type: did::DidVerificationKeyType::CapabilityDelegation,
 		tx_counter: mock_did.last_tx_counter + 1,
@@ -809,7 +809,7 @@ fn check_delegation_successful_operation_verification() {
 
 	ext.execute_with(|| {
 		assert_ok!(
-			Did::verify_operation_validity_and_increase_did_nonce::<TestDIDOperation>(
+			Did::verify_operation_validity_and_increase_did_nonce::<TestDidOperation>(
 				&operation,
 				&did::DidSignature::from(signature)
 			)
@@ -830,7 +830,7 @@ fn check_did_not_present_operation_verification() {
 	let del_key = get_ed25519_delegation_key(true);
 	let mut mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
 	mock_did.delegation_key = Some(did::PublicVerificationKey::from(del_key.public()));
-	let operation = TestDIDOperation {
+	let operation = TestDidOperation {
 		did: ALICE_DID,
 		verification_key_type: did::DidVerificationKeyType::CapabilityDelegation,
 		tx_counter: mock_did.last_tx_counter + 1,
@@ -841,7 +841,7 @@ fn check_did_not_present_operation_verification() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::verify_operation_validity_and_increase_did_nonce::<TestDIDOperation>(
+			Did::verify_operation_validity_and_increase_did_nonce::<TestDidOperation>(
 				&operation,
 				&did::DidSignature::from(signature)
 			),
@@ -855,7 +855,7 @@ fn check_max_tx_counter_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let mut mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
 	mock_did.last_tx_counter = u64::MAX;
-	let operation = TestDIDOperation {
+	let operation = TestDidOperation {
 		did: ALICE_DID,
 		verification_key_type: did::DidVerificationKeyType::Authentication,
 		tx_counter: mock_did.last_tx_counter,
@@ -868,7 +868,7 @@ fn check_max_tx_counter_operation_verification() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::verify_operation_validity_and_increase_did_nonce::<TestDIDOperation>(
+			Did::verify_operation_validity_and_increase_did_nonce::<TestDidOperation>(
 				&operation,
 				&did::DidSignature::from(signature)
 			),
@@ -886,7 +886,7 @@ fn check_smaller_counter_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let mut mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
 	mock_did.last_tx_counter = 1;
-	let operation = TestDIDOperation {
+	let operation = TestDidOperation {
 		did: ALICE_DID,
 		verification_key_type: did::DidVerificationKeyType::Authentication,
 		tx_counter: mock_did.last_tx_counter - 1,
@@ -899,7 +899,7 @@ fn check_smaller_counter_operation_verification() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::verify_operation_validity_and_increase_did_nonce::<TestDIDOperation>(
+			Did::verify_operation_validity_and_increase_did_nonce::<TestDidOperation>(
 				&operation,
 				&did::DidSignature::from(signature)
 			),
@@ -916,7 +916,7 @@ fn check_smaller_counter_operation_verification() {
 fn check_equal_counter_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
-	let operation = TestDIDOperation {
+	let operation = TestDidOperation {
 		did: ALICE_DID,
 		verification_key_type: did::DidVerificationKeyType::Authentication,
 		tx_counter: mock_did.last_tx_counter,
@@ -929,7 +929,7 @@ fn check_equal_counter_operation_verification() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::verify_operation_validity_and_increase_did_nonce::<TestDIDOperation>(
+			Did::verify_operation_validity_and_increase_did_nonce::<TestDidOperation>(
 				&operation,
 				&did::DidSignature::from(signature)
 			),
@@ -946,7 +946,7 @@ fn check_equal_counter_operation_verification() {
 fn check_too_large_counter_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
-	let operation = TestDIDOperation {
+	let operation = TestDidOperation {
 		did: ALICE_DID,
 		verification_key_type: did::DidVerificationKeyType::Authentication,
 		tx_counter: mock_did.last_tx_counter + 2,
@@ -959,7 +959,7 @@ fn check_too_large_counter_operation_verification() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::verify_operation_validity_and_increase_did_nonce::<TestDIDOperation>(
+			Did::verify_operation_validity_and_increase_did_nonce::<TestDidOperation>(
 				&operation,
 				&did::DidSignature::from(signature)
 			),
@@ -977,7 +977,7 @@ fn check_verification_key_not_present_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
 	let verification_key_required = did::DidVerificationKeyType::CapabilityInvocation;
-	let operation = TestDIDOperation {
+	let operation = TestDidOperation {
 		did: ALICE_DID,
 		verification_key_type: verification_key_required.clone(),
 		tx_counter: mock_did.last_tx_counter + 1,
@@ -991,7 +991,7 @@ fn check_verification_key_not_present_operation_verification() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::verify_operation_validity_and_increase_did_nonce::<TestDIDOperation>(
+			Did::verify_operation_validity_and_increase_did_nonce::<TestDidOperation>(
 				&operation,
 				&did::DidSignature::from(signature)
 			),
@@ -1010,7 +1010,7 @@ fn check_invalid_signature_format_operation_verification() {
 	// Expected an Sr25519, given an Ed25519
 	let invalid_key = get_ed25519_authentication_key(true);
 	let mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
-	let operation = TestDIDOperation {
+	let operation = TestDidOperation {
 		did: ALICE_DID,
 		verification_key_type: did::DidVerificationKeyType::Authentication,
 		tx_counter: mock_did.last_tx_counter + 1,
@@ -1024,7 +1024,7 @@ fn check_invalid_signature_format_operation_verification() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::verify_operation_validity_and_increase_did_nonce::<TestDIDOperation>(
+			Did::verify_operation_validity_and_increase_did_nonce::<TestDidOperation>(
 				&operation,
 				&did::DidSignature::from(signature)
 			),
@@ -1043,7 +1043,7 @@ fn check_invalid_signature_operation_verification() {
 	// Using same key type but different seed (default = false)
 	let alternative_key = get_sr25519_authentication_key(false);
 	let mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
-	let operation = TestDIDOperation {
+	let operation = TestDidOperation {
 		did: ALICE_DID,
 		verification_key_type: did::DidVerificationKeyType::Authentication,
 		tx_counter: mock_did.last_tx_counter + 1,
@@ -1057,7 +1057,7 @@ fn check_invalid_signature_operation_verification() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::verify_operation_validity_and_increase_did_nonce::<TestDIDOperation>(
+			Did::verify_operation_validity_and_increase_did_nonce::<TestDidOperation>(
 				&operation,
 				&did::DidSignature::from(signature)
 			),
