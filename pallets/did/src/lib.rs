@@ -43,7 +43,7 @@ use frame_support::{ensure, storage::types::StorageMap, Parameter};
 use frame_system::{self, ensure_signed};
 use sp_core::{ed25519, sr25519};
 use sp_runtime::traits::Verify;
-use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom, fmt::Debug, prelude::Clone, str, vec::Vec};
+use sp_std::{collections::btree_set::BTreeSet, boxed::Box, convert::TryFrom, fmt::Debug, prelude::Clone, str, vec::Vec};
 
 pub use pallet::*;
 
@@ -843,13 +843,13 @@ pub mod pallet {
 		#[pallet::weight(10)]
 		pub fn submit_did_call(
 			origin: OriginFor<T>,
-			did_call: DidCallOperation<T>,
+			did_call: Box<DidCallOperation<T>>,
 			signature: DidSignature,
 		) -> DispatchResultWithPostInfo {
 			ensure_signed(origin.clone())?;
 
 			// Verify the signature and the nonce of the delete operation.
-			Self::verify_did_operation_signature(&did_call, &signature).map_err(<Error<T>>::from)?;
+			Self::verify_did_operation_signature(&*did_call, &signature).map_err(<Error<T>>::from)?;
 
 			let res = did_call.call.dispatch(origin);
 

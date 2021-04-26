@@ -347,6 +347,7 @@ impl frame_support::traits::OnRuntimeUpgrade for DelegationStructRuntimeUpgrade 
 impl did::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
+	type Call = Call;
 	type WeightInfo = ();
 	type DidIdentifier = AccountId;
 }
