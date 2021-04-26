@@ -1022,17 +1022,17 @@ pub mod pallet {
 		#[pallet::weight(10)]
 		pub fn submit_did_call(
 			origin: OriginFor<T>,
-			did_call: DidCallOperation<T>,
+			did_call: Box<DidCallOperation<T>>,
 			signature: DidSignature,
 		) -> DispatchResultWithPostInfo {
 			ensure_signed(origin.clone())?;
 
-			let did_identifier = did_call.get_did();
+			let did_identifier = (*did_call).get_did();
 
 			let did_details = <Did<T>>::get(&did_identifier).ok_or(<Error<T>>::DidNotPresent)?;
 
 			// Verify the signature and the nonce of the delete operation.
-			Self::verify_operation_validity_for_did(&did_call, &signature, &did_details).map_err(<Error<T>>::from)?;
+			Self::verify_operation_validity_for_did(&*did_call, &signature, &did_details).map_err(<Error<T>>::from)?;
 			log::debug!("Dispatch call from DID {:?}", did_identifier);
 
 			let res = did_call.call.dispatch(origin);

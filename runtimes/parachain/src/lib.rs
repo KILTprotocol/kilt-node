@@ -736,6 +736,7 @@ impl delegation::Config for Runtime {
 impl did::Config for Runtime {
 	/// The ubiquitous event type.
 	type Event = Event;
+	type Call = Call;
 	type WeightInfo = ();
 	type DidIdentifier = AccountId;
 }
