@@ -380,6 +380,7 @@ pub mod pallet {
 		/// Minimum stake for any registered on-chain account to become a
 		/// nominator
 		type MinNominatorStk: Get<BalanceOf<Self>>;
+		// TODO: Add MaxCollatorStk
 	}
 
 	#[pallet::error]
@@ -1067,6 +1068,9 @@ pub mod pallet {
 				let collator_staked = <StakedCollator<T>>::get(round_to_payout);
 				let delegator_staked = <StakedDelegator<T>>::get(round_to_payout);
 				let (c_rewards, d_rewards) = Self::compute_issuance(collator_staked, delegator_staked);
+				// TODO: Make sure all delegators receive rewards
+				// TODO: Make sure we don't pay out more than we mint
+				// TODO: Handle case of d_reward_rate == 0
 				for (val, pts) in <AwardedPts<T>>::drain_prefix(round_to_payout) {
 					let pct_due = Perbill::from_rational(pts, total);
 

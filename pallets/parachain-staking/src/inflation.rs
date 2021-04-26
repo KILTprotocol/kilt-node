@@ -66,7 +66,7 @@ impl StakingRates {
 
 	pub fn compute_rewards<T: Config>(&self, stake: BalanceOf<T>, total_issuance: BalanceOf<T>) -> BalanceOf<T> {
 		// TODO: saturated_div?
-		let rate = Perbill::from_rational(stake, total_issuance).max(self.max_rate);
+		let rate = Perbill::from_rational(stake, total_issuance).min(self.max_rate);
 		let reward_rate = rate * self.reward_rate;
 		reward_rate * total_issuance
 	}
@@ -124,5 +124,127 @@ impl InflationInfo {
 		let delegator_rewards = self.round.delegator.compute_rewards::<T>(delegator_stake, circulating);
 
 		(collator_rewards, delegator_rewards)
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::mock::{ExtBuilder, Test};
+
+	fn mock_annual_to_round(annual: StakingInfo, rounds_per_year: u32) -> StakingInfo {
+		StakingInfo {
+			collator: StakingRates {
+				max_rate: Perbill::from_parts(annual.collator.max_rate.deconstruct() / rounds_per_year),
+				reward_rate: Perbill::from_parts(annual.collator.reward_rate.deconstruct() / rounds_per_year),
+			},
+			delegator: StakingRates {
+				max_rate: Perbill::from_parts(annual.delegator.max_rate.deconstruct() / rounds_per_year),
+				reward_rate: Perbill::from_parts(annual.delegator.reward_rate.deconstruct() / rounds_per_year),
+			},
+		}
+	}
+
+	#[test]
+	fn simple_rewards() {
+		let collator = StakingRates {
+			max_rate: Perbill::from_percent(10),
+			reward_rate: Perbill::from_percent(15),
+		};
+		let delegator = StakingRates {
+			max_rate: Perbill::from_percent(40),
+			reward_rate: Perbill::from_percent(10),
+		};
+		let staking_info = StakingInfo {
+			collator: collator.clone(),
+			delegator: delegator.clone(),
+		};
+
+		ExtBuilder::default()
+			// .with_inflation(staking_info.clone())
+			.build()
+			.execute_with(|| {
+				let rounds_per_year = BLOCKS_PER_YEAR / <Test as Config>::DefaultBlocksPerRound::get();
+				let expected_inflation = InflationInfo::new::<Test>(staking_info.clone());
+
+				assert_eq!(
+					expected_inflation.round,
+					mock_annual_to_round(staking_info, rounds_per_year)
+				);
+
+				// Check collator reward computation
+				assert_eq!(collator.compute_rewards::<Test>(0, 100_000), 0);
+				assert_eq!(collator.compute_rewards::<Test>(5000, 100_000), 750);
+				// Check for max_rate which is 10%
+				assert_eq!(collator.compute_rewards::<Test>(10_000, 100_000), 1500);
+				// Check exceeding max_rate
+				assert_eq!(collator.compute_rewards::<Test>(100_000, 100_000), 1500);
+				// Stake can never be more than what is issued, but let's check whether the cap
+				// still applies
+				assert_eq!(collator.compute_rewards::<Test>(100_001, 100_000), 1500);
+
+				// Check delegator reward calculation
+				assert_eq!(delegator.compute_rewards::<Test>(0, 100_000), 0);
+				assert_eq!(delegator.compute_rewards::<Test>(5000, 100_000), 500);
+				// Check for max_rate which is 40%
+				assert_eq!(delegator.compute_rewards::<Test>(40_000, 100_000), 4000);
+				// Check exceeding max_rate
+				assert_eq!(delegator.compute_rewards::<Test>(100_000, 100_000), 4000);
+				// Stake can never be more than what is issued, but let's check whether the cap
+				// still applies
+				assert_eq!(delegator.compute_rewards::<Test>(100_001, 100_000), 4000);
+			});
+	}
+
+	#[test]
+	fn rewards_only_collator() {
+		ExtBuilder::default()
+			.with_inflation(10, 15, 40, 0)
+			.build()
+			.execute_with(|| {
+				let rounds_per_year = BLOCKS_PER_YEAR / <Test as Config>::DefaultBlocksPerRound::get();
+
+				let collator = StakingRates {
+					max_rate: Perbill::from_percent(10),
+					reward_rate: Perbill::from_percent(15),
+				};
+				let delegator = StakingRates {
+					max_rate: Perbill::from_percent(40),
+					reward_rate: Perbill::from_percent(0),
+				};
+				let staking_info = StakingInfo {
+					collator: collator.clone(),
+					delegator: delegator.clone(),
+				};
+
+				let expected_inflation = InflationInfo::new::<Test>(staking_info.clone());
+
+				assert_eq!(
+					expected_inflation.round,
+					mock_annual_to_round(staking_info, rounds_per_year)
+				);
+
+				// Check collator reward computation
+				assert_eq!(collator.compute_rewards::<Test>(0, 100_000), 0);
+				assert_eq!(collator.compute_rewards::<Test>(5000, 100_000), 750);
+				// Check for max_rate which is 10%
+				assert_eq!(collator.compute_rewards::<Test>(10_000, 100_000), 1500);
+				// Check exceeding max_rate
+				assert_eq!(collator.compute_rewards::<Test>(100_000, 100_000), 1500);
+				// Stake can never be more than what is issued, but let's check whether the cap
+				// still applies
+				assert_eq!(collator.compute_rewards::<Test>(100_001, 100_000), 1500);
+
+				// Check delegator reward calculation
+				assert_eq!(delegator.compute_rewards::<Test>(0, 100_000), 0);
+				assert_eq!(delegator.compute_rewards::<Test>(5000, 100_000), 0);
+				// Check for max_rate which is 40%
+				assert_eq!(delegator.compute_rewards::<Test>(40_000, 100_000), 0);
+				// Check exceeding max_rate
+				assert_eq!(delegator.compute_rewards::<Test>(100_000, 100_000), 0);
+				// Stake can never be more than what is issued, but let's check whether the cap
+				// still applies
+				assert_eq!(delegator.compute_rewards::<Test>(100_001, 100_000), 0);
+			});
 	}
 }
