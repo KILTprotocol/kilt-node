@@ -224,8 +224,10 @@ fn check_successful_complete_update() {
 	let mut operation = generate_base_did_update_operation(ALICE_DID);
 	operation.new_auth_key = Some(did::PublicVerificationKey::from(new_auth_key.public()));
 	operation.new_key_agreement_key = Some(new_enc_key);
-	operation.new_attestation_key = Some(did::PublicVerificationKey::from(new_att_key.public()));
-	operation.new_delegation_key = Some(did::PublicVerificationKey::from(new_del_key.public()));
+	operation.attestation_key_update =
+		did::DidVerificationKeyUpdateAction::Change(did::PublicVerificationKey::from(new_att_key.public()));
+	operation.delegation_key_update =
+		did::DidVerificationKeyUpdateAction::Change(did::PublicVerificationKey::from(new_del_key.public()));
 	operation.new_endpoint_url = Some(new_url);
 	operation.tx_counter = old_did_details.last_tx_counter + 1u64;
 
@@ -253,8 +255,14 @@ fn check_successful_complete_update() {
 		new_did_details.key_agreement_key,
 		operation.new_key_agreement_key.expect("Missing new key agreement key.")
 	);
-	assert_eq!(new_did_details.delegation_key, operation.new_delegation_key);
-	assert_eq!(new_did_details.attestation_key, operation.new_attestation_key);
+	assert_eq!(
+		new_did_details.attestation_key,
+		Some(did::PublicVerificationKey::from(new_att_key.public()))
+	);
+	assert_eq!(
+		new_did_details.delegation_key,
+		Some(did::PublicVerificationKey::from(new_del_key.public()))
+	);
 	// Verification keys should contain the previous attestation key.
 	assert_eq!(
 		new_did_details.verification_keys,
@@ -263,6 +271,53 @@ fn check_successful_complete_update() {
 			.collect()
 	);
 	assert_eq!(new_did_details.endpoint_url, operation.new_endpoint_url);
+	assert_eq!(new_did_details.last_tx_counter, old_did_details.last_tx_counter + 1u64);
+}
+
+#[test]
+fn check_successful_keys_deletion_update() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let att_key = get_ed25519_attestation_key(true);
+	let del_key = get_sr25519_attestation_key(true);
+
+	let mut old_did_details = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
+	old_did_details.attestation_key = Some(did::PublicVerificationKey::from(att_key.public()));
+	old_did_details.delegation_key = Some(did::PublicVerificationKey::from(del_key.public()));
+
+	// Remove both attestation and delegation key
+	let mut operation = generate_base_did_update_operation(ALICE_DID);
+	operation.attestation_key_update = did::DidVerificationKeyUpdateAction::Delete;
+	operation.delegation_key_update = did::DidVerificationKeyUpdateAction::Delete;
+	operation.tx_counter = old_did_details.last_tx_counter + 1u64;
+
+	// Generate signature using the old authentication key
+	let signature = auth_key.sign(operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(ALICE_DID, old_did_details.clone())])
+		.build();
+
+	ext.execute_with(|| {
+		assert_ok!(Did::submit_did_update_operation(
+			Origin::signed(DEFAULT_ACCOUNT),
+			operation.clone(),
+			did::DidSignature::from(signature),
+		));
+	});
+
+	let new_did_details = ext.execute_with(|| Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain."));
+	// Auth key and key agreement key unchanged
+	assert_eq!(new_did_details.auth_key, old_did_details.auth_key);
+	assert_eq!(new_did_details.key_agreement_key, old_did_details.key_agreement_key);
+	assert_eq!(new_did_details.attestation_key, None);
+	assert_eq!(new_did_details.delegation_key, None);
+	// Verification keys should contain the previous attestation key.
+	assert_eq!(
+		new_did_details.verification_keys,
+		vec![did::PublicVerificationKey::from(att_key.public())]
+			.into_iter()
+			.collect()
+	);
 	assert_eq!(new_did_details.last_tx_counter, old_did_details.last_tx_counter + 1u64);
 }
 

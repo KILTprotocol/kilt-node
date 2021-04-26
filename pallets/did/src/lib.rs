@@ -188,6 +188,24 @@ pub mod pallet {
 		}
 	}
 
+	/// Possible actions on a DID verification keys within a DidUpdateOperation.
+	#[derive(Clone, Copy, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
+	pub enum DidVerificationKeyUpdateAction {
+		/// Do not change the verification key.
+		Ignore,
+		/// Change the verification key to the new one provided.
+		Change(PublicVerificationKey),
+		/// Delete the verification key.
+		Delete,
+	}
+
+	// Return the ignore operation by default
+	impl Default for DidVerificationKeyUpdateAction {
+		fn default() -> Self {
+			Self::Ignore
+		}
+	}
+
 	/// All the errors that can be generated when validating a DID operation.
 	#[derive(Debug, Eq, PartialEq)]
 	pub enum DidError {
@@ -312,10 +330,10 @@ pub mod pallet {
 		pub new_auth_key: Option<PublicVerificationKey>,
 		/// The new key agreement key.
 		pub new_key_agreement_key: Option<PublicEncryptionKey>,
-		/// The new attestation key.
-		pub new_attestation_key: Option<PublicVerificationKey>,
-		/// The new delegation key.
-		pub new_delegation_key: Option<PublicVerificationKey>,
+		/// The attestation key update operation.
+		pub attestation_key_update: DidVerificationKeyUpdateAction,
+		/// The delegation key update operation.
+		pub delegation_key_update: DidVerificationKeyUpdateAction,
 		/// The set of old attestation keys to remove.
 		/// If the operation also replaces the current attestation key, it will
 		/// not be considered for removal in this operation, so it is not
@@ -349,8 +367,8 @@ pub mod pallet {
 				.field(&self.did)
 				.field(&self.new_auth_key)
 				.field(&self.new_key_agreement_key)
-				.field(&self.new_attestation_key)
-				.field(&self.new_delegation_key)
+				.field(&self.attestation_key_update)
+				.field(&self.delegation_key_update)
 				.field(&self.verification_keys_to_remove)
 				.field(&self.new_endpoint_url)
 				.field(&self.tx_counter)
@@ -638,14 +656,36 @@ pub mod pallet {
 			if let Some(new_enc_key) = update_operation.new_key_agreement_key {
 				new_details.key_agreement_key = new_enc_key;
 			}
-			if let Some(new_attestation_key) = update_operation.new_attestation_key {
-				if let Some(old_attestation_key) = old_attestation_key {
-					new_details.verification_keys.insert(old_attestation_key);
+			// Evaluate update action for attestation key.
+			// Either leave the key unchanged, replace the old one with the new one, or
+			// delete the current one. In the last two cases, the old key is moved to the
+			// set of verification keys.
+			match update_operation.attestation_key_update {
+				DidVerificationKeyUpdateAction::Change(new_attestation_key) => {
+					if let Some(old_attestation_key) = old_attestation_key {
+						new_details.verification_keys.insert(old_attestation_key);
+					}
+					new_details.attestation_key = Some(new_attestation_key);
 				}
-				new_details.attestation_key = Some(new_attestation_key);
+				DidVerificationKeyUpdateAction::Delete => {
+					if let Some(old_attestation_key) = old_attestation_key {
+						new_details.verification_keys.insert(old_attestation_key);
+					}
+					new_details.attestation_key = None;
+				}
+				DidVerificationKeyUpdateAction::Ignore => {}
 			}
-			if let Some(new_delegation_key) = update_operation.new_delegation_key {
-				new_details.delegation_key = Some(new_delegation_key);
+			// Evaluate update action for delegation key.
+			// Either leave the key unchanged, change, or delete the existing delegation
+			// key.
+			match update_operation.delegation_key_update {
+				DidVerificationKeyUpdateAction::Change(new_delegation_key) => {
+					new_details.delegation_key = Some(new_delegation_key);
+				}
+				DidVerificationKeyUpdateAction::Delete => {
+					new_details.delegation_key = None;
+				}
+				DidVerificationKeyUpdateAction::Ignore => {}
 			}
 			if let Some(new_endpoint_url) = update_operation.new_endpoint_url {
 				new_details.endpoint_url = Some(new_endpoint_url);
