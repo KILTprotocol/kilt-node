@@ -646,53 +646,53 @@ pub mod pallet {
 		/// transactions. One of these would be `pallet_vesting::vest()` which
 		/// has to be called actively to unlock more of the vested funds.
 		fn migrate_vesting(source: &T::AccountId, target: &T::AccountId) -> Result<Weight, DispatchError> {
-			let weight = if let Some(source_vesting) = Vesting::<T>::take(source) {
-				// Check for an already existing vesting schedule for the target account
-				// which would be the case if the claimer requests migration from multiple
-				// source accounts to the same target
-				let vesting = if let Some(VestingInfo {
-					locked,
-					per_block,
-					starting_block,
-				}) = Vesting::<T>::take(&target)
-				{
-					// Should never throw because all source accounts start vesting in genesis block
-					ensure!(
-						starting_block == source_vesting.starting_block,
-						Error::<T>::ConflictingVestingStarts
-					);
-					VestingInfo {
-						// We can simply sum `locked` and `per_block` because of the above requirement
-						locked: locked.saturating_add(source_vesting.locked),
-						per_block: per_block.saturating_add(source_vesting.per_block),
-						starting_block,
-					}
-				} else {
-					// If vesting hasn't been set up for target account, we can default to the one
-					// of the source account
-					source_vesting
-				};
-				Vesting::<T>::insert(target, vesting);
-				// Only lock funds from now until vesting expires.
-				// Enables the user to have funds before actively calling `vest` if claimed
-				// after the genesis block.
-				//
-				// Logic was taken from pallet_vesting.
-
-				// Disallow transfers and reserves from vested tokens which are still locked
-				let reasons = WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE;
-				let now = <frame_system::Pallet<T>>::block_number();
-				let locked_now = vesting.locked_at::<<T as pallet_vesting::Config>::BlockNumberToBalance>(now);
-				<<T as pallet_vesting::Config>::Currency as LockableCurrency<T::AccountId>>::set_lock(
-					VESTING_ID, target, locked_now, reasons,
-				);
-				Self::deposit_event(Event::AddedVesting(target.clone(), vesting.per_block, vesting.locked));
-				<T as pallet::Config>::WeightInfo::migrate_genesis_account_vesting()
+			let source_vesting = if let Some(source_vesting) = Vesting::<T>::take(source) {
+				source_vesting
 			} else {
-				T::DbWeight::get().reads(1)
+				return Ok(T::DbWeight::get().reads(1));
 			};
 
-			Ok(weight)
+			// Check for an already existing vesting schedule for the target account
+			// which would be the case if the claimer requests migration from multiple
+			// source accounts to the same target
+			let vesting = if let Some(VestingInfo {
+				locked,
+				per_block,
+				starting_block,
+			}) = Vesting::<T>::take(&target)
+			{
+				// Should never throw because all source accounts start vesting in genesis block
+				ensure!(
+					starting_block == source_vesting.starting_block,
+					Error::<T>::ConflictingVestingStarts
+				);
+				VestingInfo {
+					// We can simply sum `locked` and `per_block` because of the above requirement
+					locked: locked.saturating_add(source_vesting.locked),
+					per_block: per_block.saturating_add(source_vesting.per_block),
+					starting_block,
+				}
+			} else {
+				// If vesting hasn't been set up for target account, we can default to the one
+				// of the source account
+				source_vesting
+			};
+			Vesting::<T>::insert(target, vesting);
+			// Only lock funds from now until vesting expires.
+			// Enables the user to have funds before actively calling `vest` if claimed
+			// after the genesis block.
+			//
+			// Logic was taken from pallet_vesting.
+
+			// Disallow transfers and reserves from vested tokens which are still locked
+			let reasons = WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE;
+			let now = <frame_system::Pallet<T>>::block_number();
+			let locked_now = vesting.locked_at::<<T as pallet_vesting::Config>::BlockNumberToBalance>(now);
+			<<T as pallet_vesting::Config>::Currency as LockableCurrency<T::AccountId>>::set_lock(
+				VESTING_ID, target, locked_now, reasons,
+			);
+			Self::deposit_event(Event::AddedVesting(target.clone(), vesting.per_block, vesting.locked));
+			Ok(<T as pallet::Config>::WeightInfo::migrate_genesis_account_vesting())
 		}
 
 		/// Set the KILT balance lock for the target address which should
@@ -708,82 +708,81 @@ pub mod pallet {
 			// Only used for `locked_transfer`, e.g., it is `None` for migration
 			max_amount: Option<<T as pallet_balances::Config>::Balance>,
 		) -> Result<Weight, DispatchError> {
-			let weight = if let Some(LockedBalance::<T> {
+			let LockedBalance::<T> {
 				block: unlock_block,
 				amount: source_amount,
-			}) = <BalanceLocks<T>>::get(&source)
-			{
-				// In case of a `locked_transfer`, we might only want to unlock a certain amount
-				// Otherwise, this will always be the source's locked amount
-				let max_add_amount = source_amount.min(max_amount.unwrap_or(source_amount));
-
-				// Check for an already existing KILT balance lock on the target
-				// account which would be the case if the claimer requests migration from
-				// multiple source accounts to the same target
-				let target_amount = if let Some(target_lock) = <BalanceLocks<T>>::take(&target) {
-					// Should never throw because there is a single locking period (6 months)
-					ensure!(target_lock.block == unlock_block, Error::<T>::ConflictingLockingBlocks);
-
-					// We don't need to append `UnlockingAt` because we require both locks to end at
-					// the same block
-					// We can simply sum `amount` because of the above requirement and the check
-					// that source != target in the corresponding extrinsics
-					target_lock.amount.saturating_add(max_add_amount)
-				} else {
-					// If no custom lock has been set up for target account, we can default to the
-					// one of the source account and append it to `UnlockingAt`
-					<UnlockingAt<T>>::append(unlock_block, &target);
-					max_add_amount
-				};
-
-				// Set target lock in case another account should be migrated to this target
-				// address at a later stage
-				<BalanceLocks<T>>::insert(
-					target,
-					LockedBalance::<T> {
-						amount: target_amount,
-						block: unlock_block,
-					},
-				);
-				// Disallow anything from being paid by custom lock
-				<pallet_balances::Pallet<T>>::set_lock(KILT_LAUNCH_ID, &target, target_amount, WithdrawReasons::all());
-
-				// Update or remove lock storage items corresponding to the source address
-				if max_add_amount == source_amount {
-					<BalanceLocks<T>>::remove(&source);
-
-					// Only needs to be handled in the case of a `locked_transfer`, e.g., when
-					// `max_amount` is set because else the source address is never added to
-					// `UnlockingAt`
-					if max_amount.is_some() {
-						let remove_source_map: Vec<T::AccountId> = <UnlockingAt<T>>::take(unlock_block)
-							.unwrap_or_default()
-							.into_iter()
-							.filter(|acc_id| acc_id != source)
-							.collect();
-						<UnlockingAt<T>>::insert(unlock_block, remove_source_map);
-					}
-				} else {
-					// Reduce the locked amount
-					//
-					// Note: The update of the real balance lock with id `KILT_LAUNCH_ID` already
-					// happens in `locked_transfer` because it is required for the token transfer
-					<BalanceLocks<T>>::insert(
-						&source,
-						LockedBalance::<T> {
-							block: unlock_block,
-							amount: source_amount.saturating_sub(max_add_amount),
-						},
-					)
-				}
-
-				Self::deposit_event(Event::AddedKiltLock(target.clone(), target_amount, unlock_block));
-				<T as pallet::Config>::WeightInfo::migrate_genesis_account_locking()
+			} = if let Some(lock) = <BalanceLocks<T>>::get(&source) {
+				lock
 			} else {
-				T::DbWeight::get().reads(1)
+				return Ok(T::DbWeight::get().reads(1));
 			};
 
-			Ok(weight)
+			// In case of a `locked_transfer`, we might only want to unlock a certain amount
+			// Otherwise, this will always be the source's locked amount
+			let max_add_amount = source_amount.min(max_amount.unwrap_or(source_amount));
+
+			// Check for an already existing KILT balance lock on the target
+			// account which would be the case if the claimer requests migration from
+			// multiple source accounts to the same target
+			let target_amount = if let Some(target_lock) = <BalanceLocks<T>>::take(&target) {
+				// Should never throw because there is a single locking period (6 months)
+				ensure!(target_lock.block == unlock_block, Error::<T>::ConflictingLockingBlocks);
+
+				// We don't need to append `UnlockingAt` because we require both locks to end at
+				// the same block
+				// We can simply sum `amount` because of the above requirement and the check
+				// that source != target in the corresponding extrinsics
+				target_lock.amount.saturating_add(max_add_amount)
+			} else {
+				// If no custom lock has been set up for target account, we can default to the
+				// one of the source account and append it to `UnlockingAt`
+				<UnlockingAt<T>>::append(unlock_block, &target);
+				max_add_amount
+			};
+
+			// Set target lock in case another account should be migrated to this target
+			// address at a later stage
+			<BalanceLocks<T>>::insert(
+				target,
+				LockedBalance::<T> {
+					amount: target_amount,
+					block: unlock_block,
+				},
+			);
+			// Disallow anything from being paid by custom lock
+			<pallet_balances::Pallet<T>>::set_lock(KILT_LAUNCH_ID, &target, target_amount, WithdrawReasons::all());
+
+			// Update or remove lock storage items corresponding to the source address
+			if max_add_amount == source_amount {
+				<BalanceLocks<T>>::remove(&source);
+
+				// Only needs to be handled in the case of a `locked_transfer`, e.g., when
+				// `max_amount` is set because else the source address is never added to
+				// `UnlockingAt`
+				if max_amount.is_some() {
+					let remove_source_map: Vec<T::AccountId> = <UnlockingAt<T>>::take(unlock_block)
+						.unwrap_or_default()
+						.into_iter()
+						.filter(|acc_id| acc_id != source)
+						.collect();
+					<UnlockingAt<T>>::insert(unlock_block, remove_source_map);
+				}
+			} else {
+				// Reduce the locked amount
+				//
+				// Note: The update of the real balance lock with id `KILT_LAUNCH_ID` already
+				// happens in `locked_transfer` because it is required for the token transfer
+				<BalanceLocks<T>>::insert(
+					&source,
+					LockedBalance::<T> {
+						block: unlock_block,
+						amount: source_amount.saturating_sub(max_add_amount),
+					},
+				)
+			}
+
+			Self::deposit_event(Event::AddedKiltLock(target.clone(), target_amount, unlock_block));
+			Ok(<T as pallet::Config>::WeightInfo::migrate_genesis_account_locking())
 		}
 	}
 }
