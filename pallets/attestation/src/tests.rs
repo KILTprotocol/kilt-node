@@ -39,12 +39,11 @@ fn check_no_delegation_submit_attestation_creation_operation_successful() {
 	let claim_hash = get_claim_hash(true);
 	let attestation = generate_base_attestation(caller_did.clone());
 
-	let operation = generate_base_attestation_creation_operation(claim_hash, attestation.clone());
+	let operation = generate_base_attestation_creation_operation(claim_hash, attestation);
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder =
-		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash.clone(), caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash, caller_did.clone())]);
 
 	let mut ext = builder.build();
 
@@ -62,7 +61,7 @@ fn check_no_delegation_submit_attestation_creation_operation_successful() {
 	assert_eq!(stored_attestation.ctype_hash, operation.ctype_hash);
 	assert_eq!(stored_attestation.attester, operation.attester_did);
 	assert_eq!(stored_attestation.delegation_id, operation.delegation_id);
-	assert_eq!(stored_attestation.revoked, false);
+	assert!(!stored_attestation.revoked);
 
 	// Verify that the DID tx counter has increased
 	let new_attester_details =
@@ -95,15 +94,14 @@ fn check_with_delegation_submit_attestation_creation_operation_successful() {
 	let mut attestation = generate_base_attestation(caller_did.clone());
 	attestation.delegation_id = Some(delegation_id);
 
-	let operation = generate_base_attestation_creation_operation(claim_hash, attestation.clone());
+	let operation = generate_base_attestation_creation_operation(claim_hash, attestation);
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder =
-		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash.clone(), caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash, caller_did.clone())]);
 	let builder = delegation_mock::ExtBuilder::from(builder)
-		.with_root_delegations(vec![(root_id, root_node.clone())])
-		.with_delegations(vec![(delegation_id, delegation_node.clone())]);
+		.with_root_delegations(vec![(root_id, root_node)])
+		.with_delegations(vec![(delegation_id, delegation_node)]);
 
 	let mut ext = builder.build();
 
@@ -121,7 +119,7 @@ fn check_with_delegation_submit_attestation_creation_operation_successful() {
 	assert_eq!(stored_attestation.ctype_hash, operation.ctype_hash);
 	assert_eq!(stored_attestation.attester, operation.attester_did);
 	assert_eq!(stored_attestation.delegation_id, operation.delegation_id);
-	assert_eq!(stored_attestation.revoked, false);
+	assert!(!stored_attestation.revoked);
 
 	let delegated_attestations = ext.execute_with(|| {
 		Attestation::delegated_attestations(&delegation_id).expect("Attested delegation should be present on chain.")
@@ -149,14 +147,13 @@ fn check_did_not_present_submit_attestation_creation_operation() {
 	let caller_did = did_mock::ALICE_DID;
 	let alternative_did = did_mock::CHARLIE_DID;
 	let claim_hash = get_claim_hash(true);
-	let attestation = generate_base_attestation(caller_did.clone());
+	let attestation = generate_base_attestation(caller_did);
 
-	let operation = generate_base_attestation_creation_operation(claim_hash, attestation.clone());
+	let operation = generate_base_attestation_creation_operation(claim_hash, attestation);
 	let signature = did_att_key.sign(&operation.encode());
 
-	let builder = did_mock::ExtBuilder::default().with_dids(vec![(alternative_did.clone(), mock_did_details.clone())]);
-	let builder = ctype_mock::ExtBuilder::from(builder)
-		.with_ctypes(vec![(operation.ctype_hash.clone(), alternative_did.clone())]);
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(alternative_did.clone(), mock_did_details)]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash, alternative_did)]);
 
 	let mut ext = builder.build();
 
@@ -185,12 +182,11 @@ fn check_did_max_tx_counter_submit_attestation_creation_operation() {
 	let claim_hash = get_claim_hash(true);
 	let attestation = generate_base_attestation(caller_did.clone());
 
-	let operation = generate_base_attestation_creation_operation(claim_hash, attestation.clone());
+	let operation = generate_base_attestation_creation_operation(claim_hash, attestation);
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder =
-		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash.clone(), caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash, caller_did)]);
 
 	let mut ext = builder.build();
 
@@ -227,13 +223,12 @@ fn check_did_too_small_tx_counter_submit_attestation_creation_operation() {
 	let claim_hash = get_claim_hash(true);
 	let attestation = generate_base_attestation(caller_did.clone());
 
-	let mut operation = generate_base_attestation_creation_operation(claim_hash, attestation.clone());
+	let mut operation = generate_base_attestation_creation_operation(claim_hash, attestation);
 	operation.tx_counter = mock_did_details.get_tx_counter_value() - 1u64;
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder =
-		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash.clone(), caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash, caller_did)]);
 
 	let mut ext = builder.build();
 
@@ -269,13 +264,12 @@ fn check_did_equal_tx_counter_submit_attestation_creation_operation() {
 	let claim_hash = get_claim_hash(true);
 	let attestation = generate_base_attestation(caller_did.clone());
 
-	let mut operation = generate_base_attestation_creation_operation(claim_hash, attestation.clone());
+	let mut operation = generate_base_attestation_creation_operation(claim_hash, attestation);
 	operation.tx_counter = mock_did_details.get_tx_counter_value();
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder =
-		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash.clone(), caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash, caller_did)]);
 
 	let mut ext = builder.build();
 
@@ -311,13 +305,12 @@ fn check_did_too_large_tx_counter_submit_attestation_creation_operation() {
 	let claim_hash = get_claim_hash(true);
 	let attestation = generate_base_attestation(caller_did.clone());
 
-	let mut operation = generate_base_attestation_creation_operation(claim_hash, attestation.clone());
+	let mut operation = generate_base_attestation_creation_operation(claim_hash, attestation);
 	operation.tx_counter = mock_did_details.get_tx_counter_value() + 2u64;
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder =
-		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash.clone(), caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash, caller_did)]);
 
 	let mut ext = builder.build();
 
@@ -352,12 +345,11 @@ fn check_did_attestation_key_not_present_submit_attestation_creation_operation()
 	let claim_hash = get_claim_hash(true);
 	let attestation = generate_base_attestation(caller_did.clone());
 
-	let operation = generate_base_attestation_creation_operation(claim_hash, attestation.clone());
+	let operation = generate_base_attestation_creation_operation(claim_hash, attestation);
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder =
-		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash.clone(), caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash, caller_did)]);
 
 	let mut ext = builder.build();
 
@@ -394,12 +386,11 @@ fn check_did_invalid_signature_format_submit_attestation_creation_operation() {
 	let claim_hash = get_claim_hash(true);
 	let attestation = generate_base_attestation(caller_did.clone());
 
-	let operation = generate_base_attestation_creation_operation(claim_hash, attestation.clone());
+	let operation = generate_base_attestation_creation_operation(claim_hash, attestation);
 	let signature = alternative_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder =
-		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash.clone(), caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash, caller_did)]);
 
 	let mut ext = builder.build();
 
@@ -436,12 +427,11 @@ fn check_did_invalid_signature_submit_attestation_creation_operation() {
 	let claim_hash = get_claim_hash(true);
 	let attestation = generate_base_attestation(caller_did.clone());
 
-	let operation = generate_base_attestation_creation_operation(claim_hash, attestation.clone());
+	let operation = generate_base_attestation_creation_operation(claim_hash, attestation);
 	let signature = alternative_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder =
-		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash.clone(), caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash, caller_did)]);
 
 	let mut ext = builder.build();
 
@@ -478,12 +468,11 @@ fn check_ctype_not_present_submit_attestation_creation_operation() {
 	let claim_hash = get_claim_hash(true);
 	let attestation = generate_base_attestation(caller_did.clone());
 
-	let operation = generate_base_attestation_creation_operation(claim_hash, attestation.clone());
+	let operation = generate_base_attestation_creation_operation(claim_hash, attestation);
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder =
-		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(alternative_ctype.clone(), caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(alternative_ctype, caller_did)]);
 
 	let mut ext = builder.build();
 
@@ -523,10 +512,9 @@ fn check_duplicate_attestation_submit_attestation_creation_operation() {
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder =
-		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash.clone(), caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash, caller_did)]);
 	let builder = delegation_mock::ExtBuilder::from(builder);
-	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation.clone())]);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation)]);
 
 	let mut ext = builder.build();
 
@@ -564,12 +552,11 @@ fn check_delegation_not_found_submit_attestation_creation_operation() {
 	let mut attestation = generate_base_attestation(caller_did.clone());
 	attestation.delegation_id = Some(delegation_id);
 
-	let operation = generate_base_attestation_creation_operation(claim_hash, attestation.clone());
+	let operation = generate_base_attestation_creation_operation(claim_hash, attestation);
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder =
-		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash.clone(), caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash, caller_did)]);
 
 	let mut ext = builder.build();
 
@@ -616,15 +603,14 @@ fn check_delegation_revoked_submit_attestation_creation_operation() {
 	let mut attestation = generate_base_attestation(caller_did.clone());
 	attestation.delegation_id = Some(delegation_id);
 
-	let operation = generate_base_attestation_creation_operation(claim_hash, attestation.clone());
+	let operation = generate_base_attestation_creation_operation(claim_hash, attestation);
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder =
-		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash.clone(), caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash, caller_did)]);
 	let builder = delegation_mock::ExtBuilder::from(builder)
-		.with_root_delegations(vec![(root_id, root_node.clone())])
-		.with_delegations(vec![(delegation_id, delegation_node.clone())]);
+		.with_root_delegations(vec![(root_id, root_node)])
+		.with_delegations(vec![(delegation_id, delegation_node)]);
 
 	let mut ext = builder.build();
 
@@ -665,21 +651,20 @@ fn check_not_delegation_owner_submit_attestation_creation_operation() {
 	);
 	let (delegation_id, mut delegation_node) = (
 		delegation_mock::get_delegation_id(true),
-		delegation_mock::generate_base_delegation_node(root_id, alternative_did.clone()),
+		delegation_mock::generate_base_delegation_node(root_id, alternative_did),
 	);
 	delegation_node.permissions = delegation::Permissions::ATTEST;
 	let mut attestation = generate_base_attestation(caller_did.clone());
 	attestation.delegation_id = Some(delegation_id);
 
-	let operation = generate_base_attestation_creation_operation(claim_hash, attestation.clone());
+	let operation = generate_base_attestation_creation_operation(claim_hash, attestation);
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder =
-		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash.clone(), caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash, caller_did)]);
 	let builder = delegation_mock::ExtBuilder::from(builder)
-		.with_root_delegations(vec![(root_id, root_node.clone())])
-		.with_delegations(vec![(delegation_id, delegation_node.clone())]);
+		.with_root_delegations(vec![(root_id, root_node)])
+		.with_delegations(vec![(delegation_id, delegation_node)]);
 
 	let mut ext = builder.build();
 
@@ -725,15 +710,14 @@ fn check_unauthorised_permissions_submit_attestation_creation_operation() {
 	let mut attestation = generate_base_attestation(caller_did.clone());
 	attestation.delegation_id = Some(delegation_id);
 
-	let operation = generate_base_attestation_creation_operation(claim_hash, attestation.clone());
+	let operation = generate_base_attestation_creation_operation(claim_hash, attestation);
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder =
-		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash.clone(), caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash, caller_did)]);
 	let builder = delegation_mock::ExtBuilder::from(builder)
-		.with_root_delegations(vec![(root_id, root_node.clone())])
-		.with_delegations(vec![(delegation_id, delegation_node.clone())]);
+		.with_root_delegations(vec![(root_id, root_node)])
+		.with_delegations(vec![(delegation_id, delegation_node)]);
 
 	let mut ext = builder.build();
 
@@ -780,15 +764,14 @@ fn check_root_not_present_submit_attestation_creation_operation() {
 	let mut attestation = generate_base_attestation(caller_did.clone());
 	attestation.delegation_id = Some(delegation_id);
 
-	let operation = generate_base_attestation_creation_operation(claim_hash, attestation.clone());
+	let operation = generate_base_attestation_creation_operation(claim_hash, attestation);
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder =
-		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash.clone(), caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash, caller_did)]);
 	let builder = delegation_mock::ExtBuilder::from(builder)
-		.with_root_delegations(vec![(alternative_root_id, root_node.clone())])
-		.with_delegations(vec![(delegation_id, delegation_node.clone())]);
+		.with_root_delegations(vec![(alternative_root_id, root_node)])
+		.with_delegations(vec![(delegation_id, delegation_node)]);
 
 	let mut ext = builder.build();
 
@@ -836,15 +819,14 @@ fn check_root_ctype_mismatch_submit_attestation_creation_operation() {
 	let mut attestation = generate_base_attestation(caller_did.clone());
 	attestation.delegation_id = Some(delegation_id);
 
-	let operation = generate_base_attestation_creation_operation(claim_hash, attestation.clone());
+	let operation = generate_base_attestation_creation_operation(claim_hash, attestation);
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder =
-		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash.clone(), caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(operation.ctype_hash, caller_did)]);
 	let builder = delegation_mock::ExtBuilder::from(builder)
-		.with_root_delegations(vec![(root_id, root_node.clone())])
-		.with_delegations(vec![(delegation_id, delegation_node.clone())]);
+		.with_root_delegations(vec![(root_id, root_node)])
+		.with_delegations(vec![(delegation_id, delegation_node)]);
 
 	let mut ext = builder.build();
 
@@ -886,9 +868,9 @@ fn check_direct_attestation_submit_attestation_revocation_operation_successful()
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did)]);
 	let builder = delegation_mock::ExtBuilder::from(builder);
-	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation.clone())]);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation)]);
 
 	let mut ext = builder.build();
 
@@ -903,7 +885,7 @@ fn check_direct_attestation_submit_attestation_revocation_operation_successful()
 	let stored_attestation =
 		ext.execute_with(|| Attestation::attestations(claim_hash).expect("Attestation should be present on chain."));
 
-	assert_eq!(stored_attestation.revoked, true);
+	assert!(stored_attestation.revoked);
 
 	// Verify that the DID tx counter has increased
 	let new_mock_details =
@@ -936,7 +918,7 @@ fn check_direct_delegation_submit_attestation_revocation_operation_successful() 
 	delegation_node.permissions = delegation::Permissions::ATTEST;
 	// Attestation owned by a different user, but delegation owned by the user
 	// submitting the operation.
-	let mut attestation = generate_base_attestation(alternative_did.clone());
+	let mut attestation = generate_base_attestation(alternative_did);
 	attestation.delegation_id = Some(delegation_id);
 
 	let mut operation = generate_base_attestation_revocation_operation(claim_hash, attestation.clone());
@@ -946,11 +928,11 @@ fn check_direct_delegation_submit_attestation_revocation_operation_successful() 
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did)]);
 	let builder = delegation_mock::ExtBuilder::from(builder)
-		.with_root_delegations(vec![(root_id, root_node.clone())])
-		.with_delegations(vec![(delegation_id, delegation_node.clone())]);
-	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation.clone())]);
+		.with_root_delegations(vec![(root_id, root_node)])
+		.with_delegations(vec![(delegation_id, delegation_node)]);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation)]);
 
 	let mut ext = builder.build();
 
@@ -965,7 +947,7 @@ fn check_direct_delegation_submit_attestation_revocation_operation_successful() 
 	let stored_attestation =
 		ext.execute_with(|| Attestation::attestations(claim_hash).expect("Attestation should be present on chain."));
 
-	assert_eq!(stored_attestation.revoked, true);
+	assert!(stored_attestation.revoked);
 
 	// Verify that the DID tx counter has increased
 	let new_mock_details =
@@ -1001,7 +983,7 @@ fn check_parent_delegation_submit_attestation_revocation_operation_successful() 
 		delegation_mock::generate_base_delegation_node(root_id, alternative_did.clone()),
 	);
 	// Attestation owned by a different user
-	let mut attestation = generate_base_attestation(alternative_did.clone());
+	let mut attestation = generate_base_attestation(alternative_did);
 	attestation.delegation_id = Some(delegation_id);
 
 	let mut operation = generate_base_attestation_revocation_operation(claim_hash, attestation.clone());
@@ -1012,14 +994,11 @@ fn check_parent_delegation_submit_attestation_revocation_operation_successful() 
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did)]);
 	let builder = delegation_mock::ExtBuilder::from(builder)
-		.with_root_delegations(vec![(root_id, root_node.clone())])
-		.with_delegations(vec![
-			(parent_id, parent_node.clone()),
-			(delegation_id, delegation_node.clone()),
-		]);
-	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation.clone())]);
+		.with_root_delegations(vec![(root_id, root_node)])
+		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)]);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation)]);
 
 	let mut ext = builder.build();
 
@@ -1034,7 +1013,7 @@ fn check_parent_delegation_submit_attestation_revocation_operation_successful() 
 	let stored_attestation =
 		ext.execute_with(|| Attestation::attestations(claim_hash).expect("Attestation should be present on chain."));
 
-	assert_eq!(stored_attestation.revoked, true);
+	assert!(stored_attestation.revoked);
 
 	// Verify that the DID tx counter has increased
 	let new_mock_details =
@@ -1072,7 +1051,7 @@ fn check_parent_delegation_no_attestation_permissions_submit_attestation_revocat
 		delegation_mock::generate_base_delegation_node(root_id, alternative_did.clone()),
 	);
 	// Attestation owned by a different user
-	let mut attestation = generate_base_attestation(alternative_did.clone());
+	let mut attestation = generate_base_attestation(alternative_did);
 	attestation.delegation_id = Some(delegation_id);
 
 	let mut operation = generate_base_attestation_revocation_operation(claim_hash, attestation.clone());
@@ -1083,14 +1062,11 @@ fn check_parent_delegation_no_attestation_permissions_submit_attestation_revocat
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did)]);
 	let builder = delegation_mock::ExtBuilder::from(builder)
-		.with_root_delegations(vec![(root_id, root_node.clone())])
-		.with_delegations(vec![
-			(parent_id, parent_node.clone()),
-			(delegation_id, delegation_node.clone()),
-		]);
-	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation.clone())]);
+		.with_root_delegations(vec![(root_id, root_node)])
+		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)]);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation)]);
 
 	let mut ext = builder.build();
 
@@ -1105,7 +1081,7 @@ fn check_parent_delegation_no_attestation_permissions_submit_attestation_revocat
 	let stored_attestation =
 		ext.execute_with(|| Attestation::attestations(claim_hash).expect("Attestation should be present on chain."));
 
-	assert_eq!(stored_attestation.revoked, true);
+	assert!(stored_attestation.revoked);
 
 	// Verify that the DID tx counter has increased
 	let new_mock_details =
@@ -1144,7 +1120,7 @@ fn check_parent_delegation_with_direct_delegation_revoked_submit_attestation_rev
 	// parent) is not
 	delegation_node.revoked = true;
 	// Attestation owned by a different user
-	let mut attestation = generate_base_attestation(alternative_did.clone());
+	let mut attestation = generate_base_attestation(alternative_did);
 	attestation.delegation_id = Some(delegation_id);
 
 	let mut operation = generate_base_attestation_revocation_operation(claim_hash, attestation.clone());
@@ -1155,14 +1131,11 @@ fn check_parent_delegation_with_direct_delegation_revoked_submit_attestation_rev
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did)]);
 	let builder = delegation_mock::ExtBuilder::from(builder)
-		.with_root_delegations(vec![(root_id, root_node.clone())])
-		.with_delegations(vec![
-			(parent_id, parent_node.clone()),
-			(delegation_id, delegation_node.clone()),
-		]);
-	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation.clone())]);
+		.with_root_delegations(vec![(root_id, root_node)])
+		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)]);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation)]);
 
 	let mut ext = builder.build();
 
@@ -1177,7 +1150,7 @@ fn check_parent_delegation_with_direct_delegation_revoked_submit_attestation_rev
 	let stored_attestation =
 		ext.execute_with(|| Attestation::attestations(claim_hash).expect("Attestation should be present on chain."));
 
-	assert_eq!(stored_attestation.revoked, true);
+	assert!(stored_attestation.revoked);
 
 	// Verify that the DID tx counter has increased
 	let new_mock_details =
@@ -1204,10 +1177,10 @@ fn check_did_not_present_submit_attestation_revocation_operation() {
 	let operation = generate_base_attestation_revocation_operation(claim_hash, attestation.clone());
 	let signature = did_att_key.sign(&operation.encode());
 
-	let builder = did_mock::ExtBuilder::default().with_dids(vec![(alternative_did.clone(), mock_did_details.clone())]);
-	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did.clone())]);
+	let builder = did_mock::ExtBuilder::default().with_dids(vec![(alternative_did, mock_did_details)]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did)]);
 	let builder = delegation_mock::ExtBuilder::from(builder);
-	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation.clone())]);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation)]);
 
 	let mut ext = builder.build();
 
@@ -1240,9 +1213,9 @@ fn check_did_max_tx_counter_submit_attestation_revocation_operation() {
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did)]);
 	let builder = delegation_mock::ExtBuilder::from(builder);
-	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation.clone())]);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation)]);
 
 	let mut ext = builder.build();
 
@@ -1284,9 +1257,9 @@ fn check_too_small_tx_counter_submit_attestation_revocation_operation() {
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did)]);
 	let builder = delegation_mock::ExtBuilder::from(builder);
-	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation.clone())]);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation)]);
 
 	let mut ext = builder.build();
 
@@ -1327,9 +1300,9 @@ fn check_equal_tx_counter_submit_attestation_revocation_operation() {
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did)]);
 	let builder = delegation_mock::ExtBuilder::from(builder);
-	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation.clone())]);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation)]);
 
 	let mut ext = builder.build();
 
@@ -1370,9 +1343,9 @@ fn check_too_large_tx_counter_submit_attestation_revocation_operation() {
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did)]);
 	let builder = delegation_mock::ExtBuilder::from(builder);
-	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation.clone())]);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation)]);
 
 	let mut ext = builder.build();
 
@@ -1411,9 +1384,9 @@ fn check_attestation_key_not_present_submit_attestation_revocation_operation() {
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did)]);
 	let builder = delegation_mock::ExtBuilder::from(builder);
-	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation.clone())]);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation)]);
 
 	let mut ext = builder.build();
 
@@ -1454,9 +1427,9 @@ fn check_invalid_signature_format_submit_attestation_revocation_operation() {
 	let signature = alternative_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did)]);
 	let builder = delegation_mock::ExtBuilder::from(builder);
-	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation.clone())]);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation)]);
 
 	let mut ext = builder.build();
 
@@ -1497,9 +1470,9 @@ fn check_invalid_signature_submit_attestation_revocation_operation() {
 	let signature = alternative_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did)]);
 	let builder = delegation_mock::ExtBuilder::from(builder);
-	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation.clone())]);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation)]);
 
 	let mut ext = builder.build();
 
@@ -1539,7 +1512,7 @@ fn check_attestation_not_present_submit_attestation_revocation_operation() {
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did)]);
 
 	let mut ext = builder.build();
 
@@ -1580,9 +1553,9 @@ fn check_already_revoked_attestation_submit_attestation_revocation_operation() {
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did)]);
 	let builder = delegation_mock::ExtBuilder::from(builder);
-	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation.clone())]);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation)]);
 
 	let mut ext = builder.build();
 
@@ -1625,11 +1598,11 @@ fn check_unauthorised_attestation_no_delegation_submit_attestation_revocation_op
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![
 		(caller_did.clone(), mock_did_details.clone()),
-		(alternative_did.clone(), mock_did_details.clone()),
+		(alternative_did, mock_did_details.clone()),
 	]);
-	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(attestation.ctype_hash, caller_did)]);
 	let builder = delegation_mock::ExtBuilder::from(builder);
-	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation.clone())]);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation)]);
 
 	let mut ext = builder.build();
 
@@ -1688,21 +1661,20 @@ fn check_max_parent_lookups_submit_attestation_revocation_operation() {
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![
 		(caller_did.clone(), mock_did_details.clone()),
-		(alternative_did.clone(), mock_did_details.clone()),
+		(alternative_did, mock_did_details.clone()),
 	]);
-	let builder =
-		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash, caller_did)]);
 	let builder = delegation_mock::ExtBuilder::from(builder)
-		.with_root_delegations(vec![(root_id, root_node.clone())])
+		.with_root_delegations(vec![(root_id, root_node)])
 		.with_delegations(vec![
-			(parent_delegation_id, parent_delegation_node.clone()),
-			(delegation_id, delegation_node.clone()),
+			(parent_delegation_id, parent_delegation_node),
+			(delegation_id, delegation_node),
 		])
 		.with_children(vec![
 			(root_id, vec![parent_delegation_id]),
 			(parent_delegation_id, vec![delegation_id]),
 		]);
-	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation.clone())]);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation)]);
 
 	let mut ext = builder.build();
 
@@ -1747,7 +1719,7 @@ fn check_revoked_delegation_submit_attestation_revocation_operation() {
 	);
 	delegation_node.permissions = delegation::Permissions::ATTEST;
 	delegation_node.revoked = true;
-	let mut attestation = generate_base_attestation(alternative_did.clone());
+	let mut attestation = generate_base_attestation(alternative_did);
 	attestation.delegation_id = Some(delegation_id);
 
 	let mut operation = generate_base_attestation_revocation_operation(claim_hash, attestation.clone());
@@ -1755,12 +1727,11 @@ fn check_revoked_delegation_submit_attestation_revocation_operation() {
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(caller_did.clone(), mock_did_details.clone())]);
-	let builder =
-		ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash.clone(), caller_did.clone())]);
+	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash, caller_did)]);
 	let builder = delegation_mock::ExtBuilder::from(builder)
-		.with_root_delegations(vec![(root_id, root_node.clone())])
-		.with_delegations(vec![(delegation_id, delegation_node.clone())]);
-	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation.clone())]);
+		.with_root_delegations(vec![(root_id, root_node)])
+		.with_delegations(vec![(delegation_id, delegation_node)]);
+	let builder = ExtBuilder::from(builder).with_attestations(vec![(claim_hash, attestation)]);
 
 	let mut ext = builder.build();
 

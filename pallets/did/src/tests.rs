@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use std::{convert::TryFrom, iter::FromIterator};
+use std::convert::TryFrom;
 
 use frame_support::{assert_noop, assert_ok};
 use sp_core::Pair;
@@ -258,7 +258,9 @@ fn check_successful_complete_update() {
 	// Verification keys should contain the previous attestation key.
 	assert_eq!(
 		new_did_details.verification_keys,
-		BTreeSet::from_iter(vec![did::PublicVerificationKey::from(old_att_key.public())].into_iter())
+		vec![did::PublicVerificationKey::from(old_att_key.public())]
+			.into_iter()
+			.collect()
 	);
 	assert_eq!(new_did_details.endpoint_url, operation.new_endpoint_url);
 	assert_eq!(new_did_details.last_tx_counter, old_did_details.last_tx_counter + 1u64);
@@ -273,7 +275,7 @@ fn check_successful_verification_keys_deletion() {
 		did::PublicVerificationKey::from(get_sr25519_attestation_key(true).public()),
 		did::PublicVerificationKey::from(get_sr25519_attestation_key(false).public()),
 	];
-	let old_verification_keys_set = BTreeSet::from_iter(old_verification_keys_vector.into_iter());
+	let old_verification_keys_set = old_verification_keys_vector.into_iter().collect::<BTreeSet<_>>();
 	let mut old_did_details = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
 	old_did_details.verification_keys = old_verification_keys_set.clone();
 
@@ -480,19 +482,19 @@ fn check_invalid_verification_keys_deletion() {
 	let key3 = did::PublicVerificationKey::from(get_sr25519_attestation_key(true).public());
 	let key4 = did::PublicVerificationKey::from(get_sr25519_attestation_key(false).public());
 	let old_verification_keys_vector = vec![key1, key2, key3];
-	let old_verification_keys_set = BTreeSet::from_iter(old_verification_keys_vector.into_iter());
+	let old_verification_keys_set = old_verification_keys_vector.into_iter().collect::<BTreeSet<_>>();
 	let mut old_did_details = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
 	old_did_details.verification_keys = old_verification_keys_set;
 
 	// Remove some verification keys including one not stored on chain (key4)
 	let verification_keys_to_remove = vec![key1, key3, key4];
 	let mut operation = generate_base_did_update_operation(ALICE_DID);
-	operation.verification_keys_to_remove = Some(BTreeSet::from_iter(verification_keys_to_remove.into_iter()));
+	operation.verification_keys_to_remove = Some(verification_keys_to_remove.into_iter().collect());
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(ALICE_DID, old_did_details.clone())])
+		.with_dids(vec![(ALICE_DID, old_did_details)])
 		.build();
 
 	ext.execute_with(|| {
@@ -521,9 +523,7 @@ fn check_successful_deletion() {
 	// Generate signature using the old authentication key
 	let signature = auth_key.sign(operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(ALICE_DID, did_details.clone())])
-		.build();
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, did_details)]).build();
 
 	ext.execute_with(|| {
 		assert_ok!(Did::submit_did_delete_operation(

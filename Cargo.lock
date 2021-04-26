@@ -10336,13 +10336,13 @@ dependencies = [
 [[package]]
 name = "substrate-wasm-builder"
 version = "4.0.0"
-source = "git+https://github.com/paritytech/substrate?branch=rococo-v1#13a07b4b637b6e25397db7fcd62d8b93eeae76ac"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93a3d51ad6abbc408b03ea962062bfcc959b438a318d7d4bedd181e1effd0610"
 dependencies = [
  "ansi_term 0.12.1",
  "atty",
  "build-helper",
  "cargo_metadata",
- "sp-maybe-compressed-blob",
  "tempfile",
  "toml",
  "walkdir",
@@ -10352,13 +10352,13 @@ dependencies = [
 [[package]]
 name = "substrate-wasm-builder"
 version = "4.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "93a3d51ad6abbc408b03ea962062bfcc959b438a318d7d4bedd181e1effd0610"
+source = "git+https://github.com/paritytech/substrate?branch=rococo-v1#13a07b4b637b6e25397db7fcd62d8b93eeae76ac"
 dependencies = [
  "ansi_term 0.12.1",
  "atty",
  "build-helper",
  "cargo_metadata",
+ "sp-maybe-compressed-blob",
  "tempfile",
  "toml",
  "walkdir",

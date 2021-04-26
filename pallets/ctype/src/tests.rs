@@ -76,7 +76,7 @@ fn check_duplicate_ctype_creation() {
 
 	let did = did_mock::ALICE_DID;
 
-	let operation = generate_base_ctype_creation_operation(did.clone());
+	let operation = generate_base_ctype_creation_operation(did);
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder =
@@ -116,11 +116,11 @@ fn check_did_not_present_ctype_creation() {
 	let did = did_mock::ALICE_DID;
 	let alternative_did = did_mock::BOB_DID;
 
-	let operation = generate_base_ctype_creation_operation(did.clone());
+	let operation = generate_base_ctype_creation_operation(did);
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(alternative_did.clone(), mock_did_details)]);
-	let builder = ExtBuilder::from(builder).with_ctypes(vec![(operation.hash, alternative_did.clone())]);
+	let builder = ExtBuilder::from(builder).with_ctypes(vec![(operation.hash, alternative_did)]);
 
 	let mut ext = builder.build();
 
@@ -147,7 +147,7 @@ fn check_max_did_counter_ctype_creation() {
 
 	let did = did_mock::ALICE_DID;
 
-	let operation = generate_base_ctype_creation_operation(did.clone());
+	let operation = generate_base_ctype_creation_operation(did);
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder =
@@ -187,7 +187,7 @@ fn check_smaller_did_counter_ctype_creation() {
 
 	let did = did_mock::ALICE_DID;
 
-	let mut operation = generate_base_ctype_creation_operation(did.clone());
+	let mut operation = generate_base_ctype_creation_operation(did);
 	operation.tx_counter = mock_did_details.get_tx_counter_value() - 1u64;
 	let signature = did_att_key.sign(&operation.encode());
 
@@ -227,7 +227,7 @@ fn check_equal_did_counter_ctype_creation() {
 
 	let did = did_mock::ALICE_DID;
 
-	let mut operation = generate_base_ctype_creation_operation(did.clone());
+	let mut operation = generate_base_ctype_creation_operation(did);
 	operation.tx_counter = mock_did_details.get_tx_counter_value();
 	let signature = did_att_key.sign(&operation.encode());
 
@@ -268,7 +268,7 @@ fn check_too_large_did_counter_ctype_creation() {
 
 	let did = did_mock::ALICE_DID;
 
-	let mut operation = generate_base_ctype_creation_operation(did.clone());
+	let mut operation = generate_base_ctype_creation_operation(did);
 	operation.tx_counter = mock_did_details.get_tx_counter_value() + 2u64;
 	let signature = did_att_key.sign(&operation.encode());
 
@@ -307,7 +307,7 @@ fn check_no_attestation_key_ctype_creation() {
 
 	let did = did_mock::ALICE_DID;
 
-	let operation = generate_base_ctype_creation_operation(did.clone());
+	let operation = generate_base_ctype_creation_operation(did);
 	let signature = did_att_key.sign(&operation.encode());
 
 	let builder =
@@ -347,7 +347,7 @@ fn check_invalid_signature_format_ctype_creation() {
 
 	let did = did_mock::ALICE_DID;
 
-	let operation = generate_base_ctype_creation_operation(did.clone());
+	let operation = generate_base_ctype_creation_operation(did);
 	let signature = wrong_format_att_key.sign(&operation.encode());
 
 	let builder =
@@ -387,7 +387,7 @@ fn check_invalid_signature_ctype_creation() {
 
 	let did = did_mock::ALICE_DID;
 
-	let operation = generate_base_ctype_creation_operation(did.clone());
+	let operation = generate_base_ctype_creation_operation(did);
 	let signature = alternative_seed_att_key.sign(&operation.encode());
 
 	let builder =
