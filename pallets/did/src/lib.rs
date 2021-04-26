@@ -39,8 +39,6 @@ pub use default_weights::WeightInfo;
 
 use codec::{Decode, Encode};
 
-use core::ops::Sub;
-
 use frame_support::{ensure, storage::types::StorageMap, Parameter};
 use frame_system::{self, ensure_signed};
 use sp_core::{ed25519, sr25519};
@@ -51,8 +49,13 @@ pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
+	use core::ops::Sub;
+
 	use super::*;
-	use frame_support::pallet_prelude::*;
+	use frame_support::{
+		dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo},
+		pallet_prelude::*,
+	};
 	use frame_system::pallet_prelude::*;
 
 	/// The expected URI scheme for HTTP endpoints.
@@ -415,6 +418,42 @@ pub mod pallet {
 		}
 	}
 
+	#[derive(Clone, Decode, Encode, PartialEq)]
+	pub struct DidCallOperation<T: Config> {
+		/// The DID identifier.
+		pub did: T::DidIdentifier,
+		/// The DID tx counter.
+		pub tx_counter: u64,
+		pub call: <T as pallet::Config>::Call,
+	}
+
+	impl<T: Config> DidOperation<T> for DidCallOperation<T> {
+		fn get_verification_key_type(&self) -> DidVerificationKeyType {
+			// TODO: impl a new trait:
+			// trait DeriveDidVerificationType {
+			//     fn verification_type(&self) -> DidVerificationKeyType;
+			// }
+			DidVerificationKeyType::Authentication
+		}
+
+		fn get_did(&self) -> &T::DidIdentifier {
+			&self.did
+		}
+
+		fn get_tx_counter(&self) -> u64 {
+			self.tx_counter
+		}
+	}
+
+	impl<T: Config> Debug for DidCallOperation<T> {
+		fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
+			f.debug_tuple("DidOperation")
+				.field(&self.did)
+				.field(&self.tx_counter)
+				.finish()
+		}
+	}
+
 	/// A web URL starting with either http:// or https://
 	/// and containing only ASCII URL-encoded characters.
 	#[derive(Clone, Decode, Debug, Encode, PartialEq)]
@@ -640,7 +679,7 @@ pub mod pallet {
 				// Verify that the set of keys to delete - the set of keys stored is empty
 				// (otherwise keys to delete contains some keys not stored on chain -> notify
 				// about them to the caller)
-				let keys_not_present = verification_keys_to_remove.sub(&new_details.verification_keys);
+				let keys_not_present = verification_keys_to_remove - &new_details.verification_keys;
 				ensure!(
 					keys_not_present.is_empty(),
 					DidError::StorageError(StorageError::VerificationKeysNotPresent(
@@ -702,6 +741,9 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type Call: Parameter
+			+ Dispatchable<Origin = <Self as frame_system::Config>::Origin, PostInfo = PostDispatchInfo>
+			+ GetDispatchInfo;
 		type WeightInfo: WeightInfo;
 		type DidIdentifier: Parameter + Encode + Decode + Debug;
 	}
@@ -916,6 +958,38 @@ pub mod pallet {
 			Self::deposit_event(Event::DidDeleted(sender, did_identifier.clone()));
 
 			Ok(None.into())
+		}
+
+		#[pallet::weight(10)]
+		pub fn submit_did_call(
+			origin: OriginFor<T>,
+			did_call: DidCallOperation<T>,
+			signature: DidSignature,
+		) -> DispatchResultWithPostInfo {
+			ensure_signed(origin.clone())?;
+
+			let did_identifier = did_call.get_did();
+
+			let did_details = <Did<T>>::get(&did_identifier).ok_or(<Error<T>>::DidNotPresent)?;
+
+			// Verify the signature and the nonce of the delete operation.
+			Self::verify_operation_validity_for_did(&did_call, &signature, &did_details).map_err(<Error<T>>::from)?;
+			log::debug!("Dispatch call from DID {:?}", did_identifier);
+
+			let res = did_call.call.dispatch(origin);
+
+			match res {
+				Ok(ok) => {
+					log::debug!("Dispatch was successfull");
+					// TODO: event
+					Ok(ok)
+				},
+				Err(err) => {
+					log::debug!("Dispatch was failed {:?}", err);
+					// TODO: event
+					Ok(None.into())
+				}
+			}
 		}
 	}
 }
