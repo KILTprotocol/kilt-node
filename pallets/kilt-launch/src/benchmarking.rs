@@ -20,10 +20,15 @@ use super::*;
 
 #[allow(unused)]
 use crate::{BalanceLocks, BalanceOf, LockedBalance, Pallet as KiltLaunch, KILT_LAUNCH_ID};
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, vec, whitelist_account};
-use frame_support::inherent::Vec;
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, vec, whitelist_account, Zero};
+use frame_support::{
+	inherent::Vec,
+	traits::{Currency, Get},
+};
 use frame_system::{Pallet as System, RawOrigin};
+use pallet_balances::Locks;
 use pallet_vesting::{Vesting, VestingInfo};
+use sp_runtime::traits::StaticLookup;
 
 const SEED: u32 = 0;
 const AMOUNT: u32 = 10000;

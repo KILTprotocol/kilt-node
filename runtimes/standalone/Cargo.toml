@@ -8,7 +8,7 @@ version = "0.24.0"
 substrate-wasm-builder = "4.0.0"
 
 [dependencies]
-# kilt features
+# kilt functionality
 attestation = {default-features = false, path = "../../pallets/attestation"}
 kilt-launch = {default-features = false, path = "../../pallets/kilt-launch"}
 ctype = {default-features = false, path = "../../pallets/ctype"}
