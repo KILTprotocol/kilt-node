@@ -39,8 +39,6 @@ pub use default_weights::WeightInfo;
 
 use codec::{Decode, Encode};
 
-use core::ops::Sub;
-
 use frame_support::{ensure, storage::types::StorageMap, Parameter};
 use frame_system::{self, ensure_signed};
 use sp_core::{ed25519, sr25519};
@@ -233,12 +231,14 @@ pub enum UrlError {
 }
 
 /// A trait describing an operation that requires DID authentication.
-pub trait DidOperation<DidIdentifier>: Encode {
+pub trait DidOperation<T: Config>: Encode {
 	/// Returns the type of the verification key to be used to validate the
 	/// operation.
 	fn get_verification_key_type(&self) -> DidVerificationKeyType;
 	/// Returns the DID identifier of the subject.
-	fn get_did(&self) -> &DidIdentifier;
+	fn get_did(&self) -> &T::DidIdentifier;
+
+	fn get_tx_counter(&self) -> u64;
 }
 
 /// A DID creation request. It contains the following values:
@@ -250,28 +250,29 @@ pub trait DidOperation<DidIdentifier>: Encode {
 /// * The optional delegation key to use
 /// * The optional endpoint URL pointing to the DID service endpoints
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
-pub struct DidCreationOperation<DidIdentifier>
-where
-	DidIdentifier: Parameter + Encode + Decode + Debug,
+pub struct DidCreationOperation<T: Config>
 {
-	did: DidIdentifier,
+	did: T::DidIdentifier,
 	new_auth_key: PublicVerificationKey,
 	new_key_agreement_key: PublicEncryptionKey,
 	new_attestation_key: Option<PublicVerificationKey>,
 	new_delegation_key: Option<PublicVerificationKey>,
 	new_endpoint_url: Option<Url>,
+	tx_counter: u64,
 }
 
-impl<DidIdentifier> DidOperation<DidIdentifier> for DidCreationOperation<DidIdentifier>
-where
-	DidIdentifier: Parameter + Encode + Decode + Debug,
+impl<T: Config> DidOperation<T> for DidCreationOperation<T>
 {
 	fn get_verification_key_type(&self) -> DidVerificationKeyType {
 		DidVerificationKeyType::Authentication
 	}
 
-	fn get_did(&self) -> &DidIdentifier {
+	fn get_did(&self) -> &T::DidIdentifier {
 		&self.did
+	}
+
+	fn get_tx_counter(&self) -> u64 {
+		self.tx_counter
 	}
 }
 
@@ -285,11 +286,9 @@ where
 /// * The optional new endpoint URL pointing to the DID service endpoints
 /// * A counter used to protect against replay attacks
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
-pub struct DidUpdateOperation<DidIdentifier>
-where
-	DidIdentifier: Parameter + Encode + Decode + Debug,
+pub struct DidUpdateOperation<T: Config>
 {
-	did: DidIdentifier,
+	did: T::DidIdentifier,
 	new_auth_key: Option<PublicVerificationKey>,
 	new_key_agreement_key: Option<PublicEncryptionKey>,
 	new_attestation_key: Option<PublicVerificationKey>,
@@ -299,16 +298,18 @@ where
 	tx_counter: u64,
 }
 
-impl<DidIdentifier> DidOperation<DidIdentifier> for DidUpdateOperation<DidIdentifier>
-where
-	DidIdentifier: Parameter + Encode + Decode + Debug,
+impl<T: Config> DidOperation<T> for DidUpdateOperation<T>
 {
 	fn get_verification_key_type(&self) -> DidVerificationKeyType {
 		DidVerificationKeyType::Authentication
 	}
 
-	fn get_did(&self) -> &DidIdentifier {
+	fn get_did(&self) -> &T::DidIdentifier {
 		&self.did
+	}
+
+	fn get_tx_counter(&self) -> u64 {
+		self.tx_counter
 	}
 }
 
@@ -316,24 +317,24 @@ where
 /// * The DID identifier being deleted
 /// * A counter used to protect against replay attacks
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
-pub struct DidDeletionOperation<DidIdentifier>
-where
-	DidIdentifier: Parameter + Encode + Decode + Debug,
+pub struct DidDeletionOperation<T: Config>
 {
-	did: DidIdentifier,
+	did: T::DidIdentifier,
 	tx_counter: u64,
 }
 
-impl<DidIdentifier> DidOperation<DidIdentifier> for DidDeletionOperation<DidIdentifier>
-where
-	DidIdentifier: Parameter + Encode + Decode + Debug,
+impl<T: Config> DidOperation<T> for DidDeletionOperation<T>
 {
 	fn get_verification_key_type(&self) -> DidVerificationKeyType {
 		DidVerificationKeyType::Authentication
 	}
 
-	fn get_did(&self) -> &DidIdentifier {
+	fn get_did(&self) -> &T::DidIdentifier {
 		&self.did
+	}
+
+	fn get_tx_counter(&self) -> u64 {
+		self.tx_counter
 	}
 }
 
@@ -341,6 +342,41 @@ where
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
 pub struct HttpUrl {
 	payload: Vec<u8>,
+}
+#[derive(Clone, Decode, Encode, PartialEq)]
+pub struct DidCallOperation<T: Config> {
+	/// The DID identifier.
+	pub did: T::DidIdentifier,
+	/// The DID tx counter.
+	pub tx_counter: u64,
+	pub call: <T as Config>::Call,
+}
+
+impl<T: Config> DidOperation<T> for DidCallOperation<T> {
+	fn get_verification_key_type(&self) -> DidVerificationKeyType {
+		// TODO: impl a new trait:
+		// trait DeriveDidVerificationType {
+		//     fn verification_type(&self) -> DidVerificationKeyType;
+		// }
+		DidVerificationKeyType::Authentication
+	}
+
+	fn get_did(&self) -> &T::DidIdentifier {
+		&self.did
+	}
+
+	fn get_tx_counter(&self) -> u64 {
+		self.tx_counter
+	}
+}
+
+impl<T: Config> Debug for DidCallOperation<T> {
+	fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
+		f.debug_tuple("DidOperation")
+			.field(&self.did)
+			.field(&self.tx_counter)
+			.finish()
+	}
 }
 
 impl TryFrom<&[u8]> for HttpUrl {
@@ -473,11 +509,9 @@ pub struct DidDetails {
 	last_tx_counter: u64,
 }
 
-impl<DidIdentifier> From<DidCreationOperation<DidIdentifier>> for DidDetails
-where
-	DidIdentifier: Parameter + Encode + Decode + Debug,
+impl<T: Config> From<DidCreationOperation<T>> for DidDetails
 {
-	fn from(op: DidCreationOperation<DidIdentifier>) -> Self {
+	fn from(op: DidCreationOperation<T>) -> Self {
 		DidDetails {
 			auth_key: op.new_auth_key,
 			key_agreement_key: op.new_key_agreement_key,
@@ -511,14 +545,12 @@ impl DidDetails {
 ///
 /// Please note that this method does not perform any checks regarding
 /// the validity of the DidUpdateOperation signature.
-impl<DidIdentifier> TryFrom<(DidDetails, DidUpdateOperation<DidIdentifier>)> for DidDetails
-where
-	DidIdentifier: Parameter + Encode + Decode + Debug,
+impl<T: Config> TryFrom<(DidDetails, DidUpdateOperation<T>)> for DidDetails
 {
 	type Error = DidError;
 
 	fn try_from(
-		(old_details, update_operation): (DidDetails, DidUpdateOperation<DidIdentifier>),
+		(old_details, update_operation): (DidDetails, DidUpdateOperation<T>),
 	) -> Result<Self, Self::Error> {
 		// Old attestation key is used later in the process, so it's saved here.
 		let old_attestation_key = old_details.attestation_key;
@@ -529,7 +561,7 @@ where
 			// Verify that the set of keys to delete - the set of keys stored is empty
 			// (otherwise keys to delete contains some keys not stored on chain -> notify
 			// about them to the caller)
-			let keys_not_present = verification_keys_to_remove.sub(&new_details.verification_keys);
+			let keys_not_present = verification_keys_to_remove - &new_details.verification_keys;
 			ensure!(
 				keys_not_present.is_empty(),
 				DidError::StorageError(StorageError::VerificationKeysNotPresent(
@@ -564,7 +596,7 @@ where
 			new_details.endpoint_url = Some(new_endpoint_url);
 		}
 		if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove.as_ref() {
-			new_details.verification_keys = new_details.verification_keys.sub(verification_keys_to_remove);
+			new_details.verification_keys = &new_details.verification_keys - &verification_keys_to_remove;
 		}
 		new_details.last_tx_counter = update_operation.tx_counter;
 
@@ -576,14 +608,18 @@ where
 pub mod pallet {
 	use super::*;
 	use frame_support::{
+		dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo},
 		pallet_prelude::*,
 		traits::{Hooks, IsType},
 	};
 	use frame_system::pallet_prelude::*;
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config {
+	pub trait Config: frame_system::Config + Debug {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type Call: Parameter
+			+ Dispatchable<Origin = <Self as frame_system::Config>::Origin, PostInfo = PostDispatchInfo>
+			+ GetDispatchInfo;
 		type WeightInfo: WeightInfo;
 		type DidIdentifier: Parameter + Encode + Decode + Debug;
 	}
@@ -681,7 +717,7 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::submit_did_create_operation())]
 		pub fn submit_did_create_operation(
 			origin: OriginFor<T>,
-			did_creation_operation: DidCreationOperation<T::DidIdentifier>,
+			did_creation_operation: DidCreationOperation<T>,
 			signature: DidSignature,
 		) -> DispatchResultWithPostInfo {
 			// origin of the transaction needs to be a signed sender account
@@ -736,7 +772,7 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::submit_did_update_operation())]
 		pub fn submit_did_update_operation(
 			origin: OriginFor<T>,
-			did_update_operation: DidUpdateOperation<T::DidIdentifier>,
+			did_update_operation: DidUpdateOperation<T>,
 			signature: DidSignature,
 		) -> DispatchResultWithPostInfo {
 			// origin of the transaction needs to be a signed sender account
@@ -776,7 +812,7 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::submit_did_delete_operation())]
 		pub fn submit_did_delete_operation(
 			origin: OriginFor<T>,
-			did_deletion_operation: DidDeletionOperation<T::DidIdentifier>,
+			did_deletion_operation: DidDeletionOperation<T>,
 			signature: DidSignature,
 		) -> DispatchResultWithPostInfo {
 			// origin of the transaction needs to be a signed sender account
@@ -803,6 +839,33 @@ pub mod pallet {
 			Self::deposit_event(Event::DidDeleted(sender, did_identifier.clone()));
 			Ok(().into())
 		}
+
+		#[pallet::weight(10)]
+		pub fn submit_did_call(
+			origin: OriginFor<T>,
+			did_call: DidCallOperation<T>,
+			signature: DidSignature,
+		) -> DispatchResultWithPostInfo {
+			ensure_signed(origin.clone())?;
+
+			// Verify the signature and the nonce of the delete operation.
+			Self::verify_did_operation_signature(&did_call, &signature).map_err(<Error<T>>::from)?;
+
+			let res = did_call.call.dispatch(origin);
+
+			match res {
+				Ok(ok) => {
+					log::debug!("Dispatch was successfull");
+					// TODO: event
+					Ok(ok)
+				}
+				Err(err) => {
+					log::debug!("Dispatch was failed {:?}", err);
+					// TODO: event
+					Ok(None.into())
+				}
+			}
+		}
 	}
 }
 
@@ -811,7 +874,7 @@ impl<T: Config> Pallet<T> {
 	/// returns either Ok or a DidError. The paremeters are:
 	/// * op: a reference to the DID operation
 	/// * signature: a reference to the signature
-	pub fn verify_did_operation_signature<O: DidOperation<T::DidIdentifier>>(
+	pub fn verify_did_operation_signature<O: DidOperation<T>>(
 		op: &O,
 		signature: &DidSignature,
 	) -> Result<(), DidError> {
@@ -833,7 +896,7 @@ impl<T: Config> Pallet<T> {
 	/// * signature: a reference to the signature
 	/// * did_details: an instance of DidDetails as returned by the pallet
 	///   storage
-	fn verify_operation_signature_for_entry<O: DidOperation<T::DidIdentifier>>(
+	fn verify_operation_signature_for_entry<O: DidOperation<T>>(
 		did_operation: &O,
 		signature: &DidSignature,
 		did_details: &DidDetails,
