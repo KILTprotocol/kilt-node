@@ -133,7 +133,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use pallet_balances::{BalanceLock, Locks};
 	use pallet_vesting::{Vesting, VestingInfo};
-	use sp_runtime::traits::{Convert, Saturating};
+	use sp_runtime::traits::{CheckedDiv, Convert, Saturating};
 
 	pub const KILT_LAUNCH_ID: LockIdentifier = *b"kiltlnch";
 	pub const VESTING_ID: LockIdentifier = *b"vesting ";
@@ -250,7 +250,7 @@ pub mod pallet {
 					);
 
 					let length_as_balance = T::BlockNumberToBalance::convert(length);
-					let per_block = locked / length_as_balance.max(sp_runtime::traits::One::one());
+					let per_block = locked.checked_div(&length_as_balance).unwrap_or(locked);
 
 					Vesting::<T>::insert(
 						who,
@@ -377,12 +377,9 @@ pub mod pallet {
 		pub fn force_unlock(origin: OriginFor<T>, block: T::BlockNumber) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
 
-			Ok(
-				Some(<T as pallet::Config>::WeightInfo::force_unlock(Self::unlock_balance(
-					block,
-				)))
-				.into(),
-			)
+			let weight = <T as pallet::Config>::WeightInfo::force_unlock(Self::unlock_balance(block));
+
+			Ok(Some(weight).into())
 		}
 
 		/// Forcedly change the transfer account to the specified account.
@@ -674,10 +671,9 @@ pub mod pallet {
 						per_block: per_block.saturating_add(source_vesting.per_block),
 						starting_block,
 					}
-				}
-				// If vesting hasn't been set up for target account, we can default to the one of the source
-				// account
-				else {
+				} else {
+					// If vesting hasn't been set up for target account, we can default to the one
+					// of the source account
 					source_vesting
 				};
 				Vesting::<T>::insert(target, vesting);
@@ -735,10 +731,9 @@ pub mod pallet {
 					// We can simply sum `amount` because of the above requirement and the check
 					// that source != target in the corresponding extrinsics
 					target_lock.amount.saturating_add(max_add_amount)
-				}
-				// If no custom lock has been set up for target account, we can default to the one of the source
-				// account and append it to `UnlockingAt`
-				else {
+				} else {
+					// If no custom lock has been set up for target account, we can default to the
+					// one of the source account and append it to `UnlockingAt`
 					<UnlockingAt<T>>::append(unlock_block, &target);
 					max_add_amount
 				};
