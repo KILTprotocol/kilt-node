@@ -200,69 +200,65 @@ pub mod pallet {
 			// * who - Account which we are setting the custom lock for
 			// * length - Number of blocks from  until removal of the lock
 			// * locked - Number of tokens which are locked
-			for (ref who, length, locked) in self.balance_locks.iter() {
-				if !length.is_zero() {
-					let balance = <pallet_balances::Pallet<T>>::free_balance(who);
-					assert!(!balance.is_zero(), "Currencies must be init'd before locking");
-					assert!(
-						balance >= *locked,
-						"Locked balance must not exceed total balance for address {:?}",
-						who.to_string()
-					);
-					assert!(
-						!<BalanceLocks<T>>::contains_key(who),
-						"Account with address {:?} must not occur twice in locking",
-						who.to_string()
-					);
+			for (ref who, length, locked) in self.balance_locks.iter().filter(|(_, length, _)| !length.is_zero()) {
+				let balance = <pallet_balances::Pallet<T>>::free_balance(who);
+				assert!(!balance.is_zero(), "Currencies must be init'd before locking");
+				assert!(
+					balance >= *locked,
+					"Locked balance must not exceed total balance for address {:?}",
+					who.to_string()
+				);
+				assert!(
+					!<BalanceLocks<T>>::contains_key(who),
+					"Account with address {:?} must not occur twice in locking",
+					who.to_string()
+				);
 
-					// Add unlock block to storage
-					<BalanceLocks<T>>::insert(
-						who,
-						LockedBalance::<T> {
-							block: *length,
-							amount: (*locked).saturating_sub(T::UsableBalance::get()),
-						},
-					);
-					// Instead of setting the lock now, we do so in
-					// `migrate_genesis_account`, see there for explanation
-				}
+				// Add unlock block to storage
+				<BalanceLocks<T>>::insert(
+					who,
+					LockedBalance::<T> {
+						block: *length,
+						amount: (*locked).saturating_sub(T::UsableBalance::get()),
+					},
+				);
+				// Instead of setting the lock now, we do so in
+				// `migrate_genesis_account`, see there for explanation
 			}
 
 			// Generate initial vesting configuration, taken from pallet_vesting
 			// * who - Account which we are generating vesting configuration for
 			// * begin - Block when the account will start to vest
 			// * length - Number of blocks from `begin` until fully vested
-			for &(ref who, length, locked) in self.vesting.iter() {
-				if !length.is_zero() {
-					let balance = <<T as pallet_vesting::Config>::Currency as Currency<
-						<T as frame_system::Config>::AccountId,
-					>>::free_balance(who);
-					assert!(!balance.is_zero(), "Currencies must be init'd before vesting");
-					assert!(
-						balance >= locked,
-						"Vested balance must not exceed total balance for address {:?}",
-						who.to_string()
-					);
-					assert!(
-						!<Vesting<T>>::contains_key(who),
-						"Account with address {:?} must not occur twice in vesting",
-						who.to_string()
-					);
+			for &(ref who, length, locked) in self.vesting.iter().filter(|(_, length, _)| !length.is_zero()) {
+				let balance = <<T as pallet_vesting::Config>::Currency as Currency<
+					<T as frame_system::Config>::AccountId,
+				>>::free_balance(who);
+				assert!(!balance.is_zero(), "Currencies must be init'd before vesting");
+				assert!(
+					balance >= locked,
+					"Vested balance must not exceed total balance for address {:?}",
+					who.to_string()
+				);
+				assert!(
+					!<Vesting<T>>::contains_key(who),
+					"Account with address {:?} must not occur twice in vesting",
+					who.to_string()
+				);
 
-					let length_as_balance = T::BlockNumberToBalance::convert(length);
-					let per_block = locked.checked_div(&length_as_balance).unwrap_or(locked);
+				let length_as_balance = T::BlockNumberToBalance::convert(length);
+				let per_block = locked.checked_div(&length_as_balance).unwrap_or(locked);
 
-					Vesting::<T>::insert(
-						who,
-						VestingInfo::<BalanceOf<T>, T::BlockNumber> {
-							locked,
-							per_block,
-							starting_block: T::BlockNumber::zero(),
-						},
-					);
-					// Instead of setting the lock now, we do so in
-					// `migrate_genesis_account`, see there for explanation
-				}
+				Vesting::<T>::insert(
+					who,
+					VestingInfo::<BalanceOf<T>, T::BlockNumber> {
+						locked,
+						per_block,
+						starting_block: T::BlockNumber::zero(),
+					},
+				);
+				// Instead of setting the lock now, we do so in
+				// `migrate_genesis_account`, see there for explanation
 			}
 
 			// Set the transfer account which has a subset of the powers of root
