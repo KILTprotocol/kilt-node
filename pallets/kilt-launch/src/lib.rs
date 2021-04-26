@@ -646,7 +646,7 @@ pub mod pallet {
 		/// transactions. One of these would be `pallet_vesting::vest()` which
 		/// has to be called actively to unlock more of the vested funds.
 		fn migrate_vesting(source: &T::AccountId, target: &T::AccountId) -> Result<Weight, DispatchError> {
-			if let Some(source_vesting) = Vesting::<T>::take(source) {
+			let weight = if let Some(source_vesting) = Vesting::<T>::take(source) {
 				// Check for an already existing vesting schedule for the target account
 				// which would be the case if the claimer requests migration from multiple
 				// source accounts to the same target
@@ -687,10 +687,12 @@ pub mod pallet {
 					VESTING_ID, target, locked_now, reasons,
 				);
 				Self::deposit_event(Event::AddedVesting(target.clone(), vesting.per_block, vesting.locked));
-				Ok(<T as pallet::Config>::WeightInfo::migrate_genesis_account_vesting())
+				<T as pallet::Config>::WeightInfo::migrate_genesis_account_vesting()
 			} else {
-				Ok(T::DbWeight::get().reads(1))
-			}
+				T::DbWeight::get().reads(1)
+			};
+
+			Ok(weight)
 		}
 
 		/// Set the KILT balance lock for the target address which should
@@ -706,7 +708,7 @@ pub mod pallet {
 			// Only used for `locked_transfer`, e.g., it is `None` for migration
 			max_amount: Option<<T as pallet_balances::Config>::Balance>,
 		) -> Result<Weight, DispatchError> {
-			if let Some(LockedBalance::<T> {
+			let weight = if let Some(LockedBalance::<T> {
 				block: unlock_block,
 				amount: source_amount,
 			}) = <BalanceLocks<T>>::get(&source)
@@ -776,10 +778,12 @@ pub mod pallet {
 				}
 
 				Self::deposit_event(Event::AddedKiltLock(target.clone(), target_amount, unlock_block));
-				Ok(<T as pallet::Config>::WeightInfo::migrate_genesis_account_locking())
+				<T as pallet::Config>::WeightInfo::migrate_genesis_account_locking()
 			} else {
-				Ok(T::DbWeight::get().reads(1))
-			}
+				T::DbWeight::get().reads(1)
+			};
+
+			Ok(weight)
 		}
 	}
 }
