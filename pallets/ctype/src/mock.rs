@@ -83,6 +83,7 @@ impl ctype::Config for Test {
 
 impl did::Config for Test {
 	type Event = ();
+	type Call = Call;
 	type WeightInfo = ();
 	type DidIdentifier = AccountId;
 }
