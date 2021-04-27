@@ -12,6 +12,7 @@ static_assertions = "1.1.0"
 
 # RPC
 frame-system-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
+pallet-vesting = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 pallet-transaction-payment-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 
 # KILT pallets & primitives
@@ -19,6 +20,7 @@ attestation = {default-features = false, path = "../../pallets/attestation"}
 ctype = {default-features = false, path = "../../pallets/ctype"}
 delegation = {default-features = false, path = "../../pallets/delegation"}
 did = {default-features = false, path = "../../pallets/did"}
+kilt-launch = {path = "../../pallets/kilt-launch", default-features = false}
 kilt-primitives = {path = "../../primitives", default-features = false}
 
 # Xtokens
@@ -97,11 +99,13 @@ runtime-benchmarks = [
   "ctype/runtime-benchmarks",
   "did/runtime-benchmarks",
   "delegation/runtime-benchmarks",
+  "kilt-launch/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
-  "pallet-indices/runtime-benchmarks",
-  "pallet-timestamp/runtime-benchmarks",
   "pallet-collective/runtime-benchmarks",
+  "pallet-indices/runtime-benchmarks",
   "pallet-society/runtime-benchmarks",
+  "pallet-vesting/runtime-benchmarks",
+  "pallet-timestamp/runtime-benchmarks",
   "rococo-runtime/runtime-benchmarks",
 ]
 std = [
@@ -130,9 +134,10 @@ std = [
   "frame-system/std",
   "pallet-balances/std",
   "pallet-randomness-collective-flip/std",
-  "pallet-timestamp/std",
   "pallet-sudo/std",
+  "pallet-timestamp/std",
   "pallet-transaction-payment/std",
+  "pallet-vesting/std",
   "pallet-collective/std",
   "pallet-scheduler/std",
   "pallet-treasury/std",
@@ -142,6 +147,7 @@ std = [
   "pallet-membership/std",
   "pallet-transaction-payment-rpc-runtime-api/std",
   "parachain-info/std",
+  "kilt-launch/std",
   "kilt-primitives/std",
   "cumulus-pallet-parachain-system/std",
   "cumulus-primitives-core/std",

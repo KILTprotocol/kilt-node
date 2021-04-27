@@ -22,6 +22,7 @@
 
 use codec::{Decode, Encode};
 use core::convert::TryFrom;
+pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
 
 use sp_runtime::{
 	generic,
@@ -33,7 +34,6 @@ use sp_std::vec::Vec;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
-pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
 pub mod constants;
 
 /// Opaque block header type.

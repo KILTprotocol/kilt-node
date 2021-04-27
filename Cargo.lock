@@ -3301,6 +3301,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "kilt-launch"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "kilt-primitives",
+ "pallet-balances",
+ "pallet-vesting",
+ "parity-scale-codec",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "kilt-parachain"
 version = "0.2.0"
 dependencies = [
@@ -3348,6 +3366,7 @@ dependencies = [
  "sc-tracing",
  "sc-transaction-pool",
  "serde",
+ "serde_json",
  "sp-api",
  "sp-block-builder",
  "sp-blockchain",
@@ -3389,6 +3408,7 @@ dependencies = [
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "hex-literal 0.3.1",
+ "kilt-launch",
  "kilt-primitives",
  "orml-benchmarking",
  "orml-currencies",
@@ -3413,6 +3433,7 @@ dependencies = [
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "pallet-treasury",
+ "pallet-vesting",
  "parachain-info",
  "parity-scale-codec",
  "polkadot-parachain",
@@ -4204,6 +4225,8 @@ dependencies = [
  "sc-service",
  "sc-telemetry",
  "sc-transaction-pool",
+ "serde",
+ "serde_json",
  "sp-api",
  "sp-block-builder",
  "sp-blockchain",
@@ -4236,6 +4259,7 @@ dependencies = [
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "hex-literal 0.3.1",
+ "kilt-launch",
  "kilt-primitives",
  "pallet-aura",
  "pallet-authorship",
@@ -4248,6 +4272,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-vesting",
  "parity-scale-codec",
  "serde",
  "sp-api",
@@ -5548,6 +5573,7 @@ version = "3.0.0"
 source = "git+https://github.com/paritytech/substrate?branch=rococo-v1#13a07b4b637b6e25397db7fcd62d8b93eeae76ac"
 dependencies = [
  "enumflags2",
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "parity-scale-codec",
@@ -11062,7 +11088,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "04f8ab788026715fa63b31960869617cba39117e520eb415b0139543e325ab59"
 dependencies = [
  "cfg-if 0.1.10",
- "rand 0.7.3",
+ "rand 0.6.5",
  "static_assertions",
 ]
 
