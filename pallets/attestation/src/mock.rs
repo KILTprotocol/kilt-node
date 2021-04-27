@@ -22,6 +22,7 @@ use crate::{self as attestation, Attestation as AttestationStruct};
 use ctype::mock as ctype_mock;
 use delegation::mock as delegation_mock;
 
+use did::DeriveDidVerificationType;
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use kilt_primitives::{AccountId, Signature};
 use sp_core::H256;
@@ -97,8 +98,21 @@ impl delegation::Config for Test {
 
 impl did::Config for Test {
 	type Event = ();
+	type Call = Call;
 	type WeightInfo = ();
 	type DidIdentifier = AccountId;
+}
+
+impl DeriveDidVerificationType for Call {
+    fn verification_type(&self) -> Option<did::DidVerificationKeyType> {
+        match self {
+            Call::System(_) => None,
+            Call::Attestation(_) => Some(did::DidVerificationKeyType::Authentication),
+            Call::Ctype(_) => Some(did::DidVerificationKeyType::Authentication),
+            Call::Delegation(_) => Some(did::DidVerificationKeyType::Authentication),
+            Call::Did(_) => Some(did::DidVerificationKeyType::Authentication),
+        }
+    }
 }
 
 pub type TestHash = <Test as frame_system::Config>::Hash;

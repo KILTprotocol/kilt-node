@@ -19,7 +19,7 @@
 #![allow(clippy::from_over_into)]
 
 use crate as ctype;
-use did::mock as did_mock;
+use did::{mock as did_mock, DeriveDidVerificationType, DidVerificationKeyType};
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use kilt_primitives::{AccountId, Signature};
@@ -86,6 +86,16 @@ impl did::Config for Test {
 	type Call = Call;
 	type WeightInfo = ();
 	type DidIdentifier = AccountId;
+}
+
+impl DeriveDidVerificationType for Call {
+	fn verification_type(&self) -> Option<DidVerificationKeyType> {
+		match self {
+			Call::System(_) => None,
+			Call::Did(_) => Some(DidVerificationKeyType::Authentication),
+			Call::Ctype(_) => Some(DidVerificationKeyType::Authentication),
+		}
+	}
 }
 
 pub type TestCtypeHash = <Test as frame_system::Config>::Hash;

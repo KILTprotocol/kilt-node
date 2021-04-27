@@ -37,13 +37,15 @@ mod utils;
 
 pub use default_weights::WeightInfo;
 
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, WrapperTypeEncode};
 
 use frame_support::{ensure, storage::types::StorageMap, Parameter};
 use frame_system::{self, ensure_signed};
 use sp_core::{ed25519, sr25519};
 use sp_runtime::traits::Verify;
-use sp_std::{collections::btree_set::BTreeSet, boxed::Box, convert::TryFrom, fmt::Debug, prelude::Clone, str, vec::Vec};
+use sp_std::{
+	boxed::Box, collections::btree_set::BTreeSet, convert::TryFrom, fmt::Debug, prelude::Clone, str, vec::Vec,
+};
 
 pub use pallet::*;
 
@@ -78,7 +80,7 @@ pub mod pallet {
 
 	/// Verification methods a verification key can
 	/// fulfil, according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
-	#[derive(Clone, Debug, Decode, Encode, PartialEq, Eq)]
+	#[derive(Clone, Copy, Debug, Decode, Encode, PartialEq, Eq)]
 	pub enum DidVerificationKeyType {
 		/// Key used to authenticate all the DID operations.
 		Authentication,
@@ -416,22 +418,39 @@ pub mod pallet {
 		}
 	}
 
+	pub trait DeriveDidVerificationType {
+		fn verification_type(&self) -> Option<DidVerificationKeyType>;
+	}
+
 	#[derive(Clone, Decode, Encode, PartialEq)]
 	pub struct DidCallOperation<T: Config> {
 		/// The DID identifier.
 		pub did: T::DidIdentifier,
 		/// The DID tx counter.
 		pub tx_counter: u64,
+
 		pub call: <T as pallet::Config>::Call,
 	}
 
-	impl<T: Config> DidOperation<T> for DidCallOperation<T> {
+	impl<T: Config> Debug for DidCallOperation<T> {
+		fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
+			f.debug_tuple("DidCallOperation")
+				.field(&self.did)
+				.field(&self.tx_counter)
+				.field(&self.call)
+				.finish()
+		}
+	}
+
+	#[derive(Clone, PartialEq)]
+	pub struct DidCallOperationWithType<T: Config> {
+		pub operation: DidCallOperation<T>,
+		pub key_type: DidVerificationKeyType,
+	}
+
+	impl<T: Config> DidOperation<T> for DidCallOperationWithType<T> {
 		fn get_verification_key_type(&self) -> DidVerificationKeyType {
-			// TODO: impl a new trait:
-			// trait DeriveDidVerificationType {
-			//     fn verification_type(&self) -> DidVerificationKeyType;
-			// }
-			DidVerificationKeyType::Authentication
+			self.key_type
 		}
 
 		fn get_did(&self) -> &T::DidIdentifier {
@@ -443,11 +462,22 @@ pub mod pallet {
 		}
 	}
 
-	impl<T: Config> Debug for DidCallOperation<T> {
+	impl<T: Config> core::ops::Deref for DidCallOperationWithType<T> {
+		type Target = DidCallOperation<T>;
+
+		fn deref(&self) -> &Self::Target {
+			&self.operation
+		}
+	}
+
+	// opque implementation. DidCallOperationWithType encodes to DidCallOperation
+	impl<T: Config> WrapperTypeEncode for DidCallOperationWithType<T> {}
+
+	impl<T: Config> Debug for DidCallOperationWithType<T> {
 		fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
-			f.debug_tuple("DidOperation")
-				.field(&self.did)
-				.field(&self.tx_counter)
+			f.debug_tuple("DidCallOperationWithType")
+				.field(&self.operation)
+				.field(&self.key_type)
 				.finish()
 		}
 	}
@@ -741,7 +771,8 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type Call: Parameter
 			+ Dispatchable<Origin = <Self as frame_system::Config>::Origin, PostInfo = PostDispatchInfo>
-			+ GetDispatchInfo;
+			+ GetDispatchInfo
+			+ DeriveDidVerificationType;
 		type WeightInfo: WeightInfo;
 		type DidIdentifier: Parameter + Encode + Decode + Debug;
 	}
@@ -966,14 +997,26 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			ensure_signed(origin.clone())?;
 
-			let did_identifier = (*did_call).get_did();
+			let did_identifier = did_call.did.clone();
 
 			let did_details = <Did<T>>::get(&did_identifier).ok_or(<Error<T>>::DidNotPresent)?;
 
+			// TODO: replace with proper error (call not allowed)
+			let key_type = did_call
+				.call
+				.verification_type()
+				.ok_or(<Error<T>>::VerificationKeysNotPresent)?;
+
+			let wrapped = DidCallOperationWithType {
+				operation: *did_call,
+				key_type,
+			};
+
 			// Verify the signature and the nonce of the delete operation.
-			Self::verify_operation_validity_for_did(&*did_call, &signature, &did_details).map_err(<Error<T>>::from)?;
+			Self::verify_operation_validity_for_did(&wrapped, &signature, &did_details).map_err(<Error<T>>::from)?;
 			log::debug!("Dispatch call from DID {:?}", did_identifier);
 
+			let did_call = wrapped.operation;
 			let res = did_call.call.dispatch(origin);
 
 			match res {
@@ -981,7 +1024,7 @@ pub mod pallet {
 					log::debug!("Dispatch was successfull");
 					// TODO: event
 					Ok(ok)
-				},
+				}
 				Err(err) => {
 					log::debug!("Dispatch was failed {:?}", err);
 					// TODO: event
