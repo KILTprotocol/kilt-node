@@ -98,23 +98,23 @@ pub mod pallet {
 		}
 	}
 
-	impl<AccountId: Ord, Balance> Eq for Bond<AccountId, Balance> {}
+	impl<AccountId: Ord, Balance: PartialEq> Eq for Bond<AccountId, Balance> {}
 
-	impl<AccountId: Ord, Balance> Ord for Bond<AccountId, Balance> {
+	impl<AccountId: Ord, Balance: PartialEq> Ord for Bond<AccountId, Balance> {
 		fn cmp(&self, other: &Self) -> Ordering {
 			self.owner.cmp(&other.owner)
 		}
 	}
 
-	impl<AccountId: Ord, Balance> PartialOrd for Bond<AccountId, Balance> {
+	impl<AccountId: Ord, Balance: PartialEq> PartialOrd for Bond<AccountId, Balance> {
 		fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
 			Some(self.cmp(other))
 		}
 	}
 
-	impl<AccountId: Ord, Balance> PartialEq for Bond<AccountId, Balance> {
+	impl<AccountId: Ord, Balance: PartialEq> PartialEq for Bond<AccountId, Balance> {
 		fn eq(&self, other: &Self) -> bool {
-			self.owner == other.owner
+			self.owner == other.owner && self.amount == other.amount
 		}
 	}
 
@@ -143,6 +143,13 @@ pub mod pallet {
 		pub nominators: Vec<Bond<AccountId, Balance>>,
 		pub total: Balance,
 	}
+
+	impl<AccountId: Ord, Balance: PartialEq> PartialEq for CollatorSnapshot<AccountId, Balance> {
+		fn eq(&self, other: &Self) -> bool {
+			self.bond == other.bond && self.total == other.total && self.nominators.eq(&other.nominators)
+		}
+	}
+	impl<AccountId: Ord, Balance: PartialEq> Eq for CollatorSnapshot<AccountId, Balance> {}
 
 	#[derive(Encode, Decode, RuntimeDebug)]
 	/// Global collator state with commission fee, bonded stake, and nominations
@@ -354,7 +361,7 @@ pub mod pallet {
 		/// Overarching event type
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		/// The currency type
-		type Currency: Currency<Self::AccountId> + ReservableCurrency<Self::AccountId>;
+		type Currency: Currency<Self::AccountId> + ReservableCurrency<Self::AccountId> + Eq;
 		/// Minimum number of blocks per round
 		type MinBlocksPerRound: Get<u32>;
 		/// Default number of blocks per round at genesis
@@ -469,6 +476,8 @@ pub mod pallet {
 				<Round<T>>::put(round);
 				// snapshot total stake
 				// TODO: Might want to use <Total<T>>::get()?
+				// TODO: only use collator_staked, delegator_staked if we want to ignore
+				// inactive collators
 				<StakedCollator<T>>::insert(round.current, collator_staked);
 				<StakedDelegator<T>>::insert(round.current, delegator_staked);
 
@@ -1065,15 +1074,19 @@ pub mod pallet {
 			if next > duration {
 				let round_to_payout = next - duration;
 				let total = <Points<T>>::get(round_to_payout);
+				// TODO: We might just want to use this rounds stake such that large stakes of
+				// inactive collators do not affect the rewards
 				let collator_staked = <StakedCollator<T>>::get(round_to_payout);
 				let delegator_staked = <StakedDelegator<T>>::get(round_to_payout);
 				let (c_rewards, d_rewards) = Self::compute_issuance(collator_staked, delegator_staked);
+				println!("rewards: {:?}, {:?}", c_rewards, d_rewards);
 				// TODO: Make sure all delegators receive rewards
 				// TODO: Make sure we don't pay out more than we mint
 				// TODO: Handle case of d_reward_rate == 0
 				for (val, pts) in <AwardedPts<T>>::drain_prefix(round_to_payout) {
 					let pct_due = Perbill::from_rational(pts, total);
 
+					println!("pct_due: {:?} * {:?} = {:?}", pct_due, c_rewards, pct_due * c_rewards,);
 					let amt_due_collator = pct_due * c_rewards;
 					let amt_due_delegators = pct_due * d_rewards;
 

@@ -22,7 +22,7 @@ use frame_support::traits::Currency;
 use parity_scale_codec::{Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_runtime::{traits::Saturating, Perbill, RuntimeDebug};
+use sp_runtime::{traits::Saturating, PerThing, Perbill, RuntimeDebug};
 
 // TODO: use constants from kilt_primitives
 const SECONDS_PER_YEAR: u32 = 31557600;
@@ -67,7 +67,13 @@ impl StakingRates {
 	pub fn compute_rewards<T: Config>(&self, stake: BalanceOf<T>, total_issuance: BalanceOf<T>) -> BalanceOf<T> {
 		// TODO: saturated_div?
 		let rate = Perbill::from_rational(stake, total_issuance).min(self.max_rate);
-		let reward_rate = rate * self.reward_rate;
+		let reward_rate = Perbill::from_parts(rate.deconstruct() * self.reward_rate.deconstruct());
+		println!(
+			"compute_rewards: {:?} * {:?} = {:?}",
+			reward_rate,
+			total_issuance,
+			reward_rate * total_issuance,
+		);
 		reward_rate * total_issuance
 	}
 }

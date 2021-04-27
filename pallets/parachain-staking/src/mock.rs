@@ -141,12 +141,12 @@ impl Default for ExtBuilder {
 			collators: vec![],
 			staking_config: StakingInfo {
 				collator: StakingRates {
-					max_rate: Perbill::from_parts(Perbill::from_percent(10).deconstruct() / 8766),
-					reward_rate: Perbill::from_parts(Perbill::from_percent(15).deconstruct() / 8766),
+					max_rate: Perbill::from_percent(10),
+					reward_rate: Perbill::from_percent(15),
 				},
 				delegator: StakingRates {
-					max_rate: Perbill::from_parts(Perbill::from_percent(40).deconstruct() / 8766),
-					reward_rate: Perbill::from_parts(Perbill::from_percent(10).deconstruct() / 8766),
+					max_rate: Perbill::from_percent(40),
+					reward_rate: Perbill::from_percent(10),
 				},
 			},
 		}
@@ -170,16 +170,17 @@ impl ExtBuilder {
 	}
 
 	#[allow(dead_code)]
+	// TODO: Fix why this is not applied
 	pub(crate) fn with_inflation(mut self, col_max: u32, col_rewards: u32, d_max: u32, d_rewards: u32) -> Self {
 		self.staking_config = StakingInfo {
 			collator: StakingRates {
 				// TODO: Move blocks per year to const or somewhere else
-				max_rate: Perbill::from_parts(Perbill::from_percent(col_max).deconstruct() / 8766),
-				reward_rate: Perbill::from_parts(Perbill::from_percent(col_rewards).deconstruct() / 8766),
+				max_rate: Perbill::from_percent(col_max),
+				reward_rate: Perbill::from_percent(col_rewards),
 			},
 			delegator: StakingRates {
-				max_rate: Perbill::from_parts(Perbill::from_percent(d_max).deconstruct() / 8766),
-				reward_rate: Perbill::from_parts(Perbill::from_percent(d_rewards).deconstruct() / 8766),
+				max_rate: Perbill::from_percent(d_max),
+				reward_rate: Perbill::from_percent(d_rewards),
 			},
 		};
 		self

@@ -82,6 +82,10 @@ impl<T: Ord> OrderedSet<T> {
 	pub fn clear(&mut self) {
 		self.0.clear();
 	}
+
+	pub fn is_empty(&self) -> bool {
+		self.0.is_empty()
+	}
 }
 
 impl<T: Ord> From<Vec<T>> for OrderedSet<T> {
