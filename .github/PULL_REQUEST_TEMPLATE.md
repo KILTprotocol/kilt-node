@@ -14,8 +14,12 @@ If necessary provide information about dependencies (specific configuration, bra
 
 This PR introduces new custom JS-types. Use the following to test the code with the polkadot apps:
 
-<detailts>
-
+<details>
+  <summary>JS-Types</summary>
+  
+  ```json
+  {}
+  ```
 </details>
 
 ## Checklist:
