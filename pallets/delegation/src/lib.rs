@@ -22,19 +22,11 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
-#[cfg(any(feature = "runtime-benchmarks", test))]
-pub mod benchmarking;
-
 #[cfg(test)]
 mod tests;
 
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
-
-pub mod migration;
-
-#[macro_use]
-extern crate bitflags;
 
 pub mod default_weights;
 pub use default_weights::WeightInfo;
@@ -57,6 +49,8 @@ use sp_std::{
 	fmt::Debug,
 	prelude::{Clone, Eq, PartialEq, Vec},
 };
+
+use bitflags::*;
 
 pub use pallet::*;
 

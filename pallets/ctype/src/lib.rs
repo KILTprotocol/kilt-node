@@ -21,8 +21,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
-#[cfg(any(feature = "runtime-benchmarks", test))]
-pub mod benchmarking;
 /// Test module for CTYPEs
 #[cfg(test)]
 mod tests;

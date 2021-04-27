@@ -28,9 +28,6 @@ mod tests;
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
 
-#[cfg(any(feature = "runtime-benchmarks", test))]
-pub mod benchmarking;
-
 pub mod default_weights;
 
 mod utils;

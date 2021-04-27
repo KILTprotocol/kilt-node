@@ -23,26 +23,19 @@ sp-core = {branch = "rococo-v1",  default-features = false, git = "https://githu
 did = {default-features = false, path = "../did", version = "0.24.0"}
 kilt-primitives = {default-features = false, optional = true, path = "../../primitives"}
 
-frame-benchmarking = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-sp-core = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-
 #External dependencies
 codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.0.0"}
 frame-support = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate"}
 frame-system = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate"}
 log = {default-features = false, version = "0.4.14"}
 serde = {optional = true, version = "1.0.101"}
+sp-core = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
 sp-io = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
 sp-runtime = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-std = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [features]
 default = ["std"]
-runtime-benchmarks = [
-  "frame-benchmarking",
-  "frame-support/runtime-benchmarks",
-  "frame-system/runtime-benchmarks",
-]
 mock = [
   "kilt-primitives",
   "serde",

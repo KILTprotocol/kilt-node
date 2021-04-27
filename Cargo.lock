@@ -414,7 +414,6 @@ dependencies = [
  "ctype",
  "delegation",
  "did",
- "frame-benchmarking",
  "frame-support",
  "frame-system",
  "kilt-primitives",
@@ -1263,7 +1262,6 @@ name = "ctype"
 version = "0.24.0"
 dependencies = [
  "did",
- "frame-benchmarking",
  "frame-support",
  "frame-system",
  "kilt-primitives",
@@ -1559,7 +1557,6 @@ dependencies = [
  "bitflags",
  "ctype",
  "did",
- "frame-benchmarking",
  "frame-support",
  "frame-system",
  "kilt-primitives",
@@ -1603,7 +1600,6 @@ dependencies = [
 name = "did"
 version = "0.24.0"
 dependencies = [
- "frame-benchmarking",
  "frame-support",
  "frame-system",
  "kilt-primitives",
