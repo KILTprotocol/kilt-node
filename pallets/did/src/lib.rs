@@ -188,7 +188,7 @@ pub mod pallet {
 		}
 	}
 
-	/// Possible actions on a DID verification keys within a DidUpdateOperation.
+	/// Possible actions on a DID verification key within a DidUpdateOperation.
 	#[derive(Clone, Copy, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
 	pub enum DidVerificationKeyUpdateAction {
 		/// Do not change the verification key.
@@ -330,9 +330,9 @@ pub mod pallet {
 		pub new_auth_key: Option<PublicVerificationKey>,
 		/// The new key agreement key.
 		pub new_key_agreement_key: Option<PublicEncryptionKey>,
-		/// The attestation key update operation.
+		/// The attestation key update action.
 		pub attestation_key_update: DidVerificationKeyUpdateAction,
-		/// The delegation key update operation.
+		/// The delegation key update action.
 		pub delegation_key_update: DidVerificationKeyUpdateAction,
 		/// The set of old attestation keys to remove.
 		/// If the operation also replaces the current attestation key, it will
@@ -633,6 +633,8 @@ pub mod pallet {
 		fn try_from((old_details, update_operation): (DidDetails, DidUpdateOperation<T>)) -> Result<Self, Self::Error> {
 			// Old attestation key is used later in the process, so it's saved here.
 			let old_attestation_key = old_details.attestation_key;
+			// Same thing for the delegation key.
+			let old_delegation_key = old_details.delegation_key;
 			// Copy old state into new, and apply changes in operation to new state.
 			let mut new_details = old_details;
 
@@ -660,33 +662,40 @@ pub mod pallet {
 			// Either leave the key unchanged, replace the old one with the new one, or
 			// delete the current one. In the last two cases, the old key is moved to the
 			// set of verification keys.
-			match update_operation.attestation_key_update {
-				DidVerificationKeyUpdateAction::Change(new_attestation_key) => {
+			let new_attestation_key: Option<PublicVerificationKey> = match update_operation.attestation_key_update {
+				DidVerificationKeyUpdateAction::Change(new_key) => {
+					// Old key added to set of verification keys
 					if let Some(old_attestation_key) = old_attestation_key {
 						new_details.verification_keys.insert(old_attestation_key);
 					}
-					new_details.attestation_key = Some(new_attestation_key);
+					// New key returned to be set in the DID details
+					Some(new_key)
 				}
 				DidVerificationKeyUpdateAction::Delete => {
+					// Old key added to set of verification keys
 					if let Some(old_attestation_key) = old_attestation_key {
 						new_details.verification_keys.insert(old_attestation_key);
 					}
-					new_details.attestation_key = None;
+					// None returned to be set in the DID details
+					None
 				}
-				DidVerificationKeyUpdateAction::Ignore => {}
-			}
+				DidVerificationKeyUpdateAction::Ignore => {
+					// Old key returned to be set in the DID details
+					old_attestation_key
+				}
+			};
+			new_details.attestation_key = new_attestation_key;
+
 			// Evaluate update action for delegation key.
 			// Either leave the key unchanged, change, or delete the existing delegation
 			// key.
-			match update_operation.delegation_key_update {
-				DidVerificationKeyUpdateAction::Change(new_delegation_key) => {
-					new_details.delegation_key = Some(new_delegation_key);
-				}
-				DidVerificationKeyUpdateAction::Delete => {
-					new_details.delegation_key = None;
-				}
-				DidVerificationKeyUpdateAction::Ignore => {}
-			}
+			let new_delegation_key: Option<PublicVerificationKey> = match update_operation.delegation_key_update {
+				DidVerificationKeyUpdateAction::Change(new_delegation_key) => Some(new_delegation_key),
+				DidVerificationKeyUpdateAction::Delete => None,
+				DidVerificationKeyUpdateAction::Ignore => old_delegation_key,
+			};
+			new_details.delegation_key = new_delegation_key;
+
 			if let Some(new_endpoint_url) = update_operation.new_endpoint_url {
 				new_details.endpoint_url = Some(new_endpoint_url);
 			}
