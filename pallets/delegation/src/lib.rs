@@ -486,6 +486,8 @@ pub mod pallet {
 		/// Max number of delegation nodes revocation has been reached for the
 		/// operation.
 		ExceededRevocationBounds,
+		/// An error that is not supposed to take place, yet it happened.
+		InternalError,
 	}
 
 	#[pallet::call]
@@ -576,6 +578,8 @@ pub mod pallet {
 				// here.
 				did::DidError::StorageError(_) | did::DidError::UrlError(_) => Error::<T>::DelegateNotFound,
 				did::DidError::SignatureError(_) => Error::<T>::InvalidDelegateSignature,
+				// Should never happen as we are not checking the delegate's DID tx counter.
+				did::DidError::InternalError => Error::<T>::InternalError,
 			})?;
 
 			ensure!(
@@ -592,7 +596,7 @@ pub mod pallet {
 
 				// Check if the parent's delegate is the creator of this delegation node...
 				ensure!(
-					parent_node.owner.eq(&operation.creator_did),
+					parent_node.owner == operation.creator_did,
 					Error::<T>::NotOwnerOfParentDelegation
 				);
 				// ... and has permission to delegate
@@ -618,7 +622,7 @@ pub mod pallet {
 				// Check if the creator of this delegation node is the creator of the root node
 				// (as no parent is given)
 				ensure!(
-					root.owner.eq(&operation.creator_did),
+					root.owner == operation.creator_did,
 					Error::<T>::NotOwnerOfRootDelegation
 				);
 
@@ -673,7 +677,7 @@ pub mod pallet {
 			let mut root = <Roots<T>>::get(&operation.root_id).ok_or(Error::<T>::RootNotFound)?;
 
 			ensure!(
-				root.owner.eq(&operation.revoker_did),
+				root.owner == operation.revoker_did,
 				Error::<T>::UnauthorizedRevocation
 			);
 

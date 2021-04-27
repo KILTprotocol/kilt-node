@@ -269,7 +269,7 @@ pub mod pallet {
 				ensure!(!delegation.revoked, Error::<T>::DelegationRevoked);
 
 				ensure!(
-					delegation.owner.eq(&operation.attester_did),
+					delegation.owner == operation.attester_did,
 					Error::<T>::NotDelegatedToAttester
 				);
 
@@ -281,7 +281,7 @@ pub mod pallet {
 				// Check if the CTYPE of the delegation is matching the CTYPE of the attestation
 				let root =
 					<delegation::Roots<T>>::get(delegation.root_id).ok_or(delegation::Error::<T>::RootNotFound)?;
-				ensure!(root.ctype_hash.eq(&operation.ctype_hash), Error::<T>::CTypeMismatch);
+				ensure!(root.ctype_hash == operation.ctype_hash, Error::<T>::CTypeMismatch);
 
 				// If the attestation is based on a delegation, store separately
 				let mut delegated_attestations = <DelegatedAttestations<T>>::get(delegation_id).unwrap_or_default();
@@ -334,7 +334,7 @@ pub mod pallet {
 
 			// Check the delegation tree if the sender of the revocation operation is not
 			// the original attester
-			if !attestation.attester.eq(&operation.revoker_did) {
+			if attestation.attester != operation.revoker_did {
 				let delegation_id = attestation.delegation_id.ok_or(Error::<T>::UnauthorizedRevocation)?;
 				// Check whether the sender of the revocation controls the delegation node
 				// specified, and that its status has not been revoked

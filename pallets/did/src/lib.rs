@@ -36,8 +36,6 @@ pub use default_weights::WeightInfo;
 
 use codec::{Decode, Encode};
 
-use core::ops::Sub;
-
 use frame_support::{ensure, storage::types::StorageMap, Parameter};
 use frame_system::{self, ensure_signed};
 use sp_core::{ed25519, sr25519};
@@ -209,6 +207,7 @@ pub mod pallet {
 		StorageError(StorageError),
 		SignatureError(SignatureError),
 		UrlError(UrlError),
+		InternalError,
 	}
 
 	/// Error involving the pallet's storage.
@@ -639,7 +638,7 @@ pub mod pallet {
 				// Verify that the set of keys to delete - the set of keys stored is empty
 				// (otherwise keys to delete contains some keys not stored on chain -> notify
 				// about them to the caller)
-				let keys_not_present = verification_keys_to_remove.sub(&new_details.verification_keys);
+				let keys_not_present = verification_keys_to_remove - &new_details.verification_keys;
 				ensure!(
 					keys_not_present.is_empty(),
 					DidError::StorageError(StorageError::VerificationKeysNotPresent(
@@ -697,7 +696,7 @@ pub mod pallet {
 				new_details.endpoint_url = Some(new_endpoint_url);
 			}
 			if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove.as_ref() {
-				new_details.verification_keys = new_details.verification_keys.sub(verification_keys_to_remove);
+				new_details.verification_keys = &new_details.verification_keys - verification_keys_to_remove;
 			}
 			new_details.last_tx_counter = update_operation.tx_counter;
 
@@ -764,6 +763,8 @@ pub mod pallet {
 		/// The maximum supported value for the DID tx counter has been reached.
 		/// No more operations with the DID are allowed.
 		MaxTxCounterValue,
+		/// An error that is not supposed to take place, yet it happened.
+		InternalError,
 	}
 
 	impl<T> From<DidError> for Error<T> {
@@ -772,6 +773,7 @@ pub mod pallet {
 				DidError::StorageError(storage_error) => Self::from(storage_error),
 				DidError::SignatureError(operation_error) => Self::from(operation_error),
 				DidError::UrlError(url_error) => Self::from(url_error),
+				DidError::InternalError => Self::InternalError,
 			}
 		}
 	}
@@ -944,9 +946,7 @@ impl<T: Config> Pallet<T> {
 		Self::verify_operation_validity_for_did(operation, &signature, &did_details)?;
 
 		// Update tx counter in DID details and save to DID pallet
-		did_details
-			.increase_tx_counter()
-			.expect("Increasing DID tx counter should be a safe operation.");
+		did_details.increase_tx_counter().map_err(DidError::StorageError)?;
 		<Did<T>>::insert(&operation.get_did(), did_details);
 
 		Ok(())
@@ -987,7 +987,7 @@ impl<T: Config> Pallet<T> {
 		let expected_nonce_value = did_details
 			.get_tx_counter_value()
 			.checked_add(1)
-			.expect("Checked against overflow in previous step.");
+			.ok_or(DidError::InternalError)?;
 		ensure!(
 			operation.get_tx_counter() == expected_nonce_value,
 			DidError::SignatureError(SignatureError::InvalidNonce)
