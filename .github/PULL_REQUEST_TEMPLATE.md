@@ -24,5 +24,5 @@ This PR introduces new custom JS-types. Use the following to test the code with 
   - [ ] No panics! (checked arithmetic ops, no indexing `array[3]` use `get(3)`, ...)
 - [ ] I have verified that the code is easy to understand
   - [ ] If not, I have left a well-balanced amount of inline comments
-- [ ] I have [left the code in a better state](https://deviq.com/boy-scout-rule/)
+- [ ] I have [left the code in a better state](https://deviq.com/principles/boy-scout-rule)
 - [ ] I have documented the changes (where applicable)
