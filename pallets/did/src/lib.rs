@@ -49,8 +49,6 @@ pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
-	use core::ops::Sub;
-
 	use super::*;
 	use frame_support::{
 		dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo},
@@ -730,7 +728,7 @@ pub mod pallet {
 				new_details.endpoint_url = Some(new_endpoint_url);
 			}
 			if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove.as_ref() {
-				new_details.verification_keys = new_details.verification_keys.sub(verification_keys_to_remove);
+				new_details.verification_keys = &new_details.verification_keys - verification_keys_to_remove;
 			}
 			new_details.last_tx_counter = update_operation.tx_counter;
 
