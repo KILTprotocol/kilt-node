@@ -12,7 +12,7 @@ If necessary provide information about dependencies (specific configuration, bra
 
 ### custom types
 
-This PR introduces new custom JS-types. Use the following to test the code with the polkadot apps:
+This PR introduces new custom JS-types which are required for compatibility with [our SDK](https://github.com/KILTprotocol/sdk-js) and the [Polkadot Apps](https://polkadot.js.org/apps/#/extrinsics). Please use the following types to test the code with the Polkadot Apps:
 
 <details>
   <summary>JS-Types</summary>
@@ -28,5 +28,7 @@ This PR introduces new custom JS-types. Use the following to test the code with 
   - [ ] No panics! (checked arithmetic ops, no indexing `array[3]` use `get(3)`, ...)
 - [ ] I have verified that the code is easy to understand
   - [ ] If not, I have left a well-balanced amount of inline comments
+- [ ] This PR does not introduce new custom types
+  - [ ] If not, I have opened a companion PR with the type changes in the [KILT types-definitions repository](https://github.com/KILTprotocol/type-definitions/pulls)
 - [ ] I have [left the code in a better state](https://deviq.com/principles/boy-scout-rule)
 - [ ] I have documented the changes (where applicable)
