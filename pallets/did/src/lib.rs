@@ -37,13 +37,15 @@ mod utils;
 
 pub use default_weights::WeightInfo;
 
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, WrapperTypeEncode};
 
 use frame_support::{ensure, storage::types::StorageMap, Parameter};
 use frame_system::{self, ensure_signed};
 use sp_core::{ed25519, sr25519};
 use sp_runtime::traits::Verify;
-use sp_std::{collections::btree_set::BTreeSet, boxed::Box, convert::TryFrom, fmt::Debug, prelude::Clone, str, vec::Vec};
+use sp_std::{
+	boxed::Box, collections::btree_set::BTreeSet, convert::TryFrom, fmt::Debug, prelude::Clone, str, vec::Vec,
+};
 
 pub use pallet::*;
 
@@ -69,7 +71,7 @@ pub trait DidPublicKey {
 
 /// An enum describing the different verification methods a verification key can
 /// fulfil, according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
-#[derive(Clone, Debug, Decode, Encode, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Decode, Encode, PartialEq, Eq)]
 pub enum DidVerificationKeyType {
 	Authentication,
 	CapabilityDelegation,
@@ -250,8 +252,7 @@ pub trait DidOperation<T: Config>: Encode {
 /// * The optional delegation key to use
 /// * The optional endpoint URL pointing to the DID service endpoints
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
-pub struct DidCreationOperation<T: Config>
-{
+pub struct DidCreationOperation<T: Config> {
 	did: T::DidIdentifier,
 	new_auth_key: PublicVerificationKey,
 	new_key_agreement_key: PublicEncryptionKey,
@@ -261,8 +262,7 @@ pub struct DidCreationOperation<T: Config>
 	tx_counter: u64,
 }
 
-impl<T: Config> DidOperation<T> for DidCreationOperation<T>
-{
+impl<T: Config> DidOperation<T> for DidCreationOperation<T> {
 	fn get_verification_key_type(&self) -> DidVerificationKeyType {
 		DidVerificationKeyType::Authentication
 	}
@@ -286,8 +286,7 @@ impl<T: Config> DidOperation<T> for DidCreationOperation<T>
 /// * The optional new endpoint URL pointing to the DID service endpoints
 /// * A counter used to protect against replay attacks
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
-pub struct DidUpdateOperation<T: Config>
-{
+pub struct DidUpdateOperation<T: Config> {
 	did: T::DidIdentifier,
 	new_auth_key: Option<PublicVerificationKey>,
 	new_key_agreement_key: Option<PublicEncryptionKey>,
@@ -298,8 +297,7 @@ pub struct DidUpdateOperation<T: Config>
 	tx_counter: u64,
 }
 
-impl<T: Config> DidOperation<T> for DidUpdateOperation<T>
-{
+impl<T: Config> DidOperation<T> for DidUpdateOperation<T> {
 	fn get_verification_key_type(&self) -> DidVerificationKeyType {
 		DidVerificationKeyType::Authentication
 	}
@@ -317,14 +315,12 @@ impl<T: Config> DidOperation<T> for DidUpdateOperation<T>
 /// * The DID identifier being deleted
 /// * A counter used to protect against replay attacks
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
-pub struct DidDeletionOperation<T: Config>
-{
+pub struct DidDeletionOperation<T: Config> {
 	did: T::DidIdentifier,
 	tx_counter: u64,
 }
 
-impl<T: Config> DidOperation<T> for DidDeletionOperation<T>
-{
+impl<T: Config> DidOperation<T> for DidDeletionOperation<T> {
 	fn get_verification_key_type(&self) -> DidVerificationKeyType {
 		DidVerificationKeyType::Authentication
 	}
@@ -332,33 +328,34 @@ impl<T: Config> DidOperation<T> for DidDeletionOperation<T>
 	fn get_did(&self) -> &T::DidIdentifier {
 		&self.did
 	}
-
 	fn get_tx_counter(&self) -> u64 {
 		self.tx_counter
 	}
 }
 
-/// A web URL starting with either http:// or https://.
-#[derive(Clone, Decode, Debug, Encode, PartialEq)]
-pub struct HttpUrl {
-	payload: Vec<u8>,
+pub trait DeriveDidVerificationType {
+	fn verification_type(&self) -> Option<DidVerificationKeyType>;
 }
-#[derive(Clone, Decode, Encode, PartialEq)]
+
+#[derive(Clone, Debug, Decode, Encode, PartialEq)]
 pub struct DidCallOperation<T: Config> {
 	/// The DID identifier.
 	pub did: T::DidIdentifier,
 	/// The DID tx counter.
 	pub tx_counter: u64,
-	pub call: <T as Config>::Call,
+
+	pub call: <T as pallet::Config>::Call,
 }
 
-impl<T: Config> DidOperation<T> for DidCallOperation<T> {
+#[derive(Clone, PartialEq)]
+pub struct DidCallOperationWithType<T: Config> {
+	pub operation: DidCallOperation<T>,
+	pub key_type: DidVerificationKeyType,
+}
+
+impl<T: Config> DidOperation<T> for DidCallOperationWithType<T> {
 	fn get_verification_key_type(&self) -> DidVerificationKeyType {
-		// TODO: impl a new trait:
-		// trait DeriveDidVerificationType {
-		//     fn verification_type(&self) -> DidVerificationKeyType;
-		// }
-		DidVerificationKeyType::Authentication
+		self.key_type
 	}
 
 	fn get_did(&self) -> &T::DidIdentifier {
@@ -370,13 +367,21 @@ impl<T: Config> DidOperation<T> for DidCallOperation<T> {
 	}
 }
 
-impl<T: Config> Debug for DidCallOperation<T> {
-	fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
-		f.debug_tuple("DidOperation")
-			.field(&self.did)
-			.field(&self.tx_counter)
-			.finish()
+impl<T: Config> core::ops::Deref for DidCallOperationWithType<T> {
+	type Target = DidCallOperation<T>;
+
+	fn deref(&self) -> &Self::Target {
+		&self.operation
 	}
+}
+
+// opque implementation. DidCallOperationWithType encodes to DidCallOperation
+impl<T: Config> WrapperTypeEncode for DidCallOperationWithType<T> {}
+
+/// A web URL starting with either http:// or https://.
+#[derive(Clone, Decode, Debug, Encode, PartialEq)]
+pub struct HttpUrl {
+	payload: Vec<u8>,
 }
 
 impl TryFrom<&[u8]> for HttpUrl {
@@ -509,8 +514,7 @@ pub struct DidDetails {
 	last_tx_counter: u64,
 }
 
-impl<T: Config> From<DidCreationOperation<T>> for DidDetails
-{
+impl<T: Config> From<DidCreationOperation<T>> for DidDetails {
 	fn from(op: DidCreationOperation<T>) -> Self {
 		DidDetails {
 			auth_key: op.new_auth_key,
@@ -545,13 +549,10 @@ impl DidDetails {
 ///
 /// Please note that this method does not perform any checks regarding
 /// the validity of the DidUpdateOperation signature.
-impl<T: Config> TryFrom<(DidDetails, DidUpdateOperation<T>)> for DidDetails
-{
+impl<T: Config> TryFrom<(DidDetails, DidUpdateOperation<T>)> for DidDetails {
 	type Error = DidError;
 
-	fn try_from(
-		(old_details, update_operation): (DidDetails, DidUpdateOperation<T>),
-	) -> Result<Self, Self::Error> {
+	fn try_from((old_details, update_operation): (DidDetails, DidUpdateOperation<T>)) -> Result<Self, Self::Error> {
 		// Old attestation key is used later in the process, so it's saved here.
 		let old_attestation_key = old_details.attestation_key;
 		// Copy old state into new, and apply changes in operation to new state.
@@ -619,7 +620,8 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type Call: Parameter
 			+ Dispatchable<Origin = <Self as frame_system::Config>::Origin, PostInfo = PostDispatchInfo>
-			+ GetDispatchInfo;
+			+ GetDispatchInfo
+			+ DeriveDidVerificationType;
 		type WeightInfo: WeightInfo;
 		type DidIdentifier: Parameter + Encode + Decode + Debug;
 	}
@@ -848,9 +850,21 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			ensure_signed(origin.clone())?;
 
-			// Verify the signature and the nonce of the delete operation.
-			Self::verify_did_operation_signature(&*did_call, &signature).map_err(<Error<T>>::from)?;
+			// TODO: replace with proper error (call not allowed)
+			let key_type = did_call
+				.call
+				.verification_type()
+				.ok_or(<Error<T>>::VerificationKeysNotPresent)?;
 
+			let wrapped = DidCallOperationWithType {
+				operation: *did_call,
+				key_type,
+			};
+
+			// Verify the signature and the nonce of the delete operation.
+			Self::verify_did_operation_signature(&wrapped, &signature).map_err(<Error<T>>::from)?;
+
+			let did_call = wrapped.operation;
 			let res = did_call.call.dispatch(origin);
 
 			match res {
