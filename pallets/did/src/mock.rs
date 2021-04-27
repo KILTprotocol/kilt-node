@@ -23,7 +23,7 @@ use crate::*;
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use kilt_primitives::{AccountId, Signature};
-use sp_core::{ed25519, sr25519, Pair, H256};
+use sp_core::*;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
@@ -194,7 +194,7 @@ pub fn generate_base_did_delete_operation(did: TestDidIdentifier) -> did::DidDel
 
 // Given an authentication key, it generates a DidDetails object with the given
 // key and a default key agreement key.
-pub fn generate_base_did_details(auth_key: did::PublicVerificationKey) -> did::DidDetails {
+pub fn generate_base_did_details(auth_key: did::PublicVerificationKey) -> did::DidDetails<Test> {
 	did::DidDetails {
 		auth_key,
 		key_agreement_key: get_x25519_encryption_key(true),
@@ -202,8 +202,20 @@ pub fn generate_base_did_details(auth_key: did::PublicVerificationKey) -> did::D
 		delegation_key: None,
 		endpoint_url: None,
 		last_tx_counter: 0,
-		verification_keys: BTreeSet::new(),
+		verification_keys: BTreeMap::new(),
 	}
+}
+
+pub fn generate_attestation_key_id(
+	key: did::PublicVerificationKey,
+	tx_counter: u64,
+) -> <Test as frame_system::Config>::Hash {
+	let mut vec = key.encode();
+	vec.extend_from_slice(did::DidVerificationKeyType::AssertionMethod.encode().as_slice());
+	vec.extend_from_slice(tx_counter.encode().as_slice());
+
+	let hasher = Blake2Hasher {};
+	sp_core::Blake2Hasher::hash(&vec)
 }
 
 // A test DID operation which can be crated to require any DID verification key
@@ -231,7 +243,7 @@ impl DidOperation<Test> for TestDidOperation {
 
 #[derive(Clone)]
 pub struct ExtBuilder {
-	dids_stored: Vec<(TestDidIdentifier, did::DidDetails)>,
+	dids_stored: Vec<(TestDidIdentifier, did::DidDetails<Test>)>,
 }
 
 impl Default for ExtBuilder {
@@ -241,7 +253,7 @@ impl Default for ExtBuilder {
 }
 
 impl ExtBuilder {
-	pub fn with_dids(mut self, dids: Vec<(TestDidIdentifier, did::DidDetails)>) -> Self {
+	pub fn with_dids(mut self, dids: Vec<(TestDidIdentifier, did::DidDetails<Test>)>) -> Self {
 		self.dids_stored = dids;
 		self
 	}

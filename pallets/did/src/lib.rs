@@ -39,8 +39,15 @@ use codec::{Decode, Encode};
 use frame_support::{ensure, storage::types::StorageMap, Parameter};
 use frame_system::{self, ensure_signed};
 use sp_core::{ed25519, sr25519};
-use sp_runtime::traits::Verify;
-use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom, fmt::Debug, prelude::Clone, str, vec::Vec};
+use sp_runtime::traits::{Hash, Verify};
+use sp_std::{
+	collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+	convert::TryFrom,
+	fmt::Debug,
+	prelude::Clone,
+	str,
+	vec::Vec,
+};
 
 pub use pallet::*;
 
@@ -220,9 +227,14 @@ pub mod pallet {
 		/// The given DID does not contain the right key to verify the signature
 		/// of a DID operation.
 		DidKeyNotPresent(DidVerificationKeyType),
-		/// One or more verification keys referenced are not stored in the set
+		/// At least one verification key referenced is not stored in the set
 		/// of verification keys.
-		VerificationKeysNotPresent(Vec<PublicVerificationKey>),
+		VerificationKeyNotPresent,
+		/// The user tries to delete a verification key that is currently being
+		/// used as an attestation key, and this is not allowed as that would
+		/// result in new attestations being created but that cannot be verified
+		/// as the verification key has been deleted.
+		CurrentlyActiveAttestationKey,
 		/// The maximum supported value for the DID tx counter has been reached.
 		/// No more operations with the DID are allowed.
 		MaxTxCounterValue,
@@ -330,11 +342,11 @@ pub mod pallet {
 		pub attestation_key_update: DidVerificationKeyUpdateAction,
 		/// The delegation key update action.
 		pub delegation_key_update: DidVerificationKeyUpdateAction,
-		/// The set of old attestation keys to remove.
+		/// The set of old attestation keys to remove, given their identifiers.
 		/// If the operation also replaces the current attestation key, it will
 		/// not be considered for removal in this operation, so it is not
 		/// possible to specify it for removal in this set.
-		pub verification_keys_to_remove: Option<BTreeSet<PublicVerificationKey>>,
+		pub verification_keys_to_remove: Option<BTreeSet<<T as frame_system::Config>::Hash>>,
 		/// The new endpoint URL.
 		pub new_endpoint_url: Option<Url>,
 		/// The DID tx counter.
@@ -540,7 +552,7 @@ pub mod pallet {
 	/// * A counter used to avoid replay attacks, which is checked and updated
 	///   upon each DID operation execution
 	#[derive(Clone, Debug, Decode, Encode, PartialEq)]
-	pub struct DidDetails {
+	pub struct DidDetails<T: Config> {
 		/// The authentication key, used to authenticate DID-related operations.
 		pub auth_key: PublicVerificationKey,
 		///  The key agreement key, which can be used to encrypt data addressed
@@ -552,10 +564,11 @@ pub mod pallet {
 		/// [OPTIONAL] The attestation key, used by the DID subject to write and
 		/// revoke attestations on chain.
 		pub attestation_key: Option<PublicVerificationKey>,
-		/// The set of old attestations keys.
+		/// The map of old attestations keys, with the key label as
+		/// the key map and the key as the map value.
 		/// They are not considered valid anymore for new attestations, but can
 		/// still be used to verify old attestations.
-		pub verification_keys: BTreeSet<PublicVerificationKey>,
+		pub verification_keys: BTreeMap<<T as frame_system::Config>::Hash, PublicVerificationKey>,
 		/// [OPTIONAL] The URL pointing to the service endpoints the DID subject
 		/// publicly exposes.
 		pub endpoint_url: Option<Url>,
@@ -565,7 +578,7 @@ pub mod pallet {
 		pub(crate) last_tx_counter: u64,
 	}
 
-	impl DidDetails {
+	impl<T: Config> DidDetails<T> {
 		pub fn increase_tx_counter(&mut self) -> Result<(), StorageError> {
 			self.last_tx_counter = self
 				.last_tx_counter
@@ -584,21 +597,27 @@ pub mod pallet {
 		}
 	}
 
-	impl<T: Config> From<DidCreationOperation<T>> for DidDetails {
+	impl<T: Config> From<DidCreationOperation<T>> for DidDetails<T> {
 		fn from(op: DidCreationOperation<T>) -> Self {
-			DidDetails {
+			let mut new_details = DidDetails {
 				auth_key: op.new_auth_key,
 				key_agreement_key: op.new_key_agreement_key,
 				delegation_key: op.new_delegation_key,
 				attestation_key: op.new_attestation_key,
-				verification_keys: BTreeSet::new(),
+				verification_keys: BTreeMap::new(),
 				endpoint_url: op.new_endpoint_url,
 				last_tx_counter: 0,
+			};
+
+			if let Some(attestation_key) = op.new_attestation_key {
+				new_details.add_verification_key(attestation_key, DidVerificationKeyType::AssertionMethod);
 			}
+
+			new_details
 		}
 	}
 
-	impl DidDetails {
+	impl<T: Config> DidDetails<T> {
 		/// Returns a reference to a specific verification key given the type of
 		/// the key needed.
 		pub fn get_verification_key_for_key_type(
@@ -612,6 +631,14 @@ pub mod pallet {
 				_ => None,
 			}
 		}
+
+		fn add_verification_key(&mut self, key: PublicVerificationKey, key_type: DidVerificationKeyType) {
+			let mut hashed_values: Vec<u8> = key.encode();
+			hashed_values.extend_from_slice(key_type.encode().as_ref());
+			hashed_values.extend_from_slice(self.get_tx_counter_value().encode().as_ref());
+			let key_id = T::Hashing::hash(&hashed_values);
+			self.verification_keys.insert(key_id, key);
+		}
 	}
 
 	// Generates a new DID entry starting from the current one stored in the
@@ -623,31 +650,43 @@ pub mod pallet {
 	// Please note that this method does not perform any checks regarding
 	// the validity of the DidUpdateOperation signature nor whether the nonce
 	// provided is valid.
-	impl<T: Config> TryFrom<(DidDetails, DidUpdateOperation<T>)> for DidDetails {
+	impl<T: Config> TryFrom<(DidDetails<T>, DidUpdateOperation<T>)> for DidDetails<T> {
 		type Error = DidError;
 
-		fn try_from((old_details, update_operation): (DidDetails, DidUpdateOperation<T>)) -> Result<Self, Self::Error> {
+		fn try_from(
+			(old_details, update_operation): (DidDetails<T>, DidUpdateOperation<T>),
+		) -> Result<Self, Self::Error> {
 			// Old attestation key is used later in the process, so it's saved here.
 			let old_attestation_key = old_details.attestation_key;
 			// Same thing for the delegation key.
 			let old_delegation_key = old_details.delegation_key;
 			// Copy old state into new, and apply changes in operation to new state.
 			let mut new_details = old_details;
+			let mut remaining_verification_keys = new_details.verification_keys.clone();
 
 			if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove.as_ref() {
-				// Verify that the set of keys to delete - the set of keys stored is empty
-				// (otherwise keys to delete contains some keys not stored on chain -> notify
-				// about them to the caller)
-				let keys_not_present = verification_keys_to_remove - &new_details.verification_keys;
-				ensure!(
-					keys_not_present.is_empty(),
-					DidError::StorageError(StorageError::VerificationKeysNotPresent(
-						keys_not_present.iter().copied().collect()
-					))
-				);
+				// Verify that none of the following two conditions is verified:
+				// 1. the set of keys to delete contains key IDs that are not currently stored
+				// on chain 2. the currently active attestation key is not included in the list
+				// of keys to delete
+				for key_id in verification_keys_to_remove.iter() {
+					if let Some(verification_key) = new_details.verification_keys.get(key_id) {
+						ensure!(
+							new_details.attestation_key.is_none()
+								|| *verification_key != new_details.attestation_key.unwrap(),
+							DidError::StorageError(StorageError::CurrentlyActiveAttestationKey)
+						);
+						remaining_verification_keys.remove(key_id);
+					} else {
+						return Err(DidError::StorageError(StorageError::VerificationKeyNotPresent));
+					}
+				}
 			};
 
-			// Updates keys, endpoint and tx counter.
+			// Increase new tx counter
+			new_details.last_tx_counter = update_operation.tx_counter;
+
+			// Update the rest of the information accordingly
 			if let Some(new_auth_key) = update_operation.new_auth_key {
 				new_details.auth_key = new_auth_key;
 			}
@@ -660,18 +699,12 @@ pub mod pallet {
 			// set of verification keys.
 			let new_attestation_key: Option<PublicVerificationKey> = match update_operation.attestation_key_update {
 				DidVerificationKeyUpdateAction::Change(new_key) => {
-					// Old key added to set of verification keys
-					if let Some(old_attestation_key) = old_attestation_key {
-						new_details.verification_keys.insert(old_attestation_key);
-					}
+					// If it a new key, it is added to the map of verification keys
+					new_details.add_verification_key(new_key, DidVerificationKeyType::AssertionMethod);
 					// New key returned to be set in the DID details
 					Some(new_key)
 				}
 				DidVerificationKeyUpdateAction::Delete => {
-					// Old key added to set of verification keys
-					if let Some(old_attestation_key) = old_attestation_key {
-						new_details.verification_keys.insert(old_attestation_key);
-					}
 					// None returned to be set in the DID details
 					None
 				}
@@ -695,10 +728,7 @@ pub mod pallet {
 			if let Some(new_endpoint_url) = update_operation.new_endpoint_url {
 				new_details.endpoint_url = Some(new_endpoint_url);
 			}
-			if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove.as_ref() {
-				new_details.verification_keys = &new_details.verification_keys - verification_keys_to_remove;
-			}
-			new_details.last_tx_counter = update_operation.tx_counter;
+			new_details.verification_keys = remaining_verification_keys;
 
 			Ok(new_details)
 		}
@@ -723,7 +753,7 @@ pub mod pallet {
 	/// It maps from a DID identifier to the DID details.
 	#[pallet::storage]
 	#[pallet::getter(fn get_did)]
-	pub type Did<T> = StorageMap<_, Blake2_128Concat, <T as Config>::DidIdentifier, DidDetails>;
+	pub type Did<T> = StorageMap<_, Blake2_128Concat, <T as Config>::DidIdentifier, DidDetails<T>>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -763,6 +793,11 @@ pub mod pallet {
 		/// The maximum supported value for the DID tx counter has been reached.
 		/// No more operations with the DID are allowed.
 		MaxTxCounterValue,
+		/// The user tries to delete a verification key that is currently being
+		/// used as an attestation key, and this is not allowed as that would
+		/// result in new attestations being created but that cannot be verified
+		/// as the verification key has been deleted.
+		CurrentlyActiveAttestationKey,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
 	}
@@ -783,10 +818,11 @@ pub mod pallet {
 			match error {
 				StorageError::DidNotPresent => Self::DidNotPresent,
 				StorageError::DidAlreadyPresent => Self::DidAlreadyPresent,
-				StorageError::DidKeyNotPresent(_) | StorageError::VerificationKeysNotPresent(_) => {
+				StorageError::DidKeyNotPresent(_) | StorageError::VerificationKeyNotPresent => {
 					Self::VerificationKeysNotPresent
 				}
 				StorageError::MaxTxCounterValue => Self::MaxTxCounterValue,
+				StorageError::CurrentlyActiveAttestationKey => Self::CurrentlyActiveAttestationKey,
 			}
 		}
 	}
@@ -956,7 +992,7 @@ impl<T: Config> Pallet<T> {
 	fn verify_operation_validity_for_did<O: DidOperation<T>>(
 		operation: &O,
 		signature: &DidSignature,
-		did_details: &DidDetails,
+		did_details: &DidDetails<T>,
 	) -> Result<(), DidError> {
 		Self::verify_operation_counter_for_did(operation, did_details)?;
 		Self::verify_payload_signature_with_did_key_type(
@@ -975,7 +1011,7 @@ impl<T: Config> Pallet<T> {
 	// reached.
 	fn verify_operation_counter_for_did<O: DidOperation<T>>(
 		operation: &O,
-		did_details: &DidDetails,
+		did_details: &DidDetails<T>,
 	) -> Result<(), DidError> {
 		// Verify that the DID has not reached the maximum tx counter value
 		ensure!(
@@ -1000,7 +1036,7 @@ impl<T: Config> Pallet<T> {
 	pub fn verify_payload_signature_with_did_key_type(
 		payload: &Payload,
 		signature: &DidSignature,
-		did_details: &DidDetails,
+		did_details: &DidDetails<T>,
 		key_type: DidVerificationKeyType,
 	) -> Result<(), DidError> {
 		// Retrieve the needed verification key from the DID details, or generate an

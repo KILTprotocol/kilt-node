@@ -22,6 +22,7 @@ kilt-primitives = {default-features = false, optional = true, path = "../../prim
 
 # External dependencies
 codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.0.0"}
+hex = {default-features = false, features = ["alloc"], version = "0.4.2"}
 frame-support = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate"}
 frame-system = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate"}
 log = {default-features = false, version = "0.4.14"}
@@ -42,6 +43,7 @@ std = [
   "codec/std",
   "frame-support/std",
   "frame-system/std",
+  "hex/std",
   "log/std",
   "sp-core/std",
   "sp-io/std",
