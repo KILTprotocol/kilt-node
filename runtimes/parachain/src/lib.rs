@@ -741,6 +741,17 @@ impl did::Config for Runtime {
 	type DidIdentifier = AccountId;
 }
 
+impl did::DeriveDidVerificationType for Call {
+	fn verification_type(&self) -> Option<did::DidVerificationKeyType> {
+		match self {
+			Call::Did(_) => Some(did::DidVerificationKeyType::Authentication),
+			Call::Ctype(_) => Some(did::DidVerificationKeyType::Authentication),
+			Call::Delegation(_) => Some(did::DidVerificationKeyType::Authentication),
+			_ => None,
+		}
+	}
+}
+
 construct_runtime! {
 	pub enum Runtime where
 		Block = Block,

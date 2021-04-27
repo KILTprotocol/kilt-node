@@ -82,6 +82,15 @@ impl did::Config for Test {
 	type DidIdentifier = AccountId;
 }
 
+impl DeriveDidVerificationType for Call {
+	fn verification_type(&self) -> Option<DidVerificationKeyType> {
+		match self {
+			Call::System(_) => None,
+			Call::Did(_) => Some(DidVerificationKeyType::Authentication),
+		}
+	}
+}
+
 pub type TestDidIdentifier = <Test as did::Config>::DidIdentifier;
 
 #[cfg(test)]
