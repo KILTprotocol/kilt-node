@@ -20,6 +20,7 @@ use std::{convert::TryFrom, format};
 
 use frame_support::{assert_noop, assert_ok};
 use kilt_primitives::Hash;
+use log::logger;
 use sp_core::*;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 
@@ -27,191 +28,198 @@ use codec::Encode;
 
 use crate::{self as did, mock::*, utils, DidOperation};
 
-// submit_did_create_operation
+use env_logger;
 
-#[test]
-fn check_successful_simple_ed25519_creation() {
-	let auth_key = get_ed25519_authentication_key(true);
-	let operation =
-		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()));
-
-	let signature = auth_key.sign(operation.encode().as_ref());
-
-	let mut ext = ExtBuilder::default().build();
-
-	ext.execute_with(|| {
-		assert_ok!(Did::submit_did_create_operation(
-			Origin::signed(DEFAULT_ACCOUNT),
-			operation.clone(),
-			did::DidSignature::from(signature),
-		));
-	});
-
-	let stored_did = ext.execute_with(|| Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain."));
-	assert_eq!(stored_did.auth_key, operation.new_auth_key);
-	assert_eq!(stored_did.key_agreement_key, operation.new_key_agreement_key);
-	assert_eq!(stored_did.delegation_key, operation.new_delegation_key);
-	assert_eq!(stored_did.attestation_key, operation.new_attestation_key);
-	assert_eq!(
-		stored_did.verification_keys,
-		<BTreeMap<Hash, did::PublicVerificationKey>>::new()
-	);
-	assert_eq!(stored_did.endpoint_url, operation.new_endpoint_url);
-	assert_eq!(stored_did.last_tx_counter, 0u64);
+fn init() {
+	env_logger::builder().is_test(true).try_init();
 }
 
-#[test]
-fn check_successful_simple_sr25519_creation() {
-	let auth_key = get_sr25519_authentication_key(true);
-	let operation =
-		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()));
+// // submit_did_create_operation
 
-	let signature = auth_key.sign(operation.encode().as_ref());
+// #[test]
+// fn check_successful_simple_ed25519_creation() {
+// 	let auth_key = get_ed25519_authentication_key(true);
+// 	let operation =
+// 		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()));
 
-	let mut ext = ExtBuilder::default().build();
+// 	let signature = auth_key.sign(operation.encode().as_ref());
 
-	ext.execute_with(|| {
-		assert_ok!(Did::submit_did_create_operation(
-			Origin::signed(DEFAULT_ACCOUNT),
-			operation.clone(),
-			did::DidSignature::from(signature),
-		));
-	});
+// 	let mut ext = ExtBuilder::default().build();
 
-	let stored_did = ext.execute_with(|| Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain."));
-	assert_eq!(stored_did.auth_key, operation.new_auth_key);
-	assert_eq!(stored_did.key_agreement_key, operation.new_key_agreement_key);
-	assert_eq!(stored_did.delegation_key, operation.new_delegation_key);
-	assert_eq!(stored_did.attestation_key, operation.new_attestation_key);
-	assert_eq!(
-		stored_did.verification_keys,
-		<BTreeMap<Hash, did::PublicVerificationKey>>::new()
-	);
-	assert_eq!(stored_did.endpoint_url, operation.new_endpoint_url);
-	assert_eq!(stored_did.last_tx_counter, 0u64);
-}
+// 	ext.execute_with(|| {
+// 		assert_ok!(Did::submit_did_create_operation(
+// 			Origin::signed(DEFAULT_ACCOUNT),
+// 			operation.clone(),
+// 			did::DidSignature::from(signature),
+// 		));
+// 	});
 
-#[test]
-fn check_successful_complete_creation() {
-	let auth_key = get_sr25519_authentication_key(true);
-	let del_key = get_sr25519_delegation_key(true);
-	let att_key = get_ed25519_attestation_key(true);
-	let new_url = did::Url::from(
-		did::HttpUrl::try_from("https://new_kilt.io".as_bytes())
-			.expect("https://new_kilt.io should not be considered an invalid HTTP URL."),
-	);
-	let mut operation =
-		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()));
-	operation.new_attestation_key = Some(did::PublicVerificationKey::from(att_key.public()));
-	operation.new_delegation_key = Some(did::PublicVerificationKey::from(del_key.public()));
-	operation.new_endpoint_url = Some(new_url);
+// 	let stored_did = ext.execute_with(|| Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain."));
+// 	assert_eq!(stored_did.auth_key, operation.new_auth_key);
+// 	assert_eq!(stored_did.key_agreement_key, operation.new_key_agreement_key);
+// 	assert_eq!(stored_did.delegation_key, operation.new_delegation_key);
+// 	assert_eq!(stored_did.attestation_key, operation.new_attestation_key);
+// 	assert_eq!(
+// 		stored_did.verification_keys,
+// 		<BTreeMap<Hash, did::PublicVerificationKey>>::new()
+// 	);
+// 	assert_eq!(stored_did.endpoint_url, operation.new_endpoint_url);
+// 	assert_eq!(stored_did.last_tx_counter, 0u64);
+// }
 
-	let signature = auth_key.sign(operation.encode().as_ref());
+// #[test]
+// fn check_successful_simple_sr25519_creation() {
+// 	let auth_key = get_sr25519_authentication_key(true);
+// 	let operation =
+// 		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()));
 
-	let mut ext = ExtBuilder::default().build();
+// 	let signature = auth_key.sign(operation.encode().as_ref());
 
-	ext.execute_with(|| {
-		assert_ok!(Did::submit_did_create_operation(
-			Origin::signed(DEFAULT_ACCOUNT),
-			operation.clone(),
-			did::DidSignature::from(signature),
-		));
-	});
+// 	let mut ext = ExtBuilder::default().build();
 
-	let stored_did = ext.execute_with(|| Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain."));
-	assert_eq!(stored_did.auth_key, operation.new_auth_key);
-	assert_eq!(stored_did.key_agreement_key, operation.new_key_agreement_key);
-	assert_eq!(stored_did.delegation_key, operation.new_delegation_key);
-	assert_eq!(stored_did.attestation_key, operation.new_attestation_key);
+// 	ext.execute_with(|| {
+// 		assert_ok!(Did::submit_did_create_operation(
+// 			Origin::signed(DEFAULT_ACCOUNT),
+// 			operation.clone(),
+// 			did::DidSignature::from(signature),
+// 		));
+// 	});
 
-	assert_eq!(stored_did.verification_keys.len(), 1);
-	let (stored_key_id, stored_key) = stored_did
-		.verification_keys
-		.iter()
-		.next()
-		.expect("Stored verification keys should contain at least one key.");
-	let hash = generate_attestation_key_id(*stored_key, stored_did.last_tx_counter);
-	assert_eq!(*stored_key_id, hash);
+// 	let stored_did = ext.execute_with(|| Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain."));
+// 	assert_eq!(stored_did.auth_key, operation.new_auth_key);
+// 	assert_eq!(stored_did.key_agreement_key, operation.new_key_agreement_key);
+// 	assert_eq!(stored_did.delegation_key, operation.new_delegation_key);
+// 	assert_eq!(stored_did.attestation_key, operation.new_attestation_key);
+// 	assert_eq!(
+// 		stored_did.verification_keys,
+// 		<BTreeMap<Hash, did::PublicVerificationKey>>::new()
+// 	);
+// 	assert_eq!(stored_did.endpoint_url, operation.new_endpoint_url);
+// 	assert_eq!(stored_did.last_tx_counter, 0u64);
+// }
 
-	assert_eq!(stored_did.endpoint_url, operation.new_endpoint_url);
-	assert_eq!(stored_did.last_tx_counter, 0u64);
-}
+// #[test]
+// fn check_successful_complete_creation() {
+// 	let auth_key = get_sr25519_authentication_key(true);
+// 	let del_key = get_sr25519_delegation_key(true);
+// 	let att_key = get_ed25519_attestation_key(true);
+// 	let new_url = did::Url::from(
+// 		did::HttpUrl::try_from("https://new_kilt.io".as_bytes())
+// 			.expect("https://new_kilt.io should not be considered an invalid HTTP URL."),
+// 	);
+// 	let mut operation =
+// 		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()));
+// 	operation.new_attestation_key = Some(did::PublicVerificationKey::from(att_key.public()));
+// 	operation.new_delegation_key = Some(did::PublicVerificationKey::from(del_key.public()));
+// 	operation.new_endpoint_url = Some(new_url);
 
-#[test]
-fn check_duplicate_did_creation() {
-	let auth_key = get_sr25519_authentication_key(true);
-	let mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
-	let operation =
-		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()));
+// 	let signature = auth_key.sign(operation.encode().as_ref());
 
-	let signature = auth_key.sign(operation.encode().as_ref());
+// 	let mut ext = ExtBuilder::default().build();
 
-	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
+// 	ext.execute_with(|| {
+// 		assert_ok!(Did::submit_did_create_operation(
+// 			Origin::signed(DEFAULT_ACCOUNT),
+// 			operation.clone(),
+// 			did::DidSignature::from(signature),
+// 		));
+// 	});
 
-	ext.execute_with(|| {
-		assert_noop!(
-			Did::submit_did_create_operation(
-				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
-				did::DidSignature::from(signature),
-			),
-			did::Error::<Test>::DidAlreadyPresent
-		);
-	});
-}
+// 	let stored_did = ext.execute_with(|| Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain."));
+// 	assert_eq!(stored_did.auth_key, operation.new_auth_key);
+// 	assert_eq!(stored_did.key_agreement_key, operation.new_key_agreement_key);
+// 	assert_eq!(stored_did.delegation_key, operation.new_delegation_key);
+// 	assert_eq!(stored_did.attestation_key, operation.new_attestation_key);
 
-#[test]
-fn check_invalid_signature_format_did_creation() {
-	let auth_key = get_sr25519_authentication_key(true);
-	// Using an Ed25519 key where an Sr25519 is expected
-	let invalid_key = get_ed25519_authentication_key(true);
-	// DID creation contains auth_key, but signature is generated using invalid_key
-	let operation =
-		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()));
+// 	assert_eq!(stored_did.verification_keys.len(), 1);
+// 	let (stored_key_id, stored_key) = stored_did
+// 		.verification_keys
+// 		.iter()
+// 		.next()
+// 		.expect("Stored verification keys should contain at least one key.");
+// 	let hash = generate_attestation_key_id(*stored_key, stored_did.last_tx_counter);
+// 	assert_eq!(*stored_key_id, hash);
 
-	let signature = invalid_key.sign(operation.encode().as_ref());
+// 	assert_eq!(stored_did.endpoint_url, operation.new_endpoint_url);
+// 	assert_eq!(stored_did.last_tx_counter, 0u64);
+// }
 
-	let mut ext = ExtBuilder::default().build();
+// #[test]
+// fn check_duplicate_did_creation() {
+// 	let auth_key = get_sr25519_authentication_key(true);
+// 	let mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
+// 	let operation =
+// 		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()));
 
-	ext.execute_with(|| {
-		assert_noop!(
-			Did::submit_did_create_operation(
-				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
-				did::DidSignature::from(signature),
-			),
-			did::Error::<Test>::InvalidSignatureFormat
-		);
-	});
-}
+// 	let signature = auth_key.sign(operation.encode().as_ref());
 
-#[test]
-fn check_invalid_signature_did_creation() {
-	let auth_key = get_sr25519_authentication_key(true);
-	let alternative_key = get_sr25519_authentication_key(false);
-	let operation =
-		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()));
+// 	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
 
-	let signature = alternative_key.sign(operation.encode().as_ref());
+// 	ext.execute_with(|| {
+// 		assert_noop!(
+// 			Did::submit_did_create_operation(
+// 				Origin::signed(DEFAULT_ACCOUNT),
+// 				operation.clone(),
+// 				did::DidSignature::from(signature),
+// 			),
+// 			did::Error::<Test>::DidAlreadyPresent
+// 		);
+// 	});
+// }
 
-	let mut ext = ExtBuilder::default().build();
+// #[test]
+// fn check_invalid_signature_format_did_creation() {
+// 	let auth_key = get_sr25519_authentication_key(true);
+// 	// Using an Ed25519 key where an Sr25519 is expected
+// 	let invalid_key = get_ed25519_authentication_key(true);
+// 	// DID creation contains auth_key, but signature is generated using invalid_key
+// 	let operation =
+// 		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()));
 
-	ext.execute_with(|| {
-		assert_noop!(
-			Did::submit_did_create_operation(
-				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
-				did::DidSignature::from(signature),
-			),
-			did::Error::<Test>::InvalidSignature
-		);
-	});
-}
+// 	let signature = invalid_key.sign(operation.encode().as_ref());
+
+// 	let mut ext = ExtBuilder::default().build();
+
+// 	ext.execute_with(|| {
+// 		assert_noop!(
+// 			Did::submit_did_create_operation(
+// 				Origin::signed(DEFAULT_ACCOUNT),
+// 				operation.clone(),
+// 				did::DidSignature::from(signature),
+// 			),
+// 			did::Error::<Test>::InvalidSignatureFormat
+// 		);
+// 	});
+// }
+
+// #[test]
+// fn check_invalid_signature_did_creation() {
+// 	let auth_key = get_sr25519_authentication_key(true);
+// 	let alternative_key = get_sr25519_authentication_key(false);
+// 	let operation =
+// 		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()));
+
+// 	let signature = alternative_key.sign(operation.encode().as_ref());
+
+// 	let mut ext = ExtBuilder::default().build();
+
+// 	ext.execute_with(|| {
+// 		assert_noop!(
+// 			Did::submit_did_create_operation(
+// 				Origin::signed(DEFAULT_ACCOUNT),
+// 				operation.clone(),
+// 				did::DidSignature::from(signature),
+// 			),
+// 			did::Error::<Test>::InvalidSignature
+// 		);
+// 	});
+// }
 
 // submit_did_update_operation
 
 #[test]
 fn check_successful_complete_update() {
+	init();
 	let old_auth_key = get_ed25519_authentication_key(true);
 	let new_auth_key = get_ed25519_authentication_key(false);
 	let new_enc_key = get_x25519_encryption_key(false);
@@ -286,17 +294,17 @@ fn check_successful_complete_update() {
 		Some(did::PublicVerificationKey::from(new_del_key.public()))
 	);
 
-	// assert_eq!(new_did_details.verification_keys.len(), 2);
+	assert_eq!(new_did_details.verification_keys.len(), 2);
 	// Verification keys should contain both the previous and the current
 	// attestation key.
-	let mut keys_iterator = new_did_details.verification_keys.iter();
-	let (stored_key_id_1, stored_key_1) = keys_iterator
-		.next()
-		.expect("Stored verification keys should contain at least one key.");
-	println!("{:?}", stored_key_id_1);
-	println!("{:?}", stored_key_1);
-	let hash_1 = generate_attestation_key_id(*stored_key_1, 0u64);
-	assert_eq!(*stored_key_id_1, hash_1);
+	// let mut keys_iterator = new_did_details.verification_keys.iter();
+	// let (stored_key_id_1, stored_key_1) = keys_iterator
+	// 	.next()
+	// 	.expect("Stored verification keys should contain at least one key.");
+	// println!("{:?}", stored_key_id_1);
+	// println!("{:?}", stored_key_1);
+	// let hash_1 = generate_attestation_key_id(*stored_key_1, 0u64);
+	// assert_eq!(*stored_key_id_1, hash_1);
 	// let (stored_key_id_2, stored_key_2) = keys_iterator
 	// 	.next()
 	// 	.expect("Stored verification keys should contain at least two keys.");

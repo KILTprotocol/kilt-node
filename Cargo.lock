@@ -1600,6 +1600,7 @@ dependencies = [
 name = "did"
 version = "0.24.0"
 dependencies = [
+ "env_logger 0.8.3",
  "frame-support",
  "frame-system",
  "hex",
