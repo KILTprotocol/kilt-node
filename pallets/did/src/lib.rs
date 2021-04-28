@@ -664,14 +664,12 @@ pub mod pallet {
 			let mut new_details = old_details;
 			let mut remaining_verification_keys = new_details.verification_keys.clone();
 
-			log::debug!("A");
 			if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove.as_ref() {
 				// Verify that none of the following two conditions is verified:
 				// 1. the set of keys to delete contains key IDs that are not currently stored
 				// on chain 2. the currently active attestation key is not included in the list
 				// of keys to delete
 				for key_id in verification_keys_to_remove.iter() {
-					log::debug!("B");
 					if let Some(verification_key) = new_details.verification_keys.get(key_id) {
 						ensure!(
 							new_details.attestation_key.is_none()
@@ -683,12 +681,9 @@ pub mod pallet {
 						return Err(DidError::StorageError(StorageError::VerificationKeyNotPresent));
 					}
 				}
-				log::debug!("C");
 				// Save in the details the remaining verification keys
 				new_details.verification_keys = remaining_verification_keys;
 			};
-
-			log::debug!("D");
 
 			// Increase new tx counter
 			new_details.last_tx_counter = update_operation.tx_counter;
@@ -704,31 +699,23 @@ pub mod pallet {
 			// Either leave the key unchanged, replace the old one with the new one, or
 			// delete the current one. In the last two cases, the old key is moved to the
 			// set of verification keys.
-			log::debug!("E");
-			log::debug!("{:#?}", new_details.verification_keys);
 			let new_attestation_key: Option<PublicVerificationKey> = match update_operation.attestation_key_update {
 				DidVerificationKeyUpdateAction::Change(new_key) => {
 					// If it a new key, it is added to the map of verification keys
-					log::debug!("F");
 					new_details.add_verification_key(new_key, DidVerificationKeyType::AssertionMethod);
 					// New key returned to be set in the DID details
 					Some(new_key)
 				}
 				DidVerificationKeyUpdateAction::Delete => {
-					log::debug!("G");
 					// None returned to be set in the DID details
 					None
 				}
 				DidVerificationKeyUpdateAction::Ignore => {
-					log::debug!("H");
 					// Old key returned to be set in the DID details
 					old_attestation_key
 				}
 			};
-			log::debug!("{:#?}", new_details.verification_keys);
-			log::debug!("I");
 			new_details.attestation_key = new_attestation_key;
-			log::debug!("L");
 
 			// Evaluate update action for delegation key.
 			// Either leave the key unchanged, change, or delete the existing delegation
@@ -743,7 +730,6 @@ pub mod pallet {
 			if let Some(new_endpoint_url) = update_operation.new_endpoint_url {
 				new_details.endpoint_url = Some(new_endpoint_url);
 			}
-			log::debug!("{:#?}", new_details.verification_keys);
 
 			Ok(new_details)
 		}

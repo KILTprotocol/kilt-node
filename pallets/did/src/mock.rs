@@ -21,9 +21,11 @@
 use crate as did;
 use crate::*;
 
+use env_logger;
+
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use kilt_primitives::{AccountId, Signature};
-use sp_core::*;
+use sp_core::{ed25519, sr25519, Pair, H256};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
@@ -82,6 +84,7 @@ impl did::Config for Test {
 }
 
 pub type TestDidIdentifier = <Test as did::Config>::DidIdentifier;
+pub type TestKeyId = <Test as frame_system::Config>::Hash;
 
 #[cfg(test)]
 pub(crate) const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
@@ -211,11 +214,10 @@ pub fn generate_attestation_key_id(
 	tx_counter: u64,
 ) -> <Test as frame_system::Config>::Hash {
 	let mut vec = key.encode();
-	vec.extend_from_slice(did::DidVerificationKeyType::AssertionMethod.encode().as_slice());
+	vec.extend_from_slice(did::DidVerificationKeyType::AssertionMethod.encode().as_ref());
 	vec.extend_from_slice(tx_counter.encode().as_slice());
 
-	let hasher = Blake2Hasher {};
-	sp_core::Blake2Hasher::hash(&vec)
+	<Test as frame_system::Config>::Hashing::hash(&vec)
 }
 
 // A test DID operation which can be crated to require any DID verification key
@@ -239,6 +241,10 @@ impl DidOperation<Test> for TestDidOperation {
 	fn get_tx_counter(&self) -> u64 {
 		self.tx_counter
 	}
+}
+
+pub fn initialize_logger() {
+	env_logger::builder().is_test(true).try_init();
 }
 
 #[derive(Clone)]
