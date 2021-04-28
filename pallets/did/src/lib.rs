@@ -30,6 +30,7 @@ pub mod mock;
 
 pub mod default_weights;
 
+pub mod origin;
 mod utils;
 
 pub use default_weights::WeightInfo;
@@ -41,13 +42,13 @@ use frame_system::{self, ensure_signed};
 use sp_core::{ed25519, sr25519};
 use sp_runtime::traits::{Hash, Verify};
 use sp_std::{
+	boxed::Box,
 	collections::{btree_map::BTreeMap, btree_set::BTreeSet},
 	convert::TryFrom,
 	fmt::Debug,
 	prelude::Clone,
 	str,
 	vec::Vec,
-	boxed::Box,
 };
 
 pub use pallet::*;
@@ -60,6 +61,9 @@ pub mod pallet {
 		pallet_prelude::*,
 	};
 	use frame_system::pallet_prelude::*;
+
+	pub use crate::origin::RawOrigin;
+	pub type Origin<T> = RawOrigin<<T as Config>::DidIdentifier>;
 
 	/// The expected URI scheme for HTTP endpoints.
 	pub const HTTP_URI_SCHEME: &str = "http://";
@@ -819,9 +823,10 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
+		type Origin: From<RawOrigin<Self::DidIdentifier>>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type Call: Parameter
-			+ Dispatchable<Origin = <Self as frame_system::Config>::Origin, PostInfo = PostDispatchInfo>
+			+ Dispatchable<Origin = <Self as Config>::Origin, PostInfo = PostDispatchInfo>
 			+ GetDispatchInfo
 			+ DeriveDidVerificationType;
 		type WeightInfo: WeightInfo;
@@ -1077,7 +1082,7 @@ pub mod pallet {
 			log::debug!("Dispatch call from DID {:?}", did_identifier);
 
 			let did_call = wrapped.operation;
-			let res = did_call.call.dispatch(origin);
+			let res = did_call.call.dispatch(RawOrigin { id: did_identifier }.into());
 
 			match res {
 				Ok(ok) => {

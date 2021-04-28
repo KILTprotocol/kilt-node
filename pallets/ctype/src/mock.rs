@@ -40,7 +40,7 @@ frame_support::construct_runtime!(
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
-		Did: did::{Pallet, Call, Storage, Event<T>},
+		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>},
 	}
 );
 
@@ -82,6 +82,7 @@ impl ctype::Config for Test {
 }
 
 impl did::Config for Test {
+	type Origin = Origin;
 	type Event = ();
 	type Call = Call;
 	type WeightInfo = ();

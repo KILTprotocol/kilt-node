@@ -318,7 +318,7 @@ impl delegation::Config for Runtime {
 }
 
 impl did::Config for Runtime {
-	/// The ubiquitous event type.
+	type Origin = Origin;
 	type Event = Event;
 	type Call = Call;
 	type WeightInfo = ();
@@ -407,7 +407,7 @@ construct_runtime!(
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>} = 9,
 		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 10,
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 11,
-		Did: did::{Pallet, Call, Storage, Event<T>} = 12,
+		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 12,
 
 		Session: session::{Pallet, Call, Storage, Event, Config<T>} = 15,
 		Authorship: authorship::{Pallet, Call, Storage} = 16,
