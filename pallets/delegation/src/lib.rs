@@ -676,10 +676,7 @@ pub mod pallet {
 
 			let mut root = <Roots<T>>::get(&operation.root_id).ok_or(Error::<T>::RootNotFound)?;
 
-			ensure!(
-				root.owner == operation.revoker_did,
-				Error::<T>::UnauthorizedRevocation
-			);
+			ensure!(root.owner == operation.revoker_did, Error::<T>::UnauthorizedRevocation);
 
 			let consumed_weight: Weight = if !root.revoked {
 				// Recursively revoke all children

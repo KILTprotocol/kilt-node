@@ -21,7 +21,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
-/// Test module for attestations
 #[cfg(test)]
 mod tests;
 
@@ -71,6 +70,9 @@ pub mod pallet {
 	/// Reference to a payload of data of variable size.
 	pub type Payload = [u8];
 
+	/// Type of a DID key identifier.
+	pub type KeyId<T> = <T as frame_system::Config>::Hash;
+
 	/// A public key under the control of a DID subject.
 	pub trait DidPublicKey {
 		/// Returns the key method description as in the [DID specification](https://w3c.github.io/did-spec-registries/#verification-method-types).
@@ -97,6 +99,19 @@ pub mod pallet {
 	pub enum DidEncryptionKeyType {
 		/// Key used for key agreement and encryption.
 		KeyAgreement,
+	}
+
+	/// Details of a verification key, which includes the key value and the
+	/// block number at which it was set.
+	///
+	/// It is currently used to keep track of all the past and current
+	/// attestation keys a DID might control.
+	#[derive(Clone, Copy, Debug, Decode, Encode, PartialEq)]
+	pub struct VerificationKeyDetails<T: Config> {
+		/// A verification key the DID controls.
+		pub verification_key: PublicVerificationKey,
+		/// The block number in which the verification key was added to the DID.
+		pub block_number: <T as frame_system::Config>::BlockNumber,
 	}
 
 	/// Types of verification keys a DID can control.
@@ -211,9 +226,13 @@ pub mod pallet {
 	/// All the errors that can be generated when validating a DID operation.
 	#[derive(Debug, Eq, PartialEq)]
 	pub enum DidError {
+		/// See StorageError.
 		StorageError(StorageError),
+		/// See SignatureError.
 		SignatureError(SignatureError),
+		/// See UrlError.
 		UrlError(UrlError),
+		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
 	}
 
@@ -278,7 +297,7 @@ pub mod pallet {
 	/// contain information about the caller's DID, the type of DID key
 	/// required to verify the operation signature, and the tx counter to
 	/// protect against replay attacks.
-	#[derive(Clone, Decode, Encode, PartialEq)]
+	#[derive(Clone, Debug, Decode, Encode, PartialEq)]
 	pub struct DidCreationOperation<T: Config> {
 		/// The DID identifier. It has to be unique.
 		pub did: T::DidIdentifier,
@@ -309,28 +328,13 @@ pub mod pallet {
 		}
 	}
 
-	// Required to use a struct as an extrinsic parameter, and since Config does not
-	// implement Debug, the derive macro does not work.
-	impl<T: Config> Debug for DidCreationOperation<T> {
-		fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
-			f.debug_tuple("DidCreationOperation")
-				.field(&self.did)
-				.field(&self.new_auth_key)
-				.field(&self.new_key_agreement_key)
-				.field(&self.new_attestation_key)
-				.field(&self.new_delegation_key)
-				.field(&self.new_endpoint_url)
-				.finish()
-		}
-	}
-
 	/// An operation to update a DID.
 	///
 	/// The struct implements the DidOperation trait, and as such it must
 	/// contain information about the caller's DID, the type of DID key
 	/// required to verify the operation signature, and the tx counter to
 	/// protect against replay attacks.
-	#[derive(Clone, Decode, Encode, PartialEq)]
+	#[derive(Clone, Debug, Decode, Encode, PartialEq)]
 	pub struct DidUpdateOperation<T: Config> {
 		/// The DID identifier.
 		pub did: T::DidIdentifier,
@@ -346,7 +350,7 @@ pub mod pallet {
 		/// If the operation also replaces the current attestation key, it will
 		/// not be considered for removal in this operation, so it is not
 		/// possible to specify it for removal in this set.
-		pub verification_keys_to_remove: Option<BTreeSet<<T as frame_system::Config>::Hash>>,
+		pub verification_keys_to_remove: Option<BTreeSet<KeyId<T>>>,
 		/// The new endpoint URL.
 		pub new_endpoint_url: Option<Url>,
 		/// The DID tx counter.
@@ -367,30 +371,13 @@ pub mod pallet {
 		}
 	}
 
-	// Required to use a struct as an extrinsic parameter, and since Config does not
-	// implement Debug, the derive macro does not work.
-	impl<T: Config> Debug for DidUpdateOperation<T> {
-		fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
-			f.debug_tuple("DidUpdateOperation")
-				.field(&self.did)
-				.field(&self.new_auth_key)
-				.field(&self.new_key_agreement_key)
-				.field(&self.attestation_key_update)
-				.field(&self.delegation_key_update)
-				.field(&self.verification_keys_to_remove)
-				.field(&self.new_endpoint_url)
-				.field(&self.tx_counter)
-				.finish()
-		}
-	}
-
 	/// An operation to delete a DID.
 	///
 	/// The struct implements the DidOperation trait, and as such it must
 	/// contain information about the caller's DID, the type of DID key
 	/// required to verify the operation signature, and the tx counter to
 	/// protect against replay attacks.
-	#[derive(Clone, Decode, Encode, PartialEq)]
+	#[derive(Clone, Debug, Decode, Encode, PartialEq)]
 	pub struct DidDeletionOperation<T: Config> {
 		/// The DID identifier.
 		pub did: T::DidIdentifier,
@@ -409,17 +396,6 @@ pub mod pallet {
 
 		fn get_tx_counter(&self) -> u64 {
 			self.tx_counter
-		}
-	}
-
-	// Required to use a struct as an extrinsic parameter, and since Config does not
-	// implement Debug, the derive macro does not work.
-	impl<T: Config> Debug for DidDeletionOperation<T> {
-		fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
-			f.debug_tuple("DidDeletionOperation")
-				.field(&self.did)
-				.field(&self.tx_counter)
-				.finish()
 		}
 	}
 
@@ -540,17 +516,6 @@ pub mod pallet {
 	}
 
 	/// The details associated to a DID identity.
-	/// * The authentication key, used to authenticate DID-related operations
-	/// * The key agreement key, used to encrypt data addressed to the DID
-	///   subject
-	/// * An optional delegation key, used by the DID subject to sign delegation
-	///   nodes before writing them on chain
-	/// * An optional attestation key, used by the DID subject to sign
-	///   attestations before writing them on chain
-	/// * An optional URL pointing to the service endpoints the DID subject
-	///   publicly exposes
-	/// * A counter used to avoid replay attacks, which is checked and updated
-	///   upon each DID operation execution
 	#[derive(Clone, Debug, Decode, Encode, PartialEq)]
 	pub struct DidDetails<T: Config> {
 		/// The authentication key, used to authenticate DID-related operations.
@@ -564,11 +529,15 @@ pub mod pallet {
 		/// [OPTIONAL] The attestation key, used by the DID subject to write and
 		/// revoke attestations on chain.
 		pub attestation_key: Option<PublicVerificationKey>,
-		/// The map of old attestations keys, with the key label as
-		/// the key map and the key as the map value.
-		/// They are not considered valid anymore for new attestations, but can
-		/// still be used to verify old attestations.
-		pub verification_keys: BTreeMap<<T as frame_system::Config>::Hash, PublicVerificationKey>,
+		/// The map of verification keys, with the key label as
+		/// the key map and the tuple (key, addition_block_number) as the map
+		/// value. The map ALWAYS also includes the currently active attestation
+		/// key plus old attestation keys that have been rotated and not yet
+		/// deleted from this set. Keys other than the current attestation key
+		/// are not considered valid anymore to write new attestations
+		/// but can still be used to verify attestations issued when they were
+		/// considered valid.
+		pub verification_keys: BTreeMap<KeyId<T>, VerificationKeyDetails<T>>,
 		/// [OPTIONAL] The URL pointing to the service endpoints the DID subject
 		/// publicly exposes.
 		pub endpoint_url: Option<Url>,
@@ -609,6 +578,9 @@ pub mod pallet {
 				last_tx_counter: 0,
 			};
 
+			// As the verification keys map always include the currently active attestation
+			// key, if an attestation key is specified in the creation operation, it is also
+			// added to the verification keys map.
 			if let Some(attestation_key) = op.new_attestation_key {
 				new_details.add_verification_key(attestation_key, DidVerificationKeyType::AssertionMethod);
 			}
@@ -636,8 +608,17 @@ pub mod pallet {
 			let mut hashed_values: Vec<u8> = key.encode();
 			hashed_values.extend_from_slice(key_type.encode().as_ref());
 			hashed_values.extend_from_slice(self.get_tx_counter_value().encode().as_ref());
+
 			let key_id = T::Hashing::hash(&hashed_values);
-			self.verification_keys.insert(key_id, key);
+			let block_number = <frame_system::Pallet<T>>::block_number();
+
+			self.verification_keys.insert(
+				key_id,
+				VerificationKeyDetails {
+					verification_key: key,
+					block_number,
+				},
+			);
 		}
 	}
 
@@ -666,29 +647,34 @@ pub mod pallet {
 
 			if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove.as_ref() {
 				// Verify that none of the following two conditions is verified:
-				// 1. the set of keys to delete contains key IDs that are not currently stored
-				// on chain 2. the currently active attestation key is not included in the list
+				// - 1. the set of keys to delete contains key IDs that are not currently stored
+				// on chain
+				// - 2. the currently active attestation key is not included in the list
 				// of keys to delete
 				for key_id in verification_keys_to_remove.iter() {
-					if let Some(verification_key) = new_details.verification_keys.get(key_id) {
-						ensure!(
-							new_details.attestation_key.is_none()
-								|| *verification_key != new_details.attestation_key.unwrap(),
-							DidError::StorageError(StorageError::CurrentlyActiveAttestationKey)
-						);
+					// Check for condition 1
+					if let Some(verification_key_details) = new_details.verification_keys.get(key_id) {
+						// Check for condition 2
+						if let Some(current_attestation_key) = new_details.attestation_key {
+							ensure!(
+								verification_key_details.verification_key != current_attestation_key,
+								DidError::StorageError(StorageError::CurrentlyActiveAttestationKey)
+							);
+						}
+						// If no attestation key is currently set, all is good
 						remaining_verification_keys.remove(key_id);
 					} else {
 						return Err(DidError::StorageError(StorageError::VerificationKeyNotPresent));
 					}
 				}
-				// Save in the details the remaining verification keys
+				// Save the remaining verification keys
 				new_details.verification_keys = remaining_verification_keys;
 			};
 
 			// Increase new tx counter
 			new_details.last_tx_counter = update_operation.tx_counter;
 
-			// Update the rest of the information accordingly
+			// Update the rest of the details
 			if let Some(new_auth_key) = update_operation.new_auth_key {
 				new_details.auth_key = new_auth_key;
 			}
@@ -696,30 +682,32 @@ pub mod pallet {
 				new_details.key_agreement_key = new_enc_key;
 			}
 			// Evaluate update action for attestation key.
-			// Either leave the key unchanged, replace the old one with the new one, or
-			// delete the current one. In the last two cases, the old key is moved to the
-			// set of verification keys.
+			// Either leave the key unchanged, delete the current one,
+			// or replace the old one with the new one. In the last case, the new key is
+			// added to the set of verification keys.
 			let new_attestation_key: Option<PublicVerificationKey> = match update_operation.attestation_key_update {
 				DidVerificationKeyUpdateAction::Change(new_key) => {
 					// If it a new key, it is added to the map of verification keys
 					new_details.add_verification_key(new_key, DidVerificationKeyType::AssertionMethod);
-					// New key returned to be set in the DID details
+					// New key returned to be set in the new DID details
 					Some(new_key)
 				}
 				DidVerificationKeyUpdateAction::Delete => {
-					// None returned to be set in the DID details
+					// None returned to be set in the DID details,
+					// effectively making the attestation key invalid from now on.
 					None
 				}
 				DidVerificationKeyUpdateAction::Ignore => {
-					// Old key returned to be set in the DID details
+					// Old key returned to be set in the DID details,
+					// effectively leaving it unchanged.
 					old_attestation_key
 				}
 			};
 			new_details.attestation_key = new_attestation_key;
 
 			// Evaluate update action for delegation key.
-			// Either leave the key unchanged, change, or delete the existing delegation
-			// key.
+			// Either leave the key unchanged, replace it with the new given key,
+			// or delete the existing delegation key.
 			let new_delegation_key: Option<PublicVerificationKey> = match update_operation.delegation_key_update {
 				DidVerificationKeyUpdateAction::Change(new_delegation_key) => Some(new_delegation_key),
 				DidVerificationKeyUpdateAction::Delete => None,
@@ -736,7 +724,7 @@ pub mod pallet {
 	}
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config {
+	pub trait Config: frame_system::Config + Debug {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type WeightInfo: WeightInfo;
 		type DidIdentifier: Parameter + Encode + Decode + Debug;

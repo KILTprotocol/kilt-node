@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 #![allow(clippy::from_over_into)]
+#![allow(unused_must_use)]
 
 use crate as did;
 use crate::*;
@@ -84,7 +85,11 @@ impl did::Config for Test {
 }
 
 pub type TestDidIdentifier = <Test as did::Config>::DidIdentifier;
-pub type TestKeyId = <Test as frame_system::Config>::Hash;
+pub type TestKeyId = did::KeyId<Test>;
+pub type TestVerificationKeyDetails = did::VerificationKeyDetails<Test>;
+pub type TestBlockNumber = <Test as frame_system::Config>::BlockNumber;
+
+type TestHashing = <Test as frame_system::Config>::Hashing;
 
 #[cfg(test)]
 pub(crate) const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
@@ -209,15 +214,12 @@ pub fn generate_base_did_details(auth_key: did::PublicVerificationKey) -> did::D
 	}
 }
 
-pub fn generate_attestation_key_id(
-	key: did::PublicVerificationKey,
-	tx_counter: u64,
-) -> <Test as frame_system::Config>::Hash {
+pub fn generate_attestation_key_id(key: &did::PublicVerificationKey, tx_counter: u64) -> TestKeyId {
 	let mut vec = key.encode();
 	vec.extend_from_slice(did::DidVerificationKeyType::AssertionMethod.encode().as_ref());
 	vec.extend_from_slice(tx_counter.encode().as_slice());
 
-	<Test as frame_system::Config>::Hashing::hash(&vec)
+	TestHashing::hash(&vec)
 }
 
 // A test DID operation which can be crated to require any DID verification key

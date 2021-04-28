@@ -16,17 +16,15 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use std::{convert::TryFrom, format};
+use std::convert::TryFrom;
 
 use frame_support::{assert_noop, assert_ok};
-use kilt_primitives::Hash;
-use log::logger;
 use sp_core::*;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 
 use codec::Encode;
 
-use crate::{self as did, mock::*, utils, DidOperation};
+use crate::{self as did, mock::*, VerificationKeyDetails};
 
 // submit_did_create_operation
 
@@ -55,7 +53,7 @@ fn check_successful_simple_ed25519_creation() {
 	assert_eq!(stored_did.attestation_key, operation.new_attestation_key);
 	assert_eq!(
 		stored_did.verification_keys,
-		<BTreeMap<Hash, did::PublicVerificationKey>>::new()
+		<BTreeMap<TestKeyId, TestVerificationKeyDetails>>::new()
 	);
 	assert_eq!(stored_did.endpoint_url, operation.new_endpoint_url);
 	assert_eq!(stored_did.last_tx_counter, 0u64);
@@ -86,7 +84,7 @@ fn check_successful_simple_sr25519_creation() {
 	assert_eq!(stored_did.attestation_key, operation.new_attestation_key);
 	assert_eq!(
 		stored_did.verification_keys,
-		<BTreeMap<Hash, did::PublicVerificationKey>>::new()
+		<BTreeMap<TestKeyId, TestVerificationKeyDetails>>::new()
 	);
 	assert_eq!(stored_did.endpoint_url, operation.new_endpoint_url);
 	assert_eq!(stored_did.last_tx_counter, 0u64);
@@ -126,13 +124,18 @@ fn check_successful_complete_creation() {
 	assert_eq!(stored_did.attestation_key, operation.new_attestation_key);
 
 	assert_eq!(stored_did.verification_keys.len(), 1);
-	let (stored_key_id, stored_key) = stored_did
+	let stored_attestation_key = stored_did
+		.attestation_key
+		.expect("Attestation key should be present for this DID.");
+	let (stored_key_id, stored_key_details) = stored_did
 		.verification_keys
 		.iter()
 		.next()
 		.expect("Stored verification keys should contain at least one key.");
-	let hash = generate_attestation_key_id(*stored_key, stored_did.last_tx_counter);
-	assert_eq!(*stored_key_id, hash);
+	let expected_hash = generate_attestation_key_id(&stored_attestation_key, stored_did.last_tx_counter);
+	assert_eq!(*stored_key_id, expected_hash);
+	assert_eq!(stored_key_details.verification_key, stored_attestation_key);
+	assert_eq!(stored_key_details.block_number, 0);
 
 	assert_eq!(stored_did.endpoint_url, operation.new_endpoint_url);
 	assert_eq!(stored_did.last_tx_counter, 0u64);
@@ -226,15 +229,20 @@ fn check_successful_complete_update() {
 
 	let mut old_did_details = generate_base_did_details(did::PublicVerificationKey::from(old_auth_key.public()));
 	old_did_details.attestation_key = Some(did::PublicVerificationKey::from(old_att_key.public()));
-	let mut old_verification_keys_map = BTreeMap::<Hash, did::PublicVerificationKey>::new();
-	old_verification_keys_map.insert(
-		generate_attestation_key_id(
-			old_did_details.attestation_key.unwrap(),
-			old_did_details.last_tx_counter,
-		),
-		old_did_details.attestation_key.unwrap(),
+	let attestation_key_id = generate_attestation_key_id(
+		&old_did_details.attestation_key.unwrap(),
+		old_did_details.last_tx_counter,
 	);
-	old_did_details.verification_keys = old_verification_keys_map;
+	old_did_details.verification_keys = vec![(
+		attestation_key_id,
+		VerificationKeyDetails {
+			verification_key: did::PublicVerificationKey::from(old_att_key.public()),
+			block_number: 0,
+		},
+	)]
+	.iter()
+	.copied()
+	.collect::<BTreeMap<TestKeyId, TestVerificationKeyDetails>>();
 
 	// Update all keys, URL endpoint and tx counter. No keys are removed in this
 	// test case
@@ -255,7 +263,10 @@ fn check_successful_complete_update() {
 		.with_dids(vec![(ALICE_DID, old_did_details.clone())])
 		.build();
 
+	let new_block_number: TestBlockNumber = 1;
+
 	ext.execute_with(|| {
+		System::set_block_number(new_block_number);
 		assert_ok!(Did::submit_did_update_operation(
 			Origin::signed(DEFAULT_ACCOUNT),
 			operation.clone(),
@@ -283,18 +294,32 @@ fn check_successful_complete_update() {
 
 	// Verification keys should contain both the previous and the current
 	// attestation key.
+	let old_att_key = old_did_details
+		.attestation_key
+		.expect("Old attestation key should be present in the old DID details.");
+	let new_att_key = new_did_details
+		.attestation_key
+		.expect("New attestation key should be present in the new DID details.");
+
 	assert_eq!(new_did_details.verification_keys.len(), 2);
-	let mut keys_iterator = new_did_details.verification_keys.iter();
-	let (_, stored_key_1) = keys_iterator
-		.next()
-		.expect("Stored verification keys should contain at least one key.");
-	let (_, stored_key_2) = keys_iterator
-		.next()
-		.expect("Stored verification keys should contain at least two keys.");
-	let keys: BTreeSet<did::PublicVerificationKey> =
-		vec![stored_key_1.clone(), stored_key_2.clone()].into_iter().collect();
-	assert!(keys.contains(&old_did_details.attestation_key.unwrap()));
-	assert!(keys.contains(&new_did_details.attestation_key.unwrap()));
+	let mut key_details: Vec<(&TestKeyId, &TestVerificationKeyDetails)> =
+		new_did_details.verification_keys.iter().collect();
+	// Sort keys by block number in which they were added
+	key_details.sort_by_key(|key_entry| key_entry.1.block_number);
+
+	let (key_id_1, key_details_1) = key_details
+		.get(0)
+		.expect("DID should have at least 1 verification key stored");
+	assert_eq!(key_details_1.block_number, 0);
+	assert_eq!(key_details_1.verification_key, old_att_key);
+	assert_eq!(**key_id_1, generate_attestation_key_id(&old_att_key, 0));
+
+	let (key_id_2, key_details_2) = key_details
+		.get(1)
+		.expect("DID should have at least 2 verification keys stored");
+	assert_eq!(key_details_2.block_number, new_block_number);
+	assert_eq!(key_details_2.verification_key, new_att_key);
+	assert_eq!(**key_id_2, generate_attestation_key_id(&new_att_key, new_block_number));
 
 	assert_eq!(new_did_details.endpoint_url, operation.new_endpoint_url);
 	assert_eq!(new_did_details.last_tx_counter, old_did_details.last_tx_counter + 1u64);
@@ -307,12 +332,20 @@ fn check_successful_keys_deletion_update() {
 	let did_att_key = did::PublicVerificationKey::from(auth_key.public());
 	let del_key = get_sr25519_attestation_key(true);
 
-	let mut old_verification_keys_map = BTreeMap::new();
-	old_verification_keys_map.insert(generate_attestation_key_id(did_att_key, 0), did_att_key.clone());
 	let mut old_did_details = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
 	old_did_details.attestation_key = Some(did::PublicVerificationKey::from(att_key.public()));
 	old_did_details.delegation_key = Some(did::PublicVerificationKey::from(del_key.public()));
-	old_did_details.verification_keys = old_verification_keys_map;
+	let old_att_key_id = generate_attestation_key_id(&did_att_key, 0);
+	old_did_details.verification_keys = vec![(
+		old_att_key_id,
+		VerificationKeyDetails {
+			verification_key: did_att_key,
+			block_number: 0,
+		},
+	)]
+	.iter()
+	.copied()
+	.collect::<BTreeMap<TestKeyId, TestVerificationKeyDetails>>();
 
 	// Remove both attestation and delegation key
 	let mut operation = generate_base_did_update_operation(ALICE_DID);
@@ -349,22 +382,49 @@ fn check_successful_keys_deletion_update() {
 #[test]
 fn check_successful_verification_keys_deletion() {
 	let auth_key = get_ed25519_authentication_key(true);
-	let old_verification_keys_vector = vec![
-		did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public()),
-		did::PublicVerificationKey::from(get_ed25519_attestation_key(false).public()),
-		did::PublicVerificationKey::from(get_sr25519_attestation_key(true).public()),
-		did::PublicVerificationKey::from(get_sr25519_attestation_key(false).public()),
-	];
-	let mut old_verification_keys_map = BTreeMap::new();
-	for key in old_verification_keys_vector.iter() {
-		old_verification_keys_map.insert(generate_attestation_key_id(*key, 0), key.clone());
-	}
+	let att_key_1 = did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public());
+	let att_key_2 = did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public());
+	let att_key_3 = did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public());
+	let att_key_4 = did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public());
+	let old_verification_keys_map = vec![
+		(
+			generate_attestation_key_id(&att_key_1, 0),
+			VerificationKeyDetails {
+				verification_key: att_key_1,
+				block_number: 0,
+			},
+		),
+		(
+			generate_attestation_key_id(&att_key_2, 0),
+			VerificationKeyDetails {
+				verification_key: att_key_2,
+				block_number: 0,
+			},
+		),
+		(
+			generate_attestation_key_id(&att_key_3, 0),
+			VerificationKeyDetails {
+				verification_key: att_key_3,
+				block_number: 0,
+			},
+		),
+		(
+			generate_attestation_key_id(&att_key_4, 0),
+			VerificationKeyDetails {
+				verification_key: att_key_4,
+				block_number: 0,
+			},
+		),
+	]
+	.iter()
+	.copied()
+	.collect::<BTreeMap<TestKeyId, TestVerificationKeyDetails>>();
 	let mut old_did_details = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
 	old_did_details.verification_keys = old_verification_keys_map.clone();
 
 	// Create update operation to remove all verification keys.
 	let mut operation = generate_base_did_update_operation(ALICE_DID);
-	operation.verification_keys_to_remove = Some(old_verification_keys_map.keys().map(|key| key.clone()).collect());
+	operation.verification_keys_to_remove = Some(old_verification_keys_map.keys().copied().collect());
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
@@ -558,32 +618,109 @@ fn check_invalid_signature_did_update() {
 }
 
 #[test]
+fn check_invalid_current_attestaton_key_deletion() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let current_att_key = did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public());
+	let other_verification_key = did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public());
+	let old_verification_keys_map = vec![
+		(
+			generate_attestation_key_id(&current_att_key, 0),
+			VerificationKeyDetails {
+				verification_key: current_att_key,
+				block_number: 0,
+			},
+		),
+		(
+			generate_attestation_key_id(&other_verification_key, 0),
+			VerificationKeyDetails {
+				verification_key: other_verification_key,
+				block_number: 0,
+			},
+		),
+	]
+	.iter()
+	.copied()
+	.collect::<BTreeMap<TestKeyId, TestVerificationKeyDetails>>();
+	let mut old_did_details = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
+	old_did_details.attestation_key = Some(current_att_key);
+	old_did_details.verification_keys = old_verification_keys_map;
+
+	let verification_keys_to_remove = vec![
+		generate_attestation_key_id(&other_verification_key, 0),
+		// Current attestation key instructed to be deleted from the storage
+		generate_attestation_key_id(&current_att_key, 0),
+	]
+	.iter()
+	.cloned()
+	.collect::<BTreeSet<TestKeyId>>();
+	let mut operation = generate_base_did_update_operation(ALICE_DID);
+	operation.verification_keys_to_remove = Some(verification_keys_to_remove);
+
+	let signature = auth_key.sign(operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(ALICE_DID, old_did_details)])
+		.build();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_update_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::CurrentlyActiveAttestationKey
+		);
+	});
+}
+
+#[test]
 fn check_invalid_verification_keys_deletion() {
 	let auth_key = get_ed25519_authentication_key(true);
-	let key1 = did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public());
-	let key2 = did::PublicVerificationKey::from(get_ed25519_attestation_key(false).public());
-	let key3 = did::PublicVerificationKey::from(get_sr25519_attestation_key(true).public());
-	let key4 = did::PublicVerificationKey::from(get_sr25519_attestation_key(false).public());
-	let old_verification_keys = vec![key1, key2, key3];
-	let old_verification_keys_ids: Vec<TestKeyId> = old_verification_keys
-		.iter()
-		.map(|key| generate_attestation_key_id(*key, 0)).collect();
-
-	let mut old_verification_keys_map = BTreeMap::new();
-	for (index, key_id) in old_verification_keys_ids.iter().enumerate() {
-		let key = old_verification_keys[index];
-		old_verification_keys_map.insert(*key_id, key.clone());
-	}
+	let att_key_1 = did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public());
+	let att_key_2 = did::PublicVerificationKey::from(get_ed25519_attestation_key(false).public());
+	let att_key_3 = did::PublicVerificationKey::from(get_sr25519_attestation_key(true).public());
+	let att_key_4 = did::PublicVerificationKey::from(get_sr25519_attestation_key(false).public());
+	// No key_4 added to the map of stored verification keys
+	let old_verification_keys_map = vec![
+		(
+			generate_attestation_key_id(&att_key_1, 0),
+			VerificationKeyDetails {
+				verification_key: att_key_1,
+				block_number: 0,
+			},
+		),
+		(
+			generate_attestation_key_id(&att_key_2, 0),
+			VerificationKeyDetails {
+				verification_key: att_key_2,
+				block_number: 0,
+			},
+		),
+		(
+			generate_attestation_key_id(&att_key_3, 0),
+			VerificationKeyDetails {
+				verification_key: att_key_3,
+				block_number: 0,
+			},
+		),
+	]
+	.iter()
+	.copied()
+	.collect::<BTreeMap<TestKeyId, TestVerificationKeyDetails>>();
 	let mut old_did_details = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
 	old_did_details.verification_keys = old_verification_keys_map;
 
-	// Remove some verification keys including one not stored on chain (key4)
-	let verification_keys_to_remove = vec![key2, key3, key4];
-	let verification_keys_ids_to_remove: Vec<TestKeyId> = verification_keys_to_remove
-		.iter()
-		.map(|key| generate_attestation_key_id(*key, 0)).collect();
+	// Remove some verification keys including one not stored on chain (key_4)
+	let verification_keys_to_remove = vec![
+		generate_attestation_key_id(&att_key_3, 0),
+		generate_attestation_key_id(&att_key_4, 0),
+	]
+	.iter()
+	.cloned()
+	.collect::<BTreeSet<TestKeyId>>();
 	let mut operation = generate_base_did_update_operation(ALICE_DID);
-	operation.verification_keys_to_remove = Some(verification_keys_ids_to_remove.iter().map(|key| key.clone()).collect());
+	operation.verification_keys_to_remove = Some(verification_keys_to_remove);
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
