@@ -40,6 +40,7 @@
 
 #![allow(unused_parens)]
 #![allow(unused_imports)]
+#![allow(rustdoc::broken_intra_doc_links)]
 
 use frame_support::{
 	traits::Get,

@@ -61,8 +61,8 @@ pub mod pallet {
 	}
 
 	impl<T: Config> did::DidOperation<T> for CtypeCreationOperation<T> {
-		fn get_verification_key_type(&self) -> did::DidVerificationKeyType {
-			did::DidVerificationKeyType::AssertionMethod
+		fn get_verification_key_type(&self) -> did::DidVerificationKeyRelationship {
+			did::DidVerificationKeyRelationship::AssertionMethod
 		}
 
 		fn get_did(&self) -> &T::DidIdentifier {

@@ -57,7 +57,7 @@ pub mod pallet {
 		pub ctype_hash: T::Hash,
 		/// The DID of the attester.
 		pub attester: T::DidIdentifier,
-		/// [OPTIONAL] The ID of the delegation node used to authorise the
+		/// \[OPTIONAL\] The ID of the delegation node used to authorize the
 		/// attester.
 		pub delegation_id: Option<T::DelegationNodeId>,
 		/// The flag indicating whether the attestation has been revoked or not.
@@ -78,7 +78,7 @@ pub mod pallet {
 		pub claim_hash: T::Hash,
 		/// The hash of the CTYPE used for this attestation.
 		pub ctype_hash: T::Hash,
-		/// [OPTIONAL] The ID of the delegation node used to authorise the
+		/// \[OPTIONAL\] The ID of the delegation node used to authorise the
 		/// attester.
 		pub delegation_id: Option<T::DelegationNodeId>,
 		/// The DID tx counter.
@@ -86,8 +86,8 @@ pub mod pallet {
 	}
 
 	impl<T: Config> did::DidOperation<T> for AttestationCreationOperation<T> {
-		fn get_verification_key_type(&self) -> did::DidVerificationKeyType {
-			did::DidVerificationKeyType::AssertionMethod
+		fn get_verification_key_type(&self) -> did::DidVerificationKeyRelationship {
+			did::DidVerificationKeyRelationship::AssertionMethod
 		}
 
 		fn get_did(&self) -> &T::DidIdentifier {
@@ -135,8 +135,8 @@ pub mod pallet {
 	}
 
 	impl<T: Config> did::DidOperation<T> for AttestationRevocationOperation<T> {
-		fn get_verification_key_type(&self) -> did::DidVerificationKeyType {
-			did::DidVerificationKeyType::AssertionMethod
+		fn get_verification_key_type(&self) -> did::DidVerificationKeyRelationship {
+			did::DidVerificationKeyRelationship::AssertionMethod
 		}
 
 		fn get_did(&self) -> &T::DidIdentifier {

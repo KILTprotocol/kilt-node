@@ -116,7 +116,7 @@ pub mod pallet {
 	pub struct DelegationNode<T: Config> {
 		/// The ID of the delegation hierarchy root.
 		pub root_id: T::DelegationNodeId,
-		/// [OPTIONAL] The ID of the parent node. If None, the node is
+		/// \[OPTIONAL\] The ID of the parent node. If None, the node is
 		/// considered a child of the root node.
 		pub parent: Option<T::DelegationNodeId>,
 		/// The DID of the owner of the delegation node, i.e., the delegate.
@@ -191,8 +191,8 @@ pub mod pallet {
 	}
 
 	impl<T: Config> DidOperation<T> for DelegationRootCreationOperation<T> {
-		fn get_verification_key_type(&self) -> did::DidVerificationKeyType {
-			did::DidVerificationKeyType::CapabilityDelegation
+		fn get_verification_key_type(&self) -> did::DidVerificationKeyRelationship {
+			did::DidVerificationKeyRelationship::CapabilityDelegation
 		}
 
 		fn get_did(&self) -> &T::DidIdentifier {
@@ -231,7 +231,7 @@ pub mod pallet {
 		pub delegation_id: T::DelegationNodeId,
 		/// The ID of the delegation hierarchy root to add this delegation to.
 		pub root_id: T::DelegationNodeId,
-		/// [OPTIONAL] The ID of the parent node to verify that the creator is
+		/// \[OPTIONAL\] The ID of the parent node to verify that the creator is
 		/// allowed to create a new delegation. If None, the verification is
 		/// performed against the provided root node.
 		pub parent_id: Option<T::DelegationNodeId>,
@@ -248,8 +248,8 @@ pub mod pallet {
 	}
 
 	impl<T: Config> DidOperation<T> for DelegationCreationOperation<T> {
-		fn get_verification_key_type(&self) -> did::DidVerificationKeyType {
-			did::DidVerificationKeyType::CapabilityDelegation
+		fn get_verification_key_type(&self) -> did::DidVerificationKeyRelationship {
+			did::DidVerificationKeyRelationship::CapabilityDelegation
 		}
 
 		fn get_did(&self) -> &T::DidIdentifier {
@@ -301,8 +301,8 @@ pub mod pallet {
 	}
 
 	impl<T: Config> DidOperation<T> for DelegationRootRevocationOperation<T> {
-		fn get_verification_key_type(&self) -> did::DidVerificationKeyType {
-			did::DidVerificationKeyType::CapabilityDelegation
+		fn get_verification_key_type(&self) -> did::DidVerificationKeyRelationship {
+			did::DidVerificationKeyRelationship::CapabilityDelegation
 		}
 
 		fn get_did(&self) -> &T::DidIdentifier {
@@ -356,8 +356,8 @@ pub mod pallet {
 	}
 
 	impl<T: Config> DidOperation<T> for DelegationRevocationOperation<T> {
-		fn get_verification_key_type(&self) -> did::DidVerificationKeyType {
-			did::DidVerificationKeyType::CapabilityDelegation
+		fn get_verification_key_type(&self) -> did::DidVerificationKeyRelationship {
+			did::DidVerificationKeyRelationship::CapabilityDelegation
 		}
 
 		fn get_did(&self) -> &T::DidIdentifier {
@@ -571,7 +571,7 @@ pub mod pallet {
 				hash_root.as_ref(),
 				&operation.delegate_signature,
 				&delegate_did_details,
-				did::DidVerificationKeyType::Authentication,
+				did::DidVerificationKeyRelationship::Authentication,
 			)
 			.map_err(|err| match err {
 				// Should never happen as a DID has always a valid authentication key and UrlErrors are never thrown

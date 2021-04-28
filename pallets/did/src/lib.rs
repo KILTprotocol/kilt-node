@@ -38,7 +38,7 @@ use codec::{Decode, Encode};
 use frame_support::{ensure, storage::types::StorageMap, Parameter};
 use frame_system::{self, ensure_signed};
 use sp_core::{ed25519, sr25519};
-use sp_runtime::traits::{Hash, Verify};
+use sp_runtime::traits::Verify;
 use sp_std::{
 	collections::{btree_map::BTreeMap, btree_set::BTreeSet},
 	convert::TryFrom,
@@ -70,76 +70,33 @@ pub mod pallet {
 	/// Reference to a payload of data of variable size.
 	pub type Payload = [u8];
 
-	/// Type of a DID key identifier.
+	/// Type for a DID key identifier.
 	pub type KeyId<T> = <T as frame_system::Config>::Hash;
 
-	/// A public key under the control of a DID subject.
-	pub trait DidPublicKey {
-		/// Returns the key method description as in the [DID specification](https://w3c.github.io/did-spec-registries/#verification-method-types).
-		fn get_did_key_description(&self) -> &str;
-	}
+	/// Type for a block number.
+	pub type BlockNumber<T> = <T as frame_system::Config>::BlockNumber;
 
-	/// Verification methods a verification key can
-	/// fulfil, according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
-	#[derive(Clone, Debug, Decode, Encode, PartialEq, Eq)]
-	pub enum DidVerificationKeyType {
-		/// Key used to authenticate all the DID operations.
-		Authentication,
-		/// Key used to write and revoke delegations on chain.
-		CapabilityDelegation,
-		/// Not used for now.
-		CapabilityInvocation,
-		/// Key used to write and revoke attestations on chain.
-		AssertionMethod,
-	}
-
-	/// Verification methods an encryption key can
-	/// fulfil, according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
-	#[derive(Clone, Debug, Decode, Encode, PartialEq)]
-	pub enum DidEncryptionKeyType {
-		/// Key used for key agreement and encryption.
-		KeyAgreement,
-	}
-
-	/// Details of a verification key, which includes the key value and the
-	/// block number at which it was set.
+	/// The string description of a DID public key.
 	///
-	/// It is currently used to keep track of all the past and current
-	/// attestation keys a DID might control.
-	#[derive(Clone, Copy, Debug, Decode, Encode, PartialEq)]
-	pub struct VerificationKeyDetails<T: Config> {
-		/// A verification key the DID controls.
-		pub verification_key: PublicVerificationKey,
-		/// The block number in which the verification key was added to the DID.
-		pub block_number: <T as frame_system::Config>::BlockNumber,
+	/// The description must follow the [DID specification](https://w3c.github.io/did-spec-registries/#verification-method-types).
+	pub trait DidPublicKeyDescription {
+		fn get_did_key_description(&self) -> &str;
 	}
 
 	/// Types of verification keys a DID can control.
 	#[derive(Clone, Copy, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
-	pub enum PublicVerificationKey {
+	pub enum DidVerificationKey {
 		/// An Ed25519 public key.
 		Ed25519(ed25519::Public),
 		/// A Sr25519 public key.
 		Sr25519(sr25519::Public),
 	}
 
-	impl From<ed25519::Public> for PublicVerificationKey {
-		fn from(key: ed25519::Public) -> Self {
-			PublicVerificationKey::Ed25519(key)
-		}
-	}
-
-	impl From<sr25519::Public> for PublicVerificationKey {
-		fn from(key: sr25519::Public) -> Self {
-			PublicVerificationKey::Sr25519(key)
-		}
-	}
-
-	impl PublicVerificationKey {
+	impl DidVerificationKey {
 		/// Verify a DID signature using one of the DID keys.
 		pub fn verify_signature(&self, payload: &Payload, signature: &DidSignature) -> Result<bool, SignatureError> {
 			match self {
-				PublicVerificationKey::Ed25519(public_key) => {
+				DidVerificationKey::Ed25519(public_key) => {
 					// Try to re-create a Signature value or throw an error if raw value is invalid
 					if let DidSignature::Ed25519(sig) = signature {
 						Ok(sig.verify(payload, &public_key))
@@ -148,7 +105,7 @@ pub mod pallet {
 					}
 				}
 				// Follows same process as above, but using a Sr25519 instead
-				PublicVerificationKey::Sr25519(public_key) => {
+				DidVerificationKey::Sr25519(public_key) => {
 					if let DidSignature::Sr25519(sig) = signature {
 						Ok(sig.verify(payload, &public_key))
 					} else {
@@ -159,15 +116,76 @@ pub mod pallet {
 		}
 	}
 
-	impl DidPublicKey for PublicVerificationKey {
+	impl DidPublicKeyDescription for DidVerificationKey {
 		fn get_did_key_description(&self) -> &str {
 			match self {
 				// https://w3c.github.io/did-spec-registries/#ed25519verificationkey2018
-				PublicVerificationKey::Ed25519(_) => "Ed25519VerificationKey2018",
+				DidVerificationKey::Ed25519(_) => "Ed25519VerificationKey2018",
 				// Not yet defined in the DID specification.
-				PublicVerificationKey::Sr25519(_) => "Sr25519VerificationKey2020",
+				DidVerificationKey::Sr25519(_) => "Sr25519VerificationKey2020",
 			}
 		}
+	}
+
+	impl From<ed25519::Public> for DidVerificationKey {
+		fn from(key: ed25519::Public) -> Self {
+			DidVerificationKey::Ed25519(key)
+		}
+	}
+
+	impl From<sr25519::Public> for DidVerificationKey {
+		fn from(key: sr25519::Public) -> Self {
+			DidVerificationKey::Sr25519(key)
+		}
+	}
+
+	/// Types of encryption keys a DID can control.
+	#[derive(Clone, Copy, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
+	pub enum DidEncryptionKey {
+		/// An X25519 public key.
+		X25519([u8; 32]),
+	}
+
+	impl DidPublicKeyDescription for DidEncryptionKey {
+		fn get_did_key_description(&self) -> &str {
+			// https://w3c.github.io/did-spec-registries/#x25519keyagreementkey2019
+			"X25519KeyAgreementKey2019"
+		}
+	}
+
+	/// A general public key under the control of the DID.
+	#[derive(Clone, Copy, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
+	pub enum DidPublicKey {
+		/// A verification key, used to generate and verify signatures.
+		PublicVerificationKey(DidVerificationKey),
+		/// An encryption key, used to encrypt and decrypt payloads.
+		PublicEncryptionKey(DidEncryptionKey),
+	}
+
+	impl From<DidVerificationKey> for DidPublicKey {
+		fn from(verification_key: DidVerificationKey) -> Self {
+			Self::PublicVerificationKey(verification_key)
+		}
+	}
+
+	impl From<DidEncryptionKey> for DidPublicKey {
+		fn from(encryption_key: DidEncryptionKey) -> Self {
+			Self::PublicEncryptionKey(encryption_key)
+		}
+	}
+
+	/// Verification methods a verification key can
+	/// fulfil, according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
+	#[derive(Clone, Debug, Decode, Encode, PartialEq, Eq)]
+	pub enum DidVerificationKeyRelationship {
+		/// Key used to authenticate all the DID operations.
+		Authentication,
+		/// Key used to write and revoke delegations on chain.
+		CapabilityDelegation,
+		/// Not used for now.
+		CapabilityInvocation,
+		/// Key used to write and revoke attestations on chain.
+		AssertionMethod,
 	}
 
 	/// Types of signatures supported by this pallet.
@@ -191,46 +209,14 @@ pub mod pallet {
 		}
 	}
 
-	/// Types of encryption keys a DID can control.
-	#[derive(Clone, Copy, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
-	pub enum PublicEncryptionKey {
-		/// An X25519 public key.
-		X25519([u8; 32]),
-	}
-
-	impl DidPublicKey for PublicEncryptionKey {
-		fn get_did_key_description(&self) -> &str {
-			// https://w3c.github.io/did-spec-registries/#x25519keyagreementkey2019
-			"X25519KeyAgreementKey2019"
-		}
-	}
-
-	/// Possible actions on a DID verification key within a DidUpdateOperation.
-	#[derive(Clone, Copy, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
-	pub enum DidVerificationKeyUpdateAction {
-		/// Do not change the verification key.
-		Ignore,
-		/// Change the verification key to the new one provided.
-		Change(PublicVerificationKey),
-		/// Delete the verification key.
-		Delete,
-	}
-
-	// Return the ignore operation by default
-	impl Default for DidVerificationKeyUpdateAction {
-		fn default() -> Self {
-			Self::Ignore
-		}
-	}
-
 	/// All the errors that can be generated when validating a DID operation.
 	#[derive(Debug, Eq, PartialEq)]
 	pub enum DidError {
-		/// See StorageError.
+		/// See [StorageError].
 		StorageError(StorageError),
-		/// See SignatureError.
+		/// See [SignatureError].
 		SignatureError(SignatureError),
-		/// See UrlError.
+		/// See [UrlError].
 		UrlError(UrlError),
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
@@ -245,15 +231,13 @@ pub mod pallet {
 		DidNotPresent,
 		/// The given DID does not contain the right key to verify the signature
 		/// of a DID operation.
-		DidKeyNotPresent(DidVerificationKeyType),
+		DidKeyNotPresent(DidVerificationKeyRelationship),
 		/// At least one verification key referenced is not stored in the set
 		/// of verification keys.
 		VerificationKeyNotPresent,
 		/// The user tries to delete a verification key that is currently being
-		/// used as an attestation key, and this is not allowed as that would
-		/// result in new attestations being created but that cannot be verified
-		/// as the verification key has been deleted.
-		CurrentlyActiveAttestationKey,
+		/// used to authorize operations, and this is not allowed.
+		CurrentlyActiveKey,
 		/// The maximum supported value for the DID tx counter has been reached.
 		/// No more operations with the DID are allowed.
 		MaxTxCounterValue,
@@ -280,11 +264,403 @@ pub mod pallet {
 		InvalidUrlScheme,
 	}
 
+	/// Details of a public key, which includes the key value and the
+	/// block number at which it was set.
+	///
+	/// It is currently used to keep track of all the past and current
+	/// attestation keys a DID might control.
+	#[derive(Clone, Debug, Decode, Encode, PartialEq)]
+	pub struct DidPublicKeyDetails<T: Config> {
+		/// A public key the DID controls.
+		pub key: DidPublicKey,
+		/// The block number in which the verification key was added to the DID.
+		pub block_number: BlockNumber<T>,
+	}
+
+	/// The details associated to a DID identity.
+	#[derive(Clone, Debug, Decode, Encode, PartialEq)]
+	pub struct DidDetails<T: Config> {
+		/// The ID of the authentication key, used to authenticate DID-related
+		/// operations.
+		authentication_key: KeyId<T>,
+		/// The set of the key agreement key IDs, which can be used to encrypt
+		/// data addressed to the DID subject.
+		key_agreement_keys: BTreeSet<KeyId<T>>,
+		/// \[OPTIONAL\] The ID of the delegation key, used to verify the
+		/// signatures of the delegations created by the DID subject.
+		delegation_key: Option<KeyId<T>>,
+		/// \[OPTIONAL\] The ID of the attestation key, used to verify the
+		/// signatures of the attestations created by the DID subject.
+		attestation_key: Option<KeyId<T>>,
+		/// The map of public keys, with the key label as
+		/// the key map and the tuple (key, addition_block_number) as the map
+		/// value.
+		/// The map includes all the keys under the control of the DID subject,
+		/// including the ones currently used for authentication, key agreement,
+		/// attestation, and delegation. Other than those, the map also contains
+		/// the old attestation keys that have been rotated, i.e., they cannot
+		/// be used to create new attestations but can still be used to verify
+		/// previously issued attestations.
+		public_keys: BTreeMap<KeyId<T>, DidPublicKeyDetails<T>>,
+		/// \[OPTIONAL\] The URL pointing to the service endpoints the DID
+		/// subject publicly exposes.
+		pub endpoint_url: Option<Url>,
+		/// The counter used to avoid replay attacks, which is checked and
+		/// updated upon each DID operation involving with the subject as the
+		/// creator.
+		pub(crate) last_tx_counter: u64,
+	}
+
+	impl<T: Config> DidDetails<T> {
+		/// Creates a new instance of DID details with the minimum information,
+		/// i.e., an authentication key and the block creation time.
+		///
+		/// The tx counter is set by default to 0.
+		pub fn new(authentication_key: DidVerificationKey, block_number: BlockNumber<T>) -> Self {
+			let mut public_keys: BTreeMap<KeyId<T>, DidPublicKeyDetails<T>> = BTreeMap::new();
+			let authentication_key_id = utils::calculate_key_id::<T>(&authentication_key.into());
+			public_keys.insert(
+				authentication_key_id,
+				DidPublicKeyDetails {
+					key: authentication_key.into(),
+					block_number,
+				},
+			);
+			Self {
+				authentication_key: authentication_key_id,
+				key_agreement_keys: BTreeSet::new(),
+				attestation_key: None,
+				delegation_key: None,
+				endpoint_url: None,
+				public_keys,
+				last_tx_counter: 0u64,
+			}
+		}
+
+		/// Update the DID authentication key.
+		///
+		/// The old key is deleted from the set of verification keys if it is
+		/// not used in any other part of the DID. The new key is added to the
+		/// set of verification keys.
+		pub fn update_authentication_key(
+			&mut self,
+			new_authentication_key: DidVerificationKey,
+			block_number: BlockNumber<T>,
+		) {
+			let old_authentication_key_id = self.authentication_key;
+			let new_authentication_key_id = utils::calculate_key_id::<T>(&new_authentication_key.into());
+			self.authentication_key = new_authentication_key_id;
+			// Remove old key ID from public keys, if not used anymore.
+			self.remove_key_if_unused(&old_authentication_key_id);
+			// Add new key ID to public keys. If a key with the same ID is already present,
+			// the result is simply that the block number is updated.
+			self.public_keys.insert(
+				new_authentication_key_id,
+				DidPublicKeyDetails {
+					key: new_authentication_key.into(),
+					block_number,
+				},
+			);
+		}
+
+		/// Add new key agreement keys to the DID.
+		///
+		/// The new keys are added to the set of verification keys.
+		pub fn add_key_agreement_keys(
+			&mut self,
+			new_key_agreement_keys: BTreeSet<DidEncryptionKey>,
+			block_number: BlockNumber<T>,
+		) {
+			for new_key_agreement_key in new_key_agreement_keys {
+				let new_key_agreement_id = utils::calculate_key_id::<T>(&new_key_agreement_key.into());
+				self.public_keys.insert(
+					new_key_agreement_id,
+					DidPublicKeyDetails {
+						key: new_key_agreement_key.into(),
+						block_number,
+					},
+				);
+				self.key_agreement_keys.insert(new_key_agreement_id);
+			}
+		}
+
+		/// Update the DID attestation key.
+		///
+		/// The old key is not removed from the set of verification keys, hence
+		/// it can still be used to verify past attestations.
+		/// The new key is added to the set of verification keys.
+		pub fn update_attestation_key(
+			&mut self,
+			new_attestation_key: DidVerificationKey,
+			block_number: BlockNumber<T>,
+		) {
+			let new_attestation_key_id = utils::calculate_key_id::<T>(&new_attestation_key.into());
+			self.attestation_key = Some(new_attestation_key_id);
+			self.public_keys.insert(
+				new_attestation_key_id,
+				DidPublicKeyDetails {
+					key: new_attestation_key.into(),
+					block_number,
+				},
+			);
+		}
+
+		/// Delete the DID attestation key.
+		///
+		/// Once deleted, it cannot be used to write new attestations anymore.
+		/// The key is also removed from the set of verification keys if it not
+		/// used anywhere else in the DID.
+		pub fn delete_attestation_key(&mut self) {
+			if let Some(old_attestation_key_id) = self.attestation_key {
+				self.attestation_key = None;
+				self.remove_key_if_unused(&old_attestation_key_id);
+			}
+		}
+
+		/// Update the DID delegation key.
+		///
+		/// The old key is deleted from the set of verification keys if it is
+		/// not used in any other part of the DID. The new key is added to the
+		/// set of verification keys.
+		pub fn update_delegation_key(&mut self, new_delegation_key: DidVerificationKey, block_number: BlockNumber<T>) {
+			let old_delegation_key_id = self.delegation_key;
+			let new_delegation_key_id = utils::calculate_key_id::<T>(&new_delegation_key.into());
+			self.delegation_key = Some(new_delegation_key_id);
+			if let Some(old_delegation_key) = old_delegation_key_id {
+				self.remove_key_if_unused(&old_delegation_key);
+			}
+			self.public_keys.insert(
+				new_delegation_key_id,
+				DidPublicKeyDetails {
+					key: new_delegation_key.into(),
+					block_number,
+				},
+			);
+		}
+
+		/// Delete the DID delegation key.
+		///
+		/// It cannot be used to write new delegations anymore.
+		/// The key is also removed from the set of verification keys if it not
+		/// used anywhere else in the DID.
+		pub fn delete_delegation_key(&mut self) {
+			if let Some(old_delegation_key_id) = self.delegation_key {
+				self.delegation_key = None;
+				self.remove_key_if_unused(&old_delegation_key_id);
+			}
+		}
+
+		/// Deletes a public key from the set of public keys stored on chain.
+		/// Additionally, if the public key to remove is among the key agreement
+		/// keys, it also eliminates it from there.
+		///
+		/// When deleting a public key, the following conditions are verified:
+		/// - 1. the set of keys to delete does not contain any of the currently
+		///   active verification keys, i.e., authentication, attestation, and
+		///   delegation key, i.e., only key agreement keys and past attestation
+		///   keys can be deleted.
+		/// - 2. the set of keys to delete contains key IDs that are not
+		///   currently stored on chain
+		fn remove_public_keys(&mut self, key_ids: &BTreeSet<KeyId<T>>) -> Result<(), StorageError> {
+			// Consider the currently active authentication, attestation, and delegation key
+			// as forbidden to delete. They can be deleted with the right operation for the
+			// respective fields in the DidUpdateOperation.
+			let mut forbidden_verification_key_ids = BTreeSet::new();
+			forbidden_verification_key_ids.insert(self.authentication_key);
+			if let Some(attestation_key_id) = self.attestation_key {
+				forbidden_verification_key_ids.insert(attestation_key_id);
+			}
+			if let Some(delegation_key_id) = self.delegation_key {
+				forbidden_verification_key_ids.insert(delegation_key_id);
+			}
+
+			for key_id in key_ids.iter() {
+				// Check for condition 1.
+				ensure!(
+					!forbidden_verification_key_ids.contains(key_id),
+					StorageError::CurrentlyActiveKey
+				);
+				// Check for condition 2.
+				self.public_keys
+					.remove(key_id)
+					.ok_or(StorageError::VerificationKeyNotPresent)?;
+				// Also remove from the set of key agreement keys, if present.
+				self.key_agreement_keys.remove(key_id);
+			}
+
+			Ok(())
+		}
+
+		// Remove a key from the map of public keys if none of the other keys, i.e.,
+		// authentication, key agreement, attestation, or delegation, is referencing it.
+		fn remove_key_if_unused(&mut self, key_id: &KeyId<T>) {
+			if self.authentication_key != *key_id
+				&& self.attestation_key != Some(*key_id)
+				&& self.delegation_key != Some(*key_id)
+				&& !self.key_agreement_keys.contains(key_id)
+			{
+				self.public_keys.remove(key_id);
+			}
+		}
+
+		pub fn get_authentication_key_id(&self) -> KeyId<T> {
+			self.authentication_key
+		}
+
+		pub fn get_key_agreement_keys_ids(&self) -> &BTreeSet<KeyId<T>> {
+			&self.key_agreement_keys
+		}
+
+		pub fn get_attestation_key_id(&self) -> &Option<KeyId<T>> {
+			&self.attestation_key
+		}
+
+		pub fn get_delegation_key_id(&self) -> &Option<KeyId<T>> {
+			&self.delegation_key
+		}
+
+		pub fn get_public_keys(&self) -> &BTreeMap<KeyId<T>, DidPublicKeyDetails<T>> {
+			&self.public_keys
+		}
+
+		/// Returns a reference to a specific verification key given the type of
+		/// the key needed.
+		pub fn get_verification_key_for_key_type(
+			&self,
+			key_type: DidVerificationKeyRelationship,
+		) -> Option<&DidVerificationKey> {
+			let key_id = match key_type {
+				DidVerificationKeyRelationship::AssertionMethod => self.attestation_key,
+				DidVerificationKeyRelationship::Authentication => Some(self.authentication_key),
+				DidVerificationKeyRelationship::CapabilityDelegation => self.delegation_key,
+				_ => None,
+			}?;
+			let key_details = self.public_keys.get(&key_id)?;
+			if let DidPublicKey::PublicVerificationKey(key) = &key_details.key {
+				Some(&key)
+			} else {
+				// The case of something different than a verification key should never happen.
+				None
+			}
+		}
+
+		/// Increase the tx counter of the DID.
+		pub fn increase_tx_counter(&mut self) -> Result<(), StorageError> {
+			self.last_tx_counter = self
+				.last_tx_counter
+				.checked_add(1)
+				.ok_or(StorageError::MaxTxCounterValue)?;
+			Ok(())
+		}
+
+		/// Returns the last used tx counter for the DID.
+		pub fn get_tx_counter_value(&self) -> u64 {
+			self.last_tx_counter
+		}
+
+		/// Set the DID tx counter to an arbitrary value.
+		#[cfg(any(feature = "mock", test))]
+		pub fn set_tx_counter(&mut self, value: u64) {
+			self.last_tx_counter = value;
+		}
+	}
+
+	impl<T: Config> From<DidCreationOperation<T>> for DidDetails<T> {
+		fn from(op: DidCreationOperation<T>) -> Self {
+			let current_block_number = <frame_system::Pallet<T>>::block_number();
+
+			// Creates a new DID with the given authentication key.
+			let mut new_did_details = DidDetails::new(op.new_authentication_key, current_block_number);
+
+			new_did_details.add_key_agreement_keys(op.new_key_agreement_keys, current_block_number);
+
+			if let Some(attesation_key) = op.new_attestation_key {
+				new_did_details.update_attestation_key(attesation_key, current_block_number);
+			}
+
+			if let Some(delegation_key) = op.new_delegation_key {
+				new_did_details.update_delegation_key(delegation_key, current_block_number);
+			}
+
+			new_did_details.endpoint_url = op.new_endpoint_url;
+
+			new_did_details
+		}
+	}
+
+	// Generates a new DID entry starting from the current one stored in the
+	// storage and by applying the changes in the [DidUpdateOperation].
+	//
+	// The operation fails with a [DidError] if the update operation instructs to
+	// delete a verification key that is not associated with the DID.
+	//
+	// Please note that this method does not perform any checks regarding
+	// the validity of the [DidUpdateOperation] signature nor whether the nonce
+	// provided is valid.
+	impl<T: Config> TryFrom<(DidDetails<T>, DidUpdateOperation<T>)> for DidDetails<T> {
+		type Error = DidError;
+
+		fn try_from(
+			(old_details, update_operation): (DidDetails<T>, DidUpdateOperation<T>),
+		) -> Result<Self, Self::Error> {
+			let current_block_number = <frame_system::Pallet<T>>::block_number();
+
+			let mut new_details = old_details;
+
+			// Remove specified public keys.
+			new_details
+				.remove_public_keys(&update_operation.public_keys_to_remove)
+				.map_err(DidError::StorageError)?;
+
+			// Update the authentication key, if needed.
+			if let Some(new_authentication_key) = update_operation.new_authentication_key {
+				new_details.update_authentication_key(new_authentication_key, current_block_number);
+			}
+
+			// Add any new key agreement keys.
+			new_details.add_key_agreement_keys(update_operation.new_key_agreement_keys, current_block_number);
+
+			// Update/remove the attestation key, if needed.
+			match update_operation.attestation_key_update {
+				DidVerificationKeyUpdateAction::Delete => {
+					new_details.delete_attestation_key();
+				}
+				DidVerificationKeyUpdateAction::Change(new_attestation_key) => {
+					new_details.update_attestation_key(new_attestation_key, current_block_number);
+				}
+				// Nothing happens.
+				DidVerificationKeyUpdateAction::Ignore => {}
+			}
+
+			// Update/remove the delegation key, if needed.
+			match update_operation.delegation_key_update {
+				DidVerificationKeyUpdateAction::Delete => {
+					new_details.delete_delegation_key();
+				}
+				DidVerificationKeyUpdateAction::Change(new_delegation_key) => {
+					new_details.update_delegation_key(new_delegation_key, current_block_number);
+				}
+				// Nothing happens.
+				DidVerificationKeyUpdateAction::Ignore => {}
+			}
+
+			// Update URL, if needed.
+			if let Some(new_endpoint_url) = update_operation.new_endpoint_url {
+				new_details.endpoint_url = Some(new_endpoint_url);
+			}
+
+			// Update DID counter.
+			new_details.last_tx_counter = update_operation.tx_counter;
+
+			Ok(new_details)
+		}
+	}
+
 	/// An operation that requires DID authentication.
 	pub trait DidOperation<T: Config>: Encode {
 		/// The type of the verification key to be used to validate the
 		/// operation.
-		fn get_verification_key_type(&self) -> DidVerificationKeyType;
+		fn get_verification_key_type(&self) -> DidVerificationKeyRelationship;
 		/// The DID identifier of the subject.
 		fn get_did(&self) -> &T::DidIdentifier;
 		/// The operation tx counter, used to protect against replay attacks.
@@ -293,7 +669,7 @@ pub mod pallet {
 
 	/// An operation to create a new DID.
 	///
-	/// The struct implements the DidOperation trait, and as such it must
+	/// The struct implements the [DidOperation] trait, and as such it must
 	/// contain information about the caller's DID, the type of DID key
 	/// required to verify the operation signature, and the tx counter to
 	/// protect against replay attacks.
@@ -302,20 +678,20 @@ pub mod pallet {
 		/// The DID identifier. It has to be unique.
 		pub did: T::DidIdentifier,
 		/// The new authentication key.
-		pub new_auth_key: PublicVerificationKey,
-		/// The new key agreement key.
-		pub new_key_agreement_key: PublicEncryptionKey,
-		/// [OPTIONAL] The new attestation key.
-		pub new_attestation_key: Option<PublicVerificationKey>,
-		/// [OPTIONAL] The new delegation key.
-		pub new_delegation_key: Option<PublicVerificationKey>,
-		/// [OPTIONAL] The URL containing the DID endpoints description.
+		pub new_authentication_key: DidVerificationKey,
+		/// The new key agreement keys.
+		pub new_key_agreement_keys: BTreeSet<DidEncryptionKey>,
+		/// \[OPTIONAL\] The new attestation key.
+		pub new_attestation_key: Option<DidVerificationKey>,
+		/// \[OPTIONAL\] The new delegation key.
+		pub new_delegation_key: Option<DidVerificationKey>,
+		/// \[OPTIONAL\] The URL containing the DID endpoints description.
 		pub new_endpoint_url: Option<Url>,
 	}
 
 	impl<T: Config> DidOperation<T> for DidCreationOperation<T> {
-		fn get_verification_key_type(&self) -> DidVerificationKeyType {
-			DidVerificationKeyType::Authentication
+		fn get_verification_key_type(&self) -> DidVerificationKeyRelationship {
+			DidVerificationKeyRelationship::Authentication
 		}
 
 		fn get_did(&self) -> &T::DidIdentifier {
@@ -330,7 +706,7 @@ pub mod pallet {
 
 	/// An operation to update a DID.
 	///
-	/// The struct implements the DidOperation trait, and as such it must
+	/// The struct implements the [DidOperation] trait, and as such it must
 	/// contain information about the caller's DID, the type of DID key
 	/// required to verify the operation signature, and the tx counter to
 	/// protect against replay attacks.
@@ -338,28 +714,28 @@ pub mod pallet {
 	pub struct DidUpdateOperation<T: Config> {
 		/// The DID identifier.
 		pub did: T::DidIdentifier,
-		/// The new authentication key.
-		pub new_auth_key: Option<PublicVerificationKey>,
-		/// The new key agreement key.
-		pub new_key_agreement_key: Option<PublicEncryptionKey>,
-		/// The attestation key update action.
+		/// \[OPTIONAL\] The new authentication key.
+		pub new_authentication_key: Option<DidVerificationKey>,
+		/// A new set of key agreement keys to add to the ones already stored.
+		pub new_key_agreement_keys: BTreeSet<DidEncryptionKey>,
+		/// \[OPTIONAL\] The attestation key update action.
 		pub attestation_key_update: DidVerificationKeyUpdateAction,
-		/// The delegation key update action.
+		/// \[OPTIONAL\] The delegation key update action.
 		pub delegation_key_update: DidVerificationKeyUpdateAction,
 		/// The set of old attestation keys to remove, given their identifiers.
 		/// If the operation also replaces the current attestation key, it will
 		/// not be considered for removal in this operation, so it is not
 		/// possible to specify it for removal in this set.
-		pub verification_keys_to_remove: Option<BTreeSet<KeyId<T>>>,
-		/// The new endpoint URL.
+		pub public_keys_to_remove: BTreeSet<KeyId<T>>,
+		/// \[OPTIONAL\] The new endpoint URL.
 		pub new_endpoint_url: Option<Url>,
 		/// The DID tx counter.
 		pub tx_counter: u64,
 	}
 
 	impl<T: Config> DidOperation<T> for DidUpdateOperation<T> {
-		fn get_verification_key_type(&self) -> DidVerificationKeyType {
-			DidVerificationKeyType::Authentication
+		fn get_verification_key_type(&self) -> DidVerificationKeyRelationship {
+			DidVerificationKeyRelationship::Authentication
 		}
 
 		fn get_did(&self) -> &T::DidIdentifier {
@@ -371,9 +747,28 @@ pub mod pallet {
 		}
 	}
 
+	/// Possible actions on a DID verification key within a
+	/// [DidUpdateOperation].
+	#[derive(Clone, Copy, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
+	pub enum DidVerificationKeyUpdateAction {
+		/// Do not change the verification key.
+		Ignore,
+		/// Change the verification key to the new one provided.
+		Change(DidVerificationKey),
+		/// Delete the verification key.
+		Delete,
+	}
+
+	// Return the ignore operation by default
+	impl Default for DidVerificationKeyUpdateAction {
+		fn default() -> Self {
+			Self::Ignore
+		}
+	}
+
 	/// An operation to delete a DID.
 	///
-	/// The struct implements the DidOperation trait, and as such it must
+	/// The struct implements the [DidOperation] trait, and as such it must
 	/// contain information about the caller's DID, the type of DID key
 	/// required to verify the operation signature, and the tx counter to
 	/// protect against replay attacks.
@@ -386,8 +781,8 @@ pub mod pallet {
 	}
 
 	impl<T: Config> DidOperation<T> for DidDeletionOperation<T> {
-		fn get_verification_key_type(&self) -> DidVerificationKeyType {
-			DidVerificationKeyType::Authentication
+		fn get_verification_key_type(&self) -> DidVerificationKeyRelationship {
+			DidVerificationKeyRelationship::Authentication
 		}
 
 		fn get_did(&self) -> &T::DidIdentifier {
@@ -492,8 +887,11 @@ pub mod pallet {
 	/// Supported URLs.
 	#[derive(Clone, Decode, Debug, Encode, PartialEq)]
 	pub enum Url {
+		/// See [HttpUrl].
 		Http(HttpUrl),
+		/// See [FtpUrl].
 		Ftp(FtpUrl),
+		/// See [IpfsUrl].
 		Ipfs(IpfsUrl),
 	}
 
@@ -512,214 +910,6 @@ pub mod pallet {
 	impl From<IpfsUrl> for Url {
 		fn from(url: IpfsUrl) -> Self {
 			Self::Ipfs(url)
-		}
-	}
-
-	/// The details associated to a DID identity.
-	#[derive(Clone, Debug, Decode, Encode, PartialEq)]
-	pub struct DidDetails<T: Config> {
-		/// The authentication key, used to authenticate DID-related operations.
-		pub auth_key: PublicVerificationKey,
-		///  The key agreement key, which can be used to encrypt data addressed
-		/// to the DID subject.
-		pub key_agreement_key: PublicEncryptionKey,
-		/// [OPTIONAL] The delegation key, used by the DID subject to write and
-		/// revoke delegation roots and nodes on chain.
-		pub delegation_key: Option<PublicVerificationKey>,
-		/// [OPTIONAL] The attestation key, used by the DID subject to write and
-		/// revoke attestations on chain.
-		pub attestation_key: Option<PublicVerificationKey>,
-		/// The map of verification keys, with the key label as
-		/// the key map and the tuple (key, addition_block_number) as the map
-		/// value. The map ALWAYS also includes the currently active attestation
-		/// key plus old attestation keys that have been rotated and not yet
-		/// deleted from this set. Keys other than the current attestation key
-		/// are not considered valid anymore to write new attestations
-		/// but can still be used to verify attestations issued when they were
-		/// considered valid.
-		pub verification_keys: BTreeMap<KeyId<T>, VerificationKeyDetails<T>>,
-		/// [OPTIONAL] The URL pointing to the service endpoints the DID subject
-		/// publicly exposes.
-		pub endpoint_url: Option<Url>,
-		/// The counter used to avoid replay attacks, which is checked and
-		/// updated upon each DID operation involving with the subject as the
-		/// creator.
-		pub(crate) last_tx_counter: u64,
-	}
-
-	impl<T: Config> DidDetails<T> {
-		pub fn increase_tx_counter(&mut self) -> Result<(), StorageError> {
-			self.last_tx_counter = self
-				.last_tx_counter
-				.checked_add(1)
-				.ok_or(StorageError::MaxTxCounterValue)?;
-			Ok(())
-		}
-
-		pub fn get_tx_counter_value(&self) -> u64 {
-			self.last_tx_counter
-		}
-
-		#[cfg(any(feature = "mock", test))]
-		pub fn set_tx_counter(&mut self, value: u64) {
-			self.last_tx_counter = value;
-		}
-	}
-
-	impl<T: Config> From<DidCreationOperation<T>> for DidDetails<T> {
-		fn from(op: DidCreationOperation<T>) -> Self {
-			let mut new_details = DidDetails {
-				auth_key: op.new_auth_key,
-				key_agreement_key: op.new_key_agreement_key,
-				delegation_key: op.new_delegation_key,
-				attestation_key: op.new_attestation_key,
-				verification_keys: BTreeMap::new(),
-				endpoint_url: op.new_endpoint_url,
-				last_tx_counter: 0,
-			};
-
-			// As the verification keys map always include the currently active attestation
-			// key, if an attestation key is specified in the creation operation, it is also
-			// added to the verification keys map.
-			if let Some(attestation_key) = op.new_attestation_key {
-				new_details.add_verification_key(attestation_key, DidVerificationKeyType::AssertionMethod);
-			}
-
-			new_details
-		}
-	}
-
-	impl<T: Config> DidDetails<T> {
-		/// Returns a reference to a specific verification key given the type of
-		/// the key needed.
-		pub fn get_verification_key_for_key_type(
-			&self,
-			key_type: DidVerificationKeyType,
-		) -> Option<&PublicVerificationKey> {
-			match key_type {
-				DidVerificationKeyType::AssertionMethod => self.attestation_key.as_ref(),
-				DidVerificationKeyType::Authentication => Option::from(&self.auth_key),
-				DidVerificationKeyType::CapabilityDelegation => self.delegation_key.as_ref(),
-				_ => None,
-			}
-		}
-
-		fn add_verification_key(&mut self, key: PublicVerificationKey, key_type: DidVerificationKeyType) {
-			let mut hashed_values: Vec<u8> = key.encode();
-			hashed_values.extend_from_slice(key_type.encode().as_ref());
-			hashed_values.extend_from_slice(self.get_tx_counter_value().encode().as_ref());
-
-			let key_id = T::Hashing::hash(&hashed_values);
-			let block_number = <frame_system::Pallet<T>>::block_number();
-
-			self.verification_keys.insert(
-				key_id,
-				VerificationKeyDetails {
-					verification_key: key,
-					block_number,
-				},
-			);
-		}
-	}
-
-	// Generates a new DID entry starting from the current one stored in the
-	// storage and by applying the changes in the DidUpdateOperation.
-	//
-	// The operation fails with a DidError if the update operation instructs to
-	// delete a verification key that is not associated with the DID.
-	//
-	// Please note that this method does not perform any checks regarding
-	// the validity of the DidUpdateOperation signature nor whether the nonce
-	// provided is valid.
-	impl<T: Config> TryFrom<(DidDetails<T>, DidUpdateOperation<T>)> for DidDetails<T> {
-		type Error = DidError;
-
-		fn try_from(
-			(old_details, update_operation): (DidDetails<T>, DidUpdateOperation<T>),
-		) -> Result<Self, Self::Error> {
-			// Old attestation key is used later in the process, so it's saved here.
-			let old_attestation_key = old_details.attestation_key;
-			// Same thing for the delegation key.
-			let old_delegation_key = old_details.delegation_key;
-			// Copy old state into new, and apply changes in operation to new state.
-			let mut new_details = old_details;
-			let mut remaining_verification_keys = new_details.verification_keys.clone();
-
-			if let Some(verification_keys_to_remove) = update_operation.verification_keys_to_remove.as_ref() {
-				// Verify that none of the following two conditions is verified:
-				// - 1. the set of keys to delete contains key IDs that are not currently stored
-				// on chain
-				// - 2. the currently active attestation key is not included in the list
-				// of keys to delete
-				for key_id in verification_keys_to_remove.iter() {
-					// Check for condition 1
-					let verification_key_details = new_details
-						.verification_keys
-						.get(key_id)
-						.ok_or(DidError::StorageError(StorageError::VerificationKeyNotPresent))?;
-					// Check for condition 2
-					if let Some(current_attestation_key) = new_details.attestation_key {
-						ensure!(
-							verification_key_details.verification_key != current_attestation_key,
-							DidError::StorageError(StorageError::CurrentlyActiveAttestationKey)
-						);
-					}
-					// If no attestation key is currently set, all is good
-					remaining_verification_keys.remove(key_id);
-				}
-				// Save the remaining verification keys
-				new_details.verification_keys = remaining_verification_keys;
-			};
-
-			// Increase new tx counter
-			new_details.last_tx_counter = update_operation.tx_counter;
-
-			// Update the rest of the details
-			if let Some(new_auth_key) = update_operation.new_auth_key {
-				new_details.auth_key = new_auth_key;
-			}
-			if let Some(new_enc_key) = update_operation.new_key_agreement_key {
-				new_details.key_agreement_key = new_enc_key;
-			}
-			// Evaluate update action for attestation key.
-			// Either leave the key unchanged, delete the current one,
-			// or replace the old one with the new one. In the last case, the new key is
-			// added to the set of verification keys.
-			let new_attestation_key: Option<PublicVerificationKey> = match update_operation.attestation_key_update {
-				DidVerificationKeyUpdateAction::Change(new_key) => {
-					// If it a new key, it is added to the map of verification keys
-					new_details.add_verification_key(new_key, DidVerificationKeyType::AssertionMethod);
-					// New key returned to be set in the new DID details
-					Some(new_key)
-				}
-				DidVerificationKeyUpdateAction::Delete => {
-					// None returned to be set in the DID details,
-					// effectively making the attestation key invalid from now on.
-					None
-				}
-				DidVerificationKeyUpdateAction::Ignore => {
-					// Old key returned to be set in the DID details,
-					// effectively leaving it unchanged.
-					old_attestation_key
-				}
-			};
-			new_details.attestation_key = new_attestation_key;
-
-			// Evaluate update action for delegation key.
-			// Either leave the key unchanged, replace it with the new given key,
-			// or delete the existing delegation key.
-			let new_delegation_key: Option<PublicVerificationKey> = match update_operation.delegation_key_update {
-				DidVerificationKeyUpdateAction::Change(new_delegation_key) => Some(new_delegation_key),
-				DidVerificationKeyUpdateAction::Delete => None,
-				DidVerificationKeyUpdateAction::Ignore => old_delegation_key,
-			};
-			new_details.delegation_key = new_delegation_key;
-
-			if let Some(new_endpoint_url) = update_operation.new_endpoint_url {
-				new_details.endpoint_url = Some(new_endpoint_url);
-			}
-
-			Ok(new_details)
 		}
 	}
 
@@ -772,7 +962,7 @@ pub mod pallet {
 		DidNotPresent,
 		/// One or more verification keys referenced are not stored in the set
 		/// of verification keys.
-		VerificationKeysNotPresent,
+		VerificationKeyNotPresent,
 		/// The DID operation nonce is not equal to the current DID nonce + 1.
 		InvalidNonce,
 		/// The URL specified is not ASCII-encoded.
@@ -783,10 +973,9 @@ pub mod pallet {
 		/// No more operations with the DID are allowed.
 		MaxTxCounterValue,
 		/// The user tries to delete a verification key that is currently being
-		/// used as an attestation key, and this is not allowed as that would
-		/// result in new attestations being created but that cannot be verified
-		/// as the verification key has been deleted.
-		CurrentlyActiveAttestationKey,
+		/// used as an authentication, delegation, or attestation key, and this
+		/// is not allowed.
+		CurrentlyActiveKey,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
 	}
@@ -808,10 +997,10 @@ pub mod pallet {
 				StorageError::DidNotPresent => Self::DidNotPresent,
 				StorageError::DidAlreadyPresent => Self::DidAlreadyPresent,
 				StorageError::DidKeyNotPresent(_) | StorageError::VerificationKeyNotPresent => {
-					Self::VerificationKeysNotPresent
+					Self::VerificationKeyNotPresent
 				}
 				StorageError::MaxTxCounterValue => Self::MaxTxCounterValue,
-				StorageError::CurrentlyActiveAttestationKey => Self::CurrentlyActiveAttestationKey,
+				StorageError::CurrentlyActiveKey => Self::CurrentlyActiveKey,
 			}
 		}
 	}
@@ -842,10 +1031,11 @@ pub mod pallet {
 		///
 		/// * origin: the Substrate account submitting the transaction (which
 		///   can be different from the DID subject)
-		/// * operation: the DidCreationOperation which contains the details of
-		///   the new DID
-		/// * signature: the signature over DidCreationOperation that must be
-		///   signed with the authentication key provided in the operation
+		/// * operation: the [DidCreationOperation] which contains the details
+		///   of the new DID
+		/// * signature: the [signature](DidSignature) over the operation that
+		///   must be signed with the authentication key provided in the
+		///   operation
 		#[pallet::weight(T::WeightInfo::submit_did_create_operation())]
 		pub fn submit_did_create_operation(
 			origin: OriginFor<T>,
@@ -885,12 +1075,12 @@ pub mod pallet {
 		///
 		/// * origin: the Substrate account submitting the transaction (which
 		///   can be different from the DID subject)
-		/// * operation: the DidUpdateOperation which contains the new details
+		/// * operation: the [DidUpdateOperation] which contains the new details
 		///   of the given DID
-		/// * signature: the signature over the operation that must be signed
-		///   with the authentication key associated with the new DID. Even in
-		///   case the authentication key is being updated, the operation must
-		///   still be signed with the old one being replaced.
+		/// * signature: the [signature](DidSignature) over the operation that
+		///   must be signed with the authentication key associated with the new
+		///   DID. Even in case the authentication key is being updated, the
+		///   operation must still be signed with the old one being replaced.
 		#[pallet::weight(T::WeightInfo::submit_did_update_operation())]
 		pub fn submit_did_update_operation(
 			origin: OriginFor<T>,
@@ -924,10 +1114,11 @@ pub mod pallet {
 		///
 		/// * origin: the Substrate account submitting the transaction (which
 		///   can be different from the DID subject)
-		/// * operation: the DidDeletionOperation which includes the DID to
+		/// * operation: the [DidDeletionOperation] which includes the DID to
 		///   deactivate
-		/// * signature: the signature over the operation that must be signed
-		///   with the authentication key associated with the new DID.
+		/// * signature: the [signature](DidSignature) over the operation that
+		///   must be signed with the authentication key associated with the new
+		///   DID.
 		#[pallet::weight(T::WeightInfo::submit_did_delete_operation())]
 		pub fn submit_did_delete_operation(
 			origin: OriginFor<T>,
@@ -955,11 +1146,12 @@ pub mod pallet {
 
 impl<T: Config> Pallet<T> {
 	/// Verify the validity (i.e., nonce and signature) of a generic
-	/// DidOperation and, if valid, update the DID state with the latest nonce.
+	/// [DidOperation] and, if valid, update the DID state with the latest
+	/// nonce.
 	///
-	/// * operation: the reference to the DID operation which validity is to be
+	/// * operation: the reference to the [DidOperation] which validity is to be
 	///   verified
-	/// * signature: a reference to the signature
+	/// * signature: a reference to the [signature](DidSignature)
 	/// * did: the DID identifier to verify the operation signature for
 	pub fn verify_operation_validity_and_increase_did_nonce<O: DidOperation<T>>(
 		operation: &O,
@@ -1026,7 +1218,7 @@ impl<T: Config> Pallet<T> {
 		payload: &Payload,
 		signature: &DidSignature,
 		did_details: &DidDetails<T>,
-		key_type: DidVerificationKeyType,
+		key_type: DidVerificationKeyRelationship,
 	) -> Result<(), DidError> {
 		// Retrieve the needed verification key from the DID details, or generate an
 		// error if there is no key of the type required

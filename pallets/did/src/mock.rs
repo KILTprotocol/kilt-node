@@ -84,10 +84,8 @@ impl did::Config for Test {
 
 pub type TestDidIdentifier = <Test as did::Config>::DidIdentifier;
 pub type TestKeyId = did::KeyId<Test>;
-pub type TestVerificationKeyDetails = did::VerificationKeyDetails<Test>;
+pub type TestVerificationKeyDetails = did::DidPublicKeyDetails<Test>;
 pub type TestBlockNumber = <Test as frame_system::Config>::BlockNumber;
-
-type TestHashing = <Test as frame_system::Config>::Hashing;
 
 #[cfg(test)]
 pub(crate) const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
@@ -120,11 +118,11 @@ pub fn get_sr25519_authentication_key(default: bool) -> sr25519::Pair {
 	}
 }
 
-pub fn get_x25519_encryption_key(default: bool) -> PublicEncryptionKey {
+pub fn get_x25519_encryption_key(default: bool) -> DidEncryptionKey {
 	if default {
-		PublicEncryptionKey::X25519(DEFAULT_ENC_SEED)
+		DidEncryptionKey::X25519(DEFAULT_ENC_SEED)
 	} else {
-		PublicEncryptionKey::X25519(ALTERNATIVE_ENC_SEED)
+		DidEncryptionKey::X25519(ALTERNATIVE_ENC_SEED)
 	}
 }
 
@@ -165,12 +163,12 @@ pub fn get_sr25519_delegation_key(default: bool) -> sr25519::Pair {
 // a default key agreement key.
 pub fn generate_base_did_creation_operation(
 	did: TestDidIdentifier,
-	new_auth_key: did::PublicVerificationKey,
+	new_auth_key: did::DidVerificationKey,
 ) -> did::DidCreationOperation<Test> {
 	DidCreationOperation {
 		did,
-		new_auth_key,
-		new_key_agreement_key: get_x25519_encryption_key(true),
+		new_authentication_key: new_auth_key,
+		new_key_agreement_keys: BTreeSet::new(),
 		new_attestation_key: None,
 		new_delegation_key: None,
 		new_endpoint_url: None,
@@ -182,42 +180,30 @@ pub fn generate_base_did_creation_operation(
 pub fn generate_base_did_update_operation(did: TestDidIdentifier) -> did::DidUpdateOperation<Test> {
 	DidUpdateOperation {
 		did,
-		new_auth_key: None,
-		new_key_agreement_key: None,
+		new_authentication_key: None,
+		new_key_agreement_keys: BTreeSet::new(),
 		attestation_key_update: DidVerificationKeyUpdateAction::default(),
 		delegation_key_update: DidVerificationKeyUpdateAction::default(),
 		new_endpoint_url: None,
-		verification_keys_to_remove: None,
-		tx_counter: 1,
+		public_keys_to_remove: BTreeSet::new(),
+		tx_counter: 1u64,
 	}
 }
 
 // Given a DID identifier, it returns a DidDeletionOperation
 // that would remove the DID from chain.
 pub fn generate_base_did_delete_operation(did: TestDidIdentifier) -> did::DidDeletionOperation<Test> {
-	DidDeletionOperation { did, tx_counter: 1 }
+	DidDeletionOperation { did, tx_counter: 1u64 }
 }
 
 // Given an authentication key, it generates a DidDetails object with the given
-// key and a default key agreement key.
-pub fn generate_base_did_details(auth_key: did::PublicVerificationKey) -> did::DidDetails<Test> {
-	did::DidDetails {
-		auth_key,
-		key_agreement_key: get_x25519_encryption_key(true),
-		attestation_key: None,
-		delegation_key: None,
-		endpoint_url: None,
-		last_tx_counter: 0,
-		verification_keys: BTreeMap::new(),
-	}
+// key.
+pub fn generate_base_did_details(authentication_key: did::DidVerificationKey) -> did::DidDetails<Test> {
+	did::DidDetails::new(authentication_key, 0u64)
 }
 
-pub fn generate_attestation_key_id(key: &did::PublicVerificationKey, tx_counter: u64) -> TestKeyId {
-	let mut vec = key.encode();
-	vec.extend_from_slice(did::DidVerificationKeyType::AssertionMethod.encode().as_ref());
-	vec.extend_from_slice(tx_counter.encode().as_slice());
-
-	TestHashing::hash(&vec)
+pub fn generate_key_id(key: &did::DidPublicKey) -> TestKeyId {
+	utils::calculate_key_id::<Test>(key)
 }
 
 // A test DID operation which can be crated to require any DID verification key
@@ -225,12 +211,12 @@ pub fn generate_attestation_key_id(key: &did::PublicVerificationKey, tx_counter:
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
 pub struct TestDidOperation {
 	pub did: TestDidIdentifier,
-	pub verification_key_type: DidVerificationKeyType,
+	pub verification_key_type: DidVerificationKeyRelationship,
 	pub tx_counter: u64,
 }
 
 impl DidOperation<Test> for TestDidOperation {
-	fn get_verification_key_type(&self) -> DidVerificationKeyType {
+	fn get_verification_key_type(&self) -> DidVerificationKeyRelationship {
 		self.verification_key_type.clone()
 	}
 

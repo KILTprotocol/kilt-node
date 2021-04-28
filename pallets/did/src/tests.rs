@@ -20,19 +20,18 @@ use std::convert::TryFrom;
 
 use frame_support::{assert_noop, assert_ok};
 use sp_core::*;
-use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
+use sp_std::collections::btree_set::BTreeSet;
 
 use codec::Encode;
 
-use crate::{self as did, mock::*, VerificationKeyDetails};
+use crate::{self as did, mock::*};
 
 // submit_did_create_operation
 
 #[test]
 fn check_successful_simple_ed25519_creation() {
 	let auth_key = get_ed25519_authentication_key(true);
-	let operation =
-		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()));
+	let operation = generate_base_did_creation_operation(ALICE_DID, did::DidVerificationKey::from(auth_key.public()));
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
@@ -47,23 +46,25 @@ fn check_successful_simple_ed25519_creation() {
 	});
 
 	let stored_did = ext.execute_with(|| Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain."));
-	assert_eq!(stored_did.auth_key, operation.new_auth_key);
-	assert_eq!(stored_did.key_agreement_key, operation.new_key_agreement_key);
-	assert_eq!(stored_did.delegation_key, operation.new_delegation_key);
-	assert_eq!(stored_did.attestation_key, operation.new_attestation_key);
 	assert_eq!(
-		stored_did.verification_keys,
-		<BTreeMap<TestKeyId, TestVerificationKeyDetails>>::new()
+		stored_did.get_authentication_key_id(),
+		generate_key_id(&operation.new_authentication_key.into())
 	);
-	assert_eq!(stored_did.endpoint_url, operation.new_endpoint_url);
+	assert_eq!(stored_did.get_key_agreement_keys_ids().len(), 0);
+	assert_eq!(stored_did.get_delegation_key_id(), &None);
+	assert_eq!(stored_did.get_attestation_key_id(), &None);
+	assert_eq!(stored_did.get_public_keys().len(), 1);
+	assert!(stored_did
+		.get_public_keys()
+		.contains_key(&generate_key_id(&operation.new_authentication_key.into())));
+	assert_eq!(stored_did.endpoint_url, None);
 	assert_eq!(stored_did.last_tx_counter, 0u64);
 }
 
 #[test]
 fn check_successful_simple_sr25519_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
-	let operation =
-		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()));
+	let operation = generate_base_did_creation_operation(ALICE_DID, did::DidVerificationKey::from(auth_key.public()));
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
@@ -78,21 +79,29 @@ fn check_successful_simple_sr25519_creation() {
 	});
 
 	let stored_did = ext.execute_with(|| Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain."));
-	assert_eq!(stored_did.auth_key, operation.new_auth_key);
-	assert_eq!(stored_did.key_agreement_key, operation.new_key_agreement_key);
-	assert_eq!(stored_did.delegation_key, operation.new_delegation_key);
-	assert_eq!(stored_did.attestation_key, operation.new_attestation_key);
 	assert_eq!(
-		stored_did.verification_keys,
-		<BTreeMap<TestKeyId, TestVerificationKeyDetails>>::new()
+		stored_did.get_authentication_key_id(),
+		generate_key_id(&operation.new_authentication_key.into())
 	);
-	assert_eq!(stored_did.endpoint_url, operation.new_endpoint_url);
+	assert_eq!(stored_did.get_key_agreement_keys_ids().len(), 0);
+	assert_eq!(stored_did.get_delegation_key_id(), &None);
+	assert_eq!(stored_did.get_attestation_key_id(), &None);
+	assert_eq!(stored_did.get_public_keys().len(), 1);
+	assert!(stored_did
+		.get_public_keys()
+		.contains_key(&generate_key_id(&operation.new_authentication_key.into())));
+	assert_eq!(stored_did.endpoint_url, None);
 	assert_eq!(stored_did.last_tx_counter, 0u64);
 }
 
 #[test]
 fn check_successful_complete_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
+	let enc_keys: BTreeSet<did::DidEncryptionKey> =
+		vec![get_x25519_encryption_key(true), get_x25519_encryption_key(false)]
+			.iter()
+			.copied()
+			.collect();
 	let del_key = get_sr25519_delegation_key(true);
 	let att_key = get_ed25519_attestation_key(true);
 	let new_url = did::Url::from(
@@ -100,9 +109,10 @@ fn check_successful_complete_creation() {
 			.expect("https://new_kilt.io should not be considered an invalid HTTP URL."),
 	);
 	let mut operation =
-		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()));
-	operation.new_attestation_key = Some(did::PublicVerificationKey::from(att_key.public()));
-	operation.new_delegation_key = Some(did::PublicVerificationKey::from(del_key.public()));
+		generate_base_did_creation_operation(ALICE_DID, did::DidVerificationKey::from(auth_key.public()));
+	operation.new_key_agreement_keys = enc_keys.clone();
+	operation.new_attestation_key = Some(did::DidVerificationKey::from(att_key.public()));
+	operation.new_delegation_key = Some(did::DidVerificationKey::from(del_key.public()));
 	operation.new_endpoint_url = Some(new_url);
 
 	let signature = auth_key.sign(operation.encode().as_ref());
@@ -118,35 +128,50 @@ fn check_successful_complete_creation() {
 	});
 
 	let stored_did = ext.execute_with(|| Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain."));
-	assert_eq!(stored_did.auth_key, operation.new_auth_key);
-	assert_eq!(stored_did.key_agreement_key, operation.new_key_agreement_key);
-	assert_eq!(stored_did.delegation_key, operation.new_delegation_key);
-	assert_eq!(stored_did.attestation_key, operation.new_attestation_key);
-
-	assert_eq!(stored_did.verification_keys.len(), 1);
-	let stored_attestation_key = stored_did
-		.attestation_key
-		.expect("Attestation key should be present for this DID.");
-	let (stored_key_id, stored_key_details) = stored_did
-		.verification_keys
-		.iter()
-		.next()
-		.expect("Stored verification keys should contain at least one key.");
-	let expected_hash = generate_attestation_key_id(&stored_attestation_key, stored_did.last_tx_counter);
-	assert_eq!(*stored_key_id, expected_hash);
-	assert_eq!(stored_key_details.verification_key, stored_attestation_key);
-	assert_eq!(stored_key_details.block_number, 0);
-
-	assert_eq!(stored_did.endpoint_url, operation.new_endpoint_url);
-	assert_eq!(stored_did.last_tx_counter, 0u64);
+	assert_eq!(
+		stored_did.get_authentication_key_id(),
+		generate_key_id(&operation.new_authentication_key.into())
+	);
+	assert_eq!(stored_did.get_key_agreement_keys_ids().len(), 2);
+	for key in enc_keys.iter().copied() {
+		assert!(stored_did
+			.get_key_agreement_keys_ids()
+			.contains(&generate_key_id(&key.into())))
+	}
+	assert_eq!(
+		stored_did.get_delegation_key_id(),
+		&Some(generate_key_id(&operation.new_delegation_key.unwrap().into()))
+	);
+	assert_eq!(
+		stored_did.get_attestation_key_id(),
+		&Some(generate_key_id(&operation.new_attestation_key.unwrap().into()))
+	);
+	// Authentication key + 2 * Encryption key + Delegation key + Attestation key =
+	// 5
+	assert_eq!(stored_did.get_public_keys().len(), 5);
+	assert!(stored_did
+		.get_public_keys()
+		.contains_key(&generate_key_id(&operation.new_authentication_key.into())));
+	let mut key_agreement_keys_iterator = operation.new_key_agreement_keys.iter().copied();
+	assert!(stored_did
+		.get_public_keys()
+		.contains_key(&generate_key_id(&key_agreement_keys_iterator.next().unwrap().into())));
+	assert!(stored_did
+		.get_public_keys()
+		.contains_key(&generate_key_id(&key_agreement_keys_iterator.next().unwrap().into())));
+	assert!(stored_did
+		.get_public_keys()
+		.contains_key(&generate_key_id(&operation.new_attestation_key.unwrap().into())));
+	assert!(stored_did
+		.get_public_keys()
+		.contains_key(&generate_key_id(&operation.new_delegation_key.unwrap().into())));
 }
 
 #[test]
 fn check_duplicate_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
-	let mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
-	let operation =
-		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	let operation = generate_base_did_creation_operation(ALICE_DID, did::DidVerificationKey::from(auth_key.public()));
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
@@ -170,8 +195,7 @@ fn check_invalid_signature_format_did_creation() {
 	// Using an Ed25519 key where an Sr25519 is expected
 	let invalid_key = get_ed25519_authentication_key(true);
 	// DID creation contains auth_key, but signature is generated using invalid_key
-	let operation =
-		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()));
+	let operation = generate_base_did_creation_operation(ALICE_DID, did::DidVerificationKey::from(auth_key.public()));
 
 	let signature = invalid_key.sign(operation.encode().as_ref());
 
@@ -193,8 +217,7 @@ fn check_invalid_signature_format_did_creation() {
 fn check_invalid_signature_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alternative_key = get_sr25519_authentication_key(false);
-	let operation =
-		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(auth_key.public()));
+	let operation = generate_base_did_creation_operation(ALICE_DID, did::DidVerificationKey::from(auth_key.public()));
 
 	let signature = alternative_key.sign(operation.encode().as_ref());
 
@@ -218,41 +241,42 @@ fn check_invalid_signature_did_creation() {
 fn check_successful_complete_update() {
 	let old_auth_key = get_ed25519_authentication_key(true);
 	let new_auth_key = get_ed25519_authentication_key(false);
+	let old_enc_key = get_x25519_encryption_key(true);
 	let new_enc_key = get_x25519_encryption_key(false);
 	let old_att_key = get_ed25519_attestation_key(true);
 	let new_att_key = get_ed25519_attestation_key(false);
-	let new_del_key = get_sr25519_attestation_key(true);
+	let new_del_key = get_sr25519_delegation_key(true);
 	let new_url = did::Url::from(
 		did::HttpUrl::try_from("https://new_kilt.io".as_bytes())
 			.expect("https://new_kilt.io should not be considered an invalid HTTP URL."),
 	);
 
-	let mut old_did_details = generate_base_did_details(did::PublicVerificationKey::from(old_auth_key.public()));
-	old_did_details.attestation_key = Some(did::PublicVerificationKey::from(old_att_key.public()));
-	let attestation_key_id = generate_attestation_key_id(
-		&old_did_details.attestation_key.unwrap(),
-		old_did_details.last_tx_counter,
+	let mut old_did_details = generate_base_did_details(did::DidVerificationKey::from(old_auth_key.public()));
+	old_did_details.add_key_agreement_keys(
+		vec![old_enc_key]
+			.iter()
+			.copied()
+			.collect::<BTreeSet<did::DidEncryptionKey>>(),
+		0u64,
 	);
-	old_did_details.verification_keys = vec![(
-		attestation_key_id,
-		VerificationKeyDetails {
-			verification_key: did::PublicVerificationKey::from(old_att_key.public()),
-			block_number: 0,
-		},
-	)]
-	.iter()
-	.copied()
-	.collect::<BTreeMap<TestKeyId, TestVerificationKeyDetails>>();
+	old_did_details.update_attestation_key(did::DidVerificationKey::from(old_att_key.public()), 0u64);
 
-	// Update all keys, URL endpoint and tx counter. No keys are removed in this
-	// test case
+	// Update all keys, URL endpoint and tx counter. The old key agreement key is
+	// removed.
 	let mut operation = generate_base_did_update_operation(ALICE_DID);
-	operation.new_auth_key = Some(did::PublicVerificationKey::from(new_auth_key.public()));
-	operation.new_key_agreement_key = Some(new_enc_key);
+	operation.new_authentication_key = Some(did::DidVerificationKey::from(new_auth_key.public()));
+	operation.new_key_agreement_keys = vec![new_enc_key]
+		.iter()
+		.copied()
+		.collect::<BTreeSet<did::DidEncryptionKey>>();
 	operation.attestation_key_update =
-		did::DidVerificationKeyUpdateAction::Change(did::PublicVerificationKey::from(new_att_key.public()));
+		did::DidVerificationKeyUpdateAction::Change(did::DidVerificationKey::from(new_att_key.public()));
 	operation.delegation_key_update =
-		did::DidVerificationKeyUpdateAction::Change(did::PublicVerificationKey::from(new_del_key.public()));
+		did::DidVerificationKeyUpdateAction::Change(did::DidVerificationKey::from(new_del_key.public()));
+	operation.public_keys_to_remove = vec![generate_key_id(&old_enc_key.into())]
+		.iter()
+		.copied()
+		.collect::<BTreeSet<TestKeyId>>();
 	operation.new_endpoint_url = Some(new_url);
 	operation.tx_counter = old_did_details.last_tx_counter + 1u64;
 
@@ -276,52 +300,52 @@ fn check_successful_complete_update() {
 
 	let new_did_details = ext.execute_with(|| Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain."));
 	assert_eq!(
-		new_did_details.auth_key,
-		operation.new_auth_key.expect("Missing new auth key.")
+		new_did_details.get_authentication_key_id(),
+		generate_key_id(&operation.new_authentication_key.unwrap().into())
+	);
+	// Old one deleted, new one added -> Total keys = 1
+	assert_eq!(new_did_details.get_key_agreement_keys_ids().len(), 1);
+	assert_eq!(
+		new_did_details.get_key_agreement_keys_ids().iter().next().unwrap(),
+		&generate_key_id(&new_enc_key.into())
 	);
 	assert_eq!(
-		new_did_details.key_agreement_key,
-		operation.new_key_agreement_key.expect("Missing new key agreement key.")
+		new_did_details.get_attestation_key_id(),
+		&Some(generate_key_id(
+			&did::DidVerificationKey::from(new_att_key.public()).into()
+		))
 	);
 	assert_eq!(
-		new_did_details.attestation_key,
-		Some(did::PublicVerificationKey::from(new_att_key.public()))
-	);
-	assert_eq!(
-		new_did_details.delegation_key,
-		Some(did::PublicVerificationKey::from(new_del_key.public()))
+		new_did_details.get_delegation_key_id(),
+		&Some(generate_key_id(
+			&did::DidVerificationKey::from(new_del_key.public()).into()
+		))
 	);
 
-	// Verification keys should contain both the previous and the current
-	// attestation key.
-	let old_att_key = old_did_details
-		.attestation_key
-		.expect("Old attestation key should be present in the old DID details.");
-	let new_att_key = new_did_details
-		.attestation_key
-		.expect("New attestation key should be present in the new DID details.");
-
-	assert_eq!(new_did_details.verification_keys.len(), 2);
-	let mut key_details: Vec<(&TestKeyId, &TestVerificationKeyDetails)> =
-		new_did_details.verification_keys.iter().collect();
-	// Sort keys by block number in which they were added
-	key_details.sort_by_key(|key_entry| key_entry.1.block_number);
-
-	let (key_id_1, key_details_1) = key_details
-		.get(0)
-		.expect("DID should have at least 1 verification key stored");
-	assert_eq!(key_details_1.block_number, 0);
-	assert_eq!(key_details_1.verification_key, old_att_key);
-	assert_eq!(**key_id_1, generate_attestation_key_id(&old_att_key, 0));
-
-	let (key_id_2, key_details_2) = key_details
-		.get(1)
-		.expect("DID should have at least 2 verification keys stored");
-	assert_eq!(key_details_2.block_number, new_block_number);
-	assert_eq!(key_details_2.verification_key, new_att_key);
-	assert_eq!(**key_id_2, generate_attestation_key_id(&new_att_key, new_block_number));
-
-	assert_eq!(new_did_details.endpoint_url, operation.new_endpoint_url);
+	// Total is +1 for the new auth key, -1 for the old auth key (replaced), +1 for
+	// the new key agreement key, -1 for the old key agreement key (deleted), +1 for
+	// the old attestation key, +1 for the new attestation key, +1 for the new
+	// delegation key = 5
+	let public_keys = new_did_details.get_public_keys();
+	assert_eq!(public_keys.len(), 5);
+	// Check for new authentication key
+	assert!(public_keys.contains_key(&generate_key_id(
+		&did::DidVerificationKey::from(new_att_key.public()).into()
+	)));
+	// Check for new key agreement key
+	assert!(public_keys.contains_key(&generate_key_id(&new_enc_key.into())));
+	// Check for old attestation key
+	assert!(public_keys.contains_key(&generate_key_id(
+		&did::DidVerificationKey::from(old_att_key.public()).into()
+	)));
+	// Check for new attestation key
+	assert!(public_keys.contains_key(&generate_key_id(
+		&did::DidVerificationKey::from(new_att_key.public()).into()
+	)));
+	// Check for new delegation key
+	assert!(public_keys.contains_key(&generate_key_id(
+		&did::DidVerificationKey::from(new_del_key.public()).into()
+	)));
 	assert_eq!(new_did_details.last_tx_counter, old_did_details.last_tx_counter + 1u64);
 }
 
@@ -329,23 +353,11 @@ fn check_successful_complete_update() {
 fn check_successful_keys_deletion_update() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let att_key = get_ed25519_attestation_key(true);
-	let did_att_key = did::PublicVerificationKey::from(auth_key.public());
-	let del_key = get_sr25519_attestation_key(true);
+	let del_key = get_sr25519_delegation_key(true);
 
-	let mut old_did_details = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
-	old_did_details.attestation_key = Some(did::PublicVerificationKey::from(att_key.public()));
-	old_did_details.delegation_key = Some(did::PublicVerificationKey::from(del_key.public()));
-	let old_att_key_id = generate_attestation_key_id(&did_att_key, 0);
-	old_did_details.verification_keys = vec![(
-		old_att_key_id,
-		VerificationKeyDetails {
-			verification_key: did_att_key,
-			block_number: 0,
-		},
-	)]
-	.iter()
-	.copied()
-	.collect::<BTreeMap<TestKeyId, TestVerificationKeyDetails>>();
+	let mut old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	old_did_details.update_attestation_key(did::DidVerificationKey::from(att_key.public()), 0u64);
+	old_did_details.update_delegation_key(did::DidVerificationKey::from(del_key.public()), 0u64);
 
 	// Remove both attestation and delegation key
 	let mut operation = generate_base_did_update_operation(ALICE_DID);
@@ -353,14 +365,16 @@ fn check_successful_keys_deletion_update() {
 	operation.delegation_key_update = did::DidVerificationKeyUpdateAction::Delete;
 	operation.tx_counter = old_did_details.last_tx_counter + 1u64;
 
-	// Generate signature using the old authentication key
 	let signature = auth_key.sign(operation.encode().as_ref());
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(ALICE_DID, old_did_details.clone())])
 		.build();
 
+	let new_block_number: TestBlockNumber = 1;
+
 	ext.execute_with(|| {
+		System::set_block_number(new_block_number);
 		assert_ok!(Did::submit_did_update_operation(
 			Origin::signed(DEFAULT_ACCOUNT),
 			operation.clone(),
@@ -370,61 +384,38 @@ fn check_successful_keys_deletion_update() {
 
 	// Auth key and key agreement key unchanged
 	let new_did_details = ext.execute_with(|| Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain."));
-	assert_eq!(new_did_details.auth_key, old_did_details.auth_key);
-	assert_eq!(new_did_details.key_agreement_key, old_did_details.key_agreement_key);
-	assert_eq!(new_did_details.attestation_key, None);
-	assert_eq!(new_did_details.delegation_key, None);
-	// Verification keys should be left unchanged.
-	assert_eq!(new_did_details.verification_keys, old_did_details.verification_keys);
+	assert_eq!(
+		new_did_details.get_authentication_key_id(),
+		old_did_details.get_authentication_key_id()
+	);
+	assert_eq!(
+		new_did_details.get_key_agreement_keys_ids(),
+		old_did_details.get_key_agreement_keys_ids()
+	);
+	assert_eq!(new_did_details.get_attestation_key_id(), &None);
+	assert_eq!(new_did_details.get_delegation_key_id(), &None);
+
+	// Public keys should now contain only the authentication key
+	let stored_public_keys = new_did_details.get_public_keys();
+	assert_eq!(stored_public_keys.len(), 1);
+	assert!(stored_public_keys.contains_key(&generate_key_id(
+		&did::DidVerificationKey::from(auth_key.public()).into()
+	)));
 	assert_eq!(new_did_details.last_tx_counter, old_did_details.last_tx_counter + 1u64);
 }
 
 #[test]
-fn check_successful_verification_keys_deletion() {
+fn check_successful_keys_overwrite_update() {
 	let auth_key = get_ed25519_authentication_key(true);
-	let att_key_1 = did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public());
-	let att_key_2 = did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public());
-	let att_key_3 = did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public());
-	let att_key_4 = did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public());
-	let old_verification_keys_map = vec![
-		(
-			generate_attestation_key_id(&att_key_1, 0),
-			VerificationKeyDetails {
-				verification_key: att_key_1,
-				block_number: 0,
-			},
-		),
-		(
-			generate_attestation_key_id(&att_key_2, 0),
-			VerificationKeyDetails {
-				verification_key: att_key_2,
-				block_number: 0,
-			},
-		),
-		(
-			generate_attestation_key_id(&att_key_3, 0),
-			VerificationKeyDetails {
-				verification_key: att_key_3,
-				block_number: 0,
-			},
-		),
-		(
-			generate_attestation_key_id(&att_key_4, 0),
-			VerificationKeyDetails {
-				verification_key: att_key_4,
-				block_number: 0,
-			},
-		),
-	]
-	.iter()
-	.copied()
-	.collect::<BTreeMap<TestKeyId, TestVerificationKeyDetails>>();
-	let mut old_did_details = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
-	old_did_details.verification_keys = old_verification_keys_map.clone();
+	// Same as the authentication key -> leads to two keys having the same ID
+	let new_att_key = auth_key.clone();
 
-	// Create update operation to remove all verification keys.
+	let old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+
+	// Remove both attestation and delegation key
 	let mut operation = generate_base_did_update_operation(ALICE_DID);
-	operation.verification_keys_to_remove = Some(old_verification_keys_map.keys().copied().collect());
+	operation.attestation_key_update =
+		did::DidVerificationKeyUpdateAction::Change(did::DidVerificationKey::from(new_att_key.public()));
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
@@ -432,31 +423,98 @@ fn check_successful_verification_keys_deletion() {
 		.with_dids(vec![(ALICE_DID, old_did_details.clone())])
 		.build();
 
+	let new_block_number: TestBlockNumber = 1;
+
 	ext.execute_with(|| {
+		System::set_block_number(new_block_number);
 		assert_ok!(Did::submit_did_update_operation(
 			Origin::signed(DEFAULT_ACCOUNT),
 			operation.clone(),
 			did::DidSignature::from(signature),
 		));
 	});
-	let new_did_details = ext.execute_with(||
-	//All fields but verification_keys should remain unchanged
-	Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain."));
-	assert_eq!(new_did_details.auth_key, old_did_details.auth_key);
-	assert_eq!(new_did_details.key_agreement_key, old_did_details.key_agreement_key);
-	assert_eq!(new_did_details.delegation_key, old_did_details.delegation_key);
-	assert_eq!(new_did_details.attestation_key, old_did_details.attestation_key);
-	assert_eq!(new_did_details.endpoint_url, old_did_details.endpoint_url);
-	assert_eq!(new_did_details.last_tx_counter, old_did_details.last_tx_counter + 1u64);
 
-	// Set of verification keys should be empty now
-	assert_eq!(new_did_details.verification_keys, BTreeMap::new());
+	// Auth key unchanged
+	let new_did_details = ext.execute_with(|| Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain."));
+	assert_eq!(
+		new_did_details.get_authentication_key_id(),
+		old_did_details.get_authentication_key_id()
+	);
+	// New attestation key and authentication key should now have the same ID
+	assert_eq!(
+		new_did_details.get_attestation_key_id(),
+		&Some(old_did_details.get_authentication_key_id())
+	);
+
+	// As the two keys have the same ID, public keys still contain only one element
+	let stored_public_keys = new_did_details.get_public_keys();
+	assert_eq!(stored_public_keys.len(), 1);
+	assert!(stored_public_keys.contains_key(&generate_key_id(
+		&did::DidVerificationKey::from(auth_key.public()).into()
+	)));
+	assert!(stored_public_keys.contains_key(&generate_key_id(
+		&did::DidVerificationKey::from(new_att_key.public()).into()
+	)));
+	// The block number should be the updated to the latest one, even if the ID was
+	// also present before.
+	let stored_key_details = stored_public_keys
+		.get(&old_did_details.get_authentication_key_id())
+		.expect("There should be a key with the given ID stored on chain.");
+	assert_eq!(stored_key_details.block_number, new_block_number);
+	assert_eq!(new_did_details.last_tx_counter, old_did_details.last_tx_counter + 1u64);
+}
+
+#[test]
+fn check_successful_keys_multiuse_update() {
+	let auth_key = get_ed25519_authentication_key(true);
+	// Same as the authentication key -> leads to two keys having the same ID
+	let old_att_key = auth_key.clone();
+
+	let mut old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	old_did_details.update_attestation_key(did::DidVerificationKey::from(old_att_key.public()), 0u64);
+
+	// Remove attestation key
+	let mut operation = generate_base_did_update_operation(ALICE_DID);
+	operation.attestation_key_update = did::DidVerificationKeyUpdateAction::Delete;
+
+	let signature = auth_key.sign(operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(ALICE_DID, old_did_details.clone())])
+		.build();
+
+	let new_block_number: TestBlockNumber = 1;
+
+	ext.execute_with(|| {
+		System::set_block_number(new_block_number);
+		assert_ok!(Did::submit_did_update_operation(
+			Origin::signed(DEFAULT_ACCOUNT),
+			operation.clone(),
+			did::DidSignature::from(signature),
+		));
+	});
+
+	// Auth key unchanged
+	let new_did_details = ext.execute_with(|| Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain."));
+	assert_eq!(
+		new_did_details.get_authentication_key_id(),
+		old_did_details.get_authentication_key_id()
+	);
+	// Attestation key should now be set to None
+	assert_eq!(new_did_details.get_attestation_key_id(), &None);
+
+	// As the two keys have the same ID, public keys still contain only one element
+	let stored_public_keys = new_did_details.get_public_keys();
+	assert_eq!(stored_public_keys.len(), 1);
+	assert!(stored_public_keys.contains_key(&generate_key_id(
+		&did::DidVerificationKey::from(auth_key.public()).into()
+	)));
 }
 
 #[test]
 fn check_did_not_present_update() {
 	let auth_key = get_ed25519_authentication_key(true);
-	let mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	let operation = generate_base_did_update_operation(BOB_DID);
 
 	let signature = auth_key.sign(operation.encode().as_ref());
@@ -478,7 +536,7 @@ fn check_did_not_present_update() {
 #[test]
 fn check_did_max_counter_update() {
 	let auth_key = get_ed25519_authentication_key(true);
-	let mut mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
+	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	mock_did.last_tx_counter = u64::MAX;
 	let operation = generate_base_did_update_operation(ALICE_DID);
 
@@ -501,7 +559,7 @@ fn check_did_max_counter_update() {
 #[test]
 fn check_smaller_tx_counter_did_update() {
 	let auth_key = get_sr25519_authentication_key(true);
-	let mut mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
+	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	mock_did.last_tx_counter = 1;
 	let mut operation = generate_base_did_update_operation(ALICE_DID);
 	operation.tx_counter = mock_did.last_tx_counter - 1;
@@ -525,7 +583,7 @@ fn check_smaller_tx_counter_did_update() {
 #[test]
 fn check_equal_tx_counter_did_update() {
 	let auth_key = get_sr25519_authentication_key(true);
-	let mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	let mut operation = generate_base_did_update_operation(ALICE_DID);
 	operation.tx_counter = mock_did.last_tx_counter;
 
@@ -548,7 +606,7 @@ fn check_equal_tx_counter_did_update() {
 #[test]
 fn check_too_large_tx_counter_did_update() {
 	let auth_key = get_sr25519_authentication_key(true);
-	let mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	let mut operation = generate_base_did_update_operation(ALICE_DID);
 	operation.tx_counter = mock_did.last_tx_counter + 2;
 
@@ -574,7 +632,7 @@ fn check_invalid_signature_format_did_update() {
 	// Using an Sr25519 key where an Ed25519 is expected
 	let invalid_key = get_sr25519_authentication_key(true);
 	// DID update contains auth_key, but signature is generated using invalid_key
-	let mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	let operation = generate_base_did_update_operation(ALICE_DID);
 
 	let signature = invalid_key.sign(operation.encode().as_ref());
@@ -598,7 +656,7 @@ fn check_invalid_signature_did_update() {
 	let auth_key = get_sr25519_authentication_key(true);
 	// Using an Sr25519 key as expected, but from a different seed (default = false)
 	let alternative_key = get_sr25519_authentication_key(false);
-	let mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	let operation = generate_base_did_update_operation(ALICE_DID);
 
 	let signature = alternative_key.sign(operation.encode().as_ref());
@@ -618,43 +676,20 @@ fn check_invalid_signature_did_update() {
 }
 
 #[test]
-fn check_invalid_current_attestaton_key_deletion() {
+fn check_currently_active_authentication_key_update() {
 	let auth_key = get_ed25519_authentication_key(true);
-	let current_att_key = did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public());
-	let other_verification_key = did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public());
-	let old_verification_keys_map = vec![
-		(
-			generate_attestation_key_id(&current_att_key, 0),
-			VerificationKeyDetails {
-				verification_key: current_att_key,
-				block_number: 0,
-			},
-		),
-		(
-			generate_attestation_key_id(&other_verification_key, 0),
-			VerificationKeyDetails {
-				verification_key: other_verification_key,
-				block_number: 0,
-			},
-		),
-	]
+
+	let old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+
+	// Remove both attestation and delegation key
+	let mut operation = generate_base_did_update_operation(ALICE_DID);
+	// Trying to remove the currently active authentication key
+	operation.public_keys_to_remove = vec![generate_key_id(
+		&did::DidVerificationKey::from(auth_key.public()).into(),
+	)]
 	.iter()
 	.copied()
-	.collect::<BTreeMap<TestKeyId, TestVerificationKeyDetails>>();
-	let mut old_did_details = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
-	old_did_details.attestation_key = Some(current_att_key);
-	old_did_details.verification_keys = old_verification_keys_map;
-
-	let verification_keys_to_remove = vec![
-		generate_attestation_key_id(&other_verification_key, 0),
-		// Current attestation key instructed to be deleted from the storage
-		generate_attestation_key_id(&current_att_key, 0),
-	]
-	.iter()
-	.cloned()
 	.collect::<BTreeSet<TestKeyId>>();
-	let mut operation = generate_base_did_update_operation(ALICE_DID);
-	operation.verification_keys_to_remove = Some(verification_keys_to_remove);
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
@@ -662,65 +697,36 @@ fn check_invalid_current_attestaton_key_deletion() {
 		.with_dids(vec![(ALICE_DID, old_did_details)])
 		.build();
 
+	let new_block_number: TestBlockNumber = 1;
+
 	ext.execute_with(|| {
+		System::set_block_number(new_block_number);
 		assert_noop!(
 			Did::submit_did_update_operation(
 				Origin::signed(DEFAULT_ACCOUNT),
 				operation.clone(),
-				did::DidSignature::from(signature)
+				did::DidSignature::from(signature),
 			),
-			did::Error::<Test>::CurrentlyActiveAttestationKey
+			did::Error::<Test>::CurrentlyActiveKey
 		);
 	});
 }
 
 #[test]
-fn check_invalid_verification_keys_deletion() {
+fn check_currently_active_delegation_key_update() {
 	let auth_key = get_ed25519_authentication_key(true);
-	let att_key_1 = did::PublicVerificationKey::from(get_ed25519_attestation_key(true).public());
-	let att_key_2 = did::PublicVerificationKey::from(get_ed25519_attestation_key(false).public());
-	let att_key_3 = did::PublicVerificationKey::from(get_sr25519_attestation_key(true).public());
-	let att_key_4 = did::PublicVerificationKey::from(get_sr25519_attestation_key(false).public());
-	// No key_4 added to the map of stored verification keys
-	let old_verification_keys_map = vec![
-		(
-			generate_attestation_key_id(&att_key_1, 0),
-			VerificationKeyDetails {
-				verification_key: att_key_1,
-				block_number: 0,
-			},
-		),
-		(
-			generate_attestation_key_id(&att_key_2, 0),
-			VerificationKeyDetails {
-				verification_key: att_key_2,
-				block_number: 0,
-			},
-		),
-		(
-			generate_attestation_key_id(&att_key_3, 0),
-			VerificationKeyDetails {
-				verification_key: att_key_3,
-				block_number: 0,
-			},
-		),
-	]
-	.iter()
-	.copied()
-	.collect::<BTreeMap<TestKeyId, TestVerificationKeyDetails>>();
-	let mut old_did_details = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
-	old_did_details.verification_keys = old_verification_keys_map;
+	let del_key = get_sr25519_delegation_key(true);
 
-	// Remove some verification keys including one not stored on chain (key_4)
-	let verification_keys_to_remove = vec![
-		generate_attestation_key_id(&att_key_3, 0),
-		generate_attestation_key_id(&att_key_4, 0),
-	]
-	.iter()
-	.cloned()
-	.collect::<BTreeSet<TestKeyId>>();
+	let mut old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	old_did_details.update_delegation_key(did::DidVerificationKey::from(del_key.public()), 0u64);
+
+	// Remove both attestation and delegation key
 	let mut operation = generate_base_did_update_operation(ALICE_DID);
-	operation.verification_keys_to_remove = Some(verification_keys_to_remove);
+	// Trying to remove the currently active delegation key
+	operation.public_keys_to_remove = vec![generate_key_id(&did::DidVerificationKey::from(del_key.public()).into())]
+		.iter()
+		.copied()
+		.collect::<BTreeSet<TestKeyId>>();
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
@@ -728,14 +734,92 @@ fn check_invalid_verification_keys_deletion() {
 		.with_dids(vec![(ALICE_DID, old_did_details)])
 		.build();
 
+	let new_block_number: TestBlockNumber = 1;
+
 	ext.execute_with(|| {
+		System::set_block_number(new_block_number);
 		assert_noop!(
 			Did::submit_did_update_operation(
 				Origin::signed(DEFAULT_ACCOUNT),
 				operation.clone(),
-				did::DidSignature::from(signature)
+				did::DidSignature::from(signature),
 			),
-			did::Error::<Test>::VerificationKeysNotPresent
+			did::Error::<Test>::CurrentlyActiveKey
+		);
+	});
+}
+
+#[test]
+fn check_currently_active_attestation_key_update() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let att_key = get_sr25519_attestation_key(true);
+
+	let mut old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	old_did_details.update_attestation_key(did::DidVerificationKey::from(att_key.public()), 0u64);
+
+	// Remove both attestation and delegation key
+	let mut operation = generate_base_did_update_operation(ALICE_DID);
+	// Trying to remove the currently active attestation key
+	operation.public_keys_to_remove = vec![generate_key_id(&did::DidVerificationKey::from(att_key.public()).into())]
+		.iter()
+		.copied()
+		.collect::<BTreeSet<TestKeyId>>();
+
+	let signature = auth_key.sign(operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(ALICE_DID, old_did_details)])
+		.build();
+
+	let new_block_number: TestBlockNumber = 1;
+
+	ext.execute_with(|| {
+		System::set_block_number(new_block_number);
+		assert_noop!(
+			Did::submit_did_update_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature),
+			),
+			did::Error::<Test>::CurrentlyActiveKey
+		);
+	});
+}
+
+#[test]
+fn check_verification_key_not_present_update() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let key_to_delete = get_sr25519_authentication_key(true);
+
+	let old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+
+	// Remove both attestation and delegation key
+	let mut operation = generate_base_did_update_operation(ALICE_DID);
+	// Trying to remove the currently active authentication key
+	operation.public_keys_to_remove = vec![generate_key_id(
+		&did::DidVerificationKey::from(key_to_delete.public()).into(),
+	)]
+	.iter()
+	.copied()
+	.collect::<BTreeSet<TestKeyId>>();
+
+	let signature = auth_key.sign(operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(ALICE_DID, old_did_details)])
+		.build();
+
+	let new_block_number: TestBlockNumber = 1;
+
+	ext.execute_with(|| {
+		System::set_block_number(new_block_number);
+		assert_noop!(
+			Did::submit_did_update_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature),
+			),
+			did::Error::<Test>::VerificationKeyNotPresent
 		);
 	});
 }
@@ -745,7 +829,7 @@ fn check_invalid_verification_keys_deletion() {
 #[test]
 fn check_successful_deletion() {
 	let auth_key = get_ed25519_authentication_key(true);
-	let did_details = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
+	let did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 
 	// Update all keys, URL endpoint and tx counter. No keys are removed in this
 	// test
@@ -769,7 +853,7 @@ fn check_successful_deletion() {
 	// Re-adding the same DID identifier, which should not fail.
 	let new_auth_key = get_sr25519_authentication_key(true);
 	let operation =
-		generate_base_did_creation_operation(ALICE_DID, did::PublicVerificationKey::from(new_auth_key.public()));
+		generate_base_did_creation_operation(ALICE_DID, did::DidVerificationKey::from(new_auth_key.public()));
 
 	let signature = new_auth_key.sign(operation.encode().as_ref());
 
@@ -812,7 +896,7 @@ fn check_did_not_present_deletion() {
 #[test]
 fn check_max_tx_counter_did_deletion() {
 	let auth_key = get_sr25519_authentication_key(true);
-	let mut mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
+	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	mock_did.last_tx_counter = u64::MAX;
 	let operation = generate_base_did_delete_operation(ALICE_DID);
 
@@ -835,7 +919,7 @@ fn check_max_tx_counter_did_deletion() {
 #[test]
 fn check_smaller_tx_counter_did_deletion() {
 	let auth_key = get_sr25519_authentication_key(true);
-	let mut mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
+	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	mock_did.last_tx_counter = 1;
 	let mut operation = generate_base_did_delete_operation(ALICE_DID);
 	operation.tx_counter = mock_did.last_tx_counter - 1;
@@ -859,7 +943,7 @@ fn check_smaller_tx_counter_did_deletion() {
 #[test]
 fn check_equal_tx_counter_did_deletion() {
 	let auth_key = get_sr25519_authentication_key(true);
-	let mut mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
+	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	mock_did.last_tx_counter = 1;
 	let mut operation = generate_base_did_delete_operation(ALICE_DID);
 	operation.tx_counter = mock_did.last_tx_counter;
@@ -883,7 +967,7 @@ fn check_equal_tx_counter_did_deletion() {
 #[test]
 fn check_too_large_tx_counter_did_deletion() {
 	let auth_key = get_sr25519_authentication_key(true);
-	let mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	let mut operation = generate_base_did_delete_operation(ALICE_DID);
 	operation.tx_counter = mock_did.last_tx_counter + 2;
 
@@ -908,7 +992,7 @@ fn check_invalid_signature_format_did_deletion() {
 	let auth_key = get_ed25519_authentication_key(true);
 	// Using an Sr25519 key where an Ed25519 is expected
 	let invalid_key = get_sr25519_authentication_key(true);
-	let mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	let operation = generate_base_did_delete_operation(ALICE_DID);
 
 	let signature = invalid_key.sign(operation.encode().as_ref());
@@ -932,7 +1016,7 @@ fn check_invalid_signature_did_deletion() {
 	let auth_key = get_sr25519_authentication_key(true);
 	// Using an Sr25519 key as expected, but from a different seed (default = false)
 	let alternative_key = get_sr25519_authentication_key(false);
-	let mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	let operation = generate_base_did_delete_operation(ALICE_DID);
 
 	let signature = alternative_key.sign(operation.encode().as_ref());
@@ -956,10 +1040,10 @@ fn check_invalid_signature_did_deletion() {
 #[test]
 fn check_authentication_successful_operation_verification() {
 	let auth_key = get_sr25519_authentication_key(true);
-	let mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	let operation = TestDidOperation {
 		did: ALICE_DID,
-		verification_key_type: did::DidVerificationKeyType::Authentication,
+		verification_key_type: did::DidVerificationKeyRelationship::Authentication,
 		tx_counter: mock_did.last_tx_counter + 1,
 	};
 
@@ -990,11 +1074,11 @@ fn check_authentication_successful_operation_verification() {
 fn check_attestation_successful_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let att_key = get_sr25519_attestation_key(true);
-	let mut mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
-	mock_did.attestation_key = Some(did::PublicVerificationKey::from(att_key.public()));
+	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	mock_did.update_attestation_key(did::DidVerificationKey::from(att_key.public()), 0u64);
 	let operation = TestDidOperation {
 		did: ALICE_DID,
-		verification_key_type: did::DidVerificationKeyType::AssertionMethod,
+		verification_key_type: did::DidVerificationKeyRelationship::AssertionMethod,
 		tx_counter: mock_did.last_tx_counter + 1,
 	};
 
@@ -1025,11 +1109,11 @@ fn check_attestation_successful_operation_verification() {
 fn check_delegation_successful_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let del_key = get_ed25519_delegation_key(true);
-	let mut mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
-	mock_did.delegation_key = Some(did::PublicVerificationKey::from(del_key.public()));
+	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	mock_did.update_delegation_key(did::DidVerificationKey::from(del_key.public()), 0u64);
 	let operation = TestDidOperation {
 		did: ALICE_DID,
-		verification_key_type: did::DidVerificationKeyType::CapabilityDelegation,
+		verification_key_type: did::DidVerificationKeyRelationship::CapabilityDelegation,
 		tx_counter: mock_did.last_tx_counter + 1,
 	};
 	let signature = del_key.sign(&operation.encode());
@@ -1059,11 +1143,10 @@ fn check_delegation_successful_operation_verification() {
 fn check_did_not_present_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let del_key = get_ed25519_delegation_key(true);
-	let mut mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
-	mock_did.delegation_key = Some(did::PublicVerificationKey::from(del_key.public()));
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	let operation = TestDidOperation {
 		did: ALICE_DID,
-		verification_key_type: did::DidVerificationKeyType::CapabilityDelegation,
+		verification_key_type: did::DidVerificationKeyRelationship::CapabilityDelegation,
 		tx_counter: mock_did.last_tx_counter + 1,
 	};
 	let signature = del_key.sign(&operation.encode());
@@ -1084,11 +1167,11 @@ fn check_did_not_present_operation_verification() {
 #[test]
 fn check_max_tx_counter_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
-	let mut mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
+	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	mock_did.last_tx_counter = u64::MAX;
 	let operation = TestDidOperation {
 		did: ALICE_DID,
-		verification_key_type: did::DidVerificationKeyType::Authentication,
+		verification_key_type: did::DidVerificationKeyRelationship::Authentication,
 		tx_counter: mock_did.last_tx_counter,
 	};
 	let signature = auth_key.sign(&operation.encode());
@@ -1115,11 +1198,11 @@ fn check_max_tx_counter_operation_verification() {
 #[test]
 fn check_smaller_counter_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
-	let mut mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
+	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	mock_did.last_tx_counter = 1;
 	let operation = TestDidOperation {
 		did: ALICE_DID,
-		verification_key_type: did::DidVerificationKeyType::Authentication,
+		verification_key_type: did::DidVerificationKeyRelationship::Authentication,
 		tx_counter: mock_did.last_tx_counter - 1,
 	};
 	let signature = auth_key.sign(&operation.encode());
@@ -1146,10 +1229,10 @@ fn check_smaller_counter_operation_verification() {
 #[test]
 fn check_equal_counter_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
-	let mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	let operation = TestDidOperation {
 		did: ALICE_DID,
-		verification_key_type: did::DidVerificationKeyType::Authentication,
+		verification_key_type: did::DidVerificationKeyRelationship::Authentication,
 		tx_counter: mock_did.last_tx_counter,
 	};
 	let signature = auth_key.sign(&operation.encode());
@@ -1176,10 +1259,10 @@ fn check_equal_counter_operation_verification() {
 #[test]
 fn check_too_large_counter_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
-	let mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	let operation = TestDidOperation {
 		did: ALICE_DID,
-		verification_key_type: did::DidVerificationKeyType::Authentication,
+		verification_key_type: did::DidVerificationKeyRelationship::Authentication,
 		tx_counter: mock_did.last_tx_counter + 2,
 	};
 	let signature = auth_key.sign(&operation.encode());
@@ -1206,8 +1289,8 @@ fn check_too_large_counter_operation_verification() {
 #[test]
 fn check_verification_key_not_present_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
-	let mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
-	let verification_key_required = did::DidVerificationKeyType::CapabilityInvocation;
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	let verification_key_required = did::DidVerificationKeyRelationship::CapabilityInvocation;
 	let operation = TestDidOperation {
 		did: ALICE_DID,
 		verification_key_type: verification_key_required.clone(),
@@ -1240,10 +1323,10 @@ fn check_invalid_signature_format_operation_verification() {
 	let auth_key = get_sr25519_authentication_key(true);
 	// Expected an Sr25519, given an Ed25519
 	let invalid_key = get_ed25519_authentication_key(true);
-	let mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	let operation = TestDidOperation {
 		did: ALICE_DID,
-		verification_key_type: did::DidVerificationKeyType::Authentication,
+		verification_key_type: did::DidVerificationKeyRelationship::Authentication,
 		tx_counter: mock_did.last_tx_counter + 1,
 	};
 
@@ -1273,10 +1356,10 @@ fn check_invalid_signature_operation_verification() {
 	let auth_key = get_sr25519_authentication_key(true);
 	// Using same key type but different seed (default = false)
 	let alternative_key = get_sr25519_authentication_key(false);
-	let mock_did = generate_base_did_details(did::PublicVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	let operation = TestDidOperation {
 		did: ALICE_DID,
-		verification_key_type: did::DidVerificationKeyType::Authentication,
+		verification_key_type: did::DidVerificationKeyRelationship::Authentication,
 		tx_counter: mock_did.last_tx_counter + 1,
 	};
 

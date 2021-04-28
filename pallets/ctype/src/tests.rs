@@ -30,8 +30,8 @@ fn check_successful_ctype_creation() {
 	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()));
-	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
+		did_mock::generate_base_did_details(did::DidVerificationKey::from(did_auth_key.public()));
+	mock_did_details.update_attestation_key(did::DidVerificationKey::from(did_att_key.public()), 0u64);
 
 	let did = did_mock::ALICE_DID;
 
@@ -71,8 +71,8 @@ fn check_duplicate_ctype_creation() {
 	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()));
-	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
+		did_mock::generate_base_did_details(did::DidVerificationKey::from(did_auth_key.public()));
+	mock_did_details.update_attestation_key(did::DidVerificationKey::from(did_att_key.public()), 0u64);
 
 	let did = did_mock::ALICE_DID;
 
@@ -110,8 +110,8 @@ fn check_did_not_present_ctype_creation() {
 	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()));
-	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
+		did_mock::generate_base_did_details(did::DidVerificationKey::from(did_auth_key.public()));
+	mock_did_details.update_attestation_key(did::DidVerificationKey::from(did_att_key.public()), 0u64);
 
 	let did = did_mock::ALICE_DID;
 	let alternative_did = did_mock::BOB_DID;
@@ -141,8 +141,8 @@ fn check_max_did_counter_ctype_creation() {
 	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()));
-	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
+		did_mock::generate_base_did_details(did::DidVerificationKey::from(did_auth_key.public()));
+	mock_did_details.update_attestation_key(did::DidVerificationKey::from(did_att_key.public()), 0u64);
 	mock_did_details.set_tx_counter(u64::MAX);
 
 	let did = did_mock::ALICE_DID;
@@ -181,8 +181,8 @@ fn check_smaller_did_counter_ctype_creation() {
 	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()));
-	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
+		did_mock::generate_base_did_details(did::DidVerificationKey::from(did_auth_key.public()));
+	mock_did_details.update_attestation_key(did::DidVerificationKey::from(did_att_key.public()), 0u64);
 	mock_did_details.set_tx_counter(1u64);
 
 	let did = did_mock::ALICE_DID;
@@ -222,8 +222,8 @@ fn check_equal_did_counter_ctype_creation() {
 	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()));
-	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
+		did_mock::generate_base_did_details(did::DidVerificationKey::from(did_auth_key.public()));
+	mock_did_details.update_attestation_key(did::DidVerificationKey::from(did_att_key.public()), 0u64);
 
 	let did = did_mock::ALICE_DID;
 
@@ -262,8 +262,8 @@ fn check_too_large_did_counter_ctype_creation() {
 	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()));
-	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
+		did_mock::generate_base_did_details(did::DidVerificationKey::from(did_auth_key.public()));
+	mock_did_details.update_attestation_key(did::DidVerificationKey::from(did_att_key.public()), 0u64);
 	mock_did_details.set_tx_counter(1u64);
 
 	let did = did_mock::ALICE_DID;
@@ -303,7 +303,7 @@ fn check_no_attestation_key_ctype_creation() {
 	let did_auth_key = did_mock::get_ed25519_authentication_key(true);
 	// Created but not added to the mock DID details
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
-	let mock_did_details = did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()));
+	let mock_did_details = did_mock::generate_base_did_details(did::DidVerificationKey::from(did_auth_key.public()));
 
 	let did = did_mock::ALICE_DID;
 
@@ -323,7 +323,7 @@ fn check_no_attestation_key_ctype_creation() {
 				operation.clone(),
 				did::DidSignature::from(signature)
 			),
-			did::Error::<Test>::VerificationKeysNotPresent
+			did::Error::<Test>::VerificationKeyNotPresent
 		);
 	});
 
@@ -342,8 +342,8 @@ fn check_invalid_signature_format_ctype_creation() {
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let wrong_format_att_key = did_mock::get_ed25519_attestation_key(true);
 	let mut mock_did_details =
-		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()));
-	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
+		did_mock::generate_base_did_details(did::DidVerificationKey::from(did_auth_key.public()));
+	mock_did_details.update_attestation_key(did::DidVerificationKey::from(did_att_key.public()), 0u64);
 
 	let did = did_mock::ALICE_DID;
 
@@ -382,8 +382,8 @@ fn check_invalid_signature_ctype_creation() {
 	let did_att_key = did_mock::get_sr25519_attestation_key(true);
 	let alternative_seed_att_key = did_mock::get_sr25519_attestation_key(false);
 	let mut mock_did_details =
-		did_mock::generate_base_did_details(did::PublicVerificationKey::from(did_auth_key.public()));
-	mock_did_details.attestation_key = Some(did::PublicVerificationKey::from(did_att_key.public()));
+		did_mock::generate_base_did_details(did::DidVerificationKey::from(did_auth_key.public()));
+	mock_did_details.update_attestation_key(did::DidVerificationKey::from(did_att_key.public()), 0u64);
 
 	let did = did_mock::ALICE_DID;
 
