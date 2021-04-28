@@ -34,6 +34,7 @@ use sp_runtime::{
 pub type AccountId = u64;
 pub type Balance = u128;
 pub type BlockNumber = u64;
+pub const BLOCKS_PER_ROUND: u32 = 5;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -96,8 +97,8 @@ impl pallet_balances::Config for Test {
 }
 parameter_types! {
 	pub const MinBlocksPerRound: u32 = 3; // 20
-	pub const DefaultBlocksPerRound: u32 = 5; // 600
 	pub const BondDuration: u32 = 2;
+	pub const DefaultBlocksPerRound: u32 = BLOCKS_PER_ROUND;
 	pub const MinSelectedCandidates: u32 = 5;
 	pub const MaxNominatorsPerCollator: u32 = 4;
 	pub const MaxCollatorsPerNominator: u32 = 4;
@@ -131,6 +132,8 @@ pub(crate) struct ExtBuilder {
 	nominators: Vec<(AccountId, AccountId, Balance)>,
 	// inflation config
 	inflation_config: InflationInfo,
+	// blocks per round
+	blocks_per_round: u32,
 }
 
 impl Default for ExtBuilder {
@@ -139,6 +142,7 @@ impl Default for ExtBuilder {
 			balances: vec![],
 			nominators: vec![],
 			collators: vec![],
+			blocks_per_round: BLOCKS_PER_ROUND,
 			inflation_config: InflationInfo {
 				collator: StakingInfo {
 					max_rate: Perbill::from_percent(10),
@@ -197,32 +201,42 @@ impl ExtBuilder {
 		self
 	}
 
+	pub(crate) fn set_blocks_per_round(mut self, blocks_per_round: u32) -> Self {
+		self.blocks_per_round = blocks_per_round;
+		self
+	}
+
 	pub(crate) fn build(self) -> sp_io::TestExternalities {
 		let mut t = frame_system::GenesisConfig::default()
 			.build_storage::<Test>()
 			.expect("Frame system builds valid default genesis config");
 
 		pallet_balances::GenesisConfig::<Test> {
-			balances: self.balances,
+			balances: self.balances.clone(),
 		}
 		.assimilate_storage(&mut t)
 		.expect("Pallet balances storage can be assimilated");
 
 		let mut stakers: Vec<(AccountId, Option<AccountId>, Balance)> = Vec::new();
-		for collator in self.collators {
+		for collator in self.collators.clone() {
 			stakers.push((collator.0, None, collator.1));
 		}
-		for nominator in self.nominators {
+		for nominator in self.nominators.clone() {
 			stakers.push((nominator.0, Some(nominator.1), nominator.2));
 		}
 		stake::GenesisConfig::<Test> {
 			stakers,
-			inflation_config: self.inflation_config,
+			inflation_config: self.inflation_config.clone(),
 		}
 		.assimilate_storage(&mut t)
 		.expect("Parachain Staking's storage can be assimilated");
 
 		let mut ext = sp_io::TestExternalities::new(t);
+
+		if self.blocks_per_round != BLOCKS_PER_ROUND {
+			ext.execute_with(|| Stake::set_blocks_per_round(Origin::root(), self.blocks_per_round));
+		}
+
 		ext.execute_with(|| System::set_block_number(1));
 		ext
 	}

@@ -200,6 +200,7 @@ mod tests {
 	#[test]
 	fn simple_rewards() {
 		ExtBuilder::default()
+			.set_blocks_per_round(BLOCKS_PER_YEAR)
 			// .with_inflation(staking_info.clone())
 			.build()
 			.execute_with(|| {
@@ -209,8 +210,6 @@ mod tests {
 					first: 1,
 					length: BLOCKS_PER_YEAR,
 				});
-				// let rounds_per_year = BLOCKS_PER_YEAR / <Test as
-				// Config>::DefaultBlocksPerRound::get();
 				let rounds_per_year = 1;
 				let inflation = InflationInfo::new::<Test>(10, 15, 40, 10);
 
@@ -255,158 +254,164 @@ mod tests {
 
 	#[test]
 	fn more_realistic_rewards() {
-		ExtBuilder::default().build().execute_with(|| {
-			let rounds_per_year = BLOCKS_PER_YEAR / <Test as Config>::DefaultBlocksPerRound::get();
-			let inflation = InflationInfo::new::<Test>(10, 15, 40, 10);
+		ExtBuilder::default()
+			.set_blocks_per_round(600)
+			.build()
+			.execute_with(|| {
+				let rounds_per_year = BLOCKS_PER_YEAR / 600;
+				let inflation = InflationInfo::new::<Test>(10, 15, 40, 10);
 
-			// Dummy checks for correct instantiation
-			assert!(inflation.is_valid());
-			assert_eq!(inflation.collator.max_rate, Perbill::from_percent(10));
-			assert_eq!(inflation.collator.reward_rate.annual, Perbill::from_percent(15));
-			assert_eq!(
-				inflation.collator.reward_rate.round,
-				Perbill::from_percent(15) / rounds_per_year
-			);
-			assert_eq!(inflation.delegator.max_rate, Perbill::from_percent(40));
-			assert_eq!(inflation.delegator.reward_rate.annual, Perbill::from_percent(10));
-			assert_eq!(
-				inflation.delegator.reward_rate.round,
-				Perbill::from_percent(10) / rounds_per_year
-			);
+				// Dummy checks for correct instantiation
+				assert!(inflation.is_valid());
+				assert_eq!(inflation.collator.max_rate, Perbill::from_percent(10));
+				assert_eq!(inflation.collator.reward_rate.annual, Perbill::from_percent(15));
+				assert_eq!(
+					inflation.collator.reward_rate.round,
+					Perbill::from_percent(15) / rounds_per_year
+				);
+				assert_eq!(inflation.delegator.max_rate, Perbill::from_percent(40));
+				assert_eq!(inflation.delegator.reward_rate.annual, Perbill::from_percent(10));
+				assert_eq!(
+					inflation.delegator.reward_rate.round,
+					Perbill::from_percent(10) / rounds_per_year
+				);
 
-			// Check collator reward computation
-			assert_eq!(inflation.collator.compute_rewards::<Test>(0, 160_000_000), 0);
-			assert_eq!(inflation.collator.compute_rewards::<Test>(100_000, 160_000_000), 2);
-			// Check for max_rate which is 10%
-			assert_eq!(inflation.collator.compute_rewards::<Test>(16_000_000, 160_000_000), 274);
-			// Check exceeding max_rate
-			assert_eq!(inflation.collator.compute_rewards::<Test>(32_000_000, 160_000_000), 274);
-			// Stake can never be more than what is issued, but let's check whether the cap
-			// still applies
-			assert_eq!(
-				inflation.collator.compute_rewards::<Test>(200_000_000, 160_000_000),
-				274
-			);
+				// Check collator reward computation
+				assert_eq!(inflation.collator.compute_rewards::<Test>(0, 160_000_000), 0);
+				assert_eq!(inflation.collator.compute_rewards::<Test>(100_000, 160_000_000), 2);
+				// Check for max_rate which is 10%
+				assert_eq!(inflation.collator.compute_rewards::<Test>(16_000_000, 160_000_000), 274);
+				// Check exceeding max_rate
+				assert_eq!(inflation.collator.compute_rewards::<Test>(32_000_000, 160_000_000), 274);
+				// Stake can never be more than what is issued, but let's check whether the cap
+				// still applies
+				assert_eq!(
+					inflation.collator.compute_rewards::<Test>(200_000_000, 160_000_000),
+					274
+				);
 
-			// Check delegator reward calculation
-			assert_eq!(inflation.delegator.compute_rewards::<Test>(0, 160_000_000), 0);
-			assert_eq!(inflation.delegator.compute_rewards::<Test>(100_000, 160_000_000), 1);
-			assert!(
-				inflation.delegator.compute_rewards::<Test>(16_000_000, 160_000_000)
-					< inflation.collator.compute_rewards::<Test>(16_000_000, 160_000_000)
-			);
-			// Check for max_rate which is 40%
-			assert_eq!(
-				inflation.delegator.compute_rewards::<Test>(64_000_000, 160_000_000),
-				730
-			);
-			// Check exceeding max_rate
-			assert_eq!(
-				inflation.delegator.compute_rewards::<Test>(100_000_000, 160_000_000),
-				730
-			);
-			// Stake can never be more than what is issued, but let's check whether the cap
-			// still applies
-			assert_eq!(
-				inflation.delegator.compute_rewards::<Test>(200_000_000, 160_000_000),
-				730
-			);
-		});
+				// Check delegator reward calculation
+				assert_eq!(inflation.delegator.compute_rewards::<Test>(0, 160_000_000), 0);
+				assert_eq!(inflation.delegator.compute_rewards::<Test>(100_000, 160_000_000), 1);
+				assert!(
+					inflation.delegator.compute_rewards::<Test>(16_000_000, 160_000_000)
+						< inflation.collator.compute_rewards::<Test>(16_000_000, 160_000_000)
+				);
+				// Check for max_rate which is 40%
+				assert_eq!(
+					inflation.delegator.compute_rewards::<Test>(64_000_000, 160_000_000),
+					730
+				);
+				// Check exceeding max_rate
+				assert_eq!(
+					inflation.delegator.compute_rewards::<Test>(100_000_000, 160_000_000),
+					730
+				);
+				// Stake can never be more than what is issued, but let's check whether the cap
+				// still applies
+				assert_eq!(
+					inflation.delegator.compute_rewards::<Test>(200_000_000, 160_000_000),
+					730
+				);
+			});
 	}
 
 	#[test]
 	fn real_rewards() {
-		ExtBuilder::default().build().execute_with(|| {
-			let rounds_per_year = BLOCKS_PER_YEAR / <Test as Config>::DefaultBlocksPerRound::get();
-			let inflation = InflationInfo::new::<Test>(10, 15, 40, 10);
+		ExtBuilder::default()
+			.set_blocks_per_round(600)
+			.build()
+			.execute_with(|| {
+				let rounds_per_year = BLOCKS_PER_YEAR / 600;
+				let inflation = InflationInfo::new::<Test>(10, 15, 40, 10);
 
-			// Dummy checks for correct instantiation
-			assert!(inflation.is_valid());
-			assert_eq!(inflation.collator.max_rate, Perbill::from_percent(10));
-			assert_eq!(inflation.collator.reward_rate.annual, Perbill::from_percent(15));
-			assert_eq!(
-				inflation.collator.reward_rate.round,
-				Perbill::from_percent(15) / rounds_per_year
-			);
-			assert_eq!(inflation.delegator.max_rate, Perbill::from_percent(40));
-			assert_eq!(inflation.delegator.reward_rate.annual, Perbill::from_percent(10));
-			assert_eq!(
-				inflation.delegator.reward_rate.round,
-				Perbill::from_percent(10) / rounds_per_year
-			);
+				// Dummy checks for correct instantiation
+				assert!(inflation.is_valid());
+				assert_eq!(inflation.collator.max_rate, Perbill::from_percent(10));
+				assert_eq!(inflation.collator.reward_rate.annual, Perbill::from_percent(15));
+				assert_eq!(
+					inflation.collator.reward_rate.round,
+					Perbill::from_percent(15) / rounds_per_year
+				);
+				assert_eq!(inflation.delegator.max_rate, Perbill::from_percent(40));
+				assert_eq!(inflation.delegator.reward_rate.annual, Perbill::from_percent(10));
+				assert_eq!(
+					inflation.delegator.reward_rate.round,
+					Perbill::from_percent(10) / rounds_per_year
+				);
 
-			let decimals = 10u128.pow(15);
-			let total_issuance: u128 = 160_000_000u128 * decimals;
+				let decimals = 10u128.pow(15);
+				let total_issuance: u128 = 160_000_000u128 * decimals;
 
-			// Check collator reward computation
-			assert_eq!(inflation.collator.compute_rewards::<Test>(0, total_issuance), 0);
-			assert_eq!(
-				inflation
-					.collator
-					.compute_rewards::<Test>(100_000 * decimals, total_issuance),
-				1600 * 10u128.pow(12)
-			);
-			// Check for max_rate which is 10%
-			assert_eq!(
-				inflation
-					.collator
-					.compute_rewards::<Test>(16_000_000 * decimals, total_issuance),
-				273760 * 10u128.pow(12)
-			);
-			// Check exceeding max_rate
-			assert_eq!(
-				inflation
-					.collator
-					.compute_rewards::<Test>(32_000_000 * decimals, total_issuance),
-				273760 * 10u128.pow(12)
-			);
-			// Stake can never be more than what is issued, but let's check whether the cap
-			// still applies
-			assert_eq!(
-				inflation
-					.collator
-					.compute_rewards::<Test>(200_000_000 * decimals, total_issuance),
-				273760 * 10u128.pow(12)
-			);
-
-			// Check delegator reward calculation
-			assert_eq!(inflation.delegator.compute_rewards::<Test>(0, total_issuance), 0);
-			assert_eq!(
-				inflation
-					.delegator
-					.compute_rewards::<Test>(100_000 * decimals, total_issuance),
-				1120 * 10u128.pow(12)
-			);
-			assert!(
-				inflation
-					.delegator
-					.compute_rewards::<Test>(16_000_000 * decimals, total_issuance)
-					< inflation
+				// Check collator reward computation
+				assert_eq!(inflation.collator.compute_rewards::<Test>(0, total_issuance), 0);
+				assert_eq!(
+					inflation
 						.collator
+						.compute_rewards::<Test>(100_000 * decimals, total_issuance),
+					1600 * 10u128.pow(12)
+				);
+				// Check for max_rate which is 10%
+				assert_eq!(
+					inflation
+						.collator
+						.compute_rewards::<Test>(16_000_000 * decimals, total_issuance),
+					273760 * 10u128.pow(12)
+				);
+				// Check exceeding max_rate
+				assert_eq!(
+					inflation
+						.collator
+						.compute_rewards::<Test>(32_000_000 * decimals, total_issuance),
+					273760 * 10u128.pow(12)
+				);
+				// Stake can never be more than what is issued, but let's check whether the cap
+				// still applies
+				assert_eq!(
+					inflation
+						.collator
+						.compute_rewards::<Test>(200_000_000 * decimals, total_issuance),
+					273760 * 10u128.pow(12)
+				);
+
+				// Check delegator reward calculation
+				assert_eq!(inflation.delegator.compute_rewards::<Test>(0, total_issuance), 0);
+				assert_eq!(
+					inflation
+						.delegator
+						.compute_rewards::<Test>(100_000 * decimals, total_issuance),
+					1120 * 10u128.pow(12)
+				);
+				assert!(
+					inflation
+						.delegator
 						.compute_rewards::<Test>(16_000_000 * decimals, total_issuance)
-			);
-			// Check for max_rate which is 40%
-			assert_eq!(
-				inflation
-					.delegator
-					.compute_rewards::<Test>(64_000_000 * decimals, total_issuance),
-				729_920 * 10u128.pow(12)
-			);
-			// Check exceeding max_rate
-			assert_eq!(
-				inflation
-					.delegator
-					.compute_rewards::<Test>(100_000_000 * decimals, total_issuance),
-				729_920 * 10u128.pow(12)
-			);
-			// Stake can never be more than what is issued, but let's check whether the cap
-			// still applies
-			assert_eq!(
-				inflation
-					.delegator
-					.compute_rewards::<Test>(200_000_000 * decimals, total_issuance),
-				729_920 * 10u128.pow(12)
-			);
-		});
+						< inflation
+							.collator
+							.compute_rewards::<Test>(16_000_000 * decimals, total_issuance)
+				);
+				// Check for max_rate which is 40%
+				assert_eq!(
+					inflation
+						.delegator
+						.compute_rewards::<Test>(64_000_000 * decimals, total_issuance),
+					729_920 * 10u128.pow(12)
+				);
+				// Check exceeding max_rate
+				assert_eq!(
+					inflation
+						.delegator
+						.compute_rewards::<Test>(100_000_000 * decimals, total_issuance),
+					729_920 * 10u128.pow(12)
+				);
+				// Stake can never be more than what is issued, but let's check whether the cap
+				// still applies
+				assert_eq!(
+					inflation
+						.delegator
+						.compute_rewards::<Test>(200_000_000 * decimals, total_issuance),
+					729_920 * 10u128.pow(12)
+				);
+			});
 	}
 }
