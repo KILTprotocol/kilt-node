@@ -491,10 +491,7 @@ fn payout_distribution_to_solo_collators_below_max_rate() {
 			set_author(2, 1, 100);
 			roll_to(16);
 			// pay total issuance to 1
-			let mut rewards = inflation
-				.round
-				.collator
-				.compute_rewards::<Test>(400_000, total_issuance);
+			let mut rewards = inflation.collator.compute_rewards::<Test>(400_000, total_issuance);
 			assert_eq!(rewards, 13217);
 			let mut new = vec![
 				Event::CollatorChosen(3, 1, 100_000, 0),
@@ -521,10 +518,7 @@ fn payout_distribution_to_solo_collators_below_max_rate() {
 
 			// TODO: Why not applied?
 			total_issuance = <Test as Config>::Currency::total_issuance();
-			rewards = inflation
-				.round
-				.collator
-				.compute_rewards::<Test>(400_000, total_issuance);
+			rewards = inflation.collator.compute_rewards::<Test>(400_000, total_issuance);
 			assert_eq!(rewards, 13275);
 			// pay 60% total issuance to 1 and 40% total issuance to 2
 			let mut new1 = vec![
@@ -631,10 +625,7 @@ fn payout_distribution_to_solo_collators_above_max_rate() {
 			set_author(2, 1, 100);
 			roll_to(16);
 			// pay total issuance to 1
-			let mut rewards = inflation
-				.round
-				.collator
-				.compute_rewards::<Test>(400_000, total_issuance);
+			let mut rewards = inflation.collator.compute_rewards::<Test>(400_000, total_issuance);
 			assert_eq!(rewards, 1321);
 			let mut new = vec![
 				Event::CollatorChosen(3, 1, 100_000, 0),
@@ -661,10 +652,7 @@ fn payout_distribution_to_solo_collators_above_max_rate() {
 
 			// TODO: Why not applied?
 			total_issuance = <Test as Config>::Currency::total_issuance();
-			rewards = inflation
-				.round
-				.collator
-				.compute_rewards::<Test>(400_000, total_issuance);
+			rewards = inflation.collator.compute_rewards::<Test>(400_000, total_issuance);
 			assert_eq!(rewards, 1322);
 			// pay 60% total issuance to 1 and 40% total issuance to 2
 			let mut new1 = vec![

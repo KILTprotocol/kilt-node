@@ -95,8 +95,8 @@ impl pallet_balances::Config for Test {
 	type WeightInfo = ();
 }
 parameter_types! {
-	pub const MinBlocksPerRound: u32 = 3;
-	pub const DefaultBlocksPerRound: u32 = 5;
+	pub const MinBlocksPerRound: u32 = 3; // 20
+	pub const DefaultBlocksPerRound: u32 = 5; // 600
 	pub const BondDuration: u32 = 2;
 	pub const MinSelectedCandidates: u32 = 5;
 	pub const MaxNominatorsPerCollator: u32 = 4;
@@ -130,7 +130,7 @@ pub(crate) struct ExtBuilder {
 	// [nominator, collator, nomination_amount]
 	nominators: Vec<(AccountId, AccountId, Balance)>,
 	// inflation config
-	staking_config: StakingInfo,
+	inflation_config: InflationInfo,
 }
 
 impl Default for ExtBuilder {
@@ -139,14 +139,20 @@ impl Default for ExtBuilder {
 			balances: vec![],
 			nominators: vec![],
 			collators: vec![],
-			staking_config: StakingInfo {
-				collator: StakingRates {
+			inflation_config: InflationInfo {
+				collator: StakingInfo {
 					max_rate: Perbill::from_percent(10),
-					reward_rate: Perbill::from_percent(15),
+					reward_rate: RewardRate {
+						annual: Perbill::from_percent(15),
+						round: Perbill::from_parts(Perbill::from_percent(15).deconstruct() / 8766),
+					},
 				},
-				delegator: StakingRates {
+				delegator: StakingInfo {
 					max_rate: Perbill::from_percent(40),
-					reward_rate: Perbill::from_percent(10),
+					reward_rate: RewardRate {
+						annual: Perbill::from_percent(10),
+						round: Perbill::from_parts(Perbill::from_percent(10).deconstruct() / 8766),
+					},
 				},
 			},
 		}
@@ -172,15 +178,20 @@ impl ExtBuilder {
 	#[allow(dead_code)]
 	// TODO: Fix why this is not applied
 	pub(crate) fn with_inflation(mut self, col_max: u32, col_rewards: u32, d_max: u32, d_rewards: u32) -> Self {
-		self.staking_config = StakingInfo {
-			collator: StakingRates {
-				// TODO: Move blocks per year to const or somewhere else
+		self.inflation_config = InflationInfo {
+			collator: StakingInfo {
 				max_rate: Perbill::from_percent(col_max),
-				reward_rate: Perbill::from_percent(col_rewards),
+				reward_rate: RewardRate {
+					annual: Perbill::from_percent(col_rewards),
+					round: Perbill::from_parts(Perbill::from_percent(col_rewards).deconstruct() / 8766),
+				},
 			},
-			delegator: StakingRates {
+			delegator: StakingInfo {
 				max_rate: Perbill::from_percent(d_max),
-				reward_rate: Perbill::from_percent(d_rewards),
+				reward_rate: RewardRate {
+					annual: Perbill::from_percent(d_rewards),
+					round: Perbill::from_parts(Perbill::from_percent(d_rewards).deconstruct() / 8766),
+				},
 			},
 		};
 		self
@@ -206,7 +217,7 @@ impl ExtBuilder {
 		}
 		stake::GenesisConfig::<Test> {
 			stakers,
-			staking_config: self.staking_config,
+			inflation_config: self.inflation_config,
 		}
 		.assimilate_storage(&mut t)
 		.expect("Parachain Staking's storage can be assimilated");

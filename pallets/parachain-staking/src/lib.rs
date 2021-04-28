@@ -59,7 +59,7 @@ mod set;
 #[cfg(test)]
 mod tests;
 use frame_support::pallet;
-pub use inflation::{InflationInfo, StakingInfo, StakingRates};
+pub use inflation::{InflationInfo, RewardRate, StakingInfo};
 
 pub use pallet::*;
 
@@ -505,7 +505,7 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn round)]
 	/// Current round index and next round scheduled transition
-	type Round<T: Config> = StorageValue<_, RoundInfo<T::BlockNumber>, ValueQuery>;
+	pub type Round<T: Config> = StorageValue<_, RoundInfo<T::BlockNumber>, ValueQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn nominator_state)]
@@ -584,7 +584,7 @@ pub mod pallet {
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
 		pub stakers: Vec<(T::AccountId, Option<T::AccountId>, BalanceOf<T>)>,
-		pub staking_config: StakingInfo,
+		pub inflation_config: InflationInfo,
 	}
 
 	#[cfg(feature = "std")]
@@ -600,8 +600,9 @@ pub mod pallet {
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
-			let inflation = InflationInfo::new::<T>(self.staking_config.clone());
-			<InflationConfig<T>>::put(inflation);
+			assert!(self.inflation_config.is_valid(), "Invalid inflation configuration");
+			<InflationConfig<T>>::put(self.inflation_config.clone());
+
 			for &(ref actor, ref opt_val, balance) in &self.stakers {
 				assert!(
 					T::Currency::free_balance(&actor) >= balance,
@@ -644,15 +645,14 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		/// Set the annual inflation rate to derive per-round inflation
 		#[pallet::weight(0)]
-		pub fn set_inflation(origin: OriginFor<T>, inflation_annual: StakingInfo) -> DispatchResultWithPostInfo {
+		pub fn set_inflation(origin: OriginFor<T>, inflation: InflationInfo) -> DispatchResultWithPostInfo {
 			frame_system::ensure_root(origin)?;
-			ensure!(inflation_annual.is_valid(), Error::<T>::InvalidSchedule);
-			let inflation = InflationInfo::new::<T>(inflation_annual);
+			ensure!(inflation.is_valid(), Error::<T>::InvalidSchedule);
 			Self::deposit_event(Event::RoundInflationSet(
-				inflation.round.collator.max_rate,
-				inflation.round.collator.reward_rate,
-				inflation.round.delegator.max_rate,
-				inflation.round.delegator.reward_rate,
+				inflation.collator.max_rate,
+				inflation.collator.reward_rate.round,
+				inflation.delegator.max_rate,
+				inflation.delegator.reward_rate.round,
 			));
 			<InflationConfig<T>>::put(inflation);
 			Ok(().into())
