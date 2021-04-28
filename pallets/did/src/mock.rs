@@ -22,8 +22,6 @@
 use crate as did;
 use crate::*;
 
-use env_logger;
-
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use kilt_primitives::{AccountId, Signature};
 use sp_core::{ed25519, sr25519, Pair, H256};
