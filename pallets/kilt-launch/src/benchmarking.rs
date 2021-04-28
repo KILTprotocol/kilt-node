@@ -45,6 +45,7 @@ fn as_lookup<T: Config>(account: T::AccountId) -> Lookup<T> {
 /// Mock the Pallet's GenesisBuild and return pairs consisting of AccountId and
 /// LookupSource for the transfer account, `n` vesting addresses and `n` locking
 /// addresses.
+#[allow(clippy::type_complexity)]
 fn genesis_setup<T: Config>(
 	n: u32,
 ) -> Result<
@@ -119,6 +120,7 @@ benchmarks! {
 		let mut c = 0;
 
 		// Migrate balance locks 1 by 1 to fill UnlockingAt
+		#[allow(clippy::explicit_counter_loop)]
 		for (_, source_lookup) in s {
 			let target: T::AccountId = account("target", c, SEED);
 			let target_lookup: <T::Lookup as StaticLookup>::Source = as_lookup::<T>(target);
@@ -151,7 +153,7 @@ benchmarks! {
 		// Set custom lock with amount `AMOUNT` for target
 		let target: T::AccountId = account("target", 0, SEED);
 		let target_lookup: <T::Lookup as StaticLookup>::Source = as_lookup::<T>(target.clone());
-		KiltLaunch::<T>::migrate_multiple_genesis_accounts(RawOrigin::Signed(transfer.clone()).into(), locked_lookup, target_lookup.clone())?;
+		KiltLaunch::<T>::migrate_multiple_genesis_accounts(RawOrigin::Signed(transfer).into(), locked_lookup, target_lookup.clone())?;
 		assert_eq!(BalanceLocks::<T>::get(&target), Some(LockedBalance::<T> {
 			block: UNLOCK_BLOCK.into(),
 			amount: AMOUNT.into(),
