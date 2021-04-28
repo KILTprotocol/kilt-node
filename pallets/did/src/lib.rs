@@ -653,19 +653,19 @@ pub mod pallet {
 				// of keys to delete
 				for key_id in verification_keys_to_remove.iter() {
 					// Check for condition 1
-					if let Some(verification_key_details) = new_details.verification_keys.get(key_id) {
-						// Check for condition 2
-						if let Some(current_attestation_key) = new_details.attestation_key {
-							ensure!(
-								verification_key_details.verification_key != current_attestation_key,
-								DidError::StorageError(StorageError::CurrentlyActiveAttestationKey)
-							);
-						}
-						// If no attestation key is currently set, all is good
-						remaining_verification_keys.remove(key_id);
-					} else {
-						return Err(DidError::StorageError(StorageError::VerificationKeyNotPresent));
+					let verification_key_details = new_details
+						.verification_keys
+						.get(key_id)
+						.ok_or(DidError::StorageError(StorageError::VerificationKeyNotPresent))?;
+					// Check for condition 2
+					if let Some(current_attestation_key) = new_details.attestation_key {
+						ensure!(
+							verification_key_details.verification_key != current_attestation_key,
+							DidError::StorageError(StorageError::CurrentlyActiveAttestationKey)
+						);
 					}
+					// If no attestation key is currently set, all is good
+					remaining_verification_keys.remove(key_id);
 				}
 				// Save the remaining verification keys
 				new_details.verification_keys = remaining_verification_keys;
