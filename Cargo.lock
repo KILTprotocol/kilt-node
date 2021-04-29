@@ -5028,6 +5028,7 @@ dependencies = [
  "frame-system",
  "kilt-primitives",
  "log",
+ "pallet-balances",
  "parity-scale-codec",
  "serde",
  "sp-core",

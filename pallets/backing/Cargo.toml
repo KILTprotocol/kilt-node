@@ -22,6 +22,15 @@ default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
+[dependencies]
+log = "0.4"
+
+[dependencies.pallet-balances]
+git = "https://github.com/paritytech/substrate"
+default-features = false
+version = "3.0.0"
+branch = "rococo-v1"
+
 [dependencies.codec]
 default-features = false
 features = ["derive"]
@@ -64,10 +73,6 @@ default-features = false
 git = "https://github.com/paritytech/substrate"
 optional = true
 version = "3.0.0"
-
-[dependencies.log]
-version = "0.4.14"
-default-features = false
 
 [features]
 default = ["std"]
