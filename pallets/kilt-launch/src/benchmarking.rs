@@ -16,7 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-
 use super::*;
 
 #[allow(unused)]
