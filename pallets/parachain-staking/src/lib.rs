@@ -1089,6 +1089,7 @@ pub mod pallet {
 					println!("pct_due: {:?} * {:?} = {:?}", pct_due, c_rewards, pct_due * c_rewards,);
 					let amt_due_collator = pct_due * c_rewards;
 					let amt_due_delegators = pct_due * d_rewards;
+					println!("due_delegators: {:?}", amt_due_delegators);
 
 					// Take the snapshot of block author and nominations
 					let state = <AtStake<T>>::take(round_to_payout, &val);
@@ -1098,12 +1099,15 @@ pub mod pallet {
 						mint(amt_due_collator, val.clone());
 					}
 
-					// TODO: Check necessary?
+					// Pay delegators
 					if amt_due_delegators > T::Currency::minimum_balance() {
 						// Pay delegators due portion
 						for Bond { owner, amount } in state.nominators {
-							let percent = Perbill::from_rational(amount, state.total);
+							// TODO: Decide for one or the other
+							let percent = Perbill::from_rational(amount, delegator_staked);
+							// let percent = Perbill::from_rational(amount, state.total);
 							let due = percent * amt_due_delegators;
+							println!("owner {:?} receives {:?} = {:?}", owner, percent, due);
 							mint(due, owner);
 						}
 					}
