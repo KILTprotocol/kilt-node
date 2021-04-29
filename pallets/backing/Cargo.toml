@@ -31,6 +31,12 @@ default-features = false
 version = "3.0.0"
 branch = "rococo-v1"
 
+[dependencies.pallet-scored-pool]
+git = "https://github.com/paritytech/substrate"
+default-features = false
+version = "3.0.0"
+branch = "rococo-v1"
+
 [dependencies.codec]
 default-features = false
 features = ["derive"]
@@ -89,5 +95,6 @@ std = [
   "sp-runtime/std",
   "sp-io/std",
   "sp-std/std",
-  "sp-io/std",
+  "pallet-balances/std",
+  "pallet-scored-pool/std",
 ]

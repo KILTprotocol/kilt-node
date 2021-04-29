@@ -14,7 +14,10 @@ mod tests;
 mod benchmarking;
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct BackingInfo<T: Config> {
+pub struct BackingInfo<T: Config>
+where
+	<T as pallet_scored_pool::Config>::Score: From<<T as pallet_balances::Config>::Balance>,
+{
 	pub candidancy_term: T::BlockNumber,
 	pub amount: T::Balance,
 }
@@ -35,7 +38,10 @@ pub mod pallet {
 	/// Configure the pallet by specifying the parameters and types on which it
 	/// depends.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + pallet_balances::Config {
+	pub trait Config: frame_system::Config + pallet_balances::Config + pallet_scored_pool::Config
+	where
+		<Self as pallet_scored_pool::Config>::Score: From<<Self as pallet_balances::Config>::Balance>,
+	{
 		/// Because this pallet emits events, it depends on the runtime's
 		/// definition of an event.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
@@ -77,7 +83,10 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::metadata(T::AccountId = "AccountId")]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
-	pub enum Event<T: Config> {
+	pub enum Event<T: Config>
+	where
+		<T as pallet_scored_pool::Config>::Score: From<<T as pallet_balances::Config>::Balance>,
+	{
 		/// Event documentation should end with an array that provides
 		/// descriptive names for event parameters. [something, who]
 		SubmitedCandidancy(T::AccountId),
@@ -92,14 +101,21 @@ pub mod pallet {
 	}
 
 	#[pallet::hooks]
-	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> where
+		<T as pallet_scored_pool::Config>::Score: From<<T as pallet_balances::Config>::Balance>
+	{
+	}
 
 	#[pallet::call]
-	impl<T: Config> Pallet<T> {
+	impl<T: Config> Pallet<T>
+	where
+		<T as pallet_scored_pool::Config>::Score: From<<T as pallet_balances::Config>::Balance>,
+	{
 		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
 		pub fn submit_candidancy(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
-			let who = ensure_signed(origin)?;
+			let who = ensure_signed(origin.clone())?;
 
+			pallet_scored_pool::Pallet::<T>::submit_candidacy(origin)?;
 			<Candidates<T>>::insert(
 				who.clone(),
 				(
@@ -113,12 +129,12 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
-		pub fn revoke_candidancy(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
-			let who = ensure_signed(origin)?;
+		pub fn withdraw_candidacy(origin: OriginFor<T>, index: u32) -> DispatchResultWithPostInfo {
+			let who = ensure_signed(origin.clone())?;
 
+			pallet_scored_pool::Pallet::<T>::withdraw_candidacy(origin, index)?;
 			<Candidates<T>>::remove(who.clone());
 			// TODO: Event!!
-			// TODO: Notify new score!
 
 			Self::deposit_event(Event::RevokedCandidancy(who));
 			Ok(().into())
@@ -128,13 +144,15 @@ pub mod pallet {
 		pub fn set_backing_for_candidate(
 			origin: OriginFor<T>,
 			candidate: <T::Lookup as StaticLookup>::Source,
+			index: u32,
 			amount: T::Balance,
 		) -> DispatchResultWithPostInfo {
-			let who = ensure_signed(origin)?;
-			let candidancy_id = <T::Lookup as StaticLookup>::lookup(candidate)?;
+			let who = ensure_signed(origin.clone())?;
+			let candidancy_id = <T::Lookup as StaticLookup>::lookup(candidate.clone())?;
 			let (candidancy_term, candidancy_backing) =
 				<Candidates<T>>::get(&candidancy_id).ok_or(Error::<T>::CandidateNotFound)?;
 
+			// TODO: ensure that BackingCandidateLimit is not exceded!
 			let current_backing = <Backing<T>>::get(&who, &candidancy_id).unwrap_or_else(|| crate::BackingInfo {
 				candidancy_term,
 				amount: <T as pallet_balances::Config>::Balance::zero(),
@@ -187,14 +205,17 @@ pub mod pallet {
 				<Backing<T>>::insert(&who, candidancy_id, new_backing);
 			}
 
-			// TODO: Notify new score!
+			pallet_scored_pool::Pallet::<T>::score(origin, candidate, index, new_candidancy_backing.into())?;
 
 			Self::deposit_event(Event::RevokedCandidancy(who));
 			Ok(().into())
 		}
 	}
 
-	impl<T: Config> Pallet<T> {
+	impl<T: Config> Pallet<T>
+	where
+		<T as pallet_scored_pool::Config>::Score: From<<T as pallet_balances::Config>::Balance>,
+	{
 		fn currently_locked(who: &T::AccountId) -> T::Balance {
 			Locks::<T>::get(&who)
 				.iter()
