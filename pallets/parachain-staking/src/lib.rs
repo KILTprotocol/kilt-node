@@ -478,8 +478,8 @@ pub mod pallet {
 				// TODO: Might want to use <Total<T>>::get()?
 				// TODO: only use collator_staked, delegator_staked if we want to ignore
 				// inactive collators
-				<StakedCollator<T>>::insert(round.current, collator_staked);
-				<StakedDelegator<T>>::insert(round.current, delegator_staked);
+				<StakedCollator<T>>::put(collator_staked);
+				<StakedDelegator<T>>::put(delegator_staked);
 
 				Self::deposit_event(Event::NewRound(
 					round.first,
@@ -557,13 +557,14 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn staked_collator)]
-	/// Total backing stake for all collators in the round
-	pub type StakedCollator<T: Config> = StorageMap<_, Twox64Concat, RoundIndex, BalanceOf<T>, ValueQuery>;
+	/// Total backing stake for all collators in the current round
+	pub type StakedCollator<T: Config> = StorageValue<_, BalanceOf<T>, ValueQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn staked_delegator)]
-	/// Total backing stake for all delegators of the collators in the round
-	pub type StakedDelegator<T: Config> = StorageMap<_, Twox64Concat, RoundIndex, BalanceOf<T>, ValueQuery>;
+	/// Total backing stake for all delegators of the collators in the current
+	/// round
+	pub type StakedDelegator<T: Config> = StorageValue<_, BalanceOf<T>, ValueQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn inflation_config)]
@@ -629,8 +630,8 @@ pub mod pallet {
 			let round: RoundInfo<T::BlockNumber> = RoundInfo::new(1u32, 0u32.into(), T::DefaultBlocksPerRound::get());
 			<Round<T>>::put(round);
 			// Snapshot total stake
-			<StakedCollator<T>>::insert(1u32, collator_staked);
-			<StakedDelegator<T>>::insert(1u32, delegator_staked);
+			<StakedCollator<T>>::put(collator_staked);
+			<StakedDelegator<T>>::put(delegator_staked);
 			<Pallet<T>>::deposit_event(Event::NewRound(
 				T::BlockNumber::zero(),
 				1u32,
@@ -1076,9 +1077,9 @@ pub mod pallet {
 				let total = <Points<T>>::get(round_to_payout);
 				// TODO: We might just want to use this rounds stake such that large stakes of
 				// inactive collators do not affect the rewards
-				let collator_staked = <StakedCollator<T>>::get(round_to_payout);
-				let delegator_staked = <StakedDelegator<T>>::get(round_to_payout);
-				let (c_rewards, d_rewards) = Self::compute_issuance(collator_staked, delegator_staked);
+				let total_collator_stake = <StakedCollator<T>>::get();
+				let total_delegator_stake = <StakedDelegator<T>>::get();
+				let (c_rewards, d_rewards) = Self::compute_issuance(total_collator_stake, total_delegator_stake);
 				println!("rewards: {:?}, {:?}", c_rewards, d_rewards);
 				// TODO: Make sure all delegators receive rewards
 				// TODO: Make sure we don't pay out more than we mint
@@ -1093,6 +1094,8 @@ pub mod pallet {
 
 					// Take the snapshot of block author and nominations
 					let state = <AtStake<T>>::take(round_to_payout, &val);
+					// TODO: This can never fail, do we still need to ensure with saturating?
+					let delegator_stake = state.total.saturating_sub(state.bond);
 
 					// Pay collator
 					if amt_due_collator > T::Currency::minimum_balance() {
@@ -1103,9 +1106,9 @@ pub mod pallet {
 					if amt_due_delegators > T::Currency::minimum_balance() {
 						// Pay delegators due portion
 						for Bond { owner, amount } in state.nominators {
-							// TODO: Decide for one or the other
-							let percent = Perbill::from_rational(amount, delegator_staked);
-							// let percent = Perbill::from_rational(amount, state.total);
+							// Compare this delegator's stake with the total amount of delegated stake for
+							// this collator
+							let percent = Perbill::from_rational(amount, delegator_stake);
 							let due = percent * amt_due_delegators;
 							println!("owner {:?} receives {:?} = {:?}", owner, percent, due);
 							mint(due, owner);

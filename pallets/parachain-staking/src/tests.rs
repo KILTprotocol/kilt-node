@@ -48,7 +48,7 @@ fn geneses() {
 			assert!(System::events().is_empty());
 
 			// Collators
-			assert_eq!(<StakedCollator<Test>>::get(1u32), 700);
+			assert_eq!(<StakedCollator<Test>>::get(), 700);
 			assert_eq!(
 				Stake::candidate_pool().0,
 				vec![Bond { owner: 1, amount: 700 }, Bond { owner: 2, amount: 400 }]
@@ -78,7 +78,7 @@ fn geneses() {
 				}
 			);
 			// Nominators
-			assert_eq!(<StakedDelegator<Test>>::get(1u32), 400);
+			assert_eq!(<StakedDelegator<Test>>::get(), 400);
 			for x in 3..7 {
 				assert!(Stake::is_nominator(&x));
 				assert_eq!(Balances::free_balance(&x), 0);
@@ -122,7 +122,7 @@ fn geneses() {
 			assert!(System::events().is_empty());
 
 			// Collators
-			assert_eq!(<StakedCollator<Test>>::get(1u32), 90);
+			assert_eq!(<StakedCollator<Test>>::get(), 90);
 			assert_eq!(
 				Stake::candidate_pool().0,
 				vec![
@@ -142,7 +142,7 @@ fn geneses() {
 			assert_eq!(Balances::free_balance(&5), 90);
 			assert_eq!(Balances::reserved_balance(&5), 10);
 			// Nominators
-			assert_eq!(<StakedDelegator<Test>>::get(1u32), 50);
+			assert_eq!(<StakedDelegator<Test>>::get(), 50);
 			for x in 6..11 {
 				assert!(Stake::is_nominator(&x));
 				assert_eq!(Balances::free_balance(&x), 90);
@@ -1182,9 +1182,9 @@ fn payouts_follow_nomination_changes() {
 				Event::CollatorChosen(3, 5, 10_000_000, 0),
 				Event::NewRound(10, 3, 5, 90_000_000, 60_000_000),
 				Event::Rewarded(1, 1539),
-				Event::Rewarded(6, 228),
-				Event::Rewarded(7, 114),
-				Event::Rewarded(10, 114),
+				Event::Rewarded(6, 342),
+				Event::Rewarded(7, 171),
+				Event::Rewarded(10, 171),
 				Event::CollatorChosen(4, 1, 20_000_000, 40_000_000),
 				Event::CollatorChosen(4, 2, 20_000_000, 20_000_000),
 				Event::CollatorChosen(4, 4, 20_000_000, 0),
@@ -1201,15 +1201,14 @@ fn payouts_follow_nomination_changes() {
 			assert_noop!(Stake::leave_nominators(Origin::signed(66)), Error::<Test>::NominatorDNE);
 			assert_ok!(Stake::leave_nominators(Origin::signed(6)));
 			roll_to(21);
-			// keep paying 6 (note: inflation is in terms of total issuance so that's why 1
-			// is 21)
+			// keep paying 6
 			let mut new2 = vec![
 				Event::NominatorLeftCollator(6, 1, 20_000_000, 40_000_000),
 				Event::NominatorLeft(6, 20_000_000),
 				Event::Rewarded(1, 1539),
-				Event::Rewarded(6, 228),
-				Event::Rewarded(7, 114),
-				Event::Rewarded(10, 114),
+				Event::Rewarded(6, 342),
+				Event::Rewarded(7, 171),
+				Event::Rewarded(10, 171),
 				Event::CollatorChosen(5, 2, 20_000_000, 20_000_000),
 				Event::CollatorChosen(5, 1, 20_000_000, 20_000_000),
 				Event::CollatorChosen(5, 4, 20_000_000, 0),
@@ -1225,6 +1224,7 @@ fn payouts_follow_nomination_changes() {
 			// keep paying 6
 			let mut new3 = vec![
 				Event::Rewarded(1, 1539),
+				// TODO: Check whether it makes sense that the rewards shrink but 6 is still rewarded
 				Event::Rewarded(6, 228),
 				Event::Rewarded(7, 114),
 				Event::Rewarded(10, 114),
@@ -1242,8 +1242,8 @@ fn payouts_follow_nomination_changes() {
 			// no more paying 6
 			let mut new4 = vec![
 				Event::Rewarded(1, 1539),
-				Event::Rewarded(7, 114),
-				Event::Rewarded(10, 114),
+				Event::Rewarded(7, 228),
+				Event::Rewarded(10, 228),
 				Event::CollatorChosen(7, 2, 20_000_000, 20_000_000),
 				Event::CollatorChosen(7, 1, 20_000_000, 20_000_000),
 				Event::CollatorChosen(7, 4, 20_000_000, 0),
@@ -1260,8 +1260,8 @@ fn payouts_follow_nomination_changes() {
 			let mut new5 = vec![
 				Event::Nomination(8, 30_000_000, 1, 70_000_000),
 				Event::Rewarded(1, 1539),
-				Event::Rewarded(7, 114),
-				Event::Rewarded(10, 114),
+				Event::Rewarded(7, 228),
+				Event::Rewarded(10, 228),
 				Event::CollatorChosen(8, 1, 20_000_000, 50_000_000),
 				Event::CollatorChosen(8, 2, 20_000_000, 20_000_000),
 				Event::CollatorChosen(8, 4, 20_000_000, 0),
@@ -1276,8 +1276,10 @@ fn payouts_follow_nomination_changes() {
 			// new nomination is still not rewarded yet
 			let mut new6 = vec![
 				Event::Rewarded(1, 1539),
-				Event::Rewarded(7, 114),
-				Event::Rewarded(10, 114),
+				// TODO: Check whether it makes sense to apply the stake for the rewards but not to the
+				// Collator-Delegator-Pool
+				Event::Rewarded(7, 399),
+				Event::Rewarded(10, 399),
 				Event::CollatorChosen(9, 1, 20_000_000, 50_000_000),
 				Event::CollatorChosen(9, 2, 20_000_000, 20_000_000),
 				Event::CollatorChosen(9, 4, 20_000_000, 0),
@@ -1292,9 +1294,9 @@ fn payouts_follow_nomination_changes() {
 			// (`BondDuration` = 2)
 			let mut new7 = vec![
 				Event::Rewarded(1, 1539),
-				Event::Rewarded(7, 114),
-				Event::Rewarded(8, 342),
-				Event::Rewarded(10, 114),
+				Event::Rewarded(7, 160),
+				Event::Rewarded(8, 479),
+				Event::Rewarded(10, 160),
 				Event::CollatorChosen(10, 1, 20_000_000, 50_000_000),
 				Event::CollatorChosen(10, 2, 20_000_000, 20_000_000),
 				Event::CollatorChosen(10, 4, 20_000_000, 0),
