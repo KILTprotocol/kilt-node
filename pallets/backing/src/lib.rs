@@ -117,6 +117,8 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 
 			<Candidates<T>>::remove(who.clone());
+			// TODO: Event!!
+			// TODO: Notify new score!
 
 			Self::deposit_event(Event::RevokedCandidancy(who));
 			Ok(().into())
@@ -138,7 +140,7 @@ pub mod pallet {
 				amount: <T as pallet_balances::Config>::Balance::zero(),
 			});
 
-			let new_backing = crate::BackingInfo {
+			let new_backing = crate::BackingInfo::<T> {
 				candidancy_term,
 				amount,
 			};
@@ -177,22 +179,15 @@ pub mod pallet {
 				};
 			});
 
-			<Backing<T>>::insert(&who, candidancy_id, new_backing);
+			if new_backing.amount.is_zero() {
+				// TODO: Event!!
+				<Backing<T>>::remove(&who, candidancy_id);
+			} else {
+				// TODO: Event!!
+				<Backing<T>>::insert(&who, candidancy_id, new_backing);
+			}
 
-			Self::deposit_event(Event::RevokedCandidancy(who));
-			Ok(().into())
-		}
-
-		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
-		pub fn unback_candidate(
-			origin: OriginFor<T>,
-			candidate: <T::Lookup as StaticLookup>::Source,
-			amount: T::Balance,
-		) -> DispatchResultWithPostInfo {
-			let who = ensure_signed(origin)?;
-			let candidate_id = <T::Lookup as StaticLookup>::lookup(candidate)?;
-
-			<Backing<T>>::remove(who.clone(), candidate_id);
+			// TODO: Notify new score!
 
 			Self::deposit_event(Event::RevokedCandidancy(who));
 			Ok(().into())
