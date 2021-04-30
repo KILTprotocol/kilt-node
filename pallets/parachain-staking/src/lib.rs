@@ -63,6 +63,8 @@ pub use inflation::{InflationInfo, RewardRate, StakingInfo};
 
 pub use pallet::*;
 
+// TODO: Rename Nominator --> Delegator
+
 #[pallet]
 pub mod pallet {
 	use super::{InflationInfo, StakingInfo};
@@ -388,6 +390,7 @@ pub mod pallet {
 		/// nominator
 		type MinNominatorStk: Get<BalanceOf<Self>>;
 		// TODO: Add MaxCollatorStk
+		// TODO: Add MaxNumOfCollators
 	}
 
 	#[pallet::error]
@@ -416,8 +419,8 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(crate) fn deposit_event)]
 	pub enum Event<T: Config> {
-		/// Starting Block, Round, Number of Collators Selected, Collator Stake,
-		/// Delegator Stake
+		/// Starting Block, Round, Number of Collators Selected, Active Collator
+		/// Stake, Delegator Stake
 		NewRound(T::BlockNumber, RoundIndex, u32, BalanceOf<T>, BalanceOf<T>),
 		/// Account, Amount Locked, New Total Amt Locked
 		JoinedCollatorCandidates(T::AccountId, BalanceOf<T>, BalanceOf<T>),
@@ -449,8 +452,6 @@ pub mod pallet {
 		Rewarded(T::AccountId, BalanceOf<T>),
 		/// Round inflation range set with the provided annual inflation range
 		RoundInflationSet(Perbill, Perbill, Perbill, Perbill),
-		/// Staking expectations set
-		StakeExpectationsSet(BalanceOf<T>, BalanceOf<T>, BalanceOf<T>),
 		/// Set total selected candidates to this value [old, new]
 		TotalSelectedSet(u32, u32),
 		/// Set collator commission to this value [old, new]
@@ -1077,13 +1078,12 @@ pub mod pallet {
 				let total = <Points<T>>::get(round_to_payout);
 				// TODO: We might just want to use this rounds stake such that large stakes of
 				// inactive collators do not affect the rewards
-				let total_collator_stake = <StakedCollator<T>>::get();
-				let total_delegator_stake = <StakedDelegator<T>>::get();
+				// let total_collator_stake = <StakedCollator<T>>::get();
+				// let total_delegator_stake = <StakedDelegator<T>>::get();
+				let (total_collator_stake, total_delegator_stake) = <Total<T>>::get();
 				let (c_rewards, d_rewards) = Self::compute_issuance(total_collator_stake, total_delegator_stake);
 				println!("rewards: {:?}, {:?}", c_rewards, d_rewards);
 				// TODO: Make sure all delegators receive rewards
-				// TODO: Make sure we don't pay out more than we mint
-				// TODO: Handle case of d_reward_rate == 0
 				for (val, pts) in <AwardedPts<T>>::drain_prefix(round_to_payout) {
 					let pct_due = Perbill::from_rational(pts, total);
 
@@ -1110,7 +1110,7 @@ pub mod pallet {
 							// this collator
 							let percent = Perbill::from_rational(amount, delegator_stake);
 							let due = percent * amt_due_delegators;
-							println!("owner {:?} receives {:?} = {:?}", owner, percent, due);
+							println!("delegator {:?} receives {:?}% --> {:?}", owner, percent, due);
 							mint(due, owner);
 						}
 					}

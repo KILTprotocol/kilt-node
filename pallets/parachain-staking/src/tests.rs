@@ -448,7 +448,8 @@ fn exit_queue() {
 
 // TODO: Rename to: below_limit or add tests for other cases
 // Total issuance 6_099_000_000
-// At stake: 400_000_000 (6.55%)
+// At stake: 450_000_000 (7.37% below max rate of 10%)
+// At stake of active collators: 400_000_000 (6.55%)
 #[test]
 fn payout_distribution_to_solo_collators_below_max_rate() {
 	// max_rate not met
@@ -478,8 +479,8 @@ fn payout_distribution_to_solo_collators_below_max_rate() {
 			let inflation = Stake::inflation_config();
 			let total_issuance = <Test as Config>::Currency::total_issuance();
 			assert_eq!(total_issuance, 6_099_000_000);
-			let rewards = inflation.collator.compute_rewards::<Test>(400_000_000, total_issuance);
-			assert_eq!(rewards, 6843);
+			let rewards = inflation.collator.compute_rewards::<Test>(450_000_000, total_issuance);
+			assert_eq!(rewards, 7697);
 
 			roll_to(8);
 			// should choose top TotalCandidatesSelected (5), in order
@@ -579,9 +580,9 @@ fn payout_distribution_to_solo_collators_below_max_rate() {
 		});
 }
 
-// max_rate = 10% of 6_099_000 = 609_900 exceeded (collator stake = 400_000)
 // Total issuance 6_099_000_000
-// At stake: 800_000_000 (13.11%)
+// At stake: 850_000_000 (14.10% exceeds max_rate of 10%)
+// At stake of active collators: 800_000_000 (13.11%)
 #[test]
 fn payout_distribution_to_solo_collators_above_max_rate() {
 	ExtBuilder::default()
@@ -610,7 +611,9 @@ fn payout_distribution_to_solo_collators_above_max_rate() {
 			let inflation = Stake::inflation_config();
 			let total_issuance = <Test as Config>::Currency::total_issuance();
 			assert_eq!(total_issuance, 6_099_000_000);
-			let rewards = inflation.collator.compute_rewards::<Test>(800_000_000, total_issuance);
+			let rewards = inflation
+				.collator
+				.compute_rewards::<Test>(Perbill::from_percent(10) * total_issuance, total_issuance);
 			assert_eq!(rewards, 10435);
 
 			roll_to(8);
@@ -1128,6 +1131,9 @@ fn payout_distribution_to_solo_collators_above_max_rate() {
 // }
 
 #[test]
+// Total issuance 1_000_000_000_000
+// At stake collators: 90_000_000 (0.009%)
+// At stake delegators: 60_000_000 (0.006%)
 fn payouts_follow_nomination_changes() {
 	ExtBuilder::default()
 		.with_balances(vec![
@@ -1140,7 +1146,8 @@ fn payouts_follow_nomination_changes() {
 			(7, 100_000_000),
 			(8, 100_000_000),
 			(9, 100_000_000),
-			(10, 100_000_000),
+			(10, 50_000_000),
+			(11, 50_000_000),
 		])
 		.with_collators(vec![
 			(1, 20_000_000),
@@ -1160,8 +1167,9 @@ fn payouts_follow_nomination_changes() {
 		.build()
 		.execute_with(|| {
 			roll_to(8);
-			// chooses top TotalSelectedCandidates (5), in order
+			// choose top TotalSelectedCandidates (5) in order
 			let mut expected = vec![
+				// Round 2 initialization
 				Event::CollatorChosen(2, 1, 20_000_000, 40_000_000),
 				Event::CollatorChosen(2, 2, 20_000_000, 20_000_000),
 				Event::CollatorChosen(2, 4, 20_000_000, 0),
@@ -1170,21 +1178,25 @@ fn payouts_follow_nomination_changes() {
 				Event::NewRound(5, 2, 5, 90_000_000, 60_000_000),
 			];
 			assert_eq!(events(), expected);
-			// ~ set block author as 1 for all blocks this round
+
+			// Round 2 -> 3
+			// set block author as 1 for all blocks this round
 			set_author(2, 1, 100_000_000);
 			roll_to(16);
-			// distribute total issuance to collator 1 and its nominators 6, 7, 19
-			let mut new = vec![
+			// distribute total issuance to collator 1 and its nominators 6, 7, 10
+			let mut round_2_to_3 = vec![
 				Event::CollatorChosen(3, 1, 20_000_000, 40_000_000),
 				Event::CollatorChosen(3, 2, 20_000_000, 20_000_000),
 				Event::CollatorChosen(3, 4, 20_000_000, 0),
 				Event::CollatorChosen(3, 3, 20_000_000, 0),
 				Event::CollatorChosen(3, 5, 10_000_000, 0),
 				Event::NewRound(10, 3, 5, 90_000_000, 60_000_000),
+				// Round 2 rewards
 				Event::Rewarded(1, 1539),
 				Event::Rewarded(6, 342),
 				Event::Rewarded(7, 171),
 				Event::Rewarded(10, 171),
+				// Round 3 initialization
 				Event::CollatorChosen(4, 1, 20_000_000, 40_000_000),
 				Event::CollatorChosen(4, 2, 20_000_000, 20_000_000),
 				Event::CollatorChosen(4, 4, 20_000_000, 0),
@@ -1192,23 +1204,29 @@ fn payouts_follow_nomination_changes() {
 				Event::CollatorChosen(4, 5, 10_000_000, 0),
 				Event::NewRound(15, 4, 5, 90_000_000, 60_000_000),
 			];
-			expected.append(&mut new);
+			expected.append(&mut round_2_to_3);
 			assert_eq!(events(), expected);
-			// ~ set block author as 1 for all blocks this round
+
+			// Round 3 -> 4: 6 leaves delegators
+			// set block author as 1 for all blocks this round
 			set_author(3, 1, 100);
-			set_author(4, 1, 100);
-			// 1. ensure nominators are paid for 2 rounds after they leave
 			assert_noop!(Stake::leave_nominators(Origin::signed(66)), Error::<Test>::NominatorDNE);
 			assert_ok!(Stake::leave_nominators(Origin::signed(6)));
 			roll_to(21);
-			// keep paying 6
-			let mut new2 = vec![
+			// ensure nominators are paid for 2 rounds after they leave, e.g. 6 should
+			// receive rewards for rounds 3 and 4 after leaving during round 3
+			let mut round_3_to_4 = vec![
 				Event::NominatorLeftCollator(6, 1, 20_000_000, 40_000_000),
 				Event::NominatorLeft(6, 20_000_000),
+				// Round 3 rewards
 				Event::Rewarded(1, 1539),
-				Event::Rewarded(6, 342),
-				Event::Rewarded(7, 171),
-				Event::Rewarded(10, 171),
+				Event::Rewarded(6, 228),
+				Event::Rewarded(7, 114),
+				Event::Rewarded(10, 114),
+				// Event::Rewarded(6, 342),
+				// Event::Rewarded(7, 171),
+				// Event::Rewarded(10, 171),
+				// Round 4 initialization
 				Event::CollatorChosen(5, 2, 20_000_000, 20_000_000),
 				Event::CollatorChosen(5, 1, 20_000_000, 20_000_000),
 				Event::CollatorChosen(5, 4, 20_000_000, 0),
@@ -1216,18 +1234,21 @@ fn payouts_follow_nomination_changes() {
 				Event::CollatorChosen(5, 5, 10_000_000, 0),
 				Event::NewRound(20, 5, 5, 90_000_000, 40_000_000),
 			];
-			expected.append(&mut new2);
+			expected.append(&mut round_3_to_4);
 			assert_eq!(events(), expected);
-			// 6 won't be paid for this round because they left already
-			set_author(5, 1, 100);
+
+			// Round 4 -> 5
+			set_author(4, 1, 100);
 			roll_to(26);
-			// keep paying 6
-			let mut new3 = vec![
+			// last round in which 6 receives rewards after leaving in round 3
+			let mut round_4_to_5 = vec![
+				// Round 4 rewards
 				Event::Rewarded(1, 1539),
 				// TODO: Check whether it makes sense that the rewards shrink but 6 is still rewarded
 				Event::Rewarded(6, 228),
 				Event::Rewarded(7, 114),
 				Event::Rewarded(10, 114),
+				// Round 5 initialization
 				Event::CollatorChosen(6, 2, 20_000_000, 20_000_000),
 				Event::CollatorChosen(6, 1, 20_000_000, 20_000_000),
 				Event::CollatorChosen(6, 4, 20_000_000, 0),
@@ -1235,15 +1256,19 @@ fn payouts_follow_nomination_changes() {
 				Event::CollatorChosen(6, 5, 10_000_000, 0),
 				Event::NewRound(25, 6, 5, 90_000_000, 40_000_000),
 			];
-			expected.append(&mut new3);
+			expected.append(&mut round_4_to_5);
 			assert_eq!(events(), expected);
-			set_author(6, 1, 100);
+
+			// Round 5 -> 6
+			set_author(5, 1, 100);
 			roll_to(31);
-			// no more paying 6
-			let mut new4 = vec![
+			// 6 should not receive rewards
+			let mut round_5_to_6 = vec![
+				// Round 5 rewards
 				Event::Rewarded(1, 1539),
 				Event::Rewarded(7, 228),
 				Event::Rewarded(10, 228),
+				// Round 6 collators
 				Event::CollatorChosen(7, 2, 20_000_000, 20_000_000),
 				Event::CollatorChosen(7, 1, 20_000_000, 20_000_000),
 				Event::CollatorChosen(7, 4, 20_000_000, 0),
@@ -1251,17 +1276,24 @@ fn payouts_follow_nomination_changes() {
 				Event::CollatorChosen(7, 5, 10_000_000, 0),
 				Event::NewRound(30, 7, 5, 90_000_000, 40_000_000),
 			];
-			expected.append(&mut new4);
+			expected.append(&mut round_5_to_6);
 			assert_eq!(events(), expected);
-			set_author(7, 1, 100);
+
+			// Round 6 -> 7: 8 delegates to 1
+			set_author(6, 1, 100);
 			assert_ok!(Stake::nominate(Origin::signed(8), 1, 30_000_000));
 			roll_to(36);
-			// new nomination is not rewarded yet
-			let mut new5 = vec![
+			// new nomination should not be rewarded for this round and the next one (expect
+			// rewards at conclusion of round 8)
+			let mut round_6_to_7 = vec![
+				// round 6 finalization
 				Event::Nomination(8, 30_000_000, 1, 70_000_000),
 				Event::Rewarded(1, 1539),
-				Event::Rewarded(7, 228),
-				Event::Rewarded(10, 228),
+				Event::Rewarded(7, 399),
+				Event::Rewarded(10, 399),
+				// Event::Rewarded(7, 228),
+				// Event::Rewarded(10, 228),
+				// Round 7 initialization
 				Event::CollatorChosen(8, 1, 20_000_000, 50_000_000),
 				Event::CollatorChosen(8, 2, 20_000_000, 20_000_000),
 				Event::CollatorChosen(8, 4, 20_000_000, 0),
@@ -1269,17 +1301,21 @@ fn payouts_follow_nomination_changes() {
 				Event::CollatorChosen(8, 5, 10_000_000, 0),
 				Event::NewRound(35, 8, 5, 90_000_000, 70_000_000),
 			];
-			expected.append(&mut new5);
+			expected.append(&mut round_6_to_7);
 			assert_eq!(events(), expected);
-			set_author(8, 1, 100);
+
+			// Round 7 -> 8
+			set_author(7, 1, 100);
 			roll_to(41);
-			// new nomination is still not rewarded yet
-			let mut new6 = vec![
+			// new nomination is still not rewarded yet, but should be next round
+			let mut round_7_to_8 = vec![
 				Event::Rewarded(1, 1539),
 				// TODO: Check whether it makes sense to apply the stake for the rewards but not to the
 				// Collator-Delegator-Pool
+				// round 7 finalization
 				Event::Rewarded(7, 399),
 				Event::Rewarded(10, 399),
+				// Round 8 initialization
 				Event::CollatorChosen(9, 1, 20_000_000, 50_000_000),
 				Event::CollatorChosen(9, 2, 20_000_000, 20_000_000),
 				Event::CollatorChosen(9, 4, 20_000_000, 0),
@@ -1287,16 +1323,21 @@ fn payouts_follow_nomination_changes() {
 				Event::CollatorChosen(9, 5, 10_000_000, 0),
 				Event::NewRound(40, 9, 5, 90_000_000, 70_000_000),
 			];
-			expected.append(&mut new6);
+			expected.append(&mut round_7_to_8);
 			assert_eq!(events(), expected);
+
+			// Round 8 -> 9
+			set_author(8, 1, 100);
 			roll_to(46);
 			// new nomination is rewarded for first time, 2 rounds after joining
 			// (`BondDuration` = 2)
-			let mut new7 = vec![
+			let mut round_8_to_9 = vec![
+				// round 8 finalization
 				Event::Rewarded(1, 1539),
 				Event::Rewarded(7, 160),
 				Event::Rewarded(8, 479),
 				Event::Rewarded(10, 160),
+				// round 9 initiation
 				Event::CollatorChosen(10, 1, 20_000_000, 50_000_000),
 				Event::CollatorChosen(10, 2, 20_000_000, 20_000_000),
 				Event::CollatorChosen(10, 4, 20_000_000, 0),
@@ -1304,7 +1345,187 @@ fn payouts_follow_nomination_changes() {
 				Event::CollatorChosen(10, 5, 10_000_000, 0),
 				Event::NewRound(45, 10, 5, 90_000_000, 70_000_000),
 			];
-			expected.append(&mut new7);
+			expected.append(&mut round_8_to_9);
+
+			// Round 9 -> 10: 11 joins collator candidates (6 candidates in total)
+			set_author(9, 1, 50);
+			set_author(9, 2, 40);
+			set_author(9, 3, 5);
+			set_author(9, 11, 5);
+			// new collator candidate with higher self bond than anyone else
+			assert_ok!(Stake::join_candidates(Origin::signed(11), 30_000_000));
+			roll_to(51);
+			// expect collator candidate 5 not to be chosen because of lowest stake
+			// new collator should immediately be rewarded because they authored blocks
+			let mut round_9_to_10 = vec![
+				Event::JoinedCollatorCandidates(11, 30_000_000, 190_000_000),
+				Event::Rewarded(3, 86),
+				// reward 1 and their delegators
+				Event::Rewarded(1, 855),
+				Event::Rewarded(7, 80),
+				Event::Rewarded(8, 239),
+				Event::Rewarded(10, 80),
+				// reward 2 and their delegators
+				Event::Rewarded(2, 684),
+				Event::Rewarded(8, 159),
+				Event::Rewarded(9, 159),
+				// reward 11
+				Event::Rewarded(11, 86),
+				// round 10 initiation
+				Event::CollatorChosen(11, 1, 20_000_000, 50_000_000),
+				Event::CollatorChosen(11, 2, 20_000_000, 20_000_000),
+				Event::CollatorChosen(11, 11, 30_000_000, 0),
+				Event::CollatorChosen(11, 4, 20_000_000, 0),
+				Event::CollatorChosen(11, 3, 20_000_000, 0),
+				Event::NewRound(50, 11, 5, 110_000_000, 70_000_000),
+			];
+			expected.append(&mut round_9_to_10);
+			assert_eq!(events(), expected);
+
+			// Round 10 -> 11: 8 delegates to 11
+			set_author(10, 1, 50);
+			set_author(10, 2, 30);
+			set_author(10, 3, 10);
+			set_author(10, 5, 5);
+			set_author(10, 11, 5);
+			// 8 adds delegation to 11
+			assert_ok!(Stake::nominate(Origin::signed(8), 11, 20_000_000));
+			roll_to(56);
+			// new delegation of 8 should not be rewarded for this and the following round
+			let mut round_10_to_11 = vec![
+				Event::Nomination(8, 20_000_000, 11, 50_000_000),
+				Event::Rewarded(5, 86),
+				Event::Rewarded(3, 171),
+				// reward 1 and their delegators
+				Event::Rewarded(1, 855),
+				Event::Rewarded(7, 103),
+				Event::Rewarded(8, 308),
+				Event::Rewarded(10, 103),
+				// reward 2 and their delegators
+				Event::Rewarded(2, 513),
+				Event::Rewarded(8, 154),
+				Event::Rewarded(9, 154),
+				// reward 11
+				Event::Rewarded(11, 86),
+				// round 11 initiation
+				Event::CollatorChosen(12, 1, 20_000_000, 50_000_000),
+				Event::CollatorChosen(12, 11, 30_000_000, 20_000_000),
+				Event::CollatorChosen(12, 2, 20_000_000, 20_000_000),
+				Event::CollatorChosen(12, 4, 20_000_000, 0),
+				Event::CollatorChosen(12, 3, 20_000_000, 0),
+				Event::NewRound(55, 12, 5, 110_000_000, 90_000_000),
+			];
+			expected.append(&mut round_10_to_11);
+			assert_eq!(events(), expected);
+
+			// Round 11 -> 12: 9 delegates to 5
+			set_author(11, 1, 50);
+			set_author(11, 2, 30);
+			set_author(11, 4, 10);
+			set_author(11, 5, 5);
+			set_author(11, 11, 5);
+			// 9 adds delegation to 5
+			assert_ok!(Stake::nominate(Origin::signed(9), 5, 30_000_000));
+			roll_to(61);
+			// delegation of 8 should not be rewarded for this round
+			// new delegation of 9 should not be rewarded for this and the following round
+			let mut round_11_to_12 = vec![
+				Event::Nomination(9, 30_000_000, 5, 40_000_000),
+				Event::Rewarded(5, 86),
+				Event::Rewarded(4, 171),
+				// reward 1 and their delegators
+				Event::Rewarded(1, 855),
+				Event::Rewarded(7, 137),
+				Event::Rewarded(8, 410),
+				Event::Rewarded(10, 137),
+				// reward 2 and their delegators
+				Event::Rewarded(2, 513),
+				Event::Rewarded(8, 205),
+				Event::Rewarded(9, 205),
+				// reward 11
+				Event::Rewarded(11, 86),
+				// round 12 initiation
+				Event::CollatorChosen(13, 1, 20_000_000, 50_000_000),
+				Event::CollatorChosen(13, 11, 30_000_000, 20_000_000),
+				Event::CollatorChosen(13, 5, 10_000_000, 30_000_000),
+				Event::CollatorChosen(13, 2, 20_000_000, 20_000_000),
+				Event::CollatorChosen(13, 4, 20_000_000, 0),
+				Event::NewRound(60, 13, 5, 100_000_000, 120_000_000),
+			];
+			expected.append(&mut round_11_to_12);
+			assert_eq!(events(), expected);
+
+			// Round 12 -> 13
+			set_author(12, 1, 50);
+			set_author(12, 2, 30);
+			set_author(12, 4, 10);
+			set_author(12, 5, 5);
+			set_author(12, 11, 5);
+			roll_to(66);
+			// delegation of 8 should not be rewarded for this round
+			// delegation of 9 should be rewarded from now on
+			let mut round_12_to_13 = vec![
+				Event::Rewarded(5, 86),
+				Event::Rewarded(4, 171),
+				// reward 1 and their delegators
+				Event::Rewarded(1, 855),
+				Event::Rewarded(7, 137),
+				Event::Rewarded(8, 410),
+				Event::Rewarded(10, 137),
+				// reward 2 and their delegators
+				Event::Rewarded(2, 513),
+				Event::Rewarded(8, 205),
+				Event::Rewarded(9, 205),
+				// reward 11 and their delegators
+				Event::Rewarded(11, 86),
+				Event::Rewarded(8, 68),
+				// round 14 initiation
+				Event::CollatorChosen(14, 1, 20_000_000, 50_000_000),
+				Event::CollatorChosen(14, 11, 30_000_000, 20_000_000),
+				Event::CollatorChosen(14, 5, 10_000_000, 30_000_000),
+				Event::CollatorChosen(14, 2, 20_000_000, 20_000_000),
+				Event::CollatorChosen(14, 4, 20_000_000, 0),
+				Event::NewRound(65, 14, 5, 100_000_000, 120_000_000),
+			];
+			expected.append(&mut round_12_to_13);
+			assert_eq!(events(), expected);
+
+			// Round 13 -> 14
+			set_author(13, 1, 20);
+			set_author(13, 2, 20);
+			set_author(13, 4, 20);
+			set_author(13, 5, 20);
+			set_author(13, 11, 20);
+			roll_to(71);
+			// delegation of 8 should not be rewarded for this round
+			// delegation of 9 should be rewarded from now on
+			let mut round_13_to_14 = vec![
+				// reward 5 and their delegators
+				Event::Rewarded(5, 342),
+				Event::Rewarded(9, 274),
+				// reward 4
+				Event::Rewarded(4, 342),
+				// reward 1 and their delegators
+				Event::Rewarded(1, 342),
+				Event::Rewarded(7, 55),
+				Event::Rewarded(8, 164),
+				Event::Rewarded(10, 55),
+				// reward 2 and their delegators
+				Event::Rewarded(2, 342),
+				Event::Rewarded(8, 137),
+				Event::Rewarded(9, 137),
+				// reward 11
+				Event::Rewarded(11, 342),
+				Event::Rewarded(8, 274),
+				// round 15 initiation
+				Event::CollatorChosen(15, 1, 20_000_000, 50_000_000),
+				Event::CollatorChosen(15, 11, 30_000_000, 20_000_000),
+				Event::CollatorChosen(15, 5, 10_000_000, 30_000_000),
+				Event::CollatorChosen(15, 2, 20_000_000, 20_000_000),
+				Event::CollatorChosen(15, 4, 20_000_000, 0),
+				Event::NewRound(70, 15, 5, 100_000_000, 120_000_000),
+			];
+			expected.append(&mut round_13_to_14);
 			assert_eq!(events(), expected);
 		});
 }
