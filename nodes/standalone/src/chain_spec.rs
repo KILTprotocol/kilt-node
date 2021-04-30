@@ -215,7 +215,7 @@ fn testnet_genesis(
 	type LockingPeriod = BlockNumber;
 
 	// vesting and locks as initially designed
-	let airdrop_accounts_json = &include_bytes!("../../../dev-specs/genesis-testing/genesis_accounts.json")[..];
+	let airdrop_accounts_json = &include_bytes!("../res/genesis-testing/genesis_accounts.json")[..];
 	let airdrop_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
 		serde_json::from_slice(airdrop_accounts_json).expect("Could not read from genesis_accounts.json");
 
