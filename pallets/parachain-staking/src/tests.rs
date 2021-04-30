@@ -19,9 +19,12 @@
 //! Unit testing
 use crate::{
 	mock::{
-		events, last_event, roll_to, set_author, Balances, Event as MetaEvent, ExtBuilder, Origin, Stake, System, Test,
+		events, last_event, roll_to, roll_to_faster, set_author, AccountId, Balances, Event as MetaEvent, ExtBuilder,
+		Origin, Stake, System, Test,
 	},
-	Bond, CollatorSnapshot, CollatorStatus, Config, Error, Event, RoundInfo, StakedCollator, StakedDelegator,
+	set::OrderedSet,
+	BalanceOf, Bond, Collator, CollatorSnapshot, CollatorStatus, Config, Error, Event, RoundInfo, StakedCollator,
+	StakedDelegator,
 };
 use frame_support::{assert_noop, assert_ok};
 use pallet_balances::Error as BalancesError;
@@ -1527,6 +1530,103 @@ fn payouts_follow_nomination_changes() {
 			];
 			expected.append(&mut round_13_to_14);
 			assert_eq!(events(), expected);
+		});
+}
+
+#[test]
+// 7200 blocks per round --> 12 hours per round
+fn yearly_inflation() {
+	// mint 160 Mio total issuance
+	let balances: Vec<(<Test as frame_system::Config>::AccountId, BalanceOf<Test>)> =
+		(1u64..=160u64).map(|i| (i, 1_000_000 * 10u128.pow(15))).collect();
+	assert!(!balances.is_empty());
+
+	// 16 collators stake each with 1 Mio. --> collator stake = 16 Mio (10%)
+	let collator_ids: Vec<AccountId> = (1u64..=16u64).collect();
+	let num_of_collators = collator_ids.len() as u64;
+	let collators: Vec<(<Test as frame_system::Config>::AccountId, BalanceOf<Test>)> = collator_ids
+		.clone()
+		.into_iter()
+		.map(|i| (i, 1_000_000 * 10u128.pow(15)))
+		.collect();
+
+	// 320 delegators each delegate 200k --> delegator stake = 64 Mio (40%)
+	let nominators: Vec<(AccountId, <Test as frame_system::Config>::AccountId, BalanceOf<Test>)> = (96u64..160u64)
+		.map(|i| (i, (i - 96u64) % num_of_collators + 1, 1_000_000 * 10u128.pow(15)))
+		.collect();
+	let blocks_per_round: u32 = 7200;
+
+	ExtBuilder::default()
+		.with_balances(balances)
+		.with_collators(collators)
+		.with_nominators(nominators)
+		.with_inflation(10, 15, 40, 10)
+		.set_blocks_per_round(blocks_per_round)
+		.build()
+		.execute_with(|| {
+			let total_issuance = <Test as Config>::Currency::total_issuance();
+			assert_eq!(total_issuance, 160_000_000 * 10u128.pow(15));
+			let (total_collator_stake, total_delegator_stake) = Stake::total();
+			assert_eq!(total_collator_stake, 16_000_000 * 10u128.pow(15));
+			assert_eq!(total_delegator_stake, 64_000_000 * 10u128.pow(15));
+			let rounds_per_year = crate::inflation::BLOCKS_PER_YEAR / Stake::round().length;
+			assert_eq!(rounds_per_year, 730);
+			assert_eq!(Stake::candidate_pool().0.len(), collator_ids.len());
+
+			assert_ok!(Stake::set_total_selected(Origin::root(), 160));
+
+			// roll to round 2 to check for update of TotalSelected
+			roll_to_faster((2 * blocks_per_round + 10).into(), blocks_per_round.into());
+			assert_eq!(Stake::selected_candidates(), collator_ids);
+
+			// for each round, give each collator the same amount of points
+			for collator in collator_ids.clone() {
+				// let mut nominators: Vec<Bond<AccountId, BalanceOf<Test>>> = ((collator +
+				// 94)..=(collator + 98)) 	.map(|acc| Bond {
+				// 		owner: acc,
+				// 		amount: 1_000_000 * 10u128.pow(15),
+				// 	})
+				// 	.collect();
+				let collator_state = Stake::collator_state(collator).expect("Collator should have state");
+				assert_eq!(collator_state.id, collator);
+				assert_eq!(collator_state.bond, 1_000_000 * 10u128.pow(15));
+				assert_eq!(collator_state.total, 1_000_000 * 5 * 10u128.pow(15));
+				assert_eq!(collator_state.state, CollatorStatus::Active);
+				// assert_eq!(
+				// 	Stake::collator_state(collator),
+				// 	Some(Collator {
+				// 		id: collator,
+				// 		bond: 1_000_000 * 10u128.pow(15),
+				// 		nominators: OrderedSet::<Bond<AccountId, BalanceOf<Test>>>::from(nominators),
+				// 		total: 1_000_000 * 10u128.pow(15) * 5,
+				// 		state: CollatorStatus::Active
+				// 	})
+				// );
+				for round in 2..=rounds_per_year {
+					set_author(round, collator, 20);
+				}
+			}
+
+			// fast-forward half a year year
+			let inflation = Stake::inflation_config();
+			let collator_rewards: BalanceOf<Test> = inflation
+				.collator
+				.compute_rewards::<Test>(total_collator_stake, total_issuance)
+				* (rounds_per_year as u128);
+			let delegator_rewards: BalanceOf<Test> = inflation
+				.collator
+				.compute_rewards::<Test>(total_delegator_stake, total_issuance)
+				* (rounds_per_year as u128);
+
+			let blocks_per_year: u64 = (rounds_per_year * blocks_per_round / 2).into();
+			roll_to_faster(blocks_per_year + 1, blocks_per_round.into());
+			assert!(Balances::free_balance(&1) > collator_rewards / 17 / 2);
+			// FIXME: Delegators get much more, why?
+			assert_eq!(Balances::free_balance(&96), delegator_rewards / 64 / 2);
+			assert_eq!(
+				<Test as Config>::Currency::total_issuance(),
+				total_issuance + collator_rewards / 2 + delegator_rewards / 2
+			);
 		});
 }
 

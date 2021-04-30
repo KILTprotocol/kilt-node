@@ -1081,16 +1081,21 @@ pub mod pallet {
 				// let total_collator_stake = <StakedCollator<T>>::get();
 				// let total_delegator_stake = <StakedDelegator<T>>::get();
 				let (total_collator_stake, total_delegator_stake) = <Total<T>>::get();
+				println!(
+					"collator stake {:?}, delegator stake {:?}",
+					total_collator_stake, total_delegator_stake
+				);
 				let (c_rewards, d_rewards) = Self::compute_issuance(total_collator_stake, total_delegator_stake);
 				println!("rewards: {:?}, {:?}", c_rewards, d_rewards);
 				// TODO: Make sure all delegators receive rewards
 				for (val, pts) in <AwardedPts<T>>::drain_prefix(round_to_payout) {
 					let pct_due = Perbill::from_rational(pts, total);
 
-					println!("pct_due: {:?} * {:?} = {:?}", pct_due, c_rewards, pct_due * c_rewards,);
+					// println!("pct_due: {:?} * {:?} = {:?}", pct_due, c_rewards, pct_due *
+					// c_rewards,);
 					let amt_due_collator = pct_due * c_rewards;
 					let amt_due_delegators = pct_due * d_rewards;
-					println!("due_delegators: {:?}", amt_due_delegators);
+					// println!("due_delegators: {:?}", amt_due_delegators);
 
 					// Take the snapshot of block author and nominations
 					let state = <AtStake<T>>::take(round_to_payout, &val);
@@ -1110,7 +1115,7 @@ pub mod pallet {
 							// this collator
 							let percent = Perbill::from_rational(amount, delegator_stake);
 							let due = percent * amt_due_delegators;
-							println!("delegator {:?} receives {:?}% --> {:?}", owner, percent, due);
+							// println!("delegator {:?} receives {:?}% --> {:?}", owner, percent, due);
 							mint(due, owner);
 						}
 					}

@@ -254,6 +254,18 @@ pub(crate) fn roll_to(n: u64) {
 	}
 }
 
+pub(crate) fn roll_to_faster(n: u64, m: u64) {
+	while System::block_number() + m < n {
+		Stake::on_finalize(System::block_number());
+		Balances::on_finalize(System::block_number());
+		System::on_finalize(System::block_number());
+		System::set_block_number(System::block_number() + m);
+		System::on_initialize(System::block_number());
+		Balances::on_initialize(System::block_number());
+		Stake::on_initialize(System::block_number());
+	}
+}
+
 pub(crate) fn last_event() -> Event {
 	System::events().pop().expect("Event expected").event
 }
