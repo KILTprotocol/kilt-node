@@ -87,6 +87,7 @@ impl did::Config for Test {
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
 		match self {
+			//TODO: maybe use it for DID as well?
 			Call::Did(_) => None,
 			Call::System(_) => None,
 		}

@@ -37,7 +37,12 @@ pub use default_weights::WeightInfo;
 
 use codec::{Decode, Encode, WrapperTypeEncode};
 
-use frame_support::{ensure, storage::types::StorageMap, Parameter, dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo}};
+use frame_support::{
+	dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo},
+	ensure,
+	storage::types::StorageMap,
+	Parameter,
+};
 use frame_system::{self, ensure_signed};
 use sp_core::{ed25519, sr25519};
 use sp_runtime::traits::Verify;
@@ -677,16 +682,20 @@ pub mod pallet {
 
 	/// Trait for extrinsic DID-based authorization.
 	///
-	/// The trait allows [DidAuthorizedCallOperations](DidAuthorizedCallOperation) wrapping an extrinsic to specify what DID key to use to perform signature validation over the
-	/// byte-encoded operation. A result of None indicates that the extrinsic does not support DID-based authorization.
+	/// The trait allows
+	/// [DidAuthorizedCallOperations](DidAuthorizedCallOperation) wrapping an
+	/// extrinsic to specify what DID key to use to perform signature validation
+	/// over the byte-encoded operation. A result of None indicates that the
+	/// extrinsic does not support DID-based authorization.
 	pub trait DeriveDidCallAuthorizationVerificationKeyRelationship {
 		/// The type of the verification key to be used to validate the
 		/// wrapped extrinsic.
 		fn derive_verification_key_relationship(&self) -> Option<DidVerificationKeyRelationship>;
 	}
 
-	/// A DID operation that wraps other extrinsic calls, allowing those extrinsic to
-	/// have a DID origin and perform DID-based authorization upon their invocation.
+	/// A DID operation that wraps other extrinsic calls, allowing those
+	/// extrinsic to have a DID origin and perform DID-based authorization upon
+	/// their invocation.
 	#[derive(Clone, Debug, Decode, Encode, PartialEq)]
 	pub struct DidAuthorizedCallOperation<T: Config> {
 		/// The DID identifier.
@@ -699,7 +708,8 @@ pub mod pallet {
 
 	/// Wrapper around a [DidAuthorizedCallOperation].
 	///
-	/// It contains additional information about the type of DID key to used for authorization.
+	/// It contains additional information about the type of DID key to used for
+	/// authorization.
 	#[derive(Clone, Debug, PartialEq)]
 	pub struct DidAuthorizedCallOperationWithVerificationRelationship<T: Config> {
 		/// The wrapped [DidAuthorizedCallOperation].
@@ -730,7 +740,8 @@ pub mod pallet {
 		}
 	}
 
-	// Opaque implementation. DidAuthorizedCallOperationWithVerificationRelationship encodes to DidAuthorizedCallOperation.
+	// Opaque implementation. DidAuthorizedCallOperationWithVerificationRelationship
+	// encodes to DidAuthorizedCallOperation.
 	impl<T: Config> WrapperTypeEncode for DidAuthorizedCallOperationWithVerificationRelationship<T> {}
 
 	/// An operation to create a new DID.
@@ -1236,7 +1247,8 @@ pub mod pallet {
 			};
 
 			// Verify the operation signature and increase the nonce if successful.
-			Self::verify_operation_validity_and_increase_did_nonce(&wrapped_operation, &signature).map_err(<Error<T>>::from)?;
+			Self::verify_operation_validity_and_increase_did_nonce(&wrapped_operation, &signature)
+				.map_err(<Error<T>>::from)?;
 			log::debug!("Dispatch call from DID {:?}", did_identifier);
 
 			did_call.call.dispatch(RawOrigin { id: did_identifier }.into())

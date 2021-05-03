@@ -21,17 +21,23 @@ use frame_support::{
 	traits::EnsureOrigin,
 };
 use sp_runtime::RuntimeDebug;
+use sp_std::default::Default;
 
 /// Origin for the did module.
 #[derive(Clone, Decode, Encode, Eq, PartialEq, RuntimeDebug)]
-pub struct RawOrigin<DidIdentifier> {
+pub struct RawOrigin<DidIdentifier>
+where
+	DidIdentifier: Default,
+{
 	pub id: DidIdentifier,
 }
 
 pub struct EnsureDid<DidIdentifier>(sp_std::marker::PhantomData<DidIdentifier>);
 
-impl<O: Into<Result<RawOrigin<DidIdentifier>, O>> + From<RawOrigin<DidIdentifier>>, DidIdentifier> EnsureOrigin<O>
-	for EnsureDid<DidIdentifier>
+impl<O, DidIdentifier> EnsureOrigin<O> for EnsureDid<DidIdentifier>
+where
+	O: Into<Result<RawOrigin<DidIdentifier>, O>> + From<RawOrigin<DidIdentifier>>,
+	DidIdentifier: Default
 {
 	type Success = DidIdentifier;
 	fn try_origin(o: O) -> Result<Self::Success, O> {
