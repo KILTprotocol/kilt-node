@@ -649,14 +649,8 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn set_inflation(origin: OriginFor<T>, inflation: InflationInfo) -> DispatchResultWithPostInfo {
 			frame_system::ensure_root(origin)?;
-			ensure!(inflation.is_valid(), Error::<T>::InvalidSchedule);
-			Self::deposit_event(Event::RoundInflationSet(
-				inflation.collator.max_rate,
-				inflation.collator.reward_rate.round,
-				inflation.delegator.max_rate,
-				inflation.delegator.reward_rate.round,
-			));
-			<InflationConfig<T>>::put(inflation);
+
+			Self::update_inflation(inflation)?;
 			Ok(().into())
 		}
 		#[pallet::weight(0)]
@@ -687,11 +681,17 @@ pub mod pallet {
 		pub fn set_blocks_per_round(origin: OriginFor<T>, new: u32) -> DispatchResultWithPostInfo {
 			frame_system::ensure_root(origin)?;
 			ensure!(new >= T::MinBlocksPerRound::get(), Error::<T>::CannotSetBelowMin);
+
+			// Update inflation config
+			let mut inflation = <InflationConfig<T>>::get();
+			inflation.update_blocks_per_round(new);
+			Self::update_inflation(inflation.clone())?;
+
 			let mut round = <Round<T>>::get();
 			let (now, first, old) = (round.current, round.first, round.length);
 			round.length = new;
 			<Round<T>>::put(round);
-			// TODO: Add update of inflation config
+
 			Self::deposit_event(Event::BlocksPerRoundSet(now, first, old, new));
 			Ok(().into())
 		}
@@ -1211,6 +1211,18 @@ pub mod pallet {
 			// Insert canonical collator set
 			<SelectedCandidates<T>>::put(collators);
 			(all_collators, total_collators, total_delegators)
+		}
+
+		fn update_inflation(inflation: InflationInfo) -> Result<(), DispatchError> {
+			ensure!(inflation.is_valid(), Error::<T>::InvalidSchedule);
+			Self::deposit_event(Event::RoundInflationSet(
+				inflation.collator.max_rate,
+				inflation.collator.reward_rate.round,
+				inflation.delegator.max_rate,
+				inflation.delegator.reward_rate.round,
+			));
+			<InflationConfig<T>>::put(inflation);
+			Ok(())
 		}
 	}
 	/// Add reward points to block authors:

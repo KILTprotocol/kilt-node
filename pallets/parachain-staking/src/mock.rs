@@ -180,8 +180,6 @@ impl ExtBuilder {
 		self
 	}
 
-	#[allow(dead_code)]
-	// TODO: Fix why this is not applied
 	pub(crate) fn with_inflation(
 		mut self,
 		col_max: u32,
@@ -254,7 +252,8 @@ impl ExtBuilder {
 	}
 }
 
-/// Simulate a longer cycle of the chain to check collator and delegator rewards
+/// Simulate a longer cycle of the chain to check collator and delegator
+/// rewards.
 ///
 /// * base_balance: The balance to mint for each user (should be 160 Mio. in
 ///   sum)
@@ -443,6 +442,15 @@ pub(crate) fn check_yearly_inflation(
 pub(crate) fn almost_equal(left: Balance, right: Balance, precision: Perbill) -> bool {
 	let err = precision * left;
 	left.max(right) - left.min(right) <= err
+}
+
+pub(crate) fn check_inflation_update(less_rounds: InflationInfo, more_rounds: InflationInfo) -> bool {
+	less_rounds.collator.max_rate == more_rounds.collator.max_rate
+		&& less_rounds.collator.reward_rate.annual == more_rounds.collator.reward_rate.annual
+		&& less_rounds.collator.reward_rate.round > more_rounds.collator.reward_rate.round
+		&& less_rounds.delegator.max_rate == more_rounds.delegator.max_rate
+		&& less_rounds.delegator.reward_rate.annual == more_rounds.delegator.reward_rate.annual
+		&& less_rounds.delegator.reward_rate.round > more_rounds.delegator.reward_rate.round
 }
 
 pub(crate) fn roll_to(n: u64) {

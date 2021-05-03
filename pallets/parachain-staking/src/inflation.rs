@@ -79,6 +79,12 @@ impl RewardRate {
 			round: annual_to_round::<T>(rate),
 		}
 	}
+
+	pub fn update_blocks_per_round(&mut self, blocks_per_round: u32) {
+		let rounds_per_year = BLOCKS_PER_YEAR / blocks_per_round;
+		println!("rounds_per_year {:?}", rounds_per_year);
+		self.round = perbill_annual_to_perbill_round(self.annual, rounds_per_year);
+	}
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -130,8 +136,8 @@ impl InflationInfo {
 		collator_annual_reward_rate_percentage: u32,
 		delegator_max_rate_percentage: u32,
 		delegator_annual_reward_rate_percentage: u32,
-	) -> InflationInfo {
-		InflationInfo {
+	) -> Self {
+		Self {
 			collator: StakingInfo::new::<T>(
 				Perbill::from_percent(collator_max_rate_percentage),
 				Perbill::from_percent(collator_annual_reward_rate_percentage),
@@ -141,6 +147,11 @@ impl InflationInfo {
 				Perbill::from_percent(delegator_annual_reward_rate_percentage),
 			),
 		}
+	}
+
+	pub fn update_blocks_per_round(&mut self, blocks_per_round: u32) {
+		self.collator.reward_rate.update_blocks_per_round(blocks_per_round);
+		self.delegator.reward_rate.update_blocks_per_round(blocks_per_round);
 	}
 
 	pub fn round_issuance<T: Config>(

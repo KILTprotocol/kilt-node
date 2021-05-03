@@ -19,12 +19,13 @@
 //! Unit testing
 use crate::{
 	mock::{
-		almost_equal, check_yearly_inflation, events, last_event, roll_to, roll_to_faster, set_author, AccountId,
-		Balances, BlockNumber, Event as MetaEvent, ExtBuilder, Origin, Stake, System, Test, BLOCKS_PER_ROUND, DECIMALS,
+		almost_equal, check_inflation_update, check_yearly_inflation, events, last_event, roll_to, roll_to_faster,
+		set_author, AccountId, Balances, BlockNumber, Event as MetaEvent, ExtBuilder, Origin, Stake, System, Test,
+		BLOCKS_PER_ROUND, DECIMALS,
 	},
 	set::OrderedSet,
-	BalanceOf, Bond, Collator, CollatorSnapshot, CollatorStatus, Config, Error, Event, RoundInfo, StakedCollator,
-	StakedDelegator,
+	BalanceOf, Bond, Collator, CollatorSnapshot, CollatorStatus, Config, Error, Event, InflationInfo, RoundInfo,
+	StakedCollator, StakedDelegator,
 };
 use frame_support::{assert_noop, assert_ok};
 use pallet_balances::Error as BalancesError;
@@ -449,7 +450,6 @@ fn exit_queue() {
 		});
 }
 
-// TODO: Rename to: below_limit or add tests for other cases
 // Total issuance 6_099_000_000
 // At stake: 450_000_000 (7.37% below max rate of 10%)
 // At stake of active collators: 400_000_000 (6.55%)
@@ -725,359 +725,323 @@ fn payout_distribution_to_solo_collators_above_max_rate() {
 		});
 }
 
-// #[test]
-// fn multiple_nominations() {
-// 	ExtBuilder::default()
-// 		.with_balances(vec![
-// 			(1, 100),
-// 			(2, 100),
-// 			(3, 100),
-// 			(4, 100),
-// 			(5, 100),
-// 			(6, 100),
-// 			(7, 100),
-// 			(8, 100),
-// 			(9, 100),
-// 			(10, 100),
-// 		])
-// 		.with_collators(vec![(1, 20), (2, 20), (3, 20), (4, 20), (5, 10)])
-// 		.with_nominators(vec![
-// 			(6, 1, 10),
-// 			(7, 1, 10),
-// 			(8, 2, 10),
-// 			(9, 2, 10),
-// 			(10, 1, 10),
-// 		])
-// 		.build()
-// 		.execute_with(|| {
-// 			roll_to(8);
-// 			// chooses top TotalSelectedCandidates (5), in order
-// 			let mut expected = vec![
-// 				Event::CollatorChosen(2, 1, 50),
-// 				Event::CollatorChosen(2, 2, 40),
-// 				Event::CollatorChosen(2, 4, 20),
-// 				Event::CollatorChosen(2, 3, 20),
-// 				Event::CollatorChosen(2, 5, 10),
-// 				Event::NewRound(5, 2, 5, 140),
-// 			];
-// 			assert_eq!(events(), expected);
-// 			assert_noop!(
-// 				Stake::nominate(Origin::signed(6), 1, 10),
-// 				Error::<Test>::AlreadyNominatedCollator,
-// 			);
-// 			assert_noop!(
-// 				Stake::nominate(Origin::signed(6), 2, 2),
-// 				Error::<Test>::NominationBelowMin,
-// 			);
-// 			assert_ok!(Stake::nominate(Origin::signed(6), 2, 10));
-// 			assert_ok!(Stake::nominate(Origin::signed(6), 3, 10));
-// 			assert_ok!(Stake::nominate(Origin::signed(6), 4, 10));
-// 			assert_noop!(
-// 				Stake::nominate(Origin::signed(6), 5, 10),
-// 				Error::<Test>::ExceedMaxCollatorsPerNom,
-// 			);
-// 			roll_to(16);
-// 			let mut new = vec![
-// 				Event::Nomination(6, 10, 2, 50),
-// 				Event::Nomination(6, 10, 3, 30),
-// 				Event::Nomination(6, 10, 4, 30),
-// 				Event::CollatorChosen(3, 2, 50),
-// 				Event::CollatorChosen(3, 1, 50),
-// 				Event::CollatorChosen(3, 4, 30),
-// 				Event::CollatorChosen(3, 3, 30),
-// 				Event::CollatorChosen(3, 5, 10),
-// 				Event::NewRound(10, 3, 5, 170),
-// 				Event::CollatorChosen(4, 2, 50),
-// 				Event::CollatorChosen(4, 1, 50),
-// 				Event::CollatorChosen(4, 4, 30),
-// 				Event::CollatorChosen(4, 3, 30),
-// 				Event::CollatorChosen(4, 5, 10),
-// 				Event::NewRound(15, 4, 5, 170),
-// 			];
-// 			expected.append(&mut new);
-// 			assert_eq!(events(), expected);
-// 			roll_to(21);
-// 			assert_ok!(Stake::nominate(Origin::signed(7), 2, 80));
-// 			assert_noop!(
-// 				Stake::nominate(Origin::signed(7), 3, 11),
-// 				DispatchError::Module {
-// 					index: 1,
-// 					error: 3,
-// 					message: Some("InsufficientBalance")
-// 				},
-// 			);
-// 			assert_noop!(
-// 				Stake::nominate(Origin::signed(10), 2, 10),
-// 				Error::<Test>::TooManyNominators
-// 			);
-// 			roll_to(26);
-// 			let mut new2 = vec![
-// 				Event::CollatorChosen(5, 2, 50),
-// 				Event::CollatorChosen(5, 1, 50),
-// 				Event::CollatorChosen(5, 4, 30),
-// 				Event::CollatorChosen(5, 3, 30),
-// 				Event::CollatorChosen(5, 5, 10),
-// 				Event::NewRound(20, 5, 5, 170),
-// 				Event::Nomination(7, 80, 2, 130),
-// 				Event::CollatorChosen(6, 2, 130),
-// 				Event::CollatorChosen(6, 1, 50),
-// 				Event::CollatorChosen(6, 4, 30),
-// 				Event::CollatorChosen(6, 3, 30),
-// 				Event::CollatorChosen(6, 5, 10),
-// 				Event::NewRound(25, 6, 5, 250),
-// 			];
-// 			expected.append(&mut new2);
-// 			assert_eq!(events(), expected);
-// 			assert_ok!(Stake::leave_candidates(Origin::signed(2)));
-// 			assert_eq!(
-// 				last_event(),
-// 				MetaEvent::stake(Event::CollatorScheduledExit(6, 2, 8))
-// 			);
-// 			roll_to(31);
-// 			let mut new3 = vec![
-// 				Event::CollatorScheduledExit(6, 2, 8),
-// 				Event::CollatorChosen(7, 1, 50),
-// 				Event::CollatorChosen(7, 4, 30),
-// 				Event::CollatorChosen(7, 3, 30),
-// 				Event::CollatorChosen(7, 5, 10),
-// 				Event::NewRound(30, 7, 4, 120),
-// 			];
-// 			expected.append(&mut new3);
-// 			assert_eq!(events(), expected);
-// 			// verify that nominations are removed after collator leaves, not before
-// 			assert_eq!(Stake::nominator_state(7).unwrap().total, 90);
-// 			assert_eq!(
-// 				Stake::nominator_state(7).unwrap().nominations.0.len(),
-// 				2usize
-// 			);
-// 			assert_eq!(Stake::nominator_state(6).unwrap().total, 40);
-// 			assert_eq!(
-// 				Stake::nominator_state(6).unwrap().nominations.0.len(),
-// 				4usize
-// 			);
-// 			assert_eq!(Balances::reserved_balance(&6), 40);
-// 			assert_eq!(Balances::reserved_balance(&7), 90);
-// 			assert_eq!(Balances::free_balance(&6), 60);
-// 			assert_eq!(Balances::free_balance(&7), 10);
-// 			roll_to(40);
-// 			assert_eq!(Stake::nominator_state(7).unwrap().total, 10);
-// 			assert_eq!(Stake::nominator_state(6).unwrap().total, 30);
-// 			assert_eq!(
-// 				Stake::nominator_state(7).unwrap().nominations.0.len(),
-// 				1usize
-// 			);
-// 			assert_eq!(
-// 				Stake::nominator_state(6).unwrap().nominations.0.len(),
-// 				3usize
-// 			);
-// 			assert_eq!(Balances::reserved_balance(&6), 30);
-// 			assert_eq!(Balances::reserved_balance(&7), 10);
-// 			assert_eq!(Balances::free_balance(&6), 70);
-// 			assert_eq!(Balances::free_balance(&7), 90);
-// 		});
-// }
+#[test]
+fn multiple_nominations() {
+	ExtBuilder::default()
+		.with_balances(vec![
+			(1, 100),
+			(2, 100),
+			(3, 100),
+			(4, 100),
+			(5, 100),
+			(6, 100),
+			(7, 100),
+			(8, 100),
+			(9, 100),
+			(10, 100),
+		])
+		.with_collators(vec![(1, 20), (2, 20), (3, 20), (4, 20), (5, 10)])
+		.with_nominators(vec![(6, 1, 10), (7, 1, 10), (8, 2, 10), (9, 2, 10), (10, 1, 10)])
+		.set_blocks_per_round(5)
+		.build()
+		.execute_with(|| {
+			roll_to(8);
+			// chooses top TotalSelectedCandidates (5), in order
+			let mut expected = vec![
+				Event::CollatorChosen(2, 1, 20, 30),
+				Event::CollatorChosen(2, 2, 20, 20),
+				Event::CollatorChosen(2, 4, 20, 0),
+				Event::CollatorChosen(2, 3, 20, 0),
+				Event::CollatorChosen(2, 5, 10, 0),
+				Event::NewRound(5, 2, 5, 90, 50),
+			];
+			assert_eq!(events(), expected);
+			assert_noop!(
+				Stake::nominate(Origin::signed(6), 1, 10),
+				Error::<Test>::AlreadyNominatedCollator,
+			);
+			assert_noop!(
+				Stake::nominate(Origin::signed(6), 2, 2),
+				Error::<Test>::NominationBelowMin,
+			);
+			assert_ok!(Stake::nominate(Origin::signed(6), 2, 10));
+			assert_ok!(Stake::nominate(Origin::signed(6), 3, 10));
+			assert_ok!(Stake::nominate(Origin::signed(6), 4, 10));
+			assert_noop!(
+				Stake::nominate(Origin::signed(6), 5, 10),
+				Error::<Test>::ExceedMaxCollatorsPerNom,
+			);
+			roll_to(16);
+			let mut new = vec![
+				Event::Nomination(6, 10, 2, 50),
+				Event::Nomination(6, 10, 3, 30),
+				Event::Nomination(6, 10, 4, 30),
+				Event::CollatorChosen(3, 2, 20, 30),
+				Event::CollatorChosen(3, 1, 20, 30),
+				Event::CollatorChosen(3, 4, 20, 10),
+				Event::CollatorChosen(3, 3, 20, 10),
+				Event::CollatorChosen(3, 5, 10, 0),
+				Event::NewRound(10, 3, 5, 90, 80),
+				Event::CollatorChosen(4, 2, 20, 30),
+				Event::CollatorChosen(4, 1, 20, 30),
+				Event::CollatorChosen(4, 4, 20, 10),
+				Event::CollatorChosen(4, 3, 20, 10),
+				Event::CollatorChosen(4, 5, 10, 0),
+				Event::NewRound(15, 4, 5, 90, 80),
+			];
+			expected.append(&mut new);
+			assert_eq!(events(), expected);
+			roll_to(21);
+			assert_ok!(Stake::nominate(Origin::signed(7), 2, 80));
+			assert_noop!(
+				Stake::nominate(Origin::signed(7), 3, 11),
+				DispatchError::Module {
+					index: 1,
+					error: 3,
+					message: Some("InsufficientBalance")
+				},
+			);
+			assert_noop!(
+				Stake::nominate(Origin::signed(10), 2, 10),
+				Error::<Test>::TooManyNominators
+			);
+			roll_to(26);
+			let mut new2 = vec![
+				Event::CollatorChosen(5, 2, 20, 30),
+				Event::CollatorChosen(5, 1, 20, 30),
+				Event::CollatorChosen(5, 4, 20, 10),
+				Event::CollatorChosen(5, 3, 20, 10),
+				Event::CollatorChosen(5, 5, 10, 0),
+				Event::NewRound(20, 5, 5, 90, 80),
+				Event::Nomination(7, 80, 2, 130),
+				Event::CollatorChosen(6, 2, 20, 110),
+				Event::CollatorChosen(6, 1, 20, 30),
+				Event::CollatorChosen(6, 4, 20, 10),
+				Event::CollatorChosen(6, 3, 20, 10),
+				Event::CollatorChosen(6, 5, 10, 0),
+				Event::NewRound(25, 6, 5, 90, 160),
+			];
+			expected.append(&mut new2);
+			assert_eq!(events(), expected);
+			assert_ok!(Stake::leave_candidates(Origin::signed(2)));
+			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(6, 2, 8)));
+			roll_to(31);
+			let mut new3 = vec![
+				Event::CollatorScheduledExit(6, 2, 8),
+				Event::CollatorChosen(7, 1, 20, 30),
+				Event::CollatorChosen(7, 4, 20, 10),
+				Event::CollatorChosen(7, 3, 20, 10),
+				Event::CollatorChosen(7, 5, 10, 0),
+				Event::NewRound(30, 7, 4, 70, 50),
+			];
+			expected.append(&mut new3);
+			assert_eq!(events(), expected);
+			// verify that nominations are removed after collator leaves, not before
+			assert_eq!(Stake::nominator_state(7).unwrap().total, 90);
+			assert_eq!(Stake::nominator_state(7).unwrap().nominations.0.len(), 2usize);
+			assert_eq!(Stake::nominator_state(6).unwrap().total, 40);
+			assert_eq!(Stake::nominator_state(6).unwrap().nominations.0.len(), 4usize);
+			assert_eq!(Balances::reserved_balance(&6), 40);
+			assert_eq!(Balances::reserved_balance(&7), 90);
+			assert_eq!(Balances::free_balance(&6), 60);
+			assert_eq!(Balances::free_balance(&7), 10);
+			roll_to(40);
+			assert_eq!(Stake::nominator_state(7).unwrap().total, 10);
+			assert_eq!(Stake::nominator_state(6).unwrap().total, 30);
+			assert_eq!(Stake::nominator_state(7).unwrap().nominations.0.len(), 1usize);
+			assert_eq!(Stake::nominator_state(6).unwrap().nominations.0.len(), 3usize);
+			assert_eq!(Balances::reserved_balance(&6), 30);
+			assert_eq!(Balances::reserved_balance(&7), 10);
+			assert_eq!(Balances::free_balance(&6), 70);
+			assert_eq!(Balances::free_balance(&7), 90);
+		});
+}
 
-// #[test]
-// fn collators_bond() {
-// 	ExtBuilder::default()
-// 		.with_balances(vec![
-// 			(1, 100),
-// 			(2, 100),
-// 			(3, 100),
-// 			(4, 100),
-// 			(5, 100),
-// 			(6, 100),
-// 			(7, 100),
-// 			(8, 100),
-// 			(9, 100),
-// 			(10, 100),
-// 		])
-// 		.with_collators(vec![(1, 20), (2, 20), (3, 20), (4, 20), (5, 10)])
-// 		.with_nominators(vec![
-// 			(6, 1, 10),
-// 			(7, 1, 10),
-// 			(8, 2, 10),
-// 			(9, 2, 10),
-// 			(10, 1, 10),
-// 		])
-// 		.build()
-// 		.execute_with(|| {
-// 			roll_to(4);
-// 			assert_noop!(
-// 				Stake::candidate_bond_more(Origin::signed(6), 50),
-// 				Error::<Test>::CandidateDNE
-// 			);
-// 			assert_ok!(Stake::candidate_bond_more(Origin::signed(1), 50));
-// 			assert_noop!(
-// 				Stake::candidate_bond_more(Origin::signed(1), 40),
-// 				DispatchError::Module {
-// 					index: 1,
-// 					error: 3,
-// 					message: Some("InsufficientBalance")
-// 				}
-// 			);
-// 			assert_ok!(Stake::leave_candidates(Origin::signed(1)));
-// 			assert_noop!(
-// 				Stake::candidate_bond_more(Origin::signed(1), 30),
-// 				Error::<Test>::CannotActivateIfLeaving
-// 			);
-// 			roll_to(30);
-// 			assert_noop!(
-// 				Stake::candidate_bond_more(Origin::signed(1), 40),
-// 				Error::<Test>::CandidateDNE
-// 			);
-// 			assert_ok!(Stake::candidate_bond_more(Origin::signed(2), 80));
-// 			assert_ok!(Stake::candidate_bond_less(Origin::signed(2), 90));
-// 			assert_ok!(Stake::candidate_bond_less(Origin::signed(3), 10));
-// 			assert_noop!(
-// 				Stake::candidate_bond_less(Origin::signed(2), 11),
-// 				Error::<Test>::Underflow
-// 			);
-// 			assert_noop!(
-// 				Stake::candidate_bond_less(Origin::signed(2), 1),
-// 				Error::<Test>::ValBondBelowMin
-// 			);
-// 			assert_noop!(
-// 				Stake::candidate_bond_less(Origin::signed(3), 1),
-// 				Error::<Test>::ValBondBelowMin
-// 			);
-// 			assert_noop!(
-// 				Stake::candidate_bond_less(Origin::signed(4), 11),
-// 				Error::<Test>::ValBondBelowMin
-// 			);
-// 			assert_ok!(Stake::candidate_bond_less(Origin::signed(4), 10));
-// 		});
-// }
+#[test]
+// TODO: Add max bond
+fn collators_bond() {
+	ExtBuilder::default()
+		.with_balances(vec![
+			(1, 100),
+			(2, 100),
+			(3, 100),
+			(4, 100),
+			(5, 100),
+			(6, 100),
+			(7, 100),
+			(8, 100),
+			(9, 100),
+			(10, 100),
+		])
+		.with_collators(vec![(1, 20), (2, 20), (3, 20), (4, 20), (5, 10)])
+		.with_nominators(vec![(6, 1, 10), (7, 1, 10), (8, 2, 10), (9, 2, 10), (10, 1, 10)])
+		.set_blocks_per_round(5)
+		.build()
+		.execute_with(|| {
+			roll_to(4);
+			assert_noop!(
+				Stake::candidate_bond_more(Origin::signed(6), 50),
+				Error::<Test>::CandidateDNE
+			);
+			assert_ok!(Stake::candidate_bond_more(Origin::signed(1), 50));
+			assert_noop!(
+				Stake::candidate_bond_more(Origin::signed(1), 40),
+				DispatchError::Module {
+					index: 1,
+					error: 3,
+					message: Some("InsufficientBalance")
+				}
+			);
+			assert_ok!(Stake::leave_candidates(Origin::signed(1)));
+			assert_noop!(
+				Stake::candidate_bond_more(Origin::signed(1), 30),
+				Error::<Test>::CannotActivateIfLeaving
+			);
+			roll_to(30);
+			assert_noop!(
+				Stake::candidate_bond_more(Origin::signed(1), 40),
+				Error::<Test>::CandidateDNE
+			);
+			assert_ok!(Stake::candidate_bond_more(Origin::signed(2), 80));
+			assert_ok!(Stake::candidate_bond_less(Origin::signed(2), 90));
+			assert_ok!(Stake::candidate_bond_less(Origin::signed(3), 10));
+			assert_noop!(
+				Stake::candidate_bond_less(Origin::signed(2), 11),
+				Error::<Test>::Underflow
+			);
+			assert_noop!(
+				Stake::candidate_bond_less(Origin::signed(2), 1),
+				Error::<Test>::ValBondBelowMin
+			);
+			assert_noop!(
+				Stake::candidate_bond_less(Origin::signed(3), 1),
+				Error::<Test>::ValBondBelowMin
+			);
+			assert_noop!(
+				Stake::candidate_bond_less(Origin::signed(4), 11),
+				Error::<Test>::ValBondBelowMin
+			);
+			assert_ok!(Stake::candidate_bond_less(Origin::signed(4), 10));
+		});
+}
 
-// #[test]
-// fn nominators_bond() {
-// 	ExtBuilder::default()
-// 		.with_balances(vec![
-// 			(1, 100),
-// 			(2, 100),
-// 			(3, 100),
-// 			(4, 100),
-// 			(5, 100),
-// 			(6, 100),
-// 			(7, 100),
-// 			(8, 100),
-// 			(9, 100),
-// 			(10, 100),
-// 		])
-// 		.with_collators(vec![(1, 20), (2, 20), (3, 20), (4, 20), (5, 10)])
-// 		.with_nominators(vec![
-// 			(6, 1, 10),
-// 			(7, 1, 10),
-// 			(8, 2, 10),
-// 			(9, 2, 10),
-// 			(10, 1, 10),
-// 		])
-// 		.build()
-// 		.execute_with(|| {
-// 			roll_to(4);
-// 			assert_noop!(
-// 				Stake::nominator_bond_more(Origin::signed(1), 2, 50),
-// 				Error::<Test>::NominatorDNE
-// 			);
-// 			assert_noop!(
-// 				Stake::nominator_bond_more(Origin::signed(6), 2, 50),
-// 				Error::<Test>::NominationDNE
-// 			);
-// 			assert_noop!(
-// 				Stake::nominator_bond_more(Origin::signed(7), 6, 50),
-// 				Error::<Test>::CandidateDNE
-// 			);
-// 			assert_noop!(
-// 				Stake::nominator_bond_less(Origin::signed(6), 1, 11),
-// 				Error::<Test>::Underflow
-// 			);
-// 			assert_noop!(
-// 				Stake::nominator_bond_less(Origin::signed(6), 1, 8),
-// 				Error::<Test>::NominationBelowMin
-// 			);
-// 			assert_noop!(
-// 				Stake::nominator_bond_less(Origin::signed(6), 1, 6),
-// 				Error::<Test>::NomBondBelowMin
-// 			);
-// 			assert_ok!(Stake::nominator_bond_more(Origin::signed(6), 1, 10));
-// 			assert_noop!(
-// 				Stake::nominator_bond_less(Origin::signed(6), 2, 5),
-// 				Error::<Test>::NominationDNE
-// 			);
-// 			assert_noop!(
-// 				Stake::nominator_bond_more(Origin::signed(6), 1, 81),
-// 				DispatchError::Module {
-// 					index: 1,
-// 					error: 3,
-// 					message: Some("InsufficientBalance")
-// 				}
-// 			);
-// 			roll_to(9);
-// 			assert_eq!(Balances::reserved_balance(&6), 20);
-// 			assert_ok!(Stake::leave_candidates(Origin::signed(1)));
-// 			roll_to(31);
-// 			assert!(!Stake::is_nominator(&6));
-// 			assert_eq!(Balances::reserved_balance(&6), 0);
-// 			assert_eq!(Balances::free_balance(&6), 100);
-// 		});
-// }
+#[test]
+fn nominators_bond() {
+	ExtBuilder::default()
+		.with_balances(vec![
+			(1, 100),
+			(2, 100),
+			(3, 100),
+			(4, 100),
+			(5, 100),
+			(6, 100),
+			(7, 100),
+			(8, 100),
+			(9, 100),
+			(10, 100),
+		])
+		.with_collators(vec![(1, 20), (2, 20), (3, 20), (4, 20), (5, 10)])
+		.with_nominators(vec![(6, 1, 10), (7, 1, 10), (8, 2, 10), (9, 2, 10), (10, 1, 10)])
+		.set_blocks_per_round(5)
+		.build()
+		.execute_with(|| {
+			roll_to(4);
+			assert_noop!(
+				Stake::nominator_bond_more(Origin::signed(1), 2, 50),
+				Error::<Test>::NominatorDNE
+			);
+			assert_noop!(
+				Stake::nominator_bond_more(Origin::signed(6), 2, 50),
+				Error::<Test>::NominationDNE
+			);
+			assert_noop!(
+				Stake::nominator_bond_more(Origin::signed(7), 6, 50),
+				Error::<Test>::CandidateDNE
+			);
+			assert_noop!(
+				Stake::nominator_bond_less(Origin::signed(6), 1, 11),
+				Error::<Test>::Underflow
+			);
+			assert_noop!(
+				Stake::nominator_bond_less(Origin::signed(6), 1, 8),
+				Error::<Test>::NominationBelowMin
+			);
+			assert_noop!(
+				Stake::nominator_bond_less(Origin::signed(6), 1, 6),
+				Error::<Test>::NomBondBelowMin
+			);
+			assert_ok!(Stake::nominator_bond_more(Origin::signed(6), 1, 10));
+			assert_noop!(
+				Stake::nominator_bond_less(Origin::signed(6), 2, 5),
+				Error::<Test>::NominationDNE
+			);
+			assert_noop!(
+				Stake::nominator_bond_more(Origin::signed(6), 1, 81),
+				DispatchError::Module {
+					index: 1,
+					error: 3,
+					message: Some("InsufficientBalance")
+				}
+			);
+			roll_to(9);
+			assert_eq!(Balances::reserved_balance(&6), 20);
+			assert_ok!(Stake::leave_candidates(Origin::signed(1)));
+			roll_to(31);
+			assert!(!Stake::is_nominator(&6));
+			assert_eq!(Balances::reserved_balance(&6), 0);
+			assert_eq!(Balances::free_balance(&6), 100);
+		});
+}
 
-// #[test]
-// fn revoke_nomination_or_leave_nominators() {
-// 	ExtBuilder::default()
-// 		.with_balances(vec![
-// 			(1, 100),
-// 			(2, 100),
-// 			(3, 100),
-// 			(4, 100),
-// 			(5, 100),
-// 			(6, 100),
-// 			(7, 100),
-// 			(8, 100),
-// 			(9, 100),
-// 			(10, 100),
-// 		])
-// 		.with_collators(vec![(1, 20), (2, 20), (3, 20), (4, 20), (5, 10)])
-// 		.with_nominators(vec![
-// 			(6, 1, 10),
-// 			(7, 1, 10),
-// 			(8, 2, 10),
-// 			(9, 2, 10),
-// 			(10, 1, 10),
-// 		])
-// 		.build()
-// 		.execute_with(|| {
-// 			roll_to(4);
-// 			assert_noop!(
-// 				Stake::revoke_nomination(Origin::signed(1), 2),
-// 				Error::<Test>::NominatorDNE
-// 			);
-// 			assert_noop!(
-// 				Stake::revoke_nomination(Origin::signed(6), 2),
-// 				Error::<Test>::NominationDNE
-// 			);
-// 			assert_noop!(
-// 				Stake::leave_nominators(Origin::signed(1)),
-// 				Error::<Test>::NominatorDNE
-// 			);
-// 			assert_ok!(Stake::nominate(Origin::signed(6), 2, 3));
-// 			assert_ok!(Stake::nominate(Origin::signed(6), 3, 3));
-// 			assert_ok!(Stake::revoke_nomination(Origin::signed(6), 1));
-// 			// cannot revoke nomination because would leave remaining total below
-// MinNominatorStk 			assert_noop!(
-// 				Stake::revoke_nomination(Origin::signed(6), 2),
-// 				Error::<Test>::NomBondBelowMin
-// 			);
-// 			assert_noop!(
-// 				Stake::revoke_nomination(Origin::signed(6), 3),
-// 				Error::<Test>::NomBondBelowMin
-// 			);
-// 			// can revoke both remaining by calling leave nominators
-// 			assert_ok!(Stake::leave_nominators(Origin::signed(6)));
-// 			// this leads to 8 leaving set of nominators
-// 			assert_ok!(Stake::revoke_nomination(Origin::signed(8), 2));
-// 		});
-// }
+#[test]
+fn revoke_nomination_or_leave_nominators() {
+	ExtBuilder::default()
+		.with_balances(vec![
+			(1, 100),
+			(2, 100),
+			(3, 100),
+			(4, 100),
+			(5, 100),
+			(6, 100),
+			(7, 100),
+			(8, 100),
+			(9, 100),
+			(10, 100),
+		])
+		.with_collators(vec![(1, 20), (2, 20), (3, 20), (4, 20), (5, 10)])
+		.with_nominators(vec![(6, 1, 10), (7, 1, 10), (8, 2, 10), (9, 2, 10), (10, 1, 10)])
+		.set_blocks_per_round(5)
+		.build()
+		.execute_with(|| {
+			roll_to(4);
+			assert_noop!(
+				Stake::revoke_nomination(Origin::signed(1), 2),
+				Error::<Test>::NominatorDNE
+			);
+			assert_noop!(
+				Stake::revoke_nomination(Origin::signed(6), 2),
+				Error::<Test>::NominationDNE
+			);
+			assert_noop!(Stake::leave_nominators(Origin::signed(1)), Error::<Test>::NominatorDNE);
+			assert_ok!(Stake::nominate(Origin::signed(6), 2, 3));
+			assert_ok!(Stake::nominate(Origin::signed(6), 3, 3));
+			assert_ok!(Stake::revoke_nomination(Origin::signed(6), 1));
+			// cannot revoke nomination because would leave remaining total below
+			// MinNominatorStk
+			assert_noop!(
+				Stake::revoke_nomination(Origin::signed(6), 2),
+				Error::<Test>::NomBondBelowMin
+			);
+			assert_noop!(
+				Stake::revoke_nomination(Origin::signed(6), 3),
+				Error::<Test>::NomBondBelowMin
+			);
+			// can revoke both remaining by calling leave nominators
+			assert_ok!(Stake::leave_nominators(Origin::signed(6)));
+			// this leads to 8 leaving set of nominators
+			assert_ok!(Stake::revoke_nomination(Origin::signed(8), 2));
+		});
+}
 
 #[test]
 // Total issuance 1_000_000_000_000
@@ -1561,131 +1525,97 @@ fn collator_delegator_rewards_full_year_24h() {
 	);
 }
 
-// #[test]
-// fn round_transitions() {
-// 	// round_immediately_jumps_if_current_duration_exceeds_new_blocks_per_round
-// 	ExtBuilder::default()
-// 		.with_balances(vec![
-// 			(1, 100),
-// 			(2, 100),
-// 			(3, 100),
-// 			(4, 100),
-// 			(5, 100),
-// 			(6, 100),
-// 		])
-// 		.with_collators(vec![(1, 20)])
-// 		.with_nominators(vec![(2, 1, 10), (3, 1, 10)])
-// 		.build()
-// 		.execute_with(|| {
-// 			// Default round every 5 blocks, but MinBlocksPerRound is 3 and we set it to
-// min 3 blocks 			roll_to(8);
-// 			// chooses top TotalSelectedCandidates (5), in order
-// 			let init = vec![
-// 				Event::CollatorChosen(2, 1, 40),
-// 				Event::NewRound(5, 2, 1, 40),
-// 			];
-// 			assert_eq!(events(), init);
-// 			assert_ok!(Stake::set_blocks_per_round(Origin::root(), 3u32));
-// 			assert_eq!(
-// 				last_event(),
-// 				MetaEvent::stake(Event::BlocksPerRoundSet(
-// 					2,
-// 					5,
-// 					5,
-// 					3,
-// 					Perbill::from_parts(232),
-// 					Perbill::from_parts(232),
-// 					Perbill::from_parts(232)
-// 				))
-// 			);
-// 			roll_to(9);
-// 			assert_eq!(last_event(), MetaEvent::stake(Event::NewRound(8, 3, 1, 40)));
-// 		});
-// 	// round_immediately_jumps_if_current_duration_exceeds_new_blocks_per_round
-// 	ExtBuilder::default()
-// 		.with_balances(vec![
-// 			(1, 100),
-// 			(2, 100),
-// 			(3, 100),
-// 			(4, 100),
-// 			(5, 100),
-// 			(6, 100),
-// 		])
-// 		.with_collators(vec![(1, 20)])
-// 		.with_nominators(vec![(2, 1, 10), (3, 1, 10)])
-// 		.build()
-// 		.execute_with(|| {
-// 			roll_to(9);
-// 			let init = vec![
-// 				Event::CollatorChosen(2, 1, 40),
-// 				Event::NewRound(5, 2, 1, 40),
-// 			];
-// 			assert_eq!(events(), init);
-// 			assert_ok!(Stake::set_blocks_per_round(Origin::root(), 3u32));
-// 			assert_eq!(
-// 				last_event(),
-// 				MetaEvent::stake(Event::BlocksPerRoundSet(
-// 					2,
-// 					5,
-// 					5,
-// 					3,
-// 					Perbill::from_parts(232),
-// 					Perbill::from_parts(232),
-// 					Perbill::from_parts(232)
-// 				))
-// 			);
-// 			roll_to(10);
-// 			assert_eq!(last_event(), MetaEvent::stake(Event::NewRound(9, 3, 1, 40)));
-// 		});
-// 	// if current duration less than new blocks per round (bpr), round waits
-// until new bpr passes 	ExtBuilder::default()
-// 		.with_balances(vec![
-// 			(1, 100),
-// 			(2, 100),
-// 			(3, 100),
-// 			(4, 100),
-// 			(5, 100),
-// 			(6, 100),
-// 		])
-// 		.with_collators(vec![(1, 20)])
-// 		.with_nominators(vec![(2, 1, 10), (3, 1, 10)])
-// 		.build()
-// 		.execute_with(|| {
-// 			// Default round every 5 blocks, but MinBlocksPerRound is 3 and we set it to
-// min 3 blocks 			roll_to(6);
-// 			// chooses top TotalSelectedCandidates (5), in order
-// 			let init = vec![
-// 				Event::CollatorChosen(2, 1, 40),
-// 				Event::NewRound(5, 2, 1, 40),
-// 			];
-// 			assert_eq!(events(), init);
-// 			assert_ok!(Stake::set_blocks_per_round(Origin::root(), 3u32));
-// 			assert_eq!(
-// 				last_event(),
-// 				MetaEvent::stake(Event::BlocksPerRoundSet(
-// 					2,
-// 					5,
-// 					5,
-// 					3,
-// 					Perbill::from_parts(232),
-// 					Perbill::from_parts(232),
-// 					Perbill::from_parts(232)
-// 				))
-// 			);
-// 			roll_to(8);
-// 			assert_eq!(
-// 				last_event(),
-// 				MetaEvent::stake(Event::BlocksPerRoundSet(
-// 					2,
-// 					5,
-// 					5,
-// 					3,
-// 					Perbill::from_parts(232),
-// 					Perbill::from_parts(232),
-// 					Perbill::from_parts(232)
-// 				))
-// 			);
-// 			roll_to(9);
-// 			assert_eq!(last_event(), MetaEvent::stake(Event::NewRound(8, 3, 1, 40)));
-// 		});
-// }
+#[test]
+fn round_transitions() {
+	let col_max = 10;
+	let col_rewards = 15;
+	let d_max = 40;
+	let d_rewards = 10;
+	// round_immediately_jumps_if_current_duration_exceeds_new_blocks_per_round
+	// change from 5 bpr (blocks_per_round) to 3 in block 8 -> 8 should be new round
+	ExtBuilder::default()
+		.with_balances(vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100), (6, 100)])
+		.with_collators(vec![(1, 20)])
+		.with_nominators(vec![(2, 1, 10), (3, 1, 10)])
+		.with_inflation(col_max, col_rewards, d_max, d_rewards, 5)
+		.build()
+		.execute_with(|| {
+			// Default round every 5 blocks, but MinBlocksPerRound is 3 and we set it to min
+			// 3 blocks
+			let inflation = InflationInfo::new::<Test>(col_max, col_rewards, d_max, d_rewards);
+			assert_eq!(inflation, Stake::inflation_config());
+			roll_to(8);
+			// chooses top TotalSelectedCandidates (5), in order
+			let init = vec![Event::CollatorChosen(2, 1, 20, 20), Event::NewRound(5, 2, 1, 20, 20)];
+			assert_eq!(events(), init);
+			assert_ok!(Stake::set_blocks_per_round(Origin::root(), 3u32));
+
+			// check update of inflation config
+			assert!(check_inflation_update(inflation, Stake::inflation_config()));
+
+			assert_eq!(Stake::inflation_config(), InflationInfo::new::<Test>(10, 15, 40, 10));
+			assert_eq!(last_event(), MetaEvent::stake(Event::BlocksPerRoundSet(2, 5, 5, 3)));
+			roll_to(9);
+
+			// last round startet at 5, so we expect 8 to be the new round
+			assert_eq!(last_event(), MetaEvent::stake(Event::NewRound(8, 3, 1, 20, 20)));
+		});
+
+	// round_immediately_jumps_if_current_duration_exceeds_new_blocks_per_round
+	// change from 5 bpr to 3 in block 9 -> 9 should be new round
+	ExtBuilder::default()
+		.with_balances(vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100), (6, 100)])
+		.with_collators(vec![(1, 20)])
+		.with_nominators(vec![(2, 1, 10), (3, 1, 10)])
+		.with_inflation(col_max, col_rewards, d_max, d_rewards, 5)
+		.build()
+		.execute_with(|| {
+			let inflation = InflationInfo::new::<Test>(col_max, col_rewards, d_max, d_rewards);
+			assert_eq!(inflation, Stake::inflation_config());
+			roll_to(9);
+			let init = vec![Event::CollatorChosen(2, 1, 20, 20), Event::NewRound(5, 2, 1, 20, 20)];
+			assert_eq!(events(), init);
+			assert_ok!(Stake::set_blocks_per_round(Origin::root(), 3u32));
+			assert_eq!(last_event(), MetaEvent::stake(Event::BlocksPerRoundSet(2, 5, 5, 3)));
+
+			// check update of inflation config
+			assert!(check_inflation_update(inflation, Stake::inflation_config()));
+
+			// last round startet at 5 but we are already at 9, so we expect 9 to be the new
+			// round
+			roll_to(10);
+			assert_eq!(last_event(), MetaEvent::stake(Event::NewRound(9, 3, 1, 20, 20)));
+		});
+
+	// if duration of current round is less than new bpr, round waits until new bpr
+	// passes
+	// change from 5 bpr to 3 in block 6 -> 8 should be new round
+	ExtBuilder::default()
+		.with_balances(vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100), (6, 100)])
+		.with_collators(vec![(1, 20)])
+		.with_nominators(vec![(2, 1, 10), (3, 1, 10)])
+		.with_inflation(col_max, col_rewards, d_max, d_rewards, 5)
+		.build()
+		.execute_with(|| {
+			let inflation = InflationInfo::new::<Test>(col_max, col_rewards, d_max, d_rewards);
+			assert_eq!(inflation, Stake::inflation_config());
+			// Default round every 5 blocks, but MinBlocksPerRound is 3 and we set it to min
+			// 3 blocks
+			roll_to(6);
+			// chooses top TotalSelectedCandidates (5), in order
+			let init = vec![Event::CollatorChosen(2, 1, 20, 20), Event::NewRound(5, 2, 1, 20, 20)];
+			assert_eq!(events(), init);
+			assert_ok!(Stake::set_blocks_per_round(Origin::root(), 3u32));
+			assert_eq!(last_event(), MetaEvent::stake(Event::BlocksPerRoundSet(2, 5, 5, 3)));
+
+			// check update of inflation config
+			assert!(check_inflation_update(inflation, Stake::inflation_config()));
+
+			// there should not be a new event
+			roll_to(8);
+			assert_eq!(last_event(), MetaEvent::stake(Event::BlocksPerRoundSet(2, 5, 5, 3)));
+
+			roll_to(9);
+			assert_eq!(last_event(), MetaEvent::stake(Event::NewRound(8, 3, 1, 20, 20)));
+		});
+}
