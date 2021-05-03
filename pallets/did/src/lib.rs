@@ -740,8 +740,8 @@ pub mod pallet {
 		}
 	}
 
-	// Opaque implementation. DidAuthorizedCallOperationWithVerificationRelationship
-	// encodes to DidAuthorizedCallOperation.
+	// Opaque implementation. [DidAuthorizedCallOperationWithVerificationRelationship]
+	// encodes to [DidAuthorizedCallOperation].
 	impl<T: Config> WrapperTypeEncode for DidAuthorizedCallOperationWithVerificationRelationship<T> {}
 
 	/// An operation to create a new DID.
@@ -1226,21 +1226,29 @@ pub mod pallet {
 			Ok(None.into())
 		}
 
+		// TODO: Compute right weights
+		/// Submit the execution of another runtime extrinsic conforming to the [Call] trait that supports DID-based authorization.
+		///
+		/// * origin: the account submitting this `submit_did_call` extrinsic, which pays for the transaction fees.
+		/// * did_call: the DID-authorized runtime extrinsic operation to call.
+		/// * signature: the DID signature over the encoded `did_call` that must be signed with the expected DID verification key.
 		#[pallet::weight(10)]
 		pub fn submit_did_call(
 			origin: OriginFor<T>,
 			did_call: Box<DidAuthorizedCallOperation<T>>,
 			signature: DidSignature,
 		) -> DispatchResultWithPostInfo {
-			ensure_signed(origin.clone())?;
+			ensure_signed(origin)?;
 
 			let did_identifier = did_call.did.clone();
 
+			// Compute the right DID verification key to use to verify the operation signature
 			let verification_key_relationship = did_call
 				.call
 				.derive_verification_key_relationship()
 				.ok_or(<Error<T>>::UnsupportedDidAuthorizationCall)?;
 
+			// Wrap the operation in the expected structure, specifying the key retrieved
 			let wrapped_operation = DidAuthorizedCallOperationWithVerificationRelationship {
 				operation: *did_call.clone(),
 				verification_key_relationship,
@@ -1251,6 +1259,7 @@ pub mod pallet {
 				.map_err(<Error<T>>::from)?;
 			log::debug!("Dispatch call from DID {:?}", did_identifier);
 
+			// Dispatch the referenced [Call] instance and return its result
 			did_call.call.dispatch(RawOrigin { id: did_identifier }.into())
 		}
 	}

@@ -22,30 +22,30 @@ use frame_support::{
 };
 use sp_runtime::RuntimeDebug;
 use sp_std::default::Default;
+use sp_std::marker::PhantomData;
 
-/// Origin for the did module.
+/// Origin for modules that support DID-based authorization.
 #[derive(Clone, Decode, Encode, Eq, PartialEq, RuntimeDebug)]
 pub struct RawOrigin<DidIdentifier>
-where
-	DidIdentifier: Default,
 {
 	pub id: DidIdentifier,
 }
 
-pub struct EnsureDid<DidIdentifier>(sp_std::marker::PhantomData<DidIdentifier>);
+pub struct EnsureDid<DidIdentifier>(PhantomData<DidIdentifier>);
 
-impl<O, DidIdentifier> EnsureOrigin<O> for EnsureDid<DidIdentifier>
+impl<Origin, DidIdentifier> EnsureOrigin<Origin> for EnsureDid<DidIdentifier>
 where
-	O: Into<Result<RawOrigin<DidIdentifier>, O>> + From<RawOrigin<DidIdentifier>>,
+	Origin: Into<Result<RawOrigin<DidIdentifier>, Origin>> + From<RawOrigin<DidIdentifier>>,
 	DidIdentifier: Default
 {
 	type Success = DidIdentifier;
-	fn try_origin(o: O) -> Result<Self::Success, O> {
+
+	fn try_origin(o: Origin) -> Result<Self::Success, Origin> {
 		o.into().and_then(|o| Ok(o.id))
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]
-	fn successful_origin() -> O {
-		O::from(RawOrigin { id: Default::default() })
+	fn successful_origin() -> Origin {
+		Origin::from(RawOrigin { id: Default::default() })
 	}
 }

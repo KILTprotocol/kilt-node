@@ -42,6 +42,7 @@ mock = [
   "serde",
   "sp-io",
 ]
+runtime-benchmarks = []
 std = [
   "codec/std",
   "frame-support/std",

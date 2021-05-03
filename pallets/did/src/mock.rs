@@ -78,7 +78,7 @@ impl frame_system::Config for Test {
 
 impl did::Config for Test {
 	type Call = Call;
-	type DidIdentifier = AccountId;
+	type DidIdentifier = kilt_primitives::DidIdentifier;
 	type Event = ();
 	type Origin = Origin;
 	type WeightInfo = ();
@@ -87,7 +87,6 @@ impl did::Config for Test {
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
 		match self {
-			//TODO: maybe use it for DID as well?
 			Call::Did(_) => None,
 			Call::System(_) => None,
 		}
