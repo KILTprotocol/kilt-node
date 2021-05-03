@@ -191,7 +191,7 @@ pub mod pallet {
 	}
 
 	impl<T: Config> DidOperation<T> for DelegationRootCreationOperation<T> {
-		fn get_verification_key_type(&self) -> did::DidVerificationKeyRelationship {
+		fn get_verification_key_relationship(&self) -> did::DidVerificationKeyRelationship {
 			did::DidVerificationKeyRelationship::CapabilityDelegation
 		}
 
@@ -248,7 +248,7 @@ pub mod pallet {
 	}
 
 	impl<T: Config> DidOperation<T> for DelegationCreationOperation<T> {
-		fn get_verification_key_type(&self) -> did::DidVerificationKeyRelationship {
+		fn get_verification_key_relationship(&self) -> did::DidVerificationKeyRelationship {
 			did::DidVerificationKeyRelationship::CapabilityDelegation
 		}
 
@@ -301,7 +301,7 @@ pub mod pallet {
 	}
 
 	impl<T: Config> DidOperation<T> for DelegationRootRevocationOperation<T> {
-		fn get_verification_key_type(&self) -> did::DidVerificationKeyRelationship {
+		fn get_verification_key_relationship(&self) -> did::DidVerificationKeyRelationship {
 			did::DidVerificationKeyRelationship::CapabilityDelegation
 		}
 
@@ -356,7 +356,7 @@ pub mod pallet {
 	}
 
 	impl<T: Config> DidOperation<T> for DelegationRevocationOperation<T> {
-		fn get_verification_key_type(&self) -> did::DidVerificationKeyRelationship {
+		fn get_verification_key_relationship(&self) -> did::DidVerificationKeyRelationship {
 			did::DidVerificationKeyRelationship::CapabilityDelegation
 		}
 

@@ -33,7 +33,6 @@ pub use default_weights::WeightInfo;
 
 use codec::{Decode, Encode};
 use frame_support::ensure;
-use frame_system::{self, ensure_signed};
 use sp_std::fmt::Debug;
 
 pub use pallet::*;
@@ -44,50 +43,16 @@ pub mod pallet {
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 
-	/// An operation to create a new CTYPE.
-	///
-	/// The struct implements the DidOperation trait, and as such it must
-	/// contain information about the caller's DID, the type of DID key
-	/// required to verify the operation signature, and the tx counter to
-	/// protect against replay attacks.
-	#[derive(Clone, Decode, Encode, PartialEq)]
-	pub struct CtypeCreationOperation<T: Config> {
-		/// The DID of the CTYPE creator.
-		pub creator_did: T::DidIdentifier,
-		/// The CTYPE hash. It has to be unique.
-		pub hash: T::Hash,
-		/// The DID tx counter.
-		pub tx_counter: u64,
-	}
+	/// The type of a CTYPE hash.
+	pub type CtypeHash<T> = <T as frame_system::Config>::Hash;
 
-	impl<T: Config> did::DidOperation<T> for CtypeCreationOperation<T> {
-		fn get_verification_key_type(&self) -> did::DidVerificationKeyRelationship {
-			did::DidVerificationKeyRelationship::AssertionMethod
-		}
-
-		fn get_did(&self) -> &T::DidIdentifier {
-			&self.creator_did
-		}
-
-		fn get_tx_counter(&self) -> u64 {
-			self.tx_counter
-		}
-	}
-
-	// Required to use a struct as an extrinsic parameter, and since Config does not
-	// implement Debug, the derive macro does not work.
-	impl<T: Config> Debug for CtypeCreationOperation<T> {
-		fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
-			f.debug_tuple("CtypeCreationOperation")
-				.field(&self.creator_did)
-				.field(&self.hash)
-				.field(&self.tx_counter)
-				.finish()
-		}
-	}
+	/// The type of a CTYPE creator.
+	pub type CtypeCreator<T> = <T as Config>::AccountIdentifier;
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config + did::Config {
+	pub trait Config: frame_system::Config {
+		type AccountIdentifier: Default + Parameter + Encode + Decode + Debug;
+		type EnsureOrigin: EnsureOrigin<Success = <Self as Config>::AccountIdentifier, <Self as frame_system::Config>::Origin>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type WeightInfo: WeightInfo;
 	}
@@ -105,14 +70,14 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn ctypes)]
 	pub type Ctypes<T> =
-		StorageMap<_, Blake2_128Concat, <T as frame_system::Config>::Hash, <T as did::Config>::DidIdentifier>;
+		StorageMap<_, Blake2_128Concat, CtypeHash<T>, CtypeCreator<T>>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// A new CTYPE has been created.
 		/// \[creator DID, CTYPE hash\]
-		CTypeCreated(T::DidIdentifier, T::Hash),
+		CTypeCreated(CtypeCreator<T>, CtypeHash<T>),
 	}
 
 	#[pallet::error]
@@ -125,33 +90,26 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		/// Submits a new CtypeCreationOperation operation.
+		/// Create a new CTYPE.
 		///
-		/// * origin: the origin of the transaction
-		/// * operation: the CtypeCreationOperation operation
-		/// * signature: the signature over the byte-encoded operation
-		#[pallet::weight(<T as Config>::WeightInfo::submit_ctype_creation_operation())]
-		pub fn submit_ctype_creation_operation(
+		/// * origin: the identifier of the CTYPE creator
+		/// * hash: the CTYPE hash. It has to be unique.
+		#[pallet::weight(10)]
+		pub fn add(
 			origin: OriginFor<T>,
-			operation: CtypeCreationOperation<T>,
-			signature: did::DidSignature,
+			hash: T::Hash
 		) -> DispatchResultWithPostInfo {
-			ensure_signed(origin)?;
-
-			// Check if DID exists, if counter is valid, if signature is valid, and increase
-			// DID tx counter
-			did::pallet::Pallet::verify_operation_validity_and_increase_did_nonce(&operation, &signature)
-				.map_err(<did::Error<T>>::from)?;
+			let creator = T::EnsureOrigin::ensure_origin(origin)?;
 
 			ensure!(
-				!<Ctypes<T>>::contains_key(&operation.hash),
+				!<Ctypes<T>>::contains_key(&hash),
 				Error::<T>::CTypeAlreadyExists
 			);
 
 			log::debug!("insert CTYPE");
-			<Ctypes<T>>::insert(&operation.hash, operation.creator_did.clone());
+			<Ctypes<T>>::insert(&hash, creator.clone());
 
-			Self::deposit_event(Event::CTypeCreated(operation.creator_did, operation.hash));
+			Self::deposit_event(Event::CTypeCreated(creator, hash));
 
 			Ok(None.into())
 		}

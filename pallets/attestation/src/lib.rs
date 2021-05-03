@@ -86,7 +86,7 @@ pub mod pallet {
 	}
 
 	impl<T: Config> did::DidOperation<T> for AttestationCreationOperation<T> {
-		fn get_verification_key_type(&self) -> did::DidVerificationKeyRelationship {
+		fn get_verification_key_relationship(&self) -> did::DidVerificationKeyRelationship {
 			did::DidVerificationKeyRelationship::AssertionMethod
 		}
 
@@ -135,7 +135,7 @@ pub mod pallet {
 	}
 
 	impl<T: Config> did::DidOperation<T> for AttestationRevocationOperation<T> {
-		fn get_verification_key_type(&self) -> did::DidVerificationKeyRelationship {
+		fn get_verification_key_relationship(&self) -> did::DidVerificationKeyRelationship {
 			did::DidVerificationKeyRelationship::AssertionMethod
 		}
 

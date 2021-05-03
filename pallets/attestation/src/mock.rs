@@ -23,12 +23,13 @@ use ctype::mock as ctype_mock;
 use delegation::mock as delegation_mock;
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
-use kilt_primitives::{AccountId, Signature};
+use kilt_primitives::{DidIdentifier, Signature};
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 };
+use frame_system::EnsureSigned;
 
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
@@ -43,7 +44,7 @@ frame_support::construct_runtime!(
 		Attestation: attestation::{Pallet, Call, Storage, Event<T>},
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>},
-		Did: did::{Pallet, Call, Storage, Event<T>},
+		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>},
 	}
 );
 
@@ -85,6 +86,8 @@ impl attestation::Config for Test {
 }
 
 impl ctype::Config for Test {
+	type AccountIdentifier = DidIdentifier;
+	type EnsureOrigin = EnsureSigned<TestDidIdentifier>;
 	type Event = ();
 	type WeightInfo = ();
 }
@@ -96,9 +99,23 @@ impl delegation::Config for Test {
 }
 
 impl did::Config for Test {
+	type Call = Call;
+	type DidIdentifier = DidIdentifier;
 	type Event = ();
+	type Origin = Origin;
 	type WeightInfo = ();
-	type DidIdentifier = AccountId;
+}
+
+impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
+    fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
+        match self {
+            Call::Attestation(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
+            Call::Ctype(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
+            Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
+            Call::Did(_) => None,
+			Call::System(_) => None,
+        }
+    }
 }
 
 pub type TestHash = <Test as frame_system::Config>::Hash;

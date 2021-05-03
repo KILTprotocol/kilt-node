@@ -42,6 +42,7 @@ mock = [
   "sp-core",
   "sp-io",
 ]
+runtime-benchmarks = []
 std = [
   "codec/std",
   "frame-support/std",
