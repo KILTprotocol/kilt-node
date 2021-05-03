@@ -17,9 +17,9 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 //! Test utilities
 use super::*;
-use crate as stake;
+use crate::{self as stake, inflation::BLOCKS_PER_YEAR};
 use frame_support::{
-	construct_runtime, parameter_types,
+	assert_ok, construct_runtime, parameter_types,
 	traits::{GenesisBuild, OnFinalize, OnInitialize},
 	weights::Weight,
 };
@@ -27,7 +27,7 @@ use sp_core::H256;
 use sp_io;
 use sp_runtime::{
 	testing::Header,
-	traits::{BlakeTwo256, IdentityLookup},
+	traits::{BlakeTwo256, IdentityLookup, Zero},
 	Perbill,
 };
 
@@ -35,6 +35,7 @@ pub type AccountId = u64;
 pub type Balance = u128;
 pub type BlockNumber = u64;
 pub const BLOCKS_PER_ROUND: u32 = 5;
+pub const DECIMALS: Balance = 10u128.pow(15);
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -181,23 +182,34 @@ impl ExtBuilder {
 
 	#[allow(dead_code)]
 	// TODO: Fix why this is not applied
-	pub(crate) fn with_inflation(mut self, col_max: u32, col_rewards: u32, d_max: u32, d_rewards: u32) -> Self {
+	pub(crate) fn with_inflation(
+		mut self,
+		col_max: u32,
+		col_rewards: u32,
+		d_max: u32,
+		d_rewards: u32,
+		blocks_per_round: u32,
+	) -> Self {
+		let blocks_per_year = BLOCKS_PER_YEAR / blocks_per_round;
+
 		self.inflation_config = InflationInfo {
 			collator: StakingInfo {
 				max_rate: Perbill::from_percent(col_max),
 				reward_rate: RewardRate {
 					annual: Perbill::from_percent(col_rewards),
-					round: Perbill::from_parts(Perbill::from_percent(col_rewards).deconstruct() / 8766),
+					round: Perbill::from_parts(Perbill::from_percent(col_rewards).deconstruct() / blocks_per_year),
 				},
 			},
 			delegator: StakingInfo {
 				max_rate: Perbill::from_percent(d_max),
 				reward_rate: RewardRate {
 					annual: Perbill::from_percent(d_rewards),
-					round: Perbill::from_parts(Perbill::from_percent(d_rewards).deconstruct() / 8766),
+					round: Perbill::from_parts(Perbill::from_percent(d_rewards).deconstruct() / blocks_per_year),
 				},
 			},
 		};
+		self.blocks_per_round = blocks_per_round;
+
 		self
 	}
 
@@ -240,6 +252,197 @@ impl ExtBuilder {
 		ext.execute_with(|| System::set_block_number(1));
 		ext
 	}
+}
+
+/// Simulate a longer cycle of the chain to check collator and delegator rewards
+///
+/// * base_balance: The balance to mint for each user (should be 160 Mio. in
+///   sum)
+/// * collator_stake: The balance each collator stakes
+/// * delegator_stake: The balance each delegator stakes (1 collator per
+///   delegator)
+/// * max_collator_rate: The percentage of the maximum collator staking rate for
+///   the `InflationInfo`
+/// * collator_reward_rate: The percentage of the annual collator reward rate
+///   for the `InflationInfo`
+/// * max_delegator_rate: The percentage of the maximum collator staking rate
+///   for the `InflationInfo`
+/// * delegator_reward_rate: The percentage of the annual delegator reward rate
+///   for the `InflationInfo`
+/// * blocks_per_round: The number of blocks for each round. 7200 corresponds to
+///   rounds of length 12.
+/// * num_of_years: The number of years we want to simulate. Ideally, this
+///   should be between zero and one.
+
+pub(crate) fn check_yearly_inflation(
+	base_balance: Balance,
+	collator_stake: Balance,
+	delegator_stake: Balance,
+	max_collator_rate: u32,
+	collator_reward_rate: u32,
+	max_delegator_rate: u32,
+	delegator_reward_rate: u32,
+	blocks_per_round: u32,
+	num_of_years: Perbill,
+) {
+	let expected_issuance = 160_000_000 * DECIMALS;
+	let num_of_users = (expected_issuance / base_balance) as u64;
+	let num_of_collators = (Perbill::from_percent(max_collator_rate) * expected_issuance / collator_stake) as u64;
+	let num_of_delegators = (Perbill::from_percent(max_delegator_rate) * expected_issuance / delegator_stake) as u64;
+	assert!(num_of_users >= num_of_collators + num_of_delegators);
+	let blocks_per_year = crate::inflation::BLOCKS_PER_YEAR / blocks_per_round;
+	let rounds_in_test = num_of_years * blocks_per_year;
+	let end_block: u64 = (rounds_in_test * blocks_per_round).into();
+
+	// mint 160 Mio total issuance
+	let balances: Vec<(<Test as frame_system::Config>::AccountId, BalanceOf<Test>)> =
+		(1u64..=num_of_users).map(|i| (i, base_balance)).collect();
+	assert!(!balances.is_empty());
+
+	// goal: max_collator_rate in % (default: 10%) staked by collators
+	let collator_ids: Vec<AccountId> = (1u64..=num_of_collators).collect();
+	let collators: Vec<(<Test as frame_system::Config>::AccountId, BalanceOf<Test>)> =
+		collator_ids.clone().into_iter().map(|i| (i, collator_stake)).collect();
+
+	// goal: max_delegator_rate in % (default: 40%) of the network staked by
+	// delegators
+	let delegators: Vec<(AccountId, <Test as frame_system::Config>::AccountId, BalanceOf<Test>)> =
+		((num_of_collators + 1)..=(num_of_collators + num_of_delegators))
+			.map(|i| (i, (i - 1) % num_of_collators + 1, delegator_stake))
+			.collect();
+
+	ExtBuilder::default()
+		.with_balances(balances)
+		.with_collators(collators.clone())
+		.with_nominators(delegators.clone())
+		.with_inflation(
+			max_collator_rate,
+			collator_reward_rate,
+			max_delegator_rate,
+			delegator_reward_rate,
+			blocks_per_round,
+		)
+		.build()
+		.execute_with(|| {
+			let total_issuance = <Test as Config>::Currency::total_issuance();
+			assert_eq!(total_issuance, expected_issuance);
+			let (total_collator_stake, total_delegator_stake) = Stake::total();
+			assert_eq!(total_collator_stake, num_of_collators as u128 * collator_stake);
+			assert_eq!(total_delegator_stake, num_of_delegators as u128 * delegator_stake);
+			assert_eq!(Stake::round().length, blocks_per_round);
+
+			// for each round, give each collator the same amount of points
+			for collator in collator_ids.clone() {
+				let collator_state = Stake::collator_state(collator).expect("Collator should have state");
+				assert_eq!(collator_state.id, collator);
+				assert_eq!(collator_state.bond, collator_stake);
+				assert!(collator_state.total >= collator_state.bond);
+				assert_eq!(collator_state.state, CollatorStatus::Active);
+				for round in 1..=rounds_in_test {
+					set_author(round, collator, 20);
+				}
+			}
+
+			// increase number of selected candidates
+			if num_of_collators as usize > Stake::selected_candidates().len() {
+				assert_ok!(Stake::set_total_selected(Origin::root(), num_of_collators as u32));
+
+				// roll to round 2 to check for update of TotalSelected
+				roll_to_faster((2 * blocks_per_round + 2).into(), blocks_per_round.into());
+				assert_eq!(Stake::selected_candidates(), collator_ids);
+			}
+
+			// get inflation and expected rewards
+			let inflation = Stake::inflation_config();
+			let collator_rewards: BalanceOf<Test> = inflation
+				.collator
+				.compute_rewards::<Test>(total_collator_stake, total_issuance)
+				* (rounds_in_test as u128);
+			let delegator_rewards: BalanceOf<Test> = inflation
+				.delegator
+				.compute_rewards::<Test>(total_delegator_stake, total_issuance)
+				* (rounds_in_test as u128);
+
+			// fast-forward a year
+			roll_to_faster(end_block + 2, blocks_per_round.into());
+
+			// check collator rewards
+			let mut single_collator_reward: Balance = Balance::zero();
+			for (collator_acc, _) in collators {
+				single_collator_reward =
+					Balances::free_balance(collator_acc).saturating_sub(base_balance - collator_stake);
+
+				// collator should have received about the annual reward rate of their initial
+				// stake
+				assert!(almost_equal(
+					num_of_years * inflation.collator.reward_rate.annual * Balances::reserved_balance(collator_acc),
+					single_collator_reward,
+					Perbill::from_percent(15) * Perbill::from_percent(10),
+				));
+				assert!(almost_equal(
+					num_of_years * Perbill::from_percent(collator_reward_rate) * collator_stake,
+					single_collator_reward,
+					Perbill::from_percent(15) * Perbill::from_percent(10),
+				));
+				// expected collator rewards should match what was minted
+				assert!(almost_equal(
+					collator_rewards,
+					num_of_collators as u128 * single_collator_reward,
+					Perbill::from_percent(15) * Perbill::from_percent(10),
+				));
+			}
+			assert!(!single_collator_reward.is_zero());
+
+			// check delegator rewards
+			let mut single_delegator_reward: Balance = Balance::zero();
+			for (delegator_acc, _, _) in delegators {
+				single_delegator_reward =
+					Balances::free_balance(delegator_acc).saturating_sub(base_balance - delegator_stake);
+
+				// delegator should have received about the annual reward rate of their initial
+				// stake
+				assert!(almost_equal(
+					num_of_years * inflation.delegator.reward_rate.annual * Balances::reserved_balance(delegator_acc),
+					single_delegator_reward,
+					Perbill::from_percent(2),
+				));
+				assert!(almost_equal(
+					num_of_years * Perbill::from_percent(delegator_reward_rate) * delegator_stake,
+					single_delegator_reward,
+					Perbill::from_percent(2),
+				));
+				// expected delegator rewards should match what was minted
+				assert!(almost_equal(
+					delegator_rewards,
+					num_of_delegators as u128 * single_delegator_reward,
+					Perbill::from_percent(2),
+				));
+			}
+			assert!(!single_delegator_reward.is_zero());
+
+			// collators should have received better reward rate than delegators
+			assert!(
+				Perbill::from_rational(single_collator_reward, collator_stake)
+					> Perbill::from_rational(single_delegator_reward, delegator_stake)
+			);
+
+			// compare expected inflation with actual inflation after 1 year
+			assert!(almost_equal(
+				num_of_years * inflation.collator.reward_rate.annual * inflation.collator.max_rate * total_issuance
+					+ num_of_years
+						* inflation.delegator.reward_rate.annual
+						* inflation.delegator.max_rate
+						* total_issuance + total_issuance,
+				<Test as Config>::Currency::total_issuance(),
+				Perbill::from_percent(3) * Perbill::from_percent(10),
+			));
+		});
+}
+
+/// Compare whether the difference of both sides is at most `precision * left`.
+pub(crate) fn almost_equal(left: Balance, right: Balance, precision: Perbill) -> bool {
+	let err = precision * left;
+	left.max(right) - left.min(right) <= err
 }
 
 pub(crate) fn roll_to(n: u64) {

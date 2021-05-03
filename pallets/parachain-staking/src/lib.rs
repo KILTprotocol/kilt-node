@@ -1081,12 +1081,12 @@ pub mod pallet {
 				// let total_collator_stake = <StakedCollator<T>>::get();
 				// let total_delegator_stake = <StakedDelegator<T>>::get();
 				let (total_collator_stake, total_delegator_stake) = <Total<T>>::get();
-				println!(
-					"collator stake {:?}, delegator stake {:?}",
-					total_collator_stake, total_delegator_stake
-				);
+				// println!(
+				// 	"collator stake {:?}, delegator stake {:?}",
+				// 	total_collator_stake, total_delegator_stake
+				// );
 				let (c_rewards, d_rewards) = Self::compute_issuance(total_collator_stake, total_delegator_stake);
-				println!("rewards: {:?}, {:?}", c_rewards, d_rewards);
+				// println!("rewards: {:?}, {:?}", c_rewards, d_rewards);
 				// TODO: Make sure all delegators receive rewards
 				for (val, pts) in <AwardedPts<T>>::drain_prefix(round_to_payout) {
 					let pct_due = Perbill::from_rational(pts, total);

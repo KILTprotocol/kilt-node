@@ -31,8 +31,8 @@ use substrate_fixed::{
 // TODO: use constants from kilt_primitives
 const SECONDS_PER_YEAR: u32 = 31557600;
 const SECONDS_PER_BLOCK: u32 = 6;
-// = 5.259.600
-const BLOCKS_PER_YEAR: u32 = SECONDS_PER_YEAR / SECONDS_PER_BLOCK;
+// = 5_259_600
+pub const BLOCKS_PER_YEAR: u32 = SECONDS_PER_YEAR / SECONDS_PER_BLOCK;
 
 fn rounds_per_year<T: Config>() -> u32 {
 	let blocks_per_round = <Pallet<T>>::round().length;
@@ -111,16 +111,8 @@ impl StakingInfo {
 
 	pub fn compute_rewards<T: Config>(&self, stake: BalanceOf<T>, total_issuance: BalanceOf<T>) -> BalanceOf<T> {
 		let staking_rate = Perbill::from_rational(stake, total_issuance).min(self.max_rate);
-		let reward_rate = staking_rate * self.reward_rate.round;
-		println!(
-			"compute_rewards: {:?} {:?} | {:?} * {:?} = {:?}",
-			staking_rate,
-			self.reward_rate.round,
-			reward_rate,
-			total_issuance,
-			reward_rate * total_issuance,
-		);
-		reward_rate * total_issuance
+		let rewards = self.reward_rate.round * total_issuance;
+		staking_rate * rewards
 	}
 }
 
@@ -187,7 +179,7 @@ impl InflationInfo {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::mock::{ExtBuilder, Test};
+	use crate::mock::{ExtBuilder, Stake, Test};
 
 	#[test]
 	fn perbill() {
@@ -200,8 +192,7 @@ mod tests {
 	#[test]
 	fn simple_rewards() {
 		ExtBuilder::default()
-			.set_blocks_per_round(BLOCKS_PER_YEAR)
-			// .with_inflation(staking_info.clone())
+			.with_inflation(10, 15, 40, 10, BLOCKS_PER_YEAR)
 			.build()
 			.execute_with(|| {
 				// Unrealistic configuration but makes computation simple
@@ -255,11 +246,11 @@ mod tests {
 	#[test]
 	fn more_realistic_rewards() {
 		ExtBuilder::default()
-			.set_blocks_per_round(600)
+			.with_inflation(10, 15, 40, 10, 600)
 			.build()
 			.execute_with(|| {
 				let rounds_per_year = BLOCKS_PER_YEAR / 600;
-				let inflation = InflationInfo::new::<Test>(10, 15, 40, 10);
+				let inflation = Stake::inflation_config();
 
 				// Dummy checks for correct instantiation
 				assert!(inflation.is_valid());
@@ -323,7 +314,7 @@ mod tests {
 			.build()
 			.execute_with(|| {
 				let rounds_per_year = BLOCKS_PER_YEAR / 600;
-				let inflation = InflationInfo::new::<Test>(10, 15, 40, 10);
+				let inflation = Stake::inflation_config();
 
 				// Dummy checks for correct instantiation
 				assert!(inflation.is_valid());
@@ -349,21 +340,24 @@ mod tests {
 					inflation
 						.collator
 						.compute_rewards::<Test>(100_000 * decimals, total_issuance),
-					1600 * 10u128.pow(12)
+					// 1600 * 10u128.pow(12)
+					1711100000000000 // 1600 * 10u128.pow(12)
 				);
 				// Check for max_rate which is 10%
 				assert_eq!(
 					inflation
 						.collator
 						.compute_rewards::<Test>(16_000_000 * decimals, total_issuance),
-					273760 * 10u128.pow(12)
+					// 273760 * 10u128.pow(12)
+					273776000000000000
 				);
 				// Check exceeding max_rate
 				assert_eq!(
 					inflation
 						.collator
 						.compute_rewards::<Test>(32_000_000 * decimals, total_issuance),
-					273760 * 10u128.pow(12)
+					// 273760 * 10u128.pow(12)
+					273776000000000000
 				);
 				// Stake can never be more than what is issued, but let's check whether the cap
 				// still applies
@@ -371,7 +365,8 @@ mod tests {
 					inflation
 						.collator
 						.compute_rewards::<Test>(200_000_000 * decimals, total_issuance),
-					273760 * 10u128.pow(12)
+					// 273760 * 10u128.pow(12)
+					273776000000000000
 				);
 
 				// Check delegator reward calculation
@@ -380,7 +375,8 @@ mod tests {
 					inflation
 						.delegator
 						.compute_rewards::<Test>(100_000 * decimals, total_issuance),
-					1120 * 10u128.pow(12)
+					// 1120 * 10u128.pow(12)
+					1140700000000000
 				);
 				assert!(
 					inflation
@@ -395,14 +391,16 @@ mod tests {
 					inflation
 						.delegator
 						.compute_rewards::<Test>(64_000_000 * decimals, total_issuance),
-					729_920 * 10u128.pow(12)
+					// 729_920 * 10u128.pow(12)
+					730048000000000000
 				);
 				// Check exceeding max_rate
 				assert_eq!(
 					inflation
 						.delegator
 						.compute_rewards::<Test>(100_000_000 * decimals, total_issuance),
-					729_920 * 10u128.pow(12)
+					// 729_920 * 10u128.pow(12)
+					730048000000000000
 				);
 				// Stake can never be more than what is issued, but let's check whether the cap
 				// still applies
@@ -410,7 +408,8 @@ mod tests {
 					inflation
 						.delegator
 						.compute_rewards::<Test>(200_000_000 * decimals, total_issuance),
-					729_920 * 10u128.pow(12)
+					// 729_920 * 10u128.pow(12)
+					730048000000000000
 				);
 			});
 	}
