@@ -40,7 +40,7 @@ frame_support::construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		Did: did::{Pallet, Call, Storage, Event<T>},
+		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>},
 	}
 );
 
@@ -77,9 +77,20 @@ impl frame_system::Config for Test {
 }
 
 impl did::Config for Test {
-	type Event = ();
-	type WeightInfo = ();
+	type Call = Call;
 	type DidIdentifier = AccountId;
+	type Event = ();
+	type Origin = Origin;
+	type WeightInfo = ();
+}
+
+impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
+	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
+		match self {
+			Call::Did(_) => None,
+			Call::System(_) => None,
+		}
+	}
 }
 
 pub type TestDidIdentifier = <Test as did::Config>::DidIdentifier;
@@ -216,8 +227,8 @@ pub struct TestDidOperation {
 }
 
 impl DidOperation<Test> for TestDidOperation {
-	fn get_verification_key_type(&self) -> DidVerificationKeyRelationship {
-		self.verification_key_type.clone()
+	fn get_verification_key_relationship(&self) -> DidVerificationKeyRelationship {
+		self.verification_key_type
 	}
 
 	fn get_did(&self) -> &TestDidIdentifier {

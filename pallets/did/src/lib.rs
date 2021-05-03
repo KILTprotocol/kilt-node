@@ -29,17 +29,20 @@ pub mod mock;
 
 pub mod default_weights;
 
+pub mod origin;
+
 mod utils;
 
 pub use default_weights::WeightInfo;
 
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, WrapperTypeEncode};
 
-use frame_support::{ensure, storage::types::StorageMap, Parameter};
+use frame_support::{ensure, storage::types::StorageMap, Parameter, dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo}};
 use frame_system::{self, ensure_signed};
 use sp_core::{ed25519, sr25519};
 use sp_runtime::traits::Verify;
 use sp_std::{
+	boxed::Box,
 	collections::{btree_map::BTreeMap, btree_set::BTreeSet},
 	convert::TryFrom,
 	fmt::Debug,
@@ -47,6 +50,8 @@ use sp_std::{
 	str,
 	vec::Vec,
 };
+
+use origin::*;
 
 pub use pallet::*;
 
@@ -75,6 +80,9 @@ pub mod pallet {
 
 	/// Type for a block number.
 	pub type BlockNumber<T> = <T as frame_system::Config>::BlockNumber;
+
+	/// Type for DID origin in extrinsics supporting DID authorization.
+	pub type Origin<T> = RawOrigin<<T as Config>::DidIdentifier>;
 
 	/// The string description of a DID public key.
 	///
@@ -176,7 +184,7 @@ pub mod pallet {
 
 	/// Verification methods a verification key can
 	/// fulfil, according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
-	#[derive(Clone, Debug, Decode, Encode, PartialEq, Eq)]
+	#[derive(Clone, Copy, Debug, Decode, Encode, PartialEq, Eq)]
 	pub enum DidVerificationKeyRelationship {
 		/// Key used to authenticate all the DID operations.
 		Authentication,
@@ -660,12 +668,70 @@ pub mod pallet {
 	pub trait DidOperation<T: Config>: Encode {
 		/// The type of the verification key to be used to validate the
 		/// operation.
-		fn get_verification_key_type(&self) -> DidVerificationKeyRelationship;
+		fn get_verification_key_relationship(&self) -> DidVerificationKeyRelationship;
 		/// The DID identifier of the subject.
 		fn get_did(&self) -> &T::DidIdentifier;
 		/// The operation tx counter, used to protect against replay attacks.
 		fn get_tx_counter(&self) -> u64;
 	}
+
+	/// Trait for extrinsic DID-based authorization.
+	///
+	/// The trait allows [DidAuthorizedCallOperations](DidAuthorizedCallOperation) wrapping an extrinsic to specify what DID key to use to perform signature validation over the
+	/// byte-encoded operation. A result of None indicates that the extrinsic does not support DID-based authorization.
+	pub trait DeriveDidCallAuthorizationVerificationKeyRelationship {
+		/// The type of the verification key to be used to validate the
+		/// wrapped extrinsic.
+		fn derive_verification_key_relationship(&self) -> Option<DidVerificationKeyRelationship>;
+	}
+
+	/// A DID operation that wraps other extrinsic calls, allowing those extrinsic to
+	/// have a DID origin and perform DID-based authorization upon their invocation.
+	#[derive(Clone, Debug, Decode, Encode, PartialEq)]
+	pub struct DidAuthorizedCallOperation<T: Config> {
+		/// The DID identifier.
+		pub did: T::DidIdentifier,
+		/// The DID tx counter.
+		pub tx_counter: u64,
+		/// The extrinsic call to authorize with the DID.
+		pub call: <T as pallet::Config>::Call,
+	}
+
+	/// Wrapper around a [DidAuthorizedCallOperation].
+	///
+	/// It contains additional information about the type of DID key to used for authorization.
+	#[derive(Clone, Debug, PartialEq)]
+	pub struct DidAuthorizedCallOperationWithVerificationRelationship<T: Config> {
+		/// The wrapped [DidAuthorizedCallOperation].
+		pub operation: DidAuthorizedCallOperation<T>,
+		/// The type of DID key to use for authorization.
+		pub verification_key_relationship: DidVerificationKeyRelationship,
+	}
+
+	impl<T: Config> DidOperation<T> for DidAuthorizedCallOperationWithVerificationRelationship<T> {
+		fn get_verification_key_relationship(&self) -> DidVerificationKeyRelationship {
+			self.verification_key_relationship
+		}
+
+		fn get_did(&self) -> &T::DidIdentifier {
+			&self.did
+		}
+
+		fn get_tx_counter(&self) -> u64 {
+			self.tx_counter
+		}
+	}
+
+	impl<T: Config> core::ops::Deref for DidAuthorizedCallOperationWithVerificationRelationship<T> {
+		type Target = DidAuthorizedCallOperation<T>;
+
+		fn deref(&self) -> &Self::Target {
+			&self.operation
+		}
+	}
+
+	// Opaque implementation. DidAuthorizedCallOperationWithVerificationRelationship encodes to DidAuthorizedCallOperation.
+	impl<T: Config> WrapperTypeEncode for DidAuthorizedCallOperationWithVerificationRelationship<T> {}
 
 	/// An operation to create a new DID.
 	///
@@ -690,7 +756,7 @@ pub mod pallet {
 	}
 
 	impl<T: Config> DidOperation<T> for DidCreationOperation<T> {
-		fn get_verification_key_type(&self) -> DidVerificationKeyRelationship {
+		fn get_verification_key_relationship(&self) -> DidVerificationKeyRelationship {
 			DidVerificationKeyRelationship::Authentication
 		}
 
@@ -734,7 +800,7 @@ pub mod pallet {
 	}
 
 	impl<T: Config> DidOperation<T> for DidUpdateOperation<T> {
-		fn get_verification_key_type(&self) -> DidVerificationKeyRelationship {
+		fn get_verification_key_relationship(&self) -> DidVerificationKeyRelationship {
 			DidVerificationKeyRelationship::Authentication
 		}
 
@@ -781,7 +847,7 @@ pub mod pallet {
 	}
 
 	impl<T: Config> DidOperation<T> for DidDeletionOperation<T> {
-		fn get_verification_key_type(&self) -> DidVerificationKeyRelationship {
+		fn get_verification_key_relationship(&self) -> DidVerificationKeyRelationship {
 			DidVerificationKeyRelationship::Authentication
 		}
 
@@ -915,9 +981,14 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + Debug {
+		type Call: Parameter
+			+ Dispatchable<Origin = <Self as Config>::Origin, PostInfo = PostDispatchInfo>
+			+ GetDispatchInfo
+			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
+		type DidIdentifier: Default + Parameter + Encode + Decode + Debug;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type Origin: From<RawOrigin<Self::DidIdentifier>>;
 		type WeightInfo: WeightInfo;
-		type DidIdentifier: Parameter + Encode + Decode + Debug;
 	}
 
 	#[pallet::pallet]
@@ -976,6 +1047,8 @@ pub mod pallet {
 		/// used as an authentication, delegation, or attestation key, and this
 		/// is not allowed.
 		CurrentlyActiveKey,
+		/// The called extrinsic does not support DID authorization.
+		UnsupportedDidAuthorizationCall,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
 	}
@@ -1057,7 +1130,7 @@ pub mod pallet {
 				&operation.encode(),
 				&signature,
 				&did_entry,
-				operation.get_verification_key_type(),
+				operation.get_verification_key_relationship(),
 			)
 			.map_err(<Error<T>>::from)?;
 
@@ -1141,6 +1214,33 @@ pub mod pallet {
 
 			Ok(None.into())
 		}
+
+		#[pallet::weight(10)]
+		pub fn submit_did_call(
+			origin: OriginFor<T>,
+			did_call: Box<DidAuthorizedCallOperation<T>>,
+			signature: DidSignature,
+		) -> DispatchResultWithPostInfo {
+			ensure_signed(origin.clone())?;
+
+			let did_identifier = did_call.did.clone();
+
+			let verification_key_relationship = did_call
+				.call
+				.derive_verification_key_relationship()
+				.ok_or(<Error<T>>::UnsupportedDidAuthorizationCall)?;
+
+			let wrapped_operation = DidAuthorizedCallOperationWithVerificationRelationship {
+				operation: *did_call.clone(),
+				verification_key_relationship,
+			};
+
+			// Verify the operation signature and increase the nonce if successful.
+			Self::verify_operation_validity_and_increase_did_nonce(&wrapped_operation, &signature).map_err(<Error<T>>::from)?;
+			log::debug!("Dispatch call from DID {:?}", did_identifier);
+
+			did_call.call.dispatch(RawOrigin { id: did_identifier }.into())
+		}
 	}
 }
 
@@ -1180,7 +1280,7 @@ impl<T: Config> Pallet<T> {
 			&operation.encode(),
 			signature,
 			did_details,
-			operation.get_verification_key_type(),
+			operation.get_verification_key_relationship(),
 		)
 	}
 
