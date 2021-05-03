@@ -47,12 +47,11 @@ pub mod pallet {
 	pub type CtypeHash<T> = <T as frame_system::Config>::Hash;
 
 	/// The type of a CTYPE creator.
-	pub type CtypeCreator<T> = <T as Config>::AccountIdentifier;
+	pub type CtypeCreator<T> = did::DidIdentifier<T>;
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config {
-		type AccountIdentifier: Default + Parameter + Encode + Decode + Debug;
-		type EnsureOrigin: EnsureOrigin<Success = <Self as Config>::AccountIdentifier, <Self as frame_system::Config>::Origin>;
+	pub trait Config: frame_system::Config + did::Config {
+		type EnsureOrigin: EnsureOrigin<Success = CtypeCreator<Self>, <Self as frame_system::Config>::Origin>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type WeightInfo: WeightInfo;
 	}
@@ -97,7 +96,7 @@ pub mod pallet {
 		#[pallet::weight(10)]
 		pub fn add(
 			origin: OriginFor<T>,
-			hash: T::Hash
+			hash: CtypeHash<T>
 		) -> DispatchResultWithPostInfo {
 			let creator = T::EnsureOrigin::ensure_origin(origin)?;
 

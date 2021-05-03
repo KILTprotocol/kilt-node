@@ -57,8 +57,21 @@ pub use pallet::*;
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_support::pallet_prelude::*;
+	use ctype::CtypeCreator;
+use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
+
+	/// Type of a delegation node identifier.
+	pub type DelegationNodeId<T> = <T as Config>::DelegationNodeId;
+
+	/// Type of a delegation node's owner.
+	pub type DelegationOwner<T> = did::DidIdentifier<T>;
+
+	/// Type of a delegate.
+	pub type Delegate<T> = did::DidIdentifier<T>;
+
+	/// The type of a CTYPE hash.
+	pub type CtypeHash<T> = ctype::CtypeHash<T>;
 
 	bitflags! {
 		/// Bitflags for permissions.
@@ -94,15 +107,15 @@ pub mod pallet {
 	#[derive(Clone, Debug, Encode, Decode, PartialEq)]
 	pub struct DelegationRoot<T: Config> {
 		/// The hash of the CTYPE that delegated attesters can attest.
-		pub ctype_hash: T::Hash,
+		pub ctype_hash: CtypeHash<T>,
 		/// The DID of the root owner.
-		pub owner: T::DidIdentifier,
+		pub owner: CtypeCreator<T>,
 		/// The flag indicating whether the root has been revoked or not.
 		pub revoked: bool,
 	}
 
 	impl<T: Config> DelegationRoot<T> {
-		fn new(ctype_hash: T::Hash, owner: T::DidIdentifier) -> Self {
+		fn new(ctype_hash: CtypeHash<T>, owner: CtypeCreator<T>) -> Self {
 			DelegationRoot {
 				ctype_hash,
 				owner,
@@ -115,12 +128,12 @@ pub mod pallet {
 	#[derive(Clone, Debug, Encode, Decode, PartialEq)]
 	pub struct DelegationNode<T: Config> {
 		/// The ID of the delegation hierarchy root.
-		pub root_id: T::DelegationNodeId,
+		pub root_id: DelegationNodeId<T>,
 		/// \[OPTIONAL\] The ID of the parent node. If None, the node is
 		/// considered a child of the root node.
-		pub parent: Option<T::DelegationNodeId>,
+		pub parent: Option<DelegationNodeId<T>>,
 		/// The DID of the owner of the delegation node, i.e., the delegate.
-		pub owner: T::DidIdentifier,
+		pub owner: DelegationOwner<T>,
 		/// The permission flags for the operations the delegate is allowed to
 		/// perform.
 		pub permissions: Permissions,
@@ -137,7 +150,7 @@ pub mod pallet {
 		///   delegate
 		/// * permissions: the permission flags for the operations the delegate
 		///   is allowed to perform
-		pub fn new_root_child(root_id: T::DelegationNodeId, owner: T::DidIdentifier, permissions: Permissions) -> Self {
+		pub fn new_root_child(root_id: DelegationNodeId<T>, owner: DelegationOwner<T>, permissions: Permissions) -> Self {
 			DelegationNode {
 				root_id,
 				owner,
@@ -157,9 +170,9 @@ pub mod pallet {
 		/// * permissions: the permission flags for the operations the delegate
 		///   is allowed to perform
 		pub fn new_node_child(
-			root_id: T::DelegationNodeId,
-			parent: T::DelegationNodeId,
-			owner: T::DidIdentifier,
+			root_id: DelegationNodeId<T>,
+			parent: DelegationNodeId<T>,
+			owner: DelegationOwner<T>,
 			permissions: Permissions,
 		) -> Self {
 			DelegationNode {
@@ -169,51 +182,6 @@ pub mod pallet {
 				permissions,
 				revoked: false,
 			}
-		}
-	}
-
-	/// An operation to create a new delegation root.
-	///
-	/// The struct implements the DidOperation trait, and as such it must
-	/// contain information about the caller's DID, the type of DID key
-	/// required to verify the operation signature, and the tx counter to
-	/// protect against replay attacks.
-	#[derive(Clone, Decode, Encode, PartialEq)]
-	pub struct DelegationRootCreationOperation<T: Config> {
-		/// The DID of the root creator.
-		pub creator_did: T::DidIdentifier,
-		/// The ID of the root node. It has to be unique.
-		pub root_id: T::DelegationNodeId,
-		/// The CTYPE hash that delegates can use for attestations.
-		pub ctype_hash: T::Hash,
-		/// The DID tx counter.
-		pub tx_counter: u64,
-	}
-
-	impl<T: Config> DidOperation<T> for DelegationRootCreationOperation<T> {
-		fn get_verification_key_relationship(&self) -> did::DidVerificationKeyRelationship {
-			did::DidVerificationKeyRelationship::CapabilityDelegation
-		}
-
-		fn get_did(&self) -> &T::DidIdentifier {
-			&self.creator_did
-		}
-
-		fn get_tx_counter(&self) -> u64 {
-			self.tx_counter
-		}
-	}
-
-	// Required to use a struct as an extrinsic parameter, and since Config does not
-	// implement Debug, the derive macro does not work.
-	impl<T: Config> Debug for DelegationRootCreationOperation<T> {
-		fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
-			f.debug_tuple("DelegationRootCreationOperation")
-				.field(&self.creator_did)
-				.field(&self.root_id)
-				.field(&self.ctype_hash)
-				.field(&self.tx_counter)
-				.finish()
 		}
 	}
 
@@ -261,23 +229,6 @@ pub mod pallet {
 		}
 	}
 
-	// Required to use a struct as an extrinsic parameter, and since Config does not
-	// implement Debug, the derive macro does not work.
-	impl<T: Config> Debug for DelegationCreationOperation<T> {
-		fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
-			f.debug_tuple("DelegationCreationOperation")
-				.field(&self.creator_did)
-				.field(&self.delegation_id)
-				.field(&self.root_id)
-				.field(&self.parent_id)
-				.field(&self.delegate_did)
-				.field(&self.permissions)
-				.field(&self.delegate_signature)
-				.field(&self.tx_counter)
-				.finish()
-		}
-	}
-
 	/// An operation to revoke a delegation root.
 	///
 	/// The struct implements the DidOperation trait, and as such it must
@@ -311,19 +262,6 @@ pub mod pallet {
 
 		fn get_tx_counter(&self) -> u64 {
 			self.tx_counter
-		}
-	}
-
-	// Required to use a struct as an extrinsic parameter, and since Config does not
-	// implement Debug, the derive macro does not work.
-	impl<T: Config> Debug for DelegationRootRevocationOperation<T> {
-		fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
-			f.debug_tuple("DelegationRootRevocationOperation")
-				.field(&self.revoker_did)
-				.field(&self.root_id)
-				.field(&self.max_children)
-				.field(&self.tx_counter)
-				.finish()
 		}
 	}
 
@@ -369,24 +307,8 @@ pub mod pallet {
 		}
 	}
 
-	// Required to use a struct as an extrinsic parameter, and since Config does not
-	// implement Debug, the derive macro does not work.
-	impl<T: Config> Debug for DelegationRevocationOperation<T> {
-		fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
-			f.debug_tuple("DelegationRevocationOperation")
-				.field(&self.revoker_did)
-				.field(&self.delegation_id)
-				.field(&self.max_parent_checks)
-				.field(&self.max_revocations)
-				.field(&self.tx_counter)
-				.finish()
-		}
-	}
-
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config + did::Config {
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-		type WeightInfo: WeightInfo;
 		type DelegationNodeId: Parameter
 			+ Member
 			+ Codec
@@ -398,6 +320,9 @@ pub mod pallet {
 			+ sp_std::hash::Hash
 			+ AsRef<[u8]>
 			+ AsMut<[u8]>;
+		type EnsureOrigin: EnsureOrigin<Success = ctype::CtypeCreator<Self>, <Self as frame_system::Config>::Origin>;
+		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type WeightInfo: WeightInfo;
 	}
 
 	#[pallet::pallet]
@@ -412,14 +337,14 @@ pub mod pallet {
 	/// It maps from a root node ID to the full root node.
 	#[pallet::storage]
 	#[pallet::getter(fn roots)]
-	pub type Roots<T> = StorageMap<_, Blake2_128Concat, <T as Config>::DelegationNodeId, DelegationRoot<T>>;
+	pub type Roots<T> = StorageMap<_, Blake2_128Concat, DelegationNodeId<T>, DelegationRoot<T>>;
 
 	/// Delegation nodes stored on chain.
 	///
 	/// It maps from a node ID to the full delegation node.
 	#[pallet::storage]
 	#[pallet::getter(fn delegations)]
-	pub type Delegations<T> = StorageMap<_, Blake2_128Concat, <T as Config>::DelegationNodeId, DelegationNode<T>>;
+	pub type Delegations<T> = StorageMap<_, Blake2_128Concat, DelegationNodeId<T>, DelegationNode<T>>;
 
 	/// Children delegation nodes.
 	///
@@ -428,31 +353,31 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn children)]
 	pub type Children<T> =
-		StorageMap<_, Blake2_128Concat, <T as Config>::DelegationNodeId, Vec<<T as Config>::DelegationNodeId>>;
+		StorageMap<_, Blake2_128Concat, DelegationNodeId<T>, Vec<DelegationNodeId<T>>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// A new root has been created.
 		/// \[creator DID, root node ID, CTYPE hash\]
-		RootCreated(T::DidIdentifier, T::DelegationNodeId, T::Hash),
+		RootCreated(DelegationOwner<T>, DelegationNodeId<T>, ctype::CtypeHash<T>),
 		/// A root has been revoked.
 		/// \[revoker DID, root node ID\]
-		RootRevoked(T::DidIdentifier, T::DelegationNodeId),
+		RootRevoked(DelegationOwner<T>, DelegationNodeId<T>),
 		/// A new delegation has been created.
 		/// \[creator DID, root node ID, delegation node ID, parent node ID,
 		/// delegate DID, permissions\]
 		DelegationCreated(
-			T::DidIdentifier,
-			T::DelegationNodeId,
-			T::DelegationNodeId,
-			Option<T::DelegationNodeId>,
-			T::DidIdentifier,
+			DelegationOwner<T>,
+			DelegationNodeId<T>,
+			DelegationNodeId<T>,
+			Option<DelegationNodeId<T>>,
+			Delegate<T>,
 			Permissions,
 		),
 		/// A delegation has been revoked.
 		/// \[revoker DID, delegation node ID\]
-		DelegationRevoked(T::DidIdentifier, T::DelegationNodeId),
+		DelegationRevoked(DelegationOwner<T>, DelegationNodeId<T>),
 	}
 
 	#[pallet::error]
@@ -490,9 +415,28 @@ pub mod pallet {
 		InternalError,
 	}
 
+		/// An operation to create a new delegation root.
+	///
+	/// The struct implements the DidOperation trait, and as such it must
+	/// contain information about the caller's DID, the type of DID key
+	/// required to verify the operation signature, and the tx counter to
+	/// protect against replay attacks.
+	#[derive(Clone, Decode, Encode, PartialEq)]
+	pub struct DelegationRootCreationOperation<T: Config> {
+		/// The DID of the root creator.
+		pub creator_did: T::DidIdentifier,
+		/// The ID of the root node. It has to be unique.
+		pub root_id: T::DelegationNodeId,
+		/// The CTYPE hash that delegates can use for attestations.
+		pub ctype_hash: T::Hash,
+		/// The DID tx counter.
+		pub tx_counter: u64,
+	}
+
+	// TODO: restart from here
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		/// Submits a new DelegationRootCreationOperation operation.
+		/// Create a new delegation root.
 		///
 		/// * origin: the origin of the transaction
 		/// * operation: the DelegationRootCreationOperation operation

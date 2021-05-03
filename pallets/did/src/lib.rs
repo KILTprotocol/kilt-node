@@ -83,11 +83,20 @@ pub mod pallet {
 	/// Type for a DID key identifier.
 	pub type KeyId<T> = <T as frame_system::Config>::Hash;
 
+	/// Type for a DID subject identifier.
+	pub type DidIdentifier<T> = <T as Config>::DidIdentifier;
+
+	/// Type for a Kilt account identifier.
+	pub type AccountIdentifier<T> = <T as frame_system::Config>::AccountId;
+
 	/// Type for a block number.
 	pub type BlockNumber<T> = <T as frame_system::Config>::BlockNumber;
 
 	/// Type for DID origin in extrinsics supporting DID authorization.
-	pub type Origin<T> = RawOrigin<<T as Config>::DidIdentifier>;
+	pub type Origin<T> = RawOrigin<DidIdentifier<T>>;
+
+	/// Type for a runtime extrinsic callable under DID-based authorization.
+	pub type Callable<T> = <T as Config>::Call;
 
 	/// The string description of a DID public key.
 	///
@@ -675,7 +684,7 @@ pub mod pallet {
 		/// operation.
 		fn get_verification_key_relationship(&self) -> DidVerificationKeyRelationship;
 		/// The DID identifier of the subject.
-		fn get_did(&self) -> &T::DidIdentifier;
+		fn get_did(&self) -> &DidIdentifier<T>;
 		/// The operation tx counter, used to protect against replay attacks.
 		fn get_tx_counter(&self) -> u64;
 	}
@@ -699,11 +708,11 @@ pub mod pallet {
 	#[derive(Clone, Debug, Decode, Encode, PartialEq)]
 	pub struct DidAuthorizedCallOperation<T: Config> {
 		/// The DID identifier.
-		pub did: T::DidIdentifier,
+		pub did: DidIdentifier<T>,
 		/// The DID tx counter.
 		pub tx_counter: u64,
 		/// The extrinsic call to authorize with the DID.
-		pub call: <T as pallet::Config>::Call,
+		pub call: Callable<T>,
 	}
 
 	/// Wrapper around a [DidAuthorizedCallOperation].
@@ -723,7 +732,7 @@ pub mod pallet {
 			self.verification_key_relationship
 		}
 
-		fn get_did(&self) -> &T::DidIdentifier {
+		fn get_did(&self) -> &DidIdentifier<T> {
 			&self.did
 		}
 
@@ -753,7 +762,7 @@ pub mod pallet {
 	#[derive(Clone, Debug, Decode, Encode, PartialEq)]
 	pub struct DidCreationOperation<T: Config> {
 		/// The DID identifier. It has to be unique.
-		pub did: T::DidIdentifier,
+		pub did: DidIdentifier<T>,
 		/// The new authentication key.
 		pub new_authentication_key: DidVerificationKey,
 		/// The new key agreement keys.
@@ -771,7 +780,7 @@ pub mod pallet {
 			DidVerificationKeyRelationship::Authentication
 		}
 
-		fn get_did(&self) -> &T::DidIdentifier {
+		fn get_did(&self) -> &DidIdentifier<T> {
 			&self.did
 		}
 
@@ -790,7 +799,7 @@ pub mod pallet {
 	#[derive(Clone, Debug, Decode, Encode, PartialEq)]
 	pub struct DidUpdateOperation<T: Config> {
 		/// The DID identifier.
-		pub did: T::DidIdentifier,
+		pub did: DidIdentifier<T>,
 		/// \[OPTIONAL\] The new authentication key.
 		pub new_authentication_key: Option<DidVerificationKey>,
 		/// A new set of key agreement keys to add to the ones already stored.
@@ -815,7 +824,7 @@ pub mod pallet {
 			DidVerificationKeyRelationship::Authentication
 		}
 
-		fn get_did(&self) -> &T::DidIdentifier {
+		fn get_did(&self) -> &DidIdentifier<T> {
 			&self.did
 		}
 
@@ -852,7 +861,7 @@ pub mod pallet {
 	#[derive(Clone, Debug, Decode, Encode, PartialEq)]
 	pub struct DidDeletionOperation<T: Config> {
 		/// The DID identifier.
-		pub did: T::DidIdentifier,
+		pub did: DidIdentifier<T>,
 		/// The DID tx counter.
 		pub tx_counter: u64,
 	}
@@ -862,7 +871,7 @@ pub mod pallet {
 			DidVerificationKeyRelationship::Authentication
 		}
 
-		fn get_did(&self) -> &T::DidIdentifier {
+		fn get_did(&self) -> &DidIdentifier<T> {
 			&self.did
 		}
 
@@ -1014,20 +1023,20 @@ pub mod pallet {
 	/// It maps from a DID identifier to the DID details.
 	#[pallet::storage]
 	#[pallet::getter(fn get_did)]
-	pub type Did<T> = StorageMap<_, Blake2_128Concat, <T as Config>::DidIdentifier, DidDetails<T>>;
+	pub type Did<T> = StorageMap<_, Blake2_128Concat, DidIdentifier<T>, DidDetails<T>>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// A new DID has been created.
 		/// \[transaction signer, DID identifier\]
-		DidCreated(T::AccountId, T::DidIdentifier),
+		DidCreated(AccountIdentifier<T>, DidIdentifier<T>),
 		/// A DID has been updated.
 		/// \[transaction signer, DID identifier\]
-		DidUpdated(T::AccountId, T::DidIdentifier),
+		DidUpdated(AccountIdentifier<T>, DidIdentifier<T>),
 		/// A DID has been deleted.
 		/// \[transaction signer, DID identifier\]
-		DidDeleted(T::AccountId, T::DidIdentifier),
+		DidDeleted(AccountIdentifier<T>, DidIdentifier<T>),
 	}
 
 	#[pallet::error]
