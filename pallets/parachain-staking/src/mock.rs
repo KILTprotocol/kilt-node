@@ -17,12 +17,13 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 //! Test utilities
 use super::*;
-use crate::{self as stake, inflation::BLOCKS_PER_YEAR};
+use crate::{self as stake};
 use frame_support::{
 	assert_noop, assert_ok, construct_runtime, parameter_types,
 	traits::{GenesisBuild, OnFinalize, OnInitialize},
 	weights::Weight,
 };
+use kilt_primitives::constants::YEARS;
 use sp_core::H256;
 use sp_io;
 use sp_runtime::{
@@ -105,6 +106,7 @@ parameter_types! {
 	pub const MaxCollatorsPerNominator: u32 = 4;
 	pub const DefaultCollatorCommission: Perbill = Perbill::from_percent(20);
 	pub const MinCollatorStk: u128 = 10;
+	pub const MaxCollatorCandidateStk: u128 = 160_000_000 * DECIMALS;
 	pub const MinNominatorStk: u128 = 5;
 	pub const MinNomination: u128 = 3;
 }
@@ -117,9 +119,9 @@ impl Config for Test {
 	type MinSelectedCandidates = MinSelectedCandidates;
 	type MaxNominatorsPerCollator = MaxNominatorsPerCollator;
 	type MaxCollatorsPerNominator = MaxCollatorsPerNominator;
-	type DefaultCollatorCommission = DefaultCollatorCommission;
 	type MinCollatorStk = MinCollatorStk;
 	type MinCollatorCandidateStk = MinCollatorStk;
+	type MaxCollatorCandidateStk = MaxCollatorCandidateStk;
 	type MinNominatorStk = MinNominatorStk;
 	type MinNomination = MinNomination;
 }
@@ -149,14 +151,14 @@ impl Default for ExtBuilder {
 					max_rate: Perbill::from_percent(10),
 					reward_rate: RewardRate {
 						annual: Perbill::from_percent(15),
-						round: Perbill::from_parts(Perbill::from_percent(15).deconstruct() / 8766),
+						round: Perbill::from_parts(Perbill::from_percent(15).deconstruct() / 8640),
 					},
 				},
 				delegator: StakingInfo {
 					max_rate: Perbill::from_percent(40),
 					reward_rate: RewardRate {
 						annual: Perbill::from_percent(10),
-						round: Perbill::from_parts(Perbill::from_percent(10).deconstruct() / 8766),
+						round: Perbill::from_parts(Perbill::from_percent(10).deconstruct() / 8640),
 					},
 				},
 			},
@@ -188,7 +190,7 @@ impl ExtBuilder {
 		d_rewards: u32,
 		blocks_per_round: u32,
 	) -> Self {
-		let blocks_per_year = BLOCKS_PER_YEAR / blocks_per_round;
+		let blocks_per_year = (YEARS as u32) / blocks_per_round;
 
 		self.inflation_config = InflationInfo {
 			collator: StakingInfo {
@@ -244,7 +246,10 @@ impl ExtBuilder {
 		let mut ext = sp_io::TestExternalities::new(t);
 
 		if self.blocks_per_round != BLOCKS_PER_ROUND {
-			ext.execute_with(|| Stake::set_blocks_per_round(Origin::root(), self.blocks_per_round));
+			ext.execute_with(|| {
+				Stake::set_blocks_per_round(Origin::root(), self.blocks_per_round)
+					.expect("Ran into issues when setting blocks_per_round");
+			});
 		}
 
 		ext.execute_with(|| System::set_block_number(1));
@@ -289,7 +294,7 @@ pub(crate) fn check_yearly_inflation(
 	let num_of_collators = (Perbill::from_percent(max_collator_rate) * expected_issuance / collator_stake) as u64;
 	let num_of_delegators = (Perbill::from_percent(max_delegator_rate) * expected_issuance / delegator_stake) as u64;
 	assert!(num_of_users >= num_of_collators + num_of_delegators);
-	let blocks_per_year = crate::inflation::BLOCKS_PER_YEAR / blocks_per_round;
+	let blocks_per_year = YEARS / blocks_per_round;
 	let rounds_in_test = num_of_years * blocks_per_year;
 	let end_block: u64 = (rounds_in_test * blocks_per_round).into();
 

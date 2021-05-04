@@ -33,6 +33,11 @@ pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
 pub const MONTHS: BlockNumber = DAYS * 30;
+pub const YEARS: u32 = (MONTHS * 12) as u32;
+// 864_000
+// pub const YEARS: u32 = YEARS as u32;
+// pub const YEARS: u32 = 31557600 / 6;
+// pub const YEARS: u32 = (YEARS / MILLISECS_PER_BLOCK * 1000) as u32;
 
 pub const MIN_VESTED_TRANSFER_AMOUNT: Balance = Balance::MAX;
 

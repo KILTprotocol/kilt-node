@@ -19,13 +19,11 @@
 //! Unit testing
 use crate::{
 	mock::{
-		almost_equal, check_inflation_update, check_yearly_inflation, events, last_event, roll_to, roll_to_faster,
-		set_author, AccountId, Balances, BlockNumber, Event as MetaEvent, ExtBuilder, Origin, Stake, System, Test,
-		BLOCKS_PER_ROUND, DECIMALS,
+		check_inflation_update, check_yearly_inflation, events, last_event, roll_to, set_author, Balances, BlockNumber,
+		Event as MetaEvent, ExtBuilder, Origin, Stake, System, Test, BLOCKS_PER_ROUND, DECIMALS,
 	},
-	set::OrderedSet,
-	BalanceOf, Bond, Collator, CollatorSnapshot, CollatorStatus, Config, Error, Event, InflationInfo, RewardRate,
-	RoundInfo, StakedCollator, StakedDelegator, StakingInfo,
+	Bond, CollatorSnapshot, CollatorStatus, Config, Error, Event, InflationInfo, RewardRate, RoundInfo, StakedCollator,
+	StakedDelegator, StakingInfo,
 };
 use frame_support::{assert_noop, assert_ok};
 use pallet_balances::Error as BalancesError;
@@ -227,6 +225,7 @@ fn join_collator_candidates() {
 			(7, 100),
 			(8, 9),
 			(9, 4),
+			(10, 161_000_000 * DECIMALS),
 		])
 		.with_collators(vec![(1, 500), (2, 200)])
 		.with_nominators(vec![(3, 1, 100), (4, 1, 100), (5, 2, 100), (6, 2, 100)])
@@ -252,7 +251,25 @@ fn join_collator_candidates() {
 			assert_ok!(Stake::join_candidates(Origin::signed(7), 10u128,));
 			assert_eq!(
 				last_event(),
-				MetaEvent::stake(Event::JoinedCollatorCandidates(7, 10u128, 1110u128))
+				MetaEvent::stake(Event::JoinedCollatorCandidates(7, 10u128, 710u128))
+			);
+
+			// MaxCollatorCandidateStk
+			assert_noop!(
+				Stake::join_candidates(Origin::signed(10), 161_000_000 * DECIMALS),
+				Error::<Test>::ValBondAboveMax
+			);
+			assert_ok!(Stake::join_candidates(
+				Origin::signed(10),
+				<Test as Config>::MaxCollatorCandidateStk::get()
+			));
+			assert_eq!(
+				last_event(),
+				MetaEvent::stake(Event::JoinedCollatorCandidates(
+					10,
+					<Test as Config>::MaxCollatorCandidateStk::get(),
+					<Test as Config>::MaxCollatorCandidateStk::get() + 710u128
+				))
 			);
 		});
 }
@@ -296,7 +313,7 @@ fn collator_exit_executes_after_delay() {
 				Event::CollatorScheduledExit(3, 2, 5),
 				Event::CollatorChosen(4, 1, 500, 200),
 				Event::NewRound(15, 4, 1, 500, 200),
-				Event::CollatorLeft(2, 400, 700),
+				Event::CollatorLeft(2, 400, 500, 200),
 				Event::CollatorChosen(5, 1, 500, 200),
 				Event::NewRound(20, 5, 1, 500, 200),
 			];
@@ -356,7 +373,7 @@ fn collator_selection_chooses_top_candidates() {
 				Event::CollatorChosen(3, 4, 70, 0),
 				Event::CollatorChosen(3, 5, 60, 0),
 				Event::NewRound(10, 3, 5, 400, 0),
-				Event::CollatorLeft(6, 50, 400),
+				Event::CollatorLeft(6, 50, 400, 0),
 				Event::CollatorChosen(4, 1, 100, 0),
 				Event::CollatorChosen(4, 2, 90, 0),
 				Event::CollatorChosen(4, 3, 80, 0),
@@ -432,14 +449,14 @@ fn exit_queue() {
 				Event::CollatorChosen(3, 5, 60, 0),
 				Event::NewRound(10, 3, 5, 400, 0),
 				Event::CollatorScheduledExit(3, 5, 5),
-				Event::CollatorLeft(6, 50, 400),
+				Event::CollatorLeft(6, 50, 400, 0),
 				Event::CollatorChosen(4, 1, 100, 0),
 				Event::CollatorChosen(4, 2, 90, 0),
 				Event::CollatorChosen(4, 3, 80, 0),
 				Event::CollatorChosen(4, 4, 70, 0),
 				Event::NewRound(15, 4, 4, 340, 0),
 				Event::CollatorScheduledExit(4, 4, 6),
-				Event::CollatorLeft(5, 60, 340),
+				Event::CollatorLeft(5, 60, 340, 0),
 				Event::CollatorChosen(5, 1, 100, 0),
 				Event::CollatorChosen(5, 2, 90, 0),
 				Event::CollatorChosen(5, 3, 80, 0),
@@ -484,7 +501,7 @@ fn payout_distribution_to_solo_collators_below_max_rate() {
 			let total_issuance = <Test as Config>::Currency::total_issuance();
 			assert_eq!(total_issuance, 6_099_000_000);
 			let rewards = inflation.collator.compute_rewards::<Test>(450_000_000, total_issuance);
-			assert_eq!(rewards, 7700);
+			assert_eq!(rewards, 7812);
 
 			let mut round: BlockNumber = 1;
 			roll_to(round * blocks_per_round + 1);
@@ -625,7 +642,7 @@ fn payout_distribution_to_solo_collators_above_max_rate() {
 			let rewards = inflation
 				.collator
 				.compute_rewards::<Test>(Perbill::from_percent(10) * total_issuance, total_issuance);
-			assert_eq!(rewards, 10436);
+			assert_eq!(rewards, 10588);
 
 			roll_to(blocks_per_round + 1);
 			// should choose top TotalCandidatesSelected (5), in order
@@ -858,7 +875,6 @@ fn multiple_nominations() {
 }
 
 #[test]
-// TODO: Add max bond
 fn collators_bond() {
 	ExtBuilder::default()
 		.with_balances(vec![
@@ -872,6 +888,7 @@ fn collators_bond() {
 			(8, 100),
 			(9, 100),
 			(10, 100),
+			(11, 161_000_000 * DECIMALS),
 		])
 		.with_collators(vec![(1, 20), (2, 20), (3, 20), (4, 20), (5, 10)])
 		.with_nominators(vec![(6, 1, 10), (7, 1, 10), (8, 2, 10), (9, 2, 10), (10, 1, 10)])
@@ -886,11 +903,7 @@ fn collators_bond() {
 			assert_ok!(Stake::candidate_bond_more(Origin::signed(1), 50));
 			assert_noop!(
 				Stake::candidate_bond_more(Origin::signed(1), 40),
-				DispatchError::Module {
-					index: 1,
-					error: 3,
-					message: Some("InsufficientBalance")
-				}
+				BalancesError::<Test>::InsufficientBalance
 			);
 			assert_ok!(Stake::leave_candidates(Origin::signed(1)));
 			assert_noop!(
@@ -922,6 +935,16 @@ fn collators_bond() {
 				Error::<Test>::ValBondBelowMin
 			);
 			assert_ok!(Stake::candidate_bond_less(Origin::signed(4), 10));
+
+			// MaxCollatorCandidateStk
+			assert_ok!(Stake::join_candidates(
+				Origin::signed(11),
+				<Test as Config>::MaxCollatorCandidateStk::get()
+			));
+			assert_noop!(
+				Stake::candidate_bond_more(Origin::signed(11), 1u128),
+				Error::<Test>::ValBondAboveMax,
+			);
 		});
 }
 
@@ -1102,10 +1125,10 @@ fn payouts_follow_nomination_changes() {
 				Event::CollatorChosen(3, 5, 10_000_000, 0),
 				Event::NewRound(2 * blocks_per_round, 3, 5, 90_000_000, 60_000_000),
 				// Round 2 rewards
-				Event::Rewarded(1, 1540),
-				Event::Rewarded(6, 342),
-				Event::Rewarded(7, 171),
-				Event::Rewarded(10, 171),
+				Event::Rewarded(1, 1562),
+				Event::Rewarded(6, 347),
+				Event::Rewarded(7, 173),
+				Event::Rewarded(10, 173),
 				// Round 3 initialization
 				Event::CollatorChosen(4, 1, 20_000_000, 40_000_000),
 				Event::CollatorChosen(4, 2, 20_000_000, 20_000_000),
@@ -1129,13 +1152,13 @@ fn payouts_follow_nomination_changes() {
 				Event::NominatorLeftCollator(6, 1, 20_000_000, 40_000_000),
 				Event::NominatorLeft(6, 20_000_000),
 				// Round 3 rewards
-				Event::Rewarded(1, 1540),
-				Event::Rewarded(6, 228),
-				Event::Rewarded(7, 114),
-				Event::Rewarded(10, 114),
-				// Event::Rewarded(6, 342),
-				// Event::Rewarded(7, 171),
-				// Event::Rewarded(10, 171),
+				Event::Rewarded(1, 1562),
+				Event::Rewarded(6, 231),
+				Event::Rewarded(7, 116),
+				Event::Rewarded(10, 116),
+				// Event::Rewarded(6, 347),
+				// Event::Rewarded(7, 173),
+				// Event::Rewarded(10, 173),
 				// Round 4 initialization
 				Event::CollatorChosen(5, 2, 20_000_000, 20_000_000),
 				Event::CollatorChosen(5, 1, 20_000_000, 20_000_000),
@@ -1153,11 +1176,11 @@ fn payouts_follow_nomination_changes() {
 			// last round in which 6 receives rewards after leaving in round 3
 			let mut round_4_to_5 = vec![
 				// Round 4 rewards
-				Event::Rewarded(1, 1540),
+				Event::Rewarded(1, 1562),
 				// TODO: Check whether it makes sense that the rewards shrink but 6 is still rewarded
-				Event::Rewarded(6, 228),
-				Event::Rewarded(7, 114),
-				Event::Rewarded(10, 114),
+				Event::Rewarded(6, 231),
+				Event::Rewarded(7, 116),
+				Event::Rewarded(10, 116),
 				// Round 5 initialization
 				Event::CollatorChosen(6, 2, 20_000_000, 20_000_000),
 				Event::CollatorChosen(6, 1, 20_000_000, 20_000_000),
@@ -1175,9 +1198,9 @@ fn payouts_follow_nomination_changes() {
 			// 6 should not receive rewards
 			let mut round_5_to_6 = vec![
 				// Round 5 rewards
-				Event::Rewarded(1, 1540),
-				Event::Rewarded(7, 228),
-				Event::Rewarded(10, 228),
+				Event::Rewarded(1, 1562),
+				Event::Rewarded(7, 231),
+				Event::Rewarded(10, 231),
 				// Round 6 collators
 				Event::CollatorChosen(7, 2, 20_000_000, 20_000_000),
 				Event::CollatorChosen(7, 1, 20_000_000, 20_000_000),
@@ -1198,11 +1221,11 @@ fn payouts_follow_nomination_changes() {
 			let mut round_6_to_7 = vec![
 				// round 6 finalization
 				Event::Nomination(8, 30_000_000, 1, 70_000_000),
-				Event::Rewarded(1, 1540),
-				Event::Rewarded(7, 399),
-				Event::Rewarded(10, 399),
-				// Event::Rewarded(7, 228),
-				// Event::Rewarded(10, 228),
+				Event::Rewarded(1, 1562),
+				Event::Rewarded(7, 405),
+				Event::Rewarded(10, 405),
+				// Event::Rewarded(7, 231),
+				// Event::Rewarded(10, 231),
 				// Round 7 initialization
 				Event::CollatorChosen(8, 1, 20_000_000, 50_000_000),
 				Event::CollatorChosen(8, 2, 20_000_000, 20_000_000),
@@ -1219,12 +1242,12 @@ fn payouts_follow_nomination_changes() {
 			roll_to(8 * blocks_per_round + 1);
 			// new nomination is still not rewarded yet, but should be next round
 			let mut round_7_to_8 = vec![
-				Event::Rewarded(1, 1540),
+				Event::Rewarded(1, 1562),
 				// TODO: Check whether it makes sense to apply the stake for the rewards but not to the
 				// Collator-Delegator-Pool
 				// round 7 finalization
-				Event::Rewarded(7, 399),
-				Event::Rewarded(10, 399),
+				Event::Rewarded(7, 405),
+				Event::Rewarded(10, 405),
 				// Round 8 initialization
 				Event::CollatorChosen(9, 1, 20_000_000, 50_000_000),
 				Event::CollatorChosen(9, 2, 20_000_000, 20_000_000),
@@ -1243,10 +1266,10 @@ fn payouts_follow_nomination_changes() {
 			// (`BondDuration` = 2)
 			let mut round_8_to_9 = vec![
 				// round 8 finalization
-				Event::Rewarded(1, 1540),
-				Event::Rewarded(7, 160),
-				Event::Rewarded(8, 479),
-				Event::Rewarded(10, 160),
+				Event::Rewarded(1, 1562),
+				Event::Rewarded(7, 162),
+				Event::Rewarded(8, 486),
+				Event::Rewarded(10, 162),
 				// round 9 initiation
 				Event::CollatorChosen(10, 1, 20_000_000, 50_000_000),
 				Event::CollatorChosen(10, 2, 20_000_000, 20_000_000),
@@ -1256,6 +1279,7 @@ fn payouts_follow_nomination_changes() {
 				Event::NewRound(9 * blocks_per_round, 10, 5, 90_000_000, 70_000_000),
 			];
 			expected.append(&mut round_8_to_9);
+			assert_eq!(events(), expected);
 
 			// Round 9 -> 10: 11 joins collator candidates (6 candidates in total)
 			set_author(9, 1, 50);
@@ -1268,19 +1292,19 @@ fn payouts_follow_nomination_changes() {
 			// expect collator candidate 5 not to be chosen because of lowest stake
 			// new collator should immediately be rewarded because they authored blocks
 			let mut round_9_to_10 = vec![
-				Event::JoinedCollatorCandidates(11, 30_000_000, 190_000_000),
-				Event::Rewarded(3, 86),
+				Event::JoinedCollatorCandidates(11, 30_000_000, 120_000_000),
+				Event::Rewarded(3, 87),
 				// reward 1 and their delegators
-				Event::Rewarded(1, 855),
-				Event::Rewarded(7, 80),
-				Event::Rewarded(8, 239),
-				Event::Rewarded(10, 80),
+				Event::Rewarded(1, 868),
+				Event::Rewarded(7, 81),
+				Event::Rewarded(8, 243),
+				Event::Rewarded(10, 81),
 				// reward 2 and their delegators
-				Event::Rewarded(2, 684),
-				Event::Rewarded(8, 159),
-				Event::Rewarded(9, 159),
+				Event::Rewarded(2, 694),
+				Event::Rewarded(8, 162),
+				Event::Rewarded(9, 162),
 				// reward 11
-				Event::Rewarded(11, 86),
+				Event::Rewarded(11, 87),
 				// round 10 initiation
 				Event::CollatorChosen(11, 1, 20_000_000, 50_000_000),
 				Event::CollatorChosen(11, 2, 20_000_000, 20_000_000),
@@ -1304,19 +1328,19 @@ fn payouts_follow_nomination_changes() {
 			// new delegation of 8 should not be rewarded for this and the following round
 			let mut round_10_to_11 = vec![
 				Event::Nomination(8, 20_000_000, 11, 50_000_000),
-				Event::Rewarded(5, 86),
-				Event::Rewarded(3, 171),
+				Event::Rewarded(5, 87),
+				Event::Rewarded(3, 174),
 				// reward 1 and their delegators
-				Event::Rewarded(1, 855),
-				Event::Rewarded(7, 103),
-				Event::Rewarded(8, 308),
-				Event::Rewarded(10, 103),
+				Event::Rewarded(1, 868),
+				Event::Rewarded(7, 104),
+				Event::Rewarded(8, 313),
+				Event::Rewarded(10, 104),
 				// reward 2 and their delegators
-				Event::Rewarded(2, 513),
-				Event::Rewarded(8, 154),
-				Event::Rewarded(9, 154),
+				Event::Rewarded(2, 521),
+				Event::Rewarded(8, 156),
+				Event::Rewarded(9, 156),
 				// reward 11
-				Event::Rewarded(11, 86),
+				Event::Rewarded(11, 87),
 				// round 11 initiation
 				Event::CollatorChosen(12, 1, 20_000_000, 50_000_000),
 				Event::CollatorChosen(12, 11, 30_000_000, 20_000_000),
@@ -1341,19 +1365,19 @@ fn payouts_follow_nomination_changes() {
 			// new delegation of 9 should not be rewarded for this and the following round
 			let mut round_11_to_12 = vec![
 				Event::Nomination(9, 30_000_000, 5, 40_000_000),
-				Event::Rewarded(5, 86),
-				Event::Rewarded(4, 171),
+				Event::Rewarded(5, 87),
+				Event::Rewarded(4, 174),
 				// reward 1 and their delegators
-				Event::Rewarded(1, 855),
-				Event::Rewarded(7, 137),
-				Event::Rewarded(8, 410),
-				Event::Rewarded(10, 137),
+				Event::Rewarded(1, 868),
+				Event::Rewarded(7, 139),
+				Event::Rewarded(8, 416),
+				Event::Rewarded(10, 139),
 				// reward 2 and their delegators
-				Event::Rewarded(2, 513),
-				Event::Rewarded(8, 205),
-				Event::Rewarded(9, 205),
+				Event::Rewarded(2, 521),
+				Event::Rewarded(8, 208),
+				Event::Rewarded(9, 208),
 				// reward 11
-				Event::Rewarded(11, 86),
+				Event::Rewarded(11, 87),
 				// round 12 initiation
 				Event::CollatorChosen(13, 1, 20_000_000, 50_000_000),
 				Event::CollatorChosen(13, 11, 30_000_000, 20_000_000),
@@ -1375,20 +1399,20 @@ fn payouts_follow_nomination_changes() {
 			// delegation of 8 should not be rewarded for this round
 			// delegation of 9 should be rewarded from now on
 			let mut round_12_to_13 = vec![
-				Event::Rewarded(5, 86),
-				Event::Rewarded(4, 171),
+				Event::Rewarded(5, 87),
+				Event::Rewarded(4, 174),
 				// reward 1 and their delegators
-				Event::Rewarded(1, 855),
-				Event::Rewarded(7, 137),
-				Event::Rewarded(8, 410),
-				Event::Rewarded(10, 137),
+				Event::Rewarded(1, 868),
+				Event::Rewarded(7, 139),
+				Event::Rewarded(8, 416),
+				Event::Rewarded(10, 139),
 				// reward 2 and their delegators
-				Event::Rewarded(2, 513),
-				Event::Rewarded(8, 205),
-				Event::Rewarded(9, 205),
+				Event::Rewarded(2, 521),
+				Event::Rewarded(8, 208),
+				Event::Rewarded(9, 208),
 				// reward 11 and their delegators
-				Event::Rewarded(11, 86),
-				Event::Rewarded(8, 68),
+				Event::Rewarded(11, 87),
+				Event::Rewarded(8, 69),
 				// round 14 initiation
 				Event::CollatorChosen(14, 1, 20_000_000, 50_000_000),
 				Event::CollatorChosen(14, 11, 30_000_000, 20_000_000),
@@ -1411,22 +1435,22 @@ fn payouts_follow_nomination_changes() {
 			// delegation of 9 should be rewarded from now on
 			let mut round_13_to_14 = vec![
 				// reward 5 and their delegators
-				Event::Rewarded(5, 342),
-				Event::Rewarded(9, 274),
+				Event::Rewarded(5, 347),
+				Event::Rewarded(9, 278),
 				// reward 4
-				Event::Rewarded(4, 342),
+				Event::Rewarded(4, 347),
 				// reward 1 and their delegators
-				Event::Rewarded(1, 342),
-				Event::Rewarded(7, 55),
-				Event::Rewarded(8, 164),
-				Event::Rewarded(10, 55),
+				Event::Rewarded(1, 347),
+				Event::Rewarded(7, 56),
+				Event::Rewarded(8, 167),
+				Event::Rewarded(10, 56),
 				// reward 2 and their delegators
-				Event::Rewarded(2, 342),
-				Event::Rewarded(8, 137),
-				Event::Rewarded(9, 137),
+				Event::Rewarded(2, 347),
+				Event::Rewarded(8, 139),
+				Event::Rewarded(9, 139),
 				// reward 11
-				Event::Rewarded(11, 342),
-				Event::Rewarded(8, 274),
+				Event::Rewarded(11, 347),
+				Event::Rewarded(8, 278),
 				// round 15 initiation
 				Event::CollatorChosen(15, 1, 20_000_000, 50_000_000),
 				Event::CollatorChosen(15, 11, 30_000_000, 20_000_000),
@@ -1446,7 +1470,7 @@ fn collator_delegator_rewards_quarter_year_12h() {
 	// unfortunately, collator_stake at 100_000 leads to stack overflow
 	check_yearly_inflation(
 		800_000 * DECIMALS,
-		200_000 * DECIMALS,
+		400_000 * DECIMALS,
 		800_000 * DECIMALS,
 		10,
 		15,
@@ -1521,8 +1545,26 @@ fn collator_delegator_rewards_full_year_24h() {
 	);
 }
 
+#[test]
 fn set_inflation() {
 	ExtBuilder::default().build().execute_with(|| {
+		// check that Perbill is limited to 100%
+		let capped_inflation = InflationInfo {
+			collator: StakingInfo {
+				max_rate: Perbill::from_percent(200),
+				reward_rate: RewardRate {
+					annual: Perbill::from_percent(50),
+					round: Perbill::from_parts(2_000_000_000u32),
+				},
+			},
+			delegator: StakingInfo {
+				max_rate: Perbill::from_percent(200),
+				reward_rate: RewardRate {
+					annual: Perbill::from_percent(200),
+					round: Perbill::from_percent(200),
+				},
+			},
+		};
 		let mut inflation = InflationInfo {
 			collator: StakingInfo {
 				max_rate: Perbill::one(),
@@ -1539,26 +1581,14 @@ fn set_inflation() {
 				},
 			},
 		};
+		assert_eq!(capped_inflation, inflation);
 
 		// annual < round
 		assert_noop!(
 			Stake::set_inflation(Origin::root(), inflation.clone()),
 			Error::<Test>::InvalidSchedule
 		);
-		// annual > 100%
-		inflation.collator.reward_rate.annual = Perbill::from_percent(101);
-		assert_noop!(
-			Stake::set_inflation(Origin::root(), inflation.clone()),
-			Error::<Test>::InvalidSchedule
-		);
-		inflation.collator.reward_rate.annual = Perbill::from_percent(100);
-		// max_rate > 100%
-		inflation.collator.max_rate = Perbill::from_percent(101);
-		assert_noop!(
-			Stake::set_inflation(Origin::root(), inflation.clone()),
-			Error::<Test>::InvalidSchedule
-		);
-		inflation.collator.max_rate = Perbill::from_percent(100);
+		inflation.collator.reward_rate.annual = Perbill::one();
 		assert_ok!(Stake::set_inflation(Origin::root(), inflation.clone()));
 		assert_eq!(
 			last_event(),
@@ -1576,28 +1606,15 @@ fn set_inflation() {
 			Stake::set_inflation(Origin::root(), inflation.clone()),
 			Error::<Test>::InvalidSchedule
 		);
-		// annual > 100%
-		inflation.delegator.reward_rate.annual = Perbill::from_percent(101);
-		assert_noop!(
-			Stake::set_inflation(Origin::root(), inflation.clone()),
-			Error::<Test>::InvalidSchedule
-		);
-		inflation.delegator.reward_rate.annual = Perbill::from_percent(100);
-		// max_rate > 100%
-		inflation.delegator.max_rate = Perbill::from_percent(101);
-		assert_noop!(
-			Stake::set_inflation(Origin::root(), inflation.clone()),
-			Error::<Test>::InvalidSchedule
-		);
-		inflation.delegator.max_rate = Perbill::from_percent(70);
+		inflation.delegator.reward_rate.round = Perbill::from_percent(15);
 		assert_ok!(Stake::set_inflation(Origin::root(), inflation));
 		assert_eq!(
 			last_event(),
 			MetaEvent::stake(Event::RoundInflationSet(
 				Perbill::one(),
 				Perbill::one(),
-				Perbill::from_percent(70),
-				Perbill::one()
+				Perbill::one(),
+				Perbill::from_percent(15)
 			))
 		);
 	});

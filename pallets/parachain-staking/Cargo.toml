@@ -6,6 +6,7 @@ version = "1.0.0"
 edition = "2018"
 
 [dependencies]
+kilt-primitives = {path = "../../primitives", default-features = false}
 author-inherent = { path = "../author-inherent", default-features = false }
 frame-support = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
 frame-system = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }

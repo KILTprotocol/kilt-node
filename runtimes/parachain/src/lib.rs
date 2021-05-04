@@ -719,24 +719,24 @@ impl did::Config for Runtime {
 }
 
 parameter_types! {
-	/// Minimum round length is 2 minutes (20 * 6 second block times)
-	pub const MinBlocksPerRound: u32 = 20;
-	/// Default BlocksPerRound is every hour (600 * 6 second block times)
-	pub const DefaultBlocksPerRound: u32 = 600;
-	/// Reward payments and collator exit requests are delayed by 2 hours (2 * 600 * block_time)
-	pub const BondDuration: u32 = 2;
+	/// Minimum round length is 1 hour (600 * 6 second block times)
+	pub const MinBlocksPerRound: u32 = 600;
+	/// Default BlocksPerRound is every 12 hours (7200 * 6 second block times)
+	pub const DefaultBlocksPerRound: u32 = 7200;
+	/// Reward payments and collator exit requests are delayed by 7 days (7200 * 2 * 7 * block_time)
+	pub const BondDuration: u32 = 14;
 	/// Minimum 8 collators selected per round, default at genesis and minimum forever after
 	pub const MinSelectedCandidates: u32 = 8;
 	/// Maximum 10 nominators per collator
 	pub const MaxNominatorsPerCollator: u32 = 10;
 	/// Maximum 25 collators per nominator
 	pub const MaxCollatorsPerNominator: u32 = 25;
-	/// The fixed percent a collator takes off the top of due rewards is 20%
-	pub const DefaultCollatorCommission: Perbill = Perbill::from_percent(20);
-	/// Minimum stake required to be reserved to be a collator is 1_000
-	pub const MinCollatorStk: u128 = 1_000 * DOLLARS;
-	/// Minimum stake required to be reserved to be a nominator is 5
-	pub const MinNominatorStk: u128 = 5 * DOLLARS;
+	/// Minimum stake required to be reserved to be a collator is 10_000
+	pub const MinCollatorStk: u128 = 10_000 * DOLLARS;
+	/// Max stake possible to be reserved to be collator candidate is 100_0000
+	pub const MaxCollatorCandidateStk: u128 = 100_000 * DOLLARS;
+	/// Minimum stake required to be reserved to be a nominator is 1000
+	pub const MinNominatorStk: u128 = 1000 * DOLLARS;
 }
 
 impl parachain_staking::Config for Runtime {
@@ -748,9 +748,9 @@ impl parachain_staking::Config for Runtime {
 	type MinSelectedCandidates = MinSelectedCandidates;
 	type MaxNominatorsPerCollator = MaxNominatorsPerCollator;
 	type MaxCollatorsPerNominator = MaxCollatorsPerNominator;
-	type DefaultCollatorCommission = DefaultCollatorCommission;
 	type MinCollatorStk = MinCollatorStk;
 	type MinCollatorCandidateStk = MinCollatorStk;
+	type MaxCollatorCandidateStk = MaxCollatorCandidateStk;
 	type MinNomination = MinNominatorStk;
 	type MinNominatorStk = MinNominatorStk;
 }

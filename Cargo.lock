@@ -5606,6 +5606,7 @@ dependencies = [
  "author-inherent",
  "frame-support",
  "frame-system",
+ "kilt-primitives",
  "pallet-balances",
  "parity-scale-codec",
  "serde",
@@ -5613,7 +5614,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
- "substrate-fixed",
 ]
 
 [[package]]
@@ -10235,15 +10235,6 @@ version = "3.0.0"
 source = "git+https://github.com/paritytech/substrate?branch=rococo-v1#13a07b4b637b6e25397db7fcd62d8b93eeae76ac"
 dependencies = [
  "platforms",
-]
-
-[[package]]
-name = "substrate-fixed"
-version = "0.5.6"
-source = "git+https://github.com/encointer/substrate-fixed#b33d186888c60f38adafcfc0ec3a21aab263aef1"
-dependencies = [
- "parity-scale-codec",
- "typenum",
 ]
 
 [[package]]

@@ -17,28 +17,13 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 //! Helper methods for computing issuance based on inflation
-use crate::pallet::{BalanceOf, Config, Pallet, Round, RoundInfo};
+use crate::pallet::{BalanceOf, Config, Pallet};
 use frame_support::traits::Currency;
+use kilt_primitives::constants::YEARS;
 use parity_scale_codec::{Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_runtime::{traits::Saturating, PerThing, Perbill, RuntimeDebug};
-use substrate_fixed::{
-	transcendental::pow as floatpow,
-	types::{I32F32, I64F64},
-};
-
-// TODO: use constants from kilt_primitives
-const SECONDS_PER_YEAR: u32 = 31557600;
-const SECONDS_PER_BLOCK: u32 = 6;
-// = 5_259_600
-pub const BLOCKS_PER_YEAR: u32 = SECONDS_PER_YEAR / SECONDS_PER_BLOCK;
-
-fn rounds_per_year<T: Config>() -> u32 {
-	let blocks_per_round = <Pallet<T>>::round().length;
-	// blocks_per_round > 0 is ensured in `set_blocks_per_round`
-	BLOCKS_PER_YEAR / blocks_per_round
-}
+use sp_runtime::{Perbill, RuntimeDebug};
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Eq, PartialEq, Clone, Encode, Decode, Default, RuntimeDebug)]
@@ -50,26 +35,19 @@ pub struct RewardRate {
 /// Convert annual inflation rate range to round inflation range
 pub fn annual_to_round<T: Config>(rate: Perbill) -> Perbill {
 	let periods = rounds_per_year::<T>();
-	// TODO: Add check if periods are 0
+	// safe because periods > 0 is ensured in `set_blocks_per_round`
 	perbill_annual_to_perbill_round(rate, periods)
 }
 
-// TODO: Check if we need this. See here https://github.com/PureStake/moonbeam/pull/366
-/// Convert an annual inflation to a round inflation
-/// round = 1 - (1+annual)^(1/rounds_per_year)
-fn perbill_annual_to_perbill_round(annual: Perbill, rounds_per_year: u32) -> Perbill {
-	// let exponent = I32F32::from_num(1) / I32F32::from_num(rounds_per_year);
+// Convert blocks per round to rounds per year
+fn rounds_per_year<T: Config>() -> u32 {
+	let blocks_per_round = <Pallet<T>>::round().length;
+	// blocks_per_round > 0 is ensured in `set_blocks_per_round`
+	YEARS / blocks_per_round
+}
 
-	// let x = I32F32::from_num(annual.deconstruct()) /
-	// I32F32::from_num(Perbill::ACCURACY); let y: I64F64 =
-	// floatpow(I32F32::from_num(1) + x, exponent).expect( 	"Cannot overflow since
-	// rounds_per_year is u32 so worst case 0; QED",
-	// );
-	// Perbill::from_parts(
-	// 	((y - I64F64::from_num(1)) * I64F64::from_num(Perbill::ACCURACY))
-	// 		.ceil()
-	// 		.to_num::<u32>(),
-	// )
+/// Convert an annual inflation to a round inflation
+fn perbill_annual_to_perbill_round(annual: Perbill, rounds_per_year: u32) -> Perbill {
 	Perbill::from_parts(annual.deconstruct() / rounds_per_year)
 }
 
@@ -82,8 +60,7 @@ impl RewardRate {
 	}
 
 	pub fn update_blocks_per_round(&mut self, blocks_per_round: u32) {
-		let rounds_per_year = BLOCKS_PER_YEAR / blocks_per_round;
-		println!("rounds_per_year {:?}", rounds_per_year);
+		let rounds_per_year = YEARS / blocks_per_round;
 		self.round = perbill_annual_to_perbill_round(self.annual, rounds_per_year);
 	}
 }
@@ -191,7 +168,10 @@ impl InflationInfo {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::mock::{ExtBuilder, Stake, Test};
+	use crate::{
+		mock::{ExtBuilder, Stake, Test},
+		Round, RoundInfo,
+	};
 
 	#[test]
 	fn perbill() {
@@ -204,14 +184,14 @@ mod tests {
 	#[test]
 	fn simple_rewards() {
 		ExtBuilder::default()
-			.with_inflation(10, 15, 40, 10, BLOCKS_PER_YEAR)
+			.with_inflation(10, 15, 40, 10, YEARS)
 			.build()
 			.execute_with(|| {
 				// Unrealistic configuration but makes computation simple
 				<Round<Test>>::put(RoundInfo {
 					current: 1,
 					first: 1,
-					length: BLOCKS_PER_YEAR,
+					length: YEARS,
 				});
 				let rounds_per_year = 1;
 				let inflation = InflationInfo::new::<Test>(10, 15, 40, 10);
@@ -261,7 +241,7 @@ mod tests {
 			.with_inflation(10, 15, 40, 10, 600)
 			.build()
 			.execute_with(|| {
-				let rounds_per_year = BLOCKS_PER_YEAR / 600;
+				let rounds_per_year = YEARS / 600;
 				let inflation = Stake::inflation_config();
 
 				// Dummy checks for correct instantiation
@@ -283,14 +263,14 @@ mod tests {
 				assert_eq!(inflation.collator.compute_rewards::<Test>(0, 160_000_000), 0);
 				assert_eq!(inflation.collator.compute_rewards::<Test>(100_000, 160_000_000), 2);
 				// Check for max_rate which is 10%
-				assert_eq!(inflation.collator.compute_rewards::<Test>(16_000_000, 160_000_000), 274);
+				assert_eq!(inflation.collator.compute_rewards::<Test>(16_000_000, 160_000_000), 278);
 				// Check exceeding max_rate
-				assert_eq!(inflation.collator.compute_rewards::<Test>(32_000_000, 160_000_000), 274);
+				assert_eq!(inflation.collator.compute_rewards::<Test>(32_000_000, 160_000_000), 278);
 				// Stake can never be more than what is issued, but let's check whether the cap
 				// still applies
 				assert_eq!(
 					inflation.collator.compute_rewards::<Test>(200_000_000, 160_000_000),
-					274
+					278
 				);
 
 				// Check delegator reward calculation
@@ -303,18 +283,18 @@ mod tests {
 				// Check for max_rate which is 40%
 				assert_eq!(
 					inflation.delegator.compute_rewards::<Test>(64_000_000, 160_000_000),
-					730
+					741
 				);
 				// Check exceeding max_rate
 				assert_eq!(
 					inflation.delegator.compute_rewards::<Test>(100_000_000, 160_000_000),
-					730
+					741
 				);
 				// Stake can never be more than what is issued, but let's check whether the cap
 				// still applies
 				assert_eq!(
 					inflation.delegator.compute_rewards::<Test>(200_000_000, 160_000_000),
-					730
+					741
 				);
 			});
 	}
@@ -325,7 +305,7 @@ mod tests {
 			.set_blocks_per_round(600)
 			.build()
 			.execute_with(|| {
-				let rounds_per_year = BLOCKS_PER_YEAR / 600;
+				let rounds_per_year = YEARS / 600;
 				let inflation = Stake::inflation_config();
 
 				// Dummy checks for correct instantiation
@@ -352,24 +332,21 @@ mod tests {
 					inflation
 						.collator
 						.compute_rewards::<Test>(100_000 * decimals, total_issuance),
-					// 1600 * 10u128.pow(12)
-					1711100000000000 // 1600 * 10u128.pow(12)
+					1736100000000000
 				);
 				// Check for max_rate which is 10%
 				assert_eq!(
 					inflation
 						.collator
 						.compute_rewards::<Test>(16_000_000 * decimals, total_issuance),
-					// 273760 * 10u128.pow(12)
-					273776000000000000
+					277776000000000000
 				);
 				// Check exceeding max_rate
 				assert_eq!(
 					inflation
 						.collator
 						.compute_rewards::<Test>(32_000_000 * decimals, total_issuance),
-					// 273760 * 10u128.pow(12)
-					273776000000000000
+					277776000000000000
 				);
 				// Stake can never be more than what is issued, but let's check whether the cap
 				// still applies
@@ -377,8 +354,7 @@ mod tests {
 					inflation
 						.collator
 						.compute_rewards::<Test>(200_000_000 * decimals, total_issuance),
-					// 273760 * 10u128.pow(12)
-					273776000000000000
+					277776000000000000
 				);
 
 				// Check delegator reward calculation
@@ -387,8 +363,7 @@ mod tests {
 					inflation
 						.delegator
 						.compute_rewards::<Test>(100_000 * decimals, total_issuance),
-					// 1120 * 10u128.pow(12)
-					1140700000000000
+					1157400000000000
 				);
 				assert!(
 					inflation
@@ -403,16 +378,14 @@ mod tests {
 					inflation
 						.delegator
 						.compute_rewards::<Test>(64_000_000 * decimals, total_issuance),
-					// 729_920 * 10u128.pow(12)
-					730048000000000000
+					740736000000000000
 				);
 				// Check exceeding max_rate
 				assert_eq!(
 					inflation
 						.delegator
 						.compute_rewards::<Test>(100_000_000 * decimals, total_issuance),
-					// 729_920 * 10u128.pow(12)
-					730048000000000000
+					740736000000000000
 				);
 				// Stake can never be more than what is issued, but let's check whether the cap
 				// still applies
@@ -420,8 +393,7 @@ mod tests {
 					inflation
 						.delegator
 						.compute_rewards::<Test>(200_000_000 * decimals, total_issuance),
-					// 729_920 * 10u128.pow(12)
-					730048000000000000
+					740736000000000000
 				);
 			});
 	}
