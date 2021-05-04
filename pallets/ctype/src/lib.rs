@@ -35,9 +35,6 @@ pub use pallet::*;
 pub use types::*;
 pub use default_weights::WeightInfo;
 
-use sp_std::fmt::Debug;
-use codec::EncodeLike;
-
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
@@ -45,8 +42,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config {
-		type CreatorId: Encode + Decode + EncodeLike + Clone + Eq + Debug;
+	pub trait Config: frame_system::Config + did::Config {
 		type EnsureOrigin: EnsureOrigin<Success = CtypeCreator<Self>, <Self as frame_system::Config>::Origin>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type WeightInfo: WeightInfo;

@@ -19,6 +19,7 @@
 #![allow(clippy::from_over_into)]
 
 use crate as ctype;
+use did as did;
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use sp_core::H256;
@@ -26,13 +27,13 @@ use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 };
-use frame_system::EnsureSigned;
 
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
 
+pub type TestDidIdentifier =  kilt_primitives::AccountId;
+pub type TestCtypeOwner = TestDidIdentifier;
 pub type TestCtypeHash = kilt_primitives::Hash;
-pub type TestCtypeOwner = kilt_primitives::AccountId;
 
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -42,6 +43,7 @@ frame_support::construct_runtime!(
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
+		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>},
 	}
 );
 
@@ -77,11 +79,30 @@ impl frame_system::Config for Test {
 	type OnSetCode = ();
 }
 
-impl ctype::Config for Test {
-	type CreatorId = TestCtypeOwner;
-	type EnsureOrigin = EnsureSigned<TestCtypeOwner>;
+impl did::Config for Test {
+	type DidIdentifier = TestDidIdentifier;
+	type Origin = Origin;
+	type Call = Call;
 	type Event = ();
 	type WeightInfo = ();
+}
+
+impl ctype::Config for Test {
+	type EnsureOrigin = did::EnsureDidOrigin<TestCtypeOwner>;
+	type Event = ();
+	type WeightInfo = ();
+}
+
+
+impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
+
+    fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
+		// Only interested in CTYPE calls
+        match self {
+			Call::Ctype(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
+			_ => None
+		}
+    }
 }
 
 pub struct CtypeCreationDetails {
@@ -94,6 +115,14 @@ pub(crate) const DEFAULT_ACCOUNT: TestCtypeOwner = TestCtypeOwner::new([0u8; 32]
 
 const DEFAULT_CTYPE_HASH_SEED: u64 = 1u64;
 const ALTERNATIVE_CTYPE_HASH_SEED: u64 = 2u64;
+
+pub fn get_default_origin() -> Origin {
+	Origin::from(
+		did::DidRawOrigin {
+			id: DEFAULT_ACCOUNT
+		}
+	)
+}
 
 pub fn get_ctype_hash(default: bool) -> H256 {
 	if default {

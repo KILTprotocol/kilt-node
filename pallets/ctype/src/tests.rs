@@ -17,10 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{self as ctype, mock::*};
-use frame_support::{assert_err, assert_noop, assert_ok};
-use sp_core::Pair;
-
-use codec::Encode;
+use frame_support::{assert_err, assert_ok};
 
 // submit_ctype_creation_operation
 
@@ -37,7 +34,7 @@ fn check_successful_ctype_creation() {
 	// Write CTYPE on chain
 	ext.execute_with(|| {
 		assert_ok!(Ctype::add(
-			Origin::signed(operation.creator.clone()),
+			get_default_origin(),
 			operation.hash
 		));
 	});
@@ -61,7 +58,7 @@ fn check_duplicate_ctype_creation() {
 	ext.execute_with(|| {
 		assert_err!(
 			Ctype::add(
-				Origin::signed(DEFAULT_ACCOUNT),
+				get_default_origin(),
 				operation.hash
 			),
 			ctype::Error::<Test>::CTypeAlreadyExists

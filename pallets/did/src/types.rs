@@ -24,6 +24,7 @@ pub use sp_std::{
 	collections::{btree_map::BTreeMap, btree_set::BTreeSet},
 	convert::TryFrom,
 	str,
+	vec::Vec
 };
 
 pub use sp_core::{ed25519, sr25519};
