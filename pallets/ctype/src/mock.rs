@@ -18,7 +18,7 @@
 
 #![allow(clippy::from_over_into)]
 
-use crate::{self as ctype, CtypeCreator};
+use crate as ctype;
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use sp_core::H256;

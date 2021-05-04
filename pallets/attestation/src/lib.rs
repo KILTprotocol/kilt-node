@@ -21,63 +21,28 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
-#[cfg(test)]
-mod tests;
+pub mod default_weights;
 
+pub mod types;
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
 
-pub mod default_weights;
+#[cfg(test)]
+mod tests;
+
 pub use default_weights::WeightInfo;
-
-use codec::{Decode, Encode};
-use delegation::Permissions;
-use frame_support::{
-	ensure,
-	traits::{Hooks, IsType},
-};
-use sp_std::{
-	fmt::Debug,
-	prelude::{Clone, PartialEq, Vec},
-};
-
+pub use types::*;
 pub use pallet::*;
-
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 
-	/// Type of an attestation CTYPE hash.
-	pub type CtypeHash<T> = ctype::CtypeHash<T>;
-
-	/// Type of a claim hash.
-	pub type ClaimHash<T> = <T as frame_system::Config>::Hash;
-
-	/// Type of an attester identifier.
-	pub type Attester<T> = did::DidIdentifier<T>;
-
-	/// Type of a delegation identifier.
-	pub type DelegationNodeId<T> = delegation::DelegationNodeId<T>;
-
-	/// An on-chain attestation written by an authorised attester.
-	#[derive(Clone, Debug, Encode, Decode, PartialEq)]
-	pub struct Attestation<T: Config> {
-		/// The hash of the CTYPE used for this attestation.
-		pub ctype_hash: T::Hash,
-		/// The DID of the attester.
-		pub attester: T::DidIdentifier,
-		/// \[OPTIONAL\] The ID of the delegation node used to authorize the
-		/// attester.
-		pub delegation_id: Option<T::DelegationNodeId>,
-		/// The flag indicating whether the attestation has been revoked or not.
-		pub revoked: bool,
-	}
-
 	#[pallet::config]
-	pub trait Config: frame_system::Config + did::Config + delegation::Config {
-		type EnsureOrigin: EnsureOrigin<Success = Attester<Self>, <Self as frame_system::Config>::Origin>;
+	pub trait Config: frame_system::Config + ctype::Config + delegation::Config{
+		type AttesterId: Encode + Decode + EncodeLike + Clone + Eq + Debug;
+		type EnsureOrigin: EnsureOrigin<Success = AttesterId<Self>, <Self as frame_system::Config>::Origin>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type WeightInfo: WeightInfo;
 	}

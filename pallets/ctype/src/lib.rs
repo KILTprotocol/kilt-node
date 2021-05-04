@@ -21,34 +21,28 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
-/// Test module for CTYPEs
-#[cfg(test)]
-mod tests;
+pub mod default_weights;
+pub mod types;
 
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
 
-pub mod default_weights;
-pub use default_weights::WeightInfo;
-
-use codec::EncodeLike;
-use sp_std::clone::Clone;
-use frame_support::ensure;
-use sp_std::fmt::Debug;
+/// Test module for CTYPEs
+#[cfg(test)]
+mod tests;
 
 pub use pallet::*;
+pub use types::*;
+pub use default_weights::WeightInfo;
+
+use sp_std::fmt::Debug;
+use codec::EncodeLike;
 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
-
-	/// The type of a CTYPE hash.
-	pub type CtypeHash<T> = <T as frame_system::Config>::Hash;
-
-	/// The type of a CTYPE creator.
-	pub type CtypeCreator<T> = <T as Config>::CreatorId;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {

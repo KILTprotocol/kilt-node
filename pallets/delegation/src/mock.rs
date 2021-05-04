@@ -23,18 +23,28 @@ use crate::*;
 use ctype::mock as ctype_mock;
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
-use sp_core::H256;
-use sp_runtime::{
-	testing::Header,
-	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-};
 use frame_system::EnsureSigned;
+use sp_core::{H256, ed25519};
+use sp_runtime::{MultiAddress, testing::Header, traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify}};
 
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
 
+pub type TestCtypeHash = kilt_primitives::Hash;
+pub type TestCtypeOwner = kilt_primitives::AccountId;
+
 pub type TestDelegationNodeId = kilt_primitives::Hash;
-pub type TestDidIdentifier = kilt_primitives::DidIdentifier;
+pub type TestDelegatorId = kilt_primitives::AccountId;
+pub type TestDelegateKey = ed25519::Public;
+pub type TestSignatureVerify = ed25519::Signature;
+
+pub struct TestDelegateKeyRetrieval {}
+
+impl delegation::RetrieveDelegateKey<Test> for TestDelegateKeyRetrieval {
+    fn retrieve_key(delegate: &TestDelegatorId) -> Option<TestDelegateKey> {
+		None
+    }
+}
 
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -45,7 +55,6 @@ frame_support::construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>},
-		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>},
 	}
 );
 
@@ -81,39 +90,26 @@ impl frame_system::Config for Test {
 	type OnSetCode = ();
 }
 
+impl ctype::Config for Test {
+	type CreatorId = TestCtypeOwner;
+	type EnsureOrigin = EnsureSigned<TestCtypeOwner>;
+	type Event = ();
+	type WeightInfo = ();
+}
+
 impl Config for Test {
 	type DelegationNodeId = TestDelegationNodeId;
-	type EnsureOrigin = EnsureSigned<TestDidIdentifier>;
+	type DelegatorId = TestDelegatorId;
+	type DelegateKey = TestDelegateKey;
+	type DelegationSignatureVerify = TestSignatureVerify;
+	type RetrieveDelegateKey = TestDelegateKeyRetrieval;
+	type EnsureOrigin = EnsureSigned<TestDelegatorId>;
 	type Event = ();
 	type WeightInfo = ();
-}
-
-impl ctype::Config for Test {
-	type EnsureOrigin = EnsureSigned<TestDidIdentifier>;
-	type Event = ();
-	type WeightInfo = ();
-}
-
-impl did::Config for Test {
-	type Call = Call;
-	type DidIdentifier = TestDidIdentifier;
-	type Event = ();
-	type Origin = Origin;
-	type WeightInfo = ();
-}
-
-impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
-	// Only interested in delegation operations
-	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
-		match self {
-			Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
-			_ => None
-		}
-	}
 }
 
 #[cfg(test)]
-pub(crate) const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
+pub(crate) const DEFAULT_ACCOUNT: TestDelegatorId = TestDelegatorId::new([0u8; 32]);
 
 const DEFAULT_ROOT_ID_SEED: u64 = 1u64;
 const ALTERNATIVE_ROOT_ID_SEED: u64 = 2u64;
@@ -122,7 +118,7 @@ const ALTERNATIVE_DELEGATION_ID_SEED: u64 = 4u64;
 const DEFAULT_DELEGATION_ID_2_SEED: u64 = 3u64;
 const ALTERNATIVE_DELEGATION_ID_2_SEED: u64 = 4u64;
 
-pub fn get_delegation_root_id(default: bool) -> H256 {
+pub fn get_delegation_root_id(default: bool) -> TestDelegationNodeId {
 	if default {
 		H256::from_low_u64_be(DEFAULT_ROOT_ID_SEED)
 	} else {
@@ -130,7 +126,7 @@ pub fn get_delegation_root_id(default: bool) -> H256 {
 	}
 }
 
-pub fn get_delegation_id(default: bool) -> H256 {
+pub fn get_delegation_id(default: bool) -> TestDelegationNodeId {
 	if default {
 		H256::from_low_u64_be(DEFAULT_DELEGATION_ID_SEED)
 	} else {
@@ -138,7 +134,7 @@ pub fn get_delegation_id(default: bool) -> H256 {
 	}
 }
 
-pub fn get_delegation_id_2(default: bool) -> H256 {
+pub fn get_delegation_id_2(default: bool) -> TestDelegationNodeId {
 	if default {
 		H256::from_low_u64_be(DEFAULT_DELEGATION_ID_2_SEED)
 	} else {
@@ -151,8 +147,9 @@ pub(crate) fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
 	hash.encode()
 }
 
-// // Given a root ID and a root node, it returns a DelegationRootCreationOperation
-// // that would result in the provided root node being written on chain.
+// // Given a root ID and a root node, it returns a
+// DelegationRootCreationOperation // that would result in the provided root
+// node being written on chain.
 // pub fn generate_base_delegation_root_creation_operation(
 // 	root_id: TestDelegationNodeId,
 // 	root_node: DelegationRoot<Test>,
@@ -166,8 +163,8 @@ pub(crate) fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
 // }
 
 // // Given a delegator DID, a delegation ID, a delegate's signature and a
-// // delegation node, it returns a DelegationCreationOperation that would result
-// // in the provided delegation node being written on chain.
+// // delegation node, it returns a DelegationCreationOperation that would
+// result // in the provided delegation node being written on chain.
 // pub fn generate_base_delegation_creation_operation(
 // 	delegator_did: TestDidIdentifier,
 // 	delegation_id: TestDelegationNodeId,
@@ -220,7 +217,7 @@ pub(crate) fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
 // }
 
 // Given an owner, it generates a DelegationRoot using a default CTYPE hash.
-pub fn generate_base_delegation_root(owner: TestDidIdentifier) -> DelegationRoot<Test> {
+pub fn generate_base_delegation_root(owner: TestDelegatorId) -> DelegationRoot<Test> {
 	DelegationRoot {
 		owner,
 		ctype_hash: ctype_mock::get_ctype_hash(true),
@@ -230,7 +227,7 @@ pub fn generate_base_delegation_root(owner: TestDidIdentifier) -> DelegationRoot
 
 // Given a root_id and an owner, it generates a DelegationNode with no parent
 // and a permission to delegate.
-pub fn generate_base_delegation_node(root_id: TestDelegationNodeId, owner: TestDidIdentifier) -> DelegationNode<Test> {
+pub fn generate_base_delegation_node(root_id: TestDelegationNodeId, owner: TestDelegatorId) -> DelegationNode<Test> {
 	DelegationNode {
 		owner,
 		parent: None,
