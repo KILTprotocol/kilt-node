@@ -24,8 +24,8 @@ use crate::{
 		BLOCKS_PER_ROUND, DECIMALS,
 	},
 	set::OrderedSet,
-	BalanceOf, Bond, Collator, CollatorSnapshot, CollatorStatus, Config, Error, Event, InflationInfo, RoundInfo,
-	StakedCollator, StakedDelegator,
+	BalanceOf, Bond, Collator, CollatorSnapshot, CollatorStatus, Config, Error, Event, InflationInfo, RewardRate,
+	RoundInfo, StakedCollator, StakedDelegator, StakingInfo,
 };
 use frame_support::{assert_noop, assert_ok};
 use pallet_balances::Error as BalancesError;
@@ -977,11 +977,7 @@ fn nominators_bond() {
 			);
 			assert_noop!(
 				Stake::nominator_bond_more(Origin::signed(6), 1, 81),
-				DispatchError::Module {
-					index: 1,
-					error: 3,
-					message: Some("InsufficientBalance")
-				}
+				BalancesError::<Test>::InsufficientBalance
 			);
 			roll_to(9);
 			assert_eq!(Balances::reserved_balance(&6), 20);
@@ -1523,6 +1519,88 @@ fn collator_delegator_rewards_full_year_24h() {
 		14400,
 		Perbill::from_percent(100),
 	);
+}
+
+fn set_inflation() {
+	ExtBuilder::default().build().execute_with(|| {
+		let mut inflation = InflationInfo {
+			collator: StakingInfo {
+				max_rate: Perbill::one(),
+				reward_rate: RewardRate {
+					annual: Perbill::from_percent(50),
+					round: Perbill::one(),
+				},
+			},
+			delegator: StakingInfo {
+				max_rate: Perbill::one(),
+				reward_rate: RewardRate {
+					annual: Perbill::one(),
+					round: Perbill::one(),
+				},
+			},
+		};
+
+		// annual < round
+		assert_noop!(
+			Stake::set_inflation(Origin::root(), inflation.clone()),
+			Error::<Test>::InvalidSchedule
+		);
+		// annual > 100%
+		inflation.collator.reward_rate.annual = Perbill::from_percent(101);
+		assert_noop!(
+			Stake::set_inflation(Origin::root(), inflation.clone()),
+			Error::<Test>::InvalidSchedule
+		);
+		inflation.collator.reward_rate.annual = Perbill::from_percent(100);
+		// max_rate > 100%
+		inflation.collator.max_rate = Perbill::from_percent(101);
+		assert_noop!(
+			Stake::set_inflation(Origin::root(), inflation.clone()),
+			Error::<Test>::InvalidSchedule
+		);
+		inflation.collator.max_rate = Perbill::from_percent(100);
+		assert_ok!(Stake::set_inflation(Origin::root(), inflation.clone()));
+		assert_eq!(
+			last_event(),
+			MetaEvent::stake(Event::RoundInflationSet(
+				Perbill::one(),
+				Perbill::one(),
+				Perbill::one(),
+				Perbill::one()
+			))
+		);
+
+		// annual < round
+		inflation.delegator.reward_rate.annual = Perbill::from_percent(50);
+		assert_noop!(
+			Stake::set_inflation(Origin::root(), inflation.clone()),
+			Error::<Test>::InvalidSchedule
+		);
+		// annual > 100%
+		inflation.delegator.reward_rate.annual = Perbill::from_percent(101);
+		assert_noop!(
+			Stake::set_inflation(Origin::root(), inflation.clone()),
+			Error::<Test>::InvalidSchedule
+		);
+		inflation.delegator.reward_rate.annual = Perbill::from_percent(100);
+		// max_rate > 100%
+		inflation.delegator.max_rate = Perbill::from_percent(101);
+		assert_noop!(
+			Stake::set_inflation(Origin::root(), inflation.clone()),
+			Error::<Test>::InvalidSchedule
+		);
+		inflation.delegator.max_rate = Perbill::from_percent(70);
+		assert_ok!(Stake::set_inflation(Origin::root(), inflation));
+		assert_eq!(
+			last_event(),
+			MetaEvent::stake(Event::RoundInflationSet(
+				Perbill::one(),
+				Perbill::one(),
+				Perbill::from_percent(70),
+				Perbill::one()
+			))
+		);
+	});
 }
 
 #[test]

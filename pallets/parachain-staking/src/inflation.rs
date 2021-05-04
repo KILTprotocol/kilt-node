@@ -36,6 +36,7 @@ pub const BLOCKS_PER_YEAR: u32 = SECONDS_PER_YEAR / SECONDS_PER_BLOCK;
 
 fn rounds_per_year<T: Config>() -> u32 {
 	let blocks_per_round = <Pallet<T>>::round().length;
+	// blocks_per_round > 0 is ensured in `set_blocks_per_round`
 	BLOCKS_PER_YEAR / blocks_per_round
 }
 

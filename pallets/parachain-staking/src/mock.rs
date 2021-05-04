@@ -19,7 +19,7 @@
 use super::*;
 use crate::{self as stake, inflation::BLOCKS_PER_YEAR};
 use frame_support::{
-	assert_ok, construct_runtime, parameter_types,
+	assert_noop, assert_ok, construct_runtime, parameter_types,
 	traits::{GenesisBuild, OnFinalize, OnInitialize},
 	weights::Weight,
 };
@@ -344,6 +344,10 @@ pub(crate) fn check_yearly_inflation(
 
 			// increase number of selected candidates
 			if num_of_collators as usize > Stake::selected_candidates().len() {
+				assert_noop!(
+					Stake::set_total_selected(Origin::root(), <Test as Config>::MinSelectedCandidates::get() - 1),
+					Error::<Test>::CannotSetBelowMin
+				);
 				assert_ok!(Stake::set_total_selected(Origin::root(), num_of_collators as u32));
 
 				// roll to round 2 to check for update of TotalSelected
