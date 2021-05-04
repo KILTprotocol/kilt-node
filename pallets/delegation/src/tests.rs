@@ -40,7 +40,7 @@ fn check_submit_delegation_root_creation_operation_successful() {
 		generate_base_delegation_root(delegator_did.clone()),
 	);
 
-	let operation = generate_base_delegation_root_creation_operation(root_id, root_node.clone());
+	let operation = generate_base_delegation_root_creation_details(root_id, root_node.clone());
 	let signature = del_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(delegator_did.clone(), delegator_details.clone())]);
@@ -87,7 +87,7 @@ fn check_did_not_found_submit_delegation_root_creation_operation() {
 		generate_base_delegation_root(delegator_did),
 	);
 
-	let operation = generate_base_delegation_root_creation_operation(root_id, root_node);
+	let operation = generate_base_delegation_root_creation_details(root_id, root_node);
 	let signature = del_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(alternative_did, delegator_details)]);
@@ -121,7 +121,7 @@ fn check_did_max_tx_counter_submit_delegation_root_creation_operation() {
 		generate_base_delegation_root(delegator_did.clone()),
 	);
 
-	let operation = generate_base_delegation_root_creation_operation(root_id, root_node);
+	let operation = generate_base_delegation_root_creation_details(root_id, root_node);
 	let signature = del_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(delegator_did.clone(), delegator_details.clone())]);
@@ -164,7 +164,7 @@ fn check_did_too_small_tx_counter_submit_delegation_root_creation_operation() {
 		generate_base_delegation_root(delegator_did.clone()),
 	);
 
-	let mut operation = generate_base_delegation_root_creation_operation(root_id, root_node);
+	let mut operation = generate_base_delegation_root_creation_details(root_id, root_node);
 	operation.tx_counter = delegator_details.get_tx_counter_value() - 1u64;
 	let signature = del_key.sign(&operation.encode());
 
@@ -207,7 +207,7 @@ fn check_did_equal_tx_counter_submit_delegation_root_creation_operation() {
 		generate_base_delegation_root(delegator_did.clone()),
 	);
 
-	let mut operation = generate_base_delegation_root_creation_operation(root_id, root_node);
+	let mut operation = generate_base_delegation_root_creation_details(root_id, root_node);
 	operation.tx_counter = delegator_details.get_tx_counter_value();
 	let signature = del_key.sign(&operation.encode());
 
@@ -250,7 +250,7 @@ fn check_did_too_large_tx_counter_submit_delegation_root_creation_operation() {
 		generate_base_delegation_root(delegator_did.clone()),
 	);
 
-	let mut operation = generate_base_delegation_root_creation_operation(root_id, root_node);
+	let mut operation = generate_base_delegation_root_creation_details(root_id, root_node);
 	operation.tx_counter = delegator_details.get_tx_counter_value() + 2u64;
 	let signature = del_key.sign(&operation.encode());
 
@@ -293,7 +293,7 @@ fn check_did_delegation_key_not_present_submit_delegation_root_creation_operatio
 		generate_base_delegation_root(delegator_did.clone()),
 	);
 
-	let operation = generate_base_delegation_root_creation_operation(root_id, root_node);
+	let operation = generate_base_delegation_root_creation_details(root_id, root_node);
 	let signature = del_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(delegator_did.clone(), delegator_details.clone())]);
@@ -336,7 +336,7 @@ fn check_did_invalid_signature_format_submit_delegation_root_creation_operation(
 		generate_base_delegation_root(delegator_did.clone()),
 	);
 
-	let operation = generate_base_delegation_root_creation_operation(root_id, root_node);
+	let operation = generate_base_delegation_root_creation_details(root_id, root_node);
 	let signature = invalid_format_del_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(delegator_did.clone(), delegator_details.clone())]);
@@ -379,7 +379,7 @@ fn check_did_invalid_signature_submit_delegation_root_creation_operation() {
 		generate_base_delegation_root(delegator_did.clone()),
 	);
 
-	let operation = generate_base_delegation_root_creation_operation(root_id, root_node);
+	let operation = generate_base_delegation_root_creation_details(root_id, root_node);
 	let signature = invalid_del_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(delegator_did.clone(), delegator_details.clone())]);
@@ -421,7 +421,7 @@ fn check_duplicate_submit_delegation_root_creation_operation() {
 		generate_base_delegation_root(delegator_did.clone()),
 	);
 
-	let operation = generate_base_delegation_root_creation_operation(root_id, root_node.clone());
+	let operation = generate_base_delegation_root_creation_details(root_id, root_node.clone());
 	let signature = del_key.sign(&operation.encode());
 
 	let builder = did_mock::ExtBuilder::default().with_dids(vec![(delegator_did.clone(), delegator_details.clone())]);
@@ -464,7 +464,7 @@ fn check_ctype_not_found_submit_delegation_root_creation_operation() {
 		generate_base_delegation_root(delegator_did.clone()),
 	);
 
-	let operation = generate_base_delegation_root_creation_operation(root_id, root_node);
+	let operation = generate_base_delegation_root_creation_details(root_id, root_node);
 	let signature = del_key.sign(&operation.encode());
 
 	// No CTYPE created in the builder

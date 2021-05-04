@@ -19,7 +19,6 @@
 #![allow(clippy::from_over_into)]
 
 use crate as delegation;
-use crate::*;
 use ctype::mock as ctype_mock;
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
@@ -30,21 +29,11 @@ use sp_runtime::{MultiAddress, testing::Header, traits::{BlakeTwo256, IdentifyAc
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
 
+pub type TestDidIdentifier =  kilt_primitives::AccountId;
+pub type TestCtypeOwner = TestDidIdentifier;
 pub type TestCtypeHash = kilt_primitives::Hash;
-pub type TestCtypeOwner = kilt_primitives::AccountId;
-
 pub type TestDelegationNodeId = kilt_primitives::Hash;
-pub type TestDelegatorId = kilt_primitives::AccountId;
-pub type TestDelegateKey = ed25519::Public;
-pub type TestSignatureVerify = ed25519::Signature;
-
-pub struct TestDelegateKeyRetrieval {}
-
-impl delegation::RetrieveDelegateKey<Test> for TestDelegateKeyRetrieval {
-    fn retrieve_key(delegate: &TestDelegatorId) -> Option<TestDelegateKey> {
-		None
-    }
-}
+pub type TestDelegatorId = TestDidIdentifier;
 
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -90,9 +79,16 @@ impl frame_system::Config for Test {
 	type OnSetCode = ();
 }
 
+impl did::Config for Test {
+	type DidIdentifier = TestDidIdentifier;
+	type Origin = Origin;
+	type Call = Call;
+	type Event = ();
+	type WeightInfo = ();
+}
+
 impl ctype::Config for Test {
-	type CreatorId = TestCtypeOwner;
-	type EnsureOrigin = EnsureSigned<TestCtypeOwner>;
+	type EnsureOrigin = did::EnsureDidOrigin<TestCtypeOwner>;
 	type Event = ();
 	type WeightInfo = ();
 }
@@ -100,15 +96,21 @@ impl ctype::Config for Test {
 impl Config for Test {
 	type DelegationNodeId = TestDelegationNodeId;
 	type DelegatorId = TestDelegatorId;
-	type DelegateKey = TestDelegateKey;
-	type DelegationSignatureVerify = TestSignatureVerify;
-	type RetrieveDelegateKey = TestDelegateKeyRetrieval;
-	type EnsureOrigin = EnsureSigned<TestDelegatorId>;
+	type EnsureOrigin = did::EnsureDidOrigin<TestDelegatorId>;
 	type Event = ();
 	type WeightInfo = ();
 }
 
-#[cfg(test)]
+impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
+    fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
+		// Only interested in Delegation calls
+        match self {
+			Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
+			_ => None
+		}
+    }
+}
+
 pub(crate) const DEFAULT_ACCOUNT: TestDelegatorId = TestDelegatorId::new([0u8; 32]);
 
 const DEFAULT_ROOT_ID_SEED: u64 = 1u64;
@@ -117,6 +119,14 @@ const DEFAULT_DELEGATION_ID_SEED: u64 = 3u64;
 const ALTERNATIVE_DELEGATION_ID_SEED: u64 = 4u64;
 const DEFAULT_DELEGATION_ID_2_SEED: u64 = 3u64;
 const ALTERNATIVE_DELEGATION_ID_2_SEED: u64 = 4u64;
+
+pub fn get_default_origin() -> Origin {
+	Origin::from(
+		did::DidRawOrigin {
+			id: DEFAULT_ACCOUNT
+		}
+	)
+}
 
 pub fn get_delegation_root_id(default: bool) -> TestDelegationNodeId {
 	if default {
@@ -147,74 +157,77 @@ pub(crate) fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
 	hash.encode()
 }
 
-// // Given a root ID and a root node, it returns a
-// DelegationRootCreationOperation // that would result in the provided root
-// node being written on chain.
-// pub fn generate_base_delegation_root_creation_operation(
-// 	root_id: TestDelegationNodeId,
-// 	root_node: DelegationRoot<Test>,
-// ) -> DelegationRootCreationOperation<Test> {
-// 	DelegationRootCreationOperation {
-// 		creator_did: root_node.owner,
-// 		ctype_hash: root_node.ctype_hash,
-// 		root_id,
-// 		tx_counter: 1u64,
-// 	}
-// }
+pub struct DelegationRootCreationDetails {
+	pub root_id: TestDelegationNodeId,
+	pub ctype_hash: TestCtypeHash,
+}
 
-// // Given a delegator DID, a delegation ID, a delegate's signature and a
-// // delegation node, it returns a DelegationCreationOperation that would
-// result // in the provided delegation node being written on chain.
-// pub fn generate_base_delegation_creation_operation(
-// 	delegator_did: TestDidIdentifier,
-// 	delegation_id: TestDelegationNodeId,
-// 	delegate_signature: did::DidSignature,
-// 	delegation_node: DelegationNode<Test>,
-// ) -> DelegationCreationOperation<Test> {
-// 	DelegationCreationOperation {
-// 		creator_did: delegator_did,
-// 		delegate_did: delegation_node.owner,
-// 		delegate_signature,
-// 		delegation_id,
-// 		parent_id: delegation_node.parent,
-// 		root_id: delegation_node.root_id,
-// 		permissions: delegation_node.permissions,
-// 		tx_counter: 1u64,
-// 	}
-// }
+pub fn generate_base_delegation_root_creation_details(
+	root_id: TestDelegationNodeId,
+	root_node: DelegationRoot<Test>,
+) -> DelegationRootCreationDetails {
+	DelegationRootCreationDetails {
+		ctype_hash: root_node.ctype_hash,
+		root_id,
+	}
+}
 
-// // Given a root ID and a root node, it returns a
-// // DelegationRootRevocationOperation that would successfully revoke the root
-// // node from the chain, using the root node's owner as the revoker and no
-// // children revocation support (max_children = 0).
-// pub fn generate_base_delegation_root_revocation_operation(
-// 	root_id: TestDelegationNodeId,
-// 	root_node: DelegationRoot<Test>,
-// ) -> DelegationRootRevocationOperation<Test> {
-// 	DelegationRootRevocationOperation {
-// 		revoker_did: root_node.owner,
-// 		root_id,
-// 		max_children: 0u32,
-// 		tx_counter: 1u64,
-// 	}
-// }
+pub struct DelegationCreationDetails {
+	pub delegation_id: TestDelegationNodeId,
+	pub root_id: TestDelegationNodeId,
+	pub parent_id: Option<TestDelegationNodeId>,
+	pub delegate_did: TestDelegatorId,
+	pub permissions: Permissions,
+	pub delegate_signature: did::DidSignature,
+}
 
-// // Given a root ID and a root node, it returns a
-// // DelegationRootRevocationOperation that would successfully revoke the root
-// // node from the chain, using the root node's owner as the revoker and no
-// // children revocation support (max_revocations = 0).
-// pub fn generate_base_delegation_revocation_operation(
-// 	delegation_id: TestDelegationNodeId,
-// 	delegation_node: DelegationNode<Test>,
-// ) -> DelegationRevocationOperation<Test> {
-// 	DelegationRevocationOperation {
-// 		revoker_did: delegation_node.owner,
-// 		delegation_id,
-// 		max_parent_checks: 0u32,
-// 		max_revocations: 0u32,
-// 		tx_counter: 1u64,
-// 	}
-// }
+pub fn generate_base_delegation_creation_details(
+	delegator_did: TestDidIdentifier,
+	delegation_id: TestDelegationNodeId,
+	delegate_signature: did::DidSignature,
+	delegation_node: DelegationNode<Test>,
+) -> DelegationCreationDetails {
+	DelegationCreationDetails {
+		delegation_id,
+		parent_id: delegation_node.parent,
+		root_id: delegation_node.root_id,
+		delegate_did: delegation_node.owner,
+		delegate_signature,
+		permissions: delegation_node.permissions,
+	}
+}
+
+pub struct DelegationRootRevocationDetails {
+	pub root_id: T::DelegationNodeId,
+	pub max_children: u32,
+}
+
+pub fn generate_base_delegation_root_revocation_details(
+	root_id: TestDelegationNodeId,
+	root_node: DelegationRoot<Test>,
+) -> DelegationRootRevocationDetails {
+	DelegationRootRevocationDetails {
+		root_id,
+		max_children: 0u32,
+	}
+}
+
+pub struct DelegationRevocationDetails {
+	pub delegation_id: DelegationNodeId<T>,
+	pub max_parent_checks: u32,
+	pub max_revocations: u32,
+}
+
+pub fn generate_base_delegation_revocation_details(
+	delegation_id: TestDelegationNodeId,
+	delegation_node: DelegationNode<Test>,
+) -> DelegationRevocationDetails {
+	DelegationRevocationDetails {
+		delegation_id,
+		max_parent_checks: 0u32,
+		max_revocations: 0u32,
+	}
+}
 
 // Given an owner, it generates a DelegationRoot using a default CTYPE hash.
 pub fn generate_base_delegation_root(owner: TestDelegatorId) -> DelegationRoot<Test> {

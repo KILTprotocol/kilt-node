@@ -24,16 +24,13 @@ use crate::Config;
 pub type DelegationNodeId<T> = <T as Config>::DelegationNodeId;
 
 /// Type of a delegation node's owner.
-pub type DelegatorId<T> = <T as Config>::DelegatorId;
+pub type DelegatorId<T> = did::DidIdentifier<T>;
 
 /// The type of a CTYPE hash.
 pub type CtypeHash<T> = ctype::CtypeHash<T>;
 
-pub type DelegateKey<T> = <T as Config>::DelegateKey;
-
-pub trait RetrieveDelegateKey<T: Config> {
-	fn retrieve_key(delegate: &DelegatorId<T>) -> Option<DelegateKey<T>>;
-}
+/// Type of a signature over the delegation details.
+pub type DelegationSignature = did::DidSignature;
 
 bitflags! {
 	/// Bitflags for permissions.

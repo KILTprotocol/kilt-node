@@ -36,14 +36,12 @@ pub use default_weights::WeightInfo;
 pub use pallet::*;
 pub use types::*;
 
-use codec::{Codec, EncodeLike};
+use codec::{Codec};
 use frame_support::pallet_prelude::Weight;
-use sp_core::Public;
 use sp_runtime::{
-	traits::{CheckEqual, IdentifyAccount, MaybeDisplay, SimpleBitOps, Verify},
+	traits::{CheckEqual, MaybeDisplay, SimpleBitOps},
 	DispatchError,
 };
-use sp_std::fmt::Debug;
 
 use frame_support::traits::Get;
 use sp_runtime::traits::Hash;
@@ -57,7 +55,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config + ctype::Config {
+	pub trait Config: frame_system::Config + ctype::Config + did::Config {
 		type DelegationNodeId: Parameter
 			+ Member
 			+ Codec
@@ -69,10 +67,6 @@ pub mod pallet {
 			+ sp_std::hash::Hash
 			+ AsRef<[u8]>
 			+ AsMut<[u8]>;
-		type DelegatorId: Encode + Decode + EncodeLike + Clone + Eq + Debug;
-		type DelegateKey: Public + IdentifyAccount<AccountId = Self::DelegateKey>;
-		type DelegationSignatureVerify: Verify<Signer = <Self as Config>::DelegateKey> + Codec + Debug + Clone + Eq;
-		type RetrieveDelegateKey: RetrieveDelegateKey<Self>;
 		type EnsureOrigin: EnsureOrigin<Success = DelegatorId<Self>, <Self as frame_system::Config>::Origin>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type WeightInfo: WeightInfo;
@@ -112,7 +106,7 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// A new root has been created.
 		/// \[creator ID, root node ID, CTYPE hash\]
-		RootCreated(DelegatorId<T>, DelegationNodeId<T>, ctype::CtypeHash<T>),
+		RootCreated(DelegatorId<T>, DelegationNodeId<T>, CtypeHash<T>),
 		/// A root has been revoked.
 		/// \[revoker ID, root node ID\]
 		RootRevoked(DelegatorId<T>, DelegationNodeId<T>),
@@ -141,8 +135,8 @@ pub mod pallet {
 		InvalidDelegateSignature,
 		/// No delegation with the given ID stored on chain.
 		DelegationNotFound,
-		/// No delegate or no delegate required key stored on chain.
-		DelegateOrKeyNotFound,
+		/// No delegate with the given ID stored on chain.
+		DelegateNotFound,
 		/// There is already a root node with the same ID stored on chain.
 		RootAlreadyExists,
 		/// No root delegation with the given ID stored on chain.
@@ -220,21 +214,37 @@ pub mod pallet {
 			parent_id: Option<DelegationNodeId<T>>,
 			delegate: DelegatorId<T>,
 			permissions: Permissions,
-			delegate_signature_verification: T::DelegationSignatureVerify,
+			delegate_signature: did::DidSignature
 		) -> DispatchResultWithPostInfo {
 			let delegator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
-			// Retrieve delegate key for delegation signature verification
-			let delegate_key =
-				T::RetrieveDelegateKey::retrieve_key(&delegate).ok_or(Error::<T>::DelegateOrKeyNotFound)?;
+			// Retrieve delegate DID details for signature verification
+			let delegate_details = <did::Did<T>>::get(&delegate).ok_or(Error::<T>::DelegateNotFound)?;
 
 			// Calculate the hash root
-			let hash_root = Self::calculate_hash(&delegation_id, &root_id, &parent_id, &permissions);
-
-			ensure!(
-				delegate_signature_verification.verify(hash_root.as_ref(), &delegate_key),
-				Error::<T>::InvalidDelegateSignature
+			let hash_root = Self::calculate_hash(
+				&delegation_id,
+				&root_id,
+				&parent_id,
+				&permissions,
 			);
+
+			// Verify that the hash root has been signed with the delegate's authentication
+			// key
+			did::pallet::Pallet::<T>::verify_payload_signature_with_did_key_type(
+				hash_root.as_ref(),
+				&delegate_signature,
+				&delegate_details,
+				did::DidVerificationKeyRelationship::Authentication,
+			)
+			.map_err(|err| match err {
+				// Should never happen as a DID has always a valid authentication key and UrlErrors are never thrown
+				// here.
+				did::DidError::StorageError(_) | did::DidError::UrlError(_) => Error::<T>::DelegateNotFound,
+				did::DidError::SignatureError(_) => Error::<T>::InvalidDelegateSignature,
+				// Should never happen as we are not checking the delegate's DID tx counter.
+				did::DidError::InternalError => Error::<T>::InternalError,
+			})?;
 
 			ensure!(
 				!<Delegations<T>>::contains_key(&delegation_id),

@@ -27,8 +27,8 @@ pub mod types;
 
 mod utils;
 
-#[cfg(test)]
-mod mock;
+#[cfg(any(feature = "mock", test))]
+pub mod mock;
 #[cfg(test)]
 mod tests;
 

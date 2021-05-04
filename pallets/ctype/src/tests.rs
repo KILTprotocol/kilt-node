@@ -25,7 +25,7 @@ use frame_support::{assert_err, assert_ok};
 fn check_successful_ctype_creation() {
 	let creator = DEFAULT_ACCOUNT;
 
-	let operation = generate_base_ctype_creation_details(creator.clone());
+	let operation = generate_base_ctype_creation_details();
 
 	let builder = ExtBuilder::default();
 
@@ -42,16 +42,16 @@ fn check_successful_ctype_creation() {
 	// Verify the CTYPE has the right owner
 	let stored_ctype_creator =
 		ext.execute_with(|| Ctype::ctypes(&operation.hash).expect("CTYPE hash should be present on chain."));
-	assert_eq!(stored_ctype_creator, operation.creator);
+	assert_eq!(stored_ctype_creator, creator);
 }
 
 #[test]
 fn check_duplicate_ctype_creation() {
 	let creator = DEFAULT_ACCOUNT;
 
-	let operation = generate_base_ctype_creation_details(creator.clone());
+	let operation = generate_base_ctype_creation_details();
 
-	let builder = ExtBuilder::default().with_ctypes(vec![(operation.hash, operation.creator.clone())]);
+	let builder = ExtBuilder::default().with_ctypes(vec![(operation.hash, creator.clone())]);
 
 	let mut ext = builder.build();
 
