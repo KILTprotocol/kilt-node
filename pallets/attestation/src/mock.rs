@@ -23,7 +23,6 @@ use ctype::mock as ctype_mock;
 use delegation::mock as delegation_mock;
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
-use kilt_primitives::{DidIdentifier, Signature};
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
@@ -33,6 +32,11 @@ use frame_system::EnsureSigned;
 
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
+
+pub type TestHash = kilt_primitives::Hash;
+pub type TestCtypeHash = kilt_primitives::Hash;
+pub type TestDelegationNodeId = kilt_primitives::Hash;
+pub type TestDidIdentifier = kilt_primitives::DidIdentifier;
 
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -60,7 +64,7 @@ impl frame_system::Config for Test {
 	type BlockNumber = u64;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
-	type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+	type AccountId = <<kilt_primitives::Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
 	type Event = ();
@@ -86,7 +90,7 @@ impl attestation::Config for Test {
 }
 
 impl ctype::Config for Test {
-	type AccountIdentifier = DidIdentifier;
+	type AccountIdentifier = TestDidIdentifier;
 	type EnsureOrigin = EnsureSigned<TestDidIdentifier>;
 	type Event = ();
 	type WeightInfo = ();
@@ -95,33 +99,26 @@ impl ctype::Config for Test {
 impl delegation::Config for Test {
 	type Event = ();
 	type WeightInfo = ();
-	type DelegationNodeId = H256;
+	type DelegationNodeId = TestDelegationNodeId;
 }
 
 impl did::Config for Test {
 	type Call = Call;
-	type DidIdentifier = DidIdentifier;
+	type DidIdentifier = TestDidIdentifier;
 	type Event = ();
 	type Origin = Origin;
 	type WeightInfo = ();
 }
 
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
+	// Only interested in attestation operations
     fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
         match self {
             Call::Attestation(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
-            Call::Ctype(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
-            Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
-            Call::Did(_) => None,
-			Call::System(_) => None,
+            _ => None
         }
     }
 }
-
-pub type TestHash = <Test as frame_system::Config>::Hash;
-pub type TestCtypeHash = <Test as frame_system::Config>::Hash;
-pub type TestDelegationNodeId = <Test as delegation::Config>::DelegationNodeId;
-pub type TestDidIdentifier = <Test as did::Config>::DidIdentifier;
 
 #[cfg(test)]
 pub(crate) const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);

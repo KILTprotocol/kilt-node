@@ -18,11 +18,9 @@
 
 #![allow(clippy::from_over_into)]
 
-use crate as ctype;
-use did::mock as did_mock;
+use crate::{self as ctype, CtypeCreator};
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
-use kilt_primitives::{DidIdentifier, Signature};
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
@@ -33,6 +31,9 @@ use frame_system::EnsureSigned;
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
 
+pub type TestCtypeHash = kilt_primitives::Hash;
+pub type TestCtypeOwner = kilt_primitives::AccountId;
+
 frame_support::construct_runtime!(
 	pub enum Test where
 		Block = Block,
@@ -41,7 +42,6 @@ frame_support::construct_runtime!(
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
-		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>},
 	}
 );
 
@@ -57,7 +57,7 @@ impl frame_system::Config for Test {
 	type BlockNumber = u64;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
-	type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+	type AccountId = <<kilt_primitives::Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
 	type Event = ();
@@ -78,35 +78,19 @@ impl frame_system::Config for Test {
 }
 
 impl ctype::Config for Test {
-	type AccountIdentifier = DidIdentifier;
-	type EnsureOrigin = EnsureSigned<TestDidIdentifier>;
+	type CreatorId = TestCtypeOwner;
+	type EnsureOrigin = EnsureSigned<TestCtypeOwner>;
 	type Event = ();
 	type WeightInfo = ();
 }
 
-impl did::Config for Test {
-	type Call = Call;
-	type DidIdentifier = DidIdentifier;
-	type Event = ();
-	type Origin = Origin;
-	type WeightInfo = ();
+pub struct CtypeCreationDetails {
+	pub creator: TestCtypeOwner,
+	pub hash: TestCtypeHash,
 }
-
-impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
-    fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
-        match self {
-            Call::Ctype(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
-            Call::Did(_) => None,
-			Call::System(_) => None,
-        }
-    }
-}
-
-pub type TestCtypeHash = <Test as frame_system::Config>::Hash;
-pub type TestDidIdentifier = <Test as did::Config>::DidIdentifier;
 
 #[cfg(test)]
-pub(crate) const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
+pub(crate) const DEFAULT_ACCOUNT: TestCtypeOwner = TestCtypeOwner::new([0u8; 32]);
 
 const DEFAULT_CTYPE_HASH_SEED: u64 = 1u64;
 const ALTERNATIVE_CTYPE_HASH_SEED: u64 = 2u64;
@@ -119,53 +103,37 @@ pub fn get_ctype_hash(default: bool) -> H256 {
 	}
 }
 
-// Given a creator DID, it returns a CtypeCreationOperation
+// Given a creator DID, it returns the CtypeCreationDetails
 // that would result in a CTYPE with a default hash being written on chain.
-// pub fn generate_base_ctype_creation_operation(creator: TestDidIdentifier) -> ctype::CtypeCreationOperation<Test> {
-// 	ctype::CtypeCreationOperation {
-// 		creator_did: creator,
-// 		hash: get_ctype_hash(true),
-// 		tx_counter: 1u64,
-// 	}
-// }
+pub fn generate_base_ctype_creation_details(creator: TestCtypeOwner) -> CtypeCreationDetails {
+	CtypeCreationDetails {
+		creator,
+		hash: get_ctype_hash(true),
+	}
+}
 
 #[derive(Clone)]
 pub struct ExtBuilder {
-	did_builder: Option<did_mock::ExtBuilder>,
-	ctypes_stored: Vec<(TestCtypeHash, TestDidIdentifier)>,
+	ctypes_stored: Vec<(TestCtypeHash, TestCtypeOwner)>,
 }
 
 impl Default for ExtBuilder {
 	fn default() -> Self {
 		Self {
 			ctypes_stored: vec![],
-			did_builder: None,
-		}
-	}
-}
-
-impl From<did_mock::ExtBuilder> for ExtBuilder {
-	fn from(did_builder: did_mock::ExtBuilder) -> Self {
-		ExtBuilder {
-			did_builder: Some(did_builder),
-			..Default::default()
 		}
 	}
 }
 
 impl ExtBuilder {
-	pub fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, TestDidIdentifier)>) -> Self {
+	pub fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, TestCtypeOwner)>) -> Self {
 		self.ctypes_stored = ctypes;
 		self
 	}
 
 	pub fn build(self) -> sp_io::TestExternalities {
-		let mut ext = if let Some(did_builder) = self.did_builder.clone() {
-			did_builder.build()
-		} else {
-			let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
-			sp_io::TestExternalities::new(storage)
-		};
+		let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+		let mut ext = sp_io::TestExternalities::new(storage);
 
 		if !self.ctypes_stored.is_empty() {
 			ext.execute_with(|| {

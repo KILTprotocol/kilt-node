@@ -89,6 +89,7 @@ substrate-wasm-builder = "4.0.0"
 [features]
 default = ["std"]
 runtime-benchmarks = [
+  "did/runtime-benchmarks",
   "frame-benchmarking",
   "frame-system-benchmarking",
   "hex-literal",

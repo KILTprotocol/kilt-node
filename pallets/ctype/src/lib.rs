@@ -31,7 +31,8 @@ pub mod mock;
 pub mod default_weights;
 pub use default_weights::WeightInfo;
 
-use codec::{Decode, Encode};
+use codec::EncodeLike;
+use sp_std::clone::Clone;
 use frame_support::ensure;
 use sp_std::fmt::Debug;
 
@@ -47,10 +48,11 @@ pub mod pallet {
 	pub type CtypeHash<T> = <T as frame_system::Config>::Hash;
 
 	/// The type of a CTYPE creator.
-	pub type CtypeCreator<T> = did::DidIdentifier<T>;
+	pub type CtypeCreator<T> = <T as Config>::CreatorId;
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config + did::Config {
+	pub trait Config: frame_system::Config {
+		type CreatorId: Encode + Decode + EncodeLike + Clone + Eq + Debug;
 		type EnsureOrigin: EnsureOrigin<Success = CtypeCreator<Self>, <Self as frame_system::Config>::Origin>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type WeightInfo: WeightInfo;
@@ -98,14 +100,14 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			hash: CtypeHash<T>
 		) -> DispatchResultWithPostInfo {
-			let creator = T::EnsureOrigin::ensure_origin(origin)?;
+			let creator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
 			ensure!(
 				!<Ctypes<T>>::contains_key(&hash),
 				Error::<T>::CTypeAlreadyExists
 			);
 
-			log::debug!("insert CTYPE");
+			log::debug!("Creating CTYPE with hash {:?} and creator {:?}", &hash, &creator);
 			<Ctypes<T>>::insert(&hash, creator.clone());
 
 			Self::deposit_event(Event::CTypeCreated(creator, hash));

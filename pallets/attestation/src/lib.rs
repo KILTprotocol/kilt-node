@@ -36,7 +36,6 @@ use frame_support::{
 	ensure,
 	traits::{Hooks, IsType},
 };
-use frame_system::{self, ensure_signed};
 use sp_std::{
 	fmt::Debug,
 	prelude::{Clone, PartialEq, Vec},
@@ -49,6 +48,18 @@ pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
+
+	/// Type of an attestation CTYPE hash.
+	pub type CtypeHash<T> = ctype::CtypeHash<T>;
+
+	/// Type of a claim hash.
+	pub type ClaimHash<T> = <T as frame_system::Config>::Hash;
+
+	/// Type of an attester identifier.
+	pub type Attester<T> = did::DidIdentifier<T>;
+
+	/// Type of a delegation identifier.
+	pub type DelegationNodeId<T> = delegation::DelegationNodeId<T>;
 
 	/// An on-chain attestation written by an authorised attester.
 	#[derive(Clone, Debug, Encode, Decode, PartialEq)]
@@ -64,105 +75,9 @@ pub mod pallet {
 		pub revoked: bool,
 	}
 
-	/// An operation to create a new attestation.
-	///
-	/// The struct implements the DidOperation trait, and as such it must
-	/// contain information about the caller's DID, the type of DID key
-	/// required to verify the operation signature, and the tx counter to
-	/// protect against replay attacks.
-	#[derive(Clone, Decode, Encode, PartialEq)]
-	pub struct AttestationCreationOperation<T: Config> {
-		/// The DID of the attester.
-		pub attester_did: T::DidIdentifier,
-		/// The hash of the claim to attest. It has to be unique.
-		pub claim_hash: T::Hash,
-		/// The hash of the CTYPE used for this attestation.
-		pub ctype_hash: T::Hash,
-		/// \[OPTIONAL\] The ID of the delegation node used to authorise the
-		/// attester.
-		pub delegation_id: Option<T::DelegationNodeId>,
-		/// The DID tx counter.
-		pub tx_counter: u64,
-	}
-
-	impl<T: Config> did::DidOperation<T> for AttestationCreationOperation<T> {
-		fn get_verification_key_relationship(&self) -> did::DidVerificationKeyRelationship {
-			did::DidVerificationKeyRelationship::AssertionMethod
-		}
-
-		fn get_did(&self) -> &T::DidIdentifier {
-			&self.attester_did
-		}
-
-		fn get_tx_counter(&self) -> u64 {
-			self.tx_counter
-		}
-	}
-
-	// Required to use a struct as an extrinsic parameter, and since Config does not
-	// implement Debug, the derive macro does not work.
-	impl<T: Config> Debug for AttestationCreationOperation<T> {
-		fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
-			f.debug_tuple("AttestationCreationOperation")
-				.field(&self.attester_did)
-				.field(&self.claim_hash)
-				.field(&self.ctype_hash)
-				.field(&self.delegation_id)
-				.field(&self.tx_counter)
-				.finish()
-		}
-	}
-
-	/// An operation to revoke an existing attestation.
-	///
-	/// The struct implements the DidOperation trait, and as such it must
-	/// contain information about the caller's DID, the type of DID key
-	/// required to verify the operation signature, and the tx counter to
-	/// protect against replay attacks.
-	#[derive(Clone, Decode, Encode, PartialEq)]
-	pub struct AttestationRevocationOperation<T: Config> {
-		/// The DID of the revoker.
-		pub revoker_did: T::DidIdentifier,
-		/// The hash of the claim to revoke.
-		pub claim_hash: T::Hash,
-		/// For delegated attestations, the number of nodes to check up in the
-		/// trust hierarchy (including the root node but excluding the given
-		/// node) to verify whether the caller is authorised to revoke the
-		/// specified attestation.
-		pub max_parent_checks: u32,
-		/// The DID tx counter.
-		pub tx_counter: u64,
-	}
-
-	impl<T: Config> did::DidOperation<T> for AttestationRevocationOperation<T> {
-		fn get_verification_key_relationship(&self) -> did::DidVerificationKeyRelationship {
-			did::DidVerificationKeyRelationship::AssertionMethod
-		}
-
-		fn get_did(&self) -> &T::DidIdentifier {
-			&self.revoker_did
-		}
-
-		fn get_tx_counter(&self) -> u64 {
-			self.tx_counter
-		}
-	}
-
-	// Required to use a struct as an extrinsic parameter, and since Config does not
-	// implement Debug, the derive macro does not work.
-	impl<T: Config> Debug for AttestationRevocationOperation<T> {
-		fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
-			f.debug_tuple("AttestationRevocationOperation")
-				.field(&self.revoker_did)
-				.field(&self.claim_hash)
-				.field(&self.max_parent_checks)
-				.field(&self.tx_counter)
-				.finish()
-		}
-	}
-
 	#[pallet::config]
 	pub trait Config: frame_system::Config + did::Config + delegation::Config {
+		type EnsureOrigin: EnsureOrigin<Success = Attester<Self>, <Self as frame_system::Config>::Origin>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type WeightInfo: WeightInfo;
 	}
@@ -179,7 +94,7 @@ pub mod pallet {
 	/// It maps from a claim hash to the full attestation.
 	#[pallet::storage]
 	#[pallet::getter(fn attestations)]
-	pub type Attestations<T> = StorageMap<_, Blake2_128Concat, <T as frame_system::Config>::Hash, Attestation<T>>;
+	pub type Attestations<T> = StorageMap<_, Blake2_128Concat, ClaimHash<T>, Attestation<T>>;
 
 	/// Delegated attestations stored on chain.
 	///
@@ -189,8 +104,8 @@ pub mod pallet {
 	pub type DelegatedAttestations<T> = StorageMap<
 		_,
 		Blake2_128Concat,
-		<T as delegation::Config>::DelegationNodeId,
-		Vec<<T as frame_system::Config>::Hash>,
+		DelegationNodeId<T>,
+		Vec<ClaimHash<T>>,
 	>;
 
 	#[pallet::event]
@@ -198,10 +113,10 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// A new attestation has been created.
 		/// \[attester DID, claim hash, CTYPE hash, delegation ID\]
-		AttestationCreated(T::DidIdentifier, T::Hash, T::Hash, Option<T::DelegationNodeId>),
+		AttestationCreated(Attester<T>, ClaimHash<T>, CtypeHash<T>, Option<DelegationNodeId<T>>),
 		/// An attestation has been revoked.
 		/// \[revoker DID, claim hash\]
-		AttestationRevoked(T::DidIdentifier, T::Hash),
+		AttestationRevoked(Attester<T>, ClaimHash<T>),
 	}
 
 	#[pallet::error]
@@ -233,43 +148,40 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		/// Submit a new AttestationCreationOperation operation.
+		/// Create a new attestation.
 		///
-		/// * origin: the origin of the transaction
-		/// * operation: the AttestationCreationOperation operation
-		/// * signature: the signature over the byte-encoded operation
-		#[pallet::weight(<T as Config>::WeightInfo::submit_attestation_creation_operation())]
-		pub fn submit_attestation_creation_operation(
+		/// * origin: the identifier of the attester
+		/// * claim_hash: the hash of the claim to attest. It has to be unique
+		/// * ctype_hash: the hash of the CTYPE used for this attestation
+		/// * delegation_id: \[OPTIONAL\] the ID of the delegation node used to authorise the attester
+		#[pallet::weight(0)]
+		pub fn add(
 			origin: OriginFor<T>,
-			operation: AttestationCreationOperation<T>,
-			signature: did::DidSignature,
+			claim_hash: ClaimHash<T>,
+			ctype_hash: CtypeHash<T>,
+			delegation_id: Option<DelegationNodeId<T>>
 		) -> DispatchResultWithPostInfo {
-			ensure_signed(origin)?;
-
-			// Check if DID exists, if counter is valid, if signature is valid, and increase
-			// DID tx counter
-			did::pallet::Pallet::verify_operation_validity_and_increase_did_nonce(&operation, &signature)
-				.map_err(<did::Error<T>>::from)?;
+			let attester = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
 			ensure!(
-				<ctype::Ctypes<T>>::contains_key(&operation.ctype_hash),
+				<ctype::Ctypes<T>>::contains_key(&ctype_hash),
 				ctype::Error::<T>::CTypeNotFound
 			);
 
 			ensure!(
-				!<Attestations<T>>::contains_key(&operation.claim_hash),
+				!<Attestations<T>>::contains_key(&claim_hash),
 				Error::<T>::AlreadyAttested
 			);
 
 			// Check for validity of the delegation node if specified.
-			if let Some(delegation_id) = operation.delegation_id {
+			if let Some(delegation_id) = delegation_id {
 				let delegation = <delegation::Delegations<T>>::get(delegation_id)
 					.ok_or(delegation::Error::<T>::DelegationNotFound)?;
 
 				ensure!(!delegation.revoked, Error::<T>::DelegationRevoked);
 
 				ensure!(
-					delegation.owner == operation.attester_did,
+					delegation.owner == attester,
 					Error::<T>::NotDelegatedToAttester
 				);
 
@@ -281,68 +193,63 @@ pub mod pallet {
 				// Check if the CTYPE of the delegation is matching the CTYPE of the attestation
 				let root =
 					<delegation::Roots<T>>::get(delegation.root_id).ok_or(delegation::Error::<T>::RootNotFound)?;
-				ensure!(root.ctype_hash == operation.ctype_hash, Error::<T>::CTypeMismatch);
+				ensure!(root.ctype_hash == ctype_hash, Error::<T>::CTypeMismatch);
 
 				// If the attestation is based on a delegation, store separately
 				let mut delegated_attestations = <DelegatedAttestations<T>>::get(delegation_id).unwrap_or_default();
-				delegated_attestations.push(operation.claim_hash);
+				delegated_attestations.push(claim_hash);
 				<DelegatedAttestations<T>>::insert(delegation_id, delegated_attestations);
 			}
 
 			log::debug!("insert Attestation");
 			<Attestations<T>>::insert(
-				&operation.claim_hash,
+				&claim_hash,
 				Attestation {
-					ctype_hash: operation.ctype_hash,
-					attester: operation.attester_did.clone(),
-					delegation_id: operation.delegation_id,
+					ctype_hash: ctype_hash,
+					attester: attester.clone(),
+					delegation_id: delegation_id,
 					revoked: false,
 				},
 			);
 
 			Self::deposit_event(Event::AttestationCreated(
-				operation.attester_did,
-				operation.claim_hash,
-				operation.ctype_hash,
-				operation.delegation_id,
+				attester,
+				claim_hash,
+				ctype_hash,
+				delegation_id,
 			));
 
 			Ok(None.into())
 		}
 
-		/// Submit a new AttestationRevocationOperation operation.
+		/// Revoke an existing attestation.
 		///
-		/// * origin: the origin of the transaction
-		/// * operation: the AttestationRevocationOperation operation
-		/// * signature: the signature over the byte-encoded operation
-		#[pallet::weight(<T as Config>::WeightInfo::submit_attestation_revocation_operation(operation.max_parent_checks))]
-		pub fn submit_attestation_revocation_operation(
+		/// * origin: the identifier of the revoker
+		/// * claim_hash: the hash of the claim to revoke
+		/// * max_parent_checks: for delegated attestations, the number of nodes to check up in the trust hierarchy (including the root node but excluding the given node) to verify whether the caller is authorised to revoke the specified attestation.
+		#[pallet::weight(0)]
+		pub fn revoke(
 			origin: OriginFor<T>,
-			operation: AttestationRevocationOperation<T>,
-			signature: did::DidSignature,
+			claim_hash: ClaimHash<T>,
+			max_parent_checks: u32,
 		) -> DispatchResultWithPostInfo {
-			ensure_signed(origin)?;
+			let revoker = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
-			// Check if DID exists, if counter is valid, if signature is valid, and increase
-			// DID tx counter
-			did::pallet::Pallet::verify_operation_validity_and_increase_did_nonce(&operation, &signature)
-				.map_err(<did::Error<T>>::from)?;
-
-			let attestation = <Attestations<T>>::get(&operation.claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
+			let attestation = <Attestations<T>>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
 			ensure!(!attestation.revoked, Error::<T>::AlreadyRevoked);
 
 			// Check the delegation tree if the sender of the revocation operation is not
 			// the original attester
-			if attestation.attester != operation.revoker_did {
+			if attestation.attester != revoker {
 				let delegation_id = attestation.delegation_id.ok_or(Error::<T>::UnauthorizedRevocation)?;
 				// Check whether the sender of the revocation controls the delegation node
 				// specified, and that its status has not been revoked
 				ensure!(
 					<delegation::Pallet<T>>::is_delegating(
-						&operation.revoker_did,
+						&revoker,
 						&delegation_id,
-						operation.max_parent_checks
+						max_parent_checks
 					)?,
 					Error::<T>::UnauthorizedRevocation
 				);
@@ -350,14 +257,14 @@ pub mod pallet {
 
 			log::debug!("revoking Attestation");
 			<Attestations<T>>::insert(
-				&operation.claim_hash,
+				&claim_hash,
 				Attestation {
 					revoked: true,
 					..attestation
 				},
 			);
 
-			Self::deposit_event(Event::AttestationRevoked(operation.revoker_did, operation.claim_hash));
+			Self::deposit_event(Event::AttestationRevoked(revoker, claim_hash));
 
 			//TODO: Return actual weight used, which should be returned by
 			// delegation::is_actively_delegating

@@ -28,10 +28,7 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
-use kilt_primitives::{
-	constants::{DOLLARS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
-	AccountId, Balance, BlockNumber, Hash, Index, Signature,
-};
+use kilt_primitives::{AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, constants::{DOLLARS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION}};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
@@ -299,29 +296,42 @@ impl sudo::Config for Runtime {
 }
 
 impl attestation::Config for Runtime {
-	/// The ubiquitous event type.
+	type EnsureOrigin = did::origin::EnsureDidOrigin<DidIdentifier>;
 	type Event = Event;
 	type WeightInfo = ();
 }
 
 impl ctype::Config for Runtime {
-	/// The ubiquitous event type.
+	type EnsureOrigin = did::origin::EnsureDidOrigin<DidIdentifier>;
 	type Event = Event;
 	type WeightInfo = ();
 }
 
 impl delegation::Config for Runtime {
-	/// The ubiquitous event type.
+	type EnsureOrigin = did::origin::EnsureDidOrigin<DidIdentifier>;
 	type Event = Event;
 	type DelegationNodeId = Hash;
 	type WeightInfo = ();
 }
 
 impl did::Config for Runtime {
-	/// The ubiquitous event type.
+	type Call = Call;
+	type DidIdentifier = DidIdentifier;
 	type Event = Event;
+	type Origin = Origin;
 	type WeightInfo = ();
-	type DidIdentifier = AccountId;
+}
+
+impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
+	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
+		match self {
+			Call::Attestation(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
+			Call::Ctype(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
+			Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
+			Call::Did(_) => None,
+			_ => None,
+		}
+	}
 }
 
 pub struct PortableGabiRemoval;
@@ -395,7 +405,7 @@ construct_runtime!(
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>} = 9,
 		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 10,
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 11,
-		Did: did::{Pallet, Call, Storage, Event<T>} = 12,
+		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 12,
 
 		Session: session::{Pallet, Call, Storage, Event, Config<T>} = 15,
 		Authorship: authorship::{Pallet, Call, Storage} = 16,

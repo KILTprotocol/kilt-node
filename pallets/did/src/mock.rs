@@ -23,7 +23,6 @@ use crate as did;
 use crate::*;
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
-use kilt_primitives::{AccountId, Signature};
 use sp_core::{ed25519, sr25519, Pair, H256};
 use sp_runtime::{
 	testing::Header,
@@ -32,6 +31,10 @@ use sp_runtime::{
 
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
+
+pub type TestDidIdentifier = kilt_primitives::DidIdentifier;
+pub type TestKeyId = did::KeyId<Test>;
+pub type TestBlockNumber = kilt_primitives::BlockNumber;
 
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -56,7 +59,7 @@ impl frame_system::Config for Test {
 	type BlockNumber = u64;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
-	type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+	type AccountId = <<kilt_primitives::Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
 	type Event = ();
@@ -78,32 +81,24 @@ impl frame_system::Config for Test {
 
 impl did::Config for Test {
 	type Call = Call;
-	type DidIdentifier = kilt_primitives::DidIdentifier;
-	type Event = ();
+	type DidIdentifier = TestDidIdentifier;
 	type Origin = Origin;
+	type Event = ();
 	type WeightInfo = ();
 }
 
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
+	// Not needed for DID operations
 	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
-		match self {
-			Call::Did(_) => None,
-			Call::System(_) => None,
-		}
+		None
 	}
 }
 
-pub type TestDidIdentifier = <Test as did::Config>::DidIdentifier;
-pub type TestKeyId = did::KeyId<Test>;
-pub type TestVerificationKeyDetails = did::DidPublicKeyDetails<Test>;
-pub type TestBlockNumber = <Test as frame_system::Config>::BlockNumber;
-
 #[cfg(test)]
-pub(crate) const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
+pub(crate) const DEFAULT_ACCOUNT: TestDidIdentifier = TestDidIdentifier::new([0u8; 32]);
 
-pub const ALICE_DID: TestDidIdentifier = AccountId::new([1u8; 32]);
-pub const BOB_DID: TestDidIdentifier = AccountId::new([2u8; 32]);
-pub const CHARLIE_DID: TestDidIdentifier = AccountId::new([3u8; 32]);
+pub const ALICE_DID: TestDidIdentifier = TestDidIdentifier::new([1u8; 32]);
+pub const BOB_DID: TestDidIdentifier = TestDidIdentifier::new([2u8; 32]);
 const DEFAULT_AUTH_SEED: [u8; 32] = [4u8; 32];
 const ALTERNATIVE_AUTH_SEED: [u8; 32] = [40u8; 32];
 const DEFAULT_ENC_SEED: [u8; 32] = [5u8; 32];
@@ -240,6 +235,7 @@ impl DidOperation<Test> for TestDidOperation {
 	}
 }
 
+#[allow(dead_code)]
 pub fn initialize_logger() {
 	env_logger::builder().is_test(true).try_init();
 }
