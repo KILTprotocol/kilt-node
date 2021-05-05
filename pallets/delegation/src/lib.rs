@@ -42,6 +42,7 @@ use sp_runtime::{
 	traits::{CheckEqual, MaybeDisplay, SimpleBitOps},
 	DispatchError,
 };
+use sp_std::vec::Vec;
 
 use frame_support::traits::Get;
 use sp_runtime::traits::Hash;

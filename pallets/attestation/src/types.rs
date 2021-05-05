@@ -16,12 +16,13 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode};
-use crate::Config;
-use sp_std::{
+pub use codec::{Decode, Encode};
+pub use sp_std::{
 	fmt::Debug,
 	prelude::{Clone, PartialEq},
 };
+
+use crate::Config;
 
 /// Type of a claim hash.
 pub type ClaimHash<T> = <T as frame_system::Config>::Hash;

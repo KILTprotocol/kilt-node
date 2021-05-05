@@ -711,9 +711,11 @@ impl pallet_membership::Config for Runtime {
 	type MembershipChanged = TechnicalCommittee;
 }
 
-impl attestation::Config for Runtime {
-	type EnsureOrigin = did::origin::EnsureDidOrigin<DidIdentifier>;
+impl did::Config for Runtime {
+	type Call = Call;
+	type DidIdentifier = DidIdentifier;
 	type Event = Event;
+	type Origin = Origin;
 	type WeightInfo = ();
 }
 
@@ -730,11 +732,9 @@ impl delegation::Config for Runtime {
 	type WeightInfo = ();
 }
 
-impl did::Config for Runtime {
-	type Call = Call;
-	type DidIdentifier = DidIdentifier;
+impl attestation::Config for Runtime {
+	type EnsureOrigin = did::origin::EnsureDidOrigin<DidIdentifier>;
 	type Event = Event;
-	type Origin = Origin;
 	type WeightInfo = ();
 }
 
@@ -743,7 +743,8 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 		match self {
 			Call::Attestation(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
 			Call::Ctype(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
-			Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
+			Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
+			// The DID pallet does not support this functionality
 			Call::Did(_) => None,
 			_ => None,
 		}

@@ -34,6 +34,8 @@ pub use default_weights::WeightInfo;
 pub use types::*;
 pub use pallet::*;
 
+use sp_std::vec::Vec;
+
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;

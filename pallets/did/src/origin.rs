@@ -44,6 +44,6 @@ where
 
 	#[cfg(feature = "runtime-benchmarks")]
 	fn successful_origin() -> OuterOrigin {
-		OuterOrigin::from(RawOrigin { id: Default::default() })
+		OuterOrigin::from(DidRawOrigin { id: Default::default() })
 	}
 }
