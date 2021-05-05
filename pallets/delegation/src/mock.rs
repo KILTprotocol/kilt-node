@@ -111,8 +111,11 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
     }
 }
 
+#[cfg(test)]
 pub(crate) const DEFAULT_ACCOUNT: TestDelegatorId = TestDelegatorId::new([0u8; 32]);
+#[cfg(test)]
 pub(crate) const ALTERNATIVE_ACCOUNT: TestDelegatorId = TestDelegatorId::new([1u8; 32]);
+#[cfg(test)]
 pub(crate) const THIRD_ACCOUNT: TestDelegatorId = TestDelegatorId::new([2u8; 32]);
 
 const DEFAULT_ROOT_ID_SEED: u64 = 1u64;

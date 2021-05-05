@@ -33,6 +33,7 @@ mod tests;
 pub use default_weights::WeightInfo;
 pub use types::*;
 pub use pallet::*;
+
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
@@ -40,9 +41,8 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config + ctype::Config + delegation::Config{
-		type AttesterId: Encode + Decode + EncodeLike + Clone + Eq + Debug;
-		type EnsureOrigin: EnsureOrigin<Success = AttesterId<Self>, <Self as frame_system::Config>::Origin>;
+	pub trait Config: frame_system::Config + ctype::Config + delegation::Config + did::Config {
+		type EnsureOrigin: EnsureOrigin<Success = Attester<Self>, <Self as frame_system::Config>::Origin>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type WeightInfo: WeightInfo;
 	}
@@ -151,7 +151,7 @@ pub mod pallet {
 				);
 
 				ensure!(
-					(delegation.permissions & Permissions::ATTEST) == Permissions::ATTEST,
+					(delegation.permissions & delegation::Permissions::ATTEST) == delegation::Permissions::ATTEST,
 					Error::<T>::DelegationUnauthorizedToAttest
 				);
 

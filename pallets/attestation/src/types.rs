@@ -17,24 +17,20 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::{Decode, Encode};
-use delegation::Permissions;
-use frame_support::{
-	ensure,
-	traits::{Hooks, IsType},
-};
+use crate::Config;
 use sp_std::{
 	fmt::Debug,
-	prelude::{Clone, PartialEq, Vec},
+	prelude::{Clone, PartialEq},
 };
-
-/// Type of an attestation CTYPE hash.
-pub type CtypeHash<T> = ctype::CtypeHash<T>;
 
 /// Type of a claim hash.
 pub type ClaimHash<T> = <T as frame_system::Config>::Hash;
 
+/// Type of an attestation CTYPE hash.
+pub type CtypeHash<T> = ctype::CtypeHash<T>;
+
 /// Type of an attester identifier.
-pub type AttesterId<T> = <T as Config>::AttesterId;
+pub type Attester<T> = did::DidIdentifier<T>;
 
 /// Type of a delegation identifier.
 pub type DelegationNodeId<T> = delegation::DelegationNodeId<T>;
@@ -45,10 +41,10 @@ pub struct Attestation<T: Config> {
 	/// The hash of the CTYPE used for this attestation.
 	pub ctype_hash: CtypeHash<T>,
 	/// The DID of the attester.
-	pub attester: AttesterId<T>,
+	pub attester: Attester<T>,
 	/// \[OPTIONAL\] The ID of the delegation node used to authorize the
 	/// attester.
-	pub delegation_id: Option<DelegationNode<T>>,
+	pub delegation_id: Option<DelegationNodeId<T>>,
 	/// The flag indicating whether the attestation has been revoked or not.
 	pub revoked: bool,
 }

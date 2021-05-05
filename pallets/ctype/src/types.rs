@@ -20,4 +20,4 @@
 pub type CtypeHash<T> = <T as frame_system::Config>::Hash;
 
 /// The type of a CTYPE creator.
-pub type CtypeCreator<T> = <T as did::Config>::DidIdentifier;
+pub type CtypeCreator<T> = did::DidIdentifier<T>;

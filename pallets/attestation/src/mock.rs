@@ -18,7 +18,7 @@
 
 #![allow(clippy::from_over_into)]
 
-use crate::{self as attestation, Attestation as AttestationStruct};
+use crate::{self as attestation, Attestation as AttestationStruct, Config};
 use ctype::mock as ctype_mock;
 use delegation::mock as delegation_mock;
 
@@ -33,10 +33,13 @@ use frame_system::EnsureSigned;
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
 
-pub type TestHash = kilt_primitives::Hash;
+pub type TestDidIdentifier =  kilt_primitives::AccountId;
+pub type TestCtypeOwner = TestDidIdentifier;
 pub type TestCtypeHash = kilt_primitives::Hash;
 pub type TestDelegationNodeId = kilt_primitives::Hash;
-pub type TestDidIdentifier = kilt_primitives::DidIdentifier;
+pub type TestDelegatorId = TestDidIdentifier;
+pub type TestClaimHash = kilt_primitives::Hash;
+pub type TestAttester = TestDidIdentifier;
 
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -84,29 +87,30 @@ impl frame_system::Config for Test {
 	type OnSetCode = ();
 }
 
-impl attestation::Config for Test {
+impl did::Config for Test {
+	type DidIdentifier = TestDidIdentifier;
+	type Origin = Origin;
+	type Call = Call;
 	type Event = ();
 	type WeightInfo = ();
 }
 
 impl ctype::Config for Test {
-	type AccountIdentifier = TestDidIdentifier;
-	type EnsureOrigin = EnsureSigned<TestDidIdentifier>;
+	type EnsureOrigin = did::EnsureDidOrigin<TestCtypeOwner>;
 	type Event = ();
 	type WeightInfo = ();
 }
 
 impl delegation::Config for Test {
+	type DelegationNodeId = TestDelegationNodeId;
+	type EnsureOrigin = did::EnsureDidOrigin<TestDelegatorId>;
 	type Event = ();
 	type WeightInfo = ();
-	type DelegationNodeId = TestDelegationNodeId;
 }
 
-impl did::Config for Test {
-	type Call = Call;
-	type DidIdentifier = TestDidIdentifier;
+impl Config for Test {
+	type EnsureOrigin = did::EnsureDidOrigin<TestAttester>;
 	type Event = ();
-	type Origin = Origin;
 	type WeightInfo = ();
 }
 
@@ -121,52 +125,62 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 }
 
 #[cfg(test)]
-pub(crate) const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
+pub(crate) const DEFAULT_ACCOUNT: TestAttester = TestAttester::new([0u8; 32]);
+#[cfg(test)]
+pub(crate) const ALTERNATIVE_ACCOUNT: TestAttester = TestAttester::new([1u8; 32]);
+
 const DEFAULT_CLAIM_HASH_SEED: u64 = 1u64;
 const ALTERNATIVE_CLAIM_HASH_SEED: u64 = 2u64;
 
-pub fn get_claim_hash(default: bool) -> H256 {
+pub fn get_origin(account: TestAttester) -> Origin {
+	Origin::from(
+		did::DidRawOrigin {
+			id: account
+		}
+	)
+}
+
+pub fn get_claim_hash(default: bool) -> TestClaimHash {
 	if default {
-		H256::from_low_u64_be(DEFAULT_CLAIM_HASH_SEED)
+		TestClaimHash::from_low_u64_be(DEFAULT_CLAIM_HASH_SEED)
 	} else {
-		H256::from_low_u64_be(ALTERNATIVE_CLAIM_HASH_SEED)
+		TestClaimHash::from_low_u64_be(ALTERNATIVE_CLAIM_HASH_SEED)
 	}
 }
 
-// Given a claim hash and an attestation, it returns an
-// AttestationCreationOperation that would result in the provided attestation
-// being written on chain.
-pub fn generate_base_attestation_creation_operation(
-	claim_hash: TestHash,
+pub struct AttestationCreationOperation {
+	pub claim_hash: TestClaimHash,
+	pub ctype_hash: TestCtypeHash,
+	pub delegation_id: Option<TestDelegationNodeId>,
+}
+
+
+pub fn generate_base_attestation_creation_details(
+	claim_hash: TestClaimHash,
 	attestation: AttestationStruct<Test>,
-) -> attestation::AttestationCreationOperation<Test> {
-	attestation::AttestationCreationOperation {
-		attester_did: attestation.attester,
+) -> AttestationCreationOperation {
+	AttestationCreationOperation {
 		claim_hash,
 		ctype_hash: attestation.ctype_hash,
 		delegation_id: attestation.delegation_id,
-		tx_counter: 1u64,
 	}
 }
 
-// Given a claim hash and an attestation, it returns an
-// AttestationRevocationOperation that would successfully revoke the attestation
-// from the chain, using the attestation owner as the default revoker, and no
-// gas to check for parent delegations.
-pub fn generate_base_attestation_revocation_operation(
-	claim_hash: TestHash,
+pub struct AttestationRevocationOperation {
+	pub claim_hash: TestClaimHash,
+	pub max_parent_checks: u32,
+}
+
+pub fn generate_base_attestation_revocation_details(
+	claim_hash: TestClaimHash,
 	attestation: AttestationStruct<Test>,
-) -> attestation::AttestationRevocationOperation<Test> {
-	attestation::AttestationRevocationOperation {
-		revoker_did: attestation.attester,
+) -> AttestationRevocationOperation {
+	AttestationRevocationOperation {
 		claim_hash,
 		max_parent_checks: 0u32,
-		tx_counter: 1u64,
 	}
 }
 
-// Given an attester, it generates an Attestation using no delegation and a
-// default CTYPE hash.
 pub fn generate_base_attestation(attester: TestDidIdentifier) -> AttestationStruct<Test> {
 	AttestationStruct {
 		attester,
@@ -179,8 +193,8 @@ pub fn generate_base_attestation(attester: TestDidIdentifier) -> AttestationStru
 #[derive(Clone)]
 pub struct ExtBuilder {
 	delegation_builder: Option<delegation_mock::ExtBuilder>,
-	attestations_stored: Vec<(TestHash, AttestationStruct<Test>)>,
-	delegated_attestations_stored: Vec<(TestDelegationNodeId, Vec<TestHash>)>,
+	attestations_stored: Vec<(TestClaimHash, AttestationStruct<Test>)>,
+	delegated_attestations_stored: Vec<(TestDelegationNodeId, Vec<TestClaimHash>)>,
 }
 
 impl Default for ExtBuilder {
@@ -203,14 +217,14 @@ impl From<delegation_mock::ExtBuilder> for ExtBuilder {
 }
 
 impl ExtBuilder {
-	pub fn with_attestations(mut self, attestations: Vec<(TestHash, AttestationStruct<Test>)>) -> Self {
+	pub fn with_attestations(mut self, attestations: Vec<(TestClaimHash, AttestationStruct<Test>)>) -> Self {
 		self.attestations_stored = attestations;
 		self
 	}
 
 	pub fn with_delegated_attestations(
 		mut self,
-		delegated_attestations: Vec<(TestDelegationNodeId, Vec<TestHash>)>,
+		delegated_attestations: Vec<(TestDelegationNodeId, Vec<TestClaimHash>)>,
 	) -> Self {
 		self.delegated_attestations_stored = delegated_attestations;
 		self
