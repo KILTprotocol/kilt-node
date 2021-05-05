@@ -15,6 +15,7 @@ parity-scale-codec = { version = "2.0.0", default-features = false, features = [
 serde = { version = "1.0.101", optional = true }
 sp-std = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
+orml-utilities = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch = "master", default-features = false }
 
 [dev-dependencies]
 sp-io = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
@@ -26,6 +27,7 @@ std = [
 	"author-inherent/std",
 	"frame-support/std",
 	"frame-system/std",
+	"orml-utilities/std",
 	"pallet-balances/std",
 	"parity-scale-codec/std",
 	"serde",

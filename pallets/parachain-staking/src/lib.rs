@@ -55,7 +55,6 @@
 mod inflation;
 #[cfg(test)]
 mod mock;
-mod set;
 #[cfg(test)]
 mod tests;
 use frame_support::pallet;
@@ -63,17 +62,15 @@ pub use inflation::{InflationInfo, RewardRate, StakingInfo};
 
 pub use pallet::*;
 
-// TODO: Rename Delegator --> Delegator
-
 #[pallet]
 pub mod pallet {
 	use super::InflationInfo;
-	use crate::set::OrderedSet;
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{Currency, Get, Imbalance, ReservableCurrency},
 	};
 	use frame_system::pallet_prelude::*;
+	use orml_utilities::OrderedSet;
 	use parity_scale_codec::{Decode, Encode};
 	use sp_runtime::{
 		traits::{AtLeast32BitUnsigned, Saturating, Zero},

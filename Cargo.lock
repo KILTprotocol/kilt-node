@@ -5607,6 +5607,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "kilt-primitives",
+ "orml-utilities",
  "pallet-balances",
  "parity-scale-codec",
  "serde",

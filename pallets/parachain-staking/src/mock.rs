@@ -385,18 +385,18 @@ pub(crate) fn check_yearly_inflation(
 				assert!(almost_equal(
 					num_of_years * inflation.collator.reward_rate.annual * Balances::reserved_balance(collator_acc),
 					single_collator_reward,
-					Perbill::from_percent(15) * Perbill::from_percent(10),
+					Perbill::from_perthousand(15)
 				));
 				assert!(almost_equal(
 					num_of_years * Perbill::from_percent(collator_reward_rate) * collator_stake,
 					single_collator_reward,
-					Perbill::from_percent(15) * Perbill::from_percent(10),
+					Perbill::from_perthousand(15)
 				));
 				// expected collator rewards should match what was minted
 				assert!(almost_equal(
 					collator_rewards,
 					num_of_collators as u128 * single_collator_reward,
-					Perbill::from_percent(15) * Perbill::from_percent(10),
+					Perbill::from_perthousand(15)
 				));
 			}
 			assert!(!single_collator_reward.is_zero());

@@ -41,7 +41,8 @@ pub const YEARS: u32 = (MONTHS * 12) as u32;
 
 pub const MIN_VESTED_TRANSFER_AMOUNT: Balance = Balance::MAX;
 
-pub const DOLLARS: Balance = 10; // TODO: how much?
+// TODO: how much?
+pub const DOLLARS: Balance = 10;
 pub const CENTS: Balance = DOLLARS / 100;
 pub const MILLICENTS: Balance = CENTS / 1_000;
 
