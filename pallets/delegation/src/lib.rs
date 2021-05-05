@@ -219,7 +219,7 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let delegator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
-			// Retrieve delegate DID details for signature verification
+			// Retrieve delegate details for signature verification
 			let delegate_details = <did::Did<T>>::get(&delegate).ok_or(Error::<T>::DelegateNotFound)?;
 
 			// Calculate the hash root

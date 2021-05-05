@@ -74,10 +74,10 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// A new attestation has been created.
-		/// \[attester DID, claim hash, CTYPE hash, delegation ID\]
+		/// \[attester ID, claim hash, CTYPE hash, delegation ID\]
 		AttestationCreated(Attester<T>, ClaimHash<T>, CtypeHash<T>, Option<DelegationNodeId<T>>),
 		/// An attestation has been revoked.
-		/// \[revoker DID, claim hash\]
+		/// \[revoker ID, claim hash\]
 		AttestationRevoked(Attester<T>, ClaimHash<T>),
 	}
 

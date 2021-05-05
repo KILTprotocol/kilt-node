@@ -15,8 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-pub use bitflags::*;
-pub use codec::{Decode, Encode};
+use bitflags::*;
+use codec::{Decode, Encode};
 
 use crate::Config;
 
@@ -67,7 +67,7 @@ impl Default for Permissions {
 pub struct DelegationRoot<T: Config> {
 	/// The hash of the CTYPE that delegated attesters can attest.
 	pub ctype_hash: CtypeHash<T>,
-	/// The DID of the root owner.
+	/// The identifier of the root owner.
 	pub owner: DelegatorId<T>,
 	/// The flag indicating whether the root has been revoked or not.
 	pub revoked: bool,
@@ -91,7 +91,7 @@ pub struct DelegationNode<T: Config> {
 	/// \[OPTIONAL\] The ID of the parent node. If None, the node is
 	/// considered a child of the root node.
 	pub parent: Option<DelegationNodeId<T>>,
-	/// The DID of the owner of the delegation node, i.e., the delegate.
+	/// The identifier of the owner of the delegation node, i.e., the delegate.
 	pub owner: DelegatorId<T>,
 	/// The permission flags for the operations the delegate is allowed to
 	/// perform.
@@ -105,7 +105,7 @@ impl<T: Config> DelegationNode<T> {
 	/// given root.
 	///
 	/// * root_id: the root node ID this node will be a child of
-	/// * owner: the DID of the owner of the new delegation, i.e., the new
+	/// * owner: the identifier of the owner of the new delegation, i.e., the new
 	///   delegate
 	/// * permissions: the permission flags for the operations the delegate is
 	///   allowed to perform
@@ -124,7 +124,7 @@ impl<T: Config> DelegationNode<T> {
 	///
 	/// * root_id: the root node ID this node will be a child of
 	/// * parent - the parent node ID this node will be a child of
-	/// * owner: the DID of the owner of the new delegation, i.e., the new
+	/// * owner: the identifier of the owner of the new delegation, i.e., the new
 	///   delegate
 	/// * permissions: the permission flags for the operations the delegate is
 	///   allowed to perform

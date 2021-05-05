@@ -96,20 +96,13 @@ impl Config for Test {
 
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
-		// Only interested in CTYPE calls
-		match self {
-			Call::Ctype(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
-			_ => None,
-		}
+		// Not used in this pallet
+		None
 	}
 }
 
-pub struct CtypeCreationDetails {
-	pub hash: TestCtypeHash,
-}
-
 #[cfg(test)]
-pub(crate) const DEFAULT_ACCOUNT: TestCtypeOwner = TestCtypeOwner::new([0u8; 32]);
+pub(crate) const ALICE: TestCtypeOwner = TestCtypeOwner::new([0u8; 32]);
 
 const DEFAULT_CTYPE_HASH_SEED: u64 = 1u64;
 const ALTERNATIVE_CTYPE_HASH_SEED: u64 = 2u64;
@@ -124,6 +117,10 @@ pub fn get_ctype_hash(default: bool) -> TestCtypeHash {
 	} else {
 		TestCtypeHash::from_low_u64_be(ALTERNATIVE_CTYPE_HASH_SEED)
 	}
+}
+
+pub struct CtypeCreationDetails {
+	pub hash: TestCtypeHash,
 }
 
 pub fn generate_base_ctype_creation_details() -> CtypeCreationDetails {

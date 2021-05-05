@@ -25,8 +25,8 @@ use sp_core::Pair;
 // submit_delegation_root_creation_operation()
 
 #[test]
-fn check_submit_delegation_root_creation_operation_successful() {
-	let creator = DEFAULT_ACCOUNT;
+fn create_root_delegation_successful() {
+	let creator = ALICE;
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -56,8 +56,8 @@ fn check_submit_delegation_root_creation_operation_successful() {
 }
 
 #[test]
-fn check_duplicate_submit_delegation_root_creation_operation() {
-	let creator = DEFAULT_ACCOUNT;
+fn duplicate_create_root_delegation_error() {
+	let creator = ALICE;
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -80,8 +80,8 @@ fn check_duplicate_submit_delegation_root_creation_operation() {
 }
 
 #[test]
-fn check_ctype_not_found_submit_delegation_root_creation_operation() {
-	let creator = DEFAULT_ACCOUNT;
+fn ctype_not_found_create_root_delegation_error() {
+	let creator = ALICE;
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -106,9 +106,9 @@ fn check_ctype_not_found_submit_delegation_root_creation_operation() {
 // submit_delegation_creation_operation()
 
 #[test]
-fn check_submit_delegation_no_parent_creation_operation() {
-	let creator = DEFAULT_ACCOUNT;
-	let delegate = ALTERNATIVE_ACCOUNT;
+fn create_delegation_no_parent_successful() {
+	let creator = ALICE;
+	let delegate = BOB;
 
 	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
 	let delegate_details =
@@ -156,7 +156,7 @@ fn check_submit_delegation_no_parent_creation_operation() {
 
 	assert_eq!(stored_delegation.root_id, operation.root_id);
 	assert_eq!(stored_delegation.parent, operation.parent_id);
-	assert_eq!(stored_delegation.owner, operation.delegate_did);
+	assert_eq!(stored_delegation.owner, operation.delegate);
 	assert_eq!(stored_delegation.permissions, operation.permissions);
 	assert!(!stored_delegation.revoked);
 
@@ -169,9 +169,9 @@ fn check_submit_delegation_no_parent_creation_operation() {
 }
 
 #[test]
-fn check_submit_delegation_with_parent_creation_operation_successful() {
-	let creator = DEFAULT_ACCOUNT;
-	let delegate = ALTERNATIVE_ACCOUNT;
+fn create_delegation_with_parent_successful() {
+	let creator = ALICE;
+	let delegate = BOB;
 
 	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
 	let delegate_details =
@@ -227,7 +227,7 @@ fn check_submit_delegation_with_parent_creation_operation_successful() {
 
 	assert_eq!(stored_delegation.root_id, operation.root_id);
 	assert_eq!(stored_delegation.parent, operation.parent_id);
-	assert_eq!(stored_delegation.owner, operation.delegate_did);
+	assert_eq!(stored_delegation.owner, operation.delegate);
 	assert_eq!(stored_delegation.permissions, operation.permissions);
 	assert!(!stored_delegation.revoked);
 
@@ -241,9 +241,9 @@ fn check_submit_delegation_with_parent_creation_operation_successful() {
 }
 
 #[test]
-fn check_delegate_did_not_found_submit_delegation_creation_operation() {
-	let creator = DEFAULT_ACCOUNT;
-	let delegate = ALTERNATIVE_ACCOUNT;
+fn delegate_not_found_create_delegation_error() {
+	let creator = ALICE;
+	let delegate = BOB;
 
 	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
 
@@ -296,9 +296,9 @@ fn check_delegate_did_not_found_submit_delegation_creation_operation() {
 }
 
 #[test]
-fn check_invalid_delegate_signature_submit_delegation_creation_operation() {
-	let creator = DEFAULT_ACCOUNT;
-	let delegate = ALTERNATIVE_ACCOUNT;
+fn invalid_delegate_signature_create_delegation_error() {
+	let creator = ALICE;
+	let delegate = BOB;
 
 	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
 	let alternative_auth_key = did_mock::get_sr25519_attestation_key(false);
@@ -347,9 +347,9 @@ fn check_invalid_delegate_signature_submit_delegation_creation_operation() {
 }
 
 #[test]
-fn check_duplicate_delegation_submit_delegation_creation_operation() {
-	let creator = DEFAULT_ACCOUNT;
-	let delegate = ALTERNATIVE_ACCOUNT;
+fn duplicate_delegation_create_delegation_error() {
+	let creator = ALICE;
+	let delegate = BOB;
 
 	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
 	let delegate_details =
@@ -400,9 +400,9 @@ fn check_duplicate_delegation_submit_delegation_creation_operation() {
 }
 
 #[test]
-fn check_root_not_existing_submit_delegation_creation_operation() {
-	let creator = DEFAULT_ACCOUNT;
-	let delegate = ALTERNATIVE_ACCOUNT;
+fn root_not_existing_create_delegation_error() {
+	let creator = ALICE;
+	let delegate = BOB;
 
 	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
 	let delegate_details =
@@ -450,9 +450,9 @@ fn check_root_not_existing_submit_delegation_creation_operation() {
 }
 
 #[test]
-fn check_parent_not_existing_submit_delegation_creation_operation() {
-	let creator = DEFAULT_ACCOUNT;
-	let delegate = ALTERNATIVE_ACCOUNT;
+fn parent_not_existing_create_delegation_error() {
+	let creator = ALICE;
+	let delegate = BOB;
 
 	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
 	let delegate_details =
@@ -501,10 +501,10 @@ fn check_parent_not_existing_submit_delegation_creation_operation() {
 }
 
 #[test]
-fn check_not_owner_of_parent_submit_delegation_creation_operation() {
-	let creator = DEFAULT_ACCOUNT;
-	let alternative_owner = THIRD_ACCOUNT;
-	let delegate = ALTERNATIVE_ACCOUNT;
+fn not_owner_of_parent_create_delegation_error() {
+	let creator = ALICE;
+	let alternative_owner = CHARLIE;
+	let delegate = BOB;
 
 	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
 	let delegate_details =
@@ -559,9 +559,9 @@ fn check_not_owner_of_parent_submit_delegation_creation_operation() {
 }
 
 #[test]
-fn check_unauthorised_delegation_submit_delegation_creation_operation() {
-	let creator = DEFAULT_ACCOUNT;
-	let delegate = ALTERNATIVE_ACCOUNT;
+fn unauthorised_delegation_create_delegation_error() {
+	let creator = ALICE;
+	let delegate = BOB;
 
 	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
 	let delegate_details =
@@ -617,10 +617,10 @@ fn check_unauthorised_delegation_submit_delegation_creation_operation() {
 }
 
 #[test]
-fn check_not_owner_of_root_delegation_submit_delegation_creation_operation() {
-	let creator = DEFAULT_ACCOUNT;
-	let alternative_owner = THIRD_ACCOUNT;
-	let delegate = ALTERNATIVE_ACCOUNT;
+fn not_owner_of_root_create_delegation_error() {
+	let creator = ALICE;
+	let alternative_owner = CHARLIE;
+	let delegate = BOB;
 
 	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
 	let delegate_details =
@@ -669,9 +669,9 @@ fn check_not_owner_of_root_delegation_submit_delegation_creation_operation() {
 // submit_delegation_root_revocation_operation()
 
 #[test]
-fn check_list_hierarchy_submit_delegation_root_revocation_operation_successful() {
-	let revoker = DEFAULT_ACCOUNT;
-	let delegate = ALTERNATIVE_ACCOUNT;
+fn list_hierarchy_revoke_root_successful() {
+	let revoker = ALICE;
+	let delegate = BOB;
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -728,9 +728,9 @@ fn check_list_hierarchy_submit_delegation_root_revocation_operation_successful()
 }
 
 #[test]
-fn check_tree_hierarchy_submit_delegation_root_revocation_operation_successful() {
-	let revoker = DEFAULT_ACCOUNT;
-	let delegate = ALTERNATIVE_ACCOUNT;
+fn tree_hierarchy_revoke_root_successful() {
+	let revoker = ALICE;
+	let delegate = BOB;
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -784,9 +784,9 @@ fn check_tree_hierarchy_submit_delegation_root_revocation_operation_successful()
 }
 
 #[test]
-fn check_greater_max_revocations_submit_delegation_root_revocation_operation_successful() {
-	let revoker = DEFAULT_ACCOUNT;
-	let delegate = ALTERNATIVE_ACCOUNT;
+fn greater_max_revocations_revoke_root_successful() {
+	let revoker = ALICE;
+	let delegate = BOB;
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -829,8 +829,8 @@ fn check_greater_max_revocations_submit_delegation_root_revocation_operation_suc
 }
 
 #[test]
-fn check_root_not_found_submit_delegation_root_revocation_operation() {
-	let revoker = DEFAULT_ACCOUNT;
+fn root_not_found_revoke_root_error() {
+	let revoker = ALICE;
 
 	let root_id = get_delegation_root_id(true);
 
@@ -849,9 +849,9 @@ fn check_root_not_found_submit_delegation_root_revocation_operation() {
 }
 
 #[test]
-fn check_different_root_creator_submit_delegation_root_revocation_operation() {
-	let revoker = DEFAULT_ACCOUNT;
-	let alternative_revoker = ALTERNATIVE_ACCOUNT;
+fn different_root_creator_revoke_root_error() {
+	let revoker = ALICE;
+	let alternative_revoker = BOB;
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -874,9 +874,9 @@ fn check_different_root_creator_submit_delegation_root_revocation_operation() {
 }
 
 #[test]
-fn check_too_small_max_revocations_submit_delegation_root_revocation_operation() {
-	let revoker = DEFAULT_ACCOUNT;
-	let delegate = ALTERNATIVE_ACCOUNT;
+fn too_small_max_revocations_revoke_root_error() {
+	let revoker = ALICE;
+	let delegate = BOB;
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -910,9 +910,9 @@ fn check_too_small_max_revocations_submit_delegation_root_revocation_operation()
 }
 
 #[test]
-fn check_exact_children_max_revocations_submit_delegation_root_revocation_operation() {
-	let revoker = DEFAULT_ACCOUNT;
-	let delegate = ALTERNATIVE_ACCOUNT;
+fn exact_children_max_revocations_revoke_root_error() {
+	let revoker = ALICE;
+	let delegate = BOB;
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -983,9 +983,9 @@ fn check_exact_children_max_revocations_submit_delegation_root_revocation_operat
 // submit_delegation_revocation_operation()
 
 #[test]
-fn check_direct_owner_submit_delegation_revocation_operation_successful() {
-	let revoker = DEFAULT_ACCOUNT;
-	let delegate = ALTERNATIVE_ACCOUNT;
+fn direct_owner_revoke_delegation_successful() {
+	let revoker = ALICE;
+	let delegate = BOB;
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -1040,9 +1040,9 @@ fn check_direct_owner_submit_delegation_revocation_operation_successful() {
 }
 
 #[test]
-fn check_parent_owner_submit_delegation_revocation_operation_successful() {
-	let revoker = DEFAULT_ACCOUNT;
-	let delegate = ALTERNATIVE_ACCOUNT;
+fn parent_owner_revoke_delegation_successful() {
+	let revoker = ALICE;
+	let delegate = BOB;
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -1097,8 +1097,8 @@ fn check_parent_owner_submit_delegation_revocation_operation_successful() {
 }
 
 #[test]
-fn check_delegation_not_found_submit_delegation_revocation_operation() {
-	let revoker = DEFAULT_ACCOUNT;
+fn delegation_not_found_revoke_delegation_error() {
+	let revoker = ALICE;
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -1127,9 +1127,9 @@ fn check_delegation_not_found_submit_delegation_revocation_operation() {
 }
 
 #[test]
-fn check_not_delegating_submit_delegation_revocation_operation() {
-	let owner = DEFAULT_ACCOUNT;
-	let revoker = ALTERNATIVE_ACCOUNT;
+fn not_delegating_revoke_delegation_error() {
+	let owner = ALICE;
+	let revoker = BOB;
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -1165,10 +1165,10 @@ fn check_not_delegating_submit_delegation_revocation_operation() {
 }
 
 #[test]
-fn check_parent_too_far_submit_delegation_revocation_operation() {
-	let owner = DEFAULT_ACCOUNT;
-	let intermediate = THIRD_ACCOUNT;
-	let delegate = ALTERNATIVE_ACCOUNT;
+fn parent_too_far_revoke_delegation_error() {
+	let owner = ALICE;
+	let intermediate = CHARLIE;
+	let delegate = BOB;
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -1215,9 +1215,9 @@ fn check_parent_too_far_submit_delegation_revocation_operation() {
 }
 
 #[test]
-fn check_too_many_revocations_submit_delegation_revocation_operation() {
-	let revoker = DEFAULT_ACCOUNT;
-	let delegate = ALTERNATIVE_ACCOUNT;
+fn too_many_revocations_revoke_delegation_error() {
+	let revoker = ALICE;
+	let delegate = BOB;
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -1266,10 +1266,10 @@ fn check_too_many_revocations_submit_delegation_revocation_operation() {
 // Internal function: is_delegating()
 
 #[test]
-fn check_is_delegating_direct_not_revoked() {
-	let user_1 = DEFAULT_ACCOUNT;
-	let user_2 = ALTERNATIVE_ACCOUNT;
-	let user_3 = THIRD_ACCOUNT;
+fn is_delegating_direct_not_revoked() {
+	let user_1 = ALICE;
+	let user_2 = BOB;
+	let user_3 = CHARLIE;
 
 	let (root_id, root_node) = (get_delegation_root_id(true), generate_base_delegation_root(user_1));
 	let (delegation_id_1, delegation_node_1) =
@@ -1301,10 +1301,10 @@ fn check_is_delegating_direct_not_revoked() {
 }
 
 #[test]
-fn check_is_delegating_direct_not_revoked_max_parent_checks_value() {
-	let user_1 = DEFAULT_ACCOUNT;
-	let user_2 = ALTERNATIVE_ACCOUNT;
-	let user_3 = THIRD_ACCOUNT;
+fn is_delegating_direct_not_revoked_max_parent_checks_value() {
+	let user_1 = ALICE;
+	let user_2 = BOB;
+	let user_3 = CHARLIE;
 
 	let (root_id, root_node) = (get_delegation_root_id(true), generate_base_delegation_root(user_1));
 	let (delegation_id_1, delegation_node_1) =
@@ -1336,10 +1336,10 @@ fn check_is_delegating_direct_not_revoked_max_parent_checks_value() {
 }
 
 #[test]
-fn check_is_delegating_direct_revoked() {
-	let user_1 = DEFAULT_ACCOUNT;
-	let user_2 = ALTERNATIVE_ACCOUNT;
-	let user_3 = THIRD_ACCOUNT;
+fn is_delegating_direct_revoked() {
+	let user_1 = ALICE;
+	let user_2 = BOB;
+	let user_3 = CHARLIE;
 
 	let (root_id, root_node) = (get_delegation_root_id(true), generate_base_delegation_root(user_1));
 	let (delegation_id_1, delegation_node_1) =
@@ -1372,10 +1372,10 @@ fn check_is_delegating_direct_revoked() {
 }
 
 #[test]
-fn check_is_delegating_direct_revoked_max_parent_checks_value() {
-	let user_1 = DEFAULT_ACCOUNT;
-	let user_2 = ALTERNATIVE_ACCOUNT;
-	let user_3 = THIRD_ACCOUNT;
+fn is_delegating_direct_revoked_max_parent_checks_value() {
+	let user_1 = ALICE;
+	let user_2 = BOB;
+	let user_3 = CHARLIE;
 
 	let (root_id, root_node) = (get_delegation_root_id(true), generate_base_delegation_root(user_1));
 	let (delegation_id_1, delegation_node_1) =
@@ -1408,10 +1408,10 @@ fn check_is_delegating_direct_revoked_max_parent_checks_value() {
 }
 
 #[test]
-fn check_is_delegating_max_parent_not_revoked() {
-	let user_1 = DEFAULT_ACCOUNT;
-	let user_2 = ALTERNATIVE_ACCOUNT;
-	let user_3 = THIRD_ACCOUNT;
+fn is_delegating_max_parent_not_revoked() {
+	let user_1 = ALICE;
+	let user_2 = BOB;
+	let user_3 = CHARLIE;
 
 	let (root_id, root_node) = (get_delegation_root_id(true), generate_base_delegation_root(user_1));
 	let (delegation_id_1, delegation_node_1) = (
@@ -1443,10 +1443,10 @@ fn check_is_delegating_max_parent_not_revoked() {
 }
 
 #[test]
-fn check_is_delegating_max_parent_revoked() {
-	let user_1 = DEFAULT_ACCOUNT;
-	let user_2 = ALTERNATIVE_ACCOUNT;
-	let user_3 = THIRD_ACCOUNT;
+fn is_delegating_max_parent_revoked() {
+	let user_1 = ALICE;
+	let user_2 = BOB;
+	let user_3 = CHARLIE;
 
 	let (root_id, root_node) = (get_delegation_root_id(true), generate_base_delegation_root(user_1));
 	let (delegation_id_1, mut delegation_node_1) = (
@@ -1479,10 +1479,10 @@ fn check_is_delegating_max_parent_revoked() {
 }
 
 #[test]
-fn check_is_delegating_root_owner_not_revoked() {
-	let user_1 = DEFAULT_ACCOUNT;
-	let user_2 = ALTERNATIVE_ACCOUNT;
-	let user_3 = THIRD_ACCOUNT;
+fn is_delegating_root_owner_not_revoked() {
+	let user_1 = ALICE;
+	let user_2 = BOB;
+	let user_3 = CHARLIE;
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -1515,10 +1515,10 @@ fn check_is_delegating_root_owner_not_revoked() {
 }
 
 #[test]
-fn check_is_delegating_root_owner_revoked() {
-	let user_1 = DEFAULT_ACCOUNT;
-	let user_2 = ALTERNATIVE_ACCOUNT;
-	let user_3 = THIRD_ACCOUNT;
+fn is_delegating_root_owner_revoked() {
+	let user_1 = ALICE;
+	let user_2 = BOB;
+	let user_3 = CHARLIE;
 
 	let (root_id, mut root_node) = (
 		get_delegation_root_id(true),
@@ -1553,8 +1553,8 @@ fn check_is_delegating_root_owner_revoked() {
 }
 
 #[test]
-fn check_is_delegating_delegation_not_found() {
-	let user_1 = DEFAULT_ACCOUNT;
+fn is_delegating_delegation_not_found() {
+	let user_1 = ALICE;
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -1578,10 +1578,10 @@ fn check_is_delegating_delegation_not_found() {
 }
 
 #[test]
-fn check_is_delegating_root_after_max_limit() {
-	let user_1 = DEFAULT_ACCOUNT;
-	let user_2 = ALTERNATIVE_ACCOUNT;
-	let user_3 = THIRD_ACCOUNT;
+fn is_delegating_root_after_max_limit() {
+	let user_1 = ALICE;
+	let user_2 = BOB;
+	let user_3 = CHARLIE;
 
 	let (root_id, mut root_node) = (
 		get_delegation_root_id(true),

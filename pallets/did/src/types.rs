@@ -16,18 +16,17 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-pub use codec::{Decode, Encode, WrapperTypeEncode};
-pub use frame_support::ensure;
-pub use sp_runtime::traits::Verify;
-use sp_runtime::traits::{IdentifyAccount, Lazy};
-pub use sp_std::{
+use codec::{Decode, Encode, WrapperTypeEncode};
+use frame_support::ensure;
+use sp_runtime::traits::{IdentifyAccount, Lazy, Verify};
+use sp_std::{
 	collections::{btree_map::BTreeMap, btree_set::BTreeSet},
 	convert::TryFrom,
 	str,
 	vec::Vec,
 };
 
-pub use sp_core::{ed25519, sr25519};
+use sp_core::{ed25519, sr25519};
 
 use crate::{utils, Config};
 
@@ -304,7 +303,7 @@ pub enum UrlError {
 ///
 /// It is currently used to keep track of all the past and current
 /// attestation keys a DID might control.
-#[derive(Clone, Debug, Decode, Encode, PartialEq)]
+#[derive(Clone, Copy, Debug, Decode, Encode, PartialEq)]
 pub struct DidPublicKeyDetails<T: Config> {
 	/// A public key the DID controls.
 	pub key: DidPublicKey,

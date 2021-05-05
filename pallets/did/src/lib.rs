@@ -48,7 +48,7 @@ use frame_support::{
 	Parameter,
 };
 use frame_system::ensure_signed;
-use sp_std::{boxed::Box, fmt::Debug, prelude::Clone};
+use sp_std::{boxed::Box, convert::TryFrom, fmt::Debug, prelude::Clone};
 
 #[frame_support::pallet]
 pub mod pallet {

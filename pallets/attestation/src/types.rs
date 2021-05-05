@@ -16,8 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-pub use codec::{Decode, Encode};
-pub use sp_std::{
+use codec::{Decode, Encode};
+use sp_std::{
 	fmt::Debug,
 	prelude::{Clone, PartialEq},
 };
@@ -41,7 +41,7 @@ pub type DelegationNodeId<T> = delegation::DelegationNodeId<T>;
 pub struct Attestation<T: Config> {
 	/// The hash of the CTYPE used for this attestation.
 	pub ctype_hash: CtypeHash<T>,
-	/// The DID of the attester.
+	/// The ID of the attester.
 	pub attester: Attester<T>,
 	/// \[OPTIONAL\] The ID of the delegation node used to authorize the
 	/// attester.

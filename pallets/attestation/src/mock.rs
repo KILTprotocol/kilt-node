@@ -18,7 +18,8 @@
 
 #![allow(clippy::from_over_into)]
 
-use crate::{self as attestation, Attestation as AttestationStruct, Config};
+use crate as attestation;
+use crate::{Attestation as AttestationStruct, *};
 use ctype::mock as ctype_mock;
 use delegation::mock as delegation_mock;
 
@@ -116,17 +117,15 @@ impl Config for Test {
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	// Only interested in attestation operations
 	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
-		match self {
-			Call::Attestation(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
-			_ => None,
-		}
+		// Not used in this pallet
+		None
 	}
 }
 
 #[cfg(test)]
-pub(crate) const DEFAULT_ACCOUNT: TestAttester = TestAttester::new([0u8; 32]);
+pub(crate) const ALICE: TestAttester = TestAttester::new([0u8; 32]);
 #[cfg(test)]
-pub(crate) const ALTERNATIVE_ACCOUNT: TestAttester = TestAttester::new([1u8; 32]);
+pub(crate) const BOB: TestAttester = TestAttester::new([1u8; 32]);
 
 const DEFAULT_CLAIM_HASH_SEED: u64 = 1u64;
 const ALTERNATIVE_CLAIM_HASH_SEED: u64 = 2u64;
@@ -143,7 +142,7 @@ pub fn get_claim_hash(default: bool) -> TestClaimHash {
 	}
 }
 
-pub struct AttestationCreationOperation {
+pub struct AttestationCreationDetails {
 	pub claim_hash: TestClaimHash,
 	pub ctype_hash: TestCtypeHash,
 	pub delegation_id: Option<TestDelegationNodeId>,
@@ -152,27 +151,27 @@ pub struct AttestationCreationOperation {
 pub fn generate_base_attestation_creation_details(
 	claim_hash: TestClaimHash,
 	attestation: AttestationStruct<Test>,
-) -> AttestationCreationOperation {
-	AttestationCreationOperation {
+) -> AttestationCreationDetails {
+	AttestationCreationDetails {
 		claim_hash,
 		ctype_hash: attestation.ctype_hash,
 		delegation_id: attestation.delegation_id,
 	}
 }
 
-pub struct AttestationRevocationOperation {
+pub struct AttestationRevocationDetails {
 	pub claim_hash: TestClaimHash,
 	pub max_parent_checks: u32,
 }
 
-pub fn generate_base_attestation_revocation_details(claim_hash: TestClaimHash) -> AttestationRevocationOperation {
-	AttestationRevocationOperation {
+pub fn generate_base_attestation_revocation_details(claim_hash: TestClaimHash) -> AttestationRevocationDetails {
+	AttestationRevocationDetails {
 		claim_hash,
 		max_parent_checks: 0u32,
 	}
 }
 
-pub fn generate_base_attestation(attester: TestDidIdentifier) -> AttestationStruct<Test> {
+pub fn generate_base_attestation(attester: TestAttester) -> AttestationStruct<Test> {
 	AttestationStruct {
 		attester,
 		delegation_id: None,

@@ -66,7 +66,7 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// A new CTYPE has been created.
-		/// \[creator DID, CTYPE hash\]
+		/// \[creator identifier, CTYPE hash\]
 		CTypeCreated(CtypeCreator<T>, CtypeHash<T>),
 	}
 

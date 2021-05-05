@@ -23,11 +23,15 @@ use crate as did;
 use crate::*;
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
+#[cfg(test)]
+use kilt_primitives::AccountId;
 use sp_core::{ed25519, sr25519, Pair, H256};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 };
+use codec::Decode;
+use sp_std::collections::btree_set::BTreeSet;
 
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
@@ -95,7 +99,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 }
 
 #[cfg(test)]
-pub(crate) const DEFAULT_ACCOUNT: TestDidIdentifier = TestDidIdentifier::new([0u8; 32]);
+pub(crate) const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
 
 pub const ALICE_DID: TestDidIdentifier = TestDidIdentifier::new([1u8; 32]);
 pub const BOB_DID: TestDidIdentifier = TestDidIdentifier::new([2u8; 32]);
@@ -164,9 +168,6 @@ pub fn get_sr25519_delegation_key(default: bool) -> sr25519::Pair {
 	}
 }
 
-// Given a DID identifier and an authentication key, it returns a
-// DidCreationOperation that would successfully write the new DID on chain using
-// a default key agreement key.
 pub fn generate_base_did_creation_operation(
 	did: TestDidIdentifier,
 	new_auth_key: did::DidVerificationKey,
@@ -181,8 +182,6 @@ pub fn generate_base_did_creation_operation(
 	}
 }
 
-// Given a DID identifier, it returns a DidUpdateOperation
-// that does not update any information for the DID.
 pub fn generate_base_did_update_operation(did: TestDidIdentifier) -> did::DidUpdateOperation<Test> {
 	DidUpdateOperation {
 		did,
@@ -196,14 +195,10 @@ pub fn generate_base_did_update_operation(did: TestDidIdentifier) -> did::DidUpd
 	}
 }
 
-// Given a DID identifier, it returns a DidDeletionOperation
-// that would remove the DID from chain.
 pub fn generate_base_did_delete_operation(did: TestDidIdentifier) -> did::DidDeletionOperation<Test> {
 	DidDeletionOperation { did, tx_counter: 1u64 }
 }
 
-// Given an authentication key, it generates a DidDetails object with the given
-// key.
 pub fn generate_base_did_details(authentication_key: did::DidVerificationKey) -> did::DidDetails<Test> {
 	did::DidDetails::new(authentication_key, 0u64)
 }

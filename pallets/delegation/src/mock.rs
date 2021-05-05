@@ -22,6 +22,9 @@ use crate as delegation;
 use crate::*;
 use ctype::mock as ctype_mock;
 
+#[cfg(test)]
+use codec::Encode;
+
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use sp_core::H256;
 use sp_runtime::{
@@ -106,20 +109,17 @@ impl Config for Test {
 
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
-		// Only interested in Delegation calls
-		match self {
-			Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
-			_ => None,
-		}
+		// Not used in this pallet
+		None
 	}
 }
 
 #[cfg(test)]
-pub(crate) const DEFAULT_ACCOUNT: TestDelegatorId = TestDelegatorId::new([0u8; 32]);
+pub(crate) const ALICE: TestDelegatorId = TestDelegatorId::new([0u8; 32]);
 #[cfg(test)]
-pub(crate) const ALTERNATIVE_ACCOUNT: TestDelegatorId = TestDelegatorId::new([1u8; 32]);
+pub(crate) const BOB: TestDelegatorId = TestDelegatorId::new([1u8; 32]);
 #[cfg(test)]
-pub(crate) const THIRD_ACCOUNT: TestDelegatorId = TestDelegatorId::new([2u8; 32]);
+pub(crate) const CHARLIE: TestDelegatorId = TestDelegatorId::new([2u8; 32]);
 
 const DEFAULT_ROOT_ID_SEED: u64 = 1u64;
 const ALTERNATIVE_ROOT_ID_SEED: u64 = 2u64;
@@ -180,7 +180,7 @@ pub struct DelegationCreationDetails {
 	pub delegation_id: TestDelegationNodeId,
 	pub root_id: TestDelegationNodeId,
 	pub parent_id: Option<TestDelegationNodeId>,
-	pub delegate_did: TestDelegatorId,
+	pub delegate: TestDelegatorId,
 	pub permissions: Permissions,
 	pub delegate_signature: did::DidSignature,
 }
@@ -194,7 +194,7 @@ pub fn generate_base_delegation_creation_details(
 		delegation_id,
 		parent_id: delegation_node.parent,
 		root_id: delegation_node.root_id,
-		delegate_did: delegation_node.owner,
+		delegate: delegation_node.owner,
 		delegate_signature,
 		permissions: delegation_node.permissions,
 	}
@@ -228,7 +228,6 @@ pub fn generate_base_delegation_revocation_details(delegation_id: TestDelegation
 	}
 }
 
-// Given an owner, it generates a DelegationRoot using a default CTYPE hash.
 pub fn generate_base_delegation_root(owner: TestDelegatorId) -> DelegationRoot<Test> {
 	DelegationRoot {
 		owner,
@@ -237,8 +236,6 @@ pub fn generate_base_delegation_root(owner: TestDelegatorId) -> DelegationRoot<T
 	}
 }
 
-// Given a root_id and an owner, it generates a DelegationNode with no parent
-// and a permission to delegate.
 pub fn generate_base_delegation_node(root_id: TestDelegationNodeId, owner: TestDelegatorId) -> DelegationNode<Test> {
 	DelegationNode {
 		owner,

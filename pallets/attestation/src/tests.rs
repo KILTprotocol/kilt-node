@@ -24,8 +24,8 @@ use frame_support::{assert_noop, assert_ok};
 // submit_attestation_creation_operation
 
 #[test]
-fn check_no_delegation_submit_attestation_creation_operation_successful() {
-	let attester = DEFAULT_ACCOUNT;
+fn attest_no_delegation_successful() {
+	let attester = ALICE;
 	let claim_hash = get_claim_hash(true);
 	let attestation = generate_base_attestation(attester.clone());
 
@@ -54,8 +54,8 @@ fn check_no_delegation_submit_attestation_creation_operation_successful() {
 }
 
 #[test]
-fn check_with_delegation_submit_attestation_creation_operation_successful() {
-	let attester = DEFAULT_ACCOUNT;
+fn attest_with_delegation_successful() {
+	let attester = ALICE;
 	let claim_hash = get_claim_hash(true);
 	let (root_id, root_node) = (
 		delegation_mock::get_delegation_root_id(true),
@@ -104,8 +104,8 @@ fn check_with_delegation_submit_attestation_creation_operation_successful() {
 }
 
 #[test]
-fn check_ctype_not_present_submit_attestation_creation_operation() {
-	let attester = DEFAULT_ACCOUNT;
+fn ctype_not_present_attest_error() {
+	let attester = ALICE;
 	let claim_hash = get_claim_hash(true);
 	let attestation = generate_base_attestation(attester.clone());
 
@@ -130,8 +130,8 @@ fn check_ctype_not_present_submit_attestation_creation_operation() {
 }
 
 #[test]
-fn check_duplicate_attestation_submit_attestation_creation_operation() {
-	let attester = DEFAULT_ACCOUNT;
+fn duplicate_attest_error() {
+	let attester = ALICE;
 	let claim_hash = get_claim_hash(true);
 	let attestation = generate_base_attestation(attester.clone());
 
@@ -157,8 +157,8 @@ fn check_duplicate_attestation_submit_attestation_creation_operation() {
 }
 
 #[test]
-fn check_delegation_not_found_submit_attestation_creation_operation() {
-	let attester = DEFAULT_ACCOUNT;
+fn delegation_not_found_attest_error() {
+	let attester = ALICE;
 	let claim_hash = get_claim_hash(true);
 	let delegation_id = delegation_mock::get_delegation_id(true);
 	let mut attestation = generate_base_attestation(attester.clone());
@@ -184,8 +184,8 @@ fn check_delegation_not_found_submit_attestation_creation_operation() {
 }
 
 #[test]
-fn check_delegation_revoked_submit_attestation_creation_operation() {
-	let attester = DEFAULT_ACCOUNT;
+fn delegation_revoked_attest_error() {
+	let attester = ALICE;
 	let claim_hash = get_claim_hash(true);
 	let (root_id, root_node) = (
 		delegation_mock::get_delegation_root_id(true),
@@ -224,9 +224,9 @@ fn check_delegation_revoked_submit_attestation_creation_operation() {
 }
 
 #[test]
-fn check_not_delegation_owner_submit_attestation_creation_operation() {
-	let attester = DEFAULT_ACCOUNT;
-	let alternative_owner = ALTERNATIVE_ACCOUNT;
+fn not_delegation_owner_attest_error() {
+	let attester = ALICE;
+	let alternative_owner = BOB;
 	let claim_hash = get_claim_hash(true);
 	let (root_id, root_node) = (
 		delegation_mock::get_delegation_root_id(true),
@@ -264,8 +264,8 @@ fn check_not_delegation_owner_submit_attestation_creation_operation() {
 }
 
 #[test]
-fn check_unauthorised_permissions_submit_attestation_creation_operation() {
-	let attester = DEFAULT_ACCOUNT;
+fn unauthorised_permissions_attest_error() {
+	let attester = ALICE;
 	let claim_hash = get_claim_hash(true);
 	let (root_id, root_node) = (
 		delegation_mock::get_delegation_root_id(true),
@@ -302,8 +302,8 @@ fn check_unauthorised_permissions_submit_attestation_creation_operation() {
 }
 
 #[test]
-fn check_root_not_present_submit_attestation_creation_operation() {
-	let attester = DEFAULT_ACCOUNT;
+fn root_not_present_attest_error() {
+	let attester = ALICE;
 	let claim_hash = get_claim_hash(true);
 	let (root_id, root_node) = (
 		delegation_mock::get_delegation_root_id(true),
@@ -342,8 +342,8 @@ fn check_root_not_present_submit_attestation_creation_operation() {
 }
 
 #[test]
-fn check_root_ctype_mismatch_submit_attestation_creation_operation() {
-	let attester = DEFAULT_ACCOUNT;
+fn root_ctype_mismatch_attest_error() {
+	let attester = ALICE;
 	let claim_hash = get_claim_hash(true);
 	let alternative_ctype_hash = ctype_mock::get_ctype_hash(false);
 	let (root_id, mut root_node) = (
@@ -385,8 +385,8 @@ fn check_root_ctype_mismatch_submit_attestation_creation_operation() {
 // submit_attestation_revocation_operation
 
 #[test]
-fn check_direct_attestation_submit_attestation_revocation_operation_successful() {
-	let revoker = DEFAULT_ACCOUNT;
+fn revoke_direct_successful() {
+	let revoker = ALICE;
 	let claim_hash = get_claim_hash(true);
 	let attestation = generate_base_attestation(revoker.clone());
 
@@ -413,9 +413,9 @@ fn check_direct_attestation_submit_attestation_revocation_operation_successful()
 }
 
 #[test]
-fn check_direct_delegation_submit_attestation_revocation_operation_successful() {
-	let revoker = DEFAULT_ACCOUNT;
-	let attestation_owner = ALTERNATIVE_ACCOUNT;
+fn revoke_with_delegation_successful() {
+	let revoker = ALICE;
+	let attestation_owner = BOB;
 	let claim_hash = get_claim_hash(true);
 
 	let (root_id, root_node) = (
@@ -461,9 +461,9 @@ fn check_direct_delegation_submit_attestation_revocation_operation_successful() 
 }
 
 #[test]
-fn check_parent_delegation_submit_attestation_revocation_operation_successful() {
-	let revoker = DEFAULT_ACCOUNT;
-	let attestation_owner = ALTERNATIVE_ACCOUNT;
+fn revoke_with_parent_delegation_successful() {
+	let revoker = ALICE;
+	let attestation_owner = BOB;
 	let claim_hash = get_claim_hash(true);
 
 	let (root_id, root_node) = (
@@ -511,9 +511,9 @@ fn check_parent_delegation_submit_attestation_revocation_operation_successful() 
 }
 
 #[test]
-fn check_parent_delegation_no_attestation_permissions_submit_attestation_revocation_operation_successful() {
-	let revoker = DEFAULT_ACCOUNT;
-	let attestation_owner = ALTERNATIVE_ACCOUNT;
+fn revoke_parent_delegation_no_attestation_permissions_successful() {
+	let revoker = ALICE;
+	let attestation_owner = BOB;
 	let claim_hash = get_claim_hash(true);
 
 	let (root_id, root_node) = (
@@ -561,9 +561,9 @@ fn check_parent_delegation_no_attestation_permissions_submit_attestation_revocat
 }
 
 #[test]
-fn check_parent_delegation_with_direct_delegation_revoked_submit_attestation_revocation_operation_successful() {
-	let revoker = DEFAULT_ACCOUNT;
-	let attestation_owner = ALTERNATIVE_ACCOUNT;
+fn revoke_parent_delegation_with_direct_delegation_revoked_successful() {
+	let revoker = ALICE;
+	let attestation_owner = BOB;
 	let claim_hash = get_claim_hash(true);
 
 	let (root_id, root_node) = (
@@ -612,8 +612,8 @@ fn check_parent_delegation_with_direct_delegation_revoked_submit_attestation_rev
 }
 
 #[test]
-fn check_attestation_not_present_submit_attestation_revocation_operation() {
-	let revoker = DEFAULT_ACCOUNT;
+fn attestation_not_present_revoke_error() {
+	let revoker = ALICE;
 	let claim_hash = get_claim_hash(true);
 
 	let attestation = generate_base_attestation(revoker.clone());
@@ -637,8 +637,8 @@ fn check_attestation_not_present_submit_attestation_revocation_operation() {
 }
 
 #[test]
-fn check_already_revoked_attestation_submit_attestation_revocation_operation() {
-	let revoker = DEFAULT_ACCOUNT;
+fn already_revoked_revoke_error() {
+	let revoker = ALICE;
 	let claim_hash = get_claim_hash(true);
 
 	// Attestation already revoked
@@ -666,9 +666,9 @@ fn check_already_revoked_attestation_submit_attestation_revocation_operation() {
 }
 
 #[test]
-fn check_unauthorised_attestation_no_delegation_submit_attestation_revocation_operation() {
-	let revoker = DEFAULT_ACCOUNT;
-	let attestation_owner = ALTERNATIVE_ACCOUNT;
+fn unauthorised_attestation_revoke_error() {
+	let revoker = ALICE;
+	let attestation_owner = BOB;
 	let claim_hash = get_claim_hash(true);
 
 	// Attestation owned by a different user
@@ -695,9 +695,9 @@ fn check_unauthorised_attestation_no_delegation_submit_attestation_revocation_op
 }
 
 #[test]
-fn check_max_parent_lookups_submit_attestation_revocation_operation() {
-	let revoker = DEFAULT_ACCOUNT;
-	let attestation_owner = ALTERNATIVE_ACCOUNT;
+fn max_parent_lookups_revoke_error() {
+	let revoker = ALICE;
+	let attestation_owner = BOB;
 	let claim_hash = get_claim_hash(true);
 
 	let (root_id, root_node) = (
@@ -748,9 +748,9 @@ fn check_max_parent_lookups_submit_attestation_revocation_operation() {
 }
 
 #[test]
-fn check_revoked_delegation_submit_attestation_revocation_operation() {
-	let revoker = DEFAULT_ACCOUNT;
-	let attestation_owner = ALTERNATIVE_ACCOUNT;
+fn revoked_delegation_revoke_error() {
+	let revoker = ALICE;
+	let attestation_owner = BOB;
 	let claim_hash = get_claim_hash(true);
 
 	let (root_id, root_node) = (

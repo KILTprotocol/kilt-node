@@ -23,7 +23,7 @@ use frame_support::{assert_err, assert_ok};
 
 #[test]
 fn check_successful_ctype_creation() {
-	let creator = DEFAULT_ACCOUNT;
+	let creator = ALICE;
 
 	let operation = generate_base_ctype_creation_details();
 
@@ -44,7 +44,7 @@ fn check_successful_ctype_creation() {
 
 #[test]
 fn check_duplicate_ctype_creation() {
-	let creator = DEFAULT_ACCOUNT;
+	let creator = ALICE;
 
 	let operation = generate_base_ctype_creation_details();
 
