@@ -102,13 +102,13 @@ parameter_types! {
 	pub const BondDuration: u32 = 2;
 	pub const DefaultBlocksPerRound: u32 = BLOCKS_PER_ROUND;
 	pub const MinSelectedCandidates: u32 = 5;
-	pub const MaxNominatorsPerCollator: u32 = 4;
-	pub const MaxCollatorsPerNominator: u32 = 4;
+	pub const MaxDelegatorsPerCollator: u32 = 4;
+	pub const MaxCollatorsPerDelegator: u32 = 4;
 	pub const DefaultCollatorCommission: Perbill = Perbill::from_percent(20);
 	pub const MinCollatorStk: u128 = 10;
 	pub const MaxCollatorCandidateStk: u128 = 160_000_000 * DECIMALS;
-	pub const MinNominatorStk: u128 = 5;
-	pub const MinNomination: u128 = 3;
+	pub const MinDelegatorStk: u128 = 5;
+	pub const MinDelegation: u128 = 3;
 }
 impl Config for Test {
 	type Event = Event;
@@ -117,13 +117,13 @@ impl Config for Test {
 	type DefaultBlocksPerRound = DefaultBlocksPerRound;
 	type BondDuration = BondDuration;
 	type MinSelectedCandidates = MinSelectedCandidates;
-	type MaxNominatorsPerCollator = MaxNominatorsPerCollator;
-	type MaxCollatorsPerNominator = MaxCollatorsPerNominator;
+	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
+	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
 	type MinCollatorStk = MinCollatorStk;
 	type MinCollatorCandidateStk = MinCollatorStk;
 	type MaxCollatorCandidateStk = MaxCollatorCandidateStk;
-	type MinNominatorStk = MinNominatorStk;
-	type MinNomination = MinNomination;
+	type MinDelegatorStk = MinDelegatorStk;
+	type MinDelegation = MinDelegation;
 }
 
 pub(crate) struct ExtBuilder {
@@ -131,8 +131,8 @@ pub(crate) struct ExtBuilder {
 	balances: Vec<(AccountId, Balance)>,
 	// [collator, amount]
 	collators: Vec<(AccountId, Balance)>,
-	// [nominator, collator, nomination_amount]
-	nominators: Vec<(AccountId, AccountId, Balance)>,
+	// [delegator, collator, delegation_amount]
+	delegators: Vec<(AccountId, AccountId, Balance)>,
 	// inflation config
 	inflation_config: InflationInfo,
 	// blocks per round
@@ -143,7 +143,7 @@ impl Default for ExtBuilder {
 	fn default() -> ExtBuilder {
 		ExtBuilder {
 			balances: vec![],
-			nominators: vec![],
+			delegators: vec![],
 			collators: vec![],
 			blocks_per_round: BLOCKS_PER_ROUND,
 			inflation_config: InflationInfo {
@@ -177,8 +177,8 @@ impl ExtBuilder {
 		self
 	}
 
-	pub(crate) fn with_nominators(mut self, nominators: Vec<(AccountId, AccountId, Balance)>) -> Self {
-		self.nominators = nominators;
+	pub(crate) fn with_delegators(mut self, delegators: Vec<(AccountId, AccountId, Balance)>) -> Self {
+		self.delegators = delegators;
 		self
 	}
 
@@ -233,8 +233,8 @@ impl ExtBuilder {
 		for collator in self.collators.clone() {
 			stakers.push((collator.0, None, collator.1));
 		}
-		for nominator in self.nominators.clone() {
-			stakers.push((nominator.0, Some(nominator.1), nominator.2));
+		for delegator in self.delegators.clone() {
+			stakers.push((delegator.0, Some(delegator.1), delegator.2));
 		}
 		stake::GenesisConfig::<Test> {
 			stakers,
@@ -318,7 +318,7 @@ pub(crate) fn check_yearly_inflation(
 	ExtBuilder::default()
 		.with_balances(balances)
 		.with_collators(collators.clone())
-		.with_nominators(delegators.clone())
+		.with_delegators(delegators.clone())
 		.with_inflation(
 			max_collator_rate,
 			collator_reward_rate,

@@ -44,7 +44,7 @@ fn geneses() {
 			(9, 4),
 		])
 		.with_collators(vec![(1, 500), (2, 200)])
-		.with_nominators(vec![(3, 1, 100), (4, 1, 100), (5, 2, 100), (6, 2, 100)])
+		.with_delegators(vec![(3, 1, 100), (4, 1, 100), (5, 2, 100), (6, 2, 100)])
 		.build()
 		.execute_with(|| {
 			assert!(System::events().is_empty());
@@ -63,7 +63,7 @@ fn geneses() {
 				Stake::at_stake(1u32, &1),
 				CollatorSnapshot {
 					bond: 500,
-					nominators: vec![Bond { owner: 3, amount: 100 }, Bond { owner: 4, amount: 100 }],
+					delegators: vec![Bond { owner: 3, amount: 100 }, Bond { owner: 4, amount: 100 }],
 					total: 700
 				}
 			);
@@ -75,20 +75,20 @@ fn geneses() {
 				Stake::at_stake(1u32, &2),
 				CollatorSnapshot {
 					bond: 200,
-					nominators: vec![Bond { owner: 5, amount: 100 }, Bond { owner: 6, amount: 100 }],
+					delegators: vec![Bond { owner: 5, amount: 100 }, Bond { owner: 6, amount: 100 }],
 					total: 400
 				}
 			);
-			// Nominators
+			// Delegators
 			assert_eq!(<StakedDelegator<Test>>::get(), 400);
 			for x in 3..7 {
-				assert!(Stake::is_nominator(&x));
+				assert!(Stake::is_delegator(&x));
 				assert_eq!(Balances::free_balance(&x), 0);
 				assert_eq!(Balances::reserved_balance(&x), 100);
 			}
 			// Uninvolved
 			for x in 7..10 {
-				assert!(!Stake::is_nominator(&x));
+				assert!(!Stake::is_delegator(&x));
 			}
 			assert_eq!(Balances::free_balance(&7), 100);
 			assert_eq!(Balances::reserved_balance(&7), 0);
@@ -118,7 +118,7 @@ fn geneses() {
 			(10, 100),
 		])
 		.with_collators(vec![(1, 20), (2, 20), (3, 20), (4, 20), (5, 10)])
-		.with_nominators(vec![(6, 1, 10), (7, 1, 10), (8, 2, 10), (9, 2, 10), (10, 1, 10)])
+		.with_delegators(vec![(6, 1, 10), (7, 1, 10), (8, 2, 10), (9, 2, 10), (10, 1, 10)])
 		.build()
 		.execute_with(|| {
 			assert!(System::events().is_empty());
@@ -143,10 +143,10 @@ fn geneses() {
 			assert!(Stake::is_candidate(&5));
 			assert_eq!(Balances::free_balance(&5), 90);
 			assert_eq!(Balances::reserved_balance(&5), 10);
-			// Nominators
+			// Delegators
 			assert_eq!(<StakedDelegator<Test>>::get(), 50);
 			for x in 6..11 {
-				assert!(Stake::is_nominator(&x));
+				assert!(Stake::is_delegator(&x));
 				assert_eq!(Balances::free_balance(&x), 90);
 				assert_eq!(Balances::reserved_balance(&x), 10);
 			}
@@ -175,7 +175,7 @@ fn online_offline_works() {
 			(9, 4),
 		])
 		.with_collators(vec![(1, 500), (2, 200)])
-		.with_nominators(vec![(3, 1, 100), (4, 1, 100), (5, 2, 100), (6, 2, 100)])
+		.with_delegators(vec![(3, 1, 100), (4, 1, 100), (5, 2, 100), (6, 2, 100)])
 		.build()
 		.execute_with(|| {
 			roll_to(4);
@@ -228,7 +228,7 @@ fn join_collator_candidates() {
 			(10, 161_000_000 * DECIMALS),
 		])
 		.with_collators(vec![(1, 500), (2, 200)])
-		.with_nominators(vec![(3, 1, 100), (4, 1, 100), (5, 2, 100), (6, 2, 100)])
+		.with_delegators(vec![(3, 1, 100), (4, 1, 100), (5, 2, 100), (6, 2, 100)])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
@@ -237,7 +237,7 @@ fn join_collator_candidates() {
 			);
 			assert_noop!(
 				Stake::join_candidates(Origin::signed(3), 11u128,),
-				Error::<Test>::NominatorExists
+				Error::<Test>::DelegatorExists
 			);
 			assert_noop!(
 				Stake::join_candidates(Origin::signed(7), 9u128,),
@@ -289,7 +289,7 @@ fn collator_exit_executes_after_delay() {
 			(9, 4),
 		])
 		.with_collators(vec![(1, 500), (2, 200)])
-		.with_nominators(vec![(3, 1, 100), (4, 1, 100), (5, 2, 100), (6, 2, 100)])
+		.with_delegators(vec![(3, 1, 100), (4, 1, 100), (5, 2, 100), (6, 2, 100)])
 		.build()
 		.execute_with(|| {
 			roll_to(4);
@@ -743,7 +743,7 @@ fn payout_distribution_to_solo_collators_above_max_rate() {
 }
 
 #[test]
-fn multiple_nominations() {
+fn multiple_delegations() {
 	ExtBuilder::default()
 		.with_balances(vec![
 			(1, 100),
@@ -758,7 +758,7 @@ fn multiple_nominations() {
 			(10, 100),
 		])
 		.with_collators(vec![(1, 20), (2, 20), (3, 20), (4, 20), (5, 10)])
-		.with_nominators(vec![(6, 1, 10), (7, 1, 10), (8, 2, 10), (9, 2, 10), (10, 1, 10)])
+		.with_delegators(vec![(6, 1, 10), (7, 1, 10), (8, 2, 10), (9, 2, 10), (10, 1, 10)])
 		.set_blocks_per_round(5)
 		.build()
 		.execute_with(|| {
@@ -774,25 +774,25 @@ fn multiple_nominations() {
 			];
 			assert_eq!(events(), expected);
 			assert_noop!(
-				Stake::nominate(Origin::signed(6), 1, 10),
-				Error::<Test>::AlreadyNominatedCollator,
+				Stake::delegate(Origin::signed(6), 1, 10),
+				Error::<Test>::AlreadyDelegatedCollator,
 			);
 			assert_noop!(
-				Stake::nominate(Origin::signed(6), 2, 2),
-				Error::<Test>::NominationBelowMin,
+				Stake::delegate(Origin::signed(6), 2, 2),
+				Error::<Test>::DelegationBelowMin,
 			);
-			assert_ok!(Stake::nominate(Origin::signed(6), 2, 10));
-			assert_ok!(Stake::nominate(Origin::signed(6), 3, 10));
-			assert_ok!(Stake::nominate(Origin::signed(6), 4, 10));
+			assert_ok!(Stake::delegate(Origin::signed(6), 2, 10));
+			assert_ok!(Stake::delegate(Origin::signed(6), 3, 10));
+			assert_ok!(Stake::delegate(Origin::signed(6), 4, 10));
 			assert_noop!(
-				Stake::nominate(Origin::signed(6), 5, 10),
+				Stake::delegate(Origin::signed(6), 5, 10),
 				Error::<Test>::ExceedMaxCollatorsPerNom,
 			);
 			roll_to(16);
 			let mut new = vec![
-				Event::Nomination(6, 10, 2, 50),
-				Event::Nomination(6, 10, 3, 30),
-				Event::Nomination(6, 10, 4, 30),
+				Event::Delegation(6, 10, 2, 50),
+				Event::Delegation(6, 10, 3, 30),
+				Event::Delegation(6, 10, 4, 30),
 				Event::CollatorChosen(3, 2, 20, 30),
 				Event::CollatorChosen(3, 1, 20, 30),
 				Event::CollatorChosen(3, 4, 20, 10),
@@ -809,9 +809,9 @@ fn multiple_nominations() {
 			expected.append(&mut new);
 			assert_eq!(events(), expected);
 			roll_to(21);
-			assert_ok!(Stake::nominate(Origin::signed(7), 2, 80));
+			assert_ok!(Stake::delegate(Origin::signed(7), 2, 80));
 			assert_noop!(
-				Stake::nominate(Origin::signed(7), 3, 11),
+				Stake::delegate(Origin::signed(7), 3, 11),
 				DispatchError::Module {
 					index: 1,
 					error: 3,
@@ -819,8 +819,8 @@ fn multiple_nominations() {
 				},
 			);
 			assert_noop!(
-				Stake::nominate(Origin::signed(10), 2, 10),
-				Error::<Test>::TooManyNominators
+				Stake::delegate(Origin::signed(10), 2, 10),
+				Error::<Test>::TooManyDelegators
 			);
 			roll_to(26);
 			let mut new2 = vec![
@@ -830,7 +830,7 @@ fn multiple_nominations() {
 				Event::CollatorChosen(5, 3, 20, 10),
 				Event::CollatorChosen(5, 5, 10, 0),
 				Event::NewRound(20, 5, 5, 90, 80),
-				Event::Nomination(7, 80, 2, 130),
+				Event::Delegation(7, 80, 2, 130),
 				Event::CollatorChosen(6, 2, 20, 110),
 				Event::CollatorChosen(6, 1, 20, 30),
 				Event::CollatorChosen(6, 4, 20, 10),
@@ -853,20 +853,20 @@ fn multiple_nominations() {
 			];
 			expected.append(&mut new3);
 			assert_eq!(events(), expected);
-			// verify that nominations are removed after collator leaves, not before
-			assert_eq!(Stake::nominator_state(7).unwrap().total, 90);
-			assert_eq!(Stake::nominator_state(7).unwrap().nominations.0.len(), 2usize);
-			assert_eq!(Stake::nominator_state(6).unwrap().total, 40);
-			assert_eq!(Stake::nominator_state(6).unwrap().nominations.0.len(), 4usize);
+			// verify that delegations are removed after collator leaves, not before
+			assert_eq!(Stake::delegator_state(7).unwrap().total, 90);
+			assert_eq!(Stake::delegator_state(7).unwrap().delegations.0.len(), 2usize);
+			assert_eq!(Stake::delegator_state(6).unwrap().total, 40);
+			assert_eq!(Stake::delegator_state(6).unwrap().delegations.0.len(), 4usize);
 			assert_eq!(Balances::reserved_balance(&6), 40);
 			assert_eq!(Balances::reserved_balance(&7), 90);
 			assert_eq!(Balances::free_balance(&6), 60);
 			assert_eq!(Balances::free_balance(&7), 10);
 			roll_to(40);
-			assert_eq!(Stake::nominator_state(7).unwrap().total, 10);
-			assert_eq!(Stake::nominator_state(6).unwrap().total, 30);
-			assert_eq!(Stake::nominator_state(7).unwrap().nominations.0.len(), 1usize);
-			assert_eq!(Stake::nominator_state(6).unwrap().nominations.0.len(), 3usize);
+			assert_eq!(Stake::delegator_state(7).unwrap().total, 10);
+			assert_eq!(Stake::delegator_state(6).unwrap().total, 30);
+			assert_eq!(Stake::delegator_state(7).unwrap().delegations.0.len(), 1usize);
+			assert_eq!(Stake::delegator_state(6).unwrap().delegations.0.len(), 3usize);
 			assert_eq!(Balances::reserved_balance(&6), 30);
 			assert_eq!(Balances::reserved_balance(&7), 10);
 			assert_eq!(Balances::free_balance(&6), 70);
@@ -891,7 +891,7 @@ fn collators_bond() {
 			(11, 161_000_000 * DECIMALS),
 		])
 		.with_collators(vec![(1, 20), (2, 20), (3, 20), (4, 20), (5, 10)])
-		.with_nominators(vec![(6, 1, 10), (7, 1, 10), (8, 2, 10), (9, 2, 10), (10, 1, 10)])
+		.with_delegators(vec![(6, 1, 10), (7, 1, 10), (8, 2, 10), (9, 2, 10), (10, 1, 10)])
 		.set_blocks_per_round(5)
 		.build()
 		.execute_with(|| {
@@ -949,7 +949,7 @@ fn collators_bond() {
 }
 
 #[test]
-fn nominators_bond() {
+fn delegators_bond() {
 	ExtBuilder::default()
 		.with_balances(vec![
 			(1, 100),
@@ -964,56 +964,56 @@ fn nominators_bond() {
 			(10, 100),
 		])
 		.with_collators(vec![(1, 20), (2, 20), (3, 20), (4, 20), (5, 10)])
-		.with_nominators(vec![(6, 1, 10), (7, 1, 10), (8, 2, 10), (9, 2, 10), (10, 1, 10)])
+		.with_delegators(vec![(6, 1, 10), (7, 1, 10), (8, 2, 10), (9, 2, 10), (10, 1, 10)])
 		.set_blocks_per_round(5)
 		.build()
 		.execute_with(|| {
 			roll_to(4);
 			assert_noop!(
-				Stake::nominator_bond_more(Origin::signed(1), 2, 50),
-				Error::<Test>::NominatorDNE
+				Stake::delegator_bond_more(Origin::signed(1), 2, 50),
+				Error::<Test>::DelegatorDNE
 			);
 			assert_noop!(
-				Stake::nominator_bond_more(Origin::signed(6), 2, 50),
-				Error::<Test>::NominationDNE
+				Stake::delegator_bond_more(Origin::signed(6), 2, 50),
+				Error::<Test>::DelegationDNE
 			);
 			assert_noop!(
-				Stake::nominator_bond_more(Origin::signed(7), 6, 50),
+				Stake::delegator_bond_more(Origin::signed(7), 6, 50),
 				Error::<Test>::CandidateDNE
 			);
 			assert_noop!(
-				Stake::nominator_bond_less(Origin::signed(6), 1, 11),
+				Stake::delegator_bond_less(Origin::signed(6), 1, 11),
 				Error::<Test>::Underflow
 			);
 			assert_noop!(
-				Stake::nominator_bond_less(Origin::signed(6), 1, 8),
-				Error::<Test>::NominationBelowMin
+				Stake::delegator_bond_less(Origin::signed(6), 1, 8),
+				Error::<Test>::DelegationBelowMin
 			);
 			assert_noop!(
-				Stake::nominator_bond_less(Origin::signed(6), 1, 6),
+				Stake::delegator_bond_less(Origin::signed(6), 1, 6),
 				Error::<Test>::NomBondBelowMin
 			);
-			assert_ok!(Stake::nominator_bond_more(Origin::signed(6), 1, 10));
+			assert_ok!(Stake::delegator_bond_more(Origin::signed(6), 1, 10));
 			assert_noop!(
-				Stake::nominator_bond_less(Origin::signed(6), 2, 5),
-				Error::<Test>::NominationDNE
+				Stake::delegator_bond_less(Origin::signed(6), 2, 5),
+				Error::<Test>::DelegationDNE
 			);
 			assert_noop!(
-				Stake::nominator_bond_more(Origin::signed(6), 1, 81),
+				Stake::delegator_bond_more(Origin::signed(6), 1, 81),
 				BalancesError::<Test>::InsufficientBalance
 			);
 			roll_to(9);
 			assert_eq!(Balances::reserved_balance(&6), 20);
 			assert_ok!(Stake::leave_candidates(Origin::signed(1)));
 			roll_to(31);
-			assert!(!Stake::is_nominator(&6));
+			assert!(!Stake::is_delegator(&6));
 			assert_eq!(Balances::reserved_balance(&6), 0);
 			assert_eq!(Balances::free_balance(&6), 100);
 		});
 }
 
 #[test]
-fn revoke_nomination_or_leave_nominators() {
+fn revoke_delegation_or_leave_delegators() {
 	ExtBuilder::default()
 		.with_balances(vec![
 			(1, 100),
@@ -1028,37 +1028,37 @@ fn revoke_nomination_or_leave_nominators() {
 			(10, 100),
 		])
 		.with_collators(vec![(1, 20), (2, 20), (3, 20), (4, 20), (5, 10)])
-		.with_nominators(vec![(6, 1, 10), (7, 1, 10), (8, 2, 10), (9, 2, 10), (10, 1, 10)])
+		.with_delegators(vec![(6, 1, 10), (7, 1, 10), (8, 2, 10), (9, 2, 10), (10, 1, 10)])
 		.set_blocks_per_round(5)
 		.build()
 		.execute_with(|| {
 			roll_to(4);
 			assert_noop!(
-				Stake::revoke_nomination(Origin::signed(1), 2),
-				Error::<Test>::NominatorDNE
+				Stake::revoke_delegation(Origin::signed(1), 2),
+				Error::<Test>::DelegatorDNE
 			);
 			assert_noop!(
-				Stake::revoke_nomination(Origin::signed(6), 2),
-				Error::<Test>::NominationDNE
+				Stake::revoke_delegation(Origin::signed(6), 2),
+				Error::<Test>::DelegationDNE
 			);
-			assert_noop!(Stake::leave_nominators(Origin::signed(1)), Error::<Test>::NominatorDNE);
-			assert_ok!(Stake::nominate(Origin::signed(6), 2, 3));
-			assert_ok!(Stake::nominate(Origin::signed(6), 3, 3));
-			assert_ok!(Stake::revoke_nomination(Origin::signed(6), 1));
-			// cannot revoke nomination because would leave remaining total below
-			// MinNominatorStk
+			assert_noop!(Stake::leave_delegators(Origin::signed(1)), Error::<Test>::DelegatorDNE);
+			assert_ok!(Stake::delegate(Origin::signed(6), 2, 3));
+			assert_ok!(Stake::delegate(Origin::signed(6), 3, 3));
+			assert_ok!(Stake::revoke_delegation(Origin::signed(6), 1));
+			// cannot revoke delegation because would leave remaining total below
+			// MinDelegatorStk
 			assert_noop!(
-				Stake::revoke_nomination(Origin::signed(6), 2),
+				Stake::revoke_delegation(Origin::signed(6), 2),
 				Error::<Test>::NomBondBelowMin
 			);
 			assert_noop!(
-				Stake::revoke_nomination(Origin::signed(6), 3),
+				Stake::revoke_delegation(Origin::signed(6), 3),
 				Error::<Test>::NomBondBelowMin
 			);
-			// can revoke both remaining by calling leave nominators
-			assert_ok!(Stake::leave_nominators(Origin::signed(6)));
-			// this leads to 8 leaving set of nominators
-			assert_ok!(Stake::revoke_nomination(Origin::signed(8), 2));
+			// can revoke both remaining by calling leave delegators
+			assert_ok!(Stake::leave_delegators(Origin::signed(6)));
+			// this leads to 8 leaving set of delegators
+			assert_ok!(Stake::revoke_delegation(Origin::signed(8), 2));
 		});
 }
 
@@ -1066,7 +1066,7 @@ fn revoke_nomination_or_leave_nominators() {
 // Total issuance 1_000_000_000_000
 // At stake collators: 90_000_000 (0.009%)
 // At stake delegators: 60_000_000 (0.006%)
-fn payouts_follow_nomination_changes() {
+fn payouts_follow_delegation_changes() {
 	let blocks_per_round: BlockNumber = 600;
 	ExtBuilder::default()
 		.with_balances(vec![
@@ -1089,7 +1089,7 @@ fn payouts_follow_nomination_changes() {
 			(4, 20_000_000),
 			(5, 10_000_000),
 		])
-		.with_nominators(vec![
+		.with_delegators(vec![
 			(6, 1, 20_000_000),
 			(7, 1, 10_000_000),
 			(8, 2, 10_000_000),
@@ -1116,7 +1116,7 @@ fn payouts_follow_nomination_changes() {
 			// set block author as 1 for all blocks this round
 			set_author(2, 1, 100);
 			roll_to(3 * blocks_per_round + 1);
-			// distribute total issuance to collator 1 and its nominators 6, 7, 10
+			// distribute total issuance to collator 1 and its delegators 6, 7, 10
 			let mut round_2_to_3 = vec![
 				Event::CollatorChosen(3, 1, 20_000_000, 40_000_000),
 				Event::CollatorChosen(3, 2, 20_000_000, 20_000_000),
@@ -1143,14 +1143,14 @@ fn payouts_follow_nomination_changes() {
 			// Round 3 -> 4: 6 leaves delegators
 			// set block author as 1 for all blocks this round
 			set_author(3, 1, 100);
-			assert_noop!(Stake::leave_nominators(Origin::signed(66)), Error::<Test>::NominatorDNE);
-			assert_ok!(Stake::leave_nominators(Origin::signed(6)));
+			assert_noop!(Stake::leave_delegators(Origin::signed(66)), Error::<Test>::DelegatorDNE);
+			assert_ok!(Stake::leave_delegators(Origin::signed(6)));
 			roll_to(4 * blocks_per_round + 1);
-			// ensure nominators are paid for 2 rounds after they leave, e.g. 6 should
+			// ensure delegators are paid for 2 rounds after they leave, e.g. 6 should
 			// receive rewards for rounds 3 and 4 after leaving during round 3
 			let mut round_3_to_4 = vec![
-				Event::NominatorLeftCollator(6, 1, 20_000_000, 40_000_000),
-				Event::NominatorLeft(6, 20_000_000),
+				Event::DelegatorLeftCollator(6, 1, 20_000_000, 40_000_000),
+				Event::DelegatorLeft(6, 20_000_000),
 				// Round 3 rewards
 				Event::Rewarded(1, 1562),
 				Event::Rewarded(6, 231),
@@ -1214,13 +1214,13 @@ fn payouts_follow_nomination_changes() {
 
 			// Round 6 -> 7: 8 delegates to 1
 			set_author(6, 1, 100);
-			assert_ok!(Stake::nominate(Origin::signed(8), 1, 30_000_000));
+			assert_ok!(Stake::delegate(Origin::signed(8), 1, 30_000_000));
 			roll_to(7 * blocks_per_round + 1);
-			// new nomination should not be rewarded for this round and the next one (expect
+			// new delegation should not be rewarded for this round and the next one (expect
 			// rewards at conclusion of round 8)
 			let mut round_6_to_7 = vec![
 				// round 6 finalization
-				Event::Nomination(8, 30_000_000, 1, 70_000_000),
+				Event::Delegation(8, 30_000_000, 1, 70_000_000),
 				Event::Rewarded(1, 1562),
 				Event::Rewarded(7, 405),
 				Event::Rewarded(10, 405),
@@ -1240,7 +1240,7 @@ fn payouts_follow_nomination_changes() {
 			// Round 7 -> 8
 			set_author(7, 1, 100);
 			roll_to(8 * blocks_per_round + 1);
-			// new nomination is still not rewarded yet, but should be next round
+			// new delegation is still not rewarded yet, but should be next round
 			let mut round_7_to_8 = vec![
 				Event::Rewarded(1, 1562),
 				// TODO: Check whether it makes sense to apply the stake for the rewards but not to the
@@ -1262,7 +1262,7 @@ fn payouts_follow_nomination_changes() {
 			// Round 8 -> 9
 			set_author(8, 1, 100);
 			roll_to(9 * blocks_per_round + 1);
-			// new nomination is rewarded for first time, 2 rounds after joining
+			// new delegation is rewarded for first time, 2 rounds after joining
 			// (`BondDuration` = 2)
 			let mut round_8_to_9 = vec![
 				// round 8 finalization
@@ -1323,11 +1323,11 @@ fn payouts_follow_nomination_changes() {
 			set_author(10, 5, 5);
 			set_author(10, 11, 5);
 			// 8 adds delegation to 11
-			assert_ok!(Stake::nominate(Origin::signed(8), 11, 20_000_000));
+			assert_ok!(Stake::delegate(Origin::signed(8), 11, 20_000_000));
 			roll_to(11 * blocks_per_round + 1);
 			// new delegation of 8 should not be rewarded for this and the following round
 			let mut round_10_to_11 = vec![
-				Event::Nomination(8, 20_000_000, 11, 50_000_000),
+				Event::Delegation(8, 20_000_000, 11, 50_000_000),
 				Event::Rewarded(5, 87),
 				Event::Rewarded(3, 174),
 				// reward 1 and their delegators
@@ -1359,12 +1359,12 @@ fn payouts_follow_nomination_changes() {
 			set_author(11, 5, 5);
 			set_author(11, 11, 5);
 			// 9 adds delegation to 5
-			assert_ok!(Stake::nominate(Origin::signed(9), 5, 30_000_000));
+			assert_ok!(Stake::delegate(Origin::signed(9), 5, 30_000_000));
 			roll_to(12 * blocks_per_round + 1);
 			// delegation of 8 should not be rewarded for this round
 			// new delegation of 9 should not be rewarded for this and the following round
 			let mut round_11_to_12 = vec![
-				Event::Nomination(9, 30_000_000, 5, 40_000_000),
+				Event::Delegation(9, 30_000_000, 5, 40_000_000),
 				Event::Rewarded(5, 87),
 				Event::Rewarded(4, 174),
 				// reward 1 and their delegators
@@ -1631,7 +1631,7 @@ fn round_transitions() {
 	ExtBuilder::default()
 		.with_balances(vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100), (6, 100)])
 		.with_collators(vec![(1, 20)])
-		.with_nominators(vec![(2, 1, 10), (3, 1, 10)])
+		.with_delegators(vec![(2, 1, 10), (3, 1, 10)])
 		.with_inflation(col_max, col_rewards, d_max, d_rewards, 5)
 		.build()
 		.execute_with(|| {
@@ -1661,7 +1661,7 @@ fn round_transitions() {
 	ExtBuilder::default()
 		.with_balances(vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100), (6, 100)])
 		.with_collators(vec![(1, 20)])
-		.with_nominators(vec![(2, 1, 10), (3, 1, 10)])
+		.with_delegators(vec![(2, 1, 10), (3, 1, 10)])
 		.with_inflation(col_max, col_rewards, d_max, d_rewards, 5)
 		.build()
 		.execute_with(|| {
@@ -1688,7 +1688,7 @@ fn round_transitions() {
 	ExtBuilder::default()
 		.with_balances(vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100), (6, 100)])
 		.with_collators(vec![(1, 20)])
-		.with_nominators(vec![(2, 1, 10), (3, 1, 10)])
+		.with_delegators(vec![(2, 1, 10), (3, 1, 10)])
 		.with_inflation(col_max, col_rewards, d_max, d_rewards, 5)
 		.build()
 		.execute_with(|| {

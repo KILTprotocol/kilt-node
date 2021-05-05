@@ -727,16 +727,16 @@ parameter_types! {
 	pub const BondDuration: u32 = 14;
 	/// Minimum 8 collators selected per round, default at genesis and minimum forever after
 	pub const MinSelectedCandidates: u32 = 8;
-	/// Maximum 10 nominators per collator
-	pub const MaxNominatorsPerCollator: u32 = 10;
-	/// Maximum 25 collators per nominator
-	pub const MaxCollatorsPerNominator: u32 = 25;
+	/// Maximum 10 delegators per collator
+	pub const MaxDelegatorsPerCollator: u32 = 10;
+	/// Maximum 25 collators per delegator
+	pub const MaxCollatorsPerDelegator: u32 = 25;
 	/// Minimum stake required to be reserved to be a collator is 10_000
 	pub const MinCollatorStk: u128 = 10_000 * DOLLARS;
 	/// Max stake possible to be reserved to be collator candidate is 100_0000
 	pub const MaxCollatorCandidateStk: u128 = 100_000 * DOLLARS;
-	/// Minimum stake required to be reserved to be a nominator is 1000
-	pub const MinNominatorStk: u128 = 1000 * DOLLARS;
+	/// Minimum stake required to be reserved to be a delegator is 1000
+	pub const MinDelegatorStk: u128 = 1000 * DOLLARS;
 }
 
 impl parachain_staking::Config for Runtime {
@@ -746,13 +746,13 @@ impl parachain_staking::Config for Runtime {
 	type DefaultBlocksPerRound = DefaultBlocksPerRound;
 	type BondDuration = BondDuration;
 	type MinSelectedCandidates = MinSelectedCandidates;
-	type MaxNominatorsPerCollator = MaxNominatorsPerCollator;
-	type MaxCollatorsPerNominator = MaxCollatorsPerNominator;
+	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
+	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
 	type MinCollatorStk = MinCollatorStk;
 	type MinCollatorCandidateStk = MinCollatorStk;
 	type MaxCollatorCandidateStk = MaxCollatorCandidateStk;
-	type MinNomination = MinNominatorStk;
-	type MinNominatorStk = MinNominatorStk;
+	type MinDelegation = MinDelegatorStk;
+	type MinDelegatorStk = MinDelegatorStk;
 }
 
 // TODO: Replace with Aura once available
