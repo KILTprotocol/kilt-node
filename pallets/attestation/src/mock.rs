@@ -28,7 +28,6 @@ use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 };
-use frame_system::EnsureSigned;
 
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
@@ -173,7 +172,6 @@ pub struct AttestationRevocationOperation {
 
 pub fn generate_base_attestation_revocation_details(
 	claim_hash: TestClaimHash,
-	attestation: AttestationStruct<Test>,
 ) -> AttestationRevocationOperation {
 	AttestationRevocationOperation {
 		claim_hash,
