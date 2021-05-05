@@ -20,7 +20,6 @@
 
 use crate as ctype;
 use crate::*;
-use did as did;
 use did::mock as did_mock;
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
@@ -110,24 +109,25 @@ pub struct CtypeCreationDetails {
 	pub hash: TestCtypeHash,
 }
 
+#[cfg(test)]
 pub(crate) const DEFAULT_ACCOUNT: TestCtypeOwner = TestCtypeOwner::new([0u8; 32]);
 
 const DEFAULT_CTYPE_HASH_SEED: u64 = 1u64;
 const ALTERNATIVE_CTYPE_HASH_SEED: u64 = 2u64;
 
-pub fn get_default_origin() -> Origin {
+pub fn get_origin(account: TestCtypeOwner) -> Origin {
 	Origin::from(
 		did::DidRawOrigin {
-			id: DEFAULT_ACCOUNT
+			id: account
 		}
 	)
 }
 
-pub fn get_ctype_hash(default: bool) -> H256 {
+pub fn get_ctype_hash(default: bool) -> TestCtypeHash {
 	if default {
-		H256::from_low_u64_be(DEFAULT_CTYPE_HASH_SEED)
+		TestCtypeHash::from_low_u64_be(DEFAULT_CTYPE_HASH_SEED)
 	} else {
-		H256::from_low_u64_be(ALTERNATIVE_CTYPE_HASH_SEED)
+		TestCtypeHash::from_low_u64_be(ALTERNATIVE_CTYPE_HASH_SEED)
 	}
 }
 

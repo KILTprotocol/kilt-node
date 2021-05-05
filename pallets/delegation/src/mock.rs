@@ -19,12 +19,12 @@
 #![allow(clippy::from_over_into)]
 
 use crate as delegation;
+use crate::*;
 use ctype::mock as ctype_mock;
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
-use frame_system::EnsureSigned;
-use sp_core::{H256, ed25519};
-use sp_runtime::{MultiAddress, testing::Header, traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify}};
+use sp_core::H256;
+use sp_runtime::{testing::Header, traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify}};
 
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
@@ -44,6 +44,7 @@ frame_support::construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>},
+		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>},
 	}
 );
 
@@ -95,7 +96,6 @@ impl ctype::Config for Test {
 
 impl Config for Test {
 	type DelegationNodeId = TestDelegationNodeId;
-	type DelegatorId = TestDelegatorId;
 	type EnsureOrigin = did::EnsureDidOrigin<TestDelegatorId>;
 	type Event = ();
 	type WeightInfo = ();
@@ -112,6 +112,8 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 }
 
 pub(crate) const DEFAULT_ACCOUNT: TestDelegatorId = TestDelegatorId::new([0u8; 32]);
+pub(crate) const ALTERNATIVE_ACCOUNT: TestDelegatorId = TestDelegatorId::new([1u8; 32]);
+pub(crate) const THIRD_ACCOUNT: TestDelegatorId = TestDelegatorId::new([2u8; 32]);
 
 const DEFAULT_ROOT_ID_SEED: u64 = 1u64;
 const ALTERNATIVE_ROOT_ID_SEED: u64 = 2u64;
@@ -120,35 +122,35 @@ const ALTERNATIVE_DELEGATION_ID_SEED: u64 = 4u64;
 const DEFAULT_DELEGATION_ID_2_SEED: u64 = 3u64;
 const ALTERNATIVE_DELEGATION_ID_2_SEED: u64 = 4u64;
 
-pub fn get_default_origin() -> Origin {
+pub fn get_origin(account: TestDelegatorId) -> Origin {
 	Origin::from(
 		did::DidRawOrigin {
-			id: DEFAULT_ACCOUNT
+			id: account
 		}
 	)
 }
 
 pub fn get_delegation_root_id(default: bool) -> TestDelegationNodeId {
 	if default {
-		H256::from_low_u64_be(DEFAULT_ROOT_ID_SEED)
+		TestCtypeHash::from_low_u64_be(DEFAULT_ROOT_ID_SEED)
 	} else {
-		H256::from_low_u64_be(ALTERNATIVE_ROOT_ID_SEED)
+		TestCtypeHash::from_low_u64_be(ALTERNATIVE_ROOT_ID_SEED)
 	}
 }
 
 pub fn get_delegation_id(default: bool) -> TestDelegationNodeId {
 	if default {
-		H256::from_low_u64_be(DEFAULT_DELEGATION_ID_SEED)
+		TestCtypeHash::from_low_u64_be(DEFAULT_DELEGATION_ID_SEED)
 	} else {
-		H256::from_low_u64_be(ALTERNATIVE_DELEGATION_ID_SEED)
+		TestCtypeHash::from_low_u64_be(ALTERNATIVE_DELEGATION_ID_SEED)
 	}
 }
 
 pub fn get_delegation_id_2(default: bool) -> TestDelegationNodeId {
 	if default {
-		H256::from_low_u64_be(DEFAULT_DELEGATION_ID_2_SEED)
+		TestCtypeHash::from_low_u64_be(DEFAULT_DELEGATION_ID_2_SEED)
 	} else {
-		H256::from_low_u64_be(ALTERNATIVE_DELEGATION_ID_2_SEED)
+		TestCtypeHash::from_low_u64_be(ALTERNATIVE_DELEGATION_ID_2_SEED)
 	}
 }
 
@@ -182,7 +184,6 @@ pub struct DelegationCreationDetails {
 }
 
 pub fn generate_base_delegation_creation_details(
-	delegator_did: TestDidIdentifier,
 	delegation_id: TestDelegationNodeId,
 	delegate_signature: did::DidSignature,
 	delegation_node: DelegationNode<Test>,
@@ -198,13 +199,12 @@ pub fn generate_base_delegation_creation_details(
 }
 
 pub struct DelegationRootRevocationDetails {
-	pub root_id: T::DelegationNodeId,
+	pub root_id: TestDelegationNodeId,
 	pub max_children: u32,
 }
 
 pub fn generate_base_delegation_root_revocation_details(
 	root_id: TestDelegationNodeId,
-	root_node: DelegationRoot<Test>,
 ) -> DelegationRootRevocationDetails {
 	DelegationRootRevocationDetails {
 		root_id,
@@ -213,14 +213,13 @@ pub fn generate_base_delegation_root_revocation_details(
 }
 
 pub struct DelegationRevocationDetails {
-	pub delegation_id: DelegationNodeId<T>,
+	pub delegation_id: TestDelegationNodeId,
 	pub max_parent_checks: u32,
 	pub max_revocations: u32,
 }
 
 pub fn generate_base_delegation_revocation_details(
 	delegation_id: TestDelegationNodeId,
-	delegation_node: DelegationNode<Test>,
 ) -> DelegationRevocationDetails {
 	DelegationRevocationDetails {
 		delegation_id,
