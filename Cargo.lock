@@ -3326,6 +3326,8 @@ dependencies = [
  "cumulus-primitives-core",
  "derive_more 0.15.0",
  "exit-future 0.1.4",
+ "frame-benchmarking",
+ "frame-benchmarking-cli",
  "futures 0.3.13",
  "hex-literal 0.2.1",
  "jsonrpc-core",
@@ -5604,6 +5606,7 @@ name = "parachain-staking"
 version = "1.0.0"
 dependencies = [
  "author-inherent",
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "kilt-primitives",
