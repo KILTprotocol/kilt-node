@@ -32,7 +32,7 @@ use sp_runtime::{
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
 
-pub type TestDidIdentifier =  kilt_primitives::AccountId;
+pub type TestDidIdentifier = kilt_primitives::AccountId;
 pub type TestCtypeOwner = TestDidIdentifier;
 pub type TestCtypeHash = kilt_primitives::Hash;
 
@@ -94,15 +94,14 @@ impl Config for Test {
 	type WeightInfo = ();
 }
 
-
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
-    fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
+	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
 		// Only interested in CTYPE calls
-        match self {
+		match self {
 			Call::Ctype(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
-			_ => None
+			_ => None,
 		}
-    }
+	}
 }
 
 pub struct CtypeCreationDetails {
@@ -116,11 +115,7 @@ const DEFAULT_CTYPE_HASH_SEED: u64 = 1u64;
 const ALTERNATIVE_CTYPE_HASH_SEED: u64 = 2u64;
 
 pub fn get_origin(account: TestCtypeOwner) -> Origin {
-	Origin::from(
-		did::DidRawOrigin {
-			id: account
-		}
-	)
+	Origin::from(did::DidRawOrigin { id: account })
 }
 
 pub fn get_ctype_hash(default: bool) -> TestCtypeHash {
@@ -133,7 +128,7 @@ pub fn get_ctype_hash(default: bool) -> TestCtypeHash {
 
 pub fn generate_base_ctype_creation_details() -> CtypeCreationDetails {
 	CtypeCreationDetails {
-		hash: get_ctype_hash(true)
+		hash: get_ctype_hash(true),
 	}
 }
 

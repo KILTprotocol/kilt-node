@@ -18,18 +18,18 @@
 
 pub use codec::{Decode, Encode, WrapperTypeEncode};
 pub use frame_support::ensure;
-use sp_runtime::traits::{IdentifyAccount, Lazy};
 pub use sp_runtime::traits::Verify;
+use sp_runtime::traits::{IdentifyAccount, Lazy};
 pub use sp_std::{
 	collections::{btree_map::BTreeMap, btree_set::BTreeSet},
 	convert::TryFrom,
 	str,
-	vec::Vec
+	vec::Vec,
 };
 
 pub use sp_core::{ed25519, sr25519};
 
-use crate::{Config, utils};
+use crate::{utils, Config};
 
 /// The expected URI scheme for HTTP endpoints.
 pub const HTTP_URI_SCHEME: &str = "http://";
@@ -101,17 +101,17 @@ impl DidVerificationKey {
 }
 
 impl IdentifyAccount for DidVerificationKey {
-    type AccountId = Self;
+	type AccountId = Self;
 
-    fn into_account(self) -> Self::AccountId {
+	fn into_account(self) -> Self::AccountId {
 		self
-    }
+	}
 }
 
 impl TryFrom<Vec<u8>> for DidVerificationKey {
-    type Error = KeyError;
+	type Error = KeyError;
 
-    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
 		if let Ok(ed25519_key) = ed25519::Public::try_from(value.as_ref()) {
 			Ok(Self::from(ed25519_key))
 		} else if let Ok(sr25519_key) = sr25519::Public::try_from(value.as_ref()) {
@@ -119,7 +119,7 @@ impl TryFrom<Vec<u8>> for DidVerificationKey {
 		} else {
 			Err(KeyError::InvalidVerificationKeyFormat)
 		}
-    }
+	}
 }
 
 impl DidPublicKeyDescription for DidVerificationKey {
@@ -216,9 +216,9 @@ impl From<sr25519::Signature> for DidSignature {
 }
 
 impl TryFrom<Vec<u8>> for DidSignature {
-    type Error = SignatureError;
+	type Error = SignatureError;
 
-    fn try_from(encoded_signature: Vec<u8>) -> Result<Self, Self::Error> {
+	fn try_from(encoded_signature: Vec<u8>) -> Result<Self, Self::Error> {
 		if let Ok(ed25519_sig) = ed25519::Signature::try_from(encoded_signature.as_ref()) {
 			Ok(Self::from(ed25519_sig))
 		} else if let Ok(sr25519_sig) = sr25519::Signature::try_from(encoded_signature.as_ref()) {
@@ -226,15 +226,15 @@ impl TryFrom<Vec<u8>> for DidSignature {
 		} else {
 			Err(SignatureError::InvalidSignatureFormat)
 		}
-    }
+	}
 }
 
 impl Verify for DidSignature {
-    type Signer = DidVerificationKey;
+	type Signer = DidVerificationKey;
 
-    fn verify<L: Lazy<[u8]>>(&self, mut msg: L, signer: &DidVerificationKey) -> bool {
+	fn verify<L: Lazy<[u8]>>(&self, mut msg: L, signer: &DidVerificationKey) -> bool {
 		signer.verify_signature(msg.get().as_ref(), &self).unwrap_or(false)
-    }
+	}
 }
 
 /// All the errors that can be generated when validating a DID operation.

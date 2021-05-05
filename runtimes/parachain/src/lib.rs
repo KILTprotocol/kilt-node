@@ -34,7 +34,10 @@ use frame_system::{
 	limits::{BlockLength, BlockWeights},
 	EnsureOneOf, EnsureRoot,
 };
-use kilt_primitives::{AccountId, Amount, Balance, BlockNumber, CurrencyId, DidIdentifier, Hash, Index, Signature, constants::{DAYS, DOLLARS, HOURS, MILLICENTS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION}};
+use kilt_primitives::{
+	constants::{DAYS, DOLLARS, HOURS, MILLICENTS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
+	AccountId, Amount, Balance, BlockNumber, CurrencyId, DidIdentifier, Hash, Index, Signature,
+};
 use orml_currencies::BasicCurrencyAdapter;
 use orml_traits::{arithmetic::Zero, parameter_type_with_key};
 use orml_xcm_support::{IsNativeConcrete, MultiCurrencyAdapter, XcmHandler as XcmHandlerT};

@@ -32,7 +32,7 @@ use sp_runtime::{
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
 
-pub type TestDidIdentifier =  kilt_primitives::AccountId;
+pub type TestDidIdentifier = kilt_primitives::AccountId;
 pub type TestCtypeOwner = TestDidIdentifier;
 pub type TestCtypeHash = kilt_primitives::Hash;
 pub type TestDelegationNodeId = kilt_primitives::Hash;
@@ -115,12 +115,12 @@ impl Config for Test {
 
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	// Only interested in attestation operations
-    fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
-        match self {
-            Call::Attestation(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
-            _ => None
-        }
-    }
+	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
+		match self {
+			Call::Attestation(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
+			_ => None,
+		}
+	}
 }
 
 #[cfg(test)]
@@ -132,11 +132,7 @@ const DEFAULT_CLAIM_HASH_SEED: u64 = 1u64;
 const ALTERNATIVE_CLAIM_HASH_SEED: u64 = 2u64;
 
 pub fn get_origin(account: TestAttester) -> Origin {
-	Origin::from(
-		did::DidRawOrigin {
-			id: account
-		}
-	)
+	Origin::from(did::DidRawOrigin { id: account })
 }
 
 pub fn get_claim_hash(default: bool) -> TestClaimHash {
@@ -152,7 +148,6 @@ pub struct AttestationCreationOperation {
 	pub ctype_hash: TestCtypeHash,
 	pub delegation_id: Option<TestDelegationNodeId>,
 }
-
 
 pub fn generate_base_attestation_creation_details(
 	claim_hash: TestClaimHash,
@@ -170,9 +165,7 @@ pub struct AttestationRevocationOperation {
 	pub max_parent_checks: u32,
 }
 
-pub fn generate_base_attestation_revocation_details(
-	claim_hash: TestClaimHash,
-) -> AttestationRevocationOperation {
+pub fn generate_base_attestation_revocation_details(claim_hash: TestClaimHash) -> AttestationRevocationOperation {
 	AttestationRevocationOperation {
 		claim_hash,
 		max_parent_checks: 0u32,

@@ -33,10 +33,7 @@ fn check_successful_ctype_creation() {
 
 	// Write CTYPE on chain
 	ext.execute_with(|| {
-		assert_ok!(Ctype::add(
-			get_origin(creator.clone()),
-			operation.hash
-		));
+		assert_ok!(Ctype::add(get_origin(creator.clone()), operation.hash));
 	});
 
 	// Verify the CTYPE has the right owner
@@ -57,10 +54,7 @@ fn check_duplicate_ctype_creation() {
 
 	ext.execute_with(|| {
 		assert_err!(
-			Ctype::add(
-				get_origin(creator.clone()),
-				operation.hash
-			),
+			Ctype::add(get_origin(creator.clone()), operation.hash),
 			ctype::Error::<Test>::CTypeAlreadyExists
 		);
 	});

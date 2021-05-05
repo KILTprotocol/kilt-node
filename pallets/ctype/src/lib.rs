@@ -31,9 +31,9 @@ pub mod mock;
 #[cfg(test)]
 mod tests;
 
+pub use default_weights::WeightInfo;
 pub use pallet::*;
 pub use types::*;
-pub use default_weights::WeightInfo;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -60,8 +60,7 @@ pub mod pallet {
 	/// It maps from a CTYPE hash to its creator.
 	#[pallet::storage]
 	#[pallet::getter(fn ctypes)]
-	pub type Ctypes<T> =
-		StorageMap<_, Blake2_128Concat, CtypeHash<T>, CtypeCreator<T>>;
+	pub type Ctypes<T> = StorageMap<_, Blake2_128Concat, CtypeHash<T>, CtypeCreator<T>>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -86,16 +85,10 @@ pub mod pallet {
 		/// * origin: the identifier of the CTYPE creator
 		/// * hash: the CTYPE hash. It has to be unique.
 		#[pallet::weight(10)]
-		pub fn add(
-			origin: OriginFor<T>,
-			hash: CtypeHash<T>
-		) -> DispatchResultWithPostInfo {
+		pub fn add(origin: OriginFor<T>, hash: CtypeHash<T>) -> DispatchResultWithPostInfo {
 			let creator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
-			ensure!(
-				!<Ctypes<T>>::contains_key(&hash),
-				Error::<T>::CTypeAlreadyExists
-			);
+			ensure!(!<Ctypes<T>>::contains_key(&hash), Error::<T>::CTypeAlreadyExists);
 
 			log::debug!("Creating CTYPE with hash {:?} and creator {:?}", &hash, &creator);
 			<Ctypes<T>>::insert(&hash, creator.clone());

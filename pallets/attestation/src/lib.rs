@@ -23,16 +23,16 @@
 
 pub mod default_weights;
 
-pub mod types;
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
+pub mod types;
 
 #[cfg(test)]
 mod tests;
 
 pub use default_weights::WeightInfo;
-pub use types::*;
 pub use pallet::*;
+pub use types::*;
 
 use sp_std::vec::Vec;
 
@@ -68,12 +68,7 @@ pub mod pallet {
 	/// It maps from a delegation ID to a vector of claim hashes.
 	#[pallet::storage]
 	#[pallet::getter(fn delegated_attestations)]
-	pub type DelegatedAttestations<T> = StorageMap<
-		_,
-		Blake2_128Concat,
-		DelegationNodeId<T>,
-		Vec<ClaimHash<T>>,
-	>;
+	pub type DelegatedAttestations<T> = StorageMap<_, Blake2_128Concat, DelegationNodeId<T>, Vec<ClaimHash<T>>>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -120,13 +115,14 @@ pub mod pallet {
 		/// * origin: the identifier of the attester
 		/// * claim_hash: the hash of the claim to attest. It has to be unique
 		/// * ctype_hash: the hash of the CTYPE used for this attestation
-		/// * delegation_id: \[OPTIONAL\] the ID of the delegation node used to authorise the attester
+		/// * delegation_id: \[OPTIONAL\] the ID of the delegation node used to
+		///   authorise the attester
 		#[pallet::weight(0)]
 		pub fn add(
 			origin: OriginFor<T>,
 			claim_hash: ClaimHash<T>,
 			ctype_hash: CtypeHash<T>,
-			delegation_id: Option<DelegationNodeId<T>>
+			delegation_id: Option<DelegationNodeId<T>>,
 		) -> DispatchResultWithPostInfo {
 			let attester = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
@@ -147,10 +143,7 @@ pub mod pallet {
 
 				ensure!(!delegation.revoked, Error::<T>::DelegationRevoked);
 
-				ensure!(
-					delegation.owner == attester,
-					Error::<T>::NotDelegatedToAttester
-				);
+				ensure!(delegation.owner == attester, Error::<T>::NotDelegatedToAttester);
 
 				ensure!(
 					(delegation.permissions & delegation::Permissions::ATTEST) == delegation::Permissions::ATTEST,
@@ -172,9 +165,9 @@ pub mod pallet {
 			<Attestations<T>>::insert(
 				&claim_hash,
 				Attestation {
-					ctype_hash: ctype_hash,
+					ctype_hash,
 					attester: attester.clone(),
-					delegation_id: delegation_id,
+					delegation_id,
 					revoked: false,
 				},
 			);
@@ -193,7 +186,10 @@ pub mod pallet {
 		///
 		/// * origin: the identifier of the revoker
 		/// * claim_hash: the hash of the claim to revoke
-		/// * max_parent_checks: for delegated attestations, the number of nodes to check up in the trust hierarchy (including the root node but excluding the given node) to verify whether the caller is authorised to revoke the specified attestation.
+		/// * max_parent_checks: for delegated attestations, the number of nodes
+		///   to check up in the trust hierarchy (including the root node but
+		///   excluding the given node) to verify whether the caller is
+		///   authorised to revoke the specified attestation.
 		#[pallet::weight(0)]
 		pub fn revoke(
 			origin: OriginFor<T>,
@@ -213,11 +209,7 @@ pub mod pallet {
 				// Check whether the sender of the revocation controls the delegation node
 				// specified, and that its status has not been revoked
 				ensure!(
-					<delegation::Pallet<T>>::is_delegating(
-						&revoker,
-						&delegation_id,
-						max_parent_checks
-					)?,
+					<delegation::Pallet<T>>::is_delegating(&revoker, &delegation_id, max_parent_checks)?,
 					Error::<T>::UnauthorizedRevocation
 				);
 			}

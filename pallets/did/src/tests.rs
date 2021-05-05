@@ -1293,7 +1293,7 @@ fn check_verification_key_not_present_operation_verification() {
 	let verification_key_required = did::DidVerificationKeyRelationship::CapabilityInvocation;
 	let operation = TestDidOperation {
 		did: ALICE_DID,
-		verification_key_type: verification_key_required.clone(),
+		verification_key_type: verification_key_required,
 		tx_counter: mock_did.last_tx_counter + 1,
 	};
 
@@ -1309,7 +1309,7 @@ fn check_verification_key_not_present_operation_verification() {
 				&operation,
 				&did::DidSignature::from(signature)
 			),
-			did::DidError::StorageError(did::StorageError::DidKeyNotPresent(verification_key_required.clone()))
+			did::DidError::StorageError(did::StorageError::DidKeyNotPresent(verification_key_required))
 		);
 	});
 

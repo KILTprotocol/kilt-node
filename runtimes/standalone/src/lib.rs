@@ -28,7 +28,10 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
-use kilt_primitives::{AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, constants::{DOLLARS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION}};
+use kilt_primitives::{
+	constants::{DOLLARS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
+	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature,
+};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};

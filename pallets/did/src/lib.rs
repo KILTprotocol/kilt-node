@@ -47,7 +47,7 @@ use frame_support::{
 	storage::types::StorageMap,
 	Parameter,
 };
-use frame_system::{ensure_signed};
+use frame_system::ensure_signed;
 use sp_std::{boxed::Box, fmt::Debug, prelude::Clone};
 
 #[frame_support::pallet]

@@ -36,7 +36,7 @@ pub use default_weights::WeightInfo;
 pub use pallet::*;
 pub use types::*;
 
-use codec::{Codec};
+use codec::Codec;
 use frame_support::pallet_prelude::Weight;
 use sp_runtime::{
 	traits::{CheckEqual, MaybeDisplay, SimpleBitOps},
@@ -215,7 +215,7 @@ pub mod pallet {
 			parent_id: Option<DelegationNodeId<T>>,
 			delegate: DelegatorId<T>,
 			permissions: Permissions,
-			delegate_signature: did::DidSignature
+			delegate_signature: did::DidSignature,
 		) -> DispatchResultWithPostInfo {
 			let delegator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
@@ -223,12 +223,7 @@ pub mod pallet {
 			let delegate_details = <did::Did<T>>::get(&delegate).ok_or(Error::<T>::DelegateNotFound)?;
 
 			// Calculate the hash root
-			let hash_root = Self::calculate_hash(
-				&delegation_id,
-				&root_id,
-				&parent_id,
-				&permissions,
-			);
+			let hash_root = Self::calculate_hash(&delegation_id, &root_id, &parent_id, &permissions);
 
 			// Verify that the hash root has been signed with the delegate's authentication
 			// key

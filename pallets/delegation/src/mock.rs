@@ -24,12 +24,15 @@ use ctype::mock as ctype_mock;
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use sp_core::H256;
-use sp_runtime::{testing::Header, traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify}};
+use sp_runtime::{
+	testing::Header,
+	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
+};
 
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
 
-pub type TestDidIdentifier =  kilt_primitives::AccountId;
+pub type TestDidIdentifier = kilt_primitives::AccountId;
 pub type TestCtypeOwner = TestDidIdentifier;
 pub type TestCtypeHash = kilt_primitives::Hash;
 pub type TestDelegationNodeId = kilt_primitives::Hash;
@@ -102,13 +105,13 @@ impl Config for Test {
 }
 
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
-    fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
+	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
 		// Only interested in Delegation calls
-        match self {
+		match self {
 			Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
-			_ => None
+			_ => None,
 		}
-    }
+	}
 }
 
 #[cfg(test)]
@@ -126,11 +129,7 @@ const DEFAULT_DELEGATION_ID_2_SEED: u64 = 3u64;
 const ALTERNATIVE_DELEGATION_ID_2_SEED: u64 = 4u64;
 
 pub fn get_origin(account: TestDelegatorId) -> Origin {
-	Origin::from(
-		did::DidRawOrigin {
-			id: account
-		}
-	)
+	Origin::from(did::DidRawOrigin { id: account })
 }
 
 pub fn get_delegation_root_id(default: bool) -> TestDelegationNodeId {
@@ -221,9 +220,7 @@ pub struct DelegationRevocationDetails {
 	pub max_revocations: u32,
 }
 
-pub fn generate_base_delegation_revocation_details(
-	delegation_id: TestDelegationNodeId,
-) -> DelegationRevocationDetails {
+pub fn generate_base_delegation_revocation_details(delegation_id: TestDelegationNodeId) -> DelegationRevocationDetails {
 	DelegationRevocationDetails {
 		delegation_id,
 		max_parent_checks: 0u32,
