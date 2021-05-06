@@ -21,7 +21,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
-pub mod default_weights;
 pub mod origin;
 pub mod types;
 
@@ -31,8 +30,6 @@ mod utils;
 pub mod mock;
 #[cfg(test)]
 mod tests;
-
-pub use default_weights::WeightInfo;
 
 pub use origin::*;
 pub use types::*;
@@ -68,7 +65,6 @@ pub mod pallet {
 		type DidIdentifier: Parameter;
 		type Origin: From<DidRawOrigin<DidIdentifier<Self>>>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-		type WeightInfo: WeightInfo;
 	}
 
 	#[pallet::pallet]
@@ -192,7 +188,7 @@ pub mod pallet {
 		/// * signature: the [signature](DidSignature) over the operation that
 		///   must be signed with the authentication key provided in the
 		///   operation
-		#[pallet::weight(T::WeightInfo::submit_did_create_operation())]
+		#[pallet::weight(0)]
 		pub fn submit_did_create_operation(
 			origin: OriginFor<T>,
 			operation: DidCreationOperation<T>,
@@ -237,7 +233,7 @@ pub mod pallet {
 		///   must be signed with the authentication key associated with the new
 		///   DID. Even in case the authentication key is being updated, the
 		///   operation must still be signed with the old one being replaced.
-		#[pallet::weight(T::WeightInfo::submit_did_update_operation())]
+		#[pallet::weight(0)]
 		pub fn submit_did_update_operation(
 			origin: OriginFor<T>,
 			operation: DidUpdateOperation<T>,
@@ -275,7 +271,7 @@ pub mod pallet {
 		/// * signature: the [signature](DidSignature) over the operation that
 		///   must be signed with the authentication key associated with the new
 		///   DID.
-		#[pallet::weight(T::WeightInfo::submit_did_delete_operation())]
+		#[pallet::weight(0)]
 		pub fn submit_did_delete_operation(
 			origin: OriginFor<T>,
 			operation: DidDeletionOperation<T>,
@@ -307,7 +303,7 @@ pub mod pallet {
 		/// * did_call: the DID-authorized runtime extrinsic operation to call.
 		/// * signature: the DID signature over the encoded `did_call` that must
 		///   be signed with the expected DID verification key.
-		#[pallet::weight(10)]
+		#[pallet::weight(0)]
 		pub fn submit_did_call(
 			origin: OriginFor<T>,
 			did_call: Box<DidAuthorizedCallOperation<T>>,

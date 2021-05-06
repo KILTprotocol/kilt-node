@@ -22,7 +22,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
-pub mod default_weights;
 pub mod types;
 
 #[cfg(any(feature = "mock", test))]
@@ -30,8 +29,6 @@ pub mod mock;
 
 #[cfg(test)]
 mod tests;
-
-pub use default_weights::WeightInfo;
 
 pub use pallet::*;
 pub use types::*;
@@ -70,7 +67,6 @@ pub mod pallet {
 			+ AsMut<[u8]>;
 		type EnsureOrigin: EnsureOrigin<Success = DelegatorId<Self>, <Self as frame_system::Config>::Origin>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-		type WeightInfo: WeightInfo;
 	}
 
 	#[pallet::pallet]

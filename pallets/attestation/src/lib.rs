@@ -21,8 +21,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
-pub mod default_weights;
-
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
 pub mod types;
@@ -30,7 +28,6 @@ pub mod types;
 #[cfg(test)]
 mod tests;
 
-pub use default_weights::WeightInfo;
 pub use pallet::*;
 pub use types::*;
 
