@@ -57,9 +57,9 @@ mod benchmarking;
 
 mod inflation;
 #[cfg(test)]
-mod mock;
+pub(crate) mod mock;
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 use frame_support::pallet;
 pub use inflation::{InflationInfo, RewardRate, StakingInfo};
 
@@ -897,9 +897,11 @@ pub mod pallet {
 				);
 				T::Currency::reserve(&acc, amount)?;
 				let new_total = state.total + amount;
+
 				if state.is_active() {
 					Self::update_active(collator.clone(), new_total);
 				}
+
 				let (total_collators, total_delegators) = <Total<T>>::get();
 				<Total<T>>::put((total_collators, total_delegators.saturating_add(amount)));
 				state.total = new_total;
@@ -945,9 +947,11 @@ pub mod pallet {
 			let before = collator.total;
 			collator.inc_delegator(delegator.clone(), more);
 			let after = collator.total;
+
 			if collator.is_active() {
 				Self::update_active(candidate.clone(), collator.total);
 			}
+			
 			<CollatorState<T>>::insert(&candidate, collator);
 			<DelegatorState<T>>::insert(&delegator, delegations);
 			Self::deposit_event(Event::DelegationIncreased(delegator, candidate, before, after));

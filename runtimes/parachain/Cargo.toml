@@ -12,6 +12,7 @@ static_assertions = "1.1.0"
 
 # RPC
 frame-system-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
+pallet-vesting = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 pallet-transaction-payment-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 
 # KILT pallets & primitives
@@ -22,19 +23,8 @@ did = {default-features = false, path = "../../pallets/did"}
 parachain-staking = {default-features = false, path = "../../pallets/parachain-staking"}
 pallet-author-filter = {default-features = false, path = "../../pallets/author-filter"}
 author-inherent = {default-features = false, path = "../../pallets/author-inherent"}
+kilt-launch = {path = "../../pallets/kilt-launch", default-features = false}
 kilt-primitives = {path = "../../primitives", default-features = false}
-
-
-# Xtokens
-orml-benchmarking = {git = "https://github.com/open-web3-stack/open-runtime-module-library", branch = "master", default-features = false}
-orml-currencies = {git = "https://github.com/open-web3-stack/open-runtime-module-library", branch = "master", default-features = false}
-orml-oracle = {git = "https://github.com/open-web3-stack/open-runtime-module-library", branch = "master", default-features = false}
-orml-oracle-rpc-runtime-api = {git = "https://github.com/open-web3-stack/open-runtime-module-library", branch = "master", default-features = false}
-orml-tokens = {git = "https://github.com/open-web3-stack/open-runtime-module-library", branch = "master", default-features = false}
-orml-traits = {git = "https://github.com/open-web3-stack/open-runtime-module-library", branch = "master", default-features = false}
-orml-unknown-tokens = {git = "https://github.com/open-web3-stack/open-runtime-module-library", branch = "master", default-features = false}
-orml-xcm-support = {git = "https://github.com/open-web3-stack/open-runtime-module-library", branch = "master", default-features = false}
-orml-xtokens = {git = "https://github.com/open-web3-stack/open-runtime-module-library", branch = "master", default-features = false}
 
 # Substrate dependencies
 sp-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
@@ -69,7 +59,7 @@ pallet-treasury = {git = "https://github.com/paritytech/substrate", default-feat
 
 # Cumulus dependencies
 cumulus-pallet-parachain-system = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "rococo-v1"}
-cumulus-pallet-xcm-handler = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "rococo-v1"}
+cumulus-pallet-xcmp-queue = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "rococo-v1"}
 cumulus-primitives-core = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "rococo-v1"}
 parachain-info = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "rococo-v1"}
 
@@ -101,12 +91,14 @@ runtime-benchmarks = [
   "ctype/runtime-benchmarks",
   "did/runtime-benchmarks",
   "delegation/runtime-benchmarks",
+  "kilt-launch/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
-  "pallet-indices/runtime-benchmarks",
-  "pallet-timestamp/runtime-benchmarks",
   "pallet-collective/runtime-benchmarks",
+  "pallet-indices/runtime-benchmarks",
   "pallet-society/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
+  "pallet-vesting/runtime-benchmarks",
+  "pallet-timestamp/runtime-benchmarks",
   "rococo-runtime/runtime-benchmarks",
 ]
 std = [
@@ -138,9 +130,10 @@ std = [
   "frame-system/std",
   "pallet-balances/std",
   "pallet-randomness-collective-flip/std",
-  "pallet-timestamp/std",
   "pallet-sudo/std",
+  "pallet-timestamp/std",
   "pallet-transaction-payment/std",
+  "pallet-vesting/std",
   "pallet-collective/std",
   "pallet-scheduler/std",
   "pallet-treasury/std",
@@ -150,20 +143,13 @@ std = [
   "pallet-membership/std",
   "pallet-transaction-payment-rpc-runtime-api/std",
   "parachain-info/std",
+  "kilt-launch/std",
   "kilt-primitives/std",
   "cumulus-pallet-parachain-system/std",
   "cumulus-primitives-core/std",
-  "cumulus-pallet-xcm-handler/std",
+  "cumulus-pallet-xcmp-queue/std",
   "xcm/std",
   "xcm-builder/std",
   "xcm-executor/std",
-  "orml-benchmarking/std",
-  "orml-currencies/std",
-  "orml-oracle/std",
-  "orml-oracle/std",
-  "orml-tokens/std",
-  "orml-traits/std",
-  "orml-xtokens/std",
   "polkadot-parachain/std",
-  "cumulus-pallet-xcm-handler/std",
 ]

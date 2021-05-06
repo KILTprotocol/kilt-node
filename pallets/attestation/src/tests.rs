@@ -148,9 +148,11 @@ fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
 	hash.encode()
 }
 
+#[allow(dead_code)]
 pub struct ExtBuilder;
 
 impl ExtBuilder {
+	#[allow(dead_code)]
 	pub fn build_with_keystore() -> TestExternalities {
 		let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 		let mut ext = TestExternalities::from(storage);

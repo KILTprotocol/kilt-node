@@ -18,7 +18,8 @@ futures = {version = "0.3.1", features = ["compat"]}
 hex-literal = "0.2.1"
 log = "0.4.13"
 parking_lot = "0.9.0"
-serde = {version = "1.0.119", features = ["derive"]}
+serde = { version = "1.0.119", features = ["derive"] }
+serde_json = "1.0.64"
 structopt = "0.3.3"
 trie-root = "0.15.2"
 

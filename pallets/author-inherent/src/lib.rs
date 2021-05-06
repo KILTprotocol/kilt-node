@@ -217,6 +217,10 @@ impl<T: Config> ProvideInherent for Module<T> {
 	type Error = InherentError;
 	const INHERENT_IDENTIFIER: InherentIdentifier = INHERENT_IDENTIFIER;
 
+	fn is_inherent(_: &<Self as ProvideInherent>::Call) -> bool {
+		todo!()
+	}
+
 	fn is_inherent_required(_: &InherentData) -> Result<Option<Self::Error>, Self::Error> {
 		// Return Ok(Some(_)) unconditionally because this inherent is required in every
 		// block If it is not found, throw an AuthorInherentRequired error.

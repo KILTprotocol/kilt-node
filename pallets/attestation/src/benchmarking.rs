@@ -20,7 +20,7 @@
 
 use super::*;
 
-use crate::Module as AttestationModule;
+use crate::Pallet as AttestationModule;
 use delegation::{benchmarking::setup_delegations, Permissions};
 use frame_benchmarking::benchmarks;
 use frame_support::storage::StorageMap;

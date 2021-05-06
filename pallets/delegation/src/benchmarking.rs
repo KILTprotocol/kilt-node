@@ -68,7 +68,7 @@ where
 	let ctype_hash = <T::Hash as Default>::default();
 	let root_id = generate_delegation_id::<T>(number);
 
-	ctype::Module::<T>::add(RawOrigin::Signed(root_acc.clone()).into(), ctype_hash)?;
+	ctype::Pallet::<T>::add(RawOrigin::Signed(root_acc.clone()).into(), ctype_hash)?;
 	Module::<T>::create_root(RawOrigin::Signed(root_acc.clone()).into(), root_id, ctype_hash)?;
 
 	Ok((
@@ -197,7 +197,7 @@ benchmarks! {
 		let caller: T::AccountId = account("caller", 0, SEED);
 		let ctype = <T::Hash as Default>::default();
 		let delegation = generate_delegation_id::<T>(0);
-		ctype::Module::<T>::add(RawOrigin::Signed(caller.clone()).into(), ctype)?;
+		ctype::Pallet::<T>::add(RawOrigin::Signed(caller.clone()).into(), ctype)?;
 	}: _(RawOrigin::Signed(caller), delegation, ctype)
 	verify {
 		assert!(Root::<T>::contains_key(delegation));
@@ -212,13 +212,13 @@ benchmarks! {
 		assert!(Root::<T>::contains_key(root_id));
 		let root_delegation = Root::<T>::get(root_id).ok_or("Missing root delegation")?;
 		assert_eq!(root_delegation.owner, root_acc_id);
-		assert_eq!(root_delegation.revoked, true);
+		assert!(root_delegation.revoked);
 
 		assert!(Delegations::<T>::contains_key(leaf_id));
 		let leaf_delegation = Delegations::<T>::get(leaf_id).ok_or("Missing leaf delegation")?;
 		assert_eq!(leaf_delegation.root_id, root_id);
 		assert_eq!(leaf_delegation.owner, leaf_acc.into());
-		assert_eq!(leaf_delegation.revoked, true);
+		assert!(leaf_delegation.revoked);
 	}
 
 	add_delegation {
@@ -257,13 +257,13 @@ benchmarks! {
 	verify {
 		assert!(Delegations::<T>::contains_key(child_id));
 		let DelegationNode::<T> { revoked, .. } = Delegations::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
-		assert_eq!(revoked, true);
+		assert!(revoked);
 
 		assert!(Delegations::<T>::contains_key(leaf_id));
 		let leaf_delegation = Delegations::<T>::get(leaf_id).ok_or("Missing leaf delegation")?;
 		assert_eq!(leaf_delegation.root_id, root_id);
 		assert_eq!(leaf_delegation.owner, leaf_acc.into());
-		assert_eq!(leaf_delegation.revoked, true);
+		assert!(leaf_delegation.revoked);
 	}
 	// TODO: Might want to add variant iterating over children instead of depth at some later point
 
@@ -273,11 +273,11 @@ benchmarks! {
 	revoke_delegation_leaf {
 		let r in 1 .. MAX_REVOCATIONS;
 		let (root_acc, _, _, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
-	}: revoke_delegation(RawOrigin::Signed(root_acc.clone().into()), leaf_id, r, r)
+	}: revoke_delegation(RawOrigin::Signed(root_acc.into()), leaf_id, r, r)
 	verify {
 		assert!(Delegations::<T>::contains_key(leaf_id));
 		let DelegationNode::<T> { revoked, .. } = Delegations::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
-		assert_eq!(revoked, true);
+		assert!(revoked);
 	}
 	// TODO: Might want to add variant iterating over children instead of depth at some later point
 }
