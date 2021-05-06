@@ -951,7 +951,7 @@ pub mod pallet {
 			if collator.is_active() {
 				Self::update_active(candidate.clone(), collator.total);
 			}
-			
+
 			<CollatorState<T>>::insert(&candidate, collator);
 			<DelegatorState<T>>::insert(&delegator, delegations);
 			Self::deposit_event(Event::DelegationIncreased(delegator, candidate, before, after));
@@ -972,11 +972,13 @@ pub mod pallet {
 				.dec_delegation(candidate.clone(), less)
 				.ok_or(Error::<T>::DelegationDNE)?
 				.ok_or(Error::<T>::Underflow)?;
+
 			ensure!(remaining >= T::MinDelegation::get(), Error::<T>::DelegationBelowMin);
 			ensure!(
 				delegations.total >= T::MinDelegatorStk::get(),
 				Error::<T>::NomBondBelowMin
 			);
+
 			T::Currency::unreserve(&delegator, less);
 			let before = collator.total;
 			collator.dec_delegator(delegator.clone(), less);
