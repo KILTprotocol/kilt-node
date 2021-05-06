@@ -35,7 +35,7 @@ fn check_successful_simple_ed25519_creation() {
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default().build();
+	let mut ext = ExtBuilder::default().build(None);
 
 	ext.execute_with(|| {
 		assert_ok!(Did::submit_did_create_operation(
@@ -68,7 +68,7 @@ fn check_successful_simple_sr25519_creation() {
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default().build();
+	let mut ext = ExtBuilder::default().build(None);
 
 	ext.execute_with(|| {
 		assert_ok!(Did::submit_did_create_operation(
@@ -117,7 +117,7 @@ fn check_successful_complete_creation() {
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default().build();
+	let mut ext = ExtBuilder::default().build(None);
 
 	ext.execute_with(|| {
 		assert_ok!(Did::submit_did_create_operation(
@@ -175,7 +175,7 @@ fn check_duplicate_did_creation() {
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -199,7 +199,7 @@ fn check_invalid_signature_format_did_creation() {
 
 	let signature = invalid_key.sign(operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default().build();
+	let mut ext = ExtBuilder::default().build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -221,7 +221,7 @@ fn check_invalid_signature_did_creation() {
 
 	let signature = alternative_key.sign(operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default().build();
+	let mut ext = ExtBuilder::default().build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -285,7 +285,7 @@ fn check_successful_complete_update() {
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(ALICE_DID, old_did_details.clone())])
-		.build();
+		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
 
@@ -369,7 +369,7 @@ fn check_successful_keys_deletion_update() {
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(ALICE_DID, old_did_details.clone())])
-		.build();
+		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
 
@@ -421,7 +421,7 @@ fn check_successful_keys_overwrite_update() {
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(ALICE_DID, old_did_details.clone())])
-		.build();
+		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
 
@@ -481,7 +481,7 @@ fn check_successful_keys_multiuse_update() {
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(ALICE_DID, old_did_details.clone())])
-		.build();
+		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
 
@@ -519,7 +519,7 @@ fn check_did_not_present_update() {
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -542,7 +542,7 @@ fn check_did_max_counter_update() {
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -566,7 +566,7 @@ fn check_smaller_tx_counter_did_update() {
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -589,7 +589,7 @@ fn check_equal_tx_counter_did_update() {
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -612,7 +612,7 @@ fn check_too_large_tx_counter_did_update() {
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -637,7 +637,7 @@ fn check_invalid_signature_format_did_update() {
 
 	let signature = invalid_key.sign(operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -661,7 +661,7 @@ fn check_invalid_signature_did_update() {
 
 	let signature = alternative_key.sign(operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -695,7 +695,7 @@ fn check_currently_active_authentication_key_update() {
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(ALICE_DID, old_did_details)])
-		.build();
+		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
 
@@ -732,7 +732,7 @@ fn check_currently_active_delegation_key_update() {
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(ALICE_DID, old_did_details)])
-		.build();
+		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
 
@@ -769,7 +769,7 @@ fn check_currently_active_attestation_key_update() {
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(ALICE_DID, old_did_details)])
-		.build();
+		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
 
@@ -807,7 +807,7 @@ fn check_verification_key_not_present_update() {
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(ALICE_DID, old_did_details)])
-		.build();
+		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
 
@@ -838,7 +838,7 @@ fn check_successful_deletion() {
 	// Generate signature using the old authentication key
 	let signature = auth_key.sign(operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, did_details)]).build();
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, did_details)]).build(None);
 
 	ext.execute_with(|| {
 		assert_ok!(Did::submit_did_delete_operation(
@@ -857,7 +857,7 @@ fn check_successful_deletion() {
 
 	let signature = new_auth_key.sign(operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default().build();
+	let mut ext = ExtBuilder::default().build(None);
 
 	ext.execute_with(|| {
 		assert_ok!(Did::submit_did_create_operation(
@@ -879,7 +879,7 @@ fn check_did_not_present_deletion() {
 	// Generate signature using the old authentication key
 	let signature = auth_key.sign(operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default().build();
+	let mut ext = ExtBuilder::default().build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -902,7 +902,7 @@ fn check_max_tx_counter_did_deletion() {
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -926,7 +926,7 @@ fn check_smaller_tx_counter_did_deletion() {
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -950,7 +950,7 @@ fn check_equal_tx_counter_did_deletion() {
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -973,7 +973,7 @@ fn check_too_large_tx_counter_did_deletion() {
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -997,7 +997,7 @@ fn check_invalid_signature_format_did_deletion() {
 
 	let signature = invalid_key.sign(operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -1021,7 +1021,7 @@ fn check_invalid_signature_did_deletion() {
 
 	let signature = alternative_key.sign(operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build();
+	let mut ext = ExtBuilder::default().with_dids(vec![(ALICE_DID, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -1052,7 +1052,7 @@ fn check_call_attestation_key_successful() {
 
 	let builder = ExtBuilder::default().with_dids(vec![(did.clone(), mock_did)]);
 
-	let mut ext = builder.build();
+	let mut ext = builder.build(None);
 
 	ext.execute_with(|| {
 		assert_ok!(
@@ -1080,7 +1080,7 @@ fn check_call_attestation_key_error() {
 
 	let builder = ExtBuilder::default().with_dids(vec![(did.clone(), mock_did)]);
 
-	let mut ext = builder.build();
+	let mut ext = builder.build(None);
 
 	ext.execute_with(|| {
 		assert_ok!(
@@ -1109,7 +1109,7 @@ fn check_authentication_successful_operation_verification() {
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(ALICE_DID, mock_did.clone())])
-		.build();
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_ok!(
@@ -1144,7 +1144,7 @@ fn check_attestation_successful_operation_verification() {
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(ALICE_DID, mock_did.clone())])
-		.build();
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_ok!(
@@ -1178,7 +1178,7 @@ fn check_delegation_successful_operation_verification() {
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(ALICE_DID, mock_did.clone())])
-		.build();
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_ok!(
@@ -1209,7 +1209,7 @@ fn check_did_not_present_operation_verification() {
 	};
 	let signature = del_key.sign(&operation.encode());
 
-	let mut ext = ExtBuilder::default().build();
+	let mut ext = ExtBuilder::default().build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -1236,7 +1236,7 @@ fn check_max_tx_counter_operation_verification() {
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(ALICE_DID, mock_did.clone())])
-		.build();
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -1267,7 +1267,7 @@ fn check_smaller_counter_operation_verification() {
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(ALICE_DID, mock_did.clone())])
-		.build();
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -1297,7 +1297,7 @@ fn check_equal_counter_operation_verification() {
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(ALICE_DID, mock_did.clone())])
-		.build();
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -1327,7 +1327,7 @@ fn check_too_large_counter_operation_verification() {
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(ALICE_DID, mock_did.clone())])
-		.build();
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -1359,7 +1359,7 @@ fn check_verification_key_not_present_operation_verification() {
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(ALICE_DID, mock_did.clone())])
-		.build();
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -1392,7 +1392,7 @@ fn check_invalid_signature_format_operation_verification() {
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(ALICE_DID, mock_did.clone())])
-		.build();
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -1425,7 +1425,7 @@ fn check_invalid_signature_operation_verification() {
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(ALICE_DID, mock_did.clone())])
-		.build();
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(

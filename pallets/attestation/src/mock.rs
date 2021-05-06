@@ -30,10 +30,12 @@ use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 };
+use sp_io::TestExternalities;
 
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
 
+pub type TestDidIdentifier = kilt_primitives::AccountId;
 pub type TestCtypeOwner = kilt_primitives::AccountId;
 pub type TestCtypeHash = kilt_primitives::Hash;
 pub type TestDelegationNodeId = kilt_primitives::Hash;
@@ -51,6 +53,7 @@ frame_support::construct_runtime!(
 		Attestation: attestation::{Pallet, Call, Storage, Event<T>},
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>},
+		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>},
 	}
 );
 
@@ -86,7 +89,16 @@ impl frame_system::Config for Test {
 	type OnSetCode = ();
 }
 
+impl did::Config for Test {
+	type DidIdentifier = TestDidIdentifier;
+	type Origin = Origin;
+	type Call = Call;
+	type Event = ();
+	type WeightInfo = ();
+}
+
 impl ctype::Config for Test {
+	type CtypeCreatorId = TestCtypeOwner;
 	type EnsureOrigin = EnsureSigned<TestCtypeOwner>;
 	type Event = ();
 	type WeightInfo = ();
@@ -103,6 +115,13 @@ impl Config for Test {
 	type EnsureOrigin = EnsureSigned<TestAttester>;
 	type Event = ();
 	type WeightInfo = ();
+}
+
+impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
+	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
+		// Not used in this pallet
+		None
+	}
 }
 
 #[cfg(test)]
@@ -165,7 +184,6 @@ pub fn generate_base_attestation(attester: TestAttester) -> AttestationStruct<Te
 
 #[derive(Clone)]
 pub struct ExtBuilder {
-	delegation_builder: Option<delegation_mock::ExtBuilder>,
 	attestations_stored: Vec<(TestClaimHash, AttestationStruct<Test>)>,
 	delegated_attestations_stored: Vec<(TestDelegationNodeId, Vec<TestClaimHash>)>,
 }
@@ -173,18 +191,8 @@ pub struct ExtBuilder {
 impl Default for ExtBuilder {
 	fn default() -> Self {
 		Self {
-			delegation_builder: None,
 			attestations_stored: vec![],
 			delegated_attestations_stored: vec![],
-		}
-	}
-}
-
-impl From<delegation_mock::ExtBuilder> for ExtBuilder {
-	fn from(delegation_builder: delegation_mock::ExtBuilder) -> Self {
-		Self {
-			delegation_builder: Some(delegation_builder),
-			..Default::default()
 		}
 	}
 }
@@ -203,9 +211,9 @@ impl ExtBuilder {
 		self
 	}
 
-	pub fn build(self) -> sp_io::TestExternalities {
-		let mut ext = if let Some(delegation_builder) = self.delegation_builder.clone() {
-			delegation_builder.build()
+	pub fn build(self, ext: Option<TestExternalities>) -> sp_io::TestExternalities {
+		let mut ext = if let Some(ext) = ext {
+			ext
 		} else {
 			let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 			sp_io::TestExternalities::new(storage)

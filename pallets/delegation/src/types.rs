@@ -105,8 +105,8 @@ impl<T: Config> DelegationNode<T> {
 	/// given root.
 	///
 	/// * root_id: the root node ID this node will be a child of
-	/// * owner: the identifier of the owner of the new delegation, i.e., the new
-	///   delegate
+	/// * owner: the identifier of the owner of the new delegation, i.e., the
+	///   new delegate
 	/// * permissions: the permission flags for the operations the delegate is
 	///   allowed to perform
 	pub fn new_root_child(root_id: DelegationNodeId<T>, owner: DelegatorId<T>, permissions: Permissions) -> Self {
@@ -124,8 +124,8 @@ impl<T: Config> DelegationNode<T> {
 	///
 	/// * root_id: the root node ID this node will be a child of
 	/// * parent - the parent node ID this node will be a child of
-	/// * owner: the identifier of the owner of the new delegation, i.e., the new
-	///   delegate
+	/// * owner: the identifier of the owner of the new delegation, i.e., the
+	///   new delegate
 	/// * permissions: the permission flags for the operations the delegate is
 	///   allowed to perform
 	pub fn new_node_child(

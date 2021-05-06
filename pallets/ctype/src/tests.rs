@@ -29,7 +29,7 @@ fn check_successful_ctype_creation() {
 
 	let builder = ExtBuilder::default();
 
-	let mut ext = builder.build();
+	let mut ext = builder.build(None);
 
 	// Write CTYPE on chain
 	ext.execute_with(|| {
@@ -50,7 +50,7 @@ fn check_duplicate_ctype_creation() {
 
 	let builder = ExtBuilder::default().with_ctypes(vec![(operation.hash, creator.clone())]);
 
-	let mut ext = builder.build();
+	let mut ext = builder.build(None);
 
 	ext.execute_with(|| {
 		assert_err!(

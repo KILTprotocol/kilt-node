@@ -23,6 +23,7 @@ use crate::*;
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use sp_core::H256;
+use sp_io::TestExternalities;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
@@ -131,9 +132,13 @@ impl ExtBuilder {
 		self
 	}
 
-	pub fn build(self) -> sp_io::TestExternalities {
-		let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
-		let mut ext = sp_io::TestExternalities::new(storage);
+	pub fn build(self, ext: Option<TestExternalities>) -> sp_io::TestExternalities {
+		let mut ext = if let Some(ext) = ext {
+			ext
+		} else {
+			let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+			sp_io::TestExternalities::new(storage)
+		};
 
 		if !self.ctypes_stored.is_empty() {
 			ext.execute_with(|| {

@@ -252,7 +252,6 @@ pub fn generate_base_delegation_node(root_id: TestDelegationNodeId, owner: TestD
 
 #[derive(Clone)]
 pub struct ExtBuilder {
-	did_builder: Option<did_mock::ExtBuilder>,
 	ctype_builder: Option<ctype_mock::ExtBuilder>,
 	root_delegations_stored: Vec<(TestDelegationNodeId, DelegationRoot<Test>)>,
 	delegations_stored: Vec<(TestDelegationNodeId, DelegationNode<Test>)>,
@@ -262,7 +261,6 @@ pub struct ExtBuilder {
 impl Default for ExtBuilder {
 	fn default() -> Self {
 		Self {
-			did_builder: None,
 			ctype_builder: None,
 			root_delegations_stored: vec![],
 			delegations_stored: vec![],
@@ -271,24 +269,7 @@ impl Default for ExtBuilder {
 	}
 }
 
-impl From<ctype_mock::ExtBuilder> for ExtBuilder {
-	fn from(ctype_builder: ctype_mock::ExtBuilder) -> Self {
-		Self {
-			ctype_builder: Some(ctype_builder),
-			..Default::default()
-		}
-	}
-}
-
 impl ExtBuilder {
-	pub fn with_did_builder(
-		mut self,
-		did_builder: did_mock::ExtBuilder,
-	) -> Self {
-		self.did_builder = Some(did_builder);
-		self
-	}
-
 	pub fn with_root_delegations(
 		mut self,
 		root_delegations: Vec<(TestDelegationNodeId, DelegationRoot<Test>)>,
@@ -307,20 +288,13 @@ impl ExtBuilder {
 		self
 	}
 
-	pub fn build(self) -> sp_io::TestExternalities {
-		// TODO: fix this error where did_builder is not considered
-		let ext: Option<TestExternalities> = None;
-		if let Some(ctype_builder) = self.ctype_builder.clone() {
-			ext = ctype_builder.build();
-		}
-		if let Some(did_builder) = self.did_builder.clone() {
-
-		}
-		if ext.is_none() {
+	pub fn build(self, ext: Option<TestExternalities>) -> sp_io::TestExternalities {
+		let mut ext = if let Some(ext) = ext {
+			ext
+		} else {
 			let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
-			ext = Some(sp_io::TestExternalities::new(storage));
-		}
-		let mut ext = ext.unwrap();
+			sp_io::TestExternalities::new(storage)
+		};
 
 		if !self.root_delegations_stored.is_empty() {
 			ext.execute_with(|| {
