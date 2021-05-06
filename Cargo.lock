@@ -412,7 +412,7 @@ dependencies = [
  "sp-keystore",
  "sp-runtime",
  "sp-std",
- "substrate-wasm-builder-runner 3.0.0",
+ "substrate-wasm-builder-runner",
 ]
 
 [[package]]
@@ -1265,7 +1265,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
- "substrate-wasm-builder-runner 3.0.0",
+ "substrate-wasm-builder-runner",
 ]
 
 [[package]]
@@ -1565,7 +1565,7 @@ dependencies = [
  "sp-keystore",
  "sp-runtime",
  "sp-std",
- "substrate-wasm-builder-runner 1.0.6",
+ "substrate-wasm-builder-runner",
 ]
 
 [[package]]
@@ -4884,7 +4884,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
- "substrate-wasm-builder-runner 3.0.0",
+ "substrate-wasm-builder-runner",
 ]
 
 [[package]]
@@ -10245,7 +10245,8 @@ dependencies = [
 [[package]]
 name = "substrate-wasm-builder"
 version = "4.0.0"
-source = "git+https://github.com/paritytech/substrate?branch=rococo-v1#2be8fcc4236d32786c62f6f27a98e7fe7e550807"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93a3d51ad6abbc408b03ea962062bfcc959b438a318d7d4bedd181e1effd0610"
 dependencies = [
  "ansi_term 0.12.1",
  "atty",
@@ -10272,12 +10273,6 @@ dependencies = [
  "walkdir",
  "wasm-gc-api",
 ]
-
-[[package]]
-name = "substrate-wasm-builder-runner"
-version = "1.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2a965994514ab35d3893e9260245f2947fd1981cdd4fffd2c6e6d1a9ce02e6a"
 
 [[package]]
 name = "substrate-wasm-builder-runner"
