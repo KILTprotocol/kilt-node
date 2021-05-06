@@ -27,21 +27,15 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use codec::{Decode, Encode};
-use cumulus_primitives_core::{relay_chain::Balance as RelayChainBalance, ParaId};
-use frame_support::traits::LockIdentifier;
+use frame_support::{traits::LockIdentifier, PalletId};
 use frame_system::{
 	limits::{BlockLength, BlockWeights},
 	EnsureOneOf, EnsureRoot,
 };
 use kilt_primitives::{
 	constants::{DAYS, DOLLARS, HOURS, MILLICENTS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
-	AccountId, Amount, Balance, BlockNumber, CurrencyId, Hash, Index, Signature,
+	AccountId, Balance, BlockNumber, Hash, Index, Signature,
 };
-use orml_currencies::BasicCurrencyAdapter;
-use orml_traits::{arithmetic::Zero, parameter_type_with_key};
-use orml_xcm_support::{IsNativeConcrete, MultiCurrencyAdapter, XcmHandler as XcmHandlerT};
-use polkadot_parachain::primitives::Sibling;
 use sp_api::impl_runtime_apis;
 use sp_core::{
 	u32_trait::{_1, _2, _3, _5},
@@ -49,19 +43,13 @@ use sp_core::{
 };
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, Convert, ConvertInto, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, DispatchResult, ModuleId,
+	ApplyExtrinsicResult,
 };
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 use static_assertions::const_assert;
-use xcm::v0::{Junction, MultiAsset, MultiLocation, NetworkId, Xcm};
-use xcm_builder::{
-	AccountId32Aliases, ChildParachainConvertsVia, LocationInverter, ParentIsDefault, RelayChainAsNative,
-	SiblingParachainAsNative, SiblingParachainConvertsVia, SignedAccountId32AsNative, SovereignSignedViaLocation,
-};
-use xcm_executor::{traits::NativeAsset, Config, XcmExecutor};
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -133,6 +121,13 @@ const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 /// We allow for 2 seconds of compute with a 6 second average block time.
 const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
+
+// Pallet accounts of runtime
+parameter_types! {
+	pub const TreasuryPalletId: PalletId = PalletId(*b"kilt/tsy");
+	pub const SocietyPalletId: PalletId = PalletId(*b"kilt/soc");
+	pub const ElectionsPalletId: LockIdentifier = *b"kilt/elc";
+}
 
 parameter_types! {
 	pub const BlockHashCount: BlockNumber = 250;
@@ -260,10 +255,12 @@ parameter_types! {
 
 impl cumulus_pallet_parachain_system::Config for Runtime {
 	type Event = Event;
-	type OnValidationData = ();
 	type SelfParaId = parachain_info::Pallet<Runtime>;
+	type ReservedXcmpWeight = ();
+	type OnValidationData = ();
 	type DownwardMessageHandlers = ();
-	type XcmpMessageHandlers = XcmHandler;
+	type OutboundXcmpMessageSource = ();
+	type XcmpMessageHandler = ();
 }
 
 impl parachain_info::Config for Runtime {}
@@ -291,196 +288,6 @@ impl kilt_launch::Config for Runtime {
 	type MaxClaims = MaxClaims;
 	type UsableBalance = UsableBalance;
 	type WeightInfo = kilt_launch::default_weights::SubstrateWeight<Runtime>;
-}
-
-parameter_types! {
-	pub KiltNetwork: NetworkId = NetworkId::Named("kilt".into());
-	pub const RococoLocation: MultiLocation = MultiLocation::X1(Junction::Parent);
-	pub const RococoNetwork: NetworkId = NetworkId::Polkadot;
-	pub RelayChainOrigin: Origin = cumulus_pallet_xcm_handler::Origin::Relay.into();
-	pub Ancestry: MultiLocation = Junction::Parachain {
-		id: ParachainInfo::parachain_id().into()
-	}.into();
-	pub const RelayChainCurrencyId: CurrencyId = CurrencyId::Dot;
-}
-
-pub type LocationConverter = (
-	ParentIsDefault<AccountId>,
-	SiblingParachainConvertsVia<Sibling, AccountId>,
-	ChildParachainConvertsVia<ParaId, AccountId>,
-	AccountId32Aliases<KiltNetwork, AccountId>,
-);
-
-pub type LocalAssetTransactor = MultiCurrencyAdapter<
-	Currencies,
-	UnknownTokens,
-	IsNativeConcrete<CurrencyId, CurrencyIdConvert>,
-	AccountId,
-	LocationConverter,
-	CurrencyId,
-	CurrencyIdConvert,
->;
-
-pub type LocalOriginConverter = (
-	SovereignSignedViaLocation<LocationConverter, Origin>,
-	RelayChainAsNative<RelayChainOrigin, Origin>,
-	SiblingParachainAsNative<cumulus_pallet_xcm_handler::Origin, Origin>,
-	SignedAccountId32AsNative<KiltNetwork, Origin>,
-);
-
-pub struct XcmConfig;
-impl Config for XcmConfig {
-	type Call = Call;
-	type XcmSender = XcmHandler;
-	// How to withdraw and deposit an asset.
-	type AssetTransactor = LocalAssetTransactor;
-	type OriginConverter = LocalOriginConverter;
-	type IsReserve = NativeAsset;
-	type IsTeleporter = ();
-	type LocationInverter = LocationInverter<Ancestry>;
-}
-
-impl cumulus_pallet_xcm_handler::Config for Runtime {
-	type Event = Event;
-	type XcmExecutor = XcmExecutor<XcmConfig>;
-	type UpwardMessageSender = ParachainSystem;
-	type AccountIdConverter = LocationConverter;
-	type XcmpMessageSender = ParachainSystem;
-	type SendXcmOrigin = EnsureRoot<AccountId>;
-}
-
-pub struct RelayToNative;
-impl Convert<RelayChainBalance, Balance> for RelayToNative {
-	fn convert(val: u128) -> Balance {
-		// native is 15
-		// relay is 12
-		val * 1_000
-	}
-}
-
-pub struct NativeToRelay;
-impl Convert<Balance, RelayChainBalance> for NativeToRelay {
-	fn convert(val: u128) -> Balance {
-		// native is 15
-		// relay is 12
-		val / 1_000
-	}
-}
-
-pub struct AccountId32Convert;
-impl Convert<AccountId, [u8; 32]> for AccountId32Convert {
-	fn convert(account_id: AccountId) -> [u8; 32] {
-		account_id.into()
-	}
-}
-
-parameter_types! {
-	pub const PolkadotNetworkId: NetworkId = NetworkId::Polkadot;
-}
-
-pub struct HandleXcm;
-impl XcmHandlerT<AccountId> for HandleXcm {
-	fn execute_xcm(origin: AccountId, xcm: Xcm) -> DispatchResult {
-		XcmHandler::execute_xcm(origin, xcm)
-	}
-}
-
-fn native_currency_location(id: CurrencyId) -> MultiLocation {
-	MultiLocation::X3(
-		Junction::Parent,
-		Junction::Parachain {
-			id: ParachainInfo::get().into(),
-		},
-		Junction::GeneralKey(id.encode()),
-	)
-}
-
-pub struct CurrencyIdConvert;
-impl Convert<CurrencyId, Option<MultiLocation>> for CurrencyIdConvert {
-	fn convert(id: CurrencyId) -> Option<MultiLocation> {
-		match id {
-			CurrencyId::Dot => Some(MultiLocation::X1(Junction::Parent)),
-			// TODO: which relay chain is it?
-			// CurrencyId::Ksm => Some(MultiLocation::X1(Parent)),
-			CurrencyId::Kilt => Some(native_currency_location(id)),
-			_ => None,
-		}
-	}
-}
-impl Convert<MultiLocation, Option<CurrencyId>> for CurrencyIdConvert {
-	fn convert(location: MultiLocation) -> Option<CurrencyId> {
-		match location {
-			MultiLocation::X1(Junction::Parent) => Some(CurrencyId::Dot),
-			MultiLocation::X3(Junction::Parent, Junction::Parachain { id: para_id }, Junction::GeneralKey(key))
-				if para_id == u32::from(ParachainInfo::get()) =>
-			{
-				// decode the general key
-				if let Ok(CurrencyId::Kilt) = CurrencyId::decode(&mut &key[..]) {
-					Some(CurrencyId::Kilt)
-				} else {
-					None
-				}
-			}
-			_ => None,
-		}
-	}
-}
-impl Convert<MultiAsset, Option<CurrencyId>> for CurrencyIdConvert {
-	fn convert(asset: MultiAsset) -> Option<CurrencyId> {
-		if let MultiAsset::ConcreteFungible { id, amount: _ } = asset {
-			Self::convert(id)
-		} else {
-			None
-		}
-	}
-}
-
-parameter_types! {
-	pub SelfLocation: MultiLocation = MultiLocation::X2(Junction::Parent, Junction::Parachain { id: ParachainInfo::get().into() });
-}
-
-impl orml_xtokens::Config for Runtime {
-	type Event = Event;
-	type Balance = Balance;
-	type AccountId32Convert = AccountId32Convert;
-	type XcmHandler = HandleXcm;
-	type CurrencyId = CurrencyId;
-	type CurrencyIdConvert = CurrencyIdConvert;
-	type SelfLocation = SelfLocation;
-}
-
-parameter_type_with_key! {
-	pub ExistentialDeposits: |_currency_id: CurrencyId| -> Balance {
-		Zero::zero()
-	};
-}
-
-impl orml_tokens::Config for Runtime {
-	type Event = Event;
-	type Balance = Balance;
-	type Amount = kilt_primitives::Amount;
-	type CurrencyId = CurrencyId;
-	type WeightInfo = ();
-	type ExistentialDeposits = ExistentialDeposits;
-	type OnDust = ();
-}
-
-parameter_types! {
-	pub const GetKiltTokenId: CurrencyId = CurrencyId::Kilt;
-}
-
-pub type KiltToken = BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber>;
-
-impl orml_currencies::Config for Runtime {
-	type Event = Event;
-	type MultiCurrency = orml_tokens::Pallet<Runtime>;
-	type NativeCurrency = KiltToken;
-	type GetNativeCurrencyId = GetKiltTokenId;
-	type WeightInfo = ();
-}
-
-impl orml_unknown_tokens::Config for Runtime {
-	type Event = Event;
 }
 
 parameter_types! {
@@ -571,7 +378,6 @@ parameter_types! {
 	pub const ProposalBondMinimum: Balance = 20 * DOLLARS; // TODO: how much?
 	pub const SpendPeriod: BlockNumber = 6 * DAYS;
 	pub const Burn: Permill = Permill::from_perthousand(2);
-	pub const TreasuryModuleId: ModuleId = ModuleId(*b"py/trsry");
 }
 
 type ApproveOrigin = EnsureOneOf<
@@ -587,7 +393,7 @@ type MoreThanHalfCouncil = EnsureOneOf<
 >;
 
 impl pallet_treasury::Config for Runtime {
-	type ModuleId = TreasuryModuleId;
+	type PalletId = TreasuryPalletId;
 	type Currency = Balances;
 	type ApproveOrigin = ApproveOrigin;
 	type RejectOrigin = MoreThanHalfCouncil;
@@ -611,10 +417,10 @@ parameter_types! {
 	pub const MaxLockDuration: BlockNumber = 36 * 30 * DAYS;
 	pub const ChallengePeriod: BlockNumber = 7 * DAYS;
 	pub const MaxCandidateIntake: u32 = 1;
-	pub const SocietyModuleId: ModuleId = ModuleId(*b"py/socie");
 }
 
 impl pallet_society::Config for Runtime {
+	type PalletId = SocietyPalletId;
 	type Event = Event;
 	type Currency = Balances;
 	type Randomness = RandomnessCollectiveFlip;
@@ -629,7 +435,6 @@ impl pallet_society::Config for Runtime {
 	type SuspensionJudgementOrigin = pallet_society::EnsureFounder<Runtime>;
 	type ChallengePeriod = ChallengePeriod;
 	type MaxCandidateIntake = MaxCandidateIntake;
-	type ModuleId = SocietyModuleId;
 }
 
 parameter_types! {
@@ -642,7 +447,6 @@ parameter_types! {
 	pub const TermDuration: BlockNumber = 24 * HOURS;
 	pub const DesiredMembers: u32 = 19;
 	pub const DesiredRunnersUp: u32 = 19;
-	pub const ElectionsPhragmenModuleId: LockIdentifier = *b"phrelect";
 }
 
 // Make sure that there are no more than MaxMembers members elected via
@@ -650,6 +454,7 @@ parameter_types! {
 const_assert!(DesiredMembers::get() <= CouncilMaxMembers::get());
 
 impl pallet_elections_phragmen::Config for Runtime {
+	type PalletId = ElectionsPalletId;
 	type Event = Event;
 	type Currency = Balances;
 	type ChangeMembers = Council;
@@ -663,7 +468,6 @@ impl pallet_elections_phragmen::Config for Runtime {
 	type DesiredMembers = DesiredMembers;
 	type DesiredRunnersUp = DesiredRunnersUp;
 	type TermDuration = TermDuration;
-	type ModuleId = ElectionsPhragmenModuleId;
 	type WeightInfo = ();
 }
 
@@ -712,6 +516,8 @@ impl pallet_membership::Config for Runtime {
 	type PrimeOrigin = MoreThanHalfCouncil;
 	type MembershipInitialized = TechnicalCommittee;
 	type MembershipChanged = TechnicalCommittee;
+	type MaxMembers = TechnicalMaxMembers;
+	type WeightInfo = ();
 }
 
 impl attestation::Config for Runtime {
@@ -767,13 +573,13 @@ construct_runtime! {
 		// Session: session::{Pallet, Call, Storage, Event, Config<T>} = 15,
 		// Authorship: authorship::{Pallet, Call, Storage} = 16,
 
-		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event} = 18,
+		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>} = 18,
 		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 19,
-		XcmHandler: cumulus_pallet_xcm_handler::{Pallet, Call, Event<T>, Origin} = 20,
-		Tokens: orml_tokens::{Pallet, Call, Storage, Event<T>} = 21,
-		Currencies: orml_currencies::{Pallet, Call, Storage, Event<T>} = 22,
-		XTokens: orml_xtokens::{Pallet, Call, Storage, Event<T>} = 23,
-		UnknownTokens: orml_unknown_tokens::{Pallet, Storage, Event} = 24,
+		// XcmHandler: cumulus_pallet_xcmp_queue::{Pallet, Call, Event<T>, Origin} = 20,
+		// Tokens: orml_tokens::{Pallet, Call, Storage, Event<T>} = 21,
+		// Currencies: orml_currencies::{Pallet, Call, Storage, Event<T>} = 22,
+		// XTokens: orml_xtokens::{Pallet, Call, Storage, Event<T>} = 23,
+		// UnknownTokens: orml_unknown_tokens::{Pallet, Storage, Event} = 24,
 
 		// Governance stuff; uncallable initially.
 		Democracy: pallet_democracy::{Pallet, Call, Storage, Config, Event<T>} = 25,
@@ -959,7 +765,7 @@ impl_runtime_apis! {
 			// No benchmarks for these pallets
 			// add_benchmark!(params, batches, cumulus_pallet_parachain_system, ParachainSystem);
 			// add_benchmark!(params, batches, parachain_info, ParachainInfo);
-			// add_benchmark!(params, batches, cumulus_pallet_xcm_handler, XcmHandler);
+			// add_benchmark!(params, batches, cumulus_pallet_xcmp_queue, XcmHandler);
 			// add_benchmark!(params, batches, orml_tokens, Tokens);
 			// add_benchmark!(params, batches, orml_currencies, Currencies);
 			// add_benchmark!(params, batches, orml_xtokens, XTokens);

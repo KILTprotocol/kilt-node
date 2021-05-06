@@ -38,6 +38,7 @@ native_executor_instance!(
 	pub Executor,
 	kilt_parachain_runtime::api::dispatch,
 	kilt_parachain_runtime::native_version,
+	frame_benchmarking::benchmarking::HostFunctions,
 );
 
 type PartialComponentsType = sc_service::PartialComponents<

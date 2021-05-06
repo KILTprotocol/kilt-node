@@ -212,13 +212,13 @@ benchmarks! {
 		assert!(Root::<T>::contains_key(root_id));
 		let root_delegation = Root::<T>::get(root_id).ok_or("Missing root delegation")?;
 		assert_eq!(root_delegation.owner, root_acc_id);
-		assert_eq!(root_delegation.revoked, true);
+		assert!(root_delegation.revoked);
 
 		assert!(Delegations::<T>::contains_key(leaf_id));
 		let leaf_delegation = Delegations::<T>::get(leaf_id).ok_or("Missing leaf delegation")?;
 		assert_eq!(leaf_delegation.root_id, root_id);
 		assert_eq!(leaf_delegation.owner, leaf_acc.into());
-		assert_eq!(leaf_delegation.revoked, true);
+		assert!(leaf_delegation.revoked);
 	}
 
 	add_delegation {
@@ -257,13 +257,13 @@ benchmarks! {
 	verify {
 		assert!(Delegations::<T>::contains_key(child_id));
 		let DelegationNode::<T> { revoked, .. } = Delegations::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
-		assert_eq!(revoked, true);
+		assert!(revoked);
 
 		assert!(Delegations::<T>::contains_key(leaf_id));
 		let leaf_delegation = Delegations::<T>::get(leaf_id).ok_or("Missing leaf delegation")?;
 		assert_eq!(leaf_delegation.root_id, root_id);
 		assert_eq!(leaf_delegation.owner, leaf_acc.into());
-		assert_eq!(leaf_delegation.revoked, true);
+		assert!(leaf_delegation.revoked);
 	}
 	// TODO: Might want to add variant iterating over children instead of depth at some later point
 
@@ -273,11 +273,11 @@ benchmarks! {
 	revoke_delegation_leaf {
 		let r in 1 .. MAX_REVOCATIONS;
 		let (root_acc, _, _, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
-	}: revoke_delegation(RawOrigin::Signed(root_acc.clone().into()), leaf_id, r, r)
+	}: revoke_delegation(RawOrigin::Signed(root_acc.into()), leaf_id, r, r)
 	verify {
 		assert!(Delegations::<T>::contains_key(leaf_id));
 		let DelegationNode::<T> { revoked, .. } = Delegations::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
-		assert_eq!(revoked, true);
+		assert!(revoked);
 	}
 	// TODO: Might want to add variant iterating over children instead of depth at some later point
 }

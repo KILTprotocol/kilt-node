@@ -19,6 +19,7 @@
 use crate::{
 	chain_spec,
 	cli::{Cli, RelayChainCli, Subcommand},
+	service::Executor,
 };
 use codec::Encode;
 use cumulus_client_service::genesis::generate_genesis_block;
@@ -216,6 +217,17 @@ pub fn run() -> Result<()> {
 				} = crate::service::new_partial(&config)?;
 				Ok((cmd.run(client, backend), task_manager))
 			})
+		}
+		Some(Subcommand::Benchmark(cmd)) => {
+			if cfg!(feature = "runtime-benchmarks") {
+				let runner = cli.create_runner(cmd)?;
+
+				runner.sync_run(|config| cmd.run::<Block, Executor>(config))
+			} else {
+				Err("Benchmarking wasn't enabled when building the node. \
+				You can enable it with `--features runtime-benchmarks`."
+					.into())
+			}
 		}
 		Some(Subcommand::ExportGenesisState(params)) => {
 			let mut builder = sc_cli::LoggerBuilder::new("");

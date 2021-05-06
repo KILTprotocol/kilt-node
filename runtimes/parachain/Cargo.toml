@@ -23,17 +23,6 @@ did = {default-features = false, path = "../../pallets/did"}
 kilt-launch = {path = "../../pallets/kilt-launch", default-features = false}
 kilt-primitives = {path = "../../primitives", default-features = false}
 
-# Xtokens
-orml-benchmarking = {git = "https://github.com/open-web3-stack/open-runtime-module-library", branch = "master", default-features = false}
-orml-currencies = {git = "https://github.com/open-web3-stack/open-runtime-module-library", branch = "master", default-features = false}
-orml-oracle = {git = "https://github.com/open-web3-stack/open-runtime-module-library", branch = "master", default-features = false}
-orml-oracle-rpc-runtime-api = {git = "https://github.com/open-web3-stack/open-runtime-module-library", branch = "master", default-features = false}
-orml-tokens = {git = "https://github.com/open-web3-stack/open-runtime-module-library", branch = "master", default-features = false}
-orml-traits = {git = "https://github.com/open-web3-stack/open-runtime-module-library", branch = "master", default-features = false}
-orml-unknown-tokens = {git = "https://github.com/open-web3-stack/open-runtime-module-library", branch = "master", default-features = false}
-orml-xcm-support = {git = "https://github.com/open-web3-stack/open-runtime-module-library", branch = "master", default-features = false}
-orml-xtokens = {git = "https://github.com/open-web3-stack/open-runtime-module-library", branch = "master", default-features = false}
-
 # Substrate dependencies
 sp-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
 sp-arithmetic = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
@@ -67,7 +56,7 @@ pallet-treasury = {git = "https://github.com/paritytech/substrate", default-feat
 
 # Cumulus dependencies
 cumulus-pallet-parachain-system = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "rococo-v1"}
-cumulus-pallet-xcm-handler = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "rococo-v1"}
+cumulus-pallet-xcmp-queue = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "rococo-v1"}
 cumulus-primitives-core = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "rococo-v1"}
 parachain-info = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "rococo-v1"}
 
@@ -151,17 +140,9 @@ std = [
   "kilt-primitives/std",
   "cumulus-pallet-parachain-system/std",
   "cumulus-primitives-core/std",
-  "cumulus-pallet-xcm-handler/std",
+  "cumulus-pallet-xcmp-queue/std",
   "xcm/std",
   "xcm-builder/std",
   "xcm-executor/std",
-  "orml-benchmarking/std",
-  "orml-currencies/std",
-  "orml-oracle/std",
-  "orml-oracle/std",
-  "orml-tokens/std",
-  "orml-traits/std",
-  "orml-xtokens/std",
   "polkadot-parachain/std",
-  "cumulus-pallet-xcm-handler/std",
 ]
