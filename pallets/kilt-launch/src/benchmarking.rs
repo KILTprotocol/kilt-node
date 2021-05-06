@@ -29,6 +29,7 @@ use frame_system::{Pallet as System, RawOrigin};
 use pallet_balances::Locks;
 use pallet_vesting::{Vesting, VestingInfo};
 use sp_runtime::traits::StaticLookup;
+use sp_std::convert::TryFrom;
 
 const SEED: u32 = 0;
 const AMOUNT: u32 = 10000;
@@ -42,20 +43,25 @@ fn as_lookup<T: Config>(account: T::AccountId) -> Lookup<T> {
 	T::Lookup::unlookup(account)
 }
 
+type GenesisSetup<T> = (
+	(
+		<T as frame_system::Config>::AccountId,
+		<<T as frame_system::Config>::Lookup as StaticLookup>::Source,
+	),
+	Vec<(
+		<T as frame_system::Config>::AccountId,
+		<<T as frame_system::Config>::Lookup as StaticLookup>::Source,
+	)>,
+	Vec<(
+		<T as frame_system::Config>::AccountId,
+		<<T as frame_system::Config>::Lookup as StaticLookup>::Source,
+	)>,
+);
+
 /// Mock the Pallet's GenesisBuild and return pairs consisting of AccountId and
 /// LookupSource for the transfer account, `n` vesting addresses and `n` locking
 /// addresses.
-#[allow(clippy::type_complexity)]
-fn genesis_setup<T: Config>(
-	n: u32,
-) -> Result<
-	(
-		(T::AccountId, <T::Lookup as StaticLookup>::Source),
-		Vec<(T::AccountId, <T::Lookup as StaticLookup>::Source)>,
-		Vec<(T::AccountId, <T::Lookup as StaticLookup>::Source)>,
-	),
-	&'static str,
-> {
+fn genesis_setup<T: Config>(n: u32) -> Result<GenesisSetup<T>, &'static str> {
 	System::<T>::set_block_number(0u32.into());
 
 	// Setup transfer account
@@ -117,15 +123,12 @@ benchmarks! {
 
 		let ((transfer, _), _, s) = genesis_setup::<T>(n).expect("Genesis setup failure");
 		whitelist_account!(transfer);
-		let mut c = 0;
 
 		// Migrate balance locks 1 by 1 to fill UnlockingAt
-		#[allow(clippy::explicit_counter_loop)]
-		for (_, source_lookup) in s {
-			let target: T::AccountId = account("target", c, SEED);
+		for (c, (_, source_lookup)) in s.into_iter().enumerate() {
+			let target: T::AccountId = account("target", u32::try_from(c).unwrap(), SEED);
 			let target_lookup: <T::Lookup as StaticLookup>::Source = as_lookup::<T>(target);
 			KiltLaunch::<T>::migrate_genesis_account(RawOrigin::Signed(transfer.clone()).into(), source_lookup, target_lookup)?;
-			c += 1;
 		}
 		assert_eq!(UnlockingAt::<T>::get::<T::BlockNumber>(UNLOCK_BLOCK.into()).expect("UnlockingAt should not be empty").len(), n as usize);
 	}: _(RawOrigin::Root, UNLOCK_BLOCK.into())
