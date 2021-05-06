@@ -31,7 +31,7 @@ pub type ClaimHash<T> = <T as frame_system::Config>::Hash;
 pub type CtypeHash<T> = ctype::CtypeHash<T>;
 
 /// Type of an attester identifier.
-pub type Attester<T> = did::DidIdentifier<T>;
+pub type Attester<T> = delegation::DelegatorId<T>;
 
 /// Type of a delegation identifier.
 pub type DelegationNodeId<T> = delegation::DelegationNodeId<T>;

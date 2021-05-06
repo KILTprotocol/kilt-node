@@ -16,8 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use crate::Config;
+
 /// The type of a CTYPE hash.
 pub type CtypeHash<T> = <T as frame_system::Config>::Hash;
 
 /// The type of a CTYPE creator.
-pub type CtypeCreator<T> = did::DidIdentifier<T>;
+pub type CtypeCreator<T> = <T as Config>::CtypeCreatorId;

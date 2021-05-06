@@ -21,12 +21,15 @@
 use crate as delegation;
 use crate::*;
 use ctype::mock as ctype_mock;
+use did::mock as did_mock;
 
 #[cfg(test)]
 use codec::Encode;
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
+use frame_system::EnsureSigned;
 use sp_core::H256;
+use sp_io::TestExternalities;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
@@ -95,14 +98,15 @@ impl did::Config for Test {
 }
 
 impl ctype::Config for Test {
-	type EnsureOrigin = did::EnsureDidOrigin<TestCtypeOwner>;
+	type CtypeCreatorId = TestCtypeOwner;
+	type EnsureOrigin = EnsureSigned<TestCtypeOwner>;
 	type Event = ();
 	type WeightInfo = ();
 }
 
 impl Config for Test {
 	type DelegationNodeId = TestDelegationNodeId;
-	type EnsureOrigin = did::EnsureDidOrigin<TestDelegatorId>;
+	type EnsureOrigin = EnsureSigned<TestDelegatorId>;
 	type Event = ();
 	type WeightInfo = ();
 }
@@ -129,7 +133,7 @@ const DEFAULT_DELEGATION_ID_2_SEED: u64 = 3u64;
 const ALTERNATIVE_DELEGATION_ID_2_SEED: u64 = 4u64;
 
 pub fn get_origin(account: TestDelegatorId) -> Origin {
-	Origin::from(did::DidRawOrigin { id: account })
+	Origin::signed(account)
 }
 
 pub fn get_delegation_root_id(default: bool) -> TestDelegationNodeId {
@@ -248,6 +252,7 @@ pub fn generate_base_delegation_node(root_id: TestDelegationNodeId, owner: TestD
 
 #[derive(Clone)]
 pub struct ExtBuilder {
+	did_builder: Option<did_mock::ExtBuilder>,
 	ctype_builder: Option<ctype_mock::ExtBuilder>,
 	root_delegations_stored: Vec<(TestDelegationNodeId, DelegationRoot<Test>)>,
 	delegations_stored: Vec<(TestDelegationNodeId, DelegationNode<Test>)>,
@@ -257,6 +262,7 @@ pub struct ExtBuilder {
 impl Default for ExtBuilder {
 	fn default() -> Self {
 		Self {
+			did_builder: None,
 			ctype_builder: None,
 			root_delegations_stored: vec![],
 			delegations_stored: vec![],
@@ -275,6 +281,14 @@ impl From<ctype_mock::ExtBuilder> for ExtBuilder {
 }
 
 impl ExtBuilder {
+	pub fn with_did_builder(
+		mut self,
+		did_builder: did_mock::ExtBuilder,
+	) -> Self {
+		self.did_builder = Some(did_builder);
+		self
+	}
+
 	pub fn with_root_delegations(
 		mut self,
 		root_delegations: Vec<(TestDelegationNodeId, DelegationRoot<Test>)>,
@@ -294,12 +308,19 @@ impl ExtBuilder {
 	}
 
 	pub fn build(self) -> sp_io::TestExternalities {
-		let mut ext = if let Some(ctype_builder) = self.ctype_builder.clone() {
-			ctype_builder.build()
-		} else {
+		// TODO: fix this error where did_builder is not considered
+		let ext: Option<TestExternalities> = None;
+		if let Some(ctype_builder) = self.ctype_builder.clone() {
+			ext = ctype_builder.build();
+		}
+		if let Some(did_builder) = self.did_builder.clone() {
+
+		}
+		if ext.is_none() {
 			let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
-			sp_io::TestExternalities::new(storage)
-		};
+			ext = Some(sp_io::TestExternalities::new(storage));
+		}
+		let mut ext = ext.unwrap();
 
 		if !self.root_delegations_stored.is_empty() {
 			ext.execute_with(|| {

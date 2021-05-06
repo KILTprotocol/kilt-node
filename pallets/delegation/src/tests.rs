@@ -132,9 +132,9 @@ fn create_delegation_no_parent_successful() {
 
 	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature, delegation_node);
 
-	let builder = did_mock::ExtBuilder::default().with_dids(vec![(delegate.clone(), delegate_details)]);
-	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash, creator.clone())]);
-	let builder = ExtBuilder::from(builder).with_root_delegations(vec![(root_id, root_node)]);
+	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(delegate.clone(), delegate_details)]);
+	let builder = ctype_mock::ExtBuilder::default().with_ctypes(vec![(root_node.ctype_hash, creator.clone())]);
+	let builder = ExtBuilder::from(builder).with_did_builder(did_builder).with_root_delegations(vec![(root_id, root_node)]);
 
 	let mut ext = builder.build();
 
@@ -200,9 +200,9 @@ fn create_delegation_with_parent_successful() {
 
 	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature, delegation_node);
 
-	let builder = did_mock::ExtBuilder::default().with_dids(vec![(delegate.clone(), delegate_details)]);
-	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash, creator.clone())]);
-	let builder = ExtBuilder::from(builder)
+	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(delegate.clone(), delegate_details)]);
+	let builder = ctype_mock::ExtBuilder::default().with_ctypes(vec![(root_node.ctype_hash, creator.clone())]);
+	let builder = ExtBuilder::from(builder).with_did_builder(did_builder)
 		.with_root_delegations(vec![(root_id, root_node)])
 		.with_delegations(vec![(parent_delegation_id, parent_delegation_node)])
 		.with_children(vec![(root_id, vec![(parent_delegation_id)])]);
@@ -324,9 +324,9 @@ fn invalid_delegate_signature_create_delegation_error() {
 
 	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature, delegation_node);
 
-	let builder = did_mock::ExtBuilder::default().with_dids(vec![(delegate.clone(), delegate_details)]);
-	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash, creator.clone())]);
-	let builder = ExtBuilder::from(builder).with_root_delegations(vec![(root_id, root_node)]);
+	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(delegate.clone(), delegate_details)]);
+	let builder = ctype_mock::ExtBuilder::default().with_ctypes(vec![(root_node.ctype_hash, creator.clone())]);
+	let builder = ExtBuilder::from(builder).with_did_builder(did_builder).with_root_delegations(vec![(root_id, root_node)]);
 
 	let mut ext = builder.build();
 
@@ -374,9 +374,9 @@ fn duplicate_delegation_create_delegation_error() {
 	let operation =
 		generate_base_delegation_creation_details(delegation_id, delegate_signature, delegation_node.clone());
 
-	let builder = did_mock::ExtBuilder::default().with_dids(vec![(delegate.clone(), delegate_details)]);
-	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash, creator.clone())]);
-	let builder = ExtBuilder::from(builder)
+		let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(delegate.clone(), delegate_details)]);
+	let builder = ctype_mock::ExtBuilder::default().with_ctypes(vec![(root_node.ctype_hash, creator.clone())]);
+	let builder = ExtBuilder::from(builder).with_did_builder(did_builder)
 		.with_root_delegations(vec![(root_id, root_node)])
 		.with_delegations(vec![(delegation_id, delegation_node)])
 		.with_children(vec![(root_id, vec![delegation_id])]);
@@ -426,10 +426,10 @@ fn root_not_existing_create_delegation_error() {
 
 	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature, delegation_node);
 
-	let builder = did_mock::ExtBuilder::default().with_dids(vec![(delegate.clone(), delegate_details)]);
-	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash, creator.clone())]);
+	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(delegate.clone(), delegate_details)]);
+	let builder = ctype_mock::ExtBuilder::default().with_ctypes(vec![(root_node.ctype_hash, creator.clone())]);
 	// No delegations added to the pallet storage
-	let builder = ExtBuilder::from(builder);
+	let builder = ExtBuilder::from(builder).with_did_builder(did_builder);
 
 	let mut ext = builder.build();
 
@@ -478,9 +478,9 @@ fn parent_not_existing_create_delegation_error() {
 
 	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature, delegation_node);
 
-	let builder = did_mock::ExtBuilder::default().with_dids(vec![(delegate.clone(), delegate_details)]);
-	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash, creator.clone())]);
-	let builder = ExtBuilder::from(builder).with_root_delegations(vec![(root_id, root_node)]);
+	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(delegate.clone(), delegate_details)]);
+	let builder = ctype_mock::ExtBuilder::default().with_ctypes(vec![(root_node.ctype_hash, creator.clone())]);
+	let builder = ExtBuilder::from(builder).with_did_builder(did_builder).with_root_delegations(vec![(root_id, root_node)]);
 
 	let mut ext = builder.build();
 
@@ -533,9 +533,9 @@ fn not_owner_of_parent_create_delegation_error() {
 
 	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature, delegation_node);
 
-	let builder = did_mock::ExtBuilder::default().with_dids(vec![(delegate.clone(), delegate_details)]);
-	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash, creator.clone())]);
-	let builder = ExtBuilder::from(builder)
+	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(delegate.clone(), delegate_details)]);
+	let builder = ctype_mock::ExtBuilder::default().with_ctypes(vec![(root_node.ctype_hash, creator.clone())]);
+	let builder = ExtBuilder::from(builder).with_did_builder(did_builder)
 		.with_root_delegations(vec![(root_id, root_node)])
 		.with_delegations(vec![(parent_delegation_id, parent_delegation_node)])
 		.with_children(vec![(root_id, vec![parent_delegation_id])]);
@@ -591,9 +591,9 @@ fn unauthorised_delegation_create_delegation_error() {
 
 	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature, delegation_node);
 
-	let builder = did_mock::ExtBuilder::default().with_dids(vec![(delegate.clone(), delegate_details)]);
-	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash, creator.clone())]);
-	let builder = ExtBuilder::from(builder)
+	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(delegate.clone(), delegate_details)]);
+	let builder = ctype_mock::ExtBuilder::default().with_ctypes(vec![(root_node.ctype_hash, creator.clone())]);
+	let builder = ExtBuilder::from(builder).with_did_builder(did_builder)
 		.with_root_delegations(vec![(root_id, root_node)])
 		.with_delegations(vec![(parent_delegation_id, parent_delegation_node)])
 		.with_children(vec![(root_id, vec![parent_delegation_id])]);
@@ -644,9 +644,9 @@ fn not_owner_of_root_create_delegation_error() {
 
 	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature, delegation_node);
 
-	let builder = did_mock::ExtBuilder::default().with_dids(vec![(delegate.clone(), delegate_details)]);
-	let builder = ctype_mock::ExtBuilder::from(builder).with_ctypes(vec![(root_node.ctype_hash, creator.clone())]);
-	let builder = ExtBuilder::from(builder).with_root_delegations(vec![(root_id, root_node)]);
+	let did_builder = did_mock::ExtBuilder::default().with_dids(vec![(delegate.clone(), delegate_details)]);
+	let builder = ctype_mock::ExtBuilder::default().with_ctypes(vec![(root_node.ctype_hash, creator.clone())]);
+	let builder = ExtBuilder::from(builder).with_did_builder(did_builder).with_root_delegations(vec![(root_id, root_node)]);
 
 	let mut ext = builder.build();
 

@@ -20,7 +20,6 @@
 
 use crate as ctype;
 use crate::*;
-use did::mock as did_mock;
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use sp_core::H256;
@@ -32,8 +31,7 @@ use sp_runtime::{
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
 
-pub type TestDidIdentifier = kilt_primitives::AccountId;
-pub type TestCtypeOwner = TestDidIdentifier;
+pub type TestCtypeOwner = kilt_primitives::AccountId;
 pub type TestCtypeHash = kilt_primitives::Hash;
 
 frame_support::construct_runtime!(
@@ -44,7 +42,6 @@ frame_support::construct_runtime!(
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
-		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>},
 	}
 );
 
@@ -80,25 +77,11 @@ impl frame_system::Config for Test {
 	type OnSetCode = ();
 }
 
-impl did::Config for Test {
-	type DidIdentifier = TestDidIdentifier;
-	type Origin = Origin;
-	type Call = Call;
-	type Event = ();
-	type WeightInfo = ();
-}
-
 impl Config for Test {
-	type EnsureOrigin = did::EnsureDidOrigin<TestCtypeOwner>;
+	type CtypeCreatorId = TestCtypeOwner;
+	type EnsureOrigin = frame_system::EnsureSigned<TestCtypeOwner>;
 	type Event = ();
 	type WeightInfo = ();
-}
-
-impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
-	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
-		// Not used in this pallet
-		None
-	}
 }
 
 #[cfg(test)]
@@ -108,7 +91,7 @@ const DEFAULT_CTYPE_HASH_SEED: u64 = 1u64;
 const ALTERNATIVE_CTYPE_HASH_SEED: u64 = 2u64;
 
 pub fn get_origin(account: TestCtypeOwner) -> Origin {
-	Origin::from(did::DidRawOrigin { id: account })
+	Origin::signed(account)
 }
 
 pub fn get_ctype_hash(default: bool) -> TestCtypeHash {
@@ -131,7 +114,6 @@ pub fn generate_base_ctype_creation_details() -> CtypeCreationDetails {
 
 #[derive(Clone)]
 pub struct ExtBuilder {
-	did_builder: Option<did_mock::ExtBuilder>,
 	ctypes_stored: Vec<(TestCtypeHash, TestCtypeOwner)>,
 }
 
@@ -139,33 +121,19 @@ impl Default for ExtBuilder {
 	fn default() -> Self {
 		Self {
 			ctypes_stored: vec![],
-			did_builder: None,
-		}
-	}
-}
-
-impl From<did_mock::ExtBuilder> for ExtBuilder {
-	fn from(did_builder: did_mock::ExtBuilder) -> Self {
-		ExtBuilder {
-			did_builder: Some(did_builder),
-			..Default::default()
 		}
 	}
 }
 
 impl ExtBuilder {
-	pub fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, TestDidIdentifier)>) -> Self {
+	pub fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, TestCtypeOwner)>) -> Self {
 		self.ctypes_stored = ctypes;
 		self
 	}
 
 	pub fn build(self) -> sp_io::TestExternalities {
-		let mut ext = if let Some(did_builder) = self.did_builder.clone() {
-			did_builder.build()
-		} else {
-			let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
-			sp_io::TestExternalities::new(storage)
-		};
+		let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+		let mut ext = sp_io::TestExternalities::new(storage);
 
 		if !self.ctypes_stored.is_empty() {
 			ext.execute_with(|| {

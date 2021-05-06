@@ -1035,6 +1035,64 @@ fn check_invalid_signature_did_deletion() {
 	});
 }
 
+// submit_did_call
+
+#[test]
+fn check_call_attestation_key_successful() {
+	let caller = DEFAULT_ACCOUNT;
+	let did = ALICE_DID;
+	let auth_key = get_sr25519_authentication_key(true);
+	let attestation_key = get_ed25519_attestation_key(true);
+
+	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	mock_did.update_attestation_key(did::DidVerificationKey::from(attestation_key.public()), 0);
+
+	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::AssertionMethod, did.clone(), false);
+	let signature = attestation_key.sign(call_operation.encode().as_ref());
+
+	let builder = ExtBuilder::default().with_dids(vec![(did.clone(), mock_did)]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_ok!(
+			Did::submit_did_call(
+				Origin::signed(caller),
+				Box::new(call_operation),
+				did::DidSignature::from(signature)
+			)
+		);
+	});
+}
+
+#[test]
+fn check_call_attestation_key_error() {
+	let caller = DEFAULT_ACCOUNT;
+	let did = ALICE_DID;
+	let auth_key = get_sr25519_authentication_key(true);
+	let attestation_key = get_ed25519_attestation_key(true);
+
+	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	mock_did.update_attestation_key(did::DidVerificationKey::from(attestation_key.public()), 0);
+
+	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::AssertionMethod, did.clone(), true);
+	let signature = attestation_key.sign(call_operation.encode().as_ref());
+
+	let builder = ExtBuilder::default().with_dids(vec![(did.clone(), mock_did)]);
+
+	let mut ext = builder.build();
+
+	ext.execute_with(|| {
+		assert_ok!(
+			Did::submit_did_call(
+				Origin::signed(caller),
+				Box::new(call_operation),
+				did::DidSignature::from(signature)
+			)
+		);
+	});
+}
+
 // Internal function: verify_operation_validity_and_increase_did_nonce
 
 #[test]

@@ -42,7 +42,8 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config + did::Config {
+	pub trait Config: frame_system::Config {
+		type CtypeCreatorId: Parameter;
 		type EnsureOrigin: EnsureOrigin<Success = CtypeCreator<Self>, <Self as frame_system::Config>::Origin>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type WeightInfo: WeightInfo;
@@ -86,12 +87,17 @@ pub mod pallet {
 		/// * hash: the CTYPE hash. It has to be unique.
 		#[pallet::weight(10)]
 		pub fn add(origin: OriginFor<T>, hash: CtypeHash<T>) -> DispatchResultWithPostInfo {
+			log::debug!("C1");
 			let creator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			log::debug!("C2");
 
 			ensure!(!<Ctypes<T>>::contains_key(&hash), Error::<T>::CTypeAlreadyExists);
 
+			log::debug!("C3");
+
 			log::debug!("Creating CTYPE with hash {:?} and creator {:?}", &hash, &creator);
 			<Ctypes<T>>::insert(&hash, creator.clone());
+			log::debug!("C4");
 
 			Self::deposit_event(Event::CTypeCreated(creator, hash));
 

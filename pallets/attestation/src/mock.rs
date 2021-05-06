@@ -24,6 +24,7 @@ use ctype::mock as ctype_mock;
 use delegation::mock as delegation_mock;
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
+use frame_system::EnsureSigned;
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
@@ -33,13 +34,12 @@ use sp_runtime::{
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
 
-pub type TestDidIdentifier = kilt_primitives::AccountId;
-pub type TestCtypeOwner = TestDidIdentifier;
+pub type TestCtypeOwner = kilt_primitives::AccountId;
 pub type TestCtypeHash = kilt_primitives::Hash;
 pub type TestDelegationNodeId = kilt_primitives::Hash;
-pub type TestDelegatorId = TestDidIdentifier;
+pub type TestDelegatorId = kilt_primitives::AccountId;
 pub type TestClaimHash = kilt_primitives::Hash;
-pub type TestAttester = TestDidIdentifier;
+pub type TestAttester = TestDelegatorId;
 
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -51,7 +51,6 @@ frame_support::construct_runtime!(
 		Attestation: attestation::{Pallet, Call, Storage, Event<T>},
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>},
-		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>},
 	}
 );
 
@@ -87,39 +86,23 @@ impl frame_system::Config for Test {
 	type OnSetCode = ();
 }
 
-impl did::Config for Test {
-	type DidIdentifier = TestDidIdentifier;
-	type Origin = Origin;
-	type Call = Call;
-	type Event = ();
-	type WeightInfo = ();
-}
-
 impl ctype::Config for Test {
-	type EnsureOrigin = did::EnsureDidOrigin<TestCtypeOwner>;
+	type EnsureOrigin = EnsureSigned<TestCtypeOwner>;
 	type Event = ();
 	type WeightInfo = ();
 }
 
 impl delegation::Config for Test {
 	type DelegationNodeId = TestDelegationNodeId;
-	type EnsureOrigin = did::EnsureDidOrigin<TestDelegatorId>;
+	type EnsureOrigin = EnsureSigned<TestDelegatorId>;
 	type Event = ();
 	type WeightInfo = ();
 }
 
 impl Config for Test {
-	type EnsureOrigin = did::EnsureDidOrigin<TestAttester>;
+	type EnsureOrigin = EnsureSigned<TestAttester>;
 	type Event = ();
 	type WeightInfo = ();
-}
-
-impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
-	// Only interested in attestation operations
-	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
-		// Not used in this pallet
-		None
-	}
 }
 
 #[cfg(test)]
@@ -131,7 +114,7 @@ const DEFAULT_CLAIM_HASH_SEED: u64 = 1u64;
 const ALTERNATIVE_CLAIM_HASH_SEED: u64 = 2u64;
 
 pub fn get_origin(account: TestAttester) -> Origin {
-	Origin::from(did::DidRawOrigin { id: account })
+	Origin::signed(account)
 }
 
 pub fn get_claim_hash(default: bool) -> TestClaimHash {

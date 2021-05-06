@@ -23,13 +23,8 @@ use crate as did;
 use crate::*;
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
-#[cfg(test)]
-use kilt_primitives::AccountId;
 use sp_core::{ed25519, sr25519, Pair, H256};
-use sp_runtime::{
-	testing::Header,
-	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-};
+use sp_runtime::{Perbill, testing::Header, traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify}};
 use codec::Decode;
 use sp_std::collections::btree_set::BTreeSet;
 
@@ -39,6 +34,8 @@ pub type Block = frame_system::mocking::MockBlock<Test>;
 pub type TestDidIdentifier = kilt_primitives::DidIdentifier;
 pub type TestKeyId = did::KeyId<Test>;
 pub type TestBlockNumber = kilt_primitives::BlockNumber;
+pub type TestCtypeOwner = TestDidIdentifier;
+pub type TestCtypeHash = kilt_primitives::Hash;
 
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -46,8 +43,9 @@ frame_support::construct_runtime!(
 		NodeBlock = Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
-		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>},
+		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
+		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 	}
 );
 
@@ -83,23 +81,23 @@ impl frame_system::Config for Test {
 	type OnSetCode = ();
 }
 
-impl did::Config for Test {
-	type Call = Call;
+impl Config for Test {
 	type DidIdentifier = TestDidIdentifier;
 	type Origin = Origin;
+	type Call = Call;
 	type Event = ();
 	type WeightInfo = ();
 }
 
-impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
-	// Not needed for DID operations
-	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
-		None
-	}
+impl ctype::Config for Test {
+	type CtypeCreatorId = TestCtypeOwner;
+	type EnsureOrigin = did::EnsureDidOrigin<TestCtypeOwner>;
+	type Event = ();
+	type WeightInfo = ();
 }
 
 #[cfg(test)]
-pub(crate) const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
+pub(crate) const DEFAULT_ACCOUNT: kilt_primitives::AccountId = kilt_primitives::AccountId::new([0u8; 32]);
 
 pub const ALICE_DID: TestDidIdentifier = TestDidIdentifier::new([1u8; 32]);
 pub const BOB_DID: TestDidIdentifier = TestDidIdentifier::new([2u8; 32]);
@@ -205,6 +203,74 @@ pub fn generate_base_did_details(authentication_key: did::DidVerificationKey) ->
 
 pub fn generate_key_id(key: &did::DidPublicKey) -> TestKeyId {
 	utils::calculate_key_id::<Test>(key)
+}
+
+fn get_attestation_key_success_test_input() -> TestCtypeHash {
+	TestCtypeHash::from_slice(&[0u8; 32])
+}
+fn get_attestation_key_fail_test_input() -> Perbill {
+	Perbill::from_float(0.0)
+}
+pub(crate) fn get_attestation_key_call(should_fail: bool) -> Call {
+	if should_fail {
+		Call::System(frame_system::Call::fill_block(get_attestation_key_fail_test_input()))
+	} else {
+		Call::Ctype(ctype::Call::add(get_attestation_key_success_test_input()))
+	}
+}
+fn get_authentication_key_success_test_input() -> TestCtypeHash {
+	TestCtypeHash::from_slice(&[1u8; 32])
+}
+fn get_authentication_key_fail_test_input() -> Perbill {
+	Perbill::from_float(1.0)
+}
+pub(crate) fn get_authentication_key_call(should_fail: bool) -> Call {
+	if should_fail {
+		Call::System(frame_system::Call::fill_block(get_authentication_key_fail_test_input()))
+	} else {
+		Call::Ctype(ctype::Call::add(get_attestation_key_success_test_input()))
+	}
+}
+fn get_delegation_key_success_test_input() -> TestCtypeHash {
+	TestCtypeHash::from_slice(&[2u8; 32])
+}
+fn get_delegation_key_fail_test_input() -> Perbill {
+	Perbill::from_float(2.0)
+}
+pub(crate) fn get_delegation_key_call(should_fail: bool) -> Call {
+	if should_fail {
+		Call::System(frame_system::Call::fill_block(get_delegation_key_fail_test_input()))
+	} else {
+		Call::Ctype(ctype::Call::add(get_attestation_key_success_test_input()))
+	}
+}
+
+impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
+	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
+		if *self == get_attestation_key_call(true) || *self == get_attestation_key_call(false) {
+			Some(did::DidVerificationKeyRelationship::AssertionMethod)
+		} else if *self == get_authentication_key_call(true) || *self == get_authentication_key_call(false) {
+			Some(did::DidVerificationKeyRelationship::Authentication)
+		} else if *self == get_delegation_key_call(true) || *self == get_delegation_key_call(false) {
+			Some(did::DidVerificationKeyRelationship::CapabilityDelegation)
+		} else {
+			None
+		}
+	}
+}
+
+pub fn generate_test_did_call(verification_key_required: did::DidVerificationKeyRelationship, caller: TestDidIdentifier, should_fail: bool) -> did::DidAuthorizedCallOperation<Test> {
+	let call = match verification_key_required {
+		DidVerificationKeyRelationship::AssertionMethod => get_attestation_key_call(should_fail),
+		DidVerificationKeyRelationship::Authentication => get_authentication_key_call(should_fail),
+		DidVerificationKeyRelationship::CapabilityDelegation => get_delegation_key_call(should_fail),
+		_ => get_authentication_key_call(should_fail),
+	};
+	did::DidAuthorizedCallOperation {
+		did: caller,
+		call,
+		tx_counter: 1u64,
+	}
 }
 
 // A test DID operation which can be crated to require any DID verification key

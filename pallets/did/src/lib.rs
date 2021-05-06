@@ -97,6 +97,9 @@ pub mod pallet {
 		/// A DID has been deleted.
 		/// \[transaction signer, DID identifier\]
 		DidDeleted(AccountIdentifier<T>, DidIdentifier<T>),
+		/// A DID-authorized call has been executed.
+		/// \[DID caller, execution result]
+		DidCallExecuted(DidIdentifier<T>, DispatchResultWithPostInfo),
 	}
 
 	#[pallet::error]
@@ -330,10 +333,12 @@ pub mod pallet {
 			// Verify the operation signature and increase the nonce if successful.
 			Self::verify_operation_validity_and_increase_did_nonce(&wrapped_operation, &signature)
 				.map_err(<Error<T>>::from)?;
-			log::debug!("Dispatch call from DID {:?}", did_identifier);
+			log::debug!("Dispatch call from DID {:?}", did_identifier.clone());
 
 			// Dispatch the referenced [Call] instance and return its result
-			did_call.call.dispatch(DidRawOrigin { id: did_identifier }.into())
+			let result = did_call.call.dispatch(DidRawOrigin { id: did_identifier.clone() }.into());
+			Self::deposit_event(Event::DidCallExecuted(did_identifier, result));
+			result
 		}
 	}
 }

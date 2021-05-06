@@ -1261,7 +1261,6 @@ dependencies = [
 name = "ctype"
 version = "0.24.0"
 dependencies = [
- "did",
  "frame-support",
  "frame-system",
  "kilt-primitives",
@@ -1600,12 +1599,14 @@ dependencies = [
 name = "did"
 version = "0.24.0"
 dependencies = [
+ "ctype",
  "env_logger 0.8.3",
  "frame-support",
  "frame-system",
  "hex",
  "kilt-primitives",
  "log",
+ "pallet-membership",
  "parity-scale-codec",
  "serde",
  "sp-core",
