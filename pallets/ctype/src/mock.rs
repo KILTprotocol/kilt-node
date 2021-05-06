@@ -120,9 +120,7 @@ pub struct ExtBuilder {
 
 impl Default for ExtBuilder {
 	fn default() -> Self {
-		Self {
-			ctypes_stored: vec![],
-		}
+		Self { ctypes_stored: vec![] }
 	}
 }
 

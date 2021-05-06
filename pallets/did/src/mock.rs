@@ -22,11 +22,14 @@
 use crate as did;
 use crate::*;
 
+use codec::Decode;
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use sp_core::{ed25519, sr25519, Pair, H256};
 use sp_io::TestExternalities;
-use sp_runtime::{testing::Header, traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify}};
-use codec::Decode;
+use sp_runtime::{
+	testing::Header,
+	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
+};
 use sp_std::collections::btree_set::BTreeSet;
 
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -245,7 +248,10 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	}
 }
 
-pub fn generate_test_did_call(verification_key_required: did::DidVerificationKeyRelationship, caller: TestDidIdentifier) -> did::DidAuthorizedCallOperation<Test> {
+pub fn generate_test_did_call(
+	verification_key_required: did::DidVerificationKeyRelationship,
+	caller: TestDidIdentifier,
+) -> did::DidAuthorizedCallOperation<Test> {
 	let call = match verification_key_required {
 		DidVerificationKeyRelationship::AssertionMethod => get_attestation_key_call(),
 		DidVerificationKeyRelationship::Authentication => get_authentication_key_call(),

@@ -1175,10 +1175,7 @@ fn not_delegating_revoke_delegation_error() {
 		get_delegation_root_id(true),
 		generate_base_delegation_root(owner.clone()),
 	);
-	let (delegation_id, delegation_node) = (
-		get_delegation_id(false),
-		generate_base_delegation_node(root_id, owner.clone()),
-	);
+	let (delegation_id, delegation_node) = (get_delegation_id(false), generate_base_delegation_node(root_id, owner));
 
 	let mut operation = generate_base_delegation_revocation_details(delegation_id);
 	operation.max_parent_checks = u32::MAX;
@@ -1229,7 +1226,7 @@ fn parent_too_far_revoke_delegation_error() {
 	operation.max_parent_checks = 0u32;
 
 	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(root_node.ctype_hash, owner.clone())])
+		.with_ctypes(vec![(root_node.ctype_hash, owner)])
 		.build(None);
 	let mut ext = ExtBuilder::default()
 		.with_root_delegations(vec![(root_id, root_node)])
