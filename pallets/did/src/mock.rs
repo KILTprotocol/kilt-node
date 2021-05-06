@@ -25,7 +25,7 @@ use crate::*;
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use sp_core::{ed25519, sr25519, Pair, H256};
 use sp_io::TestExternalities;
-use sp_runtime::{Perbill, testing::Header, traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify}};
+use sp_runtime::{testing::Header, traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify}};
 use codec::Decode;
 use sp_std::collections::btree_set::BTreeSet;
 
@@ -206,53 +206,38 @@ pub fn generate_key_id(key: &did::DidPublicKey) -> TestKeyId {
 	utils::calculate_key_id::<Test>(key)
 }
 
-fn get_attestation_key_success_test_input() -> TestCtypeHash {
+pub(crate) fn get_attestation_key_test_input() -> TestCtypeHash {
 	TestCtypeHash::from_slice(&[0u8; 32])
 }
-fn get_attestation_key_fail_test_input() -> Perbill {
-	Perbill::from_float(0.0)
+pub(crate) fn get_attestation_key_call() -> Call {
+	Call::Ctype(ctype::Call::add(get_attestation_key_test_input()))
 }
-pub(crate) fn get_attestation_key_call(should_fail: bool) -> Call {
-	if should_fail {
-		Call::System(frame_system::Call::fill_block(get_attestation_key_fail_test_input()))
-	} else {
-		Call::Ctype(ctype::Call::add(get_attestation_key_success_test_input()))
-	}
-}
-fn get_authentication_key_success_test_input() -> TestCtypeHash {
+pub(crate) fn get_authentication_key_test_input() -> TestCtypeHash {
 	TestCtypeHash::from_slice(&[1u8; 32])
 }
-fn get_authentication_key_fail_test_input() -> Perbill {
-	Perbill::from_float(1.0)
+pub(crate) fn get_authentication_key_call() -> Call {
+	Call::Ctype(ctype::Call::add(get_authentication_key_test_input()))
 }
-pub(crate) fn get_authentication_key_call(should_fail: bool) -> Call {
-	if should_fail {
-		Call::System(frame_system::Call::fill_block(get_authentication_key_fail_test_input()))
-	} else {
-		Call::Ctype(ctype::Call::add(get_attestation_key_success_test_input()))
-	}
-}
-fn get_delegation_key_success_test_input() -> TestCtypeHash {
+pub(crate) fn get_delegation_key_test_input() -> TestCtypeHash {
 	TestCtypeHash::from_slice(&[2u8; 32])
 }
-fn get_delegation_key_fail_test_input() -> Perbill {
-	Perbill::from_float(2.0)
+pub(crate) fn get_delegation_key_call() -> Call {
+	Call::Ctype(ctype::Call::add(get_delegation_key_test_input()))
 }
-pub(crate) fn get_delegation_key_call(should_fail: bool) -> Call {
-	if should_fail {
-		Call::System(frame_system::Call::fill_block(get_delegation_key_fail_test_input()))
-	} else {
-		Call::Ctype(ctype::Call::add(get_attestation_key_success_test_input()))
-	}
+pub(crate) fn get_no_key_test_input() -> TestCtypeHash {
+	TestCtypeHash::from_slice(&[3u8; 32])
+}
+pub(crate) fn get_no_key_call() -> Call {
+	Call::Ctype(ctype::Call::add(get_no_key_test_input()))
 }
 
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
-		if *self == get_attestation_key_call(true) || *self == get_attestation_key_call(false) {
+		if *self == get_attestation_key_call() {
 			Some(did::DidVerificationKeyRelationship::AssertionMethod)
-		} else if *self == get_authentication_key_call(true) || *self == get_authentication_key_call(false) {
+		} else if *self == get_authentication_key_call() {
 			Some(did::DidVerificationKeyRelationship::Authentication)
-		} else if *self == get_delegation_key_call(true) || *self == get_delegation_key_call(false) {
+		} else if *self == get_delegation_key_call() {
 			Some(did::DidVerificationKeyRelationship::CapabilityDelegation)
 		} else {
 			None
@@ -260,12 +245,12 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	}
 }
 
-pub fn generate_test_did_call(verification_key_required: did::DidVerificationKeyRelationship, caller: TestDidIdentifier, should_fail: bool) -> did::DidAuthorizedCallOperation<Test> {
+pub fn generate_test_did_call(verification_key_required: did::DidVerificationKeyRelationship, caller: TestDidIdentifier) -> did::DidAuthorizedCallOperation<Test> {
 	let call = match verification_key_required {
-		DidVerificationKeyRelationship::AssertionMethod => get_attestation_key_call(should_fail),
-		DidVerificationKeyRelationship::Authentication => get_authentication_key_call(should_fail),
-		DidVerificationKeyRelationship::CapabilityDelegation => get_delegation_key_call(should_fail),
-		_ => get_authentication_key_call(should_fail),
+		DidVerificationKeyRelationship::AssertionMethod => get_attestation_key_call(),
+		DidVerificationKeyRelationship::Authentication => get_authentication_key_call(),
+		DidVerificationKeyRelationship::CapabilityDelegation => get_delegation_key_call(),
+		_ => get_no_key_call(),
 	};
 	did::DidAuthorizedCallOperation {
 		did: caller,

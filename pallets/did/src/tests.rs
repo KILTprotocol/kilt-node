@@ -18,9 +18,11 @@
 
 use std::convert::TryFrom;
 
-use frame_support::{assert_noop, assert_ok};
+use frame_support::{assert_noop, assert_ok, assert_err};
 use sp_core::*;
 use sp_std::collections::btree_set::BTreeSet;
+
+use ctype::mock as ctype_mock;
 
 use codec::Encode;
 
@@ -1038,6 +1040,229 @@ fn check_invalid_signature_did_deletion() {
 // submit_did_call
 
 #[test]
+fn check_no_key_error() {
+	let caller = DEFAULT_ACCOUNT;
+	let did = ALICE_DID;
+
+	let mut ext = ExtBuilder::default().build(None);
+
+	// CapabilityInvocation is not supported at the moment, so it should return no key and hence the operation fail.
+	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityInvocation, did.clone());
+	let signature = did::DidSignature::from(ed25519::Signature::default());
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_call(
+				Origin::signed(caller),
+				Box::new(call_operation),
+				signature
+			),
+			did::Error::<Test>::UnsupportedDidAuthorizationCall
+		);
+	});
+}
+
+#[test]
+fn check_did_not_found_call_error() {
+	let caller = DEFAULT_ACCOUNT;
+	let did = ALICE_DID;
+	let auth_key = get_sr25519_authentication_key(true);
+
+	// No DID added
+	let mut ext = ExtBuilder::default().build(None);
+
+	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did.clone());
+	let signature = auth_key.sign(call_operation.encode().as_ref());
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_call(
+				Origin::signed(caller),
+				Box::new(call_operation),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::DidNotPresent
+		);
+	});
+}
+
+#[test]
+fn check_max_counter_call_error() {
+	let caller = DEFAULT_ACCOUNT;
+	let did = ALICE_DID;
+	let auth_key = get_sr25519_authentication_key(true);
+	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	mock_did.last_tx_counter = u64::MAX;
+
+	let mut ext = ExtBuilder::default().with_dids(vec![(did.clone(), mock_did)]).build(None);
+
+	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did.clone());
+	let signature = auth_key.sign(call_operation.encode().as_ref());
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_call(
+				Origin::signed(caller),
+				Box::new(call_operation),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::MaxTxCounterValue
+		);
+	});
+}
+
+#[test]
+fn check_too_small_tx_counter_call_error() {
+	let caller = DEFAULT_ACCOUNT;
+	let did = ALICE_DID;
+	let auth_key = get_sr25519_authentication_key(true);
+	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	mock_did.last_tx_counter = 1u64;
+
+	let mut ext = ExtBuilder::default().with_dids(vec![(did.clone(), mock_did)]).build(None);
+
+	let mut call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did.clone());
+	call_operation.tx_counter = 0u64;
+	let signature = auth_key.sign(call_operation.encode().as_ref());
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_call(
+				Origin::signed(caller),
+				Box::new(call_operation),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::InvalidNonce
+		);
+	});
+}
+
+#[test]
+fn check_equal_tx_counter_call_error() {
+	let caller = DEFAULT_ACCOUNT;
+	let did = ALICE_DID;
+	let auth_key = get_sr25519_authentication_key(true);
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+
+	let mut ext = ExtBuilder::default().with_dids(vec![(did.clone(), mock_did.clone())]).build(None);
+
+	let mut call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did.clone());
+	call_operation.tx_counter = mock_did.last_tx_counter;
+	let signature = auth_key.sign(call_operation.encode().as_ref());
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_call(
+				Origin::signed(caller),
+				Box::new(call_operation),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::InvalidNonce
+		);
+	});
+}
+
+#[test]
+fn check_too_large_tx_counter_call_error() {
+	let caller = DEFAULT_ACCOUNT;
+	let did = ALICE_DID;
+	let auth_key = get_sr25519_authentication_key(true);
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+
+	let mut ext = ExtBuilder::default().with_dids(vec![(did.clone(), mock_did.clone())]).build(None);
+
+	let mut call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did.clone());
+	call_operation.tx_counter = mock_did.last_tx_counter + 2u64;
+	let signature = auth_key.sign(call_operation.encode().as_ref());
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_call(
+				Origin::signed(caller),
+				Box::new(call_operation),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::InvalidNonce
+		);
+	});
+}
+
+#[test]
+fn check_verification_key_not_present_call_error() {
+	let caller = DEFAULT_ACCOUNT;
+	let did = ALICE_DID;
+	let auth_key = get_sr25519_authentication_key(true);
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+
+	let mut ext = ExtBuilder::default().with_dids(vec![(did.clone(), mock_did.clone())]).build(None);
+
+	// The operation requires the delegation key that is currently not stored for the given DID.
+	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did.clone());
+	let signature = auth_key.sign(call_operation.encode().as_ref());
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_call(
+				Origin::signed(caller),
+				Box::new(call_operation),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::VerificationKeyNotPresent
+		);
+	});
+}
+
+#[test]
+fn check_invalid_signature_format_call_error() {
+	let caller = DEFAULT_ACCOUNT;
+	let did = ALICE_DID;
+	let auth_key = get_sr25519_authentication_key(true);
+	let alternative_auth_key = get_ed25519_authentication_key(true);
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+
+	let mut ext = ExtBuilder::default().with_dids(vec![(did.clone(), mock_did.clone())]).build(None);
+
+	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did.clone());
+	let signature = alternative_auth_key.sign(call_operation.encode().as_ref());
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_call(
+				Origin::signed(caller),
+				Box::new(call_operation),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::InvalidSignatureFormat
+		);
+	});
+}
+
+#[test]
+fn check_invalid_signature_call_error() {
+	let caller = DEFAULT_ACCOUNT;
+	let did = ALICE_DID;
+	let auth_key = get_sr25519_authentication_key(true);
+	let alternative_auth_key = get_sr25519_authentication_key(false);
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+
+	let mut ext = ExtBuilder::default().with_dids(vec![(did.clone(), mock_did.clone())]).build(None);
+
+	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did.clone());
+	let signature = alternative_auth_key.sign(call_operation.encode().as_ref());
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_call(
+				Origin::signed(caller),
+				Box::new(call_operation),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::InvalidSignature
+		);
+	});
+}
+
+#[test]
 fn check_call_attestation_key_successful() {
 	let caller = DEFAULT_ACCOUNT;
 	let did = ALICE_DID;
@@ -1047,12 +1272,10 @@ fn check_call_attestation_key_successful() {
 	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	mock_did.update_attestation_key(did::DidVerificationKey::from(attestation_key.public()), 0);
 
-	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::AssertionMethod, did.clone(), false);
+	let mut ext = ExtBuilder::default().with_dids(vec![(did.clone(), mock_did)]).build(None);
+
+	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::AssertionMethod, did.clone());
 	let signature = attestation_key.sign(call_operation.encode().as_ref());
-
-	let builder = ExtBuilder::default().with_dids(vec![(did.clone(), mock_did)]);
-
-	let mut ext = builder.build(None);
 
 	ext.execute_with(|| {
 		assert_ok!(
@@ -1075,12 +1298,39 @@ fn check_call_attestation_key_error() {
 	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	mock_did.update_attestation_key(did::DidVerificationKey::from(attestation_key.public()), 0);
 
-	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::AssertionMethod, did.clone(), true);
+	let ext = ExtBuilder::default().with_dids(vec![(did.clone(), mock_did)]).build(None);
+	// CTYPE already added to storage
+	let mut ext = ctype_mock::ExtBuilder::default().with_ctypes(vec![(get_attestation_key_test_input(), did.clone())]).build(Some(ext));
+
+	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::AssertionMethod, did.clone());
 	let signature = attestation_key.sign(call_operation.encode().as_ref());
 
-	let builder = ExtBuilder::default().with_dids(vec![(did.clone(), mock_did)]);
+	ext.execute_with(|| {
+		assert_err!(
+			Did::submit_did_call(
+				Origin::signed(caller),
+				Box::new(call_operation),
+				did::DidSignature::from(signature)
+			),
+			ctype::Error::<Test>::CTypeAlreadyExists
+		);
+	});
+}
 
-	let mut ext = builder.build(None);
+#[test]
+fn check_call_delegation_key_successful() {
+	let caller = DEFAULT_ACCOUNT;
+	let did = ALICE_DID;
+	let auth_key = get_sr25519_authentication_key(true);
+	let delegation_key = get_ed25519_delegation_key(true);
+
+	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	mock_did.update_delegation_key(did::DidVerificationKey::from(delegation_key.public()), 0);
+
+	let mut ext = ExtBuilder::default().with_dids(vec![(did.clone(), mock_did)]).build(None);
+
+	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did.clone());
+	let signature = delegation_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
 		assert_ok!(
@@ -1089,6 +1339,86 @@ fn check_call_attestation_key_error() {
 				Box::new(call_operation),
 				did::DidSignature::from(signature)
 			)
+		);
+	});
+}
+
+#[test]
+fn check_call_delegation_key_error() {
+	let caller = DEFAULT_ACCOUNT;
+	let did = ALICE_DID;
+	let auth_key = get_sr25519_authentication_key(true);
+	let delegation_key = get_ed25519_delegation_key(true);
+
+	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	mock_did.update_delegation_key(did::DidVerificationKey::from(delegation_key.public()), 0);
+
+	let ext = ExtBuilder::default().with_dids(vec![(did.clone(), mock_did)]).build(None);
+	// CTYPE already added to storage
+	let mut ext = ctype_mock::ExtBuilder::default().with_ctypes(vec![(get_delegation_key_test_input(), did.clone())]).build(Some(ext));
+
+	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did.clone());
+	let signature = delegation_key.sign(call_operation.encode().as_ref());
+
+	ext.execute_with(|| {
+		assert_err!(
+			Did::submit_did_call(
+				Origin::signed(caller),
+				Box::new(call_operation),
+				did::DidSignature::from(signature)
+			),
+			ctype::Error::<Test>::CTypeAlreadyExists
+		);
+	});
+}
+
+#[test]
+fn check_call_authentication_key_successful() {
+	let caller = DEFAULT_ACCOUNT;
+	let did = ALICE_DID;
+	let auth_key = get_sr25519_authentication_key(true);
+
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+
+	let mut ext = ExtBuilder::default().with_dids(vec![(did.clone(), mock_did)]).build(None);
+
+	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did.clone());
+	let signature = auth_key.sign(call_operation.encode().as_ref());
+
+	ext.execute_with(|| {
+		assert_ok!(
+			Did::submit_did_call(
+				Origin::signed(caller),
+				Box::new(call_operation),
+				did::DidSignature::from(signature)
+			)
+		);
+	});
+}
+
+#[test]
+fn check_call_authentication_key_error() {
+	let caller = DEFAULT_ACCOUNT;
+	let did = ALICE_DID;
+	let auth_key = get_sr25519_authentication_key(true);
+
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+
+	let ext = ExtBuilder::default().with_dids(vec![(did.clone(), mock_did)]).build(None);
+	// CTYPE already added to storage
+	let mut ext = ctype_mock::ExtBuilder::default().with_ctypes(vec![(get_authentication_key_test_input(), did.clone())]).build(Some(ext));
+
+	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did.clone());
+	let signature = auth_key.sign(call_operation.encode().as_ref());
+
+	ext.execute_with(|| {
+		assert_err!(
+			Did::submit_did_call(
+				Origin::signed(caller),
+				Box::new(call_operation),
+				did::DidSignature::from(signature)
+			),
+			ctype::Error::<Test>::CTypeAlreadyExists
 		);
 	});
 }
