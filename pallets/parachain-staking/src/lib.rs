@@ -52,6 +52,9 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+
 mod inflation;
 #[cfg(test)]
 mod mock;

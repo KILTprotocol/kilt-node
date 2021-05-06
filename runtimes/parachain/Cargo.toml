@@ -106,6 +106,7 @@ runtime-benchmarks = [
   "pallet-timestamp/runtime-benchmarks",
   "pallet-collective/runtime-benchmarks",
   "pallet-society/runtime-benchmarks",
+  "parachain-staking/runtime-benchmarks",
   "rococo-runtime/runtime-benchmarks",
 ]
 std = [
