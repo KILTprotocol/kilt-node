@@ -21,7 +21,6 @@
 use crate as delegation;
 use crate::*;
 use ctype::mock as ctype_mock;
-use did::mock as did_mock;
 
 #[cfg(test)]
 use codec::Encode;

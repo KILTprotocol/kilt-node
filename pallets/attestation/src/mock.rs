@@ -21,7 +21,6 @@
 use crate as attestation;
 use crate::{Attestation as AttestationStruct, *};
 use ctype::mock as ctype_mock;
-use delegation::mock as delegation_mock;
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use frame_system::EnsureSigned;

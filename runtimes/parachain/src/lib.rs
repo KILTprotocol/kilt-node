@@ -723,6 +723,7 @@ impl did::Config for Runtime {
 }
 
 impl ctype::Config for Runtime {
+	type CtypeCreatorId = DidIdentifier;
 	type EnsureOrigin = did::origin::EnsureDidOrigin<DidIdentifier>;
 	type Event = Event;
 	type WeightInfo = ();

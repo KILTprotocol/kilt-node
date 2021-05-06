@@ -24,6 +24,7 @@ sp-keystore = {branch = "rococo-v1",  default-features = false, git = "https://g
 
 [dependencies]
 # Internal dependencies
+did = {default-features = false, optional = true, path = "../did", version = "0.24.0"}
 ctype = {default-features = false, path = "../ctype", version = "0.24.0"}
 delegation = {default-features = false, path = "../delegation", version = "0.24.0"}
 kilt-primitives = {default-features = false, optional = true, path = "../../primitives"}
@@ -42,6 +43,7 @@ sp-std = {branch = "rococo-v1", default-features = false, git = "https://github.
 [features]
 default = ["std"]
 mock = [
+  "did",
   "kilt-primitives",
   "serde",
   "sp-core",
