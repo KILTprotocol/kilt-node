@@ -67,10 +67,11 @@ pub use pallet::*;
 
 #[pallet]
 pub mod pallet {
+
 	use super::InflationInfo;
 	use frame_support::{
 		pallet_prelude::*,
-		traits::{Currency, Get, Imbalance, ReservableCurrency},
+		traits::{Currency, Get, Imbalance, LockIdentifier, LockableCurrency, ReservableCurrency, WithdrawReasons},
 	};
 	use frame_system::pallet_prelude::*;
 	use orml_utilities::OrderedSet;
@@ -79,7 +80,9 @@ pub mod pallet {
 		traits::{AtLeast32BitUnsigned, Saturating, Zero},
 		Perbill, RuntimeDebug,
 	};
-	use sp_std::{cmp::Ordering, prelude::*};
+	use sp_std::{cmp::Ordering, collections::btree_map::BTreeMap, prelude::*};
+
+	pub const REWARDS_ID: LockIdentifier = *b"kiltrwrd";
 
 	/// Pallet for parachain staking
 	#[pallet::pallet]
@@ -380,7 +383,12 @@ pub mod pallet {
 		/// Overarching event type
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		/// The currency type
-		type Currency: Currency<Self::AccountId> + ReservableCurrency<Self::AccountId> + Eq;
+		type Currency: Currency<Self::AccountId>
+			+ ReservableCurrency<Self::AccountId>
+			+ LockableCurrency<Self::AccountId>
+			+ Eq;
+		// TODO: Add CurrencyBalance as in pallet_gilt to make use of `From<u64`;
+
 		/// Minimum number of blocks per round
 		type MinBlocksPerRound: Get<u32>;
 		/// Default number of blocks per round at genesis
@@ -553,6 +561,7 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn at_stake)]
 	/// Snapshot of collator delegation stake at the start of the round
+	// TODO: Convert to StorageMap because we already note during the round
 	pub type AtStake<T: Config> = StorageDoubleMap<
 		_,
 		Twox64Concat,
@@ -589,6 +598,12 @@ pub mod pallet {
 	/// Points for each collator per round
 	pub type AwardedPts<T: Config> =
 		StorageDoubleMap<_, Twox64Concat, RoundIndex, Twox64Concat, T::AccountId, RewardPoint, ValueQuery>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn reward_locks)]
+	/// Total points awarded to collators for block production in the round
+	pub type RewardLocks<T: Config> =
+		StorageMap<_, Twox64Concat, T::AccountId, BTreeMap<T::BlockNumber, BalanceOf<T>>, ValueQuery>;
 
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
@@ -1024,6 +1039,14 @@ pub mod pallet {
 			config.round_issuance::<T>(collator_stake, delegator_stake)
 		}
 
+		fn compute_block_issuance(
+			collator_stake: BalanceOf<T>,
+			delegator_stake: BalanceOf<T>,
+		) -> (BalanceOf<T>, BalanceOf<T>) {
+			let config = <InflationConfig<T>>::get();
+			config.block_issuance::<T>(collator_stake, delegator_stake)
+		}
+
 		fn delegator_revokes_collator(acc: T::AccountId, collator: T::AccountId) -> DispatchResultWithPostInfo {
 			let mut delegator = <DelegatorState<T>>::get(&acc).ok_or(Error::<T>::DelegatorDNE)?;
 			let old_total = delegator.total;
@@ -1236,16 +1259,86 @@ pub mod pallet {
 			<InflationConfig<T>>::put(inflation);
 			Ok(())
 		}
+
+		fn do_reward(who: &T::AccountId, reward: BalanceOf<T>, now: T::BlockNumber) {
+			// mint
+			if reward > T::Currency::minimum_balance() {
+				if let Ok(imb) = T::Currency::deposit_into_existing(who, reward) {
+					// TODO: Remove?
+					Self::deposit_event(Event::Rewarded(who.clone(), imb.peek()));
+				}
+			}
+
+			// set & update lock
+			let mut locks = <RewardLocks<T>>::get(who);
+			// TODO: Fix dummy value
+			let unlock_block: T::BlockNumber = now.saturating_add(222u32.into());
+			locks.insert(unlock_block, reward);
+			Self::do_update_reward_locks(who, locks, now);
+		}
+		fn do_update_reward_locks(
+			who: &T::AccountId,
+			mut locks: BTreeMap<T::BlockNumber, BalanceOf<T>>,
+			now: T::BlockNumber,
+		) {
+			let mut total_locked: BalanceOf<T> = Zero::zero();
+			let mut expired = Vec::new();
+
+			// check potential unlocks
+			for (block_number, locked_balance) in &locks {
+				if block_number <= &now {
+					expired.push(*block_number);
+				} else {
+					total_locked = total_locked.saturating_add(*locked_balance);
+				}
+			}
+			for block_number in expired {
+				locks.remove(&block_number);
+			}
+
+			// TODO: Check whether remove_lock is necessary if total_locked == 0
+			<T::Currency as LockableCurrency<T::AccountId>>::set_lock(
+				REWARDS_ID,
+				who,
+				total_locked,
+				WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
+			);
+
+			<RewardLocks<T>>::insert(who, locks);
+		}
 	}
 
-	/// Add reward points to block authors:
-	/// * 20 points to the block producer for producing a block in the chain
+	/// Reward author and their delegators
+	// TODO: Remove author_inherent and author_filter once Aura is working for
+	// parachains + make compatible with Aura
 	impl<T: Config> author_inherent::EventHandler<T::AccountId> for Pallet<T> {
 		fn note_author(author: T::AccountId) {
 			let now = <Round<T>>::get().current;
-			let score_plus_20 = <AwardedPts<T>>::get(now, &author) + 20;
-			<AwardedPts<T>>::insert(now, author, score_plus_20);
-			<Points<T>>::mutate(now, |x| *x += 20);
+
+			let state = <AtStake<T>>::take(now, author.clone());
+			let (total_collator_stake, total_delegator_stake) = <Total<T>>::get();
+			let (c_rewards, d_rewards) = Self::compute_block_issuance(total_collator_stake, total_delegator_stake);
+
+			let amt_due_collator = Perbill::from_rational(state.bond, total_collator_stake) * c_rewards;
+			let delegator_stake = state.total.saturating_sub(state.bond);
+			let amt_due_delegators = Perbill::from_rational(delegator_stake, total_delegator_stake) * d_rewards;
+
+			// Reward collator
+			if amt_due_collator > T::Currency::minimum_balance() {
+				Self::do_reward(&author, amt_due_collator, now.into());
+			}
+
+			// Reward delegators
+			if amt_due_delegators > T::Currency::minimum_balance() {
+				// Reward delegators due portion
+				for Bond { owner, amount } in state.delegators {
+					// Compare this delegator's stake with the total amount of delegated stake for
+					// this collator
+					let percent = Perbill::from_rational(amount, delegator_stake);
+					let due = percent * amt_due_delegators;
+					Self::do_reward(&owner, due, now.into());
+				}
+			}
 		}
 	}
 

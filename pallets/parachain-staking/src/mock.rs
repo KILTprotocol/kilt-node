@@ -50,6 +50,7 @@ construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Stake: stake::{Pallet, Call, Storage, Config<T>, Event<T>},
+		AuthorInherent: author_inherent::{Pallet, Call, Storage, Inherent},
 	}
 );
 
@@ -124,6 +125,12 @@ impl Config for Test {
 	type MaxCollatorCandidateStk = MaxCollatorCandidateStk;
 	type MinDelegatorStk = MinDelegatorStk;
 	type MinDelegation = MinDelegation;
+}
+
+impl author_inherent::Config for Test {
+	type EventHandler = Stake;
+	type PreliminaryCanAuthor = Stake;
+	type FinalCanAuthor = ();
 }
 
 pub(crate) struct ExtBuilder {
@@ -502,4 +509,17 @@ pub(crate) fn events() -> Vec<pallet::Event<Test>> {
 pub(crate) fn set_author(round: u32, acc: u64, pts: u32) {
 	<Points<Test>>::mutate(round, |p| *p += pts);
 	<AwardedPts<Test>>::mutate(round, acc, |p| *p += pts);
+}
+
+pub(crate) fn roll_to_new(n: u64) {
+	while System::block_number() < n {
+		Stake::on_finalize(System::block_number());
+		Balances::on_finalize(System::block_number());
+		System::on_finalize(System::block_number());
+		System::set_block_number(System::block_number() + 1);
+		System::on_initialize(System::block_number());
+		AuthorInherent::on_initialize(System::block_number());
+		Balances::on_initialize(System::block_number());
+		Stake::on_initialize(System::block_number());
+	}
 }

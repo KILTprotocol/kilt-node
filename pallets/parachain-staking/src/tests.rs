@@ -19,15 +19,17 @@
 //! Unit testing
 use crate::{
 	mock::{
-		check_inflation_update, check_yearly_inflation, events, last_event, roll_to, set_author, Balances, BlockNumber,
-		Event as MetaEvent, ExtBuilder, Origin, Stake, System, Test, BLOCKS_PER_ROUND, DECIMALS,
+		check_inflation_update, check_yearly_inflation, events, last_event, roll_to, roll_to_new, set_author,
+		AuthorInherent, Balances, BlockNumber, Event as MetaEvent, ExtBuilder, Origin, Stake, System, Test,
+		BLOCKS_PER_ROUND, DECIMALS,
 	},
-	Bond, CollatorSnapshot, CollatorStatus, Config, Error, Event, InflationInfo, RewardRate, RoundInfo, StakedCollator,
-	StakedDelegator, StakingInfo,
+	BalanceOf, Bond, CollatorSnapshot, CollatorStatus, Config, Error, Event, InflationInfo, RewardRate, RoundInfo,
+	StakedCollator, StakedDelegator, StakingInfo,
 };
 use frame_support::{assert_noop, assert_ok};
 use pallet_balances::Error as BalancesError;
 use sp_runtime::{traits::Zero, DispatchError, Perbill};
+use sp_std::collections::btree_map::BTreeMap;
 
 #[test]
 fn geneses() {
@@ -1712,5 +1714,32 @@ fn round_transitions() {
 
 			roll_to(9);
 			assert_eq!(last_event(), MetaEvent::stake(Event::NewRound(8, 3, 1, 20, 20)));
+		});
+}
+
+#[test]
+fn coinbase_rewards() {
+	ExtBuilder::default()
+		.with_balances(vec![
+			(1, 40_000_000 * DECIMALS),
+			(2, 40_000_000 * DECIMALS),
+			(3, 40_000_000 * DECIMALS),
+			(4, 40_000_000 * DECIMALS),
+		])
+		.with_collators(vec![(1, 16_000_000 * DECIMALS)])
+		.with_delegators(vec![(2, 1, 32_000_000 * DECIMALS), (3, 1, 32_000_000 * DECIMALS)])
+		.with_inflation(10, 15, 40, 15, 5)
+		.build()
+		.execute_with(|| {
+			assert_ok!(AuthorInherent::set_author(Origin::none(), 1));
+			roll_to_new(1);
+			let mut rewards: BTreeMap<BlockNumber, BalanceOf<Test>> = BTreeMap::new();
+			rewards.insert(1, 1u128);
+			assert_eq!(Stake::reward_locks(1), rewards);
+
+			assert_ok!(AuthorInherent::set_author(Origin::none(), 1));
+			roll_to_new(2);
+			rewards.insert(2, 1u128);
+			assert_eq!(Stake::reward_locks(1), rewards);
 		});
 }

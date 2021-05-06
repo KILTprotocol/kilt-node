@@ -98,6 +98,21 @@ impl StakingInfo {
 		let rewards = self.reward_rate.round * total_issuance;
 		staking_rate * rewards
 	}
+
+	pub fn compute_block_rewards<T: Config>(&self, stake: BalanceOf<T>, total_issuance: BalanceOf<T>) -> BalanceOf<T> {
+		// TODO: Use Perquintill
+		let staking_rate = Perbill::from_rational(stake, total_issuance).min(self.max_rate);
+		let rewards = self.reward_rate.annual * total_issuance;
+		let rewards = staking_rate * rewards;
+		// println!("YEARS {:?}, PERBILL {:?}", YEARS, Perbill::from_rational(1u32, YEARS));
+		// println!(
+		// 	"rewards per year {:?}, per block {:?}",
+		// 	rewards,
+		// 	Perbill::from_rational(1u32, YEARS) * rewards
+		// );
+		// TODO: Replace `round` with `block` to reduce number of computations
+		Perbill::from_rational(1u32, YEARS) * rewards
+	}
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -141,6 +156,19 @@ impl InflationInfo {
 
 		let collator_rewards = self.collator.compute_rewards::<T>(collator_stake, circulating);
 		let delegator_rewards = self.delegator.compute_rewards::<T>(delegator_stake, circulating);
+
+		(collator_rewards, delegator_rewards)
+	}
+
+	pub fn block_issuance<T: Config>(
+		&self,
+		collator_stake: BalanceOf<T>,
+		delegator_stake: BalanceOf<T>,
+	) -> (BalanceOf<T>, BalanceOf<T>) {
+		let circulating = T::Currency::total_issuance();
+
+		let collator_rewards = self.collator.compute_block_rewards::<T>(collator_stake, circulating);
+		let delegator_rewards = self.delegator.compute_block_rewards::<T>(delegator_stake, circulating);
 
 		(collator_rewards, delegator_rewards)
 	}
