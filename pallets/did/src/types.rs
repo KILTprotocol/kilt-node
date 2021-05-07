@@ -19,7 +19,7 @@
 use codec::{Decode, Encode, WrapperTypeEncode};
 use frame_support::ensure;
 use sp_core::{ed25519, sr25519};
-use sp_runtime::traits::{IdentifyAccount, Lazy, Verify};
+use sp_runtime::traits::Verify;
 use sp_std::{
 	collections::{btree_map::BTreeMap, btree_set::BTreeSet},
 	convert::TryFrom,
@@ -95,14 +95,6 @@ impl DidVerificationKey {
 				}
 			}
 		}
-	}
-}
-
-impl IdentifyAccount for DidVerificationKey {
-	type AccountId = Self;
-
-	fn into_account(self) -> Self::AccountId {
-		self
 	}
 }
 
@@ -224,14 +216,6 @@ impl TryFrom<Vec<u8>> for DidSignature {
 		} else {
 			Err(SignatureError::InvalidSignatureFormat)
 		}
-	}
-}
-
-impl Verify for DidSignature {
-	type Signer = DidVerificationKey;
-
-	fn verify<L: Lazy<[u8]>>(&self, mut msg: L, signer: &DidVerificationKey) -> bool {
-		signer.verify_signature(msg.get().as_ref(), &self).unwrap_or(false)
 	}
 }
 
@@ -707,58 +691,6 @@ pub trait DeriveDidCallAuthorizationVerificationKeyRelationship {
 	fn derive_verification_key_relationship(&self) -> Option<DidVerificationKeyRelationship>;
 }
 
-/// A DID operation that wraps other extrinsic calls, allowing those
-/// extrinsic to have a DID origin and perform DID-based authorization upon
-/// their invocation.
-#[derive(Clone, Debug, Decode, Encode, PartialEq)]
-pub struct DidAuthorizedCallOperation<T: Config> {
-	/// The DID identifier.
-	pub did: DidIdentifier<T>,
-	/// The DID tx counter.
-	pub tx_counter: u64,
-	/// The extrinsic call to authorize with the DID.
-	pub call: DidCallable<T>,
-}
-
-/// Wrapper around a [DidAuthorizedCallOperation].
-///
-/// It contains additional information about the type of DID key to used for
-/// authorization.
-#[derive(Clone, Debug, PartialEq)]
-pub struct DidAuthorizedCallOperationWithVerificationRelationship<T: Config> {
-	/// The wrapped [DidAuthorizedCallOperation].
-	pub operation: DidAuthorizedCallOperation<T>,
-	/// The type of DID key to use for authorization.
-	pub verification_key_relationship: DidVerificationKeyRelationship,
-}
-
-impl<T: Config> DidOperation<T> for DidAuthorizedCallOperationWithVerificationRelationship<T> {
-	fn get_verification_key_relationship(&self) -> DidVerificationKeyRelationship {
-		self.verification_key_relationship
-	}
-
-	fn get_did(&self) -> &DidIdentifier<T> {
-		&self.did
-	}
-
-	fn get_tx_counter(&self) -> u64 {
-		self.tx_counter
-	}
-}
-
-impl<T: Config> core::ops::Deref for DidAuthorizedCallOperationWithVerificationRelationship<T> {
-	type Target = DidAuthorizedCallOperation<T>;
-
-	fn deref(&self) -> &Self::Target {
-		&self.operation
-	}
-}
-
-// Opaque implementation.
-// [DidAuthorizedCallOperationWithVerificationRelationship] encodes to
-// [DidAuthorizedCallOperation].
-impl<T: Config> WrapperTypeEncode for DidAuthorizedCallOperationWithVerificationRelationship<T> {}
-
 /// An operation to create a new DID.
 ///
 /// The struct implements the [DidOperation] trait, and as such it must
@@ -885,6 +817,58 @@ impl<T: Config> DidOperation<T> for DidDeletionOperation<T> {
 		self.tx_counter
 	}
 }
+
+/// A DID operation that wraps other extrinsic calls, allowing those
+/// extrinsic to have a DID origin and perform DID-based authorization upon
+/// their invocation.
+#[derive(Clone, Debug, Decode, Encode, PartialEq)]
+pub struct DidAuthorizedCallOperation<T: Config> {
+	/// The DID identifier.
+	pub did: DidIdentifier<T>,
+	/// The DID tx counter.
+	pub tx_counter: u64,
+	/// The extrinsic call to authorize with the DID.
+	pub call: DidCallable<T>,
+}
+
+/// Wrapper around a [DidAuthorizedCallOperation].
+///
+/// It contains additional information about the type of DID key to used for
+/// authorization.
+#[derive(Clone, Debug, PartialEq)]
+pub struct DidAuthorizedCallOperationWithVerificationRelationship<T: Config> {
+	/// The wrapped [DidAuthorizedCallOperation].
+	pub operation: DidAuthorizedCallOperation<T>,
+	/// The type of DID key to use for authorization.
+	pub verification_key_relationship: DidVerificationKeyRelationship,
+}
+
+impl<T: Config> DidOperation<T> for DidAuthorizedCallOperationWithVerificationRelationship<T> {
+	fn get_verification_key_relationship(&self) -> DidVerificationKeyRelationship {
+		self.verification_key_relationship
+	}
+
+	fn get_did(&self) -> &DidIdentifier<T> {
+		&self.did
+	}
+
+	fn get_tx_counter(&self) -> u64 {
+		self.tx_counter
+	}
+}
+
+impl<T: Config> core::ops::Deref for DidAuthorizedCallOperationWithVerificationRelationship<T> {
+	type Target = DidAuthorizedCallOperation<T>;
+
+	fn deref(&self) -> &Self::Target {
+		&self.operation
+	}
+}
+
+// Opaque implementation.
+// [DidAuthorizedCallOperationWithVerificationRelationship] encodes to
+// [DidAuthorizedCallOperation].
+impl<T: Config> WrapperTypeEncode for DidAuthorizedCallOperationWithVerificationRelationship<T> {}
 
 /// A web URL starting with either http:// or https://
 /// and containing only ASCII URL-encoded characters.
