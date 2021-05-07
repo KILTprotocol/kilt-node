@@ -34,7 +34,7 @@ use frame_system::{
 };
 use kilt_primitives::{
 	constants::{DAYS, DOLLARS, HOURS, MILLICENTS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
-	AccountId, Balance, BlockNumber, Hash, Index, Signature,
+	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature,
 };
 use sp_api::impl_runtime_apis;
 use sp_core::{
@@ -43,7 +43,7 @@ use sp_core::{
 };
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult,
 };
@@ -521,31 +521,27 @@ impl pallet_membership::Config for Runtime {
 }
 
 impl attestation::Config for Runtime {
-	/// The ubiquitous event type.
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
 	type Event = Event;
-	type WeightInfo = ();
 }
 
 impl ctype::Config for Runtime {
-	/// The ubiquitous event type.
+	type CtypeCreatorId = DidIdentifier;
+	type EnsureOrigin = did::EnsureDidOrigin<Self::CtypeCreatorId>;
 	type Event = Event;
-	type WeightInfo = ();
 }
 
 impl delegation::Config for Runtime {
-	/// The ubiquitous event type.
-	type Event = Event;
-	type Signature = Signature;
-	type Signer = <Signature as Verify>::Signer;
 	type DelegationNodeId = Hash;
-	type WeightInfo = ();
+	type Event = Event;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
 }
 
 impl did::Config for Runtime {
-	/// The ubiquitous event type.
-	type Event = Event;
-	type WeightInfo = ();
 	type DidIdentifier = AccountId;
+	type Event = Event;
+	type Call = Call;
+	type Origin = Origin;
 }
 
 construct_runtime! {
@@ -568,7 +564,7 @@ construct_runtime! {
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>} = 9,
 		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 10,
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 11,
-		Did: did::{Pallet, Call, Storage, Event<T>} = 12,
+		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 12,
 
 		// Session: session::{Pallet, Call, Storage, Event, Config<T>} = 15,
 		// Authorship: authorship::{Pallet, Call, Storage} = 16,
@@ -598,6 +594,17 @@ construct_runtime! {
 		// Vesting. Usable initially, but removed once all vesting is finished.
 		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 33,
 		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
+	}
+}
+
+impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
+	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
+		match self {
+			Call::Attestation(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
+			Call::Ctype(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
+			Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
+			_ => None,
+		}
 	}
 }
 

@@ -93,27 +93,23 @@ impl did::Config for Test {
 	type Origin = Origin;
 	type Call = Call;
 	type Event = ();
-	type WeightInfo = ();
 }
 
 impl ctype::Config for Test {
 	type CtypeCreatorId = TestCtypeOwner;
 	type EnsureOrigin = EnsureSigned<TestCtypeOwner>;
 	type Event = ();
-	type WeightInfo = ();
 }
 
 impl delegation::Config for Test {
 	type DelegationNodeId = TestDelegationNodeId;
 	type EnsureOrigin = EnsureSigned<TestDelegatorId>;
 	type Event = ();
-	type WeightInfo = ();
 }
 
 impl Config for Test {
 	type EnsureOrigin = EnsureSigned<TestAttester>;
 	type Event = ();
-	type WeightInfo = ();
 }
 
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {

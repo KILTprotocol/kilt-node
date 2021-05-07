@@ -90,14 +90,12 @@ impl Config for Test {
 	type Origin = Origin;
 	type Call = Call;
 	type Event = ();
-	type WeightInfo = ();
 }
 
 impl ctype::Config for Test {
 	type CtypeCreatorId = TestCtypeOwner;
 	type EnsureOrigin = did::EnsureDidOrigin<TestCtypeOwner>;
 	type Event = ();
-	type WeightInfo = ();
 }
 
 #[cfg(test)]

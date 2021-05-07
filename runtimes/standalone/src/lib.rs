@@ -298,45 +298,28 @@ impl sudo::Config for Runtime {
 	type Call = Call;
 }
 
-impl did::Config for Runtime {
-	type Call = Call;
-	type DidIdentifier = DidIdentifier;
+impl attestation::Config for Runtime {
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
 	type Event = Event;
-	type Origin = Origin;
-	type WeightInfo = ();
 }
 
 impl ctype::Config for Runtime {
 	type CtypeCreatorId = DidIdentifier;
-	type EnsureOrigin = did::origin::EnsureDidOrigin<DidIdentifier>;
+	type EnsureOrigin = did::EnsureDidOrigin<Self::CtypeCreatorId>;
 	type Event = Event;
-	type WeightInfo = ();
 }
 
 impl delegation::Config for Runtime {
-	type EnsureOrigin = did::origin::EnsureDidOrigin<DidIdentifier>;
-	type Event = Event;
 	type DelegationNodeId = Hash;
-	type WeightInfo = ();
-}
-
-impl attestation::Config for Runtime {
-	type EnsureOrigin = did::origin::EnsureDidOrigin<DidIdentifier>;
 	type Event = Event;
-	type WeightInfo = ();
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
 }
 
-impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
-	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
-		match self {
-			Call::Attestation(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
-			Call::Ctype(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
-			Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
-			// The DID pallet does not support this functionality
-			Call::Did(_) => None,
-			_ => None,
-		}
-	}
+impl did::Config for Runtime {
+	type DidIdentifier = AccountId;
+	type Event = Event;
+	type Call = Call;
+	type Origin = Origin;
 }
 
 pub struct PortableGabiRemoval;
@@ -434,6 +417,17 @@ construct_runtime!(
 		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
 	}
 );
+
+impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
+	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
+		match self {
+			Call::Attestation(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
+			Call::Ctype(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
+			Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
+			_ => None,
+		}
+	}
+}
 
 /// The address format for describing accounts.
 pub type Address = sp_runtime::MultiAddress<AccountId, ()>;

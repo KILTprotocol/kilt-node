@@ -43,7 +43,6 @@ pub mod pallet {
 	pub trait Config: frame_system::Config + ctype::Config + delegation::Config {
 		type EnsureOrigin: EnsureOrigin<Success = Attester<Self>, <Self as frame_system::Config>::Origin>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-		type WeightInfo: WeightInfo;
 	}
 
 	#[pallet::pallet]
