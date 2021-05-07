@@ -34,7 +34,7 @@ use frame_system::{
 };
 use kilt_primitives::{
 	constants::{DAYS, DOLLARS, HOURS, MILLICENTS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
-	AccountId, Balance, BlockNumber, Hash, Index, Signature,
+	AccountId, Balance, BlockNumber, Hash, Index, Signature, VERSION,
 };
 use sp_api::impl_runtime_apis;
 use sp_core::{
@@ -81,17 +81,6 @@ pub type SessionHandlers = ();
 impl_opaque_keys! {
 	pub struct SessionKeys {}
 }
-
-/// This runtime version.
-pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: create_runtime_str!("mashnet-node"),
-	impl_name: create_runtime_str!("mashnet-node"),
-	authoring_version: 1,
-	spec_version: 3,
-	impl_version: 0,
-	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 1,
-};
 
 pub const fn deposit(items: u32, bytes: u32) -> Balance {
 	items as Balance * 20 * DOLLARS + (bytes as Balance) * 100 * MILLICENTS

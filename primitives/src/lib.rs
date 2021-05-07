@@ -78,22 +78,13 @@ pub type Hash = sp_core::H256;
 /// Digest item type.
 pub type DigestItem = generic::DigestItem<Hash>;
 
-#[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-pub enum CurrencyId {
-	Dot = 0_isize,
-	Ksm,
-	Kilt,
-}
-
-impl TryFrom<Vec<u8>> for CurrencyId {
-	type Error = ();
-	fn try_from(v: Vec<u8>) -> Result<CurrencyId, ()> {
-		match v.as_slice() {
-			b"KILT" => Ok(CurrencyId::Kilt),
-			b"DOT" => Ok(CurrencyId::Dot),
-			b"KSM" => Ok(CurrencyId::Ksm),
-			_ => Err(()),
-		}
-	}
-}
+/// This runtime version.
+pub const VERSION: RuntimeVersion = RuntimeVersion {
+	spec_name: create_runtime_str!("mashnet-node"),
+	impl_name: create_runtime_str!("mashnet-node"),
+	authoring_version: 4,
+	spec_version: 8,
+	impl_version: 0,
+	apis: RUNTIME_API_VERSIONS,
+	transaction_version: 2,
+};

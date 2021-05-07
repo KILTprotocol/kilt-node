@@ -30,7 +30,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use kilt_primitives::{
 	constants::{DOLLARS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
-	AccountId, Balance, BlockNumber, Hash, Index, Signature,
+	AccountId, Balance, BlockNumber, Hash, Index, Signature, VERSION,
 };
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
 use sp_api::impl_runtime_apis;
@@ -99,17 +99,6 @@ pub mod opaque {
 		}
 	}
 }
-
-/// This runtime version.
-pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: create_runtime_str!("mashnet-node"),
-	impl_name: create_runtime_str!("mashnet-node"),
-	authoring_version: 4,
-	spec_version: 8,
-	impl_version: 0,
-	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 2,
-};
 
 /// The version information used to identify this runtime when compiled
 /// natively.
