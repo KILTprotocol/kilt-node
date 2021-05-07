@@ -178,16 +178,15 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		/// Stores a new DID on chain, after verifying the signature associated
+		/// Store a new DID on chain, after verifying the signature associated
 		/// with the creation operation.
 		///
 		/// * origin: the Substrate account submitting the transaction (which
 		///   can be different from the DID subject)
-		/// * operation: the [DidCreationOperation] which contains the details
-		///   of the new DID
-		/// * signature: the [signature](DidSignature) over the operation that
-		///   must be signed with the authentication key provided in the
-		///   operation
+		/// * operation: the creation operation which contains the details of
+		///   the new DID
+		/// * signature: the signture over the operation that must be signed
+		///   with the authentication key provided in the operation
 		#[pallet::weight(0)]
 		pub fn submit_did_create_operation(
 			origin: OriginFor<T>,
@@ -222,17 +221,17 @@ pub mod pallet {
 			Ok(None.into())
 		}
 
-		/// Updates the information associated with a DID on chain, after
+		/// Update the information associated with a DID on chain, after
 		/// verifying the signature associated with the operation.
 		///
 		/// * origin: the Substrate account submitting the transaction (which
 		///   can be different from the DID subject)
-		/// * operation: the [DidUpdateOperation] which contains the new details
-		///   of the given DID
-		/// * signature: the [signature](DidSignature) over the operation that
-		///   must be signed with the authentication key associated with the new
-		///   DID. Even in case the authentication key is being updated, the
-		///   operation must still be signed with the old one being replaced.
+		/// * operation: the update operation which contains the new details of
+		///   the existing DID
+		/// * signature: the signature over the operation that must be signed
+		///   with the authentication key associated with the new DID. Even in
+		///   case the authentication key is being updated, the operation must
+		///   still be signed with the old one being replaced
 		#[pallet::weight(0)]
 		pub fn submit_did_update_operation(
 			origin: OriginFor<T>,
@@ -261,16 +260,15 @@ pub mod pallet {
 			Ok(None.into())
 		}
 
-		/// Deletes all the information associated with a DID on chain, after
-		/// verifying the signature associated with the operation.
+		/// Delete all the information associated with a DID from the chain,
+		/// after verifying the signature associated with the operation.
 		///
 		/// * origin: the Substrate account submitting the transaction (which
 		///   can be different from the DID subject)
-		/// * operation: the [DidDeletionOperation] which includes the DID to
+		/// * operation: the deletion operation which includes the DID to
 		///   deactivate
-		/// * signature: the [signature](DidSignature) over the operation that
-		///   must be signed with the authentication key associated with the new
-		///   DID.
+		/// * signature: the signature over the operation that must be signed
+		///   with the authentication key associated with the DID being deleted
 		#[pallet::weight(0)]
 		pub fn submit_did_delete_operation(
 			origin: OriginFor<T>,
@@ -294,15 +292,15 @@ pub mod pallet {
 			Ok(None.into())
 		}
 
-		// TODO: Compute right weights
-		/// Submit the execution of another runtime extrinsic conforming to the
-		/// [Call] trait that supports DID-based authorization.
+		/// Proxy a [call](Call) to another runtime extrinsic conforming that
+		/// supports DID-based authorization.
 		///
-		/// * origin: the account submitting this `submit_did_call` extrinsic,
-		///   which pays for the transaction fees.
-		/// * did_call: the DID-authorized runtime extrinsic operation to call.
-		/// * signature: the DID signature over the encoded `did_call` that must
-		///   be signed with the expected DID verification key.
+		/// * origin: the account which will pay the execution fees of the
+		///   nested call
+		/// * did_call: the extrinsic call to dispatch
+		/// * signature: the signature over the encoded extrinsic call that must
+		///   be signed by the tx submiter, i.e., the account paying for the
+		///   execution fees
 		#[pallet::weight(0)]
 		pub fn submit_did_call(
 			origin: OriginFor<T>,
@@ -350,9 +348,9 @@ impl<T: Config> Pallet<T> {
 	/// [DidOperation] and, if valid, update the DID state with the latest
 	/// nonce.
 	///
-	/// * operation: the reference to the [DidOperation] which validity is to be
+	/// * operation: the reference to the operation which validity is to be
 	///   verified
-	/// * signature: a reference to the [signature](DidSignature)
+	/// * signature: a reference to the signature
 	/// * did: the DID identifier to verify the operation signature for
 	pub fn verify_operation_validity_and_increase_did_nonce<O: DidOperation<T>>(
 		operation: &O,

@@ -34,17 +34,12 @@ pub use pallet::*;
 pub use types::*;
 
 use codec::Codec;
-use frame_support::pallet_prelude::Weight;
+use frame_support::{ensure, pallet_prelude::Weight, traits::Get};
 use sp_runtime::{
-	traits::{CheckEqual, MaybeDisplay, SimpleBitOps},
+	traits::{CheckEqual, Hash, MaybeDisplay, SimpleBitOps},
 	DispatchError,
 };
 use sp_std::vec::Vec;
-
-use frame_support::traits::Get;
-use sp_runtime::traits::Hash;
-
-use frame_support::ensure;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -162,6 +157,9 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		/// Create a new delegation root.
 		///
+		/// The new root will allow a new trust hierarchy to be created by
+		/// adding children delegations to the root.
+		///
 		/// * origin: the identifier of the delegation creator
 		/// * root_id: the ID of the root node. It has to be unique
 		/// * ctype_hash: the CTYPE hash that delegates can use for attestations
@@ -189,6 +187,10 @@ pub mod pallet {
 		}
 
 		/// Create a new delegation node.
+		///
+		/// The new delegation node represents a new trust hierarchy that
+		/// considers the new node as its root. The owner of this node has full
+		/// control over any of its direct and indirect descendants.
 		///
 		/// * origin: the identifier of the delegation creator
 		/// * delegation_id: the ID of the new delegation node. It has to be
@@ -297,17 +299,19 @@ pub mod pallet {
 			Ok(None.into())
 		}
 
-		/// Revoke a delegation root and all its descending delegation
-		/// hierarchy.
+		/// Revoke a delegation root.
+		///
+		/// Revoking a delegation root results in the whole trust hierarchy
+		/// being revoked. Nevertheless, revocation starts from the leave nodes
+		/// upwards, so if the operation ends prematurely because it runs out of
+		/// gas, the delegation state would be consisent as no child would
+		/// "survive" its parent. As a consequence, if the root node is revoked,
+		/// the whole trust hierarchy is to be considered revoked.
 		///
 		/// * origin: the identifier of the revoker
 		/// * root_id: the ID of the delegation root to revoke
-		/// * max_children: tThe maximum number of nodes descending from the
-		///   root to revoke as a consequence of the root revocation. The
-		///   revocation starts from the leaves, so in case of values that are
-		///   not large enough, the nodes at the bottom of the hierarchy might
-		///   get revoked while the ones higher up, including the root node,
-		///   might not
+		/// * max_children: the maximum number of nodes descending from the root
+		///   to revoke as a consequence of the root revocation
 		#[pallet::weight(0)]
 		pub fn revoke_root(
 			origin: OriginFor<T>,
@@ -339,7 +343,15 @@ pub mod pallet {
 			Ok(Some(consumed_weight.saturating_add(T::DbWeight::get().reads(1))).into())
 		}
 
-		/// Revoke a delegation node and all its children, where
+		/// Revoke a delegation node and all its children.
+		///
+		/// Revoking a delegation node results in the trust hierarchy starting
+		/// from the given node being revoked. Nevertheless, revocation starts
+		/// from the leave nodes upwards, so if the operation ends prematurely
+		/// because it runs out of gas, the delegation state would be consisent
+		/// as no child would "survive" its parent. As a consequence, if the
+		/// given node is revoked, the trust hierarchy with the node as root is
+		/// to be considered revoked.
 		///
 		/// * origin: the identifier of the revoker
 		/// * delegation_id: the ID of the delegation root to revoke
@@ -350,11 +362,7 @@ pub mod pallet {
 		///   hierarchy including the root node has been checked, or when the
 		///   max number of parents is reached
 		/// * max_revocations: the maximum number of nodes descending from this
-		///   one to revoke as a consequence of this node revocation. The
-		///   revocation starts from the leaves, so in case of values that are
-		///   not large enough, the nodes at the bottom of the hierarchy might
-		///   get revoked while the ones higher up, including this node, might
-		///   not
+		///   one to revoke as a consequence of this node revocation
 		#[pallet::weight(0)]
 		pub fn revoke_delegation(
 			origin: OriginFor<T>,

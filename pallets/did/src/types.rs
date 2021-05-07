@@ -18,6 +18,7 @@
 
 use codec::{Decode, Encode, WrapperTypeEncode};
 use frame_support::ensure;
+use sp_core::{ed25519, sr25519};
 use sp_runtime::traits::{IdentifyAccount, Lazy, Verify};
 use sp_std::{
 	collections::{btree_map::BTreeMap, btree_set::BTreeSet},
@@ -25,8 +26,6 @@ use sp_std::{
 	str,
 	vec::Vec,
 };
-
-use sp_core::{ed25519, sr25519};
 
 use crate::{utils, Config};
 

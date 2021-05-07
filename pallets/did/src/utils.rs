@@ -16,10 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate as did;
 use codec::Encode;
 use sp_runtime::traits::Hash;
 use sp_std::vec::Vec;
+
+use crate as did;
 
 pub fn calculate_key_id<T: did::Config>(key: &did::DidPublicKey) -> did::KeyId<T> {
 	let hashed_values: Vec<u8> = key.encode();

@@ -36,7 +36,7 @@ pub type Attester<T> = delegation::DelegatorId<T>;
 /// Type of a delegation identifier.
 pub type DelegationNodeId<T> = delegation::DelegationNodeId<T>;
 
-/// An on-chain attestation written by an authorised attester.
+/// An on-chain attestation written by an attester.
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
 pub struct Attestation<T: Config> {
 	/// The hash of the CTYPE used for this attestation.

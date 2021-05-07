@@ -16,8 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::{self as ctype, mock::*};
 use frame_support::{assert_err, assert_ok};
+
+use crate::{self as ctype, mock::*};
 
 // submit_ctype_creation_operation
 

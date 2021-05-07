@@ -16,11 +16,12 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use frame_support::{assert_err, assert_noop, assert_ok};
+use sp_core::Pair;
+
 use crate::{self as delegation, mock::*};
 use ctype::mock as ctype_mock;
 use did::mock as did_mock;
-use frame_support::{assert_err, assert_noop, assert_ok};
-use sp_core::Pair;
 
 // submit_delegation_root_creation_operation()
 

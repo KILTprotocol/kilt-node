@@ -18,8 +18,8 @@
 
 use crate::Config;
 
-/// The type of a CTYPE hash.
+/// Type of a CTYPE hash.
 pub type CtypeHash<T> = <T as frame_system::Config>::Hash;
 
-/// The type of a CTYPE creator.
+/// Type of a CTYPE creator.
 pub type CtypeCreator<T> = <T as Config>::CtypeCreatorId;

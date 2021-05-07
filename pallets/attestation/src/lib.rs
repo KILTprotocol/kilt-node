@@ -70,7 +70,7 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// A new attestation has been created.
-		/// \[attester ID, claim hash, CTYPE hash, delegation ID\]
+		/// \[attester ID, claim hash, CTYPE hash, (optional) delegation ID\]
 		AttestationCreated(Attester<T>, ClaimHash<T>, CtypeHash<T>, Option<DelegationNodeId<T>>),
 		/// An attestation has been revoked.
 		/// \[revoker ID, claim hash\]
@@ -107,6 +107,10 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		/// Create a new attestation.
+		///
+		/// The attester can optionally provide a reference to an existing
+		/// delegation that will be saved along with the attestation itself in
+		/// the form of an attested delegation.
 		///
 		/// * origin: the identifier of the attester
 		/// * claim_hash: the hash of the claim to attest. It has to be unique
@@ -180,11 +184,17 @@ pub mod pallet {
 
 		/// Revoke an existing attestation.
 		///
+		/// The revoker must be either the creator of the attestation being
+		/// revoked or an entity that in the delegation tree is an ancestor of
+		/// the attester, i.e., it was either the delegator of the attester or
+		/// an ancestor thereof.
+		///
 		/// * origin: the identifier of the revoker
 		/// * claim_hash: the hash of the claim to revoke
-		/// * max_parent_checks: for delegated attestations, the number of nodes
-		///   to check up in the trust hierarchy (including the root node but
-		///   excluding the given node) to verify whether the caller is
+		/// * max_parent_checks: for delegated attestations, the number of
+		///   delegation nodes to check up in the trust hierarchy (including the
+		///   root node but excluding the provided node) to verify whether the
+		///   caller is an ancestor of the attestation attester and hence
 		///   authorised to revoke the specified attestation.
 		#[pallet::weight(0)]
 		pub fn revoke(

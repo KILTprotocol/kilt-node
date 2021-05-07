@@ -23,7 +23,7 @@ use crate::Config;
 /// Type of a delegation node identifier.
 pub type DelegationNodeId<T> = <T as Config>::DelegationNodeId;
 
-/// Type of a delegation node's owner.
+/// Type of a delegator or a delegate.
 pub type DelegatorId<T> = did::DidIdentifier<T>;
 
 /// The type of a CTYPE hash.
@@ -34,6 +34,8 @@ pub type DelegationSignature = did::DidSignature;
 
 bitflags! {
 	/// Bitflags for permissions.
+	///
+	/// Permission bits can be combined to express multiple permissions.
 	#[derive(Encode, Decode)]
 	pub struct Permissions: u32 {
 		/// Permission to write attestations on chain.
@@ -56,7 +58,6 @@ impl Permissions {
 }
 
 impl Default for Permissions {
-	/// Default permissions to the attest permission.
 	fn default() -> Self {
 		Permissions::ATTEST
 	}
@@ -65,7 +66,8 @@ impl Default for Permissions {
 /// A node representing a delegation hierarchy root.
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
 pub struct DelegationRoot<T: Config> {
-	/// The hash of the CTYPE that delegated attesters can attest.
+	/// The hash of the CTYPE that delegated attesters within this trust
+	/// hierarchy can attest.
 	pub ctype_hash: CtypeHash<T>,
 	/// The identifier of the root owner.
 	pub owner: DelegatorId<T>,
@@ -83,13 +85,13 @@ impl<T: Config> DelegationRoot<T> {
 	}
 }
 
-/// A node representing a node in the deleagation hierarchy.
+/// A node representing a node in the delegation hierarchy.
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
 pub struct DelegationNode<T: Config> {
 	/// The ID of the delegation hierarchy root.
 	pub root_id: DelegationNodeId<T>,
 	/// \[OPTIONAL\] The ID of the parent node. If None, the node is
-	/// considered a child of the root node.
+	/// considered a direct child of the root node.
 	pub parent: Option<DelegationNodeId<T>>,
 	/// The identifier of the owner of the delegation node, i.e., the delegate.
 	pub owner: DelegatorId<T>,

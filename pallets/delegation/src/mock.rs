@@ -18,13 +18,6 @@
 
 #![allow(clippy::from_over_into)]
 
-use crate as delegation;
-use crate::*;
-use ctype::mock as ctype_mock;
-
-#[cfg(test)]
-use codec::Encode;
-
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use frame_system::EnsureSigned;
 use sp_core::H256;
@@ -33,6 +26,13 @@ use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 };
+
+#[cfg(test)]
+use codec::Encode;
+
+use crate as delegation;
+use crate::*;
+use ctype::mock as ctype_mock;
 
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;

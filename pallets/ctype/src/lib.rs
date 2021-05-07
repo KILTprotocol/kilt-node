@@ -78,23 +78,18 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		/// Create a new CTYPE.
+		/// Create a new CTYPE and associates it with its creator.
 		///
 		/// * origin: the identifier of the CTYPE creator
 		/// * hash: the CTYPE hash. It has to be unique.
 		#[pallet::weight(0)]
 		pub fn add(origin: OriginFor<T>, hash: CtypeHash<T>) -> DispatchResultWithPostInfo {
-			log::debug!("C1");
 			let creator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
-			log::debug!("C2");
 
 			ensure!(!<Ctypes<T>>::contains_key(&hash), Error::<T>::CTypeAlreadyExists);
 
-			log::debug!("C3");
-
 			log::debug!("Creating CTYPE with hash {:?} and creator {:?}", &hash, &creator);
 			<Ctypes<T>>::insert(&hash, creator.clone());
-			log::debug!("C4");
 
 			Self::deposit_event(Event::CTypeCreated(creator, hash));
 

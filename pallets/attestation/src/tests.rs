@@ -16,10 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use frame_support::{assert_noop, assert_ok};
+
 use crate::{self as attestation, mock::*};
 use ctype::mock as ctype_mock;
 use delegation::mock as delegation_mock;
-use frame_support::{assert_noop, assert_ok};
 
 // submit_attestation_creation_operation
 
