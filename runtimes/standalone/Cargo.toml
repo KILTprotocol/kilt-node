@@ -219,6 +219,9 @@ version = "3.0.0"
 [features]
 default = ["std"]
 runtime-benchmarks = [
+  "attestation/runtime-benchmarks",
+  "ctype/runtime-benchmarks",
+  "delegation/runtime-benchmarks",
   "did/runtime-benchmarks",
   "frame-benchmarking",
   "frame-system-benchmarking",
