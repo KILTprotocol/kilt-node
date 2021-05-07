@@ -4,11 +4,10 @@ FROM paritytech/ci-linux:d34c7950-20210408 as builder
 
 WORKDIR /build
 
-ARG GIT_COMMIT
-ENV GIT_COMMIT=$GIT_COMMIT
+ARG FEATURES=default
 
-ARG FEATURES=
-
+# We include the .git to enable the
+COPY ./.git /build/.git
 COPY ./nodes /build/nodes
 COPY ./pallets /build/pallets
 COPY ./primitives /build/primitives
