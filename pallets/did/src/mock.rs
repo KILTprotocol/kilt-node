@@ -36,7 +36,7 @@ pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test
 pub type Block = frame_system::mocking::MockBlock<Test>;
 
 pub type TestDidIdentifier = kilt_primitives::DidIdentifier;
-pub type TestKeyId = did::KeyId<Test>;
+pub type TestKeyId = did::KeyIdOf<Test>;
 pub type TestBlockNumber = kilt_primitives::BlockNumber;
 pub type TestCtypeOwner = TestDidIdentifier;
 pub type TestCtypeHash = kilt_primitives::Hash;

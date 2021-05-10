@@ -28,6 +28,8 @@ use ctype::mock as ctype_mock;
 
 #[test]
 fn check_successful_simple_ed25519_creation() {
+	initialize_logger();
+	log::debug!("Account: {:?}", ALICE_DID);
 	let auth_key = get_ed25519_authentication_key(true);
 	let operation = generate_base_did_creation_operation(ALICE_DID, did::DidVerificationKey::from(auth_key.public()));
 

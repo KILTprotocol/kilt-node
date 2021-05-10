@@ -44,19 +44,19 @@ pub const IPFS_URI_SCHEME: &str = "ipfs://";
 pub type Payload = [u8];
 
 /// Type for a DID key identifier.
-pub type KeyId<T> = <T as frame_system::Config>::Hash;
+pub type KeyIdOf<T> = <T as frame_system::Config>::Hash;
 
 /// Type for a DID subject identifier.
-pub type DidIdentifier<T> = <T as Config>::DidIdentifier;
+pub type DidIdentifierOf<T> = <T as Config>::DidIdentifier;
 
 /// Type for a Kilt account identifier.
-pub type AccountIdentifier<T> = <T as frame_system::Config>::AccountId;
+pub type AccountIdentifierOf<T> = <T as frame_system::Config>::AccountId;
 
 /// Type for a block number.
-pub type BlockNumber<T> = <T as frame_system::Config>::BlockNumber;
+pub type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
 
 /// Type for a runtime extrinsic callable under DID-based authorization.
-pub type DidCallable<T> = <T as Config>::Call;
+pub type DidCallableOf<T> = <T as Config>::Call;
 
 /// The string description of a DID public key.
 ///
@@ -291,7 +291,7 @@ pub struct DidPublicKeyDetails<T: Config> {
 	/// A public key the DID controls.
 	pub key: DidPublicKey,
 	/// The block number in which the verification key was added to the DID.
-	pub block_number: BlockNumber<T>,
+	pub block_number: BlockNumberOf<T>,
 }
 
 /// The details associated to a DID identity.
@@ -299,16 +299,16 @@ pub struct DidPublicKeyDetails<T: Config> {
 pub struct DidDetails<T: Config> {
 	/// The ID of the authentication key, used to authenticate DID-related
 	/// operations.
-	authentication_key: KeyId<T>,
+	authentication_key: KeyIdOf<T>,
 	/// The set of the key agreement key IDs, which can be used to encrypt
 	/// data addressed to the DID subject.
-	key_agreement_keys: BTreeSet<KeyId<T>>,
+	key_agreement_keys: BTreeSet<KeyIdOf<T>>,
 	/// \[OPTIONAL\] The ID of the delegation key, used to verify the
 	/// signatures of the delegations created by the DID subject.
-	delegation_key: Option<KeyId<T>>,
+	delegation_key: Option<KeyIdOf<T>>,
 	/// \[OPTIONAL\] The ID of the attestation key, used to verify the
 	/// signatures of the attestations created by the DID subject.
-	attestation_key: Option<KeyId<T>>,
+	attestation_key: Option<KeyIdOf<T>>,
 	/// The map of public keys, with the key label as
 	/// the key map and the tuple (key, addition_block_number) as the map
 	/// value.
@@ -318,7 +318,7 @@ pub struct DidDetails<T: Config> {
 	/// the old attestation keys that have been rotated, i.e., they cannot
 	/// be used to create new attestations but can still be used to verify
 	/// previously issued attestations.
-	public_keys: BTreeMap<KeyId<T>, DidPublicKeyDetails<T>>,
+	public_keys: BTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>>,
 	/// \[OPTIONAL\] The URL pointing to the service endpoints the DID
 	/// subject publicly exposes.
 	pub endpoint_url: Option<Url>,
@@ -333,8 +333,8 @@ impl<T: Config> DidDetails<T> {
 	/// i.e., an authentication key and the block creation time.
 	///
 	/// The tx counter is set by default to 0.
-	pub fn new(authentication_key: DidVerificationKey, block_number: BlockNumber<T>) -> Self {
-		let mut public_keys: BTreeMap<KeyId<T>, DidPublicKeyDetails<T>> = BTreeMap::new();
+	pub fn new(authentication_key: DidVerificationKey, block_number: BlockNumberOf<T>) -> Self {
+		let mut public_keys: BTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>> = BTreeMap::new();
 		let authentication_key_id = utils::calculate_key_id::<T>(&authentication_key.into());
 		public_keys.insert(
 			authentication_key_id,
@@ -362,7 +362,7 @@ impl<T: Config> DidDetails<T> {
 	pub fn update_authentication_key(
 		&mut self,
 		new_authentication_key: DidVerificationKey,
-		block_number: BlockNumber<T>,
+		block_number: BlockNumberOf<T>,
 	) {
 		let old_authentication_key_id = self.authentication_key;
 		let new_authentication_key_id = utils::calculate_key_id::<T>(&new_authentication_key.into());
@@ -386,7 +386,7 @@ impl<T: Config> DidDetails<T> {
 	pub fn add_key_agreement_keys(
 		&mut self,
 		new_key_agreement_keys: BTreeSet<DidEncryptionKey>,
-		block_number: BlockNumber<T>,
+		block_number: BlockNumberOf<T>,
 	) {
 		for new_key_agreement_key in new_key_agreement_keys {
 			let new_key_agreement_id = utils::calculate_key_id::<T>(&new_key_agreement_key.into());
@@ -406,7 +406,7 @@ impl<T: Config> DidDetails<T> {
 	/// The old key is not removed from the set of verification keys, hence
 	/// it can still be used to verify past attestations.
 	/// The new key is added to the set of verification keys.
-	pub fn update_attestation_key(&mut self, new_attestation_key: DidVerificationKey, block_number: BlockNumber<T>) {
+	pub fn update_attestation_key(&mut self, new_attestation_key: DidVerificationKey, block_number: BlockNumberOf<T>) {
 		let new_attestation_key_id = utils::calculate_key_id::<T>(&new_attestation_key.into());
 		self.attestation_key = Some(new_attestation_key_id);
 		self.public_keys.insert(
@@ -435,7 +435,7 @@ impl<T: Config> DidDetails<T> {
 	/// The old key is deleted from the set of verification keys if it is
 	/// not used in any other part of the DID. The new key is added to the
 	/// set of verification keys.
-	pub fn update_delegation_key(&mut self, new_delegation_key: DidVerificationKey, block_number: BlockNumber<T>) {
+	pub fn update_delegation_key(&mut self, new_delegation_key: DidVerificationKey, block_number: BlockNumberOf<T>) {
 		let old_delegation_key_id = self.delegation_key;
 		let new_delegation_key_id = utils::calculate_key_id::<T>(&new_delegation_key.into());
 		self.delegation_key = Some(new_delegation_key_id);
@@ -474,7 +474,7 @@ impl<T: Config> DidDetails<T> {
 	///   keys can be deleted.
 	/// - 2. the set of keys to delete contains key IDs that are not currently
 	///   stored on chain
-	fn remove_public_keys(&mut self, key_ids: &BTreeSet<KeyId<T>>) -> Result<(), StorageError> {
+	fn remove_public_keys(&mut self, key_ids: &BTreeSet<KeyIdOf<T>>) -> Result<(), StorageError> {
 		// Consider the currently active authentication, attestation, and delegation key
 		// as forbidden to delete. They can be deleted with the right operation for the
 		// respective fields in the DidUpdateOperation.
@@ -506,7 +506,7 @@ impl<T: Config> DidDetails<T> {
 
 	// Remove a key from the map of public keys if none of the other keys, i.e.,
 	// authentication, key agreement, attestation, or delegation, is referencing it.
-	fn remove_key_if_unused(&mut self, key_id: &KeyId<T>) {
+	fn remove_key_if_unused(&mut self, key_id: &KeyIdOf<T>) {
 		if self.authentication_key != *key_id
 			&& self.attestation_key != Some(*key_id)
 			&& self.delegation_key != Some(*key_id)
@@ -516,23 +516,23 @@ impl<T: Config> DidDetails<T> {
 		}
 	}
 
-	pub fn get_authentication_key_id(&self) -> KeyId<T> {
+	pub fn get_authentication_key_id(&self) -> KeyIdOf<T> {
 		self.authentication_key
 	}
 
-	pub fn get_key_agreement_keys_ids(&self) -> &BTreeSet<KeyId<T>> {
+	pub fn get_key_agreement_keys_ids(&self) -> &BTreeSet<KeyIdOf<T>> {
 		&self.key_agreement_keys
 	}
 
-	pub fn get_attestation_key_id(&self) -> &Option<KeyId<T>> {
+	pub fn get_attestation_key_id(&self) -> &Option<KeyIdOf<T>> {
 		&self.attestation_key
 	}
 
-	pub fn get_delegation_key_id(&self) -> &Option<KeyId<T>> {
+	pub fn get_delegation_key_id(&self) -> &Option<KeyIdOf<T>> {
 		&self.delegation_key
 	}
 
-	pub fn get_public_keys(&self) -> &BTreeMap<KeyId<T>, DidPublicKeyDetails<T>> {
+	pub fn get_public_keys(&self) -> &BTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>> {
 		&self.public_keys
 	}
 
@@ -673,7 +673,7 @@ pub trait DidOperation<T: Config>: Encode {
 	/// operation.
 	fn get_verification_key_relationship(&self) -> DidVerificationKeyRelationship;
 	/// The DID identifier of the subject.
-	fn get_did(&self) -> &DidIdentifier<T>;
+	fn get_did(&self) -> &DidIdentifierOf<T>;
 	/// The operation tx counter, used to protect against replay attacks.
 	fn get_tx_counter(&self) -> u64;
 }
@@ -700,7 +700,7 @@ pub trait DeriveDidCallAuthorizationVerificationKeyRelationship {
 #[derive(Clone, Debug, Decode, Encode, PartialEq)]
 pub struct DidCreationOperation<T: Config> {
 	/// The DID identifier. It has to be unique.
-	pub did: DidIdentifier<T>,
+	pub did: DidIdentifierOf<T>,
 	/// The new authentication key.
 	pub new_authentication_key: DidVerificationKey,
 	/// The new key agreement keys.
@@ -718,7 +718,7 @@ impl<T: Config> DidOperation<T> for DidCreationOperation<T> {
 		DidVerificationKeyRelationship::Authentication
 	}
 
-	fn get_did(&self) -> &DidIdentifier<T> {
+	fn get_did(&self) -> &DidIdentifierOf<T> {
 		&self.did
 	}
 
@@ -737,7 +737,7 @@ impl<T: Config> DidOperation<T> for DidCreationOperation<T> {
 #[derive(Clone, Debug, Decode, Encode, PartialEq)]
 pub struct DidUpdateOperation<T: Config> {
 	/// The DID identifier.
-	pub did: DidIdentifier<T>,
+	pub did: DidIdentifierOf<T>,
 	/// \[OPTIONAL\] The new authentication key.
 	pub new_authentication_key: Option<DidVerificationKey>,
 	/// A new set of key agreement keys to add to the ones already stored.
@@ -750,7 +750,7 @@ pub struct DidUpdateOperation<T: Config> {
 	/// If the operation also replaces the current attestation key, it will
 	/// not be considered for removal in this operation, so it is not
 	/// possible to specify it for removal in this set.
-	pub public_keys_to_remove: BTreeSet<KeyId<T>>,
+	pub public_keys_to_remove: BTreeSet<KeyIdOf<T>>,
 	/// \[OPTIONAL\] The new endpoint URL.
 	pub new_endpoint_url: Option<Url>,
 	/// The DID tx counter.
@@ -762,7 +762,7 @@ impl<T: Config> DidOperation<T> for DidUpdateOperation<T> {
 		DidVerificationKeyRelationship::Authentication
 	}
 
-	fn get_did(&self) -> &DidIdentifier<T> {
+	fn get_did(&self) -> &DidIdentifierOf<T> {
 		&self.did
 	}
 
@@ -799,7 +799,7 @@ impl Default for DidVerificationKeyUpdateAction {
 #[derive(Clone, Debug, Decode, Encode, PartialEq)]
 pub struct DidDeletionOperation<T: Config> {
 	/// The DID identifier.
-	pub did: DidIdentifier<T>,
+	pub did: DidIdentifierOf<T>,
 	/// The DID tx counter.
 	pub tx_counter: u64,
 }
@@ -809,7 +809,7 @@ impl<T: Config> DidOperation<T> for DidDeletionOperation<T> {
 		DidVerificationKeyRelationship::Authentication
 	}
 
-	fn get_did(&self) -> &DidIdentifier<T> {
+	fn get_did(&self) -> &DidIdentifierOf<T> {
 		&self.did
 	}
 
@@ -824,11 +824,11 @@ impl<T: Config> DidOperation<T> for DidDeletionOperation<T> {
 #[derive(Clone, Debug, Decode, Encode, PartialEq)]
 pub struct DidAuthorizedCallOperation<T: Config> {
 	/// The DID identifier.
-	pub did: DidIdentifier<T>,
+	pub did: DidIdentifierOf<T>,
 	/// The DID tx counter.
 	pub tx_counter: u64,
 	/// The extrinsic call to authorize with the DID.
-	pub call: DidCallable<T>,
+	pub call: DidCallableOf<T>,
 }
 
 /// Wrapper around a [DidAuthorizedCallOperation].
@@ -848,7 +848,7 @@ impl<T: Config> DidOperation<T> for DidAuthorizedCallOperationWithVerificationRe
 		self.verification_key_relationship
 	}
 
-	fn get_did(&self) -> &DidIdentifier<T> {
+	fn get_did(&self) -> &DidIdentifierOf<T> {
 		&self.did
 	}
 

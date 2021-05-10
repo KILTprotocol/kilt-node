@@ -21,13 +21,13 @@ use codec::{Decode, Encode};
 use crate::Config;
 
 /// Type of a delegation node identifier.
-pub type DelegationNodeId<T> = <T as Config>::DelegationNodeId;
+pub type DelegationNodeIdOf<T> = <T as Config>::DelegationNodeId;
 
 /// Type of a delegator or a delegate.
-pub type DelegatorId<T> = did::DidIdentifier<T>;
+pub type DelegatorIdOf<T> = did::DidIdentifierOf<T>;
 
 /// The type of a CTYPE hash.
-pub type CtypeHash<T> = ctype::CtypeHash<T>;
+pub type CtypeHashOf<T> = ctype::CtypeHashOf<T>;
 
 /// Type of a signature over the delegation details.
 pub type DelegationSignature = did::DidSignature;
@@ -68,15 +68,15 @@ impl Default for Permissions {
 pub struct DelegationRoot<T: Config> {
 	/// The hash of the CTYPE that delegated attesters within this trust
 	/// hierarchy can attest.
-	pub ctype_hash: CtypeHash<T>,
+	pub ctype_hash: CtypeHashOf<T>,
 	/// The identifier of the root owner.
-	pub owner: DelegatorId<T>,
+	pub owner: DelegatorIdOf<T>,
 	/// The flag indicating whether the root has been revoked or not.
 	pub revoked: bool,
 }
 
 impl<T: Config> DelegationRoot<T> {
-	pub fn new(ctype_hash: CtypeHash<T>, owner: DelegatorId<T>) -> Self {
+	pub fn new(ctype_hash: CtypeHashOf<T>, owner: DelegatorIdOf<T>) -> Self {
 		DelegationRoot {
 			ctype_hash,
 			owner,
@@ -89,12 +89,12 @@ impl<T: Config> DelegationRoot<T> {
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
 pub struct DelegationNode<T: Config> {
 	/// The ID of the delegation hierarchy root.
-	pub root_id: DelegationNodeId<T>,
+	pub root_id: DelegationNodeIdOf<T>,
 	/// \[OPTIONAL\] The ID of the parent node. If None, the node is
 	/// considered a direct child of the root node.
-	pub parent: Option<DelegationNodeId<T>>,
+	pub parent: Option<DelegationNodeIdOf<T>>,
 	/// The identifier of the owner of the delegation node, i.e., the delegate.
-	pub owner: DelegatorId<T>,
+	pub owner: DelegatorIdOf<T>,
 	/// The permission flags for the operations the delegate is allowed to
 	/// perform.
 	pub permissions: Permissions,
@@ -111,7 +111,7 @@ impl<T: Config> DelegationNode<T> {
 	///   new delegate
 	/// * permissions: the permission flags for the operations the delegate is
 	///   allowed to perform
-	pub fn new_root_child(root_id: DelegationNodeId<T>, owner: DelegatorId<T>, permissions: Permissions) -> Self {
+	pub fn new_root_child(root_id: DelegationNodeIdOf<T>, owner: DelegatorIdOf<T>, permissions: Permissions) -> Self {
 		DelegationNode {
 			root_id,
 			owner,
@@ -131,9 +131,9 @@ impl<T: Config> DelegationNode<T> {
 	/// * permissions: the permission flags for the operations the delegate is
 	///   allowed to perform
 	pub fn new_node_child(
-		root_id: DelegationNodeId<T>,
-		parent: DelegationNodeId<T>,
-		owner: DelegatorId<T>,
+		root_id: DelegationNodeIdOf<T>,
+		parent: DelegationNodeIdOf<T>,
+		owner: DelegatorIdOf<T>,
 		permissions: Permissions,
 	) -> Self {
 		DelegationNode {

@@ -42,7 +42,7 @@ where
 		o.into().map(|o| o.id)
 	}
 
-	#[cfg(any(feature = "runtime-benchmarks", test))]
+	#[cfg(feature = "runtime-benchmarks")]
 	fn successful_origin() -> OuterOrigin {
 		OuterOrigin::from(DidRawOrigin { id: Default::default() })
 	}

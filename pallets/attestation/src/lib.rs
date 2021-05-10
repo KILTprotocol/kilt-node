@@ -41,7 +41,7 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config + delegation::Config {
-		type EnsureOrigin: EnsureOrigin<Success = Attester<Self>, <Self as frame_system::Config>::Origin>;
+		type EnsureOrigin: EnsureOrigin<Success = AttesterOf<Self>, <Self as frame_system::Config>::Origin>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 	}
 
@@ -57,24 +57,24 @@ pub mod pallet {
 	/// It maps from a claim hash to the full attestation.
 	#[pallet::storage]
 	#[pallet::getter(fn attestations)]
-	pub type Attestations<T> = StorageMap<_, Blake2_128Concat, ClaimHash<T>, Attestation<T>>;
+	pub type Attestations<T> = StorageMap<_, Blake2_128Concat, ClaimHashOf<T>, Attestation<T>>;
 
 	/// Delegated attestations stored on chain.
 	///
 	/// It maps from a delegation ID to a vector of claim hashes.
 	#[pallet::storage]
 	#[pallet::getter(fn delegated_attestations)]
-	pub type DelegatedAttestations<T> = StorageMap<_, Blake2_128Concat, DelegationNodeId<T>, Vec<ClaimHash<T>>>;
+	pub type DelegatedAttestations<T> = StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, Vec<ClaimHashOf<T>>>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// A new attestation has been created.
 		/// \[attester ID, claim hash, CTYPE hash, (optional) delegation ID\]
-		AttestationCreated(Attester<T>, ClaimHash<T>, CtypeHash<T>, Option<DelegationNodeId<T>>),
+		AttestationCreated(AttesterOf<T>, ClaimHashOf<T>, CtypeHashOf<T>, Option<DelegationNodeIdOf<T>>),
 		/// An attestation has been revoked.
 		/// \[revoker ID, claim hash\]
-		AttestationRevoked(Attester<T>, ClaimHash<T>),
+		AttestationRevoked(AttesterOf<T>, ClaimHashOf<T>),
 	}
 
 	#[pallet::error]
@@ -120,9 +120,9 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn add(
 			origin: OriginFor<T>,
-			claim_hash: ClaimHash<T>,
-			ctype_hash: CtypeHash<T>,
-			delegation_id: Option<DelegationNodeId<T>>,
+			claim_hash: ClaimHashOf<T>,
+			ctype_hash: CtypeHashOf<T>,
+			delegation_id: Option<DelegationNodeIdOf<T>>,
 		) -> DispatchResultWithPostInfo {
 			let attester = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
@@ -199,7 +199,7 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn revoke(
 			origin: OriginFor<T>,
-			claim_hash: ClaimHash<T>,
+			claim_hash: ClaimHashOf<T>,
 			max_parent_checks: u32,
 		) -> DispatchResultWithPostInfo {
 			let revoker = <T as Config>::EnsureOrigin::ensure_origin(origin)?;

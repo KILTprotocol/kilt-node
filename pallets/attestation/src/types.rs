@@ -25,27 +25,27 @@ use sp_std::{
 use crate::Config;
 
 /// Type of a claim hash.
-pub type ClaimHash<T> = <T as frame_system::Config>::Hash;
+pub type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
 
 /// Type of an attestation CTYPE hash.
-pub type CtypeHash<T> = ctype::CtypeHash<T>;
+pub type CtypeHashOf<T> = ctype::CtypeHashOf<T>;
 
 /// Type of an attester identifier.
-pub type Attester<T> = delegation::DelegatorId<T>;
+pub type AttesterOf<T> = delegation::DelegatorIdOf<T>;
 
 /// Type of a delegation identifier.
-pub type DelegationNodeId<T> = delegation::DelegationNodeId<T>;
+pub type DelegationNodeIdOf<T> = delegation::DelegationNodeIdOf<T>;
 
 /// An on-chain attestation written by an attester.
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
 pub struct Attestation<T: Config> {
 	/// The hash of the CTYPE used for this attestation.
-	pub ctype_hash: CtypeHash<T>,
+	pub ctype_hash: CtypeHashOf<T>,
 	/// The ID of the attester.
-	pub attester: Attester<T>,
+	pub attester: AttesterOf<T>,
 	/// \[OPTIONAL\] The ID of the delegation node used to authorize the
 	/// attester.
-	pub delegation_id: Option<DelegationNodeId<T>>,
+	pub delegation_id: Option<DelegationNodeIdOf<T>>,
 	/// The flag indicating whether the attestation has been revoked or not.
 	pub revoked: bool,
 }

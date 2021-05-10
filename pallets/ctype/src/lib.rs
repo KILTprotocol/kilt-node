@@ -42,7 +42,7 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type CtypeCreatorId: Parameter;
-		type EnsureOrigin: EnsureOrigin<Success = CtypeCreator<Self>, <Self as frame_system::Config>::Origin>;
+		type EnsureOrigin: EnsureOrigin<Success = CtypeCreatorOf<Self>, <Self as frame_system::Config>::Origin>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 	}
 
@@ -58,14 +58,14 @@ pub mod pallet {
 	/// It maps from a CTYPE hash to its creator.
 	#[pallet::storage]
 	#[pallet::getter(fn ctypes)]
-	pub type Ctypes<T> = StorageMap<_, Blake2_128Concat, CtypeHash<T>, CtypeCreator<T>>;
+	pub type Ctypes<T> = StorageMap<_, Blake2_128Concat, CtypeHashOf<T>, CtypeCreatorOf<T>>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// A new CTYPE has been created.
 		/// \[creator identifier, CTYPE hash\]
-		CTypeCreated(CtypeCreator<T>, CtypeHash<T>),
+		CTypeCreated(CtypeCreatorOf<T>, CtypeHashOf<T>),
 	}
 
 	#[pallet::error]
@@ -83,7 +83,7 @@ pub mod pallet {
 		/// * origin: the identifier of the CTYPE creator
 		/// * hash: the CTYPE hash. It has to be unique.
 		#[pallet::weight(0)]
-		pub fn add(origin: OriginFor<T>, hash: CtypeHash<T>) -> DispatchResultWithPostInfo {
+		pub fn add(origin: OriginFor<T>, hash: CtypeHashOf<T>) -> DispatchResultWithPostInfo {
 			let creator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
 			ensure!(!<Ctypes<T>>::contains_key(&hash), Error::<T>::CTypeAlreadyExists);

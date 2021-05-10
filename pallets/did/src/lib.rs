@@ -54,7 +54,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 
 	/// Type for origin that supports a DID sender.
-	pub type Origin<T> = DidRawOrigin<DidIdentifier<T>>;
+	pub type Origin<T> = DidRawOrigin<DidIdentifierOf<T>>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + Debug {
@@ -63,7 +63,7 @@ pub mod pallet {
 			+ GetDispatchInfo
 			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
 		type DidIdentifier: Parameter;
-		type Origin: From<DidRawOrigin<DidIdentifier<Self>>>;
+		type Origin: From<DidRawOrigin<DidIdentifierOf<Self>>>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 	}
 
@@ -79,23 +79,23 @@ pub mod pallet {
 	/// It maps from a DID identifier to the DID details.
 	#[pallet::storage]
 	#[pallet::getter(fn get_did)]
-	pub type Did<T> = StorageMap<_, Blake2_128Concat, DidIdentifier<T>, DidDetails<T>>;
+	pub type Did<T> = StorageMap<_, Blake2_128Concat, DidIdentifierOf<T>, DidDetails<T>>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// A new DID has been created.
 		/// \[transaction signer, DID identifier\]
-		DidCreated(AccountIdentifier<T>, DidIdentifier<T>),
+		DidCreated(AccountIdentifierOf<T>, DidIdentifierOf<T>),
 		/// A DID has been updated.
 		/// \[transaction signer, DID identifier\]
-		DidUpdated(AccountIdentifier<T>, DidIdentifier<T>),
+		DidUpdated(AccountIdentifierOf<T>, DidIdentifierOf<T>),
 		/// A DID has been deleted.
 		/// \[transaction signer, DID identifier\]
-		DidDeleted(AccountIdentifier<T>, DidIdentifier<T>),
+		DidDeleted(AccountIdentifierOf<T>, DidIdentifierOf<T>),
 		/// A DID-authorized call has been executed.
 		/// \[DID caller, execution result]
-		DidCallExecuted(DidIdentifier<T>, DispatchResultWithPostInfo),
+		DidCallExecuted(DidIdentifierOf<T>, DispatchResultWithPostInfo),
 	}
 
 	#[pallet::error]
