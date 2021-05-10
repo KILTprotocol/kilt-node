@@ -105,6 +105,3 @@ default = []
 runtime-benchmarks = [
   "kilt-parachain-runtime/runtime-benchmarks",
 ]
-fast-gov = [
-  "kilt-parachain-runtime/fast-gov",
-]

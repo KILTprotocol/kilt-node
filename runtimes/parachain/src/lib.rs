@@ -33,7 +33,7 @@ use frame_system::{
 	EnsureOneOf, EnsureRoot,
 };
 use kilt_primitives::{
-	constants::{DAYS, DOLLARS, HOURS, MILLICENTS, MINUTES, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
+	constants::{DAYS, DOLLARS, HOURS, MILLICENTS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
 	AccountId, Balance, BlockNumber, Hash, Index, Signature,
 };
 use sp_api::impl_runtime_apis;
