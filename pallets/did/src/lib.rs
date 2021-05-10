@@ -54,7 +54,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 
 	/// Type for origin that supports a DID sender.
-	pub type Origin<T> = DidRawOrigin<<T as Config>::DidIdentifier>;
+	pub type Origin<T> = DidRawOrigin<DidIdentifier<T>>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + Debug {
