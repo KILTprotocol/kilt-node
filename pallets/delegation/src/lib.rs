@@ -313,7 +313,7 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn revoke_root(
 			origin: OriginFor<T>,
-			root_id: T::DelegationNodeId,
+			root_id: DelegationNodeIdOf<T>,
 			max_children: u32,
 		) -> DispatchResultWithPostInfo {
 			let invoker = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
@@ -516,7 +516,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 	// Add a child node into the delegation hierarchy
-	fn add_child(child: T::DelegationNodeId, parent: T::DelegationNodeId) {
+	fn add_child(child: DelegationNodeIdOf<T>, parent: DelegationNodeIdOf<T>) {
 		// Get the children vector or initialize an empty one if none
 		let mut children = <Children<T>>::get(parent).unwrap_or_default();
 		children.push(child);
