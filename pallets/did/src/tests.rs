@@ -1327,7 +1327,7 @@ fn check_call_attestation_key_error() {
 				Box::new(call_operation),
 				did::DidSignature::from(signature)
 			),
-			ctype::Error::<Test>::CTypeAlreadyExists
+			ctype::Error::<Test>::CtypeAlreadyExists
 		);
 	});
 }
@@ -1386,7 +1386,7 @@ fn check_call_delegation_key_error() {
 				Box::new(call_operation),
 				did::DidSignature::from(signature)
 			),
-			ctype::Error::<Test>::CTypeAlreadyExists
+			ctype::Error::<Test>::CtypeAlreadyExists
 		);
 	});
 }
@@ -1441,7 +1441,7 @@ fn check_call_authentication_key_error() {
 				Box::new(call_operation),
 				did::DidSignature::from(signature)
 			),
-			ctype::Error::<Test>::CTypeAlreadyExists
+			ctype::Error::<Test>::CtypeAlreadyExists
 		);
 	});
 }

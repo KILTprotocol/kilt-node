@@ -106,7 +106,7 @@ pub mod pallet {
 		AttestationNotFound,
 		/// The attestation CTYPE does not match the CTYPE specified in the
 		/// delegation hierarchy root.
-		CTypeMismatch,
+		CtypeMismatch,
 		/// The delegation node does not include the permission to create new
 		/// attestations. Only when the revoker is not the original attester.
 		DelegationUnauthorizedToAttest,
@@ -146,7 +146,7 @@ pub mod pallet {
 
 			ensure!(
 				<ctype::Ctypes<T>>::contains_key(&ctype_hash),
-				ctype::Error::<T>::CTypeNotFound
+				ctype::Error::<T>::CtypeNotFound
 			);
 
 			ensure!(
@@ -171,7 +171,7 @@ pub mod pallet {
 				// Check if the CTYPE of the delegation is matching the CTYPE of the attestation
 				let root =
 					<delegation::Roots<T>>::get(delegation.root_id).ok_or(delegation::Error::<T>::RootNotFound)?;
-				ensure!(root.ctype_hash == ctype_hash, Error::<T>::CTypeMismatch);
+				ensure!(root.ctype_hash == ctype_hash, Error::<T>::CtypeMismatch);
 
 				// If the attestation is based on a delegation, store separately
 				let mut delegated_attestations = <DelegatedAttestations<T>>::get(delegation_id).unwrap_or_default();

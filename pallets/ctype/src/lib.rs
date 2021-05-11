@@ -67,15 +67,15 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// A new CTYPE has been created.
 		/// \[creator identifier, CTYPE hash\]
-		CTypeCreated(CtypeCreatorOf<T>, CtypeHashOf<T>),
+		CtypeCreated(CtypeCreatorOf<T>, CtypeHashOf<T>),
 	}
 
 	#[pallet::error]
 	pub enum Error<T> {
 		/// There is no CTYPE with the given hash.
-		CTypeNotFound,
+		CtypeNotFound,
 		/// The CTYPE already exists.
-		CTypeAlreadyExists,
+		CtypeAlreadyExists,
 	}
 
 	#[pallet::call]
@@ -88,12 +88,12 @@ pub mod pallet {
 		pub fn add(origin: OriginFor<T>, hash: CtypeHashOf<T>) -> DispatchResultWithPostInfo {
 			let creator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
-			ensure!(!<Ctypes<T>>::contains_key(&hash), Error::<T>::CTypeAlreadyExists);
+			ensure!(!<Ctypes<T>>::contains_key(&hash), Error::<T>::CtypeAlreadyExists);
 
 			log::debug!("Creating CTYPE with hash {:?} and creator {:?}", &hash, &creator);
 			<Ctypes<T>>::insert(&hash, creator.clone());
 
-			Self::deposit_event(Event::CTypeCreated(creator, hash));
+			Self::deposit_event(Event::CtypeCreated(creator, hash));
 
 			Ok(None.into())
 		}

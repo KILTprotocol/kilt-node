@@ -173,7 +173,7 @@ pub mod pallet {
 
 			ensure!(
 				<ctype::Ctypes<T>>::contains_key(&ctype_hash),
-				<ctype::Error<T>>::CTypeNotFound
+				<ctype::Error<T>>::CtypeNotFound
 			);
 
 			log::debug!("insert Delegation Root");

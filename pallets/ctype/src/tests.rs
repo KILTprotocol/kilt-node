@@ -56,7 +56,7 @@ fn check_duplicate_ctype_creation() {
 	ext.execute_with(|| {
 		assert_noop!(
 			Ctype::add(get_origin(creator.clone()), operation.hash),
-			ctype::Error::<Test>::CTypeAlreadyExists
+			ctype::Error::<Test>::CtypeAlreadyExists
 		);
 	});
 }

@@ -124,7 +124,7 @@ fn ctype_not_present_attest_error() {
 				operation.ctype_hash,
 				operation.delegation_id
 			),
-			ctype::Error::<Test>::CTypeNotFound
+			ctype::Error::<Test>::CtypeNotFound
 		);
 	});
 }
@@ -384,7 +384,7 @@ fn root_ctype_mismatch_attest_error() {
 				operation.ctype_hash,
 				operation.delegation_id
 			),
-			attestation::Error::<Test>::CTypeMismatch
+			attestation::Error::<Test>::CtypeMismatch
 		);
 	});
 }

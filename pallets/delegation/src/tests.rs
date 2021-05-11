@@ -99,7 +99,7 @@ fn ctype_not_found_create_root_delegation_error() {
 	ext.execute_with(|| {
 		assert_err!(
 			Delegation::create_root(get_origin(creator.clone()), operation.root_id, operation.ctype_hash),
-			ctype::Error::<Test>::CTypeNotFound
+			ctype::Error::<Test>::CtypeNotFound
 		);
 	});
 }
