@@ -301,6 +301,7 @@ pub mod pallet {
 		/// * signature: the signature over the encoded extrinsic call that must
 		///   be signed by the tx submiter, i.e., the account paying for the
 		///   execution fees
+		#[allow(clippy::boxed_local)]
 		#[pallet::weight(0)]
 		pub fn submit_did_call(
 			origin: OriginFor<T>,
@@ -320,7 +321,7 @@ pub mod pallet {
 
 			// Wrap the operation in the expected structure, specifying the key retrieved
 			let wrapped_operation = DidAuthorizedCallOperationWithVerificationRelationship {
-				operation: *did_call.clone(),
+				operation: *did_call,
 				verification_key_relationship,
 			};
 
@@ -331,12 +332,8 @@ pub mod pallet {
 			log::debug!("Dispatch call from DID {:?}", did_identifier);
 
 			// Dispatch the referenced [Call] instance and return its result
-			let result = did_call.call.dispatch(
-				DidRawOrigin {
-					id: did_identifier.clone(),
-				}
-				.into(),
-			);
+			let DidAuthorizedCallOperation { did, call, .. } = wrapped_operation.operation;
+			let result = call.dispatch(DidRawOrigin { id: did }.into());
 			Self::deposit_event(Event::DidCallExecuted(did_identifier, result));
 			result
 		}

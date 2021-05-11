@@ -21,8 +21,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
-pub mod types;
-
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
 
@@ -31,13 +29,17 @@ pub mod mock;
 mod tests;
 
 pub use pallet::*;
-pub use types::*;
 
 #[frame_support::pallet]
 pub mod pallet {
-	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
+
+	/// Type of a CTYPE hash.
+	pub type CtypeHashOf<T> = <T as frame_system::Config>::Hash;
+
+	/// Type of a CTYPE creator.
+	pub type CtypeCreatorOf<T> = <T as Config>::CtypeCreatorId;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {

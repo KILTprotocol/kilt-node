@@ -22,19 +22,7 @@ use sp_std::{
 	prelude::{Clone, PartialEq},
 };
 
-use crate::Config;
-
-/// Type of a claim hash.
-pub type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
-
-/// Type of an attestation CTYPE hash.
-pub type CtypeHashOf<T> = ctype::CtypeHashOf<T>;
-
-/// Type of an attester identifier.
-pub type AttesterOf<T> = delegation::DelegatorIdOf<T>;
-
-/// Type of a delegation identifier.
-pub type DelegationNodeIdOf<T> = delegation::DelegationNodeIdOf<T>;
+use crate::*;
 
 /// An on-chain attestation written by an attester.
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]

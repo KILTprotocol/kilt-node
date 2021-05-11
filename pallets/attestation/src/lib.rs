@@ -23,13 +23,13 @@
 
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
-pub mod types;
+pub mod attestation;
 
 #[cfg(test)]
 mod tests;
 
 pub use pallet::*;
-pub use types::*;
+pub use crate::attestation::*;
 
 use sp_std::vec::Vec;
 
@@ -38,6 +38,18 @@ pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
+
+	/// Type of a claim hash.
+	pub type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
+
+	/// Type of an attestation CTYPE hash.
+	pub type CtypeHashOf<T> = ctype::CtypeHashOf<T>;
+
+	/// Type of an attester identifier.
+	pub type AttesterOf<T> = delegation::DelegatorIdOf<T>;
+
+	/// Type of a delegation identifier.
+	pub type DelegationNodeIdOf<T> = delegation::DelegationNodeIdOf<T>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config + delegation::Config {
