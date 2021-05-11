@@ -504,6 +504,7 @@ impl ctype::Config for Runtime {
 	type CtypeCreatorId = DidIdentifier;
 	type EnsureOrigin = did::EnsureDidOrigin<Self::CtypeCreatorId>;
 	type Event = Event;
+	type WeightInfo = ();
 }
 
 impl delegation::Config for Runtime {
@@ -736,6 +737,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
 			add_benchmark!(params, batches, kilt_launch, KiltLaunch);
 			add_benchmark!(params, batches, pallet_vesting, Vesting);
+			add_benchmark!(params, batches, ctype, Ctype);
 
 			// No benchmarks for these pallets
 			// add_benchmark!(params, batches, cumulus_pallet_parachain_system, ParachainSystem);

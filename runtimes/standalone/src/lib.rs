@@ -307,6 +307,8 @@ impl ctype::Config for Runtime {
 	type CtypeCreatorId = DidIdentifier;
 	type EnsureOrigin = did::EnsureDidOrigin<Self::CtypeCreatorId>;
 	type Event = Event;
+
+	type WeightInfo = ();
 }
 
 impl delegation::Config for Runtime {
@@ -622,6 +624,8 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
 			add_benchmark!(params, batches, kilt_launch, KiltLaunch);
 			add_benchmark!(params, batches, pallet_vesting, Vesting);
+
+			add_benchmark!(params, batches, ctype, Ctype);
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
 			Ok(batches)

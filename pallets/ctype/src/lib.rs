@@ -16,10 +16,14 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-//! CTYPE: Handles CTYPEs on chain,
-//! adding CTYPEs.
+//! The CType pallet registers CTypes on chain. Only the hash of the CType and
+//! the owner are stored. CTypes cannot be removed once they where added to the
+//! chain.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
+
+#[cfg(any(feature = "runtime-benchmarks", test))]
+pub mod benchmarking;
 
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
@@ -28,12 +32,17 @@ pub mod mock;
 #[cfg(test)]
 mod tests;
 
+pub mod default_weights;
+
+pub use default_weights::WeightInfo;
 pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
+
+	use crate::WeightInfo;
 
 	/// Type of a CTYPE hash.
 	pub type CtypeHashOf<T> = <T as frame_system::Config>::Hash;
@@ -43,9 +52,13 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type CtypeCreatorId: Parameter;
-		type EnsureOrigin: EnsureOrigin<Success = CtypeCreatorOf<Self>, <Self as frame_system::Config>::Origin>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type EnsureOrigin: EnsureOrigin<Success = CtypeCreatorOf<Self>, <Self as frame_system::Config>::Origin>;
+
+		/// Weight information for extrinsics in this pallet.
+		type WeightInfo: WeightInfo;
+
+		type CtypeCreatorId: Parameter;
 	}
 
 	#[pallet::pallet]
