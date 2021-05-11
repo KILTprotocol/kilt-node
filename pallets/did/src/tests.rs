@@ -16,7 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::Encode;
 use frame_support::{assert_err, assert_noop, assert_ok};
 use sp_core::*;
 use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom};

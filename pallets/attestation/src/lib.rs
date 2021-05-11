@@ -21,15 +21,15 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
+pub mod attestations;
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
-pub mod attestation;
 
 #[cfg(test)]
 mod tests;
 
+pub use crate::attestations::*;
 pub use pallet::*;
-pub use crate::attestation::*;
 
 use sp_std::vec::Vec;
 
@@ -83,7 +83,12 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// A new attestation has been created.
 		/// \[attester ID, claim hash, CTYPE hash, (optional) delegation ID\]
-		AttestationCreated(AttesterOf<T>, ClaimHashOf<T>, CtypeHashOf<T>, Option<DelegationNodeIdOf<T>>),
+		AttestationCreated(
+			AttesterOf<T>,
+			ClaimHashOf<T>,
+			CtypeHashOf<T>,
+			Option<DelegationNodeIdOf<T>>,
+		),
 		/// An attestation has been revoked.
 		/// \[revoker ID, claim hash\]
 		AttestationRevoked(AttesterOf<T>, ClaimHashOf<T>),

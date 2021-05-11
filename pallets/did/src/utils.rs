@@ -18,11 +18,10 @@
 
 use codec::Encode;
 use sp_runtime::traits::Hash;
-use sp_std::vec::Vec;
 
-use crate as did;
+use crate::*;
 
-pub fn calculate_key_id<T: did::Config>(key: &did::DidPublicKey) -> did::KeyIdOf<T> {
+pub fn calculate_key_id<T: Config>(key: &DidPublicKey) -> KeyIdOf<T> {
 	let hashed_values: Vec<u8> = key.encode();
 	T::Hashing::hash(&hashed_values)
 }

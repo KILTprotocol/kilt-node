@@ -16,3 +16,20 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use codec::{Decode, Encode};
+
+use crate::*;
+
+/// An on-chain attestation written by an attester.
+#[derive(Clone, Debug, Encode, Decode, PartialEq)]
+pub struct Attestation<T: Config> {
+	/// The hash of the CTYPE used for this attestation.
+	pub ctype_hash: CtypeHashOf<T>,
+	/// The ID of the attester.
+	pub attester: AttesterOf<T>,
+	/// \[OPTIONAL\] The ID of the delegation node used to authorize the
+	/// attester.
+	pub delegation_id: Option<DelegationNodeIdOf<T>>,
+	/// The flag indicating whether the attestation has been revoked or not.
+	pub revoked: bool,
+}

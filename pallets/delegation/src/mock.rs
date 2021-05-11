@@ -20,8 +20,6 @@
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use frame_system::EnsureSigned;
-use sp_core::H256;
-use sp_io::TestExternalities;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
@@ -66,7 +64,7 @@ impl frame_system::Config for Test {
 	type Call = Call;
 	type Index = u64;
 	type BlockNumber = u64;
-	type Hash = H256;
+	type Hash = kilt_primitives::Hash;
 	type Hashing = BlakeTwo256;
 	type AccountId = <<kilt_primitives::Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
@@ -284,7 +282,7 @@ impl ExtBuilder {
 		self
 	}
 
-	pub fn build(self, ext: Option<TestExternalities>) -> sp_io::TestExternalities {
+	pub fn build(self, ext: Option<sp_io::TestExternalities>) -> sp_io::TestExternalities {
 		let mut ext = if let Some(ext) = ext {
 			ext
 		} else {

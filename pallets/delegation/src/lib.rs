@@ -22,7 +22,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
-pub mod types;
+pub mod delegation_hierarchy;
 
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
@@ -30,14 +30,11 @@ pub mod mock;
 #[cfg(test)]
 mod tests;
 
+pub use delegation_hierarchy::*;
 pub use pallet::*;
-pub use types::*;
 
 use frame_support::{ensure, pallet_prelude::Weight, traits::Get};
-use sp_runtime::{
-	traits::Hash,
-	DispatchError,
-};
+use sp_runtime::{traits::Hash, DispatchError};
 use sp_std::vec::Vec;
 
 #[frame_support::pallet]
@@ -46,11 +43,21 @@ pub mod pallet {
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 
+	/// Type of a delegation node identifier.
+	pub type DelegationNodeIdOf<T> = <T as Config>::DelegationNodeId;
+
+	/// Type of a delegator or a delegate.
+	pub type DelegatorIdOf<T> = did::DidIdentifierOf<T>;
+
+	/// The type of a CTYPE hash.
+	pub type CtypeHashOf<T> = ctype::CtypeHashOf<T>;
+
+	/// Type of a signature over the delegation details.
+	pub type DelegationSignature = did::DidSignature;
+
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config + did::Config {
-		type DelegationNodeId: Parameter
-			+ Copy
-			+ AsRef<[u8]>;
+		type DelegationNodeId: Parameter + Copy + AsRef<[u8]>;
 		type EnsureOrigin: EnsureOrigin<Success = DelegatorIdOf<Self>, <Self as frame_system::Config>::Origin>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 	}

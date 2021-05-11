@@ -21,7 +21,9 @@ use frame_support::{
 	traits::EnsureOrigin,
 };
 use sp_runtime::RuntimeDebug;
-use sp_std::{default::Default, marker::PhantomData};
+use sp_std::marker::PhantomData;
+
+use crate::*;
 
 /// Origin for modules that support DID-based authorization.
 #[derive(Clone, Decode, Encode, Eq, PartialEq, RuntimeDebug)]

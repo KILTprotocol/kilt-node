@@ -15,22 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-use bitflags::*;
+
+use bitflags::bitflags;
 use codec::{Decode, Encode};
 
-use crate::Config;
-
-/// Type of a delegation node identifier.
-pub type DelegationNodeIdOf<T> = <T as Config>::DelegationNodeId;
-
-/// Type of a delegator or a delegate.
-pub type DelegatorIdOf<T> = did::DidIdentifierOf<T>;
-
-/// The type of a CTYPE hash.
-pub type CtypeHashOf<T> = ctype::CtypeHashOf<T>;
-
-/// Type of a signature over the delegation details.
-pub type DelegationSignature = did::DidSignature;
+use crate::*;
 
 bitflags! {
 	/// Bitflags for permissions.

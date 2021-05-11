@@ -21,8 +21,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
+pub mod did_details;
+pub mod errors;
 pub mod origin;
-pub mod types;
+pub mod url;
 
 mod utils;
 
@@ -31,12 +33,11 @@ pub mod mock;
 #[cfg(test)]
 mod tests;
 
+pub use did_details::*;
+pub use errors::*;
 pub use origin::*;
-pub use types::*;
-
 pub use pallet::*;
-
-use codec::Encode;
+pub use url::*;
 
 use frame_support::{
 	dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo},
@@ -45,13 +46,31 @@ use frame_support::{
 	Parameter,
 };
 use frame_system::ensure_signed;
-use sp_std::{boxed::Box, convert::TryFrom, fmt::Debug, prelude::Clone};
+use sp_std::{boxed::Box, convert::TryFrom, fmt::Debug, prelude::Clone, vec::Vec};
 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
+
+	/// Reference to a payload of data of variable size.
+	pub type Payload = [u8];
+
+	/// Type for a DID key identifier.
+	pub type KeyIdOf<T> = <T as frame_system::Config>::Hash;
+
+	/// Type for a DID subject identifier.
+	pub type DidIdentifierOf<T> = <T as Config>::DidIdentifier;
+
+	/// Type for a Kilt account identifier.
+	pub type AccountIdentifierOf<T> = <T as frame_system::Config>::AccountId;
+
+	/// Type for a block number.
+	pub type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
+
+	/// Type for a runtime extrinsic callable under DID-based authorization.
+	pub type DidCallableOf<T> = <T as Config>::Call;
 
 	/// Type for origin that supports a DID sender.
 	pub type Origin<T> = DidRawOrigin<DidIdentifierOf<T>>;
