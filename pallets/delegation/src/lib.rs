@@ -22,13 +22,16 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
-pub mod delegation_hierarchy;
+#[cfg(any(feature = "runtime-benchmarks", test))]
+pub mod benchmarking;
 
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
 
 #[cfg(test)]
 mod tests;
+
+pub mod delegation_hierarchy;
 
 pub use delegation_hierarchy::*;
 pub use pallet::*;

@@ -626,6 +626,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_vesting, Vesting);
 
 			add_benchmark!(params, batches, ctype, Ctype);
+			add_benchmark!(params, batches, delegation, Delegation);
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
 			Ok(batches)

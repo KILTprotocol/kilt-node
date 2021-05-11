@@ -738,6 +738,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, kilt_launch, KiltLaunch);
 			add_benchmark!(params, batches, pallet_vesting, Vesting);
 			add_benchmark!(params, batches, ctype, Ctype);
+			add_benchmark!(params, batches, delegation, Delegation);
 
 			// No benchmarks for these pallets
 			// add_benchmark!(params, batches, cumulus_pallet_parachain_system, ParachainSystem);
