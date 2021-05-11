@@ -112,9 +112,12 @@ pub mod pallet {
 		/// A DID has been deleted.
 		/// \[transaction signer, DID identifier\]
 		DidDeleted(AccountIdentifierOf<T>, DidIdentifierOf<T>),
-		/// A DID-authorized call has been executed.
-		/// \[DID caller, execution result]
-		DidCallExecuted(DidIdentifierOf<T>, DispatchResultWithPostInfo),
+		/// A DID-authorized call has been successfully executed.
+		/// \[DID caller]
+		DidCallSuccess(DidIdentifierOf<T>),
+		/// A DID-authorized call has failed to execute.
+		/// \[DID caller, error]
+		DidCallFailure(DidIdentifierOf<T>, DispatchError),
 	}
 
 	#[pallet::error]
@@ -353,7 +356,13 @@ pub mod pallet {
 			// Dispatch the referenced [Call] instance and return its result
 			let DidAuthorizedCallOperation { did, call, .. } = wrapped_operation.operation;
 			let result = call.dispatch(DidRawOrigin { id: did }.into());
-			Self::deposit_event(Event::DidCallExecuted(did_identifier, result));
+
+			let dispatch_event = match result {
+				Ok(_) => Event::DidCallSuccess(did_identifier),
+				Err(err_result) => Event::DidCallFailure(did_identifier, err_result.error),
+			};
+			Self::deposit_event(dispatch_event);
+
 			result
 		}
 	}
