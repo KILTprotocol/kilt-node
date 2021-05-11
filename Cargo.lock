@@ -10261,7 +10261,7 @@ dependencies = [
 [[package]]
 name = "substrate-wasm-builder"
 version = "4.0.0"
-source = "git+https://github.com/paritytech/substrate?branch=rococo-v1#13a07b4b637b6e25397db7fcd62d8b93eeae76ac"
+source = "git+https://github.com/paritytech/substrate?branch=rococo-v1#2be8fcc4236d32786c62f6f27a98e7fe7e550807"
 dependencies = [
  "ansi_term 0.12.1",
  "atty",
