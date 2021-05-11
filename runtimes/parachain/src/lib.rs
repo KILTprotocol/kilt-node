@@ -93,16 +93,6 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	transaction_version: 1,
 };
 
-pub const fn deposit(items: u32, bytes: u32) -> Balance {
-	items as Balance * 20 * DOLLARS + (bytes as Balance) * 100 * MILLICENTS
-}
-
-#[derive(codec::Encode, codec::Decode)]
-pub enum XcmpMessage<XAccountId, XBalance> {
-	/// Transfer tokens to the given account from the Parachain account.
-	TransferToken(XAccountId, XBalance),
-}
-
 /// The version information used to identify this runtime when compiled
 /// natively.
 #[cfg(feature = "std")]
@@ -125,7 +115,6 @@ const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
 // Pallet accounts of runtime
 parameter_types! {
 	pub const TreasuryPalletId: PalletId = PalletId(*b"kilt/tsy");
-	pub const SocietyPalletId: PalletId = PalletId(*b"kilt/soc");
 	pub const ElectionsPalletId: LockIdentifier = *b"kilt/elc";
 }
 
@@ -377,7 +366,7 @@ parameter_types! {
 	pub const ProposalBond: Permill = Permill::from_percent(5);
 	pub const ProposalBondMinimum: Balance = 20 * DOLLARS; // TODO: how much?
 	pub const SpendPeriod: BlockNumber = 6 * DAYS;
-	pub const Burn: Permill = Permill::from_perthousand(2);
+	pub const Burn: Permill = Permill::zero();
 }
 
 type ApproveOrigin = EnsureOneOf<
@@ -403,7 +392,7 @@ impl pallet_treasury::Config for Runtime {
 	type ProposalBondMinimum = ProposalBondMinimum;
 	type SpendPeriod = SpendPeriod;
 	type Burn = Burn;
-	type BurnDestination = Society;
+	type BurnDestination = ();
 	type SpendFunds = ();
 	type WeightInfo = ();
 }
@@ -419,22 +408,8 @@ parameter_types! {
 	pub const MaxCandidateIntake: u32 = 1;
 }
 
-impl pallet_society::Config for Runtime {
-	type PalletId = SocietyPalletId;
-	type Event = Event;
-	type Currency = Balances;
-	type Randomness = RandomnessCollectiveFlip;
-	type CandidateDeposit = CandidateDeposit;
-	type WrongSideDeduction = WrongSideDeduction;
-	type MaxStrikes = MaxStrikes;
-	type PeriodSpend = PeriodSpend;
-	type MembershipChanged = ();
-	type RotationPeriod = RotationPeriod;
-	type MaxLockDuration = MaxLockDuration;
-	type FounderSetOrigin = pallet_collective::EnsureProportionMoreThan<_1, _2, AccountId, CouncilCollective>;
-	type SuspensionJudgementOrigin = pallet_society::EnsureFounder<Runtime>;
-	type ChallengePeriod = ChallengePeriod;
-	type MaxCandidateIntake = MaxCandidateIntake;
+pub const fn deposit(items: u32, bytes: u32) -> Balance {
+	items as Balance * 20 * DOLLARS + (bytes as Balance) * 100 * MILLICENTS
 }
 
 parameter_types! {
@@ -588,9 +563,6 @@ construct_runtime! {
 		ElectionsPhragmen: pallet_elections_phragmen::{Pallet, Call, Storage, Event<T>, Config<T>} = 28,
 		TechnicalMembership: pallet_membership::{Pallet, Call, Storage, Event<T>, Config<T>} = 29,
 		Treasury: pallet_treasury::{Pallet, Call, Storage, Config, Event<T>} = 30,
-
-		// Society Pallet.
-		Society: pallet_society::{Pallet, Call, Storage, Event<T>} = 31,
 
 		// System scheduler.
 		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 32,
