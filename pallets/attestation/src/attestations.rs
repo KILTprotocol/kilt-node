@@ -16,36 +16,20 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-#![cfg(feature = "runtime-benchmarks")]
+use codec::{Decode, Encode};
 
-use super::*;
+use crate::*;
 
-use frame_benchmarking::{account, benchmarks};
-use frame_system::RawOrigin;
-
-const SEED: u32 = 0;
-
-benchmarks! {
-	add {
-		let caller = account("caller", 0, SEED);
-		let hash = <T::Hash as Default>::default();
-
-	}: _(RawOrigin::Signed(caller), hash)
-	verify {
-		CTYPEs::<T>::contains_key(hash)
-	}
-}
-
-#[cfg(test)]
-mod tests {
-	use super::*;
-	use crate::tests::{new_test_ext, Test};
-	use frame_support::assert_ok;
-
-	#[test]
-	fn test_benchmarks() {
-		new_test_ext().execute_with(|| {
-			assert_ok!(test_benchmark_add::<Test>());
-		});
-	}
+/// An on-chain attestation written by an attester.
+#[derive(Clone, Debug, Encode, Decode, PartialEq)]
+pub struct AttestationDetails<T: Config> {
+	/// The hash of the CTYPE used for this attestation.
+	pub ctype_hash: CtypeHashOf<T>,
+	/// The ID of the attester.
+	pub attester: AttesterOf<T>,
+	/// \[OPTIONAL\] The ID of the delegation node used to authorize the
+	/// attester.
+	pub delegation_id: Option<DelegationNodeIdOf<T>>,
+	/// The flag indicating whether the attestation has been revoked or not.
+	pub revoked: bool,
 }

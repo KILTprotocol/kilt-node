@@ -451,14 +451,14 @@ fn check_migrate_accounts_vested() {
 		// TODO: Add positive check for staking once it has been added
 
 		// Reach vesting limits
-		for block in vec![9, 10, 15, 20, 27] {
-			System::set_block_number(block);
+		for block in &[9, 10, 15, 20, 27] {
+			System::set_block_number(*block);
 			assert_ok!(Vesting::vest(Origin::signed(USER)));
 			assert_eq!(
 				Locks::<Test>::get(USER),
 				vec![BalanceLock {
 					id: VESTING_ID,
-					amount: vesting_info.locked - vesting_info.per_block * (block as u128),
+					amount: vesting_info.locked - vesting_info.per_block * (*block as u128),
 					reasons: Reasons::Misc
 				}]
 			);
@@ -467,7 +467,7 @@ fn check_migrate_accounts_vested() {
 				USER,
 				vesting_info.locked,
 				vesting_info.locked,
-				vesting_info.per_block * (block as u128),
+				vesting_info.per_block * (*block as u128),
 				false,
 			);
 		}

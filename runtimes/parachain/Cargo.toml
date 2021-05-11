@@ -78,16 +78,16 @@ substrate-wasm-builder = "4.0.0"
 [features]
 default = ["std"]
 runtime-benchmarks = [
+  "attestation/runtime-benchmarks",
+  "ctype/runtime-benchmarks",
+  "delegation/runtime-benchmarks",
+  "did/runtime-benchmarks",
   "frame-benchmarking",
   "frame-system-benchmarking",
   "hex-literal",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
-  "attestation/runtime-benchmarks",
-  "ctype/runtime-benchmarks",
-  "did/runtime-benchmarks",
-  "delegation/runtime-benchmarks",
   "kilt-launch/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-collective/runtime-benchmarks",

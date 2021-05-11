@@ -20,13 +20,19 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use codec::{Decode, Encode};
+use core::convert::TryFrom;
 pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
 
 use sp_runtime::{
 	generic,
 	traits::{BlakeTwo256, IdentifyAccount, Verify},
-	MultiSignature,
+	MultiSignature, RuntimeDebug,
 };
+use sp_std::vec::Vec;
+
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 
 pub mod constants;
 
@@ -71,3 +77,26 @@ pub type Hash = sp_core::H256;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem<Hash>;
+
+/// A Kilt DID subject identifier.
+pub type DidIdentifier = AccountId;
+
+#[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+pub enum CurrencyId {
+	Dot = 0_isize,
+	Ksm,
+	Kilt,
+}
+
+impl TryFrom<Vec<u8>> for CurrencyId {
+	type Error = ();
+	fn try_from(v: Vec<u8>) -> Result<CurrencyId, ()> {
+		match v.as_slice() {
+			b"KILT" => Ok(CurrencyId::Kilt),
+			b"DOT" => Ok(CurrencyId::Dot),
+			b"KSM" => Ok(CurrencyId::Ksm),
+			_ => Err(()),
+		}
+	}
+}
