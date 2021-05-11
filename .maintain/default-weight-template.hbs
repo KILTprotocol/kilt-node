@@ -45,9 +45,7 @@ pub trait WeightInfo {
 }
 
 // Default weight info
-/// Weights for {{pallet}} using the Substrate node and recommended hardware.
-pub struct PalletWeightInfo<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for PalletWeightInfo<T> {
+impl WeightInfo for () {
 	{{~#each benchmarks as |benchmark|}}
 	fn {{benchmark.name~}}
 	(
@@ -60,16 +58,16 @@ impl<T: frame_system::Config> WeightInfo for PalletWeightInfo<T> {
 			.saturating_add(({{underscore cw.slope}}_u64).saturating_mul({{cw.name}} as Weight))
 			{{~/each}}
 			{{~#if (ne benchmark.base_reads "0")}}
-			.saturating_add(T::DbWeight::get().reads({{benchmark.base_reads}}_u64))
+			.saturating_add(RocksDbWeight::get().reads({{benchmark.base_reads}}_u64))
 			{{~/if}}
 			{{~#each benchmark.component_reads as |cr|}}
-			.saturating_add(T::DbWeight::get().reads(({{cr.slope}}_u64).saturating_mul({{cr.name}} as Weight)))
+			.saturating_add(RocksDbWeight::get().reads(({{cr.slope}}_u64).saturating_mul({{cr.name}} as Weight)))
 			{{~/each}}
 			{{~#if (ne benchmark.base_writes "0")}}
-			.saturating_add(T::DbWeight::get().writes({{benchmark.base_writes}}_u64))
+			.saturating_add(RocksDbWeight::get().writes({{benchmark.base_writes}}_u64))
 			{{~/if}}
 			{{~#each benchmark.component_writes as |cw|}}
-			.saturating_add(T::DbWeight::get().writes(({{cw.slope}}_u64).saturating_mul({{cw.name}} as Weight)))
+			.saturating_add(RocksDbWeight::get().writes(({{cw.slope}}_u64).saturating_mul({{cw.name}} as Weight)))
 			{{~/each}}
 	}
 	{{~/each}}
