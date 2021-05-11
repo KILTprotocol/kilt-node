@@ -22,6 +22,7 @@
 #![allow(clippy::unused_unit)]
 
 pub mod attestations;
+
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
 
@@ -69,7 +70,7 @@ pub mod pallet {
 	/// It maps from a claim hash to the full attestation.
 	#[pallet::storage]
 	#[pallet::getter(fn attestations)]
-	pub type Attestations<T> = StorageMap<_, Blake2_128Concat, ClaimHashOf<T>, Attestation<T>>;
+	pub type Attestations<T> = StorageMap<_, Blake2_128Concat, ClaimHashOf<T>, AttestationDetails<T>>;
 
 	/// Delegated attestations stored on chain.
 	///
@@ -181,7 +182,7 @@ pub mod pallet {
 			log::debug!("insert Attestation");
 			<Attestations<T>>::insert(
 				&claim_hash,
-				Attestation {
+				AttestationDetails {
 					ctype_hash,
 					attester: attester.clone(),
 					delegation_id,
@@ -240,7 +241,7 @@ pub mod pallet {
 			log::debug!("revoking Attestation");
 			<Attestations<T>>::insert(
 				&claim_hash,
-				Attestation {
+				AttestationDetails {
 					revoked: true,
 					..attestation
 				},

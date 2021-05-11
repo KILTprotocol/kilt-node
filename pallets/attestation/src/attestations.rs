@@ -22,7 +22,7 @@ use crate::*;
 
 /// An on-chain attestation written by an attester.
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
-pub struct Attestation<T: Config> {
+pub struct AttestationDetails<T: Config> {
 	/// The hash of the CTYPE used for this attestation.
 	pub ctype_hash: CtypeHashOf<T>,
 	/// The ID of the attester.

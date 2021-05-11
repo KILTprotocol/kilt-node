@@ -19,7 +19,7 @@
 #![allow(clippy::from_over_into)]
 
 use crate as attestation;
-use crate::{Attestation as AttestationStruct, *};
+use crate::*;
 use ctype::mock as ctype_mock;
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
@@ -145,7 +145,7 @@ pub struct AttestationCreationDetails {
 
 pub fn generate_base_attestation_creation_details(
 	claim_hash: TestClaimHash,
-	attestation: AttestationStruct<Test>,
+	attestation: AttestationDetails<Test>,
 ) -> AttestationCreationDetails {
 	AttestationCreationDetails {
 		claim_hash,
@@ -166,8 +166,8 @@ pub fn generate_base_attestation_revocation_details(claim_hash: TestClaimHash) -
 	}
 }
 
-pub fn generate_base_attestation(attester: TestAttester) -> AttestationStruct<Test> {
-	AttestationStruct {
+pub fn generate_base_attestation(attester: TestAttester) -> AttestationDetails<Test> {
+	AttestationDetails {
 		attester,
 		delegation_id: None,
 		ctype_hash: ctype_mock::get_ctype_hash(true),
@@ -177,7 +177,7 @@ pub fn generate_base_attestation(attester: TestAttester) -> AttestationStruct<Te
 
 #[derive(Clone)]
 pub struct ExtBuilder {
-	attestations_stored: Vec<(TestClaimHash, AttestationStruct<Test>)>,
+	attestations_stored: Vec<(TestClaimHash, AttestationDetails<Test>)>,
 	delegated_attestations_stored: Vec<(TestDelegationNodeId, Vec<TestClaimHash>)>,
 }
 
@@ -191,7 +191,7 @@ impl Default for ExtBuilder {
 }
 
 impl ExtBuilder {
-	pub fn with_attestations(mut self, attestations: Vec<(TestClaimHash, AttestationStruct<Test>)>) -> Self {
+	pub fn with_attestations(mut self, attestations: Vec<(TestClaimHash, AttestationDetails<Test>)>) -> Self {
 		self.attestations_stored = attestations;
 		self
 	}

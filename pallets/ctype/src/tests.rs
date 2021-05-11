@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_noop, assert_ok};
 
 use crate::{self as ctype, mock::*};
 
@@ -54,7 +54,7 @@ fn check_duplicate_ctype_creation() {
 	let mut ext = builder.build(None);
 
 	ext.execute_with(|| {
-		assert_err!(
+		assert_noop!(
 			Ctype::add(get_origin(creator.clone()), operation.hash),
 			ctype::Error::<Test>::CTypeAlreadyExists
 		);
