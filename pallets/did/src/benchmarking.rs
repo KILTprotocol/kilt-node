@@ -63,8 +63,6 @@ fn generate_base_did_details<T: Config>(authentication_key: DidVerificationKey) 
 }
 
 benchmarks! {
-    where_clause { where T: core::fmt::Debug }
-
     submit_did_create_operation {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get() - 1;
 
