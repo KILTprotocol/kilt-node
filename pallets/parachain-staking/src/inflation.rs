@@ -23,7 +23,7 @@ use kilt_primitives::constants::YEARS;
 use parity_scale_codec::{Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_runtime::{Perbill, RuntimeDebug};
+use sp_runtime::{Perbill, Perquintill, RuntimeDebug};
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Eq, PartialEq, Clone, Encode, Decode, Default, RuntimeDebug)]
@@ -100,18 +100,14 @@ impl StakingInfo {
 	}
 
 	pub fn compute_block_rewards<T: Config>(&self, stake: BalanceOf<T>, total_issuance: BalanceOf<T>) -> BalanceOf<T> {
-		// TODO: Use Perquintill
-		let staking_rate = Perbill::from_rational(stake, total_issuance).min(self.max_rate);
-		let rewards = self.reward_rate.annual * total_issuance;
+		// TODO: Refactor Perbills to be Perquintill
+		let max_rate: u64 = (self.max_rate.deconstruct() as u64).saturating_mul(1000000000u64);
+		let annual_rate: u64 = (self.reward_rate.annual.deconstruct() as u64).saturating_mul(1000000000u64);
+
+		let staking_rate = Perquintill::from_rational(stake, total_issuance).min(Perquintill::from_parts(max_rate));
+		let rewards = Perquintill::from_parts(annual_rate) * total_issuance;
 		let rewards = staking_rate * rewards;
-		// println!("YEARS {:?}, PERBILL {:?}", YEARS, Perbill::from_rational(1u32, YEARS));
-		// println!(
-		// 	"rewards per year {:?}, per block {:?}",
-		// 	rewards,
-		// 	Perbill::from_rational(1u32, YEARS) * rewards
-		// );
-		// TODO: Replace `round` with `block` to reduce number of computations
-		Perbill::from_rational(1u32, YEARS) * rewards
+		Perquintill::from_rational(1u64, YEARS.into()) * rewards
 	}
 }
 
