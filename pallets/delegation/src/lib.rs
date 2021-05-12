@@ -326,7 +326,8 @@ pub mod pallet {
 				// Recursively revoke all children
 				let (_, post_weight) = Self::revoke_children(&root_id, &invoker, max_children)?;
 
-				// If we didn't return an ExceededRevocationBounds error, we can revoke the root to.
+				// If we didn't return an ExceededRevocationBounds error, we can revoke the root
+				// to.
 				root.revoked = true;
 				<Roots<T>>::insert(&root_id, root);
 
