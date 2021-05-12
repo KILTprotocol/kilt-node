@@ -21,10 +21,6 @@ ctype = {default-features = false, path = "../../pallets/ctype"}
 delegation = {default-features = false, path = "../../pallets/delegation"}
 did = {default-features = false, path = "../../pallets/did"}
 parachain-staking = {default-features = false, path = "../../pallets/parachain-staking"}
-pallet-author-filter = {default-features = false, path = "../../pallets/author-filter"}
-author-inherent = {default-features = false, path = "../../pallets/author-inherent"}
-# pallet-author-filter = {package ="pallet-author-slot-filter", git = "https://github.com/purestake/cumulus", default-features = false, branch = "nimbus"}
-# author-inherent = {package = "pallet-author-inherent", git = "https://github.com/purestake/cumulus", default-features = false, branch = "nimbus"}
 kilt-launch = {path = "../../pallets/kilt-launch", default-features = false}
 kilt-primitives = {path = "../../primitives", default-features = false}
 
@@ -105,8 +101,6 @@ runtime-benchmarks = [
 ]
 std = [
   "parachain-staking/std",
-  "pallet-author-filter/std",
-  "author-inherent/std",
   "sp-arithmetic/std",
   "pallet-indices/std",
   "frame-system-rpc-runtime-api/std",

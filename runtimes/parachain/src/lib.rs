@@ -587,26 +587,6 @@ impl parachain_staking::Config for Runtime {
 	type MinDelegatorStk = MinDelegatorStk;
 }
 
-// TODO: Replace with Aura once available
-impl author_inherent::Config for Runtime {
-	type AuthorId = AccountId;
-	type EventHandler = ParachainStaking;
-	// We cannot run the full filtered author checking logic in the preliminary
-	// check because it depends on entropy from the relay chain. Instead we just
-	// make sure that the author is staked in the preliminary check. The final check
-	// including filtering happens during block execution.
-	type PreliminaryCanAuthor = ParachainStaking;
-	type FullCanAuthor = AuthorFilter;
-}
-
-// TODO: Replace with Aura once available
-impl pallet_author_filter::Config for Runtime {
-	type AuthorId = AccountId;
-	type Event = Event;
-	type RandomnessSource = RandomnessCollectiveFlip;
-	type PotentialAuthors = ParachainStaking;
-}
-
 construct_runtime! {
 	pub enum Runtime where
 		Block = Block,
@@ -656,8 +636,6 @@ construct_runtime! {
 
 		// TODO: Add meaningful index
 		ParachainStaking: parachain_staking::{Pallet, Call, Storage, Event<T>, Config<T>} = 99,
-		AuthorInherent: author_inherent::{Pallet, Call, Storage, Inherent} = 100,
-		AuthorFilter: pallet_author_filter::{Pallet, Storage, Event<T>} = 101,
 		// Vesting. Usable initially, but removed once all vesting is finished.
 		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 33,
 		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
@@ -835,17 +813,6 @@ impl_runtime_apis! {
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
 			Ok(batches)
-		}
-	}
-
-	impl author_filter_api::AuthorFilterAPI<Block, AccountId> for Runtime {
-		fn can_author(author: AccountId, relay_parent: u32) -> bool {
-			// Rather than referring to the author filter directly here,
-			// refer to it via the author inherent config. This avoid the possibility
-			// of accidentally using different filters in different places.
-			// This will make more sense when the CanAuthor trait is revised so its method accepts
-			// the slot number. Basically what is currently called the "helper" should be the main method.
-			AuthorFilter::can_author_helper(&author, relay_parent)
 		}
 	}
 }

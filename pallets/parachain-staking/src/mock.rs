@@ -50,7 +50,6 @@ construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Stake: stake::{Pallet, Call, Storage, Config<T>, Event<T>},
-		AuthorInherent: author_inherent::{Pallet, Call, Storage, Inherent},
 	}
 );
 
@@ -516,15 +515,15 @@ pub(crate) fn set_author(round: u32, acc: u64, pts: u32) {
 pub(crate) fn roll_to_new(n: u64, authors: Vec<Option<AccountId>>) {
 	while System::block_number() < n {
 		if let Some(Some(author)) = authors.get((System::block_number()) as usize) {
-			assert_ok!(AuthorInherent::set_author(Origin::none(), *author));
+			// assert_ok!(AuthorInherent::set_author(Origin::none(), *author));
 		}
-		AuthorInherent::on_finalize(System::block_number());
+		// AuthorInherent::on_finalize(System::block_number());
 		Stake::on_finalize(System::block_number());
 		Balances::on_finalize(System::block_number());
 		System::on_finalize(System::block_number());
 		System::set_block_number(System::block_number() + 1);
 		System::on_initialize(System::block_number());
-		AuthorInherent::on_initialize(System::block_number());
+		// AuthorInherent::on_initialize(System::block_number());
 		Balances::on_initialize(System::block_number());
 		Stake::on_initialize(System::block_number());
 	}

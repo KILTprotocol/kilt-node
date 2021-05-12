@@ -1322,44 +1322,47 @@ pub mod pallet {
 		}
 	}
 
-	/// Reward author and their delegators
-	// TODO: Remove author_inherent and author_filter once Aura is working for
-	// parachains + make compatible with Aura
-	impl<T: Config> author_inherent::EventHandler<T::AccountId> for Pallet<T> {
-		fn note_author(author: T::AccountId) {
-			let now = <Round<T>>::get().current;
-			let block_now: T::BlockNumber = <frame_system::Pallet<T>>::block_number();
+	// /// Reward author and their delegators
+	// TODO: Fix after successfully adding AuRa + AuRaExt author_inherent from
+	// Parity impl<T: Config> author_inherent::EventHandler<T::AccountId> for
+	// Pallet<T> { 	fn note_author(author: T::AccountId) {
+	// 		let now = <Round<T>>::get().current;
+	// 		let block_now: T::BlockNumber =
+	// <frame_system::Pallet<T>>::block_number();
 
-			let state = <AtStake<T>>::get(now, author.clone());
-			let (total_collator_stake, total_delegator_stake) = <Total<T>>::get();
-			let (c_rewards, d_rewards) = Self::compute_block_issuance(total_collator_stake, total_delegator_stake);
+	// 		let state = <AtStake<T>>::get(now, author.clone());
+	// 		let (total_collator_stake, total_delegator_stake) = <Total<T>>::get();
+	// 		let (c_rewards, d_rewards) =
+	// Self::compute_block_issuance(total_collator_stake,
+	// total_delegator_stake);
 
-			let amt_due_collator = c_rewards;
-			let delegator_stake = state.total.saturating_sub(state.bond);
-			let amt_due_delegators = d_rewards;
+	// 		let amt_due_collator = c_rewards;
+	// 		let delegator_stake = state.total.saturating_sub(state.bond);
+	// 		let amt_due_delegators = d_rewards;
 
-			// Reward collator
-			if amt_due_collator > T::Currency::minimum_balance() {
-				Self::do_reward(&author, amt_due_collator, block_now);
-			}
+	// 		// Reward collator
+	// 		if amt_due_collator > T::Currency::minimum_balance() {
+	// 			Self::do_reward(&author, amt_due_collator, block_now);
+	// 		}
 
-			// Reward delegators
-			if amt_due_delegators > T::Currency::minimum_balance() {
-				// Reward delegators due portion
-				for Bond { owner, amount } in state.delegators {
-					// Compare this delegator's stake with the total amount of delegated stake for
-					// this collator
-					let percent = Perbill::from_rational(amount, delegator_stake);
-					let due = percent * amt_due_delegators;
-					Self::do_reward(&owner, due, block_now);
-				}
-			}
-		}
-	}
+	// 		// Reward delegators
+	// 		if amt_due_delegators > T::Currency::minimum_balance() {
+	// 			// Reward delegators due portion
+	// 			for Bond { owner, amount } in state.delegators {
+	// 				// Compare this delegator's stake with the total amount of delegated
+	// stake for 				// this collator
+	// 				let percent = Perbill::from_rational(amount, delegator_stake);
+	// 				let due = percent * amt_due_delegators;
+	// 				Self::do_reward(&owner, due, block_now);
+	// 			}
+	// 		}
+	// 	}
+	// }
 
-	impl<T: Config> author_inherent::CanAuthor<T::AccountId> for Pallet<T> {
-		fn can_author(account: &T::AccountId) -> bool {
-			Self::is_selected_candidate(account)
-		}
-	}
+	// TODO: Fix after successfully adding AuRa + AuRaExt author_inherent from
+	// Parity impl<T: Config> author_inherent::CanAuthor<T::AccountId> for
+	// Pallet<T> { 	fn can_author(account: &T::AccountId) -> bool {
+	// 		Self::is_selected_candidate(account)
+	// 	}
+	// }
 }

@@ -7,8 +7,6 @@ edition = "2018"
 
 [dependencies]
 kilt-primitives = {path = "../../primitives", default-features = false}
-author-inherent = { path = "../author-inherent", default-features = false }
-# author-inherent = { package = "pallet-author-inherent", git = "https://github.com/purestake/cumulus", branch = "nimbus", default-features = false }
 frame-support = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
 frame-system = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
 pallet-balances = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
@@ -28,7 +26,6 @@ sp-core = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1
 [features]
 default = ["std"]
 std = [
-	"author-inherent/std",
 	"frame-support/std",
 	"frame-system/std",
 	"orml-utilities/std",
