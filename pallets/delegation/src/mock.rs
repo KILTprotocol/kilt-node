@@ -20,10 +20,12 @@
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use frame_system::EnsureSigned;
+use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 };
+use sp_std::sync::Arc;
 
 #[cfg(test)]
 use codec::Encode;
@@ -281,6 +283,17 @@ impl ExtBuilder {
 	pub fn with_children(mut self, children: Vec<(TestDelegationNodeId, Vec<TestDelegationNodeId>)>) -> Self {
 		self.children_stored = children;
 		self
+	}
+
+	pub fn build_with_keystore() -> sp_io::TestExternalities {
+		let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+		let mut ext = sp_io::TestExternalities::from(storage);
+		// register keystore
+		let keystore = KeyStore::new();
+		ext.register_extension(KeystoreExt(Arc::new(keystore)));
+		// events are not emitted on default block number 0
+		ext.execute_with(|| System::set_block_number(1));
+		ext
 	}
 
 	pub fn build(self, ext: Option<sp_io::TestExternalities>) -> sp_io::TestExternalities {

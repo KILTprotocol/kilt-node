@@ -104,8 +104,6 @@ fn ctype_not_found_create_root_delegation_error() {
 	});
 }
 
-// submit_delegation_creation_operation()
-
 #[test]
 fn create_delegation_no_parent_successful() {
 	let creator = ALICE;

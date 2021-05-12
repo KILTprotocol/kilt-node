@@ -13,11 +13,12 @@ targets = ["x86_64-unknown-linux-gnu"]
 substrate-wasm-builder-runner = {version = "3.0.0"}
 
 [dev-dependencies]
-ctype = {features = ["mock"], path = "../ctype", version = "0.24.0"}
-did = {features = ["mock"], path = "../did", version = "0.24.0"}
+ctype = {features = ["mock"], path = "../ctype"}
+did = {features = ["mock"], path = "../did"}
 kilt-primitives = {default-features = false, path = "../../primitives"}
 serde = {version = "1.0.101"}
-sp-core = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate", version = "3.0.0"}
+sp-core = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-keystore = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [dependencies]
 bitflags = {default-features = false, version = "1.2.1"}
@@ -25,8 +26,8 @@ log = {default-features = false, version = "0.4.14"}
 serde = {optional = true, version = "1.0.101"}
 
 # Internal
-ctype = {default-features = false, path = "../ctype", version = "0.24.0"}
-did = {default-features = false, path = "../did", version = "0.24.0"}
+ctype = {default-features = false, path = "../ctype"}
+did = {default-features = false, path = "../did"}
 kilt-primitives = {default-features = false, optional = true, path = "../../primitives"}
 
 # Substrate
@@ -39,6 +40,7 @@ sp-std = {branch = "rococo-v1", default-features = false, git = "https://github.
 # Mock/Test
 sp-core = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
 sp-io = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+sp-keystore = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
 
 # Substrate Benchmarking
 frame-benchmarking = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
@@ -50,6 +52,7 @@ mock = [
   "serde",
   "sp-core",
   "sp-io",
+  "sp-keystore",
 ]
 runtime-benchmarks = [
   "frame-benchmarking",
