@@ -114,7 +114,10 @@ where
 		let delegate_acc_public = sr25519_generate(KeyTypeId(DID_KEY_IDENTIFIER), None);
 		let delegate_acc_id: T::AccountId = delegate_acc_public.into();
 		let delegate_did: T::DidIdentifier = delegate_acc_id.clone().into();
-		let did_details = did::DidDetails::new(did::DidVerificationKey::Sr25519(delegate_acc_public), T::BlockNumber::zero());
+		let did_details = did::DidDetails::new(
+			did::DidVerificationKey::Sr25519(delegate_acc_public),
+			T::BlockNumber::zero(),
+		);
 		did::Did::<T>::insert(delegate_did.clone(), did_details);
 
 		let delegation_id = generate_delegation_id::<T>(level * children_per_level.get() + c);
@@ -279,54 +282,65 @@ benchmarks! {
 		assert!(leaf_delegation.revoked);
 	}
 
-	// add_delegation {
-	// 	// do setup
-	// 	let (_, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(1, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
+	add_delegation {
+		// do setup
+		let (root_pub, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(1, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
+		let root_acc: T::AccountId = root_pub.into();
+		let root_did: T::DidIdentifier = root_acc.clone().into();
 
-	// 	// add one more delegation
-	// 	let delegate_acc_public = sr25519_generate(
-	// 		KeyTypeId(DID_KEY_IDENTIFIER),
-	// 		None
-	// 	);
-	// 	let delegation_id = generate_delegation_id::<T>(u32::MAX);
-	// 	let parent_id = parent_id_check::<T>(root_id, leaf_id);
+		// add one more delegation
+		let delegate_acc_public = sr25519_generate(
+			KeyTypeId(DID_KEY_IDENTIFIER),
+			None
+		);
+		let delegation_id = generate_delegation_id::<T>(u32::MAX);
+		let parent_id = parent_id_check::<T>(root_id, leaf_id);
 
-	// 	let perm: Permissions = Permissions::ATTEST | Permissions::DELEGATE;
-	// 	let hash_root = Pallet::<T>::calculate_hash(&delegation_id, &root_id, &parent_id, &perm);
-	// 	let sig: DidSignature = sp_io::crypto::sr25519_sign(KeyTypeId(DID_KEY_IDENTIFIER), &delegate_acc_public, hash_root.as_ref()).ok_or("Error while building signature of delegation.")?.into();
+		let did_details = did::DidDetails::new(did::DidVerificationKey::Sr25519(root_pub), T::BlockNumber::zero());
+		did::Did::<T>::insert(root_did, did_details);
 
-	// 	let delegate_acc_id: T::AccountId = delegate_acc_public.into();
-	// 	let delegate_acc_did: T::DidIdentifier = delegate_acc_id.into();
-	// 	let leaf_acc_id: T::AccountId = leaf_acc.into();
-	// }: _(RawOrigin::Signed(leaf_acc_id), delegation_id, root_id, parent_id, delegate_acc_did, perm, sig)
-	// verify {
-	// 	assert!(Delegations::<T>::contains_key(delegation_id));
-	// }
+		let perm: Permissions = Permissions::ATTEST | Permissions::DELEGATE;
+		let hash_root = Pallet::<T>::calculate_hash(&delegation_id, &root_id, &parent_id, &perm);
+		let sig: DidSignature = sp_io::crypto::sr25519_sign(KeyTypeId(DID_KEY_IDENTIFIER), &delegate_acc_public, hash_root.as_ref()).ok_or("Error while building signature of delegation.")?.into();
 
+		let delegate_acc_id: T::AccountId = delegate_acc_public.into();
+		let delegate_acc_did: T::DidIdentifier = delegate_acc_id.into();
+		let did_details = did::DidDetails::new(did::DidVerificationKey::Sr25519(delegate_acc_public), T::BlockNumber::zero());
+		did::Did::<T>::insert(delegate_acc_did.clone(), did_details);
 
-	// // worst case #1: revoke a child of the root delegation
-	// // because all of its children have to be revoked
-	// // complexitiy: O(h * c) with h = height of the delegation tree, c = max number of children in a level
-	// revoke_delegation_root_child {
-	// 	let r in 1 .. MAX_REVOCATIONS;
-	// 	let (_, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
-	// 	let children: Vec<T::DelegationNodeId> = Children::<T>::get(root_id).ok_or("Children should be defined")?;
-	// 	let child_id: T::DelegationNodeId = *children.get(0).ok_or("Root should have children")?;
-	// 	let child_delegation = Delegations::<T>::get(child_id).ok_or("Child of root should have delegation id")?;
-	// }: revoke_delegation(RawOrigin::Signed(child_delegation.owner.clone()), child_id, r, r)
-	// verify {
-	// 	assert!(Delegations::<T>::contains_key(child_id));
-	// 	let DelegationNode::<T> { revoked, .. } = Delegations::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
-	// 	assert!(revoked);
+		let origin = acc_to_origin::<T>(leaf_acc.into());
+		let call = Call::<T>::add_delegation(delegation_id, root_id, parent_id, delegate_acc_did, perm, sig);
+	}: { call.dispatch_bypass_filter(origin)? }
+	verify {
+		assert!(Delegations::<T>::contains_key(delegation_id));
+	}
 
-	// 	assert!(Delegations::<T>::contains_key(leaf_id));
-	// 	let leaf_delegation = Delegations::<T>::get(leaf_id).ok_or("Missing leaf delegation")?;
-	// 	assert_eq!(leaf_delegation.root_id, root_id);
-	// 	let leaf_acc_id: T::AccountId = leaf_acc.into();
-	// 	let leaf_acc_did: T::AccountId = leaf_acc_id.into();
-	// 	assert_eq!(leaf_delegation.owner, leaf_acc_did.into());
-	// 	assert!(leaf_delegation.revoked);
-	// }
+	// worst case #1: revoke a child of the root delegation
+	// because all of its children have to be revoked
+	// complexitiy: O(h * c) with h = height of the delegation tree, c = max number of children in a level
+	revoke_delegation_root_child {
+		let r in 1 .. MAX_REVOCATIONS;
+		let (_, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
+		let children: Vec<T::DelegationNodeId> = Children::<T>::get(root_id).ok_or("Children should be defined")?;
+		let child_id: T::DelegationNodeId = *children.get(0).ok_or("Root should have children")?;
+		let child_delegation = Delegations::<T>::get(child_id).ok_or("Child of root should have delegation id")?;
+
+		let origin = did::Origin::<T> { id: child_delegation.owner.clone() };
+		let call = Call::<T>::revoke_delegation(child_id, r, r);
+	}: { call.dispatch_bypass_filter(origin.into())? }
+	verify {
+		assert!(Delegations::<T>::contains_key(child_id));
+		let DelegationNode::<T> { revoked, .. } = Delegations::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
+		assert!(revoked);
+
+		assert!(Delegations::<T>::contains_key(leaf_id));
+		let leaf_delegation = Delegations::<T>::get(leaf_id).ok_or("Missing leaf delegation")?;
+		assert_eq!(leaf_delegation.root_id, root_id);
+		let leaf_acc_id: T::AccountId = leaf_acc.into();
+		let leaf_acc_did: T::AccountId = leaf_acc_id.into();
+		assert_eq!(leaf_delegation.owner, leaf_acc_did.into());
+		assert!(leaf_delegation.revoked);
+	}
 	// TODO: Might want to add variant iterating over children instead of depth at some later point
 
 	// worst case #2: revoke leaf node as root
