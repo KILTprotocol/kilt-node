@@ -21,7 +21,7 @@
 use super::pallet::*;
 
 use frame_benchmarking::benchmarks;
-use frame_support::traits::{EnsureOrigin,UnfilteredDispatchable};
+use frame_support::traits::{EnsureOrigin, UnfilteredDispatchable};
 
 benchmarks! {
 	add {
@@ -38,12 +38,12 @@ benchmarks! {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::tests::{new_test_ext, Test};
+	use crate::mock::{ExtBuilder, Test};
 	use frame_support::assert_ok;
 
 	#[test]
 	fn test_benchmarks() {
-		new_test_ext().execute_with(|| {
+		ExtBuilder::default().build(None).execute_with(|| {
 			assert_ok!(test_benchmark_add::<Test>());
 		});
 	}

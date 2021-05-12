@@ -97,6 +97,7 @@ impl ctype::Config for Test {
 	type CtypeCreatorId = TestCtypeOwner;
 	type EnsureOrigin = EnsureSigned<TestCtypeOwner>;
 	type Event = ();
+	type WeightInfo = ();
 }
 
 impl delegation::Config for Test {
