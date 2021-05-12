@@ -327,7 +327,7 @@ pub mod pallet {
 				let (_, post_weight) = Self::revoke_children(&root_id, &invoker, max_children)?;
 
 				// If we didn't return an ExceededRevocationBounds error, we can revoke the root
-				// to.
+				// too.
 				root.revoked = true;
 				<Roots<T>>::insert(&root_id, root);
 
@@ -485,7 +485,7 @@ impl<T: Config> Pallet<T> {
 		Ok((revocations, consumed_weight))
 	}
 
-	/// revoke_children revokes all children of a delegation.
+	/// Revokes all children of a delegation.
 	/// Returns the number of revoked delegations and the consumed weight.
 	fn revoke_children(
 		delegation: &DelegationNodeIdOf<T>,
