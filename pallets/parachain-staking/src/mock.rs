@@ -114,6 +114,7 @@ parameter_types! {
 impl Config for Test {
 	type Event = Event;
 	type Currency = Balances;
+	type CurrencyBalance = <Self as pallet_balances::Config>::Balance;
 	type MinBlocksPerRound = MinBlocksPerRound;
 	type DefaultBlocksPerRound = DefaultBlocksPerRound;
 	type BondDuration = BondDuration;
@@ -128,9 +129,10 @@ impl Config for Test {
 }
 
 impl author_inherent::Config for Test {
+	type AuthorId = AccountId;
 	type EventHandler = Stake;
 	type PreliminaryCanAuthor = Stake;
-	type FinalCanAuthor = ();
+	type FullCanAuthor = ();
 }
 
 pub(crate) struct ExtBuilder {
@@ -511,8 +513,12 @@ pub(crate) fn set_author(round: u32, acc: u64, pts: u32) {
 	<AwardedPts<Test>>::mutate(round, acc, |p| *p += pts);
 }
 
-pub(crate) fn roll_to_new(n: u64) {
+pub(crate) fn roll_to_new(n: u64, authors: Vec<Option<AccountId>>) {
 	while System::block_number() < n {
+		if let Some(Some(author)) = authors.get((System::block_number()) as usize) {
+			assert_ok!(AuthorInherent::set_author(Origin::none(), *author));
+		}
+		AuthorInherent::on_finalize(System::block_number());
 		Stake::on_finalize(System::block_number());
 		Balances::on_finalize(System::block_number());
 		System::on_finalize(System::block_number());

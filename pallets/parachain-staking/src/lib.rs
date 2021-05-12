@@ -383,11 +383,22 @@ pub mod pallet {
 		/// Overarching event type
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		/// The currency type
-		type Currency: Currency<Self::AccountId>
-			+ ReservableCurrency<Self::AccountId>
-			+ LockableCurrency<Self::AccountId>
+		// Note: Declaration of Balance taken from pallet_gilt
+		type Currency: Currency<Self::AccountId, Balance = Self::CurrencyBalance>
+			+ ReservableCurrency<Self::AccountId, Balance = Self::CurrencyBalance>
+			+ LockableCurrency<Self::AccountId, Balance = Self::CurrencyBalance>
 			+ Eq;
-		// TODO: Add CurrencyBalance as in pallet_gilt to make use of `From<u64`;
+
+		/// Just the `Currency::Balance` type; we have this item to allow us to
+		/// constrain it to `From<u64>`.
+		// Note: Definition taken from pallet_gilt
+		type CurrencyBalance: sp_runtime::traits::AtLeast32BitUnsigned
+			+ parity_scale_codec::FullCodec
+			+ Copy
+			+ MaybeSerializeDeserialize
+			+ sp_std::fmt::Debug
+			+ Default
+			+ From<u64>;
 
 		/// Minimum number of blocks per round
 		type MinBlocksPerRound: Get<u32>;
@@ -491,6 +502,8 @@ pub mod pallet {
 		fn on_finalize(n: T::BlockNumber) {
 			let mut round = <Round<T>>::get();
 			if round.should_update(n) {
+				// kill snapshot of current round
+				<AtStake<T>>::remove_prefix(round.current);
 				// mutate round
 				round.update(n);
 				// pay all stakers for T::BondDuration rounds ago
@@ -1133,8 +1146,6 @@ pub mod pallet {
 
 					// Pay collator
 					if amt_due_collator > T::Currency::minimum_balance() {
-						// println!("collator {:?} receives {:?}", val.clone(), amt_due_collator);
-
 						mint(amt_due_collator, val.clone());
 					}
 
@@ -1146,7 +1157,6 @@ pub mod pallet {
 							// this collator
 							let percent = Perbill::from_rational(amount, delegator_stake);
 							let due = percent * amt_due_delegators;
-							// println!("owner {:?} receives {:?}", owner, due);
 							mint(due, owner);
 						}
 					}
@@ -1271,8 +1281,11 @@ pub mod pallet {
 
 			// set & update lock
 			let mut locks = <RewardLocks<T>>::get(who);
-			// TODO: Fix dummy value
-			let unlock_block: T::BlockNumber = now.saturating_add(222u32.into());
+			let unlock_block: T::BlockNumber = now.saturating_add(T::BondDuration::get().into());
+			// println!(
+			// 	"now {:?}, reward {:?} who {:?} unlock block {:?}",
+			// 	now, reward, who, unlock_block
+			// );
 			locks.insert(unlock_block, reward);
 			Self::do_update_reward_locks(who, locks, now);
 		}
@@ -1292,6 +1305,7 @@ pub mod pallet {
 					total_locked = total_locked.saturating_add(*locked_balance);
 				}
 			}
+			// println!("lock {:?}", locks);
 			for block_number in expired {
 				locks.remove(&block_number);
 			}
@@ -1314,18 +1328,19 @@ pub mod pallet {
 	impl<T: Config> author_inherent::EventHandler<T::AccountId> for Pallet<T> {
 		fn note_author(author: T::AccountId) {
 			let now = <Round<T>>::get().current;
+			let block_now: T::BlockNumber = <frame_system::Pallet<T>>::block_number();
 
-			let state = <AtStake<T>>::take(now, author.clone());
+			let state = <AtStake<T>>::get(now, author.clone());
 			let (total_collator_stake, total_delegator_stake) = <Total<T>>::get();
 			let (c_rewards, d_rewards) = Self::compute_block_issuance(total_collator_stake, total_delegator_stake);
 
-			let amt_due_collator = Perbill::from_rational(state.bond, total_collator_stake) * c_rewards;
+			let amt_due_collator = c_rewards;
 			let delegator_stake = state.total.saturating_sub(state.bond);
-			let amt_due_delegators = Perbill::from_rational(delegator_stake, total_delegator_stake) * d_rewards;
+			let amt_due_delegators = d_rewards;
 
 			// Reward collator
 			if amt_due_collator > T::Currency::minimum_balance() {
-				Self::do_reward(&author, amt_due_collator, now.into());
+				Self::do_reward(&author, amt_due_collator, block_now);
 			}
 
 			// Reward delegators
@@ -1336,7 +1351,7 @@ pub mod pallet {
 					// this collator
 					let percent = Perbill::from_rational(amount, delegator_stake);
 					let due = percent * amt_due_delegators;
-					Self::do_reward(&owner, due, now.into());
+					Self::do_reward(&owner, due, block_now);
 				}
 			}
 		}

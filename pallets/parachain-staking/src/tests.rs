@@ -20,7 +20,7 @@
 use crate::{
 	mock::{
 		check_inflation_update, check_yearly_inflation, events, last_event, roll_to, roll_to_new, set_author,
-		AuthorInherent, Balances, BlockNumber, Event as MetaEvent, ExtBuilder, Origin, Stake, System, Test,
+		AccountId, AuthorInherent, Balances, BlockNumber, Event as MetaEvent, ExtBuilder, Origin, Stake, System, Test,
 		BLOCKS_PER_ROUND, DECIMALS,
 	},
 	BalanceOf, Bond, CollatorSnapshot, CollatorStatus, Config, Error, Event, InflationInfo, RewardRate, RoundInfo,
@@ -1724,22 +1724,61 @@ fn coinbase_rewards() {
 			(1, 40_000_000 * DECIMALS),
 			(2, 40_000_000 * DECIMALS),
 			(3, 40_000_000 * DECIMALS),
-			(4, 40_000_000 * DECIMALS),
+			(4, 20_000_000 * DECIMALS),
+			(5, 20_000_000 * DECIMALS),
 		])
-		.with_collators(vec![(1, 16_000_000 * DECIMALS)])
-		.with_delegators(vec![(2, 1, 32_000_000 * DECIMALS), (3, 1, 32_000_000 * DECIMALS)])
+		.with_collators(vec![(1, 8_000_000 * DECIMALS), (2, 8_000_000 * DECIMALS)])
+		.with_delegators(vec![
+			(3, 1, 32_000_000 * DECIMALS),
+			(4, 1, 16_000_000 * DECIMALS),
+			(5, 2, 16_000_000 * DECIMALS),
+		])
 		.with_inflation(10, 15, 40, 15, 5)
 		.build()
 		.execute_with(|| {
-			assert_ok!(AuthorInherent::set_author(Origin::none(), 1));
-			roll_to_new(1);
-			let mut rewards: BTreeMap<BlockNumber, BalanceOf<Test>> = BTreeMap::new();
-			rewards.insert(1, 1u128);
-			assert_eq!(Stake::reward_locks(1), rewards);
+			let inflation = Stake::inflation_config();
+			let total_issuance = <Test as Config>::Currency::total_issuance();
+			assert_eq!(total_issuance, 160_000_000 * DECIMALS);
+			let c_rewards: BalanceOf<Test> = inflation
+				.collator
+				.compute_block_rewards::<Test>(16_000_000 * DECIMALS, total_issuance);
+			let d_rewards: BalanceOf<Test> = inflation
+				.delegator
+				.compute_block_rewards::<Test>(64_000_000 * DECIMALS, total_issuance);
 
-			assert_ok!(AuthorInherent::set_author(Origin::none(), 1));
-			roll_to_new(2);
-			rewards.insert(2, 1u128);
-			assert_eq!(Stake::reward_locks(1), rewards);
+			let authors: Vec<Option<AccountId>> = vec![None, Some(1u64), Some(1u64), Some(1u64), Some(1u64)];
+			let mut c_reward_locks: BTreeMap<BlockNumber, BalanceOf<Test>> = BTreeMap::new();
+			let mut d_reward_locks: BTreeMap<BlockNumber, BalanceOf<Test>> = BTreeMap::new();
+
+			// first rewards for block 1
+			roll_to_new(2, authors.clone());
+			c_reward_locks.insert(3, c_rewards);
+			d_reward_locks.insert(3, 1234567899994232);
+			assert_eq!(Stake::reward_locks(1), c_reward_locks);
+			assert_eq!(Stake::reward_locks(2), BTreeMap::new());
+			assert_eq!(Stake::reward_locks(3), d_reward_locks);
+			assert_eq!(Stake::reward_locks(5), BTreeMap::new());
+
+			roll_to_new(3, authors.clone());
+			c_reward_locks.insert(4, c_rewards);
+			d_reward_locks.insert(4, 1234567899994232);
+			assert_eq!(Stake::reward_locks(1), c_reward_locks);
+			assert_eq!(Stake::reward_locks(2), BTreeMap::new());
+			assert_eq!(Stake::reward_locks(3), d_reward_locks);
+			assert_eq!(Stake::reward_locks(5), BTreeMap::new());
+
+			roll_to_new(4, authors);
+			c_reward_locks.remove(&3u64);
+			d_reward_locks.remove(&3u64);
+			c_reward_locks.insert(5, c_rewards);
+			d_reward_locks.insert(5, 1234567899994232);
+			assert_eq!(Stake::reward_locks(1), c_reward_locks);
+			assert_eq!(Stake::reward_locks(2), BTreeMap::new());
+			assert_eq!(Stake::reward_locks(3), d_reward_locks);
+			assert_eq!(Stake::reward_locks(5), BTreeMap::new());
+			assert_eq!(Balances::free_balance(&1), 32_000_000 * DECIMALS + 3 * c_rewards);
+			assert_eq!(Balances::usable_balance(&1), 32_000_000 * DECIMALS + c_rewards);
+			assert_eq!(Balances::free_balance(&3), 8_000_000 * DECIMALS + 3 * 1234567899994232);
+			assert_eq!(Balances::usable_balance(&3), 8_000_000 * DECIMALS + 1234567899994232);
 		});
 }
