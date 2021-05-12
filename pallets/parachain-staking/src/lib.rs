@@ -60,6 +60,8 @@ mod inflation;
 pub(crate) mod mock;
 #[cfg(test)]
 pub(crate) mod tests;
+// TODO: Remove after swapping OrderedSet
+mod set;
 use frame_support::pallet;
 pub use inflation::{InflationInfo, RewardRate, StakingInfo};
 
@@ -74,7 +76,9 @@ pub mod pallet {
 		traits::{Currency, Get, Imbalance, LockIdentifier, LockableCurrency, ReservableCurrency, WithdrawReasons},
 	};
 	use frame_system::pallet_prelude::*;
-	use orml_utilities::OrderedSet;
+	// TODO: Use ORML one once they point to Substrate master
+	// use orml_utilities::OrderedSet;
+	use crate::set::OrderedSet;
 	use parity_scale_codec::{Decode, Encode};
 	use sp_runtime::{
 		traits::{AtLeast32BitUnsigned, Saturating, Zero},
