@@ -428,12 +428,12 @@ dependencies = [
 
 [[package]]
 name = "author-inherent"
-version = "0.6.0"
+version = "0.1.0"
 dependencies = [
  "frame-support",
  "frame-system",
+ "log",
  "parity-scale-codec",
- "serde",
  "sp-authorship",
  "sp-core",
  "sp-inherents",
@@ -4848,17 +4848,20 @@ dependencies = [
 
 [[package]]
 name = "pallet-author-filter"
-version = "0.6.0"
+version = "0.1.0"
 dependencies = [
  "author-inherent",
  "cumulus-pallet-parachain-system",
  "frame-support",
  "frame-system",
+ "log",
  "parachain-staking",
  "parity-scale-codec",
  "primitive-types",
+ "serde",
  "sp-core",
  "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]

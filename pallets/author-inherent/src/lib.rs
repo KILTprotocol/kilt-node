@@ -1,4 +1,4 @@
-// Copyright 2019-2021 PureStake Inc.
+// Copyright 2019-2020 PureStake Inc.
 // This file is part of Moonbeam.
 
 // Moonbeam is free software: you can redistribute it and/or modify
@@ -22,17 +22,19 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use frame_support::{
-	decl_error, decl_module, decl_storage, ensure, log,
+	decl_error, decl_module, decl_storage, ensure,
 	traits::FindAuthor,
 	weights::{DispatchClass, Weight},
+	Parameter,
 };
-use frame_system::{ensure_none, Config as System};
+use frame_system::ensure_none;
+use log::debug;
 use parity_scale_codec::{Decode, Encode};
 #[cfg(feature = "std")]
 use sp_inherents::ProvideInherentData;
 use sp_inherents::{InherentData, InherentIdentifier, IsFatalError, ProvideInherent};
-use sp_runtime::{ConsensusEngineId, DigestItem, RuntimeString};
-use sp_std::vec::Vec;
+use sp_runtime::{traits::Member, ConsensusEngineId, DigestItem, RuntimeAppPublic, RuntimeString};
+// use sp_application_crypto::AppKey;
 
 /// The given account ID is the author of the current block.
 pub trait EventHandler<Author> {
@@ -44,36 +46,58 @@ impl<T> EventHandler<T> for () {
 }
 
 /// Permissions for what block author can be set in this pallet
-pub trait CanAuthor<AccountId> {
-	fn can_author(account: &AccountId) -> bool;
+pub trait CanAuthor<AuthorId> {
+	fn can_author(author: &AuthorId) -> bool;
 }
-
-/// Default implementation where anyone can author, see `stake` and
-/// `author-filter` pallets for additional implementations.
+/// Default implementation where anyone can author, see and `author-*-filter`
+/// pallets for additional implementations.
+/// TODO Promote this is "implementing relay chain consensus in the nimbus
+/// framework."
 impl<T> CanAuthor<T> for () {
 	fn can_author(_: &T) -> bool {
 		true
 	}
 }
 
-pub trait Config: System {
+pub trait Config: frame_system::Config {
+	// This is copied from Aura. I wonder if I really need all those trait bounds.
+	// For now I'll leave them.
+	/// The identifier type for an authority.
+	type AuthorId: Member + Parameter;
+
+	//TODO do we have any use for this converter?
+	// It has to happen eventually to pay rewards to accountids and let account ids
+	// stake. But is there any reason it needs to be included here? For now I won't
+	// use it as I'm not staking or rewarding in this poc.
+	// A type to convert between AuthorId and AccountId
+
 	/// Other pallets that want to be informed about block authorship
-	type EventHandler: EventHandler<Self::AccountId>;
+	type EventHandler: EventHandler<Self::AuthorId>;
 
 	/// A preliminary means of checking the validity of this author. This check
 	/// is run before block execution begins when data from previous inherent is
 	/// unavailable. This is meant to quickly invalidate blocks from
 	/// obviously-invalid authors, although it need not rule out all
-	/// invalid authors. The final check will be made when executing the
+	/// invlaid authors. The final check will be made when executing the
 	/// inherent.
-	type PreliminaryCanAuthor: CanAuthor<Self::AccountId>;
+	type PreliminaryCanAuthor: CanAuthor<Self::AuthorId>;
 
 	/// The final word on whether the reported author can author at this height.
 	/// This will be used when executing the inherent. This check is often
 	/// stricter than the Preliminary check, because it can use more data.
 	/// If the pallet that implements this trait depends on an inherent, that
 	/// inherent **must** be included before this one.
-	type FinalCanAuthor: CanAuthor<Self::AccountId>;
+	type FullCanAuthor: CanAuthor<Self::AuthorId>;
+}
+
+// If the AccountId type supports it, then this pallet can be
+// BoundToRuntimeAppPublic
+impl<T> sp_runtime::BoundToRuntimeAppPublic for Module<T>
+where
+	T: Config,
+	T::AuthorId: RuntimeAppPublic,
+{
+	type Public = T::AuthorId;
 }
 
 decl_error! {
@@ -88,7 +112,7 @@ decl_error! {
 decl_storage! {
 	trait Store for Module<T: Config> as Author {
 		/// Author of current block.
-		Author: Option<T::AccountId>;
+		Author: Option<T::AuthorId>;
 	}
 }
 
@@ -106,18 +130,16 @@ decl_module! {
 			0,
 			DispatchClass::Mandatory
 		)]
-		pub fn set_author(origin, author: T::AccountId) {
-			log::trace!(target:"author-inherent", "In the author inherent dispatchable");
+		pub fn set_author(origin, author: T::AuthorId) {
 
 			ensure_none(origin)?;
+			debug!(target: "author-inherent", "Executing Author inherent");
 			ensure!(<Author<T>>::get().is_none(), Error::<T>::AuthorAlreadySet);
-			ensure!(T::FinalCanAuthor::can_author(&author), Error::<T>::CannotBeAuthor);
+			debug!(target: "author-inherent", "Author was not already set");
+			ensure!(T::FullCanAuthor::can_author(&author), Error::<T>::CannotBeAuthor);
+			debug!(target: "author-inherent", "I can be author!");
 
 			// Update storage
-			log::trace!(
-				target:"author-inherent",
-				"Passed ensures. About to write claimed author to storage."
-			);
 			Author::<T>::put(&author);
 
 			// Add a digest item so Apps can detect the block author
@@ -131,23 +153,11 @@ decl_module! {
 			// Notify any other pallets that are listening (eg rewards) about the author
 			T::EventHandler::note_author(author);
 		}
-
-		fn on_finalize(_n: T::BlockNumber) {
-			log::trace!(
-				target:"author-inherent",
-				"In author inherent's on finalize. About to assert author was set"
-			);
-			assert!(Author::<T>::get().is_some(), "No valid author set in block");
-			log::trace!(
-				target:"author-inherent",
-				"Finished asserting author was set (apparently it was)"
-			);
-		}
 	}
 }
 
-impl<T: Config> FindAuthor<T::AccountId> for Module<T> {
-	fn find_author<'a, I>(_digests: I) -> Option<T::AccountId>
+impl<T: Config> FindAuthor<T::AuthorId> for Module<T> {
+	fn find_author<'a, I>(_digests: I) -> Option<T::AuthorId>
 	where
 		I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
 	{
@@ -190,15 +200,17 @@ impl InherentError {
 }
 
 /// The type of data that the inherent will contain.
-/// Just a byte array. It will be decoded to an actual account id later.
-pub type InherentType = Vec<u8>;
+pub type InherentType<T> = <T as Config>::AuthorId;
 
-/// The thing that the outer node will use to actually inject the inherent data
+/// A thing that an outer node could use to inject the inherent data.
+/// This should be used in simple uses of the author inherent (eg permissionless
+/// authoring) When using the full nimbus system, we are manually inserting the
+/// inherent.
 #[cfg(feature = "std")]
-pub struct InherentDataProvider(pub InherentType);
+pub struct InherentDataProvider<AuthorId>(pub AuthorId);
 
 #[cfg(feature = "std")]
-impl ProvideInherentData for InherentDataProvider {
+impl<AuthorId: Encode> ProvideInherentData for InherentDataProvider<AuthorId> {
 	fn inherent_identifier(&self) -> &'static InherentIdentifier {
 		&INHERENT_IDENTIFIER
 	}
@@ -217,10 +229,6 @@ impl<T: Config> ProvideInherent for Module<T> {
 	type Error = InherentError;
 	const INHERENT_IDENTIFIER: InherentIdentifier = INHERENT_IDENTIFIER;
 
-	fn is_inherent(_: &<Self as ProvideInherent>::Call) -> bool {
-		todo!()
-	}
-
 	fn is_inherent_required(_: &InherentData) -> Result<Option<Self::Error>, Self::Error> {
 		// Return Ok(Some(_)) unconditionally because this inherent is required in every
 		// block If it is not found, throw an AuthorInherentRequired error.
@@ -231,26 +239,27 @@ impl<T: Config> ProvideInherent for Module<T> {
 
 	fn create_inherent(data: &InherentData) -> Option<Self::Call> {
 		// Grab the Vec<u8> labelled with "author__" from the map of all inherent data
-		let author_raw = data
-			.get_data::<InherentType>(&INHERENT_IDENTIFIER)
-			.expect("Gets and decodes authorship inherent data")?;
+		let author_raw = data.get_data::<InherentType<T>>(&INHERENT_IDENTIFIER);
+
+		debug!("In create_inherent (runtime side). data is");
+		debug!("{:?}", author_raw);
+
+		let author = author_raw.expect("Gets and decodes authorship inherent data")?;
 
 		//TODO we need to make the author _prove_ their identity, not just claim it.
 		// we should have them sign something here. Best idea so far: parent block hash.
 
 		// Decode the Vec<u8> into an account Id
-		let author = T::AccountId::decode(&mut &author_raw[..]).expect("Decodes author raw inherent data");
+		// let author =
+		// 	T::AuthorId::decode(&mut &author_raw[..]).expect("Decodes author raw inherent
+		// data");
 
 		Some(Call::set_author(author))
 	}
 
 	fn check_inherent(call: &Self::Call, _data: &InherentData) -> Result<(), Self::Error> {
-		// We only care to check the inherent provided by this pallet.
+		// We only check this pallet's inherent.
 		if let Self::Call::set_author(claimed_author) = call {
-			log::trace!(
-				target:"author-inherent",
-				"In the author inherent's `check_inherent` impl"
-			);
 			ensure!(
 				T::PreliminaryCanAuthor::can_author(&claimed_author),
 				InherentError::Other(sp_runtime::RuntimeString::Borrowed("Cannot Be Author"))
@@ -258,6 +267,10 @@ impl<T: Config> ProvideInherent for Module<T> {
 		}
 
 		Ok(())
+	}
+
+	fn is_inherent(call: &Self::Call) -> bool {
+		matches!(call, Call::set_author(_))
 	}
 }
 
@@ -326,9 +339,10 @@ mod tests {
 		type OnSetCode = ();
 	}
 	impl Config for Test {
+		type AuthorId = u64;
 		type EventHandler = ();
 		type PreliminaryCanAuthor = ();
-		type FinalCanAuthor = ();
+		type FullCanAuthor = ();
 	}
 
 	pub fn roll_to(n: u64) {
@@ -347,6 +361,16 @@ mod tests {
 			roll_to(1);
 			assert_ok!(AuthorInherent::set_author(Origin::none(), 1));
 			roll_to(2);
+		});
+	}
+
+	#[test]
+	fn must_be_inherent() {
+		new_test_ext().execute_with(|| {
+			assert_noop!(
+				AuthorInherent::set_author(Origin::signed(1), 1),
+				sp_runtime::DispatchError::BadOrigin
+			);
 		});
 	}
 

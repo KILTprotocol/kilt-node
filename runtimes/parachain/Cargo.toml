@@ -23,6 +23,8 @@ did = {default-features = false, path = "../../pallets/did"}
 parachain-staking = {default-features = false, path = "../../pallets/parachain-staking"}
 pallet-author-filter = {default-features = false, path = "../../pallets/author-filter"}
 author-inherent = {default-features = false, path = "../../pallets/author-inherent"}
+# pallet-author-filter = {package ="pallet-author-slot-filter", git = "https://github.com/purestake/cumulus", default-features = false, branch = "nimbus"}
+# author-inherent = {package = "pallet-author-inherent", git = "https://github.com/purestake/cumulus", default-features = false, branch = "nimbus"}
 kilt-launch = {path = "../../pallets/kilt-launch", default-features = false}
 kilt-primitives = {path = "../../primitives", default-features = false}
 
