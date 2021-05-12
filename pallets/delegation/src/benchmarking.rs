@@ -327,24 +327,24 @@ benchmarks! {
 	// 	assert_eq!(leaf_delegation.owner, leaf_acc_did.into());
 	// 	assert!(leaf_delegation.revoked);
 	// }
-	// // TODO: Might want to add variant iterating over children instead of depth at some later point
+	// TODO: Might want to add variant iterating over children instead of depth at some later point
 
-	// // worst case #2: revoke leaf node as root
-	// // because `is_delegating` has to traverse up to the root
-	// // complexitiy: O(h) with h = height of the delegation tree
-	// revoke_delegation_leaf {
-	// 	let r in 1 .. MAX_REVOCATIONS;
-	// 	let (root_acc, _, _, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
+	// worst case #2: revoke leaf node as root
+	// because `is_delegating` has to traverse up to the root
+	// complexitiy: O(h) with h = height of the delegation tree
+	revoke_delegation_leaf {
+		let r in 1 .. MAX_REVOCATIONS;
+		let (root_acc, _, _, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
 
-	// 	let origin = to_origin::<T>(root_acc);
-	// 	let call = Call::<T>::revoke_delegation(leaf_id, r, r);
-	// }: { call.dispatch_bypass_filter(origin)? }
-	// verify {
-	// 	assert!(Delegations::<T>::contains_key(leaf_id));
-	// 	let DelegationNode::<T> { revoked, .. } = Delegations::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
-	// 	assert!(revoked);
-	// }
-	// // TODO: Might want to add variant iterating over children instead of depth at some later point
+		let origin = pub_to_origin::<T>(root_acc);
+		let call = Call::<T>::revoke_delegation(leaf_id, r, r);
+	}: { call.dispatch_bypass_filter(origin)? }
+	verify {
+		assert!(Delegations::<T>::contains_key(leaf_id));
+		let DelegationNode::<T> { revoked, .. } = Delegations::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
+		assert!(revoked);
+	}
+	// TODO: Might want to add variant iterating over children instead of depth at some later point
 }
 
 #[cfg(test)]
