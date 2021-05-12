@@ -86,11 +86,20 @@ impl frame_system::Config for Test {
 	type OnSetCode = ();
 }
 
+parameter_types! {
+	pub const MaxNewKeyAgreementKeys: u32 = u32::MAX;
+	pub const MaxUrlLength: u32 = u32::MAX;
+	pub const MaxVerificationKeysToRevoke: u32 = u32::MAX;
+}
+
 impl did::Config for Test {
 	type DidIdentifier = TestDidIdentifier;
 	type Origin = Origin;
 	type Call = Call;
 	type Event = ();
+	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
+	type MaxUrlLength = MaxUrlLength;
+	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 }
 
 impl ctype::Config for Test {

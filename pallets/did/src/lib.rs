@@ -30,6 +30,10 @@ mod utils;
 
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
+
+#[cfg(feature = "runtime-benchmarks")]
+pub mod benchmarking;
+
 #[cfg(test)]
 mod tests;
 
@@ -43,6 +47,7 @@ use frame_support::{
 	dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo},
 	ensure,
 	storage::types::StorageMap,
+	traits::Get,
 	Parameter,
 };
 use frame_system::ensure_signed;
@@ -81,9 +86,12 @@ pub mod pallet {
 			+ Dispatchable<Origin = <Self as Config>::Origin, PostInfo = PostDispatchInfo>
 			+ GetDispatchInfo
 			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
-		type DidIdentifier: Parameter;
+		type DidIdentifier: Parameter + Default;
 		type Origin: From<DidRawOrigin<DidIdentifierOf<Self>>>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type MaxNewKeyAgreementKeys: Get<u32>;
+		type MaxVerificationKeysToRevoke: Get<u32>;
+		type MaxUrlLength: Get<u32>;
 	}
 
 	#[pallet::pallet]
@@ -150,6 +158,12 @@ pub mod pallet {
 		CurrentlyActiveKey,
 		/// The called extrinsic does not support DID authorization.
 		UnsupportedDidAuthorizationCall,
+		/// A number of new key agreement keys greater than the maximum allowed has been provided.
+		MaxKeyAgreementKeysLimitExceeded,
+		/// A number of new verification keys to remove greater than the maximum allowed has been provided.
+		MaxVerificationKeysToRemoveLimitExceeded,
+		/// A URL longer than the maximum size allowed has been provided.
+		MaxUrlLengthExceeded,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
 	}
@@ -160,6 +174,7 @@ pub mod pallet {
 				DidError::StorageError(storage_error) => Self::from(storage_error),
 				DidError::SignatureError(operation_error) => Self::from(operation_error),
 				DidError::UrlError(url_error) => Self::from(url_error),
+				DidError::InputError(input_error) => Self::from(input_error),
 				DidError::InternalError => Self::InternalError,
 			}
 		}
@@ -194,6 +209,16 @@ pub mod pallet {
 			match error {
 				UrlError::InvalidUrlEncoding => Self::InvalidUrlEncoding,
 				UrlError::InvalidUrlScheme => Self::InvalidUrlScheme,
+				UrlError::MaxUrlLengthExceeded => Self::MaxUrlLengthExceeded,
+			}
+		}
+	}
+
+	impl<T> From<InputError> for Error<T> {
+		fn from(error: InputError) -> Self {
+			match error {
+				InputError::MaxKeyAgreementKeysLimitExceeded => Self::MaxKeyAgreementKeysLimitExceeded,
+				InputError::MaxVerificationKeysToRemoveLimitExceeded => Self::MaxVerificationKeysToRemoveLimitExceeded,
 			}
 		}
 	}
@@ -224,7 +249,7 @@ pub mod pallet {
 				<Error<T>>::DidAlreadyPresent
 			);
 
-			let did_entry = DidDetails::from(operation.clone());
+			let did_entry = DidDetails::try_from(operation.clone()).map_err(<Error<T>>::from)?;
 
 			Self::verify_payload_signature_with_did_key_type(
 				&operation.encode(),

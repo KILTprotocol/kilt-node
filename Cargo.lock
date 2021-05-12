@@ -1609,6 +1609,7 @@ version = "0.24.0"
 dependencies = [
  "ctype",
  "env_logger 0.8.3",
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "hex",

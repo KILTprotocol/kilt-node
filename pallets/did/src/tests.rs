@@ -104,7 +104,7 @@ fn check_successful_complete_creation() {
 	let del_key = get_sr25519_delegation_key(true);
 	let att_key = get_ed25519_attestation_key(true);
 	let new_url = did::Url::from(
-		did::HttpUrl::try_from("https://new_kilt.io".as_bytes())
+		did::HttpUrl::try_from(("https://new_kilt.io".as_bytes(), u32::MAX))
 			.expect("https://new_kilt.io should not be considered an invalid HTTP URL."),
 	);
 	let mut operation =
@@ -246,7 +246,7 @@ fn check_successful_complete_update() {
 	let new_att_key = get_ed25519_attestation_key(false);
 	let new_del_key = get_sr25519_delegation_key(true);
 	let new_url = did::Url::from(
-		did::HttpUrl::try_from("https://new_kilt.io".as_bytes())
+		did::HttpUrl::try_from(("https://new_kilt.io".as_bytes(), u32::MAX))
 			.expect("https://new_kilt.io should not be considered an invalid HTTP URL."),
 	);
 
@@ -1799,47 +1799,50 @@ fn check_invalid_signature_operation_verification() {
 
 #[test]
 fn check_http_url() {
-	assert_ok!(did::HttpUrl::try_from("http://kilt.io".as_bytes()));
+	assert_ok!(did::HttpUrl::try_from(("http://kilt.io".as_bytes(), u32::MAX)));
 
-	assert_ok!(did::HttpUrl::try_from("https://kilt.io".as_bytes()));
+	assert_ok!(did::HttpUrl::try_from(("https://kilt.io".as_bytes(), u32::MAX)));
 
 	assert_ok!(did::HttpUrl::try_from(
-		"https://super.long.domain.kilt.io:12345/public/files/test.txt".as_bytes()
+		(
+			"https://super.long.domain.kilt.io:12345/public/files/test.txt".as_bytes(),
+			u32::MAX
+		)
 	));
 
 	// All other valid ASCII characters
-	assert_ok!(did::HttpUrl::try_from("http://:/?#[]@!$&'()*+,;=-._~".as_bytes()));
+	assert_ok!(did::HttpUrl::try_from(("http://:/?#[]@!$&'()*+,;=-._~".as_bytes(), u32::MAX)));
 
 	assert_eq!(
-		did::HttpUrl::try_from("".as_bytes()),
+		did::HttpUrl::try_from(("".as_bytes(), u32::MAX)),
 		Err(did::UrlError::InvalidUrlScheme)
 	);
 
 	// Non-printable ASCII characters
 	assert_eq!(
-		did::HttpUrl::try_from("http://kilt.io/\x00".as_bytes()),
+		did::HttpUrl::try_from(("http://kilt.io/\x00".as_bytes(), u32::MAX)),
 		Err(did::UrlError::InvalidUrlEncoding)
 	);
 
 	// Some invalid ASCII characters
 	assert_eq!(
-		did::HttpUrl::try_from("http://kilt.io/<tag>".as_bytes()),
+		did::HttpUrl::try_from(("http://kilt.io/<tag>".as_bytes(), u32::MAX)),
 		Err(did::UrlError::InvalidUrlEncoding)
 	);
 
 	// Non-ASCII characters
 	assert_eq!(
-		did::HttpUrl::try_from("http://¶.com".as_bytes()),
+		did::HttpUrl::try_from(("http://¶.com".as_bytes(), u32::MAX)),
 		Err(did::UrlError::InvalidUrlEncoding)
 	);
 
 	assert_eq!(
-		did::HttpUrl::try_from("htt://kilt.io".as_bytes()),
+		did::HttpUrl::try_from(("htt://kilt.io".as_bytes(), u32::MAX)),
 		Err(did::UrlError::InvalidUrlScheme)
 	);
 
 	assert_eq!(
-		did::HttpUrl::try_from("httpss://kilt.io".as_bytes()),
+		did::HttpUrl::try_from(("httpss://kilt.io".as_bytes(), u32::MAX)),
 		Err(did::UrlError::InvalidUrlScheme)
 	);
 }
@@ -1848,47 +1851,47 @@ fn check_http_url() {
 
 #[test]
 fn check_ftp_url() {
-	assert_ok!(did::FtpUrl::try_from("ftp://kilt.io".as_bytes()));
+	assert_ok!(did::FtpUrl::try_from(("ftp://kilt.io".as_bytes(), u32::MAX)));
 
-	assert_ok!(did::FtpUrl::try_from("ftps://kilt.io".as_bytes()));
+	assert_ok!(did::FtpUrl::try_from(("ftps://kilt.io".as_bytes(), u32::MAX)));
 
-	assert_ok!(did::FtpUrl::try_from(
-		"ftps://user@super.long.domain.kilt.io:12345/public/files/test.txt".as_bytes()
+	assert_ok!(did::FtpUrl::try_from((
+		"ftps://user@super.long.domain.kilt.io:12345/public/files/test.txt".as_bytes(), u32::MAX)
 	));
 
 	// All other valid ASCII characters
-	assert_ok!(did::FtpUrl::try_from("ftps://:/?#[]@%!$&'()*+,;=-._~".as_bytes()));
+	assert_ok!(did::FtpUrl::try_from(("ftps://:/?#[]@%!$&'()*+,;=-._~".as_bytes(), u32::MAX)));
 
 	assert_eq!(
-		did::FtpUrl::try_from("".as_bytes()),
+		did::FtpUrl::try_from(("".as_bytes(), u32::MAX)),
 		Err(did::UrlError::InvalidUrlScheme)
 	);
 
 	// Non-printable ASCII characters
 	assert_eq!(
-		did::HttpUrl::try_from("http://kilt.io/\x00".as_bytes()),
+		did::HttpUrl::try_from(("http://kilt.io/\x00".as_bytes(), u32::MAX)),
 		Err(did::UrlError::InvalidUrlEncoding)
 	);
 
 	// Some invalid ASCII characters
 	assert_eq!(
-		did::FtpUrl::try_from("ftp://kilt.io/<tag>".as_bytes()),
+		did::FtpUrl::try_from(("ftp://kilt.io/<tag>".as_bytes(), u32::MAX)),
 		Err(did::UrlError::InvalidUrlEncoding)
 	);
 
 	// Non-ASCII characters
 	assert_eq!(
-		did::FtpUrl::try_from("ftps://¶.com".as_bytes()),
+		did::FtpUrl::try_from(("ftps://¶.com".as_bytes(), u32::MAX)),
 		Err(did::UrlError::InvalidUrlEncoding)
 	);
 
 	assert_eq!(
-		did::FtpUrl::try_from("ft://kilt.io".as_bytes()),
+		did::FtpUrl::try_from(("ft://kilt.io".as_bytes(), u32::MAX)),
 		Err(did::UrlError::InvalidUrlScheme)
 	);
 
 	assert_eq!(
-		did::HttpUrl::try_from("ftpss://kilt.io".as_bytes()),
+		did::HttpUrl::try_from(("ftpss://kilt.io".as_bytes(), u32::MAX)),
 		Err(did::UrlError::InvalidUrlScheme)
 	);
 }
@@ -1898,40 +1901,40 @@ fn check_ftp_url() {
 #[test]
 fn check_ipfs_url() {
 	// Base58 address
-	assert_ok!(did::IpfsUrl::try_from(
-		"ipfs://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()
+	assert_ok!(did::IpfsUrl::try_from((
+		"ipfs://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes(), u32::MAX)
 	));
 
 	// Base32 address (at the moment, padding characters can appear anywhere in the
 	// string)
-	assert_ok!(did::IpfsUrl::try_from(
-		"ipfs://OQQHHHTGMMYDQQ364YB4GDE=HREJQL==".as_bytes()
+	assert_ok!(did::IpfsUrl::try_from((
+		"ipfs://OQQHHHTGMMYDQQ364YB4GDE=HREJQL==".as_bytes(), u32::MAX)
 	));
 
 	assert_eq!(
-		did::IpfsUrl::try_from("".as_bytes()),
+		did::IpfsUrl::try_from(("".as_bytes(), u32::MAX)),
 		Err(did::UrlError::InvalidUrlScheme)
 	);
 
 	assert_eq!(
-		did::IpfsUrl::try_from(
+		did::IpfsUrl::try_from((
 			"ipfs://¶
 QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL"
-				.as_bytes()
+				.as_bytes(), u32::MAX)
 		),
 		Err(did::UrlError::InvalidUrlEncoding)
 	);
 
 	assert_eq!(
-		did::IpfsUrl::try_from("ipf://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()),
+		did::IpfsUrl::try_from(("ipf://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes(), u32::MAX)),
 		Err(did::UrlError::InvalidUrlScheme)
 	);
 
 	assert_eq!(
-		did::IpfsUrl::try_from(
+		did::IpfsUrl::try_from((
 			"ipfss://
 QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL"
-				.as_bytes()
+				.as_bytes(), u32::MAX)
 		),
 		Err(did::UrlError::InvalidUrlScheme)
 	);

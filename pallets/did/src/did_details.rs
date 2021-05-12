@@ -481,8 +481,15 @@ impl<T: Config> DidDetails<T> {
 	}
 }
 
-impl<T: Config> From<DidCreationOperation<T>> for DidDetails<T> {
-	fn from(op: DidCreationOperation<T>) -> Self {
+impl<T: Config> TryFrom<DidCreationOperation<T>> for DidDetails<T> {
+	type Error = InputError;
+
+	fn try_from(op: DidCreationOperation<T>) -> Result<Self, Self::Error> {
+		ensure!(
+			op.new_key_agreement_keys.len() < <<T as Config>::MaxNewKeyAgreementKeys>::get() as usize,
+			InputError::MaxKeyAgreementKeysLimitExceeded
+		);
+
 		let current_block_number = <frame_system::Pallet<T>>::block_number();
 
 		// Creates a new DID with the given authentication key.
@@ -500,7 +507,7 @@ impl<T: Config> From<DidCreationOperation<T>> for DidDetails<T> {
 
 		new_did_details.endpoint_url = op.new_endpoint_url;
 
-		new_did_details
+		Ok(new_did_details)
 	}
 }
 
@@ -517,6 +524,16 @@ impl<T: Config> TryFrom<(DidDetails<T>, DidUpdateOperation<T>)> for DidDetails<T
 	type Error = DidError;
 
 	fn try_from((old_details, update_operation): (DidDetails<T>, DidUpdateOperation<T>)) -> Result<Self, Self::Error> {
+		ensure!(
+			update_operation.new_key_agreement_keys.len() < <<T as Config>::MaxNewKeyAgreementKeys>::get() as usize,
+			DidError::InputError(InputError::MaxKeyAgreementKeysLimitExceeded)
+		);
+
+		ensure!(
+			update_operation.public_keys_to_remove.len() < <<T as Config>::MaxNewKeyAgreementKeys>::get() as usize,
+			DidError::InputError(InputError::MaxVerificationKeysToRemoveLimitExceeded)
+		);
+
 		let current_block_number = <frame_system::Pallet<T>>::block_number();
 
 		let mut new_details = old_details;
