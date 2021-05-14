@@ -567,16 +567,16 @@ parameter_types! {
 	pub const DefaultBlocksPerRound: u32 = 7200;
 	/// Reward payments and collator exit requests are delayed by 7 days (7200 * 2 * 7 * block_time)
 	pub const BondDuration: u32 = 14;
-	/// Minimum 8 collators selected per round, default at genesis and minimum forever after
-	pub const MinSelectedCandidates: u32 = 8;
-	/// Maximum 10 delegators per collator
-	pub const MaxDelegatorsPerCollator: u32 = 10;
+	/// Minimum 16 collators selected per round, default at genesis and minimum forever after
+	pub const MinSelectedCandidates: u32 = 16;
+	/// Maximum 1 delegators per collator at launch, will be increased later
+	pub const MaxDelegatorsPerCollator: u32 = 1;
 	/// Maximum 25 collators per delegator
 	pub const MaxCollatorsPerDelegator: u32 = 25;
 	/// Minimum stake required to be reserved to be a collator is 10_000
 	pub const MinCollatorStk: u128 = 10_000 * DOLLARS;
 	/// Max stake possible to be reserved to be collator candidate is 100_0000
-	pub const MaxCollatorCandidateStk: u128 = 100_000 * DOLLARS;
+	pub const MaxCollatorCandidateStk: u128 = 200_000 * DOLLARS;
 	/// Minimum stake required to be reserved to be a delegator is 1000
 	pub const MinDelegatorStk: u128 = 1000 * DOLLARS;
 }

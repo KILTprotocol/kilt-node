@@ -177,14 +177,14 @@ pub fn kilt_inflation_config() -> InflationInfo {
 		collator: StakingInfo {
 			max_rate: Perbill::from_percent(10),
 			reward_rate: RewardRate {
-				annual: Perbill::from_percent(15),
+				annual: Perbill::from_percent(10),
 				round: Perbill::from_parts(Perbill::from_percent(15).deconstruct() / 8766),
 			},
 		},
 		delegator: StakingInfo {
 			max_rate: Perbill::from_percent(40),
 			reward_rate: RewardRate {
-				annual: Perbill::from_percent(10),
+				annual: Perbill::from_percent(5),
 				round: Perbill::from_parts(Perbill::from_percent(10).deconstruct() / 8766),
 			},
 		},
