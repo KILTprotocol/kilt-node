@@ -14,6 +14,8 @@ parity-scale-codec = { version = "2.0.0", default-features = false, features = [
 serde = { version = "1.0.101", optional = true }
 sp-std = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+pallet-authorship = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+# TODO: Re-enable once compatible with master branches
 # orml-utilities = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch = "master", default-features = false }
 
 # benchmarking
@@ -28,10 +30,12 @@ default = ["std"]
 std = [
 	"frame-support/std",
 	"frame-system/std",
+	# TODO: Re-enable once compatible with master branches
 	# "orml-utilities/std",
 	"pallet-balances/std",
 	"parity-scale-codec/std",
 	"serde",
+	"pallet-authorship/std",
 	"sp-std/std",
 	"sp-runtime/std",
 ]

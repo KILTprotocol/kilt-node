@@ -29,6 +29,7 @@ use sp_runtime::{Perbill, Perquintill, RuntimeDebug};
 #[derive(Eq, PartialEq, Clone, Encode, Decode, Default, RuntimeDebug)]
 pub struct RewardRate {
 	pub annual: Perbill,
+	// TODO: Change to per_block
 	pub round: Perbill,
 }
 
@@ -93,6 +94,7 @@ impl StakingInfo {
 		self.reward_rate.round = annual_to_round::<T>(annual_rate)
 	}
 
+	// TODO: Remove and replace usage with `compute_block_rewards`
 	pub fn compute_rewards<T: Config>(&self, stake: BalanceOf<T>, total_issuance: BalanceOf<T>) -> BalanceOf<T> {
 		let staking_rate = Perbill::from_rational(stake, total_issuance).min(self.max_rate);
 		let rewards = self.reward_rate.round * total_issuance;
@@ -100,7 +102,7 @@ impl StakingInfo {
 	}
 
 	pub fn compute_block_rewards<T: Config>(&self, stake: BalanceOf<T>, total_issuance: BalanceOf<T>) -> BalanceOf<T> {
-		// TODO: Refactor Perbills to be Perquintill
+		// TODO: Remove shifting after applying Perquintill to InflationInfo
 		let max_rate: u64 = (self.max_rate.deconstruct() as u64).saturating_mul(1000000000u64);
 		let annual_rate: u64 = (self.reward_rate.annual.deconstruct() as u64).saturating_mul(1000000000u64);
 
@@ -118,6 +120,7 @@ pub struct InflationInfo {
 	pub delegator: StakingInfo,
 }
 
+// TODO: Refactor Perbills to be Perquintill
 impl InflationInfo {
 	pub fn new<T: Config>(
 		// TODO: How to solve this more elegantly?

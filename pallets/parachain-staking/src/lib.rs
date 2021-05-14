@@ -51,6 +51,7 @@
 //! additional collators and revoking delegations.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
@@ -378,7 +379,6 @@ pub mod pallet {
 	}
 
 	type RoundIndex = u32;
-	type RewardPoint = u32;
 	pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
 	/// Configuration trait of this pallet.
@@ -410,6 +410,7 @@ pub mod pallet {
 		type DefaultBlocksPerRound: Get<u32>;
 		/// Number of rounds that collators remain bonded before exit request is
 		/// executed
+		// TODO: Split into `BondDuration` and `ExitQueueDelay`
 		type BondDuration: Get<RoundIndex>;
 		/// Minimum number of selected candidates every round
 		type MinSelectedCandidates: Get<u32>;
@@ -429,10 +430,10 @@ pub mod pallet {
 		/// Minimum stake for any registered on-chain account to become a
 		/// delegator
 		type MinDelegatorStk: Get<BalanceOf<Self>>;
-		// TODO: Add MaxNumOfCollators
 	}
 
 	#[pallet::error]
+	// TODO: Add documentation
 	pub enum Error<T> {
 		// Delegator Does Not Exist
 		DelegatorDNE,
@@ -454,6 +455,7 @@ pub mod pallet {
 		Underflow,
 		InvalidSchedule,
 		CannotSetBelowMin,
+		RewardLockDNE,
 	}
 
 	#[pallet::event]
@@ -510,8 +512,6 @@ pub mod pallet {
 				<AtStake<T>>::remove_prefix(round.current);
 				// mutate round
 				round.update(n);
-				// pay all stakers for T::BondDuration rounds ago
-				Self::pay_stakers(round.current);
 				// execute all delayed collator exits
 				Self::execute_delayed_collator_exits(round.current);
 				// select top collator candidates for next round
@@ -578,7 +578,7 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn at_stake)]
 	/// Snapshot of collator delegation stake at the start of the round
-	// TODO: Convert to StorageMap because we already note during the round
+	// TODO: Try to reduce storage footprint
 	pub type AtStake<T: Config> = StorageDoubleMap<
 		_,
 		Twox64Concat,
@@ -590,35 +590,14 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn staked_collator)]
-	/// Total backing stake for all collators in the current round
-	pub type StakedCollator<T: Config> = StorageValue<_, BalanceOf<T>, ValueQuery>;
-
-	#[pallet::storage]
-	#[pallet::getter(fn staked_delegator)]
-	/// Total backing stake for all delegators of the collators in the current
-	/// round
-	pub type StakedDelegator<T: Config> = StorageValue<_, BalanceOf<T>, ValueQuery>;
-
-	#[pallet::storage]
 	#[pallet::getter(fn inflation_config)]
 	/// Inflation configuration
 	pub type InflationConfig<T: Config> = StorageValue<_, InflationInfo, ValueQuery>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn points)]
-	/// Total points awarded to collators for block production in the round
-	pub type Points<T: Config> = StorageMap<_, Twox64Concat, RoundIndex, RewardPoint, ValueQuery>;
-
-	#[pallet::storage]
-	#[pallet::getter(fn awarded_pts)]
-	/// Points for each collator per round
-	pub type AwardedPts<T: Config> =
-		StorageDoubleMap<_, Twox64Concat, RoundIndex, Twox64Concat, T::AccountId, RewardPoint, ValueQuery>;
-
-	#[pallet::storage]
 	#[pallet::getter(fn reward_locks)]
-	/// Total points awarded to collators for block production in the round
+	/// Locked balance which has been granted as reward after a collator
+	/// authored a block
 	pub type RewardLocks<T: Config> =
 		StorageMap<_, Twox64Concat, T::AccountId, BTreeMap<T::BlockNumber, BalanceOf<T>>, ValueQuery>;
 
@@ -667,8 +646,6 @@ pub mod pallet {
 			let round: RoundInfo<T::BlockNumber> = RoundInfo::new(1u32, 0u32.into(), T::DefaultBlocksPerRound::get());
 			<Round<T>>::put(round);
 			// Snapshot total stake
-			<StakedCollator<T>>::put(collator_staked);
-			<StakedDelegator<T>>::put(delegator_staked);
 			<Pallet<T>>::deposit_event(Event::NewRound(
 				T::BlockNumber::zero(),
 				1u32,
@@ -894,6 +871,7 @@ pub mod pallet {
 					owner: acc.clone(),
 					amount,
 				};
+				// TODO: How to handle: Kick lowest bonded delegators or keep as is?
 				ensure!(
 					(state.delegators.0.len() as u32) < T::MaxDelegatorsPerCollator::get(),
 					Error::<T>::TooManyDelegators
@@ -1023,6 +1001,34 @@ pub mod pallet {
 			Self::deposit_event(Event::DelegationDecreased(delegator, candidate, before, after));
 			Ok(().into())
 		}
+
+		/// Unlock rewards from staking which are avaible for the current block
+		/// number. Checks whether the `RewardLocks` BTreeMap for the target has
+		/// entries less or equal than the current block number.
+		///
+		/// NOTE: Unlocking automatically occurs in `note_author` after a block
+		/// author has produced a block. If you assume that a specific collator
+		/// candidate (and their  corresponding delegators) is an active
+		/// collator for every round, it would be unnecessary to ever call
+		/// `unlock_rewards` for such collator and their delegators.
+		#[pallet::weight(0)]
+		pub fn unlock_rewards(
+			origin: OriginFor<T>,
+			// TODO: Better to use Lookup?
+			// target: <T::Lookup as StaticLookup>::Source
+			target: T::AccountId,
+		) -> DispatchResult {
+			ensure_signed(origin)?;
+			// let target = T::Lookup::lookup(target)?;
+
+			let now: T::BlockNumber = <frame_system::Pallet<T>>::block_number();
+
+			let lock = <RewardLocks<T>>::get(&target);
+			ensure!(!lock.is_empty(), Error::<T>::RewardLockDNE);
+
+			Self::do_update_reward_locks(&target, lock, now);
+			Ok(())
+		}
 	}
 
 	impl<T: Config> Pallet<T> {
@@ -1046,14 +1052,6 @@ pub mod pallet {
 				amount: total,
 			});
 			<CandidatePool<T>>::put(candidates);
-		}
-
-		fn compute_issuance(
-			collator_stake: BalanceOf<T>,
-			delegator_stake: BalanceOf<T>,
-		) -> (BalanceOf<T>, BalanceOf<T>) {
-			let config = <InflationConfig<T>>::get();
-			config.round_issuance::<T>(collator_stake, delegator_stake)
 		}
 
 		fn compute_block_issuance(
@@ -1118,54 +1116,6 @@ pub mod pallet {
 				new_total,
 			));
 			Ok(().into())
-		}
-		fn pay_stakers(next: RoundIndex) {
-			let mint = |amt: BalanceOf<T>, to: T::AccountId| {
-				if amt > T::Currency::minimum_balance() {
-					if let Ok(imb) = T::Currency::deposit_into_existing(&to, amt) {
-						Self::deposit_event(Event::Rewarded(to.clone(), imb.peek()));
-					}
-				}
-			};
-			let duration = T::BondDuration::get();
-			if next > duration {
-				let round_to_payout = next - duration;
-				let total = <Points<T>>::get(round_to_payout);
-				// TODO: We might just want to use this rounds stake such that large stakes of
-				// inactive collators do not affect the rewards
-				// let total_collator_stake = <StakedCollator<T>>::get();
-				// let total_delegator_stake = <StakedDelegator<T>>::get();
-				let (total_collator_stake, total_delegator_stake) = <Total<T>>::get();
-
-				let (c_rewards, d_rewards) = Self::compute_issuance(total_collator_stake, total_delegator_stake);
-				for (val, pts) in <AwardedPts<T>>::drain_prefix(round_to_payout) {
-					let pct_due = Perbill::from_rational(pts, total);
-					let amt_due_collator = pct_due * c_rewards;
-					let amt_due_delegators = pct_due * d_rewards;
-
-					// Take the snapshot of block author and delegations
-					let state = <AtStake<T>>::take(round_to_payout, &val);
-					// TODO: This can never fail, do we still need to ensure with saturating?
-					let delegator_stake = state.total.saturating_sub(state.bond);
-
-					// Pay collator
-					if amt_due_collator > T::Currency::minimum_balance() {
-						mint(amt_due_collator, val.clone());
-					}
-
-					// Pay delegators
-					if amt_due_delegators > T::Currency::minimum_balance() {
-						// Pay delegators due portion
-						for Bond { owner, amount } in state.delegators {
-							// Compare this delegator's stake with the total amount of delegated stake for
-							// this collator
-							let percent = Perbill::from_rational(amount, delegator_stake);
-							let due = percent * amt_due_delegators;
-							mint(due, owner);
-						}
-					}
-				}
-			}
 		}
 
 		fn execute_delayed_collator_exits(next: RoundIndex) {
@@ -1274,6 +1224,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		// Weight: writes(2)
 		fn do_reward(who: &T::AccountId, reward: BalanceOf<T>, now: T::BlockNumber) {
 			// mint
 			if reward > T::Currency::minimum_balance() {
@@ -1286,10 +1237,6 @@ pub mod pallet {
 			// set & update lock
 			let mut locks = <RewardLocks<T>>::get(who);
 			let unlock_block: T::BlockNumber = now.saturating_add(T::BondDuration::get().into());
-			// println!(
-			// 	"now {:?}, reward {:?} who {:?} unlock block {:?}",
-			// 	now, reward, who, unlock_block
-			// );
 			locks.insert(unlock_block, reward);
 			Self::do_update_reward_locks(who, locks, now);
 		}
@@ -1309,64 +1256,67 @@ pub mod pallet {
 					total_locked = total_locked.saturating_add(*locked_balance);
 				}
 			}
-			// println!("lock {:?}", locks);
 			for block_number in expired {
 				locks.remove(&block_number);
 			}
 
-			// TODO: Check whether remove_lock is necessary if total_locked == 0
-			<T::Currency as LockableCurrency<T::AccountId>>::set_lock(
-				REWARDS_ID,
-				who,
-				total_locked,
-				WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
-			);
+			if !total_locked.is_zero() {
+				<T::Currency as LockableCurrency<T::AccountId>>::set_lock(
+					REWARDS_ID,
+					who,
+					total_locked,
+					WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
+				);
 
-			<RewardLocks<T>>::insert(who, locks);
+				<RewardLocks<T>>::insert(who, locks);
+			} else {
+				// Lock is guaranteed to exist at this moment, because we ensure existance in
+				// `unlock_rewards` or else have created it previously by paying rewards
+				<T::Currency as LockableCurrency<T::AccountId>>::remove_lock(REWARDS_ID, who);
+				<RewardLocks<T>>::remove(who);
+			}
 		}
 	}
 
-	// /// Reward author and their delegators
-	// TODO: Fix after successfully adding AuRa + AuRaExt author_inherent from
-	// Parity impl<T: Config> author_inherent::EventHandler<T::AccountId> for
-	// Pallet<T> { 	fn note_author(author: T::AccountId) {
-	// 		let now = <Round<T>>::get().current;
-	// 		let block_now: T::BlockNumber =
-	// <frame_system::Pallet<T>>::block_number();
+	impl<T> pallet_authorship::EventHandler<T::AccountId, T::BlockNumber> for Pallet<T>
+	where
+		T: Config + pallet_authorship::Config,
+	{
+		fn note_author(author: T::AccountId) {
+			let now = <Round<T>>::get().current;
 
-	// 		let state = <AtStake<T>>::get(now, author.clone());
-	// 		let (total_collator_stake, total_delegator_stake) = <Total<T>>::get();
-	// 		let (c_rewards, d_rewards) =
-	// Self::compute_block_issuance(total_collator_stake,
-	// total_delegator_stake);
+			let state = <AtStake<T>>::get(now, author.clone());
+			if state.bond >= T::MinCollatorStk::get() && state.total >= T::MinCollatorStk::get() {
+				let block_now: T::BlockNumber = <frame_system::Pallet<T>>::block_number();
+				// TODO: Do we rather want to use a snapshot of total at the start of the round?
+				let (total_collator_stake, total_delegator_stake) = <Total<T>>::get();
+				let (c_rewards, d_rewards) = Self::compute_block_issuance(total_collator_stake, total_delegator_stake);
 
-	// 		let amt_due_collator = c_rewards;
-	// 		let delegator_stake = state.total.saturating_sub(state.bond);
-	// 		let amt_due_delegators = d_rewards;
+				let amt_due_collator = c_rewards;
+				let delegator_stake = state.total.saturating_sub(state.bond);
+				let amt_due_delegators = d_rewards;
 
-	// 		// Reward collator
-	// 		if amt_due_collator > T::Currency::minimum_balance() {
-	// 			Self::do_reward(&author, amt_due_collator, block_now);
-	// 		}
+				// Reward collator
+				if amt_due_collator > T::Currency::minimum_balance() {
+					Self::do_reward(&author, amt_due_collator, block_now);
+				}
 
-	// 		// Reward delegators
-	// 		if amt_due_delegators > T::Currency::minimum_balance() {
-	// 			// Reward delegators due portion
-	// 			for Bond { owner, amount } in state.delegators {
-	// 				// Compare this delegator's stake with the total amount of delegated
-	// stake for 				// this collator
-	// 				let percent = Perbill::from_rational(amount, delegator_stake);
-	// 				let due = percent * amt_due_delegators;
-	// 				Self::do_reward(&owner, due, block_now);
-	// 			}
-	// 		}
-	// 	}
-	// }
-
-	// TODO: Fix after successfully adding AuRa + AuRaExt author_inherent from
-	// Parity impl<T: Config> author_inherent::CanAuthor<T::AccountId> for
-	// Pallet<T> { 	fn can_author(account: &T::AccountId) -> bool {
-	// 		Self::is_selected_candidate(account)
-	// 	}
-	// }
+				// Reward delegators
+				if amt_due_delegators > T::Currency::minimum_balance() {
+					// Reward delegators due portion
+					for Bond { owner, amount } in state.delegators {
+						if amount >= T::MinDelegatorStk::get() {
+							// Compare this delegator's stake with the total amount of
+							// delegated stake for this collator
+							let percent = Perbill::from_rational(amount, delegator_stake);
+							let due = percent * amt_due_delegators;
+							Self::do_reward(&owner, due, block_now);
+						}
+					}
+				}
+			}
+		}
+		// TODO: Does this need to be handled?
+		fn note_uncle(_author: T::AccountId, _age: T::BlockNumber) {}
+	}
 }

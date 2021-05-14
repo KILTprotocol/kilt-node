@@ -20,16 +20,17 @@ use super::*;
 use crate::{self as stake};
 use frame_support::{
 	assert_noop, assert_ok, construct_runtime, parameter_types,
-	traits::{GenesisBuild, OnFinalize, OnInitialize},
+	traits::{FindAuthor, GenesisBuild, OnFinalize, OnInitialize},
 	weights::Weight,
 };
 use kilt_primitives::constants::YEARS;
+use pallet_authorship::EventHandler;
 use sp_core::H256;
 use sp_io;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup, Zero},
-	Perbill,
+	Perbill, Perquintill,
 };
 
 pub type AccountId = u64;
@@ -37,6 +38,7 @@ pub type Balance = u128;
 pub type BlockNumber = u64;
 pub const BLOCKS_PER_ROUND: u32 = 5;
 pub const DECIMALS: Balance = 10u128.pow(15);
+pub const COLLATOR: AccountId = 1337;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -50,6 +52,7 @@ construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Stake: stake::{Pallet, Call, Storage, Config<T>, Event<T>},
+		Authorship: pallet_authorship::{Pallet, Call, Storage, Inherent},
 	}
 );
 
@@ -97,6 +100,24 @@ impl pallet_balances::Config for Test {
 	type AccountStore = System;
 	type WeightInfo = ();
 }
+
+/// Author of block is always 1337
+pub struct Author1337;
+impl FindAuthor<AccountId> for Author1337 {
+	fn find_author<'a, I>(_digests: I) -> Option<AccountId>
+	where
+		I: 'a + IntoIterator<Item = (frame_support::ConsensusEngineId, &'a [u8])>,
+	{
+		Some(1337)
+	}
+}
+impl pallet_authorship::Config for Test {
+	type FindAuthor = Author1337;
+	type UncleGenerations = ();
+	type FilterUncle = ();
+	type EventHandler = Pallet<Test>;
+}
+
 parameter_types! {
 	pub const MinBlocksPerRound: u32 = 3; // 20
 	pub const BondDuration: u32 = 2;
@@ -125,13 +146,6 @@ impl Config for Test {
 	type MaxCollatorCandidateStk = MaxCollatorCandidateStk;
 	type MinDelegatorStk = MinDelegatorStk;
 	type MinDelegation = MinDelegation;
-}
-
-impl author_inherent::Config for Test {
-	type AuthorId = AccountId;
-	type EventHandler = Stake;
-	type PreliminaryCanAuthor = Stake;
-	type FullCanAuthor = ();
 }
 
 pub(crate) struct ExtBuilder {
@@ -285,7 +299,6 @@ impl ExtBuilder {
 ///   rounds of length 12.
 /// * num_of_years: The number of years we want to simulate. Ideally, this
 ///   should be between zero and one.
-
 pub(crate) fn check_yearly_inflation(
 	base_balance: Balance,
 	collator_stake: Balance,
@@ -302,9 +315,7 @@ pub(crate) fn check_yearly_inflation(
 	let num_of_collators = (Perbill::from_percent(max_collator_rate) * expected_issuance / collator_stake) as u64;
 	let num_of_delegators = (Perbill::from_percent(max_delegator_rate) * expected_issuance / delegator_stake) as u64;
 	assert!(num_of_users >= num_of_collators + num_of_delegators);
-	let blocks_per_year = YEARS / blocks_per_round;
-	let rounds_in_test = num_of_years * blocks_per_year;
-	let end_block: u64 = (rounds_in_test * blocks_per_round).into();
+	let end_block = num_of_years * YEARS as u64;
 
 	// mint 160 Mio total issuance
 	let balances: Vec<(<Test as frame_system::Config>::AccountId, BalanceOf<Test>)> =
@@ -322,6 +333,11 @@ pub(crate) fn check_yearly_inflation(
 		((num_of_collators + 1)..=(num_of_collators + num_of_delegators))
 			.map(|i| (i, (i - 1) % num_of_collators + 1, delegator_stake))
 			.collect();
+
+	// generate round robin author list
+	let authors: Vec<Option<AccountId>> = (1u64..=end_block)
+		.map(|i| Some((i - 1) % num_of_collators + 1))
+		.collect();
 
 	ExtBuilder::default()
 		.with_balances(balances)
@@ -350,9 +366,6 @@ pub(crate) fn check_yearly_inflation(
 				assert_eq!(collator_state.bond, collator_stake);
 				assert!(collator_state.total >= collator_state.bond);
 				assert_eq!(collator_state.state, CollatorStatus::Active);
-				for round in 1..=rounds_in_test {
-					set_author(round, collator, 20);
-				}
 			}
 
 			// increase number of selected candidates
@@ -364,7 +377,7 @@ pub(crate) fn check_yearly_inflation(
 				assert_ok!(Stake::set_total_selected(Origin::root(), num_of_collators as u32));
 
 				// roll to round 2 to check for update of TotalSelected
-				roll_to_faster((2 * blocks_per_round + 2).into(), blocks_per_round.into());
+				roll_to_new((2 * blocks_per_round + 2).into(), authors.clone());
 				assert_eq!(Stake::selected_candidates(), collator_ids);
 			}
 
@@ -372,15 +385,15 @@ pub(crate) fn check_yearly_inflation(
 			let inflation = Stake::inflation_config();
 			let collator_rewards: BalanceOf<Test> = inflation
 				.collator
-				.compute_rewards::<Test>(total_collator_stake, total_issuance)
-				* (rounds_in_test as u128);
+				.compute_block_rewards::<Test>(total_collator_stake, total_issuance)
+				* (end_block as u128);
 			let delegator_rewards: BalanceOf<Test> = inflation
 				.delegator
-				.compute_rewards::<Test>(total_delegator_stake, total_issuance)
-				* (rounds_in_test as u128);
+				.compute_block_rewards::<Test>(total_delegator_stake, total_issuance)
+				* (end_block as u128);
 
-			// fast-forward a year
-			roll_to_faster(end_block + 2, blocks_per_round.into());
+			// fast-forward to num_of_years * blocks
+			roll_to_new(end_block, authors);
 
 			// check collator rewards
 			let mut single_collator_reward: Balance = Balance::zero();
@@ -441,17 +454,6 @@ pub(crate) fn check_yearly_inflation(
 				Perbill::from_rational(single_collator_reward, collator_stake)
 					> Perbill::from_rational(single_delegator_reward, delegator_stake)
 			);
-
-			// compare expected inflation with actual inflation after 1 year
-			assert!(almost_equal(
-				num_of_years * inflation.collator.reward_rate.annual * inflation.collator.max_rate * total_issuance
-					+ num_of_years
-						* inflation.delegator.reward_rate.annual
-						* inflation.delegator.max_rate
-						* total_issuance + total_issuance,
-				<Test as Config>::Currency::total_issuance(),
-				Perbill::from_percent(3) * Perbill::from_percent(10),
-			));
 		});
 }
 
@@ -482,12 +484,15 @@ pub(crate) fn roll_to(n: u64) {
 	}
 }
 
-pub(crate) fn roll_to_faster(n: u64, m: u64) {
-	while System::block_number() + m < n {
+pub(crate) fn roll_to_new(n: u64, authors: Vec<Option<AccountId>>) {
+	while System::block_number() < n {
+		if let Some(Some(author)) = authors.get((System::block_number()) as usize) {
+			Stake::note_author(*author);
+		}
 		Stake::on_finalize(System::block_number());
 		Balances::on_finalize(System::block_number());
 		System::on_finalize(System::block_number());
-		System::set_block_number(System::block_number() + m);
+		System::set_block_number(System::block_number() + 1);
 		System::on_initialize(System::block_number());
 		Balances::on_initialize(System::block_number());
 		Stake::on_initialize(System::block_number());
@@ -504,27 +509,4 @@ pub(crate) fn events() -> Vec<pallet::Event<Test>> {
 		.map(|r| r.event)
 		.filter_map(|e| if let Event::stake(inner) = e { Some(inner) } else { None })
 		.collect::<Vec<_>>()
-}
-
-// Same storage changes as EventHandler::note_author impl
-pub(crate) fn set_author(round: u32, acc: u64, pts: u32) {
-	<Points<Test>>::mutate(round, |p| *p += pts);
-	<AwardedPts<Test>>::mutate(round, acc, |p| *p += pts);
-}
-
-pub(crate) fn roll_to_new(n: u64, authors: Vec<Option<AccountId>>) {
-	while System::block_number() < n {
-		if let Some(Some(author)) = authors.get((System::block_number()) as usize) {
-			// assert_ok!(AuthorInherent::set_author(Origin::none(), *author));
-		}
-		// AuthorInherent::on_finalize(System::block_number());
-		Stake::on_finalize(System::block_number());
-		Balances::on_finalize(System::block_number());
-		System::on_finalize(System::block_number());
-		System::set_block_number(System::block_number() + 1);
-		System::on_initialize(System::block_number());
-		// AuthorInherent::on_initialize(System::block_number());
-		Balances::on_initialize(System::block_number());
-		Stake::on_initialize(System::block_number());
-	}
 }
