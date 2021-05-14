@@ -39,12 +39,14 @@ pub struct HttpUrl {
 	payload: Vec<u8>,
 }
 
-// I cannot get impl<T: Config> for TryFrom<(&[u8], T::MaxUrlLength)> for HttpUrl to work...
+// I cannot get impl<T: Config> for TryFrom<(&[u8], T::MaxUrlLength)> for
+// HttpUrl to work...
 impl TryFrom<(&[u8], u32)> for HttpUrl {
 	type Error = UrlError;
 
 	// It fails if the byte sequence does not result in an ASCII-encoded string,
-	// if the resulting string contains characters that are not allowed in a URL, or if the URL length exceeds the maximum length allowed.
+	// if the resulting string contains characters that are not allowed in a URL, or
+	// if the URL length exceeds the maximum length allowed.
 	fn try_from(value: (&[u8], u32)) -> Result<Self, Self::Error> {
 		let (raw_url, max_length) = value;
 

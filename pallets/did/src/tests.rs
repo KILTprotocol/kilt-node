@@ -1803,15 +1803,16 @@ fn check_http_url() {
 
 	assert_ok!(did::HttpUrl::try_from(("https://kilt.io".as_bytes(), u32::MAX)));
 
-	assert_ok!(did::HttpUrl::try_from(
-		(
-			"https://super.long.domain.kilt.io:12345/public/files/test.txt".as_bytes(),
-			u32::MAX
-		)
-	));
+	assert_ok!(did::HttpUrl::try_from((
+		"https://super.long.domain.kilt.io:12345/public/files/test.txt".as_bytes(),
+		u32::MAX
+	)));
 
 	// All other valid ASCII characters
-	assert_ok!(did::HttpUrl::try_from(("http://:/?#[]@!$&'()*+,;=-._~".as_bytes(), u32::MAX)));
+	assert_ok!(did::HttpUrl::try_from((
+		"http://:/?#[]@!$&'()*+,;=-._~".as_bytes(),
+		u32::MAX
+	)));
 
 	assert_eq!(
 		did::HttpUrl::try_from(("".as_bytes(), u32::MAX)),
@@ -1856,11 +1857,15 @@ fn check_ftp_url() {
 	assert_ok!(did::FtpUrl::try_from(("ftps://kilt.io".as_bytes(), u32::MAX)));
 
 	assert_ok!(did::FtpUrl::try_from((
-		"ftps://user@super.long.domain.kilt.io:12345/public/files/test.txt".as_bytes(), u32::MAX)
-	));
+		"ftps://user@super.long.domain.kilt.io:12345/public/files/test.txt".as_bytes(),
+		u32::MAX
+	)));
 
 	// All other valid ASCII characters
-	assert_ok!(did::FtpUrl::try_from(("ftps://:/?#[]@%!$&'()*+,;=-._~".as_bytes(), u32::MAX)));
+	assert_ok!(did::FtpUrl::try_from((
+		"ftps://:/?#[]@%!$&'()*+,;=-._~".as_bytes(),
+		u32::MAX
+	)));
 
 	assert_eq!(
 		did::FtpUrl::try_from(("".as_bytes(), u32::MAX)),
@@ -1902,14 +1907,16 @@ fn check_ftp_url() {
 fn check_ipfs_url() {
 	// Base58 address
 	assert_ok!(did::IpfsUrl::try_from((
-		"ipfs://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes(), u32::MAX)
-	));
+		"ipfs://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes(),
+		u32::MAX
+	)));
 
 	// Base32 address (at the moment, padding characters can appear anywhere in the
 	// string)
 	assert_ok!(did::IpfsUrl::try_from((
-		"ipfs://OQQHHHTGMMYDQQ364YB4GDE=HREJQL==".as_bytes(), u32::MAX)
-	));
+		"ipfs://OQQHHHTGMMYDQQ364YB4GDE=HREJQL==".as_bytes(),
+		u32::MAX
+	)));
 
 	assert_eq!(
 		did::IpfsUrl::try_from(("".as_bytes(), u32::MAX)),
@@ -1920,13 +1927,17 @@ fn check_ipfs_url() {
 		did::IpfsUrl::try_from((
 			"ipfs://¶
 QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL"
-				.as_bytes(), u32::MAX)
-		),
+				.as_bytes(),
+			u32::MAX
+		)),
 		Err(did::UrlError::InvalidUrlEncoding)
 	);
 
 	assert_eq!(
-		did::IpfsUrl::try_from(("ipf://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes(), u32::MAX)),
+		did::IpfsUrl::try_from((
+			"ipf://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes(),
+			u32::MAX
+		)),
 		Err(did::UrlError::InvalidUrlScheme)
 	);
 
@@ -1934,8 +1945,9 @@ QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL"
 		did::IpfsUrl::try_from((
 			"ipfss://
 QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL"
-				.as_bytes(), u32::MAX)
-		),
+				.as_bytes(),
+			u32::MAX
+		)),
 		Err(did::UrlError::InvalidUrlScheme)
 	);
 }

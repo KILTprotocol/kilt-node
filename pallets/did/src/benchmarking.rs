@@ -16,32 +16,59 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_benchmarking::{account, benchmarks};
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
+use sp_io::crypto::{ed25519_generate, ed25519_verify, ed25519_sign, sr25519_generate, sr25519_verify, sr25519_sign};
 use sp_core::ed25519;
-use sp_std::collections::btree_set::BTreeSet;
-use sp_std::convert::TryInto;
-use sp_core::Pair;
+use sp_core::crypto::KeyTypeId;
+use sp_std::{collections::btree_set::BTreeSet, convert::TryInto};
+use codec::Encode;
+use frame_system::RawOrigin;
 
-use crate::*;
+use crate::{Pallet as DelegationPallet, *};
 use did_details::*;
 
-const ACCOUNT_SEED: u32 = 0;
-const AUTH_KEY_SEED: [u8; 32] = [0u8; 32];
+const DEFAULT_ACCOUNT_ID: &str = "tx_submitter";
+const DEFAULT_ACCOUNT_SEED: u32 = 0;
+const AUTHENTICATION_KEY_ID: KeyTypeId = KeyTypeId(*b"0000");
+const AUTHENTICATION_KEY_SEED: [u8; 32] = [0u8; 32];
+const ATTESTATION_KEY_ID: KeyTypeId = KeyTypeId(*b"0001");
+const ATTESTATION_KEY_SEED: [u8; 32] = [1u8; 32];
+const DELEGATION_KEY_ID: KeyTypeId = KeyTypeId(*b"0002");
+const DELEGATION_KEY_SEED: [u8; 32] = [2u8; 32];
 
-fn set_key_agreement_keys<T: Config>(did_details: &mut DidDetails<T>, n_keys: u32) {
-	let new_key_agreement_keys = (1..=n_keys).map(|i| {
-		// Converts the loop index to a 32-byte array;
-		let mut seed_vec = i.to_be_bytes().to_vec();
-		seed_vec.resize(32, 0u8);
-		let seed: [u8; 32] = seed_vec.try_into().unwrap();
-		DidEncryptionKey::X25519(seed)
-	}).collect::<BTreeSet<DidEncryptionKey>>();
-
-	did_details.add_key_agreement_keys(new_key_agreement_keys, BlockNumberOf::<T>::default());
+fn get_ed25519_public_authentication_key() -> ed25519::Public {
+	ed25519_generate(AUTHENTICATION_KEY_ID, None)
 }
 
-fn get_ed25519_authentication_key() -> ed25519::Pair {
-	ed25519::Pair::from_seed(&AUTH_KEY_SEED)
+fn set_key_agreement_keys<T: Config>(creation_operation: &mut DidCreationOperation<T>, n_keys: u32) {
+	let new_key_agreement_keys = (1..=n_keys)
+		.map(|i| {
+			// Converts the loop index to a 32-byte array;
+			let mut seed_vec = i.to_be_bytes().to_vec();
+			seed_vec.resize(32, 0u8);
+			let seed: [u8; 32] = seed_vec.try_into().unwrap();
+			DidEncryptionKey::X25519(seed)
+		})
+		.collect::<BTreeSet<DidEncryptionKey>>();
+
+		creation_operation.new_key_agreement_keys = new_key_agreement_keys;
+}
+
+fn get_ed25519_public_attestation_key() -> ed25519::Public {
+	ed25519_generate(ATTESTATION_KEY_ID, None)
+}
+
+fn get_ed25519_public_delegation_key() -> ed25519::Public {
+	ed25519_generate(DELEGATION_KEY_ID, None)
+}
+
+// Assumes that length is greater than 8 (length of https://)
+fn get_url_endpoint(length: u32) -> Url {
+	let prefix = "https://";
+	let remaining_length = length as usize - prefix.len();
+	let mut url_string = "https://".bytes().collect::<Vec<u8>>();
+	url_string.resize(remaining_length, b'0');
+	Url::Http(HttpUrl::try_from((url_string.as_ref(), length)).unwrap())
 }
 
 fn generate_base_did_creation_operation<T: Config>(
@@ -63,14 +90,28 @@ fn generate_base_did_details<T: Config>(authentication_key: DidVerificationKey) 
 }
 
 benchmarks! {
-    submit_did_create_operation {
+	submit_did_create_operation {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get() - 1;
+		let u in 1 .. T::MaxUrlLength::get() - 1;
 
-        let submitter: AccountIdentifierOf<T> = account("tx_submitter", 0, ACCOUNT_SEED);
+		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
-		let did_auth_key = get_ed25519_authentication_key();
-		let mut base_did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_auth_key.public()));
+		let did_public_auth_key = get_ed25519_public_authentication_key();
+		let did_public_att_key = get_ed25519_public_attestation_key();
+		let did_public_del_key = get_ed25519_public_delegation_key();
 
-		set_key_agreement_keys(&mut base_did_details, n);
-    }: {}
+		let mut did_creation_op = generate_base_did_creation_operation::<T>(DidIdentifierOf::<T>::default(), DidVerificationKey::from(did_public_auth_key));
+		set_key_agreement_keys(&mut did_creation_op, n);
+		did_creation_op.new_attestation_key = Some(DidVerificationKey::from(did_public_att_key));
+		did_creation_op.new_delegation_key = Some(DidVerificationKey::from(did_public_del_key));
+		did_creation_op.new_endpoint_url = Some(get_url_endpoint(u));
+
+		let did_creation_signature = ed25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_creation_op.encode().as_ref()).unwrap();
+	}: submit_did_create_operation(RawOrigin::Signed(submitter), did_creation_op, DidSignature::from(did_creation_signature))
+}
+
+impl_benchmark_test_suite! {
+	DelegationPallet,
+	crate::mock::ExtBuilder::default().build(None),
+	crate::mock::Test
 }

@@ -85,9 +85,9 @@ impl frame_system::Config for Test {
 }
 
 parameter_types! {
-	pub const MaxNewKeyAgreementKeys: u32 = u32::MAX;
-	pub const MaxUrlLength: u32 = u32::MAX;
-	pub const MaxVerificationKeysToRevoke: u32 = u32::MAX;
+	pub const MaxNewKeyAgreementKeys: u32 = 5u32;
+	pub const MaxVerificationKeysToRevoke: u32 = 10u32;
+	pub const MaxUrlLength: u32 = 200u32;
 }
 
 impl Config for Test {

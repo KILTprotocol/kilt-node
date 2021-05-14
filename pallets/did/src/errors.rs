@@ -84,11 +84,14 @@ pub enum UrlError {
 	MaxUrlLengthExceeded,
 }
 
-/// Error generated when some extrinsic input does not respect the pallet's constraints.
+/// Error generated when some extrinsic input does not respect the pallet's
+/// constraints.
 #[derive(Debug, Eq, PartialEq)]
 pub enum InputError {
-	/// A number of new key agreement keys greater than the maximum allowed has been provided.
+	/// A number of new key agreement keys greater than the maximum allowed has
+	/// been provided.
 	MaxKeyAgreementKeysLimitExceeded,
-	/// A number of new verification keys to remove greater than the maximum allowed has been provided.
+	/// A number of new verification keys to remove greater than the maximum
+	/// allowed has been provided.
 	MaxVerificationKeysToRemoveLimitExceeded,
 }

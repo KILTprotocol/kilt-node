@@ -89,8 +89,11 @@ pub mod pallet {
 		type DidIdentifier: Parameter + Default;
 		type Origin: From<DidRawOrigin<DidIdentifierOf<Self>>>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		#[pallet::constant]
 		type MaxNewKeyAgreementKeys: Get<u32>;
+		#[pallet::constant]
 		type MaxVerificationKeysToRevoke: Get<u32>;
+		#[pallet::constant]
 		type MaxUrlLength: Get<u32>;
 	}
 
@@ -158,9 +161,11 @@ pub mod pallet {
 		CurrentlyActiveKey,
 		/// The called extrinsic does not support DID authorization.
 		UnsupportedDidAuthorizationCall,
-		/// A number of new key agreement keys greater than the maximum allowed has been provided.
+		/// A number of new key agreement keys greater than the maximum allowed
+		/// has been provided.
 		MaxKeyAgreementKeysLimitExceeded,
-		/// A number of new verification keys to remove greater than the maximum allowed has been provided.
+		/// A number of new verification keys to remove greater than the maximum
+		/// allowed has been provided.
 		MaxVerificationKeysToRemoveLimitExceeded,
 		/// A URL longer than the maximum size allowed has been provided.
 		MaxUrlLengthExceeded,
