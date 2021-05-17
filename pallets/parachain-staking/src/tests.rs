@@ -760,6 +760,7 @@ fn multiple_delegations() {
 			(8, 100),
 			(9, 100),
 			(10, 100),
+			(11, 100),
 		])
 		.with_collators(vec![(1, 20), (2, 20), (3, 20), (4, 20), (5, 10)])
 		.with_delegators(vec![(6, 1, 10), (7, 1, 10), (8, 2, 10), (9, 2, 10), (10, 1, 10)])
@@ -790,7 +791,7 @@ fn multiple_delegations() {
 			assert_ok!(Stake::delegate_another_candidate(Origin::signed(6), 4, 10));
 			assert_noop!(
 				Stake::delegate_another_candidate(Origin::signed(6), 5, 10),
-				Error::<Test>::ExceedMaxCollatorsPerNom,
+				Error::<Test>::ExceedMaxCollatorsPerDelegator,
 			);
 			roll_to(16, vec![]);
 			let mut new = vec![
@@ -822,6 +823,7 @@ fn multiple_delegations() {
 				Stake::delegate_another_candidate(Origin::signed(10), 2, 10),
 				Error::<Test>::TooManyDelegators
 			);
+			assert_ok!(Stake::delegate_another_candidate(Origin::signed(10), 2, 11),);
 			roll_to(26, vec![]);
 			let mut new2 = vec![
 				Event::CollatorChosen(4, 2, 20, 30),
@@ -831,12 +833,14 @@ fn multiple_delegations() {
 				Event::CollatorChosen(4, 5, 10, 0),
 				Event::NewRound(20, 4, 5, 90, 80),
 				Event::Delegation(7, 80, 2, 130),
-				Event::CollatorChosen(5, 2, 20, 110),
+				Event::DelegationReplaced(10, 11, 9, 10, 2, 131),
+				Event::Delegation(10, 11, 2, 131),
+				Event::CollatorChosen(5, 2, 20, 111),
 				Event::CollatorChosen(5, 1, 20, 30),
 				Event::CollatorChosen(5, 4, 20, 10),
 				Event::CollatorChosen(5, 3, 20, 10),
 				Event::CollatorChosen(5, 5, 10, 0),
-				Event::NewRound(25, 5, 5, 90, 160),
+				Event::NewRound(25, 5, 5, 90, 161),
 			];
 			expected.append(&mut new2);
 			assert_eq!(events(), expected);
@@ -853,6 +857,19 @@ fn multiple_delegations() {
 			];
 			expected.append(&mut new3);
 			assert_eq!(events(), expected);
+
+			// test join_delegator errors
+			assert_ok!(Stake::delegate_another_candidate(Origin::signed(8), 1, 10),);
+			assert_noop!(
+				Stake::join_delegators(Origin::signed(11), 1, 10),
+				Error::<Test>::TooManyDelegators
+			);
+			assert_noop!(
+				Stake::delegate_another_candidate(Origin::signed(11), 1, 10),
+				Error::<Test>::NotYetDelegating
+			);
+			assert_ok!(Stake::join_delegators(Origin::signed(11), 1, 11),);
+
 			// verify that delegations are removed after collator leaves, not before
 			assert_eq!(Stake::delegator_state(7).unwrap().total, 90);
 			assert_eq!(Stake::delegator_state(7).unwrap().delegations.0.len(), 2usize);

@@ -75,6 +75,7 @@ pub mod pallet {
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{Currency, Get, Imbalance, LockIdentifier, LockableCurrency, ReservableCurrency, WithdrawReasons},
+		transactional,
 	};
 	use frame_system::pallet_prelude::*;
 	// TODO: Use ORML one once they point to Substrate master
@@ -453,10 +454,10 @@ pub mod pallet {
 		AlreadyActive,
 		AlreadyLeaving,
 		AlreadyDelegating,
-		NotDelegatingYet,
+		NotYetDelegating,
 		TooManyDelegators,
 		CannotActivateIfLeaving,
-		ExceedMaxCollatorsPerNom,
+		ExceedMaxCollatorsPerDelegator,
 		AlreadyDelegatedCollator,
 		DelegationDNE,
 		Underflow,
@@ -496,6 +497,16 @@ pub mod pallet {
 		/// Delegator, Amount Locked, Collator, New Total Amount backing
 		/// Collator
 		Delegation(T::AccountId, BalanceOf<T>, T::AccountId, BalanceOf<T>),
+		/// New Delegator, New Amount Bonded, Old Delegator, Old Amount Bonded,
+		/// Collator, New Total Amount backing Collator
+		DelegationReplaced(
+			T::AccountId,
+			BalanceOf<T>,
+			T::AccountId,
+			BalanceOf<T>,
+			T::AccountId,
+			BalanceOf<T>,
+		),
 		/// Delegator, Collator, Amount Unstaked, New Total Amount Staked for
 		/// Collator
 		DelegatorLeftCollator(T::AccountId, T::AccountId, BalanceOf<T>, BalanceOf<T>),
@@ -861,6 +872,8 @@ pub mod pallet {
 		/// NOTE: Expects the caller to have delegated before. Otherwise, they
 		/// should call `delegate_more`.
 		#[pallet::weight(0)]
+		// TODO: Fix unit test panic with transactional feature enabled
+		// #[transactional]
 		pub fn join_delegators(
 			origin: OriginFor<T>,
 			// TODO: Switch to LookupSource
@@ -880,16 +893,20 @@ pub mod pallet {
 				owner: acc.clone(),
 				amount,
 			};
-			ensure!(state.delegators.insert(delegation), Error::<T>::DelegatorExists);
-			ensure!(
-				(state.delegators.0.len() as u32) <= T::MaxDelegatorsPerCollator::get(),
-				Error::<T>::TooManyDelegators
-			);
+			ensure!(state.delegators.insert(delegation.clone()), Error::<T>::DelegatorExists);
+
+			// update state and potentially kick a delegator with less bonded amount
+			state = if (state.delegators.0.len() as u32) > T::MaxDelegatorsPerCollator::get() {
+				Self::do_update_delegator(delegation, state)?
+			} else {
+				state.total = state.total.saturating_add(amount);
+				state
+			};
+			let new_total = state.total;
 
 			// lock bond
 			// TODO: switch to lock instead of reserving
 			T::Currency::reserve(&acc, amount)?;
-			let new_total = state.total + amount;
 			if state.is_active() {
 				Self::update_active(collator.clone(), new_total);
 			}
@@ -897,7 +914,8 @@ pub mod pallet {
 			// update states
 			let (total_collators, total_delegators) = <Total<T>>::get();
 			<Total<T>>::put((total_collators, total_delegators.saturating_add(amount)));
-			state.total = new_total;
+
+			// TODO: Add update of select_top_candidates
 			<CollatorState<T>>::insert(&collator, state);
 			<DelegatorState<T>>::insert(&acc, Delegator::new(collator.clone(), amount));
 			Self::deposit_event(Event::Delegation(acc, amount, collator, new_total));
@@ -910,6 +928,8 @@ pub mod pallet {
 		///
 		/// NOTE: Expects the caller to have already delegated.
 		#[pallet::weight(0)]
+		// TODO: Fix unit test panic with transactional feature enabled
+		// #[transactional]
 		pub fn delegate_another_candidate(
 			origin: OriginFor<T>,
 			// TODO: Switch to LookupSource
@@ -922,7 +942,7 @@ pub mod pallet {
 				ensure!(amount >= T::MinDelegation::get(), Error::<T>::DelegationBelowMin);
 				ensure!(
 					(delegator.delegations.0.len() as u32) < T::MaxCollatorsPerDelegator::get(),
-					Error::<T>::ExceedMaxCollatorsPerNom
+					Error::<T>::ExceedMaxCollatorsPerDelegator
 				);
 
 				// prepare new collator state
@@ -938,17 +958,20 @@ pub mod pallet {
 					owner: acc.clone(),
 					amount,
 				};
-				// TODO: How to handle: Kick lowest bonded delegators or keep as is?
-				ensure!(
-					(state.delegators.0.len() as u32) < T::MaxDelegatorsPerCollator::get(),
-					Error::<T>::TooManyDelegators
-				);
-				ensure!(state.delegators.insert(delegation), Error::<T>::DelegatorExists);
+				ensure!(state.delegators.insert(delegation.clone()), Error::<T>::DelegatorExists);
+
+				// update state and potentially kick a delegator with less bonded amount
+				state = if (state.delegators.0.len() as u32) > T::MaxDelegatorsPerCollator::get() {
+					Self::do_update_delegator(delegation, state)?
+				} else {
+					state.total = state.total.saturating_add(amount);
+					state
+				};
+				let new_total = state.total;
 
 				// lock bond
 				// TODO: Switch from reserve to lock
 				T::Currency::reserve(&acc, amount)?;
-				let new_total = state.total + amount;
 				if state.is_active() {
 					Self::update_active(collator.clone(), new_total);
 				}
@@ -956,14 +979,15 @@ pub mod pallet {
 				// Update states
 				let (total_collators, total_delegators) = <Total<T>>::get();
 				<Total<T>>::put((total_collators, total_delegators.saturating_add(amount)));
-				state.total = new_total;
+
+				// TODO: Add update of select_top_candidates
 				<CollatorState<T>>::insert(&collator, state);
 				<DelegatorState<T>>::insert(&acc, delegator);
 				Self::deposit_event(Event::Delegation(acc, amount, collator, new_total));
 
 				Ok(().into())
 			} else {
-				Err(Error::<T>::NotDelegatingYet.into())
+				Err(Error::<T>::NotYetDelegating.into())
 			}
 		}
 		/// Leave the set of delegators and, by implication, revoke all ongoing
@@ -1317,6 +1341,34 @@ pub mod pallet {
 				// `unlock_rewards` or else have created it previously by paying rewards
 				<T::Currency as LockableCurrency<T::AccountId>>::remove_lock(REWARDS_ID, who);
 				<RewardLocks<T>>::remove(who);
+			}
+		}
+
+		fn do_update_delegator(
+			bond: Bond<T::AccountId, BalanceOf<T>>,
+			mut state: Collator<T::AccountId, BalanceOf<T>>,
+		) -> Result<Collator<T::AccountId, BalanceOf<T>>, DispatchError> {
+			// add bond & sort by amount
+			let mut delegators: Vec<Bond<T::AccountId, BalanceOf<T>>> = state.delegators.0;
+			// delegators.push(bond.clone());
+			delegators.sort_by(|a, b| b.amount.cmp(&a.amount));
+
+			// check whether bond is at last place
+			match delegators.pop() {
+				Some(Bond { amount, owner }) if amount < bond.amount => {
+					state.total = state.total.saturating_sub(amount).saturating_add(bond.amount);
+					state.delegators = OrderedSet::from_sorted_set(delegators);
+					Self::deposit_event(Event::DelegationReplaced(
+						bond.owner,
+						bond.amount,
+						owner,
+						amount,
+						state.id.clone(),
+						state.total,
+					));
+					Ok(state)
+				}
+				_ => Err(Error::<T>::TooManyDelegators.into()),
 			}
 		}
 	}
