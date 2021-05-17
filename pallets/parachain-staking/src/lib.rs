@@ -1235,18 +1235,15 @@ pub mod pallet {
 		// Weight: writes(2)
 		fn do_reward(who: &T::AccountId, reward: BalanceOf<T>, now: T::BlockNumber) {
 			// mint
-			if reward > T::Currency::minimum_balance() {
-				if let Ok(imb) = T::Currency::deposit_into_existing(who, reward) {
-					// TODO: Remove?
-					Self::deposit_event(Event::Rewarded(who.clone(), imb.peek()));
-				}
+			if let Ok(imb) = T::Currency::deposit_into_existing(who, reward) {
+				// set & update lock
+				let mut locks = <RewardLocks<T>>::get(who);
+				let unlock_block: T::BlockNumber = now.saturating_add(T::BondDuration::get().into());
+				locks.insert(unlock_block, reward);
+				Self::do_update_reward_locks(who, locks, now);
+				// TODO: Remove?
+				Self::deposit_event(Event::Rewarded(who.clone(), imb.peek()));
 			}
-
-			// set & update lock
-			let mut locks = <RewardLocks<T>>::get(who);
-			let unlock_block: T::BlockNumber = now.saturating_add(T::BondDuration::get().into());
-			locks.insert(unlock_block, reward);
-			Self::do_update_reward_locks(who, locks, now);
 		}
 		fn do_update_reward_locks(
 			who: &T::AccountId,
@@ -1296,6 +1293,7 @@ pub mod pallet {
 			if state.bond >= T::MinCollatorStk::get() && state.total >= T::MinCollatorStk::get() {
 				let block_now: T::BlockNumber = <frame_system::Pallet<T>>::block_number();
 				// TODO: Do we rather want to use a snapshot of total at the start of the round?
+				// --> Keep as is for now and worry about this later
 				let (total_collator_stake, total_delegator_stake) = <Total<T>>::get();
 				let (c_rewards, d_rewards) = Self::compute_block_issuance(total_collator_stake, total_delegator_stake);
 
@@ -1304,21 +1302,17 @@ pub mod pallet {
 				let amt_due_delegators = d_rewards;
 
 				// Reward collator
-				if amt_due_collator > T::Currency::minimum_balance() {
-					Self::do_reward(&author, amt_due_collator, block_now);
-				}
+				Self::do_reward(&author, amt_due_collator, block_now);
 
 				// Reward delegators
-				if amt_due_delegators > T::Currency::minimum_balance() {
-					// Reward delegators due portion
-					for Bond { owner, amount } in state.delegators {
-						if amount >= T::MinDelegatorStk::get() {
-							// Compare this delegator's stake with the total amount of
-							// delegated stake for this collator
-							let percent = Perbill::from_rational(amount, delegator_stake);
-							let due = percent * amt_due_delegators;
-							Self::do_reward(&owner, due, block_now);
-						}
+				// Reward delegators due portion
+				for Bond { owner, amount } in state.delegators {
+					if amount >= T::MinDelegatorStk::get() {
+						// Compare this delegator's stake with the total amount of
+						// delegated stake for this collator
+						let percent = Perbill::from_rational(amount, delegator_stake);
+						let due = percent * amt_due_delegators;
+						Self::do_reward(&owner, due, block_now);
 					}
 				}
 			}
