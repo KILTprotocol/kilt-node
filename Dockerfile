@@ -4,9 +4,6 @@ FROM paritytech/ci-linux:d34c7950-20210408 as builder
 
 WORKDIR /build
 
-ARG GIT_COMMIT
-ENV GIT_COMMIT=$GIT_COMMIT
-
 ARG FEATURES=
 
 COPY ./nodes /build/nodes
