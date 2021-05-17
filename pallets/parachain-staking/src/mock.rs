@@ -377,7 +377,7 @@ pub(crate) fn check_yearly_inflation(
 				assert_ok!(Stake::set_total_selected(Origin::root(), num_of_collators as u32));
 
 				// roll to round 2 to check for update of TotalSelected
-				roll_to_new((2 * blocks_per_round + 2).into(), authors.clone());
+				roll_to((2 * blocks_per_round + 2).into(), authors.clone());
 				assert_eq!(Stake::selected_candidates(), collator_ids);
 			}
 
@@ -393,7 +393,7 @@ pub(crate) fn check_yearly_inflation(
 				* (end_block as u128);
 
 			// fast-forward to num_of_years * blocks
-			roll_to_new(end_block, authors);
+			roll_to(end_block, authors);
 
 			// check collator rewards
 			let mut single_collator_reward: Balance = Balance::zero();
@@ -472,19 +472,7 @@ pub(crate) fn check_inflation_update(less_rounds: InflationInfo, more_rounds: In
 		&& less_rounds.delegator.reward_rate.round > more_rounds.delegator.reward_rate.round
 }
 
-pub(crate) fn roll_to(n: u64) {
-	while System::block_number() < n {
-		Stake::on_finalize(System::block_number());
-		Balances::on_finalize(System::block_number());
-		System::on_finalize(System::block_number());
-		System::set_block_number(System::block_number() + 1);
-		System::on_initialize(System::block_number());
-		Balances::on_initialize(System::block_number());
-		Stake::on_initialize(System::block_number());
-	}
-}
-
-pub(crate) fn roll_to_new(n: u64, authors: Vec<Option<AccountId>>) {
+pub(crate) fn roll_to(n: u64, authors: Vec<Option<AccountId>>) {
 	while System::block_number() < n {
 		if let Some(Some(author)) = authors.get((System::block_number()) as usize) {
 			Stake::note_author(*author);

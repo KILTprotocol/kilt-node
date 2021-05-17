@@ -558,7 +558,7 @@ pub mod pallet {
 	#[pallet::getter(fn collator_state)]
 	/// Get collator state associated with an account if account is collating
 	/// else None
-	type CollatorState<T: Config> =
+	pub(crate) type CollatorState<T: Config> =
 		StorageMap<_, Twox64Concat, T::AccountId, Collator<T::AccountId, BalanceOf<T>>, OptionQuery>;
 
 	#[pallet::storage]
@@ -841,7 +841,9 @@ pub mod pallet {
 			let before = state.bond;
 			let after = state.bond_less(less).ok_or(Error::<T>::Underflow)?;
 			ensure!(after >= T::MinCollatorCandidateStk::get(), Error::<T>::ValBondBelowMin);
-			T::Currency::unreserve(&collator, less);
+
+			let err_amt = T::Currency::unreserve(&collator, less);
+			debug_assert!(err_amt.is_zero());
 			if state.is_active() {
 				Self::update_active(collator.clone(), state.total);
 			}
