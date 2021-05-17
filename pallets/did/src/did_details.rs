@@ -486,7 +486,7 @@ impl<T: Config> TryFrom<DidCreationOperation<T>> for DidDetails<T> {
 
 	fn try_from(op: DidCreationOperation<T>) -> Result<Self, Self::Error> {
 		ensure!(
-			op.new_key_agreement_keys.len() < <<T as Config>::MaxNewKeyAgreementKeys>::get() as usize,
+			op.new_key_agreement_keys.len() <= <<T as Config>::MaxNewKeyAgreementKeys>::get() as usize,
 			InputError::MaxKeyAgreementKeysLimitExceeded
 		);
 
@@ -525,12 +525,12 @@ impl<T: Config> TryFrom<(DidDetails<T>, DidUpdateOperation<T>)> for DidDetails<T
 
 	fn try_from((old_details, update_operation): (DidDetails<T>, DidUpdateOperation<T>)) -> Result<Self, Self::Error> {
 		ensure!(
-			update_operation.new_key_agreement_keys.len() < <<T as Config>::MaxNewKeyAgreementKeys>::get() as usize,
+			update_operation.new_key_agreement_keys.len() <= <<T as Config>::MaxNewKeyAgreementKeys>::get() as usize,
 			DidError::InputError(InputError::MaxKeyAgreementKeysLimitExceeded)
 		);
 
 		ensure!(
-			update_operation.public_keys_to_remove.len() < <<T as Config>::MaxNewKeyAgreementKeys>::get() as usize,
+			update_operation.public_keys_to_remove.len() <= <<T as Config>::MaxVerificationKeysToRevoke>::get() as usize,
 			DidError::InputError(InputError::MaxVerificationKeysToRemoveLimitExceeded)
 		);
 

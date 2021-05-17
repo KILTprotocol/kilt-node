@@ -512,11 +512,20 @@ impl delegation::Config for Runtime {
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
 }
 
+parameter_types! {
+	pub const MaxNewKeyAgreementKeys: u32 = 5u32;
+	pub const MaxVerificationKeysToRevoke: u32 = 10u32;
+	pub const MaxUrlLength: u32 = 200u32;
+}
+
 impl did::Config for Runtime {
 	type DidIdentifier = AccountId;
 	type Event = Event;
 	type Call = Call;
 	type Origin = Origin;
+	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
+	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
+	type MaxUrlLength = MaxUrlLength;
 }
 
 construct_runtime! {
