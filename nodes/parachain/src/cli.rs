@@ -18,8 +18,11 @@
 
 use crate::chain_spec;
 use sc_cli;
-use std::path::PathBuf;
+use std::{ops::Deref, path::PathBuf};
 use structopt::StructOpt;
+
+pub const DEFAULT_RUNTIME: &str = "mashnet";
+pub const DEFAULT_PARA_ID: &str = "12555";
 
 /// Sub-commands supported by the collator.
 #[derive(Debug, StructOpt)]
@@ -33,7 +36,7 @@ pub enum Subcommand {
 	ExportGenesisWasm(ExportGenesisWasmCommand),
 
 	/// Build a chain specification.
-	BuildSpec(sc_cli::BuildSpecCmd),
+	BuildSpec(BuildSpecCmd),
 
 	/// Validate blocks.
 	CheckBlock(sc_cli::CheckBlockCmd),
@@ -58,6 +61,25 @@ pub enum Subcommand {
 	Benchmark(frame_benchmarking_cli::BenchmarkCmd),
 }
 
+/// Command for building the genesis state of the parachain
+#[derive(Debug, StructOpt)]
+pub struct BuildSpecCmd {
+	#[structopt(flatten)]
+	pub inner_args: sc_cli::BuildSpecCmd,
+
+	/// The name of the runtime which should get executed.
+	#[structopt(long, default_value = DEFAULT_RUNTIME)]
+	pub runtime: String,
+}
+
+impl Deref for BuildSpecCmd {
+	type Target = sc_cli::BuildSpecCmd;
+
+	fn deref(&self) -> &Self::Target {
+		&self.inner_args
+	}
+}
+
 /// Command for exporting the genesis state of the parachain
 #[derive(Debug, StructOpt)]
 pub struct ExportGenesisStateCommand {
@@ -66,10 +88,8 @@ pub struct ExportGenesisStateCommand {
 	pub output: Option<PathBuf>,
 
 	/// Id of the parachain this state is for.
-	///
-	/// Default: 100
-	#[structopt(long)]
-	pub parachain_id: Option<u32>,
+	#[structopt(long, default_value = DEFAULT_PARA_ID)]
+	pub parachain_id: u32,
 
 	/// Write output in binary. Default is to write in hex.
 	#[structopt(short, long)]
@@ -78,6 +98,10 @@ pub struct ExportGenesisStateCommand {
 	/// The name of the chain for that the genesis state should be exported.
 	#[structopt(long)]
 	pub chain: Option<String>,
+
+	/// The name of the runtime which should get executed.
+	#[structopt(long, default_value = DEFAULT_RUNTIME)]
+	pub runtime: String,
 }
 
 /// Command for exporting the genesis wasm file.
@@ -94,6 +118,10 @@ pub struct ExportGenesisWasmCommand {
 	/// The name of the chain for that the genesis wasm file should be exported.
 	#[structopt(long)]
 	pub chain: Option<String>,
+
+	/// The name of the runtime which should get executed.
+	#[structopt(long)]
+	pub runtime: Option<String>,
 }
 
 #[derive(Debug, StructOpt)]
@@ -108,6 +136,10 @@ pub struct Cli {
 
 	#[structopt(flatten)]
 	pub run: cumulus_client_cli::RunCmd,
+
+	/// The name of the runtime which should get executed.
+	#[structopt(long, default_value = DEFAULT_RUNTIME)]
+	pub runtime: String,
 
 	/// Relaychain arguments
 	#[structopt(raw = true)]

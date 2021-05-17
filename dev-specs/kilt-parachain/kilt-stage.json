@@ -11,7 +11,7 @@
     "tokenSymbol": "KILT"
   },
   "relay_chain": "rococo_local_testnet",
-  "para_id": 100,
+  "para_id": 12555,
   "consensusEngine": null,
   "lightSyncState": null,
   "genesis": {
@@ -64,7 +64,7 @@
         "key": "5Gp5hVw2Q6oBz9DkCB2bfH2gkVQpnMuTxgHpmg72yZBGqXGA"
       },
       "parachainInfo": {
-        "parachainId": 100
+        "parachainId": 12555
       },
       "palletDemocracy": {},
       "palletCollectiveInstance1": {

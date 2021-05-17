@@ -26,8 +26,8 @@ use cumulus_primitives_core::ParaId;
 use kilt_primitives::{Block, Hash};
 use polkadot_primitives::v0::CollatorPair;
 
+use polkadot_service::NativeExecutionDispatch;
 use sc_client_api::ExecutorProvider;
-use sc_executor::native_executor_instance;
 use sc_network::NetworkService;
 use sc_service::{Configuration, PartialComponents, Role, TFullBackend, TFullClient, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle};
@@ -40,20 +40,43 @@ use substrate_prometheus_endpoint::Registry;
 
 pub use sc_executor::NativeExecutor;
 
-// Native executor instance.
-native_executor_instance!(
-	pub RuntimeExecutor,
-	kilt_parachain_runtime::api::dispatch,
-	kilt_parachain_runtime::native_version,
-	frame_benchmarking::benchmarking::HostFunctions,
-);
+pub mod mashnet_executor {
+	use sc_executor::native_executor_instance;
 
-// Native executor instance.
-native_executor_instance!(
-	pub ShellRuntimeExecutor,
-	shell_runtime::api::dispatch,
-	shell_runtime::native_version,
-);
+	// Native executor instance.
+	native_executor_instance!(
+		pub RuntimeExecutor,
+		kilt_parachain_runtime::api::dispatch,
+		kilt_parachain_runtime::native_version,
+		frame_benchmarking::benchmarking::HostFunctions,
+	);
+
+	// Native executor instance.
+	native_executor_instance!(
+		pub ShellRuntimeExecutor,
+		shell_runtime::api::dispatch,
+		shell_runtime::native_version,
+	);
+}
+
+pub mod spiritnet_executor {
+	use sc_executor::native_executor_instance;
+
+	// Native executor instance.
+	native_executor_instance!(
+		pub RuntimeExecutor,
+		spiritnet_runtime::api::dispatch,
+		spiritnet_runtime::native_version,
+		frame_benchmarking::benchmarking::HostFunctions,
+	);
+
+	// Native executor instance.
+	native_executor_instance!(
+		pub ShellRuntimeExecutor,
+		shell_runtime::api::dispatch,
+		shell_runtime::native_version,
+	);
+}
 
 // type PartialComponentsType = sc_service::PartialComponents<
 // 	TFullClient<Block, RuntimeApi, Executor>,
@@ -333,15 +356,19 @@ where
 }
 
 /// Build the import queue for the "default" runtime.
-pub fn build_import_queue(
-	client: Arc<TFullClient<Block, kilt_parachain_runtime::RuntimeApi, RuntimeExecutor>>,
+pub fn build_import_queue<RE, SRE>(
+	client: Arc<TFullClient<Block, kilt_parachain_runtime::RuntimeApi, RE>>,
 	config: &Configuration,
 	telemetry: Option<TelemetryHandle>,
 	task_manager: &TaskManager,
 ) -> Result<
-	sp_consensus::DefaultImportQueue<Block, TFullClient<Block, shell_runtime::RuntimeApi, ShellRuntimeExecutor>>,
+	sp_consensus::DefaultImportQueue<Block, TFullClient<Block, shell_runtime::RuntimeApi, SRE>>,
 	sc_service::Error,
-> {
+>
+where
+	SRE: NativeExecutionDispatch + 'static,
+	RE: NativeExecutionDispatch + 'static,
+{
 	let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)?;
 
 	let block_import =
@@ -374,22 +401,26 @@ pub fn build_import_queue(
 }
 
 /// Start a rococo-test parachain node.
-pub async fn start_node(
+pub async fn start_node<RE, SRE>(
 	parachain_config: Configuration,
 	collator_key: CollatorPair,
 	polkadot_config: Configuration,
 	id: ParaId,
 ) -> sc_service::error::Result<(
 	TaskManager,
-	Arc<TFullClient<Block, kilt_parachain_runtime::RuntimeApi, RuntimeExecutor>>,
-)> {
-	start_node_impl::<kilt_parachain_runtime::RuntimeApi, RuntimeExecutor, _, _, _>(
+	Arc<TFullClient<Block, kilt_parachain_runtime::RuntimeApi, RE>>,
+)>
+where
+	RE: NativeExecutionDispatch + 'static,
+	SRE: NativeExecutionDispatch + 'static,
+{
+	start_node_impl::<kilt_parachain_runtime::RuntimeApi, RE, _, _, _>(
 		parachain_config,
 		collator_key,
 		polkadot_config,
 		id,
 		|_| Default::default(),
-		build_import_queue,
+		build_import_queue::<RE, SRE>,
 		|client,
 		 prometheus_registry,
 		 telemetry,
@@ -466,15 +497,18 @@ pub async fn start_node(
 }
 
 /// Build the import queue for the shell runtime.
-pub fn shell_build_import_queue(
-	client: Arc<TFullClient<Block, shell_runtime::RuntimeApi, ShellRuntimeExecutor>>,
+pub fn shell_build_import_queue<SRE>(
+	client: Arc<TFullClient<Block, shell_runtime::RuntimeApi, SRE>>,
 	config: &Configuration,
 	_: Option<TelemetryHandle>,
 	task_manager: &TaskManager,
 ) -> Result<
-	sp_consensus::DefaultImportQueue<Block, TFullClient<Block, shell_runtime::RuntimeApi, ShellRuntimeExecutor>>,
+	sp_consensus::DefaultImportQueue<Block, TFullClient<Block, shell_runtime::RuntimeApi, SRE>>,
 	sc_service::Error,
-> {
+>
+where
+	SRE: NativeExecutionDispatch + 'static,
+{
 	cumulus_client_consensus_relay_chain::import_queue(
 		client.clone(),
 		client,
@@ -486,16 +520,16 @@ pub fn shell_build_import_queue(
 }
 
 /// Start a rococo-shell parachain node.
-pub async fn start_shell_node(
+pub async fn start_shell_node<SRE>(
 	parachain_config: Configuration,
 	collator_key: CollatorPair,
 	polkadot_config: Configuration,
 	id: ParaId,
-) -> sc_service::error::Result<(
-	TaskManager,
-	Arc<TFullClient<Block, shell_runtime::RuntimeApi, ShellRuntimeExecutor>>,
-)> {
-	start_node_impl::<shell_runtime::RuntimeApi, ShellRuntimeExecutor, _, _, _>(
+) -> sc_service::error::Result<(TaskManager, Arc<TFullClient<Block, shell_runtime::RuntimeApi, SRE>>)>
+where
+	SRE: NativeExecutionDispatch + 'static,
+{
+	start_node_impl::<shell_runtime::RuntimeApi, SRE, _, _, _>(
 		parachain_config,
 		collator_key,
 		polkadot_config,
