@@ -33,7 +33,7 @@ use frame_system::{
 	EnsureOneOf, EnsureRoot,
 };
 use kilt_primitives::{
-	constants::{DAYS, DOLLARS, HOURS, MILLICENTS, MINUTES, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
+	constants::{DAYS, DOLLARS, MILLICENTS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature,
 };
 use sp_api::impl_runtime_apis;
@@ -53,6 +53,11 @@ use static_assertions::const_assert;
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
+
+#[cfg(feature = "fast-gov")]
+use kilt_primitives::constants::MINUTES;
+#[cfg(not(feature = "fast-gov"))]
+use kilt_primitives::constants::HOURS;
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
