@@ -355,26 +355,31 @@ pub mod pallet {
 		pub length: u32,
 	}
 
-	impl<B: Copy + sp_std::ops::Add<Output = B> + sp_std::ops::Sub<Output = B> + From<u32> + PartialOrd> RoundInfo<B> {
+	impl<
+			B: Copy + Saturating + sp_std::ops::Add<Output = B> + sp_std::ops::Sub<Output = B> + From<u32> + PartialOrd,
+		> RoundInfo<B>
+	{
 		pub fn new(current: RoundIndex, first: B, length: u32) -> RoundInfo<B> {
 			RoundInfo { current, first, length }
 		}
 		/// Check if the round should be updated
 		pub fn should_update(&self, now: B) -> bool {
-			now - self.first >= self.length.into()
+			let l = now.saturating_sub(self.first);
+			l >= self.length.into()
 		}
 		/// New round
 		pub fn update(&mut self, now: B) {
-			self.current += 1u32;
+			self.current = self.current.saturating_add(1u32);
 			self.first = now;
 		}
 	}
 
-	impl<B: Copy + sp_std::ops::Add<Output = B> + sp_std::ops::Sub<Output = B> + From<u32> + PartialOrd> Default
-		for RoundInfo<B>
+	impl<
+			B: Copy + Saturating + sp_std::ops::Add<Output = B> + sp_std::ops::Sub<Output = B> + From<u32> + PartialOrd,
+		> Default for RoundInfo<B>
 	{
 		fn default() -> RoundInfo<B> {
-			RoundInfo::new(1u32, 1u32.into(), 20u32.into())
+			RoundInfo::new(0u32, 0u32.into(), 20u32.into())
 		}
 	}
 
@@ -505,7 +510,7 @@ pub mod pallet {
 
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-		fn on_finalize(n: T::BlockNumber) {
+		fn on_initialize(n: T::BlockNumber) -> frame_support::weights::Weight {
 			let mut round = <Round<T>>::get();
 			if round.should_update(n) {
 				// kill snapshot of current round
@@ -527,6 +532,8 @@ pub mod pallet {
 					delegator_staked,
 				));
 			}
+			// TODO: Add post weight
+			0
 		}
 	}
 
@@ -641,14 +648,14 @@ pub mod pallet {
 			// Set total selected candidates to minimum config
 			<TotalSelected<T>>::put(T::MinSelectedCandidates::get());
 			// Choose top TotalSelected collator candidates
-			let (v_count, collator_staked, delegator_staked) = <Pallet<T>>::select_top_candidates(1u32);
-			// Start Round 1 at Block 0
-			let round: RoundInfo<T::BlockNumber> = RoundInfo::new(1u32, 0u32.into(), T::DefaultBlocksPerRound::get());
+			let (v_count, collator_staked, delegator_staked) = <Pallet<T>>::select_top_candidates(0u32);
+			// Start Round 0 at Block 0
+			let round: RoundInfo<T::BlockNumber> = RoundInfo::new(0u32, 0u32.into(), T::DefaultBlocksPerRound::get());
 			<Round<T>>::put(round);
 			// Snapshot total stake
 			<Pallet<T>>::deposit_event(Event::NewRound(
 				T::BlockNumber::zero(),
-				1u32,
+				0u32,
 				v_count,
 				collator_staked,
 				delegator_staked,
@@ -1285,7 +1292,6 @@ pub mod pallet {
 	{
 		fn note_author(author: T::AccountId) {
 			let now = <Round<T>>::get().current;
-
 			let state = <AtStake<T>>::get(now, author.clone());
 			if state.bond >= T::MinCollatorStk::get() && state.total >= T::MinCollatorStk::get() {
 				let block_now: T::BlockNumber = <frame_system::Pallet<T>>::block_number();

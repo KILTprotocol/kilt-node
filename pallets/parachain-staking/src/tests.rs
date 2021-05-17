@@ -63,7 +63,7 @@ fn geneses() {
 			assert_eq!(Balances::free_balance(&1), 500);
 			assert!(Stake::is_candidate(&1));
 			assert_eq!(
-				Stake::at_stake(1u32, &1),
+				Stake::at_stake(0u32, &1),
 				CollatorSnapshot {
 					bond: 500,
 					delegators: vec![Bond { owner: 3, amount: 100 }, Bond { owner: 4, amount: 100 }],
@@ -75,7 +75,7 @@ fn geneses() {
 			assert_eq!(Balances::free_balance(&2), 100);
 			assert!(Stake::is_candidate(&2));
 			assert_eq!(
-				Stake::at_stake(1u32, &2),
+				Stake::at_stake(0u32, &2),
 				CollatorSnapshot {
 					bond: 200,
 					delegators: vec![Bond { owner: 5, amount: 100 }, Bond { owner: 6, amount: 100 }],
@@ -104,7 +104,7 @@ fn geneses() {
 			assert_eq!(Stake::total_selected(), <Test as Config>::MinSelectedCandidates::get());
 			assert_eq!(
 				Stake::round(),
-				RoundInfo::new(1u32, 0u32.into(), <Test as Config>::DefaultBlocksPerRound::get())
+				RoundInfo::new(0u32, 0u32.into(), <Test as Config>::DefaultBlocksPerRound::get())
 			);
 		});
 	ExtBuilder::default()
@@ -157,7 +157,7 @@ fn geneses() {
 			assert_eq!(Stake::total_selected(), <Test as Config>::MinSelectedCandidates::get());
 			assert_eq!(
 				Stake::round(),
-				RoundInfo::new(1u32, 0u32.into(), <Test as Config>::DefaultBlocksPerRound::get())
+				RoundInfo::new(0u32, 0u32.into(), <Test as Config>::DefaultBlocksPerRound::get())
 			);
 		});
 }
@@ -186,30 +186,30 @@ fn online_offline_works() {
 			assert_noop!(Stake::go_online(Origin::signed(3)), Error::<Test>::CandidateDNE);
 			assert_noop!(Stake::go_online(Origin::signed(2)), Error::<Test>::AlreadyActive);
 			assert_ok!(Stake::go_offline(Origin::signed(2)));
-			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorWentOffline(3, 2)));
+			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorWentOffline(2, 2)));
 			roll_to(21);
 			let mut expected = vec![
+				Event::CollatorChosen(1, 1, 500, 200),
+				Event::CollatorChosen(1, 2, 200, 200),
+				Event::NewRound(5, 1, 2, 700, 400),
 				Event::CollatorChosen(2, 1, 500, 200),
 				Event::CollatorChosen(2, 2, 200, 200),
-				Event::NewRound(5, 2, 2, 700, 400),
+				Event::NewRound(10, 2, 2, 700, 400),
+				Event::CollatorWentOffline(2, 2),
 				Event::CollatorChosen(3, 1, 500, 200),
-				Event::CollatorChosen(3, 2, 200, 200),
-				Event::NewRound(10, 3, 2, 700, 400),
-				Event::CollatorWentOffline(3, 2),
+				Event::NewRound(15, 3, 1, 500, 200),
 				Event::CollatorChosen(4, 1, 500, 200),
-				Event::NewRound(15, 4, 1, 500, 200),
-				Event::CollatorChosen(5, 1, 500, 200),
-				Event::NewRound(20, 5, 1, 500, 200),
+				Event::NewRound(20, 4, 1, 500, 200),
 			];
 			assert_eq!(events(), expected);
 			assert_noop!(Stake::go_offline(Origin::signed(2)), Error::<Test>::AlreadyOffline);
 			assert_ok!(Stake::go_online(Origin::signed(2)));
-			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorBackOnline(5, 2)));
-			expected.push(Event::CollatorBackOnline(5, 2));
+			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorBackOnline(4, 2)));
+			expected.push(Event::CollatorBackOnline(4, 2));
 			roll_to(26);
-			expected.push(Event::CollatorChosen(6, 1, 500, 200));
-			expected.push(Event::CollatorChosen(6, 2, 200, 200));
-			expected.push(Event::NewRound(25, 6, 2, 700, 400));
+			expected.push(Event::CollatorChosen(5, 1, 500, 200));
+			expected.push(Event::CollatorChosen(5, 2, 200, 200));
+			expected.push(Event::NewRound(25, 5, 2, 700, 400));
 			assert_eq!(events(), expected);
 		});
 }
@@ -298,26 +298,26 @@ fn collator_exit_executes_after_delay() {
 			assert_noop!(Stake::leave_candidates(Origin::signed(3)), Error::<Test>::CandidateDNE);
 			roll_to(11);
 			assert_ok!(Stake::leave_candidates(Origin::signed(2)));
-			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(3, 2, 5)));
+			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(2, 2, 4)));
 			let info = Stake::collator_state(&2).unwrap();
-			assert_eq!(info.state, CollatorStatus::Leaving(5));
+			assert_eq!(info.state, CollatorStatus::Leaving(4));
 			roll_to(21);
 			// we must exclude leaving collators from rewards while
 			// holding them retroactively accountable for previous faults
 			// (within the last T::SlashingWindow blocks)
 			let expected = vec![
+				Event::CollatorChosen(1, 1, 500, 200),
+				Event::CollatorChosen(1, 2, 200, 200),
+				Event::NewRound(5, 1, 2, 700, 400),
 				Event::CollatorChosen(2, 1, 500, 200),
 				Event::CollatorChosen(2, 2, 200, 200),
-				Event::NewRound(5, 2, 2, 700, 400),
+				Event::NewRound(10, 2, 2, 700, 400),
+				Event::CollatorScheduledExit(2, 2, 4),
 				Event::CollatorChosen(3, 1, 500, 200),
-				Event::CollatorChosen(3, 2, 200, 200),
-				Event::NewRound(10, 3, 2, 700, 400),
-				Event::CollatorScheduledExit(3, 2, 5),
-				Event::CollatorChosen(4, 1, 500, 200),
-				Event::NewRound(15, 4, 1, 500, 200),
+				Event::NewRound(15, 3, 1, 500, 200),
 				Event::CollatorLeft(2, 400, 500, 200),
-				Event::CollatorChosen(5, 1, 500, 200),
-				Event::NewRound(20, 5, 1, 500, 200),
+				Event::CollatorChosen(4, 1, 500, 200),
+				Event::NewRound(20, 4, 1, 500, 200),
 			];
 			assert_eq!(events(), expected);
 		});
@@ -343,16 +343,16 @@ fn collator_selection_chooses_top_candidates() {
 			roll_to(8);
 			// should choose top TotalSelectedCandidates (5), in order
 			let expected = vec![
-				Event::CollatorChosen(2, 1, 100, 0),
-				Event::CollatorChosen(2, 2, 90, 0),
-				Event::CollatorChosen(2, 3, 80, 0),
-				Event::CollatorChosen(2, 4, 70, 0),
-				Event::CollatorChosen(2, 5, 60, 0),
-				Event::NewRound(5, 2, 5, 400, 0),
+				Event::CollatorChosen(1, 1, 100, 0),
+				Event::CollatorChosen(1, 2, 90, 0),
+				Event::CollatorChosen(1, 3, 80, 0),
+				Event::CollatorChosen(1, 4, 70, 0),
+				Event::CollatorChosen(1, 5, 60, 0),
+				Event::NewRound(5, 1, 5, 400, 0),
 			];
 			assert_eq!(events(), expected);
 			assert_ok!(Stake::leave_candidates(Origin::signed(6)));
-			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(2, 6, 4)));
+			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(1, 6, 3)));
 			roll_to(21);
 			assert_ok!(Stake::join_candidates(Origin::signed(6), 69u128));
 			assert_eq!(
@@ -362,39 +362,39 @@ fn collator_selection_chooses_top_candidates() {
 			roll_to(27);
 			// should choose top TotalSelectedCandidates (5), in order
 			let expected = vec![
+				Event::CollatorChosen(1, 1, 100, 0),
+				Event::CollatorChosen(1, 2, 90, 0),
+				Event::CollatorChosen(1, 3, 80, 0),
+				Event::CollatorChosen(1, 4, 70, 0),
+				Event::CollatorChosen(1, 5, 60, 0),
+				Event::NewRound(5, 1, 5, 400, 0),
+				Event::CollatorScheduledExit(1, 6, 3),
 				Event::CollatorChosen(2, 1, 100, 0),
 				Event::CollatorChosen(2, 2, 90, 0),
 				Event::CollatorChosen(2, 3, 80, 0),
 				Event::CollatorChosen(2, 4, 70, 0),
 				Event::CollatorChosen(2, 5, 60, 0),
-				Event::NewRound(5, 2, 5, 400, 0),
-				Event::CollatorScheduledExit(2, 6, 4),
+				Event::NewRound(10, 2, 5, 400, 0),
+				Event::CollatorLeft(6, 50, 400, 0),
 				Event::CollatorChosen(3, 1, 100, 0),
 				Event::CollatorChosen(3, 2, 90, 0),
 				Event::CollatorChosen(3, 3, 80, 0),
 				Event::CollatorChosen(3, 4, 70, 0),
 				Event::CollatorChosen(3, 5, 60, 0),
-				Event::NewRound(10, 3, 5, 400, 0),
-				Event::CollatorLeft(6, 50, 400, 0),
+				Event::NewRound(15, 3, 5, 400, 0),
 				Event::CollatorChosen(4, 1, 100, 0),
 				Event::CollatorChosen(4, 2, 90, 0),
 				Event::CollatorChosen(4, 3, 80, 0),
 				Event::CollatorChosen(4, 4, 70, 0),
 				Event::CollatorChosen(4, 5, 60, 0),
-				Event::NewRound(15, 4, 5, 400, 0),
+				Event::NewRound(20, 4, 5, 400, 0),
+				Event::JoinedCollatorCandidates(6, 69, 469),
 				Event::CollatorChosen(5, 1, 100, 0),
 				Event::CollatorChosen(5, 2, 90, 0),
 				Event::CollatorChosen(5, 3, 80, 0),
 				Event::CollatorChosen(5, 4, 70, 0),
-				Event::CollatorChosen(5, 5, 60, 0),
-				Event::NewRound(20, 5, 5, 400, 0),
-				Event::JoinedCollatorCandidates(6, 69, 469),
-				Event::CollatorChosen(6, 1, 100, 0),
-				Event::CollatorChosen(6, 2, 90, 0),
-				Event::CollatorChosen(6, 3, 80, 0),
-				Event::CollatorChosen(6, 4, 70, 0),
-				Event::CollatorChosen(6, 6, 69, 0),
-				Event::NewRound(25, 6, 5, 409, 0),
+				Event::CollatorChosen(5, 6, 69, 0),
+				Event::NewRound(25, 5, 5, 409, 0),
 			];
 			assert_eq!(events(), expected);
 		});
@@ -421,48 +421,48 @@ fn exit_queue() {
 			roll_to(8);
 			// should choose top TotalSelectedCandidates (5), in order
 			let mut expected = vec![
-				Event::CollatorChosen(2, 1, 100, 0),
-				Event::CollatorChosen(2, 2, 90, 0),
-				Event::CollatorChosen(2, 3, 80, 0),
-				Event::CollatorChosen(2, 4, 70, 0),
-				Event::CollatorChosen(2, 5, 60, 0),
-				Event::NewRound(5, 2, 5, 400, 0),
+				Event::CollatorChosen(1, 1, 100, 0),
+				Event::CollatorChosen(1, 2, 90, 0),
+				Event::CollatorChosen(1, 3, 80, 0),
+				Event::CollatorChosen(1, 4, 70, 0),
+				Event::CollatorChosen(1, 5, 60, 0),
+				Event::NewRound(5, 1, 5, 400, 0),
 			];
 			assert_eq!(events(), expected);
 			assert_ok!(Stake::leave_candidates(Origin::signed(6)));
-			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(2, 6, 4)));
+			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(1, 6, 3)));
 			roll_to(11);
 			assert_ok!(Stake::leave_candidates(Origin::signed(5)));
-			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(3, 5, 5)));
+			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(2, 5, 4)));
 			roll_to(16);
 			assert_ok!(Stake::leave_candidates(Origin::signed(4)));
-			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(4, 4, 6)));
+			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(3, 4, 5)));
 			assert_noop!(
 				Stake::leave_candidates(Origin::signed(4)),
 				Error::<Test>::AlreadyLeaving
 			);
 			roll_to(21);
 			let mut new_events = vec![
-				Event::CollatorScheduledExit(2, 6, 4),
+				Event::CollatorScheduledExit(1, 6, 3),
+				Event::CollatorChosen(2, 1, 100, 0),
+				Event::CollatorChosen(2, 2, 90, 0),
+				Event::CollatorChosen(2, 3, 80, 0),
+				Event::CollatorChosen(2, 4, 70, 0),
+				Event::CollatorChosen(2, 5, 60, 0),
+				Event::NewRound(10, 2, 5, 400, 0),
+				Event::CollatorScheduledExit(2, 5, 4),
+				Event::CollatorLeft(6, 50, 400, 0),
 				Event::CollatorChosen(3, 1, 100, 0),
 				Event::CollatorChosen(3, 2, 90, 0),
 				Event::CollatorChosen(3, 3, 80, 0),
 				Event::CollatorChosen(3, 4, 70, 0),
-				Event::CollatorChosen(3, 5, 60, 0),
-				Event::NewRound(10, 3, 5, 400, 0),
-				Event::CollatorScheduledExit(3, 5, 5),
-				Event::CollatorLeft(6, 50, 400, 0),
+				Event::NewRound(15, 3, 4, 340, 0),
+				Event::CollatorScheduledExit(3, 4, 5),
+				Event::CollatorLeft(5, 60, 340, 0),
 				Event::CollatorChosen(4, 1, 100, 0),
 				Event::CollatorChosen(4, 2, 90, 0),
 				Event::CollatorChosen(4, 3, 80, 0),
-				Event::CollatorChosen(4, 4, 70, 0),
-				Event::NewRound(15, 4, 4, 340, 0),
-				Event::CollatorScheduledExit(4, 4, 6),
-				Event::CollatorLeft(5, 60, 340, 0),
-				Event::CollatorChosen(5, 1, 100, 0),
-				Event::CollatorChosen(5, 2, 90, 0),
-				Event::CollatorChosen(5, 3, 80, 0),
-				Event::NewRound(20, 5, 3, 270, 0),
+				Event::NewRound(20, 4, 3, 270, 0),
 			];
 			expected.append(&mut new_events);
 			assert_eq!(events(), expected);
@@ -510,11 +510,11 @@ fn exit_queue() {
 // 			roll_to(round * blocks_per_round + 1);
 // 			// should choose top TotalCandidatesSelected (5), in order
 // 			let mut expected = vec![
-// 				Event::CollatorChosen(2, 1, 100_000_000, 0),
-// 				Event::CollatorChosen(2, 2, 90_000_000, 0),
-// 				Event::CollatorChosen(2, 3, 80_000_000, 0),
-// 				Event::CollatorChosen(2, 4, 70_000_000, 0),
-// 				Event::CollatorChosen(2, 5, 60_000_000, 0),
+// 				Event::CollatorChosen(1, 1, 100_000_000, 0),
+// 				Event::CollatorChosen(1, 2, 90_000_000, 0),
+// 				Event::CollatorChosen(1, 3, 80_000_000, 0),
+// 				Event::CollatorChosen(1, 4, 70_000_000, 0),
+// 				Event::CollatorChosen(1, 5, 60_000_000, 0),
 // 				Event::NewRound(blocks_per_round, 2, 5, 400_000_000, 0),
 // 			];
 // 			assert_eq!(events(), expected);
@@ -524,18 +524,18 @@ fn exit_queue() {
 // 			roll_to(round * blocks_per_round + 1);
 // 			// pay total issuance to 1
 // 			let mut new = vec![
+// 				Event::CollatorChosen(2, 1, 100_000_000, 0),
+// 				Event::CollatorChosen(2, 2, 90_000_000, 0),
+// 				Event::CollatorChosen(2, 3, 80_000_000, 0),
+// 				Event::CollatorChosen(2, 4, 70_000_000, 0),
+// 				Event::CollatorChosen(2, 5, 60_000_000, 0),
+// 				Event::NewRound(2 * blocks_per_round, 3, 5, 400_000_000, 0),
+// 				Event::Rewarded(1, rewards),
 // 				Event::CollatorChosen(3, 1, 100_000_000, 0),
 // 				Event::CollatorChosen(3, 2, 90_000_000, 0),
 // 				Event::CollatorChosen(3, 3, 80_000_000, 0),
 // 				Event::CollatorChosen(3, 4, 70_000_000, 0),
 // 				Event::CollatorChosen(3, 5, 60_000_000, 0),
-// 				Event::NewRound(2 * blocks_per_round, 3, 5, 400_000_000, 0),
-// 				Event::Rewarded(1, rewards),
-// 				Event::CollatorChosen(4, 1, 100_000_000, 0),
-// 				Event::CollatorChosen(4, 2, 90_000_000, 0),
-// 				Event::CollatorChosen(4, 3, 80_000_000, 0),
-// 				Event::CollatorChosen(4, 4, 70_000_000, 0),
-// 				Event::CollatorChosen(4, 5, 60_000_000, 0),
 // 				Event::NewRound(3 * blocks_per_round, 4, 5, 400_000_000, 0),
 // 			];
 // 			expected.append(&mut new);
@@ -549,19 +549,19 @@ fn exit_queue() {
 
 // 			// pay 60% total issuance to 1 and 40% total issuance to 2
 // 			let mut new1 = vec![
+// 				Event::CollatorChosen(4, 1, 100_000_000, 0),
+// 				Event::CollatorChosen(4, 2, 90_000_000, 0),
+// 				Event::CollatorChosen(4, 3, 80_000_000, 0),
+// 				Event::CollatorChosen(4, 4, 70_000_000, 0),
+// 				Event::CollatorChosen(4, 5, 60_000_000, 0),
+// 				Event::NewRound(4 * blocks_per_round, 5, 5, 400_000_000, 0),
+// 				Event::Rewarded(1, Perbill::from_percent(60) * rewards),
+// 				Event::Rewarded(2, Perbill::from_percent(40) * rewards),
 // 				Event::CollatorChosen(5, 1, 100_000_000, 0),
 // 				Event::CollatorChosen(5, 2, 90_000_000, 0),
 // 				Event::CollatorChosen(5, 3, 80_000_000, 0),
 // 				Event::CollatorChosen(5, 4, 70_000_000, 0),
 // 				Event::CollatorChosen(5, 5, 60_000_000, 0),
-// 				Event::NewRound(4 * blocks_per_round, 5, 5, 400_000_000, 0),
-// 				Event::Rewarded(1, Perbill::from_percent(60) * rewards),
-// 				Event::Rewarded(2, Perbill::from_percent(40) * rewards),
-// 				Event::CollatorChosen(6, 1, 100_000_000, 0),
-// 				Event::CollatorChosen(6, 2, 90_000_000, 0),
-// 				Event::CollatorChosen(6, 3, 80_000_000, 0),
-// 				Event::CollatorChosen(6, 4, 70_000_000, 0),
-// 				Event::CollatorChosen(6, 5, 60_000_000, 0),
 // 				Event::NewRound(5 * blocks_per_round, 6, 5, 400_000_000, 0),
 // 			];
 // 			expected.append(&mut new1);
@@ -688,19 +688,19 @@ fn exit_queue() {
 
 // 			// pay 60% total issuance to 1 and 40% total issuance to 2
 // 			let mut new1 = vec![
+// 				Event::CollatorChosen(4, 1, 500_000_000, 0),
+// 				Event::CollatorChosen(4, 2, 90_000_000, 0),
+// 				Event::CollatorChosen(4, 3, 80_000_000, 0),
+// 				Event::CollatorChosen(4, 4, 70_000_000, 0),
+// 				Event::CollatorChosen(4, 5, 60_000_000, 0),
+// 				Event::NewRound(4 * blocks_per_round, 5, 5, 800_000_000, 0),
+// 				Event::Rewarded(1, Perbill::from_percent(60) * rewards),
+// 				Event::Rewarded(2, Perbill::from_percent(40) * rewards),
 // 				Event::CollatorChosen(5, 1, 500_000_000, 0),
 // 				Event::CollatorChosen(5, 2, 90_000_000, 0),
 // 				Event::CollatorChosen(5, 3, 80_000_000, 0),
 // 				Event::CollatorChosen(5, 4, 70_000_000, 0),
 // 				Event::CollatorChosen(5, 5, 60_000_000, 0),
-// 				Event::NewRound(4 * blocks_per_round, 5, 5, 800_000_000, 0),
-// 				Event::Rewarded(1, Perbill::from_percent(60) * rewards),
-// 				Event::Rewarded(2, Perbill::from_percent(40) * rewards),
-// 				Event::CollatorChosen(6, 1, 500_000_000, 0),
-// 				Event::CollatorChosen(6, 2, 90_000_000, 0),
-// 				Event::CollatorChosen(6, 3, 80_000_000, 0),
-// 				Event::CollatorChosen(6, 4, 70_000_000, 0),
-// 				Event::CollatorChosen(6, 5, 60_000_000, 0),
 // 				Event::NewRound(5 * blocks_per_round, 6, 5, 800_000_000, 0),
 // 			];
 // 			expected.append(&mut new1);
@@ -769,12 +769,12 @@ fn multiple_delegations() {
 			roll_to(8);
 			// chooses top TotalSelectedCandidates (5), in order
 			let mut expected = vec![
-				Event::CollatorChosen(2, 1, 20, 30),
-				Event::CollatorChosen(2, 2, 20, 20),
-				Event::CollatorChosen(2, 4, 20, 0),
-				Event::CollatorChosen(2, 3, 20, 0),
-				Event::CollatorChosen(2, 5, 10, 0),
-				Event::NewRound(5, 2, 5, 90, 50),
+				Event::CollatorChosen(1, 1, 20, 30),
+				Event::CollatorChosen(1, 2, 20, 20),
+				Event::CollatorChosen(1, 4, 20, 0),
+				Event::CollatorChosen(1, 3, 20, 0),
+				Event::CollatorChosen(1, 5, 10, 0),
+				Event::NewRound(5, 1, 5, 90, 50),
 			];
 			assert_eq!(events(), expected);
 			assert_noop!(
@@ -797,18 +797,18 @@ fn multiple_delegations() {
 				Event::Delegation(6, 10, 2, 50),
 				Event::Delegation(6, 10, 3, 30),
 				Event::Delegation(6, 10, 4, 30),
+				Event::CollatorChosen(2, 2, 20, 30),
+				Event::CollatorChosen(2, 1, 20, 30),
+				Event::CollatorChosen(2, 4, 20, 10),
+				Event::CollatorChosen(2, 3, 20, 10),
+				Event::CollatorChosen(2, 5, 10, 0),
+				Event::NewRound(10, 2, 5, 90, 80),
 				Event::CollatorChosen(3, 2, 20, 30),
 				Event::CollatorChosen(3, 1, 20, 30),
 				Event::CollatorChosen(3, 4, 20, 10),
 				Event::CollatorChosen(3, 3, 20, 10),
 				Event::CollatorChosen(3, 5, 10, 0),
-				Event::NewRound(10, 3, 5, 90, 80),
-				Event::CollatorChosen(4, 2, 20, 30),
-				Event::CollatorChosen(4, 1, 20, 30),
-				Event::CollatorChosen(4, 4, 20, 10),
-				Event::CollatorChosen(4, 3, 20, 10),
-				Event::CollatorChosen(4, 5, 10, 0),
-				Event::NewRound(15, 4, 5, 90, 80),
+				Event::NewRound(15, 3, 5, 90, 80),
 			];
 			expected.append(&mut new);
 			assert_eq!(events(), expected);
@@ -824,32 +824,32 @@ fn multiple_delegations() {
 			);
 			roll_to(26);
 			let mut new2 = vec![
-				Event::CollatorChosen(5, 2, 20, 30),
+				Event::CollatorChosen(4, 2, 20, 30),
+				Event::CollatorChosen(4, 1, 20, 30),
+				Event::CollatorChosen(4, 4, 20, 10),
+				Event::CollatorChosen(4, 3, 20, 10),
+				Event::CollatorChosen(4, 5, 10, 0),
+				Event::NewRound(20, 4, 5, 90, 80),
+				Event::Delegation(7, 80, 2, 130),
+				Event::CollatorChosen(5, 2, 20, 110),
 				Event::CollatorChosen(5, 1, 20, 30),
 				Event::CollatorChosen(5, 4, 20, 10),
 				Event::CollatorChosen(5, 3, 20, 10),
 				Event::CollatorChosen(5, 5, 10, 0),
-				Event::NewRound(20, 5, 5, 90, 80),
-				Event::Delegation(7, 80, 2, 130),
-				Event::CollatorChosen(6, 2, 20, 110),
-				Event::CollatorChosen(6, 1, 20, 30),
-				Event::CollatorChosen(6, 4, 20, 10),
-				Event::CollatorChosen(6, 3, 20, 10),
-				Event::CollatorChosen(6, 5, 10, 0),
-				Event::NewRound(25, 6, 5, 90, 160),
+				Event::NewRound(25, 5, 5, 90, 160),
 			];
 			expected.append(&mut new2);
 			assert_eq!(events(), expected);
 			assert_ok!(Stake::leave_candidates(Origin::signed(2)));
-			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(6, 2, 8)));
+			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(5, 2, 7)));
 			roll_to(31);
 			let mut new3 = vec![
-				Event::CollatorScheduledExit(6, 2, 8),
-				Event::CollatorChosen(7, 1, 20, 30),
-				Event::CollatorChosen(7, 4, 20, 10),
-				Event::CollatorChosen(7, 3, 20, 10),
-				Event::CollatorChosen(7, 5, 10, 0),
-				Event::NewRound(30, 7, 4, 70, 50),
+				Event::CollatorScheduledExit(5, 2, 7),
+				Event::CollatorChosen(6, 1, 20, 30),
+				Event::CollatorChosen(6, 4, 20, 10),
+				Event::CollatorChosen(6, 3, 20, 10),
+				Event::CollatorChosen(6, 5, 10, 0),
+				Event::NewRound(30, 6, 4, 70, 50),
 			];
 			expected.append(&mut new3);
 			assert_eq!(events(), expected);
@@ -1161,11 +1161,11 @@ fn revoke_delegation_or_leave_delegators() {
 // 				// Event::Rewarded(7, 173),
 // 				// Event::Rewarded(10, 173),
 // 				// Round 4 initialization
-// 				Event::CollatorChosen(5, 2, 20_000_000, 20_000_000),
-// 				Event::CollatorChosen(5, 1, 20_000_000, 20_000_000),
-// 				Event::CollatorChosen(5, 4, 20_000_000, 0),
-// 				Event::CollatorChosen(5, 3, 20_000_000, 0),
-// 				Event::CollatorChosen(5, 5, 10_000_000, 0),
+// 				Event::CollatorChosen(4, 2, 20_000_000, 20_000_000),
+// 				Event::CollatorChosen(4, 1, 20_000_000, 20_000_000),
+// 				Event::CollatorChosen(4, 4, 20_000_000, 0),
+// 				Event::CollatorChosen(4, 3, 20_000_000, 0),
+// 				Event::CollatorChosen(4, 5, 10_000_000, 0),
 // 				Event::NewRound(4 * blocks_per_round, 5, 5, 90_000_000, 40_000_000),
 // 			];
 // 			expected.append(&mut round_3_to_4);
@@ -1183,11 +1183,11 @@ fn revoke_delegation_or_leave_delegators() {
 // 				Event::Rewarded(7, 116),
 // 				Event::Rewarded(10, 116),
 // 				// Round 5 initialization
-// 				Event::CollatorChosen(6, 2, 20_000_000, 20_000_000),
-// 				Event::CollatorChosen(6, 1, 20_000_000, 20_000_000),
-// 				Event::CollatorChosen(6, 4, 20_000_000, 0),
-// 				Event::CollatorChosen(6, 3, 20_000_000, 0),
-// 				Event::CollatorChosen(6, 5, 10_000_000, 0),
+// 				Event::CollatorChosen(5, 2, 20_000_000, 20_000_000),
+// 				Event::CollatorChosen(5, 1, 20_000_000, 20_000_000),
+// 				Event::CollatorChosen(5, 4, 20_000_000, 0),
+// 				Event::CollatorChosen(5, 3, 20_000_000, 0),
+// 				Event::CollatorChosen(5, 5, 10_000_000, 0),
 // 				Event::NewRound(5 * blocks_per_round, 6, 5, 90_000_000, 40_000_000),
 // 			];
 // 			expected.append(&mut round_4_to_5);
@@ -1545,38 +1545,9 @@ fn round_transitions() {
 	let col_rewards = 15;
 	let d_max = 40;
 	let d_rewards = 10;
-	// round_immediately_jumps_if_current_duration_exceeds_new_blocks_per_round
-	// change from 5 bpr (blocks_per_round) to 3 in block 8 -> 8 should be new round
-	ExtBuilder::default()
-		.with_balances(vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100), (6, 100)])
-		.with_collators(vec![(1, 20)])
-		.with_delegators(vec![(2, 1, 10), (3, 1, 10)])
-		.with_inflation(col_max, col_rewards, d_max, d_rewards, 5)
-		.build()
-		.execute_with(|| {
-			// Default round every 5 blocks, but MinBlocksPerRound is 3 and we set it to min
-			// 3 blocks
-			let inflation = InflationInfo::new::<Test>(col_max, col_rewards, d_max, d_rewards);
-			assert_eq!(inflation, Stake::inflation_config());
-			roll_to(8);
-			// chooses top TotalSelectedCandidates (5), in order
-			let init = vec![Event::CollatorChosen(2, 1, 20, 20), Event::NewRound(5, 2, 1, 20, 20)];
-			assert_eq!(events(), init);
-			assert_ok!(Stake::set_blocks_per_round(Origin::root(), 3u32));
-
-			// check update of inflation config
-			assert!(check_inflation_update(inflation, Stake::inflation_config()));
-
-			assert_eq!(Stake::inflation_config(), InflationInfo::new::<Test>(10, 15, 40, 10));
-			assert_eq!(last_event(), MetaEvent::stake(Event::BlocksPerRoundSet(2, 5, 5, 3)));
-			roll_to(9);
-
-			// last round startet at 5, so we expect 8 to be the new round
-			assert_eq!(last_event(), MetaEvent::stake(Event::NewRound(8, 3, 1, 20, 20)));
-		});
 
 	// round_immediately_jumps_if_current_duration_exceeds_new_blocks_per_round
-	// change from 5 bpr to 3 in block 9 -> 9 should be new round
+	// change from 5 bpr to 3 in block 5 -> 8 should be new round
 	ExtBuilder::default()
 		.with_balances(vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100), (6, 100)])
 		.with_collators(vec![(1, 20)])
@@ -1586,19 +1557,19 @@ fn round_transitions() {
 		.execute_with(|| {
 			let inflation = InflationInfo::new::<Test>(col_max, col_rewards, d_max, d_rewards);
 			assert_eq!(inflation, Stake::inflation_config());
-			roll_to(9);
-			let init = vec![Event::CollatorChosen(2, 1, 20, 20), Event::NewRound(5, 2, 1, 20, 20)];
+			roll_to(5);
+			let init = vec![Event::CollatorChosen(1, 1, 20, 20), Event::NewRound(5, 1, 1, 20, 20)];
 			assert_eq!(events(), init);
 			assert_ok!(Stake::set_blocks_per_round(Origin::root(), 3u32));
-			assert_eq!(last_event(), MetaEvent::stake(Event::BlocksPerRoundSet(2, 5, 5, 3)));
+			assert_eq!(last_event(), MetaEvent::stake(Event::BlocksPerRoundSet(1, 5, 5, 3)));
 
 			// check update of inflation config
 			assert!(check_inflation_update(inflation, Stake::inflation_config()));
 
 			// last round startet at 5 but we are already at 9, so we expect 9 to be the new
 			// round
-			roll_to(10);
-			assert_eq!(last_event(), MetaEvent::stake(Event::NewRound(9, 3, 1, 20, 20)));
+			roll_to(8);
+			assert_eq!(last_event(), MetaEvent::stake(Event::NewRound(8, 2, 1, 20, 20)));
 		});
 
 	// if duration of current round is less than new bpr, round waits until new bpr
@@ -1617,20 +1588,53 @@ fn round_transitions() {
 			// 3 blocks
 			roll_to(6);
 			// chooses top TotalSelectedCandidates (5), in order
-			let init = vec![Event::CollatorChosen(2, 1, 20, 20), Event::NewRound(5, 2, 1, 20, 20)];
+			let init = vec![Event::CollatorChosen(1, 1, 20, 20), Event::NewRound(5, 1, 1, 20, 20)];
 			assert_eq!(events(), init);
 			assert_ok!(Stake::set_blocks_per_round(Origin::root(), 3u32));
-			assert_eq!(last_event(), MetaEvent::stake(Event::BlocksPerRoundSet(2, 5, 5, 3)));
+			assert_eq!(last_event(), MetaEvent::stake(Event::BlocksPerRoundSet(1, 5, 5, 3)));
 
 			// check update of inflation config
 			assert!(check_inflation_update(inflation, Stake::inflation_config()));
 
 			// there should not be a new event
-			roll_to(8);
-			assert_eq!(last_event(), MetaEvent::stake(Event::BlocksPerRoundSet(2, 5, 5, 3)));
+			roll_to(7);
+			assert_eq!(last_event(), MetaEvent::stake(Event::BlocksPerRoundSet(1, 5, 5, 3)));
 
-			roll_to(9);
-			assert_eq!(last_event(), MetaEvent::stake(Event::NewRound(8, 3, 1, 20, 20)));
+			roll_to(8);
+			assert_eq!(last_event(), MetaEvent::stake(Event::NewRound(8, 2, 1, 20, 20)));
+		});
+
+	// round_immediately_jumps_if_current_duration_exceeds_new_blocks_per_round
+	// change from 5 bpr (blocks_per_round) to 3 in block 7 -> 8 should be new round
+	ExtBuilder::default()
+		.with_balances(vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100), (6, 100)])
+		.with_collators(vec![(1, 20)])
+		.with_delegators(vec![(2, 1, 10), (3, 1, 10)])
+		.with_inflation(col_max, col_rewards, d_max, d_rewards, 5)
+		.build()
+		.execute_with(|| {
+			// Default round every 5 blocks, but MinBlocksPerRound is 3 and we set it to min
+			// 3 blocks
+			let inflation = InflationInfo::new::<Test>(col_max, col_rewards, d_max, d_rewards);
+			assert_eq!(inflation, Stake::inflation_config());
+			roll_to(7);
+			// chooses top TotalSelectedCandidates (5), in order
+			let init = vec![Event::CollatorChosen(1, 1, 20, 20), Event::NewRound(5, 1, 1, 20, 20)];
+			assert_eq!(events(), init);
+			assert_ok!(Stake::set_blocks_per_round(Origin::root(), 3u32));
+
+			// check update of inflation config
+			assert!(check_inflation_update(inflation, Stake::inflation_config()));
+
+			assert_eq!(
+				Stake::inflation_config(),
+				InflationInfo::new::<Test>(col_max, col_rewards, d_max, d_rewards)
+			);
+			assert_eq!(last_event(), MetaEvent::stake(Event::BlocksPerRoundSet(1, 5, 5, 3)));
+			roll_to(8);
+
+			// last round startet at 5, so we expect 8 to be the new round
+			assert_eq!(last_event(), MetaEvent::stake(Event::NewRound(8, 2, 1, 20, 20)));
 		});
 }
 
@@ -1660,7 +1664,7 @@ fn coinbase_rewards_few_blocks_detailed_check() {
 			let c_rewards: BalanceOf<Test> = inflation
 				.collator
 				.compute_block_rewards::<Test>(16_000_000 * DECIMALS, total_issuance);
-			// set 1 to be author for blocks 2-4, then 2 for blocks 5-6
+			// set 1 to be author for blocks 1-3, then 2 for blocks 4-5
 			let authors: Vec<Option<AccountId>> =
 				vec![None, Some(1u64), Some(1u64), Some(1u64), Some(2u64), Some(2u64)];
 			let mut c_reward_locks: BTreeMap<BlockNumber, BalanceOf<Test>> = BTreeMap::new();
@@ -1866,7 +1870,7 @@ fn coinbase_rewards_many_blocks_simple_check() {
 			assert_eq!(total_issuance, 160_000_000 * DECIMALS);
 			let end_block = num_of_years * YEARS as u64;
 			// set round robin authoring
-			let authors: Vec<Option<AccountId>> = (1u64..=end_block).map(|i| Some(i % 2 + 1)).collect();
+			let authors: Vec<Option<AccountId>> = (0u64..=end_block).map(|i| Some(i % 2 + 1)).collect();
 			roll_to_new(end_block, authors);
 
 			let rewards_1 = Balances::free_balance(&1).saturating_sub(32_000_000 * DECIMALS);
