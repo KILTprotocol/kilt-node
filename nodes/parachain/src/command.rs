@@ -37,11 +37,13 @@ use std::{io::Write, net::SocketAddr};
 
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
 	match id {
-		"staging" => Ok(Box::new(chain_spec::staging_test_net(para_id)?)),
-		"rococo" => Ok(Box::new(chain_spec::rococo_net()?)),
-		"dev" => Ok(Box::new(chain_spec::get_chain_spec(para_id)?)),
-		"" => Ok(Box::new(chain_spec::get_chain_spec(para_id)?)),
-		path => Ok(Box::new(chain_spec::ChainSpec::from_json_file(path.into())?)),
+		"staging" => Ok(Box::new(chain_spec::mashnet::make_staging_spec(para_id)?)),
+		"rococo" => Ok(Box::new(chain_spec::mashnet::load_rococo_spec()?)),
+		"dev" => Ok(Box::new(chain_spec::mashnet::make_dev_spec(para_id)?)),
+		"spiritnet-dev" => Ok(Box::new(chain_spec::spiritnet::get_chain_spec(para_id)?)),
+		"spiritnet" => Ok(Box::new(chain_spec::spiritnet::load_spiritnet_spec()?)),
+		"" => Ok(Box::new(chain_spec::mashnet::make_dev_spec(para_id)?)),
+		path => Ok(Box::new(chain_spec::mashnet::ChainSpec::from_json_file(path.into())?)),
 	}
 }
 
