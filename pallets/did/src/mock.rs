@@ -16,19 +16,29 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate as did;
-use crate::*;
+#![allow(clippy::from_over_into)]
+#![allow(unused_must_use)]
 
+use codec::{Decode, Encode};
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
-use kilt_primitives::{AccountId, Signature};
-use sp_core::{ed25519, sr25519, Pair, H256};
+use sp_core::{ed25519, sr25519, Pair};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 };
+use sp_std::collections::btree_set::BTreeSet;
+
+use crate as did;
+use crate::*;
 
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
+
+pub type TestDidIdentifier = kilt_primitives::DidIdentifier;
+pub type TestKeyId = did::KeyIdOf<Test>;
+pub type TestBlockNumber = kilt_primitives::BlockNumber;
+pub type TestCtypeOwner = TestDidIdentifier;
+pub type TestCtypeHash = kilt_primitives::Hash;
 
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -36,8 +46,9 @@ frame_support::construct_runtime!(
 		NodeBlock = Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
+		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>},
+		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		Did: did::{Pallet, Call, Storage, Event<T>},
 	}
 );
 
@@ -51,9 +62,9 @@ impl frame_system::Config for Test {
 	type Call = Call;
 	type Index = u64;
 	type BlockNumber = u64;
-	type Hash = H256;
+	type Hash = kilt_primitives::Hash;
 	type Hashing = BlakeTwo256;
-	type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+	type AccountId = <<kilt_primitives::Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
 	type Event = ();
@@ -73,27 +84,32 @@ impl frame_system::Config for Test {
 	type OnSetCode = ();
 }
 
-impl did::Config for Test {
+impl Config for Test {
+	type DidIdentifier = TestDidIdentifier;
+	type Origin = Origin;
+	type Call = Call;
 	type Event = ();
-	type WeightInfo = ();
-	type DidIdentifier = AccountId;
 }
 
-pub type TestDidIdentifier = <Test as did::Config>::DidIdentifier;
+impl ctype::Config for Test {
+	type CtypeCreatorId = TestCtypeOwner;
+	type EnsureOrigin = did::EnsureDidOrigin<TestCtypeOwner>;
+	type Event = ();
+}
 
-pub const DEFAULT_ACCOUNT: AccountId = AccountId::new([0u8; 32]);
+#[cfg(test)]
+pub(crate) const DEFAULT_ACCOUNT: kilt_primitives::AccountId = kilt_primitives::AccountId::new([0u8; 32]);
 
-pub const ALICE_DID: TestDidIdentifier = AccountId::new([1u8; 32]);
-pub const BOB_DID: TestDidIdentifier = AccountId::new([2u8; 32]);
-
-const DEFAULT_AUTH_SEED: [u8; 32] = [3u8; 32];
-const ALTERNATIVE_AUTH_SEED: [u8; 32] = [30u8; 32];
-const DEFAULT_ENC_SEED: [u8; 32] = [4u8; 32];
-const ALTERNATIVE_ENC_SEED: [u8; 32] = [40u8; 32];
-const DEFAULT_ATT_SEED: [u8; 32] = [5u8; 32];
-const ALTERNATIVE_ATT_SEED: [u8; 32] = [50u8; 32];
-const DEFAULT_DEL_SEED: [u8; 32] = [6u8; 32];
-const ALTERNATIVE_DEL_SEED: [u8; 32] = [60u8; 32];
+pub const ALICE_DID: TestDidIdentifier = TestDidIdentifier::new([1u8; 32]);
+pub const BOB_DID: TestDidIdentifier = TestDidIdentifier::new([2u8; 32]);
+const DEFAULT_AUTH_SEED: [u8; 32] = [4u8; 32];
+const ALTERNATIVE_AUTH_SEED: [u8; 32] = [40u8; 32];
+const DEFAULT_ENC_SEED: [u8; 32] = [5u8; 32];
+const ALTERNATIVE_ENC_SEED: [u8; 32] = [50u8; 32];
+const DEFAULT_ATT_SEED: [u8; 32] = [6u8; 32];
+const ALTERNATIVE_ATT_SEED: [u8; 32] = [60u8; 32];
+const DEFAULT_DEL_SEED: [u8; 32] = [7u8; 32];
+const ALTERNATIVE_DEL_SEED: [u8; 32] = [70u8; 32];
 
 pub fn get_ed25519_authentication_key(default: bool) -> ed25519::Pair {
 	if default {
@@ -111,11 +127,11 @@ pub fn get_sr25519_authentication_key(default: bool) -> sr25519::Pair {
 	}
 }
 
-pub fn get_x25519_encryption_key(default: bool) -> PublicEncryptionKey {
+pub fn get_x25519_encryption_key(default: bool) -> DidEncryptionKey {
 	if default {
-		PublicEncryptionKey::X55519(DEFAULT_ENC_SEED)
+		DidEncryptionKey::X25519(DEFAULT_ENC_SEED)
 	} else {
-		PublicEncryptionKey::X55519(ALTERNATIVE_ENC_SEED)
+		DidEncryptionKey::X25519(ALTERNATIVE_ENC_SEED)
 	}
 }
 
@@ -153,74 +169,130 @@ pub fn get_sr25519_delegation_key(default: bool) -> sr25519::Pair {
 
 pub fn generate_base_did_creation_operation(
 	did: TestDidIdentifier,
-	auth_key: did::PublicVerificationKey,
-	enc_key: did::PublicEncryptionKey,
-) -> did::DidCreationOperation<TestDidIdentifier> {
+	new_auth_key: did::DidVerificationKey,
+) -> did::DidCreationOperation<Test> {
 	DidCreationOperation {
-		did: did,
-		new_auth_key: auth_key,
-		new_key_agreement_key: enc_key,
+		did,
+		new_authentication_key: new_auth_key,
+		new_key_agreement_keys: BTreeSet::new(),
 		new_attestation_key: None,
 		new_delegation_key: None,
 		new_endpoint_url: None,
 	}
 }
 
-pub fn generate_base_did_update_operation(did: TestDidIdentifier) -> did::DidUpdateOperation<TestDidIdentifier> {
+pub fn generate_base_did_update_operation(did: TestDidIdentifier) -> did::DidUpdateOperation<Test> {
 	DidUpdateOperation {
-		did: did,
-		new_auth_key: None,
-		new_key_agreement_key: None,
-		new_attestation_key: None,
-		new_delegation_key: None,
+		did,
+		new_authentication_key: None,
+		new_key_agreement_keys: BTreeSet::new(),
+		attestation_key_update: DidVerificationKeyUpdateAction::default(),
+		delegation_key_update: DidVerificationKeyUpdateAction::default(),
 		new_endpoint_url: None,
-		verification_keys_to_remove: None,
-		tx_counter: 1,
+		public_keys_to_remove: BTreeSet::new(),
+		tx_counter: 1u64,
 	}
 }
 
-pub fn generate_base_did_delete_operation(did: TestDidIdentifier) -> did::DidDeletionOperation<TestDidIdentifier> {
-	DidDeletionOperation {
-		did: did,
-		tx_counter: u64::MAX,
+pub fn generate_base_did_delete_operation(did: TestDidIdentifier) -> did::DidDeletionOperation<Test> {
+	DidDeletionOperation { did, tx_counter: 1u64 }
+}
+
+pub fn generate_base_did_details(authentication_key: did::DidVerificationKey) -> did::DidDetails<Test> {
+	did::DidDetails::new(authentication_key, 0u64)
+}
+
+pub fn generate_key_id(key: &did::DidPublicKey) -> TestKeyId {
+	utils::calculate_key_id::<Test>(key)
+}
+
+pub(crate) fn get_attestation_key_test_input() -> TestCtypeHash {
+	TestCtypeHash::from_slice(&[0u8; 32])
+}
+pub(crate) fn get_attestation_key_call() -> Call {
+	Call::Ctype(ctype::Call::add(get_attestation_key_test_input()))
+}
+pub(crate) fn get_authentication_key_test_input() -> TestCtypeHash {
+	TestCtypeHash::from_slice(&[1u8; 32])
+}
+pub(crate) fn get_authentication_key_call() -> Call {
+	Call::Ctype(ctype::Call::add(get_authentication_key_test_input()))
+}
+pub(crate) fn get_delegation_key_test_input() -> TestCtypeHash {
+	TestCtypeHash::from_slice(&[2u8; 32])
+}
+pub(crate) fn get_delegation_key_call() -> Call {
+	Call::Ctype(ctype::Call::add(get_delegation_key_test_input()))
+}
+pub(crate) fn get_no_key_test_input() -> TestCtypeHash {
+	TestCtypeHash::from_slice(&[3u8; 32])
+}
+pub(crate) fn get_no_key_call() -> Call {
+	Call::Ctype(ctype::Call::add(get_no_key_test_input()))
+}
+
+impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
+	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
+		if *self == get_attestation_key_call() {
+			Some(did::DidVerificationKeyRelationship::AssertionMethod)
+		} else if *self == get_authentication_key_call() {
+			Some(did::DidVerificationKeyRelationship::Authentication)
+		} else if *self == get_delegation_key_call() {
+			Some(did::DidVerificationKeyRelationship::CapabilityDelegation)
+		} else {
+			None
+		}
 	}
 }
 
-pub fn generate_mock_did_details(
-	auth_key: did::PublicVerificationKey,
-	enc_key: did::PublicEncryptionKey,
-) -> did::DidDetails {
-	did::DidDetails {
-		auth_key: auth_key,
-		key_agreement_key: enc_key,
-		attestation_key: None,
-		delegation_key: None,
-		endpoint_url: None,
-		last_tx_counter: 0,
-		verification_keys: BTreeSet::new(),
+pub fn generate_test_did_call(
+	verification_key_required: did::DidVerificationKeyRelationship,
+	caller: TestDidIdentifier,
+) -> did::DidAuthorizedCallOperation<Test> {
+	let call = match verification_key_required {
+		DidVerificationKeyRelationship::AssertionMethod => get_attestation_key_call(),
+		DidVerificationKeyRelationship::Authentication => get_authentication_key_call(),
+		DidVerificationKeyRelationship::CapabilityDelegation => get_delegation_key_call(),
+		_ => get_no_key_call(),
+	};
+	did::DidAuthorizedCallOperation {
+		did: caller,
+		call,
+		tx_counter: 1u64,
 	}
 }
 
 // A test DID operation which can be crated to require any DID verification key
 // type.
 #[derive(Clone, Decode, Debug, Encode, PartialEq)]
-pub struct TestDIDOperation {
+pub struct TestDidOperation {
 	pub did: TestDidIdentifier,
-	pub verification_key_type: DidVerificationKeyType,
+	pub verification_key_type: DidVerificationKeyRelationship,
+	pub tx_counter: u64,
 }
 
-impl DidOperation<TestDidIdentifier> for TestDIDOperation {
-	fn get_verification_key_type(&self) -> DidVerificationKeyType {
-		self.verification_key_type.clone()
+impl DidOperation<Test> for TestDidOperation {
+	fn get_verification_key_relationship(&self) -> DidVerificationKeyRelationship {
+		self.verification_key_type
 	}
 
 	fn get_did(&self) -> &TestDidIdentifier {
 		&self.did
 	}
+
+	fn get_tx_counter(&self) -> u64 {
+		self.tx_counter
+	}
 }
 
+#[allow(dead_code)]
+pub fn initialize_logger() {
+	env_logger::builder().is_test(true).try_init();
+}
+
+#[derive(Clone)]
 pub struct ExtBuilder {
-	dids_stored: Vec<(TestDidIdentifier, did::DidDetails)>,
+	dids_stored: Vec<(TestDidIdentifier, did::DidDetails<Test>)>,
 }
 
 impl Default for ExtBuilder {
@@ -230,16 +302,20 @@ impl Default for ExtBuilder {
 }
 
 impl ExtBuilder {
-	pub fn with_dids(mut self, dids: Vec<(TestDidIdentifier, did::DidDetails)>) -> Self {
+	pub fn with_dids(mut self, dids: Vec<(TestDidIdentifier, did::DidDetails<Test>)>) -> Self {
 		self.dids_stored = dids;
 		self
 	}
 
-	pub fn build(self) -> sp_io::TestExternalities {
-		let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
-		let mut ext = sp_io::TestExternalities::new(storage);
+	pub fn build(self, ext: Option<sp_io::TestExternalities>) -> sp_io::TestExternalities {
+		let mut ext = if let Some(ext) = ext {
+			ext
+		} else {
+			let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+			sp_io::TestExternalities::new(storage)
+		};
 
-		if self.dids_stored.len() > 0 {
+		if !self.dids_stored.is_empty() {
 			ext.execute_with(|| {
 				self.dids_stored.iter().for_each(|did| {
 					did::Did::<Test>::insert(did.0.clone(), did.1.clone());

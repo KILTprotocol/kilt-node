@@ -34,7 +34,7 @@ use frame_system::{
 };
 use kilt_primitives::{
 	constants::{DAYS, DOLLARS, HOURS, MILLICENTS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
-	AccountId, Balance, BlockNumber, Hash, Header, Index, Signature,
+	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Header, Index, Signature,
 };
 pub use parachain_staking::{InflationInfo, RewardRate, StakingInfo};
 use sp_api::impl_runtime_apis;
@@ -44,7 +44,7 @@ use sp_core::{
 };
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult,
 };
@@ -91,22 +91,12 @@ impl_opaque_keys! {
 pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
-	authoring_version: 1,
-	spec_version: 3,
+	authoring_version: 4,
+	spec_version: 9,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 1,
+	transaction_version: 2,
 };
-
-pub const fn deposit(items: u32, bytes: u32) -> Balance {
-	items as Balance * 20 * DOLLARS + (bytes as Balance) * 100 * MILLICENTS
-}
-
-#[derive(codec::Encode, codec::Decode)]
-pub enum XcmpMessage<XAccountId, XBalance> {
-	/// Transfer tokens to the given account from the Parachain account.
-	TransferToken(XAccountId, XBalance),
-}
 
 /// The version information used to identify this runtime when compiled
 /// natively.
@@ -130,7 +120,6 @@ const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
 // Pallet accounts of runtime
 parameter_types! {
 	pub const TreasuryPalletId: PalletId = PalletId(*b"kilt/tsy");
-	pub const SocietyPalletId: PalletId = PalletId(*b"kilt/soc");
 	pub const ElectionsPalletId: LockIdentifier = *b"kilt/elc";
 }
 
@@ -387,7 +376,7 @@ parameter_types! {
 	pub const ProposalBond: Permill = Permill::from_percent(5);
 	pub const ProposalBondMinimum: Balance = 20 * DOLLARS; // TODO: how much?
 	pub const SpendPeriod: BlockNumber = 6 * DAYS;
-	pub const Burn: Permill = Permill::from_perthousand(2);
+	pub const Burn: Permill = Permill::zero();
 	pub const MaxApprovals: u32 = 100;
 }
 
@@ -414,7 +403,7 @@ impl pallet_treasury::Config for Runtime {
 	type ProposalBondMinimum = ProposalBondMinimum;
 	type SpendPeriod = SpendPeriod;
 	type Burn = Burn;
-	type BurnDestination = Society;
+	type BurnDestination = ();
 	type SpendFunds = ();
 	type WeightInfo = ();
 	type MaxApprovals = MaxApprovals;
@@ -431,22 +420,8 @@ parameter_types! {
 	pub const MaxCandidateIntake: u32 = 1;
 }
 
-impl pallet_society::Config for Runtime {
-	type PalletId = SocietyPalletId;
-	type Event = Event;
-	type Currency = Balances;
-	type Randomness = RandomnessCollectiveFlip;
-	type CandidateDeposit = CandidateDeposit;
-	type WrongSideDeduction = WrongSideDeduction;
-	type MaxStrikes = MaxStrikes;
-	type PeriodSpend = PeriodSpend;
-	type MembershipChanged = ();
-	type RotationPeriod = RotationPeriod;
-	type MaxLockDuration = MaxLockDuration;
-	type FounderSetOrigin = pallet_collective::EnsureProportionMoreThan<_1, _2, AccountId, CouncilCollective>;
-	type SuspensionJudgementOrigin = pallet_society::EnsureFounder<Runtime>;
-	type ChallengePeriod = ChallengePeriod;
-	type MaxCandidateIntake = MaxCandidateIntake;
+pub const fn deposit(items: u32, bytes: u32) -> Balance {
+	items as Balance * 20 * DOLLARS + (bytes as Balance) * 100 * MILLICENTS
 }
 
 parameter_types! {
@@ -533,31 +508,27 @@ impl pallet_membership::Config for Runtime {
 }
 
 impl attestation::Config for Runtime {
-	/// The ubiquitous event type.
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
 	type Event = Event;
-	type WeightInfo = ();
 }
 
 impl ctype::Config for Runtime {
-	/// The ubiquitous event type.
+	type CtypeCreatorId = DidIdentifier;
+	type EnsureOrigin = did::EnsureDidOrigin<Self::CtypeCreatorId>;
 	type Event = Event;
-	type WeightInfo = ();
 }
 
 impl delegation::Config for Runtime {
-	/// The ubiquitous event type.
-	type Event = Event;
-	type Signature = Signature;
-	type Signer = <Signature as Verify>::Signer;
 	type DelegationNodeId = Hash;
-	type WeightInfo = ();
+	type Event = Event;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
 }
 
 impl did::Config for Runtime {
-	/// The ubiquitous event type.
-	type Event = Event;
-	type WeightInfo = ();
 	type DidIdentifier = AccountId;
+	type Event = Event;
+	type Call = Call;
+	type Origin = Origin;
 }
 
 parameter_types! {
@@ -622,7 +593,7 @@ construct_runtime! {
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>} = 9,
 		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 10,
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 11,
-		Did: did::{Pallet, Call, Storage, Event<T>} = 12,
+		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 12,
 
 		// Session: session::{Pallet, Call, Storage, Event, Config<T>} = 15,
 		// Authorship: authorship::{Pallet, Call, Storage} = 16,
@@ -643,9 +614,6 @@ construct_runtime! {
 		TechnicalMembership: pallet_membership::{Pallet, Call, Storage, Event<T>, Config<T>} = 29,
 		Treasury: pallet_treasury::{Pallet, Call, Storage, Config, Event<T>} = 30,
 
-		// Society Pallet.
-		Society: pallet_society::{Pallet, Call, Storage, Event<T>} = 31,
-
 		// System scheduler.
 		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 32,
 
@@ -658,6 +626,18 @@ construct_runtime! {
 		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
 	}
 }
+
+impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
+	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
+		match self {
+			Call::Attestation(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
+			Call::Ctype(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
+			Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
+			_ => None,
+		}
+	}
+}
+
 /// The address format for describing accounts.
 pub type Address = sp_runtime::MultiAddress<AccountId, ()>;
 /// Block header type as expected by this runtime.
@@ -817,11 +797,6 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
-			add_benchmark!(params, batches, attestation, Attestation);
-			add_benchmark!(params, batches, ctype, Ctype);
-			add_benchmark!(params, batches, delegation, Delegation);
-			add_benchmark!(params, batches, parachain_staking, ParachainStaking);
-			// add_benchmark!(params, batches, did, Did);
 			add_benchmark!(params, batches, kilt_launch, KiltLaunch);
 			add_benchmark!(params, batches, pallet_vesting, Vesting);
 

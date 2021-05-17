@@ -21,171 +21,237 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
-#[cfg(any(feature = "runtime-benchmarks", test))]
-pub mod benchmarking;
-/// Test module for attestations
+pub mod attestations;
+
+#[cfg(any(feature = "mock", test))]
+pub mod mock;
+
 #[cfg(test)]
 mod tests;
 
-pub mod migration;
+pub use crate::attestations::*;
+pub use pallet::*;
 
-pub mod default_weights;
-pub use default_weights::WeightInfo;
+use sp_std::vec::Vec;
 
-use codec::{Decode, Encode};
-use delegation::Permissions;
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure, StorageMap};
-use frame_system::{self, ensure_signed};
-use sp_std::prelude::{Clone, PartialEq, Vec};
+#[frame_support::pallet]
+pub mod pallet {
+	use super::*;
+	use frame_support::pallet_prelude::*;
+	use frame_system::pallet_prelude::*;
 
-/// The attestation trait
-pub trait Config: frame_system::Config + delegation::Config {
-	/// Attestation specific event type
-	type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+	/// Type of a claim hash.
+	pub type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
 
-	/// Weight information for extrinsics in this pallet.
-	type WeightInfo: WeightInfo;
-}
+	/// Type of an attestation CTYPE hash.
+	pub type CtypeHashOf<T> = ctype::CtypeHashOf<T>;
 
-decl_event!(
-	/// Events for attestations
-	pub enum Event<T> where <T as frame_system::Config>::AccountId, <T as frame_system::Config>::Hash,
-			<T as delegation::Config>::DelegationNodeId {
-		/// An attestation has been added
-		AttestationCreated(AccountId, Hash, Hash, Option<DelegationNodeId>),
-		/// An attestation has been revoked
-		AttestationRevoked(AccountId, Hash),
+	/// Type of an attester identifier.
+	pub type AttesterOf<T> = delegation::DelegatorIdOf<T>;
+
+	/// Type of a delegation identifier.
+	pub type DelegationNodeIdOf<T> = delegation::DelegationNodeIdOf<T>;
+
+	#[pallet::config]
+	pub trait Config: frame_system::Config + ctype::Config + delegation::Config {
+		type EnsureOrigin: EnsureOrigin<Success = AttesterOf<Self>, <Self as frame_system::Config>::Origin>;
+		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 	}
-);
 
-// The pallet's errors
-decl_error! {
-	pub enum Error for Module<T: Config> {
+	#[pallet::pallet]
+	#[pallet::generate_store(pub(super) trait Store)]
+	pub struct Pallet<T>(_);
+
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
+
+	/// Attestations stored on chain.
+	///
+	/// It maps from a claim hash to the full attestation.
+	#[pallet::storage]
+	#[pallet::getter(fn attestations)]
+	pub type Attestations<T> = StorageMap<_, Blake2_128Concat, ClaimHashOf<T>, AttestationDetails<T>>;
+
+	/// Delegated attestations stored on chain.
+	///
+	/// It maps from a delegation ID to a vector of claim hashes.
+	#[pallet::storage]
+	#[pallet::getter(fn delegated_attestations)]
+	pub type DelegatedAttestations<T> = StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, Vec<ClaimHashOf<T>>>;
+
+	#[pallet::event]
+	#[pallet::generate_deposit(pub(super) fn deposit_event)]
+	pub enum Event<T: Config> {
+		/// A new attestation has been created.
+		/// \[attester ID, claim hash, CTYPE hash, (optional) delegation ID\]
+		AttestationCreated(
+			AttesterOf<T>,
+			ClaimHashOf<T>,
+			CtypeHashOf<T>,
+			Option<DelegationNodeIdOf<T>>,
+		),
+		/// An attestation has been revoked.
+		/// \[revoker ID, claim hash\]
+		AttestationRevoked(AttesterOf<T>, ClaimHashOf<T>),
+	}
+
+	#[pallet::error]
+	pub enum Error<T> {
+		/// There is already an attestation with the same claim hash stored on
+		/// chain.
 		AlreadyAttested,
+		/// The attestation has already been revoked.
 		AlreadyRevoked,
+		/// No attestation on chain matching the claim hash.
 		AttestationNotFound,
+		/// The attestation CTYPE does not match the CTYPE specified in the
+		/// delegation hierarchy root.
 		CTypeMismatch,
+		/// The delegation node does not include the permission to create new
+		/// attestations. Only when the revoker is not the original attester.
 		DelegationUnauthorizedToAttest,
+		/// The delegation node has already been revoked.
+		/// Only when the revoker is not the original attester.
 		DelegationRevoked,
+		/// The delegation node owner is different than the attester.
+		/// Only when the revoker is not the original attester.
 		NotDelegatedToAttester,
+		/// The delegation node is not under the control of the revoker, or it
+		/// is but it has been revoked. Only when the revoker is not the
+		/// original attester.
 		UnauthorizedRevocation,
 	}
-}
 
-decl_module! {
-	/// The attestation runtime module
-	pub struct Module<T: Config> for enum Call where origin: T::Origin {
-		/// Deposit events
-		fn deposit_event() = default;
+	#[pallet::call]
+	impl<T: Config> Pallet<T> {
+		/// Create a new attestation.
+		///
+		/// The attester can optionally provide a reference to an existing
+		/// delegation that will be saved along with the attestation itself in
+		/// the form of an attested delegation.
+		///
+		/// * origin: the identifier of the attester
+		/// * claim_hash: the hash of the claim to attest. It has to be unique
+		/// * ctype_hash: the hash of the CTYPE used for this attestation
+		/// * delegation_id: \[OPTIONAL\] the ID of the delegation node used to
+		///   authorise the attester
+		#[pallet::weight(0)]
+		pub fn add(
+			origin: OriginFor<T>,
+			claim_hash: ClaimHashOf<T>,
+			ctype_hash: CtypeHashOf<T>,
+			delegation_id: Option<DelegationNodeIdOf<T>>,
+		) -> DispatchResultWithPostInfo {
+			let attester = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
-		// Initializing errors
-		// this includes information about your errors in the node's metadata.
-		// it is needed only if you are using errors in your pallet
-		type Error = Error<T>;
+			ensure!(
+				<ctype::Ctypes<T>>::contains_key(&ctype_hash),
+				ctype::Error::<T>::CTypeNotFound
+			);
 
-		/// Adds an attestation on chain, where
-		/// origin - the origin of the transaction
-		/// claim_hash - hash of the attested claim
-		/// ctype_hash - hash of the CTYPE of the claim
-		/// delegation_id - optional id that refers to a delegation this attestation is based on
-		#[weight = <T as Config>::WeightInfo::add()]
-		pub fn add(origin, claim_hash: T::Hash, ctype_hash: T::Hash, delegation_id: Option<T::DelegationNodeId>) -> DispatchResult {
-			// origin of the transaction needs to be a signed sender account
-			let sender = ensure_signed(origin)?;
+			ensure!(
+				!<Attestations<T>>::contains_key(&claim_hash),
+				Error::<T>::AlreadyAttested
+			);
 
-			// check if the CTYPE exists
-			ensure!(<ctype::CTYPEs<T>>::contains_key(ctype_hash), ctype::Error::<T>::NotFound);
+			// Check for validity of the delegation node if specified.
+			if let Some(delegation_id) = delegation_id {
+				let delegation = <delegation::Delegations<T>>::get(delegation_id)
+					.ok_or(delegation::Error::<T>::DelegationNotFound)?;
 
-			// check if attestation already exists
-			ensure!(!<Attestations<T>>::contains_key(claim_hash), Error::<T>::AlreadyAttested);
-
-			if let Some(d) = delegation_id {
-				// check if delegation exists
-				let delegation = <delegation::Delegations<T>>::get(d).ok_or(delegation::Error::<T>::DelegationNotFound)?;
-				// check whether delegation has been revoked already
 				ensure!(!delegation.revoked, Error::<T>::DelegationRevoked);
 
-				// check whether the owner of the delegation is not the sender of this transaction
-				ensure!(delegation.owner.eq(&sender), Error::<T>::NotDelegatedToAttester);
+				ensure!(delegation.owner == attester, Error::<T>::NotDelegatedToAttester);
 
-				// check whether the delegation is not set up for attesting claims
-				ensure!((delegation.permissions & Permissions::ATTEST) == Permissions::ATTEST, Error::<T>::DelegationUnauthorizedToAttest);
+				ensure!(
+					(delegation.permissions & delegation::Permissions::ATTEST) == delegation::Permissions::ATTEST,
+					Error::<T>::DelegationUnauthorizedToAttest
+				);
 
-				// check if CTYPE of the delegation is matching the CTYPE of the attestation
-				let root = <delegation::Root<T>>::get(delegation.root_id).ok_or(delegation::Error::<T>::RootNotFound)?;
-				ensure!(root.ctype_hash.eq(&ctype_hash), Error::<T>::CTypeMismatch);
-			}
+				// Check if the CTYPE of the delegation is matching the CTYPE of the attestation
+				let root =
+					<delegation::Roots<T>>::get(delegation.root_id).ok_or(delegation::Error::<T>::RootNotFound)?;
+				ensure!(root.ctype_hash == ctype_hash, Error::<T>::CTypeMismatch);
 
-			// insert attestation
-			log::debug!("insert Attestation");
-			<Attestations<T>>::insert(claim_hash, Attestation {ctype_hash, attester: sender.clone(), delegation_id, revoked: false});
-
-			if let Some(d) = delegation_id {
-				// if attestation is based on a delegation, store separately
-				let mut delegated_attestations = <DelegatedAttestations<T>>::get(d);
+				// If the attestation is based on a delegation, store separately
+				let mut delegated_attestations = <DelegatedAttestations<T>>::get(delegation_id).unwrap_or_default();
 				delegated_attestations.push(claim_hash);
-				<DelegatedAttestations<T>>::insert(d, delegated_attestations);
+				<DelegatedAttestations<T>>::insert(delegation_id, delegated_attestations);
 			}
 
-			// deposit event that attestation has beed added
-			Self::deposit_event(RawEvent::AttestationCreated(sender, claim_hash, ctype_hash, delegation_id));
-			Ok(())
+			log::debug!("insert Attestation");
+			<Attestations<T>>::insert(
+				&claim_hash,
+				AttestationDetails {
+					ctype_hash,
+					attester: attester.clone(),
+					delegation_id,
+					revoked: false,
+				},
+			);
+
+			Self::deposit_event(Event::AttestationCreated(
+				attester,
+				claim_hash,
+				ctype_hash,
+				delegation_id,
+			));
+
+			Ok(None.into())
 		}
 
-		/// Revokes an attestation on chain, where
-		/// origin - the origin of the transaction
-		/// claim_hash - hash of the attested claim
-		/// max_depth - max number of parent checks of the delegation node supported in this call until finding the owner
-		#[weight = <T as Config>::WeightInfo::revoke(*max_depth)]
-		pub fn revoke(origin, claim_hash: T::Hash, max_depth: u32) -> DispatchResult {
-			// origin of the transaction needs to be a signed sender account
-			let sender = ensure_signed(origin)?;
+		/// Revoke an existing attestation.
+		///
+		/// The revoker must be either the creator of the attestation being
+		/// revoked or an entity that in the delegation tree is an ancestor of
+		/// the attester, i.e., it was either the delegator of the attester or
+		/// an ancestor thereof.
+		///
+		/// * origin: the identifier of the revoker
+		/// * claim_hash: the hash of the claim to revoke
+		/// * max_parent_checks: for delegated attestations, the number of
+		///   delegation nodes to check up in the trust hierarchy (including the
+		///   root node but excluding the provided node) to verify whether the
+		///   caller is an ancestor of the attestation attester and hence
+		///   authorised to revoke the specified attestation.
+		#[pallet::weight(0)]
+		pub fn revoke(
+			origin: OriginFor<T>,
+			claim_hash: ClaimHashOf<T>,
+			max_parent_checks: u32,
+		) -> DispatchResultWithPostInfo {
+			let revoker = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
-			// lookup attestation & check if the attestation exists
-			let Attestation {ctype_hash, attester, delegation_id, revoked, ..} = <Attestations<T>>::get(claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
+			let attestation = <Attestations<T>>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
-			// check if the attestation has already been revoked
-			ensure!(!revoked, Error::<T>::AlreadyRevoked);
+			ensure!(!attestation.revoked, Error::<T>::AlreadyRevoked);
 
-			// check delegation tree if the sender of the revocation transaction is not the attester
-			if !attester.eq(&sender) {
-				// check whether the attestation includes a delegation
-				let del_id = delegation_id.ok_or(Error::<T>::UnauthorizedRevocation)?;
-				// check whether the sender of the revocation is not a parent in the delegation hierarchy
-				ensure!(<delegation::Pallet<T>>::is_delegating(&sender, &del_id, max_depth)?, Error::<T>::UnauthorizedRevocation);
+			// Check the delegation tree if the sender of the revocation operation is not
+			// the original attester
+			if attestation.attester != revoker {
+				let delegation_id = attestation.delegation_id.ok_or(Error::<T>::UnauthorizedRevocation)?;
+				// Check whether the sender of the revocation controls the delegation node
+				// specified, and that its status has not been revoked
+				ensure!(
+					<delegation::Pallet<T>>::is_delegating(&revoker, &delegation_id, max_parent_checks)?,
+					Error::<T>::UnauthorizedRevocation
+				);
 			}
 
 			log::debug!("revoking Attestation");
-			<Attestations<T>>::insert(claim_hash, Attestation {
-				ctype_hash,
-				attester,
-				delegation_id,
-				revoked: true
-			});
-			Self::deposit_event(RawEvent::AttestationRevoked(sender, claim_hash));
+			<Attestations<T>>::insert(
+				&claim_hash,
+				AttestationDetails {
+					revoked: true,
+					..attestation
+				},
+			);
 
-			Ok(())
+			Self::deposit_event(Event::AttestationRevoked(revoker, claim_hash));
+
+			//TODO: Return actual weight used, which should be returned by
+			// delegation::is_actively_delegating
+			Ok(None.into())
 		}
-	}
-}
-
-#[derive(Debug, Encode, Decode, PartialEq)]
-pub struct Attestation<T: Config> {
-	// hash of the CTYPE used for this attestation
-	ctype_hash: T::Hash,
-	// the account which executed the attestation
-	attester: T::AccountId,
-	// id of the delegation node (if existent)
-	delegation_id: Option<T::DelegationNodeId>,
-	// revocation status
-	revoked: bool,
-}
-
-decl_storage! {
-	trait Store for Module<T: Config> as Attestation {
-		/// Attestations: claim-hash -> (ctype-hash, attester-account, delegation-id?, revoked)?
-		Attestations get(fn attestations): map hasher(opaque_blake2_256) T::Hash => Option<Attestation<T>>;
-		/// DelegatedAttestations: delegation-id -> [claim-hash]
-		DelegatedAttestations get(fn delegated_attestations): map hasher(opaque_blake2_256) T::DelegationNodeId => Vec<T::Hash>;
 	}
 }

@@ -21,79 +21,81 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
-#[cfg(any(feature = "runtime-benchmarks", test))]
-pub mod benchmarking;
+#[cfg(any(feature = "mock", test))]
+pub mod mock;
+
 /// Test module for CTYPEs
 #[cfg(test)]
 mod tests;
 
-pub mod default_weights;
-pub use default_weights::WeightInfo;
+pub use pallet::*;
 
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure, StorageMap};
-use frame_system::{self, ensure_signed};
+#[frame_support::pallet]
+pub mod pallet {
+	use frame_support::pallet_prelude::*;
+	use frame_system::pallet_prelude::*;
 
-/// The CTYPE Config
-pub trait Config: frame_system::Config {
-	/// CTYPE specific event type
-	type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+	/// Type of a CTYPE hash.
+	pub type CtypeHashOf<T> = <T as frame_system::Config>::Hash;
 
-	/// Weight information for extrinsics in this pallet.
-	type WeightInfo: WeightInfo;
-}
+	/// Type of a CTYPE creator.
+	pub type CtypeCreatorOf<T> = <T as Config>::CtypeCreatorId;
 
-decl_event!(
-	/// Events for CTYPEs
-	pub enum Event<T> where <T as frame_system::Config>::AccountId, <T as frame_system::Config>::Hash {
-		/// A CTYPE has been added
-		CTypeCreated(AccountId, Hash),
+	#[pallet::config]
+	pub trait Config: frame_system::Config {
+		type CtypeCreatorId: Parameter;
+		type EnsureOrigin: EnsureOrigin<Success = CtypeCreatorOf<Self>, <Self as frame_system::Config>::Origin>;
+		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 	}
-);
 
-// The pallet's errors
-decl_error! {
-	pub enum Error for Module<T: Config> {
-		NotFound,
-		AlreadyExists,
+	#[pallet::pallet]
+	#[pallet::generate_store(pub(super) trait Store)]
+	pub struct Pallet<T>(_);
+
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
+
+	/// CTYPEs stored on chain.
+	///
+	/// It maps from a CTYPE hash to its creator.
+	#[pallet::storage]
+	#[pallet::getter(fn ctypes)]
+	pub type Ctypes<T> = StorageMap<_, Blake2_128Concat, CtypeHashOf<T>, CtypeCreatorOf<T>>;
+
+	#[pallet::event]
+	#[pallet::generate_deposit(pub(super) fn deposit_event)]
+	pub enum Event<T: Config> {
+		/// A new CTYPE has been created.
+		/// \[creator identifier, CTYPE hash\]
+		CTypeCreated(CtypeCreatorOf<T>, CtypeHashOf<T>),
 	}
-}
 
-decl_module! {
-	/// The CTYPE runtime module
-	pub struct Module<T: Config> for enum Call where origin: T::Origin {
+	#[pallet::error]
+	pub enum Error<T> {
+		/// There is no CTYPE with the given hash.
+		CTypeNotFound,
+		/// The CTYPE already exists.
+		CTypeAlreadyExists,
+	}
 
-		/// Deposit events
-		fn deposit_event() = default;
+	#[pallet::call]
+	impl<T: Config> Pallet<T> {
+		/// Create a new CTYPE and associates it with its creator.
+		///
+		/// * origin: the identifier of the CTYPE creator
+		/// * hash: the CTYPE hash. It has to be unique.
+		#[pallet::weight(0)]
+		pub fn add(origin: OriginFor<T>, hash: CtypeHashOf<T>) -> DispatchResultWithPostInfo {
+			let creator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
-		// Initializing errors
-		// this includes information about your errors in the node's metadata.
-		// it is needed only if you are using errors in your pallet
-		type Error = Error<T>;
+			ensure!(!<Ctypes<T>>::contains_key(&hash), Error::<T>::CTypeAlreadyExists);
 
-		/// Adds a CTYPE on chain, where
-		/// origin - the origin of the transaction
-		/// hash - hash of the CTYPE of the claim
-		#[weight = <T as Config>::WeightInfo::add()]
-		pub fn add(origin, hash: T::Hash) -> DispatchResult {
-			// origin of the transaction needs to be a signed sender account
-			let sender = ensure_signed(origin)?;
+			log::debug!("Creating CTYPE with hash {:?} and creator {:?}", &hash, &creator);
+			<Ctypes<T>>::insert(&hash, creator.clone());
 
-			// check if CTYPE already exists
-			ensure!(!<CTYPEs<T>>::contains_key(hash), Error::<T>::AlreadyExists);
+			Self::deposit_event(Event::CTypeCreated(creator, hash));
 
-			// add CTYPE to storage
-			log::debug!("insert CTYPE");
-			<CTYPEs<T>>::insert(hash, sender.clone());
-			// deposit event that the CTYPE has been added
-			Self::deposit_event(RawEvent::CTypeCreated(sender, hash));
-			Ok(())
+			Ok(None.into())
 		}
-	}
-}
-
-decl_storage! {
-	trait Store for Module<T: Config> as Ctype {
-		// CTYPEs: ctype-hash -> account-id?
-		pub CTYPEs get(fn ctypes):map hasher(opaque_blake2_256) T::Hash => Option<T::AccountId>;
 	}
 }
