@@ -778,18 +778,18 @@ fn multiple_delegations() {
 			];
 			assert_eq!(events(), expected);
 			assert_noop!(
-				Stake::delegate(Origin::signed(6), 1, 10),
+				Stake::delegate_another_candidate(Origin::signed(6), 1, 10),
 				Error::<Test>::AlreadyDelegatedCollator,
 			);
 			assert_noop!(
-				Stake::delegate(Origin::signed(6), 2, 2),
+				Stake::delegate_another_candidate(Origin::signed(6), 2, 2),
 				Error::<Test>::DelegationBelowMin,
 			);
-			assert_ok!(Stake::delegate(Origin::signed(6), 2, 10));
-			assert_ok!(Stake::delegate(Origin::signed(6), 3, 10));
-			assert_ok!(Stake::delegate(Origin::signed(6), 4, 10));
+			assert_ok!(Stake::delegate_another_candidate(Origin::signed(6), 2, 10));
+			assert_ok!(Stake::delegate_another_candidate(Origin::signed(6), 3, 10));
+			assert_ok!(Stake::delegate_another_candidate(Origin::signed(6), 4, 10));
 			assert_noop!(
-				Stake::delegate(Origin::signed(6), 5, 10),
+				Stake::delegate_another_candidate(Origin::signed(6), 5, 10),
 				Error::<Test>::ExceedMaxCollatorsPerNom,
 			);
 			roll_to(16, vec![]);
@@ -813,13 +813,13 @@ fn multiple_delegations() {
 			expected.append(&mut new);
 			assert_eq!(events(), expected);
 			roll_to(21, vec![]);
-			assert_ok!(Stake::delegate(Origin::signed(7), 2, 80));
+			assert_ok!(Stake::delegate_another_candidate(Origin::signed(7), 2, 80));
 			assert_noop!(
-				Stake::delegate(Origin::signed(7), 3, 11),
+				Stake::delegate_another_candidate(Origin::signed(7), 3, 11),
 				BalancesError::<Test>::InsufficientBalance
 			);
 			assert_noop!(
-				Stake::delegate(Origin::signed(10), 2, 10),
+				Stake::delegate_another_candidate(Origin::signed(10), 2, 10),
 				Error::<Test>::TooManyDelegators
 			);
 			roll_to(26, vec![]);
@@ -1042,8 +1042,8 @@ fn revoke_delegation_or_leave_delegators() {
 				Error::<Test>::DelegationDNE
 			);
 			assert_noop!(Stake::leave_delegators(Origin::signed(1)), Error::<Test>::DelegatorDNE);
-			assert_ok!(Stake::delegate(Origin::signed(6), 2, 3));
-			assert_ok!(Stake::delegate(Origin::signed(6), 3, 3));
+			assert_ok!(Stake::delegate_another_candidate(Origin::signed(6), 2, 3));
+			assert_ok!(Stake::delegate_another_candidate(Origin::signed(6), 3, 3));
 			assert_ok!(Stake::revoke_delegation(Origin::signed(6), 1));
 			// cannot revoke delegation because would leave remaining total below
 			// MinDelegatorStk
@@ -1215,7 +1215,7 @@ fn revoke_delegation_or_leave_delegators() {
 
 // 			// Round 6 -> 7: 8 delegates to 1
 // 			set_author(6, 1, 100);
-// 			assert_ok!(Stake::delegate(Origin::signed(8), 1, 30_000_000));
+// 			assert_ok!(Stake::delegate_another_candidate(Origin::signed(8), 1, 30_000_000));
 // 			roll_to(7 * blocks_per_round + 1, vec![]);
 // 			// new delegation should not be rewarded for this round and the next one (expect
 // 			// rewards at conclusion of round 8)
@@ -1324,7 +1324,7 @@ fn revoke_delegation_or_leave_delegators() {
 // 			set_author(10, 5, 5);
 // 			set_author(10, 11, 5);
 // 			// 8 adds delegation to 11
-// 			assert_ok!(Stake::delegate(Origin::signed(8), 11, 20_000_000));
+// 			assert_ok!(Stake::delegate_another_candidate(Origin::signed(8), 11, 20_000_000));
 // 			roll_to(11 * blocks_per_round + 1, vec![]);
 // 			// new delegation of 8 should not be rewarded for this and the following round
 // 			let mut round_10_to_11 = vec![
@@ -1360,7 +1360,7 @@ fn revoke_delegation_or_leave_delegators() {
 // 			set_author(11, 5, 5);
 // 			set_author(11, 11, 5);
 // 			// 9 adds delegation to 5
-// 			assert_ok!(Stake::delegate(Origin::signed(9), 5, 30_000_000));
+// 			assert_ok!(Stake::delegate_another_candidate(Origin::signed(9), 5, 30_000_000));
 // 			roll_to(12 * blocks_per_round + 1, vec![]);
 // 			// delegation of 8 should not be rewarded for this round
 // 			// new delegation of 9 should not be rewarded for this and the following round

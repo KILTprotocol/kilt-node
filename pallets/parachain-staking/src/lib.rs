@@ -452,6 +452,8 @@ pub mod pallet {
 		AlreadyOffline,
 		AlreadyActive,
 		AlreadyLeaving,
+		AlreadyDelegating,
+		NotDelegatingYet,
 		TooManyDelegators,
 		CannotActivateIfLeaving,
 		ExceedMaxCollatorsPerNom,
@@ -636,11 +638,12 @@ pub mod pallet {
 					"Account does not have enough balance to bond."
 				);
 				let _ = if let Some(delegated_val) = opt_val {
-					<Pallet<T>>::delegate(
+					<Pallet<T>>::join_delegators(
 						T::Origin::from(Some(actor.clone()).into()),
 						delegated_val.clone(),
 						balance,
 					)
+					.into()
 				} else {
 					<Pallet<T>>::join_candidates(T::Origin::from(Some(actor.clone()).into()), balance)
 				};
@@ -832,6 +835,7 @@ pub mod pallet {
 			Self::deposit_event(Event::CollatorBondedMore(collator, before, after));
 			Ok(().into())
 		}
+
 		/// Bond less for collator candidates
 		#[pallet::weight(0)]
 		pub fn candidate_bond_less(origin: OriginFor<T>, less: BalanceOf<T>) -> DispatchResultWithPostInfo {
@@ -851,12 +855,64 @@ pub mod pallet {
 			Self::deposit_event(Event::CollatorBondedLess(collator, before, after));
 			Ok(().into())
 		}
-		/// If caller is not a delegator, then join the set of delegators
-		/// If caller is a delegator, then makes delegation to change their
-		/// delegation state
+
+		/// Join the set of delegators by delegating to a collator candidate.
+		///
+		/// NOTE: Expects the caller to have delegated before. Otherwise, they
+		/// should call `delegate_more`.
 		#[pallet::weight(0)]
-		pub fn delegate(
+		pub fn join_delegators(
 			origin: OriginFor<T>,
+			// TODO: Switch to LookupSource
+			collator: T::AccountId,
+			amount: BalanceOf<T>,
+		) -> DispatchResultWithPostInfo {
+			let acc = ensure_signed(origin)?;
+			// first delegation
+			ensure!(<DelegatorState<T>>::get(&acc).is_none(), Error::<T>::AlreadyDelegating);
+			ensure!(amount >= T::MinDelegatorStk::get(), Error::<T>::NomBondBelowMin);
+			// cannot be a collator candidate and delegator with same AccountId
+			ensure!(!Self::is_candidate(&acc), Error::<T>::CandidateExists);
+
+			// prepare update of collator state
+			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateDNE)?;
+			let delegation = Bond {
+				owner: acc.clone(),
+				amount,
+			};
+			ensure!(state.delegators.insert(delegation), Error::<T>::DelegatorExists);
+			ensure!(
+				(state.delegators.0.len() as u32) <= T::MaxDelegatorsPerCollator::get(),
+				Error::<T>::TooManyDelegators
+			);
+
+			// lock bond
+			// TODO: switch to lock instead of reserving
+			T::Currency::reserve(&acc, amount)?;
+			let new_total = state.total + amount;
+			if state.is_active() {
+				Self::update_active(collator.clone(), new_total);
+			}
+
+			// update states
+			let (total_collators, total_delegators) = <Total<T>>::get();
+			<Total<T>>::put((total_collators, total_delegators.saturating_add(amount)));
+			state.total = new_total;
+			<CollatorState<T>>::insert(&collator, state);
+			<DelegatorState<T>>::insert(&acc, Delegator::new(collator.clone(), amount));
+			Self::deposit_event(Event::Delegation(acc, amount, collator, new_total));
+
+			Ok(().into())
+		}
+
+		/// Delegate to another collator candidate which results in updating the
+		/// caller's delegation state.
+		///
+		/// NOTE: Expects the caller to have already delegated.
+		#[pallet::weight(0)]
+		pub fn delegate_another_candidate(
+			origin: OriginFor<T>,
+			// TODO: Switch to LookupSource
 			collator: T::AccountId,
 			amount: BalanceOf<T>,
 		) -> DispatchResultWithPostInfo {
@@ -868,6 +924,8 @@ pub mod pallet {
 					(delegator.delegations.0.len() as u32) < T::MaxCollatorsPerDelegator::get(),
 					Error::<T>::ExceedMaxCollatorsPerNom
 				);
+
+				// prepare new collator state
 				let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateDNE)?;
 				ensure!(
 					delegator.add_delegation(Bond {
@@ -886,6 +944,9 @@ pub mod pallet {
 					Error::<T>::TooManyDelegators
 				);
 				ensure!(state.delegators.insert(delegation), Error::<T>::DelegatorExists);
+
+				// lock bond
+				// TODO: Switch from reserve to lock
 				T::Currency::reserve(&acc, amount)?;
 				let new_total = state.total + amount;
 				if state.is_active() {
@@ -899,36 +960,11 @@ pub mod pallet {
 				<CollatorState<T>>::insert(&collator, state);
 				<DelegatorState<T>>::insert(&acc, delegator);
 				Self::deposit_event(Event::Delegation(acc, amount, collator, new_total));
+
+				Ok(().into())
 			} else {
-				// first delegation
-				ensure!(amount >= T::MinDelegatorStk::get(), Error::<T>::NomBondBelowMin);
-				// cannot be a collator candidate and delegator with same AccountId
-				ensure!(!Self::is_candidate(&acc), Error::<T>::CandidateExists);
-				let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateDNE)?;
-				let delegation = Bond {
-					owner: acc.clone(),
-					amount,
-				};
-				ensure!(state.delegators.insert(delegation), Error::<T>::DelegatorExists);
-				ensure!(
-					(state.delegators.0.len() as u32) <= T::MaxDelegatorsPerCollator::get(),
-					Error::<T>::TooManyDelegators
-				);
-				T::Currency::reserve(&acc, amount)?;
-				let new_total = state.total + amount;
-
-				if state.is_active() {
-					Self::update_active(collator.clone(), new_total);
-				}
-
-				let (total_collators, total_delegators) = <Total<T>>::get();
-				<Total<T>>::put((total_collators, total_delegators.saturating_add(amount)));
-				state.total = new_total;
-				<CollatorState<T>>::insert(&collator, state);
-				<DelegatorState<T>>::insert(&acc, Delegator::new(collator.clone(), amount));
-				Self::deposit_event(Event::Delegation(acc, amount, collator, new_total));
+				Err(Error::<T>::NotDelegatingYet.into())
 			}
-			Ok(().into())
 		}
 		/// Leave the set of delegators and, by implication, revoke all ongoing
 		/// delegations
