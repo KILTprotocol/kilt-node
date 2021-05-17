@@ -30,7 +30,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use kilt_primitives::{
 	constants::{DOLLARS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
-	AccountId, Balance, BlockNumber, Hash, Index, Signature,
+	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature,
 };
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
 use sp_api::impl_runtime_apis;
@@ -38,7 +38,7 @@ use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult,
 };
@@ -105,7 +105,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 8,
+	spec_version: 9,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -299,56 +299,27 @@ impl sudo::Config for Runtime {
 }
 
 impl attestation::Config for Runtime {
-	/// The ubiquitous event type.
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
 	type Event = Event;
-	type WeightInfo = ();
-}
-
-pub struct AttestationStructRuntimeUpgrade;
-impl attestation::migration::V23ToV24 for AttestationStructRuntimeUpgrade {
-	type Hash = Hash;
-	type DelegationNodeId = Hash;
-	type AccountId = AccountId;
-	type Module = Attestation;
-}
-impl frame_support::traits::OnRuntimeUpgrade for AttestationStructRuntimeUpgrade {
-	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		attestation::migration::apply::<Self>()
-	}
 }
 
 impl ctype::Config for Runtime {
-	/// The ubiquitous event type.
+	type CtypeCreatorId = DidIdentifier;
+	type EnsureOrigin = did::EnsureDidOrigin<Self::CtypeCreatorId>;
 	type Event = Event;
-	type WeightInfo = ();
 }
 
 impl delegation::Config for Runtime {
-	/// The ubiquitous event type.
+	type DelegationNodeId = Hash;
 	type Event = Event;
-	type Signature = Signature;
-	type Signer = <Signature as Verify>::Signer;
-	type DelegationNodeId = Hash;
-	type WeightInfo = ();
-}
-
-pub struct DelegationStructRuntimeUpgrade;
-impl delegation::migration::V23ToV24 for DelegationStructRuntimeUpgrade {
-	type AccountId = AccountId;
-	type DelegationNodeId = Hash;
-	type Module = Delegation;
-}
-impl frame_support::traits::OnRuntimeUpgrade for DelegationStructRuntimeUpgrade {
-	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		delegation::migration::apply::<Self>()
-	}
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
 }
 
 impl did::Config for Runtime {
-	/// The ubiquitous event type.
-	type Event = Event;
-	type WeightInfo = ();
 	type DidIdentifier = AccountId;
+	type Event = Event;
+	type Call = Call;
+	type Origin = Origin;
 }
 
 pub struct PortableGabiRemoval;
@@ -422,7 +393,7 @@ construct_runtime!(
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>} = 9,
 		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 10,
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 11,
-		Did: did::{Pallet, Call, Storage, Event<T>} = 12,
+		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 12,
 
 		Session: session::{Pallet, Call, Storage, Event, Config<T>} = 15,
 		Authorship: authorship::{Pallet, Call, Storage} = 16,
@@ -446,6 +417,17 @@ construct_runtime!(
 		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
 	}
 );
+
+impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
+	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
+		match self {
+			Call::Attestation(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
+			Call::Ctype(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
+			Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
+			_ => None,
+		}
+	}
+}
 
 /// The address format for describing accounts.
 pub type Address = sp_runtime::MultiAddress<AccountId, ()>;
@@ -638,10 +620,6 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
-			add_benchmark!(params, batches, attestation, Attestation);
-			add_benchmark!(params, batches, ctype, Ctype);
-			add_benchmark!(params, batches, delegation, Delegation);
-			// add_benchmark!(params, batches, did, Did);
 			add_benchmark!(params, batches, kilt_launch, KiltLaunch);
 			add_benchmark!(params, batches, pallet_vesting, Vesting);
 

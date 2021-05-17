@@ -16,6 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+#![allow(clippy::from_over_into)]
+
 use crate as kilt_launch;
 use frame_support::{assert_noop, assert_ok, parameter_types, traits::GenesisBuild};
 use frame_system as system;
@@ -159,7 +161,7 @@ pub fn ensure_single_migration_works(
 		source.to_owned(),
 		dest.to_owned()
 	));
-	let now: BlockNumber = System::block_number().into();
+	let now: BlockNumber = System::block_number();
 
 	// Check for desired death of allocation account
 	assert_eq!(Balances::free_balance(source), 0);
@@ -263,7 +265,7 @@ pub fn assert_balance(who: AccountId, free: Balance, usable_for_fees: Balance, u
 	if do_transfer && usable > ExistentialDeposit::get() {
 		// Should be able to transfer all tokens but ExistentialDeposit
 		assert_ok!(Balances::transfer(
-			Origin::signed(who.clone()),
+			Origin::signed(who),
 			TRANSFER_ACCOUNT,
 			usable - ExistentialDeposit::get()
 		));
