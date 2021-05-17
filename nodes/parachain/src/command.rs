@@ -19,7 +19,7 @@
 use crate::{
 	chain_spec,
 	cli::{Cli, RelayChainCli, Subcommand, DEFAULT_PARA_ID},
-	service::{mashnet_executor, new_partial, spiritnet_executor},
+	service::{new_partial, MashRuntimeExecutor, ShellRuntimeExecutor, SpiritRuntimeExecutor},
 };
 use codec::Encode;
 use cumulus_client_service::genesis::generate_genesis_block;
@@ -156,62 +156,47 @@ fn extract_genesis_wasm(chain_spec: &Box<dyn sc_service::ChainSpec>) -> Result<V
 		.ok_or_else(|| "Could not find wasm file in genesis state!".into())
 }
 
-fn use_shell_runtime(chain_spec: &Box<dyn ChainSpec>) -> bool {
-	chain_spec.id().starts_with("track") || chain_spec.id().starts_with("shell")
-}
-
 macro_rules! construct_async_run {
 	(|$components:ident, $cli:ident, $cmd:ident, $config:ident| $( $code:tt )* ) => {{
 		let runner = $cli.create_runner($cmd)?;
 		match $cli.runtime.as_str() {
 			"spiritnet" => {
-				if use_shell_runtime(&runner.config().chain_spec) {
 					runner.async_run(|$config| {
-						let $components = new_partial::<shell_runtime::RuntimeApi, spiritnet_executor::ShellRuntimeExecutor, _>(
+						let $components = new_partial::<kilt_parachain_runtime::RuntimeApi, SpiritRuntimeExecutor, _>(
 							&$config,
-							crate::service::shell_build_import_queue::<spiritnet_executor::ShellRuntimeExecutor>,
+							crate::service::build_import_queue::<SpiritRuntimeExecutor, ShellRuntimeExecutor>,
 						)?;
 						let task_manager = $components.task_manager;
 						{ $( $code )* }.map(|v| (v, task_manager))
 					})
-				} else {
-					runner.async_run(|$config| {
-						let $components = new_partial::<kilt_parachain_runtime::RuntimeApi, spiritnet_executor::RuntimeExecutor, _>(
-							&$config,
-							crate::service::build_import_queue::<spiritnet_executor::RuntimeExecutor, spiritnet_executor::ShellRuntimeExecutor>,
-						)?;
-						let task_manager = $components.task_manager;
-						{ $( $code )* }.map(|v| (v, task_manager))
-					})
-				}
-			},
+				},
 			"mashnet" => {
-				if use_shell_runtime(&runner.config().chain_spec) {
 					runner.async_run(|$config| {
-						let $components = new_partial::<shell_runtime::RuntimeApi, mashnet_executor::ShellRuntimeExecutor, _>(
+						let $components = new_partial::<kilt_parachain_runtime::RuntimeApi, MashRuntimeExecutor, _>(
 							&$config,
-							crate::service::shell_build_import_queue::<mashnet_executor::ShellRuntimeExecutor>,
-						)?;
-						let task_manager = $components.task_manager;
-						{ $( $code )* }.map(|v| (v, task_manager))
-					})
-				} else {
-					runner.async_run(|$config| {
-						let $components = new_partial::<kilt_parachain_runtime::RuntimeApi, mashnet_executor::RuntimeExecutor, _>(
-							&$config,
-							crate::service::build_import_queue::<mashnet_executor::RuntimeExecutor, mashnet_executor::ShellRuntimeExecutor>,
+							crate::service::build_import_queue::<MashRuntimeExecutor, ShellRuntimeExecutor>,
 						)?;
 						let task_manager = $components.task_manager;
 						{ $( $code )* }.map(|v| (v, task_manager))
 					})
 				}
+			"shell" => {
+				runner.async_run(|$config| {
+					let $components = new_partial::<shell_runtime::RuntimeApi, ShellRuntimeExecutor, _>(
+						&$config,
+						crate::service::shell_build_import_queue::<ShellRuntimeExecutor>,
+					)?;
+					let task_manager = $components.task_manager;
+					{ $( $code )* }.map(|v| (v, task_manager))
+				})
 			}
 			_ => panic!("unkown runtime"),
 		}
 	}}
 }
 
-/// The runtime argument is not always on the root level of the cli struct. Make sure that it is.
+/// The runtime argument is not always on the root level of the cli struct. Make
+/// sure that it is.
 fn fix_runtime_arg(cli: &mut Cli) {
 	let sub_command_runtime = match &cli.subcommand {
 		Some(Subcommand::BuildSpec(cmd)) => Some(&cmd.runtime),
@@ -273,10 +258,9 @@ pub fn run() -> Result<()> {
 			if cfg!(feature = "runtime-benchmarks") {
 				let runner = cli.create_runner(cmd)?;
 				match cli.runtime.as_str() {
-					"mashnet" => runner.sync_run(|config| cmd.run::<Block, mashnet_executor::RuntimeExecutor>(config)),
-					"spiritnet" => {
-						runner.sync_run(|config| cmd.run::<Block, spiritnet_executor::RuntimeExecutor>(config))
-					}
+					"mashnet" => runner.sync_run(|config| cmd.run::<Block, MashRuntimeExecutor>(config)),
+					"spiritnet" => runner.sync_run(|config| cmd.run::<Block, SpiritRuntimeExecutor>(config)),
+					"shell" => runner.sync_run(|config| cmd.run::<Block, ShellRuntimeExecutor>(config)),
 					_ => Err("Unknown runtime".into()),
 				}
 			} else {
@@ -332,7 +316,6 @@ pub fn run() -> Result<()> {
 		}
 		None => {
 			let runner = cli.create_runner(&cli.run.normalize())?;
-			let use_shell = use_shell_runtime(&runner.config().chain_spec);
 
 			runner.run_node_until_exit(|config| async move {
 				// TODO
@@ -366,8 +349,8 @@ pub fn run() -> Result<()> {
 					if config.role.is_authority() { "yes" } else { "no" }
 				);
 
-				match (cli.runtime.as_str(), use_shell) {
-					("mashnet", true) => crate::service::start_shell_node::<mashnet_executor::ShellRuntimeExecutor>(
+				match cli.runtime.as_str() {
+					"mashnet" => crate::service::start_node::<MashRuntimeExecutor, ShellRuntimeExecutor>(
 						config,
 						key,
 						polkadot_config,
@@ -376,31 +359,21 @@ pub fn run() -> Result<()> {
 					.await
 					.map(|r| r.0)
 					.map_err(Into::into),
-					("mashnet", false) => crate::service::start_node::<
-						mashnet_executor::RuntimeExecutor,
-						mashnet_executor::ShellRuntimeExecutor,
-					>(config, key, polkadot_config, id)
+					"spiritnet" => crate::service::start_node::<SpiritRuntimeExecutor, ShellRuntimeExecutor>(
+						config,
+						key,
+						polkadot_config,
+						id,
+					)
 					.await
 					.map(|r| r.0)
 					.map_err(Into::into),
-					("spiritnet", true) => {
-						crate::service::start_shell_node::<spiritnet_executor::ShellRuntimeExecutor>(
-							config,
-							key,
-							polkadot_config,
-							id,
-						)
-						.await
-						.map(|r| r.0)
-						.map_err(Into::into)
+					"shell" => {
+						crate::service::start_shell_node::<ShellRuntimeExecutor>(config, key, polkadot_config, id)
+							.await
+							.map(|r| r.0)
+							.map_err(Into::into)
 					}
-					("spiritnet", false) => crate::service::start_node::<
-						spiritnet_executor::RuntimeExecutor,
-						spiritnet_executor::ShellRuntimeExecutor,
-					>(config, key, polkadot_config, id)
-					.await
-					.map(|r| r.0)
-					.map_err(Into::into),
 					_ => Err("Unknown runtime".into()),
 				}
 			})

@@ -40,43 +40,30 @@ use substrate_prometheus_endpoint::Registry;
 
 pub use sc_executor::NativeExecutor;
 
-pub mod mashnet_executor {
-	use sc_executor::native_executor_instance;
+use sc_executor::native_executor_instance;
 
-	// Native executor instance.
-	native_executor_instance!(
-		pub RuntimeExecutor,
-		kilt_parachain_runtime::api::dispatch,
-		kilt_parachain_runtime::native_version,
-		frame_benchmarking::benchmarking::HostFunctions,
-	);
+// Native executor instance.
+native_executor_instance!(
+	pub MashRuntimeExecutor,
+	kilt_parachain_runtime::api::dispatch,
+	kilt_parachain_runtime::native_version,
+	frame_benchmarking::benchmarking::HostFunctions,
+);
 
-	// Native executor instance.
-	native_executor_instance!(
-		pub ShellRuntimeExecutor,
-		shell_runtime::api::dispatch,
-		shell_runtime::native_version,
-	);
-}
+// Native executor instance.
+native_executor_instance!(
+	pub ShellRuntimeExecutor,
+	shell_runtime::api::dispatch,
+	shell_runtime::native_version,
+);
 
-pub mod spiritnet_executor {
-	use sc_executor::native_executor_instance;
-
-	// Native executor instance.
-	native_executor_instance!(
-		pub RuntimeExecutor,
-		spiritnet_runtime::api::dispatch,
-		spiritnet_runtime::native_version,
-		frame_benchmarking::benchmarking::HostFunctions,
-	);
-
-	// Native executor instance.
-	native_executor_instance!(
-		pub ShellRuntimeExecutor,
-		shell_runtime::api::dispatch,
-		shell_runtime::native_version,
-	);
-}
+// Native executor instance.
+native_executor_instance!(
+	pub SpiritRuntimeExecutor,
+	spiritnet_runtime::api::dispatch,
+	spiritnet_runtime::native_version,
+	frame_benchmarking::benchmarking::HostFunctions,
+);
 
 // type PartialComponentsType = sc_service::PartialComponents<
 // 	TFullClient<Block, RuntimeApi, Executor>,
