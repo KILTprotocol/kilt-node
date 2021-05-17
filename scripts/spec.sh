@@ -1,6 +1,17 @@
 #!/bin/bash
+TMP_DIR="/tmp/parachain/"
 
-mkdir -p /tmp/parachain/
+mkdir -p $TMP_DIR
+
+# make sure that jq supports big numbers
+EXPECTED_BIG_NUM=10000000000000000000000000000
+BIG_NUM=$(echo '{"big_test_num":10000000000000000000000000000}' | jq '.big_test_num')
+if [[ $BIG_NUM != $EXPECTED_BIG_NUM ]]; then
+	echo "your jq doesn't support big numbers."
+	echo "Make sure to install the latest git version"
+	echo "Got: " $BIG_NUM " Expected: " $EXPECTED_BIG_NUM
+	exit 1
+fi
 
 # ##############################################################################
 # #                                                                            #
@@ -15,3 +26,19 @@ jq -f scripts/roc-stage-kilt.jq /tmp/parachain/kilt-stage.plain.json >/tmp/parac
 
 docker run -v /tmp/parachain/:/data/spec parity/rococo:rococo-v1-0.8.30-943038a8-f14fa75f build-spec --chain /data/spec/rococo.json --raw --disable-default-bootnode >dev-specs/kilt-parachain/relay-stage.json
 cargo run --release -p kilt-parachain -- build-spec --chain /tmp/parachain/kilt-stage.json --disable-default-bootnode >dev-specs/kilt-parachain/kilt-stage.json
+
+# ##############################################################################
+# #                                                                            #
+# #                                 SPIRITNET                                  #
+# #                                                                            #
+# ##############################################################################
+SPIRITNET_PLAIN=$TMP_DIR"spiritnet.plain.json"
+SPIRITNET_JQ=$TMP_DIR"spiritnet.json"
+SPIRITNET_OUTPUT=nodes/parachain/res/spiritnet.json
+
+# we have to load `spiritnet-dev` here since `spiritnet` would just be the content of the file at $SPIRITNET_OUTPUT
+cargo run --release -p kilt-parachain -- build-spec --chain spiritnet-dev --disable-default-bootnode >$SPIRITNET_PLAIN
+
+jq -f scripts/roc-stage-kilt.jq $SPIRITNET_PLAIN >$SPIRITNET_JQ
+
+cargo run --release -p kilt-parachain -- build-spec --chain $SPIRITNET_JQ --disable-default-bootnode >$SPIRITNET_OUTPUT
