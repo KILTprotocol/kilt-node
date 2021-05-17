@@ -54,10 +54,10 @@ use static_assertions::const_assert;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 
-#[cfg(feature = "fast-gov")]
-use kilt_primitives::constants::MINUTES;
 #[cfg(not(feature = "fast-gov"))]
 use kilt_primitives::constants::HOURS;
+#[cfg(feature = "fast-gov")]
+use kilt_primitives::constants::MINUTES;
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
