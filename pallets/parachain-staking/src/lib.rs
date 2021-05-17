@@ -660,11 +660,11 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		/// Set the annual inflation rate to derive per-round inflation
 		#[pallet::weight(0)]
-		pub fn set_inflation(origin: OriginFor<T>, inflation: InflationInfo) -> DispatchResultWithPostInfo {
+		pub fn set_inflation(origin: OriginFor<T>, inflation: InflationInfo) -> DispatchResult {
 			frame_system::ensure_root(origin)?;
 
 			Self::update_inflation(inflation)?;
-			Ok(().into())
+			Ok(())
 		}
 
 		#[pallet::weight(0)]
@@ -989,7 +989,8 @@ pub mod pallet {
 				Error::<T>::NomBondBelowMin
 			);
 
-			T::Currency::unreserve(&delegator, less);
+			let err_amt = T::Currency::unreserve(&delegator, less);
+			debug_assert!(err_amt.is_zero());
 			let before = collator.total;
 			collator.dec_delegator(delegator.clone(), less);
 			let after = collator.total;
