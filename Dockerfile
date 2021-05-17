@@ -4,7 +4,7 @@ FROM paritytech/ci-linux:d34c7950-20210408 as builder
 
 WORKDIR /build
 
-ARG FEATURES=
+ARG FEATURES=default
 
 COPY ./nodes /build/nodes
 COPY ./pallets /build/pallets
