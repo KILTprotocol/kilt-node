@@ -99,6 +99,7 @@ impl Config for Test {
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxUrlLength = MaxUrlLength;
 	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
+	type WeightInfo = ();
 }
 
 impl ctype::Config for Test {

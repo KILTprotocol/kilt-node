@@ -329,6 +329,7 @@ impl did::Config for Runtime {
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 	type MaxUrlLength = MaxUrlLength;
+	type WeightInfo = did::default_weights::SubstrateWeight<Runtime>;
 }
 
 pub struct PortableGabiRemoval;
