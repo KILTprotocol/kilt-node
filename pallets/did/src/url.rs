@@ -136,6 +136,7 @@ pub enum Url {
 }
 
 impl Url {
+	#[allow(clippy::len_without_is_empty)]
 	pub fn len(&self) -> usize {
 		match self {
 			Self::Http(HttpUrl { payload }) | Self::Ftp(FtpUrl { payload }) | Self::Ipfs(IpfsUrl { payload }) => {

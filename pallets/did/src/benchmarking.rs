@@ -260,8 +260,8 @@ benchmarks! {
 		let mut did_update_op = generate_base_did_update_operation::<T>(did_subject.clone());
 		did_update_op.new_authentication_key = Some(DidVerificationKey::from(new_did_public_auth_key));
 		did_update_op.new_key_agreement_keys = new_key_agreement_keys;
-		did_update_op.attestation_key_update = DidVerificationKeyUpdateAction::Change(DidVerificationKey::from(new_did_public_att_key.clone()));
-		did_update_op.delegation_key_update = DidVerificationKeyUpdateAction::Change(DidVerificationKey::from(new_did_public_del_key.clone()));
+		did_update_op.attestation_key_update = DidVerificationKeyUpdateAction::Change(DidVerificationKey::from(new_did_public_att_key));
+		did_update_op.delegation_key_update = DidVerificationKeyUpdateAction::Change(DidVerificationKey::from(new_did_public_del_key));
 		did_update_op.public_keys_to_remove = public_keys_to_remove;
 		did_update_op.new_endpoint_url = Some(new_url);
 
@@ -323,8 +323,8 @@ benchmarks! {
 		let mut did_update_op = generate_base_did_update_operation::<T>(did_subject.clone());
 		did_update_op.new_authentication_key = Some(DidVerificationKey::from(new_did_public_auth_key));
 		did_update_op.new_key_agreement_keys = new_key_agreement_keys;
-		did_update_op.attestation_key_update = DidVerificationKeyUpdateAction::Change(DidVerificationKey::from(new_did_public_att_key.clone()));
-		did_update_op.delegation_key_update = DidVerificationKeyUpdateAction::Change(DidVerificationKey::from(new_did_public_del_key.clone()));
+		did_update_op.attestation_key_update = DidVerificationKeyUpdateAction::Change(DidVerificationKey::from(new_did_public_att_key));
+		did_update_op.delegation_key_update = DidVerificationKeyUpdateAction::Change(DidVerificationKey::from(new_did_public_del_key));
 		did_update_op.public_keys_to_remove = public_keys_to_remove;
 		did_update_op.new_endpoint_url = Some(new_url);
 
