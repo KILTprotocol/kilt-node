@@ -2049,13 +2049,13 @@ fn check_ftp_url() {
 fn check_ipfs_url() {
 	// Base58 address
 	assert_ok!(did::IpfsUrl::try_from(
-		"ipfs://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes(),
+		"ipfs://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()
 	));
 
 	// Base32 address (at the moment, padding characters can appear anywhere in the
 	// string)
 	assert_ok!(did::IpfsUrl::try_from(
-		"ipfs://OQQHHHTGMMYDQQ364YB4GDE=HREJQL==".as_bytes(),
+		"ipfs://OQQHHHTGMMYDQQ364YB4GDE=HREJQL==".as_bytes()
 	));
 
 	assert_eq!(
