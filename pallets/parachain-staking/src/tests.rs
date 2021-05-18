@@ -17,11 +17,14 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 //! Unit testing
-use crate::{Config, Error, Event, InflationInfo, REWARDS_ID, RewardRate, StakingInfo, mock::{
-		almost_equal, check_inflation_update, events, last_event, roll_to, AccountId,
-		Authorship, Balance, Balances, BlockNumber, Event as MetaEvent, ExtBuilder, Origin, Stake, System, Test,
-		BLOCKS_PER_ROUND, DECIMALS,
-	}, types::{BalanceOf, Bond, CollatorSnapshot, CollatorStatus, RoundInfo}};
+use crate::{
+	mock::{
+		almost_equal, check_inflation_update, events, last_event, roll_to, AccountId, Authorship, Balance, Balances,
+		BlockNumber, Event as MetaEvent, ExtBuilder, Origin, Stake, System, Test, BLOCKS_PER_ROUND, DECIMALS,
+	},
+	types::{BalanceOf, Bond, CollatorSnapshot, CollatorStatus, RoundInfo},
+	Config, Error, Event, InflationInfo, RewardRate, StakingInfo, REWARDS_ID,
+};
 use frame_support::{assert_noop, assert_ok};
 use kilt_primitives::constants::YEARS;
 use pallet_balances::{BalanceLock, Error as BalancesError, Locks, Reasons};
@@ -1961,6 +1964,47 @@ fn should_not_reward_delegators_below_min_stake() {
 			assert_eq!(Balances::free_balance(&4), 5);
 			assert_eq!(Balances::free_balance(&2), Balance::zero());
 			assert_eq!(Balances::free_balance(&3), Balance::zero());
+		});
+}
+
+#[test]
+fn reach_max_collator_candidates() {
+	ExtBuilder::default()
+		.with_balances(vec![
+			(1, 10),
+			(2, 20),
+			(3, 10),
+			(4, 10),
+			(5, 10),
+			(6, 10),
+			(7, 10),
+			(8, 10),
+			(9, 10),
+			(10, 10),
+			(11, 10),
+		])
+		.with_collators(vec![
+			(1, 10),
+			(2, 20),
+			(3, 10),
+			(4, 10),
+			(5, 10),
+			(6, 10),
+			(7, 10),
+			(8, 10),
+			(9, 10),
+			(10, 10),
+		])
+		.build()
+		.execute_with(|| {
+			assert_eq!(
+				Stake::candidate_pool().0.len() as u32,
+				<Test as Config>::MaxCollatorCandidates::get()
+			);
+			assert_noop!(
+				Stake::join_candidates(Origin::signed(11), 10),
+				Error::<Test>::TooManyCollatorCandidates
+			);
 		});
 }
 

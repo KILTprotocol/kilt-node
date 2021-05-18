@@ -17,7 +17,10 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 //! Test utilities
 use super::*;
-use crate::{self as stake, types::{BalanceOf, CollatorStatus}};
+use crate::{
+	self as stake,
+	types::{BalanceOf, CollatorStatus},
+};
 use frame_support::{
 	assert_noop, assert_ok, construct_runtime, parameter_types,
 	traits::{FindAuthor, GenesisBuild, OnFinalize, OnInitialize},
@@ -128,6 +131,7 @@ parameter_types! {
 	pub const DefaultCollatorCommission: Perbill = Perbill::from_percent(20);
 	pub const MinCollatorStk: u128 = 10;
 	pub const MaxCollatorCandidateStk: u128 = 160_000_000 * DECIMALS;
+	pub const MaxCollatorCandidates: u32 = 10;
 	pub const MinDelegatorStk: u128 = 5;
 	pub const MinDelegation: u128 = 3;
 }
@@ -144,6 +148,7 @@ impl Config for Test {
 	type MinCollatorStk = MinCollatorStk;
 	type MinCollatorCandidateStk = MinCollatorStk;
 	type MaxCollatorCandidateStk = MaxCollatorCandidateStk;
+	type MaxCollatorCandidates = MaxCollatorCandidates;
 	type MinDelegatorStk = MinDelegatorStk;
 	type MinDelegation = MinDelegation;
 }

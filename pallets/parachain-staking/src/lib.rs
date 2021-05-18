@@ -136,6 +136,8 @@ pub mod pallet {
 		type MaxDelegatorsPerCollator: Get<u32>;
 		/// Maximum collators per delegator
 		type MaxCollatorsPerDelegator: Get<u32>;
+		/// Maximum number of collator candidates
+		type MaxCollatorCandidates: Get<u32>;
 		/// Minimum stake required for any account to be in `SelectedCandidates`
 		/// for the round
 		type MinCollatorStk: Get<BalanceOf<Self>>;
@@ -168,6 +170,7 @@ pub mod pallet {
 		AlreadyDelegating,
 		NotYetDelegating,
 		TooManyDelegators,
+		TooManyCollatorCandidates,
 		CannotActivateIfLeaving,
 		ExceedMaxCollatorsPerDelegator,
 		AlreadyDelegatedCollator,
@@ -450,6 +453,12 @@ pub mod pallet {
 					amount: bond
 				}),
 				Error::<T>::CandidateExists
+			);
+
+			// Post-launch TODO: Replace with `check_collator_candidate_inclusion`.
+			ensure!(
+				(candidates.0.len() as u32) <= T::MaxCollatorCandidates::get(),
+				Error::<T>::TooManyCollatorCandidates
 			);
 			T::Currency::reserve(&acc, bond)?;
 
@@ -1055,6 +1064,11 @@ pub mod pallet {
 			}
 		}
 
+		/// Attempts to add the bond to the set of delegators of a collator
+		/// which already reached its maximum size by removing an already
+		/// existing delegator with less bonded value. If the given bonded
+		/// amount is at most the minimum bonded value of the original delegator
+		/// set, an error is returned.
 		fn do_update_delegator(
 			bond: Bond<T::AccountId, BalanceOf<T>>,
 			mut state: Collator<T::AccountId, BalanceOf<T>>,
@@ -1082,6 +1096,18 @@ pub mod pallet {
 				_ => Err(Error::<T>::TooManyDelegators.into()),
 			}
 		}
+
+		// Post-launch TODO: Think about Collator stake or total stake?
+		// /// Attempts to add a collator candidate to the set of collator
+		// /// candidates which already reached its maximum size. On success,
+		// /// another collator with the minimum total stake is removed from the
+		// /// set. On failure, an error is returned. removing an already existing
+		// fn check_collator_candidate_inclusion(
+		// 	bond: Bond<T::AccountId, BalanceOf<T>>,
+		// 	mut candidates: OrderedSet<Bond<T::AccountId, BalanceOf<T>>>,
+		// ) -> Result<(), DispatchError> {
+		// 	todo!()
+		// }
 	}
 
 	impl<T> pallet_authorship::EventHandler<T::AccountId, T::BlockNumber> for Pallet<T>

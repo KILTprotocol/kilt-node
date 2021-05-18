@@ -199,7 +199,11 @@ impl InflationInfo {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::{Round, mock::{ExtBuilder, Stake, Test}, types::RoundInfo};
+	use crate::{
+		mock::{ExtBuilder, Stake, Test},
+		types::RoundInfo,
+		Round,
+	};
 
 	#[test]
 	fn perbill() {
