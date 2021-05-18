@@ -2003,11 +2003,11 @@ fn check_ftp_url() {
 	assert_ok!(did::FtpUrl::try_from("ftps://kilt.io".as_bytes()));
 
 	assert_ok!(did::FtpUrl::try_from(
-		"ftps://user@super.long.domain.kilt.io:12345/public/files/test.txt".as_bytes(),
+		"ftps://user@super.long.domain.kilt.io:12345/public/files/test.txt".as_bytes()
 	));
 
 	// All other valid ASCII characters
-	assert_ok!(did::FtpUrl::try_from("ftps://:/?#[]@%!$&'()*+,;=-._~".as_bytes(),));
+	assert_ok!(did::FtpUrl::try_from("ftps://:/?#[]@%!$&'()*+,;=-._~".as_bytes()));
 
 	assert_eq!(
 		did::FtpUrl::try_from("".as_bytes()),
