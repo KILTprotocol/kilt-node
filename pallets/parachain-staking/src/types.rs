@@ -153,22 +153,16 @@ where
 	}
 
 	pub fn inc_delegator(&mut self, delegator: A, more: B) {
-		for x in &mut self.delegators.0 {
-			if x.owner == delegator {
-				x.amount = x.amount.saturating_add(more);
-				self.total = self.total.saturating_add(more);
-				return;
-			}
+		if let Ok(i) = self.delegators.binary_search_by(|x| x.owner.cmp(&delegator)) {
+			self.delegators[i].amount = self.delegators[i].amount.saturating_add(more);
+			self.total = self.total.saturating_add(more);
 		}
 	}
 
 	pub fn dec_delegator(&mut self, delegator: A, less: B) {
-		for x in &mut self.delegators.0 {
-			if x.owner == delegator {
-				x.amount = x.amount.saturating_sub(less);
-				self.total = self.total.saturating_sub(less);
-				return;
-			}
+		if let Ok(i) = self.delegators.binary_search_by(|x| x.owner.cmp(&delegator)) {
+			self.delegators[i].amount = self.delegators[i].amount.saturating_sub(less);
+			self.total = self.total.saturating_sub(less);
 		}
 	}
 
@@ -193,7 +187,7 @@ where
 	fn from(other: Collator<A, B>) -> CollatorSnapshot<A, B> {
 		CollatorSnapshot {
 			bond: other.bond,
-			delegators: other.delegators.0,
+			delegators: other.delegators.into(),
 			total: other.total,
 		}
 	}
@@ -233,22 +227,9 @@ where
 	// Returns Some(remaining balance), must be more than MinDelegatorStk
 	// Returns None if delegation not found
 	pub fn rm_delegation(&mut self, collator: AccountId) -> Option<Balance> {
-		let mut amt: Option<Balance> = None;
-		let delegations = self
-			.delegations
-			.0
-			.iter()
-			.filter_map(|x| {
-				if x.owner == collator {
-					amt = Some(x.amount);
-					None
-				} else {
-					Some(x.clone())
-				}
-			})
-			.collect();
+		let amt = self.delegations.remove_by(|x| x.owner.cmp(&collator)).map(|f| f.amount);
+
 		if let Some(balance) = amt {
-			self.delegations = OrderedSet::from(delegations);
 			self.total = self.total.saturating_sub(balance);
 			Some(self.total)
 		} else {
@@ -258,33 +239,34 @@ where
 
 	// Returns None if delegation not found
 	pub fn inc_delegation(&mut self, collator: AccountId, more: Balance) -> Option<Balance> {
-		for x in &mut self.delegations.0 {
-			if x.owner == collator {
-				x.amount = x.amount.saturating_add(more);
+		match self.delegations.binary_search_by(|x| x.owner.cmp(&collator)) {
+			Ok(i) => {
+				self.delegations[i].amount = self.delegations[i].amount.saturating_add(more);
 				self.total = self.total.saturating_add(more);
-				return Some(x.amount);
+				Some(self.delegations[i].amount)
 			}
+			Err(_) => None,
 		}
-		None
 	}
 
 	// Returns Some(Some(balance)) if successful
 	// None if delegation not found
 	// Some(None) if underflow
 	pub fn dec_delegation(&mut self, collator: AccountId, less: Balance) -> Option<Option<Balance>> {
-		for x in &mut self.delegations.0 {
-			if x.owner == collator {
+		match self.delegations.binary_search_by(|x| x.owner.cmp(&collator)) {
+			Ok(i) => {
+				let mut x = &mut self.delegations[i];
 				if x.amount > less {
 					x.amount = x.amount.saturating_sub(less);
 					self.total = self.total.saturating_sub(less);
-					return Some(Some(x.amount));
+					Some(Some(x.amount))
 				} else {
 					// underflow error; should rm entire delegation if x.amount == collator
-					return Some(None);
+					Some(None)
 				}
 			}
+			Err(_) => None,
 		}
-		None
 	}
 }
 

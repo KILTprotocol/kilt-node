@@ -60,8 +60,8 @@ fn geneses() {
 				}
 			);
 			assert_eq!(
-				Stake::candidate_pool().0,
-				vec![Bond { owner: 1, amount: 700 }, Bond { owner: 2, amount: 400 }]
+				vec![Bond { owner: 1, amount: 700 }, Bond { owner: 2, amount: 400 }],
+				Stake::candidate_pool().to_vec()
 			);
 			// 1
 			assert_eq!(Balances::reserved_balance(&1), 500);
@@ -146,7 +146,7 @@ fn geneses() {
 				}
 			);
 			assert_eq!(
-				Stake::candidate_pool().0,
+				Stake::candidate_pool().to_vec(),
 				vec![
 					Bond { owner: 1, amount: 50 },
 					Bond { owner: 2, amount: 40 },
@@ -889,9 +889,9 @@ fn multiple_delegations() {
 
 			// verify that delegations are removed after collator leaves, not before
 			assert_eq!(Stake::delegator_state(7).unwrap().total, 90);
-			assert_eq!(Stake::delegator_state(7).unwrap().delegations.0.len(), 2usize);
+			assert_eq!(Stake::delegator_state(7).unwrap().delegations.len(), 2usize);
 			assert_eq!(Stake::delegator_state(6).unwrap().total, 40);
-			assert_eq!(Stake::delegator_state(6).unwrap().delegations.0.len(), 4usize);
+			assert_eq!(Stake::delegator_state(6).unwrap().delegations.len(), 4usize);
 			assert_eq!(Balances::reserved_balance(&6), 40);
 			assert_eq!(Balances::reserved_balance(&7), 90);
 			assert_eq!(Balances::free_balance(&6), 60);
@@ -899,8 +899,8 @@ fn multiple_delegations() {
 			roll_to(40, vec![]);
 			assert_eq!(Stake::delegator_state(7).unwrap().total, 10);
 			assert_eq!(Stake::delegator_state(6).unwrap().total, 30);
-			assert_eq!(Stake::delegator_state(7).unwrap().delegations.0.len(), 1usize);
-			assert_eq!(Stake::delegator_state(6).unwrap().delegations.0.len(), 3usize);
+			assert_eq!(Stake::delegator_state(7).unwrap().delegations.len(), 1usize);
+			assert_eq!(Stake::delegator_state(6).unwrap().delegations.len(), 3usize);
 			assert_eq!(Balances::reserved_balance(&6), 30);
 			assert_eq!(Balances::reserved_balance(&7), 10);
 			assert_eq!(Balances::free_balance(&6), 70);
@@ -2024,7 +2024,7 @@ fn reach_max_collator_candidates() {
 		.build()
 		.execute_with(|| {
 			assert_eq!(
-				Stake::candidate_pool().0.len() as u32,
+				Stake::candidate_pool().len() as u32,
 				<Test as Config>::MaxCollatorCandidates::get()
 			);
 			assert_noop!(

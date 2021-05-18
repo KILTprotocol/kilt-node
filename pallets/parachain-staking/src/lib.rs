@@ -452,7 +452,7 @@ pub mod pallet {
 
 			// Post-launch TODO: Replace with `check_collator_candidate_inclusion`.
 			ensure!(
-				(candidates.0.len() as u32) <= T::MaxCollatorCandidates::get(),
+				(candidates.len() as u32) <= T::MaxCollatorCandidates::get(),
 				Error::<T>::TooManyCollatorCandidates
 			);
 			T::Currency::reserve(&acc, bond)?;
@@ -495,7 +495,7 @@ pub mod pallet {
 			);
 			state.leave_candidates(when);
 			let mut candidates = <CandidatePool<T>>::get();
-			if candidates.remove(&Bond::from(collator.clone())) {
+			if candidates.remove_by(|bond| bond.owner.cmp(&collator)).is_some() {
 				<CandidatePool<T>>::put(candidates);
 			}
 			<ExitQueue<T>>::put(exits);
@@ -512,7 +512,7 @@ pub mod pallet {
 			ensure!(state.is_active(), Error::<T>::AlreadyOffline);
 			state.go_offline();
 			let mut candidates = <CandidatePool<T>>::get();
-			if candidates.remove(&Bond::from(collator.clone())) {
+			if candidates.remove_by(|bond| bond.owner.cmp(&collator)).is_some() {
 				<CandidatePool<T>>::put(candidates);
 			}
 			<CollatorState<T>>::insert(&collator, state);
@@ -617,7 +617,7 @@ pub mod pallet {
 			ensure!(state.delegators.insert(delegation.clone()), Error::<T>::DelegatorExists);
 
 			// update state and potentially kick a delegator with less bonded amount
-			state = if (state.delegators.0.len() as u32) > T::MaxDelegatorsPerCollator::get() {
+			state = if (state.delegators.len() as u32) > T::MaxDelegatorsPerCollator::get() {
 				Self::do_update_delegator(delegation, state)?
 			} else {
 				state.total = state.total.saturating_add(amount);
@@ -668,7 +668,7 @@ pub mod pallet {
 				// delegation after first
 				ensure!(amount >= T::MinDelegation::get(), Error::<T>::DelegationBelowMin);
 				ensure!(
-					(delegator.delegations.0.len() as u32) < T::MaxCollatorsPerDelegator::get(),
+					(delegator.delegations.len() as u32) < T::MaxCollatorsPerDelegator::get(),
 					Error::<T>::ExceedMaxCollatorsPerDelegator
 				);
 
@@ -688,7 +688,7 @@ pub mod pallet {
 				ensure!(state.delegators.insert(delegation.clone()), Error::<T>::DelegatorExists);
 
 				// update state and potentially kick a delegator with less bonded amount
-				state = if (state.delegators.0.len() as u32) > T::MaxDelegatorsPerCollator::get() {
+				state = if (state.delegators.len() as u32) > T::MaxDelegatorsPerCollator::get() {
 					Self::do_update_delegator(delegation, state)?
 				} else {
 					state.total = state.total.saturating_add(amount);
@@ -724,7 +724,7 @@ pub mod pallet {
 		pub fn leave_delegators(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			let acc = ensure_signed(origin)?;
 			let delegator = <DelegatorState<T>>::get(&acc).ok_or(Error::<T>::DelegatorDNE)?;
-			for bond in delegator.delegations.0 {
+			for bond in delegator.delegations.into_iter() {
 				Self::delegator_leaves_collator(acc.clone(), bond.owner.clone())?;
 			}
 			<DelegatorState<T>>::remove(&acc);
@@ -841,14 +841,15 @@ pub mod pallet {
 		pub fn is_selected_candidate(acc: &T::AccountId) -> bool {
 			<SelectedCandidates<T>>::get().binary_search(acc).is_ok()
 		}
+
 		// ensure candidate is active before calling
 		fn update_active(candidate: T::AccountId, total: BalanceOf<T>) {
 			let mut candidates = <CandidatePool<T>>::get();
-			candidates.remove(&Bond::from(candidate.clone()));
-			candidates.insert(Bond {
+			candidates.upsert(Bond {
 				owner: candidate,
 				amount: total,
 			});
+
 			<CandidatePool<T>>::put(candidates);
 		}
 
@@ -867,7 +868,7 @@ pub mod pallet {
 				.rm_delegation(collator.clone())
 				.ok_or(Error::<T>::DelegationDNE)?;
 			// edge case; if no delegations remaining, leave set of delegators
-			if delegator.delegations.0.len().is_zero() {
+			if delegator.delegations.is_empty() {
 				// leave the set of delegators because no delegations left
 				Self::delegator_leaves_collator(acc.clone(), collator)?;
 				<DelegatorState<T>>::remove(&acc);
@@ -879,27 +880,20 @@ pub mod pallet {
 			<DelegatorState<T>>::insert(&acc, delegator);
 			Ok(().into())
 		}
+
 		fn delegator_leaves_collator(delegator: T::AccountId, collator: T::AccountId) -> DispatchResultWithPostInfo {
 			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateDNE)?;
-			let mut exists: Option<BalanceOf<T>> = None;
-			let noms = state
+
+			let delegator_stake = state
 				.delegators
-				.0
-				.into_iter()
-				.filter_map(|nom| {
-					if nom.owner != delegator {
-						Some(nom)
-					} else {
-						exists = Some(nom.amount);
-						None
-					}
-				})
-				.collect();
-			let delegator_stake = exists.ok_or(Error::<T>::DelegatorDNE)?;
-			let delegators = OrderedSet::from(noms);
-			T::Currency::unreserve(&delegator, delegator_stake);
-			state.delegators = delegators;
+				.remove_by(|nom| nom.owner.cmp(&delegator))
+				.map(|nom| nom.amount)
+				.ok_or(Error::<T>::DelegatorDNE)?;
+
 			state.total = state.total.saturating_sub(delegator_stake);
+
+			T::Currency::unreserve(&delegator, delegator_stake);
+
 			if state.is_active() {
 				Self::update_active(collator.clone(), state.total);
 			}
@@ -908,6 +902,7 @@ pub mod pallet {
 			});
 			let new_total = state.total;
 			<CollatorState<T>>::insert(&collator, state);
+
 			Self::deposit_event(Event::DelegatorLeftCollator(
 				delegator,
 				collator,
@@ -919,14 +914,13 @@ pub mod pallet {
 
 		fn execute_delayed_collator_exits(next: RoundIndex) {
 			let remain_exits = <ExitQueue<T>>::get()
-				.0
 				.into_iter()
 				.filter_map(|x| {
 					if x.amount > next {
 						Some(x)
 					} else {
 						if let Some(state) = <CollatorState<T>>::get(&x.owner) {
-							for bond in state.delegators.0 {
+							for bond in state.delegators.into_iter() {
 								// return stake to delegator
 								T::Currency::unreserve(&bond.owner, bond.amount);
 								// remove delegation from delegator state
@@ -976,7 +970,7 @@ pub mod pallet {
 		fn select_top_candidates(next: RoundIndex) -> (u32, BalanceOf<T>, BalanceOf<T>) {
 			let (mut all_collators, mut total_collators, mut total_delegators) =
 				(0u32, BalanceOf::<T>::zero(), BalanceOf::<T>::zero());
-			let mut candidates = <CandidatePool<T>>::get().0;
+			let mut candidates: Vec<Bond<_, _>> = <CandidatePool<T>>::get().into();
 
 			// Order candidates by their total stake
 			// TODO: Safe to unwrap?
@@ -1089,7 +1083,7 @@ pub mod pallet {
 			mut state: Collator<T::AccountId, BalanceOf<T>>,
 		) -> Result<Collator<T::AccountId, BalanceOf<T>>, DispatchError> {
 			// add bond & sort by amount
-			let mut delegators: Vec<Bond<T::AccountId, BalanceOf<T>>> = state.delegators.0;
+			let mut delegators: Vec<Bond<T::AccountId, BalanceOf<T>>> = state.delegators.into();
 			// delegators.push(bond.clone());
 			delegators.sort_by(|a, b| b.amount.cmp(&a.amount));
 

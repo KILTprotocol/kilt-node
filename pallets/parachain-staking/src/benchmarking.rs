@@ -23,7 +23,7 @@ use crate::Pallet as ParachainStaking;
 use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
 // use frame_support::{assert_ok, traits::OnFinalize};
 use frame_system::RawOrigin;
-// use sp_runtime::Perbill;
+use sp_runtime::Perquintill;
 
 // const BLOCK: u32 = 5;
 // const MAX_COLLATORS: usize = 2;
@@ -35,7 +35,7 @@ use frame_system::RawOrigin;
 
 benchmarks! {
 	set_inflation {
-		let inflation = InflationInfo::new(10, 15, 40, 10);
+		let inflation = InflationInfo::new(Perquintill::from_percent(10), Perquintill::from_percent(15), Perquintill::from_percent(40), Perquintill::from_percent(10));
 
 	}: _(RawOrigin::Root, inflation)
 	verify {

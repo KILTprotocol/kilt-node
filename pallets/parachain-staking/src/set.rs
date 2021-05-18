@@ -17,15 +17,20 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use parity_scale_codec::{Decode, Encode};
+use sp_runtime::RuntimeDebug;
+use sp_std::{
+	cmp::Ordering,
+	ops::{Index, IndexMut, Range, RangeFull},
+	prelude::*,
+};
+
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_runtime::RuntimeDebug;
-use sp_std::prelude::*;
 
 /// An ordered set backed by `Vec`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Default, Clone)]
-pub struct OrderedSet<T>(pub Vec<T>);
+pub struct OrderedSet<T>(Vec<T>);
 
 impl<T: Ord> OrderedSet<T> {
 	/// Create a new empty set
@@ -59,15 +64,39 @@ impl<T: Ord> OrderedSet<T> {
 		}
 	}
 
+	/// Insert or replaces an element.
+	/// Returns the old value if existing.
+	pub fn upsert(&mut self, value: T) -> Option<T> {
+		match self.0.binary_search(&value) {
+			Ok(i) => {
+				let old = sp_std::mem::replace(&mut self.0[i], value);
+				Some(old)
+			}
+			Err(i) => {
+				self.0.insert(i, value);
+				None
+			}
+		}
+	}
+
 	/// Remove an element.
 	/// Return true if removal happened.
-	pub fn remove(&mut self, value: &T) -> bool {
+	pub fn remove(&mut self, value: &T) -> Option<T> {
 		match self.0.binary_search(&value) {
-			Ok(loc) => {
-				self.0.remove(loc);
-				true
-			}
-			Err(_) => false,
+			Ok(loc) => Some(self.0.remove(loc)),
+			Err(_) => None,
+		}
+	}
+
+	/// Remove an element.
+	/// Return true if removal happened.
+	pub fn remove_by<F>(&mut self, f: F) -> Option<T>
+	where
+		F: FnMut(&T) -> Ordering,
+	{
+		match self.0.binary_search_by(f) {
+			Ok(loc) => Some(self.0.remove(loc)),
+			Err(_) => None,
 		}
 	}
 
@@ -76,15 +105,87 @@ impl<T: Ord> OrderedSet<T> {
 		self.0.binary_search(&value).is_ok()
 	}
 
+	/// Return if the set contains `value`
+	pub fn binary_search(&self, value: &T) -> Result<usize, usize> {
+		self.0.binary_search(&value)
+	}
+
+	/// Return if the set contains `value`
+	pub fn binary_search_by<'a, F>(&'a self, f: F) -> Result<usize, usize>
+	where
+		F: FnMut(&'a T) -> Ordering,
+	{
+		self.0.binary_search_by(f)
+	}
+
 	/// Clear the set
 	pub fn clear(&mut self) {
 		self.0.clear();
+	}
+
+	/// Clear the set
+	pub fn len(&self) -> usize {
+		self.0.len()
+	}
+
+	/// Clear the set
+	pub fn is_empty(&self) -> bool {
+		self.0.is_empty()
+	}
+
+	pub fn to_vec(self) -> Vec<T> {
+		self.0
 	}
 }
 
 impl<T: Ord> From<Vec<T>> for OrderedSet<T> {
 	fn from(v: Vec<T>) -> Self {
 		Self::from(v)
+	}
+}
+
+impl<T: Ord> Index<usize> for OrderedSet<T> {
+	type Output = T;
+
+	fn index(&self, index: usize) -> &Self::Output {
+		&self.0[index]
+	}
+}
+
+impl<T: Ord> Index<Range<usize>> for OrderedSet<T> {
+	type Output = [T];
+
+	fn index(&self, range: Range<usize>) -> &Self::Output {
+		&self.0[range]
+	}
+}
+
+impl<T: Ord> Index<RangeFull> for OrderedSet<T> {
+	type Output = [T];
+
+	fn index(&self, range: RangeFull) -> &Self::Output {
+		&self.0[range]
+	}
+}
+
+impl<T: Ord> IndexMut<usize> for OrderedSet<T> {
+	fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+		&mut self.0[index]
+	}
+}
+
+impl<T: Ord> IntoIterator for OrderedSet<T> {
+	type Item = T;
+	type IntoIter = sp_std::vec::IntoIter<Self::Item>;
+
+	fn into_iter(self) -> Self::IntoIter {
+		self.0.into_iter()
+	}
+}
+
+impl<T: Ord> From<OrderedSet<T>> for Vec<T> {
+	fn from(s: OrderedSet<T>) -> Self {
+		s.0
 	}
 }
 
@@ -121,25 +222,25 @@ mod tests {
 	fn remove() {
 		let mut set: OrderedSet<i32> = OrderedSet::from(vec![1, 2, 3, 4]);
 
-		assert_eq!(set.remove(&5), false);
+		assert_eq!(set.remove(&5), None);
 		assert_eq!(set, OrderedSet::from(vec![1, 2, 3, 4]));
 
-		assert_eq!(set.remove(&1), true);
+		assert_eq!(set.remove(&1), Some(1));
 		assert_eq!(set, OrderedSet::from(vec![2, 3, 4]));
 
-		assert_eq!(set.remove(&3), true);
+		assert_eq!(set.remove(&3), Some(3));
 		assert_eq!(set, OrderedSet::from(vec![2, 4]));
 
-		assert_eq!(set.remove(&3), false);
+		assert_eq!(set.remove(&3), None);
 		assert_eq!(set, OrderedSet::from(vec![2, 4]));
 
-		assert_eq!(set.remove(&4), true);
+		assert_eq!(set.remove(&4), Some(4));
 		assert_eq!(set, OrderedSet::from(vec![2]));
 
-		assert_eq!(set.remove(&2), true);
+		assert_eq!(set.remove(&2), Some(2));
 		assert_eq!(set, OrderedSet::from(vec![]));
 
-		assert_eq!(set.remove(&2), false);
+		assert_eq!(set.remove(&2), None);
 		assert_eq!(set, OrderedSet::from(vec![]));
 	}
 
