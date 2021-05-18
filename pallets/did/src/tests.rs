@@ -1949,7 +1949,7 @@ fn check_invalid_signature_operation_verification() {
 
 #[test]
 fn check_http_url() {
-	assert_ok!(did::HttpUrl::try_from("https://new_kilt.io".as_bytes()));
+	assert_ok!(did::HttpUrl::try_from("http://kilt.io".as_bytes()));
 
 	assert_ok!(did::HttpUrl::try_from("https://kilt.io".as_bytes()));
 

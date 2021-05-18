@@ -42,7 +42,7 @@ pub struct HttpUrl {
 impl TryFrom<&[u8]> for HttpUrl {
 	type Error = UrlError;
 
-	// It fails if the byte sequence does not result in an ASCII-encoded string,
+	// It fails if the byte sequence does not result in an ASCII-encoded string or
 	// if the resulting string contains characters that are not allowed in a URL.
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 		let str_url = str::from_utf8(value).map_err(|_| UrlError::InvalidUrlEncoding)?;
