@@ -99,3 +99,5 @@ jobs:
         docker pull $SOURCE_IMAGE
         docker tag $SOURCE_IMAGE $DOCKER_REPOSITORY:$DOCKER_IMAGE_TAG
         docker push $DOCKER_REPOSITORY:$DOCKER_IMAGE_TAG
+        docker image prune -a --force --filter "until=360h"
+
