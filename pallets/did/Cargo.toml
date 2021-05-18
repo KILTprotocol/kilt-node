@@ -18,6 +18,7 @@ env_logger = {version = "0.8.3"}
 kilt-primitives = {default-features = false, path = "../../primitives"}
 pallet-membership = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate"}
 serde = {version = "1.0.101"}
+sp-keystore = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [dependencies]
 # Internal dependencies
@@ -35,6 +36,7 @@ log = {default-features = false, version = "0.4.14"}
 serde = {optional = true, version = "1.0.101"}
 sp-core = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-io = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+sp-keystore = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
 sp-runtime = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-std = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate"}
 
@@ -46,9 +48,12 @@ mock = [
   "kilt-primitives",
   "serde",
   "sp-io",
+  "sp-keystore"
 ]
 runtime-benchmarks = [
   "frame-benchmarking",
+  "frame-support/runtime-benchmarks",
+	"frame-system/runtime-benchmarks",
   "sp-io"
 ]
 std = [

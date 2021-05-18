@@ -381,7 +381,7 @@ benchmarks! {
 }
 
 impl_benchmark_test_suite! {
-	DelegationPallet,
-	crate::mock::ExtBuilder::default().build(None),
+	Pallet,
+	crate::mock::ExtBuilder::default().build_with_keystore(None),
 	crate::mock::Test
 }
