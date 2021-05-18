@@ -17,14 +17,10 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 //! Unit testing
-use crate::{
-	mock::{
+use crate::{Config, Error, Event, InflationInfo, REWARDS_ID, RewardRate, StakingInfo, mock::{
 		almost_equal, check_inflation_update, events, last_event, roll_to, AccountId, Authorship, Balance, Balances,
 		BlockNumber, Event as MetaEvent, ExtBuilder, Origin, Stake, System, Test, BLOCKS_PER_ROUND, DECIMALS,
-	},
-	types::{BalanceOf, Bond, CollatorSnapshot, CollatorStatus, RoundInfo},
-	Config, Error, Event, InflationInfo, RewardRate, StakingInfo, REWARDS_ID,
-};
+	}, types::{BalanceOf, Bond, CollatorSnapshot, CollatorStatus, RoundInfo, TotalStake}};
 use frame_support::{assert_noop, assert_ok};
 use kilt_primitives::constants::YEARS;
 use pallet_balances::{BalanceLock, Error as BalancesError, Locks, Reasons};
@@ -52,7 +48,7 @@ fn geneses() {
 			assert!(System::events().is_empty());
 
 			// Collators
-			assert_eq!(Stake::total(), (700, 400));
+			assert_eq!(Stake::total(), TotalStake { collators: 700, delegators: 400 });
 			assert_eq!(
 				Stake::candidate_pool().0,
 				vec![Bond { owner: 1, amount: 700 }, Bond { owner: 2, amount: 400 }]
@@ -82,7 +78,7 @@ fn geneses() {
 				}
 			);
 			// Delegators
-			assert_eq!(Stake::total(), (700, 400));
+			assert_eq!(Stake::total(), TotalStake { collators: 700, delegators: 400 });
 			for x in 3..7 {
 				assert!(Stake::is_delegator(&x));
 				assert_eq!(Balances::free_balance(&x), 0);
@@ -126,7 +122,7 @@ fn geneses() {
 			assert!(System::events().is_empty());
 
 			// Collators
-			assert_eq!(Stake::total(), (90, 50));
+			assert_eq!(Stake::total(), TotalStake { collators: 90, delegators: 50 });
 			assert_eq!(
 				Stake::candidate_pool().0,
 				vec![

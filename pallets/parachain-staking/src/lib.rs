@@ -90,7 +90,7 @@ pub mod pallet {
 
 	use crate::{
 		set::OrderedSet,
-		types::{BalanceOf, Bond, Collator, CollatorSnapshot, Delegator, RoundIndex, RoundInfo},
+		types::{BalanceOf, Bond, Collator, CollatorSnapshot, Delegator, RoundIndex, RoundInfo, TotalStake},
 	};
 
 	pub const REWARDS_ID: LockIdentifier = *b"kiltrwrd";
@@ -298,7 +298,7 @@ pub mod pallet {
 	#[pallet::getter(fn total)]
 	/// Total capital locked by this staking pallet
 	// TODO: Might want to use Struct instead of Tuple
-	type Total<T: Config> = StorageValue<_, (BalanceOf<T>, BalanceOf<T>), ValueQuery>;
+	type Total<T: Config> = StorageValue<_, TotalStake<BalanceOf<T>>, ValueQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn candidate_pool)]
@@ -463,9 +463,15 @@ pub mod pallet {
 			T::Currency::reserve(&acc, bond)?;
 
 			let candidate = Collator::new(acc.clone(), bond);
-			let (total_collators, total_delegators) = <Total<T>>::get();
+			let TotalStake {
+				collators: total_collators,
+				delegators: total_delegators,
+			} = <Total<T>>::get();
 			let total_collators = total_collators.saturating_add(bond);
-			<Total<T>>::put((total_collators, total_delegators));
+			<Total<T>>::put(TotalStake {
+				collators: total_collators,
+				delegators: total_delegators,
+			});
 			<CollatorState<T>>::insert(&acc, candidate);
 			<CandidatePool<T>>::put(candidates);
 
@@ -632,8 +638,14 @@ pub mod pallet {
 			}
 
 			// update states
-			let (total_collators, total_delegators) = <Total<T>>::get();
-			<Total<T>>::put((total_collators, total_delegators.saturating_add(amount)));
+			let TotalStake {
+				collators: total_collators,
+				delegators: total_delegators,
+			} = <Total<T>>::get();
+			<Total<T>>::put(TotalStake {
+				collators: total_collators,
+				delegators: total_delegators.saturating_add(amount),
+			});
 
 			// TODO: Add update of select_top_candidates
 			<CollatorState<T>>::insert(&collator, state);
@@ -697,8 +709,9 @@ pub mod pallet {
 				}
 
 				// Update states
-				let (total_collators, total_delegators) = <Total<T>>::get();
-				<Total<T>>::put((total_collators, total_delegators.saturating_add(amount)));
+				Total::<T>::mutate(|old| {
+					old.delegators = old.delegators.saturating_add(amount);
+				});
 
 				// TODO: Add update of select_top_candidates
 				<CollatorState<T>>::insert(&collator, state);
@@ -895,8 +908,9 @@ pub mod pallet {
 			if state.is_active() {
 				Self::update_active(collator.clone(), state.total);
 			}
-			let (total_collators, total_delegators) = <Total<T>>::get();
-			<Total<T>>::put((total_collators, total_delegators.saturating_sub(delegator_stake)));
+			Total::<T>::mutate(|old| {
+				old.delegators = old.delegators.saturating_add(delegator_stake);
+			});
 			let new_total = state.total;
 			<CollatorState<T>>::insert(&collator, state);
 			Self::deposit_event(Event::DelegatorLeftCollator(
@@ -934,11 +948,17 @@ pub mod pallet {
 							// return stake to collator
 							T::Currency::unreserve(&state.id, state.bond);
 
-							let (total_collators, total_delegators) = <Total<T>>::get();
+							let TotalStake {
+								collators: total_collators,
+								delegators: total_delegators,
+							} = <Total<T>>::get();
 							let total_collators = total_collators.saturating_sub(state.bond);
 							// safe because bond <= total at all times
 							let total_delegators = total_delegators.saturating_sub(state.total - state.bond);
-							<Total<T>>::put((total_collators, total_delegators));
+							<Total<T>>::put(TotalStake {
+								collators: total_collators,
+								delegators: total_delegators,
+							});
 
 							<CollatorState<T>>::remove(&x.owner);
 							Self::deposit_event(Event::CollatorLeft(
@@ -1121,8 +1141,11 @@ pub mod pallet {
 				let block_now: T::BlockNumber = <frame_system::Pallet<T>>::block_number();
 				// TODO: Do we rather want to use a snapshot of total at the start of the round?
 				// --> Keep as is for now and worry about this later
-				let (total_collator_stake, total_delegator_stake) = <Total<T>>::get();
-				let (c_rewards, d_rewards) = Self::compute_block_issuance(total_collator_stake, total_delegator_stake);
+				let TotalStake {
+					collators: total_collators,
+					delegators: total_delegators,
+				} = <Total<T>>::get();
+				let (c_rewards, d_rewards) = Self::compute_block_issuance(total_collators, total_delegators);
 
 				let amt_due_collator = c_rewards;
 				let delegator_stake = state.total.saturating_sub(state.bond);

@@ -17,10 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 //! Test utilities
 use super::*;
-use crate::{
-	self as stake,
-	types::{BalanceOf, CollatorStatus},
-};
+use crate::{self as stake, types::{BalanceOf, CollatorStatus, TotalStake}};
 use frame_support::{
 	assert_noop, assert_ok, construct_runtime, parameter_types,
 	traits::{FindAuthor, GenesisBuild, OnFinalize, OnInitialize},
@@ -359,7 +356,10 @@ pub(crate) fn check_yearly_inflation(
 		.execute_with(|| {
 			let total_issuance = <Test as Config>::Currency::total_issuance();
 			assert_eq!(total_issuance, expected_issuance);
-			let (total_collator_stake, total_delegator_stake) = Stake::total();
+			let TotalStake {
+				collators: total_collator_stake,
+				delegators: total_delegator_stake,
+			} = Stake::total();
 			assert_eq!(total_collator_stake, num_of_collators as u128 * collator_stake);
 			assert_eq!(total_delegator_stake, num_of_delegators as u128 * delegator_stake);
 			assert_eq!(Stake::round().length, blocks_per_round);

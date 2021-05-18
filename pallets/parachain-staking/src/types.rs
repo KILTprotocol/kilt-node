@@ -327,5 +327,11 @@ where
 	}
 }
 
+#[derive(Default, Clone, Encode, Decode, RuntimeDebug, PartialEq, Eq)]
+pub struct TotalStake<Balance: Default> {
+	pub collators: Balance,
+	pub delegators: Balance,
+}
+
 pub type RoundIndex = u32;
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
