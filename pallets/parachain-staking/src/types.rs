@@ -24,7 +24,7 @@ use sp_runtime::{
 };
 use sp_std::{
 	cmp::Ordering,
-	ops::{Add, AddAssign, Sub, SubAssign},
+	ops::{Add, Sub},
 	vec,
 	vec::Vec,
 };
@@ -114,7 +114,7 @@ where
 impl<A, B> Collator<A, B>
 where
 	A: Ord + Clone,
-	B: AtLeast32BitUnsigned + Ord + Copy + AddAssign + SubAssign,
+	B: AtLeast32BitUnsigned + Ord + Copy + Saturating,
 {
 	pub fn new(id: A, bond: B) -> Self {
 		let total = bond;
@@ -136,17 +136,16 @@ where
 	}
 
 	pub fn bond_more(&mut self, more: B) {
-		// TODO: use saturaring_add instead?
-		self.bond += more;
-		self.total += more;
+		self.bond = self.bond.saturating_add(more);
+		self.total = self.total.saturating_add(more);
 	}
 
 	// Returns None if underflow or less == self.bond (in which case collator should
 	// leave)
 	pub fn bond_less(&mut self, less: B) -> Option<B> {
 		if self.bond > less {
-			self.bond -= less;
-			self.total -= less;
+			self.bond = self.bond.saturating_sub(less);
+			self.total = self.total.saturating_sub(less);
 			Some(self.bond)
 		} else {
 			None
@@ -156,8 +155,8 @@ where
 	pub fn inc_delegator(&mut self, delegator: A, more: B) {
 		for x in &mut self.delegators.0 {
 			if x.owner == delegator {
-				x.amount += more;
-				self.total += more;
+				x.amount = x.amount.saturating_add(more);
+				self.total = self.total.saturating_add(more);
 				return;
 			}
 		}
@@ -166,8 +165,8 @@ where
 	pub fn dec_delegator(&mut self, delegator: A, less: B) {
 		for x in &mut self.delegators.0 {
 			if x.owner == delegator {
-				x.amount -= less;
-				self.total -= less;
+				x.amount = x.amount.saturating_sub(less);
+				self.total = self.total.saturating_sub(less);
 				return;
 			}
 		}
@@ -209,7 +208,7 @@ pub struct Delegator<AccountId: Eq + Ord, Balance: Eq + Ord> {
 impl<AccountId, Balance> Delegator<AccountId, Balance>
 where
 	AccountId: Eq + Ord + Clone,
-	Balance: Copy + AddAssign + Add<Output = Balance> + SubAssign + PartialOrd + Eq + Ord,
+	Balance: Copy + Add<Output = Balance> + Saturating + PartialOrd + Eq + Ord,
 {
 	pub fn new(collator: AccountId, amount: Balance) -> Self {
 		Delegator {
@@ -224,7 +223,7 @@ where
 	pub fn add_delegation(&mut self, bond: Bond<AccountId, Balance>) -> bool {
 		let amt = bond.amount;
 		if self.delegations.insert(bond) {
-			self.total += amt;
+			self.total = self.total.saturating_add(amt);
 			true
 		} else {
 			false
@@ -250,7 +249,7 @@ where
 			.collect();
 		if let Some(balance) = amt {
 			self.delegations = OrderedSet::from(delegations);
-			self.total -= balance;
+			self.total = self.total.saturating_sub(balance);
 			Some(self.total)
 		} else {
 			None
@@ -261,8 +260,8 @@ where
 	pub fn inc_delegation(&mut self, collator: AccountId, more: Balance) -> Option<Balance> {
 		for x in &mut self.delegations.0 {
 			if x.owner == collator {
-				x.amount += more;
-				self.total += more;
+				x.amount = x.amount.saturating_add(more);
+				self.total = self.total.saturating_add(more);
 				return Some(x.amount);
 			}
 		}
@@ -276,8 +275,8 @@ where
 		for x in &mut self.delegations.0 {
 			if x.owner == collator {
 				if x.amount > less {
-					x.amount -= less;
-					self.total -= less;
+					x.amount = x.amount.saturating_sub(less);
+					self.total = self.total.saturating_sub(less);
 					return Some(Some(x.amount));
 				} else {
 					// underflow error; should rm entire delegation if x.amount == collator

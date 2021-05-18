@@ -484,7 +484,7 @@ pub mod pallet {
 			ensure!(!state.is_leaving(), Error::<T>::AlreadyLeaving);
 			let mut exits = <ExitQueue<T>>::get();
 			let now = <Round<T>>::get().current;
-			let when = now + T::BondDuration::get();
+			let when = now.saturating_add(T::BondDuration::get());
 			ensure!(
 				exits.insert(Bond {
 					owner: collator.clone(),
@@ -891,7 +891,7 @@ pub mod pallet {
 			let delegators = OrderedSet::from(noms);
 			T::Currency::unreserve(&delegator, delegator_stake);
 			state.delegators = delegators;
-			state.total -= delegator_stake;
+			state.total = state.total.saturating_sub(delegator_stake);
 			if state.is_active() {
 				Self::update_active(collator.clone(), state.total);
 			}
