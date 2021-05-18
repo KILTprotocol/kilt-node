@@ -699,6 +699,37 @@ fn not_owner_of_root_create_delegation_error() {
 }
 
 // submit_delegation_root_revocation_operation()
+#[test]
+fn empty_revoke_root_successful() {
+	let revoker = ALICE;
+
+	let (root_id, root_node) = (
+		get_delegation_root_id(true),
+		generate_base_delegation_root(revoker.clone()),
+	);
+
+	let mut operation = generate_base_delegation_root_revocation_details(root_id);
+	operation.max_children = 2u32;
+
+	let ext = ctype_mock::ExtBuilder::default()
+		.with_ctypes(vec![(root_node.ctype_hash, revoker.clone())])
+		.build(None);
+	let mut ext = ExtBuilder::default()
+		.with_root_delegations(vec![(root_id, root_node)])
+		.build(Some(ext));
+
+	ext.execute_with(|| {
+		assert_ok!(Delegation::revoke_root(
+			get_origin(revoker.clone()),
+			operation.root_id,
+			operation.max_children
+		));
+	});
+
+	let stored_delegation_root = ext
+		.execute_with(|| Delegation::roots(&operation.root_id).expect("Delegation root should be present on chain."));
+	assert!(stored_delegation_root.revoked);
+}
 
 #[test]
 fn list_hierarchy_revoke_root_successful() {
