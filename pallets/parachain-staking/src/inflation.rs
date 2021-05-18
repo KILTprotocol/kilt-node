@@ -101,6 +101,7 @@ impl StakingInfo {
 	// TODO: Remove and replace usage with `compute_block_rewards`
 	pub fn compute_rewards<T: Config>(&self, stake: BalanceOf<T>, total_issuance: BalanceOf<T>) -> BalanceOf<T> {
 		let staking_rate = Perbill::from_rational(stake, total_issuance).min(self.max_rate);
+		// multiplication with perbill cannot overflow
 		let rewards = self.reward_rate.round * total_issuance;
 		staking_rate * rewards
 	}
@@ -111,6 +112,8 @@ impl StakingInfo {
 		let annual_rate: u64 = (self.reward_rate.annual.deconstruct() as u64).saturating_mul(1000000000u64);
 
 		let staking_rate = Perquintill::from_rational(stake, total_issuance).min(Perquintill::from_parts(max_rate));
+
+		// multiplication with perbill/Perquintill cannot overflow
 		let rewards = Perquintill::from_parts(annual_rate) * total_issuance;
 		let rewards = staking_rate * rewards;
 		Perquintill::from_rational(1u64, YEARS.into()) * rewards

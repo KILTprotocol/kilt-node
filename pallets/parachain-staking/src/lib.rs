@@ -1138,6 +1138,7 @@ pub mod pallet {
 						// Compare this delegator's stake with the total amount of
 						// delegated stake for this collator
 						let percent = Perbill::from_rational(amount, delegator_stake);
+						// multiplication with perbill cannot overflow
 						let due = percent * amt_due_delegators;
 						Self::do_reward(&owner, due, block_now);
 					}
