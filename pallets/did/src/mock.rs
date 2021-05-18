@@ -213,8 +213,7 @@ pub fn get_url_endpoint(length: u32) -> Url {
 	let mut url_encoded_string = DEFAULT_URL_SCHEME.to_vec();
 	url_encoded_string.resize(total_length, b'0');
 	Url::Http(
-		HttpUrl::try_from(url_encoded_string.as_ref())
-			.expect("Failed to create default URL with provided length."),
+		HttpUrl::try_from(url_encoded_string.as_ref()).expect("Failed to create default URL with provided length."),
 	)
 }
 

@@ -21,6 +21,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
+pub mod default_weights;
 pub mod did_details;
 pub mod errors;
 pub mod origin;
@@ -52,6 +53,8 @@ use frame_support::{
 };
 use frame_system::ensure_signed;
 use sp_std::{boxed::Box, convert::TryFrom, fmt::Debug, prelude::Clone, vec::Vec};
+
+use crate::default_weights::WeightInfo;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -95,6 +98,7 @@ pub mod pallet {
 		type MaxVerificationKeysToRevoke: Get<u32>;
 		#[pallet::constant]
 		type MaxUrlLength: Get<u32>;
+		type WeightInfo: WeightInfo;
 	}
 
 	#[pallet::pallet]
@@ -239,7 +243,16 @@ pub mod pallet {
 		///   the new DID
 		/// * signature: the signture over the operation that must be signed
 		///   with the authentication key provided in the operation
-		#[pallet::weight(0)]
+		#[pallet::weight(
+			<T as pallet::Config>::WeightInfo::submit_did_create_operation_ed25519_keys(
+				operation.new_key_agreement_keys.len() as u32,
+				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len() as u32)
+			)
+			.max(<T as pallet::Config>::WeightInfo::submit_did_create_operation_sr25519_keys(
+				operation.new_key_agreement_keys.len() as u32,
+				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len() as u32)
+			))
+		)]
 		pub fn submit_did_create_operation(
 			origin: OriginFor<T>,
 			operation: DidCreationOperation<T>,
@@ -284,7 +297,18 @@ pub mod pallet {
 		///   with the authentication key associated with the new DID. Even in
 		///   case the authentication key is being updated, the operation must
 		///   still be signed with the old one being replaced
-		#[pallet::weight(0)]
+		#[pallet::weight(
+			<T as pallet::Config>::WeightInfo::submit_did_update_operation_ed25519_keys(
+				operation.new_key_agreement_keys.len() as u32,
+				operation.public_keys_to_remove.len() as u32,
+				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len() as u32)
+			)
+			.max(<T as pallet::Config>::WeightInfo::submit_did_update_operation_sr25519_keys(
+				operation.new_key_agreement_keys.len() as u32,
+				operation.public_keys_to_remove.len() as u32,
+				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len() as u32)
+			))
+		)]
 		pub fn submit_did_update_operation(
 			origin: OriginFor<T>,
 			operation: DidUpdateOperation<T>,
@@ -321,7 +345,7 @@ pub mod pallet {
 		///   deactivate
 		/// * signature: the signature over the operation that must be signed
 		///   with the authentication key associated with the DID being deleted
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::submit_did_deletion_operation())]
 		pub fn submit_did_delete_operation(
 			origin: OriginFor<T>,
 			operation: DidDeletionOperation<T>,

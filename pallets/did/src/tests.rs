@@ -764,7 +764,8 @@ fn check_max_limit_public_keys_to_remove_did_update() {
 	let old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 
 	// Max keys allowed + 1
-	let keys_ids_to_remove = get_public_keys_to_remove(<Test as did::Config>::MaxNewKeyAgreementKeys::get().saturating_add(1));
+	let keys_ids_to_remove =
+		get_public_keys_to_remove(<Test as did::Config>::MaxNewKeyAgreementKeys::get().saturating_add(1));
 
 	let mut operation = generate_base_did_update_operation(ALICE_DID);
 	operation.public_keys_to_remove = keys_ids_to_remove;
