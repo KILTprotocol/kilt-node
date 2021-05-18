@@ -39,8 +39,6 @@ pub struct HttpUrl {
 	payload: Vec<u8>,
 }
 
-// I cannot get impl<T: Config> for TryFrom<(&[u8], T::MaxUrlLength)> for
-// HttpUrl to work...
 impl TryFrom<&[u8]> for HttpUrl {
 	type Error = UrlError;
 
