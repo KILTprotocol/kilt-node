@@ -22,7 +22,8 @@ use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
 use kilt_parachain_runtime::{
 	AuraId, BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, ParachainInfoConfig,
-	ParachainStakingConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig, WASM_BINARY,
+	ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig,
+	WASM_BINARY,
 };
 use kilt_primitives::{
 	constants::{DOLLARS, MONTHS},
@@ -56,7 +57,16 @@ pub fn make_dev_spec(id: ParaId) -> Result<ChainSpec, String> {
 				)],
 				kilt_inflation_config(),
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
-				vec![get_from_seed::<AuraId>("Alice"), get_from_seed::<AuraId>("Bob")],
+				vec![
+					(
+						get_account_id_from_seed::<sr25519::Public>("Alice"),
+						get_from_seed::<AuraId>("Alice"),
+					),
+					(
+						get_account_id_from_seed::<sr25519::Public>("Bob"),
+						get_from_seed::<AuraId>("Bob"),
+					),
+				],
 				vec![
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
 					get_account_id_from_seed::<sr25519::Public>("Bob"),
@@ -105,8 +115,14 @@ pub fn make_staging_spec(id: ParaId) -> Result<ChainSpec, String> {
 				kilt_inflation_config(),
 				hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].into(),
 				vec![
-					hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].unchecked_into(),
-					hex!["b67fe6413ffe5cf91ae38a6475c37deea70a25c6c86b3dd17bb82d09efd9b350"].unchecked_into(),
+					(
+						hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].into(),
+						hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].unchecked_into(),
+					),
+					(
+						hex!["b67fe6413ffe5cf91ae38a6475c37deea70a25c6c86b3dd17bb82d09efd9b350"].into(),
+						hex!["b67fe6413ffe5cf91ae38a6475c37deea70a25c6c86b3dd17bb82d09efd9b350"].unchecked_into(),
+					),
 				],
 				vec![
 					hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].into(),
@@ -146,8 +162,14 @@ pub fn peregrine_test_net(id: ParaId) -> Result<ChainSpec, String> {
 				kilt_inflation_config(),
 				hex!["6419c4046cff92703299e9fa37fc100f2664677e6ee3d841735665005345f710"].into(),
 				vec![
-					hex!["6419c4046cff92703299e9fa37fc100f2664677e6ee3d841735665005345f710"].unchecked_into(),
-					hex!["369669429a18b273fb686bd9335c387bb5e8d98abfa33cda946fc7313483ed3f"].unchecked_into(),
+					(
+						hex!["6419c4046cff92703299e9fa37fc100f2664677e6ee3d841735665005345f710"].into(),
+						hex!["6419c4046cff92703299e9fa37fc100f2664677e6ee3d841735665005345f710"].unchecked_into(),
+					),
+					(
+						hex!["369669429a18b273fb686bd9335c387bb5e8d98abfa33cda946fc7313483ed3f"].into(),
+						hex!["369669429a18b273fb686bd9335c387bb5e8d98abfa33cda946fc7313483ed3f"].unchecked_into(),
+					),
 				],
 				vec![
 					hex!["6419c4046cff92703299e9fa37fc100f2664677e6ee3d841735665005345f710"].into(),
@@ -185,7 +207,7 @@ fn testnet_genesis(
 	stakers: Vec<(AccountId, Option<AccountId>, Balance)>,
 	inflation_config: InflationInfo,
 	root_key: AccountId,
-	initial_authorities: Vec<AuraId>,
+	initial_authorities: Vec<(AccountId, AuraId)>,
 	endowed_accounts: Vec<AccountId>,
 	id: ParaId,
 ) -> GenesisConfig {
@@ -244,8 +266,20 @@ fn testnet_genesis(
 			inflation_config,
 		},
 		pallet_aura: kilt_parachain_runtime::AuraConfig {
-			authorities: initial_authorities,
+			authorities: initial_authorities.iter().map(|x| x.1.clone()).collect(),
 		},
 		cumulus_pallet_aura_ext: Default::default(),
+		pallet_session: SessionConfig {
+			keys: initial_authorities
+				.iter()
+				.map(|(acc, key)| {
+					(
+						acc.clone(),
+						acc.clone(),
+						kilt_parachain_runtime::opaque::SessionKeys { aura: key.clone() },
+					)
+				})
+				.collect::<Vec<_>>(),
+		},
 	}
 }

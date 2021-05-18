@@ -44,7 +44,7 @@ use sp_core::{
 };
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult,
 };
@@ -83,11 +83,29 @@ pub use ctype;
 pub use delegation;
 pub use did;
 
-pub type SessionHandlers = ();
+/// Opaque types. These are used by the CLI to instantiate machinery that don't
+/// need to know the specifics of the runtime. They can then be made to be
+/// agnostic over specific formats of data like extrinsics, allowing for them to
+/// continue syncing the network through upgrades to even the core data
+/// structures.
+pub mod opaque {
+	use super::*;
 
-impl_opaque_keys! {
-	pub struct SessionKeys {
-		pub aura: Aura,
+	pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
+
+	pub type SessionHandlers = ();
+	
+	/// Opaque block header type.
+	pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
+	/// Opaque block type.
+	pub type Block = generic::Block<Header, UncheckedExtrinsic>;
+	/// Opaque block identifier type.
+	pub type BlockId = generic::BlockId<Block>;
+
+	impl_opaque_keys! {
+		pub struct SessionKeys {
+			pub aura: Aura,
+		}
 	}
 }
 
@@ -268,6 +286,40 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 impl parachain_info::Config for Runtime {}
 
 impl cumulus_pallet_aura_ext::Config for Runtime {}
+
+impl pallet_aura::Config for Runtime {
+	type AuthorityId = AuraId;
+}
+
+parameter_types! {
+	pub const UncleGenerations: u32 = 0;
+}
+
+impl pallet_authorship::Config for Runtime {
+	type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
+	type UncleGenerations = UncleGenerations;
+	type FilterUncle = ();
+	type EventHandler = ();
+}
+
+parameter_types! {
+	pub const DisabledValidatorsThreshold: Perbill = Perbill::from_percent(17);
+	pub const Period: u64 = 0xFFFF_FFFF_FFFF_FFFF;
+	pub const Offset: u64 = 0xFFFF_FFFF_FFFF_FFFF;
+}
+
+impl pallet_session::Config for Runtime {
+	type Event = Event;
+	type ValidatorId = AccountId;
+	type ValidatorIdOf = ();
+	type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
+	type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
+	type SessionManager = ParachainStaking;
+	type SessionHandler = <opaque::SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
+	type Keys = opaque::SessionKeys;
+	type DisabledValidatorsThreshold = DisabledValidatorsThreshold;
+	type WeightInfo = ();
+}
 
 parameter_types! {
 	pub const MinVestedTransfer: Balance = MIN_VESTED_TRANSFER_AMOUNT;
@@ -632,10 +684,6 @@ impl parachain_staking::Config for Runtime {
 	type MinDelegatorStk = MinDelegatorStk;
 }
 
-impl pallet_aura::Config for Runtime {
-	type AuthorityId = AuraId;
-}
-
 construct_runtime! {
 	pub enum Runtime where
 		Block = Block,
@@ -646,8 +694,8 @@ construct_runtime! {
 		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Call, Storage} = 1,
 
 		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent} = 2,
-		// Aura: aura::{Pallet, Config<T>, Storage} = 3,
-		// Grandpa: grandpa::{Pallet, Call, Storage, Config, Event} = 4,
+		Aura: pallet_aura::{Pallet, Config<T>} = 3,
+		AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 4,
 		Indices: pallet_indices::{Pallet, Call, Storage, Event<T>} = 5,
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>} = 6,
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage} = 7,
@@ -658,8 +706,8 @@ construct_runtime! {
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 11,
 		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 12,
 
-		// Session: session::{Pallet, Call, Storage, Event, Config<T>} = 15,
-		// Authorship: authorship::{Pallet, Call, Storage} = 16,
+		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>} = 15,
+		Authorship: pallet_authorship::{Pallet, Call, Storage} = 16,
 
 		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>} = 18,
 		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 19,
@@ -682,8 +730,7 @@ construct_runtime! {
 
 		// TODO: Add meaningful index
 		ParachainStaking: parachain_staking::{Pallet, Call, Storage, Event<T>, Config<T>} = 99,
-		Aura: pallet_aura::{Pallet, Config<T>} = 100,
-		AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 101,
+
 		// Vesting. Usable initially, but removed once all vesting is finished.
 		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 33,
 		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
@@ -806,11 +853,11 @@ impl_runtime_apis! {
 		fn decode_session_keys(
 			encoded: Vec<u8>,
 		) -> Option<Vec<(Vec<u8>, sp_core::crypto::KeyTypeId)>> {
-			SessionKeys::decode_into_raw_public_keys(&encoded)
+			opaque::SessionKeys::decode_into_raw_public_keys(&encoded)
 		}
 
 		fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
-			SessionKeys::generate(seed)
+			opaque::SessionKeys::generate(seed)
 		}
 	}
 

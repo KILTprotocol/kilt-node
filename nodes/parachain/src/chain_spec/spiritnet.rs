@@ -29,7 +29,7 @@ use sp_core::sr25519;
 use sp_runtime::Perquintill;
 use spiritnet_runtime::{
 	AuraId, BalancesConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, ParachainInfoConfig,
-	ParachainStakingConfig, SudoConfig, SystemConfig, VestingConfig, WASM_BINARY,
+	ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig, WASM_BINARY,
 };
 
 use crate::chain_spec::{get_account_id_from_seed, get_from_seed};
@@ -58,7 +58,16 @@ pub fn get_chain_spec(id: ParaId) -> Result<ChainSpec, String> {
 				)],
 				kilt_inflation_config(),
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
-				vec![get_from_seed::<AuraId>("Alice"), get_from_seed::<AuraId>("Bob")],
+				vec![
+					(
+						get_account_id_from_seed::<sr25519::Public>("Alice"),
+						get_from_seed::<AuraId>("Alice"),
+					),
+					(
+						get_account_id_from_seed::<sr25519::Public>("Bob"),
+						get_from_seed::<AuraId>("Bob"),
+					),
+				],
 				vec![
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
 					get_account_id_from_seed::<sr25519::Public>("Bob"),
@@ -105,7 +114,7 @@ fn testnet_genesis(
 	stakers: Vec<(AccountId, Option<AccountId>, Balance)>,
 	inflation_config: InflationInfo,
 	root_key: AccountId,
-	initial_authorities: Vec<AuraId>,
+	initial_authorities: Vec<(AccountId, AuraId)>,
 	endowed_accounts: Vec<AccountId>,
 	id: ParaId,
 ) -> GenesisConfig {
@@ -152,8 +161,20 @@ fn testnet_genesis(
 			inflation_config,
 		},
 		pallet_aura: spiritnet_runtime::AuraConfig {
-			authorities: initial_authorities,
+			authorities: initial_authorities.iter().map(|x|x.1.clone()).collect(),
 		},
 		cumulus_pallet_aura_ext: Default::default(),
+		pallet_session: SessionConfig {
+			keys: initial_authorities
+				.iter()
+				.map(|(acc, key)| {
+					(
+						acc.clone(),
+						acc.clone(),
+						spiritnet_runtime::opaque::SessionKeys { aura: key.clone() },
+					)
+				})
+				.collect::<Vec<_>>(),
+		},
 	}
 }

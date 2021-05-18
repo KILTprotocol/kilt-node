@@ -12,24 +12,24 @@ static_assertions = "1.1.0"
 
 # RPC
 frame-system-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
-pallet-vesting = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 pallet-transaction-payment-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
+pallet-vesting = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 
 # KILT pallets & primitives
 attestation = {default-features = false, path = "../../pallets/attestation"}
 ctype = {default-features = false, path = "../../pallets/ctype"}
 delegation = {default-features = false, path = "../../pallets/delegation"}
 did = {default-features = false, path = "../../pallets/did"}
-parachain-staking = {default-features = false, path = "../../pallets/parachain-staking"}
 kilt-launch = {path = "../../pallets/kilt-launch", default-features = false}
 kilt-primitives = {path = "../../primitives", default-features = false}
+parachain-staking = {default-features = false, path = "../../pallets/parachain-staking"}
 
 # Substrate dependencies
 sp-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 sp-arithmetic = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 sp-block-builder = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
-sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 sp-consensus-aura = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
+sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 sp-inherents = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 sp-io = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 sp-offchain = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
@@ -43,6 +43,7 @@ frame-executive = {git = "https://github.com/paritytech/substrate", default-feat
 frame-support = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 frame-system = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 pallet-aura = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
+pallet-authorship = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 pallet-balances = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 pallet-collective = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 pallet-democracy = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
@@ -51,6 +52,7 @@ pallet-indices = {git = "https://github.com/paritytech/substrate", default-featu
 pallet-membership = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 pallet-randomness-collective-flip = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 pallet-scheduler = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
+pallet-session = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 pallet-society = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 pallet-sudo = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 pallet-timestamp = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
@@ -58,11 +60,11 @@ pallet-transaction-payment = {git = "https://github.com/paritytech/substrate", d
 pallet-treasury = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 
 # Cumulus dependencies
+cumulus-pallet-aura-ext = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "master"}
 cumulus-pallet-parachain-system = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "master"}
 cumulus-pallet-xcmp-queue = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "master"}
 cumulus-primitives-core = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "master"}
 parachain-info = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "master"}
-cumulus-pallet-aura-ext = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "master"}
 
 # Polkadot dependencies
 polkadot-parachain = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "master"}
@@ -117,7 +119,7 @@ std = [
   "serde",
   "sp-api/std",
   "sp-std/std",
-	"sp-consensus-aura/std",
+  "sp-consensus-aura/std",
   "sp-core/std",
   "sp-runtime/std",
   "sp-version/std",
@@ -144,6 +146,8 @@ std = [
   "pallet-democracy/std",
   "pallet-membership/std",
   "pallet-transaction-payment-rpc-runtime-api/std",
+  "pallet-session/std",
+  "pallet-authorship/std",
   "parachain-info/std",
   "kilt-launch/std",
   "kilt-primitives/std",

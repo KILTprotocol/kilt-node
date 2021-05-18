@@ -82,10 +82,8 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	// TODO: Use ORML one once they point to Substrate master
 	// use orml_utilities::OrderedSet;
-	use sp_runtime::{
-		traits::{Saturating, Zero},
-		Perquintill,
-	};
+	use sp_runtime::{Perquintill, traits::{Saturating, Zero}};
+	use sp_staking::SessionIndex;
 	use sp_std::{collections::btree_map::BTreeMap, prelude::*};
 
 	use crate::{
@@ -1159,5 +1157,27 @@ pub mod pallet {
 		}
 		// TODO: Does this need to be handled?
 		fn note_uncle(_author: T::AccountId, _age: T::BlockNumber) {}
+	}
+
+	impl<T: Config> pallet_session::SessionManager<T::AccountId> for Pallet<T> {
+		fn new_session(new_index: SessionIndex) -> Option<Vec<T::AccountId>> {
+			log::info!(
+				"assembling new collators for new session {} at #{:?}",
+				new_index,
+				<frame_system::Pallet<T>>::block_number(),
+			);
+
+			Self::select_top_candidates(new_index);
+
+			Some(<SelectedCandidates<T>>::get())
+		}
+
+		fn end_session(_end_index: SessionIndex) {
+			// we too are not caring.
+		}
+
+		fn start_session(_start_index: SessionIndex) {
+			// we too are not caring.
+		}
 	}
 }
