@@ -43,7 +43,7 @@ fn load_spec(id: &str, runtime: &str, para_id: ParaId) -> std::result::Result<Bo
 		"dev" => Ok(Box::new(chain_spec::mashnet::make_dev_spec(para_id)?)),
 		"spiritnet-dev" => Ok(Box::new(chain_spec::spiritnet::get_chain_spec(para_id)?)),
 		"spiritnet" => Ok(Box::new(chain_spec::spiritnet::load_spiritnet_spec()?)),
-
+		"peregrine" => Ok(Box::new(chain_spec::mashnet::peregrine_test_net(para_id)?)),
 		"" => match runtime {
 			"spiritnet" => Ok(Box::new(chain_spec::spiritnet::get_chain_spec(para_id)?)),
 			"mashnet" => Ok(Box::new(chain_spec::mashnet::make_dev_spec(para_id)?)),

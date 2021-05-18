@@ -1,6 +1,6 @@
 {
-  "name": "KILT Collator Staging Testnet",
-  "id": "kilt_parachain_staging_testnet",
+  "name": "KILT Collator Peregrine Testnet",
+  "id": "peregrine_kilt",
   "chainType": "Live",
   "bootNodes": [],
   "telemetryEndpoints": null,
@@ -8,10 +8,10 @@
   "properties": {
     "ss58Format": 38,
     "tokenDecimals": 15,
-    "tokenSymbol": "KILT"
+    "tokenSymbol": "PKILT"
   },
-  "relay_chain": "rococo_local_testnet",
-  "para_id": 15566,
+  "relay_chain": "peregrine_relay_testnet",
+  "para_id": 12555,
   "consensusEngine": null,
   "lightSyncState": null,
   "genesis": {
@@ -23,11 +23,11 @@
       "palletBalances": {
         "balances": [
           [
-            "5Gp5hVw2Q6oBz9DkCB2bfH2gkVQpnMuTxgHpmg72yZBGqXGA",
+            "5EKxJLF55ArWS38yJp2Rsyz9CEBJxsoRe9UQ4bQyX1imwZxk",
             10000000000000000000000000000
           ],
           [
-            "5GBzZo6jFsG2MyHyxzixThzgSnja3i5dqf8tYjXseSeMNgpQ",
+            "5DJH8AgnXEjG8jzT1B8UzV9MW9Mfsmw3vajoEFJQHqpTXeoj",
             10000000000000000000000000000
           ],
           [
@@ -61,10 +61,10 @@
         ]
       },
       "palletSudo": {
-        "key": "5Gp5hVw2Q6oBz9DkCB2bfH2gkVQpnMuTxgHpmg72yZBGqXGA"
+        "key": "5EKxJLF55ArWS38yJp2Rsyz9CEBJxsoRe9UQ4bQyX1imwZxk"
       },
       "parachainInfo": {
-        "parachainId": 15566
+        "parachainId": 12555
       },
       "palletDemocracy": {},
       "palletCollectiveInstance1": {
@@ -110,8 +110,8 @@
       },
       "palletAura": {
         "authorities": [
-          "5Gp5hVw2Q6oBz9DkCB2bfH2gkVQpnMuTxgHpmg72yZBGqXGA",
-          "5GBzZo6jFsG2MyHyxzixThzgSnja3i5dqf8tYjXseSeMNgpQ"
+          "5EKxJLF55ArWS38yJp2Rsyz9CEBJxsoRe9UQ4bQyX1imwZxk",
+          "5DJH8AgnXEjG8jzT1B8UzV9MW9Mfsmw3vajoEFJQHqpTXeoj"
         ]
       },
       "cumulusPalletAuraExt": null,

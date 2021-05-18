@@ -111,6 +111,7 @@ substrate-test-runtime-client = {git = "https://github.com/paritytech/substrate"
 
 [features]
 default = []
+fast-gov = ["kilt-parachain-runtime/fast-gov"]
 runtime-benchmarks = [
   "kilt-parachain-runtime/runtime-benchmarks",
 ]
