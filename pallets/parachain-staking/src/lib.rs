@@ -84,7 +84,7 @@ pub mod pallet {
 	// use orml_utilities::OrderedSet;
 	use sp_runtime::{
 		traits::{Saturating, Zero},
-		Perbill,
+		Perquintill,
 	};
 	use sp_std::{collections::btree_map::BTreeMap, prelude::*};
 
@@ -229,7 +229,7 @@ pub mod pallet {
 		/// rewards
 		Rewarded(T::AccountId, BalanceOf<T>),
 		/// Round inflation range set with the provided annual inflation range
-		RoundInflationSet(Perbill, Perbill, Perbill, Perbill),
+		RoundInflationSet(Perquintill, Perquintill, Perquintill, Perquintill),
 		/// Set total selected candidates to this value [old, new]
 		TotalSelectedSet(u32, u32),
 		/// Set blocks per round [current_round, first_block, old, new]
@@ -422,11 +422,6 @@ pub mod pallet {
 		pub fn set_blocks_per_round(origin: OriginFor<T>, new: u32) -> DispatchResultWithPostInfo {
 			frame_system::ensure_root(origin)?;
 			ensure!(new >= T::MinBlocksPerRound::get(), Error::<T>::CannotSetBelowMin);
-
-			// Update inflation config
-			let mut inflation = <InflationConfig<T>>::get();
-			inflation.update_blocks_per_round(new);
-			Self::update_inflation(inflation)?;
 
 			let mut round = <Round<T>>::get();
 			let (now, first, old) = (round.current, round.first, round.length);
@@ -1026,9 +1021,9 @@ pub mod pallet {
 			ensure!(inflation.is_valid(), Error::<T>::InvalidSchedule);
 			Self::deposit_event(Event::RoundInflationSet(
 				inflation.collator.max_rate,
-				inflation.collator.reward_rate.round,
+				inflation.collator.reward_rate.per_block,
 				inflation.delegator.max_rate,
-				inflation.delegator.reward_rate.round,
+				inflation.delegator.reward_rate.per_block,
 			));
 			<InflationConfig<T>>::put(inflation);
 			Ok(())
@@ -1160,8 +1155,8 @@ pub mod pallet {
 					if amount >= T::MinDelegatorStk::get() {
 						// Compare this delegator's stake with the total amount of
 						// delegated stake for this collator
-						let percent = Perbill::from_rational(amount, delegator_stake);
 						// multiplication with perbill cannot overflow
+						let percent = Perquintill::from_rational(amount, delegator_stake);
 						let due = percent * amt_due_delegators;
 						Self::do_reward(&owner, due, block_now);
 					}

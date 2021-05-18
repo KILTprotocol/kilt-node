@@ -35,7 +35,7 @@ use frame_system::RawOrigin;
 
 benchmarks! {
 	set_inflation {
-		let inflation = InflationInfo::new::<T>(10, 15, 40, 10);
+		let inflation = InflationInfo::new(10, 15, 40, 10);
 
 	}: _(RawOrigin::Root, inflation)
 	verify {

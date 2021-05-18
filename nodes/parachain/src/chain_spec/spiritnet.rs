@@ -26,9 +26,10 @@ use kilt_primitives::{
 };
 use sc_service::ChainType;
 use sp_core::sr25519;
+use sp_runtime::Perquintill;
 use spiritnet_runtime::{
 	AuraId, BalancesConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, ParachainInfoConfig,
-	ParachainStakingConfig, Perbill, RewardRate, StakingInfo, SudoConfig, SystemConfig, VestingConfig, WASM_BINARY,
+	ParachainStakingConfig, SudoConfig, SystemConfig, VestingConfig, WASM_BINARY,
 };
 
 use crate::chain_spec::{get_account_id_from_seed, get_from_seed};
@@ -91,22 +92,12 @@ pub fn load_spiritnet_spec() -> Result<ChainSpec, String> {
 }
 
 pub fn kilt_inflation_config() -> InflationInfo {
-	InflationInfo {
-		collator: StakingInfo {
-			max_rate: Perbill::from_percent(10),
-			reward_rate: RewardRate {
-				annual: Perbill::from_percent(10),
-				round: Perbill::from_parts(Perbill::from_percent(15).deconstruct() / 8766),
-			},
-		},
-		delegator: StakingInfo {
-			max_rate: Perbill::from_percent(40),
-			reward_rate: RewardRate {
-				annual: Perbill::from_percent(5),
-				round: Perbill::from_parts(Perbill::from_percent(10).deconstruct() / 8766),
-			},
-		},
-	}
+	InflationInfo::new(
+		Perquintill::from_percent(10),
+		Perquintill::from_percent(10),
+		Perquintill::from_percent(40),
+		Perquintill::from_percent(5),
+	)
 }
 
 fn testnet_genesis(
