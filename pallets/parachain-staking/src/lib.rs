@@ -366,7 +366,6 @@ pub mod pallet {
 						delegated_val.clone(),
 						balance,
 					)
-					.into()
 				} else {
 					<Pallet<T>>::join_candidates(T::Origin::from(Some(actor.clone()).into()), balance)
 				};
@@ -424,7 +423,7 @@ pub mod pallet {
 			// Update inflation config
 			let mut inflation = <InflationConfig<T>>::get();
 			inflation.update_blocks_per_round(new);
-			Self::update_inflation(inflation.clone())?;
+			Self::update_inflation(inflation)?;
 
 			let mut round = <Round<T>>::get();
 			let (now, first, old) = (round.current, round.first, round.length);
@@ -486,7 +485,7 @@ pub mod pallet {
 			);
 			state.leave_candidates(when);
 			let mut candidates = <CandidatePool<T>>::get();
-			if candidates.remove(&Bond::from_owner(collator.clone())) {
+			if candidates.remove(&Bond::from(collator.clone())) {
 				<CandidatePool<T>>::put(candidates);
 			}
 			<ExitQueue<T>>::put(exits);
@@ -503,7 +502,7 @@ pub mod pallet {
 			ensure!(state.is_active(), Error::<T>::AlreadyOffline);
 			state.go_offline();
 			let mut candidates = <CandidatePool<T>>::get();
-			if candidates.remove(&Bond::from_owner(collator.clone())) {
+			if candidates.remove(&Bond::from(collator.clone())) {
 				<CandidatePool<T>>::put(candidates);
 			}
 			<CollatorState<T>>::insert(&collator, state);
@@ -828,7 +827,7 @@ pub mod pallet {
 		// ensure candidate is active before calling
 		fn update_active(candidate: T::AccountId, total: BalanceOf<T>) {
 			let mut candidates = <CandidatePool<T>>::get();
-			candidates.remove(&Bond::from_owner(candidate.clone()));
+			candidates.remove(&Bond::from(candidate.clone()));
 			candidates.insert(Bond {
 				owner: candidate,
 				amount: total,

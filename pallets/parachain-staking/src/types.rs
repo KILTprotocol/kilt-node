@@ -23,15 +23,6 @@ impl<A, B: Default> From<A> for Bond<A, B> {
 	}
 }
 
-impl<A, B: Default> Bond<A, B> {
-	pub fn from_owner(owner: A) -> Self {
-		Bond {
-			owner,
-			amount: B::default(),
-		}
-	}
-}
-
 impl<AccountId: Ord, Balance: PartialEq> Eq for Bond<AccountId, Balance> {}
 
 impl<AccountId: Ord, Balance: PartialEq> Ord for Bond<AccountId, Balance> {
@@ -301,7 +292,7 @@ impl<B: Copy + Saturating + sp_std::ops::Add<Output = B> + sp_std::ops::Sub<Outp
 	Default for RoundInfo<B>
 {
 	fn default() -> RoundInfo<B> {
-		RoundInfo::new(0u32, 0u32.into(), 20u32.into())
+		RoundInfo::new(0u32, 0u32.into(), 20u32)
 	}
 }
 

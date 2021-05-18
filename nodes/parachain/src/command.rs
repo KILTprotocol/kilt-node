@@ -94,7 +94,7 @@ impl SubstrateCli for Cli {
 			&self.runtime,
 			self.run
 				.parachain_id
-				.unwrap_or(DEFAULT_PARA_ID.parse().expect("Default parachain id is a valid u32"))
+				.unwrap_or_else(|| DEFAULT_PARA_ID.parse().expect("Default parachain id is a valid u32"))
 				.into(),
 		)
 	}
