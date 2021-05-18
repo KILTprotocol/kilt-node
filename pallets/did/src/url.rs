@@ -41,21 +41,13 @@ pub struct HttpUrl {
 
 // I cannot get impl<T: Config> for TryFrom<(&[u8], T::MaxUrlLength)> for
 // HttpUrl to work...
-impl TryFrom<(&[u8], u32)> for HttpUrl {
+impl TryFrom<&[u8]> for HttpUrl {
 	type Error = UrlError;
 
 	// It fails if the byte sequence does not result in an ASCII-encoded string,
-	// if the resulting string contains characters that are not allowed in a URL, or
-	// if the URL length exceeds the maximum length allowed.
-	fn try_from(value: (&[u8], u32)) -> Result<Self, Self::Error> {
-		let (raw_url, max_length) = value;
-
-		let str_url = str::from_utf8(raw_url).map_err(|_| UrlError::InvalidUrlEncoding)?;
-
-		ensure!(
-			str_url.chars().count() <= max_length as usize,
-			UrlError::MaxUrlLengthExceeded
-		);
+	// if the resulting string contains characters that are not allowed in a URL.
+	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+		let str_url = str::from_utf8(value).map_err(|_| UrlError::InvalidUrlEncoding)?;
 
 		ensure!(
 			str_url.starts_with(HTTP_URI_SCHEME) || str_url.starts_with(HTTPS_URI_SCHEME),
@@ -65,7 +57,7 @@ impl TryFrom<(&[u8], u32)> for HttpUrl {
 		ensure!(utils::is_valid_ascii_url(&str_url), UrlError::InvalidUrlEncoding);
 
 		Ok(HttpUrl {
-			payload: raw_url.to_vec(),
+			payload: value.to_vec(),
 		})
 	}
 }
@@ -77,20 +69,13 @@ pub struct FtpUrl {
 	payload: Vec<u8>,
 }
 
-impl TryFrom<(&[u8], u32)> for FtpUrl {
+impl TryFrom<&[u8]> for FtpUrl {
 	type Error = UrlError;
 
 	// It fails if the byte sequence does not result in an ASCII-encoded string or
 	// if the resulting string contains characters that are not allowed in a URL.
-	fn try_from(value: (&[u8], u32)) -> Result<Self, Self::Error> {
-		let (raw_url, max_length) = value;
-
-		let str_url = str::from_utf8(raw_url).map_err(|_| UrlError::InvalidUrlEncoding)?;
-
-		ensure!(
-			str_url.chars().count() <= max_length as usize,
-			UrlError::MaxUrlLengthExceeded
-		);
+	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+		let str_url = str::from_utf8(value).map_err(|_| UrlError::InvalidUrlEncoding)?;
 
 		ensure!(
 			str_url.starts_with(FTP_URI_SCHEME) || str_url.starts_with(FTPS_URI_SCHEME),
@@ -100,7 +85,7 @@ impl TryFrom<(&[u8], u32)> for FtpUrl {
 		ensure!(utils::is_valid_ascii_url(&str_url), UrlError::InvalidUrlEncoding);
 
 		Ok(FtpUrl {
-			payload: raw_url.to_vec(),
+			payload: value.to_vec(),
 		})
 	}
 }
@@ -111,20 +96,13 @@ pub struct IpfsUrl {
 	payload: Vec<u8>,
 }
 
-impl TryFrom<(&[u8], u32)> for IpfsUrl {
+impl TryFrom<&[u8]> for IpfsUrl {
 	type Error = UrlError;
 
 	// It fails if the URL is not ASCII-encoded or does not start with the expected
 	// URL scheme.
-	fn try_from(value: (&[u8], u32)) -> Result<Self, Self::Error> {
-		let (raw_url, max_length) = value;
-
-		let str_url = str::from_utf8(raw_url).map_err(|_| UrlError::InvalidUrlEncoding)?;
-
-		ensure!(
-			str_url.chars().count() <= max_length as usize,
-			UrlError::MaxUrlLengthExceeded
-		);
+	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+		let str_url = str::from_utf8(value).map_err(|_| UrlError::InvalidUrlEncoding)?;
 
 		ensure!(str_url.starts_with(IPFS_URI_SCHEME), UrlError::InvalidUrlScheme);
 
@@ -141,7 +119,7 @@ impl TryFrom<(&[u8], u32)> for IpfsUrl {
 		);
 
 		Ok(IpfsUrl {
-			payload: raw_url.to_vec(),
+			payload: value.to_vec(),
 		})
 	}
 }
@@ -155,6 +133,17 @@ pub enum Url {
 	Ftp(FtpUrl),
 	/// See [IpfsUrl].
 	Ipfs(IpfsUrl),
+}
+
+impl Url {
+	pub fn len(&self) -> usize {
+		match self {
+			Self::Http(HttpUrl { payload }) | Self::Ftp(FtpUrl { payload }) | Self::Ipfs(IpfsUrl { payload }) => {
+				// We can use .len() as we know the string is ASCII, so 1 byte <-> 1 character
+				payload.len()
+			}
+		}
+	}
 }
 
 impl From<HttpUrl> for Url {

@@ -16,13 +16,12 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
-use sp_io::crypto::{ed25519_generate, ed25519_sign, sr25519_generate, sr25519_sign};
-use sp_core::{ed25519, sr25519};
-use sp_core::crypto::KeyTypeId;
-use sp_std::{collections::btree_set::BTreeSet, convert::TryInto};
 use codec::Encode;
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_system::RawOrigin;
+use sp_core::{crypto::KeyTypeId, ed25519, sr25519};
+use sp_io::crypto::{ed25519_generate, ed25519_sign, sr25519_generate, sr25519_sign};
+use sp_std::{collections::btree_set::BTreeSet, convert::TryInto};
 
 use crate::*;
 use did_details::*;
@@ -48,22 +47,27 @@ fn get_key_agreement_keys(n_keys: u32) -> BTreeSet<DidEncryptionKey> {
 			// Converts the loop index to a 32-byte array;
 			let mut seed_vec = i.to_be_bytes().to_vec();
 			seed_vec.resize(32, 0u8);
-			let seed: [u8; 32] = seed_vec.try_into().expect("Failed to create encryption key from raw seed.");
+			let seed: [u8; 32] = seed_vec
+				.try_into()
+				.expect("Failed to create encryption key from raw seed.");
 			DidEncryptionKey::X25519(seed)
 		})
 		.collect::<BTreeSet<DidEncryptionKey>>()
 }
 
 fn get_public_keys<T: Config>(n_keys: u32) -> BTreeSet<KeyIdOf<T>> {
-	(1..=n_keys).map(|i| {
-		// Converts the loop index to a 32-byte array;
-		let mut seed_vec = i.to_be_bytes().to_vec();
-		seed_vec.resize(32, 0u8);
-		let seed: [u8; 32] = seed_vec.try_into().expect("Failed to create encryption key from raw seed.");
-		let key = DidEncryptionKey::X25519(seed);
-		utils::calculate_key_id::<T>(&key.into())
-	})
-	.collect::<BTreeSet<KeyIdOf<T>>>()
+	(1..=n_keys)
+		.map(|i| {
+			// Converts the loop index to a 32-byte array;
+			let mut seed_vec = i.to_be_bytes().to_vec();
+			seed_vec.resize(32, 0u8);
+			let seed: [u8; 32] = seed_vec
+				.try_into()
+				.expect("Failed to create encryption key from raw seed.");
+			let key = DidEncryptionKey::X25519(seed);
+			utils::calculate_key_id::<T>(&key.into())
+		})
+		.collect::<BTreeSet<KeyIdOf<T>>>()
 }
 
 fn get_ed25519_public_attestation_key() -> ed25519::Public {
@@ -83,11 +87,14 @@ fn get_sr25519_public_delegation_key() -> sr25519::Public {
 }
 
 // Assumes that the length of the URL is larger than 8 (length of the prefix https://)
-fn get_url_endpoint<T: Config>(length: u32) -> Url {
+fn get_url_endpoint(length: u32) -> Url {
 	let total_length = usize::try_from(length).expect("Failed to convert URL max length value to usize value.");
 	let mut url_encoded_string = DEFAULT_URL_SCHEME.to_vec();
 	url_encoded_string.resize(total_length, b'0');
-	Url::Http(HttpUrl::try_from((url_encoded_string.as_ref(), T::MaxUrlLength::get())).expect("Failed to create default URL with provided length."))
+	Url::Http(
+		HttpUrl::try_from(url_encoded_string.as_ref())
+			.expect("Failed to create default URL with provided length."),
+	)
 }
 
 fn get_did_base_details<T: Config>(auth_key: DidVerificationKey) -> DidDetails<T> {
@@ -108,9 +115,7 @@ fn generate_base_did_creation_operation<T: Config>(
 	}
 }
 
-fn generate_base_did_update_operation<T: Config>(
-	did: DidIdentifierOf<T>
-) -> DidUpdateOperation<T> {
+fn generate_base_did_update_operation<T: Config>(did: DidIdentifierOf<T>) -> DidUpdateOperation<T> {
 	DidUpdateOperation {
 		did,
 		new_authentication_key: None,
@@ -123,13 +128,8 @@ fn generate_base_did_update_operation<T: Config>(
 	}
 }
 
-fn generate_base_did_deletion_operation<T: Config>(
-	did: DidIdentifierOf<T>
-) -> DidDeletionOperation<T> {
-	DidDeletionOperation {
-		did,
-		tx_counter: 1u64,
-	}
+fn generate_base_did_deletion_operation<T: Config>(did: DidIdentifierOf<T>) -> DidDeletionOperation<T> {
+	DidDeletionOperation { did, tx_counter: 1u64 }
 }
 
 benchmarks! {
@@ -145,7 +145,7 @@ benchmarks! {
 		let did_key_agreement_keys = get_key_agreement_keys(n);
 		let did_public_att_key = get_ed25519_public_attestation_key();
 		let did_public_del_key = get_ed25519_public_delegation_key();
-		let did_endpoint = get_url_endpoint::<T>(u);
+		let did_endpoint = get_url_endpoint(u);
 
 		let mut did_creation_op = generate_base_did_creation_operation::<T>(did_subject.clone(), DidVerificationKey::from(did_public_auth_key));
 		did_creation_op.new_key_agreement_keys = did_key_agreement_keys;
@@ -195,7 +195,7 @@ benchmarks! {
 		let did_key_agreement_keys = get_key_agreement_keys(n);
 		let did_public_att_key = get_sr25519_public_attestation_key();
 		let did_public_del_key = get_sr25519_public_delegation_key();
-		let did_endpoint = get_url_endpoint::<T>(u);
+		let did_endpoint = get_url_endpoint(u);
 
 		let mut did_creation_op = generate_base_did_creation_operation::<T>(did_subject.clone(), DidVerificationKey::from(did_public_auth_key));
 		did_creation_op.new_key_agreement_keys = did_key_agreement_keys;
@@ -256,7 +256,7 @@ benchmarks! {
 		let new_did_public_del_key = get_ed25519_public_delegation_key();
 		// Public keys obtained are generated using the same logic as the key agreement keys, so that we are sure they do not generate KeyNotPresent errors
 		let public_keys_to_remove = get_public_keys::<T>(m);
-		let new_url = get_url_endpoint::<T>(u);
+		let new_url = get_url_endpoint(u);
 
 		let mut did_update_op = generate_base_did_update_operation::<T>(did_subject.clone());
 		did_update_op.new_authentication_key = Some(DidVerificationKey::from(new_did_public_auth_key));
@@ -319,7 +319,7 @@ benchmarks! {
 		let new_did_public_del_key = get_sr25519_public_delegation_key();
 		// Public keys obtained are generated using the same logic as the key agreement keys, so that we are sure they do not generate KeyNotPresent errors
 		let public_keys_to_remove = get_public_keys::<T>(m);
-		let new_url = get_url_endpoint::<T>(u);
+		let new_url = get_url_endpoint(u);
 
 		let mut did_update_op = generate_base_did_update_operation::<T>(did_subject.clone());
 		did_update_op.new_authentication_key = Some(DidVerificationKey::from(new_did_public_auth_key));

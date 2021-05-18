@@ -490,6 +490,13 @@ impl<T: Config> TryFrom<DidCreationOperation<T>> for DidDetails<T> {
 			InputError::MaxKeyAgreementKeysLimitExceeded
 		);
 
+		if let Some(ref endpoint_url) = op.new_endpoint_url {
+			ensure!(
+				endpoint_url.len() <= T::MaxUrlLength::get() as usize,
+				InputError::MaxUrlLengthExceeded
+			);
+		}
+
 		let current_block_number = <frame_system::Pallet<T>>::block_number();
 
 		// Creates a new DID with the given authentication key.
@@ -530,9 +537,17 @@ impl<T: Config> TryFrom<(DidDetails<T>, DidUpdateOperation<T>)> for DidDetails<T
 		);
 
 		ensure!(
-			update_operation.public_keys_to_remove.len() <= <<T as Config>::MaxVerificationKeysToRevoke>::get() as usize,
+			update_operation.public_keys_to_remove.len()
+				<= <<T as Config>::MaxVerificationKeysToRevoke>::get() as usize,
 			DidError::InputError(InputError::MaxVerificationKeysToRemoveLimitExceeded)
 		);
+
+		if let Some(ref endpoint_url) = update_operation.new_endpoint_url {
+			ensure!(
+				endpoint_url.len() <= T::MaxUrlLength::get() as usize,
+				DidError::InputError(InputError::MaxUrlLengthExceeded)
+			);
+		}
 
 		let current_block_number = <frame_system::Pallet<T>>::block_number();
 

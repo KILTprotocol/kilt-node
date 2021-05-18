@@ -214,7 +214,6 @@ pub mod pallet {
 			match error {
 				UrlError::InvalidUrlEncoding => Self::InvalidUrlEncoding,
 				UrlError::InvalidUrlScheme => Self::InvalidUrlScheme,
-				UrlError::MaxUrlLengthExceeded => Self::MaxUrlLengthExceeded,
 			}
 		}
 	}
@@ -224,6 +223,7 @@ pub mod pallet {
 			match error {
 				InputError::MaxKeyAgreementKeysLimitExceeded => Self::MaxKeyAgreementKeysLimitExceeded,
 				InputError::MaxVerificationKeysToRemoveLimitExceeded => Self::MaxVerificationKeysToRemoveLimitExceeded,
+				InputError::MaxUrlLengthExceeded => Self::MaxUrlLengthExceeded,
 			}
 		}
 	}

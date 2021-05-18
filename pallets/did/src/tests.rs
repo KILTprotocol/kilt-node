@@ -104,7 +104,7 @@ fn check_successful_complete_creation() {
 	let del_key = get_sr25519_delegation_key(true);
 	let att_key = get_ed25519_attestation_key(true);
 	let new_url = did::Url::from(
-		did::HttpUrl::try_from(("https://new_kilt.io".as_bytes(), u32::MAX))
+		did::HttpUrl::try_from("https://new_kilt.io".as_bytes())
 			.expect("https://new_kilt.io should not be considered an invalid HTTP URL."),
 	);
 	let mut operation =
@@ -234,6 +234,56 @@ fn check_invalid_signature_did_creation() {
 	});
 }
 
+#[test]
+fn check_max_limit_key_agreement_keys_did_creation() {
+	let auth_key = get_sr25519_authentication_key(true);
+	// Max keys allowed + 1
+	let enc_keys = get_key_agreement_keys(<Test as did::Config>::MaxNewKeyAgreementKeys::get().saturating_add(1));
+	let mut operation =
+		generate_base_did_creation_operation(ALICE_DID, did::DidVerificationKey::from(auth_key.public()));
+	operation.new_key_agreement_keys = enc_keys;
+
+	let signature = auth_key.sign(operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default().build(None);
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_create_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature),
+			),
+			did::Error::<Test>::MaxKeyAgreementKeysLimitExceeded
+		);
+	});
+}
+
+#[test]
+fn check_url_too_long_did_creation() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let url_endpoint = get_url_endpoint(<Test as did::Config>::MaxUrlLength::get().saturating_add(1));
+	let mut operation =
+		generate_base_did_creation_operation(ALICE_DID, did::DidVerificationKey::from(auth_key.public()));
+	// Max length allowed + 1
+	operation.new_endpoint_url = Some(url_endpoint);
+
+	let signature = auth_key.sign(operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default().build(None);
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_create_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature),
+			),
+			did::Error::<Test>::MaxUrlLengthExceeded
+		);
+	});
+}
+
 // submit_did_update_operation
 
 #[test]
@@ -246,7 +296,7 @@ fn check_successful_complete_update() {
 	let new_att_key = get_ed25519_attestation_key(false);
 	let new_del_key = get_sr25519_delegation_key(true);
 	let new_url = did::Url::from(
-		did::HttpUrl::try_from(("https://new_kilt.io".as_bytes(), u32::MAX))
+		did::HttpUrl::try_from("https://new_kilt.io".as_bytes())
 			.expect("https://new_kilt.io should not be considered an invalid HTTP URL."),
 	);
 
@@ -670,6 +720,105 @@ fn check_invalid_signature_did_update() {
 				did::DidSignature::from(signature),
 			),
 			did::Error::<Test>::InvalidSignature
+		);
+	});
+}
+
+#[test]
+fn check_max_limit_key_agreement_keys_did_update() {
+	let auth_key = get_sr25519_authentication_key(true);
+
+	let old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+
+	// Max keys allowed + 1
+	let new_enc_keys = get_key_agreement_keys(<Test as did::Config>::MaxNewKeyAgreementKeys::get().saturating_add(1));
+
+	let mut operation = generate_base_did_update_operation(ALICE_DID);
+	operation.new_key_agreement_keys = new_enc_keys;
+
+	let signature = auth_key.sign(operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(ALICE_DID, old_did_details)])
+		.build(None);
+
+	let new_block_number: TestBlockNumber = 1;
+
+	ext.execute_with(|| {
+		System::set_block_number(new_block_number);
+		assert_noop!(
+			Did::submit_did_update_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature),
+			),
+			did::Error::<Test>::MaxKeyAgreementKeysLimitExceeded
+		);
+	});
+}
+
+#[test]
+fn check_max_limit_public_keys_to_remove_did_update() {
+	let auth_key = get_sr25519_authentication_key(true);
+
+	let old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+
+	// Max keys allowed + 1
+	let keys_ids_to_remove = get_public_keys_to_remove(<Test as did::Config>::MaxNewKeyAgreementKeys::get().saturating_add(1));
+
+	let mut operation = generate_base_did_update_operation(ALICE_DID);
+	operation.public_keys_to_remove = keys_ids_to_remove;
+
+	let signature = auth_key.sign(operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(ALICE_DID, old_did_details)])
+		.build(None);
+
+	let new_block_number: TestBlockNumber = 1;
+
+	ext.execute_with(|| {
+		System::set_block_number(new_block_number);
+		assert_noop!(
+			Did::submit_did_update_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature),
+			),
+			did::Error::<Test>::MaxVerificationKeysToRemoveLimitExceeded
+		);
+	});
+}
+
+#[test]
+fn check_url_too_long_did_update() {
+	let auth_key = get_sr25519_authentication_key(true);
+
+	let old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+
+	// Max URL length allowed + 1
+	let new_endpoint_url = get_url_endpoint(<Test as did::Config>::MaxUrlLength::get().saturating_add(1));
+
+	let mut operation = generate_base_did_update_operation(ALICE_DID);
+	operation.new_endpoint_url = Some(new_endpoint_url);
+
+	let signature = auth_key.sign(operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(ALICE_DID, old_did_details)])
+		.build(None);
+
+	let new_block_number: TestBlockNumber = 1;
+
+	ext.execute_with(|| {
+		System::set_block_number(new_block_number);
+		assert_noop!(
+			Did::submit_did_update_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature),
+			),
+			did::Error::<Test>::MaxUrlLengthExceeded
 		);
 	});
 }
@@ -1799,51 +1948,47 @@ fn check_invalid_signature_operation_verification() {
 
 #[test]
 fn check_http_url() {
-	assert_ok!(did::HttpUrl::try_from(("http://kilt.io".as_bytes(), u32::MAX)));
+	assert_ok!(did::HttpUrl::try_from("https://new_kilt.io".as_bytes()));
 
-	assert_ok!(did::HttpUrl::try_from(("https://kilt.io".as_bytes(), u32::MAX)));
+	assert_ok!(did::HttpUrl::try_from("https://kilt.io".as_bytes()));
 
-	assert_ok!(did::HttpUrl::try_from((
-		"https://super.long.domain.kilt.io:12345/public/files/test.txt".as_bytes(),
-		u32::MAX
-	)));
+	assert_ok!(did::HttpUrl::try_from(
+		"https://super.long.domain.kilt.io:12345/public/files/test.txt".as_bytes()
+	));
 
 	// All other valid ASCII characters
-	assert_ok!(did::HttpUrl::try_from((
-		"http://:/?#[]@!$&'()*+,;=-._~".as_bytes(),
-		u32::MAX
-	)));
+	assert_ok!(did::HttpUrl::try_from("http://:/?#[]@!$&'()*+,;=-._~".as_bytes()));
 
 	assert_eq!(
-		did::HttpUrl::try_from(("".as_bytes(), u32::MAX)),
+		did::HttpUrl::try_from("".as_bytes()),
 		Err(did::UrlError::InvalidUrlScheme)
 	);
 
 	// Non-printable ASCII characters
 	assert_eq!(
-		did::HttpUrl::try_from(("http://kilt.io/\x00".as_bytes(), u32::MAX)),
+		did::HttpUrl::try_from("http://kilt.io/\x00".as_bytes()),
 		Err(did::UrlError::InvalidUrlEncoding)
 	);
 
 	// Some invalid ASCII characters
 	assert_eq!(
-		did::HttpUrl::try_from(("http://kilt.io/<tag>".as_bytes(), u32::MAX)),
+		did::HttpUrl::try_from("http://kilt.io/<tag>".as_bytes()),
 		Err(did::UrlError::InvalidUrlEncoding)
 	);
 
 	// Non-ASCII characters
 	assert_eq!(
-		did::HttpUrl::try_from(("http://¶.com".as_bytes(), u32::MAX)),
+		did::HttpUrl::try_from("http://¶.com".as_bytes()),
 		Err(did::UrlError::InvalidUrlEncoding)
 	);
 
 	assert_eq!(
-		did::HttpUrl::try_from(("htt://kilt.io".as_bytes(), u32::MAX)),
+		did::HttpUrl::try_from("htt://kilt.io".as_bytes()),
 		Err(did::UrlError::InvalidUrlScheme)
 	);
 
 	assert_eq!(
-		did::HttpUrl::try_from(("httpss://kilt.io".as_bytes(), u32::MAX)),
+		did::HttpUrl::try_from("httpss://kilt.io".as_bytes()),
 		Err(did::UrlError::InvalidUrlScheme)
 	);
 }
@@ -1852,51 +1997,47 @@ fn check_http_url() {
 
 #[test]
 fn check_ftp_url() {
-	assert_ok!(did::FtpUrl::try_from(("ftp://kilt.io".as_bytes(), u32::MAX)));
+	assert_ok!(did::FtpUrl::try_from("ftp://kilt.io".as_bytes()));
 
-	assert_ok!(did::FtpUrl::try_from(("ftps://kilt.io".as_bytes(), u32::MAX)));
+	assert_ok!(did::FtpUrl::try_from("ftps://kilt.io".as_bytes()));
 
-	assert_ok!(did::FtpUrl::try_from((
+	assert_ok!(did::FtpUrl::try_from(
 		"ftps://user@super.long.domain.kilt.io:12345/public/files/test.txt".as_bytes(),
-		u32::MAX
-	)));
+	));
 
 	// All other valid ASCII characters
-	assert_ok!(did::FtpUrl::try_from((
-		"ftps://:/?#[]@%!$&'()*+,;=-._~".as_bytes(),
-		u32::MAX
-	)));
+	assert_ok!(did::FtpUrl::try_from("ftps://:/?#[]@%!$&'()*+,;=-._~".as_bytes(),));
 
 	assert_eq!(
-		did::FtpUrl::try_from(("".as_bytes(), u32::MAX)),
+		did::FtpUrl::try_from("".as_bytes()),
 		Err(did::UrlError::InvalidUrlScheme)
 	);
 
 	// Non-printable ASCII characters
 	assert_eq!(
-		did::HttpUrl::try_from(("http://kilt.io/\x00".as_bytes(), u32::MAX)),
+		did::HttpUrl::try_from("http://kilt.io/\x00".as_bytes()),
 		Err(did::UrlError::InvalidUrlEncoding)
 	);
 
 	// Some invalid ASCII characters
 	assert_eq!(
-		did::FtpUrl::try_from(("ftp://kilt.io/<tag>".as_bytes(), u32::MAX)),
+		did::FtpUrl::try_from("ftp://kilt.io/<tag>".as_bytes()),
 		Err(did::UrlError::InvalidUrlEncoding)
 	);
 
 	// Non-ASCII characters
 	assert_eq!(
-		did::FtpUrl::try_from(("ftps://¶.com".as_bytes(), u32::MAX)),
+		did::FtpUrl::try_from("ftps://¶.com".as_bytes()),
 		Err(did::UrlError::InvalidUrlEncoding)
 	);
 
 	assert_eq!(
-		did::FtpUrl::try_from(("ft://kilt.io".as_bytes(), u32::MAX)),
+		did::FtpUrl::try_from("ft://kilt.io".as_bytes()),
 		Err(did::UrlError::InvalidUrlScheme)
 	);
 
 	assert_eq!(
-		did::HttpUrl::try_from(("ftpss://kilt.io".as_bytes(), u32::MAX)),
+		did::HttpUrl::try_from("ftpss://kilt.io".as_bytes()),
 		Err(did::UrlError::InvalidUrlScheme)
 	);
 }
@@ -1906,48 +2047,41 @@ fn check_ftp_url() {
 #[test]
 fn check_ipfs_url() {
 	// Base58 address
-	assert_ok!(did::IpfsUrl::try_from((
+	assert_ok!(did::IpfsUrl::try_from(
 		"ipfs://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes(),
-		u32::MAX
-	)));
+	));
 
 	// Base32 address (at the moment, padding characters can appear anywhere in the
 	// string)
-	assert_ok!(did::IpfsUrl::try_from((
+	assert_ok!(did::IpfsUrl::try_from(
 		"ipfs://OQQHHHTGMMYDQQ364YB4GDE=HREJQL==".as_bytes(),
-		u32::MAX
-	)));
+	));
 
 	assert_eq!(
-		did::IpfsUrl::try_from(("".as_bytes(), u32::MAX)),
+		did::IpfsUrl::try_from("".as_bytes()),
 		Err(did::UrlError::InvalidUrlScheme)
 	);
 
 	assert_eq!(
-		did::IpfsUrl::try_from((
+		did::IpfsUrl::try_from(
 			"ipfs://¶
 QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL"
-				.as_bytes(),
-			u32::MAX
-		)),
+				.as_bytes()
+		),
 		Err(did::UrlError::InvalidUrlEncoding)
 	);
 
 	assert_eq!(
-		did::IpfsUrl::try_from((
-			"ipf://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes(),
-			u32::MAX
-		)),
+		did::IpfsUrl::try_from("ipf://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()),
 		Err(did::UrlError::InvalidUrlScheme)
 	);
 
 	assert_eq!(
-		did::IpfsUrl::try_from((
+		did::IpfsUrl::try_from(
 			"ipfss://
 QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL"
-				.as_bytes(),
-			u32::MAX
-		)),
+				.as_bytes()
+		),
 		Err(did::UrlError::InvalidUrlScheme)
 	);
 }
