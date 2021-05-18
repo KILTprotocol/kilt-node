@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 //! Test utilities
 use super::*;
-use crate::{self as stake};
+use crate::{self as stake, types::{BalanceOf, CollatorStatus}};
 use frame_support::{
 	assert_noop, assert_ok, construct_runtime, parameter_types,
 	traits::{FindAuthor, GenesisBuild, OnFinalize, OnInitialize},
@@ -30,7 +30,7 @@ use sp_io;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup, Zero},
-	Perbill, Perquintill,
+	Perbill,
 };
 
 pub type AccountId = u64;

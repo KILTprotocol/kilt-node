@@ -17,19 +17,15 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 //! Unit testing
-use crate::{
-	mock::{
-		almost_equal, check_inflation_update, check_yearly_inflation, events, last_event, roll_to, AccountId,
+use crate::{Config, Error, Event, InflationInfo, REWARDS_ID, RewardRate, StakingInfo, mock::{
+		almost_equal, check_inflation_update, events, last_event, roll_to, AccountId,
 		Authorship, Balance, Balances, BlockNumber, Event as MetaEvent, ExtBuilder, Origin, Stake, System, Test,
 		BLOCKS_PER_ROUND, DECIMALS,
-	},
-	BalanceOf, Bond, CollatorSnapshot, CollatorStatus, Config, Error, Event, InflationInfo, RewardRate, RoundInfo,
-	StakingInfo, REWARDS_ID,
-};
+	}, types::{BalanceOf, Bond, CollatorSnapshot, CollatorStatus, RoundInfo}};
 use frame_support::{assert_noop, assert_ok};
 use kilt_primitives::constants::YEARS;
 use pallet_balances::{BalanceLock, Error as BalancesError, Locks, Reasons};
-use sp_runtime::{traits::Zero, DispatchError, Perbill};
+use sp_runtime::{traits::Zero, Perbill};
 use sp_std::collections::btree_map::BTreeMap;
 
 #[test]

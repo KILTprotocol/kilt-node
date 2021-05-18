@@ -17,13 +17,17 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 //! Helper methods for computing issuance based on inflation
-use crate::pallet::{BalanceOf, Config, Pallet};
+use crate::{
+	pallet::{Config, Pallet},
+	types::BalanceOf,
+};
 use frame_support::traits::Currency;
 use kilt_primitives::constants::YEARS;
 use parity_scale_codec::{Decode, Encode};
+use sp_runtime::{Perbill, Perquintill, RuntimeDebug};
+
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_runtime::{Perbill, Perquintill, RuntimeDebug};
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Eq, PartialEq, Clone, Encode, Decode, Default, RuntimeDebug)]
@@ -195,10 +199,7 @@ impl InflationInfo {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::{
-		mock::{ExtBuilder, Stake, Test},
-		Round, RoundInfo,
-	};
+	use crate::{Round, mock::{ExtBuilder, Stake, Test}, types::RoundInfo};
 
 	#[test]
 	fn perbill() {
