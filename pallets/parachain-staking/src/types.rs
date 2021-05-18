@@ -1,20 +1,51 @@
+// KILT Blockchain – https://botlabs.org
+// Copyright (C) 2019-2021 BOTLabs GmbH
+
+// The KILT Blockchain is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// The KILT Blockchain is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+// If you feel like getting in touch with us, you can do so at info@botlabs.org
+
 use frame_support::traits::Currency;
 use parity_scale_codec::{Decode, Encode};
 use sp_runtime::{
 	traits::{AtLeast32BitUnsigned, Saturating},
 	RuntimeDebug,
 };
-use sp_std::{cmp::Ordering, vec, vec::Vec};
+use sp_std::{
+	cmp::Ordering,
+	ops::{Add, AddAssign, Sub, SubAssign},
+	vec,
+	vec::Vec,
+};
 
 use crate::{set::OrderedSet, Config};
 
-#[derive(Default, Clone, Encode, Decode, RuntimeDebug)]
-pub struct Bond<AccountId, Balance> {
+#[derive(Default, Clone, Encode, Decode, RuntimeDebug, PartialEq, Eq)]
+pub struct Bond<AccountId, Balance>
+where
+	AccountId: Eq + Ord,
+	Balance: Eq + Ord,
+{
 	pub owner: AccountId,
 	pub amount: Balance,
 }
 
-impl<A, B: Default> From<A> for Bond<A, B> {
+impl<A, B> From<A> for Bond<A, B>
+where
+	A: Eq + Ord,
+	B: Default + Eq + Ord,
+{
 	fn from(owner: A) -> Self {
 		Bond {
 			owner,
@@ -23,23 +54,16 @@ impl<A, B: Default> From<A> for Bond<A, B> {
 	}
 }
 
-impl<AccountId: Ord, Balance: PartialEq> Eq for Bond<AccountId, Balance> {}
-
-impl<AccountId: Ord, Balance: PartialEq> Ord for Bond<AccountId, Balance> {
-	fn cmp(&self, other: &Self) -> Ordering {
-		self.owner.cmp(&other.owner)
-	}
-}
-
-impl<AccountId: Ord, Balance: PartialEq> PartialOrd for Bond<AccountId, Balance> {
+impl<AccountId: Ord, Balance: PartialEq + Ord> PartialOrd for Bond<AccountId, Balance> {
 	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
 		Some(self.cmp(other))
 	}
 }
 
-impl<AccountId: Ord, Balance: PartialEq> PartialEq for Bond<AccountId, Balance> {
-	fn eq(&self, other: &Self) -> bool {
-		self.owner == other.owner && self.amount == other.amount
+// We only establish an order based on the owner
+impl<AccountId: Ord, Balance: PartialEq + Ord> Ord for Bond<AccountId, Balance> {
+	fn cmp(&self, other: &Self) -> Ordering {
+		self.owner.cmp(&other.owner)
 	}
 }
 
@@ -60,26 +84,26 @@ impl Default for CollatorStatus {
 	}
 }
 
-#[derive(Default, Encode, Decode, RuntimeDebug)]
+#[derive(Default, Encode, Decode, RuntimeDebug, PartialEq, Eq)]
 /// Snapshot of collator state at the start of the round for which they are
 /// selected
-pub struct CollatorSnapshot<AccountId, Balance> {
+pub struct CollatorSnapshot<AccountId, Balance>
+where
+	AccountId: Eq + Ord,
+	Balance: Eq + Ord,
+{
 	pub bond: Balance,
 	pub delegators: Vec<Bond<AccountId, Balance>>,
 	pub total: Balance,
 }
 
-impl<AccountId: Ord, Balance: PartialEq> PartialEq for CollatorSnapshot<AccountId, Balance> {
-	fn eq(&self, other: &Self) -> bool {
-		self.bond == other.bond && self.total == other.total && self.delegators.eq(&other.delegators)
-	}
-}
-
-impl<AccountId: Ord, Balance: PartialEq> Eq for CollatorSnapshot<AccountId, Balance> {}
-
 #[derive(Encode, Decode, RuntimeDebug)]
 /// Global collator state with commission fee, bonded stake, and delegations
-pub struct Collator<AccountId, Balance> {
+pub struct Collator<AccountId, Balance>
+where
+	AccountId: Eq + Ord,
+	Balance: Eq + Ord,
+{
 	pub id: AccountId,
 	pub bond: Balance,
 	pub delegators: OrderedSet<Bond<AccountId, Balance>>,
@@ -87,8 +111,10 @@ pub struct Collator<AccountId, Balance> {
 	pub state: CollatorStatus,
 }
 
-impl<A: Ord + Clone, B: AtLeast32BitUnsigned + Ord + Copy + sp_std::ops::AddAssign + sp_std::ops::SubAssign>
-	Collator<A, B>
+impl<A, B> Collator<A, B>
+where
+	A: Ord + Clone,
+	B: AtLeast32BitUnsigned + Ord + Copy + AddAssign + SubAssign,
 {
 	pub fn new(id: A, bond: B) -> Self {
 		let total = bond;
@@ -160,7 +186,11 @@ impl<A: Ord + Clone, B: AtLeast32BitUnsigned + Ord + Copy + sp_std::ops::AddAssi
 	}
 }
 
-impl<A: Clone, B: Copy> From<Collator<A, B>> for CollatorSnapshot<A, B> {
+impl<A, B> From<Collator<A, B>> for CollatorSnapshot<A, B>
+where
+	A: Clone + Eq + Ord,
+	B: Copy + Eq + Ord,
+{
 	fn from(other: Collator<A, B>) -> CollatorSnapshot<A, B> {
 		CollatorSnapshot {
 			bond: other.bond,
@@ -171,15 +201,15 @@ impl<A: Clone, B: Copy> From<Collator<A, B>> for CollatorSnapshot<A, B> {
 }
 
 #[derive(Encode, Decode, RuntimeDebug)]
-pub struct Delegator<AccountId, Balance> {
+pub struct Delegator<AccountId: Eq + Ord, Balance: Eq + Ord> {
 	pub delegations: OrderedSet<Bond<AccountId, Balance>>,
 	pub total: Balance,
 }
 
 impl<AccountId, Balance> Delegator<AccountId, Balance>
 where
-	AccountId: Ord + Clone,
-	Balance: Copy + sp_std::ops::AddAssign + sp_std::ops::Add<Output = Balance> + sp_std::ops::SubAssign + PartialOrd,
+	AccountId: Eq + Ord + Clone,
+	Balance: Copy + AddAssign + Add<Output = Balance> + SubAssign + PartialOrd + Eq + Ord,
 {
 	pub fn new(collator: AccountId, amount: Balance) -> Self {
 		Delegator {
@@ -270,8 +300,9 @@ pub struct RoundInfo<BlockNumber> {
 	pub length: u32,
 }
 
-impl<B: Copy + Saturating + sp_std::ops::Add<Output = B> + sp_std::ops::Sub<Output = B> + From<u32> + PartialOrd>
-	RoundInfo<B>
+impl<B> RoundInfo<B>
+where
+	B: Copy + Saturating + Add<Output = B> + Sub<Output = B> + From<u32> + PartialOrd,
 {
 	pub fn new(current: RoundIndex, first: B, length: u32) -> RoundInfo<B> {
 		RoundInfo { current, first, length }
@@ -288,8 +319,9 @@ impl<B: Copy + Saturating + sp_std::ops::Add<Output = B> + sp_std::ops::Sub<Outp
 	}
 }
 
-impl<B: Copy + Saturating + sp_std::ops::Add<Output = B> + sp_std::ops::Sub<Output = B> + From<u32> + PartialOrd>
-	Default for RoundInfo<B>
+impl<B> Default for RoundInfo<B>
+where
+	B: Copy + Saturating + Add<Output = B> + Sub<Output = B> + From<u32> + PartialOrd,
 {
 	fn default() -> RoundInfo<B> {
 		RoundInfo::new(0u32, 0u32.into(), 20u32)
