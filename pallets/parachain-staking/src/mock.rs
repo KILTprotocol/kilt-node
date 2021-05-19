@@ -89,7 +89,7 @@ impl frame_system::Config for Test {
 	type OnSetCode = ();
 }
 parameter_types! {
-	pub const ExistentialDeposit: u128 = 1;
+	pub const ExistentialDeposit: Balance = 1;
 }
 impl pallet_balances::Config for Test {
 	type MaxLocks = ();
@@ -126,11 +126,11 @@ parameter_types! {
 	pub const MaxDelegatorsPerCollator: u32 = 4;
 	pub const MaxCollatorsPerDelegator: u32 = 4;
 	pub const DefaultCollatorCommission: Perbill = Perbill::from_percent(20);
-	pub const MinCollatorStk: u128 = 10;
-	pub const MaxCollatorCandidateStk: u128 = 160_000_000 * DECIMALS;
+	pub const MinCollatorStk: Balance = 10;
+	pub const MaxCollatorCandidateStk: Balance = 160_000_000 * DECIMALS;
 	pub const MaxCollatorCandidates: u32 = 10;
-	pub const MinDelegatorStk: u128 = 5;
-	pub const MinDelegation: u128 = 3;
+	pub const MinDelegatorStk: Balance = 5;
+	pub const MinDelegation: Balance = 3;
 	pub const MaxUnbondRequests: usize = 5;
 }
 
