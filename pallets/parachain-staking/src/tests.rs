@@ -28,11 +28,56 @@ use crate::{
 use frame_support::{assert_noop, assert_ok, traits::EstimateNextSessionRotation};
 use kilt_primitives::constants::YEARS;
 use pallet_balances::Error as BalancesError;
-use pallet_session::ShouldEndSession;
+use pallet_session::{SessionManager, ShouldEndSession};
 use sp_runtime::{traits::Zero, Perbill, Percent, Perquintill};
 
 #[test]
-fn geneses() {
+fn should_select_collators_genesis_session() {
+	ExtBuilder::default()
+		.with_balances(vec![
+			(1, 20),
+			(2, 20),
+			(3, 20),
+			(4, 20),
+			(5, 20),
+			(6, 20),
+			(7, 20),
+			(8, 20),
+			(9, 20),
+			(10, 20),
+			(11, 20),
+		])
+		.with_collators(vec![
+			(1, 20),
+			(2, 20),
+			(3, 20),
+			(4, 20),
+			(5, 20),
+			(6, 20),
+			(7, 20),
+			(8, 20),
+			(9, 20),
+			(10, 20),
+		])
+		.build()
+		.execute_with(|| {
+			assert_eq!(
+				Stake::new_session(0)
+					.expect("first session must return new collators")
+					.len(),
+				<Test as Config>::MaxCollatorCandidates::get() as usize
+			);
+			assert_eq!(
+				Stake::new_session(1)
+					.expect("second session must return new collators")
+					.len(),
+				<Test as Config>::MaxCollatorCandidates::get() as usize
+			);
+		});
+}
+
+#[test]
+fn genesis() {
 	ExtBuilder::default()
 		.with_balances(vec![
 			(1, 1000),
@@ -1115,7 +1160,7 @@ fn revoke_delegation_or_leave_delegators() {
 		});
 }
 
-#[test]
+// #[test]
 // Total issuance 1_000_000_000_000
 // At stake collators: 90_000_000 (0.009%)
 // At stake delegators: 60_000_000 (0.006%)
@@ -1197,9 +1242,9 @@ fn revoke_delegation_or_leave_delegators() {
 // 			// Round 3 -> 4: 6 leaves delegators
 // 			// set block author as 1 for all blocks this round
 // 			set_author(3, 1, 100);
-// 			assert_noop!(Stake::leave_delegators(Origin::signed(66)), Error::<Test>::DelegatorDNE);
-// 			assert_ok!(Stake::leave_delegators(Origin::signed(6)));
-// 			roll_to(4 * blocks_per_round + 1, vec![]);
+// 			assert_noop!(Stake::leave_delegators(Origin::signed(66)),
+// Error::<Test>::DelegatorDNE); 			assert_ok!(Stake::leave_delegators(Origin::
+// signed(6))); 			roll_to(4 * blocks_per_round + 1, vec![]);
 // 			// ensure delegators are paid for 2 rounds after they leave, e.g. 6 should
 // 			// receive rewards for rounds 3 and 4 after leaving during round 3
 // 			let mut round_3_to_4 = vec![
@@ -1231,8 +1276,8 @@ fn revoke_delegation_or_leave_delegators() {
 // 			let mut round_4_to_5 = vec![
 // 				// Round 4 rewards
 // 				Event::Rewarded(1, 1562),
-// 				// TODO: Check whether it makes sense that the rewards shrink but 6 is still rewarded
-// 				Event::Rewarded(6, 231),
+// 				// TODO: Check whether it makes sense that the rewards shrink but 6 is still
+// rewarded 				Event::Rewarded(6, 231),
 // 				Event::Rewarded(7, 116),
 // 				Event::Rewarded(10, 116),
 // 				// Round 5 initialization
@@ -1268,10 +1313,10 @@ fn revoke_delegation_or_leave_delegators() {
 
 // 			// Round 6 -> 7: 8 delegates to 1
 // 			set_author(6, 1, 100);
-// 			assert_ok!(Stake::delegate_another_candidate(Origin::signed(8), 1, 30_000_000));
-// 			roll_to(7 * blocks_per_round + 1, vec![]);
-// 			// new delegation should not be rewarded for this round and the next one (expect
-// 			// rewards at conclusion of round 8)
+// 			assert_ok!(Stake::delegate_another_candidate(Origin::signed(8), 1,
+// 30_000_000)); 			roll_to(7 * blocks_per_round + 1, vec![]);
+// 			// new delegation should not be rewarded for this round and the next one
+// (expect 			// rewards at conclusion of round 8)
 // 			let mut round_6_to_7 = vec![
 // 				// round 6 finalization
 // 				Event::Delegation(8, 30_000_000, 1, 70_000_000),
@@ -1297,8 +1342,8 @@ fn revoke_delegation_or_leave_delegators() {
 // 			// new delegation is still not rewarded yet, but should be next round
 // 			let mut round_7_to_8 = vec![
 // 				Event::Rewarded(1, 1562),
-// 				// TODO: Check whether it makes sense to apply the stake for the rewards but not to the
-// 				// Collator-Delegator-Pool
+// 				// TODO: Check whether it makes sense to apply the stake for the rewards but
+// not to the 				// Collator-Delegator-Pool
 // 				// round 7 finalization
 // 				Event::Rewarded(7, 405),
 // 				Event::Rewarded(10, 405),
@@ -1377,10 +1422,10 @@ fn revoke_delegation_or_leave_delegators() {
 // 			set_author(10, 5, 5);
 // 			set_author(10, 11, 5);
 // 			// 8 adds delegation to 11
-// 			assert_ok!(Stake::delegate_another_candidate(Origin::signed(8), 11, 20_000_000));
-// 			roll_to(11 * blocks_per_round + 1, vec![]);
-// 			// new delegation of 8 should not be rewarded for this and the following round
-// 			let mut round_10_to_11 = vec![
+// 			assert_ok!(Stake::delegate_another_candidate(Origin::signed(8), 11,
+// 20_000_000)); 			roll_to(11 * blocks_per_round + 1, vec![]);
+// 			// new delegation of 8 should not be rewarded for this and the following
+// round 			let mut round_10_to_11 = vec![
 // 				Event::Delegation(8, 20_000_000, 11, 50_000_000),
 // 				Event::Rewarded(5, 87),
 // 				Event::Rewarded(3, 174),
@@ -1413,11 +1458,11 @@ fn revoke_delegation_or_leave_delegators() {
 // 			set_author(11, 5, 5);
 // 			set_author(11, 11, 5);
 // 			// 9 adds delegation to 5
-// 			assert_ok!(Stake::delegate_another_candidate(Origin::signed(9), 5, 30_000_000));
-// 			roll_to(12 * blocks_per_round + 1, vec![]);
+// 			assert_ok!(Stake::delegate_another_candidate(Origin::signed(9), 5,
+// 30_000_000)); 			roll_to(12 * blocks_per_round + 1, vec![]);
 // 			// delegation of 8 should not be rewarded for this round
-// 			// new delegation of 9 should not be rewarded for this and the following round
-// 			let mut round_11_to_12 = vec![
+// 			// new delegation of 9 should not be rewarded for this and the following
+// round 			let mut round_11_to_12 = vec![
 // 				Event::Delegation(9, 30_000_000, 5, 40_000_000),
 // 				Event::Rewarded(5, 87),
 // 				Event::Rewarded(4, 174),
@@ -1593,6 +1638,7 @@ fn revoke_delegation_or_leave_delegators() {
 // 		);
 // 	});
 // }
+
 #[test]
 fn round_transitions() {
 	let col_max = 10;
