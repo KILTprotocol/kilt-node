@@ -162,9 +162,9 @@ macro_rules! construct_async_run {
 		match $cli.runtime.as_str() {
 			"spiritnet" => {
 					runner.async_run(|$config| {
-						let $components = new_partial::<kilt_parachain_runtime::RuntimeApi, SpiritRuntimeExecutor, _>(
+						let $components = new_partial::<spiritnet_runtime::RuntimeApi, SpiritRuntimeExecutor, _>(
 							&$config,
-							crate::service::build_import_queue::<SpiritRuntimeExecutor, ShellRuntimeExecutor>,
+							crate::service::build_import_queue::<SpiritRuntimeExecutor, ShellRuntimeExecutor, spiritnet_runtime::RuntimeApi>,
 						)?;
 						let task_manager = $components.task_manager;
 						{ $( $code )* }.map(|v| (v, task_manager))
@@ -174,7 +174,7 @@ macro_rules! construct_async_run {
 					runner.async_run(|$config| {
 						let $components = new_partial::<kilt_parachain_runtime::RuntimeApi, MashRuntimeExecutor, _>(
 							&$config,
-							crate::service::build_import_queue::<MashRuntimeExecutor, ShellRuntimeExecutor>,
+							crate::service::build_import_queue::<MashRuntimeExecutor, ShellRuntimeExecutor, kilt_parachain_runtime::RuntimeApi>,
 						)?;
 						let task_manager = $components.task_manager;
 						{ $( $code )* }.map(|v| (v, task_manager))
@@ -350,7 +350,7 @@ pub fn run() -> Result<()> {
 				);
 
 				match cli.runtime.as_str() {
-					"mashnet" => crate::service::start_node::<MashRuntimeExecutor, ShellRuntimeExecutor>(
+					"mashnet" => crate::service::start_node::<MashRuntimeExecutor, ShellRuntimeExecutor, kilt_parachain_runtime::RuntimeApi>(
 						config,
 						key,
 						polkadot_config,
@@ -359,7 +359,7 @@ pub fn run() -> Result<()> {
 					.await
 					.map(|r| r.0)
 					.map_err(Into::into),
-					"spiritnet" => crate::service::start_node::<SpiritRuntimeExecutor, ShellRuntimeExecutor>(
+					"spiritnet" => crate::service::start_node::<SpiritRuntimeExecutor, ShellRuntimeExecutor, spiritnet_runtime::RuntimeApi>(
 						config,
 						key,
 						polkadot_config,

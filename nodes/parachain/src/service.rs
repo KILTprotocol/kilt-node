@@ -23,13 +23,13 @@ use cumulus_client_service::{
 	prepare_node_config, start_collator, start_full_node, StartCollatorParams, StartFullNodeParams,
 };
 use cumulus_primitives_core::ParaId;
-use kilt_primitives::{Block, Hash};
+use kilt_primitives::{AccountId, Balance, Block, Hash, Index, AuthorityId};
 use polkadot_primitives::v0::CollatorPair;
 
 use polkadot_service::NativeExecutionDispatch;
 use sc_client_api::ExecutorProvider;
 use sc_network::NetworkService;
-use sc_service::{Configuration, PartialComponents, Role, TFullBackend, TFullClient, TaskManager};
+use sc_service::{Configuration, PartialComponents, Role, RpcExtensionBuilder, TFullBackend, TFullClient, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle};
 use sp_api::ConstructRuntimeApi;
 use sp_consensus::SlotData;
@@ -65,14 +65,8 @@ native_executor_instance!(
 	frame_benchmarking::benchmarking::HostFunctions,
 );
 
-// type PartialComponentsType = sc_service::PartialComponents<
-// 	TFullClient<Block, RuntimeApi, Executor>,
-// 	TFullBackend<Block>,
-// 	(),
-// 	sp_consensus::DefaultImportQueue<Block, TFullClient<Block, RuntimeApi,
-// Executor>>, 	sc_transaction_pool::FullPool<Block, TFullClient<Block,
-// RuntimeApi, Executor>>, 	(Option<Telemetry>, Option<TelemetryWorkerHandle>),
-// >;
+pub type TransactionPool<Block, RuntimeApi, Executor> =
+	sc_transaction_pool::FullPool<Block, TFullClient<Block, RuntimeApi, Executor>>;
 
 /// Starts a `ServiceBuilder` for a full service.
 ///
@@ -87,7 +81,7 @@ pub fn new_partial<RuntimeApi, Executor, BIQ>(
 		TFullBackend<Block>,
 		(),
 		sp_consensus::DefaultImportQueue<Block, TFullClient<Block, RuntimeApi, Executor>>,
-		sc_transaction_pool::FullPool<Block, TFullClient<Block, RuntimeApi, Executor>>,
+		TransactionPool<Block, RuntimeApi, Executor>,
 		(Option<Telemetry>, Option<TelemetryWorkerHandle>),
 	>,
 	sc_service::Error,
@@ -190,7 +184,12 @@ where
 		+ sp_block_builder::BlockBuilder<Block>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
 	Executor: sc_executor::NativeExecutionDispatch + 'static,
-	RB: Fn(Arc<TFullClient<Block, RuntimeApi, Executor>>) -> jsonrpc_core::IoHandler<sc_rpc::Metadata> + Send + 'static,
+	RB: FnOnce(
+			Arc<TFullClient<Block, RuntimeApi, Executor>>,
+			Arc<TransactionPool<Block, RuntimeApi, Executor>>,
+		) -> Box<dyn RpcExtensionBuilder<Output = jsonrpc_core::IoHandler<sc_rpc::Metadata>> + Send>
+		+ Send
+		+ 'static,
 	BIQ: FnOnce(
 		Arc<TFullClient<Block, RuntimeApi, Executor>>,
 		&Configuration,
@@ -206,7 +205,7 @@ where
 		Option<TelemetryHandle>,
 		&TaskManager,
 		&polkadot_service::NewFull<polkadot_service::Client>,
-		Arc<sc_transaction_pool::FullPool<Block, TFullClient<Block, RuntimeApi, Executor>>>,
+		Arc<TransactionPool<Block, RuntimeApi, Executor>>,
 		Arc<NetworkService<Block, Hash>>,
 		SyncCryptoStorePtr,
 		bool,
@@ -257,28 +256,10 @@ where
 			block_announce_validator_builder: Some(Box::new(|_| block_announce_validator)),
 		})?;
 
-	let rpc_client = client.clone();
-
-	let rpc_extensions_builder = Box::new(move |_, _| rpc_ext_builder(rpc_client.clone()));
-	// TODO: Check how to get working with `create_full`
-	// let rpc_extensions_builder = {
-	// 	let client = client.clone();
-	// 	let pool = transaction_pool.clone();
-	// 	Box::new(move |deny_unsafe, _| {
-	// 		let deps = crate::rpc::FullDeps {
-	// 			client: client.clone(),
-	// 			pool: pool.clone(),
-	// 			deny_unsafe,
-	// 		};
-
-	// 		crate::rpc::create_full(deps)
-	// 	})
-	// };
-
 	sc_service::spawn_tasks(sc_service::SpawnTasksParams {
 		on_demand: None,
 		remote_blockchain: None,
-		rpc_extensions_builder,
+		rpc_extensions_builder: rpc_ext_builder(client.clone(), transaction_pool.clone()),
 		client: client.clone(),
 		transaction_pool: transaction_pool.clone(),
 		task_manager: &mut task_manager,
@@ -343,8 +324,8 @@ where
 }
 
 /// Build the import queue for the "default" runtime.
-pub fn build_import_queue<RE, SRE>(
-	client: Arc<TFullClient<Block, kilt_parachain_runtime::RuntimeApi, RE>>,
+pub fn build_import_queue<RE, SRE, API>(
+	client: Arc<TFullClient<Block, API, RE>>,
 	config: &Configuration,
 	telemetry: Option<TelemetryHandle>,
 	task_manager: &TaskManager,
@@ -355,6 +336,17 @@ pub fn build_import_queue<RE, SRE>(
 where
 	SRE: NativeExecutionDispatch + 'static,
 	RE: NativeExecutionDispatch + 'static,
+	API: ConstructRuntimeApi<Block, TFullClient<Block, API, RE>> + Send + Sync + 'static,
+	API::RuntimeApi: sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>
+		+ sp_api::Metadata<Block>
+		+ sp_session::SessionKeys<Block>
+		+ sp_api::ApiExt<Block, StateBackend = sc_client_api::StateBackendFor<TFullBackend<Block>, Block>>
+		+ sp_offchain::OffchainWorkerApi<Block>
+		+ sp_block_builder::BlockBuilder<Block>
+		+ frame_rpc_system::AccountNonceApi<Block, AccountId, Index>
+		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
+		+ sp_consensus_aura::AuraApi<Block, AuthorityId>,
+	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
 {
 	let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)?;
 
@@ -388,26 +380,49 @@ where
 }
 
 /// Start a rococo-test parachain node.
-pub async fn start_node<RE, SRE>(
+pub async fn start_node<RE, SRE, API>(
 	parachain_config: Configuration,
 	collator_key: CollatorPair,
 	polkadot_config: Configuration,
 	id: ParaId,
-) -> sc_service::error::Result<(
-	TaskManager,
-	Arc<TFullClient<Block, kilt_parachain_runtime::RuntimeApi, RE>>,
-)>
+) -> sc_service::error::Result<(TaskManager, Arc<TFullClient<Block, API, RE>>)>
 where
 	RE: NativeExecutionDispatch + 'static,
 	SRE: NativeExecutionDispatch + 'static,
+	API: ConstructRuntimeApi<Block, TFullClient<Block, API, RE>> + Send + Sync + 'static,
+	API::RuntimeApi: sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>
+		+ sp_api::Metadata<Block>
+		+ sp_session::SessionKeys<Block>
+		+ sp_api::ApiExt<Block, StateBackend = sc_client_api::StateBackendFor<TFullBackend<Block>, Block>>
+		+ sp_offchain::OffchainWorkerApi<Block>
+		+ sp_block_builder::BlockBuilder<Block>
+		+ frame_rpc_system::AccountNonceApi<Block, AccountId, Index>
+		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
+		+ sp_consensus_aura::AuraApi<Block, AuthorityId>,
+	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
 {
-	start_node_impl::<kilt_parachain_runtime::RuntimeApi, RE, _, _, _>(
+	let rpc_extensions_builder =
+		|client: Arc<TFullClient<Block, API, RE>>,
+		 pool: Arc<TransactionPool<Block, API, RE>>|
+		 -> Box<dyn RpcExtensionBuilder<Output = jsonrpc_core::IoHandler<sc_rpc::Metadata>> + std::marker::Send> {
+			Box::new(move |deny_unsafe, _| {
+				let deps = crate::rpc::FullDeps {
+					client: client.clone(),
+					pool: pool.clone(),
+					deny_unsafe,
+				};
+
+				crate::rpc::create_full(deps)
+			})
+		};
+
+	start_node_impl::<API, RE, _, _, _>(
 		parachain_config,
 		collator_key,
 		polkadot_config,
 		id,
-		|_| Default::default(),
-		build_import_queue::<RE, SRE>,
+		rpc_extensions_builder,
+		build_import_queue::<RE, SRE, API>,
 		|client,
 		 prometheus_registry,
 		 telemetry,
@@ -521,7 +536,7 @@ where
 		collator_key,
 		polkadot_config,
 		id,
-		|_| Default::default(),
+		|_, _| Box::new(|_, _| Default::default()),
 		shell_build_import_queue,
 		|client, prometheus_registry, telemetry, task_manager, relay_chain_node, transaction_pool, _, _, _| {
 			let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(

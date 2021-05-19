@@ -21,13 +21,13 @@
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
 use kilt_parachain_runtime::{
-	AuraId, BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, ParachainInfoConfig,
+	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, ParachainInfoConfig,
 	ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig,
 	WASM_BINARY,
 };
 use kilt_primitives::{
 	constants::{DOLLARS, MONTHS},
-	AccountId, Balance, BlockNumber,
+	AccountId, Balance, BlockNumber, AuthorityId
 };
 use sc_service::ChainType;
 use sp_core::{crypto::UncheckedInto, sr25519};
@@ -60,11 +60,11 @@ pub fn make_dev_spec(id: ParaId) -> Result<ChainSpec, String> {
 				vec![
 					(
 						get_account_id_from_seed::<sr25519::Public>("Alice"),
-						get_from_seed::<AuraId>("Alice"),
+						get_from_seed::<AuthorityId>("Alice"),
 					),
 					(
 						get_account_id_from_seed::<sr25519::Public>("Bob"),
-						get_from_seed::<AuraId>("Bob"),
+						get_from_seed::<AuthorityId>("Bob"),
 					),
 				],
 				vec![
@@ -207,7 +207,7 @@ fn testnet_genesis(
 	stakers: Vec<(AccountId, Option<AccountId>, Balance)>,
 	inflation_config: InflationInfo,
 	root_key: AccountId,
-	initial_authorities: Vec<(AccountId, AuraId)>,
+	initial_authorities: Vec<(AccountId, AuthorityId)>,
 	endowed_accounts: Vec<AccountId>,
 	id: ParaId,
 ) -> GenesisConfig {

@@ -24,6 +24,8 @@ use codec::{Decode, Encode};
 use core::convert::TryFrom;
 pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
 
+pub use sp_consensus_aura::sr25519::AuthorityId;
+
 use sp_runtime::{
 	generic,
 	traits::{BlakeTwo256, IdentifyAccount, Verify},

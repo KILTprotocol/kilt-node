@@ -31,7 +31,7 @@ use frame_support::{traits::LockIdentifier, PalletId};
 use frame_system::limits::{BlockLength, BlockWeights};
 use kilt_primitives::{
 	constants::{DOLLARS, MILLICENTS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
-	AccountId, Balance, BlockNumber, Hash, Header, Index, Signature,
+	AccountId, Balance, BlockNumber, Hash, Header, Index, Signature, AuthorityId
 };
 pub use parachain_staking::{InflationInfo, RewardRate, StakingInfo};
 use sp_api::impl_runtime_apis;
@@ -61,7 +61,6 @@ pub use frame_support::{
 
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
-pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
@@ -280,7 +279,7 @@ impl parachain_info::Config for Runtime {}
 impl cumulus_pallet_aura_ext::Config for Runtime {}
 
 impl pallet_aura::Config for Runtime {
-	type AuthorityId = AuraId;
+	type AuthorityId = AuthorityId;
 }
 
 parameter_types! {
@@ -524,12 +523,12 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
+	impl sp_consensus_aura::AuraApi<Block, AuthorityId> for Runtime {
 		fn slot_duration() -> sp_consensus_aura::SlotDuration {
 			sp_consensus_aura::SlotDuration::from_millis(Aura::slot_duration())
 		}
 
-		fn authorities() -> Vec<AuraId> {
+		fn authorities() -> Vec<AuthorityId> {
 			Aura::authorities()
 		}
 	}

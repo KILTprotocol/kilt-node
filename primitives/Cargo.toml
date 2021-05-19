@@ -11,6 +11,7 @@ serde = {version = "1.0.101", optional = true, features = ["derive"]}
 sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 sp-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 sp-std = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
+sp-consensus-aura = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 
 [features]
 default = ["std"]

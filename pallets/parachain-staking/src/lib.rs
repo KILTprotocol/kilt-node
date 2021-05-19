@@ -1364,7 +1364,7 @@ pub mod pallet {
 			)
 		}
 
-		fn estimate_next_session_rotation(now: T::BlockNumber) -> (Option<T::BlockNumber>, Weight) {
+		fn estimate_next_session_rotation(_now: T::BlockNumber) -> (Option<T::BlockNumber>, Weight) {
 			let round = <Round<T>>::get();
 
 			(

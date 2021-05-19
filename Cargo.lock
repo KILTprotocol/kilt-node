@@ -3645,6 +3645,7 @@ version = "0.1.0"
 dependencies = [
  "parity-scale-codec",
  "serde",
+ "sp-consensus-aura",
  "sp-core",
  "sp-runtime",
  "sp-std",
