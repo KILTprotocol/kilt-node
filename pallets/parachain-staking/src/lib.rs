@@ -354,20 +354,6 @@ pub mod pallet {
 	pub type InflationConfig<T: Config> = StorageValue<_, InflationInfo, ValueQuery>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn rewards)]
-	/// Locked balance which has been granted as reward after a collator
-	/// authored a block sorted by the blocks in which each reward can be
-	/// unlocked
-	pub type Rewards<T: Config> =
-		StorageMap<_, Twox64Concat, T::AccountId, BTreeMap<T::BlockNumber, BalanceOf<T>>, ValueQuery>;
-
-	#[pallet::storage]
-	#[pallet::getter(fn locked_rewards)]
-	/// Locked balance which has been granted as reward after a collator
-	/// authored a block summed up
-	pub type LockedRewards<T: Config> = StorageMap<_, Twox64Concat, T::AccountId, BalanceOf<T>, ValueQuery>;
-
-	#[pallet::storage]
 	#[pallet::getter(fn unbonding)]
 	/// Bonded balance which was requested to be unlocked but has to wait
 	/// BondDuration until it can be withdrawn
@@ -839,34 +825,6 @@ pub mod pallet {
 			Ok(().into())
 		}
 
-		/// Unlock rewards from staking which are avaible for the current block
-		/// number. Checks whether the `Rewards` BTreeMap for the target has
-		/// entries less or equal than the current block number.
-		///
-		/// NOTE: Unlocking automatically occurs in `note_author` after a block
-		/// author has produced a block. If you assume that a specific collator
-		/// candidate (and their  corresponding delegators) is an active
-		/// collator for every round, it would be unnecessary to ever call
-		/// `unlock_rewards` for such collator and their delegators.
-		#[pallet::weight(0)]
-		pub fn unlock_rewards(
-			origin: OriginFor<T>,
-			// TODO: Switch to Lookup
-			// target: <T::Lookup as StaticLookup>::Source
-			target: T::AccountId,
-		) -> DispatchResult {
-			ensure_signed(origin)?;
-			// let target = T::Lookup::lookup(target)?;
-
-			let now: T::BlockNumber = <frame_system::Pallet<T>>::block_number();
-
-			let lock = <Rewards<T>>::get(&target);
-			ensure!(!lock.is_empty(), Error::<T>::RewardLockDNE);
-
-			Self::do_update_reward_locks(&target, lock, now);
-			Ok(())
-		}
-
 		/// Withdraw all balance for the given account which was unbonded at
 		/// least `BondDuration` blocks ago. Updates `Unbonding` and the Staking
 		/// currency lock.
@@ -1087,62 +1045,7 @@ pub mod pallet {
 		fn do_reward(who: &T::AccountId, reward: BalanceOf<T>, now: T::BlockNumber) {
 			// mint
 			if let Ok(imb) = T::Currency::deposit_into_existing(who, reward) {
-				// set & update lock
-				let mut locks = <Rewards<T>>::get(who);
-				let unlock_block: T::BlockNumber = now.saturating_add(T::BondDuration::get().into());
-				locks.insert(unlock_block, reward);
-				Self::do_update_reward_locks(who, locks, now);
 				Self::deposit_event(Event::Rewarded(who.clone(), imb.peek()));
-			}
-		}
-
-		// Weight: reads_writes(1, 2)
-		fn do_update_reward_locks(
-			who: &T::AccountId,
-			mut rewards: BTreeMap<T::BlockNumber, BalanceOf<T>>,
-			now: T::BlockNumber,
-		) {
-			let mut unlockable: BalanceOf<T> = Zero::zero();
-			let mut still_locked: BalanceOf<T> = Zero::zero();
-			let mut expired = Vec::new();
-			let old_locked = <LockedRewards<T>>::get(who);
-
-			// divide rewards into unlockable and still locked
-			for (block_number, locked_balance) in &rewards {
-				if block_number <= &now {
-					expired.push(*block_number);
-					unlockable = unlockable.saturating_add(*locked_balance);
-				} else {
-					still_locked = still_locked.saturating_add(*locked_balance);
-				}
-			}
-			// remove unlockable rewards
-			for block_number in expired {
-				rewards.remove(&block_number);
-			}
-
-			// iterate balance locks to retrieve amount of locked balance
-			let locks = Locks::<T>::get(who);
-			let total_locked: BalanceOf<T> =
-			// lock has to exist because the LockIdentifier is the same for bonding which is required in order to receive rewards
-				if let Some(BalanceLock { amount, .. }) = locks.iter().find(|l| l.id == STAKING_ID) {
-					amount
-						.saturating_add(still_locked.into())
-						.saturating_sub(old_locked.into())
-						.into()
-				} else {
-					// safe fall back just in case
-					still_locked
-				};
-
-			if total_locked.is_zero() {
-				T::Currency::remove_lock(STAKING_ID, who);
-				<Rewards<T>>::remove(who);
-				<LockedRewards<T>>::remove(who);
-			} else {
-				T::Currency::set_lock(STAKING_ID, who, total_locked, WithdrawReasons::all());
-				<Rewards<T>>::insert(who, rewards);
-				<LockedRewards<T>>::insert(who, still_locked);
 			}
 		}
 
