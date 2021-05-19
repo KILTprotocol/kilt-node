@@ -94,7 +94,7 @@ pub mod opaque {
 	pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
 
 	pub type SessionHandlers = ();
-	
+
 	/// Opaque block header type.
 	pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
 	/// Opaque block type.
@@ -304,16 +304,14 @@ impl pallet_authorship::Config for Runtime {
 
 parameter_types! {
 	pub const DisabledValidatorsThreshold: Perbill = Perbill::from_percent(17);
-	pub const Period: u64 = 0xFFFF_FFFF_FFFF_FFFF;
-	pub const Offset: u64 = 0xFFFF_FFFF_FFFF_FFFF;
 }
 
 impl pallet_session::Config for Runtime {
 	type Event = Event;
 	type ValidatorId = AccountId;
 	type ValidatorIdOf = ();
-	type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
-	type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
+	type ShouldEndSession = ParachainStaking;
+	type NextSessionRotation = ParachainStaking;
 	type SessionManager = ParachainStaking;
 	type SessionHandler = <opaque::SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
 	type Keys = opaque::SessionKeys;

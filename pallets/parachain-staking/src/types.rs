@@ -278,21 +278,23 @@ pub struct RoundInfo<BlockNumber> {
 	/// The first block of the current round
 	pub first: BlockNumber,
 	/// The length of the current round in number of blocks
-	pub length: u32,
+	pub length: BlockNumber,
 }
 
 impl<B> RoundInfo<B>
 where
-	B: Copy + Saturating + Add<Output = B> + Sub<Output = B> + From<u32> + PartialOrd,
+	B: Copy + Saturating + From<u32> + PartialOrd,
 {
-	pub fn new(current: RoundIndex, first: B, length: u32) -> RoundInfo<B> {
+	pub fn new(current: RoundIndex, first: B, length: B) -> RoundInfo<B> {
 		RoundInfo { current, first, length }
 	}
+
 	/// Check if the round should be updated
 	pub fn should_update(&self, now: B) -> bool {
 		let l = now.saturating_sub(self.first);
 		l >= self.length.into()
 	}
+
 	/// New round
 	pub fn update(&mut self, now: B) {
 		self.current = self.current.saturating_add(1u32);
@@ -305,7 +307,7 @@ where
 	B: Copy + Saturating + Add<Output = B> + Sub<Output = B> + From<u32> + PartialOrd,
 {
 	fn default() -> RoundInfo<B> {
-		RoundInfo::new(0u32, 0u32.into(), 20u32)
+		RoundInfo::new(0u32, 0u32.into(), 20.into())
 	}
 }
 

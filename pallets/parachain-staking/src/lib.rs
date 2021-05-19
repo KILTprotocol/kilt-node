@@ -76,13 +76,20 @@ pub mod pallet {
 
 	use frame_support::{
 		pallet_prelude::*,
-		traits::{Currency, Get, Imbalance, LockIdentifier, LockableCurrency, ReservableCurrency, WithdrawReasons},
+		traits::{
+			Currency, EstimateNextSessionRotation, Get, Imbalance, LockIdentifier, LockableCurrency,
+			ReservableCurrency, WithdrawReasons,
+		},
 		transactional,
 	};
 	use frame_system::pallet_prelude::*;
+	use pallet_session::ShouldEndSession;
 	// TODO: Use ORML one once they point to Substrate master
 	// use orml_utilities::OrderedSet;
-	use sp_runtime::{Perquintill, traits::{Saturating, Zero}};
+	use sp_runtime::{
+		traits::{Saturating, Zero},
+		Percent, Perquintill,
+	};
 	use sp_staking::SessionIndex;
 	use sp_std::{collections::btree_map::BTreeMap, prelude::*};
 
@@ -121,9 +128,9 @@ pub mod pallet {
 			+ From<u64>;
 
 		/// Minimum number of blocks per round
-		type MinBlocksPerRound: Get<u32>;
+		type MinBlocksPerRound: Get<Self::BlockNumber>;
 		/// Default number of blocks per round at genesis
-		type DefaultBlocksPerRound: Get<u32>;
+		type DefaultBlocksPerRound: Get<Self::BlockNumber>;
 		/// Number of rounds that collators remain bonded before exit request is
 		/// executed
 		// TODO: Split into `BondDuration` and `ExitQueueDelay`
@@ -231,7 +238,7 @@ pub mod pallet {
 		/// Set total selected candidates to this value [old, new]
 		TotalSelectedSet(u32, u32),
 		/// Set blocks per round [current_round, first_block, old, new]
-		BlocksPerRoundSet(RoundIndex, T::BlockNumber, u32, u32),
+		BlocksPerRoundSet(RoundIndex, T::BlockNumber, T::BlockNumber, T::BlockNumber),
 	}
 
 	#[pallet::hooks]
@@ -417,7 +424,7 @@ pub mod pallet {
 		/// - if called with `new` less than length of current round, will
 		///   transition immediately
 		/// in the next block
-		pub fn set_blocks_per_round(origin: OriginFor<T>, new: u32) -> DispatchResultWithPostInfo {
+		pub fn set_blocks_per_round(origin: OriginFor<T>, new: T::BlockNumber) -> DispatchResultWithPostInfo {
 			frame_system::ensure_root(origin)?;
 			ensure!(new >= T::MinBlocksPerRound::get(), Error::<T>::CannotSetBelowMin);
 

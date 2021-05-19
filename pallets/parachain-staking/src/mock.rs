@@ -32,10 +32,11 @@ use sp_runtime::{
 	Perbill, Perquintill,
 };
 
+pub use kilt_primitives::BlockNumber;
+
 pub type AccountId = u64;
 pub type Balance = u128;
-pub type BlockNumber = u64;
-pub const BLOCKS_PER_ROUND: u32 = 5;
+pub const BLOCKS_PER_ROUND: BlockNumber = 5;
 pub const DECIMALS: Balance = 10u128.pow(15);
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -61,6 +62,7 @@ parameter_types! {
 	pub const AvailableBlockRatio: Perbill = Perbill::one();
 	pub const SS58Prefix: u8 = 42;
 }
+
 impl frame_system::Config for Test {
 	type BaseCallFilter = ();
 	type DbWeight = ();
@@ -117,9 +119,9 @@ impl pallet_authorship::Config for Test {
 }
 
 parameter_types! {
-	pub const MinBlocksPerRound: u32 = 3; // 20
+	pub const MinBlocksPerRound: BlockNumber = 3; // 20
 	pub const BondDuration: u32 = 2;
-	pub const DefaultBlocksPerRound: u32 = BLOCKS_PER_ROUND;
+	pub const DefaultBlocksPerRound: BlockNumber = BLOCKS_PER_ROUND;
 	pub const MinSelectedCandidates: u32 = 5;
 	pub const MaxDelegatorsPerCollator: u32 = 4;
 	pub const MaxCollatorsPerDelegator: u32 = 4;
@@ -130,6 +132,7 @@ parameter_types! {
 	pub const MinDelegatorStk: u128 = 5;
 	pub const MinDelegation: u128 = 3;
 }
+
 impl Config for Test {
 	type Event = Event;
 	type Currency = Balances;
@@ -158,7 +161,7 @@ pub(crate) struct ExtBuilder {
 	// inflation config
 	inflation_config: InflationInfo,
 	// blocks per round
-	blocks_per_round: u32,
+	blocks_per_round: BlockNumber,
 }
 
 impl Default for ExtBuilder {
@@ -200,7 +203,7 @@ impl ExtBuilder {
 		col_rewards: u64,
 		d_max: u64,
 		d_rewards: u64,
-		blocks_per_round: u32,
+		blocks_per_round: BlockNumber,
 	) -> Self {
 		self.inflation_config = InflationInfo::new(
 			Perquintill::from_percent(col_max),
@@ -213,7 +216,7 @@ impl ExtBuilder {
 		self
 	}
 
-	pub(crate) fn set_blocks_per_round(mut self, blocks_per_round: u32) -> Self {
+	pub(crate) fn set_blocks_per_round(mut self, blocks_per_round: BlockNumber) -> Self {
 		self.blocks_per_round = blocks_per_round;
 		self
 	}
@@ -263,7 +266,7 @@ pub(crate) fn almost_equal(left: Balance, right: Balance, precision: Perbill) ->
 	left.max(right) - left.min(right) <= err
 }
 
-pub(crate) fn roll_to(n: u64, authors: Vec<Option<AccountId>>) {
+pub(crate) fn roll_to(n: BlockNumber, authors: Vec<Option<AccountId>>) {
 	while System::block_number() < n {
 		if let Some(Some(author)) = authors.get((System::block_number()) as usize) {
 			Stake::note_author(*author);

@@ -174,7 +174,7 @@ fn geneses() {
 			assert_eq!(Stake::total_selected(), <Test as Config>::MinSelectedCandidates::get());
 			assert_eq!(
 				Stake::round(),
-				RoundInfo::new(0u32, 0u32.into(), <Test as Config>::DefaultBlocksPerRound::get())
+				RoundInfo::new(0, 0, <Test as Config>::DefaultBlocksPerRound::get())
 			);
 		});
 }
@@ -1600,7 +1600,7 @@ fn round_transitions() {
 			roll_to(5, vec![]);
 			let init = vec![Event::CollatorChosen(1, 1, 20, 20), Event::NewRound(5, 1, 1, 20, 20)];
 			assert_eq!(events(), init);
-			assert_ok!(Stake::set_blocks_per_round(Origin::root(), 3u32));
+			assert_ok!(Stake::set_blocks_per_round(Origin::root(), 3));
 			assert_eq!(last_event(), MetaEvent::stake(Event::BlocksPerRoundSet(1, 5, 5, 3)));
 
 			// inflation config should be untouched after per_block update
@@ -1629,7 +1629,7 @@ fn round_transitions() {
 			// chooses top TotalSelectedCandidates (5), in order
 			let init = vec![Event::CollatorChosen(1, 1, 20, 20), Event::NewRound(5, 1, 1, 20, 20)];
 			assert_eq!(events(), init);
-			assert_ok!(Stake::set_blocks_per_round(Origin::root(), 3u32));
+			assert_ok!(Stake::set_blocks_per_round(Origin::root(), 3));
 			assert_eq!(last_event(), MetaEvent::stake(Event::BlocksPerRoundSet(1, 5, 5, 3)));
 
 			// inflation config should be untouched after per_block update
@@ -1659,7 +1659,7 @@ fn round_transitions() {
 			// chooses top TotalSelectedCandidates (5), in order
 			let init = vec![Event::CollatorChosen(1, 1, 20, 20), Event::NewRound(5, 1, 1, 20, 20)];
 			assert_eq!(events(), init);
-			assert_ok!(Stake::set_blocks_per_round(Origin::root(), 3u32));
+			assert_ok!(Stake::set_blocks_per_round(Origin::root(), 3));
 
 			// inflation config should be untouched after per_block update
 			assert_eq!(inflation, Stake::inflation_config());
@@ -1787,8 +1787,8 @@ fn coinbase_rewards_few_blocks_detailed_check() {
 
 			// 1 is block author for 3rd block
 			roll_to(4, authors.clone());
-			c_reward_locks.remove(&3u64);
-			d_reward_locks.remove(&3u64);
+			c_reward_locks.remove(&3);
+			d_reward_locks.remove(&3);
 			c_reward_locks.insert(5, c_rewards);
 			d_reward_locks.insert(5, block_rewards_for_3);
 			assert_eq!(Stake::reward_locks(1), c_reward_locks);
@@ -1911,7 +1911,7 @@ fn coinbase_rewards_many_blocks_simple_check() {
 			let inflation = Stake::inflation_config();
 			let total_issuance = <Test as Config>::Currency::total_issuance();
 			assert_eq!(total_issuance, 160_000_000 * DECIMALS);
-			let end_block = num_of_years * YEARS as u64;
+			let end_block: BlockNumber = num_of_years * YEARS as BlockNumber;
 			// set round robin authoring
 			let authors: Vec<Option<AccountId>> = (0u64..=end_block).map(|i| Some(i % 2 + 1)).collect();
 			roll_to(end_block, authors);
