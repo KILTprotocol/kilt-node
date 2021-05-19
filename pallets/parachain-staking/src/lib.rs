@@ -991,8 +991,7 @@ pub mod pallet {
 			let mut candidates: Vec<Bond<_, _>> = <CandidatePool<T>>::get().into();
 
 			// Order candidates by their total stake
-			// TODO: Safe to unwrap?
-			candidates.sort_unstable_by(|a, b| a.amount.partial_cmp(&b.amount).unwrap());
+			candidates.sort_unstable_by(|a, b| a.amount.cmp(&b.amount));
 			let top_n = <TotalSelected<T>>::get() as usize;
 
 			// Choose the top TotalSelected qualified candidates, ordered by stake (least to
@@ -1024,7 +1023,7 @@ pub mod pallet {
 			}
 			collators.sort();
 
-			// Insert canonical collator set
+			// store canonical collator set
 			<SelectedCandidates<T>>::put(collators);
 			(all_collators, total_collators, total_delegators)
 		}
