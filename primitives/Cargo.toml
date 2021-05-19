@@ -16,6 +16,8 @@ sp-consensus-aura = {git = "https://github.com/paritytech/substrate", default-fe
 [features]
 default = ["std"]
 std = [
+  "codec/std",
+  "sp-consensus-aura/std",
   "sp-runtime/std",
   "sp-core/std",
   "serde",

@@ -19,8 +19,6 @@ serde = { version = "1.0.101", optional = true }
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 sp-std = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 sp-staking = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
-# TODO: Re-enable once compatible with master branches
-# orml-utilities = { git = "https://github.com/open-web3-stack/open-runtime-module-library", branch = "master", default-features = false }
 
 # benchmarking
 frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false, optional = true }
@@ -39,10 +37,14 @@ runtime-benchmarks = [
 std = [
   "frame-support/std",
   "frame-system/std",
+  "log/std",
+  "kilt-primitives/std",
+  "pallet-authorship/std",
   "pallet-balances/std",
   "parity-scale-codec/std",
+  "pallet-session/std",
   "serde",
-  "pallet-authorship/std",
-  "sp-std/std",
   "sp-runtime/std",
-] # TODO: Re-enable once compatible with master branches  # "orml-utilities/std",
+  "sp-staking/std",
+  "sp-std/std",
+]
