@@ -37,8 +37,9 @@ pub const YEARS: BlockNumber = MONTHS * 12;
 
 pub const MIN_VESTED_TRANSFER_AMOUNT: Balance = Balance::MAX;
 
-// TODO: how much?
-pub const DOLLARS: Balance = 10;
+// TODO: how much? (10 KILT)
+// TODO: get token decimals from properties?
+pub const DOLLARS: Balance = 10 * 10u128.pow(15);
 pub const CENTS: Balance = DOLLARS / 100;
 pub const MILLICENTS: Balance = CENTS / 1_000;
 
