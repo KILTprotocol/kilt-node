@@ -25,10 +25,11 @@ use crate::{
 	types::{BalanceOf, Bond, CollatorSnapshot, CollatorStatus, RoundInfo, TotalStake},
 	Config, Error, Event, InflationInfo, REWARDS_ID,
 };
-use frame_support::{assert_noop, assert_ok};
+use frame_support::{assert_noop, assert_ok, traits::EstimateNextSessionRotation};
 use kilt_primitives::constants::YEARS;
 use pallet_balances::{BalanceLock, Error as BalancesError, Locks, Reasons};
-use sp_runtime::{traits::Zero, Perbill, Perquintill};
+use pallet_session::ShouldEndSession;
+use sp_runtime::{traits::Zero, Perbill, Percent, Perquintill};
 use sp_std::collections::btree_map::BTreeMap;
 
 #[test]
@@ -2068,3 +2069,60 @@ fn reach_max_collator_candidates() {
 // 		Perbill::from_percent(1),
 // 	);
 // }
+
+#[test]
+fn should_estimate_current_session_progress() {
+	ExtBuilder::default()
+		.set_blocks_per_round(100)
+		.build()
+		.execute_with(|| {
+			assert_eq!(
+				Stake::estimate_current_session_progress(10).0.unwrap(),
+				Percent::from_percent(10)
+			);
+			assert_eq!(
+				Stake::estimate_current_session_progress(20).0.unwrap(),
+				Percent::from_percent(20)
+			);
+			assert_eq!(
+				Stake::estimate_current_session_progress(30).0.unwrap(),
+				Percent::from_percent(30)
+			);
+			assert_eq!(
+				Stake::estimate_current_session_progress(60).0.unwrap(),
+				Percent::from_percent(60)
+			);
+			assert_eq!(
+				Stake::estimate_current_session_progress(100).0.unwrap(),
+				Percent::from_percent(100)
+			);
+		});
+}
+
+#[test]
+fn should_estimate_next_session_rotation() {
+	ExtBuilder::default()
+		.set_blocks_per_round(100)
+		.build()
+		.execute_with(|| {
+			assert_eq!(Stake::estimate_next_session_rotation(10).0.unwrap(), 100);
+			assert_eq!(Stake::estimate_next_session_rotation(20).0.unwrap(), 100);
+			assert_eq!(Stake::estimate_next_session_rotation(30).0.unwrap(), 100);
+			assert_eq!(Stake::estimate_next_session_rotation(60).0.unwrap(), 100);
+			assert_eq!(Stake::estimate_next_session_rotation(100).0.unwrap(), 100);
+		});
+}
+
+#[test]
+fn should_end_session_when_appropriate() {
+	ExtBuilder::default()
+		.set_blocks_per_round(100)
+		.build()
+		.execute_with(|| {
+			assert_eq!(Stake::should_end_session(10), false);
+			assert_eq!(Stake::should_end_session(20), false);
+			assert_eq!(Stake::should_end_session(30), false);
+			assert_eq!(Stake::should_end_session(60), false);
+			assert_eq!(Stake::should_end_session(100), true);
+		});
+}
