@@ -350,21 +350,19 @@ pub fn run() -> Result<()> {
 				);
 
 				match cli.runtime.as_str() {
-					"mashnet" => crate::service::start_node::<MashRuntimeExecutor, ShellRuntimeExecutor, kilt_parachain_runtime::RuntimeApi>(
-						config,
-						key,
-						polkadot_config,
-						id,
-					)
+					"mashnet" => crate::service::start_node::<
+						MashRuntimeExecutor,
+						ShellRuntimeExecutor,
+						kilt_parachain_runtime::RuntimeApi,
+					>(config, key, polkadot_config, id)
 					.await
 					.map(|r| r.0)
 					.map_err(Into::into),
-					"spiritnet" => crate::service::start_node::<SpiritRuntimeExecutor, ShellRuntimeExecutor, spiritnet_runtime::RuntimeApi>(
-						config,
-						key,
-						polkadot_config,
-						id,
-					)
+					"spiritnet" => crate::service::start_node::<
+						SpiritRuntimeExecutor,
+						ShellRuntimeExecutor,
+						spiritnet_runtime::RuntimeApi,
+					>(config, key, polkadot_config, id)
 					.await
 					.map(|r| r.0)
 					.map_err(Into::into),

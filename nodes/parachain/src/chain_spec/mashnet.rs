@@ -27,7 +27,7 @@ use kilt_parachain_runtime::{
 };
 use kilt_primitives::{
 	constants::{DOLLARS, MONTHS},
-	AccountId, Balance, BlockNumber, AuthorityId
+	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use sc_service::ChainType;
 use sp_core::{crypto::UncheckedInto, sr25519};

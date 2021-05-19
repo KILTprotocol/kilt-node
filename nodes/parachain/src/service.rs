@@ -23,7 +23,7 @@ use cumulus_client_service::{
 	prepare_node_config, start_collator, start_full_node, StartCollatorParams, StartFullNodeParams,
 };
 use cumulus_primitives_core::ParaId;
-use kilt_primitives::{AccountId, Balance, Block, Hash, Index, AuthorityId};
+use kilt_primitives::{AccountId, AuthorityId, Balance, Block, Hash, Index};
 use polkadot_primitives::v0::CollatorPair;
 
 use polkadot_service::NativeExecutionDispatch;

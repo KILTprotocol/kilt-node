@@ -31,7 +31,7 @@ use frame_support::{traits::LockIdentifier, PalletId};
 use frame_system::limits::{BlockLength, BlockWeights};
 use kilt_primitives::{
 	constants::{DOLLARS, MILLICENTS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
-	AccountId, Balance, BlockNumber, Hash, Header, Index, Signature, AuthorityId
+	AccountId, AuthorityId, Balance, BlockNumber, Hash, Header, Index, Signature,
 };
 pub use parachain_staking::{InflationInfo, RewardRate, StakingInfo};
 use sp_api::impl_runtime_apis;

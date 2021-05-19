@@ -34,7 +34,7 @@ use frame_system::{
 };
 use kilt_primitives::{
 	constants::{DAYS, DOLLARS, MILLICENTS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
-	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Header, Index, Signature, AuthorityId
+	AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Hash, Header, Index, Signature,
 };
 pub use parachain_staking::{InflationInfo, RewardRate, StakingInfo};
 use sp_api::impl_runtime_apis;
