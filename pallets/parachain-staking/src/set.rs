@@ -100,17 +100,34 @@ impl<T: Ord> OrderedSet<T> {
 		}
 	}
 
-	/// Return if the set contains `value`
+	/// Return whether the set contains `value`.
 	pub fn contains(&self, value: &T) -> bool {
 		self.0.binary_search(&value).is_ok()
 	}
 
-	/// Return if the set contains `value`
+	/// Binary searches this ordered OrderedSet for a given element.
+	///
+	/// 1. If the value is found, then Result::Ok is returned, containing the
+	/// index of the matching element.
+	/// 2. If there are multiple matches, then any one of the matches could be
+	/// returned.
+	/// 3. If the value is not found then Result::Err is returned, containing
+	/// the index where a matching element could be inserted while maintaining
+	/// sorted order.
 	pub fn binary_search(&self, value: &T) -> Result<usize, usize> {
 		self.0.binary_search(&value)
 	}
 
-	/// Return if the set contains `value`
+	/// Binary searches this ordered OrderedSet for a given element with the
+	/// provided comparator.
+	///
+	/// 1. If the value is found, then Result::Ok is returned, containing the
+	/// index of the matching element.
+	/// 2. If there are multiple matches, then any one of the matches could be
+	/// returned.
+	/// 3. If the value is not found then Result::Err is returned, containing
+	/// the index where a matching element could be inserted while maintaining
+	/// sorted order.
 	pub fn binary_search_by<'a, F>(&'a self, f: F) -> Result<usize, usize>
 	where
 		F: FnMut(&'a T) -> Ordering,
@@ -118,21 +135,22 @@ impl<T: Ord> OrderedSet<T> {
 		self.0.binary_search_by(f)
 	}
 
-	/// Clear the set
+	/// Clear the set.
 	pub fn clear(&mut self) {
 		self.0.clear();
 	}
 
-	/// Clear the set
+	/// Return the length of the set.
 	pub fn len(&self) -> usize {
 		self.0.len()
 	}
 
-	/// Clear the set
+	/// Check whether the set is empty.
 	pub fn is_empty(&self) -> bool {
 		self.0.is_empty()
 	}
 
+	/// Convert the set to a vector.
 	pub fn to_vec(self) -> Vec<T> {
 		self.0
 	}

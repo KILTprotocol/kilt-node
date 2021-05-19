@@ -161,7 +161,7 @@ fn testnet_genesis(
 			inflation_config,
 		},
 		pallet_aura: spiritnet_runtime::AuraConfig {
-			authorities: initial_authorities.iter().map(|x|x.1.clone()).collect(),
+			authorities: initial_authorities.iter().map(|x| x.1.clone()).collect(),
 		},
 		cumulus_pallet_aura_ext: Default::default(),
 		pallet_session: SessionConfig {
