@@ -1169,6 +1169,11 @@ pub mod pallet {
 
 			Self::select_top_candidates(new_index);
 
+			frame_system::Pallet::<T>::register_extra_weight_unchecked(
+				0, // TODO: T::WeightInfo::new_session(candidates_len_before as u32, removed as u32),
+				DispatchClass::Mandatory,
+			);
+
 			Some(<SelectedCandidates<T>>::get())
 		}
 
