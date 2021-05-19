@@ -547,6 +547,8 @@ pub mod pallet {
 		pub fn go_offline(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			let collator = ensure_signed(origin)?;
 			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateDNE)?;
+
+			ensure!(!state.is_leaving(), Error::<T>::CannotActivateIfLeaving);
 			ensure!(state.is_active(), Error::<T>::AlreadyOffline);
 			state.go_offline();
 			let mut candidates = <CandidatePool<T>>::get();
@@ -950,7 +952,7 @@ pub mod pallet {
 
 			// we don't unlock immediately
 			Self::prepare_withdraw(&delegator, delegator_stake)?;
-			
+
 			if state.is_active() {
 				Self::update_active(collator.clone(), state.total);
 			}

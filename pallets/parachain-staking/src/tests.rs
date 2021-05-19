@@ -229,6 +229,15 @@ fn online_offline_works() {
 			expected.push(Event::CollatorChosen(5, 2, 200, 200));
 			expected.push(Event::NewRound(25, 5, 2, 700, 400));
 			assert_eq!(events(), expected);
+			assert_ok!(Stake::leave_candidates(Origin::signed(1)));
+			assert_noop!(
+				Stake::go_online(Origin::signed(1)),
+				Error::<Test>::CannotActivateIfLeaving
+			);
+			assert_noop!(
+				Stake::go_offline(Origin::signed(1)),
+				Error::<Test>::CannotActivateIfLeaving
+			);
 		});
 }
 
