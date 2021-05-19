@@ -31,6 +31,9 @@ use sp_std::{
 
 use crate::{set::OrderedSet, Config};
 
+/// A struct represented an amount of staked funds.
+///
+/// The stake has a destination account (to which the stake is directed) and an amount of funds staked.
 #[derive(Default, Clone, Encode, Decode, RuntimeDebug, PartialEq, Eq)]
 pub struct Bond<AccountId, Balance>
 where
@@ -67,8 +70,8 @@ impl<AccountId: Ord, Balance: PartialEq + Ord> Ord for Bond<AccountId, Balance> 
 	}
 }
 
+/// The activity status of the collator.
 #[derive(Copy, Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
-/// The activity status of the collator
 pub enum CollatorStatus {
 	/// Committed to be online and producing valid blocks (not equivocating)
 	Active,
@@ -193,6 +196,7 @@ where
 	}
 }
 
+
 #[derive(Encode, Decode, RuntimeDebug)]
 pub struct Delegator<AccountId: Eq + Ord, Balance: Eq + Ord> {
 	pub delegations: OrderedSet<Bond<AccountId, Balance>>,
@@ -270,14 +274,14 @@ where
 	}
 }
 
+/// The current round index and transition information.
 #[derive(Copy, Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
-/// The current round index and transition information
 pub struct RoundInfo<BlockNumber> {
-	/// Current round index
+	/// Current round index.
 	pub current: RoundIndex,
-	/// The first block of the current round
+	/// The first block of the current round.
 	pub first: BlockNumber,
-	/// The length of the current round in number of blocks
+	/// The length of the current round in blocks.
 	pub length: BlockNumber,
 }
 
@@ -289,13 +293,13 @@ where
 		RoundInfo { current, first, length }
 	}
 
-	/// Check if the round should be updated
+	/// Check if the round should be updated.
 	pub fn should_update(&self, now: B) -> bool {
 		let l = now.saturating_sub(self.first);
 		l >= self.length.into()
 	}
 
-	/// New round
+	/// Start a new round.
 	pub fn update(&mut self, now: B) {
 		self.current = self.current.saturating_add(1u32);
 		self.first = now;
@@ -311,6 +315,9 @@ where
 	}
 }
 
+/// The total stake of the pallet.
+///
+/// The stake includes both collators' and delegators' staked funds.
 #[derive(Default, Clone, Encode, Decode, RuntimeDebug, PartialEq, Eq)]
 pub struct TotalStake<Balance: Default> {
 	pub collators: Balance,

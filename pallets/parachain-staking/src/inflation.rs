@@ -33,7 +33,7 @@ pub struct RewardRate {
 	pub per_block: Perquintill,
 }
 
-/// Convert annual reward rate to per_block
+/// Convert annual reward rate to per_block.
 fn annual_to_per_block(rate: Perquintill) -> Perquintill {
 	rate / YEARS
 }
@@ -47,12 +47,13 @@ impl RewardRate {
 	}
 }
 
+/// Staking info (staking rate and reward rate) for collators and delegators.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Eq, PartialEq, Clone, Encode, Decode, Default, RuntimeDebug)]
 pub struct StakingInfo {
-	/// Maximum staking rate
+	/// Maximum staking rate.
 	pub max_rate: Perquintill,
-	/// Reward rate
+	/// Reward rate.
 	pub reward_rate: RewardRate,
 }
 
@@ -65,7 +66,7 @@ impl StakingInfo {
 	}
 
 	/// Calculate newly minted rewards on coinbase, e.g.,
-	/// reward = rewards_per_block * staking_rate
+	/// reward = rewards_per_block * staking_rate.
 	pub fn compute_block_rewards<T: Config>(&self, stake: BalanceOf<T>, total_issuance: BalanceOf<T>) -> BalanceOf<T> {
 		let staking_rate = Perquintill::from_rational(stake, total_issuance).min(self.max_rate);
 		// multiplication with perbill cannot overflow
@@ -96,7 +97,7 @@ impl InflationInfo {
 	}
 
 	/// Compute coinbase rewards for collators and delegators based on the
-	/// current staking rate and the InflationInfo
+	/// current staking rate and the InflationInfo.
 	pub fn block_issuance<T: Config>(
 		&self,
 		collator_stake: BalanceOf<T>,
@@ -115,8 +116,8 @@ impl InflationInfo {
 	pub fn is_valid(&self) -> bool {
 		self.collator.reward_rate.annual
 			>= Perquintill::from_parts(self.collator.reward_rate.per_block.deconstruct() * YEARS)
-			&& self.delegator.reward_rate.annual
-				>= Perquintill::from_parts(self.delegator.reward_rate.per_block.deconstruct() * YEARS)
+		&& self.delegator.reward_rate.annual
+			>= Perquintill::from_parts(self.delegator.reward_rate.per_block.deconstruct() * YEARS)
 	}
 }
 
