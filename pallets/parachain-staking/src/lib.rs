@@ -86,6 +86,7 @@ pub mod pallet {
 	use pallet_session::ShouldEndSession;
 	// TODO: Use ORML one once they point to Substrate master
 	// use orml_utilities::OrderedSet;
+	use pallet_balances::{BalanceLock, Locks};
 	use sp_runtime::{
 		traits::{Saturating, Zero},
 		Percent, Perquintill,
@@ -98,7 +99,7 @@ pub mod pallet {
 		types::{BalanceOf, Bond, Collator, CollatorSnapshot, Delegator, RoundIndex, RoundInfo, TotalStake},
 	};
 
-	pub const REWARDS_ID: LockIdentifier = *b"kiltrwrd";
+	pub(crate) const STAKING_ID: LockIdentifier = *b"kiltpstk";
 
 	/// Pallet for parachain staking
 	#[pallet::pallet]
@@ -106,26 +107,33 @@ pub mod pallet {
 
 	/// Configuration trait of this pallet.
 	#[pallet::config]
-	pub trait Config: frame_system::Config {
+	pub trait Config: frame_system::Config + pallet_balances::Config {
 		/// Overarching event type
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		// FIXME: Remove Currency and CurrencyBalance types. Problem: Need to restrict
+		// pallet_balances::Config::Balance with From<u64> for usage with Perquintill
+		// multiplication
 		/// The currency type
-		// Note: Declaration of Balance taken from pallet_gilt
+		/// Note: Declaration of Balance taken from pallet_gilt
 		type Currency: Currency<Self::AccountId, Balance = Self::CurrencyBalance>
 			+ ReservableCurrency<Self::AccountId, Balance = Self::CurrencyBalance>
 			+ LockableCurrency<Self::AccountId, Balance = Self::CurrencyBalance>
 			+ Eq;
 
+		// TODO: Check whether this type is still needed after restricting Config to
+		// pallet_balances::Config
 		/// Just the `Currency::Balance` type; we have this item to allow us to
 		/// constrain it to `From<u64>`.
-		// Note: Definition taken from pallet_gilt
+		/// Note: Definition taken from pallet_gilt
 		type CurrencyBalance: sp_runtime::traits::AtLeast32BitUnsigned
 			+ parity_scale_codec::FullCodec
 			+ Copy
 			+ MaybeSerializeDeserialize
 			+ sp_std::fmt::Debug
 			+ Default
-			+ From<u64>;
+			+ From<u64>
+			+ Into<<Self as pallet_balances::Config>::Balance>
+			+ From<<Self as pallet_balances::Config>::Balance>;
 
 		/// Minimum number of blocks per round
 		type MinBlocksPerRound: Get<Self::BlockNumber>;
@@ -155,6 +163,9 @@ pub mod pallet {
 		/// Minimum stake for any registered on-chain account to become a
 		/// delegator
 		type MinDelegatorStk: Get<BalanceOf<Self>>;
+		/// Max number of concurrent active unbonding requests before
+		/// withdrawing.
+		type MaxUnbondRequests: Get<usize>;
 	}
 
 	#[pallet::error]
@@ -184,6 +195,12 @@ pub mod pallet {
 		InvalidSchedule,
 		CannotSetBelowMin,
 		RewardLockDNE,
+		/// Max unlocking requests reached.
+		NoMoreUnbonding,
+		/// Provided bonded value is zero.
+		BondDNE,
+		/// Cannot withdraw when Unbonded is empty.
+		UnbondingIsEmpty,
 	}
 
 	#[pallet::event]
@@ -208,9 +225,11 @@ pub mod pallet {
 		/// Account, Amount Unlocked, New Total Collator Amount Locked, New
 		/// Total Delegator Amount Locked
 		CollatorLeft(T::AccountId, BalanceOf<T>, BalanceOf<T>, BalanceOf<T>),
-		// Delegator, Collator, Old Delegation, New Delegation
+		/// Delegator, Collator, Old Total Amount backing Collator, New Total
+		/// Amount backing Collator
 		DelegationIncreased(T::AccountId, T::AccountId, BalanceOf<T>, BalanceOf<T>),
-		// Delegator, Collator, Old Delegation, New Delegation
+		/// Delegator, Collator, Old Total Amount backing Collator, New Total
+		/// Amount backing Collator
 		DelegationDecreased(T::AccountId, T::AccountId, BalanceOf<T>, BalanceOf<T>),
 		/// Delegator, Amount Unstaked
 		DelegatorLeft(T::AccountId, BalanceOf<T>),
@@ -227,7 +246,7 @@ pub mod pallet {
 			T::AccountId,
 			BalanceOf<T>,
 		),
-		/// Delegator, Collator, Amount Unstaked, New Total Amount Staked for
+		/// Delegator, Collator, Amount Unstaked, New Total Amount backing
 		/// Collator
 		DelegatorLeftCollator(T::AccountId, T::AccountId, BalanceOf<T>, BalanceOf<T>),
 		/// Paid the account (delegator or collator) the balance as liquid
@@ -335,10 +354,24 @@ pub mod pallet {
 	pub type InflationConfig<T: Config> = StorageValue<_, InflationInfo, ValueQuery>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn reward_locks)]
+	#[pallet::getter(fn rewards)]
 	/// Locked balance which has been granted as reward after a collator
-	/// authored a block
-	pub type RewardLocks<T: Config> =
+	/// authored a block sorted by the blocks in which each reward can be
+	/// unlocked
+	pub type Rewards<T: Config> =
+		StorageMap<_, Twox64Concat, T::AccountId, BTreeMap<T::BlockNumber, BalanceOf<T>>, ValueQuery>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn locked_rewards)]
+	/// Locked balance which has been granted as reward after a collator
+	/// authored a block summed up
+	pub type LockedRewards<T: Config> = StorageMap<_, Twox64Concat, T::AccountId, BalanceOf<T>, ValueQuery>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn unbonding)]
+	/// Bonded balance which was requested to be unlocked but has to wait
+	/// BondDuration until it can be withdrawn
+	pub type Unbonding<T: Config> =
 		StorageMap<_, Twox64Concat, T::AccountId, BTreeMap<T::BlockNumber, BalanceOf<T>>, ValueQuery>;
 
 	#[pallet::genesis_config]
@@ -460,7 +493,7 @@ pub mod pallet {
 				(candidates.len() as u32) <= T::MaxCollatorCandidates::get(),
 				Error::<T>::TooManyCollatorCandidates
 			);
-			T::Currency::reserve(&acc, bond)?;
+			Self::increase_lock(&acc, bond)?;
 
 			let candidate = Collator::new(acc.clone(), bond);
 			let TotalStake {
@@ -556,15 +589,14 @@ pub mod pallet {
 
 			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateDNE)?;
 			ensure!(!state.is_leaving(), Error::<T>::CannotActivateIfLeaving);
-			ensure!(
-				state.bond.saturating_add(more) <= T::MaxCollatorCandidateStk::get(),
-				Error::<T>::ValBondAboveMax
-			);
 
-			T::Currency::reserve(&collator, more)?;
 			let before = state.bond;
 			state.bond_more(more);
 			let after = state.bond;
+			ensure!(after <= T::MaxCollatorCandidateStk::get(), Error::<T>::ValBondAboveMax);
+
+			Self::increase_lock(&collator, after)?;
+
 			if state.is_active() {
 				Self::update_active(collator.clone(), state.total);
 			}
@@ -583,8 +615,9 @@ pub mod pallet {
 			let after = state.bond_less(less).ok_or(Error::<T>::Underflow)?;
 			ensure!(after >= T::MinCollatorCandidateStk::get(), Error::<T>::ValBondBelowMin);
 
-			let err_amt = T::Currency::unreserve(&collator, less);
-			debug_assert!(err_amt.is_zero());
+			// we don't unlock immediately
+			Self::prepare_withdraw(&collator, less)?;
+
 			if state.is_active() {
 				Self::update_active(collator.clone(), state.total);
 			}
@@ -631,8 +664,7 @@ pub mod pallet {
 			let new_total = state.total;
 
 			// lock bond
-			// TODO: switch to lock instead of reserving
-			T::Currency::reserve(&acc, amount)?;
+			Self::increase_lock(&acc, amount)?;
 			if state.is_active() {
 				Self::update_active(collator.clone(), new_total);
 			}
@@ -702,8 +734,7 @@ pub mod pallet {
 				let new_total = state.total;
 
 				// lock bond
-				// TODO: Switch from reserve to lock
-				T::Currency::reserve(&acc, amount)?;
+				Self::increase_lock(&acc, delegator.total)?;
 				if state.is_active() {
 					Self::update_active(collator.clone(), new_total);
 				}
@@ -723,6 +754,7 @@ pub mod pallet {
 				Err(Error::<T>::NotYetDelegating.into())
 			}
 		}
+
 		/// Leave the set of delegators and, by implication, revoke all ongoing
 		/// delegations
 		#[pallet::weight(0)]
@@ -736,6 +768,7 @@ pub mod pallet {
 			Self::deposit_event(Event::DelegatorLeft(acc, delegator.total));
 			Ok(().into())
 		}
+
 		/// Revoke an existing delegation
 		#[pallet::weight(0)]
 		pub fn revoke_delegation(origin: OriginFor<T>, collator: T::AccountId) -> DispatchResultWithPostInfo {
@@ -752,10 +785,12 @@ pub mod pallet {
 			let delegator = ensure_signed(origin)?;
 			let mut delegations = <DelegatorState<T>>::get(&delegator).ok_or(Error::<T>::DelegatorDNE)?;
 			let mut collator = <CollatorState<T>>::get(&candidate).ok_or(Error::<T>::CandidateDNE)?;
-			let _ = delegations
+			let delegator_total = delegations
 				.inc_delegation(candidate.clone(), more)
 				.ok_or(Error::<T>::DelegationDNE)?;
-			T::Currency::reserve(&delegator, more)?;
+
+			// update lock
+			Self::increase_lock(&delegator, delegator_total)?;
 			let before = collator.total;
 			collator.inc_delegator(delegator.clone(), more);
 			let after = collator.total;
@@ -791,8 +826,8 @@ pub mod pallet {
 				Error::<T>::NomBondBelowMin
 			);
 
-			let err_amt = T::Currency::unreserve(&delegator, less);
-			debug_assert!(err_amt.is_zero());
+			Self::prepare_withdraw(&delegator, remaining)?;
+
 			let before = collator.total;
 			collator.dec_delegator(delegator.clone(), less);
 			let after = collator.total;
@@ -806,7 +841,7 @@ pub mod pallet {
 		}
 
 		/// Unlock rewards from staking which are avaible for the current block
-		/// number. Checks whether the `RewardLocks` BTreeMap for the target has
+		/// number. Checks whether the `Rewards` BTreeMap for the target has
 		/// entries less or equal than the current block number.
 		///
 		/// NOTE: Unlocking automatically occurs in `note_author` after a block
@@ -817,7 +852,7 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn unlock_rewards(
 			origin: OriginFor<T>,
-			// TODO: Better to use Lookup?
+			// TODO: Switch to Lookup
 			// target: <T::Lookup as StaticLookup>::Source
 			target: T::AccountId,
 		) -> DispatchResult {
@@ -826,11 +861,27 @@ pub mod pallet {
 
 			let now: T::BlockNumber = <frame_system::Pallet<T>>::block_number();
 
-			let lock = <RewardLocks<T>>::get(&target);
+			let lock = <Rewards<T>>::get(&target);
 			ensure!(!lock.is_empty(), Error::<T>::RewardLockDNE);
 
 			Self::do_update_reward_locks(&target, lock, now);
 			Ok(())
+		}
+
+		/// Withdraw all balance for the given account which was unbonded at
+		/// least `BondDuration` blocks ago. Updates `Unbonding` and the Staking
+		/// currency lock.
+		#[pallet::weight(0)]
+		pub fn withdraw_unbonded(
+			origin: OriginFor<T>,
+			// TODO: Switch to Lookup
+			// target: <T::Lookup as StaticLookup>::Source
+			target: T::AccountId,
+		) -> DispatchResult {
+			ensure_signed(origin)?;
+			// let target = T::Lookup::lookup(target)?;
+
+			Self::do_withdraw(&target)
 		}
 	}
 
@@ -897,8 +948,9 @@ pub mod pallet {
 
 			state.total = state.total.saturating_sub(delegator_stake);
 
-			T::Currency::unreserve(&delegator, delegator_stake);
-
+			// we don't unlock immediately
+			Self::prepare_withdraw(&delegator, delegator_stake)?;
+			
 			if state.is_active() {
 				Self::update_active(collator.clone(), state.total);
 			}
@@ -917,6 +969,7 @@ pub mod pallet {
 			Ok(().into())
 		}
 
+		// TODO: Replace with function without delay
 		fn execute_delayed_collator_exits(next: RoundIndex) {
 			let remain_exits = <ExitQueue<T>>::get()
 				.into_iter()
@@ -927,7 +980,8 @@ pub mod pallet {
 						if let Some(state) = <CollatorState<T>>::get(&x.owner) {
 							for bond in state.delegators.into_iter() {
 								// return stake to delegator
-								T::Currency::unreserve(&bond.owner, bond.amount);
+								// NOTE: Since this function will be removed anyway, the below is okay for now
+								Self::prepare_withdraw(&bond.owner, bond.amount).ok()?;
 								// remove delegation from delegator state
 								if let Some(mut delegator) = <DelegatorState<T>>::get(&bond.owner) {
 									if let Some(remaining) = delegator.rm_delegation(x.owner.clone()) {
@@ -940,7 +994,8 @@ pub mod pallet {
 								}
 							}
 							// return stake to collator
-							T::Currency::unreserve(&state.id, state.bond);
+							// NOTE: Since this function will be removed anyway, the below is okay for now
+							Self::prepare_withdraw(&state.id, state.bond).ok()?;
 
 							let TotalStake {
 								collators: total_collators,
@@ -1028,53 +1083,66 @@ pub mod pallet {
 			Ok(())
 		}
 
-		// Weight: writes(2)
+		// Weight: reads_writes(2, 2) + deposit_into_existing
 		fn do_reward(who: &T::AccountId, reward: BalanceOf<T>, now: T::BlockNumber) {
 			// mint
 			if let Ok(imb) = T::Currency::deposit_into_existing(who, reward) {
 				// set & update lock
-				let mut locks = <RewardLocks<T>>::get(who);
+				let mut locks = <Rewards<T>>::get(who);
 				let unlock_block: T::BlockNumber = now.saturating_add(T::BondDuration::get().into());
 				locks.insert(unlock_block, reward);
 				Self::do_update_reward_locks(who, locks, now);
-				// TODO: Remove?
 				Self::deposit_event(Event::Rewarded(who.clone(), imb.peek()));
 			}
 		}
+
+		// Weight: reads_writes(1, 2)
 		fn do_update_reward_locks(
 			who: &T::AccountId,
-			mut locks: BTreeMap<T::BlockNumber, BalanceOf<T>>,
+			mut rewards: BTreeMap<T::BlockNumber, BalanceOf<T>>,
 			now: T::BlockNumber,
 		) {
-			let mut total_locked: BalanceOf<T> = Zero::zero();
+			let mut unlockable: BalanceOf<T> = Zero::zero();
+			let mut still_locked: BalanceOf<T> = Zero::zero();
 			let mut expired = Vec::new();
+			let old_locked = <LockedRewards<T>>::get(who);
 
-			// check potential unlocks
-			for (block_number, locked_balance) in &locks {
+			// divide rewards into unlockable and still locked
+			for (block_number, locked_balance) in &rewards {
 				if block_number <= &now {
 					expired.push(*block_number);
+					unlockable = unlockable.saturating_add(*locked_balance);
 				} else {
-					total_locked = total_locked.saturating_add(*locked_balance);
+					still_locked = still_locked.saturating_add(*locked_balance);
 				}
 			}
+			// remove unlockable rewards
 			for block_number in expired {
-				locks.remove(&block_number);
+				rewards.remove(&block_number);
 			}
 
-			if !total_locked.is_zero() {
-				<T::Currency as LockableCurrency<T::AccountId>>::set_lock(
-					REWARDS_ID,
-					who,
-					total_locked,
-					WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
-				);
+			// iterate balance locks to retrieve amount of locked balance
+			let locks = Locks::<T>::get(who);
+			let total_locked: BalanceOf<T> =
+			// lock has to exist because the LockIdentifier is the same for bonding which is required in order to receive rewards
+				if let Some(BalanceLock { amount, .. }) = locks.iter().find(|l| l.id == STAKING_ID) {
+					amount
+						.saturating_add(still_locked.into())
+						.saturating_sub(old_locked.into())
+						.into()
+				} else {
+					// safe fall back just in case
+					still_locked
+				};
 
-				<RewardLocks<T>>::insert(who, locks);
+			if total_locked.is_zero() {
+				T::Currency::remove_lock(STAKING_ID, who);
+				<Rewards<T>>::remove(who);
+				<LockedRewards<T>>::remove(who);
 			} else {
-				// Lock is guaranteed to exist at this moment, because we ensure existance in
-				// `unlock_rewards` or else have created it previously by paying rewards
-				<T::Currency as LockableCurrency<T::AccountId>>::remove_lock(REWARDS_ID, who);
-				<RewardLocks<T>>::remove(who);
+				T::Currency::set_lock(STAKING_ID, who, total_locked, WithdrawReasons::all());
+				<Rewards<T>>::insert(who, rewards);
+				<LockedRewards<T>>::insert(who, still_locked);
 			}
 		}
 
@@ -1097,6 +1165,7 @@ pub mod pallet {
 				Some(Bond { amount, owner }) if amount < bond.amount => {
 					state.total = state.total.saturating_sub(amount).saturating_add(bond.amount);
 					state.delegators = OrderedSet::from_sorted_set(delegators);
+					// TODO: Might want to remove this, if extrinis cannot be made transactional
 					Self::deposit_event(Event::DelegationReplaced(
 						bond.owner,
 						bond.amount,
@@ -1122,6 +1191,86 @@ pub mod pallet {
 		// ) -> Result<(), DispatchError> {
 		// 	todo!()
 		// }
+
+		/// Either set or increase the BalanceLock of target account to
+		/// amount.
+		fn increase_lock(who: &T::AccountId, amount: BalanceOf<T>) -> Result<(), DispatchError> {
+			// println!(
+			// 	"who {:?} balance {:?}, amount {:?}",
+			// 	who,
+			// 	pallet_balances::Pallet::<T>::free_balance(who),
+			// 	amount
+			// );
+			ensure!(
+				pallet_balances::Pallet::<T>::free_balance(who) >= amount.into(),
+				pallet_balances::Error::<T>::InsufficientBalance
+			);
+
+			T::Currency::set_lock(STAKING_ID, who, amount, WithdrawReasons::all());
+			Ok(())
+		}
+
+		/// Set the unlocking block for the account and corresponding amount
+		/// which can be withdrawn via `withdraw_unbonded` after waiting at
+		/// least for `BondDuration` many blocks.
+		fn prepare_withdraw(who: &T::AccountId, amount: BalanceOf<T>) -> Result<(), DispatchError> {
+			ensure!(!amount.is_zero(), Error::<T>::BondDNE);
+
+			let now = <frame_system::Pallet<T>>::block_number();
+			let unlock_block = now.saturating_add(T::BondDuration::get().into());
+			let mut unbonding = <Unbonding<T>>::get(who);
+
+			ensure!(
+				unbonding.len() < T::MaxUnbondRequests::get(),
+				Error::<T>::NoMoreUnbonding
+			);
+
+			unbonding.insert(unlock_block, amount);
+			<Unbonding<T>>::insert(who, unbonding);
+			Ok(())
+		}
+
+		/// Withdraw all bonded currency which was unbonded at least
+		/// `BondDuration` blocks ago.
+		fn do_withdraw(who: &T::AccountId) -> Result<(), DispatchError> {
+			let now = <frame_system::Pallet<T>>::block_number();
+			let mut unbonding = <Unbonding<T>>::get(who);
+			ensure!(unbonding.len() > 0, Error::<T>::UnbondingIsEmpty);
+
+			let mut total_unlocked: BalanceOf<T> = Zero::zero();
+			let mut expired = Vec::new();
+
+			// check potential unlocks
+			for (block_number, locked_balance) in &unbonding {
+				if block_number <= &now {
+					expired.push(*block_number);
+					total_unlocked = total_unlocked.saturating_add(*locked_balance);
+				}
+			}
+			for block_number in expired {
+				unbonding.remove(&block_number);
+			}
+
+			// iterate balance locks to retrieve amount of locked balance
+			let locks = Locks::<T>::get(who);
+			// should always find the lock
+			let total_locked: BalanceOf<T> =
+				if let Some(BalanceLock { amount, .. }) = locks.iter().find(|l| l.id == STAKING_ID) {
+					amount.saturating_sub(total_unlocked.into()).into()
+				} else {
+					Zero::zero()
+				};
+
+			if total_locked.is_zero() {
+				T::Currency::remove_lock(STAKING_ID, who);
+				<Unbonding<T>>::remove(who);
+			} else {
+				T::Currency::set_lock(STAKING_ID, who, total_locked, WithdrawReasons::all());
+				<Unbonding<T>>::insert(who, unbonding);
+			}
+
+			Ok(())
+		}
 	}
 
 	impl<T> pallet_authorship::EventHandler<T::AccountId, T::BlockNumber> for Pallet<T>

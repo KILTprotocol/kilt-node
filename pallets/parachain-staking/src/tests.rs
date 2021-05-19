@@ -23,7 +23,7 @@ use crate::{
 		Event as MetaEvent, ExtBuilder, Origin, Stake, System, Test, BLOCKS_PER_ROUND, DECIMALS,
 	},
 	types::{BalanceOf, Bond, CollatorSnapshot, CollatorStatus, RoundInfo, TotalStake},
-	Config, Error, Event, InflationInfo, REWARDS_ID,
+	Config, Error, Event, InflationInfo, STAKING_ID,
 };
 use frame_support::{assert_noop, assert_ok, traits::EstimateNextSessionRotation};
 use kilt_primitives::constants::YEARS;
@@ -65,8 +65,8 @@ fn geneses() {
 				Stake::candidate_pool().to_vec()
 			);
 			// 1
-			assert_eq!(Balances::reserved_balance(&1), 500);
-			assert_eq!(Balances::free_balance(&1), 500);
+			assert_eq!(Balances::usable_balance(&1), 500);
+			assert_eq!(Balances::free_balance(&1), 1000);
 			assert!(Stake::is_candidate(&1));
 			assert_eq!(
 				Stake::at_stake(0u32, &1),
@@ -77,8 +77,8 @@ fn geneses() {
 				}
 			);
 			// 2
-			assert_eq!(Balances::reserved_balance(&2), 200);
-			assert_eq!(Balances::free_balance(&2), 100);
+			assert_eq!(Balances::usable_balance(&2), 100);
+			assert_eq!(Balances::free_balance(&2), 300);
 			assert!(Stake::is_candidate(&2));
 			assert_eq!(
 				Stake::at_stake(0u32, &2),
@@ -98,19 +98,19 @@ fn geneses() {
 			);
 			for x in 3..7 {
 				assert!(Stake::is_delegator(&x));
-				assert_eq!(Balances::free_balance(&x), 0);
-				assert_eq!(Balances::reserved_balance(&x), 100);
+				assert_eq!(Balances::usable_balance(&x), 0);
+				assert_eq!(Balances::free_balance(&x), 100);
 			}
 			// Uninvolved
 			for x in 7..10 {
 				assert!(!Stake::is_delegator(&x));
 			}
 			assert_eq!(Balances::free_balance(&7), 100);
-			assert_eq!(Balances::reserved_balance(&7), 0);
+			assert_eq!(Balances::usable_balance(&7), 100);
 			assert_eq!(Balances::free_balance(&8), 9);
-			assert_eq!(Balances::reserved_balance(&8), 0);
+			assert_eq!(Balances::usable_balance(&8), 9);
 			assert_eq!(Balances::free_balance(&9), 4);
-			assert_eq!(Balances::reserved_balance(&9), 0);
+			assert_eq!(Balances::usable_balance(&9), 4);
 
 			// Safety first checks
 			assert_eq!(Stake::total_selected(), <Test as Config>::MinSelectedCandidates::get());
@@ -158,17 +158,17 @@ fn geneses() {
 			);
 			for x in 1..5 {
 				assert!(Stake::is_candidate(&x));
-				assert_eq!(Balances::free_balance(&x), 80);
-				assert_eq!(Balances::reserved_balance(&x), 20);
+				assert_eq!(Balances::free_balance(&x), 100);
+				assert_eq!(Balances::usable_balance(&x), 80);
 			}
 			assert!(Stake::is_candidate(&5));
-			assert_eq!(Balances::free_balance(&5), 90);
-			assert_eq!(Balances::reserved_balance(&5), 10);
+			assert_eq!(Balances::free_balance(&5), 100);
+			assert_eq!(Balances::usable_balance(&5), 90);
 			// Delegators
 			for x in 6..11 {
 				assert!(Stake::is_delegator(&x));
-				assert_eq!(Balances::free_balance(&x), 90);
-				assert_eq!(Balances::reserved_balance(&x), 10);
+				assert_eq!(Balances::free_balance(&x), 100);
+				assert_eq!(Balances::usable_balance(&x), 90);
 			}
 
 			// Safety first checks
@@ -889,23 +889,33 @@ fn multiple_delegations() {
 			assert_ok!(Stake::join_delegators(Origin::signed(11), 1, 11),);
 
 			// verify that delegations are removed after collator leaves, not before
-			assert_eq!(Stake::delegator_state(7).unwrap().total, 90);
-			assert_eq!(Stake::delegator_state(7).unwrap().delegations.len(), 2usize);
 			assert_eq!(Stake::delegator_state(6).unwrap().total, 40);
 			assert_eq!(Stake::delegator_state(6).unwrap().delegations.len(), 4usize);
-			assert_eq!(Balances::reserved_balance(&6), 40);
-			assert_eq!(Balances::reserved_balance(&7), 90);
-			assert_eq!(Balances::free_balance(&6), 60);
-			assert_eq!(Balances::free_balance(&7), 10);
-			roll_to(40, vec![]);
-			assert_eq!(Stake::delegator_state(7).unwrap().total, 10);
+			assert_eq!(Stake::delegator_state(7).unwrap().total, 90);
+			assert_eq!(Stake::delegator_state(7).unwrap().delegations.len(), 2usize);
+			assert_eq!(Balances::usable_balance(&6), 60);
+			assert_eq!(Balances::usable_balance(&7), 10);
+			assert_eq!(Balances::free_balance(&6), 100);
+			assert_eq!(Balances::free_balance(&7), 100);
+			// TODO: Enable after removing execute_delayed_collator_exits
+			// let mut unbonding_6 = BTreeMap::new();
+			// unbonding_6.insert(31 + <Test as Config>::BondDuration::get(), 10);
+			// assert_eq!(Stake::unbonding(6), unbonding_6);
+			// let mut unbonding_7 = BTreeMap::new();
+			// unbonding_7.insert(31 + <Test as Config>::BondDuration::get(), 80);
+			// assert_eq!(Stake::unbonding(6), unbonding_7);
+			// TODO: Switch back to n == 40 after removing execute_delayed_collator_exits
+			roll_to(50, vec![]);
 			assert_eq!(Stake::delegator_state(6).unwrap().total, 30);
-			assert_eq!(Stake::delegator_state(7).unwrap().delegations.len(), 1usize);
+			assert_eq!(Stake::delegator_state(7).unwrap().total, 10);
 			assert_eq!(Stake::delegator_state(6).unwrap().delegations.len(), 3usize);
-			assert_eq!(Balances::reserved_balance(&6), 30);
-			assert_eq!(Balances::reserved_balance(&7), 10);
-			assert_eq!(Balances::free_balance(&6), 70);
-			assert_eq!(Balances::free_balance(&7), 90);
+			assert_eq!(Stake::delegator_state(7).unwrap().delegations.len(), 1usize);
+			assert_ok!(Stake::withdraw_unbonded(Origin::signed(6), 6));
+			assert_ok!(Stake::withdraw_unbonded(Origin::signed(7), 7));
+			assert_eq!(Balances::usable_balance(&6), 70);
+			assert_eq!(Balances::usable_balance(&7), 90);
+			assert_eq!(Balances::free_balance(&6), 100);
+			assert_eq!(Balances::free_balance(&7), 100);
 		});
 }
 
@@ -1038,11 +1048,11 @@ fn delegators_bond() {
 				BalancesError::<Test>::InsufficientBalance
 			);
 			roll_to(9, vec![]);
-			assert_eq!(Balances::reserved_balance(&6), 20);
+			assert_eq!(Balances::usable_balance(&6), 80);
 			assert_ok!(Stake::leave_candidates(Origin::signed(1)));
 			roll_to(31, vec![]);
 			assert!(!Stake::is_delegator(&6));
-			assert_eq!(Balances::reserved_balance(&6), 0);
+			assert_eq!(Balances::usable_balance(&6), 80);
 			assert_eq!(Balances::free_balance(&6), 100);
 		});
 }
@@ -1714,77 +1724,82 @@ fn coinbase_rewards_few_blocks_detailed_check() {
 			let mut c_reward_locks: BTreeMap<BlockNumber, BalanceOf<Test>> = BTreeMap::new();
 			let mut d_reward_locks: BTreeMap<BlockNumber, BalanceOf<Test>> = BTreeMap::new();
 			let block_rewards_for_3: Balance = 2469135802453333;
+			assert_eq!(Balances::usable_balance(&1), 32_000_000 * DECIMALS);
+			assert_eq!(Balances::usable_balance(&2), 32_000_000 * DECIMALS);
+			assert_eq!(Balances::usable_balance(&3), 8_000_000 * DECIMALS);
+			assert_eq!(Balances::usable_balance(&4), 4_000_000 * DECIMALS);
+			assert_eq!(Balances::usable_balance(&5), 4_000_000 * DECIMALS);
 
 			// 1 is block author for 1st block
 			roll_to(2, authors.clone());
 			c_reward_locks.insert(3, c_rewards);
 			d_reward_locks.insert(3, block_rewards_for_3);
-			assert_eq!(Stake::reward_locks(1), c_reward_locks);
-			assert!(Stake::reward_locks(2).is_empty());
-			assert_eq!(Stake::reward_locks(3), d_reward_locks);
-			assert!(Stake::reward_locks(5).is_empty());
+			assert_eq!(Stake::rewards(1), c_reward_locks);
+			assert!(Stake::rewards(2).is_empty());
+			assert_eq!(Stake::rewards(3), d_reward_locks);
+			assert!(Stake::rewards(5).is_empty());
 			assert_eq!(
 				<Locks<Test>>::get(1),
 				vec![BalanceLock::<Balance> {
-					id: REWARDS_ID,
-					amount: c_rewards,
-					reasons: Reasons::Misc,
-				}]
+					id: STAKING_ID,
+					amount: 8_000_000 * DECIMALS + c_rewards,
+					reasons: Reasons::All,
+				},]
 			);
-			assert!(<Locks<Test>>::get(2).is_empty());
+			assert_eq!(<Locks<Test>>::get(2).len(), 1);
 			assert_eq!(
 				<Locks<Test>>::get(3),
 				vec![BalanceLock::<Balance> {
-					id: REWARDS_ID,
-					amount: block_rewards_for_3,
-					reasons: Reasons::Misc,
-				}]
+					id: STAKING_ID,
+					amount: 32_000_000 * DECIMALS + block_rewards_for_3,
+					reasons: Reasons::All,
+				},]
 			);
 			assert_eq!(
 				<Locks<Test>>::get(4),
 				vec![BalanceLock::<Balance> {
-					id: REWARDS_ID,
-					amount: block_rewards_for_3 / 2 + 1,
-					reasons: Reasons::Misc,
-				}]
+					id: STAKING_ID,
+					amount: 16_000_000 * DECIMALS + block_rewards_for_3 / 2 + 1,
+					reasons: Reasons::All,
+				},]
 			);
-			assert!(<Locks<Test>>::get(5).is_empty());
+			assert_eq!(<Locks<Test>>::get(5).len(), 1);
 
 			// 1 is block author for 2nd block
 			roll_to(3, authors.clone());
 			c_reward_locks.insert(4, c_rewards);
 			d_reward_locks.insert(4, block_rewards_for_3);
-			assert_eq!(Stake::reward_locks(1), c_reward_locks);
-			assert!(Stake::reward_locks(2).is_empty());
-			assert_eq!(Stake::reward_locks(3), d_reward_locks);
-			assert!(!Stake::reward_locks(4).is_empty());
-			assert!(Stake::reward_locks(5).is_empty());
+			assert_eq!(Stake::rewards(1), c_reward_locks);
+			assert!(Stake::rewards(2).is_empty());
+			assert_eq!(Stake::rewards(3), d_reward_locks);
+			assert!(!Stake::rewards(4).is_empty());
+			assert!(Stake::rewards(5).is_empty());
 			assert_eq!(
 				<Locks<Test>>::get(1),
 				vec![BalanceLock::<Balance> {
-					id: REWARDS_ID,
-					amount: 2 * c_rewards,
-					reasons: Reasons::Misc,
-				}]
+					id: STAKING_ID,
+					amount: 8_000_000 * DECIMALS + 2 * c_rewards,
+					reasons: Reasons::All,
+				},]
 			);
-			assert!(<Locks<Test>>::get(2).is_empty());
+			assert_eq!(<Locks<Test>>::get(2).len(), 1);
 			assert_eq!(
 				<Locks<Test>>::get(3),
 				vec![BalanceLock::<Balance> {
-					id: REWARDS_ID,
-					amount: 2 * block_rewards_for_3,
-					reasons: Reasons::Misc,
-				}]
+					id: STAKING_ID,
+					amount: 32_000_000 * DECIMALS + 2 * block_rewards_for_3,
+					reasons: Reasons::All,
+				},]
 			);
 			assert_eq!(
 				<Locks<Test>>::get(4),
 				vec![BalanceLock::<Balance> {
-					id: REWARDS_ID,
-					amount: block_rewards_for_3 + 1,
-					reasons: Reasons::Misc,
-				}]
+					id: STAKING_ID,
+					amount: 16_000_000 * DECIMALS + block_rewards_for_3 + 1,
+					reasons: Reasons::All,
+				},]
 			);
-			assert!(<Locks<Test>>::get(5).is_empty());
+			assert_eq!(<Locks<Test>>::get(5).len(), 1);
 
 			// 1 is block author for 3rd block
 			roll_to(4, authors.clone());
@@ -1792,99 +1807,99 @@ fn coinbase_rewards_few_blocks_detailed_check() {
 			d_reward_locks.remove(&3);
 			c_reward_locks.insert(5, c_rewards);
 			d_reward_locks.insert(5, block_rewards_for_3);
-			assert_eq!(Stake::reward_locks(1), c_reward_locks);
-			assert!(Stake::reward_locks(2).is_empty());
-			assert_eq!(Stake::reward_locks(3), d_reward_locks);
-			assert!(!Stake::reward_locks(4).is_empty());
-			assert!(Stake::reward_locks(5).is_empty());
+			assert_eq!(Stake::rewards(1), c_reward_locks);
+			assert!(Stake::rewards(2).is_empty());
+			assert_eq!(Stake::rewards(3), d_reward_locks);
+			assert!(!Stake::rewards(4).is_empty());
+			assert!(Stake::rewards(5).is_empty());
 
-			assert_eq!(Balances::free_balance(&1), 32_000_000 * DECIMALS + 3 * c_rewards);
+			assert_eq!(Balances::free_balance(&1), 40_000_000 * DECIMALS + 3 * c_rewards);
 			assert_eq!(Balances::usable_balance(&1), 32_000_000 * DECIMALS + c_rewards);
 			assert_eq!(
 				Balances::free_balance(&3),
-				8_000_000 * DECIMALS + 3 * block_rewards_for_3
+				40_000_000 * DECIMALS + 3 * block_rewards_for_3
 			);
 			assert_eq!(Balances::usable_balance(&3), 8_000_000 * DECIMALS + block_rewards_for_3);
 			assert_eq!(
 				<Locks<Test>>::get(1),
 				vec![BalanceLock::<Balance> {
-					id: REWARDS_ID,
-					amount: 2 * c_rewards,
-					reasons: Reasons::Misc,
-				}]
+					id: STAKING_ID,
+					amount: 8_000_000 * DECIMALS + 2 * c_rewards,
+					reasons: Reasons::All,
+				},]
 			);
-			assert!(<Locks<Test>>::get(2).is_empty());
+			assert_eq!(<Locks<Test>>::get(2).len(), 1);
 			assert_eq!(
 				<Locks<Test>>::get(3),
 				vec![BalanceLock::<Balance> {
-					id: REWARDS_ID,
-					amount: 2 * block_rewards_for_3,
-					reasons: Reasons::Misc,
-				}]
+					id: STAKING_ID,
+					amount: 32_000_000 * DECIMALS + 2 * block_rewards_for_3,
+					reasons: Reasons::All,
+				},]
 			);
 			assert_eq!(
 				<Locks<Test>>::get(4),
 				vec![BalanceLock::<Balance> {
-					id: REWARDS_ID,
-					amount: block_rewards_for_3 + 1,
-					reasons: Reasons::Misc,
-				}]
+					id: STAKING_ID,
+					amount: 16_000_000 * DECIMALS + block_rewards_for_3 + 1,
+					reasons: Reasons::All,
+				},]
 			);
-			assert!(<Locks<Test>>::get(5).is_empty());
+			assert_eq!(<Locks<Test>>::get(5).len(), 1);
 
 			// 2 is block author for 4th block
 			roll_to(5, authors.clone());
 			// 1 hasn't authored blocks this round --> rewards of 1, 3, 4 not unlocked
 			// automatically
-			assert_eq!(Stake::reward_locks(1), c_reward_locks);
+			assert_eq!(Stake::rewards(1), c_reward_locks);
 			assert_ok!(Stake::unlock_rewards(Origin::signed(1), 1));
-			assert!(Stake::reward_locks(1).is_empty());
+			assert!(Stake::rewards(1).is_empty());
 			assert_eq!(Balances::usable_balance(&1), 32_000_000 * DECIMALS + 3 * c_rewards);
-			assert!(!Stake::reward_locks(2).is_empty());
+			assert!(!Stake::rewards(2).is_empty());
 			// 1 hasn't authored blocks this round --> rewards of 3 not unlocked
 			// automatically
-			assert_eq!(Stake::reward_locks(3), d_reward_locks);
+			assert_eq!(Stake::rewards(3), d_reward_locks);
 			assert_ok!(Stake::unlock_rewards(Origin::signed(3), 3));
-			assert!(Stake::reward_locks(3).is_empty());
+			assert!(Stake::rewards(3).is_empty());
 			assert_eq!(
 				Balances::usable_balance(&3),
 				8_000_000 * DECIMALS + 3 * block_rewards_for_3
 			);
-			assert!(!Stake::reward_locks(4).is_empty());
+			assert!(!Stake::rewards(4).is_empty());
 			assert_ok!(Stake::unlock_rewards(Origin::signed(4), 4));
-			assert!(Stake::reward_locks(4).is_empty());
-			assert!(!Stake::reward_locks(5).is_empty());
-			assert!(<Locks<Test>>::get(1).is_empty());
+			assert!(Stake::rewards(4).is_empty());
+			assert!(!Stake::rewards(5).is_empty());
+			assert_eq!(<Locks<Test>>::get(1).len(), 1);
 			assert_eq!(
 				<Locks<Test>>::get(2),
 				vec![BalanceLock::<Balance> {
-					id: REWARDS_ID,
-					amount: c_rewards,
-					reasons: Reasons::Misc,
-				}]
+					id: STAKING_ID,
+					amount: 8_000_000 * DECIMALS + c_rewards,
+					reasons: Reasons::All,
+				},]
 			);
-			assert!(<Locks<Test>>::get(3).is_empty());
-			assert!(<Locks<Test>>::get(4).is_empty());
-			assert!(!<Locks<Test>>::get(5).is_empty(),);
+			assert_eq!(<Locks<Test>>::get(3).len(), 1);
+			assert_eq!(<Locks<Test>>::get(4).len(), 1);
+			assert_eq!(<Locks<Test>>::get(5).len(), 1);
 
 			// 2 is block author for 5th block
 			roll_to(6, authors);
-			assert!(Stake::reward_locks(1).is_empty());
-			assert!(Stake::reward_locks(3).is_empty());
-			assert!(Stake::reward_locks(4).is_empty());
-			assert!(!Stake::reward_locks(2).is_empty());
-			assert!(!Stake::reward_locks(5).is_empty());
+			assert!(Stake::rewards(1).is_empty());
+			assert!(Stake::rewards(3).is_empty());
+			assert!(Stake::rewards(4).is_empty());
+			assert!(!Stake::rewards(2).is_empty());
+			assert!(!Stake::rewards(5).is_empty());
 			assert_eq!(
 				<Locks<Test>>::get(2),
 				vec![BalanceLock::<Balance> {
-					id: REWARDS_ID,
-					amount: 2 * c_rewards,
-					reasons: Reasons::Misc,
-				}]
+					id: STAKING_ID,
+					amount: 8_000_000 * DECIMALS + 2 * c_rewards,
+					reasons: Reasons::All,
+				},]
 			);
-			assert!(<Locks<Test>>::get(3).is_empty());
-			assert!(<Locks<Test>>::get(4).is_empty());
-			assert!(!<Locks<Test>>::get(5).is_empty());
+			assert_eq!(<Locks<Test>>::get(3).len(), 1);
+			assert_eq!(<Locks<Test>>::get(4).len(), 1);
+			assert_eq!(<Locks<Test>>::get(5).len(), 1);
 		});
 }
 
@@ -1917,11 +1932,11 @@ fn coinbase_rewards_many_blocks_simple_check() {
 			let authors: Vec<Option<AccountId>> = (0u64..=end_block).map(|i| Some(i % 2 + 1)).collect();
 			roll_to(end_block, authors);
 
-			let rewards_1 = Balances::free_balance(&1).saturating_sub(32_000_000 * DECIMALS);
-			let rewards_2 = Balances::free_balance(&2).saturating_sub(32_000_000 * DECIMALS);
-			let rewards_3 = Balances::free_balance(&3).saturating_sub(8_000_000 * DECIMALS);
-			let rewards_4 = Balances::free_balance(&4).saturating_sub(4_000_000 * DECIMALS);
-			let rewards_5 = Balances::free_balance(&5).saturating_sub(4_000_000 * DECIMALS);
+			let rewards_1 = Balances::free_balance(&1).saturating_sub(40_000_000 * DECIMALS);
+			let rewards_2 = Balances::free_balance(&2).saturating_sub(40_000_000 * DECIMALS);
+			let rewards_3 = Balances::free_balance(&3).saturating_sub(40_000_000 * DECIMALS);
+			let rewards_4 = Balances::free_balance(&4).saturating_sub(20_000_000 * DECIMALS);
+			let rewards_5 = Balances::free_balance(&5).saturating_sub(20_000_000 * DECIMALS);
 			let expected_collator_rewards =
 				num_of_years * inflation.collator.reward_rate.annual * 16_000_000 * DECIMALS;
 			let expected_delegator_rewards =
@@ -1930,26 +1945,42 @@ fn coinbase_rewards_many_blocks_simple_check() {
 			// collator rewards should be about the same
 			assert!(almost_equal(rewards_1, rewards_2, Perbill::from_perthousand(1)));
 			// delegator rewards should be about the same
-			assert!(almost_equal(
+			assert!(
+				almost_equal(rewards_3 + rewards_4, rewards_5, Perbill::from_perthousand(1)),
+				"left {:?}, right {:?}",
 				rewards_3 + rewards_4,
-				rewards_5,
-				Perbill::from_perthousand(1)
-			));
-			assert!(almost_equal(
+				rewards_5
+			);
+			assert!(
+				almost_equal(
+					rewards_1 + rewards_2,
+					expected_collator_rewards,
+					Perbill::from_perthousand(1),
+				),
+				"left {:?}, right {:?}",
 				rewards_1 + rewards_2,
 				expected_collator_rewards,
-				Perbill::from_perthousand(1),
-			));
-			assert!(almost_equal(
+			);
+			assert!(
+				almost_equal(
+					rewards_3 + rewards_4 + rewards_5,
+					expected_delegator_rewards,
+					Perbill::from_perthousand(1),
+				),
+				"left {:?}, right {:?}",
 				rewards_3 + rewards_4 + rewards_5,
 				expected_delegator_rewards,
-				Perbill::from_perthousand(1),
-			));
-			assert!(almost_equal(
+			);
+			assert!(
+				almost_equal(
+					total_issuance + expected_collator_rewards + expected_delegator_rewards,
+					<Test as Config>::Currency::total_issuance(),
+					Perbill::from_perthousand(1),
+				),
+				"left {:?}, right {:?}",
 				total_issuance + expected_collator_rewards + expected_delegator_rewards,
 				<Test as Config>::Currency::total_issuance(),
-				Perbill::from_perthousand(1),
-			));
+			);
 		});
 }
 
@@ -1980,17 +2011,17 @@ fn should_not_reward_delegators_below_min_stake() {
 			<crate::CollatorState<Test>>::insert(&1u64, state);
 
 			let authors: Vec<Option<AccountId>> = vec![Some(1u64), Some(1u64), Some(1u64), Some(1u64)];
-			assert_eq!(Balances::free_balance(&1), Balance::zero());
-			assert_eq!(Balances::free_balance(&2), Balance::zero());
-			assert_eq!(Balances::free_balance(&3), Balance::zero());
-			assert_eq!(Balances::free_balance(&4), 5);
+			assert_eq!(Balances::usable_balance(&1), Balance::zero());
+			assert_eq!(Balances::usable_balance(&2), Balance::zero());
+			assert_eq!(Balances::usable_balance(&3), Balance::zero());
+			assert_eq!(Balances::usable_balance(&4), 5);
 
 			// should only reward 1
 			roll_to(4, authors);
-			assert!(Balances::free_balance(&1) > Balance::zero());
-			assert_eq!(Balances::free_balance(&4), 5);
-			assert_eq!(Balances::free_balance(&2), Balance::zero());
-			assert_eq!(Balances::free_balance(&3), Balance::zero());
+			assert!(Balances::usable_balance(&1) > Balance::zero());
+			assert_eq!(Balances::usable_balance(&4), 5);
+			assert_eq!(Balances::usable_balance(&2), Balance::zero());
+			assert_eq!(Balances::usable_balance(&3), Balance::zero());
 		});
 }
 

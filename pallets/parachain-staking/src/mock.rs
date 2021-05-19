@@ -131,6 +131,7 @@ parameter_types! {
 	pub const MaxCollatorCandidates: u32 = 10;
 	pub const MinDelegatorStk: u128 = 5;
 	pub const MinDelegation: u128 = 3;
+	pub const MaxUnbondRequests: usize = 5;
 }
 
 impl Config for Test {
@@ -149,6 +150,7 @@ impl Config for Test {
 	type MaxCollatorCandidates = MaxCollatorCandidates;
 	type MinDelegatorStk = MinDelegatorStk;
 	type MinDelegation = MinDelegation;
+	type MaxUnbondRequests = MaxUnbondRequests;
 }
 
 pub(crate) struct ExtBuilder {
