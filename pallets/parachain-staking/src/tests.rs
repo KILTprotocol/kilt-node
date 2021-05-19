@@ -23,7 +23,7 @@ use crate::{
 		Event as MetaEvent, ExtBuilder, Origin, Stake, System, Test, BLOCKS_PER_ROUND, DECIMALS,
 	},
 	types::{BalanceOf, Bond, CollatorSnapshot, CollatorStatus, RoundInfo, TotalStake},
-	Config, Error, Event, InflationInfo,
+	Config, Error, Event, InflationInfo, Pallet,
 };
 use frame_support::{assert_noop, assert_ok, traits::EstimateNextSessionRotation};
 use kilt_primitives::constants::YEARS;
@@ -65,13 +65,13 @@ fn should_select_collators_genesis_session() {
 				Stake::new_session(0)
 					.expect("first session must return new collators")
 					.len(),
-				<Test as Config>::MaxCollatorCandidates::get() as usize
+				Pallet::<Test>::total_selected() as usize
 			);
 			assert_eq!(
 				Stake::new_session(1)
 					.expect("second session must return new collators")
 					.len(),
-				<Test as Config>::MaxCollatorCandidates::get() as usize
+				Pallet::<Test>::total_selected() as usize
 			);
 		});
 }
