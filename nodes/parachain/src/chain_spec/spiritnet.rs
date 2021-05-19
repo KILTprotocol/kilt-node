@@ -20,16 +20,13 @@
 
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
-use kilt_primitives::{
-	constants::{DOLLARS, MONTHS},
-	AccountId, AuthorityId, Balance, BlockNumber,
-};
+use kilt_primitives::{constants::MONTHS, AccountId, AuthorityId, Balance, BlockNumber};
 use sc_service::ChainType;
 use sp_core::sr25519;
 use sp_runtime::Perquintill;
 use spiritnet_runtime::{
-	BalancesConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, ParachainInfoConfig, ParachainStakingConfig,
-	SessionConfig, SudoConfig, SystemConfig, VestingConfig, WASM_BINARY,
+	BalancesConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStk, ParachainInfoConfig,
+	ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig, WASM_BINARY,
 };
 
 use crate::chain_spec::{get_account_id_from_seed, get_from_seed};
@@ -50,12 +47,20 @@ pub fn get_chain_spec(id: ParaId) -> Result<ChainSpec, String> {
 		move || {
 			testnet_genesis(
 				wasm,
-				vec![(
-					// TODO: Change before launch
-					get_account_id_from_seed::<sr25519::Public>("Alice"),
-					None,
-					1_000 * DOLLARS,
-				)],
+				vec![
+					(
+						// TODO: Change before launch
+						get_account_id_from_seed::<sr25519::Public>("Alice"),
+						None,
+						2 * MinCollatorStk::get(),
+					),
+					(
+						// TODO: Change before launch
+						get_account_id_from_seed::<sr25519::Public>("Bob"),
+						None,
+						2 * MinCollatorStk::get(),
+					),
+				],
 				kilt_inflation_config(),
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
 				vec![

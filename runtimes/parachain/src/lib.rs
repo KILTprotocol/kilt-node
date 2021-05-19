@@ -705,7 +705,9 @@ construct_runtime! {
 		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 10,
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 11,
 		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 12,
-
+		
+		// Staking pallet MUST HAVE a lower index than the session pallet
+		ParachainStaking: parachain_staking::{Pallet, Call, Storage, Event<T>, Config<T>} = 14,
 		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>} = 15,
 		Authorship: pallet_authorship::{Pallet, Call, Storage} = 16,
 
@@ -729,7 +731,6 @@ construct_runtime! {
 		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 32,
 
 		// TODO: Add meaningful index
-		ParachainStaking: parachain_staking::{Pallet, Call, Storage, Event<T>, Config<T>} = 99,
 
 		// Vesting. Usable initially, but removed once all vesting is finished.
 		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 33,

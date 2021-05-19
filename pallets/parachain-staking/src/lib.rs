@@ -75,6 +75,7 @@ pub mod pallet {
 	pub use crate::inflation::{InflationInfo, RewardRate, StakingInfo};
 
 	use frame_support::{
+		assert_ok,
 		pallet_prelude::*,
 		traits::{
 			Currency, EstimateNextSessionRotation, Get, Imbalance, LockIdentifier, LockableCurrency,
@@ -272,8 +273,8 @@ pub mod pallet {
 				// execute all delayed collator exits
 				Self::execute_delayed_collator_exits(round.current);
 				// select top collator candidates for next round
-				let (collator_count, collator_staked, delegator_staked) = Self::select_top_candidates(round.current);
-				// start next round
+				let (collator_count, collator_staked, delegator_staked) =
+		Self::select_top_candidates(round.current); 		// start next round
 				<Round<T>>::put(round);
 
 				Self::deposit_event(Event::NewRound(
@@ -380,6 +381,11 @@ pub mod pallet {
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
 			assert!(self.inflation_config.is_valid(), "Invalid inflation configuration");
+			assert!(
+				self.stakers.iter().find(|s| s.1.is_none()).is_some(),
+				"at least one collator in genesis config"
+			);
+
 			<InflationConfig<T>>::put(self.inflation_config.clone());
 
 			for &(ref actor, ref opt_val, balance) in &self.stakers {
@@ -387,20 +393,26 @@ pub mod pallet {
 					T::Currency::free_balance(&actor) >= balance,
 					"Account does not have enough balance to bond."
 				);
-				let _ = if let Some(delegated_val) = opt_val {
-					<Pallet<T>>::join_delegators(
+				if let Some(delegated_val) = opt_val {
+					assert_ok!(<Pallet<T>>::join_delegators(
 						T::Origin::from(Some(actor.clone()).into()),
 						delegated_val.clone(),
 						balance,
-					)
+					));
 				} else {
-					<Pallet<T>>::join_candidates(T::Origin::from(Some(actor.clone()).into()), balance)
-				};
+					assert_ok!(<Pallet<T>>::join_candidates(
+						T::Origin::from(Some(actor.clone()).into()),
+						balance
+					));
+				}
 			}
 			// Set total selected candidates to minimum config
 			<TotalSelected<T>>::put(T::MinSelectedCandidates::get());
 			// Choose top TotalSelected collator candidates
 			let (v_count, collator_staked, delegator_staked) = <Pallet<T>>::select_top_candidates(0u32);
+			assert!(!v_count.is_zero());
+			assert!(!<SelectedCandidates<T>>::get().is_empty());
+
 			// Start Round 0 at Block 0
 			let round: RoundInfo<T::BlockNumber> = RoundInfo::new(0u32, 0u32.into(), T::DefaultBlocksPerRound::get());
 			<Round<T>>::put(round);
@@ -988,11 +1000,14 @@ pub mod pallet {
 		fn select_top_candidates(next: RoundIndex) -> (u32, BalanceOf<T>, BalanceOf<T>) {
 			let (mut all_collators, mut total_collators, mut total_delegators) =
 				(0u32, BalanceOf::<T>::zero(), BalanceOf::<T>::zero());
-			let mut candidates: Vec<Bond<_, _>> = <CandidatePool<T>>::get().into();
+			log::trace!("Select collators for round {}", next);
+			let mut candidates = <CandidatePool<T>>::get().to_vec();
+			let top_n = <TotalSelected<T>>::get() as usize;
+
+			log::trace!("{} Candidates for {} Collator seats", candidates.len(), top_n);
 
 			// Order candidates by their total stake
 			candidates.sort_unstable_by(|a, b| a.amount.cmp(&b.amount));
-			let top_n = <TotalSelected<T>>::get() as usize;
 
 			// Choose the top TotalSelected qualified candidates, ordered by stake (least to
 			// greatest, thus requires `rev()`)
@@ -1023,6 +1038,7 @@ pub mod pallet {
 			}
 			collators.sort();
 
+			log::trace!("Selected {} collators", collators.len());
 			// store canonical collator set
 			<SelectedCandidates<T>>::put(collators);
 			(all_collators, total_collators, total_delegators)

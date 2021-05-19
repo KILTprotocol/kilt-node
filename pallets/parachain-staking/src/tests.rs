@@ -50,14 +50,6 @@ fn should_select_collators_genesis_session() {
 		.with_collators(vec![
 			(1, 20),
 			(2, 20),
-			(3, 20),
-			(4, 20),
-			(5, 20),
-			(6, 20),
-			(7, 20),
-			(8, 20),
-			(9, 20),
-			(10, 20),
 		])
 		.build()
 		.execute_with(|| {
@@ -65,13 +57,13 @@ fn should_select_collators_genesis_session() {
 				Stake::new_session(0)
 					.expect("first session must return new collators")
 					.len(),
-				Pallet::<Test>::total_selected() as usize
+				2
 			);
 			assert_eq!(
 				Stake::new_session(1)
 					.expect("second session must return new collators")
 					.len(),
-				Pallet::<Test>::total_selected() as usize
+				2
 			);
 		});
 }
