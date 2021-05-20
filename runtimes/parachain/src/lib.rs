@@ -644,21 +644,25 @@ impl did::Config for Runtime {
 #[cfg(feature = "fast-gov")]
 pub const MIN_BLOCKS_PER_ROUND: BlockNumber = 10;
 #[cfg(not(feature = "fast-gov"))]
-pub const MIN_BLOCKS_PER_ROUND: BlockNumber = 600;
+pub const MIN_BLOCKS_PER_ROUND: BlockNumber = HOURS;
 
-/// Default BlocksPerRound is every 12 hours (7200 * 6 second block times)
 #[cfg(feature = "fast-gov")]
 pub const DEFAULT_BLOCKS_PER_ROUND: BlockNumber = 20;
 #[cfg(not(feature = "fast-gov"))]
-pub const DEFAULT_BLOCKS_PER_ROUND: BlockNumber = 7200;
+pub const DEFAULT_BLOCKS_PER_ROUND: BlockNumber = 6 * HOURS;
+
+#[cfg(feature = "fast-gov")]
+pub const STAKE_DURATION: BlockNumber = 30;
+#[cfg(not(feature = "fast-gov"))]
+pub const STAKE_DURATION: BlockNumber = 7 * DAYS;
 
 parameter_types! {
 	/// Minimum round length is 1 hour
-	pub const MinBlocksPerRound: BlockNumber = HOURS;
+	pub const MinBlocksPerRound: BlockNumber = MIN_BLOCKS_PER_ROUND;
 	/// Default BlocksPerRound is every 6 hours
-	pub const DefaultBlocksPerRound: BlockNumber = 6 * HOURS;
+	pub const DefaultBlocksPerRound: BlockNumber = DEFAULT_BLOCKS_PER_ROUND;
 	/// Unstaked balance can be unlocked after 7 days
-	pub const StakeDuration: BlockNumber = 7 * DAYS;
+	pub const StakeDuration: BlockNumber = STAKE_DURATION;
 	/// Collator exit requests are delayed by 2 rounds
 	pub const ExitQueueDelay: u32 = 2;
 	/// Minimum 16 collators selected per round, default at genesis and minimum forever after

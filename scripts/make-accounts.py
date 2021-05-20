@@ -32,5 +32,5 @@ if __name__ == "__main__":
             ]
         ])
 
-    with open("./nodes/parachain/res/genesis-testing/mash-genesis-accounts.json", "w") as f:
+    with open("./nodes/parachain/res/genesis-testing/genesis-accounts.json", "w") as f:
         json.dump(x, f)
