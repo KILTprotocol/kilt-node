@@ -10,11 +10,11 @@
           [
             "5EKxJLF55ArWS38yJp2Rsyz9CEBJxsoRe9UQ4bQyX1imwZxk",
             null,
-            10000000000000000000
+            100000000000000000000
           ],[
             "5DJH8AgnXEjG8jzT1B8UzV9MW9Mfsmw3vajoEFJQHqpTXeoj",
             null,
-            10000000000000000000
+            100000000000000000000
           ]
         ]
     | .genesis.runtime.palletSession.keys = [
@@ -40,7 +40,7 @@
             }
           ]
         ]
-    | .genesis.runtime.palletBalances.balances |= [
+    | .genesis.runtime.palletBalances.balances += [
             [
                 "5EKxJLF55ArWS38yJp2Rsyz9CEBJxsoRe9UQ4bQyX1imwZxk",
                 10000000000000000000000000000
@@ -48,5 +48,9 @@
             [
                 "5DJH8AgnXEjG8jzT1B8UzV9MW9Mfsmw3vajoEFJQHqpTXeoj",
                 10000000000000000000000000000
+            ],
+            [
+              "5GRJdyoQtAKFSX4wSDjzYMtm6zs7fqti2bLcyRQwKF7UnGYv",
+              10000000000000000000000000000
             ]
         ]

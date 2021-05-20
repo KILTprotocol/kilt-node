@@ -116,9 +116,14 @@ pub fn make_staging_spec(id: ParaId) -> Result<ChainSpec, String> {
 				wasm,
 				vec![(
 					// TODO: Change before launch
-					get_account_id_from_seed::<sr25519::Public>("Alice"),
+					hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].into(),
 					None,
-					1_000 * DOLLARS,
+					10_000 * DOLLARS,
+				),(
+					// TODO: Change before launch
+					hex!["b67fe6413ffe5cf91ae38a6475c37deea70a25c6c86b3dd17bb82d09efd9b350"].into(),
+					None,
+					10_000 * DOLLARS,
 				)],
 				kilt_inflation_config(),
 				hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].into(),

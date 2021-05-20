@@ -36,7 +36,7 @@ PEREGRINE_JQ=$TMP_DIR"peregrine-kilt.json"
 PEREGRINE_OUTPUT=dev-specs/kilt-parachain/peregrine-kilt.json
 
 docker run parity/rococo:rococo-v1-0.8.30-943038a8-f14fa75f build-spec --chain rococo-local --disable-default-bootnode > $RELAY_PEREGRINE_PLAIN
-$TMP_DIR/kilt-parachain-fast-gov build-spec --runtime mashnet --chain mashnet-dev --disable-default-bootnode > $PEREGRINE_PLAIN
+$TMP_DIR/kilt-parachain-fast-gov build-spec --runtime mashnet --chain dev --disable-default-bootnode > $PEREGRINE_PLAIN
 
 jq -f scripts/peregrine-relay.jq $RELAY_PEREGRINE_PLAIN > $RELAY_PEREGRINE
 jq -f scripts/peregrine-kilt.jq $PEREGRINE_PLAIN > $PEREGRINE_JQ
