@@ -25,10 +25,7 @@ use kilt_parachain_runtime::{
 	ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig,
 	WASM_BINARY,
 };
-use kilt_primitives::{
-	constants::{DOLLARS, MONTHS},
-	AccountId, AuthorityId, Balance, BlockNumber,
-};
+use kilt_primitives::{AccountId, AuthorityId, Balance, BlockNumber, constants::{DOLLARS, MINUTES, MONTHS}};
 use sc_service::ChainType;
 use sp_core::{crypto::UncheckedInto, sr25519};
 use sp_runtime::Perquintill;
@@ -246,12 +243,12 @@ fn testnet_genesis(
 			balance_locks: airdrop_accounts
 				.iter()
 				.cloned()
-				.map(|(who, amount, _, locking_length)| (who, locking_length * MONTHS, amount))
+				.map(|(who, amount, _, locking_length)| (who, locking_length * MINUTES, amount))
 				.collect(),
 			vesting: airdrop_accounts
 				.iter()
 				.cloned()
-				.map(|(who, amount, vesting_length, _)| (who, vesting_length * MONTHS, amount))
+				.map(|(who, amount, vesting_length, _)| (who, vesting_length * MINUTES, amount))
 				.collect(),
 			// TODO: Set this to another address (PRE-LAUNCH)
 			transfer_account: hex!["6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c"].into(),
