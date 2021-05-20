@@ -97,7 +97,7 @@ pub mod pallet {
 
 	use crate::{
 		set::OrderedSet,
-		types::{BalanceOf, Stake, Collator, CollatorSnapshot, Delegator, RoundIndex, RoundInfo, TotalStake},
+		types::{BalanceOf, Collator, CollatorSnapshot, Delegator, RoundIndex, RoundInfo, Stake, TotalStake},
 	};
 
 	/// Kilt-specific lock for staking rewards.
@@ -139,12 +139,15 @@ pub mod pallet {
 
 		/// Minimum number of blocks validation rounds can last.
 		type MinBlocksPerRound: Get<Self::BlockNumber>;
-		/// Default number of blocks validation rounds last, as set in the genesis configuration.
+		/// Default number of blocks validation rounds last, as set in the
+		/// genesis configuration.
 		type DefaultBlocksPerRound: Get<Self::BlockNumber>;
-		/// Number of rounds a collator's funds remain staked after the collator submits a request to leave the set of collator candidates.
+		/// Number of rounds a collator's funds remain staked after the collator
+		/// submits a request to leave the set of collator candidates.
 		// TODO: Split into `StakeDuration` and `ExitQueueDelay`
 		type StakeDuration: Get<RoundIndex>;
-		/// Minimum number of collators selected from the set of candidates at every validation round.
+		/// Minimum number of collators selected from the set of candidates at
+		/// every validation round.
 		type MinSelectedCandidates: Get<u32>;
 		/// Maximum number of delegators a single collator can have.
 		type MaxDelegatorsPerCollator: Get<u32>;
@@ -152,11 +155,14 @@ pub mod pallet {
 		type MaxCollatorsPerDelegator: Get<u32>;
 		/// Maximum size of the collator candidates set.
 		type MaxCollatorCandidates: Get<u32>;
-		/// Minimum stake required for any account to be elected as validator for a round.
+		/// Minimum stake required for any account to be elected as validator
+		/// for a round.
 		type MinCollatorStk: Get<BalanceOf<Self>>;
-		/// Minimum stake required for any account to be added to the set of candidates.
+		/// Minimum stake required for any account to be added to the set of
+		/// candidates.
 		type MinCollatorCandidateStk: Get<BalanceOf<Self>>;
-		/// Maximum stake required for any account to be added to the set of candidates.
+		/// Maximum stake required for any account to be added to the set of
+		/// candidates.
 		type MaxCollatorCandidateStk: Get<BalanceOf<Self>>;
 		/// Minimum stake required for any account to be able to delegate.
 		type MinDelegation: Get<BalanceOf<Self>>;
@@ -178,42 +184,57 @@ pub mod pallet {
 		DelegatorExists,
 		/// The account is already part of the collator candidates set.
 		CandidateExists,
-		/// The account has not staked enough funds to be added to the collator candidates set.
+		/// The account has not staked enough funds to be added to the collator
+		/// candidates set.
 		ValStakeBelowMin,
 		/// The account has already staked the maximum amount of funds possible.
 		ValStakeAboveMax,
 		/// The account has not staked enough funds to become a delegator.
 		NomStakeBelowMin,
-		/// The account has not staked enough funds to delegate a collator candidate.
+		/// The account has not staked enough funds to delegate a collator
+		/// candidate.
 		DelegationBelowMin,
-		/// The collator candidate has already left the set of active collator candidates.
+		/// The collator candidate has already left the set of active collator
+		/// candidates.
 		AlreadyOffline,
-		/// The collator candidate is already actively actively participating in the set of collator candidates.
+		/// The collator candidate is already actively actively participating in
+		/// the set of collator candidates.
 		AlreadyActive,
-		/// The collator candidate has already trigger the process to leave the set of collator candidates.
+		/// The collator candidate has already trigger the process to leave the
+		/// set of collator candidates.
 		AlreadyLeaving,
 		/// The account is already delegating the collator candidate.
 		AlreadyDelegating,
-		/// The account has not delegated any collator candidate yet, hence it is not in the set of delegators.
+		/// The account has not delegated any collator candidate yet, hence it
+		/// is not in the set of delegators.
 		NotYetDelegating,
-		/// The collator candidate has already reached the maximum number of delegators.
+		/// The collator candidate has already reached the maximum number of
+		/// delegators.
 		///
-		/// This error is generated in cases a new delegation request does not stake enough funds to replace some other existing delegation.
+		/// This error is generated in cases a new delegation request does not
+		/// stake enough funds to replace some other existing delegation.
 		TooManyDelegators,
-		/// The set of collator candidates has already reached the maximum size allowed.
-		// TODO: Update this comment when the new logic to include new collator candidates is added (by using `check_collator_candidate_inclusion`).
+		/// The set of collator candidates has already reached the maximum size
+		/// allowed.
+		// TODO: Update this comment when the new logic to include new collator candidates is added (by using
+		// `check_collator_candidate_inclusion`).
 		TooManyCollatorCandidates,
-		/// The collator candidate is in the process of leaving the set of candidates and cannot perform any other actions in the meantime.
+		/// The collator candidate is in the process of leaving the set of
+		/// candidates and cannot perform any other actions in the meantime.
 		CannotActivateIfLeaving,
-		/// The delegator has already delegated the maximum number of candidates allowed.
+		/// The delegator has already delegated the maximum number of candidates
+		/// allowed.
 		ExceedMaxCollatorsPerDelegator,
-		/// The delegator has already previously delegated the collator candidate.
+		/// The delegator has already previously delegated the collator
+		/// candidate.
 		AlreadyDelegatedCollator,
 		/// The given delegation does not exist in the set of delegations.
 		DelegationDNE,
-		/// The collator delegate or the delegator is trying to un-stake more funds that are currently staked.
+		/// The collator delegate or the delegator is trying to un-stake more
+		/// funds that are currently staked.
 		Underflow,
-		/// The number of selected candidates or of blocks per staking round is below the minimum value allowed.
+		/// The number of selected candidates or of blocks per staking round is
+		/// below the minimum value allowed.
 		CannotSetBelowMin,
 		/// An invalid inflation configuration is trying to be set.
 		InvalidSchedule,
@@ -231,14 +252,18 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(crate) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// A new staking round has started.
-		/// \[round starting block, round number, number of collators selected, total stake of selected collators, total stake of delegators for the selected collators\]
-		NewRound(T::BlockNumber, RoundIndex, u32, BalanceOf<T>, BalanceOf<T>),
+		/// \[round number, total stake of
+		/// selected collators, total stake of delegators for the selected
+		/// collators\]
+		NewRound(T::BlockNumber, RoundIndex, BalanceOf<T>, BalanceOf<T>),
 		/// A new account has joined the set of collator candidates.
-		/// \[account, amount staked by the new candidate, new total stake of collator candidates\]
+		/// \[account, amount staked by the new candidate, new total stake of
+		/// collator candidates\]
 		JoinedCollatorCandidates(T::AccountId, BalanceOf<T>, BalanceOf<T>),
-		/// A collator candidate has been selected for the next validation round.
-		/// \[round number, collator's account, collator's total stake, collator's delegators' total stake\]
-		CollatorChosen(RoundIndex, T::AccountId, BalanceOf<T>, BalanceOf<T>),
+		/// A collator candidate has been selected for the next validation
+		/// round. \[collator's account, collator's total stake, collator's
+		/// delegators' total stake\]
+		CollatorChosen(T::AccountId, BalanceOf<T>, BalanceOf<T>),
 		/// A collator candidate has increased the amount of funds at stake.
 		/// \[collator's account, previous stake, new stake\]
 		CollatorStakedMore(T::AccountId, BalanceOf<T>, BalanceOf<T>),
@@ -251,26 +276,37 @@ pub mod pallet {
 		/// A collator candidate has returned to an active state.
 		/// \[round number, collator's account\]
 		CollatorBackOnline(RoundIndex, T::AccountId),
-		/// A collator candidate has started the process to leave the set of candidates.
-		/// \[round number, collator's account, round number when the collator will be effectively removed from the set of candidates\]
+		/// A collator candidate has started the process to leave the set of
+		/// candidates. \[round number, collator's account, round number when
+		/// the collator will be effectively removed from the set of
+		/// candidates\]
 		CollatorScheduledExit(RoundIndex, T::AccountId, RoundIndex),
 		/// An account has left the set of collator candidates.
-		/// \[account, amount of funds un-staked, new total stake of collator candidates, new total stake of delegators for the remaining collators\]
+		/// \[account, amount of funds un-staked, new total stake of collator
+		/// candidates, new total stake of delegators for the remaining
+		/// collators\]
 		CollatorLeft(T::AccountId, BalanceOf<T>, BalanceOf<T>, BalanceOf<T>),
-		/// A delegator has increased the amount of funds at stake for a collator.
-		/// \[delegator's account, collator's account, previous delegation stake, new delegation stake\]
+		/// A delegator has increased the amount of funds at stake for a
+		/// collator. \[delegator's account, collator's account, previous
+		/// delegation stake, new delegation stake\]
 		DelegatorStakedMore(T::AccountId, T::AccountId, BalanceOf<T>, BalanceOf<T>),
-		/// A delegator has decreased the amount of funds at stake for a collator.
-		/// \[delegator's account, collator's account, previous delegation stake, new delegation stake\]
+		/// A delegator has decreased the amount of funds at stake for a
+		/// collator. \[delegator's account, collator's account, previous
+		/// delegation stake, new delegation stake\]
 		DelegatorStakedLess(T::AccountId, T::AccountId, BalanceOf<T>, BalanceOf<T>),
 		/// An account has left the set of delegators.
 		/// \[account, amount of funds un-staked\]
 		DelegatorLeft(T::AccountId, BalanceOf<T>),
 		/// An account has delegated a new collator candidate.
-		/// \[account, amount of funds staked, total amount of delegators' funds staked for the collator candidate\]
+		/// \[account, amount of funds staked, total amount of delegators' funds
+		/// staked for the collator candidate\]
 		Delegation(T::AccountId, BalanceOf<T>, T::AccountId, BalanceOf<T>),
-		/// A new delegation has replaced an existing one in the set of ongoing delegations for a collator candidate.
-		/// \[new delegator's account, amount of funds staked in the new delegation, replaced delegator's account, amount of funds staked in the replace delegation, collator candidate's account, new total amount of delegators' funds staked for the collator candidate\]
+		/// A new delegation has replaced an existing one in the set of ongoing
+		/// delegations for a collator candidate. \[new delegator's account,
+		/// amount of funds staked in the new delegation, replaced delegator's
+		/// account, amount of funds staked in the replace delegation, collator
+		/// candidate's account, new total amount of delegators' funds staked
+		/// for the collator candidate\]
 		DelegationReplaced(
 			T::AccountId,
 			BalanceOf<T>,
@@ -280,19 +316,22 @@ pub mod pallet {
 			BalanceOf<T>,
 		),
 		/// An account has stopped delegating a collator candidate.
-		/// \[account, collator candidate's account, old amount of delegators' funds staked, new amount of delegators' funds staked\]
+		/// \[account, collator candidate's account, old amount of delegators'
+		/// funds staked, new amount of delegators' funds staked\]
 		DelegatorLeftCollator(T::AccountId, T::AccountId, BalanceOf<T>, BalanceOf<T>),
 		/// A collator or a delegator has received a reward.
 		/// \[account, amount of reward\]
 		Rewarded(T::AccountId, BalanceOf<T>),
 		/// Inflation configuration for future validation rounds has changed.
-		/// \[maximum collator's staking rate, maximum collator's reward rate, maximum delegator's staking rate, maximum delegator's reward rate\]
+		/// \[maximum collator's staking rate, maximum collator's reward rate,
+		/// maximum delegator's staking rate, maximum delegator's reward rate\]
 		RoundInflationSet(Perquintill, Perquintill, Perquintill, Perquintill),
-		/// The maximum number of collator candidates selected in future validation rounds has changed.
-		/// \[old value, new value\]
+		/// The maximum number of collator candidates selected in future
+		/// validation rounds has changed. \[old value, new value\]
 		TotalSelectedSet(u32, u32),
 		/// The length in blocks for future validation rounds has changed.
-		/// \[round number, first block in the current round, old value, new value\]
+		/// \[round number, first block in the current round, old value, new
+		/// value\]
 		BlocksPerRoundSet(RoundIndex, T::BlockNumber, T::BlockNumber, T::BlockNumber),
 	}
 
@@ -301,21 +340,25 @@ pub mod pallet {
 		fn on_initialize(n: T::BlockNumber) -> frame_support::weights::Weight {
 			let mut round = <Round<T>>::get();
 			if round.should_update(n) {
-				// kill snapshot of current round
-				<AtStake<T>>::remove_prefix(round.current);
 				// mutate round
 				round.update(n);
 				// execute all delayed collator exits
+				// TODO: Test live with session pallet
+				// TODO: Check whether we can move this from here to an extrinsic
 				Self::execute_delayed_collator_exits(round.current);
-				// select top collator candidates for next round
-				let (collator_count, collator_staked, delegator_staked) =
-				Self::select_top_candidates(round.current); 		// start next round
+
+				// start next round
 				<Round<T>>::put(round);
 
+				// TODO: Check whether we want to remove the storage read if we reduce the data
+				// provided by Event::NewRound
+				let TotalStake {
+					collators: collator_staked,
+					delegators: delegator_staked,
+				} = <Total<T>>::get();
 				Self::deposit_event(Event::NewRound(
 					round.first,
 					round.current,
-					collator_count,
 					collator_staked,
 					delegator_staked,
 				));
@@ -374,19 +417,27 @@ pub mod pallet {
 
 	/// Snapshot of collator delegation stake at the start of the round.
 	///
-	/// It maps from the combination of round number and account to the collator snapshot for that account.
+	/// It maps from the combination of round number and account to the collator
+	/// snapshot for that account.
 	// TODO: Try to reduce storage footprint
 	#[pallet::storage]
 	#[pallet::getter(fn at_stake)]
-	pub type AtStake<T: Config> = StorageDoubleMap<
-		_,
-		Twox64Concat,
-		RoundIndex,
-		Twox64Concat,
-		T::AccountId,
-		CollatorSnapshot<T::AccountId, BalanceOf<T>>,
-		ValueQuery,
-	>;
+	/// Snapshot of collator delegation stake.
+	///
+	/// NOTE: We don't care about the round index here because unstaking/staking
+	/// less comes with an unstaking duration. Thus, we allow delegators to
+	/// "snipe" rewards by delegating (more) to a collator which will soon
+	/// author a block. This will increase the delegator's rewards but they
+	/// cannot immediately withdraw their (additional) bond to the collator and
+	/// have to wait for at least `StakeDuration` many blocks until they can do
+	/// so. Plus, they have to pay transaction fees for both unstaking and
+	/// withdrawing.
+	///
+	/// All in all, we don't think this can be an attack scenario
+	/// due to the unstaking time and the fact that you have to actively
+	/// withdraw a previously unbondend amount.
+	pub type AtStake<T: Config> =
+		StorageMap<_, Twox64Concat, T::AccountId, CollatorSnapshot<T::AccountId, BalanceOf<T>>, ValueQuery>;
 
 	/// Inflation configuration.
 	#[pallet::storage]
@@ -395,7 +446,8 @@ pub mod pallet {
 
 	/// The funds waiting to be unstaked.
 	///
-	/// It maps from accounts to all the funds addressed to them in the future blocks.
+	/// It maps from accounts to all the funds addressed to them in the future
+	/// blocks.
 	#[pallet::storage]
 	#[pallet::getter(fn unstaking)]
 	pub type Unstaking<T: Config> =
@@ -448,19 +500,21 @@ pub mod pallet {
 			}
 			// Set total selected candidates to minimum config
 			<TotalSelected<T>>::put(T::MinSelectedCandidates::get());
+
 			// Choose top TotalSelected collator candidates
-			let (v_count, collator_staked, delegator_staked) = <Pallet<T>>::select_top_candidates(0u32);
+			let (v_count, collator_staked, delegator_staked) = <Pallet<T>>::select_top_candidates();
 			assert!(!v_count.is_zero());
 			assert!(!<SelectedCandidates<T>>::get().is_empty());
 
 			// Start Round 0 at Block 0
+
 			let round: RoundInfo<T::BlockNumber> = RoundInfo::new(0u32, 0u32.into(), T::DefaultBlocksPerRound::get());
 			<Round<T>>::put(round);
 			// Snapshot total stake
+
 			<Pallet<T>>::deposit_event(Event::NewRound(
 				T::BlockNumber::zero(),
 				0u32,
-				v_count,
 				collator_staked,
 				delegator_staked,
 			));
@@ -469,10 +523,11 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-
 		/// Set the annual inflation rate to derive per-round inflation.
 		///
-		/// The inflation details are considered valid if the annual reward rate is approximately the per-block reward rate multiplied by the estimated* total number of blocks per year.
+		/// The inflation details are considered valid if the annual reward rate
+		/// is approximately the per-block reward rate multiplied by the
+		/// estimated* total number of blocks per year.
 		///
 		/// *The estimated average block time is six seconds.
 		///
@@ -487,31 +542,40 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Set the maximum number of collator candidates that can be selected at the beginning of each validation round.
+		/// Set the maximum number of collator candidates that can be selected
+		/// at the beginning of each validation round.
 		///
 		/// Changes are not applied until the start of the next round.
 		///
-		/// The new value must be higher than the minimum allowed as set in the pallet's configuration.
+		/// The new value must be higher than the minimum allowed as set in the
+		/// pallet's configuration.
 		///
 		/// The dispatch origin must be Root.
 		///
 		/// Emits `TotalSelectedSet`.
-		//TODO: Should be changed to something like set_maximum_selected. Same for the Event name and all related stuff.
+		//TODO: Should be changed to something like set_maximum_selected. Same for the Event name and all related
+		// stuff.
 		#[pallet::weight(0)]
 		pub fn set_total_selected(origin: OriginFor<T>, new: u32) -> DispatchResultWithPostInfo {
 			frame_system::ensure_root(origin)?;
 			ensure!(new >= T::MinSelectedCandidates::get(), Error::<T>::CannotSetBelowMin);
 			let old = <TotalSelected<T>>::get();
 			<TotalSelected<T>>::put(new);
+
+			// update candidates for next round
+			Self::select_top_candidates();
+
 			Self::deposit_event(Event::TotalSelectedSet(old, new));
 			Ok(().into())
 		}
 
 		/// Set the number of blocks each validation round lasts.
 		///
-		/// If the new value is less than the length of the current round, the system will immediately move to the next round in the next block.
+		/// If the new value is less than the length of the current round, the
+		/// system will immediately move to the next round in the next block.
 		///
-		/// The new value must be higher than the minimum allowed as set in the pallet's configuration.
+		/// The new value must be higher than the minimum allowed as set in the
+		/// pallet's configuration.
 		///
 		/// The dispatch origin must be Root.
 		///
@@ -532,13 +596,19 @@ pub mod pallet {
 
 		/// Join the set of collator candidates.
 		///
-		/// In the next blocks, if the collator candidate has enough funds staked to be included in any of the top `TotalSelected` positions, it will be included in the set of potential authors that will be selected by the stake-weighted random selection function.
+		/// In the next blocks, if the collator candidate has enough funds
+		/// staked to be included in any of the top `TotalSelected` positions,
+		/// it will be included in the set of potential authors that will be
+		/// selected by the stake-weighted random selection function.
 		///
-		/// The staked funds of the new collator candidate are added to the total stake of the system.
+		/// The staked funds of the new collator candidate are added to the
+		/// total stake of the system.
 		///
-		/// The total amount of funds staked must be within the allowed range as set in the pallet's configuration.
+		/// The total amount of funds staked must be within the allowed range as
+		/// set in the pallet's configuration.
 		///
-		/// The dispatch origin must not be already part of the collator candidates nor of the delegators set.
+		/// The dispatch origin must not be already part of the collator
+		/// candidates nor of the delegators set.
 		///
 		/// Emits `JoinedCollatorCandidates`.
 		#[pallet::weight(0)]
@@ -578,16 +648,22 @@ pub mod pallet {
 			<CollatorState<T>>::insert(&acc, candidate);
 			<CandidatePool<T>>::put(candidates);
 
+			// update candidates for next round
+			Self::select_top_candidates();
+
 			Self::deposit_event(Event::JoinedCollatorCandidates(acc, stake, total_collators));
 			Ok(().into())
 		}
 
 		/// Request to leave the set of collator candidates.
 		///
-		/// If successful, the account is immediately removed from the candidate pool to prevent selection as a collator in future validation rounds,
-		/// but unstaking of the funds is executed with a delay of `StakeDuration` rounds.
+		/// If successful, the account is immediately removed from the candidate
+		/// pool to prevent selection as a collator in future validation rounds,
+		/// but unstaking of the funds is executed with a delay of
+		/// `StakeDuration` rounds.
 		///
-		/// The total stake of the pallet is not affected by this operation until the funds are released after `StakeDuration` rounds.
+		/// The total stake of the pallet is not affected by this operation
+		/// until the funds are released after `StakeDuration` rounds.
 		///
 		/// Emits `CollatorScheduledExit`.
 		#[pallet::weight(0)]
@@ -612,15 +688,22 @@ pub mod pallet {
 			}
 			<ExitQueue<T>>::put(exits);
 			<CollatorState<T>>::insert(&collator, state);
+
+			// update candidates for next round
+			Self::select_top_candidates();
+
 			Self::deposit_event(Event::CollatorScheduledExit(now, collator, when));
 			Ok(().into())
 		}
 
 		/// Temporarily leave the set of collator candidates without unstaking.
 		///
-		/// For as long as offline, the collator will not be selected anymore to produce new blocks, but its staked funds will not scheduled to be released.
+		/// For as long as offline, the collator will not be selected anymore to
+		/// produce new blocks, but its staked funds will not scheduled to be
+		/// released.
 		///
-		/// The total stake of the system, including validators' stakes, is left unchanged.
+		/// The total stake of the system, including validators' stakes, is left
+		/// unchanged.
 		///
 		/// Emits `CollatorWentOffline`.
 		#[pallet::weight(0)]
@@ -636,13 +719,20 @@ pub mod pallet {
 				<CandidatePool<T>>::put(candidates);
 			}
 			<CollatorState<T>>::insert(&collator, state);
+
+			// update candidates for next round
+			Self::select_top_candidates();
+
 			Self::deposit_event(Event::CollatorWentOffline(<Round<T>>::get().current, collator));
 			Ok(().into())
 		}
 
-		/// Rejoin the set of collator candidates with the previously staked funds.
+		/// Rejoin the set of collator candidates with the previously staked
+		/// funds.
 		///
-		/// From the moment of re-inclusion in the set, the collator candidate will be re-considered for block production if enough funds are staked to rank in any of the top `TotalSelected` positions.
+		/// From the moment of re-inclusion in the set, the collator candidate
+		/// will be re-considered for block production if enough funds are
+		/// staked to rank in any of the top `TotalSelected` positions.
 		///
 		/// The total stake of the pallet is not affected by this operation.
 		///
@@ -664,18 +754,24 @@ pub mod pallet {
 			);
 			<CandidatePool<T>>::put(candidates);
 			<CollatorState<T>>::insert(&collator, state);
+
+			// update candidates for next round
+			Self::select_top_candidates();
+
 			Self::deposit_event(Event::CollatorBackOnline(<Round<T>>::get().current, collator));
 			Ok(().into())
 		}
 
 		/// Stake more funds for a collator candidate.
 		///
-		/// If not in the set of candidates, staking enough funds allows the account to be added to it.
-		/// The larger amount of funds, the higher chances to be selected as the author of the next block.
+		/// If not in the set of candidates, staking enough funds allows the
+		/// account to be added to it. The larger amount of funds, the higher
+		/// chances to be selected as the author of the next block.
 		///
 		/// This operation affects the pallet's total stake amount.
 		///
-		/// The resulting total amount of funds staked must be within the allowed range as set in the pallet's configuration.
+		/// The resulting total amount of funds staked must be within the
+		/// allowed range as set in the pallet's configuration.
 		///
 		/// Emits `CollatorStakedMore`.
 		#[pallet::weight(0)]
@@ -697,19 +793,27 @@ pub mod pallet {
 				Self::update_active(collator.clone(), state.total);
 			}
 			<CollatorState<T>>::insert(&collator, state);
+
+			// update candidates for next round
+			Self::select_top_candidates();
+
 			Self::deposit_event(Event::CollatorStakedMore(collator, before, after));
 			Ok(().into())
 		}
 
 		/// Stake less funds for a collator candidate.
 		///
-		/// If the new amound of staked fund is not large enough, the account could be removed from the set of collator candidates and not be considered for authoring the next blocks.
+		/// If the new amound of staked fund is not large enough, the account
+		/// could be removed from the set of collator candidates and not be
+		/// considered for authoring the next blocks.
 		///
 		/// This operation affects the pallet's total stake amount.
 		///
-		/// The unstaked funds are not release immediately to the account, but they will be available after `StakeDuration` rounds.
+		/// The unstaked funds are not release immediately to the account, but
+		/// they will be available after `StakeDuration` rounds.
 		///
-		/// The resulting total amount of funds staked must be within the allowed range as set in the pallet's configuration.
+		/// The resulting total amount of funds staked must be within the
+		/// allowed range as set in the pallet's configuration.
 		///
 		/// Emits `CollatorStakedLess`.
 		#[pallet::weight(0)]
@@ -728,21 +832,31 @@ pub mod pallet {
 				Self::update_active(collator.clone(), state.total);
 			}
 			<CollatorState<T>>::insert(&collator, state);
+
+			// update candidates for next round
+			Self::select_top_candidates();
+
 			Self::deposit_event(Event::CollatorStakedLess(collator, before, after));
 			Ok(().into())
 		}
 
 		/// Join the set of delegators by delegating to a collator candidate.
 		///
-		/// The account that wants to delegate cannot be part of the collator candidates set as well.
+		/// The account that wants to delegate cannot be part of the collator
+		/// candidates set as well.
 		///
-		/// The caller must _not_ have delegated before. Otherwise, `delegate_another_candidate` should be called.
+		/// The caller must _not_ have delegated before. Otherwise,
+		/// `delegate_another_candidate` should be called.
 		///
-		/// The amount staked must be larger than the minimum required to become a delegator as set in the pallet's configuration.
+		/// The amount staked must be larger than the minimum required to become
+		/// a delegator as set in the pallet's configuration.
 		///
-		/// As only `MaxDelegatorsPerCollator` are allowed to delegate a given collator, the amount staked must be larger than the lowest one in the current set of delegator for the operation to be meaningful.
+		/// As only `MaxDelegatorsPerCollator` are allowed to delegate a given
+		/// collator, the amount staked must be larger than the lowest one in
+		/// the current set of delegator for the operation to be meaningful.
 		///
-		/// The collator's total stake as well as the pallet's total stake are increased accordingly.
+		/// The collator's total stake as well as the pallet's total stake are
+		/// increased accordingly.
 		///
 		/// Emits `Delegation`.
 		#[pallet::weight(0)]
@@ -794,27 +908,37 @@ pub mod pallet {
 				delegators: total_delegators.saturating_add(amount),
 			});
 
-			// TODO: Add update of select_top_candidates
 			<CollatorState<T>>::insert(&collator, state);
 			<DelegatorState<T>>::insert(&acc, Delegator::new(collator.clone(), amount));
-			Self::deposit_event(Event::Delegation(acc, amount, collator, new_total));
 
+			// update candidates for next round
+			Self::select_top_candidates();
+
+			Self::deposit_event(Event::Delegation(acc, amount, collator, new_total));
 			Ok(().into())
 		}
 
-		/// Delegate another collator's candidate by staking some funds and increasing the pallet's as well as the collator's total stake.
+		/// Delegate another collator's candidate by staking some funds and
+		/// increasing the pallet's as well as the collator's total stake.
 		///
-		/// The account that wants to delegate cannot be part of the collator candidates set as well.
+		/// The account that wants to delegate cannot be part of the collator
+		/// candidates set as well.
 		///
-		/// The caller _must_ have delegated before. Otherwise, `join_delegators` should be called.
+		/// The caller _must_ have delegated before. Otherwise,
+		/// `join_delegators` should be called.
 		///
-		/// If the delegator has already delegated the maximum number of collator candidates, this operation will fail.
+		/// If the delegator has already delegated the maximum number of
+		/// collator candidates, this operation will fail.
 		///
-		/// The amount staked must be larger than the minimum required to become a delegator as set in the pallet's configuration.
+		/// The amount staked must be larger than the minimum required to become
+		/// a delegator as set in the pallet's configuration.
 		///
-		/// As only `MaxDelegatorsPerCollator` are allowed to delegate a given collator, the amount staked must be larger than the lowest one in the current set of delegator for the operation to be meaningful.
+		/// As only `MaxDelegatorsPerCollator` are allowed to delegate a given
+		/// collator, the amount staked must be larger than the lowest one in
+		/// the current set of delegator for the operation to be meaningful.
 		///
-		/// The collator's total stake as well as the pallet's total stake are increased accordingly.
+		/// The collator's total stake as well as the pallet's total stake are
+		/// increased accordingly.
 		///
 		/// Emits `Delegation`.
 		#[pallet::weight(0)]
@@ -870,19 +994,27 @@ pub mod pallet {
 				old.delegators = old.delegators.saturating_add(amount);
 			});
 
-			// TODO: Add update of select_top_candidates
 			<CollatorState<T>>::insert(&collator, state);
 			<DelegatorState<T>>::insert(&acc, delegator);
-			Self::deposit_event(Event::Delegation(acc, amount, collator, new_total));
 
+			// update candidates for next round
+			Self::select_top_candidates();
+
+			Self::deposit_event(Event::Delegation(acc, amount, collator, new_total));
 			Ok(().into())
 		}
 
-		/// Leave the set of delegators and, by implication, revoke all ongoing delegations.
+		/// Leave the set of delegators and, by implication, revoke all ongoing
+		/// delegations.
 		///
-		/// All staked funds are not unlocked immediately, but they are added to the queue of pending unstaking, and will effectively be released after `StakeDuration` rounds from the moment the delegator leaves.
+		/// All staked funds are not unlocked immediately, but they are added to
+		/// the queue of pending unstaking, and will effectively be released
+		/// after `StakeDuration` rounds from the moment the delegator leaves.
 		///
-		/// This operation reduces the total stake of the pallet as well as the stakes of all collators that were delegated, pontentially affecting their chances to be included in the set of candidates in the next rounds.
+		/// This operation reduces the total stake of the pallet as well as the
+		/// stakes of all collators that were delegated, pontentially affecting
+		/// their chances to be included in the set of candidates in the next
+		/// rounds.
 		///
 		/// Emits `DelegatorLeft`.
 		#[pallet::weight(0)]
@@ -893,17 +1025,28 @@ pub mod pallet {
 				Self::delegator_leaves_collator(acc.clone(), stake.owner.clone())?;
 			}
 			<DelegatorState<T>>::remove(&acc);
+
+			// update candidates for next round
+			Self::select_top_candidates();
+
 			Self::deposit_event(Event::DelegatorLeft(acc, delegator.total));
 			Ok(().into())
 		}
 
 		/// Terminates an ongoing delegation for a given collator candidate.
 		///
-		/// The staked funds are not unlocked immediately, but they are added to the queue of pending unstaking, and will effectively be released after `StakeDuration` rounds from the moment the delegation is terminated.
+		/// The staked funds are not unlocked immediately, but they are added to
+		/// the queue of pending unstaking, and will effectively be released
+		/// after `StakeDuration` rounds from the moment the delegation is
+		/// terminated.
 		///
-		/// This operation reduces the total stake of the pallet as well as the stakes of the collator involved, pontentially affecting its chances to be included in the set of candidates in the next rounds.
+		/// This operation reduces the total stake of the pallet as well as the
+		/// stakes of the collator involved, pontentially affecting its chances
+		/// to be included in the set of candidates in the next rounds.
 		///
 		/// Emits `DelegatorLeft`.
+		/// NOTE:: update candidates for next round in
+		/// `delegator_revokes_collator`
 		#[pallet::weight(0)]
 		pub fn revoke_delegation(origin: OriginFor<T>, collator: T::AccountId) -> DispatchResultWithPostInfo {
 			Self::delegator_revokes_collator(ensure_signed(origin)?, collator)
@@ -911,9 +1054,10 @@ pub mod pallet {
 
 		/// Increase the stake for delegating a collator candidate.
 		///
-		/// If not in the set of candidates, staking enough funds allows the collator candidate to be added to it.
+		/// If not in the set of candidates, staking enough funds allows the
+		/// collator candidate to be added to it.
 		///
-		/// Emits `DelegationIncreased`.
+		/// Emits `DelegatorStakedMore`.
 		#[pallet::weight(0)]
 		pub fn delegator_stake_more(
 			origin: OriginFor<T>,
@@ -939,21 +1083,30 @@ pub mod pallet {
 
 			<CollatorState<T>>::insert(&candidate, collator);
 			<DelegatorState<T>>::insert(&delegator, delegations);
+
+			// update candidates for next round
+			Self::select_top_candidates();
+
 			Self::deposit_event(Event::DelegatorStakedMore(delegator, candidate, before, after));
 			Ok(().into())
 		}
 
 		/// Reduce the stake for delegating a collator candidate.
 		///
-		/// If the new amound of staked fund is not large enough, the collator could be removed from the set of collator candidates and not be considered for authoring the next blocks.
+		/// If the new amound of staked fund is not large enough, the collator
+		/// could be removed from the set of collator candidates and not be
+		/// considered for authoring the next blocks.
 		///
-		/// The unstaked funds are not release immediately to the account, but they will be available after `StakeDuration` rounds.
+		/// The unstaked funds are not release immediately to the account, but
+		/// they will be available after `StakeDuration` rounds.
 		///
-		/// The remaining staked funds must still be larger than the minimum required by this pallet to maintain the status of delegator.
+		/// The remaining staked funds must still be larger than the minimum
+		/// required by this pallet to maintain the status of delegator.
 		///
-		/// The resulting total amount of funds staked must be within the allowed range as set in the pallet's configuration.
+		/// The resulting total amount of funds staked must be within the
+		/// allowed range as set in the pallet's configuration.
 		///
-		/// Emits `DelegationDecreased`.
+		/// Emits `DelegatorStakedLess`.
 		#[pallet::weight(0)]
 		pub fn delegator_stake_less(
 			origin: OriginFor<T>,
@@ -984,13 +1137,20 @@ pub mod pallet {
 			}
 			<CollatorState<T>>::insert(&candidate, collator);
 			<DelegatorState<T>>::insert(&delegator, delegations);
+
+			// update candidates for next round
+			Self::select_top_candidates();
+
 			Self::deposit_event(Event::DelegatorStakedLess(delegator, candidate, before, after));
 			Ok(().into())
 		}
 
-		/// Withdraw all previously staked funds that are now available for wihtdrawal by the origin account after `StakeDuration` rounds have elapsed.
+		/// Withdraw all previously staked funds that are now available for
+		/// wihtdrawal by the origin account after `StakeDuration` rounds have
+		/// elapsed.
 		///
-		/// The withdrawn funds will be fully available to the account, minus the transaction fees, for all other operations.
+		/// The withdrawn funds will be fully available to the account, minus
+		/// the transaction fees, for all other operations.
 		#[pallet::weight(0)]
 		pub fn withdraw_unstaked(
 			origin: OriginFor<T>,
@@ -1016,14 +1176,16 @@ pub mod pallet {
 			<CollatorState<T>>::get(acc).is_some()
 		}
 
-		/// Check whether an account is currently among the selected collator candidates for the current validation round.
+		/// Check whether an account is currently among the selected collator
+		/// candidates for the current validation round.
 		pub fn is_selected_candidate(acc: &T::AccountId) -> bool {
 			<SelectedCandidates<T>>::get().binary_search(acc).is_ok()
 		}
 
 		/// Update the staking information for an active collator candidate.
 		///
-		/// NOTE: it is assumed that the calling context checks whether the collator candidate is currently active before calling this function.
+		/// NOTE: it is assumed that the calling context checks whether the
+		/// collator candidate is currently active before calling this function.
 		fn update_active(candidate: T::AccountId, total: BalanceOf<T>) {
 			let mut candidates = <CandidatePool<T>>::get();
 			candidates.upsert(Stake {
@@ -1034,7 +1196,8 @@ pub mod pallet {
 			<CandidatePool<T>>::put(candidates);
 		}
 
-		/// Compute block production coinbase rewards based on the current inflation configuration.
+		/// Compute block production coinbase rewards based on the current
+		/// inflation configuration.
 		fn compute_block_issuance(
 			collator_stake: BalanceOf<T>,
 			delegator_stake: BalanceOf<T>,
@@ -1043,7 +1206,8 @@ pub mod pallet {
 			config.block_issuance::<T>(collator_stake, delegator_stake)
 		}
 
-		/// Update the delegator's state by removing the collator candidate from the set of ongoing delegations.
+		/// Update the delegator's state by removing the collator candidate from
+		/// the set of ongoing delegations.
 		fn delegator_revokes_collator(acc: T::AccountId, collator: T::AccountId) -> DispatchResultWithPostInfo {
 			let mut delegator = <DelegatorState<T>>::get(&acc).ok_or(Error::<T>::DelegatorDNE)?;
 			let old_total = delegator.total;
@@ -1062,10 +1226,15 @@ pub mod pallet {
 			ensure!(remaining >= T::MinDelegatorStk::get(), Error::<T>::NomStakeBelowMin);
 			Self::delegator_leaves_collator(acc.clone(), collator)?;
 			<DelegatorState<T>>::insert(&acc, delegator);
+
+			// update candidates for next round
+			Self::select_top_candidates();
+
 			Ok(().into())
 		}
 
-		/// Update the collator's state by removing the delegator's stake and starting the process to unlock the delegator's staked funds.
+		/// Update the collator's state by removing the delegator's stake and
+		/// starting the process to unlock the delegator's staked funds.
 		///
 		/// This operation affects the pallet's total stake.
 		fn delegator_leaves_collator(delegator: T::AccountId, collator: T::AccountId) -> DispatchResultWithPostInfo {
@@ -1100,12 +1269,17 @@ pub mod pallet {
 			Ok(().into())
 		}
 
-		/// Process all the queued operations regarding collators' unstaking requests.
+		/// Process all the queued operations regarding collators' unstaking
+		/// requests.
 		///
-		/// This round processes exit requests for stakes that have an amount of locked funds lower than the current round number.
+		/// This round processes exit requests for stakes that have an amount of
+		/// locked funds lower than the current round number.
 		///
-		/// This implies that the higher a collator's stake upon request to leave the set of candidates, the longer it will be possible for the collator to unlock the staked funds.
-		// TODO: Replace with function without delay
+		/// This implies that the higher a collator's stake upon request to
+		/// leave the set of candidates, the longer it will be possible for the
+		/// collator to unlock the staked funds.
+		// FIXME: Add limit to number of iterations for ExitQueue to prevent exceeding
+		// PoV size limit
 		fn execute_delayed_collator_exits(next: RoundIndex) {
 			let remain_exits = <ExitQueue<T>>::get()
 				.into_iter()
@@ -1160,22 +1334,31 @@ pub mod pallet {
 			<ExitQueue<T>>::put(OrderedSet::from(remain_exits));
 		}
 
-		/// Select the top `n` collators in terms of total stake (self +
-		/// from delegators) from the pool of candidates to get the possibility to author blocks during
-		/// the next validation round.
+		/// Select the top `n` collators in terms of cumulated stake (self +
+		/// from delegators) from the CandidatePool to become block authors for
+		/// the next round. The number of candidates selected can be `n` or
+		/// lower in case that are less candidates available.
 		///
-		/// The number of candidates selected can be `n` or lower in case that are less candidates available.
-		fn select_top_candidates(next: RoundIndex) -> (u32, BalanceOf<T>, BalanceOf<T>) {
+		/// We do not want to execute this function in `on_initialize` or
+		/// `new_session` because we could exceed the PoV size limit and brick
+		/// our chain.
+		/// Instead we execute this function in every extrinsic which mutates
+		/// the amount at stake (collator or delegator). This will heavily
+		/// increase the weight of each of these transactions it enables us to
+		/// do a simple storage read to get the top candidates when a session
+		/// starts in `new_session.
+		fn select_top_candidates() -> (u32, BalanceOf<T>, BalanceOf<T>) {
 			let (mut all_collators, mut total_collators, mut total_delegators) =
 				(0u32, BalanceOf::<T>::zero(), BalanceOf::<T>::zero());
-			log::trace!("Select collators for round {}", next);
+			log::trace!("Selecting collators");
 			let mut candidates = <CandidatePool<T>>::get().to_vec();
 			let top_n = <TotalSelected<T>>::get() as usize;
 
 			log::trace!("{} Candidates for {} Collator seats", candidates.len(), top_n);
 
 			// Order candidates by their total stake
-			candidates.sort_unstable_by(|a, b| a.amount.cmp(&b.amount));
+			candidates.sort_by(|a, b| a.amount.cmp(&b.amount));
+			let top_n = <TotalSelected<T>>::get() as usize;
 
 			// Choose the top TotalSelected qualified candidates, ordered by stake (least to
 			// greatest, thus requires `rev()`)
@@ -1193,12 +1376,11 @@ pub mod pallet {
 				let amount_collator = state.stake;
 				let amount_delegators = state.total.saturating_sub(amount_collator);
 				let exposure: CollatorSnapshot<T::AccountId, BalanceOf<T>> = state.into();
-				<AtStake<T>>::insert(next, account, exposure);
+				<AtStake<T>>::insert(account, exposure);
 				all_collators = all_collators.saturating_add(1u32);
 				total_collators = total_collators.saturating_add(amount_collator);
 				total_delegators = total_delegators.saturating_add(amount_delegators);
 				Self::deposit_event(Event::CollatorChosen(
-					next,
 					account.clone(),
 					amount_collator,
 					amount_delegators,
@@ -1283,12 +1465,6 @@ pub mod pallet {
 		/// Either set or increase the BalanceLock of target account to
 		/// amount.
 		fn increase_lock(who: &T::AccountId, amount: BalanceOf<T>) -> Result<(), DispatchError> {
-			// println!(
-			// 	"who {:?} balance {:?}, amount {:?}",
-			// 	who,
-			// 	pallet_balances::Pallet::<T>::free_balance(who),
-			// 	amount
-			// );
 			ensure!(
 				pallet_balances::Pallet::<T>::free_balance(who) >= amount.into(),
 				pallet_balances::Error::<T>::InsufficientBalance
@@ -1341,11 +1517,12 @@ pub mod pallet {
 
 			// iterate balance locks to retrieve amount of locked balance
 			let locks = Locks::<T>::get(who);
-			// should always find the lock
 			let total_locked: BalanceOf<T> =
 				if let Some(BalanceLock { amount, .. }) = locks.iter().find(|l| l.id == STAKING_ID) {
 					amount.saturating_sub(total_unlocked.into()).into()
 				} else {
+					// should never fail to find the lock since we checked whether unstaking is not
+					// empty but let's be safe
 					Zero::zero()
 				};
 
@@ -1365,10 +1542,11 @@ pub mod pallet {
 	where
 		T: Config + pallet_authorship::Config,
 	{
-		/// Compute coinbase rewawrds for block production and distribute it to collator's (block producer) and its delegators according to their stake.
+		/// Compute coinbase rewawrds for block production and distribute it to
+		/// collator's (block producer) and its delegators according to their
+		/// stake.
 		fn note_author(author: T::AccountId) {
-			let now = <Round<T>>::get().current;
-			let state = <AtStake<T>>::get(now, author.clone());
+			let state = <AtStake<T>>::get(author.clone());
 			if state.stake >= T::MinCollatorStk::get() && state.total >= T::MinCollatorStk::get() {
 				let block_now: T::BlockNumber = <frame_system::Pallet<T>>::block_number();
 				// TODO: Do we rather want to use a snapshot of total at the start of the round?
@@ -1412,13 +1590,14 @@ pub mod pallet {
 				<frame_system::Pallet<T>>::block_number(),
 			);
 
-			Self::select_top_candidates(new_index);
-
 			frame_system::Pallet::<T>::register_extra_weight_unchecked(
 				0, // TODO: T::WeightInfo::new_session(candidates_len_before as u32, removed as u32),
 				DispatchClass::Mandatory,
 			);
 
+			// get top collator candidates which are updated in any transaction which
+			// affects either the stake of collators or delegators, see
+			// `select_top_candidates` for details
 			Some(<SelectedCandidates<T>>::get())
 		}
 
