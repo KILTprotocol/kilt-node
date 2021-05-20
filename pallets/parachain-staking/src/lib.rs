@@ -778,7 +778,6 @@ pub mod pallet {
 		///
 		/// Emits `CollatorStakedMore`.
 		#[pallet::weight(0)]
-		// TODO: Make transactional
 		pub fn candidate_stake_more(origin: OriginFor<T>, more: BalanceOf<T>) -> DispatchResultWithPostInfo {
 			let collator = ensure_signed(origin)?;
 
@@ -869,8 +868,6 @@ pub mod pallet {
 		///
 		/// Emits `Delegation`.
 		#[pallet::weight(0)]
-		// TODO: Fix unit test panic with transactional feature enabled
-		// #[transactional]
 		pub fn join_delegators(
 			origin: OriginFor<T>,
 			collator: <T::Lookup as StaticLookup>::Source,
@@ -894,7 +891,16 @@ pub mod pallet {
 
 			// update state and potentially kick a delegator with less staked amount
 			state = if (state.delegators.len() as u32) > T::MaxDelegatorsPerCollator::get() {
-				Self::do_update_delegator(delegation, state)?
+				let (new_state, replaced_delegation) = Self::do_update_delegator(delegation.clone(), state)?;
+				Self::deposit_event(Event::DelegationReplaced(
+					delegation.owner,
+					delegation.amount,
+					replaced_delegation.owner,
+					replaced_delegation.amount,
+					new_state.id.clone(),
+					new_state.total,
+				));
+				new_state
 			} else {
 				state.total = state.total.saturating_add(amount);
 				state
@@ -979,7 +985,16 @@ pub mod pallet {
 
 			// update state and potentially kick a delegator with less staked amount
 			state = if (state.delegators.len() as u32) > T::MaxDelegatorsPerCollator::get() {
-				Self::do_update_delegator(delegation, state)?
+				let (new_state, replaced_delegation) = Self::do_update_delegator(delegation.clone(), state)?;
+				Self::deposit_event(Event::DelegationReplaced(
+					delegation.owner,
+					delegation.amount,
+					replaced_delegation.owner,
+					replaced_delegation.amount,
+					new_state.id.clone(),
+					new_state.total,
+				));
+				new_state
 			} else {
 				state.total = state.total.saturating_add(amount);
 				state
@@ -1429,10 +1444,11 @@ pub mod pallet {
 		/// existing delegator with less staked value. If the given staked
 		/// amount is at most the minimum staked value of the original delegator
 		/// set, an error is returned.
+		/// Returns the old delegation that is updated, if any.
 		fn do_update_delegator(
 			stake: Stake<T::AccountId, BalanceOf<T>>,
 			mut state: Collator<T::AccountId, BalanceOf<T>>,
-		) -> Result<Collator<T::AccountId, BalanceOf<T>>, DispatchError> {
+		) -> Result<(Collator<T::AccountId, BalanceOf<T>>, Stake<T::AccountId, BalanceOf<T>>), DispatchError> {
 			// add stake & sort by amount
 			let mut delegators: Vec<Stake<T::AccountId, BalanceOf<T>>> = state.delegators.into();
 			// delegators.push(stake.clone());
@@ -1440,19 +1456,10 @@ pub mod pallet {
 
 			// check whether stake is at last place
 			match delegators.pop() {
-				Some(Stake { amount, owner }) if amount < stake.amount => {
-					state.total = state.total.saturating_sub(amount).saturating_add(stake.amount);
+				Some(stake_to_remove) if stake_to_remove.amount < stake.amount => {
+					state.total = state.total.saturating_sub(stake_to_remove.amount).saturating_add(stake.amount);
 					state.delegators = OrderedSet::from_sorted_set(delegators);
-					// TODO: Might want to remove this, if extrinis cannot be made transactional
-					Self::deposit_event(Event::DelegationReplaced(
-						stake.owner,
-						stake.amount,
-						owner,
-						amount,
-						state.id.clone(),
-						state.total,
-					));
-					Ok(state)
+					Ok((state, stake_to_remove))
 				}
 				_ => Err(Error::<T>::TooManyDelegators.into()),
 			}
