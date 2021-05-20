@@ -293,7 +293,7 @@ pub mod pallet {
 		TotalSelectedSet(u32, u32),
 		/// The length in blocks for future validation rounds has changed.
 		/// \[round number, first block in the current round, old value, new value\]
-		BlocksPerRoundSet(RoundIndex, T::BlockNumber, u32, u32),
+		BlocksPerRoundSet(RoundIndex, T::BlockNumber, T::BlockNumber, T::BlockNumber),
 	}
 
 	#[pallet::hooks]
@@ -517,7 +517,7 @@ pub mod pallet {
 		///
 		/// Emits `BlocksPerRoundSet`.
 		#[pallet::weight(0)]
-		pub fn set_blocks_per_round(origin: OriginFor<T>, new: u32) -> DispatchResultWithPostInfo {
+		pub fn set_blocks_per_round(origin: OriginFor<T>, new: T::BlockNumber) -> DispatchResultWithPostInfo {
 			frame_system::ensure_root(origin)?;
 			ensure!(new >= T::MinBlocksPerRound::get(), Error::<T>::CannotSetBelowMin);
 

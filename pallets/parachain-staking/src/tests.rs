@@ -23,7 +23,7 @@ use crate::{
 		Event as MetaEvent, ExtBuilder, Origin, Stake, System, Test, BLOCKS_PER_ROUND, DECIMALS,
 	},
 	types::{BalanceOf, Bond, CollatorSnapshot, CollatorStatus, RoundInfo, TotalStake},
-	Config, Error, Event, InflationInfo, Pallet,
+	Config, Error, Event, InflationInfo,
 };
 use frame_support::{assert_noop, assert_ok, traits::EstimateNextSessionRotation};
 use kilt_primitives::constants::YEARS;
