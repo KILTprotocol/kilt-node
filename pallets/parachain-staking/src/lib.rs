@@ -241,10 +241,9 @@ pub mod pallet {
 		/// An invalid inflation configuration is trying to be set.
 		InvalidSchedule,
 		/// The staking reward being unlocked does not exist.
-		RewardLockDNE,
 		/// Max unlocking requests reached.
 		NoMoreUnstaking,
-		/// Provided staked value is zero.
+		/// Provided staked value is zero. Should never be thrown.
 		StakeDNE,
 		/// Cannot withdraw when Unstaked is empty.
 		UnstakingIsEmpty,
@@ -535,7 +534,14 @@ pub mod pallet {
 		pub fn set_inflation(origin: OriginFor<T>, inflation: InflationInfo) -> DispatchResult {
 			frame_system::ensure_root(origin)?;
 
-			Self::update_inflation(inflation)?;
+			ensure!(inflation.is_valid(), Error::<T>::InvalidSchedule);
+			Self::deposit_event(Event::RoundInflationSet(
+				inflation.collator.max_rate,
+				inflation.collator.reward_rate.per_block,
+				inflation.delegator.max_rate,
+				inflation.delegator.reward_rate.per_block,
+			));
+			<InflationConfig<T>>::put(inflation);
 			Ok(())
 		}
 
@@ -615,6 +621,7 @@ pub mod pallet {
 			ensure!(stake <= T::MaxCollatorCandidateStk::get(), Error::<T>::ValStakeAboveMax);
 
 			let mut candidates = <CandidatePool<T>>::get();
+			// should never fail but let's be safe
 			ensure!(
 				candidates.insert(Stake {
 					owner: acc.clone(),
@@ -753,6 +760,8 @@ pub mod pallet {
 			ensure!(!state.is_leaving(), Error::<T>::CannotActivateIfLeaving);
 			state.go_online();
 			let mut candidates = <CandidatePool<T>>::get();
+
+			// should never fail but let's be safe
 			ensure!(
 				candidates.insert(Stake {
 					owner: collator.clone(),
@@ -892,6 +901,7 @@ pub mod pallet {
 				owner: acc.clone(),
 				amount,
 			};
+			// should never fail but let's be safe
 			ensure!(state.delegators.insert(delegation.clone()), Error::<T>::DelegatorExists);
 
 			// update state and potentially kick a delegator with less staked amount
@@ -984,6 +994,7 @@ pub mod pallet {
 				owner: acc.clone(),
 				amount,
 			};
+			// should never fail but let's be safe
 			ensure!(state.delegators.insert(delegation.clone()), Error::<T>::DelegatorExists);
 
 			// update state and potentially kick a delegator with less staked amount
@@ -1431,19 +1442,6 @@ pub mod pallet {
 			(all_collators, total_collators, total_delegators)
 		}
 
-		/// Update the staking inflation information.
-		fn update_inflation(inflation: InflationInfo) -> Result<(), DispatchError> {
-			ensure!(inflation.is_valid(), Error::<T>::InvalidSchedule);
-			Self::deposit_event(Event::RoundInflationSet(
-				inflation.collator.max_rate,
-				inflation.collator.reward_rate.per_block,
-				inflation.delegator.max_rate,
-				inflation.delegator.reward_rate.per_block,
-			));
-			<InflationConfig<T>>::put(inflation);
-			Ok(())
-		}
-
 		/// Process the coinbase rewards for the production of a new block.
 		// Weight: reads_writes(2, 2) + deposit_into_existing
 		fn do_reward(who: &T::AccountId, reward: BalanceOf<T>) {
@@ -1605,7 +1603,6 @@ pub mod pallet {
 		fn note_author(author: T::AccountId) {
 			let state = <AtStake<T>>::get(author.clone());
 			if state.stake >= T::MinCollatorStk::get() && state.total >= T::MinCollatorStk::get() {
-				let block_now: T::BlockNumber = <frame_system::Pallet<T>>::block_number();
 				let TotalStake {
 					collators: total_collators,
 					delegators: total_delegators,
@@ -1617,7 +1614,7 @@ pub mod pallet {
 				let amt_due_delegators = d_rewards;
 
 				// Reward collator
-				Self::do_reward(&author, amt_due_collator, block_now);
+				Self::do_reward(&author, amt_due_collator);
 
 				// Reward delegators
 				// Reward delegators due portion
@@ -1628,7 +1625,7 @@ pub mod pallet {
 						// multiplication with perbill cannot overflow
 						let percent = Perquintill::from_rational(amount, delegator_stake);
 						let due = percent * amt_due_delegators;
-						Self::do_reward(&owner, due, block_now);
+						Self::do_reward(&owner, due);
 					}
 				}
 			}

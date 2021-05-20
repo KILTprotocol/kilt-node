@@ -24,7 +24,7 @@ use crate::{
 	},
 	set::OrderedSet,
 	types::{BalanceOf, Collator, CollatorSnapshot, CollatorStatus, Delegator, RoundInfo, Stake, TotalStake},
-	Config, Error, Event, InflationInfo,
+	Config, Error, Event, InflationInfo, RewardRate, StakingInfo,
 };
 use frame_support::{assert_noop, assert_ok, traits::EstimateNextSessionRotation};
 use kilt_primitives::constants::YEARS;
@@ -307,6 +307,10 @@ fn join_collator_candidates() {
 		.execute_with(|| {
 			assert_noop!(
 				StakePallet::join_candidates(Origin::signed(1), 11u128,),
+				Error::<Test>::CandidateExists
+			);
+			assert_noop!(
+				StakePallet::join_delegators(Origin::signed(1), 1, 11u128,),
 				Error::<Test>::CandidateExists
 			);
 			assert_noop!(
@@ -1233,6 +1237,10 @@ fn multiple_delegations() {
 			assert_eq!(StakePallet::delegator_state(6).unwrap().delegations.len(), 3usize);
 			assert_eq!(StakePallet::delegator_state(7).unwrap().delegations.len(), 1usize);
 			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(6), 6));
+			assert_noop!(
+				StakePallet::withdraw_unstaked(Origin::signed(6), 6),
+				Error::<Test>::UnstakingIsEmpty
+			);
 			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(7), 7));
 			assert_eq!(Balances::usable_balance(&6), 70);
 			assert_eq!(Balances::usable_balance(&7), 90);
@@ -1384,6 +1392,14 @@ fn collators_bond() {
 				StakePallet::candidate_stake_more(Origin::signed(6), 50),
 				Error::<Test>::CandidateDNE
 			);
+			assert_noop!(
+				StakePallet::candidate_stake_less(Origin::signed(6), 50),
+				Error::<Test>::CandidateDNE
+			);
+			assert_noop!(
+				StakePallet::delegate_another_candidate(Origin::signed(6), 50, 10),
+				Error::<Test>::CandidateDNE
+			);
 			assert_ok!(StakePallet::candidate_stake_more(Origin::signed(1), 50));
 			assert_noop!(
 				StakePallet::candidate_stake_more(Origin::signed(1), 40),
@@ -1392,6 +1408,10 @@ fn collators_bond() {
 			assert_ok!(StakePallet::leave_candidates(Origin::signed(1)));
 			assert_noop!(
 				StakePallet::candidate_stake_more(Origin::signed(1), 30),
+				Error::<Test>::CannotActivateIfLeaving
+			);
+			assert_noop!(
+				StakePallet::candidate_stake_less(Origin::signed(1), 10),
 				Error::<Test>::CannotActivateIfLeaving
 			);
 			roll_to(30, vec![]);
@@ -1448,13 +1468,21 @@ fn delegators_bond() {
 			(10, 100),
 		])
 		.with_collators(vec![(1, 20), (2, 20), (3, 20), (4, 20), (5, 10)])
-		.with_delegators(vec![(6, 1, 10), (7, 1, 10), (8, 2, 10), (9, 2, 10), (10, 1, 10)])
+		.with_delegators(vec![(6, 1, 10), (7, 1, 10), (8, 2, 10), (9, 2, 10)])
 		.set_blocks_per_round(5)
 		.build()
 		.execute_with(|| {
 			roll_to(4, vec![]);
 			assert_noop!(
+				StakePallet::join_delegators(Origin::signed(6), 2, 50),
+				Error::<Test>::AlreadyDelegating
+			);
+			assert_noop!(
 				StakePallet::delegator_stake_more(Origin::signed(1), 2, 50),
+				Error::<Test>::DelegatorDNE
+			);
+			assert_noop!(
+				StakePallet::delegator_stake_less(Origin::signed(1), 2, 50),
 				Error::<Test>::DelegatorDNE
 			);
 			assert_noop!(
@@ -1463,6 +1491,10 @@ fn delegators_bond() {
 			);
 			assert_noop!(
 				StakePallet::delegator_stake_more(Origin::signed(7), 6, 50),
+				Error::<Test>::CandidateDNE
+			);
+			assert_noop!(
+				StakePallet::delegator_stake_less(Origin::signed(7), 6, 50),
 				Error::<Test>::CandidateDNE
 			);
 			assert_noop!(
@@ -1485,6 +1517,10 @@ fn delegators_bond() {
 			assert_noop!(
 				StakePallet::delegator_stake_more(Origin::signed(6), 1, 81),
 				BalancesError::<Test>::InsufficientBalance
+			);
+			assert_noop!(
+				StakePallet::join_delegators(Origin::signed(10), 1, 4),
+				Error::<Test>::NomStakeBelowMin
 			);
 			roll_to(9, vec![]);
 			assert_eq!(Balances::usable_balance(&6), 80);
@@ -1952,82 +1988,6 @@ fn revoke_delegation_or_leave_delegators() {
 // 		});
 // }
 
-// FIXME:
-// #[test]
-// fn set_inflation() {
-// 	ExtBuilder::default().build().execute_with(|| {
-// 		// check that Perbill is limited to 100%
-// 		let capped_inflation = InflationInfo {
-// 			collator: StakingInfo {
-// 				max_rate: Perquintill::from_percent(200),
-// 				reward_rate: RewardRate {
-// 					annual: Perquintill::from_percent(50),
-// 					per_block: Perbill::from_parts(2_000_000_000u32),
-// 				},
-// 			},
-// 			delegator: StakingInfo {
-// 				max_rate: Perquintill::from_percent(200),
-// 				reward_rate: RewardRate {
-// 					annual: Perquintill::from_percent(200),
-// 					per_block: Perquintill::from_percent(200),
-// 				},
-// 			},
-// 		};
-// 		let mut inflation = InflationInfo {
-// 			collator: StakingInfo {
-// 				max_rate: Perbill::one(),
-// 				reward_rate: RewardRate {
-// 					annual: Perquintill::from_percent(50),
-// 					per_block: Perbill::one(),
-// 				},
-// 			},
-// 			delegator: StakingInfo {
-// 				max_rate: Perbill::one(),
-// 				reward_rate: RewardRate {
-// 					annual: Perbill::one(),
-// 					per_block: Perbill::one(),
-// 				},
-// 			},
-// 		};
-// 		assert_eq!(capped_inflation, inflation);
-
-// 		// annual < round
-// 		assert_noop!(
-// 			StakePallet::set_inflation(Origin::root(), inflation.clone()),
-// 			Error::<Test>::InvalidSchedule
-// 		);
-// 		inflation.collator.reward_rate.annual = Perbill::one();
-// 		assert_ok!(StakePallet::set_inflation(Origin::root(), inflation.clone()));
-// 		assert_eq!(
-// 			last_event(),
-// 			MetaEvent::stake(Event::RoundInflationSet(
-// 				Perbill::one(),
-// 				Perbill::one(),
-// 				Perbill::one(),
-// 				Perbill::one()
-// 			))
-// 		);
-
-// 		// annual < round
-// 		inflation.delegator.reward_rate.annual = Perquintill::from_percent(50);
-// 		assert_noop!(
-// 			StakePallet::set_inflation(Origin::root(), inflation.clone()),
-// 			Error::<Test>::InvalidSchedule
-// 		);
-// 		inflation.delegator.reward_rate.per_block = Perquintill::from_percent(15);
-// 		assert_ok!(StakePallet::set_inflation(Origin::root(), inflation));
-// 		assert_eq!(
-// 			last_event(),
-// 			MetaEvent::stake(Event::RoundInflationSet(
-// 				Perbill::one(),
-// 				Perbill::one(),
-// 				Perbill::one(),
-// 				Perquintill::from_percent(15)
-// 			))
-// 		);
-// 	});
-// }
-
 #[test]
 fn round_transitions() {
 	let col_max = 10;
@@ -2055,6 +2015,10 @@ fn round_transitions() {
 			let init = vec![Event::NewRound(5, 1, 20, 20)];
 			assert_eq!(events(), init);
 			assert_ok!(StakePallet::set_blocks_per_round(Origin::root(), 3));
+			assert_noop!(
+				StakePallet::set_blocks_per_round(Origin::root(), 1),
+				Error::<Test>::CannotSetBelowMin
+			);
 			assert_eq!(last_event(), MetaEvent::stake(Event::BlocksPerRoundSet(1, 5, 5, 3)));
 
 			// inflation config should be untouched after per_block update
@@ -2247,7 +2211,6 @@ fn coinbase_rewards_many_blocks_simple_check() {
 			let total_issuance = <Test as Config>::Currency::total_issuance();
 			assert_eq!(total_issuance, 160_000_000 * DECIMALS);
 			let end_block: BlockNumber = num_of_years * YEARS as BlockNumber;
-			println!("end block {:?}", end_block);
 			// set round robin authoring
 			let authors: Vec<Option<AccountId>> = (0u64..=end_block).map(|i| Some(i % 2 + 1)).collect();
 			roll_to(end_block, authors);
@@ -2543,5 +2506,64 @@ fn should_end_session_when_appropriate() {
 			assert_eq!(StakePallet::should_end_session(30), false);
 			assert_eq!(StakePallet::should_end_session(60), false);
 			assert_eq!(StakePallet::should_end_session(100), true);
+		});
+}
+
+#[test]
+fn set_max_selected_candidates() {
+	ExtBuilder::default()
+		.with_balances(vec![(1, 10)])
+		.with_collators(vec![(1, 10)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				StakePallet::set_max_selected_candidates(
+					Origin::root(),
+					<Test as Config>::MinSelectedCandidates::get() - 1
+				),
+				Error::<Test>::CannotSetBelowMin
+			);
+			assert_ok!(StakePallet::set_max_selected_candidates(
+				Origin::root(),
+				<Test as Config>::MinSelectedCandidates::get() + 1
+			));
+		});
+}
+
+#[test]
+fn update_inflation() {
+	ExtBuilder::default()
+		.with_balances(vec![(1, 10)])
+		.with_collators(vec![(1, 10)])
+		.build()
+		.execute_with(|| {
+			let mut invalid_inflation = InflationInfo {
+				collator: StakingInfo {
+					max_rate: Perquintill::one(),
+					reward_rate: RewardRate {
+						annual: Perquintill::from_percent(99),
+						per_block: Perquintill::from_percent(1),
+					},
+				},
+				delegator: StakingInfo {
+					max_rate: Perquintill::one(),
+					reward_rate: RewardRate {
+						annual: Perquintill::from_percent(99),
+						per_block: Perquintill::from_percent(1),
+					},
+				},
+			};
+			assert_noop!(
+				StakePallet::set_inflation(Origin::root(), invalid_inflation.clone()),
+				Error::<Test>::InvalidSchedule
+			);
+			invalid_inflation.collator.reward_rate.per_block = Perquintill::zero();
+			assert_noop!(
+				StakePallet::set_inflation(Origin::root(), invalid_inflation.clone()),
+				Error::<Test>::InvalidSchedule
+			);
+			invalid_inflation.delegator.reward_rate.per_block = Perquintill::zero();
+
+			assert_ok!(StakePallet::set_inflation(Origin::root(), invalid_inflation),);
 		});
 }
