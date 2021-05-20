@@ -150,6 +150,8 @@ mod tests {
 		let precision = Perbill::from_perthousand(1);
 		ExtBuilder::default()
 			.with_inflation(10, 15, 40, 10, 5)
+			.with_balances(vec![(1, 10)])
+			.with_collators(vec![(1, 10)])
 			.build()
 			.execute_with(|| {
 				let inflation = InflationInfo::new(

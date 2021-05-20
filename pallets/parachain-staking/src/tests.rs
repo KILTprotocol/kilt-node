@@ -47,10 +47,7 @@ fn should_select_collators_genesis_session() {
 			(10, 20),
 			(11, 20),
 		])
-		.with_collators(vec![
-			(1, 20),
-			(2, 20),
-		])
+		.with_collators(vec![(1, 20), (2, 20)])
 		.build()
 		.execute_with(|| {
 			assert_eq!(
@@ -1912,7 +1909,7 @@ fn coinbase_rewards_many_blocks_simple_check() {
 fn should_not_reward_delegators_below_min_stake() {
 	ExtBuilder::default()
 		.with_balances(vec![(1, 10 * DECIMALS), (2, 10 * DECIMALS), (3, 10 * DECIMALS), (4, 5)])
-		.with_collators(vec![(1, 10 * DECIMALS), (2, 10 * DECIMALS)])
+		.with_collators(vec![(1, 10 * DECIMALS), (2, 10 * DECIMALS), (2, 10 * DECIMALS)])
 		.with_delegators(vec![(3, 2, 10 * DECIMALS), (4, 1, 4)])
 		.with_inflation(10, 15, 40, 15, 5)
 		.build()
@@ -2027,6 +2024,31 @@ fn reach_max_collator_candidates() {
 fn should_estimate_current_session_progress() {
 	ExtBuilder::default()
 		.set_blocks_per_round(100)
+		.with_balances(vec![
+			(1, 10),
+			(2, 20),
+			(3, 10),
+			(4, 10),
+			(5, 10),
+			(6, 10),
+			(7, 10),
+			(8, 10),
+			(9, 10),
+			(10, 10),
+			(11, 10),
+		])
+		.with_collators(vec![
+			(1, 10),
+			(2, 20),
+			(3, 10),
+			(4, 10),
+			(5, 10),
+			(6, 10),
+			(7, 10),
+			(8, 10),
+			(9, 10),
+			(10, 10),
+		])
 		.build()
 		.execute_with(|| {
 			assert_eq!(
@@ -2056,6 +2078,31 @@ fn should_estimate_current_session_progress() {
 fn should_estimate_next_session_rotation() {
 	ExtBuilder::default()
 		.set_blocks_per_round(100)
+		.with_balances(vec![
+			(1, 10),
+			(2, 20),
+			(3, 10),
+			(4, 10),
+			(5, 10),
+			(6, 10),
+			(7, 10),
+			(8, 10),
+			(9, 10),
+			(10, 10),
+			(11, 10),
+		])
+		.with_collators(vec![
+			(1, 10),
+			(2, 20),
+			(3, 10),
+			(4, 10),
+			(5, 10),
+			(6, 10),
+			(7, 10),
+			(8, 10),
+			(9, 10),
+			(10, 10),
+		])
 		.build()
 		.execute_with(|| {
 			assert_eq!(Stake::estimate_next_session_rotation(10).0.unwrap(), 100);
@@ -2070,6 +2117,31 @@ fn should_estimate_next_session_rotation() {
 fn should_end_session_when_appropriate() {
 	ExtBuilder::default()
 		.set_blocks_per_round(100)
+		.with_balances(vec![
+			(1, 10),
+			(2, 20),
+			(3, 10),
+			(4, 10),
+			(5, 10),
+			(6, 10),
+			(7, 10),
+			(8, 10),
+			(9, 10),
+			(10, 10),
+			(11, 10),
+		])
+		.with_collators(vec![
+			(1, 10),
+			(2, 20),
+			(3, 10),
+			(4, 10),
+			(5, 10),
+			(6, 10),
+			(7, 10),
+			(8, 10),
+			(9, 10),
+			(10, 10),
+		])
 		.build()
 		.execute_with(|| {
 			assert_eq!(Stake::should_end_session(10), false);
