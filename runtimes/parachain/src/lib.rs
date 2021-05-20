@@ -661,8 +661,8 @@ parameter_types! {
 	pub const MinDelegatorStk: u128 = 1000 * DOLLARS;
 	/// Maximum number of collator candidates
 	pub const MaxCollatorCandidates: u32 = 80;
-	/// Maximum number of concurrent requests to unlock unbonded balance
-	pub const MaxUnbondRequests: usize = 10;
+	/// Maximum number of concurrent requests to unlock unstaked balance
+	pub const MaxUnstakeRequests: usize = 10;
 }
 
 impl parachain_staking::Config for Runtime {
@@ -671,7 +671,7 @@ impl parachain_staking::Config for Runtime {
 	type CurrencyBalance = Balance;
 	type MinBlocksPerRound = MinBlocksPerRound;
 	type DefaultBlocksPerRound = DefaultBlocksPerRound;
-	type BondDuration = BondDuration;
+	type StakeDuration = BondDuration;
 	type MinSelectedCandidates = MinSelectedCandidates;
 	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
 	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
@@ -681,7 +681,7 @@ impl parachain_staking::Config for Runtime {
 	type MaxCollatorCandidates = MaxCollatorCandidates;
 	type MinDelegation = MinDelegatorStk;
 	type MinDelegatorStk = MinDelegatorStk;
-	type MaxUnbondRequests = MaxUnbondRequests;
+	type MaxUnstakeRequests = MaxUnstakeRequests;
 }
 
 construct_runtime! {

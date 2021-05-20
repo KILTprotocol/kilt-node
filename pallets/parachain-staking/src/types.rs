@@ -35,7 +35,7 @@ use crate::{set::OrderedSet, Config};
 ///
 /// The stake has a destination account (to which the stake is directed) and an amount of funds staked.
 #[derive(Default, Clone, Encode, Decode, RuntimeDebug, PartialEq, Eq)]
-pub struct Bond<AccountId, Balance>
+pub struct Stake<AccountId, Balance>
 where
 	AccountId: Eq + Ord,
 	Balance: Eq + Ord,
@@ -44,27 +44,27 @@ where
 	pub amount: Balance,
 }
 
-impl<A, B> From<A> for Bond<A, B>
+impl<A, B> From<A> for Stake<A, B>
 where
 	A: Eq + Ord,
 	B: Default + Eq + Ord,
 {
 	fn from(owner: A) -> Self {
-		Bond {
+		Stake {
 			owner,
 			amount: B::default(),
 		}
 	}
 }
 
-impl<AccountId: Ord, Balance: PartialEq + Ord> PartialOrd for Bond<AccountId, Balance> {
+impl<AccountId: Ord, Balance: PartialEq + Ord> PartialOrd for Stake<AccountId, Balance> {
 	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
 		Some(self.cmp(other))
 	}
 }
 
 // We only establish an order based on the owner
-impl<AccountId: Ord, Balance: PartialEq + Ord> Ord for Bond<AccountId, Balance> {
+impl<AccountId: Ord, Balance: PartialEq + Ord> Ord for Stake<AccountId, Balance> {
 	fn cmp(&self, other: &Self) -> Ordering {
 		self.owner.cmp(&other.owner)
 	}
@@ -77,7 +77,7 @@ pub enum CollatorStatus {
 	Active,
 	/// Temporarily inactive and excused for inactivity
 	Idle,
-	/// Bonded until the inner round
+	/// Staked until the inner round
 	Leaving(RoundIndex),
 }
 
@@ -95,21 +95,21 @@ where
 	AccountId: Eq + Ord,
 	Balance: Eq + Ord,
 {
-	pub bond: Balance,
-	pub delegators: Vec<Bond<AccountId, Balance>>,
+	pub stake: Balance,
+	pub delegators: Vec<Stake<AccountId, Balance>>,
 	pub total: Balance,
 }
 
 #[derive(Encode, Decode, RuntimeDebug)]
-/// Global collator state with commission fee, bonded stake, and delegations
+/// Global collator state with commission fee, staked funds, and delegations
 pub struct Collator<AccountId, Balance>
 where
 	AccountId: Eq + Ord,
 	Balance: Eq + Ord,
 {
 	pub id: AccountId,
-	pub bond: Balance,
-	pub delegators: OrderedSet<Bond<AccountId, Balance>>,
+	pub stake: Balance,
+	pub delegators: OrderedSet<Stake<AccountId, Balance>>,
 	pub total: Balance,
 	pub state: CollatorStatus,
 }
@@ -119,11 +119,11 @@ where
 	A: Ord + Clone,
 	B: AtLeast32BitUnsigned + Ord + Copy + Saturating,
 {
-	pub fn new(id: A, bond: B) -> Self {
-		let total = bond;
+	pub fn new(id: A, stake: B) -> Self {
+		let total = stake;
 		Collator {
 			id,
-			bond,
+			stake,
 			delegators: OrderedSet::new(),
 			total,
 			state: CollatorStatus::default(), // default active
@@ -138,18 +138,18 @@ where
 		matches!(self.state, CollatorStatus::Leaving(_))
 	}
 
-	pub fn bond_more(&mut self, more: B) {
-		self.bond = self.bond.saturating_add(more);
+	pub fn stake_more(&mut self, more: B) {
+		self.stake = self.stake.saturating_add(more);
 		self.total = self.total.saturating_add(more);
 	}
 
-	// Returns None if underflow or less == self.bond (in which case collator should
+	// Returns None if underflow or less == self.stake (in which case collator should
 	// leave)
-	pub fn bond_less(&mut self, less: B) -> Option<B> {
-		if self.bond > less {
-			self.bond = self.bond.saturating_sub(less);
+	pub fn stake_less(&mut self, less: B) -> Option<B> {
+		if self.stake > less {
+			self.stake = self.stake.saturating_sub(less);
 			self.total = self.total.saturating_sub(less);
-			Some(self.bond)
+			Some(self.stake)
 		} else {
 			None
 		}
@@ -189,7 +189,7 @@ where
 {
 	fn from(other: Collator<A, B>) -> CollatorSnapshot<A, B> {
 		CollatorSnapshot {
-			bond: other.bond,
+			stake: other.stake,
 			delegators: other.delegators.into(),
 			total: other.total,
 		}
@@ -199,7 +199,7 @@ where
 
 #[derive(Encode, Decode, RuntimeDebug)]
 pub struct Delegator<AccountId: Eq + Ord, Balance: Eq + Ord> {
-	pub delegations: OrderedSet<Bond<AccountId, Balance>>,
+	pub delegations: OrderedSet<Stake<AccountId, Balance>>,
 	pub total: Balance,
 }
 
@@ -210,7 +210,7 @@ where
 {
 	pub fn new(collator: AccountId, amount: Balance) -> Self {
 		Delegator {
-			delegations: OrderedSet::from(vec![Bond {
+			delegations: OrderedSet::from(vec![Stake {
 				owner: collator,
 				amount,
 			}]),
@@ -218,9 +218,9 @@ where
 		}
 	}
 
-	pub fn add_delegation(&mut self, bond: Bond<AccountId, Balance>) -> bool {
-		let amt = bond.amount;
-		if self.delegations.insert(bond) {
+	pub fn add_delegation(&mut self, stake: Stake<AccountId, Balance>) -> bool {
+		let amt = stake.amount;
+		if self.delegations.insert(stake) {
 			self.total = self.total.saturating_add(amt);
 			true
 		} else {

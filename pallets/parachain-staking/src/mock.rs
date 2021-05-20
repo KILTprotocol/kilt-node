@@ -50,7 +50,7 @@ construct_runtime!(
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-		Stake: stake::{Pallet, Call, Storage, Config<T>, Event<T>},
+		StakePallet: stake::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Authorship: pallet_authorship::{Pallet, Call, Storage, Inherent},
 	}
 );
@@ -120,7 +120,7 @@ impl pallet_authorship::Config for Test {
 
 parameter_types! {
 	pub const MinBlocksPerRound: BlockNumber = 3; // 20
-	pub const BondDuration: u32 = 2;
+	pub const StakeDuration: u32 = 2;
 	pub const DefaultBlocksPerRound: BlockNumber = BLOCKS_PER_ROUND;
 	pub const MinSelectedCandidates: u32 = 5;
 	pub const MaxDelegatorsPerCollator: u32 = 4;
@@ -131,7 +131,7 @@ parameter_types! {
 	pub const MaxCollatorCandidates: u32 = 10;
 	pub const MinDelegatorStk: Balance = 5;
 	pub const MinDelegation: Balance = 3;
-	pub const MaxUnbondRequests: usize = 5;
+	pub const MaxUnstakeRequests: usize = 5;
 }
 
 impl Config for Test {
@@ -140,7 +140,7 @@ impl Config for Test {
 	type CurrencyBalance = <Self as pallet_balances::Config>::Balance;
 	type MinBlocksPerRound = MinBlocksPerRound;
 	type DefaultBlocksPerRound = DefaultBlocksPerRound;
-	type BondDuration = BondDuration;
+	type StakeDuration = StakeDuration;
 	type MinSelectedCandidates = MinSelectedCandidates;
 	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
 	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
@@ -150,7 +150,7 @@ impl Config for Test {
 	type MaxCollatorCandidates = MaxCollatorCandidates;
 	type MinDelegatorStk = MinDelegatorStk;
 	type MinDelegation = MinDelegation;
-	type MaxUnbondRequests = MaxUnbondRequests;
+	type MaxUnstakeRequests = MaxUnstakeRequests;
 }
 
 pub(crate) struct ExtBuilder {
@@ -252,7 +252,7 @@ impl ExtBuilder {
 
 		if self.blocks_per_round != BLOCKS_PER_ROUND {
 			ext.execute_with(|| {
-				Stake::set_blocks_per_round(Origin::root(), self.blocks_per_round)
+				StakePallet::set_blocks_per_round(Origin::root(), self.blocks_per_round)
 					.expect("Ran into issues when setting blocks_per_round");
 			});
 		}
@@ -271,15 +271,15 @@ pub(crate) fn almost_equal(left: Balance, right: Balance, precision: Perbill) ->
 pub(crate) fn roll_to(n: BlockNumber, authors: Vec<Option<AccountId>>) {
 	while System::block_number() < n {
 		if let Some(Some(author)) = authors.get((System::block_number()) as usize) {
-			Stake::note_author(*author);
+			StakePallet::note_author(*author);
 		}
-		Stake::on_finalize(System::block_number());
+		StakePallet::on_finalize(System::block_number());
 		Balances::on_finalize(System::block_number());
 		System::on_finalize(System::block_number());
 		System::set_block_number(System::block_number() + 1);
 		System::on_initialize(System::block_number());
 		Balances::on_initialize(System::block_number());
-		Stake::on_initialize(System::block_number());
+		StakePallet::on_initialize(System::block_number());
 	}
 }
 
