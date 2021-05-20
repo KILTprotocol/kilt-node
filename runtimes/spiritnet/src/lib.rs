@@ -29,10 +29,9 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use frame_system::limits::{BlockLength, BlockWeights};
 use kilt_primitives::{
-	constants::{DAYS, DOLLARS, MILLICENTS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
+	constants::{DAYS, DOLLARS, HOURS, MILLICENTS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
 	AccountId, AuthorityId, Balance, BlockNumber, Hash, Header, Index, Signature,
 };
-pub use parachain_staking::{InflationInfo, RewardRate, StakingInfo};
 use sp_api::impl_runtime_apis;
 use sp_core::OpaqueMetadata;
 use sp_runtime::{
@@ -50,20 +49,21 @@ use sp_version::NativeVersion;
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{Get, Randomness},
+	traits::{Filter, Get, Randomness},
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
 		DispatchClass, IdentityFee, Weight,
 	},
 	StorageValue,
 };
-
-use kilt_primitives::constants::HOURS;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
+pub use sp_runtime::{Perbill, Permill};
+
+pub use parachain_staking::{InflationInfo, RewardRate, StakingInfo};
+
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
-pub use sp_runtime::{Perbill, Permill};
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't
 /// need to know the specifics of the runtime. They can then be made to be
@@ -156,6 +156,19 @@ parameter_types! {
 	pub const SS58Prefix: u8 = 38;
 }
 
+/// Don't allow swaps until parathread story is more mature.
+pub struct BaseFilter;
+impl Filter<Call> for BaseFilter {
+	fn filter(c: &Call) -> bool {
+		!matches!(
+			c,
+			Call::Vesting(pallet_vesting::Call::vested_transfer(..))
+				| Call::KiltLaunch(kilt_launch::Call::locked_transfer(..))
+				| Call::Balances(pallet_balances::Call::transfer(..))
+		)
+	}
+}
+
 impl frame_system::Config for Runtime {
 	/// The identifier used to distinguish between accounts.
 	type AccountId = AccountId;
@@ -189,7 +202,7 @@ impl frame_system::Config for Runtime {
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type DbWeight = ();
-	type BaseCallFilter = ();
+	type BaseCallFilter = BaseFilter;
 	type SystemWeightInfo = ();
 	type BlockWeights = RuntimeBlockWeights;
 	type BlockLength = RuntimeBlockLength;
