@@ -88,10 +88,7 @@ pub mod pallet {
 	// TODO: Use ORML one once they point to Substrate master
 	// use orml_utilities::OrderedSet;
 	use pallet_balances::{BalanceLock, Locks};
-	use sp_runtime::{
-		traits::{Saturating, Zero},
-		Percent, Perquintill,
-	};
+	use sp_runtime::{Percent, Perquintill, traits::{Saturating, StaticLookup, Zero}};
 	use sp_staking::SessionIndex;
 	use sp_std::{collections::btree_map::BTreeMap, prelude::*};
 
@@ -488,7 +485,7 @@ pub mod pallet {
 				if let Some(delegated_val) = opt_val {
 					assert_ok!(<Pallet<T>>::join_delegators(
 						T::Origin::from(Some(actor.clone()).into()),
-						delegated_val.clone(),
+						T::Lookup::unlookup(delegated_val.clone()),
 						balance,
 					));
 				} else {
@@ -870,11 +867,11 @@ pub mod pallet {
 		// #[transactional]
 		pub fn join_delegators(
 			origin: OriginFor<T>,
-			// TODO: Switch to LookupSource
-			collator: T::AccountId,
+			collator: <T::Lookup as StaticLookup>::Source,
 			amount: BalanceOf<T>,
 		) -> DispatchResultWithPostInfo {
 			let acc = ensure_signed(origin)?;
+			let collator = T::Lookup::lookup(collator)?;
 			// first delegation
 			ensure!(<DelegatorState<T>>::get(&acc).is_none(), Error::<T>::AlreadyDelegating);
 			ensure!(amount >= T::MinDelegatorStk::get(), Error::<T>::NomStakeBelowMin);
@@ -946,11 +943,11 @@ pub mod pallet {
 		// #[transactional]
 		pub fn delegate_another_candidate(
 			origin: OriginFor<T>,
-			// TODO: Switch to LookupSource
-			collator: T::AccountId,
+			collator: <T::Lookup as StaticLookup>::Source,
 			amount: BalanceOf<T>,
 		) -> DispatchResultWithPostInfo {
 			let acc = ensure_signed(origin)?;
+			let collator = T::Lookup::lookup(collator)?;
 			let mut delegator = <DelegatorState<T>>::get(&acc).ok_or(Error::<T>::NotYetDelegating)?;
 			// delegation after first
 			ensure!(amount >= T::MinDelegation::get(), Error::<T>::DelegationBelowMin);
@@ -1047,7 +1044,8 @@ pub mod pallet {
 		/// NOTE:: update candidates for next round in
 		/// `delegator_revokes_collator`
 		#[pallet::weight(0)]
-		pub fn revoke_delegation(origin: OriginFor<T>, collator: T::AccountId) -> DispatchResultWithPostInfo {
+		pub fn revoke_delegation(origin: OriginFor<T>, collator: <T::Lookup as StaticLookup>::Source) -> DispatchResultWithPostInfo {
+			let collator = T::Lookup::lookup(collator)?;
 			Self::delegator_revokes_collator(ensure_signed(origin)?, collator)
 		}
 
@@ -1060,10 +1058,11 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn delegator_stake_more(
 			origin: OriginFor<T>,
-			candidate: T::AccountId,
+			candidate: <T::Lookup as StaticLookup>::Source,
 			more: BalanceOf<T>,
 		) -> DispatchResultWithPostInfo {
 			let delegator = ensure_signed(origin)?;
+			let candidate = T::Lookup::lookup(candidate)?;
 			let mut delegations = <DelegatorState<T>>::get(&delegator).ok_or(Error::<T>::DelegatorDNE)?;
 			let mut collator = <CollatorState<T>>::get(&candidate).ok_or(Error::<T>::CandidateDNE)?;
 			let delegator_total = delegations
@@ -1111,10 +1110,11 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn delegator_stake_less(
 			origin: OriginFor<T>,
-			candidate: T::AccountId,
+			candidate: <T::Lookup as StaticLookup>::Source,
 			less: BalanceOf<T>,
 		) -> DispatchResultWithPostInfo {
 			let delegator = ensure_signed(origin)?;
+			let candidate = T::Lookup::lookup(candidate)?;
 			let mut delegations = <DelegatorState<T>>::get(&delegator).ok_or(Error::<T>::DelegatorDNE)?;
 			let mut collator = <CollatorState<T>>::get(&candidate).ok_or(Error::<T>::CandidateDNE)?;
 			let remaining = delegations
@@ -1158,12 +1158,10 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn withdraw_unstaked(
 			origin: OriginFor<T>,
-			// TODO: Switch to Lookup
-			// target: <T::Lookup as StaticLookup>::Source
-			target: T::AccountId,
+			target: <T::Lookup as StaticLookup>::Source
 		) -> DispatchResult {
 			ensure_signed(origin)?;
-			// let target = T::Lookup::lookup(target)?;
+			let target = T::Lookup::lookup(target)?;
 
 			Self::do_withdraw(&target)
 		}
