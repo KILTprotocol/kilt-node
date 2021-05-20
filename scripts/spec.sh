@@ -32,17 +32,17 @@ RELAY_PEREGRINE=$TMP_DIR"rococo.json"
 RELAY_PEREGRINE_OUT=dev-specs/kilt-parachain/peregrine-relay.json
 
 PEREGRINE_PLAIN=$TMP_DIR"peregrine-kilt.plain.spec"
-PEREGRINE_JQ=$TMP_DIR"peregrine.json"
+PEREGRINE_JQ=$TMP_DIR"peregrine-kilt.json"
 PEREGRINE_OUTPUT=dev-specs/kilt-parachain/peregrine-kilt.json
 
 docker run parity/rococo:rococo-v1-0.8.30-943038a8-f14fa75f build-spec --chain rococo-local --disable-default-bootnode > $RELAY_PEREGRINE_PLAIN
-$TMP_DIR/kilt-parachain-fast-gov build-spec --runtime spiritnet --chain spiritnet-dev --disable-default-bootnode > $PEREGRINE_PLAIN
+$TMP_DIR/kilt-parachain-fast-gov build-spec --runtime mashnet --chain mashnet-dev --disable-default-bootnode > $PEREGRINE_PLAIN
 
 jq -f scripts/peregrine-relay.jq $RELAY_PEREGRINE_PLAIN > $RELAY_PEREGRINE
 jq -f scripts/peregrine-kilt.jq $PEREGRINE_PLAIN > $PEREGRINE_JQ
 
 docker run -v $(dirname $RELAY_PEREGRINE):/data/spec parity/rococo:rococo-v1-0.8.30-943038a8-f14fa75f build-spec --chain /data/spec/$(basename -- "$RELAY_PEREGRINE") --raw --disable-default-bootnode > $RELAY_PEREGRINE_OUT
-$TMP_DIR/kilt-parachain-fast-gov build-spec --runtime spiritnet  --chain $PEREGRINE_JQ --disable-default-bootnode > $PEREGRINE_OUTPUT
+$TMP_DIR/kilt-parachain-fast-gov build-spec --runtime mashnet --chain $PEREGRINE_JQ --disable-default-bootnode --raw > $PEREGRINE_OUTPUT
 
 # ##############################################################################
 # #                                                                            #
@@ -58,13 +58,13 @@ STAGING_JQ=$TMP_DIR"staging.json"
 STAGING_OUTPUT=dev-specs/kilt-parachain/kilt-stage.json
 
 docker run parity/rococo:rococo-v1-0.8.30-943038a8-f14fa75f build-spec --chain rococo-local --disable-default-bootnode >$RELAY_STAGING_PLAIN
-$TMP_DIR/kilt-parachain build-spec --chain staging --disable-default-bootnode > $STAGING_PLAIN
+$TMP_DIR/kilt-parachain build-spec --runtime mashnet --chain staging --disable-default-bootnode > $STAGING_PLAIN
 
 jq -f scripts/roc-stage-relay.jq $RELAY_STAGING_PLAIN > $RELAY_STAGING_JQ
 jq -f scripts/roc-stage-kilt.jq $STAGING_PLAIN > $STAGING_JQ
 
 docker run -v$(dirname $RELAY_STAGING_JQ):/data/spec parity/rococo:rococo-v1-0.8.30-943038a8-f14fa75f build-spec --chain /data/spec/$(basename -- "$RELAY_STAGING_JQ") --raw --disable-default-bootnode > $RELAY_STAGING_OUT
-$TMP_DIR/kilt-parachain build-spec --chain $STAGING_JQ --disable-default-bootnode > $STAGING_OUTPUT
+$TMP_DIR/kilt-parachain build-spec --runtime mashnet --chain $STAGING_JQ --disable-default-bootnode --raw > $STAGING_OUTPUT
 
 # ##############################################################################
 # #                                                                            #
@@ -80,4 +80,4 @@ $TMP_DIR/kilt-parachain build-spec --chain spiritnet-dev --disable-default-bootn
 
 jq -f scripts/kilt-spiritnet.jq $SPIRITNET_PLAIN >$SPIRITNET_JQ
 
-$TMP_DIR/kilt-parachain build-spec --runtime spiritnet --chain $SPIRITNET_JQ --disable-default-bootnode >$SPIRITNET_OUTPUT
+$TMP_DIR/kilt-parachain build-spec --runtime spiritnet --chain $SPIRITNET_JQ --disable-default-bootnode --raw >$SPIRITNET_OUTPUT
