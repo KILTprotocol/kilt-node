@@ -61,7 +61,6 @@ pub(crate) mod mock;
 #[cfg(test)]
 pub(crate) mod tests;
 
-// TODO: Replace set with OrderedSet
 mod inflation;
 mod set;
 mod types;
@@ -84,10 +83,8 @@ pub mod pallet {
 		transactional,
 	};
 	use frame_system::pallet_prelude::*;
-	use pallet_session::ShouldEndSession;
-	// TODO: Use ORML one once they point to Substrate master
-	// use orml_utilities::OrderedSet;
 	use pallet_balances::{BalanceLock, Locks};
+	use pallet_session::ShouldEndSession;
 	use sp_runtime::{
 		traits::{Saturating, StaticLookup, Zero},
 		Percent, Perquintill,
@@ -177,7 +174,6 @@ pub mod pallet {
 	}
 
 	#[pallet::error]
-	// TODO: Add documentation
 	pub enum Error<T> {
 		/// The account is not part of the delegators set.
 		DelegatorDNE,
@@ -219,8 +215,8 @@ pub mod pallet {
 		TooManyDelegators,
 		/// The set of collator candidates has already reached the maximum size
 		/// allowed.
-		// TODO: Update this comment when the new logic to include new collator candidates is added (by using
-		// `check_collator_candidate_inclusion`).
+		// Post-launch TODO: Update this comment when the new logic to include new collator candidates is added (by
+		// using `check_collator_candidate_inclusion`).
 		TooManyCollatorCandidates,
 		/// The collator candidate is in the process of leaving the set of
 		/// candidates and cannot perform any other actions in the meantime.
@@ -331,7 +327,7 @@ pub mod pallet {
 		RoundInflationSet(Perquintill, Perquintill, Perquintill, Perquintill),
 		/// The maximum number of collator candidates selected in future
 		/// validation rounds has changed. \[old value, new value\]
-		TotalSelectedSet(u32, u32),
+		MaxSelectedCandidatesSet(u32, u32),
 		/// The length in blocks for future validation rounds has changed.
 		/// \[round number, first block in the current round, old value, new
 		/// value\]
@@ -418,13 +414,6 @@ pub mod pallet {
 	#[pallet::getter(fn exit_queue)]
 	type ExitQueue<T: Config> = StorageValue<_, OrderedSet<Stake<T::AccountId, SessionIndex>>, ValueQuery>;
 
-	/// Snapshot of collator delegation stake at the start of the round.
-	///
-	/// It maps from the combination of round number and account to the collator
-	/// snapshot for that account.
-	// TODO: Try to reduce storage footprint
-	#[pallet::storage]
-	#[pallet::getter(fn at_stake)]
 	/// Snapshot of collator delegation stake.
 	///
 	/// NOTE: We don't care about the round index here because unstaking/staking
@@ -439,6 +428,8 @@ pub mod pallet {
 	/// All in all, we don't think this can be an attack scenario
 	/// due to the unstaking time and the fact that you have to actively
 	/// withdraw a previously unbondend amount.
+	#[pallet::storage]
+	#[pallet::getter(fn at_stake)]
 	pub type AtStake<T: Config> =
 		StorageMap<_, Twox64Concat, T::AccountId, CollatorSnapshot<T::AccountId, BalanceOf<T>>, ValueQuery>;
 
@@ -555,11 +546,9 @@ pub mod pallet {
 		///
 		/// The dispatch origin must be Root.
 		///
-		/// Emits `TotalSelectedSet`.
-		//TODO: Should be changed to something like set_maximum_selected. Same for the Event name and all related
-		// stuff.
+		/// Emits `MaxSelectedCandidatesSet`.
 		#[pallet::weight(0)]
-		pub fn set_total_selected(origin: OriginFor<T>, new: u32) -> DispatchResultWithPostInfo {
+		pub fn set_max_selected_candidates(origin: OriginFor<T>, new: u32) -> DispatchResultWithPostInfo {
 			frame_system::ensure_root(origin)?;
 			ensure!(new >= T::MinSelectedCandidates::get(), Error::<T>::CannotSetBelowMin);
 			let old = <TotalSelected<T>>::get();
@@ -568,7 +557,7 @@ pub mod pallet {
 			// update candidates for next round
 			Self::select_top_candidates();
 
-			Self::deposit_event(Event::TotalSelectedSet(old, new));
+			Self::deposit_event(Event::MaxSelectedCandidatesSet(old, new));
 			Ok(().into())
 		}
 
@@ -1564,8 +1553,6 @@ pub mod pallet {
 			let state = <AtStake<T>>::get(author.clone());
 			if state.stake >= T::MinCollatorStk::get() && state.total >= T::MinCollatorStk::get() {
 				let block_now: T::BlockNumber = <frame_system::Pallet<T>>::block_number();
-				// TODO: Do we rather want to use a snapshot of total at the start of the round?
-				// --> Keep as is for now and worry about this later
 				let TotalStake {
 					collators: total_collators,
 					delegators: total_delegators,
@@ -1593,8 +1580,10 @@ pub mod pallet {
 				}
 			}
 		}
-		// TODO: Does this need to be handled?
-		fn note_uncle(_author: T::AccountId, _age: T::BlockNumber) {}
+
+		fn note_uncle(_author: T::AccountId, _age: T::BlockNumber) {
+			// we too are not caring.
+		}
 	}
 
 	impl<T: Config> pallet_session::SessionManager<T::AccountId> for Pallet<T> {

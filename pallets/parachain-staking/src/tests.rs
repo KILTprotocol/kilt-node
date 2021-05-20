@@ -1945,7 +1945,7 @@ fn coinbase_rewards_few_blocks_detailed_check() {
 
 #[test]
 fn coinbase_rewards_many_blocks_simple_check() {
-	let num_of_years: Perquintill = Perquintill::from_perthousand(1);
+	let num_of_years: Perquintill = Perquintill::from_perthousand(2);
 	ExtBuilder::default()
 		.with_balances(vec![
 			(1, 40_000_000 * DECIMALS),
@@ -2134,41 +2134,6 @@ fn reach_max_collator_candidates() {
 			);
 		});
 }
-
-// #[test]
-// // 1/4 year with 12h rounds, 80 collators and 80 delegators
-// // TODO: Remove or fix long execution time
-// fn collator_delegator_rewards_quarter_year_12h() {
-// 	// unfortunately, collator_stake at 100_000 leads to stack overflow
-// 	check_yearly_inflation(
-// 		800_000 * DECIMALS,
-// 		400_000 * DECIMALS,
-// 		800_000 * DECIMALS,
-// 		10,
-// 		15,
-// 		40,
-// 		10,
-// 		7200,
-// 		Perbill::from_percent(25),
-// 	);
-// }
-
-// #[test]
-// // full year with 12h rounds, 4 collators and 26 delegators
-// // TODO: Remove or fix long execution time
-// fn collator_delegator_rewards_full_year_24h() {
-// 	check_yearly_inflation(
-// 		16_000_000 * DECIMALS,
-// 		16_000_000 * DECIMALS,
-// 		16_000_000 * DECIMALS,
-// 		10,
-// 		15,
-// 		40,
-// 		10,
-// 		5,
-// 		Perbill::from_percent(1),
-// 	);
-// }
 
 #[test]
 fn should_estimate_current_session_progress() {
