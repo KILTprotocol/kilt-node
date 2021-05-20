@@ -27,7 +27,6 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use frame_support::{traits::LockIdentifier, PalletId};
 use frame_system::limits::{BlockLength, BlockWeights};
 use kilt_primitives::{
 	constants::{DOLLARS, MILLICENTS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
@@ -129,13 +128,6 @@ const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 /// We allow for 2 seconds of compute with a 6 second average block time.
 const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
-
-// Pallet accounts of runtime
-parameter_types! {
-	pub const TreasuryPalletId: PalletId = PalletId(*b"kilt/tsy");
-	pub const SocietyPalletId: PalletId = PalletId(*b"kilt/soc");
-	pub const ElectionsPalletId: LockIdentifier = *b"kilt/elc";
-}
 
 parameter_types! {
 	pub const BlockHashCount: BlockNumber = 250;
