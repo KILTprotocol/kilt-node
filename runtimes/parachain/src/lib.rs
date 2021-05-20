@@ -55,8 +55,6 @@ use static_assertions::const_assert;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 
-#[cfg(not(feature = "fast-gov"))]
-use kilt_primitives::constants::HOURS;
 #[cfg(feature = "fast-gov")]
 use kilt_primitives::constants::MINUTES;
 
