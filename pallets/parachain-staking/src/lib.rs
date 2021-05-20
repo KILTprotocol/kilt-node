@@ -793,6 +793,9 @@ pub mod pallet {
 				Self::update_active(collator.clone(), state.total);
 			}
 			<CollatorState<T>>::insert(&collator, state);
+			Total::<T>::mutate(|old| {
+				old.collators = old.collators.saturating_add(more);
+			});
 
 			// update candidates for next round
 			Self::select_top_candidates();
@@ -832,6 +835,9 @@ pub mod pallet {
 				Self::update_active(collator.clone(), state.total);
 			}
 			<CollatorState<T>>::insert(&collator, state);
+			Total::<T>::mutate(|old| {
+				old.collators = old.collators.saturating_sub(less);
+			});
 
 			// update candidates for next round
 			Self::select_top_candidates();
@@ -899,15 +905,9 @@ pub mod pallet {
 			}
 
 			// update states
-			let TotalStake {
-				collators: total_collators,
-				delegators: total_delegators,
-			} = <Total<T>>::get();
-			<Total<T>>::put(TotalStake {
-				collators: total_collators,
-				delegators: total_delegators.saturating_add(amount),
+			Total::<T>::mutate(|old| {
+				old.delegators = old.delegators.saturating_add(amount);
 			});
-
 			<CollatorState<T>>::insert(&collator, state);
 			<DelegatorState<T>>::insert(&acc, Delegator::new(collator.clone(), amount));
 
@@ -993,7 +993,6 @@ pub mod pallet {
 			Total::<T>::mutate(|old| {
 				old.delegators = old.delegators.saturating_add(amount);
 			});
-
 			<CollatorState<T>>::insert(&collator, state);
 			<DelegatorState<T>>::insert(&acc, delegator);
 
@@ -1080,7 +1079,9 @@ pub mod pallet {
 			if collator.is_active() {
 				Self::update_active(candidate.clone(), collator.total);
 			}
-
+			Total::<T>::mutate(|old| {
+				old.delegators = old.delegators.saturating_add(more);
+			});
 			<CollatorState<T>>::insert(&candidate, collator);
 			<DelegatorState<T>>::insert(&delegator, delegations);
 
@@ -1135,6 +1136,9 @@ pub mod pallet {
 			if collator.is_active() {
 				Self::update_active(candidate.clone(), collator.total);
 			}
+			Total::<T>::mutate(|old| {
+				old.delegators = old.delegators.saturating_sub(less);
+			});
 			<CollatorState<T>>::insert(&candidate, collator);
 			<DelegatorState<T>>::insert(&delegator, delegations);
 
@@ -1255,7 +1259,7 @@ pub mod pallet {
 				Self::update_active(collator.clone(), state.total);
 			}
 			Total::<T>::mutate(|old| {
-				old.delegators = old.delegators.saturating_add(delegator_stake);
+				old.delegators = old.delegators.saturating_sub(delegator_stake);
 			});
 			let new_total = state.total;
 			<CollatorState<T>>::insert(&collator, state);

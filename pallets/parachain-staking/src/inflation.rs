@@ -116,8 +116,8 @@ impl InflationInfo {
 	pub fn is_valid(&self) -> bool {
 		self.collator.reward_rate.annual
 			>= Perquintill::from_parts(self.collator.reward_rate.per_block.deconstruct() * YEARS)
-		&& self.delegator.reward_rate.annual
-			>= Perquintill::from_parts(self.delegator.reward_rate.per_block.deconstruct() * YEARS)
+			&& self.delegator.reward_rate.annual
+				>= Perquintill::from_parts(self.delegator.reward_rate.per_block.deconstruct() * YEARS)
 	}
 }
 

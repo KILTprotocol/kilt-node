@@ -1004,7 +1004,7 @@ fn should_update_total_stake() {
 			);
 
 			let old_stake = StakePallet::total();
-			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(7), 6, 50));
+			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(7), 1, 50));
 			assert_eq!(
 				StakePallet::total(),
 				TotalStake {
@@ -1014,12 +1014,66 @@ fn should_update_total_stake() {
 			);
 
 			let old_stake = StakePallet::total();
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(7), 6, 50));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(7), 1, 50));
 			assert_eq!(
 				StakePallet::total(),
 				TotalStake {
 					delegators: old_stake.delegators - 50,
 					..old_stake
+				}
+			);
+
+			let old_stake = StakePallet::total();
+			assert_ok!(StakePallet::join_delegators(Origin::signed(11), 1, 200));
+			assert_eq!(
+				StakePallet::total(),
+				TotalStake {
+					delegators: old_stake.delegators + 200,
+					..old_stake
+				}
+			);
+
+			let old_stake = StakePallet::total();
+			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(11), 2, 150));
+			assert_eq!(
+				StakePallet::total(),
+				TotalStake {
+					delegators: old_stake.delegators + 150,
+					..old_stake
+				}
+			);
+
+			let old_stake = StakePallet::total();
+			assert_ok!(StakePallet::leave_delegators(Origin::signed(11)));
+			assert_eq!(
+				StakePallet::total(),
+				TotalStake {
+					delegators: old_stake.delegators - 350,
+					..old_stake
+				}
+			);
+
+			let old_stake = StakePallet::total();
+			assert_ok!(StakePallet::revoke_delegation(Origin::signed(8), 2));
+			assert_eq!(
+				StakePallet::total(),
+				TotalStake {
+					delegators: old_stake.delegators - 10,
+					..old_stake
+				}
+			);
+
+			// shouldn't immediately affect total stake because we have to wait
+			// `StakeDuration` rounds
+			let old_stake = StakePallet::total();
+			assert_ok!(StakePallet::leave_candidates(Origin::signed(2)));
+			assert_eq!(StakePallet::total(), old_stake);
+			roll_to(10, vec![]);
+			assert_eq!(
+				StakePallet::total(),
+				TotalStake {
+					collators: old_stake.collators - 20,
+					delegators: old_stake.delegators - 10,
 				}
 			);
 		})

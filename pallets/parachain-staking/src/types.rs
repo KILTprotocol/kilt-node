@@ -33,7 +33,8 @@ use crate::{set::OrderedSet, Config};
 
 /// A struct represented an amount of staked funds.
 ///
-/// The stake has a destination account (to which the stake is directed) and an amount of funds staked.
+/// The stake has a destination account (to which the stake is directed) and an
+/// amount of funds staked.
 #[derive(Default, Clone, Encode, Decode, RuntimeDebug, PartialEq, Eq)]
 pub struct Stake<AccountId, Balance>
 where
@@ -143,8 +144,8 @@ where
 		self.total = self.total.saturating_add(more);
 	}
 
-	// Returns None if underflow or less == self.stake (in which case collator should
-	// leave)
+	// Returns None if underflow or less == self.stake (in which case collator
+	// should leave)
 	pub fn stake_less(&mut self, less: B) -> Option<B> {
 		if self.stake > less {
 			self.stake = self.stake.saturating_sub(less);
@@ -195,7 +196,6 @@ where
 		}
 	}
 }
-
 
 #[derive(Encode, Decode, RuntimeDebug)]
 pub struct Delegator<AccountId: Eq + Ord, Balance: Eq + Ord> {
