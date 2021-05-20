@@ -699,17 +699,12 @@ construct_runtime! {
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage} = 7,
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>} = 8,
 
-		Ctype: ctype::{Pallet, Call, Storage, Event<T>} = 9,
-		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 10,
-		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 11,
-		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 12,
-
 		// The following order MUST NOT be changed: Staking -> Session -> Aura
-		ParachainStaking: parachain_staking::{Pallet, Call, Storage, Event<T>, Config<T>} = 14,
-		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>} = 15,
-		Authorship: pallet_authorship::{Pallet, Call, Storage} = 16,
-		Aura: pallet_aura::{Pallet, Config<T>} = 3,
-		AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 4,
+		ParachainStaking: parachain_staking::{Pallet, Call, Storage, Event<T>, Config<T>} = 10,
+		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>} = 11,
+		Authorship: pallet_authorship::{Pallet, Call, Storage} = 12,
+		Aura: pallet_aura::{Pallet, Config<T>} = 13,
+		AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 14,
 
 		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>} = 18,
 		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 19,
@@ -735,6 +730,11 @@ construct_runtime! {
 		// Vesting. Usable initially, but removed once all vesting is finished.
 		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 33,
 		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
+
+		Ctype: ctype::{Pallet, Call, Storage, Event<T>} = 35,
+		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 36,
+		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 37,
+		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 38,
 	}
 }
 

@@ -395,11 +395,11 @@ construct_runtime! {
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>} = 8,
 
 		// The following order MUST NOT be changed: Staking -> Session -> Aura
-		ParachainStaking: parachain_staking::{Pallet, Call, Storage, Event<T>, Config<T>} = 14,
-		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>} = 15,
-		Authorship: pallet_authorship::{Pallet, Call, Storage} = 16,
-		Aura: pallet_aura::{Pallet, Config<T>} = 3,
-		AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 4,
+		ParachainStaking: parachain_staking::{Pallet, Call, Storage, Event<T>, Config<T>} = 10,
+		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>} = 11,
+		Authorship: pallet_authorship::{Pallet, Call, Storage} = 12,
+		Aura: pallet_aura::{Pallet, Config<T>} = 13,
+		AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 14,
 
 		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>} = 18,
 		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 19,
