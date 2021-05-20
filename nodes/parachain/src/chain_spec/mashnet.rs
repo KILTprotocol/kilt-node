@@ -150,52 +150,6 @@ pub fn make_staging_spec(id: ParaId) -> Result<ChainSpec, String> {
 	))
 }
 
-pub fn peregrine_test_net(id: ParaId) -> Result<ChainSpec, String> {
-	let properties = get_properties("PKILT", 15, 38);
-	let wasm = WASM_BINARY.ok_or("No WASM")?;
-
-	Ok(ChainSpec::from_genesis(
-		"KILT Collator Peregrine Testnet",
-		"peregrine_kilt",
-		ChainType::Live,
-		move || {
-			testnet_genesis(
-				wasm,
-				vec![(
-					// TODO: Change before launch
-					get_account_id_from_seed::<sr25519::Public>("Alice"),
-					None,
-					1_000 * DOLLARS,
-				)],
-				kilt_inflation_config(),
-				hex!["6419c4046cff92703299e9fa37fc100f2664677e6ee3d841735665005345f710"].into(),
-				vec![
-					(
-						hex!["6419c4046cff92703299e9fa37fc100f2664677e6ee3d841735665005345f710"].into(),
-						hex!["6419c4046cff92703299e9fa37fc100f2664677e6ee3d841735665005345f710"].unchecked_into(),
-					),
-					(
-						hex!["369669429a18b273fb686bd9335c387bb5e8d98abfa33cda946fc7313483ed3f"].into(),
-						hex!["369669429a18b273fb686bd9335c387bb5e8d98abfa33cda946fc7313483ed3f"].unchecked_into(),
-					),
-				],
-				vec![
-					hex!["6419c4046cff92703299e9fa37fc100f2664677e6ee3d841735665005345f710"].into(),
-					hex!["369669429a18b273fb686bd9335c387bb5e8d98abfa33cda946fc7313483ed3f"].into(),
-				],
-				id,
-			)
-		},
-		Vec::new(),
-		None,
-		None,
-		Some(properties),
-		Extensions {
-			relay_chain: "peregrine_relay_testnet".into(),
-			para_id: id.into(),
-		},
-	))
-}
 
 pub fn load_rococo_spec() -> Result<ChainSpec, String> {
 	ChainSpec::from_json_bytes(&include_bytes!("../../res/mashnet-rococo.json")[..])

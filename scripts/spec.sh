@@ -19,6 +19,9 @@ fi
 cargo build --release -p kilt-parachain
 cp target/release/kilt-parachain $TMP_DIR/kilt-parachain
 
+cargo build --release -p kilt-parachain --features fast-gov
+cp target/release/kilt-parachain $TMP_DIR/kilt-parachain-fast-gov
+
 # ##############################################################################
 # #                                                                            #
 # #                                  PEREGRINE                                 #
@@ -33,13 +36,13 @@ PEREGRINE_JQ=$TMP_DIR"peregrine.json"
 PEREGRINE_OUTPUT=dev-specs/kilt-parachain/peregrine-kilt.json
 
 docker run parity/rococo:rococo-v1-0.8.30-943038a8-f14fa75f build-spec --chain rococo-local --disable-default-bootnode > $RELAY_PEREGRINE_PLAIN
-cargo run --release -p kilt-parachain --features fast-gov -- build-spec --chain peregrine --disable-default-bootnode > $PEREGRINE_PLAIN
+$TMP_DIR/kilt-parachain-fast-gov build-spec --runtime spiritnet --chain spiritnet-dev --disable-default-bootnode > $PEREGRINE_PLAIN
 
 jq -f scripts/peregrine-relay.jq $RELAY_PEREGRINE_PLAIN > $RELAY_PEREGRINE
 jq -f scripts/peregrine-kilt.jq $PEREGRINE_PLAIN > $PEREGRINE_JQ
 
 docker run -v $(dirname $RELAY_PEREGRINE):/data/spec parity/rococo:rococo-v1-0.8.30-943038a8-f14fa75f build-spec --chain /data/spec/$(basename -- "$RELAY_PEREGRINE") --raw --disable-default-bootnode > $RELAY_PEREGRINE_OUT
-cargo run --release -p kilt-parachain --features fast-gov -- build-spec --chain $PEREGRINE_JQ --disable-default-bootnode > $PEREGRINE_OUTPUT
+$TMP_DIR/kilt-parachain-fast-gov build-spec --runtime spiritnet  --chain $PEREGRINE_JQ --disable-default-bootnode > $PEREGRINE_OUTPUT
 
 # ##############################################################################
 # #                                                                            #
