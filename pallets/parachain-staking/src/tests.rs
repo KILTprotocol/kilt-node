@@ -2031,14 +2031,11 @@ fn coinbase_rewards_many_blocks_simple_check() {
 fn should_not_reward_delegators_below_min_stake() {
 	ExtBuilder::default()
 		.with_balances(vec![(1, 10 * DECIMALS), (2, 10 * DECIMALS), (3, 10 * DECIMALS), (4, 5)])
-		.with_collators(vec![(1, 10 * DECIMALS), (2, 10 * DECIMALS), (2, 10 * DECIMALS)])
-		.with_delegators(vec![(3, 2, 10 * DECIMALS), (4, 1, 4)])
+		.with_collators(vec![(1, 10 * DECIMALS), (2, 10 * DECIMALS)])
+		.with_delegators(vec![(3, 2, 10 * DECIMALS)])
 		.with_inflation(10, 15, 40, 15, 5)
 		.build()
 		.execute_with(|| {
-			assert!(StakePallet::delegator_state(3).is_some());
-			assert!(StakePallet::delegator_state(4).is_none());
-
 			// impossible but lets assume it happened
 			let mut state = StakePallet::collator_state(&1).expect("CollatorState cannot be missing");
 			let delegator_stake_below_min = <Test as Config>::MinDelegatorStk::get() - 1;
@@ -2064,6 +2061,37 @@ fn should_not_reward_delegators_below_min_stake() {
 			assert_eq!(Balances::usable_balance(&2), Balance::zero());
 			assert_eq!(Balances::usable_balance(&3), Balance::zero());
 		});
+}
+
+#[test]
+#[should_panic]
+fn should_deny_low_delegator_stake() {
+	ExtBuilder::default()
+		.with_balances(vec![(1, 10 * DECIMALS), (2, 10 * DECIMALS), (3, 10 * DECIMALS), (4, 1)])
+		.with_collators(vec![(1, 10 * DECIMALS), (2, 10 * DECIMALS)])
+		.with_delegators(vec![(4, 2, 1)])
+		.build()
+		.execute_with(|| {});
+}
+
+#[test]
+#[should_panic]
+fn should_deny_low_collator_stake() {
+	ExtBuilder::default()
+		.with_balances(vec![(1, 10 * DECIMALS), (2, 5)])
+		.with_collators(vec![(1, 10 * DECIMALS), (2, 5)])
+		.build()
+		.execute_with(|| {});
+}
+
+#[test]
+#[should_panic]
+fn should_deny_duplicate_collators() {
+	ExtBuilder::default()
+		.with_balances(vec![(1, 10 * DECIMALS)])
+		.with_collators(vec![(1, 10 * DECIMALS), (1, 10 * DECIMALS)])
+		.build()
+		.execute_with(|| {});
 }
 
 #[test]
