@@ -389,17 +389,17 @@ construct_runtime! {
 		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Call, Storage} = 1,
 
 		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent} = 2,
-		Aura: pallet_aura::{Pallet, Config<T>} = 3,
-		AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 4,
 		Indices: pallet_indices::{Pallet, Call, Storage, Event<T>} = 5,
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>} = 6,
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage} = 7,
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>} = 8,
 
-		// Staking pallet MUST HAVE a lower index than the session pallet
+		// The following order MUST NOT be changed: Staking -> Session -> Aura
 		ParachainStaking: parachain_staking::{Pallet, Call, Storage, Event<T>, Config<T>} = 14,
 		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>} = 15,
 		Authorship: pallet_authorship::{Pallet, Call, Storage} = 16,
+		Aura: pallet_aura::{Pallet, Config<T>} = 3,
+		AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 4,
 
 		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>} = 18,
 		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 19,

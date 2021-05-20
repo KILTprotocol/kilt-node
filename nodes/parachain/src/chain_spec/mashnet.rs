@@ -273,9 +273,7 @@ fn testnet_genesis(
 			stakers,
 			inflation_config,
 		},
-		pallet_aura: kilt_parachain_runtime::AuraConfig {
-			authorities: initial_authorities.iter().map(|x| x.1.clone()).collect(),
-		},
+		pallet_aura: Default::default(),
 		cumulus_pallet_aura_ext: Default::default(),
 		pallet_session: SessionConfig {
 			keys: initial_authorities
