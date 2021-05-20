@@ -656,6 +656,16 @@ pub const STAKE_DURATION: BlockNumber = 30;
 #[cfg(not(feature = "fast-gov"))]
 pub const STAKE_DURATION: BlockNumber = 7 * DAYS;
 
+#[cfg(feature = "fast-gov")]
+pub const MIN_COLLATORS: u32 = 4;
+#[cfg(not(feature = "fast-gov"))]
+pub const MIN_COLLATORS: u32 = 16;
+
+#[cfg(feature = "fast-gov")]
+pub const MAX_CANDIDATES: u32 = 16;
+#[cfg(not(feature = "fast-gov"))]
+pub const MAX_CANDIDATES: u32 = 80;
+
 parameter_types! {
 	/// Minimum round length is 1 hour
 	pub const MinBlocksPerRound: BlockNumber = MIN_BLOCKS_PER_ROUND;
@@ -666,7 +676,7 @@ parameter_types! {
 	/// Collator exit requests are delayed by 2 rounds
 	pub const ExitQueueDelay: u32 = 2;
 	/// Minimum 16 collators selected per round, default at genesis and minimum forever after
-	pub const MinSelectedCandidates: u32 = 16;
+	pub const MinSelectedCandidates: u32 = MIN_COLLATORS;
 	/// Maximum 25 delegators per collator at launch, might be increased later
 	pub const MaxDelegatorsPerCollator: u32 = 25;
 	/// Maximum 1 collator per delegator at launch, will be increased later
@@ -678,7 +688,7 @@ parameter_types! {
 	/// Minimum stake required to be reserved to be a delegator is 1000
 	pub const MinDelegatorStk: Balance = 1000 * DOLLARS;
 	/// Maximum number of collator candidates
-	pub const MaxCollatorCandidates: u32 = 80;
+	pub const MaxCollatorCandidates: u32 = MAX_CANDIDATES;
 	/// Maximum number of concurrent requests to unlock unstaked balance
 	pub const MaxUnstakeRequests: usize = 10;
 }
