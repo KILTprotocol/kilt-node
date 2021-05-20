@@ -647,7 +647,7 @@ pub const MIN_BLOCKS_PER_ROUND: BlockNumber = HOURS;
 #[cfg(feature = "fast-gov")]
 pub const DEFAULT_BLOCKS_PER_ROUND: BlockNumber = 20;
 #[cfg(not(feature = "fast-gov"))]
-pub const DEFAULT_BLOCKS_PER_ROUND: BlockNumber = 6 * HOURS;
+pub const DEFAULT_BLOCKS_PER_ROUND: BlockNumber = 2 * HOURS;
 
 #[cfg(feature = "fast-gov")]
 pub const STAKE_DURATION: BlockNumber = 30;
@@ -662,7 +662,7 @@ pub const MIN_COLLATORS: u32 = 16;
 #[cfg(feature = "fast-gov")]
 pub const MAX_CANDIDATES: u32 = 16;
 #[cfg(not(feature = "fast-gov"))]
-pub const MAX_CANDIDATES: u32 = 80;
+pub const MAX_CANDIDATES: u32 = 75;
 
 parameter_types! {
 	/// Minimum round length is 1 hour
@@ -671,8 +671,11 @@ parameter_types! {
 	pub const DefaultBlocksPerRound: BlockNumber = DEFAULT_BLOCKS_PER_ROUND;
 	/// Unstaked balance can be unlocked after 7 days
 	pub const StakeDuration: BlockNumber = STAKE_DURATION;
-	/// Collator exit requests are delayed by 2 rounds
-	pub const ExitQueueDelay: u32 = 2;
+	/// Collator exit requests are delayed by 12 hours (6 rounds)
+	pub const ExitQueueDelay: u32 = 6;
+	/// Maximum number of processed collator exit requests per round is 5
+	/// Defends against exceeding PoV size limit in on_initialize
+	pub const MaxExitsPerRound: usize = 5;
 	/// Minimum 16 collators selected per round, default at genesis and minimum forever after
 	pub const MinSelectedCandidates: u32 = MIN_COLLATORS;
 	/// Maximum 25 delegators per collator at launch, might be increased later
@@ -699,6 +702,7 @@ impl parachain_staking::Config for Runtime {
 	type DefaultBlocksPerRound = DefaultBlocksPerRound;
 	type StakeDuration = StakeDuration;
 	type ExitQueueDelay = ExitQueueDelay;
+	type MaxExitsPerRound = MaxExitsPerRound;
 	type MinSelectedCandidates = MinSelectedCandidates;
 	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
 	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;

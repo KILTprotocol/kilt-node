@@ -122,6 +122,7 @@ parameter_types! {
 	pub const MinBlocksPerRound: BlockNumber = 3; // 20
 	pub const StakeDuration: u32 = 2;
 	pub const ExitQueueDelay: u32 = 2;
+	pub const MaxExitsPerRound: usize = 5;
 	pub const DefaultBlocksPerRound: BlockNumber = BLOCKS_PER_ROUND;
 	pub const MinSelectedCandidates: u32 = 5;
 	pub const MaxDelegatorsPerCollator: u32 = 4;
@@ -143,6 +144,7 @@ impl Config for Test {
 	type DefaultBlocksPerRound = DefaultBlocksPerRound;
 	type StakeDuration = StakeDuration;
 	type ExitQueueDelay = ExitQueueDelay;
+	type MaxExitsPerRound = MaxExitsPerRound;
 	type MinSelectedCandidates = MinSelectedCandidates;
 	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
 	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;

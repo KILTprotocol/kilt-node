@@ -80,7 +80,6 @@ pub mod pallet {
 			Currency, EstimateNextSessionRotation, Get, Imbalance, LockIdentifier, LockableCurrency,
 			ReservableCurrency, WithdrawReasons,
 		},
-		transactional,
 	};
 	use frame_system::pallet_prelude::*;
 	use pallet_balances::{BalanceLock, Locks};
@@ -141,11 +140,15 @@ pub mod pallet {
 		type DefaultBlocksPerRound: Get<Self::BlockNumber>;
 		/// Number of blocks for which unstaked balance will still be locked
 		/// before it can be withdrawn by actively calling the extrinsic
-		/// `withdraw_unbonded`.
+		/// `withdraw_unstaked`.
 		type StakeDuration: Get<Self::BlockNumber>;
 		/// Number of rounds a collator has to stay active after submitting a
 		/// request to leave the set of collator candidates.
 		type ExitQueueDelay: Get<u32>;
+		/// Maximum number of possible collator candidate exits per round.
+		/// Requires the collators to have submitted their request to leave the
+		/// set of collator candidates in advance.
+		type MaxExitsPerRound: Get<usize>;
 		/// Minimum number of collators selected from the set of candidates at
 		/// every validation round.
 		type MinSelectedCandidates: Get<u32>;
@@ -649,13 +652,22 @@ pub mod pallet {
 
 		/// Request to leave the set of collator candidates.
 		///
-		/// If successful, the account is immediately removed from the candidate
+		/// On success, the account is immediately removed from the candidate
 		/// pool to prevent selection as a collator in future validation rounds,
 		/// but unstaking of the funds is executed with a delay of
 		/// `StakeDuration` rounds.
 		///
 		/// The total stake of the pallet is not affected by this operation
 		/// until the funds are released after `StakeDuration` rounds.
+		///
+		/// NOTE: Upon starting a new session_i in `new_session`, the current
+		/// top candidates are selected to be block authors for session_i+1. Any
+		/// changes to the top candidates afterwards do not effect the set of
+		/// authors for session_i+1.
+		/// Thus, we have to make sure none of these collators can
+		/// leave before session_i+1 ends by keeping them in the ExitQueue for
+		/// at least 2 sessions (= 2 rounds), e.g., the current (i) and the next
+		/// one (i+1).
 		///
 		/// Emits `CollatorScheduledExit`.
 		#[pallet::weight(0)]
@@ -698,6 +710,10 @@ pub mod pallet {
 		/// unchanged.
 		///
 		/// Emits `CollatorWentOffline`.
+		//
+		// TODO: We might want to remove this function for the launch because
+		// collators which go offline during a round could be in the set of
+		// authors for the next session.
 		#[pallet::weight(0)]
 		pub fn go_offline(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			let collator = ensure_signed(origin)?;
@@ -820,7 +836,7 @@ pub mod pallet {
 			ensure!(after >= T::MinCollatorCandidateStk::get(), Error::<T>::ValStakeBelowMin);
 
 			// we don't unlock immediately
-			Self::prepare_withdraw(&collator, less)?;
+			Self::prep_unstake(&collator, less)?;
 
 			if state.is_active() {
 				Self::update_active(collator.clone(), state.total);
@@ -940,8 +956,6 @@ pub mod pallet {
 		///
 		/// Emits `Delegation`.
 		#[pallet::weight(0)]
-		// TODO: Fix unit test panic with transactional feature enabled
-		// #[transactional]
 		pub fn delegate_another_candidate(
 			origin: OriginFor<T>,
 			collator: <T::Lookup as StaticLookup>::Source,
@@ -1141,7 +1155,7 @@ pub mod pallet {
 				Error::<T>::NomStakeBelowMin
 			);
 
-			Self::prepare_withdraw(&delegator, remaining)?;
+			Self::prep_unstake(&delegator, remaining)?;
 
 			let before = collator.total;
 			collator.dec_delegator(delegator.clone(), less);
@@ -1261,7 +1275,7 @@ pub mod pallet {
 			state.total = state.total.saturating_sub(delegator_stake);
 
 			// we don't unlock immediately
-			Self::prepare_withdraw(&delegator, delegator_stake)?;
+			Self::prep_unstake(&delegator, delegator_stake)?;
 
 			if state.is_active() {
 				Self::update_active(collator.clone(), state.total);
@@ -1290,10 +1304,19 @@ pub mod pallet {
 		/// This implies that the higher a collator's stake upon request to
 		/// leave the set of candidates, the longer it will be possible for the
 		/// collator to unlock the staked funds.
-		// FIXME: Add limit to number of iterations for ExitQueue to prevent exceeding
-		// PoV size limit
 		fn execute_delayed_collator_exits(next: SessionIndex) {
-			let remain_exits = <ExitQueue<T>>::get()
+			let mut maybe_exits = <ExitQueue<T>>::get().to_vec();
+			let split_index = T::MaxExitsPerRound::get().min(maybe_exits.len());
+
+			// early bail if exit queue is empty
+			if split_index < 1 {
+				return;
+			}
+
+			// only iterate over at most `MaxExitsPerRound` potentially leaving candidates
+			// to defend against exceeding the PoV size
+			let remain_exits = maybe_exits.split_off(split_index);
+			maybe_exits = maybe_exits
 				.into_iter()
 				.filter_map(|x| {
 					if x.amount > next {
@@ -1301,9 +1324,8 @@ pub mod pallet {
 					} else {
 						if let Some(state) = <CollatorState<T>>::get(&x.owner) {
 							for stake in state.delegators.into_iter() {
-								// return stake to delegator
-								// NOTE: Since this function will be removed anyway, the below is okay for now
-								Self::prepare_withdraw(&stake.owner, stake.amount).ok()?;
+								// prepare unstaking of delegator
+								Self::prep_unstake_exit_queue(&stake.owner, stake.amount);
 								// remove delegation from delegator state
 								if let Some(mut delegator) = <DelegatorState<T>>::get(&stake.owner) {
 									if let Some(remaining) = delegator.rm_delegation(x.owner.clone()) {
@@ -1315,9 +1337,8 @@ pub mod pallet {
 									}
 								}
 							}
-							// return stake to collator
-							// NOTE: Since this function will be removed anyway, the below is okay for now
-							Self::prepare_withdraw(&state.id, state.stake).ok()?;
+							// prepare unstaking of collator candidate
+							Self::prep_unstake_exit_queue(&state.id, state.stake);
 
 							let TotalStake {
 								collators: total_collators,
@@ -1343,7 +1364,11 @@ pub mod pallet {
 					}
 				})
 				.collect::<Vec<Stake<T::AccountId, SessionIndex>>>();
-			<ExitQueue<T>>::put(OrderedSet::from(remain_exits));
+
+			// append back the remaining exits
+			maybe_exits.extend_from_slice(&remain_exits);
+
+			<ExitQueue<T>>::put(OrderedSet::from(maybe_exits));
 		}
 
 		/// Select the top `n` collators in terms of cumulated stake (self +
@@ -1421,7 +1446,7 @@ pub mod pallet {
 
 		/// Process the coinbase rewards for the production of a new block.
 		// Weight: reads_writes(2, 2) + deposit_into_existing
-		fn do_reward(who: &T::AccountId, reward: BalanceOf<T>, now: T::BlockNumber) {
+		fn do_reward(who: &T::AccountId, reward: BalanceOf<T>) {
 			// mint
 			if let Ok(imb) = T::Currency::deposit_into_existing(who, reward) {
 				Self::deposit_event(Event::Rewarded(who.clone(), imb.peek()));
@@ -1446,7 +1471,10 @@ pub mod pallet {
 			// check whether stake is at last place
 			match delegators.pop() {
 				Some(stake_to_remove) if stake_to_remove.amount < stake.amount => {
-					state.total = state.total.saturating_sub(stake_to_remove.amount).saturating_add(stake.amount);
+					state.total = state
+						.total
+						.saturating_sub(stake_to_remove.amount)
+						.saturating_add(stake.amount);
 					state.delegators = OrderedSet::from_sorted_set(delegators);
 					Ok((state, stake_to_remove))
 				}
@@ -1481,13 +1509,21 @@ pub mod pallet {
 		/// Set the unlocking block for the account and corresponding amount
 		/// which can be withdrawn via `withdraw_unstaked` after waiting at
 		/// least for `StakeDuration` many rounds.
-		fn prepare_withdraw(who: &T::AccountId, amount: BalanceOf<T>) -> Result<(), DispatchError> {
+		///
+		/// Throws if the amount is zero (unlikely) or if active unlocking
+		/// requests exceed limit. The latter defends against stake reduction
+		/// spamming.
+		///
+		/// Should never be called in `execute_delayed_exit_queue`!
+		fn prep_unstake(who: &T::AccountId, amount: BalanceOf<T>) -> Result<(), DispatchError> {
+			// should never occur but let's be safe
 			ensure!(!amount.is_zero(), Error::<T>::StakeDNE);
 
 			let now = <frame_system::Pallet<T>>::block_number();
 			let unlock_block = now.saturating_add(T::StakeDuration::get().into());
 			let mut unstaking = <Unstaking<T>>::get(who);
 
+			// TODO: Test
 			ensure!(
 				unstaking.len() < T::MaxUnstakeRequests::get(),
 				Error::<T>::NoMoreUnstaking
@@ -1496,6 +1532,23 @@ pub mod pallet {
 			unstaking.insert(unlock_block, amount);
 			<Unstaking<T>>::insert(who, unstaking);
 			Ok(())
+		}
+
+		/// Prepare unstaking without checking for exceeding the unstake request
+		/// limit. Same as `prep_unstake` but without checking for errors.
+		///
+		/// That way, we defend against a stagnating exit queue if all first
+		/// `MaxExitsPerRound` candidates have reached their maximum unstake
+		/// limit such that the queue would never shrink in case we executed
+		/// `prep_unstake` instead of `prep_unstake_exit_queue`.
+		///
+		/// Should only be called in `execute_delayed_exit_queue`!
+		fn prep_unstake_exit_queue(who: &T::AccountId, amount: BalanceOf<T>) {
+			let now = <frame_system::Pallet<T>>::block_number();
+			let unlock_block = now.saturating_add(T::StakeDuration::get().into());
+			let mut unstaking = <Unstaking<T>>::get(who);
+			unstaking.insert(unlock_block, amount);
+			<Unstaking<T>>::insert(who, unstaking);
 		}
 
 		/// Withdraw all staked currency which was unstaked at least
@@ -1587,6 +1640,9 @@ pub mod pallet {
 	}
 
 	impl<T: Config> pallet_session::SessionManager<T::AccountId> for Pallet<T> {
+		/// This is where the magic happens!
+		///
+		/// See NOTE of `leave_candidates` for details.
 		fn new_session(new_index: SessionIndex) -> Option<Vec<T::AccountId>> {
 			log::info!(
 				"assembling new collators for new session {} at #{:?}",

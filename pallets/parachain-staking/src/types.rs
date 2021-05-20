@@ -102,7 +102,7 @@ where
 	pub total: Balance,
 }
 
-#[derive(Encode, Decode, RuntimeDebug)]
+#[derive(Encode, Decode, RuntimeDebug, PartialEq)]
 /// Global collator state with commission fee, staked funds, and delegations
 pub struct Collator<AccountId, Balance>
 where
@@ -198,7 +198,7 @@ where
 	}
 }
 
-#[derive(Encode, Decode, RuntimeDebug)]
+#[derive(Encode, Decode, RuntimeDebug, PartialEq)]
 pub struct Delegator<AccountId: Eq + Ord, Balance: Eq + Ord> {
 	pub delegations: OrderedSet<Stake<AccountId, Balance>>,
 	pub total: Balance,

@@ -344,12 +344,16 @@ impl kilt_launch::Config for Runtime {
 parameter_types! {
 	/// Minimum round length is 1 hour
 	pub const MinBlocksPerRound: BlockNumber = HOURS;
-	/// Default BlocksPerRound is every 6 hours
-	pub const DefaultBlocksPerRound: BlockNumber = 6 * HOURS;
+	/// Default length of a round/session is 2 hours
+	pub const DefaultBlocksPerRound: BlockNumber = 2 * HOURS;
 	/// Unstaked balance can be unlocked after 7 days
 	pub const StakeDuration: BlockNumber = 7 * DAYS;
-	/// Collator exit requests are delayed by 2 rounds
-	pub const ExitQueueDelay: u32 = 2;
+	/// Collator exit requests are delayed by 12 hours (6 rounds)
+	pub const ExitQueueDelay: u32 = 6;
+	/// Maximum number of processed collator exit requests per round is 5
+	/// Defends against exceeding PoV size limit in on_initialize
+	// TODO: Potentially change after benchmarking
+	pub const MaxExitsPerRound: usize = 5;
 	/// Minimum 16 collators selected per round, default at genesis and minimum forever after
 	pub const MinSelectedCandidates: u32 = 16;
 	/// Maximum 25 delegators per collator at launch, might be increased later
@@ -363,7 +367,7 @@ parameter_types! {
 	/// Minimum stake required to be reserved to be a delegator is 1000
 	pub const MinDelegatorStk: Balance = 1000 * DOLLARS;
 	/// Maximum number of collator candidates
-	pub const MaxCollatorCandidates: u32 = 80;
+	pub const MaxCollatorCandidates: u32 = 75;
 	/// Maximum number of concurrent requests to unlock unstaked balance
 	pub const MaxUnstakeRequests: usize = 10;
 }
@@ -376,6 +380,7 @@ impl parachain_staking::Config for Runtime {
 	type DefaultBlocksPerRound = DefaultBlocksPerRound;
 	type StakeDuration = StakeDuration;
 	type ExitQueueDelay = ExitQueueDelay;
+	type MaxExitsPerRound = MaxExitsPerRound;
 	type MinSelectedCandidates = MinSelectedCandidates;
 	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
 	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;

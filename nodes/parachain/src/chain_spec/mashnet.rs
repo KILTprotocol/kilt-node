@@ -150,7 +150,6 @@ pub fn make_staging_spec(id: ParaId) -> Result<ChainSpec, String> {
 	))
 }
 
-
 pub fn load_rococo_spec() -> Result<ChainSpec, String> {
 	ChainSpec::from_json_bytes(&include_bytes!("../../res/mashnet-rococo.json")[..])
 }
