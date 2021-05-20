@@ -640,11 +640,23 @@ impl did::Config for Runtime {
 	type Origin = Origin;
 }
 
+/// Minimum round length is 1 hour (600 * 6 second block times)
+#[cfg(feature = "fast-gov")]
+pub const MIN_BLOCKS_PER_ROUND: BlockNumber = 10;
+#[cfg(not(feature = "fast-gov"))]
+pub const MIN_BLOCKS_PER_ROUND: BlockNumber = 600;
+
+/// Default BlocksPerRound is every 12 hours (7200 * 6 second block times)
+#[cfg(feature = "fast-gov")]
+pub const DEFAULT_BLOCKS_PER_ROUND: BlockNumber = 20;
+#[cfg(not(feature = "fast-gov"))]
+pub const DEFAULT_BLOCKS_PER_ROUND: BlockNumber = 7200;
+
 parameter_types! {
-	/// Minimum round length is 1 hour (600 * 6 second block times)
-	pub const MinBlocksPerRound: u32 = 600;
-	/// Default BlocksPerRound is every 12 hours (7200 * 6 second block times)
-	pub const DefaultBlocksPerRound: u32 = 7200;
+	/// Minimum round length
+	pub const MinBlocksPerRound: BlockNumber = MIN_BLOCKS_PER_ROUND;
+	/// Default BlocksPerRound
+	pub const DefaultBlocksPerRound: BlockNumber = DEFAULT_BLOCKS_PER_ROUND;
 	/// Reward payments and collator exit requests are delayed by 7 days (7200 * 2 * 7 * block_time)
 	pub const BondDuration: u32 = 14;
 	/// Minimum 16 collators selected per round, default at genesis and minimum forever after

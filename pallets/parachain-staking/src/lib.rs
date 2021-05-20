@@ -97,7 +97,7 @@ pub mod pallet {
 
 	use crate::{
 		set::OrderedSet,
-		types::{BalanceOf, Collator, CollatorSnapshot, Delegator, RoundIndex, RoundInfo, Stake, TotalStake},
+		types::{BalanceOf, Collator, CollatorSnapshot, Delegator, RoundInfo, Stake, TotalStake},
 	};
 
 	/// Kilt-specific lock for staking rewards.
@@ -145,7 +145,7 @@ pub mod pallet {
 		/// Number of rounds a collator's funds remain staked after the collator
 		/// submits a request to leave the set of collator candidates.
 		// TODO: Split into `StakeDuration` and `ExitQueueDelay`
-		type StakeDuration: Get<RoundIndex>;
+		type StakeDuration: Get<SessionIndex>;
 		/// Minimum number of collators selected from the set of candidates at
 		/// every validation round.
 		type MinSelectedCandidates: Get<u32>;
@@ -255,7 +255,7 @@ pub mod pallet {
 		/// \[round number, total stake of
 		/// selected collators, total stake of delegators for the selected
 		/// collators\]
-		NewRound(T::BlockNumber, RoundIndex, BalanceOf<T>, BalanceOf<T>),
+		NewRound(T::BlockNumber, SessionIndex, BalanceOf<T>, BalanceOf<T>),
 		/// A new account has joined the set of collator candidates.
 		/// \[account, amount staked by the new candidate, new total stake of
 		/// collator candidates\]
@@ -272,15 +272,15 @@ pub mod pallet {
 		CollatorStakedLess(T::AccountId, BalanceOf<T>, BalanceOf<T>),
 		/// A collator candidate has gone from active to idle.
 		/// \[round number, collator's account\]
-		CollatorWentOffline(RoundIndex, T::AccountId),
+		CollatorWentOffline(SessionIndex, T::AccountId),
 		/// A collator candidate has returned to an active state.
 		/// \[round number, collator's account\]
-		CollatorBackOnline(RoundIndex, T::AccountId),
+		CollatorBackOnline(SessionIndex, T::AccountId),
 		/// A collator candidate has started the process to leave the set of
 		/// candidates. \[round number, collator's account, round number when
 		/// the collator will be effectively removed from the set of
 		/// candidates\]
-		CollatorScheduledExit(RoundIndex, T::AccountId, RoundIndex),
+		CollatorScheduledExit(SessionIndex, T::AccountId, SessionIndex),
 		/// An account has left the set of collator candidates.
 		/// \[account, amount of funds un-staked, new total stake of collator
 		/// candidates, new total stake of delegators for the remaining
@@ -332,7 +332,7 @@ pub mod pallet {
 		/// The length in blocks for future validation rounds has changed.
 		/// \[round number, first block in the current round, old value, new
 		/// value\]
-		BlocksPerRoundSet(RoundIndex, T::BlockNumber, T::BlockNumber, T::BlockNumber),
+		BlocksPerRoundSet(SessionIndex, T::BlockNumber, T::BlockNumber, T::BlockNumber),
 	}
 
 	#[pallet::hooks]
@@ -413,7 +413,7 @@ pub mod pallet {
 	/// A queue of collators waiting to be removed from the set of candidates.
 	#[pallet::storage]
 	#[pallet::getter(fn exit_queue)]
-	type ExitQueue<T: Config> = StorageValue<_, OrderedSet<Stake<T::AccountId, RoundIndex>>, ValueQuery>;
+	type ExitQueue<T: Config> = StorageValue<_, OrderedSet<Stake<T::AccountId, SessionIndex>>, ValueQuery>;
 
 	/// Snapshot of collator delegation stake at the start of the round.
 	///
@@ -1284,7 +1284,7 @@ pub mod pallet {
 		/// collator to unlock the staked funds.
 		// FIXME: Add limit to number of iterations for ExitQueue to prevent exceeding
 		// PoV size limit
-		fn execute_delayed_collator_exits(next: RoundIndex) {
+		fn execute_delayed_collator_exits(next: SessionIndex) {
 			let remain_exits = <ExitQueue<T>>::get()
 				.into_iter()
 				.filter_map(|x| {
@@ -1334,7 +1334,7 @@ pub mod pallet {
 						None
 					}
 				})
-				.collect::<Vec<Stake<T::AccountId, RoundIndex>>>();
+				.collect::<Vec<Stake<T::AccountId, SessionIndex>>>();
 			<ExitQueue<T>>::put(OrderedSet::from(remain_exits));
 		}
 

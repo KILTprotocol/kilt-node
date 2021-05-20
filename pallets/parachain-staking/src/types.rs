@@ -22,6 +22,7 @@ use sp_runtime::{
 	traits::{AtLeast32BitUnsigned, Saturating},
 	RuntimeDebug,
 };
+use sp_staking::SessionIndex;
 use sp_std::{
 	cmp::Ordering,
 	ops::{Add, Sub},
@@ -79,7 +80,7 @@ pub enum CollatorStatus {
 	/// Temporarily inactive and excused for inactivity
 	Idle,
 	/// Staked until the inner round
-	Leaving(RoundIndex),
+	Leaving(SessionIndex),
 }
 
 impl Default for CollatorStatus {
@@ -178,7 +179,7 @@ where
 		self.state = CollatorStatus::Active;
 	}
 
-	pub fn leave_candidates(&mut self, round: RoundIndex) {
+	pub fn leave_candidates(&mut self, round: SessionIndex) {
 		self.state = CollatorStatus::Leaving(round);
 	}
 }
@@ -278,7 +279,7 @@ where
 #[derive(Copy, Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
 pub struct RoundInfo<BlockNumber> {
 	/// Current round index.
-	pub current: RoundIndex,
+	pub current: SessionIndex,
 	/// The first block of the current round.
 	pub first: BlockNumber,
 	/// The length of the current round in blocks.
@@ -289,7 +290,7 @@ impl<B> RoundInfo<B>
 where
 	B: Copy + Saturating + From<u32> + PartialOrd,
 {
-	pub fn new(current: RoundIndex, first: B, length: B) -> RoundInfo<B> {
+	pub fn new(current: SessionIndex, first: B, length: B) -> RoundInfo<B> {
 		RoundInfo { current, first, length }
 	}
 
@@ -324,5 +325,4 @@ pub struct TotalStake<Balance: Default> {
 	pub delegators: Balance,
 }
 
-pub type RoundIndex = u32;
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
