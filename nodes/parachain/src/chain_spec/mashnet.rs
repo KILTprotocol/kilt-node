@@ -25,7 +25,7 @@ use kilt_parachain_runtime::{
 	ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig,
 	WASM_BINARY,
 };
-use kilt_primitives::{AccountId, AuthorityId, Balance, BlockNumber, constants::{DOLLARS, MINUTES, MONTHS}};
+use kilt_primitives::{AccountId, AuthorityId, Balance, BlockNumber, constants::{DOLLARS, MINUTES}};
 use sc_service::ChainType;
 use sp_core::{crypto::UncheckedInto, sr25519};
 use sp_runtime::Perquintill;
@@ -220,7 +220,7 @@ fn testnet_genesis(
 	type LockingPeriod = BlockNumber;
 
 	// vesting and locks as initially designed
-	let airdrop_accounts_json = &include_bytes!("../../res/genesis-testing/genesis_accounts.json")[..];
+	let airdrop_accounts_json = &include_bytes!("../../res/genesis-testing/mash-genesis-accounts.json")[..];
 	let airdrop_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
 		serde_json::from_slice(airdrop_accounts_json).expect("Could not read from genesis_accounts.json");
 
