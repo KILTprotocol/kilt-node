@@ -29,7 +29,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use frame_system::limits::{BlockLength, BlockWeights};
 use kilt_primitives::{
-	constants::{DOLLARS, MILLICENTS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
+	constants::{DAYS, DOLLARS, MILLICENTS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
 	AccountId, AuthorityId, Balance, BlockNumber, Hash, Header, Index, Signature,
 };
 pub use parachain_staking::{InflationInfo, RewardRate, StakingInfo};
@@ -58,6 +58,7 @@ pub use frame_support::{
 	StorageValue,
 };
 
+use kilt_primitives::constants::HOURS;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
 #[cfg(any(feature = "std", test))]
@@ -328,24 +329,26 @@ impl kilt_launch::Config for Runtime {
 }
 
 parameter_types! {
-	/// Minimum round length is 1 hour (600 * 6 second block times)
-	pub const MinBlocksPerRound: u32 = 600;
-	/// Default BlocksPerRound is every 12 hours (7200 * 6 second block times)
-	pub const DefaultBlocksPerRound: u32 = 7200;
-	/// Reward payments and collator exit requests are delayed by 7 days (7200 * 2 * 7 * block_time)
-	pub const BondDuration: u32 = 14;
+	/// Minimum round length is 1 hour
+	pub const MinBlocksPerRound: BlockNumber = HOURS;
+	/// Default BlocksPerRound is every 6 hours
+	pub const DefaultBlocksPerRound: BlockNumber = 6 * HOURS;
+	/// Unstaked balance can be unlocked after 7 days
+	pub const StakeDuration: BlockNumber = 7 * DAYS;
+	/// Collator exit requests are delayed by 2 rounds
+	pub const ExitQueueDelay: u32 = 2;
 	/// Minimum 16 collators selected per round, default at genesis and minimum forever after
 	pub const MinSelectedCandidates: u32 = 16;
-	/// Maximum 1 delegators per collator at launch, will be increased later
-	pub const MaxDelegatorsPerCollator: u32 = 1;
-	/// Maximum 25 collators per delegator
-	pub const MaxCollatorsPerDelegator: u32 = 25;
+	/// Maximum 25 delegators per collator at launch, might be increased later
+	pub const MaxDelegatorsPerCollator: u32 = 25;
+	/// Maximum 1 collator per delegator at launch, will be increased later
+	pub const MaxCollatorsPerDelegator: u32 = 1;
 	/// Minimum stake required to be reserved to be a collator is 10_000
-	pub const MinCollatorStk: u128 = 10_000 * DOLLARS;
+	pub const MinCollatorStk: Balance = 10_000 * DOLLARS;
 	/// Max stake possible to be reserved to be collator candidate is 100_0000
-	pub const MaxCollatorCandidateStk: u128 = 200_000 * DOLLARS;
+	pub const MaxCollatorCandidateStk: Balance = 200_000 * DOLLARS;
 	/// Minimum stake required to be reserved to be a delegator is 1000
-	pub const MinDelegatorStk: u128 = 1000 * DOLLARS;
+	pub const MinDelegatorStk: Balance = 1000 * DOLLARS;
 	/// Maximum number of collator candidates
 	pub const MaxCollatorCandidates: u32 = 80;
 	/// Maximum number of concurrent requests to unlock unstaked balance
@@ -358,7 +361,8 @@ impl parachain_staking::Config for Runtime {
 	type CurrencyBalance = Balance;
 	type MinBlocksPerRound = MinBlocksPerRound;
 	type DefaultBlocksPerRound = DefaultBlocksPerRound;
-	type StakeDuration = BondDuration;
+	type StakeDuration = StakeDuration;
+	type ExitQueueDelay = ExitQueueDelay;
 	type MinSelectedCandidates = MinSelectedCandidates;
 	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
 	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;

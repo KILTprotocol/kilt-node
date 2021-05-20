@@ -25,7 +25,10 @@ use kilt_parachain_runtime::{
 	ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig,
 	WASM_BINARY,
 };
-use kilt_primitives::{AccountId, AuthorityId, Balance, BlockNumber, constants::{DOLLARS, MINUTES}};
+use kilt_primitives::{
+	constants::{DOLLARS, MINUTES},
+	AccountId, AuthorityId, Balance, BlockNumber,
+};
 use sc_service::ChainType;
 use sp_core::{crypto::UncheckedInto, sr25519};
 use sp_runtime::Perquintill;

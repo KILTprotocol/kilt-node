@@ -88,7 +88,10 @@ pub mod pallet {
 	// TODO: Use ORML one once they point to Substrate master
 	// use orml_utilities::OrderedSet;
 	use pallet_balances::{BalanceLock, Locks};
-	use sp_runtime::{Percent, Perquintill, traits::{Saturating, StaticLookup, Zero}};
+	use sp_runtime::{
+		traits::{Saturating, StaticLookup, Zero},
+		Percent, Perquintill,
+	};
 	use sp_staking::SessionIndex;
 	use sp_std::{collections::btree_map::BTreeMap, prelude::*};
 
@@ -139,10 +142,13 @@ pub mod pallet {
 		/// Default number of blocks validation rounds last, as set in the
 		/// genesis configuration.
 		type DefaultBlocksPerRound: Get<Self::BlockNumber>;
-		/// Number of rounds a collator's funds remain staked after the collator
-		/// submits a request to leave the set of collator candidates.
-		// TODO: Split into `StakeDuration` and `ExitQueueDelay`
-		type StakeDuration: Get<SessionIndex>;
+		/// Number of blocks for which unstaked balance will still be locked
+		/// before it can be withdrawn by actively calling the extrinsic
+		/// `withdraw_unbonded`.
+		type StakeDuration: Get<Self::BlockNumber>;
+		/// Number of rounds a collator has to stay active after submitting a
+		/// request to leave the set of collator candidates.
+		type ExitQueueDelay: Get<u32>;
 		/// Minimum number of collators selected from the set of candidates at
 		/// every validation round.
 		type MinSelectedCandidates: Get<u32>;
@@ -670,7 +676,7 @@ pub mod pallet {
 			ensure!(!state.is_leaving(), Error::<T>::AlreadyLeaving);
 			let mut exits = <ExitQueue<T>>::get();
 			let now = <Round<T>>::get().current;
-			let when = now.saturating_add(T::StakeDuration::get());
+			let when = now.saturating_add(T::ExitQueueDelay::get());
 			ensure!(
 				exits.insert(Stake {
 					owner: collator.clone(),
@@ -1044,7 +1050,10 @@ pub mod pallet {
 		/// NOTE:: update candidates for next round in
 		/// `delegator_revokes_collator`
 		#[pallet::weight(0)]
-		pub fn revoke_delegation(origin: OriginFor<T>, collator: <T::Lookup as StaticLookup>::Source) -> DispatchResultWithPostInfo {
+		pub fn revoke_delegation(
+			origin: OriginFor<T>,
+			collator: <T::Lookup as StaticLookup>::Source,
+		) -> DispatchResultWithPostInfo {
 			let collator = T::Lookup::lookup(collator)?;
 			Self::delegator_revokes_collator(ensure_signed(origin)?, collator)
 		}
@@ -1156,10 +1165,7 @@ pub mod pallet {
 		/// The withdrawn funds will be fully available to the account, minus
 		/// the transaction fees, for all other operations.
 		#[pallet::weight(0)]
-		pub fn withdraw_unstaked(
-			origin: OriginFor<T>,
-			target: <T::Lookup as StaticLookup>::Source
-		) -> DispatchResult {
+		pub fn withdraw_unstaked(origin: OriginFor<T>, target: <T::Lookup as StaticLookup>::Source) -> DispatchResult {
 			ensure_signed(origin)?;
 			let target = T::Lookup::lookup(target)?;
 

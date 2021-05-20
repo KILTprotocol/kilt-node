@@ -382,7 +382,7 @@ fn collator_exit_executes_after_delay() {
 			roll_to(21, vec![]);
 			// we must exclude leaving collators from rewards while
 			// holding them retroactively accountable for previous faults
-			// (within the last T::BondDuration rounds)
+			// (within the last T::StakeDuration rounds)
 			let expected = vec![
 				Event::NewRound(5, 1, 700, 400),
 				Event::NewRound(10, 2, 700, 400),
@@ -942,10 +942,10 @@ fn multiple_delegations() {
 			assert_eq!(Balances::free_balance(&7), 100);
 			// TODO: Enable after removing execute_delayed_collator_exits
 			// let mut unbonding_6 = BTreeMap::new();
-			// unbonding_6.insert(31 + <Test as Config>::BondDuration::get(), 10);
+			// unbonding_6.insert(31 + <Test as Config>::StakeDuration::get(), 10);
 			// assert_eq!(StakePallet::unstaking(6), unbonding_6);
 			// let mut unbonding_7 = BTreeMap::new();
-			// unbonding_7.insert(31 + <Test as Config>::BondDuration::get(), 80);
+			// unbonding_7.insert(31 + <Test as Config>::StakeDuration::get(), 80);
 			// assert_eq!(StakePallet::unstaking(6), unbonding_7);
 			// TODO: Switch back to n == 40 after removing execute_delayed_collator_exits
 			roll_to(50, vec![]);
@@ -1472,7 +1472,7 @@ fn revoke_delegation_or_leave_delegators() {
 // 			set_author(8, 1, 100);
 // 			roll_to(9 * blocks_per_round + 1, vec![]);
 // 			// new delegation is rewarded for first time, 2 rounds after joining
-// 			// (`BondDuration` = 2)
+// 			// (`StakeDuration` = 2)
 // 			let mut round_8_to_9 = vec![
 // 				// round 8 finalization
 // 				Event::Rewarded(1, 1562),
