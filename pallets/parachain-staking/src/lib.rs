@@ -259,10 +259,10 @@ pub mod pallet {
 		CollatorLeft(T::AccountId, BalanceOf<T>, BalanceOf<T>, BalanceOf<T>),
 		/// A delegator has increased the amount of funds at stake for a collator.
 		/// \[delegator's account, collator's account, previous delegation stake, new delegation stake\]
-		DelegationIncreased(T::AccountId, T::AccountId, BalanceOf<T>, BalanceOf<T>),
+		DelegatorStakedMore(T::AccountId, T::AccountId, BalanceOf<T>, BalanceOf<T>),
 		/// A delegator has decreased the amount of funds at stake for a collator.
 		/// \[delegator's account, collator's account, previous delegation stake, new delegation stake\]
-		DelegationDecreased(T::AccountId, T::AccountId, BalanceOf<T>, BalanceOf<T>),
+		DelegatorStakedLess(T::AccountId, T::AccountId, BalanceOf<T>, BalanceOf<T>),
 		/// An account has left the set of delegators.
 		/// \[account, amount of funds un-staked\]
 		DelegatorLeft(T::AccountId, BalanceOf<T>),
@@ -939,7 +939,7 @@ pub mod pallet {
 
 			<CollatorState<T>>::insert(&candidate, collator);
 			<DelegatorState<T>>::insert(&delegator, delegations);
-			Self::deposit_event(Event::DelegationIncreased(delegator, candidate, before, after));
+			Self::deposit_event(Event::DelegatorStakedMore(delegator, candidate, before, after));
 			Ok(().into())
 		}
 
@@ -984,7 +984,7 @@ pub mod pallet {
 			}
 			<CollatorState<T>>::insert(&candidate, collator);
 			<DelegatorState<T>>::insert(&delegator, delegations);
-			Self::deposit_event(Event::DelegationDecreased(delegator, candidate, before, after));
+			Self::deposit_event(Event::DelegatorStakedLess(delegator, candidate, before, after));
 			Ok(().into())
 		}
 
