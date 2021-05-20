@@ -961,7 +961,6 @@ fn multiple_delegations() {
 		});
 }
 
-
 #[test]
 fn should_update_total_stake() {
 	ExtBuilder::default()
@@ -984,10 +983,7 @@ fn should_update_total_stake() {
 		.build()
 		.execute_with(|| {
 			let old_stake = Stake::total();
-			assert_noop!(
-				Stake::candidate_bond_more(Origin::signed(6), 50),
-				Error::<Test>::CandidateDNE
-			);
+			assert_ok!(Stake::candidate_bond_more(Origin::signed(1), 50));
 			assert_eq!(
 				Stake::total(),
 				TotalStake {
@@ -997,10 +993,7 @@ fn should_update_total_stake() {
 			);
 
 			let old_stake = Stake::total();
-			assert_noop!(
-				Stake::candidate_bond_less(Origin::signed(6), 50),
-				Error::<Test>::CandidateDNE
-			);
+			assert_ok!(Stake::candidate_bond_less(Origin::signed(1), 50));
 			assert_eq!(
 				Stake::total(),
 				TotalStake {
@@ -1010,10 +1003,7 @@ fn should_update_total_stake() {
 			);
 
 			let old_stake = Stake::total();
-			assert_noop!(
-				Stake::delegator_bond_more(Origin::signed(10), 6, 50),
-				Error::<Test>::CandidateDNE
-			);
+			assert_ok!(Stake::delegator_bond_more(Origin::signed(7), 6, 50));
 			assert_eq!(
 				Stake::total(),
 				TotalStake {
@@ -1023,10 +1013,7 @@ fn should_update_total_stake() {
 			);
 
 			let old_stake = Stake::total();
-			assert_noop!(
-				Stake::delegator_bond_less(Origin::signed(10), 6, 50),
-				Error::<Test>::CandidateDNE
-			);
+			assert_ok!(Stake::delegator_bond_less(Origin::signed(7), 6, 50));
 			assert_eq!(
 				Stake::total(),
 				TotalStake {
