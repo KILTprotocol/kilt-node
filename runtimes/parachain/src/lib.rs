@@ -671,8 +671,8 @@ parameter_types! {
 	pub const DefaultBlocksPerRound: BlockNumber = DEFAULT_BLOCKS_PER_ROUND;
 	/// Unstaked balance can be unlocked after 7 days
 	pub const StakeDuration: BlockNumber = STAKE_DURATION;
-	/// Collator exit requests are delayed by 12 hours (6 rounds)
-	pub const ExitQueueDelay: u32 = 6;
+	/// Collator exit requests are delayed by 8 hours (4 rounds/sessions)
+	pub const ExitQueueDelay: u32 = 4;
 	/// Maximum number of processed collator exit requests per round is 5
 	/// Defends against exceeding PoV size limit in on_initialize
 	pub const MaxExitsPerRound: usize = 5;
