@@ -20,70 +20,87 @@
 //! Benchmarking
 use super::*;
 use crate::Pallet as ParachainStaking;
-use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
-// use frame_support::{assert_ok, traits::OnFinalize};
-use frame_system::RawOrigin;
-use sp_runtime::Perquintill;
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
+use frame_support::{
+	assert_ok,
+	traits::{Currency, Get, Hooks, OnFinalize},
+};
+use frame_system::{pallet_prelude::BlockNumberFor, RawOrigin};
+use sp_runtime::{traits::One, Perquintill};
+use sp_std::vec::Vec;
 
-// const BLOCK: u32 = 5;
-// const MAX_COLLATORS: usize = 2;
-// const MAX_CANDIDATES: usize = 5;
+const COLLATOR_ACCOUNT_SEED: u32 = 0;
 
-// // fn setup<T: Config>() -> Result<(), &'static str> {
+fn setup_collator_candidates<T: Config>(num_collators: u32) -> Vec<T::AccountId> {
+	let collators: Vec<T::AccountId> = (0..num_collators)
+		.map(|i| account("collator", i as u32, COLLATOR_ACCOUNT_SEED))
+		.collect();
 
-// // }
+	for acc in collators.iter() {
+		T::Currency::make_free_balance_be(&acc, T::MinCollatorCandidateStk::get());
+		assert_ok!(<Pallet<T>>::join_candidates(
+			T::Origin::from(Some(acc.clone()).into()),
+			T::MinCollatorCandidateStk::get(),
+		));
+	}
+
+	collators
+}
 
 benchmarks! {
 	set_inflation {
-		let inflation = InflationInfo::new(Perquintill::from_percent(10), Perquintill::from_percent(15), Perquintill::from_percent(40), Perquintill::from_percent(10));
-
+		let inflation = InflationInfo::new(
+			Perquintill::from_percent(10),
+			Perquintill::from_percent(15),
+			Perquintill::from_percent(40),
+			Perquintill::from_percent(10)
+		);
 	}: _(RawOrigin::Root, inflation)
+	verify {}
+
+	join_candidates {
+		let n in 1 .. T::MaxCollatorCandidates::get() - 1;
+
+		let candidates = setup_collator_candidates::<T>(n);
+		let new_candidate = account("new_collator", u32::MAX , COLLATOR_ACCOUNT_SEED);
+		T::Currency::make_free_balance_be(&new_candidate, T::MinCollatorCandidateStk::get());
+
+	}: _(RawOrigin::Signed(new_candidate), T::MinCollatorCandidateStk::get())
 	verify {
 	}
 
-// 	on_finalize {
-// 		let block = BLOCK;
-// 		// TODO: From min to max
-// 		let num_of_collators = MAX_CANDIDATES;
-// 		let num_of_candidates = MAX_CANDIDATES;
-// 		let collator_stake
 
-// 		// initialize balance
+	on_initialize {
+		// TODO: implement this benchmark
+		let num_of_collators = T::MinSelectedCandidates::get();
+		let num_of_candidates = T::MaxCollatorCandidates::get();
 
-// 		// initialize candidates
-// 		let candidate_ids: Vec<T as frame_system::Config>::AccountId> =
-// (1..=MAX_CANDIDATES).collect() 		let candidates: Vec<(<T as
-// frame_system::Config>::AccountId, BalanceOf<T>)> = 		candidate_ids.clone().
-// into_iter().map(|i| (i, 100_000 * DECIMALS)).collect();
-
-// 		// TODO: initialize delegators
-
-// 		 // TODO: Set up genesis round
-
-// 		 // TODO: Collator should exit
-// 	}: { ParachainStaking::<T>::on_finalize(block.into()) }
-// 	verify {
-// 	}
+	}: { <ParachainStaking<T> as Hooks<BlockNumberFor<T>>>::on_initialize(T::BlockNumber::one()) }
+	verify {
+	}
 }
 
-// #[cfg(test)]
-// mod tests {
-// 	use super::*;
-// 	use crate::mock::Test;
-// 	use sp_io::TestExternalities;
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::mock::Test;
+	use sp_io::TestExternalities;
 
-// 	pub fn new_test_ext() -> TestExternalities {
-// 		let t = frame_system::GenesisConfig::default().build_storage::<Test>().
-// unwrap(); 		TestExternalities::new(t)
-// 	}
+	pub fn new_test_ext() -> TestExternalities {
+		let t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+		TestExternalities::new(t)
+	}
 
-// 	#[test]
-// 	fn test_benchmarks() {
-// 		new_test_ext().execute_with(|| {
-// 			assert_ok!(test_benchmark_set_inflation::<Test>());
-// 		});
-// 	}
-// }
+	#[test]
+	fn test_benchmarks() {
+		new_test_ext().execute_with(|| {
+			assert_ok!(test_benchmark_set_inflation::<Test>());
+		});
+	}
+}
 
-// impl_benchmark_test_suite!(Pallet, crate::tests::new_test_ext(),
-// crate::tests::Test);
+impl_benchmark_test_suite!(
+	ParachainStaking,
+	crate::mock::ExtBuilder::default().build(),
+	crate::mock::Test,
+);

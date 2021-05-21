@@ -114,4 +114,5 @@ default = []
 fast-gov = ["kilt-parachain-runtime/fast-gov"]
 runtime-benchmarks = [
   "kilt-parachain-runtime/runtime-benchmarks",
+  "spiritnet-runtime/runtime-benchmarks",
 ]
