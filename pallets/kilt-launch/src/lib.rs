@@ -721,9 +721,11 @@ pub mod pallet {
 			// Otherwise, this will always be the source's locked amount
 			let max_add_amount = source_amount.min(max_amount.unwrap_or(source_amount));
 
-			// We don't need to transfer any locks if the lock already expired. So we bail early
+			// We don't need to transfer any locks if the lock already expired. So we bail
+			// early
 			if unlock_block <= frame_system::Pallet::<T>::block_number() {
-				// But we still need to reduce the old lock or remove it, if it's consumed completly.
+				// But we still need to reduce the old lock or remove it, if it's consumed
+				// completly.
 				if max_add_amount == source_amount {
 					<BalanceLocks<T>>::remove(&source);
 				} else {
