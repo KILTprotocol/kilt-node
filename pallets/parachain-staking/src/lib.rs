@@ -1,4 +1,4 @@
-	// KILT Blockchain – https://botlabs.org
+// KILT Blockchain – https://botlabs.org
 // Copyright (C) 2019-2021 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
@@ -397,7 +397,8 @@ pub mod pallet {
 	/// The set of collator candidates, each with their total backing stake.
 	#[pallet::storage]
 	#[pallet::getter(fn candidate_pool)]
-	pub(crate) type CandidatePool<T: Config> = StorageValue<_, OrderedSet<Stake<T::AccountId, BalanceOf<T>>>, ValueQuery>;
+	pub(crate) type CandidatePool<T: Config> =
+		StorageValue<_, OrderedSet<Stake<T::AccountId, BalanceOf<T>>>, ValueQuery>;
 
 	/// A queue of collators waiting to be removed from the set of candidates.
 	#[pallet::storage]

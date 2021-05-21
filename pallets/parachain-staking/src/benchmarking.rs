@@ -41,8 +41,11 @@ fn setup_collator_candidates<T: Config>(num_collators: u32) -> Vec<T::AccountId>
 		.map(|i| account("collator", i as u32, COLLATOR_ACCOUNT_SEED))
 		.collect();
 
-
-	log::info!("add {} collators to {} collators", collators.len(), CandidatePool::<T>::get().len());
+	log::info!(
+		"add {} collators to {} collators",
+		collators.len(),
+		CandidatePool::<T>::get().len()
+	);
 
 	for acc in collators.iter() {
 		T::Currency::make_free_balance_be(&acc, T::MinCollatorCandidateStk::get());
@@ -142,8 +145,4 @@ mod tests {
 	}
 }
 
-impl_benchmark_test_suite!(
-	Pallet,
-	crate::mock::ExtBuilder::default().build(),
-	crate::mock::Test,
-);
+impl_benchmark_test_suite!(Pallet, crate::mock::ExtBuilder::default().build(), crate::mock::Test,);
