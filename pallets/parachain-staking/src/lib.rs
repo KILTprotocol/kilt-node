@@ -457,10 +457,6 @@ pub mod pallet {
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
 			assert!(self.inflation_config.is_valid(), "Invalid inflation configuration");
-			assert!(
-				self.stakers.iter().any(|s| s.1.is_none()),
-				"at least one collator in genesis config"
-			);
 
 			<InflationConfig<T>>::put(self.inflation_config.clone());
 
@@ -486,9 +482,7 @@ pub mod pallet {
 			<TotalSelected<T>>::put(T::MinSelectedCandidates::get());
 
 			// Choose top TotalSelected collator candidates
-			let (v_count, collator_staked, delegator_staked) = <Pallet<T>>::select_top_candidates();
-			assert!(!v_count.is_zero());
-			assert!(!<SelectedCandidates<T>>::get().is_empty());
+			let (_, collator_staked, delegator_staked) = <Pallet<T>>::select_top_candidates();
 
 			// Start Round 0 at Block 0
 
