@@ -512,7 +512,7 @@ pub mod pallet {
 		/// The dispatch origin must be Root.
 		///
 		/// Emits `RoundInflationSet`.
-		#[pallet::weight(0)]
+		#[pallet::weight(100_000_000)]
 		pub fn set_inflation(origin: OriginFor<T>, inflation: InflationInfo) -> DispatchResult {
 			frame_system::ensure_root(origin)?;
 
@@ -538,7 +538,7 @@ pub mod pallet {
 		/// The dispatch origin must be Root.
 		///
 		/// Emits `MaxSelectedCandidatesSet`.
-		#[pallet::weight(0)]
+		#[pallet::weight(100_000_000)]
 		pub fn set_max_selected_candidates(origin: OriginFor<T>, new: u32) -> DispatchResultWithPostInfo {
 			frame_system::ensure_root(origin)?;
 			ensure!(new >= T::MinSelectedCandidates::get(), Error::<T>::CannotSetBelowMin);
@@ -563,7 +563,7 @@ pub mod pallet {
 		/// The dispatch origin must be Root.
 		///
 		/// Emits `BlocksPerRoundSet`.
-		#[pallet::weight(0)]
+		#[pallet::weight(100_000_000)]
 		pub fn set_blocks_per_round(origin: OriginFor<T>, new: T::BlockNumber) -> DispatchResultWithPostInfo {
 			frame_system::ensure_root(origin)?;
 			ensure!(new >= T::MinBlocksPerRound::get(), Error::<T>::CannotSetBelowMin);
@@ -594,7 +594,7 @@ pub mod pallet {
 		/// candidates nor of the delegators set.
 		///
 		/// Emits `JoinedCollatorCandidates`.
-		#[pallet::weight(0)]
+		#[pallet::weight(100_000_000)]
 		pub fn join_candidates(origin: OriginFor<T>, stake: BalanceOf<T>) -> DispatchResultWithPostInfo {
 			let acc = ensure_signed(origin)?;
 			ensure!(!Self::is_candidate(&acc), Error::<T>::CandidateExists);
@@ -659,7 +659,7 @@ pub mod pallet {
 		/// one (i+1).
 		///
 		/// Emits `CollatorScheduledExit`.
-		#[pallet::weight(0)]
+		#[pallet::weight(100_000_000)]
 		pub fn leave_candidates(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			let collator = ensure_signed(origin)?;
 			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateDNE)?;
@@ -701,7 +701,7 @@ pub mod pallet {
 		/// allowed range as set in the pallet's configuration.
 		///
 		/// Emits `CollatorStakedMore`.
-		#[pallet::weight(0)]
+		#[pallet::weight(100_000_000)]
 		pub fn candidate_stake_more(origin: OriginFor<T>, more: BalanceOf<T>) -> DispatchResultWithPostInfo {
 			let collator = ensure_signed(origin)?;
 
@@ -745,7 +745,7 @@ pub mod pallet {
 		/// allowed range as set in the pallet's configuration.
 		///
 		/// Emits `CollatorStakedLess`.
-		#[pallet::weight(0)]
+		#[pallet::weight(100_000_000)]
 		pub fn candidate_stake_less(origin: OriginFor<T>, less: BalanceOf<T>) -> DispatchResultWithPostInfo {
 			let collator = ensure_signed(origin)?;
 			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateDNE)?;
@@ -791,7 +791,7 @@ pub mod pallet {
 		/// increased accordingly.
 		///
 		/// Emits `Delegation`.
-		#[pallet::weight(0)]
+		#[pallet::weight(100_000_000)]
 		pub fn join_delegators(
 			origin: OriginFor<T>,
 			collator: <T::Lookup as StaticLookup>::Source,
@@ -875,7 +875,7 @@ pub mod pallet {
 		/// increased accordingly.
 		///
 		/// Emits `Delegation`.
-		#[pallet::weight(0)]
+		#[pallet::weight(100_000_000)]
 		pub fn delegate_another_candidate(
 			origin: OriginFor<T>,
 			collator: <T::Lookup as StaticLookup>::Source,
@@ -958,7 +958,7 @@ pub mod pallet {
 		/// rounds.
 		///
 		/// Emits `DelegatorLeft`.
-		#[pallet::weight(0)]
+		#[pallet::weight(100_000_000)]
 		pub fn leave_delegators(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			let acc = ensure_signed(origin)?;
 			let delegator = <DelegatorState<T>>::get(&acc).ok_or(Error::<T>::DelegatorDNE)?;
@@ -988,7 +988,7 @@ pub mod pallet {
 		/// Emits `DelegatorLeft`.
 		/// NOTE:: update candidates for next round in
 		/// `delegator_revokes_collator`
-		#[pallet::weight(0)]
+		#[pallet::weight(100_000_000)]
 		pub fn revoke_delegation(
 			origin: OriginFor<T>,
 			collator: <T::Lookup as StaticLookup>::Source,
@@ -1004,7 +1004,7 @@ pub mod pallet {
 		/// collator candidate to be added to it.
 		///
 		/// Emits `DelegatorStakedMore`.
-		#[pallet::weight(0)]
+		#[pallet::weight(100_000_000)]
 		pub fn delegator_stake_more(
 			origin: OriginFor<T>,
 			candidate: <T::Lookup as StaticLookup>::Source,
@@ -1056,7 +1056,7 @@ pub mod pallet {
 		/// allowed range as set in the pallet's configuration.
 		///
 		/// Emits `DelegatorStakedLess`.
-		#[pallet::weight(0)]
+		#[pallet::weight(100_000_000)]
 		pub fn delegator_stake_less(
 			origin: OriginFor<T>,
 			candidate: <T::Lookup as StaticLookup>::Source,
@@ -1104,7 +1104,7 @@ pub mod pallet {
 		///
 		/// The withdrawn funds will be fully available to the account, minus
 		/// the transaction fees, for all other operations.
-		#[pallet::weight(0)]
+		#[pallet::weight(100_000_000)]
 		pub fn withdraw_unstaked(origin: OriginFor<T>, target: <T::Lookup as StaticLookup>::Source) -> DispatchResult {
 			ensure_signed(origin)?;
 			let target = T::Lookup::lookup(target)?;
