@@ -1,11 +1,10 @@
 [package]
 authors = ["KILT <info@kilt.io>"]
 edition = "2018"
-name = "kilt-parachain-runtime"
+name = "spiritnet-runtime"
 version = "0.2.0"
 
 [dependencies]
-bitflags = {version = "1.2.1", default-features = false}
 codec = {package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"]}
 serde = {version = "1.0.101", optional = true, features = ["derive"]}
 static_assertions = "1.1.0"
@@ -16,10 +15,6 @@ pallet-transaction-payment-rpc-runtime-api = {git = "https://github.com/parityte
 pallet-vesting = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 
 # KILT pallets & primitives
-attestation = {default-features = false, path = "../../pallets/attestation"}
-ctype = {default-features = false, path = "../../pallets/ctype"}
-delegation = {default-features = false, path = "../../pallets/delegation"}
-did = {default-features = false, path = "../../pallets/did"}
 kilt-launch = {path = "../../pallets/kilt-launch", default-features = false}
 kilt-primitives = {path = "../../primitives", default-features = false}
 parachain-staking = {default-features = false, path = "../../pallets/parachain-staking"}
@@ -43,21 +38,14 @@ frame-executive = {git = "https://github.com/paritytech/substrate", default-feat
 frame-support = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 frame-system = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 pallet-aura = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
-pallet-authorship = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 pallet-balances = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
-pallet-collective = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
-pallet-democracy = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
-pallet-elections-phragmen = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 pallet-indices = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
-pallet-membership = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 pallet-randomness-collective-flip = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
-pallet-scheduler = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 pallet-session = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
-pallet-society = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 pallet-sudo = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 pallet-timestamp = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 pallet-transaction-payment = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
-pallet-treasury = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
+pallet-authorship = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 
 # Cumulus dependencies
 cumulus-pallet-aura-ext = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "master"}
@@ -83,12 +71,7 @@ substrate-wasm-builder = "4.0.0"
 
 [features]
 default = ["std"]
-fast-gov = []
 runtime-benchmarks = [
-  "attestation/runtime-benchmarks",
-  "ctype/runtime-benchmarks",
-  "delegation/runtime-benchmarks",
-  "did/runtime-benchmarks",
   "frame-benchmarking",
   "frame-system-benchmarking",
   "hex-literal",
@@ -97,66 +80,52 @@ runtime-benchmarks = [
   "sp-runtime/runtime-benchmarks",
   "kilt-launch/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
-  "pallet-collective/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
-  "pallet-society/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
   "pallet-vesting/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
   "rococo-runtime/runtime-benchmarks",
 ]
 std = [
-  "parachain-staking/std",
-  "sp-arithmetic/std",
-  "pallet-indices/std",
-  "frame-system-rpc-runtime-api/std",
-  "sp-io/std",
-  "attestation/std",
-  "ctype/std",
-  "did/std",
-  "delegation/std",
   "codec/std",
-  "serde",
-  "sp-api/std",
-  "sp-std/std",
-  "sp-consensus-aura/std",
-  "sp-core/std",
-  "sp-runtime/std",
-  "sp-version/std",
-  "sp-offchain/std",
-  "sp-session/std",
-  "sp-block-builder/std",
-  "sp-transaction-pool/std",
-  "sp-inherents/std",
-  "frame-support/std",
+  "cumulus-pallet-aura-ext/std",
+  "cumulus-pallet-parachain-system/std",
+  "cumulus-pallet-xcmp-queue/std",
+  "cumulus-primitives-core/std",
   "frame-executive/std",
+  "frame-support/std",
+  "frame-system-rpc-runtime-api/std",
   "frame-system/std",
-  "pallet-aura/std",
-  "pallet-balances/std",
-  "pallet-randomness-collective-flip/std",
-  "pallet-sudo/std",
-  "pallet-timestamp/std",
-  "pallet-transaction-payment/std",
-  "pallet-vesting/std",
-  "pallet-collective/std",
-  "pallet-scheduler/std",
-  "pallet-treasury/std",
-  "pallet-society/std",
-  "pallet-elections-phragmen/std",
-  "pallet-democracy/std",
-  "pallet-membership/std",
-  "pallet-transaction-payment-rpc-runtime-api/std",
-  "pallet-session/std",
-  "pallet-authorship/std",
-  "parachain-info/std",
   "kilt-launch/std",
   "kilt-primitives/std",
-  "cumulus-pallet-parachain-system/std",
-  "cumulus-primitives-core/std",
-  "cumulus-pallet-xcmp-queue/std",
-  "cumulus-pallet-aura-ext/std",
-  "xcm/std",
+  "pallet-randomness-collective-flip/std",
+  "pallet-aura/std",
+  "pallet-balances/std",
+  "pallet-indices/std",
+  "pallet-sudo/std",
+  "pallet-timestamp/std",
+  "pallet-transaction-payment-rpc-runtime-api/std",
+  "pallet-transaction-payment/std",
+  "pallet-vesting/std",
+  "pallet-session/std",
+  "parachain-info/std",
+  "parachain-staking/std",
+  "polkadot-parachain/std",
+  "serde",
+  "sp-api/std",
+  "sp-arithmetic/std",
+  "sp-block-builder/std",
+  "sp-consensus-aura/std",
+  "sp-core/std",
+  "sp-inherents/std",
+  "sp-io/std",
+  "sp-offchain/std",
+  "sp-runtime/std",
+  "sp-session/std",
+  "sp-std/std",
+  "sp-transaction-pool/std",
+  "sp-version/std",
   "xcm-builder/std",
   "xcm-executor/std",
-  "polkadot-parachain/std",
+  "xcm/std",
 ]

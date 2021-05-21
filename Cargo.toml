@@ -13,3 +13,29 @@ members = [
   "runtimes/parachain",
   "runtimes/standalone",
 ]
+
+[patch.'https://github.com/paritytech/substrate?branch=rococo-v1']
+frame-support = {git = "https://github.com/paritytech/substrate", branch = "master"}
+sp-io = {git = "https://github.com/paritytech/substrate", branch = "master"}
+sp-runtime = {git = "https://github.com/paritytech/substrate", branch = "master"}
+sp-std = {git = "https://github.com/paritytech/substrate", branch = "master"}
+frame-metadata = {git = "https://github.com/paritytech/substrate", branch = "master"}
+sp-debug-derive = {git = "https://github.com/paritytech/substrate", branch = "master"}
+sp-externalities = {git = "https://github.com/paritytech/substrate", branch = "master"}
+sp-storage = {git = "https://github.com/paritytech/substrate", branch = "master"}
+sp-runtime-interface = {git = "https://github.com/paritytech/substrate", branch = "master"}
+sp-runtime-interface-proc-macro = {git = "https://github.com/paritytech/substrate", branch = "master"}
+sp-tracing = {git = "https://github.com/paritytech/substrate", branch = "master"}
+sp-wasm-interface = {git = "https://github.com/paritytech/substrate", branch = "master"}
+frame-support-procedural = {git = "https://github.com/paritytech/substrate", branch = "master"}
+frame-support-procedural-tools = {git = "https://github.com/paritytech/substrate", branch = "master"}
+frame-support-procedural-tools-derive = {git = "https://github.com/paritytech/substrate", branch = "master"}
+sp-arithmetic = {git = "https://github.com/paritytech/substrate", branch = "master"}
+sp-core = {git = "https://github.com/paritytech/substrate", branch = "master"}
+sp-inherents = {git = "https://github.com/paritytech/substrate", branch = "master"}
+sp-keystore = {git = "https://github.com/paritytech/substrate", branch = "master"}
+sp-state-machine = {git = "https://github.com/paritytech/substrate", branch = "master"}
+sp-panic-handler = {git = "https://github.com/paritytech/substrate", branch = "master"}
+sp-trie = {git = "https://github.com/paritytech/substrate", branch = "master"}
+sp-application-crypto = {git = "https://github.com/paritytech/substrate", branch = "master"}
+sp-staking = {git = "https://github.com/paritytech/substrate", branch = "master"}

@@ -34,8 +34,9 @@ use frame_system::{
 };
 use kilt_primitives::{
 	constants::{DAYS, DOLLARS, MILLICENTS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
-	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature,
+	AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Hash, Header, Index, Signature,
 };
+pub use parachain_staking::{InflationInfo, RewardRate, StakingInfo};
 use sp_api::impl_runtime_apis;
 use sp_core::{
 	u32_trait::{_1, _2, _3, _5},
@@ -43,7 +44,7 @@ use sp_core::{
 };
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult,
 };
@@ -54,8 +55,6 @@ use static_assertions::const_assert;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 
-#[cfg(not(feature = "fast-gov"))]
-use kilt_primitives::constants::HOURS;
 #[cfg(feature = "fast-gov")]
 use kilt_primitives::constants::MINUTES;
 
@@ -81,18 +80,39 @@ pub use ctype;
 pub use delegation;
 pub use did;
 
-pub type SessionHandlers = ();
+/// Opaque types. These are used by the CLI to instantiate machinery that don't
+/// need to know the specifics of the runtime. They can then be made to be
+/// agnostic over specific formats of data like extrinsics, allowing for them to
+/// continue syncing the network through upgrades to even the core data
+/// structures.
+pub mod opaque {
+	use super::*;
 
-impl_opaque_keys! {
-	pub struct SessionKeys {}
+	pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
+
+	pub type SessionHandlers = ();
+
+	/// Opaque block header type.
+	pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
+	/// Opaque block type.
+	pub type Block = generic::Block<Header, UncheckedExtrinsic>;
+	/// Opaque block identifier type.
+	pub type BlockId = generic::BlockId<Block>;
+
+	impl_opaque_keys! {
+		pub struct SessionKeys {
+			pub aura: Aura,
+		}
+	}
 }
 
 /// This runtime version.
+#[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 9,
+	spec_version: 10,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -245,19 +265,56 @@ impl pallet_sudo::Config for Runtime {
 
 parameter_types! {
 	pub const SelfParaId: u32 = 12623;
+	pub const ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT / 4;
+	pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT / 4;
 }
 
 impl cumulus_pallet_parachain_system::Config for Runtime {
 	type Event = Event;
-	type SelfParaId = parachain_info::Pallet<Runtime>;
-	type ReservedXcmpWeight = ();
 	type OnValidationData = ();
-	type DownwardMessageHandlers = ();
+	type SelfParaId = parachain_info::Pallet<Runtime>;
 	type OutboundXcmpMessageSource = ();
+	type DmpMessageHandler = ();
+	type ReservedDmpWeight = ReservedDmpWeight;
 	type XcmpMessageHandler = ();
+	type ReservedXcmpWeight = ReservedXcmpWeight;
 }
 
 impl parachain_info::Config for Runtime {}
+
+impl cumulus_pallet_aura_ext::Config for Runtime {}
+
+impl pallet_aura::Config for Runtime {
+	type AuthorityId = AuthorityId;
+}
+
+parameter_types! {
+	pub const UncleGenerations: u32 = 0;
+}
+
+impl pallet_authorship::Config for Runtime {
+	type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
+	type UncleGenerations = UncleGenerations;
+	type FilterUncle = ();
+	type EventHandler = ParachainStaking;
+}
+
+parameter_types! {
+	pub const DisabledValidatorsThreshold: Perbill = Perbill::from_percent(17);
+}
+
+impl pallet_session::Config for Runtime {
+	type Event = Event;
+	type ValidatorId = AccountId;
+	type ValidatorIdOf = ();
+	type ShouldEndSession = ParachainStaking;
+	type NextSessionRotation = ParachainStaking;
+	type SessionManager = ParachainStaking;
+	type SessionHandler = <opaque::SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
+	type Keys = opaque::SessionKeys;
+	type DisabledValidatorsThreshold = DisabledValidatorsThreshold;
+	type WeightInfo = ();
+}
 
 parameter_types! {
 	pub const MinVestedTransfer: Balance = MIN_VESTED_TRANSFER_AMOUNT;
@@ -401,7 +458,8 @@ parameter_types! {
 	pub const ProposalBond: Permill = Permill::from_percent(5);
 	pub const ProposalBondMinimum: Balance = 20 * DOLLARS; // TODO: how much?
 	pub const SpendPeriod: BlockNumber = SPEND_PERIOD;
-	pub const Burn: Permill = Permill::from_perthousand(2);
+	pub const Burn: Permill = Permill::zero();
+	pub const MaxApprovals: u32 = 100;
 }
 
 type ApproveOrigin = EnsureOneOf<
@@ -430,12 +488,13 @@ impl pallet_treasury::Config for Runtime {
 	type BurnDestination = ();
 	type SpendFunds = ();
 	type WeightInfo = ();
+	type MaxApprovals = MaxApprovals;
 }
 
 #[cfg(feature = "fast-gov")]
 const ROTATION_PERIOD: BlockNumber = 80 * MINUTES;
 #[cfg(not(feature = "fast-gov"))]
-const ROTATION_PERIOD: BlockNumber = 80 * HOURS;
+const ROTATION_PERIOD: BlockNumber = 80 * kilt_primitives::constants::HOURS;
 
 #[cfg(feature = "fast-gov")]
 const CHALLENGE_PERIOD: BlockNumber = 7 * MINUTES;
@@ -579,6 +638,83 @@ impl did::Config for Runtime {
 	type Origin = Origin;
 }
 
+/// Minimum round length is 1 hour (600 * 6 second block times)
+#[cfg(feature = "fast-gov")]
+pub const MIN_BLOCKS_PER_ROUND: BlockNumber = 10;
+#[cfg(not(feature = "fast-gov"))]
+pub const MIN_BLOCKS_PER_ROUND: BlockNumber = kilt_primitives::constants::HOURS;
+
+#[cfg(feature = "fast-gov")]
+pub const DEFAULT_BLOCKS_PER_ROUND: BlockNumber = 20;
+#[cfg(not(feature = "fast-gov"))]
+pub const DEFAULT_BLOCKS_PER_ROUND: BlockNumber = 2 * kilt_primitives::constants::HOURS;
+
+#[cfg(feature = "fast-gov")]
+pub const STAKE_DURATION: BlockNumber = 30;
+#[cfg(not(feature = "fast-gov"))]
+pub const STAKE_DURATION: BlockNumber = 7 * DAYS;
+
+#[cfg(feature = "fast-gov")]
+pub const MIN_COLLATORS: u32 = 4;
+#[cfg(not(feature = "fast-gov"))]
+pub const MIN_COLLATORS: u32 = 16;
+
+#[cfg(feature = "fast-gov")]
+pub const MAX_CANDIDATES: u32 = 16;
+#[cfg(not(feature = "fast-gov"))]
+pub const MAX_CANDIDATES: u32 = 75;
+
+parameter_types! {
+	/// Minimum round length is 1 hour
+	pub const MinBlocksPerRound: BlockNumber = MIN_BLOCKS_PER_ROUND;
+	/// Default BlocksPerRound is every 6 hours
+	pub const DefaultBlocksPerRound: BlockNumber = DEFAULT_BLOCKS_PER_ROUND;
+	/// Unstaked balance can be unlocked after 7 days
+	pub const StakeDuration: BlockNumber = STAKE_DURATION;
+	/// Collator exit requests are delayed by 8 hours (4 rounds/sessions)
+	pub const ExitQueueDelay: u32 = 4;
+	/// Maximum number of processed collator exit requests per round is 5
+	/// Defends against exceeding PoV size limit in on_initialize
+	pub const MaxExitsPerRound: usize = 5;
+	/// Minimum 16 collators selected per round, default at genesis and minimum forever after
+	pub const MinSelectedCandidates: u32 = MIN_COLLATORS;
+	/// Maximum 25 delegators per collator at launch, might be increased later
+	pub const MaxDelegatorsPerCollator: u32 = 25;
+	/// Maximum 1 collator per delegator at launch, will be increased later
+	pub const MaxCollatorsPerDelegator: u32 = 1;
+	/// Minimum stake required to be reserved to be a collator is 10_000
+	pub const MinCollatorStk: Balance = 10_000 * DOLLARS;
+	/// Max stake possible to be reserved to be collator candidate is 100_0000
+	pub const MaxCollatorCandidateStk: Balance = 200_000 * DOLLARS;
+	/// Minimum stake required to be reserved to be a delegator is 1000
+	pub const MinDelegatorStk: Balance = 1000 * DOLLARS;
+	/// Maximum number of collator candidates
+	pub const MaxCollatorCandidates: u32 = MAX_CANDIDATES;
+	/// Maximum number of concurrent requests to unlock unstaked balance
+	pub const MaxUnstakeRequests: usize = 10;
+}
+
+impl parachain_staking::Config for Runtime {
+	type Event = Event;
+	type Currency = Balances;
+	type CurrencyBalance = Balance;
+	type MinBlocksPerRound = MinBlocksPerRound;
+	type DefaultBlocksPerRound = DefaultBlocksPerRound;
+	type StakeDuration = StakeDuration;
+	type ExitQueueDelay = ExitQueueDelay;
+	type MaxExitsPerRound = MaxExitsPerRound;
+	type MinSelectedCandidates = MinSelectedCandidates;
+	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
+	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
+	type MinCollatorStk = MinCollatorStk;
+	type MinCollatorCandidateStk = MinCollatorStk;
+	type MaxCollatorCandidateStk = MaxCollatorCandidateStk;
+	type MaxCollatorCandidates = MaxCollatorCandidates;
+	type MinDelegation = MinDelegatorStk;
+	type MinDelegatorStk = MinDelegatorStk;
+	type MaxUnstakeRequests = MaxUnstakeRequests;
+}
+
 construct_runtime! {
 	pub enum Runtime where
 		Block = Block,
@@ -589,20 +725,17 @@ construct_runtime! {
 		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Call, Storage} = 1,
 
 		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent} = 2,
-		// Aura: aura::{Pallet, Config<T>, Storage} = 3,
-		// Grandpa: grandpa::{Pallet, Call, Storage, Config, Event} = 4,
 		Indices: pallet_indices::{Pallet, Call, Storage, Event<T>} = 5,
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>} = 6,
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage} = 7,
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>} = 8,
 
-		Ctype: ctype::{Pallet, Call, Storage, Event<T>} = 9,
-		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 10,
-		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 11,
-		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 12,
-
-		// Session: session::{Pallet, Call, Storage, Event, Config<T>} = 15,
-		// Authorship: authorship::{Pallet, Call, Storage} = 16,
+		// The following order MUST NOT be changed: Staking -> Session -> Aura
+		ParachainStaking: parachain_staking::{Pallet, Call, Storage, Event<T>, Config<T>} = 10,
+		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>} = 11,
+		Authorship: pallet_authorship::{Pallet, Call, Storage} = 12,
+		Aura: pallet_aura::{Pallet, Config<T>} = 13,
+		AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 14,
 
 		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>} = 18,
 		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 19,
@@ -623,9 +756,16 @@ construct_runtime! {
 		// System scheduler.
 		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 32,
 
+		// TODO: Add meaningful index
+
 		// Vesting. Usable initially, but removed once all vesting is finished.
 		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 33,
 		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
+
+		Ctype: ctype::{Pallet, Call, Storage, Event<T>} = 35,
+		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 36,
+		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 37,
+		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 38,
 	}
 }
 
@@ -643,7 +783,6 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 /// The address format for describing accounts.
 pub type Address = sp_runtime::MultiAddress<AccountId, ()>;
 /// Block header type as expected by this runtime.
-pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
 /// Block type as expected by this runtime.
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 /// A Block signed with a Justification
@@ -674,7 +813,7 @@ impl_runtime_apis! {
 		}
 
 		fn execute_block(block: Block) {
-			Executive::execute_block(block)
+			Executive::execute_block(block);
 		}
 
 		fn initialize_block(header: &<Block as BlockT>::Header) {
@@ -725,10 +864,6 @@ impl_runtime_apis! {
 		fn check_inherents(block: Block, data: sp_inherents::InherentData) -> sp_inherents::CheckInherentsResult {
 			data.check_extrinsics(&block)
 		}
-
-		fn random_seed() -> <Block as BlockT>::Hash {
-			RandomnessCollectiveFlip::random_seed().0
-		}
 	}
 
 	impl sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block> for Runtime {
@@ -750,11 +885,21 @@ impl_runtime_apis! {
 		fn decode_session_keys(
 			encoded: Vec<u8>,
 		) -> Option<Vec<(Vec<u8>, sp_core::crypto::KeyTypeId)>> {
-			SessionKeys::decode_into_raw_public_keys(&encoded)
+			opaque::SessionKeys::decode_into_raw_public_keys(&encoded)
 		}
 
 		fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
-			SessionKeys::generate(seed)
+			opaque::SessionKeys::generate(seed)
+		}
+	}
+
+	impl sp_consensus_aura::AuraApi<Block, AuthorityId> for Runtime {
+		fn slot_duration() -> sp_consensus_aura::SlotDuration {
+			sp_consensus_aura::SlotDuration::from_millis(Aura::slot_duration())
+		}
+
+		fn authorities() -> Vec<AuthorityId> {
+			Aura::authorities()
 		}
 	}
 
@@ -796,6 +941,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
 			add_benchmark!(params, batches, kilt_launch, KiltLaunch);
 			add_benchmark!(params, batches, pallet_vesting, Vesting);
+			add_benchmark!(params, batches, parachain_staking, ParachainStaking);
 
 			// No benchmarks for these pallets
 			// add_benchmark!(params, batches, cumulus_pallet_parachain_system, ParachainSystem);
@@ -812,4 +958,7 @@ impl_runtime_apis! {
 	}
 }
 
-cumulus_pallet_parachain_system::register_validate_block!(Runtime, Executive);
+cumulus_pallet_parachain_system::register_validate_block!(
+	Runtime,
+	cumulus_pallet_aura_ext::BlockExecutor::<Runtime, Executive>,
+);

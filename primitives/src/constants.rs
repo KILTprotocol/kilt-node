@@ -24,7 +24,7 @@ use crate::*;
 /// up by `pallet_aura` to implement `fn slot_duration()`.
 ///
 /// Change this to adjust the block time.
-pub const MILLISECS_PER_BLOCK: u64 = 6000;
+pub const MILLISECS_PER_BLOCK: u64 = 12_000;
 
 pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
 
@@ -33,10 +33,13 @@ pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
 pub const MONTHS: BlockNumber = DAYS * 30;
+pub const YEARS: BlockNumber = MONTHS * 12;
 
 pub const MIN_VESTED_TRANSFER_AMOUNT: Balance = Balance::MAX;
 
-pub const DOLLARS: Balance = 10; // TODO: how much?
+// TODO: how much? (1 KILT)
+// TODO: get token decimals from properties?
+pub const DOLLARS: Balance = 10u128.pow(15);
 pub const CENTS: Balance = DOLLARS / 100;
 pub const MILLICENTS: Balance = CENTS / 1_000;
 

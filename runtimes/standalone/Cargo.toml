@@ -17,29 +17,29 @@ did = {default-features = false, path = "../../pallets/did"}
 kilt-primitives = {path = "../../primitives", default-features = false}
 
 # kilt specific
-pallet-vesting = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1"}
+pallet-vesting = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 
 # Benchmarking
-frame-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "rococo-v1"}
-frame-system-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "rococo-v1"}
+frame-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "master"}
+frame-system-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "master"}
 hex-literal = {version = "0.3.1", optional = true}
 
 [dependencies.aura]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 package = "pallet-aura"
 version = "3.0.0"
 
 [dependencies.authorship]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 package = "pallet-authorship"
 version = "3.0.0"
 
 [dependencies.balances]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 package = "pallet-balances"
@@ -56,57 +56,57 @@ package = "parity-scale-codec"
 version = "2.0.0"
 
 [dependencies.executive]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 package = "frame-executive"
 version = "3.0.0"
 
 [dependencies.frame-support]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
 [dependencies.frame-system]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
 [dependencies.frame-system-rpc-runtime-api]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
 [dependencies.grandpa]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 package = "pallet-grandpa"
 version = "3.0.0"
 
 [dependencies.pallet-indices]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
 [dependencies.pallet-transaction-payment]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
 [dependencies.pallet-transaction-payment-rpc-runtime-api]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
 [dependencies.randomness-collective-flip]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 package = "pallet-randomness-collective-flip"
@@ -118,99 +118,99 @@ optional = true
 version = "1.0"
 
 [dependencies.session]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 package = "pallet-session"
 version = "3.0.0"
 
 [dependencies.sp-api]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
 [dependencies.sp-arithmetic]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
 [dependencies.sp-block-builder]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
 [dependencies.sp-consensus-aura]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "0.9.0"
 
 [dependencies.sp-core]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
 [dependencies.sp-inherents]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
 [dependencies.sp-io]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
 [dependencies.sp-offchain]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
 [dependencies.sp-runtime]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
 [dependencies.sp-session]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
 [dependencies.sp-std]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
 [dependencies.sp-transaction-pool]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
 [dependencies.sp-version]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 version = "3.0.0"
 
 [dependencies.sudo]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 package = "pallet-sudo"
 version = "3.0.0"
 
 [dependencies.timestamp]
-branch = "rococo-v1"
+branch = "master"
 default-features = false
 git = "https://github.com/paritytech/substrate"
 package = "pallet-timestamp"
