@@ -1242,16 +1242,16 @@ pub mod pallet {
 			let remain_exits = maybe_exits.split_off(split_index);
 			maybe_exits = maybe_exits
 				.into_iter()
-				.filter_map(|x| {
+				.filter(|x| {
 					if x.amount > next {
-						Some(x)
+						true
 					} else {
-						if let Some(state) = <CollatorState<T>>::get(&x.owner) {
+						if let Some(state) = <CollatorState<T>>::get(&x.owner.clone()) {
 							for stake in state.delegators.into_iter() {
 								// prepare unstaking of delegator
 								Self::prep_unstake_exit_queue(&stake.owner, stake.amount);
 								// remove delegation from delegator state
-								if let Some(mut delegator) = <DelegatorState<T>>::get(&stake.owner) {
+								if let Some(mut delegator) = <DelegatorState<T>>::get(&stake.owner.clone()) {
 									if let Some(remaining) = delegator.rm_delegation(x.owner.clone()) {
 										if remaining.is_zero() {
 											<DelegatorState<T>>::remove(&stake.owner);
@@ -1278,13 +1278,13 @@ pub mod pallet {
 
 							<CollatorState<T>>::remove(&x.owner);
 							Self::deposit_event(Event::CollatorLeft(
-								x.owner,
+								x.owner.clone(),
 								state.total,
 								total_collators,
 								total_delegators,
 							));
 						}
-						None
+						false
 					}
 				})
 				.collect::<Vec<Stake<T::AccountId, SessionIndex>>>();
@@ -1429,19 +1429,17 @@ pub mod pallet {
 					// append to total_locked if amount is not reducable anymore
 					if amt_consuming_unstaking.is_zero() {
 						total_locked = total_locked.saturating_add(locked_balance);
+					} else if locked_balance > amt_consuming_unstaking {
+						// amount is only reducable by locked_balance - amt_consuming_unstaking
+						let delta = locked_balance.saturating_sub(amt_consuming_unstaking);
+						// replace old entry with delta
+						unstaking.insert(block_number, delta);
+						amt_consuming_unstaking = Zero::zero();
+						total_locked = total_locked.saturating_add(locked_balance);
 					} else {
-						if locked_balance > amt_consuming_unstaking {
-							// amount is only reducable by locked_balance - amt_consuming_unstaking
-							let delta = locked_balance.saturating_sub(amt_consuming_unstaking);
-							// replace old entry with delta
-							unstaking.insert(block_number, delta);
-							amt_consuming_unstaking = Zero::zero();
-							total_locked = total_locked.saturating_add(locked_balance);
-						} else {
-							// amount is either still reducable or reached
-							amt_consuming_unstaking = amt_consuming_unstaking.saturating_sub(locked_balance);
-							unstaking.remove(&block_number);
-						}
+						// amount is either still reducable or reached
+						amt_consuming_unstaking = amt_consuming_unstaking.saturating_sub(locked_balance);
+						unstaking.remove(&block_number);
 					}
 				}
 			});
