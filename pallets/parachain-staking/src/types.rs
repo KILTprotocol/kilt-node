@@ -77,8 +77,6 @@ impl<AccountId: Ord, Balance: PartialEq + Ord> Ord for Stake<AccountId, Balance>
 pub enum CollatorStatus {
 	/// Committed to be online and producing valid blocks (not equivocating)
 	Active,
-	/// Temporarily inactive and excused for inactivity
-	Idle,
 	/// Staked until the inner round
 	Leaving(SessionIndex),
 }
@@ -169,14 +167,6 @@ where
 			self.delegators[i].amount = self.delegators[i].amount.saturating_sub(less);
 			self.total = self.total.saturating_sub(less);
 		}
-	}
-
-	pub fn go_offline(&mut self) {
-		self.state = CollatorStatus::Idle;
-	}
-
-	pub fn go_online(&mut self) {
-		self.state = CollatorStatus::Active;
 	}
 
 	pub fn leave_candidates(&mut self, round: SessionIndex) {
@@ -297,7 +287,7 @@ where
 	/// Check if the round should be updated.
 	pub fn should_update(&self, now: B) -> bool {
 		let l = now.saturating_sub(self.first);
-		l >= self.length.into()
+		l >= self.length
 	}
 
 	/// Start a new round.

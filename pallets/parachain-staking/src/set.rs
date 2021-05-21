@@ -229,16 +229,16 @@ mod tests {
 		let mut set: OrderedSet<i32> = OrderedSet::new();
 		assert_eq!(set, OrderedSet::from(vec![]));
 
-		assert_eq!(set.insert(1), true);
+		assert!(set.insert(1));
 		assert_eq!(set, OrderedSet::from(vec![1]));
 
-		assert_eq!(set.insert(5), true);
+		assert!(set.insert(5));
 		assert_eq!(set, OrderedSet::from(vec![1, 5]));
 
-		assert_eq!(set.insert(3), true);
+		assert!(set.insert(3));
 		assert_eq!(set, OrderedSet::from(vec![1, 3, 5]));
 
-		assert_eq!(set.insert(3), false);
+		assert!(!set.insert(3));
 		assert_eq!(set, OrderedSet::from(vec![1, 3, 5]));
 	}
 
@@ -272,11 +272,11 @@ mod tests {
 	fn contains() {
 		let set: OrderedSet<i32> = OrderedSet::from(vec![1, 2, 3, 4]);
 
-		assert_eq!(set.contains(&5), false);
+		assert!(!set.contains(&5));
 
-		assert_eq!(set.contains(&1), true);
+		assert!(set.contains(&1));
 
-		assert_eq!(set.contains(&3), true);
+		assert!(set.contains(&3));
 	}
 
 	#[test]

@@ -221,72 +221,6 @@ fn genesis() {
 }
 
 #[test]
-fn online_offline_works() {
-	ExtBuilder::default()
-		.with_balances(vec![
-			(1, 1000),
-			(2, 300),
-			(3, 100),
-			(4, 100),
-			(5, 100),
-			(6, 100),
-			(7, 100),
-			(8, 9),
-			(9, 4),
-		])
-		.with_collators(vec![(1, 500), (2, 200)])
-		.with_delegators(vec![(3, 1, 100), (4, 1, 100), (5, 2, 100), (6, 2, 100)])
-		.build()
-		.execute_with(|| {
-			roll_to(4, vec![]);
-			assert_noop!(StakePallet::go_offline(Origin::signed(3)), Error::<Test>::CandidateDNE);
-
-			roll_to(11, vec![]);
-			assert_noop!(StakePallet::go_online(Origin::signed(3)), Error::<Test>::CandidateDNE);
-			assert_noop!(StakePallet::go_online(Origin::signed(2)), Error::<Test>::AlreadyActive);
-			assert_eq!(StakePallet::selected_candidates(), vec![1, 2]);
-			assert_ok!(StakePallet::go_offline(Origin::signed(2)));
-			assert_eq!(StakePallet::selected_candidates(), vec![1]);
-			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorWentOffline(2, 2)));
-
-			roll_to(21, vec![]);
-			let mut expected = vec![
-				Event::NewRound(5, 1, 700, 400),
-				Event::NewRound(10, 2, 700, 400),
-				Event::CollatorChosen(1, 500, 200),
-				Event::CollatorWentOffline(2, 2),
-				Event::NewRound(15, 3, 700, 400),
-				Event::NewRound(20, 4, 700, 400),
-			];
-			assert_eq!(events(), expected);
-			assert_noop!(
-				StakePallet::go_offline(Origin::signed(2)),
-				Error::<Test>::AlreadyOffline
-			);
-			assert_ok!(StakePallet::go_online(Origin::signed(2)));
-			assert_eq!(StakePallet::selected_candidates(), vec![1, 2]);
-			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorBackOnline(4, 2)));
-			expected.push(Event::CollatorChosen(1, 500, 200));
-			expected.push(Event::CollatorChosen(2, 200, 200));
-			expected.push(Event::CollatorBackOnline(4, 2));
-
-			roll_to(26, vec![]);
-			expected.push(Event::NewRound(25, 5, 700, 400));
-			assert_eq!(events(), expected);
-			assert_ok!(StakePallet::leave_candidates(Origin::signed(1)));
-			assert_eq!(StakePallet::selected_candidates(), vec![2]);
-			assert_noop!(
-				StakePallet::go_online(Origin::signed(1)),
-				Error::<Test>::CannotActivateIfLeaving
-			);
-			assert_noop!(
-				StakePallet::go_offline(Origin::signed(1)),
-				Error::<Test>::CannotActivateIfLeaving
-			);
-		});
-}
-
-#[test]
 fn join_collator_candidates() {
 	ExtBuilder::default()
 		.with_balances(vec![
@@ -651,8 +585,8 @@ fn exit_queue_exceeds_exit_limit() {
 						state: CollatorStatus::Leaving(3)
 					})
 				);
-				assert_eq!(StakePallet::is_candidate(&collator), true);
-				assert_eq!(StakePallet::unstaking(collator).len(), 0);
+				assert!(StakePallet::is_candidate(&collator));
+				assert!(StakePallet::unstaking(collator).is_empty());
 			}
 			assert_eq!(
 				StakePallet::delegator_state(11),
@@ -683,8 +617,8 @@ fn exit_queue_exceeds_exit_limit() {
 				})
 			);
 			for delegator in 11u64..=14u64 {
-				assert_eq!(StakePallet::is_delegator(&delegator), true);
-				assert_eq!(StakePallet::unstaking(delegator).len(), 0);
+				assert!(StakePallet::is_delegator(&delegator));
+				assert!(StakePallet::unstaking(delegator).is_empty());
 			}
 
 			// exits are not executed yet but in the next round
@@ -742,8 +676,8 @@ fn exit_queue_exceeds_exit_limit() {
 						state: CollatorStatus::Leaving(3)
 					})
 				);
-				assert_eq!(StakePallet::is_candidate(&collator), true);
-				assert_eq!(StakePallet::unstaking(collator).len(), 0);
+				assert!(StakePallet::is_candidate(&collator));
+				assert!(StakePallet::unstaking(collator).is_empty());
 			}
 			assert_eq!(
 				StakePallet::delegator_state(11),
@@ -774,8 +708,8 @@ fn exit_queue_exceeds_exit_limit() {
 				})
 			);
 			for delegator in 11u64..=14u64 {
-				assert_eq!(StakePallet::is_delegator(&delegator), true);
-				assert_eq!(StakePallet::unstaking(delegator).len(), 0);
+				assert!(StakePallet::is_delegator(&delegator));
+				assert!(StakePallet::unstaking(delegator).is_empty());
 			}
 
 			// first five exits are executed
@@ -791,11 +725,11 @@ fn exit_queue_exceeds_exit_limit() {
 				])
 			);
 			for collator in vec![1u64, 2u64, 5u64, 6u64, 7u64].iter() {
-				assert_eq!(StakePallet::is_candidate(&collator), false);
+				assert!(!StakePallet::is_candidate(&collator));
 				assert_eq!(StakePallet::unstaking(collator).len(), 1);
 			}
 			for delegator in 11u64..=14u64 {
-				assert_eq!(StakePallet::is_delegator(&delegator), false);
+				assert!(!StakePallet::is_delegator(&delegator));
 				assert_eq!(StakePallet::unstaking(delegator).len(), 1);
 			}
 
@@ -803,7 +737,7 @@ fn exit_queue_exceeds_exit_limit() {
 			roll_to(20, vec![]);
 			assert_eq!(StakePallet::exit_queue(), OrderedSet::from(vec![]));
 			for collator in 8u64..=10u64 {
-				assert_eq!(StakePallet::is_candidate(&collator), false);
+				assert!(!StakePallet::is_candidate(&collator));
 				assert_eq!(StakePallet::unstaking(collator).len(), 1);
 			}
 		});
@@ -2501,11 +2435,11 @@ fn should_end_session_when_appropriate() {
 		])
 		.build()
 		.execute_with(|| {
-			assert_eq!(StakePallet::should_end_session(10), false);
-			assert_eq!(StakePallet::should_end_session(20), false);
-			assert_eq!(StakePallet::should_end_session(30), false);
-			assert_eq!(StakePallet::should_end_session(60), false);
-			assert_eq!(StakePallet::should_end_session(100), true);
+			assert!(!StakePallet::should_end_session(10));
+			assert!(!StakePallet::should_end_session(20));
+			assert!(!StakePallet::should_end_session(30));
+			assert!(!StakePallet::should_end_session(60));
+			assert!(StakePallet::should_end_session(100));
 		});
 }
 

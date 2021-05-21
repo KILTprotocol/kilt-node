@@ -196,12 +196,6 @@ pub mod pallet {
 		/// The account has not staked enough funds to delegate a collator
 		/// candidate.
 		DelegationBelowMin,
-		/// The collator candidate has already left the set of active collator
-		/// candidates.
-		AlreadyOffline,
-		/// The collator candidate is already actively actively participating in
-		/// the set of collator candidates.
-		AlreadyActive,
 		/// The collator candidate has already trigger the process to leave the
 		/// set of collator candidates.
 		AlreadyLeaving,
@@ -271,12 +265,6 @@ pub mod pallet {
 		/// A collator candidate has decreased the amount of funds at stake.
 		/// \[collator's account, previous stake, new stake\]
 		CollatorStakedLess(T::AccountId, BalanceOf<T>, BalanceOf<T>),
-		/// A collator candidate has gone from active to idle.
-		/// \[round number, collator's account\]
-		CollatorWentOffline(SessionIndex, T::AccountId),
-		/// A collator candidate has returned to an active state.
-		/// \[round number, collator's account\]
-		CollatorBackOnline(SessionIndex, T::AccountId),
 		/// A collator candidate has started the process to leave the set of
 		/// candidates. \[round number, collator's account, round number when
 		/// the collator will be effectively removed from the set of
@@ -422,14 +410,14 @@ pub mod pallet {
 	/// less comes with an unstaking duration. Thus, we allow delegators to
 	/// "snipe" rewards by delegating (more) to a collator which will soon
 	/// author a block. This will increase the delegator's rewards but they
-	/// cannot immediately withdraw their (additional) bond to the collator and
+	/// cannot immediately withdraw their (additional) stake to the collator and
 	/// have to wait for at least `StakeDuration` many blocks until they can do
 	/// so. Plus, they have to pay transaction fees for both unstaking and
 	/// withdrawing.
 	///
 	/// All in all, we don't think this can be an attack scenario
 	/// due to the unstaking time and the fact that you have to actively
-	/// withdraw a previously unbondend amount.
+	/// withdraw a previously unstaked amount.
 	#[pallet::storage]
 	#[pallet::getter(fn at_stake)]
 	pub type AtStake<T: Config> =
@@ -470,7 +458,7 @@ pub mod pallet {
 		fn build(&self) {
 			assert!(self.inflation_config.is_valid(), "Invalid inflation configuration");
 			assert!(
-				self.stakers.iter().find(|s| s.1.is_none()).is_some(),
+				self.stakers.iter().any(|s| s.1.is_none()),
 				"at least one collator in genesis config"
 			);
 
@@ -508,7 +496,7 @@ pub mod pallet {
 			<Round<T>>::put(round);
 			// Snapshot total stake
 
-			<Pallet<T>>::deposit_event(Event::NewRound(
+			Pallet::<T>::deposit_event(Event::NewRound(
 				T::BlockNumber::zero(),
 				0u32,
 				collator_staked,
@@ -707,78 +695,6 @@ pub mod pallet {
 			Ok(().into())
 		}
 
-		/// Temporarily leave the set of collator candidates without unstaking.
-		///
-		/// For as long as offline, the collator will not be selected anymore to
-		/// produce new blocks, but its staked funds will not scheduled to be
-		/// released.
-		///
-		/// The total stake of the system, including validators' stakes, is left
-		/// unchanged.
-		///
-		/// Emits `CollatorWentOffline`.
-		//
-		// TODO: We might want to remove this function for the launch because
-		// collators which go offline during a round could be in the set of
-		// authors for the next session.
-		#[pallet::weight(0)]
-		pub fn go_offline(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
-			let collator = ensure_signed(origin)?;
-			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateDNE)?;
-
-			ensure!(!state.is_leaving(), Error::<T>::CannotActivateIfLeaving);
-			ensure!(state.is_active(), Error::<T>::AlreadyOffline);
-			state.go_offline();
-			let mut candidates = <CandidatePool<T>>::get();
-			if candidates.remove_by(|stake| stake.owner.cmp(&collator)).is_some() {
-				<CandidatePool<T>>::put(candidates);
-			}
-			<CollatorState<T>>::insert(&collator, state);
-
-			// update candidates for next round
-			Self::select_top_candidates();
-
-			Self::deposit_event(Event::CollatorWentOffline(<Round<T>>::get().current, collator));
-			Ok(().into())
-		}
-
-		/// Rejoin the set of collator candidates with the previously staked
-		/// funds.
-		///
-		/// From the moment of re-inclusion in the set, the collator candidate
-		/// will be re-considered for block production if enough funds are
-		/// staked to rank in any of the top `TotalSelected` positions.
-		///
-		/// The total stake of the pallet is not affected by this operation.
-		///
-		/// Emits `CollatorBackOnline`.
-		#[pallet::weight(0)]
-		pub fn go_online(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
-			let collator = ensure_signed(origin)?;
-			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateDNE)?;
-			ensure!(!state.is_active(), Error::<T>::AlreadyActive);
-			ensure!(!state.is_leaving(), Error::<T>::CannotActivateIfLeaving);
-			state.go_online();
-			let mut candidates = <CandidatePool<T>>::get();
-
-			// should never fail but let's be safe
-			ensure!(
-				candidates.insert(Stake {
-					owner: collator.clone(),
-					amount: state.total
-				}),
-				Error::<T>::AlreadyActive
-			);
-			<CandidatePool<T>>::put(candidates);
-			<CollatorState<T>>::insert(&collator, state);
-
-			// update candidates for next round
-			Self::select_top_candidates();
-
-			Self::deposit_event(Event::CollatorBackOnline(<Round<T>>::get().current, collator));
-			Ok(().into())
-		}
-
 		/// Stake more funds for a collator candidate.
 		///
 		/// If not in the set of candidates, staking enough funds allows the
@@ -806,7 +722,7 @@ pub mod pallet {
 			Self::increase_lock(&collator, after)?;
 
 			if state.is_active() {
-				Self::update_active(collator.clone(), state.total);
+				Self::update(collator.clone(), state.total);
 			}
 			<CollatorState<T>>::insert(&collator, state);
 			Total::<T>::mutate(|old| {
@@ -848,7 +764,7 @@ pub mod pallet {
 			Self::prep_unstake(&collator, less)?;
 
 			if state.is_active() {
-				Self::update_active(collator.clone(), state.total);
+				Self::update(collator.clone(), state.total);
 			}
 			<CollatorState<T>>::insert(&collator, state);
 			Total::<T>::mutate(|old| {
@@ -925,7 +841,7 @@ pub mod pallet {
 			// lock stake
 			Self::increase_lock(&acc, amount)?;
 			if state.is_active() {
-				Self::update_active(collator.clone(), new_total);
+				Self::update(collator.clone(), new_total);
 			}
 
 			// update states
@@ -1018,7 +934,7 @@ pub mod pallet {
 			// lock stake
 			Self::increase_lock(&acc, delegator.total)?;
 			if state.is_active() {
-				Self::update_active(collator.clone(), new_total);
+				Self::update(collator.clone(), new_total);
 			}
 
 			// Update states
@@ -1114,7 +1030,7 @@ pub mod pallet {
 			let after = collator.total;
 
 			if collator.is_active() {
-				Self::update_active(candidate.clone(), collator.total);
+				Self::update(candidate.clone(), collator.total);
 			}
 			Total::<T>::mutate(|old| {
 				old.delegators = old.delegators.saturating_add(more);
@@ -1172,7 +1088,7 @@ pub mod pallet {
 			collator.dec_delegator(delegator.clone(), less);
 			let after = collator.total;
 			if collator.is_active() {
-				Self::update_active(candidate.clone(), collator.total);
+				Self::update(candidate.clone(), collator.total);
 			}
 			Total::<T>::mutate(|old| {
 				old.delegators = old.delegators.saturating_sub(less);
@@ -1223,7 +1139,7 @@ pub mod pallet {
 		///
 		/// NOTE: it is assumed that the calling context checks whether the
 		/// collator candidate is currently active before calling this function.
-		fn update_active(candidate: T::AccountId, total: BalanceOf<T>) {
+		fn update(candidate: T::AccountId, total: BalanceOf<T>) {
 			let mut candidates = <CandidatePool<T>>::get();
 			candidates.upsert(Stake {
 				owner: candidate,
@@ -1289,7 +1205,7 @@ pub mod pallet {
 			Self::prep_unstake(&delegator, delegator_stake)?;
 
 			if state.is_active() {
-				Self::update_active(collator.clone(), state.total);
+				Self::update(collator.clone(), state.total);
 			}
 			Total::<T>::mutate(|old| {
 				old.delegators = old.delegators.saturating_sub(delegator_stake);
@@ -1518,7 +1434,7 @@ pub mod pallet {
 			ensure!(!amount.is_zero(), Error::<T>::StakeDNE);
 
 			let now = <frame_system::Pallet<T>>::block_number();
-			let unlock_block = now.saturating_add(T::StakeDuration::get().into());
+			let unlock_block = now.saturating_add(T::StakeDuration::get());
 			let mut unstaking = <Unstaking<T>>::get(who);
 
 			// TODO: Test
@@ -1543,7 +1459,7 @@ pub mod pallet {
 		/// Should only be called in `execute_delayed_exit_queue`!
 		fn prep_unstake_exit_queue(who: &T::AccountId, amount: BalanceOf<T>) {
 			let now = <frame_system::Pallet<T>>::block_number();
-			let unlock_block = now.saturating_add(T::StakeDuration::get().into());
+			let unlock_block = now.saturating_add(T::StakeDuration::get());
 			let mut unstaking = <Unstaking<T>>::get(who);
 			unstaking.insert(unlock_block, amount);
 			<Unstaking<T>>::insert(who, unstaking);
@@ -1675,7 +1591,7 @@ pub mod pallet {
 
 	impl<T: Config> EstimateNextSessionRotation<T::BlockNumber> for Pallet<T> {
 		fn average_session_length() -> T::BlockNumber {
-			<Round<T>>::get().length.into()
+			<Round<T>>::get().length
 		}
 
 		fn estimate_current_session_progress(now: T::BlockNumber) -> (Option<Percent>, Weight) {

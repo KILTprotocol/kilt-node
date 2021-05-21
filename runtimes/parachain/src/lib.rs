@@ -33,7 +33,7 @@ use frame_system::{
 	EnsureOneOf, EnsureRoot,
 };
 use kilt_primitives::{
-	constants::{DAYS, DOLLARS, HOURS, MILLICENTS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
+	constants::{DAYS, DOLLARS, MILLICENTS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
 	AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Hash, Header, Index, Signature,
 };
 pub use parachain_staking::{InflationInfo, RewardRate, StakingInfo};
