@@ -122,6 +122,31 @@ fn check_migrate_single_account_locked() {
 }
 
 #[test]
+fn check_migrate_single_locked_account_after_unlock_block() {
+	ExtBuilder::default().pseudos_lock_all().build().execute_with(|| {
+		// Reach balance lock limit
+		System::set_block_number(101);
+
+		let user_locked_info = LockedBalance {
+			block: 100,
+			amount: 10_000 - <Test as crate::Config>::UsableBalance::get(),
+		};
+		// Migration of balance locks
+		ensure_single_migration_works(&PSEUDO_1, &USER, None, Some((user_locked_info, 0)));
+
+		assert_eq!(UnlockingAt::<Test>::get(100), None);
+		assert_eq!(Locks::<Test>::get(&USER).len(), 0);
+
+		// Should be able to transfer all tokens but ExistentialDeposit
+		assert_ok!(Balances::transfer(
+			Origin::signed(USER),
+			PSEUDO_2,
+			10_000 - ExistentialDeposit::get()
+		));
+	});
+}
+
+#[test]
 fn check_migrate_single_account_locked_twice() {
 	ExtBuilder::default().pseudos_lock_all().build().execute_with(|| {
 		let mut user_locked_info = LockedBalance {
