@@ -494,7 +494,7 @@ impl pallet_treasury::Config for Runtime {
 #[cfg(feature = "fast-gov")]
 const ROTATION_PERIOD: BlockNumber = 80 * MINUTES;
 #[cfg(not(feature = "fast-gov"))]
-const ROTATION_PERIOD: BlockNumber = 80 * HOURS;
+const ROTATION_PERIOD: BlockNumber = 80 * kilt_primitives::constants::HOURS;
 
 #[cfg(feature = "fast-gov")]
 const CHALLENGE_PERIOD: BlockNumber = 7 * MINUTES;
@@ -642,12 +642,12 @@ impl did::Config for Runtime {
 #[cfg(feature = "fast-gov")]
 pub const MIN_BLOCKS_PER_ROUND: BlockNumber = 10;
 #[cfg(not(feature = "fast-gov"))]
-pub const MIN_BLOCKS_PER_ROUND: BlockNumber = HOURS;
+pub const MIN_BLOCKS_PER_ROUND: BlockNumber = kilt_primitives::constants::HOURS;
 
 #[cfg(feature = "fast-gov")]
 pub const DEFAULT_BLOCKS_PER_ROUND: BlockNumber = 20;
 #[cfg(not(feature = "fast-gov"))]
-pub const DEFAULT_BLOCKS_PER_ROUND: BlockNumber = 2 * HOURS;
+pub const DEFAULT_BLOCKS_PER_ROUND: BlockNumber = 2 * kilt_primitives::constants::HOURS;
 
 #[cfg(feature = "fast-gov")]
 pub const STAKE_DURATION: BlockNumber = 30;
