@@ -89,6 +89,17 @@ benchmarks! {
 	}: _(RawOrigin::Root, inflation)
 	verify {}
 
+	set_max_selected_candidates {
+		let n in 1 .. T::MaxCollatorCandidates::get() - 1;
+		let m in 0 .. T::MaxDelegatorsPerCollator::get();
+
+		let candidates = setup_collator_candidates::<T>(n);
+		let old_candidate = candidates[0].clone();
+
+		add_delegators::<T>(m, old_candidate.clone());
+	}: _(RawOrigin::Root, T::MinBlocksPerRound::get())
+	verify {}
+
 	set_blocks_per_round {
 	}: _(RawOrigin::Root, T::MinBlocksPerRound::get())
 	verify {}
