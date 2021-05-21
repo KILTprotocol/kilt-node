@@ -725,7 +725,7 @@ pub mod pallet {
 			// early
 			if unlock_block <= frame_system::Pallet::<T>::block_number() {
 				// But we still need to reduce the old lock or remove it, if it's consumed
-				// completly.
+				// completely.
 				if max_add_amount == source_amount {
 					<BalanceLocks<T>>::remove(&source);
 				} else {
