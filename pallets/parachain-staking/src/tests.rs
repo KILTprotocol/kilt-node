@@ -17,6 +17,8 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 //! Unit testing
+use std::collections::BTreeMap;
+
 use crate::{
 	mock::{
 		almost_equal, events, last_event, roll_to, AccountId, Authorship, Balance, Balances, BlockNumber,
@@ -24,11 +26,11 @@ use crate::{
 	},
 	set::OrderedSet,
 	types::{BalanceOf, Collator, CollatorSnapshot, CollatorStatus, Delegator, RoundInfo, Stake, TotalStake},
-	Config, Error, Event, InflationInfo, RewardRate, StakingInfo,
+	Config, Error, Event, InflationInfo, RewardRate, StakingInfo, STAKING_ID,
 };
 use frame_support::{assert_noop, assert_ok, traits::EstimateNextSessionRotation};
 use kilt_primitives::constants::YEARS;
-use pallet_balances::Error as BalancesError;
+use pallet_balances::{BalanceLock, Error as BalancesError, Reasons};
 use pallet_session::{SessionManager, ShouldEndSession};
 use sp_runtime::{traits::Zero, Perbill, Percent, Perquintill};
 
@@ -1099,7 +1101,7 @@ fn multiple_delegations() {
 				StakePallet::delegate_another_candidate(Origin::signed(10), 2, 10),
 				Error::<Test>::TooManyDelegators
 			);
-			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(10), 2, 11),);
+			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(10), 2, 11));
 
 			roll_to(26, vec![]);
 			let mut new2 = vec![
@@ -1137,7 +1139,7 @@ fn multiple_delegations() {
 			assert_eq!(events(), expected);
 
 			// test join_delegator errors
-			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(8), 1, 10),);
+			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(8), 1, 10));
 			assert_noop!(
 				StakePallet::join_delegators(Origin::signed(11), 1, 10),
 				Error::<Test>::TooManyDelegators
@@ -1146,7 +1148,7 @@ fn multiple_delegations() {
 				StakePallet::delegate_another_candidate(Origin::signed(11), 1, 10),
 				Error::<Test>::NotYetDelegating
 			);
-			assert_ok!(StakePallet::join_delegators(Origin::signed(11), 1, 11),);
+			assert_ok!(StakePallet::join_delegators(Origin::signed(11), 1, 11));
 
 			// verify that delegations are removed after collator leaves, not before
 			assert_eq!(StakePallet::delegator_state(6).unwrap().total, 40);
@@ -2498,6 +2500,323 @@ fn update_inflation() {
 			);
 			invalid_inflation.delegator.reward_rate.per_block = Perquintill::zero();
 
-			assert_ok!(StakePallet::set_inflation(Origin::root(), invalid_inflation),);
+			assert_ok!(StakePallet::set_inflation(Origin::root(), invalid_inflation));
+		});
+}
+
+// FIXME:
+#[test]
+fn withdraw_unstaked() {
+	// same_unstaked_as_restaked
+	// block 1: stake & unstake for 100
+	// block 2: stake & unstake for 100
+	// should remove first entry in unstaking BTreeMap when staking in block 2
+	// should still have 100 locked until withdrawing
+	ExtBuilder::default()
+		.with_balances(vec![(1, 10), (2, 100)])
+		.with_collators(vec![(1, 10)])
+		.with_delegators(vec![(2, 1, 100)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
+			let mut unstaking = BTreeMap::new();
+			unstaking.insert(3, 100);
+			let lock = BalanceLock {
+				id: STAKING_ID,
+				amount: 100,
+				reasons: Reasons::All,
+			};
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			// shouldn't be able to unlock anything
+			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+
+			// join delegators and revoke again --> consume unstaking at block 3
+			roll_to(2, vec![]);
+			assert_ok!(StakePallet::join_delegators(Origin::signed(2), 1, 100));
+			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
+			unstaking.remove(&3);
+			unstaking.insert(4, 100);
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			// shouldn't be able to unlock anything
+			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+
+			// should reduce unlocking but not unlock anything
+			roll_to(3, vec![]);
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			// shouldn't be able to unlock anything
+			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+
+			roll_to(4, vec![]);
+			unstaking.remove(&4);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			// shouldn't be able to unlock anything
+			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(2), vec![]);
+		});
+
+	// less_unstaked_than_restaked
+	// block 1: stake & unstake for 10
+	// block 2: stake & unstake for 100
+	// should remove first entry in unstaking BTreeMap when staking in block 2
+	// should still have 90 locked until withdrawing in block 4
+	ExtBuilder::default()
+		.with_balances(vec![(1, 10), (2, 100)])
+		.with_collators(vec![(1, 10)])
+		.with_delegators(vec![(2, 1, 10)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
+			let mut unstaking = BTreeMap::new();
+			unstaking.insert(3, 10);
+			let mut lock = BalanceLock {
+				id: STAKING_ID,
+				amount: 10,
+				reasons: Reasons::All,
+			};
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			// shouldn't be able to unlock anything
+			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+
+			// join delegators and revoke again
+			roll_to(2, vec![]);
+			assert_ok!(StakePallet::join_delegators(Origin::signed(2), 1, 100));
+			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
+			unstaking.remove(&3);
+			unstaking.insert(4, 100);
+			lock.amount = 100;
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			// shouldn't be able to unlock anything
+			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+
+			roll_to(3, vec![]);
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			// shouldn't be able to unlock anything
+			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+
+			// withdraw, remove lock, empty unlocking
+			roll_to(4, vec![]);
+			unstaking.remove(&4);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(2), vec![]);
+		});
+
+	// more_unstaked_than_restaked
+	// block 1: stake & unstake for 100
+	// block 2: stake & unstake for 10
+	// should reduce first entry from amount 100 to 90 in unstaking BTreeMap when
+	// staking in block 2
+	// should have 100 locked until withdrawing in block 3, then 10
+	// should have 10 locked until further withdrawing in block 4
+	ExtBuilder::default()
+		.with_balances(vec![(1, 10), (2, 100)])
+		.with_collators(vec![(1, 10)])
+		.with_delegators(vec![(2, 1, 100)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
+			let mut unstaking = BTreeMap::new();
+			unstaking.insert(3, 100);
+			let mut lock = BalanceLock {
+				id: STAKING_ID,
+				amount: 100,
+				reasons: Reasons::All,
+			};
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			// shouldn't be able to unlock anything
+			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+
+			// join delegators and revoke again
+			roll_to(2, vec![]);
+			assert_ok!(StakePallet::join_delegators(Origin::signed(2), 1, 10));
+			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
+			unstaking.insert(3, 90);
+			unstaking.insert(4, 10);
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			// shouldn't be able to unlock anything
+			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+
+			// should reduce unlocking but not unlock anything
+			roll_to(3, vec![]);
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			// should be able to unlock 90 of 100 from unstaking
+			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			unstaking.remove(&3);
+			lock.amount = 10;
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+
+			roll_to(4, vec![]);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			// should be able to unlock 10 of remaining 10
+			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			unstaking.remove(&4);
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(2), vec![]);
+		});
+
+	// test_stake_less
+	// block 1: stake & unstake for 100
+	// block 2: stake & unstake for 10
+	// should reduce first entry from amount 100 to 90 in unstaking BTreeMap when
+	// staking in block 2
+	// should have 100 locked until withdrawing in block 3, then 10
+	// should have 10 locked until further withdrawing in block 4
+	ExtBuilder::default()
+		.with_balances(vec![(1, 200), (2, 200)])
+		.with_collators(vec![(1, 200)])
+		.with_delegators(vec![(2, 1, 200)])
+		.build()
+		.execute_with(|| {
+			// should be able to decrease more often than MaxUnstakeRequests because it's
+			// the same block and thus unstaking is increased at block 3 instead of having
+			// multiple entries for the same block
+			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
+			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
+			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
+			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
+			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
+			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10),);
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10),);
+			let mut unstaking = BTreeMap::new();
+			unstaking.insert(3, 60);
+			let mut lock = BalanceLock {
+				id: STAKING_ID,
+				amount: 200,
+				reasons: Reasons::All,
+			};
+			assert_eq!(Balances::locks(1), vec![lock.clone()]);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(StakePallet::unstaking(1), unstaking);
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			// shouldn't be able to unlock anything
+			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(1), 1));
+			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_eq!(StakePallet::unstaking(1), unstaking);
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(1), vec![lock.clone()]);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+
+			roll_to(2, vec![]);
+			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10),);
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10),);
+			unstaking.insert(4, 10);
+			assert_eq!(Balances::locks(1), vec![lock.clone()]);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(StakePallet::unstaking(1), unstaking);
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			// shouldn't be able to unlock anything
+			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(1), 1));
+			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_eq!(StakePallet::unstaking(1), unstaking);
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(1), vec![lock.clone()]);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+
+			roll_to(3, vec![]);
+			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10),);
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10),);
+			unstaking.insert(5, 10);
+			unstaking.insert(5, 10);
+			assert_eq!(Balances::locks(1), vec![lock.clone()]);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(StakePallet::unstaking(1), unstaking);
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			// should unlock 60
+			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(1), 1));
+			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			lock.amount = 140;
+			unstaking.remove(&3);
+			assert_eq!(StakePallet::unstaking(1), unstaking);
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(1), vec![lock.clone()]);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+
+			// reach MaxUnstakeRequests
+			roll_to(4, vec![]);
+			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
+			roll_to(5, vec![]);
+			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
+			roll_to(6, vec![]);
+			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
+			roll_to(7, vec![]);
+			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
+			unstaking.insert(6, 10);
+			unstaking.insert(7, 10);
+			unstaking.insert(8, 10);
+			unstaking.insert(9, 10);
+			assert_eq!(StakePallet::unstaking(1), unstaking);
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(1), vec![lock.clone()]);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+
+			roll_to(8, vec![]);
+			assert_noop!(
+				StakePallet::candidate_stake_less(Origin::signed(1), 10),
+				Error::<Test>::NoMoreUnstaking
+			);
+			assert_noop!(
+				StakePallet::delegator_stake_less(Origin::signed(2), 1, 10),
+				Error::<Test>::NoMoreUnstaking
+			);
+			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(1), 1));
+			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			unstaking.remove(&4);
+			unstaking.remove(&5);
+			unstaking.remove(&6);
+			unstaking.remove(&7);
+			unstaking.remove(&8);
+			lock.amount = 90;
+			assert_eq!(StakePallet::unstaking(1), unstaking);
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(1), vec![lock.clone()]);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 40));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 40));
+			unstaking.insert(10, 40);
+			assert_ok!(StakePallet::candidate_stake_more(Origin::signed(1), 30));
+			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(2), 1, 30));
+			unstaking.remove(&9);
+			unstaking.insert(10, 20);
+			assert_eq!(StakePallet::unstaking(1), unstaking);
+			assert_eq!(StakePallet::unstaking(2), unstaking);
+			assert_eq!(Balances::locks(1), vec![lock.clone()]);
+			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 		});
 }

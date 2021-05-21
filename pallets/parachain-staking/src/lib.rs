@@ -617,7 +617,7 @@ pub mod pallet {
 				(candidates.len() as u32) <= T::MaxCollatorCandidates::get(),
 				Error::<T>::TooManyCollatorCandidates
 			);
-			Self::increase_lock(&acc, stake)?;
+			Self::increase_lock(&acc, stake, BalanceOf::<T>::zero())?;
 
 			let candidate = Collator::new(acc.clone(), stake);
 			let TotalStake {
@@ -713,7 +713,7 @@ pub mod pallet {
 			let after = state.stake;
 			ensure!(after <= T::MaxCollatorCandidateStk::get(), Error::<T>::ValStakeAboveMax);
 
-			Self::increase_lock(&collator, after)?;
+			Self::increase_lock(&collator, after, more)?;
 
 			if state.is_active() {
 				Self::update(collator.clone(), state.total);
@@ -833,7 +833,7 @@ pub mod pallet {
 			let new_total = state.total;
 
 			// lock stake
-			Self::increase_lock(&acc, amount)?;
+			Self::increase_lock(&acc, amount, BalanceOf::<T>::zero())?;
 			if state.is_active() {
 				Self::update(collator.clone(), new_total);
 			}
@@ -926,7 +926,7 @@ pub mod pallet {
 			let new_total = state.total;
 
 			// lock stake
-			Self::increase_lock(&acc, delegator.total)?;
+			Self::increase_lock(&acc, delegator.total, amount)?;
 			if state.is_active() {
 				Self::update(collator.clone(), new_total);
 			}
@@ -1018,7 +1018,7 @@ pub mod pallet {
 				.ok_or(Error::<T>::DelegationDNE)?;
 
 			// update lock
-			Self::increase_lock(&delegator, delegator_total)?;
+			Self::increase_lock(&delegator, delegator_total, more)?;
 			let before = collator.total;
 			collator.inc_delegator(delegator.clone(), more);
 			let after = collator.total;
@@ -1076,7 +1076,7 @@ pub mod pallet {
 				Error::<T>::NomStakeBelowMin
 			);
 
-			Self::prep_unstake(&delegator, remaining)?;
+			Self::prep_unstake(&delegator, less)?;
 
 			let before = collator.total;
 			collator.dec_delegator(delegator.clone(), less);
@@ -1404,13 +1404,62 @@ pub mod pallet {
 
 		/// Either set or increase the BalanceLock of target account to
 		/// amount.
-		fn increase_lock(who: &T::AccountId, amount: BalanceOf<T>) -> Result<(), DispatchError> {
+		///
+		/// Consumes unstaked balance which can be withdrawn in the future up to
+		/// amount and updates `Unstaking` storage accordingly.
+		fn increase_lock(who: &T::AccountId, amount: BalanceOf<T>, more: BalanceOf<T>) -> Result<(), DispatchError> {
 			ensure!(
 				pallet_balances::Pallet::<T>::free_balance(who) >= amount.into(),
 				pallet_balances::Error::<T>::InsufficientBalance
 			);
 
+			// update Unstaking by consuming up to {amount | more} and sum up balance locked
+			// in unstaking in case that unstaking.sum > amount
+			let mut total_locked: BalanceOf<T> = Zero::zero();
+			<Unstaking<T>>::mutate(who, |unstaking| {
+				// reduce {amount | more} by unstaking until either {amount | more} is zero or
+				// no unstaking is left
+				// if more is set, we only want to reduce by more to achieve 100 - 40 + 30 = 90
+				// locked
+				let mut amt_consuming_unstaking = if more.is_zero() { amount } else { more };
+				for (block_number, locked_balance) in unstaking.clone() {
+					// append to total_locked if amount is not reducable anymore
+					if amt_consuming_unstaking.is_zero() {
+						total_locked = total_locked.saturating_add(locked_balance);
+					} else {
+						if locked_balance > amt_consuming_unstaking {
+							// amount is only reducable by locked_balance - amt_consuming_unstaking
+							let delta = locked_balance.saturating_sub(amt_consuming_unstaking);
+							// replace old entry with delta
+							unstaking.insert(block_number, delta);
+							amt_consuming_unstaking = Zero::zero();
+							total_locked = total_locked.saturating_add(locked_balance);
+						} else {
+							// amount is either still reducable or reached
+							amt_consuming_unstaking = amt_consuming_unstaking.saturating_sub(locked_balance);
+							unstaking.remove(&block_number);
+						}
+					}
+				}
+			});
+
+			// Handle case of collator/delegator decreasing their stake and increasing
+			// afterwards which results in amount != locked
+			//
+			// Example: if delegator has 100 staked and decreases by 30 and then increases
+			// by 20, 80 have been delegated to the collator but
+			// amount = 80, more = 30, locked = 100.
+			//
+			// This would immediately unlock 20 for the delegator
+			let amount: BalanceOf<T> = if let Some(BalanceLock { amount: locked, .. }) =
+				Locks::<T>::get(who).iter().find(|l| l.id == STAKING_ID)
+			{
+				BalanceOf::<T>::from(*locked).max(amount)
+			} else {
+				amount
+			};
 			T::Currency::set_lock(STAKING_ID, who, amount, WithdrawReasons::all());
+
 			Ok(())
 		}
 
@@ -1431,12 +1480,14 @@ pub mod pallet {
 			let unlock_block = now.saturating_add(T::StakeDuration::get());
 			let mut unstaking = <Unstaking<T>>::get(who);
 
-			// TODO: Test
 			ensure!(
-				unstaking.len() < T::MaxUnstakeRequests::get(),
+				unstaking.len() <= T::MaxUnstakeRequests::get(),
 				Error::<T>::NoMoreUnstaking
 			);
 
+			// if existent, we have to add the current amount of same unlock_block, because
+			// insert overwrites the current value
+			let amount = amount.saturating_add(*unstaking.get(&unlock_block).unwrap_or(&BalanceOf::<T>::zero()));
 			unstaking.insert(unlock_block, amount);
 			<Unstaking<T>>::insert(who, unstaking);
 			Ok(())
@@ -1467,6 +1518,7 @@ pub mod pallet {
 			ensure!(!unstaking.is_empty(), Error::<T>::UnstakingIsEmpty);
 
 			let mut total_unlocked: BalanceOf<T> = Zero::zero();
+			let mut total_locked: BalanceOf<T> = Zero::zero();
 			let mut expired = Vec::new();
 
 			// check potential unlocks
@@ -1474,6 +1526,8 @@ pub mod pallet {
 				if block_number <= &now {
 					expired.push(*block_number);
 					total_unlocked = total_unlocked.saturating_add(*locked_balance);
+				} else {
+					total_locked = total_locked.saturating_add(*locked_balance);
 				}
 			}
 			for block_number in expired {
@@ -1482,14 +1536,13 @@ pub mod pallet {
 
 			// iterate balance locks to retrieve amount of locked balance
 			let locks = Locks::<T>::get(who);
-			let total_locked: BalanceOf<T> =
-				if let Some(BalanceLock { amount, .. }) = locks.iter().find(|l| l.id == STAKING_ID) {
-					amount.saturating_sub(total_unlocked.into()).into()
-				} else {
-					// should never fail to find the lock since we checked whether unstaking is not
-					// empty but let's be safe
-					Zero::zero()
-				};
+			total_locked = if let Some(BalanceLock { amount, .. }) = locks.iter().find(|l| l.id == STAKING_ID) {
+				amount.saturating_sub(total_unlocked.into()).into()
+			} else {
+				// should never fail to find the lock since we checked whether unstaking is not
+				// empty but let's be safe
+				Zero::zero()
+			};
 
 			if total_locked.is_zero() {
 				T::Currency::remove_lock(STAKING_ID, who);
