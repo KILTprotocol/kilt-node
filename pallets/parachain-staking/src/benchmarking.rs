@@ -89,6 +89,10 @@ benchmarks! {
 	}: _(RawOrigin::Root, inflation)
 	verify {}
 
+	set_blocks_per_round {
+	}: _(RawOrigin::Root, T::MinBlocksPerRound::get())
+	verify {}
+
 	join_candidates {
 		let n in 0 .. T::MaxCollatorCandidates::get() - 1;
 

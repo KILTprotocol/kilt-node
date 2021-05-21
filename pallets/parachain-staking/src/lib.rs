@@ -1,4 +1,4 @@
-	// KILT Blockchain – https://botlabs.org
+// KILT Blockchain – https://botlabs.org
 // Copyright (C) 2019-2021 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
@@ -676,17 +676,23 @@ pub mod pallet {
 		/// - Writes: Round
 		/// # </weight>
 		#[pallet::weight(100_000_000)]
-		pub fn set_blocks_per_round(origin: OriginFor<T>, new: T::BlockNumber) -> DispatchResultWithPostInfo {
+		pub fn set_blocks_per_round(origin: OriginFor<T>, new: T::BlockNumber) -> DispatchResult {
 			frame_system::ensure_root(origin)?;
 			ensure!(new >= T::MinBlocksPerRound::get(), Error::<T>::CannotSetBelowMin);
 
-			let mut round = <Round<T>>::get();
-			let (now, first, old) = (round.current, round.first, round.length);
-			round.length = new;
-			<Round<T>>::put(round);
+			let old_round = <Round<T>>::get();
+			<Round<T>>::put(RoundInfo {
+				length: new,
+				..old_round
+			});
 
-			Self::deposit_event(Event::BlocksPerRoundSet(now, first, old, new));
-			Ok(().into())
+			Self::deposit_event(Event::BlocksPerRoundSet(
+				old_round.current,
+				old_round.first,
+				old_round.length,
+				new,
+			));
+			Ok(())
 		}
 
 		/// Join the set of collator candidates.
