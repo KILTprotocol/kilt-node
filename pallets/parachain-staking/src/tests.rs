@@ -2111,6 +2111,7 @@ fn coinbase_rewards_few_blocks_detailed_check() {
 			assert_eq!(Balances::usable_balance(&3), user_3 + d_rewards * 2 - 1);
 			assert_eq!(Balances::usable_balance(&4), user_4 + d_rewards + 1);
 			assert_eq!(Balances::usable_balance(&5), user_5 + d_rewards);
+			assert_ok!(StakePallet::revoke_delegation(Origin::signed(5), 2));
 
 			// 2 is block author for 5th block
 			roll_to(6, authors);
@@ -2118,10 +2119,54 @@ fn coinbase_rewards_few_blocks_detailed_check() {
 			assert_eq!(Balances::usable_balance(&2), user_2 + 2 * c_rewards);
 			assert_eq!(Balances::usable_balance(&3), user_3 + d_rewards * 2 - 1);
 			assert_eq!(Balances::usable_balance(&4), user_4 + d_rewards + 1);
-			assert_eq!(Balances::usable_balance(&5), user_5 + 2 * d_rewards);
+			// Should have not received rewards
+			assert_eq!(Balances::usable_balance(&5), user_5 + d_rewards);
 		});
 }
 
+#[test]
+fn delegator_should_not_receive_rewards_after_revoking() {
+	// test edge case of 1 delegator
+	ExtBuilder::default()
+		.with_balances(vec![(1, 10_000_000 * DECIMALS), (2, 10_000_000 * DECIMALS)])
+		.with_collators(vec![(1, 10_000_000 * DECIMALS)])
+		.with_delegators(vec![(2, 1, 10_000_000 * DECIMALS)])
+		.with_inflation(10, 15, 40, 15, 5)
+		.build()
+		.execute_with(|| {
+			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
+			let authors: Vec<Option<AccountId>> = (1u64..100u64).map(|_| Some(1u64)).collect();
+			assert_eq!(Balances::usable_balance(&1), Balance::zero());
+			assert_eq!(Balances::usable_balance(&2), Balance::zero());
+			roll_to(100, authors);
+			assert!(Balances::usable_balance(&1) > Balance::zero());
+			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_eq!(Balances::usable_balance(&2), 10_000_000 * DECIMALS);
+		});
+
+	ExtBuilder::default()
+		.with_balances(vec![
+			(1, 10_000_000 * DECIMALS),
+			(2, 10_000_000 * DECIMALS),
+			(3, 10_000_000 * DECIMALS),
+		])
+		.with_collators(vec![(1, 10_000_000 * DECIMALS)])
+		.with_delegators(vec![(2, 1, 10_000_000 * DECIMALS), (3, 1, 10_000_000 * DECIMALS)])
+		.with_inflation(10, 15, 40, 15, 5)
+		.build()
+		.execute_with(|| {
+			assert_ok!(StakePallet::revoke_delegation(Origin::signed(3), 1));
+			let authors: Vec<Option<AccountId>> = (1u64..100u64).map(|_| Some(1u64)).collect();
+			assert_eq!(Balances::usable_balance(&1), Balance::zero());
+			assert_eq!(Balances::usable_balance(&2), Balance::zero());
+			assert_eq!(Balances::usable_balance(&3), Balance::zero());
+			roll_to(100, authors);
+			assert!(Balances::usable_balance(&1) > Balance::zero());
+			assert!(Balances::usable_balance(&2) > Balance::zero());
+			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(3), 3));
+			assert_eq!(Balances::usable_balance(&3), 10_000_000 * DECIMALS);
+		});
+}
 #[test]
 fn coinbase_rewards_many_blocks_simple_check() {
 	let num_of_years: Perquintill = Perquintill::from_perthousand(2);
@@ -2504,7 +2549,6 @@ fn update_inflation() {
 		});
 }
 
-// FIXME:
 #[test]
 fn withdraw_unstaked() {
 	// same_unstaked_as_restaked

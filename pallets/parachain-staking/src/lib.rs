@@ -994,7 +994,8 @@ pub mod pallet {
 			collator: <T::Lookup as StaticLookup>::Source,
 		) -> DispatchResultWithPostInfo {
 			let collator = T::Lookup::lookup(collator)?;
-			Self::delegator_revokes_collator(ensure_signed(origin)?, collator)
+			let delegator = ensure_signed(origin)?;
+			Self::delegator_revokes_collator(delegator, collator)
 		}
 
 		/// Increase the stake for delegating a collator candidate.
@@ -1167,6 +1168,8 @@ pub mod pallet {
 				Self::delegator_leaves_collator(acc.clone(), collator)?;
 				<DelegatorState<T>>::remove(&acc);
 				Self::deposit_event(Event::DelegatorLeft(acc, old_total));
+				// update candidates for next round
+				Self::select_top_candidates();
 				return Ok(().into());
 			}
 			// can never fail iff MinDelegatorStk == MinDelegation
