@@ -1,4 +1,4 @@
-// KILT Blockchain – https://botlabs.org
+	// KILT Blockchain – https://botlabs.org
 // Copyright (C) 2019-2021 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
@@ -373,7 +373,7 @@ pub mod pallet {
 	/// It maps from an account to its delegation details.
 	#[pallet::storage]
 	#[pallet::getter(fn delegator_state)]
-	type DelegatorState<T: Config> =
+	pub(crate) type DelegatorState<T: Config> =
 		StorageMap<_, Twox64Concat, T::AccountId, Delegator<T::AccountId, BalanceOf<T>>, OptionQuery>;
 
 	/// Collator candidates staking information.
@@ -387,22 +387,22 @@ pub mod pallet {
 	/// The collator candidates selected for the latest validation round.
 	#[pallet::storage]
 	#[pallet::getter(fn selected_candidates)]
-	type SelectedCandidates<T: Config> = StorageValue<_, Vec<T::AccountId>, ValueQuery>;
+	pub(crate) type SelectedCandidates<T: Config> = StorageValue<_, Vec<T::AccountId>, ValueQuery>;
 
 	/// Total funds locked by this staking pallet.
 	#[pallet::storage]
 	#[pallet::getter(fn total)]
-	type Total<T: Config> = StorageValue<_, TotalStake<BalanceOf<T>>, ValueQuery>;
+	pub(crate) type Total<T: Config> = StorageValue<_, TotalStake<BalanceOf<T>>, ValueQuery>;
 
 	/// The set of collator candidates, each with their total backing stake.
 	#[pallet::storage]
 	#[pallet::getter(fn candidate_pool)]
-	type CandidatePool<T: Config> = StorageValue<_, OrderedSet<Stake<T::AccountId, BalanceOf<T>>>, ValueQuery>;
+	pub(crate) type CandidatePool<T: Config> = StorageValue<_, OrderedSet<Stake<T::AccountId, BalanceOf<T>>>, ValueQuery>;
 
 	/// A queue of collators waiting to be removed from the set of candidates.
 	#[pallet::storage]
 	#[pallet::getter(fn exit_queue)]
-	type ExitQueue<T: Config> = StorageValue<_, OrderedSet<Stake<T::AccountId, SessionIndex>>, ValueQuery>;
+	pub(crate) type ExitQueue<T: Config> = StorageValue<_, OrderedSet<Stake<T::AccountId, SessionIndex>>, ValueQuery>;
 
 	/// Snapshot of collator delegation stake.
 	///

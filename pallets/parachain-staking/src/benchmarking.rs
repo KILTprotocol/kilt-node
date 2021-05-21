@@ -18,23 +18,31 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 //! Benchmarking
-use super::*;
-use crate::Pallet as ParachainStaking;
+use crate::*;
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
 	assert_ok,
 	traits::{Currency, Get, Hooks, OnFinalize},
 };
 use frame_system::{pallet_prelude::BlockNumberFor, RawOrigin};
-use sp_runtime::{traits::One, Perquintill};
+use sp_runtime::{
+	traits::{One, StaticLookup},
+	Perquintill,
+};
 use sp_std::vec::Vec;
 
 const COLLATOR_ACCOUNT_SEED: u32 = 0;
+const DELEGATOR_ACCOUNT_SEED: u32 = 1;
 
+/// Creates collators, must be called with an empty candidate pool
 fn setup_collator_candidates<T: Config>(num_collators: u32) -> Vec<T::AccountId> {
-	let collators: Vec<T::AccountId> = (0..num_collators)
+	let current_collator_count = CandidatePool::<T>::get().len() as u32;
+	let collators: Vec<T::AccountId> = (current_collator_count..num_collators)
 		.map(|i| account("collator", i as u32, COLLATOR_ACCOUNT_SEED))
 		.collect();
+
+
+	log::info!("add {} collators to {} collators", collators.len(), CandidatePool::<T>::get().len());
 
 	for acc in collators.iter() {
 		T::Currency::make_free_balance_be(&acc, T::MinCollatorCandidateStk::get());
@@ -44,7 +52,26 @@ fn setup_collator_candidates<T: Config>(num_collators: u32) -> Vec<T::AccountId>
 		));
 	}
 
-	collators
+	CandidatePool::<T>::get().to_vec().drain(..).map(|c| c.owner).collect()
+}
+
+fn add_delegators<T: Config>(num_delegators: u32, collator: T::AccountId) -> Vec<T::AccountId> {
+	let delegators: Vec<T::AccountId> = (0..num_delegators)
+		.map(|i| account("delegator", i as u32, DELEGATOR_ACCOUNT_SEED))
+		.collect();
+
+	log::info!("setup {} delegators", delegators.len());
+
+	for acc in delegators.iter() {
+		T::Currency::make_free_balance_be(&acc, T::MinDelegatorStk::get());
+		assert_ok!(<Pallet<T>>::join_delegators(
+			T::Origin::from(Some(acc.clone()).into()),
+			T::Lookup::unlookup(collator.clone()),
+			T::MinDelegatorStk::get(),
+		));
+	}
+
+	delegators
 }
 
 benchmarks! {
@@ -59,25 +86,41 @@ benchmarks! {
 	verify {}
 
 	join_candidates {
-		let n in 1 .. T::MaxCollatorCandidates::get() - 1;
+		let n in 0 .. T::MaxCollatorCandidates::get() - 1;
 
 		let candidates = setup_collator_candidates::<T>(n);
 		let new_candidate = account("new_collator", u32::MAX , COLLATOR_ACCOUNT_SEED);
 		T::Currency::make_free_balance_be(&new_candidate, T::MinCollatorCandidateStk::get());
 
-	}: _(RawOrigin::Signed(new_candidate), T::MinCollatorCandidateStk::get())
+	}: _(RawOrigin::Signed(new_candidate.clone()), T::MinCollatorCandidateStk::get())
 	verify {
+		let candidates = CandidatePool::<T>::get();
+		assert!(candidates.binary_search_by(|other| other.owner.cmp(&new_candidate)).is_ok())
 	}
 
+	leave_candidates {
+		let n in 1 .. T::MaxCollatorCandidates::get() - 1;
+		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
-	on_initialize {
-		// TODO: implement this benchmark
-		let num_of_collators = T::MinSelectedCandidates::get();
-		let num_of_candidates = T::MaxCollatorCandidates::get();
+		let candidates = setup_collator_candidates::<T>(n);
+		let old_candidate = candidates[0].clone();
 
-	}: { <ParachainStaking<T> as Hooks<BlockNumberFor<T>>>::on_initialize(T::BlockNumber::one()) }
+		add_delegators::<T>(m, old_candidate.clone());
+
+	}: _(RawOrigin::Signed(old_candidate.clone()))
 	verify {
+		let candidates = CandidatePool::<T>::get();
+		assert!(candidates.binary_search_by(|other| other.owner.cmp(&old_candidate)).is_err())
 	}
+
+	// on_initialize {
+	// 	// TODO: implement this benchmark
+	// 	let num_of_collators = T::MinSelectedCandidates::get();
+	// 	let num_of_candidates = T::MaxCollatorCandidates::get();
+
+	// }: { <Pallet<T> as Hooks<BlockNumberFor<T>>>::on_initialize(T::BlockNumber::one()) }
+	// verify {
+	// }
 }
 
 #[cfg(test)]
@@ -100,7 +143,7 @@ mod tests {
 }
 
 impl_benchmark_test_suite!(
-	ParachainStaking,
+	Pallet,
 	crate::mock::ExtBuilder::default().build(),
 	crate::mock::Test,
 );
