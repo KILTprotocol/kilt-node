@@ -98,7 +98,7 @@ fn genesis() {
 			);
 			assert_eq!(
 				vec![Stake { owner: 1, amount: 700 }, Stake { owner: 2, amount: 400 }],
-				StakePallet::candidate_pool().to_vec()
+				StakePallet::candidate_pool().into_vec()
 			);
 			// 1
 			assert_eq!(Balances::usable_balance(&1), 500);
@@ -186,7 +186,7 @@ fn genesis() {
 				}
 			);
 			assert_eq!(
-				StakePallet::candidate_pool().to_vec(),
+				StakePallet::candidate_pool().into_vec(),
 				vec![
 					Stake { owner: 1, amount: 50 },
 					Stake { owner: 2, amount: 40 },
@@ -310,7 +310,7 @@ fn collator_exit_executes_after_delay() {
 			roll_to(4, vec![]);
 			assert_noop!(
 				StakePallet::leave_candidates(Origin::signed(3)),
-				Error::<Test>::CandidateDNE
+				Error::<Test>::CandidateNotFound
 			);
 
 			roll_to(11, vec![]);
@@ -1326,15 +1326,15 @@ fn collators_bond() {
 			roll_to(4, vec![]);
 			assert_noop!(
 				StakePallet::candidate_stake_more(Origin::signed(6), 50),
-				Error::<Test>::CandidateDNE
+				Error::<Test>::CandidateNotFound
 			);
 			assert_noop!(
 				StakePallet::candidate_stake_less(Origin::signed(6), 50),
-				Error::<Test>::CandidateDNE
+				Error::<Test>::CandidateNotFound
 			);
 			assert_noop!(
 				StakePallet::delegate_another_candidate(Origin::signed(6), 50, 10),
-				Error::<Test>::CandidateDNE
+				Error::<Test>::CandidateNotFound
 			);
 			assert_ok!(StakePallet::candidate_stake_more(Origin::signed(1), 50));
 			assert_noop!(
@@ -1353,7 +1353,7 @@ fn collators_bond() {
 			roll_to(30, vec![]);
 			assert_noop!(
 				StakePallet::candidate_stake_more(Origin::signed(1), 40),
-				Error::<Test>::CandidateDNE
+				Error::<Test>::CandidateNotFound
 			);
 			assert_ok!(StakePallet::candidate_stake_more(Origin::signed(2), 80));
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(2), 90));
@@ -1415,23 +1415,23 @@ fn delegators_bond() {
 			);
 			assert_noop!(
 				StakePallet::delegator_stake_more(Origin::signed(1), 2, 50),
-				Error::<Test>::DelegatorDNE
+				Error::<Test>::DelegatorNotFound
 			);
 			assert_noop!(
 				StakePallet::delegator_stake_less(Origin::signed(1), 2, 50),
-				Error::<Test>::DelegatorDNE
+				Error::<Test>::DelegatorNotFound
 			);
 			assert_noop!(
 				StakePallet::delegator_stake_more(Origin::signed(6), 2, 50),
-				Error::<Test>::DelegationDNE
+				Error::<Test>::DelegationNotFound
 			);
 			assert_noop!(
 				StakePallet::delegator_stake_more(Origin::signed(7), 6, 50),
-				Error::<Test>::CandidateDNE
+				Error::<Test>::CandidateNotFound
 			);
 			assert_noop!(
 				StakePallet::delegator_stake_less(Origin::signed(7), 6, 50),
-				Error::<Test>::CandidateDNE
+				Error::<Test>::CandidateNotFound
 			);
 			assert_noop!(
 				StakePallet::delegator_stake_less(Origin::signed(6), 1, 11),
@@ -1448,7 +1448,7 @@ fn delegators_bond() {
 			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(6), 1, 10));
 			assert_noop!(
 				StakePallet::delegator_stake_less(Origin::signed(6), 2, 5),
-				Error::<Test>::DelegationDNE
+				Error::<Test>::DelegationNotFound
 			);
 			assert_noop!(
 				StakePallet::delegator_stake_more(Origin::signed(6), 1, 81),
@@ -1491,15 +1491,15 @@ fn revoke_delegation_or_leave_delegators() {
 			roll_to(4, vec![]);
 			assert_noop!(
 				StakePallet::revoke_delegation(Origin::signed(1), 2),
-				Error::<Test>::DelegatorDNE
+				Error::<Test>::DelegatorNotFound
 			);
 			assert_noop!(
 				StakePallet::revoke_delegation(Origin::signed(6), 2),
-				Error::<Test>::DelegationDNE
+				Error::<Test>::DelegationNotFound
 			);
 			assert_noop!(
 				StakePallet::leave_delegators(Origin::signed(1)),
-				Error::<Test>::DelegatorDNE
+				Error::<Test>::DelegatorNotFound
 			);
 			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(6), 2, 3));
 			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(6), 3, 3));
@@ -1604,7 +1604,7 @@ fn revoke_delegation_or_leave_delegators() {
 // 			// set block author as 1 for all blocks this round
 // 			set_author(3, 1, 100);
 // 			assert_noop!(StakePallet::leave_delegators(Origin::signed(66)),
-// Error::<Test>::DelegatorDNE);
+// Error::<Test>::DelegatorNotFound);
 // assert_ok!(StakePallet::leave_delegators(Origin:: signed(6))); 			roll_to(4 *
 // blocks_per_round + 1, vec![]); 			// ensure delegators are paid for 2 rounds
 // after they leave, e.g. 6 should 			// receive rewards for rounds 3 and 4 after

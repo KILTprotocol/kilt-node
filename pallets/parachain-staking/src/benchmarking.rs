@@ -55,7 +55,11 @@ fn setup_collator_candidates<T: Config>(num_collators: u32) -> Vec<T::AccountId>
 		));
 	}
 
-	CandidatePool::<T>::get().to_vec().drain(..).map(|c| c.owner).collect()
+	CandidatePool::<T>::get()
+		.into_vec()
+		.drain(..)
+		.map(|c| c.owner)
+		.collect()
 }
 
 fn add_delegators<T: Config>(num_delegators: u32, collator: T::AccountId) -> Vec<T::AccountId> {

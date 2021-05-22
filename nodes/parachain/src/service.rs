@@ -370,7 +370,7 @@ where
 
 				Ok((time, slot))
 			},
-			registry: config.prometheus_registry().clone(),
+			registry: config.prometheus_registry(),
 			can_author_with: sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone()),
 			spawner: &task_manager.spawn_essential_handle(),
 			telemetry,
@@ -439,7 +439,7 @@ where
 				task_manager.spawn_handle(),
 				client.clone(),
 				transaction_pool,
-				prometheus_registry.clone(),
+				prometheus_registry,
 				telemetry.clone(),
 			);
 
@@ -484,7 +484,7 @@ where
 				block_import: client.clone(),
 				relay_chain_client: relay_chain_node.client.clone(),
 				relay_chain_backend: relay_chain_node.backend.clone(),
-				para_client: client.clone(),
+				para_client: client,
 				backoff_authoring_blocks: Option::<()>::None,
 				sync_oracle,
 				keystore,
@@ -517,7 +517,7 @@ where
 		client,
 		|_, _| async { Ok(()) },
 		&task_manager.spawn_essential_handle(),
-		config.prometheus_registry().clone(),
+		config.prometheus_registry(),
 	)
 	.map_err(Into::into)
 }
@@ -544,8 +544,8 @@ where
 				task_manager.spawn_handle(),
 				client.clone(),
 				transaction_pool,
-				prometheus_registry.clone(),
-				telemetry.clone(),
+				prometheus_registry,
+				telemetry,
 			);
 
 			let relay_chain_backend = relay_chain_node.backend.clone();
@@ -555,7 +555,7 @@ where
 				cumulus_client_consensus_relay_chain::BuildRelayChainConsensusParams {
 					para_id: id,
 					proposer_factory,
-					block_import: client.clone(),
+					block_import: client,
 					relay_chain_client: relay_chain_node.client.clone(),
 					relay_chain_backend: relay_chain_node.backend.clone(),
 					create_inherent_data_providers: move |_, (relay_parent, validation_data)| {
