@@ -181,7 +181,8 @@ where
 		+ sp_session::SessionKeys<Block>
 		+ sp_api::ApiExt<Block, StateBackend = sc_client_api::StateBackendFor<TFullBackend<Block>, Block>>
 		+ sp_offchain::OffchainWorkerApi<Block>
-		+ sp_block_builder::BlockBuilder<Block>,
+		+ sp_block_builder::BlockBuilder<Block>
+		+ cumulus_primitives_core::CollectCollationInfo<Block>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
 	Executor: sc_executor::NativeExecutionDispatch + 'static,
 	RB: FnOnce(
@@ -301,7 +302,6 @@ where
 			collator_key,
 			relay_chain_full_node,
 			spawner,
-			backend,
 			parachain_consensus,
 		};
 
@@ -370,7 +370,7 @@ where
 
 				Ok((time, slot))
 			},
-			registry: config.prometheus_registry(),
+			registry: config.prometheus_registry().clone(),
 			can_author_with: sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone()),
 			spawner: &task_manager.spawn_essential_handle(),
 			telemetry,
@@ -398,7 +398,8 @@ where
 		+ sp_block_builder::BlockBuilder<Block>
 		+ frame_rpc_system::AccountNonceApi<Block, AccountId, Index>
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
-		+ sp_consensus_aura::AuraApi<Block, AuthorityId>,
+		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
+		+ cumulus_primitives_core::CollectCollationInfo<Block>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
 {
 	let rpc_extensions_builder =
@@ -438,7 +439,7 @@ where
 				task_manager.spawn_handle(),
 				client.clone(),
 				transaction_pool,
-				prometheus_registry,
+				prometheus_registry.clone(),
 				telemetry.clone(),
 			);
 
@@ -483,7 +484,7 @@ where
 				block_import: client.clone(),
 				relay_chain_client: relay_chain_node.client.clone(),
 				relay_chain_backend: relay_chain_node.backend.clone(),
-				para_client: client,
+				para_client: client.clone(),
 				backoff_authoring_blocks: Option::<()>::None,
 				sync_oracle,
 				keystore,
@@ -516,7 +517,7 @@ where
 		client,
 		|_, _| async { Ok(()) },
 		&task_manager.spawn_essential_handle(),
-		config.prometheus_registry(),
+		config.prometheus_registry().clone(),
 	)
 	.map_err(Into::into)
 }
@@ -543,8 +544,8 @@ where
 				task_manager.spawn_handle(),
 				client.clone(),
 				transaction_pool,
-				prometheus_registry,
-				telemetry,
+				prometheus_registry.clone(),
+				telemetry.clone(),
 			);
 
 			let relay_chain_backend = relay_chain_node.backend.clone();
@@ -554,7 +555,7 @@ where
 				cumulus_client_consensus_relay_chain::BuildRelayChainConsensusParams {
 					para_id: id,
 					proposer_factory,
-					block_import: client,
+					block_import: client.clone(),
 					relay_chain_client: relay_chain_node.client.clone(),
 					relay_chain_backend: relay_chain_node.backend.clone(),
 					create_inherent_data_providers: move |_, (relay_parent, validation_data)| {
