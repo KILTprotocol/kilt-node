@@ -14,7 +14,7 @@ on:
 
 jobs:
   test-code:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
     - name: Checkout Code
       uses: actions/checkout@v2
@@ -33,7 +33,7 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: nightly-2021-02-22
+        toolchain: nightly-2021-05-10
         target: wasm32-unknown-unknown
         override: true
         default: true
@@ -43,7 +43,7 @@ jobs:
 
 
   clippy-lint:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
     - name: Checkout Code
       uses: actions/checkout@v2
@@ -61,7 +61,7 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: nightly-2021-02-22
+        toolchain: nightly-2021-05-10
         components: clippy
         target: wasm32-unknown-unknown
         override: true
@@ -75,7 +75,7 @@ jobs:
 
 
   check-fmt:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
     - name: Checkout Code
       uses: actions/checkout@v2
@@ -93,7 +93,7 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: nightly-2021-02-22
+        toolchain: nightly-2021-05-10
         components: rustfmt
         target: wasm32-unknown-unknown
         override: true

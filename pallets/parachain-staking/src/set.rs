@@ -157,7 +157,7 @@ impl<T: Ord> OrderedSet<T> {
 	}
 
 	/// Convert the set to a vector.
-	pub fn to_vec(self) -> Vec<T> {
+	pub fn into_vec(self) -> Vec<T> {
 		self.0
 	}
 }
