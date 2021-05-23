@@ -33,7 +33,7 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: nightly-2021-02-22
+        toolchain: nightly-2021-05-10
         target: wasm32-unknown-unknown
         override: true
         default: true
@@ -61,7 +61,7 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: nightly-2021-02-22
+        toolchain: nightly-2021-05-10
         components: clippy
         target: wasm32-unknown-unknown
         override: true
@@ -93,7 +93,7 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: nightly-2021-02-22
+        toolchain: nightly-2021-05-10
         components: rustfmt
         target: wasm32-unknown-unknown
         override: true
