@@ -17,38 +17,67 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 //! # Parachain Staking
+// TODO: Improve text below
 //! Minimal staking pallet that implements collator selection by total backed
 //! stake. The main difference between this pallet and `frame/pallet-staking` is
 //! that this pallet uses direct delegation. Delegators choose exactly who they
 //! delegate and with what stake. This is different from `frame/pallet-staking`
 //! where you approval vote and then run Phragmen.
 //!
-//! ### Rules
-//! There is a new round every `BlocksPerRound` blocks.
-//!
-//! At the start of every round,
-//! * issuance is distributed to collators for `StakeDuration` rounds ago
-//! in proportion to the points they received in that round (for authoring
-//! blocks)
-//! * queued collator exits are executed
-//! * a new set of collators is chosen from the candidates
-//!
 //! To join the set of candidates, an account must call `join_candidates` with
-//! stake >= `MinCollatorCandidateStk` and fee <= `MaxFee`. The fee is taken off
-//! the top of any rewards for the collator before the remaining rewards are
-//! distributed in proportion to stake to all delegators (including the
-//! collator, who always self-delegates).
+//! `MinCollatorCandidateStk` <= stake <= `MaxCollatorCandidateStk`
 //!
 //! To leave the set of candidates, the collator calls `leave_candidates`. If
 //! the call succeeds, the collator is removed from the pool of candidates so
 //! they cannot be selected for future collator sets, but they are not unstaked
-//! until `StakeDuration` rounds later. The exit request is stored in the
-//! `ExitQueue` and processed `StakeDuration` rounds later to unstake the
+//! until `ExitQueueDelay` rounds later. The exit request is stored in the
+//! `ExitQueue` and processed `ExitQueueDelay` rounds later to unstake the
 //! collator and all of its delegators.
 //!
 //! To join the set of delegators, an account must call `join_delegators` with
 //! stake >= `MinDelegatorStk`. There are also runtime methods for delegating
 //! additional collators and revoking delegations.
+//!
+//!
+//! - [`Config`]
+//! - [`Call`]
+//! - [`Pallet`]
+//!
+//! ## Overview
+//!
+//! The KILT Launch pallet provides functions for:
+//! TODO: Add
+//!
+//! ### Terminology
+//!
+//! * Collator: A user which locks up tokens to be included into the set of
+//!   authorities which author blocks and receive rewards for that
+//! * Delegator: A user which locks up tokens for collators they trust. When
+//!   their collator authors a block, the corresponding delegators also receive
+//!   rewards.
+//! * Total Stake = A collator’s own stake + the sum of delegated stake to this
+//!   collator
+//! * Total collator stake = The sum of tokens locked for staking from all
+//!   collator candidates
+//! * Total delegator stake = The sum of tokens locked for staking from all
+//!   delegators
+//! * To Stake: Lock tokens for staking
+//! * To Unstake: Unlock tokens from staking
+//! * Round (= Session): A fixed number of blocks in which the set of collators
+//!   does not change. We set the length of a session to the length of a staking
+//!   round, thus both words are interchangeable in our context.
+//!
+//! ## Interface
+//!
+//! ### Dispatchable Functions
+//! TODO: Add
+//!
+//! ## Genesis config
+//!
+//! The KiltLaunch pallet depends on the [`GenesisConfig`].
+//!
+//! ## Assumptions
+//! TODO: Add
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
@@ -1147,6 +1176,21 @@ pub mod pallet {
 
 		/// Compute block production coinbase rewards based on the current
 		/// inflation configuration.
+		///
+		/// The rewards are split between collators and delegators with
+		/// different reward rates and maximum staking rates. The latter is
+		/// required to have at most our targeted inflation because rewards are
+		/// minted. Rewards are immediately available without any restrictions
+		/// after minting.
+		///
+		/// A collator’s reward does not increase/decrease when a collator
+		/// stakes more/less. Their stake is solely used to increase the chances
+		/// of being one of the top n candidates to make the SelectedCandidates.
+		///
+		/// A delegator’s reward however increases/decreases when a delegator
+		/// stakes more/less because each delegator gets a percentage of the
+		/// reward, depending on the proportion of their stake compared to the
+		/// stake of other delegators for this collator
 		fn compute_block_issuance(
 			collator_stake: BalanceOf<T>,
 			delegator_stake: BalanceOf<T>,
@@ -1223,12 +1267,21 @@ pub mod pallet {
 		/// Process all the queued operations regarding collators' unstaking
 		/// requests.
 		///
-		/// This round processes exit requests for stakes that have an amount of
-		/// locked funds lower than the current round number.
+		/// This round processes exit requests for candidates who requested to
+		/// leave at least ExitQueueDelay rounds ago.
 		///
-		/// This implies that the higher a collator's stake upon request to
-		/// leave the set of candidates, the longer it will be possible for the
-		/// collator to unlock the staked funds.
+		/// Process of a collator which is active and wants to leave
+		/// 1. Collator calls extrinsic leave_candidates
+		/// 2. Collator is removed from CandidatePool such that they cannot be
+		/// included in SelectedCandidates from now on Note: They can still be
+		/// in the set of collators in the next session because that was decided
+		/// at the start of this session
+		/// 3. At the start of every new session, the ExitQueue is checked for
+		/// final removal of collator candidates and killing all associated
+		/// storage Note: We limit the number of ExitQueue iterations per
+		/// session because the highest risk of a parachain is that the Proof of
+		/// Verification (PoV) size limit is exceeded in automatic executions
+		/// such as the clearing of the ExitQueue.
 		fn execute_delayed_collator_exits(next: SessionIndex) {
 			let mut maybe_exits = <ExitQueue<T>>::get().into_vec();
 			let split_index = T::MaxExitsPerRound::get().min(maybe_exits.len());
@@ -1602,9 +1655,15 @@ pub mod pallet {
 	}
 
 	impl<T: Config> pallet_session::SessionManager<T::AccountId> for Pallet<T> {
-		/// This is where the magic happens!
+		/// 1. A new session starts.
+		/// 2. In hook new_session: Read the current top n candidates from the
+		/// SelectedCandidates Storage and assign this set to author blocks for
+		/// the next session.
+		/// 3. The session pallet tells AuRa about the set of
+		/// authorities for this session AuRa picks authors on
+		/// round-robin-block-basis from the set of authors.
 		///
-		/// See NOTE of `leave_candidates` for details.
+		/// See NOTE of `leave_candidates` for details about SelectedCandidates.
 		fn new_session(new_index: SessionIndex) -> Option<Vec<T::AccountId>> {
 			log::info!(
 				"assembling new collators for new session {} at #{:?}",

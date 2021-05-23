@@ -84,6 +84,10 @@ pub struct InflationInfo {
 }
 
 impl InflationInfo {
+	/// Create a new inflation info from the max staking rates and annual reward
+	/// rates for collators and delegators.
+	///
+	/// Example: InflationInfo::new(Perquintill_from_percent(10), ...)
 	pub fn new(
 		collator_max_rate_percentage: Perquintill,
 		collator_annual_reward_rate_percentage: Perquintill,
