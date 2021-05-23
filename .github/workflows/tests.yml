@@ -14,7 +14,7 @@ on:
 
 jobs:
   test-code:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
     - name: Checkout Code
       uses: actions/checkout@v2
@@ -43,7 +43,7 @@ jobs:
 
 
   clippy-lint:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
     - name: Checkout Code
       uses: actions/checkout@v2
@@ -75,7 +75,7 @@ jobs:
 
 
   check-fmt:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
     - name: Checkout Code
       uses: actions/checkout@v2
