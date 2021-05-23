@@ -181,7 +181,8 @@ where
 		+ sp_session::SessionKeys<Block>
 		+ sp_api::ApiExt<Block, StateBackend = sc_client_api::StateBackendFor<TFullBackend<Block>, Block>>
 		+ sp_offchain::OffchainWorkerApi<Block>
-		+ sp_block_builder::BlockBuilder<Block>,
+		+ sp_block_builder::BlockBuilder<Block>
+		+ cumulus_primitives_core::CollectCollationInfo<Block>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
 	Executor: sc_executor::NativeExecutionDispatch + 'static,
 	RB: FnOnce(
@@ -301,7 +302,6 @@ where
 			collator_key,
 			relay_chain_full_node,
 			spawner,
-			backend,
 			parachain_consensus,
 		};
 
@@ -398,7 +398,8 @@ where
 		+ sp_block_builder::BlockBuilder<Block>
 		+ frame_rpc_system::AccountNonceApi<Block, AccountId, Index>
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
-		+ sp_consensus_aura::AuraApi<Block, AuthorityId>,
+		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
+		+ cumulus_primitives_core::CollectCollationInfo<Block>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
 {
 	let rpc_extensions_builder =

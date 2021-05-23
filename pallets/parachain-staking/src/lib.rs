@@ -179,9 +179,9 @@ pub mod pallet {
 	#[pallet::error]
 	pub enum Error<T> {
 		/// The account is not part of the delegators set.
-		DelegatorDNE,
+		DelegatorNotFound,
 		/// The account is not part of the collator candidates set.
-		CandidateDNE,
+		CandidateNotFound,
 		/// The account is already part of the delegators set.
 		DelegatorExists,
 		/// The account is already part of the collator candidates set.
@@ -225,7 +225,7 @@ pub mod pallet {
 		/// candidate.
 		AlreadyDelegatedCollator,
 		/// The given delegation does not exist in the set of delegations.
-		DelegationDNE,
+		DelegationNotFound,
 		/// The collator delegate or the delegator is trying to un-stake more
 		/// funds that are currently staked.
 		Underflow,
@@ -238,7 +238,7 @@ pub mod pallet {
 		/// Max unlocking requests reached.
 		NoMoreUnstaking,
 		/// Provided staked value is zero. Should never be thrown.
-		StakeDNE,
+		StakeNotFound,
 		/// Cannot withdraw when Unstaked is empty.
 		UnstakingIsEmpty,
 	}
@@ -663,7 +663,7 @@ pub mod pallet {
 		#[pallet::weight(100_000_000)]
 		pub fn leave_candidates(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			let collator = ensure_signed(origin)?;
-			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateDNE)?;
+			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(!state.is_leaving(), Error::<T>::AlreadyLeaving);
 			let mut exits = <ExitQueue<T>>::get();
 			let now = <Round<T>>::get().current;
@@ -706,7 +706,7 @@ pub mod pallet {
 		pub fn candidate_stake_more(origin: OriginFor<T>, more: BalanceOf<T>) -> DispatchResultWithPostInfo {
 			let collator = ensure_signed(origin)?;
 
-			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateDNE)?;
+			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(!state.is_leaving(), Error::<T>::CannotActivateIfLeaving);
 
 			let before = state.stake;
@@ -749,7 +749,7 @@ pub mod pallet {
 		#[pallet::weight(100_000_000)]
 		pub fn candidate_stake_less(origin: OriginFor<T>, less: BalanceOf<T>) -> DispatchResultWithPostInfo {
 			let collator = ensure_signed(origin)?;
-			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateDNE)?;
+			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(!state.is_leaving(), Error::<T>::CannotActivateIfLeaving);
 			let before = state.stake;
 			let after = state.stake_less(less).ok_or(Error::<T>::Underflow)?;
@@ -807,7 +807,7 @@ pub mod pallet {
 			ensure!(!Self::is_candidate(&acc), Error::<T>::CandidateExists);
 
 			// prepare update of collator state
-			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateDNE)?;
+			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
 			let delegation = Stake {
 				owner: acc.clone(),
 				amount,
@@ -893,7 +893,7 @@ pub mod pallet {
 			);
 
 			// prepare new collator state
-			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateDNE)?;
+			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(
 				delegator.add_delegation(Stake {
 					owner: collator.clone(),
@@ -962,7 +962,7 @@ pub mod pallet {
 		#[pallet::weight(100_000_000)]
 		pub fn leave_delegators(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			let acc = ensure_signed(origin)?;
-			let delegator = <DelegatorState<T>>::get(&acc).ok_or(Error::<T>::DelegatorDNE)?;
+			let delegator = <DelegatorState<T>>::get(&acc).ok_or(Error::<T>::DelegatorNotFound)?;
 			for stake in delegator.delegations.into_iter() {
 				Self::delegator_leaves_collator(acc.clone(), stake.owner.clone())?;
 			}
@@ -1013,11 +1013,11 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let delegator = ensure_signed(origin)?;
 			let candidate = T::Lookup::lookup(candidate)?;
-			let mut delegations = <DelegatorState<T>>::get(&delegator).ok_or(Error::<T>::DelegatorDNE)?;
-			let mut collator = <CollatorState<T>>::get(&candidate).ok_or(Error::<T>::CandidateDNE)?;
+			let mut delegations = <DelegatorState<T>>::get(&delegator).ok_or(Error::<T>::DelegatorNotFound)?;
+			let mut collator = <CollatorState<T>>::get(&candidate).ok_or(Error::<T>::CandidateNotFound)?;
 			let delegator_total = delegations
 				.inc_delegation(candidate.clone(), more)
-				.ok_or(Error::<T>::DelegationDNE)?;
+				.ok_or(Error::<T>::DelegationNotFound)?;
 
 			// update lock
 			Self::increase_lock(&delegator, delegator_total, more)?;
@@ -1065,11 +1065,11 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let delegator = ensure_signed(origin)?;
 			let candidate = T::Lookup::lookup(candidate)?;
-			let mut delegations = <DelegatorState<T>>::get(&delegator).ok_or(Error::<T>::DelegatorDNE)?;
-			let mut collator = <CollatorState<T>>::get(&candidate).ok_or(Error::<T>::CandidateDNE)?;
+			let mut delegations = <DelegatorState<T>>::get(&delegator).ok_or(Error::<T>::DelegatorNotFound)?;
+			let mut collator = <CollatorState<T>>::get(&candidate).ok_or(Error::<T>::CandidateNotFound)?;
 			let remaining = delegations
 				.dec_delegation(candidate.clone(), less)
-				.ok_or(Error::<T>::DelegationDNE)?
+				.ok_or(Error::<T>::DelegationNotFound)?
 				.ok_or(Error::<T>::Underflow)?;
 
 			ensure!(remaining >= T::MinDelegation::get(), Error::<T>::DelegationBelowMin);
@@ -1158,11 +1158,11 @@ pub mod pallet {
 		/// Update the delegator's state by removing the collator candidate from
 		/// the set of ongoing delegations.
 		fn delegator_revokes_collator(acc: T::AccountId, collator: T::AccountId) -> DispatchResultWithPostInfo {
-			let mut delegator = <DelegatorState<T>>::get(&acc).ok_or(Error::<T>::DelegatorDNE)?;
+			let mut delegator = <DelegatorState<T>>::get(&acc).ok_or(Error::<T>::DelegatorNotFound)?;
 			let old_total = delegator.total;
 			let remaining = delegator
 				.rm_delegation(collator.clone())
-				.ok_or(Error::<T>::DelegationDNE)?;
+				.ok_or(Error::<T>::DelegationNotFound)?;
 			// edge case; if no delegations remaining, leave set of delegators
 			if delegator.delegations.is_empty() {
 				// leave the set of delegators because no delegations left
@@ -1189,13 +1189,13 @@ pub mod pallet {
 		///
 		/// This operation affects the pallet's total stake.
 		fn delegator_leaves_collator(delegator: T::AccountId, collator: T::AccountId) -> DispatchResultWithPostInfo {
-			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateDNE)?;
+			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
 
 			let delegator_stake = state
 				.delegators
 				.remove_by(|nom| nom.owner.cmp(&delegator))
 				.map(|nom| nom.amount)
-				.ok_or(Error::<T>::DelegatorDNE)?;
+				.ok_or(Error::<T>::DelegatorNotFound)?;
 
 			state.total = state.total.saturating_sub(delegator_stake);
 
@@ -1230,7 +1230,7 @@ pub mod pallet {
 		/// leave the set of candidates, the longer it will be possible for the
 		/// collator to unlock the staked funds.
 		fn execute_delayed_collator_exits(next: SessionIndex) {
-			let mut maybe_exits = <ExitQueue<T>>::get().to_vec();
+			let mut maybe_exits = <ExitQueue<T>>::get().into_vec();
 			let split_index = T::MaxExitsPerRound::get().min(maybe_exits.len());
 
 			// early bail if exit queue is empty
@@ -1313,7 +1313,7 @@ pub mod pallet {
 			let (mut all_collators, mut total_collators, mut total_delegators) =
 				(0u32, BalanceOf::<T>::zero(), BalanceOf::<T>::zero());
 			log::trace!("Selecting collators");
-			let mut candidates = <CandidatePool<T>>::get().to_vec();
+			let mut candidates = <CandidatePool<T>>::get().into_vec();
 			let top_n = <TotalSelected<T>>::get() as usize;
 
 			log::trace!("{} Candidates for {} Collator seats", candidates.len(), top_n);
@@ -1476,7 +1476,7 @@ pub mod pallet {
 		/// Should never be called in `execute_delayed_exit_queue`!
 		fn prep_unstake(who: &T::AccountId, amount: BalanceOf<T>) -> Result<(), DispatchError> {
 			// should never occur but let's be safe
-			ensure!(!amount.is_zero(), Error::<T>::StakeDNE);
+			ensure!(!amount.is_zero(), Error::<T>::StakeNotFound);
 
 			let now = <frame_system::Pallet<T>>::block_number();
 			let unlock_block = now.saturating_add(T::StakeDuration::get());
