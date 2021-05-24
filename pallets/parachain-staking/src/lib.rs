@@ -19,7 +19,7 @@
 //! # Parachain Staking
 //!
 //! A simple staking pallet providing means of selecting a set of collators to
-//! become block authors based on their total backed staked. The main difference
+//! become block authors based on their total backed stake. The main difference
 //! between this pallet and `frame/pallet-staking` is that this pallet uses
 //! direct delegation. Delegators choose exactly who they delegate and with what
 //! stake. This is different from `frame/pallet-staking` where you approval vote
@@ -56,10 +56,10 @@
 //! ## Overview
 //!
 //! The KILT parachain staking pallet provides functions for:
-//! - Joining the set of collator candidates of which the best `MaxSelected` are
-//!   chosen to become active collators for the next session. That makes the set
-//!   of active collators the set of block authors by handing it over to the
-//!   session and the authority pallet.
+//! - Joining the set of collator candidates of which the best
+//!   `MaxSelectedCandidates` are chosen to become active collators for the next
+//!   session. That makes the set of active collators the set of block authors
+//!   by handing it over to the session and the authority pallet.
 //! - Delegating to a collator candidate by staking for them.
 //! - Increasing and reducing your stake as a collator or delegator.
 //! - Revoking your delegation entirely.
@@ -449,7 +449,7 @@ pub mod pallet {
 	/// The maximum number of collator candidates selected at each round.
 	#[pallet::storage]
 	#[pallet::getter(fn total_selected)]
-	type MaxSelected<T: Config> = StorageValue<_, u32, ValueQuery>;
+	type MaxSelectedCandidates<T: Config> = StorageValue<_, u32, ValueQuery>;
 
 	/// Current round number and next round scheduled transition.
 	#[pallet::storage]
@@ -568,9 +568,9 @@ pub mod pallet {
 				}
 			}
 			// Set total selected candidates to minimum config
-			<MaxSelected<T>>::put(T::MinSelectedCandidates::get());
+			<MaxSelectedCandidates<T>>::put(T::MinSelectedCandidates::get());
 
-			// Choose top MaxSelected collator candidates
+			// Choose top MaxSelectedCandidates collator candidates
 			let (_, collator_staked, delegator_staked) = <Pallet<T>>::select_top_candidates();
 
 			// Start Round 0 at Block 0
@@ -631,8 +631,8 @@ pub mod pallet {
 		pub fn set_max_selected_candidates(origin: OriginFor<T>, new: u32) -> DispatchResultWithPostInfo {
 			frame_system::ensure_root(origin)?;
 			ensure!(new >= T::MinSelectedCandidates::get(), Error::<T>::CannotSetBelowMin);
-			let old = <MaxSelected<T>>::get();
-			<MaxSelected<T>>::put(new);
+			let old = <MaxSelectedCandidates<T>>::get();
+			<MaxSelectedCandidates<T>>::put(new);
 
 			// update candidates for next round
 			Self::select_top_candidates();
@@ -669,9 +669,9 @@ pub mod pallet {
 		/// Join the set of collator candidates.
 		///
 		/// In the next blocks, if the collator candidate has enough funds
-		/// staked to be included in any of the top `MaxSelected` positions,
-		/// it will be included in the set of potential authors that will be
-		/// selected by the stake-weighted random selection function.
+		/// staked to be included in any of the top `MaxSelectedCandidates`
+		/// positions, it will be included in the set of potential authors that
+		/// will be selected by the stake-weighted random selection function.
 		///
 		/// The staked funds of the new collator candidate are added to the
 		/// total stake of the system.
@@ -1426,16 +1426,16 @@ pub mod pallet {
 				(0u32, BalanceOf::<T>::zero(), BalanceOf::<T>::zero());
 			log::trace!("Selecting collators");
 			let mut candidates = <CandidatePool<T>>::get().into_vec();
-			let top_n = <MaxSelected<T>>::get() as usize;
+			let top_n = <MaxSelectedCandidates<T>>::get() as usize;
 
 			log::trace!("{} Candidates for {} Collator seats", candidates.len(), top_n);
 
 			// Order candidates by their total stake
 			candidates.sort_by(|a, b| a.amount.cmp(&b.amount));
-			let top_n = <MaxSelected<T>>::get() as usize;
+			let top_n = <MaxSelectedCandidates<T>>::get() as usize;
 
-			// Choose the top MaxSelected qualified candidates, ordered by stake (least to
-			// greatest, thus requires `rev()`)
+			// Choose the top MaxSelectedCandidates qualified candidates, ordered by stake
+			// (least to greatest, thus requires `rev()`)
 			let mut collators = candidates
 				.into_iter()
 				.rev()
