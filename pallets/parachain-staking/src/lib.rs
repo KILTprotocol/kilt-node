@@ -101,12 +101,12 @@
 //! ## Interface
 //!
 //! ### Dispatchable Functions
-//! - `set_inflation` - Change the inflation configuration.
+//! - `set_inflation` - Change the inflation configuration. Requires sudo.
 //! - `set_max_selected_candidates` - Change the number of collator candidates
-//!   which can be selected to be in the set of block authors.
+//!   which can be selected to be in the set of block authors. Requires sudo.
 //! - `set_blocks_per_round` - Change the number of blocks of a round. Shorter
 //!   rounds enable more frequent changes of the selected candidates, earlier
-//!   withdrawal from unstaking and earlier collator leaving.
+//!   withdrawal from unstaking and earlier collator leaving. Requires sudo.
 //! - `join_candidates` - Join the set of collator candidates by staking at
 //!   least `MinCandidateStk` and at most `MaxCandidateStk`.
 //! - `leave_candidates` - Request to leave the set of collators. Unstaking and
@@ -574,7 +574,6 @@ pub mod pallet {
 			let (_, collator_staked, delegator_staked) = <Pallet<T>>::select_top_candidates();
 
 			// Start Round 0 at Block 0
-
 			let round: RoundInfo<T::BlockNumber> = RoundInfo::new(0u32, 0u32.into(), T::DefaultBlocksPerRound::get());
 			<Round<T>>::put(round);
 			// Snapshot total stake
@@ -601,6 +600,12 @@ pub mod pallet {
 		/// The dispatch origin must be Root.
 		///
 		/// Emits `RoundInflationSet`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account]
+		/// - Writes: InflationConfig
+		/// # </weight>
 		#[pallet::weight(100_000_000)]
 		pub fn set_inflation(origin: OriginFor<T>, inflation: InflationInfo) -> DispatchResult {
 			frame_system::ensure_root(origin)?;
@@ -627,6 +632,12 @@ pub mod pallet {
 		/// The dispatch origin must be Root.
 		///
 		/// Emits `MaxSelectedCandidatesSet`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], MaxSelectedCandidates
+		/// - Writes: MaxSelectedCandidates
+		/// # </weight>
 		#[pallet::weight(100_000_000)]
 		pub fn set_max_selected_candidates(origin: OriginFor<T>, new: u32) -> DispatchResultWithPostInfo {
 			frame_system::ensure_root(origin)?;
@@ -652,6 +663,12 @@ pub mod pallet {
 		/// The dispatch origin must be Root.
 		///
 		/// Emits `BlocksPerRoundSet`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Round
+		/// - Writes: Round
+		/// # </weight>
 		#[pallet::weight(100_000_000)]
 		pub fn set_blocks_per_round(origin: OriginFor<T>, new: T::BlockNumber) -> DispatchResultWithPostInfo {
 			frame_system::ensure_root(origin)?;
@@ -683,6 +700,18 @@ pub mod pallet {
 		/// candidates nor of the delegators set.
 		///
 		/// Emits `JoinedCollatorCandidates`.
+		///
+		/// # <weight>
+		/// Weight: O(N) + O(C) where N is MaxSelectedCandidates, N the size of
+		/// the CanidatePool (bounded by MaxCollatorCandidates)
+		/// - NOTE: The O(N) update of SelectedCandidates in
+		///   select_top_candidates introduces the lion's share of this
+		///   extrinsic's weight
+		/// - Reads: [Origin Account], DelegatorState, CollatorState, Lock,
+		///   TotalStake, CandidatePool, MaxSelectedCandidates, CollatorState
+		/// - Writes: Lock, TotalStake, CollatorState, CandidatePool, AtStake,
+		///   SelectedCandidates
+		/// # </weight>
 		#[pallet::weight(100_000_000)]
 		pub fn join_candidates(origin: OriginFor<T>, stake: BalanceOf<T>) -> DispatchResultWithPostInfo {
 			let acc = ensure_signed(origin)?;
@@ -1421,6 +1450,12 @@ pub mod pallet {
 		/// increase the weight of each of these transactions it enables us to
 		/// do a simple storage read to get the top candidates when a session
 		/// starts in `new_session.
+		///
+		/// # <weight>
+		/// Weight: O(N) where N is MaxSelectedCandidates
+		/// - Reads: CandidatePool, MaxSelectedCandidates, CollatorState
+		/// - Writes: AtStake, SelectedCandidates
+		/// # </weight>
 		fn select_top_candidates() -> (u32, BalanceOf<T>, BalanceOf<T>) {
 			let (mut all_collators, mut total_collators, mut total_delegators) =
 				(0u32, BalanceOf::<T>::zero(), BalanceOf::<T>::zero());
