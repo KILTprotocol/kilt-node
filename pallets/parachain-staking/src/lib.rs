@@ -17,22 +17,32 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 //! # Parachain Staking
-// TODO: Improve text below
-//! Minimal staking pallet that implements collator selection by total backed
-//! stake. The main difference between this pallet and `frame/pallet-staking` is
-//! that this pallet uses direct delegation. Delegators choose exactly who they
-//! delegate and with what stake. This is different from `frame/pallet-staking`
-//! where you approval vote and then run Phragmen.
+//!
+//! A simple staking pallet providing means of selecting a set of collators to
+//! become block authors based on their total backed staked. The main difference
+//! between this pallet and `frame/pallet-staking` is that this pallet uses
+//! direct delegation. Delegators choose exactly who they delegate and with what
+//! stake. This is different from `frame/pallet-staking` where you approval vote
+//! and then run Phragmen. Moreover, this pallet rewards a collator and their
+//! delegators immediately when authoring a block. Rewards are calculated
+//! separately between collators and delegators.
 //!
 //! To join the set of candidates, an account must call `join_candidates` with
-//! `MinCollatorCandidateStk` <= stake <= `MaxCollatorCandidateStk`
+//! `MinCollatorCandidateStk` <= stake <= `MaxCollatorCandidateStk`.
 //!
 //! To leave the set of candidates, the collator calls `leave_candidates`. If
 //! the call succeeds, the collator is removed from the pool of candidates so
-//! they cannot be selected for future collator sets, but they are not unstaked
-//! until `ExitQueueDelay` rounds later. The exit request is stored in the
-//! `ExitQueue` and processed `ExitQueueDelay` rounds later to unstake the
-//! collator and all of its delegators.
+//! they cannot be selected for future collator sets, but they are not unstaking
+//! until `ExitQueueDelay` rounds later. The exit request is stored
+//! in the `ExitQueue` and processed `ExitQueueDelay` rounds later to unstake
+//! the collator and all of its delegators. Both parties have to wait
+//! `StakeDuration` more rounds to be able to withdraw their stake.
+//!
+//! Candidates which requested to leave can still be in the set of authors for
+//! the next round due to the design of the session pallet which at the start of
+//! session s(i) chooses a set for the next session s(i+1). Thus, candidates
+//! have to keep collating at least until the end of the next session (= round).
+//! We extend this by delaying their execute by `ExitQueueDelay` many sessions.
 //!
 //! To join the set of delegators, an account must call `join_delegators` with
 //! stake >= `MinDelegatorStk`. There are also runtime methods for delegating
@@ -45,39 +55,94 @@
 //!
 //! ## Overview
 //!
-//! The KILT Launch pallet provides functions for:
-//! TODO: Add
+//! The KILT parachain staking pallet provides functions for:
+//! - Joining the set of collator candidates of which the best `TotalSelected`
+//!   are chosen to become active collators for the next session. That makes the
+//!   set of active collators the set of block authors by handing it over to the
+//!   session and the authority pallet.
+//! - Delegating to a collator candidate by staking for them.
+//! - Increasing and reducing your stake as a collator or delegator.
+//! - Revoking your delegation entirely.
+//! - Requesting to leave the set of collator candidates.
+//! - Withdrawing your unstaked balance after waiting for a certain number of
+//!   blocks.
 //!
 //! ### Terminology
 //!
-//! * Collator: A user which locks up tokens to be included into the set of
-//!   authorities which author blocks and receive rewards for that
-//! * Delegator: A user which locks up tokens for collators they trust. When
+//! - **Collator:** A user which locks up tokens to be included into the set of
+//!   authorities which author blocks and receive rewards for doing so.
+//!
+//! - **Delegator:** A user which locks up tokens for collators they trust. When
 //!   their collator authors a block, the corresponding delegators also receive
 //!   rewards.
-//! * Total Stake = A collator’s own stake + the sum of delegated stake to this
-//!   collator
-//! * Total collator stake = The sum of tokens locked for staking from all
-//!   collator candidates
-//! * Total delegator stake = The sum of tokens locked for staking from all
-//!   delegators
-//! * To Stake: Lock tokens for staking
-//! * To Unstake: Unlock tokens from staking
-//! * Round (= Session): A fixed number of blocks in which the set of collators
-//!   does not change. We set the length of a session to the length of a staking
-//!   round, thus both words are interchangeable in our context.
+//!
+//! - **Total Stake:** A collator’s own stake + the sum of delegated stake to
+//!   this collator.
+//!
+//! - **Total collator stake:** The sum of tokens locked for staking from all
+//!   collator candidates.
+//!
+//! - **Total delegator stake:** The sum of tokens locked for staking from all
+//!   delegators.
+//!
+//! - **To Stake:** Lock tokens for staking.
+//!
+//! - **To Unstake:** Unlock tokens from staking.
+//!
+//! - **Round (= Session):** A fixed number of blocks in which the set of
+//!   collators does not change. We set the length of a session to the length of
+//!   a staking round, thus both words are interchangeable in the context of
+//!   this pallet.
+//!
+//! - **Lock:** A freeze on a specified amount of an account's free balance
+//!   until a specified block number. Multiple locks always operate over the
+//!   same funds, so they "overlay" rather than "stack"
 //!
 //! ## Interface
 //!
 //! ### Dispatchable Functions
-//! TODO: Add
+//! - `set_inflation` - Change the inflation configuration.
+//! - `set_max_selected_candidates` - Change the number of collator candidates
+//!   which can be selected to be in the set of block authors.
+//! - `set_blocks_per_round` - Change the number of blocks of a round. Shorter
+//!   rounds enable more frequent changes of the selected candidates, earlier
+//!   withdrawal from unstaking and earlier collator leaving.
+//! - `join_candidates` - Join the set of collator candidates by staking at
+//!   least `MinCandidateStk` and at most `MaxCandidateStk`.
+//! - `leave_candidates` - Request to leave the set of collators. Unstaking and
+//!   storage clean-up is delayed until executing the exit at least
+//!   ExitQueueDelay rounds later.
+//! - `candidate_stake_more` - Increase your own stake as a collator candidate
+//!   by the provided amount up to `MaxCandidateStk`.
+//! - `candidate_stake_less` - Decrease your own stake as a collator candidate
+//!   by the provided amount down to `MinCandidateStk`.
+//! - `join_delegators` - Join the set of delegators by delegating to a collator
+//!   candidate.
+//! - `delegate_another_candidate` - Delegate to another collator candidate by
+//!   staking for them.
+//! - `leave_delegators` - Leave the set of delegators and revoke all
+//!   delegations. Since delegators do not have to run a node and cannot be
+//!   selected to become block authors, this exit is not delayed like it is for
+//!   collator candidates.
+//! - `revoke_delegation` - Revoke a single delegation to a collator candidate.
+//! - `delegator_stake_more` - Increase your own stake as a delegator and the
+//!   delegated collator candidate's total stake.
+//! - `delegator_stake_less` - Decrease your own stake as a delegator and the
+//!   delegated collator candidate's total stake by the provided amount down to
+//!   `MinDelegatorStk`.
+//! - `withdraw_unstaked` - Attempt to withdraw previously unstaked balance from
+//!   any account. Succeeds if at least one unstake call happened at least
+//!   `StakeDuration` rounds ago.
 //!
 //! ## Genesis config
 //!
 //! The KiltLaunch pallet depends on the [`GenesisConfig`].
 //!
-//! ## Assumptions
-//! TODO: Add
+//! ## Assumptions+
+//!
+//! - At the start of session s(i), the set of session ids for session s(i+1)
+//!   are chosen. These equal the set of selected candidates. Thus, we cannot
+//!   allow collators to leave at least until the start of session s(i+2).
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
@@ -146,9 +211,6 @@ pub mod pallet {
 			+ ReservableCurrency<Self::AccountId, Balance = Self::CurrencyBalance>
 			+ LockableCurrency<Self::AccountId, Balance = Self::CurrencyBalance>
 			+ Eq;
-
-		// TODO: Check whether this type is still needed after restricting Config to
-		// pallet_balances::Config
 		/// Just the `Currency::Balance` type; we have this item to allow us to
 		/// constrain it to `From<u64>`.
 		/// Note: Definition taken from pallet_gilt
@@ -161,7 +223,6 @@ pub mod pallet {
 			+ From<u64>
 			+ Into<<Self as pallet_balances::Config>::Balance>
 			+ From<<Self as pallet_balances::Config>::Balance>;
-
 		/// Minimum number of blocks validation rounds can last.
 		type MinBlocksPerRound: Get<Self::BlockNumber>;
 		/// Default number of blocks validation rounds last, as set in the
@@ -361,7 +422,6 @@ pub mod pallet {
 				// mutate round
 				round.update(n);
 				// execute all delayed collator exits
-				// TODO: Test live with session pallet
 				// TODO: Check whether we can move this from here to an extrinsic
 				Self::execute_delayed_collator_exits(round.current);
 
