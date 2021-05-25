@@ -154,12 +154,14 @@ benchmarks! {
 		}
 		let candidate = candidates[0].clone();
 
+		let old_stake = <CollatorState<T>>::get(&candidate).unwrap().stake;
 		let more_stake = T::MinCollatorCandidateStk::get();
 		T::Currency::make_free_balance_be(&candidate, more_stake + more_stake + more_stake + more_stake);
 
-	}: _(RawOrigin::Signed(candidate), more_stake)
+	}: _(RawOrigin::Signed(candidate.clone()), more_stake)
 	verify {
-
+		let new_stake = <CollatorState<T>>::get(&candidate).unwrap().stake;
+		assert_eq!(new_stake, old_stake + more_stake);
 	}
 
 	// on_initialize {
