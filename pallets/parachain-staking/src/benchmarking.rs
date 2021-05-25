@@ -144,6 +144,24 @@ benchmarks! {
 		assert!(candidates.binary_search_by(|other| other.owner.cmp(&old_candidate)).is_err())
 	}
 
+	candidate_stake_more {
+		let n in 0 .. T::MaxCollatorCandidates::get() - 1;
+		let m in 0 .. T::MaxDelegatorsPerCollator::get();
+
+		let candidates = setup_collator_candidates::<T>(n);
+		for (i, c) in candidates.iter().enumerate() {
+			fill_delegators::<T>(m, c.clone(), i as u32);
+		}
+		let candidate = candidates[0].clone();
+
+		let more_stake = T::MinCollatorCandidateStk::get();
+		T::Currency::make_free_balance_be(&candidate, more_stake + more_stake + more_stake + more_stake);
+
+	}: _(RawOrigin::Signed(candidate), more_stake)
+	verify {
+
+	}
+
 	// on_initialize {
 	// 	// TODO: implement this benchmark
 	// 	let num_of_collators = T::MinSelectedCandidates::get();
