@@ -10,10 +10,10 @@ substrate-wasm-builder = "4.0.0"
 [dependencies]
 # kilt functionality
 attestation = {default-features = false, path = "../../pallets/attestation"}
-kilt-launch = {default-features = false, path = "../../pallets/kilt-launch"}
 ctype = {default-features = false, path = "../../pallets/ctype"}
 delegation = {default-features = false, path = "../../pallets/delegation"}
 did = {default-features = false, path = "../../pallets/did"}
+kilt-launch = {default-features = false, path = "../../pallets/kilt-launch"}
 kilt-primitives = {path = "../../primitives", default-features = false}
 
 # kilt specific
@@ -215,6 +215,11 @@ default-features = false
 git = "https://github.com/paritytech/substrate"
 package = "pallet-timestamp"
 version = "3.0.0"
+
+[dependencies.pallet-utility]
+branch = "polkadot-v0.9.2"
+default-features = false
+git = "https://github.com/paritytech/substrate"
 
 [features]
 default = ["std"]
