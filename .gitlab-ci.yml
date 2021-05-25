@@ -1,12 +1,12 @@
 test:
-  image: paritytech/ci-linux:d34c7950-20210408
+  image: paritytech/ci-linux:9a44d4ec-20210423
   stage: test
   timeout: 1 hours
   script:
     - cargo test --all --all-features
 
 clippy:
-  image: paritytech/ci-linux:d34c7950-20210408
+  image: paritytech/ci-linux:9a44d4ec-20210423
   stage: test
   timeout: 1 hours
   script:
@@ -14,9 +14,9 @@ clippy:
     - cargo +nightly clippy
 
 fmt:
-  image: paritytech/ci-linux:d34c7950-20210408
+  image: paritytech/ci-linux:9a44d4ec-20210423
   stage: test
   timeout: 1 hours
   script:
-    - rustup component add rustfmt --toolchain nightly
+    - rustup component add rustfmt
     - cargo +nightly fmt
