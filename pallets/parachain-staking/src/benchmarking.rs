@@ -31,10 +31,10 @@ use sp_std::vec::Vec;
 const COLLATOR_ACCOUNT_SEED: u32 = 0;
 const DELEGATOR_ACCOUNT_SEED: u32 = 1;
 
-/// Creates collators, must be called with an empty candidate pool
-fn setup_collator_candidates<T: Config>(num_collators: u32) -> Vec<T::AccountId> {
+/// Fills the candidate pool up to `num_candidates`.
+fn setup_collator_candidates<T: Config>(num_candidates: u32) -> Vec<T::AccountId> {
 	let current_collator_count = CandidatePool::<T>::get().len() as u32;
-	let collators: Vec<T::AccountId> = (current_collator_count..num_collators)
+	let collators: Vec<T::AccountId> = (current_collator_count..num_candidates)
 		.map(|i| account("collator", i as u32, COLLATOR_ACCOUNT_SEED))
 		.collect();
 
@@ -59,9 +59,12 @@ fn setup_collator_candidates<T: Config>(num_collators: u32) -> Vec<T::AccountId>
 		.collect()
 }
 
-fn add_delegators<T: Config>(num_delegators: u32, collator: T::AccountId) -> Vec<T::AccountId> {
-	let delegators: Vec<T::AccountId> = (0..num_delegators)
-		.map(|i| account("delegator", i as u32, DELEGATOR_ACCOUNT_SEED))
+fn fill_delegators<T: Config>(num_delegators: u32, collator: T::AccountId, collator_seed: u32) -> Vec<T::AccountId> {
+	let state = <CollatorState<T>>::get(&collator).unwrap();
+	let current_delegators = state.delegators.len() as u32;
+
+	let delegators: Vec<T::AccountId> = (current_delegators..num_delegators)
+		.map(|i| account("delegator", i as u32, DELEGATOR_ACCOUNT_SEED * 1000 + collator_seed))
 		.collect();
 
 	log::info!("setup {} delegators", delegators.len());
@@ -90,14 +93,16 @@ benchmarks! {
 	verify {}
 
 	set_max_selected_candidates {
-		let n in 1 .. T::MaxCollatorCandidates::get() - 1;
+		let n in (T::MinSelectedCandidates::get()) .. T::MaxCollatorCandidates::get();
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
 		let candidates = setup_collator_candidates::<T>(n);
+		for (i, c) in candidates.iter().enumerate() {
+			fill_delegators::<T>(m, c.clone(), i as u32);
+		}
 		let old_candidate = candidates[0].clone();
 
-		add_delegators::<T>(m, old_candidate.clone());
-	}: _(RawOrigin::Root, T::MinBlocksPerRound::get())
+	}: _(RawOrigin::Root, n)
 	verify {}
 
 	set_blocks_per_round {
@@ -106,8 +111,13 @@ benchmarks! {
 
 	join_candidates {
 		let n in 0 .. T::MaxCollatorCandidates::get() - 1;
+		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
 		let candidates = setup_collator_candidates::<T>(n);
+		for (i, c) in candidates.iter().enumerate() {
+			fill_delegators::<T>(m, c.clone(), i as u32);
+		}
+
 		let new_candidate = account("new_collator", u32::MAX , COLLATOR_ACCOUNT_SEED);
 		T::Currency::make_free_balance_be(&new_candidate, T::MinCollatorCandidateStk::get());
 
@@ -122,9 +132,11 @@ benchmarks! {
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
 		let candidates = setup_collator_candidates::<T>(n);
-		let old_candidate = candidates[0].clone();
+		for (i, c) in candidates.iter().enumerate() {
+			fill_delegators::<T>(m, c.clone(), i as u32);
+		}
 
-		add_delegators::<T>(m, old_candidate.clone());
+		let old_candidate = candidates[0].clone();
 
 	}: _(RawOrigin::Signed(old_candidate.clone()))
 	verify {
