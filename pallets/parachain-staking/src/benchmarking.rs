@@ -164,6 +164,32 @@ benchmarks! {
 		assert_eq!(new_stake, old_stake + more_stake);
 	}
 
+	candidate_stake_less {
+		let n in 0 .. T::MaxCollatorCandidates::get() - 1;
+		let m in 0 .. T::MaxDelegatorsPerCollator::get();
+
+		let candidates = setup_collator_candidates::<T>(n);
+		for (i, c) in candidates.iter().enumerate() {
+			fill_delegators::<T>(m, c.clone(), i as u32);
+		}
+		let candidate = candidates[0].clone();
+
+		// increase stake of candidate to later decrease it again
+		let old_stake = <CollatorState<T>>::get(&candidate).unwrap().stake;
+		let more_stake = T::MinCollatorCandidateStk::get();
+
+		T::Currency::make_free_balance_be(&candidate, more_stake + more_stake + more_stake + more_stake);
+		Pallet::<T>::candidate_stake_more(RawOrigin::Signed(candidate.clone()).into(), more_stake).expect("should increase stake");
+
+		let new_stake = <CollatorState<T>>::get(&candidate).unwrap().stake;
+		assert_eq!(new_stake, old_stake + more_stake);
+
+	}: _(RawOrigin::Signed(candidate.clone()), more_stake)
+	verify {
+		let new_stake = <CollatorState<T>>::get(&candidate).unwrap().stake;
+		assert_eq!(new_stake, old_stake);
+	}
+
 	// on_initialize {
 	// 	// TODO: implement this benchmark
 	// 	let num_of_collators = T::MinSelectedCandidates::get();
