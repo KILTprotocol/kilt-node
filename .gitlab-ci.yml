@@ -6,15 +6,17 @@ test:
     - cargo test --all --all-features
 
 clippy:
-  image: rustdocker/rustfmt_clippy
+  image: paritytech/ci-linux:d34c7950-20210408
   stage: test
   timeout: 1 hours
   script:
-    - cargo clippy
+    - rustup component add clippy  --toolchain nightly
+    - cargo +nightly clippy
 
 fmt:
-  image: rustdocker/rustfmt_clippy
+  image: paritytech/ci-linux:d34c7950-20210408
   stage: test
   timeout: 1 hours
   script:
-    - cargo fmt
+    - rustup component add rustfmt --toolchain nightly
+    - cargo +nightly fmt
