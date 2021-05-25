@@ -1,0 +1,7 @@
+test:
+  image: paritytech/ci-linux:d34c7950-20210408
+  stage: test
+  timeout: 2 hours
+  script:
+    - cargo test --all --all-features
+
