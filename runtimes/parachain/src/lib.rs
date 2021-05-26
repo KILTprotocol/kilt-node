@@ -715,6 +715,12 @@ impl parachain_staking::Config for Runtime {
 	type MaxUnstakeRequests = MaxUnstakeRequests;
 }
 
+impl pallet_utility::Config for Runtime {
+	type Event = Event;
+	type Call = Call;
+	type WeightInfo = ();
+}
+
 construct_runtime! {
 	pub enum Runtime where
 		Block = Block,
@@ -766,6 +772,8 @@ construct_runtime! {
 		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 36,
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 37,
 		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 38,
+
+		Utility: pallet_utility::{Pallet, Call, Storage, Event} = 39,
 	}
 }
 

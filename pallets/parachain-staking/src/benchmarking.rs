@@ -22,13 +22,10 @@ use crate::*;
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
 	assert_ok,
-	traits::{Currency, Get, Hooks, OnFinalize},
+	traits::{Currency, Get},
 };
-use frame_system::{pallet_prelude::BlockNumberFor, RawOrigin};
-use sp_runtime::{
-	traits::{One, StaticLookup},
-	Perquintill,
-};
+use frame_system::RawOrigin;
+use sp_runtime::{traits::StaticLookup, Perquintill};
 use sp_std::vec::Vec;
 
 const COLLATOR_ACCOUNT_SEED: u32 = 0;
