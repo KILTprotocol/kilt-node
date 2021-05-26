@@ -224,7 +224,7 @@ fn testnet_genesis(
 			code: wasm_binary.to_vec(),
 			changes_trie_config: Default::default(),
 		},
-		balances: BalancesConfig {
+		pallet_balances: BalancesConfig {
 			balances: endowed_accounts
 				.iter()
 				.cloned()
@@ -232,7 +232,7 @@ fn testnet_genesis(
 				.chain(airdrop_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
 				.collect(),
 		},
-		session: SessionConfig {
+		pallet_session: SessionConfig {
 			keys: initial_authorities
 				.iter()
 				.map(|x| {
@@ -247,9 +247,9 @@ fn testnet_genesis(
 				})
 				.collect::<Vec<_>>(),
 		},
-		aura: Default::default(),
-		grandpa: Default::default(),
-		sudo: SudoConfig { key: root_key },
+		pallet_aura: Default::default(),
+		pallet_grandpa: Default::default(),
+		pallet_sudo: SudoConfig { key: root_key },
 		kilt_launch: KiltLaunchConfig {
 			balance_locks: airdrop_accounts
 				.iter()
