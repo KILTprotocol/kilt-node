@@ -355,7 +355,7 @@ fn collator_selection_chooses_top_candidates() {
 		.build()
 		.execute_with(|| {
 			roll_to(8, vec![]);
-			// should choose top TotalSelectedCandidates (5), in order
+			// should choose top MaxSelectedCandidates (5), in order
 			assert_eq!(StakePallet::selected_candidates(), vec![1, 2, 3, 4, 5]);
 			let expected = vec![Event::NewRound(5, 1, 450, 0)];
 			assert_eq!(events(), expected);
@@ -370,7 +370,7 @@ fn collator_selection_chooses_top_candidates() {
 				MetaEvent::stake(Event::JoinedCollatorCandidates(6, 69u128, 469u128))
 			);
 			roll_to(27, vec![]);
-			// should choose top TotalSelectedCandidates (5), in order
+			// should choose top MaxSelectedCandidates (5), in order
 			let expected = vec![
 				Event::NewRound(5, 1, 450, 0),
 				Event::CollatorChosen(1, 100, 0),
@@ -415,7 +415,7 @@ fn exit_queue_with_events() {
 		.build()
 		.execute_with(|| {
 			roll_to(8, vec![]);
-			// should choose top TotalSelectedCandidates (5), in order
+			// should choose top MaxSelectedCandidates (5), in order
 			assert_eq!(StakePallet::selected_candidates(), vec![1, 2, 3, 4, 5]);
 			let mut expected = vec![Event::NewRound(5, 1, 450, 0)];
 			assert_eq!(events(), expected);
@@ -503,7 +503,7 @@ fn exit_queue_exceeds_exit_limit() {
 		.build()
 		.execute_with(|| {
 			roll_to(5, vec![]);
-			// should choose top TotalSelectedCandidates (5), in order
+			// should choose top MaxSelectedCandidates (5), in order
 			let old_stake = StakePallet::total();
 			assert_eq!(
 				old_stake,
@@ -1044,7 +1044,7 @@ fn multiple_delegations() {
 		.build()
 		.execute_with(|| {
 			roll_to(8, vec![]);
-			// chooses top TotalSelectedCandidates (5), in order
+			// chooses top MaxSelectedCandidates (5), in order
 			assert_eq!(StakePallet::selected_candidates(), vec![1, 2, 3, 4, 5]);
 			let mut expected = vec![Event::NewRound(5, 1, 90, 50)];
 			assert_eq!(events(), expected);
@@ -1560,7 +1560,7 @@ fn revoke_delegation_or_leave_delegators() {
 // 		.build()
 // 		.execute_with(|| {
 // 			roll_to(blocks_per_round + 1, vec![]);
-// 			// choose top TotalSelectedCandidates (5) in order
+// 			// choose top MaxSelectedCandidates (5) in order
 // 			let mut expected = vec![
 // 				// Round 2 initialization
 // 				Event::CollatorChosen(1, 20_000_000, 40_000_000),
@@ -1980,7 +1980,7 @@ fn round_transitions() {
 			// Default round every 5 blocks, but MinBlocksPerRound is 3 and we set it to min
 			// 3 blocks
 			roll_to(6, vec![]);
-			// chooses top TotalSelectedCandidates (5), in order
+			// chooses top MaxSelectedCandidates (5), in order
 			let init = vec![Event::NewRound(5, 1, 20, 20)];
 			assert_eq!(events(), init);
 			assert_ok!(StakePallet::set_blocks_per_round(Origin::root(), 3));
@@ -2010,7 +2010,7 @@ fn round_transitions() {
 			// 3 blocks
 			assert_eq!(inflation, StakePallet::inflation_config());
 			roll_to(7, vec![]);
-			// chooses top TotalSelectedCandidates (5), in order
+			// chooses top MaxSelectedCandidates (5), in order
 			let init = vec![Event::NewRound(5, 1, 20, 20)];
 			assert_eq!(events(), init);
 			assert_ok!(StakePallet::set_blocks_per_round(Origin::root(), 3));
