@@ -93,7 +93,7 @@ pub mod pallet {
 
 	use crate::{
 		set::OrderedSet,
-		types::{BalanceOf, Collator, CollatorSnapshot, Delegator, RoundInfo, Stake, TotalStake},
+		types::{BalanceOf, Collator, CollatorOf, CollatorSnapshot, Delegator, RoundInfo, Stake, StakeOf, TotalStake},
 	};
 
 	/// Kilt-specific lock for staking rewards.
@@ -438,9 +438,15 @@ pub mod pallet {
 	pub type Unstaking<T: Config> =
 		StorageMap<_, Twox64Concat, T::AccountId, BTreeMap<T::BlockNumber, BalanceOf<T>>, ValueQuery>;
 
+	pub type GenesisStaker<T> = Vec<(
+		<T as frame_system::Config>::AccountId,
+		Option<<T as frame_system::Config>::AccountId>,
+		BalanceOf<T>,
+	)>;
+
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
-		pub stakers: Vec<(T::AccountId, Option<T::AccountId>, BalanceOf<T>)>,
+		pub stakers: GenesisStaker<T>,
 		pub inflation_config: InflationInfo,
 	}
 
@@ -1374,7 +1380,7 @@ pub mod pallet {
 		fn do_update_delegator(
 			stake: Stake<T::AccountId, BalanceOf<T>>,
 			mut state: Collator<T::AccountId, BalanceOf<T>>,
-		) -> Result<(Collator<T::AccountId, BalanceOf<T>>, Stake<T::AccountId, BalanceOf<T>>), DispatchError> {
+		) -> Result<(CollatorOf<T>, StakeOf<T>), DispatchError> {
 			// add stake & sort by amount
 			let mut delegators: Vec<Stake<T::AccountId, BalanceOf<T>>> = state.delegators.into();
 			// delegators.push(stake.clone());

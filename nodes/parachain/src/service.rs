@@ -29,7 +29,7 @@ use polkadot_primitives::v0::CollatorPair;
 use polkadot_service::NativeExecutionDispatch;
 use sc_client_api::ExecutorProvider;
 use sc_network::NetworkService;
-use sc_service::{Configuration, PartialComponents, Role, RpcExtensionBuilder, TFullBackend, TFullClient, TaskManager};
+use sc_service::{Configuration, Role, RpcExtensionBuilder, TFullBackend, TFullClient, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle};
 use sp_api::ConstructRuntimeApi;
 use sp_consensus::SlotData;
@@ -68,6 +68,16 @@ native_executor_instance!(
 pub type TransactionPool<Block, RuntimeApi, Executor> =
 	sc_transaction_pool::FullPool<Block, TFullClient<Block, RuntimeApi, Executor>>;
 
+pub type PartialComponents<Block, RuntimeApi, Executor, Telemetry, TelemetryWorkerHandle> =
+	sc_service::PartialComponents<
+		TFullClient<Block, RuntimeApi, Executor>,
+		TFullBackend<Block>,
+		(),
+		sp_consensus::DefaultImportQueue<Block, TFullClient<Block, RuntimeApi, Executor>>,
+		TransactionPool<Block, RuntimeApi, Executor>,
+		(Option<Telemetry>, Option<TelemetryWorkerHandle>),
+	>;
+
 /// Starts a `ServiceBuilder` for a full service.
 ///
 /// Use this macro if you don't actually need the full service, but just the
@@ -75,17 +85,7 @@ pub type TransactionPool<Block, RuntimeApi, Executor> =
 pub fn new_partial<RuntimeApi, Executor, BIQ>(
 	config: &Configuration,
 	build_import_queue: BIQ,
-) -> Result<
-	PartialComponents<
-		TFullClient<Block, RuntimeApi, Executor>,
-		TFullBackend<Block>,
-		(),
-		sp_consensus::DefaultImportQueue<Block, TFullClient<Block, RuntimeApi, Executor>>,
-		TransactionPool<Block, RuntimeApi, Executor>,
-		(Option<Telemetry>, Option<TelemetryWorkerHandle>),
-	>,
-	sc_service::Error,
->
+) -> Result<PartialComponents<Block, RuntimeApi, Executor, Telemetry, TelemetryWorkerHandle>, sc_service::Error>
 where
 	RuntimeApi: ConstructRuntimeApi<Block, TFullClient<Block, RuntimeApi, Executor>> + Send + Sync + 'static,
 	RuntimeApi::RuntimeApi: sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>
