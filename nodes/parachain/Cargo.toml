@@ -105,9 +105,8 @@ polkadot-test-runtime = {git = "https://github.com/paritytech/polkadot", branch 
 polkadot-test-service = {git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.2"}
 
 # Substrate dependencies
-pallet-sudo = {git = "https://github.com/paritytech/substrate", branch = "master"}
-substrate-test-client = {git = "https://github.com/paritytech/substrate", branch = "master"}
-substrate-test-runtime-client = {git = "https://github.com/paritytech/substrate", branch = "master"}
+substrate-test-client = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.2"}
+substrate-test-runtime-client = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.2"}
 
 [features]
 default = []
