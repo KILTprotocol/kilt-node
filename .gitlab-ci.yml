@@ -35,6 +35,10 @@ build-fast-gov:
   stage: build
   script:
     - docker build --build-arg NODE_TYPE=kilt-parachain --build-arg FEATURES=fast-gov -t kiltprotocol/peregrine:latest-fast-gov .
+    - docker save kiltprotocol/peregrine:latest-fast-gov > peregrine-latest-fast-gov.img
+  artifacts:
+    paths:
+      - peregrine-latest-fast-gov.img
 
 build:
   image: docker:19.03.12
@@ -43,5 +47,11 @@ build:
     - master
     - develop
   script:
-    - docker build --build-arg NODE_TYPE=kilt-parachain -t kiltprotocol/peregrine .
+    - docker build --build-arg NODE_TYPE=kilt-parachain -t kiltprotocol/peregrine:develop .
+    - docker save kiltprotocol/peregrine:develop > peregrine-develop.img
     - docker build --build-arg NODE_TYPE=mashnet-node -t kiltprotocol/mashnet-node:develop .
+    - docker save kiltprotocol/mashnet-node:develop > mashnet-node-develop.img
+  artifacts:
+    paths:
+      - peregrine-develop.img
+      - mashnet-node-develop.img
