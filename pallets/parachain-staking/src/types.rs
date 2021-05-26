@@ -315,4 +315,7 @@ pub struct TotalStake<Balance: Default> {
 	pub delegators: Balance,
 }
 
-pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+pub type CollatorOf<T> = Collator<AccountIdOf<T>, BalanceOf<T>>;
+pub type StakeOf<T> = Stake<AccountIdOf<T>, BalanceOf<T>>;

@@ -374,6 +374,12 @@ impl pallet_vesting::Config for Runtime {
 	type WeightInfo = pallet_vesting::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_utility::Config for Runtime {
+	type Event = Event;
+	type Call = Call;
+	type WeightInfo = ();
+}
+
 construct_runtime!(
 	pub enum Runtime where
 		Block = Block,
@@ -416,6 +422,7 @@ construct_runtime!(
 		// Vesting. Usable initially, but removed once all vesting is finished.
 		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 33,
 		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
+		Utility: pallet_utility::{Pallet, Call, Storage, Event} = 35,
 	}
 );
 
