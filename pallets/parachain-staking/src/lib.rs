@@ -448,13 +448,13 @@ pub mod pallet {
 
 	/// The maximum number of collator candidates selected at each round.
 	#[pallet::storage]
-	#[pallet::getter(fn total_selected)]
-	type MaxSelectedCandidates<T: Config> = StorageValue<_, u32, ValueQuery>;
+	#[pallet::getter(fn max_selected_candidates)]
+	pub(crate) type MaxSelectedCandidates<T: Config> = StorageValue<_, u32, ValueQuery>;
 
 	/// Current round number and next round scheduled transition.
 	#[pallet::storage]
 	#[pallet::getter(fn round)]
-	pub type Round<T: Config> = StorageValue<_, RoundInfo<T::BlockNumber>, ValueQuery>;
+	pub(crate) type Round<T: Config> = StorageValue<_, RoundInfo<T::BlockNumber>, ValueQuery>;
 
 	/// Delegation staking information.
 	///
@@ -509,13 +509,13 @@ pub mod pallet {
 	/// withdraw a previously unstaked amount.
 	#[pallet::storage]
 	#[pallet::getter(fn at_stake)]
-	pub type AtStake<T: Config> =
+	pub(crate) type AtStake<T: Config> =
 		StorageMap<_, Twox64Concat, T::AccountId, CollatorSnapshot<T::AccountId, BalanceOf<T>>, ValueQuery>;
 
 	/// Inflation configuration.
 	#[pallet::storage]
 	#[pallet::getter(fn inflation_config)]
-	pub type InflationConfig<T: Config> = StorageValue<_, InflationInfo, ValueQuery>;
+	pub(crate) type InflationConfig<T: Config> = StorageValue<_, InflationInfo, ValueQuery>;
 
 	/// The funds waiting to be unstaked.
 	///
@@ -523,7 +523,7 @@ pub mod pallet {
 	/// blocks.
 	#[pallet::storage]
 	#[pallet::getter(fn unstaking)]
-	pub type Unstaking<T: Config> =
+	pub(crate) type Unstaking<T: Config> =
 		StorageMap<_, Twox64Concat, T::AccountId, BTreeMap<T::BlockNumber, BalanceOf<T>>, ValueQuery>;
 
 	pub type GenesisStaker<T> = Vec<(
