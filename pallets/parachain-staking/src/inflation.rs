@@ -53,7 +53,7 @@ impl RewardRate {
 pub struct StakingInfo {
 	/// Maximum staking rate.
 	pub max_rate: Perquintill,
-	/// Reward rate.
+	/// Reward rate annually and per_block.
 	pub reward_rate: RewardRate,
 }
 
@@ -84,6 +84,10 @@ pub struct InflationInfo {
 }
 
 impl InflationInfo {
+	/// Create a new inflation info from the max staking rates and annual reward
+	/// rates for collators and delegators.
+	///
+	/// Example: InflationInfo::new(Perquintill_from_percent(10), ...)
 	pub fn new(
 		collator_max_rate_percentage: Perquintill,
 		collator_annual_reward_rate_percentage: Perquintill,
@@ -97,7 +101,7 @@ impl InflationInfo {
 	}
 
 	/// Compute coinbase rewards for collators and delegators based on the
-	/// current staking rate and the InflationInfo.
+	/// current staking rates and the InflationInfo.
 	pub fn block_issuance<T: Config>(
 		&self,
 		collator_stake: BalanceOf<T>,
