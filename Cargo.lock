@@ -3663,7 +3663,6 @@ dependencies = [
  "kilt-primitives",
  "log",
  "nix",
- "pallet-sudo",
  "pallet-transaction-payment-rpc",
  "parity-scale-codec",
  "parking_lot 0.9.0",
