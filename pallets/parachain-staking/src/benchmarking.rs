@@ -18,11 +18,16 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 //! Benchmarking
-use crate::*;
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
+use crate::{types::Stake, *};
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, vec};
 use frame_support::{
 	assert_ok,
-	traits::{Currency, Get},
+	traits::{Currency, Get, Hooks, OnFinalize},
+};
+use frame_system::{pallet_prelude::BlockNumberFor, Pallet as System, RawOrigin};
+use sp_runtime::{
+	traits::{One, StaticLookup},
+	Perquintill,
 };
 use frame_system::RawOrigin;
 use sp_runtime::{traits::StaticLookup, Perquintill};
@@ -34,7 +39,7 @@ const DELEGATOR_ACCOUNT_SEED: u32 = 1;
 /// Fills the candidate pool up to `num_candidates`.
 fn setup_collator_candidates<T: Config>(num_candidates: u32) -> Vec<T::AccountId> {
 	let current_collator_count = CandidatePool::<T>::get().len() as u32;
-	let collators: Vec<T::AccountId> = (current_collator_count..num_candidates)
+	let collators: Vec<T::AccountId> = (current_collator_count..=num_candidates)
 		.map(|i| account("collator", i as u32, COLLATOR_ACCOUNT_SEED))
 		.collect();
 
@@ -82,6 +87,8 @@ fn fill_delegators<T: Config>(num_delegators: u32, collator: T::AccountId, colla
 }
 
 benchmarks! {
+	where_clause { where u64: Into<<T as frame_system::Config>::BlockNumber> }
+
 	set_inflation {
 		let inflation = InflationInfo::new(
 			Perquintill::from_percent(10),
@@ -89,8 +96,10 @@ benchmarks! {
 			Perquintill::from_percent(40),
 			Perquintill::from_percent(10)
 		);
-	}: _(RawOrigin::Root, inflation)
-	verify {}
+	}: _(RawOrigin::Root, inflation.clone())
+	verify {
+		assert_eq!(<InflationConfig<T>>::get(), inflation);
+	}
 
 	set_max_selected_candidates {
 		let n in (T::MinSelectedCandidates::get()) .. T::MaxCollatorCandidates::get();
@@ -101,13 +110,19 @@ benchmarks! {
 			fill_delegators::<T>(m, c.clone(), i as u32);
 		}
 		let old_candidate = candidates[0].clone();
-
+		let old_num_selected = <SelectedCandidates<T>>::get().len();
 	}: _(RawOrigin::Root, n)
-	verify {}
+	verify {
+		assert_eq!(<TotalSelected<T>>::get(), n);
+		assert_eq!(<SelectedCandidates<T>>::get().len() as u32, n);
+	}
 
 	set_blocks_per_round {
-	}: _(RawOrigin::Root, T::MinBlocksPerRound::get())
-	verify {}
+		let bpr: T::BlockNumber = T::MinBlocksPerRound::get() + T::BlockNumber::one();
+	}: _(RawOrigin::Root, bpr)
+	verify {
+		assert_eq!(<Round<T>>::get().length, bpr);
+	}
 
 	join_candidates {
 		let n in 0 .. T::MaxCollatorCandidates::get() - 1;
@@ -136,15 +151,18 @@ benchmarks! {
 			fill_delegators::<T>(m, c.clone(), i as u32);
 		}
 
+		let now = <Round<T>>::get().current;
 		let old_candidate = candidates[0].clone();
 
 	}: _(RawOrigin::Signed(old_candidate.clone()))
 	verify {
 		let candidates = CandidatePool::<T>::get();
-		assert!(candidates.binary_search_by(|other| other.owner.cmp(&old_candidate)).is_err())
+		assert!(candidates.binary_search_by(|other| other.owner.cmp(&old_candidate)).is_err());
+		let unlocking_at = now.saturating_add(T::ExitQueueDelay::get());
+		assert_eq!(<ExitQueue<T>>::get().to_vec(), vec![Stake { owner: old_candidate, amount: unlocking_at }]);
 	}
 
-	candidate_stake_more {
+	candidate_stake_more_unstaked_empty {
 		let n in 0 .. T::MaxCollatorCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
@@ -158,10 +176,46 @@ benchmarks! {
 		let more_stake = T::MinCollatorCandidateStk::get();
 		T::Currency::make_free_balance_be(&candidate, more_stake + more_stake + more_stake + more_stake);
 
-	}: _(RawOrigin::Signed(candidate.clone()), more_stake)
+	}: candidate_stake_more(RawOrigin::Signed(candidate.clone()), more_stake)
 	verify {
 		let new_stake = <CollatorState<T>>::get(&candidate).unwrap().stake;
 		assert_eq!(new_stake, old_stake + more_stake);
+	}
+
+	candidate_stake_more_unstaked_full {
+		let n in 0 .. T::MaxCollatorCandidates::get() - 1;
+		let m in 0 .. T::MaxDelegatorsPerCollator::get();
+
+		let candidates = setup_collator_candidates::<T>(n);
+		for (i, c) in candidates.iter().enumerate() {
+			fill_delegators::<T>(m, c.clone(), i as u32);
+		}
+		let candidate = candidates[0].clone();
+
+		let old_stake = <CollatorState<T>>::get(&candidate).unwrap().stake;
+		let more_stake = T::MinCollatorCandidateStk::get();
+		T::Currency::make_free_balance_be(&candidate, T::CurrencyBalance::from(100_000u64) * T::CurrencyBalance::from(u64::MAX));
+		log::info!("free balance {:?}", T::Currency::free_balance(&candidate));
+		log::info!("old_Stake {:?}", old_stake);
+
+
+		// increase stake so we can unstake, because current stake is minimum
+		assert_ok!(<Pallet<T>>::candidate_stake_more(RawOrigin::Signed(candidate.clone()).into(), more_stake));
+
+		// fill unstake BTreeMap by unstaked many entries of 1
+		let unstaked = T::MaxUnstakeRequests::get() as u64;
+		assert!(more_stake + more_stake - T::CurrencyBalance::from(unstaked) > T::MinCollatorCandidateStk::get());
+		while System::<T>::block_number() < unstaked.into() {
+			assert_ok!(<Pallet<T>>::candidate_stake_less(RawOrigin::Signed(candidate.clone()).into(), T::CurrencyBalance::from(1u64)));
+			System::<T>::set_block_number(System::<T>::block_number() + T::BlockNumber::one());
+		}
+		assert_eq!(<Unstaking<T>>::get(&candidate).len(), T::MaxUnstakeRequests::get());
+
+	}: candidate_stake_more(RawOrigin::Signed(candidate.clone()), more_stake)
+	verify {
+		let new_stake = <CollatorState<T>>::get(&candidate).unwrap().stake;
+		assert!(<Unstaking<T>>::get(candidate).is_empty());
+		assert_eq!(new_stake, old_stake + more_stake + more_stake - T::CurrencyBalance::from(unstaked));
 	}
 
 	candidate_stake_less {
