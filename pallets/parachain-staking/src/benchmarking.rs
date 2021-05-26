@@ -29,8 +29,6 @@ use sp_runtime::{
 	traits::{One, StaticLookup},
 	Perquintill,
 };
-use frame_system::RawOrigin;
-use sp_runtime::{traits::StaticLookup, Perquintill};
 use sp_std::vec::Vec;
 
 const COLLATOR_ACCOUNT_SEED: u32 = 0;
@@ -39,7 +37,8 @@ const DELEGATOR_ACCOUNT_SEED: u32 = 1;
 /// Fills the candidate pool up to `num_candidates`.
 fn setup_collator_candidates<T: Config>(num_candidates: u32) -> Vec<T::AccountId> {
 	let current_collator_count = CandidatePool::<T>::get().len() as u32;
-	let collators: Vec<T::AccountId> = (current_collator_count..=num_candidates)
+	log::info!("bla {}", current_collator_count);
+	let collators: Vec<T::AccountId> = (current_collator_count..num_candidates)
 		.map(|i| account("collator", i as u32, COLLATOR_ACCOUNT_SEED))
 		.collect();
 
@@ -86,6 +85,31 @@ fn fill_delegators<T: Config>(num_delegators: u32, collator: T::AccountId, colla
 	delegators
 }
 
+// fills unstake BTreeMap by unstaked many entries of 1
+fn fill_unstaking<T: Config>(collator: &T::AccountId, delegator: Option<&T::AccountId>, unstaked: u64)
+where
+	u64: Into<<T as frame_system::Config>::BlockNumber>,
+{
+	while System::<T>::block_number() < unstaked.into() {
+		if let Some(delegator) = delegator {
+			assert_ok!(<Pallet<T>>::delegator_stake_less(
+				RawOrigin::Signed(delegator.clone()).into(),
+				T::Lookup::unlookup(collator.clone()),
+				T::CurrencyBalance::from(1u64)
+			));
+		} else {
+			assert_ok!(<Pallet<T>>::candidate_stake_less(
+				RawOrigin::Signed(collator.clone()).into(),
+				T::CurrencyBalance::from(1u64)
+			));
+		}
+		System::<T>::set_block_number(System::<T>::block_number() + T::BlockNumber::one());
+	}
+	let who = delegator.unwrap_or(collator);
+	assert_eq!(<Unstaking<T>>::get(who).len() as u64, unstaked);
+	assert!(<Unstaking<T>>::get(who).len() <= T::MaxUnstakeRequests::get());
+}
+
 benchmarks! {
 	where_clause { where u64: Into<<T as frame_system::Config>::BlockNumber> }
 
@@ -113,7 +137,7 @@ benchmarks! {
 		let old_num_selected = <SelectedCandidates<T>>::get().len();
 	}: _(RawOrigin::Root, n)
 	verify {
-		assert_eq!(<TotalSelected<T>>::get(), n);
+		assert_eq!(<MaxSelectedCandidates<T>>::get(), n);
 		assert_eq!(<SelectedCandidates<T>>::get().len() as u32, n);
 	}
 
@@ -159,12 +183,13 @@ benchmarks! {
 		let candidates = CandidatePool::<T>::get();
 		assert!(candidates.binary_search_by(|other| other.owner.cmp(&old_candidate)).is_err());
 		let unlocking_at = now.saturating_add(T::ExitQueueDelay::get());
-		assert_eq!(<ExitQueue<T>>::get().to_vec(), vec![Stake { owner: old_candidate, amount: unlocking_at }]);
+		assert_eq!(<ExitQueue<T>>::get().into_vec(), vec![Stake { owner: old_candidate, amount: unlocking_at }]);
 	}
 
-	candidate_stake_more_unstaked_empty {
+	candidate_stake_more_unstaked {
 		let n in 0 .. T::MaxCollatorCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
+		let u in 0 .. (T::MaxUnstakeRequests::get() as u32);
 
 		let candidates = setup_collator_candidates::<T>(n);
 		for (i, c) in candidates.iter().enumerate() {
@@ -174,48 +199,19 @@ benchmarks! {
 
 		let old_stake = <CollatorState<T>>::get(&candidate).unwrap().stake;
 		let more_stake = T::MinCollatorCandidateStk::get();
-		T::Currency::make_free_balance_be(&candidate, more_stake + more_stake + more_stake + more_stake);
-
-	}: candidate_stake_more(RawOrigin::Signed(candidate.clone()), more_stake)
-	verify {
-		let new_stake = <CollatorState<T>>::get(&candidate).unwrap().stake;
-		assert_eq!(new_stake, old_stake + more_stake);
-	}
-
-	candidate_stake_more_unstaked_full {
-		let n in 0 .. T::MaxCollatorCandidates::get() - 1;
-		let m in 0 .. T::MaxDelegatorsPerCollator::get();
-
-		let candidates = setup_collator_candidates::<T>(n);
-		for (i, c) in candidates.iter().enumerate() {
-			fill_delegators::<T>(m, c.clone(), i as u32);
-		}
-		let candidate = candidates[0].clone();
-
-		let old_stake = <CollatorState<T>>::get(&candidate).unwrap().stake;
-		let more_stake = T::MinCollatorCandidateStk::get();
-		T::Currency::make_free_balance_be(&candidate, T::CurrencyBalance::from(100_000u64) * T::CurrencyBalance::from(u64::MAX));
-		log::info!("free balance {:?}", T::Currency::free_balance(&candidate));
-		log::info!("old_Stake {:?}", old_stake);
-
 
 		// increase stake so we can unstake, because current stake is minimum
+		T::Currency::make_free_balance_be(&candidate, T::CurrencyBalance::from(u64::MAX) * T::CurrencyBalance::from(u64::MAX));
 		assert_ok!(<Pallet<T>>::candidate_stake_more(RawOrigin::Signed(candidate.clone()).into(), more_stake));
 
 		// fill unstake BTreeMap by unstaked many entries of 1
-		let unstaked = T::MaxUnstakeRequests::get() as u64;
-		assert!(more_stake + more_stake - T::CurrencyBalance::from(unstaked) > T::MinCollatorCandidateStk::get());
-		while System::<T>::block_number() < unstaked.into() {
-			assert_ok!(<Pallet<T>>::candidate_stake_less(RawOrigin::Signed(candidate.clone()).into(), T::CurrencyBalance::from(1u64)));
-			System::<T>::set_block_number(System::<T>::block_number() + T::BlockNumber::one());
-		}
-		assert_eq!(<Unstaking<T>>::get(&candidate).len(), T::MaxUnstakeRequests::get());
+		fill_unstaking::<T>(&candidate, None, u as u64);
 
 	}: candidate_stake_more(RawOrigin::Signed(candidate.clone()), more_stake)
 	verify {
 		let new_stake = <CollatorState<T>>::get(&candidate).unwrap().stake;
 		assert!(<Unstaking<T>>::get(candidate).is_empty());
-		assert_eq!(new_stake, old_stake + more_stake + more_stake - T::CurrencyBalance::from(unstaked));
+		assert_eq!(new_stake, old_stake + more_stake + more_stake - T::CurrencyBalance::from(u as u64));
 	}
 
 	candidate_stake_less {
@@ -262,6 +258,45 @@ benchmarks! {
 		let state = <CollatorState<T>>::get(&collator).unwrap();
 		assert!(state.delegators.binary_search_by(|x| x.owner.cmp(&delegator)).is_ok());
 	}
+
+	// TODO: Activate after increasing MaxCollatorsPerDelegator to at least 2. Expected to throw otherwise.
+	// delegate_another_candidate {
+	// 	// we need at least 2 collators
+	// 	let n in 2 .. T::MaxCollatorCandidates::get();
+	// 	// we need at least 1 delegator
+	// 	let m in 1 .. T::MaxDelegatorsPerCollator::get() - 1;
+	// 	let u in 0 .. (T::MaxUnstakeRequests::get() as u32);
+
+	// 	let candidates = setup_collator_candidates::<T>(n);
+	// 	for (i, c) in candidates.iter().enumerate() {
+	// 		fill_delegators::<T>(m, c.clone(), i as u32);
+	// 	}
+	// 	let collator_delegated = candidates[0].clone();
+	// 	let collator = candidates.last().unwrap().clone();
+	// 	let amount = T::MinDelegatorStk::get();
+
+	// 	// make sure delegator collated to collator_delegated
+	// 	let state_delegated = <CollatorState<T>>::get(&collator_delegated).unwrap();
+	// 	let delegator = state_delegated.delegators.into_vec()[0].owner.clone();
+	// 	assert!(<DelegatorState<T>>::get(&delegator).is_some());
+	// 	T::Currency::make_free_balance_be(&delegator, amount + amount + amount + amount);
+
+	// 	// should not have delegated to collator yet
+	// 	let state = <CollatorState<T>>::get(&collator).unwrap();
+	// 	assert!(!state.delegators.binary_search_by(|x| x.owner.cmp(&delegator)).is_ok());
+
+	// 	// increase stake so we can unstake, because current stake is minimum
+	// 	T::Currency::make_free_balance_be(&delegator, T::CurrencyBalance::from(u64::MAX) * T::CurrencyBalance::from(u64::MAX));
+	// 	assert_ok!(<Pallet<T>>::delegator_stake_more(RawOrigin::Signed(delegator.clone()).into(), T::Lookup::unlookup(collator_delegated.clone()), T::CurrencyBalance::from(u as u64)));
+
+	// 	// fill unstake BTreeMap by unstaked many entries of 1
+	// 	fill_unstaking::<T>(&collator_delegated, Some(&delegator), u as u64);
+
+	// }: _(RawOrigin::Signed(delegator.clone()), T::Lookup::unlookup(collator.clone()), amount)
+	// verify {
+	// 	let state = <CollatorState<T>>::get(&collator).unwrap();
+	// 	assert!(state.delegators.binary_search_by(|x| x.owner.cmp(&delegator)).is_ok());
+	// }
 
 	// on_initialize {
 	// 	// TODO: implement this benchmark
