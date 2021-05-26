@@ -1,7 +1,7 @@
 #!/bin/bash
 set -x
 
-TMP_DIR="/tmp/parachain/"
+TMP_DIR="/tmp/parachain/$USER/"
 
 mkdir -p $TMP_DIR
 
