@@ -59,11 +59,6 @@ sp-std = {branch = "polkadot-v0.9.3", default-features = false, git = "https://g
 sp-transaction-pool = {branch = "polkadot-v0.9.3", default-features = false, git = "https://github.com/paritytech/substrate", version = "3.0.0"}
 sp-version = {branch = "polkadot-v0.9.3", default-features = false, git = "https://github.com/paritytech/substrate", version = "3.0.0"}
 
-[dependencies.pallet-utility]
-branch = "polkadot-v0.9.2"
-default-features = false
-git = "https://github.com/paritytech/substrate"
-
 [features]
 default = ["std"]
 runtime-benchmarks = [
