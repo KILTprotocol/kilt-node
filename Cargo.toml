@@ -6,10 +6,36 @@ members = [
   "nodes/parachain",
   "nodes/standalone",
   "pallets/attestation",
-  "pallets/kilt-launch",
   "pallets/ctype",
   "pallets/delegation",
   "pallets/did",
+  "pallets/kilt-launch",
   "runtimes/parachain",
   "runtimes/standalone",
 ]
+
+[patch.'https://github.com/paritytech/substrate?branch=rococo-v1']
+frame-metadata = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+frame-support = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+frame-support-procedural = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+frame-support-procedural-tools = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+frame-support-procedural-tools-derive = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-application-crypto = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-arithmetic = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-core = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-debug-derive = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-externalities = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-inherents = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-io = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-keystore = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-panic-handler = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-runtime = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-runtime-interface = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-runtime-interface-proc-macro = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-staking = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-state-machine = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-std = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-storage = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-tracing = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-trie = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-wasm-interface = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}

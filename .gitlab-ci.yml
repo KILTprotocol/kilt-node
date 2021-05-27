@@ -1,0 +1,30 @@
+cache:
+  paths:
+    - target/
+
+stages:
+  - lint
+  - test
+
+clippy:
+  image: paritytech/ci-linux:9a44d4ec-20210423
+  stage: lint
+  timeout: 1 hours
+  script:
+    - rustup component add clippy --toolchain nightly
+    - cargo +nightly clippy -- -D warnings
+
+fmt:
+  image: paritytech/ci-linux:9a44d4ec-20210423
+  stage: lint
+  timeout: 1 hours
+  script:
+    - rustup component add rustfmt
+    - cargo fmt -- --check
+
+test:
+  image: paritytech/ci-linux:9a44d4ec-20210423
+  stage: test
+  timeout: 1 hours
+  script:
+    - cargo test --all --all-features

@@ -28,6 +28,7 @@ use sc_finality_grandpa::SharedVoterState;
 use sc_keystore::LocalKeystore;
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryWorker};
+use sp_consensus::SlotData;
 use sp_consensus_aura::ed25519::AuthorityPair as AuraPair;
 use std::{sync::Arc, time::Duration};
 
@@ -42,29 +43,23 @@ native_executor_instance!(
 type FullClient = sc_service::TFullClient<Block, RuntimeApi, Executor>;
 type FullBackend = sc_service::TFullBackend<Block>;
 type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
-type PartialConfig = sc_service::PartialComponents<
+type PartialComponents = sc_service::PartialComponents<
 	FullClient,
 	FullBackend,
 	FullSelectChain,
 	sp_consensus::DefaultImportQueue<Block, FullClient>,
 	sc_transaction_pool::FullPool<Block, FullClient>,
 	(
-		sc_consensus_aura::AuraBlockImport<
-			Block,
-			FullClient,
-			sc_finality_grandpa::GrandpaBlockImport<FullBackend, Block, FullClient, FullSelectChain>,
-			AuraPair,
-		>,
+		sc_finality_grandpa::GrandpaBlockImport<FullBackend, Block, FullClient, FullSelectChain>,
 		sc_finality_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
 		Option<Telemetry>,
 	),
 >;
 
-pub fn new_partial(config: &Configuration) -> Result<PartialConfig, ServiceError> {
+pub fn new_partial(config: &Configuration) -> Result<PartialComponents, ServiceError> {
 	if config.keystore_remote.is_some() {
-		return Err(ServiceError::Other("Remote Keystores are not supported.".to_owned()));
+		return Err(ServiceError::Other("Remote Keystores are not supported.".to_string()));
 	}
-	let inherent_data_providers = sp_inherents::InherentDataProviders::new();
 
 	let telemetry = config
 		.telemetry_endpoints
@@ -105,17 +100,24 @@ pub fn new_partial(config: &Configuration) -> Result<PartialConfig, ServiceError
 		telemetry.as_ref().map(|x| x.handle()),
 	)?;
 
-	let aura_block_import =
-		sc_consensus_aura::AuraBlockImport::<_, _, _, AuraPair>::new(grandpa_block_import.clone(), client.clone());
+	let slot_duration = sc_consensus_aura::slot_duration(&*client)?.slot_duration();
 
-	let import_queue = sc_consensus_aura::import_queue::<AuraPair, _, _, _, _, _>(ImportQueueParams {
-		block_import: aura_block_import.clone(),
-		justification_import: Some(Box::new(grandpa_block_import)),
+	let import_queue = sc_consensus_aura::import_queue::<AuraPair, _, _, _, _, _, _>(ImportQueueParams {
+		block_import: grandpa_block_import.clone(),
+		justification_import: Some(Box::new(grandpa_block_import.clone())),
 		client: client.clone(),
-		inherent_data_providers: inherent_data_providers.clone(),
+		create_inherent_data_providers: move |_, ()| async move {
+			let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+
+			let slot = sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_duration(
+				*timestamp,
+				slot_duration,
+			);
+
+			Ok((timestamp, slot))
+		},
 		spawner: &task_manager.spawn_essential_handle(),
 		can_author_with: sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone()),
-		slot_duration: sc_consensus_aura::slot_duration(&*client)?,
 		registry: config.prometheus_registry(),
 		check_for_equivocation: Default::default(),
 		telemetry: telemetry.as_ref().map(|x| x.handle()),
@@ -129,8 +131,7 @@ pub fn new_partial(config: &Configuration) -> Result<PartialConfig, ServiceError
 		keystore_container,
 		select_chain,
 		transaction_pool,
-		inherent_data_providers,
-		other: (aura_block_import, grandpa_link, telemetry),
+		other: (grandpa_block_import, grandpa_link, telemetry),
 	})
 }
 
@@ -151,7 +152,6 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		mut keystore_container,
 		select_chain,
 		transaction_pool,
-		inherent_data_providers,
 		other: (block_import, grandpa_link, mut telemetry),
 	} = new_partial(&config)?;
 
@@ -236,13 +236,25 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 
 		let can_author_with = sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone());
 
-		let aura = sc_consensus_aura::start_aura::<AuraPair, _, _, _, _, _, _, _, _, _>(StartAuraParams {
-			slot_duration: sc_consensus_aura::slot_duration(&*client)?,
-			client: client.clone(),
+		let slot_duration = sc_consensus_aura::slot_duration(&*client)?;
+		let raw_slot_duration = slot_duration.slot_duration();
+
+		let aura = sc_consensus_aura::start_aura::<AuraPair, _, _, _, _, _, _, _, _, _, _>(StartAuraParams {
+			slot_duration,
+			client,
 			select_chain,
 			block_import,
 			proposer_factory,
-			inherent_data_providers,
+			create_inherent_data_providers: move |_, ()| async move {
+				let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+
+				let slot = sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_duration(
+					*timestamp,
+					raw_slot_duration,
+				);
+
+				Ok((timestamp, slot))
+			},
 			force_authoring,
 			backoff_authoring_blocks,
 			keystore: keystore_container.sync_keystore(),
@@ -350,17 +362,24 @@ pub fn new_light(mut config: Configuration) -> Result<TaskManager, ServiceError>
 		telemetry.as_ref().map(|x| x.handle()),
 	)?;
 
-	let aura_block_import =
-		sc_consensus_aura::AuraBlockImport::<_, _, _, AuraPair>::new(grandpa_block_import.clone(), client.clone());
+	let slot_duration = sc_consensus_aura::slot_duration(&*client)?.slot_duration();
 
-	let import_queue = sc_consensus_aura::import_queue::<AuraPair, _, _, _, _, _>(ImportQueueParams {
-		block_import: aura_block_import,
+	let import_queue = sc_consensus_aura::import_queue::<AuraPair, _, _, _, _, _, _>(ImportQueueParams {
+		block_import: grandpa_block_import.clone(),
 		justification_import: Some(Box::new(grandpa_block_import)),
 		client: client.clone(),
-		inherent_data_providers: sp_inherents::InherentDataProviders::new(),
+		create_inherent_data_providers: move |_, ()| async move {
+			let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+
+			let slot = sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_duration(
+				*timestamp,
+				slot_duration,
+			);
+
+			Ok((timestamp, slot))
+		},
 		spawner: &task_manager.spawn_essential_handle(),
 		can_author_with: sp_consensus::NeverCanAuthor,
-		slot_duration: sc_consensus_aura::slot_duration(&*client)?,
 		registry: config.prometheus_registry(),
 		check_for_equivocation: Default::default(),
 		telemetry: telemetry.as_ref().map(|x| x.handle()),

@@ -316,7 +316,7 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn revoke_root(
 			origin: OriginFor<T>,
-			root_id: T::DelegationNodeId,
+			root_id: DelegationNodeIdOf<T>,
 			max_children: u32,
 		) -> DispatchResultWithPostInfo {
 			let invoker = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
@@ -329,7 +329,8 @@ pub mod pallet {
 				// Recursively revoke all children
 				let (_, post_weight) = Self::revoke_children(&root_id, &invoker, max_children)?;
 
-				// If we didn't return an ExceededRevocationBounds error, we can revoke the root to.
+				// If we didn't return an ExceededRevocationBounds error, we can revoke the root
+				// too.
 				root.revoked = true;
 				<Roots<T>>::insert(&root_id, root);
 
@@ -487,7 +488,7 @@ impl<T: Config> Pallet<T> {
 		Ok((revocations, consumed_weight))
 	}
 
-	/// revoke_children revokes all children of a delegation.
+	/// Revokes all children of a delegation.
 	/// Returns the number of revoked delegations and the consumed weight.
 	fn revoke_children(
 		delegation: &DelegationNodeIdOf<T>,
@@ -519,7 +520,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 	// Add a child node into the delegation hierarchy
-	fn add_child(child: T::DelegationNodeId, parent: T::DelegationNodeId) {
+	fn add_child(child: DelegationNodeIdOf<T>, parent: DelegationNodeIdOf<T>) {
 		// Get the children vector or initialize an empty one if none
 		let mut children = <Children<T>>::get(parent).unwrap_or_default();
 		children.push(child);

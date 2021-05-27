@@ -700,7 +700,6 @@ fn not_owner_of_root_create_delegation_error() {
 #[test]
 fn empty_revoke_root_successful() {
 	let revoker = ALICE;
-	let delegate = BOB;
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),

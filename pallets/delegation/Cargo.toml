@@ -17,8 +17,7 @@ ctype = {features = ["mock"], path = "../ctype"}
 did = {features = ["mock"], path = "../did"}
 kilt-primitives = {default-features = false, path = "../../primitives"}
 serde = {version = "1.0.101"}
-sp-core = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-keystore = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-core = {branch = "polkadot-v0.9.3", default-features = false, git = "https://github.com/paritytech/substrate", version = "3.0.0"}
 
 [dependencies]
 bitflags = {default-features = false, version = "1.2.1"}
@@ -32,18 +31,18 @@ kilt-primitives = {default-features = false, optional = true, path = "../../prim
 
 # Substrate
 codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.0.0"}
-frame-support = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate"}
-frame-system = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-runtime = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-std = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-support = {branch = "polkadot-v0.9.3", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-system = {branch = "polkadot-v0.9.3", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-runtime = {branch = "polkadot-v0.9.3", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-std = {branch = "polkadot-v0.9.3", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 # Mock/Test
-sp-core = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-sp-io = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-sp-keystore = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+sp-core = {branch = "polkadot-v0.9.3", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+sp-io = {branch = "polkadot-v0.9.3", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+sp-keystore = {branch = "polkadot-v0.9.3", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
 
 # Substrate Benchmarking
-frame-benchmarking = {branch = "rococo-v1", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+frame-benchmarking = {branch = "polkadot-v0.9.3", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
 
 [features]
 default = ["std"]
