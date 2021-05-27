@@ -23,11 +23,12 @@ use cumulus_client_service::{
 	prepare_node_config, start_collator, start_full_node, StartCollatorParams, StartFullNodeParams,
 };
 use cumulus_primitives_core::ParaId;
-use kilt_primitives::{AccountId, AuthorityId, Balance, Block, Hash, Index};
-use polkadot_primitives::v0::CollatorPair;
+use kilt_primitives::{AccountId, AuthorityId, Balance, BlockNumber, Index};
+use polkadot_primitives::v1::CollatorPair;
 
 use polkadot_service::NativeExecutionDispatch;
 use sc_client_api::ExecutorProvider;
+use sc_executor::native_executor_instance;
 use sc_network::NetworkService;
 use sc_service::{Configuration, Role, RpcExtensionBuilder, TFullBackend, TFullClient, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle};
@@ -40,7 +41,19 @@ use substrate_prometheus_endpoint::Registry;
 
 pub use sc_executor::NativeExecutor;
 
-use sc_executor::native_executor_instance;
+type Header = sp_runtime::generic::Header<BlockNumber, sp_runtime::traits::BlakeTwo256>;
+pub type Block = sp_runtime::generic::Block<Header, sp_runtime::OpaqueExtrinsic>;
+type Hash = sp_core::H256;
+pub type TransactionPool<Block, RuntimeApi, Executor> =
+	sc_transaction_pool::FullPool<Block, TFullClient<Block, RuntimeApi, Executor>>;
+type PartialComponents<Block, RuntimeApi, Executor, Telemetry, TelemetryWorkerHandle> = sc_service::PartialComponents<
+	TFullClient<Block, RuntimeApi, Executor>,
+	TFullBackend<Block>,
+	(),
+	sp_consensus::DefaultImportQueue<Block, TFullClient<Block, RuntimeApi, Executor>>,
+	TransactionPool<Block, RuntimeApi, Executor>,
+	(Option<Telemetry>, Option<TelemetryWorkerHandle>),
+>;
 
 // Native executor instance.
 native_executor_instance!(
@@ -52,31 +65,11 @@ native_executor_instance!(
 
 // Native executor instance.
 native_executor_instance!(
-	pub ShellRuntimeExecutor,
-	shell_runtime::api::dispatch,
-	shell_runtime::native_version,
-);
-
-// Native executor instance.
-native_executor_instance!(
 	pub SpiritRuntimeExecutor,
 	spiritnet_runtime::api::dispatch,
 	spiritnet_runtime::native_version,
 	frame_benchmarking::benchmarking::HostFunctions,
 );
-
-pub type TransactionPool<Block, RuntimeApi, Executor> =
-	sc_transaction_pool::FullPool<Block, TFullClient<Block, RuntimeApi, Executor>>;
-
-pub type PartialComponents<Block, RuntimeApi, Executor, Telemetry, TelemetryWorkerHandle> =
-	sc_service::PartialComponents<
-		TFullClient<Block, RuntimeApi, Executor>,
-		TFullBackend<Block>,
-		(),
-		sp_consensus::DefaultImportQueue<Block, TFullClient<Block, RuntimeApi, Executor>>,
-		TransactionPool<Block, RuntimeApi, Executor>,
-		(Option<Telemetry>, Option<TelemetryWorkerHandle>),
-	>;
 
 /// Starts a `ServiceBuilder` for a full service.
 ///
@@ -245,14 +238,14 @@ where
 	let prometheus_registry = parachain_config.prometheus_registry().cloned();
 	let transaction_pool = params.transaction_pool.clone();
 	let mut task_manager = params.task_manager;
-	let import_queue = params.import_queue;
+	let import_queue = cumulus_client_service::SharedImportQueue::new(params.import_queue);
 	let (network, network_status_sinks, system_rpc_tx, start_network) =
 		sc_service::build_network(sc_service::BuildNetworkParams {
 			config: &parachain_config,
 			client: client.clone(),
 			transaction_pool: transaction_pool.clone(),
 			spawn_handle: task_manager.spawn_handle(),
-			import_queue,
+			import_queue: import_queue.clone(),
 			on_demand: None,
 			block_announce_validator_builder: Some(Box::new(|_| block_announce_validator)),
 		})?;
@@ -294,25 +287,26 @@ where
 		let spawner = task_manager.spawn_handle();
 
 		let params = StartCollatorParams {
-			para_id: id,
 			block_status: client.clone(),
-			announce_block,
 			client: client.clone(),
-			task_manager: &mut task_manager,
+			announce_block,
+			spawner,
+			para_id: id,
 			collator_key,
 			relay_chain_full_node,
-			spawner,
+			task_manager: &mut task_manager,
 			parachain_consensus,
+			import_queue,
 		};
 
 		start_collator(params).await?;
 	} else {
 		let params = StartFullNodeParams {
-			client: client.clone(),
-			announce_block,
-			task_manager: &mut task_manager,
 			para_id: id,
-			polkadot_full_node: relay_chain_full_node,
+			client: client.clone(),
+			relay_chain_full_node,
+			task_manager: &mut task_manager,
+			announce_block,
 		};
 
 		start_full_node(params)?;
@@ -323,18 +317,14 @@ where
 	Ok((task_manager, client))
 }
 
-/// Build the import queue for the "default" runtime.
-pub fn build_import_queue<RE, SRE, API>(
+/// Build the import queue for THE runtime.
+pub fn build_import_queue<RE, API>(
 	client: Arc<TFullClient<Block, API, RE>>,
 	config: &Configuration,
 	telemetry: Option<TelemetryHandle>,
 	task_manager: &TaskManager,
-) -> Result<
-	sp_consensus::DefaultImportQueue<Block, TFullClient<Block, shell_runtime::RuntimeApi, SRE>>,
-	sc_service::Error,
->
+) -> Result<sp_consensus::DefaultImportQueue<Block, TFullClient<Block, API, RE>>, sc_service::Error>
 where
-	SRE: NativeExecutionDispatch + 'static,
 	RE: NativeExecutionDispatch + 'static,
 	API: ConstructRuntimeApi<Block, TFullClient<Block, API, RE>> + Send + Sync + 'static,
 	API::RuntimeApi: sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>
@@ -345,20 +335,15 @@ where
 		+ sp_block_builder::BlockBuilder<Block>
 		+ frame_rpc_system::AccountNonceApi<Block, AccountId, Index>
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
-		+ sp_consensus_aura::AuraApi<Block, AuthorityId>,
+		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
+		+ cumulus_primitives_core::CollectCollationInfo<Block>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
 {
 	let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)?;
 
-	let block_import =
-		cumulus_client_consensus_aura::AuraBlockImport::<_, _, _, sp_consensus_aura::sr25519::AuthorityPair>::new(
-			client.clone(),
-			client.clone(),
-		);
-
 	cumulus_client_consensus_aura::import_queue::<sp_consensus_aura::sr25519::AuthorityPair, _, _, _, _, _, _>(
 		cumulus_client_consensus_aura::ImportQueueParams {
-			block_import,
+			block_import: client.clone(),
 			client: client.clone(),
 			create_inherent_data_providers: move |_, _| async move {
 				let time = sp_timestamp::InherentDataProvider::from_system_time();
@@ -379,8 +364,8 @@ where
 	.map_err(Into::into)
 }
 
-/// Start a rococo-test parachain node.
-pub async fn start_node<RE, SRE, API>(
+/// Start a parachain node.
+pub async fn start_node<RE, API>(
 	parachain_config: Configuration,
 	collator_key: CollatorPair,
 	polkadot_config: Configuration,
@@ -388,7 +373,6 @@ pub async fn start_node<RE, SRE, API>(
 ) -> sc_service::error::Result<(TaskManager, Arc<TFullClient<Block, API, RE>>)>
 where
 	RE: NativeExecutionDispatch + 'static,
-	SRE: NativeExecutionDispatch + 'static,
 	API: ConstructRuntimeApi<Block, TFullClient<Block, API, RE>> + Send + Sync + 'static,
 	API::RuntimeApi: sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>
 		+ sp_api::Metadata<Block>
@@ -423,7 +407,7 @@ where
 		polkadot_config,
 		id,
 		rpc_extensions_builder,
-		build_import_queue::<RE, SRE, API>,
+		build_import_queue::<RE, API>,
 		|client,
 		 prometheus_registry,
 		 telemetry,
@@ -494,88 +478,6 @@ where
 				block_proposal_slot_portion: SlotProportion::new(1f32 / 24f32),
 				telemetry,
 			}))
-		},
-	)
-	.await
-}
-
-/// Build the import queue for the shell runtime.
-pub fn shell_build_import_queue<SRE>(
-	client: Arc<TFullClient<Block, shell_runtime::RuntimeApi, SRE>>,
-	config: &Configuration,
-	_: Option<TelemetryHandle>,
-	task_manager: &TaskManager,
-) -> Result<
-	sp_consensus::DefaultImportQueue<Block, TFullClient<Block, shell_runtime::RuntimeApi, SRE>>,
-	sc_service::Error,
->
-where
-	SRE: NativeExecutionDispatch + 'static,
-{
-	cumulus_client_consensus_relay_chain::import_queue(
-		client.clone(),
-		client,
-		|_, _| async { Ok(()) },
-		&task_manager.spawn_essential_handle(),
-		config.prometheus_registry(),
-	)
-	.map_err(Into::into)
-}
-
-/// Start a rococo-shell parachain node.
-pub async fn start_shell_node<SRE>(
-	parachain_config: Configuration,
-	collator_key: CollatorPair,
-	polkadot_config: Configuration,
-	id: ParaId,
-) -> sc_service::error::Result<(TaskManager, Arc<TFullClient<Block, shell_runtime::RuntimeApi, SRE>>)>
-where
-	SRE: NativeExecutionDispatch + 'static,
-{
-	start_node_impl::<shell_runtime::RuntimeApi, SRE, _, _, _>(
-		parachain_config,
-		collator_key,
-		polkadot_config,
-		id,
-		|_, _| Box::new(|_, _| Default::default()),
-		shell_build_import_queue,
-		|client, prometheus_registry, telemetry, task_manager, relay_chain_node, transaction_pool, _, _, _| {
-			let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
-				task_manager.spawn_handle(),
-				client.clone(),
-				transaction_pool,
-				prometheus_registry,
-				telemetry,
-			);
-
-			let relay_chain_backend = relay_chain_node.backend.clone();
-			let relay_chain_client = relay_chain_node.client.clone();
-
-			Ok(cumulus_client_consensus_relay_chain::build_relay_chain_consensus(
-				cumulus_client_consensus_relay_chain::BuildRelayChainConsensusParams {
-					para_id: id,
-					proposer_factory,
-					block_import: client,
-					relay_chain_client: relay_chain_node.client.clone(),
-					relay_chain_backend: relay_chain_node.backend.clone(),
-					create_inherent_data_providers: move |_, (relay_parent, validation_data)| {
-						let parachain_inherent =
-							cumulus_primitives_parachain_inherent::ParachainInherentData::create_at_with_client(
-								relay_parent,
-								&relay_chain_client,
-								&*relay_chain_backend,
-								&validation_data,
-								id,
-							);
-						async move {
-							let parachain_inherent = parachain_inherent.ok_or_else(|| {
-								Box::<dyn std::error::Error + Send + Sync>::from("Failed to create parachain inherent")
-							})?;
-							Ok(parachain_inherent)
-						}
-					},
-				},
-			))
 		},
 	)
 	.await
