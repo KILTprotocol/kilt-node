@@ -29,6 +29,8 @@ use sp_runtime::{
 	traits::{One, StaticLookup},
 	Perquintill,
 };
+use frame_system::RawOrigin;
+use sp_runtime::{traits::StaticLookup, Perquintill};
 use sp_std::vec::Vec;
 
 const COLLATOR_ACCOUNT_SEED: u32 = 0;

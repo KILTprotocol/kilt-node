@@ -1,7 +1,7 @@
 #!/bin/bash
 set -x
 
-TMP_DIR="/tmp/parachain/"
+TMP_DIR="/tmp/parachain/$USER/"
 
 mkdir -p $TMP_DIR
 
@@ -22,7 +22,7 @@ cp target/release/kilt-parachain $TMP_DIR/kilt-parachain
 cargo build --release -p kilt-parachain --features fast-gov
 cp target/release/kilt-parachain $TMP_DIR/kilt-parachain-fast-gov
 
-RELAY_CHAIN_IMG=parity/polkadot:v0.9.2
+RELAY_CHAIN_IMG=parity/polkadot:v0.9.3
 
 # ##############################################################################
 # #                                                                            #

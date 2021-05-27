@@ -27,11 +27,11 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use kilt_primitives::{
 	constants::{DOLLARS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature,
 };
+use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
@@ -48,7 +48,7 @@ use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 
 // pub use consensus::Call as ConsensusCall;
-pub use balances::Call as BalancesCall;
+pub use pallet_balances::Call as BalancesCall;
 
 pub use frame_support::{
 	construct_runtime, parameter_types,
@@ -59,10 +59,10 @@ pub use frame_support::{
 	},
 	ConsensusEngineId, StorageValue,
 };
+pub use pallet_timestamp::Call as TimestampCall;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
-pub use timestamp::Call as TimestampCall;
 
 pub use attestation;
 pub use ctype;
@@ -73,7 +73,7 @@ pub use did;
 pub type DigestItem = generic::DigestItem<Hash>;
 
 pub type NegativeImbalance<T> =
-	<balances::Pallet<T> as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
+	<pallet_balances::Pallet<T> as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't
 /// need to know the specifics of the runtime. They can then be made to be
@@ -181,7 +181,7 @@ impl frame_system::Config for Runtime {
 	/// What to do if an account is fully reaped from the system.
 	type OnKilledAccount = ();
 	/// The data to be stored in an account.
-	type AccountData = balances::AccountData<Balance>;
+	type AccountData = pallet_balances::AccountData<Balance>;
 	/// Weight information for the extrinsics of this pallet.
 	type SystemWeightInfo = ();
 	/// This is used as an identifier of the chain. 42 is the generic substrate
@@ -191,11 +191,11 @@ impl frame_system::Config for Runtime {
 	type OnSetCode = ();
 }
 
-impl aura::Config for Runtime {
+impl pallet_aura::Config for Runtime {
 	type AuthorityId = AuraId;
 }
 
-impl grandpa::Config for Runtime {
+impl pallet_grandpa::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
 
@@ -215,7 +215,7 @@ parameter_types! {
 	pub const MinimumPeriod: u64 = SLOT_DURATION / 2;
 }
 
-impl timestamp::Config for Runtime {
+impl pallet_timestamp::Config for Runtime {
 	/// A timestamp: milliseconds since the unix epoch.
 	type Moment = u64;
 	type OnTimestampSet = Aura;
@@ -240,7 +240,7 @@ parameter_types! {
 	pub const MaxLocks: u32 = 50;
 }
 
-impl balances::Config for Runtime {
+impl pallet_balances::Config for Runtime {
 	type MaxLocks = MaxLocks;
 	/// The type for recording an account's balance.
 	type Balance = Balance;
@@ -249,7 +249,7 @@ impl balances::Config for Runtime {
 	type DustRemoval = ();
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
-	type WeightInfo = balances::weights::SubstrateWeight<Runtime>;
+	type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
 
 /// Logic for the author to get a portion of fees.
@@ -257,17 +257,17 @@ pub struct ToAuthor<R>(sp_std::marker::PhantomData<R>);
 
 impl<R> OnUnbalanced<NegativeImbalance<R>> for ToAuthor<R>
 where
-	R: balances::Config + authorship::Config,
+	R: pallet_balances::Config + pallet_authorship::Config,
 	<R as frame_system::Config>::AccountId: From<AccountId>,
 	<R as frame_system::Config>::AccountId: Into<AccountId>,
-	<R as frame_system::Config>::Event: From<balances::Event<Runtime>>,
-	<R as balances::Config>::Balance: Into<u128>,
+	<R as frame_system::Config>::Event: From<pallet_balances::Event<Runtime>>,
+	<R as pallet_balances::Config>::Balance: Into<u128>,
 {
 	fn on_nonzero_unbalanced(amount: NegativeImbalance<R>) {
 		let numeric_amount = amount.peek();
-		let author = <authorship::Pallet<R>>::author();
-		<balances::Pallet<R>>::resolve_creating(&author, amount);
-		<frame_system::Pallet<R>>::deposit_event(balances::Event::Deposit(author.into(), numeric_amount.into()));
+		let author = <pallet_authorship::Pallet<R>>::author();
+		<pallet_balances::Pallet<R>>::resolve_creating(&author, amount);
+		<frame_system::Pallet<R>>::deposit_event(pallet_balances::Event::Deposit(author.into(), numeric_amount.into()));
 	}
 }
 
@@ -294,7 +294,7 @@ impl pallet_transaction_payment::Config for Runtime {
 	type FeeMultiplierUpdate = ();
 }
 
-impl sudo::Config for Runtime {
+impl pallet_sudo::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
 }
@@ -337,11 +337,11 @@ parameter_types! {
 	pub const Offset: u64 = 0xFFFF_FFFF_FFFF_FFFF;
 }
 
-impl session::Config for Runtime {
+impl pallet_session::Config for Runtime {
 	type Event = Event;
 	type ValidatorId = AccountId;
 	type ValidatorIdOf = ();
-	type ShouldEndSession = session::PeriodicSessions<Period, Offset>;
+	type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
 	type NextSessionRotation = ();
 	type SessionManager = ();
 	type SessionHandler = <opaque::SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
@@ -354,8 +354,8 @@ parameter_types! {
 	pub const UncleGenerations: u32 = 0;
 }
 
-impl authorship::Config for Runtime {
-	type FindAuthor = session::FindAccountFromAuthorIndex<Self, Aura>;
+impl pallet_authorship::Config for Runtime {
+	type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
 	type UncleGenerations = UncleGenerations;
 	type FilterUncle = ();
 	type EventHandler = ();
@@ -387,23 +387,23 @@ construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>} = 0,
-		RandomnessCollectiveFlip: randomness_collective_flip::{Pallet, Call, Storage} = 1,
+		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Call, Storage} = 1,
 
-		Timestamp: timestamp::{Pallet, Call, Storage, Inherent} = 2,
-		Aura: aura::{Pallet, Config<T>, Storage} = 3,
-		Grandpa: grandpa::{Pallet, Call, Storage, Config, Event} = 4,
+		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent} = 2,
+		Aura: pallet_aura::{Pallet, Config<T>, Storage} = 3,
+		Grandpa: pallet_grandpa::{Pallet, Call, Storage, Config, Event} = 4,
 		Indices: pallet_indices::{Pallet, Call, Storage, Event<T>} = 5,
-		Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>} = 6,
+		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>} = 6,
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage} = 7,
-		Sudo: sudo::{Pallet, Call, Config<T>, Storage, Event<T>} = 8,
+		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>} = 8,
 
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>} = 9,
 		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 10,
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 11,
 		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 12,
 
-		Session: session::{Pallet, Call, Storage, Event, Config<T>} = 15,
-		Authorship: authorship::{Pallet, Call, Storage} = 16,
+		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>} = 15,
+		Authorship: pallet_authorship::{Pallet, Call, Storage} = 16,
 
 		// // Governance stuff; uncallable initially.
 		// Democracy: pallet_democracy::{Module, Call, Storage, Config, Event<T>} = 25,
@@ -462,7 +462,8 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signatu
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various Pallets.
-pub type Executive = executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllPallets>;
+pub type Executive =
+	frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllPallets>;
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
