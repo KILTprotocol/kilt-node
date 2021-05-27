@@ -294,6 +294,42 @@ benchmarks! {
 		assert!(<Unstaking<T>>::get(&delegator).is_empty());
 	}
 
+	delegator_stake_less {
+		// we need at least 1 collators
+		let n in 1 .. T::MaxCollatorCandidates::get();
+		// we need at least 1 delegator
+		let m in 1 .. T::MaxDelegatorsPerCollator::get() - 1;
+
+		let candidates = setup_collator_candidates::<T>(n);
+		for (i, c) in candidates.iter().enumerate() {
+			fill_delegators::<T>(m, c.clone(), i as u32);
+		}
+		let collator = candidates[0].clone();
+		let amount = T::CurrencyBalance::from(1u64);
+
+		// make sure delegator collated to collator
+		let state = <CollatorState<T>>::get(&collator).unwrap();
+		let delegator = state.delegators.into_vec()[0].owner.clone();
+		assert_eq!(<DelegatorState<T>>::get(&delegator).unwrap().total, T::MinDelegation::get());
+
+		// increase stake so we can unstake, because current stake is minimum
+		T::Currency::make_free_balance_be(&delegator, T::CurrencyBalance::from(u64::MAX) * T::CurrencyBalance::from(u64::MAX));
+		assert_ok!(<Pallet<T>>::delegator_stake_more(RawOrigin::Signed(delegator.clone()).into(), T::Lookup::unlookup(collator.clone()), amount + amount));
+		assert_eq!(<DelegatorState<T>>::get(&delegator).unwrap().total, T::MinDelegation::get() + amount + amount);
+
+		// decrease stake once so we have an entry for this block
+		<Pallet<T>>::delegator_stake_less(RawOrigin::Signed(delegator.clone()).into(), T::Lookup::unlookup(collator.clone()), amount);
+		assert_eq!(<DelegatorState<T>>::get(&delegator).unwrap().total, T::MinDelegation::get() + amount);
+		assert_eq!(<Unstaking<T>>::get(&delegator).len(), 1);
+
+	}: _(RawOrigin::Signed(delegator.clone()), T::Lookup::unlookup(collator.clone()), amount)
+	verify {
+		let state = <CollatorState<T>>::get(&collator).unwrap();
+		assert!(state.delegators.binary_search_by(|x| x.owner.cmp(&delegator)).is_ok());
+		assert_eq!(<DelegatorState<T>>::get(&delegator).unwrap().total, T::MinDelegation::get());
+		assert_eq!(<Unstaking<T>>::get(&delegator).len(), 2);
+	}
+
 	// TODO: Activate after increasing MaxCollatorsPerDelegator to at least 2. Expected to throw otherwise.
 	// delegate_another_candidate {
 	// 	// we need at least 2 collators
