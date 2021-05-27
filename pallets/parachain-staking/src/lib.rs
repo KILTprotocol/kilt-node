@@ -1601,10 +1601,11 @@ pub mod pallet {
 		/// such as the clearing of the ExitQueue.
 		///
 		/// # <weight>
-		/// Weight: O(E) where E is the number of entries in the ExitQueue
-		/// bounded by `MaxExitsPerRound`
+		/// Weight: O(E * D) where E is the number of entries in the ExitQueue
+		/// bounded by `MaxExitsPerRound` and D is the number of delegators per
+		/// collator bounded by `MaxDelegatorsPerCollator`
 		/// - Reads: E * DelegatorState, E * BlockNumber, E * Unstaking
-		/// - Writes: E * Unstaking, E * DelegatorState, E * Total
+		/// - Writes: E * Unstaking, E * D * DelegatorState, E * Total
 		/// - Kills: CollatorState & DelegatorState for each removed entry of
 		///   ExitQueue, ExitQueue if all entries are removed
 		/// # </weight>
