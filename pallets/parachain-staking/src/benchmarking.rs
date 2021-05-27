@@ -432,8 +432,8 @@ benchmarks! {
 		assert_eq!(pallet_balances::Pallet::<T>::usable_balance(&candidate), (free_balance - stake - stake + T::CurrencyBalance::from(1u64)).into());
 	}
 
+	// 	TODO: implement this benchmark after refactoring `execute_delayed_exits`
 	// on_initialize {
-	// 	// TODO: implement this benchmark
 	// 	let num_of_collators = T::MinSelectedCandidates::get();
 	// 	let num_of_candidates = T::MaxCollatorCandidates::get();
 
@@ -441,9 +441,7 @@ benchmarks! {
 	// verify {
 	// }
 
-	// new_session
-
-	// TODO: Activate after increasing MaxCollatorsPerDelegator to at least 2. Expected to throw otherwise.
+	// [Post-launch TODO]: Activate after increasing MaxCollatorsPerDelegator to at least 2. Expected to throw otherwise.
 	// delegate_another_candidate {
 	// 	// we need at least 2 collators
 	// 	let n in 2 .. T::MaxCollatorCandidates::get();
