@@ -19,7 +19,7 @@
 use crate::{
 	chain_spec,
 	cli::{Cli, RelayChainCli, Subcommand, DEFAULT_PARA_ID},
-	service::{new_partial, MashRuntimeExecutor, ShellRuntimeExecutor, SpiritRuntimeExecutor},
+	service::{new_partial, MashRuntimeExecutor, SpiritRuntimeExecutor},
 };
 use codec::Encode;
 use cumulus_client_service::genesis::generate_genesis_block;
@@ -163,7 +163,7 @@ macro_rules! construct_async_run {
 					runner.async_run(|$config| {
 						let $components = new_partial::<spiritnet_runtime::RuntimeApi, SpiritRuntimeExecutor, _>(
 							&$config,
-							crate::service::build_import_queue::<SpiritRuntimeExecutor, ShellRuntimeExecutor, spiritnet_runtime::RuntimeApi>,
+							crate::service::build_import_queue::<SpiritRuntimeExecutor, spiritnet_runtime::RuntimeApi>,
 						)?;
 						let task_manager = $components.task_manager;
 						{ $( $code )* }.map(|v| (v, task_manager))
@@ -173,22 +173,12 @@ macro_rules! construct_async_run {
 					runner.async_run(|$config| {
 						let $components = new_partial::<kilt_parachain_runtime::RuntimeApi, MashRuntimeExecutor, _>(
 							&$config,
-							crate::service::build_import_queue::<MashRuntimeExecutor, ShellRuntimeExecutor, kilt_parachain_runtime::RuntimeApi>,
+							crate::service::build_import_queue::<MashRuntimeExecutor, kilt_parachain_runtime::RuntimeApi>,
 						)?;
 						let task_manager = $components.task_manager;
 						{ $( $code )* }.map(|v| (v, task_manager))
 					})
 				}
-			"shell" => {
-				runner.async_run(|$config| {
-					let $components = new_partial::<shell_runtime::RuntimeApi, ShellRuntimeExecutor, _>(
-						&$config,
-						crate::service::shell_build_import_queue::<ShellRuntimeExecutor>,
-					)?;
-					let task_manager = $components.task_manager;
-					{ $( $code )* }.map(|v| (v, task_manager))
-				})
-			}
 			_ => panic!("unkown runtime"),
 		}
 	}}
@@ -259,7 +249,6 @@ pub fn run() -> Result<()> {
 				match cli.runtime.as_str() {
 					"mashnet" => runner.sync_run(|config| cmd.run::<Block, MashRuntimeExecutor>(config)),
 					"spiritnet" => runner.sync_run(|config| cmd.run::<Block, SpiritRuntimeExecutor>(config)),
-					"shell" => runner.sync_run(|config| cmd.run::<Block, ShellRuntimeExecutor>(config)),
 					_ => Err("Unknown runtime".into()),
 				}
 			} else {
@@ -349,28 +338,24 @@ pub fn run() -> Result<()> {
 				);
 
 				match cli.runtime.as_str() {
-					"mashnet" => crate::service::start_node::<
-						MashRuntimeExecutor,
-						ShellRuntimeExecutor,
-						kilt_parachain_runtime::RuntimeApi,
-					>(config, key, polkadot_config, id)
+					"mashnet" => crate::service::start_node::<MashRuntimeExecutor, kilt_parachain_runtime::RuntimeApi>(
+						config,
+						key,
+						polkadot_config,
+						id,
+					)
 					.await
 					.map(|r| r.0)
 					.map_err(Into::into),
-					"spiritnet" => crate::service::start_node::<
-						SpiritRuntimeExecutor,
-						ShellRuntimeExecutor,
-						spiritnet_runtime::RuntimeApi,
-					>(config, key, polkadot_config, id)
+					"spiritnet" => crate::service::start_node::<SpiritRuntimeExecutor, spiritnet_runtime::RuntimeApi>(
+						config,
+						key,
+						polkadot_config,
+						id,
+					)
 					.await
 					.map(|r| r.0)
 					.map_err(Into::into),
-					"shell" => {
-						crate::service::start_shell_node::<ShellRuntimeExecutor>(config, key, polkadot_config, id)
-							.await
-							.map(|r| r.0)
-							.map_err(Into::into)
-					}
 					_ => Err("Unknown runtime".into()),
 				}
 			})
