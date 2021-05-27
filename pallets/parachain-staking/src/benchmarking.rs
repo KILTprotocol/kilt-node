@@ -19,12 +19,12 @@
 
 //! Benchmarking
 use crate::{types::Stake, *};
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, vec, Zero};
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, vec};
 use frame_support::{
 	assert_ok,
-	traits::{Currency, Get, Hooks, OnFinalize},
+	traits::{Currency, Get},
 };
-use frame_system::{pallet_prelude::BlockNumberFor, Pallet as System, RawOrigin};
+use frame_system::{Pallet as System, RawOrigin};
 use sp_runtime::{
 	traits::{One, StaticLookup},
 	Perquintill,
@@ -186,7 +186,7 @@ benchmarks! {
 		assert_eq!(<ExitQueue<T>>::get().into_vec(), vec![Stake { owner: old_candidate, amount: unlocking_at }]);
 	}
 
-	candidate_stake_more_unstaked {
+	candidate_stake_more {
 		let n in 1 .. T::MaxCollatorCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 		let u in 0 .. (T::MaxUnstakeRequests::get() as u32);
@@ -207,7 +207,7 @@ benchmarks! {
 		// fill unstake BTreeMap by unstaked many entries of 1
 		fill_unstaking::<T>(&candidate, None, u as u64);
 
-	}: candidate_stake_more(RawOrigin::Signed(candidate.clone()), more_stake)
+	}: _(RawOrigin::Signed(candidate.clone()), more_stake)
 	verify {
 		let new_stake = <CollatorState<T>>::get(&candidate).unwrap().stake;
 		assert!(<Unstaking<T>>::get(candidate).is_empty());
