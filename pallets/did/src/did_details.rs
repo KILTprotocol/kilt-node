@@ -621,6 +621,10 @@ pub trait DeriveDidCallAuthorizationVerificationKeyRelationship {
 	/// The type of the verification key to be used to validate the
 	/// wrapped extrinsic.
 	fn derive_verification_key_relationship(&self) -> Option<DidVerificationKeyRelationship>;
+
+	// Return a call to dispatch in order to test the pallet proxy feature.
+	#[cfg(feature = "runtime-benchmarks")]
+	fn get_call_for_did_call_benchmark() -> Self;
 }
 
 /// An operation to create a new DID.

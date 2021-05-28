@@ -345,7 +345,7 @@ pub mod pallet {
 		///   deactivate
 		/// * signature: the signature over the operation that must be signed
 		///   with the authentication key associated with the DID being deleted
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::submit_did_deletion_operation())]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::submit_did_delete_operation())]
 		pub fn submit_did_delete_operation(
 			origin: OriginFor<T>,
 			operation: DidDeletionOperation<T>,

@@ -294,6 +294,11 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			None
 		}
 	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn get_call_for_verification_key_relationship(_: did::DidVerificationKeyRelationship) -> Self {
+		Call::System(frame_system::Call::remark(vec![]))
+	}
 }
 
 pub fn generate_test_did_call(

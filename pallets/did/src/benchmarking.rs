@@ -131,11 +131,22 @@ fn generate_base_did_deletion_operation<T: Config>(did: DidIdentifierOf<T>) -> D
 	DidDeletionOperation { did, tx_counter: 1u64 }
 }
 
+// Must always be dispatched with the DID authentication key
+fn generate_base_did_call_operation<T: Config>(did: DidIdentifierOf<T>) -> DidAuthorizedCallOperation<T> {
+	let test_call = <T as Config>::Call::get_call_for_did_call_benchmark();
+
+	DidAuthorizedCallOperation {
+		did,
+		call: test_call,
+		tx_counter: 1u64,
+	}
+}
+
 benchmarks! {
+
 	submit_did_create_operation_ed25519_keys {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
-		// Doesn't allow me to reference the const declared above
-		let u in 9 .. T::MaxUrlLength::get();
+		let u in (DEFAULT_URL_SCHEME.len() as u32) .. T::MaxUrlLength::get();
 
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
@@ -184,8 +195,7 @@ benchmarks! {
 
 	submit_did_create_operation_sr25519_keys {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
-		// Doesn't allow me to reference the const declared above
-		let u in 9 .. T::MaxUrlLength::get();
+		let u in (DEFAULT_URL_SCHEME.len() as u32) .. T::MaxUrlLength::get();
 
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
@@ -235,8 +245,7 @@ benchmarks! {
 	submit_did_update_operation_ed25519_keys {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
 		let m in 1 .. T::MaxVerificationKeysToRevoke::get();
-		// Doesn't allow me to reference the const declared above
-		let u in 9 .. T::MaxUrlLength::get();
+		let u in (DEFAULT_URL_SCHEME.len() as u32) .. T::MaxUrlLength::get();
 
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
@@ -298,8 +307,7 @@ benchmarks! {
 	submit_did_update_operation_sr25519_keys {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
 		let m in 1 .. T::MaxVerificationKeysToRevoke::get();
-		// Doesn't allow me to reference the const declared above
-		let u in 9 .. T::MaxUrlLength::get();
+		let u in (DEFAULT_URL_SCHEME.len() as u32) .. T::MaxUrlLength::get();
 
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
@@ -358,7 +366,7 @@ benchmarks! {
 		assert_eq!(stored_did.last_tx_counter, did_update_op.tx_counter);
 	}
 
-	submit_did_deletion_operation {
+	submit_did_delete_operation {
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
 		let did_subject = DidIdentifierOf::<T>::default();
@@ -370,13 +378,41 @@ benchmarks! {
 		let did_deletion_op = generate_base_did_deletion_operation::<T>(did_subject.clone());
 
 		let did_deletion_signature = ed25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_deletion_op.encode().as_ref()).expect("Failed to create DID signature from raw ed25519 signature.");
-	}: submit_did_delete_operation(RawOrigin::Signed(submitter), did_deletion_op.clone(), DidSignature::from(did_deletion_signature))
+	}: _(RawOrigin::Signed(submitter), did_deletion_op.clone(), DidSignature::from(did_deletion_signature))
 	verify {
 		assert_eq!(
 			Did::<T>::get(&did_subject),
 			None
 		);
 	}
+
+	submit_did_call_ed25519_key {
+		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
+
+		let did_subject = DidIdentifierOf::<T>::default();
+		let did_public_auth_key = get_ed25519_public_authentication_key();
+
+		let did_details = get_did_base_details(DidVerificationKey::from(did_public_auth_key));
+		Did::<T>::insert(&did_subject, did_details);
+
+		let did_call_op = generate_base_did_call_operation::<T>(did_subject.clone());
+
+		let did_call_signature = ed25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_call_op.encode().as_ref()).expect("Failed to create DID signature from raw ed25519 signature.");
+	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op.clone()), DidSignature::from(did_call_signature))
+
+	submit_did_call_sr25519_key {
+		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
+
+		let did_subject = DidIdentifierOf::<T>::default();
+		let did_public_auth_key = get_sr25519_public_authentication_key();
+
+		let did_details = get_did_base_details(DidVerificationKey::from(did_public_auth_key));
+		Did::<T>::insert(&did_subject, did_details);
+
+		let did_call_op = generate_base_did_call_operation::<T>(did_subject.clone());
+
+		let did_call_signature = sr25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_call_op.encode().as_ref()).expect("Failed to create DID signature from raw sr25519 signature.");
+	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op.clone()), DidSignature::from(did_call_signature))
 }
 
 impl_benchmark_test_suite! {

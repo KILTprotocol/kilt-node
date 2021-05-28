@@ -793,8 +793,16 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			Call::Attestation(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
 			Call::Ctype(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
 			Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
+			#[cfg(feature = "runtime-benchmarks")]
+			// Return always the authentication key.
+			Call::System(_) => Some(did::DidVerificationKeyRelationship::Authentication)
 			_ => None,
 		}
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn get_call_for_did_call_benchmark() -> Self {
+		Call::System(frame_system::all::remark(vec![]))C
 	}
 }
 
