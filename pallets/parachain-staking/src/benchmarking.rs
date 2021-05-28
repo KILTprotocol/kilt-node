@@ -37,16 +37,15 @@ const DELEGATOR_ACCOUNT_SEED: u32 = 1;
 /// Fills the candidate pool up to `num_candidates`.
 fn setup_collator_candidates<T: Config>(num_candidates: u32) -> Vec<T::AccountId> {
 	let current_collator_count = CandidatePool::<T>::get().len() as u32;
-	log::info!("bla {}", current_collator_count);
 	let collators: Vec<T::AccountId> = (current_collator_count..num_candidates)
 		.map(|i| account("collator", i as u32, COLLATOR_ACCOUNT_SEED))
 		.collect();
 
-	log::info!(
-		"add {} collators to {} collators",
-		collators.len(),
-		CandidatePool::<T>::get().len()
-	);
+	// log::info!(
+	// 	"add {} collators to {} collators",
+	// 	collators.len(),
+	// 	CandidatePool::<T>::get().len()
+	// );
 
 	for acc in collators.iter() {
 		T::Currency::make_free_balance_be(&acc, T::MinCollatorCandidateStk::get());
@@ -71,7 +70,7 @@ fn fill_delegators<T: Config>(num_delegators: u32, collator: T::AccountId, colla
 		.map(|i| account("delegator", i as u32, DELEGATOR_ACCOUNT_SEED * 1000 + collator_seed))
 		.collect();
 
-	log::info!("setup {} delegators", delegators.len());
+	// log::info!("setup {} delegators", delegators.len());
 
 	for acc in delegators.iter() {
 		T::Currency::make_free_balance_be(&acc, T::MinDelegatorStk::get());
@@ -139,6 +138,7 @@ benchmarks! {
 	verify {
 		assert_eq!(<MaxSelectedCandidates<T>>::get(), n);
 		assert_eq!(<SelectedCandidates<T>>::get().len() as u32, n);
+		assert_eq!(<SelectedCandidates<T>>::get().len(), old_num_selected + ((n - T::MinSelectedCandidates::get()) as usize));
 	}
 
 	set_blocks_per_round {
