@@ -2129,8 +2129,6 @@ pub mod pallet {
 			);
 
 			frame_system::Pallet::<T>::register_extra_weight_unchecked(
-				/* TODO: T::WeightInfo::new_session(candidates_len_before as u32,
-				 * removed as u32), */
 				T::DbWeight::get().reads(1),
 				DispatchClass::Mandatory,
 			);
