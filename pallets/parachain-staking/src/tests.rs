@@ -2601,7 +2601,7 @@ fn withdraw_unstaked() {
 
 			roll_to(4, vec![]);
 			unstaking.remove(&4);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Balances::locks(2), vec![lock]);
 			// shouldn't be able to unlock anything
 			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
@@ -2659,7 +2659,7 @@ fn withdraw_unstaked() {
 			// withdraw, remove lock, empty unlocking
 			roll_to(4, vec![]);
 			unstaking.remove(&4);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Balances::locks(2), vec![lock]);
 			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(2), vec![]);
@@ -2718,7 +2718,7 @@ fn withdraw_unstaked() {
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 
 			roll_to(4, vec![]);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Balances::locks(2), vec![lock]);
 			// should be able to unlock 10 of remaining 10
 			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
 			unstaking.remove(&4);
@@ -2861,6 +2861,6 @@ fn withdraw_unstaked() {
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(1), vec![lock.clone()]);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Balances::locks(2), vec![lock]);
 		});
 }

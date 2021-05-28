@@ -444,11 +444,15 @@ fn check_successful_keys_deletion_update() {
 	assert_eq!(new_did_details.get_attestation_key_id(), &None);
 	assert_eq!(new_did_details.get_delegation_key_id(), &None);
 
-	// Public keys should now contain only the authentication key
+	// Public keys should now contain only the authentication key and the revoked
+	// attestation key
 	let stored_public_keys = new_did_details.get_public_keys();
-	assert_eq!(stored_public_keys.len(), 1);
+	assert_eq!(stored_public_keys.len(), 2);
 	assert!(stored_public_keys.contains_key(&generate_key_id(
 		&did::DidVerificationKey::from(auth_key.public()).into()
+	)));
+	assert!(stored_public_keys.contains_key(&generate_key_id(
+		&did::DidVerificationKey::from(att_key.public()).into()
 	)));
 	assert_eq!(new_did_details.last_tx_counter, old_did_details.last_tx_counter + 1u64);
 }
