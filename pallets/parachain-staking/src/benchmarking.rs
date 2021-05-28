@@ -166,7 +166,7 @@ benchmarks! {
 		assert!(candidates.binary_search_by(|other| other.owner.cmp(&new_candidate)).is_ok())
 	}
 
-	leave_candidates {
+	init_leave_candidates {
 		let n in 1 .. T::MaxCollatorCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
@@ -183,7 +183,7 @@ benchmarks! {
 		let candidates = CandidatePool::<T>::get();
 		assert!(candidates.binary_search_by(|other| other.owner.cmp(&old_candidate)).is_err());
 		let unlocking_at = now.saturating_add(T::ExitQueueDelay::get());
-		assert_eq!(<ExitQueue<T>>::get().into_vec(), vec![Stake { owner: old_candidate, amount: unlocking_at }]);
+		assert!(<CollatorState<T>>::get(old_candidate).unwrap().can_exit(unlocking_at));
 	}
 
 	candidate_stake_more {

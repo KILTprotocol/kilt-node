@@ -53,7 +53,7 @@ pub trait WeightInfo {
 	fn set_max_selected_candidates(n: u32, m: u32) -> Weight;
 	fn set_blocks_per_round() -> Weight;
 	fn join_candidates(n: u32, m: u32) -> Weight;
-	fn leave_candidates(n: u32, m: u32) -> Weight;
+	fn init_leave_candidates(n: u32, m: u32) -> Weight;
 	fn candidate_stake_more(n: u32, m: u32, u: u32) -> Weight;
 	fn candidate_stake_less(n: u32, m: u32) -> Weight;
 	fn join_delegators(n: u32, m: u32) -> Weight;
@@ -96,7 +96,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(16_u64))
 			.saturating_add(T::DbWeight::get().writes(16_u64))
 	}
-	fn leave_candidates(n: u32, m: u32) -> Weight {
+	fn init_leave_candidates(n: u32, m: u32) -> Weight {
 		(0_u64)
 			// Standard Error: 169_000
 			.saturating_add((12_005_000_u64).saturating_mul(n as Weight))
@@ -211,7 +211,7 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(16_u64))
 			.saturating_add(RocksDbWeight::get().writes(16_u64))
 	}
-	fn leave_candidates(n: u32, m: u32) -> Weight {
+	fn init_leave_candidates(n: u32, m: u32) -> Weight {
 		(0_u64)
 			// Standard Error: 169_000
 			.saturating_add((12_005_000_u64).saturating_mul(n as Weight))

@@ -309,29 +309,32 @@ fn collator_exit_executes_after_delay() {
 			assert_eq!(StakePallet::selected_candidates(), vec![1, 2]);
 			roll_to(4, vec![]);
 			assert_noop!(
-				StakePallet::leave_candidates(Origin::signed(3)),
+				StakePallet::init_leave_candidates(Origin::signed(3)),
 				Error::<Test>::CandidateNotFound
 			);
 
 			roll_to(11, vec![]);
-			assert_ok!(StakePallet::leave_candidates(Origin::signed(2)));
+			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(2)));
 			assert_eq!(StakePallet::selected_candidates(), vec![1]);
 			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(2, 2, 4)));
 			let info = StakePallet::collator_state(&2).unwrap();
 			assert_eq!(info.state, CollatorStatus::Leaving(4));
 
 			roll_to(21, vec![]);
+			assert_ok!(StakePallet::execute_leave_candidates(Origin::signed(2)));
 			// we must exclude leaving collators from rewards while
 			// holding them retroactively accountable for previous faults
 			// (within the last T::StakeDuration rounds)
+			roll_to(25, vec![]);
 			let expected = vec![
 				Event::NewRound(5, 1, 700, 400),
 				Event::NewRound(10, 2, 700, 400),
 				Event::CollatorChosen(1, 500, 200),
 				Event::CollatorScheduledExit(2, 2, 4),
 				Event::NewRound(15, 3, 700, 400),
+				Event::NewRound(20, 4, 700, 400),
 				Event::CollatorLeft(2, 400, 500, 200),
-				Event::NewRound(20, 4, 500, 200),
+				Event::NewRound(25, 5, 500, 200),
 			];
 			assert_eq!(events(), expected);
 		});
@@ -359,9 +362,13 @@ fn collator_selection_chooses_top_candidates() {
 			assert_eq!(StakePallet::selected_candidates(), vec![1, 2, 3, 4, 5]);
 			let expected = vec![Event::NewRound(5, 1, 450, 0)];
 			assert_eq!(events(), expected);
-			assert_ok!(StakePallet::leave_candidates(Origin::signed(6)));
+			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(6)));
 			assert_eq!(StakePallet::selected_candidates(), vec![1, 2, 3, 4, 5]);
 			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(1, 6, 3)));
+
+			roll_to(15, vec![]);
+			assert_ok!(StakePallet::execute_leave_candidates(Origin::signed(6)));
+
 			roll_to(21, vec![]);
 			assert_ok!(StakePallet::join_candidates(Origin::signed(6), 69u128));
 			assert_eq!(StakePallet::selected_candidates(), vec![1, 2, 3, 4, 6]);
@@ -369,6 +376,7 @@ fn collator_selection_chooses_top_candidates() {
 				last_event(),
 				MetaEvent::stake(Event::JoinedCollatorCandidates(6, 69u128, 469u128))
 			);
+
 			roll_to(27, vec![]);
 			// should choose top MaxSelectedCandidates (5), in order
 			let expected = vec![
@@ -381,8 +389,8 @@ fn collator_selection_chooses_top_candidates() {
 				Event::CollatorScheduledExit(1, 6, 3),
 				// TotalStake is updated once candidate 6 left in `execute_delayed_collator_exits`
 				Event::NewRound(10, 2, 450, 0),
+				Event::NewRound(15, 3, 450, 0),
 				Event::CollatorLeft(6, 50, 400, 0),
-				Event::NewRound(15, 3, 400, 0),
 				Event::NewRound(20, 4, 400, 0),
 				Event::CollatorChosen(1, 100, 0),
 				Event::CollatorChosen(2, 90, 0),
@@ -419,25 +427,30 @@ fn exit_queue_with_events() {
 			assert_eq!(StakePallet::selected_candidates(), vec![1, 2, 3, 4, 5]);
 			let mut expected = vec![Event::NewRound(5, 1, 450, 0)];
 			assert_eq!(events(), expected);
-			assert_ok!(StakePallet::leave_candidates(Origin::signed(6)));
+			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(6)));
 			assert_eq!(StakePallet::selected_candidates(), vec![1, 2, 3, 4, 5]);
 			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(1, 6, 3)));
 
 			roll_to(11, vec![]);
-			assert_ok!(StakePallet::leave_candidates(Origin::signed(5)));
+			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(5)));
 			assert_eq!(StakePallet::selected_candidates(), vec![1, 2, 3, 4]);
 			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(2, 5, 4)));
 
 			roll_to(16, vec![]);
-			assert_ok!(StakePallet::leave_candidates(Origin::signed(4)));
+			assert_ok!(StakePallet::execute_leave_candidates(Origin::signed(6)));
+			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(4)));
 			assert_eq!(StakePallet::selected_candidates(), vec![1, 2, 3]);
 			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(3, 4, 5)));
 			assert_noop!(
-				StakePallet::leave_candidates(Origin::signed(4)),
+				StakePallet::init_leave_candidates(Origin::signed(4)),
 				Error::<Test>::AlreadyLeaving
 			);
+			roll_to(20, vec![]);
+			assert_ok!(StakePallet::execute_leave_candidates(Origin::signed(5)));
 
 			roll_to(26, vec![]);
+			assert_ok!(StakePallet::execute_leave_candidates(Origin::signed(4)));
+			roll_to(30, vec![]);
 			let mut new_events = vec![
 				Event::CollatorChosen(1, 100, 0),
 				Event::CollatorChosen(2, 90, 0),
@@ -451,16 +464,17 @@ fn exit_queue_with_events() {
 				Event::CollatorChosen(3, 80, 0),
 				Event::CollatorChosen(4, 70, 0),
 				Event::CollatorScheduledExit(2, 5, 4),
+				Event::NewRound(15, 3, 450, 0),
 				Event::CollatorLeft(6, 50, 400, 0),
-				Event::NewRound(15, 3, 400, 0),
 				Event::CollatorChosen(1, 100, 0),
 				Event::CollatorChosen(2, 90, 0),
 				Event::CollatorChosen(3, 80, 0),
 				Event::CollatorScheduledExit(3, 4, 5),
+				Event::NewRound(20, 4, 400, 0),
 				Event::CollatorLeft(5, 60, 340, 0),
-				Event::NewRound(20, 4, 340, 0),
+				Event::NewRound(25, 5, 340, 0),
 				Event::CollatorLeft(4, 70, 270, 0),
-				Event::NewRound(25, 5, 270, 0),
+				Event::NewRound(30, 6, 270, 0),
 			];
 			expected.append(&mut new_events);
 			assert_eq!(events(), expected);
@@ -468,7 +482,7 @@ fn exit_queue_with_events() {
 }
 
 #[test]
-fn exit_queue_exceeds_exit_limit() {
+fn execute_leave_candidates_with_delay() {
 	ExtBuilder::default()
 		.with_balances(vec![
 			(1, 1000),
@@ -513,42 +527,21 @@ fn exit_queue_exceeds_exit_limit() {
 				}
 			);
 			assert_eq!(StakePallet::selected_candidates(), vec![1, 2, 8, 9, 10]);
-			assert_ok!(StakePallet::leave_candidates(Origin::signed(10)));
-			assert_ok!(StakePallet::leave_candidates(Origin::signed(9)));
-			assert_ok!(StakePallet::leave_candidates(Origin::signed(1)));
-			assert_ok!(StakePallet::leave_candidates(Origin::signed(7)));
-			assert_ok!(StakePallet::leave_candidates(Origin::signed(6)));
-			assert_ok!(StakePallet::leave_candidates(Origin::signed(5)));
-			assert_ok!(StakePallet::leave_candidates(Origin::signed(8)));
-			assert_ok!(StakePallet::leave_candidates(Origin::signed(2)));
+			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(10)));
+			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(9)));
+			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(1)));
+			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(7)));
+			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(6)));
+			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(5)));
+			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(8)));
+			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(2)));
 			assert_eq!(StakePallet::selected_candidates(), vec![3, 4]);
-			assert_eq!(
-				StakePallet::exit_queue(),
-				OrderedSet::from(vec![
-					Stake { owner: 1, amount: 3 },
-					Stake { owner: 2, amount: 3 },
-					Stake { owner: 5, amount: 3 },
-					Stake { owner: 6, amount: 3 },
-					Stake { owner: 7, amount: 3 },
-					Stake { owner: 8, amount: 3 },
-					Stake { owner: 9, amount: 3 },
-					Stake { owner: 10, amount: 3 },
-				])
-			);
+			for owner in vec![1, 2, 5, 6, 7, 8, 9, 10].iter() {
+				assert!(StakePallet::collator_state(owner)
+					.unwrap()
+					.can_exit(1 + <Test as Config>::ExitQueueDelay::get()));
+			}
 			assert_eq!(StakePallet::total(), old_stake);
-			assert_eq!(
-				StakePallet::exit_queue(),
-				OrderedSet::from(vec![
-					Stake { owner: 1, amount: 3 },
-					Stake { owner: 2, amount: 3 },
-					Stake { owner: 5, amount: 3 },
-					Stake { owner: 6, amount: 3 },
-					Stake { owner: 7, amount: 3 },
-					Stake { owner: 8, amount: 3 },
-					Stake { owner: 9, amount: 3 },
-					Stake { owner: 10, amount: 3 },
-				])
-			);
 			assert_eq!(StakePallet::total(), old_stake);
 			assert_eq!(
 				StakePallet::collator_state(1),
@@ -623,23 +616,19 @@ fn exit_queue_exceeds_exit_limit() {
 				assert!(StakePallet::unstaking(delegator).is_empty());
 			}
 
-			// exits are not executed yet but in the next round
+			// exits cannot be executed yet but in the next round
 			roll_to(10, vec![]);
 			assert_eq!(StakePallet::total(), old_stake);
 			assert_eq!(StakePallet::selected_candidates(), vec![3, 4]);
-			assert_eq!(
-				StakePallet::exit_queue(),
-				OrderedSet::from(vec![
-					Stake { owner: 1, amount: 3 },
-					Stake { owner: 2, amount: 3 },
-					Stake { owner: 5, amount: 3 },
-					Stake { owner: 6, amount: 3 },
-					Stake { owner: 7, amount: 3 },
-					Stake { owner: 8, amount: 3 },
-					Stake { owner: 9, amount: 3 },
-					Stake { owner: 10, amount: 3 },
-				])
-			);
+			for owner in vec![1, 2, 5, 6, 7, 8, 9, 10].iter() {
+				assert!(StakePallet::collator_state(owner)
+					.unwrap()
+					.can_exit(1 + <Test as Config>::ExitQueueDelay::get()));
+				assert_noop!(
+					StakePallet::execute_leave_candidates(Origin::signed(owner.clone())),
+					Error::<Test>::CannotLeaveYet
+				);
+			}
 			assert_eq!(StakePallet::total(), old_stake);
 			assert_eq!(
 				StakePallet::collator_state(1),
@@ -714,22 +703,17 @@ fn exit_queue_exceeds_exit_limit() {
 				assert!(StakePallet::unstaking(delegator).is_empty());
 			}
 
-			// first five exits are executed
+			// execute first five exits are executed
 			roll_to(15, vec![]);
-			assert!(StakePallet::total() != old_stake);
+			assert_eq!(StakePallet::total(), old_stake);
 			assert_eq!(StakePallet::selected_candidates(), vec![3, 4]);
-			assert_eq!(
-				StakePallet::exit_queue(),
-				OrderedSet::from(vec![
-					Stake { owner: 8, amount: 3 },
-					Stake { owner: 9, amount: 3 },
-					Stake { owner: 10, amount: 3 },
-				])
-			);
 			for collator in vec![1u64, 2u64, 5u64, 6u64, 7u64].iter() {
+				assert_ok!(StakePallet::execute_leave_candidates(Origin::signed(collator.clone())));
+				assert!(StakePallet::collator_state(&collator).is_none());
 				assert!(!StakePallet::is_candidate(&collator));
 				assert_eq!(StakePallet::unstaking(collator).len(), 1);
 			}
+			assert!(StakePallet::total() != old_stake);
 			for delegator in 11u64..=14u64 {
 				assert!(!StakePallet::is_delegator(&delegator));
 				assert_eq!(StakePallet::unstaking(delegator).len(), 1);
@@ -737,8 +721,9 @@ fn exit_queue_exceeds_exit_limit() {
 
 			// last 3 exits are executed
 			roll_to(20, vec![]);
-			assert_eq!(StakePallet::exit_queue(), OrderedSet::from(vec![]));
 			for collator in 8u64..=10u64 {
+				assert_ok!(StakePallet::execute_leave_candidates(Origin::signed(collator.clone())));
+				assert!(StakePallet::collator_state(&collator).is_none());
 				assert!(!StakePallet::is_candidate(&collator));
 				assert_eq!(StakePallet::unstaking(collator).len(), 1);
 			}
@@ -1123,7 +1108,7 @@ fn multiple_delegations() {
 			];
 			expected.append(&mut new2);
 			assert_eq!(events(), expected);
-			assert_ok!(StakePallet::leave_candidates(Origin::signed(2)));
+			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(2)));
 			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(5, 2, 7)));
 
 			roll_to(31, vec![]);
@@ -1159,15 +1144,17 @@ fn multiple_delegations() {
 			assert_eq!(Balances::usable_balance(&7), 10);
 			assert_eq!(Balances::free_balance(&6), 100);
 			assert_eq!(Balances::free_balance(&7), 100);
-			// TODO: Enable after removing execute_delayed_collator_exits
-			// let mut unbonding_6 = BTreeMap::new();
-			// unbonding_6.insert(31 + <Test as Config>::StakeDuration::get(), 10);
-			// assert_eq!(StakePallet::unstaking(6), unbonding_6);
-			// let mut unbonding_7 = BTreeMap::new();
-			// unbonding_7.insert(31 + <Test as Config>::StakeDuration::get(), 80);
-			// assert_eq!(StakePallet::unstaking(6), unbonding_7);
-			// TODO: Switch back to n == 40 after removing execute_delayed_collator_exits
-			roll_to(50, vec![]);
+
+			roll_to(35, vec![]);
+			assert_ok!(StakePallet::execute_leave_candidates(Origin::signed(2)));
+			let mut unbonding_6 = BTreeMap::new();
+			unbonding_6.insert(35u64 + <Test as Config>::StakeDuration::get() as u64, 10);
+			assert_eq!(StakePallet::unstaking(6), unbonding_6);
+			let mut unbonding_7 = BTreeMap::new();
+			unbonding_7.insert(35u64 + <Test as Config>::StakeDuration::get() as u64, 80);
+			assert_eq!(StakePallet::unstaking(7), unbonding_7);
+
+			roll_to(37, vec![]);
 			assert_eq!(StakePallet::delegator_state(6).unwrap().total, 30);
 			assert_eq!(StakePallet::delegator_state(7).unwrap().total, 10);
 			assert_eq!(StakePallet::delegator_state(6).unwrap().delegations.len(), 3usize);
@@ -1289,9 +1276,12 @@ fn should_update_total_stake() {
 			// shouldn't immediately affect total stake because we have to wait
 			// `StakeDuration` rounds
 			let old_stake = StakePallet::total();
-			assert_ok!(StakePallet::leave_candidates(Origin::signed(2)));
+			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(2)));
 			assert_eq!(StakePallet::total(), old_stake);
+
 			roll_to(10, vec![]);
+			assert_eq!(StakePallet::total(), old_stake);
+			assert_ok!(StakePallet::execute_leave_candidates(Origin::signed(2)));
 			assert_eq!(
 				StakePallet::total(),
 				TotalStake {
@@ -1341,7 +1331,11 @@ fn collators_bond() {
 				StakePallet::candidate_stake_more(Origin::signed(1), 40),
 				BalancesError::<Test>::InsufficientBalance
 			);
-			assert_ok!(StakePallet::leave_candidates(Origin::signed(1)));
+			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(1)));
+			assert!(StakePallet::collator_state(1)
+				.unwrap()
+				.can_exit(<Test as Config>::ExitQueueDelay::get()));
+
 			assert_noop!(
 				StakePallet::candidate_stake_more(Origin::signed(1), 30),
 				Error::<Test>::CannotActivateIfLeaving
@@ -1350,7 +1344,9 @@ fn collators_bond() {
 				StakePallet::candidate_stake_less(Origin::signed(1), 10),
 				Error::<Test>::CannotActivateIfLeaving
 			);
+
 			roll_to(30, vec![]);
+			assert_ok!(StakePallet::execute_leave_candidates(Origin::signed(1)));
 			assert_noop!(
 				StakePallet::candidate_stake_more(Origin::signed(1), 40),
 				Error::<Test>::CandidateNotFound
@@ -1458,10 +1454,17 @@ fn delegators_bond() {
 				StakePallet::join_delegators(Origin::signed(10), 1, 4),
 				Error::<Test>::NomStakeBelowMin
 			);
+
 			roll_to(9, vec![]);
 			assert_eq!(Balances::usable_balance(&6), 80);
-			assert_ok!(StakePallet::leave_candidates(Origin::signed(1)));
+			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(1)));
+			assert!(StakePallet::collator_state(1)
+				.unwrap()
+				.can_exit(1 + <Test as Config>::ExitQueueDelay::get()));
+
 			roll_to(31, vec![]);
+			assert!(StakePallet::is_delegator(&6));
+			assert_ok!(StakePallet::execute_leave_candidates(Origin::signed(1)));
 			assert!(!StakePallet::is_delegator(&6));
 			assert_eq!(Balances::usable_balance(&6), 80);
 			assert_eq!(Balances::free_balance(&6), 100);

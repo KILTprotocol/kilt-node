@@ -138,6 +138,14 @@ where
 		matches!(self.state, CollatorStatus::Leaving(_))
 	}
 
+	pub fn can_exit(&self, when: u32) -> bool {
+		matches!(self.state, CollatorStatus::Leaving(at) if at <= when )
+	}
+
+	pub fn revert_leaving(&mut self) {
+		self.state = CollatorStatus::Active;
+	}
+
 	pub fn stake_more(&mut self, more: B) {
 		self.stake = self.stake.saturating_add(more);
 		self.total = self.total.saturating_add(more);
