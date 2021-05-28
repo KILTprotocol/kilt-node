@@ -894,7 +894,7 @@ pub mod pallet {
 			ensure!(state.can_exit(<Round<T>>::get().current), Error::<T>::CannotLeaveYet);
 
 			// iterate over delegators
-			let num_delegators = state.delegators.len() as u32;
+			let _num_delegators = state.delegators.len() as u32;
 			for stake in state.delegators.into_iter() {
 				// prepare unstaking of delegator
 				Self::prep_unstake_exit_queue(&stake.owner, stake.amount);
