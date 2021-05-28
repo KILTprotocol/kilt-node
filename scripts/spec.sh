@@ -1,5 +1,6 @@
 #!/bin/bash
 set -x
+set -e
 
 TMP_DIR="/tmp/parachain/$USER/"
 
@@ -45,6 +46,21 @@ jq -f scripts/peregrine-kilt.jq $PEREGRINE_PLAIN > $PEREGRINE_JQ
 
 docker run -v $(dirname $RELAY_PEREGRINE):/data/spec $RELAY_CHAIN_IMG build-spec --chain /data/spec/$(basename -- "$RELAY_PEREGRINE") --raw --disable-default-bootnode > $RELAY_PEREGRINE_OUT
 $TMP_DIR/kilt-parachain build-spec --runtime spiritnet --chain $PEREGRINE_JQ --disable-default-bootnode --raw > $PEREGRINE_OUTPUT
+
+# ##############################################################################
+# #                                                                            #
+# #                         PEREGRINE Mashnet Fast-Gov                         #
+# #                                                                            #
+# ##############################################################################
+PEREGRINE_FG_PLAIN=$TMP_DIR"peregrine-kilt-fast-gov.plain.spec"
+PEREGRINE_FG_JQ=$TMP_DIR"peregrine-kilt-fast-gov.json"
+PEREGRINE_FG_OUTPUT=dev-specs/kilt-parachain/peregrine-kilt-fast-gov.json
+
+$TMP_DIR/kilt-parachain-fast-gov build-spec --runtime mashnet --chain dev --disable-default-bootnode > $PEREGRINE_FG_PLAIN
+
+jq -f scripts/peregrine-kilt.jq $PEREGRINE_FG_PLAIN > $PEREGRINE_FG_JQ
+
+$TMP_DIR/kilt-parachain-fast-gov build-spec --runtime mashnet --chain $PEREGRINE_FG_JQ --disable-default-bootnode --raw > $PEREGRINE_FG_OUTPUT
 
 # ##############################################################################
 # #                                                                            #
