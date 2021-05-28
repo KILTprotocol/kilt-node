@@ -312,10 +312,16 @@ impl ctype::Config for Runtime {
 	type WeightInfo = ();
 }
 
+parameter_types! {
+	pub const MaxRevocations: u32 = 100;
+}
+
 impl delegation::Config for Runtime {
-	type DelegationNodeId = Hash;
 	type Event = Event;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
+
+	type DelegationNodeId = Hash;
+	type MaxRevocations = MaxRevocations;
 }
 
 impl did::Config for Runtime {

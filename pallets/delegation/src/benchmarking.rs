@@ -29,7 +29,6 @@ use sp_core::{offchain::KeyTypeId, sr25519};
 use sp_io::crypto::sr25519_generate;
 use sp_std::num::NonZeroU32;
 
-const MAX_REVOCATIONS: u32 = 5;
 const ONE_CHILD_PER_LEVEL: Option<NonZeroU32> = NonZeroU32::new(1);
 const DID_KEY_IDENTIFIER: [u8; 4] = *b"did ";
 const SEED: u32 = 0;
@@ -254,7 +253,7 @@ benchmarks! {
 	}
 
 	revoke_root {
-		let r in 1 .. MAX_REVOCATIONS;
+		let r in 1 .. T::MaxRevocations::get();
 		let (root_pub, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
 		let root_acc: T::AccountId = root_pub.into();
 		let root_did: T::DidIdentifier = root_acc.clone().into();
@@ -319,7 +318,7 @@ benchmarks! {
 	// because all of its children have to be revoked
 	// complexitiy: O(h * c) with h = height of the delegation tree, c = max number of children in a level
 	revoke_delegation_root_child {
-		let r in 1 .. MAX_REVOCATIONS;
+		let r in 1 .. T::MaxRevocations::get();
 		let (_, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
 		let children: Vec<T::DelegationNodeId> = Children::<T>::get(root_id).ok_or("Children should be defined")?;
 		let child_id: T::DelegationNodeId = *children.get(0).ok_or("Root should have children")?;
@@ -347,7 +346,7 @@ benchmarks! {
 	// because `is_delegating` has to traverse up to the root
 	// complexitiy: O(h) with h = height of the delegation tree
 	revoke_delegation_leaf {
-		let r in 1 .. MAX_REVOCATIONS;
+		let r in 1 .. T::MaxRevocations::get();
 		let (root_acc, _, _, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
 
 		let origin = pub_to_origin::<T>(root_acc);

@@ -102,10 +102,16 @@ impl ctype::Config for Test {
 	type WeightInfo = ();
 }
 
+parameter_types! {
+	pub const MaxRevocations: u32 = 50;
+}
+
 impl Config for Test {
-	type DelegationNodeId = TestDelegationNodeId;
 	type EnsureOrigin = EnsureSigned<TestDelegatorId>;
 	type Event = ();
+
+	type DelegationNodeId = TestDelegationNodeId;
+	type MaxRevocations = MaxRevocations;
 }
 
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {

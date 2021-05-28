@@ -60,9 +60,11 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config + did::Config {
-		type DelegationNodeId: Parameter + Copy + AsRef<[u8]>;
 		type EnsureOrigin: EnsureOrigin<Success = DelegatorIdOf<Self>, <Self as frame_system::Config>::Origin>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+
+		type DelegationNodeId: Parameter + Copy + AsRef<[u8]>;
+		type MaxRevocations: Get<u32>;
 	}
 
 	#[pallet::pallet]
