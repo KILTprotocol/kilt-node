@@ -721,6 +721,25 @@ pub mod pallet {
 			// Otherwise, this will always be the source's locked amount
 			let max_add_amount = source_amount.min(max_amount.unwrap_or(source_amount));
 
+			// We don't need to transfer any locks if the lock already expired. So we bail
+			// early
+			if unlock_block <= frame_system::Pallet::<T>::block_number() {
+				// But we still need to reduce the old lock or remove it, if it's consumed
+				// completely.
+				if max_add_amount == source_amount {
+					<BalanceLocks<T>>::remove(&source);
+				} else {
+					<BalanceLocks<T>>::insert(
+						&source,
+						LockedBalance::<T> {
+							block: unlock_block,
+							amount: source_amount.saturating_sub(max_add_amount),
+						},
+					)
+				}
+				return Ok(T::DbWeight::get().reads(1));
+			}
+
 			// Check for an already existing KILT balance lock on the target
 			// account which would be the case if the claimer requests migration from
 			// multiple source accounts to the same target

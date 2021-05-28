@@ -1,0 +1,50 @@
+[package]
+authors = ["KILT <info@kilt.io>"]
+description = "Parachain parachain-staking pallet for collator delegation and selection as well as reward distribution"
+edition = "2018"
+name = "parachain-staking"
+version = "1.0.0"
+
+[dependencies]
+kilt-primitives = { path = "../../primitives", default-features = false }
+log = "*"
+parity-scale-codec = { version = "2.0.0", default-features = false, features = ["derive"] }
+
+frame-support = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3", default-features = false }
+frame-system = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3", default-features = false }
+pallet-authorship = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3", default-features = false }
+pallet-balances = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3", default-features = false }
+pallet-session = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3", default-features = false }
+serde = { version = "1.0.101", optional = true }
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3", default-features = false }
+sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3", default-features = false }
+sp-staking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3", default-features = false }
+
+# benchmarking
+frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3", default-features = false, optional = true }
+
+[dev-dependencies]
+sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3", default-features = false }
+sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3", default-features = false }
+
+[features]
+default = ["std"]
+runtime-benchmarks = [
+  "frame-benchmarking",
+  "frame-support/runtime-benchmarks",
+  "frame-system/runtime-benchmarks",
+]
+std = [
+  "frame-support/std",
+  "frame-system/std",
+  "log/std",
+  "kilt-primitives/std",
+  "pallet-authorship/std",
+  "pallet-balances/std",
+  "parity-scale-codec/std",
+  "pallet-session/std",
+  "serde",
+  "sp-runtime/std",
+  "sp-staking/std",
+  "sp-std/std",
+]

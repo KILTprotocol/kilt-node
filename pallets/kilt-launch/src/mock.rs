@@ -178,13 +178,16 @@ pub fn ensure_single_migration_works(
 		num_of_locks += 1;
 	}
 	if let Some((lock, _)) = locked_info.clone() {
-		assert_eq!(kilt_launch::BalanceLocks::<Test>::get(dest), Some(lock.clone()));
-		assert_eq!(
-			kilt_launch::UnlockingAt::<Test>::get(lock.block),
-			Some(vec![dest.to_owned()])
-		);
-		locked_balance = locked_balance.max(lock.amount);
-		num_of_locks += 1;
+		// only if the lock is not expired, it should show up here
+		if lock.block > now {
+			assert_eq!(kilt_launch::BalanceLocks::<Test>::get(dest), Some(lock.clone()));
+			assert_eq!(
+				kilt_launch::UnlockingAt::<Test>::get(lock.block),
+				Some(vec![dest.to_owned()])
+			);
+			locked_balance = locked_balance.max(lock.amount);
+			num_of_locks += 1;
+		}
 	}
 
 	// Check correct setting of locks for dest

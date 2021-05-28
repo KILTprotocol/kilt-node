@@ -18,8 +18,8 @@
 
 use crate::{
 	chain_spec,
-	cli::{Cli, RelayChainCli, Subcommand},
-	service::Executor,
+	cli::{Cli, RelayChainCli, Subcommand, DEFAULT_PARA_ID},
+	service::{new_partial, MashRuntimeExecutor, SpiritRuntimeExecutor},
 };
 use codec::Encode;
 use cumulus_client_service::genesis::generate_genesis_block;
@@ -31,22 +31,28 @@ use sc_cli::{
 	ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams, NetworkParams, Result,
 	RuntimeVersion, SharedParams, SubstrateCli,
 };
-use sc_service::{
-	config::{BasePath, PrometheusConfig},
-	PartialComponents,
-};
+use sc_service::config::{BasePath, PrometheusConfig};
 use sp_core::hexdisplay::HexDisplay;
 use sp_runtime::traits::Block as BlockT;
 use std::{io::Write, net::SocketAddr};
 
-fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
+fn load_spec(id: &str, runtime: &str, para_id: ParaId) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
 	match id {
-		"staging" => Ok(Box::new(chain_spec::staging_test_net(para_id)?)),
-		"rococo" => Ok(Box::new(chain_spec::rococo_net()?)),
-		"dev" => Ok(Box::new(chain_spec::get_chain_spec(para_id)?)),
-		"peregrine" => Ok(Box::new(chain_spec::peregrine_test_net(para_id)?)),
-		"" => Ok(Box::new(chain_spec::get_chain_spec(para_id)?)),
-		path => Ok(Box::new(chain_spec::ChainSpec::from_json_file(path.into())?)),
+		"staging" => Ok(Box::new(chain_spec::mashnet::make_staging_spec(para_id)?)),
+		"rococo" => Ok(Box::new(chain_spec::mashnet::load_rococo_spec()?)),
+		"dev" => Ok(Box::new(chain_spec::mashnet::make_dev_spec(para_id)?)),
+		"spiritnet-dev" => Ok(Box::new(chain_spec::spiritnet::get_chain_spec(para_id)?)),
+		"spiritnet" => Ok(Box::new(chain_spec::spiritnet::load_spiritnet_spec()?)),
+		"" => match runtime {
+			"spiritnet" => Ok(Box::new(chain_spec::spiritnet::get_chain_spec(para_id)?)),
+			"mashnet" => Ok(Box::new(chain_spec::mashnet::make_dev_spec(para_id)?)),
+			_ => Err("Unknown runtime".to_owned()),
+		},
+		path => match runtime {
+			"spiritnet" => Ok(Box::new(chain_spec::spiritnet::ChainSpec::from_json_file(path.into())?)),
+			"mashnet" => Ok(Box::new(chain_spec::mashnet::ChainSpec::from_json_file(path.into())?)),
+			_ => Err("Unknown runtime".to_owned()),
+		},
 	}
 }
 
@@ -82,11 +88,22 @@ impl SubstrateCli for Cli {
 	}
 
 	fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
-		load_spec(id, self.run.parachain_id.unwrap_or(100).into())
+		load_spec(
+			id,
+			&self.runtime,
+			self.run
+				.parachain_id
+				.unwrap_or_else(|| DEFAULT_PARA_ID.parse().expect("Default parachain id is a valid u32"))
+				.into(),
+		)
 	}
 
-	fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-		&kilt_parachain_runtime::VERSION
+	fn native_runtime_version(spec: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
+		if spec.id().starts_with("spiritnet") {
+			&spiritnet_runtime::VERSION
+		} else {
+			&kilt_parachain_runtime::VERSION
+		}
 	}
 }
 
@@ -138,55 +155,71 @@ fn extract_genesis_wasm(chain_spec: &Box<dyn sc_service::ChainSpec>) -> Result<V
 		.ok_or_else(|| "Could not find wasm file in genesis state!".into())
 }
 
+macro_rules! construct_async_run {
+	(|$components:ident, $cli:ident, $cmd:ident, $config:ident| $( $code:tt )* ) => {{
+		let runner = $cli.create_runner($cmd)?;
+		match $cli.runtime.as_str() {
+			"spiritnet" => {
+					runner.async_run(|$config| {
+						let $components = new_partial::<spiritnet_runtime::RuntimeApi, SpiritRuntimeExecutor, _>(
+							&$config,
+							crate::service::build_import_queue::<SpiritRuntimeExecutor, spiritnet_runtime::RuntimeApi>,
+						)?;
+						let task_manager = $components.task_manager;
+						{ $( $code )* }.map(|v| (v, task_manager))
+					})
+				},
+			"mashnet" => {
+					runner.async_run(|$config| {
+						let $components = new_partial::<kilt_parachain_runtime::RuntimeApi, MashRuntimeExecutor, _>(
+							&$config,
+							crate::service::build_import_queue::<MashRuntimeExecutor, kilt_parachain_runtime::RuntimeApi>,
+						)?;
+						let task_manager = $components.task_manager;
+						{ $( $code )* }.map(|v| (v, task_manager))
+					})
+				}
+			_ => panic!("unkown runtime"),
+		}
+	}}
+}
+
+/// The runtime argument is not always on the root level of the cli struct. Make
+/// sure that it is.
+fn fix_runtime_arg(cli: &mut Cli) {
+	let sub_command_runtime = match &cli.subcommand {
+		Some(Subcommand::BuildSpec(cmd)) => Some(&cmd.runtime),
+		Some(Subcommand::ExportGenesisState(cmd)) => Some(&cmd.runtime),
+		_ => None,
+	};
+	cli.runtime = sub_command_runtime.unwrap_or(&cli.runtime).clone();
+}
+
 /// Parse command line arguments into service configuration.
 pub fn run() -> Result<()> {
-	let cli = Cli::from_args();
+	let mut cli = Cli::from_args();
+	fix_runtime_arg(&mut cli);
+	let cli = cli;
 
 	match &cli.subcommand {
 		Some(Subcommand::BuildSpec(cmd)) => {
-			let runner = cli.create_runner(cmd)?;
+			let runner = cli.create_runner(&cmd.inner_args)?;
 			runner.sync_run(|config| cmd.run(config.chain_spec, config.network))
 		}
 		Some(Subcommand::CheckBlock(cmd)) => {
-			let runner = cli.create_runner(cmd)?;
-			runner.async_run(|config| {
-				let PartialComponents {
-					client,
-					task_manager,
-					import_queue,
-					..
-				} = crate::service::new_partial(&config)?;
-				Ok((cmd.run(client, import_queue), task_manager))
+			construct_async_run!(|components, cli, cmd, config| {
+				Ok(cmd.run(components.client, components.import_queue))
 			})
 		}
 		Some(Subcommand::ExportBlocks(cmd)) => {
-			let runner = cli.create_runner(cmd)?;
-			runner.async_run(|config| {
-				let PartialComponents {
-					client, task_manager, ..
-				} = crate::service::new_partial(&config)?;
-				Ok((cmd.run(client, config.database), task_manager))
-			})
+			construct_async_run!(|components, cli, cmd, config| Ok(cmd.run(components.client, config.database)))
 		}
 		Some(Subcommand::ExportState(cmd)) => {
-			let runner = cli.create_runner(cmd)?;
-			runner.async_run(|config| {
-				let PartialComponents {
-					client, task_manager, ..
-				} = crate::service::new_partial(&config)?;
-				Ok((cmd.run(client, config.chain_spec), task_manager))
-			})
+			construct_async_run!(|components, cli, cmd, config| Ok(cmd.run(components.client, config.chain_spec)))
 		}
 		Some(Subcommand::ImportBlocks(cmd)) => {
-			let runner = cli.create_runner(cmd)?;
-			runner.async_run(|config| {
-				let PartialComponents {
-					client,
-					task_manager,
-					import_queue,
-					..
-				} = crate::service::new_partial(&config)?;
-				Ok((cmd.run(client, import_queue), task_manager))
+			construct_async_run!(|components, cli, cmd, config| {
+				Ok(cmd.run(components.client, components.import_queue))
 			})
 		}
 		Some(Subcommand::PurgeChain(cmd)) => {
@@ -208,22 +241,16 @@ pub fn run() -> Result<()> {
 			})
 		}
 		Some(Subcommand::Revert(cmd)) => {
-			let runner = cli.create_runner(cmd)?;
-			runner.async_run(|config| {
-				let PartialComponents {
-					client,
-					task_manager,
-					backend,
-					..
-				} = crate::service::new_partial(&config)?;
-				Ok((cmd.run(client, backend), task_manager))
-			})
+			construct_async_run!(|components, cli, cmd, config| Ok(cmd.run(components.client, components.backend)))
 		}
 		Some(Subcommand::Benchmark(cmd)) => {
 			if cfg!(feature = "runtime-benchmarks") {
 				let runner = cli.create_runner(cmd)?;
-
-				runner.sync_run(|config| cmd.run::<Block, Executor>(config))
+				match cli.runtime.as_str() {
+					"mashnet" => runner.sync_run(|config| cmd.run::<Block, MashRuntimeExecutor>(config)),
+					"spiritnet" => runner.sync_run(|config| cmd.run::<Block, SpiritRuntimeExecutor>(config)),
+					_ => Err("Unknown runtime".into()),
+				}
 			} else {
 				Err("Benchmarking wasn't enabled when building the node. \
 				You can enable it with `--features runtime-benchmarks`."
@@ -237,6 +264,7 @@ pub fn run() -> Result<()> {
 
 			let block: Block = generate_genesis_block(&load_spec(
 				&params.chain.clone().unwrap_or_default(),
+				&params.runtime,
 				params.parachain_id.into(),
 			)?)?;
 			let raw_header = block.header().encode();
@@ -275,7 +303,7 @@ pub fn run() -> Result<()> {
 			Ok(())
 		}
 		None => {
-			let runner = cli.create_runner(&*cli.run)?;
+			let runner = cli.create_runner(&cli.run.normalize())?;
 
 			runner.run_node_until_exit(|config| async move {
 				// TODO
@@ -300,17 +328,36 @@ pub fn run() -> Result<()> {
 				let task_executor = config.task_executor.clone();
 				let polkadot_config = SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, task_executor)
 					.map_err(|err| format!("Relay chain argument error: {}", err))?;
-				let collator = cli.run.base.validator || cli.collator;
 
 				info!("Parachain id: {:?}", id);
 				info!("Parachain Account: {}", parachain_account);
 				info!("Parachain genesis state: {}", genesis_state);
-				info!("Is collating: {}", if collator { "yes" } else { "no" });
+				info!(
+					"Is collating: {}",
+					if config.role.is_authority() { "yes" } else { "no" }
+				);
 
-				crate::service::start_node(config, key, polkadot_config, id, collator)
+				match cli.runtime.as_str() {
+					"mashnet" => crate::service::start_node::<MashRuntimeExecutor, kilt_parachain_runtime::RuntimeApi>(
+						config,
+						key,
+						polkadot_config,
+						id,
+					)
 					.await
 					.map(|r| r.0)
-					.map_err(Into::into)
+					.map_err(Into::into),
+					"spiritnet" => crate::service::start_node::<SpiritRuntimeExecutor, spiritnet_runtime::RuntimeApi>(
+						config,
+						key,
+						polkadot_config,
+						id,
+					)
+					.await
+					.map(|r| r.0)
+					.map_err(Into::into),
+					_ => Err("Unknown runtime".into()),
+				}
 			})
 		}
 	}

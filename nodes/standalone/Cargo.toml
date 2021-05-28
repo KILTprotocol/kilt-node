@@ -10,7 +10,7 @@ name = "mashnet-node"
 path = "src/main.rs"
 
 [build-dependencies]
-build-script-utils = {package = "substrate-build-script-utils", git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+build-script-utils = {package = "substrate-build-script-utils", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
 vergen = "3.1.0"
 
 [dependencies]
@@ -22,34 +22,35 @@ structopt = "0.3.8"
 serde = { version = "1.0.119", features = ["derive"] }
 serde_json = "1.0.64"
 
-frame-benchmarking = {git = "https://github.com/paritytech/substrate.git", branch = "rococo-v1"}
-frame-benchmarking-cli = {git = "https://github.com/paritytech/substrate.git", branch = "rococo-v1"}
-frame-rpc-system = {package = "substrate-frame-rpc-system", git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
-pallet-transaction-payment-rpc = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
-sc-basic-authorship = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
-sc-cli = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
-sc-client-api = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
-sc-consensus = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
-sc-consensus-aura = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
-sc-executor = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
-sc-finality-grandpa = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
-sc-keystore = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
-sc-network = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
-sc-rpc = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
-sc-rpc-api = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
-sc-service = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
-sc-telemetry = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
-sc-transaction-pool = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
-sp-api = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
-sp-block-builder = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
-sp-blockchain = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
-sp-consensus = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
-sp-consensus-aura = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
-sp-core = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
-sp-finality-grandpa = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
-sp-inherents = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
-sp-runtime = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
-sp-transaction-pool = {git = "https://github.com/paritytech/substrate", branch = "rococo-v1"}
+frame-benchmarking = {git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.3"}
+frame-benchmarking-cli = {git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.3"}
+frame-rpc-system = {package = "substrate-frame-rpc-system", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+pallet-transaction-payment-rpc = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sc-basic-authorship = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sc-cli = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sc-client-api = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sc-consensus = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sc-consensus-aura = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sc-executor = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sc-finality-grandpa = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sc-keystore = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sc-network = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sc-rpc = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sc-rpc-api = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sc-service = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sc-telemetry = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sc-transaction-pool = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-api = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-block-builder = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-blockchain = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-consensus = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-consensus-aura = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-core = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-finality-grandpa = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-inherents = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-runtime = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-timestamp = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
+sp-transaction-pool = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3"}
 
 mashnet-node-runtime = {path = "../../runtimes/standalone"}
 kilt-primitives = {path = "../../primitives"}
