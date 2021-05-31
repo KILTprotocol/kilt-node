@@ -217,6 +217,10 @@ where
 		}
 	}
 
+	/// Add a new delegation.
+	///
+	/// If already delegating to the same account, this call returns false and
+	/// doesn't insert the new delegation.
 	pub fn add_delegation(&mut self, stake: Stake<AccountId, Balance>) -> bool {
 		let amt = stake.amount;
 		if self.delegations.insert(stake) {
@@ -227,8 +231,8 @@ where
 		}
 	}
 
-	// Returns Some(remaining balance), must be more than MinDelegatorStk
-	// Returns None if delegation not found
+	/// Returns Some(remaining stake for delecator), must be more than
+	/// MinDelegatorStk Returns None if delegation not found
 	pub fn rm_delegation(&mut self, collator: AccountId) -> Option<Balance> {
 		let amt = self.delegations.remove_by(|x| x.owner.cmp(&collator)).map(|f| f.amount);
 
@@ -240,7 +244,7 @@ where
 		}
 	}
 
-	// Returns None if delegation not found
+	/// Returns None if delegation not found
 	pub fn inc_delegation(&mut self, collator: AccountId, more: Balance) -> Option<Balance> {
 		match self.delegations.binary_search_by(|x| x.owner.cmp(&collator)) {
 			Ok(i) => {
@@ -252,9 +256,9 @@ where
 		}
 	}
 
-	// Returns Some(Some(balance)) if successful
-	// None if delegation not found
-	// Some(None) if underflow
+	/// Returns Some(Some(balance)) if successful
+	/// None if delegation not found
+	/// Some(None) if underflow
 	pub fn dec_delegation(&mut self, collator: AccountId, less: Balance) -> Option<Option<Balance>> {
 		match self.delegations.binary_search_by(|x| x.owner.cmp(&collator)) {
 			Ok(i) => {
@@ -293,6 +297,9 @@ where
 	}
 
 	/// Check if the round should be updated.
+	///
+	/// The round should update if `self.length` or more blocks where produced
+	/// after `self.first`.
 	pub fn should_update(&self, now: B) -> bool {
 		let l = now.saturating_sub(self.first);
 		l >= self.length
