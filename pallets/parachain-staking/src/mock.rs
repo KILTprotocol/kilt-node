@@ -123,7 +123,7 @@ parameter_types! {
 	pub const ExitQueueDelay: u32 = 2;
 	pub const MaxExitsPerRound: usize = 5;
 	pub const DefaultBlocksPerRound: BlockNumber = BLOCKS_PER_ROUND;
-	pub const MinSelectedCandidates: u32 = 5;
+	pub const MinSelectedCandidates: u32 = 2;
 	pub const MaxDelegatorsPerCollator: u32 = 4;
 	pub const MaxCollatorsPerDelegator: u32 = 4;
 	pub const DefaultCollatorCommission: Perbill = Perbill::from_percent(20);

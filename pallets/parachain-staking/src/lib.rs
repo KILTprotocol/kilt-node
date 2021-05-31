@@ -36,7 +36,7 @@
 //! until executing the exit request by calling the extrinsic
 //! `execute_leave_candidates` at least `ExitQueueDelay` rounds later. After
 //! doing so, the collator candidate as well as their delegators are unstaked.
-//! Both parties then have to wait another `StakeDuration` more rounds to be
+//! Both parties then have to wait another `StakeDuration` more blocks to be
 //! able to withdraw their stake.
 //!
 //! Candidates which requested to leave can still be in the set of authors for
@@ -134,7 +134,7 @@
 //!   `MinDelegatorStk`.
 //! - `withdraw_unstaked` - Attempt to withdraw previously unstaked balance from
 //!   any account. Succeeds if at least one unstake call happened at least
-//!   `StakeDuration` rounds ago.
+//!   `StakeDuration` blocks ago.
 //!
 //! ## Genesis config
 //!
@@ -318,6 +318,9 @@ pub mod pallet {
 		// [Post-launch TODO] Update this comment when the new logic to include new collator candidates is added (by
 		// using `check_collator_candidate_inclusion`).
 		TooManyCollatorCandidates,
+		/// The set of collator candidates would fall below the required minimum
+		/// if the collator left.
+		TooFewCollatorCandidates,
 		/// The collator candidate is in the process of leaving the set of
 		/// candidates and cannot perform any other actions in the meantime.
 		CannotActivateIfLeaving,
@@ -805,13 +808,13 @@ pub mod pallet {
 		/// On success, the account is immediately removed from the candidate
 		/// pool to prevent selection as a collator in future validation rounds,
 		/// but unstaking of the funds is executed with a delay of
-		/// `StakeDuration` rounds.
+		/// `StakeDuration` blocks.
 		///
 		/// The exit request can be reversed by calling
 		/// `cancel_leave_candidates`.
 		///
 		/// The total stake of the pallet is not affected by this operation
-		/// until the funds are released after `StakeDuration` rounds.
+		/// until the funds are released after `StakeDuration` blocks.
 		///
 		/// NOTE: Upon starting a new session_i in `new_session`, the current
 		/// top candidates are selected to be block authors for session_i+1. Any
@@ -843,11 +846,15 @@ pub mod pallet {
 			let collator = ensure_signed(origin)?;
 			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(!state.is_leaving(), Error::<T>::AlreadyLeaving);
+			let mut candidates = <CandidatePool<T>>::get();
+			ensure!(
+				candidates.len().saturating_sub(1) as u32 >= T::MinSelectedCandidates::get(),
+				Error::<T>::TooFewCollatorCandidates
+			);
 
 			let now = <Round<T>>::get().current;
 			let when = now.saturating_add(T::ExitQueueDelay::get());
 			state.leave_candidates(when);
-			let mut candidates = <CandidatePool<T>>::get();
 			if candidates.remove_by(|stake| stake.owner.cmp(&collator)).is_some() {
 				<CandidatePool<T>>::put(candidates);
 			}
@@ -867,7 +874,8 @@ pub mod pallet {
 		/// Execute the network exit of a candidate who requested to leave at
 		/// least `ExitQueueDelay` rounds ago. Prepares unstaking of the
 		/// candidates and their delegators stake which can be withdrawn via
-		/// `withdraw_unstaked` after `StakeDuration`.
+		/// `withdraw_unstaked` after waiting at least `StakeDuration` many
+		/// blocks.
 		///
 		/// Requires the candidate to previously have called
 		/// `init_leave_candidates`.
@@ -887,8 +895,12 @@ pub mod pallet {
 		/// # </weight>
 		// TODO: Add benchmark
 		#[pallet::weight(100_000_000_000)]
-		pub fn execute_leave_candidates(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
-			let collator = ensure_signed(origin)?;
+		pub fn execute_leave_candidates(
+			origin: OriginFor<T>,
+			collator: <T::Lookup as StaticLookup>::Source,
+		) -> DispatchResultWithPostInfo {
+			ensure_signed(origin)?;
+			let collator = T::Lookup::lookup(collator)?;
 			let state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(state.is_leaving(), Error::<T>::NotLeaving);
 			ensure!(state.can_exit(<Round<T>>::get().current), Error::<T>::CannotLeaveYet);
@@ -988,8 +1000,8 @@ pub mod pallet {
 			state.revert_leaving();
 
 			// update candidates for next round
-			<CandidatePool<T>>::put(candidates);
 			<CollatorState<T>>::insert(&acc, state);
+			<CandidatePool<T>>::put(candidates);
 			let (num_collators, num_delegators, _, _) = Self::select_top_candidates();
 
 			Self::deposit_event(Event::CollatorCanceledExit(acc));
@@ -1071,7 +1083,7 @@ pub mod pallet {
 		/// This operation affects the pallet's total stake amount.
 		///
 		/// The unstaked funds are not release immediately to the account, but
-		/// they will be available after `StakeDuration` rounds.
+		/// they will be available after `StakeDuration` blocks.
 		///
 		/// The resulting total amount of funds staked must be within the
 		/// allowed range as set in the pallet's configuration.
@@ -1348,7 +1360,7 @@ pub mod pallet {
 		///
 		/// All staked funds are not unlocked immediately, but they are added to
 		/// the queue of pending unstaking, and will effectively be released
-		/// after `StakeDuration` rounds from the moment the delegator leaves.
+		/// after `StakeDuration` blocks from the moment the delegator leaves.
 		///
 		/// This operation reduces the total stake of the pallet as well as the
 		/// stakes of all collators that were delegated, potentially affecting
@@ -1402,7 +1414,7 @@ pub mod pallet {
 		///
 		/// The staked funds are not unlocked immediately, but they are added to
 		/// the queue of pending unstaking, and will effectively be released
-		/// after `StakeDuration` rounds from the moment the delegation is
+		/// after `StakeDuration` blocks from the moment the delegation is
 		/// terminated.
 		///
 		/// This operation reduces the total stake of the pallet as well as the
@@ -1520,7 +1532,7 @@ pub mod pallet {
 		/// considered for authoring the next blocks.
 		///
 		/// The unstaked funds are not release immediately to the account, but
-		/// they will be available after `StakeDuration` rounds.
+		/// they will be available after `StakeDuration` blocks.
 		///
 		/// The remaining staked funds must still be larger than the minimum
 		/// required by this pallet to maintain the status of delegator.
@@ -1592,7 +1604,7 @@ pub mod pallet {
 		}
 
 		/// Withdraw all previously staked funds that are now available for
-		/// withdrawal by the origin account after `StakeDuration` rounds have
+		/// withdrawal by the origin account after `StakeDuration` blocks have
 		/// elapsed.
 		///
 		/// Weight: O(U) where U the the number non-withdrawn unstaking requests
@@ -1962,7 +1974,7 @@ pub mod pallet {
 
 		/// Set the unlocking block for the account and corresponding amount
 		/// which can be withdrawn via `withdraw_unstaked` after waiting at
-		/// least for `StakeDuration` many rounds.
+		/// least for `StakeDuration` many blocks.
 		///
 		/// Throws if the amount is zero (unlikely) or if active unlocking
 		/// requests exceed limit. The latter defends against stake reduction
@@ -2018,7 +2030,7 @@ pub mod pallet {
 		}
 
 		/// Withdraw all staked currency which was unstaked at least
-		/// `StakeDuration` rounds ago.
+		/// `StakeDuration` blocks ago.
 		///
 		/// # <weight>
 		/// Weight: O(U) where U is the number of non-withdrawn unstaking
