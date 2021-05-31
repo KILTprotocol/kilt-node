@@ -17,7 +17,15 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 //! Unit testing
-use std::collections::BTreeMap;
+
+use std::{collections::BTreeMap, iter};
+
+use frame_support::{assert_noop, assert_ok, traits::EstimateNextSessionRotation};
+use pallet_balances::{BalanceLock, Error as BalancesError, Reasons};
+use pallet_session::{SessionManager, ShouldEndSession};
+use sp_runtime::{traits::Zero, Perbill, Percent, Perquintill};
+
+use kilt_primitives::constants::YEARS;
 
 use crate::{
 	mock::{
@@ -28,11 +36,6 @@ use crate::{
 	types::{BalanceOf, Collator, CollatorSnapshot, CollatorStatus, Delegator, RoundInfo, Stake, TotalStake},
 	Config, Error, Event, InflationInfo, RewardRate, StakingInfo, STAKING_ID,
 };
-use frame_support::{assert_noop, assert_ok, traits::EstimateNextSessionRotation};
-use kilt_primitives::constants::YEARS;
-use pallet_balances::{BalanceLock, Error as BalancesError, Reasons};
-use pallet_session::{SessionManager, ShouldEndSession};
-use sp_runtime::{traits::Zero, Perbill, Percent, Perquintill};
 
 #[test]
 fn should_select_collators_genesis_session() {
@@ -2968,13 +2971,29 @@ fn candidate_leaves() {
 			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(11)));
 			// join back
 			assert_ok!(StakePallet::cancel_leave_candidates(Origin::signed(1)));
-			let stake: Vec<Stake<AccountId, Balance>> =
-				(1u64..11u64).map(|id| Stake { owner: id, amount: 100 }).collect();
+			let stake: Vec<Stake<AccountId, Balance>> = (1u64..11u64)
+				.zip(iter::once(210).chain(iter::repeat(100)))
+				.map(|(id, amount)| Stake {
+					owner: id,
+					amount: amount,
+				})
+				.collect();
+
 			assert_eq!(StakePallet::candidate_pool(), OrderedSet::from(stake));
-			// FIXME: Should actually include candidate 1 but select_top_candidates only
-			// sorts by collator stake, not total stake
-			assert_eq!(StakePallet::selected_candidates(), vec![9, 10]);
-			assert_eq!(StakePallet::collator_state(1).unwrap().state, CollatorStatus::Active);
+			let state = StakePallet::collator_state(1).unwrap();
+			assert_eq!(state.state, CollatorStatus::Active);
+			assert_eq!(state.delegators.len(), 2);
+			assert_eq!(state.total, 210);
+			assert_eq!(
+				state.total,
+				StakePallet::candidate_pool()
+					.binary_search_by(|other| other.owner.cmp(&1))
+					.map(|i| StakePallet::candidate_pool()[i].clone())
+					.unwrap()
+					.amount
+			);
+			assert_eq!(StakePallet::selected_candidates(), vec![1, 10]);
+
 			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(1)));
 
 			roll_to(15, vec![]);

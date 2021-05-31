@@ -1000,7 +1000,7 @@ pub mod pallet {
 			ensure!(
 				candidates.insert(Stake {
 					owner: acc.clone(),
-					amount: state.stake
+					amount: state.total,
 				}),
 				Error::<T>::CandidateExists
 			);

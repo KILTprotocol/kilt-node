@@ -42,7 +42,10 @@ where
 	AccountId: Eq + Ord,
 	Balance: Eq + Ord,
 {
+	/// The account that is backed by the stake.
 	pub owner: AccountId,
+
+	/// The amount of backing the `owner` received.
 	pub amount: Balance,
 }
 
@@ -107,10 +110,22 @@ where
 	AccountId: Eq + Ord,
 	Balance: Eq + Ord,
 {
+	/// the collators account id
 	pub id: AccountId,
+
+	/// the stake that the collator put down
 	pub stake: Balance,
+
+	/// the delegators that back the collator
 	pub delegators: OrderedSet<Stake<AccountId, Balance>>,
+
+	/// the total backing a collator has.
+	///
+	/// Should equal the sum of all delegators stake adding collators stake
 	pub total: Balance,
+
+	/// The current status of the collator. Indicates whether a collator is
+	/// active or leaving the collator set
 	pub state: CollatorStatus,
 }
 

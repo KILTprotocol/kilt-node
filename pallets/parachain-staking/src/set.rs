@@ -56,7 +56,7 @@ impl<T: Ord> OrderedSet<T> {
 
 	/// Insert an element, if no equal item exist in the set.
 	///
-	/// Return true if the item is uniqu in the set, otherwise returns false.
+	/// Return true if the item is unique in the set, otherwise returns false.
 	pub fn insert(&mut self, value: T) -> bool {
 		match self.0.binary_search(&value) {
 			Ok(_) => false,
