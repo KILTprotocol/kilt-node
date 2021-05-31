@@ -97,8 +97,6 @@ where
 		System::<T>::set_block_number(System::<T>::block_number() + T::BlockNumber::one());
 	}
 	let who = delegator.unwrap_or(collator);
-	// FIXME: Why is this throwing all of a sudden in cargo test --all
-	// --all-features?
 	assert_eq!(<Unstaking<T>>::get(who).len() as u64, unstaked);
 	assert!(<Unstaking<T>>::get(who).len() <= T::MaxUnstakeRequests::get().try_into().unwrap());
 }
@@ -180,7 +178,6 @@ benchmarks! {
 		assert!(<CollatorState<T>>::get(candidate).unwrap().can_exit(unlocking_at));
 	}
 
-	// FIXME: Check whether this works
 	cancel_leave_candidates {
 		let n in (T::MinSelectedCandidates::get() + 1) .. T::MaxCollatorCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
