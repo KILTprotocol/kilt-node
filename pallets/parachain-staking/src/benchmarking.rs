@@ -169,7 +169,7 @@ benchmarks! {
 	}
 
 	init_leave_candidates {
-		let n in 1 .. T::MaxCollatorCandidates::get() - 1;
+		let n in (T::MinSelectedCandidates::get() + 1) .. T::MaxCollatorCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
 		let candidates = setup_collator_candidates::<T>(n);
@@ -190,7 +190,7 @@ benchmarks! {
 
 	// FIXME: Check whether this works
 	cancel_leave_candidates {
-		let n in 1 .. T::MaxCollatorCandidates::get() - 1;
+		let n in (T::MinSelectedCandidates::get() + 1) .. T::MaxCollatorCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
 		let candidates = setup_collator_candidates::<T>(n);
@@ -201,7 +201,7 @@ benchmarks! {
 		let candidate = candidates[0].clone();
 		assert_ok!(<Pallet<T>>::init_leave_candidates(RawOrigin::Signed(candidate.clone()).into()));
 
-	}: _(RawOrigin::Signed(candidate.clone()), T::Lookup::unlookup(candidate.clone()))
+	}: _(RawOrigin::Signed(candidate.clone()))
 	verify {
 		let candidates = CandidatePool::<T>::get();
 		assert!(candidates.binary_search_by(|other| other.owner.cmp(&candidate)).is_ok());
@@ -209,7 +209,7 @@ benchmarks! {
 
 	// FIXME: Check whether this works
 	execute_leave_candidates {
-		let n in 1 .. T::MaxCollatorCandidates::get() - 1;
+		let n in (T::MinSelectedCandidates::get() + 1) .. T::MaxCollatorCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 		let u in 0 .. (T::MaxUnstakeRequests::get() as u32 - 1);
 
@@ -230,9 +230,9 @@ benchmarks! {
 		// go to block in which we can exit
 		assert_ok!(<Pallet<T>>::init_leave_candidates(RawOrigin::Signed(candidate.clone()).into()));
 		let round = <Round<T>>::get();
-		System::<T>::set_block_number((round.current as u64).into() + round.length * (T::ExitQueueDelay::get() as u64).into());
+		System::<T>::set_block_number((round.length * (T::ExitQueueDelay::get() as u64).into());
 
-	}: _(RawOrigin::Signed(candidate.clone()))
+	}: _(RawOrigin::Signed(candidate.clone()), T::Lookup::unlookup(candidate.clone()))
 	verify {
 		// should have one more entry in Unstaking
 		assert_eq!(<Unstaking<T>>::get(&candidate).len() as u32, u.saturating_add(1u32));
