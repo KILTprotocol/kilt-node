@@ -125,6 +125,12 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 		// Not used in this pallet
 		None
 	}
+
+	// Always return a System::remark() extrinsic call
+	#[cfg(feature = "runtime-benchmarks")]
+	fn get_call_for_did_call_benchmark() -> Self {
+		Call::System(frame_system::Call::remark(vec![]))
+	}
 }
 
 #[cfg(test)]

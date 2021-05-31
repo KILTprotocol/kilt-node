@@ -437,23 +437,15 @@ construct_runtime!(
 );
 
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
-	#[cfg(not(feature = "runtime-benchmarks"))]
 	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
 		match self {
 			Call::Attestation(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
 			Call::Ctype(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
 			Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
+			#[cfg(not(feature = "runtime-benchmarks"))]
 			_ => None,
-		}
-	}
-
-	// By default, returns the assertionMethod (attestation) key
-	#[cfg(feature = "runtime-benchmarks")]
-	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
-		match self {
-			Call::Attestation(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
-			Call::Ctype(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
-			Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
+			// By default, returns the assertionMethod (attestation) key
+			#[cfg(feature = "runtime-benchmarks")]
 			_ => Some(did::DidVerificationKeyRelationship::AssertionMethod),
 		}
 	}
