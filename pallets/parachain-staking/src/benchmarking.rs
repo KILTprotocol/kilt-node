@@ -105,6 +105,8 @@ where
 		System::<T>::set_block_number(System::<T>::block_number() + T::BlockNumber::one());
 	}
 	let who = delegator.unwrap_or(collator);
+	// FIXME: Why is this throwing all of a sudden in cargo test --all
+	// --all-features?
 	assert_eq!(<Unstaking<T>>::get(who).len() as u64, unstaked);
 	assert!(<Unstaking<T>>::get(who).len() <= T::MaxUnstakeRequests::get());
 }
@@ -176,14 +178,63 @@ benchmarks! {
 		}
 
 		let now = <Round<T>>::get().current;
-		let old_candidate = candidates[0].clone();
+		let candidate = candidates[0].clone();
 
-	}: _(RawOrigin::Signed(old_candidate.clone()))
+	}: _(RawOrigin::Signed(candidate.clone()))
 	verify {
 		let candidates = CandidatePool::<T>::get();
-		assert!(candidates.binary_search_by(|other| other.owner.cmp(&old_candidate)).is_err());
+		assert!(candidates.binary_search_by(|other| other.owner.cmp(&candidate)).is_err());
 		let unlocking_at = now.saturating_add(T::ExitQueueDelay::get());
-		assert!(<CollatorState<T>>::get(old_candidate).unwrap().can_exit(unlocking_at));
+		assert!(<CollatorState<T>>::get(candidate).unwrap().can_exit(unlocking_at));
+	}
+
+	// FIXME: Check whether this works
+	cancel_leave_candidates {
+		let n in 1 .. T::MaxCollatorCandidates::get() - 1;
+		let m in 0 .. T::MaxDelegatorsPerCollator::get();
+
+		let candidates = setup_collator_candidates::<T>(n);
+		for (i, c) in candidates.iter().enumerate() {
+			fill_delegators::<T>(m, c.clone(), i as u32);
+		}
+
+		let candidate = candidates[0].clone();
+		assert_ok!(<Pallet<T>>::init_leave_candidates(RawOrigin::Signed(candidate.clone()).into()));
+
+	}: _(RawOrigin::Signed(candidate.clone()), T::Lookup::unlookup(candidate.clone()))
+	verify {
+		let candidates = CandidatePool::<T>::get();
+		assert!(candidates.binary_search_by(|other| other.owner.cmp(&candidate)).is_ok());
+	}
+
+	// FIXME: Check whether this works
+	execute_leave_candidates {
+		let n in 1 .. T::MaxCollatorCandidates::get() - 1;
+		let m in 0 .. T::MaxDelegatorsPerCollator::get();
+		let u in 0 .. (T::MaxUnstakeRequests::get() as u32);
+
+		let candidates = setup_collator_candidates::<T>(n);
+		for (i, c) in candidates.iter().enumerate() {
+			fill_delegators::<T>(m, c.clone(), i as u32);
+		}
+		let candidate = candidates[0].clone();
+
+		// increase stake so we can unstake, because current stake is minimum
+		T::Currency::make_free_balance_be(&candidate, T::CurrencyBalance::from(u64::MAX) * T::CurrencyBalance::from(u64::MAX));
+		assert_ok!(<Pallet<T>>::candidate_stake_more(RawOrigin::Signed(candidate.clone()).into(), more_stake));
+
+		// fill unstake BTreeMap by unstaked many entries of 1
+		fill_unstaking::<T>(&candidate, None, u as u64);
+
+		// go to block in which we can exit
+		assert_ok!(<Pallet<T>>::init_leave_candidates(RawOrigin::Signed(candidate.clone()).into()));
+		let round = <Round<T>>::get();
+		System::<T>::set_block_number((round.current as u64).into() + round.length * (T::ExitQueueDelay::get() as u64).into());
+
+	}: _(RawOrigin::Signed(candidate.clone()))
+	verify {
+		let candidates = CandidatePool::<T>::get();
+		assert!(candidates.binary_search_by(|other| other.owner.cmp(&candidate)).is_ok());
 	}
 
 	candidate_stake_more {
