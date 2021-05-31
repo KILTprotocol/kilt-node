@@ -230,7 +230,7 @@ benchmarks! {
 		// go to block in which we can exit
 		assert_ok!(<Pallet<T>>::init_leave_candidates(RawOrigin::Signed(candidate.clone()).into()));
 		let round = <Round<T>>::get();
-		System::<T>::set_block_number((round.length * (T::ExitQueueDelay::get() as u64).into());
+		System::<T>::set_block_number(round.length * (T::ExitQueueDelay::get() as u64).into());
 
 	}: _(RawOrigin::Signed(candidate.clone()), T::Lookup::unlookup(candidate.clone()))
 	verify {
