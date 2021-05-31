@@ -18,18 +18,18 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 //! Benchmarking
-use crate::{types::Stake, *};
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, vec};
+use crate::*;
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
 	assert_ok,
-	traits::{Currency, Get},
+	traits::{Currency, Get, OnInitialize},
 };
 use frame_system::{Pallet as System, RawOrigin};
 use sp_runtime::{
 	traits::{One, StaticLookup},
 	Perquintill,
 };
-use sp_std::vec::Vec;
+use sp_std::{convert::TryInto, vec::Vec};
 
 const COLLATOR_ACCOUNT_SEED: u32 = 0;
 const DELEGATOR_ACCOUNT_SEED: u32 = 1;
@@ -40,12 +40,6 @@ fn setup_collator_candidates<T: Config>(num_candidates: u32) -> Vec<T::AccountId
 	let collators: Vec<T::AccountId> = (current_collator_count..num_candidates)
 		.map(|i| account("collator", i as u32, COLLATOR_ACCOUNT_SEED))
 		.collect();
-
-	// log::info!(
-	// 	"add {} collators to {} collators",
-	// 	collators.len(),
-	// 	CandidatePool::<T>::get().len()
-	// );
 
 	for acc in collators.iter() {
 		T::Currency::make_free_balance_be(&acc, T::MinCollatorCandidateStk::get());
@@ -69,8 +63,6 @@ fn fill_delegators<T: Config>(num_delegators: u32, collator: T::AccountId, colla
 	let delegators: Vec<T::AccountId> = (current_delegators..num_delegators)
 		.map(|i| account("delegator", i as u32, DELEGATOR_ACCOUNT_SEED * 1000 + collator_seed))
 		.collect();
-
-	// log::info!("setup {} delegators", delegators.len());
 
 	for acc in delegators.iter() {
 		T::Currency::make_free_balance_be(&acc, T::MinDelegatorStk::get());
@@ -108,7 +100,7 @@ where
 	// FIXME: Why is this throwing all of a sudden in cargo test --all
 	// --all-features?
 	assert_eq!(<Unstaking<T>>::get(who).len() as u64, unstaked);
-	assert!(<Unstaking<T>>::get(who).len() <= T::MaxUnstakeRequests::get());
+	assert!(<Unstaking<T>>::get(who).len() <= T::MaxUnstakeRequests::get().try_into().unwrap());
 }
 
 benchmarks! {
@@ -207,7 +199,6 @@ benchmarks! {
 		assert!(candidates.binary_search_by(|other| other.owner.cmp(&candidate)).is_ok());
 	}
 
-	// FIXME: Check whether this works
 	execute_leave_candidates {
 		let n in (T::MinSelectedCandidates::get() + 1) .. T::MaxCollatorCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
@@ -229,8 +220,13 @@ benchmarks! {
 
 		// go to block in which we can exit
 		assert_ok!(<Pallet<T>>::init_leave_candidates(RawOrigin::Signed(candidate.clone()).into()));
-		let round = <Round<T>>::get();
-		System::<T>::set_block_number(round.length * (T::ExitQueueDelay::get() as u64).into());
+
+		for i in 1..=T::ExitQueueDelay::get() {
+			let round = <Round<T>>::get();
+			let now = round.first + round.length;
+			System::<T>::set_block_number(now);
+			Pallet::<T>::on_initialize(now);
+		}
 
 	}: _(RawOrigin::Signed(candidate.clone()), T::Lookup::unlookup(candidate.clone()))
 	verify {

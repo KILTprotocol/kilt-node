@@ -188,7 +188,7 @@ pub mod pallet {
 		Percent, Perquintill,
 	};
 	use sp_staking::SessionIndex;
-	use sp_std::{collections::btree_map::BTreeMap, prelude::*};
+	use sp_std::{collections::btree_map::BTreeMap, convert::TryFrom, prelude::*};
 
 	use crate::{
 		set::OrderedSet,
@@ -243,7 +243,7 @@ pub mod pallet {
 		/// Maximum number of possible collator candidate exits per round.
 		/// Requires the collators to have submitted their request to leave the
 		/// set of collator candidates in advance.
-		type MaxExitsPerRound: Get<usize>;
+		type MaxExitsPerRound: Get<u32>;
 		/// Minimum number of collators selected from the set of candidates at
 		/// every validation round.
 		type MinSelectedCandidates: Get<u32>;
@@ -268,7 +268,7 @@ pub mod pallet {
 		type MinDelegatorStk: Get<BalanceOf<Self>>;
 		/// Max number of concurrent active unstaking requests before
 		/// withdrawing.
-		type MaxUnstakeRequests: Get<usize>;
+		type MaxUnstakeRequests: Get<u32>;
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}
@@ -436,11 +436,11 @@ pub mod pallet {
 
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-		fn on_initialize(n: T::BlockNumber) -> frame_support::weights::Weight {
+		fn on_initialize(now: T::BlockNumber) -> frame_support::weights::Weight {
 			let mut round = <Round<T>>::get();
-			if round.should_update(n) {
+			if round.should_update(now) {
 				// mutate round
-				round.update(n);
+				round.update(now);
 
 				// start next round
 				<Round<T>>::put(round);
@@ -841,7 +841,10 @@ pub mod pallet {
 		/// - Writes: CollatorState, CandidatePool, ExitQueue, N * AtStake,
 		///   SelectedCandidates
 		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::init_leave_candidates(T::MaxCollatorCandidates::get(), T::MaxCollatorCandidates::get() * T::MaxDelegatorsPerCollator::get()))]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::init_leave_candidates(
+			T::MaxCollatorCandidates::get(),
+			T::MaxCollatorCandidates::get() * T::MaxDelegatorsPerCollator::get()
+		))]
 		pub fn init_leave_candidates(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			let collator = ensure_signed(origin)?;
 			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
@@ -893,8 +896,11 @@ pub mod pallet {
 		/// - Writes: D * Unstaking, D * DelegatorState, Total
 		/// - Kills: CollatorState, DelegatorState
 		/// # </weight>
-		// TODO: Add benchmark
-		#[pallet::weight(100_000_000_000)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::execute_leave_candidates(
+			T::MaxCollatorCandidates::get(),
+			T::MaxDelegatorsPerCollator::get(),
+			T::MaxUnstakeRequests::get()
+		))]
 		pub fn execute_leave_candidates(
 			origin: OriginFor<T>,
 			collator: <T::Lookup as StaticLookup>::Source,
@@ -950,7 +956,6 @@ pub mod pallet {
 		}
 
 		// TODO: Add unit test
-		// TODO: Add benchmark
 		/// Revert the previously requested exit of the network of a collator
 		/// candidate. On success, adds back the candidate to the CandidatePool
 		/// and updates the SelectedCandidates.
@@ -975,7 +980,10 @@ pub mod pallet {
 		/// - Writes: Total, CollatorState, CandidatePool, SelectedCandidates, N
 		///   * AtStake
 		/// # </weight>
-		#[pallet::weight(100_000_000_000)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::cancel_leave_candidates(
+			T::MaxCollatorCandidates::get(),
+			T::MaxDelegatorsPerCollator::get(),
+		))]
 		pub fn cancel_leave_candidates(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			let acc = ensure_signed(origin)?;
 			let mut state = <CollatorState<T>>::get(&acc).ok_or(Error::<T>::CandidateNotFound)?;
@@ -1006,7 +1014,7 @@ pub mod pallet {
 
 			Self::deposit_event(Event::CollatorCanceledExit(acc));
 			// TODO: Replace with correct correction after adding benchmark
-			Ok(Some(<T as pallet::Config>::WeightInfo::join_candidates(
+			Ok(Some(<T as pallet::Config>::WeightInfo::cancel_leave_candidates(
 				num_collators,
 				num_delegators,
 			))
@@ -1995,7 +2003,10 @@ pub mod pallet {
 			let mut unstaking = <Unstaking<T>>::get(who);
 
 			ensure!(
-				unstaking.len() <= T::MaxUnstakeRequests::get(),
+				u32::try_from(unstaking.len())
+					.map(|len| len <= T::MaxUnstakeRequests::get())
+					.ok()
+					.unwrap_or(false),
 				Error::<T>::NoMoreUnstaking
 			);
 
