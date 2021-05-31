@@ -211,7 +211,7 @@ benchmarks! {
 	execute_leave_candidates {
 		let n in 1 .. T::MaxCollatorCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
-		let u in 0 .. (T::MaxUnstakeRequests::get() as u32);
+		let u in 0 .. (T::MaxUnstakeRequests::get() as u32 - 1);
 
 		let candidates = setup_collator_candidates::<T>(n);
 		for (i, c) in candidates.iter().enumerate() {
@@ -234,8 +234,8 @@ benchmarks! {
 
 	}: _(RawOrigin::Signed(candidate.clone()))
 	verify {
-		let candidates = CandidatePool::<T>::get();
-		assert!(candidates.binary_search_by(|other| other.owner.cmp(&candidate)).is_ok());
+		// should have one more entry in Unstaking
+		assert_eq!(<Unstaking<T>>::get(&candidate).len() as u32, u.saturating_add(1u32));
 	}
 
 	candidate_stake_more {
