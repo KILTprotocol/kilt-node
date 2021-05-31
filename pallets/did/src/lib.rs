@@ -52,6 +52,8 @@ use frame_support::{
 	Parameter,
 };
 use frame_system::ensure_signed;
+#[cfg(feature = "runtime-benchmarks")]
+use frame_system::RawOrigin;
 use sp_std::{boxed::Box, convert::TryFrom, fmt::Debug, prelude::Clone, vec::Vec};
 
 use crate::default_weights::WeightInfo;
@@ -90,7 +92,10 @@ pub mod pallet {
 			+ GetDispatchInfo
 			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
 		type DidIdentifier: Parameter + Default;
+		#[cfg(not(feature = "runtime-benchmarks"))]
 		type Origin: From<DidRawOrigin<DidIdentifierOf<Self>>>;
+		#[cfg(feature = "runtime-benchmarks")]
+		type Origin: From<RawOrigin<Self::DidIdentifier>>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		#[pallet::constant]
 		type MaxNewKeyAgreementKeys: Get<u32>;
@@ -409,7 +414,11 @@ pub mod pallet {
 
 			// Dispatch the referenced [Call] instance and return its result
 			let DidAuthorizedCallOperation { did, call, .. } = wrapped_operation.operation;
+
+			#[cfg(not(feature = "runtime-benchmarks"))]
 			let result = call.dispatch(DidRawOrigin { id: did }.into());
+			#[cfg(feature = "runtime-benchmarks")]
+			let result = call.dispatch(RawOrigin::Signed(did).into());
 
 			let dispatch_event = match result {
 				Ok(_) => Event::DidCallSuccess(did_identifier),

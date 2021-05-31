@@ -283,6 +283,7 @@ pub(crate) fn get_no_key_call() -> Call {
 }
 
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
 		if *self == get_attestation_key_call() {
 			Some(did::DidVerificationKeyRelationship::AssertionMethod)
@@ -295,9 +296,24 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 		}
 	}
 
+	// By default, returns the assertionMethod (attestation) key
 	#[cfg(feature = "runtime-benchmarks")]
-	fn get_call_for_verification_key_relationship(_: did::DidVerificationKeyRelationship) -> Self {
-		Call::System(frame_system::Call::remark(vec![]))
+	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
+		if *self == get_attestation_key_call() {
+			Some(did::DidVerificationKeyRelationship::AssertionMethod)
+		} else if *self == get_authentication_key_call() {
+			Some(did::DidVerificationKeyRelationship::Authentication)
+		} else if *self == get_delegation_key_call() {
+			Some(did::DidVerificationKeyRelationship::CapabilityDelegation)
+		} else {
+			Some(did::DidVerificationKeyRelationship::AssertionMethod)
+		}
+	}
+
+	// Always return a System::remark() extrinsic call
+	#[cfg(feature = "runtime-benchmarks")]
+	fn get_call_for_did_call_benchmark() -> Self {
+		Call::System(frame_system::all::remark(vec![]))
 	}
 }
 
