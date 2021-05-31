@@ -220,6 +220,7 @@ benchmarks! {
 		let candidate = candidates[0].clone();
 
 		// increase stake so we can unstake, because current stake is minimum
+		let more_stake = T::MinCollatorCandidateStk::get();
 		T::Currency::make_free_balance_be(&candidate, T::CurrencyBalance::from(u64::MAX) * T::CurrencyBalance::from(u64::MAX));
 		assert_ok!(<Pallet<T>>::candidate_stake_more(RawOrigin::Signed(candidate.clone()).into(), more_stake));
 
