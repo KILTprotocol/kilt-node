@@ -112,6 +112,8 @@ impl Config for Test {
 
 	type DelegationNodeId = TestDelegationNodeId;
 	type MaxRevocations = MaxRevocations;
+
+	type WeightInfo = ();
 }
 
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {

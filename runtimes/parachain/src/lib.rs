@@ -636,6 +636,7 @@ impl delegation::Config for Runtime {
 
 	type DelegationNodeId = Hash;
 	type MaxRevocations = MaxRevocations;
+	type WeightInfo = ();
 }
 
 impl did::Config for Runtime {
