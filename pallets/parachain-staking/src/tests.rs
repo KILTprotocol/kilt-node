@@ -2971,6 +2971,7 @@ fn candidate_leaves() {
 			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(11)));
 			// join back
 			assert_ok!(StakePallet::cancel_leave_candidates(Origin::signed(1)));
+
 			let stake: Vec<Stake<AccountId, Balance>> = (1u64..11u64)
 				.zip(iter::once(210).chain(iter::repeat(100)))
 				.map(|(id, amount)| Stake {
@@ -2978,7 +2979,6 @@ fn candidate_leaves() {
 					amount: amount,
 				})
 				.collect();
-
 			assert_eq!(StakePallet::candidate_pool(), OrderedSet::from(stake));
 			let state = StakePallet::collator_state(1).unwrap();
 			assert_eq!(state.state, CollatorStatus::Active);

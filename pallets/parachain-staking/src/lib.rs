@@ -951,14 +951,14 @@ pub mod pallet {
 				total_delegators,
 			));
 
-			Ok(<T as pallet::Config>::WeightInfo::execute_leave_candidates(
+			Ok(Some(<T as pallet::Config>::WeightInfo::execute_leave_candidates(
 				T::MaxCollatorCandidates::get(),
 				num_delegators,
-				T::MaxUnstakeRequests::get()
+				T::MaxUnstakeRequests::get(),
 			))
+			.into())
 		}
 
-		// TODO: Add unit test
 		/// Revert the previously requested exit of the network of a collator
 		/// candidate. On success, adds back the candidate to the CandidatePool
 		/// and updates the SelectedCandidates.
@@ -1016,7 +1016,6 @@ pub mod pallet {
 			let (num_collators, num_delegators, _, _) = Self::select_top_candidates();
 
 			Self::deposit_event(Event::CollatorCanceledExit(acc));
-			// TODO: Replace with correct correction after adding benchmark
 			Ok(Some(<T as pallet::Config>::WeightInfo::cancel_leave_candidates(
 				num_collators,
 				num_delegators,
