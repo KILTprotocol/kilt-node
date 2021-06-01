@@ -912,7 +912,7 @@ pub mod pallet {
 			ensure!(state.can_exit(<Round<T>>::get().current), Error::<T>::CannotLeaveYet);
 
 			// iterate over delegators
-			let _num_delegators = state.delegators.len() as u32;
+			let num_delegators = state.delegators.len() as u32;
 			for stake in state.delegators.into_iter() {
 				// prepare unstaking of delegator
 				Self::prep_unstake_exit_queue(&stake.owner, stake.amount);
@@ -951,8 +951,11 @@ pub mod pallet {
 				total_delegators,
 			));
 
-			// TODO: weight refund after adding benchmark using num_delegators
-			Ok(().into())
+			Ok(<T as pallet::Config>::WeightInfo::execute_leave_candidates(
+				T::MaxCollatorCandidates::get(),
+				num_delegators,
+				T::MaxUnstakeRequests::get()
+			))
 		}
 
 		// TODO: Add unit test
