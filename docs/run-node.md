@@ -14,7 +14,7 @@ For development, we recommend to run the `mashnet-node`.
 
 ## How to run a node (TLDR)
 
-To start a node, you need to use an existing image from [DockerHub](https://hub.docker.com/r/kiltprotocol/mashnet-node), or [build the code yourself](#option-3-build-code-without-docker) and decide on the [command](#node-commands) to execute.
+To start a node, you need to use an existing image from [DockerHub](https://hub.docker.com/r/kiltprotocol/mashnet-node), or [build the code yourself](#option-2-build-code-without-docker) and decide on the [command](#node-commands) to execute.
 
 ### Use a pre-compiled docker image from DockerHub
 

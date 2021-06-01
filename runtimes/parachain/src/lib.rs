@@ -721,6 +721,7 @@ impl parachain_staking::Config for Runtime {
 	type MinDelegation = MinDelegatorStk;
 	type MinDelegatorStk = MinDelegatorStk;
 	type MaxUnstakeRequests = MaxUnstakeRequests;
+	type WeightInfo = ();
 }
 
 impl pallet_utility::Config for Runtime {
