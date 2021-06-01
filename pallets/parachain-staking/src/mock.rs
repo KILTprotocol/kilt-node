@@ -154,6 +154,7 @@ impl Config for Test {
 	type MinDelegatorStk = MinDelegatorStk;
 	type MinDelegation = MinDelegation;
 	type MaxUnstakeRequests = MaxUnstakeRequests;
+	type WeightInfo = ();
 }
 
 pub(crate) struct ExtBuilder {

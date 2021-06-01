@@ -150,7 +150,7 @@ fn genesis() {
 
 			// Safety first checks
 			assert_eq!(
-				StakePallet::total_selected(),
+				StakePallet::max_selected_candidates(),
 				<Test as Config>::MinSelectedCandidates::get()
 			);
 			assert_eq!(
@@ -212,7 +212,7 @@ fn genesis() {
 
 			// Safety first checks
 			assert_eq!(
-				StakePallet::total_selected(),
+				StakePallet::max_selected_candidates(),
 				<Test as Config>::MinSelectedCandidates::get()
 			);
 			assert_eq!(
