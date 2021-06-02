@@ -918,7 +918,7 @@ pub mod pallet {
 				Self::prep_unstake_exit_queue(&stake.owner, stake.amount);
 				// remove delegation from delegator state
 				if let Some(mut delegator) = <DelegatorState<T>>::get(&stake.owner) {
-					if let Some(remaining) = delegator.rm_delegation(collator.clone()) {
+					if let Some(remaining) = delegator.rm_delegation(&collator) {
 						if remaining.is_zero() {
 							<DelegatorState<T>>::remove(&stake.owner);
 						} else {
@@ -1505,13 +1505,13 @@ pub mod pallet {
 			let mut delegations = <DelegatorState<T>>::get(&delegator).ok_or(Error::<T>::DelegatorNotFound)?;
 			let mut collator = <CollatorState<T>>::get(&candidate).ok_or(Error::<T>::CandidateNotFound)?;
 			let delegator_total = delegations
-				.inc_delegation(candidate.clone(), more)
+				.inc_delegation(&candidate, more)
 				.ok_or(Error::<T>::DelegationNotFound)?;
 
 			// update lock
 			let unstaking_len = Self::increase_lock(&delegator, delegator_total, more)?;
 			let before = collator.total;
-			collator.inc_delegator(delegator.clone(), more);
+			collator.inc_delegator(&delegator, more);
 			let after = collator.total;
 
 			if collator.is_active() {
@@ -1578,7 +1578,7 @@ pub mod pallet {
 			let mut delegations = <DelegatorState<T>>::get(&delegator).ok_or(Error::<T>::DelegatorNotFound)?;
 			let mut collator = <CollatorState<T>>::get(&candidate).ok_or(Error::<T>::CandidateNotFound)?;
 			let remaining = delegations
-				.dec_delegation(candidate.clone(), less)
+				.dec_delegation(&candidate, less)
 				.ok_or(Error::<T>::DelegationNotFound)?
 				.ok_or(Error::<T>::Underflow)?;
 
@@ -1591,7 +1591,7 @@ pub mod pallet {
 			Self::prep_unstake(&delegator, less)?;
 
 			let before = collator.total;
-			collator.dec_delegator(delegator.clone(), less);
+			collator.dec_delegator(&delegator, less);
 			let after = collator.total;
 			if collator.is_active() {
 				Self::update(candidate.clone(), collator.total);
@@ -1746,7 +1746,7 @@ pub mod pallet {
 			let mut delegator = <DelegatorState<T>>::get(&acc).ok_or(Error::<T>::DelegatorNotFound)?;
 			let old_total = delegator.total;
 			let remaining = delegator
-				.rm_delegation(collator.clone())
+				.rm_delegation(&collator)
 				.ok_or(Error::<T>::DelegationNotFound)?;
 
 			// edge case; if no delegations remaining, leave set of delegators

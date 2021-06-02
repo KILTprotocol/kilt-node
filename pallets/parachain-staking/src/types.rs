@@ -178,15 +178,15 @@ where
 		}
 	}
 
-	pub fn inc_delegator(&mut self, delegator: A, more: B) {
-		if let Ok(i) = self.delegators.binary_search_by(|x| x.owner.cmp(&delegator)) {
+	pub fn inc_delegator(&mut self, delegator: &A, more: B) {
+		if let Ok(i) = self.delegators.binary_search_by(|x| x.owner.cmp(delegator)) {
 			self.delegators[i].amount = self.delegators[i].amount.saturating_add(more);
 			self.total = self.total.saturating_add(more);
 		}
 	}
 
-	pub fn dec_delegator(&mut self, delegator: A, less: B) {
-		if let Ok(i) = self.delegators.binary_search_by(|x| x.owner.cmp(&delegator)) {
+	pub fn dec_delegator(&mut self, delegator: &A, less: B) {
+		if let Ok(i) = self.delegators.binary_search_by(|x| x.owner.cmp(delegator)) {
 			self.delegators[i].amount = self.delegators[i].amount.saturating_sub(less);
 			self.total = self.total.saturating_sub(less);
 		}
@@ -248,8 +248,8 @@ where
 
 	/// Returns Some(remaining stake for delecator), must be more than
 	/// MinDelegatorStk Returns None if delegation not found
-	pub fn rm_delegation(&mut self, collator: AccountId) -> Option<Balance> {
-		let amt = self.delegations.remove_by(|x| x.owner.cmp(&collator)).map(|f| f.amount);
+	pub fn rm_delegation(&mut self, collator: &AccountId) -> Option<Balance> {
+		let amt = self.delegations.remove_by(|x| x.owner.cmp(collator)).map(|f| f.amount);
 
 		if let Some(balance) = amt {
 			self.total = self.total.saturating_sub(balance);
@@ -260,8 +260,8 @@ where
 	}
 
 	/// Returns None if delegation not found
-	pub fn inc_delegation(&mut self, collator: AccountId, more: Balance) -> Option<Balance> {
-		match self.delegations.binary_search_by(|x| x.owner.cmp(&collator)) {
+	pub fn inc_delegation(&mut self, collator: &AccountId, more: Balance) -> Option<Balance> {
+		match self.delegations.binary_search_by(|x| x.owner.cmp(collator)) {
 			Ok(i) => {
 				self.delegations[i].amount = self.delegations[i].amount.saturating_add(more);
 				self.total = self.total.saturating_add(more);
@@ -274,8 +274,8 @@ where
 	/// Returns Some(Some(balance)) if successful
 	/// None if delegation not found
 	/// Some(None) if underflow
-	pub fn dec_delegation(&mut self, collator: AccountId, less: Balance) -> Option<Option<Balance>> {
-		match self.delegations.binary_search_by(|x| x.owner.cmp(&collator)) {
+	pub fn dec_delegation(&mut self, collator: &AccountId, less: Balance) -> Option<Option<Balance>> {
+		match self.delegations.binary_search_by(|x| x.owner.cmp(collator)) {
 			Ok(i) => {
 				let mut x = &mut self.delegations[i];
 				if x.amount > less {
