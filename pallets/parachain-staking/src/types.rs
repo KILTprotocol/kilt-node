@@ -246,7 +246,7 @@ where
 		}
 	}
 
-	/// Returns Some(remaining stake for delegator) if the delegation for the 
+	/// Returns Some(remaining stake for delegator) if the delegation for the
 	/// collator exists. Returns `None` otherwise.
 	pub fn rm_delegation(&mut self, collator: &AccountId) -> Option<Balance> {
 		let amt = self.delegations.remove_by(|x| x.owner.cmp(collator)).map(|f| f.amount);
@@ -271,8 +271,8 @@ where
 		}
 	}
 
-	/// Returns Some(Some(balance)) if successful, None if delegation was not found
-	/// and Some(None) if delegated stake would underflow.
+	/// Returns Some(Some(balance)) if successful, None if delegation was not
+	/// found and Some(None) if delegated stake would underflow.
 	pub fn dec_delegation(&mut self, collator: &AccountId, less: Balance) -> Option<Option<Balance>> {
 		match self.delegations.binary_search_by(|x| x.owner.cmp(collator)) {
 			Ok(i) => {
