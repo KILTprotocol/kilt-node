@@ -323,14 +323,6 @@ impl did::Config for Runtime {
 	type Origin = Origin;
 }
 
-pub struct PortableGabiRemoval;
-impl frame_support::traits::OnRuntimeUpgrade for PortableGabiRemoval {
-	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		frame_support::storage::unhashed::kill_prefix(&sp_io::hashing::twox_128(b"Portablegabi"));
-		Weight::max_value()
-	}
-}
-
 parameter_types! {
 	pub const DisabledValidatorsThreshold: Perbill = Perbill::from_percent(17);
 	pub const Period: u64 = 0xFFFF_FFFF_FFFF_FFFF;
@@ -420,8 +412,8 @@ construct_runtime!(
 		// Scheduler: pallet_scheduler::{Module, Call, Storage, Event<T>} = 32,
 
 		// Vesting. Usable initially, but removed once all vesting is finished.
-		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 33,
-		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
+		// Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 33,
+		// KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
 		Utility: pallet_utility::{Pallet, Call, Storage, Event} = 35,
 	}
 );
@@ -434,6 +426,14 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
 			_ => None,
 		}
+	}
+}
+
+pub struct DidRewriteUpgrade;
+impl frame_support::traits::OnRuntimeUpgrade for DidRewriteUpgrade {
+	fn on_runtime_upgrade() -> frame_support::weights::Weight {
+		frame_support::storage::unhashed::kill_prefix(&sp_io::hashing::twox_128(b"Did"));
+		Weight::max_value()
 	}
 }
 
@@ -462,8 +462,14 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signatu
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various Pallets.
-pub type Executive =
-	frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllPallets>;
+pub type Executive = frame_executive::Executive<
+	Runtime,
+	Block,
+	frame_system::ChainContext<Runtime>,
+	Runtime,
+	AllPallets,
+	(DidRewriteUpgrade,),
+>;
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
