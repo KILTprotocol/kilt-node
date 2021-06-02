@@ -426,7 +426,7 @@ checksum = "065374052e7df7ee4047b1160cca5e1467a12351a40b3da123c870ba0b8eda2a"
 
 [[package]]
 name = "attestation"
-version = "0.24.0"
+version = "0.25.0"
 dependencies = [
  "ctype",
  "delegation",
@@ -1412,7 +1412,7 @@ dependencies = [
 
 [[package]]
 name = "ctype"
-version = "0.24.0"
+version = "0.25.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -1873,7 +1873,7 @@ dependencies = [
 
 [[package]]
 name = "delegation"
-version = "0.24.0"
+version = "0.25.0"
 dependencies = [
  "bitflags",
  "ctype",
@@ -1930,7 +1930,7 @@ dependencies = [
 
 [[package]]
 name = "did"
-version = "0.24.0"
+version = "0.25.0"
 dependencies = [
  "ctype",
  "env_logger 0.8.3",
@@ -4572,7 +4572,7 @@ checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
 
 [[package]]
 name = "mashnet-node"
-version = "0.24.0"
+version = "0.25.0"
 dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
@@ -4618,7 +4618,7 @@ dependencies = [
 
 [[package]]
 name = "mashnet-node-runtime"
-version = "0.24.0"
+version = "0.25.0"
 dependencies = [
  "attestation",
  "bitflags",
@@ -4632,7 +4632,6 @@ dependencies = [
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "hex-literal 0.3.1",
- "kilt-launch",
  "kilt-primitives",
  "pallet-aura",
  "pallet-authorship",
@@ -4646,7 +4645,6 @@ dependencies = [
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "pallet-utility",
- "pallet-vesting",
  "parity-scale-codec",
  "serde",
  "sp-api",
