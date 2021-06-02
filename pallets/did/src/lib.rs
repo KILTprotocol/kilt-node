@@ -95,7 +95,7 @@ pub mod pallet {
 		#[cfg(not(feature = "runtime-benchmarks"))]
 		type Origin: From<DidRawOrigin<DidIdentifierOf<Self>>>;
 		#[cfg(feature = "runtime-benchmarks")]
-		type Origin: From<RawOrigin<Self::DidIdentifier>>;
+		type Origin: From<RawOrigin<DidIdentifierOf<Self>>>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		#[pallet::constant]
 		type MaxNewKeyAgreementKeys: Get<u32>;

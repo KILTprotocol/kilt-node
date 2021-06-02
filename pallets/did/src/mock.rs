@@ -21,6 +21,8 @@
 
 use codec::{Decode, Encode};
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
+#[cfg(feature = "runtime-benchmarks")]
+use frame_system::EnsureSigned;
 use sp_core::{ed25519, sr25519, Pair};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
@@ -104,6 +106,9 @@ impl Config for Test {
 
 impl ctype::Config for Test {
 	type CtypeCreatorId = TestCtypeOwner;
+	#[cfg(feature = "runtime-benchmarks")]
+	type EnsureOrigin = EnsureSigned<TestDidIdentifier>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<TestCtypeOwner>;
 	type Event = ();
 }
@@ -291,10 +296,12 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 		} else if *self == get_delegation_key_call() {
 			Some(did::DidVerificationKeyRelationship::CapabilityDelegation)
 		} else {
-			#[cfg(not(feature = "runtime-benchmarks"))]
-			return None;
 			#[cfg(feature = "runtime-benchmarks")]
-			return Some(did::DidVerificationKeyRelationship::AssertionMethod);
+			if *self == Self::get_call_for_did_call_benchmark() {
+				// Always require an authentication key to dispatch calls during benchmarking
+				return Some(did::DidVerificationKeyRelationship::Authentication);
+			}
+			None
 		}
 	}
 

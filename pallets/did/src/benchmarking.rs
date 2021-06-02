@@ -391,15 +391,13 @@ benchmarks! {
 
 		let did_subject = DidIdentifierOf::<T>::default();
 		let did_public_auth_key = get_ed25519_public_authentication_key();
-		let did_public_att_key = get_ed25519_public_attestation_key();
 
-		let mut did_details = get_did_base_details(DidVerificationKey::from(did_public_auth_key));
-		did_details.update_attestation_key(DidVerificationKey::from(did_public_att_key), BlockNumberOf::<T>::default());
+		let did_details = get_did_base_details(DidVerificationKey::from(did_public_auth_key));
 		Did::<T>::insert(&did_subject, did_details);
 
-		let did_call_op = generate_base_did_call_operation::<T>(did_subject.clone());
+		let did_call_op = generate_base_did_call_operation::<T>(did_subject);
 
-		let did_call_signature = ed25519_sign(ATTESTATION_KEY_ID, &did_public_att_key, did_call_op.encode().as_ref()).expect("Failed to create DID signature from raw ed25519 signature.");
+		let did_call_signature = ed25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_call_op.encode().as_ref()).expect("Failed to create DID signature from raw ed25519 signature.");
 	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op.clone()), DidSignature::from(did_call_signature))
 
 	submit_did_call_sr25519_key {
@@ -407,15 +405,13 @@ benchmarks! {
 
 		let did_subject = DidIdentifierOf::<T>::default();
 		let did_public_auth_key = get_sr25519_public_authentication_key();
-		let did_public_att_key = get_sr25519_public_attestation_key();
 
-		let mut did_details = get_did_base_details(DidVerificationKey::from(did_public_auth_key));
-		did_details.update_attestation_key(DidVerificationKey::from(did_public_att_key), BlockNumberOf::<T>::default());
+		let did_details = get_did_base_details(DidVerificationKey::from(did_public_auth_key));
 		Did::<T>::insert(&did_subject, did_details);
 
-		let did_call_op = generate_base_did_call_operation::<T>(did_subject.clone());
+		let did_call_op = generate_base_did_call_operation::<T>(did_subject);
 
-		let did_call_signature = sr25519_sign(ATTESTATION_KEY_ID, &did_public_att_key, did_call_op.encode().as_ref()).expect("Failed to create DID signature from raw sr25519 signature.");
+		let did_call_signature = sr25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_call_op.encode().as_ref()).expect("Failed to create DID signature from raw sr25519 signature.");
 	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op.clone()), DidSignature::from(did_call_signature))
 }
 

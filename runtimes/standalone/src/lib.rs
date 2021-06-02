@@ -444,9 +444,9 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
 			#[cfg(not(feature = "runtime-benchmarks"))]
 			_ => None,
-			// By default, returns the assertionMethod (attestation) key
+			// By default, returns the authentication key
 			#[cfg(feature = "runtime-benchmarks")]
-			_ => Some(did::DidVerificationKeyRelationship::AssertionMethod),
+			_ => Some(did::DidVerificationKeyRelationship::Authentication),
 		}
 	}
 
