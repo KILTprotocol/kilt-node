@@ -18,11 +18,8 @@
 
 //! KILT chain specification
 
-use kilt_primitives::{constants::MONTHS, AccountId, AccountPublic, Balance, BlockNumber};
-use mashnet_node_runtime::{
-	BalancesConfig, GenesisConfig, KiltLaunchConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig,
-	WASM_BINARY,
-};
+use kilt_primitives::{AccountId, AccountPublic, Balance, BlockNumber};
+use mashnet_node_runtime::{BalancesConfig, GenesisConfig, SessionConfig, SudoConfig, SystemConfig, WASM_BINARY};
 
 use hex_literal::hex;
 
@@ -250,21 +247,6 @@ fn testnet_genesis(
 		pallet_aura: Default::default(),
 		pallet_grandpa: Default::default(),
 		pallet_sudo: SudoConfig { key: root_key },
-		kilt_launch: KiltLaunchConfig {
-			balance_locks: airdrop_accounts
-				.iter()
-				.cloned()
-				.map(|(who, amount, _, locking_length)| (who, locking_length * MONTHS, amount))
-				.collect(),
-			vesting: airdrop_accounts
-				.iter()
-				.cloned()
-				.map(|(who, amount, vesting_length, _)| (who, vesting_length * MONTHS, amount))
-				.collect(),
-			// TODO: Set this to another address (PRE-LAUNCH)
-			transfer_account: hex!["6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c"].into(),
-		},
-		pallet_vesting: VestingConfig { vesting: vec![] },
 	}
 }
 

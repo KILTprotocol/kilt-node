@@ -16,11 +16,7 @@ attestation = {default-features = false, path = "../../pallets/attestation"}
 ctype = {default-features = false, path = "../../pallets/ctype"}
 delegation = {default-features = false, path = "../../pallets/delegation"}
 did = {default-features = false, path = "../../pallets/did"}
-kilt-launch = {default-features = false, path = "../../pallets/kilt-launch"}
 kilt-primitives = {path = "../../primitives", default-features = false}
-
-# kilt specific
-pallet-vesting = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.3"}
 
 # Benchmarking
 frame-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.3"}
@@ -71,11 +67,9 @@ runtime-benchmarks = [
   "frame-system-benchmarking",
   "frame-system/runtime-benchmarks",
   "hex-literal",
-  "kilt-launch/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
-  "pallet-vesting/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
 ]
 std = [
@@ -88,7 +82,6 @@ std = [
   "frame-support/std",
   "frame-system-rpc-runtime-api/std",
   "frame-system/std",
-  "kilt-launch/std",
   "kilt-primitives/std",
   "pallet-aura/std",
   "pallet-authorship/std",
@@ -101,7 +94,6 @@ std = [
   "pallet-timestamp/std",
   "pallet-transaction-payment-rpc-runtime-api/std",
   "pallet-transaction-payment/std",
-  "pallet-vesting/std",
   "serde",
   "sp-api/std",
   "sp-arithmetic/std",
