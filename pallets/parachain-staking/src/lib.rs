@@ -188,7 +188,7 @@ pub mod pallet {
 		Percent, Perquintill,
 	};
 	use sp_staking::SessionIndex;
-	use sp_std::{collections::btree_map::BTreeMap, convert::TryFrom, prelude::*};
+	use sp_std::{collections::btree_map::BTreeMap, prelude::*};
 
 	use crate::{
 		set::OrderedSet,
@@ -2005,11 +2005,8 @@ pub mod pallet {
 			let mut unstaking = <Unstaking<T>>::get(who);
 
 			ensure!(
-				u32::try_from(unstaking.len())
-					.map(|len| len <= T::MaxUnstakeRequests::get())
-					.ok()
-					.unwrap_or(false),
-				Error::<T>::NoMoreUnstaking
+				unstaking.len() as u32 <= T::MaxUnstakeRequests::get(),
+				Error::<T>::NoMoreUnstaking,
 			);
 
 			// if existent, we have to add the current amount of same unlock_block, because
