@@ -21,12 +21,15 @@
 
 use codec::{Decode, Encode};
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
+#[cfg(feature = "runtime-benchmarks")]
+use frame_system::EnsureSigned;
 use sp_core::{ed25519, sr25519, Pair};
+use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 };
-use sp_std::collections::btree_set::BTreeSet;
+use sp_std::{collections::btree_set::BTreeSet, convert::TryInto, sync::Arc};
 
 use crate as did;
 use crate::*;
@@ -84,15 +87,28 @@ impl frame_system::Config for Test {
 	type OnSetCode = ();
 }
 
+parameter_types! {
+	pub const MaxNewKeyAgreementKeys: u32 = 10u32;
+	pub const MaxVerificationKeysToRevoke: u32 = 10u32;
+	pub const MaxUrlLength: u32 = 200u32;
+}
+
 impl Config for Test {
 	type DidIdentifier = TestDidIdentifier;
 	type Origin = Origin;
 	type Call = Call;
 	type Event = ();
+	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
+	type MaxUrlLength = MaxUrlLength;
+	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
+	type WeightInfo = ();
 }
 
 impl ctype::Config for Test {
 	type CtypeCreatorId = TestCtypeOwner;
+	#[cfg(feature = "runtime-benchmarks")]
+	type EnsureOrigin = EnsureSigned<TestDidIdentifier>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<TestCtypeOwner>;
 	type Event = ();
 }
@@ -110,6 +126,7 @@ const DEFAULT_ATT_SEED: [u8; 32] = [6u8; 32];
 const ALTERNATIVE_ATT_SEED: [u8; 32] = [60u8; 32];
 const DEFAULT_DEL_SEED: [u8; 32] = [7u8; 32];
 const ALTERNATIVE_DEL_SEED: [u8; 32] = [70u8; 32];
+const DEFAULT_URL_SCHEME: [u8; 8] = *b"https://";
 
 pub fn get_ed25519_authentication_key(default: bool) -> ed25519::Pair {
 	if default {
@@ -165,6 +182,45 @@ pub fn get_sr25519_delegation_key(default: bool) -> sr25519::Pair {
 	} else {
 		sr25519::Pair::from_seed(&ALTERNATIVE_DEL_SEED)
 	}
+}
+
+pub fn get_key_agreement_keys(n_keys: u32) -> BTreeSet<DidEncryptionKey> {
+	(1..=n_keys)
+		.map(|i| {
+			// Converts the loop index to a 32-byte array;
+			let mut seed_vec = i.to_be_bytes().to_vec();
+			seed_vec.resize(32, 0u8);
+			let seed: [u8; 32] = seed_vec
+				.try_into()
+				.expect("Failed to create encryption key from raw seed.");
+			DidEncryptionKey::X25519(seed)
+		})
+		.collect::<BTreeSet<DidEncryptionKey>>()
+}
+
+pub fn get_public_keys_to_remove(n_keys: u32) -> BTreeSet<TestKeyId> {
+	(1..=n_keys)
+		.map(|i| {
+			// Converts the loop index to a 32-byte array;
+			let mut seed_vec = i.to_be_bytes().to_vec();
+			seed_vec.resize(32, 0u8);
+			let seed: [u8; 32] = seed_vec
+				.try_into()
+				.expect("Failed to create encryption key from raw seed.");
+			let key = DidEncryptionKey::X25519(seed);
+			generate_key_id(&key.into())
+		})
+		.collect::<BTreeSet<TestKeyId>>()
+}
+
+// Assumes that the length of the URL is larger than 8 (length of the prefix https://)
+pub fn get_url_endpoint(length: u32) -> Url {
+	let total_length = usize::try_from(length).expect("Failed to convert URL max length value to usize value.");
+	let mut url_encoded_string = DEFAULT_URL_SCHEME.to_vec();
+	url_encoded_string.resize(total_length, b'0');
+	Url::Http(
+		HttpUrl::try_from(url_encoded_string.as_ref()).expect("Failed to create default URL with provided length."),
+	)
 }
 
 pub fn generate_base_did_creation_operation(
@@ -240,8 +296,19 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 		} else if *self == get_delegation_key_call() {
 			Some(did::DidVerificationKeyRelationship::CapabilityDelegation)
 		} else {
+			#[cfg(feature = "runtime-benchmarks")]
+			if *self == Self::get_call_for_did_call_benchmark() {
+				// Always require an authentication key to dispatch calls during benchmarking
+				return Some(did::DidVerificationKeyRelationship::Authentication);
+			}
 			None
 		}
+	}
+
+	// Always return a System::remark() extrinsic call
+	#[cfg(feature = "runtime-benchmarks")]
+	fn get_call_for_did_call_benchmark() -> Self {
+		Call::System(frame_system::Call::remark(vec![]))
 	}
 }
 
@@ -322,6 +389,15 @@ impl ExtBuilder {
 				})
 			});
 		}
+
+		ext
+	}
+
+	pub fn build_with_keystore(self, ext: Option<sp_io::TestExternalities>) -> sp_io::TestExternalities {
+		let mut ext = self.build(ext);
+
+		let keystore = KeyStore::new();
+		ext.register_extension(KeystoreExt(Arc::new(keystore)));
 
 		ext
 	}

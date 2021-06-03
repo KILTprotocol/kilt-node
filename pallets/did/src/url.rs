@@ -133,6 +133,18 @@ pub enum Url {
 	Ipfs(IpfsUrl),
 }
 
+impl Url {
+	#[allow(clippy::len_without_is_empty)]
+	pub fn len(&self) -> usize {
+		match self {
+			Self::Http(HttpUrl { payload }) | Self::Ftp(FtpUrl { payload }) | Self::Ipfs(IpfsUrl { payload }) => {
+				// We can use .len() as we know the string is ASCII, so 1 byte <-> 1 character
+				payload.len()
+			}
+		}
+	}
+}
+
 impl From<HttpUrl> for Url {
 	fn from(url: HttpUrl) -> Self {
 		Self::Http(url)

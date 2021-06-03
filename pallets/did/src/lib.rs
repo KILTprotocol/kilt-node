@@ -21,6 +21,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
+pub mod default_weights;
 pub mod did_details;
 pub mod errors;
 pub mod origin;
@@ -30,6 +31,10 @@ mod utils;
 
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
+
+#[cfg(feature = "runtime-benchmarks")]
+pub mod benchmarking;
+
 #[cfg(test)]
 mod tests;
 
@@ -43,10 +48,15 @@ use frame_support::{
 	dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo},
 	ensure,
 	storage::types::StorageMap,
+	traits::Get,
 	Parameter,
 };
 use frame_system::ensure_signed;
+#[cfg(feature = "runtime-benchmarks")]
+use frame_system::RawOrigin;
 use sp_std::{boxed::Box, convert::TryFrom, fmt::Debug, prelude::Clone, vec::Vec};
+
+use crate::default_weights::WeightInfo;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -81,9 +91,19 @@ pub mod pallet {
 			+ Dispatchable<Origin = <Self as Config>::Origin, PostInfo = PostDispatchInfo>
 			+ GetDispatchInfo
 			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
-		type DidIdentifier: Parameter;
+		type DidIdentifier: Parameter + Default;
+		#[cfg(not(feature = "runtime-benchmarks"))]
 		type Origin: From<DidRawOrigin<DidIdentifierOf<Self>>>;
+		#[cfg(feature = "runtime-benchmarks")]
+		type Origin: From<RawOrigin<DidIdentifierOf<Self>>>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		#[pallet::constant]
+		type MaxNewKeyAgreementKeys: Get<u32>;
+		#[pallet::constant]
+		type MaxVerificationKeysToRevoke: Get<u32>;
+		#[pallet::constant]
+		type MaxUrlLength: Get<u32>;
+		type WeightInfo: WeightInfo;
 	}
 
 	#[pallet::pallet]
@@ -150,6 +170,14 @@ pub mod pallet {
 		CurrentlyActiveKey,
 		/// The called extrinsic does not support DID authorization.
 		UnsupportedDidAuthorizationCall,
+		/// A number of new key agreement keys greater than the maximum allowed
+		/// has been provided.
+		MaxKeyAgreementKeysLimitExceeded,
+		/// A number of new verification keys to remove greater than the maximum
+		/// allowed has been provided.
+		MaxVerificationKeysToRemoveLimitExceeded,
+		/// A URL longer than the maximum size allowed has been provided.
+		MaxUrlLengthExceeded,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
 	}
@@ -160,6 +188,7 @@ pub mod pallet {
 				DidError::StorageError(storage_error) => Self::from(storage_error),
 				DidError::SignatureError(operation_error) => Self::from(operation_error),
 				DidError::UrlError(url_error) => Self::from(url_error),
+				DidError::InputError(input_error) => Self::from(input_error),
 				DidError::InternalError => Self::InternalError,
 			}
 		}
@@ -198,6 +227,16 @@ pub mod pallet {
 		}
 	}
 
+	impl<T> From<InputError> for Error<T> {
+		fn from(error: InputError) -> Self {
+			match error {
+				InputError::MaxKeyAgreementKeysLimitExceeded => Self::MaxKeyAgreementKeysLimitExceeded,
+				InputError::MaxVerificationKeysToRemoveLimitExceeded => Self::MaxVerificationKeysToRemoveLimitExceeded,
+				InputError::MaxUrlLengthExceeded => Self::MaxUrlLengthExceeded,
+			}
+		}
+	}
+
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		/// Store a new DID on chain, after verifying the signature associated
@@ -209,7 +248,16 @@ pub mod pallet {
 		///   the new DID
 		/// * signature: the signture over the operation that must be signed
 		///   with the authentication key provided in the operation
-		#[pallet::weight(0)]
+		#[pallet::weight(
+			<T as pallet::Config>::WeightInfo::submit_did_create_operation_ed25519_keys(
+				operation.new_key_agreement_keys.len() as u32,
+				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len() as u32)
+			)
+			.max(<T as pallet::Config>::WeightInfo::submit_did_create_operation_sr25519_keys(
+				operation.new_key_agreement_keys.len() as u32,
+				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len() as u32)
+			))
+		)]
 		pub fn submit_did_create_operation(
 			origin: OriginFor<T>,
 			operation: DidCreationOperation<T>,
@@ -224,7 +272,7 @@ pub mod pallet {
 				<Error<T>>::DidAlreadyPresent
 			);
 
-			let did_entry = DidDetails::from(operation.clone());
+			let did_entry = DidDetails::try_from(operation.clone()).map_err(<Error<T>>::from)?;
 
 			Self::verify_payload_signature_with_did_key_type(
 				&operation.encode(),
@@ -254,7 +302,18 @@ pub mod pallet {
 		///   with the authentication key associated with the new DID. Even in
 		///   case the authentication key is being updated, the operation must
 		///   still be signed with the old one being replaced
-		#[pallet::weight(0)]
+		#[pallet::weight(
+			<T as pallet::Config>::WeightInfo::submit_did_update_operation_ed25519_keys(
+				operation.new_key_agreement_keys.len() as u32,
+				operation.public_keys_to_remove.len() as u32,
+				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len() as u32)
+			)
+			.max(<T as pallet::Config>::WeightInfo::submit_did_update_operation_sr25519_keys(
+				operation.new_key_agreement_keys.len() as u32,
+				operation.public_keys_to_remove.len() as u32,
+				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len() as u32)
+			))
+		)]
 		pub fn submit_did_update_operation(
 			origin: OriginFor<T>,
 			operation: DidUpdateOperation<T>,
@@ -291,7 +350,7 @@ pub mod pallet {
 		///   deactivate
 		/// * signature: the signature over the operation that must be signed
 		///   with the authentication key associated with the DID being deleted
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::submit_did_delete_operation())]
 		pub fn submit_did_delete_operation(
 			origin: OriginFor<T>,
 			operation: DidDeletionOperation<T>,
@@ -355,7 +414,11 @@ pub mod pallet {
 
 			// Dispatch the referenced [Call] instance and return its result
 			let DidAuthorizedCallOperation { did, call, .. } = wrapped_operation.operation;
+
+			#[cfg(not(feature = "runtime-benchmarks"))]
 			let result = call.dispatch(DidRawOrigin { id: did }.into());
+			#[cfg(feature = "runtime-benchmarks")]
+			let result = call.dispatch(RawOrigin::Signed(did).into());
 
 			let dispatch_event = match result {
 				Ok(_) => Event::DidCallSuccess(did_identifier),
