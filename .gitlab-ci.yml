@@ -1,7 +1,3 @@
-cache:
-  paths:
-    - target/
-
 stages:
   - lint
   - test
