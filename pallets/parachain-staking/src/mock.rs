@@ -16,6 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 //! Test utilities
+
+#![allow(clippy::from_over_into)]
+
 use super::*;
 use crate::{self as stake};
 use frame_support::{

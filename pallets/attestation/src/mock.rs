@@ -86,11 +86,21 @@ impl frame_system::Config for Test {
 	type OnSetCode = ();
 }
 
+parameter_types! {
+	pub const MaxNewKeyAgreementKeys: u32 = 10u32;
+	pub const MaxVerificationKeysToRevoke: u32 = 10u32;
+	pub const MaxUrlLength: u32 = 200u32;
+}
+
 impl did::Config for Test {
 	type DidIdentifier = TestDidIdentifier;
 	type Origin = Origin;
 	type Call = Call;
 	type Event = ();
+	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
+	type MaxUrlLength = MaxUrlLength;
+	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
+	type WeightInfo = ();
 }
 
 impl ctype::Config for Test {
@@ -114,6 +124,12 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
 		// Not used in this pallet
 		None
+	}
+
+	// Always return a System::remark() extrinsic call
+	#[cfg(feature = "runtime-benchmarks")]
+	fn get_call_for_did_call_benchmark() -> Self {
+		Call::System(frame_system::Call::remark(vec![]))
 	}
 }
 
