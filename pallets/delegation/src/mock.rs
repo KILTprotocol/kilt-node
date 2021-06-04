@@ -24,6 +24,7 @@ use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 };
+use sp_std::convert::TryFrom;
 
 #[cfg(test)]
 use codec::Encode;
@@ -109,10 +110,17 @@ impl ctype::Config for Test {
 	type Event = ();
 }
 
+parameter_types! {
+	pub const MaxSignatureByteLength: u16 = 64;
+}
+
 impl Config for Test {
+	type DelegationSignatureVerification = Self;
+	type DelegationEntityId = TestDelegatorId;
 	type DelegationNodeId = TestDelegationNodeId;
-	type EnsureOrigin = EnsureSigned<TestDelegatorId>;
+	type EnsureOrigin = did::EnsureDidOrigin<TestDelegatorId>;
 	type Event = ();
+	type MaxSignatureByteLength = MaxSignatureByteLength;
 }
 
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
@@ -125,6 +133,35 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	#[cfg(feature = "runtime-benchmarks")]
 	fn get_call_for_did_call_benchmark() -> Self {
 		Call::System(frame_system::Call::remark(vec![]))
+	}
+}
+
+impl VerifyDelegateSignature for Test {
+	type DelegateId = TestDelegatorId;
+	type Payload = kilt_primitives::Hash;
+	type Signature = Vec<u8>;
+
+	fn verify(delegate: &Self::DelegateId, payload: &Self::Payload, signature: &Self::Signature) -> SignatureVerificationResult {
+		// Retrieve delegate details for signature verification
+		let delegate_details = <did::Did<Test>>::get(&delegate).ok_or(SignatureVerificationError::SignerInformationNotPresent)?;
+
+		let did_signature = did::DidSignature::try_from(signature.to_owned()).map_err(|_| SignatureVerificationError::SignatureInvalid)?;
+
+		did::pallet::Pallet::<Test>::verify_payload_signature_with_did_key_type(
+			payload.as_ref(),
+			&did_signature,
+			&delegate_details,
+			did::DidVerificationKeyRelationship::Authentication,
+		).map_err(|err| {
+			match err {
+				did::DidError::StorageError(_) => SignatureVerificationError::SignerInformationNotPresent,
+				did::DidError::SignatureError(_) => SignatureVerificationError::SignatureInvalid,
+				// Should never happen
+				_ => delegation::SignatureVerificationError::SignatureInvalid,
+			}
+		})?;
+
+		Ok(())
 	}
 }
 

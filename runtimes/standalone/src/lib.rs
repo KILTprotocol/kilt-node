@@ -274,7 +274,7 @@ where
 impl delegation::VerifyDelegateSignature for Runtime {
 	type DelegateId = DidIdentifier;
 	type Payload = Hash;
-	type Signature = sp_std::vec::Vec<u8>;
+	type Signature = Vec<u8>;
 
 	fn verify(delegate: &Self::DelegateId, payload: &Self::Payload, signature: &Self::Signature) -> delegation::SignatureVerificationResult {
 		// Retrieve delegate details for signature verification
@@ -338,7 +338,7 @@ parameter_types! {
 }
 
 impl delegation::Config for Runtime {
-	type DelegationSignatureVerification = Runtime;
+	type DelegationSignatureVerification = Self;
 	type DelegationEntityId = DidIdentifier;
 	type DelegationNodeId = Hash;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
@@ -367,14 +367,6 @@ impl did::Config for Runtime {
 	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 	type MaxUrlLength = MaxUrlLength;
 	type WeightInfo = did::default_weights::SubstrateWeight<Runtime>;
-}
-
-pub struct PortableGabiRemoval;
-impl frame_support::traits::OnRuntimeUpgrade for PortableGabiRemoval {
-	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		frame_support::storage::unhashed::kill_prefix(&sp_io::hashing::twox_128(b"Portablegabi"));
-		Weight::max_value()
-	}
 }
 
 parameter_types! {
