@@ -22,7 +22,6 @@ sp-core = {branch = "polkadot-v0.9.3", default-features = false, git = "https://
 [dependencies]
 # Internal dependencies
 ctype = {default-features = false, path = "../ctype", version = "0.24.0"}
-did = {default-features = false, path = "../did", version = "0.24.0"}
 kilt-primitives = {default-features = false, optional = true, path = "../../primitives"}
 
 #External dependencies
@@ -48,8 +47,10 @@ mock = [
 runtime-benchmarks = []
 std = [
   "codec/std",
+  "ctype/std",
   "frame-support/std",
   "frame-system/std",
+  "kilt-primitives/std",
   "log/std",
   "sp-core/std",
   "sp-io/std",
