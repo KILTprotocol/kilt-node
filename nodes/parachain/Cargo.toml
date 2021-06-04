@@ -75,8 +75,6 @@ cumulus-client-network = {git = "https://github.com/paritytech/cumulus", branch 
 cumulus-client-service = {git = "https://github.com/paritytech/cumulus", branch = "master"}
 cumulus-primitives-core = {git = "https://github.com/paritytech/cumulus", branch = "master"}
 cumulus-primitives-parachain-inherent = {git = "https://github.com/paritytech/cumulus", branch = "master"}
-# TODO: Check whether removable
-shell-runtime = {package = "cumulus-shell-runtime", git = "https://github.com/paritytech/cumulus", branch = "master"}
 
 # Polkadot dependencies
 polkadot-cli = {git = "https://github.com/paritytech/polkadot", branch = "master"}
