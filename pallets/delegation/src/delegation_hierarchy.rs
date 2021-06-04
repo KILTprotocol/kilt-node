@@ -139,7 +139,7 @@ pub type SignatureVerificationResult = Result<(), SignatureVerificationError>;
 
 pub enum SignatureVerificationError {
 	SignerInformationNotPresent,
-	SignatureInvalid
+	SignatureInvalid,
 }
 
 pub trait VerifyDelegateSignature {
@@ -147,5 +147,9 @@ pub trait VerifyDelegateSignature {
 	type Payload;
 	type Signature;
 
-	fn verify(delegate: &Self::DelegateId, payload: &Self::Payload, signature: &Self::Signature) -> SignatureVerificationResult;
+	fn verify(
+		delegate: &Self::DelegateId,
+		payload: &Self::Payload,
+		signature: &Self::Signature,
+	) -> SignatureVerificationResult;
 }

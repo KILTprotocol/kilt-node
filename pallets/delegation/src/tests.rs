@@ -16,12 +16,13 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use codec::Encode;
 use frame_support::{assert_err, assert_noop, assert_ok};
 use sp_core::Pair;
 
 use crate::{self as delegation, mock::*};
 use ctype::mock as ctype_mock;
-use did::mock as did_mock;
+use did::mock::{self as did_mock, initialize_logger};
 
 // submit_delegation_root_creation_operation()
 
@@ -108,6 +109,7 @@ fn ctype_not_found_create_root_delegation_error() {
 
 #[test]
 fn create_delegation_no_parent_successful() {
+	initialize_logger();
 	let creator = ALICE;
 	let delegate = BOB;
 
@@ -130,6 +132,7 @@ fn create_delegation_no_parent_successful() {
 		&delegation_node.parent,
 		&delegation_node.permissions,
 	))));
+	log::info!("SIG: {:#?}", delegate_signature);
 
 	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature, delegation_node);
 
@@ -151,7 +154,7 @@ fn create_delegation_no_parent_successful() {
 			operation.parent_id,
 			delegate.clone(),
 			operation.permissions,
-			operation.delegate_signature.clone(),
+			operation.delegate_signature.clone().encode(),
 		));
 	});
 
@@ -225,7 +228,7 @@ fn create_delegation_with_parent_successful() {
 			operation.parent_id,
 			delegate.clone(),
 			operation.permissions,
-			operation.delegate_signature.clone(),
+			operation.delegate_signature.clone().encode(),
 		));
 	});
 
@@ -297,7 +300,7 @@ fn delegate_not_found_create_delegation_error() {
 				operation.parent_id,
 				delegate.clone(),
 				operation.permissions,
-				operation.delegate_signature.clone(),
+				operation.delegate_signature.clone().encode(),
 			),
 			delegation::Error::<Test>::DelegateNotFound
 		);
@@ -352,7 +355,7 @@ fn invalid_delegate_signature_create_delegation_error() {
 				operation.parent_id,
 				delegate.clone(),
 				operation.permissions,
-				operation.delegate_signature.clone(),
+				operation.delegate_signature.clone().encode(),
 			),
 			delegation::Error::<Test>::InvalidDelegateSignature
 		);
@@ -408,7 +411,7 @@ fn duplicate_delegation_create_delegation_error() {
 				operation.parent_id,
 				delegate.clone(),
 				operation.permissions,
-				operation.delegate_signature.clone(),
+				operation.delegate_signature.clone().encode(),
 			),
 			delegation::Error::<Test>::DelegationAlreadyExists
 		);
@@ -460,7 +463,7 @@ fn root_not_existing_create_delegation_error() {
 				operation.parent_id,
 				delegate.clone(),
 				operation.permissions,
-				operation.delegate_signature.clone(),
+				operation.delegate_signature.clone().encode(),
 			),
 			delegation::Error::<Test>::RootNotFound
 		);
@@ -515,7 +518,7 @@ fn parent_not_existing_create_delegation_error() {
 				operation.parent_id,
 				delegate.clone(),
 				operation.permissions,
-				operation.delegate_signature.clone(),
+				operation.delegate_signature.clone().encode(),
 			),
 			delegation::Error::<Test>::ParentDelegationNotFound
 		);
@@ -576,7 +579,7 @@ fn not_owner_of_parent_create_delegation_error() {
 				operation.parent_id,
 				delegate.clone(),
 				operation.permissions,
-				operation.delegate_signature.clone(),
+				operation.delegate_signature.clone().encode(),
 			),
 			delegation::Error::<Test>::NotOwnerOfParentDelegation
 		);
@@ -637,7 +640,7 @@ fn unauthorised_delegation_create_delegation_error() {
 				operation.parent_id,
 				delegate.clone(),
 				operation.permissions,
-				operation.delegate_signature.clone(),
+				operation.delegate_signature.clone().encode(),
 			),
 			delegation::Error::<Test>::UnauthorizedDelegation
 		);
@@ -691,7 +694,7 @@ fn not_owner_of_root_create_delegation_error() {
 				operation.parent_id,
 				delegate.clone(),
 				operation.permissions,
-				operation.delegate_signature.clone(),
+				operation.delegate_signature.clone().encode(),
 			),
 			delegation::Error::<Test>::NotOwnerOfRootDelegation
 		);

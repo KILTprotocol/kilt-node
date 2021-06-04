@@ -28,7 +28,6 @@ use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 };
-use sp_std::convert::TryFrom;
 
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
@@ -143,21 +142,28 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 
 impl delegation::VerifyDelegateSignature for Test {
 	type DelegateId = TestDelegatorId;
-	type Payload = kilt_primitives::Hash;
+	type Payload = Vec<u8>;
 	type Signature = Vec<u8>;
 
-	fn verify(delegate: &Self::DelegateId, payload: &Self::Payload, signature: &Self::Signature) -> delegation::SignatureVerificationResult {
+	fn verify(
+		delegate: &Self::DelegateId,
+		payload: &Self::Payload,
+		signature: &Self::Signature,
+	) -> delegation::SignatureVerificationResult {
 		// Retrieve delegate details for signature verification
-		let delegate_details = <did::Did<Test>>::get(&delegate).ok_or(delegation::SignatureVerificationError::SignerInformationNotPresent)?;
+		let delegate_details = <did::Did<Test>>::get(&delegate)
+			.ok_or(delegation::SignatureVerificationError::SignerInformationNotPresent)?;
 
-		let did_signature = did::DidSignature::try_from(signature.to_owned()).map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
+		let did_signature = did::DidSignature::from_did_signature_encoded(signature.to_owned())
+			.map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
 
 		did::pallet::Pallet::<Test>::verify_payload_signature_with_did_key_type(
 			payload.as_ref(),
 			&did_signature,
 			&delegate_details,
 			did::DidVerificationKeyRelationship::Authentication,
-		).map_err(|err| {
+		)
+		.map_err(|err| {
 			match err {
 				did::DidError::StorageError(_) => delegation::SignatureVerificationError::SignerInformationNotPresent,
 				did::DidError::SignatureError(_) => delegation::SignatureVerificationError::SignatureInvalid,

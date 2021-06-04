@@ -42,7 +42,7 @@ use sp_runtime::{
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult,
 };
-use sp_std::{borrow::ToOwned, convert::TryFrom, prelude::*};
+use sp_std::{borrow::ToOwned, prelude::*};
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
@@ -273,21 +273,28 @@ where
 
 impl delegation::VerifyDelegateSignature for Runtime {
 	type DelegateId = DidIdentifier;
-	type Payload = Hash;
+	type Payload = Vec<u8>;
 	type Signature = Vec<u8>;
 
-	fn verify(delegate: &Self::DelegateId, payload: &Self::Payload, signature: &Self::Signature) -> delegation::SignatureVerificationResult {
+	fn verify(
+		delegate: &Self::DelegateId,
+		payload: &Self::Payload,
+		signature: &Self::Signature,
+	) -> delegation::SignatureVerificationResult {
 		// Retrieve delegate details for signature verification
-		let delegate_details = <did::Did<Runtime>>::get(&delegate).ok_or(delegation::SignatureVerificationError::SignerInformationNotPresent)?;
+		let delegate_details = <did::Did<Runtime>>::get(&delegate)
+			.ok_or(delegation::SignatureVerificationError::SignerInformationNotPresent)?;
 
-		let did_signature = did::DidSignature::try_from(signature.to_owned()).map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
+		let did_signature = did::DidSignature::from_did_signature_encoded(signature.to_owned())
+			.map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
 
 		did::pallet::Pallet::<Runtime>::verify_payload_signature_with_did_key_type(
 			payload.as_ref(),
 			&did_signature,
 			&delegate_details,
 			did::DidVerificationKeyRelationship::Authentication,
-		).map_err(|err| {
+		)
+		.map_err(|err| {
 			match err {
 				did::DidError::StorageError(_) => delegation::SignatureVerificationError::SignerInformationNotPresent,
 				did::DidError::SignatureError(_) => delegation::SignatureVerificationError::SignatureInvalid,
