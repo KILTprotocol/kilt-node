@@ -1646,25 +1646,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cumulus-pallet-dmp-queue"
-version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.3#78b31b21122995b49f3c2cfe2791f188e33e5917"
-dependencies = [
- "cumulus-primitives-core",
- "frame-support",
- "frame-system",
- "log",
- "parity-scale-codec",
- "rand 0.8.3",
- "rand_chacha 0.3.0",
- "sp-io",
- "sp-runtime",
- "sp-std",
- "xcm",
- "xcm-executor",
-]
-
-[[package]]
 name = "cumulus-pallet-parachain-system"
 version = "0.1.0"
 source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.3#78b31b21122995b49f3c2cfe2791f188e33e5917"
@@ -1691,22 +1672,6 @@ dependencies = [
  "sp-trie",
  "sp-version",
  "trie-db",
- "xcm",
-]
-
-[[package]]
-name = "cumulus-pallet-xcm"
-version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.3#78b31b21122995b49f3c2cfe2791f188e33e5917"
-dependencies = [
- "cumulus-primitives-core",
- "frame-support",
- "frame-system",
- "parity-scale-codec",
- "serde",
- "sp-io",
- "sp-runtime",
- "sp-std",
  "xcm",
 ]
 
@@ -1764,59 +1729,6 @@ dependencies = [
  "sp-std",
  "sp-trie",
  "tracing",
-]
-
-[[package]]
-name = "cumulus-primitives-utility"
-version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.3#78b31b21122995b49f3c2cfe2791f188e33e5917"
-dependencies = [
- "cumulus-primitives-core",
- "frame-support",
- "impl-trait-for-tuples",
- "parity-scale-codec",
- "polkadot-core-primitives",
- "polkadot-parachain",
- "polkadot-primitives",
- "sp-runtime",
- "sp-std",
- "sp-trie",
- "xcm",
-]
-
-[[package]]
-name = "cumulus-shell-runtime"
-version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.3#78b31b21122995b49f3c2cfe2791f188e33e5917"
-dependencies = [
- "cumulus-pallet-dmp-queue",
- "cumulus-pallet-parachain-system",
- "cumulus-pallet-xcm",
- "cumulus-primitives-core",
- "cumulus-primitives-utility",
- "frame-executive",
- "frame-support",
- "frame-system",
- "log",
- "parachain-info",
- "parity-scale-codec",
- "polkadot-parachain",
- "serde",
- "sp-api",
- "sp-block-builder",
- "sp-core",
- "sp-inherents",
- "sp-io",
- "sp-offchain",
- "sp-runtime",
- "sp-session",
- "sp-std",
- "sp-transaction-pool",
- "sp-version",
- "substrate-wasm-builder 4.0.0 (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.3)",
- "xcm",
- "xcm-builder",
- "xcm-executor",
 ]
 
 [[package]]
@@ -3681,7 +3593,6 @@ dependencies = [
  "cumulus-client-service",
  "cumulus-primitives-core",
  "cumulus-primitives-parachain-inherent",
- "cumulus-shell-runtime",
  "derive_more 0.15.0",
  "exit-future 0.1.4",
  "frame-benchmarking",
