@@ -24,7 +24,6 @@ use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 };
-use sp_std::convert::TryFrom;
 
 #[cfg(test)]
 use codec::Encode;
@@ -118,7 +117,7 @@ impl Config for Test {
 	type DelegationSignatureVerification = Self;
 	type DelegationEntityId = TestDelegatorId;
 	type DelegationNodeId = TestDelegationNodeId;
-	type EnsureOrigin = did::EnsureDidOrigin<TestDelegatorId>;
+	type EnsureOrigin = EnsureSigned<TestDelegatorId>;
 	type Event = ();
 	type MaxSignatureByteLength = MaxSignatureByteLength;
 }
@@ -138,21 +137,31 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 
 impl VerifyDelegateSignature for Test {
 	type DelegateId = TestDelegatorId;
-	type Payload = kilt_primitives::Hash;
+	type Payload = Vec<u8>;
 	type Signature = Vec<u8>;
 
-	fn verify(delegate: &Self::DelegateId, payload: &Self::Payload, signature: &Self::Signature) -> SignatureVerificationResult {
+	fn verify(
+		delegate: &Self::DelegateId,
+		payload: &Self::Payload,
+		signature: &Self::Signature,
+	) -> SignatureVerificationResult {
 		// Retrieve delegate details for signature verification
-		let delegate_details = <did::Did<Test>>::get(&delegate).ok_or(SignatureVerificationError::SignerInformationNotPresent)?;
+		let delegate_details =
+			<did::Did<Test>>::get(&delegate).ok_or(SignatureVerificationError::SignerInformationNotPresent)?;
 
-		let did_signature = did::DidSignature::try_from(signature.to_owned()).map_err(|_| SignatureVerificationError::SignatureInvalid)?;
+		log::info!("BEFORE.");
+		let did_signature = did::DidSignature::from_did_signature_encoded(signature.to_owned())
+			.map_err(|_| SignatureVerificationError::SignatureInvalid)?;
+		log::info!("SIG: {:#?}", did_signature);
+		log::info!("AFTER.");
 
 		did::pallet::Pallet::<Test>::verify_payload_signature_with_did_key_type(
 			payload.as_ref(),
 			&did_signature,
 			&delegate_details,
 			did::DidVerificationKeyRelationship::Authentication,
-		).map_err(|err| {
+		)
+		.map_err(|err| {
 			match err {
 				did::DidError::StorageError(_) => SignatureVerificationError::SignerInformationNotPresent,
 				did::DidError::SignatureError(_) => SignatureVerificationError::SignatureInvalid,
