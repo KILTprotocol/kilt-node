@@ -134,3 +134,18 @@ impl<T: Config> DelegationNode<T> {
 		}
 	}
 }
+
+pub type SignatureVerificationResult = Result<(), SignatureVerificationError>;
+
+pub enum SignatureVerificationError {
+	SignerInformationNotPresent,
+	SignatureInvalid
+}
+
+pub trait VerifyDelegateSignature {
+	type DelegateId;
+	type Payload;
+	type Signature;
+
+	fn verify(delegate: &Self::DelegateId, payload: &Self::Payload, signature: &Self::Signature) -> SignatureVerificationResult;
+}
