@@ -99,3 +99,18 @@ $TMP_DIR/kilt-parachain build-spec --chain spiritnet-dev --disable-default-bootn
 jq -f scripts/kilt-spiritnet.jq $SPIRITNET_PLAIN >$SPIRITNET_JQ
 
 $TMP_DIR/kilt-parachain build-spec --runtime spiritnet --chain $SPIRITNET_JQ --disable-default-bootnode --raw >$SPIRITNET_OUTPUT
+
+# ##############################################################################
+# #                                                                            #
+# #                               westend-kilt                                 #
+# #                                                                            #
+# ##############################################################################
+WESTEND_PLAIN=$TMP_DIR"kilt-westend.plain.json"
+WESTEND_JQ=$TMP_DIR"kilt-westend.json"
+WESTEND_OUTPUT=dev-specs/kilt-parachain/kilt-westend.json
+
+$TMP_DIR/kilt-parachain build-spec --chain spiritnet-dev --disable-default-bootnode >$WESTEND_PLAIN
+
+jq -f scripts/kilt-westend.jq $WESTEND_PLAIN >$WESTEND_JQ
+
+$TMP_DIR/kilt-parachain build-spec --runtime spiritnet --chain $WESTEND_JQ --disable-default-bootnode --raw >$WESTEND_OUTPUT
