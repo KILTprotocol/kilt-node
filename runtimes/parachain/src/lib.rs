@@ -48,7 +48,7 @@ use sp_runtime::{
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult,
 };
-use sp_std::prelude::*;
+use sp_std::{borrow::ToOwned, convert::TryFrom, prelude::*};
 use sp_version::RuntimeVersion;
 use static_assertions::const_assert;
 
@@ -615,21 +615,57 @@ impl pallet_membership::Config for Runtime {
 	type WeightInfo = ();
 }
 
+impl delegation::VerifyDelegateSignature for Runtime {
+	type DelegateId = DidIdentifier;
+	type Payload = Hash;
+	type Signature = Vec<u8>;
+
+	fn verify(delegate: &Self::DelegateId, payload: &Self::Payload, signature: &Self::Signature) -> delegation::SignatureVerificationResult {
+		// Retrieve delegate details for signature verification
+		let delegate_details = <did::Did<Runtime>>::get(&delegate).ok_or(delegation::SignatureVerificationError::SignerInformationNotPresent)?;
+
+		let did_signature = did::DidSignature::try_from(signature.to_owned()).map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
+
+		did::pallet::Pallet::<Runtime>::verify_payload_signature_with_did_key_type(
+			payload.as_ref(),
+			&did_signature,
+			&delegate_details,
+			did::DidVerificationKeyRelationship::Authentication,
+		).map_err(|err| {
+			match err {
+				did::DidError::StorageError(_) => delegation::SignatureVerificationError::SignerInformationNotPresent,
+				did::DidError::SignatureError(_) => delegation::SignatureVerificationError::SignatureInvalid,
+				// Should never happen
+				_ => delegation::SignatureVerificationError::SignatureInvalid,
+			}
+		})?;
+
+		Ok(())
+	}
+}
+
 impl attestation::Config for Runtime {
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
 	type Event = Event;
+}
+
+parameter_types! {
+	pub const MaxSignatureByteLength: u16 = 64;
+}
+
+impl delegation::Config for Runtime {
+	type DelegationSignatureVerification = Self;
+	type DelegationEntityId = DidIdentifier;
+	type DelegationNodeId = Hash;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
+	type Event = Event;
+	type MaxSignatureByteLength = MaxSignatureByteLength;
 }
 
 impl ctype::Config for Runtime {
 	type CtypeCreatorId = DidIdentifier;
 	type EnsureOrigin = did::EnsureDidOrigin<Self::CtypeCreatorId>;
 	type Event = Event;
-}
-
-impl delegation::Config for Runtime {
-	type DelegationNodeId = Hash;
-	type Event = Event;
-	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
 }
 
 parameter_types! {
