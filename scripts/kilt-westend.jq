@@ -3,8 +3,8 @@
     | .name = "KILT-Westend"
     | .id = "kilt_westend"
     | .properties.tokenSymbol = "WILT"
-    | .para_id = 12555
-    | .genesis.runtime.parachainInfo.parachainId = 12555
+    | .para_id = 2009
+    | .genesis.runtime.parachainInfo.parachainId = 2009
     | .genesis.runtime.palletSudo.key = "5CniRAWZ8PoyG4iiJHThG2xtcuGBBPdpLuHZn6TeXtfmcjt4"
     | .genesis.runtime.parachainStaking.stakers = [
             [
