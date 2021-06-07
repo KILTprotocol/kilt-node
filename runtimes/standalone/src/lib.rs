@@ -29,6 +29,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::Decode;
 use frame_support::ensure;
+use frame_system::EnsureSigned;
 use kilt_primitives::{
 	constants::{DOLLARS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature,
@@ -329,7 +330,7 @@ impl pallet_sudo::Config for Runtime {
 }
 
 impl attestation::Config for Runtime {
-	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
+	type EnsureOrigin = EnsureSigned<<Self as delegation::Config>::DelegationEntityId>;
 	type Event = Event;
 }
 
@@ -339,16 +340,16 @@ parameter_types! {
 
 impl delegation::Config for Runtime {
 	type DelegationSignatureVerification = Self;
-	type DelegationEntityId = DidIdentifier;
+	type DelegationEntityId = AccountId;
 	type DelegationNodeId = Hash;
-	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
+	type EnsureOrigin = EnsureSigned<Self::DelegationEntityId>;
 	type Event = Event;
 	type MaxSignatureByteLength = MaxSignatureByteLength;
 }
 
 impl ctype::Config for Runtime {
-	type CtypeCreatorId = DidIdentifier;
-	type EnsureOrigin = did::EnsureDidOrigin<Self::CtypeCreatorId>;
+	type CtypeCreatorId = AccountId;
+	type EnsureOrigin = EnsureSigned<Self::CtypeCreatorId>;
 	type Event = Event;
 }
 
@@ -359,7 +360,7 @@ parameter_types! {
 }
 
 impl did::Config for Runtime {
-	type DidIdentifier = AccountId;
+	type DidIdentifier = DidIdentifier;
 	type Event = Event;
 	type Call = Call;
 	type Origin = Origin;
