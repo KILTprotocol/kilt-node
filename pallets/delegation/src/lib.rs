@@ -222,12 +222,9 @@ pub mod pallet {
 			delegate_signature: Vec<u8>,
 		) -> DispatchResultWithPostInfo {
 			let delegator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
-			log::info!("Delegator: {:#?}", delegator);
-			log::info!("Delegate: {:#?}", delegate);
 
 			// Calculate the hash root
 			let hash_root = Self::calculate_hash(&delegation_id, &root_id, &parent_id, &permissions);
-			log::info!("HASH ROOT: {:#?}", &hash_root);
 
 			// Verify that the hash root signature is correct.
 			DelegationSignatureVerificationOf::<T>::verify(&delegate, &hash_root.encode(), &delegate_signature)

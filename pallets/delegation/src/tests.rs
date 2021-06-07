@@ -131,10 +131,8 @@ fn create_delegation_no_parent_successful() {
 		&delegation_node.parent,
 		&delegation_node.permissions,
 	);
-	log::info!("Delegation info: {:#?}", delegation_info);
 
 	let delegate_signature = delegate_keypair.sign(&hash_to_u8(delegation_info));
-	log::info!("Sig: {:#?}", delegate_signature);
 
 	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node);
 
