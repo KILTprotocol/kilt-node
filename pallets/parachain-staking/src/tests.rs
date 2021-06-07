@@ -659,7 +659,7 @@ fn execute_leave_candidates_with_delay() {
 					.unwrap()
 					.can_exit(1 + <Test as Config>::ExitQueueDelay::get()));
 				assert_noop!(
-					StakePallet::execute_leave_candidates(Origin::signed(owner.clone()), *owner),
+					StakePallet::execute_leave_candidates(Origin::signed(*owner), *owner),
 					Error::<Test>::CannotLeaveYet
 				);
 			}
@@ -747,7 +747,7 @@ fn execute_leave_candidates_with_delay() {
 					*collator
 				));
 				assert!(StakePallet::collator_state(&collator).is_none());
-				assert!(!StakePallet::is_candidate(&collator));
+				assert!(!StakePallet::is_candidate(collator));
 				assert_eq!(StakePallet::unstaking(collator).len(), 1);
 			}
 			assert!(StakePallet::total() != old_stake);

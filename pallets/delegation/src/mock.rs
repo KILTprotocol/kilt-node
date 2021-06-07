@@ -119,7 +119,7 @@ impl VerifyDelegateSignature for Test {
 		let decoded_signature = MultiSignature::decode(&mut &signature[..]).map_err(|_| SignatureVerificationError::SignatureInvalid)?;
 
 		ensure!(
-			decoded_signature.verify(&payload[..], &delegate),
+			decoded_signature.verify(&payload[..], delegate),
 			SignatureVerificationError::SignatureInvalid
 		);
 
