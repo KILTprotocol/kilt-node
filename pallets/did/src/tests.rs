@@ -1486,7 +1486,6 @@ fn check_call_attestation_key_error() {
 
 #[test]
 fn check_call_delegation_key_successful() {
-	initialize_logger();
 	let caller = DEFAULT_ACCOUNT;
 	let did = ALICE_DID;
 	let auth_key = get_sr25519_authentication_key(true);
