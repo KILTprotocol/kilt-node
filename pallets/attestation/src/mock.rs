@@ -23,15 +23,13 @@ use crate::*;
 use ctype::mock as ctype_mock;
 
 use codec::Decode;
-use frame_support::ensure;
-use frame_support::{parameter_types, weights::constants::RocksDbWeight};
+use frame_support::{ensure, parameter_types, weights::constants::RocksDbWeight};
 use frame_system::EnsureSigned;
 use sp_core::{ed25519, sr25519, Pair};
-use sp_runtime::MultiSignature;
-use sp_runtime::MultiSigner;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
+	MultiSignature, MultiSigner,
 };
 
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -125,7 +123,8 @@ impl delegation::VerifyDelegateSignature for Test {
 		signature: &Self::Signature,
 	) -> delegation::SignatureVerificationResult {
 		// Try to decode signature first.
-		let decoded_signature = MultiSignature::decode(&mut &signature[..]).map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
+		let decoded_signature = MultiSignature::decode(&mut &signature[..])
+			.map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
 
 		ensure!(
 			decoded_signature.verify(&payload[..], delegate),

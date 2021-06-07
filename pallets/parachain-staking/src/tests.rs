@@ -2974,10 +2974,7 @@ fn candidate_leaves() {
 
 			let stake: Vec<Stake<AccountId, Balance>> = (1u64..11u64)
 				.zip(iter::once(210).chain(iter::repeat(100)))
-				.map(|(id, amount)| Stake {
-					owner: id,
-					amount,
-				})
+				.map(|(id, amount)| Stake { owner: id, amount })
 				.collect();
 			assert_eq!(StakePallet::candidate_pool(), OrderedSet::from(stake));
 			let state = StakePallet::collator_state(1).unwrap();

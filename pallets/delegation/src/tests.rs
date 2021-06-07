@@ -134,7 +134,8 @@ fn create_delegation_no_parent_successful() {
 
 	let delegate_signature = delegate_keypair.sign(&hash_to_u8(delegation_info));
 
-	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node);
+	let operation =
+		generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node);
 
 	let ext = ctype_mock::ExtBuilder::default()
 		.with_ctypes(vec![(root_node.ctype_hash, creator.clone())])
@@ -201,7 +202,8 @@ fn create_delegation_with_parent_successful() {
 		&delegation_node.permissions,
 	)));
 
-	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node);
+	let operation =
+		generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node);
 
 	let ext = ctype_mock::ExtBuilder::default()
 		.with_ctypes(vec![(root_node.ctype_hash, creator.clone())])
@@ -260,15 +262,15 @@ fn invalid_delegate_signature_create_delegation_error() {
 		generate_base_delegation_node(root_id, delegate.clone()),
 	);
 
-	let delegate_signature =
-		alternative_keypair.sign(&hash_to_u8(Delegation::calculate_hash(
-			&delegation_id,
-			&delegation_node.root_id,
-			&delegation_node.parent,
-			&delegation_node.permissions,
-		)));
+	let delegate_signature = alternative_keypair.sign(&hash_to_u8(Delegation::calculate_hash(
+		&delegation_id,
+		&delegation_node.root_id,
+		&delegation_node.parent,
+		&delegation_node.permissions,
+	)));
 
-	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node);
+	let operation =
+		generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node);
 
 	let ext = ctype_mock::ExtBuilder::default()
 		.with_ctypes(vec![(root_node.ctype_hash, creator.clone())])
@@ -367,7 +369,8 @@ fn root_not_existing_create_delegation_error() {
 		&delegation_node.permissions,
 	)));
 
-	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node);
+	let operation =
+		generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node);
 
 	let ext = ctype_mock::ExtBuilder::default()
 		.with_ctypes(vec![(root_node.ctype_hash, creator.clone())])
@@ -416,7 +419,8 @@ fn parent_not_existing_create_delegation_error() {
 		&delegation_node.permissions,
 	)));
 
-	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node);
+	let operation =
+		generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node);
 
 	let ext = ctype_mock::ExtBuilder::default()
 		.with_ctypes(vec![(root_node.ctype_hash, creator.clone())])
@@ -471,7 +475,8 @@ fn not_owner_of_parent_create_delegation_error() {
 		&delegation_node.permissions,
 	)));
 
-	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node);
+	let operation =
+		generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node);
 
 	let ext = ctype_mock::ExtBuilder::default()
 		.with_ctypes(vec![(root_node.ctype_hash, creator.clone())])
@@ -527,7 +532,8 @@ fn unauthorised_delegation_create_delegation_error() {
 		&delegation_node.permissions,
 	)));
 
-	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node);
+	let operation =
+		generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node);
 
 	let ext = ctype_mock::ExtBuilder::default()
 		.with_ctypes(vec![(root_node.ctype_hash, creator.clone())])
@@ -579,7 +585,8 @@ fn not_owner_of_root_create_delegation_error() {
 		&delegation_node.permissions,
 	)));
 
-	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node);
+	let operation =
+		generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node);
 
 	let ext = ctype_mock::ExtBuilder::default()
 		.with_ctypes(vec![(root_node.ctype_hash, creator.clone())])
