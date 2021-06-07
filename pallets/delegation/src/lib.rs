@@ -52,7 +52,7 @@ pub mod pallet {
 	/// The type of a CTYPE hash.
 	pub type CtypeHashOf<T> = ctype::CtypeHashOf<T>;
 
-	/// Type of a signature over the delegation details.
+	/// Type of a signature verification operation over the delegation details.
 	pub type DelegationSignatureVerificationOf<T> = <T as Config>::DelegationSignatureVerification;
 
 	#[pallet::config]
