@@ -38,7 +38,12 @@ use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
-use sp_runtime::{ApplyExtrinsicResult, MultiSignature, create_runtime_str, generic, impl_opaque_keys, traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys, Verify}, transaction_validity::{TransactionSource, TransactionValidity}};
+use sp_runtime::{
+	create_runtime_str, generic, impl_opaque_keys,
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys, Verify},
+	transaction_validity::{TransactionSource, TransactionValidity},
+	ApplyExtrinsicResult, MultiSignature,
+};
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -283,7 +288,8 @@ impl delegation::VerifyDelegateSignature for Runtime {
 		signature: &Self::Signature,
 	) -> delegation::SignatureVerificationResult {
 		// Try to decode signature first.
-		let decoded_signature = MultiSignature::decode(&mut &signature[..]).map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
+		let decoded_signature = MultiSignature::decode(&mut &signature[..])
+			.map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
 
 		ensure!(
 			decoded_signature.verify(&payload[..], delegate),

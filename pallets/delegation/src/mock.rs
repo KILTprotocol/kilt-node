@@ -21,9 +21,12 @@
 use codec::Decode;
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use frame_system::EnsureSigned;
-use sp_runtime::{MultiSignature, MultiSigner, testing::Header, traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify}};
-use sp_core::{ed25519, sr25519};
-use sp_core::Pair;
+use sp_core::{ed25519, sr25519, Pair};
+use sp_runtime::{
+	testing::Header,
+	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
+	MultiSignature, MultiSigner,
+};
 
 #[cfg(test)]
 use codec::Encode;
@@ -116,7 +119,8 @@ impl VerifyDelegateSignature for Test {
 		signature: &Self::Signature,
 	) -> SignatureVerificationResult {
 		// Try to decode signature first.
-		let decoded_signature = MultiSignature::decode(&mut &signature[..]).map_err(|_| SignatureVerificationError::SignatureInvalid)?;
+		let decoded_signature =
+			MultiSignature::decode(&mut &signature[..]).map_err(|_| SignatureVerificationError::SignatureInvalid)?;
 
 		ensure!(
 			decoded_signature.verify(&payload[..], delegate),

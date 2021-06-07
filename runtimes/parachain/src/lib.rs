@@ -28,7 +28,7 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::Decode;
-use frame_support::{PalletId, ensure, traits::LockIdentifier};
+use frame_support::{ensure, traits::LockIdentifier, PalletId};
 use frame_system::{
 	limits::{BlockLength, BlockWeights},
 	EnsureOneOf, EnsureRoot,
@@ -43,7 +43,12 @@ use sp_core::{
 	u32_trait::{_1, _2, _3, _5},
 	OpaqueMetadata,
 };
-use sp_runtime::{ApplyExtrinsicResult, MultiSignature, create_runtime_str, generic, impl_opaque_keys, traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys, Verify}, transaction_validity::{TransactionSource, TransactionValidity}};
+use sp_runtime::{
+	create_runtime_str, generic, impl_opaque_keys,
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys, Verify},
+	transaction_validity::{TransactionSource, TransactionValidity},
+	ApplyExtrinsicResult, MultiSignature,
+};
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 use static_assertions::const_assert;
@@ -623,7 +628,8 @@ impl delegation::VerifyDelegateSignature for Runtime {
 		signature: &Self::Signature,
 	) -> delegation::SignatureVerificationResult {
 		// Try to decode signature first.
-		let decoded_signature = MultiSignature::decode(&mut &signature[..]).map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
+		let decoded_signature = MultiSignature::decode(&mut &signature[..])
+			.map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
 
 		ensure!(
 			decoded_signature.verify(&payload[..], delegate),
