@@ -27,6 +27,8 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use codec::Decode;
+use frame_support::ensure;
 use kilt_primitives::{
 	constants::{DOLLARS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature,
@@ -36,13 +38,8 @@ use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
-use sp_runtime::{
-	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys},
-	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult,
-};
-use sp_std::{borrow::ToOwned, prelude::*};
+use sp_runtime::{ApplyExtrinsicResult, MultiSignature, create_runtime_str, generic, impl_opaque_keys, traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys, Verify}, transaction_validity::{TransactionSource, TransactionValidity}};
+use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
@@ -275,36 +272,23 @@ where
 }
 
 impl delegation::VerifyDelegateSignature for Runtime {
-	type DelegateId = DidIdentifier;
+	type DelegateId = AccountId;
 	type Payload = Vec<u8>;
 	type Signature = Vec<u8>;
 
+	// No need to retrieve delegate details as it is simply an AccountId.
 	fn verify(
 		delegate: &Self::DelegateId,
 		payload: &Self::Payload,
 		signature: &Self::Signature,
 	) -> delegation::SignatureVerificationResult {
-		// Retrieve delegate details for signature verification
-		let delegate_details = <did::Did<Runtime>>::get(&delegate)
-			.ok_or(delegation::SignatureVerificationError::SignerInformationNotPresent)?;
+		// Try to decode signature first.
+		let decoded_signature = MultiSignature::decode(&mut &signature[..]).map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
 
-		let did_signature = did::DidSignature::from_did_signature_encoded(signature.to_owned())
-			.map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
-
-		did::pallet::Pallet::<Runtime>::verify_payload_signature_with_did_key_type(
-			payload.as_ref(),
-			&did_signature,
-			&delegate_details,
-			did::DidVerificationKeyRelationship::Authentication,
-		)
-		.map_err(|err| {
-			match err {
-				did::DidError::StorageError(_) => delegation::SignatureVerificationError::SignerInformationNotPresent,
-				did::DidError::SignatureError(_) => delegation::SignatureVerificationError::SignatureInvalid,
-				// Should never happen
-				_ => delegation::SignatureVerificationError::SignatureInvalid,
-			}
-		})?;
+		ensure!(
+			decoded_signature.verify(&payload[..], delegate),
+			delegation::SignatureVerificationError::SignatureInvalid
+		);
 
 		Ok(())
 	}
