@@ -22,13 +22,13 @@ use sp_core::Pair;
 
 use crate::{self as delegation, mock::*};
 use ctype::mock as ctype_mock;
-use did::mock::{self as did_mock, initialize_logger};
 
 // submit_delegation_root_creation_operation()
 
 #[test]
 fn create_root_delegation_successful() {
-	let creator = ALICE;
+	let creator_keypair = get_alice_ed25519();
+	let creator = get_ed25519_account(creator_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -59,7 +59,8 @@ fn create_root_delegation_successful() {
 
 #[test]
 fn duplicate_create_root_delegation_error() {
-	let creator = ALICE;
+	let creator_keypair = get_alice_ed25519();
+	let creator = get_ed25519_account(creator_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -85,7 +86,8 @@ fn duplicate_create_root_delegation_error() {
 
 #[test]
 fn ctype_not_found_create_root_delegation_error() {
-	let creator = ALICE;
+	let creator_keypair = get_alice_ed25519();
+	let creator = get_ed25519_account(creator_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -109,13 +111,10 @@ fn ctype_not_found_create_root_delegation_error() {
 
 #[test]
 fn create_delegation_no_parent_successful() {
-	initialize_logger();
-	let creator = ALICE;
-	let delegate = BOB;
-
-	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
-	let delegate_details =
-		did_mock::generate_base_did_details(did::DidVerificationKey::from(delegate_auth_key.public()));
+	let creator_keypair = get_alice_ed25519();
+	let creator = get_ed25519_account(creator_keypair.public());
+	let delegate_keypair = get_bob_sr25519();
+	let delegate = get_sr25519_account(delegate_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -123,25 +122,25 @@ fn create_delegation_no_parent_successful() {
 	);
 	let (delegation_id, delegation_node) = (
 		get_delegation_id(true),
-		generate_base_delegation_node(root_id, delegate.clone()),
+		generate_base_delegation_node(root_id, delegate),
 	);
 
-	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
+	let delegation_info = Delegation::calculate_hash(
 		&delegation_id,
 		&delegation_node.root_id,
 		&delegation_node.parent,
 		&delegation_node.permissions,
-	))));
-	log::info!("SIG: {:#?}", delegate_signature);
+	);
+	log::info!("Delegation info: {:#?}", delegation_info);
 
-	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature, delegation_node);
+	let delegate_signature = delegate_keypair.sign(&hash_to_u8(delegation_info));
+	log::info!("Sig: {:#?}", delegate_signature);
 
-	let ext = did_mock::ExtBuilder::default()
-		.with_dids(vec![(delegate.clone(), delegate_details)])
-		.build(None);
+	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node);
+
 	let ext = ctype_mock::ExtBuilder::default()
 		.with_ctypes(vec![(root_node.ctype_hash, creator.clone())])
-		.build(Some(ext));
+		.build(None);
 	let mut ext = ExtBuilder::default()
 		.with_root_delegations(vec![(root_id, root_node)])
 		.build(Some(ext));
@@ -152,7 +151,7 @@ fn create_delegation_no_parent_successful() {
 			operation.delegation_id,
 			operation.root_id,
 			operation.parent_id,
-			delegate.clone(),
+			operation.delegate.clone(),
 			operation.permissions,
 			operation.delegate_signature.clone().encode(),
 		));
@@ -178,12 +177,10 @@ fn create_delegation_no_parent_successful() {
 
 #[test]
 fn create_delegation_with_parent_successful() {
-	let creator = ALICE;
-	let delegate = BOB;
-
-	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
-	let delegate_details =
-		did_mock::generate_base_did_details(did::DidVerificationKey::from(delegate_auth_key.public()));
+	let creator_keypair = get_alice_ed25519();
+	let creator = get_ed25519_account(creator_keypair.public());
+	let delegate_keypair = get_bob_sr25519();
+	let delegate = get_sr25519_account(delegate_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -199,21 +196,18 @@ fn create_delegation_with_parent_successful() {
 	);
 	delegation_node.parent = Some(parent_delegation_id);
 
-	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
+	let delegate_signature = delegate_keypair.sign(&hash_to_u8(Delegation::calculate_hash(
 		&delegation_id,
 		&delegation_node.root_id,
 		&delegation_node.parent,
 		&delegation_node.permissions,
-	))));
+	)));
 
-	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature, delegation_node);
+	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node);
 
-	let ext = did_mock::ExtBuilder::default()
-		.with_dids(vec![(delegate.clone(), delegate_details)])
-		.build(None);
 	let ext = ctype_mock::ExtBuilder::default()
 		.with_ctypes(vec![(root_node.ctype_hash, creator.clone())])
-		.build(Some(ext));
+		.build(None);
 	let mut ext = ExtBuilder::default()
 		.with_root_delegations(vec![(root_id, root_node)])
 		.with_delegations(vec![(parent_delegation_id, parent_delegation_node)])
@@ -252,70 +246,12 @@ fn create_delegation_with_parent_successful() {
 }
 
 #[test]
-fn delegate_not_found_create_delegation_error() {
-	let creator = ALICE;
-	let delegate = BOB;
-
-	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
-
-	let (root_id, root_node) = (
-		get_delegation_root_id(true),
-		generate_base_delegation_root(creator.clone()),
-	);
-	let (parent_delegation_id, parent_delegation_node) = (
-		get_delegation_id(true),
-		generate_base_delegation_node(root_id, creator.clone()),
-	);
-	let (delegation_id, mut delegation_node) = (
-		get_delegation_id(false),
-		generate_base_delegation_node(root_id, delegate.clone()),
-	);
-	delegation_node.parent = Some(parent_delegation_id);
-
-	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
-		&delegation_id,
-		&delegation_node.root_id,
-		&delegation_node.parent,
-		&delegation_node.permissions,
-	))));
-
-	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature, delegation_node);
-
-	// No DIDs added to the DID storage
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(root_node.ctype_hash, creator.clone())])
-		.build(None);
-	let mut ext = ExtBuilder::default()
-		.with_root_delegations(vec![(root_id, root_node)])
-		.with_delegations(vec![(parent_delegation_id, parent_delegation_node)])
-		.with_children(vec![(root_id, vec![(parent_delegation_id)])])
-		.build(Some(ext));
-
-	ext.execute_with(|| {
-		assert_noop!(
-			Delegation::add_delegation(
-				get_origin(creator.clone()),
-				operation.delegation_id,
-				operation.root_id,
-				operation.parent_id,
-				delegate.clone(),
-				operation.permissions,
-				operation.delegate_signature.clone().encode(),
-			),
-			delegation::Error::<Test>::DelegateNotFound
-		);
-	});
-}
-
-#[test]
 fn invalid_delegate_signature_create_delegation_error() {
-	let creator = ALICE;
-	let delegate = BOB;
-
-	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
-	let alternative_auth_key = did_mock::get_sr25519_attestation_key(false);
-	let delegate_details =
-		did_mock::generate_base_did_details(did::DidVerificationKey::from(delegate_auth_key.public()));
+	let creator_keypair = get_alice_ed25519();
+	let creator = get_ed25519_account(creator_keypair.public());
+	let alternative_keypair = get_alice_sr25519();
+	let delegate_keypair = get_bob_sr25519();
+	let delegate = get_sr25519_account(delegate_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -327,21 +263,18 @@ fn invalid_delegate_signature_create_delegation_error() {
 	);
 
 	let delegate_signature =
-		did::DidSignature::from(alternative_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
+		alternative_keypair.sign(&hash_to_u8(Delegation::calculate_hash(
 			&delegation_id,
 			&delegation_node.root_id,
 			&delegation_node.parent,
 			&delegation_node.permissions,
-		))));
+		)));
 
-	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature, delegation_node);
+	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node);
 
-	let ext = did_mock::ExtBuilder::default()
-		.with_dids(vec![(delegate.clone(), delegate_details)])
-		.build(None);
 	let ext = ctype_mock::ExtBuilder::default()
 		.with_ctypes(vec![(root_node.ctype_hash, creator.clone())])
-		.build(Some(ext));
+		.build(None);
 	let mut ext = ExtBuilder::default()
 		.with_root_delegations(vec![(root_id, root_node)])
 		.build(Some(ext));
@@ -364,12 +297,10 @@ fn invalid_delegate_signature_create_delegation_error() {
 
 #[test]
 fn duplicate_delegation_create_delegation_error() {
-	let creator = ALICE;
-	let delegate = BOB;
-
-	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
-	let delegate_details =
-		did_mock::generate_base_did_details(did::DidVerificationKey::from(delegate_auth_key.public()));
+	let creator_keypair = get_alice_ed25519();
+	let creator = get_ed25519_account(creator_keypair.public());
+	let delegate_keypair = get_bob_sr25519();
+	let delegate = get_sr25519_account(delegate_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -380,22 +311,19 @@ fn duplicate_delegation_create_delegation_error() {
 		generate_base_delegation_node(root_id, delegate.clone()),
 	);
 
-	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
+	let delegate_signature = delegate_keypair.sign(&hash_to_u8(Delegation::calculate_hash(
 		&delegation_id,
 		&delegation_node.root_id,
 		&delegation_node.parent,
 		&delegation_node.permissions,
-	))));
+	)));
 
 	let operation =
-		generate_base_delegation_creation_details(delegation_id, delegate_signature, delegation_node.clone());
+		generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node.clone());
 
-	let ext = did_mock::ExtBuilder::default()
-		.with_dids(vec![(delegate.clone(), delegate_details)])
-		.build(None);
 	let ext = ctype_mock::ExtBuilder::default()
 		.with_ctypes(vec![(root_node.ctype_hash, creator.clone())])
-		.build(Some(ext));
+		.build(None);
 	let mut ext = ExtBuilder::default()
 		.with_root_delegations(vec![(root_id, root_node)])
 		.with_delegations(vec![(delegation_id, delegation_node)])
@@ -420,12 +348,10 @@ fn duplicate_delegation_create_delegation_error() {
 
 #[test]
 fn root_not_existing_create_delegation_error() {
-	let creator = ALICE;
-	let delegate = BOB;
-
-	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
-	let delegate_details =
-		did_mock::generate_base_did_details(did::DidVerificationKey::from(delegate_auth_key.public()));
+	let creator_keypair = get_alice_ed25519();
+	let creator = get_ed25519_account(creator_keypair.public());
+	let delegate_keypair = get_bob_sr25519();
+	let delegate = get_sr25519_account(delegate_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -436,21 +362,18 @@ fn root_not_existing_create_delegation_error() {
 		generate_base_delegation_node(root_id, delegate.clone()),
 	);
 
-	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
+	let delegate_signature = delegate_keypair.sign(&hash_to_u8(Delegation::calculate_hash(
 		&delegation_id,
 		&delegation_node.root_id,
 		&delegation_node.parent,
 		&delegation_node.permissions,
-	))));
+	)));
 
-	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature, delegation_node);
+	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node);
 
-	let ext = did_mock::ExtBuilder::default()
-		.with_dids(vec![(delegate.clone(), delegate_details)])
-		.build(None);
 	let ext = ctype_mock::ExtBuilder::default()
 		.with_ctypes(vec![(root_node.ctype_hash, creator.clone())])
-		.build(Some(ext));
+		.build(None);
 	// No delegations added to the pallet storage
 	let mut ext = ExtBuilder::default().build(Some(ext));
 
@@ -472,12 +395,10 @@ fn root_not_existing_create_delegation_error() {
 
 #[test]
 fn parent_not_existing_create_delegation_error() {
-	let creator = ALICE;
-	let delegate = BOB;
-
-	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
-	let delegate_details =
-		did_mock::generate_base_did_details(did::DidVerificationKey::from(delegate_auth_key.public()));
+	let creator_keypair = get_alice_ed25519();
+	let creator = get_ed25519_account(creator_keypair.public());
+	let delegate_keypair = get_bob_sr25519();
+	let delegate = get_sr25519_account(delegate_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -490,21 +411,18 @@ fn parent_not_existing_create_delegation_error() {
 	);
 	delegation_node.parent = Some(alternative_parent_id);
 
-	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
+	let delegate_signature = delegate_keypair.sign(&hash_to_u8(Delegation::calculate_hash(
 		&delegation_id,
 		&delegation_node.root_id,
 		&delegation_node.parent,
 		&delegation_node.permissions,
-	))));
+	)));
 
-	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature, delegation_node);
+	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node);
 
-	let ext = did_mock::ExtBuilder::default()
-		.with_dids(vec![(delegate.clone(), delegate_details)])
-		.build(None);
 	let ext = ctype_mock::ExtBuilder::default()
 		.with_ctypes(vec![(root_node.ctype_hash, creator.clone())])
-		.build(Some(ext));
+		.build(None);
 	let mut ext = ExtBuilder::default()
 		.with_root_delegations(vec![(root_id, root_node)])
 		.build(Some(ext));
@@ -527,13 +445,12 @@ fn parent_not_existing_create_delegation_error() {
 
 #[test]
 fn not_owner_of_parent_create_delegation_error() {
-	let creator = ALICE;
-	let alternative_owner = CHARLIE;
-	let delegate = BOB;
-
-	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
-	let delegate_details =
-		did_mock::generate_base_did_details(did::DidVerificationKey::from(delegate_auth_key.public()));
+	let creator_keypair = get_alice_ed25519();
+	let creator = get_ed25519_account(creator_keypair.public());
+	let alternative_owner_keypair = get_charlie_ed25519();
+	let alternative_owner = get_ed25519_account(alternative_owner_keypair.public());
+	let delegate_keypair = get_bob_sr25519();
+	let delegate = get_sr25519_account(delegate_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -549,21 +466,18 @@ fn not_owner_of_parent_create_delegation_error() {
 	);
 	delegation_node.parent = Some(parent_delegation_id);
 
-	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
+	let delegate_signature = delegate_keypair.sign(&hash_to_u8(Delegation::calculate_hash(
 		&delegation_id,
 		&delegation_node.root_id,
 		&delegation_node.parent,
 		&delegation_node.permissions,
-	))));
+	)));
 
-	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature, delegation_node);
+	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node);
 
-	let ext = did_mock::ExtBuilder::default()
-		.with_dids(vec![(delegate.clone(), delegate_details)])
-		.build(None);
 	let ext = ctype_mock::ExtBuilder::default()
 		.with_ctypes(vec![(root_node.ctype_hash, creator.clone())])
-		.build(Some(ext));
+		.build(None);
 	let mut ext = ExtBuilder::default()
 		.with_root_delegations(vec![(root_id, root_node)])
 		.with_delegations(vec![(parent_delegation_id, parent_delegation_node)])
@@ -588,12 +502,10 @@ fn not_owner_of_parent_create_delegation_error() {
 
 #[test]
 fn unauthorised_delegation_create_delegation_error() {
-	let creator = ALICE;
-	let delegate = BOB;
-
-	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
-	let delegate_details =
-		did_mock::generate_base_did_details(did::DidVerificationKey::from(delegate_auth_key.public()));
+	let creator_keypair = get_alice_ed25519();
+	let creator = get_ed25519_account(creator_keypair.public());
+	let delegate_keypair = get_bob_sr25519();
+	let delegate = get_sr25519_account(delegate_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -610,21 +522,18 @@ fn unauthorised_delegation_create_delegation_error() {
 	);
 	delegation_node.parent = Some(parent_delegation_id);
 
-	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
+	let delegate_signature = delegate_keypair.sign(&hash_to_u8(Delegation::calculate_hash(
 		&delegation_id,
 		&delegation_node.root_id,
 		&delegation_node.parent,
 		&delegation_node.permissions,
-	))));
+	)));
 
-	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature, delegation_node);
+	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node);
 
-	let ext = did_mock::ExtBuilder::default()
-		.with_dids(vec![(delegate.clone(), delegate_details)])
-		.build(None);
 	let ext = ctype_mock::ExtBuilder::default()
 		.with_ctypes(vec![(root_node.ctype_hash, creator.clone())])
-		.build(Some(ext));
+		.build(None);
 	let mut ext = ExtBuilder::default()
 		.with_root_delegations(vec![(root_id, root_node)])
 		.with_delegations(vec![(parent_delegation_id, parent_delegation_node)])
@@ -649,13 +558,12 @@ fn unauthorised_delegation_create_delegation_error() {
 
 #[test]
 fn not_owner_of_root_create_delegation_error() {
-	let creator = ALICE;
-	let alternative_owner = CHARLIE;
-	let delegate = BOB;
-
-	let delegate_auth_key = did_mock::get_sr25519_authentication_key(true);
-	let delegate_details =
-		did_mock::generate_base_did_details(did::DidVerificationKey::from(delegate_auth_key.public()));
+	let creator_keypair = get_alice_ed25519();
+	let creator = get_ed25519_account(creator_keypair.public());
+	let alternative_owner_keypair = get_charlie_ed25519();
+	let alternative_owner = get_ed25519_account(alternative_owner_keypair.public());
+	let delegate_keypair = get_bob_sr25519();
+	let delegate = get_sr25519_account(delegate_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -666,21 +574,18 @@ fn not_owner_of_root_create_delegation_error() {
 		generate_base_delegation_node(root_id, delegate.clone()),
 	);
 
-	let delegate_signature = did::DidSignature::from(delegate_auth_key.sign(&hash_to_u8(Delegation::calculate_hash(
+	let delegate_signature = delegate_keypair.sign(&hash_to_u8(Delegation::calculate_hash(
 		&delegation_id,
 		&delegation_node.root_id,
 		&delegation_node.parent,
 		&delegation_node.permissions,
-	))));
+	)));
 
-	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature, delegation_node);
+	let operation = generate_base_delegation_creation_details(delegation_id, delegate_signature.into(), delegation_node);
 
-	let ext = did_mock::ExtBuilder::default()
-		.with_dids(vec![(delegate.clone(), delegate_details)])
-		.build(None);
 	let ext = ctype_mock::ExtBuilder::default()
 		.with_ctypes(vec![(root_node.ctype_hash, creator.clone())])
-		.build(Some(ext));
+		.build(None);
 	let mut ext = ExtBuilder::default()
 		.with_root_delegations(vec![(root_id, root_node)])
 		.build(Some(ext));
@@ -704,7 +609,8 @@ fn not_owner_of_root_create_delegation_error() {
 // submit_delegation_root_revocation_operation()
 #[test]
 fn empty_revoke_root_successful() {
-	let revoker = ALICE;
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -736,8 +642,10 @@ fn empty_revoke_root_successful() {
 
 #[test]
 fn list_hierarchy_revoke_root_successful() {
-	let revoker = ALICE;
-	let delegate = BOB;
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let delegate_keypair = get_bob_ed25519();
+	let delegate = get_ed25519_account(delegate_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -796,8 +704,10 @@ fn list_hierarchy_revoke_root_successful() {
 
 #[test]
 fn tree_hierarchy_revoke_root_successful() {
-	let revoker = ALICE;
-	let delegate = BOB;
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let delegate_keypair = get_bob_ed25519();
+	let delegate = get_ed25519_account(delegate_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -853,8 +763,10 @@ fn tree_hierarchy_revoke_root_successful() {
 
 #[test]
 fn greater_max_revocations_revoke_root_successful() {
-	let revoker = ALICE;
-	let delegate = BOB;
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let delegate_keypair = get_alice_ed25519();
+	let delegate = get_ed25519_account(delegate_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -899,7 +811,8 @@ fn greater_max_revocations_revoke_root_successful() {
 
 #[test]
 fn root_not_found_revoke_root_error() {
-	let revoker = ALICE;
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
 
 	let root_id = get_delegation_root_id(true);
 
@@ -917,8 +830,10 @@ fn root_not_found_revoke_root_error() {
 
 #[test]
 fn different_root_creator_revoke_root_error() {
-	let revoker = ALICE;
-	let alternative_revoker = BOB;
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let alternative_revoker_keypair = get_charlie_ed25519();
+	let alternative_revoker = get_ed25519_account(alternative_revoker_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -944,8 +859,10 @@ fn different_root_creator_revoke_root_error() {
 
 #[test]
 fn too_small_max_revocations_revoke_root_error() {
-	let revoker = ALICE;
-	let delegate = BOB;
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let delegate_keypair = get_alice_ed25519();
+	let delegate = get_ed25519_account(delegate_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -981,8 +898,10 @@ fn too_small_max_revocations_revoke_root_error() {
 
 #[test]
 fn exact_children_max_revocations_revoke_root_error() {
-	let revoker = ALICE;
-	let delegate = BOB;
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let delegate_keypair = get_alice_ed25519();
+	let delegate = get_ed25519_account(delegate_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -1055,8 +974,10 @@ fn exact_children_max_revocations_revoke_root_error() {
 
 #[test]
 fn direct_owner_revoke_delegation_successful() {
-	let revoker = ALICE;
-	let delegate = BOB;
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let delegate_keypair = get_alice_ed25519();
+	let delegate = get_ed25519_account(delegate_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -1113,8 +1034,10 @@ fn direct_owner_revoke_delegation_successful() {
 
 #[test]
 fn parent_owner_revoke_delegation_successful() {
-	let revoker = ALICE;
-	let delegate = BOB;
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let delegate_keypair = get_alice_ed25519();
+	let delegate = get_ed25519_account(delegate_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -1171,7 +1094,8 @@ fn parent_owner_revoke_delegation_successful() {
 
 #[test]
 fn delegation_not_found_revoke_delegation_error() {
-	let revoker = ALICE;
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -1203,8 +1127,10 @@ fn delegation_not_found_revoke_delegation_error() {
 
 #[test]
 fn not_delegating_revoke_delegation_error() {
-	let owner = ALICE;
-	let revoker = BOB;
+	let owner_keypair = get_alice_ed25519();
+	let owner = get_ed25519_account(owner_keypair.public());
+	let revoker_keypair = get_bob_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -1239,9 +1165,12 @@ fn not_delegating_revoke_delegation_error() {
 
 #[test]
 fn parent_too_far_revoke_delegation_error() {
-	let owner = ALICE;
-	let intermediate = CHARLIE;
-	let delegate = BOB;
+	let owner_keypair = get_alice_ed25519();
+	let owner = get_ed25519_account(owner_keypair.public());
+	let intermediate_keypair = get_charlie_ed25519();
+	let intermediate = get_ed25519_account(intermediate_keypair.public());
+	let delegate_keypair = get_bob_ed25519();
+	let delegate = get_ed25519_account(delegate_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -1290,8 +1219,10 @@ fn parent_too_far_revoke_delegation_error() {
 
 #[test]
 fn too_many_revocations_revoke_delegation_error() {
-	let revoker = ALICE;
-	let delegate = BOB;
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let delegate_keypair = get_bob_ed25519();
+	let delegate = get_ed25519_account(delegate_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -1342,9 +1273,12 @@ fn too_many_revocations_revoke_delegation_error() {
 
 #[test]
 fn is_delegating_direct_not_revoked() {
-	let user_1 = ALICE;
-	let user_2 = BOB;
-	let user_3 = CHARLIE;
+	let user_1_keypair = get_alice_ed25519();
+	let user_1 = get_ed25519_account(user_1_keypair.public());
+	let user_2_keypair = get_bob_ed25519();
+	let user_2 = get_ed25519_account(user_2_keypair.public());
+	let user_3_keypair = get_charlie_ed25519();
+	let user_3 = get_ed25519_account(user_3_keypair.public());
 
 	let (root_id, root_node) = (get_delegation_root_id(true), generate_base_delegation_root(user_1));
 	let (delegation_id_1, delegation_node_1) =
@@ -1376,9 +1310,12 @@ fn is_delegating_direct_not_revoked() {
 
 #[test]
 fn is_delegating_direct_not_revoked_max_parent_checks_value() {
-	let user_1 = ALICE;
-	let user_2 = BOB;
-	let user_3 = CHARLIE;
+	let user_1_keypair = get_alice_ed25519();
+	let user_1 = get_ed25519_account(user_1_keypair.public());
+	let user_2_keypair = get_bob_ed25519();
+	let user_2 = get_ed25519_account(user_2_keypair.public());
+	let user_3_keypair = get_charlie_ed25519();
+	let user_3 = get_ed25519_account(user_3_keypair.public());
 
 	let (root_id, root_node) = (get_delegation_root_id(true), generate_base_delegation_root(user_1));
 	let (delegation_id_1, delegation_node_1) =
@@ -1410,9 +1347,12 @@ fn is_delegating_direct_not_revoked_max_parent_checks_value() {
 
 #[test]
 fn is_delegating_direct_revoked() {
-	let user_1 = ALICE;
-	let user_2 = BOB;
-	let user_3 = CHARLIE;
+	let user_1_keypair = get_alice_ed25519();
+	let user_1 = get_ed25519_account(user_1_keypair.public());
+	let user_2_keypair = get_bob_ed25519();
+	let user_2 = get_ed25519_account(user_2_keypair.public());
+	let user_3_keypair = get_charlie_ed25519();
+	let user_3 = get_ed25519_account(user_3_keypair.public());
 
 	let (root_id, root_node) = (get_delegation_root_id(true), generate_base_delegation_root(user_1));
 	let (delegation_id_1, delegation_node_1) =
@@ -1445,9 +1385,12 @@ fn is_delegating_direct_revoked() {
 
 #[test]
 fn is_delegating_direct_revoked_max_parent_checks_value() {
-	let user_1 = ALICE;
-	let user_2 = BOB;
-	let user_3 = CHARLIE;
+	let user_1_keypair = get_alice_ed25519();
+	let user_1 = get_ed25519_account(user_1_keypair.public());
+	let user_2_keypair = get_bob_ed25519();
+	let user_2 = get_ed25519_account(user_2_keypair.public());
+	let user_3_keypair = get_charlie_ed25519();
+	let user_3 = get_ed25519_account(user_3_keypair.public());
 
 	let (root_id, root_node) = (get_delegation_root_id(true), generate_base_delegation_root(user_1));
 	let (delegation_id_1, delegation_node_1) =
@@ -1480,9 +1423,12 @@ fn is_delegating_direct_revoked_max_parent_checks_value() {
 
 #[test]
 fn is_delegating_max_parent_not_revoked() {
-	let user_1 = ALICE;
-	let user_2 = BOB;
-	let user_3 = CHARLIE;
+	let user_1_keypair = get_alice_ed25519();
+	let user_1 = get_ed25519_account(user_1_keypair.public());
+	let user_2_keypair = get_bob_ed25519();
+	let user_2 = get_ed25519_account(user_2_keypair.public());
+	let user_3_keypair = get_charlie_ed25519();
+	let user_3 = get_ed25519_account(user_3_keypair.public());
 
 	let (root_id, root_node) = (get_delegation_root_id(true), generate_base_delegation_root(user_1));
 	let (delegation_id_1, delegation_node_1) = (
@@ -1514,9 +1460,12 @@ fn is_delegating_max_parent_not_revoked() {
 
 #[test]
 fn is_delegating_max_parent_revoked() {
-	let user_1 = ALICE;
-	let user_2 = BOB;
-	let user_3 = CHARLIE;
+	let user_1_keypair = get_alice_ed25519();
+	let user_1 = get_ed25519_account(user_1_keypair.public());
+	let user_2_keypair = get_bob_ed25519();
+	let user_2 = get_ed25519_account(user_2_keypair.public());
+	let user_3_keypair = get_charlie_ed25519();
+	let user_3 = get_ed25519_account(user_3_keypair.public());
 
 	let (root_id, root_node) = (get_delegation_root_id(true), generate_base_delegation_root(user_1));
 	let (delegation_id_1, mut delegation_node_1) = (
@@ -1549,9 +1498,12 @@ fn is_delegating_max_parent_revoked() {
 
 #[test]
 fn is_delegating_root_owner_not_revoked() {
-	let user_1 = ALICE;
-	let user_2 = BOB;
-	let user_3 = CHARLIE;
+	let user_1_keypair = get_alice_ed25519();
+	let user_1 = get_ed25519_account(user_1_keypair.public());
+	let user_2_keypair = get_bob_ed25519();
+	let user_2 = get_ed25519_account(user_2_keypair.public());
+	let user_3_keypair = get_charlie_ed25519();
+	let user_3 = get_ed25519_account(user_3_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -1584,9 +1536,12 @@ fn is_delegating_root_owner_not_revoked() {
 
 #[test]
 fn is_delegating_root_owner_revoked() {
-	let user_1 = ALICE;
-	let user_2 = BOB;
-	let user_3 = CHARLIE;
+	let user_1_keypair = get_alice_ed25519();
+	let user_1 = get_ed25519_account(user_1_keypair.public());
+	let user_2_keypair = get_bob_ed25519();
+	let user_2 = get_ed25519_account(user_2_keypair.public());
+	let user_3_keypair = get_charlie_ed25519();
+	let user_3 = get_ed25519_account(user_3_keypair.public());
 
 	let (root_id, mut root_node) = (
 		get_delegation_root_id(true),
@@ -1621,7 +1576,8 @@ fn is_delegating_root_owner_revoked() {
 
 #[test]
 fn is_delegating_delegation_not_found() {
-	let user_1 = ALICE;
+	let user_1_keypair = get_alice_ed25519();
+	let user_1 = get_ed25519_account(user_1_keypair.public());
 
 	let (root_id, root_node) = (
 		get_delegation_root_id(true),
@@ -1646,9 +1602,12 @@ fn is_delegating_delegation_not_found() {
 
 #[test]
 fn is_delegating_root_after_max_limit() {
-	let user_1 = ALICE;
-	let user_2 = BOB;
-	let user_3 = CHARLIE;
+	let user_1_keypair = get_alice_ed25519();
+	let user_1 = get_ed25519_account(user_1_keypair.public());
+	let user_2_keypair = get_bob_ed25519();
+	let user_2 = get_ed25519_account(user_2_keypair.public());
+	let user_3_keypair = get_charlie_ed25519();
+	let user_3 = get_ed25519_account(user_3_keypair.public());
 
 	let (root_id, mut root_node) = (
 		get_delegation_root_id(true),
