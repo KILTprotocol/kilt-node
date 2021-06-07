@@ -17,11 +17,11 @@ if [[ $BIG_NUM != $EXPECTED_BIG_NUM ]]; then
 fi
 
 # build and copy the binary. Make sure we don't rebuild because of changed spec files.
-cargo build --release -p kilt-parachain
-cp target/release/kilt-parachain $TMP_DIR/kilt-parachain
+# cargo build --release -p kilt-parachain
+# cp target/release/kilt-parachain $TMP_DIR/kilt-parachain
 
-cargo build --release -p kilt-parachain --features fast-gov
-cp target/release/kilt-parachain $TMP_DIR/kilt-parachain-fast-gov
+# cargo build --release -p kilt-parachain --features fast-gov
+# cp target/release/kilt-parachain $TMP_DIR/kilt-parachain-fast-gov
 
 RELAY_CHAIN_IMG=parity/polkadot:v0.9.3
 
@@ -109,8 +109,15 @@ WESTEND_PLAIN=$TMP_DIR"kilt-westend.plain.json"
 WESTEND_JQ=$TMP_DIR"kilt-westend.json"
 WESTEND_OUTPUT=dev-specs/kilt-parachain/kilt-westend.json
 
+WESTEND_RELAY_PLAIN=$TMP_DIR"westend-relay.plain.json"
+WESTEND_RELAY_JQ=$TMP_DIR"westend-relay.json"
+WESTEND_RELAY_OUTPUT=dev-specs/kilt-parachain/westend-relay.json
+
+docker run $RELAY_CHAIN_IMG build-spec --chain westend-local --disable-default-bootnode >$WESTEND_RELAY_PLAIN
 $TMP_DIR/kilt-parachain build-spec --chain spiritnet-dev --disable-default-bootnode >$WESTEND_PLAIN
 
+jq -f scripts/relay-westend.jq $WESTEND_RELAY_PLAIN >$WESTEND_RELAY_JQ
 jq -f scripts/kilt-westend.jq $WESTEND_PLAIN >$WESTEND_JQ
 
+docker run -v$(dirname $WESTEND_RELAY_JQ):/data/spec $RELAY_CHAIN_IMG build-spec --chain /data/spec/$(basename -- "$WESTEND_RELAY_JQ") --raw --disable-default-bootnode >$WESTEND_RELAY_OUTPUT
 $TMP_DIR/kilt-parachain build-spec --runtime spiritnet --chain $WESTEND_JQ --disable-default-bootnode --raw >$WESTEND_OUTPUT
