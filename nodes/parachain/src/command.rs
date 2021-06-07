@@ -179,7 +179,7 @@ macro_rules! construct_async_run {
 						{ $( $code )* }.map(|v| (v, task_manager))
 					})
 				}
-			_ => panic!("unkown runtime"),
+			_ => panic!("unknown runtime"),
 		}
 	}}
 }
@@ -306,9 +306,6 @@ pub fn run() -> Result<()> {
 			let runner = cli.create_runner(&cli.run.normalize())?;
 
 			runner.run_node_until_exit(|config| async move {
-				// TODO
-				let key = sp_core::Pair::generate().0;
-
 				let para_id = chain_spec::Extensions::try_get(&*config.chain_spec).map(|e| e.para_id);
 
 				let polkadot_cli = RelayChainCli::new(
@@ -340,7 +337,6 @@ pub fn run() -> Result<()> {
 				match cli.runtime.as_str() {
 					"mashnet" => crate::service::start_node::<MashRuntimeExecutor, kilt_parachain_runtime::RuntimeApi>(
 						config,
-						key,
 						polkadot_config,
 						id,
 					)
@@ -349,7 +345,6 @@ pub fn run() -> Result<()> {
 					.map_err(Into::into),
 					"spiritnet" => crate::service::start_node::<SpiritRuntimeExecutor, spiritnet_runtime::RuntimeApi>(
 						config,
-						key,
 						polkadot_config,
 						id,
 					)
