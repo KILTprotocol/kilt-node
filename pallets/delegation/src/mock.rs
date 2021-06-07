@@ -22,10 +22,11 @@ use codec::Decode;
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use frame_system::EnsureSigned;
 use sp_runtime::{MultiSignature, MultiSigner, testing::Header, traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify}};
-
-use codec::Encode;
 use sp_core::{ed25519, sr25519};
 use sp_core::Pair;
+
+#[cfg(test)]
+use codec::Encode;
 
 use crate as delegation;
 use crate::*;
