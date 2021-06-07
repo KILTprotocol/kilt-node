@@ -39,7 +39,7 @@ impl DidVerificationKey {
 			DidVerificationKey::Ed25519(public_key) => {
 				// Try to re-create a Signature value or throw an error if raw value is invalid
 				if let DidSignature::Ed25519(sig) = signature {
-					Ok(sig.verify(payload, &public_key))
+					Ok(sig.verify(payload, public_key))
 				} else {
 					Err(SignatureError::InvalidSignatureFormat)
 				}
@@ -47,7 +47,7 @@ impl DidVerificationKey {
 			// Follows same process as above, but using a Sr25519 instead
 			DidVerificationKey::Sr25519(public_key) => {
 				if let DidSignature::Sr25519(sig) = signature {
-					Ok(sig.verify(payload, &public_key))
+					Ok(sig.verify(payload, public_key))
 				} else {
 					Err(SignatureError::InvalidSignatureFormat)
 				}
@@ -410,7 +410,7 @@ impl<T: Config> DidDetails<T> {
 		}?;
 		let key_details = self.public_keys.get(&key_id)?;
 		if let DidPublicKey::PublicVerificationKey(key) = &key_details.key {
-			Some(&key)
+			Some(key)
 		} else {
 			// The case of something different than a verification key should never happen.
 			None
