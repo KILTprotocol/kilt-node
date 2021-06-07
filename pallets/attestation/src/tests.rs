@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{assert_noop, assert_ok};
+use sp_core::Pair;
 
 use crate::{self as attestation, mock::*};
 use ctype::mock as ctype_mock;
@@ -26,7 +27,8 @@ use delegation::mock as delegation_mock;
 
 #[test]
 fn attest_no_delegation_successful() {
-	let attester = ALICE;
+	let attester_keypair = get_alice_ed25519();
+	let attester = get_ed25519_account(attester_keypair.public());
 	let claim_hash = get_claim_hash(true);
 	let attestation = generate_base_attestation(attester.clone());
 
@@ -56,7 +58,8 @@ fn attest_no_delegation_successful() {
 
 #[test]
 fn attest_with_delegation_successful() {
-	let attester = ALICE;
+	let attester_keypair = get_alice_ed25519();
+	let attester = get_ed25519_account(attester_keypair.public());
 	let claim_hash = get_claim_hash(true);
 	let (root_id, root_node) = (
 		delegation_mock::get_delegation_root_id(true),
@@ -107,7 +110,8 @@ fn attest_with_delegation_successful() {
 
 #[test]
 fn ctype_not_present_attest_error() {
-	let attester = ALICE;
+	let attester_keypair = get_alice_ed25519();
+	let attester = get_ed25519_account(attester_keypair.public());
 	let claim_hash = get_claim_hash(true);
 	let attestation = generate_base_attestation(attester.clone());
 
@@ -131,7 +135,8 @@ fn ctype_not_present_attest_error() {
 
 #[test]
 fn duplicate_attest_error() {
-	let attester = ALICE;
+	let attester_keypair = get_alice_ed25519();
+	let attester = get_ed25519_account(attester_keypair.public());
 	let claim_hash = get_claim_hash(true);
 	let attestation = generate_base_attestation(attester.clone());
 
@@ -160,7 +165,8 @@ fn duplicate_attest_error() {
 
 #[test]
 fn delegation_not_found_attest_error() {
-	let attester = ALICE;
+	let attester_keypair = get_alice_ed25519();
+	let attester = get_ed25519_account(attester_keypair.public());
 	let claim_hash = get_claim_hash(true);
 	let delegation_id = delegation_mock::get_delegation_id(true);
 	let mut attestation = generate_base_attestation(attester.clone());
@@ -187,7 +193,8 @@ fn delegation_not_found_attest_error() {
 
 #[test]
 fn delegation_revoked_attest_error() {
-	let attester = ALICE;
+	let attester_keypair = get_alice_ed25519();
+	let attester = get_ed25519_account(attester_keypair.public());
 	let claim_hash = get_claim_hash(true);
 	let (root_id, root_node) = (
 		delegation_mock::get_delegation_root_id(true),
@@ -228,8 +235,10 @@ fn delegation_revoked_attest_error() {
 
 #[test]
 fn not_delegation_owner_attest_error() {
-	let attester = ALICE;
-	let alternative_owner = BOB;
+	let attester_keypair = get_alice_ed25519();
+	let attester = get_ed25519_account(attester_keypair.public());
+	let alternative_owner_keypair = get_bob_ed25519();
+	let alternative_owner = get_ed25519_account(alternative_owner_keypair.public());
 	let claim_hash = get_claim_hash(true);
 	let (root_id, root_node) = (
 		delegation_mock::get_delegation_root_id(true),
@@ -269,7 +278,8 @@ fn not_delegation_owner_attest_error() {
 
 #[test]
 fn unauthorised_permissions_attest_error() {
-	let attester = ALICE;
+	let attester_keypair = get_alice_ed25519();
+	let attester = get_ed25519_account(attester_keypair.public());
 	let claim_hash = get_claim_hash(true);
 	let (root_id, root_node) = (
 		delegation_mock::get_delegation_root_id(true),
@@ -308,7 +318,8 @@ fn unauthorised_permissions_attest_error() {
 
 #[test]
 fn root_not_present_attest_error() {
-	let attester = ALICE;
+	let attester_keypair = get_alice_ed25519();
+	let attester = get_ed25519_account(attester_keypair.public());
 	let claim_hash = get_claim_hash(true);
 	let (root_id, root_node) = (
 		delegation_mock::get_delegation_root_id(true),
@@ -349,7 +360,8 @@ fn root_not_present_attest_error() {
 
 #[test]
 fn root_ctype_mismatch_attest_error() {
-	let attester = ALICE;
+	let attester_keypair = get_alice_ed25519();
+	let attester = get_ed25519_account(attester_keypair.public());
 	let claim_hash = get_claim_hash(true);
 	let alternative_ctype_hash = ctype_mock::get_ctype_hash(false);
 	let (root_id, mut root_node) = (
@@ -393,7 +405,8 @@ fn root_ctype_mismatch_attest_error() {
 
 #[test]
 fn revoke_direct_successful() {
-	let revoker = ALICE;
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
 	let claim_hash = get_claim_hash(true);
 	let attestation = generate_base_attestation(revoker.clone());
 
@@ -423,8 +436,10 @@ fn revoke_direct_successful() {
 
 #[test]
 fn revoke_with_delegation_successful() {
-	let revoker = ALICE;
-	let attestation_owner = BOB;
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let attestation_owner_keypair = get_bob_ed25519();
+	let attestation_owner = get_ed25519_account(attestation_owner_keypair.public());
 	let claim_hash = get_claim_hash(true);
 
 	let (root_id, root_node) = (
@@ -474,8 +489,10 @@ fn revoke_with_delegation_successful() {
 
 #[test]
 fn revoke_with_parent_delegation_successful() {
-	let revoker = ALICE;
-	let attestation_owner = BOB;
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let attestation_owner_keypair = get_bob_ed25519();
+	let attestation_owner = get_ed25519_account(attestation_owner_keypair.public());
 	let claim_hash = get_claim_hash(true);
 
 	let (root_id, root_node) = (
@@ -527,8 +544,10 @@ fn revoke_with_parent_delegation_successful() {
 
 #[test]
 fn revoke_parent_delegation_no_attestation_permissions_successful() {
-	let revoker = ALICE;
-	let attestation_owner = BOB;
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let attestation_owner_keypair = get_bob_ed25519();
+	let attestation_owner = get_ed25519_account(attestation_owner_keypair.public());
 	let claim_hash = get_claim_hash(true);
 
 	let (root_id, root_node) = (
@@ -580,8 +599,10 @@ fn revoke_parent_delegation_no_attestation_permissions_successful() {
 
 #[test]
 fn revoke_parent_delegation_with_direct_delegation_revoked_successful() {
-	let revoker = ALICE;
-	let attestation_owner = BOB;
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let attestation_owner_keypair = get_bob_ed25519();
+	let attestation_owner = get_ed25519_account(attestation_owner_keypair.public());
 	let claim_hash = get_claim_hash(true);
 
 	let (root_id, root_node) = (
@@ -634,7 +655,8 @@ fn revoke_parent_delegation_with_direct_delegation_revoked_successful() {
 
 #[test]
 fn attestation_not_present_revoke_error() {
-	let revoker = ALICE;
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
 	let claim_hash = get_claim_hash(true);
 
 	let attestation = generate_base_attestation(revoker.clone());
@@ -659,7 +681,8 @@ fn attestation_not_present_revoke_error() {
 
 #[test]
 fn already_revoked_revoke_error() {
-	let revoker = ALICE;
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
 	let claim_hash = get_claim_hash(true);
 
 	// Attestation already revoked
@@ -690,8 +713,10 @@ fn already_revoked_revoke_error() {
 
 #[test]
 fn unauthorised_attestation_revoke_error() {
-	let revoker = ALICE;
-	let attestation_owner = BOB;
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let attestation_owner_keypair = get_bob_ed25519();
+	let attestation_owner = get_ed25519_account(attestation_owner_keypair.public());
 	let claim_hash = get_claim_hash(true);
 
 	// Attestation owned by a different user
@@ -721,8 +746,10 @@ fn unauthorised_attestation_revoke_error() {
 
 #[test]
 fn max_parent_lookups_revoke_error() {
-	let revoker = ALICE;
-	let attestation_owner = BOB;
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let attestation_owner_keypair = get_bob_ed25519();
+	let attestation_owner = get_ed25519_account(attestation_owner_keypair.public());
 	let claim_hash = get_claim_hash(true);
 
 	let (root_id, root_node) = (
@@ -777,8 +804,10 @@ fn max_parent_lookups_revoke_error() {
 
 #[test]
 fn revoked_delegation_revoke_error() {
-	let revoker = ALICE;
-	let attestation_owner = BOB;
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let attestation_owner_keypair = get_bob_ed25519();
+	let attestation_owner = get_ed25519_account(attestation_owner_keypair.public());
 	let claim_hash = get_claim_hash(true);
 
 	let (root_id, root_node) = (
