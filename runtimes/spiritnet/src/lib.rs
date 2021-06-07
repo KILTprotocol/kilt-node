@@ -353,7 +353,7 @@ parameter_types! {
 	/// Maximum number of processed collator exit requests per round is 5
 	/// Defends against exceeding PoV size limit in on_initialize
 	// TODO: Potentially change after benchmarking
-	pub const MaxExitsPerRound: usize = 5;
+	pub const MaxExitsPerRound: u32 = 5;
 	/// Minimum 16 collators selected per round, default at genesis and minimum forever after
 	pub const MinSelectedCandidates: u32 = 16;
 	/// Maximum 25 delegators per collator at launch, might be increased later
@@ -369,7 +369,7 @@ parameter_types! {
 	/// Maximum number of collator candidates
 	pub const MaxCollatorCandidates: u32 = 75;
 	/// Maximum number of concurrent requests to unlock unstaked balance
-	pub const MaxUnstakeRequests: usize = 10;
+	pub const MaxUnstakeRequests: u32 = 10;
 }
 
 impl parachain_staking::Config for Runtime {
