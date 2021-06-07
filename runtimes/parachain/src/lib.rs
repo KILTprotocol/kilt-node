@@ -27,7 +27,8 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use frame_support::{traits::LockIdentifier, PalletId};
+use codec::Decode;
+use frame_support::{PalletId, ensure, traits::LockIdentifier};
 use frame_system::{
 	limits::{BlockLength, BlockWeights},
 	EnsureOneOf, EnsureRoot,
@@ -42,13 +43,8 @@ use sp_core::{
 	u32_trait::{_1, _2, _3, _5},
 	OpaqueMetadata,
 };
-use sp_runtime::{
-	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
-	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult,
-};
-use sp_std::{borrow::ToOwned, prelude::*};
+use sp_runtime::{ApplyExtrinsicResult, MultiSignature, create_runtime_str, generic, impl_opaque_keys, traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys, Verify}, transaction_validity::{TransactionSource, TransactionValidity}};
+use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 use static_assertions::const_assert;
 
@@ -616,37 +612,23 @@ impl pallet_membership::Config for Runtime {
 }
 
 impl delegation::VerifyDelegateSignature for Runtime {
-	type DelegateId = DidIdentifier;
+	type DelegateId = AccountId;
 	type Payload = Vec<u8>;
 	type Signature = Vec<u8>;
 
-	//TODO: Add unit tests for this function
+	// No need to retrieve delegate details as it is simply an AccountId.
 	fn verify(
 		delegate: &Self::DelegateId,
 		payload: &Self::Payload,
 		signature: &Self::Signature,
 	) -> delegation::SignatureVerificationResult {
-		// Retrieve delegate details for signature verification
-		let delegate_details = <did::Did<Runtime>>::get(&delegate)
-			.ok_or(delegation::SignatureVerificationError::SignerInformationNotPresent)?;
+		// Try to decode signature first.
+		let decoded_signature = MultiSignature::decode(&mut &signature[..]).map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
 
-		let did_signature = did::DidSignature::from_did_signature_encoded(signature.to_owned())
-			.map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
-
-		did::pallet::Pallet::<Runtime>::verify_payload_signature_with_did_key_type(
-			payload.as_ref(),
-			&did_signature,
-			&delegate_details,
-			did::DidVerificationKeyRelationship::Authentication,
-		)
-		.map_err(|err| {
-			match err {
-				did::DidError::StorageError(_) => delegation::SignatureVerificationError::SignerInformationNotPresent,
-				did::DidError::SignatureError(_) => delegation::SignatureVerificationError::SignatureInvalid,
-				// Should never happen
-				_ => delegation::SignatureVerificationError::SignatureInvalid,
-			}
-		})?;
+		ensure!(
+			decoded_signature.verify(&payload[..], delegate),
+			delegation::SignatureVerificationError::SignatureInvalid
+		);
 
 		Ok(())
 	}
