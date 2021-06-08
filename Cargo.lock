@@ -434,7 +434,6 @@ version = "0.24.0"
 dependencies = [
  "ctype",
  "delegation",
- "did",
  "frame-support",
  "frame-system",
  "kilt-primitives",
@@ -1791,7 +1790,6 @@ version = "0.24.0"
 dependencies = [
  "bitflags",
  "ctype",
- "did",
  "frame-support",
  "frame-system",
  "kilt-primitives",

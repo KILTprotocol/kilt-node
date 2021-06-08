@@ -27,10 +27,11 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use frame_support::{traits::LockIdentifier, PalletId};
+use codec::Decode;
+use frame_support::{ensure, traits::LockIdentifier, PalletId};
 use frame_system::{
 	limits::{BlockLength, BlockWeights},
-	EnsureOneOf, EnsureRoot,
+	EnsureOneOf, EnsureRoot, EnsureSigned,
 };
 use kilt_primitives::{
 	constants::{DAYS, DOLLARS, MILLICENTS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
@@ -44,9 +45,9 @@ use sp_core::{
 };
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult,
+	ApplyExtrinsicResult, MultiSignature,
 };
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
@@ -615,21 +616,52 @@ impl pallet_membership::Config for Runtime {
 	type WeightInfo = ();
 }
 
+impl delegation::VerifyDelegateSignature for Runtime {
+	type DelegateId = AccountId;
+	type Payload = Vec<u8>;
+	type Signature = Vec<u8>;
+
+	// No need to retrieve delegate details as it is simply an AccountId.
+	fn verify(
+		delegate: &Self::DelegateId,
+		payload: &Self::Payload,
+		signature: &Self::Signature,
+	) -> delegation::SignatureVerificationResult {
+		// Try to decode signature first.
+		let decoded_signature = MultiSignature::decode(&mut &signature[..])
+			.map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
+
+		ensure!(
+			decoded_signature.verify(&payload[..], delegate),
+			delegation::SignatureVerificationError::SignatureInvalid
+		);
+
+		Ok(())
+	}
+}
+
 impl attestation::Config for Runtime {
-	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
+	type EnsureOrigin = EnsureSigned<<Self as delegation::Config>::DelegationEntityId>;
 	type Event = Event;
 }
 
-impl ctype::Config for Runtime {
-	type CtypeCreatorId = DidIdentifier;
-	type EnsureOrigin = did::EnsureDidOrigin<Self::CtypeCreatorId>;
-	type Event = Event;
+parameter_types! {
+	pub const MaxSignatureByteLength: u16 = 64;
 }
 
 impl delegation::Config for Runtime {
+	type DelegationSignatureVerification = Self;
+	type DelegationEntityId = AccountId;
 	type DelegationNodeId = Hash;
+	type EnsureOrigin = EnsureSigned<Self::DelegationEntityId>;
 	type Event = Event;
-	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
+	type MaxSignatureByteLength = MaxSignatureByteLength;
+}
+
+impl ctype::Config for Runtime {
+	type CtypeCreatorId = AccountId;
+	type EnsureOrigin = EnsureSigned<Self::CtypeCreatorId>;
+	type Event = Event;
 }
 
 parameter_types! {
@@ -639,7 +671,7 @@ parameter_types! {
 }
 
 impl did::Config for Runtime {
-	type DidIdentifier = AccountId;
+	type DidIdentifier = DidIdentifier;
 	type Event = Event;
 	type Call = Call;
 	type Origin = Origin;

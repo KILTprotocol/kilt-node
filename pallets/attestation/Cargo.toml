@@ -15,7 +15,6 @@ substrate-wasm-builder-runner = {version = "3.0.0"}
 [dev-dependencies]
 ctype = {features = ["mock"], path = "../ctype", version = "0.24.0"}
 delegation = {features = ["mock"], path = "../delegation", version = "0.24.0"}
-did = {features = ["mock"], path = "../did", version = "0.24.0"}
 kilt-primitives = {default-features = false, path = "../../primitives"}
 serde = {version = "1.0.101"}
 sp-core = {branch = "master", default-features = false, git = "https://github.com/paritytech/substrate", version = "3.0.0"}
@@ -26,7 +25,6 @@ sp-keystore = {branch = "master", default-features = false, git = "https://githu
 # Internal dependencies
 ctype = {default-features = false, path = "../ctype", version = "0.24.0"}
 delegation = {default-features = false, path = "../delegation", version = "0.24.0"}
-did = {default-features = false, optional = true, path = "../did", version = "0.24.0"}
 kilt-primitives = {default-features = false, optional = true, path = "../../primitives"}
 
 #External dependencies
@@ -43,7 +41,6 @@ sp-std = {branch = "master", default-features = false, git = "https://github.com
 [features]
 default = ["std"]
 mock = [
-  "did",
   "kilt-primitives",
   "serde",
   "sp-core",
@@ -56,6 +53,7 @@ std = [
   "delegation/std",
   "frame-support/std",
   "frame-system/std",
+  "kilt-primitives/std",
   "log/std",
   "sp-core/std",
   "sp-io/std",

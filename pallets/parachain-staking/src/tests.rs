@@ -659,7 +659,7 @@ fn execute_leave_candidates_with_delay() {
 					.unwrap()
 					.can_exit(1 + <Test as Config>::ExitQueueDelay::get()));
 				assert_noop!(
-					StakePallet::execute_leave_candidates(Origin::signed(owner.clone()), owner.clone()),
+					StakePallet::execute_leave_candidates(Origin::signed(*owner), *owner),
 					Error::<Test>::CannotLeaveYet
 				);
 			}
@@ -743,11 +743,11 @@ fn execute_leave_candidates_with_delay() {
 			assert_eq!(StakePallet::selected_candidates(), vec![3, 4]);
 			for collator in vec![1u64, 2u64, 5u64, 6u64, 7u64].iter() {
 				assert_ok!(StakePallet::execute_leave_candidates(
-					Origin::signed(collator.clone()),
-					collator.clone()
+					Origin::signed(*collator),
+					*collator
 				));
 				assert!(StakePallet::collator_state(&collator).is_none());
-				assert!(!StakePallet::is_candidate(&collator));
+				assert!(!StakePallet::is_candidate(collator));
 				assert_eq!(StakePallet::unstaking(collator).len(), 1);
 			}
 			assert!(StakePallet::total() != old_stake);
@@ -760,7 +760,7 @@ fn execute_leave_candidates_with_delay() {
 			roll_to(20, vec![]);
 			for collator in 8u64..=10u64 {
 				assert_ok!(StakePallet::execute_leave_candidates(
-					Origin::signed(collator.clone()),
+					Origin::signed(collator),
 					collator
 				));
 				assert!(StakePallet::collator_state(&collator).is_none());
@@ -2936,7 +2936,7 @@ fn candidate_leaves() {
 			);
 			// add five more collator to max fill CandidatePool
 			for candidate in 3u64..11u64 {
-				assert_ok!(StakePallet::join_candidates(Origin::signed(candidate.clone()), 100));
+				assert_ok!(StakePallet::join_candidates(Origin::signed(candidate), 100));
 			}
 			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(1)));
 			assert_noop!(
@@ -2974,10 +2974,7 @@ fn candidate_leaves() {
 
 			let stake: Vec<Stake<AccountId, Balance>> = (1u64..11u64)
 				.zip(iter::once(210).chain(iter::repeat(100)))
-				.map(|(id, amount)| Stake {
-					owner: id,
-					amount: amount,
-				})
+				.map(|(id, amount)| Stake { owner: id, amount })
 				.collect();
 			assert_eq!(StakePallet::candidate_pool(), OrderedSet::from(stake));
 			let state = StakePallet::collator_state(1).unwrap();

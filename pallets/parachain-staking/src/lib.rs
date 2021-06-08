@@ -570,7 +570,7 @@ pub mod pallet {
 
 			for &(ref actor, ref opt_val, balance) in &self.stakers {
 				assert!(
-					T::Currency::free_balance(&actor) >= balance,
+					T::Currency::free_balance(actor) >= balance,
 					"Account does not have enough balance to stake."
 				);
 				if let Some(delegated_val) = opt_val {

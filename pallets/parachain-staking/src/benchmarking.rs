@@ -42,7 +42,7 @@ fn setup_collator_candidates<T: Config>(num_candidates: u32) -> Vec<T::AccountId
 		.collect();
 
 	for acc in collators.iter() {
-		T::Currency::make_free_balance_be(&acc, T::MinCollatorCandidateStk::get());
+		T::Currency::make_free_balance_be(acc, T::MinCollatorCandidateStk::get());
 		assert_ok!(<Pallet<T>>::join_candidates(
 			T::Origin::from(Some(acc.clone()).into()),
 			T::MinCollatorCandidateStk::get(),
@@ -65,7 +65,7 @@ fn fill_delegators<T: Config>(num_delegators: u32, collator: T::AccountId, colla
 		.collect();
 
 	for acc in delegators.iter() {
-		T::Currency::make_free_balance_be(&acc, T::MinDelegatorStk::get());
+		T::Currency::make_free_balance_be(acc, T::MinDelegatorStk::get());
 		assert_ok!(<Pallet<T>>::join_delegators(
 			T::Origin::from(Some(acc.clone()).into()),
 			T::Lookup::unlookup(collator.clone()),
