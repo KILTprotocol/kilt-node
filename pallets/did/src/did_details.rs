@@ -18,7 +18,7 @@
 
 use codec::{Decode, Encode, WrapperTypeEncode};
 use sp_core::{ed25519, sr25519};
-use sp_runtime::traits::Verify;
+use sp_runtime::{MultiSignature, MultiSigner, traits::Verify};
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 
 use crate::*;
@@ -54,12 +54,6 @@ impl DidVerificationKey {
 			}
 		}
 	}
-
-	/// Returns a DidVerificationKey after decoding an encoded version of
-	/// itself.
-	pub fn from_did_verification_key_encoded(encoded: Vec<u8>) -> Result<Self, KeyError> {
-		Self::decode(&mut &encoded[..]).map_err(|_| KeyError::InvalidVerificationKeyFormat)
-	}
 }
 
 impl From<ed25519::Public> for DidVerificationKey {
@@ -72,6 +66,18 @@ impl From<sr25519::Public> for DidVerificationKey {
 	fn from(key: sr25519::Public) -> Self {
 		DidVerificationKey::Sr25519(key)
 	}
+}
+
+impl TryFrom<MultiSigner> for DidVerificationKey {
+    type Error = KeyError;
+
+    fn try_from(value: MultiSigner) -> Result<Self, Self::Error> {
+		match value {
+			MultiSigner::Ed25519(pk) => Ok(Self::Ed25519(pk)),
+			MultiSigner::Sr25519(pk) => Ok(Self::Sr25519(pk)),
+			_ => Err(KeyError::UnsupportedKeyType)
+		}
+    }
 }
 
 /// Types of encryption keys a DID can control.
@@ -142,6 +148,18 @@ impl From<sr25519::Signature> for DidSignature {
 	fn from(sig: sr25519::Signature) -> Self {
 		DidSignature::Sr25519(sig)
 	}
+}
+
+impl TryFrom<MultiSignature> for DidSignature {
+    type Error = SignatureError;
+
+    fn try_from(value: MultiSignature) -> Result<Self, Self::Error> {
+		match value {
+			MultiSignature::Sr25519(sig) => Ok(Self::Sr25519(sig)),
+			MultiSignature::Ed25519(sig) => Ok(Self::Ed25519(sig)),
+			_ => Err(SignatureError::UnsupportedSignatureFormat),
+		}
+    }
 }
 
 /// Details of a public key, which includes the key value and the
@@ -438,10 +456,12 @@ impl<T: Config> DidDetails<T> {
 	}
 }
 
-impl<T: Config> TryFrom<DidCreationOperation<T>> for DidDetails<T> {
+impl<T: Config> TryFrom<(DidCreationOperation<T>, DidVerificationKey)> for DidDetails<T> {
 	type Error = InputError;
 
-	fn try_from(op: DidCreationOperation<T>) -> Result<Self, Self::Error> {
+	fn try_from(new_details: (DidCreationOperation<T>, DidVerificationKey)) -> Result<Self, Self::Error> {
+		let (op, new_auth_key) = new_details;
+
 		ensure!(
 			op.new_key_agreement_keys.len() <= <<T as Config>::MaxNewKeyAgreementKeys>::get() as usize,
 			InputError::MaxKeyAgreementKeysLimitExceeded
@@ -457,7 +477,7 @@ impl<T: Config> TryFrom<DidCreationOperation<T>> for DidDetails<T> {
 		let current_block_number = <frame_system::Pallet<T>>::block_number();
 
 		// Creates a new DID with the given authentication key.
-		let mut new_did_details = DidDetails::new(op.new_authentication_key, current_block_number);
+		let mut new_did_details = DidDetails::new(new_auth_key, current_block_number);
 
 		new_did_details.add_key_agreement_keys(op.new_key_agreement_keys, current_block_number);
 
@@ -597,8 +617,6 @@ pub trait DeriveDidCallAuthorizationVerificationKeyRelationship {
 pub struct DidCreationOperation<T: Config> {
 	/// The DID identifier. It has to be unique.
 	pub did: DidIdentifierOf<T>,
-	/// The new authentication key.
-	pub new_authentication_key: DidVerificationKey,
 	/// The new key agreement keys.
 	pub new_key_agreement_keys: BTreeSet<DidEncryptionKey>,
 	/// \[OPTIONAL\] The new attestation key.
@@ -610,6 +628,7 @@ pub struct DidCreationOperation<T: Config> {
 }
 
 impl<T: Config> DidOperation<T> for DidCreationOperation<T> {
+	// Not really used for creations.
 	fn get_verification_key_relationship(&self) -> DidVerificationKeyRelationship {
 		DidVerificationKeyRelationship::Authentication
 	}

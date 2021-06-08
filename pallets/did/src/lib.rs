@@ -63,6 +63,7 @@ pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
+use sp_runtime::traits::IdentifyAccount;
 
 	/// Reference to a payload of data of variable size.
 	pub type Payload = [u8];
@@ -91,7 +92,7 @@ pub mod pallet {
 			+ Dispatchable<Origin = <Self as Config>::Origin, PostInfo = PostDispatchInfo>
 			+ GetDispatchInfo
 			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
-		type DidIdentifier: Parameter + Default;
+		type DidIdentifier: Parameter + Default + IdentifyAccount<AccountId = AccountIdentifierOf<Self>> + Into<DidVerificationKey>;
 		#[cfg(not(feature = "runtime-benchmarks"))]
 		type Origin: From<DidRawOrigin<DidIdentifierOf<Self>>>;
 		#[cfg(feature = "runtime-benchmarks")]
@@ -178,6 +179,10 @@ pub mod pallet {
 		MaxVerificationKeysToRemoveLimitExceeded,
 		/// A URL longer than the maximum size allowed has been provided.
 		MaxUrlLengthExceeded,
+		/// The key type used for the DID is not supported.
+		UnsupportedKeyType,
+		/// The signature type used is not supported.
+		UnsupportedSignatureFormat,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
 	}
@@ -189,6 +194,7 @@ pub mod pallet {
 				DidError::SignatureError(operation_error) => Self::from(operation_error),
 				DidError::UrlError(url_error) => Self::from(url_error),
 				DidError::InputError(input_error) => Self::from(input_error),
+				DidError::KeyError(key_error) => Self::from(key_error),
 				DidError::InternalError => Self::InternalError,
 			}
 		}
@@ -214,6 +220,7 @@ pub mod pallet {
 				SignatureError::InvalidSignature => Self::InvalidSignature,
 				SignatureError::InvalidSignatureFormat => Self::InvalidSignatureFormat,
 				SignatureError::InvalidNonce => Self::InvalidNonce,
+				SignatureError::UnsupportedSignatureFormat => Self::UnsupportedSignatureFormat,
 			}
 		}
 	}
@@ -233,6 +240,14 @@ pub mod pallet {
 				InputError::MaxKeyAgreementKeysLimitExceeded => Self::MaxKeyAgreementKeysLimitExceeded,
 				InputError::MaxVerificationKeysToRemoveLimitExceeded => Self::MaxVerificationKeysToRemoveLimitExceeded,
 				InputError::MaxUrlLengthExceeded => Self::MaxUrlLengthExceeded,
+			}
+		}
+	}
+
+	impl<T> From<KeyError> for Error<T> {
+		fn from(error: KeyError) -> Self {
+			match error {
+				KeyError::UnsupportedKeyType => Self::UnsupportedKeyType
 			}
 		}
 	}
@@ -272,7 +287,7 @@ pub mod pallet {
 				<Error<T>>::DidAlreadyPresent
 			);
 
-			let did_entry = DidDetails::try_from(operation.clone()).map_err(<Error<T>>::from)?;
+			let did_entry = DidDetails::try_from((operation.clone(), operation.did.clone().into())).map_err(<Error<T>>::from)?;
 
 			Self::verify_payload_signature_with_did_key_type(
 				&operation.encode(),
