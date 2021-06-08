@@ -63,6 +63,7 @@
             "Validator"
           ]
         ]
+    | .genesis.runtime.palletStaking.validatorCount = 3
     | .genesis.runtime.palletStaking.invulnerables = [
             "5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY",
             "5HpG9w8EBLe5XCrbczpwq5TSXvedjrBGCwqxK1iQ7qUsSWFc",
