@@ -26,16 +26,6 @@ test:
   script:
     - cargo test --all --all-features
 
-build-fast-gov:
-  image: docker:19.03.12
-  stage: build
-  script:
-    - docker build --build-arg NODE_TYPE=kilt-parachain --build-arg FEATURES=fast-gov -t kiltprotocol/peregrine:latest-fast-gov .
-    - docker save kiltprotocol/peregrine:latest-fast-gov > peregrine-latest-fast-gov.img
-  artifacts:
-    paths:
-      - peregrine-latest-fast-gov.img
-
 build:
   image: docker:19.03.12
   stage: build
