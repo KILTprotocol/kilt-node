@@ -23,13 +23,6 @@ use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 
 use crate::*;
 
-/// The string description of a DID public key.
-///
-/// The description must follow the [DID specification](https://w3c.github.io/did-spec-registries/#verification-method-types).
-pub trait DidPublicKeyDescription {
-	fn get_did_key_description(&self) -> &str;
-}
-
 /// Types of verification keys a DID can control.
 #[derive(Clone, Copy, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
 pub enum DidVerificationKey {
@@ -46,7 +39,7 @@ impl DidVerificationKey {
 			DidVerificationKey::Ed25519(public_key) => {
 				// Try to re-create a Signature value or throw an error if raw value is invalid
 				if let DidSignature::Ed25519(sig) = signature {
-					Ok(sig.verify(payload, &public_key))
+					Ok(sig.verify(payload, public_key))
 				} else {
 					Err(SignatureError::InvalidSignatureFormat)
 				}
@@ -54,37 +47,18 @@ impl DidVerificationKey {
 			// Follows same process as above, but using a Sr25519 instead
 			DidVerificationKey::Sr25519(public_key) => {
 				if let DidSignature::Sr25519(sig) = signature {
-					Ok(sig.verify(payload, &public_key))
+					Ok(sig.verify(payload, public_key))
 				} else {
 					Err(SignatureError::InvalidSignatureFormat)
 				}
 			}
 		}
 	}
-}
 
-impl TryFrom<Vec<u8>> for DidVerificationKey {
-	type Error = KeyError;
-
-	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-		if let Ok(ed25519_key) = ed25519::Public::try_from(value.as_ref()) {
-			Ok(Self::from(ed25519_key))
-		} else if let Ok(sr25519_key) = sr25519::Public::try_from(value.as_ref()) {
-			Ok(Self::from(sr25519_key))
-		} else {
-			Err(KeyError::InvalidVerificationKeyFormat)
-		}
-	}
-}
-
-impl DidPublicKeyDescription for DidVerificationKey {
-	fn get_did_key_description(&self) -> &str {
-		match self {
-			// https://w3c.github.io/did-spec-registries/#ed25519verificationkey2018
-			DidVerificationKey::Ed25519(_) => "Ed25519VerificationKey2018",
-			// Not yet defined in the DID specification.
-			DidVerificationKey::Sr25519(_) => "Sr25519VerificationKey2020",
-		}
+	/// Returns a DidVerificationKey after decoding an encoded version of
+	/// itself.
+	pub fn from_didi_verification_key_encoded(encoded: Vec<u8>) -> Result<Self, KeyError> {
+		Self::decode(&mut &encoded[..]).map_err(|_| KeyError::InvalidVerificationKeyFormat)
 	}
 }
 
@@ -105,13 +79,6 @@ impl From<sr25519::Public> for DidVerificationKey {
 pub enum DidEncryptionKey {
 	/// An X25519 public key.
 	X25519([u8; 32]),
-}
-
-impl DidPublicKeyDescription for DidEncryptionKey {
-	fn get_did_key_description(&self) -> &str {
-		// https://w3c.github.io/did-spec-registries/#x25519keyagreementkey2019
-		"X25519KeyAgreementKey2019"
-	}
 }
 
 /// A general public key under the control of the DID.
@@ -158,6 +125,13 @@ pub enum DidSignature {
 	Sr25519(sr25519::Signature),
 }
 
+impl DidSignature {
+	/// Returns a DidSignature after decoding an encoded version of itself.
+	pub fn from_did_signature_encoded(encoded: Vec<u8>) -> Result<Self, SignatureError> {
+		Self::decode(&mut &encoded[..]).map_err(|_| SignatureError::InvalidSignatureFormat)
+	}
+}
+
 impl From<ed25519::Signature> for DidSignature {
 	fn from(sig: ed25519::Signature) -> Self {
 		DidSignature::Ed25519(sig)
@@ -167,20 +141,6 @@ impl From<ed25519::Signature> for DidSignature {
 impl From<sr25519::Signature> for DidSignature {
 	fn from(sig: sr25519::Signature) -> Self {
 		DidSignature::Sr25519(sig)
-	}
-}
-
-impl TryFrom<Vec<u8>> for DidSignature {
-	type Error = SignatureError;
-
-	fn try_from(encoded_signature: Vec<u8>) -> Result<Self, Self::Error> {
-		if let Ok(ed25519_sig) = ed25519::Signature::try_from(encoded_signature.as_ref()) {
-			Ok(Self::from(ed25519_sig))
-		} else if let Ok(sr25519_sig) = sr25519::Signature::try_from(encoded_signature.as_ref()) {
-			Ok(Self::from(sr25519_sig))
-		} else {
-			Err(SignatureError::InvalidSignatureFormat)
-		}
 	}
 }
 
@@ -450,7 +410,7 @@ impl<T: Config> DidDetails<T> {
 		}?;
 		let key_details = self.public_keys.get(&key_id)?;
 		if let DidPublicKey::PublicVerificationKey(key) = &key_details.key {
-			Some(&key)
+			Some(key)
 		} else {
 			// The case of something different than a verification key should never happen.
 			None

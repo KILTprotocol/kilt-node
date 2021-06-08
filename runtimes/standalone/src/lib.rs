@@ -27,6 +27,9 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use codec::Decode;
+use frame_support::ensure;
+use frame_system::EnsureSigned;
 use kilt_primitives::{
 	constants::{DOLLARS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature,
@@ -38,9 +41,9 @@ use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult,
+	ApplyExtrinsicResult, MultiSignature,
 };
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
@@ -238,6 +241,7 @@ impl pallet_indices::Config for Runtime {
 parameter_types! {
 	pub const ExistentialDeposit: Balance = 500;
 	pub const MaxLocks: u32 = 50;
+	pub const MaxReserves: u32 = 50;
 }
 
 impl pallet_balances::Config for Runtime {
@@ -250,6 +254,8 @@ impl pallet_balances::Config for Runtime {
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
+	type MaxReserves = MaxReserves;
+	type ReserveIdentifier = [u8; 8];
 }
 
 /// Logic for the author to get a portion of fees.
@@ -268,6 +274,30 @@ where
 		let author = <pallet_authorship::Pallet<R>>::author();
 		<pallet_balances::Pallet<R>>::resolve_creating(&author, amount);
 		<frame_system::Pallet<R>>::deposit_event(pallet_balances::Event::Deposit(author.into(), numeric_amount.into()));
+	}
+}
+
+impl delegation::VerifyDelegateSignature for Runtime {
+	type DelegateId = AccountId;
+	type Payload = Vec<u8>;
+	type Signature = Vec<u8>;
+
+	// No need to retrieve delegate details as it is simply an AccountId.
+	fn verify(
+		delegate: &Self::DelegateId,
+		payload: &Self::Payload,
+		signature: &Self::Signature,
+	) -> delegation::SignatureVerificationResult {
+		// Try to decode signature first.
+		let decoded_signature = MultiSignature::decode(&mut &signature[..])
+			.map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
+
+		ensure!(
+			decoded_signature.verify(&payload[..], delegate),
+			delegation::SignatureVerificationError::SignatureInvalid
+		);
+
+		Ok(())
 	}
 }
 
@@ -300,20 +330,27 @@ impl pallet_sudo::Config for Runtime {
 }
 
 impl attestation::Config for Runtime {
-	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
+	type EnsureOrigin = EnsureSigned<<Self as delegation::Config>::DelegationEntityId>;
 	type Event = Event;
 }
 
-impl ctype::Config for Runtime {
-	type CtypeCreatorId = DidIdentifier;
-	type EnsureOrigin = did::EnsureDidOrigin<Self::CtypeCreatorId>;
-	type Event = Event;
+parameter_types! {
+	pub const MaxSignatureByteLength: u16 = 64;
 }
 
 impl delegation::Config for Runtime {
+	type DelegationSignatureVerification = Self;
+	type DelegationEntityId = AccountId;
 	type DelegationNodeId = Hash;
+	type EnsureOrigin = EnsureSigned<Self::DelegationEntityId>;
 	type Event = Event;
-	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
+	type MaxSignatureByteLength = MaxSignatureByteLength;
+}
+
+impl ctype::Config for Runtime {
+	type CtypeCreatorId = AccountId;
+	type EnsureOrigin = EnsureSigned<Self::CtypeCreatorId>;
+	type Event = Event;
 }
 
 parameter_types! {
@@ -323,7 +360,7 @@ parameter_types! {
 }
 
 impl did::Config for Runtime {
-	type DidIdentifier = AccountId;
+	type DidIdentifier = DidIdentifier;
 	type Event = Event;
 	type Call = Call;
 	type Origin = Origin;
@@ -331,14 +368,6 @@ impl did::Config for Runtime {
 	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 	type MaxUrlLength = MaxUrlLength;
 	type WeightInfo = did::default_weights::SubstrateWeight<Runtime>;
-}
-
-pub struct PortableGabiRemoval;
-impl frame_support::traits::OnRuntimeUpgrade for PortableGabiRemoval {
-	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		frame_support::storage::unhashed::kill_prefix(&sp_io::hashing::twox_128(b"Portablegabi"));
-		Weight::max_value()
-	}
 }
 
 parameter_types! {

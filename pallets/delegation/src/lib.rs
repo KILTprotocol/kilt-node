@@ -47,19 +47,31 @@ pub mod pallet {
 	pub type DelegationNodeIdOf<T> = <T as Config>::DelegationNodeId;
 
 	/// Type of a delegator or a delegate.
-	pub type DelegatorIdOf<T> = did::DidIdentifierOf<T>;
+	pub type DelegatorIdOf<T> = <T as Config>::DelegationEntityId;
 
 	/// The type of a CTYPE hash.
 	pub type CtypeHashOf<T> = ctype::CtypeHashOf<T>;
 
-	/// Type of a signature over the delegation details.
-	pub type DelegationSignature = did::DidSignature;
+	/// Type of a signature verification operation over the delegation details.
+	pub type DelegationSignatureVerificationOf<T> = <T as Config>::DelegationSignatureVerification;
+
+	/// Type of the signature that the delegate generates over the delegation
+	/// information.
+	pub type DelegateSignatureTypeOf<T> = <DelegationSignatureVerificationOf<T> as VerifyDelegateSignature>::Signature;
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config + ctype::Config + did::Config {
+	pub trait Config: frame_system::Config + ctype::Config {
+		type DelegationSignatureVerification: VerifyDelegateSignature<
+			DelegateId = Self::DelegationEntityId,
+			Payload = Vec<u8>,
+			Signature = Vec<u8>,
+		>;
+		type DelegationEntityId: Parameter;
 		type DelegationNodeId: Parameter + Copy + AsRef<[u8]>;
 		type EnsureOrigin: EnsureOrigin<Success = DelegatorIdOf<Self>, <Self as frame_system::Config>::Origin>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		#[pallet::constant]
+		type MaxSignatureByteLength: Get<u16>;
 	}
 
 	#[pallet::pallet]
@@ -211,32 +223,19 @@ pub mod pallet {
 			parent_id: Option<DelegationNodeIdOf<T>>,
 			delegate: DelegatorIdOf<T>,
 			permissions: Permissions,
-			delegate_signature: did::DidSignature,
+			delegate_signature: DelegateSignatureTypeOf<T>,
 		) -> DispatchResultWithPostInfo {
 			let delegator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
-
-			// Retrieve delegate details for signature verification
-			let delegate_details = <did::Did<T>>::get(&delegate).ok_or(Error::<T>::DelegateNotFound)?;
 
 			// Calculate the hash root
 			let hash_root = Self::calculate_hash(&delegation_id, &root_id, &parent_id, &permissions);
 
-			// Verify that the hash root has been signed with the delegate's authentication
-			// key
-			did::pallet::Pallet::<T>::verify_payload_signature_with_did_key_type(
-				hash_root.as_ref(),
-				&delegate_signature,
-				&delegate_details,
-				did::DidVerificationKeyRelationship::Authentication,
-			)
-			.map_err(|err| match err {
-				// Should never happen as a DID has always a valid authentication key and UrlErrors are never thrown
-				// here.
-				did::DidError::StorageError(_) | did::DidError::UrlError(_) => Error::<T>::DelegateNotFound,
-				did::DidError::SignatureError(_) => Error::<T>::InvalidDelegateSignature,
-				// Should never happen.
-				_ => Error::<T>::InternalError,
-			})?;
+			// Verify that the hash root signature is correct.
+			DelegationSignatureVerificationOf::<T>::verify(&delegate, &hash_root.encode(), &delegate_signature)
+				.map_err(|err| match err {
+					SignatureVerificationError::SignerInformationNotPresent => Error::<T>::DelegateNotFound,
+					SignatureVerificationError::SignatureInvalid => Error::<T>::InvalidDelegateSignature,
+				})?;
 
 			ensure!(
 				!<Delegations<T>>::contains_key(&delegation_id),

@@ -769,7 +769,7 @@ pub mod pallet {
 				},
 			);
 			// Disallow anything from being paid by custom lock
-			<pallet_balances::Pallet<T>>::set_lock(KILT_LAUNCH_ID, &target, target_amount, WithdrawReasons::all());
+			<pallet_balances::Pallet<T>>::set_lock(KILT_LAUNCH_ID, target, target_amount, WithdrawReasons::all());
 
 			// Update or remove lock storage items corresponding to the source address
 			if max_add_amount == source_amount {

@@ -447,7 +447,7 @@ impl<T: Config> Pallet<T> {
 		let mut did_details =
 			<Did<T>>::get(&operation.get_did()).ok_or(DidError::StorageError(StorageError::DidNotPresent))?;
 
-		Self::verify_operation_validity_for_did(operation, &signature, &did_details)?;
+		Self::verify_operation_validity_for_did(operation, signature, &did_details)?;
 
 		// Update tx counter in DID details and save to DID pallet
 		did_details.increase_tx_counter().map_err(DidError::StorageError)?;
@@ -516,7 +516,7 @@ impl<T: Config> Pallet<T> {
 		// Verify that the signature matches the expected format, otherwise generate
 		// an error
 		let is_signature_valid = verification_key
-			.verify_signature(&payload, &signature)
+			.verify_signature(payload, signature)
 			.map_err(|_| DidError::SignatureError(SignatureError::InvalidSignatureFormat))?;
 
 		ensure!(

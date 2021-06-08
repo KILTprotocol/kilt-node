@@ -134,3 +134,34 @@ impl<T: Config> DelegationNode<T> {
 		}
 	}
 }
+
+/// The result that the delegation pallet expects from the implementer of the
+/// delegate's signature verification operation.
+pub type SignatureVerificationResult = Result<(), SignatureVerificationError>;
+
+/// Types of errors the signature verification is expected to generate.
+pub enum SignatureVerificationError {
+	/// The delegate's information is not present on chain.
+	SignerInformationNotPresent,
+	/// The signature over the delegation information is invalid.
+	SignatureInvalid,
+}
+
+/// Trait to implement to provide to the delegation pallet signature
+/// verification over a delegation details.
+pub trait VerifyDelegateSignature {
+	/// The type of the delegate identifier.
+	type DelegateId;
+	/// The type of the encoded delegation details.
+	type Payload;
+	/// The type of the signature generated.
+	type Signature;
+
+	/// Verifies that the signature matches the payload and has been generated
+	/// by the delegate.
+	fn verify(
+		delegate: &Self::DelegateId,
+		payload: &Self::Payload,
+		signature: &Self::Signature,
+	) -> SignatureVerificationResult;
+}

@@ -18,11 +18,14 @@
 
 #![allow(clippy::from_over_into)]
 
+use codec::Decode;
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use frame_system::EnsureSigned;
+use sp_core::{ed25519, sr25519, Pair};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
+	MultiSignature, MultiSigner,
 };
 
 #[cfg(test)]
@@ -35,11 +38,11 @@ use ctype::mock as ctype_mock;
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
 
-pub type TestDidIdentifier = kilt_primitives::AccountId;
-pub type TestCtypeOwner = TestDidIdentifier;
+pub type TestCtypeOwner = kilt_primitives::AccountId;
 pub type TestCtypeHash = kilt_primitives::Hash;
 pub type TestDelegationNodeId = kilt_primitives::Hash;
-pub type TestDelegatorId = TestDidIdentifier;
+pub type TestDelegatorId = TestCtypeOwner;
+pub type TestDelegateSignature = MultiSignature;
 
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -50,7 +53,6 @@ frame_support::construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>},
-		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>},
 	}
 );
 
@@ -86,54 +88,52 @@ impl frame_system::Config for Test {
 	type OnSetCode = ();
 }
 
-parameter_types! {
-	pub const MaxNewKeyAgreementKeys: u32 = 10u32;
-	pub const MaxVerificationKeysToRevoke: u32 = 10u32;
-	pub const MaxUrlLength: u32 = 200u32;
-}
-
-impl did::Config for Test {
-	type DidIdentifier = TestDidIdentifier;
-	type Origin = Origin;
-	type Call = Call;
-	type Event = ();
-	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
-	type MaxUrlLength = MaxUrlLength;
-	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
-	type WeightInfo = ();
-}
-
 impl ctype::Config for Test {
 	type CtypeCreatorId = TestCtypeOwner;
 	type EnsureOrigin = EnsureSigned<TestCtypeOwner>;
 	type Event = ();
 }
 
+parameter_types! {
+	pub const MaxSignatureByteLength: u16 = 64;
+}
+
 impl Config for Test {
+	type DelegationSignatureVerification = Self;
+	type DelegationEntityId = TestDelegatorId;
 	type DelegationNodeId = TestDelegationNodeId;
 	type EnsureOrigin = EnsureSigned<TestDelegatorId>;
 	type Event = ();
+	type MaxSignatureByteLength = MaxSignatureByteLength;
 }
 
-impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
-	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
-		// Not used in this pallet
-		None
-	}
+impl VerifyDelegateSignature for Test {
+	type DelegateId = TestDelegatorId;
+	type Payload = Vec<u8>;
+	type Signature = Vec<u8>;
 
-	// Always return a System::remark() extrinsic call
-	#[cfg(feature = "runtime-benchmarks")]
-	fn get_call_for_did_call_benchmark() -> Self {
-		Call::System(frame_system::Call::remark(vec![]))
+	// No need to retrieve delegate details as it is simply an AccountId.
+	fn verify(
+		delegate: &Self::DelegateId,
+		payload: &Self::Payload,
+		signature: &Self::Signature,
+	) -> SignatureVerificationResult {
+		// Try to decode signature first.
+		let decoded_signature =
+			MultiSignature::decode(&mut &signature[..]).map_err(|_| SignatureVerificationError::SignatureInvalid)?;
+
+		ensure!(
+			decoded_signature.verify(&payload[..], delegate),
+			SignatureVerificationError::SignatureInvalid
+		);
+
+		Ok(())
 	}
 }
 
-#[cfg(test)]
-pub(crate) const ALICE: TestDelegatorId = TestDelegatorId::new([0u8; 32]);
-#[cfg(test)]
-pub(crate) const BOB: TestDelegatorId = TestDelegatorId::new([1u8; 32]);
-#[cfg(test)]
-pub(crate) const CHARLIE: TestDelegatorId = TestDelegatorId::new([2u8; 32]);
+const ALICE_SEED: [u8; 32] = [0u8; 32];
+const BOB_SEED: [u8; 32] = [1u8; 32];
+const CHARLIE_SEED: [u8; 32] = [2u8; 32];
 
 const DEFAULT_ROOT_ID_SEED: u64 = 1u64;
 const ALTERNATIVE_ROOT_ID_SEED: u64 = 2u64;
@@ -144,6 +144,38 @@ const ALTERNATIVE_DELEGATION_ID_2_SEED: u64 = 4u64;
 
 pub fn get_origin(account: TestDelegatorId) -> Origin {
 	Origin::signed(account)
+}
+
+pub fn get_ed25519_account(public_key: ed25519::Public) -> TestDelegatorId {
+	MultiSigner::from(public_key).into_account()
+}
+
+pub fn get_sr25519_account(public_key: sr25519::Public) -> TestDelegatorId {
+	MultiSigner::from(public_key).into_account()
+}
+
+pub fn get_alice_ed25519() -> ed25519::Pair {
+	ed25519::Pair::from_seed(&ALICE_SEED)
+}
+
+pub fn get_alice_sr25519() -> sr25519::Pair {
+	sr25519::Pair::from_seed(&ALICE_SEED)
+}
+
+pub fn get_bob_ed25519() -> ed25519::Pair {
+	ed25519::Pair::from_seed(&BOB_SEED)
+}
+
+pub fn get_bob_sr25519() -> sr25519::Pair {
+	sr25519::Pair::from_seed(&BOB_SEED)
+}
+
+pub fn get_charlie_ed25519() -> ed25519::Pair {
+	ed25519::Pair::from_seed(&CHARLIE_SEED)
+}
+
+pub fn get_charlie_sr25519() -> sr25519::Pair {
+	sr25519::Pair::from_seed(&CHARLIE_SEED)
 }
 
 pub fn get_delegation_root_id(default: bool) -> TestDelegationNodeId {
@@ -196,12 +228,12 @@ pub struct DelegationCreationDetails {
 	pub parent_id: Option<TestDelegationNodeId>,
 	pub delegate: TestDelegatorId,
 	pub permissions: Permissions,
-	pub delegate_signature: did::DidSignature,
+	pub delegate_signature: TestDelegateSignature,
 }
 
 pub fn generate_base_delegation_creation_details(
 	delegation_id: TestDelegationNodeId,
-	delegate_signature: did::DidSignature,
+	delegate_signature: TestDelegateSignature,
 	delegation_node: DelegationNode<Test>,
 ) -> DelegationCreationDetails {
 	DelegationCreationDetails {
