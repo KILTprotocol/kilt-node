@@ -23,9 +23,6 @@ use cumulus_client_service::{
 	prepare_node_config, start_collator, start_full_node, StartCollatorParams, StartFullNodeParams,
 };
 use cumulus_primitives_core::ParaId;
-use kilt_primitives::{AccountId, AuthorityId, Balance, BlockNumber, Index};
-use polkadot_primitives::v1::CollatorPair;
-
 use polkadot_service::NativeExecutionDispatch;
 use sc_client_api::ExecutorProvider;
 use sc_executor::native_executor_instance;
@@ -38,6 +35,8 @@ use sp_keystore::SyncCryptoStorePtr;
 use sp_runtime::traits::BlakeTwo256;
 use std::sync::Arc;
 use substrate_prometheus_endpoint::Registry;
+
+use kilt_primitives::{AccountId, AuthorityId, Balance, BlockNumber, Index};
 
 pub use sc_executor::NativeExecutor;
 
@@ -111,7 +110,7 @@ where
 		.transpose()?;
 
 	let (client, backend, keystore_container, task_manager) = sc_service::new_full_parts::<Block, RuntimeApi, Executor>(
-		&config,
+		config,
 		telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
 	)?;
 	let client = Arc::new(client);
@@ -160,7 +159,6 @@ where
 #[sc_tracing::logging::prefix_logs_with("Parachain")]
 async fn start_node_impl<RuntimeApi, Executor, RB, BIQ, BIC>(
 	parachain_config: Configuration,
-	collator_key: CollatorPair,
 	polkadot_config: Configuration,
 	id: ParaId,
 	rpc_ext_builder: RB,
@@ -214,15 +212,13 @@ where
 	let params = new_partial::<RuntimeApi, Executor, BIQ>(&parachain_config, build_import_queue)?;
 	let (mut telemetry, telemetry_worker_handle) = params.other;
 
-	let relay_chain_full_node = cumulus_client_service::build_polkadot_full_node(
-		polkadot_config,
-		collator_key.clone(),
-		telemetry_worker_handle,
-	)
-	.map_err(|e| match e {
-		polkadot_service::Error::Sub(x) => x,
-		s => format!("{}", s).into(),
-	})?;
+	let relay_chain_full_node =
+		cumulus_client_service::build_polkadot_full_node(polkadot_config, telemetry_worker_handle).map_err(
+			|e| match e {
+				polkadot_service::Error::Sub(x) => x,
+				s => format!("{}", s).into(),
+			},
+		)?;
 
 	let client = params.client.clone();
 	let backend = params.backend.clone();
@@ -290,7 +286,6 @@ where
 			announce_block,
 			spawner,
 			para_id: id,
-			collator_key,
 			relay_chain_full_node,
 			task_manager: &mut task_manager,
 			parachain_consensus,
@@ -365,7 +360,6 @@ where
 /// Start a parachain node.
 pub async fn start_node<RE, API>(
 	parachain_config: Configuration,
-	collator_key: CollatorPair,
 	polkadot_config: Configuration,
 	id: ParaId,
 ) -> sc_service::error::Result<(TaskManager, Arc<TFullClient<Block, API, RE>>)>
@@ -401,7 +395,6 @@ where
 
 	start_node_impl::<API, RE, _, _, _>(
 		parachain_config,
-		collator_key,
 		polkadot_config,
 		id,
 		rpc_extensions_builder,

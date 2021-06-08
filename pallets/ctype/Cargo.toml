@@ -45,6 +45,7 @@ std = [
   "codec/std",
   "frame-support/std",
   "frame-system/std",
+  "kilt-primitives/std",
   "log/std",
   "sp-core/std",
   "sp-io/std",

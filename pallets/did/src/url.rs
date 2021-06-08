@@ -52,7 +52,7 @@ impl TryFrom<&[u8]> for HttpUrl {
 			UrlError::InvalidUrlScheme
 		);
 
-		ensure!(utils::is_valid_ascii_url(&str_url), UrlError::InvalidUrlEncoding);
+		ensure!(utils::is_valid_ascii_url(str_url), UrlError::InvalidUrlEncoding);
 
 		Ok(HttpUrl {
 			payload: value.to_vec(),
@@ -80,7 +80,7 @@ impl TryFrom<&[u8]> for FtpUrl {
 			UrlError::InvalidUrlScheme
 		);
 
-		ensure!(utils::is_valid_ascii_url(&str_url), UrlError::InvalidUrlEncoding);
+		ensure!(utils::is_valid_ascii_url(str_url), UrlError::InvalidUrlEncoding);
 
 		Ok(FtpUrl {
 			payload: value.to_vec(),

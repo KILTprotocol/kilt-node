@@ -22,17 +22,19 @@ use crate as attestation;
 use crate::*;
 use ctype::mock as ctype_mock;
 
-use frame_support::{parameter_types, weights::constants::RocksDbWeight};
+use codec::Decode;
+use frame_support::{ensure, parameter_types, weights::constants::RocksDbWeight};
 use frame_system::EnsureSigned;
+use sp_core::{ed25519, sr25519, Pair};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
+	MultiSignature, MultiSigner,
 };
 
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
 
-pub type TestDidIdentifier = kilt_primitives::AccountId;
 pub type TestCtypeOwner = kilt_primitives::AccountId;
 pub type TestCtypeHash = kilt_primitives::Hash;
 pub type TestDelegationNodeId = kilt_primitives::Hash;
@@ -50,7 +52,6 @@ frame_support::construct_runtime!(
 		Attestation: attestation::{Pallet, Call, Storage, Event<T>},
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>},
-		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>},
 	}
 );
 
@@ -86,33 +87,23 @@ impl frame_system::Config for Test {
 	type OnSetCode = ();
 }
 
-parameter_types! {
-	pub const MaxNewKeyAgreementKeys: u32 = 10u32;
-	pub const MaxVerificationKeysToRevoke: u32 = 10u32;
-	pub const MaxUrlLength: u32 = 200u32;
-}
-
-impl did::Config for Test {
-	type DidIdentifier = TestDidIdentifier;
-	type Origin = Origin;
-	type Call = Call;
-	type Event = ();
-	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
-	type MaxUrlLength = MaxUrlLength;
-	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
-	type WeightInfo = ();
-}
-
 impl ctype::Config for Test {
 	type CtypeCreatorId = TestCtypeOwner;
 	type EnsureOrigin = EnsureSigned<TestCtypeOwner>;
 	type Event = ();
 }
 
+parameter_types! {
+	pub const MaxSignatureByteLength: u16 = 64;
+}
+
 impl delegation::Config for Test {
+	type DelegationSignatureVerification = Self;
+	type DelegationEntityId = TestDelegatorId;
 	type DelegationNodeId = TestDelegationNodeId;
 	type EnsureOrigin = EnsureSigned<TestDelegatorId>;
 	type Event = ();
+	type MaxSignatureByteLength = MaxSignatureByteLength;
 }
 
 impl Config for Test {
@@ -120,29 +111,62 @@ impl Config for Test {
 	type Event = ();
 }
 
-impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
-	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
-		// Not used in this pallet
-		None
-	}
+impl delegation::VerifyDelegateSignature for Test {
+	type DelegateId = TestDelegatorId;
+	type Payload = Vec<u8>;
+	type Signature = Vec<u8>;
 
-	// Always return a System::remark() extrinsic call
-	#[cfg(feature = "runtime-benchmarks")]
-	fn get_call_for_did_call_benchmark() -> Self {
-		Call::System(frame_system::Call::remark(vec![]))
+	// No need to retrieve delegate details as it is simply an AccountId.
+	fn verify(
+		delegate: &Self::DelegateId,
+		payload: &Self::Payload,
+		signature: &Self::Signature,
+	) -> delegation::SignatureVerificationResult {
+		// Try to decode signature first.
+		let decoded_signature = MultiSignature::decode(&mut &signature[..])
+			.map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
+
+		ensure!(
+			decoded_signature.verify(&payload[..], delegate),
+			delegation::SignatureVerificationError::SignatureInvalid
+		);
+
+		Ok(())
 	}
 }
 
-#[cfg(test)]
-pub(crate) const ALICE: TestAttester = TestAttester::new([0u8; 32]);
-#[cfg(test)]
-pub(crate) const BOB: TestAttester = TestAttester::new([1u8; 32]);
+const ALICE_SEED: [u8; 32] = [0u8; 32];
+const BOB_SEED: [u8; 32] = [1u8; 32];
 
 const DEFAULT_CLAIM_HASH_SEED: u64 = 1u64;
 const ALTERNATIVE_CLAIM_HASH_SEED: u64 = 2u64;
 
 pub fn get_origin(account: TestAttester) -> Origin {
 	Origin::signed(account)
+}
+
+pub fn get_ed25519_account(public_key: ed25519::Public) -> TestDelegatorId {
+	MultiSigner::from(public_key).into_account()
+}
+
+pub fn get_sr25519_account(public_key: sr25519::Public) -> TestDelegatorId {
+	MultiSigner::from(public_key).into_account()
+}
+
+pub fn get_alice_ed25519() -> ed25519::Pair {
+	ed25519::Pair::from_seed(&ALICE_SEED)
+}
+
+pub fn get_alice_sr25519() -> sr25519::Pair {
+	sr25519::Pair::from_seed(&ALICE_SEED)
+}
+
+pub fn get_bob_ed25519() -> ed25519::Pair {
+	ed25519::Pair::from_seed(&BOB_SEED)
+}
+
+pub fn get_bob_sr25519() -> sr25519::Pair {
+	sr25519::Pair::from_seed(&BOB_SEED)
 }
 
 pub fn get_claim_hash(default: bool) -> TestClaimHash {
