@@ -36,7 +36,7 @@ serde = {optional = true, version = "1.0.101"}
 sp-core = {branch = "master", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-io = {branch = "master", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
 sp-keystore = {branch = "master", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-sp-runtime = {branch = "master", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-runtime = {branch = "master", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
 sp-std = {branch = "master", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [features]

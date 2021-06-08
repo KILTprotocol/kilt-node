@@ -55,7 +55,8 @@ pub mod pallet {
 	/// Type of a signature verification operation over the delegation details.
 	pub type DelegationSignatureVerificationOf<T> = <T as Config>::DelegationSignatureVerification;
 
-	/// Type of the signature that the delegate generates over the delegation information.
+	/// Type of the signature that the delegate generates over the delegation
+	/// information.
 	pub type DelegateSignatureTypeOf<T> = <DelegationSignatureVerificationOf<T> as VerifyDelegateSignature>::Signature;
 
 	#[pallet::config]
