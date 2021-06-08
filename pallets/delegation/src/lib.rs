@@ -55,6 +55,9 @@ pub mod pallet {
 	/// Type of a signature verification operation over the delegation details.
 	pub type DelegationSignatureVerificationOf<T> = <T as Config>::DelegationSignatureVerification;
 
+	/// Type of the signature that the delegate generates over the delegation information.
+	pub type DelegateSignatureTypeOf<T> = <DelegationSignatureVerificationOf<T> as VerifyDelegateSignature>::Signature;
+
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config {
 		type DelegationSignatureVerification: VerifyDelegateSignature<
@@ -219,7 +222,7 @@ pub mod pallet {
 			parent_id: Option<DelegationNodeIdOf<T>>,
 			delegate: DelegatorIdOf<T>,
 			permissions: Permissions,
-			delegate_signature: Vec<u8>,
+			delegate_signature: DelegateSignatureTypeOf<T>,
 		) -> DispatchResultWithPostInfo {
 			let delegator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
