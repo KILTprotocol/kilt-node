@@ -631,11 +631,21 @@ impl delegation::Config for Runtime {
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
 }
 
+parameter_types! {
+	pub const MaxNewKeyAgreementKeys: u32 = 10u32;
+	pub const MaxVerificationKeysToRevoke: u32 = 10u32;
+	pub const MaxUrlLength: u32 = 200u32;
+}
+
 impl did::Config for Runtime {
 	type DidIdentifier = AccountId;
 	type Event = Event;
 	type Call = Call;
 	type Origin = Origin;
+	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
+	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
+	type MaxUrlLength = MaxUrlLength;
+	type WeightInfo = did::default_weights::SubstrateWeight<Runtime>;
 }
 
 /// Minimum round length is 1 hour (600 * 6 second block times)
@@ -675,7 +685,7 @@ parameter_types! {
 	pub const ExitQueueDelay: u32 = 4;
 	/// Maximum number of processed collator exit requests per round is 5
 	/// Defends against exceeding PoV size limit in on_initialize
-	pub const MaxExitsPerRound: usize = 5;
+	pub const MaxExitsPerRound: u32 = 5;
 	/// Minimum 16 collators selected per round, default at genesis and minimum forever after
 	pub const MinSelectedCandidates: u32 = MIN_COLLATORS;
 	/// Maximum 25 delegators per collator at launch, might be increased later
@@ -691,7 +701,7 @@ parameter_types! {
 	/// Maximum number of collator candidates
 	pub const MaxCollatorCandidates: u32 = MAX_CANDIDATES;
 	/// Maximum number of concurrent requests to unlock unstaked balance
-	pub const MaxUnstakeRequests: usize = 10;
+	pub const MaxUnstakeRequests: u32 = 10;
 }
 
 impl parachain_staking::Config for Runtime {
@@ -784,8 +794,18 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			Call::Attestation(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
 			Call::Ctype(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
 			Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
+			#[cfg(not(feature = "runtime-benchmarks"))]
 			_ => None,
+			// By default, returns the authentication key
+			#[cfg(feature = "runtime-benchmarks")]
+			_ => Some(did::DidVerificationKeyRelationship::Authentication),
 		}
+	}
+
+	// Always return a System::remark() extrinsic call
+	#[cfg(feature = "runtime-benchmarks")]
+	fn get_call_for_did_call_benchmark() -> Self {
+		Call::System(frame_system::Call::remark(vec![]))
 	}
 }
 
@@ -957,6 +977,8 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, kilt_launch, KiltLaunch);
 			add_benchmark!(params, batches, pallet_vesting, Vesting);
 			add_benchmark!(params, batches, parachain_staking, ParachainStaking);
+
+			add_benchmark!(params, batches, did, Did);
 
 			// No benchmarks for these pallets
 			// add_benchmark!(params, batches, cumulus_pallet_parachain_system, ParachainSystem);

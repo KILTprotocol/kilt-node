@@ -234,8 +234,8 @@ pub mod pallet {
 				// here.
 				did::DidError::StorageError(_) | did::DidError::UrlError(_) => Error::<T>::DelegateNotFound,
 				did::DidError::SignatureError(_) => Error::<T>::InvalidDelegateSignature,
-				// Should never happen as we are not checking the delegate's DID tx counter.
-				did::DidError::InternalError => Error::<T>::InternalError,
+				// Should never happen.
+				_ => Error::<T>::InternalError,
 			})?;
 
 			ensure!(

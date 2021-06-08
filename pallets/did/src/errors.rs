@@ -27,6 +27,8 @@ pub enum DidError {
 	SignatureError(SignatureError),
 	/// See [UrlError].
 	UrlError(UrlError),
+	/// See [InputError].
+	InputError(InputError),
 	/// An error that is not supposed to take place, yet it happened.
 	InternalError,
 }
@@ -78,4 +80,18 @@ pub enum UrlError {
 	InvalidUrlEncoding,
 	/// The URL specified is not properly formatted.
 	InvalidUrlScheme,
+}
+
+/// Error generated when some extrinsic input does not respect the pallet's
+/// constraints.
+#[derive(Debug, Eq, PartialEq)]
+pub enum InputError {
+	/// A number of new key agreement keys greater than the maximum allowed has
+	/// been provided.
+	MaxKeyAgreementKeysLimitExceeded,
+	/// A number of new verification keys to remove greater than the maximum
+	/// allowed has been provided.
+	MaxVerificationKeysToRemoveLimitExceeded,
+	/// A URL longer than the maximum size allowed has been provided.
+	MaxUrlLengthExceeded,
 }

@@ -42,7 +42,10 @@ where
 	AccountId: Eq + Ord,
 	Balance: Eq + Ord,
 {
+	/// The account that is backed by the stake.
 	pub owner: AccountId,
+
+	/// The amount of backing the `owner` received.
 	pub amount: Balance,
 }
 
@@ -107,10 +110,22 @@ where
 	AccountId: Eq + Ord,
 	Balance: Eq + Ord,
 {
+	/// The collators account id.
 	pub id: AccountId,
+
+	/// The stake that the collator put down.
 	pub stake: Balance,
+
+	/// The delegators that back the collator.
 	pub delegators: OrderedSet<Stake<AccountId, Balance>>,
+
+	/// The total backing a collator has.
+	///
+	/// Should equal the sum of all delegators stake adding collators stake
 	pub total: Balance,
+
+	/// The current status of the collator. Indicates whether a collator is
+	/// active or leaving the collator set
 	pub state: CollatorStatus,
 }
 
@@ -138,13 +153,21 @@ where
 		matches!(self.state, CollatorStatus::Leaving(_))
 	}
 
+	pub fn can_exit(&self, when: u32) -> bool {
+		matches!(self.state, CollatorStatus::Leaving(at) if at <= when )
+	}
+
+	pub fn revert_leaving(&mut self) {
+		self.state = CollatorStatus::Active;
+	}
+
 	pub fn stake_more(&mut self, more: B) {
 		self.stake = self.stake.saturating_add(more);
 		self.total = self.total.saturating_add(more);
 	}
 
 	// Returns None if underflow or less == self.stake (in which case collator
-	// should leave)
+	// should leave).
 	pub fn stake_less(&mut self, less: B) -> Option<B> {
 		if self.stake > less {
 			self.stake = self.stake.saturating_sub(less);
@@ -155,15 +178,15 @@ where
 		}
 	}
 
-	pub fn inc_delegator(&mut self, delegator: A, more: B) {
-		if let Ok(i) = self.delegators.binary_search_by(|x| x.owner.cmp(&delegator)) {
+	pub fn inc_delegator(&mut self, delegator: &A, more: B) {
+		if let Ok(i) = self.delegators.binary_search_by(|x| x.owner.cmp(delegator)) {
 			self.delegators[i].amount = self.delegators[i].amount.saturating_add(more);
 			self.total = self.total.saturating_add(more);
 		}
 	}
 
-	pub fn dec_delegator(&mut self, delegator: A, less: B) {
-		if let Ok(i) = self.delegators.binary_search_by(|x| x.owner.cmp(&delegator)) {
+	pub fn dec_delegator(&mut self, delegator: &A, less: B) {
+		if let Ok(i) = self.delegators.binary_search_by(|x| x.owner.cmp(delegator)) {
 			self.delegators[i].amount = self.delegators[i].amount.saturating_sub(less);
 			self.total = self.total.saturating_sub(less);
 		}
@@ -209,6 +232,10 @@ where
 		}
 	}
 
+	/// Adds a new delegation.
+	///
+	/// If already delegating to the same account, this call returns false and
+	/// doesn't insert the new delegation.
 	pub fn add_delegation(&mut self, stake: Stake<AccountId, Balance>) -> bool {
 		let amt = stake.amount;
 		if self.delegations.insert(stake) {
@@ -219,10 +246,10 @@ where
 		}
 	}
 
-	// Returns Some(remaining balance), must be more than MinDelegatorStk
-	// Returns None if delegation not found
-	pub fn rm_delegation(&mut self, collator: AccountId) -> Option<Balance> {
-		let amt = self.delegations.remove_by(|x| x.owner.cmp(&collator)).map(|f| f.amount);
+	/// Returns Some(remaining stake for delegator) if the delegation for the
+	/// collator exists. Returns `None` otherwise.
+	pub fn rm_delegation(&mut self, collator: &AccountId) -> Option<Balance> {
+		let amt = self.delegations.remove_by(|x| x.owner.cmp(collator)).map(|f| f.amount);
 
 		if let Some(balance) = amt {
 			self.total = self.total.saturating_sub(balance);
@@ -232,9 +259,9 @@ where
 		}
 	}
 
-	// Returns None if delegation not found
-	pub fn inc_delegation(&mut self, collator: AccountId, more: Balance) -> Option<Balance> {
-		match self.delegations.binary_search_by(|x| x.owner.cmp(&collator)) {
+	/// Returns None if delegation was not found.
+	pub fn inc_delegation(&mut self, collator: &AccountId, more: Balance) -> Option<Balance> {
+		match self.delegations.binary_search_by(|x| x.owner.cmp(collator)) {
 			Ok(i) => {
 				self.delegations[i].amount = self.delegations[i].amount.saturating_add(more);
 				self.total = self.total.saturating_add(more);
@@ -244,11 +271,10 @@ where
 		}
 	}
 
-	// Returns Some(Some(balance)) if successful
-	// None if delegation not found
-	// Some(None) if underflow
-	pub fn dec_delegation(&mut self, collator: AccountId, less: Balance) -> Option<Option<Balance>> {
-		match self.delegations.binary_search_by(|x| x.owner.cmp(&collator)) {
+	/// Returns Some(Some(balance)) if successful, None if delegation was not
+	/// found and Some(None) if delegated stake would underflow.
+	pub fn dec_delegation(&mut self, collator: &AccountId, less: Balance) -> Option<Option<Balance>> {
+		match self.delegations.binary_search_by(|x| x.owner.cmp(collator)) {
 			Ok(i) => {
 				let mut x = &mut self.delegations[i];
 				if x.amount > less {
@@ -284,13 +310,16 @@ where
 		RoundInfo { current, first, length }
 	}
 
-	/// Check if the round should be updated.
+	/// Checks if the round should be updated.
+	///
+	/// The round should update if `self.length` or more blocks where produced
+	/// after `self.first`.
 	pub fn should_update(&self, now: B) -> bool {
 		let l = now.saturating_sub(self.first);
 		l >= self.length
 	}
 
-	/// Start a new round.
+	/// Starts a new round.
 	pub fn update(&mut self, now: B) {
 		self.current = self.current.saturating_add(1u32);
 		self.first = now;

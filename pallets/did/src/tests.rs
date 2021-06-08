@@ -27,8 +27,6 @@ use ctype::mock as ctype_mock;
 
 #[test]
 fn check_successful_simple_ed25519_creation() {
-	initialize_logger();
-	log::debug!("Account: {:?}", ALICE_DID);
 	let auth_key = get_ed25519_authentication_key(true);
 	let operation = generate_base_did_creation_operation(ALICE_DID, did::DidVerificationKey::from(auth_key.public()));
 
@@ -234,6 +232,56 @@ fn check_invalid_signature_did_creation() {
 	});
 }
 
+#[test]
+fn check_max_limit_key_agreement_keys_did_creation() {
+	let auth_key = get_sr25519_authentication_key(true);
+	// Max keys allowed + 1
+	let enc_keys = get_key_agreement_keys(<Test as did::Config>::MaxNewKeyAgreementKeys::get().saturating_add(1));
+	let mut operation =
+		generate_base_did_creation_operation(ALICE_DID, did::DidVerificationKey::from(auth_key.public()));
+	operation.new_key_agreement_keys = enc_keys;
+
+	let signature = auth_key.sign(operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default().build(None);
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_create_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature),
+			),
+			did::Error::<Test>::MaxKeyAgreementKeysLimitExceeded
+		);
+	});
+}
+
+#[test]
+fn check_url_too_long_did_creation() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let url_endpoint = get_url_endpoint(<Test as did::Config>::MaxUrlLength::get().saturating_add(1));
+	let mut operation =
+		generate_base_did_creation_operation(ALICE_DID, did::DidVerificationKey::from(auth_key.public()));
+	// Max length allowed + 1
+	operation.new_endpoint_url = Some(url_endpoint);
+
+	let signature = auth_key.sign(operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default().build(None);
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_create_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature),
+			),
+			did::Error::<Test>::MaxUrlLengthExceeded
+		);
+	});
+}
+
 // submit_did_update_operation
 
 #[test]
@@ -394,11 +442,15 @@ fn check_successful_keys_deletion_update() {
 	assert_eq!(new_did_details.get_attestation_key_id(), &None);
 	assert_eq!(new_did_details.get_delegation_key_id(), &None);
 
-	// Public keys should now contain only the authentication key
+	// Public keys should now contain only the authentication key and the revoked
+	// attestation key
 	let stored_public_keys = new_did_details.get_public_keys();
-	assert_eq!(stored_public_keys.len(), 1);
+	assert_eq!(stored_public_keys.len(), 2);
 	assert!(stored_public_keys.contains_key(&generate_key_id(
 		&did::DidVerificationKey::from(auth_key.public()).into()
+	)));
+	assert!(stored_public_keys.contains_key(&generate_key_id(
+		&did::DidVerificationKey::from(att_key.public()).into()
 	)));
 	assert_eq!(new_did_details.last_tx_counter, old_did_details.last_tx_counter + 1u64);
 }
@@ -670,6 +722,106 @@ fn check_invalid_signature_did_update() {
 				did::DidSignature::from(signature),
 			),
 			did::Error::<Test>::InvalidSignature
+		);
+	});
+}
+
+#[test]
+fn check_max_limit_key_agreement_keys_did_update() {
+	let auth_key = get_sr25519_authentication_key(true);
+
+	let old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+
+	// Max keys allowed + 1
+	let new_enc_keys = get_key_agreement_keys(<Test as did::Config>::MaxNewKeyAgreementKeys::get().saturating_add(1));
+
+	let mut operation = generate_base_did_update_operation(ALICE_DID);
+	operation.new_key_agreement_keys = new_enc_keys;
+
+	let signature = auth_key.sign(operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(ALICE_DID, old_did_details)])
+		.build(None);
+
+	let new_block_number: TestBlockNumber = 1;
+
+	ext.execute_with(|| {
+		System::set_block_number(new_block_number);
+		assert_noop!(
+			Did::submit_did_update_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature),
+			),
+			did::Error::<Test>::MaxKeyAgreementKeysLimitExceeded
+		);
+	});
+}
+
+#[test]
+fn check_max_limit_public_keys_to_remove_did_update() {
+	let auth_key = get_sr25519_authentication_key(true);
+
+	let old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+
+	// Max keys allowed + 1
+	let keys_ids_to_remove =
+		get_public_keys_to_remove(<Test as did::Config>::MaxNewKeyAgreementKeys::get().saturating_add(1));
+
+	let mut operation = generate_base_did_update_operation(ALICE_DID);
+	operation.public_keys_to_remove = keys_ids_to_remove;
+
+	let signature = auth_key.sign(operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(ALICE_DID, old_did_details)])
+		.build(None);
+
+	let new_block_number: TestBlockNumber = 1;
+
+	ext.execute_with(|| {
+		System::set_block_number(new_block_number);
+		assert_noop!(
+			Did::submit_did_update_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature),
+			),
+			did::Error::<Test>::MaxVerificationKeysToRemoveLimitExceeded
+		);
+	});
+}
+
+#[test]
+fn check_url_too_long_did_update() {
+	let auth_key = get_sr25519_authentication_key(true);
+
+	let old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+
+	// Max URL length allowed + 1
+	let new_endpoint_url = get_url_endpoint(<Test as did::Config>::MaxUrlLength::get().saturating_add(1));
+
+	let mut operation = generate_base_did_update_operation(ALICE_DID);
+	operation.new_endpoint_url = Some(new_endpoint_url);
+
+	let signature = auth_key.sign(operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(ALICE_DID, old_did_details)])
+		.build(None);
+
+	let new_block_number: TestBlockNumber = 1;
+
+	ext.execute_with(|| {
+		System::set_block_number(new_block_number);
+		assert_noop!(
+			Did::submit_did_update_operation(
+				Origin::signed(DEFAULT_ACCOUNT),
+				operation.clone(),
+				did::DidSignature::from(signature),
+			),
+			did::Error::<Test>::MaxUrlLengthExceeded
 		);
 	});
 }
@@ -1334,6 +1486,7 @@ fn check_call_attestation_key_error() {
 
 #[test]
 fn check_call_delegation_key_successful() {
+	initialize_logger();
 	let caller = DEFAULT_ACCOUNT;
 	let did = ALICE_DID;
 	let auth_key = get_sr25519_authentication_key(true);
