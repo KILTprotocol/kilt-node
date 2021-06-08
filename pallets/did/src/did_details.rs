@@ -57,7 +57,7 @@ impl DidVerificationKey {
 
 	/// Returns a DidVerificationKey after decoding an encoded version of
 	/// itself.
-	pub fn from_didi_verification_key_encoded(encoded: Vec<u8>) -> Result<Self, KeyError> {
+	pub fn from_did_verification_key_encoded(encoded: Vec<u8>) -> Result<Self, KeyError> {
 		Self::decode(&mut &encoded[..]).map_err(|_| KeyError::InvalidVerificationKeyFormat)
 	}
 }
