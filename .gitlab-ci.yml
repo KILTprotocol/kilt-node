@@ -40,14 +40,10 @@ build:
   image: docker:19.03.12
   stage: build
   only:
-    - master
     - develop
   script:
+    - echo -n $CI_REGISTRY_TOKEN | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
     - docker build --build-arg NODE_TYPE=kilt-parachain -t kiltprotocol/peregrine:develop .
-    - docker save kiltprotocol/peregrine:develop > peregrine-develop.img
     - docker build --build-arg NODE_TYPE=mashnet-node -t kiltprotocol/mashnet-node:develop .
-    - docker save kiltprotocol/mashnet-node:develop > mashnet-node-develop.img
-  artifacts:
-    paths:
-      - peregrine-develop.img
-      - mashnet-node-develop.img
+    - docker push kiltprotocol/peregrine:develop
+    - docker push kiltprotocol/mashnet-node:develop
