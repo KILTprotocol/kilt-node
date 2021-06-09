@@ -34,7 +34,7 @@ use frame_system::{
 	EnsureOneOf, EnsureRoot, EnsureSigned,
 };
 use kilt_primitives::{
-	constants::{DAYS, DOLLARS, MILLICENTS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
+	constants::{DAYS, DOLLARS, MILLICENTS, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
 	AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Hash, Header, Index, Signature,
 };
 pub use parachain_staking::{InflationInfo, RewardRate, StakingInfo};
@@ -225,7 +225,7 @@ impl pallet_timestamp::Config for Runtime {
 }
 
 parameter_types! {
-	pub const ExistentialDeposit: u128 = 500;
+	pub const ExistentialDeposit: u128 = 10 * MILLI_KILT;
 	pub const TransactionByteFee: u128 = 1;
 	pub const MaxLocks: u32 = 50;
 }

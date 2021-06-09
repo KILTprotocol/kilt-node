@@ -31,7 +31,7 @@ use codec::Decode;
 use frame_support::ensure;
 use frame_system::EnsureSigned;
 use kilt_primitives::{
-	constants::{DOLLARS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
+	constants::{DOLLARS, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature,
 };
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
@@ -239,7 +239,7 @@ impl pallet_indices::Config for Runtime {
 }
 
 parameter_types! {
-	pub const ExistentialDeposit: Balance = 500;
+	pub const ExistentialDeposit: Balance = 10 * MILLI_KILT;
 	pub const MaxLocks: u32 = 50;
 }
 

@@ -43,6 +43,12 @@ pub const DOLLARS: Balance = 10u128.pow(15);
 pub const CENTS: Balance = DOLLARS / 100;
 pub const MILLICENTS: Balance = CENTS / 1_000;
 
+/// One KILT
+pub const KILT: Balance = 10u128.pow(15);
+
+/// 0.001 KILT
+pub const MILLI_KILT: Balance = 10u128.pow(12);
+
 // 1 in 4 blocks (on average, not counting collisions) will be primary babe
 // blocks.
 pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
