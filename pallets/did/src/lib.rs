@@ -29,14 +29,13 @@ pub mod url;
 
 mod utils;
 
-#[cfg(any(feature = "mock", test))]
-pub mod mock;
-
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod mock;
 
 pub use did_details::*;
 pub use errors::*;
@@ -54,7 +53,8 @@ use frame_support::{
 use frame_system::ensure_signed;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::RawOrigin;
-use sp_std::{boxed::Box, convert::TryFrom, fmt::Debug, prelude::Clone, vec::Vec};
+use sp_runtime::traits::IdentifyAccount;
+use sp_std::{boxed::Box, convert::{TryFrom, TryInto}, fmt::Debug, prelude::Clone, vec::Vec};
 
 use crate::default_weights::WeightInfo;
 
@@ -63,7 +63,6 @@ pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
-use sp_runtime::traits::IdentifyAccount;
 
 	/// Reference to a payload of data of variable size.
 	pub type Payload = [u8];
@@ -92,7 +91,7 @@ use sp_runtime::traits::IdentifyAccount;
 			+ Dispatchable<Origin = <Self as Config>::Origin, PostInfo = PostDispatchInfo>
 			+ GetDispatchInfo
 			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
-		type DidIdentifier: Parameter + Default + IdentifyAccount<AccountId = AccountIdentifierOf<Self>> + Into<DidVerificationKey>;
+		type DidIdentifier: Parameter + Default + IdentifyAccount<AccountId = AccountIdentifierOf<Self>> + TryInto<DidVerificationKey>;
 		#[cfg(not(feature = "runtime-benchmarks"))]
 		type Origin: From<DidRawOrigin<DidIdentifierOf<Self>>>;
 		#[cfg(feature = "runtime-benchmarks")]
@@ -287,7 +286,9 @@ use sp_runtime::traits::IdentifyAccount;
 				<Error<T>>::DidAlreadyPresent
 			);
 
-			let did_entry = DidDetails::try_from((operation.clone(), operation.did.clone().into())).map_err(<Error<T>>::from)?;
+			let account_did_auth_key: DidVerificationKey = operation.did.clone().try_into().map_err(|_| <Error<T>>::UnsupportedKeyType)?;
+
+			let did_entry = DidDetails::try_from((operation.clone(), account_did_auth_key)).map_err(<Error<T>>::from)?;
 
 			Self::verify_payload_signature_with_did_key_type(
 				&operation.encode(),

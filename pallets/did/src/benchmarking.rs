@@ -102,11 +102,9 @@ fn get_did_base_details<T: Config>(auth_key: DidVerificationKey) -> DidDetails<T
 
 fn generate_base_did_creation_operation<T: Config>(
 	did: DidIdentifierOf<T>,
-	new_auth_key: DidVerificationKey,
 ) -> DidCreationOperation<T> {
 	DidCreationOperation {
 		did,
-		new_authentication_key: new_auth_key,
 		new_key_agreement_keys: BTreeSet::new(),
 		new_attestation_key: None,
 		new_delegation_key: None,
@@ -157,7 +155,7 @@ benchmarks! {
 		let did_public_del_key = get_ed25519_public_delegation_key();
 		let did_endpoint = get_url_endpoint(u);
 
-		let mut did_creation_op = generate_base_did_creation_operation::<T>(did_subject.clone(), DidVerificationKey::from(did_public_auth_key));
+		let mut did_creation_op = generate_base_did_creation_operation::<T>(did_subject.clone());
 		did_creation_op.new_key_agreement_keys = did_key_agreement_keys;
 		did_creation_op.new_attestation_key = Some(DidVerificationKey::from(did_public_att_key));
 		did_creation_op.new_delegation_key = Some(DidVerificationKey::from(did_public_del_key));
@@ -206,7 +204,7 @@ benchmarks! {
 		let did_public_del_key = get_sr25519_public_delegation_key();
 		let did_endpoint = get_url_endpoint(u);
 
-		let mut did_creation_op = generate_base_did_creation_operation::<T>(did_subject.clone(), DidVerificationKey::from(did_public_auth_key));
+		let mut did_creation_op = generate_base_did_creation_operation::<T>(did_subject.clone());
 		did_creation_op.new_key_agreement_keys = did_key_agreement_keys;
 		did_creation_op.new_attestation_key = Some(DidVerificationKey::from(did_public_att_key));
 		did_creation_op.new_delegation_key = Some(DidVerificationKey::from(did_public_del_key));
