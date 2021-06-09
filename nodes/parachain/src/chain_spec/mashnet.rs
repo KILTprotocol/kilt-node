@@ -26,7 +26,7 @@ use kilt_parachain_runtime::{
 	WASM_BINARY,
 };
 use kilt_primitives::{
-	constants::{DOLLARS, MINUTES},
+	constants::{KILT, MINUTES},
 	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use sc_service::ChainType;
@@ -119,13 +119,13 @@ pub fn make_staging_spec(id: ParaId) -> Result<ChainSpec, String> {
 						// TODO: Change before launch
 						hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].into(),
 						None,
-						10_000 * DOLLARS,
+						10_000 * KILT,
 					),
 					(
 						// TODO: Change before launch
 						hex!["b67fe6413ffe5cf91ae38a6475c37deea70a25c6c86b3dd17bb82d09efd9b350"].into(),
 						None,
-						10_000 * DOLLARS,
+						10_000 * KILT,
 					),
 				],
 				kilt_inflation_config(),

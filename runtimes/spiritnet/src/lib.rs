@@ -29,7 +29,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use frame_system::limits::{BlockLength, BlockWeights};
 use kilt_primitives::{
-	constants::{DAYS, DOLLARS, HOURS, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
+	constants::{DAYS, HOURS, KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
 	AccountId, AuthorityId, Balance, BlockNumber, Hash, Header, Index, Signature,
 };
 use sp_api::impl_runtime_apis;
@@ -258,7 +258,6 @@ impl pallet_sudo::Config for Runtime {
 }
 
 parameter_types! {
-	pub const SelfParaId: u32 = 12623;
 	pub const ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT / 4;
 	pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT / 4;
 }
@@ -320,19 +319,19 @@ impl pallet_vesting::Config for Runtime {
 	type BlockNumberToBalance = ConvertInto;
 	// disable vested transfers by setting min amount to max balance
 	type MinVestedTransfer = MinVestedTransfer;
-	type WeightInfo = pallet_vesting::weights::SubstrateWeight<Runtime>;
+	type WeightInfo = ();
 }
 
 parameter_types! {
-	pub const MaxClaims: u32 = 300;
-	pub const UsableBalance: Balance = DOLLARS;
+	pub const MaxClaims: u32 = 50;
+	pub const UsableBalance: Balance = KILT;
 }
 
 impl kilt_launch::Config for Runtime {
 	type Event = Event;
 	type MaxClaims = MaxClaims;
 	type UsableBalance = UsableBalance;
-	type WeightInfo = kilt_launch::default_weights::SubstrateWeight<Runtime>;
+	type WeightInfo = ();
 }
 
 parameter_types! {
@@ -342,12 +341,8 @@ parameter_types! {
 	pub const DefaultBlocksPerRound: BlockNumber = 2 * HOURS;
 	/// Unstaked balance can be unlocked after 7 days
 	pub const StakeDuration: BlockNumber = 7 * DAYS;
-	/// Collator exit requests are delayed by 8 hours (4 rounds/sessions)
-	pub const ExitQueueDelay: u32 = 4;
-	/// Maximum number of processed collator exit requests per round is 5
-	/// Defends against exceeding PoV size limit in on_initialize
-	// TODO: Potentially change after benchmarking
-	pub const MaxExitsPerRound: u32 = 5;
+	/// Collator exit requests are delayed by 4 hours (2 rounds/sessions)
+	pub const ExitQueueDelay: u32 = 2;
 	/// Minimum 16 collators selected per round, default at genesis and minimum forever after
 	pub const MinSelectedCandidates: u32 = 16;
 	/// Maximum 25 delegators per collator at launch, might be increased later
@@ -355,11 +350,11 @@ parameter_types! {
 	/// Maximum 1 collator per delegator at launch, will be increased later
 	pub const MaxCollatorsPerDelegator: u32 = 1;
 	/// Minimum stake required to be reserved to be a collator is 10_000
-	pub const MinCollatorStk: Balance = 10_000 * DOLLARS;
-	/// Max stake possible to be reserved to be collator candidate is 100_0000
-	pub const MaxCollatorCandidateStk: Balance = 200_000 * DOLLARS;
+	pub const MinCollatorStk: Balance = 10_000 * KILT;
+	/// Max stake possible to be reserved to be collator candidate is 200_000
+	pub const MaxCollatorCandidateStk: Balance = 200_000 * KILT;
 	/// Minimum stake required to be reserved to be a delegator is 1000
-	pub const MinDelegatorStk: Balance = 1000 * DOLLARS;
+	pub const MinDelegatorStk: Balance = 1000 * KILT;
 	/// Maximum number of collator candidates
 	pub const MaxCollatorCandidates: u32 = 75;
 	/// Maximum number of concurrent requests to unlock unstaked balance
@@ -374,7 +369,6 @@ impl parachain_staking::Config for Runtime {
 	type DefaultBlocksPerRound = DefaultBlocksPerRound;
 	type StakeDuration = StakeDuration;
 	type ExitQueueDelay = ExitQueueDelay;
-	type MaxExitsPerRound = MaxExitsPerRound;
 	type MinSelectedCandidates = MinSelectedCandidates;
 	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
 	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
