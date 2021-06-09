@@ -304,7 +304,7 @@ parameter_types! {
 impl pallet_session::Config for Runtime {
 	type Event = Event;
 	type ValidatorId = AccountId;
-	type ValidatorIdOf = ();
+	type ValidatorIdOf = ConvertInto;
 	type ShouldEndSession = ParachainStaking;
 	type NextSessionRotation = ParachainStaking;
 	type SessionManager = ParachainStaking;
