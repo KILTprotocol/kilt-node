@@ -31,7 +31,7 @@ use codec::Decode;
 use frame_support::ensure;
 use frame_system::EnsureSigned;
 use kilt_primitives::{
-	constants::{DOLLARS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
+	constants::{DOLLARS, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature,
 };
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
@@ -239,9 +239,8 @@ impl pallet_indices::Config for Runtime {
 }
 
 parameter_types! {
-	pub const ExistentialDeposit: Balance = 500;
+	pub const ExistentialDeposit: Balance = 10 * MILLI_KILT;
 	pub const MaxLocks: u32 = 50;
-	pub const MaxReserves: u32 = 50;
 }
 
 impl pallet_balances::Config for Runtime {
@@ -254,8 +253,6 @@ impl pallet_balances::Config for Runtime {
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
-	type MaxReserves = MaxReserves;
-	type ReserveIdentifier = [u8; 8];
 }
 
 /// Logic for the author to get a portion of fees.

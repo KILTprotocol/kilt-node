@@ -93,6 +93,7 @@ impl frame_system::Config for Test {
 parameter_types! {
 	pub const ExistentialDeposit: Balance = 1;
 }
+
 impl pallet_balances::Config for Test {
 	type MaxLocks = ();
 	type Balance = Balance;
@@ -101,8 +102,6 @@ impl pallet_balances::Config for Test {
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type WeightInfo = ();
-	type MaxReserves = ();
-	type ReserveIdentifier = ();
 }
 
 /// Author of block is always 1337
