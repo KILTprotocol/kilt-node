@@ -220,7 +220,7 @@ impl pallet_timestamp::Config for Runtime {
 }
 
 parameter_types! {
-	pub const ExistentialDeposit: u128 = 10 * MILLI_KILT;
+	pub const ExistentialDeposit: u128 = 100 * MILLI_KILT;
 	pub const TransactionByteFee: u128 = 1;
 	pub const MaxLocks: u32 = 50;
 }
