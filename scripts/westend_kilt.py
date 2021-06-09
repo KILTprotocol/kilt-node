@@ -5,7 +5,7 @@ def update_spec(input: typing.Dict):
     input.update({
         "bootNodes": [],
         "chainType": "Live",
-        "name": "KILT-Westend",
+        "name": "WILT",
         "id": "kilt_westend",
         "para_id": 2009,
     })
