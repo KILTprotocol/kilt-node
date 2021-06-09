@@ -29,7 +29,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use frame_system::limits::{BlockLength, BlockWeights};
 use kilt_primitives::{
-	constants::{DAYS, DOLLARS, HOURS, MILLICENTS, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
+	constants::{DAYS, DOLLARS, HOURS, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
 	AccountId, AuthorityId, Balance, BlockNumber, Hash, Header, Index, Signature,
 };
 use sp_api::impl_runtime_apis;
@@ -100,10 +100,6 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
 };
-
-pub const fn deposit(items: u32, bytes: u32) -> Balance {
-	items as Balance * 20 * DOLLARS + (bytes as Balance) * 100 * MILLICENTS
-}
 
 #[derive(codec::Encode, codec::Decode)]
 pub enum XcmpMessage<XAccountId, XBalance> {
@@ -224,7 +220,7 @@ impl pallet_timestamp::Config for Runtime {
 }
 
 parameter_types! {
-	pub const ExistentialDeposit: u128 = 500;
+	pub const ExistentialDeposit: u128 = 10 * MILLI_KILT;
 	pub const TransactionByteFee: u128 = 1;
 	pub const MaxLocks: u32 = 50;
 }
