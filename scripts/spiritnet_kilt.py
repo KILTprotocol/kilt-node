@@ -4,6 +4,9 @@ import typing
 def update_spec(input: typing.Dict):
     input.update({
         "bootNodes": [],
+        "chainType": "Live",
+        "name": "KILT",
+        "id": "kilt_spiritnet",
         "para_id": 2005,
     })
     input["genesis"]["runtime"]["parachainInfo"]["parachainId"] = 2005
