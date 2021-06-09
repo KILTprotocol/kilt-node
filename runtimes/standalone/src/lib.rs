@@ -31,7 +31,7 @@ use codec::Decode;
 use frame_support::ensure;
 use frame_system::EnsureSigned;
 use kilt_primitives::{
-	constants::{DOLLARS, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
+	constants::{KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature,
 };
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
@@ -299,8 +299,8 @@ impl delegation::VerifyDelegateSignature for Runtime {
 }
 
 parameter_types! {
-	pub const MaxClaims: u32 = 300;
-	pub const UsableBalance: Balance = DOLLARS;
+	pub const MaxClaims: u32 = 50;
+	pub const UsableBalance: Balance = KILT;
 }
 
 impl kilt_launch::Config for Runtime {

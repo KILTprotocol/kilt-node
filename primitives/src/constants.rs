@@ -35,13 +35,7 @@ pub const DAYS: BlockNumber = HOURS * 24;
 pub const MONTHS: BlockNumber = DAYS * 30;
 pub const YEARS: BlockNumber = MONTHS * 12;
 
-pub const MIN_VESTED_TRANSFER_AMOUNT: Balance = Balance::MAX;
-
-// TODO: how much? (1 KILT)
-// TODO: get token decimals from properties?
-pub const DOLLARS: Balance = 10u128.pow(15);
-pub const CENTS: Balance = DOLLARS / 100;
-pub const MILLICENTS: Balance = CENTS / 1_000;
+pub const MIN_VESTED_TRANSFER_AMOUNT: Balance = 1000 * KILT;
 
 /// One KILT
 pub const KILT: Balance = 10u128.pow(15);
