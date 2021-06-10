@@ -27,10 +27,7 @@ use kilt_primitives::{
 use sc_service::ChainType;
 use sp_core::{crypto::UncheckedInto, sr25519};
 use sp_runtime::Perquintill;
-use spiritnet_runtime::{
-	BalancesConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStk, ParachainInfoConfig,
-	ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig, WASM_BINARY,
-};
+use spiritnet_runtime::{BalancesConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MaxCollatorCandidateStk, MinCollatorStk, ParachainInfoConfig, ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig, WASM_BINARY};
 
 use crate::chain_spec::{get_account_id_from_seed, get_from_seed};
 
@@ -123,7 +120,7 @@ pub fn get_chain_spec_dev(id: ParaId) -> Result<ChainSpec, String> {
 	))
 }
 
-pub fn get_chain_spec_westend() -> Result<ChainSpec, String> {
+pub fn get_chain_spec_wilt() -> Result<ChainSpec, String> {
 	let properties = get_properties("WILT", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
 	let id: ParaId = 2009.into();
@@ -187,6 +184,82 @@ pub fn get_chain_spec_westend() -> Result<ChainSpec, String> {
 		Some(properties),
 		Extensions {
 			relay_chain: "westend".into(),
+			para_id: id.into(),
+		},
+	))
+}
+
+const SPIRIT_COL_ACC_1: [u8; 32] = hex!["dcae0b0169a344cbb3800ea34f438f5139687922ce34bfaf097a1314f5ee9069"];
+const SPIRIT_COL_SESSION_1: [u8; 32] = hex!["c2ef6ae55020c046a76e745133b75db6d10955f78d2224048aae6ac6f763fb6c"];
+const SPIRIT_COL_ACC_2: [u8; 32] = hex!["86e876d2aa97cc87a8b83b78b748f8795cac40883e6c6fc023f3fde3a094623d"];
+const SPIRIT_COL_SESSION_2: [u8; 32] = hex!["32280e5e31512fd4863bada1ab7f9ae0892bb1f9eb1d3506673c6de1ae90fe40"];
+const SPIRIT_SUDO_ACC: [u8; 32] = hex!["c48ed216c1ae656a501016efaaef59f4eb8778c64f84b245da3cc19321d4c22a"];
+const SPIRIT_TRANS_ACC: [u8; 32] = hex!["7a8604da79a9f89db6b35efdef3c4c84f9ae679b2fbd397f5bade3105a8a8e00"];
+
+pub fn get_chain_spec_spiritnet() -> Result<ChainSpec, String> {
+	let properties = get_properties("KILT", 15, 38);
+	let wasm = WASM_BINARY.ok_or("No WASM")?;
+	let id: ParaId = 2005.into();
+
+	Ok(ChainSpec::from_genesis(
+		"KILT Spiritnet",
+		"kilt",
+		ChainType::Live,
+		move || {
+			testnet_genesis(
+				wasm,
+				vec![
+					(
+						SPIRIT_COL_ACC_1.into(),
+						None,
+						MaxCollatorCandidateStk::get(),
+					),
+					(
+						SPIRIT_COL_ACC_2.into(),
+						None,
+						MaxCollatorCandidateStk::get(),
+					),
+				],
+				kilt_inflation_config(),
+				SPIRIT_SUDO_ACC.into(),
+				vec![
+					(
+						SPIRIT_COL_ACC_1.into(),
+						SPIRIT_COL_SESSION_1.unchecked_into(),
+					),
+					(
+						SPIRIT_COL_ACC_2.into(),
+						SPIRIT_COL_SESSION_2.unchecked_into(),
+					)
+				],
+				vec![
+					(
+						SPIRIT_COL_ACC_1.into(),
+						MaxCollatorCandidateStk::get() + 100 * KILT,
+					),
+					(
+						SPIRIT_COL_ACC_2.into(),
+						MaxCollatorCandidateStk::get() + 100 * KILT,
+					),
+					(
+						SPIRIT_SUDO_ACC.into(),
+						10000 * KILT,
+					),
+					(
+						SPIRIT_TRANS_ACC.into(),
+						10000 * KILT,
+					),
+				],
+				SPIRIT_TRANS_ACC.into(),
+				id,
+			)
+		},
+		vec![],
+		None,
+		None,
+		Some(properties),
+		Extensions {
+			relay_chain: "kusama".into(),
 			para_id: id.into(),
 		},
 	))
