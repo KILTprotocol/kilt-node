@@ -118,7 +118,7 @@ pub mod default_weights;
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use crate::default_weights::WeightInfo;
+	pub use crate::default_weights::WeightInfo;
 	#[cfg(feature = "std")]
 	use frame_support::traits::GenesisBuild;
 	use frame_support::{
