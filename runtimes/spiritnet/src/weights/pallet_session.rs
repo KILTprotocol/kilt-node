@@ -50,13 +50,13 @@ use sp_std::marker::PhantomData;
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_session::WeightInfo for WeightInfo<T> {
 	fn set_keys() -> Weight {
-		(154_532_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(8 as Weight))
-			.saturating_add(T::DbWeight::get().writes(7 as Weight))
+		(154_532_000_u64)
+			.saturating_add(T::DbWeight::get().reads(8_u64))
+			.saturating_add(T::DbWeight::get().writes(7_u64))
 	}
 	fn purge_keys() -> Weight {
-		(84_201_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(7 as Weight))
+		(84_201_000_u64)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(7_u64))
 	}
 }
