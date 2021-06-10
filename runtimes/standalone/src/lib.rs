@@ -30,19 +30,14 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use codec::Decode;
 use frame_support::ensure;
 use frame_system::EnsureSigned;
-use kilt_primitives::{AccountId, AccountPublic, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, constants::{DOLLARS, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION}};
+use kilt_primitives::{AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, constants::{DOLLARS, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION}};
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
-use sp_runtime::{
-	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys, Verify},
-	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, MultiSignature,
-};
-use sp_std::{prelude::*, convert::TryInto};
+use sp_runtime::{ApplyExtrinsicResult, MultiSignature, create_runtime_str, generic, impl_opaque_keys, traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys, Verify}, transaction_validity::{TransactionSource, TransactionValidity}};
+use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
@@ -354,7 +349,7 @@ parameter_types! {
 }
 
 impl did::Config for Runtime {
-	type DidIdentifier = AccountPublic;
+	type DidIdentifier = DidIdentifier;
 	type Event = Event;
 	type Call = Call;
 	type Origin = Origin;
@@ -363,6 +358,7 @@ impl did::Config for Runtime {
 	type MaxUrlLength = MaxUrlLength;
 	type WeightInfo = did::default_weights::SubstrateWeight<Runtime>;
 }
+
 
 parameter_types! {
 	pub const DisabledValidatorsThreshold: Perbill = Perbill::from_percent(17);

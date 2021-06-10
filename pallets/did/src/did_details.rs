@@ -17,19 +17,21 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::{Decode, Encode, WrapperTypeEncode};
-use sp_core::{ed25519, sr25519};
-use sp_runtime::{MultiSignature, MultiSigner, traits::Verify};
-use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
+use sp_core::{ecdsa, ed25519, sr25519};
+use sp_runtime::{MultiSigner, traits::Verify};
+use sp_std::{collections::{btree_map::BTreeMap, btree_set::BTreeSet}, convert::TryInto};
 
 use crate::*;
 
 /// Types of verification keys a DID can control.
-#[derive(Clone, Copy, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
 pub enum DidVerificationKey {
 	/// An Ed25519 public key.
 	Ed25519(ed25519::Public),
 	/// A Sr25519 public key.
 	Sr25519(sr25519::Public),
+	/// An ECDSA public key.
+	Ecdsa(ecdsa::Public),
 }
 
 impl DidVerificationKey {
@@ -52,6 +54,40 @@ impl DidVerificationKey {
 					Err(SignatureError::InvalidSignatureFormat)
 				}
 			}
+			DidVerificationKey::Ecdsa(public_key) => {
+				if let DidSignature::Ecdsa(sig) = signature {
+					Ok(sig.verify(payload, public_key))
+				} else {
+					Err(SignatureError::InvalidSignatureFormat)
+				}
+			}
+		}
+	}
+
+	/// Decodes from an encoded DidVerificationKey, including the enum type encoding.
+	pub fn from_did_verification_key_encoded(encoded: &[u8]) -> Result<Self, KeyError> {
+		Self::decode(&mut &encoded[..]).map_err(|_| KeyError::UnsupportedKeyType)
+	}
+
+	/// Decodes from a raw verification key, with no indication about its type.
+	pub fn from_verification_key_encoded(encoded: &[u8]) -> Result<Self, KeyError> {
+		if let Ok(ed25519_pk) = ed25519::Public::decode(&mut &encoded[..]) {
+			Ok(Self::Ed25519(ed25519_pk))
+		} else if let Ok(sr25519_pk) = sr25519::Public::decode(&mut &encoded[..]) {
+			Ok(Self::Sr25519(sr25519_pk))
+		} else if let Ok(ecdsa_pk) = ecdsa::Public::decode(&mut &encoded[..]) {
+			Ok(Self::Ecdsa(ecdsa_pk))
+		} else {
+			Err(KeyError::UnsupportedKeyType)
+		}
+	}
+
+	/// Encodes the DidVerificationKey to the raw underlying type.
+	pub fn to_raw_verification_key(&self) -> Vec<u8> {
+		match self {
+			DidVerificationKey::Ed25519(pk) => pk.encode(),
+			DidVerificationKey::Sr25519(pk) => pk.encode(),
+			DidVerificationKey::Ecdsa(pk) => pk.encode(),
 		}
 	}
 }
@@ -68,16 +104,10 @@ impl From<sr25519::Public> for DidVerificationKey {
 	}
 }
 
-impl TryFrom<MultiSigner> for DidVerificationKey {
-    type Error = KeyError;
-
-    fn try_from(value: MultiSigner) -> Result<Self, Self::Error> {
-		match value {
-			MultiSigner::Ed25519(pk) => Ok(Self::Ed25519(pk)),
-			MultiSigner::Sr25519(pk) => Ok(Self::Sr25519(pk)),
-			_ => Err(KeyError::UnsupportedKeyType)
-		}
-    }
+impl From<ecdsa::Public> for DidVerificationKey {
+	fn from(key: ecdsa::Public) -> Self {
+		DidVerificationKey::Ecdsa(key)
+	}
 }
 
 /// Types of encryption keys a DID can control.
@@ -88,7 +118,7 @@ pub enum DidEncryptionKey {
 }
 
 /// A general public key under the control of the DID.
-#[derive(Clone, Copy, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
 pub enum DidPublicKey {
 	/// A verification key, used to generate and verify signatures.
 	PublicVerificationKey(DidVerificationKey),
@@ -129,12 +159,36 @@ pub enum DidSignature {
 	Ed25519(ed25519::Signature),
 	/// A Sr25519 signature.
 	Sr25519(sr25519::Signature),
+	/// An Ecdsa signature.
+	Ecdsa(ecdsa::Signature),
 }
 
 impl DidSignature {
-	/// Returns a DidSignature after decoding an encoded version of itself.
-	pub fn from_did_signature_encoded(encoded: Vec<u8>) -> Result<Self, SignatureError> {
+	/// Decodes from an encoded DidSignature, including the enum type encoding.
+	pub fn from_did_signature_encoded(encoded: &[u8]) -> Result<Self, SignatureError> {
 		Self::decode(&mut &encoded[..]).map_err(|_| SignatureError::InvalidSignatureFormat)
+	}
+
+	/// Decodes from a raw signature, with no indication about its type.
+	pub fn from_verification_key_encoded(encoded: &[u8]) -> Result<Self, SignatureError> {
+		if let Ok(ed25519_sig) = ed25519::Signature::decode(&mut &encoded[..]) {
+			Ok(Self::Ed25519(ed25519_sig))
+		} else if let Ok(sr25519_sig) = sr25519::Signature::decode(&mut &encoded[..]) {
+			Ok(Self::Sr25519(sr25519_sig))
+		} else if let Ok(ecdsa_sig) = ecdsa::Signature::decode(&mut &encoded[..]) {
+			Ok(Self::Ecdsa(ecdsa_sig))
+		} else {
+			Err(SignatureError::UnsupportedSignatureFormat)
+		}
+	}
+
+	/// Encodes the DidSignature to the raw underlying type.
+	pub fn to_raw_signature(&self) -> Vec<u8> {
+		match self {
+			DidSignature::Ed25519(sig) => sig.encode(),
+			DidSignature::Sr25519(sig) => sig.encode(),
+			DidSignature::Ecdsa(sig) => sig.encode(),
+		}
 	}
 }
 
@@ -150,14 +204,41 @@ impl From<sr25519::Signature> for DidSignature {
 	}
 }
 
-impl TryFrom<MultiSignature> for DidSignature {
-    type Error = SignatureError;
+impl From<ecdsa::Signature> for DidSignature {
+	fn from(sig: ecdsa::Signature) -> Self {
+		DidSignature::Ecdsa(sig)
+	}
+}
 
-    fn try_from(value: MultiSignature) -> Result<Self, Self::Error> {
-		match value {
-			MultiSignature::Sr25519(sig) => Ok(Self::Sr25519(sig)),
-			MultiSignature::Ed25519(sig) => Ok(Self::Ed25519(sig)),
-			_ => Err(SignatureError::UnsupportedSignatureFormat),
+pub trait DidVerifiableIdentifier {
+	// This is needed if we want to support ECDSA in the future, as we can compute the public key given message and signature.
+	fn verify_and_recover_signature(&self, payload: &Payload, signature: &DidSignature) -> Result<DidVerificationKey, SignatureError>;
+}
+
+impl DidVerifiableIdentifier for kilt_primitives::DidIdentifier {
+    fn verify_and_recover_signature(&self, payload: &Payload, signature: &DidSignature) -> Result<DidVerificationKey, SignatureError> {
+		match self {
+			MultiSigner::Ed25519(pk) => {
+				let ed25519_did_key = DidVerificationKey::from_verification_key_encoded(pk).map_err(|_| SignatureError::InvalidSignature)?;
+				ed25519_did_key.verify_signature(payload, signature).map(|_| Ok(ed25519_did_key))?
+			}
+			MultiSigner::Sr25519(pk) => {
+				let sr25519_did_key = DidVerificationKey::from_verification_key_encoded(pk).map_err(|_| SignatureError::InvalidSignature)?;
+				sr25519_did_key.verify_signature(payload, signature).map(|_| Ok(sr25519_did_key))?
+			}
+			MultiSigner::Ecdsa(hashed_pk) => {
+				let ecdsa_signature: [u8; 65] = signature.to_raw_signature().try_into().map_err(|_| SignatureError::InvalidSignature)?;
+				let hashed_message = &sp_io::hashing::blake2_256(payload);
+				if let Ok(compressed_pk) = sp_io::crypto::secp256k1_ecdsa_recover_compressed(&ecdsa_signature, &hashed_message) {
+					if sp_io::hashing::blake2_256(&compressed_pk)[..] == hashed_pk.encode()[..] {
+						DidVerificationKey::from_verification_key_encoded(compressed_pk.as_ref()).map_or(Err(SignatureError::InvalidSignature), |did_key| Ok(did_key))
+					} else {
+						Err(SignatureError::InvalidSignature)
+					}
+				} else {
+					Err(SignatureError::InvalidSignature)
+				}
+			}
 		}
     }
 }
@@ -167,7 +248,7 @@ impl TryFrom<MultiSignature> for DidSignature {
 ///
 /// It is currently used to keep track of all the past and current
 /// attestation keys a DID might control.
-#[derive(Clone, Copy, Debug, Decode, Encode, PartialEq)]
+#[derive(Clone, Debug, Decode, Encode, PartialEq)]
 pub struct DidPublicKeyDetails<T: Config> {
 	/// A public key the DID controls.
 	pub key: DidPublicKey,
@@ -216,7 +297,7 @@ impl<T: Config> DidDetails<T> {
 	/// The tx counter is set by default to 0.
 	pub fn new(authentication_key: DidVerificationKey, block_number: BlockNumberOf<T>) -> Self {
 		let mut public_keys: BTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>> = BTreeMap::new();
-		let authentication_key_id = utils::calculate_key_id::<T>(&authentication_key.into());
+		let authentication_key_id = utils::calculate_key_id::<T>(&authentication_key.clone().into());
 		public_keys.insert(
 			authentication_key_id,
 			DidPublicKeyDetails {
@@ -246,7 +327,7 @@ impl<T: Config> DidDetails<T> {
 		block_number: BlockNumberOf<T>,
 	) {
 		let old_authentication_key_id = self.authentication_key;
-		let new_authentication_key_id = utils::calculate_key_id::<T>(&new_authentication_key.into());
+		let new_authentication_key_id = utils::calculate_key_id::<T>(&new_authentication_key.clone().into());
 		self.authentication_key = new_authentication_key_id;
 		// Remove old key ID from public keys, if not used anymore.
 		self.remove_key_if_unused(&old_authentication_key_id);
@@ -288,7 +369,7 @@ impl<T: Config> DidDetails<T> {
 	/// it can still be used to verify past attestations.
 	/// The new key is added to the set of verification keys.
 	pub fn update_attestation_key(&mut self, new_attestation_key: DidVerificationKey, block_number: BlockNumberOf<T>) {
-		let new_attestation_key_id = utils::calculate_key_id::<T>(&new_attestation_key.into());
+		let new_attestation_key_id = utils::calculate_key_id::<T>(&new_attestation_key.clone().into());
 		self.attestation_key = Some(new_attestation_key_id);
 		self.public_keys.insert(
 			new_attestation_key_id,
@@ -315,7 +396,7 @@ impl<T: Config> DidDetails<T> {
 	/// set of verification keys.
 	pub fn update_delegation_key(&mut self, new_delegation_key: DidVerificationKey, block_number: BlockNumberOf<T>) {
 		let old_delegation_key_id = self.delegation_key;
-		let new_delegation_key_id = utils::calculate_key_id::<T>(&new_delegation_key.into());
+		let new_delegation_key_id = utils::calculate_key_id::<T>(&new_delegation_key.clone().into());
 		self.delegation_key = Some(new_delegation_key_id);
 		if let Some(old_delegation_key) = old_delegation_key_id {
 			self.remove_key_if_unused(&old_delegation_key);
@@ -688,7 +769,7 @@ impl<T: Config> DidOperation<T> for DidUpdateOperation<T> {
 
 /// Possible actions on a DID verification key within a
 /// [DidUpdateOperation].
-#[derive(Clone, Copy, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
 pub enum DidVerificationKeyUpdateAction {
 	/// Do not change the verification key.
 	Ignore,

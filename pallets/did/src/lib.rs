@@ -54,7 +54,7 @@ use frame_system::ensure_signed;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::RawOrigin;
 use sp_runtime::traits::IdentifyAccount;
-use sp_std::{boxed::Box, convert::{TryFrom, TryInto}, fmt::Debug, prelude::Clone, vec::Vec};
+use sp_std::{boxed::Box, convert::TryFrom, fmt::Debug, prelude::Clone, vec::Vec};
 
 use crate::default_weights::WeightInfo;
 
@@ -91,7 +91,7 @@ pub mod pallet {
 			+ Dispatchable<Origin = <Self as Config>::Origin, PostInfo = PostDispatchInfo>
 			+ GetDispatchInfo
 			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
-		type DidIdentifier: Parameter + Default + IdentifyAccount<AccountId = AccountIdentifierOf<Self>> + TryInto<DidVerificationKey>;
+		type DidIdentifier: Parameter + Default + IdentifyAccount<AccountId = AccountIdentifierOf<Self>> + DidVerifiableIdentifier;
 		#[cfg(not(feature = "runtime-benchmarks"))]
 		type Origin: From<DidRawOrigin<DidIdentifierOf<Self>>>;
 		#[cfg(feature = "runtime-benchmarks")]
@@ -286,7 +286,7 @@ pub mod pallet {
 				<Error<T>>::DidAlreadyPresent
 			);
 
-			let account_did_auth_key: DidVerificationKey = operation.did.clone().try_into().map_err(|_| <Error<T>>::UnsupportedKeyType)?;
+			let account_did_auth_key: DidVerificationKey = operation.did.clone().verify_and_recover_signature(&operation.encode(), &signature).map_err(<Error<T>>::from)?;
 
 			let did_entry = DidDetails::try_from((operation.clone(), account_did_auth_key)).map_err(<Error<T>>::from)?;
 
