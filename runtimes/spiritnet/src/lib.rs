@@ -97,8 +97,8 @@ pub mod opaque {
 /// This runtime version.
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: create_runtime_str!("mashnet-node"),
-	impl_name: create_runtime_str!("mashnet-node"),
+	spec_name: create_runtime_str!("kilt-spiritnet"),
+	impl_name: create_runtime_str!("kilt-spiritnet"),
 	authoring_version: 1,
 	spec_version: 10,
 	impl_version: 0,
@@ -295,7 +295,7 @@ parameter_types! {
 impl pallet_session::Config for Runtime {
 	type Event = Event;
 	type ValidatorId = AccountId;
-	type ValidatorIdOf = ();
+	type ValidatorIdOf = ConvertInto;
 	type ShouldEndSession = ParachainStaking;
 	type NextSessionRotation = ParachainStaking;
 	type SessionManager = ParachainStaking;
