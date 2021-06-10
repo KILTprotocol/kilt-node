@@ -21,8 +21,10 @@ pallet-balances = {git = "https://github.com/paritytech/substrate", default-feat
 pallet-vesting = {git = "https://github.com/paritytech/substrate", default-features = false, version = "3.0.0", branch = "polkadot-v0.9.4"}
 sp-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, version = "3.0.0", branch = "polkadot-v0.9.4"}
 
+# benchmarking
+kilt-primitives = {path = "../../primitives", default-features = false, optional = true}
+
 [dev-dependencies]
-kilt-primitives = {path = "../../primitives", default-features = false}
 sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, version = "3.0.0", branch = "polkadot-v0.9.4"}
 sp-io = {git = "https://github.com/paritytech/substrate", default-features = false, version = "3.0.0", branch = "polkadot-v0.9.4"}
 
@@ -44,5 +46,6 @@ runtime-benchmarks = [
 	"frame-benchmarking",
 	"frame-support/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
+	"kilt-primitives",
 ]
 try-runtime = ["frame-support/try-runtime"]

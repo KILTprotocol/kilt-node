@@ -3722,6 +3722,7 @@ dependencies = [
 name = "kilt-primitives"
 version = "0.1.0"
 dependencies = [
+ "frame-support",
  "parity-scale-codec",
  "serde",
  "sp-consensus-aura",
@@ -5767,6 +5768,7 @@ name = "pallet-utility"
 version = "3.0.0"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "parity-scale-codec",
