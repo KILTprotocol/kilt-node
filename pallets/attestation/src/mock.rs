@@ -105,6 +105,7 @@ impl delegation::Config for Test {
 	type EnsureOrigin = EnsureSigned<TestDelegatorId>;
 	type Event = ();
 	type MaxSignatureByteLength = MaxSignatureByteLength;
+	type WeightInfo = ();
 }
 
 impl Config for Test {

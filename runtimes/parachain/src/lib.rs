@@ -652,6 +652,7 @@ impl delegation::Config for Runtime {
 	type EnsureOrigin = EnsureSigned<Self::DelegationEntityId>;
 	type Event = Event;
 	type MaxSignatureByteLength = MaxSignatureByteLength;
+	type WeightInfo = ();
 }
 
 impl ctype::Config for Runtime {
@@ -1006,6 +1007,8 @@ impl_runtime_apis! {
 
 			add_benchmark!(params, batches, did, Did);
 			add_benchmark!(params, batches, ctype, Ctype);
+			add_benchmark!(params, batches, delegation, Delegation);
+			// add_benchmark!(params, batches, attestation, Attestation);
 
 			// No benchmarks for these pallets
 			// add_benchmark!(params, batches, cumulus_pallet_parachain_system, ParachainSystem);

@@ -16,27 +16,21 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_system::RawOrigin;
 
 use crate::*;
 
-fn get_ctype_creator<T: Config>() -> T::AccountId {
-	T::AccountId::default()
-}
-
-fn get_ctype_hash<T: Config>() -> CtypeHashOf<T> {
-	CtypeHashOf::<T>::default()
-}
+const SEED: u32 = 0;
 
 benchmarks! {
-
 	add {
-		let caller = get_ctype_creator::<T>();
-		let hash = get_ctype_hash::<T>();
+		let caller = account("caller", 0, SEED);
+		let hash = <T::Hash as Default>::default();
+
 	}: _(RawOrigin::Signed(caller), hash)
 	verify {
-		Ctypes::<T>::contains_key(hash);
+		Ctypes::<T>::contains_key(hash)
 	}
 }
 

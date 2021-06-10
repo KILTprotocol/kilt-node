@@ -16,6 +16,7 @@ substrate-wasm-builder-runner = {version = "3.0.0"}
 kilt-primitives = {default-features = false, path = "../../primitives"}
 serde = {version = "1.0.101"}
 sp-core = {branch = "polkadot-v0.9.4", default-features = false, git = "https://github.com/paritytech/substrate", version = "3.0.0"}
+sp-keystore = {branch = "polkadot-v0.9.4", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [dependencies]
 # Internal dependencies

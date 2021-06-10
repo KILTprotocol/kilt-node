@@ -1792,6 +1792,7 @@ version = "0.24.0"
 dependencies = [
  "bitflags",
  "ctype",
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "kilt-primitives",
@@ -1800,6 +1801,7 @@ dependencies = [
  "serde",
  "sp-core",
  "sp-io",
+ "sp-keystore",
  "sp-runtime",
  "sp-std",
  "substrate-wasm-builder-runner",
