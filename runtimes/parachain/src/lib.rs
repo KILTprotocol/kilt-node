@@ -1004,6 +1004,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, parachain_staking, ParachainStaking);
 
 			add_benchmark!(params, batches, did, Did);
+			add_benchmark!(params, batches, ctype, Ctype);
 
 			// No benchmarks for these pallets
 			// add_benchmark!(params, batches, cumulus_pallet_parachain_system, ParachainSystem);

@@ -24,6 +24,9 @@
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
 
+#[cfg(feature = "runtime-benchmarks")]
+pub mod benchmarking;
+
 /// Test module for CTYPEs
 #[cfg(test)]
 mod tests;
@@ -43,7 +46,7 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type CtypeCreatorId: Parameter;
+		type CtypeCreatorId: Parameter + Default;
 		type EnsureOrigin: EnsureOrigin<Success = CtypeCreatorOf<Self>, <Self as frame_system::Config>::Origin>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 	}
