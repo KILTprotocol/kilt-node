@@ -41,10 +41,11 @@ fn load_spec(id: &str, runtime: &str, para_id: ParaId) -> std::result::Result<Bo
 		"staging" => Ok(Box::new(chain_spec::mashnet::make_staging_spec(para_id)?)),
 		"rococo" => Ok(Box::new(chain_spec::mashnet::load_rococo_spec()?)),
 		"dev" => Ok(Box::new(chain_spec::mashnet::make_dev_spec(para_id)?)),
-		"spiritnet-dev" => Ok(Box::new(chain_spec::spiritnet::get_chain_spec(para_id)?)),
+		"spiritnet-dev" => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_dev(para_id)?)),
+		"westend-new" => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_westend()?)),
 		"spiritnet" => Ok(Box::new(chain_spec::spiritnet::load_spiritnet_spec()?)),
 		"" => match runtime {
-			"spiritnet" => Ok(Box::new(chain_spec::spiritnet::get_chain_spec(para_id)?)),
+			"spiritnet" => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_dev(para_id)?)),
 			"mashnet" => Ok(Box::new(chain_spec::mashnet::make_dev_spec(para_id)?)),
 			_ => Err("Unknown runtime".to_owned()),
 		},
