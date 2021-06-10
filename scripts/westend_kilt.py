@@ -8,6 +8,7 @@ def update_spec(input: typing.Dict):
         "name": "WILT",
         "id": "kilt_westend",
         "para_id": 2009,
+        "relay_chain": "westend",
     })
     input["properties"]["tokenSymbol"] = "WILT"
     input["genesis"]["runtime"]["parachainInfo"]["parachainId"] = 2009
