@@ -59,7 +59,7 @@ fn load_spec(id: &str, runtime: &str, para_id: ParaId) -> std::result::Result<Bo
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
-		"KILT collator".into()
+		"KILT".into()
 	}
 
 	fn impl_version() -> String {
@@ -68,7 +68,7 @@ impl SubstrateCli for Cli {
 
 	fn description() -> String {
 		format!(
-			"KILT collator\n\nThe command-line arguments provided first will be \
+			"KILT\n\nThe command-line arguments provided first will be \
 		passed to the parachain node, while the arguments provided after -- will be passed \
 		to the relaychain node.\n\n\
 		{} [parachain-args] -- [relaychain-args]",
@@ -110,7 +110,7 @@ impl SubstrateCli for Cli {
 
 impl SubstrateCli for RelayChainCli {
 	fn impl_name() -> String {
-		"KILT collator".into()
+		"KILT".into()
 	}
 
 	fn impl_version() -> String {
@@ -118,7 +118,7 @@ impl SubstrateCli for RelayChainCli {
 	}
 
 	fn description() -> String {
-		"KILT collator\n\nThe command-line arguments provided first will be \
+		"KILT\n\nThe command-line arguments provided first will be \
 		passed to the parachain node, while the arguments provided after -- will be passed \
 		to the relaychain node.\n\n\
 		kilt-parachain [parachain-args] -- [relaychain-args]"
