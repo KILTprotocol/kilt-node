@@ -348,6 +348,7 @@ impl ctype::Config for Runtime {
 	type CtypeCreatorId = AccountId;
 	type EnsureOrigin = EnsureSigned<Self::CtypeCreatorId>;
 	type Event = Event;
+	type WeightInfo = ();
 }
 
 parameter_types! {

@@ -35,6 +35,9 @@ benchmarks! {
 		let caller = get_ctype_creator::<T>();
 		let hash = get_ctype_hash::<T>();
 	}: _(RawOrigin::Signed(caller), hash)
+	verify {
+		Ctypes::<T>::contains_key(hash);
+	}
 }
 
 impl_benchmark_test_suite! {
