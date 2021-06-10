@@ -25,13 +25,12 @@ use kilt_primitives::{
 	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use sc_service::ChainType;
-use sp_core::sr25519;
+use sp_core::{crypto::UncheckedInto, sr25519};
 use sp_runtime::Perquintill;
 use spiritnet_runtime::{
 	BalancesConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStk, ParachainInfoConfig,
 	ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig, WASM_BINARY,
 };
-use sp_core::crypto::UncheckedInto;
 
 use crate::chain_spec::{get_account_id_from_seed, get_from_seed};
 
@@ -153,11 +152,12 @@ pub fn get_chain_spec_westend() -> Result<ChainSpec, String> {
 				vec![
 					(
 						hex!["e6cf13c86a5f174acba79ca361dc429d89eb704c6a407af83f30b11ab8bc5045"].into(),
-						hex!["e29df39b74777495ca00cd7a316ce98c5225d7088ae924b122fe0e2e6a4b5569"].unchecked_into()
-					),(
+						hex!["e29df39b74777495ca00cd7a316ce98c5225d7088ae924b122fe0e2e6a4b5569"].unchecked_into(),
+					),
+					(
 						hex!["e8ed0c2a40fb5a0bbb24c38f5c8cd83d79498ac029ac9f87497677f5701e3d2c"].into(),
-						hex!["7cacfbce640321ba84a85f41dfb43c2a2ea14ed789c096ad62ee0491599b0f44"].unchecked_into()
-					)
+						hex!["7cacfbce640321ba84a85f41dfb43c2a2ea14ed789c096ad62ee0491599b0f44"].unchecked_into(),
+					),
 				],
 				vec![
 					(
@@ -175,7 +175,7 @@ pub fn get_chain_spec_westend() -> Result<ChainSpec, String> {
 					(
 						hex!["aaf5308b81f962ffdaccaa22352cc95b7bef70033d9d0d5a7023ec5681f05954"].into(),
 						10000 * KILT,
-					)
+					),
 				],
 				hex!["aaf5308b81f962ffdaccaa22352cc95b7bef70033d9d0d5a7023ec5681f05954"].into(),
 				id,
@@ -205,6 +205,7 @@ pub fn kilt_inflation_config() -> InflationInfo {
 	)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn testnet_genesis(
 	wasm_binary: &[u8],
 	stakers: Vec<(AccountId, Option<AccountId>, Balance)>,
