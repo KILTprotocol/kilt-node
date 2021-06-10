@@ -327,7 +327,7 @@ impl kilt_launch::Config for Runtime {
 	type Event = Event;
 	type MaxClaims = MaxClaims;
 	type UsableBalance = UsableBalance;
-	type WeightInfo = ();
+	type WeightInfo = weights::kilt_launch::WeightInfo<Runtime>;
 }
 
 parameter_types! {

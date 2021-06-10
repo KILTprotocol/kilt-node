@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 pub mod frame_system;
+pub mod kilt_launch;
 pub mod pallet_balances;
 pub mod pallet_indices;
 pub mod pallet_session;
