@@ -1,13 +1,9 @@
-use crate::weights::pallet_balances::WeightInfo;
-use frame_support::weights::{WeightToFeeCoefficients, WeightToFeePolynomial};
+use frame_support::weights::{WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial};
 use kilt_primitives::{constants::MILLI_KILT, Balance};
+use pallet_balances::WeightInfo;
 use smallvec::smallvec;
-/// Fee-related.
 pub use sp_runtime::Perbill;
 use sp_std::marker::PhantomData;
-
-/// The block saturation level. Fees will be updates based on this value.
-pub const TARGET_BLOCK_FULLNESS: Perbill = Perbill::from_percent(25);
 
 /// Handles converting a weight scalar to a fee value, based on the scale and
 /// granularity of the node's balance type.
@@ -21,8 +17,10 @@ pub const TARGET_BLOCK_FULLNESS: Perbill = Perbill::from_percent(25);
 ///   - Setting it to `0` will essentially disable the weight fee.
 ///   - Setting it to `1` will cause the literal `#[weight = x]` values to be
 ///     charged.
-pub struct WeightToFee<T>(PhantomData<T>);
-impl<T> WeightToFeePolynomial for WeightToFee<T> {
+pub struct WeightToFee<T>(PhantomData<T>)
+where
+	T: frame_system::Config;
+impl<T: frame_system::Config> WeightToFeePolynomial for WeightToFee<T> {
 	type Balance = Balance;
 	fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
 		// in Spiritnet, transfer weight is mapped to 0.001 KILT:
@@ -36,3 +34,5 @@ impl<T> WeightToFeePolynomial for WeightToFee<T> {
 		}]
 	}
 }
+
+// TODO: Add test

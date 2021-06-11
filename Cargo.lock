@@ -10380,6 +10380,7 @@ dependencies = [
  "polkadot-parachain",
  "rococo-runtime",
  "serde",
+ "smallvec 1.6.1",
  "sp-api",
  "sp-arithmetic",
  "sp-block-builder",
