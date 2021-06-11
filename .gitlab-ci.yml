@@ -45,7 +45,9 @@ build:
     - docker push kiltprotocol/mashnet-node:develop
 
     - aws ecr get-login-password | docker login --username AWS --password-stdin $AWS_REGISTRY
-    - docker tag kiltprotocol/mashnet-node:develop $AWS_REGISTRY/kilt/prototype-chain:develop
-    - docker tag kiltprotocol/peregrine:develop $AWS_REGISTRY/kilt-parachain/collator:develop
-    - docker push $AWS_REGISTRY/kilt/prototype-chain:develop
-    - docker push $AWS_REGISTRY/kilt-parachain/collator:develop
+    - docker tag kiltprotocol/mashnet-node:develop $AWS_REGISTRY/kilt/prototype-chain:latest-develop
+    - docker tag kiltprotocol/mashnet-node:develop $AWS_REGISTRY/kilt/prototype-chain:$CI_COMMIT_SHORT_SHA
+    - docker tag kiltprotocol/peregrine:develop $AWS_REGISTRY/kilt-parachain/collator:latest-develop
+    - docker push $AWS_REGISTRY/kilt/prototype-chain:latest-develop
+    - docker push $AWS_REGISTRY/kilt/prototype-chain:$CI_COMMIT_SHORT_SHA
+    - docker push $AWS_REGISTRY/kilt-parachain/collator:latest-develop
