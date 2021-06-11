@@ -27,7 +27,10 @@ use kilt_primitives::{
 use sc_service::ChainType;
 use sp_core::{crypto::UncheckedInto, sr25519};
 use sp_runtime::Perquintill;
-use spiritnet_runtime::{BalancesConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MaxCollatorCandidateStk, MinCollatorStk, ParachainInfoConfig, ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig, WASM_BINARY};
+use spiritnet_runtime::{
+	BalancesConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MaxCollatorCandidateStk, MinCollatorStk,
+	ParachainInfoConfig, ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig, WASM_BINARY,
+};
 
 use crate::chain_spec::{get_account_id_from_seed, get_from_seed};
 
@@ -209,46 +212,20 @@ pub fn get_chain_spec_spiritnet() -> Result<ChainSpec, String> {
 			testnet_genesis(
 				wasm,
 				vec![
-					(
-						SPIRIT_COL_ACC_1.into(),
-						None,
-						MaxCollatorCandidateStk::get(),
-					),
-					(
-						SPIRIT_COL_ACC_2.into(),
-						None,
-						MaxCollatorCandidateStk::get(),
-					),
+					(SPIRIT_COL_ACC_1.into(), None, MaxCollatorCandidateStk::get()),
+					(SPIRIT_COL_ACC_2.into(), None, MaxCollatorCandidateStk::get()),
 				],
 				kilt_inflation_config(),
 				SPIRIT_SUDO_ACC.into(),
 				vec![
-					(
-						SPIRIT_COL_ACC_1.into(),
-						SPIRIT_COL_SESSION_1.unchecked_into(),
-					),
-					(
-						SPIRIT_COL_ACC_2.into(),
-						SPIRIT_COL_SESSION_2.unchecked_into(),
-					)
+					(SPIRIT_COL_ACC_1.into(), SPIRIT_COL_SESSION_1.unchecked_into()),
+					(SPIRIT_COL_ACC_2.into(), SPIRIT_COL_SESSION_2.unchecked_into()),
 				],
 				vec![
-					(
-						SPIRIT_COL_ACC_1.into(),
-						MaxCollatorCandidateStk::get() + 100 * KILT,
-					),
-					(
-						SPIRIT_COL_ACC_2.into(),
-						MaxCollatorCandidateStk::get() + 100 * KILT,
-					),
-					(
-						SPIRIT_SUDO_ACC.into(),
-						10000 * KILT,
-					),
-					(
-						SPIRIT_TRANS_ACC.into(),
-						10000 * KILT,
-					),
+					(SPIRIT_COL_ACC_1.into(), MaxCollatorCandidateStk::get() + 100 * KILT),
+					(SPIRIT_COL_ACC_2.into(), MaxCollatorCandidateStk::get() + 100 * KILT),
+					(SPIRIT_SUDO_ACC.into(), 10000 * KILT),
+					(SPIRIT_TRANS_ACC.into(), 10000 * KILT),
 				],
 				SPIRIT_TRANS_ACC.into(),
 				id,
