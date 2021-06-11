@@ -26,11 +26,13 @@ use codec::Decode;
 use frame_support::{ensure, parameter_types, weights::constants::RocksDbWeight};
 use frame_system::EnsureSigned;
 use sp_core::{ed25519, sr25519, Pair};
+use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSignature, MultiSigner,
 };
+use sp_std::sync::Arc;
 
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
@@ -111,6 +113,7 @@ impl delegation::Config for Test {
 impl Config for Test {
 	type EnsureOrigin = EnsureSigned<TestAttester>;
 	type Event = ();
+	type WeightInfo = ();
 }
 
 impl delegation::VerifyDelegateSignature for Test {
@@ -274,6 +277,15 @@ impl ExtBuilder {
 					})
 			});
 		}
+
+		ext
+	}
+
+	pub fn build_with_keystore(self, ext: Option<sp_io::TestExternalities>) -> sp_io::TestExternalities {
+		let mut ext = self.build(ext);
+
+		let keystore = KeyStore::new();
+		ext.register_extension(KeystoreExt(Arc::new(keystore)));
 
 		ext
 	}

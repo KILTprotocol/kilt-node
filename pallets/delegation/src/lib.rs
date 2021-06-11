@@ -22,8 +22,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
-pub mod delegation_hierarchy;
 pub mod default_weights;
+pub mod delegation_hierarchy;
 
 #[cfg(any(feature = "mock", test))]
 pub mod mock;

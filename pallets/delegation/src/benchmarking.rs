@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::Encode;
-use frame_benchmarking::{account, benchmarks};
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::dispatch::DispatchErrorWithPostInfo;
 use frame_system::RawOrigin;
 use sp_core::{offchain::KeyTypeId, sr25519};
@@ -59,9 +59,7 @@ fn parent_id_check<T: Config>(
 }
 
 /// add ctype to storage and root delegation
-fn add_root_delegation<T: Config>(
-	number: u32,
-) -> Result<(DelegationTriplet<T>, T::Hash), DispatchErrorWithPostInfo>
+fn add_root_delegation<T: Config>(number: u32) -> Result<(DelegationTriplet<T>, T::Hash), DispatchErrorWithPostInfo>
 where
 	T::AccountId: From<sr25519::Public>,
 	T::DelegationNodeId: From<T::Hash>,
@@ -72,11 +70,7 @@ where
 	let root_id = generate_delegation_id::<T>(number);
 
 	ctype::Pallet::<T>::add(RawOrigin::Signed(root_acc.clone()).into(), ctype_hash)?;
-	Pallet::<T>::create_root(
-		RawOrigin::Signed(root_acc.clone()).into(),
-		root_id,
-		ctype_hash,
-	)?;
+	Pallet::<T>::create_root(RawOrigin::Signed(root_acc.clone()).into(), root_id, ctype_hash)?;
 
 	Ok((
 		DelegationTriplet::<T> {
@@ -88,7 +82,8 @@ where
 	))
 }
 
-/// recursively adds children delegations to a parent delegation for each level until reaching leaf level
+/// recursively adds children delegations to a parent delegation for each level
+/// until reaching leaf level
 fn add_children<T: Config>(
 	root_id: T::DelegationNodeId,
 	parent_id: T::DelegationNodeId,
@@ -117,11 +112,9 @@ where
 		let parent = parent_id_check::<T>(root_id, parent_id);
 
 		// delegate signs delegation to parent
-		let hash: Vec<u8> =
-			Pallet::<T>::calculate_hash(&delegation_id, &root_id, &parent, &permissions).encode();
-		let sig =
-			sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &delegation_acc_public, hash.as_ref())
-				.ok_or("Error while building signature of delegation.")?;
+		let hash: Vec<u8> = Pallet::<T>::calculate_hash(&delegation_id, &root_id, &parent, &permissions).encode();
+		let sig = sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &delegation_acc_public, hash.as_ref())
+			.ok_or("Error while building signature of delegation.")?;
 
 		// add delegation from delegate to parent
 		let _ = Pallet::<T>::add_delegation(
@@ -135,11 +128,7 @@ where
 		)?;
 
 		// only return first leaf
-		first_leaf = first_leaf.or(Some((
-			delegation_acc_public,
-			delegation_acc_id,
-			delegation_id,
-		)));
+		first_leaf = first_leaf.or(Some((delegation_acc_public, delegation_acc_id, delegation_id)));
 	}
 
 	let (leaf_acc_public, leaf_acc_id, leaf_id) =
@@ -220,14 +209,14 @@ benchmarks! {
 	verify {
 		assert!(Roots::<T>::contains_key(root_id));
 		let root_delegation = Roots::<T>::get(root_id).ok_or("Missing root delegation")?;
-		assert_eq!(root_delegation.owner, root_acc_id.into().into());
-		assert_eq!(root_delegation.revoked, true);
+		assert_eq!(root_delegation.owner, root_acc_id.into());
+		assert!(root_delegation.revoked);
 
 		assert!(Delegations::<T>::contains_key(leaf_id));
 		let leaf_delegation = Delegations::<T>::get(leaf_id).ok_or("Missing leaf delegation")?;
 		assert_eq!(leaf_delegation.root_id, root_id);
 		assert_eq!(leaf_delegation.owner, T::AccountId::from(leaf_acc).into());
-		assert_eq!(leaf_delegation.revoked, true);
+		assert!(leaf_delegation.revoked);
 	}
 
 	add_delegation {
@@ -266,13 +255,13 @@ benchmarks! {
 	verify {
 		assert!(Delegations::<T>::contains_key(child_id));
 		let DelegationNode::<T> { revoked, .. } = Delegations::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
-		assert_eq!(revoked, true);
+		assert!(revoked);
 
 		assert!(Delegations::<T>::contains_key(leaf_id));
 		let leaf_delegation = Delegations::<T>::get(leaf_id).ok_or("Missing leaf delegation")?;
 		assert_eq!(leaf_delegation.root_id, root_id);
 		assert_eq!(leaf_delegation.owner, T::AccountId::from(leaf_acc).into());
-		assert_eq!(leaf_delegation.revoked, true);
+		assert!(leaf_delegation.revoked);
 	}
 	// TODO: Might want to add variant iterating over children instead of depth at some later point
 
@@ -282,11 +271,17 @@ benchmarks! {
 	revoke_delegation_leaf {
 		let r in 1 .. MAX_REVOCATIONS;
 		let (root_acc, _, _, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
-	}: revoke_delegation(RawOrigin::Signed(T::AccountId::from(root_acc.clone()).into()), leaf_id, r, r)
+	}: revoke_delegation(RawOrigin::Signed(T::AccountId::from(root_acc).into()), leaf_id, r, r)
 	verify {
 		assert!(Delegations::<T>::contains_key(leaf_id));
 		let DelegationNode::<T> { revoked, .. } = Delegations::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
-		assert_eq!(revoked, true);
+		assert!(revoked);
 	}
 	// TODO: Might want to add variant iterating over children instead of depth at some later point
+}
+
+impl_benchmark_test_suite! {
+	Pallet,
+	crate::mock::ExtBuilder::default().build_with_keystore(None),
+	crate::mock::Test
 }

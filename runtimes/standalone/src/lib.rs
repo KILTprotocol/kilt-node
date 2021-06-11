@@ -329,6 +329,7 @@ impl pallet_sudo::Config for Runtime {
 impl attestation::Config for Runtime {
 	type EnsureOrigin = EnsureSigned<<Self as delegation::Config>::DelegationEntityId>;
 	type Event = Event;
+	type WeightInfo = ();
 }
 
 parameter_types! {
@@ -679,7 +680,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, did, Did);
 			add_benchmark!(params, batches, ctype, Ctype);
 			add_benchmark!(params, batches, delegation, Delegation);
-			// add_benchmark!(params, batches, attestation, Attestation);
+			add_benchmark!(params, batches, attestation, Attestation);
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
 			Ok(batches)

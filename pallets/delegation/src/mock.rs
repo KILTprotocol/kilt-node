@@ -21,8 +21,8 @@
 use codec::Decode;
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use frame_system::EnsureSigned;
-use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_core::{ed25519, sr25519, Pair};
+use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
