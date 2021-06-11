@@ -164,8 +164,7 @@ mod types;
 
 use frame_support::pallet;
 
-use crate::default_weights::WeightInfo;
-pub use crate::pallet::*;
+pub use crate::{default_weights::WeightInfo, pallet::*};
 
 #[pallet]
 pub mod pallet {
@@ -240,10 +239,6 @@ pub mod pallet {
 		/// Number of rounds a collator has to stay active after submitting a
 		/// request to leave the set of collator candidates.
 		type ExitQueueDelay: Get<u32>;
-		/// Maximum number of possible collator candidate exits per round.
-		/// Requires the collators to have submitted their request to leave the
-		/// set of collator candidates in advance.
-		type MaxExitsPerRound: Get<u32>;
 		/// Minimum number of collators selected from the set of candidates at
 		/// every validation round.
 		type MinSelectedCandidates: Get<u32>;
@@ -2019,11 +2014,6 @@ pub mod pallet {
 
 		/// Prepare unstaking without checking for exceeding the unstake request
 		/// limit. Same as `prep_unstake` but without checking for errors.
-		///
-		/// That way, we defend against a stagnating exit queue if all first
-		/// `MaxExitsPerRound` candidates have reached their maximum unstake
-		/// limit such that the queue would never shrink in case we executed
-		/// `prep_unstake` instead of `prep_unstake_exit_queue`.
 		///
 		/// NOTE: Should only be called in `execute_leave_candidates`!
 		///

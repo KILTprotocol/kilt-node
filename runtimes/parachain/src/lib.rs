@@ -34,7 +34,10 @@ use frame_system::{
 	EnsureOneOf, EnsureRoot, EnsureSigned,
 };
 use kilt_primitives::{
-	constants::{DAYS, DOLLARS, MILLICENTS, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
+	constants::{
+		AVERAGE_ON_INITIALIZE_RATIO, DAYS, KILT, MAXIMUM_BLOCK_WEIGHT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT,
+		NORMAL_DISPATCH_RATIO, SLOT_DURATION,
+	},
 	AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Hash, Header, Index, Signature,
 };
 pub use parachain_staking::{InflationInfo, RewardRate, StakingInfo};
@@ -129,15 +132,6 @@ pub fn native_version() -> NativeVersion {
 	}
 }
 
-/// We assume that ~10% of the block weight is consumed by `on_initalize`
-/// handlers. This is used to limit the maximal weight of a single extrinsic.
-const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
-/// We allow `Normal` extrinsics to fill up the block up to 75%, the rest can be
-/// used by  Operational  extrinsics.
-const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
-/// We allow for 2 seconds of compute with a 6 second average block time.
-const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
-
 // Pallet accounts of runtime
 parameter_types! {
 	pub const TreasuryPalletId: PalletId = PalletId(*b"kilt/tsy");
@@ -225,7 +219,7 @@ impl pallet_timestamp::Config for Runtime {
 }
 
 parameter_types! {
-	pub const ExistentialDeposit: u128 = 10 * MILLI_KILT;
+	pub const ExistentialDeposit: u128 = 100 * MILLI_KILT;
 	pub const TransactionByteFee: u128 = 1;
 	pub const MaxLocks: u32 = 50;
 }
@@ -263,7 +257,6 @@ impl pallet_sudo::Config for Runtime {
 }
 
 parameter_types! {
-	pub const SelfParaId: u32 = 12623;
 	pub const ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT / 4;
 	pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT / 4;
 }
@@ -305,7 +298,7 @@ parameter_types! {
 impl pallet_session::Config for Runtime {
 	type Event = Event;
 	type ValidatorId = AccountId;
-	type ValidatorIdOf = ();
+	type ValidatorIdOf = ConvertInto;
 	type ShouldEndSession = ParachainStaking;
 	type NextSessionRotation = ParachainStaking;
 	type SessionManager = ParachainStaking;
@@ -325,19 +318,19 @@ impl pallet_vesting::Config for Runtime {
 	type BlockNumberToBalance = ConvertInto;
 	// disable vested transfers by setting min amount to max balance
 	type MinVestedTransfer = MinVestedTransfer;
-	type WeightInfo = pallet_vesting::weights::SubstrateWeight<Runtime>;
+	type WeightInfo = ();
 }
 
 parameter_types! {
-	pub const MaxClaims: u32 = 300;
-	pub const UsableBalance: Balance = DOLLARS;
+	pub const MaxClaims: u32 = 50;
+	pub const UsableBalance: Balance = KILT;
 }
 
 impl kilt_launch::Config for Runtime {
 	type Event = Event;
 	type MaxClaims = MaxClaims;
 	type UsableBalance = UsableBalance;
-	type WeightInfo = kilt_launch::default_weights::SubstrateWeight<Runtime>;
+	type WeightInfo = ();
 }
 
 parameter_types! {
@@ -385,11 +378,11 @@ parameter_types! {
 	pub const LaunchPeriod: BlockNumber = LAUNCH_PERIOD;
 	pub const VotingPeriod: BlockNumber = VOTING_PERIOD;
 	pub const FastTrackVotingPeriod: BlockNumber = FAST_TRACK_VOTING_PERIOD;
-	pub const MinimumDeposit: Balance = DOLLARS;
+	pub const MinimumDeposit: Balance = KILT;
 	pub const EnactmentPeriod: BlockNumber = ENACTMENT_PERIOD;
 	pub const CooloffPeriod: BlockNumber = COOLOFF_PERIOD;
 	// One cent: $10,000 / MB
-	pub const PreimageByteDeposit: Balance = 10 * MILLICENTS;
+	pub const PreimageByteDeposit: Balance = 10 * MILLI_KILT;
 	pub const InstantAllowed: bool = true;
 	pub const MaxVotes: u32 = 100;
 	pub const MaxProposals: u32 = 100;
@@ -455,7 +448,7 @@ pub const SPEND_PERIOD: BlockNumber = 6 * DAYS;
 
 parameter_types! {
 	pub const ProposalBond: Permill = Permill::from_percent(5);
-	pub const ProposalBondMinimum: Balance = 20 * DOLLARS; // TODO: how much?
+	pub const ProposalBondMinimum: Balance = 20 * KILT; // TODO: how much?
 	pub const SpendPeriod: BlockNumber = SPEND_PERIOD;
 	pub const Burn: Permill = Permill::zero();
 	pub const MaxApprovals: u32 = 100;
@@ -501,18 +494,18 @@ const CHALLENGE_PERIOD: BlockNumber = 7 * MINUTES;
 const CHALLENGE_PERIOD: BlockNumber = 7 * DAYS;
 
 parameter_types! {
-	pub const CandidateDeposit: Balance = 10 * DOLLARS;
-	pub const WrongSideDeduction: Balance = 2 * DOLLARS;
+	pub const CandidateDeposit: Balance = 10 * KILT;
+	pub const WrongSideDeduction: Balance = 2 * KILT;
 	pub const MaxStrikes: u32 = 10;
 	pub const RotationPeriod: BlockNumber = ROTATION_PERIOD;
-	pub const PeriodSpend: Balance = 500 * DOLLARS;
+	pub const PeriodSpend: Balance = 500 * KILT;
 	pub const MaxLockDuration: BlockNumber = 36 * 30 * DAYS;
 	pub const ChallengePeriod: BlockNumber = CHALLENGE_PERIOD;
 	pub const MaxCandidateIntake: u32 = 1;
 }
 
 pub const fn deposit(items: u32, bytes: u32) -> Balance {
-	items as Balance * 20 * DOLLARS + (bytes as Balance) * 100 * MILLICENTS
+	items as Balance * 20 * KILT + (bytes as Balance) * 100 * MILLI_KILT
 }
 
 #[cfg(feature = "fast-gov")]
@@ -521,7 +514,7 @@ pub const TERM_DURATION: BlockNumber = 15 * MINUTES;
 pub const TERM_DURATION: BlockNumber = DAYS;
 
 parameter_types! {
-	pub const CandidacyBond: Balance = 2 * DOLLARS;
+	pub const CandidacyBond: Balance = 2 * KILT;
 	// 1 storage item created, key size is 32 bytes, value size is 16+16.
 	pub const VotingBondBase: Balance = deposit(1, 64);
 	// additional data per vote is 32 bytes (account id).
@@ -675,7 +668,7 @@ impl did::Config for Runtime {
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 	type MaxUrlLength = MaxUrlLength;
-	type WeightInfo = did::default_weights::SubstrateWeight<Runtime>;
+	type WeightInfo = ();
 }
 
 /// Minimum round length is 1 hour (600 * 6 second block times)
@@ -711,11 +704,8 @@ parameter_types! {
 	pub const DefaultBlocksPerRound: BlockNumber = DEFAULT_BLOCKS_PER_ROUND;
 	/// Unstaked balance can be unlocked after 7 days
 	pub const StakeDuration: BlockNumber = STAKE_DURATION;
-	/// Collator exit requests are delayed by 8 hours (4 rounds/sessions)
-	pub const ExitQueueDelay: u32 = 4;
-	/// Maximum number of processed collator exit requests per round is 5
-	/// Defends against exceeding PoV size limit in on_initialize
-	pub const MaxExitsPerRound: u32 = 5;
+	/// Collator exit requests are delayed by 4 (2 rounds/sessions)
+	pub const ExitQueueDelay: u32 = 2;
 	/// Minimum 16 collators selected per round, default at genesis and minimum forever after
 	pub const MinSelectedCandidates: u32 = MIN_COLLATORS;
 	/// Maximum 25 delegators per collator at launch, might be increased later
@@ -723,11 +713,11 @@ parameter_types! {
 	/// Maximum 1 collator per delegator at launch, will be increased later
 	pub const MaxCollatorsPerDelegator: u32 = 1;
 	/// Minimum stake required to be reserved to be a collator is 10_000
-	pub const MinCollatorStk: Balance = 10_000 * DOLLARS;
-	/// Max stake possible to be reserved to be collator candidate is 100_0000
-	pub const MaxCollatorCandidateStk: Balance = 200_000 * DOLLARS;
+	pub const MinCollatorStk: Balance = 10_000 * KILT;
+	/// Max stake possible to be reserved to be collator candidate is 200_000
+	pub const MaxCollatorCandidateStk: Balance = 200_000 * KILT;
 	/// Minimum stake required to be reserved to be a delegator is 1000
-	pub const MinDelegatorStk: Balance = 1000 * DOLLARS;
+	pub const MinDelegatorStk: Balance = 1000 * KILT;
 	/// Maximum number of collator candidates
 	pub const MaxCollatorCandidates: u32 = MAX_CANDIDATES;
 	/// Maximum number of concurrent requests to unlock unstaked balance
@@ -742,7 +732,6 @@ impl parachain_staking::Config for Runtime {
 	type DefaultBlocksPerRound = DefaultBlocksPerRound;
 	type StakeDuration = StakeDuration;
 	type ExitQueueDelay = ExitQueueDelay;
-	type MaxExitsPerRound = MaxExitsPerRound;
 	type MinSelectedCandidates = MinSelectedCandidates;
 	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
 	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;

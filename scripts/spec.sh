@@ -73,12 +73,6 @@ $TMP_DIR/kilt-parachain build-spec --runtime spiritnet --chain $SPIRITNET_JQ --d
 # #                               westend-kilt                                 #
 # #                                                                            #
 # ##############################################################################
-WESTEND_PLAIN=$TMP_DIR"kilt-westend.plain.json"
-WESTEND_JQ=$TMP_DIR"kilt-westend.json"
 WESTEND_OUTPUT=dev-specs/kilt-parachain/kilt-westend.json
 
-$TMP_DIR/kilt-parachain build-spec --chain spiritnet-dev --disable-default-bootnode >$WESTEND_PLAIN
-
-python3 scripts/westend_kilt.py $WESTEND_PLAIN $WESTEND_JQ
-
-$TMP_DIR/kilt-parachain build-spec --runtime spiritnet --chain $WESTEND_JQ --disable-default-bootnode --raw >$WESTEND_OUTPUT
+$TMP_DIR/kilt-parachain build-spec --chain westend-new --disable-default-bootnode --raw >$WESTEND_OUTPUT
