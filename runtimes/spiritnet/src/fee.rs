@@ -55,64 +55,19 @@ impl<T: frame_system::Config> WeightToFeePolynomial for WeightToFee<T> {
 	}
 }
 
-// TODO: Add test
-
 #[cfg(test)]
 mod tests {
 	use super::WeightToFee;
-	use crate::{BlockHashCount, SS58Prefix};
 	use frame_support::weights::WeightToFeePolynomial;
-	use kilt_primitives::{constants::KILT, AccountId, Balance, BlockNumber, Hash, Index};
+	use kilt_primitives::constants::KILT;
 	use pallet_balances::WeightInfo;
-	use sp_runtime::{
-		testing::Header,
-		traits::{BlakeTwo256, IdentityLookup},
-	};
-
-	type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
-	type Block = frame_system::mocking::MockBlock<Test>;
-
-	// Configure a mock runtime to test the pallet.
-	frame_support::construct_runtime!(
-		pub enum Test where
-			Block = Block,
-			NodeBlock = Block,
-			UncheckedExtrinsic = UncheckedExtrinsic,
-		{
-			System: frame_system::{Pallet, Call, Config, Storage, Event<T>}
-		}
-	);
-
-	impl frame_system::Config for Test {
-		type BaseCallFilter = ();
-		type BlockWeights = ();
-		type BlockLength = ();
-		type DbWeight = ();
-		type Origin = Origin;
-		type Call = Call;
-		type Index = Index;
-		type BlockNumber = BlockNumber;
-		type Hash = Hash;
-		type Hashing = BlakeTwo256;
-		type AccountId = AccountId;
-		type Lookup = IdentityLookup<Self::AccountId>;
-		type Header = Header;
-		type Event = Event;
-		type BlockHashCount = BlockHashCount;
-		type Version = ();
-		type PalletInfo = PalletInfo;
-		type AccountData = pallet_balances::AccountData<Balance>;
-		type OnNewAccount = ();
-		type OnKilledAccount = ();
-		type SystemWeightInfo = ();
-		type SS58Prefix = SS58Prefix;
-		type OnSetCode = ();
-	}
 
 	#[test]
-	fn transaction_fee_is_correct() {
+	fn transaction_fee_is_correct_runtime() {
 		assert_eq!(
-			WeightToFee::<Test>::calc(&crate::weights::pallet_balances::WeightInfo::<Test>::transfer()),
+			WeightToFee::<crate::Runtime>::calc(
+				&crate::weights::pallet_balances::WeightInfo::<crate::Runtime>::transfer()
+			),
 			KILT / 100
 		);
 	}
