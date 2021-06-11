@@ -59,7 +59,7 @@ benchmarks! {
 		// attest with leaf account
 		Pallet::<T>::add(RawOrigin::Signed(delegate_acc.clone()).into(), claim_hash, ctype_hash, Some(delegation_id))?;
 		// revoke with root account, s.t. delegation tree needs to be traversed
-	}: _(RawOrigin::Signed(root_acc.clone()), claim_hash, d + 1)
+	}: _(RawOrigin::Signed(root_acc.clone()), claim_hash, d)
 	verify {
 		assert!(Attestations::<T>::contains_key(claim_hash));
 		assert_eq!(Attestations::<T>::get(claim_hash), Some(AttestationDetails {

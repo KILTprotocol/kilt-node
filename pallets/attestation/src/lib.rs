@@ -239,7 +239,10 @@ pub mod pallet {
 			// the original attester
 			if attestation.attester != revoker {
 				let delegation_id = attestation.delegation_id.ok_or(Error::<T>::UnauthorizedRevocation)?;
-				let max_parent_checks = max_parent_checks.min(T::MaxParentChecks::get());
+				ensure!(
+					max_parent_checks <= T::MaxParentChecks::get(),
+					delegation::Error::<T>::MaxParentChecksTooLarge
+				);
 				// Check whether the sender of the revocation controls the delegation node
 				// specified, and that its status has not been revoked
 				ensure!(

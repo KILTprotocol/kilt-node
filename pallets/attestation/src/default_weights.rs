@@ -61,14 +61,14 @@ pub trait WeightInfo {
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn add() -> Weight {
-		(40_416_000_u64)
+		(37_981_000_u64)
 			.saturating_add(T::DbWeight::get().reads(5_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	fn revoke(d: u32, ) -> Weight {
-		(25_220_000_u64)
-			// Standard Error: 49_000
-			.saturating_add((4_866_000_u64).saturating_mul(d as Weight))
+		(23_806_000_u64)
+			// Standard Error: 20_000
+			.saturating_add((4_670_000_u64).saturating_mul(d as Weight))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(d as Weight)))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
@@ -78,14 +78,14 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 // For backwards compatibility and tests
 impl WeightInfo for () {
 	fn add() -> Weight {
-		(40_416_000_u64)
+		(37_981_000_u64)
 			.saturating_add(RocksDbWeight::get().reads(5_u64))
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
 	}
 	fn revoke(d: u32, ) -> Weight {
-		(25_220_000_u64)
-			// Standard Error: 49_000
-			.saturating_add((4_866_000_u64).saturating_mul(d as Weight))
+		(23_806_000_u64)
+			// Standard Error: 20_000
+			.saturating_add((4_670_000_u64).saturating_mul(d as Weight))
 			.saturating_add(RocksDbWeight::get().reads(2_u64))
 			.saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(d as Weight)))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))

@@ -170,6 +170,10 @@ pub mod pallet {
 		/// Max number of delegation nodes revocation has been reached for the
 		/// operation.
 		ExceededRevocationBounds,
+		/// The max number of revocation exceeds the limit for the pallet.
+		MaxRevocationsTooLarge,
+		/// The max number of parent checks exceeds the limit for the pallet.
+		MaxParentChecksTooLarge,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
 	}
@@ -332,7 +336,10 @@ pub mod pallet {
 
 			ensure!(root.owner == invoker, Error::<T>::UnauthorizedRevocation);
 
-			let max_children = max_children.min(T::MaxRevocations::get());
+			ensure!(
+				max_children <= T::MaxRevocations::get(),
+				Error::<T>::MaxRevocationsTooLarge
+			);
 
 			let consumed_weight: Weight = if !root.revoked {
 				// Recursively revoke all children
@@ -389,14 +396,20 @@ pub mod pallet {
 				Error::<T>::DelegationNotFound
 			);
 
-			let max_parent_checks = max_parent_checks.min(T::MaxParentChecks::get());
+			ensure!(
+				max_parent_checks <= T::MaxParentChecks::get(),
+				Error::<T>::MaxParentChecksTooLarge
+			);
 
 			ensure!(
 				Self::is_delegating(&invoker, &delegation_id, max_parent_checks)?,
 				Error::<T>::UnauthorizedRevocation
 			);
 
-			let max_revocations = max_revocations.min(T::MaxRevocations::get());
+			ensure!(
+				max_revocations <= T::MaxRevocations::get(),
+				Error::<T>::MaxRevocationsTooLarge
+			);
 
 			// Revoke the delegation and recursively all of its children
 			Self::revoke(&delegation_id, &invoker, max_revocations)?;
