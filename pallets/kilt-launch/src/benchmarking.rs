@@ -26,13 +26,14 @@ use frame_support::{
 	traits::{Currency, Get},
 };
 use frame_system::{Pallet as System, RawOrigin};
+use kilt_primitives::{constants::KILT, Balance};
 use pallet_balances::Locks;
 use pallet_vesting::{Vesting, VestingInfo};
 use sp_runtime::traits::StaticLookup;
 use sp_std::convert::TryFrom;
 
 const SEED: u32 = 0;
-const AMOUNT: u32 = 10000;
+const AMOUNT: Balance = KILT;
 const PER_BLOCK: u32 = 100;
 const UNLOCK_BLOCK: u32 = 1337;
 
@@ -61,7 +62,12 @@ type GenesisSetup<T> = (
 /// Mock the Pallet's GenesisBuild and return pairs consisting of AccountId and
 /// LookupSource for the transfer account, `n` vesting addresses and `n` locking
 /// addresses.
-fn genesis_setup<T: Config>(n: u32) -> Result<GenesisSetup<T>, &'static str> {
+fn genesis_setup<T: Config>(n: u32) -> Result<GenesisSetup<T>, &'static str>
+where
+	Balance: Into<<T as pallet_balances::Config>::Balance>,
+	Balance:
+		Into<<<T as pallet_vesting::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance>,
+{
 	System::<T>::set_block_number(0u32.into());
 
 	// Setup transfer account
@@ -98,6 +104,8 @@ fn genesis_setup<T: Config>(n: u32) -> Result<GenesisSetup<T>, &'static str> {
 			},
 		);
 
+		assert_eq!(<pallet_balances::Pallet<T>>::total_balance(&vest_acc), AMOUNT.into());
+		assert_eq!(<pallet_balances::Pallet<T>>::total_balance(&lock_acc), AMOUNT.into());
 		acc.0.push((vest_acc, vest_lookup));
 		acc.1.push((lock_acc, lock_lookup));
 		acc
@@ -107,7 +115,7 @@ fn genesis_setup<T: Config>(n: u32) -> Result<GenesisSetup<T>, &'static str> {
 }
 
 benchmarks! {
-	where_clause { where T: core::fmt::Debug }
+	where_clause { where T: core::fmt::Debug, Balance: Into<<T as pallet_balances::Config>::Balance>, Balance: Into<<<T as pallet_vesting::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance>}
 
 	change_transfer_account {
 		let transfer_account: T::AccountId = account("transfer_new", 0, SEED);
@@ -223,7 +231,7 @@ benchmarks! {
 	}: migrate_multiple_genesis_accounts(RawOrigin::Signed(transfer), source_lookups.clone(), target_lookup)
 	verify {
 		assert_eq!(Vesting::<T>::get(&target), Some(VestingInfo::<BalanceOf<T>, T::BlockNumber> {
-			locked: (n * AMOUNT).into(),
+			locked: (n as u128 * AMOUNT).into(),
 			per_block: (n * PER_BLOCK).into(),
 			starting_block: T::BlockNumber::zero(),
 		}), "Vesting schedule not migrated");
@@ -243,7 +251,7 @@ benchmarks! {
 	verify {
 		assert_eq!(BalanceLocks::<T>::get(&target), Some(LockedBalance::<T> {
 			block: UNLOCK_BLOCK.into(),
-			amount: (n * AMOUNT).into(),
+			amount: (n as u128 * AMOUNT).into(),
 		}), "BalanceLock not migrated");
 		assert_eq!(Locks::<T>::get(&target).len(), 1, "Lock not set");
 	}

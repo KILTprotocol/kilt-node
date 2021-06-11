@@ -26,7 +26,7 @@ use kilt_parachain_runtime::{
 	WASM_BINARY,
 };
 use kilt_primitives::{
-	constants::{DOLLARS, MINUTES},
+	constants::{KILT, MINUTES},
 	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use sc_service::ChainType;
@@ -43,7 +43,7 @@ pub fn make_dev_spec(id: ParaId) -> Result<ChainSpec, String> {
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
 
 	Ok(ChainSpec::from_genesis(
-		"KILT Collator Local Testnet",
+		"KILT Local",
 		"kilt_parachain_local_testnet",
 		ChainType::Local,
 		move || {
@@ -119,13 +119,13 @@ pub fn make_staging_spec(id: ParaId) -> Result<ChainSpec, String> {
 						// TODO: Change before launch
 						hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].into(),
 						None,
-						10_000 * DOLLARS,
+						10_000 * KILT,
 					),
 					(
 						// TODO: Change before launch
 						hex!["b67fe6413ffe5cf91ae38a6475c37deea70a25c6c86b3dd17bb82d09efd9b350"].into(),
 						None,
-						10_000 * DOLLARS,
+						10_000 * KILT,
 					),
 				],
 				kilt_inflation_config(),
@@ -184,7 +184,7 @@ fn testnet_genesis(
 	type LockingPeriod = BlockNumber;
 
 	// vesting and locks as initially designed
-	let airdrop_accounts_json = &include_bytes!("../../res/genesis-testing/genesis-accounts.json")[..];
+	let airdrop_accounts_json = &include_bytes!("../../res/genesis/genesis-accounts.json")[..];
 	let airdrop_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
 		serde_json::from_slice(airdrop_accounts_json).expect("Could not read from genesis_accounts.json");
 
