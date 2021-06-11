@@ -78,6 +78,10 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		#[pallet::constant]
 		type MaxSignatureByteLength: Get<u16>;
+		#[pallet::constant]
+		type MaxRevocations: Get<u32>;
+		#[pallet::constant]
+		type MaxParentChecks: Get<u32>;
 		type WeightInfo: WeightInfo;
 	}
 
@@ -328,6 +332,8 @@ pub mod pallet {
 
 			ensure!(root.owner == invoker, Error::<T>::UnauthorizedRevocation);
 
+			let max_children = max_children.min(T::MaxRevocations::get());
+
 			let consumed_weight: Weight = if !root.revoked {
 				// Recursively revoke all children
 				let (_, post_weight) = Self::revoke_children(&root_id, &invoker, max_children)?;
@@ -368,8 +374,8 @@ pub mod pallet {
 		/// * max_revocations: the maximum number of nodes descending from this
 		///   one to revoke as a consequence of this node revocation
 		#[pallet::weight(
-			<T as Config>::WeightInfo::revoke_delegation_root_child(*max_revocations)
-				.max(<T as Config>::WeightInfo::revoke_delegation_leaf(*max_parent_checks)))]
+			<T as Config>::WeightInfo::revoke_delegation_root_child(*max_revocations, *max_parent_checks)
+				.max(<T as Config>::WeightInfo::revoke_delegation_leaf(*max_revocations, *max_parent_checks)))]
 		pub fn revoke_delegation(
 			origin: OriginFor<T>,
 			delegation_id: DelegationNodeIdOf<T>,
@@ -383,10 +389,14 @@ pub mod pallet {
 				Error::<T>::DelegationNotFound
 			);
 
+			let max_parent_checks = max_parent_checks.min(T::MaxParentChecks::get());
+
 			ensure!(
 				Self::is_delegating(&invoker, &delegation_id, max_parent_checks)?,
 				Error::<T>::UnauthorizedRevocation
 			);
+
+			let max_revocations = max_revocations.min(T::MaxRevocations::get());
 
 			// Revoke the delegation and recursively all of its children
 			Self::revoke(&delegation_id, &invoker, max_revocations)?;

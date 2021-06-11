@@ -25,7 +25,6 @@ use sp_std::num::NonZeroU32;
 
 use crate::*;
 
-const MAX_DEPTH: u32 = 10;
 const ONE_CHILD_PER_LEVEL: Option<NonZeroU32> = NonZeroU32::new(1);
 
 benchmarks! {
@@ -48,7 +47,7 @@ benchmarks! {
 	}
 
 	revoke {
-		let d in 1 .. MAX_DEPTH;
+		let d in 1 .. T::MaxParentChecks::get();
 
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();

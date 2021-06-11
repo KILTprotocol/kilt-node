@@ -99,6 +99,8 @@ impl ctype::Config for Test {
 
 parameter_types! {
 	pub const MaxSignatureByteLength: u16 = 64;
+	pub const MaxParentChecks: u32 = 5;
+	pub const MaxRevocations: u32 = 5;
 }
 
 impl Config for Test {
@@ -108,6 +110,8 @@ impl Config for Test {
 	type EnsureOrigin = EnsureSigned<TestDelegatorId>;
 	type Event = ();
 	type MaxSignatureByteLength = MaxSignatureByteLength;
+	type MaxParentChecks = MaxParentChecks;
+	type MaxRevocations = MaxRevocations;
 	type WeightInfo = ();
 }
 

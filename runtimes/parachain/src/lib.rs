@@ -638,6 +638,8 @@ impl attestation::Config for Runtime {
 
 parameter_types! {
 	pub const MaxSignatureByteLength: u16 = 64;
+	pub const MaxParentChecks: u32 = 5;
+	pub const MaxRevocations: u32 = 5;
 }
 
 impl delegation::Config for Runtime {
@@ -647,6 +649,8 @@ impl delegation::Config for Runtime {
 	type EnsureOrigin = EnsureSigned<Self::DelegationEntityId>;
 	type Event = Event;
 	type MaxSignatureByteLength = MaxSignatureByteLength;
+	type MaxParentChecks = MaxParentChecks;
+	type MaxRevocations = MaxRevocations;
 	type WeightInfo = ();
 }
 

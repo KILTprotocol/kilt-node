@@ -28,7 +28,6 @@ use sp_std::{num::NonZeroU32, vec::Vec};
 use crate::*;
 
 const SEED: u32 = 0;
-const MAX_REVOCATIONS: u32 = 5;
 const ONE_CHILD_PER_LEVEL: Option<NonZeroU32> = NonZeroU32::new(1);
 
 struct DelegationTriplet<T: Config> {
@@ -202,7 +201,7 @@ benchmarks! {
 	}
 
 	revoke_root {
-		let r in 1 .. MAX_REVOCATIONS;
+		let r in 1 .. T::MaxRevocations::get();
 		let (root_acc, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
 		let root_acc_id: T::AccountId = root_acc.into();
 	}: _(RawOrigin::Signed(root_acc_id.clone()), root_id, r)
@@ -246,12 +245,13 @@ benchmarks! {
 	// because all of its children have to be revoked
 	// complexitiy: O(h * c) with h = height of the delegation tree, c = max number of children in a level
 	revoke_delegation_root_child {
-		let r in 1 .. MAX_REVOCATIONS;
+		let r in 1 .. T::MaxRevocations::get();
+		let c in 1 .. T::MaxParentChecks::get();
 		let (_, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
 		let children: Vec<T::DelegationNodeId> = Children::<T>::get(root_id).unwrap_or_default();
 		let child_id: T::DelegationNodeId = *children.get(0).ok_or("Root should have children")?;
 		let child_delegation = Delegations::<T>::get(child_id).ok_or("Child of root should have delegation id")?;
-	}: revoke_delegation(RawOrigin::Signed(child_delegation.owner.clone()), child_id, r, r)
+	}: revoke_delegation(RawOrigin::Signed(child_delegation.owner.clone()), child_id, c, r)
 	verify {
 		assert!(Delegations::<T>::contains_key(child_id));
 		let DelegationNode::<T> { revoked, .. } = Delegations::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
@@ -269,9 +269,10 @@ benchmarks! {
 	// because `is_delegating` has to traverse up to the root
 	// complexitiy: O(h) with h = height of the delegation tree
 	revoke_delegation_leaf {
-		let r in 1 .. MAX_REVOCATIONS;
-		let (root_acc, _, _, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
-	}: revoke_delegation(RawOrigin::Signed(T::AccountId::from(root_acc).into()), leaf_id, r, r)
+		let r in 1 .. T::MaxRevocations::get();
+		let c in 1 .. T::MaxParentChecks::get();
+		let (root_acc, _, _, leaf_id) = setup_delegations::<T>(c, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
+	}: revoke_delegation(RawOrigin::Signed(T::AccountId::from(root_acc).into()), leaf_id, c, r)
 	verify {
 		assert!(Delegations::<T>::contains_key(leaf_id));
 		let DelegationNode::<T> { revoked, .. } = Delegations::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;

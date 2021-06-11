@@ -38,6 +38,8 @@ use sp_std::vec::Vec;
 pub use crate::attestations::*;
 pub use pallet::*;
 
+use frame_support::traits::Get;
+
 use crate::default_weights::WeightInfo;
 
 #[frame_support::pallet]
@@ -237,6 +239,7 @@ pub mod pallet {
 			// the original attester
 			if attestation.attester != revoker {
 				let delegation_id = attestation.delegation_id.ok_or(Error::<T>::UnauthorizedRevocation)?;
+				let max_parent_checks = max_parent_checks.min(T::MaxParentChecks::get());
 				// Check whether the sender of the revocation controls the delegation node
 				// specified, and that its status has not been revoked
 				ensure!(

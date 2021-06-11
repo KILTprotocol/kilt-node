@@ -20,22 +20,28 @@
 //!
 //! THIS FILE WAS AUTO-GENERATED USING THE SUBSTRATE BENCHMARK CLI VERSION 3.0.0
 //! DATE: 2021-06-11, STEPS: {{cmd.steps}}\, REPEAT: {{cmd.repeat}}\, LOW RANGE: {{cmd.lowest_range_values}}\, HIGH RANGE: {{cmd.highest_range_values}}\
-//! EXECUTION: Some(Wasm), WASM-EXECUTION: Interpreted, CHAIN: Some("dev"), DB CACHE: 128
+//! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("dev"), DB CACHE: 128
 
 // Executed Command:
-// target/release/mashnet-node
+// ./kilt-parachain
 // benchmark
-// --chain=dev
-// --steps=1
-// --repeat=20
-// --pallet=attestation
+// --chain
+// dev
+// --execution
+// wasm
+// --wasm-execution
+// compiled
+// --pallet
+// attestation
 // --extrinsic
 // *
-// --execution=wasm
-// --wasm-execution=interpreted-i-know-what-i-do
+// --steps
+// 1
+// --repeat
+// 10
 // --heap-pages=4096
-// --output=./pallets/attestation/src/default_weights.rs
-// --template=./.maintain/weight-template.hbs
+// --output=../../pallets/attestation/src/default_weights.rs
+// --template=../../.maintain/weight-template.hbs
 
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
@@ -48,21 +54,21 @@ use sp_std::marker::PhantomData;
 /// Weight functions needed for attestation.
 pub trait WeightInfo {
 	fn add() -> Weight;
-	fn revoke(d: u32) -> Weight;
+	fn revoke(d: u32, ) -> Weight;
 }
 
 /// Weights for attestation using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn add() -> Weight {
-		(144_902_000_u64)
+		(40_416_000_u64)
 			.saturating_add(T::DbWeight::get().reads(5_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	fn revoke(d: u32, ) -> Weight {
-		(93_811_000_u64)
-			// Standard Error: 155_000
-			.saturating_add((29_694_000_u64).saturating_mul(d as Weight))
+		(25_220_000_u64)
+			// Standard Error: 49_000
+			.saturating_add((4_866_000_u64).saturating_mul(d as Weight))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(d as Weight)))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
@@ -72,14 +78,14 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 // For backwards compatibility and tests
 impl WeightInfo for () {
 	fn add() -> Weight {
-		(144_902_000_u64)
+		(40_416_000_u64)
 			.saturating_add(RocksDbWeight::get().reads(5_u64))
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
 	}
 	fn revoke(d: u32, ) -> Weight {
-		(93_811_000_u64)
-			// Standard Error: 155_000
-			.saturating_add((29_694_000_u64).saturating_mul(d as Weight))
+		(25_220_000_u64)
+			// Standard Error: 49_000
+			.saturating_add((4_866_000_u64).saturating_mul(d as Weight))
 			.saturating_add(RocksDbWeight::get().reads(2_u64))
 			.saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(d as Weight)))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
