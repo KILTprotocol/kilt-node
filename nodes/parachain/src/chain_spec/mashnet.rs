@@ -43,7 +43,7 @@ pub fn make_dev_spec(id: ParaId) -> Result<ChainSpec, String> {
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
 
 	Ok(ChainSpec::from_genesis(
-		"KILT Collator Local Testnet",
+		"KILT Local",
 		"kilt_parachain_local_testnet",
 		ChainType::Local,
 		move || {
