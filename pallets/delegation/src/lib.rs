@@ -22,10 +22,14 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
+pub mod default_weights;
 pub mod delegation_hierarchy;
 
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
+
+#[cfg(feature = "runtime-benchmarks")]
+pub mod benchmarking;
 
 #[cfg(test)]
 mod tests;
@@ -36,6 +40,8 @@ pub use pallet::*;
 use frame_support::{ensure, pallet_prelude::Weight, traits::Get};
 use sp_runtime::{traits::Hash, DispatchError};
 use sp_std::vec::Vec;
+
+use crate::default_weights::WeightInfo;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -72,6 +78,11 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		#[pallet::constant]
 		type MaxSignatureByteLength: Get<u16>;
+		#[pallet::constant]
+		type MaxRevocations: Get<u32>;
+		#[pallet::constant]
+		type MaxParentChecks: Get<u32>;
+		type WeightInfo: WeightInfo;
 	}
 
 	#[pallet::pallet]
@@ -159,6 +170,10 @@ pub mod pallet {
 		/// Max number of delegation nodes revocation has been reached for the
 		/// operation.
 		ExceededRevocationBounds,
+		/// The max number of revocation exceeds the limit for the pallet.
+		MaxRevocationsTooLarge,
+		/// The max number of parent checks exceeds the limit for the pallet.
+		MaxParentChecksTooLarge,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
 	}
@@ -173,7 +188,7 @@ pub mod pallet {
 		/// * origin: the identifier of the delegation creator
 		/// * root_id: the ID of the root node. It has to be unique
 		/// * ctype_hash: the CTYPE hash that delegates can use for attestations
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config>::WeightInfo::create_root())]
 		pub fn create_root(
 			origin: OriginFor<T>,
 			root_id: DelegationNodeIdOf<T>,
@@ -215,7 +230,7 @@ pub mod pallet {
 		///   is allowed to perform
 		/// * delegate_signature: the delegate's signature over the new
 		///   delegation ID, root ID, parent ID, and permission flags
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config>::WeightInfo::add_delegation())]
 		pub fn add_delegation(
 			origin: OriginFor<T>,
 			delegation_id: DelegationNodeIdOf<T>,
@@ -309,7 +324,7 @@ pub mod pallet {
 		/// * root_id: the ID of the delegation root to revoke
 		/// * max_children: the maximum number of nodes descending from the root
 		///   to revoke as a consequence of the root revocation
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config>::WeightInfo::revoke_root(*max_children))]
 		pub fn revoke_root(
 			origin: OriginFor<T>,
 			root_id: DelegationNodeIdOf<T>,
@@ -320,6 +335,11 @@ pub mod pallet {
 			let mut root = <Roots<T>>::get(&root_id).ok_or(Error::<T>::RootNotFound)?;
 
 			ensure!(root.owner == invoker, Error::<T>::UnauthorizedRevocation);
+
+			ensure!(
+				max_children <= T::MaxRevocations::get(),
+				Error::<T>::MaxRevocationsTooLarge
+			);
 
 			let consumed_weight: Weight = if !root.revoked {
 				// Recursively revoke all children
@@ -360,7 +380,9 @@ pub mod pallet {
 		///   max number of parents is reached
 		/// * max_revocations: the maximum number of nodes descending from this
 		///   one to revoke as a consequence of this node revocation
-		#[pallet::weight(0)]
+		#[pallet::weight(
+			<T as Config>::WeightInfo::revoke_delegation_root_child(*max_revocations, *max_parent_checks)
+				.max(<T as Config>::WeightInfo::revoke_delegation_leaf(*max_revocations, *max_parent_checks)))]
 		pub fn revoke_delegation(
 			origin: OriginFor<T>,
 			delegation_id: DelegationNodeIdOf<T>,
@@ -375,8 +397,18 @@ pub mod pallet {
 			);
 
 			ensure!(
+				max_parent_checks <= T::MaxParentChecks::get(),
+				Error::<T>::MaxParentChecksTooLarge
+			);
+
+			ensure!(
 				Self::is_delegating(&invoker, &delegation_id, max_parent_checks)?,
 				Error::<T>::UnauthorizedRevocation
+			);
+
+			ensure!(
+				max_revocations <= T::MaxRevocations::get(),
+				Error::<T>::MaxRevocationsTooLarge
 			);
 
 			// Revoke the delegation and recursively all of its children
