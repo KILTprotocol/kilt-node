@@ -164,8 +164,7 @@ mod types;
 
 use frame_support::pallet;
 
-use crate::default_weights::WeightInfo;
-pub use crate::pallet::*;
+pub use crate::{default_weights::WeightInfo, pallet::*};
 
 #[pallet]
 pub mod pallet {
