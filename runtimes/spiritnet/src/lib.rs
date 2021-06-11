@@ -157,6 +157,7 @@ impl Filter<Call> for BaseFilter {
 			Call::Vesting(pallet_vesting::Call::vested_transfer(..))
 				| Call::KiltLaunch(kilt_launch::Call::locked_transfer(..))
 				| Call::Balances(pallet_balances::Call::transfer(..))
+				| Call::Balances(pallet_balances::Call::transfer_keep_alive(..))
 		)
 	}
 }
