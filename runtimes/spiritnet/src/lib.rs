@@ -65,6 +65,7 @@ pub use sp_runtime::{Perbill, Permill};
 
 pub use parachain_staking::{InflationInfo, RewardRate, StakingInfo};
 
+mod fee;
 mod weights;
 
 #[cfg(any(feature = "std", test))]
@@ -245,7 +246,7 @@ impl pallet_balances::Config for Runtime {
 impl pallet_transaction_payment::Config for Runtime {
 	type OnChargeTransaction = pallet_transaction_payment::CurrencyAdapter<Balances, ()>;
 	type TransactionByteFee = TransactionByteFee;
-	type WeightToFee = IdentityFee<Balance>;
+	type WeightToFee = fee::WeightToFee<Runtime>;
 	type FeeMultiplierUpdate = ();
 }
 
