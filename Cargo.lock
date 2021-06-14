@@ -4492,6 +4492,7 @@ dependencies = [
  "kilt-primitives",
  "log",
  "mashnet-node-runtime",
+ "node-executor",
  "pallet-transaction-payment-rpc",
  "sc-basic-authorship",
  "sc-cli",
@@ -4523,6 +4524,7 @@ dependencies = [
  "structopt",
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
+ "try-runtime-cli",
  "vergen",
 ]
 

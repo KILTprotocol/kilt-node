@@ -52,6 +52,10 @@ sp-runtime = {git = "https://github.com/paritytech/substrate", branch = "polkado
 sp-timestamp = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.4"}
 sp-transaction-pool = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.4"}
 
+# Optional dependencies
+try-runtime-cli = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.4", optional = true}
+node-executor = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.4", optional = true}
+
 mashnet-node-runtime = {path = "../../runtimes/standalone"}
 kilt-primitives = {path = "../../primitives"}
 
@@ -59,4 +63,9 @@ kilt-primitives = {path = "../../primitives"}
 default = []
 runtime-benchmarks = [
   "mashnet-node-runtime/runtime-benchmarks",
+]
+try-runtime = [
+  "try-runtime-cli",
+  "node-executor",
+  "mashnet-node-runtime/try-runtime"
 ]

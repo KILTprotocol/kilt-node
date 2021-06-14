@@ -119,5 +119,7 @@ runtime-benchmarks = [
 ]
 try-runtime = [
   "try-runtime-cli",
-  "node-executor"
+  "node-executor",
+  "kilt-parachain-runtime/try-runtime",
+  "spiritnet-runtime/try-runtime"
 ]
