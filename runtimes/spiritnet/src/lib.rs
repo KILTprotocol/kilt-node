@@ -100,7 +100,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("kilt-spiritnet"),
 	impl_name: create_runtime_str!("kilt-spiritnet"),
 	authoring_version: 1,
-	spec_version: 10,
+	spec_version: 12,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -157,6 +157,7 @@ impl Filter<Call> for BaseFilter {
 			Call::Vesting(pallet_vesting::Call::vested_transfer(..))
 				| Call::KiltLaunch(kilt_launch::Call::locked_transfer(..))
 				| Call::Balances(pallet_balances::Call::transfer(..))
+				| Call::Balances(pallet_balances::Call::transfer_keep_alive(..))
 		)
 	}
 }

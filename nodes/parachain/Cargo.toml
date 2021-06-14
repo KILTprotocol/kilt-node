@@ -87,6 +87,10 @@ polkadot-test-service = {git = "https://github.com/paritytech/polkadot", branch 
 frame-benchmarking = {git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.4"}
 frame-benchmarking-cli = {git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.4"}
 
+# Optional dependencies
+try-runtime-cli = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.4", optional = true}
+node-executor = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.4", optional = true}
+
 [build-dependencies]
 substrate-build-script-utils = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.4"}
 
@@ -112,4 +116,8 @@ fast-gov = ["kilt-parachain-runtime/fast-gov"]
 runtime-benchmarks = [
   "kilt-parachain-runtime/runtime-benchmarks",
   "spiritnet-runtime/runtime-benchmarks",
+]
+try-runtime = [
+  "try-runtime-cli",
+  "node-executor"
 ]
