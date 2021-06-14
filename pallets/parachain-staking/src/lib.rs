@@ -348,10 +348,8 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(crate) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// A new staking round has started.
-		/// \[round number, total stake of
-		/// selected collators, total stake of delegators for the selected
-		/// collators\]
-		NewRound(T::BlockNumber, SessionIndex, BalanceOf<T>, BalanceOf<T>),
+		/// \[block number, round number\]
+		NewRound(T::BlockNumber, SessionIndex),
 		/// A new account has joined the set of collator candidates.
 		/// \[account, amount staked by the new candidate, new total stake of
 		/// collator candidates\]
@@ -376,10 +374,8 @@ pub mod pallet {
 		/// account\]
 		CollatorCanceledExit(T::AccountId),
 		/// An account has left the set of collator candidates.
-		/// \[account, amount of funds un-staked, new total stake of collator
-		/// candidates, new total stake of delegators for the remaining
-		/// collators\]
-		CollatorLeft(T::AccountId, BalanceOf<T>, BalanceOf<T>, BalanceOf<T>),
+		/// \[account, amount of funds un-staked\]
+		CollatorLeft(T::AccountId, BalanceOf<T>),
 		/// A delegator has increased the amount of funds at stake for a
 		/// collator. \[delegator's account, collator's account, previous
 		/// delegation stake, new delegation stake\]
@@ -440,19 +436,8 @@ pub mod pallet {
 				// start next round
 				<Round<T>>::put(round);
 
-				// TODO: Check whether we want to remove the storage read if we reduce the data
-				// provided by Event::NewRound
-				let TotalStake {
-					collators: collator_staked,
-					delegators: delegator_staked,
-				} = <Total<T>>::get();
-				Self::deposit_event(Event::NewRound(
-					round.first,
-					round.current,
-					collator_staked,
-					delegator_staked,
-				));
-				T::DbWeight::get().reads_writes(2, 1)
+				Self::deposit_event(Event::NewRound(round.first, round.current));
+				T::DbWeight::get().reads_writes(1, 1)
 			} else {
 				T::DbWeight::get().reads(1)
 			}
@@ -585,19 +570,14 @@ pub mod pallet {
 			<MaxSelectedCandidates<T>>::put(T::MinSelectedCandidates::get());
 
 			// Choose top MaxSelectedCandidates collator candidates
-			let (_, _, collator_staked, delegator_staked) = <Pallet<T>>::select_top_candidates();
+			<Pallet<T>>::select_top_candidates();
 
 			// Start Round 0 at Block 0
 			let round: RoundInfo<T::BlockNumber> = RoundInfo::new(0u32, 0u32.into(), T::DefaultBlocksPerRound::get());
 			<Round<T>>::put(round);
 			// Snapshot total stake
 
-			Pallet::<T>::deposit_event(Event::NewRound(
-				T::BlockNumber::zero(),
-				0u32,
-				collator_staked,
-				delegator_staked,
-			));
+			Pallet::<T>::deposit_event(Event::NewRound(T::BlockNumber::zero(), 0u32));
 		}
 	}
 
@@ -775,20 +755,11 @@ pub mod pallet {
 			Self::increase_lock(&acc, stake, BalanceOf::<T>::zero())?;
 
 			let candidate = Collator::new(acc.clone(), stake);
-			let TotalStake {
-				collators: total_collators,
-				delegators: total_delegators,
-			} = <Total<T>>::get();
-			let total_collators = total_collators.saturating_add(stake);
-			<Total<T>>::put(TotalStake {
-				collators: total_collators,
-				delegators: total_delegators,
-			});
 			<CollatorState<T>>::insert(&acc, candidate);
 			<CandidatePool<T>>::put(candidates);
 
 			// update candidates for next round
-			let (num_collators, num_delegators, _, _) = Self::select_top_candidates();
+			let (num_collators, num_delegators, total_collators, _) = Self::select_top_candidates();
 
 			Self::deposit_event(Event::JoinedCollatorCandidates(acc, stake, total_collators));
 			Ok(Some(<T as pallet::Config>::WeightInfo::join_candidates(
@@ -925,26 +896,8 @@ pub mod pallet {
 			// prepare unstaking of collator candidate
 			Self::prep_unstake_exit_queue(&state.id, state.stake);
 
-			// update total stake (cannot mutate because data is needed for event)
-			let TotalStake {
-				collators: total_collators,
-				delegators: total_delegators,
-			} = <Total<T>>::get();
-			let total_collators = total_collators.saturating_sub(state.stake);
-			// safe because stake <= total at all times
-			let total_delegators = total_delegators.saturating_sub(state.total - state.stake);
-			<Total<T>>::put(TotalStake {
-				collators: total_collators,
-				delegators: total_delegators,
-			});
-
 			<CollatorState<T>>::remove(&collator);
-			Self::deposit_event(Event::CollatorLeft(
-				collator,
-				state.total,
-				total_collators,
-				total_delegators,
-			));
+			Self::deposit_event(Event::CollatorLeft(collator, state.total));
 
 			Ok(Some(<T as pallet::Config>::WeightInfo::execute_leave_candidates(
 				T::MaxCollatorCandidates::get(),
@@ -1063,9 +1016,6 @@ pub mod pallet {
 				Self::update(collator.clone(), state.total);
 			}
 			<CollatorState<T>>::insert(&collator, state);
-			Total::<T>::mutate(|old| {
-				old.collators = old.collators.saturating_add(more);
-			});
 
 			// update candidates for next round
 			let (num_collators, num_delegators, _, _) = Self::select_top_candidates();
@@ -1125,9 +1075,6 @@ pub mod pallet {
 				Self::update(collator.clone(), state.total);
 			}
 			<CollatorState<T>>::insert(&collator, state);
-			Total::<T>::mutate(|old| {
-				old.collators = old.collators.saturating_sub(less);
-			});
 
 			// update candidates for next round
 			let (num_collators, num_delegators, _, _) = Self::select_top_candidates();
@@ -1223,9 +1170,6 @@ pub mod pallet {
 			}
 
 			// update states
-			Total::<T>::mutate(|old| {
-				old.delegators = old.delegators.saturating_add(amount);
-			});
 			<CollatorState<T>>::insert(&collator, state);
 			<DelegatorState<T>>::insert(&acc, Delegator::new(collator.clone(), amount));
 
@@ -1343,9 +1287,6 @@ pub mod pallet {
 			}
 
 			// Update states
-			Total::<T>::mutate(|old| {
-				old.delegators = old.delegators.saturating_add(amount);
-			});
 			<CollatorState<T>>::insert(&collator, state);
 			<DelegatorState<T>>::insert(&acc, delegator);
 
@@ -1512,9 +1453,6 @@ pub mod pallet {
 			if collator.is_active() {
 				Self::update(candidate.clone(), collator.total);
 			}
-			Total::<T>::mutate(|old| {
-				old.delegators = old.delegators.saturating_add(more);
-			});
 			<CollatorState<T>>::insert(&candidate, collator);
 			<DelegatorState<T>>::insert(&delegator, delegations);
 
@@ -1591,9 +1529,6 @@ pub mod pallet {
 			if collator.is_active() {
 				Self::update(candidate.clone(), collator.total);
 			}
-			Total::<T>::mutate(|old| {
-				old.delegators = old.delegators.saturating_sub(less);
-			});
 			<CollatorState<T>>::insert(&candidate, collator);
 			<DelegatorState<T>>::insert(&delegator, delegations);
 
@@ -1788,9 +1723,6 @@ pub mod pallet {
 			if state.is_active() {
 				Self::update(collator.clone(), state.total);
 			}
-			Total::<T>::mutate(|old| {
-				old.delegators = old.delegators.saturating_sub(delegator_stake);
-			});
 			let new_total = state.total;
 			<CollatorState<T>>::insert(&collator, state);
 
@@ -1824,12 +1756,12 @@ pub mod pallet {
 		/// - Writes: N * AtStake, SelectedCandidates
 		/// # </weight>
 		fn select_top_candidates() -> (u32, u32, BalanceOf<T>, BalanceOf<T>) {
-			let (mut all_collators, mut total_collators, mut total_delegators) =
-				(0u32, BalanceOf::<T>::zero(), BalanceOf::<T>::zero());
 			log::trace!("Selecting collators");
 			let mut candidates = <CandidatePool<T>>::get().into_vec();
 			let top_n = <MaxSelectedCandidates<T>>::get();
 			let mut num_of_delegators = 0u32;
+			let mut collator_stake = BalanceOf::<T>::zero();
+			let mut delegator_stake = BalanceOf::<T>::zero();
 
 			log::trace!("{} Candidates for {} Collator seats", candidates.len(), top_n);
 
@@ -1850,13 +1782,16 @@ pub mod pallet {
 			for account in collators.iter() {
 				let state = <CollatorState<T>>::get(&account).expect("all members of CandidateQ must be candidates");
 				num_of_delegators = num_of_delegators.saturating_add(state.delegators.len() as u32);
+
+				// sum up total stake and amount of collators, delegators
 				let amount_collator = state.stake;
-				let amount_delegators = state.total.saturating_sub(amount_collator);
+				collator_stake = collator_stake.saturating_add(state.stake);
+				// safe to subtract because total >= stake
+				let amount_delegators = state.total - amount_collator;
+				delegator_stake = delegator_stake.saturating_add(amount_delegators);
+
 				let exposure: CollatorSnapshot<T::AccountId, BalanceOf<T>> = state.into();
 				<AtStake<T>>::insert(account, exposure);
-				all_collators = all_collators.saturating_add(1u32);
-				total_collators = total_collators.saturating_add(amount_collator);
-				total_delegators = total_delegators.saturating_add(amount_delegators);
 				Self::deposit_event(Event::CollatorChosen(
 					account.clone(),
 					amount_collator,
@@ -1865,13 +1800,18 @@ pub mod pallet {
 			}
 			collators.sort();
 
+			<Total<T>>::mutate(|old| {
+				old.collators = collator_stake;
+				old.delegators = delegator_stake;
+			});
+
 			log::trace!("Selected {} collators", collators.len());
 			// store canonical collator set
 			<SelectedCandidates<T>>::put(collators);
 
 			// return number of selected candidates and the corresponding number of their
 			// delegators for post-weight correction
-			(top_n, num_of_delegators, total_collators, total_delegators)
+			(top_n, num_of_delegators, collator_stake, delegator_stake)
 		}
 
 		/// Attempts to add the stake to the set of delegators of a collator
