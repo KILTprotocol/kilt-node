@@ -2120,12 +2120,19 @@ fn coinbase_rewards_few_blocks_detailed_check() {
 			let inflation = StakePallet::inflation_config();
 			let total_issuance = <Test as Config>::Currency::total_issuance();
 			assert_eq!(total_issuance, 160_000_000 * DECIMALS);
-			let c_rewards: BalanceOf<Test> = inflation
-				.collator
-				.compute_block_rewards::<Test>(16_000_000 * DECIMALS, total_issuance);
-			let d_rewards: BalanceOf<Test> = inflation
-				.delegator
-				.compute_block_rewards::<Test>(64_000_000 * DECIMALS, total_issuance);
+
+			// compute rewards
+			let c_staking_rate = Perquintill::from_rational(16_000_000 * DECIMALS, total_issuance);
+			let c_rewards: BalanceOf<Test> =
+				inflation
+					.collator
+					.compute_reward::<Test>(16_000_000 * DECIMALS, c_staking_rate, 1u128);
+			let d_staking_rate = Perquintill::from_rational(64_000_000 * DECIMALS, total_issuance);
+			let d_rewards: BalanceOf<Test> =
+				inflation
+					.delegator
+					.compute_reward::<Test>(64_000_000 * DECIMALS, d_staking_rate, 2u128);
+
 			// set 1 to be author for blocks 1-3, then 2 for blocks 4-5
 			let authors: Vec<Option<AccountId>> =
 				vec![None, Some(1u64), Some(1u64), Some(1u64), Some(2u64), Some(2u64)];
@@ -2146,43 +2153,43 @@ fn coinbase_rewards_few_blocks_detailed_check() {
 			roll_to(2, authors.clone());
 			assert_eq!(Balances::usable_balance(&1), user_1 + c_rewards);
 			assert_eq!(Balances::usable_balance(&2), user_2);
-			assert_eq!(Balances::usable_balance(&3), user_3 + d_rewards * 2 / 3);
-			assert_eq!(Balances::usable_balance(&4), user_4 + d_rewards / 3 + 1);
+			assert_eq!(Balances::usable_balance(&3), user_3 + d_rewards / 2);
+			assert_eq!(Balances::usable_balance(&4), user_4 + d_rewards / 4);
 			assert_eq!(Balances::usable_balance(&5), user_5);
 
 			// 1 is block author for 2nd block
 			roll_to(3, authors.clone());
 			assert_eq!(Balances::usable_balance(&1), user_1 + 2 * c_rewards);
 			assert_eq!(Balances::usable_balance(&2), user_2);
-			assert_eq!(Balances::usable_balance(&3), user_3 + d_rewards * 4 / 3);
-			assert_eq!(Balances::usable_balance(&4), user_4 + d_rewards * 2 / 3 + 1);
+			assert_eq!(Balances::usable_balance(&3), user_3 + d_rewards);
+			assert_eq!(Balances::usable_balance(&4), user_4 + d_rewards / 2);
 			assert_eq!(Balances::usable_balance(&5), user_5);
 
 			// 1 is block author for 3rd block
 			roll_to(4, authors.clone());
 			assert_eq!(Balances::usable_balance(&1), user_1 + 3 * c_rewards);
 			assert_eq!(Balances::usable_balance(&2), user_2);
-			assert_eq!(Balances::usable_balance(&3), user_3 + d_rewards * 2 - 1);
-			assert_eq!(Balances::usable_balance(&4), user_4 + d_rewards + 1);
+			assert_eq!(Balances::usable_balance(&3), user_3 + d_rewards / 2 * 3);
+			assert_eq!(Balances::usable_balance(&4), user_4 + d_rewards / 4 * 3);
 			assert_eq!(Balances::usable_balance(&5), user_5);
 
 			// 2 is block author for 4th block
 			roll_to(5, authors.clone());
 			assert_eq!(Balances::usable_balance(&1), user_1 + 3 * c_rewards);
 			assert_eq!(Balances::usable_balance(&2), user_2 + c_rewards);
-			assert_eq!(Balances::usable_balance(&3), user_3 + d_rewards * 2 - 1);
-			assert_eq!(Balances::usable_balance(&4), user_4 + d_rewards + 1);
-			assert_eq!(Balances::usable_balance(&5), user_5 + d_rewards);
+			assert_eq!(Balances::usable_balance(&3), user_3 + d_rewards / 2 * 3);
+			assert_eq!(Balances::usable_balance(&4), user_4 + d_rewards / 4 * 3);
+			assert_eq!(Balances::usable_balance(&5), user_5 + d_rewards / 4);
 			assert_ok!(StakePallet::revoke_delegation(Origin::signed(5), 2));
 
 			// 2 is block author for 5th block
 			roll_to(6, authors);
 			assert_eq!(Balances::usable_balance(&1), user_1 + 3 * c_rewards);
 			assert_eq!(Balances::usable_balance(&2), user_2 + 2 * c_rewards);
-			assert_eq!(Balances::usable_balance(&3), user_3 + d_rewards * 2 - 1);
-			assert_eq!(Balances::usable_balance(&4), user_4 + d_rewards + 1);
-			// Should have not received rewards
-			assert_eq!(Balances::usable_balance(&5), user_5 + d_rewards);
+			assert_eq!(Balances::usable_balance(&3), user_3 + d_rewards / 2 * 3);
+			assert_eq!(Balances::usable_balance(&4), user_4 + d_rewards / 4 * 3);
+			// should not receive rewards due to revoked delegation
+			assert_eq!(Balances::usable_balance(&5), user_5 + d_rewards / 4);
 		});
 }
 
@@ -2268,15 +2275,36 @@ fn coinbase_rewards_many_blocks_simple_check() {
 			let expected_delegator_rewards =
 				num_of_years * inflation.delegator.reward_rate.annual * 64_000_000 * DECIMALS;
 
+			// 1200000000000000000000
+			// 2399074074058720000
+
 			// collator rewards should be about the same
 			assert!(almost_equal(rewards_1, rewards_2, Perbill::from_perthousand(1)));
+			assert!(
+				almost_equal(
+					rewards_1,
+					num_of_years * inflation.collator.reward_rate.annual * 8_000_000 * DECIMALS,
+					Perbill::from_perthousand(1)
+				),
+				"left {:?}, right {:?}",
+				rewards_1,
+				inflation.collator.reward_rate.annual * 8_000_000 * DECIMALS,
+			);
+
 			// delegator rewards should be about the same
 			assert!(
-				almost_equal(rewards_3 + rewards_4, rewards_5, Perbill::from_perthousand(1)),
+				almost_equal(rewards_3, rewards_4 + rewards_5, Perbill::from_perthousand(1)),
 				"left {:?}, right {:?}",
-				rewards_3 + rewards_4,
-				rewards_5
+				rewards_3,
+				rewards_4 + rewards_5
 			);
+			assert!(almost_equal(
+				rewards_3,
+				num_of_years * inflation.delegator.reward_rate.annual * 32_000_000 * DECIMALS,
+				Perbill::from_perthousand(1)
+			));
+
+			// check rewards in total
 			assert!(
 				almost_equal(
 					rewards_1 + rewards_2,
@@ -2297,6 +2325,8 @@ fn coinbase_rewards_many_blocks_simple_check() {
 				rewards_3 + rewards_4 + rewards_5,
 				expected_delegator_rewards,
 			);
+
+			// old issuance + rewards should equal new issuance
 			assert!(
 				almost_equal(
 					total_issuance + expected_collator_rewards + expected_delegator_rewards,

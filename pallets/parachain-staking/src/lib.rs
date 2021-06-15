@@ -1621,36 +1621,6 @@ pub mod pallet {
 			<CandidatePool<T>>::put(candidates);
 		}
 
-		/// Compute block production coinbase rewards based on the current
-		/// inflation configuration.
-		///
-		/// The rewards are split between collators and delegators with
-		/// different reward rates and maximum staking rates. The latter is
-		/// required to have at most our targeted inflation because rewards are
-		/// minted. Rewards are immediately available without any restrictions
-		/// after minting.
-		///
-		/// A collator’s reward does not increase/decrease when a collator
-		/// stakes more/less. Their stake is solely used to increase the chances
-		/// of being one of the top n candidates to make the SelectedCandidates.
-		///
-		/// A delegator’s reward however increases/decreases when a delegator
-		/// stakes more/less because each delegator gets a percentage of the
-		/// reward, depending on the proportion of their stake compared to the
-		/// stake of other delegators for this collator
-		///
-		/// # <weight>
-		/// Weight: O(1)
-		/// - Reads: InflationConfig
-		/// # </weight>
-		fn compute_block_issuance(
-			collator_stake: BalanceOf<T>,
-			delegator_stake: BalanceOf<T>,
-		) -> (BalanceOf<T>, BalanceOf<T>) {
-			let config = <InflationConfig<T>>::get();
-			config.block_issuance::<T>(collator_stake, delegator_stake)
-		}
-
 		/// Update the delegator's state by removing the collator candidate from
 		/// the set of ongoing delegations.
 		///
@@ -2056,39 +2026,61 @@ pub mod pallet {
 	{
 		/// Compute coinbase rewards for block production and distribute it to
 		/// collator's (block producer) and its delegators according to their
-		/// stake.
+		/// stake and the current InflationInfo.
+		///
+		/// The rewards are split between collators and delegators with
+		/// different reward rates and maximum staking rates. The latter is
+		/// required to have at most our targeted inflation because rewards are
+		/// minted. Rewards are immediately available without any restrictions
+		/// after minting.
+		///
+		/// If the current staking rate is below the maximum, each collator and
+		/// delegator receives the corresponding `reward_rate * stake /
+		/// blocks_per_year`. Since a collator can only author blocks every
+		/// `MaxSelectedCandidates` many rounds, we multiply the reward with
+		/// this number. As a result, a collator who has been in the set of
+		/// selected candidates, eventually receives `reward_rate * stake` after
+		/// one year.
+		///
+		/// However, if the current staking rate exceeds the max staking rate,
+		/// the reward will be reduced by `max_rate / current_rate`. E.g., if
+		/// the current rate is at 50% and the max rate at 40%, the reward is
+		/// reduced by 20% by multiplying the reward with 80%.
 		///
 		/// # <weight>
 		/// Weight: O(D) where D is the number of delegators of this collator
 		/// block author bounded by `MaxDelegatorsPerCollator`.
-		/// - Reads: AtStake, Total, Balance
+		/// - Reads: AtStake, Total, Balance, InflationConfig,
+		///   MaxSelectedCandidates
 		/// - Writes: D * Balance
 		/// # </weight>
 		fn note_author(author: T::AccountId) {
 			let state = <AtStake<T>>::get(author.clone());
 			if state.stake >= T::MinCollatorStk::get() && state.total >= T::MinCollatorStk::get() {
+				let total_issuance = T::Currency::total_issuance();
 				let TotalStake {
 					collators: total_collators,
 					delegators: total_delegators,
 				} = <Total<T>>::get();
-				let (c_rewards, d_rewards) = Self::compute_block_issuance(total_collators, total_delegators);
-
-				let amt_due_collator = c_rewards;
-				let delegator_stake = state.total.saturating_sub(state.stake);
-				let amt_due_delegators = d_rewards;
+				let c_staking_rate = Perquintill::from_rational(total_collators, total_issuance);
+				let d_staking_rate = Perquintill::from_rational(total_delegators, total_issuance);
+				let inflation_config = <InflationConfig<T>>::get();
+				let authors_per_round = <BalanceOf<T>>::from(<MaxSelectedCandidates<T>>::get());
 
 				// Reward collator
+				let amt_due_collator =
+					inflation_config
+						.collator
+						.compute_reward::<T>(state.stake, c_staking_rate, authors_per_round);
 				Self::do_reward(&author, amt_due_collator);
 
 				// Reward delegators
-				// Reward delegators due portion
 				for Stake { owner, amount } in state.delegators {
 					if amount >= T::MinDelegatorStk::get() {
-						// Compare this delegator's stake with the total amount of
-						// delegated stake for this collator
-						// multiplication with perquintill cannot overflow
-						let percent = Perquintill::from_rational(amount, delegator_stake);
-						let due = percent * amt_due_delegators;
+						let due =
+							inflation_config
+								.delegator
+								.compute_reward::<T>(amount, d_staking_rate, authors_per_round);
 						Self::do_reward(&owner, due);
 					}
 				}
