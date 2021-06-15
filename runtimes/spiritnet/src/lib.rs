@@ -609,3 +609,8 @@ cumulus_pallet_parachain_system::register_validate_block!(
 	Runtime,
 	cumulus_pallet_aura_ext::BlockExecutor::<Runtime, Executive>,
 );
+
+#[cfg(feature = "try-runtime")]
+impl frame-try-runtime::TryRuntime {
+	fn on_runtime_upgrade() -> Result<(Weight, Weight), sp_runtime::RuntimeString>;
+}

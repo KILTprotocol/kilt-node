@@ -45,6 +45,7 @@ pallet-session = {git = "https://github.com/paritytech/substrate", default-featu
 pallet-sudo = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.4"}
 pallet-timestamp = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.4"}
 pallet-transaction-payment = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.4"}
+frame-try-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.4", optional = true}
 pallet-authorship = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.4"}
 pallet-utility = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.4"}
 
@@ -136,6 +137,7 @@ std = [
   "xcm/std",
 ]
 try-runtime = [
+  "frame-try-runtime",
   "frame-support/try-runtime",
   "frame-system/try-runtime",
   "frame-executive/try-runtime",
