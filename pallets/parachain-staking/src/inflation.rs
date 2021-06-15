@@ -33,15 +33,18 @@ pub struct RewardRate {
 }
 
 /// Convert annual reward rate to per_block.
-fn annual_to_per_block(rate: Perquintill) -> Perquintill {
+fn annual_to_per_block<T: Config>(rate: Perquintill) -> Perquintill {
+	// FIXME: Should use T::BlocksPerYear::get() instead of YEARS
+	// let per_year: u64 = T::BlocksPerYear::get().into();
+	// rate / per_year
 	rate / YEARS
 }
 
 impl RewardRate {
-	pub fn new(rate: Perquintill) -> Self {
+	pub fn new<T: Config>(rate: Perquintill) -> Self {
 		RewardRate {
 			annual: rate,
-			per_block: annual_to_per_block(rate),
+			per_block: annual_to_per_block::<T>(rate),
 		}
 	}
 }
@@ -57,10 +60,10 @@ pub struct StakingInfo {
 }
 
 impl StakingInfo {
-	pub fn new(max_rate: Perquintill, annual_reward_rate: Perquintill) -> Self {
+	pub fn new<T: Config>(max_rate: Perquintill, annual_reward_rate: Perquintill) -> Self {
 		StakingInfo {
 			max_rate,
-			reward_rate: RewardRate::new(annual_reward_rate),
+			reward_rate: RewardRate::new::<T>(annual_reward_rate),
 		}
 	}
 
@@ -95,16 +98,16 @@ impl InflationInfo {
 	/// Create a new inflation info from the max staking rates and annual reward
 	/// rates for collators and delegators.
 	///
-	/// Example: InflationInfo::new(Perquintill_from_percent(10), ...)
-	pub fn new(
+	/// Example: InflationInfo::new::<T>(Perquintill_from_percent(10), ...)
+	pub fn new<T: Config>(
 		collator_max_rate_percentage: Perquintill,
 		collator_annual_reward_rate_percentage: Perquintill,
 		delegator_max_rate_percentage: Perquintill,
 		delegator_annual_reward_rate_percentage: Perquintill,
 	) -> Self {
 		Self {
-			collator: StakingInfo::new(collator_max_rate_percentage, collator_annual_reward_rate_percentage),
-			delegator: StakingInfo::new(delegator_max_rate_percentage, delegator_annual_reward_rate_percentage),
+			collator: StakingInfo::new::<T>(collator_max_rate_percentage, collator_annual_reward_rate_percentage),
+			delegator: StakingInfo::new::<T>(delegator_max_rate_percentage, delegator_annual_reward_rate_percentage),
 		}
 	}
 
@@ -138,7 +141,7 @@ mod tests {
 		let rate = Perquintill::one();
 		assert!(almost_equal(
 			rate * 10_000_000_000u128,
-			Perquintill::from_parts(annual_to_per_block(rate).deconstruct() * YEARS) * 10_000_000_000u128,
+			Perquintill::from_parts(annual_to_per_block::<Test>(rate).deconstruct() * YEARS) * 10_000_000_000u128,
 			Perbill::from_perthousand(1)
 		));
 	}
@@ -152,7 +155,7 @@ mod tests {
 			.with_collators(vec![(1, 10)])
 			.build()
 			.execute_with(|| {
-				let inflation = InflationInfo::new(
+				let inflation = InflationInfo::new::<Test>(
 					Perquintill::from_percent(10),
 					Perquintill::from_percent(15),
 					Perquintill::from_percent(40),

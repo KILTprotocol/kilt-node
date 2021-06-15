@@ -26,6 +26,7 @@ use frame_support::{
 	traits::{FindAuthor, GenesisBuild, OnFinalize, OnInitialize},
 	weights::Weight,
 };
+use kilt_primitives::constants::YEARS;
 use pallet_authorship::EventHandler;
 use sp_core::H256;
 use sp_runtime::{
@@ -136,6 +137,7 @@ parameter_types! {
 	pub const MinDelegatorStk: Balance = 5;
 	pub const MinDelegation: Balance = 3;
 	pub const MaxUnstakeRequests: u32 = 5;
+	pub const BlocksPerYear: BlockNumber = YEARS;
 }
 
 impl Config for Test {
@@ -156,6 +158,7 @@ impl Config for Test {
 	type MinDelegatorStk = MinDelegatorStk;
 	type MinDelegation = MinDelegation;
 	type MaxUnstakeRequests = MaxUnstakeRequests;
+	type BlocksPerYear = BlocksPerYear;
 	type WeightInfo = ();
 }
 
@@ -179,7 +182,7 @@ impl Default for ExtBuilder {
 			delegators: vec![],
 			collators: vec![],
 			blocks_per_round: BLOCKS_PER_ROUND,
-			inflation_config: InflationInfo::new(
+			inflation_config: InflationInfo::new::<Test>(
 				Perquintill::from_percent(10),
 				Perquintill::from_percent(15),
 				Perquintill::from_percent(40),
@@ -213,7 +216,7 @@ impl ExtBuilder {
 		d_rewards: u64,
 		blocks_per_round: BlockNumber,
 	) -> Self {
-		self.inflation_config = InflationInfo::new(
+		self.inflation_config = InflationInfo::new::<Test>(
 			Perquintill::from_percent(col_max),
 			Perquintill::from_percent(col_rewards),
 			Perquintill::from_percent(d_max),

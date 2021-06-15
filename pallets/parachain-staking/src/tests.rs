@@ -1992,7 +1992,7 @@ fn round_transitions() {
 	let col_rewards = 15;
 	let d_max = 40;
 	let d_rewards = 10;
-	let inflation = InflationInfo::new(
+	let inflation = InflationInfo::new::<Test>(
 		Perquintill::from_percent(col_max),
 		Perquintill::from_percent(col_rewards),
 		Perquintill::from_percent(d_max),
@@ -2082,7 +2082,7 @@ fn round_transitions() {
 
 			assert_eq!(
 				StakePallet::inflation_config(),
-				InflationInfo::new(
+				InflationInfo::new::<Test>(
 					Perquintill::from_percent(col_max),
 					Perquintill::from_percent(col_rewards),
 					Perquintill::from_percent(d_max),
@@ -3056,3 +3056,5 @@ fn candidate_leaves() {
 			assert_eq!(StakePallet::unstaking(12), unstaking);
 		});
 }
+
+// TODO: Add test for automatic reward rate update

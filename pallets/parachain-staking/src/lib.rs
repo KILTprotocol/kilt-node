@@ -183,7 +183,7 @@ pub mod pallet {
 	use pallet_balances::{BalanceLock, Locks};
 	use pallet_session::ShouldEndSession;
 	use sp_runtime::{
-		traits::{Saturating, StaticLookup, Zero},
+		traits::{One, Saturating, StaticLookup, Zero},
 		Percent, Perquintill,
 	};
 	use sp_staking::SessionIndex;
@@ -266,6 +266,9 @@ pub mod pallet {
 		type MaxUnstakeRequests: Get<u32>;
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
+
+		// TODO: Documentation
+		type BlocksPerYear: Get<Self::BlockNumber>;
 	}
 
 	#[pallet::error]
@@ -428,6 +431,7 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_initialize(now: T::BlockNumber) -> frame_support::weights::Weight {
+			let mut post_weight = T::DbWeight::get().reads(1);
 			let mut round = <Round<T>>::get();
 			if round.should_update(now) {
 				// mutate round
@@ -438,8 +442,11 @@ pub mod pallet {
 
 				Self::deposit_event(Event::NewRound(round.first, round.current));
 				T::DbWeight::get().reads_writes(1, 1)
+			} else if now > T::BlocksPerYear::get() {
+				post_weight = post_weight.saturating_add(Self::adjust_reward_rates(now));
+				post_weight
 			} else {
-				T::DbWeight::get().reads(1)
+				post_weight
 			}
 		}
 	}
@@ -518,6 +525,11 @@ pub mod pallet {
 	#[pallet::getter(fn unstaking)]
 	pub(crate) type Unstaking<T: Config> =
 		StorageMap<_, Twox64Concat, T::AccountId, BTreeMap<T::BlockNumber, BalanceOf<T>>, ValueQuery>;
+
+	/// Inflation configuration.
+	#[pallet::storage]
+	#[pallet::getter(fn last_reward_reduction)]
+	pub(crate) type LastRewardReduction<T: Config> = StorageValue<_, T::BlockNumber, ValueQuery>;
 
 	pub type GenesisStaker<T> = Vec<(
 		<T as frame_system::Config>::AccountId,
@@ -2004,6 +2016,42 @@ pub mod pallet {
 			// mint
 			if let Ok(imb) = T::Currency::deposit_into_existing(who, reward) {
 				Self::deposit_event(Event::Rewarded(who.clone(), imb.peek()));
+			}
+		}
+
+		// TODO: Documentation
+		fn adjust_reward_rates(now: T::BlockNumber) -> Weight {
+			let year = now / T::BlocksPerYear::get();
+			let last_update = <LastRewardReduction<T>>::get();
+			if year > last_update {
+				let inflation = <InflationConfig<T>>::get();
+				// collator reward rate decreases by 2% of the previous one per year
+				let c_reward_rate = inflation.collator.reward_rate.annual * Perquintill::from_percent(98);
+				// delegator reward rate should be 6% in 2nd year and 0% afterwards
+				let d_reward_rate = if year == T::BlockNumber::one() {
+					Perquintill::from_percent(6)
+				} else {
+					Perquintill::zero()
+				};
+
+				let new_inflation = InflationInfo::new::<T>(
+					inflation.collator.max_rate,
+					c_reward_rate,
+					inflation.delegator.max_rate,
+					d_reward_rate,
+				);
+				<InflationConfig<T>>::put(new_inflation);
+				<LastRewardReduction<T>>::put(year);
+				Self::deposit_event(Event::RoundInflationSet(
+					inflation.collator.max_rate,
+					inflation.collator.reward_rate.per_block,
+					inflation.delegator.max_rate,
+					inflation.delegator.reward_rate.per_block,
+				));
+
+				T::DbWeight::get().reads_writes(2, 2)
+			} else {
+				T::DbWeight::get().reads(1)
 			}
 		}
 

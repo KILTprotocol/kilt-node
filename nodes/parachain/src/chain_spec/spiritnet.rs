@@ -29,7 +29,7 @@ use sp_core::{crypto::UncheckedInto, sr25519};
 use sp_runtime::Perquintill;
 use spiritnet_runtime::{
 	BalancesConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStk, ParachainInfoConfig,
-	ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig, WASM_BINARY,
+	ParachainStakingConfig, Runtime, SessionConfig, SudoConfig, SystemConfig, VestingConfig, WASM_BINARY,
 };
 
 use crate::chain_spec::{get_account_id_from_seed, get_from_seed};
@@ -197,7 +197,7 @@ pub fn load_spiritnet_spec() -> Result<ChainSpec, String> {
 }
 
 pub fn kilt_inflation_config() -> InflationInfo {
-	InflationInfo::new(
+	InflationInfo::new::<Runtime>(
 		Perquintill::from_percent(10),
 		Perquintill::from_percent(10),
 		Perquintill::from_percent(40),

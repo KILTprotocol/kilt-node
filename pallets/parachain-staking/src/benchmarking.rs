@@ -105,7 +105,7 @@ benchmarks! {
 	where_clause { where u64: Into<<T as frame_system::Config>::BlockNumber> }
 
 	set_inflation {
-		let inflation = InflationInfo::new(
+		let inflation = InflationInfo::new::<T>(
 			Perquintill::from_percent(10),
 			Perquintill::from_percent(15),
 			Perquintill::from_percent(40),
