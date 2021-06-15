@@ -16,14 +16,16 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use codec::Encode;
 use frame_support::{
 	traits::Get,
 	weights::{WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
 };
-use kilt_primitives::{constants::KILT, Balance};
+use kilt_primitives::{constants::KILT, AccountId, Balance};
 use pallet_balances::WeightInfo;
 use pallet_transaction_payment::OnChargeTransaction;
 use smallvec::smallvec;
+use sp_runtime::traits::Zero;
 pub use sp_runtime::Perbill;
 use sp_std::marker::PhantomData;
 
@@ -49,23 +51,34 @@ where
 {
 	type Balance = Balance;
 	fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
-		// in Spiritnet, transfer weight is mapped to 0.01 KILT:
+		// In Spiritnet, transfer_keep_alive should cost 0.01 KILT in an empty block
 		let wanted_fee: Balance = KILT / 100;
+		let transfer_weight: Balance = crate::weights::pallet_balances::WeightInfo::<T>::transfer_keep_alive().into();
+
+		// Subtract byte fee for transfer_keep_alive transaction
 		let per_byte: Balance = Balance::from(<T as pallet_transaction_payment::Config>::TransactionByteFee::get());
-		let tx_byte_fee = Perbill::from_parts(1) * per_byte;
+		let tx = crate::Call::Balances(pallet_balances::Call::transfer_keep_alive(
+			AccountId::default().into(),
+			Balance::zero(),
+		));
+		let tx_byte_fee = tx.encode().len() as u128 * per_byte;
 
-		let max: Balance = wanted_fee.max(tx_byte_fee);
-		let min: Balance = wanted_fee.min(tx_byte_fee);
-		let p: Balance = max - min;
-		let q: Balance = crate::weights::pallet_balances::WeightInfo::<T>::transfer_keep_alive().into();
-
-		// f(w) = MILLI_KILT / WeightInfo::transfer_keep_alive() * w
-		smallvec![WeightToFeeCoefficient {
-			degree: 1,
-			negative: false,
-			coeff_frac: Perbill::from_rational(p % q, q),
-			coeff_integer: p / q,
-		}]
+		// f(x) = 0.01 KILT / weight(transfer_keep_alive()) * x -
+		// byte_fee(transfer_keep_alive())
+		smallvec![
+			WeightToFeeCoefficient {
+				degree: 0,
+				negative: true,
+				coeff_frac: Perbill::zero(),
+				coeff_integer: tx_byte_fee,
+			},
+			WeightToFeeCoefficient {
+				degree: 1,
+				negative: false,
+				coeff_frac: Perbill::from_rational(wanted_fee % transfer_weight, transfer_weight),
+				coeff_integer: wanted_fee / transfer_weight,
+			}
+		]
 	}
 }
 
