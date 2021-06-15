@@ -780,7 +780,7 @@ construct_runtime! {
 		Aura: pallet_aura::{Pallet, Config<T>} = 13,
 		AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 14,
 
-		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>} = 18,
+		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>, Config} = 18,
 		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 19,
 		// XcmHandler: cumulus_pallet_xcmp_queue::{Pallet, Call, Event<T>, Origin} = 20,
 		// Tokens: orml_tokens::{Pallet, Call, Storage, Event<T>} = 21,
