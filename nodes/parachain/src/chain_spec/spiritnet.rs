@@ -65,6 +65,7 @@ pub fn get_chain_spec_dev(id: ParaId) -> Result<ChainSpec, String> {
 					),
 				],
 				kilt_inflation_config(),
+				200_000 * KILT,
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
 				vec![
 					(
@@ -148,6 +149,7 @@ pub fn get_chain_spec_westend() -> Result<ChainSpec, String> {
 					),
 				],
 				kilt_inflation_config(),
+				200_000 * KILT,
 				hex!["200a316b25b3683459585ec746042f6841640e3b9f111028426ff17e9090005d"].into(),
 				vec![
 					(
@@ -210,6 +212,7 @@ fn testnet_genesis(
 	wasm_binary: &[u8],
 	stakers: Vec<(AccountId, Option<AccountId>, Balance)>,
 	inflation_config: InflationInfo,
+	max_collator_stake: Balance,
 	root_key: AccountId,
 	initial_authorities: Vec<(AccountId, AuthorityId)>,
 	endowed_accounts: Vec<(AccountId, Balance)>,
@@ -256,6 +259,7 @@ fn testnet_genesis(
 		parachain_staking: ParachainStakingConfig {
 			stakers,
 			inflation_config,
+			max_collator_stake,
 		},
 		pallet_aura: Default::default(),
 		cumulus_pallet_aura_ext: Default::default(),

@@ -103,7 +103,7 @@ where
 	pub total: Balance,
 }
 
-#[derive(Encode, Decode, RuntimeDebug, PartialEq)]
+#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq)]
 /// Global collator state with commission fee, staked funds, and delegations
 pub struct Collator<AccountId, Balance>
 where

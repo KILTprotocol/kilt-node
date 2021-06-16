@@ -348,8 +348,6 @@ parameter_types! {
 	pub const MaxCollatorsPerDelegator: u32 = 1;
 	/// Minimum stake required to be reserved to be a collator is 10_000
 	pub const MinCollatorStk: Balance = 10_000 * KILT;
-	/// Max stake possible to be reserved to be collator candidate is 200_000
-	pub const MaxCollatorCandidateStk: Balance = 200_000 * KILT;
 	/// Minimum stake required to be reserved to be a delegator is 1000
 	pub const MinDelegatorStk: Balance = 1000 * KILT;
 	/// Maximum number of collator candidates
@@ -373,7 +371,6 @@ impl parachain_staking::Config for Runtime {
 	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
 	type MinCollatorStk = MinCollatorStk;
 	type MinCollatorCandidateStk = MinCollatorStk;
-	type MaxCollatorCandidateStk = MaxCollatorCandidateStk;
 	type MaxCollatorCandidates = MaxCollatorCandidates;
 	type MinDelegation = MinDelegatorStk;
 	type MinDelegatorStk = MinDelegatorStk;

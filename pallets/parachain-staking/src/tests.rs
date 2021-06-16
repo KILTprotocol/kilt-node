@@ -33,7 +33,7 @@ use crate::{
 		Event as MetaEvent, ExtBuilder, Origin, StakePallet, System, Test, BLOCKS_PER_ROUND, DECIMALS,
 	},
 	set::OrderedSet,
-	types::{BalanceOf, Collator, CollatorSnapshot, CollatorStatus, Delegator, RoundInfo, Stake, TotalStake},
+	types::{BalanceOf, Collator, CollatorStatus, Delegator, RoundInfo, Stake, TotalStake},
 	Config, Error, Event, InflationInfo, RewardRate, StakingInfo, STAKING_ID,
 };
 
@@ -108,11 +108,13 @@ fn genesis() {
 			assert_eq!(Balances::free_balance(&1), 1000);
 			assert!(StakePallet::is_candidate(&1));
 			assert_eq!(
-				StakePallet::at_stake(&1),
-				CollatorSnapshot {
+				StakePallet::collator_state(&1),
+				Collator {
+					id: 1
 					stake: 500,
 					delegators: vec![Stake { owner: 3, amount: 100 }, Stake { owner: 4, amount: 100 }],
-					total: 700
+					total: 700,
+					state: CollatorStatus::Active,
 				}
 			);
 			// 2
@@ -120,11 +122,13 @@ fn genesis() {
 			assert_eq!(Balances::free_balance(&2), 300);
 			assert!(StakePallet::is_candidate(&2));
 			assert_eq!(
-				StakePallet::at_stake(&2),
-				CollatorSnapshot {
+				StakePallet::collator_state(&2),
+				Collator {
+					id: 2,
 					stake: 200,
 					delegators: vec![Stake { owner: 5, amount: 100 }, Stake { owner: 6, amount: 100 }],
 					total: 400
+					state: CollatorStatus::Active
 				}
 			);
 			// Delegators
