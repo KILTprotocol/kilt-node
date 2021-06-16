@@ -329,10 +329,13 @@ impl pallet_sudo::Config for Runtime {
 impl attestation::Config for Runtime {
 	type EnsureOrigin = EnsureSigned<<Self as delegation::Config>::DelegationEntityId>;
 	type Event = Event;
+	type WeightInfo = ();
 }
 
 parameter_types! {
 	pub const MaxSignatureByteLength: u16 = 64;
+	pub const MaxParentChecks: u32 = 5;
+	pub const MaxRevocations: u32 = 5;
 }
 
 impl delegation::Config for Runtime {
@@ -342,12 +345,16 @@ impl delegation::Config for Runtime {
 	type EnsureOrigin = EnsureSigned<Self::DelegationEntityId>;
 	type Event = Event;
 	type MaxSignatureByteLength = MaxSignatureByteLength;
+	type MaxParentChecks = MaxParentChecks;
+	type MaxRevocations = MaxRevocations;
+	type WeightInfo = ();
 }
 
 impl ctype::Config for Runtime {
 	type CtypeCreatorId = AccountId;
 	type EnsureOrigin = EnsureSigned<Self::CtypeCreatorId>;
 	type Event = Event;
+	type WeightInfo = ();
 }
 
 parameter_types! {
@@ -675,6 +682,9 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_vesting, Vesting);
 
 			add_benchmark!(params, batches, did, Did);
+			add_benchmark!(params, batches, ctype, Ctype);
+			add_benchmark!(params, batches, delegation, Delegation);
+			add_benchmark!(params, batches, attestation, Attestation);
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
 			Ok(batches)

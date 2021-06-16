@@ -633,10 +633,13 @@ impl delegation::VerifyDelegateSignature for Runtime {
 impl attestation::Config for Runtime {
 	type EnsureOrigin = EnsureSigned<<Self as delegation::Config>::DelegationEntityId>;
 	type Event = Event;
+	type WeightInfo = ();
 }
 
 parameter_types! {
 	pub const MaxSignatureByteLength: u16 = 64;
+	pub const MaxParentChecks: u32 = 5;
+	pub const MaxRevocations: u32 = 5;
 }
 
 impl delegation::Config for Runtime {
@@ -646,12 +649,16 @@ impl delegation::Config for Runtime {
 	type EnsureOrigin = EnsureSigned<Self::DelegationEntityId>;
 	type Event = Event;
 	type MaxSignatureByteLength = MaxSignatureByteLength;
+	type MaxParentChecks = MaxParentChecks;
+	type MaxRevocations = MaxRevocations;
+	type WeightInfo = ();
 }
 
 impl ctype::Config for Runtime {
 	type CtypeCreatorId = AccountId;
 	type EnsureOrigin = EnsureSigned<Self::CtypeCreatorId>;
 	type Event = Event;
+	type WeightInfo = ();
 }
 
 parameter_types! {
@@ -773,7 +780,7 @@ construct_runtime! {
 		Aura: pallet_aura::{Pallet, Config<T>} = 13,
 		AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 14,
 
-		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>} = 18,
+		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>, Config} = 18,
 		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 19,
 		// XcmHandler: cumulus_pallet_xcmp_queue::{Pallet, Call, Event<T>, Origin} = 20,
 		// Tokens: orml_tokens::{Pallet, Call, Storage, Event<T>} = 21,
@@ -998,6 +1005,9 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, parachain_staking, ParachainStaking);
 
 			add_benchmark!(params, batches, did, Did);
+			add_benchmark!(params, batches, ctype, Ctype);
+			add_benchmark!(params, batches, delegation, Delegation);
+			add_benchmark!(params, batches, attestation, Attestation);
 
 			// No benchmarks for these pallets
 			// add_benchmark!(params, batches, cumulus_pallet_parachain_system, ParachainSystem);

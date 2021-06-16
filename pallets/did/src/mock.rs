@@ -111,6 +111,7 @@ impl ctype::Config for Test {
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<TestCtypeOwner>;
 	type Event = ();
+	type WeightInfo = ();
 }
 
 #[cfg(test)]
