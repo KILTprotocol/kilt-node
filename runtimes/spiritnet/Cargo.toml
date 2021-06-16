@@ -6,6 +6,7 @@ version = "0.2.0"
 
 [dependencies]
 codec = {package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"]}
+log = {default-features = false, version = "0.4.14"}
 serde = {version = "1.0.101", optional = true, features = ["derive"]}
 static_assertions = "1.1.0"
 
@@ -101,10 +102,12 @@ std = [
   "cumulus-primitives-core/std",
   "frame-executive/std",
   "frame-support/std",
+  "frame-try-runtime/std",
   "frame-system-rpc-runtime-api/std",
   "frame-system/std",
   "kilt-launch/std",
   "kilt-primitives/std",
+  "log/std",
   "pallet-randomness-collective-flip/std",
   "pallet-aura/std",
   "pallet-balances/std",

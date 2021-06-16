@@ -7,6 +7,7 @@ version = "0.2.0"
 [dependencies]
 bitflags = {version = "1.2.1", default-features = false}
 codec = {package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"]}
+log = {default-features = false, version = "0.4.14"}
 serde = {version = "1.0.101", optional = true, features = ["derive"]}
 static_assertions = "1.1.0"
 
@@ -79,6 +80,9 @@ frame-system-benchmarking = {git = "https://github.com/paritytech/substrate", de
 hex-literal = {version = "0.3.1", optional = true}
 rococo-runtime = {git = "https://github.com/paritytech/polkadot", default-features = false, optional = true, branch = "release-v0.9.4"}
 
+# Migrations
+frame-try-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.4", optional = true}
+
 [build-dependencies]
 substrate-wasm-builder = "4.0.0"
 
@@ -116,7 +120,9 @@ std = [
   "ctype/std",
   "did/std",
   "delegation/std",
+  "frame-try-runtime/std",
   "codec/std",
+  "log/std",
   "serde",
   "sp-api/std",
   "sp-std/std",
@@ -169,6 +175,7 @@ try-runtime = [
   "frame-support/try-runtime",
   "frame-system/try-runtime",
   "frame-executive/try-runtime",
+  "frame-try-runtime",
   "kilt-launch/try-runtime",
   "pallet-balances/try-runtime",
   "pallet-indices/try-runtime",

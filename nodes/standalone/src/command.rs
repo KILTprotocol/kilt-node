@@ -22,10 +22,11 @@ use crate::{
 	service,
 };
 use mashnet_node_runtime::opaque::Block;
-#[cfg(feature = "try-runtime")]
-use node_executor::Executor;
 use sc_cli::{ChainSpec, Role, RuntimeVersion, SubstrateCli};
 use sc_service::PartialComponents;
+
+#[cfg(feature = "try-runtime")]
+use node_executor::Executor;
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
@@ -151,19 +152,16 @@ pub fn run() -> sc_cli::Result<()> {
 				// we don't need any of the components of new_partial, just a runtime, or a task
 				// manager to do `async_run`.
 				let registry = config.prometheus_config.as_ref().map(|cfg| &cfg.registry);
-				let task_manager = sc_service::TaskManager::new(
-					config.task_executor.clone(),
-					registry,
-				).map_err(|e| sc_cli::Error::Service(sc_service::Error::Prometheus(e)))?;
+				let task_manager = sc_service::TaskManager::new(config.task_executor.clone(), registry)
+					.map_err(|e| sc_cli::Error::Service(sc_service::Error::Prometheus(e)))?;
 
 				Ok((cmd.run::<Block, Executor>(config), task_manager))
 			})
-		},
+		}
 		#[cfg(not(feature = "try-runtime"))]
-		Some(Subcommand::TryRuntime) => {
-			Err("TryRuntime wasn't enabled when building the node. \
-				You can enable it with `--features try-runtime`.".into())
-		},
+		Some(Subcommand::TryRuntime) => Err("TryRuntime wasn't enabled when building the node. \
+				You can enable it with `--features try-runtime`."
+			.into()),
 		None => {
 			let runner = cli.create_runner(&cli.run)?;
 			runner.run_node_until_exit(|config| async move {

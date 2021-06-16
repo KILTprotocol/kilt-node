@@ -9,6 +9,7 @@ substrate-wasm-builder = "4.0.0"
 
 [dependencies]
 bitflags = {default-features = false, version = "1.2.1"}
+log = {default-features = false, version = "0.4.14"}
 serde = {features = ["derive"], optional = true, version = "1.0"}
 
 # kilt functionality
@@ -59,6 +60,9 @@ sp-std = {branch = "polkadot-v0.9.4", default-features = false, git = "https://g
 sp-transaction-pool = {branch = "polkadot-v0.9.4", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-version = {branch = "polkadot-v0.9.4", default-features = false, git = "https://github.com/paritytech/substrate"}
 
+# Migrations
+frame-try-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.4", optional = true}
+
 [features]
 default = ["std"]
 runtime-benchmarks = [
@@ -86,10 +90,12 @@ std = [
   "did/std",
   "frame-executive/std",
   "frame-support/std",
+  "frame-try-runtime/std",
   "frame-system-rpc-runtime-api/std",
   "frame-system/std",
   "kilt-launch/std",
   "kilt-primitives/std",
+  "log/std",
   "pallet-aura/std",
   "pallet-authorship/std",
   "pallet-balances/std",
@@ -125,6 +131,7 @@ try-runtime = [
   "frame-support/try-runtime",
   "frame-system/try-runtime",
   "frame-executive/try-runtime",
+  "frame-try-runtime",
   "kilt-launch/try-runtime",
   "pallet-balances/try-runtime",
   "pallet-indices/try-runtime",

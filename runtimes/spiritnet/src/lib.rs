@@ -100,7 +100,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("kilt-spiritnet"),
 	impl_name: create_runtime_str!("kilt-spiritnet"),
 	authoring_version: 1,
-	spec_version: 12,
+	spec_version: 10,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -157,7 +157,6 @@ impl Filter<Call> for BaseFilter {
 			Call::Vesting(pallet_vesting::Call::vested_transfer(..))
 				| Call::KiltLaunch(kilt_launch::Call::locked_transfer(..))
 				| Call::Balances(pallet_balances::Call::transfer(..))
-				| Call::Balances(pallet_balances::Call::transfer_keep_alive(..))
 		)
 	}
 }
@@ -416,6 +415,7 @@ construct_runtime! {
 		Utility: pallet_utility::{Pallet, Call, Storage, Event} = 35,
 	}
 }
+
 /// The address format for describing accounts.
 pub type Address = sp_runtime::MultiAddress<AccountId, ()>;
 /// Block header type as expected by this runtime.
@@ -603,14 +603,19 @@ impl_runtime_apis! {
 			Ok(batches)
 		}
 	}
+
+	// From the Polkadot repo: https://github.com/paritytech/polkadot/blob/master/runtime/polkadot/src/lib.rs#L1371
+	#[cfg(feature = "try-runtime")]
+	impl frame_try_runtime::TryRuntime<Block> for Runtime {
+		fn on_runtime_upgrade() -> Result<(Weight, Weight), sp_runtime::RuntimeString> {
+			log::info!("try-runtime::on_runtime_upgrade for spiritnet runtime.");
+			let weight = Executive::try_runtime_upgrade()?;
+			Ok((weight, RuntimeBlockWeights::get().max_block))
+		}
+	}
 }
 
 cumulus_pallet_parachain_system::register_validate_block!(
 	Runtime,
 	cumulus_pallet_aura_ext::BlockExecutor::<Runtime, Executive>,
 );
-
-#[cfg(feature = "try-runtime")]
-impl frame-try-runtime::TryRuntime {
-	fn on_runtime_upgrade() -> Result<(Weight, Weight), sp_runtime::RuntimeString>;
-}
