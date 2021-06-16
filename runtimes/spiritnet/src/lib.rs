@@ -356,7 +356,7 @@ parameter_types! {
 	pub const MaxCollatorCandidates: u32 = 75;
 	/// Maximum number of concurrent requests to unlock unstaked balance
 	pub const MaxUnstakeRequests: u32 = 10;
-	/// Blocks per year based on 12s block time
+	/// Number of blocks per year based on 12s block time
 	pub const BlocksPerYear: BlockNumber = YEARS;
 }
 

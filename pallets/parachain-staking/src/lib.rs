@@ -266,8 +266,7 @@ pub mod pallet {
 		type MaxUnstakeRequests: Get<u32>;
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
-
-		// TODO: Documentation
+		/// Number of blocks per year.
 		type BlocksPerYear: Get<Self::BlockNumber>;
 	}
 
@@ -433,6 +432,8 @@ pub mod pallet {
 		fn on_initialize(now: T::BlockNumber) -> frame_support::weights::Weight {
 			let mut post_weight = T::DbWeight::get().reads(1);
 			let mut round = <Round<T>>::get();
+
+			// check for round update
 			if round.should_update(now) {
 				// mutate round
 				round.update(now);
@@ -441,8 +442,10 @@ pub mod pallet {
 				<Round<T>>::put(round);
 
 				Self::deposit_event(Event::NewRound(round.first, round.current));
-				T::DbWeight::get().reads_writes(1, 1)
-			} else if now > T::BlocksPerYear::get() {
+				post_weight = post_weight.saturating_add(T::DbWeight::get().writes(1));
+			}
+			// check for InflationInfo update
+			if now > T::BlocksPerYear::get() {
 				post_weight = post_weight.saturating_add(Self::adjust_reward_rates(now));
 				post_weight
 			} else {
@@ -2019,7 +2022,13 @@ pub mod pallet {
 			}
 		}
 
-		// TODO: Documentation
+		/// Annually reduce the reward rates for collators and delegators.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: LastRewardReduction, InflationConfig
+		/// - Writes: LastRewardReduction, InflationConfig
+		/// # </weight>
 		fn adjust_reward_rates(now: T::BlockNumber) -> Weight {
 			let year = now / T::BlocksPerYear::get();
 			let last_update = <LastRewardReduction<T>>::get();
@@ -2040,13 +2049,13 @@ pub mod pallet {
 					inflation.delegator.max_rate,
 					d_reward_rate,
 				);
-				<InflationConfig<T>>::put(new_inflation);
+				<InflationConfig<T>>::put(new_inflation.clone());
 				<LastRewardReduction<T>>::put(year);
 				Self::deposit_event(Event::RoundInflationSet(
-					inflation.collator.max_rate,
-					inflation.collator.reward_rate.per_block,
-					inflation.delegator.max_rate,
-					inflation.delegator.reward_rate.per_block,
+					new_inflation.collator.max_rate,
+					new_inflation.collator.reward_rate.per_block,
+					new_inflation.delegator.max_rate,
+					new_inflation.delegator.reward_rate.per_block,
 				));
 
 				T::DbWeight::get().reads_writes(2, 2)

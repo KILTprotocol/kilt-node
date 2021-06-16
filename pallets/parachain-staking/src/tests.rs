@@ -3057,4 +3057,76 @@ fn candidate_leaves() {
 		});
 }
 
-// TODO: Add test for automatic reward rate update
+#[test]
+fn adjust_reward_rates() {
+	ExtBuilder::default()
+		.with_balances(vec![(1, 10_000_000 * DECIMALS), (2, 90_000_000 * DECIMALS)])
+		.with_collators(vec![(1, 10_000_000 * DECIMALS)])
+		.with_delegators(vec![(2, 1, 40_000_000 * DECIMALS)])
+		.with_inflation(10, 10, 40, 8, 5)
+		.build()
+		.execute_with(|| {
+			let inflation_0 = StakePallet::inflation_config();
+			let num_of_years = 3 * <Test as Config>::BlocksPerYear::get();
+			// 1 authors every block
+			let authors: Vec<Option<AccountId>> = (0u64..=num_of_years).map(|_| Some(1u64)).collect();
+
+			// reward once in first year
+			roll_to(2, authors.clone());
+			let c_rewards_0 = Balances::free_balance(&1).saturating_sub(10_000_000 * DECIMALS);
+			let d_rewards_0 = Balances::free_balance(&2).saturating_sub(90_000_000 * DECIMALS);
+			assert!(!c_rewards_0.is_zero());
+			assert!(!d_rewards_0.is_zero());
+
+			// finish first year
+			System::set_block_number(<Test as Config>::BlocksPerYear::get());
+			roll_to(<Test as Config>::BlocksPerYear::get() + 1, vec![]);
+			assert_eq!(StakePallet::last_reward_reduction(), 1u64);
+			let inflation_1 = InflationInfo::new::<Test>(
+				inflation_0.collator.max_rate,
+				Perquintill::from_parts(98000000000000000),
+				inflation_0.delegator.max_rate,
+				Perquintill::from_percent(6),
+			);
+			assert_eq!(StakePallet::inflation_config(), inflation_1);
+			// reward once in 2nd year
+			roll_to(<Test as Config>::BlocksPerYear::get() + 2, authors.clone());
+			let c_rewards_1 = Balances::free_balance(&1)
+				.saturating_sub(10_000_000 * DECIMALS)
+				.saturating_sub(c_rewards_0);
+			let d_rewards_1 = Balances::free_balance(&2)
+				.saturating_sub(90_000_000 * DECIMALS)
+				.saturating_sub(d_rewards_0);
+			assert!(
+				c_rewards_0 > c_rewards_1,
+				"left {:?}, right {:?}",
+				c_rewards_0,
+				c_rewards_1
+			);
+			assert!(d_rewards_0 > d_rewards_1);
+
+			// finish 2nd year
+			System::set_block_number(2 * <Test as Config>::BlocksPerYear::get());
+			roll_to(2 * <Test as Config>::BlocksPerYear::get() + 1, vec![]);
+			assert_eq!(StakePallet::last_reward_reduction(), 2u64);
+			let inflation_2 = InflationInfo::new::<Test>(
+				inflation_0.collator.max_rate,
+				Perquintill::from_parts(96040000000000000),
+				inflation_0.delegator.max_rate,
+				Perquintill::zero(),
+			);
+			assert_eq!(StakePallet::inflation_config(), inflation_2);
+			// reward once in 3rd year
+			roll_to(2 * <Test as Config>::BlocksPerYear::get() + 2, authors.clone());
+			let c_rewards_2 = Balances::free_balance(&1)
+				.saturating_sub(10_000_000 * DECIMALS)
+				.saturating_sub(c_rewards_0)
+				.saturating_sub(c_rewards_1);
+			let d_rewards_2 = Balances::free_balance(&2)
+				.saturating_sub(90_000_000 * DECIMALS)
+				.saturating_sub(d_rewards_0)
+				.saturating_sub(d_rewards_1);
+			assert!(c_rewards_1 > c_rewards_2);
+			assert!(d_rewards_2.is_zero());
+		});
+}
