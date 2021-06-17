@@ -24,6 +24,7 @@ pub mod frame_system;
 pub mod kilt_launch;
 pub mod pallet_balances;
 pub mod pallet_collective;
+pub mod pallet_democracy;
 pub mod pallet_indices;
 pub mod pallet_membership;
 pub mod pallet_scheduler;

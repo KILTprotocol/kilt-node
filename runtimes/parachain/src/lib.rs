@@ -440,7 +440,7 @@ impl pallet_democracy::Config for Runtime {
 	type OperationalPreimageOrigin = pallet_collective::EnsureMember<AccountId, CouncilCollective>;
 	type MaxProposals = MaxProposals;
 
-	type WeightInfo = ();
+	type WeightInfo = weights::pallet_democracy::WeightInfo<Runtime>;
 }
 
 #[cfg(feature = "fast-gov")]
@@ -546,6 +546,7 @@ impl pallet_elections_phragmen::Config for Runtime {
 	type DesiredMembers = DesiredMembers;
 	type DesiredRunnersUp = DesiredRunnersUp;
 	type TermDuration = TermDuration;
+	// Benchmarks fail, but we won't need this pallet anyway anymore
 	type WeightInfo = ();
 }
 
@@ -1002,7 +1003,6 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_collective, Council);
 			add_benchmark!(params, batches, pallet_democracy, Democracy);
-			add_benchmark!(params, batches, pallet_elections_phragmen, ElectionsPhragmen);
 			add_benchmark!(params, batches, pallet_indices, Indices);
 			add_benchmark!(params, batches, pallet_membership, TechnicalMembership);
 			add_benchmark!(params, batches, parachain_staking, ParachainStaking);
