@@ -58,31 +58,31 @@ use sp_std::marker::PhantomData;
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_scheduler::WeightInfo for WeightInfo<T> {
 	fn schedule(s: u32, ) -> Weight {
-		(37_341_000 as Weight)
+		37_341_000_u64
 			// Standard Error: 3_000
-			.saturating_add((148_000 as Weight).saturating_mul(s as Weight))
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(148_000_u64.saturating_mul(s as Weight))
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn cancel(s: u32, ) -> Weight {
-		(37_805_000 as Weight)
+		37_805_000_u64
 			// Standard Error: 8_000
-			.saturating_add((1_445_000 as Weight).saturating_mul(s as Weight))
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+			.saturating_add(1_445_000_u64.saturating_mul(s as Weight))
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	fn schedule_named(s: u32, ) -> Weight {
-		(48_341_000 as Weight)
+		48_341_000_u64
 			// Standard Error: 2_000
-			.saturating_add((130_000 as Weight).saturating_mul(s as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+			.saturating_add(130_000_u64.saturating_mul(s as Weight))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	fn cancel_named(s: u32, ) -> Weight {
-		(40_560_000 as Weight)
+		40_560_000_u64
 			// Standard Error: 8_000
-			.saturating_add((1_498_000 as Weight).saturating_mul(s as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+			.saturating_add(1_498_000_u64.saturating_mul(s as Weight))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 }

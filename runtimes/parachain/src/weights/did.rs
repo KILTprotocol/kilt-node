@@ -58,56 +58,56 @@ use sp_std::marker::PhantomData;
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> did::WeightInfo for WeightInfo<T> {
 	fn submit_did_create_operation_ed25519_keys(n: u32, _u: u32, ) -> Weight {
-		(134_704_000 as Weight)
+		134_704_000_u64
 			// Standard Error: 212_000
-			.saturating_add((2_766_000 as Weight).saturating_mul(n as Weight))
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(2_766_000_u64.saturating_mul(n as Weight))
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn submit_did_create_operation_sr25519_keys(n: u32, u: u32, ) -> Weight {
-		(125_322_000 as Weight)
+		125_322_000_u64
 			// Standard Error: 14_000
-			.saturating_add((2_783_000 as Weight).saturating_mul(n as Weight))
+			.saturating_add(2_783_000_u64.saturating_mul(n as Weight))
 			// Standard Error: 0
-			.saturating_add((9_000 as Weight).saturating_mul(u as Weight))
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(9_000_u64.saturating_mul(u as Weight))
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn submit_did_update_operation_ed25519_keys(n: u32, m: u32, u: u32, ) -> Weight {
-		(114_436_000 as Weight)
+		114_436_000_u64
 			// Standard Error: 14_000
-			.saturating_add((4_736_000 as Weight).saturating_mul(n as Weight))
+			.saturating_add(4_736_000_u64.saturating_mul(n as Weight))
 			// Standard Error: 14_000
-			.saturating_add((3_237_000 as Weight).saturating_mul(m as Weight))
+			.saturating_add(3_237_000_u64.saturating_mul(m as Weight))
 			// Standard Error: 0
-			.saturating_add((8_000 as Weight).saturating_mul(u as Weight))
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(8_000_u64.saturating_mul(u as Weight))
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn submit_did_update_operation_sr25519_keys(n: u32, m: u32, u: u32, ) -> Weight {
-		(114_959_000 as Weight)
+		114_959_000_u64
 			// Standard Error: 85_000
-			.saturating_add((4_952_000 as Weight).saturating_mul(n as Weight))
+			.saturating_add(4_952_000_u64.saturating_mul(n as Weight))
 			// Standard Error: 85_000
-			.saturating_add((3_432_000 as Weight).saturating_mul(m as Weight))
+			.saturating_add(3_432_000_u64.saturating_mul(m as Weight))
 			// Standard Error: 3_000
-			.saturating_add((7_000 as Weight).saturating_mul(u as Weight))
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(7_000_u64.saturating_mul(u as Weight))
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn submit_did_delete_operation() -> Weight {
-		(108_954_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		108_954_000_u64
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn submit_did_call_ed25519_key() -> Weight {
-		(112_961_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		112_961_000_u64
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn submit_did_call_sr25519_key() -> Weight {
-		(115_085_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		115_085_000_u64
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 }

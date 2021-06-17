@@ -58,16 +58,16 @@ use sp_std::marker::PhantomData;
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> attestation::WeightInfo for WeightInfo<T> {
 	fn add() -> Weight {
-		(67_947_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		67_947_000_u64
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	fn revoke(d: u32, ) -> Weight {
-		(44_056_000 as Weight)
+		44_056_000_u64
 			// Standard Error: 30_000
-			.saturating_add((8_178_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(d as Weight)))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(8_178_000_u64.saturating_mul(d as Weight))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().reads(1_u64.saturating_mul(d as Weight)))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 }
