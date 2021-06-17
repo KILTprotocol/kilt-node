@@ -20,7 +20,7 @@
 
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
-use kilt_parachain_runtime::{
+use peregrine_runtime::{
 	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStk, ParachainInfoConfig,
 	ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig,
 	WASM_BINARY,
@@ -39,12 +39,12 @@ use crate::chain_spec::{get_account_id_from_seed, get_from_seed, get_properties,
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;
 
 pub fn make_dev_spec(id: ParaId) -> Result<ChainSpec, String> {
-	let properties = get_properties("KILT", 15, 38);
+	let properties = get_properties("PILT", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
 
 	Ok(ChainSpec::from_genesis(
-		"KILT Local",
-		"kilt_parachain_local_testnet",
+		"KILT Peregrine Local",
+		"peregrine_local_testnet",
 		ChainType::Local,
 		move || {
 			testnet_genesis(
@@ -104,12 +104,12 @@ pub fn make_dev_spec(id: ParaId) -> Result<ChainSpec, String> {
 }
 
 pub fn make_staging_spec(id: ParaId) -> Result<ChainSpec, String> {
-	let properties = get_properties("KILT", 15, 38);
+	let properties = get_properties("PILT", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
 
 	Ok(ChainSpec::from_genesis(
-		"KILT Collator Staging Testnet",
-		"kilt_parachain_staging_testnet",
+		"KILT Peregrine Testnet",
+		"kilt_parachain_testnet",
 		ChainType::Live,
 		move || {
 			testnet_genesis(
@@ -156,10 +156,6 @@ pub fn make_staging_spec(id: ParaId) -> Result<ChainSpec, String> {
 			para_id: id.into(),
 		},
 	))
-}
-
-pub fn load_rococo_spec() -> Result<ChainSpec, String> {
-	ChainSpec::from_json_bytes(&include_bytes!("../../res/mashnet-rococo.json")[..])
 }
 
 pub fn kilt_inflation_config() -> InflationInfo {
@@ -214,7 +210,6 @@ fn testnet_genesis(
 				.cloned()
 				.map(|(who, amount, vesting_length, _)| (who, vesting_length * MINUTES, amount))
 				.collect(),
-			// TODO: Set this to another address (PRE-LAUNCH)
 			transfer_account: hex!["6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c"].into(),
 		},
 		pallet_vesting: VestingConfig { vesting: vec![] },
@@ -244,7 +239,7 @@ fn testnet_genesis(
 					(
 						acc.clone(),
 						acc.clone(),
-						kilt_parachain_runtime::opaque::SessionKeys { aura: key.clone() },
+						peregrine_runtime::opaque::SessionKeys { aura: key.clone() },
 					)
 				})
 				.collect::<Vec<_>>(),

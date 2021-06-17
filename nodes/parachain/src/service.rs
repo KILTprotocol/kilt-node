@@ -57,8 +57,8 @@ type PartialComponents<Block, RuntimeApi, Executor, Telemetry, TelemetryWorkerHa
 // Native executor instance.
 native_executor_instance!(
 	pub MashRuntimeExecutor,
-	kilt_parachain_runtime::api::dispatch,
-	kilt_parachain_runtime::native_version,
+	peregrine_runtime::api::dispatch,
+	peregrine_runtime::native_version,
 	frame_benchmarking::benchmarking::HostFunctions,
 );
 

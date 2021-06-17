@@ -1,7 +1,7 @@
 [package]
 authors = ["KILT <info@kilt.io>"]
 edition = "2018"
-name = "kilt-parachain-runtime"
+name = "peregrine-runtime"
 version = "0.2.0"
 
 [dependencies]

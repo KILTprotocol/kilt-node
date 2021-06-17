@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 use sp_core::{Pair, Public};
 use sp_runtime::traits::IdentifyAccount;
 
-pub mod mashnet;
+pub mod peregrine;
 pub mod spiritnet;
 
 /// Helper function to generate a crypto pair from seed
