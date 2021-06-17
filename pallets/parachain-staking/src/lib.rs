@@ -538,7 +538,7 @@ pub mod pallet {
 	pub struct GenesisConfig<T: Config> {
 		pub stakers: GenesisStaker<T>,
 		pub inflation_config: InflationInfo,
-		pub max_collator_stake: BalanceOf<T>,
+		pub max_candidate_stake: BalanceOf<T>,
 	}
 
 	#[cfg(feature = "std")]
@@ -557,7 +557,7 @@ pub mod pallet {
 			assert!(self.inflation_config.is_valid(), "Invalid inflation configuration");
 
 			<InflationConfig<T>>::put(self.inflation_config.clone());
-			<MaxCollatorCandidateStk<T>>::put(self.max_collator_stake);
+			<MaxCollatorCandidateStk<T>>::put(self.max_candidate_stake);
 
 			for &(ref actor, ref opt_val, balance) in &self.stakers {
 				assert!(

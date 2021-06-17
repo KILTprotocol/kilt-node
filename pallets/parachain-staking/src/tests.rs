@@ -2462,7 +2462,7 @@ fn adjust_reward_rates() {
 }
 
 #[test]
-fn increase_max_collator_stake() {
+fn increase_max_candidate_stake() {
 	let max_stake = 160_000_000 * DECIMALS;
 	ExtBuilder::default()
 		.with_balances(vec![(1, 200_000_000 * DECIMALS)])
@@ -2502,7 +2502,7 @@ fn increase_max_collator_stake() {
 }
 
 #[test]
-fn decrease_max_collator_stake() {
+fn decrease_max_candidate_stake() {
 	ExtBuilder::default()
 		.with_balances(vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100)])
 		.with_collators(vec![(1, 100), (2, 90), (3, 40)])

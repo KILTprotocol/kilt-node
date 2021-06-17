@@ -212,7 +212,7 @@ fn testnet_genesis(
 	wasm_binary: &[u8],
 	stakers: Vec<(AccountId, Option<AccountId>, Balance)>,
 	inflation_config: InflationInfo,
-	max_collator_stake: Balance,
+	max_candidate_stake: Balance,
 	root_key: AccountId,
 	initial_authorities: Vec<(AccountId, AuthorityId)>,
 	endowed_accounts: Vec<(AccountId, Balance)>,
@@ -259,7 +259,7 @@ fn testnet_genesis(
 		parachain_staking: ParachainStakingConfig {
 			stakers,
 			inflation_config,
-			max_collator_stake,
+			max_candidate_stake,
 		},
 		pallet_aura: Default::default(),
 		cumulus_pallet_aura_ext: Default::default(),
