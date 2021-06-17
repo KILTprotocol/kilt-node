@@ -24,10 +24,10 @@ use crate::{
 use codec::Encode;
 use cumulus_client_service::genesis::generate_genesis_block;
 use cumulus_primitives_core::ParaId;
-use peregrine_runtime::Block;
 use log::info;
 #[cfg(feature = "try-runtime")]
 use node_executor::Executor;
+use peregrine_runtime::Block;
 use polkadot_parachain::primitives::AccountIdConversion;
 use sc_cli::{
 	ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams, NetworkParams, Result,
@@ -41,6 +41,7 @@ use std::{io::Write, net::SocketAddr};
 fn load_spec(id: &str, runtime: &str, para_id: ParaId) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
 	match id {
 		"dev" => Ok(Box::new(chain_spec::peregrine::make_dev_spec(para_id)?)),
+		"peregrine-new" => Ok(Box::new(chain_spec::peregrine::make_new_spec(para_id)?)),
 		"spiritnet-dev" => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_dev(para_id)?)),
 		"westend-new" => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_westend()?)),
 		"spiritnet" => Ok(Box::new(chain_spec::spiritnet::load_spiritnet_spec()?)),

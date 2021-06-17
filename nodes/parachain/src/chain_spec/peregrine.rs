@@ -20,14 +20,14 @@
 
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
+use kilt_primitives::{
+	constants::{KILT, MINUTES},
+	AccountId, AuthorityId, Balance, BlockNumber,
+};
 use peregrine_runtime::{
 	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStk, ParachainInfoConfig,
 	ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig,
 	WASM_BINARY,
-};
-use kilt_primitives::{
-	constants::{KILT, MINUTES},
-	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use sc_service::ChainType;
 use sp_core::{crypto::UncheckedInto, sr25519};
@@ -103,7 +103,7 @@ pub fn make_dev_spec(id: ParaId) -> Result<ChainSpec, String> {
 	))
 }
 
-pub fn make_staging_spec(id: ParaId) -> Result<ChainSpec, String> {
+pub fn make_new_spec(id: ParaId) -> Result<ChainSpec, String> {
 	let properties = get_properties("PILT", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
 
@@ -116,13 +116,11 @@ pub fn make_staging_spec(id: ParaId) -> Result<ChainSpec, String> {
 				wasm,
 				vec![
 					(
-						// TODO: Change before launch
 						hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].into(),
 						None,
 						10_000 * KILT,
 					),
 					(
-						// TODO: Change before launch
 						hex!["b67fe6413ffe5cf91ae38a6475c37deea70a25c6c86b3dd17bb82d09efd9b350"].into(),
 						None,
 						10_000 * KILT,
