@@ -109,13 +109,16 @@ fn genesis() {
 			assert!(StakePallet::is_candidate(&1));
 			assert_eq!(
 				StakePallet::collator_state(&1),
-				Collator {
-					id: 1
+				Some(Collator {
+					id: 1,
 					stake: 500,
-					delegators: vec![Stake { owner: 3, amount: 100 }, Stake { owner: 4, amount: 100 }],
+					delegators: OrderedSet::from_sorted_set(vec![
+						Stake { owner: 3, amount: 100 },
+						Stake { owner: 4, amount: 100 }
+					]),
 					total: 700,
 					state: CollatorStatus::Active,
-				}
+				})
 			);
 			// 2
 			assert_eq!(Balances::usable_balance(&2), 100);
@@ -123,20 +126,23 @@ fn genesis() {
 			assert!(StakePallet::is_candidate(&2));
 			assert_eq!(
 				StakePallet::collator_state(&2),
-				Collator {
+				Some(Collator {
 					id: 2,
 					stake: 200,
-					delegators: vec![Stake { owner: 5, amount: 100 }, Stake { owner: 6, amount: 100 }],
-					total: 400
-					state: CollatorStatus::Active
-				}
+					delegators: OrderedSet::from_sorted_set(vec![
+						Stake { owner: 5, amount: 100 },
+						Stake { owner: 6, amount: 100 }
+					]),
+					total: 400,
+					state: CollatorStatus::Active,
+				})
 			);
 			// Delegators
 			assert_eq!(
 				StakePallet::total(),
 				TotalStake {
 					collators: 700,
-					delegators: 400
+					delegators: 400,
 				}
 			);
 			for x in 3..7 {
@@ -290,14 +296,14 @@ fn join_collator_candidates() {
 			);
 			assert_ok!(StakePallet::join_candidates(
 				Origin::signed(10),
-				<Test as Config>::MaxCollatorCandidateStk::get()
+				StakePallet::max_candidate_stake()
 			));
 			assert_eq!(
 				last_event(),
 				MetaEvent::stake(Event::JoinedCollatorCandidates(
 					10,
-					<Test as Config>::MaxCollatorCandidateStk::get(),
-					<Test as Config>::MaxCollatorCandidateStk::get() + 710u128
+					StakePallet::max_candidate_stake(),
+					StakePallet::max_candidate_stake() + 710u128
 				))
 			);
 		});
@@ -1438,7 +1444,7 @@ fn collators_bond() {
 			// MaxCollatorCandidateStk
 			assert_ok!(StakePallet::join_candidates(
 				Origin::signed(11),
-				<Test as Config>::MaxCollatorCandidateStk::get()
+				StakePallet::max_candidate_stake()
 			));
 			assert_noop!(
 				StakePallet::candidate_stake_more(Origin::signed(11), 1u128),
@@ -3132,5 +3138,129 @@ fn adjust_reward_rates() {
 				.saturating_sub(d_rewards_1);
 			assert!(c_rewards_1 > c_rewards_2);
 			assert!(d_rewards_2.is_zero());
+		});
+}
+
+#[test]
+fn increase_max_collator_stake() {
+	let max_stake = 160_000_000 * DECIMALS;
+	ExtBuilder::default()
+		.with_balances(vec![(1, 200_000_000 * DECIMALS)])
+		.with_collators(vec![(1, max_stake)])
+		.build()
+		.execute_with(|| {
+			assert_eq!(StakePallet::max_candidate_stake(), max_stake);
+			assert_noop!(
+				StakePallet::candidate_stake_more(Origin::signed(1), 1),
+				Error::<Test>::ValStakeAboveMax
+			);
+
+			assert_ok!(StakePallet::increase_max_candidate_stake(Origin::root(), max_stake + 1));
+			assert_eq!(
+				last_event(),
+				MetaEvent::stake(Event::MaxCandidateStakeChanged(max_stake, max_stake + 1))
+			);
+			assert_eq!(StakePallet::max_candidate_stake(), max_stake + 1);
+			assert_ok!(StakePallet::candidate_stake_more(Origin::signed(1), 1));
+			assert_noop!(
+				StakePallet::candidate_stake_more(Origin::signed(1), 1),
+				Error::<Test>::ValStakeAboveMax
+			);
+
+			assert_noop!(
+				StakePallet::increase_max_candidate_stake(
+					Origin::root(),
+					<Test as Config>::MinCollatorCandidateStk::get() - 1
+				),
+				Error::<Test>::CannotSetBelowMin
+			);
+			assert_noop!(
+				StakePallet::increase_max_candidate_stake(Origin::root(), max_stake),
+				Error::<Test>::NotIncreasing
+			);
+		});
+}
+
+#[test]
+fn decrease_max_collator_stake() {
+	ExtBuilder::default()
+		.with_balances(vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100)])
+		.with_collators(vec![(1, 100), (2, 90), (3, 40)])
+		.with_delegators(vec![(4, 2, 10), (5, 3, 20)])
+		.build()
+		.execute_with(|| {
+			assert_eq!(StakePallet::selected_candidates(), vec![1, 2]);
+			assert_eq!(
+				StakePallet::candidate_pool(),
+				OrderedSet::from_sorted_set(vec![
+					Stake { owner: 1, amount: 100 },
+					Stake { owner: 2, amount: 100 },
+					Stake { owner: 3, amount: 60 }
+				])
+			);
+
+			assert_ok!(StakePallet::decrease_max_candidate_stake(Origin::root(), 50));
+			assert_eq!(StakePallet::max_candidate_stake(), 50);
+			assert_eq!(
+				last_event(),
+				MetaEvent::stake(Event::MaxCandidateStakeChanged(160_000_000 * DECIMALS, 50))
+			);
+
+			// check collator states
+			assert_eq!(
+				StakePallet::candidate_pool(),
+				OrderedSet::from_sorted_set(vec![
+					Stake { owner: 1, amount: 50 },
+					Stake { owner: 2, amount: 60 },
+					Stake { owner: 3, amount: 60 },
+				])
+			);
+			assert_eq!(
+				StakePallet::collator_state(1),
+				Some(Collator {
+					id: 1,
+					stake: 50,
+					delegators: OrderedSet::from(vec![]),
+					total: 50,
+					state: CollatorStatus::Active
+				})
+			);
+			assert_eq!(
+				StakePallet::collator_state(2),
+				Some(Collator {
+					id: 2,
+					stake: 50,
+					delegators: OrderedSet::from(vec![Stake { owner: 4, amount: 10 }]),
+					total: 60,
+					state: CollatorStatus::Active
+				})
+			);
+			assert_eq!(
+				StakePallet::collator_state(3),
+				Some(Collator {
+					id: 3,
+					stake: 40,
+					delegators: OrderedSet::from(vec![Stake { owner: 5, amount: 20 }]),
+					total: 60,
+					state: CollatorStatus::Active
+				})
+			);
+			assert_eq!(StakePallet::selected_candidates(), vec![2, 3]);
+
+			assert_noop!(
+				StakePallet::candidate_stake_more(Origin::signed(1), 1),
+				Error::<Test>::ValStakeAboveMax
+			);
+			assert_noop!(
+				StakePallet::decrease_max_candidate_stake(
+					Origin::root(),
+					<Test as Config>::MinCollatorCandidateStk::get() - 1
+				),
+				Error::<Test>::CannotSetBelowMin
+			);
+			assert_noop!(
+				StakePallet::decrease_max_candidate_stake(Origin::root(), 50 + 1),
+				Error::<Test>::NotDecreasing
+			);
 		});
 }

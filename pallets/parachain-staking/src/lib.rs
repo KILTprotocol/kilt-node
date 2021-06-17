@@ -711,7 +711,7 @@ pub mod pallet {
 		pub fn increase_max_candidate_stake(origin: OriginFor<T>, new: BalanceOf<T>) -> DispatchResult {
 			frame_system::ensure_root(origin)?;
 			ensure!(new >= T::MinCollatorCandidateStk::get(), Error::<T>::CannotSetBelowMin);
-			let old = T::MinCollatorCandidateStk::get();
+			let old = <MaxCollatorCandidateStk<T>>::get();
 			ensure!(new > old, Error::<T>::NotIncreasing);
 			<MaxCollatorCandidateStk<T>>::put(new);
 
@@ -727,47 +727,36 @@ pub mod pallet {
 
 			let old = <MaxCollatorCandidateStk<T>>::get();
 			ensure!(old > new, Error::<T>::NotDecreasing);
-			// safe because we ensure old > new
-			let delta = old - new;
 
-			// iterate candidate pool and update all candidates which have staked more than
-			// new max
+			// iterate candidate pool and update all candidates with stake > max
 			let mut post_weight = T::DbWeight::get().reads(2);
-			<CandidatePool<T>>::try_mutate::<OrderedSet<Stake<T::AccountId, BalanceOf<T>>>, DispatchError, _>(
-				|pool: &mut OrderedSet<Stake<T::AccountId, BalanceOf<T>>>| {
-					let my_vec = pool.clone().into_vec();
+			<CandidatePool<T>>::mutate(|pool| {
+				let candidates = pool
+					.clone()
+					.into_vec()
+					.into_iter()
+					.map(|mut candidate| {
+						// state should always exist but let's be safe
+						if let Some(mut state) = <CollatorState<T>>::get(&candidate.owner) {
+							if state.stake > new {
+								// safe because we ensure stake > new
+								let delta = state.stake - new;
+								state.stake_less(delta);
+								candidate.amount = candidate.amount.saturating_sub(delta);
 
-					for mut candidate in my_vec.clone().into_iter() {
-						if candidate.amount > new {
-							candidate.amount = new;
+								// immediately free delta by setting lock from old to new
+								T::Currency::set_lock(STAKING_ID, &candidate.owner, new, WithdrawReasons::all());
+								<CollatorState<T>>::insert(&candidate.owner, state);
 
-							// also need to update CollatorState
-							<CollatorState<T>>::try_mutate::<
-								&T::AccountId,
-								Option<Collator<T::AccountId, BalanceOf<T>>>,
-								DispatchError,
-								_,
-							>(&candidate.owner, |s| {
-								// should never fail because candidate is in CandidatePool
-								let mut state = s
-									.as_ref()
-									.ok_or::<DispatchError>(Error::<T>::CandidateNotFound.into())?
-									.clone();
-								state.stake = new;
-								state.total = state.total.saturating_sub(delta);
-								Ok(Some(state.clone()))
-							})?;
-
-							// immediately free delta by setting lock from old to new
-							T::Currency::set_lock(STAKING_ID, &candidate.owner, new, WithdrawReasons::all());
-
-							// update consumed weight
-							post_weight = post_weight.saturating_add(T::DbWeight::get().reads_writes(1, 3));
+								// update consumed weight
+								post_weight = post_weight.saturating_add(T::DbWeight::get().writes(2));
+							}
 						}
-					}
-					Ok(OrderedSet::<Stake<T::AccountId, BalanceOf<T>>>::from_sorted_set(my_vec))
-				},
-			)?;
+						candidate
+					})
+					.collect();
+				*pool = OrderedSet::from(candidates);
+			});
 
 			// update candidates for next round
 			let (_num_collators, _num_delegators, _, _) = Self::select_top_candidates();

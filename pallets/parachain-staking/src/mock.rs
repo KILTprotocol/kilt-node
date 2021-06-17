@@ -132,7 +132,6 @@ parameter_types! {
 	pub const MaxCollatorsPerDelegator: u32 = 4;
 	pub const DefaultCollatorCommission: Perbill = Perbill::from_percent(20);
 	pub const MinCollatorStk: Balance = 10;
-	pub const MaxCollatorCandidateStk: Balance = 160_000_000 * DECIMALS;
 	pub const MaxCollatorCandidates: u32 = 10;
 	pub const MinDelegatorStk: Balance = 5;
 	pub const MinDelegation: Balance = 3;
@@ -153,7 +152,6 @@ impl Config for Test {
 	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
 	type MinCollatorStk = MinCollatorStk;
 	type MinCollatorCandidateStk = MinCollatorStk;
-	type MaxCollatorCandidateStk = MaxCollatorCandidateStk;
 	type MaxCollatorCandidates = MaxCollatorCandidates;
 	type MinDelegatorStk = MinDelegatorStk;
 	type MinDelegation = MinDelegation;
@@ -253,6 +251,7 @@ impl ExtBuilder {
 		stake::GenesisConfig::<Test> {
 			stakers,
 			inflation_config: self.inflation_config.clone(),
+			max_collator_stake: 160_000_000 * DECIMALS,
 		}
 		.assimilate_storage(&mut t)
 		.expect("Parachain Staking's storage can be assimilated");
