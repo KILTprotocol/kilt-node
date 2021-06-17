@@ -38,6 +38,7 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
+pub use crate::default_weights::WeightInfo;
 pub use did_details::*;
 pub use errors::*;
 pub use origin::*;
@@ -55,8 +56,6 @@ use frame_system::ensure_signed;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::RawOrigin;
 use sp_std::{boxed::Box, convert::TryFrom, fmt::Debug, prelude::Clone, vec::Vec};
-
-use crate::default_weights::WeightInfo;
 
 #[frame_support::pallet]
 pub mod pallet {
