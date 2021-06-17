@@ -706,7 +706,18 @@ pub mod pallet {
 			Ok(())
 		}
 
-		// TODO: Docs
+		/// Increases the maximum amount a collator candidate can stake. The new
+		/// maximum cannot be lower than MinCollatorCandidateStk.
+		///
+		/// The dispatch origin must be Root.
+		///
+		/// Emits `MaxCandidateStakeChanged`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], MaxCollatorCandidateStk
+		/// - Writes: Round
+		/// # </weight>
 		#[pallet::weight(100_000)]
 		pub fn increase_max_candidate_stake(origin: OriginFor<T>, new: BalanceOf<T>) -> DispatchResult {
 			frame_system::ensure_root(origin)?;
@@ -719,7 +730,26 @@ pub mod pallet {
 			Ok(())
 		}
 
-		// TODO: Docs
+		/// Increases the maximum amount a collator candidate can stake. The new
+		/// maximum cannot be lower than MinCollatorCandidateStk.
+		///
+		/// The dispatch origin must be Root.
+		///
+		/// Emits `MaxCandidateStakeChanged`.
+		///
+		/// # <weight>
+		/// - The transaction's complexity is mainly dependent on updating the
+		///   `SelectedCandidates` storage in `select_top_candidates` which in
+		///   return depends on the number of `MaxSelectedCandidates` (N).
+		/// - For each N, we read `CollatorState` from the storage.
+		/// ---------
+		/// Weight: O(N) where N is `MaxSelectedCandidates` bounded by
+		/// `MaxCollatorCandidates`
+		/// - Reads: MaxCollatorCandidateStk, 2 * N * CollatorState,
+		///   CandidatePool
+		/// - Writes: MaxCollatorCandidateStk, N * CollatorState,
+		///   SelectedCandidates
+		/// # </weight>
 		#[pallet::weight(100_000)]
 		pub fn decrease_max_candidate_stake(origin: OriginFor<T>, new: BalanceOf<T>) -> DispatchResultWithPostInfo {
 			frame_system::ensure_root(origin)?;
