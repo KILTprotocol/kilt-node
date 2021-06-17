@@ -19,7 +19,7 @@
 
 //! Benchmarking
 use crate::*;
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, Zero};
 use frame_support::{
 	assert_ok,
 	traits::{Currency, Get, OnInitialize},
@@ -108,6 +108,33 @@ where
 
 benchmarks! {
 	where_clause { where u64: Into<<T as frame_system::Config>::BlockNumber> }
+
+	on_initialize_no_action {
+		assert_eq!(<Round<T>>::get().current, 0u32);
+	}: { Pallet::<T>::on_initialize(T::BlockNumber::one()) }
+	verify {
+		assert_eq!(<Round<T>>::get().current, 0u32);
+	}
+
+	on_initialize_round_update {
+		let round = <Round<T>>::get();
+		assert_eq!(round.current, 0u32);
+	}: { Pallet::<T>::on_initialize(round.length) }
+	verify {
+		assert_eq!(<Round<T>>::get().current, 1u32);
+	}
+
+	on_initialize_new_year {
+		let old = <InflationConfig<T>>::get();
+		assert_eq!(<LastRewardReduction<T>>::get(), T::BlockNumber::zero());
+	}: { Pallet::<T>::on_initialize(T::BlocksPerYear::get() + T::BlockNumber::one()) }
+	verify {
+		let new = <InflationConfig<T>>::get();
+		assert_eq!(<LastRewardReduction<T>>::get(), T::BlockNumber::one());
+		assert_eq!(new.collator.max_rate, old.collator.max_rate);
+		assert_eq!(new.delegator.max_rate, old.delegator.max_rate);
+		assert!(new.collator.reward_rate.annual < old.collator.reward_rate.annual);
+	}
 
 	set_inflation {
 		let inflation = InflationInfo::new::<T>(
