@@ -27,7 +27,6 @@ use sp_std::{
 	cmp::Ordering,
 	ops::{Add, Sub},
 	vec,
-	vec::Vec,
 };
 
 use crate::{set::OrderedSet, Config};
@@ -88,19 +87,6 @@ impl Default for CollatorStatus {
 	fn default() -> CollatorStatus {
 		CollatorStatus::Active
 	}
-}
-
-#[derive(Default, Encode, Decode, RuntimeDebug, PartialEq, Eq)]
-/// Snapshot of collator state at the start of the round for which they are
-/// selected
-pub struct CollatorSnapshot<AccountId, Balance>
-where
-	AccountId: Eq + Ord,
-	Balance: Eq + Ord,
-{
-	pub stake: Balance,
-	pub delegators: Vec<Stake<AccountId, Balance>>,
-	pub total: Balance,
 }
 
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq)]
@@ -194,20 +180,6 @@ where
 
 	pub fn leave_candidates(&mut self, round: SessionIndex) {
 		self.state = CollatorStatus::Leaving(round);
-	}
-}
-
-impl<A, B> From<Collator<A, B>> for CollatorSnapshot<A, B>
-where
-	A: Clone + Eq + Ord,
-	B: Copy + Eq + Ord,
-{
-	fn from(other: Collator<A, B>) -> CollatorSnapshot<A, B> {
-		CollatorSnapshot {
-			stake: other.stake,
-			delegators: other.delegators.into(),
-			total: other.total,
-		}
 	}
 }
 
