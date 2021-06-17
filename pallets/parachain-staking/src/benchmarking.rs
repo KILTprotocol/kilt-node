@@ -35,18 +35,23 @@ const COLLATOR_ACCOUNT_SEED: u32 = 0;
 const DELEGATOR_ACCOUNT_SEED: u32 = 1;
 
 /// Fills the candidate pool up to `num_candidates`.
-fn setup_collator_candidates<T: Config>(num_candidates: u32) -> Vec<T::AccountId> {
+fn setup_collator_candidates<T: Config>(
+	num_candidates: u32,
+	default_amount: Option<T::CurrencyBalance>,
+) -> Vec<T::AccountId> {
 	let current_collator_count = CandidatePool::<T>::get().len() as u32;
 	let collators: Vec<T::AccountId> = (current_collator_count..num_candidates)
 		.map(|i| account("collator", i as u32, COLLATOR_ACCOUNT_SEED))
 		.collect();
+	let amount: T::CurrencyBalance = default_amount.unwrap_or(T::MinCollatorCandidateStk::get());
 
 	for acc in collators.iter() {
-		T::Currency::make_free_balance_be(acc, T::MinCollatorCandidateStk::get());
+		T::Currency::make_free_balance_be(acc, amount);
 		assert_ok!(<Pallet<T>>::join_candidates(
 			T::Origin::from(Some(acc.clone()).into()),
-			T::MinCollatorCandidateStk::get(),
+			amount,
 		));
+		assert_eq!(<CollatorState<T>>::get(acc).unwrap().stake, amount);
 	}
 
 	CandidatePool::<T>::get()
@@ -120,7 +125,7 @@ benchmarks! {
 		let n in (T::MinSelectedCandidates::get()) .. T::MaxCollatorCandidates::get();
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
-		let candidates = setup_collator_candidates::<T>(n);
+		let candidates = setup_collator_candidates::<T>(n, None);
 		for (i, c) in candidates.iter().enumerate() {
 			fill_delegators::<T>(m, c.clone(), i as u32);
 		}
@@ -144,7 +149,7 @@ benchmarks! {
 		let n in 1 .. T::MaxCollatorCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
-		let candidates = setup_collator_candidates::<T>(n);
+		let candidates = setup_collator_candidates::<T>(n, None);
 		for (i, c) in candidates.iter().enumerate() {
 			fill_delegators::<T>(m, c.clone(), i as u32);
 		}
@@ -162,7 +167,7 @@ benchmarks! {
 		let n in (T::MinSelectedCandidates::get() + 1) .. T::MaxCollatorCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
-		let candidates = setup_collator_candidates::<T>(n);
+		let candidates = setup_collator_candidates::<T>(n, None);
 		for (i, c) in candidates.iter().enumerate() {
 			fill_delegators::<T>(m, c.clone(), i as u32);
 		}
@@ -182,7 +187,7 @@ benchmarks! {
 		let n in (T::MinSelectedCandidates::get() + 1) .. T::MaxCollatorCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
-		let candidates = setup_collator_candidates::<T>(n);
+		let candidates = setup_collator_candidates::<T>(n, None);
 		for (i, c) in candidates.iter().enumerate() {
 			fill_delegators::<T>(m, c.clone(), i as u32);
 		}
@@ -201,7 +206,7 @@ benchmarks! {
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 		let u in 0 .. (T::MaxUnstakeRequests::get() as u32 - 1);
 
-		let candidates = setup_collator_candidates::<T>(n);
+		let candidates = setup_collator_candidates::<T>(n, None);
 		for (i, c) in candidates.iter().enumerate() {
 			fill_delegators::<T>(m, c.clone(), i as u32);
 		}
@@ -236,7 +241,7 @@ benchmarks! {
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 		let u in 0 .. (T::MaxUnstakeRequests::get() as u32);
 
-		let candidates = setup_collator_candidates::<T>(n);
+		let candidates = setup_collator_candidates::<T>(n, None);
 		for (i, c) in candidates.iter().enumerate() {
 			fill_delegators::<T>(m, c.clone(), i as u32);
 		}
@@ -263,7 +268,7 @@ benchmarks! {
 		let n in 1 .. T::MaxCollatorCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
-		let candidates = setup_collator_candidates::<T>(n);
+		let candidates = setup_collator_candidates::<T>(n, None);
 		for (i, c) in candidates.iter().enumerate() {
 			fill_delegators::<T>(m, c.clone(), i as u32);
 		}
@@ -289,7 +294,7 @@ benchmarks! {
 		let n in 1 .. T::MaxCollatorCandidates::get();
 		let m in 1 .. T::MaxDelegatorsPerCollator::get() - 1;
 
-		let candidates = setup_collator_candidates::<T>(n);
+		let candidates = setup_collator_candidates::<T>(n, None);
 		for (i, c) in candidates.iter().enumerate() {
 			fill_delegators::<T>(m, c.clone(), i as u32);
 		}
@@ -311,7 +316,7 @@ benchmarks! {
 		let m in 1 .. T::MaxDelegatorsPerCollator::get() - 1;
 		let u in 0 .. (T::MaxUnstakeRequests::get() as u32);
 
-		let candidates = setup_collator_candidates::<T>(n);
+		let candidates = setup_collator_candidates::<T>(n, None);
 		for (i, c) in candidates.iter().enumerate() {
 			fill_delegators::<T>(m, c.clone(), i as u32);
 		}
@@ -345,7 +350,7 @@ benchmarks! {
 		// we need at least 1 delegator
 		let m in 1 .. T::MaxDelegatorsPerCollator::get() - 1;
 
-		let candidates = setup_collator_candidates::<T>(n);
+		let candidates = setup_collator_candidates::<T>(n, None);
 		for (i, c) in candidates.iter().enumerate() {
 			fill_delegators::<T>(m, c.clone(), i as u32);
 		}
@@ -381,7 +386,7 @@ benchmarks! {
 		// we need at least 1 delegator
 		let m in 1 .. T::MaxDelegatorsPerCollator::get() - 1;
 
-		let candidates = setup_collator_candidates::<T>(n);
+		let candidates = setup_collator_candidates::<T>(n, None);
 		for (i, c) in candidates.iter().enumerate() {
 			fill_delegators::<T>(m, c.clone(), i as u32);
 		}
@@ -417,7 +422,7 @@ benchmarks! {
 		// we need at least 1 delegator
 		let m in 1 .. T::MaxDelegatorsPerCollator::get() - 1;
 
-		let candidates = setup_collator_candidates::<T>(n);
+		let candidates = setup_collator_candidates::<T>(n, None);
 		for (i, c) in candidates.iter().enumerate() {
 			fill_delegators::<T>(m, c.clone(), i as u32);
 		}
@@ -477,14 +482,33 @@ benchmarks! {
 		assert_eq!(pallet_balances::Pallet::<T>::usable_balance(&candidate), (free_balance - stake - stake + T::CurrencyBalance::from(1u64)).into());
 	}
 
-	// 	TODO: implement this benchmark after refactoring `execute_delayed_exits`
-	// on_initialize {
-	// 	let num_of_collators = T::MinSelectedCandidates::get();
-	// 	let num_of_candidates = T::MaxCollatorCandidates::get();
+	increase_max_candidate_stake {
+		let old = <MaxCollatorCandidateStk<T>>::get();
+		let new = old + T::CurrencyBalance::from(1u64);
+	}: _(RawOrigin::Root, new)
+	verify {
+		assert_eq!(<MaxCollatorCandidateStk<T>>::get(), new);
+		assert!(old < <MaxCollatorCandidateStk<T>>::get());
+	}
 
-	// }: { <Pallet<T> as Hooks<BlockNumberFor<T>>>::on_initialize(T::BlockNumber::one()) }
-	// verify {
-	// }
+	decrease_max_candidate_stake {
+		let n in 2 .. T::MaxCollatorCandidates::get();
+		let m in 0 .. T::MaxDelegatorsPerCollator::get();
+
+		// worst case: all candidates have staked more than new max
+		let old = T::MinCollatorCandidateStk::get() + T::MinCollatorCandidateStk::get();
+		let candidates = setup_collator_candidates::<T>(n, Some(old));
+		for (i, c) in candidates.iter().enumerate() {
+			fill_delegators::<T>(m, c.clone(), i as u32);
+		}
+		let candidate = candidates[0].clone();
+		assert_eq!(<CollatorState<T>>::get(&candidate).unwrap().stake, old);
+		let new = old - T::CurrencyBalance::from(1u64);
+	}: _(RawOrigin::Root, new)
+	verify {
+		assert_eq!(<MaxCollatorCandidateStk<T>>::get(), new);
+		assert_eq!(<CollatorState<T>>::get(candidate).unwrap().stake, new);
+	}
 
 	// [Post-launch TODO]: Activate after increasing MaxCollatorsPerDelegator to at least 2. Expected to throw otherwise.
 	// delegate_another_candidate {
@@ -494,7 +518,7 @@ benchmarks! {
 	// 	let m in 1 .. T::MaxDelegatorsPerCollator::get() - 1;
 	// 	let u in 0 .. (T::MaxUnstakeRequests::get() as u32);
 
-	// 	let candidates = setup_collator_candidates::<T>(n);
+	// 	let candidates = setup_collator_candidates::<T>(n, None);
 	// 	for (i, c) in candidates.iter().enumerate() {
 	// 		fill_delegators::<T>(m, c.clone(), i as u32);
 	// 	}
