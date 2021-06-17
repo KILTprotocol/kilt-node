@@ -26,7 +26,7 @@ use frame_support::{
 	traits::{FindAuthor, GenesisBuild, OnFinalize, OnInitialize},
 	weights::Weight,
 };
-use kilt_primitives::constants::YEARS;
+use kilt_primitives::constants::{KILT, YEARS};
 use pallet_authorship::EventHandler;
 use sp_core::H256;
 use sp_runtime::{
@@ -40,7 +40,7 @@ pub use kilt_primitives::BlockNumber;
 pub type AccountId = u64;
 pub type Balance = u128;
 pub const BLOCKS_PER_ROUND: BlockNumber = 5;
-pub const DECIMALS: Balance = 10u128.pow(15);
+pub const DECIMALS: Balance = KILT;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
