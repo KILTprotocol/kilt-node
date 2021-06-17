@@ -35,8 +35,7 @@ mod tests;
 
 use sp_std::vec::Vec;
 
-pub use crate::attestations::*;
-pub use crate::default_weights::WeightInfo;
+pub use crate::{attestations::*, default_weights::WeightInfo};
 pub use pallet::*;
 
 use frame_support::traits::Get;
