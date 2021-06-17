@@ -48,6 +48,8 @@ build:
     - docker tag kiltprotocol/mashnet-node:develop $AWS_REGISTRY/kilt/prototype-chain:latest-develop
     - docker tag kiltprotocol/mashnet-node:develop $AWS_REGISTRY/kilt/prototype-chain:$CI_COMMIT_SHORT_SHA
     - docker tag kiltprotocol/peregrine:develop $AWS_REGISTRY/kilt-parachain/collator:latest-develop
+    - docker tag kiltprotocol/peregrine:develop $AWS_REGISTRY/kilt-parachain/collator:$CI_COMMIT_SHORT_SHA
     - docker push $AWS_REGISTRY/kilt/prototype-chain:latest-develop
     - docker push $AWS_REGISTRY/kilt/prototype-chain:$CI_COMMIT_SHORT_SHA
     - docker push $AWS_REGISTRY/kilt-parachain/collator:latest-develop
+    - docker push $AWS_REGISTRY/kilt-parachain/collator:$CI_COMMIT_SHORT_SHA
