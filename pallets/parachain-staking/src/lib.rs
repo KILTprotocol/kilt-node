@@ -182,10 +182,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use pallet_balances::{BalanceLock, Locks};
 	use pallet_session::ShouldEndSession;
-	use sp_runtime::{
-		traits::{Saturating, StaticLookup, Zero},
-		Percent, Perquintill,
-	};
+	use sp_runtime::{Permill, Perquintill, traits::{Saturating, StaticLookup, Zero}};
 	use sp_staking::SessionIndex;
 	use sp_std::{collections::btree_map::BTreeMap, prelude::*};
 
@@ -2209,12 +2206,12 @@ pub mod pallet {
 			<Round<T>>::get().length
 		}
 
-		fn estimate_current_session_progress(now: T::BlockNumber) -> (Option<Percent>, Weight) {
+		fn estimate_current_session_progress(now: T::BlockNumber) -> (Option<Permill>, Weight) {
 			let round = <Round<T>>::get();
 			let passed_blocks = now.saturating_sub(round.first);
 
 			(
-				Some(Percent::from_rational(passed_blocks, round.length)),
+				Some(Permill::from_rational(passed_blocks, round.length)),
 				// One read for the round info, blocknumber is read free
 				T::DbWeight::get().reads(1),
 			)
