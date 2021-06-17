@@ -1827,6 +1827,21 @@ pub mod pallet {
 			Ok(())
 		}
 
+		fn delegator_is_kicked(delegation: StakeOf<T>, collator: &T::AccountId) -> DispatchResult {
+			let mut state = <DelegatorState<T>>::get(&delegation.owner).ok_or(Error::<T>::DelegatorNotFound)?;
+			state.rm_delegation(collator);
+			// we don't unlock immediately
+			Self::prep_unstake(&delegation.owner, delegation.amount)?;
+
+			// clear storage if no delegations are remaining
+			if state.delegations.is_empty() {
+				<DelegatorState<T>>::remove(&delegation.owner);
+			} else {
+				<DelegatorState<T>>::insert(&delegation.owner, state);
+			}
+			Ok(())
+		}
+
 		/// Select the top `n` collators in terms of cumulated stake (self +
 		/// from delegators) from the CandidatePool to become block authors for
 		/// the next round. The number of candidates selected can be `n` or
@@ -1933,6 +1948,10 @@ pub mod pallet {
 						.saturating_sub(stake_to_remove.amount)
 						.saturating_add(stake.amount);
 					state.delegators = OrderedSet::from_sorted_set(delegators);
+
+					// update storage of kicked delegator
+					Self::delegator_is_kicked(stake_to_remove.clone(), &state.id)?;
+
 					Ok((state, stake_to_remove))
 				}
 				_ => Err(Error::<T>::TooManyDelegators.into()),

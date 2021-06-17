@@ -879,7 +879,14 @@ fn multiple_delegations() {
 				StakePallet::delegate_another_candidate(Origin::signed(10), 2, 10),
 				Error::<Test>::TooManyDelegators
 			);
+			assert!(StakePallet::unstaking(9).is_empty());
 			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(10), 2, 11));
+			assert_eq!(StakePallet::unstaking(9).get(&23), Some(&10u128));
+			assert!(StakePallet::delegator_state(9).is_none());
+			assert!(!StakePallet::collator_state(2)
+				.unwrap()
+				.delegators
+				.contains(&Stake { owner: 9, amount: 10 }));
 
 			roll_to(26, vec![]);
 			let mut new2 = vec![
