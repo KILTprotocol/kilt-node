@@ -191,7 +191,7 @@ pub mod pallet {
 
 	use crate::{
 		set::OrderedSet,
-		types::{BalanceOf, Collator, CollatorOf, Delegator, RoundInfo, Stake, StakeOf, TotalStake},
+		types::{BalanceOf, Collator, CollatorOf, DelegationCounter, Delegator, RoundInfo, Stake, StakeOf, TotalStake},
 	};
 
 	/// Kilt-specific lock for staking rewards.
@@ -301,6 +301,13 @@ pub mod pallet {
 		/// The account has not delegated any collator candidate yet, hence it
 		/// is not in the set of delegators.
 		NotYetDelegating,
+		/// The delegator has exceeded the number of delegations per round which
+		/// is equal to MaxDelegatorsPerCollator.
+		///
+		/// This protects against attacks in which a delegator can re-delegate
+		/// from a collator who has already authored a block, to another one
+		/// which has not in this round.
+		ExceededDelegationsPerRound,
 		/// The collator candidate has already reached the maximum number of
 		/// delegators.
 		///
@@ -467,6 +474,16 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn round)]
 	pub(crate) type Round<T: Config> = StorageValue<_, RoundInfo<T::BlockNumber>, ValueQuery>;
+
+	/// Delegation information for the latest session in which a delegator
+	/// delegated.
+	///
+	/// It maps from an account to the number of delegations in the last
+	/// session in which they (re-)delegated.
+	#[pallet::storage]
+	#[pallet::getter(fn last_delegation)]
+	pub(crate) type LastDelegation<T: Config> =
+		StorageMap<_, Twox64Concat, T::AccountId, DelegationCounter, ValueQuery>;
 
 	/// Delegation staking information.
 	///
@@ -1220,9 +1237,10 @@ pub mod pallet {
 		/// `MaxCollatorCandidates` and D is the number of delegators for this
 		/// collator bounded by `MaxDelegatorsPerCollator`.
 		/// - Reads: [Origin Account], DelegatorState, CandidatePool,
-		///   MaxSelectedCandidates, (N + 2) * CollatorState
+		///   MaxSelectedCandidates, (N + 2) * CollatorState, LastDelegation,
+		///   Round
 		/// - Writes: Locks, CollatorState, DelegatorState, Total,
-		///   SelectedCandidates
+		///   SelectedCandidates, LastDelegation
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::join_delegators(T::MaxCollatorCandidates::get(), T::MaxCollatorCandidates::get() * T::MaxDelegatorsPerCollator::get()))]
 		pub fn join_delegators(
@@ -1237,6 +1255,9 @@ pub mod pallet {
 			ensure!(amount >= T::MinDelegatorStk::get(), Error::<T>::NomStakeBelowMin);
 			// cannot be a collator candidate and delegator with same AccountId
 			ensure!(!Self::is_candidate(&acc), Error::<T>::CandidateExists);
+			// cannot delegate if number of delegations in this round exceeds
+			// MaxCollatorsPerDelegator
+			let delegation_counter = Self::update_delegation_counter(&acc)?;
 
 			// prepare update of collator state
 			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
@@ -1274,6 +1295,7 @@ pub mod pallet {
 			// update states
 			<CollatorState<T>>::insert(&collator, state);
 			<DelegatorState<T>>::insert(&acc, Delegator::new(collator.clone(), amount));
+			<LastDelegation<T>>::insert(&acc, delegation_counter);
 
 			// update candidates for next round
 			let (num_collators, num_delegators, _, _) = Self::select_top_candidates();
@@ -1324,9 +1346,10 @@ pub mod pallet {
 		/// `MaxCollatorCandidates` and D is the number of delegators for this
 		/// collator bounded by `MaxDelegatorsPerCollator`.
 		/// - Reads: [Origin Account], DelegatorState, CandidatePool,
-		///   MaxSelectedCandidates, (N + 1) * CollatorState
+		///   MaxSelectedCandidates, (N + 1) * CollatorState, LastDelegation,
+		///   Round
 		/// - Writes: Locks, CollatorState, DelegatorState, Total,
-		///   SelectedCandidates
+		///   SelectedCandidates, LastDelegation
 		/// # </weight>
 		//
 		// We can't benchmark this extrinsic until we have increased `MaxCollatorsPerDelegator` by at least 1, thus we
@@ -1346,6 +1369,9 @@ pub mod pallet {
 				(delegator.delegations.len() as u32) < T::MaxCollatorsPerDelegator::get(),
 				Error::<T>::ExceedMaxCollatorsPerDelegator
 			);
+			// cannot delegate if number of delegations in this round exceeds
+			// MaxCollatorsPerDelegator
+			let delegation_counter = Self::update_delegation_counter(&acc)?;
 
 			// prepare new collator state
 			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
@@ -1390,6 +1416,7 @@ pub mod pallet {
 			// Update states
 			<CollatorState<T>>::insert(&collator, state);
 			<DelegatorState<T>>::insert(&acc, delegator);
+			<LastDelegation<T>>::insert(&acc, delegation_counter);
 
 			// update candidates for next round
 			let (num_collators, num_delegators, _, _) = Self::select_top_candidates();
@@ -2140,6 +2167,35 @@ pub mod pallet {
 			} else {
 				T::DbWeight::get().reads(1)
 			}
+		}
+
+		/// Checks whether a delegator can still delegate in this round, e.g.,
+		/// if they have not delegated MaxCollatorsPerDelegator many times
+		/// already in this round.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: LastDelegation, Round
+		/// # </weight>
+		fn update_delegation_counter(delegator: &T::AccountId) -> Result<DelegationCounter, DispatchError> {
+			let last_delegation = <LastDelegation<T>>::get(delegator);
+			let round = <Round<T>>::get();
+
+			let counter = if last_delegation.round < round.current {
+				0u32
+			} else {
+				last_delegation.counter
+			};
+
+			ensure!(
+				T::MaxCollatorsPerDelegator::get() > last_delegation.counter,
+				Error::<T>::ExceededDelegationsPerRound
+			);
+
+			Ok(DelegationCounter {
+				round: round.current,
+				counter: counter + 1,
+			})
 		}
 
 		// [Post-launch TODO] Think about Collator stake or total stake?

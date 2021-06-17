@@ -316,6 +316,16 @@ pub struct TotalStake<Balance: Default> {
 	pub delegators: Balance,
 }
 
+/// The number of delegations a delegator has done within the last session in
+/// which they delegated.
+#[derive(Default, Clone, Encode, Decode, RuntimeDebug)]
+pub struct DelegationCounter {
+	/// The index of the last delegation.
+	pub round: SessionIndex,
+	/// The number of delegations made within round.
+	pub counter: u32,
+}
+
 pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
 pub type CollatorOf<T> = Collator<AccountIdOf<T>, BalanceOf<T>>;

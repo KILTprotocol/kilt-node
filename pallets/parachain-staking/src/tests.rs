@@ -2584,3 +2584,36 @@ fn decrease_max_candidate_stake() {
 			);
 		});
 }
+
+#[test]
+fn exceed_delegations_per_round() {
+	ExtBuilder::default()
+		.with_balances(vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100), (6, 100)])
+		.with_collators(vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100)])
+		.with_delegators(vec![(6, 1, 10)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(6), 2, 10));
+			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(6), 3, 10));
+			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(6), 4, 10));
+			assert_noop!(
+				StakePallet::delegate_another_candidate(Origin::signed(6), 5, 10),
+				Error::<Test>::ExceedMaxCollatorsPerDelegator
+			);
+
+			// revoke delegation to allow one more collator for this delegator
+			assert_ok!(StakePallet::revoke_delegation(Origin::signed(6), 4));
+			// reached max delegations in this round
+			assert_noop!(
+				StakePallet::delegate_another_candidate(Origin::signed(6), 5, 10),
+				Error::<Test>::ExceededDelegationsPerRound
+			);
+
+			// revoke all delegations in the same round
+			assert_ok!(StakePallet::leave_delegators(Origin::signed(6)));
+			assert_noop!(
+				StakePallet::join_delegators(Origin::signed(6), 1, 10),
+				Error::<Test>::ExceededDelegationsPerRound
+			);
+		});
+}
