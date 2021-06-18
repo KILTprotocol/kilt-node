@@ -20,7 +20,7 @@
 use crate::{pallet::Config, types::BalanceOf};
 use kilt_primitives::constants::YEARS;
 use parity_scale_codec::{Decode, Encode};
-use sp_runtime::{traits::Saturating, Perquintill, RuntimeDebug, SaturatedConversion};
+use sp_runtime::{traits::Saturating, Perquintill, RuntimeDebug};
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -34,9 +34,7 @@ pub struct RewardRate {
 
 /// Convert annual reward rate to per_block.
 fn annual_to_per_block<T: Config>(rate: Perquintill) -> Perquintill {
-	// YEARS < u64::MAX is ensured via static assertion
-	let per_year: u64 = YEARS.saturated_into::<u64>();
-	rate / per_year.max(1)
+	rate / YEARS.max(1)
 }
 
 impl RewardRate {

@@ -18,7 +18,6 @@
 
 use frame_support::weights::{constants::WEIGHT_PER_SECOND, Weight};
 use sp_runtime::Perbill;
-use static_assertions::const_assert;
 
 use crate::*;
 
@@ -38,7 +37,6 @@ pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
 pub const MONTHS: BlockNumber = DAYS * 30;
 pub const YEARS: BlockNumber = MONTHS * 12;
-const_assert!(YEARS <= u64::MAX);
 
 pub const MIN_VESTED_TRANSFER_AMOUNT: Balance = 1000 * KILT;
 

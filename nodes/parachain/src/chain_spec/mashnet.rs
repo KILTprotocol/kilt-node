@@ -21,9 +21,9 @@
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
 use kilt_parachain_runtime::{
-	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake, ParachainInfoConfig,
-	ParachainStakingConfig, Runtime, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig,
-	WASM_BINARY,
+	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake,
+	ParachainInfoConfig, ParachainStakingConfig, Runtime, SessionConfig, SudoConfig, SystemConfig,
+	TechnicalCommitteeConfig, VestingConfig, WASM_BINARY,
 };
 use kilt_primitives::{
 	constants::{KILT, MINUTES},

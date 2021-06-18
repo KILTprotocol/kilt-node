@@ -3739,7 +3739,6 @@ dependencies = [
  "sp-core",
  "sp-runtime",
  "sp-std",
- "static_assertions",
 ]
 
 [[package]]
