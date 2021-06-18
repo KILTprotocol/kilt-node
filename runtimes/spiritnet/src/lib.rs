@@ -342,6 +342,8 @@ parameter_types! {
 	pub const ExitQueueDelay: u32 = 2;
 	/// Minimum 16 collators selected per round, default at genesis and minimum forever after
 	pub const MinSelectedCandidates: u32 = 16;
+	/// We only allow one delegation per round.
+	pub const MaxDelegationsPerRound: u32 = 1;
 	/// Maximum 25 delegators per collator at launch, might be increased later
 	pub const MaxDelegatorsPerCollator: u32 = 25;
 	/// Maximum 1 collator per delegator at launch, will be increased later
@@ -367,6 +369,7 @@ impl parachain_staking::Config for Runtime {
 	type StakeDuration = StakeDuration;
 	type ExitQueueDelay = ExitQueueDelay;
 	type MinSelectedCandidates = MinSelectedCandidates;
+	type MaxDelegationsPerRound = MaxDelegationsPerRound;
 	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
 	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
 	type MinCollatorStk = MinCollatorStk;
@@ -375,8 +378,8 @@ impl parachain_staking::Config for Runtime {
 	type MinDelegation = MinDelegatorStk;
 	type MinDelegatorStk = MinDelegatorStk;
 	type MaxUnstakeRequests = MaxUnstakeRequests;
-	type WeightInfo = weights::parachain_staking::WeightInfo<Runtime>;
 	type BlocksPerYear = BlocksPerYear;
+	type WeightInfo = weights::parachain_staking::WeightInfo<Runtime>;
 }
 
 impl pallet_utility::Config for Runtime {

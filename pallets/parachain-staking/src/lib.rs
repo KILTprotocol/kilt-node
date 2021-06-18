@@ -242,6 +242,12 @@ pub mod pallet {
 		/// Minimum number of collators selected from the set of candidates at
 		/// every validation round.
 		type MinSelectedCandidates: Get<u32>;
+		/// Maximum number of delegations which can be made within the same
+		/// round.
+		///
+		/// NOTE: To prevent re-delegation-reward attacks, we should keep this
+		/// to be one.
+		type MaxDelegationsPerRound: Get<u32>;
 		/// Maximum number of delegators a single collator can have.
 		type MaxDelegatorsPerCollator: Get<u32>;
 		/// Maximum number of collators a single delegator can delegate.
@@ -261,10 +267,10 @@ pub mod pallet {
 		/// Max number of concurrent active unstaking requests before
 		/// withdrawing.
 		type MaxUnstakeRequests: Get<u32>;
-		/// Weight information for extrinsics in this pallet.
-		type WeightInfo: WeightInfo;
 		/// Number of blocks per year.
 		type BlocksPerYear: Get<Self::BlockNumber>;
+		/// Weight information for extrinsics in this pallet.
+		type WeightInfo: WeightInfo;
 	}
 
 	#[pallet::error]
@@ -1254,7 +1260,7 @@ pub mod pallet {
 			// cannot be a collator candidate and delegator with same AccountId
 			ensure!(!Self::is_candidate(&acc), Error::<T>::CandidateExists);
 			// cannot delegate if number of delegations in this round exceeds
-			// MaxCollatorsPerDelegator
+			// MaxDelegationsPerRound
 			let delegation_counter = Self::update_delegation_counter(&acc)?;
 
 			// prepare update of collator state
@@ -1368,7 +1374,7 @@ pub mod pallet {
 				Error::<T>::ExceedMaxCollatorsPerDelegator
 			);
 			// cannot delegate if number of delegations in this round exceeds
-			// MaxCollatorsPerDelegator
+			// MaxDelegationsPerRound
 			let delegation_counter = Self::update_delegation_counter(&acc)?;
 
 			// prepare new collator state
@@ -2185,7 +2191,7 @@ pub mod pallet {
 		}
 
 		/// Checks whether a delegator can still delegate in this round, e.g.,
-		/// if they have not delegated MaxCollatorsPerDelegator many times
+		/// if they have not delegated MaxDelegationsPerRound many times
 		/// already in this round.
 		///
 		/// # <weight>
@@ -2203,7 +2209,7 @@ pub mod pallet {
 			};
 
 			ensure!(
-				T::MaxCollatorsPerDelegator::get() > last_delegation.counter,
+				T::MaxDelegationsPerRound::get() > last_delegation.counter,
 				Error::<T>::ExceededDelegationsPerRound
 			);
 

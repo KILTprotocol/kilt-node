@@ -148,6 +148,7 @@ impl Config for Test {
 	type StakeDuration = StakeDuration;
 	type ExitQueueDelay = ExitQueueDelay;
 	type MinSelectedCandidates = MinSelectedCandidates;
+	type MaxDelegationsPerRound = MaxDelegatorsPerCollator;
 	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
 	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
 	type MinCollatorStk = MinCollatorStk;
