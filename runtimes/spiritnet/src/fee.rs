@@ -16,8 +16,13 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::weights::{WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial};
+use crate::Runtime;
+use frame_support::{
+	traits::Get,
+	weights::{DispatchClass, WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
+};
 use kilt_primitives::{constants::KILT, Balance};
+use pallet_balances::WeightInfo;
 use smallvec::smallvec;
 use sp_runtime::Perbill;
 use sp_std::marker::PhantomData;
@@ -34,24 +39,30 @@ use sp_std::marker::PhantomData;
 ///   - Setting it to `0` will essentially disable the weight fee.
 ///   - Setting it to `1` will cause the literal `#[weight = x]` values to be
 ///     charged.
-pub struct WeightToFee<T>(PhantomData<T>);
-impl<T> WeightToFeePolynomial for WeightToFee<T>
-where
-	T: frame_system::Config,
-{
+pub struct WeightToFee;
+impl WeightToFeePolynomial for WeightToFee {
 	type Balance = Balance;
 	fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
 		// The should be fee
 		let wanted_fee: Balance = KILT / 100;
 
-		// the approx. cost of a transfer with keep alive check.
-		let unbalanced_fee: Balance = 125000288;
+		// TODO: transfer_keep_alive is 288 byte long?
+		let per_byte_fee: u128 = <Runtime as pallet_transaction_payment::Config>::TransactionByteFee::get().into();
+		let byte_fee: u128 = 288_u128 * per_byte_fee;
+		let base_weight: Balance = <Runtime as frame_system::Config>::BlockWeights::get()
+			.get(DispatchClass::Normal)
+			.base_extrinsic
+			.into();
+		let tx_weight: Balance = <Runtime as pallet_balances::Config>::WeightInfo::transfer_keep_alive().into();
+		let unbalanced_fee: Balance = base_weight + tx_weight;
+
+		let wanted_weight_fee: Balance = wanted_fee - byte_fee;
 
 		smallvec![WeightToFeeCoefficient {
 			degree: 1,
 			negative: false,
-			coeff_frac: Perbill::from_rational(wanted_fee % unbalanced_fee, unbalanced_fee),
-			coeff_integer: wanted_fee / unbalanced_fee,
+			coeff_frac: Perbill::from_rational(wanted_weight_fee % unbalanced_fee, unbalanced_fee),
+			coeff_integer: wanted_weight_fee / unbalanced_fee,
 		}]
 	}
 }
