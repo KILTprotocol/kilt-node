@@ -33,8 +33,7 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
-pub use crate::default_weights::WeightInfo;
-pub use pallet::*;
+pub use crate::{default_weights::WeightInfo, pallet::*};
 
 #[frame_support::pallet]
 pub mod pallet {

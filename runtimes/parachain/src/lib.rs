@@ -546,7 +546,7 @@ impl pallet_elections_phragmen::Config for Runtime {
 	type DesiredMembers = DesiredMembers;
 	type DesiredRunnersUp = DesiredRunnersUp;
 	type TermDuration = TermDuration;
-	// Benchmarks fail, but we won't need this pallet anyway anymore
+	// FIXME: Benchmarks fail, but this pallet will be replaced by another election algorithm before replacing sudo with governance.
 	type WeightInfo = ();
 }
 

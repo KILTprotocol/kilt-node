@@ -38,12 +38,7 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
-pub use crate::default_weights::WeightInfo;
-pub use did_details::*;
-pub use errors::*;
-pub use origin::*;
-pub use pallet::*;
-pub use url::*;
+pub use crate::{default_weights::WeightInfo, did_details::*, errors::*, origin::*, pallet::*, url::*};
 
 use frame_support::{
 	dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo},
