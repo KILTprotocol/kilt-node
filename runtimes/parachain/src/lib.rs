@@ -35,8 +35,8 @@ use frame_system::{
 };
 use kilt_primitives::{
 	constants::{
-		AVERAGE_ON_INITIALIZE_RATIO, DAYS, KILT, MAXIMUM_BLOCK_WEIGHT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT,
-		NORMAL_DISPATCH_RATIO, SLOT_DURATION,
+		AVERAGE_ON_INITIALIZE_RATIO, DAYS, KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT,
+		MIN_VESTED_TRANSFER_AMOUNT, NORMAL_DISPATCH_RATIO, SLOT_DURATION,
 	},
 	AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Hash, Header, Index, Signature,
 };
@@ -225,7 +225,7 @@ impl pallet_timestamp::Config for Runtime {
 
 parameter_types! {
 	pub const ExistentialDeposit: u128 = 100 * MILLI_KILT;
-	pub const TransactionByteFee: u128 = 1;
+	pub const TransactionByteFee: u128 = MICRO_KILT;
 	pub const MaxLocks: u32 = 50;
 }
 
