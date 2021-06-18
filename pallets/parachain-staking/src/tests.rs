@@ -289,7 +289,7 @@ fn join_collator_candidates() {
 				MetaEvent::stake(Event::JoinedCollatorCandidates(7, 10u128, 710u128))
 			);
 
-			// MaxCollatorCandidateStk
+			// MaxCollatorCandidateStake
 			assert_noop!(
 				StakePallet::join_candidates(Origin::signed(10), 161_000_000 * DECIMALS),
 				Error::<Test>::ValStakeAboveMax
@@ -1171,7 +1171,7 @@ fn collators_bond() {
 			);
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(4), 10));
 
-			// MaxCollatorCandidateStk
+			// MaxCollatorCandidateStake
 			assert_ok!(StakePallet::join_candidates(
 				Origin::signed(11),
 				StakePallet::max_candidate_stake()
@@ -1307,7 +1307,7 @@ fn revoke_delegation_or_leave_delegators() {
 			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(6), 3, 3));
 			assert_ok!(StakePallet::revoke_delegation(Origin::signed(6), 1));
 			// cannot revoke delegation because would leave remaining total below
-			// MinDelegatorStk
+			// MinDelegatorStake
 			assert_noop!(
 				StakePallet::revoke_delegation(Origin::signed(6), 2),
 				Error::<Test>::NomStakeBelowMin
@@ -1677,8 +1677,8 @@ fn coinbase_rewards_many_blocks_simple_check() {
 		});
 }
 
-// Could only occur if we increase MinDelegatorStk via runtime upgrade and don't
-// migrate delegators which fall below minimum
+// Could only occur if we increase MinDelegatorStake via runtime upgrade and
+// don't migrate delegators which fall below minimum
 #[test]
 fn should_not_reward_delegators_below_min_stake() {
 	ExtBuilder::default()
@@ -1690,7 +1690,7 @@ fn should_not_reward_delegators_below_min_stake() {
 		.execute_with(|| {
 			// impossible but lets assume it happened
 			let mut state = StakePallet::collator_state(&1).expect("CollatorState cannot be missing");
-			let delegator_stake_below_min = <Test as Config>::MinDelegatorStk::get() - 1;
+			let delegator_stake_below_min = <Test as Config>::MinDelegatorStake::get() - 1;
 			state.stake += delegator_stake_below_min;
 			state.total += delegator_stake_below_min;
 			let impossible_bond = Stake {

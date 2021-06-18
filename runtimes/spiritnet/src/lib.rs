@@ -349,9 +349,9 @@ parameter_types! {
 	/// Maximum 1 collator per delegator at launch, will be increased later
 	pub const MaxCollatorsPerDelegator: u32 = 1;
 	/// Minimum stake required to be reserved to be a collator is 10_000
-	pub const MinCollatorStk: Balance = 10_000 * KILT;
+	pub const MinCollatorStake: Balance = 10_000 * KILT;
 	/// Minimum stake required to be reserved to be a delegator is 1000
-	pub const MinDelegatorStk: Balance = 1000 * KILT;
+	pub const MinDelegatorStake: Balance = 1000 * KILT;
 	/// Maximum number of collator candidates
 	pub const MaxCollatorCandidates: u32 = 75;
 	/// Maximum number of concurrent requests to unlock unstaked balance
@@ -370,11 +370,11 @@ impl parachain_staking::Config for Runtime {
 	type MaxDelegationsPerRound = MaxDelegationsPerRound;
 	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
 	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
-	type MinCollatorStk = MinCollatorStk;
-	type MinCollatorCandidateStk = MinCollatorStk;
+	type MinCollatorStake = MinCollatorStake;
+	type MinCollatorCandidateStake = MinCollatorStake;
 	type MaxCollatorCandidates = MaxCollatorCandidates;
-	type MinDelegation = MinDelegatorStk;
-	type MinDelegatorStk = MinDelegatorStk;
+	type MinDelegation = MinDelegatorStake;
+	type MinDelegatorStake = MinDelegatorStake;
 	type MaxUnstakeRequests = MaxUnstakeRequests;
 	type WeightInfo = weights::parachain_staking::WeightInfo<Runtime>;
 }

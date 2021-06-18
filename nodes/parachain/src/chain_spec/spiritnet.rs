@@ -28,7 +28,7 @@ use sc_service::ChainType;
 use sp_core::{crypto::UncheckedInto, sr25519};
 use sp_runtime::Perquintill;
 use spiritnet_runtime::{
-	BalancesConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStk, ParachainInfoConfig,
+	BalancesConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake, ParachainInfoConfig,
 	ParachainStakingConfig, Runtime, SessionConfig, SudoConfig, SystemConfig, VestingConfig, WASM_BINARY,
 };
 
@@ -55,13 +55,13 @@ pub fn get_chain_spec_dev(id: ParaId) -> Result<ChainSpec, String> {
 						// TODO: Change before launch
 						get_account_id_from_seed::<sr25519::Public>("Alice"),
 						None,
-						2 * MinCollatorStk::get(),
+						2 * MinCollatorStake::get(),
 					),
 					(
 						// TODO: Change before launch
 						get_account_id_from_seed::<sr25519::Public>("Bob"),
 						None,
-						2 * MinCollatorStk::get(),
+						2 * MinCollatorStake::get(),
 					),
 				],
 				kilt_inflation_config(),

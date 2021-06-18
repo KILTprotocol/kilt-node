@@ -131,9 +131,9 @@ parameter_types! {
 	pub const MaxDelegatorsPerCollator: u32 = 4;
 	pub const MaxCollatorsPerDelegator: u32 = 4;
 	pub const DefaultCollatorCommission: Perbill = Perbill::from_percent(20);
-	pub const MinCollatorStk: Balance = 10;
+	pub const MinCollatorStake: Balance = 10;
 	pub const MaxCollatorCandidates: u32 = 10;
-	pub const MinDelegatorStk: Balance = 5;
+	pub const MinDelegatorStake: Balance = 5;
 	pub const MinDelegation: Balance = 3;
 	pub const MaxUnstakeRequests: u32 = 5;
 }
@@ -150,10 +150,10 @@ impl Config for Test {
 	type MaxDelegationsPerRound = MaxDelegatorsPerCollator;
 	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
 	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
-	type MinCollatorStk = MinCollatorStk;
-	type MinCollatorCandidateStk = MinCollatorStk;
+	type MinCollatorStake = MinCollatorStake;
+	type MinCollatorCandidateStake = MinCollatorStake;
 	type MaxCollatorCandidates = MaxCollatorCandidates;
-	type MinDelegatorStk = MinDelegatorStk;
+	type MinDelegatorStake = MinDelegatorStake;
 	type MinDelegation = MinDelegation;
 	type MaxUnstakeRequests = MaxUnstakeRequests;
 	type WeightInfo = ();

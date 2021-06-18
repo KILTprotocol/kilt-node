@@ -21,7 +21,7 @@
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
 use kilt_parachain_runtime::{
-	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStk, ParachainInfoConfig,
+	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake, ParachainInfoConfig,
 	ParachainStakingConfig, Runtime, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig,
 	WASM_BINARY,
 };
@@ -54,13 +54,13 @@ pub fn make_dev_spec(id: ParaId) -> Result<ChainSpec, String> {
 						// TODO: Change before launch
 						get_account_id_from_seed::<sr25519::Public>("Alice"),
 						None,
-						2 * MinCollatorStk::get(),
+						2 * MinCollatorStake::get(),
 					),
 					(
 						// TODO: Change before launch
 						get_account_id_from_seed::<sr25519::Public>("Bob"),
 						None,
-						2 * MinCollatorStk::get(),
+						2 * MinCollatorStake::get(),
 					),
 				],
 				kilt_inflation_config(),

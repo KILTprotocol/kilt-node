@@ -28,7 +28,7 @@
 //! separately between collators and delegators.
 //!
 //! To join the set of candidates, an account must call `join_candidates` with
-//! `MinCollatorCandidateStk` <= stake <= `MaxCollatorCandidateStk`.
+//! `MinCollatorCandidateStake` <= stake <= `MaxCollatorCandidateStake`.
 //!
 //! To leave the set of candidates, the collator calls `leave_candidates`. If
 //! the call succeeds, the collator is removed from the pool of candidates so
@@ -47,7 +47,7 @@
 //! sessions.
 //!
 //! To join the set of delegators, an account must call `join_delegators` with
-//! stake >= `MinDelegatorStk`. There are also runtime methods for delegating
+//! stake >= `MinDelegatorStake`. There are also runtime methods for delegating
 //! additional collators and revoking delegations.
 //!
 //!
@@ -110,14 +110,14 @@
 //!   rounds enable more frequent changes of the selected candidates, earlier
 //!   withdrawal from unstaking and earlier collator leaving. Requires sudo.
 //! - `join_candidates` - Join the set of collator candidates by staking at
-//!   least `MinCandidateStk` and at most `MaxCollatorCandidateStk`.
+//!   least `MinCandidateStake` and at most `MaxCollatorCandidateStake`.
 //! - `init_leave_candidates` - Request to leave the set of collators. Unstaking
 //!   and storage clean-up is delayed until executing the exit at least
 //!   ExitQueueDelay rounds later.
 //! - `candidate_stake_more` - Increase your own stake as a collator candidate
-//!   by the provided amount up to `MaxCollatorCandidateStk`.
+//!   by the provided amount up to `MaxCollatorCandidateStake`.
 //! - `candidate_stake_less` - Decrease your own stake as a collator candidate
-//!   by the provided amount down to `MinCandidateStk`.
+//!   by the provided amount down to `MinCandidateStake`.
 //! - `join_delegators` - Join the set of delegators by delegating to a collator
 //!   candidate.
 //! - `delegate_another_candidate` - Delegate to another collator candidate by
@@ -131,7 +131,7 @@
 //!   delegated collator candidate's total stake.
 //! - `delegator_stake_less` - Decrease your own stake as a delegator and the
 //!   delegated collator candidate's total stake by the provided amount down to
-//!   `MinDelegatorStk`.
+//!   `MinDelegatorStake`.
 //! - `withdraw_unstaked` - Attempt to withdraw previously unstaked balance from
 //!   any account. Succeeds if at least one unstake call happened at least
 //!   `StakeDuration` blocks ago.
@@ -257,14 +257,14 @@ pub mod pallet {
 		type MaxCollatorCandidates: Get<u32>;
 		/// Minimum stake required for any account to be elected as validator
 		/// for a round.
-		type MinCollatorStk: Get<BalanceOf<Self>>;
+		type MinCollatorStake: Get<BalanceOf<Self>>;
 		/// Minimum stake required for any account to be added to the set of
 		/// candidates.
-		type MinCollatorCandidateStk: Get<BalanceOf<Self>>;
+		type MinCollatorCandidateStake: Get<BalanceOf<Self>>;
 		/// Minimum stake required for any account to be able to delegate.
 		type MinDelegation: Get<BalanceOf<Self>>;
 		/// Minimum stake required for any account to become a delegator.
-		type MinDelegatorStk: Get<BalanceOf<Self>>;
+		type MinDelegatorStake: Get<BalanceOf<Self>>;
 		/// Max number of concurrent active unstaking requests before
 		/// withdrawing.
 		type MaxUnstakeRequests: Get<u32>;
@@ -533,7 +533,7 @@ pub mod pallet {
 	/// The maximum amount a collator candidate can stake.
 	#[pallet::storage]
 	#[pallet::getter(fn max_candidate_stake)]
-	pub(crate) type MaxCollatorCandidateStk<T: Config> = StorageValue<_, BalanceOf<T>, ValueQuery>;
+	pub(crate) type MaxCollatorCandidateStake<T: Config> = StorageValue<_, BalanceOf<T>, ValueQuery>;
 
 	/// The year in which the last automatic reduction of the reward rates
 	/// occurred.
@@ -573,7 +573,7 @@ pub mod pallet {
 			assert!(self.inflation_config.is_valid::<T>(), "Invalid inflation configuration");
 
 			<InflationConfig<T>>::put(self.inflation_config.clone());
-			<MaxCollatorCandidateStk<T>>::put(self.max_candidate_stake);
+			<MaxCollatorCandidateStake<T>>::put(self.max_candidate_stake);
 
 			for &(ref actor, ref opt_val, balance) in &self.stakers {
 				assert!(
@@ -728,15 +728,15 @@ pub mod pallet {
 		///
 		/// # <weight>
 		/// Weight: O(1)
-		/// - Reads: [Origin Account], MaxCollatorCandidateStk
+		/// - Reads: [Origin Account], MaxCollatorCandidateStake
 		/// - Writes: Round
 		/// # </weight>
 		#[pallet::weight(<T as Config>::WeightInfo::increase_max_candidate_stake_by())]
 		pub fn increase_max_candidate_stake_by(origin: OriginFor<T>, plus: BalanceOf<T>) -> DispatchResult {
 			frame_system::ensure_root(origin)?;
-			let old = <MaxCollatorCandidateStk<T>>::get();
+			let old = <MaxCollatorCandidateStake<T>>::get();
 			let new = old.saturating_add(plus);
-			<MaxCollatorCandidateStk<T>>::put(new);
+			<MaxCollatorCandidateStake<T>>::put(new);
 
 			Self::deposit_event(Event::MaxCandidateStakeChanged(old, new));
 			Ok(())
@@ -744,7 +744,7 @@ pub mod pallet {
 
 		/// Decreases the maximum amount a collator candidate can stake by the
 		/// provided amount. The new maximum cannot be lower than
-		/// MinCollatorCandidateStk.
+		/// MinCollatorCandidateStake.
 		///
 		/// The dispatch origin must be Root.
 		///
@@ -758,9 +758,9 @@ pub mod pallet {
 		/// ---------
 		/// Weight: O(N) where N is `MaxSelectedCandidates` bounded by
 		/// `MaxCollatorCandidates`
-		/// - Reads: MaxCollatorCandidateStk, 2 * N * CollatorState,
+		/// - Reads: MaxCollatorCandidateStake, 2 * N * CollatorState,
 		///   CandidatePool
-		/// - Writes: MaxCollatorCandidateStk, N * CollatorState,
+		/// - Writes: MaxCollatorCandidateStake, N * CollatorState,
 		///   SelectedCandidates
 		/// # </weight>
 		#[pallet::weight(<T as Config>::WeightInfo::decrease_max_candidate_stake_by(T::MaxCollatorCandidates::get(), T::MaxCollatorCandidates::get() * T::MaxDelegatorsPerCollator::get()))]
@@ -769,9 +769,12 @@ pub mod pallet {
 			minus: BalanceOf<T>,
 		) -> DispatchResultWithPostInfo {
 			frame_system::ensure_root(origin)?;
-			let old = <MaxCollatorCandidateStk<T>>::get();
+			let old = <MaxCollatorCandidateStake<T>>::get();
 			let new = old.saturating_sub(minus);
-			ensure!(new >= T::MinCollatorCandidateStk::get(), Error::<T>::CannotSetBelowMin);
+			ensure!(
+				new >= T::MinCollatorCandidateStake::get(),
+				Error::<T>::CannotSetBelowMin
+			);
 
 			// iterate candidate pool and update all candidates with stake > max
 			<CandidatePool<T>>::mutate(|pool| {
@@ -795,7 +798,7 @@ pub mod pallet {
 			// update candidates for next round
 			let (num_collators, num_delegators, _, _) = Self::select_top_candidates();
 
-			<MaxCollatorCandidateStk<T>>::put(new);
+			<MaxCollatorCandidateStake<T>>::put(new);
 
 			Self::deposit_event(Event::MaxCandidateStakeChanged(old, new));
 			Ok(Some(<T as Config>::WeightInfo::decrease_max_candidate_stake_by(
@@ -832,9 +835,9 @@ pub mod pallet {
 		/// Weight: O(N) + O(C) where N is `MaxSelectedCandidates` bounded by
 		/// `MaxCollatorCandidates` and C the size of the CandidatePool (bounded
 		/// by MaxCollatorCandidates)
-		/// - Reads: [Origin Account], DelegatorState, MaxCollatorCandidateStk,
-		///   Locks, TotalStake, CandidatePool, MaxSelectedCandidates, (N + 1) *
-		///   CollatorState
+		/// - Reads: [Origin Account], DelegatorState,
+		///   MaxCollatorCandidateStake, Locks, TotalStake, CandidatePool,
+		///   MaxSelectedCandidates, (N + 1) * CollatorState
 		/// - Writes: Locks, TotalStake, CollatorState, CandidatePool,
 		///   SelectedCandidates
 		/// # </weight>
@@ -843,9 +846,12 @@ pub mod pallet {
 			let acc = ensure_signed(origin)?;
 			ensure!(!Self::is_candidate(&acc), Error::<T>::CandidateExists);
 			ensure!(!Self::is_delegator(&acc), Error::<T>::DelegatorExists);
-			ensure!(stake >= T::MinCollatorCandidateStk::get(), Error::<T>::ValStakeBelowMin);
 			ensure!(
-				stake <= <MaxCollatorCandidateStk<T>>::get(),
+				stake >= T::MinCollatorCandidateStake::get(),
+				Error::<T>::ValStakeBelowMin
+			);
+			ensure!(
+				stake <= <MaxCollatorCandidateStake<T>>::get(),
 				Error::<T>::ValStakeAboveMax
 			);
 
@@ -1102,7 +1108,7 @@ pub mod pallet {
 		/// Weight: O(N) where N is `MaxSelectedCandidates` bounded by
 		/// `MaxCollatorCandidates`
 		/// - Reads: [Origin Account], Locks, TotalStake,
-		///   MaxCollatorCandidateStk, CandidatePool, (N + 1)
+		///   MaxCollatorCandidateStake, CandidatePool, (N + 1)
 		///   * CollatorState
 		/// - Writes: Locks, TotalStake, CollatorState, CandidatePool,
 		///   SelectedCandidates
@@ -1118,7 +1124,7 @@ pub mod pallet {
 			state.stake_more(more);
 			let after = state.stake;
 			ensure!(
-				after <= <MaxCollatorCandidateStk<T>>::get(),
+				after <= <MaxCollatorCandidateStake<T>>::get(),
 				Error::<T>::ValStakeAboveMax
 			);
 
@@ -1176,7 +1182,10 @@ pub mod pallet {
 			ensure!(!state.is_leaving(), Error::<T>::CannotActivateIfLeaving);
 			let before = state.stake;
 			let after = state.stake_less(less).ok_or(Error::<T>::Underflow)?;
-			ensure!(after >= T::MinCollatorCandidateStk::get(), Error::<T>::ValStakeBelowMin);
+			ensure!(
+				after >= T::MinCollatorCandidateStake::get(),
+				Error::<T>::ValStakeBelowMin
+			);
 
 			// we don't unlock immediately
 			Self::prep_unstake(&collator, less)?;
@@ -1242,7 +1251,7 @@ pub mod pallet {
 			let collator = T::Lookup::lookup(collator)?;
 			// first delegation
 			ensure!(<DelegatorState<T>>::get(&acc).is_none(), Error::<T>::AlreadyDelegating);
-			ensure!(amount >= T::MinDelegatorStk::get(), Error::<T>::NomStakeBelowMin);
+			ensure!(amount >= T::MinDelegatorStake::get(), Error::<T>::NomStakeBelowMin);
 			// cannot be a collator candidate and delegator with same AccountId
 			ensure!(!Self::is_candidate(&acc), Error::<T>::CandidateExists);
 			// cannot delegate if number of delegations in this round exceeds
@@ -1630,7 +1639,7 @@ pub mod pallet {
 
 			ensure!(remaining >= T::MinDelegation::get(), Error::<T>::DelegationBelowMin);
 			ensure!(
-				delegations.total >= T::MinDelegatorStk::get(),
+				delegations.total >= T::MinDelegatorStake::get(),
 				Error::<T>::NomStakeBelowMin
 			);
 
@@ -1768,8 +1777,8 @@ pub mod pallet {
 				<DelegatorState<T>>::remove(&acc);
 				Self::deposit_event(Event::DelegatorLeft(acc, old_total));
 			} else {
-				// can never fail iff MinDelegatorStk == MinDelegation
-				ensure!(remaining >= T::MinDelegatorStk::get(), Error::<T>::NomStakeBelowMin);
+				// can never fail iff MinDelegatorStake == MinDelegation
+				ensure!(remaining >= T::MinDelegatorStake::get(), Error::<T>::NomStakeBelowMin);
 				Self::delegator_leaves_collator(acc.clone(), collator)?;
 				<DelegatorState<T>>::insert(&acc, delegator);
 			}
@@ -1871,7 +1880,7 @@ pub mod pallet {
 				.into_iter()
 				.rev()
 				.take(top_n as usize)
-				.filter(|x| x.amount >= T::MinCollatorStk::get())
+				.filter(|x| x.amount >= T::MinCollatorStake::get())
 				.map(|x| x.owner)
 				.collect::<Vec<T::AccountId>>();
 
@@ -2274,7 +2283,7 @@ pub mod pallet {
 
 				// Reward delegators
 				for Stake { owner, amount } in state.delegators {
-					if amount >= T::MinDelegatorStk::get() {
+					if amount >= T::MinDelegatorStake::get() {
 						let due =
 							inflation_config
 								.delegator
