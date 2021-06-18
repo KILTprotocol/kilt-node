@@ -326,6 +326,22 @@ pub struct DelegationCounter {
 	pub counter: u32,
 }
 
+// A value placed in storage that represents the current version of the Staking
+// storage. This value is used by the `on_runtime_upgrade` logic to determine
+// whether we run storage migration logic. This should match directly with the
+// semantic versions of the Rust crate.
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, RuntimeDebug)]
+pub enum Releases {
+	V1_0_0,
+	V2_0_0, // New Reward calculation, MaxCollatorCandidateStake
+}
+
+impl Default for Releases {
+	fn default() -> Self {
+		Releases::V1_0_0
+	}
+}
+
 pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
 pub type CollatorOf<T> = Collator<AccountIdOf<T>, BalanceOf<T>>;

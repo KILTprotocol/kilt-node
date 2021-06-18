@@ -163,6 +163,7 @@ pub(crate) mod mock;
 pub(crate) mod tests;
 
 mod inflation;
+pub mod migrations;
 mod set;
 mod types;
 
@@ -196,7 +197,10 @@ pub mod pallet {
 
 	use crate::{
 		set::OrderedSet,
-		types::{BalanceOf, Collator, CollatorOf, DelegationCounter, Delegator, RoundInfo, Stake, StakeOf, TotalStake},
+		types::{
+			BalanceOf, Collator, CollatorOf, DelegationCounter, Delegator, Releases, RoundInfo, Stake, StakeOf,
+			TotalStake,
+		},
 	};
 
 	/// Kilt-specific lock for staking rewards.
@@ -475,6 +479,13 @@ pub mod pallet {
 			post_weight
 		}
 	}
+
+	/// True if network has been upgraded to this version.
+	/// Storage version of the pallet.
+	///
+	/// This is set to v2.0.0 for new networks.
+	#[pallet::storage]
+	pub(crate) type StorageVersion<T: Config> = StorageValue<_, Releases, ValueQuery>;
 
 	/// The maximum number of collator candidates selected at each round.
 	#[pallet::storage]
