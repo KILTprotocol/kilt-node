@@ -1247,7 +1247,7 @@ pub mod pallet {
 			ensure!(!Self::is_candidate(&acc), Error::<T>::CandidateExists);
 			// cannot delegate if number of delegations in this round exceeds
 			// MaxDelegationsPerRound
-			let delegation_counter = Self::update_delegation_counter(&acc)?;
+			let delegation_counter = Self::get_delegation_counter(&acc)?;
 
 			// prepare update of collator state
 			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
@@ -1361,7 +1361,7 @@ pub mod pallet {
 			);
 			// cannot delegate if number of delegations in this round exceeds
 			// MaxDelegationsPerRound
-			let delegation_counter = Self::update_delegation_counter(&acc)?;
+			let delegation_counter = Self::get_delegation_counter(&acc)?;
 
 			// prepare new collator state
 			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
@@ -1817,7 +1817,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		fn delegator_is_kicked(delegation: StakeOf<T>, collator: &T::AccountId) -> DispatchResult {
+		fn delegator_is_kicked(delegation: &StakeOf<T>, collator: &T::AccountId) -> DispatchResult {
 			let mut state = <DelegatorState<T>>::get(&delegation.owner).ok_or(Error::<T>::DelegatorNotFound)?;
 			state.rm_delegation(collator);
 			// we don't unlock immediately
@@ -1940,7 +1940,7 @@ pub mod pallet {
 					state.delegators = OrderedSet::from_sorted_set(delegators);
 
 					// update storage of kicked delegator
-					Self::delegator_is_kicked(stake_to_remove.clone(), &state.id)?;
+					Self::delegator_is_kicked(&stake_to_remove, &state.id)?;
 
 					Ok((state, stake_to_remove))
 				}
@@ -2184,7 +2184,7 @@ pub mod pallet {
 		/// Weight: O(1)
 		/// - Reads: LastDelegation, Round
 		/// # </weight>
-		fn update_delegation_counter(delegator: &T::AccountId) -> Result<DelegationCounter, DispatchError> {
+		fn get_delegation_counter(delegator: &T::AccountId) -> Result<DelegationCounter, DispatchError> {
 			let last_delegation = <LastDelegation<T>>::get(delegator);
 			let round = <Round<T>>::get();
 
@@ -2243,7 +2243,7 @@ pub mod pallet {
 		/// However, if the current staking rate exceeds the max staking rate,
 		/// the reward will be reduced by `max_rate / current_rate`. E.g., if
 		/// the current rate is at 50% and the max rate at 40%, the reward is
-		/// reduced by 20% by multiplying the reward with 80%.
+		/// reduced by 20%.
 		///
 		/// # <weight>
 		/// Weight: O(D) where D is the number of delegators of this collator
