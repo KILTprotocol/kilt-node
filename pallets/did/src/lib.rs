@@ -132,12 +132,9 @@ pub mod pallet {
 		/// A DID has been deleted.
 		/// \[transaction signer, DID identifier\]
 		DidDeleted(AccountIdentifierOf<T>, DidIdentifierOf<T>),
-		/// A DID-authorized call has been successfully executed.
-		/// \[DID caller]
-		DidCallSuccess(DidIdentifierOf<T>),
-		/// A DID-authorized call has failed to execute.
-		/// \[DID caller, error]
-		DidCallFailure(DidIdentifierOf<T>, DispatchError),
+		/// A DID-authorized call has been executed.
+		/// \[DID caller, dispatch result]
+		DidCallDispatched(DidIdentifierOf<T>, DispatchResult),
 	}
 
 	#[pallet::error]
@@ -436,11 +433,9 @@ pub mod pallet {
 			#[cfg(feature = "runtime-benchmarks")]
 			let result = call.dispatch(RawOrigin::Signed(did).into());
 
-			let dispatch_event = match result {
-				Ok(_) => Event::DidCallSuccess(did_identifier),
-				Err(err_result) => Event::DidCallFailure(did_identifier, err_result.error),
-			};
-			Self::deposit_event(dispatch_event);
+			let dispatch_event_payload = result.map(|_| ()).map_err(|e| e.error);
+
+			Self::deposit_event(Event::DidCallDispatched(did_identifier, dispatch_event_payload));
 
 			result
 		}
