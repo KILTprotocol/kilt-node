@@ -342,7 +342,7 @@ benchmarks! {
 		let n in 1 .. T::MaxCollatorCandidates::get();
 		// we need at least 1 delegator
 		let m in 1 .. T::MaxDelegatorsPerCollator::get() - 1;
-		let u in 0 .. (T::MaxUnstakeRequests::get() as u32);
+		let u in 1 .. (T::MaxUnstakeRequests::get() as u32);
 
 		let candidates = setup_collator_candidates::<T>(n, None);
 		for (i, c) in candidates.iter().enumerate() {
