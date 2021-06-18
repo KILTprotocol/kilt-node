@@ -173,6 +173,7 @@ pub fn kilt_inflation_config() -> InflationInfo {
 	)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn testnet_genesis(
 	wasm_binary: &[u8],
 	stakers: Vec<(AccountId, Option<AccountId>, Balance)>,

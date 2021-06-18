@@ -441,7 +441,7 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_initialize(now: T::BlockNumber) -> frame_support::weights::Weight {
-			let mut post_weight = T::DbWeight::get().reads(1);
+			let mut post_weight = <T as Config>::WeightInfo::on_initialize_no_action();
 			let mut round = <Round<T>>::get();
 
 			// check for round update
@@ -453,15 +453,13 @@ pub mod pallet {
 				<Round<T>>::put(round);
 
 				Self::deposit_event(Event::NewRound(round.first, round.current));
-				post_weight = post_weight.saturating_add(T::DbWeight::get().writes(1));
+				post_weight = <T as Config>::WeightInfo::on_initialize_round_update();
 			}
 			// check for InflationInfo update
 			if now > T::BlocksPerYear::get() {
 				post_weight = post_weight.saturating_add(Self::adjust_reward_rates(now));
-				post_weight
-			} else {
-				post_weight
 			}
+			post_weight
 		}
 	}
 
@@ -2181,11 +2179,9 @@ pub mod pallet {
 					new_inflation.delegator.max_rate,
 					new_inflation.delegator.reward_rate.per_block,
 				));
-
-				T::DbWeight::get().reads_writes(2, 2)
-			} else {
-				T::DbWeight::get().reads(1)
+				<T as Config>::WeightInfo::on_initialize_new_year();
 			}
+			T::DbWeight::get().reads(1)
 		}
 
 		/// Checks whether a delegator can still delegate in this round, e.g.,
