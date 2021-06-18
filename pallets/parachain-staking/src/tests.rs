@@ -2469,7 +2469,7 @@ fn adjust_reward_rates() {
 }
 
 #[test]
-fn increase_max_candidate_stake() {
+fn increase_max_candidate_stake_by() {
 	let max_stake = 160_000_000 * DECIMALS;
 	ExtBuilder::default()
 		.with_balances(vec![(1, 200_000_000 * DECIMALS)])
@@ -2482,7 +2482,7 @@ fn increase_max_candidate_stake() {
 				Error::<Test>::ValStakeAboveMax
 			);
 
-			assert_ok!(StakePallet::increase_max_candidate_stake(Origin::root(), max_stake + 1));
+			assert_ok!(StakePallet::increase_max_candidate_stake_by(Origin::root(), 1));
 			assert_eq!(
 				last_event(),
 				MetaEvent::stake(Event::MaxCandidateStakeChanged(max_stake, max_stake + 1))
@@ -2493,23 +2493,11 @@ fn increase_max_candidate_stake() {
 				StakePallet::candidate_stake_more(Origin::signed(1), 1),
 				Error::<Test>::ValStakeAboveMax
 			);
-
-			assert_noop!(
-				StakePallet::increase_max_candidate_stake(
-					Origin::root(),
-					<Test as Config>::MinCollatorCandidateStk::get() - 1
-				),
-				Error::<Test>::CannotSetBelowMin
-			);
-			assert_noop!(
-				StakePallet::increase_max_candidate_stake(Origin::root(), max_stake),
-				Error::<Test>::NotIncreasing
-			);
 		});
 }
 
 #[test]
-fn decrease_max_candidate_stake() {
+fn decrease_max_candidate_stake_by() {
 	ExtBuilder::default()
 		.with_balances(vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100)])
 		.with_collators(vec![(1, 100), (2, 90), (3, 40)])
@@ -2525,8 +2513,12 @@ fn decrease_max_candidate_stake() {
 					Stake { owner: 3, amount: 60 }
 				])
 			);
+			let max_stake = StakePallet::max_candidate_stake();
 
-			assert_ok!(StakePallet::decrease_max_candidate_stake(Origin::root(), 50));
+			assert_ok!(StakePallet::decrease_max_candidate_stake_by(
+				Origin::root(),
+				max_stake - 50
+			));
 			assert_eq!(StakePallet::max_candidate_stake(), 50);
 			assert_eq!(
 				last_event(),
@@ -2579,15 +2571,8 @@ fn decrease_max_candidate_stake() {
 				Error::<Test>::ValStakeAboveMax
 			);
 			assert_noop!(
-				StakePallet::decrease_max_candidate_stake(
-					Origin::root(),
-					<Test as Config>::MinCollatorCandidateStk::get() - 1
-				),
+				StakePallet::decrease_max_candidate_stake_by(Origin::root(), 41),
 				Error::<Test>::CannotSetBelowMin
-			);
-			assert_noop!(
-				StakePallet::decrease_max_candidate_stake(Origin::root(), 50 + 1),
-				Error::<Test>::NotDecreasing
 			);
 		});
 }

@@ -353,10 +353,6 @@ pub mod pallet {
 		StakeNotFound,
 		/// Cannot withdraw when Unstaked is empty.
 		UnstakingIsEmpty,
-		/// Tried to increase max collator stake with decrease transaction.
-		NotDecreasing,
-		/// Tried to decrease max collator stake with increase transaction.
-		NotIncreasing,
 	}
 
 	#[pallet::event]
@@ -606,9 +602,6 @@ pub mod pallet {
 			// Start Round 0 at Block 0
 			let round: RoundInfo<T::BlockNumber> = RoundInfo::new(0u32, 0u32.into(), T::DefaultBlocksPerRound::get());
 			<Round<T>>::put(round);
-			// Snapshot total stake
-
-			Pallet::<T>::deposit_event(Event::NewRound(T::BlockNumber::zero(), 0u32));
 		}
 	}
 
@@ -726,8 +719,8 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Increases the maximum amount a collator candidate can stake. The new
-		/// maximum cannot be lower than MinCollatorCandidateStk.
+		/// Increases the maximum amount a collator candidate can stake by the
+		/// provided amount.
 		///
 		/// The dispatch origin must be Root.
 		///
@@ -738,20 +731,20 @@ pub mod pallet {
 		/// - Reads: [Origin Account], MaxCollatorCandidateStk
 		/// - Writes: Round
 		/// # </weight>
-		#[pallet::weight(<T as Config>::WeightInfo::increase_max_candidate_stake())]
-		pub fn increase_max_candidate_stake(origin: OriginFor<T>, new: BalanceOf<T>) -> DispatchResult {
+		#[pallet::weight(<T as Config>::WeightInfo::increase_max_candidate_stake_by())]
+		pub fn increase_max_candidate_stake_by(origin: OriginFor<T>, plus: BalanceOf<T>) -> DispatchResult {
 			frame_system::ensure_root(origin)?;
-			ensure!(new >= T::MinCollatorCandidateStk::get(), Error::<T>::CannotSetBelowMin);
 			let old = <MaxCollatorCandidateStk<T>>::get();
-			ensure!(new > old, Error::<T>::NotIncreasing);
+			let new = old.saturating_add(plus);
 			<MaxCollatorCandidateStk<T>>::put(new);
 
 			Self::deposit_event(Event::MaxCandidateStakeChanged(old, new));
 			Ok(())
 		}
 
-		/// Increases the maximum amount a collator candidate can stake. The new
-		/// maximum cannot be lower than MinCollatorCandidateStk.
+		/// Decreases the maximum amount a collator candidate can stake by the
+		/// provided amount. The new maximum cannot be lower than
+		/// MinCollatorCandidateStk.
 		///
 		/// The dispatch origin must be Root.
 		///
@@ -770,38 +763,33 @@ pub mod pallet {
 		/// - Writes: MaxCollatorCandidateStk, N * CollatorState,
 		///   SelectedCandidates
 		/// # </weight>
-		#[pallet::weight(<T as Config>::WeightInfo::decrease_max_candidate_stake(T::MaxCollatorCandidates::get(), T::MaxCollatorCandidates::get() * T::MaxDelegatorsPerCollator::get()))]
-		pub fn decrease_max_candidate_stake(origin: OriginFor<T>, new: BalanceOf<T>) -> DispatchResultWithPostInfo {
+		#[pallet::weight(<T as Config>::WeightInfo::decrease_max_candidate_stake_by(T::MaxCollatorCandidates::get(), T::MaxCollatorCandidates::get() * T::MaxDelegatorsPerCollator::get()))]
+		pub fn decrease_max_candidate_stake_by(
+			origin: OriginFor<T>,
+			minus: BalanceOf<T>,
+		) -> DispatchResultWithPostInfo {
 			frame_system::ensure_root(origin)?;
-			ensure!(new >= T::MinCollatorCandidateStk::get(), Error::<T>::CannotSetBelowMin);
-
 			let old = <MaxCollatorCandidateStk<T>>::get();
-			ensure!(old > new, Error::<T>::NotDecreasing);
+			let new = old.saturating_sub(minus);
+			ensure!(new >= T::MinCollatorCandidateStk::get(), Error::<T>::CannotSetBelowMin);
 
 			// iterate candidate pool and update all candidates with stake > max
 			<CandidatePool<T>>::mutate(|pool| {
-				let candidates = pool
-					.clone()
-					.into_vec()
-					.into_iter()
-					.map(|mut candidate| {
-						// state should always exist but let's be safe
-						if let Some(mut state) = <CollatorState<T>>::get(&candidate.owner) {
-							if state.stake > new {
-								// safe because we ensure stake > new
-								let delta = state.stake - new;
-								state.stake_less(delta);
-								candidate.amount = candidate.amount.saturating_sub(delta);
+				for mut candidate in pool[..].iter_mut() {
+					// state should always exist but let's be safe
+					if let Some(mut state) = <CollatorState<T>>::get(&candidate.owner) {
+						if state.stake > new {
+							// safe because we ensure stake > new
+							let delta = state.stake - new;
+							state.stake_less(delta);
+							candidate.amount = candidate.amount.saturating_sub(delta);
 
-								// immediately free delta by setting lock from old to new
-								T::Currency::set_lock(STAKING_ID, &candidate.owner, new, WithdrawReasons::all());
-								<CollatorState<T>>::insert(&candidate.owner, state);
-							}
+							// immediately free delta by setting lock from old to new
+							T::Currency::set_lock(STAKING_ID, &candidate.owner, new, WithdrawReasons::all());
+							<CollatorState<T>>::insert(&candidate.owner, state);
 						}
-						candidate
-					})
-					.collect();
-				*pool = OrderedSet::from(candidates);
+					}
+				}
 			});
 
 			// update candidates for next round
@@ -810,7 +798,7 @@ pub mod pallet {
 			<MaxCollatorCandidateStk<T>>::put(new);
 
 			Self::deposit_event(Event::MaxCandidateStakeChanged(old, new));
-			Ok(Some(<T as Config>::WeightInfo::decrease_max_candidate_stake(
+			Ok(Some(<T as Config>::WeightInfo::decrease_max_candidate_stake_by(
 				num_collators,
 				num_delegators,
 			))
@@ -1907,9 +1895,9 @@ pub mod pallet {
 			}
 			collators.sort();
 
-			<Total<T>>::mutate(|old| {
-				old.collators = collator_stake;
-				old.delegators = delegator_stake;
+			<Total<T>>::mutate(|total| {
+				total.collators = collator_stake;
+				total.delegators = delegator_stake;
 			});
 
 			log::trace!("Selected {} collators", collators.len());
@@ -2267,34 +2255,31 @@ pub mod pallet {
 		fn note_author(author: T::AccountId) {
 			// should always include state
 			if let Some(state) = <CollatorState<T>>::get(author.clone()) {
-				if state.stake >= T::MinCollatorStk::get() && state.total >= T::MinCollatorStk::get() {
-					let total_issuance = T::Currency::total_issuance();
-					let TotalStake {
-						collators: total_collators,
-						delegators: total_delegators,
-					} = <Total<T>>::get();
-					let c_staking_rate = Perquintill::from_rational(total_collators, total_issuance);
-					let d_staking_rate = Perquintill::from_rational(total_delegators, total_issuance);
-					let inflation_config = <InflationConfig<T>>::get();
-					let authors_per_round = <BalanceOf<T>>::from(<MaxSelectedCandidates<T>>::get());
+				let total_issuance = T::Currency::total_issuance();
+				let TotalStake {
+					collators: total_collators,
+					delegators: total_delegators,
+				} = <Total<T>>::get();
+				let c_staking_rate = Perquintill::from_rational(total_collators, total_issuance);
+				let d_staking_rate = Perquintill::from_rational(total_delegators, total_issuance);
+				let inflation_config = <InflationConfig<T>>::get();
+				let authors_per_round = <BalanceOf<T>>::from(<MaxSelectedCandidates<T>>::get());
 
-					// Reward collator
-					let amt_due_collator =
-						inflation_config
-							.collator
-							.compute_reward::<T>(state.stake, c_staking_rate, authors_per_round);
-					Self::do_reward(&author, amt_due_collator);
+				// Reward collator
+				let amt_due_collator =
+					inflation_config
+						.collator
+						.compute_reward::<T>(state.stake, c_staking_rate, authors_per_round);
+				Self::do_reward(&author, amt_due_collator);
 
-					// Reward delegators
-					for Stake { owner, amount } in state.delegators {
-						if amount >= T::MinDelegatorStk::get() {
-							let due = inflation_config.delegator.compute_reward::<T>(
-								amount,
-								d_staking_rate,
-								authors_per_round,
-							);
-							Self::do_reward(&owner, due);
-						}
+				// Reward delegators
+				for Stake { owner, amount } in state.delegators {
+					if amount >= T::MinDelegatorStk::get() {
+						let due =
+							inflation_config
+								.delegator
+								.compute_reward::<T>(amount, d_staking_rate, authors_per_round);
+						Self::do_reward(&owner, due);
 					}
 				}
 			}

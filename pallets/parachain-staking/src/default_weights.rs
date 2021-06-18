@@ -66,8 +66,8 @@ pub trait WeightInfo {
 	fn revoke_delegation(n: u32, m: u32, ) -> Weight;
 	fn leave_delegators(n: u32, m: u32, ) -> Weight;
 	fn withdraw_unstaked(u: u32, ) -> Weight;
-	fn increase_max_candidate_stake() -> Weight;
-	fn decrease_max_candidate_stake(n: u32, m: u32, ) -> Weight;
+	fn increase_max_candidate_stake_by() -> Weight;
+	fn decrease_max_candidate_stake_by(n: u32, m: u32, ) -> Weight;
 }
 
 /// Weights for parachain_staking using the Substrate node and recommended hardware.
@@ -220,12 +220,12 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
-	fn increase_max_candidate_stake() -> Weight {
+	fn increase_max_candidate_stake_by() -> Weight {
 		(27_711_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
-	fn decrease_max_candidate_stake(n: u32, m: u32, ) -> Weight {
+	fn decrease_max_candidate_stake_by(n: u32, m: u32, ) -> Weight {
 		(0_u64)
 			// Standard Error: 62_000
 			.saturating_add((61_021_000_u64).saturating_mul(n as Weight))
@@ -387,12 +387,12 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(3_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
 	}
-	fn increase_max_candidate_stake() -> Weight {
+	fn increase_max_candidate_stake_by() -> Weight {
 		(27_711_000_u64)
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
-	fn decrease_max_candidate_stake(n: u32, m: u32, ) -> Weight {
+	fn decrease_max_candidate_stake_by(n: u32, m: u32, ) -> Weight {
 		(0_u64)
 			// Standard Error: 62_000
 			.saturating_add((61_021_000_u64).saturating_mul(n as Weight))

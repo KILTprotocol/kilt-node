@@ -27,7 +27,7 @@ use frame_support::{
 use frame_system::{Pallet as System, RawOrigin};
 use kilt_primitives::constants::YEARS;
 use sp_runtime::{
-	traits::{One, SaturatedConversion, StaticLookup},
+	traits::{One, SaturatedConversion, Saturating, StaticLookup},
 	Perquintill,
 };
 use sp_std::{convert::TryInto, vec::Vec};
@@ -510,29 +510,29 @@ benchmarks! {
 		assert_eq!(pallet_balances::Pallet::<T>::usable_balance(&candidate), (free_balance - stake - stake + T::CurrencyBalance::from(1u64)).into());
 	}
 
-	increase_max_candidate_stake {
+	increase_max_candidate_stake_by {
 		let old = <MaxCollatorCandidateStk<T>>::get();
-		let new = old + T::CurrencyBalance::from(1u64);
-	}: _(RawOrigin::Root, new)
+	}: _(RawOrigin::Root, T::CurrencyBalance::from(1u64))
 	verify {
-		assert_eq!(<MaxCollatorCandidateStk<T>>::get(), new);
+		assert_eq!(<MaxCollatorCandidateStk<T>>::get(), old + T::CurrencyBalance::from(1u64));
 		assert!(old < <MaxCollatorCandidateStk<T>>::get());
 	}
 
-	decrease_max_candidate_stake {
+	decrease_max_candidate_stake_by {
 		let n in 2 .. T::MaxCollatorCandidates::get();
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
 		// worst case: all candidates have staked more than new max
-		let old = T::MinCollatorCandidateStk::get() + T::MinCollatorCandidateStk::get();
-		let candidates = setup_collator_candidates::<T>(n, Some(old));
+		let old = <MaxCollatorCandidateStk<T>>::get();
+		let new =  T::MinCollatorCandidateStk::get();
+		let stake = new + new;
+		let candidates = setup_collator_candidates::<T>(n, Some(stake));
 		for (i, c) in candidates.iter().enumerate() {
 			fill_delegators::<T>(m, c.clone(), i as u32);
 		}
 		let candidate = candidates[0].clone();
-		assert_eq!(<CollatorState<T>>::get(&candidate).unwrap().stake, old);
-		let new = old - T::CurrencyBalance::from(1u64);
-	}: _(RawOrigin::Root, new)
+		assert_eq!(<CollatorState<T>>::get(&candidate).unwrap().stake, stake);
+	}: _(RawOrigin::Root, old.saturating_sub(new))
 	verify {
 		assert_eq!(<MaxCollatorCandidateStk<T>>::get(), new);
 		assert_eq!(<CollatorState<T>>::get(candidate).unwrap().stake, new);

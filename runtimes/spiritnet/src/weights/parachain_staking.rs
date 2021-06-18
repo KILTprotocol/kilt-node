@@ -194,12 +194,12 @@ impl<T: frame_system::Config> parachain_staking::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
-	fn increase_max_candidate_stake() -> Weight {
+	fn increase_max_candidate_stake_by() -> Weight {
 		(27_711_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
-	fn decrease_max_candidate_stake(n: u32, m: u32) -> Weight {
+	fn decrease_max_candidate_stake_by(n: u32, m: u32) -> Weight {
 		(0_u64)
 			// Standard Error: 62_000
 			.saturating_add((61_021_000_u64).saturating_mul(n as Weight))
