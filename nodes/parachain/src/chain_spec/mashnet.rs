@@ -236,6 +236,7 @@ fn testnet_genesis(
 		},
 		pallet_aura: Default::default(),
 		cumulus_pallet_aura_ext: Default::default(),
+		cumulus_pallet_parachain_system: Default::default(),
 		pallet_session: SessionConfig {
 			keys: initial_authorities
 				.iter()

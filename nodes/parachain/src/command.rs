@@ -26,6 +26,8 @@ use cumulus_client_service::genesis::generate_genesis_block;
 use cumulus_primitives_core::ParaId;
 use kilt_parachain_runtime::Block;
 use log::info;
+#[cfg(feature = "try-runtime")]
+use node_executor::Executor;
 use polkadot_parachain::primitives::AccountIdConversion;
 use sc_cli::{
 	ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams, NetworkParams, Result,
@@ -303,6 +305,23 @@ pub fn run() -> Result<()> {
 
 			Ok(())
 		}
+		#[cfg(feature = "try-runtime")]
+		Some(Subcommand::TryRuntime(cmd)) => {
+			let runner = cli.create_runner(cmd)?;
+			runner.async_run(|config| {
+				// we don't need any of the components of new_partial, just a runtime, or a task
+				// manager to do `async_run`.
+				let registry = config.prometheus_config.as_ref().map(|cfg| &cfg.registry);
+				let task_manager = sc_service::TaskManager::new(config.task_executor.clone(), registry)
+					.map_err(|e| sc_cli::Error::Service(sc_service::Error::Prometheus(e)))?;
+
+				Ok((cmd.run::<Block, Executor>(config), task_manager))
+			})
+		}
+		#[cfg(not(feature = "try-runtime"))]
+		Some(Subcommand::TryRuntime) => Err("TryRuntime wasn't enabled when building the node. \
+				You can enable it with `--features try-runtime`."
+			.into()),
 		None => {
 			let runner = cli.create_runner(&cli.run.normalize())?;
 

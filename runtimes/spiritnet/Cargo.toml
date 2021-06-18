@@ -6,6 +6,7 @@ version = "0.2.0"
 
 [dependencies]
 codec = {package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"]}
+log = {default-features = false, version = "0.4.14"}
 serde = {version = "1.0.101", optional = true, features = ["derive"]}
 static_assertions = "1.1.0"
 
@@ -69,6 +70,9 @@ rococo-runtime = {git = "https://github.com/paritytech/polkadot", default-featur
 # TODO: Enable after pallet is available on the Cumulus branch we use
 # pallet-session-benchmarking = { git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.4", default-features = false, optional = true }
 
+# Runtime tests
+frame-try-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.4", optional = true}
+
 [build-dependencies]
 substrate-wasm-builder = "4.0.0"
 
@@ -76,21 +80,21 @@ substrate-wasm-builder = "4.0.0"
 default = ["std"]
 runtime-benchmarks = [
   "frame-benchmarking",
-  "frame-system-benchmarking",
-  "hex-literal",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
-  "sp-runtime/runtime-benchmarks",
+  "frame-system-benchmarking",
+  "hex-literal",
   "kilt-launch/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
+  "pallet-timestamp/runtime-benchmarks",
   "pallet-utility/runtime-benchmarks",
   "pallet-vesting/runtime-benchmarks",
-  "pallet-timestamp/runtime-benchmarks",
   # TODO: Enable after pallet is available on the Cumulus branch we use
   # "pallet-session-benchmarking",
   "rococo-runtime/runtime-benchmarks",
+  "sp-runtime/runtime-benchmarks",
 ]
 std = [
   "codec/std",
@@ -100,20 +104,22 @@ std = [
   "cumulus-primitives-core/std",
   "frame-executive/std",
   "frame-support/std",
-  "frame-system-rpc-runtime-api/std",
   "frame-system/std",
+  "frame-system-rpc-runtime-api/std",
+  "frame-try-runtime/std",
   "kilt-launch/std",
   "kilt-primitives/std",
-  "pallet-randomness-collective-flip/std",
+  "log/std",
   "pallet-aura/std",
   "pallet-balances/std",
   "pallet-indices/std",
+  "pallet-randomness-collective-flip/std",
+  "pallet-session/std",
   "pallet-sudo/std",
   "pallet-timestamp/std",
   "pallet-transaction-payment-rpc-runtime-api/std",
   "pallet-transaction-payment/std",
   "pallet-vesting/std",
-  "pallet-session/std",
   "parachain-info/std",
   "parachain-staking/std",
   "polkadot-parachain/std",
@@ -131,7 +137,26 @@ std = [
   "sp-std/std",
   "sp-transaction-pool/std",
   "sp-version/std",
+  "xcm/std",
   "xcm-builder/std",
   "xcm-executor/std",
-  "xcm/std",
+]
+try-runtime = [
+  "frame-executive/try-runtime",
+  "frame-try-runtime",
+  "frame-support/try-runtime",
+  "frame-system/try-runtime",
+  "kilt-launch/try-runtime",
+  "pallet-balances/try-runtime",
+  "pallet-aura/try-runtime",
+  "pallet-authorship/try-runtime",
+  "pallet-indices/try-runtime",
+  "pallet-randomness-collective-flip/try-runtime",
+  "pallet-session/try-runtime",
+  "pallet-sudo/try-runtime",
+  "pallet-timestamp/try-runtime",
+  "pallet-transaction-payment/try-runtime",
+  "pallet-utility/try-runtime",
+  "pallet-vesting/try-runtime",
+  "parachain-staking/try-runtime"
 ]
