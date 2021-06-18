@@ -33,9 +33,9 @@ mod utils;
 pub mod benchmarking;
 
 #[cfg(test)]
-mod tests;
-#[cfg(test)]
 mod mock;
+#[cfg(test)]
+mod tests;
 
 pub use did_details::*;
 pub use errors::*;
@@ -91,7 +91,10 @@ pub mod pallet {
 			+ Dispatchable<Origin = <Self as Config>::Origin, PostInfo = PostDispatchInfo>
 			+ GetDispatchInfo
 			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
-		type DidIdentifier: Parameter + Default + IdentifyAccount<AccountId = AccountIdentifierOf<Self>> + DidVerifiableIdentifier;
+		type DidIdentifier: Parameter
+			+ Default
+			+ IdentifyAccount<AccountId = AccountIdentifierOf<Self>>
+			+ DidVerifiableIdentifier;
 		#[cfg(not(feature = "runtime-benchmarks"))]
 		type Origin: From<DidRawOrigin<DidIdentifierOf<Self>>>;
 		#[cfg(feature = "runtime-benchmarks")]
@@ -243,7 +246,7 @@ pub mod pallet {
 	impl<T> From<KeyError> for Error<T> {
 		fn from(error: KeyError) -> Self {
 			match error {
-				KeyError::UnsupportedKeyType => Self::UnsupportedKeyType
+				KeyError::UnsupportedKeyType => Self::UnsupportedKeyType,
 			}
 		}
 	}
@@ -283,9 +286,14 @@ pub mod pallet {
 				<Error<T>>::DidAlreadyPresent
 			);
 
-			let account_did_auth_key: DidVerificationKey = operation.did.clone().verify_and_recover_signature(&operation.encode(), &signature).map_err(<Error<T>>::from)?;
+			let account_did_auth_key: DidVerificationKey = operation
+				.did
+				.clone()
+				.verify_and_recover_signature(&operation.encode(), &signature)
+				.map_err(<Error<T>>::from)?;
 
-			let did_entry = DidDetails::try_from((operation.clone(), account_did_auth_key)).map_err(<Error<T>>::from)?;
+			let did_entry =
+				DidDetails::try_from((operation.clone(), account_did_auth_key)).map_err(<Error<T>>::from)?;
 
 			Self::verify_payload_signature_with_did_key_type(
 				&operation.encode(),

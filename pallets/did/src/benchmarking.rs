@@ -100,9 +100,7 @@ fn get_did_base_details<T: Config>(auth_key: DidVerificationKey) -> DidDetails<T
 	DidDetails::new(auth_key, BlockNumberOf::<T>::default())
 }
 
-fn generate_base_did_creation_operation<T: Config>(
-	did: DidIdentifierOf<T>,
-) -> DidCreationOperation<T> {
+fn generate_base_did_creation_operation<T: Config>(did: DidIdentifierOf<T>) -> DidCreationOperation<T> {
 	DidCreationOperation {
 		did,
 		new_key_agreement_keys: BTreeSet::new(),

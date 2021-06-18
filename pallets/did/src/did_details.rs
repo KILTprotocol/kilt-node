@@ -18,8 +18,11 @@
 
 use codec::{Decode, Encode, WrapperTypeEncode};
 use sp_core::{ecdsa, ed25519, sr25519};
-use sp_runtime::{MultiSigner, traits::Verify};
-use sp_std::{collections::{btree_map::BTreeMap, btree_set::BTreeSet}, convert::TryInto};
+use sp_runtime::{traits::Verify, MultiSigner};
+use sp_std::{
+	collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+	convert::TryInto,
+};
 
 use crate::*;
 
@@ -64,13 +67,14 @@ impl DidVerificationKey {
 		}
 	}
 
-	/// Decodes from an encoded DidVerificationKey, including the enum type encoding.
+	/// Decodes from an encoded DidVerificationKey, including the enum type
+	/// encoding.
 	pub fn from_did_verification_key_encoded(encoded: &[u8]) -> Result<Self, KeyError> {
 		Self::decode(&mut &encoded[..]).map_err(|_| KeyError::UnsupportedKeyType)
 	}
 
 	/// Decodes from a raw verification key, with no indication about its type.
-	pub fn from_verification_key_encoded(encoded: &[u8]) -> Result<Self, KeyError> {
+	pub fn from_raw_verification_key_encoded(encoded: &[u8]) -> Result<Self, KeyError> {
 		if let Ok(ed25519_pk) = ed25519::Public::decode(&mut &encoded[..]) {
 			Ok(Self::Ed25519(ed25519_pk))
 		} else if let Ok(sr25519_pk) = sr25519::Public::decode(&mut &encoded[..]) {
@@ -83,6 +87,10 @@ impl DidVerificationKey {
 	}
 
 	/// Encodes the DidVerificationKey to the raw underlying type.
+	///
+	/// Different from DidVerificationKey::encode() as the resulting vector
+	/// only contains the encoded public key, with no information about its enum
+	/// type.
 	pub fn to_raw_verification_key(&self) -> Vec<u8> {
 		match self {
 			DidVerificationKey::Ed25519(pk) => pk.encode(),
@@ -170,7 +178,11 @@ impl DidSignature {
 	}
 
 	/// Decodes from a raw signature, with no indication about its type.
-	pub fn from_verification_key_encoded(encoded: &[u8]) -> Result<Self, SignatureError> {
+	///
+	/// Different from DidSignature::encode() as the resulting vector
+	/// only contains the encoded signature, with no information about its enum
+	/// type.
+	pub fn from_raw_signature_encoded(encoded: &[u8]) -> Result<Self, SignatureError> {
 		if let Ok(ed25519_sig) = ed25519::Signature::decode(&mut &encoded[..]) {
 			Ok(Self::Ed25519(ed25519_sig))
 		} else if let Ok(sr25519_sig) = sr25519::Signature::decode(&mut &encoded[..]) {
@@ -211,27 +223,54 @@ impl From<ecdsa::Signature> for DidSignature {
 }
 
 pub trait DidVerifiableIdentifier {
-	// This is needed if we want to support ECDSA in the future, as we can compute the public key given message and signature.
-	fn verify_and_recover_signature(&self, payload: &Payload, signature: &DidSignature) -> Result<DidVerificationKey, SignatureError>;
+	// This is needed if we want to support ECDSA in the future, as we can compute
+	// the public key given message and signature.
+	fn verify_and_recover_signature(
+		&self,
+		payload: &Payload,
+		signature: &DidSignature,
+	) -> Result<DidVerificationKey, SignatureError>;
 }
 
+// TODO: did not manage to implement this trait in the kilt_primivites crate due
+// to some circular dependency problems.
 impl DidVerifiableIdentifier for kilt_primitives::DidIdentifier {
-    fn verify_and_recover_signature(&self, payload: &Payload, signature: &DidSignature) -> Result<DidVerificationKey, SignatureError> {
+	fn verify_and_recover_signature(
+		&self,
+		payload: &Payload,
+		signature: &DidSignature,
+	) -> Result<DidVerificationKey, SignatureError> {
 		match self {
 			MultiSigner::Ed25519(pk) => {
-				let ed25519_did_key = DidVerificationKey::from_verification_key_encoded(pk).map_err(|_| SignatureError::InvalidSignature)?;
-				ed25519_did_key.verify_signature(payload, signature).map(|_| Ok(ed25519_did_key))?
+				let ed25519_did_key = DidVerificationKey::from_raw_verification_key_encoded(pk)
+					.map_err(|_| SignatureError::InvalidSignature)?;
+				ed25519_did_key
+					.verify_signature(payload, signature)
+					.map(|_| Ok(ed25519_did_key))?
 			}
 			MultiSigner::Sr25519(pk) => {
-				let sr25519_did_key = DidVerificationKey::from_verification_key_encoded(pk).map_err(|_| SignatureError::InvalidSignature)?;
-				sr25519_did_key.verify_signature(payload, signature).map(|_| Ok(sr25519_did_key))?
+				let sr25519_did_key = DidVerificationKey::from_raw_verification_key_encoded(pk)
+					.map_err(|_| SignatureError::InvalidSignature)?;
+				sr25519_did_key
+					.verify_signature(payload, signature)
+					.map(|_| Ok(sr25519_did_key))?
 			}
 			MultiSigner::Ecdsa(hashed_pk) => {
-				let ecdsa_signature: [u8; 65] = signature.to_raw_signature().try_into().map_err(|_| SignatureError::InvalidSignature)?;
+				let ecdsa_signature: [u8; 65] = signature
+					.to_raw_signature()
+					.try_into()
+					.map_err(|_| SignatureError::InvalidSignature)?;
+				// ECDSA uses blake2-256 hashing algorihtm for signatures, so we hash the given
+				// message to recover the public key
 				let hashed_message = &sp_io::hashing::blake2_256(payload);
-				if let Ok(compressed_pk) = sp_io::crypto::secp256k1_ecdsa_recover_compressed(&ecdsa_signature, &hashed_message) {
+				if let Ok(compressed_pk) =
+					sp_io::crypto::secp256k1_ecdsa_recover_compressed(&ecdsa_signature, &hashed_message)
+				{
+					// As AccountId32 is the hash of an ECDSA public key, we hash the recovered key
+					// to match for equality
 					if sp_io::hashing::blake2_256(&compressed_pk)[..] == hashed_pk.encode()[..] {
-						DidVerificationKey::from_verification_key_encoded(compressed_pk.as_ref()).map_or(Err(SignatureError::InvalidSignature), |did_key| Ok(did_key))
+						DidVerificationKey::from_raw_verification_key_encoded(compressed_pk.as_ref())
+							.map_or(Err(SignatureError::InvalidSignature), |did_key| Ok(did_key))
 					} else {
 						Err(SignatureError::InvalidSignature)
 					}
@@ -240,7 +279,7 @@ impl DidVerifiableIdentifier for kilt_primitives::DidIdentifier {
 				}
 			}
 		}
-    }
+	}
 }
 
 /// Details of a public key, which includes the key value and the
