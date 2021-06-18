@@ -44,7 +44,8 @@ fn load_spec(id: &str, runtime: &str, para_id: ParaId) -> std::result::Result<Bo
 		"rococo" => Ok(Box::new(chain_spec::mashnet::load_rococo_spec()?)),
 		"dev" => Ok(Box::new(chain_spec::mashnet::make_dev_spec(para_id)?)),
 		"spiritnet-dev" => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_dev(para_id)?)),
-		"westend-new" => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_westend()?)),
+		"wilt-new" => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_wilt()?)),
+		"spiritnet-new" => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_spiritnet()?)),
 		"spiritnet" => Ok(Box::new(chain_spec::spiritnet::load_spiritnet_spec()?)),
 		"" => match runtime {
 			"spiritnet" => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_dev(para_id)?)),

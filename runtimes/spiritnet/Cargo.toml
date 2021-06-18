@@ -8,6 +8,7 @@ version = "0.2.0"
 codec = {package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"]}
 log = {default-features = false, version = "0.4.14"}
 serde = {version = "1.0.101", optional = true, features = ["derive"]}
+smallvec = "1.6.1"
 static_assertions = "1.1.0"
 
 # RPC
