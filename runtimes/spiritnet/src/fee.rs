@@ -42,7 +42,7 @@ impl WeightToFeePolynomial for WeightToFee {
 		// The should be fee
 		let wanted_fee: Balance = 10 * MILLI_KILT;
 
-		let per_byte_fee: u128 = <Runtime as pallet_transaction_payment::Config>::TransactionByteFee::get().into();
+		let per_byte_fee: u128 = <Runtime as pallet_transaction_payment::Config>::TransactionByteFee::get();
 		// TODO: transfer_keep_alive is 288 byte long?
 		let byte_fee: u128 = 288_u128 * per_byte_fee;
 		let base_weight: Balance = <Runtime as frame_system::Config>::BlockWeights::get()
