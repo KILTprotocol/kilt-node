@@ -780,7 +780,7 @@ construct_runtime! {
 		Aura: pallet_aura::{Pallet, Config<T>} = 13,
 		AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 14,
 
-		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>} = 18,
+		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>, Config} = 18,
 		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 19,
 		// XcmHandler: cumulus_pallet_xcmp_queue::{Pallet, Call, Event<T>, Origin} = 20,
 		// Tokens: orml_tokens::{Pallet, Call, Storage, Event<T>} = 21,
@@ -1020,6 +1020,16 @@ impl_runtime_apis! {
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
 			Ok(batches)
+		}
+	}
+
+	// From the Polkadot repo: https://github.com/paritytech/polkadot/blob/master/runtime/polkadot/src/lib.rs#L1371
+	#[cfg(feature = "try-runtime")]
+	impl frame_try_runtime::TryRuntime<Block> for Runtime {
+		fn on_runtime_upgrade() -> Result<(Weight, Weight), sp_runtime::RuntimeString> {
+			log::info!("try-runtime::on_runtime_upgrade for peregrine runtime.");
+			let weight = Executive::try_runtime_upgrade()?;
+			Ok((weight, RuntimeBlockWeights::get().max_block))
 		}
 	}
 }

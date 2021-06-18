@@ -11,6 +11,13 @@ name = "kilt-parachain"
 path = "src/main.rs"
 
 [dependencies]
+
+# Internal dependencies
+kilt-parachain-runtime = {path = "../../runtimes/parachain"}
+kilt-primitives = {path = "../../primitives"}
+spiritnet-runtime = {path = "../../runtimes/spiritnet"}
+
+# External dependencies
 codec = {package = "parity-scale-codec", version = "2.0.0"}
 derive_more = "0.15.0"
 exit-future = "0.1.4"
@@ -23,11 +30,6 @@ serde_json = "1.0.64"
 structopt = "0.3.3"
 trie-root = "0.15.2"
 
-# Parachain dependencies
-kilt-parachain-runtime = {path = "../../runtimes/parachain"}
-kilt-primitives = {path = "../../primitives"}
-spiritnet-runtime = {path = "../../runtimes/spiritnet"}
-
 # Substrate dependencies
 sc-basic-authorship = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.4"}
 sc-chain-spec = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.4"}
@@ -37,7 +39,6 @@ sc-consensus = {git = "https://github.com/paritytech/substrate", branch = "polka
 sc-executor = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.4"}
 sc-finality-grandpa = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.4"}
 sc-network = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.4"}
-sc-rpc = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.4"}
 sc-service = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.4"}
 sc-telemetry = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.4"}
 sc-tracing = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.4"}
@@ -62,6 +63,7 @@ substrate-prometheus-endpoint = {git = "https://github.com/paritytech/substrate"
 frame-rpc-system = {package = "substrate-frame-rpc-system", version = "3.0.0", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.4"}
 jsonrpc-core = "15.1.0"
 pallet-transaction-payment-rpc = {version = "3.0.0", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.4"}
+sc-rpc = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.4"}
 sc-rpc-api = {version = "0.9.0", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.4"}
 sp-api = {version = "3.0.0", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.4"}
 
@@ -86,6 +88,10 @@ polkadot-test-service = {git = "https://github.com/paritytech/polkadot", branch 
 # Benchmarking
 frame-benchmarking = {git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.4"}
 frame-benchmarking-cli = {git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.4"}
+
+# Runtime tests
+node-executor = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.4", optional = true}
+try-runtime-cli = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.4", optional = true}
 
 [build-dependencies]
 substrate-build-script-utils = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.4"}
@@ -112,4 +118,10 @@ fast-gov = ["kilt-parachain-runtime/fast-gov"]
 runtime-benchmarks = [
   "kilt-parachain-runtime/runtime-benchmarks",
   "spiritnet-runtime/runtime-benchmarks",
+]
+try-runtime = [
+  "kilt-parachain-runtime/try-runtime",
+  "node-executor",
+  "spiritnet-runtime/try-runtime",
+  "try-runtime-cli"
 ]

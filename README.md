@@ -13,9 +13,3 @@ The nodes use Parity Substrate as the underlying blockchain technology stack, ex
 * [How to build and run a KILT node](./docs/run-node.md)
 * [Detailed explanation about KILT node module functionalities](./docs/kilt-pallets-description.md)
 * [About KILT and Substrate in the Polkaverse](./docs/kilt-substrate.md)
-
-
-<br/><br/><br/>
-<p align="center">
-<img src="https://www.parity.io/assets/img/built-on-substrate-badge.svg" height=120/>
-</p>
