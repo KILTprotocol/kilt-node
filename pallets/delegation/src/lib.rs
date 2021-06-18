@@ -34,14 +34,11 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
-pub use delegation_hierarchy::*;
-pub use pallet::*;
+pub use crate::{default_weights::WeightInfo, delegation_hierarchy::*, pallet::*};
 
 use frame_support::{ensure, pallet_prelude::Weight, traits::Get};
 use sp_runtime::{traits::Hash, DispatchError};
 use sp_std::vec::Vec;
-
-use crate::default_weights::WeightInfo;
 
 #[frame_support::pallet]
 pub mod pallet {
