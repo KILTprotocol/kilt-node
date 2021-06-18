@@ -36,7 +36,7 @@ use frame_system::{
 use kilt_primitives::{
 	constants::{
 		AVERAGE_ON_INITIALIZE_RATIO, DAYS, KILT, MAXIMUM_BLOCK_WEIGHT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT,
-		NORMAL_DISPATCH_RATIO, SLOT_DURATION, YEARS,
+		NORMAL_DISPATCH_RATIO, SLOT_DURATION,
 	},
 	AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Hash, Header, Index, Signature,
 };
@@ -729,8 +729,6 @@ parameter_types! {
 	pub const MaxCollatorCandidates: u32 = MAX_CANDIDATES;
 	/// Maximum number of concurrent requests to unlock unstaked balance
 	pub const MaxUnstakeRequests: u32 = 10;
-	/// Blocks per year based on 12s block time
-	pub const BlocksPerYear: BlockNumber = YEARS;
 }
 
 impl parachain_staking::Config for Runtime {
@@ -751,7 +749,6 @@ impl parachain_staking::Config for Runtime {
 	type MinDelegation = MinDelegatorStk;
 	type MinDelegatorStk = MinDelegatorStk;
 	type MaxUnstakeRequests = MaxUnstakeRequests;
-	type BlocksPerYear = BlocksPerYear;
 	type WeightInfo = ();
 }
 

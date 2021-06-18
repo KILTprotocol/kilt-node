@@ -26,6 +26,7 @@ sp-runtime = {git = "https://github.com/paritytech/substrate", default-features 
 kilt-primitives = {path = "../../primitives", default-features = false, optional = true}
 
 [dev-dependencies]
+kilt-primitives = {path = "../../primitives", default-features = false}
 sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, version = "3.0.0", branch = "polkadot-v0.9.4"}
 sp-io = {git = "https://github.com/paritytech/substrate", default-features = false, version = "3.0.0", branch = "polkadot-v0.9.4"}
 

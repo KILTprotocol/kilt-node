@@ -26,7 +26,7 @@ use frame_support::{
 	traits::{FindAuthor, GenesisBuild, OnFinalize, OnInitialize},
 	weights::Weight,
 };
-use kilt_primitives::constants::{KILT, YEARS};
+use kilt_primitives::constants::KILT;
 use pallet_authorship::EventHandler;
 use sp_core::H256;
 use sp_runtime::{
@@ -136,7 +136,6 @@ parameter_types! {
 	pub const MinDelegatorStk: Balance = 5;
 	pub const MinDelegation: Balance = 3;
 	pub const MaxUnstakeRequests: u32 = 5;
-	pub const BlocksPerYear: BlockNumber = YEARS;
 }
 
 impl Config for Test {
@@ -157,7 +156,6 @@ impl Config for Test {
 	type MinDelegatorStk = MinDelegatorStk;
 	type MinDelegation = MinDelegation;
 	type MaxUnstakeRequests = MaxUnstakeRequests;
-	type BlocksPerYear = BlocksPerYear;
 	type WeightInfo = ();
 }
 

@@ -180,10 +180,11 @@ pub mod pallet {
 		},
 	};
 	use frame_system::pallet_prelude::*;
+	use kilt_primitives::constants::YEARS;
 	use pallet_balances::{BalanceLock, Locks};
 	use pallet_session::ShouldEndSession;
 	use sp_runtime::{
-		traits::{One, Saturating, StaticLookup, Zero},
+		traits::{One, SaturatedConversion, Saturating, StaticLookup, Zero},
 		Percent, Perquintill,
 	};
 	use sp_staking::SessionIndex;
@@ -267,8 +268,6 @@ pub mod pallet {
 		/// Max number of concurrent active unstaking requests before
 		/// withdrawing.
 		type MaxUnstakeRequests: Get<u32>;
-		/// Number of blocks per year.
-		type BlocksPerYear: Get<Self::BlockNumber>;
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}
@@ -462,7 +461,7 @@ pub mod pallet {
 				post_weight = <T as Config>::WeightInfo::on_initialize_round_update();
 			}
 			// check for InflationInfo update
-			if now > T::BlocksPerYear::get() {
+			if now > YEARS.saturated_into::<T::BlockNumber>() {
 				post_weight = post_weight.saturating_add(Self::adjust_reward_rates(now));
 			}
 			post_weight
@@ -543,8 +542,8 @@ pub mod pallet {
 	/// The year in which the last automatic reduction of the reward rates
 	/// occurred.
 	///
-	/// It starts at zero at genesis and inrements by one every `BlocksPerYear`
-	/// many blocks.
+	/// It starts at zero at genesis and increments by one every YEARS many
+	/// blocks.
 	#[pallet::storage]
 	#[pallet::getter(fn last_reward_reduction)]
 	pub(crate) type LastRewardReduction<T: Config> = StorageValue<_, T::BlockNumber, ValueQuery>;
@@ -575,7 +574,7 @@ pub mod pallet {
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
-			assert!(self.inflation_config.is_valid(), "Invalid inflation configuration");
+			assert!(self.inflation_config.is_valid::<T>(), "Invalid inflation configuration");
 
 			<InflationConfig<T>>::put(self.inflation_config.clone());
 			<MaxCollatorCandidateStk<T>>::put(self.max_candidate_stake);
@@ -636,7 +635,7 @@ pub mod pallet {
 		pub fn set_inflation(origin: OriginFor<T>, inflation: InflationInfo) -> DispatchResult {
 			frame_system::ensure_root(origin)?;
 
-			ensure!(inflation.is_valid(), Error::<T>::InvalidSchedule);
+			ensure!(inflation.is_valid::<T>(), Error::<T>::InvalidSchedule);
 			Self::deposit_event(Event::RoundInflationSet(
 				inflation.collator.max_rate,
 				inflation.collator.reward_rate.per_block,
@@ -739,7 +738,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], MaxCollatorCandidateStk
 		/// - Writes: Round
 		/// # </weight>
-		#[pallet::weight(100_000)]
+		#[pallet::weight(<T as Config>::WeightInfo::increase_max_candidate_stake())]
 		pub fn increase_max_candidate_stake(origin: OriginFor<T>, new: BalanceOf<T>) -> DispatchResult {
 			frame_system::ensure_root(origin)?;
 			ensure!(new >= T::MinCollatorCandidateStk::get(), Error::<T>::CannotSetBelowMin);
@@ -771,7 +770,7 @@ pub mod pallet {
 		/// - Writes: MaxCollatorCandidateStk, N * CollatorState,
 		///   SelectedCandidates
 		/// # </weight>
-		#[pallet::weight(100_000)]
+		#[pallet::weight(<T as Config>::WeightInfo::decrease_max_candidate_stake(T::MaxCollatorCandidates::get(), T::MaxCollatorCandidates::get() * T::MaxDelegatorsPerCollator::get()))]
 		pub fn decrease_max_candidate_stake(origin: OriginFor<T>, new: BalanceOf<T>) -> DispatchResultWithPostInfo {
 			frame_system::ensure_root(origin)?;
 			ensure!(new >= T::MinCollatorCandidateStk::get(), Error::<T>::CannotSetBelowMin);
@@ -780,7 +779,6 @@ pub mod pallet {
 			ensure!(old > new, Error::<T>::NotDecreasing);
 
 			// iterate candidate pool and update all candidates with stake > max
-			let mut post_weight = T::DbWeight::get().reads(2);
 			<CandidatePool<T>>::mutate(|pool| {
 				let candidates = pool
 					.clone()
@@ -798,9 +796,6 @@ pub mod pallet {
 								// immediately free delta by setting lock from old to new
 								T::Currency::set_lock(STAKING_ID, &candidate.owner, new, WithdrawReasons::all());
 								<CollatorState<T>>::insert(&candidate.owner, state);
-
-								// update consumed weight
-								post_weight = post_weight.saturating_add(T::DbWeight::get().writes(2));
 							}
 						}
 						candidate
@@ -810,13 +805,16 @@ pub mod pallet {
 			});
 
 			// update candidates for next round
-			let (_num_collators, _num_delegators, _, _) = Self::select_top_candidates();
-			// post_weight = post_weight.saturating_add()
+			let (num_collators, num_delegators, _, _) = Self::select_top_candidates();
 
 			<MaxCollatorCandidateStk<T>>::put(new);
 
 			Self::deposit_event(Event::MaxCandidateStakeChanged(old, new));
-			Ok(Some(post_weight).into())
+			Ok(Some(<T as Config>::WeightInfo::decrease_max_candidate_stake(
+				num_collators,
+				num_delegators,
+			))
+			.into())
 		}
 
 		/// Join the set of collator candidates.
@@ -2158,7 +2156,7 @@ pub mod pallet {
 		/// - Writes: LastRewardReduction, InflationConfig
 		/// # </weight>
 		fn adjust_reward_rates(now: T::BlockNumber) -> Weight {
-			let year = now / T::BlocksPerYear::get();
+			let year = now / YEARS.saturated_into::<T::BlockNumber>();
 			let last_update = <LastRewardReduction<T>>::get();
 			if year > last_update {
 				let inflation = <InflationConfig<T>>::get();

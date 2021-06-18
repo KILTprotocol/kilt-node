@@ -2404,7 +2404,7 @@ fn adjust_reward_rates() {
 		.build()
 		.execute_with(|| {
 			let inflation_0 = StakePallet::inflation_config();
-			let num_of_years = 3 * <Test as Config>::BlocksPerYear::get();
+			let num_of_years = 3 * YEARS;
 			// 1 authors every block
 			let authors: Vec<Option<AccountId>> = (0u64..=num_of_years).map(|_| Some(1u64)).collect();
 
@@ -2416,8 +2416,8 @@ fn adjust_reward_rates() {
 			assert!(!d_rewards_0.is_zero());
 
 			// finish first year
-			System::set_block_number(<Test as Config>::BlocksPerYear::get());
-			roll_to(<Test as Config>::BlocksPerYear::get() + 1, vec![]);
+			System::set_block_number(YEARS);
+			roll_to(YEARS + 1, vec![]);
 			assert_eq!(StakePallet::last_reward_reduction(), 1u64);
 			let inflation_1 = InflationInfo::new::<Test>(
 				inflation_0.collator.max_rate,
@@ -2427,7 +2427,7 @@ fn adjust_reward_rates() {
 			);
 			assert_eq!(StakePallet::inflation_config(), inflation_1);
 			// reward once in 2nd year
-			roll_to(<Test as Config>::BlocksPerYear::get() + 2, authors.clone());
+			roll_to(YEARS + 2, authors.clone());
 			let c_rewards_1 = Balances::free_balance(&1)
 				.saturating_sub(10_000_000 * DECIMALS)
 				.saturating_sub(c_rewards_0);
@@ -2443,8 +2443,8 @@ fn adjust_reward_rates() {
 			assert!(d_rewards_0 > d_rewards_1);
 
 			// finish 2nd year
-			System::set_block_number(2 * <Test as Config>::BlocksPerYear::get());
-			roll_to(2 * <Test as Config>::BlocksPerYear::get() + 1, vec![]);
+			System::set_block_number(2 * YEARS);
+			roll_to(2 * YEARS + 1, vec![]);
 			assert_eq!(StakePallet::last_reward_reduction(), 2u64);
 			let inflation_2 = InflationInfo::new::<Test>(
 				inflation_0.collator.max_rate,
@@ -2454,7 +2454,7 @@ fn adjust_reward_rates() {
 			);
 			assert_eq!(StakePallet::inflation_config(), inflation_2);
 			// reward once in 3rd year
-			roll_to(2 * <Test as Config>::BlocksPerYear::get() + 2, authors.clone());
+			roll_to(2 * YEARS + 2, authors.clone());
 			let c_rewards_2 = Balances::free_balance(&1)
 				.saturating_sub(10_000_000 * DECIMALS)
 				.saturating_sub(c_rewards_0)

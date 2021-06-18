@@ -20,7 +20,7 @@
 use crate::{pallet::Config, types::BalanceOf};
 use kilt_primitives::constants::YEARS;
 use parity_scale_codec::{Decode, Encode};
-use sp_runtime::{Perquintill, RuntimeDebug};
+use sp_runtime::{traits::Saturating, Perquintill, RuntimeDebug, SaturatedConversion};
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -34,10 +34,9 @@ pub struct RewardRate {
 
 /// Convert annual reward rate to per_block.
 fn annual_to_per_block<T: Config>(rate: Perquintill) -> Perquintill {
-	// FIXME: Should use T::BlocksPerYear::get() instead of YEARS
-	// let per_year: u64 = T::BlocksPerYear::get().into();
-	// rate / per_year
-	rate / YEARS
+	// YEARS < u64::MAX is ensured via static assertion
+	let per_year: u64 = YEARS.saturated_into::<u64>();
+	rate / per_year.max(1)
 }
 
 impl RewardRate {
@@ -78,11 +77,11 @@ impl StakingInfo {
 		current_staking_rate: Perquintill,
 		authors_per_round: BalanceOf<T>,
 	) -> BalanceOf<T> {
-		// Perquintill automatically bounds to [0, 100]% in case staking_rate >
-		// self.max_rate
+		// Perquintill automatically bounds to [0, 100]% in case staking_rate is greater
+		// than self.max_rate
 		let reduction = Perquintill::from_rational(self.max_rate.deconstruct(), current_staking_rate.deconstruct());
 		// multiplication with perbill cannot overflow
-		let reward = self.reward_rate.per_block * stake * authors_per_round;
+		let reward = (self.reward_rate.per_block * stake).saturating_mul(authors_per_round);
 		reduction * reward
 	}
 }
@@ -113,11 +112,12 @@ impl InflationInfo {
 
 	/// Check whether the annual reward rate is approx. the per_block reward
 	/// rate multiplied with the number of blocks per year
-	pub fn is_valid(&self) -> bool {
+	pub fn is_valid<T: Config>(&self) -> bool {
+		let years = YEARS;
 		self.collator.reward_rate.annual
-			>= Perquintill::from_parts(self.collator.reward_rate.per_block.deconstruct().saturating_mul(YEARS))
+			>= Perquintill::from_parts(self.collator.reward_rate.per_block.deconstruct().saturating_mul(years))
 			&& self.delegator.reward_rate.annual
-				>= Perquintill::from_parts(self.delegator.reward_rate.per_block.deconstruct().saturating_mul(YEARS))
+				>= Perquintill::from_parts(self.delegator.reward_rate.per_block.deconstruct().saturating_mul(years))
 	}
 }
 
@@ -127,6 +127,7 @@ mod tests {
 
 	use super::*;
 	use crate::mock::{almost_equal, ExtBuilder, Test, DECIMALS};
+	use kilt_primitives::constants::YEARS;
 
 	#[test]
 	fn perquintill() {
@@ -134,6 +135,11 @@ mod tests {
 			Perquintill::from_percent(100) * Perquintill::from_percent(50),
 			Perquintill::from_percent(50)
 		);
+	}
+
+	#[test]
+	fn blocks_per_year_saturation() {
+		assert!(YEARS < u64::MAX);
 	}
 
 	#[test]
@@ -164,7 +170,7 @@ mod tests {
 				let years_u128: BalanceOf<Test> = YEARS as u128;
 
 				// Dummy checks for correct instantiation
-				assert!(inflation.is_valid());
+				assert!(inflation.is_valid::<Test>());
 				assert_eq!(inflation.collator.max_rate, Perquintill::from_percent(10));
 				assert_eq!(inflation.collator.reward_rate.annual, Perquintill::from_percent(15));
 				assert!(
@@ -259,37 +265,7 @@ mod tests {
 					Perquintill::from_percent(15) * 10_000 * DECIMALS,
 				);
 
-				// // Check delegator reward computation
-				// assert_eq!(inflation.delegator.compute_block_rewards::
-				// <Test>(0, 100_000), 0); assert!(
-				// 	almost_equal(
-				// 		inflation
-				// 			.delegator
-				// 			.compute_block_rewards::<Test>(5000 * DECIMALS, 100_000 *
-				// DECIMALS)
-				// 			* years_u128,
-				// 		Perquintill::from_percent(10) * 5000 * DECIMALS,
-				// 		Perbill::from_percent(1)
-				// 	),
-				// 	"left = {:?}, right = {:?}",
-				// 	inflation
-				// 		.delegator
-				// 		.compute_block_rewards::<Test>(5000 * DECIMALS, 100_000 *
-				// DECIMALS)
-				// 		* years_u128,
-				// 	Perquintill::from_percent(10) * 5000 * DECIMALS,
-				// );
-				// // Check for max_rate which is 40%
-				// assert_eq!(
-				// 	inflation.delegator.compute_block_rewards::<Test>(40_000,
-				// 100_000), 	inflation.delegator.compute_block_rewards::
-				// <Test>(100_000, 100_000) );
-				// // Stake can never be more than what is issued, but let's
-				// check whether the cap // still applies
-				// assert_eq!(
-				// 	inflation.delegator.compute_block_rewards::<Test>(40_000,
-				// 100_000), 	inflation.delegator.compute_block_rewards::
-				// <Test>(100_001, 100_000) );
+				// Check delegator reward computation
 				current_staking_rate = inflation.delegator.max_rate;
 				assert_eq!(
 					inflation
