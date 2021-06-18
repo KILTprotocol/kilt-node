@@ -457,7 +457,6 @@ pub mod pallet {
 
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-
 		fn on_initialize(now: T::BlockNumber) -> frame_support::weights::Weight {
 			let mut post_weight = <T as Config>::WeightInfo::on_initialize_no_action();
 			let mut round = <Round<T>>::get();
@@ -2189,7 +2188,7 @@ pub mod pallet {
 				Self::prep_unstake_exit_queue(&stake.owner, stake.amount);
 				// remove delegation from delegator state
 				if let Some(mut delegator) = <DelegatorState<T>>::get(&stake.owner) {
-					if let Some(remaining) = delegator.rm_delegation(&collator) {
+					if let Some(remaining) = delegator.rm_delegation(collator) {
 						if remaining.is_zero() {
 							<DelegatorState<T>>::remove(&stake.owner);
 						} else {

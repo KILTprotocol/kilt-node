@@ -135,6 +135,7 @@ mod tests {
 		);
 	}
 
+	#[allow(clippy::assertions_on_constants)]
 	#[test]
 	fn blocks_per_year_saturation() {
 		assert!(YEARS < u64::MAX);

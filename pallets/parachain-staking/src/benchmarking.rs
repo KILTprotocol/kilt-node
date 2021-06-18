@@ -44,7 +44,7 @@ fn setup_collator_candidates<T: Config>(
 	let collators: Vec<T::AccountId> = (current_collator_count..num_candidates)
 		.map(|i| account("collator", i as u32, COLLATOR_ACCOUNT_SEED))
 		.collect();
-	let amount: T::CurrencyBalance = default_amount.unwrap_or(T::MinCollatorCandidateStake::get());
+	let amount: T::CurrencyBalance = default_amount.unwrap_or_else(T::MinCollatorCandidateStake::get);
 
 	for acc in collators.iter() {
 		T::Currency::make_free_balance_be(acc, amount);

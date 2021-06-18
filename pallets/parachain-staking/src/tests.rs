@@ -2478,7 +2478,7 @@ fn adjust_reward_rates() {
 			);
 			assert_eq!(StakePallet::inflation_config(), inflation_2);
 			// reward once in 3rd year
-			roll_to(2 * YEARS + 2, authors.clone());
+			roll_to(2 * YEARS + 2, authors);
 			let c_rewards_2 = Balances::free_balance(&1)
 				.saturating_sub(10_000_000 * DECIMALS)
 				.saturating_sub(c_rewards_0)
