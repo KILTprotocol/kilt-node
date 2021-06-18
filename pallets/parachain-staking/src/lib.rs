@@ -182,7 +182,10 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use pallet_balances::{BalanceLock, Locks};
 	use pallet_session::ShouldEndSession;
-	use sp_runtime::{Permill, Perquintill, traits::{Saturating, StaticLookup, Zero}};
+	use sp_runtime::{
+		traits::{Saturating, StaticLookup, Zero},
+		Permill, Perquintill,
+	};
 	use sp_staking::SessionIndex;
 	use sp_std::{collections::btree_map::BTreeMap, prelude::*};
 

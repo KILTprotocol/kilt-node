@@ -300,6 +300,12 @@ pub(crate) fn events() -> Vec<pallet::Event<Test>> {
 	System::events()
 		.into_iter()
 		.map(|r| r.event)
-		.filter_map(|e| if let Event::StakePallet(inner) = e { Some(inner) } else { None })
+		.filter_map(|e| {
+			if let Event::StakePallet(inner) = e {
+				Some(inner)
+			} else {
+				None
+			}
+		})
 		.collect::<Vec<_>>()
 }

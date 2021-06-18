@@ -23,7 +23,7 @@ use std::{collections::BTreeMap, iter};
 use frame_support::{assert_noop, assert_ok, traits::EstimateNextSessionRotation};
 use pallet_balances::{BalanceLock, Error as BalancesError, Reasons};
 use pallet_session::{SessionManager, ShouldEndSession};
-use sp_runtime::{Perbill, Permill, Perquintill, traits::Zero};
+use sp_runtime::{traits::Zero, Perbill, Permill, Perquintill};
 
 use kilt_primitives::constants::YEARS;
 
@@ -320,7 +320,10 @@ fn collator_exit_executes_after_delay() {
 			roll_to(11, vec![]);
 			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(2)));
 			assert_eq!(StakePallet::selected_candidates(), vec![1, 7]);
-			assert_eq!(last_event(), MetaEvent::StakePallet(Event::CollatorScheduledExit(2, 2, 4)));
+			assert_eq!(
+				last_event(),
+				MetaEvent::StakePallet(Event::CollatorScheduledExit(2, 2, 4))
+			);
 			let info = StakePallet::collator_state(&2).unwrap();
 			assert_eq!(info.state, CollatorStatus::Leaving(4));
 
@@ -382,7 +385,10 @@ fn collator_selection_chooses_top_candidates() {
 			assert_eq!(events(), expected);
 			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(6)));
 			assert_eq!(StakePallet::selected_candidates(), vec![1, 2, 3, 4, 5]);
-			assert_eq!(last_event(), MetaEvent::StakePallet(Event::CollatorScheduledExit(1, 6, 3)));
+			assert_eq!(
+				last_event(),
+				MetaEvent::StakePallet(Event::CollatorScheduledExit(1, 6, 3))
+			);
 
 			roll_to(15, vec![]);
 			assert_ok!(StakePallet::execute_leave_candidates(Origin::signed(6), 6));
@@ -462,18 +468,27 @@ fn exit_queue_with_events() {
 			assert_eq!(events(), expected);
 			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(6)));
 			assert_eq!(StakePallet::selected_candidates(), vec![1, 2, 3, 4, 5]);
-			assert_eq!(last_event(), MetaEvent::StakePallet(Event::CollatorScheduledExit(1, 6, 3)));
+			assert_eq!(
+				last_event(),
+				MetaEvent::StakePallet(Event::CollatorScheduledExit(1, 6, 3))
+			);
 
 			roll_to(11, vec![]);
 			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(5)));
 			assert_eq!(StakePallet::selected_candidates(), vec![1, 2, 3, 4]);
-			assert_eq!(last_event(), MetaEvent::StakePallet(Event::CollatorScheduledExit(2, 5, 4)));
+			assert_eq!(
+				last_event(),
+				MetaEvent::StakePallet(Event::CollatorScheduledExit(2, 5, 4))
+			);
 
 			roll_to(16, vec![]);
 			assert_ok!(StakePallet::execute_leave_candidates(Origin::signed(6), 6));
 			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(4)));
 			assert_eq!(StakePallet::selected_candidates(), vec![1, 2, 3]);
-			assert_eq!(last_event(), MetaEvent::StakePallet(Event::CollatorScheduledExit(3, 4, 5)));
+			assert_eq!(
+				last_event(),
+				MetaEvent::StakePallet(Event::CollatorScheduledExit(3, 4, 5))
+			);
 			assert_noop!(
 				StakePallet::init_leave_candidates(Origin::signed(4)),
 				Error::<Test>::AlreadyLeaving
@@ -1158,7 +1173,10 @@ fn multiple_delegations() {
 			expected.append(&mut new2);
 			assert_eq!(events(), expected);
 			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(2)));
-			assert_eq!(last_event(), MetaEvent::StakePallet(Event::CollatorScheduledExit(5, 2, 7)));
+			assert_eq!(
+				last_event(),
+				MetaEvent::StakePallet(Event::CollatorScheduledExit(5, 2, 7))
+			);
 
 			roll_to(31, vec![]);
 			let mut new3 = vec![
@@ -2007,7 +2025,10 @@ fn round_transitions() {
 				StakePallet::set_blocks_per_round(Origin::root(), 1),
 				Error::<Test>::CannotSetBelowMin
 			);
-			assert_eq!(last_event(), MetaEvent::StakePallet(Event::BlocksPerRoundSet(1, 5, 5, 3)));
+			assert_eq!(
+				last_event(),
+				MetaEvent::StakePallet(Event::BlocksPerRoundSet(1, 5, 5, 3))
+			);
 
 			// inflation config should be untouched after per_block update
 			assert_eq!(inflation, StakePallet::inflation_config());
@@ -2036,14 +2057,20 @@ fn round_transitions() {
 			let init = vec![Event::NewRound(5, 1, 20, 20)];
 			assert_eq!(events(), init);
 			assert_ok!(StakePallet::set_blocks_per_round(Origin::root(), 3));
-			assert_eq!(last_event(), MetaEvent::StakePallet(Event::BlocksPerRoundSet(1, 5, 5, 3)));
+			assert_eq!(
+				last_event(),
+				MetaEvent::StakePallet(Event::BlocksPerRoundSet(1, 5, 5, 3))
+			);
 
 			// inflation config should be untouched after per_block update
 			assert_eq!(inflation, StakePallet::inflation_config());
 
 			// there should not be a new event
 			roll_to(7, vec![]);
-			assert_eq!(last_event(), MetaEvent::StakePallet(Event::BlocksPerRoundSet(1, 5, 5, 3)));
+			assert_eq!(
+				last_event(),
+				MetaEvent::StakePallet(Event::BlocksPerRoundSet(1, 5, 5, 3))
+			);
 
 			roll_to(8, vec![]);
 			assert_eq!(last_event(), MetaEvent::StakePallet(Event::NewRound(8, 2, 20, 20)));
@@ -2079,7 +2106,10 @@ fn round_transitions() {
 					Perquintill::from_percent(d_rewards)
 				)
 			);
-			assert_eq!(last_event(), MetaEvent::StakePallet(Event::BlocksPerRoundSet(1, 5, 5, 3)));
+			assert_eq!(
+				last_event(),
+				MetaEvent::StakePallet(Event::BlocksPerRoundSet(1, 5, 5, 3))
+			);
 			roll_to(8, vec![]);
 
 			// last round startet at 5, so we expect 8 to be the new round

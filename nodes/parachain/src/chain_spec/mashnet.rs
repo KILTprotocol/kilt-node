@@ -189,7 +189,6 @@ fn testnet_genesis(
 		serde_json::from_slice(airdrop_accounts_json).expect("Could not read from genesis_accounts.json");
 
 	GenesisConfig {
-
 		system: SystemConfig {
 			code: wasm_binary.to_vec(),
 			changes_trie_config: Default::default(),
