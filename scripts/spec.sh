@@ -57,16 +57,9 @@ $TMP_DIR/kilt-parachain-fast-gov build-spec --runtime mashnet --chain $PEREGRINE
 # #                                 SPIRITNET                                  #
 # #                                                                            #
 # ##############################################################################
-SPIRITNET_PLAIN=$TMP_DIR"spiritnet.plain.json"
-SPIRITNET_JQ=$TMP_DIR"spiritnet.json"
 SPIRITNET_OUTPUT=nodes/parachain/res/spiritnet.json
 
-# we have to load `spiritnet-dev` here since `spiritnet` would just be the content of the file at $SPIRITNET_OUTPUT
-$TMP_DIR/kilt-parachain build-spec --chain spiritnet-dev --disable-default-bootnode >$SPIRITNET_PLAIN
-
-python3 scripts/spiritnet_kilt.py $SPIRITNET_PLAIN $SPIRITNET_JQ
-
-$TMP_DIR/kilt-parachain build-spec --runtime spiritnet --chain $SPIRITNET_JQ --disable-default-bootnode --raw >$SPIRITNET_OUTPUT
+$TMP_DIR/kilt-parachain build-spec --chain spiritnet-new --disable-default-bootnode --raw >$SPIRITNET_OUTPUT
 
 # ##############################################################################
 # #                                                                            #
@@ -75,4 +68,4 @@ $TMP_DIR/kilt-parachain build-spec --runtime spiritnet --chain $SPIRITNET_JQ --d
 # ##############################################################################
 WESTEND_OUTPUT=dev-specs/kilt-parachain/kilt-westend.json
 
-$TMP_DIR/kilt-parachain build-spec --chain westend-new --disable-default-bootnode --raw >$WESTEND_OUTPUT
+$TMP_DIR/kilt-parachain build-spec --chain wilt-new --disable-default-bootnode --raw >$WESTEND_OUTPUT
