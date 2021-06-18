@@ -21,7 +21,7 @@ use frame_support::{
 	traits::Get,
 	weights::{DispatchClass, WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
 };
-use kilt_primitives::{constants::KILT, Balance};
+use kilt_primitives::{constants::MILLI_KILT, Balance};
 use pallet_balances::WeightInfo;
 use smallvec::smallvec;
 use sp_runtime::Perbill;
@@ -44,10 +44,10 @@ impl WeightToFeePolynomial for WeightToFee {
 	type Balance = Balance;
 	fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
 		// The should be fee
-		let wanted_fee: Balance = KILT / 100;
+		let wanted_fee: Balance = 10 * MILLI_KILT;
 
-		// TODO: transfer_keep_alive is 288 byte long?
 		let per_byte_fee: u128 = <Runtime as pallet_transaction_payment::Config>::TransactionByteFee::get().into();
+		// TODO: transfer_keep_alive is 288 byte long?
 		let byte_fee: u128 = 288_u128 * per_byte_fee;
 		let base_weight: Balance = <Runtime as frame_system::Config>::BlockWeights::get()
 			.get(DispatchClass::Normal)
