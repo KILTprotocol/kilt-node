@@ -43,6 +43,7 @@ pub const DECIMALS: Balance = 10u128.pow(15);
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
+
 // Configure a mock runtime to test the pallet.
 construct_runtime!(
 	pub enum Test where
@@ -96,6 +97,8 @@ parameter_types! {
 
 impl pallet_balances::Config for Test {
 	type MaxLocks = ();
+	type MaxReserves = ();
+	type ReserveIdentifier = [u8; 8];
 	type Balance = Balance;
 	type Event = Event;
 	type DustRemoval = ();
@@ -297,6 +300,12 @@ pub(crate) fn events() -> Vec<pallet::Event<Test>> {
 	System::events()
 		.into_iter()
 		.map(|r| r.event)
-		.filter_map(|e| if let Event::stake(inner) = e { Some(inner) } else { None })
+		.filter_map(|e| {
+			if let Event::StakePallet(inner) = e {
+				Some(inner)
+			} else {
+				None
+			}
+		})
 		.collect::<Vec<_>>()
 }

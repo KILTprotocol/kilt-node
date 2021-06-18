@@ -241,10 +241,13 @@ impl pallet_indices::Config for Runtime {
 parameter_types! {
 	pub const ExistentialDeposit: Balance = 100 * MILLI_KILT;
 	pub const MaxLocks: u32 = 50;
+	pub const MaxReserves: u32 = 50;
 }
 
 impl pallet_balances::Config for Runtime {
 	type MaxLocks = MaxLocks;
+	type MaxReserves = MaxReserves;
+	type ReserveIdentifier = [u8; 8];
 	/// The type for recording an account's balance.
 	type Balance = Balance;
 	/// The ubiquitous event type.
@@ -422,6 +425,8 @@ impl pallet_utility::Config for Runtime {
 	type Call = Call;
 	type WeightInfo = ();
 }
+
+impl pallet_randomness_collective_flip::Config for Runtime {}
 
 construct_runtime!(
 	pub enum Runtime where

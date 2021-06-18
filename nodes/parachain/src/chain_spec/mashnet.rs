@@ -189,11 +189,11 @@ fn testnet_genesis(
 		serde_json::from_slice(airdrop_accounts_json).expect("Could not read from genesis_accounts.json");
 
 	GenesisConfig {
-		frame_system: SystemConfig {
+		system: SystemConfig {
 			code: wasm_binary.to_vec(),
 			changes_trie_config: Default::default(),
 		},
-		pallet_balances: BalancesConfig {
+		balances: BalancesConfig {
 			balances: endowed_accounts
 				.iter()
 				.cloned()
@@ -201,7 +201,7 @@ fn testnet_genesis(
 				.chain(airdrop_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
 				.collect(),
 		},
-		pallet_sudo: SudoConfig { key: root_key },
+		sudo: SudoConfig { key: root_key },
 		parachain_info: ParachainInfoConfig { parachain_id: id },
 		kilt_launch: KiltLaunchConfig {
 			balance_locks: airdrop_accounts
@@ -217,27 +217,27 @@ fn testnet_genesis(
 			// TODO: Set this to another address (PRE-LAUNCH)
 			transfer_account: hex!["6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c"].into(),
 		},
-		pallet_vesting: VestingConfig { vesting: vec![] },
-		pallet_collective_Instance1: CouncilConfig {
+		vesting: VestingConfig { vesting: vec![] },
+		council: CouncilConfig {
 			members: vec![],
 			phantom: Default::default(),
 		},
-		pallet_collective_Instance2: TechnicalCommitteeConfig {
+		technical_committee: TechnicalCommitteeConfig {
 			members: vec![],
 			phantom: Default::default(),
 		},
-		pallet_treasury: Default::default(),
-		pallet_elections_phragmen: Default::default(),
-		pallet_membership: Default::default(),
-		pallet_democracy: Default::default(),
+		treasury: Default::default(),
+		elections_phragmen: Default::default(),
+		technical_membership: Default::default(),
+		democracy: Default::default(),
 		parachain_staking: ParachainStakingConfig {
 			stakers,
 			inflation_config,
 		},
-		pallet_aura: Default::default(),
-		cumulus_pallet_aura_ext: Default::default(),
-		cumulus_pallet_parachain_system: Default::default(),
-		pallet_session: SessionConfig {
+		aura: Default::default(),
+		aura_ext: Default::default(),
+		parachain_system: Default::default(),
+		session: SessionConfig {
 			keys: initial_authorities
 				.iter()
 				.map(|(acc, key)| {
