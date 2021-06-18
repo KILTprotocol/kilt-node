@@ -396,6 +396,9 @@ pub mod pallet {
 		/// An account has left the set of collator candidates.
 		/// \[account, amount of funds un-staked\]
 		CollatorLeft(T::AccountId, BalanceOf<T>),
+		/// An account was forcedly removed from the  set of collator
+		/// candidates. \[account, amount of funds un-staked\]
+		CollatorRemoved(T::AccountId, BalanceOf<T>),
 		/// The maximum candidate stake has been changed.
 		/// \[old max amount, new max amount\]
 		MaxCandidateStakeChanged(BalanceOf<T>, BalanceOf<T>),
@@ -817,6 +820,61 @@ pub mod pallet {
 			.into())
 		}
 
+		/// Forcedly removes a collator candidate from the CandidatePool and
+		/// clears all associated storage for the candidate and their
+		/// delegators.
+		///
+		/// Prepares unstaking of the candidates and their delegators stake
+		/// which can be withdrawn via `withdraw_unstaked` after waiting at
+		/// least `StakeDuration` many blocks.
+		///
+		/// Emits `CandidateRemoved`.
+		///
+		/// # <weight>
+		/// - The transaction's complexity is mainly dependent on updating the
+		///   `SelectedCandidates` storage in `select_top_candidates` which in
+		///   return depends on the number of `MaxSelectedCandidates` (N).
+		/// - For each N, we read `CollatorState` from the storage.
+		/// ---------
+		/// Weight: O(N + D) where N is `MaxSelectedCandidates` bounded by
+		/// `MaxCollatorCandidates` and D is the number of delegators of the
+		/// collator candidate bounded by `MaxDelegatorsPerCollator`
+		/// - Reads: MaxCollatorCandidateStake, 2 * N * CollatorState,
+		///   CandidatePool, BlockNumber, D * DelegatorState, D * Unstaking
+		/// - Writes: MaxCollatorCandidateStake, N * CollatorState,
+		///   SelectedCandidates, D * DelegatorState, (D + 1) * Unstaking
+		/// - Kills: CollatorState, DelegatorState for all delegators which only
+		///   delegated to the candidate
+		/// # </weight>
+		#[pallet::weight(<T as Config>::WeightInfo::force_remove_candidate(T::MaxCollatorCandidates::get() * T::MaxDelegatorsPerCollator::get()))]
+		pub fn force_remove_candidate(
+			origin: OriginFor<T>,
+			collator: <T::Lookup as StaticLookup>::Source,
+		) -> DispatchResultWithPostInfo {
+			ensure_root(origin)?;
+			let collator = T::Lookup::lookup(collator)?;
+			let state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
+			let total_amount = state.total;
+
+			let mut candidates = <CandidatePool<T>>::get();
+			ensure!(
+				candidates.len().saturating_sub(1) as u32 >= T::MinSelectedCandidates::get(),
+				Error::<T>::TooFewCollatorCandidates
+			);
+			if candidates.remove_by(|stake| stake.owner.cmp(&collator)).is_some() {
+				<CandidatePool<T>>::put(candidates);
+			}
+
+			Self::remove_candidate(&collator, state);
+
+			// update candidates for next round
+			let (_, num_delegators, _, _) = Self::select_top_candidates();
+
+			Self::deposit_event(Event::CollatorRemoved(collator, total_amount));
+
+			Ok(Some(<T as Config>::WeightInfo::force_remove_candidate(num_delegators)).into())
+		}
+
 		/// Join the set of collator candidates.
 		///
 		/// In the next blocks, if the collator candidate has enough funds
@@ -1003,27 +1061,11 @@ pub mod pallet {
 			ensure!(state.is_leaving(), Error::<T>::NotLeaving);
 			ensure!(state.can_exit(<Round<T>>::get().current), Error::<T>::CannotLeaveYet);
 
-			// iterate over delegators
 			let num_delegators = state.delegators.len() as u32;
-			for stake in state.delegators.into_iter() {
-				// prepare unstaking of delegator
-				Self::prep_unstake_exit_queue(&stake.owner, stake.amount);
-				// remove delegation from delegator state
-				if let Some(mut delegator) = <DelegatorState<T>>::get(&stake.owner) {
-					if let Some(remaining) = delegator.rm_delegation(&collator) {
-						if remaining.is_zero() {
-							<DelegatorState<T>>::remove(&stake.owner);
-						} else {
-							<DelegatorState<T>>::insert(&stake.owner, delegator);
-						}
-					}
-				}
-			}
-			// prepare unstaking of collator candidate
-			Self::prep_unstake_exit_queue(&state.id, state.stake);
+			let total_amount = state.total;
+			Self::remove_candidate(&collator, state);
 
-			<CollatorState<T>>::remove(&collator);
-			Self::deposit_event(Event::CollatorLeft(collator, state.total));
+			Self::deposit_event(Event::CollatorLeft(collator, total_amount));
 
 			Ok(Some(<T as pallet::Config>::WeightInfo::execute_leave_candidates(
 				T::MaxCollatorCandidates::get(),
@@ -2055,6 +2097,7 @@ pub mod pallet {
 		///
 		/// NOTE: Should never be called in `execute_leave_candidates`!
 		///
+		/// # <weight>
 		/// Weight: O(1)
 		/// - Reads: BlockNumber, Unstaking
 		/// - Writes: Unstaking
@@ -2085,6 +2128,7 @@ pub mod pallet {
 		///
 		/// NOTE: Should only be called in `execute_leave_candidates`!
 		///
+		/// # <weight>
 		/// Weight: O(1)
 		/// - Reads: BlockNumber, Unstaking
 		/// - Writes: Unstaking
@@ -2095,6 +2139,40 @@ pub mod pallet {
 			let mut unstaking = <Unstaking<T>>::get(who);
 			unstaking.insert(unlock_block, amount);
 			<Unstaking<T>>::insert(who, unstaking);
+		}
+
+		/// Clear the CollatorState of the candidate and remove all delegations
+		/// to the candidate. Moreover, prepare unstaking for the candidate and
+		/// their former delegations.
+		///
+		/// # <weight>
+		/// Weight: O(D) where D is the number of delegators of the collator
+		/// candidate bounded by `MaxDelegatorsPerCollator`
+		/// - Reads: BlockNumber, D * DelegatorState, D * Unstaking
+		/// - Writes: D * DelegatorState, (D + 1) * Unstaking
+		/// - Kills: CollatorState, DelegatorState for all delegators which only
+		///   delegated to the candidate
+		/// # </weight>
+		fn remove_candidate(collator: &T::AccountId, state: CollatorOf<T>) {
+			// iterate over delegators
+			for stake in state.delegators.into_iter() {
+				// prepare unstaking of delegator
+				Self::prep_unstake_exit_queue(&stake.owner, stake.amount);
+				// remove delegation from delegator state
+				if let Some(mut delegator) = <DelegatorState<T>>::get(&stake.owner) {
+					if let Some(remaining) = delegator.rm_delegation(&collator) {
+						if remaining.is_zero() {
+							<DelegatorState<T>>::remove(&stake.owner);
+						} else {
+							<DelegatorState<T>>::insert(&stake.owner, delegator);
+						}
+					}
+				}
+			}
+			// prepare unstaking of collator candidate
+			Self::prep_unstake_exit_queue(&state.id, state.stake);
+
+			<CollatorState<T>>::remove(&collator);
 		}
 
 		/// Withdraw all staked currency which was unstaked at least

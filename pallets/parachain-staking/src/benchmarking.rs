@@ -173,6 +173,21 @@ benchmarks! {
 		assert_eq!(<Round<T>>::get().length, bpr);
 	}
 
+	force_remove_candidate {
+		let n in (T::MinSelectedCandidates::get() + 1) .. T::MaxCollatorCandidates::get();
+		let m in 0 .. T::MaxDelegatorsPerCollator::get();
+
+		let candidates = setup_collator_candidates::<T>(n, None);
+		for (i, c) in candidates.iter().enumerate() {
+			fill_delegators::<T>(m, c.clone(), i as u32);
+		}
+		let candidate = candidates[0].clone();
+	}: _(RawOrigin::Root,  T::Lookup::unlookup(candidate.clone()))
+	verify {
+		let candidates = CandidatePool::<T>::get();
+		assert!(candidates.binary_search_by(|other| other.owner.cmp(&candidate)).is_err())
+	}
+
 	join_candidates {
 		let n in 1 .. T::MaxCollatorCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();

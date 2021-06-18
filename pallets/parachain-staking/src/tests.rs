@@ -2641,3 +2641,45 @@ fn exceed_delegations_per_round() {
 			);
 		});
 }
+
+#[test]
+fn force_remove_candidate() {
+	ExtBuilder::default()
+		.with_balances(vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100), (6, 100)])
+		.with_collators(vec![(1, 100), (2, 100), (3, 100)])
+		.with_delegators(vec![(4, 1, 50), (5, 1, 50)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(4), 2, 50));
+			assert_eq!(StakePallet::selected_candidates(), vec![1, 2]);
+			assert!(StakePallet::unstaking(1).get(&3).is_none());
+			assert!(StakePallet::unstaking(2).get(&3).is_none());
+			assert!(StakePallet::unstaking(3).get(&3).is_none());
+
+			assert_ok!(StakePallet::force_remove_candidate(Origin::root(), 1));
+			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorRemoved(1, 200)));
+			assert!(!StakePallet::candidate_pool().contains(&Stake { owner: 1, amount: 100 }));
+			assert_eq!(StakePallet::selected_candidates(), vec![2, 3]);
+			assert!(StakePallet::collator_state(1).is_none());
+			assert!(StakePallet::delegator_state(5).is_none());
+			assert_eq!(
+				StakePallet::delegator_state(4),
+				Some(Delegator {
+					delegations: OrderedSet::from(vec![Stake { owner: 2, amount: 50 }]),
+					total: 50
+				})
+			);
+			assert_eq!(StakePallet::unstaking(1).get(&3), Some(&100));
+			assert_eq!(StakePallet::unstaking(4).get(&3), Some(&50));
+			assert_eq!(StakePallet::unstaking(5).get(&3), Some(&50));
+
+			assert_noop!(
+				StakePallet::force_remove_candidate(Origin::root(), 2),
+				Error::<Test>::TooFewCollatorCandidates
+			);
+			assert_noop!(
+				StakePallet::force_remove_candidate(Origin::root(), 4),
+				Error::<Test>::CandidateNotFound
+			);
+		});
+}

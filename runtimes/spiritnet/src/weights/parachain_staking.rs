@@ -80,6 +80,11 @@ impl<T: frame_system::Config> parachain_staking::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
+	fn force_remove_candidate(m: u32) -> Weight {
+		(317_877_000_u64)
+			// Standard Error: 36_000
+			.saturating_add((5_988_000_u64).saturating_mul(m as Weight))
+	}
 	fn join_candidates(n: u32, m: u32) -> Weight {
 		(182_620_000_u64)
 			// Standard Error: 86_000
