@@ -123,6 +123,13 @@ pub fn get_chain_spec_dev(id: ParaId) -> Result<ChainSpec, String> {
 	))
 }
 
+const WILT_COL_ACC_1: [u8; 32] = hex!["e6cf13c86a5f174acba79ca361dc429d89eb704c6a407af83f30b11ab8bc5045"];
+const WILT_COL_SESSION_1: [u8; 32] = hex!["e29df39b74777495ca00cd7a316ce98c5225d7088ae924b122fe0e2e6a4b5569"];
+const WILT_COL_ACC_2: [u8; 32] = hex!["e8ed0c2a40fb5a0bbb24c38f5c8cd83d79498ac029ac9f87497677f5701e3d2c"];
+const WILT_COL_SESSION_2: [u8; 32] = hex!["7cacfbce640321ba84a85f41dfb43c2a2ea14ed789c096ad62ee0491599b0f44"];
+const WILT_SUDO_ACC: [u8; 32] = hex!["200a316b25b3683459585ec746042f6841640e3b9f111028426ff17e9090005d"];
+const WILT_TRANS_ACC: [u8; 32] = hex!["aaf5308b81f962ffdaccaa22352cc95b7bef70033d9d0d5a7023ec5681f05954"];
+
 pub fn get_chain_spec_wilt() -> Result<ChainSpec, String> {
 	let properties = get_properties("WILT", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
@@ -136,48 +143,22 @@ pub fn get_chain_spec_wilt() -> Result<ChainSpec, String> {
 			testnet_genesis(
 				wasm,
 				vec![
-					(
-						hex!["e6cf13c86a5f174acba79ca361dc429d89eb704c6a407af83f30b11ab8bc5045"].into(),
-						None,
-						30000 * KILT,
-					),
-					(
-						hex!["e8ed0c2a40fb5a0bbb24c38f5c8cd83d79498ac029ac9f87497677f5701e3d2c"].into(),
-						None,
-						30000 * KILT,
-					),
+					(WILT_COL_ACC_1.into(), None, 30000 * KILT),
+					(WILT_COL_ACC_2.into(), None, 30000 * KILT),
 				],
 				kilt_inflation_config(),
-				hex!["200a316b25b3683459585ec746042f6841640e3b9f111028426ff17e9090005d"].into(),
+				WILT_SUDO_ACC.into(),
 				vec![
-					(
-						hex!["e6cf13c86a5f174acba79ca361dc429d89eb704c6a407af83f30b11ab8bc5045"].into(),
-						hex!["e29df39b74777495ca00cd7a316ce98c5225d7088ae924b122fe0e2e6a4b5569"].unchecked_into(),
-					),
-					(
-						hex!["e8ed0c2a40fb5a0bbb24c38f5c8cd83d79498ac029ac9f87497677f5701e3d2c"].into(),
-						hex!["7cacfbce640321ba84a85f41dfb43c2a2ea14ed789c096ad62ee0491599b0f44"].unchecked_into(),
-					),
+					(WILT_COL_ACC_1.into(), WILT_COL_SESSION_1.unchecked_into()),
+					(WILT_COL_ACC_2.into(), WILT_COL_SESSION_2.unchecked_into()),
 				],
 				vec![
-					(
-						hex!["e6cf13c86a5f174acba79ca361dc429d89eb704c6a407af83f30b11ab8bc5045"].into(),
-						40000 * KILT,
-					),
-					(
-						hex!["e8ed0c2a40fb5a0bbb24c38f5c8cd83d79498ac029ac9f87497677f5701e3d2c"].into(),
-						40000 * KILT,
-					),
-					(
-						hex!["200a316b25b3683459585ec746042f6841640e3b9f111028426ff17e9090005d"].into(),
-						10000 * KILT,
-					),
-					(
-						hex!["aaf5308b81f962ffdaccaa22352cc95b7bef70033d9d0d5a7023ec5681f05954"].into(),
-						10000 * KILT,
-					),
+					(WILT_COL_ACC_1.into(), 40000 * KILT),
+					(WILT_COL_ACC_2.into(), 40000 * KILT),
+					(WILT_SUDO_ACC.into(), 10000 * KILT),
+					(WILT_TRANS_ACC.into(), 10000 * KILT),
 				],
-				hex!["aaf5308b81f962ffdaccaa22352cc95b7bef70033d9d0d5a7023ec5681f05954"].into(),
+				WILT_TRANS_ACC.into(),
 				id,
 			)
 		},
