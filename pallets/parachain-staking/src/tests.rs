@@ -1015,6 +1015,14 @@ fn should_update_total_stake() {
 
 			old_stake = StakePallet::total();
 			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(7), 1, 50));
+			assert_noop!(
+				StakePallet::delegator_stake_more(Origin::signed(7), 1, 0),
+				Error::<Test>::ValStakeZero
+			);
+			assert_noop!(
+				StakePallet::delegator_stake_less(Origin::signed(7), 1, 0),
+				Error::<Test>::ValStakeZero
+			);
 			assert_eq!(
 				StakePallet::total(),
 				TotalStake {
@@ -2566,6 +2574,14 @@ fn decrease_max_candidate_stake_by() {
 			);
 			assert_eq!(StakePallet::selected_candidates(), vec![2, 3]);
 
+			assert_noop!(
+				StakePallet::candidate_stake_more(Origin::signed(1), 0),
+				Error::<Test>::ValStakeZero
+			);
+			assert_noop!(
+				StakePallet::candidate_stake_less(Origin::signed(1), 0),
+				Error::<Test>::ValStakeZero
+			);
 			assert_noop!(
 				StakePallet::candidate_stake_more(Origin::signed(1), 1),
 				Error::<Test>::ValStakeAboveMax

@@ -109,6 +109,10 @@
 //! - `set_blocks_per_round` - Change the number of blocks of a round. Shorter
 //!   rounds enable more frequent changes of the selected candidates, earlier
 //!   withdrawal from unstaking and earlier collator leaving. Requires sudo.
+//! - `increase_max_candidate_stake_by` - Increase the maximum amount which can
+//!   be staked by a collator candidate.
+//! - `decrease_max_candidate_stake_by` - Decrease the maximum amount which can
+//!   be staked by a collator candidate.
 //! - `join_candidates` - Join the set of collator candidates by staking at
 //!   least `MinCandidateStake` and at most `MaxCollatorCandidateStake`.
 //! - `init_leave_candidates` - Request to leave the set of collators. Unstaking
@@ -282,6 +286,8 @@ pub mod pallet {
 		DelegatorExists,
 		/// The account is already part of the collator candidates set.
 		CandidateExists,
+		/// The account tried to stake more or less with amount zero.
+		ValStakeZero,
 		/// The account has not staked enough funds to be added to the collator
 		/// candidates set.
 		ValStakeBelowMin,
@@ -1117,6 +1123,7 @@ pub mod pallet {
 		pub fn candidate_stake_more(origin: OriginFor<T>, more: BalanceOf<T>) -> DispatchResultWithPostInfo {
 			let collator = ensure_signed(origin)?;
 
+			ensure!(!more.is_zero(), Error::<T>::ValStakeZero);
 			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(!state.is_leaving(), Error::<T>::CannotActivateIfLeaving);
 
@@ -1178,6 +1185,8 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::candidate_stake_less(T::MaxCollatorCandidates::get(), T::MaxCollatorCandidates::get() * T::MaxDelegatorsPerCollator::get()))]
 		pub fn candidate_stake_less(origin: OriginFor<T>, less: BalanceOf<T>) -> DispatchResultWithPostInfo {
 			let collator = ensure_signed(origin)?;
+			ensure!(!less.is_zero(), Error::<T>::ValStakeZero);
+
 			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(!state.is_leaving(), Error::<T>::CannotActivateIfLeaving);
 			let before = state.stake;
@@ -1560,6 +1569,8 @@ pub mod pallet {
 			more: BalanceOf<T>,
 		) -> DispatchResultWithPostInfo {
 			let delegator = ensure_signed(origin)?;
+			ensure!(!more.is_zero(), Error::<T>::ValStakeZero);
+
 			let candidate = T::Lookup::lookup(candidate)?;
 			let mut delegations = <DelegatorState<T>>::get(&delegator).ok_or(Error::<T>::DelegatorNotFound)?;
 			let mut collator = <CollatorState<T>>::get(&candidate).ok_or(Error::<T>::CandidateNotFound)?;
@@ -1629,6 +1640,8 @@ pub mod pallet {
 			less: BalanceOf<T>,
 		) -> DispatchResultWithPostInfo {
 			let delegator = ensure_signed(origin)?;
+			ensure!(!less.is_zero(), Error::<T>::ValStakeZero);
+
 			let candidate = T::Lookup::lookup(candidate)?;
 			let mut delegations = <DelegatorState<T>>::get(&delegator).ok_or(Error::<T>::DelegatorNotFound)?;
 			let mut collator = <CollatorState<T>>::get(&candidate).ok_or(Error::<T>::CandidateNotFound)?;
