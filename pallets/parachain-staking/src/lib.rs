@@ -457,6 +457,7 @@ pub mod pallet {
 
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+
 		fn on_initialize(now: T::BlockNumber) -> frame_support::weights::Weight {
 			let mut post_weight = <T as Config>::WeightInfo::on_initialize_no_action();
 			let mut round = <Round<T>>::get();
@@ -477,6 +478,23 @@ pub mod pallet {
 				post_weight = post_weight.saturating_add(Self::adjust_reward_rates(now));
 			}
 			post_weight
+		}
+
+		#[cfg(feature = "try-runtime")]
+		fn pre_upgrade() -> Result<(), &'static str> {
+			log::debug!("[BEGIN] parachain-staking::pre_upgrade");
+			let pre_migration_checks = migrations::v2::pre_migrate::<T>();
+			log::debug!("[END] parachain-staking::pre_upgrade");
+			pre_migration_checks
+		}
+
+		fn on_runtime_upgrade() -> Weight {
+			#[cfg(feature = "try-runtime")]
+			log::debug!("[BEGIN] parachain-staking::on_runtime_upgrade");
+			let migration_consumed_weight = migrations::v2::migrate::<T>();
+			#[cfg(feature = "try-runtime")]
+			log::debug!("[END] parachain-staking::on_runtime_upgrade");
+			migration_consumed_weight
 		}
 	}
 
