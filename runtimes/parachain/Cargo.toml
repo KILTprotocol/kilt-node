@@ -9,6 +9,7 @@ bitflags = {version = "1.2.1", default-features = false}
 codec = {package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"]}
 log = {default-features = false, version = "0.4.14"}
 serde = {version = "1.0.101", optional = true, features = ["derive"]}
+smallvec = "1.6.1"
 static_assertions = "1.1.0"
 
 # RPC
@@ -201,5 +202,5 @@ try-runtime = [
   "pallet-treasury/try-runtime",
   "pallet-utility/try-runtime",
   "pallet-vesting/try-runtime",
-  "parachain-staking/try-runtime"
+  "parachain-staking/try-runtime",
 ]
