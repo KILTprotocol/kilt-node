@@ -102,7 +102,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("kilt-spiritnet"),
 	impl_name: create_runtime_str!("kilt-spiritnet"),
 	authoring_version: 1,
-	spec_version: 10,
+	spec_version: 11,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -215,7 +215,7 @@ impl pallet_timestamp::Config for Runtime {
 	type Moment = u64;
 	type OnTimestampSet = ();
 	type MinimumPeriod = MinimumPeriod;
-	type WeightInfo = ();
+	type WeightInfo = weights::pallet_timestamp::WeightInfo<Runtime>;
 }
 
 parameter_types! {
