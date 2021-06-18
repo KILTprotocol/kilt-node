@@ -21,17 +21,23 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
+pub mod default_weights;
+
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
+
+#[cfg(feature = "runtime-benchmarks")]
+pub mod benchmarking;
 
 /// Test module for CTYPEs
 #[cfg(test)]
 mod tests;
 
-pub use pallet::*;
+pub use crate::{default_weights::WeightInfo, pallet::*};
 
 #[frame_support::pallet]
 pub mod pallet {
+	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 
@@ -43,9 +49,10 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type CtypeCreatorId: Parameter;
+		type CtypeCreatorId: Parameter + Default;
 		type EnsureOrigin: EnsureOrigin<Success = CtypeCreatorOf<Self>, <Self as frame_system::Config>::Origin>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type WeightInfo: WeightInfo;
 	}
 
 	#[pallet::pallet]
@@ -84,7 +91,7 @@ pub mod pallet {
 		///
 		/// * origin: the identifier of the CTYPE creator
 		/// * hash: the CTYPE hash. It has to be unique.
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::add())]
 		pub fn add(origin: OriginFor<T>, hash: CtypeHashOf<T>) -> DispatchResultWithPostInfo {
 			let creator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 

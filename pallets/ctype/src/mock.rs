@@ -19,10 +19,12 @@
 #![allow(clippy::from_over_into)]
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
+use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 };
+use sp_std::sync::Arc;
 
 use crate as ctype;
 use crate::*;
@@ -80,6 +82,7 @@ impl Config for Test {
 	type CtypeCreatorId = TestCtypeOwner;
 	type EnsureOrigin = frame_system::EnsureSigned<TestCtypeOwner>;
 	type Event = ();
+	type WeightInfo = ();
 }
 
 #[cfg(test)]
@@ -142,6 +145,15 @@ impl ExtBuilder {
 				})
 			});
 		}
+
+		ext
+	}
+
+	pub fn build_with_keystore(self, ext: Option<sp_io::TestExternalities>) -> sp_io::TestExternalities {
+		let mut ext = self.build(ext);
+
+		let keystore = KeyStore::new();
+		ext.register_extension(KeystoreExt(Arc::new(keystore)));
 
 		ext
 	}

@@ -22,17 +22,22 @@
 #![allow(clippy::unused_unit)]
 
 pub mod attestations;
+pub mod default_weights;
 
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
 
+#[cfg(feature = "runtime-benchmarks")]
+pub mod benchmarking;
+
 #[cfg(test)]
 mod tests;
 
-pub use crate::attestations::*;
-pub use pallet::*;
-
 use sp_std::vec::Vec;
+
+pub use crate::{attestations::*, default_weights::WeightInfo, pallet::*};
+
+use frame_support::traits::Get;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -56,6 +61,7 @@ pub mod pallet {
 	pub trait Config: frame_system::Config + ctype::Config + delegation::Config {
 		type EnsureOrigin: EnsureOrigin<Success = AttesterOf<Self>, <Self as frame_system::Config>::Origin>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type WeightInfo: WeightInfo;
 	}
 
 	#[pallet::pallet]
@@ -135,7 +141,7 @@ pub mod pallet {
 		/// * ctype_hash: the hash of the CTYPE used for this attestation
 		/// * delegation_id: \[OPTIONAL\] the ID of the delegation node used to
 		///   authorise the attester
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::add())]
 		pub fn add(
 			origin: OriginFor<T>,
 			claim_hash: ClaimHashOf<T>,
@@ -214,7 +220,7 @@ pub mod pallet {
 		///   root node but excluding the provided node) to verify whether the
 		///   caller is an ancestor of the attestation attester and hence
 		///   authorised to revoke the specified attestation.
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::revoke(*max_parent_checks))]
 		pub fn revoke(
 			origin: OriginFor<T>,
 			claim_hash: ClaimHashOf<T>,
@@ -230,6 +236,10 @@ pub mod pallet {
 			// the original attester
 			if attestation.attester != revoker {
 				let delegation_id = attestation.delegation_id.ok_or(Error::<T>::UnauthorizedRevocation)?;
+				ensure!(
+					max_parent_checks <= T::MaxParentChecks::get(),
+					delegation::Error::<T>::MaxParentChecksTooLarge
+				);
 				// Check whether the sender of the revocation controls the delegation node
 				// specified, and that its status has not been revoked
 				ensure!(

@@ -1,10 +1,10 @@
 stages:
-  - lint
   - test
+  - build
 
 clippy:
   image: paritytech/ci-linux:9a44d4ec-20210423
-  stage: lint
+  stage: test
   timeout: 1 hours
   script:
     - rustup component add clippy --toolchain nightly
@@ -12,7 +12,7 @@ clippy:
 
 fmt:
   image: paritytech/ci-linux:9a44d4ec-20210423
-  stage: lint
+  stage: test
   timeout: 1 hours
   script:
     - rustup component add rustfmt
@@ -24,3 +24,30 @@ test:
   timeout: 1 hours
   script:
     - cargo test --all --all-features
+
+build:
+  image:
+    name: amazon/aws-cli
+    entrypoint: [""]
+  stage: build
+  only:
+    - develop
+  before_script:
+    - amazon-linux-extras install docker
+    - aws --version
+    - docker --version
+  script:
+    - echo -n $CI_REGISTRY_TOKEN | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+    - docker build --build-arg NODE_TYPE=kilt-parachain -t kiltprotocol/peregrine:develop .
+    - docker build --build-arg NODE_TYPE=mashnet-node -t kiltprotocol/mashnet-node:develop .
+
+    - docker push kiltprotocol/peregrine:develop
+    - docker push kiltprotocol/mashnet-node:develop
+
+    - aws ecr get-login-password | docker login --username AWS --password-stdin $AWS_REGISTRY
+    - docker tag kiltprotocol/mashnet-node:develop $AWS_REGISTRY/kilt/prototype-chain:latest-develop
+    - docker tag kiltprotocol/mashnet-node:develop $AWS_REGISTRY/kilt/prototype-chain:$CI_COMMIT_SHORT_SHA
+    - docker tag kiltprotocol/peregrine:develop $AWS_REGISTRY/kilt-parachain/collator:latest-develop
+    - docker push $AWS_REGISTRY/kilt/prototype-chain:latest-develop
+    - docker push $AWS_REGISTRY/kilt/prototype-chain:$CI_COMMIT_SHORT_SHA
+    - docker push $AWS_REGISTRY/kilt-parachain/collator:latest-develop
