@@ -337,6 +337,10 @@ fn collator_exit_executes_after_delay() {
 
 			roll_to(11, vec![]);
 			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(2)));
+			assert_noop!(
+				StakePallet::delegate_another_candidate(Origin::signed(3), 2, 10),
+				Error::<Test>::CannotDelegateIfLeaving
+			);
 			assert_eq!(StakePallet::selected_candidates(), vec![1, 7]);
 			assert_eq!(last_event(), MetaEvent::stake(Event::CollatorScheduledExit(2, 2, 4)));
 			let info = StakePallet::collator_state(&2).unwrap();
@@ -2304,7 +2308,7 @@ fn withdraw_unstaked() {
 
 #[test]
 fn candidate_leaves() {
-	let balances: Vec<(AccountId, Balance)> = (1u64..14u64).map(|id| (id, 100)).collect();
+	let balances: Vec<(AccountId, Balance)> = (1u64..15u64).map(|id| (id, 100)).collect();
 	ExtBuilder::default()
 		.with_balances(balances)
 		.with_collators(vec![(1, 100), (2, 100)])
@@ -2324,6 +2328,18 @@ fn candidate_leaves() {
 				assert_ok!(StakePallet::join_candidates(Origin::signed(candidate), 100));
 			}
 			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(1)));
+			assert_noop!(
+				StakePallet::join_delegators(Origin::signed(15), 1, 10),
+				Error::<Test>::CannotDelegateIfLeaving
+			);
+			assert_noop!(
+				StakePallet::delegator_stake_more(Origin::signed(12), 1, 1),
+				Error::<Test>::CannotDelegateIfLeaving
+			);
+			assert_noop!(
+				StakePallet::delegator_stake_less(Origin::signed(12), 1, 1),
+				Error::<Test>::CannotDelegateIfLeaving
+			);
 			assert_noop!(
 				StakePallet::init_leave_candidates(Origin::signed(1)),
 				Error::<Test>::AlreadyLeaving

@@ -336,6 +336,9 @@ pub mod pallet {
 		/// The collator candidate is in the process of leaving the set of
 		/// candidates and cannot perform any other actions in the meantime.
 		CannotActivateIfLeaving,
+		/// The collator candidate is in the process of leaving the set of
+		/// candidates and thus cannot be delegated to.
+		CannotDelegateIfLeaving,
 		/// The delegator has already delegated the maximum number of candidates
 		/// allowed.
 		ExceedMaxCollatorsPerDelegator,
@@ -1269,6 +1272,7 @@ pub mod pallet {
 
 			// prepare update of collator state
 			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
+			ensure!(!state.is_leaving(), Error::<T>::CannotDelegateIfLeaving);
 			let delegation = Stake {
 				owner: acc.clone(),
 				amount,
@@ -1383,6 +1387,7 @@ pub mod pallet {
 
 			// prepare new collator state
 			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
+			ensure!(!state.is_leaving(), Error::<T>::CannotDelegateIfLeaving);
 			ensure!(
 				delegator.add_delegation(Stake {
 					owner: collator.clone(),
@@ -1574,6 +1579,7 @@ pub mod pallet {
 			let candidate = T::Lookup::lookup(candidate)?;
 			let mut delegations = <DelegatorState<T>>::get(&delegator).ok_or(Error::<T>::DelegatorNotFound)?;
 			let mut collator = <CollatorState<T>>::get(&candidate).ok_or(Error::<T>::CandidateNotFound)?;
+			ensure!(!collator.is_leaving(), Error::<T>::CannotDelegateIfLeaving);
 			let delegator_total = delegations
 				.inc_delegation(&candidate, more)
 				.ok_or(Error::<T>::DelegationNotFound)?;
@@ -1645,6 +1651,7 @@ pub mod pallet {
 			let candidate = T::Lookup::lookup(candidate)?;
 			let mut delegations = <DelegatorState<T>>::get(&delegator).ok_or(Error::<T>::DelegatorNotFound)?;
 			let mut collator = <CollatorState<T>>::get(&candidate).ok_or(Error::<T>::CandidateNotFound)?;
+			ensure!(!collator.is_leaving(), Error::<T>::CannotDelegateIfLeaving);
 			let remaining = delegations
 				.dec_delegation(&candidate, less)
 				.ok_or(Error::<T>::DelegationNotFound)?
