@@ -11,7 +11,7 @@ def update_spec(input: typing.Dict):
     })
     input["properties"]["tokenSymbol"] = "PILT"
     input["genesis"]["runtime"]["parachainInfo"]["parachainId"] = 12555
-    input["genesis"]["runtime"]["palletSudo"]["key"] = "5EKxJLF55ArWS38yJp2Rsyz9CEBJxsoRe9UQ4bQyX1imwZxk"
+    input["genesis"]["runtime"]["sudo"]["key"] = "5EKxJLF55ArWS38yJp2Rsyz9CEBJxsoRe9UQ4bQyX1imwZxk"
     input["genesis"]["runtime"]["parachainStaking"]["stakers"] = [
         [
             "5EKxJLF55ArWS38yJp2Rsyz9CEBJxsoRe9UQ4bQyX1imwZxk",
@@ -23,7 +23,7 @@ def update_spec(input: typing.Dict):
             100000000000000000000
         ]
     ]
-    input["genesis"]["runtime"]["palletSession"]["keys"] = [
+    input["genesis"]["runtime"]["session"]["keys"] = [
         [
             "5EKxJLF55ArWS38yJp2Rsyz9CEBJxsoRe9UQ4bQyX1imwZxk",
             "5EKxJLF55ArWS38yJp2Rsyz9CEBJxsoRe9UQ4bQyX1imwZxk",
@@ -46,7 +46,7 @@ def update_spec(input: typing.Dict):
             }
         ]
     ]
-    input["genesis"]["runtime"]["palletBalances"]["balances"] += [
+    input["genesis"]["runtime"]["balances"]["balances"] += [
         [
             "5EKxJLF55ArWS38yJp2Rsyz9CEBJxsoRe9UQ4bQyX1imwZxk",
             10000000000000000000000000000
