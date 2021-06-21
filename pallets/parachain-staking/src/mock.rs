@@ -182,7 +182,7 @@ impl Default for ExtBuilder {
 			delegators: vec![],
 			collators: vec![],
 			blocks_per_round: BLOCKS_PER_ROUND,
-			inflation_config: InflationInfo::new::<Test>(
+			inflation_config: InflationInfo::new(
 				Perquintill::from_percent(10),
 				Perquintill::from_percent(15),
 				Perquintill::from_percent(40),
@@ -216,7 +216,7 @@ impl ExtBuilder {
 		d_rewards: u64,
 		blocks_per_round: BlockNumber,
 	) -> Self {
-		self.inflation_config = InflationInfo::new::<Test>(
+		self.inflation_config = InflationInfo::new(
 			Perquintill::from_percent(col_max),
 			Perquintill::from_percent(col_rewards),
 			Perquintill::from_percent(d_max),

@@ -22,8 +22,8 @@ use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
 use kilt_parachain_runtime::{
 	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake,
-	ParachainInfoConfig, ParachainStakingConfig, Runtime, SessionConfig, SudoConfig, SystemConfig,
-	TechnicalCommitteeConfig, VestingConfig, WASM_BINARY,
+	ParachainInfoConfig, ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig,
+	VestingConfig, WASM_BINARY,
 };
 use kilt_primitives::{
 	constants::{KILT, MAX_COLLATOR_STAKE, MINUTES},
@@ -165,7 +165,7 @@ pub fn load_rococo_spec() -> Result<ChainSpec, String> {
 }
 
 pub fn kilt_inflation_config() -> InflationInfo {
-	InflationInfo::new::<Runtime>(
+	InflationInfo::new(
 		Perquintill::from_percent(10),
 		Perquintill::from_percent(10),
 		Perquintill::from_percent(40),

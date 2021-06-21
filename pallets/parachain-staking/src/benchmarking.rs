@@ -138,7 +138,7 @@ benchmarks! {
 	}
 
 	set_inflation {
-		let inflation = InflationInfo::new::<T>(
+		let inflation = InflationInfo::new(
 			Perquintill::from_percent(10),
 			Perquintill::from_percent(15),
 			Perquintill::from_percent(40),

@@ -193,7 +193,7 @@ pub mod pallet {
 		Permill, Perquintill,
 	};
 	use sp_staking::SessionIndex;
-	use sp_std::{collections::btree_map::BTreeMap, prelude::*};
+	use sp_std::{collections::btree_map::BTreeMap, convert::TryInto, prelude::*};
 
 	use crate::{
 		set::OrderedSet,
@@ -887,7 +887,7 @@ pub mod pallet {
 
 			let mut candidates = <CandidatePool<T>>::get();
 			ensure!(
-				candidates.len().saturating_sub(1) as u32 >= T::MinSelectedCandidates::get(),
+				candidates.len().try_into().unwrap_or(u32::MAX) > T::MinSelectedCandidates::get(),
 				Error::<T>::TooFewCollatorCandidates
 			);
 			if candidates.remove_by(|stake| stake.owner.cmp(&collator)).is_some() {
@@ -1921,7 +1921,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		fn delegator_is_kicked(delegation: &StakeOf<T>, collator: &T::AccountId) -> DispatchResult {
+		fn kick_delegator(delegation: &StakeOf<T>, collator: &T::AccountId) -> DispatchResult {
 			let mut state = <DelegatorState<T>>::get(&delegation.owner).ok_or(Error::<T>::DelegatorNotFound)?;
 			state.rm_delegation(collator);
 			// we don't unlock immediately
@@ -2044,7 +2044,7 @@ pub mod pallet {
 					state.delegators = OrderedSet::from_sorted_set(delegators);
 
 					// update storage of kicked delegator
-					Self::delegator_is_kicked(&stake_to_remove, &state.id)?;
+					Self::kick_delegator(&stake_to_remove, &state.id)?;
 
 					Ok((state, stake_to_remove))
 				}
@@ -2297,7 +2297,7 @@ pub mod pallet {
 					Perquintill::zero()
 				};
 
-				let new_inflation = InflationInfo::new::<T>(
+				let new_inflation = InflationInfo::new(
 					inflation.collator.max_rate,
 					c_reward_rate,
 					inflation.delegator.max_rate,
@@ -2341,7 +2341,7 @@ pub mod pallet {
 
 			Ok(DelegationCounter {
 				round: round.current,
-				counter: counter + 1,
+				counter: counter.saturating_add(1),
 			})
 		}
 

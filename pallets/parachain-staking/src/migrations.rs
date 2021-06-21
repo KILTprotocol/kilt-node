@@ -48,7 +48,7 @@ pub mod v2 {
 
 		// update rewards per block
 		InflationConfig::<T>::mutate(|inflation| {
-			*inflation = InflationInfo::new::<T>(
+			*inflation = InflationInfo::new(
 				inflation.collator.max_rate,
 				inflation.collator.reward_rate.annual,
 				inflation.collator.max_rate,

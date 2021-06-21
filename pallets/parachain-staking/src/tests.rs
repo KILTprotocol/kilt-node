@@ -1359,7 +1359,7 @@ fn round_transitions() {
 	let col_rewards = 15;
 	let d_max = 40;
 	let d_rewards = 10;
-	let inflation = InflationInfo::new::<Test>(
+	let inflation = InflationInfo::new(
 		Perquintill::from_percent(col_max),
 		Perquintill::from_percent(col_rewards),
 		Perquintill::from_percent(d_max),
@@ -1458,7 +1458,7 @@ fn round_transitions() {
 
 			assert_eq!(
 				StakePallet::inflation_config(),
-				InflationInfo::new::<Test>(
+				InflationInfo::new(
 					Perquintill::from_percent(col_max),
 					Perquintill::from_percent(col_rewards),
 					Perquintill::from_percent(d_max),
@@ -2473,7 +2473,7 @@ fn adjust_reward_rates() {
 			System::set_block_number(YEARS);
 			roll_to(YEARS + 1, vec![]);
 			assert_eq!(StakePallet::last_reward_reduction(), 1u64);
-			let inflation_1 = InflationInfo::new::<Test>(
+			let inflation_1 = InflationInfo::new(
 				inflation_0.collator.max_rate,
 				Perquintill::from_parts(98000000000000000),
 				inflation_0.delegator.max_rate,
@@ -2500,7 +2500,7 @@ fn adjust_reward_rates() {
 			System::set_block_number(2 * YEARS);
 			roll_to(2 * YEARS + 1, vec![]);
 			assert_eq!(StakePallet::last_reward_reduction(), 2u64);
-			let inflation_2 = InflationInfo::new::<Test>(
+			let inflation_2 = InflationInfo::new(
 				inflation_0.collator.max_rate,
 				Perquintill::from_parts(96040000000000000),
 				inflation_0.delegator.max_rate,
