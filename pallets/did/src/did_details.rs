@@ -73,19 +73,6 @@ impl DidVerificationKey {
 		Self::decode(&mut &encoded[..]).map_err(|_| KeyError::UnsupportedKeyType)
 	}
 
-	/// Decodes from a raw verification key, with no indication about its type.
-	pub fn from_raw_verification_key_encoded(encoded: &[u8]) -> Result<Self, KeyError> {
-		if let Ok(ed25519_pk) = ed25519::Public::decode(&mut &encoded[..]) {
-			Ok(Self::Ed25519(ed25519_pk))
-		} else if let Ok(sr25519_pk) = sr25519::Public::decode(&mut &encoded[..]) {
-			Ok(Self::Sr25519(sr25519_pk))
-		} else if let Ok(ecdsa_pk) = ecdsa::Public::decode(&mut &encoded[..]) {
-			Ok(Self::Ecdsa(ecdsa_pk))
-		} else {
-			Err(KeyError::UnsupportedKeyType)
-		}
-	}
-
 	/// Encodes the DidVerificationKey to the raw underlying type.
 	///
 	/// Different from DidVerificationKey::encode() as the resulting vector
@@ -242,15 +229,13 @@ impl DidVerifiableIdentifier for kilt_primitives::DidIdentifier {
 	) -> Result<DidVerificationKey, SignatureError> {
 		match self {
 			MultiSigner::Ed25519(pk) => {
-				let ed25519_did_key = DidVerificationKey::from_raw_verification_key_encoded(pk)
-					.map_err(|_| SignatureError::InvalidSignature)?;
+				let ed25519_did_key = DidVerificationKey::from(*pk);
 				ed25519_did_key
 					.verify_signature(payload, signature)
 					.map(|_| Ok(ed25519_did_key))?
 			}
 			MultiSigner::Sr25519(pk) => {
-				let sr25519_did_key = DidVerificationKey::from_raw_verification_key_encoded(pk)
-					.map_err(|_| SignatureError::InvalidSignature)?;
+				let sr25519_did_key = DidVerificationKey::from(*pk);
 				sr25519_did_key
 					.verify_signature(payload, signature)
 					.map(|_| Ok(sr25519_did_key))?
@@ -263,14 +248,12 @@ impl DidVerifiableIdentifier for kilt_primitives::DidIdentifier {
 				// ECDSA uses blake2-256 hashing algorihtm for signatures, so we hash the given
 				// message to recover the public key
 				let hashed_message = &sp_io::hashing::blake2_256(payload);
-				if let Ok(compressed_pk) =
+				if let Ok(hashed_compressed_pk) =
 					sp_io::crypto::secp256k1_ecdsa_recover_compressed(&ecdsa_signature, &hashed_message)
 				{
-					// As AccountId32 is the hash of an ECDSA public key, we hash the recovered key
-					// to match for equality
-					if sp_io::hashing::blake2_256(&compressed_pk)[..] == hashed_pk.encode()[..] {
-						DidVerificationKey::from_raw_verification_key_encoded(compressed_pk.as_ref())
-							.map_or(Err(SignatureError::InvalidSignature), |did_key| Ok(did_key))
+					if hashed_compressed_pk[..] == hashed_pk.encode()[..] {
+						let ecdsa_public_key = ecdsa::Public(hashed_compressed_pk);
+						Ok(DidVerificationKey::from(ecdsa_public_key))
 					} else {
 						Err(SignatureError::InvalidSignature)
 					}
