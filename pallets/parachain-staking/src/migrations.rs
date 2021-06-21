@@ -42,7 +42,6 @@ pub mod v2 {
 	pub fn migrate<T: Config>() -> Weight {
 		log::info!("Migrating staking to Releases::V2_0_0");
 
-		assert!(MAX_COLLATOR_STAKE < u64::MAX.into());
 		MaxCollatorCandidateStake::<T>::put(BalanceOf::<T>::from(MAX_COLLATOR_STAKE.saturated_into::<u64>()));
 
 		// update rewards per block
