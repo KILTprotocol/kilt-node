@@ -496,6 +496,14 @@ pub mod pallet {
 			log::debug!("[END] parachain-staking::on_runtime_upgrade");
 			migration_consumed_weight
 		}
+
+		#[cfg(feature = "try-runtime")]
+		fn post_upgrade() -> Result<(), &'static str> {
+			log::debug!("[BEGIN] parachain-staking::post_upgrade");
+			let post_migration_checks = migrations::v2::post_migrate::<T>();
+			log::debug!("[END] parachain-staking::post_upgrade");
+			post_migration_checks
+		}
 	}
 
 	/// True if network has been upgraded to this version.

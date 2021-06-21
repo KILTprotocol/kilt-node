@@ -22,10 +22,11 @@ use crate::{
 	types::{BalanceOf, Releases},
 };
 use frame_support::{dispatch::Weight, traits::Get};
-use kilt_primitives::constants::KILT;
+use kilt_primitives::constants::MAX_COLLATOR_STAKE;
 use sp_runtime::traits::{SaturatedConversion, Zero};
 
 pub mod v2 {
+
 	use super::*;
 
 	pub fn pre_migrate<T: Config>() -> Result<(), &'static str> {
@@ -34,17 +35,15 @@ pub mod v2 {
 			"MaxCollatorCandidateStake already set."
 		);
 		// should use default value if it has not existed before
-		assert!(StorageVersion::<T>::get() == Releases::V1_0_0);
+		assert_eq!(StorageVersion::<T>::get(), Releases::V1_0_0);
 		Ok(())
 	}
 
 	pub fn migrate<T: Config>() -> Weight {
 		log::info!("Migrating staking to Releases::V2_0_0");
 
-		assert!(KILT < u64::MAX.into());
-		MaxCollatorCandidateStake::<T>::put(
-			BalanceOf::<T>::from(200_000u64) * BalanceOf::<T>::from(KILT.saturated_into::<u64>()),
-		);
+		assert!(MAX_COLLATOR_STAKE < u64::MAX.into());
+		MaxCollatorCandidateStake::<T>::put(BalanceOf::<T>::from(MAX_COLLATOR_STAKE.saturated_into::<u64>()));
 
 		// update rewards per block
 		InflationConfig::<T>::mutate(|inflation| {
@@ -60,5 +59,14 @@ pub mod v2 {
 		log::info!("Completed staking migration to Releases::V2_0_0");
 
 		T::DbWeight::get().reads_writes(1, 3)
+	}
+
+	pub fn post_migrate<T: Config>() -> Result<(), &'static str> {
+		assert_eq!(
+			MaxCollatorCandidateStake::<T>::get(),
+			BalanceOf::<T>::from(MAX_COLLATOR_STAKE.saturated_into::<u64>())
+		);
+		assert_eq!(StorageVersion::<T>::get(), Releases::V2_0_0);
+		Ok(())
 	}
 }
