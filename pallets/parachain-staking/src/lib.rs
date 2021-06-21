@@ -611,7 +611,7 @@ pub mod pallet {
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
-			assert!(self.inflation_config.is_valid::<T>(), "Invalid inflation configuration");
+			assert!(self.inflation_config.is_valid(), "Invalid inflation configuration");
 
 			<InflationConfig<T>>::put(self.inflation_config.clone());
 			<MaxCollatorCandidateStake<T>>::put(self.max_candidate_stake);
@@ -669,7 +669,7 @@ pub mod pallet {
 		pub fn set_inflation(origin: OriginFor<T>, inflation: InflationInfo) -> DispatchResult {
 			frame_system::ensure_root(origin)?;
 
-			ensure!(inflation.is_valid::<T>(), Error::<T>::InvalidSchedule);
+			ensure!(inflation.is_valid(), Error::<T>::InvalidSchedule);
 			Self::deposit_event(Event::RoundInflationSet(
 				inflation.collator.max_rate,
 				inflation.collator.reward_rate.per_block,

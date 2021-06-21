@@ -110,7 +110,7 @@ impl InflationInfo {
 
 	/// Check whether the annual reward rate is approx. the per_block reward
 	/// rate multiplied with the number of blocks per year
-	pub fn is_valid<T: Config>(&self) -> bool {
+	pub fn is_valid(&self) -> bool {
 		let years = YEARS;
 		self.collator.reward_rate.annual
 			>= Perquintill::from_parts(self.collator.reward_rate.per_block.deconstruct().saturating_mul(years))
@@ -169,7 +169,7 @@ mod tests {
 				let years_u128: BalanceOf<Test> = YEARS as u128;
 
 				// Dummy checks for correct instantiation
-				assert!(inflation.is_valid::<Test>());
+				assert!(inflation.is_valid());
 				assert_eq!(inflation.collator.max_rate, Perquintill::from_percent(10));
 				assert_eq!(inflation.collator.reward_rate.annual, Perquintill::from_percent(15));
 				assert!(
