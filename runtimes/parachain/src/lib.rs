@@ -121,7 +121,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 11,
+	spec_version: 12,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -736,16 +736,16 @@ parameter_types! {
 	pub const ExitQueueDelay: u32 = 2;
 	/// Minimum 16 collators selected per round, default at genesis and minimum forever after
 	pub const MinSelectedCandidates: u32 = MIN_COLLATORS;
+	/// We only allow one delegation per round.
+	pub const MaxDelegationsPerRound: u32 = 1;
 	/// Maximum 25 delegators per collator at launch, might be increased later
 	pub const MaxDelegatorsPerCollator: u32 = 25;
 	/// Maximum 1 collator per delegator at launch, will be increased later
 	pub const MaxCollatorsPerDelegator: u32 = 1;
 	/// Minimum stake required to be reserved to be a collator is 10_000
-	pub const MinCollatorStk: Balance = 10_000 * KILT;
-	/// Max stake possible to be reserved to be collator candidate is 200_000
-	pub const MaxCollatorCandidateStk: Balance = 200_000 * KILT;
+	pub const MinCollatorStake: Balance = 10_000 * KILT;
 	/// Minimum stake required to be reserved to be a delegator is 1000
-	pub const MinDelegatorStk: Balance = 1000 * KILT;
+	pub const MinDelegatorStake: Balance = 1000 * KILT;
 	/// Maximum number of collator candidates
 	pub const MaxCollatorCandidates: u32 = MAX_CANDIDATES;
 	/// Maximum number of concurrent requests to unlock unstaked balance
@@ -761,14 +761,14 @@ impl parachain_staking::Config for Runtime {
 	type StakeDuration = StakeDuration;
 	type ExitQueueDelay = ExitQueueDelay;
 	type MinSelectedCandidates = MinSelectedCandidates;
+	type MaxDelegationsPerRound = MaxDelegationsPerRound;
 	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
 	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
-	type MinCollatorStk = MinCollatorStk;
-	type MinCollatorCandidateStk = MinCollatorStk;
-	type MaxCollatorCandidateStk = MaxCollatorCandidateStk;
+	type MinCollatorStake = MinCollatorStake;
+	type MinCollatorCandidateStake = MinCollatorStake;
 	type MaxCollatorCandidates = MaxCollatorCandidates;
-	type MinDelegation = MinDelegatorStk;
-	type MinDelegatorStk = MinDelegatorStk;
+	type MinDelegation = MinDelegatorStake;
+	type MinDelegatorStake = MinDelegatorStake;
 	type MaxUnstakeRequests = MaxUnstakeRequests;
 	type WeightInfo = weights::parachain_staking::WeightInfo<Runtime>;
 }

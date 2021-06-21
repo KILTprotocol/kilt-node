@@ -27,7 +27,6 @@ use sp_std::{
 	cmp::Ordering,
 	ops::{Add, Sub},
 	vec,
-	vec::Vec,
 };
 
 use crate::{set::OrderedSet, Config};
@@ -90,20 +89,7 @@ impl Default for CollatorStatus {
 	}
 }
 
-#[derive(Default, Encode, Decode, RuntimeDebug, PartialEq, Eq)]
-/// Snapshot of collator state at the start of the round for which they are
-/// selected
-pub struct CollatorSnapshot<AccountId, Balance>
-where
-	AccountId: Eq + Ord,
-	Balance: Eq + Ord,
-{
-	pub stake: Balance,
-	pub delegators: Vec<Stake<AccountId, Balance>>,
-	pub total: Balance,
-}
-
-#[derive(Encode, Decode, RuntimeDebug, PartialEq)]
+#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq)]
 /// Global collator state with commission fee, staked funds, and delegations
 pub struct Collator<AccountId, Balance>
 where
@@ -194,20 +180,6 @@ where
 
 	pub fn leave_candidates(&mut self, round: SessionIndex) {
 		self.state = CollatorStatus::Leaving(round);
-	}
-}
-
-impl<A, B> From<Collator<A, B>> for CollatorSnapshot<A, B>
-where
-	A: Clone + Eq + Ord,
-	B: Copy + Eq + Ord,
-{
-	fn from(other: Collator<A, B>) -> CollatorSnapshot<A, B> {
-		CollatorSnapshot {
-			stake: other.stake,
-			delegators: other.delegators.into(),
-			total: other.total,
-		}
 	}
 }
 
@@ -342,6 +314,32 @@ where
 pub struct TotalStake<Balance: Default> {
 	pub collators: Balance,
 	pub delegators: Balance,
+}
+
+/// The number of delegations a delegator has done within the last session in
+/// which they delegated.
+#[derive(Default, Clone, Encode, Decode, RuntimeDebug)]
+pub struct DelegationCounter {
+	/// The index of the last delegation.
+	pub round: SessionIndex,
+	/// The number of delegations made within round.
+	pub counter: u32,
+}
+
+// A value placed in storage that represents the current version of the Staking
+// storage. This value is used by the `on_runtime_upgrade` logic to determine
+// whether we run storage migration logic. This should match directly with the
+// semantic versions of the Rust crate.
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, RuntimeDebug)]
+pub enum Releases {
+	V1_0_0,
+	V2_0_0, // New Reward calculation, MaxCollatorCandidateStake
+}
+
+impl Default for Releases {
+	fn default() -> Self {
+		Releases::V1_0_0
+	}
 }
 
 pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
