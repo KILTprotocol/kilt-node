@@ -130,78 +130,79 @@ fn check_successful_simple_ecdsa_creation() {
 	assert_eq!(stored_did.last_tx_counter, 0u64);
 }
 
-// #[test]
-// fn check_successful_complete_creation() {
-// 	let auth_key = get_sr25519_authentication_key(true);
-// 	let enc_keys: BTreeSet<did::DidEncryptionKey> =
-// 		vec![get_x25519_encryption_key(true), get_x25519_encryption_key(false)]
-// 			.iter()
-// 			.copied()
-// 			.collect();
-// 	let del_key = get_sr25519_delegation_key(true);
-// 	let att_key = get_ed25519_attestation_key(true);
-// 	let new_url = did::Url::from(
-// 		did::HttpUrl::try_from("https://new_kilt.io".as_bytes())
-// 			.expect("https://new_kilt.io should not be considered an invalid HTTP URL."),
-// 	);
-// 	let mut operation =
-// 		generate_base_did_creation_operation(ALICE_DID, did::DidVerificationKey::from(auth_key.public()));
-// 	operation.new_key_agreement_keys = enc_keys.clone();
-// 	operation.new_attestation_key = Some(did::DidVerificationKey::from(att_key.public()));
-// 	operation.new_delegation_key = Some(did::DidVerificationKey::from(del_key.public()));
-// 	operation.new_endpoint_url = Some(new_url);
+#[test]
+fn check_successful_complete_creation() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let auth_did_key = did::DidVerificationKey::from(auth_key.clone().public());
+	let enc_keys: BTreeSet<did::DidEncryptionKey> =
+		vec![get_x25519_encryption_key(true), get_x25519_encryption_key(false)]
+			.iter()
+			.copied()
+			.collect();
+	let del_key = get_sr25519_delegation_key(true);
+	let att_key = get_ecdsa_attestation_key(true);
+	let new_url = did::Url::from(
+		did::HttpUrl::try_from("https://new_kilt.io".as_bytes())
+			.expect("https://new_kilt.io should not be considered an invalid HTTP URL."),
+	);
+	let mut operation = generate_base_did_creation_operation(alice_did.clone());
+	operation.new_key_agreement_keys = enc_keys.clone();
+	operation.new_attestation_key = Some(did::DidVerificationKey::from(att_key.public()));
+	operation.new_delegation_key = Some(did::DidVerificationKey::from(del_key.public()));
+	operation.new_endpoint_url = Some(new_url);
 
-// 	let signature = auth_key.sign(operation.encode().as_ref());
+	let signature = auth_key.sign(operation.encode().as_ref());
 
-// 	let mut ext = ExtBuilder::default().build(None);
+	let mut ext = ExtBuilder::default().build(None);
 
-// 	ext.execute_with(|| {
-// 		assert_ok!(Did::submit_did_create_operation(
-// 			Origin::signed(DEFAULT_ACCOUNT),
-// 			operation.clone(),
-// 			did::DidSignature::from(signature),
-// 		));
-// 	});
+	ext.execute_with(|| {
+		assert_ok!(Did::submit_did_create_operation(
+			Origin::signed(DEFAULT_ACCOUNT),
+			operation.clone(),
+			did::DidSignature::from(signature),
+		));
+	});
 
-// 	let stored_did = ext.execute_with(|| Did::get_did(ALICE_DID).expect("ALICE_DID should be present on chain."));
-// 	assert_eq!(
-// 		stored_did.get_authentication_key_id(),
-// 		generate_key_id(&operation.new_authentication_key.into())
-// 	);
-// 	assert_eq!(stored_did.get_key_agreement_keys_ids().len(), 2);
-// 	for key in enc_keys.iter().copied() {
-// 		assert!(stored_did
-// 			.get_key_agreement_keys_ids()
-// 			.contains(&generate_key_id(&key.into())))
-// 	}
-// 	assert_eq!(
-// 		stored_did.get_delegation_key_id(),
-// 		&Some(generate_key_id(&operation.new_delegation_key.unwrap().into()))
-// 	);
-// 	assert_eq!(
-// 		stored_did.get_attestation_key_id(),
-// 		&Some(generate_key_id(&operation.new_attestation_key.unwrap().into()))
-// 	);
-// 	// Authentication key + 2 * Encryption key + Delegation key + Attestation key =
-// 	// 5
-// 	assert_eq!(stored_did.get_public_keys().len(), 5);
-// 	assert!(stored_did
-// 		.get_public_keys()
-// 		.contains_key(&generate_key_id(&operation.new_authentication_key.into())));
-// 	let mut key_agreement_keys_iterator = operation.new_key_agreement_keys.iter().copied();
-// 	assert!(stored_did
-// 		.get_public_keys()
-// 		.contains_key(&generate_key_id(&key_agreement_keys_iterator.next().unwrap().into())));
-// 	assert!(stored_did
-// 		.get_public_keys()
-// 		.contains_key(&generate_key_id(&key_agreement_keys_iterator.next().unwrap().into())));
-// 	assert!(stored_did
-// 		.get_public_keys()
-// 		.contains_key(&generate_key_id(&operation.new_attestation_key.unwrap().into())));
-// 	assert!(stored_did
-// 		.get_public_keys()
-// 		.contains_key(&generate_key_id(&operation.new_delegation_key.unwrap().into())));
-// }
+	let stored_did = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
+	assert_eq!(
+		stored_did.get_authentication_key_id(),
+		generate_key_id(&auth_did_key.clone().into())
+	);
+	assert_eq!(stored_did.get_key_agreement_keys_ids().len(), 2);
+	for key in enc_keys.iter().copied() {
+		assert!(stored_did
+			.get_key_agreement_keys_ids()
+			.contains(&generate_key_id(&key.into())))
+	}
+	assert_eq!(
+		stored_did.get_delegation_key_id(),
+		&Some(generate_key_id(&operation.new_delegation_key.unwrap().into()))
+	);
+	assert_eq!(
+		stored_did.get_attestation_key_id(),
+		&Some(generate_key_id(&operation.new_attestation_key.unwrap().into()))
+	);
+	// Authentication key + 2 * Encryption key + Delegation key + Attestation key =
+	// 5
+	assert_eq!(stored_did.get_public_keys().len(), 5);
+	assert!(stored_did
+		.get_public_keys()
+		.contains_key(&generate_key_id(&auth_did_key.clone().into())));
+	let mut key_agreement_keys_iterator = operation.new_key_agreement_keys.iter().copied();
+	assert!(stored_did
+		.get_public_keys()
+		.contains_key(&generate_key_id(&key_agreement_keys_iterator.next().unwrap().into())));
+	assert!(stored_did
+		.get_public_keys()
+		.contains_key(&generate_key_id(&key_agreement_keys_iterator.next().unwrap().into())));
+	assert!(stored_did
+		.get_public_keys()
+		.contains_key(&generate_key_id(&operation.new_attestation_key.clone().unwrap().into())));
+	assert!(stored_did
+		.get_public_keys()
+		.contains_key(&generate_key_id(&operation.new_delegation_key.clone().unwrap().into())));
+}
 
 // #[test]
 // fn check_duplicate_did_creation() {
