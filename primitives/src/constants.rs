@@ -39,12 +39,16 @@ pub const MONTHS: BlockNumber = DAYS * 30;
 pub const YEARS: BlockNumber = MONTHS * 12;
 
 pub const MIN_VESTED_TRANSFER_AMOUNT: Balance = 1000 * KILT;
+pub const MAX_COLLATOR_STAKE: Balance = 200_000 * KILT;
 
 /// One KILT
 pub const KILT: Balance = 10u128.pow(15);
 
 /// 0.001 KILT
 pub const MILLI_KILT: Balance = 10u128.pow(12);
+
+/// 0.000_001 KILT
+pub const MICRO_KILT: Balance = 10u128.pow(9);
 
 // 1 in 4 blocks (on average, not counting collisions) will be primary babe
 // blocks.
