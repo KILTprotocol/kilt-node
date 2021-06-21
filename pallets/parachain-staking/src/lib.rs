@@ -875,7 +875,7 @@ pub mod pallet {
 		/// - Kills: CollatorState, DelegatorState for all delegators which only
 		///   delegated to the candidate
 		/// # </weight>
-		#[pallet::weight(<T as Config>::WeightInfo::force_remove_candidate(T::MaxCollatorCandidates::get() * T::MaxDelegatorsPerCollator::get()))]
+		#[pallet::weight(<T as Config>::WeightInfo::force_remove_candidate(T::MaxCollatorCandidates::get(), T::MaxCollatorCandidates::get() * T::MaxDelegatorsPerCollator::get()))]
 		pub fn force_remove_candidate(
 			origin: OriginFor<T>,
 			collator: <T::Lookup as StaticLookup>::Source,
@@ -897,11 +897,15 @@ pub mod pallet {
 			Self::remove_candidate(&collator, state);
 
 			// update candidates for next round
-			let (_, num_delegators, _, _) = Self::select_top_candidates();
+			let (num_collators, num_delegators, _, _) = Self::select_top_candidates();
 
 			Self::deposit_event(Event::CollatorRemoved(collator, total_amount));
 
-			Ok(Some(<T as Config>::WeightInfo::force_remove_candidate(num_delegators)).into())
+			Ok(Some(<T as Config>::WeightInfo::force_remove_candidate(
+				num_collators,
+				num_delegators,
+			))
+			.into())
 		}
 
 		/// Join the set of collator candidates.
