@@ -11,52 +11,52 @@ def update_spec(input: typing.Dict):
     })
     input["properties"]["tokenSymbol"] = "PILT"
     input["genesis"]["runtime"]["parachainInfo"]["parachainId"] = 12555
-    input["genesis"]["runtime"]["sudo"]["key"] = "5EKxJLF55ArWS38yJp2Rsyz9CEBJxsoRe9UQ4bQyX1imwZxk"
+    input["genesis"]["runtime"]["sudo"]["key"] = "5FNHPF1epsZHJC3LSGMbVJzP5ykcgursQAwPjJiNJB5eAGmW"
     input["genesis"]["runtime"]["parachainStaking"]["stakers"] = [
         [
-            "5EKxJLF55ArWS38yJp2Rsyz9CEBJxsoRe9UQ4bQyX1imwZxk",
+            "5FNHPF1epsZHJC3LSGMbVJzP5ykcgursQAwPjJiNJB5eAGmW",
             None,
             100000000000000000000
         ], [
-            "5DJH8AgnXEjG8jzT1B8UzV9MW9Mfsmw3vajoEFJQHqpTXeoj",
+            "5GvFCmt5FMqV15tZUHsATAzafYvVT1HDQoRRcJq4gJ52NCHr",
             None,
             100000000000000000000
         ]
     ]
     input["genesis"]["runtime"]["session"]["keys"] = [
         [
-            "5EKxJLF55ArWS38yJp2Rsyz9CEBJxsoRe9UQ4bQyX1imwZxk",
-            "5EKxJLF55ArWS38yJp2Rsyz9CEBJxsoRe9UQ4bQyX1imwZxk",
+            "5FNHPF1epsZHJC3LSGMbVJzP5ykcgursQAwPjJiNJB5eAGmW",
+            "5FNHPF1epsZHJC3LSGMbVJzP5ykcgursQAwPjJiNJB5eAGmW",
             {
-                "aura": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
+                "aura": "5GMw7mZsyWnL8M47ZuqUKKbd1C6LRKuWZDYQLVbkFnM8MS53"
             }
         ],
         [
-            "5DJH8AgnXEjG8jzT1B8UzV9MW9Mfsmw3vajoEFJQHqpTXeoj",
-            "5DJH8AgnXEjG8jzT1B8UzV9MW9Mfsmw3vajoEFJQHqpTXeoj",
+            "5GvFCmt5FMqV15tZUHsATAzafYvVT1HDQoRRcJq4gJ52NCHr",
+            "5GvFCmt5FMqV15tZUHsATAzafYvVT1HDQoRRcJq4gJ52NCHr",
             {
-                "aura": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
+                "aura": "5DMAVHz2yDhDKKUTCJH8cQTVhLZTviJvy5SQxVZjGXUC8B2o"
             }
         ],
         [
-            "5GRJdyoQtAKFSX4wSDjzYMtm6zs7fqti2bLcyRQwKF7UnGYv",
-            "5GRJdyoQtAKFSX4wSDjzYMtm6zs7fqti2bLcyRQwKF7UnGYv",
+            "5EvVhMthVR1EHGEdDoMrhx9iqU2aJqD3gJu3q3xb68A5rjFZ",
+            "5EvVhMthVR1EHGEdDoMrhx9iqU2aJqD3gJu3q3xb68A5rjFZ",
             {
-                "aura": "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y"
+                "aura": "5Dvq2MZ22wys4obTHEttjje6GxHVjJo7NQVz7VswDRRRtNwB"
             }
         ]
     ]
     input["genesis"]["runtime"]["balances"]["balances"] += [
         [
-            "5EKxJLF55ArWS38yJp2Rsyz9CEBJxsoRe9UQ4bQyX1imwZxk",
+            "5FNHPF1epsZHJC3LSGMbVJzP5ykcgursQAwPjJiNJB5eAGmW",
             10000000000000000000000000000
         ],
         [
-            "5DJH8AgnXEjG8jzT1B8UzV9MW9Mfsmw3vajoEFJQHqpTXeoj",
+            "5GvFCmt5FMqV15tZUHsATAzafYvVT1HDQoRRcJq4gJ52NCHr",
             10000000000000000000000000000
         ],
         [
-            "5GRJdyoQtAKFSX4wSDjzYMtm6zs7fqti2bLcyRQwKF7UnGYv",
+            "5EvVhMthVR1EHGEdDoMrhx9iqU2aJqD3gJu3q3xb68A5rjFZ",
             10000000000000000000000000000
         ]
     ]

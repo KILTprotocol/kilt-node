@@ -24,10 +24,10 @@ use crate::{
 use codec::Encode;
 use cumulus_client_service::genesis::generate_genesis_block;
 use cumulus_primitives_core::ParaId;
-use kilt_parachain_runtime::Block;
 use log::info;
 #[cfg(feature = "try-runtime")]
 use node_executor::Executor;
+use peregrine_runtime::Block;
 use polkadot_parachain::primitives::AccountIdConversion;
 use sc_cli::{
 	ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams, NetworkParams, Result,
@@ -40,21 +40,20 @@ use std::{io::Write, net::SocketAddr};
 
 fn load_spec(id: &str, runtime: &str, para_id: ParaId) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
 	match id {
-		"staging" => Ok(Box::new(chain_spec::mashnet::make_staging_spec(para_id)?)),
-		"rococo" => Ok(Box::new(chain_spec::mashnet::load_rococo_spec()?)),
-		"dev" => Ok(Box::new(chain_spec::mashnet::make_dev_spec(para_id)?)),
+		"dev" => Ok(Box::new(chain_spec::peregrine::make_dev_spec(para_id)?)),
+		"peregrine-new" => Ok(Box::new(chain_spec::peregrine::make_new_spec(para_id)?)),
 		"spiritnet-dev" => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_dev(para_id)?)),
 		"wilt-new" => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_wilt()?)),
 		"spiritnet-new" => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_spiritnet()?)),
 		"spiritnet" => Ok(Box::new(chain_spec::spiritnet::load_spiritnet_spec()?)),
 		"" => match runtime {
 			"spiritnet" => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_dev(para_id)?)),
-			"mashnet" => Ok(Box::new(chain_spec::mashnet::make_dev_spec(para_id)?)),
+			"peregrine" => Ok(Box::new(chain_spec::peregrine::make_dev_spec(para_id)?)),
 			_ => Err("Unknown runtime".to_owned()),
 		},
 		path => match runtime {
 			"spiritnet" => Ok(Box::new(chain_spec::spiritnet::ChainSpec::from_json_file(path.into())?)),
-			"mashnet" => Ok(Box::new(chain_spec::mashnet::ChainSpec::from_json_file(path.into())?)),
+			"peregrine" => Ok(Box::new(chain_spec::peregrine::ChainSpec::from_json_file(path.into())?)),
 			_ => Err("Unknown runtime".to_owned()),
 		},
 	}
@@ -106,7 +105,7 @@ impl SubstrateCli for Cli {
 		if spec.id().starts_with("spiritnet") {
 			&spiritnet_runtime::VERSION
 		} else {
-			&kilt_parachain_runtime::VERSION
+			&peregrine_runtime::VERSION
 		}
 	}
 }
@@ -175,9 +174,9 @@ macro_rules! construct_async_run {
 				},
 			"mashnet" => {
 					runner.async_run(|$config| {
-						let $components = new_partial::<kilt_parachain_runtime::RuntimeApi, MashRuntimeExecutor, _>(
+						let $components = new_partial::<peregrine_runtime::RuntimeApi, MashRuntimeExecutor, _>(
 							&$config,
-							crate::service::build_import_queue::<MashRuntimeExecutor, kilt_parachain_runtime::RuntimeApi>,
+							crate::service::build_import_queue::<MashRuntimeExecutor, peregrine_runtime::RuntimeApi>,
 						)?;
 						let task_manager = $components.task_manager;
 						{ $( $code )* }.map(|v| (v, task_manager))
@@ -356,7 +355,7 @@ pub fn run() -> Result<()> {
 				);
 
 				match cli.runtime.as_str() {
-					"mashnet" => crate::service::start_node::<MashRuntimeExecutor, kilt_parachain_runtime::RuntimeApi>(
+					"mashnet" => crate::service::start_node::<MashRuntimeExecutor, peregrine_runtime::RuntimeApi>(
 						config,
 						polkadot_config,
 						id,
