@@ -274,14 +274,6 @@ pub mod pallet {
 			let did_entry =
 				DidDetails::try_from((operation.clone(), account_did_auth_key)).map_err(<Error<T>>::from)?;
 
-			Self::verify_payload_signature_with_did_key_type(
-				&operation.encode(),
-				&signature,
-				&did_entry,
-				operation.get_verification_key_relationship(),
-			)
-			.map_err(<Error<T>>::from)?;
-
 			let did_identifier = operation.get_did();
 			log::debug!("Creating DID {:?}", did_identifier);
 			<Did<T>>::insert(did_identifier, did_entry);
