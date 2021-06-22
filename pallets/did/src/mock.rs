@@ -23,9 +23,13 @@ use codec::{Decode, Encode};
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::EnsureSigned;
-use sp_core::{Pair, Public, ecdsa, ed25519, sr25519};
+use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
-use sp_runtime::{MultiSigner, testing::Header, traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify}};
+use sp_runtime::{
+	testing::Header,
+	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
+	MultiSigner,
+};
 use sp_std::{collections::btree_set::BTreeSet, convert::TryInto, sync::Arc};
 
 use crate as did;
@@ -255,9 +259,7 @@ pub fn get_url_endpoint(length: u32) -> Url {
 	)
 }
 
-pub fn generate_base_did_creation_operation(
-	did: TestDidIdentifier,
-) -> did::DidCreationOperation<Test> {
+pub fn generate_base_did_creation_operation(did: TestDidIdentifier) -> did::DidCreationOperation<Test> {
 	DidCreationOperation {
 		did,
 		new_key_agreement_keys: BTreeSet::new(),

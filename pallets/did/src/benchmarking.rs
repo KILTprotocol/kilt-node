@@ -22,7 +22,7 @@ use frame_system::RawOrigin;
 use kilt_primitives::AccountId;
 use sp_core::{crypto::KeyTypeId, ecdsa, ed25519, sr25519};
 use sp_io::crypto::{ecdsa_generate, ecdsa_sign, ed25519_generate, ed25519_sign, sr25519_generate, sr25519_sign};
-use sp_runtime::{AccountId32, MultiSigner, traits::IdentifyAccount};
+use sp_runtime::{traits::IdentifyAccount, MultiSigner};
 use sp_std::{collections::btree_set::BTreeSet, convert::TryInto};
 
 use crate::*;
@@ -311,7 +311,7 @@ benchmarks! {
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
 		let did_public_auth_key = get_ed25519_public_authentication_key();
-		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key.clone()).into_account().into();
+		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 		// To cover cases in which m > n without failing, we add m + n keys to the set of keys before the update operation
 		let did_key_agreement_keys = get_key_agreement_keys(m + n);
 
@@ -373,7 +373,7 @@ benchmarks! {
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
 		let did_public_auth_key = get_sr25519_public_authentication_key();
-		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key.clone()).into_account().into();
+		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 		// To cover cases in which m > n without failing, we add m + n keys to the set of keys before the update operation
 		let did_key_agreement_keys = get_key_agreement_keys(m + n);
 
@@ -493,7 +493,7 @@ benchmarks! {
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
 		let did_public_auth_key = get_ed25519_public_authentication_key();
-		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key.clone()).into_account().into();
+		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 
 		let did_details = get_did_base_details(DidVerificationKey::from(did_public_auth_key));
 		Did::<T>::insert(&did_subject, did_details);
@@ -513,7 +513,7 @@ benchmarks! {
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
 		let did_public_auth_key = get_ed25519_public_authentication_key();
-		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key.clone()).into_account().into();
+		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 
 		let did_details = get_did_base_details(DidVerificationKey::from(did_public_auth_key));
 		Did::<T>::insert(&did_subject, did_details);
@@ -527,7 +527,7 @@ benchmarks! {
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
 		let did_public_auth_key = get_sr25519_public_authentication_key();
-		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key.clone()).into_account().into();
+		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 
 		let did_details = get_did_base_details(DidVerificationKey::from(did_public_auth_key));
 		Did::<T>::insert(&did_subject, did_details);

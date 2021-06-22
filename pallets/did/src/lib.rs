@@ -84,9 +84,7 @@ pub mod pallet {
 			+ Dispatchable<Origin = <Self as Config>::Origin, PostInfo = PostDispatchInfo>
 			+ GetDispatchInfo
 			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
-		type DidIdentifier: Parameter
-			+ Default
-			+ DidVerifiableIdentifier;
+		type DidIdentifier: Parameter + Default + DidVerifiableIdentifier;
 		#[cfg(not(feature = "runtime-benchmarks"))]
 		type Origin: From<DidRawOrigin<DidIdentifierOf<Self>>>;
 		#[cfg(feature = "runtime-benchmarks")]
@@ -525,7 +523,7 @@ impl<T: Config> Pallet<T> {
 
 		// Verify that the signature matches the expected format, otherwise generate
 		// an error
-		let is_signature_valid = verification_key
+		let _is_signature_valid = verification_key
 			.verify_signature(payload, signature)
 			.map_err(DidError::SignatureError)?;
 
