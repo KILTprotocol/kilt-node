@@ -23,7 +23,7 @@ use crate::{
 };
 use frame_support::{dispatch::Weight, traits::Get};
 use kilt_primitives::constants::MAX_COLLATOR_STAKE;
-use sp_runtime::traits::{SaturatedConversion, Zero};
+use sp_runtime::traits::Zero;
 
 pub mod v2 {
 
@@ -42,15 +42,15 @@ pub mod v2 {
 	pub fn migrate<T: Config>() -> Weight {
 		log::info!("Migrating staking to Releases::V2_0_0");
 
-		MaxCollatorCandidateStake::<T>::put(BalanceOf::<T>::from(MAX_COLLATOR_STAKE.saturated_into::<u64>()));
+		MaxCollatorCandidateStake::<T>::put(BalanceOf::<T>::from(MAX_COLLATOR_STAKE));
 
 		// update rewards per block
 		InflationConfig::<T>::mutate(|inflation| {
 			*inflation = InflationInfo::new(
 				inflation.collator.max_rate,
 				inflation.collator.reward_rate.annual,
-				inflation.collator.max_rate,
-				inflation.collator.reward_rate.annual,
+				inflation.delegator.max_rate,
+				inflation.delegator.reward_rate.annual,
 			);
 		});
 
@@ -63,7 +63,7 @@ pub mod v2 {
 	pub fn post_migrate<T: Config>() -> Result<(), &'static str> {
 		assert_eq!(
 			MaxCollatorCandidateStake::<T>::get(),
-			BalanceOf::<T>::from(MAX_COLLATOR_STAKE.saturated_into::<u64>())
+			BalanceOf::<T>::from(MAX_COLLATOR_STAKE)
 		);
 		assert_eq!(StorageVersion::<T>::get(), Releases::V2_0_0);
 		Ok(())
