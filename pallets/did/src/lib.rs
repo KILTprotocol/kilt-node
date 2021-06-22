@@ -256,7 +256,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			operation: DidCreationOperation<T>,
 			signature: DidSignature,
-		) -> DispatchResultWithPostInfo {
+		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
 			// There has to be no other DID with the same identifier already saved on chain,
@@ -282,7 +282,7 @@ pub mod pallet {
 
 			Self::deposit_event(Event::DidCreated(sender, did_identifier.clone()));
 
-			Ok(None.into())
+			Ok(())
 		}
 
 		/// Update the information associated with a DID on chain, after
@@ -312,7 +312,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			operation: DidUpdateOperation<T>,
 			signature: DidSignature,
-		) -> DispatchResultWithPostInfo {
+		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
 			// Saved here as it is consumed later when generating the new DidDetails object.
@@ -332,7 +332,7 @@ pub mod pallet {
 
 			Self::deposit_event(Event::DidUpdated(sender, did_identifier));
 
-			Ok(None.into())
+			Ok(())
 		}
 
 		/// Delete all the information associated with a DID from the chain,
@@ -349,7 +349,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			operation: DidDeletionOperation<T>,
 			signature: DidSignature,
-		) -> DispatchResultWithPostInfo {
+		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
 			let did_identifier = operation.get_did();
@@ -364,7 +364,7 @@ pub mod pallet {
 
 			Self::deposit_event(Event::DidDeleted(sender, did_identifier.clone()));
 
-			Ok(None.into())
+			Ok(())
 		}
 
 		/// Proxy a [call](Call) to another runtime extrinsic conforming that
