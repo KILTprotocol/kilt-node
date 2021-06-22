@@ -71,25 +71,6 @@ impl DidVerificationKey {
 			}
 		}
 	}
-
-	/// Decodes from an encoded DidVerificationKey, including the enum type
-	/// encoding.
-	pub fn from_did_verification_key_encoded(encoded: &[u8]) -> Result<Self, KeyError> {
-		Self::decode(&mut &*encoded).map_err(|_| KeyError::UnsupportedKeyType)
-	}
-
-	/// Encodes the DidVerificationKey to the raw underlying type.
-	///
-	/// Different from DidVerificationKey::encode() as the resulting vector
-	/// only contains the encoded public key, with no information about its enum
-	/// type.
-	pub fn to_raw_verification_key(&self) -> Vec<u8> {
-		match self {
-			DidVerificationKey::Ed25519(pk) => pk.encode(),
-			DidVerificationKey::Sr25519(pk) => pk.encode(),
-			DidVerificationKey::Ecdsa(pk) => pk.encode(),
-		}
-	}
 }
 
 impl From<ed25519::Public> for DidVerificationKey {
@@ -168,32 +149,6 @@ impl DidSignature {
 	pub fn from_did_signature_encoded(encoded: &[u8]) -> Result<Self, SignatureError> {
 		Self::decode(&mut &*encoded).map_err(|_| SignatureError::InvalidSignatureFormat)
 	}
-
-	/// Decodes from a raw signature, with no indication about its type.
-	///
-	/// Different from DidSignature::encode() as the resulting vector
-	/// only contains the encoded signature, with no information about its enum
-	/// type.
-	pub fn from_raw_signature_encoded(encoded: &[u8]) -> Result<Self, SignatureError> {
-		if let Ok(ed25519_sig) = ed25519::Signature::decode(&mut &*encoded) {
-			Ok(Self::Ed25519(ed25519_sig))
-		} else if let Ok(sr25519_sig) = sr25519::Signature::decode(&mut &*encoded) {
-			Ok(Self::Sr25519(sr25519_sig))
-		} else if let Ok(ecdsa_sig) = ecdsa::Signature::decode(&mut &*encoded) {
-			Ok(Self::Ecdsa(ecdsa_sig))
-		} else {
-			Err(SignatureError::UnsupportedSignatureFormat)
-		}
-	}
-
-	/// Encodes the DidSignature to the raw underlying type.
-	pub fn to_raw_signature(&self) -> Vec<u8> {
-		match self {
-			DidSignature::Ed25519(sig) => sig.encode(),
-			DidSignature::Sr25519(sig) => sig.encode(),
-			DidSignature::Ecdsa(sig) => sig.encode(),
-		}
-	}
 }
 
 impl From<ed25519::Signature> for DidSignature {
@@ -215,8 +170,9 @@ impl From<ecdsa::Signature> for DidSignature {
 }
 
 pub trait DidVerifiableIdentifier {
-	// This is needed if we want to support ECDSA in the future, as we can compute
-	// the public key given message and signature.
+	/// Allows a verifiable identifier to verify a signature it produces and
+	/// return the public key
+	// associated with the identifier.
 	fn verify_and_recover_signature(
 		&self,
 		payload: &Payload,
@@ -224,7 +180,7 @@ pub trait DidVerifiableIdentifier {
 	) -> Result<DidVerificationKey, SignatureError>;
 }
 
-// TODO: did not manage to implement this trait in the kilt_primivites crate due
+// TODO: did not manage to implement this trait in the kilt_primitives crate due
 // to some circular dependency problems.
 impl DidVerifiableIdentifier for kilt_primitives::DidIdentifier {
 	fn verify_and_recover_signature(
@@ -232,8 +188,8 @@ impl DidVerifiableIdentifier for kilt_primitives::DidIdentifier {
 		payload: &Payload,
 		signature: &DidSignature,
 	) -> Result<DidVerificationKey, SignatureError> {
-		// Either the raw Ed25519/Sr25519 public key or the Blake2-256 hashed ECDSA
-		// public key.
+		// So far, either the raw Ed25519/Sr25519 public key or the Blake2-256 hashed
+		// ECDSA public key.
 		let raw_public_key: &[u8; 32] = self.as_ref();
 		match *signature {
 			DidSignature::Ed25519(_) => {
@@ -264,10 +220,7 @@ impl DidVerifiableIdentifier for kilt_primitives::DidIdentifier {
 				let hashed_recovered_pk = sp_io::hashing::blake2_256(&recovered_pk);
 				// The hashed recovered public key must be equal to the AccountId32 value, which
 				// is the hashed key.
-				ensure!(
-					hashed_recovered_pk[..] == raw_public_key.encode()[..],
-					SignatureError::InvalidSignature
-				);
+				ensure!(&hashed_recovered_pk == raw_public_key, SignatureError::InvalidSignature);
 				// Safe to reconstruct the public key using the recovered value from
 				// secp256k1_ecdsa_recover_compressed
 				Ok(DidVerificationKey::from(ecdsa::Public(recovered_pk)))

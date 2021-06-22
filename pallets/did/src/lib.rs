@@ -168,10 +168,6 @@ pub mod pallet {
 		MaxVerificationKeysToRemoveLimitExceeded,
 		/// A URL longer than the maximum size allowed has been provided.
 		MaxUrlLengthExceeded,
-		/// The key type used for the DID is not supported.
-		UnsupportedKeyType,
-		/// The signature type used is not supported.
-		UnsupportedSignatureFormat,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
 	}
@@ -183,7 +179,6 @@ pub mod pallet {
 				DidError::SignatureError(operation_error) => Self::from(operation_error),
 				DidError::UrlError(url_error) => Self::from(url_error),
 				DidError::InputError(input_error) => Self::from(input_error),
-				DidError::KeyError(key_error) => Self::from(key_error),
 				DidError::InternalError => Self::InternalError,
 			}
 		}
@@ -209,7 +204,6 @@ pub mod pallet {
 				SignatureError::InvalidSignature => Self::InvalidSignature,
 				SignatureError::InvalidSignatureFormat => Self::InvalidSignatureFormat,
 				SignatureError::InvalidNonce => Self::InvalidNonce,
-				SignatureError::UnsupportedSignatureFormat => Self::UnsupportedSignatureFormat,
 			}
 		}
 	}
@@ -229,14 +223,6 @@ pub mod pallet {
 				InputError::MaxKeyAgreementKeysLimitExceeded => Self::MaxKeyAgreementKeysLimitExceeded,
 				InputError::MaxVerificationKeysToRemoveLimitExceeded => Self::MaxVerificationKeysToRemoveLimitExceeded,
 				InputError::MaxUrlLengthExceeded => Self::MaxUrlLengthExceeded,
-			}
-		}
-	}
-
-	impl<T> From<KeyError> for Error<T> {
-		fn from(error: KeyError) -> Self {
-			match error {
-				KeyError::UnsupportedKeyType => Self::UnsupportedKeyType,
 			}
 		}
 	}
@@ -276,7 +262,7 @@ pub mod pallet {
 				<Error<T>>::DidAlreadyPresent
 			);
 
-			let account_did_auth_key: DidVerificationKey = operation
+			let account_did_auth_key = operation
 				.did
 				.verify_and_recover_signature(&operation.encode(), &signature)
 				.map_err(<Error<T>>::from)?;
@@ -523,10 +509,8 @@ impl<T: Config> Pallet<T> {
 
 		// Verify that the signature matches the expected format, otherwise generate
 		// an error
-		let _is_signature_valid = verification_key
+		verification_key
 			.verify_signature(payload, signature)
-			.map_err(DidError::SignatureError)?;
-
-		Ok(())
+			.map_err(DidError::SignatureError)
 	}
 }

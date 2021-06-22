@@ -51,7 +51,8 @@ mock = [
 ]
 runtime-benchmarks = [
   "frame-benchmarking",
-  "sp-io"
+  "kilt-primitives",
+  "sp-io",
 ]
 std = [
   "codec/std",

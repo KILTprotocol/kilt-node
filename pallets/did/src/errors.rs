@@ -29,9 +29,6 @@ pub enum DidError {
 	UrlError(UrlError),
 	/// See [InputError].
 	InputError(InputError),
-	/// An error that is not supposed to take place, yet it happened.
-	/// See [KeyError].
-	KeyError(KeyError),
 	InternalError,
 }
 
@@ -66,15 +63,6 @@ pub enum SignatureError {
 	InvalidSignature,
 	/// The operation nonce is not equal to the current DID nonce + 1.
 	InvalidNonce,
-	/// Unsupported signature format.
-	UnsupportedSignatureFormat,
-}
-
-/// Error generated when dealing with DID keys.
-#[derive(Debug, Eq, PartialEq)]
-pub enum KeyError {
-	/// The given key type is not supported by this pallet.
-	UnsupportedKeyType,
 }
 
 /// Error generated when validating a byte-encoded endpoint URL.
