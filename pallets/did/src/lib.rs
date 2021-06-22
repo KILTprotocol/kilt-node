@@ -247,6 +247,10 @@ pub mod pallet {
 				operation.new_key_agreement_keys.len() as u32,
 				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len() as u32)
 			))
+			.max(<T as pallet::Config>::WeightInfo::submit_did_create_operation_ecdsa_keys(
+				operation.new_key_agreement_keys.len() as u32,
+				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len() as u32)
+			))
 		)]
 		pub fn submit_did_create_operation(
 			origin: OriginFor<T>,
@@ -305,6 +309,11 @@ pub mod pallet {
 				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len() as u32)
 			)
 			.max(<T as pallet::Config>::WeightInfo::submit_did_update_operation_sr25519_keys(
+				operation.new_key_agreement_keys.len() as u32,
+				operation.public_keys_to_remove.len() as u32,
+				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len() as u32)
+			))
+			.max(<T as pallet::Config>::WeightInfo::submit_did_update_operation_ecdsa_keys(
 				operation.new_key_agreement_keys.len() as u32,
 				operation.public_keys_to_remove.len() as u32,
 				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len() as u32)
@@ -379,7 +388,11 @@ pub mod pallet {
 		///   be signed by the tx submiter, i.e., the account paying for the
 		///   execution fees
 		#[allow(clippy::boxed_local)]
-		#[pallet::weight(0)]
+		#[pallet::weight(
+			<T as pallet::Config>::WeightInfo::submit_did_call_ed25519_key()
+			.max(<T as pallet::Config>::WeightInfo::submit_did_call_sr25519_key())
+			.max(<T as pallet::Config>::WeightInfo::submit_did_call_ecdsa_key())
+		)]
 		pub fn submit_did_call(
 			origin: OriginFor<T>,
 			did_call: Box<DidAuthorizedCallOperation<T>>,

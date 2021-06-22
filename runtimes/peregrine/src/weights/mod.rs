@@ -19,7 +19,6 @@
 pub mod attestation;
 pub mod ctype;
 pub mod delegation;
-pub mod did;
 pub mod frame_system;
 pub mod kilt_launch;
 pub mod pallet_balances;
