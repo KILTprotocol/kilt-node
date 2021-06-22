@@ -220,11 +220,11 @@ fn testnet_genesis(
 		serde_json::from_slice(airdrop_accounts_json).expect("Could not read from genesis_accounts.json");
 
 	GenesisConfig {
-		frame_system: SystemConfig {
+		system: SystemConfig {
 			code: wasm_binary.to_vec(),
 			changes_trie_config: Default::default(),
 		},
-		pallet_balances: BalancesConfig {
+		balances: BalancesConfig {
 			balances: endowed_accounts
 				.iter()
 				.cloned()
@@ -232,7 +232,7 @@ fn testnet_genesis(
 				.chain(airdrop_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
 				.collect(),
 		},
-		pallet_session: SessionConfig {
+		session: SessionConfig {
 			keys: initial_authorities
 				.iter()
 				.map(|x| {
@@ -247,9 +247,9 @@ fn testnet_genesis(
 				})
 				.collect::<Vec<_>>(),
 		},
-		pallet_aura: Default::default(),
-		pallet_grandpa: Default::default(),
-		pallet_sudo: SudoConfig { key: root_key },
+		aura: Default::default(),
+		grandpa: Default::default(),
+		sudo: SudoConfig { key: root_key },
 		kilt_launch: KiltLaunchConfig {
 			balance_locks: airdrop_accounts
 				.iter()
@@ -264,7 +264,7 @@ fn testnet_genesis(
 			// TODO: Set this to another address (PRE-LAUNCH)
 			transfer_account: hex!["6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c"].into(),
 		},
-		pallet_vesting: VestingConfig { vesting: vec![] },
+		vesting: VestingConfig { vesting: vec![] },
 	}
 }
 

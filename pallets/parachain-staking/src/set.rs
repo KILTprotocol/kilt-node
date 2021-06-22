@@ -213,6 +213,18 @@ impl<T: Ord> From<OrderedSet<T>> for Vec<T> {
 	}
 }
 
+impl<T: Ord> IndexMut<Range<usize>> for OrderedSet<T> {
+	fn index_mut(&mut self, range: Range<usize>) -> &mut Self::Output {
+		&mut self.0[range]
+	}
+}
+
+impl<T: Ord> IndexMut<RangeFull> for OrderedSet<T> {
+	fn index_mut(&mut self, range: RangeFull) -> &mut Self::Output {
+		&mut self.0[range]
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;

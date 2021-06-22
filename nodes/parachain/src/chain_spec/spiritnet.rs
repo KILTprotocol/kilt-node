@@ -21,14 +21,14 @@
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
 use kilt_primitives::{
-	constants::{KILT, MINUTES},
+	constants::{KILT, MAX_COLLATOR_STAKE, MINUTES},
 	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use sc_service::ChainType;
 use sp_core::{crypto::UncheckedInto, sr25519};
 use sp_runtime::Perquintill;
 use spiritnet_runtime::{
-	BalancesConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStk, ParachainInfoConfig,
+	BalancesConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake, ParachainInfoConfig,
 	ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig, WASM_BINARY,
 };
 
@@ -55,16 +55,17 @@ pub fn get_chain_spec_dev(id: ParaId) -> Result<ChainSpec, String> {
 						// TODO: Change before launch
 						get_account_id_from_seed::<sr25519::Public>("Alice"),
 						None,
-						2 * MinCollatorStk::get(),
+						2 * MinCollatorStake::get(),
 					),
 					(
 						// TODO: Change before launch
 						get_account_id_from_seed::<sr25519::Public>("Bob"),
 						None,
-						2 * MinCollatorStk::get(),
+						2 * MinCollatorStake::get(),
 					),
 				],
 				kilt_inflation_config(),
+				MAX_COLLATOR_STAKE,
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
 				vec![
 					(
@@ -123,7 +124,14 @@ pub fn get_chain_spec_dev(id: ParaId) -> Result<ChainSpec, String> {
 	))
 }
 
-pub fn get_chain_spec_westend() -> Result<ChainSpec, String> {
+const WILT_COL_ACC_1: [u8; 32] = hex!["e6cf13c86a5f174acba79ca361dc429d89eb704c6a407af83f30b11ab8bc5045"];
+const WILT_COL_SESSION_1: [u8; 32] = hex!["e29df39b74777495ca00cd7a316ce98c5225d7088ae924b122fe0e2e6a4b5569"];
+const WILT_COL_ACC_2: [u8; 32] = hex!["e8ed0c2a40fb5a0bbb24c38f5c8cd83d79498ac029ac9f87497677f5701e3d2c"];
+const WILT_COL_SESSION_2: [u8; 32] = hex!["7cacfbce640321ba84a85f41dfb43c2a2ea14ed789c096ad62ee0491599b0f44"];
+const WILT_SUDO_ACC: [u8; 32] = hex!["200a316b25b3683459585ec746042f6841640e3b9f111028426ff17e9090005d"];
+const WILT_TRANS_ACC: [u8; 32] = hex!["aaf5308b81f962ffdaccaa22352cc95b7bef70033d9d0d5a7023ec5681f05954"];
+
+pub fn get_chain_spec_wilt() -> Result<ChainSpec, String> {
 	let properties = get_properties("WILT", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
 	let id: ParaId = 2009.into();
@@ -136,48 +144,23 @@ pub fn get_chain_spec_westend() -> Result<ChainSpec, String> {
 			testnet_genesis(
 				wasm,
 				vec![
-					(
-						hex!["e6cf13c86a5f174acba79ca361dc429d89eb704c6a407af83f30b11ab8bc5045"].into(),
-						None,
-						30000 * KILT,
-					),
-					(
-						hex!["e8ed0c2a40fb5a0bbb24c38f5c8cd83d79498ac029ac9f87497677f5701e3d2c"].into(),
-						None,
-						30000 * KILT,
-					),
+					(WILT_COL_ACC_1.into(), None, 30000 * KILT),
+					(WILT_COL_ACC_2.into(), None, 30000 * KILT),
 				],
 				kilt_inflation_config(),
-				hex!["200a316b25b3683459585ec746042f6841640e3b9f111028426ff17e9090005d"].into(),
+				MAX_COLLATOR_STAKE,
+				WILT_SUDO_ACC.into(),
 				vec![
-					(
-						hex!["e6cf13c86a5f174acba79ca361dc429d89eb704c6a407af83f30b11ab8bc5045"].into(),
-						hex!["e29df39b74777495ca00cd7a316ce98c5225d7088ae924b122fe0e2e6a4b5569"].unchecked_into(),
-					),
-					(
-						hex!["e8ed0c2a40fb5a0bbb24c38f5c8cd83d79498ac029ac9f87497677f5701e3d2c"].into(),
-						hex!["7cacfbce640321ba84a85f41dfb43c2a2ea14ed789c096ad62ee0491599b0f44"].unchecked_into(),
-					),
+					(WILT_COL_ACC_1.into(), WILT_COL_SESSION_1.unchecked_into()),
+					(WILT_COL_ACC_2.into(), WILT_COL_SESSION_2.unchecked_into()),
 				],
 				vec![
-					(
-						hex!["e6cf13c86a5f174acba79ca361dc429d89eb704c6a407af83f30b11ab8bc5045"].into(),
-						40000 * KILT,
-					),
-					(
-						hex!["e8ed0c2a40fb5a0bbb24c38f5c8cd83d79498ac029ac9f87497677f5701e3d2c"].into(),
-						40000 * KILT,
-					),
-					(
-						hex!["200a316b25b3683459585ec746042f6841640e3b9f111028426ff17e9090005d"].into(),
-						10000 * KILT,
-					),
-					(
-						hex!["aaf5308b81f962ffdaccaa22352cc95b7bef70033d9d0d5a7023ec5681f05954"].into(),
-						10000 * KILT,
-					),
+					(WILT_COL_ACC_1.into(), 40000 * KILT),
+					(WILT_COL_ACC_2.into(), 40000 * KILT),
+					(WILT_SUDO_ACC.into(), 10000 * KILT),
+					(WILT_TRANS_ACC.into(), 10000 * KILT),
 				],
-				hex!["aaf5308b81f962ffdaccaa22352cc95b7bef70033d9d0d5a7023ec5681f05954"].into(),
+				WILT_TRANS_ACC.into(),
 				id,
 			)
 		},
@@ -187,6 +170,57 @@ pub fn get_chain_spec_westend() -> Result<ChainSpec, String> {
 		Some(properties),
 		Extensions {
 			relay_chain: "westend".into(),
+			para_id: id.into(),
+		},
+	))
+}
+
+const SPIRIT_COL_ACC_1: [u8; 32] = hex!["dcae0b0169a344cbb3800ea34f438f5139687922ce34bfaf097a1314f5ee9069"];
+const SPIRIT_COL_SESSION_1: [u8; 32] = hex!["c2ef6ae55020c046a76e745133b75db6d10955f78d2224048aae6ac6f763fb6c"];
+const SPIRIT_COL_ACC_2: [u8; 32] = hex!["86e876d2aa97cc87a8b83b78b748f8795cac40883e6c6fc023f3fde3a094623d"];
+const SPIRIT_COL_SESSION_2: [u8; 32] = hex!["32280e5e31512fd4863bada1ab7f9ae0892bb1f9eb1d3506673c6de1ae90fe40"];
+const SPIRIT_SUDO_ACC: [u8; 32] = hex!["c48ed216c1ae656a501016efaaef59f4eb8778c64f84b245da3cc19321d4c22a"];
+const SPIRIT_TRANS_ACC: [u8; 32] = hex!["7a8604da79a9f89db6b35efdef3c4c84f9ae679b2fbd397f5bade3105a8a8e00"];
+
+pub fn get_chain_spec_spiritnet() -> Result<ChainSpec, String> {
+	let properties = get_properties("KILT", 15, 38);
+	let wasm = WASM_BINARY.ok_or("No WASM")?;
+	let id: ParaId = 2005.into();
+
+	Ok(ChainSpec::from_genesis(
+		"KILT Spiritnet",
+		"kilt",
+		ChainType::Live,
+		move || {
+			testnet_genesis(
+				wasm,
+				vec![
+					(SPIRIT_COL_ACC_1.into(), None, MAX_COLLATOR_STAKE),
+					(SPIRIT_COL_ACC_2.into(), None, MAX_COLLATOR_STAKE),
+				],
+				kilt_inflation_config(),
+				MAX_COLLATOR_STAKE,
+				SPIRIT_SUDO_ACC.into(),
+				vec![
+					(SPIRIT_COL_ACC_1.into(), SPIRIT_COL_SESSION_1.unchecked_into()),
+					(SPIRIT_COL_ACC_2.into(), SPIRIT_COL_SESSION_2.unchecked_into()),
+				],
+				vec![
+					(SPIRIT_COL_ACC_1.into(), MAX_COLLATOR_STAKE + 100 * KILT),
+					(SPIRIT_COL_ACC_2.into(), MAX_COLLATOR_STAKE + 100 * KILT),
+					(SPIRIT_SUDO_ACC.into(), 10000 * KILT),
+					(SPIRIT_TRANS_ACC.into(), 10000 * KILT),
+				],
+				SPIRIT_TRANS_ACC.into(),
+				id,
+			)
+		},
+		vec![],
+		None,
+		None,
+		Some(properties),
+		Extensions {
+			relay_chain: "kusama".into(),
 			para_id: id.into(),
 		},
 	))
@@ -210,6 +244,7 @@ fn testnet_genesis(
 	wasm_binary: &[u8],
 	stakers: Vec<(AccountId, Option<AccountId>, Balance)>,
 	inflation_config: InflationInfo,
+	max_candidate_stake: Balance,
 	root_key: AccountId,
 	initial_authorities: Vec<(AccountId, AuthorityId)>,
 	endowed_accounts: Vec<(AccountId, Balance)>,
@@ -225,42 +260,43 @@ fn testnet_genesis(
 		serde_json::from_slice(airdrop_accounts_json).expect("Could not read from genesis_accounts.json");
 
 	GenesisConfig {
-		frame_system: SystemConfig {
+		system: SystemConfig {
 			code: wasm_binary.to_vec(),
 			changes_trie_config: Default::default(),
 		},
-		pallet_balances: BalancesConfig {
+		balances: BalancesConfig {
 			balances: endowed_accounts
 				.iter()
 				.cloned()
 				.chain(airdrop_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
 				.collect(),
 		},
-		pallet_sudo: SudoConfig { key: root_key },
+		sudo: SudoConfig { key: root_key },
 		parachain_info: ParachainInfoConfig { parachain_id: id },
 		kilt_launch: KiltLaunchConfig {
-			balance_locks: airdrop_accounts
-				.iter()
-				.cloned()
-				.map(|(who, amount, _, locking_length)| (who, locking_length * MINUTES, amount))
-				.collect(),
 			vesting: airdrop_accounts
 				.iter()
 				.cloned()
 				.map(|(who, amount, vesting_length, _)| (who, vesting_length * MINUTES, amount))
 				.collect(),
+			balance_locks: airdrop_accounts
+				.iter()
+				.cloned()
+				.map(|(who, amount, _, locking_length)| (who, locking_length * MINUTES, amount))
+				.collect(),
 			// TODO: Set this to another address (PRE-LAUNCH)
 			transfer_account,
 		},
-		pallet_vesting: VestingConfig { vesting: vec![] },
+		vesting: VestingConfig { vesting: vec![] },
 		parachain_staking: ParachainStakingConfig {
 			stakers,
 			inflation_config,
+			max_candidate_stake,
 		},
-		pallet_aura: Default::default(),
-		cumulus_pallet_aura_ext: Default::default(),
-		cumulus_pallet_parachain_system: Default::default(),
-		pallet_session: SessionConfig {
+		aura: Default::default(),
+		aura_ext: Default::default(),
+		parachain_system: Default::default(),
+		session: SessionConfig {
 			keys: initial_authorities
 				.iter()
 				.map(|(acc, key)| {

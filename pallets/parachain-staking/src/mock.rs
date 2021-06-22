@@ -26,6 +26,7 @@ use frame_support::{
 	traits::{FindAuthor, GenesisBuild, OnFinalize, OnInitialize},
 	weights::Weight,
 };
+use kilt_primitives::constants::KILT;
 use pallet_authorship::EventHandler;
 use sp_core::H256;
 use sp_runtime::{
@@ -39,10 +40,11 @@ pub use kilt_primitives::BlockNumber;
 pub type AccountId = u64;
 pub type Balance = u128;
 pub const BLOCKS_PER_ROUND: BlockNumber = 5;
-pub const DECIMALS: Balance = 10u128.pow(15);
+pub const DECIMALS: Balance = KILT;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
+
 // Configure a mock runtime to test the pallet.
 construct_runtime!(
 	pub enum Test where
@@ -96,6 +98,8 @@ parameter_types! {
 
 impl pallet_balances::Config for Test {
 	type MaxLocks = ();
+	type MaxReserves = ();
+	type ReserveIdentifier = [u8; 8];
 	type Balance = Balance;
 	type Event = Event;
 	type DustRemoval = ();
@@ -130,10 +134,9 @@ parameter_types! {
 	pub const MaxDelegatorsPerCollator: u32 = 4;
 	pub const MaxCollatorsPerDelegator: u32 = 4;
 	pub const DefaultCollatorCommission: Perbill = Perbill::from_percent(20);
-	pub const MinCollatorStk: Balance = 10;
-	pub const MaxCollatorCandidateStk: Balance = 160_000_000 * DECIMALS;
+	pub const MinCollatorStake: Balance = 10;
 	pub const MaxCollatorCandidates: u32 = 10;
-	pub const MinDelegatorStk: Balance = 5;
+	pub const MinDelegatorStake: Balance = 5;
 	pub const MinDelegation: Balance = 3;
 	pub const MaxUnstakeRequests: u32 = 5;
 }
@@ -147,13 +150,13 @@ impl Config for Test {
 	type StakeDuration = StakeDuration;
 	type ExitQueueDelay = ExitQueueDelay;
 	type MinSelectedCandidates = MinSelectedCandidates;
+	type MaxDelegationsPerRound = MaxDelegatorsPerCollator;
 	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
 	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
-	type MinCollatorStk = MinCollatorStk;
-	type MinCollatorCandidateStk = MinCollatorStk;
-	type MaxCollatorCandidateStk = MaxCollatorCandidateStk;
+	type MinCollatorStake = MinCollatorStake;
+	type MinCollatorCandidateStake = MinCollatorStake;
 	type MaxCollatorCandidates = MaxCollatorCandidates;
-	type MinDelegatorStk = MinDelegatorStk;
+	type MinDelegatorStake = MinDelegatorStake;
 	type MinDelegation = MinDelegation;
 	type MaxUnstakeRequests = MaxUnstakeRequests;
 	type WeightInfo = ();
@@ -250,6 +253,7 @@ impl ExtBuilder {
 		stake::GenesisConfig::<Test> {
 			stakers,
 			inflation_config: self.inflation_config.clone(),
+			max_candidate_stake: 160_000_000 * DECIMALS,
 		}
 		.assimilate_storage(&mut t)
 		.expect("Parachain Staking's storage can be assimilated");
@@ -297,6 +301,12 @@ pub(crate) fn events() -> Vec<pallet::Event<Test>> {
 	System::events()
 		.into_iter()
 		.map(|r| r.event)
-		.filter_map(|e| if let Event::stake(inner) = e { Some(inner) } else { None })
+		.filter_map(|e| {
+			if let Event::StakePallet(inner) = e {
+				Some(inner)
+			} else {
+				None
+			}
+		})
 		.collect::<Vec<_>>()
 }

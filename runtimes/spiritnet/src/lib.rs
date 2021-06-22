@@ -30,18 +30,19 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use frame_system::limits::{BlockLength, BlockWeights};
 use kilt_primitives::{
 	constants::{
-		AVERAGE_ON_INITIALIZE_RATIO, DAYS, HOURS, KILT, MAXIMUM_BLOCK_WEIGHT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT,
-		NORMAL_DISPATCH_RATIO, SLOT_DURATION,
+		AVERAGE_ON_INITIALIZE_RATIO, DAYS, HOURS, KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT,
+		MIN_VESTED_TRANSFER_AMOUNT, NORMAL_DISPATCH_RATIO, SLOT_DURATION,
 	},
 	AccountId, AuthorityId, Balance, BlockNumber, Hash, Header, Index, Signature,
 };
+use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
 use sp_api::impl_runtime_apis;
 use sp_core::OpaqueMetadata;
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult,
+	ApplyExtrinsicResult, FixedPointNumber, Perquintill,
 };
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
@@ -65,6 +66,7 @@ pub use sp_runtime::{Perbill, Permill};
 
 pub use parachain_staking::{InflationInfo, RewardRate, StakingInfo};
 
+mod fee;
 mod weights;
 
 #[cfg(any(feature = "std", test))]
@@ -100,7 +102,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("kilt-spiritnet"),
 	impl_name: create_runtime_str!("kilt-spiritnet"),
 	authoring_version: 1,
-	spec_version: 10,
+	spec_version: 12,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -158,6 +160,7 @@ impl Filter<Call> for BaseFilter {
 				| Call::KiltLaunch(kilt_launch::Call::locked_transfer(..))
 				| Call::Balances(pallet_balances::Call::transfer(..))
 				| Call::Balances(pallet_balances::Call::transfer_keep_alive(..))
+				| Call::Balances(pallet_balances::Call::transfer_all(..))
 		)
 	}
 }
@@ -194,13 +197,13 @@ impl frame_system::Config for Runtime {
 	type AccountData = pallet_balances::AccountData<Balance>;
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
-	type DbWeight = ();
+	type DbWeight = RocksDbWeight;
 	type BaseCallFilter = BaseFilter;
 	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
 	type BlockWeights = RuntimeBlockWeights;
 	type BlockLength = RuntimeBlockLength;
 	type SS58Prefix = SS58Prefix;
-	/// The set code logic, just the default since we're not a parachain.
+	/// The set code logic
 	type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Runtime>;
 }
 
@@ -213,13 +216,14 @@ impl pallet_timestamp::Config for Runtime {
 	type Moment = u64;
 	type OnTimestampSet = ();
 	type MinimumPeriod = MinimumPeriod;
-	type WeightInfo = ();
+	type WeightInfo = weights::pallet_timestamp::WeightInfo<Runtime>;
 }
 
 parameter_types! {
 	pub const ExistentialDeposit: u128 = 100 * MILLI_KILT;
-	pub const TransactionByteFee: u128 = 1;
+	pub const TransactionByteFee: u128 = MICRO_KILT;
 	pub const MaxLocks: u32 = 50;
+	pub const MaxReserves: u32 = 50;
 }
 
 impl pallet_indices::Config for Runtime {
@@ -240,13 +244,26 @@ impl pallet_balances::Config for Runtime {
 	type AccountStore = System;
 	type WeightInfo = weights::pallet_balances::WeightInfo<Runtime>;
 	type MaxLocks = MaxLocks;
+	type MaxReserves = MaxReserves;
+	type ReserveIdentifier = [u8; 8];
+}
+
+parameter_types! {
+	pub const TargetBlockFullness: Perquintill = Perquintill::from_percent(25);
+	/// Minimum amount of the multiplier. This value cannot be too low. A test case should ensure
+	/// that combined with `AdjustmentVariable`, we can recover from the minimum.
+	/// See `multiplier_can_grow_from_zero`.
+	pub Minimum: Multiplier = Multiplier::saturating_from_rational(1, 1);
+	/// The adjustment variable of the runtime. Higher values will cause `TargetBlockFullness` to
+	/// change the fees more rapidly.
+	pub Variability: Multiplier = Multiplier::saturating_from_rational(3, 100_000);
 }
 
 impl pallet_transaction_payment::Config for Runtime {
 	type OnChargeTransaction = pallet_transaction_payment::CurrencyAdapter<Balances, ()>;
 	type TransactionByteFee = TransactionByteFee;
-	type WeightToFee = IdentityFee<Balance>;
-	type FeeMultiplierUpdate = ();
+	type WeightToFee = fee::WeightToFee;
+	type FeeMultiplierUpdate = TargetedFeeAdjustment<Runtime, TargetBlockFullness, Variability, Minimum>;
 }
 
 impl pallet_sudo::Config for Runtime {
@@ -342,16 +359,16 @@ parameter_types! {
 	pub const ExitQueueDelay: u32 = 2;
 	/// Minimum 16 collators selected per round, default at genesis and minimum forever after
 	pub const MinSelectedCandidates: u32 = 16;
+	/// We only allow one delegation per round.
+	pub const MaxDelegationsPerRound: u32 = 1;
 	/// Maximum 25 delegators per collator at launch, might be increased later
 	pub const MaxDelegatorsPerCollator: u32 = 25;
 	/// Maximum 1 collator per delegator at launch, will be increased later
 	pub const MaxCollatorsPerDelegator: u32 = 1;
 	/// Minimum stake required to be reserved to be a collator is 10_000
-	pub const MinCollatorStk: Balance = 10_000 * KILT;
-	/// Max stake possible to be reserved to be collator candidate is 200_000
-	pub const MaxCollatorCandidateStk: Balance = 200_000 * KILT;
+	pub const MinCollatorStake: Balance = 10_000 * KILT;
 	/// Minimum stake required to be reserved to be a delegator is 1000
-	pub const MinDelegatorStk: Balance = 1000 * KILT;
+	pub const MinDelegatorStake: Balance = 1000 * KILT;
 	/// Maximum number of collator candidates
 	pub const MaxCollatorCandidates: u32 = 75;
 	/// Maximum number of concurrent requests to unlock unstaked balance
@@ -367,14 +384,14 @@ impl parachain_staking::Config for Runtime {
 	type StakeDuration = StakeDuration;
 	type ExitQueueDelay = ExitQueueDelay;
 	type MinSelectedCandidates = MinSelectedCandidates;
+	type MaxDelegationsPerRound = MaxDelegationsPerRound;
 	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
 	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
-	type MinCollatorStk = MinCollatorStk;
-	type MinCollatorCandidateStk = MinCollatorStk;
-	type MaxCollatorCandidateStk = MaxCollatorCandidateStk;
+	type MinCollatorStake = MinCollatorStake;
+	type MinCollatorCandidateStake = MinCollatorStake;
 	type MaxCollatorCandidates = MaxCollatorCandidates;
-	type MinDelegation = MinDelegatorStk;
-	type MinDelegatorStk = MinDelegatorStk;
+	type MinDelegation = MinDelegatorStake;
+	type MinDelegatorStake = MinDelegatorStake;
 	type MaxUnstakeRequests = MaxUnstakeRequests;
 	type WeightInfo = weights::parachain_staking::WeightInfo<Runtime>;
 }
@@ -384,6 +401,8 @@ impl pallet_utility::Config for Runtime {
 	type Call = Call;
 	type WeightInfo = weights::pallet_utility::WeightInfo<Runtime>;
 }
+
+impl pallet_randomness_collective_flip::Config for Runtime {}
 
 construct_runtime! {
 	pub enum Runtime where
@@ -616,7 +635,30 @@ impl_runtime_apis! {
 	}
 }
 
-cumulus_pallet_parachain_system::register_validate_block!(
-	Runtime,
-	cumulus_pallet_aura_ext::BlockExecutor::<Runtime, Executive>,
-);
+struct CheckInherents;
+
+impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
+	fn check_inherents(
+		block: &Block,
+		relay_state_proof: &cumulus_pallet_parachain_system::RelayChainStateProof,
+	) -> sp_inherents::CheckInherentsResult {
+		let relay_chain_slot = relay_state_proof
+			.read_slot()
+			.expect("Could not read the relay chain slot from the proof");
+
+		let inherent_data = cumulus_primitives_timestamp::InherentDataProvider::from_relay_chain_slot_and_duration(
+			relay_chain_slot,
+			sp_std::time::Duration::from_secs(6),
+		)
+		.create_inherent_data()
+		.expect("Could not create the timestamp inherent data");
+
+		inherent_data.check_extrinsics(block)
+	}
+}
+
+cumulus_pallet_parachain_system::register_validate_block! {
+	Runtime = Runtime,
+	BlockExecutor = cumulus_pallet_aura_ext::BlockExecutor::<Runtime, Executive>,
+	CheckInherents = CheckInherents,
+}
