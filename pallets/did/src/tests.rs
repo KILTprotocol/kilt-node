@@ -97,7 +97,6 @@ fn check_successful_simple_sr25519_creation() {
 
 #[test]
 fn check_successful_simple_ecdsa_creation() {
-	initialize_logger();
 	let auth_key = get_ecdsa_authentication_key(true);
 	let alice_did = get_did_identifier_from_ecdsa_key(auth_key.public());
 	let auth_did_key = did::DidVerificationKey::from(auth_key.public());

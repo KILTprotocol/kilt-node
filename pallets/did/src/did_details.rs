@@ -144,13 +144,6 @@ pub enum DidSignature {
 	Ecdsa(ecdsa::Signature),
 }
 
-impl DidSignature {
-	/// Decodes from an encoded DidSignature, including the enum type encoding.
-	pub fn from_did_signature_encoded(encoded: &[u8]) -> Result<Self, SignatureError> {
-		Self::decode(&mut &*encoded).map_err(|_| SignatureError::InvalidSignatureFormat)
-	}
-}
-
 impl From<ed25519::Signature> for DidSignature {
 	fn from(sig: ed25519::Signature) -> Self {
 		DidSignature::Ed25519(sig)
@@ -172,7 +165,7 @@ impl From<ecdsa::Signature> for DidSignature {
 pub trait DidVerifiableIdentifier {
 	/// Allows a verifiable identifier to verify a signature it produces and
 	/// return the public key
-	// associated with the identifier.
+	/// associated with the identifier.
 	fn verify_and_recover_signature(
 		&self,
 		payload: &Payload,

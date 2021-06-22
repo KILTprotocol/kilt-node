@@ -29,6 +29,7 @@ pub enum DidError {
 	UrlError(UrlError),
 	/// See [InputError].
 	InputError(InputError),
+	/// An error that is not supposed to take place, yet it happened.
 	InternalError,
 }
 
