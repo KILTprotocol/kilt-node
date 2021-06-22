@@ -39,6 +39,7 @@ pub const MONTHS: BlockNumber = DAYS * 30;
 pub const YEARS: BlockNumber = MONTHS * 12;
 
 pub const MIN_VESTED_TRANSFER_AMOUNT: Balance = 1000 * KILT;
+pub const MAX_COLLATOR_STAKE: Balance = 200_000 * KILT;
 
 /// One KILT
 pub const KILT: Balance = 10u128.pow(15);

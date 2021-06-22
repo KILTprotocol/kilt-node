@@ -21,11 +21,11 @@
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
 use kilt_primitives::{
-	constants::{KILT, MINUTES},
+	constants::{KILT, MAX_COLLATOR_STAKE, MINUTES},
 	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use peregrine_runtime::{
-	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStk, ParachainInfoConfig,
+	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake, ParachainInfoConfig,
 	ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig,
 	WASM_BINARY,
 };
@@ -54,16 +54,17 @@ pub fn make_dev_spec(id: ParaId) -> Result<ChainSpec, String> {
 						// TODO: Change before launch
 						get_account_id_from_seed::<sr25519::Public>("Alice"),
 						None,
-						2 * MinCollatorStk::get(),
+						2 * MinCollatorStake::get(),
 					),
 					(
 						// TODO: Change before launch
 						get_account_id_from_seed::<sr25519::Public>("Bob"),
 						None,
-						2 * MinCollatorStk::get(),
+						2 * MinCollatorStake::get(),
 					),
 				],
 				kilt_inflation_config(),
+				MAX_COLLATOR_STAKE,
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
 				vec![
 					(
@@ -127,6 +128,7 @@ pub fn make_new_spec(id: ParaId) -> Result<ChainSpec, String> {
 					),
 				],
 				kilt_inflation_config(),
+				MAX_COLLATOR_STAKE,
 				hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].into(),
 				vec![
 					(
@@ -165,10 +167,12 @@ pub fn kilt_inflation_config() -> InflationInfo {
 	)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn testnet_genesis(
 	wasm_binary: &[u8],
 	stakers: Vec<(AccountId, Option<AccountId>, Balance)>,
 	inflation_config: InflationInfo,
+	max_candidate_stake: Balance,
 	root_key: AccountId,
 	initial_authorities: Vec<(AccountId, AuthorityId)>,
 	endowed_accounts: Vec<AccountId>,
@@ -226,6 +230,7 @@ fn testnet_genesis(
 		parachain_staking: ParachainStakingConfig {
 			stakers,
 			inflation_config,
+			max_candidate_stake,
 		},
 		aura: Default::default(),
 		aura_ext: Default::default(),

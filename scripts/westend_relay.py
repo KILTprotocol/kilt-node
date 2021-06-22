@@ -10,7 +10,7 @@ def update_spec(input: typing.Dict):
         "bootNodes": [],
         "chainType": "Live",
     })
-    input["genesis"]["runtime"]["palletSession"]["keys"] = [
+    input["genesis"]["runtime"]["session"]["keys"] = [
         [
             acc_alice,
             acc_alice,
@@ -48,7 +48,7 @@ def update_spec(input: typing.Dict):
             }
         ]
     ]
-    input["genesis"]["runtime"]["palletStaking"].update({
+    input["genesis"]["runtime"]["staking"].update({
         "validatorCount": 3,
         "stakers": [
                     [

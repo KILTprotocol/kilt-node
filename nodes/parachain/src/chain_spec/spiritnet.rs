@@ -21,15 +21,15 @@
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
 use kilt_primitives::{
-	constants::{KILT, MINUTES},
+	constants::{KILT, MAX_COLLATOR_STAKE, MINUTES},
 	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use sc_service::ChainType;
 use sp_core::{crypto::UncheckedInto, sr25519};
 use sp_runtime::Perquintill;
 use spiritnet_runtime::{
-	BalancesConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MaxCollatorCandidateStk, MinCollatorStk,
-	ParachainInfoConfig, ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig, WASM_BINARY,
+	BalancesConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake, ParachainInfoConfig,
+	ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig, WASM_BINARY,
 };
 
 use crate::chain_spec::{get_account_id_from_seed, get_from_seed};
@@ -55,16 +55,17 @@ pub fn get_chain_spec_dev(id: ParaId) -> Result<ChainSpec, String> {
 						// TODO: Change before launch
 						get_account_id_from_seed::<sr25519::Public>("Alice"),
 						None,
-						2 * MinCollatorStk::get(),
+						2 * MinCollatorStake::get(),
 					),
 					(
 						// TODO: Change before launch
 						get_account_id_from_seed::<sr25519::Public>("Bob"),
 						None,
-						2 * MinCollatorStk::get(),
+						2 * MinCollatorStake::get(),
 					),
 				],
 				kilt_inflation_config(),
+				MAX_COLLATOR_STAKE,
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
 				vec![
 					(
@@ -147,6 +148,7 @@ pub fn get_chain_spec_wilt() -> Result<ChainSpec, String> {
 					(WILT_COL_ACC_2.into(), None, 30000 * KILT),
 				],
 				kilt_inflation_config(),
+				MAX_COLLATOR_STAKE,
 				WILT_SUDO_ACC.into(),
 				vec![
 					(WILT_COL_ACC_1.into(), WILT_COL_SESSION_1.unchecked_into()),
@@ -193,18 +195,19 @@ pub fn get_chain_spec_spiritnet() -> Result<ChainSpec, String> {
 			testnet_genesis(
 				wasm,
 				vec![
-					(SPIRIT_COL_ACC_1.into(), None, MaxCollatorCandidateStk::get()),
-					(SPIRIT_COL_ACC_2.into(), None, MaxCollatorCandidateStk::get()),
+					(SPIRIT_COL_ACC_1.into(), None, MAX_COLLATOR_STAKE),
+					(SPIRIT_COL_ACC_2.into(), None, MAX_COLLATOR_STAKE),
 				],
 				kilt_inflation_config(),
+				MAX_COLLATOR_STAKE,
 				SPIRIT_SUDO_ACC.into(),
 				vec![
 					(SPIRIT_COL_ACC_1.into(), SPIRIT_COL_SESSION_1.unchecked_into()),
 					(SPIRIT_COL_ACC_2.into(), SPIRIT_COL_SESSION_2.unchecked_into()),
 				],
 				vec![
-					(SPIRIT_COL_ACC_1.into(), MaxCollatorCandidateStk::get() + 100 * KILT),
-					(SPIRIT_COL_ACC_2.into(), MaxCollatorCandidateStk::get() + 100 * KILT),
+					(SPIRIT_COL_ACC_1.into(), MAX_COLLATOR_STAKE + 100 * KILT),
+					(SPIRIT_COL_ACC_2.into(), MAX_COLLATOR_STAKE + 100 * KILT),
 					(SPIRIT_SUDO_ACC.into(), 10000 * KILT),
 					(SPIRIT_TRANS_ACC.into(), 10000 * KILT),
 				],
@@ -241,6 +244,7 @@ fn testnet_genesis(
 	wasm_binary: &[u8],
 	stakers: Vec<(AccountId, Option<AccountId>, Balance)>,
 	inflation_config: InflationInfo,
+	max_candidate_stake: Balance,
 	root_key: AccountId,
 	initial_authorities: Vec<(AccountId, AuthorityId)>,
 	endowed_accounts: Vec<(AccountId, Balance)>,
@@ -287,6 +291,7 @@ fn testnet_genesis(
 		parachain_staking: ParachainStakingConfig {
 			stakers,
 			inflation_config,
+			max_candidate_stake,
 		},
 		aura: Default::default(),
 		aura_ext: Default::default(),
