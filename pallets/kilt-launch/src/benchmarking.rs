@@ -19,7 +19,7 @@
 use super::*;
 
 #[allow(unused)]
-use crate::{BalanceLocks, BalanceOf, LockedBalance, Pallet as KiltLaunch, KILT_LAUNCH_ID};
+use crate::{BalanceLocks, BalanceOf, LockedBalance, Pallet as KiltLaunch, UnownedAccount, KILT_LAUNCH_ID};
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, vec, whitelist_account, Zero};
 use frame_support::{
 	inherent::Vec,
@@ -85,6 +85,8 @@ where
 		// Set balance
 		<pallet_balances::Pallet<T> as Currency<T::AccountId>>::make_free_balance_be(&vest_acc, AMOUNT.into());
 		<pallet_balances::Pallet<T> as Currency<T::AccountId>>::make_free_balance_be(&lock_acc, AMOUNT.into());
+		UnownedAccount::<T>::insert(&vest_acc, ());
+		UnownedAccount::<T>::insert(&lock_acc, ());
 
 		// Set vesting info by mocking the Pallet's GenesisBuild
 		Vesting::<T>::insert(
@@ -194,6 +196,7 @@ benchmarks! {
 		let (source, source_lookup) = s.get(0).expect("Locking source should not be empty").clone();
 	}: migrate_genesis_account(RawOrigin::Signed(transfer), source_lookup.clone(), target_lookup)
 	verify {
+		assert!(UnownedAccount::<T>::get(&source).is_none());
 		assert!(!Vesting::<T>::contains_key(source), "Vesting schedule not removed");
 		assert_eq!(Vesting::<T>::get(&target), Some(VestingInfo::<BalanceOf<T>, T::BlockNumber> {
 			locked: AMOUNT.into(),
@@ -212,6 +215,7 @@ benchmarks! {
 		let (source, source_lookup) = s.get(0).expect("Locking source should not be empty").clone();
 	}: migrate_genesis_account(RawOrigin::Signed(transfer), source_lookup.clone(), target_lookup)
 	verify {
+		assert!(UnownedAccount::<T>::get(&source).is_none());
 		assert!(!BalanceLocks::<T>::contains_key(source), "BalanceLock not removed");
 		assert_eq!(BalanceLocks::<T>::get(&target), Some(LockedBalance::<T> {
 			block: UNLOCK_BLOCK.into(),
