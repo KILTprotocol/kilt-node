@@ -85,8 +85,8 @@ where
 		// Set balance
 		<pallet_balances::Pallet<T> as Currency<T::AccountId>>::make_free_balance_be(&vest_acc, AMOUNT.into());
 		<pallet_balances::Pallet<T> as Currency<T::AccountId>>::make_free_balance_be(&lock_acc, AMOUNT.into());
-		UnownedAccount::<T>::insert(&vest_acc, true);
-		UnownedAccount::<T>::insert(&lock_acc, true);
+		UnownedAccount::<T>::insert(&vest_acc, ());
+		UnownedAccount::<T>::insert(&lock_acc, ());
 
 		// Set vesting info by mocking the Pallet's GenesisBuild
 		Vesting::<T>::insert(

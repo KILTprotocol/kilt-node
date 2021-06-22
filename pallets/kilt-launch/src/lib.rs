@@ -227,7 +227,7 @@ pub mod pallet {
 					// `migrate_genesis_account`, see there for explanation
 				}
 				// Add all accounts to UnownedAccount storage
-				<UnownedAccount<T>>::insert(&who, true);
+				<UnownedAccount<T>>::insert(&who, ());
 			}
 
 			// Generate initial vesting configuration, taken from pallet_vesting
@@ -266,7 +266,7 @@ pub mod pallet {
 					// `migrate_genesis_account`, see there for explanation
 				}
 				// Add all accounts to UnownedAccount storage
-				<UnownedAccount<T>>::insert(&who, true);
+				<UnownedAccount<T>>::insert(&who, ());
 			}
 
 			// Set the transfer account which has a subset of the powers of root
@@ -303,14 +303,14 @@ pub mod pallet {
 	pub type BalanceLocks<T> =
 		StorageMap<_, Blake2_128Concat, <T as frame_system::Config>::AccountId, LockedBalance<T>>;
 
-	/// Maps an unowned account id to a boolean which reflects whether it is a
-	/// genesis account which should be migrated.
+	/// Maps an unowned account id to an empty value which reflects whether it
+	/// is a genesis account which should be migrated, if it exists.
 	///
 	/// Required for the claiming process.
 	#[pallet::storage]
 	#[pallet::getter(fn unowned_account)]
 	pub type UnownedAccount<T> =
-		StorageMap<_, Blake2_128Concat, <T as frame_system::Config>::AccountId, bool, OptionQuery>;
+		StorageMap<_, Blake2_128Concat, <T as frame_system::Config>::AccountId, (), OptionQuery>;
 
 	#[pallet::event]
 	#[pallet::metadata(T::BlockNumber = "BlockNumber", T::AccountId = "AccountId", T::Balance = "Balance")]
@@ -474,7 +474,7 @@ pub mod pallet {
 
 			ensure!(source != target, Error::<T>::SameDestination);
 			ensure!(
-				<UnownedAccount<T>>::get(&source).is_some(),
+				<UnownedAccount<T>>::contains_key(&source),
 				Error::<T>::NotUnownedAccount
 			);
 
@@ -528,7 +528,7 @@ pub mod pallet {
 				let source = T::Lookup::lookup(s)?;
 				ensure!(source != target, Error::<T>::SameDestination);
 				ensure!(
-					<UnownedAccount<T>>::get(&source).is_some(),
+					<UnownedAccount<T>>::contains_key(&source),
 					Error::<T>::NotUnownedAccount
 				);
 				post_weight += Self::migrate_user(&source, &target)?;

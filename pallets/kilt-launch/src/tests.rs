@@ -588,7 +588,7 @@ fn check_negative_migrate_accounts_vested() {
 			),
 			Error::<Test>::NotUnownedAccount
 		);
-		UnownedAccount::<Test>::insert(PSEUDO_4, true);
+		UnownedAccount::<Test>::insert(PSEUDO_4, ());
 		assert_noop!(
 			KiltLaunch::migrate_multiple_genesis_accounts(
 				Origin::signed(TRANSFER_ACCOUNT),
