@@ -274,15 +274,15 @@ fn testnet_genesis(
 		sudo: SudoConfig { key: root_key },
 		parachain_info: ParachainInfoConfig { parachain_id: id },
 		kilt_launch: KiltLaunchConfig {
-			balance_locks: airdrop_accounts
-				.iter()
-				.cloned()
-				.map(|(who, amount, _, locking_length)| (who, locking_length * MINUTES, amount))
-				.collect(),
 			vesting: airdrop_accounts
 				.iter()
 				.cloned()
 				.map(|(who, amount, vesting_length, _)| (who, vesting_length * MINUTES, amount))
+				.collect(),
+			balance_locks: airdrop_accounts
+				.iter()
+				.cloned()
+				.map(|(who, amount, _, locking_length)| (who, locking_length * MINUTES, amount))
 				.collect(),
 			// TODO: Set this to another address (PRE-LAUNCH)
 			transfer_account,

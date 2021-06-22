@@ -3,15 +3,9 @@ panic = "unwind"
 
 [workspace]
 members = [
-  "nodes/parachain",
-  "nodes/standalone",
-  "pallets/attestation",
-  "pallets/ctype",
-  "pallets/delegation",
-  "pallets/did",
-  "pallets/kilt-launch",
-  "runtimes/parachain",
-  "runtimes/standalone",
+  "nodes/*",
+  "pallets/*",
+  "runtimes/*",
 ]
 
 [patch.'https://github.com/paritytech/substrate?branch=rococo-v1']

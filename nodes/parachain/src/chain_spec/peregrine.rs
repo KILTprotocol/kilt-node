@@ -20,14 +20,14 @@
 
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
-use kilt_parachain_runtime::{
-	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake,
-	ParachainInfoConfig, ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig,
-	VestingConfig, WASM_BINARY,
-};
 use kilt_primitives::{
 	constants::{KILT, MAX_COLLATOR_STAKE, MINUTES},
 	AccountId, AuthorityId, Balance, BlockNumber,
+};
+use peregrine_runtime::{
+	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake,
+	ParachainInfoConfig, ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig,
+	VestingConfig, WASM_BINARY,
 };
 use sc_service::ChainType;
 use sp_core::{crypto::UncheckedInto, sr25519};
@@ -39,12 +39,12 @@ use crate::chain_spec::{get_account_id_from_seed, get_from_seed, get_properties,
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;
 
 pub fn make_dev_spec(id: ParaId) -> Result<ChainSpec, String> {
-	let properties = get_properties("KILT", 15, 38);
+	let properties = get_properties("PILT", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
 
 	Ok(ChainSpec::from_genesis(
-		"KILT Local",
-		"kilt_parachain_local_testnet",
+		"KILT Peregrine Local",
+		"peregrine_local_testnet",
 		ChainType::Local,
 		move || {
 			testnet_genesis(
@@ -104,26 +104,24 @@ pub fn make_dev_spec(id: ParaId) -> Result<ChainSpec, String> {
 	))
 }
 
-pub fn make_staging_spec(id: ParaId) -> Result<ChainSpec, String> {
-	let properties = get_properties("KILT", 15, 38);
+pub fn make_new_spec(id: ParaId) -> Result<ChainSpec, String> {
+	let properties = get_properties("PILT", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
 
 	Ok(ChainSpec::from_genesis(
-		"KILT Collator Staging Testnet",
-		"kilt_parachain_staging_testnet",
+		"KILT Peregrine Testnet",
+		"kilt_parachain_testnet",
 		ChainType::Live,
 		move || {
 			testnet_genesis(
 				wasm,
 				vec![
 					(
-						// TODO: Change before launch
 						hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].into(),
 						None,
 						10_000 * KILT,
 					),
 					(
-						// TODO: Change before launch
 						hex!["b67fe6413ffe5cf91ae38a6475c37deea70a25c6c86b3dd17bb82d09efd9b350"].into(),
 						None,
 						10_000 * KILT,
@@ -158,10 +156,6 @@ pub fn make_staging_spec(id: ParaId) -> Result<ChainSpec, String> {
 			para_id: id.into(),
 		},
 	))
-}
-
-pub fn load_rococo_spec() -> Result<ChainSpec, String> {
-	ChainSpec::from_json_bytes(&include_bytes!("../../res/mashnet-rococo.json")[..])
 }
 
 pub fn kilt_inflation_config() -> InflationInfo {
@@ -208,17 +202,16 @@ fn testnet_genesis(
 		sudo: SudoConfig { key: root_key },
 		parachain_info: ParachainInfoConfig { parachain_id: id },
 		kilt_launch: KiltLaunchConfig {
-			balance_locks: airdrop_accounts
-				.iter()
-				.cloned()
-				.map(|(who, amount, _, locking_length)| (who, locking_length * MINUTES, amount))
-				.collect(),
 			vesting: airdrop_accounts
 				.iter()
 				.cloned()
 				.map(|(who, amount, vesting_length, _)| (who, vesting_length * MINUTES, amount))
 				.collect(),
-			// TODO: Set this to another address (PRE-LAUNCH)
+			balance_locks: airdrop_accounts
+				.iter()
+				.cloned()
+				.map(|(who, amount, _, locking_length)| (who, locking_length * MINUTES, amount))
+				.collect(),
 			transfer_account: hex!["6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c"].into(),
 		},
 		vesting: VestingConfig { vesting: vec![] },
@@ -249,7 +242,7 @@ fn testnet_genesis(
 					(
 						acc.clone(),
 						acc.clone(),
-						kilt_parachain_runtime::opaque::SessionKeys { aura: key.clone() },
+						peregrine_runtime::opaque::SessionKeys { aura: key.clone() },
 					)
 				})
 				.collect::<Vec<_>>(),

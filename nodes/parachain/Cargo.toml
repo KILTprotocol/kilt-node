@@ -13,7 +13,7 @@ path = "src/main.rs"
 [dependencies]
 
 # Internal dependencies
-kilt-parachain-runtime = {path = "../../runtimes/parachain"}
+peregrine-runtime = {path = "../../runtimes/peregrine"}
 kilt-primitives = {path = "../../primitives"}
 spiritnet-runtime = {path = "../../runtimes/spiritnet"}
 
@@ -114,13 +114,13 @@ substrate-test-runtime-client = {git = "https://github.com/paritytech/substrate"
 
 [features]
 default = []
-fast-gov = ["kilt-parachain-runtime/fast-gov"]
+fast-gov = ["peregrine-runtime/fast-gov"]
 runtime-benchmarks = [
-  "kilt-parachain-runtime/runtime-benchmarks",
+  "peregrine-runtime/runtime-benchmarks",
   "spiritnet-runtime/runtime-benchmarks",
 ]
 try-runtime = [
-  "kilt-parachain-runtime/try-runtime",
+  "peregrine-runtime/try-runtime",
   "node-executor",
   "spiritnet-runtime/try-runtime",
   "try-runtime-cli"
