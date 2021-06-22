@@ -234,6 +234,7 @@ pub mod pallet {
 			+ sp_std::fmt::Debug
 			+ Default
 			+ From<u64>
+			+ From<u128>
 			+ Into<<Self as pallet_balances::Config>::Balance>
 			+ From<<Self as pallet_balances::Config>::Balance>;
 		/// Minimum number of blocks validation rounds can last.
@@ -674,8 +675,21 @@ pub mod pallet {
 		/// - Writes: InflationConfig
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_inflation())]
-		pub fn set_inflation(origin: OriginFor<T>, inflation: InflationInfo) -> DispatchResult {
+		pub fn set_inflation(
+			origin: OriginFor<T>,
+			collator_max_rate_percentage: Perquintill,
+			collator_annual_reward_rate_percentage: Perquintill,
+			delegator_max_rate_percentage: Perquintill,
+			delegator_annual_reward_rate_percentage: Perquintill,
+		) -> DispatchResult {
 			frame_system::ensure_root(origin)?;
+
+			let inflation = InflationInfo::new(
+				collator_max_rate_percentage,
+				collator_annual_reward_rate_percentage,
+				delegator_max_rate_percentage,
+				delegator_annual_reward_rate_percentage,
+			);
 
 			ensure!(inflation.is_valid(), Error::<T>::InvalidSchedule);
 			Self::deposit_event(Event::RoundInflationSet(
@@ -1966,26 +1980,12 @@ pub mod pallet {
 		/// # </weight>
 		fn select_top_candidates() -> (u32, u32, BalanceOf<T>, BalanceOf<T>) {
 			log::trace!("Selecting collators");
-			let mut candidates = <CandidatePool<T>>::get().into_vec();
 			let top_n = <MaxSelectedCandidates<T>>::get();
 			let mut num_of_delegators = 0u32;
 			let mut collator_stake = BalanceOf::<T>::zero();
 			let mut delegator_stake = BalanceOf::<T>::zero();
 
-			log::trace!("{} Candidates for {} Collator seats", candidates.len(), top_n);
-
-			// Order candidates by their total stake
-			candidates.sort_by(|a, b| a.amount.cmp(&b.amount));
-
-			// Choose the top MaxSelectedCandidates qualified candidates, ordered by stake
-			// (least to greatest, thus requires `rev()`)
-			let mut collators = candidates
-				.into_iter()
-				.rev()
-				.take(top_n as usize)
-				.filter(|x| x.amount >= T::MinCollatorStake::get())
-				.map(|x| x.owner)
-				.collect::<Vec<T::AccountId>>();
+			let mut collators = Self::get_collator_list(top_n);
 
 			// Snapshot exposure for round for weighting reward distribution
 			for account in collators.iter() {
@@ -2019,6 +2019,44 @@ pub mod pallet {
 			// return number of selected candidates and the corresponding number of their
 			// delegators for post-weight correction
 			(top_n, num_of_delegators, collator_stake, delegator_stake)
+		}
+
+		fn get_collator_list(top_n: u32) -> Vec<T::AccountId> {
+			let mut candidates = <CandidatePool<T>>::get().into_vec();
+
+			log::trace!("{} Candidates for {} Collator seats", candidates.len(), top_n);
+
+			// Order candidates by their total stake (greatest to least)
+			candidates.sort_by(|a, b| b.amount.cmp(&a.amount));
+
+			// Choose the top MaxSelectedCandidates qualified candidates
+			let mut collators = candidates
+				.clone()
+				.into_iter()
+				.take(top_n as usize)
+				.filter(|x| x.amount >= T::MinCollatorStake::get())
+				.map(|x| x.owner)
+				.collect::<Vec<T::AccountId>>();
+
+			// check whether we wanted to replace a collator with a candidate which has
+			// equal stake, and if so, revert the swap
+			//
+			// NOTE: Can only occur if we have filled all top_n slots
+			if collators.len().try_into().unwrap_or(u32::MAX) == top_n {
+				// we expect all of the following unwraps to be some
+				if let Some(collator_with_least_stake) = <SelectedCandidates<T>>::get().last() {
+					if let Some(state) = <CollatorState<T>>::get(&collator_with_least_stake) {
+						if let Some(last_collator) = candidates.get(collators.len().saturating_sub(1)) {
+							// check whether current last collator has same stake as their replacement
+							if last_collator.amount == state.total {
+								collators.pop();
+								collators.push(state.id);
+							}
+						}
+					}
+				}
+			}
+			collators
 		}
 
 		/// Attempts to add the stake to the set of delegators of a collator
@@ -2368,7 +2406,7 @@ pub mod pallet {
 
 	impl<T> pallet_authorship::EventHandler<T::AccountId, T::BlockNumber> for Pallet<T>
 	where
-		T: Config + pallet_authorship::Config,
+		T: Config + pallet_authorship::Config + pallet_session::Config,
 	{
 		/// Compute coinbase rewards for block production and distribute it to
 		/// collator's (block producer) and its delegators according to their
@@ -2411,7 +2449,10 @@ pub mod pallet {
 				let c_staking_rate = Perquintill::from_rational(total_collators, total_issuance);
 				let d_staking_rate = Perquintill::from_rational(total_delegators, total_issuance);
 				let inflation_config = <InflationConfig<T>>::get();
-				let authors_per_round = <BalanceOf<T>>::from(<MaxSelectedCandidates<T>>::get());
+				// FIXME: Get number of collators from session pallet
+				let authors = pallet_session::Pallet::<T>::validators();
+				let authors_per_round =
+					<BalanceOf<T>>::from(authors.len().try_into().unwrap_or(<MaxSelectedCandidates<T>>::get()));
 
 				// Reward collator
 				let amt_due_collator =

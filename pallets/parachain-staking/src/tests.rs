@@ -2005,18 +2005,38 @@ fn update_inflation() {
 					},
 				},
 			};
-			assert_noop!(
-				StakePallet::set_inflation(Origin::root(), invalid_inflation.clone()),
-				Error::<Test>::InvalidSchedule
-			);
+			assert!(!invalid_inflation.is_valid());
 			invalid_inflation.collator.reward_rate.per_block = Perquintill::zero();
-			assert_noop!(
-				StakePallet::set_inflation(Origin::root(), invalid_inflation.clone()),
-				Error::<Test>::InvalidSchedule
-			);
-			invalid_inflation.delegator.reward_rate.per_block = Perquintill::zero();
+			assert!(!invalid_inflation.is_valid());
 
-			assert_ok!(StakePallet::set_inflation(Origin::root(), invalid_inflation));
+			assert_ok!(StakePallet::set_inflation(
+				Origin::root(),
+				Perquintill::from_percent(0),
+				Perquintill::from_percent(100),
+				Perquintill::from_percent(100),
+				Perquintill::from_percent(100),
+			));
+			assert_ok!(StakePallet::set_inflation(
+				Origin::root(),
+				Perquintill::from_percent(100),
+				Perquintill::from_percent(0),
+				Perquintill::from_percent(100),
+				Perquintill::from_percent(100),
+			));
+			assert_ok!(StakePallet::set_inflation(
+				Origin::root(),
+				Perquintill::from_percent(100),
+				Perquintill::from_percent(100),
+				Perquintill::from_percent(0),
+				Perquintill::from_percent(100),
+			));
+			assert_ok!(StakePallet::set_inflation(
+				Origin::root(),
+				Perquintill::from_percent(100),
+				Perquintill::from_percent(100),
+				Perquintill::from_percent(100),
+				Perquintill::from_percent(0),
+			));
 		});
 }
 

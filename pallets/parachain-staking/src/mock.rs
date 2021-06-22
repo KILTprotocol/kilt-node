@@ -31,7 +31,7 @@ use pallet_authorship::EventHandler;
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
-	traits::{BlakeTwo256, IdentityLookup},
+	traits::{BlakeTwo256, ConvertInto, IdentityLookup},
 	Perbill, Perquintill,
 };
 
@@ -56,6 +56,7 @@ construct_runtime!(
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		StakePallet: stake::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Authorship: pallet_authorship::{Pallet, Call, Storage, Inherent},
+		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
 	}
 );
 
@@ -159,6 +160,36 @@ impl Config for Test {
 	type MinDelegatorStake = MinDelegatorStake;
 	type MinDelegation = MinDelegation;
 	type MaxUnstakeRequests = MaxUnstakeRequests;
+	type WeightInfo = ();
+}
+
+sp_runtime::impl_opaque_keys! {
+	pub struct SessionKeys {
+		pub foo: sp_runtime::testing::UintAuthorityId,
+	}
+}
+
+pub struct TestSessionHandler;
+impl pallet_session::SessionHandler<AccountId> for TestSessionHandler {
+	const KEY_TYPE_IDS: &'static [sp_runtime::KeyTypeId] = &[];
+
+	fn on_genesis_session<Ks: sp_runtime::traits::OpaqueKeys>(_validators: &[(AccountId, Ks)]) {}
+
+	fn on_new_session<Ks: sp_runtime::traits::OpaqueKeys>(_: bool, _: &[(AccountId, Ks)], _: &[(AccountId, Ks)]) {}
+
+	fn on_disabled(_: usize) {}
+}
+
+impl pallet_session::Config for Test {
+	type Event = Event;
+	type ValidatorId = AccountId;
+	type ValidatorIdOf = ConvertInto;
+	type ShouldEndSession = StakePallet;
+	type NextSessionRotation = StakePallet;
+	type SessionManager = StakePallet;
+	type SessionHandler = TestSessionHandler;
+	type Keys = SessionKeys;
+	type DisabledValidatorsThreshold = ();
 	type WeightInfo = ();
 }
 
