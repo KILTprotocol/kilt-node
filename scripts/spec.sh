@@ -7,11 +7,11 @@ TMP_DIR="/tmp/parachain/$USER/"
 mkdir -p $TMP_DIR
 
 # build and copy the binary. Make sure we don't rebuild because of changed spec files.
-# cargo build --release -p kilt-parachain
-# cp target/release/kilt-parachain $TMP_DIR/kilt-parachain
+cargo build --release -p kilt-parachain
+cp target/release/kilt-parachain $TMP_DIR/kilt-parachain
 
-# cargo build --release -p kilt-parachain --features fast-gov
-# cp target/release/kilt-parachain $TMP_DIR/kilt-parachain-fast-gov
+cargo build --release -p kilt-parachain --features fast-gov
+cp target/release/kilt-parachain $TMP_DIR/kilt-parachain-fast-gov
 
 RELAY_CHAIN_IMG=parity/polkadot:v0.9.5
 RELAY_BINARY="/usr/bin/polkadot"
