@@ -163,7 +163,7 @@ pub fn kilt_inflation_config() -> InflationInfo {
 		Perquintill::from_percent(10),
 		Perquintill::from_percent(10),
 		Perquintill::from_percent(40),
-		Perquintill::from_percent(5),
+		Perquintill::from_percent(8),
 	)
 }
 
