@@ -49,7 +49,6 @@ use frame_support::{
 use frame_system::ensure_signed;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::RawOrigin;
-use sp_runtime::traits::IdentifyAccount;
 use sp_std::{boxed::Box, convert::TryFrom, fmt::Debug, prelude::Clone, vec::Vec};
 
 #[frame_support::pallet]
@@ -281,7 +280,6 @@ pub mod pallet {
 
 			let account_did_auth_key: DidVerificationKey = operation
 				.did
-				.clone()
 				.verify_and_recover_signature(&operation.encode(), &signature)
 				.map_err(<Error<T>>::from)?;
 
@@ -529,7 +527,7 @@ impl<T: Config> Pallet<T> {
 		// an error
 		let is_signature_valid = verification_key
 			.verify_signature(payload, signature)
-			.map_err(|e| DidError::SignatureError(e))?;
+			.map_err(DidError::SignatureError)?;
 
 		Ok(())
 	}

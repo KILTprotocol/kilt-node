@@ -183,11 +183,11 @@ impl DidSignature {
 	/// only contains the encoded signature, with no information about its enum
 	/// type.
 	pub fn from_raw_signature_encoded(encoded: &[u8]) -> Result<Self, SignatureError> {
-		if let Ok(ed25519_sig) = ed25519::Signature::decode(&mut &encoded[..]) {
+		if let Ok(ed25519_sig) = ed25519::Signature::decode(&mut &*encoded) {
 			Ok(Self::Ed25519(ed25519_sig))
-		} else if let Ok(sr25519_sig) = sr25519::Signature::decode(&mut &encoded[..]) {
+		} else if let Ok(sr25519_sig) = sr25519::Signature::decode(&mut &*encoded) {
 			Ok(Self::Sr25519(sr25519_sig))
-		} else if let Ok(ecdsa_sig) = ecdsa::Signature::decode(&mut &encoded[..]) {
+		} else if let Ok(ecdsa_sig) = ecdsa::Signature::decode(&mut &*encoded) {
 			Ok(Self::Ecdsa(ecdsa_sig))
 		} else {
 			Err(SignatureError::UnsupportedSignatureFormat)
@@ -245,11 +245,11 @@ impl DidVerifiableIdentifier for kilt_primitives::DidIdentifier {
 		match *signature {
 			DidSignature::Ed25519(_) => {
 				// from_raw simply converts a byte array into a public key with no particular validations
-				let ed25519_did_key = DidVerificationKey::Ed25519(ed25519::Public::from_raw(raw_public_key.to_owned()));
+				let ed25519_did_key = DidVerificationKey::Ed25519(ed25519::Public::from_raw(*raw_public_key));
 				ed25519_did_key.verify_signature(payload, signature).map(|_| ed25519_did_key)
 			}
 			DidSignature::Sr25519(_) => {
-				let sr25519_did_key = DidVerificationKey::Sr25519(sr25519::Public::from_raw(raw_public_key.to_owned()));
+				let sr25519_did_key = DidVerificationKey::Sr25519(sr25519::Public::from_raw(*raw_public_key));
 				sr25519_did_key.verify_signature(payload, signature).map(|_| sr25519_did_key)
 			}
 			DidSignature::Ecdsa(ref signature) => {

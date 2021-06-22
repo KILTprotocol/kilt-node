@@ -18,7 +18,6 @@
 
 use frame_support::{assert_err, assert_noop, assert_ok};
 use sp_core::*;
-use sp_runtime::traits::IdentifyAccount;
 use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom};
 
 use crate::{self as did, mock::*};
@@ -1716,7 +1715,7 @@ fn check_authentication_successful_operation_verification() {
 fn check_attestation_successful_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let att_key = get_sr25519_attestation_key(true);
+	let att_key = get_ecdsa_attestation_key(true);
 	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	mock_did.update_attestation_key(did::DidVerificationKey::from(att_key.public()), 0u64);
 	let operation = TestDidOperation {
@@ -2018,7 +2017,7 @@ fn check_invalid_signature_operation_verification() {
 	let signature = alternative_key.sign(&operation.encode());
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), mock_did.clone())])
+		.with_dids(vec![(alice_did, mock_did.clone())])
 		.build(None);
 
 	ext.execute_with(|| {
