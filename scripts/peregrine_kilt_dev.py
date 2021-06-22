@@ -46,20 +46,6 @@ def update_spec(input: typing.Dict):
             }
         ]
     ]
-    input["genesis"]["runtime"]["balances"]["balances"] += [
-        [
-            "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-            10000000000000000000000000000
-        ],
-        [
-            "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
-            10000000000000000000000000000
-        ],
-        [
-            "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y",
-            10000000000000000000000000000
-        ]
-    ]
 
 
 if __name__ == "__main__":

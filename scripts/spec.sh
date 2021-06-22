@@ -7,11 +7,11 @@ TMP_DIR="/tmp/parachain/$USER/"
 mkdir -p $TMP_DIR
 
 # build and copy the binary. Make sure we don't rebuild because of changed spec files.
-cargo build --release -p kilt-parachain
-cp target/release/kilt-parachain $TMP_DIR/kilt-parachain
+# cargo build --release -p kilt-parachain
+# cp target/release/kilt-parachain $TMP_DIR/kilt-parachain
 
-cargo build --release -p kilt-parachain --features fast-gov
-cp target/release/kilt-parachain $TMP_DIR/kilt-parachain-fast-gov
+# cargo build --release -p kilt-parachain --features fast-gov
+# cp target/release/kilt-parachain $TMP_DIR/kilt-parachain-fast-gov
 
 RELAY_CHAIN_IMG=parity/polkadot:v0.9.5
 RELAY_BINARY="/usr/bin/polkadot"
@@ -47,11 +47,11 @@ PEREGRINE_FG_PLAIN=$TMP_DIR"peregrine-kilt-fast-gov.plain.spec"
 PEREGRINE_FG_JQ=$TMP_DIR"peregrine-kilt-fast-gov.json"
 PEREGRINE_FG_OUTPUT=dev-specs/kilt-parachain/peregrine-kilt-fast-gov.json
 
-$TMP_DIR/kilt-parachain-fast-gov build-spec --runtime mashnet --chain dev --disable-default-bootnode >$PEREGRINE_FG_PLAIN
+$TMP_DIR/kilt-parachain-fast-gov build-spec --runtime peregrine --chain dev --disable-default-bootnode >$PEREGRINE_FG_PLAIN
 
 python3 scripts/peregrine_kilt.py $PEREGRINE_FG_PLAIN $PEREGRINE_FG_JQ
 
-$TMP_DIR/kilt-parachain-fast-gov build-spec --runtime mashnet --chain $PEREGRINE_FG_JQ --disable-default-bootnode --raw >$PEREGRINE_FG_OUTPUT
+$TMP_DIR/kilt-parachain-fast-gov build-spec --runtime peregrine --chain $PEREGRINE_FG_JQ --disable-default-bootnode --raw >$PEREGRINE_FG_OUTPUT
 
 # ##############################################################################
 # #                                                                            #
@@ -62,11 +62,11 @@ PEREGRINE_FG_PLAIN=$TMP_DIR"peregrine-kilt-dev-fast-gov.plain.spec"
 PEREGRINE_FG_JQ=$TMP_DIR"peregrine-kilt-dev-fast-gov.json"
 PEREGRINE_FG_OUTPUT=dev-specs/kilt-parachain/peregrine-kilt-dev-fast-gov.json
 
-$TMP_DIR/kilt-parachain-fast-gov build-spec --runtime mashnet --chain dev --disable-default-bootnode >$PEREGRINE_FG_PLAIN
+$TMP_DIR/kilt-parachain-fast-gov build-spec --runtime peregrine --chain dev --disable-default-bootnode >$PEREGRINE_FG_PLAIN
 
 python3 scripts/peregrine_kilt_dev.py $PEREGRINE_FG_PLAIN $PEREGRINE_FG_JQ
 
-$TMP_DIR/kilt-parachain-fast-gov build-spec --runtime mashnet --chain $PEREGRINE_FG_JQ --disable-default-bootnode --raw >$PEREGRINE_FG_OUTPUT
+$TMP_DIR/kilt-parachain-fast-gov build-spec --runtime peregrine --chain $PEREGRINE_FG_JQ --disable-default-bootnode --raw >$PEREGRINE_FG_OUTPUT
 
 # ##############################################################################
 # #                                                                            #
