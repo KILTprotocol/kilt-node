@@ -34,7 +34,7 @@ use crate::*;
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
 
-pub type TestDidIdentifier = kilt_primitives::AccountPublic;
+pub type TestDidIdentifier = kilt_primitives::AccountId;
 pub type TestKeyId = did::KeyIdOf<Test>;
 pub type TestBlockNumber = kilt_primitives::BlockNumber;
 pub type TestCtypeOwner = TestDidIdentifier;
@@ -125,15 +125,15 @@ const ALTERNATIVE_DEL_SEED: [u8; 32] = [70u8; 32];
 const DEFAULT_URL_SCHEME: [u8; 8] = *b"https://";
 
 pub fn get_did_identifier_from_ed25519_key(public_key: ed25519::Public) -> TestDidIdentifier {
-	MultiSigner::from(public_key)
+	MultiSigner::from(public_key).into_account()
 }
 
 pub fn get_did_identifier_from_sr25519_key(public_key: sr25519::Public) -> TestDidIdentifier {
-	MultiSigner::from(public_key)
+	MultiSigner::from(public_key).into_account()
 }
 
 pub fn get_did_identifier_from_ecdsa_key(public_key: ecdsa::Public) -> TestDidIdentifier {
-	MultiSigner::from(public_key)
+	MultiSigner::from(public_key).into_account()
 }
 
 pub fn get_ed25519_authentication_key(default: bool) -> ed25519::Pair {

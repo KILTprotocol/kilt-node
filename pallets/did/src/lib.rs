@@ -87,7 +87,6 @@ pub mod pallet {
 			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
 		type DidIdentifier: Parameter
 			+ Default
-			+ IdentifyAccount<AccountId = AccountIdentifierOf<Self>>
 			+ DidVerifiableIdentifier;
 		#[cfg(not(feature = "runtime-benchmarks"))]
 		type Origin: From<DidRawOrigin<DidIdentifierOf<Self>>>;
@@ -530,12 +529,7 @@ impl<T: Config> Pallet<T> {
 		// an error
 		let is_signature_valid = verification_key
 			.verify_signature(payload, signature)
-			.map_err(|_| DidError::SignatureError(SignatureError::InvalidSignatureFormat))?;
-
-		ensure!(
-			is_signature_valid,
-			DidError::SignatureError(SignatureError::InvalidSignature)
-		);
+			.map_err(|e| DidError::SignatureError(e))?;
 
 		Ok(())
 	}

@@ -98,6 +98,7 @@ fn check_successful_simple_sr25519_creation() {
 
 #[test]
 fn check_successful_simple_ecdsa_creation() {
+	initialize_logger();
 	let auth_key = get_ecdsa_authentication_key(true);
 	let alice_did = get_did_identifier_from_ecdsa_key(auth_key.public());
 	let auth_did_key = did::DidVerificationKey::from(auth_key.clone().public());
@@ -249,7 +250,7 @@ fn check_invalid_signature_format_did_creation() {
 				operation.clone(),
 				did::DidSignature::from(signature),
 			),
-			did::Error::<Test>::InvalidSignatureFormat
+			did::Error::<Test>::InvalidSignature
 		);
 	});
 }
@@ -1543,7 +1544,7 @@ fn check_call_attestation_key_error() {
 		.build(None);
 	// CTYPE already added to storage
 	let mut ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(get_attestation_key_test_input(), did.clone().into_account())])
+		.with_ctypes(vec![(get_attestation_key_test_input(), did.clone())])
 		.build(Some(ext));
 
 	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::AssertionMethod, did);
@@ -1602,7 +1603,7 @@ fn check_call_delegation_key_error() {
 		.build(None);
 	// CTYPE already added to storage
 	let mut ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(get_delegation_key_test_input(), did.clone().into_account())])
+		.with_ctypes(vec![(get_delegation_key_test_input(), did.clone())])
 		.build(Some(ext));
 
 	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did);
@@ -1657,7 +1658,7 @@ fn check_call_authentication_key_error() {
 		.build(None);
 	// CTYPE already added to storage
 	let mut ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(get_authentication_key_test_input(), did.clone().into_account())])
+		.with_ctypes(vec![(get_authentication_key_test_input(), did.clone())])
 		.build(Some(ext));
 
 	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did);
