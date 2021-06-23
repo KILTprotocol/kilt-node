@@ -30,13 +30,13 @@ PEREGRINE_JQ=$TMP_DIR"peregrine-kilt.json"
 PEREGRINE_OUTPUT=dev-specs/kilt-parachain/peregrine-kilt.json
 
 docker run --entrypoint $RELAY_BINARY $RELAY_CHAIN_IMG build-spec --chain rococo-local --disable-default-bootnode >$RELAY_PEREGRINE_PLAIN
-$TMP_DIR/kilt-parachain build-spec --runtime spiritnet --chain spiritnet-dev --disable-default-bootnode >$PEREGRINE_PLAIN
+$TMP_DIR/kilt-parachain build-spec --runtime peregrine --chain dev --disable-default-bootnode >$PEREGRINE_PLAIN
 
 python3 scripts/peregrine_relay.py $RELAY_PEREGRINE_PLAIN $RELAY_PEREGRINE
 python3 scripts/peregrine_kilt.py $PEREGRINE_PLAIN $PEREGRINE_JQ
 
 docker run --entrypoint $RELAY_BINARY -v $(dirname $RELAY_PEREGRINE):/data/spec $RELAY_CHAIN_IMG build-spec --chain /data/spec/$(basename -- "$RELAY_PEREGRINE") --raw --disable-default-bootnode >$RELAY_PEREGRINE_OUT
-$TMP_DIR/kilt-parachain build-spec --runtime spiritnet --chain $PEREGRINE_JQ --disable-default-bootnode --raw >$PEREGRINE_OUTPUT
+$TMP_DIR/kilt-parachain build-spec --runtime peregrine --chain $PEREGRINE_JQ --disable-default-bootnode --raw >$PEREGRINE_OUTPUT
 
 # ##############################################################################
 # #                                                                            #

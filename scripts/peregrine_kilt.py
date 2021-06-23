@@ -7,10 +7,10 @@ def update_spec(input: typing.Dict):
         "chainType": "Live",
         "name": "KILT Peregrine Testnet",
         "id": "peregrine_kilt",
-        "para_id": 12555,
+        "para_id": 2000,
     })
     input["properties"]["tokenSymbol"] = "PILT"
-    input["genesis"]["runtime"]["parachainInfo"]["parachainId"] = 12555
+    input["genesis"]["runtime"]["parachainInfo"]["parachainId"] = 2000
     input["genesis"]["runtime"]["sudo"]["key"] = "5FNHPF1epsZHJC3LSGMbVJzP5ykcgursQAwPjJiNJB5eAGmW"
     input["genesis"]["runtime"]["parachainStaking"]["stakers"] = [
         [
