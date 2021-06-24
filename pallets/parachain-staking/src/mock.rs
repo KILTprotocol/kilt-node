@@ -23,15 +23,17 @@ use super::*;
 use crate::{self as stake};
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{FindAuthor, GenesisBuild, OnFinalize, OnInitialize},
+	traits::{GenesisBuild, OnFinalize, OnInitialize},
 	weights::Weight,
 };
 use kilt_primitives::constants::KILT;
 use pallet_authorship::EventHandler;
+use sp_consensus_aura::sr25519::AuthorityId;
 use sp_core::H256;
 use sp_runtime::{
-	testing::Header,
-	traits::{BlakeTwo256, ConvertInto, IdentityLookup},
+	impl_opaque_keys,
+	testing::{Header, UintAuthorityId},
+	traits::{BlakeTwo256, ConvertInto, IdentityLookup, OpaqueKeys},
 	Perbill, Perquintill,
 };
 
@@ -55,8 +57,9 @@ construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		StakePallet: stake::{Pallet, Call, Storage, Config<T>, Event<T>},
-		Authorship: pallet_authorship::{Pallet, Call, Storage, Inherent},
 		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
+		Authorship: pallet_authorship::{Pallet, Call, Storage, Inherent},
+		Aura: pallet_aura::{Pallet, Storage},
 	}
 );
 
@@ -109,18 +112,12 @@ impl pallet_balances::Config for Test {
 	type WeightInfo = ();
 }
 
-/// Author of block is always 1337
-pub struct Author1337;
-impl FindAuthor<AccountId> for Author1337 {
-	fn find_author<'a, I>(_digests: I) -> Option<AccountId>
-	where
-		I: 'a + IntoIterator<Item = (frame_support::ConsensusEngineId, &'a [u8])>,
-	{
-		Some(1337)
-	}
+impl pallet_aura::Config for Test {
+	type AuthorityId = AuthorityId;
 }
+
 impl pallet_authorship::Config for Test {
-	type FindAuthor = Author1337;
+	type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
 	type UncleGenerations = ();
 	type FilterUncle = ();
 	type EventHandler = Pallet<Test>;
@@ -163,21 +160,10 @@ impl Config for Test {
 	type WeightInfo = ();
 }
 
-sp_runtime::impl_opaque_keys! {
-	pub struct SessionKeys {
-		pub foo: sp_runtime::testing::UintAuthorityId,
+impl_opaque_keys! {
+	pub struct MockSessionKeys {
+		pub aura: Aura,
 	}
-}
-
-pub struct TestSessionHandler;
-impl pallet_session::SessionHandler<AccountId> for TestSessionHandler {
-	const KEY_TYPE_IDS: &'static [sp_runtime::KeyTypeId] = &[];
-
-	fn on_genesis_session<Ks: sp_runtime::traits::OpaqueKeys>(_validators: &[(AccountId, Ks)]) {}
-
-	fn on_new_session<Ks: sp_runtime::traits::OpaqueKeys>(_: bool, _: &[(AccountId, Ks)], _: &[(AccountId, Ks)]) {}
-
-	fn on_disabled(_: usize) {}
 }
 
 impl pallet_session::Config for Test {
@@ -187,9 +173,20 @@ impl pallet_session::Config for Test {
 	type ShouldEndSession = StakePallet;
 	type NextSessionRotation = StakePallet;
 	type SessionManager = StakePallet;
-	type SessionHandler = TestSessionHandler;
-	type Keys = SessionKeys;
+	type SessionHandler = <MockSessionKeys as OpaqueKeys>::KeyTypeIdProviders;
+	type Keys = MockSessionKeys;
 	type DisabledValidatorsThreshold = ();
+	type WeightInfo = ();
+}
+
+parameter_types! {
+	pub const MinimumPeriod: u64 = 1;
+}
+
+impl pallet_timestamp::Config for Test {
+	type Moment = u64;
+	type OnTimestampSet = ();
+	type MinimumPeriod = MinimumPeriod;
 	type WeightInfo = ();
 }
 
@@ -288,6 +285,28 @@ impl ExtBuilder {
 		}
 		.assimilate_storage(&mut t)
 		.expect("Parachain Staking's storage can be assimilated");
+
+		// stashes are the index.
+		let session_keys: Vec<_> = self
+			.collators
+			.iter()
+			.enumerate()
+			.map(|(i, (k, _))| {
+				(
+					i as u64,
+					i as u64,
+					MockSessionKeys {
+						aura: UintAuthorityId(*k).to_public_key(),
+					},
+				)
+			})
+			.collect();
+
+		// NOTE: this will initialize the babe authorities
+		// through OneSessionHandler::on_genesis_session
+		pallet_session::GenesisConfig::<Test> { keys: session_keys }
+			.assimilate_storage(&mut t)
+			.expect("Session Pallet's storage can be assimilated");
 
 		let mut ext = sp_io::TestExternalities::new(t);
 

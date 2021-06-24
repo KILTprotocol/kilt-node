@@ -838,8 +838,8 @@ fn multiple_delegations() {
 			let mut expected = vec![
 				Event::CollatorChosen(1, 20, 30),
 				Event::CollatorChosen(2, 20, 20),
-				Event::CollatorChosen(4, 20, 0),
 				Event::CollatorChosen(3, 20, 0),
+				Event::CollatorChosen(4, 20, 0),
 				Event::CollatorChosen(5, 10, 0),
 				Event::MaxSelectedCandidatesSet(2, 5),
 				Event::NewRound(5, 1),
@@ -864,22 +864,22 @@ fn multiple_delegations() {
 
 			roll_to(16, vec![]);
 			let mut new = vec![
-				Event::CollatorChosen(2, 20, 30),
 				Event::CollatorChosen(1, 20, 30),
-				Event::CollatorChosen(4, 20, 0),
+				Event::CollatorChosen(2, 20, 30),
 				Event::CollatorChosen(3, 20, 0),
+				Event::CollatorChosen(4, 20, 0),
 				Event::CollatorChosen(5, 10, 0),
 				Event::Delegation(6, 10, 2, 50),
-				Event::CollatorChosen(2, 20, 30),
 				Event::CollatorChosen(1, 20, 30),
+				Event::CollatorChosen(2, 20, 30),
 				Event::CollatorChosen(4, 20, 10),
 				Event::CollatorChosen(3, 20, 0),
 				Event::CollatorChosen(5, 10, 0),
 				Event::Delegation(6, 10, 4, 30),
-				Event::CollatorChosen(2, 20, 30),
 				Event::CollatorChosen(1, 20, 30),
-				Event::CollatorChosen(4, 20, 10),
+				Event::CollatorChosen(2, 20, 30),
 				Event::CollatorChosen(3, 20, 10),
+				Event::CollatorChosen(4, 20, 10),
 				Event::CollatorChosen(5, 10, 0),
 				Event::Delegation(6, 10, 3, 30),
 				Event::NewRound(10, 2),
@@ -912,15 +912,15 @@ fn multiple_delegations() {
 				Event::NewRound(20, 4),
 				Event::CollatorChosen(2, 20, 110),
 				Event::CollatorChosen(1, 20, 30),
-				Event::CollatorChosen(4, 20, 10),
 				Event::CollatorChosen(3, 20, 10),
+				Event::CollatorChosen(4, 20, 10),
 				Event::CollatorChosen(5, 10, 0),
 				Event::Delegation(7, 80, 2, 130),
 				Event::DelegationReplaced(10, 11, 9, 10, 2, 131),
 				Event::CollatorChosen(2, 20, 111),
 				Event::CollatorChosen(1, 20, 30),
-				Event::CollatorChosen(4, 20, 10),
 				Event::CollatorChosen(3, 20, 10),
+				Event::CollatorChosen(4, 20, 10),
 				Event::CollatorChosen(5, 10, 0),
 				Event::Delegation(10, 11, 2, 131),
 				Event::NewRound(25, 5),
@@ -936,8 +936,8 @@ fn multiple_delegations() {
 			roll_to(31, vec![]);
 			let mut new3 = vec![
 				Event::CollatorChosen(1, 20, 30),
-				Event::CollatorChosen(4, 20, 10),
 				Event::CollatorChosen(3, 20, 10),
+				Event::CollatorChosen(4, 20, 10),
 				Event::CollatorChosen(5, 10, 0),
 				Event::CollatorScheduledExit(5, 2, 7),
 				Event::NewRound(30, 6),
@@ -1495,7 +1495,6 @@ fn coinbase_rewards_few_blocks_detailed_check() {
 		.with_inflation(10, 15, 40, 15, 5)
 		.build()
 		.execute_with(|| {
-			assert_eq!(Authorship::author(), 1337);
 			let inflation = StakePallet::inflation_config();
 			let total_issuance = <Test as Config>::Currency::total_issuance();
 			assert_eq!(total_issuance, 160_000_000 * DECIMALS);
@@ -1635,7 +1634,6 @@ fn coinbase_rewards_many_blocks_simple_check() {
 		.with_inflation(10, 15, 40, 15, 5)
 		.build()
 		.execute_with(|| {
-			assert_eq!(Authorship::author(), 1337);
 			let inflation = StakePallet::inflation_config();
 			let total_issuance = <Test as Config>::Currency::total_issuance();
 			assert_eq!(total_issuance, 160_000_000 * DECIMALS);
