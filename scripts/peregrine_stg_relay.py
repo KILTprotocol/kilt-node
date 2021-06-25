@@ -64,6 +64,7 @@ def update_spec(input: typing.Dict):
             }
         ]
     ]
+    input["genesis"]["runtime"]["sudo"]["key"] = acc_alice
     input["genesis"]["runtime"]["staking"].update({
         "validatorCount": 3,
         "stakers": [
