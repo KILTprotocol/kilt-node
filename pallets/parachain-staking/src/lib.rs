@@ -1985,7 +1985,7 @@ pub mod pallet {
 			let mut collator_stake = BalanceOf::<T>::zero();
 			let mut delegator_stake = BalanceOf::<T>::zero();
 
-			let mut collators = Self::get_collator_list(top_n);
+			let collators = Self::get_collator_list(top_n);
 
 			// Snapshot exposure for round for weighting reward distribution
 			for account in collators.iter() {
@@ -2005,7 +2005,6 @@ pub mod pallet {
 					amount_delegators,
 				));
 			}
-			collators.sort();
 
 			<Total<T>>::mutate(|total| {
 				total.collators = collator_stake;
@@ -2038,24 +2037,44 @@ pub mod pallet {
 				.map(|x| x.owner)
 				.collect::<Vec<T::AccountId>>();
 
+			// should never fail
+			let top_n = top_n.try_into().unwrap_or(usize::MAX);
+
 			// check whether we wanted to replace a collator with a candidate which has
 			// equal stake, and if so, revert the swap
 			//
-			// NOTE: Can only occur if we have filled all top_n slots
-			if collators.len().try_into().unwrap_or(u32::MAX) == top_n {
+			// NOTE: Can only occur if we have filled all top_n slots and have a bigger pool
+			// than the number of collators
+			if collators.len() < candidates.len() {
 				// we expect all of the following unwraps to be some
-				if let Some(collator_with_least_stake) = <SelectedCandidates<T>>::get().last() {
-					if let Some(state) = <CollatorState<T>>::get(&collator_with_least_stake) {
-						if let Some(last_collator) = candidates.get(collators.len().saturating_sub(1)) {
-							// check whether current last collator has same stake as their replacement
-							if last_collator.amount == state.total {
-								collators.pop();
-								collators.push(state.id);
+				if let Some(old_last_collator_id) = <SelectedCandidates<T>>::get().last() {
+					if let Some(old_last_collator) = <CollatorState<T>>::get(&old_last_collator_id) {
+						if let Some(new_last_collator) = candidates.get(top_n.saturating_sub(1)) {
+							// only need to potentially revert the swap if the new collator with least total
+							// stake was not in the selected candidates before
+							if <SelectedCandidates<T>>::get()
+								.iter()
+								.find(|id| *id == &new_last_collator.owner)
+								.is_none()
+							{
+								// check whether current last collator has same stake as their replacement
+								if new_last_collator.amount == old_last_collator.total
+									&& collators.iter().find(|id| *id == &old_last_collator.id).is_none()
+								{
+									log::trace!(
+										"Prioritizing former collator {:?} over candidate {:?} with same stake",
+										old_last_collator.id,
+										new_last_collator.owner
+									);
+									collators.pop();
+									collators.push(old_last_collator.id);
+								}
 							}
 						}
 					}
 				}
 			}
+
 			collators
 		}
 
@@ -2449,7 +2468,6 @@ pub mod pallet {
 				let c_staking_rate = Perquintill::from_rational(total_collators, total_issuance);
 				let d_staking_rate = Perquintill::from_rational(total_delegators, total_issuance);
 				let inflation_config = <InflationConfig<T>>::get();
-				// FIXME: Get number of collators from session pallet
 				let authors = pallet_session::Pallet::<T>::validators();
 				let authors_per_round =
 					<BalanceOf<T>>::from(authors.len().try_into().unwrap_or(<MaxSelectedCandidates<T>>::get()));

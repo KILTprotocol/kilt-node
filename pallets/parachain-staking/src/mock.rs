@@ -290,11 +290,10 @@ impl ExtBuilder {
 		let session_keys: Vec<_> = self
 			.collators
 			.iter()
-			.enumerate()
-			.map(|(i, (k, _))| {
+			.map(|(k, _)| {
 				(
-					i as u64,
-					i as u64,
+					*k,
+					*k,
 					MockSessionKeys {
 						aura: UintAuthorityId(*k).to_public_key(),
 					},
@@ -302,7 +301,7 @@ impl ExtBuilder {
 			})
 			.collect();
 
-		// NOTE: this will initialize the babe authorities
+		// NOTE: this will initialize the aura authorities
 		// through OneSessionHandler::on_genesis_session
 		pallet_session::GenesisConfig::<Test> { keys: session_keys }
 			.assimilate_storage(&mut t)

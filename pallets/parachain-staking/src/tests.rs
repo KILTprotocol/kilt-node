@@ -29,8 +29,8 @@ use kilt_primitives::constants::YEARS;
 
 use crate::{
 	mock::{
-		almost_equal, events, last_event, roll_to, AccountId, Authorship, Balance, Balances, BlockNumber,
-		Event as MetaEvent, ExtBuilder, Origin, StakePallet, System, Test, BLOCKS_PER_ROUND, DECIMALS,
+		almost_equal, events, last_event, roll_to, AccountId, Balance, Balances, BlockNumber, Event as MetaEvent,
+		ExtBuilder, Origin, StakePallet, System, Test, BLOCKS_PER_ROUND, DECIMALS,
 	},
 	set::OrderedSet,
 	types::{BalanceOf, Collator, CollatorStatus, Delegator, RoundInfo, Stake, TotalStake},
@@ -597,7 +597,7 @@ fn execute_leave_candidates_with_delay() {
 					delegators: 500,
 				}
 			);
-			assert_eq!(StakePallet::selected_candidates(), vec![1, 2, 8, 9, 10]);
+			assert_eq!(StakePallet::selected_candidates(), vec![2, 1, 10, 9, 8]);
 			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(10)));
 			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(9)));
 			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(1)));
@@ -606,7 +606,7 @@ fn execute_leave_candidates_with_delay() {
 			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(5)));
 			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(8)));
 			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(2)));
-			assert_eq!(StakePallet::selected_candidates(), vec![3, 4]);
+			assert_eq!(StakePallet::selected_candidates(), vec![4, 3]);
 			for owner in vec![1, 2, 5, 6, 7, 8, 9, 10].iter() {
 				assert!(StakePallet::collator_state(owner)
 					.unwrap()
@@ -693,7 +693,7 @@ fn execute_leave_candidates_with_delay() {
 			// exits cannot be executed yet but in the next round
 			roll_to(10, vec![]);
 			assert_eq!(StakePallet::total(), old_stake);
-			assert_eq!(StakePallet::selected_candidates(), vec![3, 4]);
+			assert_eq!(StakePallet::selected_candidates(), vec![4, 3]);
 			for owner in vec![1, 2, 5, 6, 7, 8, 9, 10].iter() {
 				assert!(StakePallet::collator_state(owner)
 					.unwrap()
@@ -780,7 +780,7 @@ fn execute_leave_candidates_with_delay() {
 			// execute first five exits are executed
 			roll_to(15, vec![]);
 			assert_eq!(StakePallet::total(), old_stake);
-			assert_eq!(StakePallet::selected_candidates(), vec![3, 4]);
+			assert_eq!(StakePallet::selected_candidates(), vec![4, 3]);
 			for collator in vec![1u64, 2u64, 5u64, 6u64, 7u64].iter() {
 				assert_ok!(StakePallet::execute_leave_candidates(
 					Origin::signed(*collator),
@@ -2438,7 +2438,7 @@ fn candidate_leaves() {
 					.unwrap()
 					.amount
 			);
-			assert_eq!(StakePallet::selected_candidates(), vec![1, 10]);
+			assert_eq!(StakePallet::selected_candidates(), vec![1, 2]);
 
 			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(1)));
 
