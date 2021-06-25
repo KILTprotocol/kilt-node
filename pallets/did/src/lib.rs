@@ -126,7 +126,7 @@ pub mod pallet {
 		/// \[transaction signer, DID identifier\]
 		DidDeleted(AccountIdentifierOf<T>, DidIdentifierOf<T>),
 		/// A DID-authorized call has been executed.
-		/// \[DID caller, dispatch result]
+		/// \[DID caller, dispatch result\]
 		DidCallDispatched(DidIdentifierOf<T>, DispatchResult),
 	}
 
