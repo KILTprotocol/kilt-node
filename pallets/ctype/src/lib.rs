@@ -92,7 +92,7 @@ pub mod pallet {
 		/// * origin: the identifier of the CTYPE creator
 		/// * hash: the CTYPE hash. It has to be unique.
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::add())]
-		pub fn add(origin: OriginFor<T>, hash: CtypeHashOf<T>) -> DispatchResultWithPostInfo {
+		pub fn add(origin: OriginFor<T>, hash: CtypeHashOf<T>) -> DispatchResult {
 			let creator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
 			ensure!(!<Ctypes<T>>::contains_key(&hash), Error::<T>::CTypeAlreadyExists);
@@ -102,7 +102,7 @@ pub mod pallet {
 
 			Self::deposit_event(Event::CTypeCreated(creator, hash));
 
-			Ok(None.into())
+			Ok(())
 		}
 	}
 }

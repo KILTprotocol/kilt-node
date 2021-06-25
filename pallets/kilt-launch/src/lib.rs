@@ -200,65 +200,73 @@ pub mod pallet {
 			// * who - Account which we are setting the custom lock for
 			// * length - Number of blocks from  until removal of the lock
 			// * locked - Number of tokens which are locked
-			for (ref who, length, locked) in self.balance_locks.iter().filter(|(_, length, _)| !length.is_zero()) {
-				let balance = <pallet_balances::Pallet<T>>::free_balance(who);
-				assert!(!balance.is_zero(), "Currencies must be init'd before locking");
-				assert!(
-					balance >= *locked,
-					"Locked balance must not exceed total balance for address {:?}",
-					who.to_string()
-				);
-				assert!(
-					!<BalanceLocks<T>>::contains_key(who),
-					"Account with address {:?} must not occur twice in locking",
-					who.to_string()
-				);
+			for (ref who, length, locked) in self.balance_locks.iter() {
+				if !length.is_zero() {
+					let balance = <pallet_balances::Pallet<T>>::free_balance(who);
+					assert!(!balance.is_zero(), "Currencies must be init'd before locking");
+					assert!(
+						balance >= *locked,
+						"Locked balance must not exceed total balance for address {:?}",
+						who.to_string()
+					);
+					assert!(
+						!<BalanceLocks<T>>::contains_key(who),
+						"Account with address {:?} must not occur twice in locking",
+						who.to_string()
+					);
 
-				// Add unlock block to storage
-				<BalanceLocks<T>>::insert(
-					who,
-					LockedBalance::<T> {
-						block: *length,
-						amount: (*locked).saturating_sub(T::UsableBalance::get()),
-					},
-				);
-				// Instead of setting the lock now, we do so in
-				// `migrate_genesis_account`, see there for explanation
+					// Add unlock block to storage
+					<BalanceLocks<T>>::insert(
+						who,
+						LockedBalance::<T> {
+							block: *length,
+							amount: (*locked).saturating_sub(T::UsableBalance::get()),
+						},
+					);
+					// Instead of setting the lock now, we do so in
+					// `migrate_genesis_account`, see there for explanation
+				}
+				// Add all accounts to UnownedAccount storage
+				<UnownedAccount<T>>::insert(&who, ());
 			}
 
 			// Generate initial vesting configuration, taken from pallet_vesting
 			// * who - Account which we are generating vesting configuration for
 			// * begin - Block when the account will start to vest
 			// * length - Number of blocks from `begin` until fully vested
-			for &(ref who, length, locked) in self.vesting.iter().filter(|(_, length, _)| !length.is_zero()) {
-				let balance = <<T as pallet_vesting::Config>::Currency as Currency<
-					<T as frame_system::Config>::AccountId,
-				>>::free_balance(who);
-				assert!(!balance.is_zero(), "Currencies must be init'd before vesting");
-				assert!(
-					balance >= locked,
-					"Vested balance must not exceed total balance for address {:?}",
-					who.to_string()
-				);
-				assert!(
-					!<Vesting<T>>::contains_key(who),
-					"Account with address {:?} must not occur twice in vesting",
-					who.to_string()
-				);
+			for &(ref who, length, locked) in self.vesting.iter() {
+				if !length.is_zero() {
+					let balance = <<T as pallet_vesting::Config>::Currency as Currency<
+						<T as frame_system::Config>::AccountId,
+					>>::free_balance(who);
+					assert!(!balance.is_zero(), "Currencies must be init'd before vesting");
+					assert!(
+						balance >= locked,
+						"Vested balance must not exceed total balance for address {:?}",
+						who.to_string()
+					);
+					assert!(
+						!<Vesting<T>>::contains_key(who),
+						"Account with address {:?} must not occur twice in vesting",
+						who.to_string()
+					);
 
-				let length_as_balance = T::BlockNumberToBalance::convert(length);
-				let per_block = locked.checked_div(&length_as_balance).unwrap_or(locked);
+					let length_as_balance = T::BlockNumberToBalance::convert(length);
+					let per_block = locked.checked_div(&length_as_balance).unwrap_or(locked);
 
-				Vesting::<T>::insert(
-					who,
-					VestingInfo::<BalanceOf<T>, T::BlockNumber> {
-						locked,
-						per_block,
-						starting_block: T::BlockNumber::zero(),
-					},
-				);
-				// Instead of setting the lock now, we do so in
-				// `migrate_genesis_account`, see there for explanation
+					Vesting::<T>::insert(
+						who,
+						VestingInfo::<BalanceOf<T>, T::BlockNumber> {
+							locked,
+							per_block,
+							starting_block: T::BlockNumber::zero(),
+						},
+					);
+					// Instead of setting the lock now, we do so in
+					// `migrate_genesis_account`, see there for explanation
+				}
+				// Add all accounts to UnownedAccount storage
+				<UnownedAccount<T>>::insert(&who, ());
 			}
 
 			// Set the transfer account which has a subset of the powers of root
@@ -294,6 +302,15 @@ pub mod pallet {
 	#[pallet::getter(fn get_unlocking_block)]
 	pub type BalanceLocks<T> =
 		StorageMap<_, Blake2_128Concat, <T as frame_system::Config>::AccountId, LockedBalance<T>>;
+
+	/// Maps an unowned account id to an empty value which reflects whether it
+	/// is a genesis account which should be migrated, if it exists.
+	///
+	/// Required for the claiming process.
+	#[pallet::storage]
+	#[pallet::getter(fn unowned_account)]
+	pub type UnownedAccount<T> =
+		StorageMap<_, Blake2_128Concat, <T as frame_system::Config>::AccountId, (), OptionQuery>;
 
 	#[pallet::event]
 	#[pallet::metadata(T::BlockNumber = "BlockNumber", T::AccountId = "AccountId", T::Balance = "Balance")]
@@ -334,6 +351,9 @@ pub mod pallet {
 		/// The source address has less locked balance than the amount which
 		/// should be transferred in `locked_transfer`.
 		InsufficientLockedBalance,
+		/// The source address is not a valid address which was set up as an
+		/// unowned account in the genesis build.
+		NotUnownedAccount,
 		/// The target address should not be the source address.
 		SameDestination,
 		/// The signing account is not the transfer account.
@@ -391,13 +411,13 @@ pub mod pallet {
 		pub fn change_transfer_account(
 			origin: OriginFor<T>,
 			transfer_account: <T::Lookup as StaticLookup>::Source,
-		) -> DispatchResultWithPostInfo {
+		) -> DispatchResult {
 			ensure_root(origin)?;
 			let transfer_account = T::Lookup::lookup(transfer_account)?;
 
 			<TransferAccount<T>>::put(transfer_account);
 
-			Ok(None.into())
+			Ok(())
 		}
 
 		/// Transfer tokens and vesting information or the KILT balance lock
@@ -431,11 +451,11 @@ pub mod pallet {
 		/// Weight: O(1)
 		/// - Reads: [Origin Account], TransferAccount, Locks, Balance, Vesting,
 		///   BalanceLocks
-		/// - Writes: Locks, Balance, Vesting (if source is vesting),
-		///   BalanceLocks (if source is locking), UnlockingAt (if source is
-		///   locking)
-		/// - Kills (for source): Locks, Balance, Vesting (if source is
-		///   vesting), BalanceLocks (if source is locking)
+		/// - Writes: Locks, Balance, UnownedAccount, Vesting (if source is
+		///   vesting), BalanceLocks (if source is locking), UnlockingAt (if
+		///   source is locking)
+		/// - Kills (for source): Locks, Balance, UnownedAccount, Vesting (if
+		///   source is vesting), BalanceLocks (if source is locking)
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::migrate_genesis_account_vesting().max(<T as pallet::Config>::WeightInfo::migrate_genesis_account_locking()))]
 		#[transactional]
@@ -453,6 +473,10 @@ pub mod pallet {
 			let target = T::Lookup::lookup(target)?;
 
 			ensure!(source != target, Error::<T>::SameDestination);
+			ensure!(
+				<UnownedAccount<T>>::contains_key(&source),
+				Error::<T>::NotUnownedAccount
+			);
 
 			Ok(Some(Self::migrate_user(&source, &target)?).into())
 		}
@@ -473,13 +497,13 @@ pub mod pallet {
 		///   (MaxClaims)
 		/// ---------
 		/// Weight: O(N) where N is the number of source addresses.
-		/// - Reads: [Origin Account], TransferAccount, Locks, Balance, Vesting,
-		///   BalanceLocks
+		/// - Reads: [Origin Account], TransferAccount, UnownedAccount, Locks,
+		///   Balance, Vesting, BalanceLocks
 		/// - Writes: Locks, Balance, Vesting (if any source is vesting),
 		///   BalanceLocks (if aby source is locking), UnlockingAt (if any
 		///   source is locking)
-		/// - Kills (for sources): Locks, Balance, Vesting (if any source is
-		///   vesting), BalanceLocks (if any source is locking)
+		/// - Kills (for sources): Locks, Balance, UnownedAccount, Vesting (if
+		///   any source is vesting), BalanceLocks (if any source is locking)
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::migrate_multiple_genesis_accounts_vesting(T::MaxClaims::get()).max(<T as pallet::Config>::WeightInfo::migrate_multiple_genesis_accounts_locking(T::MaxClaims::get())))]
 		#[transactional]
@@ -503,6 +527,10 @@ pub mod pallet {
 			for s in sources.clone().into_iter() {
 				let source = T::Lookup::lookup(s)?;
 				ensure!(source != target, Error::<T>::SameDestination);
+				ensure!(
+					<UnownedAccount<T>>::contains_key(&source),
+					Error::<T>::NotUnownedAccount
+				);
 				post_weight += Self::migrate_user(&source, &target)?;
 			}
 
@@ -633,6 +661,9 @@ pub mod pallet {
 
 			// Set the KILT custom lock if necessary
 			post_weight += Self::migrate_kilt_balance_lock(source, target, None)?;
+
+			<UnownedAccount<T>>::remove(&source);
+			post_weight += T::DbWeight::get().writes(1);
 
 			Ok(post_weight)
 		}

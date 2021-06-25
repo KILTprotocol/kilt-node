@@ -1782,11 +1782,11 @@ pub mod pallet {
 			.into())
 		}
 
-		/// Withdraw all previously staked funds that are now available for
-		/// unlockal by the origin account after `StakeDuration` blocks have
+		/// Unlock all previously staked funds that are now available for
+		/// unlocking by the origin account after `StakeDuration` blocks have
 		/// elapsed.
 		///
-		/// Weight: O(U) where U the the number non-unlocked unstaking requests
+		/// Weight: O(U) where U is the number locked unstaking requests
 		/// bounded by `MaxUnstakeRequests`.
 		/// - Reads: [Origin Account], Unstaking, Locks
 		/// - Writes: Unstaking, Locks
@@ -1961,7 +1961,7 @@ pub mod pallet {
 		/// Select the top `MaxSelectedCandidates` many collators in terms of
 		/// cumulated stake (self + from delegators) from the CandidatePool to
 		/// become block authors for the next round. The number of candidates
-		/// selected can be `n` or lower in case that are less candidates
+		/// selected can be `n` or lower in case there are less candidates
 		/// available.
 		///
 		/// We do not want to execute this function in `on_initialize` or
@@ -2137,7 +2137,7 @@ pub mod pallet {
 		/// amount and updates `Unstaking` storage accordingly.
 		///
 		/// # <weight>
-		/// Weight: O(U) where U the the number non-unlocked unstaking requests
+		/// Weight: O(U) where U is the number locked unstaking requests
 		/// bounded by `MaxUnstakeRequests`.
 		/// - Reads: Unstaking, Locks
 		/// - Writes: Unstaking, Locks
@@ -2290,7 +2290,7 @@ pub mod pallet {
 		/// `StakeDuration` blocks ago.
 		///
 		/// # <weight>
-		/// Weight: O(U) where U is the number of non-unlocked unstaking
+		/// Weight: O(U) where U is the number of locked unstaking
 		/// requests bounded by `MaxUnstakeRequests`.
 		/// - Reads: Unstaking, Locks
 		/// - Writes: Unstaking, Locks

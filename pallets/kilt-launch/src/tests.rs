@@ -16,7 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::{mock::*, BalanceLocks, Error, LockedBalance, TransferAccount, UnlockingAt, KILT_LAUNCH_ID, VESTING_ID};
+use crate::{
+	mock::*, BalanceLocks, Error, LockedBalance, TransferAccount, UnlockingAt, UnownedAccount, KILT_LAUNCH_ID,
+	VESTING_ID,
+};
+
 use frame_support::{
 	assert_noop, assert_ok,
 	traits::{Currency, LockableCurrency, OnInitialize, WithdrawReasons},
@@ -25,6 +29,7 @@ use kilt_primitives::{AccountId, BlockNumber};
 use pallet_balances::{BalanceLock, Locks, Reasons};
 #[allow(unused_imports)]
 use pallet_vesting::{Call::vest, Vesting as VestingStorage, VestingInfo};
+use sp_runtime::traits::Zero;
 
 #[test]
 fn check_build_genesis_config() {
@@ -80,14 +85,43 @@ fn check_build_genesis_config() {
 			};
 			assert_eq!(BalanceLocks::<Test>::get(&PSEUDO_1), Some(pseudo_1_lock));
 			assert_eq!(BalanceLocks::<Test>::get(&PSEUDO_2), Some(pseudo_2_lock));
-			assert_eq!(BalanceLocks::<Test>::get(&PSEUDO_3), None);
-			assert_eq!(UnlockingAt::<Test>::get(100), None);
-			assert_eq!(UnlockingAt::<Test>::get(1337), None);
+			assert!(BalanceLocks::<Test>::get(&PSEUDO_3).is_none());
+			assert!(UnlockingAt::<Test>::get(100).is_none());
+			assert!(UnlockingAt::<Test>::get(1337).is_none());
 
 			// Ensure there are no locks on pseudo accounts
-			assert_eq!(Locks::<Test>::get(&PSEUDO_1).len(), 0);
-			assert_eq!(Locks::<Test>::get(&PSEUDO_2).len(), 0);
-			assert_eq!(Locks::<Test>::get(&PSEUDO_3).len(), 0);
+			assert!(Locks::<Test>::get(&PSEUDO_1).len().is_zero());
+			assert!(Locks::<Test>::get(&PSEUDO_2).len().is_zero());
+			assert!(Locks::<Test>::get(&PSEUDO_3).len().is_zero());
+
+			// Ensure all pseudo accounts are unowned accounts
+			assert!(UnownedAccount::<Test>::get(&PSEUDO_1).is_some());
+			assert!(UnownedAccount::<Test>::get(&PSEUDO_2).is_some());
+			assert!(UnownedAccount::<Test>::get(&PSEUDO_3).is_some());
+		});
+
+	// check only vesting
+	ExtBuilder::default().pseudos_vest_all().build().execute_with(|| {
+		assert!(UnownedAccount::<Test>::get(&PSEUDO_1).is_some());
+		assert!(UnownedAccount::<Test>::get(&PSEUDO_2).is_some());
+		assert!(UnownedAccount::<Test>::get(&PSEUDO_3).is_some());
+	});
+
+	// check only locks
+	ExtBuilder::default().pseudos_lock_all().build().execute_with(|| {
+		assert!(UnownedAccount::<Test>::get(&PSEUDO_1).is_some());
+		assert!(UnownedAccount::<Test>::get(&PSEUDO_2).is_some());
+		assert!(UnownedAccount::<Test>::get(&PSEUDO_3).is_some());
+	});
+
+	// check lengths of 0
+	ExtBuilder::default()
+		.vest(vec![(PSEUDO_1, 0, 100)])
+		.lock_balance(vec![(PSEUDO_2, 0, 100)])
+		.build()
+		.execute_with(|| {
+			assert!(UnownedAccount::<Test>::get(&PSEUDO_1).is_some());
+			assert!(UnownedAccount::<Test>::get(&PSEUDO_2).is_some());
 		});
 }
 
@@ -97,6 +131,10 @@ fn check_migrate_single_account_locked() {
 		assert_noop!(
 			KiltLaunch::migrate_genesis_account(Origin::signed(TRANSFER_ACCOUNT), PSEUDO_1, PSEUDO_1),
 			Error::<Test>::SameDestination
+		);
+		assert_noop!(
+			KiltLaunch::migrate_genesis_account(Origin::signed(TRANSFER_ACCOUNT), USER, PSEUDO_1),
+			Error::<Test>::NotUnownedAccount
 		);
 
 		let user_locked_info = LockedBalance {
@@ -109,8 +147,8 @@ fn check_migrate_single_account_locked() {
 		// Reach balance lock limit
 		System::set_block_number(100);
 		<KiltLaunch as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
-		assert_eq!(UnlockingAt::<Test>::get(100), None);
-		assert_eq!(Locks::<Test>::get(&USER).len(), 0);
+		assert!(UnlockingAt::<Test>::get(100).is_none());
+		assert!(Locks::<Test>::get(&USER).len().is_zero());
 
 		// Should be able to transfer all tokens but ExistentialDeposit
 		assert_ok!(Balances::transfer(
@@ -134,8 +172,8 @@ fn check_migrate_single_locked_account_after_unlock_block() {
 		// Migration of balance locks
 		ensure_single_migration_works(&PSEUDO_1, &USER, None, Some((user_locked_info, 0)));
 
-		assert_eq!(UnlockingAt::<Test>::get(100), None);
-		assert_eq!(Locks::<Test>::get(&USER).len(), 0);
+		assert!(UnlockingAt::<Test>::get(100).is_none());
+		assert!(Locks::<Test>::get(&USER).len().is_zero());
 
 		// Should be able to transfer all tokens but ExistentialDeposit
 		assert_ok!(Balances::transfer(
@@ -175,8 +213,8 @@ fn check_migrate_single_account_locked_twice() {
 		// Reach balance lock limit
 		System::set_block_number(100);
 		<KiltLaunch as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
-		assert_eq!(UnlockingAt::<Test>::get(100), None);
-		assert_eq!(Locks::<Test>::get(&USER).len(), 0);
+		assert!(UnlockingAt::<Test>::get(100).is_none());
+		assert!(Locks::<Test>::get(&USER).len().is_zero());
 
 		// Should be able to transfer all tokens but ExistentialDeposit
 		assert_ok!(Balances::transfer(
@@ -241,8 +279,8 @@ fn check_migrate_accounts_locked() {
 		// Reach balance lock limit
 		System::set_block_number(100);
 		<KiltLaunch as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
-		assert_eq!(UnlockingAt::<Test>::get(100), None);
-		assert_eq!(Locks::<Test>::get(&USER).len(), 0);
+		assert!(UnlockingAt::<Test>::get(100).is_none());
+		assert!(Locks::<Test>::get(&USER).len().is_zero());
 		assert_balance(
 			USER,
 			locked_info.amount + 2 * <Test as crate::Config>::UsableBalance::get(),
@@ -330,7 +368,7 @@ fn check_locked_transfer() {
 					reasons: Reasons::All,
 				}]
 			);
-			assert_eq!(BalanceLocks::<Test>::get(&USER), None);
+			assert!(BalanceLocks::<Test>::get(&USER).is_none());
 			assert_eq!(BalanceLocks::<Test>::get(&PSEUDO_1), Some(locked_info.clone()));
 			assert_eq!(UnlockingAt::<Test>::get(100), Some(vec![PSEUDO_1]));
 			assert_balance(PSEUDO_1, locked_info.amount, 0, 0, false);
@@ -338,8 +376,8 @@ fn check_locked_transfer() {
 			// Reach balance lock limit
 			System::set_block_number(100);
 			<KiltLaunch as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
-			assert_eq!(UnlockingAt::<Test>::get(100), None);
-			assert_eq!(Locks::<Test>::get(&PSEUDO_1).len(), 0);
+			assert!(UnlockingAt::<Test>::get(100).is_none());
+			assert!(Locks::<Test>::get(&PSEUDO_1).len().is_zero());
 			assert_balance(PSEUDO_1, locked_info.amount, locked_info.amount, locked_info.amount, true);
 		});
 }
@@ -350,6 +388,10 @@ fn check_migrate_single_account_vested() {
 		assert_noop!(
 			KiltLaunch::migrate_genesis_account(Origin::signed(TRANSFER_ACCOUNT), PSEUDO_1, PSEUDO_1),
 			Error::<Test>::SameDestination
+		);
+		assert_noop!(
+			KiltLaunch::migrate_genesis_account(Origin::signed(TRANSFER_ACCOUNT), USER, PSEUDO_1),
+			Error::<Test>::NotUnownedAccount
 		);
 
 		let user_vesting_schedule = VestingInfo {
@@ -365,8 +407,8 @@ fn check_migrate_single_account_vested() {
 		System::set_block_number(10);
 
 		assert_ok!(Vesting::vest(Origin::signed(USER)));
-		assert_eq!(Vesting::vesting(&USER), None);
-		assert_eq!(Locks::<Test>::get(&USER).len(), 0);
+		assert!(Vesting::vesting(&USER).is_none());
+		assert!(Locks::<Test>::get(&USER).len().is_zero());
 		// Should be able to transfer the remaining tokens
 		assert_ok!(Balances::transfer(
 			Origin::signed(USER),
@@ -412,8 +454,8 @@ fn check_migrate_single_account_twice_vested() {
 		// Reach second vesting limit
 		System::set_block_number(20);
 		assert_ok!(Vesting::vest(Origin::signed(USER)));
-		assert_eq!(Vesting::vesting(&USER), None);
-		assert_eq!(Locks::<Test>::get(&USER).len(), 0);
+		assert!(Vesting::vesting(&USER).is_none());
+		assert!(Locks::<Test>::get(&USER).len().is_zero());
 		// Should be able to transfer the remaining tokens
 		assert_balance(
 			USER,
@@ -436,6 +478,15 @@ fn check_migrate_accounts_vested() {
 			),
 			Error::<Test>::Unauthorized
 		);
+		assert_noop!(
+			KiltLaunch::migrate_multiple_genesis_accounts(
+				Origin::signed(TRANSFER_ACCOUNT),
+				vec![PSEUDO_1, USER],
+				PSEUDO_2
+			),
+			Error::<Test>::NotUnownedAccount
+		);
+
 		assert_ok!(KiltLaunch::migrate_multiple_genesis_accounts(
 			Origin::signed(TRANSFER_ACCOUNT),
 			vec![PSEUDO_1, PSEUDO_2, PSEUDO_3],
@@ -498,8 +549,8 @@ fn check_migrate_accounts_vested() {
 		}
 		System::set_block_number(30);
 		assert_ok!(Vesting::vest(Origin::signed(USER)));
-		assert_eq!(Vesting::vesting(&USER), None);
-		assert_eq!(Locks::<Test>::get(&USER).len(), 0);
+		assert!(Vesting::vesting(&USER).is_none());
+		assert!(Locks::<Test>::get(&USER).len().is_zero());
 	});
 }
 
@@ -529,6 +580,15 @@ fn check_negative_migrate_accounts_vested() {
 			starting_block: 1,
 		};
 		VestingStorage::<Test>::insert(PSEUDO_4, pseudo_4_vesting);
+		assert_noop!(
+			KiltLaunch::migrate_multiple_genesis_accounts(
+				Origin::signed(TRANSFER_ACCOUNT),
+				vec![PSEUDO_1, PSEUDO_4],
+				USER
+			),
+			Error::<Test>::NotUnownedAccount
+		);
+		UnownedAccount::<Test>::insert(PSEUDO_4, ());
 		assert_noop!(
 			KiltLaunch::migrate_multiple_genesis_accounts(
 				Origin::signed(TRANSFER_ACCOUNT),
@@ -590,8 +650,8 @@ fn check_force_unlock() {
 		ensure_single_migration_works(&PSEUDO_1, &USER, None, Some((user_locked_info, 0)));
 
 		assert_ok!(KiltLaunch::force_unlock(Origin::root(), 100));
-		assert_eq!(BalanceLocks::<Test>::get(&USER), None);
-		assert_eq!(Locks::<Test>::get(&USER).len(), 0);
+		assert!(BalanceLocks::<Test>::get(&USER).is_none());
+		assert!(Locks::<Test>::get(&USER).len().is_zero());
 		assert_eq!(Balances::usable_balance(&USER), 10_000);
 	});
 }

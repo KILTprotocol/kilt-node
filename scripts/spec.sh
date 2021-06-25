@@ -10,8 +10,8 @@ mkdir -p $TMP_DIR
 cargo build --release -p kilt-parachain
 cp target/release/kilt-parachain $TMP_DIR/kilt-parachain
 
-cargo build --release -p kilt-parachain --features fast-gov
-cp target/release/kilt-parachain $TMP_DIR/kilt-parachain-fast-gov
+# cargo build --release -p kilt-parachain --features fast-gov
+# cp target/release/kilt-parachain $TMP_DIR/kilt-parachain-fast-gov
 
 RELAY_CHAIN_IMG=parity/polkadot:v0.9.5
 RELAY_BINARY="/usr/bin/polkadot"
@@ -30,28 +30,49 @@ PEREGRINE_JQ=$TMP_DIR"peregrine-kilt.json"
 PEREGRINE_OUTPUT=dev-specs/kilt-parachain/peregrine-kilt.json
 
 docker run --entrypoint $RELAY_BINARY $RELAY_CHAIN_IMG build-spec --chain rococo-local --disable-default-bootnode >$RELAY_PEREGRINE_PLAIN
-$TMP_DIR/kilt-parachain build-spec --runtime spiritnet --chain spiritnet-dev --disable-default-bootnode >$PEREGRINE_PLAIN
+$TMP_DIR/kilt-parachain build-spec --runtime peregrine --chain dev --disable-default-bootnode >$PEREGRINE_PLAIN
 
 python3 scripts/peregrine_relay.py $RELAY_PEREGRINE_PLAIN $RELAY_PEREGRINE
 python3 scripts/peregrine_kilt.py $PEREGRINE_PLAIN $PEREGRINE_JQ
 
 docker run --entrypoint $RELAY_BINARY -v $(dirname $RELAY_PEREGRINE):/data/spec $RELAY_CHAIN_IMG build-spec --chain /data/spec/$(basename -- "$RELAY_PEREGRINE") --raw --disable-default-bootnode >$RELAY_PEREGRINE_OUT
-$TMP_DIR/kilt-parachain build-spec --runtime spiritnet --chain $PEREGRINE_JQ --disable-default-bootnode --raw >$PEREGRINE_OUTPUT
+$TMP_DIR/kilt-parachain build-spec --runtime peregrine --chain $PEREGRINE_JQ --disable-default-bootnode --raw >$PEREGRINE_OUTPUT
 
 # ##############################################################################
 # #                                                                            #
-# #                         PEREGRINE Mashnet Fast-Gov                         #
+# #                              PEREGRINE-STG                                 #
 # #                                                                            #
 # ##############################################################################
-PEREGRINE_FG_PLAIN=$TMP_DIR"peregrine-kilt-fast-gov.plain.spec"
-PEREGRINE_FG_JQ=$TMP_DIR"peregrine-kilt-fast-gov.json"
-PEREGRINE_FG_OUTPUT=dev-specs/kilt-parachain/peregrine-kilt-fast-gov.json
+RELAY_PEREGRINE_STG_PLAIN=$TMP_DIR"westend.plain.json"
+RELAY_PEREGRINE_STG=$TMP_DIR"westend.json"
+RELAY_PEREGRINE_STG_OUT=dev-specs/kilt-parachain/peregrine-stg-relay.json
 
-$TMP_DIR/kilt-parachain-fast-gov build-spec --runtime mashnet --chain dev --disable-default-bootnode >$PEREGRINE_FG_PLAIN
+PEREGRINE_STG_PLAIN=$TMP_DIR"peregrine-stg-kilt.plain.spec"
+PEREGRINE_STG_JQ=$TMP_DIR"peregrine-stg-kilt.json"
+PEREGRINE_STG_OUTPUT=dev-specs/kilt-parachain/peregrine-stg-kilt.json
 
-python3 scripts/peregrine_kilt.py $PEREGRINE_FG_PLAIN $PEREGRINE_FG_JQ
+docker run --entrypoint $RELAY_BINARY $RELAY_CHAIN_IMG build-spec --chain westend-local --disable-default-bootnode >$RELAY_PEREGRINE_STG_PLAIN
+python3 scripts/peregrine_stg_relay.py $RELAY_PEREGRINE_STG_PLAIN $RELAY_PEREGRINE_STG
+docker run --entrypoint $RELAY_BINARY -v $(dirname $RELAY_PEREGRINE_STG):/data/spec $RELAY_CHAIN_IMG build-spec --chain /data/spec/$(basename -- "$RELAY_PEREGRINE_STG") --raw --disable-default-bootnode >$RELAY_PEREGRINE_STG_OUT
 
-$TMP_DIR/kilt-parachain-fast-gov build-spec --runtime mashnet --chain $PEREGRINE_FG_JQ --disable-default-bootnode --raw >$PEREGRINE_FG_OUTPUT
+$TMP_DIR/kilt-parachain build-spec --runtime peregrine --chain dev --disable-default-bootnode >$PEREGRINE_STG_PLAIN
+python3 scripts/peregrine_stg_kilt.py $PEREGRINE_STG_PLAIN $PEREGRINE_STG_JQ
+$TMP_DIR/kilt-parachain build-spec --runtime peregrine --chain $PEREGRINE_STG_JQ --disable-default-bootnode --raw >$PEREGRINE_STG_OUTPUT
+
+# ##############################################################################
+# #                                                                            #
+# #                         PEREGRINE-DEV Fast-Gov                             #
+# #                                                                            #
+# ##############################################################################
+# PEREGRINE_FG_PLAIN=$TMP_DIR"peregrine-kilt-dev-fast-gov.plain.spec"
+# PEREGRINE_FG_JQ=$TMP_DIR"peregrine-kilt-dev-fast-gov.json"
+# PEREGRINE_FG_OUTPUT=dev-specs/kilt-parachain/peregrine-kilt-dev-fast-gov.json
+
+# $TMP_DIR/kilt-parachain-fast-gov build-spec --runtime peregrine --chain dev --disable-default-bootnode >$PEREGRINE_FG_PLAIN
+
+# python3 scripts/peregrine_kilt_dev.py $PEREGRINE_FG_PLAIN $PEREGRINE_FG_JQ
+
+# $TMP_DIR/kilt-parachain-fast-gov build-spec --runtime peregrine --chain $PEREGRINE_FG_JQ --disable-default-bootnode --raw >$PEREGRINE_FG_OUTPUT
 
 # ##############################################################################
 # #                                                                            #
