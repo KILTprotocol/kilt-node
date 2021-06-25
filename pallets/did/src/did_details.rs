@@ -40,35 +40,21 @@ pub enum DidVerificationKey {
 impl DidVerificationKey {
 	/// Verify a DID signature using one of the DID keys.
 	pub fn verify_signature(&self, payload: &Payload, signature: &DidSignature) -> Result<(), SignatureError> {
-		match self {
-			DidVerificationKey::Ed25519(public_key) => {
-				// Try to re-create a Signature value or throw an error if raw value is invalid
-				if let DidSignature::Ed25519(sig) = signature {
-					// Returns Ok(()) if the signature is correct, otherwise
-					// SignatureError::InvalidSignature
-					ensure!(sig.verify(payload, public_key), SignatureError::InvalidSignature);
-					Ok(())
-				} else {
-					Err(SignatureError::InvalidSignatureFormat)
-				}
+		match (self, signature) {
+			(DidVerificationKey::Ed25519(public_key), DidSignature::Ed25519(sig)) => {
+				ensure!(sig.verify(payload, public_key), SignatureError::InvalidSignature);
+				Ok(())
 			}
 			// Follows same process as above, but using a Sr25519 instead
-			DidVerificationKey::Sr25519(public_key) => {
-				if let DidSignature::Sr25519(sig) = signature {
-					ensure!(sig.verify(payload, public_key), SignatureError::InvalidSignature);
-					Ok(())
-				} else {
-					Err(SignatureError::InvalidSignatureFormat)
-				}
+			(DidVerificationKey::Sr25519(public_key), DidSignature::Sr25519(sig)) => {
+				ensure!(sig.verify(payload, public_key), SignatureError::InvalidSignature);
+				Ok(())
 			}
-			DidVerificationKey::Ecdsa(public_key) => {
-				if let DidSignature::Ecdsa(sig) = signature {
-					ensure!(sig.verify(payload, public_key), SignatureError::InvalidSignature);
-					Ok(())
-				} else {
-					Err(SignatureError::InvalidSignatureFormat)
-				}
+			(DidVerificationKey::Ecdsa(public_key), DidSignature::Ecdsa(sig)) => {
+				ensure!(sig.verify(payload, public_key), SignatureError::InvalidSignature);
+				Ok(())
 			}
+			_ => Err(SignatureError::InvalidSignatureFormat),
 		}
 	}
 }
