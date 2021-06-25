@@ -23,11 +23,12 @@ use codec::{Decode, Encode};
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::EnsureSigned;
-use sp_core::{ed25519, sr25519, Pair};
+use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
+	MultiSigner,
 };
 use sp_std::{collections::btree_set::BTreeSet, convert::TryInto, sync::Arc};
 
@@ -37,7 +38,7 @@ use crate::*;
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
 
-pub type TestDidIdentifier = kilt_primitives::DidIdentifier;
+pub type TestDidIdentifier = kilt_primitives::AccountId;
 pub type TestKeyId = did::KeyIdOf<Test>;
 pub type TestBlockNumber = kilt_primitives::BlockNumber;
 pub type TestCtypeOwner = TestDidIdentifier;
@@ -117,8 +118,6 @@ impl ctype::Config for Test {
 #[cfg(test)]
 pub(crate) const DEFAULT_ACCOUNT: kilt_primitives::AccountId = kilt_primitives::AccountId::new([0u8; 32]);
 
-pub const ALICE_DID: TestDidIdentifier = TestDidIdentifier::new([1u8; 32]);
-pub const BOB_DID: TestDidIdentifier = TestDidIdentifier::new([2u8; 32]);
 const DEFAULT_AUTH_SEED: [u8; 32] = [4u8; 32];
 const ALTERNATIVE_AUTH_SEED: [u8; 32] = [40u8; 32];
 const DEFAULT_ENC_SEED: [u8; 32] = [5u8; 32];
@@ -128,6 +127,18 @@ const ALTERNATIVE_ATT_SEED: [u8; 32] = [60u8; 32];
 const DEFAULT_DEL_SEED: [u8; 32] = [7u8; 32];
 const ALTERNATIVE_DEL_SEED: [u8; 32] = [70u8; 32];
 const DEFAULT_URL_SCHEME: [u8; 8] = *b"https://";
+
+pub fn get_did_identifier_from_ed25519_key(public_key: ed25519::Public) -> TestDidIdentifier {
+	MultiSigner::from(public_key).into_account()
+}
+
+pub fn get_did_identifier_from_sr25519_key(public_key: sr25519::Public) -> TestDidIdentifier {
+	MultiSigner::from(public_key).into_account()
+}
+
+pub fn get_did_identifier_from_ecdsa_key(public_key: ecdsa::Public) -> TestDidIdentifier {
+	MultiSigner::from(public_key).into_account()
+}
 
 pub fn get_ed25519_authentication_key(default: bool) -> ed25519::Pair {
 	if default {
@@ -142,6 +153,14 @@ pub fn get_sr25519_authentication_key(default: bool) -> sr25519::Pair {
 		sr25519::Pair::from_seed(&DEFAULT_AUTH_SEED)
 	} else {
 		sr25519::Pair::from_seed(&ALTERNATIVE_AUTH_SEED)
+	}
+}
+
+pub fn get_ecdsa_authentication_key(default: bool) -> ecdsa::Pair {
+	if default {
+		ecdsa::Pair::from_seed(&DEFAULT_AUTH_SEED)
+	} else {
+		ecdsa::Pair::from_seed(&ALTERNATIVE_AUTH_SEED)
 	}
 }
 
@@ -169,6 +188,14 @@ pub fn get_sr25519_attestation_key(default: bool) -> sr25519::Pair {
 	}
 }
 
+pub fn get_ecdsa_attestation_key(default: bool) -> ecdsa::Pair {
+	if default {
+		ecdsa::Pair::from_seed(&DEFAULT_ATT_SEED)
+	} else {
+		ecdsa::Pair::from_seed(&ALTERNATIVE_ATT_SEED)
+	}
+}
+
 pub fn get_ed25519_delegation_key(default: bool) -> ed25519::Pair {
 	if default {
 		ed25519::Pair::from_seed(&DEFAULT_DEL_SEED)
@@ -182,6 +209,14 @@ pub fn get_sr25519_delegation_key(default: bool) -> sr25519::Pair {
 		sr25519::Pair::from_seed(&DEFAULT_DEL_SEED)
 	} else {
 		sr25519::Pair::from_seed(&ALTERNATIVE_DEL_SEED)
+	}
+}
+
+pub fn get_ecdsa_delegation_key(default: bool) -> ecdsa::Pair {
+	if default {
+		ecdsa::Pair::from_seed(&DEFAULT_DEL_SEED)
+	} else {
+		ecdsa::Pair::from_seed(&ALTERNATIVE_DEL_SEED)
 	}
 }
 
@@ -224,13 +259,9 @@ pub fn get_url_endpoint(length: u32) -> Url {
 	)
 }
 
-pub fn generate_base_did_creation_operation(
-	did: TestDidIdentifier,
-	new_auth_key: did::DidVerificationKey,
-) -> did::DidCreationOperation<Test> {
+pub fn generate_base_did_creation_operation(did: TestDidIdentifier) -> did::DidCreationOperation<Test> {
 	DidCreationOperation {
 		did,
-		new_authentication_key: new_auth_key,
 		new_key_agreement_keys: BTreeSet::new(),
 		new_attestation_key: None,
 		new_delegation_key: None,

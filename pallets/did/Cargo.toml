@@ -22,7 +22,7 @@ serde = {version = "1.0.101"}
 [dependencies]
 # Internal dependencies
 ctype = {features = ["mock"], optional = true, path = "../ctype", version = "0.24.0"}
-kilt-primitives = {default-features = false, optional = true, path = "../../primitives"}
+kilt-primitives = {default-features = false, path = "../../primitives"}
 
 # External dependencies
 codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.0.0"}
@@ -32,9 +32,8 @@ frame-support = {branch = "polkadot-v0.9.5", default-features = false, git = "ht
 frame-system = {branch = "polkadot-v0.9.5", default-features = false, git = "https://github.com/paritytech/substrate"}
 hex = {default-features = false, features = ["alloc"], version = "0.4.2"}
 log = {default-features = false, version = "0.4.14"}
-serde = {optional = true, version = "1.0.101"}
 sp-core = {branch = "polkadot-v0.9.5", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-io = {branch = "polkadot-v0.9.5", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+sp-io = {branch = "polkadot-v0.9.5", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-keystore = {branch = "polkadot-v0.9.5", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
 sp-runtime = {branch = "polkadot-v0.9.5", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-std = {branch = "polkadot-v0.9.5", default-features = false, git = "https://github.com/paritytech/substrate"}
@@ -44,19 +43,16 @@ default = ["std"]
 mock = [
   "ctype",
   "env_logger",
-  "kilt-primitives",
-  "serde",
-  "sp-io",
   "sp-keystore"
 ]
 runtime-benchmarks = [
   "frame-benchmarking",
-  "sp-io"
 ]
 std = [
   "codec/std",
   "frame-support/std",
   "frame-system/std",
+  "kilt-primitives/std",
   "hex/std",
   "log/std",
   "sp-core/std",
