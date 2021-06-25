@@ -124,7 +124,7 @@ impl pallet_authorship::Config for Test {
 }
 
 parameter_types! {
-	pub const MinBlocksPerRound: BlockNumber = 3; // 20
+	pub const MinBlocksPerRound: BlockNumber = 3;
 	pub const StakeDuration: u32 = 2;
 	pub const ExitQueueDelay: u32 = 2;
 	pub const DefaultBlocksPerRound: BlockNumber = BLOCKS_PER_ROUND;
@@ -178,6 +178,13 @@ impl pallet_session::Config for Test {
 	type DisabledValidatorsThreshold = ();
 	type WeightInfo = ();
 }
+
+// impl<T: Config> ShouldEndSession<T::BlockNumber> for StakePallet {
+// 	fn should_end_session(now: BlockNumber) -> bool {
+// 		println!("hi");
+// 		StakePallet::round().should_update(System::block_number())
+// 	}
+// }
 
 parameter_types! {
 	pub const MinimumPeriod: u64 = 1;
@@ -286,7 +293,7 @@ impl ExtBuilder {
 		.assimilate_storage(&mut t)
 		.expect("Parachain Staking's storage can be assimilated");
 
-		// stashes are the index.
+		// stashes are the AccountId
 		let session_keys: Vec<_> = self
 			.collators
 			.iter()
@@ -333,11 +340,13 @@ pub(crate) fn roll_to(n: BlockNumber, authors: Vec<Option<AccountId>>) {
 			StakePallet::note_author(*author);
 		}
 		StakePallet::on_finalize(System::block_number());
+		Session::on_finalize(System::block_number());
 		Balances::on_finalize(System::block_number());
 		System::on_finalize(System::block_number());
 		System::set_block_number(System::block_number() + 1);
 		System::on_initialize(System::block_number());
 		Balances::on_initialize(System::block_number());
+		Session::on_initialize(System::block_number());
 		StakePallet::on_initialize(System::block_number());
 	}
 }

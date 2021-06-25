@@ -2731,3 +2731,78 @@ fn force_remove_candidate() {
 			);
 		});
 }
+
+#[test]
+fn prioritize_collator() {
+	ExtBuilder::default()
+		.with_balances(vec![(1, 100), (2, 100), (3, 100)])
+		.with_collators(vec![(2, 100), (3, 100)])
+		.build()
+		.execute_with(|| {
+			assert_eq!(StakePallet::selected_candidates(), vec![2, 3]);
+			assert_ok!(StakePallet::join_candidates(Origin::signed(1), 100));
+			assert_eq!(StakePallet::selected_candidates(), vec![1, 2]);
+			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(2)));
+			assert_eq!(StakePallet::selected_candidates(), vec![1, 3]);
+			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
+			assert_eq!(StakePallet::selected_candidates(), vec![3, 1]);
+		});
+}
+
+#[test]
+fn authorities_per_round() {
+	let stake = 100 * DECIMALS;
+	ExtBuilder::default()
+		.with_balances(vec![
+			(1, stake),
+			(2, stake),
+			(3, stake),
+			(4, stake),
+			(5, stake),
+			(6, stake),
+			(7, stake),
+			(8, stake),
+			(9, stake),
+			(10, stake),
+			(11, 100 * stake),
+		])
+		.with_collators(vec![(1, stake), (2, stake), (3, stake), (4, stake)])
+		.build()
+		.execute_with(|| {
+			assert_eq!(StakePallet::selected_candidates(), vec![1, 2]);
+			// reward 1 once per round
+			let authors: Vec<Option<AccountId>> = (0u64..=100)
+				.map(|i| if i % 5 == 2 { Some(1u64) } else { None })
+				.collect();
+			let inflation = StakePallet::inflation_config();
+
+			// roll to last block of round 0
+			roll_to(4, authors.clone());
+			let reward_0 = inflation.collator.reward_rate.per_block * stake * 2;
+			assert_eq!(Balances::free_balance(1), stake + reward_0);
+			// increase max selected candidates which will become effective in round 2
+			assert_ok!(StakePallet::set_max_selected_candidates(Origin::root(), 20));
+
+			// roll to last block of round 1
+			// should still multiply with 2 because the Authority set was chosen at start of
+			// round 1
+			roll_to(9, authors.clone());
+			let reward_1 = inflation.collator.reward_rate.per_block * stake * 2;
+			assert_eq!(Balances::free_balance(1), stake + reward_0 + reward_1);
+
+			// roll to last block of round 2
+			// should multiply with 4 because there are only 4 candidates
+			roll_to(14, authors.clone());
+			let reward_2 = inflation.collator.reward_rate.per_block * stake * 4;
+			assert_eq!(Balances::free_balance(1), stake + reward_0 + reward_1 + reward_2);
+
+			// roll to last block of round 3
+			// should multiply with 4 because there are only 4 candidates
+			roll_to(19, authors.clone());
+			let reward_3 = inflation.collator.reward_rate.per_block * stake * 4;
+			assert_eq!(
+				Balances::free_balance(1),
+				stake + reward_0 + reward_1 + reward_2 + reward_3
+			);
+		});
+}
