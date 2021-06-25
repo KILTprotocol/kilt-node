@@ -20,8 +20,8 @@ use crate::chain_spec;
 use std::{ops::Deref, path::PathBuf};
 use structopt::StructOpt;
 
-pub const DEFAULT_RUNTIME: &str = "mashnet";
-pub const DEFAULT_PARA_ID: &str = "12555";
+pub const DEFAULT_RUNTIME: &str = "peregrine";
+pub const DEFAULT_PARA_ID: &str = "2000";
 
 /// Sub-commands supported by the collator.
 #[derive(Debug, StructOpt)]

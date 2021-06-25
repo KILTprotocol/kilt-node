@@ -147,7 +147,7 @@ pub mod pallet {
 			claim_hash: ClaimHashOf<T>,
 			ctype_hash: CtypeHashOf<T>,
 			delegation_id: Option<DelegationNodeIdOf<T>>,
-		) -> DispatchResultWithPostInfo {
+		) -> DispatchResult {
 			let attester = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
 			ensure!(
@@ -203,7 +203,7 @@ pub mod pallet {
 				delegation_id,
 			));
 
-			Ok(None.into())
+			Ok(())
 		}
 
 		/// Revoke an existing attestation.
@@ -234,7 +234,7 @@ pub mod pallet {
 
 			// Check the delegation tree if the sender of the revocation operation is not
 			// the original attester
-			if attestation.attester != revoker {
+			let revocations = if attestation.attester != revoker {
 				let delegation_id = attestation.delegation_id.ok_or(Error::<T>::UnauthorizedRevocation)?;
 				ensure!(
 					max_parent_checks <= T::MaxParentChecks::get(),
@@ -242,11 +242,13 @@ pub mod pallet {
 				);
 				// Check whether the sender of the revocation controls the delegation node
 				// specified, and that its status has not been revoked
-				ensure!(
-					<delegation::Pallet<T>>::is_delegating(&revoker, &delegation_id, max_parent_checks)?,
-					Error::<T>::UnauthorizedRevocation
-				);
-			}
+				let (is_delegating, revocations) =
+					<delegation::Pallet<T>>::is_delegating(&revoker, &delegation_id, max_parent_checks)?;
+				ensure!(is_delegating, Error::<T>::UnauthorizedRevocation);
+				revocations
+			} else {
+				0u32
+			};
 
 			log::debug!("revoking Attestation");
 			<Attestations<T>>::insert(
@@ -259,9 +261,7 @@ pub mod pallet {
 
 			Self::deposit_event(Event::AttestationRevoked(revoker, claim_hash));
 
-			//TODO: Return actual weight used, which should be returned by
-			// delegation::is_actively_delegating
-			Ok(None.into())
+			Ok(Some(<T as pallet::Config>::WeightInfo::revoke(revocations)).into())
 		}
 	}
 }

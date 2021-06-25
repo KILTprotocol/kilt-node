@@ -167,9 +167,9 @@ pub fn ensure_single_migration_works(
 	let now: BlockNumber = System::block_number();
 
 	// Check for desired death of allocation account
-	assert_eq!(Balances::free_balance(source), 0);
-	assert_eq!(Vesting::vesting(source), None);
-	assert_eq!(kilt_launch::BalanceLocks::<Test>::get(source), None);
+	assert!(Balances::free_balance(source).is_zero());
+	assert!(Vesting::vesting(source).is_none());
+	assert!(kilt_launch::BalanceLocks::<Test>::get(source).is_none());
 	assert!(!frame_system::Account::<Test>::contains_key(source));
 
 	// Check storage migration to dest
@@ -220,7 +220,7 @@ pub fn ensure_single_migration_works(
 	if num_of_locks > 0 {
 		assert_noop!(
 			KiltLaunch::migrate_genesis_account(Origin::signed(TRANSFER_ACCOUNT), dest.to_owned(), TRANSFER_ACCOUNT),
-			kilt_launch::Error::<Test>::UnexpectedLocks
+			kilt_launch::Error::<Test>::NotUnownedAccount
 		);
 	}
 
@@ -242,7 +242,7 @@ pub fn ensure_single_migration_works(
 		// locks custom locked: UsableBalance
 		assert_eq!(Balances::usable_balance(dest), usable_balance + maybe_balance);
 		// there should be nothing reserved
-		assert_eq!(Balances::reserved_balance(dest), 0);
+		assert!(Balances::reserved_balance(dest).is_zero());
 
 		// Should not be able to transfer more than which is unlocked in first block
 		assert_noop!(
@@ -254,6 +254,8 @@ pub fn ensure_single_migration_works(
 			pallet_balances::Error::<Test, ()>::LiquidityRestrictions
 		);
 	}
+
+	assert!(kilt_launch::UnownedAccount::<Test>::get(source).is_none());
 }
 
 // Checks whether the usable balance meets the expectations and if exists, if it
@@ -266,7 +268,7 @@ pub fn assert_balance(who: AccountId, free: Balance, usable_for_fees: Balance, u
 	// locked balance should not be usable for anything but fees and other locks
 	assert_eq!(Balances::usable_balance(&who), usable);
 	// there should be nothing reserved
-	assert_eq!(Balances::reserved_balance(&who), 0);
+	assert!(Balances::reserved_balance(&who).is_zero());
 
 	if do_transfer && usable > ExistentialDeposit::get() {
 		// Should be able to transfer all tokens but ExistentialDeposit

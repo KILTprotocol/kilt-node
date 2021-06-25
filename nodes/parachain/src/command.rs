@@ -172,7 +172,7 @@ macro_rules! construct_async_run {
 						{ $( $code )* }.map(|v| (v, task_manager))
 					})
 				},
-			"mashnet" => {
+			"peregrine" => {
 					runner.async_run(|$config| {
 						let $components = new_partial::<peregrine_runtime::RuntimeApi, MashRuntimeExecutor, _>(
 							&$config,
@@ -250,7 +250,7 @@ pub fn run() -> Result<()> {
 			if cfg!(feature = "runtime-benchmarks") {
 				let runner = cli.create_runner(cmd)?;
 				match cli.runtime.as_str() {
-					"mashnet" => runner.sync_run(|config| cmd.run::<Block, MashRuntimeExecutor>(config)),
+					"peregrine" => runner.sync_run(|config| cmd.run::<Block, MashRuntimeExecutor>(config)),
 					"spiritnet" => runner.sync_run(|config| cmd.run::<Block, SpiritRuntimeExecutor>(config)),
 					_ => Err("Unknown runtime".into()),
 				}
@@ -355,7 +355,7 @@ pub fn run() -> Result<()> {
 				);
 
 				match cli.runtime.as_str() {
-					"mashnet" => crate::service::start_node::<MashRuntimeExecutor, peregrine_runtime::RuntimeApi>(
+					"peregrine" => crate::service::start_node::<MashRuntimeExecutor, peregrine_runtime::RuntimeApi>(
 						config,
 						polkadot_config,
 						id,
