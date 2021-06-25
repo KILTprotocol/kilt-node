@@ -190,7 +190,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			root_id: DelegationNodeIdOf<T>,
 			ctype_hash: CtypeHashOf<T>,
-		) -> DispatchResultWithPostInfo {
+		) -> DispatchResult {
 			let creator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
 			ensure!(!<Roots<T>>::contains_key(&root_id), Error::<T>::RootAlreadyExists);
@@ -205,7 +205,7 @@ pub mod pallet {
 
 			Self::deposit_event(Event::RootCreated(creator, root_id, ctype_hash));
 
-			Ok(None.into())
+			Ok(())
 		}
 
 		/// Create a new delegation node.
@@ -236,7 +236,7 @@ pub mod pallet {
 			delegate: DelegatorIdOf<T>,
 			permissions: Permissions,
 			delegate_signature: DelegateSignatureTypeOf<T>,
-		) -> DispatchResultWithPostInfo {
+		) -> DispatchResult {
 			let delegator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
 			// Calculate the hash root
@@ -305,7 +305,7 @@ pub mod pallet {
 				permissions,
 			));
 
-			Ok(None.into())
+			Ok(())
 		}
 
 		/// Revoke a delegation root.
@@ -398,10 +398,8 @@ pub mod pallet {
 				Error::<T>::MaxParentChecksTooLarge
 			);
 
-			ensure!(
-				Self::is_delegating(&invoker, &delegation_id, max_parent_checks)?,
-				Error::<T>::UnauthorizedRevocation
-			);
+			let (authorized, parent_checks) = Self::is_delegating(&invoker, &delegation_id, max_parent_checks)?;
+			ensure!(authorized, Error::<T>::UnauthorizedRevocation);
 
 			ensure!(
 				max_revocations <= T::MaxRevocations::get(),
@@ -409,11 +407,15 @@ pub mod pallet {
 			);
 
 			// Revoke the delegation and recursively all of its children
-			Self::revoke(&delegation_id, &invoker, max_revocations)?;
+			let (revocation_checks, _) = Self::revoke(&delegation_id, &invoker, max_revocations)?;
 
 			// Add worst case reads from `is_delegating`
-			//TODO: Return proper weight consumption.
-			Ok(None.into())
+			Ok(Some(
+				<T as Config>::WeightInfo::revoke_delegation_root_child(revocation_checks, parent_checks).max(
+					<T as Config>::WeightInfo::revoke_delegation_leaf(revocation_checks, parent_checks),
+				),
+			)
+			.into())
 		}
 	}
 }
@@ -448,13 +450,13 @@ impl<T: Config> Pallet<T> {
 		identity: &DelegatorIdOf<T>,
 		delegation: &DelegationNodeIdOf<T>,
 		max_parent_checks: u32,
-	) -> Result<bool, DispatchError> {
+	) -> Result<(bool, u32), DispatchError> {
 		let delegation_node = <Delegations<T>>::get(delegation).ok_or(Error::<T>::DelegationNotFound)?;
 
 		// Check if the given account is the owner of the delegation and that the
 		// delegation has not been removed
 		if &delegation_node.owner == identity {
-			Ok(!delegation_node.revoked)
+			Ok((!delegation_node.revoked, 0u32))
 		} else {
 			// Counter is decreased regardless of whether we are checking the parent node
 			// next of the root node, as the root node is as a matter of fact the top node's
@@ -470,7 +472,11 @@ impl<T: Config> Pallet<T> {
 				// Return whether the given account is the owner of the root and the root has
 				// not been revoked
 				let root = <Roots<T>>::get(delegation_node.root_id).ok_or(Error::<T>::RootNotFound)?;
-				Ok((&root.owner == identity) && !root.revoked)
+				Ok((
+					(&root.owner == identity) && !root.revoked,
+					// safe because remaining lookups is at most max_parent_checks
+					max_parent_checks - remaining_lookups,
+				))
 			}
 		}
 	}

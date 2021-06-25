@@ -1309,8 +1309,12 @@ fn is_delegating_direct_not_revoked() {
 		])
 		.build(None);
 
-	let is_delegating = ext.execute_with(|| Delegation::is_delegating(&user_3, &delegation_id_2, max_parent_checks));
-	assert_eq!(is_delegating, Ok(true));
+	ext.execute_with(|| {
+		assert_eq!(
+			Delegation::is_delegating(&user_3, &delegation_id_2, max_parent_checks),
+			Ok((true, max_parent_checks))
+		);
+	});
 }
 
 #[test]
@@ -1346,8 +1350,12 @@ fn is_delegating_direct_not_revoked_max_parent_checks_value() {
 		])
 		.build(None);
 
-	let is_delegating = ext.execute_with(|| Delegation::is_delegating(&user_3, &delegation_id_2, max_parent_checks));
-	assert_eq!(is_delegating, Ok(true));
+	ext.execute_with(|| {
+		assert_eq!(
+			Delegation::is_delegating(&user_3, &delegation_id_2, max_parent_checks),
+			Ok((true, 0u32))
+		);
+	});
 }
 
 #[test]
@@ -1384,8 +1392,12 @@ fn is_delegating_direct_revoked() {
 		])
 		.build(None);
 
-	let is_delegating = ext.execute_with(|| Delegation::is_delegating(&user_3, &delegation_id_2, max_parent_checks));
-	assert_eq!(is_delegating, Ok(false));
+	ext.execute_with(|| {
+		assert_eq!(
+			Delegation::is_delegating(&user_3, &delegation_id_2, max_parent_checks),
+			Ok((false, max_parent_checks))
+		);
+	});
 }
 
 #[test]
@@ -1422,8 +1434,12 @@ fn is_delegating_direct_revoked_max_parent_checks_value() {
 		])
 		.build(None);
 
-	let is_delegating = ext.execute_with(|| Delegation::is_delegating(&user_3, &delegation_id_2, max_parent_checks));
-	assert_eq!(is_delegating, Ok(false));
+	ext.execute_with(|| {
+		assert_eq!(
+			Delegation::is_delegating(&user_3, &delegation_id_2, max_parent_checks),
+			Ok((false, 0u32))
+		);
+	});
 }
 
 #[test]
@@ -1459,8 +1475,12 @@ fn is_delegating_max_parent_not_revoked() {
 		])
 		.build(None);
 
-	let is_delegating = ext.execute_with(|| Delegation::is_delegating(&user_2, &delegation_id_2, max_parent_checks));
-	assert_eq!(is_delegating, Ok(true));
+	ext.execute_with(|| {
+		assert_eq!(
+			Delegation::is_delegating(&user_2, &delegation_id_2, max_parent_checks),
+			Ok((true, max_parent_checks - 1))
+		);
+	});
 }
 
 #[test]
@@ -1497,8 +1517,12 @@ fn is_delegating_max_parent_revoked() {
 		])
 		.build(None);
 
-	let is_delegating = ext.execute_with(|| Delegation::is_delegating(&user_2, &delegation_id_2, max_parent_checks));
-	assert_eq!(is_delegating, Ok(false));
+	ext.execute_with(|| {
+		assert_eq!(
+			Delegation::is_delegating(&user_2, &delegation_id_2, max_parent_checks),
+			Ok((false, max_parent_checks - 2))
+		);
+	});
 }
 
 #[test]
@@ -1535,8 +1559,12 @@ fn is_delegating_root_owner_not_revoked() {
 		])
 		.build(None);
 
-	let is_delegating = ext.execute_with(|| Delegation::is_delegating(&user_1, &delegation_id_2, max_parent_checks));
-	assert_eq!(is_delegating, Ok(true));
+	ext.execute_with(|| {
+		assert_eq!(
+			Delegation::is_delegating(&user_1, &delegation_id_2, max_parent_checks),
+			Ok((true, max_parent_checks - 1))
+		);
+	});
 }
 
 #[test]
@@ -1575,8 +1603,12 @@ fn is_delegating_root_owner_revoked() {
 		])
 		.build(None);
 
-	let is_delegating = ext.execute_with(|| Delegation::is_delegating(&user_1, &delegation_id_2, max_parent_checks));
-	assert_eq!(is_delegating, Ok(false));
+	ext.execute_with(|| {
+		assert_eq!(
+			Delegation::is_delegating(&user_1, &delegation_id_2, max_parent_checks),
+			Ok((false, 1u32))
+		);
+	});
 }
 
 #[test]

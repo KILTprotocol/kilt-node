@@ -411,13 +411,13 @@ pub mod pallet {
 		pub fn change_transfer_account(
 			origin: OriginFor<T>,
 			transfer_account: <T::Lookup as StaticLookup>::Source,
-		) -> DispatchResultWithPostInfo {
+		) -> DispatchResult {
 			ensure_root(origin)?;
 			let transfer_account = T::Lookup::lookup(transfer_account)?;
 
 			<TransferAccount<T>>::put(transfer_account);
 
-			Ok(None.into())
+			Ok(())
 		}
 
 		/// Transfer tokens and vesting information or the KILT balance lock
