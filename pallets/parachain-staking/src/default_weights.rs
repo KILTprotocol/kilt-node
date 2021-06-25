@@ -66,7 +66,7 @@ pub trait WeightInfo {
 	fn delegator_stake_less(n: u32, m: u32, ) -> Weight;
 	fn revoke_delegation(n: u32, m: u32, ) -> Weight;
 	fn leave_delegators(n: u32, m: u32, ) -> Weight;
-	fn withdraw_unstaked(u: u32, ) -> Weight;
+	fn unlock_unstaked(u: u32, ) -> Weight;
 	fn increase_max_candidate_stake_by() -> Weight;
 	fn decrease_max_candidate_stake_by(n: u32, m: u32, ) -> Weight;
 }
@@ -225,7 +225,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(13_u64))
 			.saturating_add(T::DbWeight::get().writes(6_u64))
 	}
-	fn withdraw_unstaked(u: u32, ) -> Weight {
+	fn unlock_unstaked(u: u32, ) -> Weight {
 		(57_318_000_u64)
 			// Standard Error: 23_000
 			.saturating_add((142_000_u64).saturating_mul(u as Weight))
@@ -403,7 +403,7 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(13_u64))
 			.saturating_add(RocksDbWeight::get().writes(6_u64))
 	}
-	fn withdraw_unstaked(u: u32, ) -> Weight {
+	fn unlock_unstaked(u: u32, ) -> Weight {
 		(57_318_000_u64)
 			// Standard Error: 23_000
 			.saturating_add((142_000_u64).saturating_mul(u as Weight))

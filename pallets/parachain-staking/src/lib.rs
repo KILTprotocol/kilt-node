@@ -37,7 +37,7 @@
 //! `execute_leave_candidates` at least `ExitQueueDelay` rounds later. After
 //! doing so, the collator candidate as well as their delegators are unstaked.
 //! Both parties then have to wait another `StakeDuration` more blocks to be
-//! able to withdraw their stake.
+//! able to unlock their stake.
 //!
 //! Candidates which requested to leave can still be in the set of authors for
 //! the next round due to the design of the session pallet which at the start of
@@ -108,7 +108,7 @@
 //!   which can be selected to be in the set of block authors. Requires sudo.
 //! - `set_blocks_per_round` - Change the number of blocks of a round. Shorter
 //!   rounds enable more frequent changes of the selected candidates, earlier
-//!   withdrawal from unstaking and earlier collator leaving. Requires sudo.
+//!   unlockal from unstaking and earlier collator leaving. Requires sudo.
 //! - `increase_max_candidate_stake_by` - Increase the maximum amount which can
 //!   be staked by a collator candidate.
 //! - `decrease_max_candidate_stake_by` - Decrease the maximum amount which can
@@ -136,8 +136,8 @@
 //! - `delegator_stake_less` - Decrease your own stake as a delegator and the
 //!   delegated collator candidate's total stake by the provided amount down to
 //!   `MinDelegatorStake`.
-//! - `withdraw_unstaked` - Attempt to withdraw previously unstaked balance from
-//!   any account. Succeeds if at least one unstake call happened at least
+//! - `unlock_unstaked` - Attempt to unlock previously unstaked balance from any
+//!   account. Succeeds if at least one unstake call happened at least
 //!   `StakeDuration` blocks ago.
 //!
 //! ## Genesis config
@@ -243,8 +243,8 @@ pub mod pallet {
 		/// genesis configuration.
 		type DefaultBlocksPerRound: Get<Self::BlockNumber>;
 		/// Number of blocks for which unstaked balance will still be locked
-		/// before it can be withdrawn by actively calling the extrinsic
-		/// `withdraw_unstaked`.
+		/// before it can be unlocked by actively calling the extrinsic
+		/// `unlock_unstaked`.
 		type StakeDuration: Get<Self::BlockNumber>;
 		/// Number of rounds a collator has to stay active after submitting a
 		/// request to leave the set of collator candidates.
@@ -275,7 +275,7 @@ pub mod pallet {
 		/// Minimum stake required for any account to become a delegator.
 		type MinDelegatorStake: Get<BalanceOf<Self>>;
 		/// Max number of concurrent active unstaking requests before
-		/// withdrawing.
+		/// unlocking.
 		type MaxUnstakeRequests: Get<u32>;
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
@@ -365,7 +365,7 @@ pub mod pallet {
 		NoMoreUnstaking,
 		/// Provided staked value is zero. Should never be thrown.
 		StakeNotFound,
-		/// Cannot withdraw when Unstaked is empty.
+		/// Cannot unlock when Unstaked is empty.
 		UnstakingIsEmpty,
 	}
 
@@ -876,7 +876,7 @@ pub mod pallet {
 		/// delegators.
 		///
 		/// Prepares unstaking of the candidates and their delegators stake
-		/// which can be withdrawn via `withdraw_unstaked` after waiting at
+		/// which can be unlocked via `unlock_unstaked` after waiting at
 		/// least `StakeDuration` many blocks.
 		///
 		/// Emits `CandidateRemoved`.
@@ -1081,8 +1081,8 @@ pub mod pallet {
 
 		/// Execute the network exit of a candidate who requested to leave at
 		/// least `ExitQueueDelay` rounds ago. Prepares unstaking of the
-		/// candidates and their delegators stake which can be withdrawn via
-		/// `withdraw_unstaked` after waiting at least `StakeDuration` many
+		/// candidates and their delegators stake which can be unlocked via
+		/// `unlock_unstaked` after waiting at least `StakeDuration` many
 		/// blocks.
 		///
 		/// Requires the candidate to previously have called
@@ -1783,26 +1783,26 @@ pub mod pallet {
 		}
 
 		/// Withdraw all previously staked funds that are now available for
-		/// withdrawal by the origin account after `StakeDuration` blocks have
+		/// unlockal by the origin account after `StakeDuration` blocks have
 		/// elapsed.
 		///
-		/// Weight: O(U) where U the the number non-withdrawn unstaking requests
+		/// Weight: O(U) where U the the number non-unlocked unstaking requests
 		/// bounded by `MaxUnstakeRequests`.
 		/// - Reads: [Origin Account], Unstaking, Locks
 		/// - Writes: Unstaking, Locks
 		/// - Kills: Unstaking & Locks if no balance is locked anymore
 		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::withdraw_unstaked(T::MaxUnstakeRequests::get() as u32))]
-		pub fn withdraw_unstaked(
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::unlock_unstaked(T::MaxUnstakeRequests::get() as u32))]
+		pub fn unlock_unstaked(
 			origin: OriginFor<T>,
 			target: <T::Lookup as StaticLookup>::Source,
 		) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;
 			let target = T::Lookup::lookup(target)?;
 
-			let unstaking_len = Self::do_withdraw(&target)?;
+			let unstaking_len = Self::do_unlock(&target)?;
 
-			Ok(Some(<T as pallet::Config>::WeightInfo::withdraw_unstaked(unstaking_len)).into())
+			Ok(Some(<T as pallet::Config>::WeightInfo::unlock_unstaked(unstaking_len)).into())
 		}
 	}
 
@@ -2120,11 +2120,11 @@ pub mod pallet {
 		/// Either set or increase the BalanceLock of target account to
 		/// amount.
 		///
-		/// Consumes unstaked balance which can be withdrawn in the future up to
+		/// Consumes unstaked balance which can be unlocked in the future up to
 		/// amount and updates `Unstaking` storage accordingly.
 		///
 		/// # <weight>
-		/// Weight: O(U) where U the the number non-withdrawn unstaking requests
+		/// Weight: O(U) where U the the number non-unlocked unstaking requests
 		/// bounded by `MaxUnstakeRequests`.
 		/// - Reads: Unstaking, Locks
 		/// - Writes: Unstaking, Locks
@@ -2186,7 +2186,7 @@ pub mod pallet {
 		}
 
 		/// Set the unlocking block for the account and corresponding amount
-		/// which can be withdrawn via `withdraw_unstaked` after waiting at
+		/// which can be unlocked via `unlock_unstaked` after waiting at
 		/// least for `StakeDuration` many blocks.
 		///
 		/// Throws if the amount is zero (unlikely) or if active unlocking
@@ -2277,13 +2277,13 @@ pub mod pallet {
 		/// `StakeDuration` blocks ago.
 		///
 		/// # <weight>
-		/// Weight: O(U) where U is the number of non-withdrawn unstaking
+		/// Weight: O(U) where U is the number of non-unlocked unstaking
 		/// requests bounded by `MaxUnstakeRequests`.
 		/// - Reads: Unstaking, Locks
 		/// - Writes: Unstaking, Locks
 		/// - Kills: Unstaking & Locks if no balance is locked anymore
 		/// # </weight>
-		fn do_withdraw(who: &T::AccountId) -> Result<u32, DispatchError> {
+		fn do_unlock(who: &T::AccountId) -> Result<u32, DispatchError> {
 			let now = <frame_system::Pallet<T>>::block_number();
 			let mut unstaking = <Unstaking<T>>::get(who);
 			let unstaking_len = unstaking.len() as u32;

@@ -981,12 +981,12 @@ fn multiple_delegations() {
 			assert_eq!(StakePallet::delegator_state(7).unwrap().total, 10);
 			assert_eq!(StakePallet::delegator_state(6).unwrap().delegations.len(), 3usize);
 			assert_eq!(StakePallet::delegator_state(7).unwrap().delegations.len(), 1usize);
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(6), 6));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(6), 6));
 			assert_noop!(
-				StakePallet::withdraw_unstaked(Origin::signed(6), 6),
+				StakePallet::unlock_unstaked(Origin::signed(6), 6),
 				Error::<Test>::UnstakingIsEmpty
 			);
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(7), 7));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(7), 7));
 			assert_eq!(Balances::usable_balance(&6), 70);
 			assert_eq!(Balances::usable_balance(&7), 90);
 			assert_eq!(Balances::free_balance(&6), 100);
@@ -1587,7 +1587,7 @@ fn delegator_should_not_receive_rewards_after_revoking() {
 			assert_eq!(Balances::usable_balance(&2), Balance::zero());
 			roll_to(100, authors);
 			assert!(Balances::usable_balance(&1) > Balance::zero());
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(2), 2));
 			assert_eq!(Balances::usable_balance(&2), 10_000_000 * DECIMALS);
 		});
 
@@ -1610,7 +1610,7 @@ fn delegator_should_not_receive_rewards_after_revoking() {
 			roll_to(100, authors);
 			assert!(Balances::usable_balance(&1) > Balance::zero());
 			assert!(Balances::usable_balance(&2) > Balance::zero());
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(3), 3));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(3), 3));
 			assert_eq!(Balances::usable_balance(&3), 10_000_000 * DECIMALS);
 		});
 }
@@ -2039,12 +2039,12 @@ fn update_inflation() {
 }
 
 #[test]
-fn withdraw_unstaked() {
+fn unlock_unstaked() {
 	// same_unstaked_as_restaked
 	// block 1: stake & unstake for 100
 	// block 2: stake & unstake for 100
 	// should remove first entry in unstaking BTreeMap when staking in block 2
-	// should still have 100 locked until withdrawing
+	// should still have 100 locked until unlocking
 	ExtBuilder::default()
 		.with_balances(vec![(1, 10), (2, 100)])
 		.with_collators(vec![(1, 10)])
@@ -2062,7 +2062,7 @@ fn withdraw_unstaked() {
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 			// shouldn't be able to unlock anything
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 
@@ -2075,7 +2075,7 @@ fn withdraw_unstaked() {
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 			// shouldn't be able to unlock anything
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 
@@ -2084,7 +2084,7 @@ fn withdraw_unstaked() {
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 			// shouldn't be able to unlock anything
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 
@@ -2092,7 +2092,7 @@ fn withdraw_unstaked() {
 			unstaking.remove(&4);
 			assert_eq!(Balances::locks(2), vec![lock]);
 			// shouldn't be able to unlock anything
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(2), vec![]);
 		});
@@ -2101,7 +2101,7 @@ fn withdraw_unstaked() {
 	// block 1: stake & unstake for 10
 	// block 2: stake & unstake for 100
 	// should remove first entry in unstaking BTreeMap when staking in block 2
-	// should still have 90 locked until withdrawing in block 4
+	// should still have 90 locked until unlocking in block 4
 	ExtBuilder::default()
 		.with_balances(vec![(1, 10), (2, 100)])
 		.with_collators(vec![(1, 10)])
@@ -2119,7 +2119,7 @@ fn withdraw_unstaked() {
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 			// shouldn't be able to unlock anything
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 
@@ -2133,7 +2133,7 @@ fn withdraw_unstaked() {
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 			// shouldn't be able to unlock anything
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 
@@ -2141,15 +2141,15 @@ fn withdraw_unstaked() {
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 			// shouldn't be able to unlock anything
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 
-			// withdraw, remove lock, empty unlocking
+			// unlock unstaked, remove lock, empty unlocking
 			roll_to(4, vec![]);
 			unstaking.remove(&4);
 			assert_eq!(Balances::locks(2), vec![lock]);
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(2), vec![]);
 		});
@@ -2159,8 +2159,8 @@ fn withdraw_unstaked() {
 	// block 2: stake & unstake for 10
 	// should reduce first entry from amount 100 to 90 in unstaking BTreeMap when
 	// staking in block 2
-	// should have 100 locked until withdrawing in block 3, then 10
-	// should have 10 locked until further withdrawing in block 4
+	// should have 100 locked until unlocking in block 3, then 10
+	// should have 10 locked until further unlocking in block 4
 	ExtBuilder::default()
 		.with_balances(vec![(1, 10), (2, 100)])
 		.with_collators(vec![(1, 10)])
@@ -2178,7 +2178,7 @@ fn withdraw_unstaked() {
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 			// shouldn't be able to unlock anything
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 
@@ -2191,7 +2191,7 @@ fn withdraw_unstaked() {
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 			// shouldn't be able to unlock anything
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 
@@ -2200,7 +2200,7 @@ fn withdraw_unstaked() {
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 			// should be able to unlock 90 of 100 from unstaking
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(2), 2));
 			unstaking.remove(&3);
 			lock.amount = 10;
 			assert_eq!(StakePallet::unstaking(2), unstaking);
@@ -2209,7 +2209,7 @@ fn withdraw_unstaked() {
 			roll_to(4, vec![]);
 			assert_eq!(Balances::locks(2), vec![lock]);
 			// should be able to unlock 10 of remaining 10
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(2), 2));
 			unstaking.remove(&4);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(2), vec![]);
@@ -2220,8 +2220,8 @@ fn withdraw_unstaked() {
 	// block 2: stake & unstake for 10
 	// should reduce first entry from amount 100 to 90 in unstaking BTreeMap when
 	// staking in block 2
-	// should have 100 locked until withdrawing in block 3, then 10
-	// should have 10 locked until further withdrawing in block 4
+	// should have 100 locked until unlocking in block 3, then 10
+	// should have 10 locked until further unlocking in block 4
 	ExtBuilder::default()
 		.with_balances(vec![(1, 200), (2, 200)])
 		.with_collators(vec![(1, 200)])
@@ -2255,8 +2255,8 @@ fn withdraw_unstaked() {
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			// shouldn't be able to unlock anything
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(1), 1));
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(1), 1));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(1), vec![lock.clone()]);
@@ -2271,8 +2271,8 @@ fn withdraw_unstaked() {
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			// shouldn't be able to unlock anything
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(1), 1));
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(1), 1));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(1), vec![lock.clone()]);
@@ -2288,8 +2288,8 @@ fn withdraw_unstaked() {
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			// should unlock 60
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(1), 1));
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(1), 1));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(2), 2));
 			lock.amount = 140;
 			unstaking.remove(&3);
 			assert_eq!(StakePallet::unstaking(1), unstaking);
@@ -2328,8 +2328,8 @@ fn withdraw_unstaked() {
 				StakePallet::delegator_stake_less(Origin::signed(2), 1, 10),
 				Error::<Test>::NoMoreUnstaking
 			);
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(1), 1));
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(2), 2));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(1), 1));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(2), 2));
 			unstaking.remove(&4);
 			unstaking.remove(&5);
 			unstaking.remove(&6);
@@ -2449,18 +2449,18 @@ fn candidate_leaves() {
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(12), unstaking);
 
-			// cannot withdraw yet
+			// cannot unlock yet
 			roll_to(16, vec![]);
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(4), 1));
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(4), 12));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(4), 1));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(4), 12));
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(12), unstaking);
 
-			// can withdraw now
+			// can unlock now
 			roll_to(17, vec![]);
 			unstaking.remove(&17);
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(4), 1));
-			assert_ok!(StakePallet::withdraw_unstaked(Origin::signed(4), 12));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(4), 1));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(4), 12));
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(12), unstaking);
 		});

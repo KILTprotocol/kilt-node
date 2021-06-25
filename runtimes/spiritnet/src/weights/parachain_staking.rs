@@ -200,7 +200,7 @@ impl<T: frame_system::Config> parachain_staking::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(13_u64))
 			.saturating_add(T::DbWeight::get().writes(6_u64))
 	}
-	fn withdraw_unstaked(u: u32, ) -> Weight {
+	fn unlock_unstaked(u: u32, ) -> Weight {
 		(70_341_000_u64)
 			// Standard Error: 631_000
 			.saturating_add((335_000_u64).saturating_mul(u as Weight))

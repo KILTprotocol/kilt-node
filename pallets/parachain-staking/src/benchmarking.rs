@@ -496,7 +496,7 @@ benchmarks! {
 		assert_eq!(<Unstaking<T>>::get(&delegator).len(), 2);
 	}
 
-	withdraw_unstaked {
+	unlock_unstaked {
 		let u in 1 .. (T::MaxUnstakeRequests::get() as u32);
 
 		let candidate = account("collator", 0u32, COLLATOR_ACCOUNT_SEED);
@@ -516,7 +516,7 @@ benchmarks! {
 		fill_unstaking::<T>(&candidate, None, u as u64);
 		assert_eq!(<CollatorState<T>>::get(&candidate).unwrap().stake, stake + stake -  T::CurrencyBalance::from(u as u64));
 
-		// roll to block in which first unstake can be withdrawn
+		// roll to block in which first unstake can be unlocked
 		System::<T>::set_block_number(T::StakeDuration::get());
 		assert_eq!(pallet_balances::Pallet::<T>::usable_balance(&candidate), (free_balance - stake - stake).into());
 
@@ -592,7 +592,6 @@ benchmarks! {
 	// 	assert!(state.delegators.binary_search_by(|x| x.owner.cmp(&delegator)).is_ok());
 	// }
 }
-
 
 impl_benchmark_test_suite!(
 	Pallet,
