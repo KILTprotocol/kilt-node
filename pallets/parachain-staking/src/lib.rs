@@ -1958,10 +1958,11 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Select the top `n` collators in terms of cumulated stake (self +
-		/// from delegators) from the CandidatePool to become block authors for
-		/// the next round. The number of candidates selected can be `n` or
-		/// lower in case that are less candidates available.
+		/// Select the top `MaxSelectedCandidates` many collators in terms of
+		/// cumulated stake (self + from delegators) from the CandidatePool to
+		/// become block authors for the next round. The number of candidates
+		/// selected can be `n` or lower in case that are less candidates
+		/// available.
 		///
 		/// We do not want to execute this function in `on_initialize` or
 		/// `new_session` because we could exceed the PoV size limit and brick
@@ -2020,6 +2021,18 @@ pub mod pallet {
 			(top_n, num_of_delegators, collator_stake, delegator_stake)
 		}
 
+		/// Sort the CandidatePool by total amount and return the best
+		/// `MaxSelectedCandidates` many candidates.
+		///
+		/// In case a collator from last round was replaced by a candidate with
+		/// the same total stake during sorting, we revert this swap to
+		/// prioritize collators over candidates.
+		///
+		/// # <weight>
+		/// Weight: O(N) where N is `MaxSelectedCandidates` bounded by
+		/// `MaxCollatorCandidates`
+		/// - Reads: CandidatePool, CollatorState, SelectedCandidates
+		/// # </weight>
 		fn get_collator_list(top_n: u32) -> Vec<T::AccountId> {
 			let mut candidates = <CandidatePool<T>>::get().into_vec();
 
@@ -2037,14 +2050,14 @@ pub mod pallet {
 				.map(|x| x.owner)
 				.collect::<Vec<T::AccountId>>();
 
-			// should never fail
+			// Should never fail
 			let top_n = top_n.try_into().unwrap_or(usize::MAX);
 
-			// check whether we wanted to replace a collator with a candidate which has
-			// equal stake, and if so, revert the swap
+			// Check whether we wanted to replace a collator with a candidate which has
+			// equal stake, and if so, revert the swap.
 			//
 			// NOTE: Can only occur if we have filled all top_n slots and have a bigger pool
-			// than the number of collators
+			// than the number of collators.
 			if collators.len() < candidates.len() {
 				// we expect all of the following unwraps to be some
 				if let Some(old_last_collator_id) = <SelectedCandidates<T>>::get().last() {
