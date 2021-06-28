@@ -23,15 +23,17 @@ use super::*;
 use crate::{self as stake};
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{FindAuthor, GenesisBuild, OnFinalize, OnInitialize},
+	traits::{GenesisBuild, OnFinalize, OnInitialize},
 	weights::Weight,
 };
 use kilt_primitives::constants::KILT;
 use pallet_authorship::EventHandler;
+use sp_consensus_aura::sr25519::AuthorityId;
 use sp_core::H256;
 use sp_runtime::{
-	testing::Header,
-	traits::{BlakeTwo256, IdentityLookup},
+	impl_opaque_keys,
+	testing::{Header, UintAuthorityId},
+	traits::{BlakeTwo256, ConvertInto, IdentityLookup, OpaqueKeys},
 	Perbill, Perquintill,
 };
 
@@ -55,7 +57,9 @@ construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		StakePallet: stake::{Pallet, Call, Storage, Config<T>, Event<T>},
+		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
 		Authorship: pallet_authorship::{Pallet, Call, Storage, Inherent},
+		Aura: pallet_aura::{Pallet, Storage},
 	}
 );
 
@@ -108,25 +112,19 @@ impl pallet_balances::Config for Test {
 	type WeightInfo = ();
 }
 
-/// Author of block is always 1337
-pub struct Author1337;
-impl FindAuthor<AccountId> for Author1337 {
-	fn find_author<'a, I>(_digests: I) -> Option<AccountId>
-	where
-		I: 'a + IntoIterator<Item = (frame_support::ConsensusEngineId, &'a [u8])>,
-	{
-		Some(1337)
-	}
+impl pallet_aura::Config for Test {
+	type AuthorityId = AuthorityId;
 }
+
 impl pallet_authorship::Config for Test {
-	type FindAuthor = Author1337;
+	type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
 	type UncleGenerations = ();
 	type FilterUncle = ();
 	type EventHandler = Pallet<Test>;
 }
 
 parameter_types! {
-	pub const MinBlocksPerRound: BlockNumber = 3; // 20
+	pub const MinBlocksPerRound: BlockNumber = 3;
 	pub const StakeDuration: u32 = 2;
 	pub const ExitQueueDelay: u32 = 2;
 	pub const DefaultBlocksPerRound: BlockNumber = BLOCKS_PER_ROUND;
@@ -150,6 +148,7 @@ impl Config for Test {
 	type StakeDuration = StakeDuration;
 	type ExitQueueDelay = ExitQueueDelay;
 	type MinSelectedCandidates = MinSelectedCandidates;
+	type MinRequiredCollators = MinSelectedCandidates;
 	type MaxDelegationsPerRound = MaxDelegatorsPerCollator;
 	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
 	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
@@ -159,6 +158,43 @@ impl Config for Test {
 	type MinDelegatorStake = MinDelegatorStake;
 	type MinDelegation = MinDelegation;
 	type MaxUnstakeRequests = MaxUnstakeRequests;
+	type WeightInfo = ();
+}
+
+impl_opaque_keys! {
+	pub struct MockSessionKeys {
+		pub aura: Aura,
+	}
+}
+
+impl pallet_session::Config for Test {
+	type Event = Event;
+	type ValidatorId = AccountId;
+	type ValidatorIdOf = ConvertInto;
+	type ShouldEndSession = StakePallet;
+	type NextSessionRotation = StakePallet;
+	type SessionManager = StakePallet;
+	type SessionHandler = <MockSessionKeys as OpaqueKeys>::KeyTypeIdProviders;
+	type Keys = MockSessionKeys;
+	type DisabledValidatorsThreshold = ();
+	type WeightInfo = ();
+}
+
+// impl<T: Config> ShouldEndSession<T::BlockNumber> for StakePallet {
+// 	fn should_end_session(now: BlockNumber) -> bool {
+// 		println!("hi");
+// 		StakePallet::round().should_update(System::block_number())
+// 	}
+// }
+
+parameter_types! {
+	pub const MinimumPeriod: u64 = 1;
+}
+
+impl pallet_timestamp::Config for Test {
+	type Moment = u64;
+	type OnTimestampSet = ();
+	type MinimumPeriod = MinimumPeriod;
 	type WeightInfo = ();
 }
 
@@ -258,6 +294,27 @@ impl ExtBuilder {
 		.assimilate_storage(&mut t)
 		.expect("Parachain Staking's storage can be assimilated");
 
+		// stashes are the AccountId
+		let session_keys: Vec<_> = self
+			.collators
+			.iter()
+			.map(|(k, _)| {
+				(
+					*k,
+					*k,
+					MockSessionKeys {
+						aura: UintAuthorityId(*k).to_public_key(),
+					},
+				)
+			})
+			.collect();
+
+		// NOTE: this will initialize the aura authorities
+		// through OneSessionHandler::on_genesis_session
+		pallet_session::GenesisConfig::<Test> { keys: session_keys }
+			.assimilate_storage(&mut t)
+			.expect("Session Pallet's storage can be assimilated");
+
 		let mut ext = sp_io::TestExternalities::new(t);
 
 		if self.blocks_per_round != BLOCKS_PER_ROUND {
@@ -284,11 +341,13 @@ pub(crate) fn roll_to(n: BlockNumber, authors: Vec<Option<AccountId>>) {
 			StakePallet::note_author(*author);
 		}
 		StakePallet::on_finalize(System::block_number());
+		Session::on_finalize(System::block_number());
 		Balances::on_finalize(System::block_number());
 		System::on_finalize(System::block_number());
 		System::set_block_number(System::block_number() + 1);
 		System::on_initialize(System::block_number());
 		Balances::on_initialize(System::block_number());
+		Session::on_initialize(System::block_number());
 		StakePallet::on_initialize(System::block_number());
 	}
 }

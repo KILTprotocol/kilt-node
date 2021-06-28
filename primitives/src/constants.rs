@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::weights::{constants::WEIGHT_PER_SECOND, Weight};
-use sp_runtime::Perbill;
+use sp_runtime::{Perbill, Perquintill};
 
 use crate::*;
 
@@ -62,3 +62,15 @@ pub const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
 pub const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 /// We allow for 0.5 seconds of compute with a 12 second average block time.
 pub const MAXIMUM_BLOCK_WEIGHT: Weight = WEIGHT_PER_SECOND / 2;
+
+/// Inflation configuration which is used at genesis
+pub const INFLATION_CONFIG: (Perquintill, Perquintill, Perquintill, Perquintill) = (
+	// max collator staking rate
+	Perquintill::from_percent(40),
+	// collator reward rate
+	Perquintill::from_percent(10),
+	// max delegator staking rate
+	Perquintill::from_percent(10),
+	// delegator reward rate
+	Perquintill::from_percent(8),
+);

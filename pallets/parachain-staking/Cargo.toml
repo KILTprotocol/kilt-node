@@ -26,6 +26,9 @@ frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch =
 [dev-dependencies]
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.5", default-features = false }
 sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.5", default-features = false }
+pallet-aura = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.5", default-features = false }
+pallet-timestamp = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.5", default-features = false }
+sp-consensus-aura = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.5", default-features = false }
 
 [features]
 default = ["std"]

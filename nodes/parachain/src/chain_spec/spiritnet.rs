@@ -21,12 +21,11 @@
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
 use kilt_primitives::{
-	constants::{KILT, MAX_COLLATOR_STAKE, MINUTES},
+	constants::{INFLATION_CONFIG, KILT, MAX_COLLATOR_STAKE, MINUTES},
 	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use sc_service::ChainType;
 use sp_core::{crypto::UncheckedInto, sr25519};
-use sp_runtime::Perquintill;
 use spiritnet_runtime::{
 	BalancesConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake, ParachainInfoConfig,
 	ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig, WASM_BINARY,
@@ -231,12 +230,7 @@ pub fn load_spiritnet_spec() -> Result<ChainSpec, String> {
 }
 
 pub fn kilt_inflation_config() -> InflationInfo {
-	InflationInfo::new(
-		Perquintill::from_percent(10),
-		Perquintill::from_percent(10),
-		Perquintill::from_percent(40),
-		Perquintill::from_percent(5),
-	)
+	InflationInfo::from(INFLATION_CONFIG)
 }
 
 #[allow(clippy::too_many_arguments)]

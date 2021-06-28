@@ -119,13 +119,31 @@ impl InflationInfo {
 	}
 }
 
+impl From<(Perquintill, Perquintill, Perquintill, Perquintill)> for InflationInfo {
+	fn from(
+		(
+			collator_max_rate_percentage,
+			collator_annual_reward_rate_percentage,
+			delegator_max_rate_percentage,
+			delegator_annual_reward_rate_percentage,
+		): (Perquintill, Perquintill, Perquintill, Perquintill),
+	) -> Self {
+		InflationInfo::new(
+			collator_max_rate_percentage,
+			collator_annual_reward_rate_percentage,
+			delegator_max_rate_percentage,
+			delegator_annual_reward_rate_percentage,
+		)
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use sp_runtime::Perbill;
 
 	use super::*;
 	use crate::mock::{almost_equal, ExtBuilder, Test, DECIMALS};
-	use kilt_primitives::constants::YEARS;
+	use kilt_primitives::constants::{MAX_COLLATOR_STAKE, YEARS};
 
 	#[test]
 	fn perquintill() {
@@ -149,6 +167,26 @@ mod tests {
 			Perquintill::from_parts(annual_to_per_block(rate).deconstruct() * YEARS) * 10_000_000_000u128,
 			Perbill::from_perthousand(1)
 		));
+	}
+
+	#[test]
+	fn single_block_reward_collator() {
+		let inflation = InflationInfo::new(
+			Perquintill::from_percent(10),
+			Perquintill::from_percent(10),
+			Perquintill::from_percent(40),
+			Perquintill::from_percent(8),
+		);
+		let reward = inflation
+			.collator
+			.compute_reward::<Test>(MAX_COLLATOR_STAKE, Perquintill::from_percent(9), 2);
+		let expected = <Test as Config>::CurrencyBalance::from(15432098765432u64);
+		assert!(
+			almost_equal(reward, expected, Perbill::from_perthousand(1)),
+			"left {:?}, right {:?}",
+			reward,
+			expected
+		);
 	}
 
 	#[test]
