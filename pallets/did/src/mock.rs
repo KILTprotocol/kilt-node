@@ -24,13 +24,12 @@ use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::EnsureSigned;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
-use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSigner,
 };
-use sp_std::{collections::btree_set::BTreeSet, convert::TryInto, sync::Arc};
+use sp_std::{collections::btree_set::BTreeSet, convert::TryInto};
 
 use crate as did;
 use crate::*;
@@ -421,15 +420,6 @@ impl ExtBuilder {
 				})
 			});
 		}
-
-		ext
-	}
-
-	pub fn build_with_keystore(self, ext: Option<sp_io::TestExternalities>) -> sp_io::TestExternalities {
-		let mut ext = self.build(ext);
-
-		let keystore = KeyStore::new();
-		ext.register_extension(KeystoreExt(Arc::new(keystore)));
 
 		ext
 	}

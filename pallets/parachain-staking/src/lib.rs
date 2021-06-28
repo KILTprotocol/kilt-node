@@ -2065,14 +2065,13 @@ pub mod pallet {
 						if let Some(new_last_collator) = candidates.get(top_n.saturating_sub(1)) {
 							// only need to potentially revert the swap if the new collator with least total
 							// stake was not in the selected candidates before
-							if <SelectedCandidates<T>>::get()
+							if !<SelectedCandidates<T>>::get()
 								.iter()
-								.find(|id| *id == &new_last_collator.owner)
-								.is_none()
+								.any(|id| *id == new_last_collator.owner)
 							{
 								// check whether current last collator has same stake as their replacement
 								if new_last_collator.amount == old_last_collator.total
-									&& collators.iter().find(|id| *id == &old_last_collator.id).is_none()
+									&& !collators.iter().any(|id| *id == old_last_collator.id)
 								{
 									log::trace!(
 										"Prioritizing former collator {:?} over candidate {:?} with same stake",
@@ -2482,8 +2481,12 @@ pub mod pallet {
 				let d_staking_rate = Perquintill::from_rational(total_delegators, total_issuance);
 				let inflation_config = <InflationConfig<T>>::get();
 				let authors = pallet_session::Pallet::<T>::validators();
-				let authors_per_round =
-					<BalanceOf<T>>::from(authors.len().try_into().unwrap_or(<MaxSelectedCandidates<T>>::get()));
+				let authors_per_round = <BalanceOf<T>>::from(
+					authors
+						.len()
+						.try_into()
+						.unwrap_or_else(|_| <MaxSelectedCandidates<T>>::get()),
+				);
 
 				// Reward collator
 				let amt_due_collator =

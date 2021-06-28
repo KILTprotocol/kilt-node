@@ -2798,7 +2798,7 @@ fn authorities_per_round() {
 
 			// roll to last block of round 3
 			// should multiply with 4 because there are only 4 candidates
-			roll_to(19, authors.clone());
+			roll_to(19, authors);
 			let reward_3 = inflation.collator.reward_rate.per_block * stake * 4;
 			assert_eq!(
 				Balances::free_balance(1),
