@@ -35,8 +35,8 @@ pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
 pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
-pub const MONTHS: BlockNumber = DAYS * 30;
-pub const YEARS: BlockNumber = MONTHS * 12;
+// Julian year as Substrate handles it
+pub const BLOCKS_PER_YEAR: BlockNumber = DAYS * 36525 / 100;
 
 pub const MIN_VESTED_TRANSFER_AMOUNT: Balance = 1000 * KILT;
 pub const MAX_COLLATOR_STAKE: Balance = 200_000 * KILT;

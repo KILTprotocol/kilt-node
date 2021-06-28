@@ -185,7 +185,7 @@ pub mod pallet {
 		},
 	};
 	use frame_system::pallet_prelude::*;
-	use kilt_primitives::constants::YEARS;
+	use kilt_primitives::constants::BLOCKS_PER_YEAR;
 	use pallet_balances::{BalanceLock, Locks};
 	use pallet_session::ShouldEndSession;
 	use sp_runtime::{
@@ -477,7 +477,7 @@ pub mod pallet {
 				post_weight = <T as Config>::WeightInfo::on_initialize_round_update();
 			}
 			// check for InflationInfo update
-			if now > YEARS.saturated_into::<T::BlockNumber>() {
+			if now > BLOCKS_PER_YEAR.saturated_into::<T::BlockNumber>() {
 				post_weight = post_weight.saturating_add(Self::adjust_reward_rates(now));
 			}
 			post_weight
@@ -591,8 +591,8 @@ pub mod pallet {
 	/// The year in which the last automatic reduction of the reward rates
 	/// occurred.
 	///
-	/// It starts at zero at genesis and increments by one every YEARS many
-	/// blocks.
+	/// It starts at zero at genesis and increments by one every BLOCKS_PER_YEAR
+	/// many blocks.
 	#[pallet::storage]
 	#[pallet::getter(fn last_reward_reduction)]
 	pub(crate) type LastRewardReduction<T: Config> = StorageValue<_, T::BlockNumber, ValueQuery>;
@@ -2364,7 +2364,7 @@ pub mod pallet {
 		/// - Writes: LastRewardReduction, InflationConfig
 		/// # </weight>
 		fn adjust_reward_rates(now: T::BlockNumber) -> Weight {
-			let year = now / YEARS.saturated_into::<T::BlockNumber>();
+			let year = now / BLOCKS_PER_YEAR.saturated_into::<T::BlockNumber>();
 			let last_update = <LastRewardReduction<T>>::get();
 			if year > last_update {
 				let inflation = <InflationConfig<T>>::get();

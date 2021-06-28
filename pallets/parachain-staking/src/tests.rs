@@ -25,7 +25,7 @@ use pallet_balances::{BalanceLock, Error as BalancesError, Reasons};
 use pallet_session::{SessionManager, ShouldEndSession};
 use sp_runtime::{traits::Zero, Perbill, Permill, Perquintill};
 
-use kilt_primitives::constants::YEARS;
+use kilt_primitives::constants::BLOCKS_PER_YEAR;
 
 use crate::{
 	mock::{
@@ -1637,7 +1637,7 @@ fn coinbase_rewards_many_blocks_simple_check() {
 			let inflation = StakePallet::inflation_config();
 			let total_issuance = <Test as Config>::Currency::total_issuance();
 			assert_eq!(total_issuance, 160_000_000 * DECIMALS);
-			let end_block: BlockNumber = num_of_years * YEARS as BlockNumber;
+			let end_block: BlockNumber = num_of_years * BLOCKS_PER_YEAR as BlockNumber;
 			// set round robin authoring
 			let authors: Vec<Option<AccountId>> = (0u64..=end_block).map(|i| Some(i % 2 + 1)).collect();
 			roll_to(end_block, authors);
@@ -2476,7 +2476,7 @@ fn adjust_reward_rates() {
 		.build()
 		.execute_with(|| {
 			let inflation_0 = StakePallet::inflation_config();
-			let num_of_years = 3 * YEARS;
+			let num_of_years = 3 * BLOCKS_PER_YEAR;
 			// 1 authors every block
 			let authors: Vec<Option<AccountId>> = (0u64..=num_of_years).map(|_| Some(1u64)).collect();
 
@@ -2488,8 +2488,8 @@ fn adjust_reward_rates() {
 			assert!(!d_rewards_0.is_zero());
 
 			// finish first year
-			System::set_block_number(YEARS);
-			roll_to(YEARS + 1, vec![]);
+			System::set_block_number(BLOCKS_PER_YEAR);
+			roll_to(BLOCKS_PER_YEAR + 1, vec![]);
 			assert_eq!(StakePallet::last_reward_reduction(), 1u64);
 			let inflation_1 = InflationInfo::new(
 				inflation_0.collator.max_rate,
@@ -2499,7 +2499,7 @@ fn adjust_reward_rates() {
 			);
 			assert_eq!(StakePallet::inflation_config(), inflation_1);
 			// reward once in 2nd year
-			roll_to(YEARS + 2, authors.clone());
+			roll_to(BLOCKS_PER_YEAR + 2, authors.clone());
 			let c_rewards_1 = Balances::free_balance(&1)
 				.saturating_sub(10_000_000 * DECIMALS)
 				.saturating_sub(c_rewards_0);
@@ -2515,8 +2515,8 @@ fn adjust_reward_rates() {
 			assert!(d_rewards_0 > d_rewards_1);
 
 			// finish 2nd year
-			System::set_block_number(2 * YEARS);
-			roll_to(2 * YEARS + 1, vec![]);
+			System::set_block_number(2 * BLOCKS_PER_YEAR);
+			roll_to(2 * BLOCKS_PER_YEAR + 1, vec![]);
 			assert_eq!(StakePallet::last_reward_reduction(), 2u64);
 			let inflation_2 = InflationInfo::new(
 				inflation_0.collator.max_rate,
@@ -2526,7 +2526,7 @@ fn adjust_reward_rates() {
 			);
 			assert_eq!(StakePallet::inflation_config(), inflation_2);
 			// reward once in 3rd year
-			roll_to(2 * YEARS + 2, authors);
+			roll_to(2 * BLOCKS_PER_YEAR + 2, authors);
 			let c_rewards_2 = Balances::free_balance(&1)
 				.saturating_sub(10_000_000 * DECIMALS)
 				.saturating_sub(c_rewards_0)

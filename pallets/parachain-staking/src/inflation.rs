@@ -18,7 +18,7 @@
 
 //! Helper methods for computing issuance based on inflation
 use crate::{pallet::Config, types::BalanceOf};
-use kilt_primitives::constants::YEARS;
+use kilt_primitives::constants::BLOCKS_PER_YEAR;
 use parity_scale_codec::{Decode, Encode};
 use sp_runtime::{traits::Saturating, Perquintill, RuntimeDebug};
 
@@ -34,7 +34,7 @@ pub struct RewardRate {
 
 /// Convert annual reward rate to per_block.
 fn annual_to_per_block(rate: Perquintill) -> Perquintill {
-	rate / YEARS.max(1)
+	rate / BLOCKS_PER_YEAR.max(1)
 }
 
 impl RewardRate {
@@ -111,7 +111,7 @@ impl InflationInfo {
 	/// Check whether the annual reward rate is approx. the per_block reward
 	/// rate multiplied with the number of blocks per year
 	pub fn is_valid(&self) -> bool {
-		let years = YEARS;
+		let years = BLOCKS_PER_YEAR;
 		self.collator.reward_rate.annual
 			>= Perquintill::from_parts(self.collator.reward_rate.per_block.deconstruct().saturating_mul(years))
 			&& self.delegator.reward_rate.annual
@@ -143,7 +143,7 @@ mod tests {
 
 	use super::*;
 	use crate::mock::{almost_equal, ExtBuilder, Test, DECIMALS};
-	use kilt_primitives::constants::{MAX_COLLATOR_STAKE, YEARS};
+	use kilt_primitives::constants::{BLOCKS_PER_YEAR, MAX_COLLATOR_STAKE};
 
 	#[test]
 	fn perquintill() {
@@ -156,7 +156,7 @@ mod tests {
 	#[allow(clippy::assertions_on_constants)]
 	#[test]
 	fn blocks_per_year_saturation() {
-		assert!(YEARS < u64::MAX);
+		assert!(BLOCKS_PER_YEAR < u64::MAX);
 	}
 
 	#[test]
@@ -164,7 +164,7 @@ mod tests {
 		let rate = Perquintill::one();
 		assert!(almost_equal(
 			rate * 10_000_000_000u128,
-			Perquintill::from_parts(annual_to_per_block(rate).deconstruct() * YEARS) * 10_000_000_000u128,
+			Perquintill::from_parts(annual_to_per_block(rate).deconstruct() * BLOCKS_PER_YEAR) * 10_000_000_000u128,
 			Perbill::from_perthousand(1)
 		));
 	}
@@ -180,7 +180,7 @@ mod tests {
 		let reward = inflation
 			.collator
 			.compute_reward::<Test>(MAX_COLLATOR_STAKE, Perquintill::from_percent(9), 2);
-		let expected = <Test as Config>::CurrencyBalance::from(15432098765432u64);
+		let expected = <Test as Config>::CurrencyBalance::from(15210282150733u64);
 		assert!(
 			almost_equal(reward, expected, Perbill::from_perthousand(1)),
 			"left {:?}, right {:?}",
@@ -204,7 +204,7 @@ mod tests {
 					Perquintill::from_percent(40),
 					Perquintill::from_percent(10),
 				);
-				let years_u128: BalanceOf<Test> = YEARS as u128;
+				let years_u128: BalanceOf<Test> = BLOCKS_PER_YEAR as u128;
 
 				// Dummy checks for correct instantiation
 				assert!(inflation.is_valid());

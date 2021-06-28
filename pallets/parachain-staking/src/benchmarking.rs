@@ -25,7 +25,7 @@ use frame_support::{
 	traits::{Currency, Get, OnInitialize},
 };
 use frame_system::{Pallet as System, RawOrigin};
-use kilt_primitives::constants::YEARS;
+use kilt_primitives::constants::BLOCKS_PER_YEAR;
 use sp_runtime::{
 	traits::{One, SaturatedConversion, Saturating, StaticLookup},
 	Perquintill,
@@ -129,7 +129,7 @@ benchmarks! {
 	on_initialize_new_year {
 		let old = <InflationConfig<T>>::get();
 		assert_eq!(<LastRewardReduction<T>>::get(), T::BlockNumber::zero());
-	}: { Pallet::<T>::on_initialize((YEARS + 1u64).saturated_into::<T::BlockNumber>()) }
+	}: { Pallet::<T>::on_initialize((BLOCKS_PER_YEAR + 1u64).saturated_into::<T::BlockNumber>()) }
 	verify {
 		let new = <InflationConfig<T>>::get();
 		assert_eq!(<LastRewardReduction<T>>::get(), T::BlockNumber::one());
