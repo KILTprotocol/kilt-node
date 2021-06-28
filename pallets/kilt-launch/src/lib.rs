@@ -133,7 +133,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use pallet_balances::{BalanceLock, Locks};
 	use pallet_vesting::{Vesting, VestingInfo};
-	use sp_runtime::traits::{CheckedDiv, Convert, Saturating};
+	use sp_runtime::traits::{CheckedDiv, Convert, SaturatedConversion, Saturating};
 
 	pub const KILT_LAUNCH_ID: LockIdentifier = *b"kiltlnch";
 	pub const VESTING_ID: LockIdentifier = *b"vesting ";
@@ -633,9 +633,9 @@ pub mod pallet {
 					<BalanceLocks<T>>::remove(account);
 				}
 
-				Self::deposit_event(Event::Unlocked(block, unlocking_balance.len() as u32));
+				Self::deposit_event(Event::Unlocked(block, unlocking_balance.len().saturated_into::<u32>()));
 				// Safe because `UnlockingAt` will be ~6 in our case
-				unlocking_balance.len() as u32
+				unlocking_balance.len().saturated_into::<u32>()
 			} else {
 				0
 			}

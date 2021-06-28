@@ -23,7 +23,7 @@ use std::{collections::BTreeMap, iter};
 use frame_support::{assert_noop, assert_ok, traits::EstimateNextSessionRotation};
 use pallet_balances::{BalanceLock, Error as BalancesError, Reasons};
 use pallet_session::{SessionManager, ShouldEndSession};
-use sp_runtime::{traits::Zero, Perbill, Permill, Perquintill};
+use sp_runtime::{traits::Zero, Perbill, Permill, Perquintill, SaturatedConversion};
 
 use kilt_primitives::constants::BLOCKS_PER_YEAR;
 
@@ -1817,7 +1817,7 @@ fn reach_max_collator_candidates() {
 		.build()
 		.execute_with(|| {
 			assert_eq!(
-				StakePallet::candidate_pool().len() as u32,
+				StakePallet::candidate_pool().len().saturated_into::<u32>(),
 				<Test as Config>::MaxCollatorCandidates::get()
 			);
 			assert_noop!(

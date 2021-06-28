@@ -49,6 +49,7 @@ use frame_support::{
 use frame_system::ensure_signed;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::RawOrigin;
+use sp_runtime::SaturatedConversion;
 use sp_std::{boxed::Box, convert::TryFrom, fmt::Debug, prelude::Clone, vec::Vec};
 
 #[frame_support::pallet]
@@ -240,16 +241,16 @@ pub mod pallet {
 		///   with the authentication key provided in the operation
 		#[pallet::weight(
 			<T as pallet::Config>::WeightInfo::submit_did_create_operation_ed25519_keys(
-				operation.new_key_agreement_keys.len() as u32,
-				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len() as u32)
+				operation.new_key_agreement_keys.len().saturated_into::<u32>(),
+				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
 			)
 			.max(<T as pallet::Config>::WeightInfo::submit_did_create_operation_sr25519_keys(
-				operation.new_key_agreement_keys.len() as u32,
-				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len() as u32)
+				operation.new_key_agreement_keys.len().saturated_into::<u32>(),
+				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
 			))
 			.max(<T as pallet::Config>::WeightInfo::submit_did_create_operation_ecdsa_keys(
-				operation.new_key_agreement_keys.len() as u32,
-				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len() as u32)
+				operation.new_key_agreement_keys.len().saturated_into::<u32>(),
+				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
 			))
 		)]
 		pub fn submit_did_create_operation(
@@ -296,19 +297,19 @@ pub mod pallet {
 		///   still be signed with the old one being replaced
 		#[pallet::weight(
 			<T as pallet::Config>::WeightInfo::submit_did_update_operation_ed25519_keys(
-				operation.new_key_agreement_keys.len() as u32,
-				operation.public_keys_to_remove.len() as u32,
-				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len() as u32)
+				operation.new_key_agreement_keys.len().saturated_into::<u32>(),
+				operation.public_keys_to_remove.len().saturated_into::<u32>(),
+				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
 			)
 			.max(<T as pallet::Config>::WeightInfo::submit_did_update_operation_sr25519_keys(
-				operation.new_key_agreement_keys.len() as u32,
-				operation.public_keys_to_remove.len() as u32,
-				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len() as u32)
+				operation.new_key_agreement_keys.len().saturated_into::<u32>(),
+				operation.public_keys_to_remove.len().saturated_into::<u32>(),
+				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
 			))
 			.max(<T as pallet::Config>::WeightInfo::submit_did_update_operation_ecdsa_keys(
-				operation.new_key_agreement_keys.len() as u32,
-				operation.public_keys_to_remove.len() as u32,
-				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len() as u32)
+				operation.new_key_agreement_keys.len().saturated_into::<u32>(),
+				operation.public_keys_to_remove.len().saturated_into::<u32>(),
+				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
 			))
 		)]
 		pub fn submit_did_update_operation(
