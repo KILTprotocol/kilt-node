@@ -158,7 +158,7 @@ benchmarks! {
 
 	submit_did_create_operation_ed25519_keys {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
-		let u in (DEFAULT_URL_SCHEME.len() as u32) .. T::MaxUrlLength::get();
+		let u in (DEFAULT_URL_SCHEME.len().saturated_into::<u32>()) .. T::MaxUrlLength::get();
 
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
@@ -207,7 +207,7 @@ benchmarks! {
 
 	submit_did_create_operation_sr25519_keys {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
-		let u in (DEFAULT_URL_SCHEME.len() as u32) .. T::MaxUrlLength::get();
+		let u in (DEFAULT_URL_SCHEME.len().saturated_into::<u32>()) .. T::MaxUrlLength::get();
 
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
@@ -256,7 +256,7 @@ benchmarks! {
 
 	submit_did_create_operation_ecdsa_keys {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
-		let u in (DEFAULT_URL_SCHEME.len() as u32) .. T::MaxUrlLength::get();
+		let u in (DEFAULT_URL_SCHEME.len().saturated_into::<u32>()) .. T::MaxUrlLength::get();
 
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
@@ -306,7 +306,7 @@ benchmarks! {
 	submit_did_update_operation_ed25519_keys {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
 		let m in 1 .. T::MaxVerificationKeysToRevoke::get();
-		let u in (DEFAULT_URL_SCHEME.len() as u32) .. T::MaxUrlLength::get();
+		let u in (DEFAULT_URL_SCHEME.len().saturated_into::<u32>()) .. T::MaxUrlLength::get();
 
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
@@ -368,7 +368,7 @@ benchmarks! {
 	submit_did_update_operation_sr25519_keys {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
 		let m in 1 .. T::MaxVerificationKeysToRevoke::get();
-		let u in (DEFAULT_URL_SCHEME.len() as u32) .. T::MaxUrlLength::get();
+		let u in (DEFAULT_URL_SCHEME.len().saturated_into::<u32>()) .. T::MaxUrlLength::get();
 
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
@@ -430,7 +430,7 @@ benchmarks! {
 	submit_did_update_operation_ecdsa_keys {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
 		let m in 1 .. T::MaxVerificationKeysToRevoke::get();
-		let u in (DEFAULT_URL_SCHEME.len() as u32) .. T::MaxUrlLength::get();
+		let u in (DEFAULT_URL_SCHEME.len().saturated_into::<u32>()) .. T::MaxUrlLength::get();
 
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 

@@ -1819,7 +1819,7 @@ fn reach_max_collator_candidates() {
 		.build()
 		.execute_with(|| {
 			assert_eq!(
-				StakePallet::candidate_pool().len() as u32,
+				StakePallet::candidate_pool().len().saturated_into::<u32>(),
 				<Test as Config>::MaxCollatorCandidates::get()
 			);
 			assert_noop!(

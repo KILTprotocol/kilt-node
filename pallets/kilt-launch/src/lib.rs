@@ -633,9 +633,9 @@ pub mod pallet {
 					<BalanceLocks<T>>::remove(account);
 				}
 
-				Self::deposit_event(Event::Unlocked(block, unlocking_balance.len() as u32));
+				Self::deposit_event(Event::Unlocked(block, unlocking_balance.len().saturated_into::<u32>()));
 				// Safe because `UnlockingAt` will be ~6 in our case
-				unlocking_balance.len() as u32
+				unlocking_balance.len().saturated_into::<u32>()
 			} else {
 				0
 			}
