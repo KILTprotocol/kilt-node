@@ -21,7 +21,7 @@
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
 use kilt_primitives::{
-	constants::{KILT, MAX_COLLATOR_STAKE, MINUTES},
+	constants::{INFLATION_CONFIG, KILT, MAX_COLLATOR_STAKE, MINUTES},
 	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use peregrine_runtime::{
@@ -31,7 +31,6 @@ use peregrine_runtime::{
 };
 use sc_service::ChainType;
 use sp_core::{crypto::UncheckedInto, sr25519};
-use sp_runtime::Perquintill;
 
 use crate::chain_spec::{get_account_id_from_seed, get_from_seed, get_properties, Extensions};
 
@@ -159,12 +158,7 @@ pub fn make_new_spec(id: ParaId) -> Result<ChainSpec, String> {
 }
 
 pub fn kilt_inflation_config() -> InflationInfo {
-	InflationInfo::new(
-		Perquintill::from_percent(10),
-		Perquintill::from_percent(10),
-		Perquintill::from_percent(40),
-		Perquintill::from_percent(5),
-	)
+	InflationInfo::from(INFLATION_CONFIG)
 }
 
 #[allow(clippy::too_many_arguments)]
