@@ -343,7 +343,7 @@ pub mod pallet {
 		TooFewCollatorCandidates,
 		/// The collator candidate is in the process of leaving the set of
 		/// candidates and cannot perform any other actions in the meantime.
-		CannotActivateIfLeaving,
+		CannotStakeIfLeaving,
 		/// The collator candidate is in the process of leaving the set of
 		/// candidates and thus cannot be delegated to.
 		CannotDelegateIfLeaving,
@@ -685,7 +685,7 @@ pub mod pallet {
 			delegator_max_rate_percentage: Perquintill,
 			delegator_annual_reward_rate_percentage: Perquintill,
 		) -> DispatchResult {
-			frame_system::ensure_root(origin)?;
+			ensure_root(origin)?;
 
 			let inflation = InflationInfo::new(
 				collator_max_rate_percentage,
@@ -731,7 +731,7 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_max_selected_candidates(*new, *new * T::MaxDelegatorsPerCollator::get()))]
 		pub fn set_max_selected_candidates(origin: OriginFor<T>, new: u32) -> DispatchResultWithPostInfo {
-			frame_system::ensure_root(origin)?;
+			ensure_root(origin)?;
 			ensure!(new >= T::MinSelectedCandidates::get(), Error::<T>::CannotSetBelowMin);
 			let old = <MaxSelectedCandidates<T>>::get();
 			<MaxSelectedCandidates<T>>::put(new);
@@ -767,7 +767,7 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_blocks_per_round())]
 		pub fn set_blocks_per_round(origin: OriginFor<T>, new: T::BlockNumber) -> DispatchResult {
-			frame_system::ensure_root(origin)?;
+			ensure_root(origin)?;
 			ensure!(new >= T::MinBlocksPerRound::get(), Error::<T>::CannotSetBelowMin);
 
 			let old_round = <Round<T>>::get();
@@ -799,7 +799,7 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::weight(<T as Config>::WeightInfo::increase_max_candidate_stake_by())]
 		pub fn increase_max_candidate_stake_by(origin: OriginFor<T>, plus: BalanceOf<T>) -> DispatchResult {
-			frame_system::ensure_root(origin)?;
+			ensure_root(origin)?;
 			let old = <MaxCollatorCandidateStake<T>>::get();
 			let new = old.saturating_add(plus);
 			<MaxCollatorCandidateStake<T>>::put(new);
@@ -834,7 +834,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			minus: BalanceOf<T>,
 		) -> DispatchResultWithPostInfo {
-			frame_system::ensure_root(origin)?;
+			ensure_root(origin)?;
 			let old = <MaxCollatorCandidateStake<T>>::get();
 			let new = old.saturating_sub(minus);
 			ensure!(
@@ -1228,7 +1228,7 @@ pub mod pallet {
 
 			ensure!(!more.is_zero(), Error::<T>::ValStakeZero);
 			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
-			ensure!(!state.is_leaving(), Error::<T>::CannotActivateIfLeaving);
+			ensure!(!state.is_leaving(), Error::<T>::CannotStakeIfLeaving);
 
 			let before = state.stake;
 			state.stake_more(more);
@@ -1291,7 +1291,7 @@ pub mod pallet {
 			ensure!(!less.is_zero(), Error::<T>::ValStakeZero);
 
 			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
-			ensure!(!state.is_leaving(), Error::<T>::CannotActivateIfLeaving);
+			ensure!(!state.is_leaving(), Error::<T>::CannotStakeIfLeaving);
 			let before = state.stake;
 			let after = state.stake_less(less).ok_or(Error::<T>::Underflow)?;
 			ensure!(

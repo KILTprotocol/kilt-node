@@ -1167,11 +1167,11 @@ fn collators_bond() {
 
 			assert_noop!(
 				StakePallet::candidate_stake_more(Origin::signed(1), 30),
-				Error::<Test>::CannotActivateIfLeaving
+				Error::<Test>::CannotStakeIfLeaving
 			);
 			assert_noop!(
 				StakePallet::candidate_stake_less(Origin::signed(1), 10),
-				Error::<Test>::CannotActivateIfLeaving
+				Error::<Test>::CannotStakeIfLeaving
 			);
 
 			roll_to(30, vec![]);
