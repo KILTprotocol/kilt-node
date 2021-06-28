@@ -1786,7 +1786,7 @@ pub mod pallet {
 		/// unlocking by the origin account after `StakeDuration` blocks have
 		/// elapsed.
 		///
-		/// Weight: O(U) where U is the number locked unstaking requests
+		/// Weight: O(U) where U is the number of locked unstaking requests
 		/// bounded by `MaxUnstakeRequests`.
 		/// - Reads: [Origin Account], Unstaking, Locks
 		/// - Writes: Unstaking, Locks
@@ -2136,7 +2136,7 @@ pub mod pallet {
 		/// amount and updates `Unstaking` storage accordingly.
 		///
 		/// # <weight>
-		/// Weight: O(U) where U is the number locked unstaking requests
+		/// Weight: O(U) where U is the number of locked unstaking requests
 		/// bounded by `MaxUnstakeRequests`.
 		/// - Reads: Unstaking, Locks
 		/// - Writes: Unstaking, Locks
