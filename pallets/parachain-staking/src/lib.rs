@@ -193,7 +193,7 @@ pub mod pallet {
 		Permill, Perquintill,
 	};
 	use sp_staking::SessionIndex;
-	use sp_std::{collections::btree_map::BTreeMap, convert::TryInto, prelude::*};
+	use sp_std::{collections::btree_map::BTreeMap, prelude::*};
 
 	use crate::{
 		set::OrderedSet,
@@ -912,7 +912,7 @@ pub mod pallet {
 
 			let mut candidates = <CandidatePool<T>>::get();
 			ensure!(
-				candidates.len().try_into().unwrap_or(u32::MAX) > T::MinRequiredCollators::get(),
+				candidates.len().saturated_into::<u32>() > T::MinRequiredCollators::get(),
 				Error::<T>::TooFewCollatorCandidates
 			);
 			if candidates.remove_by(|stake| stake.owner.cmp(&collator)).is_some() {
@@ -992,7 +992,7 @@ pub mod pallet {
 
 			// [Post-launch TODO] Replace with `check_collator_candidate_inclusion`.
 			ensure!(
-				(candidates.len() as u32) <= T::MaxCollatorCandidates::get(),
+				(candidates.len().saturated_into::<u32>()) <= T::MaxCollatorCandidates::get(),
 				Error::<T>::TooManyCollatorCandidates
 			);
 			Self::increase_lock(&acc, stake, BalanceOf::<T>::zero())?;
@@ -1059,7 +1059,7 @@ pub mod pallet {
 			ensure!(!state.is_leaving(), Error::<T>::AlreadyLeaving);
 			let mut candidates = <CandidatePool<T>>::get();
 			ensure!(
-				candidates.len().try_into().unwrap_or(u32::MAX) > T::MinRequiredCollators::get(),
+				candidates.len().saturated_into::<u32>() > T::MinRequiredCollators::get(),
 				Error::<T>::TooFewCollatorCandidates
 			);
 
@@ -1119,7 +1119,7 @@ pub mod pallet {
 			ensure!(state.is_leaving(), Error::<T>::NotLeaving);
 			ensure!(state.can_exit(<Round<T>>::get().current), Error::<T>::CannotLeaveYet);
 
-			let num_delegators = state.delegators.len() as u32;
+			let num_delegators = state.delegators.len().saturated_into::<u32>();
 			let total_amount = state.total;
 			Self::remove_candidate(&collator, state);
 
@@ -1168,7 +1168,7 @@ pub mod pallet {
 			let mut candidates = <CandidatePool<T>>::get();
 			// [Post-launch TODO] Replace with `check_acc_candidate_inclusion`.
 			ensure!(
-				(candidates.len() as u32) < T::MaxCollatorCandidates::get(),
+				(candidates.len().saturated_into::<u32>()) < T::MaxCollatorCandidates::get(),
 				Error::<T>::TooManyCollatorCandidates
 			);
 			// should never fail but let's be safe
@@ -1222,7 +1222,7 @@ pub mod pallet {
 		/// - Writes: Locks, TotalStake, CollatorState, CandidatePool,
 		///   SelectedCandidates
 		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::candidate_stake_more(T::MaxCollatorCandidates::get(), T::MaxCollatorCandidates::get().saturating_mul(T::MaxDelegatorsPerCollator::get()), T::MaxUnstakeRequests::get() as u32))]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::candidate_stake_more(T::MaxCollatorCandidates::get(), T::MaxCollatorCandidates::get().saturating_mul(T::MaxDelegatorsPerCollator::get()), T::MaxUnstakeRequests::get().saturated_into::<u32>()))]
 		pub fn candidate_stake_more(origin: OriginFor<T>, more: BalanceOf<T>) -> DispatchResultWithPostInfo {
 			let collator = ensure_signed(origin)?;
 
@@ -1381,7 +1381,7 @@ pub mod pallet {
 			ensure!(state.delegators.insert(delegation.clone()), Error::<T>::DelegatorExists);
 
 			// update state and potentially kick a delegator with less staked amount
-			state = if (state.delegators.len() as u32) > T::MaxDelegatorsPerCollator::get() {
+			state = if (state.delegators.len().saturated_into::<u32>()) > T::MaxDelegatorsPerCollator::get() {
 				let (new_state, replaced_delegation) = Self::do_update_delegator(delegation.clone(), state)?;
 				Self::deposit_event(Event::DelegationReplaced(
 					delegation.owner,
@@ -1478,7 +1478,7 @@ pub mod pallet {
 			// delegation after first
 			ensure!(amount >= T::MinDelegation::get(), Error::<T>::DelegationBelowMin);
 			ensure!(
-				(delegator.delegations.len() as u32) < T::MaxCollatorsPerDelegator::get(),
+				(delegator.delegations.len().saturated_into::<u32>()) < T::MaxCollatorsPerDelegator::get(),
 				Error::<T>::ExceedMaxCollatorsPerDelegator
 			);
 			// cannot delegate if number of delegations in this round exceeds
@@ -1503,7 +1503,7 @@ pub mod pallet {
 			ensure!(state.delegators.insert(delegation.clone()), Error::<T>::DelegatorExists);
 
 			// update state and potentially kick a delegator with less staked amount
-			state = if (state.delegators.len() as u32) > T::MaxDelegatorsPerCollator::get() {
+			state = if (state.delegators.len().saturated_into::<u32>()) > T::MaxDelegatorsPerCollator::get() {
 				let (new_state, replaced_delegation) = Self::do_update_delegator(delegation.clone(), state)?;
 				Self::deposit_event(Event::DelegationReplaced(
 					delegation.owner,
@@ -1667,7 +1667,7 @@ pub mod pallet {
 		/// - Writes: Unstaking, Locks, DelegatorState, CollatorState, Total,
 		///   SelectedCandidates
 		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::candidate_stake_more(T::MaxCollatorCandidates::get(), T::MaxCollatorCandidates::get().saturating_mul(T::MaxDelegatorsPerCollator::get()), T::MaxUnstakeRequests::get() as u32))]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::candidate_stake_more(T::MaxCollatorCandidates::get(), T::MaxCollatorCandidates::get().saturating_mul(T::MaxDelegatorsPerCollator::get()), T::MaxUnstakeRequests::get().saturated_into::<u32>()))]
 		pub fn delegator_stake_more(
 			origin: OriginFor<T>,
 			candidate: <T::Lookup as StaticLookup>::Source,
@@ -1795,7 +1795,7 @@ pub mod pallet {
 		/// - Writes: Unstaking, Locks
 		/// - Kills: Unstaking & Locks if no balance is locked anymore
 		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::unlock_unstaked(T::MaxUnstakeRequests::get() as u32))]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::unlock_unstaked(T::MaxUnstakeRequests::get().saturated_into::<u32>()))]
 		pub fn unlock_unstaked(
 			origin: OriginFor<T>,
 			target: <T::Lookup as StaticLookup>::Source,
@@ -1994,7 +1994,7 @@ pub mod pallet {
 			// Snapshot exposure for round for weighting reward distribution
 			for account in collators.iter() {
 				let state = <CollatorState<T>>::get(&account).expect("all members of CandidateQ must be candidates");
-				num_of_delegators = num_of_delegators.saturating_add(state.delegators.len() as u32);
+				num_of_delegators = num_of_delegators.saturating_add(state.delegators.len().saturated_into::<u32>());
 
 				// sum up total stake and amount of collators, delegators
 				let amount_collator = state.stake;
@@ -2054,7 +2054,7 @@ pub mod pallet {
 				.collect::<Vec<T::AccountId>>();
 
 			// Should never fail
-			let top_n = top_n.try_into().unwrap_or(usize::MAX);
+			let top_n = top_n.saturated_into::<usize>();
 
 			// Check whether we wanted to replace a collator with a candidate which has
 			// equal stake, and if so, revert the swap.
@@ -2224,7 +2224,7 @@ pub mod pallet {
 			let mut unstaking = <Unstaking<T>>::get(who);
 
 			ensure!(
-				unstaking.len() as u32 <= T::MaxUnstakeRequests::get(),
+				unstaking.len().saturated_into::<u32>() <= T::MaxUnstakeRequests::get(),
 				Error::<T>::NoMoreUnstaking,
 			);
 
@@ -2301,7 +2301,7 @@ pub mod pallet {
 		fn do_unlock(who: &T::AccountId) -> Result<u32, DispatchError> {
 			let now = <frame_system::Pallet<T>>::block_number();
 			let mut unstaking = <Unstaking<T>>::get(who);
-			let unstaking_len = unstaking.len() as u32;
+			let unstaking_len = unstaking.len().saturated_into::<u32>();
 			ensure!(!unstaking.is_empty(), Error::<T>::UnstakingIsEmpty);
 
 			let mut total_unlocked: BalanceOf<T> = Zero::zero();
@@ -2484,12 +2484,7 @@ pub mod pallet {
 				let d_staking_rate = Perquintill::from_rational(total_delegators, total_issuance);
 				let inflation_config = <InflationConfig<T>>::get();
 				let authors = pallet_session::Pallet::<T>::validators();
-				let authors_per_round = <BalanceOf<T>>::from(
-					authors
-						.len()
-						.try_into()
-						.unwrap_or_else(|_| <MaxSelectedCandidates<T>>::get()),
-				);
+				let authors_per_round = <BalanceOf<T>>::from(authors.len().saturated_into::<u128>());
 
 				// Reward collator
 				let amt_due_collator =
