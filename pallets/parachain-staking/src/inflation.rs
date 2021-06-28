@@ -119,6 +119,24 @@ impl InflationInfo {
 	}
 }
 
+impl From<(Perquintill, Perquintill, Perquintill, Perquintill)> for InflationInfo {
+	fn from(
+		(
+			collator_max_rate_percentage,
+			collator_annual_reward_rate_percentage,
+			delegator_max_rate_percentage,
+			delegator_annual_reward_rate_percentage,
+		): (Perquintill, Perquintill, Perquintill, Perquintill),
+	) -> Self {
+		InflationInfo::new(
+			collator_max_rate_percentage,
+			collator_annual_reward_rate_percentage,
+			delegator_max_rate_percentage,
+			delegator_annual_reward_rate_percentage,
+		)
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use sp_runtime::Perbill;
