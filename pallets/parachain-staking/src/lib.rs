@@ -252,6 +252,9 @@ pub mod pallet {
 		/// Minimum number of collators selected from the set of candidates at
 		/// every validation round.
 		type MinSelectedCandidates: Get<u32>;
+		/// Minimum number of collators which cannot leave the network if there
+		/// are no others.
+		type MinRequiredCollators: Get<u32>;
 		/// Maximum number of delegations which can be made within the same
 		/// round.
 		///
@@ -909,7 +912,7 @@ pub mod pallet {
 
 			let mut candidates = <CandidatePool<T>>::get();
 			ensure!(
-				candidates.len().try_into().unwrap_or(u32::MAX) > T::MinSelectedCandidates::get(),
+				candidates.len().try_into().unwrap_or(u32::MAX) > T::MinRequiredCollators::get(),
 				Error::<T>::TooFewCollatorCandidates
 			);
 			if candidates.remove_by(|stake| stake.owner.cmp(&collator)).is_some() {
@@ -1056,7 +1059,7 @@ pub mod pallet {
 			ensure!(!state.is_leaving(), Error::<T>::AlreadyLeaving);
 			let mut candidates = <CandidatePool<T>>::get();
 			ensure!(
-				candidates.len().saturating_sub(1) as u32 >= T::MinSelectedCandidates::get(),
+				candidates.len().try_into().unwrap_or(u32::MAX) > T::MinRequiredCollators::get(),
 				Error::<T>::TooFewCollatorCandidates
 			);
 
