@@ -425,6 +425,8 @@ impl ExtBuilder {
 		ext
 	}
 
+	// allowance only required for clippy, this function is actually used
+	#[allow(dead_code)]
 	pub fn build_with_keystore(self, ext: Option<sp_io::TestExternalities>) -> sp_io::TestExternalities {
 		let mut ext = self.build(ext);
 
