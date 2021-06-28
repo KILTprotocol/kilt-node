@@ -180,7 +180,7 @@ mod tests {
 		let reward = inflation
 			.collator
 			.compute_reward::<Test>(MAX_COLLATOR_STAKE, Perquintill::from_percent(9), 2);
-		let expected = <Test as Config>::CurrencyBalance::from(15432098765432u64);
+		let expected = <Test as Config>::CurrencyBalance::from(15210282150733u64);
 		assert!(
 			almost_equal(reward, expected, Perbill::from_perthousand(1)),
 			"left {:?}, right {:?}",
