@@ -23,7 +23,7 @@ use std::{collections::BTreeMap, iter};
 use frame_support::{assert_noop, assert_ok, traits::EstimateNextSessionRotation};
 use pallet_balances::{BalanceLock, Error as BalancesError, Reasons};
 use pallet_session::{SessionManager, ShouldEndSession};
-use sp_runtime::{traits::Zero, Perbill, Permill, Perquintill};
+use sp_runtime::{traits::Zero, Perbill, Permill, Perquintill, SaturatedConversion};
 
 use kilt_primitives::constants::YEARS;
 

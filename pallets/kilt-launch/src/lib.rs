@@ -133,7 +133,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use pallet_balances::{BalanceLock, Locks};
 	use pallet_vesting::{Vesting, VestingInfo};
-	use sp_runtime::traits::{CheckedDiv, Convert, Saturating};
+	use sp_runtime::traits::{CheckedDiv, Convert, SaturatedConversion, Saturating};
 
 	pub const KILT_LAUNCH_ID: LockIdentifier = *b"kiltlnch";
 	pub const VESTING_ID: LockIdentifier = *b"vesting ";

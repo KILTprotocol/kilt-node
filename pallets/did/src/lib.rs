@@ -49,6 +49,7 @@ use frame_support::{
 use frame_system::ensure_signed;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::RawOrigin;
+use sp_runtime::SaturatedConversion;
 use sp_std::{boxed::Box, convert::TryFrom, fmt::Debug, prelude::Clone, vec::Vec};
 
 #[frame_support::pallet]

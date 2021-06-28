@@ -67,7 +67,13 @@ fn fill_delegators<T: Config>(num_delegators: u32, collator: T::AccountId, colla
 	let current_delegators = state.delegators.len().saturated_into::<u32>();
 
 	let delegators: Vec<T::AccountId> = (current_delegators..num_delegators)
-		.map(|i| account("delegator", i.saturated_into::<u32>(), DELEGATOR_ACCOUNT_SEED * 1000 + collator_seed))
+		.map(|i| {
+			account(
+				"delegator",
+				i.saturated_into::<u32>(),
+				DELEGATOR_ACCOUNT_SEED * 1000 + collator_seed,
+			)
+		})
 		.collect();
 
 	for acc in delegators.iter() {
@@ -261,7 +267,7 @@ benchmarks! {
 		assert_ok!(<Pallet<T>>::candidate_stake_more(RawOrigin::Signed(candidate.clone()).into(), more_stake));
 
 		// fill unstake BTreeMap by unstaked many entries of 1
-		fill_unstaking::<T>(&candidate, None, u.saturated_into::<u64>());
+		fill_unstaking::<T>(&candidate, None, u as u64);
 
 		// go to block in which we can exit
 		assert_ok!(<Pallet<T>>::init_leave_candidates(RawOrigin::Signed(candidate.clone()).into()));
@@ -298,13 +304,13 @@ benchmarks! {
 		assert_ok!(<Pallet<T>>::candidate_stake_more(RawOrigin::Signed(candidate.clone()).into(), more_stake));
 
 		// fill unstake BTreeMap by unstaked many entries of 1
-		fill_unstaking::<T>(&candidate, None, u.saturated_into::<u64>());
+		fill_unstaking::<T>(&candidate, None, u as u64);
 
 	}: _(RawOrigin::Signed(candidate.clone()), more_stake)
 	verify {
 		let new_stake = <CollatorState<T>>::get(&candidate).unwrap().stake;
 		assert!(<Unstaking<T>>::get(candidate).is_empty());
-		assert_eq!(new_stake, old_stake + more_stake + more_stake - T::CurrencyBalance::from(u.saturated_into::<u64>()));
+		assert_eq!(new_stake, old_stake + more_stake + more_stake - T::CurrencyBalance::from(u as u64));
 	}
 
 	candidate_stake_less {
