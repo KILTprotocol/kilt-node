@@ -143,7 +143,7 @@ mod tests {
 
 	use super::*;
 	use crate::mock::{almost_equal, ExtBuilder, Test, DECIMALS};
-	use kilt_primitives::constants::{MAX_COLLATOR_STAKE, YEARS};
+	use kilt_primitives::constants::{BLOCKS_PER_YEAR, MAX_COLLATOR_STAKE};
 
 	#[test]
 	fn perquintill() {
