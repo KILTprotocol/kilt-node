@@ -334,11 +334,12 @@ pub struct DelegationCounter {
 pub enum Releases {
 	V1_0_0,
 	V2_0_0, // New Reward calculation, MaxCollatorCandidateStake
+	V3_0_0, // Update InflationConfig
 }
 
 impl Default for Releases {
 	fn default() -> Self {
-		Releases::V2_0_0
+		Releases::V3_0_0
 	}
 }
 

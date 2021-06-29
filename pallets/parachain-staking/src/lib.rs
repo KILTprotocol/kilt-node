@@ -483,19 +483,19 @@ pub mod pallet {
 			post_weight
 		}
 
-		#[cfg(feature = "try-runtime")]
-		fn pre_upgrade() -> Result<(), &'static str> {
-			log::debug!("[BEGIN] parachain-staking::pre_upgrade");
-			let pre_migration_checks = migrations::v2::pre_migrate::<T>();
-			log::debug!("[END] parachain-staking::pre_upgrade");
-			pre_migration_checks
-		}
+		// #[cfg(feature = "try-runtime")]
+		// fn pre_upgrade() -> Result<(), &'static str> {
+		// 	log::debug!("[BEGIN] parachain-staking::pre_upgrade");
+		// 	let pre_migration_checks = migrations::v2::pre_migrate::<T>();
+		// 	log::debug!("[END] parachain-staking::pre_upgrade");
+		// 	pre_migration_checks
+		// }
 
 		#[allow(clippy::let_and_return)]
 		fn on_runtime_upgrade() -> Weight {
 			#[cfg(feature = "try-runtime")]
 			log::debug!("[BEGIN] parachain-staking::on_runtime_upgrade");
-			let migration_consumed_weight = migrations::v2::migrate::<T>();
+			let migration_consumed_weight = migrations::v3::migrate::<T>();
 			#[cfg(feature = "try-runtime")]
 			log::debug!("[END] parachain-staking::on_runtime_upgrade");
 			migration_consumed_weight
@@ -504,7 +504,7 @@ pub mod pallet {
 		#[cfg(feature = "try-runtime")]
 		fn post_upgrade() -> Result<(), &'static str> {
 			log::debug!("[BEGIN] parachain-staking::post_upgrade");
-			let post_migration_checks = migrations::v2::post_migrate::<T>();
+			let post_migration_checks = migrations::v3::post_migrate::<T>();
 			log::debug!("[END] parachain-staking::post_upgrade");
 			post_migration_checks
 		}
