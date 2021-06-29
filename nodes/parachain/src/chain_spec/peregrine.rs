@@ -31,6 +31,7 @@ use peregrine_runtime::{
 };
 use sc_service::ChainType;
 use sp_core::{crypto::UncheckedInto, sr25519};
+use sp_runtime::traits::Zero;
 
 use crate::chain_spec::{get_account_id_from_seed, get_from_seed, get_properties, Extensions};
 
@@ -180,6 +181,11 @@ fn testnet_genesis(
 	let airdrop_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
 		serde_json::from_slice(airdrop_accounts_json).expect("Could not read from genesis_accounts.json");
 
+	// botlabs account should not be migrated but some have vesting
+	let botlabs_accounts_json = &include_bytes!("../../res/genesis/botlabs-accounts.json")[..];
+	let botlabs_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
+		serde_json::from_slice(botlabs_accounts_json).expect("Could not read from botlabs_accounts.json");
+
 	GenesisConfig {
 		system: SystemConfig {
 			code: wasm_binary.to_vec(),
@@ -191,6 +197,7 @@ fn testnet_genesis(
 				.cloned()
 				.map(|k| (k, 10000000000000000000000000000_u128))
 				.chain(airdrop_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
+				.chain(botlabs_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
 				.collect(),
 		},
 		sudo: SudoConfig { key: root_key },
@@ -208,7 +215,14 @@ fn testnet_genesis(
 				.collect(),
 			transfer_account: hex!["6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c"].into(),
 		},
-		vesting: VestingConfig { vesting: vec![] },
+		vesting: VestingConfig {
+			vesting: botlabs_accounts
+				.iter()
+				.cloned()
+				.filter(|(_, _, vesting_length, _)| !vesting_length.is_zero())
+				.map(|(who, amount, vesting_length, _)| (who, 0u64, vesting_length * MINUTES, amount))
+				.collect(),
+		},
 		council: CouncilConfig {
 			members: vec![],
 			phantom: Default::default(),

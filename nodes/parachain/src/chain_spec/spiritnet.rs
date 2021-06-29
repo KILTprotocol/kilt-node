@@ -26,6 +26,7 @@ use kilt_primitives::{
 };
 use sc_service::ChainType;
 use sp_core::{crypto::UncheckedInto, sr25519};
+use sp_runtime::traits::Zero;
 use spiritnet_runtime::{
 	BalancesConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake, ParachainInfoConfig,
 	ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig, WASM_BINARY,
@@ -253,6 +254,11 @@ fn testnet_genesis(
 	let airdrop_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
 		serde_json::from_slice(airdrop_accounts_json).expect("Could not read from genesis_accounts.json");
 
+	// botlabs account should not be migrated but some have vesting
+	let botlabs_accounts_json = &include_bytes!("../../res/genesis/botlabs-accounts.json")[..];
+	let botlabs_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
+		serde_json::from_slice(botlabs_accounts_json).expect("Could not read from botlabs_accounts.json");
+
 	GenesisConfig {
 		system: SystemConfig {
 			code: wasm_binary.to_vec(),
@@ -263,6 +269,7 @@ fn testnet_genesis(
 				.iter()
 				.cloned()
 				.chain(airdrop_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
+				.chain(botlabs_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
 				.collect(),
 		},
 		sudo: SudoConfig { key: root_key },
@@ -281,7 +288,14 @@ fn testnet_genesis(
 			// TODO: Set this to another address (PRE-LAUNCH)
 			transfer_account,
 		},
-		vesting: VestingConfig { vesting: vec![] },
+		vesting: VestingConfig {
+			vesting: botlabs_accounts
+				.iter()
+				.cloned()
+				.filter(|(_, _, vesting_length, _)| !vesting_length.is_zero())
+				.map(|(who, amount, vesting_length, _)| (who, 0u64, vesting_length * MINUTES, amount))
+				.collect(),
+		},
 		parachain_staking: ParachainStakingConfig {
 			stakers,
 			inflation_config,
