@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::weights::{constants::WEIGHT_PER_SECOND, Weight};
-use sp_runtime::Perbill;
+use sp_runtime::{Perbill, Perquintill};
 
 use crate::*;
 
@@ -35,8 +35,8 @@ pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
 pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
-pub const MONTHS: BlockNumber = DAYS * 30;
-pub const YEARS: BlockNumber = MONTHS * 12;
+// Julian year as Substrate handles it
+pub const BLOCKS_PER_YEAR: BlockNumber = DAYS * 36525 / 100;
 
 pub const MIN_VESTED_TRANSFER_AMOUNT: Balance = 1000 * KILT;
 pub const MAX_COLLATOR_STAKE: Balance = 200_000 * KILT;
@@ -62,3 +62,15 @@ pub const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
 pub const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 /// We allow for 0.5 seconds of compute with a 12 second average block time.
 pub const MAXIMUM_BLOCK_WEIGHT: Weight = WEIGHT_PER_SECOND / 2;
+
+/// Inflation configuration which is used at genesis
+pub const INFLATION_CONFIG: (Perquintill, Perquintill, Perquintill, Perquintill) = (
+	// max collator staking rate
+	Perquintill::from_percent(40),
+	// collator reward rate
+	Perquintill::from_percent(10),
+	// max delegator staking rate
+	Perquintill::from_percent(10),
+	// delegator reward rate
+	Perquintill::from_percent(8),
+);
