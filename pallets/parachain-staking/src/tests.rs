@@ -33,7 +33,7 @@ use crate::{
 		ExtBuilder, Origin, StakePallet, System, Test, BLOCKS_PER_ROUND, DECIMALS,
 	},
 	set::OrderedSet,
-	types::{BalanceOf, Collator, CollatorStatus, Delegator, RoundInfo, Stake, TotalStake},
+	types::{BalanceOf, Collator, CollatorStatus, DelegationCounter, Delegator, RoundInfo, Stake, TotalStake},
 	Config, Error, Event, InflationInfo, RewardRate, StakingInfo, STAKING_ID,
 };
 
@@ -2683,6 +2683,33 @@ fn exceed_delegations_per_round() {
 
 			// revoke all delegations in the same round
 			assert_ok!(StakePallet::leave_delegators(Origin::signed(6)));
+			assert_noop!(
+				StakePallet::join_delegators(Origin::signed(6), 1, 10),
+				Error::<Test>::ExceededDelegationsPerRound
+			);
+
+			// roll to next round to clear DelegationCounter
+			roll_to(5, vec![]);
+			assert_eq!(
+				StakePallet::last_delegation(6),
+				DelegationCounter { round: 0, counter: 4 }
+			);
+			assert_ok!(StakePallet::join_delegators(Origin::signed(6), 1, 10),);
+			assert_eq!(
+				StakePallet::last_delegation(6),
+				DelegationCounter { round: 1, counter: 1 }
+			);
+			assert_ok!(StakePallet::leave_delegators(Origin::signed(6)));
+			assert_ok!(StakePallet::join_delegators(Origin::signed(6), 1, 10),);
+			assert_ok!(StakePallet::leave_delegators(Origin::signed(6)));
+			assert_ok!(StakePallet::join_delegators(Origin::signed(6), 1, 10),);
+			assert_ok!(StakePallet::leave_delegators(Origin::signed(6)));
+			assert_ok!(StakePallet::join_delegators(Origin::signed(6), 1, 10),);
+			assert_ok!(StakePallet::leave_delegators(Origin::signed(6)));
+			assert_eq!(
+				StakePallet::last_delegation(6),
+				DelegationCounter { round: 1, counter: 4 }
+			);
 			assert_noop!(
 				StakePallet::join_delegators(Origin::signed(6), 1, 10),
 				Error::<Test>::ExceededDelegationsPerRound

@@ -2044,17 +2044,17 @@ pub mod pallet {
 			// Order candidates by their total stake (greatest to least)
 			candidates.sort_by(|a, b| b.amount.cmp(&a.amount));
 
+			// Should never fail
+			let top_n = top_n.saturated_into::<usize>();
+
 			// Choose the top MaxSelectedCandidates qualified candidates
 			let mut collators = candidates
 				.clone()
 				.into_iter()
-				.take(top_n as usize)
+				.take(top_n)
 				.filter(|x| x.amount >= T::MinCollatorStake::get())
 				.map(|x| x.owner)
 				.collect::<Vec<T::AccountId>>();
-
-			// Should never fail
-			let top_n = top_n.saturated_into::<usize>();
 
 			// Check whether we wanted to replace a collator with a candidate which has
 			// equal stake, and if so, revert the swap.
@@ -2415,7 +2415,7 @@ pub mod pallet {
 			};
 
 			ensure!(
-				T::MaxDelegationsPerRound::get() > last_delegation.counter,
+				T::MaxDelegationsPerRound::get() > counter,
 				Error::<T>::ExceededDelegationsPerRound
 			);
 
