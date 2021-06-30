@@ -519,7 +519,7 @@ pub mod pallet {
 			ensure!(Some(who) == <TransferAccount<T>>::get(), Error::<T>::Unauthorized);
 
 			ensure!(
-				sources.len() < T::MaxClaims::get() as usize,
+				sources.len() < T::MaxClaims::get().saturated_into::<usize>(),
 				Error::<T>::ExceedsMaxClaims
 			);
 
