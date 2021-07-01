@@ -239,7 +239,7 @@ impl pallet_indices::Config for Runtime {
 }
 
 parameter_types! {
-	pub const ExistentialDeposit: Balance = 100 * MILLI_KILT;
+	pub const ExistentialDeposit: Balance = 10 * MILLI_KILT;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxReserves: u32 = 50;
 }
