@@ -37,6 +37,11 @@ use frame_system::{
 };
 use kilt_primitives::{
 	constants::{
+		governance::{
+			CHALLENGE_PERIOD, COOLOFF_PERIOD, COUNCIL_MOTION_DURATION, ENACTMENT_PERIOD, FAST_TRACK_VOTING_PERIOD,
+			LAUNCH_PERIOD, ROTATION_PERIOD, SPEND_PERIOD, TECHNICAL_MOTION_DURATION, TERM_DURATION, VOTING_PERIOD,
+		},
+		staking::{DEFAULT_BLOCKS_PER_ROUND, MAX_CANDIDATES, MIN_BLOCKS_PER_ROUND, MIN_COLLATORS, STAKE_DURATION},
 		AVERAGE_ON_INITIALIZE_RATIO, DAYS, KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT,
 		MIN_VESTED_TRANSFER_AMOUNT, NORMAL_DISPATCH_RATIO, SLOT_DURATION,
 	},
@@ -65,9 +70,6 @@ mod weights;
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
-
-#[cfg(feature = "fast-gov")]
-use kilt_primitives::constants::MINUTES;
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
@@ -353,31 +355,6 @@ impl pallet_scheduler::Config for Runtime {
 	type WeightInfo = weights::pallet_scheduler::WeightInfo<Runtime>;
 }
 
-#[cfg(feature = "fast-gov")]
-pub const LAUNCH_PERIOD: BlockNumber = 7 * MINUTES;
-#[cfg(not(feature = "fast-gov"))]
-pub const LAUNCH_PERIOD: BlockNumber = 7 * DAYS;
-
-#[cfg(feature = "fast-gov")]
-pub const VOTING_PERIOD: BlockNumber = 7 * MINUTES;
-#[cfg(not(feature = "fast-gov"))]
-pub const VOTING_PERIOD: BlockNumber = 7 * DAYS;
-
-#[cfg(feature = "fast-gov")]
-pub const FAST_TRACK_VOTING_PERIOD: BlockNumber = 3 * MINUTES;
-#[cfg(not(feature = "fast-gov"))]
-pub const FAST_TRACK_VOTING_PERIOD: BlockNumber = 3 * HOURS;
-
-#[cfg(feature = "fast-gov")]
-pub const ENACTMENT_PERIOD: BlockNumber = 8 * MINUTES;
-#[cfg(not(feature = "fast-gov"))]
-pub const ENACTMENT_PERIOD: BlockNumber = 8 * DAYS;
-
-#[cfg(feature = "fast-gov")]
-pub const COOLOFF_PERIOD: BlockNumber = 7 * MINUTES;
-#[cfg(not(feature = "fast-gov"))]
-pub const COOLOFF_PERIOD: BlockNumber = 7 * DAYS;
-
 parameter_types! {
 	pub const LaunchPeriod: BlockNumber = LAUNCH_PERIOD;
 	pub const VotingPeriod: BlockNumber = VOTING_PERIOD;
@@ -445,11 +422,6 @@ impl pallet_democracy::Config for Runtime {
 	type WeightInfo = weights::pallet_democracy::WeightInfo<Runtime>;
 }
 
-#[cfg(feature = "fast-gov")]
-pub const SPEND_PERIOD: BlockNumber = 6 * MINUTES;
-#[cfg(not(feature = "fast-gov"))]
-pub const SPEND_PERIOD: BlockNumber = 6 * DAYS;
-
 parameter_types! {
 	pub const ProposalBond: Permill = Permill::from_percent(5);
 	pub const ProposalBondMinimum: Balance = 20 * KILT; // TODO: how much?
@@ -487,16 +459,6 @@ impl pallet_treasury::Config for Runtime {
 	type MaxApprovals = MaxApprovals;
 }
 
-#[cfg(feature = "fast-gov")]
-const ROTATION_PERIOD: BlockNumber = 80 * MINUTES;
-#[cfg(not(feature = "fast-gov"))]
-const ROTATION_PERIOD: BlockNumber = 80 * kilt_primitives::constants::HOURS;
-
-#[cfg(feature = "fast-gov")]
-const CHALLENGE_PERIOD: BlockNumber = 7 * MINUTES;
-#[cfg(not(feature = "fast-gov"))]
-const CHALLENGE_PERIOD: BlockNumber = 7 * DAYS;
-
 parameter_types! {
 	pub const CandidateDeposit: Balance = 10 * KILT;
 	pub const WrongSideDeduction: Balance = 2 * KILT;
@@ -511,11 +473,6 @@ parameter_types! {
 pub const fn deposit(items: u32, bytes: u32) -> Balance {
 	items as Balance * 20 * KILT + (bytes as Balance) * 100 * MILLI_KILT
 }
-
-#[cfg(feature = "fast-gov")]
-pub const TERM_DURATION: BlockNumber = 15 * MINUTES;
-#[cfg(not(feature = "fast-gov"))]
-pub const TERM_DURATION: BlockNumber = DAYS;
 
 parameter_types! {
 	pub const CandidacyBond: Balance = 2 * KILT;
@@ -553,11 +510,6 @@ impl pallet_elections_phragmen::Config for Runtime {
 	type WeightInfo = ();
 }
 
-#[cfg(feature = "fast-gov")]
-pub const COUNCIL_MOTION_DURATION: BlockNumber = 4 * MINUTES;
-#[cfg(not(feature = "fast-gov"))]
-pub const COUNCIL_MOTION_DURATION: BlockNumber = 3 * DAYS;
-
 parameter_types! {
 	pub const CouncilMotionDuration: BlockNumber = COUNCIL_MOTION_DURATION;
 	pub const CouncilMaxProposals: u32 = 100;
@@ -575,11 +527,6 @@ impl pallet_collective::Config<CouncilCollective> for Runtime {
 	type DefaultVote = pallet_collective::PrimeDefaultVote;
 	type WeightInfo = weights::pallet_collective::WeightInfo<Runtime>;
 }
-
-#[cfg(feature = "fast-gov")]
-pub const TECHNICAL_MOTION_DURATION: BlockNumber = 4 * MINUTES;
-#[cfg(not(feature = "fast-gov"))]
-pub const TECHNICAL_MOTION_DURATION: BlockNumber = 3 * DAYS;
 
 parameter_types! {
 	pub const TechnicalMotionDuration: BlockNumber = TECHNICAL_MOTION_DURATION;
@@ -712,30 +659,6 @@ impl did::Config for Runtime {
 }
 
 /// Minimum round length is 1 hour (600 * 6 second block times)
-#[cfg(feature = "fast-gov")]
-pub const MIN_BLOCKS_PER_ROUND: BlockNumber = 10;
-#[cfg(not(feature = "fast-gov"))]
-pub const MIN_BLOCKS_PER_ROUND: BlockNumber = kilt_primitives::constants::HOURS;
-
-#[cfg(feature = "fast-gov")]
-pub const DEFAULT_BLOCKS_PER_ROUND: BlockNumber = 20;
-#[cfg(not(feature = "fast-gov"))]
-pub const DEFAULT_BLOCKS_PER_ROUND: BlockNumber = 2 * kilt_primitives::constants::HOURS;
-
-#[cfg(feature = "fast-gov")]
-pub const STAKE_DURATION: BlockNumber = 30;
-#[cfg(not(feature = "fast-gov"))]
-pub const STAKE_DURATION: BlockNumber = 7 * DAYS;
-
-#[cfg(feature = "fast-gov")]
-pub const MIN_COLLATORS: u32 = 4;
-#[cfg(not(feature = "fast-gov"))]
-pub const MIN_COLLATORS: u32 = 16;
-
-#[cfg(feature = "fast-gov")]
-pub const MAX_CANDIDATES: u32 = 16;
-#[cfg(not(feature = "fast-gov"))]
-pub const MAX_CANDIDATES: u32 = 75;
 
 parameter_types! {
 	/// Minimum round length is 1 hour

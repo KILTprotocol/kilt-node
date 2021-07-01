@@ -80,6 +80,7 @@ substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branc
 
 [features]
 default = ["std"]
+fast-gov = ["kilt-primitives/fast-gov"]
 runtime-benchmarks = [
   "frame-benchmarking",
   "frame-support/runtime-benchmarks",

@@ -74,3 +74,98 @@ pub const INFLATION_CONFIG: (Perquintill, Perquintill, Perquintill, Perquintill)
 	// delegator reward rate
 	Perquintill::from_percent(8),
 );
+
+pub mod staking {
+	#[cfg(not(feature = "fast-gov"))]
+	use super::{DAYS, HOURS};
+	use crate::BlockNumber;
+
+	// Minimum round length is 1 hour (600 * 6 second block times)
+	#[cfg(feature = "fast-gov")]
+	pub const MIN_BLOCKS_PER_ROUND: BlockNumber = 10;
+	#[cfg(not(feature = "fast-gov"))]
+	pub const MIN_BLOCKS_PER_ROUND: BlockNumber = HOURS;
+
+	#[cfg(feature = "fast-gov")]
+	pub const DEFAULT_BLOCKS_PER_ROUND: BlockNumber = 20;
+	#[cfg(not(feature = "fast-gov"))]
+	pub const DEFAULT_BLOCKS_PER_ROUND: BlockNumber = 2 * HOURS;
+
+	#[cfg(feature = "fast-gov")]
+	pub const STAKE_DURATION: BlockNumber = 30;
+	#[cfg(not(feature = "fast-gov"))]
+	pub const STAKE_DURATION: BlockNumber = 7 * DAYS;
+
+	#[cfg(feature = "fast-gov")]
+	pub const MIN_COLLATORS: u32 = 4;
+	#[cfg(not(feature = "fast-gov"))]
+	pub const MIN_COLLATORS: u32 = 16;
+
+	#[cfg(feature = "fast-gov")]
+	pub const MAX_CANDIDATES: u32 = 16;
+	#[cfg(not(feature = "fast-gov"))]
+	pub const MAX_CANDIDATES: u32 = 75;
+}
+
+pub mod governance {
+	#[cfg(feature = "fast-gov")]
+	use super::MINUTES;
+	#[cfg(not(feature = "fast-gov"))]
+	use super::{DAYS, HOURS};
+	use crate::BlockNumber;
+
+	#[cfg(feature = "fast-gov")]
+	pub const LAUNCH_PERIOD: BlockNumber = 7 * MINUTES;
+	#[cfg(not(feature = "fast-gov"))]
+	pub const LAUNCH_PERIOD: BlockNumber = 7 * DAYS;
+
+	#[cfg(feature = "fast-gov")]
+	pub const VOTING_PERIOD: BlockNumber = 7 * MINUTES;
+	#[cfg(not(feature = "fast-gov"))]
+	pub const VOTING_PERIOD: BlockNumber = 7 * DAYS;
+
+	#[cfg(feature = "fast-gov")]
+	pub const FAST_TRACK_VOTING_PERIOD: BlockNumber = 3 * MINUTES;
+	#[cfg(not(feature = "fast-gov"))]
+	pub const FAST_TRACK_VOTING_PERIOD: BlockNumber = 3 * HOURS;
+
+	#[cfg(feature = "fast-gov")]
+	pub const ENACTMENT_PERIOD: BlockNumber = 8 * MINUTES;
+	#[cfg(not(feature = "fast-gov"))]
+	pub const ENACTMENT_PERIOD: BlockNumber = 8 * DAYS;
+
+	#[cfg(feature = "fast-gov")]
+	pub const COOLOFF_PERIOD: BlockNumber = 7 * MINUTES;
+	#[cfg(not(feature = "fast-gov"))]
+	pub const COOLOFF_PERIOD: BlockNumber = 7 * DAYS;
+
+	#[cfg(feature = "fast-gov")]
+	pub const SPEND_PERIOD: BlockNumber = 6 * MINUTES;
+	#[cfg(not(feature = "fast-gov"))]
+	pub const SPEND_PERIOD: BlockNumber = 6 * DAYS;
+
+	#[cfg(feature = "fast-gov")]
+	pub const ROTATION_PERIOD: BlockNumber = 80 * MINUTES;
+	#[cfg(not(feature = "fast-gov"))]
+	pub const ROTATION_PERIOD: BlockNumber = 80 * HOURS;
+
+	#[cfg(feature = "fast-gov")]
+	pub const CHALLENGE_PERIOD: BlockNumber = 7 * MINUTES;
+	#[cfg(not(feature = "fast-gov"))]
+	pub const CHALLENGE_PERIOD: BlockNumber = 7 * DAYS;
+
+	#[cfg(feature = "fast-gov")]
+	pub const TERM_DURATION: BlockNumber = 15 * MINUTES;
+	#[cfg(not(feature = "fast-gov"))]
+	pub const TERM_DURATION: BlockNumber = DAYS;
+
+	#[cfg(feature = "fast-gov")]
+	pub const COUNCIL_MOTION_DURATION: BlockNumber = 4 * MINUTES;
+	#[cfg(not(feature = "fast-gov"))]
+	pub const COUNCIL_MOTION_DURATION: BlockNumber = 3 * DAYS;
+
+	#[cfg(feature = "fast-gov")]
+	pub const TECHNICAL_MOTION_DURATION: BlockNumber = 4 * MINUTES;
+	#[cfg(not(feature = "fast-gov"))]
+	pub const TECHNICAL_MOTION_DURATION: BlockNumber = 3 * DAYS;
+}

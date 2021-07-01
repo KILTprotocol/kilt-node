@@ -16,6 +16,7 @@ sp-consensus-aura = {git = "https://github.com/paritytech/substrate", default-fe
 
 [features]
 default = ["std"]
+fast-gov = []
 std = [
   "codec/std",
   "frame-support/std",
