@@ -318,7 +318,7 @@ pub struct TotalStake<Balance: Default> {
 
 /// The number of delegations a delegator has done within the last session in
 /// which they delegated.
-#[derive(Default, Clone, Encode, Decode, RuntimeDebug)]
+#[derive(Default, Clone, Encode, Decode, RuntimeDebug, PartialEq)]
 pub struct DelegationCounter {
 	/// The index of the last delegation.
 	pub round: SessionIndex,
@@ -334,11 +334,12 @@ pub struct DelegationCounter {
 pub enum Releases {
 	V1_0_0,
 	V2_0_0, // New Reward calculation, MaxCollatorCandidateStake
+	V3_0_0, // Update InflationConfig
 }
 
 impl Default for Releases {
 	fn default() -> Self {
-		Releases::V2_0_0
+		Releases::V3_0_0
 	}
 }
 

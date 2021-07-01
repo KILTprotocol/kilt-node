@@ -69,3 +69,27 @@ pub mod v2 {
 		Ok(())
 	}
 }
+
+pub mod v3 {
+	use kilt_primitives::constants::INFLATION_CONFIG;
+
+	use super::*;
+
+	pub fn migrate<T: Config>() -> Weight {
+		log::info!("Migrating staking to Releases::V3_0_0");
+
+		// update rewards per block
+		InflationConfig::<T>::mutate(|inflation| *inflation = InflationInfo::from(INFLATION_CONFIG));
+
+		StorageVersion::<T>::put(Releases::V3_0_0);
+		log::info!("Completed staking migration to Releases::V3_0_0");
+
+		T::DbWeight::get().reads_writes(1, 2)
+	}
+
+	pub fn post_migrate<T: Config>() -> Result<(), &'static str> {
+		assert_eq!(InflationConfig::<T>::get(), InflationInfo::from(INFLATION_CONFIG));
+		assert_eq!(StorageVersion::<T>::get(), Releases::V3_0_0);
+		Ok(())
+	}
+}

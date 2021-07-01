@@ -483,19 +483,19 @@ pub mod pallet {
 			post_weight
 		}
 
-		#[cfg(feature = "try-runtime")]
-		fn pre_upgrade() -> Result<(), &'static str> {
-			log::debug!("[BEGIN] parachain-staking::pre_upgrade");
-			let pre_migration_checks = migrations::v2::pre_migrate::<T>();
-			log::debug!("[END] parachain-staking::pre_upgrade");
-			pre_migration_checks
-		}
+		// #[cfg(feature = "try-runtime")]
+		// fn pre_upgrade() -> Result<(), &'static str> {
+		// 	log::debug!("[BEGIN] parachain-staking::pre_upgrade");
+		// 	let pre_migration_checks = migrations::v2::pre_migrate::<T>();
+		// 	log::debug!("[END] parachain-staking::pre_upgrade");
+		// 	pre_migration_checks
+		// }
 
 		#[allow(clippy::let_and_return)]
 		fn on_runtime_upgrade() -> Weight {
 			#[cfg(feature = "try-runtime")]
 			log::debug!("[BEGIN] parachain-staking::on_runtime_upgrade");
-			let migration_consumed_weight = migrations::v2::migrate::<T>();
+			let migration_consumed_weight = migrations::v3::migrate::<T>();
 			#[cfg(feature = "try-runtime")]
 			log::debug!("[END] parachain-staking::on_runtime_upgrade");
 			migration_consumed_weight
@@ -504,7 +504,7 @@ pub mod pallet {
 		#[cfg(feature = "try-runtime")]
 		fn post_upgrade() -> Result<(), &'static str> {
 			log::debug!("[BEGIN] parachain-staking::post_upgrade");
-			let post_migration_checks = migrations::v2::post_migrate::<T>();
+			let post_migration_checks = migrations::v3::post_migrate::<T>();
 			log::debug!("[END] parachain-staking::post_upgrade");
 			post_migration_checks
 		}
@@ -2044,17 +2044,17 @@ pub mod pallet {
 			// Order candidates by their total stake (greatest to least)
 			candidates.sort_by(|a, b| b.amount.cmp(&a.amount));
 
+			// Should never fail
+			let top_n = top_n.saturated_into::<usize>();
+
 			// Choose the top MaxSelectedCandidates qualified candidates
 			let mut collators = candidates
 				.clone()
 				.into_iter()
-				.take(top_n as usize)
+				.take(top_n)
 				.filter(|x| x.amount >= T::MinCollatorStake::get())
 				.map(|x| x.owner)
 				.collect::<Vec<T::AccountId>>();
-
-			// Should never fail
-			let top_n = top_n.saturated_into::<usize>();
 
 			// Check whether we wanted to replace a collator with a candidate which has
 			// equal stake, and if so, revert the swap.
@@ -2415,7 +2415,7 @@ pub mod pallet {
 			};
 
 			ensure!(
-				T::MaxDelegationsPerRound::get() > last_delegation.counter,
+				T::MaxDelegationsPerRound::get() > counter,
 				Error::<T>::ExceededDelegationsPerRound
 			);
 
