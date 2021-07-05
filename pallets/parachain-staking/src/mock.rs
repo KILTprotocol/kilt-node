@@ -180,13 +180,6 @@ impl pallet_session::Config for Test {
 	type WeightInfo = ();
 }
 
-// impl<T: Config> ShouldEndSession<T::BlockNumber> for StakePallet {
-// 	fn should_end_session(now: BlockNumber) -> bool {
-// 		println!("hi");
-// 		StakePallet::round().should_update(System::block_number())
-// 	}
-// }
-
 parameter_types! {
 	pub const MinimumPeriod: u64 = 1;
 }
