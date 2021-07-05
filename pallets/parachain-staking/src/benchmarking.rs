@@ -545,13 +545,10 @@ benchmarks! {
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
 		// worst case: all candidates have staked more than new max
-		let stake = <MaxCollatorCandidateStake<T>>::get();
-		// let stake = T::MinCollatorCandidateStake::get() + T::CurrencyBalance::one();
-		let candidates = setup_collator_candidates::<T>(n, Some(stake));
+		let old = <MaxCollatorCandidateStake<T>>::get();
+		let candidates = setup_collator_candidates::<T>(n, Some(old));
 		let candidate = candidates[0].clone();
-		let old = <CollatorState<T>>::get(&candidate).unwrap().stake;
-		// will break
-		assert_eq!(<CollatorState<T>>::get(&candidate).unwrap().stake, stake);
+		assert_eq!(<CollatorState<T>>::get(&candidate).unwrap().stake, old);
 
 		let new =  old.saturating_sub(T::CurrencyBalance::one());
 		for (i, c) in candidates.iter().enumerate() {

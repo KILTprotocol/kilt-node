@@ -43,7 +43,7 @@ impl<T: Ord + Debug> OrderedSet<T> {
 	///
 	/// `v` will be sorted and dedup first.
 	pub fn from(mut v: Vec<T>) -> Self {
-		v.sort_greatest_to_lowest();
+		v.sort_by(|a, b| b.cmp(a));
 		v.dedup();
 		Self::from_sorted_set(v)
 	}
