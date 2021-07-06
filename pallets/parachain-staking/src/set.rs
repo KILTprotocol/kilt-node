@@ -39,9 +39,10 @@ impl<T: Ord + Debug> OrderedSet<T> {
 		Self(Vec::new())
 	}
 
-	/// Create a set from a `Vec`.
+	/// Create an ordered set from a `Vec`.
 	///
-	/// `v` will be sorted and dedup first.
+	/// The vector will be sorted reversily (from greatest to lowest) and
+	/// deduped first.
 	pub fn from(mut v: Vec<T>) -> Self {
 		v.sort_by(|a, b| b.cmp(a));
 		v.dedup();
@@ -50,7 +51,8 @@ impl<T: Ord + Debug> OrderedSet<T> {
 
 	/// Create a set from a `Vec`.
 	///
-	/// Assume `v` is sorted and contain unique elements.
+	/// Assumes that `v` is sorted reversely (from greatest to lowest) and only
+	/// contains unique elements.
 	pub fn from_sorted_set(v: Vec<T>) -> Self {
 		Self(v)
 	}
@@ -126,26 +128,36 @@ impl<T: Ord + Debug> OrderedSet<T> {
 		self.0.binary_search(value)
 	}
 
-	// iterative search from left to right which is assumed to be sorted from
-	// greatest to least
+	/// Iteratively searchis this (from greatest to lowest) ordered set for a
+	/// given element.
+	///
+	/// 1. If the value is found, then Result::Ok is returned, containing the
+	/// index of the matching element.
+	/// 2. If the value is not found, then Result::Err is returned, containing
+	/// the index where a matching element could be inserted while maintaining
+	/// sorted order.
 	pub fn linear_search(&self, value: &T) -> Result<usize, usize> {
 		let size = self.0.len();
 		let mut loc: usize = size;
-		let mut i: usize = 0;
 		// keep running until we find a smaller item
-		for v in self.0.iter() {
-			// prevent to have same items
-			if v.cmp(value) == Ordering::Equal {
-				return Ok(i);
-			// store index if v is bigger (since we assume order from max to
-			// min) but keep checking for Ordering::Equal
-			} else if v.cmp(value) == Ordering::Less && loc == size {
-				// insert after current element
-				loc = i;
-			}
-			i = i.saturating_add(1);
-		}
-		Err(loc.min(size))
+		self.0
+			.iter()
+			.enumerate()
+			.find_map(|(i, v)| {
+				match (v.cmp(value), loc == size) {
+					// prevent to have same items
+					(Ordering::Equal, _) => Some(Ok(i)),
+					// eventually, we want to return this index but we need to keep checking for Ordering::Equal in case
+					// value is still in the set
+					(Ordering::Less, true) => {
+						// insert after current element
+						loc = i;
+						None
+					}
+					_ => None,
+				}
+			})
+			.unwrap_or(Err(loc))
 	}
 
 	/// Binary searches this ordered OrderedSet for a given element with the
