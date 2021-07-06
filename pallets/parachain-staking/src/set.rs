@@ -343,6 +343,25 @@ mod tests {
 
 	#[test]
 	fn linear_search() {
+		let set: OrderedSet<StakeOf<Test>> = OrderedSet::from(vec![
+			StakeOf::<Test> { owner: 1, amount: 100 },
+			StakeOf::<Test> { owner: 3, amount: 90 },
+			StakeOf::<Test> { owner: 5, amount: 80 },
+			StakeOf::<Test> { owner: 7, amount: 70 },
+			StakeOf::<Test> { owner: 9, amount: 60 },
+		]);
+		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 1, amount: 0 }), Ok(0));
+		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 7, amount: 100 }), Ok(3));
+		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 7, amount: 50 }), Ok(3));
+		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 2, amount: 100 }), Err(1));
+		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 2, amount: 90 }), Err(2));
+		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 2, amount: 65 }), Err(4));
+		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 2, amount: 60 }), Err(5));
+		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 2, amount: 59 }), Err(5));
+	}
+
+	#[test]
+	fn upsert_set() {
 		let mut set: OrderedSet<StakeOf<Test>> = OrderedSet::from(vec![
 			StakeOf::<Test> { owner: 1, amount: 100 },
 			StakeOf::<Test> { owner: 3, amount: 90 },
@@ -350,7 +369,7 @@ mod tests {
 			StakeOf::<Test> { owner: 7, amount: 70 },
 			StakeOf::<Test> { owner: 9, amount: 60 },
 		]);
-		assert_eq!(set.insert(StakeOf::<Test> { owner: 2, amount: 75 }), true);
+		assert!(set.insert(StakeOf::<Test> { owner: 2, amount: 75 }));
 		assert_eq!(
 			set,
 			OrderedSet::from(vec![
