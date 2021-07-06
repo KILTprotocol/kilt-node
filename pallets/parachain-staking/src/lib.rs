@@ -483,19 +483,19 @@ pub mod pallet {
 			post_weight
 		}
 
-		// #[cfg(feature = "try-runtime")]
-		// fn pre_upgrade() -> Result<(), &'static str> {
-		// 	log::debug!("[BEGIN] parachain-staking::pre_upgrade");
-		// 	let pre_migration_checks = migrations::v2::pre_migrate::<T>();
-		// 	log::debug!("[END] parachain-staking::pre_upgrade");
-		// 	pre_migration_checks
-		// }
+		#[cfg(feature = "try-runtime")]
+		fn pre_upgrade() -> Result<(), &'static str> {
+			log::debug!("[BEGIN] parachain-staking::pre_upgrade");
+			let pre_migration_checks = migrations::v4::pre_migrate::<T>();
+			log::debug!("[END] parachain-staking::pre_upgrade");
+			pre_migration_checks
+		}
 
 		#[allow(clippy::let_and_return)]
 		fn on_runtime_upgrade() -> Weight {
 			#[cfg(feature = "try-runtime")]
 			log::debug!("[BEGIN] parachain-staking::on_runtime_upgrade");
-			let migration_consumed_weight = migrations::v3::migrate::<T>();
+			let migration_consumed_weight = migrations::v4::migrate::<T>();
 			#[cfg(feature = "try-runtime")]
 			log::debug!("[END] parachain-staking::on_runtime_upgrade");
 			migration_consumed_weight
@@ -504,7 +504,7 @@ pub mod pallet {
 		#[cfg(feature = "try-runtime")]
 		fn post_upgrade() -> Result<(), &'static str> {
 			log::debug!("[BEGIN] parachain-staking::post_upgrade");
-			let post_migration_checks = migrations::v3::post_migrate::<T>();
+			let post_migration_checks = migrations::v4::post_migrate::<T>();
 			log::debug!("[END] parachain-staking::post_upgrade");
 			post_migration_checks
 		}
@@ -915,7 +915,13 @@ pub mod pallet {
 				candidates.len().saturated_into::<u32>() > T::MinRequiredCollators::get(),
 				Error::<T>::TooFewCollatorCandidates
 			);
-			if candidates.remove_by(|stake| stake.owner.cmp(&collator)).is_some() {
+			if candidates
+				.remove(&Stake {
+					owner: collator.clone(),
+					amount: state.total,
+				})
+				.is_some()
+			{
 				<CandidatePool<T>>::put(candidates);
 			}
 
@@ -1066,7 +1072,13 @@ pub mod pallet {
 			let now = <Round<T>>::get().current;
 			let when = now.saturating_add(T::ExitQueueDelay::get());
 			state.leave_candidates(when);
-			if candidates.remove_by(|stake| stake.owner.cmp(&collator)).is_some() {
+			if candidates
+				.remove(&Stake {
+					owner: collator.clone(),
+					amount: state.total,
+				})
+				.is_some()
+			{
 				<CandidatePool<T>>::put(candidates);
 			}
 			<CollatorState<T>>::insert(&collator, state);
@@ -1681,13 +1693,13 @@ pub mod pallet {
 			let mut collator = <CollatorState<T>>::get(&candidate).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(!collator.is_leaving(), Error::<T>::CannotDelegateIfLeaving);
 			let delegator_total = delegations
-				.inc_delegation(&candidate, more)
+				.inc_delegation(candidate.clone(), more)
 				.ok_or(Error::<T>::DelegationNotFound)?;
 
 			// update lock
 			let unstaking_len = Self::increase_lock(&delegator, delegator_total, more)?;
 			let before = collator.total;
-			collator.inc_delegator(&delegator, more);
+			collator.inc_delegator(delegator.clone(), more);
 			let after = collator.total;
 
 			if collator.is_active() {
@@ -1753,7 +1765,7 @@ pub mod pallet {
 			let mut collator = <CollatorState<T>>::get(&candidate).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(!collator.is_leaving(), Error::<T>::CannotDelegateIfLeaving);
 			let remaining = delegations
-				.dec_delegation(&candidate, less)
+				.dec_delegation(candidate.clone(), less)
 				.ok_or(Error::<T>::DelegationNotFound)?
 				.ok_or(Error::<T>::Underflow)?;
 
@@ -1766,7 +1778,7 @@ pub mod pallet {
 			Self::prep_unstake(&delegator, less)?;
 
 			let before = collator.total;
-			collator.dec_delegator(&delegator, less);
+			collator.dec_delegator(delegator.clone(), less);
 			let after = collator.total;
 			if collator.is_active() {
 				Self::update(candidate.clone(), collator.total);
@@ -1922,7 +1934,11 @@ pub mod pallet {
 
 			let delegator_stake = state
 				.delegators
-				.remove_by(|nom| nom.owner.cmp(&delegator))
+				.remove(&Stake {
+					owner: delegator.clone(),
+					// amount is irrelevant for removal
+					amount: BalanceOf::<T>::one(),
+				})
 				.map(|nom| nom.amount)
 				.ok_or(Error::<T>::DelegatorNotFound)?;
 
@@ -2042,13 +2058,16 @@ pub mod pallet {
 			log::trace!("{} Candidates for {} Collator seats", candidates.len(), top_n);
 
 			// Order candidates by their total stake (greatest to least)
-			candidates.sort_by(|a, b| b.amount.cmp(&a.amount));
+			//
+			// NOTE: Resorting reversely (from greatest to lowest) is required if a
+			// collator's total stake just changed before updating the selected candidates.
+			candidates.sort_by(|a, b| b.cmp(a));
 
 			// Should never fail
 			let top_n = top_n.saturated_into::<usize>();
 
 			// Choose the top MaxSelectedCandidates qualified candidates
-			let mut collators = candidates
+			let collators = candidates
 				.clone()
 				.into_iter()
 				.take(top_n)
@@ -2056,39 +2075,8 @@ pub mod pallet {
 				.map(|x| x.owner)
 				.collect::<Vec<T::AccountId>>();
 
-			// Check whether we wanted to replace a collator with a candidate which has
-			// equal stake, and if so, revert the swap.
-			//
-			// NOTE: Can only occur if we have filled all top_n slots and have a bigger pool
-			// than the number of collators.
-			if collators.len() < candidates.len() {
-				// we expect all of the following unwraps to be some
-				if let Some(old_last_collator_id) = <SelectedCandidates<T>>::get().last() {
-					if let Some(old_last_collator) = <CollatorState<T>>::get(&old_last_collator_id) {
-						if let Some(new_last_collator) = candidates.get(top_n.saturating_sub(1)) {
-							// only need to potentially revert the swap if the new collator with least total
-							// stake was not in the selected candidates before
-							if !<SelectedCandidates<T>>::get()
-								.iter()
-								.any(|id| *id == new_last_collator.owner)
-							{
-								// check whether current last collator has same stake as their replacement
-								if new_last_collator.amount == old_last_collator.total
-									&& !collators.iter().any(|id| *id == old_last_collator.id)
-								{
-									log::trace!(
-										"Prioritizing former collator {:?} over candidate {:?} with same stake",
-										old_last_collator.id,
-										new_last_collator.owner
-									);
-									collators.pop();
-									collators.push(old_last_collator.id);
-								}
-							}
-						}
-					}
-				}
-			}
+			// update pool
+			<CandidatePool<T>>::set(OrderedSet::from_sorted_set(candidates));
 
 			collators
 		}
@@ -2112,7 +2100,6 @@ pub mod pallet {
 		) -> Result<(CollatorOf<T>, StakeOf<T>), DispatchError> {
 			// add stake & sort by amount
 			let mut delegators: Vec<Stake<T::AccountId, BalanceOf<T>>> = state.delegators.into();
-			delegators.sort_by(|a, b| b.amount.cmp(&a.amount));
 
 			// check whether stake is at last place
 			match delegators.pop() {

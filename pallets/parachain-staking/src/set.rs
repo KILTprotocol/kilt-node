@@ -38,18 +38,20 @@ impl<T: Ord> OrderedSet<T> {
 		Self(Vec::new())
 	}
 
-	/// Create a set from a `Vec`.
+	/// Create an ordered set from a `Vec`.
 	///
-	/// `v` will be sorted and dedup first.
+	/// The vector will be sorted reversily (from greatest to lowest) and
+	/// deduped first.
 	pub fn from(mut v: Vec<T>) -> Self {
-		v.sort();
+		v.sort_by(|a, b| b.cmp(a));
 		v.dedup();
 		Self::from_sorted_set(v)
 	}
 
 	/// Create a set from a `Vec`.
 	///
-	/// Assume `v` is sorted and contain unique elements.
+	/// Assumes that `v` is sorted reversely (from greatest to lowest) and only
+	/// contains unique elements.
 	pub fn from_sorted_set(v: Vec<T>) -> Self {
 		Self(v)
 	}
@@ -58,7 +60,7 @@ impl<T: Ord> OrderedSet<T> {
 	///
 	/// Return true if the item is unique in the set, otherwise returns false.
 	pub fn insert(&mut self, value: T) -> bool {
-		match self.0.binary_search(&value) {
+		match self.linear_search(&value) {
 			Ok(_) => false,
 			Err(loc) => {
 				self.0.insert(loc, value);
@@ -71,9 +73,10 @@ impl<T: Ord> OrderedSet<T> {
 	///
 	/// Returns the old value if existing.
 	pub fn upsert(&mut self, value: T) -> Option<T> {
-		match self.0.binary_search(&value) {
+		match self.linear_search(&value) {
 			Ok(i) => {
 				let old = sp_std::mem::replace(&mut self.0[i], value);
+				self.sort_greatest_to_lowest();
 				Some(old)
 			}
 			Err(i) => {
@@ -87,7 +90,7 @@ impl<T: Ord> OrderedSet<T> {
 	///
 	/// Return true if removal happened.
 	pub fn remove(&mut self, value: &T) -> Option<T> {
-		match self.0.binary_search(value) {
+		match self.linear_search(value) {
 			Ok(loc) => Some(self.0.remove(loc)),
 			Err(_) => None,
 		}
@@ -108,7 +111,7 @@ impl<T: Ord> OrderedSet<T> {
 
 	/// Return whether the set contains `value`.
 	pub fn contains(&self, value: &T) -> bool {
-		self.0.binary_search(value).is_ok()
+		self.linear_search(value).is_ok()
 	}
 
 	/// Binary searches this ordered OrderedSet for a given element.
@@ -122,6 +125,38 @@ impl<T: Ord> OrderedSet<T> {
 	/// sorted order.
 	pub fn binary_search(&self, value: &T) -> Result<usize, usize> {
 		self.0.binary_search(value)
+	}
+
+	/// Iteratively searchis this (from greatest to lowest) ordered set for a
+	/// given element.
+	///
+	/// 1. If the value is found, then Result::Ok is returned, containing the
+	/// index of the matching element.
+	/// 2. If the value is not found, then Result::Err is returned, containing
+	/// the index where a matching element could be inserted while maintaining
+	/// sorted order.
+	pub fn linear_search(&self, value: &T) -> Result<usize, usize> {
+		let size = self.0.len();
+		let mut loc: usize = size;
+		// keep running until we find a smaller item
+		self.0
+			.iter()
+			.enumerate()
+			.find_map(|(i, v)| {
+				match (v.cmp(value), loc == size) {
+					// prevent to have same items
+					(Ordering::Equal, _) => Some(Ok(i)),
+					// eventually, we want to return this index but we need to keep checking for Ordering::Equal in case
+					// value is still in the set
+					(Ordering::Less, true) => {
+						// insert after current element
+						loc = i;
+						None
+					}
+					_ => None,
+				}
+			})
+			.unwrap_or(Err(loc))
 	}
 
 	/// Binary searches this ordered OrderedSet for a given element with the
@@ -159,6 +194,11 @@ impl<T: Ord> OrderedSet<T> {
 	/// Convert the set to a vector.
 	pub fn into_vec(self) -> Vec<T> {
 		self.0
+	}
+
+	/// Sort from greatest to lowest
+	pub fn sort_greatest_to_lowest(&mut self) {
+		self.0.sort_by(|a, b| b.cmp(a));
 	}
 }
 
@@ -227,6 +267,8 @@ impl<T: Ord> IndexMut<RangeFull> for OrderedSet<T> {
 
 #[cfg(test)]
 mod tests {
+	use crate::{mock::Test, types::StakeOf};
+
 	use super::*;
 
 	#[test]
@@ -296,5 +338,77 @@ mod tests {
 		let mut set: OrderedSet<i32> = OrderedSet::from(vec![1, 2, 3, 4]);
 		set.clear();
 		assert_eq!(set, OrderedSet::new());
+	}
+
+	#[test]
+	fn linear_search() {
+		let set: OrderedSet<StakeOf<Test>> = OrderedSet::from(vec![
+			StakeOf::<Test> { owner: 1, amount: 100 },
+			StakeOf::<Test> { owner: 3, amount: 90 },
+			StakeOf::<Test> { owner: 5, amount: 80 },
+			StakeOf::<Test> { owner: 7, amount: 70 },
+			StakeOf::<Test> { owner: 9, amount: 60 },
+		]);
+		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 1, amount: 0 }), Ok(0));
+		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 7, amount: 100 }), Ok(3));
+		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 7, amount: 50 }), Ok(3));
+		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 2, amount: 100 }), Err(1));
+		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 2, amount: 90 }), Err(2));
+		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 2, amount: 65 }), Err(4));
+		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 2, amount: 60 }), Err(5));
+		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 2, amount: 59 }), Err(5));
+	}
+
+	#[test]
+	fn upsert_set() {
+		let mut set: OrderedSet<StakeOf<Test>> = OrderedSet::from(vec![
+			StakeOf::<Test> { owner: 1, amount: 100 },
+			StakeOf::<Test> { owner: 3, amount: 90 },
+			StakeOf::<Test> { owner: 5, amount: 80 },
+			StakeOf::<Test> { owner: 7, amount: 70 },
+			StakeOf::<Test> { owner: 9, amount: 60 },
+		]);
+		assert!(set.insert(StakeOf::<Test> { owner: 2, amount: 75 }));
+		assert_eq!(
+			set,
+			OrderedSet::from(vec![
+				StakeOf::<Test> { owner: 1, amount: 100 },
+				StakeOf::<Test> { owner: 3, amount: 90 },
+				StakeOf::<Test> { owner: 5, amount: 80 },
+				StakeOf::<Test> { owner: 2, amount: 75 },
+				StakeOf::<Test> { owner: 7, amount: 70 },
+				StakeOf::<Test> { owner: 9, amount: 60 },
+			])
+		);
+		assert_eq!(
+			set.upsert(StakeOf::<Test> { owner: 2, amount: 90 }),
+			Some(StakeOf::<Test> { owner: 2, amount: 75 })
+		);
+		assert_eq!(
+			set,
+			OrderedSet::from(vec![
+				StakeOf::<Test> { owner: 1, amount: 100 },
+				StakeOf::<Test> { owner: 3, amount: 90 },
+				StakeOf::<Test> { owner: 2, amount: 90 },
+				StakeOf::<Test> { owner: 5, amount: 80 },
+				StakeOf::<Test> { owner: 7, amount: 70 },
+				StakeOf::<Test> { owner: 9, amount: 60 },
+			])
+		);
+		assert_eq!(
+			set.upsert(StakeOf::<Test> { owner: 2, amount: 60 }),
+			Some(StakeOf::<Test> { owner: 2, amount: 90 })
+		);
+		assert_eq!(
+			set,
+			OrderedSet::from(vec![
+				StakeOf::<Test> { owner: 1, amount: 100 },
+				StakeOf::<Test> { owner: 3, amount: 90 },
+				StakeOf::<Test> { owner: 5, amount: 80 },
+				StakeOf::<Test> { owner: 7, amount: 70 },
+				StakeOf::<Test> { owner: 2, amount: 60 },
+				StakeOf::<Test> { owner: 9, amount: 60 },
+			])
+		);
 	}
 }
