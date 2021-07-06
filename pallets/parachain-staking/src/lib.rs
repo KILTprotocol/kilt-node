@@ -2059,9 +2059,9 @@ pub mod pallet {
 
 			// Order candidates by their total stake (greatest to least)
 			//
-			// NOTE: Resorting is required if a collator's total stake just changed before
-			// updating the selected candidates.
-			candidates.sort_by(|a, b| b.cmp(&a));
+			// NOTE: Resorting reversely (from greatest to lowest) is required if a
+			// collator's total stake just changed before updating the selected candidates.
+			candidates.sort_by(|a, b| b.cmp(a));
 
 			// Should never fail
 			let top_n = top_n.saturated_into::<usize>();
@@ -2100,7 +2100,6 @@ pub mod pallet {
 		) -> Result<(CollatorOf<T>, StakeOf<T>), DispatchError> {
 			// add stake & sort by amount
 			let mut delegators: Vec<Stake<T::AccountId, BalanceOf<T>>> = state.delegators.into();
-			delegators.sort_by(|a, b| b.amount.cmp(&a.amount));
 
 			// check whether stake is at last place
 			match delegators.pop() {

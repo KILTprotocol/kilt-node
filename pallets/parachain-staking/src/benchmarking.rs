@@ -34,6 +34,7 @@ use sp_std::{convert::TryInto, vec::Vec};
 
 const COLLATOR_ACCOUNT_SEED: u32 = 0;
 const DELEGATOR_ACCOUNT_SEED: u32 = 1;
+const MIN_COLLATORS: u32 = 4;
 
 /// Fills the candidate pool up to `num_candidates`.
 fn setup_collator_candidates<T: Config>(
@@ -541,7 +542,7 @@ benchmarks! {
 	}
 
 	decrease_max_candidate_stake_by {
-		let n in 4 .. T::MaxCollatorCandidates::get();
+		let n in MIN_COLLATORS .. T::MaxCollatorCandidates::get();
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
 		// worst case: all candidates have staked more than new max
