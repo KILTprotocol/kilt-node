@@ -363,6 +363,7 @@ pub enum Releases {
 	V1_0_0,
 	V2_0_0, // New Reward calculation, MaxCollatorCandidateStake
 	V3_0_0, // Update InflationConfig
+	V4,     // Sort CandidatePool and delegations by amount
 }
 
 impl Default for Releases {

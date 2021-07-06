@@ -75,6 +75,11 @@ pub mod v3 {
 
 	use super::*;
 
+	pub fn pre_migrate<T: Config>() -> Result<(), &'static str> {
+		assert_eq!(StorageVersion::<T>::get(), Releases::V2_0_0);
+		Ok(())
+	}
+
 	pub fn migrate<T: Config>() -> Weight {
 		log::info!("Migrating staking to Releases::V3_0_0");
 
@@ -90,6 +95,51 @@ pub mod v3 {
 	pub fn post_migrate<T: Config>() -> Result<(), &'static str> {
 		assert_eq!(InflationConfig::<T>::get(), InflationInfo::from(INFLATION_CONFIG));
 		assert_eq!(StorageVersion::<T>::get(), Releases::V3_0_0);
+		Ok(())
+	}
+}
+
+pub mod v4 {
+	use super::*;
+	use crate::types::{CollatorOf, Delegator};
+
+	pub fn pre_migrate<T: Config>() -> Result<(), &'static str> {
+		assert_eq!(StorageVersion::<T>::get(), Releases::V3_0_0);
+		Ok(())
+	}
+
+	pub fn migrate<T: Config>() -> Weight {
+		log::info!("Migrating staking to Releases::V4");
+
+		// sort candidates from greatest to lowest
+		CandidatePool::<T>::mutate(|candidates| candidates.sort_greatest_to_lowest());
+		let mut n = 1u64;
+
+		// for each candidate: sort delegators from greatest to lowest
+		CollatorState::<T>::translate_values(|mut state: CollatorOf<T>| {
+			state.delegators.sort_greatest_to_lowest();
+			n = n.saturating_add(1u64);
+			Some(state)
+		});
+
+		// for each delegator: sort delegations from greatest to lowest
+		DelegatorState::<T>::translate_values(|mut state: Delegator<T::AccountId, T::CurrencyBalance>| {
+			state.delegations.sort_greatest_to_lowest();
+			n = n.saturating_add(1u64);
+			Some(state)
+		});
+
+		StorageVersion::<T>::put(Releases::V4);
+		log::info!("Completed staking migration to Releases::V4");
+
+		T::DbWeight::get().reads_writes(n, n)
+	}
+
+	pub fn post_migrate<T: Config>() -> Result<(), &'static str> {
+		let mut candidates = CandidatePool::<T>::get();
+		candidates.sort_greatest_to_lowest();
+		assert_eq!(CandidatePool::<T>::get(), candidates);
+		assert_eq!(StorageVersion::<T>::get(), Releases::V4);
 		Ok(())
 	}
 }
