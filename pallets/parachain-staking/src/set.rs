@@ -20,7 +20,6 @@ use parity_scale_codec::{Decode, Encode};
 use sp_runtime::RuntimeDebug;
 use sp_std::{
 	cmp::Ordering,
-	fmt::Debug,
 	ops::{Index, IndexMut, Range, RangeFull},
 	prelude::*,
 };
@@ -33,7 +32,7 @@ use serde::{Deserialize, Serialize};
 #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Default, Clone)]
 pub struct OrderedSet<T>(Vec<T>);
 
-impl<T: Ord + Debug> OrderedSet<T> {
+impl<T: Ord> OrderedSet<T> {
 	/// Create a new empty set.
 	pub fn new() -> Self {
 		Self(Vec::new())
@@ -203,13 +202,13 @@ impl<T: Ord + Debug> OrderedSet<T> {
 	}
 }
 
-impl<T: Ord + Debug> From<Vec<T>> for OrderedSet<T> {
+impl<T: Ord> From<Vec<T>> for OrderedSet<T> {
 	fn from(v: Vec<T>) -> Self {
 		Self::from(v)
 	}
 }
 
-impl<T: Ord + Debug> Index<usize> for OrderedSet<T> {
+impl<T: Ord> Index<usize> for OrderedSet<T> {
 	type Output = T;
 
 	fn index(&self, index: usize) -> &Self::Output {
@@ -217,7 +216,7 @@ impl<T: Ord + Debug> Index<usize> for OrderedSet<T> {
 	}
 }
 
-impl<T: Ord + Debug> Index<Range<usize>> for OrderedSet<T> {
+impl<T: Ord> Index<Range<usize>> for OrderedSet<T> {
 	type Output = [T];
 
 	fn index(&self, range: Range<usize>) -> &Self::Output {
@@ -225,7 +224,7 @@ impl<T: Ord + Debug> Index<Range<usize>> for OrderedSet<T> {
 	}
 }
 
-impl<T: Ord + Debug> Index<RangeFull> for OrderedSet<T> {
+impl<T: Ord> Index<RangeFull> for OrderedSet<T> {
 	type Output = [T];
 
 	fn index(&self, range: RangeFull) -> &Self::Output {
@@ -233,13 +232,13 @@ impl<T: Ord + Debug> Index<RangeFull> for OrderedSet<T> {
 	}
 }
 
-impl<T: Ord + Debug> IndexMut<usize> for OrderedSet<T> {
+impl<T: Ord> IndexMut<usize> for OrderedSet<T> {
 	fn index_mut(&mut self, index: usize) -> &mut Self::Output {
 		&mut self.0[index]
 	}
 }
 
-impl<T: Ord + Debug> IntoIterator for OrderedSet<T> {
+impl<T: Ord> IntoIterator for OrderedSet<T> {
 	type Item = T;
 	type IntoIter = sp_std::vec::IntoIter<Self::Item>;
 
@@ -248,19 +247,19 @@ impl<T: Ord + Debug> IntoIterator for OrderedSet<T> {
 	}
 }
 
-impl<T: Ord + Debug> From<OrderedSet<T>> for Vec<T> {
+impl<T: Ord> From<OrderedSet<T>> for Vec<T> {
 	fn from(s: OrderedSet<T>) -> Self {
 		s.0
 	}
 }
 
-impl<T: Ord + Debug> IndexMut<Range<usize>> for OrderedSet<T> {
+impl<T: Ord> IndexMut<Range<usize>> for OrderedSet<T> {
 	fn index_mut(&mut self, range: Range<usize>) -> &mut Self::Output {
 		&mut self.0[range]
 	}
 }
 
-impl<T: Ord + Debug> IndexMut<RangeFull> for OrderedSet<T> {
+impl<T: Ord> IndexMut<RangeFull> for OrderedSet<T> {
 	fn index_mut(&mut self, range: RangeFull) -> &mut Self::Output {
 		&mut self.0[range]
 	}
