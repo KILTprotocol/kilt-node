@@ -51,12 +51,16 @@ def update_spec(input: typing.Dict):
 if __name__ == "__main__":
     import json
     import sys
+    import subprocess
 
-    in_file = sys.argv[1]
-    with open(in_file, "r") as f:
-        in_json = json.load(f)
-        update_spec(in_json)
-
+    docker_img = sys.argv[1]
     out_file = sys.argv[2]
+
+    process = subprocess.run(["docker", "run", docker_img, "build-spec", "--runtime",
+                              "peregrine", "--chain", "dev", "--disable-default-bootnode"], capture=True)
+
+    in_json = json.load(process.stdout)
+    update_spec(in_json)
+
     with open(out_file, "w") as f:
         json.dump(in_json, f)

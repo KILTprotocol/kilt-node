@@ -13,3 +13,5 @@
 
 # Custom Polkadot-js apps types
 pallets/did/src/custom_types.json
+
+**/__pycache__
