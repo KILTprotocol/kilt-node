@@ -189,7 +189,7 @@ pub mod pallet {
 	use pallet_balances::{BalanceLock, Locks};
 	use pallet_session::ShouldEndSession;
 	use sp_runtime::{
-		traits::{One, SaturatedConversion, Saturating, StaticLookup, Zero},
+		traits::{Convert, One, SaturatedConversion, Saturating, StaticLookup, Zero},
 		Permill, Perquintill,
 	};
 	use sp_staking::SessionIndex;
@@ -2305,6 +2305,20 @@ pub mod pallet {
 			// prepare unstaking of collator candidate
 			Self::prep_unstake_exit_queue(&state.id, state.stake);
 
+			// disable validator for next session if they were in the set of validators
+			if let Some(index) = pallet_session::Pallet::<T>::validators()
+				.into_iter()
+				.enumerate()
+				.find_map(|(i, id): (usize, T::ValidatorId)| {
+					if <T as pallet_session::Config>::ValidatorIdOf::convert(collator.clone()) == Some(id) {
+						Some(i)
+					} else {
+						None
+					}
+				}) {
+				pallet_session::Pallet::<T>::disable_index(index);
+			}
+
 			<CollatorState<T>>::remove(&collator);
 		}
 
@@ -2489,11 +2503,13 @@ pub mod pallet {
 		/// Weight: O(D) where D is the number of delegators of this collator
 		/// block author bounded by `MaxDelegatorsPerCollator`.
 		/// - Reads: CollatorState, Total, Balance, InflationConfig,
-		///   MaxSelectedCandidates
-		/// - Writes: D * Balance
+		///   MaxSelectedCandidates, Validators, DisabledValidators
+		/// - Writes: (D + 1) * Balance
 		/// # </weight>
 		fn note_author(author: T::AccountId) {
-			// should always include state
+			log::info!("current author {:?}", pallet_authorship::Pallet::<T>::author());
+			// should always include state except if the collator has been forcedly removed
+			// via `force_remove_candidate` in the current or previous round
 			if let Some(state) = <CollatorState<T>>::get(author.clone()) {
 				let total_issuance = T::Currency::total_issuance();
 				let TotalStake {
@@ -2504,7 +2520,13 @@ pub mod pallet {
 				let d_staking_rate = Perquintill::from_rational(total_delegators, total_issuance);
 				let inflation_config = <InflationConfig<T>>::get();
 				let authors = pallet_session::Pallet::<T>::validators();
-				let authors_per_round = <BalanceOf<T>>::from(authors.len().saturated_into::<u128>());
+				let authors_per_round = <BalanceOf<T>>::from(
+					authors
+						.len()
+						// subtract by number of disabled validators
+						.saturating_sub(pallet_session::Pallet::<T>::disabled_validators().len())
+						.saturated_into::<u128>(),
+				);
 
 				// Reward collator
 				let amt_due_collator =
