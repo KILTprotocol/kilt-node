@@ -30,7 +30,7 @@ use kilt_primitives::constants::BLOCKS_PER_YEAR;
 use crate::{
 	mock::{
 		almost_equal, events, last_event, roll_to, AccountId, Balance, Balances, BlockNumber, Event as MetaEvent,
-		ExtBuilder, Origin, StakePallet, System, Test, BLOCKS_PER_ROUND, DECIMALS,
+		ExtBuilder, Origin, Session, StakePallet, System, Test, BLOCKS_PER_ROUND, DECIMALS,
 	},
 	set::OrderedSet,
 	types::{BalanceOf, Collator, CollatorStatus, DelegationCounter, Delegator, RoundInfo, Stake, StakeOf, TotalStake},
@@ -3075,5 +3075,83 @@ fn authorities_per_round() {
 				Balances::free_balance(1),
 				stake + reward_0 + reward_1 + reward_2 + reward_3
 			);
+		});
+}
+
+#[test]
+fn force_new_round() {
+	ExtBuilder::default()
+		.with_balances(vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100), (6, 100)])
+		.with_collators(vec![(1, 100), (2, 100), (3, 100), (4, 100)])
+		.build()
+		.execute_with(|| {
+			let mut round = RoundInfo {
+				current: 0,
+				first: 0,
+				length: 5,
+			};
+			assert_eq!(StakePallet::round(), round);
+			assert_eq!(Session::validators(), vec![1, 2]);
+			assert_eq!(Session::current_index(), 0);
+			// 3 should be validator in round 2
+			assert_ok!(StakePallet::join_delegators(Origin::signed(5), 3, 100));
+
+			// init force new round from 0 to 1, updating the authorities
+			assert_ok!(StakePallet::force_new_round(Origin::root()));
+			assert_eq!(StakePallet::round(), round);
+			assert_eq!(Session::current_index(), 0);
+			assert!(StakePallet::new_round_forced());
+
+			// force new round should become active by starting next block
+			roll_to(2, vec![]);
+			round = RoundInfo {
+				current: 1,
+				first: 2,
+				length: 5,
+			};
+			assert_eq!(Session::current_index(), 1);
+			assert_eq!(Session::validators(), vec![1, 2]);
+			assert!(!StakePallet::new_round_forced());
+
+			// roll to next block in same round 1
+			roll_to(3, vec![]);
+			assert_eq!(Session::current_index(), 1);
+			assert_eq!(StakePallet::round(), round);
+			// assert_eq!(Session::validators(), vec![3, 1]);
+			assert!(!StakePallet::new_round_forced());
+			// 4 should become validator in session 3 if we do not force a new round
+			assert_ok!(StakePallet::join_delegators(Origin::signed(6), 4, 100));
+
+			// end session 2 naturally
+			roll_to(7, vec![]);
+			round = RoundInfo {
+				current: 2,
+				first: 7,
+				length: 5,
+			};
+			assert_eq!(StakePallet::round(), round);
+			assert_eq!(Session::current_index(), 2);
+			assert!(!StakePallet::new_round_forced());
+			assert_eq!(Session::validators(), vec![3, 1]);
+
+			// force new round 3
+			assert_ok!(StakePallet::force_new_round(Origin::root()));
+			assert_eq!(StakePallet::round(), round);
+			assert_eq!(Session::current_index(), 2);
+			// validator set should not change until next round
+			assert_eq!(Session::validators(), vec![3, 1]);
+			assert!(StakePallet::new_round_forced());
+
+			// force new round should become active by starting next block
+			roll_to(8, vec![]);
+			round = RoundInfo {
+				current: 3,
+				first: 8,
+				length: 5,
+			};
+			assert_eq!(Session::current_index(), 3);
+			assert_eq!(StakePallet::round(), round);
+			assert_eq!(Session::validators(), vec![3, 4]);
+			assert!(!StakePallet::new_round_forced());
 		});
 }

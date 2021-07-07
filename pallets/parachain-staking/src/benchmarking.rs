@@ -18,7 +18,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 //! Benchmarking
-use crate::*;
+use crate::{types::RoundInfo, *};
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, Zero};
 use frame_support::{
 	assert_ok,
@@ -26,6 +26,7 @@ use frame_support::{
 };
 use frame_system::{Pallet as System, RawOrigin};
 use kilt_primitives::constants::BLOCKS_PER_YEAR;
+use pallet_session::Pallet as Session;
 use sp_runtime::{
 	traits::{One, SaturatedConversion, Saturating, StaticLookup},
 	Perquintill,
@@ -143,6 +144,30 @@ benchmarks! {
 		assert_eq!(new.collator.max_rate, old.collator.max_rate);
 		assert_eq!(new.delegator.max_rate, old.delegator.max_rate);
 		assert!(new.collator.reward_rate.annual < old.collator.reward_rate.annual);
+	}
+
+	force_new_round {
+		let round = <Round<T>>::get();
+		let now = System::<T>::block_number();
+		assert_eq!(round.current, 0);
+		assert_eq!(Session::<T>::current_index(), 0);
+		assert!(!<ForceNewRound<T>>::get());
+	}: _(RawOrigin::Root)
+	verify {
+		assert!(<ForceNewRound<T>>::get());
+		assert_eq!(Session::<T>::current_index(), 0);
+
+		// jump to next block to trigger new round
+		let now = now + T::BlockNumber::one();
+		System::<T>::set_block_number(now);
+		Session::<T>::on_initialize(now);
+		assert_eq!(Session::<T>::current_index(), 1);
+		assert_eq!(<Round<T>>::get(), RoundInfo {
+			current: 1,
+			first: now,
+			length: round.length,
+		});
+		assert!(!<ForceNewRound<T>>::get());
 	}
 
 	set_inflation {

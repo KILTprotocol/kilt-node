@@ -212,7 +212,7 @@ pub mod pallet {
 
 	/// Configuration trait of this pallet.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + pallet_balances::Config {
+	pub trait Config: frame_system::Config + pallet_balances::Config + pallet_session::Config {
 		/// Overarching event type
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		// FIXME: Remove Currency and CurrencyBalance types. Problem: Need to restrict
@@ -603,6 +603,10 @@ pub mod pallet {
 		BalanceOf<T>,
 	)>;
 
+	#[pallet::storage]
+	#[pallet::getter(fn new_round_forced)]
+	pub(crate) type ForceNewRound<T: Config> = StorageValue<_, bool, ValueQuery>;
+
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
 		pub stakers: GenesisStaker<T>,
@@ -660,13 +664,42 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
+		/// Forces the start of the new round in the next block.
+		///
+		/// The new round will be enforced via <T as
+		/// ShouldEndSession<_>>::should_end_session.
+		///
+		/// The dispatch origin must be Root.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account]
+		/// - Writes: ForceNewRound
+		/// # </weight>
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_inflation())]
+		pub fn force_new_round(origin: OriginFor<T>) -> DispatchResult {
+			ensure_root(origin)?;
+
+			frame_system::Pallet::<T>::register_extra_weight_unchecked(
+				T::DbWeight::get().reads_writes(1, 1),
+				DispatchClass::Mandatory,
+			);
+
+			// set force_new_round handle which, at the start of the next block, will
+			// trigger `should_end_session` in `Session::on_initialize` and update the
+			// current round
+			<ForceNewRound<T>>::put(true);
+
+			Ok(())
+		}
+
 		/// Set the annual inflation rate to derive per-round inflation.
 		///
 		/// The inflation details are considered valid if the annual reward rate
 		/// is approximately the per-block reward rate multiplied by the
 		/// estimated* total number of blocks per year.
 		///
-		/// *The estimated average block time is six seconds.
+		/// The estimated average block time is twelve seconds.
 		///
 		/// The dispatch origin must be Root.
 		///
@@ -2538,7 +2571,20 @@ pub mod pallet {
 
 	impl<T: Config> ShouldEndSession<T::BlockNumber> for Pallet<T> {
 		fn should_end_session(now: T::BlockNumber) -> bool {
-			<Round<T>>::get().should_update(now)
+			let mut round = <Round<T>>::get();
+			// always update when a new round should start
+			if round.should_update(now) {
+				true
+			} else if <ForceNewRound<T>>::get() {
+				// check for forced new round
+				<ForceNewRound<T>>::put(false);
+				round.update(now);
+				<Round<T>>::put(round);
+				Self::deposit_event(Event::NewRound(round.first, round.current));
+				true
+			} else {
+				false
+			}
 		}
 	}
 
