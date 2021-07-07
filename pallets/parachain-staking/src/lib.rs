@@ -2520,13 +2520,7 @@ pub mod pallet {
 				let d_staking_rate = Perquintill::from_rational(total_delegators, total_issuance);
 				let inflation_config = <InflationConfig<T>>::get();
 				let authors = pallet_session::Pallet::<T>::validators();
-				let authors_per_round = <BalanceOf<T>>::from(
-					authors
-						.len()
-						// subtract by number of disabled validators
-						.saturating_sub(pallet_session::Pallet::<T>::disabled_validators().len())
-						.saturated_into::<u128>(),
-				);
+				let authors_per_round = <BalanceOf<T>>::from(authors.len().saturated_into::<u128>());
 
 				// Reward collator
 				let amt_due_collator =
