@@ -500,19 +500,17 @@ pub mod pallet {
 		fn on_runtime_upgrade() -> Weight {
 			#[cfg(feature = "try-runtime")]
 			log::debug!("[BEGIN] parachain-staking::on_runtime_upgrade");
-			let mut weight = Weight::zero();
-
-			if <StorageVersion<T>>::get() == Releases::V1_0_0 {
-				weight = weight.saturating_add(migrations::v2::migrate::<T>());
+			let weight = match <StorageVersion<T>>::get() {
+				Releases::V1_0_0 => migrations::v2::migrate::<T>()
+					.saturating_add(migrations::v3::migrate::<T>())
+					.saturating_add(migrations::v4::migrate::<T>()),
+				Releases::V2_0_0 => migrations::v3::migrate::<T>().saturating_add(migrations::v4::migrate::<T>()),
+				Releases::V3_0_0 => migrations::v4::migrate::<T>(),
+				Releases::V4 => Weight::zero(),
 			}
-			if <StorageVersion<T>>::get() == Releases::V2_0_0 {
-				weight = weight.saturating_add(migrations::v3::migrate::<T>());
-			}
-			if <StorageVersion<T>>::get() == Releases::V3_0_0 {
-				weight = weight.saturating_add(migrations::v4::migrate::<T>());
-			}
+			.saturating_add(T::DbWeight::get().reads(1));
 			log::debug!("[END] parachain-staking::on_runtime_upgrade");
-			weight.saturating_add(T::DbWeight::get().reads(3))
+			weight
 		}
 
 		#[cfg(feature = "try-runtime")]
