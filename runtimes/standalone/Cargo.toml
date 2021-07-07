@@ -5,7 +5,7 @@ name = "mashnet-node-runtime"
 version = "0.24.0"
 
 [build-dependencies]
-substrate-wasm-builder = "4.0.0"
+substrate-wasm-builder = { git = "https://github.com/paritytech/substrate", branch = "master" }
 
 [dependencies]
 bitflags = {default-features = false, version = "1.2.1"}

@@ -86,7 +86,7 @@ rococo-runtime = {git = "https://github.com/paritytech/polkadot", default-featur
 frame-try-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.7", optional = true}
 
 [build-dependencies]
-substrate-wasm-builder = "4.0.0"
+substrate-wasm-builder = { git = "https://github.com/paritytech/substrate", branch = "master" }
 
 [features]
 default = ["std"]
