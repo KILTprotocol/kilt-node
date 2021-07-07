@@ -19,12 +19,13 @@
 use frame_support::traits::Currency;
 use parity_scale_codec::{Decode, Encode};
 use sp_runtime::{
-	traits::{AtLeast32BitUnsigned, Saturating},
+	traits::{AtLeast32BitUnsigned, Saturating, Zero},
 	RuntimeDebug,
 };
 use sp_staking::SessionIndex;
 use sp_std::{
 	cmp::Ordering,
+	fmt::Debug,
 	ops::{Add, Sub},
 	vec,
 };
@@ -67,10 +68,20 @@ impl<AccountId: Ord, Balance: PartialEq + Ord> PartialOrd for Stake<AccountId, B
 	}
 }
 
-// We only establish an order based on the owner
+// We order by stake and only return an equal order, if both account ids match.
+// This prevents the same account ids to be in the same OrderedSet. Otherwise,
+// it is ordered from greatest to lowest stake (primary) and from first joined
+// to last joined (primary).
 impl<AccountId: Ord, Balance: PartialEq + Ord> Ord for Stake<AccountId, Balance> {
 	fn cmp(&self, other: &Self) -> Ordering {
-		self.owner.cmp(&other.owner)
+		match (self.owner.cmp(&other.owner), self.amount.cmp(&other.amount)) {
+			// enforce unique account ids
+			(Ordering::Equal, _) => Ordering::Equal,
+			// prioritize existing members if stakes match
+			(_, Ordering::Equal) => Ordering::Greater,
+			// order by stake
+			(_, ord) => ord,
+		}
 	}
 }
 
@@ -93,8 +104,8 @@ impl Default for CollatorStatus {
 /// Global collator state with commission fee, staked funds, and delegations
 pub struct Collator<AccountId, Balance>
 where
-	AccountId: Eq + Ord,
-	Balance: Eq + Ord,
+	AccountId: Eq + Ord + Debug,
+	Balance: Eq + Ord + Debug,
 {
 	/// The collators account id.
 	pub id: AccountId,
@@ -117,8 +128,8 @@ where
 
 impl<A, B> Collator<A, B>
 where
-	A: Ord + Clone,
-	B: AtLeast32BitUnsigned + Ord + Copy + Saturating,
+	A: Ord + Clone + Debug,
+	B: AtLeast32BitUnsigned + Ord + Copy + Saturating + Debug + Zero,
 {
 	pub fn new(id: A, stake: B) -> Self {
 		let total = stake;
@@ -164,17 +175,25 @@ where
 		}
 	}
 
-	pub fn inc_delegator(&mut self, delegator: &A, more: B) {
-		if let Ok(i) = self.delegators.binary_search_by(|x| x.owner.cmp(delegator)) {
+	pub fn inc_delegator(&mut self, delegator: A, more: B) {
+		if let Ok(i) = self.delegators.linear_search(&Stake::<A, B> {
+			owner: delegator,
+			amount: B::zero(),
+		}) {
 			self.delegators[i].amount = self.delegators[i].amount.saturating_add(more);
 			self.total = self.total.saturating_add(more);
+			self.delegators.sort_greatest_to_lowest()
 		}
 	}
 
-	pub fn dec_delegator(&mut self, delegator: &A, less: B) {
-		if let Ok(i) = self.delegators.binary_search_by(|x| x.owner.cmp(delegator)) {
+	pub fn dec_delegator(&mut self, delegator: A, less: B) {
+		if let Ok(i) = self.delegators.linear_search(&Stake::<A, B> {
+			owner: delegator,
+			amount: B::zero(),
+		}) {
 			self.delegators[i].amount = self.delegators[i].amount.saturating_sub(less);
 			self.total = self.total.saturating_sub(less);
+			self.delegators.sort_greatest_to_lowest()
 		}
 	}
 
@@ -191,8 +210,8 @@ pub struct Delegator<AccountId: Eq + Ord, Balance: Eq + Ord> {
 
 impl<AccountId, Balance> Delegator<AccountId, Balance>
 where
-	AccountId: Eq + Ord + Clone,
-	Balance: Copy + Add<Output = Balance> + Saturating + PartialOrd + Eq + Ord,
+	AccountId: Eq + Ord + Clone + Debug,
+	Balance: Copy + Add<Output = Balance> + Saturating + PartialOrd + Eq + Ord + Debug + Zero,
 {
 	pub fn new(collator: AccountId, amount: Balance) -> Self {
 		Delegator {
@@ -221,9 +240,13 @@ where
 	/// Returns Some(remaining stake for delegator) if the delegation for the
 	/// collator exists. Returns `None` otherwise.
 	pub fn rm_delegation(&mut self, collator: &AccountId) -> Option<Balance> {
-		let amt = self.delegations.remove_by(|x| x.owner.cmp(collator)).map(|f| f.amount);
+		let amt = self.delegations.remove(&Stake::<AccountId, Balance> {
+			owner: collator.clone(),
+			// amount is irrelevant for removal
+			amount: Balance::zero(),
+		});
 
-		if let Some(balance) = amt {
+		if let Some(Stake::<AccountId, Balance> { amount: balance, .. }) = amt {
 			self.total = self.total.saturating_sub(balance);
 			Some(self.total)
 		} else {
@@ -232,33 +255,38 @@ where
 	}
 
 	/// Returns None if delegation was not found.
-	pub fn inc_delegation(&mut self, collator: &AccountId, more: Balance) -> Option<Balance> {
-		match self.delegations.binary_search_by(|x| x.owner.cmp(collator)) {
-			Ok(i) => {
-				self.delegations[i].amount = self.delegations[i].amount.saturating_add(more);
-				self.total = self.total.saturating_add(more);
-				Some(self.delegations[i].amount)
-			}
-			Err(_) => None,
+	pub fn inc_delegation(&mut self, collator: AccountId, more: Balance) -> Option<Balance> {
+		if let Ok(i) = self.delegations.linear_search(&Stake::<AccountId, Balance> {
+			owner: collator,
+			amount: Balance::zero(),
+		}) {
+			self.delegations[i].amount = self.delegations[i].amount.saturating_add(more);
+			self.total = self.total.saturating_add(more);
+			self.delegations.sort_greatest_to_lowest();
+			Some(self.delegations[i].amount)
+		} else {
+			None
 		}
 	}
 
 	/// Returns Some(Some(balance)) if successful, None if delegation was not
 	/// found and Some(None) if delegated stake would underflow.
-	pub fn dec_delegation(&mut self, collator: &AccountId, less: Balance) -> Option<Option<Balance>> {
-		match self.delegations.binary_search_by(|x| x.owner.cmp(collator)) {
-			Ok(i) => {
-				let mut x = &mut self.delegations[i];
-				if x.amount > less {
-					x.amount = x.amount.saturating_sub(less);
-					self.total = self.total.saturating_sub(less);
-					Some(Some(x.amount))
-				} else {
-					// underflow error; should rm entire delegation if x.amount == collator
-					Some(None)
-				}
+	pub fn dec_delegation(&mut self, collator: AccountId, less: Balance) -> Option<Option<Balance>> {
+		if let Ok(i) = self.delegations.linear_search(&Stake::<AccountId, Balance> {
+			owner: collator,
+			amount: Balance::zero(),
+		}) {
+			if self.delegations[i].amount > less {
+				self.delegations[i].amount = self.delegations[i].amount.saturating_sub(less);
+				self.total = self.total.saturating_sub(less);
+				self.delegations.sort_greatest_to_lowest();
+				Some(Some(self.delegations[i].amount))
+			} else {
+				// underflow error; should rm entire delegation
+				Some(None)
 			}
-			Err(_) => None,
+		} else {
+			None
 		}
 	}
 }
@@ -335,6 +363,7 @@ pub enum Releases {
 	V1_0_0,
 	V2_0_0, // New Reward calculation, MaxCollatorCandidateStake
 	V3_0_0, // Update InflationConfig
+	V4,     // Sort CandidatePool and delegations by amount
 }
 
 impl Default for Releases {
