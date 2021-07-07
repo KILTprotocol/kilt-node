@@ -34,6 +34,7 @@ use sp_std::{convert::TryInto, vec::Vec};
 
 const COLLATOR_ACCOUNT_SEED: u32 = 0;
 const DELEGATOR_ACCOUNT_SEED: u32 = 1;
+const MIN_COLLATORS: u32 = 4;
 
 /// Fills the candidate pool up to `num_candidates`.
 fn setup_collator_candidates<T: Config>(
@@ -192,7 +193,7 @@ benchmarks! {
 	}: _(RawOrigin::Root,  T::Lookup::unlookup(candidate.clone()))
 	verify {
 		let candidates = CandidatePool::<T>::get();
-		assert!(candidates.binary_search_by(|other| other.owner.cmp(&candidate)).is_err())
+		assert!(!candidates.into_iter().any(|other| other.owner == candidate));
 	}
 
 	join_candidates {
@@ -210,7 +211,7 @@ benchmarks! {
 	}: _(RawOrigin::Signed(new_candidate.clone()), T::MinCollatorCandidateStake::get())
 	verify {
 		let candidates = CandidatePool::<T>::get();
-		assert!(candidates.binary_search_by(|other| other.owner.cmp(&new_candidate)).is_ok())
+		assert!(candidates.into_iter().any(|other| other.owner == new_candidate));
 	}
 
 	init_leave_candidates {
@@ -228,7 +229,7 @@ benchmarks! {
 	}: _(RawOrigin::Signed(candidate.clone()))
 	verify {
 		let candidates = CandidatePool::<T>::get();
-		assert!(candidates.binary_search_by(|other| other.owner.cmp(&candidate)).is_err());
+		assert!(!candidates.into_iter().any(|other| other.owner == candidate));
 		let unlocking_at = now.saturating_add(T::ExitQueueDelay::get());
 		assert!(<CollatorState<T>>::get(candidate).unwrap().can_exit(unlocking_at));
 	}
@@ -248,7 +249,7 @@ benchmarks! {
 	}: _(RawOrigin::Signed(candidate.clone()))
 	verify {
 		let candidates = CandidatePool::<T>::get();
-		assert!(candidates.binary_search_by(|other| other.owner.cmp(&candidate)).is_ok());
+		assert!(candidates.into_iter().any(|other| other.owner == candidate));
 	}
 
 	execute_leave_candidates {
@@ -356,7 +357,7 @@ benchmarks! {
 	}: _(RawOrigin::Signed(delegator.clone()), T::Lookup::unlookup(collator.clone()), amount)
 	verify {
 		let state = <CollatorState<T>>::get(&collator).unwrap();
-		assert!(state.delegators.binary_search_by(|x| x.owner.cmp(&delegator)).is_ok());
+		assert!(state.delegators.into_iter().any(|x| x.owner == delegator));
 	}
 
 	delegator_stake_more {
@@ -389,7 +390,7 @@ benchmarks! {
 	}: _(RawOrigin::Signed(delegator.clone()), T::Lookup::unlookup(collator.clone()), amount)
 	verify {
 		let state = <CollatorState<T>>::get(&collator).unwrap();
-		assert!(state.delegators.binary_search_by(|x| x.owner.cmp(&delegator)).is_ok());
+		assert!(state.delegators.into_iter().any(|x| x.owner == delegator));
 		assert_eq!(<DelegatorState<T>>::get(&delegator).unwrap().total, amount + amount);
 		assert!(<Unstaking<T>>::get(&delegator).is_empty());
 	}
@@ -425,7 +426,7 @@ benchmarks! {
 	}: _(RawOrigin::Signed(delegator.clone()), T::Lookup::unlookup(collator.clone()), amount)
 	verify {
 		let state = <CollatorState<T>>::get(&collator).unwrap();
-		assert!(state.delegators.binary_search_by(|x| x.owner.cmp(&delegator)).is_ok());
+		assert!(state.delegators.into_iter().any(|x| x.owner == delegator));
 		assert_eq!(<DelegatorState<T>>::get(&delegator).unwrap().total, T::MinDelegatorStake::get());
 		assert_eq!(<Unstaking<T>>::get(&delegator).len(), 2);
 	}
@@ -461,7 +462,7 @@ benchmarks! {
 	}: _(RawOrigin::Signed(delegator.clone()), T::Lookup::unlookup(collator.clone()))
 	verify {
 		let state = <CollatorState<T>>::get(&collator).unwrap();
-		assert!(state.delegators.binary_search_by(|x| x.owner.cmp(&delegator)).is_err());
+		assert!(!state.delegators.into_iter().any(|x| x.owner == delegator));
 		assert!(<DelegatorState<T>>::get(&delegator).is_none());
 		assert_eq!(<Unstaking<T>>::get(&delegator).len(), 2);
 	}
@@ -497,7 +498,7 @@ benchmarks! {
 	}: _(RawOrigin::Signed(delegator.clone()))
 	verify {
 		let state = <CollatorState<T>>::get(&collator).unwrap();
-		assert!(state.delegators.binary_search_by(|x| x.owner.cmp(&delegator)).is_err());
+		assert!(!state.delegators.into_iter().any(|x| x.owner == delegator));
 		assert!(<DelegatorState<T>>::get(&delegator).is_none());
 		assert_eq!(<Unstaking<T>>::get(&delegator).len(), 2);
 	}
@@ -541,20 +542,21 @@ benchmarks! {
 	}
 
 	decrease_max_candidate_stake_by {
-		let n in 2 .. T::MaxCollatorCandidates::get();
+		let n in MIN_COLLATORS .. T::MaxCollatorCandidates::get();
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
 		// worst case: all candidates have staked more than new max
 		let old = <MaxCollatorCandidateStake<T>>::get();
-		let new =  T::MinCollatorCandidateStake::get();
-		let stake = new + new;
-		let candidates = setup_collator_candidates::<T>(n, Some(stake));
+		let candidates = setup_collator_candidates::<T>(n, Some(old));
+		let candidate = candidates[0].clone();
+		assert_eq!(<CollatorState<T>>::get(&candidate).unwrap().stake, old);
+
+		let new =  old.saturating_sub(T::CurrencyBalance::one());
 		for (i, c) in candidates.iter().enumerate() {
 			fill_delegators::<T>(m, c.clone(), i.saturated_into::<u32>());
 		}
-		let candidate = candidates[0].clone();
-		assert_eq!(<CollatorState<T>>::get(&candidate).unwrap().stake, stake);
-	}: _(RawOrigin::Root, old.saturating_sub(new))
+		assert_eq!(<CollatorState<T>>::get(&candidate).unwrap().stake, old);
+	}: decrease_max_candidate_stake_by(RawOrigin::Root, old.saturating_sub(new))
 	verify {
 		assert_eq!(<MaxCollatorCandidateStake<T>>::get(), new);
 		assert_eq!(<CollatorState<T>>::get(candidate).unwrap().stake, new);
@@ -583,7 +585,7 @@ benchmarks! {
 
 	// 	// should not have delegated to collator yet
 	// 	let state = <CollatorState<T>>::get(&collator).unwrap();
-	// 	assert!(!state.delegators.binary_search_by(|x| x.owner.cmp(&delegator)).is_ok());
+	// 	assert!(!state.delegators.into_iter().any(|x| x.owner == delegator));
 
 	// 	// increase stake so we can unstake, because current stake is minimum
 	// 	T::Currency::make_free_balance_be(&delegator, T::CurrencyBalance::from(u128::MAX));
@@ -595,7 +597,7 @@ benchmarks! {
 	// }: _(RawOrigin::Signed(delegator.clone()), T::Lookup::unlookup(collator.clone()), amount)
 	// verify {
 	// 	let state = <CollatorState<T>>::get(&collator).unwrap();
-	// 	assert!(state.delegators.binary_search_by(|x| x.owner.cmp(&delegator)).is_ok());
+	// 	assert!(state.delegators.into_iter().any(|x| x.owner == delegator);
 	// }
 }
 
