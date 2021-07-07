@@ -512,7 +512,7 @@ pub mod pallet {
 				weight = weight.saturating_add(migrations::v4::migrate::<T>());
 			}
 			log::debug!("[END] parachain-staking::on_runtime_upgrade");
-			weight
+			weight.saturating_add(T::DbWeight::get().reads(3))
 		}
 
 		#[cfg(feature = "try-runtime")]
