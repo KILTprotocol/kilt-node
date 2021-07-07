@@ -167,6 +167,10 @@ impl_opaque_keys! {
 	}
 }
 
+parameter_types! {
+	pub const DisabledValidatorsThreshold: Perbill = Perbill::from_percent(17);
+}
+
 impl pallet_session::Config for Test {
 	type Event = Event;
 	type ValidatorId = AccountId;
@@ -176,7 +180,7 @@ impl pallet_session::Config for Test {
 	type SessionManager = StakePallet;
 	type SessionHandler = <MockSessionKeys as OpaqueKeys>::KeyTypeIdProviders;
 	type Keys = MockSessionKeys;
-	type DisabledValidatorsThreshold = ();
+	type DisabledValidatorsThreshold = DisabledValidatorsThreshold;
 	type WeightInfo = ();
 }
 
@@ -335,11 +339,15 @@ pub(crate) fn roll_to(n: BlockNumber, authors: Vec<Option<AccountId>>) {
 		}
 		StakePallet::on_finalize(System::block_number());
 		Session::on_finalize(System::block_number());
+		Authorship::on_finalize(System::block_number());
+		Aura::on_finalize(System::block_number());
 		Balances::on_finalize(System::block_number());
 		System::on_finalize(System::block_number());
 		System::set_block_number(System::block_number() + 1);
 		System::on_initialize(System::block_number());
 		Balances::on_initialize(System::block_number());
+		Aura::on_initialize(System::block_number());
+		Authorship::on_initialize(System::block_number());
 		Session::on_initialize(System::block_number());
 		StakePallet::on_initialize(System::block_number());
 	}
