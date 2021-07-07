@@ -5,7 +5,7 @@ name = "mashnet-node-runtime"
 version = "0.24.0"
 
 [build-dependencies]
-substrate-wasm-builder = { git = "https://github.com/paritytech/substrate", branch = "master" }
+substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.7"}
 
 [dependencies]
 bitflags = {default-features = false, version = "1.2.1"}
@@ -144,5 +144,5 @@ try-runtime = [
   "pallet-timestamp/try-runtime",
   "pallet-utility/try-runtime",
   "pallet-transaction-payment/try-runtime",
-  "pallet-vesting/try-runtime"
+  "pallet-vesting/try-runtime",
 ]
