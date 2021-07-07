@@ -13,7 +13,7 @@ cp target/release/kilt-parachain $TMP_DIR/kilt-parachain
 # cargo build --release -p kilt-parachain --features fast-gov
 # cp target/release/kilt-parachain $TMP_DIR/kilt-parachain-fast-gov
 
-RELAY_CHAIN_IMG=parity/polkadot:v0.9.5
+RELAY_CHAIN_IMG=parity/polkadot:v0.9.7
 RELAY_BINARY="/usr/bin/polkadot"
 
 # ##############################################################################
