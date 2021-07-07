@@ -2758,7 +2758,10 @@ fn force_remove_candidate() {
 			assert!(StakePallet::unstaking(2).get(&3).is_none());
 			assert!(StakePallet::unstaking(3).get(&3).is_none());
 
+			// force remove 1
+			assert!(Session::disabled_validators().is_empty());
 			assert_ok!(StakePallet::force_remove_candidate(Origin::root(), 1));
+			assert_eq!(Session::disabled_validators(), vec![0]);
 			assert_eq!(last_event(), MetaEvent::StakePallet(Event::CollatorRemoved(1, 200)));
 			assert!(!StakePallet::candidate_pool().contains(&Stake { owner: 1, amount: 100 }));
 			assert_eq!(StakePallet::selected_candidates(), vec![2, 3]);
@@ -2783,6 +2786,17 @@ fn force_remove_candidate() {
 				StakePallet::force_remove_candidate(Origin::root(), 4),
 				Error::<Test>::CandidateNotFound
 			);
+
+			// session 1: expect 1 to still be in validator set but as disabled
+			roll_to(5, vec![]);
+			assert_eq!(Session::current_index(), 1);
+			assert_eq!(Session::validators(), vec![1, 2]);
+			assert_eq!(Session::disabled_validators(), vec![0]);
+
+			// session 2: expect validator set to have changed
+			roll_to(10, vec![]);
+			assert_eq!(Session::validators(), vec![2, 3]);
+			assert!(Session::disabled_validators().is_empty());
 		});
 }
 
