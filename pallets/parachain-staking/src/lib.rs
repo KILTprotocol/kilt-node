@@ -2244,7 +2244,7 @@ pub mod pallet {
 			let mut unstaking = <Unstaking<T>>::get(who);
 
 			ensure!(
-				unstaking.len().saturated_into::<u32>() <= T::MaxUnstakeRequests::get(),
+				unstaking.len().saturated_into::<u32>() < T::MaxUnstakeRequests::get(),
 				Error::<T>::NoMoreUnstaking,
 			);
 
