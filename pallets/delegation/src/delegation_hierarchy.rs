@@ -18,6 +18,8 @@
 
 use bitflags::bitflags;
 use codec::{Decode, Encode};
+use ctype::CtypeHashOf;
+use sp_std::collections::btree_set::BTreeSet;
 
 use crate::*;
 
@@ -52,87 +54,51 @@ impl Default for Permissions {
 	}
 }
 
-/// A node representing a delegation hierarchy root.
-#[derive(Clone, Debug, Encode, Decode, PartialEq)]
-pub struct DelegationRoot<T: Config> {
-	/// The hash of the CTYPE that delegated attesters within this trust
-	/// hierarchy can attest.
-	pub ctype_hash: CtypeHashOf<T>,
-	/// The identifier of the root owner.
-	pub owner: DelegatorIdOf<T>,
-	/// The flag indicating whether the root has been revoked or not.
-	pub revoked: bool,
-}
-
-impl<T: Config> DelegationRoot<T> {
-	pub fn new(ctype_hash: CtypeHashOf<T>, owner: DelegatorIdOf<T>) -> Self {
-		DelegationRoot {
-			ctype_hash,
-			owner,
-			revoked: false,
-		}
-	}
-}
-
-/// A node representing a node in the delegation hierarchy.
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
 pub struct DelegationNode<T: Config> {
-	/// The ID of the delegation hierarchy root.
-	pub root_id: DelegationNodeIdOf<T>,
-	/// \[OPTIONAL\] The ID of the parent node. If None, the node is
-	/// considered a direct child of the root node.
+	pub hierarchy_id: DelegationHierarchyIdOf<T>,
 	pub parent: Option<DelegationNodeIdOf<T>>,
-	/// The identifier of the owner of the delegation node, i.e., the delegate.
+	pub children: BTreeSet<DelegationNodeIdOf<T>>,
+	pub details: DelegationDetails<T>,
+}
+
+#[derive(Clone, Debug, Encode, Decode, PartialEq)]
+pub struct DelegationDetails<T: Config> {
 	pub owner: DelegatorIdOf<T>,
-	/// The permission flags for the operations the delegate is allowed to
-	/// perform.
-	pub permissions: Permissions,
-	/// The flag indicating whether the delegation has been revoked or not.
 	pub revoked: bool,
+	pub permissions: Permissions,
 }
 
 impl<T: Config> DelegationNode<T> {
-	/// Create a new delegation node that is a direct descendent of the
-	/// given root.
-	///
-	/// * root_id: the root node ID this node will be a child of
-	/// * owner: the identifier of the owner of the new delegation, i.e., the
-	///   new delegate
-	/// * permissions: the permission flags for the operations the delegate is
-	///   allowed to perform
-	pub fn new_root_child(root_id: DelegationNodeIdOf<T>, owner: DelegatorIdOf<T>, permissions: Permissions) -> Self {
-		DelegationNode {
-			root_id,
-			owner,
-			permissions,
-			revoked: false,
+	pub fn new_root_node(hierarchy_id: DelegationHierarchyIdOf<T>, owner: DelegatorIdOf<T>) -> Self {
+		Self {
+			hierarchy_id,
 			parent: None,
+			children: BTreeSet::new(),
+			details: DelegationDetails {
+				owner,
+				revoked: false,
+				permissions: Permissions::all(),
+			},
 		}
 	}
 
-	/// Creates a new delegation node that is a direct descendent of the
-	/// given node.
-	///
-	/// * root_id: the root node ID this node will be a child of
-	/// * parent - the parent node ID this node will be a child of
-	/// * owner: the identifier of the owner of the new delegation, i.e., the
-	///   new delegate
-	/// * permissions: the permission flags for the operations the delegate is
-	///   allowed to perform
-	pub fn new_node_child(
-		root_id: DelegationNodeIdOf<T>,
-		parent: DelegationNodeIdOf<T>,
-		owner: DelegatorIdOf<T>,
-		permissions: Permissions,
-	) -> Self {
-		DelegationNode {
-			root_id,
-			parent: Some(parent),
-			owner,
-			permissions,
-			revoked: false,
-		}
+	pub fn new_node(hierarchy_id: DelegationHierarchyIdOf<T>, parent: DelegationNodeIdOf<T>, owner: DelegatorIdOf<T>, permissions: Permissions) -> Self {
+		let mut new_node = Self::new_root_node(hierarchy_id, owner);
+		new_node.parent = Some(parent);
+		new_node.details.permissions = permissions;
+
+		new_node
 	}
+
+	pub fn add_child(&mut self, child_id: DelegationNodeIdOf<T>) {
+		self.children.insert(child_id);
+	}
+}
+
+#[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd)]
+pub struct DelegationHierarchyInfo<T: Config> {
+	pub ctype_hash: CtypeHashOf<T>,
 }
 
 /// The result that the delegation pallet expects from the implementer of the
