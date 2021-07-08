@@ -486,7 +486,12 @@ pub mod pallet {
 		#[cfg(feature = "try-runtime")]
 		fn pre_upgrade() -> Result<(), &'static str> {
 			log::debug!("[BEGIN] parachain-staking::pre_upgrade");
-			let pre_migration_checks = migrations::v4::pre_migrate::<T>();
+			let pre_migration_checks = match <StorageVersion<T>>::get() {
+				Releases::V1_0_0 => migrations::v2::pre_migrate::<T>(),
+				Releases::V2_0_0 => migrations::v3::pre_migrate::<T>(),
+				Releases::V3_0_0 => migrations::v4::pre_migrate::<T>(),
+				Releases::V4 => Err("Already migrated"),
+			};
 			log::debug!("[END] parachain-staking::pre_upgrade");
 			pre_migration_checks
 		}
@@ -495,10 +500,17 @@ pub mod pallet {
 		fn on_runtime_upgrade() -> Weight {
 			#[cfg(feature = "try-runtime")]
 			log::debug!("[BEGIN] parachain-staking::on_runtime_upgrade");
-			let migration_consumed_weight = migrations::v4::migrate::<T>();
-			#[cfg(feature = "try-runtime")]
+			let weight = match <StorageVersion<T>>::get() {
+				Releases::V1_0_0 => migrations::v2::migrate::<T>()
+					.saturating_add(migrations::v3::migrate::<T>())
+					.saturating_add(migrations::v4::migrate::<T>()),
+				Releases::V2_0_0 => migrations::v3::migrate::<T>().saturating_add(migrations::v4::migrate::<T>()),
+				Releases::V3_0_0 => migrations::v4::migrate::<T>(),
+				Releases::V4 => Weight::zero(),
+			}
+			.saturating_add(T::DbWeight::get().reads(1));
 			log::debug!("[END] parachain-staking::on_runtime_upgrade");
-			migration_consumed_weight
+			weight
 		}
 
 		#[cfg(feature = "try-runtime")]
