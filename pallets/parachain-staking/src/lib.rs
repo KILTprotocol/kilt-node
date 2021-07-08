@@ -198,8 +198,8 @@ pub mod pallet {
 	use crate::{
 		set::OrderedSet,
 		types::{
-			BalanceOf, Collator, CollatorOf, DelegationCounter, Delegator, Releases, RoundInfo, Stake, StakeOf,
-			TotalStake,
+			BalanceOf, Collator, CollatorOf, CollatorStatus, DelegationCounter, Delegator, Releases, RoundInfo, Stake,
+			StakeOf, TotalStake,
 		},
 	};
 
@@ -1008,7 +1008,9 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::join_candidates(T::MaxCollatorCandidates::get(), T::MaxCollatorCandidates::get().saturating_mul(T::MaxDelegatorsPerCollator::get())))]
 		pub fn join_candidates(origin: OriginFor<T>, stake: BalanceOf<T>) -> DispatchResultWithPostInfo {
 			let acc = ensure_signed(origin)?;
-			ensure!(!Self::is_candidate(&acc), Error::<T>::CandidateExists);
+			let (is_candidate, is_active) = Self::is_candidate_and_active(&acc);
+			ensure!(!is_candidate || (is_candidate && is_active), Error::<T>::AlreadyLeaving);
+			ensure!(!is_candidate, Error::<T>::CandidateExists);
 			ensure!(!Self::is_delegator(&acc), Error::<T>::DelegatorExists);
 			ensure!(
 				stake >= T::MinCollatorCandidateStake::get(),
@@ -1410,7 +1412,7 @@ pub mod pallet {
 			ensure!(<DelegatorState<T>>::get(&acc).is_none(), Error::<T>::AlreadyDelegating);
 			ensure!(amount >= T::MinDelegatorStake::get(), Error::<T>::NomStakeBelowMin);
 			// cannot be a collator candidate and delegator with same AccountId
-			ensure!(!Self::is_candidate(&acc), Error::<T>::CandidateExists);
+			ensure!(!Self::is_candidate_and_active(&acc).0, Error::<T>::CandidateExists);
 			// cannot delegate if number of delegations in this round exceeds
 			// MaxDelegationsPerRound
 			let delegation_counter = Self::get_delegation_counter(&acc)?;
@@ -1865,14 +1867,19 @@ pub mod pallet {
 			<DelegatorState<T>>::get(acc).is_some()
 		}
 
-		/// Check whether an account is currently a collator candidate.
+		/// Check whether an account is currently a collator candidate and
+		/// whether their state is CollatorStatus::Active.
 		///
 		/// # <weight>
 		/// Weight: O(1)
 		/// - Reads: CollatorState
 		/// # </weight>
-		pub fn is_candidate(acc: &T::AccountId) -> bool {
-			<CollatorState<T>>::get(acc).is_some()
+		pub fn is_candidate_and_active(acc: &T::AccountId) -> (bool, bool) {
+			if let Some(state) = <CollatorState<T>>::get(acc) {
+				(true, state.state == CollatorStatus::Active)
+			} else {
+				(false, false)
+			}
 		}
 
 		/// Check whether an account is currently among the selected collator

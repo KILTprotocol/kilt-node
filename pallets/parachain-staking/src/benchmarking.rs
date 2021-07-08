@@ -102,12 +102,12 @@ where
 			assert_ok!(<Pallet<T>>::delegator_stake_less(
 				RawOrigin::Signed(delegator.clone()).into(),
 				T::Lookup::unlookup(collator.clone()),
-				T::CurrencyBalance::from(1u64)
+				T::CurrencyBalance::one()
 			));
 		} else {
 			assert_ok!(<Pallet<T>>::candidate_stake_less(
 				RawOrigin::Signed(collator.clone()).into(),
-				T::CurrencyBalance::from(1u64)
+				T::CurrencyBalance::one()
 			));
 		}
 		System::<T>::set_block_number(System::<T>::block_number() + T::BlockNumber::one());
@@ -431,7 +431,7 @@ benchmarks! {
 			fill_delegators::<T>(m, c.clone(), i.saturated_into::<u32>());
 		}
 		let collator = candidates[0].clone();
-		let amount = T::CurrencyBalance::from(1u64);
+		let amount = T::CurrencyBalance::one();
 
 		// make sure delegator collated to collator
 		let state = <CollatorState<T>>::get(&collator).unwrap();
@@ -467,7 +467,7 @@ benchmarks! {
 			fill_delegators::<T>(m, c.clone(), i.saturated_into::<u32>());
 		}
 		let collator = candidates[0].clone();
-		let amount = T::CurrencyBalance::from(1u64);
+		let amount = T::CurrencyBalance::one();
 
 		// make sure delegator collated to collator
 		let state = <CollatorState<T>>::get(&collator).unwrap();
@@ -503,7 +503,7 @@ benchmarks! {
 			fill_delegators::<T>(m, c.clone(), i.saturated_into::<u32>());
 		}
 		let collator = candidates[0].clone();
-		let amount = T::CurrencyBalance::from(1u64);
+		let amount = T::CurrencyBalance::one();
 
 		// make sure delegator collated to collator
 		let state = <CollatorState<T>>::get(&collator).unwrap();
@@ -555,14 +555,14 @@ benchmarks! {
 	}: _(RawOrigin::Signed(candidate.clone()),  T::Lookup::unlookup(candidate.clone()))
 	verify {
 		assert_eq!(<Unstaking<T>>::get(&candidate).len().saturated_into::<u32>(), u.saturating_sub(1u32));
-		assert_eq!(pallet_balances::Pallet::<T>::usable_balance(&candidate), (free_balance - stake - stake + T::CurrencyBalance::from(1u64)).into());
+		assert_eq!(pallet_balances::Pallet::<T>::usable_balance(&candidate), (free_balance - stake - stake + T::CurrencyBalance::one()).into());
 	}
 
 	increase_max_candidate_stake_by {
 		let old = <MaxCollatorCandidateStake<T>>::get();
-	}: _(RawOrigin::Root, T::CurrencyBalance::from(1u64))
+	}: _(RawOrigin::Root, T::CurrencyBalance::one())
 	verify {
-		assert_eq!(<MaxCollatorCandidateStake<T>>::get(), old + T::CurrencyBalance::from(1u64));
+		assert_eq!(<MaxCollatorCandidateStake<T>>::get(), old + T::CurrencyBalance::one());
 		assert!(old < <MaxCollatorCandidateStake<T>>::get());
 	}
 

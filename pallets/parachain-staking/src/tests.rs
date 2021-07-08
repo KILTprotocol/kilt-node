@@ -106,7 +106,7 @@ fn genesis() {
 			// 1
 			assert_eq!(Balances::usable_balance(&1), 500);
 			assert_eq!(Balances::free_balance(&1), 1000);
-			assert!(StakePallet::is_candidate(&1));
+			assert!(StakePallet::is_candidate_and_active(&1).0);
 			assert_eq!(
 				StakePallet::collator_state(&1),
 				Some(Collator {
@@ -123,7 +123,7 @@ fn genesis() {
 			// 2
 			assert_eq!(Balances::usable_balance(&2), 100);
 			assert_eq!(Balances::free_balance(&2), 300);
-			assert!(StakePallet::is_candidate(&2));
+			assert!(StakePallet::is_candidate_and_active(&2).0);
 			assert_eq!(
 				StakePallet::collator_state(&2),
 				Some(Collator {
@@ -209,11 +209,11 @@ fn genesis() {
 				]
 			);
 			for x in 1..5 {
-				assert!(StakePallet::is_candidate(&x));
+				assert!(StakePallet::is_candidate_and_active(&x).0);
 				assert_eq!(Balances::free_balance(&x), 100);
 				assert_eq!(Balances::usable_balance(&x), 80);
 			}
-			assert!(StakePallet::is_candidate(&5));
+			assert!(StakePallet::is_candidate_and_active(&5).0);
 			assert_eq!(Balances::free_balance(&5), 100);
 			assert_eq!(Balances::usable_balance(&5), 90);
 			// Delegators
@@ -654,7 +654,7 @@ fn execute_leave_candidates_with_delay() {
 						state: CollatorStatus::Leaving(3)
 					})
 				);
-				assert!(StakePallet::is_candidate(&collator));
+				assert!(StakePallet::is_candidate_and_active(&collator).0);
 				assert!(StakePallet::unstaking(collator).is_empty());
 			}
 			assert_eq!(
@@ -741,7 +741,7 @@ fn execute_leave_candidates_with_delay() {
 						state: CollatorStatus::Leaving(3)
 					})
 				);
-				assert!(StakePallet::is_candidate(&collator));
+				assert!(StakePallet::is_candidate_and_active(&collator).0);
 				assert!(StakePallet::unstaking(collator).is_empty());
 			}
 			assert_eq!(
@@ -787,7 +787,7 @@ fn execute_leave_candidates_with_delay() {
 					*collator
 				));
 				assert!(StakePallet::collator_state(&collator).is_none());
-				assert!(!StakePallet::is_candidate(collator));
+				assert!(!StakePallet::is_candidate_and_active(collator).0);
 				assert_eq!(StakePallet::unstaking(collator).len(), 1);
 			}
 			assert_eq!(StakePallet::total(), old_stake);
@@ -804,7 +804,7 @@ fn execute_leave_candidates_with_delay() {
 					collator
 				));
 				assert!(StakePallet::collator_state(&collator).is_none());
-				assert!(!StakePallet::is_candidate(&collator));
+				assert!(!StakePallet::is_candidate_and_active(&collator).0);
 				assert_eq!(StakePallet::unstaking(collator).len(), 1);
 			}
 		});
@@ -2333,19 +2333,15 @@ fn unlock_unstaked() {
 			roll_to(6, vec![]);
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
 			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
-			roll_to(7, vec![]);
-			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
 			unstaking.insert(6, 10);
 			unstaking.insert(7, 10);
 			unstaking.insert(8, 10);
-			unstaking.insert(9, 10);
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(1), vec![lock.clone()]);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 
-			roll_to(8, vec![]);
+			roll_to(7, vec![]);
 			assert_noop!(
 				StakePallet::candidate_stake_less(Origin::signed(1), 10),
 				Error::<Test>::NoMoreUnstaking
@@ -2360,19 +2356,18 @@ fn unlock_unstaked() {
 			unstaking.remove(&5);
 			unstaking.remove(&6);
 			unstaking.remove(&7);
-			unstaking.remove(&8);
-			lock.amount = 90;
+			lock.amount = 100;
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(1), vec![lock.clone()]);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 40));
 			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 40));
-			unstaking.insert(10, 40);
+			unstaking.insert(9, 40);
 			assert_ok!(StakePallet::candidate_stake_more(Origin::signed(1), 30));
 			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(2), 1, 30));
-			unstaking.remove(&9);
-			unstaking.insert(10, 20);
+			unstaking.remove(&8);
+			unstaking.insert(9, 20);
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(1), vec![lock.clone()]);
