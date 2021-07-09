@@ -692,11 +692,6 @@ pub mod pallet {
 		pub fn force_new_round(origin: OriginFor<T>) -> DispatchResult {
 			ensure_root(origin)?;
 
-			frame_system::Pallet::<T>::register_extra_weight_unchecked(
-				T::DbWeight::get().reads_writes(1, 1),
-				DispatchClass::Mandatory,
-			);
-
 			// set force_new_round handle which, at the start of the next block, will
 			// trigger `should_end_session` in `Session::on_initialize` and update the
 			// current round
@@ -2606,11 +2601,20 @@ pub mod pallet {
 
 	impl<T: Config> ShouldEndSession<T::BlockNumber> for Pallet<T> {
 		fn should_end_session(now: T::BlockNumber) -> bool {
+			frame_system::Pallet::<T>::register_extra_weight_unchecked(
+				T::DbWeight::get().reads(2),
+				DispatchClass::Mandatory,
+			);
+
 			let mut round = <Round<T>>::get();
 			// always update when a new round should start
 			if round.should_update(now) {
 				true
 			} else if <ForceNewRound<T>>::get() {
+				frame_system::Pallet::<T>::register_extra_weight_unchecked(
+					T::DbWeight::get().writes(2),
+					DispatchClass::Mandatory,
+				);
 				// check for forced new round
 				<ForceNewRound<T>>::put(false);
 				round.update(now);
