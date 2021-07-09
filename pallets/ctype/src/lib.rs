@@ -36,8 +36,15 @@
 //! ## Interface
 //!
 //! ### Dispatchable Functions
-//! - `add` - Create a new CType from a given unique CType hash and associates
-//!   it the origin of the call.
+//! - `add` - Create a new CType from a given unique CType hash and associate it
+//!   with the origin of the call.
+//!
+//! ## Assumptions
+//!
+//! - The CType hash was created using our KILT JS-SDK.
+//! - The underlying CType includes only the following required fields for the
+//!   JSON-Schema we use in the SDK: Identifier, KILT specific JSON-Schema,
+//!   Title and Properties.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]

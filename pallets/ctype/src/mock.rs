@@ -88,8 +88,8 @@ impl Config for Test {
 #[cfg(test)]
 pub(crate) const ALICE: TestCtypeOwner = TestCtypeOwner::new([0u8; 32]);
 
-const DEFAULT_CType_HASH_SEED: u64 = 1u64;
-const ALTERNATIVE_CType_HASH_SEED: u64 = 2u64;
+const DEFAULT_CTYPE_HASH_SEED: u64 = 1u64;
+const ALTERNATIVE_CTYPE_HASH_SEED: u64 = 2u64;
 
 pub fn get_origin(account: TestCtypeOwner) -> Origin {
 	Origin::signed(account)
@@ -97,9 +97,9 @@ pub fn get_origin(account: TestCtypeOwner) -> Origin {
 
 pub fn get_ctype_hash(default: bool) -> TestCtypeHash {
 	if default {
-		TestCtypeHash::from_low_u64_be(DEFAULT_CType_HASH_SEED)
+		TestCtypeHash::from_low_u64_be(DEFAULT_CTYPE_HASH_SEED)
 	} else {
-		TestCtypeHash::from_low_u64_be(ALTERNATIVE_CType_HASH_SEED)
+		TestCtypeHash::from_low_u64_be(ALTERNATIVE_CTYPE_HASH_SEED)
 	}
 }
 
