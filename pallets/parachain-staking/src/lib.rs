@@ -2521,7 +2521,6 @@ pub mod pallet {
 		/// - Writes: (D + 1) * Balance
 		/// # </weight>
 		fn note_author(author: T::AccountId) {
-			log::info!("current author {:?}", pallet_authorship::Pallet::<T>::author());
 			// should always include state except if the collator has been forcedly removed
 			// via `force_remove_candidate` in the current or previous round
 			if let Some(state) = <CollatorState<T>>::get(author.clone()) {
