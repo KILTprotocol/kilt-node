@@ -189,7 +189,7 @@ pub mod pallet {
 	use pallet_balances::{BalanceLock, Locks};
 	use pallet_session::ShouldEndSession;
 	use sp_runtime::{
-		traits::{One, SaturatedConversion, Saturating, StaticLookup, Zero},
+		traits::{Convert, One, SaturatedConversion, Saturating, StaticLookup, Zero},
 		Permill, Perquintill,
 	};
 	use sp_staking::SessionIndex;
@@ -198,8 +198,8 @@ pub mod pallet {
 	use crate::{
 		set::OrderedSet,
 		types::{
-			BalanceOf, Collator, CollatorOf, DelegationCounter, Delegator, Releases, RoundInfo, Stake, StakeOf,
-			TotalStake,
+			BalanceOf, Collator, CollatorOf, CollatorStatus, DelegationCounter, Delegator, Releases, RoundInfo, Stake,
+			StakeOf, TotalStake,
 		},
 	};
 
@@ -212,7 +212,7 @@ pub mod pallet {
 
 	/// Configuration trait of this pallet.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + pallet_balances::Config {
+	pub trait Config: frame_system::Config + pallet_balances::Config + pallet_session::Config {
 		/// Overarching event type
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		// FIXME: Remove Currency and CurrencyBalance types. Problem: Need to restrict
@@ -615,6 +615,10 @@ pub mod pallet {
 		BalanceOf<T>,
 	)>;
 
+	#[pallet::storage]
+	#[pallet::getter(fn new_round_forced)]
+	pub(crate) type ForceNewRound<T: Config> = StorageValue<_, bool, ValueQuery>;
+
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
 		pub stakers: GenesisStaker<T>,
@@ -672,13 +676,37 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
+		/// Forces the start of the new round in the next block.
+		///
+		/// The new round will be enforced via <T as
+		/// ShouldEndSession<_>>::should_end_session.
+		///
+		/// The dispatch origin must be Root.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account]
+		/// - Writes: ForceNewRound
+		/// # </weight>
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_inflation())]
+		pub fn force_new_round(origin: OriginFor<T>) -> DispatchResult {
+			ensure_root(origin)?;
+
+			// set force_new_round handle which, at the start of the next block, will
+			// trigger `should_end_session` in `Session::on_initialize` and update the
+			// current round
+			<ForceNewRound<T>>::put(true);
+
+			Ok(())
+		}
+
 		/// Set the annual inflation rate to derive per-round inflation.
 		///
 		/// The inflation details are considered valid if the annual reward rate
 		/// is approximately the per-block reward rate multiplied by the
 		/// estimated* total number of blocks per year.
 		///
-		/// *The estimated average block time is six seconds.
+		/// The estimated average block time is twelve seconds.
 		///
 		/// The dispatch origin must be Root.
 		///
@@ -987,7 +1015,9 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::join_candidates(T::MaxCollatorCandidates::get(), T::MaxCollatorCandidates::get().saturating_mul(T::MaxDelegatorsPerCollator::get())))]
 		pub fn join_candidates(origin: OriginFor<T>, stake: BalanceOf<T>) -> DispatchResultWithPostInfo {
 			let acc = ensure_signed(origin)?;
-			ensure!(!Self::is_candidate(&acc), Error::<T>::CandidateExists);
+			let is_active_candidate = Self::is_active_candidate(&acc);
+			ensure!(is_active_candidate.unwrap_or(true), Error::<T>::AlreadyLeaving);
+			ensure!(is_active_candidate.is_none(), Error::<T>::CandidateExists);
 			ensure!(!Self::is_delegator(&acc), Error::<T>::DelegatorExists);
 			ensure!(
 				stake >= T::MinCollatorCandidateStake::get(),
@@ -1389,7 +1419,7 @@ pub mod pallet {
 			ensure!(<DelegatorState<T>>::get(&acc).is_none(), Error::<T>::AlreadyDelegating);
 			ensure!(amount >= T::MinDelegatorStake::get(), Error::<T>::NomStakeBelowMin);
 			// cannot be a collator candidate and delegator with same AccountId
-			ensure!(!Self::is_candidate(&acc), Error::<T>::CandidateExists);
+			ensure!(!Self::is_active_candidate(&acc).is_some(), Error::<T>::CandidateExists);
 			// cannot delegate if number of delegations in this round exceeds
 			// MaxDelegationsPerRound
 			let delegation_counter = Self::get_delegation_counter(&acc)?;
@@ -1844,14 +1874,19 @@ pub mod pallet {
 			<DelegatorState<T>>::get(acc).is_some()
 		}
 
-		/// Check whether an account is currently a collator candidate.
+		/// Check whether an account is currently a collator candidate and
+		/// whether their state is CollatorStatus::Active.
 		///
 		/// # <weight>
 		/// Weight: O(1)
 		/// - Reads: CollatorState
 		/// # </weight>
-		pub fn is_candidate(acc: &T::AccountId) -> bool {
-			<CollatorState<T>>::get(acc).is_some()
+		pub fn is_active_candidate(acc: &T::AccountId) -> Option<bool> {
+			if let Some(state) = <CollatorState<T>>::get(acc) {
+				Some(state.state == CollatorStatus::Active)
+			} else {
+				None
+			}
 		}
 
 		/// Check whether an account is currently among the selected collator
@@ -2223,7 +2258,7 @@ pub mod pallet {
 			let mut unstaking = <Unstaking<T>>::get(who);
 
 			ensure!(
-				unstaking.len().saturated_into::<u32>() <= T::MaxUnstakeRequests::get(),
+				unstaking.len().saturated_into::<u32>() < T::MaxUnstakeRequests::get(),
 				Error::<T>::NoMoreUnstaking,
 			);
 
@@ -2283,6 +2318,20 @@ pub mod pallet {
 			}
 			// prepare unstaking of collator candidate
 			Self::prep_unstake_exit_queue(&state.id, state.stake);
+
+			// disable validator for next session if they were in the set of validators
+			pallet_session::Pallet::<T>::validators()
+				.into_iter()
+				.enumerate()
+				.find_map(|(i, id)| {
+					if <T as pallet_session::Config>::ValidatorIdOf::convert(collator.clone()) == Some(id) {
+						Some(i)
+					} else {
+						None
+					}
+				})
+				// FIXME: Does not prevent the collator from being able to author a block in this (or potentially the next) session. See https://github.com/paritytech/substrate/issues/8004
+				.map(pallet_session::Pallet::<T>::disable_index);
 
 			<CollatorState<T>>::remove(&collator);
 		}
@@ -2468,11 +2517,12 @@ pub mod pallet {
 		/// Weight: O(D) where D is the number of delegators of this collator
 		/// block author bounded by `MaxDelegatorsPerCollator`.
 		/// - Reads: CollatorState, Total, Balance, InflationConfig,
-		///   MaxSelectedCandidates
-		/// - Writes: D * Balance
+		///   MaxSelectedCandidates, Validators, DisabledValidators
+		/// - Writes: (D + 1) * Balance
 		/// # </weight>
 		fn note_author(author: T::AccountId) {
-			// should always include state
+			// should always include state except if the collator has been forcedly removed
+			// via `force_remove_candidate` in the current or previous round
 			if let Some(state) = <CollatorState<T>>::get(author.clone()) {
 				let total_issuance = T::Currency::total_issuance();
 				let TotalStake {
@@ -2550,7 +2600,29 @@ pub mod pallet {
 
 	impl<T: Config> ShouldEndSession<T::BlockNumber> for Pallet<T> {
 		fn should_end_session(now: T::BlockNumber) -> bool {
-			<Round<T>>::get().should_update(now)
+			frame_system::Pallet::<T>::register_extra_weight_unchecked(
+				T::DbWeight::get().reads(2),
+				DispatchClass::Mandatory,
+			);
+
+			let mut round = <Round<T>>::get();
+			// always update when a new round should start
+			if round.should_update(now) {
+				true
+			} else if <ForceNewRound<T>>::get() {
+				frame_system::Pallet::<T>::register_extra_weight_unchecked(
+					T::DbWeight::get().writes(2),
+					DispatchClass::Mandatory,
+				);
+				// check for forced new round
+				<ForceNewRound<T>>::put(false);
+				round.update(now);
+				<Round<T>>::put(round);
+				Self::deposit_event(Event::NewRound(round.first, round.current));
+				true
+			} else {
+				false
+			}
 		}
 	}
 
