@@ -52,7 +52,7 @@ pub mod pallet {
 	/// Type of a delegator or a delegate.
 	pub type DelegatorIdOf<T> = <T as Config>::DelegationEntityId;
 
-	/// The type of a CTYPE hash.
+	/// The type of a CType hash.
 	pub type CtypeHashOf<T> = ctype::CtypeHashOf<T>;
 
 	/// Type of a signature verification operation over the delegation details.
@@ -115,7 +115,7 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// A new root has been created.
-		/// \[creator ID, root node ID, CTYPE hash\]
+		/// \[creator ID, root node ID, CType hash\]
 		RootCreated(DelegatorIdOf<T>, DelegationNodeIdOf<T>, CtypeHashOf<T>),
 		/// A root has been revoked.
 		/// \[revoker ID, root node ID\]
@@ -184,7 +184,7 @@ pub mod pallet {
 		///
 		/// * origin: the identifier of the delegation creator
 		/// * root_id: the ID of the root node. It has to be unique
-		/// * ctype_hash: the CTYPE hash that delegates can use for attestations
+		/// * ctype_hash: the CType hash that delegates can use for attestations
 		#[pallet::weight(<T as Config>::WeightInfo::create_root())]
 		pub fn create_root(
 			origin: OriginFor<T>,

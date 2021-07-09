@@ -55,7 +55,7 @@ impl Default for Permissions {
 /// A node representing a delegation hierarchy root.
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
 pub struct DelegationRoot<T: Config> {
-	/// The hash of the CTYPE that delegated attesters within this trust
+	/// The hash of the CType that delegated attesters within this trust
 	/// hierarchy can attest.
 	pub ctype_hash: CtypeHashOf<T>,
 	/// The identifier of the root owner.

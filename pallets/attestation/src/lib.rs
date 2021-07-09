@@ -48,7 +48,7 @@ pub mod pallet {
 	/// Type of a claim hash.
 	pub type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
 
-	/// Type of an attestation CTYPE hash.
+	/// Type of an attestation CType hash.
 	pub type CtypeHashOf<T> = ctype::CtypeHashOf<T>;
 
 	/// Type of an attester identifier.
@@ -89,7 +89,7 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// A new attestation has been created.
-		/// \[attester ID, claim hash, CTYPE hash, (optional) delegation ID\]
+		/// \[attester ID, claim hash, CType hash, (optional) delegation ID\]
 		AttestationCreated(
 			AttesterOf<T>,
 			ClaimHashOf<T>,
@@ -110,7 +110,7 @@ pub mod pallet {
 		AlreadyRevoked,
 		/// No attestation on chain matching the claim hash.
 		AttestationNotFound,
-		/// The attestation CTYPE does not match the CTYPE specified in the
+		/// The attestation CType does not match the CType specified in the
 		/// delegation hierarchy root.
 		CTypeMismatch,
 		/// The delegation node does not include the permission to create new
@@ -138,7 +138,7 @@ pub mod pallet {
 		///
 		/// * origin: the identifier of the attester
 		/// * claim_hash: the hash of the claim to attest. It has to be unique
-		/// * ctype_hash: the hash of the CTYPE used for this attestation
+		/// * ctype_hash: the hash of the CType used for this attestation
 		/// * delegation_id: \[OPTIONAL\] the ID of the delegation node used to
 		///   authorise the attester
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::add())]
@@ -174,7 +174,7 @@ pub mod pallet {
 					Error::<T>::DelegationUnauthorizedToAttest
 				);
 
-				// Check if the CTYPE of the delegation is matching the CTYPE of the attestation
+				// Check if the CType of the delegation is matching the CType of the attestation
 				let root =
 					<delegation::Roots<T>>::get(delegation.root_id).ok_or(delegation::Error::<T>::RootNotFound)?;
 				ensure!(root.ctype_hash == ctype_hash, Error::<T>::CTypeMismatch);
