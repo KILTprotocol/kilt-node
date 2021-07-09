@@ -446,6 +446,13 @@ impl<T: Config> Pallet<T> {
 	/// otherwise it goes up up to `max_parent_checks` nodes, including the root
 	/// node, to check whether the given identity is a valid delegator of the
 	/// given delegation.
+	///
+	/// # <weight>
+	/// Weight: O(P) where P is the number of steps required to verify that
+	/// the dispatch Origin controls the delegation entitled to revoke the
+	/// attestation. It is bounded by `max_parent_checks`.
+	/// - Reads: Roots, P * Delegations
+	/// # </weight>
 	pub fn is_delegating(
 		identity: &DelegatorIdOf<T>,
 		delegation: &DelegationNodeIdOf<T>,
