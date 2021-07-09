@@ -48,7 +48,7 @@ build:
     - docker build --cache-from $AWS_REGISTRY/kilt-parachain/collator:builder-develop --cache-from $AWS_REGISTRY/kilt-parachain/collator:develop --build-arg NODE_TYPE=kilt-parachain -t kiltprotocol/peregrine:develop .
     - docker build --cache-from $AWS_REGISTRY/kilt-parachain/collator:builder-develop --cache-from $AWS_REGISTRY/kilt/prototype-chain:latest-develop --build-arg NODE_TYPE=mashnet-node -t kiltprotocol/mashnet-node:develop .
 
-    - docker tag kiltprotocol/mashnet-node:develop kiltprotocol/mashnet-node::$CI_COMMIT_SHORT_SHA
+    - docker tag kiltprotocol/mashnet-node:develop kiltprotocol/mashnet-node:$CI_COMMIT_SHORT_SHA
     - docker tag kiltprotocol/peregrine:develop kiltprotocol/peregrine:$CI_COMMIT_SHORT_SHA
 
     - docker push kiltprotocol/peregrine:develop
