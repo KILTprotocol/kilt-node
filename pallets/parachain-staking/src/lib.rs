@@ -1015,9 +1015,9 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::join_candidates(T::MaxCollatorCandidates::get(), T::MaxCollatorCandidates::get().saturating_mul(T::MaxDelegatorsPerCollator::get())))]
 		pub fn join_candidates(origin: OriginFor<T>, stake: BalanceOf<T>) -> DispatchResultWithPostInfo {
 			let acc = ensure_signed(origin)?;
-			let (is_candidate, is_active) = Self::is_candidate_and_active(&acc);
-			ensure!(!is_candidate || (is_candidate && is_active), Error::<T>::AlreadyLeaving);
-			ensure!(!is_candidate, Error::<T>::CandidateExists);
+			let is_active_candidate = Self::is_active_candidate(&acc);
+			ensure!(is_active_candidate.unwrap_or(true), Error::<T>::AlreadyLeaving);
+			ensure!(is_active_candidate.is_none(), Error::<T>::CandidateExists);
 			ensure!(!Self::is_delegator(&acc), Error::<T>::DelegatorExists);
 			ensure!(
 				stake >= T::MinCollatorCandidateStake::get(),
@@ -1419,7 +1419,7 @@ pub mod pallet {
 			ensure!(<DelegatorState<T>>::get(&acc).is_none(), Error::<T>::AlreadyDelegating);
 			ensure!(amount >= T::MinDelegatorStake::get(), Error::<T>::NomStakeBelowMin);
 			// cannot be a collator candidate and delegator with same AccountId
-			ensure!(!Self::is_candidate_and_active(&acc).0, Error::<T>::CandidateExists);
+			ensure!(!Self::is_active_candidate(&acc).is_some(), Error::<T>::CandidateExists);
 			// cannot delegate if number of delegations in this round exceeds
 			// MaxDelegationsPerRound
 			let delegation_counter = Self::get_delegation_counter(&acc)?;
@@ -1881,11 +1881,11 @@ pub mod pallet {
 		/// Weight: O(1)
 		/// - Reads: CollatorState
 		/// # </weight>
-		pub fn is_candidate_and_active(acc: &T::AccountId) -> (bool, bool) {
+		pub fn is_active_candidate(acc: &T::AccountId) -> Option<bool> {
 			if let Some(state) = <CollatorState<T>>::get(acc) {
-				(true, state.state == CollatorStatus::Active)
+				Some(state.state == CollatorStatus::Active)
 			} else {
-				(false, false)
+				None
 			}
 		}
 
@@ -2320,18 +2320,18 @@ pub mod pallet {
 			Self::prep_unstake_exit_queue(&state.id, state.stake);
 
 			// disable validator for next session if they were in the set of validators
-			if let Some(index) = pallet_session::Pallet::<T>::validators()
+			pallet_session::Pallet::<T>::validators()
 				.into_iter()
 				.enumerate()
-				.find_map(|(i, id): (usize, T::ValidatorId)| {
+				.find_map(|(i, id)| {
 					if <T as pallet_session::Config>::ValidatorIdOf::convert(collator.clone()) == Some(id) {
 						Some(i)
 					} else {
 						None
 					}
-				}) {
-				pallet_session::Pallet::<T>::disable_index(index);
-			}
+				})
+				// FIXME: Does not prevent the collator from being able to author a block in this (or potentially the next) session. See https://github.com/paritytech/substrate/issues/8004
+				.map(pallet_session::Pallet::<T>::disable_index);
 
 			<CollatorState<T>>::remove(&collator);
 		}

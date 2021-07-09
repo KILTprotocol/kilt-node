@@ -106,7 +106,7 @@ fn genesis() {
 			// 1
 			assert_eq!(Balances::usable_balance(&1), 500);
 			assert_eq!(Balances::free_balance(&1), 1000);
-			assert!(StakePallet::is_candidate_and_active(&1).0);
+			assert!(StakePallet::is_active_candidate(&1).is_some());
 			assert_eq!(
 				StakePallet::collator_state(&1),
 				Some(Collator {
@@ -123,7 +123,7 @@ fn genesis() {
 			// 2
 			assert_eq!(Balances::usable_balance(&2), 100);
 			assert_eq!(Balances::free_balance(&2), 300);
-			assert!(StakePallet::is_candidate_and_active(&2).0);
+			assert!(StakePallet::is_active_candidate(&2).is_some());
 			assert_eq!(
 				StakePallet::collator_state(&2),
 				Some(Collator {
@@ -209,11 +209,11 @@ fn genesis() {
 				]
 			);
 			for x in 1..5 {
-				assert!(StakePallet::is_candidate_and_active(&x).0);
+				assert!(StakePallet::is_active_candidate(&x).is_some());
 				assert_eq!(Balances::free_balance(&x), 100);
 				assert_eq!(Balances::usable_balance(&x), 80);
 			}
-			assert!(StakePallet::is_candidate_and_active(&5).0);
+			assert!(StakePallet::is_active_candidate(&5).is_some());
 			assert_eq!(Balances::free_balance(&5), 100);
 			assert_eq!(Balances::usable_balance(&5), 90);
 			// Delegators
@@ -654,7 +654,7 @@ fn execute_leave_candidates_with_delay() {
 						state: CollatorStatus::Leaving(3)
 					})
 				);
-				assert!(StakePallet::is_candidate_and_active(&collator).0);
+				assert!(StakePallet::is_active_candidate(&collator).is_some());
 				assert!(StakePallet::unstaking(collator).is_empty());
 			}
 			assert_eq!(
@@ -741,7 +741,7 @@ fn execute_leave_candidates_with_delay() {
 						state: CollatorStatus::Leaving(3)
 					})
 				);
-				assert!(StakePallet::is_candidate_and_active(&collator).0);
+				assert!(StakePallet::is_active_candidate(&collator).is_some());
 				assert!(StakePallet::unstaking(collator).is_empty());
 			}
 			assert_eq!(
@@ -787,7 +787,7 @@ fn execute_leave_candidates_with_delay() {
 					*collator
 				));
 				assert!(StakePallet::collator_state(&collator).is_none());
-				assert!(!StakePallet::is_candidate_and_active(collator).0);
+				assert!(!StakePallet::is_active_candidate(collator).is_some());
 				assert_eq!(StakePallet::unstaking(collator).len(), 1);
 			}
 			assert_eq!(StakePallet::total(), old_stake);
@@ -804,7 +804,7 @@ fn execute_leave_candidates_with_delay() {
 					collator
 				));
 				assert!(StakePallet::collator_state(&collator).is_none());
-				assert!(!StakePallet::is_candidate_and_active(&collator).0);
+				assert!(!StakePallet::is_active_candidate(&collator).is_some());
 				assert_eq!(StakePallet::unstaking(collator).len(), 1);
 			}
 		});
