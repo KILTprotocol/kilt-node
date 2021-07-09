@@ -6,7 +6,6 @@ WORKDIR /build
 
 ARG FEATURES=default
 
-COPY ./.git/ /build/.git/
 COPY ./nodes /build/nodes
 COPY ./pallets /build/pallets
 COPY ./primitives /build/primitives
