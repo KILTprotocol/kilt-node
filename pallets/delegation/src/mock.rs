@@ -28,7 +28,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSignature, MultiSigner,
 };
-use sp_std::sync::Arc;
+use sp_std::{collections::btree_set::BTreeSet, sync::Arc};
 
 #[cfg(test)]
 use codec::Encode;
@@ -43,6 +43,7 @@ pub type Block = frame_system::mocking::MockBlock<Test>;
 pub type TestCtypeOwner = kilt_primitives::AccountId;
 pub type TestCtypeHash = kilt_primitives::Hash;
 pub type TestDelegationNodeId = kilt_primitives::Hash;
+pub type TestDelegationHierarchyId = TestDelegationNodeId;
 pub type TestDelegatorId = TestCtypeOwner;
 pub type TestDelegateSignature = MultiSignature;
 
@@ -107,6 +108,7 @@ impl Config for Test {
 	type DelegationSignatureVerification = Self;
 	type DelegationEntityId = TestDelegatorId;
 	type DelegationNodeId = TestDelegationNodeId;
+	type DelegationHierarchyId = TestDelegationHierarchyId;
 	type EnsureOrigin = EnsureSigned<TestDelegatorId>;
 	type Event = ();
 	type MaxSignatureByteLength = MaxSignatureByteLength;
@@ -143,8 +145,8 @@ const ALICE_SEED: [u8; 32] = [0u8; 32];
 const BOB_SEED: [u8; 32] = [1u8; 32];
 const CHARLIE_SEED: [u8; 32] = [2u8; 32];
 
-const DEFAULT_ROOT_ID_SEED: u64 = 1u64;
-const ALTERNATIVE_ROOT_ID_SEED: u64 = 2u64;
+const DEFAULT_HIERARCHY_ID_SEED: u64 = 1u64;
+const ALTERNATIVE_HIERARCHY_ID_SEED: u64 = 2u64;
 const DEFAULT_DELEGATION_ID_SEED: u64 = 3u64;
 const ALTERNATIVE_DELEGATION_ID_SEED: u64 = 4u64;
 const DEFAULT_DELEGATION_ID_2_SEED: u64 = 3u64;
@@ -186,27 +188,27 @@ pub fn get_charlie_sr25519() -> sr25519::Pair {
 	sr25519::Pair::from_seed(&CHARLIE_SEED)
 }
 
-pub fn get_delegation_root_id(default: bool) -> TestDelegationNodeId {
+pub fn get_delegation_hierarchy_id(default: bool) -> TestDelegationHierarchyId {
 	if default {
-		TestCtypeHash::from_low_u64_be(DEFAULT_ROOT_ID_SEED)
+		TestDelegationHierarchyId::from_low_u64_be(DEFAULT_HIERARCHY_ID_SEED)
 	} else {
-		TestCtypeHash::from_low_u64_be(ALTERNATIVE_ROOT_ID_SEED)
+		TestDelegationHierarchyId::from_low_u64_be(ALTERNATIVE_HIERARCHY_ID_SEED)
 	}
 }
 
 pub fn get_delegation_id(default: bool) -> TestDelegationNodeId {
 	if default {
-		TestCtypeHash::from_low_u64_be(DEFAULT_DELEGATION_ID_SEED)
+		TestDelegationNodeId::from_low_u64_be(DEFAULT_DELEGATION_ID_SEED)
 	} else {
-		TestCtypeHash::from_low_u64_be(ALTERNATIVE_DELEGATION_ID_SEED)
+		TestDelegationNodeId::from_low_u64_be(ALTERNATIVE_DELEGATION_ID_SEED)
 	}
 }
 
 pub fn get_delegation_id_2(default: bool) -> TestDelegationNodeId {
 	if default {
-		TestCtypeHash::from_low_u64_be(DEFAULT_DELEGATION_ID_2_SEED)
+		TestDelegationNodeId::from_low_u64_be(DEFAULT_DELEGATION_ID_2_SEED)
 	} else {
-		TestCtypeHash::from_low_u64_be(ALTERNATIVE_DELEGATION_ID_2_SEED)
+		TestDelegationNodeId::from_low_u64_be(ALTERNATIVE_DELEGATION_ID_2_SEED)
 	}
 }
 
@@ -215,24 +217,23 @@ pub(crate) fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
 	hash.encode()
 }
 
-pub struct DelegationRootCreationDetails {
-	pub root_id: TestDelegationNodeId,
+pub struct DelegationHierarchyCreationDetails {
+	pub id: TestDelegationHierarchyId,
 	pub ctype_hash: TestCtypeHash,
 }
 
-pub fn generate_base_delegation_root_creation_details(
-	root_id: TestDelegationNodeId,
-	root_node: DelegationRoot<Test>,
-) -> DelegationRootCreationDetails {
-	DelegationRootCreationDetails {
-		ctype_hash: root_node.ctype_hash,
-		root_id,
+pub fn generate_base_delegation_hierarchy_creation_details(
+	id: TestDelegationHierarchyId
+) -> DelegationHierarchyCreationDetails {
+	DelegationHierarchyCreationDetails {
+		id,
+		ctype_hash: ctype_mock::get_ctype_hash(true)
 	}
 }
 
 pub struct DelegationCreationDetails {
 	pub delegation_id: TestDelegationNodeId,
-	pub root_id: TestDelegationNodeId,
+	pub hierarchy_id: TestDelegationHierarchyId,
 	pub parent_id: Option<TestDelegationNodeId>,
 	pub delegate: TestDelegatorId,
 	pub permissions: Permissions,
@@ -247,23 +248,23 @@ pub fn generate_base_delegation_creation_details(
 	DelegationCreationDetails {
 		delegation_id,
 		parent_id: delegation_node.parent,
-		root_id: delegation_node.root_id,
-		delegate: delegation_node.owner,
+		hierarchy_id: delegation_node.hierarchy_id,
+		delegate: delegation_node.details.owner,
 		delegate_signature,
-		permissions: delegation_node.permissions,
+		permissions: delegation_node.details.permissions,
 	}
 }
 
-pub struct DelegationRootRevocationDetails {
-	pub root_id: TestDelegationNodeId,
+pub struct DelegationHierarchyRevocationDetails {
+	pub id: TestDelegationHierarchyId,
 	pub max_children: u32,
 }
 
-pub fn generate_base_delegation_root_revocation_details(
-	root_id: TestDelegationNodeId,
-) -> DelegationRootRevocationDetails {
-	DelegationRootRevocationDetails {
-		root_id,
+pub fn generate_base_delegation_hierarchy_revocation_details(
+	id: TestDelegationHierarchyId,
+) -> DelegationHierarchyRevocationDetails {
+	DelegationHierarchyRevocationDetails {
+		id,
 		max_children: 0u32,
 	}
 }
@@ -282,59 +283,53 @@ pub fn generate_base_delegation_revocation_details(delegation_id: TestDelegation
 	}
 }
 
-pub fn generate_base_delegation_root(owner: TestDelegatorId) -> DelegationRoot<Test> {
-	DelegationRoot {
-		owner,
+pub fn generate_base_delegation_hierarchy(owner: TestDelegatorId) -> DelegationHierarchyInfo<Test> {
+	DelegationHierarchyInfo {
 		ctype_hash: ctype_mock::get_ctype_hash(true),
-		revoked: false,
 	}
 }
 
-pub fn generate_base_delegation_node(root_id: TestDelegationNodeId, owner: TestDelegatorId) -> DelegationNode<Test> {
+pub fn generate_base_delegation_node(hierarchy_id: TestDelegationHierarchyId, owner: TestDelegatorId) -> DelegationNode<Test> {
 	DelegationNode {
-		owner,
+		details: DelegationDetails {
+			owner,
+			permissions: Permissions::DELEGATE,
+			revoked: false,
+		},
+		children: BTreeSet::new(),
+		hierarchy_id,
 		parent: None,
-		root_id,
-		permissions: Permissions::DELEGATE,
-		revoked: false,
 	}
 }
 
 #[derive(Clone)]
 pub struct ExtBuilder {
 	ctype_builder: Option<ctype_mock::ExtBuilder>,
-	root_delegations_stored: Vec<(TestDelegationNodeId, DelegationRoot<Test>)>,
+	delegation_hierarchies_stored: Vec<(TestDelegationHierarchyId, DelegationHierarchyInfo<Test>, DelegationDetails<Test>)>,
 	delegations_stored: Vec<(TestDelegationNodeId, DelegationNode<Test>)>,
-	children_stored: Vec<(TestDelegationNodeId, Vec<TestDelegationNodeId>)>,
 }
 
 impl Default for ExtBuilder {
 	fn default() -> Self {
 		Self {
 			ctype_builder: None,
-			root_delegations_stored: vec![],
+			delegation_hierarchies_stored: vec![],
 			delegations_stored: vec![],
-			children_stored: vec![],
 		}
 	}
 }
 
 impl ExtBuilder {
-	pub fn with_root_delegations(
+	pub fn with_delegation_hierarchies(
 		mut self,
-		root_delegations: Vec<(TestDelegationNodeId, DelegationRoot<Test>)>,
+		delegation_hierarchies: Vec<(TestDelegationHierarchyId, DelegationHierarchyInfo<Test>, DelegationDetails<Test>)>,
 	) -> Self {
-		self.root_delegations_stored = root_delegations;
+		self.delegation_hierarchies_stored = delegation_hierarchies;
 		self
 	}
 
 	pub fn with_delegations(mut self, delegations: Vec<(TestDelegationNodeId, DelegationNode<Test>)>) -> Self {
 		self.delegations_stored = delegations;
-		self
-	}
-
-	pub fn with_children(mut self, children: Vec<(TestDelegationNodeId, Vec<TestDelegationNodeId>)>) -> Self {
-		self.children_stored = children;
 		self
 	}
 
@@ -346,10 +341,10 @@ impl ExtBuilder {
 			sp_io::TestExternalities::new(storage)
 		};
 
-		if !self.root_delegations_stored.is_empty() {
+		if !self.delegation_hierarchies_stored.is_empty() {
 			ext.execute_with(|| {
-				self.root_delegations_stored.iter().for_each(|root_delegation| {
-					delegation::Roots::<Test>::insert(root_delegation.0, root_delegation.1.clone());
+				self.delegation_hierarchies_stored.iter().for_each(|delegation_hierarchy| {
+					delegation::Pallet::create_and_store_hierarchy_root(delegation_hierarchy.0, delegation_hierarchy.1.clone(), delegation_hierarchy.2.owner.clone());
 				})
 			});
 		}
@@ -357,15 +352,10 @@ impl ExtBuilder {
 		if !self.delegations_stored.is_empty() {
 			ext.execute_with(|| {
 				self.delegations_stored.iter().for_each(|del| {
-					delegation::Delegations::<Test>::insert(del.0, del.1.clone());
-				})
-			});
-		}
-
-		if !self.children_stored.is_empty() {
-			ext.execute_with(|| {
-				self.children_stored.iter().for_each(|child| {
-					delegation::Children::<Test>::insert(child.0, child.1.clone());
+					if let Some(parent_node_id) = del.1.parent {
+						let mut parent_node = delegation::DelegationNodes::<Test>::get(&parent_node_id).unwrap();
+						delegation::Pallet::store_delegation_under_parent(del.0, del.1.clone(), parent_node_id, parent_node);
+					}
 				})
 			});
 		}

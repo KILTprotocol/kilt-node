@@ -281,8 +281,8 @@ benchmarks! {
 	// TODO: Might want to add variant iterating over children instead of depth at some later point
 }
 
-impl_benchmark_test_suite! {
-	Pallet,
-	crate::mock::ExtBuilder::default().build_with_keystore(None),
-	crate::mock::Test
-}
+// impl_benchmark_test_suite! {
+// 	Pallet,
+// 	crate::mock::ExtBuilder::default().build_with_keystore(None),
+// 	crate::mock::Test
+// }
