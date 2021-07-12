@@ -76,4 +76,8 @@ build-wasm:
   script:
     - export PACKAGE=peregrine-runtime
     - export RUNTIME_DIR=runtimes
-    - srtool build
+    - /srtool/build build
+  artifacts:
+    paths:
+      - /outs/*
+    expire_in: 12 week
