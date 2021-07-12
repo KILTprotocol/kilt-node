@@ -84,5 +84,5 @@ build-wasm:
     - /srtool/build build
   artifacts:
     paths:
-      - /outs/*
+      - /out/*
     expire_in: 12 week
