@@ -9,6 +9,8 @@ clippy:
   script:
     - rustup component add clippy --toolchain nightly
     - cargo +nightly clippy -- -D warnings
+  only:
+    - develop
 
 fmt:
   image: paritytech/ci-linux:105b919b-20210617
@@ -24,6 +26,8 @@ test:
   timeout: 1 hours
   script:
     - cargo test --all --all-features
+  only:
+    - develop
 
 build:
   image:
