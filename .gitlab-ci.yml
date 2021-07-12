@@ -80,6 +80,7 @@ build-wasm:
   script:
     - export PACKAGE=peregrine-runtime
     - export RUNTIME_DIR=$PWD/runtimes/peregrine
+    - ls /builds/kiltprotocol/mashnet-node/runtimes/peregrine
     - /srtool/build build
   artifacts:
     paths:
