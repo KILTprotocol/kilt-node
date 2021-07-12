@@ -75,7 +75,7 @@ build-wasm:
   #   - master
   script:
     - export PACKAGE=peregrine-runtime
-    - export RUNTIME_DIR=runtimes
+    - export RUNTIME_DIR=runtimes/peregrine
     - /srtool/build build
   artifacts:
     paths:
