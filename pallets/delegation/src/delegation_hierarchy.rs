@@ -56,10 +56,32 @@ impl Default for Permissions {
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
 pub struct DelegationNode<T: Config> {
-	pub hierarchy_id: DelegationHierarchyIdOf<T>,
+	pub hierarchy_root_id: DelegationNodeIdOf<T>,
 	pub parent: Option<DelegationNodeIdOf<T>>,
 	pub children: BTreeSet<DelegationNodeIdOf<T>>,
 	pub details: DelegationDetails<T>,
+}
+
+impl<T: Config> DelegationNode<T> {
+	pub fn new_root_node(id: DelegationNodeIdOf<T>, details: DelegationDetails<T>) -> Self {
+		Self {
+			hierarchy_root_id: id,
+			parent: None,
+			children: BTreeSet::new(),
+			details,
+		}
+	}
+
+	pub fn new_node(hierarchy_root_id: DelegationNodeIdOf<T>, parent: DelegationNodeIdOf<T>, details: DelegationDetails<T>) -> Self {
+		let mut new_node = Self::new_root_node(hierarchy_root_id, details);
+		new_node.parent = Some(parent);
+
+		new_node
+	}
+
+	pub fn add_child(&mut self, child_id: DelegationNodeIdOf<T>) {
+		self.children.insert(child_id);
+	}
 }
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
@@ -69,30 +91,13 @@ pub struct DelegationDetails<T: Config> {
 	pub permissions: Permissions,
 }
 
-impl<T: Config> DelegationNode<T> {
-	pub fn new_root_node(hierarchy_id: DelegationHierarchyIdOf<T>, owner: DelegatorIdOf<T>) -> Self {
+impl<T: Config> DelegationDetails<T> {
+	pub fn default_with_owner(owner: DelegatorIdOf<T>) -> Self {
 		Self {
-			hierarchy_id,
-			parent: None,
-			children: BTreeSet::new(),
-			details: DelegationDetails {
-				owner,
-				revoked: false,
-				permissions: Permissions::all(),
-			},
+			owner,
+			permissions: Permissions::all(),
+			revoked: false
 		}
-	}
-
-	pub fn new_node(hierarchy_id: DelegationHierarchyIdOf<T>, parent: DelegationNodeIdOf<T>, owner: DelegatorIdOf<T>, permissions: Permissions) -> Self {
-		let mut new_node = Self::new_root_node(hierarchy_id, owner);
-		new_node.parent = Some(parent);
-		new_node.details.permissions = permissions;
-
-		new_node
-	}
-
-	pub fn add_child(&mut self, child_id: DelegationNodeIdOf<T>) {
-		self.children.insert(child_id);
 	}
 }
 

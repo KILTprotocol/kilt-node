@@ -192,7 +192,7 @@ pub mod pallet {
 				<ctype::Error<T>>::CTypeNotFound
 			);
 
-			Self::create_and_store_hierarchy_root(root_node_id, DelegationHierarchyInfo::<T> { ctype_hash }, creator.clone());
+			Self::create_and_store_new_hierarchy(root_node_id, DelegationHierarchyInfo::<T> { ctype_hash }, creator.clone());
 
 			Self::deposit_event(Event::HierarchyCreated(creator, root_node_id, ctype_hash));
 
@@ -231,7 +231,7 @@ pub mod pallet {
 			let delegator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
 			// Calculate the hash root
-			let hash_root = Self::calculate_hash_root(&delegation_id, &root_node_id.into(), &Some(parent_id), &permissions);
+			let hash_root = Self::calculate_delegation_hash_root(&delegation_id, &root_node_id, &parent_id, &permissions);
 
 			// Verify that the hash root signature is correct.
 			DelegationSignatureVerificationOf::<T>::verify(&delegate, &hash_root.encode(), &delegate_signature)
@@ -255,7 +255,7 @@ pub mod pallet {
 				Error::<T>::UnauthorizedDelegation
 			);
 
-			Self::store_delegation_under_parent(delegation_id, DelegationNode::new_node(root_node_id, parent_id, delegate.clone(), permissions), parent_id, parent_node);
+			Self::store_delegation_under_parent(delegation_id, DelegationNode::new_node(root_node_id, parent_id, DelegationDetails { owner: delegate.clone(), permissions, revoked: false }), parent_id, parent_node);
 
 			Self::deposit_event(Event::DelegationCreated(
 				delegator,
@@ -383,26 +383,24 @@ pub mod pallet {
 
 impl<T: Config> Pallet<T> {
 	// Calculate the hash of all values of a delegation transaction
-	fn calculate_hash_root(
+	fn calculate_delegation_hash_root(
 		delegation_id: &DelegationNodeIdOf<T>,
 		root_id: &DelegationNodeIdOf<T>,
-		parent_id: &Option<DelegationNodeIdOf<T>>,
+		parent_id: &DelegationNodeIdOf<T>,
 		permissions: &Permissions,
 	) -> T::Hash {
 		// Add all values to an u8 vector
 		let mut hashed_values: Vec<u8> = delegation_id.as_ref().to_vec();
 		hashed_values.extend_from_slice(root_id.as_ref());
-		if let Some(parent) = parent_id {
-			hashed_values.extend_from_slice(parent.as_ref())
-		}
+		hashed_values.extend_from_slice(parent_id.as_ref());
 		hashed_values.extend_from_slice(permissions.as_u8().as_ref());
 		// Hash the resulting vector
 		T::Hashing::hash(&hashed_values)
 	}
 
-	fn create_and_store_hierarchy_root(root_id: DelegationNodeIdOf<T>, hierarchy_info: DelegationHierarchyInfo<T>, hierarchy_owner: DelegatorIdOf<T>) {
-		let root_node = DelegationNode::new_root_node(root_id, hierarchy_owner);
-		<DelegationNodes<T>>::insert(root_id.into(), root_node);
+	fn create_and_store_new_hierarchy(root_id: DelegationNodeIdOf<T>, hierarchy_info: DelegationHierarchyInfo<T>, hierarchy_owner: DelegatorIdOf<T>) {
+		let root_node = DelegationNode::new_root_node(root_id, DelegationDetails::default_with_owner(hierarchy_owner));
+		<DelegationNodes<T>>::insert(root_id, root_node);
 		<DelegationHierarchies<T>>::insert(root_id, hierarchy_info);
 	}
 
