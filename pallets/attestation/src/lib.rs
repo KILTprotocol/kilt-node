@@ -16,9 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-//! Attestation: Handles attestations on chain,
-//! adding and revoking attestations.
-
 //! # Attestation Pallet
 //!
 //! Provides means of adding KILT attestations on chain and revoking them.

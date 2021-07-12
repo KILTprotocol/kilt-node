@@ -16,9 +16,60 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-//! Delegation: Handles delegations on chain,
-//! creating and revoking root nodes of delegation hierarchies,
-//! adding and revoking delegation nodes based on root nodes.
+//! # Delegation Pallet
+//!
+//! Provides means of adding KILT delegations on chain and revoking them. Each
+//! delegation is based on a specific CType. The most basic delegation is just a
+//! root node to which you can add further delegations by
+//! appending them to the root node resulting in a tree structure.
+//!
+//! - [`Config`]
+//! - [`Call`]
+//! - [`Pallet`]
+//!
+//! ### Terminology
+//!
+//! - **Claimer:**: A user which claims properties about themselves in the
+//!   format of a CType. This could be a person which claims to have a valid
+//!   driver's license.
+//!
+//! - **Attester:**: An entity which checks a user's claim and approves its
+//!   validity. This could be a Citizens Registration Office which issues
+//!   drivers licenses.
+//!
+//! - **Verifier:**: An entity which wants to check a user's claim by checking
+//!   the provided attestation.
+//!
+//! - **CType:**: CTypes are claim types. In everyday language, they are
+//!   standardised structures for credentials. For example, a company may need a
+//!   standard identification credential to identify workers that includes their
+//!   full name, date of birth, access level and id number. Each of these are
+//!   referred to as an attribute of a credential.
+//!
+//! - **Attestation:**: An approved or revoked user's claim in the format of a
+//!   CType.
+//!
+//! - **Delegation:**: An attestation which is not issued by the attester
+//!   directly but via a (chain of) delegations which entitle the delegated
+//!   attester. This could be an employe of a company which is authorized to
+//!   sign documents for their superiors.
+//!
+//! ## Interface
+//!
+//! ### Dispatchable Functions
+//! - `create_root` - Create a new root delegation based on a specific CType.
+//! - `add_delegation` - Add a new delegation node to an existing delegation
+//!   node acting as the root for the newly added node.
+//! - `revoke_root` - Revoke a delegation root which implicitly revokes the
+//!   entire delegation tree.
+//! - `revoke_delegation` - Revoke a delegation node and its sub delegations.
+//!
+//! ## Assumptions
+//!
+//! - The maximum depth of a delegation tree is bounded by `MaxParentChecks`.
+//!   This is not enforced when adding new delegations. However, you can only
+//!   revoke up to `MaxParentChecks` many sub-delegations.
+
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
@@ -185,6 +236,16 @@ pub mod pallet {
 		/// * origin: the identifier of the delegation creator
 		/// * root_id: the ID of the root node. It has to be unique
 		/// * ctype_hash: the CType hash that delegates can use for attestations
+		///
+		/// The dispatch origin must be DelegationEntityId.
+		///
+		/// Emits RootCreated.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Roots, CTypes
+		/// - Writes: Roots
+		/// # </weight>
 		#[pallet::weight(<T as Config>::WeightInfo::create_root())]
 		pub fn create_root(
 			origin: OriginFor<T>,
@@ -227,6 +288,16 @@ pub mod pallet {
 		///   is allowed to perform
 		/// * delegate_signature: the delegate's signature over the new
 		///   delegation ID, root ID, parent ID, and permission flags
+		///
+		/// The dispatch origin must be DelegationEntityId.
+		///
+		/// Emits DelegationCreated.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Roots, Delegations
+		/// - Writes: Delegations
+		/// # </weight>
 		#[pallet::weight(<T as Config>::WeightInfo::add_delegation())]
 		pub fn add_delegation(
 			origin: OriginFor<T>,
@@ -313,7 +384,7 @@ pub mod pallet {
 		/// Revoking a delegation root results in the whole trust hierarchy
 		/// being revoked. Nevertheless, revocation starts from the leave nodes
 		/// upwards, so if the operation ends prematurely because it runs out of
-		/// gas, the delegation state would be consisent as no child would
+		/// gas, the delegation state would be consistent as no child would
 		/// "survive" its parent. As a consequence, if the root node is revoked,
 		/// the whole trust hierarchy is to be considered revoked.
 		///
@@ -321,6 +392,17 @@ pub mod pallet {
 		/// * root_id: the ID of the delegation root to revoke
 		/// * max_children: the maximum number of nodes descending from the root
 		///   to revoke as a consequence of the root revocation
+		///
+		/// The dispatch origin must be DelegationEntityId.
+		///
+		/// Emits RootRevoked and C * DelegationRevoked.
+		///
+		/// # <weight>
+		/// Weight: O(C) where C is the number of children of the root which is
+		/// bounded by `max_children`.
+		/// - Reads: [Origin Account], Roots, C * Delegations, C * Children.
+		/// - Writes: Roots, C * Delegations
+		/// # </weight>
 		#[pallet::weight(<T as Config>::WeightInfo::revoke_root(*max_children))]
 		pub fn revoke_root(
 			origin: OriginFor<T>,
@@ -377,6 +459,17 @@ pub mod pallet {
 		///   max number of parents is reached
 		/// * max_revocations: the maximum number of nodes descending from this
 		///   one to revoke as a consequence of this node revocation
+		///
+		/// The dispatch origin must be DelegationEntityId.
+		///
+		/// Emits C * DelegationRevoked.
+		///
+		/// # <weight>
+		/// Weight: O(C) where C is the number of children of the delegation
+		/// node which is bounded by `max_children`.
+		/// - Reads: [Origin Account], Roots, C * Delegations, C * Children.
+		/// - Writes: Roots, C * Delegations
+		/// # </weight>
 		#[pallet::weight(
 			<T as Config>::WeightInfo::revoke_delegation_root_child(*max_revocations, *max_parent_checks)
 				.max(<T as Config>::WeightInfo::revoke_delegation_leaf(*max_revocations, *max_parent_checks)))]
@@ -421,7 +514,11 @@ pub mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
-	// Calculate the hash of all values of a delegation transaction
+	/// Calculate the hash of all values of a delegation transaction.
+	///
+	/// # <weight>
+	/// Weight: O(1)
+	/// # </weight>
 	fn calculate_hash(
 		delegation_id: &DelegationNodeIdOf<T>,
 		root_id: &DelegationNodeIdOf<T>,
@@ -488,7 +585,16 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
-	// Revoke a delegation and all of its children recursively.
+	/// Revoke a delegation and all of its children recursively.
+	///
+	/// Emits DelegationRevoked for each revoked node.
+	///
+	/// # <weight>
+	/// Weight: O(C) where C is the number of children of the root which is
+	/// bounded by `max_children`.
+	/// - Reads: C * Delegations
+	/// - Writes: C * Delegations
+	/// # </weight>
 	fn revoke(
 		delegation: &DelegationNodeIdOf<T>,
 		sender: &DelegatorIdOf<T>,
@@ -528,6 +634,13 @@ impl<T: Config> Pallet<T> {
 
 	/// Revokes all children of a delegation.
 	/// Returns the number of revoked delegations and the consumed weight.
+	///
+	/// # <weight>
+	/// Weight: O(C) where C is the number of children of the delegation node
+	/// which is bounded by `max_children`.
+	/// - Reads: C * Children, C * Delegations
+	/// - Writes: C * Delegations
+	/// # </weight>
 	fn revoke_children(
 		delegation: &DelegationNodeIdOf<T>,
 		sender: &DelegatorIdOf<T>,
@@ -557,7 +670,13 @@ impl<T: Config> Pallet<T> {
 		Ok((revocations, consumed_weight.saturating_add(T::DbWeight::get().reads(1))))
 	}
 
-	// Add a child node into the delegation hierarchy
+	/// Add a child node into the delegation hierarchy.
+	///
+	/// # <weight>
+	/// Weight: O(1)
+	/// - Reads: Children
+	/// - Writes: Children
+	/// # </weight>
 	fn add_child(child: DelegationNodeIdOf<T>, parent: DelegationNodeIdOf<T>) {
 		// Get the children vector or initialize an empty one if none
 		let mut children = <Children<T>>::get(parent).unwrap_or_default();
