@@ -65,7 +65,7 @@ build:
     - docker push $AWS_REGISTRY/kilt-parachain/collator:latest-develop
     - docker push $AWS_REGISTRY/kilt-parachain/collator:$CI_COMMIT_SHORT_SHA
 
-build-wasm:
+build-wasm-peregrine:
   image:
     name: paritytech/srtool:1.53.0
     entrypoint: [""]
@@ -76,6 +76,26 @@ build-wasm:
   script:
     - export PACKAGE=peregrine-runtime
     - export RUNTIME_DIR=runtimes/peregrine
+    - cp -r * /build
+    - /srtool/build build
+    - mkdir ./out
+    - mv /out/* ./out/
+  artifacts:
+    paths:
+      - out/*.wasm
+    expire_in: 12 week
+
+build-wasm-spiritnet:
+  image:
+    name: paritytech/srtool:1.53.0
+    entrypoint: [""]
+  stage: build
+  only:
+    - develop
+    - master
+  script:
+    - export PACKAGE=spiritnet-runtime
+    - export RUNTIME_DIR=runtimes/spiritnet
     - cp -r * /build
     - /srtool/build build
     - mkdir ./out
