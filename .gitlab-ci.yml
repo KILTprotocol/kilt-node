@@ -82,6 +82,7 @@ build-wasm:
     - export RUNTIME_DIR=runtimes/peregrine
     - cp -r * /build
     - /srtool/build build
+    - ls /out/
   artifacts:
     paths:
       - /out/
