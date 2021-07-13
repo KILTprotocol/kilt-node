@@ -82,10 +82,11 @@ build-wasm:
     - export RUNTIME_DIR=runtimes/peregrine
     - cp -r * /build
     - /srtool/build build
-    - ls -la /out/
+    - mkdir ./out
+    - mv /out/* ./out/
   artifacts:
     public: true
     untracked: true
     paths:
-      - /out/
+      - out/
     expire_in: 12 week
