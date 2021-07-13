@@ -84,6 +84,8 @@ build-wasm:
     - /srtool/build build
     - ls -la /out/
   artifacts:
+    public: true
+    untracked: true
     paths:
       - /out/
     expire_in: 12 week
