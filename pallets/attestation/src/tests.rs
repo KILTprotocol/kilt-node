@@ -556,7 +556,7 @@ fn revoke_parent_delegation_no_attestation_permissions_successful() {
 		delegation_mock::get_delegation_id(true),
 		delegation_mock::generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
 	);
-	parent_node.details.permissions = delegation::Permissions::ATTEST;
+	parent_node.details.permissions = delegation::Permissions::DELEGATE;
 	let (delegation_id, delegation_node) = (
 		delegation_mock::get_delegation_id(false),
 		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attestation_owner.clone(), Some(parent_id)),
