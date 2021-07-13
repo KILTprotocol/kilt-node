@@ -177,7 +177,8 @@ pub mod pallet {
 		/// * origin: the identifier of the delegation creator
 		/// * root_id: the ID of the root node. It has to be unique
 		/// * ctype_hash: the CTYPE hash that delegates can use for attestations
-		#[pallet::weight(<T as Config>::WeightInfo::create_root())]
+		// #[pallet::weight(<T as Config>::WeightInfo::create_root())]
+		#[pallet::weight(0)]
 		pub fn create_hierarchy(
 			origin: OriginFor<T>,
 			root_node_id: DelegationNodeIdOf<T>,
@@ -218,7 +219,8 @@ pub mod pallet {
 		///   is allowed to perform
 		/// * delegate_signature: the delegate's signature over the new
 		///   delegation ID, root ID, parent ID, and permission flags
-		#[pallet::weight(<T as Config>::WeightInfo::add_delegation())]
+		// #[pallet::weight(<T as Config>::WeightInfo::add_delegation())]
+		#[pallet::weight(0)]
 		pub fn add_delegation(
 			origin: OriginFor<T>,
 			delegation_id: DelegationNodeIdOf<T>,
@@ -282,7 +284,8 @@ pub mod pallet {
 		/// * root_id: the ID of the delegation root to revoke
 		/// * max_children: the maximum number of nodes descending from the root
 		///   to revoke as a consequence of the root revocation
-		#[pallet::weight(<T as Config>::WeightInfo::revoke_root(*max_children))]
+		// #[pallet::weight(<T as Config>::WeightInfo::revoke_root(*max_children))]
+		#[pallet::weight(0)]
 		pub fn revoke_hierarchy(
 			origin: OriginFor<T>,
 			root_node_id: DelegationNodeIdOf<T>,
@@ -301,7 +304,7 @@ pub mod pallet {
 
 			let consumed_weight: Weight = if !hierarchy_root_node.details.revoked {
 				// Recursively revoke all children
-				let (_, post_weight) = Self::revoke_children(&root_node_id.into(), &invoker, max_children)?;
+				let (_, post_weight) = Self::revoke_children(&root_node_id, &invoker, max_children)?;
 
 				// If we didn't return an ExceededRevocationBounds error, we can revoke the root
 				// too.
@@ -338,9 +341,10 @@ pub mod pallet {
 		///   max number of parents is reached
 		/// * max_revocations: the maximum number of nodes descending from this
 		///   one to revoke as a consequence of this node revocation
-		#[pallet::weight(
-			<T as Config>::WeightInfo::revoke_delegation_root_child(*max_revocations, *max_parent_checks)
-				.max(<T as Config>::WeightInfo::revoke_delegation_leaf(*max_revocations, *max_parent_checks)))]
+		// #[pallet::weight(
+		// 	<T as Config>::WeightInfo::revoke_delegation_root_child(*max_revocations, *max_parent_checks)
+		// 		.max(<T as Config>::WeightInfo::revoke_delegation_leaf(*max_revocations, *max_parent_checks)))]
+		#[pallet::weight(0)]
 		pub fn revoke_delegation(
 			origin: OriginFor<T>,
 			delegation_id: DelegationNodeIdOf<T>,
@@ -458,6 +462,34 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
+	/// Revokes all children of a delegation.
+	/// Returns the number of revoked delegations and the consumed weight.
+	fn revoke_children(
+		delegation: &DelegationNodeIdOf<T>,
+		sender: &DelegatorIdOf<T>,
+		max_revocations: u32,
+	) -> Result<(u32, Weight), DispatchError> {
+		let mut revocations: u32 = 0;
+		let mut consumed_weight: Weight = 0;
+		if let Some(delegation_node) = <DelegationNodes<T>>::get(delegation) {
+			// Iterate children and revoke all nodes
+			for child in delegation_node.children.iter() {
+				let remaining_revocations = max_revocations
+					.checked_sub(revocations)
+					.ok_or(Error::<T>::ExceededRevocationBounds)?;
+
+				// Check whether we ran out of gas
+				ensure!(remaining_revocations > 0, Error::<T>::ExceededRevocationBounds);
+
+				Self::revoke(&child, sender, remaining_revocations).map(|(r, w)| {
+					revocations = revocations.saturating_add(r);
+					consumed_weight = consumed_weight.saturating_add(w);
+				})?;
+			}
+		}
+		Ok((revocations, consumed_weight.saturating_add(T::DbWeight::get().reads(1))))
+	}
+
 	// Revoke a delegation and all of its children recursively.
 	fn revoke(
 		delegation: &DelegationNodeIdOf<T>,
@@ -494,33 +526,5 @@ impl<T: Config> Pallet<T> {
 			revocations = revocations.saturating_add(1);
 		}
 		Ok((revocations, consumed_weight))
-	}
-
-	/// Revokes all children of a delegation.
-	/// Returns the number of revoked delegations and the consumed weight.
-	fn revoke_children(
-		delegation: &DelegationNodeIdOf<T>,
-		sender: &DelegatorIdOf<T>,
-		max_revocations: u32,
-	) -> Result<(u32, Weight), DispatchError> {
-		let mut revocations: u32 = 0;
-		let mut consumed_weight: Weight = 0;
-		if let Some(delegation_node) = <DelegationNodes<T>>::get(delegation) {
-			// Iterate children and revoke all nodes
-			for child in delegation_node.children.iter() {
-				let remaining_revocations = max_revocations
-					.checked_sub(revocations)
-					.ok_or(Error::<T>::ExceededRevocationBounds)?;
-
-				// Check whether we ran out of gas
-				ensure!(remaining_revocations > 0, Error::<T>::ExceededRevocationBounds);
-
-				Self::revoke(&child, sender, remaining_revocations).map(|(r, w)| {
-					revocations = revocations.saturating_add(r);
-					consumed_weight = consumed_weight.saturating_add(w);
-				})?;
-			}
-		}
-		Ok((revocations, consumed_weight.saturating_add(T::DbWeight::get().reads(1))))
 	}
 }
