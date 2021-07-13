@@ -72,7 +72,11 @@ impl<T: Config> DelegationNode<T> {
 		}
 	}
 
-	pub fn new_node(hierarchy_root_id: DelegationNodeIdOf<T>, parent: DelegationNodeIdOf<T>, details: DelegationDetails<T>) -> Self {
+	pub fn new_node(
+		hierarchy_root_id: DelegationNodeIdOf<T>,
+		parent: DelegationNodeIdOf<T>,
+		details: DelegationDetails<T>,
+	) -> Self {
 		let mut new_node = Self::new_root_node(hierarchy_root_id, details);
 		new_node.parent = Some(parent);
 
@@ -96,7 +100,7 @@ impl<T: Config> DelegationDetails<T> {
 		Self {
 			owner,
 			permissions: Permissions::all(),
-			revoked: false
+			revoked: false,
 		}
 	}
 }

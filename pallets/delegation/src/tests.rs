@@ -46,10 +46,15 @@ fn create_root_delegation_successful() {
 		));
 	});
 
-	let stored_hierarchy_details = ext.execute_with(|| Delegation::delegation_hierarchies(&hierarchy_root_id).expect("Delegation hierarchy should be present on chain."));
+	let stored_hierarchy_details = ext.execute_with(|| {
+		Delegation::delegation_hierarchies(&hierarchy_root_id)
+			.expect("Delegation hierarchy should be present on chain.")
+	});
 	assert_eq!(stored_hierarchy_details.ctype_hash, operation.ctype_hash);
 
-	let stored_delegation_root = ext.execute_with(|| Delegation::delegation_nodes(&hierarchy_root_id).expect("Delegation root should be present on chain."));
+	let stored_delegation_root = ext.execute_with(|| {
+		Delegation::delegation_nodes(&hierarchy_root_id).expect("Delegation root should be present on chain.")
+	});
 
 	assert_eq!(stored_delegation_root.hierarchy_root_id, hierarchy_root_id);
 	assert_eq!(stored_delegation_root.parent, None);
@@ -63,7 +68,10 @@ fn duplicate_create_root_delegation_error() {
 	let creator_keypair = get_alice_ed25519();
 	let creator = get_ed25519_account(creator_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
 
 	let operation = generate_base_delegation_hierarchy_creation_operation(hierarchy_root_id);
 
@@ -71,15 +79,13 @@ fn duplicate_create_root_delegation_error() {
 		.with_ctypes(vec![(operation.ctype_hash, creator.clone())])
 		.build(None);
 	let mut ext = ExtBuilder::default()
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_info, creator.clone())]).build(Some(ext));
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_info, creator.clone())])
+		.build(Some(ext));
 
 	ext.execute_with(|| {
-		assert_noop!(Delegation::create_hierarchy(
-			get_origin(creator.clone()),
-			operation.id,
-			operation.ctype_hash
-		),
-		delegation::Error::<Test>::HierarchyAlreadyExists
+		assert_noop!(
+			Delegation::create_hierarchy(get_origin(creator.clone()), operation.id, operation.ctype_hash),
+			delegation::Error::<Test>::HierarchyAlreadyExists
 		);
 	});
 }
@@ -113,8 +119,14 @@ fn create_delegation_direct_root_successful() {
 	let delegate_keypair = get_bob_sr25519();
 	let delegate = get_sr25519_account(delegate_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (delegation_id, delegation_node) = (get_delegation_id(true), generate_base_delegation_node(hierarchy_root_id, delegate, Some(hierarchy_root_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, delegate, Some(hierarchy_root_id)),
+	);
 
 	let delegation_info = Delegation::calculate_delegation_hash_root(
 		&delegation_id,
@@ -125,7 +137,8 @@ fn create_delegation_direct_root_successful() {
 
 	let delegate_signature = delegate_keypair.sign(&hash_to_u8(delegation_info));
 
-	let operation = generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
+	let operation =
+		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
 
 	let ext = ctype_mock::ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_info.ctype_hash, creator.clone())])
@@ -172,9 +185,18 @@ fn create_delegation_with_parent_successful() {
 	let delegate_keypair = get_bob_sr25519();
 	let delegate = get_sr25519_account(delegate_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (parent_id, parent_node) = (get_delegation_id(true), generate_base_delegation_node(hierarchy_root_id, creator.clone(), Some(hierarchy_root_id)));
-	let (delegation_id, delegation_node) = (get_delegation_id(false), generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (parent_id, parent_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, creator.clone(), Some(hierarchy_root_id)),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id)),
+	);
 
 	let delegation_info = Delegation::calculate_delegation_hash_root(
 		&delegation_id,
@@ -185,7 +207,8 @@ fn create_delegation_with_parent_successful() {
 
 	let delegate_signature = delegate_keypair.sign(&hash_to_u8(delegation_info));
 
-	let operation = generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
+	let operation =
+		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
 
 	let ext = ctype_mock::ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_info.ctype_hash, creator.clone())])
@@ -234,8 +257,14 @@ fn invalid_delegate_signature_create_delegation_error() {
 	let delegate_keypair = get_bob_sr25519();
 	let delegate = get_sr25519_account(delegate_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (delegation_id, delegation_node) = (get_delegation_id(true), generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
+	);
 
 	let delegate_signature = alternative_keypair.sign(&hash_to_u8(Delegation::calculate_delegation_hash_root(
 		&delegation_id,
@@ -277,8 +306,14 @@ fn duplicate_delegation_create_delegation_error() {
 	let delegate_keypair = get_bob_sr25519();
 	let delegate = get_sr25519_account(delegate_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (delegation_id, delegation_node) = (get_delegation_id(true), generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
+	);
 
 	let delegate_signature = delegate_keypair.sign(&hash_to_u8(Delegation::calculate_delegation_hash_root(
 		&delegation_id,
@@ -321,8 +356,14 @@ fn parent_not_existing_create_delegation_error() {
 	let delegate_keypair = get_bob_sr25519();
 	let delegate = get_sr25519_account(delegate_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (delegation_id, delegation_node) = (get_delegation_id(true), generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
+	);
 
 	let delegate_signature = delegate_keypair.sign(&hash_to_u8(Delegation::calculate_delegation_hash_root(
 		&delegation_id,
@@ -365,9 +406,18 @@ fn not_owner_of_parent_create_delegation_error() {
 	let delegate_keypair = get_bob_sr25519();
 	let delegate = get_sr25519_account(delegate_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (parent_id, parent_node) = (get_delegation_id(true), generate_base_delegation_node(hierarchy_root_id, alternative_owner, Some(hierarchy_root_id)));
-	let (delegation_id, delegation_node) = (get_delegation_id(false), generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (parent_id, parent_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, alternative_owner, Some(hierarchy_root_id)),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
+	);
 
 	let delegate_signature = delegate_keypair.sign(&hash_to_u8(Delegation::calculate_delegation_hash_root(
 		&delegation_id,
@@ -410,10 +460,19 @@ fn unauthorised_delegation_create_delegation_error() {
 	let delegate_keypair = get_bob_sr25519();
 	let delegate = get_sr25519_account(delegate_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (parent_id, mut parent_node) = (get_delegation_id(true), generate_base_delegation_node(hierarchy_root_id, creator.clone(), Some(hierarchy_root_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (parent_id, mut parent_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, creator.clone(), Some(hierarchy_root_id)),
+	);
 	parent_node.details.permissions = delegation::Permissions::ATTEST;
-	let (delegation_id, delegation_node) = (get_delegation_id(false), generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)));
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
+	);
 
 	let delegate_signature = delegate_keypair.sign(&hash_to_u8(Delegation::calculate_delegation_hash_root(
 		&delegation_id,
@@ -456,7 +515,10 @@ fn empty_revoke_root_successful() {
 	let revoker_keypair = get_alice_ed25519();
 	let revoker = get_ed25519_account(revoker_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
 
 	let operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 
@@ -475,8 +537,9 @@ fn empty_revoke_root_successful() {
 		));
 	});
 
-	let stored_delegation_hierarchy_root = ext
-		.execute_with(|| Delegation::delegation_nodes(&operation.id).expect("Delegation root should be present on chain."));
+	let stored_delegation_hierarchy_root = ext.execute_with(|| {
+		Delegation::delegation_nodes(&operation.id).expect("Delegation root should be present on chain.")
+	});
 
 	assert!(stored_delegation_hierarchy_root.details.revoked);
 }
@@ -488,9 +551,18 @@ fn list_hierarchy_revoke_root_successful() {
 	let delegate_keypair = get_bob_sr25519();
 	let delegate = get_sr25519_account(delegate_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (parent_id, parent_node) = (get_delegation_id(true), generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)));
-	let (delegation_id, delegation_node) = (get_delegation_id(false), generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (parent_id, parent_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id)),
+	);
 
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	operation.max_children = 2u32;
@@ -511,8 +583,9 @@ fn list_hierarchy_revoke_root_successful() {
 		));
 	});
 
-	let stored_delegation_hierarchy_root = ext
-		.execute_with(|| Delegation::delegation_nodes(&operation.id).expect("Delegation root should be present on chain."));
+	let stored_delegation_hierarchy_root = ext.execute_with(|| {
+		Delegation::delegation_nodes(&operation.id).expect("Delegation root should be present on chain.")
+	});
 	assert!(stored_delegation_hierarchy_root.details.revoked);
 
 	let stored_parent_delegation = ext.execute_with(|| {
@@ -520,8 +593,8 @@ fn list_hierarchy_revoke_root_successful() {
 	});
 	assert!(stored_parent_delegation.details.revoked);
 
-	let stored_delegation =
-		ext.execute_with(|| Delegation::delegation_nodes(&delegation_id).expect("Delegation should be present on chain."));
+	let stored_delegation = ext
+		.execute_with(|| Delegation::delegation_nodes(&delegation_id).expect("Delegation should be present on chain."));
 	assert!(stored_delegation.details.revoked);
 }
 
@@ -532,9 +605,18 @@ fn tree_hierarchy_revoke_root_successful() {
 	let delegate_keypair = get_bob_sr25519();
 	let delegate = get_sr25519_account(delegate_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (delegation1_id, delegation1_node) = (get_delegation_id(true), generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)));
-	let (delegation2_id, delegation2_node) = (get_delegation_id(false), generate_base_delegation_node(hierarchy_root_id, delegate, Some(hierarchy_root_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (delegation1_id, delegation1_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
+	);
+	let (delegation2_id, delegation2_node) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(hierarchy_root_id, delegate, Some(hierarchy_root_id)),
+	);
 
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	operation.max_children = 2u32;
@@ -544,7 +626,10 @@ fn tree_hierarchy_revoke_root_successful() {
 		.build(None);
 	let mut ext = ExtBuilder::default()
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_info, revoker.clone())])
-		.with_delegations(vec![(delegation1_id, delegation1_node), (delegation2_id, delegation2_node)])
+		.with_delegations(vec![
+			(delegation1_id, delegation1_node),
+			(delegation2_id, delegation2_node),
+		])
 		.build(Some(ext));
 
 	ext.execute_with(|| {
@@ -555,8 +640,9 @@ fn tree_hierarchy_revoke_root_successful() {
 		));
 	});
 
-	let stored_delegation_hierarchy_root = ext
-		.execute_with(|| Delegation::delegation_nodes(&operation.id).expect("Delegation root should be present on chain."));
+	let stored_delegation_hierarchy_root = ext.execute_with(|| {
+		Delegation::delegation_nodes(&operation.id).expect("Delegation root should be present on chain.")
+	});
 	assert!(stored_delegation_hierarchy_root.details.revoked);
 
 	let stored_delegation_1 = ext.execute_with(|| {
@@ -564,8 +650,9 @@ fn tree_hierarchy_revoke_root_successful() {
 	});
 	assert!(stored_delegation_1.details.revoked);
 
-	let stored_delegation_2 =
-		ext.execute_with(|| Delegation::delegation_nodes(&delegation2_id).expect("Delegation 2 should be present on chain."));
+	let stored_delegation_2 = ext.execute_with(|| {
+		Delegation::delegation_nodes(&delegation2_id).expect("Delegation 2 should be present on chain.")
+	});
 	assert!(stored_delegation_2.details.revoked);
 }
 
@@ -576,9 +663,18 @@ fn max_max_revocations_revoke_successful() {
 	let delegate_keypair = get_bob_sr25519();
 	let delegate = get_sr25519_account(delegate_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (parent_id, parent_node) = (get_delegation_id(true), generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)));
-	let (delegation_id, delegation_node) = (get_delegation_id(false), generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (parent_id, parent_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id)),
+	);
 
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	operation.max_children = MaxRevocations::get();
@@ -599,8 +695,9 @@ fn max_max_revocations_revoke_successful() {
 		));
 	});
 
-	let stored_delegation_hierarchy_root = ext
-		.execute_with(|| Delegation::delegation_nodes(&operation.id).expect("Delegation root should be present on chain."));
+	let stored_delegation_hierarchy_root = ext.execute_with(|| {
+		Delegation::delegation_nodes(&operation.id).expect("Delegation root should be present on chain.")
+	});
 	assert!(stored_delegation_hierarchy_root.details.revoked);
 
 	let stored_parent_delegation = ext.execute_with(|| {
@@ -608,8 +705,8 @@ fn max_max_revocations_revoke_successful() {
 	});
 	assert!(stored_parent_delegation.details.revoked);
 
-	let stored_delegation =
-		ext.execute_with(|| Delegation::delegation_nodes(&delegation_id).expect("Delegation should be present on chain."));
+	let stored_delegation = ext
+		.execute_with(|| Delegation::delegation_nodes(&delegation_id).expect("Delegation should be present on chain."));
 	assert!(stored_delegation.details.revoked);
 }
 
@@ -639,7 +736,10 @@ fn different_root_creator_revoke_root_error() {
 	let alternative_revoker_keypair = get_charlie_ed25519();
 	let alternative_revoker = get_ed25519_account(alternative_revoker_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
 
 	let operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 
@@ -665,8 +765,14 @@ fn too_small_max_revocations_revoke_root_error() {
 	let delegate_keypair = get_alice_ed25519();
 	let delegate = get_ed25519_account(delegate_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (delegation_id, delegation_node) = (get_delegation_id(false), generate_base_delegation_node(hierarchy_root_id, delegate, Some(hierarchy_root_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(hierarchy_root_id, delegate, Some(hierarchy_root_id)),
+	);
 
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	operation.max_children = 0u32;
@@ -694,10 +800,22 @@ fn exact_children_max_revocations_revoke_root_error() {
 	let delegate_keypair = get_alice_ed25519();
 	let delegate = get_ed25519_account(delegate_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (delegation1_id, delegation1_node) = (get_delegation_id(true), generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)));
-	let (delegation2_id, delegation2_node) = (get_delegation_id(false), generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(delegation1_id)));
-	let (delegation3_id, delegation3_node) = (get_delegation_id_2(true), generate_base_delegation_node(hierarchy_root_id, delegate, Some(delegation1_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (delegation1_id, delegation1_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
+	);
+	let (delegation2_id, delegation2_node) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(delegation1_id)),
+	);
+	let (delegation3_id, delegation3_node) = (
+		get_delegation_id_2(true),
+		generate_base_delegation_node(hierarchy_root_id, delegate, Some(delegation1_id)),
+	);
 
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	operation.max_children = 2u32;
@@ -707,7 +825,11 @@ fn exact_children_max_revocations_revoke_root_error() {
 		.build(None);
 	let mut ext = ExtBuilder::default()
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_info, revoker.clone())])
-		.with_delegations(vec![(delegation1_id, delegation1_node), (delegation2_id, delegation2_node), (delegation3_id, delegation3_node)])
+		.with_delegations(vec![
+			(delegation1_id, delegation1_node),
+			(delegation2_id, delegation2_node),
+			(delegation3_id, delegation3_node),
+		])
 		.build(Some(ext));
 
 	ext.execute_with(|| {
@@ -719,22 +841,26 @@ fn exact_children_max_revocations_revoke_root_error() {
 		);
 	});
 
-	let stored_delegation_root = ext
-		.execute_with(|| Delegation::delegation_nodes(&operation.id).expect("Delegation root should be present on chain."));
+	let stored_delegation_root = ext.execute_with(|| {
+		Delegation::delegation_nodes(&operation.id).expect("Delegation root should be present on chain.")
+	});
 	assert!(!stored_delegation_root.details.revoked);
 
-	let stored_delegation_1 = ext
-		.execute_with(|| Delegation::delegation_nodes(&delegation1_id).expect("Delegation 1 should be present on chain."));
+	let stored_delegation_1 = ext.execute_with(|| {
+		Delegation::delegation_nodes(&delegation1_id).expect("Delegation 1 should be present on chain.")
+	});
 	assert!(!stored_delegation_1.details.revoked);
 
 	// Only this leaf should have been revoked as it is the first child of
 	// delegation_1
-	let stored_delegation_2 = ext
-		.execute_with(|| Delegation::delegation_nodes(&delegation2_id).expect("Delegation 2 should be present on chain."));
+	let stored_delegation_2 = ext.execute_with(|| {
+		Delegation::delegation_nodes(&delegation2_id).expect("Delegation 2 should be present on chain.")
+	});
 	assert!(stored_delegation_2.details.revoked);
 
-	let stored_delegation_3 = ext
-		.execute_with(|| Delegation::delegation_nodes(&delegation3_id).expect("Delegation 3 should be present on chain."));
+	let stored_delegation_3 = ext.execute_with(|| {
+		Delegation::delegation_nodes(&delegation3_id).expect("Delegation 3 should be present on chain.")
+	});
 	assert!(!stored_delegation_3.details.revoked);
 }
 
@@ -747,9 +873,18 @@ fn direct_owner_revoke_delegation_successful() {
 	let delegate_keypair = get_alice_ed25519();
 	let delegate = get_ed25519_account(delegate_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (parent_id, parent_node) = (get_delegation_id(true), generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)));
-	let (delegation_id, delegation_node) = (get_delegation_id(false), generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (parent_id, parent_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id)),
+	);
 
 	let mut operation = generate_base_delegation_revocation_operation(parent_id);
 	operation.max_revocations = 2u32;
@@ -789,9 +924,18 @@ fn parent_owner_revoke_delegation_successful() {
 	let delegate_keypair = get_alice_ed25519();
 	let delegate = get_ed25519_account(delegate_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (parent_id, parent_node) = (get_delegation_id(true), generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)));
-	let (delegation_id, delegation_node) = (get_delegation_id(false), generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (parent_id, parent_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id)),
+	);
 
 	let mut operation = generate_base_delegation_revocation_operation(delegation_id);
 	operation.max_parent_checks = 1u32;
@@ -830,7 +974,10 @@ fn delegation_not_found_revoke_delegation_error() {
 	let revoker_keypair = get_alice_ed25519();
 	let revoker = get_ed25519_account(revoker_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
 	let delegation_id = get_delegation_id(false);
 
 	let operation = generate_base_delegation_revocation_operation(delegation_id);
@@ -862,8 +1009,14 @@ fn not_delegating_revoke_delegation_error() {
 	let revoker_keypair = get_bob_ed25519();
 	let revoker = get_ed25519_account(revoker_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (delegation_id, delegation_node) = (get_delegation_id(true), generate_base_delegation_node(hierarchy_root_id, owner.clone(), Some(hierarchy_root_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, owner.clone(), Some(hierarchy_root_id)),
+	);
 
 	let mut operation = generate_base_delegation_revocation_operation(delegation_id);
 	operation.max_parent_checks = MaxParentChecks::get();
@@ -898,9 +1051,18 @@ fn parent_too_far_revoke_delegation_error() {
 	let delegate_keypair = get_bob_ed25519();
 	let delegate = get_ed25519_account(delegate_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (parent_id, parent_node) = (get_delegation_id(true), generate_base_delegation_node(hierarchy_root_id, intermediate.clone(), Some(hierarchy_root_id)));
-	let (delegation_id, delegation_node) = (get_delegation_id(false), generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (parent_id, parent_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, intermediate.clone(), Some(hierarchy_root_id)),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id)),
+	);
 
 	let mut operation = generate_base_delegation_revocation_operation(delegation_id);
 	operation.max_parent_checks = 0u32;
@@ -933,9 +1095,18 @@ fn too_many_revocations_revoke_delegation_error() {
 	let delegate_keypair = get_bob_ed25519();
 	let delegate = get_ed25519_account(delegate_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (parent_id, parent_node) = (get_delegation_id(true), generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)));
-	let (delegation_id, delegation_node) = (get_delegation_id(false), generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (parent_id, parent_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id)),
+	);
 
 	let mut operation = generate_base_delegation_revocation_operation(delegation_id);
 	operation.max_parent_checks = 1u32;
@@ -972,9 +1143,18 @@ fn is_delegating_direct_not_revoked() {
 	let user_3_keypair = get_charlie_ed25519();
 	let user_3 = get_ed25519_account(user_3_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (parent_id, parent_node) = (get_delegation_id(true), generate_base_delegation_node(hierarchy_root_id, user_2, Some(hierarchy_root_id)));
-	let (delegation_id, delegation_node) = (get_delegation_id(false), generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (parent_id, parent_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, user_2, Some(hierarchy_root_id)),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id)),
+	);
 
 	let max_parent_checks = 0u32;
 
@@ -1004,9 +1184,18 @@ fn is_delegating_direct_not_revoked_max_parent_checks_value() {
 	let user_3_keypair = get_charlie_ed25519();
 	let user_3 = get_ed25519_account(user_3_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (parent_id, parent_node) = (get_delegation_id(true), generate_base_delegation_node(hierarchy_root_id, user_2, Some(hierarchy_root_id)));
-	let (delegation_id, delegation_node) = (get_delegation_id(false), generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (parent_id, parent_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, user_2, Some(hierarchy_root_id)),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id)),
+	);
 
 	let max_parent_checks = u32::MAX;
 
@@ -1036,9 +1225,18 @@ fn is_delegating_direct_revoked() {
 	let user_3_keypair = get_charlie_ed25519();
 	let user_3 = get_ed25519_account(user_3_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (parent_id, parent_node) = (get_delegation_id(true), generate_base_delegation_node(hierarchy_root_id, user_2, Some(hierarchy_root_id)));
-	let (delegation_id, mut delegation_node) = (get_delegation_id(false), generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (parent_id, parent_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, user_2, Some(hierarchy_root_id)),
+	);
+	let (delegation_id, mut delegation_node) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id)),
+	);
 	delegation_node.details.revoked = true;
 
 	let max_parent_checks = 0u32;
@@ -1069,9 +1267,18 @@ fn is_delegating_direct_revoked_max_parent_checks_value() {
 	let user_3_keypair = get_charlie_ed25519();
 	let user_3 = get_ed25519_account(user_3_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (parent_id, parent_node) = (get_delegation_id(true), generate_base_delegation_node(hierarchy_root_id, user_2, Some(hierarchy_root_id)));
-	let (delegation_id, mut delegation_node) = (get_delegation_id(false), generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (parent_id, parent_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, user_2, Some(hierarchy_root_id)),
+	);
+	let (delegation_id, mut delegation_node) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id)),
+	);
 	delegation_node.details.revoked = true;
 
 	let max_parent_checks = u32::MAX;
@@ -1102,9 +1309,18 @@ fn is_delegating_max_parent_not_revoked() {
 	let user_3_keypair = get_charlie_ed25519();
 	let user_3 = get_ed25519_account(user_3_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (parent_id, parent_node) = (get_delegation_id(true), generate_base_delegation_node(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id)));
-	let (delegation_id, delegation_node) = (get_delegation_id(false), generate_base_delegation_node(hierarchy_root_id, user_3, Some(parent_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (parent_id, parent_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id)),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(hierarchy_root_id, user_3, Some(parent_id)),
+	);
 
 	let max_parent_checks = 1u32;
 
@@ -1134,10 +1350,19 @@ fn is_delegating_max_parent_revoked() {
 	let user_3_keypair = get_charlie_ed25519();
 	let user_3 = get_ed25519_account(user_3_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (parent_id, mut parent_node) = (get_delegation_id(true), generate_base_delegation_node(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (parent_id, mut parent_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id)),
+	);
 	parent_node.details.revoked = true;
-	let (delegation_id, delegation_node) = (get_delegation_id(false), generate_base_delegation_node(hierarchy_root_id, user_3, Some(parent_id)));
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(hierarchy_root_id, user_3, Some(parent_id)),
+	);
 
 	let max_parent_checks = 2u32;
 
@@ -1167,9 +1392,18 @@ fn is_delegating_root_owner_not_revoked() {
 	let user_3_keypair = get_charlie_ed25519();
 	let user_3 = get_ed25519_account(user_3_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (parent_id, parent_node) = (get_delegation_id(true), generate_base_delegation_node(hierarchy_root_id, user_2, Some(hierarchy_root_id)));
-	let (delegation_id, delegation_node) = (get_delegation_id(false), generate_base_delegation_node(hierarchy_root_id, user_3, Some(parent_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (parent_id, parent_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, user_2, Some(hierarchy_root_id)),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(hierarchy_root_id, user_3, Some(parent_id)),
+	);
 
 	let max_parent_checks = 2u32;
 
@@ -1199,9 +1433,18 @@ fn is_delegating_root_owner_revoked() {
 	let user_3_keypair = get_charlie_ed25519();
 	let user_3 = get_ed25519_account(user_3_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (parent_id, parent_node) = (get_delegation_id(true), generate_base_delegation_node(hierarchy_root_id, user_2, Some(hierarchy_root_id)));
-	let (delegation_id, delegation_node) = (get_delegation_id(false), generate_base_delegation_node(hierarchy_root_id, user_3, Some(parent_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (parent_id, parent_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, user_2, Some(hierarchy_root_id)),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(hierarchy_root_id, user_3, Some(parent_id)),
+	);
 
 	let max_parent_checks = 2u32;
 
@@ -1229,7 +1472,10 @@ fn is_delegating_delegation_not_found() {
 	let user_1_keypair = get_alice_ed25519();
 	let user_1 = get_ed25519_account(user_1_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
 	let delegation_id = get_delegation_id(true);
 
 	let max_parent_checks = 2u32;
@@ -1256,9 +1502,18 @@ fn is_delegating_root_after_max_limit() {
 	let user_3_keypair = get_charlie_ed25519();
 	let user_3 = get_ed25519_account(user_3_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_info) = (get_delegation_hierarchy_id(true), generate_base_delegation_hierarchy_info());
-	let (parent_id, parent_node) = (get_delegation_id(true), generate_base_delegation_node(hierarchy_root_id, user_2, Some(hierarchy_root_id)));
-	let (delegation_id, delegation_node) = (get_delegation_id(false), generate_base_delegation_node(hierarchy_root_id, user_3, Some(parent_id)));
+	let (hierarchy_root_id, hierarchy_info) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_info(),
+	);
+	let (parent_id, parent_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, user_2, Some(hierarchy_root_id)),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(hierarchy_root_id, user_3, Some(parent_id)),
+	);
 
 	// 1 less than needed
 	let max_parent_checks = 1u32;

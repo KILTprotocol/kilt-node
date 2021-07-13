@@ -221,7 +221,11 @@ pub fn generate_base_delegation_hierarchy_info() -> DelegationHierarchyInfo<Test
 	}
 }
 
-pub fn generate_base_delegation_node(hierarchy_id: TestDelegationNodeId, owner: TestDelegatorId, parent: Option<TestDelegationNodeId>) -> DelegationNode<Test> {
+pub fn generate_base_delegation_node(
+	hierarchy_id: TestDelegationNodeId,
+	owner: TestDelegatorId,
+	parent: Option<TestDelegationNodeId>,
+) -> DelegationNode<Test> {
 	DelegationNode {
 		details: generate_base_delegation_details(owner),
 		children: BTreeSet::new(),
@@ -243,10 +247,12 @@ pub struct DelegationHierarchyCreationOperation {
 	pub ctype_hash: TestCtypeHash,
 }
 
-pub fn generate_base_delegation_hierarchy_creation_operation(id: TestDelegationNodeId) -> DelegationHierarchyCreationOperation {
+pub fn generate_base_delegation_hierarchy_creation_operation(
+	id: TestDelegationNodeId,
+) -> DelegationHierarchyCreationOperation {
 	DelegationHierarchyCreationOperation {
 		id,
-		ctype_hash: ctype::mock::get_ctype_hash(true)
+		ctype_hash: ctype::mock::get_ctype_hash(true),
 	}
 }
 
@@ -266,7 +272,9 @@ pub fn generate_base_delegation_creation_operation(
 ) -> DelegationCreationOperation {
 	DelegationCreationOperation {
 		delegation_id,
-		parent_id: delegation_node.parent.expect("Delegation node must specify a parent ID upon creation"),
+		parent_id: delegation_node
+			.parent
+			.expect("Delegation node must specify a parent ID upon creation"),
 		hierarchy_id: delegation_node.hierarchy_root_id,
 		delegate: delegation_node.details.owner,
 		delegate_signature,
@@ -282,10 +290,7 @@ pub struct DelegationHierarchyRevocationOperation {
 pub fn generate_base_delegation_hierarchy_revocation_operation(
 	id: TestDelegationNodeId,
 ) -> DelegationHierarchyRevocationOperation {
-	DelegationHierarchyRevocationOperation {
-		id,
-		max_children: 0u32,
-	}
+	DelegationHierarchyRevocationOperation { id, max_children: 0u32 }
 }
 
 pub struct DelegationRevocationOperation {
@@ -294,7 +299,9 @@ pub struct DelegationRevocationOperation {
 	pub max_revocations: u32,
 }
 
-pub fn generate_base_delegation_revocation_operation(delegation_id: TestDelegationNodeId) -> DelegationRevocationOperation {
+pub fn generate_base_delegation_revocation_operation(
+	delegation_id: TestDelegationNodeId,
+) -> DelegationRevocationOperation {
 	DelegationRevocationOperation {
 		delegation_id,
 		max_parent_checks: 0u32,
@@ -343,18 +350,32 @@ impl ExtBuilder {
 
 		if !self.delegation_hierarchies_stored.is_empty() {
 			ext.execute_with(|| {
-				self.delegation_hierarchies_stored.iter().for_each(|delegation_hierarchy| {
-					delegation::Pallet::create_and_store_new_hierarchy(delegation_hierarchy.0, delegation_hierarchy.1.clone(), delegation_hierarchy.2.clone());
-				})
+				self.delegation_hierarchies_stored
+					.iter()
+					.for_each(|delegation_hierarchy| {
+						delegation::Pallet::create_and_store_new_hierarchy(
+							delegation_hierarchy.0,
+							delegation_hierarchy.1.clone(),
+							delegation_hierarchy.2.clone(),
+						);
+					})
 			});
 		}
 
 		if !self.delegations_stored.is_empty() {
 			ext.execute_with(|| {
 				self.delegations_stored.iter().for_each(|del| {
-					let parent_node_id = del.1.parent.expect("Delegation node that is not a root must have a parent ID specified.");
+					let parent_node_id = del
+						.1
+						.parent
+						.expect("Delegation node that is not a root must have a parent ID specified.");
 					let parent_node = delegation::DelegationNodes::<Test>::get(&parent_node_id).unwrap();
-					delegation::Pallet::store_delegation_under_parent(del.0, del.1.clone(), parent_node_id, parent_node);
+					delegation::Pallet::store_delegation_under_parent(
+						del.0,
+						del.1.clone(),
+						parent_node_id,
+						parent_node,
+					);
 				})
 			});
 		}

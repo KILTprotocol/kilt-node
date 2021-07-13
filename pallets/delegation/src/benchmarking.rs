@@ -46,7 +46,9 @@ where
 }
 
 /// add ctype to storage and root delegation
-fn add_delegation_hierarchy<T: Config>(number: u32) -> Result<(DelegationTriplet<T>, T::Hash), DispatchErrorWithPostInfo>
+fn add_delegation_hierarchy<T: Config>(
+	number: u32,
+) -> Result<(DelegationTriplet<T>, T::Hash), DispatchErrorWithPostInfo>
 where
 	T::AccountId: From<sr25519::Public>,
 	T::DelegationNodeId: From<T::Hash>,
@@ -57,7 +59,11 @@ where
 	let hierarchy_root_id = generate_delegation_id::<T>(number);
 
 	ctype::Pallet::<T>::add(RawOrigin::Signed(root_acc.clone()).into(), ctype_hash)?;
-	Pallet::<T>::create_hierarchy(RawOrigin::Signed(root_acc.clone()).into(), hierarchy_root_id, ctype_hash)?;
+	Pallet::<T>::create_hierarchy(
+		RawOrigin::Signed(root_acc.clone()).into(),
+		hierarchy_root_id,
+		ctype_hash,
+	)?;
 
 	Ok((
 		DelegationTriplet::<T> {
@@ -96,7 +102,8 @@ where
 		let delegation_id = generate_delegation_id::<T>(level * children_per_level.get() + c);
 
 		// delegate signs delegation to parent
-		let hash: Vec<u8> = Pallet::<T>::calculate_delegation_hash_root(&delegation_id, &root_id, &parent_id, &permissions).encode();
+		let hash: Vec<u8> =
+			Pallet::<T>::calculate_delegation_hash_root(&delegation_id, &root_id, &parent_id, &permissions).encode();
 		let sig = sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &delegation_acc_public, hash.as_ref())
 			.ok_or("Error while building signature of delegation.")?;
 

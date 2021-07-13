@@ -202,7 +202,7 @@ fn delegation_revoked_attest_error() {
 	);
 	let (delegation_id, mut delegation_node) = (
 		delegation_mock::get_delegation_id(true),
-		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attester.clone(), Some(hierarchy_root_id))
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attester.clone(), Some(hierarchy_root_id)),
 	);
 	delegation_node.details.permissions = delegation::Permissions::ATTEST;
 	delegation_node.details.revoked = true;
@@ -245,7 +245,7 @@ fn not_delegation_owner_attest_error() {
 	);
 	let (delegation_id, mut delegation_node) = (
 		delegation_mock::get_delegation_id(true),
-		delegation_mock::generate_base_delegation_node(hierarchy_root_id, alternative_owner, Some(hierarchy_root_id))
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, alternative_owner, Some(hierarchy_root_id)),
 	);
 	delegation_node.details.permissions = delegation::Permissions::ATTEST;
 	let mut attestation = generate_base_attestation(attester.clone());
@@ -286,7 +286,7 @@ fn unauthorised_permissions_attest_error() {
 	// Delegation node does not have permissions to attest.
 	let (delegation_id, delegation_node) = (
 		delegation_mock::get_delegation_id(true),
-		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attester.clone(), Some(hierarchy_root_id))
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attester.clone(), Some(hierarchy_root_id)),
 	);
 	let mut attestation = generate_base_attestation(attester.clone());
 	attestation.delegation_id = Some(delegation_id);
@@ -326,7 +326,11 @@ fn root_not_present_attest_error() {
 	let alternative_hierarchy_root_id = delegation_mock::get_delegation_hierarchy_id(false);
 	let (delegation_id, mut delegation_node) = (
 		delegation_mock::get_delegation_id(true),
-		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attester.clone(), Some(alternative_hierarchy_root_id))
+		delegation_mock::generate_base_delegation_node(
+			hierarchy_root_id,
+			attester.clone(),
+			Some(alternative_hierarchy_root_id),
+		),
 	);
 	delegation_node.details.permissions = delegation::Permissions::ATTEST;
 	let mut attestation = generate_base_attestation(attester.clone());
@@ -368,7 +372,7 @@ fn root_ctype_mismatch_attest_error() {
 	hierarchy_info.ctype_hash = alternative_ctype_hash;
 	let (delegation_id, mut delegation_node) = (
 		delegation_mock::get_delegation_id(true),
-		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attester.clone(), Some(hierarchy_root_id))
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attester.clone(), Some(hierarchy_root_id)),
 	);
 	delegation_node.details.permissions = delegation::Permissions::ATTEST;
 	let mut attestation = generate_base_attestation(attester.clone());
@@ -444,7 +448,7 @@ fn revoke_with_delegation_successful() {
 	);
 	let (delegation_id, mut delegation_node) = (
 		delegation_mock::get_delegation_id(true),
-		delegation_mock::generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id))
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
 	);
 	delegation_node.details.permissions = delegation::Permissions::ATTEST;
 	// Attestation owned by a different user, but delegation owned by the user
@@ -496,12 +500,12 @@ fn revoke_with_parent_delegation_successful() {
 	);
 	let (parent_id, mut parent_node) = (
 		delegation_mock::get_delegation_id(true),
-		delegation_mock::generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id))
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
 	);
 	parent_node.details.permissions = delegation::Permissions::ATTEST;
 	let (delegation_id, delegation_node) = (
 		delegation_mock::get_delegation_id(false),
-		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attestation_owner.clone(), Some(parent_id))
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attestation_owner.clone(), Some(parent_id)),
 	);
 	let mut attestation = generate_base_attestation(attestation_owner);
 	attestation.delegation_id = Some(delegation_id);
@@ -550,12 +554,12 @@ fn revoke_parent_delegation_no_attestation_permissions_successful() {
 	);
 	let (parent_id, mut parent_node) = (
 		delegation_mock::get_delegation_id(true),
-		delegation_mock::generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id))
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
 	);
 	parent_node.details.permissions = delegation::Permissions::ATTEST;
 	let (delegation_id, delegation_node) = (
 		delegation_mock::get_delegation_id(false),
-		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attestation_owner.clone(), Some(parent_id))
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attestation_owner.clone(), Some(parent_id)),
 	);
 	let mut attestation = generate_base_attestation(attestation_owner);
 	attestation.delegation_id = Some(delegation_id);
@@ -604,12 +608,12 @@ fn revoke_parent_delegation_with_direct_delegation_revoked_successful() {
 	);
 	let (parent_id, mut parent_node) = (
 		delegation_mock::get_delegation_id(true),
-		delegation_mock::generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id))
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
 	);
 	parent_node.details.permissions = delegation::Permissions::ATTEST;
 	let (delegation_id, mut delegation_node) = (
 		delegation_mock::get_delegation_id(false),
-		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attestation_owner.clone(), Some(parent_id))
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attestation_owner.clone(), Some(parent_id)),
 	);
 	delegation_node.details.revoked = true;
 	let mut attestation = generate_base_attestation(attestation_owner);
@@ -750,11 +754,11 @@ fn max_parent_lookups_revoke_error() {
 	);
 	let (parent_id, parent_node) = (
 		delegation_mock::get_delegation_id(true),
-		delegation_mock::generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id))
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
 	);
 	let (delegation_id, mut delegation_node) = (
 		delegation_mock::get_delegation_id(false),
-		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attestation_owner.clone(), Some(parent_id))
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attestation_owner.clone(), Some(parent_id)),
 	);
 	delegation_node.details.permissions = delegation::Permissions::ATTEST;
 	let mut attestation = generate_base_attestation(attestation_owner);
@@ -800,7 +804,7 @@ fn revoked_delegation_revoke_error() {
 	);
 	let (delegation_id, mut delegation_node) = (
 		delegation_mock::get_delegation_id(true),
-		delegation_mock::generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id))
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
 	);
 	delegation_node.details.permissions = delegation::Permissions::ATTEST;
 	delegation_node.details.revoked = true;

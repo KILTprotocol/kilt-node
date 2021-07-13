@@ -170,13 +170,14 @@ pub mod pallet {
 				ensure!(delegation.details.owner == attester, Error::<T>::NotDelegatedToAttester);
 
 				ensure!(
-					(delegation.details.permissions & delegation::Permissions::ATTEST) == delegation::Permissions::ATTEST,
+					(delegation.details.permissions & delegation::Permissions::ATTEST)
+						== delegation::Permissions::ATTEST,
 					Error::<T>::DelegationUnauthorizedToAttest
 				);
 
 				// Check if the CTYPE of the delegation is matching the CTYPE of the attestation
-				let root =
-					<delegation::DelegationHierarchies<T>>::get(delegation.hierarchy_root_id).ok_or(delegation::Error::<T>::HierarchyNotFound)?;
+				let root = <delegation::DelegationHierarchies<T>>::get(delegation.hierarchy_root_id)
+					.ok_or(delegation::Error::<T>::HierarchyNotFound)?;
 				ensure!(root.ctype_hash == ctype_hash, Error::<T>::CTypeMismatch);
 
 				// If the attestation is based on a delegation, store separately

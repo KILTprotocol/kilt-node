@@ -101,7 +101,8 @@ pub mod pallet {
 	/// It maps for a (root) node ID to the hierarchy details.
 	#[pallet::storage]
 	#[pallet::getter(fn delegation_hierarchies)]
-	pub type DelegationHierarchies<T> = StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, DelegationHierarchyInfo<T>>;
+	pub type DelegationHierarchies<T> =
+		StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, DelegationHierarchyInfo<T>>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -186,14 +187,21 @@ pub mod pallet {
 		) -> DispatchResult {
 			let creator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
-			ensure!(!<DelegationHierarchies<T>>::contains_key(&root_node_id), Error::<T>::HierarchyAlreadyExists);
+			ensure!(
+				!<DelegationHierarchies<T>>::contains_key(&root_node_id),
+				Error::<T>::HierarchyAlreadyExists
+			);
 
 			ensure!(
 				<ctype::Ctypes<T>>::contains_key(&ctype_hash),
 				<ctype::Error<T>>::CTypeNotFound
 			);
 
-			Self::create_and_store_new_hierarchy(root_node_id, DelegationHierarchyInfo::<T> { ctype_hash }, creator.clone());
+			Self::create_and_store_new_hierarchy(
+				root_node_id,
+				DelegationHierarchyInfo::<T> { ctype_hash },
+				creator.clone(),
+			);
 
 			Self::deposit_event(Event::HierarchyCreated(creator, root_node_id, ctype_hash));
 
@@ -233,7 +241,8 @@ pub mod pallet {
 			let delegator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
 			// Calculate the hash root
-			let hash_root = Self::calculate_delegation_hash_root(&delegation_id, &root_node_id, &parent_id, &permissions);
+			let hash_root =
+				Self::calculate_delegation_hash_root(&delegation_id, &root_node_id, &parent_id, &permissions);
 
 			// Verify that the hash root signature is correct.
 			DelegationSignatureVerificationOf::<T>::verify(&delegate, &hash_root.encode(), &delegate_signature)
@@ -250,14 +259,30 @@ pub mod pallet {
 			let parent_node = <DelegationNodes<T>>::get(&parent_id).ok_or(Error::<T>::ParentDelegationNotFound)?;
 
 			// Check if the parent's delegate is the creator of this delegation node...
-			ensure!(parent_node.details.owner == delegator, Error::<T>::NotOwnerOfParentDelegation);
+			ensure!(
+				parent_node.details.owner == delegator,
+				Error::<T>::NotOwnerOfParentDelegation
+			);
 			// ... and has permission to delegate
 			ensure!(
 				(parent_node.details.permissions & Permissions::DELEGATE) == Permissions::DELEGATE,
 				Error::<T>::UnauthorizedDelegation
 			);
 
-			Self::store_delegation_under_parent(delegation_id, DelegationNode::new_node(root_node_id, parent_id, DelegationDetails { owner: delegate.clone(), permissions, revoked: false }), parent_id, parent_node);
+			Self::store_delegation_under_parent(
+				delegation_id,
+				DelegationNode::new_node(
+					root_node_id,
+					parent_id,
+					DelegationDetails {
+						owner: delegate.clone(),
+						permissions,
+						revoked: false,
+					},
+				),
+				parent_id,
+				parent_node,
+			);
 
 			Self::deposit_event(Event::DelegationCreated(
 				delegator,
@@ -295,7 +320,10 @@ pub mod pallet {
 
 			let hierarchy_root_node = <DelegationNodes<T>>::get(&root_node_id).ok_or(Error::<T>::HierarchyNotFound)?;
 
-			ensure!(hierarchy_root_node.details.owner == invoker, Error::<T>::UnauthorizedRevocation);
+			ensure!(
+				hierarchy_root_node.details.owner == invoker,
+				Error::<T>::UnauthorizedRevocation
+			);
 
 			ensure!(
 				max_children <= T::MaxRevocations::get(),
@@ -402,23 +430,26 @@ impl<T: Config> Pallet<T> {
 		T::Hashing::hash(&hashed_values)
 	}
 
-	fn create_and_store_new_hierarchy(root_id: DelegationNodeIdOf<T>, hierarchy_info: DelegationHierarchyInfo<T>, hierarchy_owner: DelegatorIdOf<T>) {
+	fn create_and_store_new_hierarchy(
+		root_id: DelegationNodeIdOf<T>,
+		hierarchy_info: DelegationHierarchyInfo<T>,
+		hierarchy_owner: DelegatorIdOf<T>,
+	) {
 		let root_node = DelegationNode::new_root_node(root_id, DelegationDetails::default_with_owner(hierarchy_owner));
 		<DelegationNodes<T>>::insert(root_id, root_node);
 		<DelegationHierarchies<T>>::insert(root_id, hierarchy_info);
 	}
 
-	fn store_delegation_under_parent(delegation_id: DelegationNodeIdOf<T>, delegation_node: DelegationNode<T>, parent_id: DelegationNodeIdOf<T>, mut parent_node: DelegationNode<T>) {
-		<DelegationNodes<T>>::insert(
-			delegation_id,
-			delegation_node
-		);
+	fn store_delegation_under_parent(
+		delegation_id: DelegationNodeIdOf<T>,
+		delegation_node: DelegationNode<T>,
+		parent_id: DelegationNodeIdOf<T>,
+		mut parent_node: DelegationNode<T>,
+	) {
+		<DelegationNodes<T>>::insert(delegation_id, delegation_node);
 		// Add the new node as a child of that node
 		parent_node.add_child(delegation_id);
-		<DelegationNodes<T>>::insert(
-			parent_id,
-			parent_node
-		);
+		<DelegationNodes<T>>::insert(parent_id, parent_node);
 	}
 
 	fn revoke_and_store_hierarchy_root(root_id: DelegationNodeIdOf<T>, mut root_node: DelegationNode<T>) {
