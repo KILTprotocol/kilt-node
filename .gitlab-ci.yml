@@ -9,8 +9,6 @@ clippy:
   script:
     - rustup component add clippy --toolchain nightly
     - cargo +nightly clippy -- -D warnings
-  only:
-    - develop
 
 fmt:
   image: paritytech/ci-linux:105b919b-20210617
@@ -26,8 +24,6 @@ test:
   timeout: 1 hours
   script:
     - cargo test --all --all-features
-  only:
-    - develop
 
 build:
   image:
@@ -74,9 +70,9 @@ build-wasm:
     name: paritytech/srtool:1.53.0
     entrypoint: [""]
   stage: build
-  # only:
-  #   - develop
-  #   - master
+  only:
+    - develop
+    - master
   script:
     - export PACKAGE=peregrine-runtime
     - export RUNTIME_DIR=runtimes/peregrine
@@ -85,8 +81,6 @@ build-wasm:
     - mkdir ./out
     - mv /out/* ./out/
   artifacts:
-    public: true
-    untracked: true
     paths:
       - out/*.wasm
     expire_in: 12 week
