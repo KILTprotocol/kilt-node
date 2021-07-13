@@ -672,7 +672,7 @@ impl delegation::Config for Runtime {
 	type MaxSignatureByteLength = MaxSignatureByteLength;
 	type MaxParentChecks = MaxParentChecks;
 	type MaxRevocations = MaxRevocations;
-	type WeightInfo = weights::delegation::WeightInfo<Runtime>;
+	type WeightInfo = ();
 }
 
 impl ctype::Config for Runtime {
@@ -1038,7 +1038,7 @@ impl_runtime_apis! {
 
 			add_benchmark!(params, batches, attestation, Attestation);
 			add_benchmark!(params, batches, ctype, Ctype);
-			add_benchmark!(params, batches, delegation, Delegation);
+			// add_benchmark!(params, batches, delegation, Delegation);
 			add_benchmark!(params, batches, did, Did);
 			add_benchmark!(params, batches, kilt_launch, KiltLaunch);
 			add_benchmark!(params, batches, pallet_vesting, Vesting);

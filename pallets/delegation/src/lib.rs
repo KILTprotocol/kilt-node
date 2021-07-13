@@ -178,8 +178,7 @@ pub mod pallet {
 		/// * origin: the identifier of the delegation creator
 		/// * root_id: the ID of the root node. It has to be unique
 		/// * ctype_hash: the CTYPE hash that delegates can use for attestations
-		// #[pallet::weight(<T as Config>::WeightInfo::create_root())]
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config>::WeightInfo::create_hierarchy())]
 		pub fn create_hierarchy(
 			origin: OriginFor<T>,
 			root_node_id: DelegationNodeIdOf<T>,
@@ -227,8 +226,7 @@ pub mod pallet {
 		///   is allowed to perform
 		/// * delegate_signature: the delegate's signature over the new
 		///   delegation ID, root ID, parent ID, and permission flags
-		// #[pallet::weight(<T as Config>::WeightInfo::add_delegation())]
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config>::WeightInfo::add_delegation())]
 		pub fn add_delegation(
 			origin: OriginFor<T>,
 			delegation_id: DelegationNodeIdOf<T>,
@@ -309,8 +307,7 @@ pub mod pallet {
 		/// * root_id: the ID of the delegation root to revoke
 		/// * max_children: the maximum number of nodes descending from the root
 		///   to revoke as a consequence of the root revocation
-		// #[pallet::weight(<T as Config>::WeightInfo::revoke_root(*max_children))]
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config>::WeightInfo::revoke_hierarchy(*max_children))]
 		pub fn revoke_hierarchy(
 			origin: OriginFor<T>,
 			root_node_id: DelegationNodeIdOf<T>,
@@ -369,10 +366,9 @@ pub mod pallet {
 		///   max number of parents is reached
 		/// * max_revocations: the maximum number of nodes descending from this
 		///   one to revoke as a consequence of this node revocation
-		// #[pallet::weight(
-		// 	<T as Config>::WeightInfo::revoke_delegation_root_child(*max_revocations, *max_parent_checks)
-		// 		.max(<T as Config>::WeightInfo::revoke_delegation_leaf(*max_revocations, *max_parent_checks)))]
-		#[pallet::weight(0)]
+		#[pallet::weight(
+			<T as Config>::WeightInfo::revoke_delegation_root_child(*max_revocations, *max_parent_checks)
+				.max(<T as Config>::WeightInfo::revoke_delegation_leaf(*max_revocations, *max_parent_checks)))]
 		pub fn revoke_delegation(
 			origin: OriginFor<T>,
 			delegation_id: DelegationNodeIdOf<T>,
