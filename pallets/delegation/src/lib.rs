@@ -454,10 +454,10 @@ impl<T: Config> Pallet<T> {
 
 			if let Some(parent) = delegation_node.parent {
 				// Recursively check upwards in hierarchy
-				return Self::is_delegating(identity, &parent, remaining_lookups);
+				Self::is_delegating(identity, &parent, remaining_lookups)
 			} else {
 				// Safe because remaining lookups is at most max_parent_checks
-				return Ok((false, max_parent_checks - remaining_lookups));
+				Ok((false, max_parent_checks - remaining_lookups))
 			}
 		}
 	}
@@ -481,7 +481,7 @@ impl<T: Config> Pallet<T> {
 				// Check whether we ran out of gas
 				ensure!(remaining_revocations > 0, Error::<T>::ExceededRevocationBounds);
 
-				Self::revoke(&child, sender, remaining_revocations).map(|(r, w)| {
+				Self::revoke(child, sender, remaining_revocations).map(|(r, w)| {
 					revocations = revocations.saturating_add(r);
 					consumed_weight = consumed_weight.saturating_add(w);
 				})?;
