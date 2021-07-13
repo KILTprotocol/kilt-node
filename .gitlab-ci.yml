@@ -88,5 +88,5 @@ build-wasm:
     public: true
     untracked: true
     paths:
-      - out/
+      - out/*.wasm
     expire_in: 12 week
