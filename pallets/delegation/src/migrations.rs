@@ -69,13 +69,13 @@ impl<T: Config> StorageMigrator<T> {
 			// Test pre-conditions for each migrated version
 			#[cfg(feature = "try-runtime")]
 			if let Err(err) = version_migrator.pre_migrate() {
-				assert!(false, "{}", err);
+				panic!("{}", err);
 			}
 			total_weight_used = total_weight_used.saturating_add(version_migrator.migrate());
 			// Test post-conditions for each migrated version
 			#[cfg(feature = "try-runtime")]
 			if let Err(err) = version_migrator.post_migrate() {
-				assert!(false, "{}", err);
+				panic!("{}", err);
 			}
 		}
 		// Set a version number that is not upgradeable anymore until a new version is available
