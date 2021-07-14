@@ -11,7 +11,6 @@ clippy:
       - branches
     changes:
       - ./**/*.{rs,toml,lock}
-      - ./HEADER-GPL
   script:
     - rustup component add clippy --toolchain nightly
     - cargo +nightly clippy -- -D warnings
@@ -20,12 +19,6 @@ fmt:
   image: paritytech/ci-linux:105b919b-20210617
   stage: test
   timeout: 1 hours
-  only:
-    refs:
-      - branches
-    changes:
-      - ./**/*.{rs,toml,lock}
-      - ./HEADER-GPL
   script:
     - rustup component add rustfmt
     - cargo fmt -- --check
@@ -39,7 +32,6 @@ test:
       - branches
     changes:
       - ./**/*.{rs,toml,lock}
-      - ./HEADER-GPL
   script:
     - cargo test --all --all-features
 
