@@ -100,9 +100,6 @@ if __name__ == "__main__":
     parser.add_argument("--spiritnet", "-s", action="store_true", dest="spiritnet",
                         help="reset the spiritnet chainspec")
 
-    parser.add_argument("--westend", action="store_true", dest="westend",
-                        help="Build a customized westend chainspec.")
-
     parser.add_argument("--peregrine", "-p", action="store_true", dest="peregrine",
                         help="reset the peregrine chainspec")
     parser.add_argument("--peregrine-relay", "-r", action="store_true", dest="peregrine_relay",
