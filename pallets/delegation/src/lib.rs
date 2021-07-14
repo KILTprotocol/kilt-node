@@ -24,6 +24,7 @@
 
 pub mod default_weights;
 pub mod delegation_hierarchy;
+pub mod migrations;
 
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
@@ -87,7 +88,42 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::hooks]
-	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+
+		#[cfg(feature = "try-runtime")]
+		fn pre_upgrade() -> Result<(), &'static str> {
+			let last_upgrade_version = LastUpgradeVersion::<T>::get();
+			if let Ok(migrator) = migrations::StorageMigrator::<T>::try_new(last_upgrade_version) {
+				return migrator.pre_migrate();
+			} else {
+				return Err("No migrations to apply.");
+			}
+		}
+
+		fn on_runtime_upgrade() -> Weight {
+			let last_upgrade_version = LastUpgradeVersion::<T>::get();
+			if let Ok(migrator) = migrations::StorageMigrator::<T>::try_new(last_upgrade_version) {
+				migrator.migrate()
+			} else {
+				0u64
+			}
+		}
+
+		#[cfg(feature = "try-runtime")]
+		fn post_upgrade() -> Result<(), &'static str> {
+			let last_upgrade_version = LastUpgradeVersion::<T>::get();
+			if let Ok(migrator) = migrations::StorageMigrator::<T>::try_new(last_upgrade_version) {
+				return migrator.post_migrate();
+			} else {
+				return Err("No migrations applied.");
+			}
+		}
+	}
+
+	/// Contains the version of the latest runtime upgrade performed.
+	#[pallet::storage]
+	#[pallet::getter(fn last_upgrade_version)]
+	pub type LastUpgradeVersion<T> = StorageValue<_, u16, ValueQuery>;
 
 	/// Delegation nodes stored on chain.
 	///
