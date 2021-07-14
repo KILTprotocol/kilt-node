@@ -7,9 +7,11 @@ clippy:
   stage: test
   timeout: 1 hours
   only:
+    refs:
+      - branches
     changes:
       - ./**/*.{rs,toml,lock}
-      - HEADER-GPL
+      - ./HEADER-GPL
   script:
     - rustup component add clippy --toolchain nightly
     - cargo +nightly clippy -- -D warnings
@@ -19,9 +21,11 @@ fmt:
   stage: test
   timeout: 1 hours
   only:
+    refs:
+      - branches
     changes:
       - ./**/*.{rs,toml,lock}
-      - HEADER-GPL
+      - ./HEADER-GPL
   script:
     - rustup component add rustfmt
     - cargo fmt -- --check
@@ -31,9 +35,11 @@ test:
   stage: test
   timeout: 1 hours
   only:
+    refs:
+      - branches
     changes:
       - ./**/*.{rs,toml,lock}
-      - HEADER-GPL
+      - ./HEADER-GPL
   script:
     - cargo test --all --all-features
 
