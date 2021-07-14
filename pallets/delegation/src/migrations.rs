@@ -188,46 +188,336 @@ impl<T: Config> VersionMigrator<T> for V0Migrator {
 	}
 }
 
-#[test]
-fn ok_migrator_v0_no_delegations() {
-	let _ = env_logger::builder().is_test(true).try_init();
-	let migrator = StorageMigrator::<mock::Test>::new();
-	let mut ext = mock::ExtBuilder::default().build(None);
-	ext.execute_with(|| {
-		assert!(
-			migrator.pre_migration().is_ok(),
-			"Pre-migration for v0 should not fail."
-		);
-		migrator.migrate();
-		assert!(
-			migrator.post_migration().is_ok(),
-			"Post-migration for v0 should not fail."
-		);
-	});
-}
+#[cfg(test)]
+mod tests_v0 {
+	use super::*;
 
-#[test]
-fn already_max_migrator_v0() {
-	let migrator = StorageMigrator::<mock::Test>::new();
-	let mut ext = mock::ExtBuilder::default().build(None);
-	ext.execute_with(|| {
-		LastUpgradeVersion::<mock::Test>::set(1);
-		assert!(
-			migrator.pre_migration().is_err(),
-			"Pre-migration for v0 should fail."
-		);
-	});
-}
+	use sp_core::Pair;
+	use mock::Test as TestRuntime;
 
-#[test]
-fn more_than_max_migrator_v0() {
-	let migrator = StorageMigrator::<mock::Test>::new();
-	let mut ext = mock::ExtBuilder::default().build(None);
-	ext.execute_with(|| {
-		LastUpgradeVersion::<mock::Test>::set(u16::MAX);
-		assert!(
-			migrator.pre_migration().is_err(),
-			"Pre-migration for v0 should fail."
-		);
-	});
+	fn get_storage_migrator() -> StorageMigrator<TestRuntime> {
+		StorageMigrator::<mock::Test>::new()
+	}
+
+	fn init_logger() {
+		let _ = env_logger::builder().is_test(true).try_init();
+	}
+
+	#[test]
+	fn ok_no_delegations() {
+		let migrator = get_storage_migrator();
+		let mut ext = mock::ExtBuilder::default().build(None);
+		ext.execute_with(|| {
+			assert!(
+				migrator.pre_migration().is_ok(),
+				"Pre-migration for v0 should not fail."
+			);
+			migrator.migrate();
+			assert!(
+				migrator.post_migration().is_ok(),
+				"Post-migration for v0 should not fail."
+			);
+		});
+	}
+
+	#[test]
+	fn ok_only_root() {
+		init_logger();
+		let migrator = get_storage_migrator();
+		let mut ext = mock::ExtBuilder::default().build(None);
+		ext.execute_with(|| {
+			let alice = mock::get_ed25519_account(mock::get_alice_ed25519().public());
+			let old_root_id = mock::get_delegation_id(true);
+			let old_root_node = crate::v0::DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash(true), alice);
+			Roots::insert(old_root_id, old_root_node.clone());
+
+			migrator.migrate();
+
+			assert_eq!(
+				Roots::<TestRuntime>::iter_values().count(),
+				0
+			);
+			assert_eq!(
+				Delegations::<TestRuntime>::iter_values().count(),
+				0
+			);
+			assert_eq!(
+				Children::<TestRuntime>::iter_values().count(),
+				0
+			);
+
+			let new_stored_hierarchy = DelegationHierarchies::<TestRuntime>::get(old_root_id).expect("New delegation hierarchy should exist in the storage.");
+			assert_eq!(
+				new_stored_hierarchy.ctype_hash,
+				old_root_node.ctype_hash
+			);
+			let new_stored_root = DelegationNodes::<TestRuntime>::get(old_root_id).expect("New delegation root should exist in the storage.");
+			assert_eq!(
+				new_stored_root.hierarchy_root_id,
+				old_root_id
+			);
+			assert!(
+				new_stored_root.parent.is_none()
+			);
+			assert!(
+				new_stored_root.children.is_empty()
+			);
+			assert_eq!(
+				new_stored_root.details.owner,
+				old_root_node.owner
+			);
+			assert_eq!(
+				new_stored_root.details.revoked,
+				old_root_node.revoked
+			);
+		});
+	}
+
+	#[test]
+	fn ok_three_level_hierarchy() {
+		init_logger();
+		let migrator = get_storage_migrator();
+		let mut ext = mock::ExtBuilder::default().build(None);
+		ext.execute_with(|| {
+			let alice = mock::get_ed25519_account(mock::get_alice_ed25519().public());
+			let bob = mock::get_sr25519_account(mock::get_bob_sr25519().public());
+			let old_root_id = mock::get_delegation_id(true);
+			let old_root_node = crate::v0::DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash(true), alice.clone());
+			let old_parent_id = mock::get_delegation_id(false);
+			let old_parent_node = crate::v0::DelegationNode::<TestRuntime>::new_root_child(old_root_id, alice, Permissions::all());
+			let old_node_id = mock::get_delegation_id_2(true);
+			let old_node = crate::v0::DelegationNode::<TestRuntime>::new_node_child(old_root_id, old_parent_id, bob, Permissions::ATTEST);
+			Roots::insert(old_root_id, old_root_node.clone());
+			Delegations::insert(old_parent_id, old_parent_node.clone());
+			Delegations::insert(old_node_id, old_node.clone());
+			Children::<TestRuntime>::insert(old_root_id, vec![old_parent_id]);
+			Children::<TestRuntime>::insert(old_parent_id, vec![old_node_id]);
+
+			migrator.migrate();
+
+			assert_eq!(
+				Roots::<TestRuntime>::iter_values().count(),
+				0
+			);
+			assert_eq!(
+				Delegations::<TestRuntime>::iter_values().count(),
+				0
+			);
+			assert_eq!(
+				Children::<TestRuntime>::iter_values().count(),
+				0
+			);
+
+			let new_stored_hierarchy = DelegationHierarchies::<TestRuntime>::get(old_root_id).expect("New delegation hierarchy should exist in the storage.");
+			assert_eq!(
+				new_stored_hierarchy.ctype_hash,
+				old_root_node.ctype_hash
+			);
+			let new_stored_root = DelegationNodes::<TestRuntime>::get(old_root_id).expect("New delegation root should exist in the storage.");
+			assert_eq!(
+				new_stored_root.hierarchy_root_id,
+				old_root_id
+			);
+			assert!(
+				new_stored_root.parent.is_none()
+			);
+			assert_eq!(
+				new_stored_root.children.len(),
+				1
+			);
+			assert!(
+				new_stored_root.children.contains(&old_parent_id)
+			);
+			assert_eq!(
+				new_stored_root.details.owner,
+				old_root_node.owner
+			);
+			assert_eq!(
+				new_stored_root.details.revoked,
+				old_root_node.revoked
+			);
+
+			let new_stored_parent = DelegationNodes::<TestRuntime>::get(old_parent_id).expect("New delegation parent should exist in the storage.");
+			assert_eq!(
+				new_stored_parent.hierarchy_root_id,
+				old_root_id
+			);
+			assert_eq!(
+				new_stored_parent.parent,
+				Some(old_root_id)
+			);
+			assert_eq!(
+				new_stored_parent.children.len(),
+				1
+			);
+			assert!(
+				new_stored_parent.children.contains(&old_node_id)
+			);
+			assert_eq!(
+				new_stored_parent.details.owner,
+				old_parent_node.owner
+			);
+			assert_eq!(
+				new_stored_parent.details.revoked,
+				old_parent_node.revoked
+			);
+
+			let new_stored_node = DelegationNodes::<TestRuntime>::get(old_node_id).expect("New delegation node should exist in the storage.");
+			assert_eq!(
+				new_stored_node.hierarchy_root_id,
+				old_root_id
+			);
+			assert_eq!(
+				new_stored_node.parent,
+				Some(old_parent_id)
+			);
+			assert!(
+				new_stored_node.children.is_empty()
+			);
+			assert_eq!(
+				new_stored_node.details.owner,
+				old_node.owner
+			);
+			assert_eq!(
+				new_stored_node.details.revoked,
+				old_node.revoked
+			);
+		});
+	}
+
+	#[test]
+	fn ok_root_two_children() {
+		init_logger();
+		let migrator = get_storage_migrator();
+		let mut ext = mock::ExtBuilder::default().build(None);
+		ext.execute_with(|| {
+			let alice = mock::get_ed25519_account(mock::get_alice_ed25519().public());
+			let bob = mock::get_sr25519_account(mock::get_bob_sr25519().public());
+			let old_root_id = mock::get_delegation_id(true);
+			let old_root_node = crate::v0::DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash(true), alice.clone());
+			let old_node_id_1 = mock::get_delegation_id(false);
+			let old_node_1 = crate::v0::DelegationNode::<TestRuntime>::new_root_child(old_root_id, alice, Permissions::DELEGATE);
+			let old_node_id_2 = mock::get_delegation_id_2(true);
+			let old_node_2 = crate::v0::DelegationNode::<TestRuntime>::new_root_child(old_root_id, bob, Permissions::ATTEST);
+			Roots::insert(old_root_id, old_root_node.clone());
+			Delegations::insert(old_node_id_1, old_node_1.clone());
+			Delegations::insert(old_node_id_2, old_node_2.clone());
+			Children::<TestRuntime>::insert(old_root_id, vec![old_node_id_1, old_node_id_2]);
+
+			migrator.migrate();
+
+			assert_eq!(
+				Roots::<TestRuntime>::iter_values().count(),
+				0
+			);
+			assert_eq!(
+				Delegations::<TestRuntime>::iter_values().count(),
+				0
+			);
+			assert_eq!(
+				Children::<TestRuntime>::iter_values().count(),
+				0
+			);
+
+			let new_stored_hierarchy = DelegationHierarchies::<TestRuntime>::get(old_root_id).expect("New delegation hierarchy should exist in the storage.");
+			assert_eq!(
+				new_stored_hierarchy.ctype_hash,
+				old_root_node.ctype_hash
+			);
+			let new_stored_root = DelegationNodes::<TestRuntime>::get(old_root_id).expect("New delegation root should exist in the storage.");
+			assert_eq!(
+				new_stored_root.hierarchy_root_id,
+				old_root_id
+			);
+			assert!(
+				new_stored_root.parent.is_none()
+			);
+			assert_eq!(
+				new_stored_root.children.len(),
+				2
+			);
+			assert!(
+				new_stored_root.children.contains(&old_node_id_1)
+			);
+			assert!(
+				new_stored_root.children.contains(&old_node_id_2)
+			);
+			assert_eq!(
+				new_stored_root.details.owner,
+				old_root_node.owner
+			);
+			assert_eq!(
+				new_stored_root.details.revoked,
+				old_root_node.revoked
+			);
+
+			let new_stored_node_1 = DelegationNodes::<TestRuntime>::get(old_node_id_1).expect("New delegation 1 should exist in the storage.");
+			assert_eq!(
+				new_stored_node_1.hierarchy_root_id,
+				old_root_id
+			);
+			assert_eq!(
+				new_stored_node_1.parent,
+				Some(old_root_id)
+			);
+			assert!(
+				new_stored_node_1.children.is_empty()
+			);
+			assert_eq!(
+				new_stored_node_1.details.owner,
+				old_node_1.owner
+			);
+			assert_eq!(
+				new_stored_node_1.details.revoked,
+				old_node_1.revoked
+			);
+
+			let new_stored_node_2 = DelegationNodes::<TestRuntime>::get(old_node_id_2).expect("New delegation 2 should exist in the storage.");
+			assert_eq!(
+				new_stored_node_2.hierarchy_root_id,
+				old_root_id
+			);
+			assert_eq!(
+				new_stored_node_2.parent,
+				Some(old_root_id)
+			);
+			assert!(
+				new_stored_node_2.children.is_empty()
+			);
+			assert_eq!(
+				new_stored_node_2.details.owner,
+				old_node_2.owner
+			);
+			assert_eq!(
+				new_stored_node_2.details.revoked,
+				old_node_2.revoked
+			);
+		});
+	}
+
+	#[test]
+	fn err_already_max_migrator() {
+		let migrator = StorageMigrator::<mock::Test>::new();
+		let mut ext = mock::ExtBuilder::default().build(None);
+		ext.execute_with(|| {
+			LastUpgradeVersion::<mock::Test>::set(1);
+			assert!(
+				migrator.pre_migration().is_err(),
+				"Pre-migration for v0 should fail."
+			);
+		});
+	}
+
+	#[test]
+	fn err_more_than_max_migrator() {
+		let migrator = StorageMigrator::<mock::Test>::new();
+		let mut ext = mock::ExtBuilder::default().build(None);
+		ext.execute_with(|| {
+			LastUpgradeVersion::<mock::Test>::set(u16::MAX);
+			assert!(
+				migrator.pre_migration().is_err(),
+				"Pre-migration for v0 should fail."
+			);
+		});
+	}
 }
