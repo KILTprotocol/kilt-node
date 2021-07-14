@@ -34,10 +34,16 @@ def check_process(process: subprocess.CompletedProcess):
         raise RuntimeError
 
 
-def reset_spec(tmp_dir, docker_img, plain_file, out_file, update_spec):
-    process = subprocess.run(["docker", "run", docker_img, "build-spec", "--runtime",
-                              "peregrine", "--chain", "dev", "--disable-default-bootnode"],
-                             capture_output=True)
+def make_custom_spec(tmp_dir, docker_img, plain_file, out_file, update_spec, spec, runtime=None):
+    """Build a custom spec by exporting a chain spec and customize it using a python script.
+    """
+    cmd_plain_spec = ["docker", "run", docker_img, "build-spec",
+                      "--chain", spec, "--disable-default-bootnode"]
+
+    if runtime is not None:
+        cmd_plain_spec += ["--runtime", runtime]
+
+    process = subprocess.run(cmd_plain_spec, capture_output=True)
     check_process(process)
 
     in_json = json.loads(process.stdout)
@@ -47,9 +53,12 @@ def reset_spec(tmp_dir, docker_img, plain_file, out_file, update_spec):
     with open(plain_path, "w") as f:
         json.dump(in_json, f)
 
-    process = subprocess.run(["docker", "run", "-v", f"{tmp_dir}:/data/", docker_img, "build-spec", "--runtime",
-                              "peregrine", "--chain", os.path.join("/data/", plain_file), "--disable-default-bootnode"],
-                             capture_output=True)
+    cmd_raw_spec = ["docker", "run", "-v", f"{tmp_dir}:/data/", docker_img, "build-spec",
+                    "--chain", os.path.join("/data/", plain_file), "--disable-default-bootnode"]
+    if runtime is not None:
+        cmd_raw_spec += ["--runtime", runtime]
+
+    process = subprocess.run(cmd_raw_spec, capture_output=True)
     check_process(process)
 
     with open(out_file, "wb") as f:
@@ -57,6 +66,8 @@ def reset_spec(tmp_dir, docker_img, plain_file, out_file, update_spec):
 
 
 def make_native(docker_img, out_file, chain, runtime):
+    """Build a custom spec by exporting a chain spec and customize it using a python script.
+    """
     process = subprocess.run(["docker", "run", docker_img, "build-spec", "--runtime", runtime, "--chain", chain, "--raw"],
                              capture_output=True)
     check_process(process)
@@ -83,8 +94,8 @@ if __name__ == "__main__":
     parser.add_argument("--image", "-i", dest="image", required=True,
                         help="docker image to use for building chain spec")
 
-    parser.add_argument("--westend", "-w", action="store_true", dest="westend",
-                        help="reset the westend chainspec")
+    parser.add_argument("--wilt", "-w", action="store_true", dest="wilt",
+                        help="reset the wilt (westend) chainspec")
 
     parser.add_argument("--spiritnet", "-s", action="store_true", dest="spiritnet",
                         help="reset the spiritnet chainspec")
@@ -108,44 +119,46 @@ if __name__ == "__main__":
     tmp_dir = os.path.join("/tmp/", str(uuid.uuid1()))
     os.mkdir(tmp_dir)
 
-    if args.westend:
+    if args.wilt:
         make_native(args.image, WILT_KILT, "wilt-new", "spiritnet")
 
     if args.spiritnet:
         make_native(args.image, SPIRITNET_KILT, "spiritnet-new", "spiritnet")
 
     if args.peregrine:
-        reset_spec(
+        make_custom_spec(
             tmp_dir, args.image, "peregrine_dev_kilt.plain.json",
-            PERE_KILT, peregrine_kilt.update_spec
+            PERE_KILT, peregrine_kilt.update_spec, "dev", "peregrine"
         )
 
     if args.peregrine_relay:
         try:
-            reset_spec(
+            make_custom_spec(
                 tmp_dir, args.image, "peregrine_relay.plain.json",
-                PERE_RELAY, peregrine_relay.update_spec
+                PERE_RELAY, peregrine_relay.update_spec, "westend-local"
             )
         except KeyError as e:
-            raise RuntimeError("Could not customize spec. Make sure to use a relay chain image.") from e
+            raise RuntimeError(
+                "Could not customize spec. Make sure to use a relay chain image.") from e
 
     if args.peregrine_dev:
-        reset_spec(
+        make_custom_spec(
             tmp_dir, args.image, "peregrine_dev_kilt.plain.json",
-            PERE_STG_KILT, peregrine_dev_kilt.update_spec
+            PERE_STG_KILT, peregrine_dev_kilt.update_spec, "dev", "peregrine"
         )
 
     if args.peregrine_stg:
-        reset_spec(
+        make_custom_spec(
             tmp_dir, args.image, "peregrine_stg.plain.json",
-            PERE_STG_KILT, peregrine_stg_kilt.update_spec
+            PERE_STG_KILT, peregrine_stg_kilt.update_spec, "dev", "peregrine"
         )
 
     if args.peregrine_relay_stg:
         try:
-            reset_spec(
+            make_custom_spec(
                 tmp_dir, args.image, "peregrine_stg_relay.plain.json",
-                PERE_STG_RELAY, peregrine_stg_relay.update_spec
+                PERE_STG_RELAY, peregrine_stg_relay.update_spec, "westend-local"
             )
         except KeyError as e:
-            raise RuntimeError("Could not customize spec. Make sure to use a relay chain image.") from e
+            raise RuntimeError(
+                "Could not customize spec. Make sure to use a relay chain image.") from e
