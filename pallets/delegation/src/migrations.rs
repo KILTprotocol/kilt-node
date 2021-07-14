@@ -51,6 +51,7 @@ impl<T: Config> StorageMigrator<T> {
 	}
 
 	#[cfg(any(feature = "try-runtime", test))]
+	#[allow(clippy::absurd_extreme_comparisons)]
 	pub(crate) fn pre_migration(&self) -> Result<(), DelegationMigrationError> {
 		ensure!(
 			LastUpgradeVersion::<T>::get() <= migrations::LATEST_UPGRADEABLE_VERSION,
