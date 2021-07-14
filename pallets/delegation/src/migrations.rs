@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use sp_std::{boxed::Box, vec};
+use sp_std::{boxed::Box, collections::{btree_map::BTreeMap}, vec};
 
 use crate::*;
 
@@ -104,15 +104,76 @@ impl<T: Config> VersionMigrator<T> for V0Migrator {
 			LastUpgradeVersion::<T>::get() == 0,
 			"Version not equal to 0 before v0 -> v1 migration."
 		);
-		log::debug!("Version storage migrating from v0 to v1");
+		log::info!("Version storage migrating from v0 to v1");
 		Ok(())
 	}
 
 	fn migrate(&self) -> Weight {
-		log::debug!("v0 -> v1 delegation storage migrator started!");
-		let total_weight = 0u64;
+		log::info!("v0 -> v1 delegation storage migrator started!");
+		let mut total_weight = 0u64;
+
+		// First iterate over the delegation roots and translate them to hierarchies.
+		let mut new_nodes: BTreeMap<DelegationNodeIdOf<T>, DelegationNode<T>> = BTreeMap::new();
+
+		for (old_root_id, old_root_node) in Roots::<T>::drain() {
+			let new_hierarchy_info = DelegationHierarchyInfo::<T> {
+				ctype_hash: old_root_node.ctype_hash
+			};
+			let new_root_details = DelegationDetails::<T> {
+				owner: old_root_node.owner,
+				// Old roots did not have any permissions. So now we give them all permissions.
+				permissions: Permissions::all(),
+				revoked: old_root_node.revoked
+			};
+			// In here, we already check for potential children of root nodes.
+			let mut new_root_node = DelegationNode::new_root_node(old_root_id, new_root_details);
+			if let Some(root_children_ids) = Children::<T>::take(old_root_id) {
+				// Add Chilred::take()
+				total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));
+				new_root_node.children = root_children_ids.iter().copied().collect();
+			}
+			DelegationHierarchies::insert(old_root_id, new_hierarchy_info);
+			// Adds a read from Roots::drain() and DelegationHierarchies::insert()
+			total_weight = total_weight.saturating_add(T::DbWeight::get().reads_writes(1, 1));
+			new_nodes.insert(old_root_id, new_root_node);
+		}
+
+		// Then iterate over the regular delegation nodes.
+		for (old_node_id, old_node) in Delegations::<T>::drain() {
+			let new_node_details = DelegationDetails::<T> {
+				owner: old_node.owner,
+				permissions: old_node.permissions,
+				revoked: old_node.revoked
+			};
+			let new_node_parent_id = old_node.parent.unwrap_or(old_node.root_id);
+			let mut new_node = DelegationNode::<T>::new_node(old_node.root_id, new_node_parent_id, new_node_details);
+			if let Some(children_ids) = Children::<T>::take(old_node_id) {
+				// Add Chilred::take()
+				total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));
+				new_node.children = children_ids.iter().copied().collect();
+			}
+			// Adds a read from Roots::drain()
+			total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));
+			new_nodes.insert(old_node_id, new_node);
+		}
+
+		// By now, all the children should have been correctly added to the nodes.
+		// We now need to modify all the nodes that are children by adding a reference to their parents.
+		for (new_node_id, new_node) in new_nodes.clone().into_iter() {
+			for child_id in new_node.children.iter().cloned() {
+				new_nodes.entry(child_id).and_modify(|node| node.parent = Some(new_node_id));
+			}
+			// We can then insert the new delegation node in the storage.
+			DelegationNodes::<T>::insert(new_node_id, new_node);
+			// Adds a write from DelegationNodes::insert()
+			total_weight = total_weight.saturating_add(T::DbWeight::get().writes(1));
+		}
+
 		LastUpgradeVersion::<T>::set(1);
-		log::debug!("v0 -> v1 delegation storage migrator finished!");
+		// Adds a write from LastUpgradeVersion::set()
+		total_weight = total_weight.saturating_add(T::DbWeight::get().writes(1));
+		log::debug!("Total weight consumed: {}", total_weight);
+		log::info!("v0 -> v1 delegation storage migrator finished!");
 		total_weight
 	}
 
@@ -122,13 +183,14 @@ impl<T: Config> VersionMigrator<T> for V0Migrator {
 			LastUpgradeVersion::<T>::get() == 0,
 			"Version not equal to 1 after v0 -> v1 migration."
 		);
-		log::debug!("Version storage migrated from v0 to v1");
+		log::info!("Version storage migrated from v0 to v1");
 		Ok(())
 	}
 }
 
 #[test]
-fn ok_migrator_v0() {
+fn ok_migrator_v0_no_delegations() {
+	let _ = env_logger::builder().is_test(true).try_init();
 	let migrator = StorageMigrator::<mock::Test>::new();
 	let mut ext = mock::ExtBuilder::default().build(None);
 	ext.execute_with(|| {
