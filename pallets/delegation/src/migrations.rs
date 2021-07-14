@@ -20,107 +20,152 @@ use sp_std::{boxed::Box, vec};
 
 use crate::*;
 
-pub const LATEST_UPGRADEABLE_VERSION: u16 = 0;
+// Contains the latest version that can be upgraded.
+// For instance, if v1 of the storage is the last one available, only v0 would be
+// upgradeable to v1, so the value of LATEST_UPGRADEABLE_VERSION would be 0.
+const LATEST_UPGRADEABLE_VERSION: u16 = 0;
 
 trait VersionMigrator<T: Config> {
-	fn pre_migrate(&self, current_version: u16) -> Result<u16, &'static str>;
+	#[cfg(feature = "try-runtime")]
+	fn pre_migrate(&self) -> Result<(), &'static str>;
 	fn migrate(&self) -> Weight;
+	#[cfg(feature = "try-runtime")]
 	fn post_migrate(&self) -> Result<(), &'static str>;
 }
 
-pub struct StorageMigrator<T: Config> {
-	version: u16,
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum DelegationMigrationError {
+	AlreadyLatest,
+	MigrationResultInconsistent,
+}
+
+pub(crate) struct StorageMigrator<T: Config> {
 	migrations: Vec<Box<dyn VersionMigrator<T>>>,
 }
 
 impl<T: Config> StorageMigrator<T> {
-	pub(crate) fn try_new(from_version: u16) -> Result<Self, &'static str> {
+	pub(crate) fn new() -> Self {
+		Self {
+			migrations: vec![Box::new(V0Migrator{})]
+		}
+	}
+
+	#[cfg(any(feature = "try-runtime", test))]
+	pub(crate) fn pre_migration(&self) -> Result<(), DelegationMigrationError> {
 		ensure!(
-			from_version <= LATEST_UPGRADEABLE_VERSION,
-			"Version to migrate from cannot be higher than the latest upgradeable version."
+			LastUpgradeVersion::<T>::get() <= migrations::LATEST_UPGRADEABLE_VERSION,
+			DelegationMigrationError::AlreadyLatest
 		);
 
-		Ok(Self {
-			version: from_version,
-			migrations: vec![Box::new(V0Migrator{})]
-		})
+		Ok(())
 	}
 
-	// Calls the pre-migrate of the first migration to apply.
-	#[cfg(feature = "try-runtime")]
-	pub(crate) fn pre_migrate(&self) -> Result<(), &'static str> {
-		self.migrations[self.version as usize].as_ref().pre_migrate(self.version).map(|_| ())
-	}
-
-	pub(crate) fn migrate(& self) -> Weight {
+	pub(crate) fn migrate(&self) -> Weight {
 		let mut total_weight_used: Weight = 0;
-
-		for version in self.version..=LATEST_UPGRADEABLE_VERSION {
+		let current_version = LastUpgradeVersion::<T>::get();
+		for version in current_version..=LATEST_UPGRADEABLE_VERSION {
 			let version_migrator: &dyn VersionMigrator<T> = self.migrations[version as usize].as_ref();
+			// Test pre-conditions for each migrated version
 			#[cfg(feature = "try-runtime")]
-			if let Err(err) = version_migrator.pre_migrate(version) {
+			if let Err(err) = version_migrator.pre_migrate() {
 				assert!(false, "{}", err);
 			}
 			total_weight_used = total_weight_used.saturating_add(version_migrator.migrate());
+			// Test post-conditions for each migrated version
 			#[cfg(feature = "try-runtime")]
 			if let Err(err) = version_migrator.post_migrate() {
 				assert!(false, "{}", err);
 			}
 		}
+		// Set a version number that is not upgradeable anymore until a new version is available
+		LastUpgradeVersion::<T>::set(LATEST_UPGRADEABLE_VERSION.saturating_add(1));
 
-		total_weight_used
+		// Add a DB read and write for the LastUpgradeVersion storage update
+		total_weight_used.saturating_add(T::DbWeight::get().reads_writes(1, 1))
 	}
 
-	// Calls the post-migrate of the last migration applied.
-	#[cfg(feature = "try-runtime")]
-	pub(crate) fn post_migrate(&self) -> Result<(), &'static str> {
-		self.migrations[LATEST_UPGRADEABLE_VERSION as usize].as_ref().post_migrate()
+	#[cfg(any(feature = "try-runtime", test))]
+	pub(crate) fn post_migration(&self) -> Result<(), DelegationMigrationError> {
+		ensure!(
+			LastUpgradeVersion::<T>::get() == migrations::LATEST_UPGRADEABLE_VERSION.saturating_add(1),
+			DelegationMigrationError::MigrationResultInconsistent
+		);
+
+		Ok(())
 	}
 }
 
 struct V0Migrator();
 
 impl<T: Config> VersionMigrator<T> for V0Migrator {
-	fn pre_migrate(&self, current_version: u16) -> Result<u16, &'static str> {
+	#[cfg(feature = "try-runtime")]
+	fn pre_migrate(&self) -> Result<(), &'static str> {
 		assert!(
-			current_version == 0,
-			"Current version not equal to 0"
+			LastUpgradeVersion::<T>::get() == 0,
+			"Version not equal to 0 before v0 -> v1 migration."
 		);
-		log::debug!("Migrating version storage from v0 to v1");
-		Ok(1)
+		log::debug!("Version storage migrating from v0 to v1");
+		Ok(())
 	}
 
 	fn migrate(&self) -> Weight {
-		log::debug!("V0 delegation storage migrator started!");
+		log::debug!("v0 -> v1 delegation storage migrator started!");
 		let total_weight = 0u64;
-		log::debug!("V0 delegation storage migrator finished!");
+		LastUpgradeVersion::<T>::set(1);
+		log::debug!("v0 -> v1 delegation storage migrator finished!");
 		total_weight
 	}
 
+	#[cfg(feature = "try-runtime")]
 	fn post_migrate(&self) -> Result<(), &'static str> {
+		assert!(
+			LastUpgradeVersion::<T>::get() == 0,
+			"Version not equal to 1 after v0 -> v1 migration."
+		);
 		log::debug!("Version storage migrated from v0 to v1");
 		Ok(())
 	}
 }
 
 #[test]
-fn test_migrator_v0() {
-	let migrator = StorageMigrator::<mock::Test>::try_new(0).expect("Initializing storage migrator with version 0 should not fail.");
-	migrator.migrate();
+fn ok_migrator_v0() {
+	let migrator = StorageMigrator::<mock::Test>::new();
+	let mut ext = mock::ExtBuilder::default().build(None);
+	ext.execute_with(|| {
+		assert!(
+			migrator.pre_migration().is_ok(),
+			"Pre-migration for v0 should not fail."
+		);
+		migrator.migrate();
+		assert!(
+			migrator.post_migration().is_ok(),
+			"Post-migration for v0 should not fail."
+		);
+	});
 }
 
 #[test]
-fn test_migrator_v1() {
-	assert!(
-		StorageMigrator::<mock::Test>::try_new(1).is_err(),
-		"Initializing storage migrator with at least version 1 should fail."
-	);
+fn already_max_migrator_v0() {
+	let migrator = StorageMigrator::<mock::Test>::new();
+	let mut ext = mock::ExtBuilder::default().build(None);
+	ext.execute_with(|| {
+		LastUpgradeVersion::<mock::Test>::set(1);
+		assert!(
+			migrator.pre_migration().is_err(),
+			"Pre-migration for v0 should fail."
+		);
+	});
 }
 
 #[test]
-fn test_migrator_v2() {
-	assert!(
-		StorageMigrator::<mock::Test>::try_new(2).is_err(),
-		"Initializing storage migrator with at least version 2 should fail."
-	);
+fn more_than_max_migrator_v0() {
+	let migrator = StorageMigrator::<mock::Test>::new();
+	let mut ext = mock::ExtBuilder::default().build(None);
+	ext.execute_with(|| {
+		LastUpgradeVersion::<mock::Test>::set(u16::MAX);
+		assert!(
+			migrator.pre_migration().is_err(),
+			"Pre-migration for v0 should fail."
+		);
+	});
 }

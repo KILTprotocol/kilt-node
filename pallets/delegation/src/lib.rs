@@ -92,38 +92,23 @@ pub mod pallet {
 
 		#[cfg(feature = "try-runtime")]
 		fn pre_upgrade() -> Result<(), &'static str> {
-			let last_upgrade_version = LastUpgradeVersion::<T>::get();
-			if let Ok(migrator) = migrations::StorageMigrator::<T>::try_new(last_upgrade_version) {
-				return migrator.pre_migrate();
-			} else {
-				return Err("No migrations to apply.");
-			}
+			migrations::StorageMigrator::<T>::new().pre_migration().map_err(|_| "pre-migration failed")
 		}
 
 		fn on_runtime_upgrade() -> Weight {
-			let last_upgrade_version = LastUpgradeVersion::<T>::get();
-			if let Ok(migrator) = migrations::StorageMigrator::<T>::try_new(last_upgrade_version) {
-				migrator.migrate()
-			} else {
-				0u64
-			}
+			migrations::StorageMigrator::<T>::new().migrate()
 		}
 
 		#[cfg(feature = "try-runtime")]
 		fn post_upgrade() -> Result<(), &'static str> {
-			let last_upgrade_version = LastUpgradeVersion::<T>::get();
-			if let Ok(migrator) = migrations::StorageMigrator::<T>::try_new(last_upgrade_version) {
-				return migrator.post_migrate();
-			} else {
-				return Err("No migrations applied.");
-			}
+			migrations::StorageMigrator::<T>::new().post_migration().map_err(|_| "post-migration failed")
 		}
 	}
 
 	/// Contains the version of the latest runtime upgrade performed.
 	#[pallet::storage]
 	#[pallet::getter(fn last_upgrade_version)]
-	pub type LastUpgradeVersion<T> = StorageValue<_, u16, ValueQuery>;
+	pub(crate) type LastUpgradeVersion<T> = StorageValue<_, u16, ValueQuery>;
 
 	/// Delegation nodes stored on chain.
 	///
