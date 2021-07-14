@@ -2,65 +2,56 @@ import typing
 
 
 def update_spec(input: typing.Dict):
-    acc_alice = "5DEx6rzF742xUcTCf3KwvNw8gZd82hQsG7WGMiqsji9AiDNZ"
-    acc_bob = "5DL9V1dmkuZnzRD9R3cwdzowim3sBZZvz1iJhNxC5QjofikK"
-    acc_charlie = "5DcKRxsjojmbJW7Scxnu7Ck5zXfpg1RxtrcyVjaMRx5YFWUR"
+    acc_alice = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
+    acc_alice_ed = "5FA9nQDVg267DEd8m1ZypXLBnvN7SFxYwV7ndqSYGiN9TTpu"
+    acc_bob = "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
+    acc_bob_ed = "5GoNkf6WdbxCFnPdAnYYQyCjAKPJgLNxXwPjwTh6DGg6gN3E"
+    acc_charlie = "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y"
+    acc_charlie_ed = "5DbKjhNLpqX3zqZdNBc9BGb4fHU1cRBaDhJUskrvkwfraDi6"
 
     input.update({
         "bootNodes": [],
-        "chainType": "Live",
-        "name": "Peregrine Westend-Relay Stagenet",
-        "id": "westend_peregrine_relay_stagenet",
+        "chainType": "Local",
+        "name": "Peregrine Relay Devnet",
+        "id": "westend_peregrine_relay_devnet",
     })
     input["genesis"]["runtime"]["balances"]["balances"] += [
-        [
-            acc_alice,
-            10000000000000000000000000000
-        ],
-        [
-            acc_bob,
-            10000000000000000000000000000
-        ],
-        [
-            acc_charlie,
-            10000000000000000000000000000
-        ],
     ]
     input["genesis"]["runtime"]["session"]["keys"] = [
         [
             acc_alice,
             acc_alice,
             {
-                "grandpa": "5FA9nQDVg267DEd8m1ZypXLBnvN7SFxYwV7ndqSYGiN9TTpu",
-                "babe": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-                "im_online": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-                "para_validator": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-                "para_assignment": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-                "authority_discovery": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
+                "grandpa": acc_alice_ed,
+                "babe": acc_alice,
+                "im_online": acc_alice,
+                "para_validator": acc_alice,
+                "para_assignment": acc_alice,
+                "authority_discovery": acc_alice
             }
         ],
         [
             acc_bob,
             acc_bob,
             {
-                "grandpa": "5GoNkf6WdbxCFnPdAnYYQyCjAKPJgLNxXwPjwTh6DGg6gN3E",
-                "babe": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
-                "im_online": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
-                "para_validator": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
-                "para_assignment": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
-                "authority_discovery": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
+                "grandpa": acc_bob_ed,
+                "babe": acc_bob,
+                "im_online": acc_bob,
+                "para_validator": acc_bob,
+                "para_assignment": acc_bob,
+                "authority_discovery": acc_bob
             }
         ],
         [
             acc_charlie,
             acc_charlie,
             {
-                "grandpa": "5DbKjhNLpqX3zqZdNBc9BGb4fHU1cRBaDhJUskrvkwfraDi6",
-                "babe": "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y",
-                "im_online": "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y",
-                "para_validator": "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y",
-                "para_assignment": "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y",
-                "authority_discovery": "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y"
+                "grandpa": acc_charlie_ed,
+                "babe": acc_charlie,
+                "im_online": acc_charlie,
+                "para_validator": acc_charlie,
+                "para_assignment": acc_charlie,
+                "authority_discovery": acc_charlie
             }
         ]
     ]
@@ -70,19 +61,19 @@ def update_spec(input: typing.Dict):
         "stakers": [
                     [
                         acc_alice,
-                        "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+                        acc_alice,
                         1000000000000,
                         "Validator"
                     ],
             [
                         acc_bob,
-                        "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+                        acc_bob,
                         1000000000000,
                         "Validator"
                     ],
             [
                         acc_charlie,
-                        "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y",
+                        acc_charlie,
                         1000000000000,
                         "Validator"
                     ]

@@ -73,7 +73,7 @@ def update_spec(input: typing.Dict):
     })
     input["genesis"]["runtime"]["parachainsConfiguration"]["config"].update(
         {
-            "max_code_size": 5242880,
+            "max_code_size": 3145728,
             "max_head_data_size": 20480,
             "max_upward_queue_count": 10,
             "max_upward_queue_size": 51200,
