@@ -1,20 +1,20 @@
 import typing
 
 
-def update_spec(input: typing.Dict):
+def update_spec(input: typing.Dict, base_chain="westend"):
     input.update({
         "bootNodes": [],
         "chainType": "Live",
-        "name": "Peregrine Relay Testnet",
-        "id": "rococo_peregrine_relay_testnet",
+        "name": "Peregrine Relay",
+        "id": f"{base_chain}_peregrine_relay",
     })
-    input["genesis"]["runtime"]["runtime_genesis_config"]["balances"]["balances"] += [
+    input["genesis"]["runtime"]["balances"]["balances"] += [
         ["5DEx6rzF742xUcTCf3KwvNw8gZd82hQsG7WGMiqsji9AiDNZ", 1000000000000000000],
         ["5DL9V1dmkuZnzRD9R3cwdzowim3sBZZvz1iJhNxC5QjofikK", 1000000000000000000],
         ["5DcKRxsjojmbJW7Scxnu7Ck5zXfpg1RxtrcyVjaMRx5YFWUR", 1000000000000000000],
         ["5E4ZYy9tTPpJPoScqm6PvLtr1MjsBEjbDufJQYhcuBtk6rNa", 1000000000000000000]
     ]
-    input["genesis"]["runtime"]["runtime_genesis_config"]["session"]["keys"] = [
+    input["genesis"]["runtime"]["session"]["keys"] = [
         [
             "5DEx6rzF742xUcTCf3KwvNw8gZd82hQsG7WGMiqsji9AiDNZ",
             "5DEx6rzF742xUcTCf3KwvNw8gZd82hQsG7WGMiqsji9AiDNZ",
@@ -53,7 +53,7 @@ def update_spec(input: typing.Dict):
             }
         ]
     ]
-    input["genesis"]["runtime"]["runtime_genesis_config"]["sudo"]["key"] = "5DEx6rzF742xUcTCf3KwvNw8gZd82hQsG7WGMiqsji9AiDNZ"
+    input["genesis"]["runtime"]["sudo"]["key"] = "5DEx6rzF742xUcTCf3KwvNw8gZd82hQsG7WGMiqsji9AiDNZ"
 
 
 if __name__ == "__main__":

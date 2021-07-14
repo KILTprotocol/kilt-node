@@ -1,7 +1,7 @@
 {
-  "name": "Peregrine Relay",
-  "id": "westend_peregrine_relay",
-  "chainType": "Live",
+  "name": "Peregrine Relay Devnet",
+  "id": "westend_peregrine_relay_devnet",
+  "chainType": "Local",
   "bootNodes": [],
   "telemetryEndpoints": null,
   "protocolId": "dot",
@@ -79,28 +79,12 @@
           [
             "5CRmqmsiNFExV6VbdmPJViVxrWmkaXXvBrSX8oqBT8R9vmWk",
             10000000000000000
-          ],
-          [
-            "5DEx6rzF742xUcTCf3KwvNw8gZd82hQsG7WGMiqsji9AiDNZ",
-            1000000000000000000
-          ],
-          [
-            "5DL9V1dmkuZnzRD9R3cwdzowim3sBZZvz1iJhNxC5QjofikK",
-            1000000000000000000
-          ],
-          [
-            "5DcKRxsjojmbJW7Scxnu7Ck5zXfpg1RxtrcyVjaMRx5YFWUR",
-            1000000000000000000
-          ],
-          [
-            "5E4ZYy9tTPpJPoScqm6PvLtr1MjsBEjbDufJQYhcuBtk6rNa",
-            1000000000000000000
           ]
         ]
       },
       "staking": {
         "historyDepth": 84,
-        "validatorCount": 2,
+        "validatorCount": 3,
         "minimumValidatorCount": 1,
         "invulnerables": [
           "5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY",
@@ -111,14 +95,20 @@
         "canceledPayout": 0,
         "stakers": [
           [
-            "5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY",
+            "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
             "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
             1000000000000,
             "Validator"
           ],
           [
-            "5HpG9w8EBLe5XCrbczpwq5TSXvedjrBGCwqxK1iQ7qUsSWFc",
             "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+            "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+            1000000000000,
+            "Validator"
+          ],
+          [
+            "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y",
+            "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y",
             1000000000000,
             "Validator"
           ]
@@ -129,8 +119,8 @@
       "session": {
         "keys": [
           [
-            "5DEx6rzF742xUcTCf3KwvNw8gZd82hQsG7WGMiqsji9AiDNZ",
-            "5DEx6rzF742xUcTCf3KwvNw8gZd82hQsG7WGMiqsji9AiDNZ",
+            "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+            "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
             {
               "grandpa": "5FA9nQDVg267DEd8m1ZypXLBnvN7SFxYwV7ndqSYGiN9TTpu",
               "babe": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
@@ -141,8 +131,8 @@
             }
           ],
           [
-            "5DL9V1dmkuZnzRD9R3cwdzowim3sBZZvz1iJhNxC5QjofikK",
-            "5DL9V1dmkuZnzRD9R3cwdzowim3sBZZvz1iJhNxC5QjofikK",
+            "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+            "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
             {
               "grandpa": "5GoNkf6WdbxCFnPdAnYYQyCjAKPJgLNxXwPjwTh6DGg6gN3E",
               "babe": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
@@ -153,8 +143,8 @@
             }
           ],
           [
-            "5DcKRxsjojmbJW7Scxnu7Ck5zXfpg1RxtrcyVjaMRx5YFWUR",
-            "5DcKRxsjojmbJW7Scxnu7Ck5zXfpg1RxtrcyVjaMRx5YFWUR",
+            "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y",
+            "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y",
             {
               "grandpa": "5DbKjhNLpqX3zqZdNBc9BGb4fHU1cRBaDhJUskrvkwfraDi6",
               "babe": "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y",
@@ -179,50 +169,50 @@
         "vesting": []
       },
       "sudo": {
-        "key": "5DEx6rzF742xUcTCf3KwvNw8gZd82hQsG7WGMiqsji9AiDNZ"
+        "key": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
       },
       "parachainsConfiguration": {
         "config": {
           "max_code_size": 3145728,
-          "max_head_data_size": 32768,
-          "max_upward_queue_count": 8,
-          "max_upward_queue_size": 1048576,
-          "max_upward_message_size": 1048576,
-          "max_upward_message_num_per_candidate": 5,
-          "hrmp_max_message_num_per_candidate": 5,
-          "validation_upgrade_frequency": 1,
-          "validation_upgrade_delay": 1,
+          "max_head_data_size": 20480,
+          "max_upward_queue_count": 10,
+          "max_upward_queue_size": 51200,
+          "max_upward_message_size": 51200,
+          "max_upward_message_num_per_candidate": 10,
+          "hrmp_max_message_num_per_candidate": 10,
+          "validation_upgrade_frequency": 14400,
+          "validation_upgrade_delay": 600,
           "max_pov_size": 5242880,
-          "max_downward_message_size": 1024,
+          "max_downward_message_size": 51200,
           "ump_service_total_weight": 4000000000,
-          "hrmp_max_parachain_outbound_channels": 4,
-          "hrmp_max_parathread_outbound_channels": 4,
-          "hrmp_open_request_ttl": 5,
-          "hrmp_sender_deposit": 0,
-          "hrmp_recipient_deposit": 0,
-          "hrmp_channel_max_capacity": 8,
-          "hrmp_channel_max_total_size": 8192,
-          "hrmp_max_parachain_inbound_channels": 4,
-          "hrmp_max_parathread_inbound_channels": 4,
-          "hrmp_channel_max_message_size": 1048576,
-          "code_retention_period": 1200,
+          "hrmp_max_parachain_outbound_channels": 10,
+          "hrmp_max_parathread_outbound_channels": 0,
+          "hrmp_open_request_ttl": 2,
+          "hrmp_sender_deposit": 1009100000000000,
+          "hrmp_recipient_deposit": 1009100000000000,
+          "hrmp_channel_max_capacity": 1000,
+          "hrmp_channel_max_total_size": 102400,
+          "hrmp_max_parachain_inbound_channels": 10,
+          "hrmp_max_parathread_inbound_channels": 0,
+          "hrmp_channel_max_message_size": 102400,
+          "code_retention_period": 28800,
           "parathread_cores": 0,
           "parathread_retries": 0,
-          "group_rotation_frequency": 20,
-          "chain_availability_period": 4,
-          "thread_availability_period": 4,
-          "scheduling_lookahead": 0,
-          "max_validators_per_core": null,
-          "max_validators": null,
+          "group_rotation_frequency": 10,
+          "chain_availability_period": 5,
+          "thread_availability_period": 5,
+          "scheduling_lookahead": 1,
+          "max_validators_per_core": 5,
+          "max_validators": 200,
           "dispute_period": 6,
-          "dispute_post_conclusion_acceptance_period": 100,
+          "dispute_post_conclusion_acceptance_period": 600,
           "dispute_max_spam_slots": 2,
-          "dispute_conclusion_by_time_out_period": 200,
+          "dispute_conclusion_by_time_out_period": 600,
           "no_show_slots": 2,
-          "n_delay_tranches": 25,
+          "n_delay_tranches": 40,
           "zeroth_delay_tranche_width": 0,
-          "needed_approvals": 2,
-          "relay_vrf_modulo_samples": 2
+          "needed_approvals": 15,
+          "relay_vrf_modulo_samples": 1
         }
       },
       "paras": {

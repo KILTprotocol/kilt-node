@@ -1,7 +1,7 @@
 {
-  "name": "KILT Peregrine",
+  "name": "KILT Peregrine Testnet",
   "id": "peregrine_kilt",
-  "chainType": "Live",
+  "chainType": "Local",
   "bootNodes": [],
   "telemetryEndpoints": null,
   "protocolId": null,
@@ -1154,33 +1154,21 @@
           [
             "5DLr5kyTctPqTzSGnfr2jFXLd8zvnPjQWueR4RTarakcYD1a",
             8000000000000000000000
-          ],
-          [
-            "5FNHPF1epsZHJC3LSGMbVJzP5ykcgursQAwPjJiNJB5eAGmW",
-            10000000000000000000000000000
-          ],
-          [
-            "5GvFCmt5FMqV15tZUHsATAzafYvVT1HDQoRRcJq4gJ52NCHr",
-            10000000000000000000000000000
-          ],
-          [
-            "5EvVhMthVR1EHGEdDoMrhx9iqU2aJqD3gJu3q3xb68A5rjFZ",
-            10000000000000000000000000000
           ]
         ]
       },
       "sudo": {
-        "key": "5FNHPF1epsZHJC3LSGMbVJzP5ykcgursQAwPjJiNJB5eAGmW"
+        "key": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
       },
       "parachainStaking": {
         "stakers": [
           [
-            "5FNHPF1epsZHJC3LSGMbVJzP5ykcgursQAwPjJiNJB5eAGmW",
+            "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
             null,
             100000000000000000000
           ],
           [
-            "5GvFCmt5FMqV15tZUHsATAzafYvVT1HDQoRRcJq4gJ52NCHr",
+            "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
             null,
             100000000000000000000
           ]
@@ -1206,24 +1194,24 @@
       "session": {
         "keys": [
           [
-            "5FNHPF1epsZHJC3LSGMbVJzP5ykcgursQAwPjJiNJB5eAGmW",
-            "5FNHPF1epsZHJC3LSGMbVJzP5ykcgursQAwPjJiNJB5eAGmW",
+            "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+            "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
             {
-              "aura": "5GMw7mZsyWnL8M47ZuqUKKbd1C6LRKuWZDYQLVbkFnM8MS53"
+              "aura": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
             }
           ],
           [
-            "5GvFCmt5FMqV15tZUHsATAzafYvVT1HDQoRRcJq4gJ52NCHr",
-            "5GvFCmt5FMqV15tZUHsATAzafYvVT1HDQoRRcJq4gJ52NCHr",
+            "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+            "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
             {
-              "aura": "5DMAVHz2yDhDKKUTCJH8cQTVhLZTviJvy5SQxVZjGXUC8B2o"
+              "aura": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
             }
           ],
           [
-            "5EvVhMthVR1EHGEdDoMrhx9iqU2aJqD3gJu3q3xb68A5rjFZ",
-            "5EvVhMthVR1EHGEdDoMrhx9iqU2aJqD3gJu3q3xb68A5rjFZ",
+            "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y",
+            "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y",
             {
-              "aura": "5Dvq2MZ22wys4obTHEttjje6GxHVjJo7NQVz7VswDRRRtNwB"
+              "aura": "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y"
             }
           ]
         ]
