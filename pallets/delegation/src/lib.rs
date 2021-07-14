@@ -89,10 +89,11 @@ pub mod pallet {
 
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-
 		#[cfg(feature = "try-runtime")]
 		fn pre_upgrade() -> Result<(), &'static str> {
-			migrations::StorageMigrator::<T>::new().pre_migration().map_err(|_| "pre-migration failed")
+			migrations::StorageMigrator::<T>::new()
+				.pre_migration()
+				.map_err(|_| "pre-migration failed")
 		}
 
 		fn on_runtime_upgrade() -> Weight {
@@ -101,7 +102,9 @@ pub mod pallet {
 
 		#[cfg(feature = "try-runtime")]
 		fn post_upgrade() -> Result<(), &'static str> {
-			migrations::StorageMigrator::<T>::new().post_migration().map_err(|_| "post-migration failed")
+			migrations::StorageMigrator::<T>::new()
+				.post_migration()
+				.map_err(|_| "post-migration failed")
 		}
 	}
 
@@ -110,14 +113,16 @@ pub mod pallet {
 	/// It maps from a root node ID to the full root node.
 	#[pallet::storage]
 	#[pallet::getter(fn roots)]
-	pub type Roots<T> = StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, delegation_hierarchy::v0::DelegationRoot<T>>;
+	pub type Roots<T> =
+		StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, delegation_hierarchy::v0::DelegationRoot<T>>;
 
 	/// Delegation nodes stored on chain. DEPRECATED.
 	///
 	/// It maps from a node ID to the full delegation node.
 	#[pallet::storage]
 	#[pallet::getter(fn delegations)]
-	pub type Delegations<T> = StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, delegation_hierarchy::v0::DelegationNode<T>>;
+	pub type Delegations<T> =
+		StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, delegation_hierarchy::v0::DelegationNode<T>>;
 
 	/// Children delegation nodes. DEPRECATED.
 	///

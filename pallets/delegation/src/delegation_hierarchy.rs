@@ -89,7 +89,8 @@ pub(crate) mod v0 {
 		/// \[OPTIONAL\] The ID of the parent node. If None, the node is
 		/// considered a direct child of the root node.
 		pub parent: Option<DelegationNodeIdOf<T>>,
-		/// The identifier of the owner of the delegation node, i.e., the delegate.
+		/// The identifier of the owner of the delegation node, i.e., the
+		/// delegate.
 		pub owner: DelegatorIdOf<T>,
 		/// The permission flags for the operations the delegate is allowed to
 		/// perform.
@@ -103,11 +104,15 @@ pub(crate) mod v0 {
 		/// given root.
 		///
 		/// * root_id: the root node ID this node will be a child of
-		/// * owner: the identifier of the owner of the new delegation, i.e., the
-		///   new delegate
-		/// * permissions: the permission flags for the operations the delegate is
-		///   allowed to perform
-		pub fn new_root_child(root_id: DelegationNodeIdOf<T>, owner: DelegatorIdOf<T>, permissions: Permissions) -> Self {
+		/// * owner: the identifier of the owner of the new delegation, i.e.,
+		///   the new delegate
+		/// * permissions: the permission flags for the operations the delegate
+		///   is allowed to perform
+		pub fn new_root_child(
+			root_id: DelegationNodeIdOf<T>,
+			owner: DelegatorIdOf<T>,
+			permissions: Permissions,
+		) -> Self {
 			DelegationNode {
 				root_id,
 				owner,
@@ -122,10 +127,10 @@ pub(crate) mod v0 {
 		///
 		/// * root_id: the root node ID this node will be a child of
 		/// * parent - the parent node ID this node will be a child of
-		/// * owner: the identifier of the owner of the new delegation, i.e., the
-		///   new delegate
-		/// * permissions: the permission flags for the operations the delegate is
-		///   allowed to perform
+		/// * owner: the identifier of the owner of the new delegation, i.e.,
+		///   the new delegate
+		/// * permissions: the permission flags for the operations the delegate
+		///   is allowed to perform
 		pub fn new_node_child(
 			root_id: DelegationNodeIdOf<T>,
 			parent: DelegationNodeIdOf<T>,
