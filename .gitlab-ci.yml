@@ -6,6 +6,11 @@ clippy:
   image: paritytech/ci-linux:105b919b-20210617
   stage: test
   timeout: 1 hours
+  only:
+    refs:
+      - branches
+    changes:
+      - ./**/*.{rs,toml,lock}
   script:
     - rustup component add clippy --toolchain nightly
     - cargo +nightly clippy -- -D warnings
@@ -22,6 +27,11 @@ test:
   image: paritytech/ci-linux:105b919b-20210617
   stage: test
   timeout: 1 hours
+  only:
+    refs:
+      - branches
+    changes:
+      - ./**/*.{rs,toml,lock}
   script:
     - cargo test --all --all-features
 
