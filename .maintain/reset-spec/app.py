@@ -69,7 +69,7 @@ def make_custom_spec(tmp_dir, docker_img, plain_file, out_file, update_spec, spe
         json.dump(in_json, f)
 
     cmd_raw_spec = ["docker", "run", "-v", f"{tmp_dir}:/data/", docker_img, "build-spec",
-                    "--chain", os.path.join("/data/", plain_custom_file), "--disable-default-bootnode"]
+                    "--chain", os.path.join("/data/", plain_custom_file), "--disable-default-bootnode", "--raw"]
     if runtime is not None:
         cmd_raw_spec += ["--runtime", runtime]
 
