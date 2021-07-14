@@ -16,6 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+// Publicly re-export the most recent types used.
 pub use v1::*;
 
 use bitflags::bitflags;
@@ -56,6 +57,7 @@ impl Default for Permissions {
 	}
 }
 
+// The old types.
 pub(crate) mod v0 {
 	use super::*;
 
@@ -148,6 +150,7 @@ pub(crate) mod v0 {
 	}
 }
 
+// The new types.
 pub(crate) mod v1 {
 	use super::*;
 

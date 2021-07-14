@@ -23,14 +23,18 @@ use crate::*;
 // Contains the latest version that can be upgraded.
 // For instance, if v1 of the storage is the last one available, only v0 would
 // be upgradeable to v1, so the value of LATEST_UPGRADEABLE_VERSION would be 0.
+// This needs to be bumped (by 1) every time a new storage migration should take place.
+// Along with this, a new version migrator must be defined and added to the `migrations` vector
+// or the `StorageMigrator`.
 const LATEST_UPGRADEABLE_VERSION: u16 = 0;
 
+// The trait that each version migrator must implement.
 trait VersionMigrator<T: Config> {
 	#[cfg(feature = "try-runtime")]
-	fn pre_migrate(&self) -> Result<(), &'static str>;
+	fn pre_migrate(&self) -> Result<(), DelegationMigrationError>;
 	fn migrate(&self) -> Weight;
 	#[cfg(feature = "try-runtime")]
-	fn post_migrate(&self) -> Result<(), &'static str>;
+	fn post_migrate(&self) -> Result<(), DelegationMigrationError>;
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -39,7 +43,15 @@ pub(crate) enum DelegationMigrationError {
 	MigrationResultInconsistent,
 }
 
+// The "manager" of the pallet's storage migrations. It contains a vector of version migrations
+// each of which corresponds to a new runtime upgrade to run, sequencially.
+// It interacts with the `LastUpgradeVersion` of the pallet's storage.
+//
+// When a new runtime upgrade needs to be added, a new component implementing the `VersionMigrator` trait
+// must be defined and added at the end of the `migrations` vector, so that it is always executed after all
+// previous migrations have taken place.
 pub(crate) struct StorageMigrator<T: Config> {
+	// The vector of version migrators.
 	migrations: Vec<Box<dyn VersionMigrator<T>>>,
 }
 
@@ -50,6 +62,7 @@ impl<T: Config> StorageMigrator<T> {
 		}
 	}
 
+	// Checks whether there is at least one storage migration to perform.
 	#[cfg(any(feature = "try-runtime", test))]
 	#[allow(clippy::absurd_extreme_comparisons)]
 	pub(crate) fn pre_migration(&self) -> Result<(), DelegationMigrationError> {
@@ -61,31 +74,41 @@ impl<T: Config> StorageMigrator<T> {
 		Ok(())
 	}
 
+	// It retrieves the latest version deployed on chain, and sequencially applies any
+	// runtime migration until the state is update to the latest version.
+	// It provides a test feature that panics whenver something goes wrong for one of the
+	// version migrators, but in production it is just assumed that all the migrations will go through.
 	pub(crate) fn migrate(&self) -> Weight {
 		let mut total_weight_used: Weight = 0;
 		let current_version = LastUpgradeVersion::<T>::get();
+		// Applies all the needed migration from the current version up to LATEST_UPGRADEABLE_VERSION
+		// (which is always the latest possible version - 1).
 		for version in current_version..=LATEST_UPGRADEABLE_VERSION {
+			// It is assumed that the are exactly LATEST_UPGRADEABLE_VERSION+1 migrators, so as long as
+			// the pre-condition is met, the following is assumed to never panic.
 			let version_migrator: &dyn VersionMigrator<T> = self.migrations[version as usize].as_ref();
-			// Test pre-conditions for each migrated version
+			// Test pre-conditions (only in testing) for each version migrator.
 			#[cfg(feature = "try-runtime")]
 			if let Err(err) = version_migrator.pre_migrate() {
-				panic!("{}", err);
+				// panic!("{:?}", err);
 			}
+			// Apply the migration and keep adding the weight.
 			total_weight_used = total_weight_used.saturating_add(version_migrator.migrate());
-			// Test post-conditions for each migrated version
+			// Test post-conditions (only in testing) for each version migrator.
 			#[cfg(feature = "try-runtime")]
 			if let Err(err) = version_migrator.post_migrate() {
-				panic!("{}", err);
+				panic!("{:?}", err);
 			}
 		}
 		// Set a version number that is not upgradeable anymore until a new version is
-		// available
+		// available, which means that the new version will be LATEST_UPGRADEABLE_VERSION + 1.
 		LastUpgradeVersion::<T>::set(LATEST_UPGRADEABLE_VERSION.saturating_add(1));
 
 		// Add a DB read and write for the LastUpgradeVersion storage update
 		total_weight_used.saturating_add(T::DbWeight::get().reads_writes(1, 1))
 	}
 
+	// Checks whether the upgrade as a whole went through by verifying that the latest version set it not upgradeable anymore.
 	#[cfg(any(feature = "try-runtime", test))]
 	pub(crate) fn post_migration(&self) -> Result<(), DelegationMigrationError> {
 		ensure!(
@@ -97,14 +120,16 @@ impl<T: Config> StorageMigrator<T> {
 	}
 }
 
+// Migrator for the first actual pallet's migration. It migrates the Roots, Delegations, and Children storage entries
+// to a simpler HierarchyInfos, DelegationNodes, while maintaining the original information an all parent-child links.
 struct V0Migrator();
 
 impl<T: Config> VersionMigrator<T> for V0Migrator {
 	#[cfg(feature = "try-runtime")]
-	fn pre_migrate(&self) -> Result<(), &'static str> {
+	fn pre_migrate(&self) -> Result<(), DelegationMigrationError> {
 		assert!(
 			LastUpgradeVersion::<T>::get() == 0,
-			"Version not equal to 0 before v0 -> v1 migration."
+			DelegationMigrationError::AlreadyLatest
 		);
 		log::info!("Version storage migrating from v0 to v1");
 		Ok(())
@@ -114,9 +139,12 @@ impl<T: Config> VersionMigrator<T> for V0Migrator {
 		log::info!("v0 -> v1 delegation storage migrator started!");
 		let mut total_weight = 0u64;
 
-		// First iterate over the delegation roots and translate them to hierarchies.
+		// Before being stored, the nodes are saved in a map so that after we go over all the nodes and the parent-child
+		// relationship in the storage, we can update the `parent` link of each node accordingly.
+		// Otherwise, it would be possible that a node does not exist when fetched from the Children storage entry.
 		let mut new_nodes: BTreeMap<DelegationNodeIdOf<T>, DelegationNode<T>> = BTreeMap::new();
 
+		// First iterate over the delegation roots and translate them to hierarchies.
 		for (old_root_id, old_root_node) in Roots::<T>::drain() {
 			let new_hierarchy_info = DelegationHierarchyInfo::<T> {
 				ctype_hash: old_root_node.ctype_hash,
@@ -127,15 +155,17 @@ impl<T: Config> VersionMigrator<T> for V0Migrator {
 				permissions: Permissions::all(),
 				revoked: old_root_node.revoked,
 			};
-			// In here, we already check for potential children of root nodes.
+			// In here, we already check for potential children of root nodes and ONLY update the children information.
+			// The parent information will be updated later, when we know we have seen all the children already.
 			let mut new_root_node = DelegationNode::new_root_node(old_root_id, new_root_details);
 			if let Some(root_children_ids) = Children::<T>::take(old_root_id) {
-				// Add Chilred::take()
-				total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));
 				new_root_node.children = root_children_ids.iter().copied().collect();
 			}
+			// Add Chilred::take() weight
+			total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));
+
 			DelegationHierarchies::insert(old_root_id, new_hierarchy_info);
-			// Adds a read from Roots::drain() and DelegationHierarchies::insert()
+			// Adds a read from Roots::drain() and a write from DelegationHierarchies::insert() weights
 			total_weight = total_weight.saturating_add(T::DbWeight::get().reads_writes(1, 1));
 			new_nodes.insert(old_root_id, new_root_node);
 		}
@@ -147,14 +177,15 @@ impl<T: Config> VersionMigrator<T> for V0Migrator {
 				permissions: old_node.permissions,
 				revoked: old_node.revoked,
 			};
+			// In the old version, a parent None indicated the node is a child of the root.
 			let new_node_parent_id = old_node.parent.unwrap_or(old_node.root_id);
 			let mut new_node = DelegationNode::<T>::new_node(old_node.root_id, new_node_parent_id, new_node_details);
 			if let Some(children_ids) = Children::<T>::take(old_node_id) {
-				// Add Chilred::take()
-				total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));
 				new_node.children = children_ids.iter().copied().collect();
 			}
-			// Adds a read from Roots::drain()
+			// Add Chilred::take() weight
+			total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));
+			// Adds a read from Roots::drain() weight
 			total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));
 			new_nodes.insert(old_node_id, new_node);
 		}
@@ -163,19 +194,20 @@ impl<T: Config> VersionMigrator<T> for V0Migrator {
 		// We now need to modify all the nodes that are children by adding a reference
 		// to their parents.
 		for (new_node_id, new_node) in new_nodes.clone().into_iter() {
+			// FIXME: new_node.children.iter().cloned() might be possibly changed to iter_mut.
 			for child_id in new_node.children.iter().cloned() {
 				new_nodes
 					.entry(child_id)
 					.and_modify(|node| node.parent = Some(new_node_id));
 			}
-			// We can then insert the new delegation node in the storage.
+			// We can then finally insert the new delegation node in the storage.
 			DelegationNodes::<T>::insert(new_node_id, new_node);
-			// Adds a write from DelegationNodes::insert()
+			// Adds a write from DelegationNodes::insert() weight
 			total_weight = total_weight.saturating_add(T::DbWeight::get().writes(1));
 		}
 
 		LastUpgradeVersion::<T>::set(1);
-		// Adds a write from LastUpgradeVersion::set()
+		// Adds a write from LastUpgradeVersion::set() weight
 		total_weight = total_weight.saturating_add(T::DbWeight::get().writes(1));
 		log::debug!("Total weight consumed: {}", total_weight);
 		log::info!("v0 -> v1 delegation storage migrator finished!");
@@ -183,10 +215,10 @@ impl<T: Config> VersionMigrator<T> for V0Migrator {
 	}
 
 	#[cfg(feature = "try-runtime")]
-	fn post_migrate(&self) -> Result<(), &'static str> {
+	fn post_migrate(&self) -> Result<(), DelegationMigrationError> {
 		assert!(
-			LastUpgradeVersion::<T>::get() == 0,
-			"Version not equal to 1 after v0 -> v1 migration."
+			LastUpgradeVersion::<T>::get() == 1,
+			DelegationMigrationError::MigrationResultInconsistent
 		);
 		log::info!("Version storage migrated from v0 to v1");
 		Ok(())
@@ -201,7 +233,7 @@ mod tests_v0 {
 	use sp_core::Pair;
 
 	fn get_storage_migrator() -> StorageMigrator<TestRuntime> {
-		StorageMigrator::<mock::Test>::new()
+		StorageMigrator::<TestRuntime>::new()
 	}
 
 	fn init_logger() {
@@ -217,7 +249,9 @@ mod tests_v0 {
 				migrator.pre_migration().is_ok(),
 				"Pre-migration for v0 should not fail."
 			);
+
 			migrator.migrate();
+
 			assert!(
 				migrator.post_migration().is_ok(),
 				"Post-migration for v0 should not fail."
@@ -236,7 +270,17 @@ mod tests_v0 {
 			let old_root_node = crate::v0::DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash(true), alice);
 			Roots::insert(old_root_id, old_root_node.clone());
 
+			assert!(
+				migrator.pre_migration().is_ok(),
+				"Pre-migration for v0 should not fail."
+			);
+
 			migrator.migrate();
+
+			assert!(
+				migrator.post_migration().is_ok(),
+				"Post-migration for v0 should not fail."
+			);
 
 			assert_eq!(Roots::<TestRuntime>::iter_values().count(), 0);
 			assert_eq!(Delegations::<TestRuntime>::iter_values().count(), 0);
@@ -282,7 +326,17 @@ mod tests_v0 {
 			Children::<TestRuntime>::insert(old_root_id, vec![old_parent_id]);
 			Children::<TestRuntime>::insert(old_parent_id, vec![old_node_id]);
 
+			assert!(
+				migrator.pre_migration().is_ok(),
+				"Pre-migration for v0 should not fail."
+			);
+
 			migrator.migrate();
+
+			assert!(
+				migrator.post_migration().is_ok(),
+				"Post-migration for v0 should not fail."
+			);
 
 			assert_eq!(Roots::<TestRuntime>::iter_values().count(), 0);
 			assert_eq!(Delegations::<TestRuntime>::iter_values().count(), 0);
@@ -341,7 +395,17 @@ mod tests_v0 {
 			Delegations::insert(old_node_id_2, old_node_2.clone());
 			Children::<TestRuntime>::insert(old_root_id, vec![old_node_id_1, old_node_id_2]);
 
+			assert!(
+				migrator.pre_migration().is_ok(),
+				"Pre-migration for v0 should not fail."
+			);
+
 			migrator.migrate();
+
+			assert!(
+				migrator.post_migration().is_ok(),
+				"Post-migration for v0 should not fail."
+			);
 
 			assert_eq!(Roots::<TestRuntime>::iter_values().count(), 0);
 			assert_eq!(Delegations::<TestRuntime>::iter_values().count(), 0);
@@ -380,20 +444,20 @@ mod tests_v0 {
 
 	#[test]
 	fn err_already_max_migrator() {
-		let migrator = StorageMigrator::<mock::Test>::new();
+		let migrator = StorageMigrator::<TestRuntime>::new();
 		let mut ext = mock::ExtBuilder::default().build(None);
 		ext.execute_with(|| {
-			LastUpgradeVersion::<mock::Test>::set(1);
+			LastUpgradeVersion::<TestRuntime>::set(1);
 			assert!(migrator.pre_migration().is_err(), "Pre-migration for v0 should fail.");
 		});
 	}
 
 	#[test]
 	fn err_more_than_max_migrator() {
-		let migrator = StorageMigrator::<mock::Test>::new();
+		let migrator = StorageMigrator::<TestRuntime>::new();
 		let mut ext = mock::ExtBuilder::default().build(None);
 		ext.execute_with(|| {
-			LastUpgradeVersion::<mock::Test>::set(u16::MAX);
+			LastUpgradeVersion::<TestRuntime>::set(u16::MAX);
 			assert!(migrator.pre_migration().is_err(), "Pre-migration for v0 should fail.");
 		});
 	}
