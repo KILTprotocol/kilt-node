@@ -2,6 +2,11 @@ import typing
 
 
 def update_spec(input: typing.Dict, base_chain="westend"):
+    acc_alice = "5DEx6rzF742xUcTCf3KwvNw8gZd82hQsG7WGMiqsji9AiDNZ"
+    acc_bob = "5DL9V1dmkuZnzRD9R3cwdzowim3sBZZvz1iJhNxC5QjofikK"
+    acc_charlie = "5DcKRxsjojmbJW7Scxnu7Ck5zXfpg1RxtrcyVjaMRx5YFWUR"
+    acc_dave = "5E4ZYy9tTPpJPoScqm6PvLtr1MjsBEjbDufJQYhcuBtk6rNa"
+
     input.update({
         "bootNodes": [],
         "chainType": "Live",
@@ -9,15 +14,44 @@ def update_spec(input: typing.Dict, base_chain="westend"):
         "id": f"{base_chain}_peregrine_relay",
     })
     input["genesis"]["runtime"]["balances"]["balances"] += [
-        ["5DEx6rzF742xUcTCf3KwvNw8gZd82hQsG7WGMiqsji9AiDNZ", 1000000000000000000],
-        ["5DL9V1dmkuZnzRD9R3cwdzowim3sBZZvz1iJhNxC5QjofikK", 1000000000000000000],
-        ["5DcKRxsjojmbJW7Scxnu7Ck5zXfpg1RxtrcyVjaMRx5YFWUR", 1000000000000000000],
-        ["5E4ZYy9tTPpJPoScqm6PvLtr1MjsBEjbDufJQYhcuBtk6rNa", 1000000000000000000]
+        [acc_alice, 1000000000000000000],
+        [acc_bob, 1000000000000000000],
+        [acc_charlie, 1000000000000000000],
+        [acc_dave, 1000000000000000000]
     ]
+    input["genesis"]["runtime"]["staking"].update({
+        "validatorCount": 4,
+        "stakers": [
+            [
+                acc_alice,
+                acc_alice,
+                1000000000000,
+                "Validator"
+            ],
+            [
+                acc_bob,
+                acc_bob,
+                1000000000000,
+                "Validator"
+            ],
+            [
+                acc_charlie,
+                acc_charlie,
+                1000000000000,
+                "Validator"
+            ],
+            [
+                acc_dave,
+                acc_dave,
+                1000000000000,
+                "Validator"
+            ]
+        ]
+    })
     input["genesis"]["runtime"]["session"]["keys"] = [
         [
-            "5DEx6rzF742xUcTCf3KwvNw8gZd82hQsG7WGMiqsji9AiDNZ",
-            "5DEx6rzF742xUcTCf3KwvNw8gZd82hQsG7WGMiqsji9AiDNZ",
+            acc_alice,
+            acc_alice,
             {
                 "grandpa": "5H7KYuAdFtXTjdSeWjEKidoHGLCDuRe3vWpVK5pxEux1ysrU",
                 "babe": "5F7iGThj9n28FdQUzBfrWRALMqLvELEndVbXQ1e9DatM23Rz",
@@ -27,8 +61,8 @@ def update_spec(input: typing.Dict, base_chain="westend"):
                 "authority_discovery": "5F7iGThj9n28FdQUzBfrWRALMqLvELEndVbXQ1e9DatM23Rz",
             }
         ], [
-            "5DL9V1dmkuZnzRD9R3cwdzowim3sBZZvz1iJhNxC5QjofikK",
-            "5DL9V1dmkuZnzRD9R3cwdzowim3sBZZvz1iJhNxC5QjofikK",
+            acc_bob,
+            acc_bob,
             {
                 "grandpa": "5H25SYu7RHgvNrJbcpHKdRv5gjeKYxfn4wvAD3hpu2cbhRyW",
                 "babe": "5CGQvLkqjGb1v5ptKoeQdtXJXQkEXmfhB9CFDLSS8MUYkDg2",
@@ -38,8 +72,8 @@ def update_spec(input: typing.Dict, base_chain="westend"):
                 "authority_discovery": "5CGQvLkqjGb1v5ptKoeQdtXJXQkEXmfhB9CFDLSS8MUYkDg2",
             }
         ], [
-            "5DcKRxsjojmbJW7Scxnu7Ck5zXfpg1RxtrcyVjaMRx5YFWUR",
-            "5DcKRxsjojmbJW7Scxnu7Ck5zXfpg1RxtrcyVjaMRx5YFWUR",
+            acc_charlie,
+            acc_charlie,
             {
                 "grandpa": "5FBpVyAAB4E9woWhgg19LWiKDqUdMMkCZ41b6wTFVLR3qfxS",
                 "babe": "5Cz484xJRDU1MzbdC853TomhfPbuwVftTefAraaqReWZhaMu",
@@ -49,8 +83,8 @@ def update_spec(input: typing.Dict, base_chain="westend"):
                 "authority_discovery": "5Cz484xJRDU1MzbdC853TomhfPbuwVftTefAraaqReWZhaMu",
             }
         ], [
-            "5E4ZYy9tTPpJPoScqm6PvLtr1MjsBEjbDufJQYhcuBtk6rNa",
-            "5E4ZYy9tTPpJPoScqm6PvLtr1MjsBEjbDufJQYhcuBtk6rNa",
+            acc_dave,
+            acc_dave,
             {
                 "grandpa": "5CEDZib61ec64jfRpZUe7Q78Yh4oAmzMwkr519rYWBkH8hGZ",
                 "babe": "5FxM6yYBFvMeX3C2QrQDXJ8LhhzG5sPjgUtX77cX1wihHhVq",
@@ -61,7 +95,7 @@ def update_spec(input: typing.Dict, base_chain="westend"):
             }
         ]
     ]
-    input["genesis"]["runtime"]["sudo"]["key"] = "5DEx6rzF742xUcTCf3KwvNw8gZd82hQsG7WGMiqsji9AiDNZ"
+    input["genesis"]["runtime"]["sudo"]["key"] = acc_alice
 
 
 if __name__ == "__main__":
