@@ -29,7 +29,6 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::Decode;
 use did::DidSignature;
-use frame_system::EnsureSigned;
 use kilt_primitives::{
 	constants::{KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature,
@@ -337,7 +336,7 @@ impl pallet_sudo::Config for Runtime {
 }
 
 impl attestation::Config for Runtime {
-	type EnsureOrigin = EnsureSigned<<Self as delegation::Config>::DelegationEntityId>;
+	type EnsureOrigin = did::EnsureDidOrigin<<Self as delegation::Config>::DelegationEntityId>;
 	type Event = Event;
 	type WeightInfo = ();
 }
@@ -350,9 +349,9 @@ parameter_types! {
 
 impl delegation::Config for Runtime {
 	type DelegationSignatureVerification = Self;
-	type DelegationEntityId = AccountId;
+	type DelegationEntityId = DidIdentifier;
 	type DelegationNodeId = Hash;
-	type EnsureOrigin = EnsureSigned<Self::DelegationEntityId>;
+	type EnsureOrigin = did::EnsureDidOrigin<Self::DelegationEntityId>;
 	type Event = Event;
 	type MaxSignatureByteLength = MaxSignatureByteLength;
 	type MaxParentChecks = MaxParentChecks;
@@ -361,8 +360,8 @@ impl delegation::Config for Runtime {
 }
 
 impl ctype::Config for Runtime {
-	type CtypeCreatorId = AccountId;
-	type EnsureOrigin = EnsureSigned<Self::CtypeCreatorId>;
+	type CtypeCreatorId = DidIdentifier;
+	type EnsureOrigin = did::EnsureDidOrigin<Self::CtypeCreatorId>;
 	type Event = Event;
 	type WeightInfo = ();
 }
