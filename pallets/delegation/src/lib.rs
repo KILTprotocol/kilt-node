@@ -43,8 +43,11 @@ use frame_support::{ensure, pallet_prelude::Weight, traits::Get};
 use sp_runtime::{traits::Hash, DispatchError};
 use sp_std::vec::Vec;
 
+use migrations::*;
+
 #[frame_support::pallet]
 pub mod pallet {
+
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
@@ -93,20 +96,16 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		#[cfg(feature = "try-runtime")]
 		fn pre_upgrade() -> Result<(), &'static str> {
-			migrations::StorageMigrator::<T>::new()
-				.pre_migration()
-				.map_err(|_| "pre-migration failed")
+			migrations::DelegationStorageMigration::<T>::pre_migrate()
 		}
 
 		fn on_runtime_upgrade() -> Weight {
-			migrations::StorageMigrator::<T>::new().migrate()
+			migrations::DelegationStorageMigration::<T>::migrate()
 		}
 
 		#[cfg(feature = "try-runtime")]
 		fn post_upgrade() -> Result<(), &'static str> {
-			migrations::StorageMigrator::<T>::new()
-				.post_migration()
-				.map_err(|_| "post-migration failed")
+			migrations::DelegationStorageMigration::<T>::post_migrate()
 		}
 	}
 
@@ -134,10 +133,10 @@ pub mod pallet {
 	#[pallet::getter(fn children)]
 	pub type Children<T> = StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, Vec<DelegationNodeIdOf<T>>>;
 
-	/// Contains the version of the latest runtime upgrade performed.
+	/// Contains the latest version migrator used.
 	#[pallet::storage]
-	#[pallet::getter(fn last_upgrade_version)]
-	pub(crate) type LastUpgradeVersion<T> = StorageValue<_, u16, ValueQuery>;
+	#[pallet::getter(fn last_version_migration_used)]
+	pub(crate) type LastVersionMigrationUsed<T> = StorageValue<_, DelegationStorageVersion, ValueQuery>;
 
 	/// Delegation nodes stored on chain.
 	///
