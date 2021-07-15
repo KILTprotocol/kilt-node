@@ -28,7 +28,7 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::Decode;
-use frame_support::ensure;
+use did::DidSignature;
 use frame_system::EnsureSigned;
 use kilt_primitives::{
 	constants::{KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
@@ -41,9 +41,9 @@ use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, MultiSignature,
+	ApplyExtrinsicResult,
 };
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
@@ -278,26 +278,33 @@ where
 }
 
 impl delegation::VerifyDelegateSignature for Runtime {
-	type DelegateId = AccountId;
+	type DelegateId = DidIdentifier;
 	type Payload = Vec<u8>;
 	type Signature = Vec<u8>;
 
-	// No need to retrieve delegate details as it is simply an AccountId.
 	fn verify(
 		delegate: &Self::DelegateId,
 		payload: &Self::Payload,
 		signature: &Self::Signature,
 	) -> delegation::SignatureVerificationResult {
 		// Try to decode signature first.
-		let decoded_signature = MultiSignature::decode(&mut &signature[..])
+		let decoded_signature = DidSignature::decode(&mut &signature[..])
 			.map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
 
-		ensure!(
-			decoded_signature.verify(&payload[..], delegate),
-			delegation::SignatureVerificationError::SignatureInvalid
-		);
+		let delegate_details = did::Did::<Self>::get(&delegate)
+			.ok_or(delegation::SignatureVerificationError::SignerInformationNotPresent)?;
 
-		Ok(())
+		did::Pallet::verify_payload_signature_with_did_key_type(
+			payload,
+			&decoded_signature,
+			&delegate_details,
+			did::DidVerificationKeyRelationship::Authentication,
+		)
+		.map_err(|err| match err {
+			// Should never happen as a DID has always a valid authentication key and UrlErrors are never thrown here.
+			did::DidError::SignatureError(_) => delegation::SignatureVerificationError::SignatureInvalid,
+			_ => delegation::SignatureVerificationError::SignerInformationNotPresent,
+		})
 	}
 }
 

@@ -1809,6 +1809,7 @@ version = "0.24.0"
 dependencies = [
  "bitflags",
  "ctype",
+ "did",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
