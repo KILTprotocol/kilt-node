@@ -128,7 +128,7 @@ fn create_delegation_direct_root_successful() {
 		generate_base_delegation_node(hierarchy_root_id, delegate, Some(hierarchy_root_id)),
 	);
 
-	let delegation_info = Delegation::calculate_delegation_hash_root(
+	let delegation_info = Delegation::calculate_delegation_creation_hash(
 		&delegation_id,
 		&hierarchy_root_id,
 		&delegation_node.details.permissions,
@@ -196,7 +196,7 @@ fn create_delegation_with_parent_successful() {
 		generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id)),
 	);
 
-	let delegation_info = Delegation::calculate_delegation_hash_root(
+	let delegation_info = Delegation::calculate_delegation_creation_hash(
 		&delegation_id,
 		&parent_id,
 		&delegation_node.details.permissions,
@@ -262,7 +262,7 @@ fn invalid_delegate_signature_create_delegation_error() {
 		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
 	);
 
-	let delegate_signature = alternative_keypair.sign(&hash_to_u8(Delegation::calculate_delegation_hash_root(
+	let delegate_signature = alternative_keypair.sign(&hash_to_u8(Delegation::calculate_delegation_creation_hash(
 		&delegation_id,
 		&hierarchy_root_id,
 		&delegation_node.details.permissions,
@@ -309,7 +309,7 @@ fn duplicate_delegation_create_delegation_error() {
 		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
 	);
 
-	let delegate_signature = delegate_keypair.sign(&hash_to_u8(Delegation::calculate_delegation_hash_root(
+	let delegate_signature = delegate_keypair.sign(&hash_to_u8(Delegation::calculate_delegation_creation_hash(
 		&delegation_id,
 		&hierarchy_root_id,
 		&delegation_node.details.permissions,
@@ -357,7 +357,7 @@ fn parent_not_existing_create_delegation_error() {
 		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
 	);
 
-	let delegate_signature = delegate_keypair.sign(&hash_to_u8(Delegation::calculate_delegation_hash_root(
+	let delegate_signature = delegate_keypair.sign(&hash_to_u8(Delegation::calculate_delegation_creation_hash(
 		&delegation_id,
 		&hierarchy_root_id,
 		&delegation_node.details.permissions,
@@ -409,7 +409,7 @@ fn not_owner_of_parent_create_delegation_error() {
 		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
 	);
 
-	let delegate_signature = delegate_keypair.sign(&hash_to_u8(Delegation::calculate_delegation_hash_root(
+	let delegate_signature = delegate_keypair.sign(&hash_to_u8(Delegation::calculate_delegation_creation_hash(
 		&delegation_id,
 		&parent_id,
 		&delegation_node.details.permissions,
@@ -462,7 +462,7 @@ fn unauthorised_delegation_create_delegation_error() {
 		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
 	);
 
-	let delegate_signature = delegate_keypair.sign(&hash_to_u8(Delegation::calculate_delegation_hash_root(
+	let delegate_signature = delegate_keypair.sign(&hash_to_u8(Delegation::calculate_delegation_creation_hash(
 		&delegation_id,
 		&parent_id,
 		&delegation_node.details.permissions,

@@ -29,7 +29,7 @@ use crate::*;
 const LATEST_UPGRADEABLE_VERSION: u16 = 0;
 
 // The trait that each version migrator must implement.
-trait VersionMigrator<T: Config> {
+trait VersionMigrator<T> {
 	#[cfg(feature = "try-runtime")]
 	fn pre_migrate(&self) -> Result<(), DelegationMigrationError>;
 	fn migrate(&self) -> Weight;
@@ -37,6 +37,7 @@ trait VersionMigrator<T: Config> {
 	fn post_migrate(&self) -> Result<(), DelegationMigrationError>;
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Copy, Debug)]
 pub(crate) enum DelegationMigrationError {
 	AlreadyLatest,
@@ -52,7 +53,7 @@ pub(crate) enum DelegationMigrationError {
 // the `VersionMigrator` trait must be defined and added at the end of the
 // `migrations` vector, so that it is always executed after all
 // previous migrations have taken place.
-pub(crate) struct StorageMigrator<T: Config> {
+pub(crate) struct StorageMigrator<T> {
 	// The vector of version migrators.
 	migrations: Vec<Box<dyn VersionMigrator<T>>>,
 }
@@ -127,6 +128,10 @@ impl<T: Config> StorageMigrator<T> {
 
 mod v0 {
 	use super::*;
+
+	#[cfg(feature = "try-runtime")]
+	use sp_runtime::traits::Zero;
+
 	// Migrator for the first actual pallet's migration. It migrates the Roots,
 	// Delegations, and Children storage entries to a simpler HierarchyInfos,
 	// DelegationNodes, while maintaining the original information an all
@@ -137,7 +142,7 @@ mod v0 {
 		#[cfg(feature = "try-runtime")]
 		fn pre_migrate(&self) -> Result<(), DelegationMigrationError> {
 			ensure!(
-				LastUpgradeVersion::<T>::get() == 0,
+				LastUpgradeVersion::<T>::get().is_zero(),
 				DelegationMigrationError::AlreadyLatest
 			);
 			log::info!("Version storage migrating from v0 to v1");
@@ -234,6 +239,15 @@ mod v0 {
 				LastUpgradeVersion::<T>::get() == 1,
 				DelegationMigrationError::MigrationResultInconsistent
 			);
+			for (node_id, node) in DelegationNodes::<T>::iter() {
+				if let Some(parent_id) = node.parent {
+					let parent_node = DelegationNodes::<T>::get(parent_id).expect("Parent node should be in the storage.");
+					ensure!(
+						parent_node.children.contains(&node_id),
+						DelegationMigrationError::MigrationResultInconsistent
+					);
+				}
+			}
 			log::info!("Version storage migrated from v0 to v1");
 			Ok(())
 		}

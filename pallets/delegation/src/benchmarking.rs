@@ -103,7 +103,7 @@ where
 
 		// delegate signs delegation to parent
 		let hash: Vec<u8> =
-			Pallet::<T>::calculate_delegation_hash_root(&delegation_id, &parent_id, &permissions).encode();
+			Pallet::<T>::calculate_delegation_creation_hash(&delegation_id, &parent_id, &permissions).encode();
 		let sig = sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &delegation_acc_public, hash.as_ref())
 			.ok_or("Error while building signature of delegation.")?;
 
@@ -222,7 +222,7 @@ benchmarks! {
 		let parent_id = leaf_id;
 
 		let perm: Permissions = Permissions::ATTEST | Permissions::DELEGATE;
-		let hash_root = Pallet::<T>::calculate_delegation_hash_root(&delegation_id, &parent_id, &perm);
+		let hash_root = Pallet::<T>::calculate_delegation_creation_hash(&delegation_id, &parent_id, &perm);
 		let sig = sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &delegate_acc_public, hash_root.as_ref()).ok_or("Error while building signature of delegation.")?;
 
 		let delegate_acc_id: T::AccountId = delegate_acc_public.into();
