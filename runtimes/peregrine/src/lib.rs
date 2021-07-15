@@ -28,6 +28,7 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::Decode;
+use did::DidSignature;
 use frame_support::{ensure, traits::LockIdentifier, PalletId};
 use frame_system::{
 	limits::{BlockLength, BlockWeights},
@@ -628,36 +629,42 @@ impl pallet_membership::Config for Runtime {
 }
 
 impl delegation::VerifyDelegateSignature for Runtime {
-	type DelegateId = AccountId;
+	type DelegateId = DidIdentifier;
 	type Payload = Vec<u8>;
 	type Signature = Vec<u8>;
 
-	// No need to retrieve delegate details as it is simply an AccountId.
 	fn verify(
 		delegate: &Self::DelegateId,
 		payload: &Self::Payload,
 		signature: &Self::Signature,
 	) -> delegation::SignatureVerificationResult {
 		// Try to decode signature first.
-		let decoded_signature = MultiSignature::decode(&mut &signature[..])
+		let decoded_signature = DidSignature::decode(&mut &signature[..])
 			.map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
 
-		ensure!(
-			decoded_signature.verify(&payload[..], delegate),
-			delegation::SignatureVerificationError::SignatureInvalid
-		);
+		let delegate_details = did::Did::<Self>::get(&delegate)
+			.ok_or(delegation::SignatureVerificationError::SignerInformationNotPresent)?;
 
-		Ok(())
+		did::Pallet::verify_payload_signature_with_did_key_type(
+			payload,
+			&decoded_signature,
+			&delegate_details,
+			did::DidVerificationKeyRelationship::Authentication,
+		)
+		.map_err(|err| match err {
+			// Should never happen as a DID has always a valid authentication key and UrlErrors are never thrown here.
+			did::DidError::SignatureError(_) => delegation::SignatureVerificationError::SignatureInvalid,
+			_ => delegation::SignatureVerificationError::SignerInformationNotPresent,
+		})
 	}
 }
-
 parameter_types! {
 	// TODO: Find reasonable number
 	pub const MaxDelegatedAttestations: u32 = 1000;
 }
 
 impl attestation::Config for Runtime {
-	type EnsureOrigin = EnsureSigned<<Self as delegation::Config>::DelegationEntityId>;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
 	type Event = Event;
 	type WeightInfo = weights::attestation::WeightInfo<Runtime>;
 	type MaxDelegatedAttestations = MaxDelegatedAttestations;
@@ -676,7 +683,7 @@ impl delegation::Config for Runtime {
 	type DelegationSignatureVerification = Self;
 	type DelegationEntityId = AccountId;
 	type DelegationNodeId = Hash;
-	type EnsureOrigin = EnsureSigned<Self::DelegationEntityId>;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
 	type Event = Event;
 	type MaxSignatureByteLength = MaxSignatureByteLength;
 	type MaxParentChecks = MaxParentChecks;
@@ -687,7 +694,7 @@ impl delegation::Config for Runtime {
 
 impl ctype::Config for Runtime {
 	type CtypeCreatorId = AccountId;
-	type EnsureOrigin = EnsureSigned<Self::CtypeCreatorId>;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
 	type Event = Event;
 	type WeightInfo = weights::ctype::WeightInfo<Runtime>;
 }
