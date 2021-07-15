@@ -35,6 +35,8 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
+mod deprecated;
+
 pub use crate::{default_weights::WeightInfo, delegation_hierarchy::*, pallet::*};
 
 use frame_support::{ensure, pallet_prelude::Weight, traits::Get};
@@ -114,7 +116,7 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn roots)]
 	pub type Roots<T> =
-		StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, delegation_hierarchy::v0::DelegationRoot<T>>;
+		StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, deprecated::v0::DelegationRoot<T>>;
 
 	/// Delegation nodes stored on chain. DEPRECATED.
 	///
@@ -122,7 +124,7 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn delegations)]
 	pub type Delegations<T> =
-		StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, delegation_hierarchy::v0::DelegationNode<T>>;
+		StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, deprecated::v0::DelegationNode<T>>;
 
 	/// Children delegation nodes. DEPRECATED.
 	///
@@ -244,6 +246,8 @@ pub mod pallet {
 				<ctype::Error<T>>::CTypeNotFound
 			);
 
+			log::debug!("insert Delegation Root");
+
 			Self::create_and_store_new_hierarchy(
 				root_node_id,
 				DelegationHierarchyInfo::<T> { ctype_hash },
@@ -264,8 +268,6 @@ pub mod pallet {
 		/// * origin: the identifier of the delegation creator
 		/// * delegation_id: the ID of the new delegation node. It has to be
 		///   unique
-		/// * root_id: the ID of the delegation hierarchy root to add this
-		///   delegation to
 		/// * parent_id: \[OPTIONAL\] The ID of the parent node to verify that
 		///   the creator is allowed to create a new delegation. If None, the
 		///   verification is performed against the provided root node
@@ -278,7 +280,6 @@ pub mod pallet {
 		pub fn add_delegation(
 			origin: OriginFor<T>,
 			delegation_id: DelegationNodeIdOf<T>,
-			root_node_id: DelegationNodeIdOf<T>,
 			parent_id: DelegationNodeIdOf<T>,
 			delegate: DelegatorIdOf<T>,
 			permissions: Permissions,
@@ -288,7 +289,7 @@ pub mod pallet {
 
 			// Calculate the hash root
 			let hash_root =
-				Self::calculate_delegation_hash_root(&delegation_id, &root_node_id, &parent_id, &permissions);
+				Self::calculate_delegation_creation_hash(&delegation_id, &parent_id, &permissions);
 
 			// Verify that the hash root signature is correct.
 			DelegationSignatureVerificationOf::<T>::verify(&delegate, &hash_root.encode(), &delegate_signature)
@@ -303,6 +304,7 @@ pub mod pallet {
 			);
 
 			let parent_node = <DelegationNodes<T>>::get(&parent_id).ok_or(Error::<T>::ParentDelegationNotFound)?;
+			let hierarchy_root_id = parent_node.hierarchy_root_id;
 
 			// Check if the parent's delegate is the creator of this delegation node...
 			ensure!(
@@ -318,25 +320,25 @@ pub mod pallet {
 			Self::store_delegation_under_parent(
 				delegation_id,
 				DelegationNode::new_node(
-					root_node_id,
+					hierarchy_root_id,
 					parent_id,
 					DelegationDetails {
 						owner: delegate.clone(),
 						permissions,
 						revoked: false,
-					},
+					}
 				),
 				parent_id,
-				parent_node,
+				parent_node
 			);
 
 			Self::deposit_event(Event::DelegationCreated(
 				delegator,
-				root_node_id,
+				hierarchy_root_id,
 				delegation_id,
 				parent_id,
 				delegate,
-				permissions,
+				permissions
 			));
 
 			Ok(())
@@ -458,16 +460,14 @@ pub mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
-	// Calculate the hash of all values of a delegation transaction
-	fn calculate_delegation_hash_root(
+	// Calculate the hash of all values of a delegation creation transaction
+	fn calculate_delegation_creation_hash(
 		delegation_id: &DelegationNodeIdOf<T>,
-		root_id: &DelegationNodeIdOf<T>,
 		parent_id: &DelegationNodeIdOf<T>,
 		permissions: &Permissions,
 	) -> T::Hash {
-		// Add all values to an u8 vector
+		// Add all values to an u8 vector.
 		let mut hashed_values: Vec<u8> = delegation_id.as_ref().to_vec();
-		hashed_values.extend_from_slice(root_id.as_ref());
 		hashed_values.extend_from_slice(parent_id.as_ref());
 		hashed_values.extend_from_slice(permissions.as_u8().as_ref());
 		// Hash the resulting vector

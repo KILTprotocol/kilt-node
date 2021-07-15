@@ -45,7 +45,7 @@ pub(crate) enum DelegationMigrationError {
 
 // The "manager" of the pallet's storage migrations. It contains a vector of
 // version migrations each of which corresponds to a new runtime upgrade to run,
-// sequencially. It interacts with the `LastUpgradeVersion` of the pallet's
+// sequentially. It interacts with the `LastUpgradeVersion` of the pallet's
 // storage.
 //
 // When a new runtime upgrade needs to be added, a new component implementing
@@ -76,9 +76,9 @@ impl<T: Config> StorageMigrator<T> {
 		Ok(())
 	}
 
-	// It retrieves the latest version deployed on chain, and sequencially applies
-	// any runtime migration until the state is update to the latest version.
-	// It provides a test feature that panics whenver something goes wrong for one
+	// It retrieves the latest version deployed on chain, and sequentially applies
+	// any runtime migration until the state is updated to the latest version.
+	// It provides a test feature that panics whenever something goes wrong for one
 	// of the version migrators, but in production it is just assumed that all the
 	// migrations will go through.
 	pub(crate) fn migrate(&self) -> Weight {
@@ -172,7 +172,7 @@ mod v0 {
 				if let Some(root_children_ids) = Children::<T>::take(old_root_id) {
 					new_root_node.children = root_children_ids.iter().copied().collect();
 				}
-				// Add Chilred::take() weight
+				// Add Children::take() weight
 				total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));
 
 				DelegationHierarchies::insert(old_root_id, new_hierarchy_info);
@@ -196,7 +196,7 @@ mod v0 {
 				if let Some(children_ids) = Children::<T>::take(old_node_id) {
 					new_node.children = children_ids.iter().copied().collect();
 				}
-				// Add Chilred::take() weight
+				// Add Children::take() weight
 				total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));
 				// Adds a read from Roots::drain() weight
 				total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));
@@ -282,7 +282,7 @@ mod v0 {
 				let alice = mock::get_ed25519_account(mock::get_alice_ed25519().public());
 				let old_root_id = mock::get_delegation_id(true);
 				let old_root_node =
-					crate::v0::DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash(true), alice);
+					crate::deprecated::v0::DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash(true), alice);
 				Roots::insert(old_root_id, old_root_node.clone());
 
 				assert!(
@@ -324,12 +324,12 @@ mod v0 {
 				let bob = mock::get_sr25519_account(mock::get_bob_sr25519().public());
 				let old_root_id = mock::get_delegation_id(true);
 				let old_root_node =
-					crate::v0::DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash(true), alice.clone());
+					crate::deprecated::v0::DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash(true), alice.clone());
 				let old_parent_id = mock::get_delegation_id(false);
 				let old_parent_node =
-					crate::v0::DelegationNode::<TestRuntime>::new_root_child(old_root_id, alice, Permissions::all());
+					crate::deprecated::v0::DelegationNode::<TestRuntime>::new_root_child(old_root_id, alice, Permissions::all());
 				let old_node_id = mock::get_delegation_id_2(true);
-				let old_node = crate::v0::DelegationNode::<TestRuntime>::new_node_child(
+				let old_node = crate::deprecated::v0::DelegationNode::<TestRuntime>::new_node_child(
 					old_root_id,
 					old_parent_id,
 					bob,
@@ -398,13 +398,13 @@ mod v0 {
 				let bob = mock::get_sr25519_account(mock::get_bob_sr25519().public());
 				let old_root_id = mock::get_delegation_id(true);
 				let old_root_node =
-					crate::v0::DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash(true), alice.clone());
+					crate::deprecated::v0::DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash(true), alice.clone());
 				let old_node_id_1 = mock::get_delegation_id(false);
 				let old_node_1 =
-					crate::v0::DelegationNode::<TestRuntime>::new_root_child(old_root_id, alice, Permissions::DELEGATE);
+					crate::deprecated::v0::DelegationNode::<TestRuntime>::new_root_child(old_root_id, alice, Permissions::DELEGATE);
 				let old_node_id_2 = mock::get_delegation_id_2(true);
 				let old_node_2 =
-					crate::v0::DelegationNode::<TestRuntime>::new_root_child(old_root_id, bob, Permissions::ATTEST);
+					crate::deprecated::v0::DelegationNode::<TestRuntime>::new_root_child(old_root_id, bob, Permissions::ATTEST);
 				Roots::insert(old_root_id, old_root_node.clone());
 				Delegations::insert(old_node_id_1, old_node_1.clone());
 				Delegations::insert(old_node_id_2, old_node_2.clone());

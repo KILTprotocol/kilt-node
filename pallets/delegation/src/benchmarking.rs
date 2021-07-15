@@ -103,7 +103,7 @@ where
 
 		// delegate signs delegation to parent
 		let hash: Vec<u8> =
-			Pallet::<T>::calculate_delegation_hash_root(&delegation_id, &root_id, &parent_id, &permissions).encode();
+			Pallet::<T>::calculate_delegation_hash_root(&delegation_id, &parent_id, &permissions).encode();
 		let sig = sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &delegation_acc_public, hash.as_ref())
 			.ok_or("Error while building signature of delegation.")?;
 
@@ -111,7 +111,6 @@ where
 		let _ = Pallet::<T>::add_delegation(
 			RawOrigin::Signed(parent_acc_id.clone()).into(),
 			delegation_id,
-			root_id,
 			parent_id,
 			delegation_acc_id.clone().into(),
 			permissions,
@@ -223,12 +222,12 @@ benchmarks! {
 		let parent_id = leaf_id;
 
 		let perm: Permissions = Permissions::ATTEST | Permissions::DELEGATE;
-		let hash_root = Pallet::<T>::calculate_delegation_hash_root(&delegation_id, &hierarchy_id, &parent_id, &perm);
+		let hash_root = Pallet::<T>::calculate_delegation_hash_root(&delegation_id, &parent_id, &perm);
 		let sig = sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &delegate_acc_public, hash_root.as_ref()).ok_or("Error while building signature of delegation.")?;
 
 		let delegate_acc_id: T::AccountId = delegate_acc_public.into();
 		let leaf_acc_id: T::AccountId = leaf_acc.into();
-	}: _(RawOrigin::Signed(leaf_acc_id), delegation_id, hierarchy_id, parent_id, delegate_acc_id.into(), perm, MultiSignature::from(sig).encode())
+	}: _(RawOrigin::Signed(leaf_acc_id), delegation_id, parent_id, delegate_acc_id.into(), perm, MultiSignature::from(sig).encode())
 	verify {
 		assert!(DelegationNodes::<T>::contains_key(delegation_id));
 	}
