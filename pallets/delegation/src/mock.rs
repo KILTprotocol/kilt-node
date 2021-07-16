@@ -215,7 +215,7 @@ pub(crate) fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
 	hash.encode()
 }
 
-pub fn generate_base_delegation_hierarchy_info() -> DelegationHierarchyDetails<Test> {
+pub fn generate_base_delegation_hierarchy_details() -> DelegationHierarchyDetails<Test> {
 	DelegationHierarchyDetails {
 		ctype_hash: ctype_mock::get_ctype_hash(true),
 	}

@@ -109,7 +109,7 @@ pub mod pallet {
 		}
 	}
 
-	/// Contains the latest version migrator used.
+	/// Contains the latest storage version deployed.
 	#[pallet::storage]
 	#[pallet::getter(fn last_version_migration_used)]
 	pub(crate) type StorageVersion<T> = StorageValue<_, DelegationStorageVersion, ValueQuery>;
@@ -201,7 +201,7 @@ pub mod pallet {
 		/// adding children delegations to the root.
 		///
 		/// * origin: the identifier of the delegation creator
-		/// * root_id: the ID of the root node. It has to be unique
+		/// * root_node_id: the ID of the root node. It has to be unique
 		/// * ctype_hash: the CTYPE hash that delegates can use for attestations
 		#[pallet::weight(<T as Config>::WeightInfo::create_hierarchy())]
 		pub fn create_hierarchy(
@@ -318,7 +318,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Revoke a delegation root.
+		/// Revoke a delegation hierarchy starting from its root node.
 		///
 		/// Revoking a delegation root results in the whole trust hierarchy
 		/// being revoked. Nevertheless, revocation starts from the leave nodes
@@ -328,7 +328,7 @@ pub mod pallet {
 		/// the whole trust hierarchy is to be considered revoked.
 		///
 		/// * origin: the identifier of the revoker
-		/// * root_id: the ID of the delegation root to revoke
+		/// * root_node_id: the ID of the delegation root node to revoke
 		/// * max_children: the maximum number of nodes descending from the root
 		///   to revoke as a consequence of the root revocation
 		#[pallet::weight(<T as Config>::WeightInfo::revoke_hierarchy(*max_children))]
@@ -434,7 +434,7 @@ pub mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
-	// Calculate the hash of all values of a delegation creation transaction
+	// Calculates the hash of all values of a delegation creation transaction.
 	fn calculate_delegation_creation_hash(
 		delegation_id: &DelegationNodeIdOf<T>,
 		parent_id: &DelegationNodeIdOf<T>,
@@ -448,16 +448,20 @@ impl<T: Config> Pallet<T> {
 		T::Hashing::hash(&hashed_values)
 	}
 
+	// Creates a new root node with the given details and store the new hierarchy in the hierarchies storage and the new root node in the nodes storage.
 	fn create_and_store_new_hierarchy(
 		root_id: DelegationNodeIdOf<T>,
-		hierarchy_info: DelegationHierarchyDetails<T>,
+		hierarchy_details: DelegationHierarchyDetails<T>,
 		hierarchy_owner: DelegatorIdOf<T>,
 	) {
 		let root_node = DelegationNode::new_root_node(root_id, DelegationDetails::default_with_owner(hierarchy_owner));
 		<DelegationNodes<T>>::insert(root_id, root_node);
-		<DelegationHierarchies<T>>::insert(root_id, hierarchy_info);
+		<DelegationHierarchies<T>>::insert(root_id, hierarchy_details);
 	}
 
+	// Adds the given node to the storage and updates the parent node to include the given node as child.
+	//
+	// This function assumes that the parent node is already stored on the chain. If not, the behaviour of the system is undefined.
 	fn store_delegation_under_parent(
 		delegation_id: DelegationNodeIdOf<T>,
 		delegation_node: DelegationNode<T>,
@@ -470,6 +474,7 @@ impl<T: Config> Pallet<T> {
 		<DelegationNodes<T>>::insert(parent_id, parent_node);
 	}
 
+	// Marks the provided hierarchy as revoked and stores the resulting state back in the storage.
 	fn revoke_and_store_hierarchy_root(root_id: DelegationNodeIdOf<T>, mut root_node: DelegationNode<T>) {
 		root_node.details.revoked = true;
 		<DelegationNodes<T>>::insert(root_id, root_node);
@@ -494,9 +499,6 @@ impl<T: Config> Pallet<T> {
 		if &delegation_node.details.owner == identity {
 			Ok((!delegation_node.details.revoked, 0u32))
 		} else {
-			// Counter is decreased regardless of whether we are checking the parent node
-			// next of the root node, as the root node is as a matter of fact the top node's
-			// parent.
 			let remaining_lookups = max_parent_checks
 				.checked_sub(1)
 				.ok_or(Error::<T>::MaxSearchDepthReached)?;

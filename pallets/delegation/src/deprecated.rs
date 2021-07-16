@@ -16,6 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+/// Deprecated types used in version 1.
 pub(crate) mod v1 {
 	use codec::{Decode, Encode};
 
