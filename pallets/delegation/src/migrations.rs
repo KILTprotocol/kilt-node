@@ -60,7 +60,7 @@ impl<T: Config> VersionMigratorTrait<T> for DelegationStorageVersion {
 	fn pre_migrate(&self) -> Result<(), &str> {
 		match *self {
 			Self::v1 => v1::pre_migrate::<T>(),
-			Self::v2 => Ok(()),
+			Self::v2 => Err("Already latest v2 version."),
 		}
 	}
 
@@ -75,7 +75,7 @@ impl<T: Config> VersionMigratorTrait<T> for DelegationStorageVersion {
 	fn post_migrate(&self) -> Result<(), &str> {
 		match *self {
 			Self::v1 => v1::post_migrate::<T>(),
-			Self::v2 => Ok(()),
+			Self::v2 => Err("Migration from v2 should have never happened in the first place."),
 		}
 	}
 }
@@ -100,12 +100,32 @@ mod v1 {
 
 		// Before being stored, the nodes are saved in a map so that after we go over
 		// all the nodes and the parent-child relationship in the storage, we can update
-		// the `parent` link of each node accordingly. Otherwise, it would be possible
-		// that a node does not exist when fetched from the Children storage entry.
+		// the `parent` link of each node accordingly. Otherwise, we would need to save the
+		// node in the storage, and then retrieve it again to update the parent link.
 		let mut new_nodes: BTreeMap<DelegationNodeIdOf<T>, DelegationNode<T>> = BTreeMap::new();
 
 		// First iterate over the delegation roots and translate them to hierarchies.
-		for (old_root_id, old_root_node) in Roots::<T>::drain() {
+		total_weight = total_weight.saturating_add(migrate_roots::<T>(&mut new_nodes));
+
+		// Then iterate over the regular delegation nodes.
+		total_weight = total_weight.saturating_add(migrate_nodes::<T>(&mut new_nodes, total_weight));
+
+		// By now, all the children should have been correctly added to the nodes.
+		// We now need to modify all the nodes that are children by adding a reference
+		// to their parents.
+		total_weight = total_weight.saturating_add(finalize_children_nodes::<T>(&mut new_nodes, total_weight));
+
+		StorageVersion::<T>::set(DelegationStorageVersion::v2);
+		// Adds a write from StorageVersion::set() weight
+		total_weight = total_weight.saturating_add(T::DbWeight::get().writes(1));
+		log::debug!("Total weight consumed: {}", total_weight);
+		log::info!("v1 -> v2 delegation storage migrator finished!");
+
+		total_weight
+	}
+
+	fn migrate_roots<T: Config>(new_nodes: &mut BTreeMap<DelegationNodeIdOf<T>, DelegationNode<T>>) -> Weight {
+		Roots::<T>::drain().fold(0u64, |mut total_weight, (old_root_id, old_root_node)| {
 			let new_hierarchy_info = DelegationHierarchyInfo::<T> {
 				ctype_hash: old_root_node.ctype_hash,
 			};
@@ -129,11 +149,15 @@ mod v1 {
 			// Adds a read from Roots::drain() and a write from
 			// DelegationHierarchies::insert() weights
 			total_weight = total_weight.saturating_add(T::DbWeight::get().reads_writes(1, 1));
+			// Add the node to the temporary map of nodes to be added at the end.
 			new_nodes.insert(old_root_id, new_root_node);
-		}
 
-		// Then iterate over the regular delegation nodes.
-		for (old_node_id, old_node) in Delegations::<T>::drain() {
+			total_weight
+		})
+	}
+
+	fn migrate_nodes<T: Config>(new_nodes: &mut BTreeMap<DelegationNodeIdOf<T>, DelegationNode<T>>, initial_weight: Weight) -> Weight {
+		Delegations::<T>::drain().fold(initial_weight, |mut total_weight, (old_node_id, old_node)| {
 			let new_node_details = DelegationDetails::<T> {
 				owner: old_node.owner,
 				permissions: old_node.permissions,
@@ -141,7 +165,7 @@ mod v1 {
 			};
 			// In the old version, a parent None indicated the node is a child of the root.
 			let new_node_parent_id = old_node.parent.unwrap_or(old_node.root_id);
-			let mut new_node = DelegationNode::<T>::new_node(old_node.root_id, new_node_parent_id, new_node_details);
+			let mut new_node = DelegationNode::new_node(old_node.root_id, new_node_parent_id, new_node_details);
 			if let Some(children_ids) = Children::<T>::take(old_node_id) {
 				new_node.children = children_ids.iter().copied().collect();
 			}
@@ -150,31 +174,25 @@ mod v1 {
 			// Adds a read from Roots::drain() weight
 			total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));
 			new_nodes.insert(old_node_id, new_node);
-		}
 
-		// By now, all the children should have been correctly added to the nodes.
-		// We now need to modify all the nodes that are children by adding a reference
-		// to their parents.
-		for (new_node_id, new_node) in new_nodes.clone().into_iter() {
-			// FIXME: new_node.children.iter().cloned() might be possibly changed to
-			// iter_mut.
-			for child_id in new_node.children.iter().cloned() {
+			total_weight
+		})
+	}
+
+	fn finalize_children_nodes<T: Config>(new_nodes: &mut BTreeMap<DelegationNodeIdOf<T>, DelegationNode<T>>, initial_weight: Weight) -> Weight {
+		new_nodes.clone().into_iter().fold(initial_weight, |mut total_weight, (new_node_id, new_node)| {
+			new_node.children.iter().for_each(|child_id| {
 				new_nodes
-					.entry(child_id)
+					.entry(*child_id)
 					.and_modify(|node| node.parent = Some(new_node_id));
-			}
+			});
 			// We can then finally insert the new delegation node in the storage.
 			DelegationNodes::<T>::insert(new_node_id, new_node);
 			// Adds a write from DelegationNodes::insert() weight
 			total_weight = total_weight.saturating_add(T::DbWeight::get().writes(1));
-		}
 
-		StorageVersion::<T>::set(DelegationStorageVersion::v2);
-		// Adds a write from StorageVersion::set() weight
-		total_weight = total_weight.saturating_add(T::DbWeight::get().writes(1));
-		log::debug!("Total weight consumed: {}", total_weight);
-		log::info!("v1 -> v2 delegation storage migrator finished!");
-		total_weight
+			total_weight
+		})
 	}
 
 	#[cfg(any(feature = "try-runtime", test))]
@@ -183,14 +201,27 @@ mod v1 {
 			StorageVersion::<T>::get() == DelegationStorageVersion::v2,
 			"The version after deployment is not 2 as expected."
 		);
-		for (node_id, node) in DelegationNodes::<T>::iter() {
-			if let Some(parent_id) = node.parent {
-				let parent_node = DelegationNodes::<T>::get(parent_id).expect("Parent node should be in the storage.");
-				ensure!(parent_node.children.contains(&node_id), "Parent-child wrong");
-			}
-		}
+		ensure!(
+			verify_parent_children_integrity::<T>(),
+			"Some parent-child relationship has been broken in the migration."
+		);
 		log::info!("Version storage migrated from v1 to v2");
 		Ok(())
+	}
+
+	#[cfg(any(feature = "try-runtime", test))]
+	fn verify_parent_children_integrity<T: Config>() -> bool {
+		!DelegationNodes::<T>::iter().any(|(node_id, node)| {
+			if let Some(parent_id) = node.parent {
+				if let Some(parent_node) = DelegationNodes::<T>::get(parent_id) {
+					return !parent_node.children.contains(&node_id);
+				} else {
+					// If the parent node cannot be found, it is definitely an error.
+					return true;
+				}
+			}
+			false
+		})
 	}
 
 	#[cfg(test)]
@@ -359,7 +390,7 @@ pub struct DelegationStorageMigrator<T>(PhantomData<T>);
 impl<T: Config> DelegationStorageMigrator<T> {
 	fn get_next_storage_version(current: DelegationStorageVersion) -> Option<DelegationStorageVersion> {
 		match current {
-			DelegationStorageVersion::v1 => Some(DelegationStorageVersion::v2),
+			DelegationStorageVersion::v1 => None,
 			DelegationStorageVersion::v2 => None,
 		}
 	}
