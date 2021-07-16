@@ -265,6 +265,8 @@ mod v1 {
 	/// parent-child link has gone missing.
 	#[cfg(any(feature = "try-runtime", test))]
 	pub(crate) fn post_migrate<T: Config>() -> Result<(), &'static str> {
+		//TODO: Add the try-runtime test storage to check that
+		// the total number of nodes is kept the same before and after.
 		ensure!(
 			StorageVersion::<T>::get() == DelegationStorageVersion::v2,
 			"The version after deployment is not 2 as expected."
