@@ -114,16 +114,14 @@ pub mod pallet {
 	/// It maps from a root node ID to the full root node.
 	#[pallet::storage]
 	#[pallet::getter(fn roots)]
-	pub type Roots<T> =
-		StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, deprecated::v0::DelegationRoot<T>>;
+	pub type Roots<T> = StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, deprecated::v0::DelegationRoot<T>>;
 
 	/// Delegation nodes stored on chain. DEPRECATED.
 	///
 	/// It maps from a node ID to the full delegation node.
 	#[pallet::storage]
 	#[pallet::getter(fn delegations)]
-	pub type Delegations<T> =
-		StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, deprecated::v0::DelegationNode<T>>;
+	pub type Delegations<T> = StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, deprecated::v0::DelegationNode<T>>;
 
 	/// Children delegation nodes. DEPRECATED.
 	///
@@ -287,8 +285,7 @@ pub mod pallet {
 			let delegator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
 			// Calculate the hash root
-			let hash_root =
-				Self::calculate_delegation_creation_hash(&delegation_id, &parent_id, &permissions);
+			let hash_root = Self::calculate_delegation_creation_hash(&delegation_id, &parent_id, &permissions);
 
 			// Verify that the hash root signature is correct.
 			DelegationSignatureVerificationOf::<T>::verify(&delegate, &hash_root.encode(), &delegate_signature)
@@ -325,10 +322,10 @@ pub mod pallet {
 						owner: delegate.clone(),
 						permissions,
 						revoked: false,
-					}
+					},
 				),
 				parent_id,
-				parent_node
+				parent_node,
 			);
 
 			Self::deposit_event(Event::DelegationCreated(
@@ -337,7 +334,7 @@ pub mod pallet {
 				delegation_id,
 				parent_id,
 				delegate,
-				permissions
+				permissions,
 			));
 
 			Ok(())

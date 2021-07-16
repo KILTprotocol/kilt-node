@@ -32,39 +32,50 @@ pub trait VersionMigratorTrait<Config: frame_system::Config> {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Copy, Clone, Encode, Eq, Decode, PartialEq)]
+#[derive(Copy, Clone, Encode, Eq, Decode, Ord, PartialEq, PartialOrd)]
 pub enum DelegationStorageVersion {
-	v1, v2
+	v1,
+	v2,
 }
 
+#[allow(dead_code)]
+impl DelegationStorageVersion {
+	fn latest() -> Self {
+		Self::v2
+	}
+}
+
+// All nodes will default to this, which is not bad, as in case the "real"
+// version is the latest one (i.e. the node has been started with already the
+// latest version), the migration will simply do nothing as there's nothing in
+// the old storage entries.
 impl Default for DelegationStorageVersion {
-    fn default() -> Self {
-        Self::v2
-    }
+	fn default() -> Self {
+		Self::v1
+	}
 }
 
 impl<T: Config> VersionMigratorTrait<T> for DelegationStorageVersion {
-
 	#[cfg(any(feature = "try-runtime", test))]
 	fn pre_migrate(&self) -> Result<(), &str> {
 		match *self {
 			Self::v1 => v1::pre_migrate::<T>(),
-			Self::v2 => Ok(())
+			Self::v2 => Ok(()),
 		}
 	}
 
-    fn migrate(&self) -> Weight {
+	fn migrate(&self) -> Weight {
 		match *self {
 			Self::v1 => v1::migrate::<T>(),
-			Self::v2 => 0u64
+			Self::v2 => 0u64,
 		}
-    }
+	}
 
 	#[cfg(any(feature = "try-runtime", test))]
 	fn post_migrate(&self) -> Result<(), &str> {
 		match *self {
 			Self::v1 => v1::post_migrate::<T>(),
-			Self::v2 => Ok(())
+			Self::v2 => Ok(()),
 		}
 	}
 }
@@ -78,6 +89,7 @@ mod v1 {
 			StorageVersion::<T>::get() == DelegationStorageVersion::v1,
 			"Current deployed version is not v1."
 		);
+
 		log::info!("Version storage migrating from v1 to v2");
 		Ok(())
 	}
@@ -129,8 +141,7 @@ mod v1 {
 			};
 			// In the old version, a parent None indicated the node is a child of the root.
 			let new_node_parent_id = old_node.parent.unwrap_or(old_node.root_id);
-			let mut new_node =
-				DelegationNode::<T>::new_node(old_node.root_id, new_node_parent_id, new_node_details);
+			let mut new_node = DelegationNode::<T>::new_node(old_node.root_id, new_node_parent_id, new_node_details);
 			if let Some(children_ids) = Children::<T>::take(old_node_id) {
 				new_node.children = children_ids.iter().copied().collect();
 			}
@@ -175,10 +186,7 @@ mod v1 {
 		for (node_id, node) in DelegationNodes::<T>::iter() {
 			if let Some(parent_id) = node.parent {
 				let parent_node = DelegationNodes::<T>::get(parent_id).expect("Parent node should be in the storage.");
-				ensure!(
-					parent_node.children.contains(&node_id),
-					"Parent-child wrong"
-				);
+				ensure!(parent_node.children.contains(&node_id), "Parent-child wrong");
 			}
 		}
 		log::info!("Version storage migrated from v1 to v2");
@@ -194,8 +202,23 @@ mod v1 {
 		use mock::Test as TestRuntime;
 
 		#[test]
+		fn fail_version_higher() {
+			let mut ext = mock::ExtBuilder::default()
+				.with_storage_version(DelegationStorageVersion::v2)
+				.build(None);
+			ext.execute_with(|| {
+				assert!(
+					pre_migrate::<TestRuntime>().is_err(),
+					"Pre-migration for v1 should fail."
+				);
+			});
+		}
+
+		#[test]
 		fn ok_no_delegations() {
-			let mut ext = mock::ExtBuilder::default().with_storage_version(DelegationStorageVersion::v1).build(None);
+			let mut ext = mock::ExtBuilder::default()
+				.with_storage_version(DelegationStorageVersion::v1)
+				.build(None);
 			ext.execute_with(|| {
 				assert!(
 					pre_migrate::<TestRuntime>().is_ok(),
@@ -213,7 +236,9 @@ mod v1 {
 
 		#[test]
 		fn ok_only_root() {
-			let mut ext = mock::ExtBuilder::default().with_storage_version(DelegationStorageVersion::v1).build(None);
+			let mut ext = mock::ExtBuilder::default()
+				.with_storage_version(DelegationStorageVersion::v1)
+				.build(None);
 			ext.execute_with(|| {
 				let alice = mock::get_ed25519_account(mock::get_alice_ed25519().public());
 				let old_root_id = mock::get_delegation_id(true);
@@ -252,19 +277,29 @@ mod v1 {
 
 		#[test]
 		fn ok_root_two_children() {
-			let mut ext = mock::ExtBuilder::default().with_storage_version(DelegationStorageVersion::v1).build(None);
+			let mut ext = mock::ExtBuilder::default()
+				.with_storage_version(DelegationStorageVersion::v1)
+				.build(None);
 			ext.execute_with(|| {
 				let alice = mock::get_ed25519_account(mock::get_alice_ed25519().public());
 				let bob = mock::get_sr25519_account(mock::get_bob_sr25519().public());
 				let old_root_id = mock::get_delegation_id(true);
-				let old_root_node =
-					crate::deprecated::v0::DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash(true), alice.clone());
+				let old_root_node = crate::deprecated::v0::DelegationRoot::<TestRuntime>::new(
+					ctype::mock::get_ctype_hash(true),
+					alice.clone(),
+				);
 				let old_node_id_1 = mock::get_delegation_id(false);
-				let old_node_1 =
-					crate::deprecated::v0::DelegationNode::<TestRuntime>::new_root_child(old_root_id, alice, Permissions::DELEGATE);
+				let old_node_1 = crate::deprecated::v0::DelegationNode::<TestRuntime>::new_root_child(
+					old_root_id,
+					alice,
+					Permissions::DELEGATE,
+				);
 				let old_node_id_2 = mock::get_delegation_id_2(true);
-				let old_node_2 =
-					crate::deprecated::v0::DelegationNode::<TestRuntime>::new_root_child(old_root_id, bob, Permissions::ATTEST);
+				let old_node_2 = crate::deprecated::v0::DelegationNode::<TestRuntime>::new_root_child(
+					old_root_id,
+					bob,
+					Permissions::ATTEST,
+				);
 				Roots::insert(old_root_id, old_root_node.clone());
 				Delegations::insert(old_node_id_1, old_node_1.clone());
 				Delegations::insert(old_node_id_2, old_node_2.clone());
@@ -322,20 +357,23 @@ mod v1 {
 pub struct DelegationStorageMigrator<T>(PhantomData<T>);
 
 impl<T: Config> DelegationStorageMigrator<T> {
-
 	fn get_next_storage_version(current: DelegationStorageVersion) -> Option<DelegationStorageVersion> {
 		match current {
 			DelegationStorageVersion::v1 => Some(DelegationStorageVersion::v2),
-			DelegationStorageVersion::v2 => None
+			DelegationStorageVersion::v2 => None,
 		}
 	}
 
 	#[cfg(any(feature = "try-runtime", test))]
 	pub(crate) fn pre_migrate() -> Result<(), &'static str> {
 		ensure!(
-			StorageVersion::<T>::get() != DelegationStorageVersion::default(),
-			"Already the latest (default) storage version."
+			StorageVersion::<T>::get() < DelegationStorageVersion::latest(),
+			"Already the latest storage version."
 		);
+
+		// Don't need to check for any other pre_migrate, as in try-runtime it is also
+		// called in the migrate() function. Same applies for post_migrate checks for
+		// each version migrator.
 
 		Ok(())
 	}
@@ -346,7 +384,7 @@ impl<T: Config> DelegationStorageMigrator<T> {
 
 		while let Some(ver) = current_version {
 			#[cfg(feature = "try-runtime")]
-			if let Err(err) =  <DelegationStorageVersion as VersionMigratorTrait<T>>::pre_migrate(&ver) {
+			if let Err(err) = <DelegationStorageVersion as VersionMigratorTrait<T>>::pre_migrate(&ver) {
 				panic!("{:?}", err);
 			}
 			let consumed_weight = <DelegationStorageVersion as VersionMigratorTrait<T>>::migrate(&ver);
@@ -364,8 +402,8 @@ impl<T: Config> DelegationStorageMigrator<T> {
 	#[cfg(any(feature = "try-runtime", test))]
 	pub(crate) fn post_migrate() -> Result<(), &'static str> {
 		ensure!(
-			StorageVersion::<T>::get() == DelegationStorageVersion::default(),
-			"Not updated to the latest (default) version."
+			StorageVersion::<T>::get() == DelegationStorageVersion::latest(),
+			"Not updated to the latest version."
 		);
 
 		Ok(())
@@ -379,8 +417,10 @@ mod tests {
 	use mock::Test as TestRuntime;
 
 	#[test]
-	fn ok_v1_migration() {
-		let mut ext = mock::ExtBuilder::default().with_storage_version(DelegationStorageVersion::v1).build(None);
+	fn ok_from_v1_migration() {
+		let mut ext = mock::ExtBuilder::default()
+			.with_storage_version(DelegationStorageVersion::v1)
+			.build(None);
 		ext.execute_with(|| {
 			assert!(
 				DelegationStorageMigrator::<TestRuntime>::pre_migrate().is_ok(),

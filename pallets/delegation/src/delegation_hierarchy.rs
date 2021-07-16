@@ -54,7 +54,6 @@ impl Default for Permissions {
 	}
 }
 
-
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
 pub struct DelegationNode<T: Config> {
 	pub hierarchy_root_id: DelegationNodeIdOf<T>,
@@ -82,7 +81,7 @@ impl<T: Config> DelegationNode<T> {
 			hierarchy_root_id,
 			parent: Some(parent),
 			children: BTreeSet::new(),
-			details
+			details,
 		}
 	}
 
