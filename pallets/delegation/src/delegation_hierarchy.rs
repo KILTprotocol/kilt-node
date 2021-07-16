@@ -108,7 +108,7 @@ impl<T: Config> DelegationDetails<T> {
 }
 
 #[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd)]
-pub struct DelegationHierarchyInfo<T: Config> {
+pub struct DelegationHierarchyDetails<T: Config> {
 	pub ctype_hash: CtypeHashOf<T>,
 }
 

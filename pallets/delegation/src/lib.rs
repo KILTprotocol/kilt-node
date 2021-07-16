@@ -127,7 +127,7 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn delegation_hierarchies)]
 	pub type DelegationHierarchies<T> =
-		StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, DelegationHierarchyInfo<T>>;
+		StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, DelegationHierarchyDetails<T>>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -225,7 +225,7 @@ pub mod pallet {
 
 			Self::create_and_store_new_hierarchy(
 				root_node_id,
-				DelegationHierarchyInfo::<T> { ctype_hash },
+				DelegationHierarchyDetails::<T> { ctype_hash },
 				creator.clone(),
 			);
 
@@ -450,7 +450,7 @@ impl<T: Config> Pallet<T> {
 
 	fn create_and_store_new_hierarchy(
 		root_id: DelegationNodeIdOf<T>,
-		hierarchy_info: DelegationHierarchyInfo<T>,
+		hierarchy_info: DelegationHierarchyDetails<T>,
 		hierarchy_owner: DelegatorIdOf<T>,
 	) {
 		let root_node = DelegationNode::new_root_node(root_id, DelegationDetails::default_with_owner(hierarchy_owner));

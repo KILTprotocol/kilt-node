@@ -16,10 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use sp_std::marker::PhantomData;
-
 use codec::{Decode, Encode};
-use sp_std::collections::btree_map::BTreeMap;
+use sp_std::{collections::btree_map::BTreeMap, marker::PhantomData};
 
 use crate::*;
 
@@ -51,7 +49,7 @@ impl DelegationStorageVersion {
 // the old storage entries.
 impl Default for DelegationStorageVersion {
 	fn default() -> Self {
-		Self::v2
+		Self::v1
 	}
 }
 
@@ -84,7 +82,6 @@ mod v1 {
 	use super::*;
 
 	use frame_support::{IterableStorageMap, StoragePrefixedMap, StorageMap};
-	use frame_support::traits::PalletInfoAccess;
 
 	#[cfg(any(feature = "try-runtime", test))]
 	pub(crate) fn pre_migrate<T: Config>() -> Result<(), &'static str> {
@@ -128,8 +125,8 @@ mod v1 {
 	}
 
 	fn migrate_roots<T: Config>(new_nodes: &mut BTreeMap<DelegationNodeIdOf<T>, DelegationNode<T>>) -> Weight {
-		let total_weight = deprecated::v1::storage::Roots::<T>::drain().fold(0u64, |mut total_weight, (old_root_id, old_root_node)| {
-			let new_hierarchy_info = DelegationHierarchyInfo::<T> {
+		let total_weight = deprecated::v1::storage::Roots::<T>::iter().fold(0u64, |mut total_weight, (old_root_id, old_root_node)| {
+			let new_hierarchy_info = DelegationHierarchyDetails::<T> {
 				ctype_hash: old_root_node.ctype_hash,
 			};
 			let new_root_details = DelegationDetails::<T> {
@@ -157,13 +154,13 @@ mod v1 {
 
 			total_weight
 		});
-		frame_support::migration::remove_storage_prefix(<Pallet<T>>::name().as_bytes(), &deprecated::v1::storage::Children::<T>::final_prefix()[..], b"");
+		frame_support::migration::remove_storage_prefix(&deprecated::v1::storage::Roots::<T>::module_prefix()[..], &deprecated::v1::storage::Roots::<T>::storage_prefix()[..], b"");
 
 		total_weight
 	}
 
 	fn migrate_nodes<T: Config>(new_nodes: &mut BTreeMap<DelegationNodeIdOf<T>, DelegationNode<T>>, initial_weight: Weight) -> Weight {
-		let total_weight = deprecated::v1::storage::Delegations::<T>:: drain().fold(initial_weight, |mut total_weight, (old_node_id, old_node)| {
+		let total_weight = deprecated::v1::storage::Delegations::<T>::iter().fold(initial_weight, |mut total_weight, (old_node_id, old_node)| {
 			let new_node_details = DelegationDetails::<T> {
 				owner: old_node.owner,
 				permissions: old_node.permissions,
@@ -183,8 +180,8 @@ mod v1 {
 
 			total_weight
 		});
-		frame_support::migration::remove_storage_prefix(<Pallet<T>>::name().as_bytes(), &deprecated::v1::storage::Delegations::<T>::final_prefix()[..], b"");
-		frame_support::migration::remove_storage_prefix(<Pallet<T>>::name().as_bytes(), &deprecated::v1::storage::Children::<T>::final_prefix()[..], b"");
+		frame_support::migration::remove_storage_prefix(&deprecated::v1::storage::Delegations::<T>::module_prefix()[..], &deprecated::v1::storage::Delegations::<T>::storage_prefix()[..], b"");
+		frame_support::migration::remove_storage_prefix(&deprecated::v1::storage::Children::<T>::module_prefix()[..], &deprecated::v1::storage::Children::<T>::storage_prefix()[..], b"");
 
 		total_weight
 	}
@@ -237,11 +234,10 @@ mod v1 {
 
 	#[cfg(test)]
 	mod tests {
-		use super::*;
-
 		use sp_core::Pair;
 
-		use mock::Test as TestRuntime;
+		use crate::mock::Test as TestRuntime;
+		use super::*;
 
 		#[test]
 		fn fail_version_higher() {
@@ -530,7 +526,7 @@ impl<T: Config> DelegationStorageMigrator<T> {
 mod tests {
 	use super::*;
 
-	use mock::Test as TestRuntime;
+	use crate::mock::Test as TestRuntime;
 
 	#[test]
 	fn ok_from_v1_migration() {
@@ -548,6 +544,25 @@ mod tests {
 			assert!(
 				DelegationStorageMigrator::<TestRuntime>::post_migrate().is_ok(),
 				"Storage post-migrate from v1 should not fail."
+			);
+		});
+	}
+
+	#[test]
+	fn ok_from_default_migration() {
+		let mut ext = mock::ExtBuilder::default()
+			.build(None);
+		ext.execute_with(|| {
+			assert!(
+				DelegationStorageMigrator::<TestRuntime>::pre_migrate().is_ok(),
+				"Storage pre-migrate from default version should not fail."
+			);
+
+			DelegationStorageMigrator::<TestRuntime>::migrate();
+
+			assert!(
+				DelegationStorageMigrator::<TestRuntime>::post_migrate().is_ok(),
+				"Storage post-migrate from default version should not fail."
 			);
 		});
 	}
