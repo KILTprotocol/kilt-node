@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-pub(crate) mod v0 {
+pub(crate) mod v1 {
 	use codec::{Decode, Encode};
 
 	use crate::*;
@@ -26,15 +26,16 @@ pub(crate) mod v0 {
 	pub struct DelegationRoot<T: Config> {
 		/// The hash of the CTYPE that delegated attesters within this trust
 		/// hierarchy can attest.
-		pub ctype_hash: CtypeHashOf<T>,
+		pub(crate) ctype_hash: CtypeHashOf<T>,
 		/// The identifier of the root owner.
-		pub owner: DelegatorIdOf<T>,
+		pub(crate) owner: DelegatorIdOf<T>,
 		/// The flag indicating whether the root has been revoked or not.
-		pub revoked: bool,
+		pub(crate) revoked: bool,
 	}
 
 	impl<T: Config> DelegationRoot<T> {
-		pub fn new(ctype_hash: CtypeHashOf<T>, owner: DelegatorIdOf<T>) -> Self {
+		#[cfg(test)]
+		pub(crate) fn new(ctype_hash: CtypeHashOf<T>, owner: DelegatorIdOf<T>) -> Self {
 			DelegationRoot {
 				ctype_hash,
 				owner,
@@ -47,18 +48,18 @@ pub(crate) mod v0 {
 	#[derive(Clone, Debug, Encode, Decode, PartialEq)]
 	pub struct DelegationNode<T: Config> {
 		/// The ID of the delegation hierarchy root.
-		pub root_id: DelegationNodeIdOf<T>,
+		pub(crate)  root_id: DelegationNodeIdOf<T>,
 		/// \[OPTIONAL\] The ID of the parent node. If None, the node is
 		/// considered a direct child of the root node.
-		pub parent: Option<DelegationNodeIdOf<T>>,
+		pub(crate)  parent: Option<DelegationNodeIdOf<T>>,
 		/// The identifier of the owner of the delegation node, i.e., the
 		/// delegate.
-		pub owner: DelegatorIdOf<T>,
+		pub(crate)  owner: DelegatorIdOf<T>,
 		/// The permission flags for the operations the delegate is allowed to
 		/// perform.
-		pub permissions: Permissions,
+		pub(crate)  permissions: Permissions,
 		/// The flag indicating whether the delegation has been revoked or not.
-		pub revoked: bool,
+		pub(crate)  revoked: bool,
 	}
 
 	impl<T: Config> DelegationNode<T> {
@@ -70,7 +71,8 @@ pub(crate) mod v0 {
 		///   the new delegate
 		/// * permissions: the permission flags for the operations the delegate
 		///   is allowed to perform
-		pub fn new_root_child(
+		#[cfg(test)]
+		pub(crate) fn new_root_child(
 			root_id: DelegationNodeIdOf<T>,
 			owner: DelegatorIdOf<T>,
 			permissions: Permissions,
@@ -93,7 +95,8 @@ pub(crate) mod v0 {
 		///   the new delegate
 		/// * permissions: the permission flags for the operations the delegate
 		///   is allowed to perform
-		pub fn new_node_child(
+		#[cfg(test)]
+		pub(crate) fn new_node_child(
 			root_id: DelegationNodeIdOf<T>,
 			parent: DelegationNodeIdOf<T>,
 			owner: DelegatorIdOf<T>,
@@ -105,6 +108,25 @@ pub(crate) mod v0 {
 				owner,
 				permissions,
 				revoked: false,
+			}
+		}
+	}
+
+	pub(crate) mod storage {
+		pub use frame_support::{decl_module, decl_storage};
+		pub use sp_std::prelude::*;
+
+		use crate::Config;
+
+		decl_module! {
+			pub struct OldPallet<T: Config> for enum Call where origin: T::Origin {}
+		}
+
+		decl_storage! {
+			trait Store for OldPallet<T: Config> as Delegation {
+				pub(crate) Roots get(fn roots): map hasher(blake2_128_concat) crate::DelegationNodeIdOf<T> => Option<super::DelegationRoot<T>>;
+				pub(crate) Delegations get(fn delegations): map hasher(blake2_128_concat) crate::DelegationNodeIdOf<T> => Option<super::DelegationNode<T>>;
+				pub(crate) Children get(fn children): map hasher(blake2_128_concat) crate::DelegationNodeIdOf<T> => Option<Vec<crate::DelegationNodeIdOf<T>>>;
 			}
 		}
 	}
