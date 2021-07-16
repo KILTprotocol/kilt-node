@@ -314,6 +314,7 @@ pub struct ExtBuilder {
 	ctype_builder: Option<ctype_mock::ExtBuilder>,
 	delegation_hierarchies_stored: Vec<(TestDelegationNodeId, DelegationHierarchyInfo<Test>, DelegatorIdOf<Test>)>,
 	delegations_stored: Vec<(TestDelegationNodeId, DelegationNode<Test>)>,
+	storage_version: DelegationStorageVersion,
 }
 
 impl Default for ExtBuilder {
@@ -322,6 +323,7 @@ impl Default for ExtBuilder {
 			ctype_builder: None,
 			delegation_hierarchies_stored: vec![],
 			delegations_stored: vec![],
+			storage_version: DelegationStorageVersion::default(),
 		}
 	}
 }
@@ -337,6 +339,11 @@ impl ExtBuilder {
 
 	pub fn with_delegations(mut self, delegations: Vec<(TestDelegationNodeId, DelegationNode<Test>)>) -> Self {
 		self.delegations_stored = delegations;
+		self
+	}
+
+	pub fn with_storage_version(mut self, storage_version: DelegationStorageVersion) -> Self {
+		self.storage_version = storage_version;
 		self
 	}
 
@@ -379,6 +386,10 @@ impl ExtBuilder {
 				})
 			});
 		}
+
+		ext.execute_with(|| {
+			delegation::StorageVersion::<Test>::set(self.storage_version);
+		});
 
 		ext
 	}

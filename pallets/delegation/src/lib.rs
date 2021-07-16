@@ -96,16 +96,16 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		#[cfg(feature = "try-runtime")]
 		fn pre_upgrade() -> Result<(), &'static str> {
-			migrations::DelegationStorageMigration::<T>::pre_migrate()
+			migrations::DelegationStorageMigrator::<T>::pre_migrate()
 		}
 
 		fn on_runtime_upgrade() -> Weight {
-			migrations::DelegationStorageMigration::<T>::migrate()
+			migrations::DelegationStorageMigrator::<T>::migrate()
 		}
 
 		#[cfg(feature = "try-runtime")]
 		fn post_upgrade() -> Result<(), &'static str> {
-			migrations::DelegationStorageMigration::<T>::post_migrate()
+			migrations::DelegationStorageMigrator::<T>::post_migrate()
 		}
 	}
 
@@ -136,7 +136,7 @@ pub mod pallet {
 	/// Contains the latest version migrator used.
 	#[pallet::storage]
 	#[pallet::getter(fn last_version_migration_used)]
-	pub(crate) type LastVersionMigrationUsed<T> = StorageValue<_, DelegationStorageVersion, ValueQuery>;
+	pub(crate) type StorageVersion<T> = StorageValue<_, DelegationStorageVersion, ValueQuery>;
 
 	/// Delegation nodes stored on chain.
 	///

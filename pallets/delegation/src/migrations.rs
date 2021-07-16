@@ -23,23 +23,16 @@ use sp_std::collections::btree_map::BTreeMap;
 
 use crate::*;
 
-// Contains the latest version that can be upgraded.
-// For instance, if v1 of the storage is the last one available, only v0 would
-// be upgradeable to v1, so the value of LATEST_UPGRADEABLE_VERSION would be 0.
-// This needs to be bumped (by 1) every time a new storage migration should take
-// place. Along with this, a new version migrator must be defined and added to
-// the `migrations` vector or the `StorageMigrator`.
-
-pub trait VersionMigratorTrait<T> {
-	#[cfg(feature = "try-runtime")]
+pub trait VersionMigratorTrait<Config: frame_system::Config> {
+	#[cfg(any(feature = "try-runtime", test))]
 	fn pre_migrate(&self) -> Result<(), &str>;
 	fn migrate(&self) -> Weight;
-	#[cfg(feature = "try-runtime")]
+	#[cfg(any(feature = "try-runtime", test))]
 	fn post_migrate(&self) -> Result<(), &str>;
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Encode, Eq, Decode, PartialEq)]
+#[derive(Copy, Clone, Encode, Eq, Decode, PartialEq)]
 pub enum DelegationStorageVersion {
 	v1, v2
 }
@@ -50,54 +43,46 @@ impl Default for DelegationStorageVersion {
     }
 }
 
-impl DelegationStorageVersion {
-	pub(crate) fn get_next_version_migrator(&self) -> Option<Self> {
-		match *self {
-			Self::v1 => Some(Self::v2),
-			_ => None
-		}
-	}
-}
-
 impl<T: Config> VersionMigratorTrait<T> for DelegationStorageVersion {
 
-	#[cfg(feature = "try-runtime")]
+	#[cfg(any(feature = "try-runtime", test))]
 	fn pre_migrate(&self) -> Result<(), &str> {
 		match *self {
-			Self::v1 => Self::pre_migrate_v1::<T>(),
-			_ => Ok(())
+			Self::v1 => v1::pre_migrate::<T>(),
+			Self::v2 => Ok(())
 		}
 	}
 
     fn migrate(&self) -> Weight {
 		match *self {
-			Self::v1 => Self::migrate_v1::<T>(),
-			_ => 0u64
+			Self::v1 => v1::migrate::<T>(),
+			Self::v2 => 0u64
 		}
     }
 
-	#[cfg(feature = "try-runtime")]
+	#[cfg(any(feature = "try-runtime", test))]
 	fn post_migrate(&self) -> Result<(), &str> {
 		match *self {
-			Self::v1 => Self::post_migrate_v1::<T>(),
-			_ => Ok(())
+			Self::v1 => v1::post_migrate::<T>(),
+			Self::v2 => Ok(())
 		}
 	}
 }
 
-// v0 functions
-impl DelegationStorageVersion {
-	#[cfg(feature = "try-runtime")]
-	fn pre_migrate_v1<T: Config>() -> Result<(), &str> {
+mod v1 {
+	use super::*;
+
+	#[cfg(any(feature = "try-runtime", test))]
+	pub(crate) fn pre_migrate<T: Config>() -> Result<(), &'static str> {
 		ensure!(
-			LastVersionMigrationUsed::<T>::get() == Self::v1,
+			StorageVersion::<T>::get() == DelegationStorageVersion::v1,
 			"Current deployed version is not v1."
 		);
 		log::info!("Version storage migrating from v1 to v2");
 		Ok(())
 	}
 
-	fn migrate_v1<T: Config>() -> Weight {
+	pub(crate) fn migrate<T: Config>() -> Weight {
 		log::info!("v1 -> v2 delegation storage migrator started!");
 		let mut total_weight = 0u64;
 
@@ -173,17 +158,18 @@ impl DelegationStorageVersion {
 			total_weight = total_weight.saturating_add(T::DbWeight::get().writes(1));
 		}
 
-		LastVersionMigrationUsed::<T>::set(Self::v2);
-		// Adds a write from LastUpgradeVersion::set() weight
+		StorageVersion::<T>::set(DelegationStorageVersion::v2);
+		// Adds a write from StorageVersion::set() weight
 		total_weight = total_weight.saturating_add(T::DbWeight::get().writes(1));
 		log::debug!("Total weight consumed: {}", total_weight);
 		log::info!("v1 -> v2 delegation storage migrator finished!");
 		total_weight
 	}
 
-	fn post_migrate_v1<T: Config>() -> Result<(), &'static str> {
+	#[cfg(any(feature = "try-runtime", test))]
+	pub(crate) fn post_migrate<T: Config>() -> Result<(), &'static str> {
 		ensure!(
-			LastVersionMigrationUsed::<T>::get() == Self::v2,
+			StorageVersion::<T>::get() == DelegationStorageVersion::v2,
 			"The version after deployment is not 2 as expected."
 		);
 		for (node_id, node) in DelegationNodes::<T>::iter() {
@@ -198,270 +184,215 @@ impl DelegationStorageVersion {
 		log::info!("Version storage migrated from v1 to v2");
 		Ok(())
 	}
+
+	#[cfg(test)]
+	mod tests {
+		use super::*;
+
+		use sp_core::Pair;
+
+		use mock::Test as TestRuntime;
+
+		#[test]
+		fn ok_no_delegations() {
+			let mut ext = mock::ExtBuilder::default().with_storage_version(DelegationStorageVersion::v1).build(None);
+			ext.execute_with(|| {
+				assert!(
+					pre_migrate::<TestRuntime>().is_ok(),
+					"Pre-migration for v1 should not fail."
+				);
+
+				migrate::<TestRuntime>();
+
+				assert!(
+					post_migrate::<TestRuntime>().is_ok(),
+					"Post-migration for v1 should not fail."
+				);
+			});
+		}
+
+		#[test]
+		fn ok_only_root() {
+			let mut ext = mock::ExtBuilder::default().with_storage_version(DelegationStorageVersion::v1).build(None);
+			ext.execute_with(|| {
+				let alice = mock::get_ed25519_account(mock::get_alice_ed25519().public());
+				let old_root_id = mock::get_delegation_id(true);
+				let old_root_node =
+					crate::deprecated::v0::DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash(true), alice);
+				Roots::insert(old_root_id, old_root_node.clone());
+
+				assert!(
+					pre_migrate::<TestRuntime>().is_ok(),
+					"Pre-migration for v1 should not fail."
+				);
+
+				migrate::<TestRuntime>();
+
+				assert!(
+					post_migrate::<TestRuntime>().is_ok(),
+					"Post-migration for v1 should not fail."
+				);
+
+				assert_eq!(Roots::<TestRuntime>::iter_values().count(), 0);
+				assert_eq!(Delegations::<TestRuntime>::iter_values().count(), 0);
+				assert_eq!(Children::<TestRuntime>::iter_values().count(), 0);
+
+				let new_stored_hierarchy = DelegationHierarchies::<TestRuntime>::get(old_root_id)
+					.expect("New delegation hierarchy should exist in the storage.");
+				assert_eq!(new_stored_hierarchy.ctype_hash, old_root_node.ctype_hash);
+				let new_stored_root = DelegationNodes::<TestRuntime>::get(old_root_id)
+					.expect("New delegation root should exist in the storage.");
+				assert_eq!(new_stored_root.hierarchy_root_id, old_root_id);
+				assert!(new_stored_root.parent.is_none());
+				assert!(new_stored_root.children.is_empty());
+				assert_eq!(new_stored_root.details.owner, old_root_node.owner);
+				assert_eq!(new_stored_root.details.revoked, old_root_node.revoked);
+			});
+		}
+
+		#[test]
+		fn ok_root_two_children() {
+			let mut ext = mock::ExtBuilder::default().with_storage_version(DelegationStorageVersion::v1).build(None);
+			ext.execute_with(|| {
+				let alice = mock::get_ed25519_account(mock::get_alice_ed25519().public());
+				let bob = mock::get_sr25519_account(mock::get_bob_sr25519().public());
+				let old_root_id = mock::get_delegation_id(true);
+				let old_root_node =
+					crate::deprecated::v0::DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash(true), alice.clone());
+				let old_node_id_1 = mock::get_delegation_id(false);
+				let old_node_1 =
+					crate::deprecated::v0::DelegationNode::<TestRuntime>::new_root_child(old_root_id, alice, Permissions::DELEGATE);
+				let old_node_id_2 = mock::get_delegation_id_2(true);
+				let old_node_2 =
+					crate::deprecated::v0::DelegationNode::<TestRuntime>::new_root_child(old_root_id, bob, Permissions::ATTEST);
+				Roots::insert(old_root_id, old_root_node.clone());
+				Delegations::insert(old_node_id_1, old_node_1.clone());
+				Delegations::insert(old_node_id_2, old_node_2.clone());
+				Children::<TestRuntime>::insert(old_root_id, vec![old_node_id_1, old_node_id_2]);
+
+				assert!(
+					pre_migrate::<TestRuntime>().is_ok(),
+					"Pre-migration for v1 should not fail."
+				);
+
+				migrate::<TestRuntime>();
+
+				assert!(
+					post_migrate::<TestRuntime>().is_ok(),
+					"Post-migration for v1 should not fail."
+				);
+
+				assert_eq!(Roots::<TestRuntime>::iter_values().count(), 0);
+				assert_eq!(Delegations::<TestRuntime>::iter_values().count(), 0);
+				assert_eq!(Children::<TestRuntime>::iter_values().count(), 0);
+
+				let new_stored_hierarchy = DelegationHierarchies::<TestRuntime>::get(old_root_id)
+					.expect("New delegation hierarchy should exist in the storage.");
+				assert_eq!(new_stored_hierarchy.ctype_hash, old_root_node.ctype_hash);
+				let new_stored_root = DelegationNodes::<TestRuntime>::get(old_root_id)
+					.expect("New delegation root should exist in the storage.");
+				assert_eq!(new_stored_root.hierarchy_root_id, old_root_id);
+				assert!(new_stored_root.parent.is_none());
+				assert_eq!(new_stored_root.children.len(), 2);
+				assert!(new_stored_root.children.contains(&old_node_id_1));
+				assert!(new_stored_root.children.contains(&old_node_id_2));
+				assert_eq!(new_stored_root.details.owner, old_root_node.owner);
+				assert_eq!(new_stored_root.details.revoked, old_root_node.revoked);
+
+				let new_stored_node_1 = DelegationNodes::<TestRuntime>::get(old_node_id_1)
+					.expect("New delegation 1 should exist in the storage.");
+				assert_eq!(new_stored_node_1.hierarchy_root_id, old_root_id);
+				assert_eq!(new_stored_node_1.parent, Some(old_root_id));
+				assert!(new_stored_node_1.children.is_empty());
+				assert_eq!(new_stored_node_1.details.owner, old_node_1.owner);
+				assert_eq!(new_stored_node_1.details.revoked, old_node_1.revoked);
+
+				let new_stored_node_2 = DelegationNodes::<TestRuntime>::get(old_node_id_2)
+					.expect("New delegation 2 should exist in the storage.");
+				assert_eq!(new_stored_node_2.hierarchy_root_id, old_root_id);
+				assert_eq!(new_stored_node_2.parent, Some(old_root_id));
+				assert!(new_stored_node_2.children.is_empty());
+				assert_eq!(new_stored_node_2.details.owner, old_node_2.owner);
+				assert_eq!(new_stored_node_2.details.revoked, old_node_2.revoked);
+			});
+		}
+	}
 }
 
-pub struct DelegationStorageMigration<T>(PhantomData<T>);
+pub struct DelegationStorageMigrator<T>(PhantomData<T>);
 
-impl<T: Config> DelegationStorageMigration<T> {
-	#[cfg(feature = "try-runtime")]
-	pub(crate) fn pre_migrate() -> Result<(), &str> {
+impl<T: Config> DelegationStorageMigrator<T> {
+
+	fn get_next_storage_version(current: DelegationStorageVersion) -> Option<DelegationStorageVersion> {
+		match current {
+			DelegationStorageVersion::v1 => Some(DelegationStorageVersion::v2),
+			DelegationStorageVersion::v2 => None
+		}
+	}
+
+	#[cfg(any(feature = "try-runtime", test))]
+	pub(crate) fn pre_migrate() -> Result<(), &'static str> {
 		ensure!(
-			LastVersionMigrationUsed::get() != DelegationStorageVersion::default(),
-			"Already the latest (default) storage migrator."
+			StorageVersion::<T>::get() != DelegationStorageVersion::default(),
+			"Already the latest (default) storage version."
 		);
+
+		Ok(())
 	}
 
 	pub(crate) fn migrate() -> Weight {
-		0u64
+		let mut current_version: Option<DelegationStorageVersion> = Some(StorageVersion::<T>::get());
+		let mut total_weight = T::DbWeight::get().reads(1);
+
+		while let Some(ver) = current_version {
+			#[cfg(feature = "try-runtime")]
+			if let Err(err) =  <DelegationStorageVersion as VersionMigratorTrait<T>>::pre_migrate(&ver) {
+				panic!("{:?}", err);
+			}
+			let consumed_weight = <DelegationStorageVersion as VersionMigratorTrait<T>>::migrate(&ver);
+			total_weight = total_weight.saturating_add(consumed_weight);
+			#[cfg(feature = "try-runtime")]
+			if let Err(err) = <DelegationStorageVersion as VersionMigratorTrait<T>>::post_migrate(&ver) {
+				panic!("{:?}", err);
+			}
+			current_version = Self::get_next_storage_version(ver);
+		}
+
+		total_weight
 	}
 
-	#[cfg(feature = "try-runtime")]
-	pub(crate) fn post_migrate() -> Result<(), &str> {
+	#[cfg(any(feature = "try-runtime", test))]
+	pub(crate) fn post_migrate() -> Result<(), &'static str> {
 		ensure!(
-			LastUpgradeVersion::<T>::get() == DelegationStorageVersion::default(),
-			"Not updated to the latest version."
+			StorageVersion::<T>::get() == DelegationStorageVersion::default(),
+			"Not updated to the latest (default) version."
 		);
 
 		Ok(())
 	}
 }
 
-// 	#[cfg(test)]
-// 	mod tests {
-// 		use super::*;
+#[cfg(test)]
+mod tests {
+	use super::*;
 
-// 		use mock::Test as TestRuntime;
-// 		use sp_core::Pair;
+	use mock::Test as TestRuntime;
 
-// 		fn get_storage_migrator() -> StorageMigrator<TestRuntime> {
-// 			StorageMigrator::<TestRuntime>::new()
-// 		}
+	#[test]
+	fn ok_v1_migration() {
+		let mut ext = mock::ExtBuilder::default().with_storage_version(DelegationStorageVersion::v1).build(None);
+		ext.execute_with(|| {
+			assert!(
+				DelegationStorageMigrator::<TestRuntime>::pre_migrate().is_ok(),
+				"Storage pre-migrate from v1 should not fail."
+			);
 
-// 		fn init_logger() {
-// 			let _ = env_logger::builder().is_test(true).try_init();
-// 		}
+			DelegationStorageMigrator::<TestRuntime>::migrate();
 
-// 		#[test]
-// 		fn ok_no_delegations() {
-// 			let migrator = get_storage_migrator();
-// 			let mut ext = mock::ExtBuilder::default().build(None);
-// 			ext.execute_with(|| {
-// 				assert!(
-// 					migrator.pre_migration().is_ok(),
-// 					"Pre-migration for v0 should not fail."
-// 				);
-
-// 				migrator.migrate();
-
-// 				assert!(
-// 					migrator.post_migration().is_ok(),
-// 					"Post-migration for v0 should not fail."
-// 				);
-// 			});
-// 		}
-
-// 		#[test]
-// 		fn ok_only_root() {
-// 			init_logger();
-// 			let migrator = get_storage_migrator();
-// 			let mut ext = mock::ExtBuilder::default().build(None);
-// 			ext.execute_with(|| {
-// 				let alice = mock::get_ed25519_account(mock::get_alice_ed25519().public());
-// 				let old_root_id = mock::get_delegation_id(true);
-// 				let old_root_node =
-// 					crate::deprecated::v0::DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash(true), alice);
-// 				Roots::insert(old_root_id, old_root_node.clone());
-
-// 				assert!(
-// 					migrator.pre_migration().is_ok(),
-// 					"Pre-migration for v0 should not fail."
-// 				);
-
-// 				migrator.migrate();
-
-// 				assert!(
-// 					migrator.post_migration().is_ok(),
-// 					"Post-migration for v0 should not fail."
-// 				);
-
-// 				assert_eq!(Roots::<TestRuntime>::iter_values().count(), 0);
-// 				assert_eq!(Delegations::<TestRuntime>::iter_values().count(), 0);
-// 				assert_eq!(Children::<TestRuntime>::iter_values().count(), 0);
-
-// 				let new_stored_hierarchy = DelegationHierarchies::<TestRuntime>::get(old_root_id)
-// 					.expect("New delegation hierarchy should exist in the storage.");
-// 				assert_eq!(new_stored_hierarchy.ctype_hash, old_root_node.ctype_hash);
-// 				let new_stored_root = DelegationNodes::<TestRuntime>::get(old_root_id)
-// 					.expect("New delegation root should exist in the storage.");
-// 				assert_eq!(new_stored_root.hierarchy_root_id, old_root_id);
-// 				assert!(new_stored_root.parent.is_none());
-// 				assert!(new_stored_root.children.is_empty());
-// 				assert_eq!(new_stored_root.details.owner, old_root_node.owner);
-// 				assert_eq!(new_stored_root.details.revoked, old_root_node.revoked);
-// 			});
-// 		}
-
-// 		#[test]
-// 		fn ok_three_level_hierarchy() {
-// 			init_logger();
-// 			let migrator = get_storage_migrator();
-// 			let mut ext = mock::ExtBuilder::default().build(None);
-// 			ext.execute_with(|| {
-// 				let alice = mock::get_ed25519_account(mock::get_alice_ed25519().public());
-// 				let bob = mock::get_sr25519_account(mock::get_bob_sr25519().public());
-// 				let old_root_id = mock::get_delegation_id(true);
-// 				let old_root_node =
-// 					crate::deprecated::v0::DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash(true), alice.clone());
-// 				let old_parent_id = mock::get_delegation_id(false);
-// 				let old_parent_node =
-// 					crate::deprecated::v0::DelegationNode::<TestRuntime>::new_root_child(old_root_id, alice, Permissions::all());
-// 				let old_node_id = mock::get_delegation_id_2(true);
-// 				let old_node = crate::deprecated::v0::DelegationNode::<TestRuntime>::new_node_child(
-// 					old_root_id,
-// 					old_parent_id,
-// 					bob,
-// 					Permissions::ATTEST,
-// 				);
-// 				Roots::insert(old_root_id, old_root_node.clone());
-// 				Delegations::insert(old_parent_id, old_parent_node.clone());
-// 				Delegations::insert(old_node_id, old_node.clone());
-// 				Children::<TestRuntime>::insert(old_root_id, vec![old_parent_id]);
-// 				Children::<TestRuntime>::insert(old_parent_id, vec![old_node_id]);
-
-// 				assert!(
-// 					migrator.pre_migration().is_ok(),
-// 					"Pre-migration for v0 should not fail."
-// 				);
-
-// 				migrator.migrate();
-
-// 				assert!(
-// 					migrator.post_migration().is_ok(),
-// 					"Post-migration for v0 should not fail."
-// 				);
-
-// 				assert_eq!(Roots::<TestRuntime>::iter_values().count(), 0);
-// 				assert_eq!(Delegations::<TestRuntime>::iter_values().count(), 0);
-// 				assert_eq!(Children::<TestRuntime>::iter_values().count(), 0);
-
-// 				let new_stored_hierarchy = DelegationHierarchies::<TestRuntime>::get(old_root_id)
-// 					.expect("New delegation hierarchy should exist in the storage.");
-// 				assert_eq!(new_stored_hierarchy.ctype_hash, old_root_node.ctype_hash);
-// 				let new_stored_root = DelegationNodes::<TestRuntime>::get(old_root_id)
-// 					.expect("New delegation root should exist in the storage.");
-// 				assert_eq!(new_stored_root.hierarchy_root_id, old_root_id);
-// 				assert!(new_stored_root.parent.is_none());
-// 				assert_eq!(new_stored_root.children.len(), 1);
-// 				assert!(new_stored_root.children.contains(&old_parent_id));
-// 				assert_eq!(new_stored_root.details.owner, old_root_node.owner);
-// 				assert_eq!(new_stored_root.details.revoked, old_root_node.revoked);
-
-// 				let new_stored_parent = DelegationNodes::<TestRuntime>::get(old_parent_id)
-// 					.expect("New delegation parent should exist in the storage.");
-// 				assert_eq!(new_stored_parent.hierarchy_root_id, old_root_id);
-// 				assert_eq!(new_stored_parent.parent, Some(old_root_id));
-// 				assert_eq!(new_stored_parent.children.len(), 1);
-// 				assert!(new_stored_parent.children.contains(&old_node_id));
-// 				assert_eq!(new_stored_parent.details.owner, old_parent_node.owner);
-// 				assert_eq!(new_stored_parent.details.revoked, old_parent_node.revoked);
-
-// 				let new_stored_node = DelegationNodes::<TestRuntime>::get(old_node_id)
-// 					.expect("New delegation node should exist in the storage.");
-// 				assert_eq!(new_stored_node.hierarchy_root_id, old_root_id);
-// 				assert_eq!(new_stored_node.parent, Some(old_parent_id));
-// 				assert!(new_stored_node.children.is_empty());
-// 				assert_eq!(new_stored_node.details.owner, old_node.owner);
-// 				assert_eq!(new_stored_node.details.revoked, old_node.revoked);
-// 			});
-// 		}
-
-// 		#[test]
-// 		fn ok_root_two_children() {
-// 			init_logger();
-// 			let migrator = get_storage_migrator();
-// 			let mut ext = mock::ExtBuilder::default().build(None);
-// 			ext.execute_with(|| {
-// 				let alice = mock::get_ed25519_account(mock::get_alice_ed25519().public());
-// 				let bob = mock::get_sr25519_account(mock::get_bob_sr25519().public());
-// 				let old_root_id = mock::get_delegation_id(true);
-// 				let old_root_node =
-// 					crate::deprecated::v0::DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash(true), alice.clone());
-// 				let old_node_id_1 = mock::get_delegation_id(false);
-// 				let old_node_1 =
-// 					crate::deprecated::v0::DelegationNode::<TestRuntime>::new_root_child(old_root_id, alice, Permissions::DELEGATE);
-// 				let old_node_id_2 = mock::get_delegation_id_2(true);
-// 				let old_node_2 =
-// 					crate::deprecated::v0::DelegationNode::<TestRuntime>::new_root_child(old_root_id, bob, Permissions::ATTEST);
-// 				Roots::insert(old_root_id, old_root_node.clone());
-// 				Delegations::insert(old_node_id_1, old_node_1.clone());
-// 				Delegations::insert(old_node_id_2, old_node_2.clone());
-// 				Children::<TestRuntime>::insert(old_root_id, vec![old_node_id_1, old_node_id_2]);
-
-// 				assert!(
-// 					migrator.pre_migration().is_ok(),
-// 					"Pre-migration for v0 should not fail."
-// 				);
-
-// 				migrator.migrate();
-
-// 				assert!(
-// 					migrator.post_migration().is_ok(),
-// 					"Post-migration for v0 should not fail."
-// 				);
-
-// 				assert_eq!(Roots::<TestRuntime>::iter_values().count(), 0);
-// 				assert_eq!(Delegations::<TestRuntime>::iter_values().count(), 0);
-// 				assert_eq!(Children::<TestRuntime>::iter_values().count(), 0);
-
-// 				let new_stored_hierarchy = DelegationHierarchies::<TestRuntime>::get(old_root_id)
-// 					.expect("New delegation hierarchy should exist in the storage.");
-// 				assert_eq!(new_stored_hierarchy.ctype_hash, old_root_node.ctype_hash);
-// 				let new_stored_root = DelegationNodes::<TestRuntime>::get(old_root_id)
-// 					.expect("New delegation root should exist in the storage.");
-// 				assert_eq!(new_stored_root.hierarchy_root_id, old_root_id);
-// 				assert!(new_stored_root.parent.is_none());
-// 				assert_eq!(new_stored_root.children.len(), 2);
-// 				assert!(new_stored_root.children.contains(&old_node_id_1));
-// 				assert!(new_stored_root.children.contains(&old_node_id_2));
-// 				assert_eq!(new_stored_root.details.owner, old_root_node.owner);
-// 				assert_eq!(new_stored_root.details.revoked, old_root_node.revoked);
-
-// 				let new_stored_node_1 = DelegationNodes::<TestRuntime>::get(old_node_id_1)
-// 					.expect("New delegation 1 should exist in the storage.");
-// 				assert_eq!(new_stored_node_1.hierarchy_root_id, old_root_id);
-// 				assert_eq!(new_stored_node_1.parent, Some(old_root_id));
-// 				assert!(new_stored_node_1.children.is_empty());
-// 				assert_eq!(new_stored_node_1.details.owner, old_node_1.owner);
-// 				assert_eq!(new_stored_node_1.details.revoked, old_node_1.revoked);
-
-// 				let new_stored_node_2 = DelegationNodes::<TestRuntime>::get(old_node_id_2)
-// 					.expect("New delegation 2 should exist in the storage.");
-// 				assert_eq!(new_stored_node_2.hierarchy_root_id, old_root_id);
-// 				assert_eq!(new_stored_node_2.parent, Some(old_root_id));
-// 				assert!(new_stored_node_2.children.is_empty());
-// 				assert_eq!(new_stored_node_2.details.owner, old_node_2.owner);
-// 				assert_eq!(new_stored_node_2.details.revoked, old_node_2.revoked);
-// 			});
-// 		}
-
-// 		#[test]
-// 		fn err_already_max_migrator() {
-// 			let migrator = StorageMigrator::<TestRuntime>::new();
-// 			let mut ext = mock::ExtBuilder::default().build(None);
-// 			ext.execute_with(|| {
-// 				LastUpgradeVersion::<TestRuntime>::set(1);
-// 				assert!(migrator.pre_migration().is_err(), "Pre-migration for v0 should fail.");
-// 			});
-// 		}
-
-// 		#[test]
-// 		fn err_more_than_max_migrator() {
-// 			let migrator = StorageMigrator::<TestRuntime>::new();
-// 			let mut ext = mock::ExtBuilder::default().build(None);
-// 			ext.execute_with(|| {
-// 				LastUpgradeVersion::<TestRuntime>::set(u16::MAX);
-// 				assert!(migrator.pre_migration().is_err(), "Pre-migration for v0 should fail.");
-// 			});
-// 		}
-// 	}
-// }
+			assert!(
+				DelegationStorageMigrator::<TestRuntime>::post_migrate().is_ok(),
+				"Storage post-migrate from v1 should not fail."
+			);
+		});
+	}
+}
