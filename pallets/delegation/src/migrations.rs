@@ -21,9 +21,11 @@ use sp_std::{collections::btree_map::BTreeMap, marker::PhantomData};
 
 use crate::*;
 
-/// A trait that allows version migrators to access the underlying pallet's context, i.e., its Config trait.
+/// A trait that allows version migrators to access the underlying pallet's
+/// context, i.e., its Config trait.
 ///
-/// In this way, the migrator can access the pallet's storage and the pallet's types directly.
+/// In this way, the migrator can access the pallet's storage and the pallet's
+/// types directly.
 pub trait VersionMigratorTrait<Config: frame_system::Config> {
 	#[cfg(any(feature = "try-runtime", test))]
 	fn pre_migrate(&self) -> Result<(), &str>;
@@ -53,7 +55,8 @@ impl DelegationStorageVersion {
 // latest version), the migration will simply do nothing as there's nothing in
 // the old storage entries to migrate from.
 //
-// It might get updated in the future when we know that no node is running this old version anymore.
+// It might get updated in the future when we know that no node is running this
+// old version anymore.
 impl Default for DelegationStorageVersion {
 	fn default() -> Self {
 		Self::v1
@@ -78,7 +81,8 @@ impl<T: Config> VersionMigratorTrait<T> for DelegationStorageVersion {
 		}
 	}
 
-	// It runs the right post_migrate logic depending on the current storage version.
+	// It runs the right post_migrate logic depending on the current storage
+	// version.
 	#[cfg(any(feature = "try-runtime", test))]
 	fn post_migrate(&self) -> Result<(), &str> {
 		match *self {
@@ -91,13 +95,15 @@ impl<T: Config> VersionMigratorTrait<T> for DelegationStorageVersion {
 mod v1 {
 	use super::*;
 
-	use frame_support::{IterableStorageMap, StoragePrefixedMap, StorageMap};
+	use frame_support::{IterableStorageMap, StorageMap, StoragePrefixedMap};
 
-	/// Checks whether the deployed storage version is v1. If not, it won't try migrate any data.
+	/// Checks whether the deployed storage version is v1. If not, it won't try
+	/// migrate any data.
 	///
-	/// Since we have the default storage version to this one, it can happen that new nodes will
-	/// still try to perform runtime migrations. This is not a problem as at the end of the day there
-	/// will not be anything in the old storage entries to migrate from. Hence, the "pseudo-"migration will
+	/// Since we have the default storage version to this one, it can happen
+	/// that new nodes will still try to perform runtime migrations. This is not
+	/// a problem as at the end of the day there will not be anything in the old
+	/// storage entries to migrate from. Hence, the "pseudo-"migration will
 	/// simply result in the update of the storage deployed version.
 	#[cfg(any(feature = "try-runtime", test))]
 	pub(crate) fn pre_migrate<T: Config>() -> Result<(), &'static str> {
@@ -112,18 +118,20 @@ mod v1 {
 
 	/// It migrates the old storage entries to the new ones.
 	///
-	/// Specifically, for each entry in Roots, a new entry in DelegationHierarchies
-	/// + a new node in DelegationNodes is created. Furthermore, nodes
-	/// in Delegations are migrated to the new structure and stored under DelegationNodes,
-	/// with any children from the Children storage entry added to the nodes under the children set.
+	/// Specifically, for each entry in Roots, a new entry in
+	/// DelegationHierarchies + a new node in DelegationNodes is created.
+	/// Furthermore, nodes in Delegations are migrated to the new structure and
+	/// stored under DelegationNodes, with any children from the Children
+	/// storage entry added to the nodes under the children set.
 	pub(crate) fn migrate<T: Config>() -> Weight {
 		log::info!("v1 -> v2 delegation storage migrator started!");
 		let mut total_weight = 0u64;
 
 		// Before being stored, the nodes are saved in a map so that after we go over
 		// all the nodes and the parent-child relationship in the storage, we can update
-		// the `parent` link of each node accordingly. Otherwise, we would need to save the
-		// node in the storage, and then retrieve it again to update the parent link.
+		// the `parent` link of each node accordingly. Otherwise, we would need to save
+		// the node in the storage, and then retrieve it again to update the parent
+		// link.
 		let mut new_nodes: BTreeMap<DelegationNodeIdOf<T>, DelegationNode<T>> = BTreeMap::new();
 
 		// First iterate over the delegation roots and translate them to hierarchies.
@@ -147,87 +155,114 @@ mod v1 {
 	}
 
 	fn migrate_roots<T: Config>(new_nodes: &mut BTreeMap<DelegationNodeIdOf<T>, DelegationNode<T>>) -> Weight {
-		let total_weight = deprecated::v1::storage::Roots::<T>::iter().fold(0u64, |mut total_weight, (old_root_id, old_root_node)| {
-			let new_hierarchy_details = DelegationHierarchyDetails::<T> {
-				ctype_hash: old_root_node.ctype_hash,
-			};
-			let new_root_details = DelegationDetails::<T> {
-				owner: old_root_node.owner,
-				// Old roots did not have any permissions. So now we give them all permissions.
-				permissions: Permissions::all(),
-				revoked: old_root_node.revoked,
-			};
-			// In here, we already check for potential children of root nodes and ONLY
-			// update the children information. The parent information will be updated
-			// later, when we know we have seen all the children already.
-			let mut new_root_node = DelegationNode::new_root_node(old_root_id, new_root_details);
-			if let Some(root_children_ids) = deprecated::v1::storage::Children::<T>::take(old_root_id) {
-				new_root_node.children = root_children_ids.iter().copied().collect();
-			}
-			// Add Children::take() weight
-			total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));
+		let total_weight =
+			deprecated::v1::storage::Roots::<T>::iter().fold(0u64, |mut total_weight, (old_root_id, old_root_node)| {
+				let new_hierarchy_details = DelegationHierarchyDetails::<T> {
+					ctype_hash: old_root_node.ctype_hash,
+				};
+				let new_root_details = DelegationDetails::<T> {
+					owner: old_root_node.owner,
+					// Old roots did not have any permissions. So now we give them all permissions.
+					permissions: Permissions::all(),
+					revoked: old_root_node.revoked,
+				};
+				// In here, we already check for potential children of root nodes and ONLY
+				// update the children information. The parent information will be updated
+				// later, when we know we have seen all the children already.
+				let mut new_root_node = DelegationNode::new_root_node(old_root_id, new_root_details);
+				if let Some(root_children_ids) = deprecated::v1::storage::Children::<T>::take(old_root_id) {
+					new_root_node.children = root_children_ids.iter().copied().collect();
+				}
+				// Add Children::take() weight
+				total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));
 
-			DelegationHierarchies::insert(old_root_id, new_hierarchy_details);
-			// Adds a read from Roots::drain() and a write from
-			// DelegationHierarchies::insert() weights
-			total_weight = total_weight.saturating_add(T::DbWeight::get().reads_writes(1, 1));
-			// Add the node to the temporary map of nodes to be added at the end.
-			new_nodes.insert(old_root_id, new_root_node);
+				DelegationHierarchies::insert(old_root_id, new_hierarchy_details);
+				// Adds a read from Roots::drain() and a write from
+				// DelegationHierarchies::insert() weights
+				total_weight = total_weight.saturating_add(T::DbWeight::get().reads_writes(1, 1));
+				// Add the node to the temporary map of nodes to be added at the end.
+				new_nodes.insert(old_root_id, new_root_node);
 
-			total_weight
-		});
-		// Removes the whole Roots storage.
-		frame_support::migration::remove_storage_prefix(&deprecated::v1::storage::Roots::<T>::module_prefix()[..], &deprecated::v1::storage::Roots::<T>::storage_prefix()[..], b"");
-
-		total_weight
-	}
-
-	fn migrate_nodes<T: Config>(new_nodes: &mut BTreeMap<DelegationNodeIdOf<T>, DelegationNode<T>>, initial_weight: Weight) -> Weight {
-		let total_weight = deprecated::v1::storage::Delegations::<T>::iter().fold(initial_weight, |mut total_weight, (old_node_id, old_node)| {
-			let new_node_details = DelegationDetails::<T> {
-				owner: old_node.owner,
-				permissions: old_node.permissions,
-				revoked: old_node.revoked,
-			};
-			// In the old version, a parent None indicated the node is a child of the root.
-			let new_node_parent_id = old_node.parent.unwrap_or(old_node.root_id);
-			let mut new_node = DelegationNode::new_node(old_node.root_id, new_node_parent_id, new_node_details);
-			if let Some(children_ids) = deprecated::v1::storage::Children::<T>::take(old_node_id) {
-				new_node.children = children_ids.iter().copied().collect();
-			}
-			// Add Children::take() weight
-			total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));
-			// Adds a read from Roots::drain() weight
-			total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));
-			new_nodes.insert(old_node_id, new_node);
-
-			total_weight
-		});
-		// Removes the whole Delegations and Children storages.
-		frame_support::migration::remove_storage_prefix(&deprecated::v1::storage::Delegations::<T>::module_prefix()[..], &deprecated::v1::storage::Delegations::<T>::storage_prefix()[..], b"");
-		frame_support::migration::remove_storage_prefix(&deprecated::v1::storage::Children::<T>::module_prefix()[..], &deprecated::v1::storage::Children::<T>::storage_prefix()[..], b"");
-
-		total_weight
-	}
-
-	fn finalize_children_nodes<T: Config>(new_nodes: &mut BTreeMap<DelegationNodeIdOf<T>, DelegationNode<T>>, initial_weight: Weight) -> Weight {
-		new_nodes.clone().into_iter().fold(initial_weight, |mut total_weight, (new_node_id, new_node)| {
-			// Iterate over the children of every node and update their parent link.
-			new_node.children.iter().for_each(|child_id| {
-				new_nodes
-					.entry(*child_id)
-					.and_modify(|node| node.parent = Some(new_node_id));
+				total_weight
 			});
-			// We can then finally insert the new delegation node in the storage as it won't be updated anymore during the migration.
-			DelegationNodes::<T>::insert(new_node_id, new_node);
-			// Adds a write from DelegationNodes::insert() weight
-			total_weight = total_weight.saturating_add(T::DbWeight::get().writes(1));
+		// Removes the whole Roots storage.
+		frame_support::migration::remove_storage_prefix(
+			deprecated::v1::storage::Roots::<T>::module_prefix(),
+			deprecated::v1::storage::Roots::<T>::storage_prefix(),
+			b"",
+		);
 
-			total_weight
-		})
+		total_weight
 	}
 
-	/// Checks whether the deployed storage version is v2 and whether any parent-child link has gone missing.
+	fn migrate_nodes<T: Config>(
+		new_nodes: &mut BTreeMap<DelegationNodeIdOf<T>, DelegationNode<T>>,
+		initial_weight: Weight,
+	) -> Weight {
+		let total_weight = deprecated::v1::storage::Delegations::<T>::iter().fold(
+			initial_weight,
+			|mut total_weight, (old_node_id, old_node)| {
+				let new_node_details = DelegationDetails::<T> {
+					owner: old_node.owner,
+					permissions: old_node.permissions,
+					revoked: old_node.revoked,
+				};
+				// In the old version, a parent None indicated the node is a child of the root.
+				let new_node_parent_id = old_node.parent.unwrap_or(old_node.root_id);
+				let mut new_node = DelegationNode::new_node(old_node.root_id, new_node_parent_id, new_node_details);
+				if let Some(children_ids) = deprecated::v1::storage::Children::<T>::take(old_node_id) {
+					new_node.children = children_ids.iter().copied().collect();
+				}
+				// Add Children::take() weight
+				total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));
+				// Adds a read from Roots::drain() weight
+				total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));
+				new_nodes.insert(old_node_id, new_node);
+
+				total_weight
+			},
+		);
+		// Removes the whole Delegations and Children storages.
+		frame_support::migration::remove_storage_prefix(
+			deprecated::v1::storage::Delegations::<T>::module_prefix(),
+			deprecated::v1::storage::Delegations::<T>::storage_prefix(),
+			b"",
+		);
+		frame_support::migration::remove_storage_prefix(
+			deprecated::v1::storage::Children::<T>::module_prefix(),
+			deprecated::v1::storage::Children::<T>::storage_prefix(),
+			b"",
+		);
+
+		total_weight
+	}
+
+	fn finalize_children_nodes<T: Config>(
+		new_nodes: &mut BTreeMap<DelegationNodeIdOf<T>, DelegationNode<T>>,
+		initial_weight: Weight,
+	) -> Weight {
+		new_nodes
+			.clone()
+			.into_iter()
+			.fold(initial_weight, |mut total_weight, (new_node_id, new_node)| {
+				// Iterate over the children of every node and update their parent link.
+				new_node.children.iter().for_each(|child_id| {
+					new_nodes
+						.entry(*child_id)
+						.and_modify(|node| node.parent = Some(new_node_id));
+				});
+				// We can then finally insert the new delegation node in the storage as it won't
+				// be updated anymore during the migration.
+				DelegationNodes::<T>::insert(new_node_id, new_node);
+				// Adds a write from DelegationNodes::insert() weight
+				total_weight = total_weight.saturating_add(T::DbWeight::get().writes(1));
+
+				total_weight
+			})
+	}
+
+	/// Checks whether the deployed storage version is v2 and whether any
+	/// parent-child link has gone missing.
 	#[cfg(any(feature = "try-runtime", test))]
 	pub(crate) fn post_migrate<T: Config>() -> Result<(), &'static str> {
 		ensure!(
@@ -242,7 +277,8 @@ mod v1 {
 		Ok(())
 	}
 
-	// Verifies that for any node that has a parent, the parent includes the node in its children.
+	// Verifies that for any node that has a parent, the parent includes the node in
+	// its children.
 	#[cfg(any(feature = "try-runtime", test))]
 	fn verify_parent_children_integrity<T: Config>() -> bool {
 		// If all's good and false is returned, returns true.
@@ -252,7 +288,8 @@ mod v1 {
 					// True if the children set does not contain the parent ID
 					return !parent_node.children.contains(&node_id);
 				} else {
-					// If the parent node cannot be found, it is definitely an error, so return true.
+					// If the parent node cannot be found, it is definitely an error, so return
+					// true.
 					return true;
 				}
 			}
@@ -266,8 +303,8 @@ mod v1 {
 	mod tests {
 		use sp_core::Pair;
 
-		use crate::mock::Test as TestRuntime;
 		use super::*;
+		use crate::mock::Test as TestRuntime;
 
 		#[test]
 		fn fail_version_higher() {
@@ -327,8 +364,14 @@ mod v1 {
 				);
 
 				assert_eq!(deprecated::v1::storage::Roots::<TestRuntime>::iter_values().count(), 0);
-				assert_eq!(deprecated::v1::storage::Delegations::<TestRuntime>::iter_values().count(), 0);
-				assert_eq!(deprecated::v1::storage::Children::<TestRuntime>::iter_values().count(), 0);
+				assert_eq!(
+					deprecated::v1::storage::Delegations::<TestRuntime>::iter_values().count(),
+					0
+				);
+				assert_eq!(
+					deprecated::v1::storage::Children::<TestRuntime>::iter_values().count(),
+					0
+				);
 
 				let new_stored_hierarchy = DelegationHierarchies::<TestRuntime>::get(old_root_id)
 					.expect("New delegation hierarchy should exist in the storage.");
@@ -371,7 +414,10 @@ mod v1 {
 				deprecated::v1::storage::Roots::insert(old_root_id, old_root_node.clone());
 				deprecated::v1::storage::Delegations::insert(old_node_id_1, old_node_1.clone());
 				deprecated::v1::storage::Delegations::insert(old_node_id_2, old_node_2.clone());
-				deprecated::v1::storage::Children::<TestRuntime>::insert(old_root_id, vec![old_node_id_1, old_node_id_2]);
+				deprecated::v1::storage::Children::<TestRuntime>::insert(
+					old_root_id,
+					vec![old_node_id_1, old_node_id_2],
+				);
 
 				assert!(
 					pre_migrate::<TestRuntime>().is_ok(),
@@ -386,8 +432,14 @@ mod v1 {
 				);
 
 				assert_eq!(deprecated::v1::storage::Roots::<TestRuntime>::iter_values().count(), 0);
-				assert_eq!(deprecated::v1::storage::Delegations::<TestRuntime>::iter_values().count(), 0);
-				assert_eq!(deprecated::v1::storage::Children::<TestRuntime>::iter_values().count(), 0);
+				assert_eq!(
+					deprecated::v1::storage::Delegations::<TestRuntime>::iter_values().count(),
+					0
+				);
+				assert_eq!(
+					deprecated::v1::storage::Children::<TestRuntime>::iter_values().count(),
+					0
+				);
 
 				let new_stored_hierarchy = DelegationHierarchies::<TestRuntime>::get(old_root_id)
 					.expect("New delegation hierarchy should exist in the storage.");
@@ -423,17 +475,22 @@ mod v1 {
 		#[test]
 		fn ok_three_level_hierarchy() {
 			let mut ext = mock::ExtBuilder::default()
-			.with_storage_version(DelegationStorageVersion::v1)
-			.build(None);
+				.with_storage_version(DelegationStorageVersion::v1)
+				.build(None);
 			ext.execute_with(|| {
 				let alice = mock::get_ed25519_account(mock::get_alice_ed25519().public());
 				let bob = mock::get_sr25519_account(mock::get_bob_sr25519().public());
 				let old_root_id = mock::get_delegation_id(true);
-				let old_root_node =
-					deprecated::v1::DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash(true), alice.clone());
+				let old_root_node = deprecated::v1::DelegationRoot::<TestRuntime>::new(
+					ctype::mock::get_ctype_hash(true),
+					alice.clone(),
+				);
 				let old_parent_id = mock::get_delegation_id(false);
-				let old_parent_node =
-					deprecated::v1::DelegationNode::<TestRuntime>::new_root_child(old_root_id, alice, Permissions::all());
+				let old_parent_node = deprecated::v1::DelegationNode::<TestRuntime>::new_root_child(
+					old_root_id,
+					alice,
+					Permissions::all(),
+				);
 				let old_node_id = mock::get_delegation_id_2(true);
 				let old_node = deprecated::v1::DelegationNode::<TestRuntime>::new_node_child(
 					old_root_id,
@@ -460,8 +517,14 @@ mod v1 {
 				);
 
 				assert_eq!(deprecated::v1::storage::Roots::<TestRuntime>::iter_values().count(), 0);
-				assert_eq!(deprecated::v1::storage::Delegations::<TestRuntime>::iter_values().count(), 0);
-				assert_eq!(deprecated::v1::storage::Children::<TestRuntime>::iter_values().count(), 0);
+				assert_eq!(
+					deprecated::v1::storage::Delegations::<TestRuntime>::iter_values().count(),
+					0
+				);
+				assert_eq!(
+					deprecated::v1::storage::Children::<TestRuntime>::iter_values().count(),
+					0
+				);
 
 				let new_stored_hierarchy = DelegationHierarchies::<TestRuntime>::get(old_root_id)
 					.expect("New delegation hierarchy should exist in the storage.");
@@ -496,23 +559,27 @@ mod v1 {
 	}
 }
 
-/// The delegation pallet's storage migrator, which handles all version migrations in a sequential fashion.
+/// The delegation pallet's storage migrator, which handles all version
+/// migrations in a sequential fashion.
 ///
-/// If a node has missed on more than one upgrade, the migrator will apply the needed migrations one after the other.
-/// Otherwise, if no migration is needed, the migrator will simply not do anything.
+/// If a node has missed on more than one upgrade, the migrator will apply the
+/// needed migrations one after the other. Otherwise, if no migration is needed,
+/// the migrator will simply not do anything.
 pub struct DelegationStorageMigrator<T>(PhantomData<T>);
 
 impl<T: Config> DelegationStorageMigrator<T> {
 	// Contains the migration sequence logic.
 	fn get_next_storage_version(current: DelegationStorageVersion) -> Option<DelegationStorageVersion> {
-		// If the version current deployed is at least v1, there is no more migrations to run (other than the one from v1).
+		// If the version current deployed is at least v1, there is no more migrations
+		// to run (other than the one from v1).
 		match current {
 			DelegationStorageVersion::v1 => None,
 			DelegationStorageVersion::v2 => None,
 		}
 	}
 
-	/// Checks whether the latest storage version deployed is lower than the latest possible.
+	/// Checks whether the latest storage version deployed is lower than the
+	/// latest possible.
 	#[cfg(any(feature = "try-runtime", test))]
 	pub(crate) fn pre_migrate() -> Result<(), &'static str> {
 		ensure!(
@@ -527,7 +594,8 @@ impl<T: Config> DelegationStorageMigrator<T> {
 		Ok(())
 	}
 
-	/// Applies all the needed migrations from the currently deployed version to the latest possible, one after the other.
+	/// Applies all the needed migrations from the currently deployed version to
+	/// the latest possible, one after the other.
 	///
 	/// It returns the total weight consumed by ALL the migrations applied.
 	pub(crate) fn migrate() -> Weight {
@@ -536,14 +604,16 @@ impl<T: Config> DelegationStorageMigrator<T> {
 		let mut total_weight = T::DbWeight::get().reads(1);
 
 		while let Some(ver) = current_version {
-			// If any of the needed migrations pre-checks fail, the whole chain panics (during tests).
+			// If any of the needed migrations pre-checks fail, the whole chain panics
+			// (during tests).
 			#[cfg(feature = "try-runtime")]
 			if let Err(err) = <DelegationStorageVersion as VersionMigratorTrait<T>>::pre_migrate(&ver) {
 				panic!("{:?}", err);
 			}
 			let consumed_weight = <DelegationStorageVersion as VersionMigratorTrait<T>>::migrate(&ver);
 			total_weight = total_weight.saturating_add(consumed_weight);
-			// If any of the needed migrations post-checks fail, the whole chain panics (during tests).
+			// If any of the needed migrations post-checks fail, the whole chain panics
+			// (during tests).
 			#[cfg(feature = "try-runtime")]
 			if let Err(err) = <DelegationStorageVersion as VersionMigratorTrait<T>>::post_migrate(&ver) {
 				panic!("{:?}", err);
@@ -555,7 +625,8 @@ impl<T: Config> DelegationStorageMigrator<T> {
 		total_weight
 	}
 
-	/// Checks whether the storage version after all the needed migrations match the latest one.
+	/// Checks whether the storage version after all the needed migrations match
+	/// the latest one.
 	#[cfg(any(feature = "try-runtime", test))]
 	pub(crate) fn post_migrate() -> Result<(), &'static str> {
 		ensure!(
@@ -596,8 +667,7 @@ mod tests {
 
 	#[test]
 	fn ok_from_default_migration() {
-		let mut ext = mock::ExtBuilder::default()
-			.build(None);
+		let mut ext = mock::ExtBuilder::default().build(None);
 		ext.execute_with(|| {
 			assert!(
 				DelegationStorageMigrator::<TestRuntime>::pre_migrate().is_ok(),

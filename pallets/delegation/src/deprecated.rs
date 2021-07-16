@@ -42,11 +42,11 @@ pub(crate) mod v1 {
 
 	#[derive(Clone, Debug, Encode, Decode, PartialEq)]
 	pub struct DelegationNode<T: Config> {
-		pub(crate)  root_id: DelegationNodeIdOf<T>,
-		pub(crate)  parent: Option<DelegationNodeIdOf<T>>,
-		pub(crate)  owner: DelegatorIdOf<T>,
-		pub(crate)  permissions: Permissions,
-		pub(crate)  revoked: bool,
+		pub(crate) root_id: DelegationNodeIdOf<T>,
+		pub(crate) parent: Option<DelegationNodeIdOf<T>>,
+		pub(crate) owner: DelegatorIdOf<T>,
+		pub(crate) permissions: Permissions,
+		pub(crate) revoked: bool,
 	}
 
 	impl<T: Config> DelegationNode<T> {

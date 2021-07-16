@@ -56,8 +56,9 @@ impl Default for Permissions {
 
 /// A node in a delegation hierarchy.
 ///
-/// For quicker lookups of the hierarchy details, all nodes maintain a direct link to the hierarchy root node.
-/// Furthermore, all nodes have a parent but the root nodes, which point to themselves for the hierarchy root node link.
+/// For quicker lookups of the hierarchy details, all nodes maintain a direct
+/// link to the hierarchy root node. Furthermore, all nodes have a parent but
+/// the root nodes, which point to themselves for the hierarchy root node link.
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
 pub struct DelegationNode<T: Config> {
 	/// The ID of the delegation hierarchy the node is part of.
@@ -71,7 +72,8 @@ pub struct DelegationNode<T: Config> {
 }
 
 impl<T: Config> DelegationNode<T> {
-	/// Creates a new delegation root node with the given ID and delegation details.
+	/// Creates a new delegation root node with the given ID and delegation
+	/// details.
 	pub fn new_root_node(id: DelegationNodeIdOf<T>, details: DelegationDetails<T>) -> Self {
 		Self {
 			hierarchy_root_id: id,
@@ -81,7 +83,8 @@ impl<T: Config> DelegationNode<T> {
 		}
 	}
 
-	/// Creates a new delegation node under the given hierarchy ID, with the given parent and delegation details.
+	/// Creates a new delegation node under the given hierarchy ID, with the
+	/// given parent and delegation details.
 	pub fn new_node(
 		hierarchy_root_id: DelegationNodeIdOf<T>,
 		parent: DelegationNodeIdOf<T>,
@@ -106,7 +109,8 @@ impl<T: Config> DelegationNode<T> {
 pub struct DelegationDetails<T: Config> {
 	/// The owner of the delegation (and its node).
 	pub owner: DelegatorIdOf<T>,
-	/// Status indicating whether the delegation has been revoked (true) or not (false).
+	/// Status indicating whether the delegation has been revoked (true) or not
+	/// (false).
 	pub revoked: bool,
 	/// The set of permissions associated with the delegation.
 	pub permissions: Permissions,
@@ -115,7 +119,8 @@ pub struct DelegationDetails<T: Config> {
 impl<T: Config> DelegationDetails<T> {
 	/// Creates new delegation details including the given owner.
 	///
-	/// The default revocation status is false and all permissions are granted by default.
+	/// The default revocation status is false and all permissions are granted
+	/// by default.
 	pub fn default_with_owner(owner: DelegatorIdOf<T>) -> Self {
 		Self {
 			owner,
@@ -128,7 +133,8 @@ impl<T: Config> DelegationDetails<T> {
 /// The details associated with a delegation hierarchy.
 #[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd)]
 pub struct DelegationHierarchyDetails<T: Config> {
-	/// The authorised CTYPE hash that attesters can attest using this delegation hierarchy.
+	/// The authorised CTYPE hash that attesters can attest using this
+	/// delegation hierarchy.
 	pub ctype_hash: CtypeHashOf<T>,
 }
 

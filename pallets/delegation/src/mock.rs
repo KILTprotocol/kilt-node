@@ -312,7 +312,11 @@ pub fn generate_base_delegation_revocation_operation(
 #[derive(Clone)]
 pub struct ExtBuilder {
 	ctype_builder: Option<ctype_mock::ExtBuilder>,
-	delegation_hierarchies_stored: Vec<(TestDelegationNodeId, DelegationHierarchyDetails<Test>, DelegatorIdOf<Test>)>,
+	delegation_hierarchies_stored: Vec<(
+		TestDelegationNodeId,
+		DelegationHierarchyDetails<Test>,
+		DelegatorIdOf<Test>,
+	)>,
 	delegations_stored: Vec<(TestDelegationNodeId, DelegationNode<Test>)>,
 	storage_version: DelegationStorageVersion,
 }
@@ -331,7 +335,11 @@ impl Default for ExtBuilder {
 impl ExtBuilder {
 	pub fn with_delegation_hierarchies(
 		mut self,
-		delegation_hierarchies: Vec<(TestDelegationNodeId, DelegationHierarchyDetails<Test>, DelegatorIdOf<Test>)>,
+		delegation_hierarchies: Vec<(
+			TestDelegationNodeId,
+			DelegationHierarchyDetails<Test>,
+			DelegatorIdOf<Test>,
+		)>,
 	) -> Self {
 		self.delegation_hierarchies_stored = delegation_hierarchies;
 		self

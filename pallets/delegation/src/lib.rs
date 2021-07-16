@@ -448,7 +448,8 @@ impl<T: Config> Pallet<T> {
 		T::Hashing::hash(&hashed_values)
 	}
 
-	// Creates a new root node with the given details and store the new hierarchy in the hierarchies storage and the new root node in the nodes storage.
+	// Creates a new root node with the given details and store the new hierarchy in
+	// the hierarchies storage and the new root node in the nodes storage.
 	fn create_and_store_new_hierarchy(
 		root_id: DelegationNodeIdOf<T>,
 		hierarchy_details: DelegationHierarchyDetails<T>,
@@ -459,9 +460,11 @@ impl<T: Config> Pallet<T> {
 		<DelegationHierarchies<T>>::insert(root_id, hierarchy_details);
 	}
 
-	// Adds the given node to the storage and updates the parent node to include the given node as child.
+	// Adds the given node to the storage and updates the parent node to include the
+	// given node as child.
 	//
-	// This function assumes that the parent node is already stored on the chain. If not, the behaviour of the system is undefined.
+	// This function assumes that the parent node is already stored on the chain. If
+	// not, the behaviour of the system is undefined.
 	fn store_delegation_under_parent(
 		delegation_id: DelegationNodeIdOf<T>,
 		delegation_node: DelegationNode<T>,
@@ -474,7 +477,8 @@ impl<T: Config> Pallet<T> {
 		<DelegationNodes<T>>::insert(parent_id, parent_node);
 	}
 
-	// Marks the provided hierarchy as revoked and stores the resulting state back in the storage.
+	// Marks the provided hierarchy as revoked and stores the resulting state back
+	// in the storage.
 	fn revoke_and_store_hierarchy_root(root_id: DelegationNodeIdOf<T>, mut root_node: DelegationNode<T>) {
 		root_node.details.revoked = true;
 		<DelegationNodes<T>>::insert(root_id, root_node);

@@ -342,7 +342,11 @@ fn root_not_present_attest_error() {
 		.with_ctypes(vec![(operation.ctype_hash, attester.clone())])
 		.build(None);
 	let mut ext = delegation_mock::ExtBuilder::default()
-		.with_delegation_hierarchies(vec![(alternative_hierarchy_root_id, hierarchy_details, attester.clone())])
+		.with_delegation_hierarchies(vec![(
+			alternative_hierarchy_root_id,
+			hierarchy_details,
+			attester.clone(),
+		)])
 		.with_delegations(vec![(delegation_id, delegation_node)])
 		.build(Some(ext));
 
