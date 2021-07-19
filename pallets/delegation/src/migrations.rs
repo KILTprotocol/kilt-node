@@ -22,11 +22,11 @@ use sp_std::{collections::btree_map::BTreeMap, marker::PhantomData};
 use crate::*;
 
 /// A trait that allows version migrators to access the underlying pallet's
-/// context, i.e., its Config trait.
+/// context, e.g., its Config trait.
 ///
 /// In this way, the migrator can access the pallet's storage and the pallet's
 /// types directly.
-pub trait VersionMigratorTrait<Config: frame_system::Config> {
+pub trait VersionMigratorTrait<T> {
 	#[cfg(feature = "try-runtime")]
 	fn pre_migrate(&self) -> Result<(), &str>;
 	fn migrate(&self) -> Weight;
@@ -185,6 +185,23 @@ mod v1 {
 
 				total_weight
 			});
+		// If runtime testing, makes sure that the old number of roots is reflected in
+		// the new number of nodes and hierarchies migrated.
+		#[cfg(feature = "try-runtime")]
+		{
+			assert_eq!(
+				deprecated::v1::storage::Roots::<T>::iter().count(),
+				DelegationHierarchies::<T>::iter().count(),
+				"The # of old roots does not match the # of new delegation hierarchies."
+			);
+
+			assert_eq!(
+				deprecated::v1::storage::Roots::<T>::iter().count(),
+				new_nodes.iter().count(),
+				"The # of old roots does not match the current # of new delegation nodes."
+			);
+		}
+
 		// Removes the whole Roots storage.
 		frame_support::migration::remove_storage_prefix(
 			deprecated::v1::storage::Roots::<T>::module_prefix(),
@@ -222,6 +239,15 @@ mod v1 {
 				total_weight
 			},
 		);
+		// If runtime testing, makes sure that the old number of delegations is
+		// reflected in the new number of nodes that will be added to the storage.
+		#[cfg(feature = "try-runtime")]
+		assert_eq!(
+			deprecated::v1::storage::Delegations::<T>::iter().count(),
+			new_nodes.iter().count().saturating_sub(DelegationHierarchies::<T>::iter().count()),
+			"The # of old delegation nodes does not match the # of new delegation nodes (calculate as the total # of nodes - the # of delegation hierarchies)."
+		);
+
 		// Removes the whole Delegations and Children storages.
 		frame_support::migration::remove_storage_prefix(
 			deprecated::v1::storage::Delegations::<T>::module_prefix(),
@@ -265,8 +291,6 @@ mod v1 {
 	/// parent-child link has gone missing.
 	#[cfg(feature = "try-runtime")]
 	pub(crate) fn post_migrate<T: Config>() -> Result<(), &'static str> {
-		//TODO: Add the try-runtime test storage to check that
-		// the total number of nodes is kept the same before and after.
 		ensure!(
 			StorageVersion::<T>::get() == DelegationStorageVersion::v2,
 			"The version after deployment is not 2 as expected."
@@ -279,8 +303,8 @@ mod v1 {
 		Ok(())
 	}
 
-	// Verifies that for any node that has a parent, the parent includes the node in
-	// its children.
+	// Verifies that for any node that has a parent, the parent includes that node
+	// in its children.
 	#[cfg(feature = "try-runtime")]
 	fn verify_parent_children_integrity<T: Config>() -> bool {
 		// If all's good and false is returned, returns true.
