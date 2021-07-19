@@ -27,10 +27,10 @@ use crate::*;
 /// In this way, the migrator can access the pallet's storage and the pallet's
 /// types directly.
 pub trait VersionMigratorTrait<Config: frame_system::Config> {
-	#[cfg(any(feature = "try-runtime", test))]
+	#[cfg(feature = "try-runtime")]
 	fn pre_migrate(&self) -> Result<(), &str>;
 	fn migrate(&self) -> Weight;
-	#[cfg(any(feature = "try-runtime", test))]
+	#[cfg(feature = "try-runtime")]
 	fn post_migrate(&self) -> Result<(), &str>;
 }
 
@@ -65,7 +65,7 @@ impl Default for DelegationStorageVersion {
 
 impl<T: Config> VersionMigratorTrait<T> for DelegationStorageVersion {
 	// It runs the right pre_migrate logic depending on the current storage version.
-	#[cfg(any(feature = "try-runtime", test))]
+	#[cfg(feature = "try-runtime")]
 	fn pre_migrate(&self) -> Result<(), &str> {
 		match *self {
 			Self::v1 => v1::pre_migrate::<T>(),
@@ -83,7 +83,7 @@ impl<T: Config> VersionMigratorTrait<T> for DelegationStorageVersion {
 
 	// It runs the right post_migrate logic depending on the current storage
 	// version.
-	#[cfg(any(feature = "try-runtime", test))]
+	#[cfg(feature = "try-runtime")]
 	fn post_migrate(&self) -> Result<(), &str> {
 		match *self {
 			Self::v1 => v1::post_migrate::<T>(),
@@ -105,7 +105,7 @@ mod v1 {
 	/// a problem as at the end of the day there will not be anything in the old
 	/// storage entries to migrate from. Hence, the "pseudo-"migration will
 	/// simply result in the update of the storage deployed version.
-	#[cfg(any(feature = "try-runtime", test))]
+	#[cfg(feature = "try-runtime")]
 	pub(crate) fn pre_migrate<T: Config>() -> Result<(), &'static str> {
 		ensure!(
 			StorageVersion::<T>::get() == DelegationStorageVersion::v1,
@@ -263,7 +263,7 @@ mod v1 {
 
 	/// Checks whether the deployed storage version is v2 and whether any
 	/// parent-child link has gone missing.
-	#[cfg(any(feature = "try-runtime", test))]
+	#[cfg(feature = "try-runtime")]
 	pub(crate) fn post_migrate<T: Config>() -> Result<(), &'static str> {
 		//TODO: Add the try-runtime test storage to check that
 		// the total number of nodes is kept the same before and after.
@@ -281,7 +281,7 @@ mod v1 {
 
 	// Verifies that for any node that has a parent, the parent includes the node in
 	// its children.
-	#[cfg(any(feature = "try-runtime", test))]
+	#[cfg(feature = "try-runtime")]
 	fn verify_parent_children_integrity<T: Config>() -> bool {
 		// If all's good and false is returned, returns true.
 		!DelegationNodes::<T>::iter().any(|(node_id, node)| {
@@ -314,6 +314,7 @@ mod v1 {
 				.with_storage_version(DelegationStorageVersion::v2)
 				.build(None);
 			ext.execute_with(|| {
+				#[cfg(feature = "try-runtime")]
 				assert!(
 					pre_migrate::<TestRuntime>().is_err(),
 					"Pre-migration for v1 should fail."
@@ -327,6 +328,7 @@ mod v1 {
 				.with_storage_version(DelegationStorageVersion::v1)
 				.build(None);
 			ext.execute_with(|| {
+				#[cfg(feature = "try-runtime")]
 				assert!(
 					pre_migrate::<TestRuntime>().is_ok(),
 					"Pre-migration for v1 should not fail."
@@ -334,6 +336,7 @@ mod v1 {
 
 				migrate::<TestRuntime>();
 
+				#[cfg(feature = "try-runtime")]
 				assert!(
 					post_migrate::<TestRuntime>().is_ok(),
 					"Post-migration for v1 should not fail."
@@ -353,6 +356,7 @@ mod v1 {
 					crate::deprecated::v1::DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash(true), alice);
 				deprecated::v1::storage::Roots::insert(old_root_id, old_root_node.clone());
 
+				#[cfg(feature = "try-runtime")]
 				assert!(
 					pre_migrate::<TestRuntime>().is_ok(),
 					"Pre-migration for v1 should not fail."
@@ -360,6 +364,7 @@ mod v1 {
 
 				migrate::<TestRuntime>();
 
+				#[cfg(feature = "try-runtime")]
 				assert!(
 					post_migrate::<TestRuntime>().is_ok(),
 					"Post-migration for v1 should not fail."
@@ -421,6 +426,7 @@ mod v1 {
 					vec![old_node_id_1, old_node_id_2],
 				);
 
+				#[cfg(feature = "try-runtime")]
 				assert!(
 					pre_migrate::<TestRuntime>().is_ok(),
 					"Pre-migration for v1 should not fail."
@@ -428,6 +434,7 @@ mod v1 {
 
 				migrate::<TestRuntime>();
 
+				#[cfg(feature = "try-runtime")]
 				assert!(
 					post_migrate::<TestRuntime>().is_ok(),
 					"Post-migration for v1 should not fail."
@@ -506,6 +513,7 @@ mod v1 {
 				deprecated::v1::storage::Children::<TestRuntime>::insert(old_root_id, vec![old_parent_id]);
 				deprecated::v1::storage::Children::<TestRuntime>::insert(old_parent_id, vec![old_node_id]);
 
+				#[cfg(feature = "try-runtime")]
 				assert!(
 					pre_migrate::<TestRuntime>().is_ok(),
 					"Pre-migration for v1 should not fail."
@@ -513,6 +521,7 @@ mod v1 {
 
 				migrate::<TestRuntime>();
 
+				#[cfg(feature = "try-runtime")]
 				assert!(
 					post_migrate::<TestRuntime>().is_ok(),
 					"Post-migration for v1 should not fail."
@@ -582,7 +591,7 @@ impl<T: Config> DelegationStorageMigrator<T> {
 
 	/// Checks whether the latest storage version deployed is lower than the
 	/// latest possible.
-	#[cfg(any(feature = "try-runtime", test))]
+	#[cfg(feature = "try-runtime")]
 	pub(crate) fn pre_migrate() -> Result<(), &'static str> {
 		ensure!(
 			StorageVersion::<T>::get() < DelegationStorageVersion::latest(),
@@ -629,7 +638,7 @@ impl<T: Config> DelegationStorageMigrator<T> {
 
 	/// Checks whether the storage version after all the needed migrations match
 	/// the latest one.
-	#[cfg(any(feature = "try-runtime", test))]
+	#[cfg(feature = "try-runtime")]
 	pub(crate) fn post_migrate() -> Result<(), &'static str> {
 		ensure!(
 			StorageVersion::<T>::get() == DelegationStorageVersion::latest(),
@@ -653,6 +662,7 @@ mod tests {
 			.with_storage_version(DelegationStorageVersion::v1)
 			.build(None);
 		ext.execute_with(|| {
+			#[cfg(feature = "try-runtime")]
 			assert!(
 				DelegationStorageMigrator::<TestRuntime>::pre_migrate().is_ok(),
 				"Storage pre-migrate from v1 should not fail."
@@ -660,6 +670,7 @@ mod tests {
 
 			DelegationStorageMigrator::<TestRuntime>::migrate();
 
+			#[cfg(feature = "try-runtime")]
 			assert!(
 				DelegationStorageMigrator::<TestRuntime>::post_migrate().is_ok(),
 				"Storage post-migrate from v1 should not fail."
@@ -671,6 +682,7 @@ mod tests {
 	fn ok_from_default_migration() {
 		let mut ext = mock::ExtBuilder::default().build(None);
 		ext.execute_with(|| {
+			#[cfg(feature = "try-runtime")]
 			assert!(
 				DelegationStorageMigrator::<TestRuntime>::pre_migrate().is_ok(),
 				"Storage pre-migrate from default version should not fail."
@@ -678,6 +690,7 @@ mod tests {
 
 			DelegationStorageMigrator::<TestRuntime>::migrate();
 
+			#[cfg(feature = "try-runtime")]
 			assert!(
 				DelegationStorageMigrator::<TestRuntime>::post_migrate().is_ok(),
 				"Storage post-migrate from default version should not fail."
