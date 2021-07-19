@@ -200,6 +200,8 @@ mod v1 {
 				new_nodes.iter().count(),
 				"The # of old roots does not match the current # of new delegation nodes."
 			);
+
+			log::info!("{} root(s) migrated.", deprecated::v1::storage::Roots::<T>::iter().count());
 		}
 
 		// Removes the whole Roots storage.
@@ -242,11 +244,15 @@ mod v1 {
 		// If runtime testing, makes sure that the old number of delegations is
 		// reflected in the new number of nodes that will be added to the storage.
 		#[cfg(feature = "try-runtime")]
-		assert_eq!(
-			deprecated::v1::storage::Delegations::<T>::iter().count(),
-			new_nodes.iter().count().saturating_sub(DelegationHierarchies::<T>::iter().count()),
-			"The # of old delegation nodes does not match the # of new delegation nodes (calculate as the total # of nodes - the # of delegation hierarchies)."
-		);
+		{
+			assert_eq!(
+				deprecated::v1::storage::Delegations::<T>::iter().count(),
+				new_nodes.iter().count().saturating_sub(DelegationHierarchies::<T>::iter().count()),
+				"The # of old delegation nodes does not match the # of new delegation nodes (calculate as the total # of nodes - the # of delegation hierarchies)."
+			);
+
+			log::info!("{} regular node(s) migrated.", deprecated::v1::storage::Delegations::<T>::iter().count());
+		}
 
 		// Removes the whole Delegations and Children storages.
 		frame_support::migration::remove_storage_prefix(
