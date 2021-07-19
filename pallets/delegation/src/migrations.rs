@@ -96,6 +96,7 @@ mod v1 {
 	use super::*;
 
 	use frame_support::{IterableStorageMap, StorageMap, StoragePrefixedMap};
+	use sp_runtime::traits::Zero;
 
 	/// Checks whether the deployed storage version is v1. If not, it won't try
 	/// migrate any data.
@@ -125,7 +126,7 @@ mod v1 {
 	/// storage entry added to the nodes under the children set.
 	pub(crate) fn migrate<T: Config>() -> Weight {
 		log::info!("v1 -> v2 delegation storage migrator started!");
-		let mut total_weight = 0u64;
+		let mut total_weight = Weight::zero();
 
 		// Before being stored, the nodes are saved in a map so that after we go over
 		// all the nodes and the parent-child relationship in the storage, we can update
@@ -155,8 +156,9 @@ mod v1 {
 	}
 
 	fn migrate_roots<T: Config>(new_nodes: &mut BTreeMap<DelegationNodeIdOf<T>, DelegationNode<T>>) -> Weight {
-		let total_weight =
-			deprecated::v1::storage::Roots::<T>::iter().fold(0u64, |mut total_weight, (old_root_id, old_root_node)| {
+		let total_weight = deprecated::v1::storage::Roots::<T>::iter().fold(
+			Weight::zero(),
+			|mut total_weight, (old_root_id, old_root_node)| {
 				let new_hierarchy_details = DelegationHierarchyDetails::<T> {
 					ctype_hash: old_root_node.ctype_hash,
 				};
@@ -184,7 +186,9 @@ mod v1 {
 				new_nodes.insert(old_root_id, new_root_node);
 
 				total_weight
-			});
+			},
+		);
+
 		// If runtime testing, makes sure that the old number of roots is reflected in
 		// the new number of nodes and hierarchies migrated.
 		#[cfg(feature = "try-runtime")]
@@ -244,6 +248,7 @@ mod v1 {
 				total_weight
 			},
 		);
+
 		// If runtime testing, makes sure that the old number of delegations is
 		// reflected in the new number of nodes that will be added to the storage.
 		#[cfg(feature = "try-runtime")]
