@@ -18,7 +18,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 //! Benchmarking
-use crate::*;
+use crate::{types::RoundInfo, *};
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, Zero};
 use frame_support::{
 	assert_ok,
@@ -26,6 +26,7 @@ use frame_support::{
 };
 use frame_system::{Pallet as System, RawOrigin};
 use kilt_primitives::constants::BLOCKS_PER_YEAR;
+use pallet_session::Pallet as Session;
 use sp_runtime::{
 	traits::{One, SaturatedConversion, Saturating, StaticLookup},
 	Perquintill,
@@ -101,12 +102,12 @@ where
 			assert_ok!(<Pallet<T>>::delegator_stake_less(
 				RawOrigin::Signed(delegator.clone()).into(),
 				T::Lookup::unlookup(collator.clone()),
-				T::CurrencyBalance::from(1u64)
+				T::CurrencyBalance::one()
 			));
 		} else {
 			assert_ok!(<Pallet<T>>::candidate_stake_less(
 				RawOrigin::Signed(collator.clone()).into(),
-				T::CurrencyBalance::from(1u64)
+				T::CurrencyBalance::one()
 			));
 		}
 		System::<T>::set_block_number(System::<T>::block_number() + T::BlockNumber::one());
@@ -143,6 +144,30 @@ benchmarks! {
 		assert_eq!(new.collator.max_rate, old.collator.max_rate);
 		assert_eq!(new.delegator.max_rate, old.delegator.max_rate);
 		assert!(new.collator.reward_rate.annual < old.collator.reward_rate.annual);
+	}
+
+	force_new_round {
+		let round = <Round<T>>::get();
+		let now = System::<T>::block_number();
+		assert_eq!(round.current, 0);
+		assert_eq!(Session::<T>::current_index(), 0);
+		assert!(!<ForceNewRound<T>>::get());
+	}: _(RawOrigin::Root)
+	verify {
+		assert!(<ForceNewRound<T>>::get());
+		assert_eq!(Session::<T>::current_index(), 0);
+
+		// jump to next block to trigger new round
+		let now = now + T::BlockNumber::one();
+		System::<T>::set_block_number(now);
+		Session::<T>::on_initialize(now);
+		assert_eq!(Session::<T>::current_index(), 1);
+		assert_eq!(<Round<T>>::get(), RoundInfo {
+			current: 1,
+			first: now,
+			length: round.length,
+		});
+		assert!(!<ForceNewRound<T>>::get());
 	}
 
 	set_inflation {
@@ -406,7 +431,7 @@ benchmarks! {
 			fill_delegators::<T>(m, c.clone(), i.saturated_into::<u32>());
 		}
 		let collator = candidates[0].clone();
-		let amount = T::CurrencyBalance::from(1u64);
+		let amount = T::CurrencyBalance::one();
 
 		// make sure delegator collated to collator
 		let state = <CollatorState<T>>::get(&collator).unwrap();
@@ -442,7 +467,7 @@ benchmarks! {
 			fill_delegators::<T>(m, c.clone(), i.saturated_into::<u32>());
 		}
 		let collator = candidates[0].clone();
-		let amount = T::CurrencyBalance::from(1u64);
+		let amount = T::CurrencyBalance::one();
 
 		// make sure delegator collated to collator
 		let state = <CollatorState<T>>::get(&collator).unwrap();
@@ -478,7 +503,7 @@ benchmarks! {
 			fill_delegators::<T>(m, c.clone(), i.saturated_into::<u32>());
 		}
 		let collator = candidates[0].clone();
-		let amount = T::CurrencyBalance::from(1u64);
+		let amount = T::CurrencyBalance::one();
 
 		// make sure delegator collated to collator
 		let state = <CollatorState<T>>::get(&collator).unwrap();
@@ -530,14 +555,14 @@ benchmarks! {
 	}: _(RawOrigin::Signed(candidate.clone()),  T::Lookup::unlookup(candidate.clone()))
 	verify {
 		assert_eq!(<Unstaking<T>>::get(&candidate).len().saturated_into::<u32>(), u.saturating_sub(1u32));
-		assert_eq!(pallet_balances::Pallet::<T>::usable_balance(&candidate), (free_balance - stake - stake + T::CurrencyBalance::from(1u64)).into());
+		assert_eq!(pallet_balances::Pallet::<T>::usable_balance(&candidate), (free_balance - stake - stake + T::CurrencyBalance::one()).into());
 	}
 
 	increase_max_candidate_stake_by {
 		let old = <MaxCollatorCandidateStake<T>>::get();
-	}: _(RawOrigin::Root, T::CurrencyBalance::from(1u64))
+	}: _(RawOrigin::Root, T::CurrencyBalance::one())
 	verify {
-		assert_eq!(<MaxCollatorCandidateStake<T>>::get(), old + T::CurrencyBalance::from(1u64));
+		assert_eq!(<MaxCollatorCandidateStake<T>>::get(), old + T::CurrencyBalance::one());
 		assert!(old < <MaxCollatorCandidateStake<T>>::get());
 	}
 

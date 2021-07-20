@@ -30,7 +30,7 @@ use kilt_primitives::constants::BLOCKS_PER_YEAR;
 use crate::{
 	mock::{
 		almost_equal, events, last_event, roll_to, AccountId, Balance, Balances, BlockNumber, Event as MetaEvent,
-		ExtBuilder, Origin, StakePallet, System, Test, BLOCKS_PER_ROUND, DECIMALS,
+		ExtBuilder, Origin, Session, StakePallet, System, Test, BLOCKS_PER_ROUND, DECIMALS,
 	},
 	set::OrderedSet,
 	types::{BalanceOf, Collator, CollatorStatus, DelegationCounter, Delegator, RoundInfo, Stake, StakeOf, TotalStake},
@@ -106,7 +106,7 @@ fn genesis() {
 			// 1
 			assert_eq!(Balances::usable_balance(&1), 500);
 			assert_eq!(Balances::free_balance(&1), 1000);
-			assert!(StakePallet::is_candidate(&1));
+			assert!(StakePallet::is_active_candidate(&1).is_some());
 			assert_eq!(
 				StakePallet::collator_state(&1),
 				Some(Collator {
@@ -123,7 +123,7 @@ fn genesis() {
 			// 2
 			assert_eq!(Balances::usable_balance(&2), 100);
 			assert_eq!(Balances::free_balance(&2), 300);
-			assert!(StakePallet::is_candidate(&2));
+			assert!(StakePallet::is_active_candidate(&2).is_some());
 			assert_eq!(
 				StakePallet::collator_state(&2),
 				Some(Collator {
@@ -209,11 +209,11 @@ fn genesis() {
 				]
 			);
 			for x in 1..5 {
-				assert!(StakePallet::is_candidate(&x));
+				assert!(StakePallet::is_active_candidate(&x).is_some());
 				assert_eq!(Balances::free_balance(&x), 100);
 				assert_eq!(Balances::usable_balance(&x), 80);
 			}
-			assert!(StakePallet::is_candidate(&5));
+			assert!(StakePallet::is_active_candidate(&5).is_some());
 			assert_eq!(Balances::free_balance(&5), 100);
 			assert_eq!(Balances::usable_balance(&5), 90);
 			// Delegators
@@ -654,7 +654,7 @@ fn execute_leave_candidates_with_delay() {
 						state: CollatorStatus::Leaving(3)
 					})
 				);
-				assert!(StakePallet::is_candidate(&collator));
+				assert!(StakePallet::is_active_candidate(&collator).is_some());
 				assert!(StakePallet::unstaking(collator).is_empty());
 			}
 			assert_eq!(
@@ -741,7 +741,7 @@ fn execute_leave_candidates_with_delay() {
 						state: CollatorStatus::Leaving(3)
 					})
 				);
-				assert!(StakePallet::is_candidate(&collator));
+				assert!(StakePallet::is_active_candidate(&collator).is_some());
 				assert!(StakePallet::unstaking(collator).is_empty());
 			}
 			assert_eq!(
@@ -787,7 +787,7 @@ fn execute_leave_candidates_with_delay() {
 					*collator
 				));
 				assert!(StakePallet::collator_state(&collator).is_none());
-				assert!(!StakePallet::is_candidate(collator));
+				assert!(!StakePallet::is_active_candidate(collator).is_some());
 				assert_eq!(StakePallet::unstaking(collator).len(), 1);
 			}
 			assert_eq!(StakePallet::total(), old_stake);
@@ -804,7 +804,7 @@ fn execute_leave_candidates_with_delay() {
 					collator
 				));
 				assert!(StakePallet::collator_state(&collator).is_none());
-				assert!(!StakePallet::is_candidate(&collator));
+				assert!(!StakePallet::is_active_candidate(&collator).is_some());
 				assert_eq!(StakePallet::unstaking(collator).len(), 1);
 			}
 		});
@@ -2333,19 +2333,15 @@ fn unlock_unstaked() {
 			roll_to(6, vec![]);
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
 			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
-			roll_to(7, vec![]);
-			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
 			unstaking.insert(6, 10);
 			unstaking.insert(7, 10);
 			unstaking.insert(8, 10);
-			unstaking.insert(9, 10);
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(1), vec![lock.clone()]);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 
-			roll_to(8, vec![]);
+			roll_to(7, vec![]);
 			assert_noop!(
 				StakePallet::candidate_stake_less(Origin::signed(1), 10),
 				Error::<Test>::NoMoreUnstaking
@@ -2360,19 +2356,18 @@ fn unlock_unstaked() {
 			unstaking.remove(&5);
 			unstaking.remove(&6);
 			unstaking.remove(&7);
-			unstaking.remove(&8);
-			lock.amount = 90;
+			lock.amount = 100;
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(1), vec![lock.clone()]);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 40));
 			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 40));
-			unstaking.insert(10, 40);
+			unstaking.insert(9, 40);
 			assert_ok!(StakePallet::candidate_stake_more(Origin::signed(1), 30));
 			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(2), 1, 30));
-			unstaking.remove(&9);
-			unstaking.insert(10, 20);
+			unstaking.remove(&8);
+			unstaking.insert(9, 20);
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(1), vec![lock.clone()]);
@@ -2758,7 +2753,10 @@ fn force_remove_candidate() {
 			assert!(StakePallet::unstaking(2).get(&3).is_none());
 			assert!(StakePallet::unstaking(3).get(&3).is_none());
 
+			// force remove 1
+			assert!(Session::disabled_validators().is_empty());
 			assert_ok!(StakePallet::force_remove_candidate(Origin::root(), 1));
+			assert_eq!(Session::disabled_validators(), vec![0]);
 			assert_eq!(last_event(), MetaEvent::StakePallet(Event::CollatorRemoved(1, 200)));
 			assert!(!StakePallet::candidate_pool().contains(&Stake { owner: 1, amount: 100 }));
 			assert_eq!(StakePallet::selected_candidates(), vec![2, 3]);
@@ -2783,6 +2781,17 @@ fn force_remove_candidate() {
 				StakePallet::force_remove_candidate(Origin::root(), 4),
 				Error::<Test>::CandidateNotFound
 			);
+
+			// session 1: expect 1 to still be in validator set but as disabled
+			roll_to(5, vec![]);
+			assert_eq!(Session::current_index(), 1);
+			assert_eq!(Session::validators(), vec![1, 2]);
+			assert_eq!(Session::disabled_validators(), vec![0]);
+
+			// session 2: expect validator set to have changed
+			roll_to(10, vec![]);
+			assert_eq!(Session::validators(), vec![2, 3]);
+			assert!(Session::disabled_validators().is_empty());
 		});
 }
 
@@ -3075,5 +3084,83 @@ fn authorities_per_round() {
 				Balances::free_balance(1),
 				stake + reward_0 + reward_1 + reward_2 + reward_3
 			);
+		});
+}
+
+#[test]
+fn force_new_round() {
+	ExtBuilder::default()
+		.with_balances(vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100), (6, 100)])
+		.with_collators(vec![(1, 100), (2, 100), (3, 100), (4, 100)])
+		.build()
+		.execute_with(|| {
+			let mut round = RoundInfo {
+				current: 0,
+				first: 0,
+				length: 5,
+			};
+			assert_eq!(StakePallet::round(), round);
+			assert_eq!(Session::validators(), vec![1, 2]);
+			assert_eq!(Session::current_index(), 0);
+			// 3 should be validator in round 2
+			assert_ok!(StakePallet::join_delegators(Origin::signed(5), 3, 100));
+
+			// init force new round from 0 to 1, updating the authorities
+			assert_ok!(StakePallet::force_new_round(Origin::root()));
+			assert_eq!(StakePallet::round(), round);
+			assert_eq!(Session::current_index(), 0);
+			assert!(StakePallet::new_round_forced());
+
+			// force new round should become active by starting next block
+			roll_to(2, vec![]);
+			round = RoundInfo {
+				current: 1,
+				first: 2,
+				length: 5,
+			};
+			assert_eq!(Session::current_index(), 1);
+			assert_eq!(Session::validators(), vec![1, 2]);
+			assert!(!StakePallet::new_round_forced());
+
+			// roll to next block in same round 1
+			roll_to(3, vec![]);
+			assert_eq!(Session::current_index(), 1);
+			assert_eq!(StakePallet::round(), round);
+			// assert_eq!(Session::validators(), vec![3, 1]);
+			assert!(!StakePallet::new_round_forced());
+			// 4 should become validator in session 3 if we do not force a new round
+			assert_ok!(StakePallet::join_delegators(Origin::signed(6), 4, 100));
+
+			// end session 2 naturally
+			roll_to(7, vec![]);
+			round = RoundInfo {
+				current: 2,
+				first: 7,
+				length: 5,
+			};
+			assert_eq!(StakePallet::round(), round);
+			assert_eq!(Session::current_index(), 2);
+			assert!(!StakePallet::new_round_forced());
+			assert_eq!(Session::validators(), vec![3, 1]);
+
+			// force new round 3
+			assert_ok!(StakePallet::force_new_round(Origin::root()));
+			assert_eq!(StakePallet::round(), round);
+			assert_eq!(Session::current_index(), 2);
+			// validator set should not change until next round
+			assert_eq!(Session::validators(), vec![3, 1]);
+			assert!(StakePallet::new_round_forced());
+
+			// force new round should become active by starting next block
+			roll_to(8, vec![]);
+			round = RoundInfo {
+				current: 3,
+				first: 8,
+				length: 5,
+			};
+			assert_eq!(Session::current_index(), 3);
+			assert_eq!(StakePallet::round(), round);
+			assert_eq!(Session::validators(), vec![3, 4]);
+			assert!(!StakePallet::new_round_forced());
 		});
 }
