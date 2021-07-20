@@ -36,6 +36,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, ConvertInto, IdentityLookup, OpaqueKeys},
 	Perbill, Perquintill,
 };
+use sp_std::fmt::Debug;
 
 pub use kilt_primitives::BlockNumber;
 
@@ -129,10 +130,13 @@ parameter_types! {
 	pub const ExitQueueDelay: u32 = 2;
 	pub const DefaultBlocksPerRound: BlockNumber = BLOCKS_PER_ROUND;
 	pub const MinSelectedCandidates: u32 = 2;
+	#[derive(Debug, PartialEq)]
 	pub const MaxDelegatorsPerCollator: u32 = 4;
+	#[derive(Debug, PartialEq)]
 	pub const MaxCollatorsPerDelegator: u32 = 4;
 	pub const DefaultCollatorCommission: Perbill = Perbill::from_percent(20);
 	pub const MinCollatorStake: Balance = 10;
+	#[derive(Debug, PartialEq)]
 	pub const MaxCollatorCandidates: u32 = 10;
 	pub const MinDelegatorStake: Balance = 5;
 	pub const MinDelegation: Balance = 3;

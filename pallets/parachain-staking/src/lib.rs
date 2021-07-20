@@ -183,6 +183,7 @@ pub mod pallet {
 			Currency, EstimateNextSessionRotation, Get, Imbalance, LockIdentifier, LockableCurrency,
 			ReservableCurrency, WithdrawReasons,
 		},
+		BoundedVec,
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_primitives::constants::BLOCKS_PER_YEAR;
@@ -202,6 +203,7 @@ pub mod pallet {
 			StakeOf, TotalStake,
 		},
 	};
+	use sp_std::{convert::TryInto, fmt::Debug};
 
 	/// Kilt-specific lock for staking rewards.
 	pub(crate) const STAKING_ID: LockIdentifier = *b"kiltpstk";
@@ -262,11 +264,11 @@ pub mod pallet {
 		/// to be one.
 		type MaxDelegationsPerRound: Get<u32>;
 		/// Maximum number of delegators a single collator can have.
-		type MaxDelegatorsPerCollator: Get<u32>;
+		type MaxDelegatorsPerCollator: Get<u32> + Debug + PartialEq;
 		/// Maximum number of collators a single delegator can delegate.
-		type MaxCollatorsPerDelegator: Get<u32>;
+		type MaxCollatorsPerDelegator: Get<u32> + Debug + PartialEq;
 		/// Maximum size of the collator candidates set.
-		type MaxCollatorCandidates: Get<u32>;
+		type MaxCollatorCandidates: Get<u32> + Debug + PartialEq;
 		/// Minimum stake required for any account to be elected as validator
 		/// for a round.
 		type MinCollatorStake: Get<BalanceOf<Self>>;
@@ -330,7 +332,7 @@ pub mod pallet {
 		/// The collator candidate has already reached the maximum number of
 		/// delegators.
 		///
-		/// This error is generated in cases a new delegation request does not
+		/// This error is generated in case a new delegation request does not
 		/// stake enough funds to replace some other existing delegation.
 		TooManyDelegators,
 		/// The set of collator candidates has already reached the maximum size
@@ -554,21 +556,32 @@ pub mod pallet {
 	/// It maps from an account to its delegation details.
 	#[pallet::storage]
 	#[pallet::getter(fn delegator_state)]
-	pub(crate) type DelegatorState<T: Config> =
-		StorageMap<_, Twox64Concat, T::AccountId, Delegator<T::AccountId, BalanceOf<T>>, OptionQuery>;
+	pub(crate) type DelegatorState<T: Config> = StorageMap<
+		_,
+		Twox64Concat,
+		T::AccountId,
+		Delegator<T::AccountId, BalanceOf<T>, T::MaxCollatorsPerDelegator>,
+		OptionQuery,
+	>;
 
 	/// Collator candidates staking information.
 	///
 	/// It maps from an account to its collator details.
 	#[pallet::storage]
 	#[pallet::getter(fn collator_state)]
-	pub(crate) type CollatorState<T: Config> =
-		StorageMap<_, Twox64Concat, T::AccountId, Collator<T::AccountId, BalanceOf<T>>, OptionQuery>;
+	pub(crate) type CollatorState<T: Config> = StorageMap<
+		_,
+		Twox64Concat,
+		T::AccountId,
+		Collator<T::AccountId, BalanceOf<T>, T::MaxDelegatorsPerCollator>,
+		OptionQuery,
+	>;
 
 	/// The collator candidates selected for the latest validation round.
 	#[pallet::storage]
 	#[pallet::getter(fn selected_candidates)]
-	pub(crate) type SelectedCandidates<T: Config> = StorageValue<_, Vec<T::AccountId>, ValueQuery>;
+	pub(crate) type SelectedCandidates<T: Config> =
+		StorageValue<_, BoundedVec<T::AccountId, T::MaxCollatorCandidates>, ValueQuery>;
 
 	/// Total funds locked by this staking pallet.
 	#[pallet::storage]
@@ -579,7 +592,7 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn candidate_pool)]
 	pub(crate) type CandidatePool<T: Config> =
-		StorageValue<_, OrderedSet<Stake<T::AccountId, BalanceOf<T>>>, ValueQuery>;
+		StorageValue<_, OrderedSet<Stake<T::AccountId, BalanceOf<T>>, T::MaxCollatorCandidates>, ValueQuery>;
 
 	/// Inflation configuration.
 	#[pallet::storage]
@@ -1029,20 +1042,22 @@ pub mod pallet {
 			);
 
 			let mut candidates = <CandidatePool<T>>::get();
-			// should never fail but let's be safe
-			ensure!(
-				candidates.insert(Stake {
-					owner: acc.clone(),
-					amount: stake
-				}),
-				Error::<T>::CandidateExists
-			);
-
 			// [Post-launch TODO] Replace with `check_collator_candidate_inclusion`.
 			ensure!(
-				(candidates.len().saturated_into::<u32>()) <= T::MaxCollatorCandidates::get(),
+				(candidates.len().saturated_into::<u32>()) < T::MaxCollatorCandidates::get(),
 				Error::<T>::TooManyCollatorCandidates
 			);
+
+			// attempt to insert candidate and check for excess
+			let insert_candidate = candidates
+				.insert(Stake {
+					owner: acc.clone(),
+					amount: stake,
+				})
+				.map_err(|_| Error::<T>::TooManyCollatorCandidates)?;
+			// should never fail but let's be safe
+			ensure!(insert_candidate, Error::<T>::CandidateExists);
+
 			Self::increase_lock(&acc, stake, BalanceOf::<T>::zero())?;
 
 			let candidate = Collator::new(acc.clone(), stake);
@@ -1225,14 +1240,17 @@ pub mod pallet {
 				(candidates.len().saturated_into::<u32>()) < T::MaxCollatorCandidates::get(),
 				Error::<T>::TooManyCollatorCandidates
 			);
-			// should never fail but let's be safe
-			ensure!(
-				candidates.insert(Stake {
+
+			// attempt to insert candidate and check for excess
+			let insert_candidate = candidates
+				.insert(Stake {
 					owner: acc.clone(),
 					amount: state.total,
-				}),
-				Error::<T>::CandidateExists
-			);
+				})
+				.map_err(|_| Error::<T>::TooManyCollatorCandidates)?;
+			// should never fail but let's be safe
+			ensure!(insert_candidate, Error::<T>::CandidateExists);
+
 			// revert leaving state
 			state.revert_leaving();
 
@@ -1295,7 +1313,7 @@ pub mod pallet {
 			let unstaking_len = Self::increase_lock(&collator, after, more)?;
 
 			if state.is_active() {
-				Self::update(collator.clone(), state.total);
+				Self::update(collator.clone(), state.total)?;
 			}
 			<CollatorState<T>>::insert(&collator, state);
 
@@ -1357,7 +1375,7 @@ pub mod pallet {
 			Self::prep_unstake(&collator, less)?;
 
 			if state.is_active() {
-				Self::update(collator.clone(), state.total);
+				Self::update(collator.clone(), state.total)?;
 			}
 			<CollatorState<T>>::insert(&collator, state);
 
@@ -1426,16 +1444,24 @@ pub mod pallet {
 
 			// prepare update of collator state
 			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
+			let num_delegations_pre_insertion: u32 = state.delegators.len().saturated_into();
+
 			ensure!(!state.is_leaving(), Error::<T>::CannotDelegateIfLeaving);
 			let delegation = Stake {
 				owner: acc.clone(),
 				amount,
 			};
+
+			// attempt to insert delegator and check for excess
+			let insert_delegator = state
+				.delegators
+				.insert(delegation.clone())
+				.map_err(|_| Error::<T>::TooManyDelegators)?;
 			// should never fail but let's be safe
-			ensure!(state.delegators.insert(delegation.clone()), Error::<T>::DelegatorExists);
+			ensure!(insert_delegator, Error::<T>::DelegatorExists);
 
 			// update state and potentially kick a delegator with less staked amount
-			state = if (state.delegators.len().saturated_into::<u32>()) > T::MaxDelegatorsPerCollator::get() {
+			state = if num_delegations_pre_insertion == T::MaxDelegatorsPerCollator::get() {
 				let (new_state, replaced_delegation) = Self::do_update_delegator(delegation.clone(), state)?;
 				Self::deposit_event(Event::DelegationReplaced(
 					delegation.owner,
@@ -1455,7 +1481,7 @@ pub mod pallet {
 			// lock stake
 			Self::increase_lock(&acc, amount, BalanceOf::<T>::zero())?;
 			if state.is_active() {
-				Self::update(collator.clone(), new_total);
+				Self::update(collator.clone(), new_total)?;
 			}
 
 			// update states
@@ -1541,23 +1567,34 @@ pub mod pallet {
 
 			// prepare new collator state
 			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
+			let num_delegations_pre_insertion: u32 = state.delegators.len().saturated_into();
 			ensure!(!state.is_leaving(), Error::<T>::CannotDelegateIfLeaving);
+
+			// throws if delegation insertion exceeds bounded vec limit which we will handle
+			// below in Self::do_update_delegator
 			ensure!(
-				delegator.add_delegation(Stake {
-					owner: collator.clone(),
-					amount
-				}),
+				delegator
+					.add_delegation(Stake {
+						owner: collator.clone(),
+						amount
+					})
+					.unwrap_or(true),
 				Error::<T>::AlreadyDelegatedCollator
 			);
 			let delegation = Stake {
 				owner: acc.clone(),
 				amount,
 			};
-			// should never fail but let's be safe
-			ensure!(state.delegators.insert(delegation.clone()), Error::<T>::DelegatorExists);
+
+			// throws if delegation insertion exceeds bounded vec limit which we will handle
+			// below in Self::do_update_delegator
+			ensure!(
+				state.delegators.insert(delegation.clone()).unwrap_or(true),
+				Error::<T>::DelegatorExists
+			);
 
 			// update state and potentially kick a delegator with less staked amount
-			state = if (state.delegators.len().saturated_into::<u32>()) > T::MaxDelegatorsPerCollator::get() {
+			state = if num_delegations_pre_insertion == T::MaxDelegatorsPerCollator::get() {
 				let (new_state, replaced_delegation) = Self::do_update_delegator(delegation.clone(), state)?;
 				Self::deposit_event(Event::DelegationReplaced(
 					delegation.owner,
@@ -1577,7 +1614,7 @@ pub mod pallet {
 			// lock stake
 			Self::increase_lock(&acc, delegator.total, amount)?;
 			if state.is_active() {
-				Self::update(collator.clone(), new_total);
+				Self::update(collator.clone(), new_total)?;
 			}
 
 			// Update states
@@ -1745,7 +1782,7 @@ pub mod pallet {
 			let after = collator.total;
 
 			if collator.is_active() {
-				Self::update(candidate.clone(), collator.total);
+				Self::update(candidate.clone(), collator.total)?;
 			}
 			<CollatorState<T>>::insert(&candidate, collator);
 			<DelegatorState<T>>::insert(&delegator, delegations);
@@ -1823,7 +1860,7 @@ pub mod pallet {
 			collator.dec_delegator(delegator.clone(), less);
 			let after = collator.total;
 			if collator.is_active() {
-				Self::update(candidate.clone(), collator.total);
+				Self::update(candidate.clone(), collator.total)?;
 			}
 			<CollatorState<T>>::insert(&candidate, collator);
 			<DelegatorState<T>>::insert(&delegator, delegations);
@@ -1912,14 +1949,18 @@ pub mod pallet {
 		/// - Reads: CandidatePool
 		/// - Writes: CandidatePool
 		/// # </weight>
-		fn update(candidate: T::AccountId, total: BalanceOf<T>) {
+		fn update(candidate: T::AccountId, total: BalanceOf<T>) -> DispatchResult {
 			let mut candidates = <CandidatePool<T>>::get();
-			candidates.upsert(Stake {
-				owner: candidate,
-				amount: total,
-			});
+			candidates
+				.upsert(Stake {
+					owner: candidate,
+					amount: total,
+				})
+				.map_err(|_| Error::<T>::TooManyCollatorCandidates)?;
 
 			<CandidatePool<T>>::put(candidates);
+
+			Ok(())
 		}
 
 		/// Update the delegator's state by removing the collator candidate from
@@ -1995,7 +2036,7 @@ pub mod pallet {
 			Self::prep_unstake(&delegator, delegator_stake)?;
 
 			if state.is_active() {
-				Self::update(collator.clone(), state.total);
+				Self::update(collator.clone(), state.total)?;
 			}
 			let new_total = state.total;
 			<CollatorState<T>>::insert(&collator, state);
@@ -2099,8 +2140,8 @@ pub mod pallet {
 		/// `MaxCollatorCandidates`
 		/// - Reads: CandidatePool, CollatorState, SelectedCandidates
 		/// # </weight>
-		fn get_collator_list(top_n: u32) -> Vec<T::AccountId> {
-			let mut candidates = <CandidatePool<T>>::get().into_vec();
+		fn get_collator_list(top_n: u32) -> BoundedVec<T::AccountId, T::MaxCollatorCandidates> {
+			let mut candidates = <CandidatePool<T>>::get().into_bounded_vec().into_inner();
 
 			log::trace!("{} Candidates for {} Collator seats", candidates.len(), top_n);
 
@@ -2123,9 +2164,11 @@ pub mod pallet {
 				.collect::<Vec<T::AccountId>>();
 
 			// update pool
-			<CandidatePool<T>>::set(OrderedSet::from_sorted_set(candidates));
+			<CandidatePool<T>>::set(OrderedSet::from_sorted_set(
+				candidates.try_into().expect("Did not extend Candidates"),
+			));
 
-			collators
+			collators.try_into().expect("Did not extend Collators")
 		}
 
 		/// Attempts to add the stake to the set of delegators of a collator
@@ -2143,24 +2186,27 @@ pub mod pallet {
 		/// # </weight>
 		fn do_update_delegator(
 			stake: Stake<T::AccountId, BalanceOf<T>>,
-			mut state: Collator<T::AccountId, BalanceOf<T>>,
-		) -> Result<(CollatorOf<T>, StakeOf<T>), DispatchError> {
+			mut state: Collator<T::AccountId, BalanceOf<T>, T::MaxDelegatorsPerCollator>,
+		) -> Result<(CollatorOf<T, T::MaxDelegatorsPerCollator>, StakeOf<T>), DispatchError> {
 			// add stake & sort by amount
-			let mut delegators: Vec<Stake<T::AccountId, BalanceOf<T>>> = state.delegators.into();
+			let delegators: Vec<Stake<T::AccountId, BalanceOf<T>>> = state.delegators.into_bounded_vec().into_inner();
 
 			// check whether stake is at last place
-			match delegators.pop() {
+			// FIXME: Combine storage clearing with check of insertion which already
+			// replaces the lowest staked delegator
+			match delegators.clone().last() {
 				Some(stake_to_remove) if stake_to_remove.amount < stake.amount => {
 					state.total = state
 						.total
 						.saturating_sub(stake_to_remove.amount)
 						.saturating_add(stake.amount);
-					state.delegators = OrderedSet::from_sorted_set(delegators);
+					state.delegators =
+						OrderedSet::from_sorted_set(delegators.try_into().expect("Did not extend size of Delegators"));
 
 					// update storage of kicked delegator
 					Self::kick_delegator(&stake_to_remove, &state.id)?;
 
-					Ok((state, stake_to_remove))
+					Ok((state, stake_to_remove.clone()))
 				}
 				_ => Err(Error::<T>::TooManyDelegators.into()),
 			}
@@ -2300,7 +2346,7 @@ pub mod pallet {
 		/// - Kills: CollatorState, DelegatorState for all delegators which only
 		///   delegated to the candidate
 		/// # </weight>
-		fn remove_candidate(collator: &T::AccountId, state: CollatorOf<T>) {
+		fn remove_candidate(collator: &T::AccountId, state: CollatorOf<T, T::MaxDelegatorsPerCollator>) {
 			// iterate over delegators
 			for stake in state.delegators.into_iter() {
 				// prepare unstaking of delegator
@@ -2480,8 +2526,8 @@ pub mod pallet {
 		// /// set. On failure, an error is returned. removing an already existing
 		// fn check_collator_candidate_inclusion(
 		// 	stake: Stake<T::AccountId, BalanceOf<T>>,
-		// 	mut candidates: OrderedSet<Stake<T::AccountId, BalanceOf<T>>>,
-		// ) -> Result<(), DispatchError> {
+		// 	mut candidates: OrderedSet<Stake<T::AccountId, BalanceOf<T>>,
+		// T::MaxCollatorCandidates>, ) -> Result<(), DispatchError> {
 		// 	todo!()
 		// }
 	}
@@ -2586,7 +2632,7 @@ pub mod pallet {
 			// get top collator candidates which are updated in any transaction which
 			// affects either the stake of collators or delegators, see
 			// `select_top_candidates` for details
-			Some(<SelectedCandidates<T>>::get())
+			Some(<SelectedCandidates<T>>::get().to_vec())
 		}
 
 		fn end_session(_end_index: SessionIndex) {
