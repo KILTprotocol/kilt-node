@@ -103,7 +103,8 @@ where
 
 		// delegate signs delegation to parent
 		let hash: Vec<u8> =
-			Pallet::<T>::calculate_delegation_creation_hash(&delegation_id, &root_id, &parent_id, &permissions).encode();
+			Pallet::<T>::calculate_delegation_creation_hash(&delegation_id, &root_id, &parent_id, &permissions)
+				.encode();
 		let sig = sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &delegation_acc_public, hash.as_ref())
 			.ok_or("Error while building signature of delegation.")?;
 

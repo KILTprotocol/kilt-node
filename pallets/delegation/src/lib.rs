@@ -271,7 +271,8 @@ pub mod pallet {
 			let hierarchy_root_id = parent_node.hierarchy_root_id;
 
 			// Calculate the hash root
-			let hash_root = Self::calculate_delegation_creation_hash(&delegation_id, &hierarchy_root_id, &parent_id, &permissions);
+			let hash_root =
+				Self::calculate_delegation_creation_hash(&delegation_id, &hierarchy_root_id, &parent_id, &permissions);
 
 			// Verify that the hash root signature is correct.
 			DelegationSignatureVerificationOf::<T>::verify(&delegate, &hash_root.encode(), &delegate_signature)
