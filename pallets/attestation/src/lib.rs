@@ -188,16 +188,12 @@ pub mod pallet {
 		/// delegation that will be saved along with the attestation itself in
 		/// the form of an attested delegation.
 		///
-		/// * origin: the identifier of the attester
-		/// * claim_hash: the hash of the claim to attest. It has to be unique
-		/// * ctype_hash: the hash of the CType used for this attestation
-		/// * delegation_id: \[OPTIONAL\] the ID of the delegation node used to
-		///   authorise the attester
+		/// The referenced CType hash must already be present on chain.
 		///
 		/// If an optional delegation id is provided, the dispatch origin must
-		/// be the owner of the delegation.
+		/// be the owner of the delegation. Otherwise, it could be any `DelegationEntityId`.
 		///
-		/// Emits AttestationCreated.
+		/// Emits `AttestationCreated`.
 		///
 		/// # <weight>
 		/// Weight: O(1)
@@ -278,15 +274,7 @@ pub mod pallet {
 		/// the attester, i.e., it was either the delegator of the attester or
 		/// an ancestor thereof.
 		///
-		/// * origin: the identifier of the revoker
-		/// * claim_hash: the hash of the claim to revoke
-		/// * max_parent_checks: for delegated attestations, the number of
-		///   delegation nodes to check up in the trust hierarchy (including the
-		///   root node but excluding the provided node) to verify whether the
-		///   caller is an ancestor of the attestation attester and hence
-		///   authorised to revoke the specified attestation.
-		///
-		/// Emits AttestationRevoked.
+		/// Emits `AttestationRevoked`.
 		///
 		/// # <weight>
 		/// Weight: O(P) where P is the number of steps required to verify that

@@ -118,6 +118,8 @@ pub mod pallet {
 		/// Create a new CType from the given unique CType hashand associates it
 		/// with its creator.
 		///
+		/// A CType with the same hash must not be stored on chain.
+		///
 		/// Emits `CTypeCreated`.
 		///
 		/// # <weight>
