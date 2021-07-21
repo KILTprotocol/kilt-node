@@ -283,9 +283,10 @@ fn create_delegation_direct_root_revoked_error() {
 		.build(Some(ext));
 
 	ext.execute_with(|| {
-		let _ = Delegation::revoke_hierarchy(
+		let _ = Delegation::revoke_delegation(
 			get_origin(creator.clone()),
 			operation.hierarchy_id,
+			0u32,
 			MaxRevocations::get(),
 		);
 		assert_noop!(
@@ -639,9 +640,10 @@ fn empty_revoke_root_successful() {
 		.build(Some(ext));
 
 	ext.execute_with(|| {
-		assert_ok!(Delegation::revoke_hierarchy(
+		assert_ok!(Delegation::revoke_delegation(
 			get_origin(revoker.clone()),
 			operation.id,
+			0u32,
 			operation.max_children
 		));
 	});
@@ -685,9 +687,10 @@ fn list_hierarchy_revoke_root_successful() {
 		.build(Some(ext));
 
 	ext.execute_with(|| {
-		assert_ok!(Delegation::revoke_hierarchy(
+		assert_ok!(Delegation::revoke_delegation(
 			get_origin(revoker.clone()),
 			operation.id,
+			0u32,
 			operation.max_children
 		));
 	});
@@ -742,9 +745,10 @@ fn tree_hierarchy_revoke_root_successful() {
 		.build(Some(ext));
 
 	ext.execute_with(|| {
-		assert_ok!(Delegation::revoke_hierarchy(
+		assert_ok!(Delegation::revoke_delegation(
 			get_origin(revoker.clone()),
 			operation.id,
+			0u32,
 			operation.max_children
 		));
 	});
@@ -797,9 +801,10 @@ fn max_max_revocations_revoke_successful() {
 		.build(Some(ext));
 
 	ext.execute_with(|| {
-		assert_ok!(Delegation::revoke_hierarchy(
+		assert_ok!(Delegation::revoke_delegation(
 			get_origin(revoker.clone()),
 			operation.id,
+			0u32,
 			operation.max_children
 		));
 	});
@@ -832,8 +837,8 @@ fn root_not_found_revoke_root_error() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Delegation::revoke_hierarchy(get_origin(revoker.clone()), operation.id, operation.max_children),
-			delegation::Error::<Test>::HierarchyNotFound
+			Delegation::revoke_delegation(get_origin(revoker.clone()), operation.id, 0u32, operation.max_children),
+			delegation::Error::<Test>::DelegationNotFound
 		);
 	});
 }
@@ -861,7 +866,7 @@ fn different_root_creator_revoke_root_error() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Delegation::revoke_hierarchy(get_origin(revoker.clone()), operation.id, operation.max_children),
+			Delegation::revoke_delegation(get_origin(revoker.clone()), operation.id, 0u32, operation.max_children),
 			delegation::Error::<Test>::UnauthorizedRevocation
 		);
 	});
@@ -896,7 +901,7 @@ fn too_small_max_revocations_revoke_root_error() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Delegation::revoke_hierarchy(get_origin(revoker.clone()), operation.id, operation.max_children),
+			Delegation::revoke_delegation(get_origin(revoker.clone()), operation.id, 0u32, operation.max_children),
 			delegation::Error::<Test>::ExceededRevocationBounds
 		);
 	});
@@ -945,7 +950,7 @@ fn exact_children_max_revocations_revoke_root_error() {
 		// assert_err and not asser_noop becase the storage is indeed changed, even tho
 		// partially
 		assert_err!(
-			Delegation::revoke_hierarchy(get_origin(revoker.clone()), operation.id, operation.max_children),
+			Delegation::revoke_delegation(get_origin(revoker.clone()), operation.id, 0u32, operation.max_children),
 			delegation::Error::<Test>::ExceededRevocationBounds
 		);
 	});
@@ -1217,8 +1222,7 @@ fn too_many_revocations_revoke_delegation_error() {
 		generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id)),
 	);
 
-	let mut operation = generate_base_delegation_revocation_operation(delegation_id);
-	operation.max_parent_checks = 1u32;
+	let operation = generate_base_delegation_revocation_operation(parent_id);
 
 	let ext = ctype_mock::ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
@@ -1568,7 +1572,7 @@ fn is_delegating_root_owner_revoked() {
 
 	ext.execute_with(|| {
 		// First revoke the hierarchy, then test is_delegating.
-		let _ = Delegation::revoke_hierarchy(get_origin(user_1.clone()), hierarchy_root_id, 2);
+		let _ = Delegation::revoke_delegation(get_origin(user_1.clone()), hierarchy_root_id, 0u32, 2);
 		assert_eq!(
 			Delegation::is_delegating(&user_1, &delegation_id, max_parent_checks),
 			Ok((false, 0u32))

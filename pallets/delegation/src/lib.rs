@@ -323,59 +323,8 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Revoke a delegation hierarchy starting from its root node.
-		///
-		/// Revoking a delegation root results in the whole trust hierarchy
-		/// being revoked. Nevertheless, revocation starts from the leave nodes
-		/// upwards, so if the operation ends prematurely because it runs out of
-		/// gas, the delegation state would be consisent as no child would
-		/// "survive" its parent. As a consequence, if the root node is revoked,
-		/// the whole trust hierarchy is to be considered revoked.
-		///
-		/// * origin: the identifier of the revoker
-		/// * root_node_id: the ID of the delegation root node to revoke
-		/// * max_children: the maximum number of nodes descending from the root
-		///   to revoke as a consequence of the root revocation
-		#[pallet::weight(<T as Config>::WeightInfo::revoke_hierarchy(*max_children))]
-		pub fn revoke_hierarchy(
-			origin: OriginFor<T>,
-			root_node_id: DelegationNodeIdOf<T>,
-			max_children: u32,
-		) -> DispatchResultWithPostInfo {
-			let invoker = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
-
-			let hierarchy_root_node = <DelegationNodes<T>>::get(&root_node_id).ok_or(Error::<T>::HierarchyNotFound)?;
-
-			ensure!(
-				hierarchy_root_node.details.owner == invoker,
-				Error::<T>::UnauthorizedRevocation
-			);
-
-			ensure!(
-				max_children <= T::MaxRevocations::get(),
-				Error::<T>::MaxRevocationsTooLarge
-			);
-
-			let consumed_weight: Weight = if !hierarchy_root_node.details.revoked {
-				// Recursively revoke all children
-				let (_, post_weight) = Self::revoke_children(&root_node_id, &invoker, max_children)?;
-
-				// If we didn't return an ExceededRevocationBounds error, we can revoke the root
-				// too.
-				Self::revoke_and_store_hierarchy_root(root_node_id, hierarchy_root_node);
-				// We don't cancel the delegation_hierarchy from storage.
-
-				post_weight.saturating_add(T::DbWeight::get().writes(1))
-			} else {
-				0
-			};
-
-			Self::deposit_event(Event::HierarchyRevoked(invoker, root_node_id));
-
-			Ok(Some(consumed_weight.saturating_add(T::DbWeight::get().reads(1))).into())
-		}
-
-		/// Revoke a delegation node and all its children.
+		/// Revoke a delegation node (potentially a root node) and all its
+		/// children.
 		///
 		/// Revoking a delegation node results in the trust hierarchy starting
 		/// from the given node being revoked. Nevertheless, revocation starts
@@ -393,8 +342,8 @@ pub mod pallet {
 		///   evaluation terminates when a valid node is reached, when the whole
 		///   hierarchy including the root node has been checked, or when the
 		///   max number of parents is reached
-		/// * max_revocations: the maximum number of nodes descending from this
-		///   one to revoke as a consequence of this node revocation
+		/// * max_revocations: the maximum number of children nodes of this one
+		///   to revoke as a consequence of this node revocation
 		#[pallet::weight(
 			<T as Config>::WeightInfo::revoke_delegation_root_child(*max_revocations, *max_parent_checks)
 				.max(<T as Config>::WeightInfo::revoke_delegation_leaf(*max_revocations, *max_parent_checks)))]
@@ -416,16 +365,22 @@ pub mod pallet {
 				Error::<T>::MaxParentChecksTooLarge
 			);
 
-			let (authorized, parent_checks) = Self::is_delegating(&invoker, &delegation_id, max_parent_checks)?;
-			ensure!(authorized, Error::<T>::UnauthorizedRevocation);
-
 			ensure!(
 				max_revocations <= T::MaxRevocations::get(),
 				Error::<T>::MaxRevocationsTooLarge
 			);
 
-			// Revoke the delegation and recursively all of its children
-			let (revocation_checks, _) = Self::revoke(&delegation_id, &invoker, max_revocations)?;
+			let (authorized, parent_checks) = Self::is_delegating(&invoker, &delegation_id, max_parent_checks)?;
+			ensure!(authorized, Error::<T>::UnauthorizedRevocation);
+
+			// Revoke the delegation and recursively all of its children (add 1 to
+			// max_revocations to account for the node itself)
+			let (revocation_checks, _) = Self::revoke(&delegation_id, &invoker, max_revocations.saturating_add(1))?;
+
+			// If the revoked node is a root node, emit also a HierarchyRevoked event.
+			if DelegationHierarchies::<T>::contains_key(&delegation_id) {
+				Self::deposit_event(Event::HierarchyRevoked(invoker, delegation_id));
+			}
 
 			// Add worst case reads from `is_delegating`
 			Ok(Some(
@@ -484,13 +439,6 @@ impl<T: Config> Pallet<T> {
 		<DelegationNodes<T>>::insert(parent_id, parent_node);
 	}
 
-	// Marks the provided hierarchy as revoked and stores the resulting state back
-	// in the storage.
-	fn revoke_and_store_hierarchy_root(root_id: DelegationNodeIdOf<T>, mut root_node: DelegationNode<T>) {
-		root_node.details.revoked = true;
-		<DelegationNodes<T>>::insert(root_id, root_node);
-	}
-
 	/// Check if an identity is the owner of the given delegation node or any
 	/// node up the hierarchy, and if the delegation has not been yet revoked.
 	///
@@ -509,18 +457,18 @@ impl<T: Config> Pallet<T> {
 		// delegation has not been removed
 		if &delegation_node.details.owner == identity {
 			Ok((!delegation_node.details.revoked, 0u32))
-		} else {
+		} else if let Some(parent) = delegation_node.parent {
+			// Only decrease (and perhaps fail) remaining_lookups if there are more parents
+			// to visit
 			let remaining_lookups = max_parent_checks
 				.checked_sub(1)
 				.ok_or(Error::<T>::MaxSearchDepthReached)?;
 
-			if let Some(parent) = delegation_node.parent {
-				// Recursively check upwards in hierarchy
-				Self::is_delegating(identity, &parent, remaining_lookups)
-			} else {
-				// Safe because remaining lookups is at most max_parent_checks
-				Ok((false, max_parent_checks - remaining_lookups))
-			}
+			// Recursively check upwards in hierarchy
+			Self::is_delegating(identity, &parent, remaining_lookups)
+		} else {
+			// Return false and return max_parent_checks as no other check is performed
+			Ok((false, max_parent_checks))
 		}
 	}
 

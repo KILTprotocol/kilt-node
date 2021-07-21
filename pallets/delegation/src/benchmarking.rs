@@ -192,24 +192,6 @@ benchmarks! {
 		assert!(DelegationHierarchies::<T>::contains_key(delegation));
 	}
 
-	revoke_hierarchy {
-		let r in 1 .. T::MaxRevocations::get();
-		let (root_acc, hierarchy_id, leaf_acc, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
-		let root_acc_id: T::AccountId = root_acc.into();
-	}: _(RawOrigin::Signed(root_acc_id.clone()), hierarchy_id, r)
-	verify {
-		assert!(DelegationHierarchies::<T>::contains_key(hierarchy_id));
-		let root_delegation = DelegationNodes::<T>::get(hierarchy_id).ok_or("Missing root delegation")?;
-		assert_eq!(root_delegation.details.owner, root_acc_id.into());
-		assert!(root_delegation.details.revoked);
-
-		assert!(DelegationNodes::<T>::contains_key(leaf_id));
-		let leaf_delegation = DelegationNodes::<T>::get(leaf_id).ok_or("Missing leaf delegation")?;
-		assert_eq!(leaf_delegation.hierarchy_root_id, hierarchy_id);
-		assert_eq!(leaf_delegation.details.owner, T::AccountId::from(leaf_acc).into());
-		assert!(leaf_delegation.details.revoked);
-	}
-
 	add_delegation {
 		// do setup
 		let (_, hierarchy_id, leaf_acc, leaf_id) = setup_delegations::<T>(1, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
