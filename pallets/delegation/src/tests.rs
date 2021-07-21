@@ -283,7 +283,11 @@ fn create_delegation_direct_root_revoked_error() {
 		.build(Some(ext));
 
 	ext.execute_with(|| {
-		let _ = Delegation::revoke_hierarchy(get_origin(creator.clone()), operation.hierarchy_id, MaxRevocations::get());
+		let _ = Delegation::revoke_hierarchy(
+			get_origin(creator.clone()),
+			operation.hierarchy_id,
+			MaxRevocations::get(),
+		);
 		assert_noop!(
 			Delegation::add_delegation(
 				get_origin(creator.clone()),
@@ -339,7 +343,12 @@ fn create_delegation_with_parent_revoked_error() {
 		.build(Some(ext));
 
 	ext.execute_with(|| {
-		let _ = Delegation::revoke_delegation(get_origin(creator.clone()), operation.parent_id, MaxRevocations::get(), MaxParentChecks::get());
+		let _ = Delegation::revoke_delegation(
+			get_origin(creator.clone()),
+			operation.parent_id,
+			MaxRevocations::get(),
+			MaxParentChecks::get(),
+		);
 		assert_noop!(
 			Delegation::add_delegation(
 				get_origin(creator.clone()),

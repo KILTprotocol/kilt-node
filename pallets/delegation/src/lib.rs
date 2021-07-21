@@ -289,10 +289,7 @@ pub mod pallet {
 				Error::<T>::NotOwnerOfParentDelegation
 			);
 			// ... and that the node has not been revoked...
-			ensure!(
-				!parent_node.details.revoked,
-				Error::<T>::ParentDelegationRevoked
-			);
+			ensure!(!parent_node.details.revoked, Error::<T>::ParentDelegationRevoked);
 			// ... and that has permission to delegate
 			ensure!(
 				(parent_node.details.permissions & Permissions::DELEGATE) == Permissions::DELEGATE,
