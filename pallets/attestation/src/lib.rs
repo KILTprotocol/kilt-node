@@ -191,7 +191,8 @@ pub mod pallet {
 		/// The referenced CType hash must already be present on chain.
 		///
 		/// If an optional delegation id is provided, the dispatch origin must
-		/// be the owner of the delegation. Otherwise, it could be any `DelegationEntityId`.
+		/// be the owner of the delegation. Otherwise, it could be any
+		/// `DelegationEntityId`.
 		///
 		/// Emits `AttestationCreated`.
 		///

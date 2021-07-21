@@ -91,7 +91,9 @@
 //!   is bounded by `MaxVerificationKeysToRevoke`.
 //! - The maximum length in ASCII characters of the endpoint URL is bounded by
 //!   `MaxUrlLength`.
-//! - The chain performs basic checks over the endpoint URLs provided in creation and deletion operations. The SDK will perform more in-depth validation of the URL string, e.g., by pattern-matching using regexes.
+//! - The chain performs basic checks over the endpoint URLs provided in
+//!   creation and deletion operations. The SDK will perform more in-depth
+//!   validation of the URL string, e.g., by pattern-matching using regexes.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]

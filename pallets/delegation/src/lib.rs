@@ -234,7 +234,8 @@ pub mod pallet {
 		/// adding children delegations to the root.
 		///
 		/// There must be no delegation with the same ID stored on chain, while
-		/// there must be already a CType with the given hash stored in the CType pallet.
+		/// there must be already a CType with the given hash stored in the
+		/// CType pallet.
 		///
 		/// The dispatch origin must be `DelegationEntityId`.
 		///
@@ -274,12 +275,15 @@ pub mod pallet {
 		/// considers the new node as its root. The owner of this node has full
 		/// control over any of its direct and indirect descendants.
 		///
-		/// For the creation to succeed, the delegatee must provide a valid signature
-		/// over the (blake256) hash of the creation operation details which include (in order) delegation id,
-		/// root node id, parent id, and permissions of the new node.
+		/// For the creation to succeed, the delegatee must provide a valid
+		/// signature over the (blake256) hash of the creation operation details
+		/// which include (in order) delegation id, root node id, parent id, and
+		/// permissions of the new node.
 		///
-		/// There must be no delegation with the same id stored on chain. Furthermore, the referenced root
-		/// and parent nodes must already be present on chain and contain the valid permissions and revocation status (i.e., not revoked).
+		/// There must be no delegation with the same id stored on chain.
+		/// Furthermore, the referenced root and parent nodes must already be
+		/// present on chain and contain the valid permissions and revocation
+		/// status (i.e., not revoked).
 		///
 		/// The dispatch origin must be `DelegationEntityId`.
 		///
