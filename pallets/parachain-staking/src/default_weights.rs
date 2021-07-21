@@ -53,23 +53,23 @@ pub trait WeightInfo {
 	fn on_initialize_new_year() -> Weight;
 	fn force_new_round() -> Weight;
 	fn set_inflation() -> Weight;
-	fn set_max_selected_candidates(n: u32, m: u32, ) -> Weight;
+	fn set_max_selected_candidates(n: u32, m: u32) -> Weight;
 	fn set_blocks_per_round() -> Weight;
-	fn force_remove_candidate(n: u32, m: u32, ) -> Weight;
-	fn join_candidates(n: u32, m: u32, ) -> Weight;
-	fn init_leave_candidates(n: u32, m: u32, ) -> Weight;
-	fn cancel_leave_candidates(n: u32, m: u32, ) -> Weight;
-	fn execute_leave_candidates(n: u32, m: u32, u: u32, ) -> Weight;
-	fn candidate_stake_more(n: u32, m: u32, u: u32, ) -> Weight;
-	fn candidate_stake_less(n: u32, m: u32, ) -> Weight;
-	fn join_delegators(n: u32, m: u32, ) -> Weight;
-	fn delegator_stake_more(n: u32, m: u32, u: u32, ) -> Weight;
-	fn delegator_stake_less(n: u32, m: u32, ) -> Weight;
-	fn revoke_delegation(n: u32, m: u32, ) -> Weight;
-	fn leave_delegators(n: u32, m: u32, ) -> Weight;
-	fn unlock_unstaked(u: u32, ) -> Weight;
+	fn force_remove_candidate(n: u32, m: u32) -> Weight;
+	fn join_candidates(n: u32, m: u32) -> Weight;
+	fn init_leave_candidates(n: u32, m: u32) -> Weight;
+	fn cancel_leave_candidates(n: u32, m: u32) -> Weight;
+	fn execute_leave_candidates(n: u32, m: u32, u: u32) -> Weight;
+	fn candidate_stake_more(n: u32, m: u32, u: u32) -> Weight;
+	fn candidate_stake_less(n: u32, m: u32) -> Weight;
+	fn join_delegators(n: u32, m: u32) -> Weight;
+	fn delegator_stake_more(n: u32, m: u32, u: u32) -> Weight;
+	fn delegator_stake_less(n: u32, m: u32) -> Weight;
+	fn revoke_delegation(n: u32, m: u32) -> Weight;
+	fn leave_delegators(n: u32, m: u32) -> Weight;
+	fn unlock_unstaked(u: u32) -> Weight;
 	fn increase_max_candidate_stake_by() -> Weight;
-	fn decrease_max_candidate_stake_by(n: u32, m: u32, ) -> Weight;
+	fn decrease_max_candidate_stake_by(n: u32, m: u32) -> Weight;
 }
 
 /// Weights for parachain_staking using the Substrate node and recommended hardware.
@@ -98,7 +98,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		(23_353_000_u64)
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
-	fn set_max_selected_candidates(n: u32, m: u32, ) -> Weight {
+	fn set_max_selected_candidates(n: u32, m: u32) -> Weight {
 		(0_u64)
 			// Standard Error: 70_000
 			.saturating_add((24_079_000_u64).saturating_mul(n as Weight))
@@ -113,7 +113,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
-	fn force_remove_candidate(n: u32, m: u32, ) -> Weight {
+	fn force_remove_candidate(n: u32, m: u32) -> Weight {
 		(256_842_000_u64)
 			// Standard Error: 61_000
 			.saturating_add((2_473_000_u64).saturating_mul(n as Weight))
@@ -124,7 +124,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(7_u64))
 			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(m as Weight)))
 	}
-	fn join_candidates(n: u32, m: u32, ) -> Weight {
+	fn join_candidates(n: u32, m: u32) -> Weight {
 		(179_642_000_u64)
 			// Standard Error: 88_000
 			.saturating_add((3_917_000_u64).saturating_mul(n as Weight))
@@ -133,7 +133,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(17_u64))
 			.saturating_add(T::DbWeight::get().writes(7_u64))
 	}
-	fn init_leave_candidates(n: u32, m: u32, ) -> Weight {
+	fn init_leave_candidates(n: u32, m: u32) -> Weight {
 		(314_776_000_u64)
 			// Standard Error: 24_000
 			.saturating_add((1_456_000_u64).saturating_mul(n as Weight))
@@ -142,7 +142,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(21_u64))
 			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
-	fn cancel_leave_candidates(n: u32, m: u32, ) -> Weight {
+	fn cancel_leave_candidates(n: u32, m: u32) -> Weight {
 		(316_316_000_u64)
 			// Standard Error: 26_000
 			.saturating_add((1_351_000_u64).saturating_mul(n as Weight))
@@ -151,7 +151,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(19_u64))
 			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
-	fn execute_leave_candidates(n: u32, m: u32, u: u32, ) -> Weight {
+	fn execute_leave_candidates(n: u32, m: u32, u: u32) -> Weight {
 		(0_u64)
 			// Standard Error: 49_000
 			.saturating_add((2_355_000_u64).saturating_mul(n as Weight))
@@ -164,7 +164,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(4_u64))
 			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(m as Weight)))
 	}
-	fn candidate_stake_more(n: u32, m: u32, u: u32, ) -> Weight {
+	fn candidate_stake_more(n: u32, m: u32, u: u32) -> Weight {
 		(108_582_000_u64)
 			// Standard Error: 87_000
 			.saturating_add((3_870_000_u64).saturating_mul(n as Weight))
@@ -175,7 +175,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(13_u64))
 			.saturating_add(T::DbWeight::get().writes(7_u64))
 	}
-	fn candidate_stake_less(n: u32, m: u32, ) -> Weight {
+	fn candidate_stake_less(n: u32, m: u32) -> Weight {
 		(125_060_000_u64)
 			// Standard Error: 91_000
 			.saturating_add((3_814_000_u64).saturating_mul(n as Weight))
@@ -184,7 +184,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(12_u64))
 			.saturating_add(T::DbWeight::get().writes(5_u64))
 	}
-	fn join_delegators(n: u32, m: u32, ) -> Weight {
+	fn join_delegators(n: u32, m: u32) -> Weight {
 		(181_776_000_u64)
 			// Standard Error: 91_000
 			.saturating_add((4_046_000_u64).saturating_mul(n as Weight))
@@ -193,7 +193,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(18_u64))
 			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
-	fn delegator_stake_more(n: u32, m: u32, u: u32, ) -> Weight {
+	fn delegator_stake_more(n: u32, m: u32, u: u32) -> Weight {
 		(90_904_000_u64)
 			// Standard Error: 82_000
 			.saturating_add((3_945_000_u64).saturating_mul(n as Weight))
@@ -204,7 +204,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(13_u64))
 			.saturating_add(T::DbWeight::get().writes(8_u64))
 	}
-	fn delegator_stake_less(n: u32, m: u32, ) -> Weight {
+	fn delegator_stake_less(n: u32, m: u32) -> Weight {
 		(132_451_000_u64)
 			// Standard Error: 87_000
 			.saturating_add((3_822_000_u64).saturating_mul(n as Weight))
@@ -213,7 +213,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(13_u64))
 			.saturating_add(T::DbWeight::get().writes(6_u64))
 	}
-	fn revoke_delegation(n: u32, m: u32, ) -> Weight {
+	fn revoke_delegation(n: u32, m: u32) -> Weight {
 		(140_353_000_u64)
 			// Standard Error: 87_000
 			.saturating_add((3_803_000_u64).saturating_mul(n as Weight))
@@ -222,7 +222,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(13_u64))
 			.saturating_add(T::DbWeight::get().writes(6_u64))
 	}
-	fn leave_delegators(n: u32, m: u32, ) -> Weight {
+	fn leave_delegators(n: u32, m: u32) -> Weight {
 		(142_811_000_u64)
 			// Standard Error: 86_000
 			.saturating_add((3_801_000_u64).saturating_mul(n as Weight))
@@ -231,7 +231,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(13_u64))
 			.saturating_add(T::DbWeight::get().writes(6_u64))
 	}
-	fn unlock_unstaked(u: u32, ) -> Weight {
+	fn unlock_unstaked(u: u32) -> Weight {
 		(56_092_000_u64)
 			// Standard Error: 15_000
 			.saturating_add((193_000_u64).saturating_mul(u as Weight))
@@ -243,7 +243,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
-	fn decrease_max_candidate_stake_by(n: u32, m: u32, ) -> Weight {
+	fn decrease_max_candidate_stake_by(n: u32, m: u32) -> Weight {
 		(0_u64)
 			// Standard Error: 128_000
 			.saturating_add((59_819_000_u64).saturating_mul(n as Weight))
@@ -279,7 +279,7 @@ impl WeightInfo for () {
 		(23_353_000_u64)
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
-	fn set_max_selected_candidates(n: u32, m: u32, ) -> Weight {
+	fn set_max_selected_candidates(n: u32, m: u32) -> Weight {
 		(0_u64)
 			// Standard Error: 70_000
 			.saturating_add((24_079_000_u64).saturating_mul(n as Weight))
@@ -294,7 +294,7 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
-	fn force_remove_candidate(n: u32, m: u32, ) -> Weight {
+	fn force_remove_candidate(n: u32, m: u32) -> Weight {
 		(256_842_000_u64)
 			// Standard Error: 61_000
 			.saturating_add((2_473_000_u64).saturating_mul(n as Weight))
@@ -305,7 +305,7 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().writes(7_u64))
 			.saturating_add(RocksDbWeight::get().writes((2_u64).saturating_mul(m as Weight)))
 	}
-	fn join_candidates(n: u32, m: u32, ) -> Weight {
+	fn join_candidates(n: u32, m: u32) -> Weight {
 		(179_642_000_u64)
 			// Standard Error: 88_000
 			.saturating_add((3_917_000_u64).saturating_mul(n as Weight))
@@ -314,7 +314,7 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(17_u64))
 			.saturating_add(RocksDbWeight::get().writes(7_u64))
 	}
-	fn init_leave_candidates(n: u32, m: u32, ) -> Weight {
+	fn init_leave_candidates(n: u32, m: u32) -> Weight {
 		(314_776_000_u64)
 			// Standard Error: 24_000
 			.saturating_add((1_456_000_u64).saturating_mul(n as Weight))
@@ -323,7 +323,7 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(21_u64))
 			.saturating_add(RocksDbWeight::get().writes(4_u64))
 	}
-	fn cancel_leave_candidates(n: u32, m: u32, ) -> Weight {
+	fn cancel_leave_candidates(n: u32, m: u32) -> Weight {
 		(316_316_000_u64)
 			// Standard Error: 26_000
 			.saturating_add((1_351_000_u64).saturating_mul(n as Weight))
@@ -332,7 +332,7 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(19_u64))
 			.saturating_add(RocksDbWeight::get().writes(4_u64))
 	}
-	fn execute_leave_candidates(n: u32, m: u32, u: u32, ) -> Weight {
+	fn execute_leave_candidates(n: u32, m: u32, u: u32) -> Weight {
 		(0_u64)
 			// Standard Error: 49_000
 			.saturating_add((2_355_000_u64).saturating_mul(n as Weight))
@@ -345,7 +345,7 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().writes(4_u64))
 			.saturating_add(RocksDbWeight::get().writes((2_u64).saturating_mul(m as Weight)))
 	}
-	fn candidate_stake_more(n: u32, m: u32, u: u32, ) -> Weight {
+	fn candidate_stake_more(n: u32, m: u32, u: u32) -> Weight {
 		(108_582_000_u64)
 			// Standard Error: 87_000
 			.saturating_add((3_870_000_u64).saturating_mul(n as Weight))
@@ -356,7 +356,7 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(13_u64))
 			.saturating_add(RocksDbWeight::get().writes(7_u64))
 	}
-	fn candidate_stake_less(n: u32, m: u32, ) -> Weight {
+	fn candidate_stake_less(n: u32, m: u32) -> Weight {
 		(125_060_000_u64)
 			// Standard Error: 91_000
 			.saturating_add((3_814_000_u64).saturating_mul(n as Weight))
@@ -365,7 +365,7 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(12_u64))
 			.saturating_add(RocksDbWeight::get().writes(5_u64))
 	}
-	fn join_delegators(n: u32, m: u32, ) -> Weight {
+	fn join_delegators(n: u32, m: u32) -> Weight {
 		(181_776_000_u64)
 			// Standard Error: 91_000
 			.saturating_add((4_046_000_u64).saturating_mul(n as Weight))
@@ -374,7 +374,7 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(18_u64))
 			.saturating_add(RocksDbWeight::get().writes(9_u64))
 	}
-	fn delegator_stake_more(n: u32, m: u32, u: u32, ) -> Weight {
+	fn delegator_stake_more(n: u32, m: u32, u: u32) -> Weight {
 		(90_904_000_u64)
 			// Standard Error: 82_000
 			.saturating_add((3_945_000_u64).saturating_mul(n as Weight))
@@ -385,7 +385,7 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(13_u64))
 			.saturating_add(RocksDbWeight::get().writes(8_u64))
 	}
-	fn delegator_stake_less(n: u32, m: u32, ) -> Weight {
+	fn delegator_stake_less(n: u32, m: u32) -> Weight {
 		(132_451_000_u64)
 			// Standard Error: 87_000
 			.saturating_add((3_822_000_u64).saturating_mul(n as Weight))
@@ -394,7 +394,7 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(13_u64))
 			.saturating_add(RocksDbWeight::get().writes(6_u64))
 	}
-	fn revoke_delegation(n: u32, m: u32, ) -> Weight {
+	fn revoke_delegation(n: u32, m: u32) -> Weight {
 		(140_353_000_u64)
 			// Standard Error: 87_000
 			.saturating_add((3_803_000_u64).saturating_mul(n as Weight))
@@ -403,7 +403,7 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(13_u64))
 			.saturating_add(RocksDbWeight::get().writes(6_u64))
 	}
-	fn leave_delegators(n: u32, m: u32, ) -> Weight {
+	fn leave_delegators(n: u32, m: u32) -> Weight {
 		(142_811_000_u64)
 			// Standard Error: 86_000
 			.saturating_add((3_801_000_u64).saturating_mul(n as Weight))
@@ -412,7 +412,7 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(13_u64))
 			.saturating_add(RocksDbWeight::get().writes(6_u64))
 	}
-	fn unlock_unstaked(u: u32, ) -> Weight {
+	fn unlock_unstaked(u: u32) -> Weight {
 		(56_092_000_u64)
 			// Standard Error: 15_000
 			.saturating_add((193_000_u64).saturating_mul(u as Weight))
@@ -424,7 +424,7 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
-	fn decrease_max_candidate_stake_by(n: u32, m: u32, ) -> Weight {
+	fn decrease_max_candidate_stake_by(n: u32, m: u32) -> Weight {
 		(0_u64)
 			// Standard Error: 128_000
 			.saturating_add((59_819_000_u64).saturating_mul(n as Weight))
