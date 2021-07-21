@@ -16,7 +16,6 @@ fmt:
   timeout: 1 hours
   script:
     - rustup component add rustfmt --toolchain nightly
-    - ls .
     - cargo +nightly fmt -- --check
 
 test:
