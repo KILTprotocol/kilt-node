@@ -262,16 +262,6 @@ pub mod pallet {
 		) -> DispatchResult {
 			let delegator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
-			// Calculate the hash root
-			let hash_root = Self::calculate_delegation_creation_hash(&delegation_id, &parent_id, &permissions);
-
-			// Verify that the hash root signature is correct.
-			DelegationSignatureVerificationOf::<T>::verify(&delegate, &hash_root.encode(), &delegate_signature)
-				.map_err(|err| match err {
-					SignatureVerificationError::SignerInformationNotPresent => Error::<T>::DelegateNotFound,
-					SignatureVerificationError::SignatureInvalid => Error::<T>::InvalidDelegateSignature,
-				})?;
-
 			ensure!(
 				!<DelegationNodes<T>>::contains_key(&delegation_id),
 				Error::<T>::DelegationAlreadyExists
@@ -279,6 +269,16 @@ pub mod pallet {
 
 			let parent_node = <DelegationNodes<T>>::get(&parent_id).ok_or(Error::<T>::ParentDelegationNotFound)?;
 			let hierarchy_root_id = parent_node.hierarchy_root_id;
+
+			// Calculate the hash root
+			let hash_root = Self::calculate_delegation_creation_hash(&delegation_id, &hierarchy_root_id, &parent_id, &permissions);
+
+			// Verify that the hash root signature is correct.
+			DelegationSignatureVerificationOf::<T>::verify(&delegate, &hash_root.encode(), &delegate_signature)
+				.map_err(|err| match err {
+					SignatureVerificationError::SignerInformationNotPresent => Error::<T>::DelegateNotFound,
+					SignatureVerificationError::SignatureInvalid => Error::<T>::InvalidDelegateSignature,
+				})?;
 
 			// Check if the parent's delegate is the creator of this delegation node...
 			ensure!(
@@ -437,11 +437,13 @@ impl<T: Config> Pallet<T> {
 	// Calculates the hash of all values of a delegation creation transaction.
 	fn calculate_delegation_creation_hash(
 		delegation_id: &DelegationNodeIdOf<T>,
+		root_id: &DelegationNodeIdOf<T>,
 		parent_id: &DelegationNodeIdOf<T>,
 		permissions: &Permissions,
 	) -> T::Hash {
 		// Add all values to an u8 vector.
 		let mut hashed_values: Vec<u8> = delegation_id.as_ref().to_vec();
+		hashed_values.extend_from_slice(root_id.as_ref());
 		hashed_values.extend_from_slice(parent_id.as_ref());
 		hashed_values.extend_from_slice(permissions.as_u8().as_ref());
 		// Hash the resulting vector
