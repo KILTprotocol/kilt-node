@@ -2,8 +2,16 @@
   "name": "WILT",
   "id": "kilt_westend",
   "chainType": "Live",
-  "bootNodes": [],
-  "telemetryEndpoints": null,
+  "bootNodes": [
+    "/dns4/bootnode.kilt.io/tcp/30360/p2p/12D3KooWRPR7q1Rgwurd4QGyUUbVnN4nXYNVzbLeuhFsd9eXmHJk",
+    "/dns4/bootnode.kilt.io/tcp/30361/p2p/12D3KooWDAEqpTRsL76itsabbh4SeaqtCM6v9npQ8eCeqPbbuFE9"
+  ],
+  "telemetryEndpoints": [
+    [
+      "/dns/telemetry-backend.kilt.io/tcp/8080/x-parity-wss/%2Fsubmit",
+      0
+    ]
+  ],
   "protocolId": null,
   "properties": {
     "ss58Format": 38,

@@ -28,6 +28,8 @@ use sp_runtime::traits::IdentifyAccount;
 pub mod peregrine;
 pub mod spiritnet;
 
+const TELEMETRY_URL: &str = "wss://telemetry-backend.kilt.io:8080/submit";
+
 /// Helper function to generate a crypto pair from seed
 pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
 	TPublic::Pair::from_string(&format!("//{}", seed), None)
