@@ -168,10 +168,10 @@ pub fn get_chain_spec_wilt() -> Result<ChainSpec, String> {
 		vec![
 			"/dns4/bootnode.kilt.io/tcp/30360/p2p/12D3KooWRPR7q1Rgwurd4QGyUUbVnN4nXYNVzbLeuhFsd9eXmHJk"
 				.parse()
-				.expect("bootnode address is formatted correctly."),
+				.expect("bootnode address is formatted correctly; qed"),
 			"/dns4/bootnode.kilt.io/tcp/30361/p2p/12D3KooWDAEqpTRsL76itsabbh4SeaqtCM6v9npQ8eCeqPbbuFE9"
 				.parse()
-				.expect("bootnode address is formatted correctly."),
+				.expect("bootnode address is formatted correctly; qed"),
 		],
 		Some(TelemetryEndpoints::new(vec![(TELEMETRY_URL.to_string(), 0)]).expect("KILT telemetry url is valid; qed")),
 		None,
@@ -260,12 +260,12 @@ fn testnet_genesis(
 	// vesting and locks as initially designed
 	let airdrop_accounts_json = &include_bytes!("../../res/genesis/genesis-accounts.json")[..];
 	let airdrop_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
-		serde_json::from_slice(airdrop_accounts_json).expect("Could not read from genesis_accounts.json");
+		serde_json::from_slice(airdrop_accounts_json).expect("The file genesis_accounts.json exists and is valid; qed");
 
 	// botlabs account should not be migrated but some have vesting
 	let botlabs_accounts_json = &include_bytes!("../../res/genesis/botlabs-accounts.json")[..];
 	let botlabs_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
-		serde_json::from_slice(botlabs_accounts_json).expect("Could not read from botlabs_accounts.json");
+		serde_json::from_slice(botlabs_accounts_json).expect("The file botlabs_accounts.json exists and is valid; qed");
 
 	GenesisConfig {
 		system: SystemConfig {
