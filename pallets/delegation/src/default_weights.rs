@@ -49,7 +49,6 @@ use sp_std::marker::PhantomData;
 /// Weight functions needed for delegation.
 pub trait WeightInfo {
 	fn create_hierarchy() -> Weight;
-	fn revoke_hierarchy(r: u32, ) -> Weight;
 	fn add_delegation() -> Weight;
 	fn revoke_delegation_root_child(r: u32, c: u32, ) -> Weight;
 	fn revoke_delegation_leaf(r: u32, c: u32, ) -> Weight;
@@ -62,15 +61,6 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		(25_218_000_u64)
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
-	}
-	fn revoke_hierarchy(r: u32, ) -> Weight {
-		(25_605_000_u64)
-			// Standard Error: 58_000
-			.saturating_add((17_141_000_u64).saturating_mul(r as Weight))
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(r as Weight)))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
-			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(r as Weight)))
 	}
 	fn add_delegation() -> Weight {
 		(80_662_000_u64)
@@ -102,15 +92,6 @@ impl WeightInfo for () {
 		(25_218_000_u64)
 			.saturating_add(RocksDbWeight::get().reads(2_u64))
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
-	}
-	fn revoke_hierarchy(r: u32, ) -> Weight {
-		(25_605_000_u64)
-			// Standard Error: 58_000
-			.saturating_add((17_141_000_u64).saturating_mul(r as Weight))
-			.saturating_add(RocksDbWeight::get().reads(1_u64))
-			.saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(r as Weight)))
-			.saturating_add(RocksDbWeight::get().writes(1_u64))
-			.saturating_add(RocksDbWeight::get().writes((1_u64).saturating_mul(r as Weight)))
 	}
 	fn add_delegation() -> Weight {
 		(80_662_000_u64)
