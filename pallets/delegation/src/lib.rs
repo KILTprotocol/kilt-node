@@ -178,6 +178,8 @@ pub mod pallet {
 		NotOwnerOfDelegationHierarchy,
 		/// No parent delegation with the given ID stored on chain.
 		ParentDelegationNotFound,
+		/// The parent delegation has previously been revoked.
+		ParentDelegationRevoked,
 		/// The delegation revoker is not allowed to revoke the delegation.
 		UnauthorizedRevocation,
 		/// The delegation creator is not allowed to create the delegation.
@@ -286,7 +288,12 @@ pub mod pallet {
 				parent_node.details.owner == delegator,
 				Error::<T>::NotOwnerOfParentDelegation
 			);
-			// ... and has permission to delegate
+			// ... and that the node has not been revoked...
+			ensure!(
+				!parent_node.details.revoked,
+				Error::<T>::ParentDelegationRevoked
+			);
+			// ... and that has permission to delegate
 			ensure!(
 				(parent_node.details.permissions & Permissions::DELEGATE) == Permissions::DELEGATE,
 				Error::<T>::UnauthorizedDelegation

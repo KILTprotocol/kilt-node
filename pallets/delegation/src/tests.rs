@@ -248,6 +248,113 @@ fn create_delegation_with_parent_successful() {
 }
 
 #[test]
+fn create_delegation_direct_root_revoked_error() {
+	let creator_keypair = get_alice_ed25519();
+	let creator = get_ed25519_account(creator_keypair.public());
+	let delegate_keypair = get_bob_sr25519();
+	let delegate = get_sr25519_account(delegate_keypair.public());
+
+	let (hierarchy_root_id, hierarchy_details) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_details(),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
+	);
+
+	let delegation_info = Delegation::calculate_delegation_creation_hash(
+		&delegation_id,
+		&hierarchy_root_id,
+		&hierarchy_root_id,
+		&delegation_node.details.permissions,
+	);
+
+	let delegate_signature = delegate_keypair.sign(&hash_to_u8(delegation_info));
+
+	let operation =
+		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
+
+	let ext = ctype_mock::ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
+		.build(None);
+	let mut ext = ExtBuilder::default()
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
+		.build(Some(ext));
+
+	ext.execute_with(|| {
+		let _ = Delegation::revoke_hierarchy(get_origin(creator.clone()), operation.hierarchy_id, MaxRevocations::get());
+		assert_noop!(
+			Delegation::add_delegation(
+				get_origin(creator.clone()),
+				operation.delegation_id,
+				operation.parent_id,
+				delegate,
+				operation.permissions,
+				operation.delegate_signature.clone().encode(),
+			),
+			delegation::Error::<Test>::ParentDelegationRevoked
+		);
+	});
+}
+
+#[test]
+fn create_delegation_with_parent_revoked_error() {
+	let creator_keypair = get_alice_ed25519();
+	let creator = get_ed25519_account(creator_keypair.public());
+	let delegate_keypair = get_bob_sr25519();
+	let delegate = get_sr25519_account(delegate_keypair.public());
+
+	let (hierarchy_root_id, hierarchy_details) = (
+		get_delegation_hierarchy_id(true),
+		generate_base_delegation_hierarchy_details(),
+	);
+	let (parent_id, parent_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, creator.clone(), Some(hierarchy_root_id)),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
+	);
+
+	let delegation_info = Delegation::calculate_delegation_creation_hash(
+		&delegation_id,
+		&hierarchy_root_id,
+		&parent_id,
+		&delegation_node.details.permissions,
+	);
+
+	let delegate_signature = delegate_keypair.sign(&hash_to_u8(delegation_info));
+
+	let operation =
+		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
+
+	let ext = ctype_mock::ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
+		.build(None);
+	let mut ext = ExtBuilder::default()
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
+		.with_delegations(vec![(parent_id, parent_node)])
+		.build(Some(ext));
+
+	ext.execute_with(|| {
+		let _ = Delegation::revoke_delegation(get_origin(creator.clone()), operation.parent_id, MaxRevocations::get(), MaxParentChecks::get());
+		assert_noop!(
+			Delegation::add_delegation(
+				get_origin(creator.clone()),
+				operation.delegation_id,
+				operation.parent_id,
+				delegate,
+				operation.permissions,
+				operation.delegate_signature.clone().encode(),
+			),
+			delegation::Error::<Test>::ParentDelegationRevoked
+		);
+	});
+}
+
+#[test]
 fn invalid_delegate_signature_create_delegation_error() {
 	let creator_keypair = get_alice_ed25519();
 	let creator = get_ed25519_account(creator_keypair.public());
