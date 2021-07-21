@@ -35,18 +35,17 @@ pub trait VersionMigratorTrait<T> {
 }
 
 /// Storage version of the delegation pallet.
-#[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Encode, Eq, Decode, Ord, PartialEq, PartialOrd)]
 pub enum DelegationStorageVersion {
-	v1,
-	v2,
+	V1,
+	V2,
 }
 
-#[allow(dead_code)]
+#[cfg(feature = "try-runtime")]
 impl DelegationStorageVersion {
 	/// The latest storage version.
 	fn latest() -> Self {
-		Self::v2
+		Self::V2
 	}
 }
 
@@ -59,7 +58,7 @@ impl DelegationStorageVersion {
 // old version anymore.
 impl Default for DelegationStorageVersion {
 	fn default() -> Self {
-		Self::v1
+		Self::V1
 	}
 }
 
@@ -68,16 +67,16 @@ impl<T: Config> VersionMigratorTrait<T> for DelegationStorageVersion {
 	#[cfg(feature = "try-runtime")]
 	fn pre_migrate(&self) -> Result<(), &str> {
 		match *self {
-			Self::v1 => v1::pre_migrate::<T>(),
-			Self::v2 => Err("Already latest v2 version."),
+			Self::V1 => v1::pre_migrate::<T>(),
+			Self::V2 => Err("Already latest v2 version."),
 		}
 	}
 
 	// It runs the righ migration logic depending on the current storage version.
 	fn migrate(&self) -> Weight {
 		match *self {
-			Self::v1 => v1::migrate::<T>(),
-			Self::v2 => 0u64,
+			Self::V1 => v1::migrate::<T>(),
+			Self::V2 => 0u64,
 		}
 	}
 
@@ -86,8 +85,8 @@ impl<T: Config> VersionMigratorTrait<T> for DelegationStorageVersion {
 	#[cfg(feature = "try-runtime")]
 	fn post_migrate(&self) -> Result<(), &str> {
 		match *self {
-			Self::v1 => v1::post_migrate::<T>(),
-			Self::v2 => Err("Migration from v2 should have never happened in the first place."),
+			Self::V1 => v1::post_migrate::<T>(),
+			Self::V2 => Err("Migration from v2 should have never happened in the first place."),
 		}
 	}
 }
@@ -109,7 +108,7 @@ mod v1 {
 	#[cfg(feature = "try-runtime")]
 	pub(crate) fn pre_migrate<T: Config>() -> Result<(), &'static str> {
 		ensure!(
-			StorageVersion::<T>::get() == DelegationStorageVersion::v1,
+			StorageVersion::<T>::get() == DelegationStorageVersion::V1,
 			"Current deployed version is not v1."
 		);
 
@@ -146,7 +145,7 @@ mod v1 {
 		// to their parents.
 		total_weight = total_weight.saturating_add(finalize_children_nodes::<T>(&mut new_nodes, total_weight));
 
-		StorageVersion::<T>::set(DelegationStorageVersion::v2);
+		StorageVersion::<T>::set(DelegationStorageVersion::V2);
 		// Adds a write from StorageVersion::set() weight.
 		total_weight = total_weight.saturating_add(T::DbWeight::get().writes(1));
 		log::debug!("Total weight consumed: {}", total_weight);
@@ -309,7 +308,7 @@ mod v1 {
 	#[cfg(feature = "try-runtime")]
 	pub(crate) fn post_migrate<T: Config>() -> Result<(), &'static str> {
 		ensure!(
-			StorageVersion::<T>::get() == DelegationStorageVersion::v2,
+			StorageVersion::<T>::get() == DelegationStorageVersion::V2,
 			"The version after deployment is not 2 as expected."
 		);
 		ensure!(
@@ -352,7 +351,7 @@ mod v1 {
 		#[test]
 		fn fail_version_higher() {
 			let mut ext = mock::ExtBuilder::default()
-				.with_storage_version(DelegationStorageVersion::v2)
+				.with_storage_version(DelegationStorageVersion::V2)
 				.build(None);
 			ext.execute_with(|| {
 				#[cfg(feature = "try-runtime")]
@@ -366,7 +365,7 @@ mod v1 {
 		#[test]
 		fn ok_no_delegations() {
 			let mut ext = mock::ExtBuilder::default()
-				.with_storage_version(DelegationStorageVersion::v1)
+				.with_storage_version(DelegationStorageVersion::V1)
 				.build(None);
 			ext.execute_with(|| {
 				#[cfg(feature = "try-runtime")]
@@ -388,7 +387,7 @@ mod v1 {
 		#[test]
 		fn ok_only_root() {
 			let mut ext = mock::ExtBuilder::default()
-				.with_storage_version(DelegationStorageVersion::v1)
+				.with_storage_version(DelegationStorageVersion::V1)
 				.build(None);
 			ext.execute_with(|| {
 				let alice = mock::get_ed25519_account(mock::get_alice_ed25519().public());
@@ -437,7 +436,7 @@ mod v1 {
 		#[test]
 		fn ok_root_two_children() {
 			let mut ext = mock::ExtBuilder::default()
-				.with_storage_version(DelegationStorageVersion::v1)
+				.with_storage_version(DelegationStorageVersion::V1)
 				.build(None);
 			ext.execute_with(|| {
 				let alice = mock::get_ed25519_account(mock::get_alice_ed25519().public());
@@ -525,7 +524,7 @@ mod v1 {
 		#[test]
 		fn ok_three_level_hierarchy() {
 			let mut ext = mock::ExtBuilder::default()
-				.with_storage_version(DelegationStorageVersion::v1)
+				.with_storage_version(DelegationStorageVersion::V1)
 				.build(None);
 			ext.execute_with(|| {
 				let alice = mock::get_ed25519_account(mock::get_alice_ed25519().public());
@@ -625,8 +624,8 @@ impl<T: Config> DelegationStorageMigrator<T> {
 		// If the version current deployed is at least v1, there is no more migrations
 		// to run (other than the one from v1).
 		match current {
-			DelegationStorageVersion::v1 => None,
-			DelegationStorageVersion::v2 => None,
+			DelegationStorageVersion::V1 => None,
+			DelegationStorageVersion::V2 => None,
 		}
 	}
 
@@ -700,7 +699,7 @@ mod tests {
 	#[test]
 	fn ok_from_v1_migration() {
 		let mut ext = mock::ExtBuilder::default()
-			.with_storage_version(DelegationStorageVersion::v1)
+			.with_storage_version(DelegationStorageVersion::V1)
 			.build(None);
 		ext.execute_with(|| {
 			#[cfg(feature = "try-runtime")]
