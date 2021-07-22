@@ -8,7 +8,12 @@ def update_spec(input: typing.Dict, base_chain="westend"):
     acc_dave = "5E4ZYy9tTPpJPoScqm6PvLtr1MjsBEjbDufJQYhcuBtk6rNa"
 
     input.update({
-        "bootNodes": [],
+        "bootNodes": [
+            "/dns4/bootnode.kilt.io/tcp/30350/p2p/12D3KooWEeezCpJauUmWw3zfgEtYzhZTc5LgukQYtGTMaZfzgVfE",
+            "/dns4/bootnode.kilt.io/tcp/30351/p2p/12D3KooWHq5j9tLdZEu4tnr6ii2k33zp5DCoKREQ6KzuabC9Gihu",
+            "/dns4/bootnode.kilt.io/tcp/30352/p2p/12D3KooWQ8iTGLH98zLz9BZmq5FXDmR1NytDsJ2VToXvcjvHV16a",
+            "/dns4/bootnode.kilt.io/tcp/30353/p2p/12D3KooWNWNptEoH443LVUgwC5kd7DBVoNYwQtJh6dp4TQxUsAST",
+        ],
         "chainType": "Live",
         "name": "Peregrine Relay",
         "id": f"{base_chain}_peregrine_relay",
