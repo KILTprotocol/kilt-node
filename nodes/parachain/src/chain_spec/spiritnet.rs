@@ -25,6 +25,7 @@ use kilt_primitives::{
 	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use sc_service::ChainType;
+use sc_telemetry::TelemetryEndpoints;
 use sp_core::{crypto::UncheckedInto, sr25519};
 use sp_runtime::traits::Zero;
 use spiritnet_runtime::{
@@ -32,7 +33,7 @@ use spiritnet_runtime::{
 	ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig, WASM_BINARY,
 };
 
-use crate::chain_spec::{get_account_id_from_seed, get_from_seed};
+use crate::chain_spec::{get_account_id_from_seed, get_from_seed, TELEMETRY_URL};
 
 use super::{get_properties, Extensions};
 
@@ -164,8 +165,15 @@ pub fn get_chain_spec_wilt() -> Result<ChainSpec, String> {
 				id,
 			)
 		},
-		vec![],
-		None,
+		vec![
+			"/dns4/bootnode.kilt.io/tcp/30360/p2p/12D3KooWRPR7q1Rgwurd4QGyUUbVnN4nXYNVzbLeuhFsd9eXmHJk"
+				.parse()
+				.expect("bootnode address is formatted correctly; qed"),
+			"/dns4/bootnode.kilt.io/tcp/30361/p2p/12D3KooWDAEqpTRsL76itsabbh4SeaqtCM6v9npQ8eCeqPbbuFE9"
+				.parse()
+				.expect("bootnode address is formatted correctly; qed"),
+		],
+		Some(TelemetryEndpoints::new(vec![(TELEMETRY_URL.to_string(), 0)]).expect("KILT telemetry url is valid; qed")),
 		None,
 		Some(properties),
 		Extensions {
@@ -216,7 +224,7 @@ pub fn get_chain_spec_spiritnet() -> Result<ChainSpec, String> {
 			)
 		},
 		vec![],
-		None,
+		Some(TelemetryEndpoints::new(vec![(TELEMETRY_URL.to_string(), 0)]).expect("KILT telemetry url is valid; qed")),
 		None,
 		Some(properties),
 		Extensions {
@@ -252,12 +260,12 @@ fn testnet_genesis(
 	// vesting and locks as initially designed
 	let airdrop_accounts_json = &include_bytes!("../../res/genesis/genesis-accounts.json")[..];
 	let airdrop_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
-		serde_json::from_slice(airdrop_accounts_json).expect("Could not read from genesis_accounts.json");
+		serde_json::from_slice(airdrop_accounts_json).expect("The file genesis_accounts.json exists and is valid; qed");
 
 	// botlabs account should not be migrated but some have vesting
 	let botlabs_accounts_json = &include_bytes!("../../res/genesis/botlabs-accounts.json")[..];
 	let botlabs_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
-		serde_json::from_slice(botlabs_accounts_json).expect("Could not read from botlabs_accounts.json");
+		serde_json::from_slice(botlabs_accounts_json).expect("The file botlabs_accounts.json exists and is valid; qed");
 
 	GenesisConfig {
 		system: SystemConfig {

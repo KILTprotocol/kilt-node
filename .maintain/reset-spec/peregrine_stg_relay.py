@@ -7,7 +7,12 @@ def update_spec(input: typing.Dict):
     acc_charlie = "5DcKRxsjojmbJW7Scxnu7Ck5zXfpg1RxtrcyVjaMRx5YFWUR"
 
     input.update({
-        "bootNodes": [],
+        "bootNodes": [
+            "/dns4/bootnodes.kilt.io/tcp/30380/p2p/12D3KooWDRzUz3SenRC737aFrY1aPAVbiioqVMUL7otbupWtuk3B",
+            "/dns4/bootnodes.kilt.io/tcp/30381/p2p/12D3KooWLmZAehBfUxVMwL7uFc6yhdY7u2btCCVubjAjZafgAYWQ",
+            "/dns4/bootnodes.kilt.io/tcp/30382/p2p/12D3KooWEQhFBWGZXmBGzSsoHiNLD8e2VdCu17rVFHbPJzbmjUWC",
+            "/dns4/bootnodes.kilt.io/tcp/30383/p2p/12D3KooWRnGvdAf6xiGTQMdzHSrSXR5GWzc6JWvfUcACjGTpbzeq",
+        ],
         "chainType": "Live",
         "name": "Peregrine Westend-Relay Stagenet",
         "id": "westend_peregrine_relay_stagenet",
@@ -68,24 +73,24 @@ def update_spec(input: typing.Dict):
     input["genesis"]["runtime"]["staking"].update({
         "validatorCount": 3,
         "stakers": [
-                    [
-                        acc_alice,
-                        "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-                        1000000000000,
-                        "Validator"
-                    ],
             [
-                        acc_bob,
-                        "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
-                        1000000000000,
-                        "Validator"
-                    ],
+                acc_alice,
+                "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+                1000000000000,
+                "Validator"
+            ],
             [
-                        acc_charlie,
-                        "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y",
-                        1000000000000,
-                        "Validator"
-                    ]
+                acc_bob,
+                "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+                1000000000000,
+                "Validator"
+            ],
+            [
+                acc_charlie,
+                "5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y",
+                1000000000000,
+                "Validator"
+            ]
         ]
     })
     input["genesis"]["runtime"]["parachainsConfiguration"]["config"].update(
