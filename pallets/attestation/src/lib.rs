@@ -16,8 +16,60 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-//! Attestation: Handles attestations on chain,
-//! adding and revoking attestations.
+//! # Attestation Pallet
+//!
+//! Provides means of adding KILT attestations on chain and revoking them.
+//!
+//! - [`Config`]
+//! - [`Call`]
+//! - [`Pallet`]
+//!
+//! ### Terminology
+//!
+//! - **Claimer:**: A user which claims properties about themselves in the
+//!   format of a CType. This could be a person which claims to have a valid
+//!   driver's license.
+//!
+//! - **Attester:**: An entity which checks a user's claim and approves its
+//!   validity. This could be a Citizens Registration Office which issues
+//!   drivers licenses.
+//!
+//! - **Verifier:**: An entity which wants to check a user's claim by checking
+//!   the provided attestation.
+//!
+//! - **CType:**: CTypes are claim types. In everyday language, they are
+//!   standardised structures for credentials. For example, a company may need a
+//!   standard identification credential to identify workers that includes their
+//!   full name, date of birth, access level and id number. Each of these are
+//!   referred to as an attribute of a credential.
+//!
+//! - **Attestation:**: An approved or revoked user's claim in the format of a
+//!   CType.
+//!
+//! - **Delegation:**: An attestation which is not issued by the attester
+//!   directly but via a (chain of) delegations which entitle the delegated
+//!   attester. This could be an employe of a company which is authorized to
+//!   sign documents for their superiors.
+//!
+//! ## Interface
+//!
+//! ### Dispatchable Functions
+//! - `add` - Create a new attestation for a given claim which is based on a
+//!   CType. The attester can optionally provide a reference to an existing
+//!   delegation that will be saved along with the attestation itself in the
+//!   form of an attested delegation.
+//! - `revoke` - Revoke an existing attestation for a given claim. The revoker
+//!   must be either the creator of the attestation being revoked or an entity
+//!   that in the delegation tree is an ancestor of the attester, i.e., it was
+//!   either the delegator of the attester or an ancestor thereof.
+//!
+//! ## Assumptions
+//!
+//! - The claim which shall be attested is based on a CType and signed by the
+//!   claimer.
+//! - The Verifier trusts the Attester. Otherwise, the attestation is worthless
+//!   for the Verifier
+
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
@@ -48,7 +100,7 @@ pub mod pallet {
 	/// Type of a claim hash.
 	pub type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
 
-	/// Type of an attestation CTYPE hash.
+	/// Type of an attestation CType hash.
 	pub type CtypeHashOf<T> = ctype::CtypeHashOf<T>;
 
 	/// Type of an attester identifier.
@@ -89,7 +141,7 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// A new attestation has been created.
-		/// \[attester ID, claim hash, CTYPE hash, (optional) delegation ID\]
+		/// \[attester ID, claim hash, CType hash, (optional) delegation ID\]
 		AttestationCreated(
 			AttesterOf<T>,
 			ClaimHashOf<T>,
@@ -110,7 +162,7 @@ pub mod pallet {
 		AlreadyRevoked,
 		/// No attestation on chain matching the claim hash.
 		AttestationNotFound,
-		/// The attestation CTYPE does not match the CTYPE specified in the
+		/// The attestation CType does not match the CType specified in the
 		/// delegation hierarchy root.
 		CTypeMismatch,
 		/// The delegation node does not include the permission to create new
@@ -136,11 +188,21 @@ pub mod pallet {
 		/// delegation that will be saved along with the attestation itself in
 		/// the form of an attested delegation.
 		///
-		/// * origin: the identifier of the attester
-		/// * claim_hash: the hash of the claim to attest. It has to be unique
-		/// * ctype_hash: the hash of the CTYPE used for this attestation
-		/// * delegation_id: \[OPTIONAL\] the ID of the delegation node used to
-		///   authorise the attester
+		/// The referenced CType hash must already be present on chain.
+		///
+		/// If an optional delegation id is provided, the dispatch origin must
+		/// be the owner of the delegation. Otherwise, it could be any
+		/// `DelegationEntityId`.
+		///
+		/// Emits `AttestationCreated`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Ctype, Attestations
+		/// - Reads if delegation id is provided: Delegations, Roots,
+		///   DelegatedAttestations
+		/// - Writes: Attestations, (DelegatedAttestations)
+		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::add())]
 		pub fn add(
 			origin: OriginFor<T>,
@@ -174,7 +236,7 @@ pub mod pallet {
 					Error::<T>::DelegationUnauthorizedToAttest
 				);
 
-				// Check if the CTYPE of the delegation is matching the CTYPE of the attestation
+				// Check if the CType of the delegation is matching the CType of the attestation
 				let root =
 					<delegation::Roots<T>>::get(delegation.root_id).ok_or(delegation::Error::<T>::RootNotFound)?;
 				ensure!(root.ctype_hash == ctype_hash, Error::<T>::CTypeMismatch);
@@ -213,13 +275,16 @@ pub mod pallet {
 		/// the attester, i.e., it was either the delegator of the attester or
 		/// an ancestor thereof.
 		///
-		/// * origin: the identifier of the revoker
-		/// * claim_hash: the hash of the claim to revoke
-		/// * max_parent_checks: for delegated attestations, the number of
-		///   delegation nodes to check up in the trust hierarchy (including the
-		///   root node but excluding the provided node) to verify whether the
-		///   caller is an ancestor of the attestation attester and hence
-		///   authorised to revoke the specified attestation.
+		/// Emits `AttestationRevoked`.
+		///
+		/// # <weight>
+		/// Weight: O(P) where P is the number of steps required to verify that
+		/// the dispatch Origin controls the delegation entitled to revoke the
+		/// attestation. It is bounded by `max_parent_checks`.
+		/// - Reads: [Origin Account], Attestations, delegation::Roots
+		/// - Reads per delegation step P: delegation::Delegations
+		/// - Writes: Attestations, DelegatedAttestations
+		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::revoke(*max_parent_checks))]
 		pub fn revoke(
 			origin: OriginFor<T>,
