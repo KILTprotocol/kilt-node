@@ -402,7 +402,7 @@ pub mod pallet {
 		/// Any new key specified is added to the set of public keys, and a
 		/// reference to it is updated in the relative field, i.e.,
 		/// authentication, key agreement, attestation or delegation.
-		/// As there can always at most one active authentication,
+		/// As there can always be at most one active authentication,
 		/// attestation, or delegation key at any given time, the old version of
 		/// those keys, if updated, is replaced with the new one and also
 		/// removed from the set of public keys. The only exception is
@@ -414,7 +414,7 @@ pub mod pallet {
 		/// the `attestation_key` field by the new one but it is not removed
 		/// from the set of public keys. This means that the key can still be
 		/// retrieved (and used) by other parties to validate the signature of
-		/// attestations issued with thay key, but the issuance of new
+		/// attestations issued with that key, but the issuance of new
 		/// attestations using the now disabled key will fail. A
 		/// disabled attestation key can also be completely deleted (rendering
 		/// all the attestations invalid) by including its ID in the set of
