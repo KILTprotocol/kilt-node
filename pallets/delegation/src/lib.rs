@@ -585,7 +585,7 @@ impl<T: Config> Pallet<T> {
 			}
 		}
 		Ok((revocations, consumed_weight.saturating_add(T::DbWeight::get().reads(1))))
-	}	
+	}
 
 	/// Revoke a delegation and all of its children recursively.
 	///
