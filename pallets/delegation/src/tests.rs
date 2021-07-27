@@ -99,7 +99,7 @@ fn ctype_not_found_create_root_delegation_error() {
 
 	let operation = generate_base_delegation_hierarchy_creation_operation(hierarchy_root_id);
 
-	// No CTYPE stored,
+	// No CType stored,
 	let mut ext = ExtBuilder::default().build(None);
 
 	ext.execute_with(|| {

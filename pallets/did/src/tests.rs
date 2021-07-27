@@ -1535,7 +1535,7 @@ fn check_call_attestation_key_error() {
 	let ext = ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
 		.build(None);
-	// CTYPE already added to storage
+	// CType already added to storage
 	let mut ext = ctype_mock::ExtBuilder::default()
 		.with_ctypes(vec![(get_attestation_key_test_input(), did.clone())])
 		.build(Some(ext));
@@ -1594,7 +1594,7 @@ fn check_call_delegation_key_error() {
 	let ext = ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
 		.build(None);
-	// CTYPE already added to storage
+	// CType already added to storage
 	let mut ext = ctype_mock::ExtBuilder::default()
 		.with_ctypes(vec![(get_delegation_key_test_input(), did.clone())])
 		.build(Some(ext));
@@ -1649,7 +1649,7 @@ fn check_call_authentication_key_error() {
 	let ext = ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
 		.build(None);
-	// CTYPE already added to storage
+	// CType already added to storage
 	let mut ext = ctype_mock::ExtBuilder::default()
 		.with_ctypes(vec![(get_authentication_key_test_input(), did.clone())])
 		.build(Some(ext));

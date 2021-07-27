@@ -57,7 +57,7 @@ impl Default for Permissions {
 /// A node in a delegation hierarchy.
 ///
 /// For quicker lookups of the hierarchy details, all nodes maintain a direct
-/// link to the hierarchy root node. Furthermore, all nodes have a parent but
+/// link to the hierarchy root node. Furthermore, all nodes have a parent except
 /// the root nodes, which point to themselves for the hierarchy root node link.
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
 pub struct DelegationNode<T: Config> {

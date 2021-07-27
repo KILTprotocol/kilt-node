@@ -117,7 +117,7 @@ fn ctype_not_present_attest_error() {
 
 	let operation = generate_base_attestation_creation_details(claim_hash, attestation);
 
-	// No CTYPE stored
+	// No CType stored
 	let mut ext = ExtBuilder::default().build(None);
 
 	ext.execute_with(|| {
