@@ -1452,11 +1452,12 @@ pub mod pallet {
 				amount,
 			};
 
-			// attempt to insert delegator and check for excess
+			// attempt to insert delegator and check for uniqueness, excess is handled below
 			let insert_delegator = state
 				.delegators
+				// we handle TooManyDelegators below
 				.insert(delegation.clone())
-				.map_err(|_| Error::<T>::TooManyDelegators)?;
+				.unwrap_or(true);
 			// should never fail but let's be safe
 			ensure!(insert_delegator, Error::<T>::DelegatorExists);
 
@@ -2188,28 +2189,29 @@ pub mod pallet {
 			stake: Stake<T::AccountId, BalanceOf<T>>,
 			mut state: Collator<T::AccountId, BalanceOf<T>, T::MaxDelegatorsPerCollator>,
 		) -> Result<(CollatorOf<T, T::MaxDelegatorsPerCollator>, StakeOf<T>), DispatchError> {
-			// add stake & sort by amount
-			let delegators: Vec<Stake<T::AccountId, BalanceOf<T>>> = state.delegators.into_bounded_vec().into_inner();
+			// attempt to replace the last element of the set
+			let stake_to_remove = state
+				.delegators
+				.try_insert_replace(stake.clone())
+				.map_err(|err_too_many| {
+					if err_too_many {
+						Error::<T>::TooManyDelegators
+					} else {
+						// should never occur because we previously check this case, but let's be sure
+						Error::<T>::AlreadyDelegating
+					}
+				})?;
 
-			// check whether stake is at last place
-			// FIXME: Combine storage clearing with check of insertion which already
-			// replaces the lowest staked delegator
-			match delegators.clone().last() {
-				Some(stake_to_remove) if stake_to_remove.amount < stake.amount => {
-					state.total = state
-						.total
-						.saturating_sub(stake_to_remove.amount)
-						.saturating_add(stake.amount);
-					state.delegators =
-						OrderedSet::from_sorted_set(delegators.try_into().expect("Did not extend size of Delegators"));
+			// update total stake
+			state.total = state
+				.total
+				.saturating_sub(stake_to_remove.amount)
+				.saturating_add(stake.amount);
 
-					// update storage of kicked delegator
-					Self::kick_delegator(&stake_to_remove, &state.id)?;
+			// update storage of kicked delegator
+			Self::kick_delegator(&stake_to_remove, &state.id)?;
 
-					Ok((state, stake_to_remove.clone()))
-				}
-				_ => Err(Error::<T>::TooManyDelegators.into()),
-			}
+			Ok((state, stake_to_remove))
 		}
 
 		/// Either set or increase the BalanceLock of target account to

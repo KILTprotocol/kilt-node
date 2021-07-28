@@ -1923,8 +1923,9 @@ fn reach_max_collator_candidates() {
 				StakePallet::candidate_pool().len().saturated_into::<u32>(),
 				<Test as Config>::MaxCollatorCandidates::get()
 			);
+			// should not be possible to join candidate pool, even with more stake
 			assert_noop!(
-				StakePallet::join_candidates(Origin::signed(11), 10),
+				StakePallet::join_candidates(Origin::signed(11), 11),
 				Error::<Test>::TooManyCollatorCandidates
 			);
 		});
@@ -2508,8 +2509,8 @@ fn candidate_leaves() {
 				StakePallet::execute_leave_candidates(Origin::signed(2), 1),
 				Error::<Test>::CannotLeaveYet
 			);
-			// add 11 to max out CandidatePool and then leave again to enable 11 to cancel
-			// the exit request
+			// add 11 as candidate to reach max size for CandidatePool and then try leave
+			// again as 1 which should not be possible
 			assert_ok!(StakePallet::join_candidates(Origin::signed(11), 100));
 			assert_noop!(
 				StakePallet::cancel_leave_candidates(Origin::signed(1)),

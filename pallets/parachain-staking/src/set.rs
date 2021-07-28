@@ -36,7 +36,7 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 		Self(BoundedVec::default())
 	}
 
-	/// Create an ordered set from a `BoundedVec`.
+	/// Creates an ordered set from a `BoundedVec`.
 	///
 	/// The vector will be sorted reversily (from greatest to lowest) and
 	/// deduped first.
@@ -55,11 +55,11 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 		Self(bv)
 	}
 
-	/// Insert an element, if no equal item exist in the set.
+	/// Inserts an element, if no equal item exist in the set.
 	///
 	/// Throws if insertion would exceed the bounded vec's max size.
 	///
-	/// Return true if the item is unique in the set, otherwise returns false.
+	/// Returns true if the item is unique in the set, otherwise returns false.
 	pub fn insert(&mut self, value: T) -> Result<bool, ()> {
 		match self.linear_search(&value) {
 			Ok(_) => Ok(false),
@@ -70,12 +70,35 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 		}
 	}
 
-	/// Insert or replaces an element.
+	/// Attempts to replace the last element of the set with the provided value.
+	/// Assumes the set to have reached its bounded size.
+	///
+	/// Throws with `false` if the value already exists in the set.
+	/// Throws with `true` if the value has the least order in the set, i.e.,
+	/// it would be appended (inserted at i == length).
+	///
+	/// Returns the replaced element upon success.
+	pub fn try_insert_replace(&mut self, value: T) -> Result<T, bool> {
+		let last_idx = self.len().saturating_sub(1);
+		match self.linear_search(&value) {
+			Ok(_) => Err(false),
+			Err(i) if i < self.len() => {
+				// always replace the last element
+				let old = sp_std::mem::replace(&mut self.0[last_idx], value);
+				self.sort_greatest_to_lowest();
+				Ok(old)
+			}
+			_ => Err(true),
+		}
+	}
+
+	/// Inserts a new element or updates the value of an existing one.
 	///
 	/// Throws if the maximum size of the bounded vec would be exceeded
 	/// upon insertion.
 	///
-	/// Returns the old value if existing.
+	/// Returns the old value if existing or None if the value did not exist
+	/// before.
 	pub fn upsert(&mut self, value: T) -> Result<Option<T>, ()> {
 		match self.linear_search(&value) {
 			Ok(i) => {
@@ -91,9 +114,9 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 		}
 	}
 
-	/// Remove an element.
+	/// Removes an element.
 	///
-	/// Return true if removal happened.
+	/// Returns true if removal happened.
 	pub fn remove(&mut self, value: &T) -> Option<T> {
 		match self.linear_search(value) {
 			Ok(loc) => Some(self.0.remove(loc)),
@@ -101,9 +124,9 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 		}
 	}
 
-	/// Remove an element.
+	/// Removes an element.
 	///
-	/// Return true if removal happened.
+	/// Returns true if removal happened.
 	pub fn remove_by<F>(&mut self, f: F) -> Option<T>
 	where
 		F: FnMut(&T) -> Ordering,
@@ -132,7 +155,7 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 		self.0.binary_search(value)
 	}
 
-	/// Iteratively searchis this (from greatest to lowest) ordered set for a
+	/// Iteratively searches this (from greatest to lowest) ordered set for a
 	/// given element.
 	///
 	/// 1. If the value is found, then Result::Ok is returned, containing the
@@ -201,7 +224,7 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 		self.0
 	}
 
-	/// Sort from greatest to lowest.
+	/// Sorts from greatest to lowest.
 	///
 	/// NOTE: BoundedVec does not implement DerefMut because it would allow for
 	/// unchecked extension of the inner vector. Thus, we have to work with a
@@ -212,12 +235,6 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 		self.0 = sorted_v.try_into().expect("Did not extend size of bounded vec");
 	}
 }
-
-// impl<T, S> DerefMut for BoundedVec<T, S> {
-// 	fn deref_mut(&mut self) -> &mut Self::Target {
-// 		&mut self.0
-// 	}
-// }
 
 #[cfg(feature = "std")]
 impl<T, S> fmt::Debug for OrderedSet<T, S>
@@ -304,7 +321,7 @@ mod tests {
 	parameter_types! {
 		#[derive(PartialEq, RuntimeDebug)]
 		pub const Eight: u32 = 8;
-		#[derive(PartialEq, RuntimeDebug)]
+		#[derive(PartialEq, RuntimeDebug, Clone)]
 		pub const Five: u32 = 5;
 	}
 
@@ -381,6 +398,23 @@ mod tests {
 		let mut set: OrderedSet<i32, Eight> = OrderedSet::from(vec![1, 2, 3, 4].try_into().unwrap());
 		set.clear();
 		assert_eq!(set, OrderedSet::new());
+	}
+
+	#[test]
+	fn try_insert_replace() {
+		let mut set: OrderedSet<i32, Five> = OrderedSet::from(vec![10, 9, 8, 7, 5].try_into().unwrap());
+		assert_eq!(set.clone().into_bounded_vec().into_inner(), vec![10, 9, 8, 7, 5]);
+		assert!(set.insert(11).is_err());
+
+		assert_eq!(set.try_insert_replace(6), Ok(5));
+		assert_eq!(set.clone().into_bounded_vec().into_inner(), vec![10, 9, 8, 7, 6]);
+
+		assert_eq!(set.try_insert_replace(6), Err(false));
+		assert_eq!(set.try_insert_replace(5), Err(true));
+
+		assert_eq!(set.try_insert_replace(10), Err(false));
+		assert_eq!(set.try_insert_replace(11), Ok(6));
+		assert_eq!(set.clone().into_bounded_vec().into_inner(), vec![11, 10, 9, 8, 7]);
 	}
 
 	#[test]
