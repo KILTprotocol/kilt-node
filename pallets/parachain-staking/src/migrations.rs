@@ -101,7 +101,11 @@ pub mod v3 {
 
 pub mod v4 {
 	use super::*;
-	use crate::types::{CollatorOf, Delegator};
+	use crate::deprecated::v1_v4::{
+		storage::{CandidatePool, CollatorState, DelegatorState},
+		CollatorOf, Delegator,
+	};
+	use frame_support::{StoragePrefixedMap, StorageValue};
 
 	pub fn pre_migrate<T: Config>() -> Result<(), &'static str> {
 		assert_eq!(StorageVersion::<T>::get(), Releases::V3_0_0);
@@ -116,8 +120,7 @@ pub mod v4 {
 		let mut n = 1u64;
 
 		// for each candidate: sort delegators from greatest to lowest
-		// FIXME: Revert back to old type and move type to deprecated
-		CollatorState::<T>::translate_values(|mut state: CollatorOf<T, T::MaxDelegatorsPerCollator>| {
+		CollatorState::<T>::translate_values(|mut state: CollatorOf<T>| {
 			state.delegators.sort_greatest_to_lowest();
 			n = n.saturating_add(1u64);
 			Some(state)
@@ -126,7 +129,7 @@ pub mod v4 {
 		// for each delegator: sort delegations from greatest to lowest
 		DelegatorState::<T>::translate_values(
 			// FIXME: Revert back to old type and move type to deprecated
-			|mut state: Delegator<T::AccountId, T::CurrencyBalance, T::MaxCollatorsPerDelegator>| {
+			|mut state: Delegator<T::AccountId, T::CurrencyBalance>| {
 				state.delegations.sort_greatest_to_lowest();
 				n = n.saturating_add(1u64);
 				Some(state)
@@ -142,7 +145,7 @@ pub mod v4 {
 	pub fn post_migrate<T: Config>() -> Result<(), &'static str> {
 		let mut candidates = CandidatePool::<T>::get();
 		candidates.sort_greatest_to_lowest();
-		// assert_eq!(CandidatePool::<T>::get(), candidates);
+		assert_eq!(CandidatePool::<T>::get(), candidates);
 		assert_eq!(StorageVersion::<T>::get(), Releases::V4);
 		Ok(())
 	}

@@ -162,6 +162,7 @@ pub(crate) mod mock;
 #[cfg(test)]
 pub(crate) mod tests;
 
+mod deprecated;
 mod inflation;
 pub mod migrations;
 mod set;
