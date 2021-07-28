@@ -385,12 +385,9 @@ mod tests {
 	#[test]
 	fn contains() {
 		let set: OrderedSet<i32, Eight> = OrderedSet::from(vec![1, 2, 3, 4].try_into().unwrap());
-
-		assert_eq!(set.contains(&5), false);
-
-		assert_eq!(set.contains(&1), true);
-
-		assert_eq!(set.contains(&3), true);
+		assert!(!set.contains(&5));
+		assert!(set.contains(&1));
+		assert!(set.contains(&3));
 	}
 
 	#[test]
@@ -414,7 +411,7 @@ mod tests {
 
 		assert_eq!(set.try_insert_replace(10), Err(false));
 		assert_eq!(set.try_insert_replace(11), Ok(6));
-		assert_eq!(set.clone().into_bounded_vec().into_inner(), vec![11, 10, 9, 8, 7]);
+		assert_eq!(set.into_bounded_vec().into_inner(), vec![11, 10, 9, 8, 7]);
 	}
 
 	#[test]

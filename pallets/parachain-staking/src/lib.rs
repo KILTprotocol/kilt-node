@@ -1410,6 +1410,9 @@ pub mod pallet {
 		/// increased accordingly.
 		///
 		/// Emits `Delegation`.
+		/// Emits `DelegationReplaced` if the candidate has
+		/// `MaxDelegatorsPerCollator` many delegations but this delegator
+		/// staked more than one of the other delegators of this candidate.
 		///
 		/// # <weight>
 		/// - The transaction's complexity is mainly dependent on updating the
@@ -1456,7 +1459,7 @@ pub mod pallet {
 			// attempt to insert delegator and check for uniqueness, excess is handled below
 			let insert_delegator = state
 				.delegators
-				// we handle TooManyDelegators below
+				// we handle TooManyDelegators error below in do_update_delegator
 				.insert(delegation.clone())
 				.unwrap_or(true);
 			// should never fail but let's be safe
@@ -1464,16 +1467,7 @@ pub mod pallet {
 
 			// update state and potentially kick a delegator with less staked amount
 			state = if num_delegations_pre_insertion == T::MaxDelegatorsPerCollator::get() {
-				let (new_state, replaced_delegation) = Self::do_update_delegator(delegation.clone(), state)?;
-				Self::deposit_event(Event::DelegationReplaced(
-					delegation.owner,
-					delegation.amount,
-					replaced_delegation.owner,
-					replaced_delegation.amount,
-					new_state.id.clone(),
-					new_state.total,
-				));
-				new_state
+				Self::do_update_delegator(delegation, state)?
 			} else {
 				state.total = state.total.saturating_add(amount);
 				state
@@ -1529,6 +1523,9 @@ pub mod pallet {
 		/// set to one.
 		///
 		/// Emits `Delegation`.
+		/// Emits `DelegationReplaced` if the candidate has
+		/// `MaxDelegatorsPerCollator` many delegations but this delegator
+		/// staked more than one of the other delegators of this candidate.
 		///
 		/// # <weight>
 		/// - The transaction's complexity is mainly dependent on updating the
@@ -1597,16 +1594,7 @@ pub mod pallet {
 
 			// update state and potentially kick a delegator with less staked amount
 			state = if num_delegations_pre_insertion == T::MaxDelegatorsPerCollator::get() {
-				let (new_state, replaced_delegation) = Self::do_update_delegator(delegation.clone(), state)?;
-				Self::deposit_event(Event::DelegationReplaced(
-					delegation.owner,
-					delegation.amount,
-					replaced_delegation.owner,
-					replaced_delegation.amount,
-					new_state.id.clone(),
-					new_state.total,
-				));
-				new_state
+				Self::do_update_delegator(delegation, state)?
 			} else {
 				state.total = state.total.saturating_add(amount);
 				state
@@ -2181,6 +2169,9 @@ pub mod pallet {
 		///
 		/// Returns the old delegation that is updated, if any.
 		///
+		/// Emits `DelegationReplaced` if the stake exceeds one of the current
+		/// delegations.
+		///
 		/// # <weight>
 		/// Weight: O(D) where D is the number of delegators for this collator
 		/// bounded by `MaxDelegatorsPerCollator`.
@@ -2189,7 +2180,7 @@ pub mod pallet {
 		fn do_update_delegator(
 			stake: Stake<T::AccountId, BalanceOf<T>>,
 			mut state: Collator<T::AccountId, BalanceOf<T>, T::MaxDelegatorsPerCollator>,
-		) -> Result<(CollatorOf<T, T::MaxDelegatorsPerCollator>, StakeOf<T>), DispatchError> {
+		) -> Result<CollatorOf<T, T::MaxDelegatorsPerCollator>, DispatchError> {
 			// attempt to replace the last element of the set
 			let stake_to_remove = state
 				.delegators
@@ -2212,7 +2203,16 @@ pub mod pallet {
 			// update storage of kicked delegator
 			Self::kick_delegator(&stake_to_remove, &state.id)?;
 
-			Ok((state, stake_to_remove))
+			Self::deposit_event(Event::DelegationReplaced(
+				stake.owner,
+				stake.amount,
+				stake_to_remove.owner,
+				stake_to_remove.amount,
+				state.id.clone(),
+				state.total,
+			));
+
+			Ok(state)
 		}
 
 		/// Either set or increase the BalanceLock of target account to

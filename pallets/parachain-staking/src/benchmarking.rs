@@ -60,7 +60,6 @@ fn setup_collator_candidates<T: Config>(
 	CandidatePool::<T>::get()
 		.into_bounded_vec()
 		.into_inner()
-		.clone()
 		.drain(..)
 		.map(|c| c.owner)
 		.collect()
