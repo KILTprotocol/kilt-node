@@ -198,10 +198,11 @@ pub mod pallet {
 	use sp_std::{collections::btree_map::BTreeMap, prelude::*};
 
 	use crate::{
+		migrations::StakingStorageVersion,
 		set::OrderedSet,
 		types::{
-			BalanceOf, Collator, CollatorOf, CollatorStatus, DelegationCounter, Delegator, Releases, RoundInfo, Stake,
-			StakeOf, TotalStake,
+			BalanceOf, Collator, CollatorOf, CollatorStatus, DelegationCounter, Delegator, RoundInfo, Stake, StakeOf,
+			TotalStake,
 		},
 	};
 	use sp_std::{convert::TryInto, fmt::Debug};
@@ -488,40 +489,16 @@ pub mod pallet {
 
 		#[cfg(feature = "try-runtime")]
 		fn pre_upgrade() -> Result<(), &'static str> {
-			log::debug!("[BEGIN] parachain-staking::pre_upgrade");
-			let pre_migration_checks = match <StorageVersion<T>>::get() {
-				Releases::V1_0_0 => migrations::v2::pre_migrate::<T>(),
-				Releases::V2_0_0 => migrations::v3::pre_migrate::<T>(),
-				Releases::V3_0_0 => migrations::v4::pre_migrate::<T>(),
-				Releases::V4 => Err("Already migrated"),
-			};
-			log::debug!("[END] parachain-staking::pre_upgrade");
-			pre_migration_checks
+			migrations::StakingStorageMigrator::<T>::pre_migrate()
 		}
 
-		#[allow(clippy::let_and_return)]
 		fn on_runtime_upgrade() -> Weight {
-			#[cfg(feature = "try-runtime")]
-			log::debug!("[BEGIN] parachain-staking::on_runtime_upgrade");
-			let weight = match <StorageVersion<T>>::get() {
-				Releases::V1_0_0 => migrations::v2::migrate::<T>()
-					.saturating_add(migrations::v3::migrate::<T>())
-					.saturating_add(migrations::v4::migrate::<T>()),
-				Releases::V2_0_0 => migrations::v3::migrate::<T>().saturating_add(migrations::v4::migrate::<T>()),
-				Releases::V3_0_0 => migrations::v4::migrate::<T>(),
-				Releases::V4 => Weight::zero(),
-			}
-			.saturating_add(T::DbWeight::get().reads(1));
-			log::debug!("[END] parachain-staking::on_runtime_upgrade");
-			weight
+			migrations::StakingStorageMigrator::<T>::migrate()
 		}
 
 		#[cfg(feature = "try-runtime")]
 		fn post_upgrade() -> Result<(), &'static str> {
-			log::debug!("[BEGIN] parachain-staking::post_upgrade");
-			let post_migration_checks = migrations::v4::post_migrate::<T>();
-			log::debug!("[END] parachain-staking::post_upgrade");
-			post_migration_checks
+			migrations::StakingStorageMigrator::<T>::post_migrate()
 		}
 	}
 
@@ -530,7 +507,7 @@ pub mod pallet {
 	///
 	/// This is set to v2.0.0 for new networks.
 	#[pallet::storage]
-	pub(crate) type StorageVersion<T: Config> = StorageValue<_, Releases, ValueQuery>;
+	pub(crate) type StorageVersion<T: Config> = StorageValue<_, StakingStorageVersion, ValueQuery>;
 
 	/// The maximum number of collator candidates selected at each round.
 	#[pallet::storage]

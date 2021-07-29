@@ -20,7 +20,7 @@
 #![allow(clippy::from_over_into)]
 
 use super::*;
-use crate::{self as stake};
+use crate::{self as stake, migrations::StakingStorageVersion};
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{GenesisBuild, OnFinalize, OnInitialize},
@@ -210,6 +210,8 @@ pub(crate) struct ExtBuilder {
 	inflation_config: InflationInfo,
 	// blocks per round
 	blocks_per_round: BlockNumber,
+	// version of storage
+	storage_version: StakingStorageVersion,
 }
 
 impl Default for ExtBuilder {
@@ -225,6 +227,7 @@ impl Default for ExtBuilder {
 				Perquintill::from_percent(40),
 				Perquintill::from_percent(10),
 			),
+			storage_version: StakingStorageVersion::default(),
 		}
 	}
 }
@@ -266,6 +269,11 @@ impl ExtBuilder {
 
 	pub(crate) fn set_blocks_per_round(mut self, blocks_per_round: BlockNumber) -> Self {
 		self.blocks_per_round = blocks_per_round;
+		self
+	}
+
+	pub(crate) fn with_storage_version(mut self, storage_version: StakingStorageVersion) -> Self {
+		self.storage_version = storage_version;
 		self
 	}
 
@@ -324,6 +332,10 @@ impl ExtBuilder {
 					.expect("Ran into issues when setting blocks_per_round");
 			});
 		}
+
+		ext.execute_with(|| {
+			crate::StorageVersion::<Test>::set(self.storage_version);
+		});
 
 		ext.execute_with(|| System::set_block_number(1));
 		ext
