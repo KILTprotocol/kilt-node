@@ -2521,6 +2521,12 @@ pub mod pallet {
 		/// - Writes: (D + 1) * Balance
 		/// # </weight>
 		fn note_author(author: T::AccountId) {
+			log::info!(
+				"Noting author {:?} in block {:?} with starting balance {:?}",
+				author,
+				<frame_system::Pallet<T>>::block_number(),
+				T::Currency::free_balance(&author)
+			);
 			// should always include state except if the collator has been forcedly removed
 			// via `force_remove_candidate` in the current or previous round
 			if let Some(state) = <CollatorState<T>>::get(author.clone()) {
@@ -2544,6 +2550,12 @@ pub mod pallet {
 
 				// Reward delegators
 				for Stake { owner, amount } in state.delegators {
+					log::info!(
+						"Noting delegator {:?} in block {:?} with starting balance {:?}",
+						owner,
+						<frame_system::Pallet<T>>::block_number(),
+						T::Currency::free_balance(&owner)
+					);
 					if amount >= T::MinDelegatorStake::get() {
 						let due =
 							inflation_config
