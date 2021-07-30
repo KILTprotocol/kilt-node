@@ -790,6 +790,7 @@ construct_runtime! {
 		NodeBlock = kilt_primitives::Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
+		// Basic stuff; balances is uncallable initially.
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>} = 0,
 		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Storage} = 1,
 
@@ -799,44 +800,49 @@ construct_runtime! {
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage} = 7,
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>} = 8,
 
-		// The following order MUST NOT be changed: Staking -> Session -> Aura
-		ParachainStaking: parachain_staking::{Pallet, Call, Storage, Event<T>, Config<T>} = 10,
-		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>} = 11,
-		Authorship: pallet_authorship::{Pallet, Call, Storage} = 12,
-		Aura: pallet_aura::{Pallet, Config<T>} = 13,
-		AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 14,
-
-		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>, Config} = 18,
-		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 19,
-		// XcmHandler: cumulus_pallet_xcmp_queue::{Pallet, Call, Event<T>, Origin} = 20,
-		// Tokens: orml_tokens::{Pallet, Call, Storage, Event<T>} = 21,
-		// Currencies: orml_currencies::{Pallet, Call, Storage, Event<T>} = 22,
-		// XTokens: orml_xtokens::{Pallet, Call, Storage, Event<T>} = 23,
-		// UnknownTokens: orml_unknown_tokens::{Pallet, Storage, Event} = 24,
+		// Consensus support.
+		// The following order MUST NOT be changed: Authorship -> Staking -> Session -> Aura -> AuraExt
+		Authorship: pallet_authorship::{Pallet, Call, Storage} = 20,
+		ParachainStaking: parachain_staking::{Pallet, Call, Storage, Event<T>, Config<T>} = 21,
+		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>} = 22,
+		Aura: pallet_aura::{Pallet, Config<T>} = 23,
+		AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 24,
 
 		// Governance stuff; uncallable initially.
-		Democracy: pallet_democracy::{Pallet, Call, Storage, Config<T>, Event<T>} = 25,
-		Council: pallet_collective::<Instance1>::{Pallet, Call, Storage, Origin<T>, Event<T>, Config<T>} = 26,
-		TechnicalCommittee: pallet_collective::<Instance2>::{Pallet, Call, Storage, Origin<T>, Event<T>, Config<T>} = 27,
-		ElectionsPhragmen: pallet_elections_phragmen::{Pallet, Call, Storage, Event<T>, Config<T>} = 28,
-		TechnicalMembership: pallet_membership::{Pallet, Call, Storage, Event<T>, Config<T>} = 29,
-		Treasury: pallet_treasury::{Pallet, Call, Storage, Config, Event<T>} = 30,
+		Democracy: pallet_democracy::{Pallet, Call, Storage, Config<T>, Event<T>} = 30,
+		Council: pallet_collective::<Instance1>::{Pallet, Call, Storage, Origin<T>, Event<T>, Config<T>} = 31,
+		TechnicalCommittee: pallet_collective::<Instance2>::{Pallet, Call, Storage, Origin<T>, Event<T>, Config<T>} = 32,
+		ElectionsPhragmen: pallet_elections_phragmen::{Pallet, Call, Storage, Event<T>, Config<T>} = 33,
+		TechnicalMembership: pallet_membership::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
+		Treasury: pallet_treasury::{Pallet, Call, Storage, Config, Event<T>} = 35,
 
-		// System scheduler.
-		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 32,
-
-		// TODO: Add meaningful index
+		// Utility module.
+		Utility: pallet_utility::{Pallet, Call, Storage, Event} = 40,
 
 		// Vesting. Usable initially, but removed once all vesting is finished.
-		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 33,
-		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
+		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 41,
 
-		Ctype: ctype::{Pallet, Call, Storage, Event<T>} = 35,
-		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 36,
-		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 37,
-		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 38,
+		// System scheduler.
+		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 42,
 
-		Utility: pallet_utility::{Pallet, Call, Storage, Event} = 39,
+		// KILT Pallets. Start indices 60 to leave room
+		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 60,
+		Ctype: ctype::{Pallet, Call, Storage, Event<T>} = 61,
+		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 62,
+		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 63,
+		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 64,
+
+		// Parachains pallets. Start indices at 80 to leave room.
+		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>, Config} = 80,
+		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 81,
+
+		// Pallet for sending XCM.
+		// XcmHandler: cumulus_pallet_xcmp_queue::{Pallet, Call, Event<T>, Origin} = 100,
+		// Tokens: orml_tokens::{Pallet, Call, Storage, Event<T>} = 101,
+		// Currencies: orml_currencies::{Pallet, Call, Storage, Event<T>} = 102,
+		// XTokens: orml_xtokens::{Pallet, Call, Storage, Event<T>} = 103,
+		// UnknownTokens: orml_unknown_tokens::{Pallet, Storage, Event} = 104,
+
 	}
 }
 
