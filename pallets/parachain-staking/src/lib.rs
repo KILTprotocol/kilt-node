@@ -180,6 +180,7 @@ pub mod pallet {
 	use frame_support::{
 		assert_ok,
 		pallet_prelude::*,
+		storage::bounded_btree_map::BoundedBTreeMap,
 		traits::{
 			Currency, EstimateNextSessionRotation, Get, Imbalance, LockIdentifier, LockableCurrency,
 			ReservableCurrency, WithdrawReasons,
@@ -195,7 +196,7 @@ pub mod pallet {
 		Permill, Perquintill,
 	};
 	use sp_staking::SessionIndex;
-	use sp_std::{collections::btree_map::BTreeMap, prelude::*};
+	use sp_std::prelude::*;
 
 	use crate::{
 		migrations::StakingStorageVersion,
@@ -583,8 +584,13 @@ pub mod pallet {
 	/// blocks.
 	#[pallet::storage]
 	#[pallet::getter(fn unstaking)]
-	pub(crate) type Unstaking<T: Config> =
-		StorageMap<_, Twox64Concat, T::AccountId, BTreeMap<T::BlockNumber, BalanceOf<T>>, ValueQuery>;
+	pub(crate) type Unstaking<T: Config> = StorageMap<
+		_,
+		Twox64Concat,
+		T::AccountId,
+		BoundedBTreeMap<T::BlockNumber, BalanceOf<T>, T::MaxUnstakeRequests>,
+		ValueQuery,
+	>;
 
 	/// The maximum amount a collator candidate can stake.
 	#[pallet::storage]
@@ -956,7 +962,7 @@ pub mod pallet {
 				<CandidatePool<T>>::put(candidates);
 			}
 
-			Self::remove_candidate(&collator, state);
+			Self::remove_candidate(&collator, state)?;
 
 			// update candidates for next round
 			let (num_collators, num_delegators, _, _) = Self::select_top_candidates();
@@ -1168,7 +1174,7 @@ pub mod pallet {
 
 			let num_delegators = state.delegators.len().saturated_into::<u32>();
 			let total_amount = state.total;
-			Self::remove_candidate(&collator, state);
+			Self::remove_candidate(&collator, state)?;
 
 			Self::deposit_event(Event::CollatorLeft(collator, total_amount));
 
@@ -2214,7 +2220,8 @@ pub mod pallet {
 			// in unstaking in case that unstaking.sum > amount
 			let mut total_locked: BalanceOf<T> = Zero::zero();
 			let mut unstaking_len = 0u32;
-			<Unstaking<T>>::mutate(who, |unstaking| {
+
+			<Unstaking<T>>::try_mutate(who, |unstaking| -> DispatchResult {
 				// reduce {amount | more} by unstaking until either {amount | more} is zero or
 				// no unstaking is left
 				// if more is set, we only want to reduce by more to achieve 100 - 40 + 30 = 90
@@ -2228,7 +2235,9 @@ pub mod pallet {
 						// amount is only reducible by locked_balance - amt_consuming_unstaking
 						let delta = locked_balance.saturating_sub(amt_consuming_unstaking);
 						// replace old entry with delta
-						unstaking.insert(block_number, delta);
+						unstaking
+							.try_insert(block_number, delta)
+							.map_err(|_| Error::<T>::NoMoreUnstaking)?;
 						amt_consuming_unstaking = Zero::zero();
 						total_locked = total_locked.saturating_add(locked_balance);
 					} else {
@@ -2238,7 +2247,8 @@ pub mod pallet {
 					}
 					unstaking_len = unstaking_len.saturating_add(1u32);
 				}
-			});
+				Ok(())
+			})?;
 
 			// Handle case of collator/delegator decreasing their stake and increasing
 			// afterwards which results in amount != locked
@@ -2275,7 +2285,7 @@ pub mod pallet {
 		/// - Reads: BlockNumber, Unstaking
 		/// - Writes: Unstaking
 		/// # </weight>
-		fn prep_unstake(who: &T::AccountId, amount: BalanceOf<T>) -> Result<(), DispatchError> {
+		fn prep_unstake(who: &T::AccountId, amount: BalanceOf<T>) -> DispatchResult {
 			// should never occur but let's be safe
 			ensure!(!amount.is_zero(), Error::<T>::StakeNotFound);
 
@@ -2291,27 +2301,11 @@ pub mod pallet {
 			// if existent, we have to add the current amount of same unlock_block, because
 			// insert overwrites the current value
 			let amount = amount.saturating_add(*unstaking.get(&unlock_block).unwrap_or(&BalanceOf::<T>::zero()));
-			unstaking.insert(unlock_block, amount);
+			unstaking
+				.try_insert(unlock_block, amount)
+				.map_err(|_| Error::<T>::NoMoreUnstaking)?;
 			<Unstaking<T>>::insert(who, unstaking);
 			Ok(())
-		}
-
-		/// Prepare unstaking without checking for exceeding the unstake request
-		/// limit. Same as `prep_unstake` but without checking for errors.
-		///
-		/// NOTE: Should only be called in `execute_leave_candidates`!
-		///
-		/// # <weight>
-		/// Weight: O(1)
-		/// - Reads: BlockNumber, Unstaking
-		/// - Writes: Unstaking
-		/// # </weight>
-		fn prep_unstake_exit_queue(who: &T::AccountId, amount: BalanceOf<T>) {
-			let now = <frame_system::Pallet<T>>::block_number();
-			let unlock_block = now.saturating_add(T::StakeDuration::get());
-			let mut unstaking = <Unstaking<T>>::get(who);
-			unstaking.insert(unlock_block, amount);
-			<Unstaking<T>>::insert(who, unstaking);
 		}
 
 		/// Clear the CollatorState of the candidate and remove all delegations
@@ -2326,11 +2320,14 @@ pub mod pallet {
 		/// - Kills: CollatorState, DelegatorState for all delegators which only
 		///   delegated to the candidate
 		/// # </weight>
-		fn remove_candidate(collator: &T::AccountId, state: CollatorOf<T, T::MaxDelegatorsPerCollator>) {
+		fn remove_candidate(
+			collator: &T::AccountId,
+			state: CollatorOf<T, T::MaxDelegatorsPerCollator>,
+		) -> DispatchResult {
 			// iterate over delegators
 			for stake in state.delegators.into_iter() {
 				// prepare unstaking of delegator
-				Self::prep_unstake_exit_queue(&stake.owner, stake.amount);
+				Self::prep_unstake(&stake.owner, stake.amount)?;
 				// remove delegation from delegator state
 				if let Some(mut delegator) = <DelegatorState<T>>::get(&stake.owner) {
 					if let Some(remaining) = delegator.rm_delegation(collator) {
@@ -2343,7 +2340,7 @@ pub mod pallet {
 				}
 			}
 			// prepare unstaking of collator candidate
-			Self::prep_unstake_exit_queue(&state.id, state.stake);
+			Self::prep_unstake(&state.id, state.stake)?;
 
 			// disable validator for next session if they were in the set of validators
 			pallet_session::Pallet::<T>::validators()
@@ -2360,6 +2357,7 @@ pub mod pallet {
 				.map(pallet_session::Pallet::<T>::disable_index);
 
 			<CollatorState<T>>::remove(&collator);
+			Ok(())
 		}
 
 		/// Withdraw all staked currency which was unstaked at least
@@ -2383,12 +2381,12 @@ pub mod pallet {
 			let mut expired = Vec::new();
 
 			// check potential unlocks
-			for (block_number, locked_balance) in &unstaking {
-				if block_number <= &now {
-					expired.push(*block_number);
-					total_unlocked = total_unlocked.saturating_add(*locked_balance);
+			for (block_number, locked_balance) in unstaking.clone().into_iter() {
+				if block_number <= now {
+					expired.push(block_number);
+					total_unlocked = total_unlocked.saturating_add(locked_balance);
 				} else {
-					total_locked = total_locked.saturating_add(*locked_balance);
+					total_locked = total_locked.saturating_add(locked_balance);
 				}
 			}
 			for block_number in expired {

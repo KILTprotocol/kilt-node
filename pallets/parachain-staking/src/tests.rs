@@ -18,9 +18,12 @@
 
 //! Unit testing
 
-use std::{collections::BTreeMap, convert::TryInto, iter};
+use std::{convert::TryInto, iter};
 
-use frame_support::{assert_noop, assert_ok, traits::EstimateNextSessionRotation, BoundedVec};
+use frame_support::{
+	assert_noop, assert_ok, storage::bounded_btree_map::BoundedBTreeMap, traits::EstimateNextSessionRotation,
+	BoundedVec,
+};
 use pallet_balances::{BalanceLock, Error as BalancesError, Reasons};
 use pallet_session::{SessionManager, ShouldEndSession};
 use sp_runtime::{traits::Zero, Perbill, Permill, Perquintill, SaturatedConversion};
@@ -1061,11 +1064,11 @@ fn multiple_delegations() {
 
 			roll_to(35, vec![]);
 			assert_ok!(StakePallet::execute_leave_candidates(Origin::signed(2), 2));
-			let mut unbonding_7 = BTreeMap::new();
-			unbonding_7.insert(35u64 + <Test as Config>::StakeDuration::get() as u64, 80);
+			let mut unbonding_7 = BoundedBTreeMap::new();
+			assert_ok!(unbonding_7.try_insert(35u64 + <Test as Config>::StakeDuration::get() as u64, 80));
 			assert_eq!(StakePallet::unstaking(7), unbonding_7);
-			let mut unbonding_11 = BTreeMap::new();
-			unbonding_11.insert(35u64 + <Test as Config>::StakeDuration::get() as u64, 11);
+			let mut unbonding_11 = BoundedBTreeMap::new();
+			assert_ok!(unbonding_11.try_insert(35u64 + <Test as Config>::StakeDuration::get() as u64, 11));
 			assert_eq!(StakePallet::unstaking(11), unbonding_11);
 
 			roll_to(37, vec![]);
@@ -2147,8 +2150,8 @@ fn unlock_unstaked() {
 	// same_unstaked_as_restaked
 	// block 1: stake & unstake for 100
 	// block 2: stake & unstake for 100
-	// should remove first entry in unstaking BTreeMap when staking in block 2
-	// should still have 100 locked until unlocking
+	// should remove first entry in unstaking BoundedBTreeMap when staking in block
+	// 2 should still have 100 locked until unlocking
 	ExtBuilder::default()
 		.with_balances(vec![(1, 10), (2, 100)])
 		.with_collators(vec![(1, 10)])
@@ -2156,8 +2159,8 @@ fn unlock_unstaked() {
 		.build()
 		.execute_with(|| {
 			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
-			let mut unstaking = BTreeMap::new();
-			unstaking.insert(3, 100);
+			let mut unstaking = BoundedBTreeMap::new();
+			assert_ok!(unstaking.try_insert(3, 100));
 			let lock = BalanceLock {
 				id: STAKING_ID,
 				amount: 100,
@@ -2175,7 +2178,7 @@ fn unlock_unstaked() {
 			assert_ok!(StakePallet::join_delegators(Origin::signed(2), 1, 100));
 			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
 			unstaking.remove(&3);
-			unstaking.insert(4, 100);
+			assert_ok!(unstaking.try_insert(4, 100));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 			// shouldn't be able to unlock anything
@@ -2204,8 +2207,8 @@ fn unlock_unstaked() {
 	// less_unstaked_than_restaked
 	// block 1: stake & unstake for 10
 	// block 2: stake & unstake for 100
-	// should remove first entry in unstaking BTreeMap when staking in block 2
-	// should still have 90 locked until unlocking in block 4
+	// should remove first entry in unstaking BoundedBTreeMap when staking in block
+	// 2 should still have 90 locked until unlocking in block 4
 	ExtBuilder::default()
 		.with_balances(vec![(1, 10), (2, 100)])
 		.with_collators(vec![(1, 10)])
@@ -2213,8 +2216,8 @@ fn unlock_unstaked() {
 		.build()
 		.execute_with(|| {
 			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
-			let mut unstaking = BTreeMap::new();
-			unstaking.insert(3, 10);
+			let mut unstaking = BoundedBTreeMap::new();
+			assert_ok!(unstaking.try_insert(3, 10));
 			let mut lock = BalanceLock {
 				id: STAKING_ID,
 				amount: 10,
@@ -2232,7 +2235,7 @@ fn unlock_unstaked() {
 			assert_ok!(StakePallet::join_delegators(Origin::signed(2), 1, 100));
 			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
 			unstaking.remove(&3);
-			unstaking.insert(4, 100);
+			assert_ok!(unstaking.try_insert(4, 100));
 			lock.amount = 100;
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
@@ -2261,8 +2264,8 @@ fn unlock_unstaked() {
 	// more_unstaked_than_restaked
 	// block 1: stake & unstake for 100
 	// block 2: stake & unstake for 10
-	// should reduce first entry from amount 100 to 90 in unstaking BTreeMap when
-	// staking in block 2
+	// should reduce first entry from amount 100 to 90 in unstaking BoundedBTreeMap
+	// when staking in block 2
 	// should have 100 locked until unlocking in block 3, then 10
 	// should have 10 locked until further unlocking in block 4
 	ExtBuilder::default()
@@ -2272,8 +2275,8 @@ fn unlock_unstaked() {
 		.build()
 		.execute_with(|| {
 			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
-			let mut unstaking = BTreeMap::new();
-			unstaking.insert(3, 100);
+			let mut unstaking = BoundedBTreeMap::new();
+			assert_ok!(unstaking.try_insert(3, 100));
 			let mut lock = BalanceLock {
 				id: STAKING_ID,
 				amount: 100,
@@ -2290,8 +2293,8 @@ fn unlock_unstaked() {
 			roll_to(2, vec![]);
 			assert_ok!(StakePallet::join_delegators(Origin::signed(2), 1, 10));
 			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
-			unstaking.insert(3, 90);
-			unstaking.insert(4, 10);
+			assert_ok!(unstaking.try_insert(3, 90));
+			assert_ok!(unstaking.try_insert(4, 10));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 			// shouldn't be able to unlock anything
@@ -2322,8 +2325,8 @@ fn unlock_unstaked() {
 	// test_stake_less
 	// block 1: stake & unstake for 100
 	// block 2: stake & unstake for 10
-	// should reduce first entry from amount 100 to 90 in unstaking BTreeMap when
-	// staking in block 2
+	// should reduce first entry from amount 100 to 90 in unstaking BoundedBTreeMap
+	// when staking in block 2
 	// should have 100 locked until unlocking in block 3, then 10
 	// should have 10 locked until further unlocking in block 4
 	ExtBuilder::default()
@@ -2347,8 +2350,8 @@ fn unlock_unstaked() {
 			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
 			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
 			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10),);
-			let mut unstaking = BTreeMap::new();
-			unstaking.insert(3, 60);
+			let mut unstaking = BoundedBTreeMap::new();
+			assert_ok!(unstaking.try_insert(3, 60));
 			let mut lock = BalanceLock {
 				id: STAKING_ID,
 				amount: 200,
@@ -2369,7 +2372,7 @@ fn unlock_unstaked() {
 			roll_to(2, vec![]);
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10),);
 			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10),);
-			unstaking.insert(4, 10);
+			assert_ok!(unstaking.try_insert(4, 10));
 			assert_eq!(Balances::locks(1), vec![lock.clone()]);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 			assert_eq!(StakePallet::unstaking(1), unstaking);
@@ -2385,8 +2388,8 @@ fn unlock_unstaked() {
 			roll_to(3, vec![]);
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10),);
 			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10),);
-			unstaking.insert(5, 10);
-			unstaking.insert(5, 10);
+			assert_ok!(unstaking.try_insert(5, 10));
+			assert_ok!(unstaking.try_insert(5, 10));
 			assert_eq!(Balances::locks(1), vec![lock.clone()]);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 			assert_eq!(StakePallet::unstaking(1), unstaking);
@@ -2411,9 +2414,9 @@ fn unlock_unstaked() {
 			roll_to(6, vec![]);
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
 			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
-			unstaking.insert(6, 10);
-			unstaking.insert(7, 10);
-			unstaking.insert(8, 10);
+			assert_ok!(unstaking.try_insert(6, 10));
+			assert_ok!(unstaking.try_insert(7, 10));
+			assert_ok!(unstaking.try_insert(8, 10));
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(1), vec![lock.clone()]);
@@ -2441,11 +2444,11 @@ fn unlock_unstaked() {
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 40));
 			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 40));
-			unstaking.insert(9, 40);
+			assert_ok!(unstaking.try_insert(9, 40));
 			assert_ok!(StakePallet::candidate_stake_more(Origin::signed(1), 30));
 			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(2), 1, 30));
 			unstaking.remove(&8);
-			unstaking.insert(9, 20);
+			assert_ok!(unstaking.try_insert(9, 20));
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			assert_eq!(Balances::locks(1), vec![lock.clone()]);
@@ -2547,8 +2550,8 @@ fn candidate_leaves() {
 
 			roll_to(15, vec![]);
 			assert_ok!(StakePallet::execute_leave_candidates(Origin::signed(13), 1));
-			let mut unstaking = BTreeMap::new();
-			unstaking.insert(17, 100);
+			let mut unstaking = BoundedBTreeMap::new();
+			assert_ok!(unstaking.try_insert(17, 100));
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(12), unstaking);
 
