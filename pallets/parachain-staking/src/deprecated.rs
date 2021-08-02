@@ -36,10 +36,6 @@ pub(crate) mod v1_v4 {
 	#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Default, Clone)]
 	pub struct OrderedSet<T>(Vec<T>);
 	impl<T: Ord> OrderedSet<T> {
-		pub(crate) fn into_vec(self) -> Vec<T> {
-			self.0
-		}
-
 		pub(crate) fn sort_greatest_to_lowest(&mut self) {
 			self.0.sort_by(|a, b| b.cmp(a));
 		}
