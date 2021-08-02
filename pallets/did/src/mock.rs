@@ -21,6 +21,7 @@
 
 use codec::{Decode, Encode};
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
+use frame_system::EnsureSigned;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::EnsureSigned;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
@@ -98,6 +99,7 @@ impl Config for Test {
 	type DidIdentifier = TestDidIdentifier;
 	type Origin = Origin;
 	type Call = Call;
+	type EnsureOrigin = EnsureSigned<TestDidIdentifier>;
 	type Event = ();
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxUrlLength = MaxUrlLength;
@@ -259,9 +261,8 @@ pub fn get_url_endpoint(length: u32) -> Url {
 	)
 }
 
-pub fn generate_base_did_creation_operation(did: TestDidIdentifier) -> did::DidCreationOperation<Test> {
+pub fn generate_base_did_creation_operation() -> did::DidCreationOperation {
 	DidCreationOperation {
-		did,
 		new_key_agreement_keys: BTreeSet::new(),
 		new_attestation_key: None,
 		new_delegation_key: None,
@@ -271,19 +272,13 @@ pub fn generate_base_did_creation_operation(did: TestDidIdentifier) -> did::DidC
 
 pub fn generate_base_did_update_operation(did: TestDidIdentifier) -> did::DidUpdateOperation<Test> {
 	DidUpdateOperation {
-		did,
 		new_authentication_key: None,
 		new_key_agreement_keys: BTreeSet::new(),
 		attestation_key_update: DidVerificationKeyUpdateAction::default(),
 		delegation_key_update: DidVerificationKeyUpdateAction::default(),
 		new_endpoint_url: None,
 		public_keys_to_remove: BTreeSet::new(),
-		tx_counter: 1u64,
 	}
-}
-
-pub fn generate_base_did_delete_operation(did: TestDidIdentifier) -> did::DidDeletionOperation<Test> {
-	DidDeletionOperation { did, tx_counter: 1u64 }
 }
 
 pub fn generate_base_did_details(authentication_key: did::DidVerificationKey) -> did::DidDetails<Test> {
@@ -313,20 +308,28 @@ pub(crate) fn get_delegation_key_call() -> Call {
 	Call::Ctype(ctype::Call::add(get_delegation_key_test_input()))
 }
 pub(crate) fn get_no_key_test_input() -> TestCtypeHash {
-	TestCtypeHash::from_slice(&[3u8; 32])
+	TestCtypeHash::from_slice(&[4u8; 32])
 }
 pub(crate) fn get_no_key_call() -> Call {
 	Call::Ctype(ctype::Call::add(get_no_key_test_input()))
 }
+pub(crate) fn get_none_key_test_input() -> TestCtypeHash {
+	TestCtypeHash::from_slice(&[5u8; 32])
+}
+pub(crate) fn get_none_key_call() -> Call {
+	Call::Ctype(ctype::Call::add(get_none_key_test_input()))
+}
 
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
-	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
+	fn derive_verification_key_relationship(&self) -> Option<did::DidOperationAuthorizationKey> {
 		if *self == get_attestation_key_call() {
-			Some(did::DidVerificationKeyRelationship::AssertionMethod)
+			Some(did::DidOperationAuthorizationKey::DidKey(did::DidVerificationKeyRelationship::AssertionMethod))
 		} else if *self == get_authentication_key_call() {
-			Some(did::DidVerificationKeyRelationship::Authentication)
+			Some(did::DidOperationAuthorizationKey::DidKey(did::DidVerificationKeyRelationship::Authentication))
 		} else if *self == get_delegation_key_call() {
-			Some(did::DidVerificationKeyRelationship::CapabilityDelegation)
+			Some(did::DidOperationAuthorizationKey::DidKey(did::DidVerificationKeyRelationship::CapabilityDelegation))
+		} else if *self == get_no_key_call() {
+			Some(did::DidOperationAuthorizationKey::NoKey)
 		} else {
 			#[cfg(feature = "runtime-benchmarks")]
 			if *self == Self::get_call_for_did_call_benchmark() {
@@ -352,7 +355,7 @@ pub fn generate_test_did_call(
 		DidVerificationKeyRelationship::AssertionMethod => get_attestation_key_call(),
 		DidVerificationKeyRelationship::Authentication => get_authentication_key_call(),
 		DidVerificationKeyRelationship::CapabilityDelegation => get_delegation_key_call(),
-		_ => get_no_key_call(),
+		_ => get_none_key_call(),
 	};
 	did::DidAuthorizedCallOperation {
 		did: caller,
@@ -368,20 +371,6 @@ pub struct TestDidOperation {
 	pub did: TestDidIdentifier,
 	pub verification_key_type: DidVerificationKeyRelationship,
 	pub tx_counter: u64,
-}
-
-impl DidOperation<Test> for TestDidOperation {
-	fn get_verification_key_relationship(&self) -> DidVerificationKeyRelationship {
-		self.verification_key_type
-	}
-
-	fn get_did(&self) -> &TestDidIdentifier {
-		&self.did
-	}
-
-	fn get_tx_counter(&self) -> u64 {
-		self.tx_counter
-	}
 }
 
 #[allow(dead_code)]

@@ -693,6 +693,7 @@ impl did::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
 	type Origin = Origin;
+	type EnsureOrigin = did::EnsureDidOrigin<Self::DidIdentifier>;
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 	type MaxUrlLength = MaxUrlLength;

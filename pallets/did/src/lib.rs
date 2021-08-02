@@ -116,6 +116,7 @@ mod tests;
 
 pub use crate::{default_weights::WeightInfo, did_details::*, errors::*, origin::*, pallet::*, url::*};
 
+use codec::Encode;
 use frame_support::{
 	dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo},
 	ensure,
@@ -172,6 +173,7 @@ pub mod pallet {
 		type Origin: From<DidRawOrigin<DidIdentifierOf<Self>>>;
 		#[cfg(feature = "runtime-benchmarks")]
 		type Origin: From<RawOrigin<DidIdentifierOf<Self>>>;
+		type EnsureOrigin: EnsureOrigin<Success = DidIdentifierOf<Self>, <Self as frame_system::Config>::Origin>;
 		/// Overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		/// Maximum number of key agreement keys that can be added in a creation
@@ -208,13 +210,13 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// A new DID has been created.
 		/// \[transaction signer, DID identifier\]
-		DidCreated(AccountIdentifierOf<T>, DidIdentifierOf<T>),
+		DidCreated(DidIdentifierOf<T>),
 		/// A DID has been updated.
 		/// \[transaction signer, DID identifier\]
-		DidUpdated(AccountIdentifierOf<T>, DidIdentifierOf<T>),
+		DidUpdated(DidIdentifierOf<T>),
 		/// A DID has been deleted.
 		/// \[transaction signer, DID identifier\]
-		DidDeleted(AccountIdentifierOf<T>, DidIdentifierOf<T>),
+		DidDeleted(DidIdentifierOf<T>),
 		/// A DID-authorised call has been executed.
 		/// \[DID caller, dispatch result\]
 		DidCallDispatched(DidIdentifierOf<T>, DispatchResult),
@@ -363,31 +365,29 @@ pub mod pallet {
     )]
 		pub fn submit_did_create_operation(
 			origin: OriginFor<T>,
-			operation: DidCreationOperation<T>,
+			operation: DidCreationOperation,
 			signature: DidSignature,
 		) -> DispatchResult {
-			let sender = ensure_signed(origin)?;
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 
 			// There has to be no other DID with the same identifier already saved on chain,
 			// otherwise generate a DidAlreadyPresent error.
 			ensure!(
-				!<Did<T>>::contains_key(operation.get_did()),
+				!<Did<T>>::contains_key(&did_subject),
 				<Error<T>>::DidAlreadyPresent
 			);
 
-			let account_did_auth_key = operation
-				.did
+			let account_did_auth_key = did_subject
 				.verify_and_recover_signature(&operation.encode(), &signature)
 				.map_err(<Error<T>>::from)?;
 
 			let did_entry =
 				DidDetails::try_from((operation.clone(), account_did_auth_key)).map_err(<Error<T>>::from)?;
 
-			let did_identifier = operation.get_did();
-			log::debug!("Creating DID {:?}", did_identifier);
-			<Did<T>>::insert(did_identifier, did_entry);
+			log::debug!("Creating DID {:?}", did_subject.clone());
+			<Did<T>>::insert(&did_subject, did_entry);
 
-			Self::deposit_event(Event::DidCreated(sender, did_identifier.clone()));
+			Self::deposit_event(Event::DidCreated(did_subject));
 
 			Ok(())
 		}
@@ -475,26 +475,19 @@ pub mod pallet {
 		pub fn submit_did_update_operation(
 			origin: OriginFor<T>,
 			operation: DidUpdateOperation<T>,
-			signature: DidSignature,
 		) -> DispatchResult {
-			let sender = ensure_signed(origin)?;
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 
-			// Saved here as it is consumed later when generating the new DidDetails object.
-			let did_identifier = operation.get_did().clone();
-
-			let did_details = <Did<T>>::get(&did_identifier).ok_or(<Error<T>>::DidNotPresent)?;
-
-			// Verify the signature and the nonce of the update operation.
-			Self::verify_operation_validity_for_did(&operation, &signature, &did_details).map_err(<Error<T>>::from)?;
+			let did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
 			// Generate a new DidDetails object by applying the changes in the update
 			// operation to the old object (and consuming both).
 			let new_did_details = DidDetails::try_from((did_details, operation)).map_err(<Error<T>>::from)?;
 
-			log::debug!("Updating DID {:?}", did_identifier);
-			<Did<T>>::insert(&did_identifier, new_did_details);
+			log::debug!("Updating DID {:?}", did_subject);
+			<Did<T>>::insert(&did_subject, new_did_details);
 
-			Self::deposit_event(Event::DidUpdated(sender, did_identifier));
+			Self::deposit_event(Event::DidUpdated(did_subject));
 
 			Ok(())
 		}
@@ -523,23 +516,19 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::submit_did_delete_operation())]
 		pub fn submit_did_delete_operation(
-			origin: OriginFor<T>,
-			operation: DidDeletionOperation<T>,
-			signature: DidSignature,
+			origin: OriginFor<T>
 		) -> DispatchResult {
-			let sender = ensure_signed(origin)?;
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 
-			let did_identifier = operation.get_did();
+			ensure!(
+				// `take` calls `kill` internally
+				<Did<T>>::take(&did_subject).is_some(),
+				<Error<T>>::DidNotPresent
+			);
 
-			let did_details = <Did<T>>::get(&did_identifier).ok_or(<Error<T>>::DidNotPresent)?;
+			log::debug!("Deleted DID {:?}", did_subject);
 
-			// Verify the signature and the nonce of the delete operation.
-			Self::verify_operation_validity_for_did(&operation, &signature, &did_details).map_err(<Error<T>>::from)?;
-
-			log::debug!("Deleting DID {:?}", did_identifier);
-			<Did<T>>::remove(&did_identifier);
-
-			Self::deposit_event(Event::DidDeleted(sender, did_identifier.clone()));
+			Self::deposit_event(Event::DidDeleted(did_subject));
 
 			Ok(())
 		}
@@ -606,13 +595,12 @@ pub mod pallet {
 			// Wrap the operation in the expected structure, specifying the key retrieved
 			let wrapped_operation = DidAuthorizedCallOperationWithVerificationRelationship {
 				operation: *did_call,
-				verification_key_relationship,
+				operation_authorization_key_type: verification_key_relationship,
 			};
 
-			// Verify if the DID exists, if the operation signature is valid, and if so
-			// increase the nonce if successful.
-			Self::verify_operation_validity_and_increase_did_nonce(&wrapped_operation, &signature)
+			Self::verify_did_operation_signature_and_increase_nonce(&wrapped_operation, &signature)
 				.map_err(<Error<T>>::from)?;
+
 			log::debug!("Dispatch call from DID {:?}", did_identifier);
 
 			// Dispatch the referenced [Call] instance and return its result
@@ -642,35 +630,26 @@ impl<T: Config> Pallet<T> {
 	/// - Reads: Did
 	/// - Writes: Did
 	/// # </weight>
-	pub fn verify_operation_validity_and_increase_did_nonce<O: DidOperation<T>>(
-		operation: &O,
+	pub fn verify_did_operation_signature_and_increase_nonce(
+		operation: &DidAuthorizedCallOperationWithVerificationRelationship<T>,
 		signature: &DidSignature,
 	) -> Result<(), DidError> {
 		let mut did_details =
-			<Did<T>>::get(&operation.get_did()).ok_or(DidError::StorageError(StorageError::DidNotPresent))?;
+			<Did<T>>::get(&operation.did).ok_or(DidError::StorageError(StorageError::DidNotPresent))?;
 
-		Self::verify_operation_validity_for_did(operation, signature, &did_details)?;
-
-		// Update tx counter in DID details and save to DID pallet
-		did_details.increase_tx_counter().map_err(DidError::StorageError)?;
-		<Did<T>>::insert(&operation.get_did(), did_details);
+		match operation.operation_authorization_key_type {
+			// Do nothing if no key is required.
+			DidOperationAuthorizationKey::NoKey => (),
+			DidOperationAuthorizationKey::DidKey(verification_key_type) => {
+				Self::validate_counter_value(operation.tx_counter, &did_details)?;
+				// Increase the tx counter as soon as it is considered valid, no matter if the signature is valid or not.
+				did_details.increase_tx_counter().map_err(DidError::StorageError)?;
+				Self::verify_payload_signature_with_did_key_type(operation.encode().as_ref(), signature, &did_details, verification_key_type)?;
+				<Did<T>>::insert(&operation.did, did_details);
+			},
+		}
 
 		Ok(())
-	}
-
-	// Internally verifies the validity of a DID operation nonce and signature.
-	fn verify_operation_validity_for_did<O: DidOperation<T>>(
-		operation: &O,
-		signature: &DidSignature,
-		did_details: &DidDetails<T>,
-	) -> Result<(), DidError> {
-		Self::verify_operation_counter_for_did(operation, did_details)?;
-		Self::verify_payload_signature_with_did_key_type(
-			&operation.encode(),
-			signature,
-			did_details,
-			operation.get_verification_key_relationship(),
-		)
 	}
 
 	// Verify the validity of a DID operation nonce.
@@ -679,8 +658,8 @@ impl<T: Config> Pallet<T> {
 	// as that would result in the DID being unusable, since we do not have yet any
 	// mechanism in place to wrap the counter value around when the limit is
 	// reached.
-	fn verify_operation_counter_for_did<O: DidOperation<T>>(
-		operation: &O,
+	fn validate_counter_value(
+		counter: u64,
 		did_details: &DidDetails<T>,
 	) -> Result<(), DidError> {
 		// Verify that the DID has not reached the maximum tx counter value
@@ -695,7 +674,7 @@ impl<T: Config> Pallet<T> {
 			.checked_add(1)
 			.ok_or(DidError::InternalError)?;
 		ensure!(
-			operation.get_tx_counter() == expected_nonce_value,
+			counter == expected_nonce_value,
 			DidError::SignatureError(SignatureError::InvalidNonce)
 		);
 

@@ -119,6 +119,15 @@ pub enum DidVerificationKeyRelationship {
 	AssertionMethod,
 }
 
+/// Key to be used to optionally verify a DID operation.
+#[derive(Clone, Copy, Debug, Decode, Encode, PartialEq, Eq)]
+pub enum DidOperationAuthorizationKey {
+	/// A DID vrification key.
+	DidKey(DidVerificationKeyRelationship),
+	/// No key. The DID signature and nonce will not be verified.
+	NoKey
+}
+
 /// Types of signatures supported by this pallet.
 #[derive(Clone, Decode, Debug, Encode, Eq, PartialEq)]
 pub enum DidSignature {
@@ -502,10 +511,10 @@ impl<T: Config> DidDetails<T> {
 	}
 }
 
-impl<T: Config> TryFrom<(DidCreationOperation<T>, DidVerificationKey)> for DidDetails<T> {
+impl<T: Config> TryFrom<(DidCreationOperation, DidVerificationKey)> for DidDetails<T> {
 	type Error = InputError;
 
-	fn try_from(new_details: (DidCreationOperation<T>, DidVerificationKey)) -> Result<Self, Self::Error> {
+	fn try_from(new_details: (DidCreationOperation, DidVerificationKey)) -> Result<Self, Self::Error> {
 		let (op, new_auth_key) = new_details;
 
 		ensure!(
@@ -619,39 +628,8 @@ impl<T: Config> TryFrom<(DidDetails<T>, DidUpdateOperation<T>)> for DidDetails<T
 			new_details.endpoint_url = Some(new_endpoint_url);
 		}
 
-		// Update DID counter.
-		new_details.last_tx_counter = update_operation.tx_counter;
-
 		Ok(new_details)
 	}
-}
-
-/// An operation that requires DID authentication.
-pub trait DidOperation<T: Config>: Encode {
-	/// The type of the verification key to be used to validate the
-	/// operation.
-	fn get_verification_key_relationship(&self) -> DidVerificationKeyRelationship;
-	/// The DID identifier of the subject.
-	fn get_did(&self) -> &DidIdentifierOf<T>;
-	/// The operation tx counter, used to protect against replay attacks.
-	fn get_tx_counter(&self) -> u64;
-}
-
-/// Trait for extrinsic DID-based authorization.
-///
-/// The trait allows
-/// [DidAuthorizedCallOperations](DidAuthorizedCallOperation) wrapping an
-/// extrinsic to specify what DID key to use to perform signature validation
-/// over the byte-encoded operation. A result of None indicates that the
-/// extrinsic does not support DID-based authorization.
-pub trait DeriveDidCallAuthorizationVerificationKeyRelationship {
-	/// The type of the verification key to be used to validate the
-	/// wrapped extrinsic.
-	fn derive_verification_key_relationship(&self) -> Option<DidVerificationKeyRelationship>;
-
-	// Return a call to dispatch in order to test the pallet proxy feature.
-	#[cfg(feature = "runtime-benchmarks")]
-	fn get_call_for_did_call_benchmark() -> Self;
 }
 
 /// An operation to create a new DID.
@@ -661,9 +639,7 @@ pub trait DeriveDidCallAuthorizationVerificationKeyRelationship {
 /// required to verify the operation signature, and the tx counter to
 /// protect against replay attacks.
 #[derive(Clone, Debug, Decode, Encode, PartialEq)]
-pub struct DidCreationOperation<T: Config> {
-	/// The DID identifier. It has to be unique.
-	pub did: DidIdentifierOf<T>,
+pub struct DidCreationOperation {
 	/// The new key agreement keys.
 	pub new_key_agreement_keys: BTreeSet<DidEncryptionKey>,
 	/// \[OPTIONAL\] The new attestation key.
@@ -674,22 +650,6 @@ pub struct DidCreationOperation<T: Config> {
 	pub new_endpoint_url: Option<Url>,
 }
 
-impl<T: Config> DidOperation<T> for DidCreationOperation<T> {
-	// Not really used for creations.
-	fn get_verification_key_relationship(&self) -> DidVerificationKeyRelationship {
-		DidVerificationKeyRelationship::Authentication
-	}
-
-	fn get_did(&self) -> &DidIdentifierOf<T> {
-		&self.did
-	}
-
-	// Irrelevant for creation operations.
-	fn get_tx_counter(&self) -> u64 {
-		0u64
-	}
-}
-
 /// An operation to update a DID.
 ///
 /// The struct implements the [DidOperation] trait, and as such it must
@@ -698,8 +658,6 @@ impl<T: Config> DidOperation<T> for DidCreationOperation<T> {
 /// protect against replay attacks.
 #[derive(Clone, Debug, Decode, Encode, PartialEq)]
 pub struct DidUpdateOperation<T: Config> {
-	/// The DID identifier.
-	pub did: DidIdentifierOf<T>,
 	/// \[OPTIONAL\] The new authentication key.
 	pub new_authentication_key: Option<DidVerificationKey>,
 	/// A new set of key agreement keys to add to the ones already stored.
@@ -715,22 +673,6 @@ pub struct DidUpdateOperation<T: Config> {
 	pub public_keys_to_remove: BTreeSet<KeyIdOf<T>>,
 	/// \[OPTIONAL\] The new endpoint URL.
 	pub new_endpoint_url: Option<Url>,
-	/// The DID tx counter.
-	pub tx_counter: u64,
-}
-
-impl<T: Config> DidOperation<T> for DidUpdateOperation<T> {
-	fn get_verification_key_relationship(&self) -> DidVerificationKeyRelationship {
-		DidVerificationKeyRelationship::Authentication
-	}
-
-	fn get_did(&self) -> &DidIdentifierOf<T> {
-		&self.did
-	}
-
-	fn get_tx_counter(&self) -> u64 {
-		self.tx_counter
-	}
 }
 
 /// Possible actions on a DID verification key within a
@@ -752,32 +694,21 @@ impl Default for DidVerificationKeyUpdateAction {
 	}
 }
 
-/// An operation to delete a DID.
+/// Trait for extrinsic DID-based authorization.
 ///
-/// The struct implements the [DidOperation] trait, and as such it must
-/// contain information about the caller's DID, the type of DID key
-/// required to verify the operation signature, and the tx counter to
-/// protect against replay attacks.
-#[derive(Clone, Debug, Decode, Encode, PartialEq)]
-pub struct DidDeletionOperation<T: Config> {
-	/// The DID identifier.
-	pub did: DidIdentifierOf<T>,
-	/// The DID tx counter.
-	pub tx_counter: u64,
-}
+/// The trait allows
+/// [DidAuthorizedCallOperations](DidAuthorizedCallOperation) wrapping an
+/// extrinsic to specify what DID key to use to perform signature validation
+/// over the byte-encoded operation. A result of None indicates that the
+/// extrinsic does not support DID-based authorization.
+pub trait DeriveDidCallAuthorizationVerificationKeyRelationship {
+	/// The type of the verification key to be used to validate the
+	/// wrapped extrinsic.
+	fn derive_verification_key_relationship(&self) -> Option<DidOperationAuthorizationKey>;
 
-impl<T: Config> DidOperation<T> for DidDeletionOperation<T> {
-	fn get_verification_key_relationship(&self) -> DidVerificationKeyRelationship {
-		DidVerificationKeyRelationship::Authentication
-	}
-
-	fn get_did(&self) -> &DidIdentifierOf<T> {
-		&self.did
-	}
-
-	fn get_tx_counter(&self) -> u64 {
-		self.tx_counter
-	}
+	// Return a call to dispatch in order to test the pallet proxy feature.
+	#[cfg(feature = "runtime-benchmarks")]
+	fn get_call_for_did_call_benchmark() -> Self;
 }
 
 /// A DID operation that wraps other extrinsic calls, allowing those
@@ -802,21 +733,7 @@ pub struct DidAuthorizedCallOperationWithVerificationRelationship<T: Config> {
 	/// The wrapped [DidAuthorizedCallOperation].
 	pub operation: DidAuthorizedCallOperation<T>,
 	/// The type of DID key to use for authorization.
-	pub verification_key_relationship: DidVerificationKeyRelationship,
-}
-
-impl<T: Config> DidOperation<T> for DidAuthorizedCallOperationWithVerificationRelationship<T> {
-	fn get_verification_key_relationship(&self) -> DidVerificationKeyRelationship {
-		self.verification_key_relationship
-	}
-
-	fn get_did(&self) -> &DidIdentifierOf<T> {
-		&self.did
-	}
-
-	fn get_tx_counter(&self) -> u64 {
-		self.tx_counter
-	}
+	pub operation_authorization_key_type: DidOperationAuthorizationKey,
 }
 
 impl<T: Config> core::ops::Deref for DidAuthorizedCallOperationWithVerificationRelationship<T> {
