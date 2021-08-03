@@ -229,6 +229,7 @@ pub mod pallet {
 			+ ReservableCurrency<Self::AccountId, Balance = Self::CurrencyBalance>
 			+ LockableCurrency<Self::AccountId, Balance = Self::CurrencyBalance>
 			+ Eq;
+
 		/// Just the `Currency::Balance` type; we have this item to allow us to
 		/// constrain it to `From<u64>`.
 		/// Note: Definition taken from pallet_gilt
@@ -242,49 +243,78 @@ pub mod pallet {
 			+ From<u128>
 			+ Into<<Self as pallet_balances::Config>::Balance>
 			+ From<<Self as pallet_balances::Config>::Balance>;
+
 		/// Minimum number of blocks validation rounds can last.
+		#[pallet::constant]
 		type MinBlocksPerRound: Get<Self::BlockNumber>;
+
 		/// Default number of blocks validation rounds last, as set in the
 		/// genesis configuration.
+		#[pallet::constant]
 		type DefaultBlocksPerRound: Get<Self::BlockNumber>;
 		/// Number of blocks for which unstaked balance will still be locked
 		/// before it can be unlocked by actively calling the extrinsic
 		/// `unlock_unstaked`.
+		#[pallet::constant]
 		type StakeDuration: Get<Self::BlockNumber>;
 		/// Number of rounds a collator has to stay active after submitting a
 		/// request to leave the set of collator candidates.
+		#[pallet::constant]
 		type ExitQueueDelay: Get<u32>;
+
 		/// Minimum number of collators selected from the set of candidates at
 		/// every validation round.
+		#[pallet::constant]
 		type MinSelectedCandidates: Get<u32>;
+
 		/// Minimum number of collators which cannot leave the network if there
 		/// are no others.
+		#[pallet::constant]
 		type MinRequiredCollators: Get<u32>;
+
 		/// Maximum number of delegations which can be made within the same
 		/// round.
 		///
 		/// NOTE: To prevent re-delegation-reward attacks, we should keep this
 		/// to be one.
+		#[pallet::constant]
 		type MaxDelegationsPerRound: Get<u32>;
+
 		/// Maximum number of delegators a single collator can have.
+		#[pallet::constant]
 		type MaxDelegatorsPerCollator: Get<u32> + Debug + PartialEq;
+
 		/// Maximum number of collators a single delegator can delegate.
+		#[pallet::constant]
 		type MaxCollatorsPerDelegator: Get<u32> + Debug + PartialEq;
+
 		/// Maximum size of the collator candidates set.
+		#[pallet::constant]
 		type MaxCollatorCandidates: Get<u32> + Debug + PartialEq;
+
 		/// Minimum stake required for any account to be elected as validator
 		/// for a round.
+		#[pallet::constant]
 		type MinCollatorStake: Get<BalanceOf<Self>>;
+
 		/// Minimum stake required for any account to be added to the set of
 		/// candidates.
+		#[pallet::constant]
 		type MinCollatorCandidateStake: Get<BalanceOf<Self>>;
+
 		/// Minimum stake required for any account to be able to delegate.
+		#[pallet::constant]
 		type MinDelegation: Get<BalanceOf<Self>>;
+
 		/// Minimum stake required for any account to become a delegator.
+		#[pallet::constant]
 		type MinDelegatorStake: Get<BalanceOf<Self>>;
+
 		/// Max number of concurrent active unstaking requests before
 		/// unlocking.
+		#[pallet::constant]
 		type MaxUnstakeRequests: Get<u32>;
+
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}

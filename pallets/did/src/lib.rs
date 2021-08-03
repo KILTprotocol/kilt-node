@@ -165,26 +165,34 @@ pub mod pallet {
 			+ Dispatchable<Origin = <Self as Config>::Origin, PostInfo = PostDispatchInfo>
 			+ GetDispatchInfo
 			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
+
 		/// Type for a DID subject identifier.
 		type DidIdentifier: Parameter + Default + DidVerifiableIdentifier;
+
 		#[cfg(not(feature = "runtime-benchmarks"))]
 		/// Origin type expected by the proxied dispatchable calls.
 		type Origin: From<DidRawOrigin<DidIdentifierOf<Self>>>;
+
 		#[cfg(feature = "runtime-benchmarks")]
 		type Origin: From<RawOrigin<DidIdentifierOf<Self>>>;
+
 		/// Overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+
 		/// Maximum number of key agreement keys that can be added in a creation
 		/// or update operation.
 		#[pallet::constant]
 		type MaxNewKeyAgreementKeys: Get<u32>;
+
 		/// Maximum number of keys that can be removed in an update operation.
 		#[pallet::constant]
 		type MaxVerificationKeysToRevoke: Get<u32>;
+
 		/// Maximum length in ASCII characters of the endpoint URL specified in
 		/// a creation or update operation.
 		#[pallet::constant]
 		type MaxUrlLength: Get<u32>;
+
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}

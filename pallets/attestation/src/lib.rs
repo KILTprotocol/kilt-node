@@ -114,7 +114,9 @@ pub mod pallet {
 		type EnsureOrigin: EnsureOrigin<Success = AttesterOf<Self>, <Self as frame_system::Config>::Origin>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type WeightInfo: WeightInfo;
-		/// Maximum number for delegated attestations required for bounded vec.
+
+		/// The maximum number of delegated attestations which can be made by
+		/// the same delegation.
 		#[pallet::constant]
 		type MaxDelegatedAttestations: Get<u32>;
 	}
