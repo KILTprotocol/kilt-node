@@ -33,6 +33,18 @@ pub enum DidError {
 	InternalError,
 }
 
+impl From<StorageError> for DidError {
+	fn from(err: StorageError) -> Self {
+		DidError::StorageError(err)
+	}
+}
+
+impl From<InputError> for DidError {
+	fn from(err: InputError) -> Self {
+		DidError::InputError(err)
+	}
+}
+
 /// Error involving the pallet's storage.
 #[derive(Debug, Eq, PartialEq)]
 pub enum StorageError {
@@ -52,6 +64,15 @@ pub enum StorageError {
 	/// The maximum supported value for the DID tx counter has been reached.
 	/// No more operations with the DID are allowed.
 	MaxTxCounterValue,
+	/// The maximum number of public keys for this DID key identifier has
+	/// been reached.
+	MaxPublicKeysPerDidKeyIdentifierExceeded,
+	/// The maximum number of key agreements has been reached for the DID
+	/// subject.
+	MaxTotalKeyAgreementKeysExceeded,
+	/// The maximum number of old attestation keys still stored for
+	/// attestation verification has been reached.
+	MaxOldAttestationKeysExceeded,
 }
 
 /// Error generated when validating a DID operation.

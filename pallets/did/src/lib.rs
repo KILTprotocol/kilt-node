@@ -127,7 +127,7 @@ use frame_system::ensure_signed;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::RawOrigin;
 use sp_runtime::SaturatedConversion;
-use sp_std::{boxed::Box, convert::TryFrom, fmt::Debug, prelude::Clone, vec::Vec};
+use sp_std::{boxed::Box, convert::TryFrom, fmt::Debug, prelude::Clone};
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -179,14 +179,35 @@ pub mod pallet {
 		/// Overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
+		/// Maximum number of total public keys which can be stored per DID key
+		/// identifier. This includes the ones currently used for
+		/// authentication, key agreement, attestation, and delegation. It also
+		/// contains old attestation keys which cannot issue new attestations
+		/// but can still be used to verify previously issued attestations.
+		#[pallet::constant]
+		type MaxPublicKeysPerDidKeyIdentifier: Get<u32>;
+
 		/// Maximum number of key agreement keys that can be added in a creation
 		/// or update operation.
 		#[pallet::constant]
 		type MaxNewKeyAgreementKeys: Get<u32>;
 
+		/// Maximum number of total key agreement keys that can be stored for a
+		/// DID subject.
+		///
+		/// Should be greater than `MaxNewKeyAgreementKeys`.
+		#[pallet::constant]
+		type MaxTotalKeyAgreementKeys: Get<u32> + Debug + Clone + PartialEq;
+
 		/// Maximum number of keys that can be removed in an update operation.
 		#[pallet::constant]
 		type MaxVerificationKeysToRevoke: Get<u32>;
+
+		/// Maximum number of old attestation keys which can still be used to
+		/// verify previously issued attestations but cannot create new
+		/// attestations.
+		#[pallet::constant]
+		type MaxOldAttestationKeys: Get<u32> + Debug + Clone + PartialEq;
 
 		/// Maximum length in ASCII characters of the endpoint URL specified in
 		/// a creation or update operation.
@@ -268,6 +289,15 @@ pub mod pallet {
 		MaxUrlLengthExceeded,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
+		/// The maximum number of public keys for this DID key identifier has
+		/// been reached.
+		MaxPublicKeysPerDidKeyIdentifierExceeded,
+		/// The maximum number of key agreements has been reached for the DID
+		/// subject.
+		MaxTotalKeyAgreementKeysExceeded,
+		/// The maximum number of old attestation keys still stored for
+		/// attestation verification has been reached.
+		MaxOldAttestationKeysExceeded,
 	}
 
 	impl<T> From<DidError> for Error<T> {
@@ -292,6 +322,11 @@ pub mod pallet {
 				}
 				StorageError::MaxTxCounterValue => Self::MaxTxCounterValue,
 				StorageError::CurrentlyActiveKey => Self::CurrentlyActiveKey,
+				StorageError::MaxPublicKeysPerDidKeyIdentifierExceeded => {
+					Self::MaxPublicKeysPerDidKeyIdentifierExceeded
+				}
+				StorageError::MaxTotalKeyAgreementKeysExceeded => Self::MaxTotalKeyAgreementKeysExceeded,
+				StorageError::MaxOldAttestationKeysExceeded => Self::MaxOldAttestationKeysExceeded,
 			}
 		}
 	}
