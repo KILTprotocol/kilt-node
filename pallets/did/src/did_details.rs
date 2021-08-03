@@ -119,15 +119,6 @@ pub enum DidVerificationKeyRelationship {
 	AssertionMethod,
 }
 
-/// Key to be used to optionally verify a DID operation.
-#[derive(Clone, Copy, Debug, Decode, Encode, PartialEq, Eq)]
-pub enum DidOperationAuthorizationKey {
-	/// A DID vrification key.
-	DidKey(DidVerificationKeyRelationship),
-	/// No key. The DID signature and nonce will not be verified.
-	NoKey
-}
-
 /// Types of signatures supported by this pallet.
 #[derive(Clone, Decode, Debug, Encode, Eq, PartialEq)]
 pub enum DidSignature {
@@ -511,10 +502,10 @@ impl<T: Config> DidDetails<T> {
 	}
 }
 
-impl<T: Config> TryFrom<(DidCreationOperation, DidVerificationKey)> for DidDetails<T> {
+impl<T: Config> TryFrom<(DidCreationDetails<T>, DidVerificationKey)> for DidDetails<T> {
 	type Error = InputError;
 
-	fn try_from(new_details: (DidCreationOperation, DidVerificationKey)) -> Result<Self, Self::Error> {
+	fn try_from(new_details: (DidCreationDetails<T>, DidVerificationKey)) -> Result<Self, Self::Error> {
 		let (op, new_auth_key) = new_details;
 
 		ensure!(
@@ -559,10 +550,10 @@ impl<T: Config> TryFrom<(DidCreationOperation, DidVerificationKey)> for DidDetai
 // Please note that this method does not perform any checks regarding
 // the validity of the [DidUpdateOperation] signature nor whether the nonce
 // provided is valid.
-impl<T: Config> TryFrom<(DidDetails<T>, DidUpdateOperation<T>)> for DidDetails<T> {
+impl<T: Config> TryFrom<(DidDetails<T>, DidUpdateDetails<T>)> for DidDetails<T> {
 	type Error = DidError;
 
-	fn try_from((old_details, update_operation): (DidDetails<T>, DidUpdateOperation<T>)) -> Result<Self, Self::Error> {
+	fn try_from((old_details, update_operation): (DidDetails<T>, DidUpdateDetails<T>)) -> Result<Self, Self::Error> {
 		ensure!(
 			update_operation.new_key_agreement_keys.len()
 				<= <<T as Config>::MaxNewKeyAgreementKeys>::get().saturated_into::<usize>(),
@@ -639,7 +630,9 @@ impl<T: Config> TryFrom<(DidDetails<T>, DidUpdateOperation<T>)> for DidDetails<T
 /// required to verify the operation signature, and the tx counter to
 /// protect against replay attacks.
 #[derive(Clone, Debug, Decode, Encode, PartialEq)]
-pub struct DidCreationOperation {
+pub struct DidCreationDetails<T: Config> {
+	/// The DID identifier. It has to be unique.
+	pub did: DidIdentifierOf<T>,
 	/// The new key agreement keys.
 	pub new_key_agreement_keys: BTreeSet<DidEncryptionKey>,
 	/// \[OPTIONAL\] The new attestation key.
@@ -657,7 +650,7 @@ pub struct DidCreationOperation {
 /// required to verify the operation signature, and the tx counter to
 /// protect against replay attacks.
 #[derive(Clone, Debug, Decode, Encode, PartialEq)]
-pub struct DidUpdateOperation<T: Config> {
+pub struct DidUpdateDetails<T: Config> {
 	/// \[OPTIONAL\] The new authentication key.
 	pub new_authentication_key: Option<DidVerificationKey>,
 	/// A new set of key agreement keys to add to the ones already stored.
@@ -704,7 +697,7 @@ impl Default for DidVerificationKeyUpdateAction {
 pub trait DeriveDidCallAuthorizationVerificationKeyRelationship {
 	/// The type of the verification key to be used to validate the
 	/// wrapped extrinsic.
-	fn derive_verification_key_relationship(&self) -> Option<DidOperationAuthorizationKey>;
+	fn derive_verification_key_relationship(&self) -> Option<DidVerificationKeyRelationship>;
 
 	// Return a call to dispatch in order to test the pallet proxy feature.
 	#[cfg(feature = "runtime-benchmarks")]
@@ -733,7 +726,7 @@ pub struct DidAuthorizedCallOperationWithVerificationRelationship<T: Config> {
 	/// The wrapped [DidAuthorizedCallOperation].
 	pub operation: DidAuthorizedCallOperation<T>,
 	/// The type of DID key to use for authorization.
-	pub operation_authorization_key_type: DidOperationAuthorizationKey,
+	pub operation_authorization_key_type: DidVerificationKeyRelationship,
 }
 
 impl<T: Config> core::ops::Deref for DidAuthorizedCallOperationWithVerificationRelationship<T> {

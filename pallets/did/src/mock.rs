@@ -259,8 +259,9 @@ pub fn get_url_endpoint(length: u32) -> Url {
 	)
 }
 
-pub fn generate_base_did_creation_operation() -> did::DidCreationOperation {
-	DidCreationOperation {
+pub fn generate_base_did_creation_details(did: TestDidIdentifier) -> did::DidCreationDetails<Test> {
+	DidCreationDetails {
+		did,
 		new_key_agreement_keys: BTreeSet::new(),
 		new_attestation_key: None,
 		new_delegation_key: None,
@@ -268,8 +269,8 @@ pub fn generate_base_did_creation_operation() -> did::DidCreationOperation {
 	}
 }
 
-pub fn generate_base_did_update_operation(did: TestDidIdentifier) -> did::DidUpdateOperation<Test> {
-	DidUpdateOperation {
+pub fn generate_base_did_update_details() -> did::DidUpdateDetails<Test> {
+	DidUpdateDetails {
 		new_authentication_key: None,
 		new_key_agreement_keys: BTreeSet::new(),
 		attestation_key_update: DidVerificationKeyUpdateAction::default(),
@@ -305,29 +306,21 @@ pub(crate) fn get_delegation_key_test_input() -> TestCtypeHash {
 pub(crate) fn get_delegation_key_call() -> Call {
 	Call::Ctype(ctype::Call::add(get_delegation_key_test_input()))
 }
-pub(crate) fn get_no_key_test_input() -> TestCtypeHash {
-	TestCtypeHash::from_slice(&[4u8; 32])
-}
-pub(crate) fn get_no_key_call() -> Call {
-	Call::Ctype(ctype::Call::add(get_no_key_test_input()))
-}
 pub(crate) fn get_none_key_test_input() -> TestCtypeHash {
-	TestCtypeHash::from_slice(&[5u8; 32])
+	TestCtypeHash::from_slice(&[4u8; 32])
 }
 pub(crate) fn get_none_key_call() -> Call {
 	Call::Ctype(ctype::Call::add(get_none_key_test_input()))
 }
 
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
-	fn derive_verification_key_relationship(&self) -> Option<did::DidOperationAuthorizationKey> {
+	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
 		if *self == get_attestation_key_call() {
-			Some(did::DidOperationAuthorizationKey::DidKey(did::DidVerificationKeyRelationship::AssertionMethod))
+			Some(did::DidVerificationKeyRelationship::AssertionMethod)
 		} else if *self == get_authentication_key_call() {
-			Some(did::DidOperationAuthorizationKey::DidKey(did::DidVerificationKeyRelationship::Authentication))
+			Some(did::DidVerificationKeyRelationship::Authentication)
 		} else if *self == get_delegation_key_call() {
-			Some(did::DidOperationAuthorizationKey::DidKey(did::DidVerificationKeyRelationship::CapabilityDelegation))
-		} else if *self == get_no_key_call() {
-			Some(did::DidOperationAuthorizationKey::NoKey)
+			Some(did::DidVerificationKeyRelationship::CapabilityDelegation)
 		} else {
 			#[cfg(feature = "runtime-benchmarks")]
 			if *self == Self::get_call_for_did_call_benchmark() {
@@ -346,15 +339,14 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 }
 
 pub fn generate_test_did_call(
-	verification_key_required: did::DidOperationAuthorizationKey,
+	verification_key_required: did::DidVerificationKeyRelationship,
 	caller: TestDidIdentifier,
 ) -> did::DidAuthorizedCallOperationWithVerificationRelationship<Test> {
 	let call = match verification_key_required {
-		DidOperationAuthorizationKey::DidKey(DidVerificationKeyRelationship::AssertionMethod) => get_attestation_key_call(),
-		DidOperationAuthorizationKey::DidKey(DidVerificationKeyRelationship::Authentication) => get_authentication_key_call(),
-		DidOperationAuthorizationKey::DidKey(DidVerificationKeyRelationship::CapabilityDelegation) => get_delegation_key_call(),
-		DidOperationAuthorizationKey::DidKey(_) => get_none_key_call(),
-		DidOperationAuthorizationKey::NoKey => get_no_key_call(),
+		DidVerificationKeyRelationship::AssertionMethod => get_attestation_key_call(),
+		DidVerificationKeyRelationship::Authentication => get_authentication_key_call(),
+		DidVerificationKeyRelationship::CapabilityDelegation => get_delegation_key_call(),
+		_ => get_none_key_call()
 	};
 	did::DidAuthorizedCallOperationWithVerificationRelationship {
 		operation: did::DidAuthorizedCallOperation {

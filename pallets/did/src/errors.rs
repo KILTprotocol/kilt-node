@@ -64,8 +64,6 @@ pub enum SignatureError {
 	InvalidSignature,
 	/// The operation nonce is not equal to the current DID nonce + 1.
 	InvalidNonce,
-	/// The operation required a signature which has not been provided.
-	SignatureRequired,
 }
 
 /// Error generated when validating a byte-encoded endpoint URL.

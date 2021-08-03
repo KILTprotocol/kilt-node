@@ -210,12 +210,12 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// A new DID has been created.
 		/// \[transaction signer, DID identifier\]
-		DidCreated(DidIdentifierOf<T>),
+		DidCreated(AccountIdentifierOf<T>, DidIdentifierOf<T>),
 		/// A DID has been updated.
-		/// \[transaction signer, DID identifier\]
+		/// \[DID identifier\]
 		DidUpdated(DidIdentifierOf<T>),
 		/// A DID has been deleted.
-		/// \[transaction signer, DID identifier\]
+		/// \[DID identifier\]
 		DidDeleted(DidIdentifierOf<T>),
 		/// A DID-authorised call has been executed.
 		/// \[DID caller, dispatch result\]
@@ -230,8 +230,6 @@ pub mod pallet {
 		/// The DID operation signature is invalid for the payload and the
 		/// verification key provided.
 		InvalidSignature,
-		/// The operation required a signature which has not been provided.
-		SignatureRequired,
 		/// The DID with the given identifier is already present on chain.
 		DidAlreadyPresent,
 		/// No DID with the given identifier is present on chain.
@@ -298,7 +296,6 @@ pub mod pallet {
 				SignatureError::InvalidSignature => Self::InvalidSignature,
 				SignatureError::InvalidSignatureFormat => Self::InvalidSignatureFormat,
 				SignatureError::InvalidNonce => Self::InvalidNonce,
-				SignatureError::SignatureRequired => Self::SignatureRequired,
 			}
 		}
 	}
@@ -354,43 +351,45 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::weight(
       <T as pallet::Config>::WeightInfo::submit_did_create_operation_ed25519_keys(
-        operation.new_key_agreement_keys.len().saturated_into::<u32>(),
-        operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
+        details.new_key_agreement_keys.len().saturated_into::<u32>(),
+        details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
       )
       .max(<T as pallet::Config>::WeightInfo::submit_did_create_operation_sr25519_keys(
-        operation.new_key_agreement_keys.len().saturated_into::<u32>(),
-        operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
+        details.new_key_agreement_keys.len().saturated_into::<u32>(),
+        details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
       ))
       .max(<T as pallet::Config>::WeightInfo::submit_did_create_operation_ecdsa_keys(
-        operation.new_key_agreement_keys.len().saturated_into::<u32>(),
-        operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
+        details.new_key_agreement_keys.len().saturated_into::<u32>(),
+        details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
       ))
     )]
-		pub fn submit_did_create_operation(
+		pub fn create(
 			origin: OriginFor<T>,
-			operation: DidCreationOperation,
+			details: DidCreationDetails<T>,
 			signature: DidSignature,
 		) -> DispatchResult {
-			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
+			let sender = ensure_signed(origin)?;
+
+			let did_identifier = details.did.clone();
 
 			// There has to be no other DID with the same identifier already saved on chain,
 			// otherwise generate a DidAlreadyPresent error.
 			ensure!(
-				!<Did<T>>::contains_key(&did_subject),
+				!<Did<T>>::contains_key(&did_identifier),
 				<Error<T>>::DidAlreadyPresent
 			);
 
-			let account_did_auth_key = did_subject
-				.verify_and_recover_signature(&operation.encode(), &signature)
+			let account_did_auth_key = did_identifier
+				.verify_and_recover_signature(&details.encode(), &signature)
 				.map_err(<Error<T>>::from)?;
 
 			let did_entry =
-				DidDetails::try_from((operation.clone(), account_did_auth_key)).map_err(<Error<T>>::from)?;
+				DidDetails::try_from((details.clone(), account_did_auth_key)).map_err(<Error<T>>::from)?;
 
-			log::debug!("Creating DID {:?}", did_subject.clone());
-			<Did<T>>::insert(&did_subject, did_entry);
+			log::debug!("Creating DID {:?}", &did_identifier);
+			<Did<T>>::insert(&did_identifier, did_entry);
 
-			Self::deposit_event(Event::DidCreated(did_subject));
+			Self::deposit_event(Event::DidCreated(sender, did_identifier));
 
 			Ok(())
 		}
@@ -460,24 +459,24 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::weight(
       <T as pallet::Config>::WeightInfo::submit_did_update_operation_ed25519_keys(
-        operation.new_key_agreement_keys.len().saturated_into::<u32>(),
-        operation.public_keys_to_remove.len().saturated_into::<u32>(),
-        operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
+        details.new_key_agreement_keys.len().saturated_into::<u32>(),
+        details.public_keys_to_remove.len().saturated_into::<u32>(),
+        details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
       )
       .max(<T as pallet::Config>::WeightInfo::submit_did_update_operation_sr25519_keys(
-        operation.new_key_agreement_keys.len().saturated_into::<u32>(),
-        operation.public_keys_to_remove.len().saturated_into::<u32>(),
-        operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
+        details.new_key_agreement_keys.len().saturated_into::<u32>(),
+        details.public_keys_to_remove.len().saturated_into::<u32>(),
+        details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
       ))
       .max(<T as pallet::Config>::WeightInfo::submit_did_update_operation_ecdsa_keys(
-        operation.new_key_agreement_keys.len().saturated_into::<u32>(),
-        operation.public_keys_to_remove.len().saturated_into::<u32>(),
-        operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
+        details.new_key_agreement_keys.len().saturated_into::<u32>(),
+        details.public_keys_to_remove.len().saturated_into::<u32>(),
+        details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
       ))
     )]
-		pub fn submit_did_update_operation(
+		pub fn update(
 			origin: OriginFor<T>,
-			operation: DidUpdateOperation<T>,
+			details: DidUpdateDetails<T>,
 		) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 
@@ -485,7 +484,7 @@ pub mod pallet {
 
 			// Generate a new DidDetails object by applying the changes in the update
 			// operation to the old object (and consuming both).
-			let new_did_details = DidDetails::try_from((did_details, operation)).map_err(<Error<T>>::from)?;
+			let new_did_details = DidDetails::try_from((did_details, details)).map_err(<Error<T>>::from)?;
 
 			log::debug!("Updating DID {:?}", did_subject);
 			<Did<T>>::insert(&did_subject, new_did_details);
@@ -518,7 +517,7 @@ pub mod pallet {
 		/// - Kills: Did entry associated to the DID identifier
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::submit_did_delete_operation())]
-		pub fn submit_did_delete_operation(
+		pub fn delete(
 			origin: OriginFor<T>
 		) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
@@ -582,7 +581,7 @@ pub mod pallet {
 		pub fn submit_did_call(
 			origin: OriginFor<T>,
 			did_call: Box<DidAuthorizedCallOperation<T>>,
-			signature: Option<DidSignature>,
+			signature: DidSignature,
 		) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;
 
@@ -635,23 +634,17 @@ impl<T: Config> Pallet<T> {
 	/// # </weight>
 	pub fn verify_did_operation_signature_and_increase_nonce(
 		operation: &DidAuthorizedCallOperationWithVerificationRelationship<T>,
-		signature: &Option<DidSignature>,
+		signature: &DidSignature,
 	) -> Result<(), DidError> {
 		let mut did_details =
 			<Did<T>>::get(&operation.did).ok_or(DidError::StorageError(StorageError::DidNotPresent))?;
 
-		match operation.operation_authorization_key_type {
-			// Do nothing if no key is required.
-			DidOperationAuthorizationKey::NoKey => (),
-			DidOperationAuthorizationKey::DidKey(verification_key_type) => {
-				let signature = signature.as_ref().ok_or(DidError::SignatureError(SignatureError::SignatureRequired))?;
-				Self::validate_counter_value(operation.tx_counter, &did_details)?;
-				// Increase the tx counter as soon as it is considered valid, no matter if the signature is valid or not.
-				did_details.increase_tx_counter().map_err(DidError::StorageError)?;
-				Self::verify_payload_signature_with_did_key_type(operation.encode().as_ref(), signature, &did_details, verification_key_type)?;
-				<Did<T>>::insert(&operation.did, did_details);
-			},
-		}
+		Self::validate_counter_value(operation.tx_counter, &did_details)?;
+		// Increase the tx counter as soon as it is considered valid, no matter if the signature is valid or not.
+		did_details.increase_tx_counter().map_err(DidError::StorageError)?;
+		Self::verify_payload_signature_with_did_key_type(operation.encode().as_ref(), signature, &did_details, operation.operation_authorization_key_type)?;
+
+		<Did<T>>::insert(&operation.did, did_details);
 
 		Ok(())
 	}
