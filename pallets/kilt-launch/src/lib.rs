@@ -342,7 +342,7 @@ pub mod pallet {
 		ConflictingVestingStarts,
 		/// When migrating multiple accounts to the same target, the size of the
 		/// list of source addresses should never exceed `MaxClaims`.
-		ExceedsMaxClaims,
+		MaxClaimsExceeded,
 		/// The source address does not have any balance lock at all which is
 		/// required for `locked_transfer`.
 		ExpectedLocks,
@@ -521,7 +521,7 @@ pub mod pallet {
 
 			ensure!(
 				sources.len() < T::MaxClaims::get().saturated_into::<usize>(),
-				Error::<T>::ExceedsMaxClaims
+				Error::<T>::MaxClaimsExceeded
 			);
 
 			let mut post_weight: Weight = 0;
@@ -787,7 +787,7 @@ pub mod pallet {
 			} else {
 				// If no custom lock has been set up for target account, we can default to the
 				// one of the source account and append it to `UnlockingAt`
-				<UnlockingAt<T>>::try_append(unlock_block, &target).map_err(|_| Error::<T>::ExceedsMaxClaims)?;
+				<UnlockingAt<T>>::try_append(unlock_block, &target).map_err(|_| Error::<T>::MaxClaimsExceeded)?;
 				max_add_amount
 			};
 
@@ -821,7 +821,7 @@ pub mod pallet {
 								.collect();
 							*maybe_bv = Some(
 								BoundedVec::<T::AccountId, T::MaxClaims>::try_from(filtered)
-									.map_err(|_| Error::<T>::ExceedsMaxClaims)?,
+									.map_err(|_| Error::<T>::MaxClaimsExceeded)?,
 							);
 						}
 						Ok(())

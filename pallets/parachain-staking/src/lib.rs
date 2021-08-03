@@ -331,7 +331,7 @@ pub mod pallet {
 		/// This protects against attacks in which a delegator can re-delegate
 		/// from a collator who has already authored a block, to another one
 		/// which has not in this round.
-		ExceededDelegationsPerRound,
+		DelegationsPerRoundExceeded,
 		/// The collator candidate has already reached the maximum number of
 		/// delegators.
 		///
@@ -354,7 +354,7 @@ pub mod pallet {
 		CannotDelegateIfLeaving,
 		/// The delegator has already delegated the maximum number of candidates
 		/// allowed.
-		ExceedMaxCollatorsPerDelegator,
+		MaxCollatorsPerDelegatorExceeded,
 		/// The delegator has already previously delegated the collator
 		/// candidate.
 		AlreadyDelegatedCollator,
@@ -1541,7 +1541,7 @@ pub mod pallet {
 			ensure!(amount >= T::MinDelegation::get(), Error::<T>::DelegationBelowMin);
 			ensure!(
 				(delegator.delegations.len().saturated_into::<u32>()) < T::MaxCollatorsPerDelegator::get(),
-				Error::<T>::ExceedMaxCollatorsPerDelegator
+				Error::<T>::MaxCollatorsPerDelegatorExceeded
 			);
 			// cannot delegate if number of delegations in this round exceeds
 			// MaxDelegationsPerRound
@@ -2488,7 +2488,7 @@ pub mod pallet {
 
 			ensure!(
 				T::MaxDelegationsPerRound::get() > counter,
-				Error::<T>::ExceededDelegationsPerRound
+				Error::<T>::DelegationsPerRoundExceeded
 			);
 
 			Ok(DelegationCounter {

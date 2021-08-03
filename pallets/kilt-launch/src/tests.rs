@@ -573,7 +573,7 @@ fn check_negative_migrate_accounts_vested() {
 				vec![PSEUDO_1, PSEUDO_2, PSEUDO_3, PSEUDO_4],
 				USER
 			),
-			Error::<Test>::ExceedsMaxClaims
+			Error::<Test>::MaxClaimsExceeded
 		);
 
 		// Set up vesting with conflicting start block

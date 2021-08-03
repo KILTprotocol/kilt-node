@@ -940,7 +940,7 @@ fn multiple_delegations() {
 			assert_eq!(StakePallet::selected_candidates().into_inner(), vec![1, 2, 4, 3, 5]);
 			assert_noop!(
 				StakePallet::delegate_another_candidate(Origin::signed(6), 5, 10),
-				Error::<Test>::ExceedMaxCollatorsPerDelegator,
+				Error::<Test>::MaxCollatorsPerDelegatorExceeded,
 			);
 
 			roll_to(16, vec![]);
@@ -2794,7 +2794,7 @@ fn exceed_delegations_per_round() {
 			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(6), 4, 10));
 			assert_noop!(
 				StakePallet::delegate_another_candidate(Origin::signed(6), 5, 10),
-				Error::<Test>::ExceedMaxCollatorsPerDelegator
+				Error::<Test>::MaxCollatorsPerDelegatorExceeded
 			);
 
 			// revoke delegation to allow one more collator for this delegator
@@ -2802,14 +2802,14 @@ fn exceed_delegations_per_round() {
 			// reached max delegations in this round
 			assert_noop!(
 				StakePallet::delegate_another_candidate(Origin::signed(6), 5, 10),
-				Error::<Test>::ExceededDelegationsPerRound
+				Error::<Test>::DelegationsPerRoundExceeded
 			);
 
 			// revoke all delegations in the same round
 			assert_ok!(StakePallet::leave_delegators(Origin::signed(6)));
 			assert_noop!(
 				StakePallet::join_delegators(Origin::signed(6), 1, 10),
-				Error::<Test>::ExceededDelegationsPerRound
+				Error::<Test>::DelegationsPerRoundExceeded
 			);
 
 			// roll to next round to clear DelegationCounter
@@ -2836,7 +2836,7 @@ fn exceed_delegations_per_round() {
 			);
 			assert_noop!(
 				StakePallet::join_delegators(Origin::signed(6), 1, 10),
-				Error::<Test>::ExceededDelegationsPerRound
+				Error::<Test>::DelegationsPerRoundExceeded
 			);
 		});
 }
