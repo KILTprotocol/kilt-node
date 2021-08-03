@@ -23,7 +23,7 @@ use frame_system::RawOrigin;
 use sp_core::{offchain::KeyTypeId, sr25519};
 use sp_io::crypto::sr25519_generate;
 use sp_runtime::MultiSignature;
-use sp_std::{num::NonZeroU32, vec::Vec};
+use sp_std::{collections::btree_set::BTreeSet, num::NonZeroU32, vec::Vec};
 
 use crate::*;
 
@@ -45,20 +45,10 @@ where
 	hash.into()
 }
 
-/// sets parent to `None` if it is the root
-fn parent_id_check<T: Config>(
-	root_id: T::DelegationNodeId,
-	parent_id: T::DelegationNodeId,
-) -> Option<T::DelegationNodeId> {
-	if parent_id == root_id {
-		None
-	} else {
-		Some(parent_id)
-	}
-}
-
 /// add ctype to storage and root delegation
-fn add_root_delegation<T: Config>(number: u32) -> Result<(DelegationTriplet<T>, T::Hash), DispatchErrorWithPostInfo>
+fn add_delegation_hierarchy<T: Config>(
+	number: u32,
+) -> Result<(DelegationTriplet<T>, T::Hash), DispatchErrorWithPostInfo>
 where
 	T::AccountId: From<sr25519::Public>,
 	T::DelegationNodeId: From<T::Hash>,
@@ -66,16 +56,20 @@ where
 	let root_public = sr25519_generate(KeyTypeId(*b"aura"), None);
 	let root_acc: T::AccountId = root_public.into();
 	let ctype_hash = <T::Hash as Default>::default();
-	let root_id = generate_delegation_id::<T>(number);
+	let hierarchy_root_id = generate_delegation_id::<T>(number);
 
 	ctype::Pallet::<T>::add(RawOrigin::Signed(root_acc.clone()).into(), ctype_hash)?;
-	Pallet::<T>::create_root(RawOrigin::Signed(root_acc.clone()).into(), root_id, ctype_hash)?;
+	Pallet::<T>::create_hierarchy(
+		RawOrigin::Signed(root_acc.clone()).into(),
+		hierarchy_root_id,
+		ctype_hash,
+	)?;
 
 	Ok((
 		DelegationTriplet::<T> {
 			public: root_public,
 			acc: root_acc,
-			delegation_id: root_id,
+			delegation_id: hierarchy_root_id,
 		},
 		ctype_hash,
 	))
@@ -107,11 +101,10 @@ where
 		let delegation_acc_id: T::AccountId = delegation_acc_public.into();
 		let delegation_id = generate_delegation_id::<T>(level * children_per_level.get() + c);
 
-		// only set parent if not root
-		let parent = parent_id_check::<T>(root_id, parent_id);
-
 		// delegate signs delegation to parent
-		let hash: Vec<u8> = Pallet::<T>::calculate_hash(&delegation_id, &root_id, &parent, &permissions).encode();
+		let hash: Vec<u8> =
+			Pallet::<T>::calculate_delegation_creation_hash(&delegation_id, &root_id, &parent_id, &permissions)
+				.encode();
 		let sig = sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &delegation_acc_public, hash.as_ref())
 			.ok_or("Error while building signature of delegation.")?;
 
@@ -119,8 +112,7 @@ where
 		let _ = Pallet::<T>::add_delegation(
 			RawOrigin::Signed(parent_acc_id.clone()).into(),
 			delegation_id,
-			root_id,
-			parent,
+			parent_id,
 			delegation_acc_id.clone().into(),
 			permissions,
 			MultiSignature::from(sig).encode(),
@@ -169,58 +161,40 @@ where
 		DelegationTriplet::<T> {
 			public: root_public,
 			acc: root_acc,
-			delegation_id: root_id,
+			delegation_id: hierarchy_id,
 		},
 		_,
-	) = add_root_delegation::<T>(0)?;
+	) = add_delegation_hierarchy::<T>(0)?;
 
 	// iterate levels and start with parent == root
 	let (leaf_acc_public, _, leaf_id) = add_children::<T>(
-		root_id,
-		root_id,
+		hierarchy_id,
+		hierarchy_id,
 		root_public,
 		root_acc,
 		permissions,
 		levels,
 		children_per_level,
 	)?;
-	Ok((root_public, root_id, leaf_acc_public, leaf_id))
+	Ok((root_public, hierarchy_id, leaf_acc_public, leaf_id))
 }
 
 benchmarks! {
 	where_clause { where T: core::fmt::Debug, T::AccountId: From<sr25519::Public> + Into<T::DelegationEntityId>, T::DelegationNodeId: From<T::Hash>, <T as frame_system::Config>::Origin: From<RawOrigin<<T as pallet::Config>::DelegationEntityId>> }
 
-	create_root {
+	create_hierarchy {
 		let caller: T::AccountId = account("caller", 0, SEED);
 		let ctype = <T::Hash as Default>::default();
 		let delegation = generate_delegation_id::<T>(0);
 		ctype::Pallet::<T>::add(RawOrigin::Signed(caller.clone()).into(), ctype)?;
 	}: _(RawOrigin::Signed(caller), delegation, ctype)
 	verify {
-		assert!(Roots::<T>::contains_key(delegation));
-	}
-
-	revoke_root {
-		let r in 1 .. T::MaxRevocations::get();
-		let (root_acc, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
-		let root_acc_id: T::AccountId = root_acc.into();
-	}: _(RawOrigin::Signed(root_acc_id.clone()), root_id, r)
-	verify {
-		assert!(Roots::<T>::contains_key(root_id));
-		let root_delegation = Roots::<T>::get(root_id).ok_or("Missing root delegation")?;
-		assert_eq!(root_delegation.owner, root_acc_id.into());
-		assert!(root_delegation.revoked);
-
-		assert!(Delegations::<T>::contains_key(leaf_id));
-		let leaf_delegation = Delegations::<T>::get(leaf_id).ok_or("Missing leaf delegation")?;
-		assert_eq!(leaf_delegation.root_id, root_id);
-		assert_eq!(leaf_delegation.owner, T::AccountId::from(leaf_acc).into());
-		assert!(leaf_delegation.revoked);
+		assert!(DelegationHierarchies::<T>::contains_key(delegation));
 	}
 
 	add_delegation {
 		// do setup
-		let (_, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(1, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
+		let (_, hierarchy_id, leaf_acc, leaf_id) = setup_delegations::<T>(1, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
 
 		// add one more delegation
 		let delegate_acc_public = sr25519_generate(
@@ -228,17 +202,17 @@ benchmarks! {
 			None
 		);
 		let delegation_id = generate_delegation_id::<T>(u32::MAX);
-		let parent_id = parent_id_check::<T>(root_id, leaf_id);
+		let parent_id = leaf_id;
 
 		let perm: Permissions = Permissions::ATTEST | Permissions::DELEGATE;
-		let hash_root = Pallet::<T>::calculate_hash(&delegation_id, &root_id, &parent_id, &perm);
+		let hash_root = Pallet::<T>::calculate_delegation_creation_hash(&delegation_id, &hierarchy_id, &parent_id, &perm);
 		let sig = sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &delegate_acc_public, hash_root.as_ref()).ok_or("Error while building signature of delegation.")?;
 
 		let delegate_acc_id: T::AccountId = delegate_acc_public.into();
 		let leaf_acc_id: T::AccountId = leaf_acc.into();
-	}: _(RawOrigin::Signed(leaf_acc_id), delegation_id, root_id, parent_id, delegate_acc_id.into(), perm, MultiSignature::from(sig).encode())
+	}: _(RawOrigin::Signed(leaf_acc_id), delegation_id, parent_id, delegate_acc_id.into(), perm, MultiSignature::from(sig).encode())
 	verify {
-		assert!(Delegations::<T>::contains_key(delegation_id));
+		assert!(DelegationNodes::<T>::contains_key(delegation_id));
 	}
 
 	// worst case #1: revoke a child of the root delegation
@@ -247,21 +221,22 @@ benchmarks! {
 	revoke_delegation_root_child {
 		let r in 1 .. T::MaxRevocations::get();
 		let c in 1 .. T::MaxParentChecks::get();
-		let (_, root_id, leaf_acc, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
-		let children: Vec<T::DelegationNodeId> = Children::<T>::get(root_id).unwrap_or_default();
-		let child_id: T::DelegationNodeId = *children.get(0).ok_or("Root should have children")?;
-		let child_delegation = Delegations::<T>::get(child_id).ok_or("Child of root should have delegation id")?;
-	}: revoke_delegation(RawOrigin::Signed(child_delegation.owner.clone()), child_id, c, r)
+		let (_, hierarchy_id, leaf_acc, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
+		let root_node = DelegationNodes::<T>::get(hierarchy_id).expect("Root hierarchy node should be present on chain.");
+		let children: BTreeSet<T::DelegationNodeId> = root_node.children;
+		let child_id: T::DelegationNodeId = *children.iter().next().ok_or("Root should have children")?;
+		let child_delegation = DelegationNodes::<T>::get(child_id).ok_or("Child of root should have delegation id")?;
+	}: revoke_delegation(RawOrigin::Signed(child_delegation.details.owner.clone()), child_id, c, r)
 	verify {
-		assert!(Delegations::<T>::contains_key(child_id));
-		let DelegationNode::<T> { revoked, .. } = Delegations::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
-		assert!(revoked);
+		assert!(DelegationNodes::<T>::contains_key(child_id));
+		let DelegationNode::<T> { details, .. } = DelegationNodes::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
+		assert!(details.revoked);
 
-		assert!(Delegations::<T>::contains_key(leaf_id));
-		let leaf_delegation = Delegations::<T>::get(leaf_id).ok_or("Missing leaf delegation")?;
-		assert_eq!(leaf_delegation.root_id, root_id);
-		assert_eq!(leaf_delegation.owner, T::AccountId::from(leaf_acc).into());
-		assert!(leaf_delegation.revoked);
+		assert!(DelegationNodes::<T>::contains_key(leaf_id));
+		let leaf_delegation = DelegationNodes::<T>::get(leaf_id).ok_or("Missing leaf delegation")?;
+		assert_eq!(leaf_delegation.hierarchy_root_id, hierarchy_id);
+		assert_eq!(leaf_delegation.details.owner, T::AccountId::from(leaf_acc).into());
+		assert!(leaf_delegation.details.revoked);
 	}
 	// TODO: Might want to add variant iterating over children instead of depth at some later point
 
@@ -274,9 +249,9 @@ benchmarks! {
 		let (root_acc, _, _, leaf_id) = setup_delegations::<T>(c, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
 	}: revoke_delegation(RawOrigin::Signed(T::AccountId::from(root_acc).into()), leaf_id, c, r)
 	verify {
-		assert!(Delegations::<T>::contains_key(leaf_id));
-		let DelegationNode::<T> { revoked, .. } = Delegations::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
-		assert!(revoked);
+		assert!(DelegationNodes::<T>::contains_key(leaf_id));
+		let DelegationNode::<T> { details, .. } = DelegationNodes::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
+		assert!(details.revoked);
 	}
 	// TODO: Might want to add variant iterating over children instead of depth at some later point
 }

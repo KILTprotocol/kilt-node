@@ -18,6 +18,8 @@
 
 use bitflags::bitflags;
 use codec::{Decode, Encode};
+use ctype::CtypeHashOf;
+use sp_std::collections::btree_set::BTreeSet;
 
 use crate::*;
 
@@ -52,87 +54,88 @@ impl Default for Permissions {
 	}
 }
 
-/// A node representing a delegation hierarchy root.
-#[derive(Clone, Debug, Encode, Decode, PartialEq)]
-pub struct DelegationRoot<T: Config> {
-	/// The hash of the CType that delegated attesters within this trust
-	/// hierarchy can attest.
-	pub ctype_hash: CtypeHashOf<T>,
-	/// The identifier of the root owner.
-	pub owner: DelegatorIdOf<T>,
-	/// The flag indicating whether the root has been revoked or not.
-	pub revoked: bool,
-}
-
-impl<T: Config> DelegationRoot<T> {
-	pub fn new(ctype_hash: CtypeHashOf<T>, owner: DelegatorIdOf<T>) -> Self {
-		DelegationRoot {
-			ctype_hash,
-			owner,
-			revoked: false,
-		}
-	}
-}
-
-/// A node representing a node in the delegation hierarchy.
+/// A node in a delegation hierarchy.
+///
+/// For quicker lookups of the hierarchy details, all nodes maintain a direct
+/// link to the hierarchy root node. Furthermore, all nodes have a parent except
+/// the root nodes, which point to themselves for the hierarchy root node link.
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
 pub struct DelegationNode<T: Config> {
-	/// The ID of the delegation hierarchy root.
-	pub root_id: DelegationNodeIdOf<T>,
-	/// \[OPTIONAL\] The ID of the parent node. If None, the node is
-	/// considered a direct child of the root node.
+	/// The ID of the delegation hierarchy the node is part of.
+	pub hierarchy_root_id: DelegationNodeIdOf<T>,
+	/// The ID of the parent. For all but root nodes this is not None.
 	pub parent: Option<DelegationNodeIdOf<T>>,
-	/// The identifier of the owner of the delegation node, i.e., the delegate.
-	pub owner: DelegatorIdOf<T>,
-	/// The permission flags for the operations the delegate is allowed to
-	/// perform.
-	pub permissions: Permissions,
-	/// The flag indicating whether the delegation has been revoked or not.
-	pub revoked: bool,
+	/// The set of IDs of all the children nodes.
+	pub children: BTreeSet<DelegationNodeIdOf<T>>,
+	/// The additional information attached to the delegation node.
+	pub details: DelegationDetails<T>,
 }
 
 impl<T: Config> DelegationNode<T> {
-	/// Create a new delegation node that is a direct descendent of the
-	/// given root.
-	///
-	/// * root_id: the root node ID this node will be a child of
-	/// * owner: the identifier of the owner of the new delegation, i.e., the
-	///   new delegate
-	/// * permissions: the permission flags for the operations the delegate is
-	///   allowed to perform
-	pub fn new_root_child(root_id: DelegationNodeIdOf<T>, owner: DelegatorIdOf<T>, permissions: Permissions) -> Self {
-		DelegationNode {
-			root_id,
-			owner,
-			permissions,
-			revoked: false,
+	/// Creates a new delegation root node with the given ID and delegation
+	/// details.
+	pub fn new_root_node(id: DelegationNodeIdOf<T>, details: DelegationDetails<T>) -> Self {
+		Self {
+			hierarchy_root_id: id,
 			parent: None,
+			children: BTreeSet::new(),
+			details,
 		}
 	}
 
-	/// Creates a new delegation node that is a direct descendent of the
-	/// given node.
-	///
-	/// * root_id: the root node ID this node will be a child of
-	/// * parent - the parent node ID this node will be a child of
-	/// * owner: the identifier of the owner of the new delegation, i.e., the
-	///   new delegate
-	/// * permissions: the permission flags for the operations the delegate is
-	///   allowed to perform
-	pub fn new_node_child(
-		root_id: DelegationNodeIdOf<T>,
+	/// Creates a new delegation node under the given hierarchy ID, with the
+	/// given parent and delegation details.
+	pub fn new_node(
+		hierarchy_root_id: DelegationNodeIdOf<T>,
 		parent: DelegationNodeIdOf<T>,
-		owner: DelegatorIdOf<T>,
-		permissions: Permissions,
+		details: DelegationDetails<T>,
 	) -> Self {
-		DelegationNode {
-			root_id,
+		Self {
+			hierarchy_root_id,
 			parent: Some(parent),
+			children: BTreeSet::new(),
+			details,
+		}
+	}
+
+	/// Adds a node by its ID to the current node's children.
+	pub fn add_child(&mut self, child_id: DelegationNodeIdOf<T>) {
+		self.children.insert(child_id);
+	}
+}
+
+/// Delegation information attached to delegation nodes.
+#[derive(Clone, Debug, Encode, Decode, PartialEq)]
+pub struct DelegationDetails<T: Config> {
+	/// The owner of the delegation (and its node).
+	pub owner: DelegatorIdOf<T>,
+	/// Status indicating whether the delegation has been revoked (true) or not
+	/// (false).
+	pub revoked: bool,
+	/// The set of permissions associated with the delegation.
+	pub permissions: Permissions,
+}
+
+impl<T: Config> DelegationDetails<T> {
+	/// Creates new delegation details including the given owner.
+	///
+	/// The default revocation status is false and all permissions are granted
+	/// by default.
+	pub fn default_with_owner(owner: DelegatorIdOf<T>) -> Self {
+		Self {
 			owner,
-			permissions,
+			permissions: Permissions::all(),
 			revoked: false,
 		}
 	}
+}
+
+/// The details associated with a delegation hierarchy.
+#[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd)]
+pub struct DelegationHierarchyDetails<T: Config> {
+	/// The authorised CTYPE hash that attesters can attest using this
+	/// delegation hierarchy.
+	pub ctype_hash: CtypeHashOf<T>,
 }
 
 /// The result that the delegation pallet expects from the implementer of the
