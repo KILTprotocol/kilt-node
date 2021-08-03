@@ -185,8 +185,10 @@ pub fn ensure_single_migration_works(
 		if lock.block > now {
 			assert_eq!(kilt_launch::BalanceLocks::<Test>::get(dest), Some(lock.clone()));
 			assert_eq!(
-				kilt_launch::UnlockingAt::<Test>::get(lock.block),
-				Some(vec![dest.to_owned()])
+				kilt_launch::UnlockingAt::<Test>::get(lock.block)
+					.unwrap_or_default()
+					.into_inner(),
+				vec![dest.to_owned()]
 			);
 			locked_balance = locked_balance.max(lock.amount);
 			num_of_locks += 1;

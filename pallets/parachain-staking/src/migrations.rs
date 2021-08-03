@@ -228,6 +228,7 @@ mod tests {
 			.with_collators(vec![(1, 100), (2, 100)])
 			.build();
 		ext.execute_with(|| {
+			#[cfg(feature = "try-runtime")]
 			if StakingStorageVersion::default() != StakingStorageVersion::latest() {
 				#[cfg(feature = "try-runtime")]
 				assert!(
