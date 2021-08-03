@@ -115,8 +115,8 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		/// Create a new CType from the given unique CType hashand associates it
-		/// with its creator.
+		/// Create a new CType from the given unique CType hash and associates
+		/// it with its creator.
 		///
 		/// A CType with the same hash must not be stored on chain.
 		///
