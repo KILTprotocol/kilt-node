@@ -100,6 +100,8 @@ parameter_types! {
 	pub const MaxSignatureByteLength: u16 = 64;
 	pub const MaxParentChecks: u32 = 5;
 	pub const MaxRevocations: u32 = 5;
+	#[derive(Clone)]
+	pub const MaxChildren: u32 = 1000;
 }
 
 impl delegation::Config for Test {
@@ -111,6 +113,7 @@ impl delegation::Config for Test {
 	type MaxSignatureByteLength = MaxSignatureByteLength;
 	type MaxParentChecks = MaxParentChecks;
 	type MaxRevocations = MaxRevocations;
+	type MaxChildren = MaxChildren;
 	type WeightInfo = ();
 }
 
