@@ -651,10 +651,16 @@ impl delegation::VerifyDelegateSignature for Runtime {
 	}
 }
 
+parameter_types! {
+	// TODO: Find reasonable number
+	pub const MaxDelegatedAttestations: u32 = 1000;
+}
+
 impl attestation::Config for Runtime {
 	type EnsureOrigin = EnsureSigned<<Self as delegation::Config>::DelegationEntityId>;
 	type Event = Event;
 	type WeightInfo = weights::attestation::WeightInfo<Runtime>;
+	type MaxDelegatedAttestations = MaxDelegatedAttestations;
 }
 
 parameter_types! {
