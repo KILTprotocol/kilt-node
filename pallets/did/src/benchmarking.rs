@@ -125,19 +125,13 @@ fn generate_base_did_creation_operation<T: Config>() -> DidCreationOperation {
 
 fn generate_base_did_update_operation<T: Config>(did: DidIdentifierOf<T>) -> DidUpdateOperation<T> {
 	DidUpdateOperation {
-		did,
 		new_authentication_key: None,
 		new_key_agreement_keys: BTreeSet::new(),
 		attestation_key_update: DidVerificationKeyUpdateAction::default(),
 		delegation_key_update: DidVerificationKeyUpdateAction::default(),
 		new_endpoint_url: None,
 		public_keys_to_remove: BTreeSet::new(),
-		tx_counter: 1u64,
 	}
-}
-
-fn generate_base_did_deletion_operation<T: Config>(did: DidIdentifierOf<T>) -> DidDeletionOperation<T> {
-	DidDeletionOperation { did, tx_counter: 1u64 }
 }
 
 // Must always be dispatched with the DID authentication key
@@ -335,7 +329,7 @@ benchmarks! {
 		did_update_op.new_endpoint_url = Some(new_url);
 
 		let did_update_signature = ed25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_update_op.encode().as_ref()).expect("Failed to create DID signature from raw ed25519 signature.");
-	}: submit_did_update_operation(RawOrigin::Signed(submitter), did_update_op.clone(), DidSignature::from(did_update_signature))
+	}: submit_did_update_operation(RawOrigin::Signed(submitter), did_update_op.clone())
 	verify {
 		let stored_did = Did::<T>::get(&did_subject).expect("DID should be stored on chain.");
 		let stored_key_agreement_keys_ids = stored_did.get_key_agreement_keys_ids();
@@ -361,7 +355,6 @@ benchmarks! {
 			&Some(expected_attestation_key_id)
 		);
 		assert_eq!(stored_did.endpoint_url, did_update_op.new_endpoint_url);
-		assert_eq!(stored_did.last_tx_counter, did_update_op.tx_counter);
 	}
 
 	submit_did_update_operation_sr25519_keys {
@@ -397,7 +390,7 @@ benchmarks! {
 		did_update_op.new_endpoint_url = Some(new_url);
 
 		let did_update_signature = sr25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_update_op.encode().as_ref()).expect("Failed to create DID signature from raw sr25519 signature.");
-	}: submit_did_update_operation(RawOrigin::Signed(submitter), did_update_op.clone(), DidSignature::from(did_update_signature))
+	}: submit_did_update_operation(RawOrigin::Signed(submitter), did_update_op.clone())
 	verify {
 		let stored_did = Did::<T>::get(&did_subject).expect("DID should be stored on chain.");
 		let stored_key_agreement_keys_ids = stored_did.get_key_agreement_keys_ids();
@@ -423,7 +416,6 @@ benchmarks! {
 			&Some(expected_attestation_key_id)
 		);
 		assert_eq!(stored_did.endpoint_url, did_update_op.new_endpoint_url);
-		assert_eq!(stored_did.last_tx_counter, did_update_op.tx_counter);
 	}
 
 	submit_did_update_operation_ecdsa_keys {
@@ -459,7 +451,7 @@ benchmarks! {
 		did_update_op.new_endpoint_url = Some(new_url);
 
 		let did_update_signature = ecdsa_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_update_op.encode().as_ref()).expect("Failed to create DID signature from raw ecdsa signature.");
-	}: submit_did_update_operation(RawOrigin::Signed(submitter), did_update_op.clone(), DidSignature::from(did_update_signature))
+	}: submit_did_update_operation(RawOrigin::Signed(submitter), did_update_op.clone())
 	verify {
 		let stored_did = Did::<T>::get(&did_subject).expect("DID should be stored on chain.");
 		let stored_key_agreement_keys_ids = stored_did.get_key_agreement_keys_ids();
@@ -485,7 +477,6 @@ benchmarks! {
 			&Some(expected_attestation_key_id)
 		);
 		assert_eq!(stored_did.endpoint_url, did_update_op.new_endpoint_url);
-		assert_eq!(stored_did.last_tx_counter, did_update_op.tx_counter);
 	}
 
 	submit_did_delete_operation {
@@ -496,11 +487,7 @@ benchmarks! {
 
 		let did_details = get_did_base_details(DidVerificationKey::from(did_public_auth_key));
 		Did::<T>::insert(&did_subject, did_details);
-
-		let did_deletion_op = generate_base_did_deletion_operation::<T>(did_subject.clone());
-
-		let did_deletion_signature = ed25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_deletion_op.encode().as_ref()).expect("Failed to create DID signature from raw ed25519 signature.");
-	}: _(RawOrigin::Signed(submitter), did_deletion_op.clone(), DidSignature::from(did_deletion_signature))
+	}: _(RawOrigin::Signed(submitter))
 	verify {
 		assert_eq!(
 			Did::<T>::get(&did_subject),
@@ -520,7 +507,7 @@ benchmarks! {
 		let did_call_op = generate_base_did_call_operation::<T>(did_subject);
 
 		let did_call_signature = ed25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_call_op.encode().as_ref()).expect("Failed to create DID signature from raw ed25519 signature.");
-	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op.clone()), DidSignature::from(did_call_signature))
+	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op.clone()), Some(DidSignature::from(did_call_signature)))
 
 	submit_did_call_sr25519_key {
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
@@ -534,7 +521,7 @@ benchmarks! {
 		let did_call_op = generate_base_did_call_operation::<T>(did_subject);
 
 		let did_call_signature = sr25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_call_op.encode().as_ref()).expect("Failed to create DID signature from raw sr25519 signature.");
-	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op.clone()), DidSignature::from(did_call_signature))
+	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op.clone()), Some(DidSignature::from(did_call_signature)))
 
 	submit_did_call_ecdsa_key {
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
@@ -548,7 +535,7 @@ benchmarks! {
 		let did_call_op = generate_base_did_call_operation::<T>(did_subject);
 
 		let did_call_signature = ecdsa_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_call_op.encode().as_ref()).expect("Failed to create DID signature from raw ecdsa signature.");
-	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op.clone()), DidSignature::from(did_call_signature))
+	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op.clone()), Some(DidSignature::from(did_call_signature)))
 }
 
 // impl_benchmark_test_suite! {

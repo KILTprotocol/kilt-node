@@ -22,8 +22,6 @@
 use codec::{Decode, Encode};
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use frame_system::EnsureSigned;
-#[cfg(feature = "runtime-benchmarks")]
-use frame_system::EnsureSigned;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
@@ -334,7 +332,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			#[cfg(feature = "runtime-benchmarks")]
 			if *self == Self::get_call_for_did_call_benchmark() {
 				// Always require an authentication key to dispatch calls during benchmarking
-				return Some(did::DidVerificationKeyRelationship::Authentication);
+				return Some(did::DidOperationAuthorizationKey::DidKey(did::DidVerificationKeyRelationship::Authentication));
 			}
 			None
 		}
@@ -348,29 +346,24 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 }
 
 pub fn generate_test_did_call(
-	verification_key_required: did::DidVerificationKeyRelationship,
+	verification_key_required: did::DidOperationAuthorizationKey,
 	caller: TestDidIdentifier,
-) -> did::DidAuthorizedCallOperation<Test> {
+) -> did::DidAuthorizedCallOperationWithVerificationRelationship<Test> {
 	let call = match verification_key_required {
-		DidVerificationKeyRelationship::AssertionMethod => get_attestation_key_call(),
-		DidVerificationKeyRelationship::Authentication => get_authentication_key_call(),
-		DidVerificationKeyRelationship::CapabilityDelegation => get_delegation_key_call(),
-		_ => get_none_key_call(),
+		DidOperationAuthorizationKey::DidKey(DidVerificationKeyRelationship::AssertionMethod) => get_attestation_key_call(),
+		DidOperationAuthorizationKey::DidKey(DidVerificationKeyRelationship::Authentication) => get_authentication_key_call(),
+		DidOperationAuthorizationKey::DidKey(DidVerificationKeyRelationship::CapabilityDelegation) => get_delegation_key_call(),
+		DidOperationAuthorizationKey::DidKey(_) => get_none_key_call(),
+		DidOperationAuthorizationKey::NoKey => get_no_key_call(),
 	};
-	did::DidAuthorizedCallOperation {
-		did: caller,
-		call,
-		tx_counter: 1u64,
+	did::DidAuthorizedCallOperationWithVerificationRelationship {
+		operation: did::DidAuthorizedCallOperation {
+			did: caller,
+			call,
+			tx_counter: 1u64
+		},
+		operation_authorization_key_type: verification_key_required
 	}
-}
-
-// A test DID operation which can be crated to require any DID verification key
-// type.
-#[derive(Clone, Decode, Debug, Encode, PartialEq)]
-pub struct TestDidOperation {
-	pub did: TestDidIdentifier,
-	pub verification_key_type: DidVerificationKeyRelationship,
-	pub tx_counter: u64,
 }
 
 #[allow(dead_code)]

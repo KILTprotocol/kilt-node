@@ -230,6 +230,8 @@ pub mod pallet {
 		/// The DID operation signature is invalid for the payload and the
 		/// verification key provided.
 		InvalidSignature,
+		/// The operation required a signature which has not been provided.
+		SignatureRequired,
 		/// The DID with the given identifier is already present on chain.
 		DidAlreadyPresent,
 		/// No DID with the given identifier is present on chain.
@@ -296,6 +298,7 @@ pub mod pallet {
 				SignatureError::InvalidSignature => Self::InvalidSignature,
 				SignatureError::InvalidSignatureFormat => Self::InvalidSignatureFormat,
 				SignatureError::InvalidNonce => Self::InvalidNonce,
+				SignatureError::SignatureRequired => Self::SignatureRequired,
 			}
 		}
 	}
@@ -579,7 +582,7 @@ pub mod pallet {
 		pub fn submit_did_call(
 			origin: OriginFor<T>,
 			did_call: Box<DidAuthorizedCallOperation<T>>,
-			signature: DidSignature,
+			signature: Option<DidSignature>,
 		) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;
 
@@ -632,7 +635,7 @@ impl<T: Config> Pallet<T> {
 	/// # </weight>
 	pub fn verify_did_operation_signature_and_increase_nonce(
 		operation: &DidAuthorizedCallOperationWithVerificationRelationship<T>,
-		signature: &DidSignature,
+		signature: &Option<DidSignature>,
 	) -> Result<(), DidError> {
 		let mut did_details =
 			<Did<T>>::get(&operation.did).ok_or(DidError::StorageError(StorageError::DidNotPresent))?;
@@ -641,6 +644,7 @@ impl<T: Config> Pallet<T> {
 			// Do nothing if no key is required.
 			DidOperationAuthorizationKey::NoKey => (),
 			DidOperationAuthorizationKey::DidKey(verification_key_type) => {
+				let signature = signature.as_ref().ok_or(DidError::SignatureError(SignatureError::SignatureRequired))?;
 				Self::validate_counter_value(operation.tx_counter, &did_details)?;
 				// Increase the tx counter as soon as it is considered valid, no matter if the signature is valid or not.
 				did_details.increase_tx_counter().map_err(DidError::StorageError)?;
