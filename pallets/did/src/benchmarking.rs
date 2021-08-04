@@ -124,7 +124,7 @@ fn generate_base_did_creation_details<T: Config>(did: DidIdentifierOf<T>) -> Did
 	}
 }
 
-fn generate_base_did_update_details<T: Config>(did: DidIdentifierOf<T>) -> DidUpdateDetails<T> {
+fn generate_base_did_update_details<T: Config>(_did: DidIdentifierOf<T>) -> DidUpdateDetails<T> {
 	DidUpdateDetails {
 		new_authentication_key: None,
 		new_key_agreement_keys: BTreeSet::new(),
@@ -302,8 +302,6 @@ benchmarks! {
 		let m in 1 .. T::MaxVerificationKeysToRevoke::get();
 		let u in (DEFAULT_URL_SCHEME.len().saturated_into::<u32>()) .. T::MaxUrlLength::get();
 
-		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
-
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 		// To cover cases in which m > n without failing, we add m + n keys to the set of keys before the update operation
@@ -330,7 +328,7 @@ benchmarks! {
 		did_update_details.new_endpoint_url = Some(new_url);
 
 		let did_update_signature = ed25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_update_details.encode().as_ref()).expect("Failed to create DID signature from raw ed25519 signature.");
-	}: update(RawOrigin::Signed(submitter), did_update_details.clone())
+	}: update(RawOrigin::Signed(did_subject.clone()), did_update_details.clone())
 	verify {
 		let stored_did = Did::<T>::get(&did_subject).expect("DID should be stored on chain.");
 		let stored_key_agreement_keys_ids = stored_did.get_key_agreement_keys_ids();
@@ -391,7 +389,7 @@ benchmarks! {
 		did_update_details.new_endpoint_url = Some(new_url);
 
 		let did_update_signature = sr25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_update_details.encode().as_ref()).expect("Failed to create DID signature from raw sr25519 signature.");
-	}: update(RawOrigin::Signed(submitter), did_update_details.clone())
+	}: update(RawOrigin::Signed(did_subject.clone()), did_update_details.clone())
 	verify {
 		let stored_did = Did::<T>::get(&did_subject).expect("DID should be stored on chain.");
 		let stored_key_agreement_keys_ids = stored_did.get_key_agreement_keys_ids();
@@ -452,7 +450,7 @@ benchmarks! {
 		did_update_details.new_endpoint_url = Some(new_url);
 
 		let did_update_signature = ecdsa_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_update_details.encode().as_ref()).expect("Failed to create DID signature from raw ecdsa signature.");
-	}: update(RawOrigin::Signed(submitter), did_update_details.clone())
+	}: update(RawOrigin::Signed(did_subject.clone()), did_update_details.clone())
 	verify {
 		let stored_did = Did::<T>::get(&did_subject).expect("DID should be stored on chain.");
 		let stored_key_agreement_keys_ids = stored_did.get_key_agreement_keys_ids();
@@ -481,14 +479,12 @@ benchmarks! {
 	}
 
 	delete {
-		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
-
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 
 		let did_details = get_did_base_details(DidVerificationKey::from(did_public_auth_key));
 		Did::<T>::insert(&did_subject, did_details);
-	}: _(RawOrigin::Signed(submitter))
+	}: _(RawOrigin::Signed(did_subject.clone()))
 	verify {
 		assert_eq!(
 			Did::<T>::get(&did_subject),
@@ -539,8 +535,8 @@ benchmarks! {
 	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op.clone()), DidSignature::from(did_call_signature))
 }
 
-// impl_benchmark_test_suite! {
-// 	Pallet,
-// 	crate::mock::ExtBuilder::default().build_with_keystore(None),
-// 	crate::mock::Test
-// }
+impl_benchmark_test_suite! {
+	Pallet,
+	crate::mock::ExtBuilder::default().build_with_keystore(None),
+	crate::mock::Test
+}

@@ -349,20 +349,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Writes: Did (with K new key agreement keys)
 		/// # </weight>
-		#[pallet::weight(
-      <T as pallet::Config>::WeightInfo::submit_did_create_operation_ed25519_keys(
-        details.new_key_agreement_keys.len().saturated_into::<u32>(),
-        details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
-      )
-      .max(<T as pallet::Config>::WeightInfo::submit_did_create_operation_sr25519_keys(
-        details.new_key_agreement_keys.len().saturated_into::<u32>(),
-        details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
-      ))
-      .max(<T as pallet::Config>::WeightInfo::submit_did_create_operation_ecdsa_keys(
-        details.new_key_agreement_keys.len().saturated_into::<u32>(),
-        details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
-      ))
-    )]
+		#[pallet::weight(1)]
 		pub fn create(origin: OriginFor<T>, details: DidCreationDetails<T>, signature: DidSignature) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
@@ -376,7 +363,7 @@ pub mod pallet {
 				.verify_and_recover_signature(&details.encode(), &signature)
 				.map_err(<Error<T>>::from)?;
 
-			let did_entry = DidDetails::try_from((details.clone(), account_did_auth_key)).map_err(<Error<T>>::from)?;
+			let did_entry = DidDetails::try_from((details, account_did_auth_key)).map_err(<Error<T>>::from)?;
 
 			log::debug!("Creating DID {:?}", &did_identifier);
 			<Did<T>>::insert(&did_identifier, did_entry);
@@ -449,23 +436,7 @@ pub mod pallet {
 		/// - Writes: Did (with K new key agreement keys and removing D public
 		///   keys)
 		/// # </weight>
-		#[pallet::weight(
-      <T as pallet::Config>::WeightInfo::submit_did_update_operation_ed25519_keys(
-        details.new_key_agreement_keys.len().saturated_into::<u32>(),
-        details.public_keys_to_remove.len().saturated_into::<u32>(),
-        details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
-      )
-      .max(<T as pallet::Config>::WeightInfo::submit_did_update_operation_sr25519_keys(
-        details.new_key_agreement_keys.len().saturated_into::<u32>(),
-        details.public_keys_to_remove.len().saturated_into::<u32>(),
-        details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
-      ))
-      .max(<T as pallet::Config>::WeightInfo::submit_did_update_operation_ecdsa_keys(
-        details.new_key_agreement_keys.len().saturated_into::<u32>(),
-        details.public_keys_to_remove.len().saturated_into::<u32>(),
-        details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
-      ))
-    )]
+		#[pallet::weight(1)]
 		pub fn update(origin: OriginFor<T>, details: DidUpdateDetails<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 
@@ -505,7 +476,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Kills: Did entry associated to the DID identifier
 		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::submit_did_delete_operation())]
+		#[pallet::weight(1)]
 		pub fn delete(origin: OriginFor<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 

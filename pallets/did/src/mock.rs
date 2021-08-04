@@ -19,7 +19,7 @@
 #![allow(clippy::from_over_into)]
 #![allow(unused_must_use)]
 
-use codec::{Decode, Encode};
+
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use frame_system::EnsureSigned;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
@@ -97,7 +97,10 @@ impl Config for Test {
 	type DidIdentifier = TestDidIdentifier;
 	type Origin = Origin;
 	type Call = Call;
+	#[cfg(feature = "runtime-benchmarks")]
 	type EnsureOrigin = EnsureSigned<TestDidIdentifier>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type EnsureOrigin = did::EnsureDidOrigin<TestDidIdentifier>;
 	type Event = ();
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxUrlLength = MaxUrlLength;

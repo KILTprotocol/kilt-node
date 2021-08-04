@@ -215,7 +215,7 @@ fn check_duplicate_did_creation() {
 	let signature = auth_key.sign(details.encode().as_ref());
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), mock_did)])
+		.with_dids(vec![(alice_did, mock_did)])
 		.build(None);
 
 	ext.execute_with(|| {
@@ -237,7 +237,7 @@ fn check_invalid_signature_format_did_creation() {
 	// Using an Ed25519 key where an Sr25519 is expected
 	let invalid_key = get_ed25519_authentication_key(true);
 	// DID creation contains auth_key, but signature is generated using invalid_key
-	let details = generate_base_did_creation_details(alice_did.clone());
+	let details = generate_base_did_creation_details(alice_did);
 
 	let signature = invalid_key.sign(details.encode().as_ref());
 
@@ -260,7 +260,7 @@ fn check_invalid_signature_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let alternative_key = get_sr25519_authentication_key(false);
-	let details = generate_base_did_creation_details(alice_did.clone());
+	let details = generate_base_did_creation_details(alice_did);
 
 	let signature = alternative_key.sign(details.encode().as_ref());
 
@@ -283,7 +283,7 @@ fn check_swapped_did_subject_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let swapped_key = get_sr25519_authentication_key(false);
 	let swapped_did = get_did_identifier_from_sr25519_key(swapped_key.public());
-	let details = generate_base_did_creation_details(swapped_did.clone());
+	let details = generate_base_did_creation_details(swapped_did);
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
@@ -307,7 +307,7 @@ fn check_max_limit_key_agreement_keys_did_creation() {
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	// Max keys allowed + 1
 	let enc_keys = get_key_agreement_keys(<Test as did::Config>::MaxNewKeyAgreementKeys::get().saturating_add(1));
-	let mut details = generate_base_did_creation_details(alice_did.clone());
+	let mut details = generate_base_did_creation_details(alice_did);
 	details.new_key_agreement_keys = enc_keys;
 
 	let signature = auth_key.sign(details.encode().as_ref());
@@ -331,7 +331,7 @@ fn check_url_too_long_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let url_endpoint = get_url_endpoint(<Test as did::Config>::MaxUrlLength::get().saturating_add(1));
-	let mut details = generate_base_did_creation_details(alice_did.clone());
+	let mut details = generate_base_did_creation_details(alice_did);
 	// Max length allowed + 1
 	details.new_endpoint_url = Some(url_endpoint);
 
@@ -473,7 +473,7 @@ fn check_successful_keys_deletion_update() {
 	details.attestation_key_update = did::DidVerificationKeyUpdateAction::Delete;
 	details.delegation_key_update = did::DidVerificationKeyUpdateAction::Delete;
 
-	let signature = auth_key.sign(details.encode().as_ref());
+	let _signature = auth_key.sign(details.encode().as_ref());
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
@@ -579,7 +579,7 @@ fn check_successful_keys_multiuse_update() {
 	let mut details = generate_base_did_update_details();
 	details.attestation_key_update = did::DidVerificationKeyUpdateAction::Delete;
 
-	let signature = auth_key.sign(details.encode().as_ref());
+	let _signature = auth_key.sign(details.encode().as_ref());
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
@@ -670,7 +670,7 @@ fn check_max_limit_public_keys_to_remove_did_update() {
 	let mut details = generate_base_did_update_details();
 	details.public_keys_to_remove = keys_ids_to_remove;
 
-	let signature = auth_key.sign(details.encode().as_ref());
+	let _signature = auth_key.sign(details.encode().as_ref());
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
@@ -700,7 +700,7 @@ fn check_url_too_long_did_update() {
 	let mut details = generate_base_did_update_details();
 	details.new_endpoint_url = Some(new_endpoint_url);
 
-	let signature = auth_key.sign(details.encode().as_ref());
+	let _signature = auth_key.sign(details.encode().as_ref());
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
@@ -734,7 +734,7 @@ fn check_currently_active_authentication_key_update() {
 	.copied()
 	.collect::<BTreeSet<TestKeyId>>();
 
-	let signature = auth_key.sign(details.encode().as_ref());
+	let _signature = auth_key.sign(details.encode().as_ref());
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
@@ -768,7 +768,7 @@ fn check_currently_active_delegation_key_update() {
 		.copied()
 		.collect::<BTreeSet<TestKeyId>>();
 
-	let signature = auth_key.sign(details.encode().as_ref());
+	let _signature = auth_key.sign(details.encode().as_ref());
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
@@ -802,7 +802,7 @@ fn check_currently_active_attestation_key_update() {
 		.copied()
 		.collect::<BTreeSet<TestKeyId>>();
 
-	let signature = auth_key.sign(details.encode().as_ref());
+	let _signature = auth_key.sign(details.encode().as_ref());
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
@@ -1474,7 +1474,7 @@ fn check_smaller_counter_operation_verification() {
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(did.clone(), mock_did.clone())])
+		.with_dids(vec![(did, mock_did)])
 		.build(None);
 
 	ext.execute_with(|| {
@@ -1501,7 +1501,7 @@ fn check_equal_counter_operation_verification() {
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(did.clone(), mock_did.clone())])
+		.with_dids(vec![(did, mock_did)])
 		.build(None);
 
 	ext.execute_with(|| {
@@ -1528,7 +1528,7 @@ fn check_too_large_counter_operation_verification() {
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(did.clone(), mock_did.clone())])
+		.with_dids(vec![(did, mock_did)])
 		.build(None);
 
 	ext.execute_with(|| {
@@ -1553,7 +1553,7 @@ fn check_verification_key_not_present_operation_verification() {
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(did, mock_did.clone())])
+		.with_dids(vec![(did, mock_did)])
 		.build(None);
 
 	ext.execute_with(|| {
@@ -1582,7 +1582,7 @@ fn check_invalid_signature_format_operation_verification() {
 	let signature = invalid_key.sign(call_operation.encode().as_ref());
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(did, mock_did.clone())])
+		.with_dids(vec![(did, mock_did)])
 		.build(None);
 
 	ext.execute_with(|| {
@@ -1609,7 +1609,7 @@ fn check_invalid_signature_operation_verification() {
 	let signature = alternative_key.sign(&call_operation.encode());
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(did.clone(), mock_did.clone())])
+		.with_dids(vec![(did, mock_did)])
 		.build(None);
 
 	ext.execute_with(|| {
