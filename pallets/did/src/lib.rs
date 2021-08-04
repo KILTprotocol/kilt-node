@@ -375,7 +375,8 @@ pub mod pallet {
 				.verify_and_recover_signature(&details.encode(), &signature)
 				.map_err(<Error<T>>::from)?;
 
-			let did_entry = DidDetails::from_creation_details((details, account_did_auth_key)).map_err(<Error<T>>::from)?;
+			let did_entry =
+				DidDetails::from_creation_details((details, account_did_auth_key)).map_err(<Error<T>>::from)?;
 
 			log::debug!("Creating DID {:?}", &did_identifier);
 			<Did<T>>::insert(&did_identifier, did_entry);

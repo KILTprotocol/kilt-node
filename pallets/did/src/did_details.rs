@@ -281,10 +281,14 @@ impl<T: Config> DidDetails<T> {
 		}
 	}
 
-	// Creates a new DID entry from [DidUpdateDetails] and a given authentication key.
-	pub fn from_creation_details((details, new_auth_key): (DidCreationDetails<T>, DidVerificationKey)) -> Result<Self, InputError> {
+	// Creates a new DID entry from [DidUpdateDetails] and a given authentication
+	// key.
+	pub fn from_creation_details(
+		(details, new_auth_key): (DidCreationDetails<T>, DidVerificationKey),
+	) -> Result<Self, InputError> {
 		ensure!(
-			details.new_key_agreement_keys.len() <= <<T as Config>::MaxNewKeyAgreementKeys>::get().saturated_into::<usize>(),
+			details.new_key_agreement_keys.len()
+				<= <<T as Config>::MaxNewKeyAgreementKeys>::get().saturated_into::<usize>(),
 			InputError::MaxKeyAgreementKeysLimitExceeded
 		);
 
@@ -342,8 +346,7 @@ impl<T: Config> DidDetails<T> {
 		let current_block_number = <frame_system::Pallet<T>>::block_number();
 
 		// Remove specified public keys.
-		self
-			.remove_public_keys(&update_details.public_keys_to_remove)
+		self.remove_public_keys(&update_details.public_keys_to_remove)
 			.map_err(DidError::StorageError)?;
 
 		// Update the authentication key, if needed.
