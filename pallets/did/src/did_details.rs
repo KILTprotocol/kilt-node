@@ -281,6 +281,111 @@ impl<T: Config> DidDetails<T> {
 		}
 	}
 
+	// Creates a new DID entry from [DidUpdateDetails] and a given authentication key.
+	pub fn from_creation_details((details, new_auth_key): (DidCreationDetails<T>, DidVerificationKey)) -> Result<Self, InputError> {
+		ensure!(
+			details.new_key_agreement_keys.len() <= <<T as Config>::MaxNewKeyAgreementKeys>::get().saturated_into::<usize>(),
+			InputError::MaxKeyAgreementKeysLimitExceeded
+		);
+
+		if let Some(ref endpoint_url) = details.new_endpoint_url {
+			ensure!(
+				endpoint_url.len() <= T::MaxUrlLength::get().saturated_into::<usize>(),
+				InputError::MaxUrlLengthExceeded
+			);
+		}
+
+		let current_block_number = <frame_system::Pallet<T>>::block_number();
+
+		// Creates a new DID with the given authentication key.
+		let mut new_did_details = DidDetails::new(new_auth_key, current_block_number);
+
+		new_did_details.add_key_agreement_keys(details.new_key_agreement_keys, current_block_number);
+
+		if let Some(attesation_key) = details.new_attestation_key {
+			new_did_details.update_attestation_key(attesation_key, current_block_number);
+		}
+
+		if let Some(delegation_key) = details.new_delegation_key {
+			new_did_details.update_delegation_key(delegation_key, current_block_number);
+		}
+
+		new_did_details.endpoint_url = details.new_endpoint_url;
+
+		Ok(new_did_details)
+	}
+
+	// Updates a DID entry by applying the changes in the [DidUpdateDetails].
+	//
+	// The operation fails with a [DidError] if the update details instructs to
+	// delete a verification key that is not associated with the DID.
+	pub fn apply_update_details(&mut self, update_details: DidUpdateDetails<T>) -> Result<(), DidError> {
+		ensure!(
+			update_details.new_key_agreement_keys.len()
+				<= <<T as Config>::MaxNewKeyAgreementKeys>::get().saturated_into::<usize>(),
+			DidError::InputError(InputError::MaxKeyAgreementKeysLimitExceeded)
+		);
+
+		ensure!(
+			update_details.public_keys_to_remove.len()
+				<= <<T as Config>::MaxVerificationKeysToRevoke>::get().saturated_into::<usize>(),
+			DidError::InputError(InputError::MaxVerificationKeysToRemoveLimitExceeded)
+		);
+
+		if let Some(ref endpoint_url) = update_details.new_endpoint_url {
+			ensure!(
+				endpoint_url.len() <= T::MaxUrlLength::get().saturated_into::<usize>(),
+				DidError::InputError(InputError::MaxUrlLengthExceeded)
+			);
+		}
+
+		let current_block_number = <frame_system::Pallet<T>>::block_number();
+
+		// Remove specified public keys.
+		self
+			.remove_public_keys(&update_details.public_keys_to_remove)
+			.map_err(DidError::StorageError)?;
+
+		// Update the authentication key, if needed.
+		if let Some(new_authentication_key) = update_details.new_authentication_key {
+			self.update_authentication_key(new_authentication_key, current_block_number);
+		}
+
+		// Add any new key agreement keys.
+		self.add_key_agreement_keys(update_details.new_key_agreement_keys, current_block_number);
+
+		// Update/remove the attestation key, if needed.
+		match update_details.attestation_key_update {
+			DidVerificationKeyUpdateAction::Delete => {
+				self.delete_attestation_key();
+			}
+			DidVerificationKeyUpdateAction::Change(new_attestation_key) => {
+				self.update_attestation_key(new_attestation_key, current_block_number);
+			}
+			// Nothing happens.
+			DidVerificationKeyUpdateAction::Ignore => {}
+		}
+
+		// Update/remove the delegation key, if needed.
+		match update_details.delegation_key_update {
+			DidVerificationKeyUpdateAction::Delete => {
+				self.delete_delegation_key();
+			}
+			DidVerificationKeyUpdateAction::Change(new_delegation_key) => {
+				self.update_delegation_key(new_delegation_key, current_block_number);
+			}
+			// Nothing happens.
+			DidVerificationKeyUpdateAction::Ignore => {}
+		}
+
+		// Update URL, if needed.
+		if let Some(new_endpoint_url) = update_details.new_endpoint_url {
+			self.endpoint_url = Some(new_endpoint_url);
+		}
+
+		Ok(())
+	}
+
 	/// Update the DID authentication key.
 	///
 	/// The old key is deleted from the set of verification keys if it is
@@ -499,123 +604,6 @@ impl<T: Config> DidDetails<T> {
 	#[cfg(any(feature = "mock", test))]
 	pub fn set_tx_counter(&mut self, value: u64) {
 		self.last_tx_counter = value;
-	}
-}
-
-impl<T: Config> TryFrom<(DidCreationDetails<T>, DidVerificationKey)> for DidDetails<T> {
-	type Error = InputError;
-
-	fn try_from(new_details: (DidCreationDetails<T>, DidVerificationKey)) -> Result<Self, Self::Error> {
-		let (op, new_auth_key) = new_details;
-
-		ensure!(
-			op.new_key_agreement_keys.len() <= <<T as Config>::MaxNewKeyAgreementKeys>::get().saturated_into::<usize>(),
-			InputError::MaxKeyAgreementKeysLimitExceeded
-		);
-
-		if let Some(ref endpoint_url) = op.new_endpoint_url {
-			ensure!(
-				endpoint_url.len() <= T::MaxUrlLength::get().saturated_into::<usize>(),
-				InputError::MaxUrlLengthExceeded
-			);
-		}
-
-		let current_block_number = <frame_system::Pallet<T>>::block_number();
-
-		// Creates a new DID with the given authentication key.
-		let mut new_did_details = DidDetails::new(new_auth_key, current_block_number);
-
-		new_did_details.add_key_agreement_keys(op.new_key_agreement_keys, current_block_number);
-
-		if let Some(attesation_key) = op.new_attestation_key {
-			new_did_details.update_attestation_key(attesation_key, current_block_number);
-		}
-
-		if let Some(delegation_key) = op.new_delegation_key {
-			new_did_details.update_delegation_key(delegation_key, current_block_number);
-		}
-
-		new_did_details.endpoint_url = op.new_endpoint_url;
-
-		Ok(new_did_details)
-	}
-}
-
-// Generates a new DID entry starting from the current one stored in the
-// storage and by applying the changes in the [DidUpdateDetails].
-//
-// The operation fails with a [DidError] if the update operation instructs to
-// delete a verification key that is not associated with the DID.
-impl<T: Config> TryFrom<(DidDetails<T>, DidUpdateDetails<T>)> for DidDetails<T> {
-	type Error = DidError;
-
-	fn try_from((old_details, update_operation): (DidDetails<T>, DidUpdateDetails<T>)) -> Result<Self, Self::Error> {
-		ensure!(
-			update_operation.new_key_agreement_keys.len()
-				<= <<T as Config>::MaxNewKeyAgreementKeys>::get().saturated_into::<usize>(),
-			DidError::InputError(InputError::MaxKeyAgreementKeysLimitExceeded)
-		);
-
-		ensure!(
-			update_operation.public_keys_to_remove.len()
-				<= <<T as Config>::MaxVerificationKeysToRevoke>::get().saturated_into::<usize>(),
-			DidError::InputError(InputError::MaxVerificationKeysToRemoveLimitExceeded)
-		);
-
-		if let Some(ref endpoint_url) = update_operation.new_endpoint_url {
-			ensure!(
-				endpoint_url.len() <= T::MaxUrlLength::get().saturated_into::<usize>(),
-				DidError::InputError(InputError::MaxUrlLengthExceeded)
-			);
-		}
-
-		let current_block_number = <frame_system::Pallet<T>>::block_number();
-
-		let mut new_details = old_details;
-
-		// Remove specified public keys.
-		new_details
-			.remove_public_keys(&update_operation.public_keys_to_remove)
-			.map_err(DidError::StorageError)?;
-
-		// Update the authentication key, if needed.
-		if let Some(new_authentication_key) = update_operation.new_authentication_key {
-			new_details.update_authentication_key(new_authentication_key, current_block_number);
-		}
-
-		// Add any new key agreement keys.
-		new_details.add_key_agreement_keys(update_operation.new_key_agreement_keys, current_block_number);
-
-		// Update/remove the attestation key, if needed.
-		match update_operation.attestation_key_update {
-			DidVerificationKeyUpdateAction::Delete => {
-				new_details.delete_attestation_key();
-			}
-			DidVerificationKeyUpdateAction::Change(new_attestation_key) => {
-				new_details.update_attestation_key(new_attestation_key, current_block_number);
-			}
-			// Nothing happens.
-			DidVerificationKeyUpdateAction::Ignore => {}
-		}
-
-		// Update/remove the delegation key, if needed.
-		match update_operation.delegation_key_update {
-			DidVerificationKeyUpdateAction::Delete => {
-				new_details.delete_delegation_key();
-			}
-			DidVerificationKeyUpdateAction::Change(new_delegation_key) => {
-				new_details.update_delegation_key(new_delegation_key, current_block_number);
-			}
-			// Nothing happens.
-			DidVerificationKeyUpdateAction::Ignore => {}
-		}
-
-		// Update URL, if needed.
-		if let Some(new_endpoint_url) = update_operation.new_endpoint_url {
-			new_details.endpoint_url = Some(new_endpoint_url);
-		}
-
-		Ok(new_details)
 	}
 }
 

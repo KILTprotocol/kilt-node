@@ -375,7 +375,7 @@ pub mod pallet {
 				.verify_and_recover_signature(&details.encode(), &signature)
 				.map_err(<Error<T>>::from)?;
 
-			let did_entry = DidDetails::try_from((details, account_did_auth_key)).map_err(<Error<T>>::from)?;
+			let did_entry = DidDetails::from_creation_details((details, account_did_auth_key)).map_err(<Error<T>>::from)?;
 
 			log::debug!("Creating DID {:?}", &did_identifier);
 			<Did<T>>::insert(&did_identifier, did_entry);
@@ -462,14 +462,12 @@ pub mod pallet {
 		pub fn update(origin: OriginFor<T>, details: DidUpdateDetails<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 
-			let did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
+			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
-			// Generate a new DidDetails object by applying the changes in the update
-			// operation to the old object (and consuming both).
-			let new_did_details = DidDetails::try_from((did_details, details)).map_err(<Error<T>>::from)?;
+			did_details.apply_update_details(details).map_err(<Error<T>>::from)?;
 
 			log::debug!("Updating DID {:?}", did_subject);
-			<Did<T>>::insert(&did_subject, new_did_details);
+			<Did<T>>::insert(&did_subject, did_details);
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
 
