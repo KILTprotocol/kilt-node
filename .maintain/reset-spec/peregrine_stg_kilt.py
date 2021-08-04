@@ -12,6 +12,12 @@ def update_spec(input: typing.Dict):
         "name": "KILT Peregrine Stagenet",
         "id": "peregrine_stg_kilt",
         "para_id": 2000,
+        "telemetryEndpoints": [
+            [
+                "/dns/telemetry-backend.kilt.io/tcp/8080/x-parity-wss/%2Fsubmit",
+                0
+            ]
+        ]
     })
     input["properties"]["tokenSymbol"] = "PILT"
     input["genesis"]["runtime"]["parachainInfo"]["parachainId"] = 2000
