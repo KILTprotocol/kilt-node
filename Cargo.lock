@@ -1809,6 +1809,7 @@ version = "0.24.0"
 dependencies = [
  "bitflags",
  "ctype",
+ "env_logger 0.8.4",
  "frame-benchmarking",
  "frame-support",
  "frame-system",

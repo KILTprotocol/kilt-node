@@ -224,21 +224,22 @@ pub mod pallet {
 
 			// Check for validity of the delegation node if specified.
 			if let Some(delegation_id) = delegation_id {
-				let delegation = <delegation::Delegations<T>>::get(delegation_id)
+				let delegation = <delegation::DelegationNodes<T>>::get(delegation_id)
 					.ok_or(delegation::Error::<T>::DelegationNotFound)?;
 
-				ensure!(!delegation.revoked, Error::<T>::DelegationRevoked);
+				ensure!(!delegation.details.revoked, Error::<T>::DelegationRevoked);
 
-				ensure!(delegation.owner == attester, Error::<T>::NotDelegatedToAttester);
+				ensure!(delegation.details.owner == attester, Error::<T>::NotDelegatedToAttester);
 
 				ensure!(
-					(delegation.permissions & delegation::Permissions::ATTEST) == delegation::Permissions::ATTEST,
+					(delegation.details.permissions & delegation::Permissions::ATTEST)
+						== delegation::Permissions::ATTEST,
 					Error::<T>::DelegationUnauthorizedToAttest
 				);
 
 				// Check if the CType of the delegation is matching the CType of the attestation
-				let root =
-					<delegation::Roots<T>>::get(delegation.root_id).ok_or(delegation::Error::<T>::RootNotFound)?;
+				let root = <delegation::DelegationHierarchies<T>>::get(delegation.hierarchy_root_id)
+					.ok_or(delegation::Error::<T>::HierarchyNotFound)?;
 				ensure!(root.ctype_hash == ctype_hash, Error::<T>::CTypeMismatch);
 
 				// If the attestation is based on a delegation, store separately

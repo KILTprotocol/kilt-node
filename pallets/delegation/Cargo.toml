@@ -14,6 +14,7 @@ substrate-wasm-builder-runner = {version = "3.0.0"}
 
 [dev-dependencies]
 ctype = {features = ["mock"], path = "../ctype", version = "0.24.0"}
+env_logger = {version = "0.8.4"}
 kilt-primitives = {default-features = false, path = "../../primitives"}
 serde = {version = "1.0.101"}
 sp-core = {branch = "polkadot-v0.9.8", default-features = false, git = "https://github.com/paritytech/substrate", version = "3.0.0"}
