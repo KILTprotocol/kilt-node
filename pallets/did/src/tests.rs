@@ -39,7 +39,7 @@ fn check_successful_simple_ed25519_creation() {
 	ext.execute_with(|| {
 		assert_ok!(Did::create(
 			Origin::signed(DEFAULT_ACCOUNT),
-			details.clone(),
+			details,
 			did::DidSignature::from(signature),
 		));
 	});
@@ -74,7 +74,7 @@ fn check_successful_simple_sr25519_creation() {
 	ext.execute_with(|| {
 		assert_ok!(Did::create(
 			Origin::signed(DEFAULT_ACCOUNT),
-			details.clone(),
+			details,
 			did::DidSignature::from(signature),
 		));
 	});
@@ -109,7 +109,7 @@ fn check_successful_simple_ecdsa_creation() {
 	ext.execute_with(|| {
 		assert_ok!(Did::create(
 			Origin::signed(DEFAULT_ACCOUNT),
-			details.clone(),
+			details,
 			did::DidSignature::from(signature),
 		));
 	});
@@ -220,7 +220,7 @@ fn check_duplicate_did_creation() {
 		assert_noop!(
 			Did::create(
 				Origin::signed(DEFAULT_ACCOUNT),
-				details.clone(),
+				details,
 				did::DidSignature::from(signature),
 			),
 			did::Error::<Test>::DidAlreadyPresent
@@ -245,7 +245,7 @@ fn check_invalid_signature_format_did_creation() {
 		assert_noop!(
 			Did::create(
 				Origin::signed(DEFAULT_ACCOUNT),
-				details.clone(),
+				details,
 				did::DidSignature::from(signature),
 			),
 			did::Error::<Test>::InvalidSignature
@@ -268,7 +268,7 @@ fn check_invalid_signature_did_creation() {
 		assert_noop!(
 			Did::create(
 				Origin::signed(DEFAULT_ACCOUNT),
-				details.clone(),
+				details,
 				did::DidSignature::from(signature),
 			),
 			did::Error::<Test>::InvalidSignature
@@ -291,7 +291,7 @@ fn check_swapped_did_subject_did_creation() {
 		assert_noop!(
 			Did::create(
 				Origin::signed(DEFAULT_ACCOUNT),
-				details.clone(),
+				details,
 				did::DidSignature::from(signature),
 			),
 			did::Error::<Test>::InvalidSignature
@@ -316,7 +316,7 @@ fn check_max_limit_key_agreement_keys_did_creation() {
 		assert_noop!(
 			Did::create(
 				Origin::signed(DEFAULT_ACCOUNT),
-				details.clone(),
+				details,
 				did::DidSignature::from(signature),
 			),
 			did::Error::<Test>::MaxKeyAgreementKeysLimitExceeded
@@ -341,7 +341,7 @@ fn check_url_too_long_did_creation() {
 		assert_noop!(
 			Did::create(
 				Origin::signed(DEFAULT_ACCOUNT),
-				details.clone(),
+				details,
 				did::DidSignature::from(signature),
 			),
 			did::Error::<Test>::MaxUrlLengthExceeded
@@ -402,7 +402,7 @@ fn check_successful_complete_update() {
 
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
-		assert_ok!(Did::update(Origin::signed(alice_did.clone()), details.clone(),));
+		assert_ok!(Did::update(Origin::signed(alice_did.clone()), details));
 	});
 
 	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
@@ -481,7 +481,7 @@ fn check_successful_keys_deletion_update() {
 
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
-		assert_ok!(Did::update(Origin::signed(alice_did.clone()), details.clone(),));
+		assert_ok!(Did::update(Origin::signed(alice_did.clone()), details));
 	});
 
 	// Auth key and key agreement key unchanged
@@ -531,7 +531,7 @@ fn check_successful_keys_overwrite_update() {
 
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
-		assert_ok!(Did::update(Origin::signed(alice_did.clone()), details.clone(),));
+		assert_ok!(Did::update(Origin::signed(alice_did.clone()), details));
 	});
 
 	// Auth key unchanged
@@ -587,7 +587,7 @@ fn check_successful_keys_multiuse_update() {
 
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
-		assert_ok!(Did::update(Origin::signed(alice_did.clone()), details.clone(),));
+		assert_ok!(Did::update(Origin::signed(alice_did.clone()), details));
 	});
 
 	// Auth key unchanged
@@ -620,7 +620,7 @@ fn check_did_not_present_update() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::update(Origin::signed(alice_did.clone()), details.clone(),),
+			Did::update(Origin::signed(alice_did.clone()), details),
 			did::Error::<Test>::DidNotPresent
 		);
 	});
@@ -648,7 +648,7 @@ fn check_max_limit_key_agreement_keys_did_update() {
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::update(Origin::signed(alice_did.clone()), details.clone(),),
+			Did::update(Origin::signed(alice_did.clone()), details),
 			did::Error::<Test>::MaxKeyAgreementKeysLimitExceeded
 		);
 	});
@@ -679,7 +679,7 @@ fn check_max_limit_public_keys_to_remove_did_update() {
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::update(Origin::signed(alice_did.clone()), details.clone(),),
+			Did::update(Origin::signed(alice_did.clone()), details),
 			did::Error::<Test>::MaxVerificationKeysToRemoveLimitExceeded
 		);
 	});
@@ -709,7 +709,7 @@ fn check_url_too_long_did_update() {
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::update(Origin::signed(alice_did.clone()), details.clone(),),
+			Did::update(Origin::signed(alice_did.clone()), details),
 			did::Error::<Test>::MaxUrlLengthExceeded
 		);
 	});
@@ -743,7 +743,7 @@ fn check_currently_active_authentication_key_update() {
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::update(Origin::signed(alice_did.clone()), details.clone(),),
+			Did::update(Origin::signed(alice_did.clone()), details),
 			did::Error::<Test>::CurrentlyActiveKey
 		);
 	});
@@ -777,7 +777,7 @@ fn check_currently_active_delegation_key_update() {
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::update(Origin::signed(alice_did.clone()), details.clone(),),
+			Did::update(Origin::signed(alice_did.clone()), details),
 			did::Error::<Test>::CurrentlyActiveKey
 		);
 	});
@@ -811,7 +811,7 @@ fn check_currently_active_attestation_key_update() {
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::update(Origin::signed(alice_did.clone()), details.clone(),),
+			Did::update(Origin::signed(alice_did.clone()), details),
 			did::Error::<Test>::CurrentlyActiveKey
 		);
 	});
@@ -844,7 +844,7 @@ fn check_verification_key_not_present_update() {
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::update(Origin::signed(alice_did.clone()), details.clone(),),
+			Did::update(Origin::signed(alice_did.clone()), details),
 			did::Error::<Test>::VerificationKeyNotPresent
 		);
 	});
@@ -878,7 +878,7 @@ fn check_successful_deletion() {
 	ext.execute_with(|| {
 		assert_ok!(Did::create(
 			Origin::signed(alice_did.clone()),
-			details.clone(),
+			details,
 			did::DidSignature::from(signature),
 		));
 	});
@@ -893,7 +893,7 @@ fn check_did_not_present_deletion() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::delete(Origin::signed(alice_did.clone()),),
+			Did::delete(Origin::signed(alice_did)),
 			did::Error::<Test>::DidNotPresent
 		);
 	});
