@@ -395,7 +395,7 @@ fn check_successful_complete_update() {
 	details.new_endpoint_url = Some(new_url);
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
@@ -580,7 +580,7 @@ fn check_successful_keys_multiuse_update() {
 	let _signature = auth_key.sign(details.encode().as_ref());
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
