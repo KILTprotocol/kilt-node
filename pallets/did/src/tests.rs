@@ -16,11 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{assert_err, assert_noop, assert_ok};
+use frame_support::{assert_err, assert_noop, assert_ok, storage::bounded_btree_set::BoundedBTreeSet};
 use sp_core::*;
 use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom};
 
-use crate::{self as did, mock::*};
+use crate::{self as did, mock::*, Config};
 use ctype::mock as ctype_mock;
 
 // submit_did_create_operation
@@ -135,11 +135,13 @@ fn check_successful_complete_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let auth_did_key = did::DidVerificationKey::from(auth_key.public());
-	let enc_keys: BTreeSet<did::DidEncryptionKey> =
+	let enc_keys = BoundedBTreeSet::<did::DidEncryptionKey, <Test as Config>::MaxTotalKeyAgreementKeys>::try_from(
 		vec![get_x25519_encryption_key(true), get_x25519_encryption_key(false)]
 			.iter()
 			.copied()
-			.collect();
+			.collect::<BTreeSet<did::DidEncryptionKey>>(),
+	)
+	.expect("Exceeded BounddBTreeSet bounds when creating new key agreement keys");
 	let del_key = get_sr25519_delegation_key(true);
 	let att_key = get_ecdsa_attestation_key(true);
 	let new_url = did::Url::from(
@@ -345,10 +347,13 @@ fn check_successful_complete_update() {
 
 	let mut old_did_details = generate_base_did_details(did::DidVerificationKey::from(old_auth_key.public()));
 	old_did_details.add_key_agreement_keys(
-		vec![old_enc_key]
-			.iter()
-			.copied()
-			.collect::<BTreeSet<did::DidEncryptionKey>>(),
+		BoundedBTreeSet::<did::DidEncryptionKey, <Test as Config>::MaxTotalKeyAgreementKeys>::try_from(
+			vec![old_enc_key]
+				.iter()
+				.copied()
+				.collect::<BTreeSet<did::DidEncryptionKey>>(),
+		)
+		.expect("Should not fail to create BoundedBTreeSet from a single element"),
 		0u64,
 	);
 	old_did_details.update_attestation_key(did::DidVerificationKey::from(old_att_key.public()), 0u64);
@@ -357,18 +362,25 @@ fn check_successful_complete_update() {
 	// removed.
 	let mut operation = generate_base_did_update_operation(alice_did.clone());
 	operation.new_authentication_key = Some(did::DidVerificationKey::from(new_auth_key.public()));
-	operation.new_key_agreement_keys = vec![new_enc_key]
-		.iter()
-		.copied()
-		.collect::<BTreeSet<did::DidEncryptionKey>>();
+	operation.new_key_agreement_keys =
+		BoundedBTreeSet::<did::DidEncryptionKey, <Test as Config>::MaxTotalKeyAgreementKeys>::try_from(
+			vec![new_enc_key]
+				.iter()
+				.copied()
+				.collect::<BTreeSet<did::DidEncryptionKey>>(),
+		)
+		.expect("Should not fail to create BoundedBTreeSet from a single element");
 	operation.attestation_key_update =
 		did::DidVerificationKeyUpdateAction::Change(did::DidVerificationKey::from(new_att_key.public()));
 	operation.delegation_key_update =
 		did::DidVerificationKeyUpdateAction::Change(did::DidVerificationKey::from(new_del_key.public()));
-	operation.public_keys_to_remove = vec![generate_key_id(&old_enc_key.into())]
-		.iter()
-		.copied()
-		.collect::<BTreeSet<TestKeyId>>();
+	operation.public_keys_to_remove = BoundedBTreeSet::<TestKeyId, <Test as Config>::MaxOldAttestationKeys>::try_from(
+		vec![generate_key_id(&old_enc_key.into())]
+			.iter()
+			.copied()
+			.collect::<BTreeSet<TestKeyId>>(),
+	)
+	.expect("Should not fail to create BoundedBTreeSet from a single element");
 	operation.new_endpoint_url = Some(new_url);
 	operation.tx_counter = old_did_details.last_tx_counter + 1u64;
 
@@ -896,12 +908,15 @@ fn check_currently_active_authentication_key_update() {
 	// Remove both attestation and delegation key
 	let mut operation = generate_base_did_update_operation(alice_did.clone());
 	// Trying to remove the currently active authentication key
-	operation.public_keys_to_remove = vec![generate_key_id(
-		&did::DidVerificationKey::from(auth_key.public()).into(),
-	)]
-	.iter()
-	.copied()
-	.collect::<BTreeSet<TestKeyId>>();
+	operation.public_keys_to_remove = BoundedBTreeSet::<TestKeyId, <Test as Config>::MaxOldAttestationKeys>::try_from(
+		vec![generate_key_id(
+			&did::DidVerificationKey::from(auth_key.public()).into(),
+		)]
+		.iter()
+		.copied()
+		.collect::<BTreeSet<TestKeyId>>(),
+	)
+	.expect("Should not fail to create BoundedBTreeSet from a single element");
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
@@ -936,10 +951,13 @@ fn check_currently_active_delegation_key_update() {
 	// Remove both attestation and delegation key
 	let mut operation = generate_base_did_update_operation(alice_did.clone());
 	// Trying to remove the currently active delegation key
-	operation.public_keys_to_remove = vec![generate_key_id(&did::DidVerificationKey::from(del_key.public()).into())]
-		.iter()
-		.copied()
-		.collect::<BTreeSet<TestKeyId>>();
+	operation.public_keys_to_remove = BoundedBTreeSet::<TestKeyId, <Test as Config>::MaxOldAttestationKeys>::try_from(
+		vec![generate_key_id(&did::DidVerificationKey::from(del_key.public()).into())]
+			.iter()
+			.copied()
+			.collect::<BTreeSet<TestKeyId>>(),
+	)
+	.expect("Should not fail to create BoundedBTreeSet from a single element");
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
@@ -974,10 +992,13 @@ fn check_currently_active_attestation_key_update() {
 	// Remove both attestation and delegation key
 	let mut operation = generate_base_did_update_operation(alice_did.clone());
 	// Trying to remove the currently active attestation key
-	operation.public_keys_to_remove = vec![generate_key_id(&did::DidVerificationKey::from(att_key.public()).into())]
-		.iter()
-		.copied()
-		.collect::<BTreeSet<TestKeyId>>();
+	operation.public_keys_to_remove = BoundedBTreeSet::<TestKeyId, <Test as Config>::MaxOldAttestationKeys>::try_from(
+		vec![generate_key_id(&did::DidVerificationKey::from(att_key.public()).into())]
+			.iter()
+			.copied()
+			.collect::<BTreeSet<TestKeyId>>(),
+	)
+	.expect("Should not fail to create BoundedBTreeSet from a single element");
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
@@ -1011,12 +1032,15 @@ fn check_verification_key_not_present_update() {
 	// Remove both attestation and delegation key
 	let mut operation = generate_base_did_update_operation(alice_did.clone());
 	// Trying to remove the currently active authentication key
-	operation.public_keys_to_remove = vec![generate_key_id(
-		&did::DidVerificationKey::from(key_to_delete.public()).into(),
-	)]
-	.iter()
-	.copied()
-	.collect::<BTreeSet<TestKeyId>>();
+	operation.public_keys_to_remove = BoundedBTreeSet::<TestKeyId, <Test as Config>::MaxOldAttestationKeys>::try_from(
+		vec![generate_key_id(
+			&did::DidVerificationKey::from(key_to_delete.public()).into(),
+		)]
+		.iter()
+		.copied()
+		.collect::<BTreeSet<TestKeyId>>(),
+	)
+	.expect("Should not fail to create BoundedBTreeSet from a single element");
 
 	let signature = auth_key.sign(operation.encode().as_ref());
 
@@ -1066,7 +1090,7 @@ fn check_successful_deletion() {
 		));
 	});
 
-	assert_eq!(ext.execute_with(|| Did::get_did(alice_did.clone())), None);
+	assert!(ext.execute_with(|| Did::get_did(alice_did.clone())).is_none());
 
 	// Re-adding the same DID identifier, which should not fail.
 	let operation = generate_base_did_creation_operation(alice_did);

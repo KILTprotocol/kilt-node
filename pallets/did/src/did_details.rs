@@ -715,6 +715,21 @@ impl<T: Config> DidOperation<T> for DidCreationOperation<T> {
 	}
 }
 
+// required because BoundedTreeSet does not implement Debug outside of std
+// FIXME: Can we derive Debug and use custom impl only in std?
+// #[cfg(not(feature = "std"))]
+impl<T: Config> fmt::Debug for DidCreationOperation<T> {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		f.debug_tuple("DidCreationOperation")
+			.field(&self.did)
+			.field(&self.new_key_agreement_keys.clone().into_inner())
+			.field(&self.new_attestation_key)
+			.field(&self.new_delegation_key)
+			.field(&self.new_endpoint_url)
+			.finish()
+	}
+}
+
 /// An operation to update a DID.
 ///
 /// The struct implements the [DidOperation] trait, and as such it must
@@ -742,6 +757,23 @@ pub struct DidUpdateOperation<T: Config> {
 	pub new_endpoint_url: Option<Url>,
 	/// The DID tx counter.
 	pub tx_counter: u64,
+}
+
+// required because BoundedTreeSet does not implement Debug outside of std
+// FIXME: Can we derive Debug and use custom impl only in std?
+// #[cfg(not(feature = "std"))]
+impl<T: Config> fmt::Debug for DidUpdateOperation<T> {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		f.debug_tuple("DidUpdateOperation")
+			.field(&self.did)
+			.field(&self.new_key_agreement_keys.clone().into_inner())
+			.field(&self.attestation_key_update)
+			.field(&self.delegation_key_update)
+			.field(&self.public_keys_to_remove.clone().into_inner())
+			.field(&self.new_endpoint_url)
+			.field(&self.tx_counter)
+			.finish()
+	}
 }
 
 impl<T: Config> DidOperation<T> for DidUpdateOperation<T> {

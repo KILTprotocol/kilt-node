@@ -20,7 +20,7 @@
 #![allow(unused_must_use)]
 
 use codec::{Decode, Encode};
-use frame_support::{parameter_types, weights::constants::RocksDbWeight};
+use frame_support::{parameter_types, storage::bounded_btree_set::BoundedBTreeSet, weights::constants::RocksDbWeight};
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::EnsureSigned;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
@@ -92,6 +92,12 @@ parameter_types! {
 	pub const MaxNewKeyAgreementKeys: u32 = 10u32;
 	pub const MaxVerificationKeysToRevoke: u32 = 10u32;
 	pub const MaxUrlLength: u32 = 200u32;
+	#[derive(Debug, Clone)]
+	pub const MaxPublicKeysPerDidKeyIdentifier: u32 = 1000;
+	#[derive(Debug, Clone, PartialEq)]
+	pub const MaxTotalKeyAgreementKeys: u32 = 1000;
+	#[derive(Debug, Clone, PartialEq)]
+	pub const MaxOldAttestationKeys: u32 = 100;
 }
 
 impl Config for Test {
@@ -100,8 +106,11 @@ impl Config for Test {
 	type Call = Call;
 	type Event = ();
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
-	type MaxUrlLength = MaxUrlLength;
+	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
+	type MaxOldAttestationKeys = MaxOldAttestationKeys;
+	type MaxPublicKeysPerDidKeyIdentifier = MaxPublicKeysPerDidKeyIdentifier;
 	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
+	type MaxUrlLength = MaxUrlLength;
 	type WeightInfo = ();
 }
 
@@ -220,33 +229,39 @@ pub fn get_ecdsa_delegation_key(default: bool) -> ecdsa::Pair {
 	}
 }
 
-pub fn get_key_agreement_keys(n_keys: u32) -> BTreeSet<DidEncryptionKey> {
-	(1..=n_keys)
-		.map(|i| {
-			// Converts the loop index to a 32-byte array;
-			let mut seed_vec = i.to_be_bytes().to_vec();
-			seed_vec.resize(32, 0u8);
-			let seed: [u8; 32] = seed_vec
-				.try_into()
-				.expect("Failed to create encryption key from raw seed.");
-			DidEncryptionKey::X25519(seed)
-		})
-		.collect::<BTreeSet<DidEncryptionKey>>()
+pub fn get_key_agreement_keys(n_keys: u32) -> BoundedBTreeSet<DidEncryptionKey, MaxTotalKeyAgreementKeys> {
+	BoundedBTreeSet::try_from(
+		(1..=n_keys)
+			.map(|i| {
+				// Converts the loop index to a 32-byte array;
+				let mut seed_vec = i.to_be_bytes().to_vec();
+				seed_vec.resize(32, 0u8);
+				let seed: [u8; 32] = seed_vec
+					.try_into()
+					.expect("Failed to create encryption key from raw seed.");
+				DidEncryptionKey::X25519(seed)
+			})
+			.collect::<BTreeSet<DidEncryptionKey>>(),
+	)
+	.expect("Failed to convert key_agreement_keys to BoundedBTreeSet")
 }
 
-pub fn get_public_keys_to_remove(n_keys: u32) -> BTreeSet<TestKeyId> {
-	(1..=n_keys)
-		.map(|i| {
-			// Converts the loop index to a 32-byte array;
-			let mut seed_vec = i.to_be_bytes().to_vec();
-			seed_vec.resize(32, 0u8);
-			let seed: [u8; 32] = seed_vec
-				.try_into()
-				.expect("Failed to create encryption key from raw seed.");
-			let key = DidEncryptionKey::X25519(seed);
-			generate_key_id(&key.into())
-		})
-		.collect::<BTreeSet<TestKeyId>>()
+pub fn get_public_keys_to_remove(n_keys: u32) -> BoundedBTreeSet<TestKeyId, MaxOldAttestationKeys> {
+	BoundedBTreeSet::try_from(
+		(1..=n_keys)
+			.map(|i| {
+				// Converts the loop index to a 32-byte array;
+				let mut seed_vec = i.to_be_bytes().to_vec();
+				seed_vec.resize(32, 0u8);
+				let seed: [u8; 32] = seed_vec
+					.try_into()
+					.expect("Failed to create encryption key from raw seed.");
+				let key = DidEncryptionKey::X25519(seed);
+				generate_key_id(&key.into())
+			})
+			.collect::<BTreeSet<TestKeyId>>(),
+	)
+	.expect("Failed to convert public_keys_to_remove to BoundedBTreeSet")
 }
 
 // Assumes that the length of the URL is larger than 8 (length of the prefix https://)
@@ -262,7 +277,7 @@ pub fn get_url_endpoint(length: u32) -> Url {
 pub fn generate_base_did_creation_operation(did: TestDidIdentifier) -> did::DidCreationOperation<Test> {
 	DidCreationOperation {
 		did,
-		new_key_agreement_keys: BTreeSet::new(),
+		new_key_agreement_keys: BoundedBTreeSet::new(),
 		new_attestation_key: None,
 		new_delegation_key: None,
 		new_endpoint_url: None,
@@ -273,11 +288,11 @@ pub fn generate_base_did_update_operation(did: TestDidIdentifier) -> did::DidUpd
 	DidUpdateOperation {
 		did,
 		new_authentication_key: None,
-		new_key_agreement_keys: BTreeSet::new(),
+		new_key_agreement_keys: BoundedBTreeSet::new(),
 		attestation_key_update: DidVerificationKeyUpdateAction::default(),
 		delegation_key_update: DidVerificationKeyUpdateAction::default(),
 		new_endpoint_url: None,
-		public_keys_to_remove: BTreeSet::new(),
+		public_keys_to_remove: BoundedBTreeSet::new(),
 		tx_counter: 1u64,
 	}
 }
@@ -288,6 +303,7 @@ pub fn generate_base_did_delete_operation(did: TestDidIdentifier) -> did::DidDel
 
 pub fn generate_base_did_details(authentication_key: did::DidVerificationKey) -> did::DidDetails<Test> {
 	did::DidDetails::new(authentication_key, 0u64)
+		.expect("Failed to generate new DidDetails from auth_key due to BoundedBTreeSet bound")
 }
 
 pub fn generate_key_id(key: &did::DidPublicKey) -> TestKeyId {

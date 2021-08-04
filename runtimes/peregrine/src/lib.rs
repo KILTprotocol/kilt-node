@@ -696,6 +696,12 @@ parameter_types! {
 	pub const MaxNewKeyAgreementKeys: u32 = 10u32;
 	pub const MaxVerificationKeysToRevoke: u32 = 10u32;
 	pub const MaxUrlLength: u32 = 200u32;
+	// TODO: Find reasonable numbers
+	pub const MaxPublicKeysPerDidKeyIdentifier: u32 = 1000;
+	#[derive(Debug, Clone, PartialEq)]
+	pub const MaxTotalKeyAgreementKeys: u32 = 1000;
+	#[derive(Debug, Clone, PartialEq)]
+	pub const MaxOldAttestationKeys: u32 = 100;
 }
 
 impl did::Config for Runtime {
@@ -704,6 +710,9 @@ impl did::Config for Runtime {
 	type Call = Call;
 	type Origin = Origin;
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
+	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
+	type MaxOldAttestationKeys = MaxOldAttestationKeys;
+	type MaxPublicKeysPerDidKeyIdentifier = MaxPublicKeysPerDidKeyIdentifier;
 	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 	type MaxUrlLength = MaxUrlLength;
 	type WeightInfo = weights::did::WeightInfo<Runtime>;
