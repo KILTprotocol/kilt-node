@@ -284,7 +284,8 @@ impl<T: Config> DidDetails<T> {
 	// Creates a new DID entry from [DidUpdateDetails] and a given authentication
 	// key.
 	pub fn from_creation_details(
-		(details, new_auth_key): (DidCreationDetails<T>, DidVerificationKey),
+		details: DidCreationDetails<T>,
+		new_auth_key: DidVerificationKey,
 	) -> Result<Self, InputError> {
 		ensure!(
 			details.new_key_agreement_keys.len()
