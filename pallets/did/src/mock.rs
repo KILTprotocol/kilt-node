@@ -277,8 +277,8 @@ pub fn generate_base_did_update_details() -> did::DidUpdateDetails<Test> {
 	DidUpdateDetails {
 		new_authentication_key: None,
 		new_key_agreement_keys: BTreeSet::new(),
-		attestation_key_update: DidVerificationKeyUpdateAction::default(),
-		delegation_key_update: DidVerificationKeyUpdateAction::default(),
+		attestation_key_update: DidFragmentUpdateAction::default(),
+		delegation_key_update: DidFragmentUpdateAction::default(),
 		new_endpoint_url: None,
 		public_keys_to_remove: BTreeSet::new(),
 	}

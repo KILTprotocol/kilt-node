@@ -385,9 +385,9 @@ fn check_successful_complete_update() {
 		.copied()
 		.collect::<BTreeSet<did::DidEncryptionKey>>();
 	details.attestation_key_update =
-		did::DidVerificationKeyUpdateAction::Change(did::DidVerificationKey::from(new_att_key.public()));
+		did::DidFragmentUpdateAction::Change(did::DidVerificationKey::from(new_att_key.public()));
 	details.delegation_key_update =
-		did::DidVerificationKeyUpdateAction::Change(did::DidVerificationKey::from(new_del_key.public()));
+		did::DidFragmentUpdateAction::Change(did::DidVerificationKey::from(new_del_key.public()));
 	details.public_keys_to_remove = vec![generate_key_id(&old_enc_key.into())]
 		.iter()
 		.copied()
@@ -468,8 +468,8 @@ fn check_successful_keys_deletion_update() {
 
 	// Remove both attestation and delegation key
 	let mut details = generate_base_did_update_details();
-	details.attestation_key_update = did::DidVerificationKeyUpdateAction::Delete;
-	details.delegation_key_update = did::DidVerificationKeyUpdateAction::Delete;
+	details.attestation_key_update = did::DidFragmentUpdateAction::Delete;
+	details.delegation_key_update = did::DidFragmentUpdateAction::Delete;
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
@@ -519,7 +519,7 @@ fn check_successful_keys_overwrite_update() {
 	// Remove both attestation and delegation key
 	let mut details = generate_base_did_update_details();
 	details.attestation_key_update =
-		did::DidVerificationKeyUpdateAction::Change(did::DidVerificationKey::from(new_att_key.public()));
+		did::DidFragmentUpdateAction::Change(did::DidVerificationKey::from(new_att_key.public()));
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
@@ -573,7 +573,7 @@ fn check_successful_keys_multiuse_update() {
 
 	// Remove attestation key
 	let mut details = generate_base_did_update_details();
-	details.attestation_key_update = did::DidVerificationKeyUpdateAction::Delete;
+	details.attestation_key_update = did::DidFragmentUpdateAction::Delete;
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])

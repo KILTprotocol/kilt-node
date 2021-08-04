@@ -128,8 +128,8 @@ fn generate_base_did_update_details<T: Config>(_did: DidIdentifierOf<T>) -> DidU
 	DidUpdateDetails {
 		new_authentication_key: None,
 		new_key_agreement_keys: BTreeSet::new(),
-		attestation_key_update: DidVerificationKeyUpdateAction::default(),
-		delegation_key_update: DidVerificationKeyUpdateAction::default(),
+		attestation_key_update: DidFragmentUpdateAction::default(),
+		delegation_key_update: DidFragmentUpdateAction::default(),
 		new_endpoint_url: None,
 		public_keys_to_remove: BTreeSet::new(),
 	}
@@ -327,8 +327,8 @@ benchmarks! {
 		let mut did_update_details = generate_base_did_update_details::<T>(did_subject.clone());
 		did_update_details.new_authentication_key = Some(DidVerificationKey::from(new_did_public_auth_key));
 		did_update_details.new_key_agreement_keys = new_key_agreement_keys;
-		did_update_details.attestation_key_update = DidVerificationKeyUpdateAction::Change(DidVerificationKey::from(new_did_public_att_key));
-		did_update_details.delegation_key_update = DidVerificationKeyUpdateAction::Change(DidVerificationKey::from(new_did_public_del_key));
+		did_update_details.attestation_key_update = DidFragmentUpdateAction::Change(DidVerificationKey::from(new_did_public_att_key));
+		did_update_details.delegation_key_update = DidFragmentUpdateAction::Change(DidVerificationKey::from(new_did_public_del_key));
 		did_update_details.public_keys_to_remove = public_keys_to_remove;
 		did_update_details.new_endpoint_url = Some(new_url);
 
@@ -388,8 +388,8 @@ benchmarks! {
 		let mut did_update_details = generate_base_did_update_details::<T>(did_subject.clone());
 		did_update_details.new_authentication_key = Some(DidVerificationKey::from(new_did_public_auth_key));
 		did_update_details.new_key_agreement_keys = new_key_agreement_keys;
-		did_update_details.attestation_key_update = DidVerificationKeyUpdateAction::Change(DidVerificationKey::from(new_did_public_att_key));
-		did_update_details.delegation_key_update = DidVerificationKeyUpdateAction::Change(DidVerificationKey::from(new_did_public_del_key));
+		did_update_details.attestation_key_update = DidFragmentUpdateAction::Change(DidVerificationKey::from(new_did_public_att_key));
+		did_update_details.delegation_key_update = DidFragmentUpdateAction::Change(DidVerificationKey::from(new_did_public_del_key));
 		did_update_details.public_keys_to_remove = public_keys_to_remove;
 		did_update_details.new_endpoint_url = Some(new_url);
 
@@ -449,8 +449,8 @@ benchmarks! {
 		let mut did_update_details = generate_base_did_update_details::<T>(did_subject.clone());
 		did_update_details.new_authentication_key = Some(DidVerificationKey::from(new_did_public_auth_key.clone()));
 		did_update_details.new_key_agreement_keys = new_key_agreement_keys;
-		did_update_details.attestation_key_update = DidVerificationKeyUpdateAction::Change(DidVerificationKey::from(new_did_public_att_key.clone()));
-		did_update_details.delegation_key_update = DidVerificationKeyUpdateAction::Change(DidVerificationKey::from(new_did_public_del_key.clone()));
+		did_update_details.attestation_key_update = DidFragmentUpdateAction::Change(DidVerificationKey::from(new_did_public_att_key.clone()));
+		did_update_details.delegation_key_update = DidFragmentUpdateAction::Change(DidVerificationKey::from(new_did_public_del_key.clone()));
 		did_update_details.public_keys_to_remove = public_keys_to_remove;
 		did_update_details.new_endpoint_url = Some(new_url);
 

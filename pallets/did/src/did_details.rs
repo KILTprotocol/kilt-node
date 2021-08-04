@@ -360,26 +360,26 @@ impl<T: Config> DidDetails<T> {
 
 		// Update/remove the attestation key, if needed.
 		match update_details.attestation_key_update {
-			DidVerificationKeyUpdateAction::Delete => {
+			DidFragmentUpdateAction::Delete => {
 				self.delete_attestation_key();
 			}
-			DidVerificationKeyUpdateAction::Change(new_attestation_key) => {
+			DidFragmentUpdateAction::Change(new_attestation_key) => {
 				self.update_attestation_key(new_attestation_key, current_block_number);
 			}
 			// Nothing happens.
-			DidVerificationKeyUpdateAction::Ignore => {}
+			DidFragmentUpdateAction::Ignore => {}
 		}
 
 		// Update/remove the delegation key, if needed.
 		match update_details.delegation_key_update {
-			DidVerificationKeyUpdateAction::Delete => {
+			DidFragmentUpdateAction::Delete => {
 				self.delete_delegation_key();
 			}
-			DidVerificationKeyUpdateAction::Change(new_delegation_key) => {
+			DidFragmentUpdateAction::Change(new_delegation_key) => {
 				self.update_delegation_key(new_delegation_key, current_block_number);
 			}
 			// Nothing happens.
-			DidVerificationKeyUpdateAction::Ignore => {}
+			DidFragmentUpdateAction::Ignore => {}
 		}
 
 		// Update URL, if needed.
@@ -634,9 +634,9 @@ pub struct DidUpdateDetails<T: Config> {
 	/// A new set of key agreement keys to add to the ones already stored.
 	pub new_key_agreement_keys: BTreeSet<DidEncryptionKey>,
 	/// \[OPTIONAL\] The attestation key update action.
-	pub attestation_key_update: DidVerificationKeyUpdateAction,
+	pub attestation_key_update: DidFragmentUpdateAction<DidVerificationKey>,
 	/// \[OPTIONAL\] The delegation key update action.
-	pub delegation_key_update: DidVerificationKeyUpdateAction,
+	pub delegation_key_update: DidFragmentUpdateAction<DidVerificationKey>,
 	/// The set of old attestation keys to remove, given their identifiers.
 	/// If the operation also replaces the current attestation key, it will
 	/// not be considered for removal in this operation, so it is not
@@ -646,20 +646,20 @@ pub struct DidUpdateDetails<T: Config> {
 	pub new_endpoint_url: Option<Url>,
 }
 
-/// Possible actions on a DID verification key within a
+/// Possible actions on a DID fragment (e.g, a verification key or the endpoint services) within a
 /// [DidUpdateOperation].
 #[derive(Clone, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
-pub enum DidVerificationKeyUpdateAction {
-	/// Do not change the verification key.
+pub enum DidFragmentUpdateAction<FragmentType> {
+	/// Do not change the DID fragment.
 	Ignore,
-	/// Change the verification key to the new one provided.
-	Change(DidVerificationKey),
-	/// Delete the verification key.
+	/// Change the DID fragment to the new one provided.
+	Change(FragmentType),
+	/// Delete the DID fragment.
 	Delete,
 }
 
 // Return the ignore operation by default
-impl Default for DidVerificationKeyUpdateAction {
+impl<FragmentType> Default for DidFragmentUpdateAction<FragmentType> {
 	fn default() -> Self {
 		Self::Ignore
 	}
