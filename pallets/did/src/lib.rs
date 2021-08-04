@@ -72,12 +72,11 @@
 //!
 //! ### Dispatchable Functions
 //!
-//! - `submit_did_create_operation` - Register a new DID on the KILT blockchain
-//!   under the given DID identifier.
-//! - `submit_did_update_operation` - Update any keys or the endpoint URL of an
-//!   existing DID.
-//! - `submit_did_delete_operation` - Delete the specified DID and all related
-//!   keys from the KILT blockchain.
+//! - `create` - Register a new DID on the KILT blockchain under the given DID
+//!   identifier.
+//! - `update` - Update any keys or the endpoint URL of an existing DID.
+//! - `dekete` - Delete the specified DID and all related keys from the KILT
+//!   blockchain.
 //! - `submit_did_call` - Proxy a dispatchable function for an extrinsic that
 //!   expects a DID origin. The DID pallet verifies the signature and the nonce
 //!   of the wrapping operation and then dispatches the underlying extrinsic
@@ -373,9 +372,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Update an existing DID on chain, after verifying that the update
-		/// operation has been signed by the DID subject using the
-		/// authentication key currently stored on chain.
+		/// Update an existing DID on chain.
 		///
 		/// The referenced DID identifier must be present on chain before the
 		/// update operation is evaluated.
@@ -413,12 +410,8 @@ pub mod pallet {
 		/// contain information about the block number when the operation is
 		/// evaluated and executed.
 		///
-		/// A successful update operation results in the tx counter associated
-		/// with the given DID to be incremented, to mitigate replay attacks.
-		///
-		/// The dispatch origin can be any KILT account with enough funds to
-		/// execute the extrinsic and it does not have to be tied in any way to
-		/// the KILT account identifying the DID subject.
+		/// The dispatch origin must be a DID origin proxied via the
+		/// `submit_did_call` extrinsic.
 		///
 		/// Emits `DidUpdated`.
 		///
@@ -465,9 +458,8 @@ pub mod pallet {
 		/// from the storage, which results in the invalidation of all
 		/// attestations issued by the DID subject.
 		///
-		/// The dispatch origin can be any KILT account with enough funds to
-		/// execute the extrinsic and it does not have to be tied in any way to
-		/// the KILT account identifying the DID subject.
+		/// The dispatch origin must be a DID origin proxied via the
+		/// `submit_did_call` extrinsic.
 		///
 		/// Emits `DidDeleted`.
 		///
@@ -581,8 +573,8 @@ pub mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
-	/// Verify the validity (i.e., nonce and signature) of a generic
-	/// [DidOperation] and, if valid, update the DID state with the latest
+	/// Verify the validity (i.e., nonce and signature) of a DID-authorized
+	/// operation and, if valid, update the DID state with the latest
 	/// nonce.
 	///
 	/// # <weight>
@@ -613,7 +605,7 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	// Verify the validity of a DID operation nonce.
+	// Verify the validity of a DID-authorized operation nonce.
 	// To be valid, the nonce must be equal to the one currently stored + 1.
 	// This is to avoid quickly "consuming" all the possible values for the counter,
 	// as that would result in the DID being unusable, since we do not have yet any

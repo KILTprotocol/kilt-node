@@ -214,9 +214,7 @@ fn check_duplicate_did_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did, mock_did)])
-		.build(None);
+	let mut ext = ExtBuilder::default().with_dids(vec![(alice_did, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -1473,9 +1471,7 @@ fn check_smaller_counter_operation_verification() {
 	call_operation.operation.tx_counter = 0u64;
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(did, mock_did)])
-		.build(None);
+	let mut ext = ExtBuilder::default().with_dids(vec![(did, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -1500,9 +1496,7 @@ fn check_equal_counter_operation_verification() {
 	call_operation.operation.tx_counter = mock_did.last_tx_counter;
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(did, mock_did)])
-		.build(None);
+	let mut ext = ExtBuilder::default().with_dids(vec![(did, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -1527,9 +1521,7 @@ fn check_too_large_counter_operation_verification() {
 	call_operation.operation.tx_counter = mock_did.last_tx_counter + 2;
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(did, mock_did)])
-		.build(None);
+	let mut ext = ExtBuilder::default().with_dids(vec![(did, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -1552,9 +1544,7 @@ fn check_verification_key_not_present_operation_verification() {
 	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::AssertionMethod, did.clone());
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(did, mock_did)])
-		.build(None);
+	let mut ext = ExtBuilder::default().with_dids(vec![(did, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -1581,9 +1571,7 @@ fn check_invalid_signature_format_operation_verification() {
 	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did.clone());
 	let signature = invalid_key.sign(call_operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(did, mock_did)])
-		.build(None);
+	let mut ext = ExtBuilder::default().with_dids(vec![(did, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -1608,9 +1596,7 @@ fn check_invalid_signature_operation_verification() {
 	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did.clone());
 	let signature = alternative_key.sign(&call_operation.encode());
 
-	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(did, mock_did)])
-		.build(None);
+	let mut ext = ExtBuilder::default().with_dids(vec![(did, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(

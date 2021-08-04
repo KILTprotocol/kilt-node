@@ -542,14 +542,10 @@ impl<T: Config> TryFrom<(DidCreationDetails<T>, DidVerificationKey)> for DidDeta
 }
 
 // Generates a new DID entry starting from the current one stored in the
-// storage and by applying the changes in the [DidUpdateOperation].
+// storage and by applying the changes in the [DidUpdateDetails].
 //
 // The operation fails with a [DidError] if the update operation instructs to
 // delete a verification key that is not associated with the DID.
-//
-// Please note that this method does not perform any checks regarding
-// the validity of the [DidUpdateOperation] signature nor whether the nonce
-// provided is valid.
 impl<T: Config> TryFrom<(DidDetails<T>, DidUpdateDetails<T>)> for DidDetails<T> {
 	type Error = DidError;
 
@@ -623,12 +619,7 @@ impl<T: Config> TryFrom<(DidDetails<T>, DidUpdateDetails<T>)> for DidDetails<T> 
 	}
 }
 
-/// An operation to create a new DID.
-///
-/// The struct implements the [DidOperation] trait, and as such it must
-/// contain information about the caller's DID, the type of DID key
-/// required to verify the operation signature, and the tx counter to
-/// protect against replay attacks.
+/// The details of a new DID to create.
 #[derive(Clone, Debug, Decode, Encode, PartialEq)]
 pub struct DidCreationDetails<T: Config> {
 	/// The DID identifier. It has to be unique.
@@ -643,12 +634,7 @@ pub struct DidCreationDetails<T: Config> {
 	pub new_endpoint_url: Option<Url>,
 }
 
-/// An operation to update a DID.
-///
-/// The struct implements the [DidOperation] trait, and as such it must
-/// contain information about the caller's DID, the type of DID key
-/// required to verify the operation signature, and the tx counter to
-/// protect against replay attacks.
+/// The details to update a DID.
 #[derive(Clone, Debug, Decode, Encode, PartialEq)]
 pub struct DidUpdateDetails<T: Config> {
 	/// \[OPTIONAL\] The new authentication key.
