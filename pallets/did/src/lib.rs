@@ -75,7 +75,7 @@
 //! - `create` - Register a new DID on the KILT blockchain under the given DID
 //!   identifier.
 //! - `update` - Update any keys or the endpoint URL of an existing DID.
-//! - `dekete` - Delete the specified DID and all related keys from the KILT
+//! - `delete` - Delete the specified DID and all related keys from the KILT
 //!   blockchain.
 //! - `submit_did_call` - Proxy a dispatchable function for an extrinsic that
 //!   expects a DID origin. The DID pallet verifies the signature and the nonce
