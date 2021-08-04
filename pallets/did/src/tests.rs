@@ -471,8 +471,6 @@ fn check_successful_keys_deletion_update() {
 	details.attestation_key_update = did::DidVerificationKeyUpdateAction::Delete;
 	details.delegation_key_update = did::DidVerificationKeyUpdateAction::Delete;
 
-	let _signature = auth_key.sign(details.encode().as_ref());
-
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
 		.build(None);
@@ -577,8 +575,6 @@ fn check_successful_keys_multiuse_update() {
 	let mut details = generate_base_did_update_details();
 	details.attestation_key_update = did::DidVerificationKeyUpdateAction::Delete;
 
-	let _signature = auth_key.sign(details.encode().as_ref());
-
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
 		.build(None);
@@ -668,8 +664,6 @@ fn check_max_limit_public_keys_to_remove_did_update() {
 	let mut details = generate_base_did_update_details();
 	details.public_keys_to_remove = keys_ids_to_remove;
 
-	let _signature = auth_key.sign(details.encode().as_ref());
-
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build(None);
@@ -697,8 +691,6 @@ fn check_url_too_long_did_update() {
 
 	let mut details = generate_base_did_update_details();
 	details.new_endpoint_url = Some(new_endpoint_url);
-
-	let _signature = auth_key.sign(details.encode().as_ref());
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
@@ -732,8 +724,6 @@ fn check_currently_active_authentication_key_update() {
 	.copied()
 	.collect::<BTreeSet<TestKeyId>>();
 
-	let _signature = auth_key.sign(details.encode().as_ref());
-
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build(None);
@@ -766,8 +756,6 @@ fn check_currently_active_delegation_key_update() {
 		.copied()
 		.collect::<BTreeSet<TestKeyId>>();
 
-	let _signature = auth_key.sign(details.encode().as_ref());
-
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build(None);
@@ -799,8 +787,6 @@ fn check_currently_active_attestation_key_update() {
 		.iter()
 		.copied()
 		.collect::<BTreeSet<TestKeyId>>();
-
-	let _signature = auth_key.sign(details.encode().as_ref());
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
