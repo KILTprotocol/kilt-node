@@ -348,7 +348,20 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Writes: Did (with K new key agreement keys)
 		/// # </weight>
-		#[pallet::weight(1)]
+		#[pallet::weight(
+			<T as pallet::Config>::WeightInfo::create_ed25519_keys(
+				details.new_key_agreement_keys.len().saturated_into::<u32>(),
+				details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
+			)
+			.max(<T as pallet::Config>::WeightInfo::create_sr25519_keys(
+				details.new_key_agreement_keys.len().saturated_into::<u32>(),
+				details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
+			))
+			.max(<T as pallet::Config>::WeightInfo::create_ecdsa_keys(
+				details.new_key_agreement_keys.len().saturated_into::<u32>(),
+				details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
+			))
+		)]
 		pub fn create(origin: OriginFor<T>, details: DidCreationDetails<T>, signature: DidSignature) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
@@ -429,7 +442,23 @@ pub mod pallet {
 		/// - Writes: Did (with K new key agreement keys and removing D public
 		///   keys)
 		/// # </weight>
-		#[pallet::weight(1)]
+		#[pallet::weight(
+			<T as pallet::Config>::WeightInfo::update_ed25519_keys(
+				details.new_key_agreement_keys.len().saturated_into::<u32>(),
+				details.public_keys_to_remove.len().saturated_into::<u32>(),
+				details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
+			)
+			.max(<T as pallet::Config>::WeightInfo::update_sr25519_keys(
+				details.new_key_agreement_keys.len().saturated_into::<u32>(),
+				details.public_keys_to_remove.len().saturated_into::<u32>(),
+				details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
+			))
+			.max(<T as pallet::Config>::WeightInfo::update_ecdsa_keys(
+				details.new_key_agreement_keys.len().saturated_into::<u32>(),
+				details.public_keys_to_remove.len().saturated_into::<u32>(),
+				details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
+			))
+		)]
 		pub fn update(origin: OriginFor<T>, details: DidUpdateDetails<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 
@@ -468,7 +497,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Kills: Did entry associated to the DID identifier
 		/// # </weight>
-		#[pallet::weight(1)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::delete())]
 		pub fn delete(origin: OriginFor<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 
