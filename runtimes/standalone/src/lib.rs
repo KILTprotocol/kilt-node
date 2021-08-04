@@ -109,7 +109,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 17,
+	spec_version: 18,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -371,6 +371,10 @@ impl did::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
 	type Origin = Origin;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type EnsureOrigin = did::EnsureDidOrigin<Self::DidIdentifier>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type EnsureOrigin = EnsureSigned<Self::DidIdentifier>;
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 	type MaxUrlLength = MaxUrlLength;
@@ -480,6 +484,9 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			Call::Attestation(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
 			Call::Ctype(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
 			Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
+			// DID creation is not allowed through the DID proxy.
+			Call::Did(did::Call::create(..)) => None,
+			Call::Did(_) => Some(did::DidVerificationKeyRelationship::Authentication),
 			#[cfg(not(feature = "runtime-benchmarks"))]
 			_ => None,
 			// By default, returns the authentication key
