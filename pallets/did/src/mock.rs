@@ -19,9 +19,10 @@
 #![allow(clippy::from_over_into)]
 #![allow(unused_must_use)]
 
+#[cfg(feature = "runtime-benchmarks")]
+use frame_system::EnsureSigned;
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
-use frame_system::EnsureSigned;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
@@ -310,7 +311,7 @@ pub(crate) fn get_delegation_key_call() -> Call {
 	Call::Ctype(ctype::Call::add(get_delegation_key_test_input()))
 }
 pub(crate) fn get_none_key_test_input() -> TestCtypeHash {
-	TestCtypeHash::from_slice(&[4u8; 32])
+	TestCtypeHash::from_slice(&[3u8; 32])
 }
 pub(crate) fn get_none_key_call() -> Call {
 	Call::Ctype(ctype::Call::add(get_none_key_test_input()))
@@ -357,7 +358,7 @@ pub fn generate_test_did_call(
 			call,
 			tx_counter: 1u64,
 		},
-		operation_authorization_key_type: verification_key_required,
+		verification_key_relationship: verification_key_required,
 	}
 }
 

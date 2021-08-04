@@ -555,7 +555,7 @@ pub mod pallet {
 			// Wrap the operation in the expected structure, specifying the key retrieved
 			let wrapped_operation = DidAuthorizedCallOperationWithVerificationRelationship {
 				operation: *did_call,
-				operation_authorization_key_type: verification_key_relationship,
+				verification_key_relationship,
 			};
 
 			Self::verify_did_operation_signature_and_increase_nonce(&wrapped_operation, &signature)
@@ -602,10 +602,10 @@ impl<T: Config> Pallet<T> {
 		// signature is valid or not.
 		did_details.increase_tx_counter().map_err(DidError::StorageError)?;
 		Self::verify_payload_signature_with_did_key_type(
-			operation.encode().as_ref(),
+			&operation.encode(),
 			signature,
 			&did_details,
-			operation.operation_authorization_key_type,
+			operation.verification_key_relationship,
 		)?;
 
 		<Did<T>>::insert(&operation.did, did_details);

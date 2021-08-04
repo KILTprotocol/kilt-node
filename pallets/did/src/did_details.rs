@@ -726,7 +726,7 @@ pub struct DidAuthorizedCallOperationWithVerificationRelationship<T: Config> {
 	/// The wrapped [DidAuthorizedCallOperation].
 	pub operation: DidAuthorizedCallOperation<T>,
 	/// The type of DID key to use for authorization.
-	pub operation_authorization_key_type: DidVerificationKeyRelationship,
+	pub verification_key_relationship: DidVerificationKeyRelationship,
 }
 
 impl<T: Config> core::ops::Deref for DidAuthorizedCallOperationWithVerificationRelationship<T> {
