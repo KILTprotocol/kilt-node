@@ -413,6 +413,7 @@ construct_runtime! {
 		NodeBlock = kilt_primitives::Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
+		// Basic stuff; balances is uncallable initially.
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>} = 0,
 		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Storage} = 1,
 
@@ -422,20 +423,26 @@ construct_runtime! {
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage} = 7,
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>} = 8,
 
-		// The following order MUST NOT be changed: Staking -> Session -> Aura
-		ParachainStaking: parachain_staking::{Pallet, Call, Storage, Event<T>, Config<T>} = 10,
-		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>} = 11,
-		Authorship: pallet_authorship::{Pallet, Call, Storage} = 12,
-		Aura: pallet_aura::{Pallet, Config<T>} = 13,
-		AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 14,
+		// Consensus support.
+		// The following order MUST NOT be changed: Authorship -> Staking -> Session -> Aura -> AuraExt
+		Authorship: pallet_authorship::{Pallet, Call, Storage} = 20,
+		ParachainStaking: parachain_staking::{Pallet, Call, Storage, Event<T>, Config<T>} = 21,
+		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>} = 22,
+		Aura: pallet_aura::{Pallet, Config<T>} = 23,
+		AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 24,
 
-		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>, Config} = 18,
-		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 19,
+		// Utility module.
+		Utility: pallet_utility::{Pallet, Call, Storage, Event} = 40,
 
 		// Vesting. Usable initially, but removed once all vesting is finished.
-		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 33,
-		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
-		Utility: pallet_utility::{Pallet, Call, Storage, Event} = 35,
+		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 41,
+
+		// KILT Pallets. Start indices 60 to leave room
+		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 60,
+
+		// Parachains pallets. Start indices at 80 to leave room.
+		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>, Config} = 80,
+		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 81,
 	}
 }
 
