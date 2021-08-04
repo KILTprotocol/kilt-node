@@ -2,6 +2,11 @@ import typing
 
 
 def update_spec(input: typing.Dict):
+    acc_col_1 = "5FNHPF1epsZHJC3LSGMbVJzP5ykcgursQAwPjJiNJB5eAGmW"
+    acc_col_2 = "5GvFCmt5FMqV15tZUHsATAzafYvVT1HDQoRRcJq4gJ52NCHr"
+    # not an initial collator
+    acc_col_3 = "5EvVhMthVR1EHGEdDoMrhx9iqU2aJqD3gJu3q3xb68A5rjFZ"
+
     input.update({
         "bootNodes": [
             "/dns4/bootnode.kilt.io/tcp/30340/p2p/12D3KooWALJtiCZzcUPVsCa5f5egGfQyFhPY67kKosDw95bJqK7M",
@@ -20,36 +25,37 @@ def update_spec(input: typing.Dict):
     })
     input["properties"]["tokenSymbol"] = "PILT"
     input["genesis"]["runtime"]["parachainInfo"]["parachainId"] = 2000
-    input["genesis"]["runtime"]["sudo"]["key"] = "5FNHPF1epsZHJC3LSGMbVJzP5ykcgursQAwPjJiNJB5eAGmW"
+    input["genesis"]["runtime"]["sudo"]["key"] = acc_col_1
+    input["genesis"]["runtime"]["kiltLaunch"]["transferAccount"] = acc_col_2
     input["genesis"]["runtime"]["parachainStaking"]["stakers"] = [
         [
-            "5FNHPF1epsZHJC3LSGMbVJzP5ykcgursQAwPjJiNJB5eAGmW",
+            acc_col_1,
             None,
             100000000000000000000
         ], [
-            "5GvFCmt5FMqV15tZUHsATAzafYvVT1HDQoRRcJq4gJ52NCHr",
+            acc_col_2,
             None,
             100000000000000000000
         ]
     ]
     input["genesis"]["runtime"]["session"]["keys"] = [
         [
-            "5FNHPF1epsZHJC3LSGMbVJzP5ykcgursQAwPjJiNJB5eAGmW",
-            "5FNHPF1epsZHJC3LSGMbVJzP5ykcgursQAwPjJiNJB5eAGmW",
+            acc_col_1,
+            acc_col_1,
             {
                 "aura": "5GMw7mZsyWnL8M47ZuqUKKbd1C6LRKuWZDYQLVbkFnM8MS53"
             }
         ],
         [
-            "5GvFCmt5FMqV15tZUHsATAzafYvVT1HDQoRRcJq4gJ52NCHr",
-            "5GvFCmt5FMqV15tZUHsATAzafYvVT1HDQoRRcJq4gJ52NCHr",
+            acc_col_2,
+            acc_col_2,
             {
                 "aura": "5DMAVHz2yDhDKKUTCJH8cQTVhLZTviJvy5SQxVZjGXUC8B2o"
             }
         ],
         [
-            "5EvVhMthVR1EHGEdDoMrhx9iqU2aJqD3gJu3q3xb68A5rjFZ",
-            "5EvVhMthVR1EHGEdDoMrhx9iqU2aJqD3gJu3q3xb68A5rjFZ",
+            acc_col_3,
+            acc_col_3,
             {
                 "aura": "5Dvq2MZ22wys4obTHEttjje6GxHVjJo7NQVz7VswDRRRtNwB"
             }
@@ -57,15 +63,15 @@ def update_spec(input: typing.Dict):
     ]
     input["genesis"]["runtime"]["balances"]["balances"] += [
         [
-            "5FNHPF1epsZHJC3LSGMbVJzP5ykcgursQAwPjJiNJB5eAGmW",
+            acc_col_1,
             10000000000000000000000000000
         ],
         [
-            "5GvFCmt5FMqV15tZUHsATAzafYvVT1HDQoRRcJq4gJ52NCHr",
+            acc_col_2,
             10000000000000000000000000000
         ],
         [
-            "5EvVhMthVR1EHGEdDoMrhx9iqU2aJqD3gJu3q3xb68A5rjFZ",
+            acc_col_3,
             10000000000000000000000000000
         ]
     ]
