@@ -2524,8 +2524,8 @@ pub mod pallet {
 			let mut reads = Weight::one();
 			let mut writes = Weight::zero();
 			log::info!(
-				"Noting author {:?} in block {:?} with starting balance {:?}",
-				author,
+				"Noting author {:#?} in block {:?} with starting balance {:?}",
+				&author,
 				<frame_system::Pallet<T>>::block_number(),
 				T::Currency::free_balance(&author)
 			);
@@ -2554,8 +2554,8 @@ pub mod pallet {
 				// Reward delegators
 				for Stake { owner, amount } in state.delegators {
 					log::info!(
-						"Noting delegator {:?} in block {:?} with starting balance {:?}",
-						owner,
+						"Noting delegator {:#?} in block {:?} with starting balance {:?}",
+						&owner,
 						<frame_system::Pallet<T>>::block_number(),
 						T::Currency::free_balance(&owner)
 					);
