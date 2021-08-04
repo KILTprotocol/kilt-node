@@ -17,6 +17,8 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::{Decode, Encode, WrapperTypeEncode};
+use frame_support::BoundedVec;
+use kilt_primitives::Hash;
 use sp_core::{ecdsa, ed25519, sr25519};
 use sp_runtime::traits::Verify;
 use sp_std::{
@@ -622,8 +624,8 @@ pub struct DidCreationDetails<T: Config> {
 	pub new_attestation_key: Option<DidVerificationKey>,
 	/// \[OPTIONAL\] The new delegation key.
 	pub new_delegation_key: Option<DidVerificationKey>,
-	/// \[OPTIONAL\] The URL containing the DID endpoints description.
-	pub new_endpoint_url: Option<Url>,
+	/// The service endpoints information action.
+	pub new_endpoint_url: DidFragmentUpdateAction<ServiceEndpoints<T::MaxUrlLength>>,
 }
 
 /// The details to update a DID.
@@ -642,13 +644,20 @@ pub struct DidUpdateDetails<T: Config> {
 	/// not be considered for removal in this operation, so it is not
 	/// possible to specify it for removal in this set.
 	pub public_keys_to_remove: BTreeSet<KeyIdOf<T>>,
-	/// \[OPTIONAL\] The new endpoint URL.
-	pub new_endpoint_url: Option<Url>,
+	/// The service endpoints information action.
+	pub new_endpoint_url: DidFragmentUpdateAction<ServiceEndpoints<T::MaxUrlLength>>,
+}
+
+#[derive(Clone, Decode, Debug, Encode, PartialEq, Eq)]
+pub struct ServiceEndpoints<UrlMaxLength: Get<u32>> {
+	content_hash: Hash,
+	urls: BoundedVec<Url, UrlMaxLength>,
+	content_type: ContentType,
 }
 
 /// Possible actions on a DID fragment (e.g, a verification key or the endpoint services) within a
 /// [DidUpdateOperation].
-#[derive(Clone, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Copy, Clone, Decode, Debug, Encode, Eq, PartialEq)]
 pub enum DidFragmentUpdateAction<FragmentType> {
 	/// Do not change the DID fragment.
 	Ignore,
