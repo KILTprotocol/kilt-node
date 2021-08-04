@@ -146,7 +146,11 @@ fn generate_base_did_call_operation<T: Config>(did: DidIdentifierOf<T>) -> DidAu
 	}
 }
 
-//TODO: We might want to extract the logic about which key is the longest encoded and which key takes the longest to verify and always use that. Furthermore, update operations now only depend on the key according to its size and not the time it takes to verify a signature with it, as that happens in the `did_dispatch_call` extrinsic.
+//TODO: We might want to extract the logic about which key is the longest
+// encoded and which key takes the longest to verify and always use that.
+// Furthermore, update operations now only depend on the key according to its
+// size and not the time it takes to verify a signature with it, as that happens
+// in the `did_dispatch_call` extrinsic.
 benchmarks! {
 
 	where_clause { where T::DidIdentifier: From<AccountId>, <T as frame_system::Config>::Origin: From<RawOrigin<T::DidIdentifier>>}
