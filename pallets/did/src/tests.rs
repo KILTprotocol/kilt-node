@@ -158,7 +158,7 @@ fn check_successful_complete_creation() {
 
 	ext.execute_with(|| {
 		assert_ok!(Did::create(
-			Origin::signed(alice_did.clone()),
+			Origin::signed(DEFAULT_ACCOUNT),
 			details.clone(),
 			did::DidSignature::from(signature),
 		));
@@ -214,12 +214,14 @@ fn check_duplicate_did_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	let mut ext = ExtBuilder::default().with_dids(vec![(alice_did.clone(), mock_did)]).build(None);
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), mock_did)])
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
 			Did::create(
-				Origin::signed(alice_did),
+				Origin::signed(DEFAULT_ACCOUNT),
 				details.clone(),
 				did::DidSignature::from(signature),
 			),
@@ -244,7 +246,7 @@ fn check_invalid_signature_format_did_creation() {
 	ext.execute_with(|| {
 		assert_noop!(
 			Did::create(
-				Origin::signed(alice_did.clone()),
+				Origin::signed(DEFAULT_ACCOUNT),
 				details.clone(),
 				did::DidSignature::from(signature),
 			),
@@ -267,7 +269,30 @@ fn check_invalid_signature_did_creation() {
 	ext.execute_with(|| {
 		assert_noop!(
 			Did::create(
-				Origin::signed(alice_did.clone()),
+				Origin::signed(DEFAULT_ACCOUNT),
+				details.clone(),
+				did::DidSignature::from(signature),
+			),
+			did::Error::<Test>::InvalidSignature
+		);
+	});
+}
+
+#[test]
+fn check_swapped_did_subject_did_creation() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let swapped_key = get_sr25519_authentication_key(false);
+	let swapped_did = get_did_identifier_from_sr25519_key(swapped_key.public());
+	let details = generate_base_did_creation_details(swapped_did.clone());
+
+	let signature = auth_key.sign(details.encode().as_ref());
+
+	let mut ext = ExtBuilder::default().build(None);
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::create(
+				Origin::signed(DEFAULT_ACCOUNT),
 				details.clone(),
 				did::DidSignature::from(signature),
 			),
@@ -292,7 +317,7 @@ fn check_max_limit_key_agreement_keys_did_creation() {
 	ext.execute_with(|| {
 		assert_noop!(
 			Did::create(
-				Origin::signed(alice_did.clone()),
+				Origin::signed(DEFAULT_ACCOUNT),
 				details.clone(),
 				did::DidSignature::from(signature),
 			),
@@ -317,7 +342,7 @@ fn check_url_too_long_did_creation() {
 	ext.execute_with(|| {
 		assert_noop!(
 			Did::create(
-				Origin::signed(alice_did.clone()),
+				Origin::signed(DEFAULT_ACCOUNT),
 				details.clone(),
 				did::DidSignature::from(signature),
 			),
@@ -379,10 +404,7 @@ fn check_successful_complete_update() {
 
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
-		assert_ok!(Did::update(
-			Origin::signed(alice_did.clone()),
-			details.clone(),
-		));
+		assert_ok!(Did::update(Origin::signed(alice_did.clone()), details.clone(),));
 	});
 
 	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
@@ -461,10 +483,7 @@ fn check_successful_keys_deletion_update() {
 
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
-		assert_ok!(Did::update(
-			Origin::signed(alice_did.clone()),
-			details.clone(),
-		));
+		assert_ok!(Did::update(Origin::signed(alice_did.clone()), details.clone(),));
 	});
 
 	// Auth key and key agreement key unchanged
@@ -514,10 +533,7 @@ fn check_successful_keys_overwrite_update() {
 
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
-		assert_ok!(Did::update(
-			Origin::signed(alice_did.clone()),
-			details.clone(),
-		));
+		assert_ok!(Did::update(Origin::signed(alice_did.clone()), details.clone(),));
 	});
 
 	// Auth key unchanged
@@ -573,10 +589,7 @@ fn check_successful_keys_multiuse_update() {
 
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
-		assert_ok!(Did::update(
-			Origin::signed(alice_did.clone()),
-			details.clone(),
-		));
+		assert_ok!(Did::update(Origin::signed(alice_did.clone()), details.clone(),));
 	});
 
 	// Auth key unchanged
@@ -609,10 +622,7 @@ fn check_did_not_present_update() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::update(
-				Origin::signed(alice_did.clone()),
-				details.clone(),
-			),
+			Did::update(Origin::signed(alice_did.clone()), details.clone(),),
 			did::Error::<Test>::DidNotPresent
 		);
 	});
@@ -640,10 +650,7 @@ fn check_max_limit_key_agreement_keys_did_update() {
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::update(
-				Origin::signed(alice_did.clone()),
-				details.clone(),
-			),
+			Did::update(Origin::signed(alice_did.clone()), details.clone(),),
 			did::Error::<Test>::MaxKeyAgreementKeysLimitExceeded
 		);
 	});
@@ -674,10 +681,7 @@ fn check_max_limit_public_keys_to_remove_did_update() {
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::update(
-				Origin::signed(alice_did.clone()),
-				details.clone(),
-			),
+			Did::update(Origin::signed(alice_did.clone()), details.clone(),),
 			did::Error::<Test>::MaxVerificationKeysToRemoveLimitExceeded
 		);
 	});
@@ -707,10 +711,7 @@ fn check_url_too_long_did_update() {
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::update(
-				Origin::signed(alice_did.clone()),
-				details.clone(),
-			),
+			Did::update(Origin::signed(alice_did.clone()), details.clone(),),
 			did::Error::<Test>::MaxUrlLengthExceeded
 		);
 	});
@@ -744,10 +745,7 @@ fn check_currently_active_authentication_key_update() {
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::update(
-				Origin::signed(alice_did.clone()),
-				details.clone(),
-			),
+			Did::update(Origin::signed(alice_did.clone()), details.clone(),),
 			did::Error::<Test>::CurrentlyActiveKey
 		);
 	});
@@ -781,10 +779,7 @@ fn check_currently_active_delegation_key_update() {
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::update(
-				Origin::signed(alice_did.clone()),
-				details.clone(),
-			),
+			Did::update(Origin::signed(alice_did.clone()), details.clone(),),
 			did::Error::<Test>::CurrentlyActiveKey
 		);
 	});
@@ -818,10 +813,7 @@ fn check_currently_active_attestation_key_update() {
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::update(
-				Origin::signed(alice_did.clone()),
-				details.clone(),
-			),
+			Did::update(Origin::signed(alice_did.clone()), details.clone(),),
 			did::Error::<Test>::CurrentlyActiveKey
 		);
 	});
@@ -854,10 +846,7 @@ fn check_verification_key_not_present_update() {
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::update(
-				Origin::signed(alice_did.clone()),
-				details.clone(),
-			),
+			Did::update(Origin::signed(alice_did.clone()), details.clone(),),
 			did::Error::<Test>::VerificationKeyNotPresent
 		);
 	});
@@ -876,9 +865,7 @@ fn check_successful_deletion() {
 		.build(None);
 
 	ext.execute_with(|| {
-		assert_ok!(Did::delete(
-			Origin::signed(alice_did.clone()),
-		));
+		assert_ok!(Did::delete(Origin::signed(alice_did.clone()),));
 	});
 
 	assert_eq!(ext.execute_with(|| Did::get_did(alice_did.clone())), None);
@@ -908,9 +895,7 @@ fn check_did_not_present_deletion() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::delete(
-				Origin::signed(alice_did.clone()),
-			),
+			Did::delete(Origin::signed(alice_did.clone()),),
 			did::Error::<Test>::DidNotPresent
 		);
 	});
@@ -1321,7 +1306,11 @@ fn check_null_key_error() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::submit_did_call(Origin::signed(caller), Box::new(call_operation.operation), did::DidSignature::from(signature)),
+			Did::submit_did_call(
+				Origin::signed(caller),
+				Box::new(call_operation.operation),
+				did::DidSignature::from(signature)
+			),
 			did::Error::<Test>::UnsupportedDidAuthorizationCall
 		);
 	});
@@ -1344,16 +1333,15 @@ fn check_authentication_successful_operation_verification() {
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
-		assert_ok!(
-			Did::verify_did_operation_signature_and_increase_nonce(
-				&call_operation,
-				&did::DidSignature::from(signature)
-			)
-		);
+		assert_ok!(Did::verify_did_operation_signature_and_increase_nonce(
+			&call_operation,
+			&did::DidSignature::from(signature)
+		));
 	});
 
 	// Verify that the DID tx counter has increased
-	let did_details = ext.execute_with(|| Did::get_did(&call_operation.operation.did).expect("DID should be present on chain."));
+	let did_details =
+		ext.execute_with(|| Did::get_did(&call_operation.operation.did).expect("DID should be present on chain."));
 	assert_eq!(
 		did_details.get_tx_counter_value(),
 		mock_did.get_tx_counter_value() + 1u64
@@ -1377,16 +1365,15 @@ fn check_attestation_successful_operation_verification() {
 	let signature = attestation_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
-		assert_ok!(
-			Did::verify_did_operation_signature_and_increase_nonce(
-				&call_operation,
-				&did::DidSignature::from(signature)
-			)
-		);
+		assert_ok!(Did::verify_did_operation_signature_and_increase_nonce(
+			&call_operation,
+			&did::DidSignature::from(signature)
+		));
 	});
 
 	// Verify that the DID tx counter has increased
-	let did_details = ext.execute_with(|| Did::get_did(&call_operation.operation.did).expect("DID should be present on chain."));
+	let did_details =
+		ext.execute_with(|| Did::get_did(&call_operation.operation.did).expect("DID should be present on chain."));
 	assert_eq!(
 		did_details.get_tx_counter_value(),
 		mock_did.get_tx_counter_value() + 1u64
@@ -1410,16 +1397,15 @@ fn check_delegation_successful_operation_verification() {
 	let signature = delegation_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
-		assert_ok!(
-			Did::verify_did_operation_signature_and_increase_nonce(
-				&call_operation,
-				&did::DidSignature::from(signature)
-			)
-		);
+		assert_ok!(Did::verify_did_operation_signature_and_increase_nonce(
+			&call_operation,
+			&did::DidSignature::from(signature)
+		));
 	});
 
 	// Verify that the DID tx counter has increased
-	let did_details = ext.execute_with(|| Did::get_did(&call_operation.operation.did).expect("DID should be present on chain."));
+	let did_details =
+		ext.execute_with(|| Did::get_did(&call_operation.operation.did).expect("DID should be present on chain."));
 	assert_eq!(
 		did_details.get_tx_counter_value(),
 		mock_did.get_tx_counter_value() + 1u64
@@ -1482,7 +1468,8 @@ fn check_smaller_counter_operation_verification() {
 	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	mock_did.last_tx_counter = 1;
 
-	let mut call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did.clone());
+	let mut call_operation =
+		generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did.clone());
 	call_operation.operation.tx_counter = 0u64;
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
@@ -1508,7 +1495,8 @@ fn check_equal_counter_operation_verification() {
 
 	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 
-	let mut call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did.clone());
+	let mut call_operation =
+		generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did.clone());
 	call_operation.operation.tx_counter = mock_did.last_tx_counter;
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
@@ -1534,7 +1522,8 @@ fn check_too_large_counter_operation_verification() {
 
 	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 
-	let mut call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did.clone());
+	let mut call_operation =
+		generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did.clone());
 	call_operation.operation.tx_counter = mock_did.last_tx_counter + 2;
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
@@ -1573,7 +1562,9 @@ fn check_verification_key_not_present_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			did::DidError::StorageError(did::StorageError::DidKeyNotPresent(did::DidVerificationKeyRelationship::AssertionMethod))
+			did::DidError::StorageError(did::StorageError::DidKeyNotPresent(
+				did::DidVerificationKeyRelationship::AssertionMethod
+			))
 		);
 	});
 }
@@ -1751,11 +1742,7 @@ fn check_ipfs_url() {
 	);
 
 	assert_eq!(
-		did::IpfsUrl::try_from(
-			"ipfs://¶
-QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL"
-				.as_bytes()
-		),
+		did::IpfsUrl::try_from("ipfs://¶QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()),
 		Err(did::UrlError::InvalidUrlEncoding)
 	);
 
@@ -1765,11 +1752,7 @@ QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL"
 	);
 
 	assert_eq!(
-		did::IpfsUrl::try_from(
-			"ipfss://
-QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL"
-				.as_bytes()
-		),
+		did::IpfsUrl::try_from("ipfss://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQk".as_bytes()),
 		Err(did::UrlError::InvalidUrlScheme)
 	);
 }

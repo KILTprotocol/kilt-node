@@ -363,28 +363,20 @@ pub mod pallet {
         details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
       ))
     )]
-		pub fn create(
-			origin: OriginFor<T>,
-			details: DidCreationDetails<T>,
-			signature: DidSignature,
-		) -> DispatchResult {
+		pub fn create(origin: OriginFor<T>, details: DidCreationDetails<T>, signature: DidSignature) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
 			let did_identifier = details.did.clone();
 
 			// There has to be no other DID with the same identifier already saved on chain,
 			// otherwise generate a DidAlreadyPresent error.
-			ensure!(
-				!<Did<T>>::contains_key(&did_identifier),
-				<Error<T>>::DidAlreadyPresent
-			);
+			ensure!(!<Did<T>>::contains_key(&did_identifier), <Error<T>>::DidAlreadyPresent);
 
 			let account_did_auth_key = did_identifier
 				.verify_and_recover_signature(&details.encode(), &signature)
 				.map_err(<Error<T>>::from)?;
 
-			let did_entry =
-				DidDetails::try_from((details.clone(), account_did_auth_key)).map_err(<Error<T>>::from)?;
+			let did_entry = DidDetails::try_from((details.clone(), account_did_auth_key)).map_err(<Error<T>>::from)?;
 
 			log::debug!("Creating DID {:?}", &did_identifier);
 			<Did<T>>::insert(&did_identifier, did_entry);
@@ -474,10 +466,7 @@ pub mod pallet {
         details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
       ))
     )]
-		pub fn update(
-			origin: OriginFor<T>,
-			details: DidUpdateDetails<T>,
-		) -> DispatchResult {
+		pub fn update(origin: OriginFor<T>, details: DidUpdateDetails<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 
 			let did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
@@ -517,9 +506,7 @@ pub mod pallet {
 		/// - Kills: Did entry associated to the DID identifier
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::submit_did_delete_operation())]
-		pub fn delete(
-			origin: OriginFor<T>
-		) -> DispatchResult {
+		pub fn delete(origin: OriginFor<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 
 			ensure!(
@@ -640,9 +627,15 @@ impl<T: Config> Pallet<T> {
 			<Did<T>>::get(&operation.did).ok_or(DidError::StorageError(StorageError::DidNotPresent))?;
 
 		Self::validate_counter_value(operation.tx_counter, &did_details)?;
-		// Increase the tx counter as soon as it is considered valid, no matter if the signature is valid or not.
+		// Increase the tx counter as soon as it is considered valid, no matter if the
+		// signature is valid or not.
 		did_details.increase_tx_counter().map_err(DidError::StorageError)?;
-		Self::verify_payload_signature_with_did_key_type(operation.encode().as_ref(), signature, &did_details, operation.operation_authorization_key_type)?;
+		Self::verify_payload_signature_with_did_key_type(
+			operation.encode().as_ref(),
+			signature,
+			&did_details,
+			operation.operation_authorization_key_type,
+		)?;
 
 		<Did<T>>::insert(&operation.did, did_details);
 
@@ -655,10 +648,7 @@ impl<T: Config> Pallet<T> {
 	// as that would result in the DID being unusable, since we do not have yet any
 	// mechanism in place to wrap the counter value around when the limit is
 	// reached.
-	fn validate_counter_value(
-		counter: u64,
-		did_details: &DidDetails<T>,
-	) -> Result<(), DidError> {
+	fn validate_counter_value(counter: u64, did_details: &DidDetails<T>) -> Result<(), DidError> {
 		// Verify that the DID has not reached the maximum tx counter value
 		ensure!(
 			did_details.get_tx_counter_value() < u64::MAX,

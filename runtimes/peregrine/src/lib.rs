@@ -842,18 +842,19 @@ construct_runtime! {
 }
 
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
-	fn derive_verification_key_relationship(&self) -> Option<did::DidOperationAuthorizationKey> {
+	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
 		match self {
-			Call::Attestation(_) => Some(did::DidOperationAuthorizationKey::DidKey(did::DidVerificationKeyRelationship::AssertionMethod)),
-			Call::Ctype(_) => Some(did::DidOperationAuthorizationKey::DidKey(did::DidVerificationKeyRelationship::AssertionMethod)),
-			Call::Delegation(_) => Some(did::DidOperationAuthorizationKey::DidKey(did::DidVerificationKeyRelationship::CapabilityDelegation)),
-			Call::Did(did::Call::submit_did_create_operation(..)) => Some(did::DidOperationAuthorizationKey::NoKey),
-			Call::Did(_)  => Some(did::DidOperationAuthorizationKey::DidKey(did::DidVerificationKeyRelationship::Authentication)),
+			Call::Attestation(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
+			Call::Ctype(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
+			Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
+			// DID creation is not allowed through the DID proxy.
+			Call::Did(did::Call::create(..)) => None,
+			Call::Did(_) => Some(did::DidVerificationKeyRelationship::Authentication),
 			#[cfg(not(feature = "runtime-benchmarks"))]
 			_ => None,
 			// By default, returns the authentication key
 			#[cfg(feature = "runtime-benchmarks")]
-			_ => Some(did::DidOperationAuthorizationKey::DidKey(did::DidVerificationKeyRelationship::Authentication)),
+			_ => Some(did::DidVerificationKeyRelationship::Authentication),
 		}
 	}
 

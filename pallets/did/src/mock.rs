@@ -325,7 +325,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			#[cfg(feature = "runtime-benchmarks")]
 			if *self == Self::get_call_for_did_call_benchmark() {
 				// Always require an authentication key to dispatch calls during benchmarking
-				return Some(did::DidOperationAuthorizationKey::DidKey(did::DidVerificationKeyRelationship::Authentication));
+				return Some(did::DidVerificationKeyRelationship::Authentication);
 			}
 			None
 		}
@@ -346,15 +346,15 @@ pub fn generate_test_did_call(
 		DidVerificationKeyRelationship::AssertionMethod => get_attestation_key_call(),
 		DidVerificationKeyRelationship::Authentication => get_authentication_key_call(),
 		DidVerificationKeyRelationship::CapabilityDelegation => get_delegation_key_call(),
-		_ => get_none_key_call()
+		_ => get_none_key_call(),
 	};
 	did::DidAuthorizedCallOperationWithVerificationRelationship {
 		operation: did::DidAuthorizedCallOperation {
 			did: caller,
 			call,
-			tx_counter: 1u64
+			tx_counter: 1u64,
 		},
-		operation_authorization_key_type: verification_key_required
+		operation_authorization_key_type: verification_key_required,
 	}
 }
 
