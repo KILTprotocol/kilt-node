@@ -56,9 +56,9 @@ construct_runtime!(
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+		Authorship: pallet_authorship::{Pallet, Call, Storage, Inherent},
 		StakePallet: stake::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
-		Authorship: pallet_authorship::{Pallet, Call, Storage, Inherent},
 		Aura: pallet_aura::{Pallet, Storage},
 	}
 );
@@ -337,19 +337,9 @@ pub(crate) fn roll_to(n: BlockNumber, authors: Vec<Option<AccountId>>) {
 		if let Some(Some(author)) = authors.get((System::block_number()) as usize) {
 			StakePallet::note_author(*author);
 		}
-		StakePallet::on_finalize(System::block_number());
-		Session::on_finalize(System::block_number());
-		Authorship::on_finalize(System::block_number());
-		Aura::on_finalize(System::block_number());
-		Balances::on_finalize(System::block_number());
-		System::on_finalize(System::block_number());
+		<AllPallets as OnFinalize<u64>>::on_finalize(System::block_number());
 		System::set_block_number(System::block_number() + 1);
-		System::on_initialize(System::block_number());
-		Balances::on_initialize(System::block_number());
-		Aura::on_initialize(System::block_number());
-		Authorship::on_initialize(System::block_number());
-		Session::on_initialize(System::block_number());
-		StakePallet::on_initialize(System::block_number());
+		<AllPallets as OnInitialize<u64>>::on_initialize(System::block_number());
 	}
 }
 

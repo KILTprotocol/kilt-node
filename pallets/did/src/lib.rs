@@ -16,8 +16,84 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-//! DID: Handles decentralized identifiers on chain,
-//! adding and removing DIDs.
+//! # DID Pallet
+//!
+//! Provides W3C-compliant DID functionalities. A DID identifier is derived from
+//! a KILT address and must be verifiable, i.e., must be able to generate
+//! digital signatures that can be verified starting from a raw payload, its
+//! signature, and the signer identifier. Currently, the DID pallet supports the
+//! following types of keys: Ed25519, Sr25519, and Ecdsa for signing keys, and
+//! X25519 for encryption keys.
+//!
+//! - [`Config`]
+//! - [`Call`]
+//! - [`Origin`]
+//! - [`Pallet`]
+//!
+//! ### Terminology
+//!
+//! Each DID identifier is mapped to a set of keys, which in KILT are used for
+//! different purposes.
+//!
+//! - One **authentication key**: used to sign and authorise DID-management
+//!   operations (e.g., the update of some keys or the deletion of the whole
+//!   DID). This is required to always be present as otherwise the DID becomes
+//!   unusable since no operation signature can be verified anymore.
+//!
+//! - Zero or more **key agreement keys**: used by other parties that want to
+//!   interact with the DID subject to perform ECDH and encrypt information
+//!   addressed to the DID subject.
+//!
+//! - Zero or one **delegation key**: used to sign and authorise the creation of
+//!   new delegation nodes on the KILT blockchain. In case no delegation key is
+//!   present, the DID subject cannot write new delegations on the KILT
+//!   blockchain. For more info, check the [delegation
+//!   pallet](../../delegation/).
+//!
+//! - Zero or one **attestation key**: used to sign and authorise the creation
+//!   of new attested claims on the KILT blockchain. In case no attestation key
+//!   is present, the DID subject cannot write new attested claims on the KILT
+//!   blockchain. For more info, check the [attestation
+//!   pallet](../../attestation/).
+//!
+//! - A set of **public keys**: includes at least the previous keys in addition
+//!   to any past attestation key that has been rotated but not entirely
+//!   revoked.
+//!
+//! - An optional **endpoint URL**: pointing to the description of the services
+//!   the DID subject exposes. For more information, check the W3C DID Core
+//!   specification.
+//!
+//! - A **transaction counter**: acts as a nonce to avoid replay or signature
+//!   forgery attacks. Each time a DID-signed transaction is executed, the
+//!   counter is incremented.
+//!
+//! ## Interface
+//!
+//! ### Dispatchable Functions
+//!
+//! - `create` - Register a new DID on the KILT blockchain under the given DID
+//!   identifier.
+//! - `update` - Update any keys or the endpoint URL of an existing DID.
+//! - `delete` - Delete the specified DID and all related keys from the KILT
+//!   blockchain.
+//! - `submit_did_call` - Proxy a dispatchable function for an extrinsic that
+//!   expects a DID origin. The DID pallet verifies the signature and the nonce
+//!   of the wrapping operation and then dispatches the underlying extrinsic
+//!   upon successful verification.
+//!
+//! ## Assumptions
+//!
+//! - The maximum number of new key agreement keys that can be specified in a
+//!   creation or update operation is bounded by `MaxNewKeyAgreementKeys`.
+//! - The maximum number of new keys that can be deleted in an update operation
+//!   is bounded by `MaxVerificationKeysToRevoke`.
+//! - The maximum length in ASCII characters of the endpoint URL is bounded by
+//!   `MaxUrlLength`.
+//! - The chain performs basic checks over the endpoint URLs provided in
+//!   creation and deletion operations. The SDK will perform more in-depth
+//!   validation of the URL string, e.g., by pattern-matching using regexes.
+
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
@@ -39,6 +115,7 @@ mod tests;
 
 pub use crate::{default_weights::WeightInfo, did_details::*, errors::*, origin::*, pallet::*, url::*};
 
+use codec::Encode;
 use frame_support::{
 	dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo},
 	ensure,
@@ -73,7 +150,7 @@ pub mod pallet {
 	/// Type for a block number.
 	pub type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
 
-	/// Type for a runtime extrinsic callable under DID-based authorization.
+	/// Type for a runtime extrinsic callable under DID-based authorisation.
 	pub type DidCallableOf<T> = <T as Config>::Call;
 
 	/// Type for origin that supports a DID sender.
@@ -82,22 +159,34 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + Debug {
+		/// Type for a dispatchable call that can be proxied through the DID
+		/// pallet to support DID-based authorisation.
 		type Call: Parameter
 			+ Dispatchable<Origin = <Self as Config>::Origin, PostInfo = PostDispatchInfo>
 			+ GetDispatchInfo
 			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
+		/// Type for a DID subject identifier.
 		type DidIdentifier: Parameter + Default + DidVerifiableIdentifier;
 		#[cfg(not(feature = "runtime-benchmarks"))]
+		/// Origin type expected by the proxied dispatchable calls.
 		type Origin: From<DidRawOrigin<DidIdentifierOf<Self>>>;
 		#[cfg(feature = "runtime-benchmarks")]
 		type Origin: From<RawOrigin<DidIdentifierOf<Self>>>;
+		type EnsureOrigin: EnsureOrigin<Success = DidIdentifierOf<Self>, <Self as frame_system::Config>::Origin>;
+		/// Overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		/// Maximum number of key agreement keys that can be added in a creation
+		/// or update operation.
 		#[pallet::constant]
 		type MaxNewKeyAgreementKeys: Get<u32>;
+		/// Maximum number of keys that can be removed in an update operation.
 		#[pallet::constant]
 		type MaxVerificationKeysToRevoke: Get<u32>;
+		/// Maximum length in ASCII characters of the endpoint URL specified in
+		/// a creation or update operation.
 		#[pallet::constant]
 		type MaxUrlLength: Get<u32>;
+		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}
 
@@ -122,12 +211,12 @@ pub mod pallet {
 		/// \[transaction signer, DID identifier\]
 		DidCreated(AccountIdentifierOf<T>, DidIdentifierOf<T>),
 		/// A DID has been updated.
-		/// \[transaction signer, DID identifier\]
-		DidUpdated(AccountIdentifierOf<T>, DidIdentifierOf<T>),
+		/// \[DID identifier\]
+		DidUpdated(DidIdentifierOf<T>),
 		/// A DID has been deleted.
-		/// \[transaction signer, DID identifier\]
-		DidDeleted(AccountIdentifierOf<T>, DidIdentifierOf<T>),
-		/// A DID-authorized call has been executed.
+		/// \[DID identifier\]
+		DidDeleted(DidIdentifierOf<T>),
+		/// A DID-authorised call has been executed.
 		/// \[DID caller, dispatch result\]
 		DidCallDispatched(DidIdentifierOf<T>, DispatchResult),
 	}
@@ -160,7 +249,7 @@ pub mod pallet {
 		/// used as an authentication, delegation, or attestation key, and this
 		/// is not allowed.
 		CurrentlyActiveKey,
-		/// The called extrinsic does not support DID authorization.
+		/// The called extrinsic does not support DID authorisation.
 		UnsupportedDidAuthorizationCall,
 		/// A number of new key agreement keys greater than the maximum allowed
 		/// has been provided.
@@ -231,162 +320,242 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		/// Store a new DID on chain, after verifying the signature associated
-		/// with the creation operation.
+		/// Store a new DID on chain, after verifying that the creation
+		/// operation has been signed by the KILT account associated with the
+		/// identifier of the DID being created.
 		///
-		/// * origin: the Substrate account submitting the transaction (which
-		///   can be different from the DID subject)
-		/// * operation: the creation operation which contains the details of
-		///   the new DID
-		/// * signature: the signture over the operation that must be signed
-		///   with the authentication key provided in the operation
+		/// There must be no DID information stored on chain under the same DID
+		/// identifier.
+		///
+		/// The new keys added with this operation are stored under the DID
+		/// identifier along with the block number in which the operation was
+		/// executed.
+		///
+		/// The dispatch origin can be any KILT account with enough funds to
+		/// execute the extrinsic and it does not have to be tied in any way to
+		/// the KILT account identifying the DID subject.
+		///
+		/// Emits `DidCreated`.
+		///
+		/// # <weight>
+		/// - The transaction's complexity is mainly dependent on the number of
+		///   new key agreement keys included in the operation as well as the
+		///   length of the URL endpoint, if present.
+		/// ---------
+		/// Weight: O(K) + O(E) where K is the number of new key agreement keys
+		/// bounded by `MaxNewKeyAgreementKeys` and E the length of the endpoint
+		/// URL bounded by `MaxUrlLength`.
+		/// - Reads: [Origin Account], Did
+		/// - Writes: Did (with K new key agreement keys)
+		/// # </weight>
 		#[pallet::weight(
-			<T as pallet::Config>::WeightInfo::submit_did_create_operation_ed25519_keys(
-				operation.new_key_agreement_keys.len().saturated_into::<u32>(),
-				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
+			<T as pallet::Config>::WeightInfo::create_ed25519_keys(
+				details.new_key_agreement_keys.len().saturated_into::<u32>(),
+				details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
 			)
-			.max(<T as pallet::Config>::WeightInfo::submit_did_create_operation_sr25519_keys(
-				operation.new_key_agreement_keys.len().saturated_into::<u32>(),
-				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
+			.max(<T as pallet::Config>::WeightInfo::create_sr25519_keys(
+				details.new_key_agreement_keys.len().saturated_into::<u32>(),
+				details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
 			))
-			.max(<T as pallet::Config>::WeightInfo::submit_did_create_operation_ecdsa_keys(
-				operation.new_key_agreement_keys.len().saturated_into::<u32>(),
-				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
+			.max(<T as pallet::Config>::WeightInfo::create_ecdsa_keys(
+				details.new_key_agreement_keys.len().saturated_into::<u32>(),
+				details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
 			))
 		)]
-		pub fn submit_did_create_operation(
-			origin: OriginFor<T>,
-			operation: DidCreationOperation<T>,
-			signature: DidSignature,
-		) -> DispatchResult {
+		pub fn create(origin: OriginFor<T>, details: DidCreationDetails<T>, signature: DidSignature) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
+
+			let did_identifier = details.did.clone();
 
 			// There has to be no other DID with the same identifier already saved on chain,
 			// otherwise generate a DidAlreadyPresent error.
-			ensure!(
-				!<Did<T>>::contains_key(operation.get_did()),
-				<Error<T>>::DidAlreadyPresent
-			);
+			ensure!(!<Did<T>>::contains_key(&did_identifier), <Error<T>>::DidAlreadyPresent);
 
-			let account_did_auth_key = operation
-				.did
-				.verify_and_recover_signature(&operation.encode(), &signature)
+			let account_did_auth_key = did_identifier
+				.verify_and_recover_signature(&details.encode(), &signature)
 				.map_err(<Error<T>>::from)?;
 
 			let did_entry =
-				DidDetails::try_from((operation.clone(), account_did_auth_key)).map_err(<Error<T>>::from)?;
+				DidDetails::from_creation_details(details, account_did_auth_key).map_err(<Error<T>>::from)?;
 
-			let did_identifier = operation.get_did();
-			log::debug!("Creating DID {:?}", did_identifier);
-			<Did<T>>::insert(did_identifier, did_entry);
+			log::debug!("Creating DID {:?}", &did_identifier);
+			<Did<T>>::insert(&did_identifier, did_entry);
 
-			Self::deposit_event(Event::DidCreated(sender, did_identifier.clone()));
+			Self::deposit_event(Event::DidCreated(sender, did_identifier));
 
 			Ok(())
 		}
 
-		/// Update the information associated with a DID on chain, after
-		/// verifying the signature associated with the operation.
+		/// Update an existing DID on chain.
 		///
-		/// * origin: the Substrate account submitting the transaction (which
-		///   can be different from the DID subject)
-		/// * operation: the update operation which contains the new details of
-		///   the existing DID
-		/// * signature: the signature over the operation that must be signed
-		///   with the authentication key associated with the new DID. Even in
-		///   case the authentication key is being updated, the operation must
-		///   still be signed with the old one being replaced
+		/// The referenced DID identifier must be present on chain before the
+		/// update operation is evaluated.
+		///
+		/// Any new key specified is added to the set of public keys, and a
+		/// reference to it is updated in the relative field, i.e.,
+		/// authentication, key agreement, attestation or delegation.
+		/// As there can always be at most one active authentication,
+		/// attestation, or delegation key at any given time, the old version of
+		/// those keys, if updated, is replaced with the new one and also
+		/// removed from the set of public keys. The only exception is
+		/// represented by *key agreement keys* and *attestation keys*. For the
+		/// former, new keys added via update operations are always added to the
+		/// set of public keys, and their removal happens by including the ID of
+		/// the keys to remove in the `public_keys_to_remove` set in subsequent
+		/// update operations. In the latter case, the old key is replaced from
+		/// the `attestation_key` field by the new one but it is not removed
+		/// from the set of public keys. This means that the key can still be
+		/// retrieved (and used) by other parties to validate the signature of
+		/// attestations issued with that key, but the issuance of new
+		/// attestations using the now disabled key will fail. A
+		/// disabled attestation key can also be completely deleted (rendering
+		/// all the attestations invalid) by including its ID in the set of
+		/// `public_keys_to_remove` in a subsequent update operation.
+		///
+		/// For both key agreement and attestation keys, it is not possible to
+		/// add (in the former case) or disable (in the latter) a key
+		/// and also delete it within the same update operation. To do
+		/// so, first an update operation adding/disabling the
+		/// key must be submitted. Then, a second update operation must be
+		/// submitted which references the key in the set of
+		/// `public_keys_to_remove`, removing it completely from the chain.
+		///
+		/// All keys that are written as the result of the update operation also
+		/// contain information about the block number when the operation is
+		/// evaluated and executed.
+		///
+		/// The dispatch origin must be a DID origin proxied via the
+		/// `submit_did_call` extrinsic.
+		///
+		/// Emits `DidUpdated`.
+		///
+		/// # <weight>
+		/// - The transaction's complexity is mainly dependent on the number of
+		///   new key agreement keys and public keys to remove included in the
+		///   operation as well as the length of the new URL endpoint, if
+		///   present.
+		/// ---------
+		/// Weight: O(K) + O(D) + O(E) where K is the number of new key
+		/// agreement keys bounded by `MaxNewKeyAgreementKeys`, D is the number
+		/// of public keys to remove bounded by `MaxVerificationKeysToRevoke`,
+		/// and E the length of the new endpoint URL bounded by `MaxUrlLength`.
+		/// - Reads: [Origin Account], Did
+		/// - Writes: Did (with K new key agreement keys and removing D public
+		///   keys)
+		/// # </weight>
 		#[pallet::weight(
-			<T as pallet::Config>::WeightInfo::submit_did_update_operation_ed25519_keys(
-				operation.new_key_agreement_keys.len().saturated_into::<u32>(),
-				operation.public_keys_to_remove.len().saturated_into::<u32>(),
-				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
+			<T as pallet::Config>::WeightInfo::update_ed25519_keys(
+				details.new_key_agreement_keys.len().saturated_into::<u32>(),
+				details.public_keys_to_remove.len().saturated_into::<u32>(),
+				details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
 			)
-			.max(<T as pallet::Config>::WeightInfo::submit_did_update_operation_sr25519_keys(
-				operation.new_key_agreement_keys.len().saturated_into::<u32>(),
-				operation.public_keys_to_remove.len().saturated_into::<u32>(),
-				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
+			.max(<T as pallet::Config>::WeightInfo::update_sr25519_keys(
+				details.new_key_agreement_keys.len().saturated_into::<u32>(),
+				details.public_keys_to_remove.len().saturated_into::<u32>(),
+				details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
 			))
-			.max(<T as pallet::Config>::WeightInfo::submit_did_update_operation_ecdsa_keys(
-				operation.new_key_agreement_keys.len().saturated_into::<u32>(),
-				operation.public_keys_to_remove.len().saturated_into::<u32>(),
-				operation.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
+			.max(<T as pallet::Config>::WeightInfo::update_ecdsa_keys(
+				details.new_key_agreement_keys.len().saturated_into::<u32>(),
+				details.public_keys_to_remove.len().saturated_into::<u32>(),
+				details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
 			))
 		)]
-		pub fn submit_did_update_operation(
-			origin: OriginFor<T>,
-			operation: DidUpdateOperation<T>,
-			signature: DidSignature,
-		) -> DispatchResult {
-			let sender = ensure_signed(origin)?;
+		pub fn update(origin: OriginFor<T>, details: DidUpdateDetails<T>) -> DispatchResult {
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 
-			// Saved here as it is consumed later when generating the new DidDetails object.
-			let did_identifier = operation.get_did().clone();
+			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
-			let did_details = <Did<T>>::get(&did_identifier).ok_or(<Error<T>>::DidNotPresent)?;
+			did_details.apply_update_details(details).map_err(<Error<T>>::from)?;
 
-			// Verify the signature and the nonce of the update operation.
-			Self::verify_operation_validity_for_did(&operation, &signature, &did_details).map_err(<Error<T>>::from)?;
+			log::debug!("Updating DID {:?}", did_subject);
+			<Did<T>>::insert(&did_subject, did_details);
 
-			// Generate a new DidDetails object by applying the changes in the update
-			// operation to the old object (and consuming both).
-			let new_did_details = DidDetails::try_from((did_details, operation)).map_err(<Error<T>>::from)?;
-
-			log::debug!("Updating DID {:?}", did_identifier);
-			<Did<T>>::insert(&did_identifier, new_did_details);
-
-			Self::deposit_event(Event::DidUpdated(sender, did_identifier));
+			Self::deposit_event(Event::DidUpdated(did_subject));
 
 			Ok(())
 		}
 
-		/// Delete all the information associated with a DID from the chain,
-		/// after verifying the signature associated with the operation.
+		/// Delete a DID from the chain and all information associated with it,
+		/// after verifying that the delete operation has been signed by the DID
+		/// subject using the authentication key currently stored on chain.
 		///
-		/// * origin: the Substrate account submitting the transaction (which
-		///   can be different from the DID subject)
-		/// * operation: the deletion operation which includes the DID to
-		///   deactivate
-		/// * signature: the signature over the operation that must be signed
-		///   with the authentication key associated with the DID being deleted
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::submit_did_delete_operation())]
-		pub fn submit_did_delete_operation(
-			origin: OriginFor<T>,
-			operation: DidDeletionOperation<T>,
-			signature: DidSignature,
-		) -> DispatchResult {
-			let sender = ensure_signed(origin)?;
+		/// The referenced DID identifier must be present on chain before the
+		/// delete operation is evaluated.
+		///
+		/// As the result of the deletion, all traces of the DID are removed
+		/// from the storage, which results in the invalidation of all
+		/// attestations issued by the DID subject.
+		///
+		/// The dispatch origin must be a DID origin proxied via the
+		/// `submit_did_call` extrinsic.
+		///
+		/// Emits `DidDeleted`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Did
+		/// - Kills: Did entry associated to the DID identifier
+		/// # </weight>
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::delete())]
+		pub fn delete(origin: OriginFor<T>) -> DispatchResult {
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 
-			let did_identifier = operation.get_did();
+			ensure!(
+				// `take` calls `kill` internally
+				<Did<T>>::take(&did_subject).is_some(),
+				<Error<T>>::DidNotPresent
+			);
 
-			let did_details = <Did<T>>::get(&did_identifier).ok_or(<Error<T>>::DidNotPresent)?;
+			log::debug!("Deleted DID {:?}", did_subject);
 
-			// Verify the signature and the nonce of the delete operation.
-			Self::verify_operation_validity_for_did(&operation, &signature, &did_details).map_err(<Error<T>>::from)?;
-
-			log::debug!("Deleting DID {:?}", did_identifier);
-			<Did<T>>::remove(&did_identifier);
-
-			Self::deposit_event(Event::DidDeleted(sender, did_identifier.clone()));
+			Self::deposit_event(Event::DidDeleted(did_subject));
 
 			Ok(())
 		}
 
-		/// Proxy a [call](Call) to another runtime extrinsic conforming that
-		/// supports DID-based authorization.
+		/// Proxy a dispatchable call of another runtime extrinsic that
+		/// supports a DID origin.
 		///
-		/// * origin: the account which will pay the execution fees of the
-		///   nested call
-		/// * did_call: the extrinsic call to dispatch
-		/// * signature: the signature over the encoded extrinsic call that must
-		///   be signed by the tx submiter, i.e., the account paying for the
-		///   execution fees
+		/// The referenced DID identifier must be present on chain before the
+		/// operation is dispatched.
+		///
+		/// A call submitted through this extrinsic must be signed with the
+		/// right DID key, depending on the call. This information is provided
+		/// by the `DidAuthorizedCallOperation` parameter, which specifies the
+		/// DID subject acting as the origin of the call, the DID's tx counter
+		/// (nonce), the dispatchable to call in case signature verification
+		/// succeeds, and the type of DID key to use to verify the operation
+		/// signature.
+		///
+		/// In case the signature is incorrect, the nonce is not valid, or the
+		/// required key is not present for the specified DID, the verification
+		/// fails and the call is not dispatched. Otherwise, the call is
+		/// properly dispatched with a `DidOrigin` origin indicating the DID
+		/// subject.
+		///
+		/// A successful dispatch operation results in the tx counter associated
+		/// with the given DID to be incremented, to mitigate replay attacks.
+		///
+		/// The dispatch origin can be any KILT account with enough funds to
+		/// execute the extrinsic and it does not have to be tied in any way to
+		/// the KILT account identifying the DID subject.
+		///
+		/// Emits `DidCallDispatched`.
+		///
+		/// # <weight>
+		/// Weight: O(1) + weight of the dispatched call
+		/// - Reads: [Origin Account], Did
+		/// - Writes: Did
+		/// # </weight>
 		#[allow(clippy::boxed_local)]
-		#[pallet::weight(
-			<T as pallet::Config>::WeightInfo::submit_did_call_ed25519_key()
-			.max(<T as pallet::Config>::WeightInfo::submit_did_call_sr25519_key())
-			.max(<T as pallet::Config>::WeightInfo::submit_did_call_ecdsa_key())
-		)]
+		#[pallet::weight({
+    		let di = did_call.call.get_dispatch_info();
+    		let max_sig_weight = <T as pallet::Config>::WeightInfo::submit_did_call_ed25519_key()
+    		.max(<T as pallet::Config>::WeightInfo::submit_did_call_sr25519_key())
+    		.max(<T as pallet::Config>::WeightInfo::submit_did_call_ecdsa_key());
+
+    		(max_sig_weight.saturating_add(di.weight), di.class)
+  		})]
 		pub fn submit_did_call(
 			origin: OriginFor<T>,
 			did_call: Box<DidAuthorizedCallOperation<T>>,
@@ -409,10 +578,9 @@ pub mod pallet {
 				verification_key_relationship,
 			};
 
-			// Verify if the DID exists, if the operation signature is valid, and if so
-			// increase the nonce if successful.
-			Self::verify_operation_validity_and_increase_did_nonce(&wrapped_operation, &signature)
+			Self::verify_did_operation_signature_and_increase_nonce(&wrapped_operation, &signature)
 				.map_err(<Error<T>>::from)?;
+
 			log::debug!("Dispatch call from DID {:?}", did_identifier);
 
 			// Dispatch the referenced [Call] instance and return its result
@@ -433,55 +601,45 @@ pub mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
-	/// Verify the validity (i.e., nonce and signature) of a generic
-	/// [DidOperation] and, if valid, update the DID state with the latest
+	/// Verify the validity (i.e., nonce and signature) of a DID-authorized
+	/// operation and, if valid, update the DID state with the latest
 	/// nonce.
 	///
-	/// * operation: the reference to the operation which validity is to be
-	///   verified
-	/// * signature: a reference to the signature
-	/// * did: the DID identifier to verify the operation signature for
-	pub fn verify_operation_validity_and_increase_did_nonce<O: DidOperation<T>>(
-		operation: &O,
+	/// # <weight>
+	/// Weight: O(1)
+	/// - Reads: Did
+	/// - Writes: Did
+	/// # </weight>
+	pub fn verify_did_operation_signature_and_increase_nonce(
+		operation: &DidAuthorizedCallOperationWithVerificationRelationship<T>,
 		signature: &DidSignature,
 	) -> Result<(), DidError> {
 		let mut did_details =
-			<Did<T>>::get(&operation.get_did()).ok_or(DidError::StorageError(StorageError::DidNotPresent))?;
+			<Did<T>>::get(&operation.did).ok_or(DidError::StorageError(StorageError::DidNotPresent))?;
 
-		Self::verify_operation_validity_for_did(operation, signature, &did_details)?;
-
-		// Update tx counter in DID details and save to DID pallet
+		Self::validate_counter_value(operation.tx_counter, &did_details)?;
+		// Increase the tx counter as soon as it is considered valid, no matter if the
+		// signature is valid or not.
 		did_details.increase_tx_counter().map_err(DidError::StorageError)?;
-		<Did<T>>::insert(&operation.get_did(), did_details);
+		Self::verify_payload_signature_with_did_key_type(
+			&operation.encode(),
+			signature,
+			&did_details,
+			operation.verification_key_relationship,
+		)?;
+
+		<Did<T>>::insert(&operation.did, did_details);
 
 		Ok(())
 	}
 
-	// Internally verifies the validity of a DID operation nonce and signature.
-	fn verify_operation_validity_for_did<O: DidOperation<T>>(
-		operation: &O,
-		signature: &DidSignature,
-		did_details: &DidDetails<T>,
-	) -> Result<(), DidError> {
-		Self::verify_operation_counter_for_did(operation, did_details)?;
-		Self::verify_payload_signature_with_did_key_type(
-			&operation.encode(),
-			signature,
-			did_details,
-			operation.get_verification_key_relationship(),
-		)
-	}
-
-	// Verify the validity of a DID operation nonce.
+	// Verify the validity of a DID-authorized operation nonce.
 	// To be valid, the nonce must be equal to the one currently stored + 1.
 	// This is to avoid quickly "consuming" all the possible values for the counter,
 	// as that would result in the DID being unusable, since we do not have yet any
 	// mechanism in place to wrap the counter value around when the limit is
 	// reached.
-	fn verify_operation_counter_for_did<O: DidOperation<T>>(
-		operation: &O,
-		did_details: &DidDetails<T>,
-	) -> Result<(), DidError> {
+	fn validate_counter_value(counter: u64, did_details: &DidDetails<T>) -> Result<(), DidError> {
 		// Verify that the DID has not reached the maximum tx counter value
 		ensure!(
 			did_details.get_tx_counter_value() < u64::MAX,
@@ -494,7 +652,7 @@ impl<T: Config> Pallet<T> {
 			.checked_add(1)
 			.ok_or(DidError::InternalError)?;
 		ensure!(
-			operation.get_tx_counter() == expected_nonce_value,
+			counter == expected_nonce_value,
 			DidError::SignatureError(SignatureError::InvalidNonce)
 		);
 

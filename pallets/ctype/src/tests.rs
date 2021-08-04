@@ -32,14 +32,14 @@ fn check_successful_ctype_creation() {
 
 	let mut ext = builder.build(None);
 
-	// Write CTYPE on chain
+	// Write CType on chain
 	ext.execute_with(|| {
 		assert_ok!(Ctype::add(get_origin(creator.clone()), operation.hash));
 	});
 
-	// Verify the CTYPE has the right owner
+	// Verify the CType has the right owner
 	let stored_ctype_creator =
-		ext.execute_with(|| Ctype::ctypes(&operation.hash).expect("CTYPE hash should be present on chain."));
+		ext.execute_with(|| Ctype::ctypes(&operation.hash).expect("CType hash should be present on chain."));
 	assert_eq!(stored_ctype_creator, creator);
 }
 

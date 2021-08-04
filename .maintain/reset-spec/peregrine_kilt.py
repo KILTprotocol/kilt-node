@@ -3,11 +3,20 @@ import typing
 
 def update_spec(input: typing.Dict):
     input.update({
-        "bootNodes": [],
+        "bootNodes": [
+            "/dns4/bootnode.kilt.io/tcp/30340/p2p/12D3KooWALJtiCZzcUPVsCa5f5egGfQyFhPY67kKosDw95bJqK7M",
+            "/dns4/bootnode.kilt.io/tcp/30341/p2p/12D3KooWCRgcGtFRsvqxqgysiR6Ah9SAzUNkM12Ef9sy59ZEspSQ",
+        ],
         "chainType": "Live",
         "name": "KILT Peregrine",
         "id": "peregrine_kilt",
         "para_id": 2000,
+        "telemetryEndpoints": [
+            [
+                "/dns/telemetry-backend.kilt.io/tcp/8080/x-parity-wss/%2Fsubmit",
+                0
+            ]
+        ]
     })
     input["properties"]["tokenSymbol"] = "PILT"
     input["genesis"]["runtime"]["parachainInfo"]["parachainId"] = 2000

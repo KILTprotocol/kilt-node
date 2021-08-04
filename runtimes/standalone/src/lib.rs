@@ -28,7 +28,7 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::Decode;
-use did::DidSignature;
+use did::{DidSignature, DidVerifiableIdentifier};
 use kilt_primitives::{
 	constants::{KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature,
@@ -48,6 +48,9 @@ use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
+
+#[cfg(feature = "runtime-benchmarks")]
+use frame_system::EnsureSigned;
 
 // pub use consensus::Call as ConsensusCall;
 pub use pallet_balances::Call as BalancesCall;
@@ -108,7 +111,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 16,
+	spec_version: 18,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -290,20 +293,25 @@ impl delegation::VerifyDelegateSignature for Runtime {
 		let decoded_signature = DidSignature::decode(&mut &signature[..])
 			.map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
 
-		let delegate_details = did::Did::<Self>::get(&delegate)
-			.ok_or(delegation::SignatureVerificationError::SignerInformationNotPresent)?;
-
-		did::Pallet::verify_payload_signature_with_did_key_type(
-			payload,
-			&decoded_signature,
-			&delegate_details,
-			did::DidVerificationKeyRelationship::Authentication,
-		)
-		.map_err(|err| match err {
-			// Should never happen as a DID has always a valid authentication key and UrlErrors are never thrown here.
-			did::DidError::SignatureError(_) => delegation::SignatureVerificationError::SignatureInvalid,
-			_ => delegation::SignatureVerificationError::SignerInformationNotPresent,
-		})
+		if let Some(delegate_details) = did::Did::<Self>::get(&delegate) {
+			did::Pallet::verify_payload_signature_with_did_key_type(
+				payload,
+				&decoded_signature,
+				&delegate_details,
+				did::DidVerificationKeyRelationship::Authentication,
+			)
+			.map_err(|err| match err {
+				// Should never happen as a DID has always a valid authentication key and UrlErrors are never thrown
+				// here.
+				did::DidError::SignatureError(_) => delegation::SignatureVerificationError::SignatureInvalid,
+				_ => delegation::SignatureVerificationError::SignerInformationNotPresent,
+			})
+		} else {
+			delegate
+				.verify_and_recover_signature(&payload, &decoded_signature)
+				.map(|_| ())
+				.map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)
+		}
 	}
 }
 
@@ -377,6 +385,10 @@ impl did::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
 	type Origin = Origin;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type EnsureOrigin = did::EnsureDidOrigin<Self::DidIdentifier>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type EnsureOrigin = EnsureSigned<Self::DidIdentifier>;
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 	type MaxUrlLength = MaxUrlLength;
@@ -486,6 +498,9 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			Call::Attestation(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
 			Call::Ctype(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
 			Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
+			// DID creation is not allowed through the DID proxy.
+			Call::Did(did::Call::create(..)) => None,
+			Call::Did(_) => Some(did::DidVerificationKeyRelationship::Authentication),
 			#[cfg(not(feature = "runtime-benchmarks"))]
 			_ => None,
 			// By default, returns the authentication key

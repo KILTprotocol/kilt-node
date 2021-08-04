@@ -2521,6 +2521,14 @@ pub mod pallet {
 		/// - Writes: (D + 1) * Balance
 		/// # </weight>
 		fn note_author(author: T::AccountId) {
+			let mut reads = Weight::one();
+			let mut writes = Weight::zero();
+			log::info!(
+				"Noting author {:#?} in block {:?} with starting balance {:?}",
+				&author,
+				<frame_system::Pallet<T>>::block_number(),
+				T::Currency::free_balance(&author)
+			);
 			// should always include state except if the collator has been forcedly removed
 			// via `force_remove_candidate` in the current or previous round
 			if let Some(state) = <CollatorState<T>>::get(author.clone()) {
@@ -2541,18 +2549,32 @@ pub mod pallet {
 						.collator
 						.compute_reward::<T>(state.stake, c_staking_rate, authors_per_round);
 				Self::do_reward(&author, amt_due_collator);
+				writes = writes.saturating_add(Weight::one());
 
 				// Reward delegators
 				for Stake { owner, amount } in state.delegators {
+					log::info!(
+						"Noting delegator {:#?} in block {:?} with starting balance {:?}",
+						&owner,
+						<frame_system::Pallet<T>>::block_number(),
+						T::Currency::free_balance(&owner)
+					);
 					if amount >= T::MinDelegatorStake::get() {
 						let due =
 							inflation_config
 								.delegator
 								.compute_reward::<T>(amount, d_staking_rate, authors_per_round);
 						Self::do_reward(&owner, due);
+						writes = writes.saturating_add(Weight::one());
 					}
 				}
+				reads = reads.saturating_add(4);
 			}
+
+			frame_system::Pallet::<T>::register_extra_weight_unchecked(
+				T::DbWeight::get().reads_writes(reads, writes),
+				DispatchClass::Mandatory,
+			);
 		}
 
 		fn note_uncle(_author: T::AccountId, _age: T::BlockNumber) {

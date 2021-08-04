@@ -2,8 +2,18 @@
   "name": "Peregrine Relay",
   "id": "westend_peregrine_relay",
   "chainType": "Live",
-  "bootNodes": [],
-  "telemetryEndpoints": null,
+  "bootNodes": [
+    "/dns4/bootnode.kilt.io/tcp/30350/p2p/12D3KooWEeezCpJauUmWw3zfgEtYzhZTc5LgukQYtGTMaZfzgVfE",
+    "/dns4/bootnode.kilt.io/tcp/30351/p2p/12D3KooWHq5j9tLdZEu4tnr6ii2k33zp5DCoKREQ6KzuabC9Gihu",
+    "/dns4/bootnode.kilt.io/tcp/30352/p2p/12D3KooWQ8iTGLH98zLz9BZmq5FXDmR1NytDsJ2VToXvcjvHV16a",
+    "/dns4/bootnode.kilt.io/tcp/30353/p2p/12D3KooWNWNptEoH443LVUgwC5kd7DBVoNYwQtJh6dp4TQxUsAST"
+  ],
+  "telemetryEndpoints": [
+    [
+      "/dns/telemetry-backend.kilt.io/tcp/8080/x-parity-wss/%2Fsubmit",
+      0
+    ]
+  ],
   "protocolId": "dot",
   "properties": null,
   "forkBlocks": null,
