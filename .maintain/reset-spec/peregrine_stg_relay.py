@@ -16,6 +16,12 @@ def update_spec(input: typing.Dict):
         "chainType": "Live",
         "name": "Peregrine Westend-Relay Stagenet",
         "id": "westend_peregrine_relay_stagenet",
+        "telemetryEndpoints": [
+            [
+                "/dns/telemetry-backend.kilt.io/tcp/8080/x-parity-wss/%2Fsubmit",
+                0
+            ]
+        ]
     })
     input["genesis"]["runtime"]["balances"]["balances"] += [
         [

@@ -25,6 +25,10 @@ PERE_KILT = "dev-specs/kilt-parachain/peregrine-kilt.json"
 PERE_RELAY = "dev-specs/kilt-parachain/peregrine-relay.json"
 
 
+def base_docker_run_cmd():
+    return ["docker", "run", "--user", f"{os.getuid()}:{os.getgid()}"]
+
+
 def run_check_process(cmd: typing.List[str]):
     logger.debug("Execute: %s", " ".join(cmd))
     process = subprocess.run(cmd, capture_output=True)
@@ -41,8 +45,8 @@ def run_check_process(cmd: typing.List[str]):
 def make_custom_spec(tmp_dir, docker_img, plain_file, out_file, update_spec, spec, runtime=None):
     """Build a custom spec by exporting a chain spec and customize it using a python script.
     """
-    cmd_plain_spec = ["docker", "run", docker_img, "build-spec",
-                      "--chain", spec, "--disable-default-bootnode"]
+    cmd_plain_spec = base_docker_run_cmd() + [docker_img, "build-spec",
+                                              "--chain", spec, "--disable-default-bootnode"]
 
     if runtime is not None:
         cmd_plain_spec += ["--runtime", runtime]
@@ -65,16 +69,19 @@ def make_custom_spec(tmp_dir, docker_img, plain_file, out_file, update_spec, spe
 
     plain_custom_file = f"{spec}-{plain_file}"
     plain_path = os.path.join(tmp_dir, plain_custom_file)
+
+    logger.debug("writing updated intermediate plain spec to %s", plain_path)
     with open(plain_path, "w") as f:
         json.dump(in_json, f)
 
-    cmd_raw_spec = ["docker", "run", "-v", f"{tmp_dir}:/data/", docker_img, "build-spec",
-                    "--chain", os.path.join("/data/", plain_custom_file), "--disable-default-bootnode", "--raw"]
+    cmd_raw_spec = base_docker_run_cmd() + ["-v", f"{tmp_dir}:/data/", docker_img, "build-spec",
+                                            "--chain", os.path.join("/data/", plain_custom_file), "--disable-default-bootnode", "--raw"]
     if runtime is not None:
         cmd_raw_spec += ["--runtime", runtime]
 
     process = run_check_process(cmd_raw_spec)
 
+    logger.info("writing final spec to %s", out_file)
     with open(out_file, "wb") as f:
         f.write(process.stdout)
 
@@ -82,11 +89,12 @@ def make_custom_spec(tmp_dir, docker_img, plain_file, out_file, update_spec, spe
 def make_native(docker_img, out_file, chain, runtime):
     """Build a custom spec by exporting a chain spec and customize it using a python script.
     """
-    cmd = ["docker", "run", docker_img, "build-spec",
-           "--runtime", runtime, "--chain", chain, "--raw"]
+    cmd = base_docker_run_cmd() + [docker_img, "build-spec",
+                                   "--runtime", runtime, "--chain", chain, "--raw"]
 
     process = run_check_process(cmd)
 
+    logger.info("writing final native spec to %s", out_file)
     with open(out_file, "wb") as f:
         f.write(process.stdout)
 
