@@ -91,7 +91,7 @@ parameter_types! {
 	pub const MaxNewKeyAgreementKeys: u32 = 10u32;
 	pub const MaxVerificationKeysToRevoke: u32 = 10u32;
 	pub const MaxUrlLength: u32 = 200u32;
-	pub const MaxUrlsEndpointCounts: u32 = 3u32;
+	pub const MaxEndpointUrlsCount: u32 = 3u32;
 }
 
 impl Config for Test {
@@ -102,7 +102,7 @@ impl Config for Test {
 	type Event = ();
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxUrlLength = MaxUrlLength;
-	type MaxEndpointUrlsCount = MaxUrlsEndpointCounts;
+	type MaxEndpointUrlsCount = MaxEndpointUrlsCount;
 	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 	type WeightInfo = ();
 }
