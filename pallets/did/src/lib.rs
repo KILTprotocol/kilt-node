@@ -108,7 +108,7 @@ mod utils;
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
 
-#[cfg(test)]
+#[cfg(any(feature = "runtime-benchmarks", test))]
 mod mock;
 #[cfg(test)]
 mod tests;
