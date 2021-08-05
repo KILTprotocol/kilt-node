@@ -56,7 +56,7 @@ fn check_successful_simple_ed25519_creation() {
 	assert!(stored_did
 		.get_public_keys()
 		.contains_key(&generate_key_id(&auth_did_key.into())));
-	assert_eq!(stored_did.endpoint_url, None);
+	assert_eq!(stored_did.service_endpoints, None);
 	assert_eq!(stored_did.last_tx_counter, 0u64);
 }
 
@@ -91,7 +91,7 @@ fn check_successful_simple_sr25519_creation() {
 	assert!(stored_did
 		.get_public_keys()
 		.contains_key(&generate_key_id(&auth_did_key.into())));
-	assert_eq!(stored_did.endpoint_url, None);
+	assert_eq!(stored_did.service_endpoints, None);
 	assert_eq!(stored_did.last_tx_counter, 0u64);
 }
 
@@ -126,7 +126,7 @@ fn check_successful_simple_ecdsa_creation() {
 	assert!(stored_did
 		.get_public_keys()
 		.contains_key(&generate_key_id(&auth_did_key.into())));
-	assert_eq!(stored_did.endpoint_url, None);
+	assert_eq!(stored_did.service_endpoints, None);
 	assert_eq!(stored_did.last_tx_counter, 0u64);
 }
 
@@ -142,15 +142,12 @@ fn check_successful_complete_creation() {
 			.collect();
 	let del_key = get_sr25519_delegation_key(true);
 	let att_key = get_ecdsa_attestation_key(true);
-	let new_url = did::Url::from(
-		did::HttpUrl::try_from("https://new_kilt.io".as_bytes())
-			.expect("https://new_kilt.io should not be considered an invalid HTTP URL."),
-	);
+	let new_service_endpoints = get_service_endpoints(1, 10);
 	let mut details = generate_base_did_creation_details(alice_did.clone());
 	details.new_key_agreement_keys = enc_keys.clone();
 	details.new_attestation_key = Some(did::DidVerificationKey::from(att_key.public()));
 	details.new_delegation_key = Some(did::DidVerificationKey::from(del_key.public()));
-	details.new_service_endpoints = Some(new_url);
+	details.new_service_endpoints = Some(new_service_endpoints.clone());
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
@@ -202,6 +199,9 @@ fn check_successful_complete_creation() {
 	assert!(stored_did
 		.get_public_keys()
 		.contains_key(&generate_key_id(&details.new_delegation_key.clone().unwrap().into())));
+	assert!(stored_did.service_endpoints.is_some());
+	assert_eq!(stored_did.service_endpoints.clone().unwrap().urls.len(), 1);
+	assert_eq!(stored_did.service_endpoints.unwrap().urls[0], new_service_endpoints.urls[0]);
 }
 
 #[test]
@@ -328,10 +328,11 @@ fn check_max_limit_key_agreement_keys_did_creation() {
 fn check_url_too_long_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let url_endpoint = get_url_endpoint(<Test as did::Config>::MaxUrlLength::get().saturating_add(1));
+	// Max URL length allowed + 1
+	let service_endpoints = get_service_endpoints(1, <Test as did::Config>::MaxUrlLength::get().saturating_add(1));
+
 	let mut details = generate_base_did_creation_details(alice_did);
-	// Max length allowed + 1
-	details.new_service_endpoints = Some(url_endpoint);
+	details.new_service_endpoints = Some(service_endpoints);
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
@@ -349,6 +350,32 @@ fn check_url_too_long_did_creation() {
 	});
 }
 
+#[test]
+fn check_too_many_urls_did_creation() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
+	// Max number of URLs allowed + 1
+	let service_endpoints = get_service_endpoints(<Test as did::Config>::MaxEndpointUrlsCount::get().saturating_add(1), 10);
+
+	let mut details = generate_base_did_creation_details(alice_did);
+	details.new_service_endpoints = Some(service_endpoints);
+
+	let signature = auth_key.sign(details.encode().as_ref());
+
+	let mut ext = ExtBuilder::default().build(None);
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::create(
+				Origin::signed(DEFAULT_ACCOUNT),
+				details,
+				did::DidSignature::from(signature),
+			),
+			did::Error::<Test>::MaxUrlsCountExceeded
+		);
+	});
+}
+
 // update
 
 #[test]
@@ -361,10 +388,7 @@ fn check_successful_complete_update() {
 	let old_att_key = get_ed25519_attestation_key(true);
 	let new_att_key = get_ed25519_attestation_key(false);
 	let new_del_key = get_sr25519_delegation_key(true);
-	let new_url = did::Url::from(
-		did::HttpUrl::try_from("https://new_kilt.io".as_bytes())
-			.expect("https://new_kilt.io should not be considered an invalid HTTP URL."),
-	);
+	let new_service_endpoints = get_service_endpoints(1, 10);
 
 	let mut old_did_details = generate_base_did_details(did::DidVerificationKey::from(old_auth_key.public()));
 	old_did_details.add_key_agreement_keys(
@@ -392,7 +416,7 @@ fn check_successful_complete_update() {
 		.iter()
 		.copied()
 		.collect::<BTreeSet<TestKeyId>>();
-	details.service_endpoints_update = Some(new_url);
+	details.service_endpoints_update = did::DidFragmentUpdateAction::Change(new_service_endpoints.clone());
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
@@ -453,6 +477,10 @@ fn check_successful_complete_update() {
 	assert!(public_keys.contains_key(&generate_key_id(
 		&did::DidVerificationKey::from(new_del_key.public()).into()
 	)));
+	// Check for new service endpoints
+	assert!(new_did_details.service_endpoints.is_some());
+	assert_eq!(new_did_details.service_endpoints.clone().unwrap().urls.len(), 1);
+	assert_eq!(new_did_details.service_endpoints.unwrap().urls[0], new_service_endpoints.urls[0]);
 }
 
 #[test]
@@ -687,10 +715,10 @@ fn check_url_too_long_did_update() {
 	let old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 
 	// Max URL length allowed + 1
-	let new_endpoint_url = get_url_endpoint(<Test as did::Config>::MaxUrlLength::get().saturating_add(1));
+	let new_service_endpoints = get_service_endpoints(1, <Test as did::Config>::MaxUrlLength::get().saturating_add(1));
 
 	let mut details = generate_base_did_update_details();
-	details.service_endpoints_update = Some(new_endpoint_url);
+	details.service_endpoints_update = did::DidFragmentUpdateAction::Change(new_service_endpoints);
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
@@ -703,6 +731,34 @@ fn check_url_too_long_did_update() {
 		assert_noop!(
 			Did::update(Origin::signed(alice_did.clone()), details),
 			did::Error::<Test>::MaxUrlLengthExceeded
+		);
+	});
+}
+
+#[test]
+fn check_too_many_urls_did_update() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
+
+	let old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+
+	// Max URL length allowed + 1
+	let new_service_endpoints = get_service_endpoints(<Test as did::Config>::MaxEndpointUrlsCount::get().saturating_add(1), 10);
+
+	let mut details = generate_base_did_update_details();
+	details.service_endpoints_update = did::DidFragmentUpdateAction::Change(new_service_endpoints);
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.build(None);
+
+	let new_block_number: TestBlockNumber = 1;
+
+	ext.execute_with(|| {
+		System::set_block_number(new_block_number);
+		assert_noop!(
+			Did::update(Origin::signed(alice_did.clone()), details),
+			did::Error::<Test>::MaxUrlsCountExceeded
 		);
 	});
 }

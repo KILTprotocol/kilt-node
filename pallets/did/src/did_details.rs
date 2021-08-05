@@ -301,7 +301,7 @@ impl<T: Config> DidDetails<T> {
 			);
 			ensure!(
 				// Throws InputError::MaxUrlLengthExceeded if any URL is longer than the max allowed size.
-				service_endpoints.urls.iter().any(|url| {
+				!service_endpoints.urls.iter().any(|url| {
 					url.len() > T::MaxUrlLength::get().saturated_into::<usize>()
 				}),
 				InputError::MaxUrlLengthExceeded
@@ -352,7 +352,7 @@ impl<T: Config> DidDetails<T> {
 			);
 			ensure!(
 				// Throws InputError::MaxUrlLengthExceeded if any URL is longer than the max allowed size.
-				service_endpoints.urls.iter().any(|url| {
+				!service_endpoints.urls.iter().any(|url| {
 					url.len() > T::MaxUrlLength::get().saturated_into::<usize>()
 				}),
 				DidError::InputError(InputError::MaxUrlLengthExceeded)
@@ -665,9 +665,9 @@ pub struct DidUpdateDetails<T: Config> {
 
 #[derive(Clone, Debug, Decode, Encode, PartialEq, Eq)]
 pub struct ServiceEndpoints {
-	content_hash: Hash,
-	urls: Vec<Url>,
-	content_type: ContentType,
+	pub content_hash: Hash,
+	pub urls: Vec<Url>,
+	pub content_type: ContentType,
 }
 
 /// Possible actions on a DID fragment (e.g, a verification key or the endpoint services) within a

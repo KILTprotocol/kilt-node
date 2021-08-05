@@ -19,10 +19,9 @@
 #![allow(clippy::from_over_into)]
 #![allow(unused_must_use)]
 
-#[cfg(feature = "runtime-benchmarks")]
-use frame_system::EnsureSigned;
-
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
+use frame_system::EnsureSigned;
+use kilt_primitives::Hash;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
@@ -92,19 +91,18 @@ parameter_types! {
 	pub const MaxNewKeyAgreementKeys: u32 = 10u32;
 	pub const MaxVerificationKeysToRevoke: u32 = 10u32;
 	pub const MaxUrlLength: u32 = 200u32;
+	pub const MaxUrlsEndpointCounts: u32 = 3u32;
 }
 
 impl Config for Test {
 	type DidIdentifier = TestDidIdentifier;
 	type Origin = Origin;
 	type Call = Call;
-	#[cfg(feature = "runtime-benchmarks")]
 	type EnsureOrigin = EnsureSigned<TestDidIdentifier>;
-	#[cfg(not(feature = "runtime-benchmarks"))]
-	type EnsureOrigin = did::EnsureDidOrigin<TestDidIdentifier>;
 	type Event = ();
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxUrlLength = MaxUrlLength;
+	type MaxEndpointUrlsCount = MaxUrlsEndpointCounts;
 	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 	type WeightInfo = ();
 }
@@ -131,6 +129,7 @@ const ALTERNATIVE_ATT_SEED: [u8; 32] = [60u8; 32];
 const DEFAULT_DEL_SEED: [u8; 32] = [7u8; 32];
 const ALTERNATIVE_DEL_SEED: [u8; 32] = [70u8; 32];
 const DEFAULT_URL_SCHEME: [u8; 8] = *b"https://";
+const DEFAULT_SERVICE_ENDPOINT_HASH_SEED: u64 = 200u64;
 
 pub fn get_did_identifier_from_ed25519_key(public_key: ed25519::Public) -> TestDidIdentifier {
 	MultiSigner::from(public_key).into_account()
@@ -254,13 +253,20 @@ pub fn get_public_keys_to_remove(n_keys: u32) -> BTreeSet<TestKeyId> {
 }
 
 // Assumes that the length of the URL is larger than 8 (length of the prefix https://)
-pub fn get_url_endpoint(length: u32) -> Url {
+pub fn get_service_endpoints(count: u32, length: u32) -> ServiceEndpoints {
 	let total_length = usize::try_from(length).expect("Failed to convert URL max length value to usize value.");
+	let total_count = usize::try_from(count).expect("Failed to convert number (count) of URLs to usize value.");
 	let mut url_encoded_string = DEFAULT_URL_SCHEME.to_vec();
 	url_encoded_string.resize(total_length, b'0');
-	Url::Http(
+	let url = Url::Http(
 		HttpUrl::try_from(url_encoded_string.as_ref()).expect("Failed to create default URL with provided length."),
-	)
+	);
+
+	ServiceEndpoints {
+		content_hash: Hash::from_low_u64_be(DEFAULT_SERVICE_ENDPOINT_HASH_SEED),
+		urls: vec![url; total_count],
+		content_type: ContentType::ApplicationJson,
+	}
 }
 
 pub fn generate_base_did_creation_details(did: TestDidIdentifier) -> did::DidCreationDetails<Test> {
@@ -279,7 +285,7 @@ pub fn generate_base_did_update_details() -> did::DidUpdateDetails<Test> {
 		new_key_agreement_keys: BTreeSet::new(),
 		attestation_key_update: DidFragmentUpdateAction::default(),
 		delegation_key_update: DidFragmentUpdateAction::default(),
-		service_endpoints_update: None,
+		service_endpoints_update: DidFragmentUpdateAction::default(),
 		public_keys_to_remove: BTreeSet::new(),
 	}
 }
