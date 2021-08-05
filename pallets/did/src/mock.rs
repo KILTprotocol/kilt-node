@@ -269,7 +269,7 @@ pub fn generate_base_did_creation_details(did: TestDidIdentifier) -> did::DidCre
 		new_key_agreement_keys: BTreeSet::new(),
 		new_attestation_key: None,
 		new_delegation_key: None,
-		new_endpoint_url: None,
+		new_service_endpoints: None,
 	}
 }
 
@@ -279,7 +279,7 @@ pub fn generate_base_did_update_details() -> did::DidUpdateDetails<Test> {
 		new_key_agreement_keys: BTreeSet::new(),
 		attestation_key_update: DidFragmentUpdateAction::default(),
 		delegation_key_update: DidFragmentUpdateAction::default(),
-		new_endpoint_url: None,
+		service_endpoints_update: None,
 		public_keys_to_remove: BTreeSet::new(),
 	}
 }

@@ -186,6 +186,9 @@ pub mod pallet {
 		/// a creation or update operation.
 		#[pallet::constant]
 		type MaxUrlLength: Get<u32>;
+		/// Maximum number of URLs that a service endpoint can contain.
+		#[pallet::constant]
+		type MaxEndpointUrlsCount: Get<u32>;
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}
@@ -259,6 +262,8 @@ pub mod pallet {
 		MaxVerificationKeysToRemoveLimitExceeded,
 		/// A URL longer than the maximum size allowed has been provided.
 		MaxUrlLengthExceeded,
+		/// More than the maximum number of URLs have been specified.
+		MaxUrlsCountExceeded,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
 	}
@@ -314,6 +319,7 @@ pub mod pallet {
 				InputError::MaxKeyAgreementKeysLimitExceeded => Self::MaxKeyAgreementKeysLimitExceeded,
 				InputError::MaxVerificationKeysToRemoveLimitExceeded => Self::MaxVerificationKeysToRemoveLimitExceeded,
 				InputError::MaxUrlLengthExceeded => Self::MaxUrlLengthExceeded,
+				InputError::MaxUrlsCountExceeded => Self::MaxUrlsCountExceeded,
 			}
 		}
 	}
@@ -348,20 +354,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Writes: Did (with K new key agreement keys)
 		/// # </weight>
-		#[pallet::weight(
-			<T as pallet::Config>::WeightInfo::create_ed25519_keys(
-				details.new_key_agreement_keys.len().saturated_into::<u32>(),
-				details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
-			)
-			.max(<T as pallet::Config>::WeightInfo::create_sr25519_keys(
-				details.new_key_agreement_keys.len().saturated_into::<u32>(),
-				details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
-			))
-			.max(<T as pallet::Config>::WeightInfo::create_ecdsa_keys(
-				details.new_key_agreement_keys.len().saturated_into::<u32>(),
-				details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
-			))
-		)]
+		#[pallet::weight(1)]
 		pub fn create(origin: OriginFor<T>, details: DidCreationDetails<T>, signature: DidSignature) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
@@ -443,23 +436,7 @@ pub mod pallet {
 		/// - Writes: Did (with K new key agreement keys and removing D public
 		///   keys)
 		/// # </weight>
-		#[pallet::weight(
-			<T as pallet::Config>::WeightInfo::update_ed25519_keys(
-				details.new_key_agreement_keys.len().saturated_into::<u32>(),
-				details.public_keys_to_remove.len().saturated_into::<u32>(),
-				details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
-			)
-			.max(<T as pallet::Config>::WeightInfo::update_sr25519_keys(
-				details.new_key_agreement_keys.len().saturated_into::<u32>(),
-				details.public_keys_to_remove.len().saturated_into::<u32>(),
-				details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
-			))
-			.max(<T as pallet::Config>::WeightInfo::update_ecdsa_keys(
-				details.new_key_agreement_keys.len().saturated_into::<u32>(),
-				details.public_keys_to_remove.len().saturated_into::<u32>(),
-				details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
-			))
-		)]
+		#[pallet::weight(1)]
 		pub fn update(origin: OriginFor<T>, details: DidUpdateDetails<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 
@@ -548,14 +525,7 @@ pub mod pallet {
 		/// - Writes: Did
 		/// # </weight>
 		#[allow(clippy::boxed_local)]
-		#[pallet::weight({
-    		let di = did_call.call.get_dispatch_info();
-    		let max_sig_weight = <T as pallet::Config>::WeightInfo::submit_did_call_ed25519_key()
-    		.max(<T as pallet::Config>::WeightInfo::submit_did_call_sr25519_key())
-    		.max(<T as pallet::Config>::WeightInfo::submit_did_call_ecdsa_key());
-
-    		(max_sig_weight.saturating_add(di.weight), di.class)
-  		})]
+		#[pallet::weight(1)]
 		pub fn submit_did_call(
 			origin: OriginFor<T>,
 			did_call: Box<DidAuthorizedCallOperation<T>>,

@@ -87,4 +87,6 @@ pub enum InputError {
 	MaxVerificationKeysToRemoveLimitExceeded,
 	/// A URL longer than the maximum size allowed has been provided.
 	MaxUrlLengthExceeded,
+	/// More than the maximum number of URLs have been specified.
+	MaxUrlsCountExceeded,
 }

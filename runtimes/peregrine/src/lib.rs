@@ -686,6 +686,7 @@ parameter_types! {
 	pub const MaxNewKeyAgreementKeys: u32 = 10u32;
 	pub const MaxVerificationKeysToRevoke: u32 = 10u32;
 	pub const MaxUrlLength: u32 = 200u32;
+	pub const MaxUrlsEndpointCounts: u32 = 3u32;
 }
 
 impl did::Config for Runtime {
@@ -700,7 +701,8 @@ impl did::Config for Runtime {
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 	type MaxUrlLength = MaxUrlLength;
-	type WeightInfo = weights::did::WeightInfo<Runtime>;
+	type MaxEndpointUrlsCount = MaxUrlsEndpointCounts;
+	type WeightInfo = ();
 }
 
 /// Minimum round length is 1 hour (600 * 6 second block times)

@@ -17,7 +17,6 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::{Decode, Encode, WrapperTypeEncode};
-use frame_support::BoundedVec;
 use kilt_primitives::Hash;
 use sp_core::{ecdsa, ed25519, sr25519};
 use sp_runtime::traits::Verify;
@@ -192,7 +191,7 @@ impl DidVerifiableIdentifier for kilt_primitives::DidIdentifier {
 					.encode()
 					.try_into()
 					.map_err(|_| SignatureError::InvalidSignature)?;
-				// ECDSA uses blake2-256 hashing algorihtm for signatures, so we hash the given
+				// ECDSA uses blake2-256 hashing algorithm for signatures, so we hash the given
 				// message to recover the public key.
 				let hashed_message = sp_io::hashing::blake2_256(payload);
 				let recovered_pk: [u8; 33] =
@@ -248,9 +247,9 @@ pub struct DidDetails<T: Config> {
 	/// be used to create new attestations but can still be used to verify
 	/// previously issued attestations.
 	public_keys: BTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>>,
-	/// \[OPTIONAL\] The URL pointing to the service endpoints the DID
+	/// \[OPTIONAL\] The service endpoint details the DID
 	/// subject publicly exposes.
-	pub endpoint_url: Option<Url>,
+	pub service_endpoints: Option<ServiceEndpoints>,
 	/// The counter used to avoid replay attacks, which is checked and
 	/// updated upon each DID operation involving with the subject as the
 	/// creator.
@@ -261,7 +260,7 @@ impl<T: Config> DidDetails<T> {
 	/// Creates a new instance of DID details with the minimum information,
 	/// i.e., an authentication key and the block creation time.
 	///
-	/// The tx counter is set by default to 0.
+	/// The tx counter is automatically set to 0.
 	pub fn new(authentication_key: DidVerificationKey, block_number: BlockNumberOf<T>) -> Self {
 		let mut public_keys: BTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>> = BTreeMap::new();
 		let authentication_key_id = utils::calculate_key_id::<T>(&authentication_key.clone().into());
@@ -277,13 +276,13 @@ impl<T: Config> DidDetails<T> {
 			key_agreement_keys: BTreeSet::new(),
 			attestation_key: None,
 			delegation_key: None,
-			endpoint_url: None,
+			service_endpoints: None,
 			public_keys,
 			last_tx_counter: 0u64,
 		}
 	}
 
-	// Creates a new DID entry from [DidUpdateDetails] and a given authentication
+	// Creates a new DID entry from some [DidCreationDetails] and a given authentication
 	// key.
 	pub fn from_creation_details(
 		details: DidCreationDetails<T>,
@@ -295,11 +294,18 @@ impl<T: Config> DidDetails<T> {
 			InputError::MaxKeyAgreementKeysLimitExceeded
 		);
 
-		if let Some(ref endpoint_url) = details.new_endpoint_url {
+		if let Some(ref service_endpoints) = details.new_service_endpoints {
 			ensure!(
-				endpoint_url.len() <= T::MaxUrlLength::get().saturated_into::<usize>(),
-				InputError::MaxUrlLengthExceeded
+				service_endpoints.urls.len() <= T::MaxEndpointUrlsCount::get().saturated_into::<usize>(),
+				InputError::MaxUrlsCountExceeded,
 			);
+			ensure!(
+				// Throws InputError::MaxUrlLengthExceeded if any URL is longer than the max allowed size.
+				service_endpoints.urls.iter().any(|url| {
+					url.len() > T::MaxUrlLength::get().saturated_into::<usize>()
+				}),
+				InputError::MaxUrlLengthExceeded
+			)
 		}
 
 		let current_block_number = <frame_system::Pallet<T>>::block_number();
@@ -317,7 +323,7 @@ impl<T: Config> DidDetails<T> {
 			new_did_details.update_delegation_key(delegation_key, current_block_number);
 		}
 
-		new_did_details.endpoint_url = details.new_endpoint_url;
+		new_did_details.service_endpoints = details.new_service_endpoints;
 
 		Ok(new_did_details)
 	}
@@ -339,9 +345,16 @@ impl<T: Config> DidDetails<T> {
 			DidError::InputError(InputError::MaxVerificationKeysToRemoveLimitExceeded)
 		);
 
-		if let Some(ref endpoint_url) = update_details.new_endpoint_url {
+		if let DidFragmentUpdateAction::Change(ref service_endpoints) = update_details.service_endpoints_update {
 			ensure!(
-				endpoint_url.len() <= T::MaxUrlLength::get().saturated_into::<usize>(),
+				service_endpoints.urls.len() <= T::MaxEndpointUrlsCount::get().saturated_into::<usize>(),
+				DidError::InputError(InputError::MaxUrlsCountExceeded)
+			);
+			ensure!(
+				// Throws InputError::MaxUrlLengthExceeded if any URL is longer than the max allowed size.
+				service_endpoints.urls.iter().any(|url| {
+					url.len() > T::MaxUrlLength::get().saturated_into::<usize>()
+				}),
 				DidError::InputError(InputError::MaxUrlLengthExceeded)
 			);
 		}
@@ -384,9 +397,11 @@ impl<T: Config> DidDetails<T> {
 			DidFragmentUpdateAction::Ignore => {}
 		}
 
-		// Update URL, if needed.
-		if let Some(new_endpoint_url) = update_details.new_endpoint_url {
-			self.endpoint_url = Some(new_endpoint_url);
+		// Update/remove the service endpoints, if needed.
+		match update_details.service_endpoints_update {
+			DidFragmentUpdateAction::Delete => self.service_endpoints = None,
+			DidFragmentUpdateAction::Change(new_service_endpoints) => self.service_endpoints = Some(new_service_endpoints),
+			DidFragmentUpdateAction::Ignore => {}
 		}
 
 		Ok(())
@@ -624,8 +639,8 @@ pub struct DidCreationDetails<T: Config> {
 	pub new_attestation_key: Option<DidVerificationKey>,
 	/// \[OPTIONAL\] The new delegation key.
 	pub new_delegation_key: Option<DidVerificationKey>,
-	/// The service endpoints information action.
-	pub new_endpoint_url: DidFragmentUpdateAction<ServiceEndpoints<T::MaxUrlLength>>,
+	/// \[OPTIONAL\] The service endpoints publicly exposed.
+	pub new_service_endpoints: Option<ServiceEndpoints>,
 }
 
 /// The details to update a DID.
@@ -644,14 +659,14 @@ pub struct DidUpdateDetails<T: Config> {
 	/// not be considered for removal in this operation, so it is not
 	/// possible to specify it for removal in this set.
 	pub public_keys_to_remove: BTreeSet<KeyIdOf<T>>,
-	/// The service endpoints information action.
-	pub new_endpoint_url: DidFragmentUpdateAction<ServiceEndpoints<T::MaxUrlLength>>,
+	/// The update action on the service endpoints information.
+	pub service_endpoints_update: DidFragmentUpdateAction<ServiceEndpoints>,
 }
 
-#[derive(Clone, Decode, Debug, Encode, PartialEq, Eq)]
-pub struct ServiceEndpoints<UrlMaxLength: Get<u32>> {
+#[derive(Clone, Debug, Decode, Encode, PartialEq, Eq)]
+pub struct ServiceEndpoints {
 	content_hash: Hash,
-	urls: BoundedVec<Url, UrlMaxLength>,
+	urls: Vec<Url>,
 	content_type: ContentType,
 }
 

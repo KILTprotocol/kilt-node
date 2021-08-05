@@ -150,7 +150,7 @@ fn check_successful_complete_creation() {
 	details.new_key_agreement_keys = enc_keys.clone();
 	details.new_attestation_key = Some(did::DidVerificationKey::from(att_key.public()));
 	details.new_delegation_key = Some(did::DidVerificationKey::from(del_key.public()));
-	details.new_endpoint_url = Some(new_url);
+	details.new_service_endpoints = Some(new_url);
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
@@ -331,7 +331,7 @@ fn check_url_too_long_did_creation() {
 	let url_endpoint = get_url_endpoint(<Test as did::Config>::MaxUrlLength::get().saturating_add(1));
 	let mut details = generate_base_did_creation_details(alice_did);
 	// Max length allowed + 1
-	details.new_endpoint_url = Some(url_endpoint);
+	details.new_service_endpoints = Some(url_endpoint);
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
@@ -392,7 +392,7 @@ fn check_successful_complete_update() {
 		.iter()
 		.copied()
 		.collect::<BTreeSet<TestKeyId>>();
-	details.new_endpoint_url = Some(new_url);
+	details.service_endpoints_update = Some(new_url);
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
@@ -690,7 +690,7 @@ fn check_url_too_long_did_update() {
 	let new_endpoint_url = get_url_endpoint(<Test as did::Config>::MaxUrlLength::get().saturating_add(1));
 
 	let mut details = generate_base_did_update_details();
-	details.new_endpoint_url = Some(new_endpoint_url);
+	details.service_endpoints_update = Some(new_endpoint_url);
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
