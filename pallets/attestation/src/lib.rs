@@ -85,8 +85,6 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
-use sp_std::vec::Vec;
-
 pub use crate::{attestations::*, default_weights::WeightInfo, pallet::*};
 
 use frame_support::traits::Get;

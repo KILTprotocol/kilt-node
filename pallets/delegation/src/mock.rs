@@ -28,7 +28,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSignature, MultiSigner,
 };
-use sp_std::{collections::btree_set::BTreeSet, sync::Arc};
+use sp_std::sync::Arc;
 
 #[cfg(test)]
 use codec::Encode;
