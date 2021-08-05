@@ -1063,6 +1063,8 @@ pub mod pallet {
 			);
 
 			// attempt to insert candidate and check for excess
+			// NOTE: We don't support replacing a candidate with fewer stake in case of
+			// excess right now, but will be in future.
 			let insert_candidate = candidates
 				.insert(Stake {
 					owner: acc.clone(),
@@ -1256,6 +1258,8 @@ pub mod pallet {
 			);
 
 			// attempt to insert candidate and check for excess
+			// NOTE: We don't support replacing a candidate with fewer stake in case of
+			// excess right now, but will be in future.
 			let insert_candidate = candidates
 				.insert(Stake {
 					owner: acc.clone(),
@@ -1469,7 +1473,9 @@ pub mod pallet {
 				amount,
 			};
 
-			// attempt to insert delegator and check for uniqueness, excess is handled below
+			// attempt to insert delegator and check for uniqueness
+			// NOTE: excess is handled below because we support replacing a delegator with
+			// fewer stake
 			let insert_delegator = state
 				.delegators
 				// we handle TooManyDelegators error below in do_update_delegator
@@ -1582,8 +1588,9 @@ pub mod pallet {
 			let num_delegations_pre_insertion: u32 = state.delegators.len().saturated_into();
 			ensure!(!state.is_leaving(), Error::<T>::CannotDelegateIfLeaving);
 
-			// throws if delegation insertion exceeds bounded vec limit which we will handle
-			// below in Self::do_update_delegator
+			// attempt to insert delegator and check for uniqueness
+			// NOTE: excess is handled below because we support replacing a delegator with
+			// fewer stake
 			ensure!(
 				delegator
 					.add_delegation(Stake {
