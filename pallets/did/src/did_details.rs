@@ -227,16 +227,16 @@ pub struct DidPublicKeyDetails<T: Config> {
 pub struct DidDetails<T: Config> {
 	/// The ID of the authentication key, used to authenticate DID-related
 	/// operations.
-	authentication_key: KeyIdOf<T>,
+	pub(crate) authentication_key: KeyIdOf<T>,
 	/// The set of the key agreement key IDs, which can be used to encrypt
 	/// data addressed to the DID subject.
-	key_agreement_keys: BTreeSet<KeyIdOf<T>>,
+	pub(crate) key_agreement_keys: BTreeSet<KeyIdOf<T>>,
 	/// \[OPTIONAL\] The ID of the delegation key, used to verify the
 	/// signatures of the delegations created by the DID subject.
-	delegation_key: Option<KeyIdOf<T>>,
+	pub(crate) delegation_key: Option<KeyIdOf<T>>,
 	/// \[OPTIONAL\] The ID of the attestation key, used to verify the
 	/// signatures of the attestations created by the DID subject.
-	attestation_key: Option<KeyIdOf<T>>,
+	pub(crate) attestation_key: Option<KeyIdOf<T>>,
 	/// The map of public keys, with the key label as
 	/// the key map and the tuple (key, addition_block_number) as the map
 	/// value.
@@ -246,7 +246,7 @@ pub struct DidDetails<T: Config> {
 	/// the old attestation keys that have been rotated, i.e., they cannot
 	/// be used to create new attestations but can still be used to verify
 	/// previously issued attestations.
-	public_keys: BTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>>,
+	pub(crate) public_keys: BTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>>,
 	/// \[OPTIONAL\] The service endpoint details the DID
 	/// subject publicly exposes.
 	pub service_endpoints: Option<ServiceEndpoints>,

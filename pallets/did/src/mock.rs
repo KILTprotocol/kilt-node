@@ -376,17 +376,26 @@ pub fn initialize_logger() {
 #[derive(Clone)]
 pub struct ExtBuilder {
 	dids_stored: Vec<(TestDidIdentifier, did::DidDetails<Test>)>,
+	storage_version: DidStorageVersion,
 }
 
 impl Default for ExtBuilder {
 	fn default() -> Self {
-		Self { dids_stored: vec![] }
+		Self {
+			dids_stored: vec![],
+			storage_version: DidStorageVersion::default(),
+		}
 	}
 }
 
 impl ExtBuilder {
 	pub fn with_dids(mut self, dids: Vec<(TestDidIdentifier, did::DidDetails<Test>)>) -> Self {
 		self.dids_stored = dids;
+		self
+	}
+
+	pub fn with_storage_version(mut self, storage_version: DidStorageVersion) -> Self {
+		self.storage_version = storage_version;
 		self
 	}
 
@@ -405,6 +414,10 @@ impl ExtBuilder {
 				})
 			});
 		}
+
+		ext.execute_with(|| {
+			did::StorageVersion::<Test>::set(self.storage_version);
+		});
 
 		ext
 	}

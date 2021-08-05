@@ -100,6 +100,7 @@
 pub mod default_weights;
 pub mod did_details;
 pub mod errors;
+pub mod migrations;
 pub mod origin;
 pub mod url;
 
@@ -113,12 +114,15 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+mod deprecated;
+
 pub use crate::{default_weights::WeightInfo, did_details::*, errors::*, origin::*, pallet::*, url::*};
 
 use codec::Encode;
 use frame_support::{
 	dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo},
 	ensure,
+	pallet_prelude::Weight,
 	storage::types::StorageMap,
 	traits::Get,
 	Parameter,
@@ -128,6 +132,8 @@ use frame_system::ensure_signed;
 use frame_system::RawOrigin;
 use sp_runtime::SaturatedConversion;
 use sp_std::{boxed::Box, convert::TryFrom, fmt::Debug, prelude::Clone, vec::Vec};
+
+use migrations::*;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -198,7 +204,21 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::hooks]
-	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		#[cfg(feature = "try-runtime")]
+		fn pre_upgrade() -> Result<(), &'static str> {
+			migrations::DidStorageMigrator::<T>::pre_migrate()
+		}
+
+		fn on_runtime_upgrade() -> Weight {
+			migrations::DidStorageMigrator::<T>::migrate()
+		}
+
+		#[cfg(feature = "try-runtime")]
+		fn post_upgrade() -> Result<(), &'static str> {
+			migrations::DidStorageMigrator::<T>::post_migrate()
+		}
+	}
 
 	/// DIDs stored on chain.
 	///
@@ -206,6 +226,11 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn get_did)]
 	pub type Did<T> = StorageMap<_, Blake2_128Concat, DidIdentifierOf<T>, DidDetails<T>>;
+
+	/// Contains the latest storage version deployed.
+	#[pallet::storage]
+	#[pallet::getter(fn last_version_migration_used)]
+	pub(crate) type StorageVersion<T> = StorageValue<_, DidStorageVersion, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
