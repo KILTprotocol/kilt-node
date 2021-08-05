@@ -23,23 +23,23 @@ use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom};
 use crate::{self as did, mock::*, Config};
 use ctype::mock as ctype_mock;
 
-// submit_did_create_operation
+// create
 
 #[test]
 fn check_successful_simple_ed25519_creation() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let auth_did_key = did::DidVerificationKey::from(auth_key.public());
-	let operation = generate_base_did_creation_operation(alice_did.clone());
+	let details = generate_base_did_creation_details(alice_did.clone());
 
-	let signature = auth_key.sign(operation.encode().as_ref());
+	let signature = auth_key.sign(details.encode().as_ref());
 
 	let mut ext = ExtBuilder::default().build(None);
 
 	ext.execute_with(|| {
-		assert_ok!(Did::submit_did_create_operation(
+		assert_ok!(Did::create(
 			Origin::signed(DEFAULT_ACCOUNT),
-			operation.clone(),
+			details,
 			did::DidSignature::from(signature),
 		));
 	});
@@ -65,16 +65,16 @@ fn check_successful_simple_sr25519_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let auth_did_key = did::DidVerificationKey::from(auth_key.public());
-	let operation = generate_base_did_creation_operation(alice_did.clone());
+	let details = generate_base_did_creation_details(alice_did.clone());
 
-	let signature = auth_key.sign(operation.encode().as_ref());
+	let signature = auth_key.sign(details.encode().as_ref());
 
 	let mut ext = ExtBuilder::default().build(None);
 
 	ext.execute_with(|| {
-		assert_ok!(Did::submit_did_create_operation(
+		assert_ok!(Did::create(
 			Origin::signed(DEFAULT_ACCOUNT),
-			operation.clone(),
+			details,
 			did::DidSignature::from(signature),
 		));
 	});
@@ -100,16 +100,16 @@ fn check_successful_simple_ecdsa_creation() {
 	let auth_key = get_ecdsa_authentication_key(true);
 	let alice_did = get_did_identifier_from_ecdsa_key(auth_key.public());
 	let auth_did_key = did::DidVerificationKey::from(auth_key.public());
-	let operation = generate_base_did_creation_operation(alice_did.clone());
+	let details = generate_base_did_creation_details(alice_did.clone());
 
-	let signature = auth_key.sign(operation.encode().as_ref());
+	let signature = auth_key.sign(details.encode().as_ref());
 
 	let mut ext = ExtBuilder::default().build(None);
 
 	ext.execute_with(|| {
-		assert_ok!(Did::submit_did_create_operation(
+		assert_ok!(Did::create(
 			Origin::signed(DEFAULT_ACCOUNT),
-			operation.clone(),
+			details,
 			did::DidSignature::from(signature),
 		));
 	});
@@ -148,20 +148,20 @@ fn check_successful_complete_creation() {
 		did::HttpUrl::try_from("https://new_kilt.io".as_bytes())
 			.expect("https://new_kilt.io should not be considered an invalid HTTP URL."),
 	);
-	let mut operation = generate_base_did_creation_operation(alice_did.clone());
-	operation.new_key_agreement_keys = enc_keys.clone();
-	operation.new_attestation_key = Some(did::DidVerificationKey::from(att_key.public()));
-	operation.new_delegation_key = Some(did::DidVerificationKey::from(del_key.public()));
-	operation.new_endpoint_url = Some(new_url);
+	let mut details = generate_base_did_creation_details(alice_did.clone());
+	details.new_key_agreement_keys = enc_keys.clone();
+	details.new_attestation_key = Some(did::DidVerificationKey::from(att_key.public()));
+	details.new_delegation_key = Some(did::DidVerificationKey::from(del_key.public()));
+	details.new_endpoint_url = Some(new_url);
 
-	let signature = auth_key.sign(operation.encode().as_ref());
+	let signature = auth_key.sign(details.encode().as_ref());
 
 	let mut ext = ExtBuilder::default().build(None);
 
 	ext.execute_with(|| {
-		assert_ok!(Did::submit_did_create_operation(
+		assert_ok!(Did::create(
 			Origin::signed(DEFAULT_ACCOUNT),
-			operation.clone(),
+			details.clone(),
 			did::DidSignature::from(signature),
 		));
 	});
@@ -179,11 +179,11 @@ fn check_successful_complete_creation() {
 	}
 	assert_eq!(
 		stored_did.get_delegation_key_id(),
-		&Some(generate_key_id(&operation.new_delegation_key.clone().unwrap().into()))
+		&Some(generate_key_id(&details.new_delegation_key.clone().unwrap().into()))
 	);
 	assert_eq!(
 		stored_did.get_attestation_key_id(),
-		&Some(generate_key_id(&operation.new_attestation_key.clone().unwrap().into()))
+		&Some(generate_key_id(&details.new_attestation_key.clone().unwrap().into()))
 	);
 	// Authentication key + 2 * Encryption key + Delegation key + Attestation key =
 	// 5
@@ -191,7 +191,7 @@ fn check_successful_complete_creation() {
 	assert!(stored_did
 		.get_public_keys()
 		.contains_key(&generate_key_id(&auth_did_key.into())));
-	let mut key_agreement_keys_iterator = operation.new_key_agreement_keys.iter().copied();
+	let mut key_agreement_keys_iterator = details.new_key_agreement_keys.iter().copied();
 	assert!(stored_did
 		.get_public_keys()
 		.contains_key(&generate_key_id(&key_agreement_keys_iterator.next().unwrap().into())));
@@ -200,10 +200,10 @@ fn check_successful_complete_creation() {
 		.contains_key(&generate_key_id(&key_agreement_keys_iterator.next().unwrap().into())));
 	assert!(stored_did
 		.get_public_keys()
-		.contains_key(&generate_key_id(&operation.new_attestation_key.clone().unwrap().into())));
+		.contains_key(&generate_key_id(&details.new_attestation_key.clone().unwrap().into())));
 	assert!(stored_did
 		.get_public_keys()
-		.contains_key(&generate_key_id(&operation.new_delegation_key.clone().unwrap().into())));
+		.contains_key(&generate_key_id(&details.new_delegation_key.clone().unwrap().into())));
 }
 
 #[test]
@@ -212,17 +212,17 @@ fn check_duplicate_did_creation() {
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let auth_did_key = did::DidVerificationKey::from(auth_key.public());
 	let mock_did = generate_base_did_details(auth_did_key);
-	let operation = generate_base_did_creation_operation(alice_did.clone());
+	let details = generate_base_did_creation_details(alice_did.clone());
 
-	let signature = auth_key.sign(operation.encode().as_ref());
+	let signature = auth_key.sign(details.encode().as_ref());
 
 	let mut ext = ExtBuilder::default().with_dids(vec![(alice_did, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::submit_did_create_operation(
+			Did::create(
 				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
+				details,
 				did::DidSignature::from(signature),
 			),
 			did::Error::<Test>::DidAlreadyPresent
@@ -237,17 +237,17 @@ fn check_invalid_signature_format_did_creation() {
 	// Using an Ed25519 key where an Sr25519 is expected
 	let invalid_key = get_ed25519_authentication_key(true);
 	// DID creation contains auth_key, but signature is generated using invalid_key
-	let operation = generate_base_did_creation_operation(alice_did);
+	let details = generate_base_did_creation_details(alice_did);
 
-	let signature = invalid_key.sign(operation.encode().as_ref());
+	let signature = invalid_key.sign(details.encode().as_ref());
 
 	let mut ext = ExtBuilder::default().build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::submit_did_create_operation(
+			Did::create(
 				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
+				details,
 				did::DidSignature::from(signature),
 			),
 			did::Error::<Test>::InvalidSignature
@@ -260,17 +260,40 @@ fn check_invalid_signature_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let alternative_key = get_sr25519_authentication_key(false);
-	let operation = generate_base_did_creation_operation(alice_did);
+	let details = generate_base_did_creation_details(alice_did);
 
-	let signature = alternative_key.sign(operation.encode().as_ref());
+	let signature = alternative_key.sign(details.encode().as_ref());
 
 	let mut ext = ExtBuilder::default().build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::submit_did_create_operation(
+			Did::create(
 				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
+				details,
+				did::DidSignature::from(signature),
+			),
+			did::Error::<Test>::InvalidSignature
+		);
+	});
+}
+
+#[test]
+fn check_swapped_did_subject_did_creation() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let swapped_key = get_sr25519_authentication_key(false);
+	let swapped_did = get_did_identifier_from_sr25519_key(swapped_key.public());
+	let details = generate_base_did_creation_details(swapped_did);
+
+	let signature = auth_key.sign(details.encode().as_ref());
+
+	let mut ext = ExtBuilder::default().build(None);
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::create(
+				Origin::signed(DEFAULT_ACCOUNT),
+				details,
 				did::DidSignature::from(signature),
 			),
 			did::Error::<Test>::InvalidSignature
@@ -284,18 +307,18 @@ fn check_max_limit_key_agreement_keys_did_creation() {
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	// Max keys allowed + 1
 	let enc_keys = get_key_agreement_keys(<Test as did::Config>::MaxNewKeyAgreementKeys::get().saturating_add(1));
-	let mut operation = generate_base_did_creation_operation(alice_did);
-	operation.new_key_agreement_keys = enc_keys;
+	let mut details = generate_base_did_creation_details(alice_did);
+	details.new_key_agreement_keys = enc_keys;
 
-	let signature = auth_key.sign(operation.encode().as_ref());
+	let signature = auth_key.sign(details.encode().as_ref());
 
 	let mut ext = ExtBuilder::default().build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::submit_did_create_operation(
+			Did::create(
 				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
+				details,
 				did::DidSignature::from(signature),
 			),
 			did::Error::<Test>::MaxKeyAgreementKeysLimitExceeded
@@ -308,19 +331,19 @@ fn check_url_too_long_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let url_endpoint = get_url_endpoint(<Test as did::Config>::MaxUrlLength::get().saturating_add(1));
-	let mut operation = generate_base_did_creation_operation(alice_did);
+	let mut details = generate_base_did_creation_details(alice_did);
 	// Max length allowed + 1
-	operation.new_endpoint_url = Some(url_endpoint);
+	details.new_endpoint_url = Some(url_endpoint);
 
-	let signature = auth_key.sign(operation.encode().as_ref());
+	let signature = auth_key.sign(details.encode().as_ref());
 
 	let mut ext = ExtBuilder::default().build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::submit_did_create_operation(
+			Did::create(
 				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
+				details,
 				did::DidSignature::from(signature),
 			),
 			did::Error::<Test>::MaxUrlLengthExceeded
@@ -328,7 +351,7 @@ fn check_url_too_long_did_creation() {
 	});
 }
 
-// submit_did_update_operation
+// update
 
 #[test]
 fn check_successful_complete_update() {
@@ -346,7 +369,7 @@ fn check_successful_complete_update() {
 	);
 
 	let mut old_did_details = generate_base_did_details(did::DidVerificationKey::from(old_auth_key.public()));
-	old_did_details.add_key_agreement_keys(
+	assert_ok!(old_did_details.add_key_agreement_keys(
 		BoundedBTreeSet::<did::DidEncryptionKey, <Test as Config>::MaxTotalKeyAgreementKeys>::try_from(
 			vec![old_enc_key]
 				.iter()
@@ -355,14 +378,14 @@ fn check_successful_complete_update() {
 		)
 		.expect("Should not fail to create BoundedBTreeSet from a single element"),
 		0u64,
-	);
-	old_did_details.update_attestation_key(did::DidVerificationKey::from(old_att_key.public()), 0u64);
+	));
+	assert_ok!(old_did_details.update_attestation_key(did::DidVerificationKey::from(old_att_key.public()), 0u64));
 
 	// Update all keys, URL endpoint and tx counter. The old key agreement key is
 	// removed.
-	let mut operation = generate_base_did_update_operation(alice_did.clone());
-	operation.new_authentication_key = Some(did::DidVerificationKey::from(new_auth_key.public()));
-	operation.new_key_agreement_keys =
+	let mut details = generate_base_did_update_details();
+	details.new_authentication_key = Some(did::DidVerificationKey::from(new_auth_key.public()));
+	details.new_key_agreement_keys =
 		BoundedBTreeSet::<did::DidEncryptionKey, <Test as Config>::MaxTotalKeyAgreementKeys>::try_from(
 			vec![new_enc_key]
 				.iter()
@@ -370,36 +393,28 @@ fn check_successful_complete_update() {
 				.collect::<BTreeSet<did::DidEncryptionKey>>(),
 		)
 		.expect("Should not fail to create BoundedBTreeSet from a single element");
-	operation.attestation_key_update =
+	details.attestation_key_update =
 		did::DidVerificationKeyUpdateAction::Change(did::DidVerificationKey::from(new_att_key.public()));
-	operation.delegation_key_update =
+	details.delegation_key_update =
 		did::DidVerificationKeyUpdateAction::Change(did::DidVerificationKey::from(new_del_key.public()));
-	operation.public_keys_to_remove = BoundedBTreeSet::<TestKeyId, <Test as Config>::MaxOldAttestationKeys>::try_from(
+	details.public_keys_to_remove = BoundedBTreeSet::<TestKeyId, <Test as Config>::MaxOldAttestationKeys>::try_from(
 		vec![generate_key_id(&old_enc_key.into())]
 			.iter()
 			.copied()
 			.collect::<BTreeSet<TestKeyId>>(),
 	)
 	.expect("Should not fail to create BoundedBTreeSet from a single element");
-	operation.new_endpoint_url = Some(new_url);
-	operation.tx_counter = old_did_details.last_tx_counter + 1u64;
-
-	// Generate signature using the old authentication key
-	let signature = old_auth_key.sign(operation.encode().as_ref());
+	details.new_endpoint_url = Some(new_url);
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
 
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
-		assert_ok!(Did::submit_did_update_operation(
-			Origin::signed(DEFAULT_ACCOUNT),
-			operation.clone(),
-			did::DidSignature::from(signature),
-		));
+		assert_ok!(Did::update(Origin::signed(alice_did.clone()), details));
 	});
 
 	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
@@ -450,7 +465,6 @@ fn check_successful_complete_update() {
 	assert!(public_keys.contains_key(&generate_key_id(
 		&did::DidVerificationKey::from(new_del_key.public()).into()
 	)));
-	assert_eq!(new_did_details.last_tx_counter, old_did_details.last_tx_counter + 1u64);
 }
 
 #[test]
@@ -461,16 +475,13 @@ fn check_successful_keys_deletion_update() {
 	let del_key = get_sr25519_delegation_key(true);
 
 	let mut old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	old_did_details.update_attestation_key(did::DidVerificationKey::from(att_key.public()), 0u64);
-	old_did_details.update_delegation_key(did::DidVerificationKey::from(del_key.public()), 0u64);
+	assert_ok!(old_did_details.update_attestation_key(did::DidVerificationKey::from(att_key.public()), 0u64));
+	assert_ok!(old_did_details.update_delegation_key(did::DidVerificationKey::from(del_key.public()), 0u64));
 
 	// Remove both attestation and delegation key
-	let mut operation = generate_base_did_update_operation(alice_did.clone());
-	operation.attestation_key_update = did::DidVerificationKeyUpdateAction::Delete;
-	operation.delegation_key_update = did::DidVerificationKeyUpdateAction::Delete;
-	operation.tx_counter = old_did_details.last_tx_counter + 1u64;
-
-	let signature = auth_key.sign(operation.encode().as_ref());
+	let mut details = generate_base_did_update_details();
+	details.attestation_key_update = did::DidVerificationKeyUpdateAction::Delete;
+	details.delegation_key_update = did::DidVerificationKeyUpdateAction::Delete;
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
@@ -480,11 +491,7 @@ fn check_successful_keys_deletion_update() {
 
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
-		assert_ok!(Did::submit_did_update_operation(
-			Origin::signed(DEFAULT_ACCOUNT),
-			operation.clone(),
-			did::DidSignature::from(signature),
-		));
+		assert_ok!(Did::update(Origin::signed(alice_did.clone()), details));
 	});
 
 	// Auth key and key agreement key unchanged
@@ -510,7 +517,6 @@ fn check_successful_keys_deletion_update() {
 	assert!(stored_public_keys.contains_key(&generate_key_id(
 		&did::DidVerificationKey::from(att_key.public()).into()
 	)));
-	assert_eq!(new_did_details.last_tx_counter, old_did_details.last_tx_counter + 1u64);
 }
 
 #[test]
@@ -523,11 +529,9 @@ fn check_successful_keys_overwrite_update() {
 	let old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 
 	// Remove both attestation and delegation key
-	let mut operation = generate_base_did_update_operation(alice_did.clone());
-	operation.attestation_key_update =
+	let mut details = generate_base_did_update_details();
+	details.attestation_key_update =
 		did::DidVerificationKeyUpdateAction::Change(did::DidVerificationKey::from(new_att_key.public()));
-
-	let signature = auth_key.sign(operation.encode().as_ref());
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
@@ -537,11 +541,7 @@ fn check_successful_keys_overwrite_update() {
 
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
-		assert_ok!(Did::submit_did_update_operation(
-			Origin::signed(DEFAULT_ACCOUNT),
-			operation.clone(),
-			did::DidSignature::from(signature),
-		));
+		assert_ok!(Did::update(Origin::signed(alice_did.clone()), details));
 	});
 
 	// Auth key unchanged
@@ -571,7 +571,6 @@ fn check_successful_keys_overwrite_update() {
 		.get(&old_did_details.get_authentication_key_id())
 		.expect("There should be a key with the given ID stored on chain.");
 	assert_eq!(stored_key_details.block_number, new_block_number);
-	assert_eq!(new_did_details.last_tx_counter, old_did_details.last_tx_counter + 1u64);
 }
 
 #[test]
@@ -582,13 +581,11 @@ fn check_successful_keys_multiuse_update() {
 	let old_att_key = auth_key.clone();
 
 	let mut old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	old_did_details.update_attestation_key(did::DidVerificationKey::from(old_att_key.public()), 0u64);
+	assert_ok!(old_did_details.update_attestation_key(did::DidVerificationKey::from(old_att_key.public()), 0u64));
 
 	// Remove attestation key
-	let mut operation = generate_base_did_update_operation(alice_did.clone());
-	operation.attestation_key_update = did::DidVerificationKeyUpdateAction::Delete;
-
-	let signature = auth_key.sign(operation.encode().as_ref());
+	let mut details = generate_base_did_update_details();
+	details.attestation_key_update = did::DidVerificationKeyUpdateAction::Delete;
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
@@ -598,11 +595,7 @@ fn check_successful_keys_multiuse_update() {
 
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
-		assert_ok!(Did::submit_did_update_operation(
-			Origin::signed(DEFAULT_ACCOUNT),
-			operation.clone(),
-			did::DidSignature::from(signature),
-		));
+		assert_ok!(Did::update(Origin::signed(alice_did.clone()), details));
 	});
 
 	// Auth key unchanged
@@ -629,168 +622,14 @@ fn check_did_not_present_update() {
 	let bob_auth_key = get_ed25519_authentication_key(false);
 	let bob_did = get_did_identifier_from_ed25519_key(bob_auth_key.public());
 	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	let operation = generate_base_did_update_operation(alice_did);
-
-	let signature = auth_key.sign(operation.encode().as_ref());
+	let details = generate_base_did_update_details();
 
 	let mut ext = ExtBuilder::default().with_dids(vec![(bob_did, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::submit_did_update_operation(
-				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
-				did::DidSignature::from(signature),
-			),
+			Did::update(Origin::signed(alice_did.clone()), details),
 			did::Error::<Test>::DidNotPresent
-		);
-	});
-}
-
-#[test]
-fn check_did_max_counter_update() {
-	let auth_key = get_ed25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	mock_did.last_tx_counter = u64::MAX;
-	let operation = generate_base_did_update_operation(alice_did.clone());
-
-	let signature = auth_key.sign(operation.encode().as_ref());
-
-	let mut ext = ExtBuilder::default().with_dids(vec![(alice_did, mock_did)]).build(None);
-
-	ext.execute_with(|| {
-		assert_noop!(
-			Did::submit_did_update_operation(
-				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
-				did::DidSignature::from(signature),
-			),
-			did::Error::<Test>::MaxTxCounterValue
-		);
-	});
-}
-
-#[test]
-fn check_smaller_tx_counter_did_update() {
-	let auth_key = get_sr25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	mock_did.last_tx_counter = 1;
-	let mut operation = generate_base_did_update_operation(alice_did.clone());
-	operation.tx_counter = mock_did.last_tx_counter - 1;
-
-	let signature = auth_key.sign(operation.encode().as_ref());
-
-	let mut ext = ExtBuilder::default().with_dids(vec![(alice_did, mock_did)]).build(None);
-
-	ext.execute_with(|| {
-		assert_noop!(
-			Did::submit_did_update_operation(
-				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
-				did::DidSignature::from(signature),
-			),
-			did::Error::<Test>::InvalidNonce
-		);
-	});
-}
-
-#[test]
-fn check_equal_tx_counter_did_update() {
-	let auth_key = get_sr25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	let mut operation = generate_base_did_update_operation(alice_did.clone());
-	operation.tx_counter = mock_did.last_tx_counter;
-
-	let signature = auth_key.sign(operation.encode().as_ref());
-
-	let mut ext = ExtBuilder::default().with_dids(vec![(alice_did, mock_did)]).build(None);
-
-	ext.execute_with(|| {
-		assert_noop!(
-			Did::submit_did_update_operation(
-				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
-				did::DidSignature::from(signature),
-			),
-			did::Error::<Test>::InvalidNonce
-		);
-	});
-}
-
-#[test]
-fn check_too_large_tx_counter_did_update() {
-	let auth_key = get_sr25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	let mut operation = generate_base_did_update_operation(alice_did.clone());
-	operation.tx_counter = mock_did.last_tx_counter + 2;
-
-	let signature = auth_key.sign(operation.encode().as_ref());
-
-	let mut ext = ExtBuilder::default().with_dids(vec![(alice_did, mock_did)]).build(None);
-
-	ext.execute_with(|| {
-		assert_noop!(
-			Did::submit_did_update_operation(
-				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
-				did::DidSignature::from(signature),
-			),
-			did::Error::<Test>::InvalidNonce
-		);
-	});
-}
-
-#[test]
-fn check_invalid_signature_format_did_update() {
-	let auth_key = get_ed25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	// Using an Sr25519 key where an Ed25519 is expected
-	let invalid_key = get_sr25519_authentication_key(true);
-	// DID update contains auth_key, but signature is generated using invalid_key
-	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	let operation = generate_base_did_update_operation(alice_did.clone());
-
-	let signature = invalid_key.sign(operation.encode().as_ref());
-
-	let mut ext = ExtBuilder::default().with_dids(vec![(alice_did, mock_did)]).build(None);
-
-	ext.execute_with(|| {
-		assert_noop!(
-			Did::submit_did_update_operation(
-				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
-				did::DidSignature::from(signature),
-			),
-			did::Error::<Test>::InvalidSignatureFormat
-		);
-	});
-}
-
-#[test]
-fn check_invalid_signature_did_update() {
-	let auth_key = get_sr25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
-	// Using an Sr25519 key as expected, but from a different seed (default = false)
-	let alternative_key = get_sr25519_authentication_key(false);
-	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	let operation = generate_base_did_update_operation(alice_did.clone());
-
-	let signature = alternative_key.sign(operation.encode().as_ref());
-
-	let mut ext = ExtBuilder::default().with_dids(vec![(alice_did, mock_did)]).build(None);
-
-	ext.execute_with(|| {
-		assert_noop!(
-			Did::submit_did_update_operation(
-				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
-				did::DidSignature::from(signature),
-			),
-			did::Error::<Test>::InvalidSignature
 		);
 	});
 }
@@ -805,13 +644,11 @@ fn check_max_limit_key_agreement_keys_did_update() {
 	// Max keys allowed + 1
 	let new_enc_keys = get_key_agreement_keys(<Test as did::Config>::MaxNewKeyAgreementKeys::get().saturating_add(1));
 
-	let mut operation = generate_base_did_update_operation(alice_did.clone());
-	operation.new_key_agreement_keys = new_enc_keys;
-
-	let signature = auth_key.sign(operation.encode().as_ref());
+	let mut details = generate_base_did_update_details();
+	details.new_key_agreement_keys = new_enc_keys;
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did, old_did_details)])
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
@@ -819,11 +656,7 @@ fn check_max_limit_key_agreement_keys_did_update() {
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::submit_did_update_operation(
-				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
-				did::DidSignature::from(signature),
-			),
+			Did::update(Origin::signed(alice_did.clone()), details),
 			did::Error::<Test>::MaxKeyAgreementKeysLimitExceeded
 		);
 	});
@@ -840,13 +673,11 @@ fn check_max_limit_public_keys_to_remove_did_update() {
 	let keys_ids_to_remove =
 		get_public_keys_to_remove(<Test as did::Config>::MaxNewKeyAgreementKeys::get().saturating_add(1));
 
-	let mut operation = generate_base_did_update_operation(alice_did.clone());
-	operation.public_keys_to_remove = keys_ids_to_remove;
-
-	let signature = auth_key.sign(operation.encode().as_ref());
+	let mut details = generate_base_did_update_details();
+	details.public_keys_to_remove = keys_ids_to_remove;
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did, old_did_details)])
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
@@ -854,11 +685,7 @@ fn check_max_limit_public_keys_to_remove_did_update() {
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::submit_did_update_operation(
-				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
-				did::DidSignature::from(signature),
-			),
+			Did::update(Origin::signed(alice_did.clone()), details),
 			did::Error::<Test>::MaxVerificationKeysToRemoveLimitExceeded
 		);
 	});
@@ -874,13 +701,11 @@ fn check_url_too_long_did_update() {
 	// Max URL length allowed + 1
 	let new_endpoint_url = get_url_endpoint(<Test as did::Config>::MaxUrlLength::get().saturating_add(1));
 
-	let mut operation = generate_base_did_update_operation(alice_did.clone());
-	operation.new_endpoint_url = Some(new_endpoint_url);
-
-	let signature = auth_key.sign(operation.encode().as_ref());
+	let mut details = generate_base_did_update_details();
+	details.new_endpoint_url = Some(new_endpoint_url);
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did, old_did_details)])
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
@@ -888,11 +713,7 @@ fn check_url_too_long_did_update() {
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::submit_did_update_operation(
-				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
-				did::DidSignature::from(signature),
-			),
+			Did::update(Origin::signed(alice_did.clone()), details),
 			did::Error::<Test>::MaxUrlLengthExceeded
 		);
 	});
@@ -906,9 +727,9 @@ fn check_currently_active_authentication_key_update() {
 	let old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 
 	// Remove both attestation and delegation key
-	let mut operation = generate_base_did_update_operation(alice_did.clone());
+	let mut details = generate_base_did_update_details();
 	// Trying to remove the currently active authentication key
-	operation.public_keys_to_remove = BoundedBTreeSet::<TestKeyId, <Test as Config>::MaxOldAttestationKeys>::try_from(
+	details.public_keys_to_remove = BoundedBTreeSet::<TestKeyId, <Test as Config>::MaxOldAttestationKeys>::try_from(
 		vec![generate_key_id(
 			&did::DidVerificationKey::from(auth_key.public()).into(),
 		)]
@@ -918,10 +739,8 @@ fn check_currently_active_authentication_key_update() {
 	)
 	.expect("Should not fail to create BoundedBTreeSet from a single element");
 
-	let signature = auth_key.sign(operation.encode().as_ref());
-
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did, old_did_details)])
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
@@ -929,11 +748,7 @@ fn check_currently_active_authentication_key_update() {
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::submit_did_update_operation(
-				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
-				did::DidSignature::from(signature),
-			),
+			Did::update(Origin::signed(alice_did.clone()), details),
 			did::Error::<Test>::CurrentlyActiveKey
 		);
 	});
@@ -946,12 +761,12 @@ fn check_currently_active_delegation_key_update() {
 	let del_key = get_ecdsa_delegation_key(true);
 
 	let mut old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	old_did_details.update_delegation_key(did::DidVerificationKey::from(del_key.public()), 0u64);
+	assert_ok!(old_did_details.update_delegation_key(did::DidVerificationKey::from(del_key.public()), 0u64));
 
 	// Remove both attestation and delegation key
-	let mut operation = generate_base_did_update_operation(alice_did.clone());
+	let mut details = generate_base_did_update_details();
 	// Trying to remove the currently active delegation key
-	operation.public_keys_to_remove = BoundedBTreeSet::<TestKeyId, <Test as Config>::MaxOldAttestationKeys>::try_from(
+	details.public_keys_to_remove = BoundedBTreeSet::<TestKeyId, <Test as Config>::MaxOldAttestationKeys>::try_from(
 		vec![generate_key_id(&did::DidVerificationKey::from(del_key.public()).into())]
 			.iter()
 			.copied()
@@ -959,10 +774,8 @@ fn check_currently_active_delegation_key_update() {
 	)
 	.expect("Should not fail to create BoundedBTreeSet from a single element");
 
-	let signature = auth_key.sign(operation.encode().as_ref());
-
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did, old_did_details)])
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
@@ -970,11 +783,7 @@ fn check_currently_active_delegation_key_update() {
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::submit_did_update_operation(
-				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
-				did::DidSignature::from(signature),
-			),
+			Did::update(Origin::signed(alice_did.clone()), details),
 			did::Error::<Test>::CurrentlyActiveKey
 		);
 	});
@@ -987,12 +796,12 @@ fn check_currently_active_attestation_key_update() {
 	let att_key = get_sr25519_attestation_key(true);
 
 	let mut old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	old_did_details.update_attestation_key(did::DidVerificationKey::from(att_key.public()), 0u64);
+	assert_ok!(old_did_details.update_attestation_key(did::DidVerificationKey::from(att_key.public()), 0u64));
 
 	// Remove both attestation and delegation key
-	let mut operation = generate_base_did_update_operation(alice_did.clone());
+	let mut details = generate_base_did_update_details();
 	// Trying to remove the currently active attestation key
-	operation.public_keys_to_remove = BoundedBTreeSet::<TestKeyId, <Test as Config>::MaxOldAttestationKeys>::try_from(
+	details.public_keys_to_remove = BoundedBTreeSet::<TestKeyId, <Test as Config>::MaxOldAttestationKeys>::try_from(
 		vec![generate_key_id(&did::DidVerificationKey::from(att_key.public()).into())]
 			.iter()
 			.copied()
@@ -1000,10 +809,8 @@ fn check_currently_active_attestation_key_update() {
 	)
 	.expect("Should not fail to create BoundedBTreeSet from a single element");
 
-	let signature = auth_key.sign(operation.encode().as_ref());
-
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did, old_did_details)])
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
@@ -1011,11 +818,7 @@ fn check_currently_active_attestation_key_update() {
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::submit_did_update_operation(
-				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
-				did::DidSignature::from(signature),
-			),
+			Did::update(Origin::signed(alice_did.clone()), details),
 			did::Error::<Test>::CurrentlyActiveKey
 		);
 	});
@@ -1030,9 +833,9 @@ fn check_verification_key_not_present_update() {
 	let old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 
 	// Remove both attestation and delegation key
-	let mut operation = generate_base_did_update_operation(alice_did.clone());
+	let mut details = generate_base_did_update_details();
 	// Trying to remove the currently active authentication key
-	operation.public_keys_to_remove = BoundedBTreeSet::<TestKeyId, <Test as Config>::MaxOldAttestationKeys>::try_from(
+	details.public_keys_to_remove = BoundedBTreeSet::<TestKeyId, <Test as Config>::MaxOldAttestationKeys>::try_from(
 		vec![generate_key_id(
 			&did::DidVerificationKey::from(key_to_delete.public()).into(),
 		)]
@@ -1042,10 +845,8 @@ fn check_verification_key_not_present_update() {
 	)
 	.expect("Should not fail to create BoundedBTreeSet from a single element");
 
-	let signature = auth_key.sign(operation.encode().as_ref());
-
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did, old_did_details)])
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
@@ -1053,17 +854,13 @@ fn check_verification_key_not_present_update() {
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::submit_did_update_operation(
-				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
-				did::DidSignature::from(signature),
-			),
+			Did::update(Origin::signed(alice_did.clone()), details),
 			did::Error::<Test>::VerificationKeyNotPresent
 		);
 	});
 }
 
-// submit_did_delete_operation
+// delete
 
 #[test]
 fn check_successful_deletion() {
@@ -1071,38 +868,27 @@ fn check_successful_deletion() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 
-	// Update all keys, URL endpoint and tx counter. No keys are removed in this
-	// test
-	let operation = generate_base_did_delete_operation(alice_did.clone());
-
-	// Generate signature using the old authentication key
-	let signature = auth_key.sign(operation.encode().as_ref());
-
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build(None);
 
 	ext.execute_with(|| {
-		assert_ok!(Did::submit_did_delete_operation(
-			Origin::signed(DEFAULT_ACCOUNT),
-			operation.clone(),
-			did::DidSignature::from(signature),
-		));
+		assert_ok!(Did::delete(Origin::signed(alice_did.clone()),));
 	});
 
 	assert!(ext.execute_with(|| Did::get_did(alice_did.clone())).is_none());
 
 	// Re-adding the same DID identifier, which should not fail.
-	let operation = generate_base_did_creation_operation(alice_did);
+	let details = generate_base_did_creation_details(alice_did.clone());
 
-	let signature = auth_key.sign(operation.encode().as_ref());
+	let signature = auth_key.sign(details.encode().as_ref());
 
 	let mut ext = ExtBuilder::default().build(None);
 
 	ext.execute_with(|| {
-		assert_ok!(Did::submit_did_create_operation(
-			Origin::signed(DEFAULT_ACCOUNT),
-			operation.clone(),
+		assert_ok!(Did::create(
+			Origin::signed(alice_did.clone()),
+			details,
 			did::DidSignature::from(signature),
 		));
 	});
@@ -1113,197 +899,17 @@ fn check_did_not_present_deletion() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
-	// Update all keys, URL endpoint and tx counter. No keys are removed in this
-	// test
-	let operation = generate_base_did_delete_operation(alice_did);
-
-	// Generate signature using the old authentication key
-	let signature = auth_key.sign(operation.encode().as_ref());
-
 	let mut ext = ExtBuilder::default().build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::submit_did_delete_operation(
-				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
-				did::DidSignature::from(signature),
-			),
+			Did::delete(Origin::signed(alice_did)),
 			did::Error::<Test>::DidNotPresent
 		);
 	});
 }
 
-#[test]
-fn check_max_tx_counter_did_deletion() {
-	let auth_key = get_sr25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	mock_did.last_tx_counter = u64::MAX;
-	let operation = generate_base_did_delete_operation(alice_did.clone());
-
-	let signature = auth_key.sign(operation.encode().as_ref());
-
-	let mut ext = ExtBuilder::default().with_dids(vec![(alice_did, mock_did)]).build(None);
-
-	ext.execute_with(|| {
-		assert_noop!(
-			Did::submit_did_delete_operation(
-				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
-				did::DidSignature::from(signature),
-			),
-			did::Error::<Test>::MaxTxCounterValue
-		);
-	});
-}
-
-#[test]
-fn check_smaller_tx_counter_did_deletion() {
-	let auth_key = get_sr25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	mock_did.last_tx_counter = 1;
-	let mut operation = generate_base_did_delete_operation(alice_did.clone());
-	operation.tx_counter = mock_did.last_tx_counter - 1;
-
-	let signature = auth_key.sign(operation.encode().as_ref());
-
-	let mut ext = ExtBuilder::default().with_dids(vec![(alice_did, mock_did)]).build(None);
-
-	ext.execute_with(|| {
-		assert_noop!(
-			Did::submit_did_delete_operation(
-				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
-				did::DidSignature::from(signature),
-			),
-			did::Error::<Test>::InvalidNonce
-		);
-	});
-}
-
-#[test]
-fn check_equal_tx_counter_did_deletion() {
-	let auth_key = get_sr25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	mock_did.last_tx_counter = 1;
-	let mut operation = generate_base_did_delete_operation(alice_did.clone());
-	operation.tx_counter = mock_did.last_tx_counter;
-
-	let signature = auth_key.sign(operation.encode().as_ref());
-
-	let mut ext = ExtBuilder::default().with_dids(vec![(alice_did, mock_did)]).build(None);
-
-	ext.execute_with(|| {
-		assert_noop!(
-			Did::submit_did_delete_operation(
-				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
-				did::DidSignature::from(signature),
-			),
-			did::Error::<Test>::InvalidNonce
-		);
-	});
-}
-
-#[test]
-fn check_too_large_tx_counter_did_deletion() {
-	let auth_key = get_sr25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	let mut operation = generate_base_did_delete_operation(alice_did.clone());
-	operation.tx_counter = mock_did.last_tx_counter + 2;
-
-	let signature = auth_key.sign(operation.encode().as_ref());
-
-	let mut ext = ExtBuilder::default().with_dids(vec![(alice_did, mock_did)]).build(None);
-
-	ext.execute_with(|| {
-		assert_noop!(
-			Did::submit_did_delete_operation(
-				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
-				did::DidSignature::from(signature),
-			),
-			did::Error::<Test>::InvalidNonce
-		);
-	});
-}
-
-#[test]
-fn check_invalid_signature_format_did_deletion() {
-	let auth_key = get_ed25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	// Using an Sr25519 key where an Ed25519 is expected
-	let invalid_key = get_sr25519_authentication_key(true);
-	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	let operation = generate_base_did_delete_operation(alice_did.clone());
-
-	let signature = invalid_key.sign(operation.encode().as_ref());
-
-	let mut ext = ExtBuilder::default().with_dids(vec![(alice_did, mock_did)]).build(None);
-
-	ext.execute_with(|| {
-		assert_noop!(
-			Did::submit_did_delete_operation(
-				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
-				did::DidSignature::from(signature),
-			),
-			did::Error::<Test>::InvalidSignatureFormat
-		);
-	});
-}
-
-#[test]
-fn check_invalid_signature_did_deletion() {
-	let auth_key = get_sr25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
-	// Using an Sr25519 key as expected, but from a different seed (default = false)
-	let alternative_key = get_sr25519_authentication_key(false);
-	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	let operation = generate_base_did_delete_operation(alice_did.clone());
-
-	let signature = alternative_key.sign(operation.encode().as_ref());
-
-	let mut ext = ExtBuilder::default().with_dids(vec![(alice_did, mock_did)]).build(None);
-
-	ext.execute_with(|| {
-		assert_noop!(
-			Did::submit_did_delete_operation(
-				Origin::signed(DEFAULT_ACCOUNT),
-				operation.clone(),
-				did::DidSignature::from(signature),
-			),
-			did::Error::<Test>::InvalidSignature
-		);
-	});
-}
-
 // submit_did_call
-
-#[test]
-fn check_no_key_error() {
-	let auth_key = get_sr25519_authentication_key(true);
-	let did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let caller = DEFAULT_ACCOUNT;
-
-	let mut ext = ExtBuilder::default().build(None);
-
-	// CapabilityInvocation is not supported at the moment, so it should return no
-	// key and hence the operation fail.
-	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityInvocation, did);
-	let signature = did::DidSignature::from(ed25519::Signature::default());
-
-	ext.execute_with(|| {
-		assert_noop!(
-			Did::submit_did_call(Origin::signed(caller), Box::new(call_operation), signature),
-			did::Error::<Test>::UnsupportedDidAuthorizationCall
-		);
-	});
-}
 
 #[test]
 fn check_did_not_found_call_error() {
@@ -1321,7 +927,7 @@ fn check_did_not_found_call_error() {
 		assert_noop!(
 			Did::submit_did_call(
 				Origin::signed(caller),
-				Box::new(call_operation),
+				Box::new(call_operation.operation),
 				did::DidSignature::from(signature)
 			),
 			did::Error::<Test>::DidNotPresent
@@ -1348,7 +954,7 @@ fn check_max_counter_call_error() {
 		assert_noop!(
 			Did::submit_did_call(
 				Origin::signed(caller),
-				Box::new(call_operation),
+				Box::new(call_operation.operation),
 				did::DidSignature::from(signature)
 			),
 			did::Error::<Test>::MaxTxCounterValue
@@ -1369,14 +975,14 @@ fn check_too_small_tx_counter_call_error() {
 		.build(None);
 
 	let mut call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did);
-	call_operation.tx_counter = 0u64;
+	call_operation.operation.tx_counter = 0u64;
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
 		assert_noop!(
 			Did::submit_did_call(
 				Origin::signed(caller),
-				Box::new(call_operation),
+				Box::new(call_operation.operation),
 				did::DidSignature::from(signature)
 			),
 			did::Error::<Test>::InvalidNonce
@@ -1396,14 +1002,14 @@ fn check_equal_tx_counter_call_error() {
 		.build(None);
 
 	let mut call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did);
-	call_operation.tx_counter = mock_did.last_tx_counter;
+	call_operation.operation.tx_counter = mock_did.last_tx_counter;
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
 		assert_noop!(
 			Did::submit_did_call(
 				Origin::signed(caller),
-				Box::new(call_operation),
+				Box::new(call_operation.operation),
 				did::DidSignature::from(signature)
 			),
 			did::Error::<Test>::InvalidNonce
@@ -1423,14 +1029,14 @@ fn check_too_large_tx_counter_call_error() {
 		.build(None);
 
 	let mut call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did);
-	call_operation.tx_counter = mock_did.last_tx_counter + 2u64;
+	call_operation.operation.tx_counter = mock_did.last_tx_counter + 2u64;
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
 		assert_noop!(
 			Did::submit_did_call(
 				Origin::signed(caller),
-				Box::new(call_operation),
+				Box::new(call_operation.operation),
 				did::DidSignature::from(signature)
 			),
 			did::Error::<Test>::InvalidNonce
@@ -1458,7 +1064,7 @@ fn check_verification_key_not_present_call_error() {
 		assert_noop!(
 			Did::submit_did_call(
 				Origin::signed(caller),
-				Box::new(call_operation),
+				Box::new(call_operation.operation),
 				did::DidSignature::from(signature)
 			),
 			did::Error::<Test>::VerificationKeyNotPresent
@@ -1485,7 +1091,7 @@ fn check_invalid_signature_format_call_error() {
 		assert_noop!(
 			Did::submit_did_call(
 				Origin::signed(caller),
-				Box::new(call_operation),
+				Box::new(call_operation.operation),
 				did::DidSignature::from(signature)
 			),
 			did::Error::<Test>::InvalidSignatureFormat
@@ -1512,7 +1118,7 @@ fn check_invalid_signature_call_error() {
 		assert_noop!(
 			Did::submit_did_call(
 				Origin::signed(caller),
-				Box::new(call_operation),
+				Box::new(call_operation.operation),
 				did::DidSignature::from(signature)
 			),
 			did::Error::<Test>::InvalidSignature
@@ -1528,7 +1134,7 @@ fn check_call_attestation_key_successful() {
 	let attestation_key = get_ed25519_attestation_key(true);
 
 	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	mock_did.update_attestation_key(did::DidVerificationKey::from(attestation_key.public()), 0);
+	assert_ok!(mock_did.update_attestation_key(did::DidVerificationKey::from(attestation_key.public()), 0));
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
@@ -1540,7 +1146,7 @@ fn check_call_attestation_key_successful() {
 	ext.execute_with(|| {
 		assert_ok!(Did::submit_did_call(
 			Origin::signed(caller),
-			Box::new(call_operation),
+			Box::new(call_operation.operation),
 			did::DidSignature::from(signature)
 		));
 	});
@@ -1554,7 +1160,7 @@ fn check_call_attestation_key_error() {
 	let attestation_key = get_ed25519_attestation_key(true);
 
 	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	mock_did.update_attestation_key(did::DidVerificationKey::from(attestation_key.public()), 0);
+	assert_ok!(mock_did.update_attestation_key(did::DidVerificationKey::from(attestation_key.public()), 0));
 
 	let ext = ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
@@ -1571,7 +1177,7 @@ fn check_call_attestation_key_error() {
 		assert_err!(
 			Did::submit_did_call(
 				Origin::signed(caller),
-				Box::new(call_operation),
+				Box::new(call_operation.operation),
 				did::DidSignature::from(signature)
 			),
 			ctype::Error::<Test>::CTypeAlreadyExists
@@ -1587,7 +1193,7 @@ fn check_call_delegation_key_successful() {
 	let delegation_key = get_ed25519_delegation_key(true);
 
 	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	mock_did.update_delegation_key(did::DidVerificationKey::from(delegation_key.public()), 0);
+	assert_ok!(mock_did.update_delegation_key(did::DidVerificationKey::from(delegation_key.public()), 0));
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
@@ -1599,7 +1205,7 @@ fn check_call_delegation_key_successful() {
 	ext.execute_with(|| {
 		assert_ok!(Did::submit_did_call(
 			Origin::signed(caller),
-			Box::new(call_operation),
+			Box::new(call_operation.operation),
 			did::DidSignature::from(signature)
 		));
 	});
@@ -1613,7 +1219,7 @@ fn check_call_delegation_key_error() {
 	let delegation_key = get_ed25519_delegation_key(true);
 
 	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	mock_did.update_delegation_key(did::DidVerificationKey::from(delegation_key.public()), 0);
+	assert_ok!(mock_did.update_delegation_key(did::DidVerificationKey::from(delegation_key.public()), 0));
 
 	let ext = ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
@@ -1630,7 +1236,7 @@ fn check_call_delegation_key_error() {
 		assert_err!(
 			Did::submit_did_call(
 				Origin::signed(caller),
-				Box::new(call_operation),
+				Box::new(call_operation.operation),
 				did::DidSignature::from(signature)
 			),
 			ctype::Error::<Test>::CTypeAlreadyExists
@@ -1656,7 +1262,7 @@ fn check_call_authentication_key_successful() {
 	ext.execute_with(|| {
 		assert_ok!(Did::submit_did_call(
 			Origin::signed(caller),
-			Box::new(call_operation),
+			Box::new(call_operation.operation),
 			did::DidSignature::from(signature)
 		));
 	});
@@ -1685,7 +1291,7 @@ fn check_call_authentication_key_error() {
 		assert_err!(
 			Did::submit_did_call(
 				Origin::signed(caller),
-				Box::new(call_operation),
+				Box::new(call_operation.operation),
 				did::DidSignature::from(signature)
 			),
 			ctype::Error::<Test>::CTypeAlreadyExists
@@ -1693,36 +1299,57 @@ fn check_call_authentication_key_error() {
 	});
 }
 
-// Internal function: verify_operation_validity_and_increase_did_nonce
+#[test]
+fn check_null_key_error() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let caller = DEFAULT_ACCOUNT;
+
+	let mut ext = ExtBuilder::default().build(None);
+
+	// CapabilityInvocation is not supported at the moment, so it should return no
+	// key and hence the operation fail.
+	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityInvocation, did);
+	let signature = ed25519::Signature::default();
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_call(
+				Origin::signed(caller),
+				Box::new(call_operation.operation),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::UnsupportedDidAuthorizationCall
+		);
+	});
+}
+
+// Internal function: verify_did_operation_signature_and_increase_nonce
 
 #[test]
 fn check_authentication_successful_operation_verification() {
 	let auth_key = get_sr25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	let operation = TestDidOperation {
-		did: alice_did.clone(),
-		verification_key_type: did::DidVerificationKeyRelationship::Authentication,
-		tx_counter: mock_did.last_tx_counter + 1,
-	};
+	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 
-	let signature = auth_key.sign(&operation.encode());
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did, mock_did.clone())])
+		.with_dids(vec![(did.clone(), mock_did.clone())])
 		.build(None);
 
+	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did);
+	let signature = auth_key.sign(call_operation.encode().as_ref());
+
 	ext.execute_with(|| {
-		assert_ok!(
-			Did::verify_operation_validity_and_increase_did_nonce::<TestDidOperation>(
-				&operation,
-				&did::DidSignature::from(signature)
-			)
-		);
+		assert_ok!(Did::verify_did_operation_signature_and_increase_nonce(
+			&call_operation,
+			&did::DidSignature::from(signature)
+		));
 	});
 
 	// Verify that the DID tx counter has increased
-	let did_details = ext.execute_with(|| Did::get_did(&operation.did).expect("DID should be present on chain."));
+	let did_details =
+		ext.execute_with(|| Did::get_did(&call_operation.operation.did).expect("DID should be present on chain."));
 	assert_eq!(
 		did_details.get_tx_counter_value(),
 		mock_did.get_tx_counter_value() + 1u64
@@ -1731,34 +1358,30 @@ fn check_authentication_successful_operation_verification() {
 
 #[test]
 fn check_attestation_successful_operation_verification() {
-	let auth_key = get_ed25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let att_key = get_ecdsa_attestation_key(true);
-	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	mock_did.update_attestation_key(did::DidVerificationKey::from(att_key.public()), 0u64);
-	let operation = TestDidOperation {
-		did: alice_did.clone(),
-		verification_key_type: did::DidVerificationKeyRelationship::AssertionMethod,
-		tx_counter: mock_did.last_tx_counter + 1,
-	};
+	let auth_key = get_sr25519_authentication_key(true);
+	let did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let attestation_key = get_ed25519_attestation_key(true);
 
-	let signature = att_key.sign(&operation.encode());
+	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	assert_ok!(mock_did.update_attestation_key(did::DidVerificationKey::from(attestation_key.public()), 0));
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did, mock_did.clone())])
+		.with_dids(vec![(did.clone(), mock_did.clone())])
 		.build(None);
 
+	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::AssertionMethod, did);
+	let signature = attestation_key.sign(call_operation.encode().as_ref());
+
 	ext.execute_with(|| {
-		assert_ok!(
-			Did::verify_operation_validity_and_increase_did_nonce::<TestDidOperation>(
-				&operation,
-				&did::DidSignature::from(signature)
-			)
-		);
+		assert_ok!(Did::verify_did_operation_signature_and_increase_nonce(
+			&call_operation,
+			&did::DidSignature::from(signature)
+		));
 	});
 
 	// Verify that the DID tx counter has increased
-	let did_details = ext.execute_with(|| Did::get_did(&operation.did).expect("DID should be present on chain."));
+	let did_details =
+		ext.execute_with(|| Did::get_did(&call_operation.operation.did).expect("DID should be present on chain."));
 	assert_eq!(
 		did_details.get_tx_counter_value(),
 		mock_did.get_tx_counter_value() + 1u64
@@ -1767,33 +1390,30 @@ fn check_attestation_successful_operation_verification() {
 
 #[test]
 fn check_delegation_successful_operation_verification() {
-	let auth_key = get_ed25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let del_key = get_ed25519_delegation_key(true);
+	let auth_key = get_sr25519_authentication_key(true);
+	let did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let delegation_key = get_ecdsa_delegation_key(true);
+
 	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	mock_did.update_delegation_key(did::DidVerificationKey::from(del_key.public()), 0u64);
-	let operation = TestDidOperation {
-		did: alice_did.clone(),
-		verification_key_type: did::DidVerificationKeyRelationship::CapabilityDelegation,
-		tx_counter: mock_did.last_tx_counter + 1,
-	};
-	let signature = del_key.sign(&operation.encode());
+	assert_ok!(mock_did.update_delegation_key(did::DidVerificationKey::from(delegation_key.public()), 0));
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did, mock_did.clone())])
+		.with_dids(vec![(did.clone(), mock_did.clone())])
 		.build(None);
 
+	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did);
+	let signature = delegation_key.sign(call_operation.encode().as_ref());
+
 	ext.execute_with(|| {
-		assert_ok!(
-			Did::verify_operation_validity_and_increase_did_nonce::<TestDidOperation>(
-				&operation,
-				&did::DidSignature::from(signature)
-			)
-		);
+		assert_ok!(Did::verify_did_operation_signature_and_increase_nonce(
+			&call_operation,
+			&did::DidSignature::from(signature)
+		));
 	});
 
 	// Verify that the DID tx counter has increased
-	let did_details = ext.execute_with(|| Did::get_did(&operation.did).expect("DID should be present on chain."));
+	let did_details =
+		ext.execute_with(|| Did::get_did(&call_operation.operation.did).expect("DID should be present on chain."));
 	assert_eq!(
 		did_details.get_tx_counter_value(),
 		mock_did.get_tx_counter_value() + 1u64
@@ -1802,23 +1422,18 @@ fn check_delegation_successful_operation_verification() {
 
 #[test]
 fn check_did_not_present_operation_verification() {
-	let auth_key = get_ed25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let del_key = get_ed25519_delegation_key(true);
-	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	let operation = TestDidOperation {
-		did: alice_did,
-		verification_key_type: did::DidVerificationKeyRelationship::CapabilityDelegation,
-		tx_counter: mock_did.last_tx_counter + 1,
-	};
-	let signature = del_key.sign(&operation.encode());
+	let auth_key = get_sr25519_authentication_key(true);
+	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 
 	let mut ext = ExtBuilder::default().build(None);
 
+	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did);
+	let signature = auth_key.sign(call_operation.encode().as_ref());
+
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::verify_operation_validity_and_increase_did_nonce::<TestDidOperation>(
-				&operation,
+			Did::verify_did_operation_signature_and_increase_nonce(
+				&call_operation,
 				&did::DidSignature::from(signature)
 			),
 			did::DidError::StorageError(did::StorageError::DidNotPresent)
@@ -1828,229 +1443,180 @@ fn check_did_not_present_operation_verification() {
 
 #[test]
 fn check_max_tx_counter_operation_verification() {
-	let auth_key = get_ed25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let auth_key = get_sr25519_authentication_key(true);
+	let did = get_did_identifier_from_sr25519_key(auth_key.public());
+
 	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	mock_did.last_tx_counter = u64::MAX;
-	let operation = TestDidOperation {
-		did: alice_did.clone(),
-		verification_key_type: did::DidVerificationKeyRelationship::Authentication,
-		tx_counter: mock_did.last_tx_counter,
-	};
-	let signature = auth_key.sign(&operation.encode());
+	mock_did.set_tx_counter(u64::MAX);
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did, mock_did.clone())])
+		.with_dids(vec![(did.clone(), mock_did.clone())])
 		.build(None);
+
+	let mut call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did);
+	call_operation.operation.tx_counter = mock_did.last_tx_counter;
+	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::verify_operation_validity_and_increase_did_nonce::<TestDidOperation>(
-				&operation,
+			Did::verify_did_operation_signature_and_increase_nonce(
+				&call_operation,
 				&did::DidSignature::from(signature)
 			),
 			did::DidError::StorageError(did::StorageError::MaxTxCounterValue)
 		);
 	});
-
-	// Verify that the DID tx counter has not increased
-	let did_details = ext.execute_with(|| Did::get_did(&operation.did).expect("DID should be present on chain."));
-	assert_eq!(did_details.get_tx_counter_value(), mock_did.get_tx_counter_value());
 }
 
 #[test]
 fn check_smaller_counter_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let did = get_did_identifier_from_ed25519_key(auth_key.public());
+
 	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 	mock_did.last_tx_counter = 1;
-	let operation = TestDidOperation {
-		did: alice_did.clone(),
-		verification_key_type: did::DidVerificationKeyRelationship::Authentication,
-		tx_counter: mock_did.last_tx_counter - 1,
-	};
-	let signature = auth_key.sign(&operation.encode());
 
-	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did, mock_did.clone())])
-		.build(None);
+	let mut call_operation =
+		generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did.clone());
+	call_operation.operation.tx_counter = 0u64;
+	let signature = auth_key.sign(call_operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default().with_dids(vec![(did, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::verify_operation_validity_and_increase_did_nonce::<TestDidOperation>(
-				&operation,
+			Did::verify_did_operation_signature_and_increase_nonce(
+				&call_operation,
 				&did::DidSignature::from(signature)
 			),
 			did::DidError::SignatureError(did::SignatureError::InvalidNonce)
 		);
 	});
-
-	// Verify that the DID tx counter has not increased
-	let did_details = ext.execute_with(|| Did::get_did(&operation.did).expect("DID should be present on chain."));
-	assert_eq!(did_details.get_tx_counter_value(), mock_did.get_tx_counter_value());
 }
 
 #[test]
 fn check_equal_counter_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	let operation = TestDidOperation {
-		did: alice_did.clone(),
-		verification_key_type: did::DidVerificationKeyRelationship::Authentication,
-		tx_counter: mock_did.last_tx_counter,
-	};
-	let signature = auth_key.sign(&operation.encode());
+	let did = get_did_identifier_from_ed25519_key(auth_key.public());
 
-	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did, mock_did.clone())])
-		.build(None);
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+
+	let mut call_operation =
+		generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did.clone());
+	call_operation.operation.tx_counter = mock_did.last_tx_counter;
+	let signature = auth_key.sign(call_operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default().with_dids(vec![(did, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::verify_operation_validity_and_increase_did_nonce::<TestDidOperation>(
-				&operation,
+			Did::verify_did_operation_signature_and_increase_nonce(
+				&call_operation,
 				&did::DidSignature::from(signature)
 			),
 			did::DidError::SignatureError(did::SignatureError::InvalidNonce)
 		);
 	});
-
-	// Verify that the DID tx counter has not increased
-	let did_details = ext.execute_with(|| Did::get_did(&operation.did).expect("DID should be present on chain."));
-	assert_eq!(did_details.get_tx_counter_value(), mock_did.get_tx_counter_value());
 }
 
 #[test]
 fn check_too_large_counter_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	let operation = TestDidOperation {
-		did: alice_did.clone(),
-		verification_key_type: did::DidVerificationKeyRelationship::Authentication,
-		tx_counter: mock_did.last_tx_counter + 2,
-	};
-	let signature = auth_key.sign(&operation.encode());
+	let did = get_did_identifier_from_ed25519_key(auth_key.public());
 
-	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did, mock_did.clone())])
-		.build(None);
+	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+
+	let mut call_operation =
+		generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did.clone());
+	call_operation.operation.tx_counter = mock_did.last_tx_counter + 2;
+	let signature = auth_key.sign(call_operation.encode().as_ref());
+
+	let mut ext = ExtBuilder::default().with_dids(vec![(did, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::verify_operation_validity_and_increase_did_nonce::<TestDidOperation>(
-				&operation,
+			Did::verify_did_operation_signature_and_increase_nonce(
+				&call_operation,
 				&did::DidSignature::from(signature)
 			),
 			did::DidError::SignatureError(did::SignatureError::InvalidNonce)
 		);
 	});
-
-	// Verify that the DID tx counter has not increased
-	let did_details = ext.execute_with(|| Did::get_did(&operation.did).expect("DID should be present on chain."));
-	assert_eq!(did_details.get_tx_counter_value(), mock_did.get_tx_counter_value());
 }
 
 #[test]
 fn check_verification_key_not_present_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let did = get_did_identifier_from_ed25519_key(auth_key.public());
+
 	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	let verification_key_required = did::DidVerificationKeyRelationship::CapabilityInvocation;
-	let operation = TestDidOperation {
-		did: alice_did.clone(),
-		verification_key_type: verification_key_required,
-		tx_counter: mock_did.last_tx_counter + 1,
-	};
 
-	let signature = auth_key.sign(&operation.encode());
+	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::AssertionMethod, did.clone());
+	let signature = auth_key.sign(call_operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did, mock_did.clone())])
-		.build(None);
+	let mut ext = ExtBuilder::default().with_dids(vec![(did, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::verify_operation_validity_and_increase_did_nonce::<TestDidOperation>(
-				&operation,
+			Did::verify_did_operation_signature_and_increase_nonce(
+				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			did::DidError::StorageError(did::StorageError::DidKeyNotPresent(verification_key_required))
+			did::DidError::StorageError(did::StorageError::DidKeyNotPresent(
+				did::DidVerificationKeyRelationship::AssertionMethod
+			))
 		);
 	});
-
-	// Verify that the DID tx counter has not increased
-	let did_details = ext.execute_with(|| Did::get_did(&operation.did).expect("DID should be present on chain."));
-	assert_eq!(did_details.get_tx_counter_value(), mock_did.get_tx_counter_value());
 }
 
 #[test]
 fn check_invalid_signature_format_operation_verification() {
 	let auth_key = get_sr25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	// Expected an Sr25519, given an Ed25519
 	let invalid_key = get_ed25519_authentication_key(true);
+
 	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	let operation = TestDidOperation {
-		did: alice_did.clone(),
-		verification_key_type: did::DidVerificationKeyRelationship::Authentication,
-		tx_counter: mock_did.last_tx_counter + 1,
-	};
 
-	let signature = invalid_key.sign(&operation.encode());
+	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did.clone());
+	let signature = invalid_key.sign(call_operation.encode().as_ref());
 
-	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did, mock_did.clone())])
-		.build(None);
+	let mut ext = ExtBuilder::default().with_dids(vec![(did, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::verify_operation_validity_and_increase_did_nonce::<TestDidOperation>(
-				&operation,
+			Did::verify_did_operation_signature_and_increase_nonce(
+				&call_operation,
 				&did::DidSignature::from(signature)
 			),
 			did::DidError::SignatureError(did::SignatureError::InvalidSignatureFormat)
 		);
 	});
-
-	// Verify that the DID tx counter has not increased
-	let did_details = ext.execute_with(|| Did::get_did(&operation.did).expect("DID should be present on chain."));
-	assert_eq!(did_details.get_tx_counter_value(), mock_did.get_tx_counter_value());
 }
 
 #[test]
 fn check_invalid_signature_operation_verification() {
 	let auth_key = get_sr25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	// Using same key type but different seed (default = false)
 	let alternative_key = get_sr25519_authentication_key(false);
+
 	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	let operation = TestDidOperation {
-		did: alice_did.clone(),
-		verification_key_type: did::DidVerificationKeyRelationship::Authentication,
-		tx_counter: mock_did.last_tx_counter + 1,
-	};
 
-	let signature = alternative_key.sign(&operation.encode());
+	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did.clone());
+	let signature = alternative_key.sign(&call_operation.encode());
 
-	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did, mock_did.clone())])
-		.build(None);
+	let mut ext = ExtBuilder::default().with_dids(vec![(did, mock_did)]).build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::verify_operation_validity_and_increase_did_nonce::<TestDidOperation>(
-				&operation,
+			Did::verify_did_operation_signature_and_increase_nonce(
+				&call_operation,
 				&did::DidSignature::from(signature)
 			),
 			did::DidError::SignatureError(did::SignatureError::InvalidSignature)
 		);
 	});
-
-	// Verify that the DID tx counter has not increased
-	let did_details = ext.execute_with(|| Did::get_did(&operation.did).expect("DID should be present on chain."));
-	assert_eq!(did_details.get_tx_counter_value(), mock_did.get_tx_counter_value());
 }
 
 // Internal function: HttpUrl try_from
@@ -2172,11 +1738,7 @@ fn check_ipfs_url() {
 	);
 
 	assert_eq!(
-		did::IpfsUrl::try_from(
-			"ipfs://¶
-QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL"
-				.as_bytes()
-		),
+		did::IpfsUrl::try_from("ipfs://¶QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()),
 		Err(did::UrlError::InvalidUrlEncoding)
 	);
 
@@ -2186,11 +1748,7 @@ QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL"
 	);
 
 	assert_eq!(
-		did::IpfsUrl::try_from(
-			"ipfss://
-QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL"
-				.as_bytes()
-		),
+		did::IpfsUrl::try_from("ipfss://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQk".as_bytes()),
 		Err(did::UrlError::InvalidUrlScheme)
 	);
 }

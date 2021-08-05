@@ -2,6 +2,11 @@ import typing
 
 
 def update_spec(input: typing.Dict):
+    acc_col_1 = "5HVf8YPXPzp4vTF9dRNh9yLQHemNc4wASoyvFCc2pPz1pbWq"
+    acc_col_2 = "5FxhtaNtvGWTUQzmqq8NbKVVvz8AiXvaXxnSs8WbfBXYs79M"
+    # not an initial collator
+    acc_col_3 = "5CvmyN8kLcPKNg98A6nMmrPDqoNN8hJrmFfoYyCesCmfd3se"
+
     input.update({
         "bootNodes": [
             "/dns4/bootnodes.kilt.io/tcp/30370/p2p/12D3KooWCAK9CjW1abcSx1UwVRSoyAYTR3AzS6qHnG9pddeU2Sra",
@@ -12,39 +17,46 @@ def update_spec(input: typing.Dict):
         "name": "KILT Peregrine Stagenet",
         "id": "peregrine_stg_kilt",
         "para_id": 2000,
+        "telemetryEndpoints": [
+            [
+                "/dns/telemetry-backend.kilt.io/tcp/8080/x-parity-wss/%2Fsubmit",
+                0
+            ]
+        ]
     })
     input["properties"]["tokenSymbol"] = "PILT"
     input["genesis"]["runtime"]["parachainInfo"]["parachainId"] = 2000
-    input["genesis"]["runtime"]["sudo"]["key"] = "5HVf8YPXPzp4vTF9dRNh9yLQHemNc4wASoyvFCc2pPz1pbWq"
+    input["genesis"]["runtime"]["sudo"]["key"] = acc_col_1
+    input["genesis"]["runtime"]["kiltLaunch"]["transferAccount"] = acc_col_2
     input["genesis"]["runtime"]["parachainStaking"]["stakers"] = [
         [
-            "5HVf8YPXPzp4vTF9dRNh9yLQHemNc4wASoyvFCc2pPz1pbWq",
+            acc_col_1,
             None,
             100000000000000000000
         ], [
-            "5FxhtaNtvGWTUQzmqq8NbKVVvz8AiXvaXxnSs8WbfBXYs79M",
+            acc_col_2,
             None,
             100000000000000000000
         ]
     ]
     input["genesis"]["runtime"]["session"]["keys"] = [
         [
-            "5HVf8YPXPzp4vTF9dRNh9yLQHemNc4wASoyvFCc2pPz1pbWq",
-            "5HVf8YPXPzp4vTF9dRNh9yLQHemNc4wASoyvFCc2pPz1pbWq",
+            acc_col_1,
+            acc_col_1,
             {
                 "aura": "5DSMMuNSVxc6Jz3n8AK4PLEBQQjKSAtRcQXq9MTrAEHpdGDL"
             }
         ],
         [
-            "5FxhtaNtvGWTUQzmqq8NbKVVvz8AiXvaXxnSs8WbfBXYs79M",
-            "5FxhtaNtvGWTUQzmqq8NbKVVvz8AiXvaXxnSs8WbfBXYs79M",
+            acc_col_2,
+            acc_col_2,
             {
                 "aura": "5FzsPPWs7hnviHt3VhuSP3bHprpdXfwobWrUwQ57C22eBayW"
             }
         ],
         [
-            "5CvmyN8kLcPKNg98A6nMmrPDqoNN8hJrmFfoYyCesCmfd3se",
-            "5CvmyN8kLcPKNg98A6nMmrPDqoNN8hJrmFfoYyCesCmfd3se",
+            acc_col_3,
+            acc_col_3,
             {
                 "aura": "5GjATpyZpKdmJeFDTRgv4Z2aBGYVQDJSQdGRok8uJKEpC4je"
             }
@@ -52,15 +64,15 @@ def update_spec(input: typing.Dict):
     ]
     input["genesis"]["runtime"]["balances"]["balances"] += [
         [
-            "5HVf8YPXPzp4vTF9dRNh9yLQHemNc4wASoyvFCc2pPz1pbWq",
+            acc_col_1,
             10000000000000000000000000000
         ],
         [
-            "5FxhtaNtvGWTUQzmqq8NbKVVvz8AiXvaXxnSs8WbfBXYs79M",
+            acc_col_2,
             10000000000000000000000000000
         ],
         [
-            "5CvmyN8kLcPKNg98A6nMmrPDqoNN8hJrmFfoYyCesCmfd3se",
+            acc_col_3,
             10000000000000000000000000000
         ]
     ]
