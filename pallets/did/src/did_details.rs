@@ -282,8 +282,8 @@ impl<T: Config> DidDetails<T> {
 		}
 	}
 
-	// Creates a new DID entry from some [DidCreationDetails] and a given authentication
-	// key.
+	// Creates a new DID entry from some [DidCreationDetails] and a given
+	// authentication key.
 	pub fn from_creation_details(
 		details: DidCreationDetails<T>,
 		new_auth_key: DidVerificationKey,
@@ -301,9 +301,10 @@ impl<T: Config> DidDetails<T> {
 			);
 			ensure!(
 				// Throws InputError::MaxUrlLengthExceeded if any URL is longer than the max allowed size.
-				!service_endpoints.urls.iter().any(|url| {
-					url.len() > T::MaxUrlLength::get().saturated_into::<usize>()
-				}),
+				!service_endpoints
+					.urls
+					.iter()
+					.any(|url| { url.len() > T::MaxUrlLength::get().saturated_into::<usize>() }),
 				InputError::MaxUrlLengthExceeded
 			)
 		}
@@ -352,9 +353,10 @@ impl<T: Config> DidDetails<T> {
 			);
 			ensure!(
 				// Throws InputError::MaxUrlLengthExceeded if any URL is longer than the max allowed size.
-				!service_endpoints.urls.iter().any(|url| {
-					url.len() > T::MaxUrlLength::get().saturated_into::<usize>()
-				}),
+				!service_endpoints
+					.urls
+					.iter()
+					.any(|url| { url.len() > T::MaxUrlLength::get().saturated_into::<usize>() }),
 				DidError::InputError(InputError::MaxUrlLengthExceeded)
 			);
 		}
@@ -400,7 +402,9 @@ impl<T: Config> DidDetails<T> {
 		// Update/remove the service endpoints, if needed.
 		match update_details.service_endpoints_update {
 			DidFragmentUpdateAction::Delete => self.service_endpoints = None,
-			DidFragmentUpdateAction::Change(new_service_endpoints) => self.service_endpoints = Some(new_service_endpoints),
+			DidFragmentUpdateAction::Change(new_service_endpoints) => {
+				self.service_endpoints = Some(new_service_endpoints)
+			}
 			DidFragmentUpdateAction::Ignore => {}
 		}
 
@@ -670,8 +674,8 @@ pub struct ServiceEndpoints {
 	pub content_type: ContentType,
 }
 
-/// Possible actions on a DID fragment (e.g, a verification key or the endpoint services) within a
-/// [DidUpdateOperation].
+/// Possible actions on a DID fragment (e.g, a verification key or the endpoint
+/// services) within a [DidUpdateOperation].
 #[derive(Copy, Clone, Decode, Debug, Encode, Eq, PartialEq)]
 pub enum DidFragmentUpdateAction<FragmentType> {
 	/// Do not change the DID fragment.

@@ -38,7 +38,7 @@ pub enum ContentType {
 	/// application/json
 	ApplicationJson,
 	/// application/json+ld
-	ApplicationJsonLd
+	ApplicationJsonLd,
 }
 
 /// A web URL starting with either http:// or https://

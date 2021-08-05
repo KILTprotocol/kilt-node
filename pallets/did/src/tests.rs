@@ -201,7 +201,10 @@ fn check_successful_complete_creation() {
 		.contains_key(&generate_key_id(&details.new_delegation_key.clone().unwrap().into())));
 	assert!(stored_did.service_endpoints.is_some());
 	assert_eq!(stored_did.service_endpoints.clone().unwrap().urls.len(), 1);
-	assert_eq!(stored_did.service_endpoints.unwrap().urls[0], new_service_endpoints.urls[0]);
+	assert_eq!(
+		stored_did.service_endpoints.unwrap().urls[0],
+		new_service_endpoints.urls[0]
+	);
 }
 
 #[test]
@@ -355,7 +358,8 @@ fn check_too_many_urls_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	// Max number of URLs allowed + 1
-	let service_endpoints = get_service_endpoints(<Test as did::Config>::MaxEndpointUrlsCount::get().saturating_add(1), 10);
+	let service_endpoints =
+		get_service_endpoints(<Test as did::Config>::MaxEndpointUrlsCount::get().saturating_add(1), 10);
 
 	let mut details = generate_base_did_creation_details(alice_did);
 	details.new_service_endpoints = Some(service_endpoints);
@@ -480,7 +484,10 @@ fn check_successful_complete_update() {
 	// Check for new service endpoints
 	assert!(new_did_details.service_endpoints.is_some());
 	assert_eq!(new_did_details.service_endpoints.clone().unwrap().urls.len(), 1);
-	assert_eq!(new_did_details.service_endpoints.unwrap().urls[0], new_service_endpoints.urls[0]);
+	assert_eq!(
+		new_did_details.service_endpoints.unwrap().urls[0],
+		new_service_endpoints.urls[0]
+	);
 }
 
 #[test]
@@ -818,7 +825,8 @@ fn check_too_many_urls_did_update() {
 	let old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 
 	// Max URL length allowed + 1
-	let new_service_endpoints = get_service_endpoints(<Test as did::Config>::MaxEndpointUrlsCount::get().saturating_add(1), 10);
+	let new_service_endpoints =
+		get_service_endpoints(<Test as did::Config>::MaxEndpointUrlsCount::get().saturating_add(1), 10);
 
 	let mut details = generate_base_did_update_details();
 	details.service_endpoints_update = did::DidFragmentUpdateAction::Change(new_service_endpoints);
