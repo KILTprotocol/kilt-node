@@ -131,7 +131,7 @@ use frame_system::ensure_signed;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::RawOrigin;
 use sp_runtime::SaturatedConversion;
-use sp_std::{boxed::Box, convert::TryFrom, fmt::Debug, prelude::Clone, vec::Vec};
+use sp_std::{boxed::Box, convert::TryFrom, fmt::Debug, prelude::Clone, vec, vec::Vec};
 
 use migrations::*;
 
@@ -373,13 +373,37 @@ pub mod pallet {
 		///   new key agreement keys included in the operation as well as the
 		///   length of the URL endpoint, if present.
 		/// ---------
-		/// Weight: O(K) + O(E) where K is the number of new key agreement keys
-		/// bounded by `MaxNewKeyAgreementKeys` and E the length of the endpoint
-		/// URL bounded by `MaxUrlLength`.
+		/// Weight: O(K) + O(N * E) where K is the number of new key agreement
+		/// keys bounded by `MaxNewKeyAgreementKeys`, E the length of the
+		/// longest endpoint URL bounded by `MaxUrlLength`, and N the maximum
+		/// amount of endpoint URLs, bounded by `MaxEndpointUrlsCount`.
 		/// - Reads: [Origin Account], Did
-		/// - Writes: Did (with K new key agreement keys)
+		/// - Writes: Did (with K new key agreement keys and N endpoint URLs)
 		/// # </weight>
-		#[pallet::weight(1)]
+		#[pallet::weight({
+			let new_key_agreement_keys = details.new_key_agreement_keys.len().saturated_into::<u32>();
+			let new_urls = details.new_service_endpoints.as_ref().map_or(vec![], |endpoint| endpoint.urls.clone());
+			// Max 3, so we can iterate quite easily.
+			let max_url_length = new_urls.iter().map(|url| url.len().saturated_into()).max().unwrap_or(0u32);
+
+			let ed25519_weight = <T as pallet::Config>::WeightInfo::create_ed25519_keys(
+				new_key_agreement_keys,
+				new_urls.len().saturated_into(),
+				max_url_length
+			);
+			let sr25519_weight = <T as pallet::Config>::WeightInfo::create_sr25519_keys(
+				new_key_agreement_keys,
+				new_urls.len().saturated_into(),
+				max_url_length
+			);
+			let ecdsa_weight = <T as pallet::Config>::WeightInfo::create_ecdsa_keys(
+				new_key_agreement_keys,
+				new_urls.len().saturated_into(),
+				max_url_length
+			);
+
+			ed25519_weight.max(sr25519_weight).max(ecdsa_weight)
+		})]
 		pub fn create(origin: OriginFor<T>, details: DidCreationDetails<T>, signature: DidSignature) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
@@ -450,18 +474,51 @@ pub mod pallet {
 		/// # <weight>
 		/// - The transaction's complexity is mainly dependent on the number of
 		///   new key agreement keys and public keys to remove included in the
-		///   operation as well as the length of the new URL endpoint, if
-		///   present.
+		///   operation as well as the length of the longest URL endpoint and
+		///   the number of new URL endpoints, if present.
 		/// ---------
-		/// Weight: O(K) + O(D) + O(E) where K is the number of new key
+		/// Weight: O(K) + O(D) + O(N * E) where K is the number of new key
 		/// agreement keys bounded by `MaxNewKeyAgreementKeys`, D is the number
 		/// of public keys to remove bounded by `MaxVerificationKeysToRevoke`,
-		/// and E the length of the new endpoint URL bounded by `MaxUrlLength`.
+		/// E the length of the longest endpoint
+		/// URL bounded by `MaxUrlLength`, and N the maximum amount of endpoint
+		/// URLs, bounded by `MaxEndpointUrlsCount`.
 		/// - Reads: [Origin Account], Did
-		/// - Writes: Did (with K new key agreement keys and removing D public
-		///   keys)
+		/// - Writes: Did (with K new key agreement keys, removing D public
+		///   keys, and replacing N service endpoint URLs)
 		/// # </weight>
-		#[pallet::weight(1)]
+		#[pallet::weight({
+			let new_key_agreement_keys = details.new_key_agreement_keys.len().saturated_into::<u32>();
+			let keys_to_delete = details.public_keys_to_remove.len().saturated_into::<u32>();
+			let new_urls = if let DidFragmentUpdateAction::Change(ref new_service_endpoints) = details.service_endpoints_update {
+				new_service_endpoints.urls.clone()
+			} else {
+				vec![]
+			};
+			// Again, max 3, so we can iterate quite easily.
+			let max_url_length = new_urls.iter().map(|url| url.len().saturated_into()).max().unwrap_or(0u32);
+
+			let ed25519_weight = <T as pallet::Config>::WeightInfo::update_ed25519_keys(
+				new_key_agreement_keys,
+				keys_to_delete,
+				new_urls.len().saturated_into(),
+				max_url_length
+			);
+			let sr25519_weight = <T as pallet::Config>::WeightInfo::update_sr25519_keys(
+				new_key_agreement_keys,
+				keys_to_delete,
+				new_urls.len().saturated_into(),
+				max_url_length
+			);
+			let ecdsa_weight = <T as pallet::Config>::WeightInfo::update_ecdsa_keys(
+				new_key_agreement_keys,
+				keys_to_delete,
+				new_urls.len().saturated_into(),
+				max_url_length
+			);
+
+			ed25519_weight.max(sr25519_weight).max(ecdsa_weight)
+		})]
 		pub fn update(origin: OriginFor<T>, details: DidUpdateDetails<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 
@@ -550,7 +607,14 @@ pub mod pallet {
 		/// - Writes: Did
 		/// # </weight>
 		#[allow(clippy::boxed_local)]
-		#[pallet::weight(1)]
+		#[pallet::weight({
+    		let di = did_call.call.get_dispatch_info();
+    		let max_sig_weight = <T as pallet::Config>::WeightInfo::submit_did_call_ed25519_key()
+    		.max(<T as pallet::Config>::WeightInfo::submit_did_call_sr25519_key())
+    		.max(<T as pallet::Config>::WeightInfo::submit_did_call_ecdsa_key());
+
+    		(max_sig_weight.saturating_add(di.weight), di.class)
+  		})]
 		pub fn submit_did_call(
 			origin: OriginFor<T>,
 			did_call: Box<DidAuthorizedCallOperation<T>>,
