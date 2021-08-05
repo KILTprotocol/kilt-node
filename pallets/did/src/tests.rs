@@ -536,6 +536,81 @@ fn check_successful_keys_deletion_update() {
 }
 
 #[test]
+fn check_successful_endpoints_deletion_update() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let service_endpoints = get_service_endpoints(1, 10);
+
+	let mut old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	old_did_details.service_endpoints = Some(service_endpoints);
+
+	// Remove the service endpoints
+	let mut details = generate_base_did_update_details();
+	details.service_endpoints_update = did::DidFragmentUpdateAction::Delete;
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
+		.build(None);
+
+	ext.execute_with(|| {
+		assert_ok!(Did::update(Origin::signed(alice_did.clone()), details));
+	});
+
+	// Auth key and key agreement key unchanged
+	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
+	assert_eq!(
+		new_did_details.get_authentication_key_id(),
+		old_did_details.get_authentication_key_id()
+	);
+	assert_eq!(
+		new_did_details.get_key_agreement_keys_ids(),
+		old_did_details.get_key_agreement_keys_ids()
+	);
+	assert_eq!(new_did_details.get_attestation_key_id(), &None);
+	assert_eq!(new_did_details.get_delegation_key_id(), &None);
+
+	// Service endpoints should now be None
+	assert!(new_did_details.service_endpoints.is_none());
+}
+
+#[test]
+fn check_successful_endpoints_ignore_update() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let service_endpoints = get_service_endpoints(1, 10);
+
+	let mut old_did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	old_did_details.service_endpoints = Some(service_endpoints.clone());
+
+	// By default all actions are `Ignore`, including the service endpoint action.
+	let details = generate_base_did_update_details();
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
+		.build(None);
+
+	ext.execute_with(|| {
+		assert_ok!(Did::update(Origin::signed(alice_did.clone()), details));
+	});
+
+	// Auth key and key agreement key unchanged
+	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
+	assert_eq!(
+		new_did_details.get_authentication_key_id(),
+		old_did_details.get_authentication_key_id()
+	);
+	assert_eq!(
+		new_did_details.get_key_agreement_keys_ids(),
+		old_did_details.get_key_agreement_keys_ids()
+	);
+	assert_eq!(new_did_details.get_attestation_key_id(), &None);
+	assert_eq!(new_did_details.get_delegation_key_id(), &None);
+
+	// Service endpoints should remain unchanged
+	assert_eq!(new_did_details.service_endpoints, Some(service_endpoints));
+}
+
+#[test]
 fn check_successful_keys_overwrite_update() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
