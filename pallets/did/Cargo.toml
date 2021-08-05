@@ -22,7 +22,7 @@ serde = {version = "1.0.101"}
 [dependencies]
 # Internal dependencies
 ctype = {features = ["mock"], optional = true, path = "../ctype", version = "0.24.0"}
-kilt-primitives = {default-features = false, path = "../../primitives"}
+kilt-primitives = {default-features = false, optional = true, path = "../../primitives"}
 
 # External dependencies
 codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.0.0"}
@@ -47,6 +47,7 @@ mock = [
 ]
 runtime-benchmarks = [
   "frame-benchmarking",
+  "kilt-primitives",
 ]
 std = [
   "codec/std",

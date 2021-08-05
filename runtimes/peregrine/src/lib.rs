@@ -702,7 +702,7 @@ impl did::Config for Runtime {
 	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 	type MaxUrlLength = MaxUrlLength;
 	type MaxEndpointUrlsCount = MaxUrlsEndpointCounts;
-	type WeightInfo = ();
+	type WeightInfo = weights::did::WeightInfo<Runtime>;
 }
 
 /// Minimum round length is 1 hour (600 * 6 second block times)
