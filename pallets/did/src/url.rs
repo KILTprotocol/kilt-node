@@ -32,9 +32,18 @@ pub const FTPS_URI_SCHEME: &str = "ftps://";
 /// The expected URI scheme for IPFS endpoints.
 pub const IPFS_URI_SCHEME: &str = "ipfs://";
 
+/// The content type of a resource pointed by a service URL.
+#[derive(Clone, Decode, Debug, Encode, PartialEq, Eq)]
+pub enum ContentType {
+	/// application/json
+	ApplicationJson,
+	/// application/json+ld
+	ApplicationJsonLd,
+}
+
 /// A web URL starting with either http:// or https://
 /// and containing only ASCII URL-encoded characters.
-#[derive(Clone, Decode, Debug, Encode, PartialEq)]
+#[derive(Clone, Decode, Debug, Encode, PartialEq, Eq)]
 pub struct HttpUrl {
 	payload: Vec<u8>,
 }
@@ -62,7 +71,7 @@ impl TryFrom<&[u8]> for HttpUrl {
 
 /// An FTP URL starting with ftp:// or ftps://
 /// and containing only ASCII URL-encoded characters.
-#[derive(Clone, Decode, Debug, Encode, PartialEq)]
+#[derive(Clone, Decode, Debug, Encode, PartialEq, Eq)]
 pub struct FtpUrl {
 	payload: Vec<u8>,
 }
@@ -89,7 +98,7 @@ impl TryFrom<&[u8]> for FtpUrl {
 }
 
 /// An IPFS URL starting with ipfs://. Both CIDs v0 and v1 supported.
-#[derive(Clone, Decode, Debug, Encode, PartialEq)]
+#[derive(Clone, Decode, Debug, Encode, PartialEq, Eq)]
 pub struct IpfsUrl {
 	payload: Vec<u8>,
 }
@@ -123,7 +132,7 @@ impl TryFrom<&[u8]> for IpfsUrl {
 }
 
 /// Supported URLs.
-#[derive(Clone, Decode, Debug, Encode, PartialEq)]
+#[derive(Clone, Decode, Debug, Encode, PartialEq, Eq)]
 pub enum Url {
 	/// See [HttpUrl].
 	Http(HttpUrl),

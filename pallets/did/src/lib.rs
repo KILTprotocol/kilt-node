@@ -60,9 +60,10 @@
 //!   to any past attestation key that has been rotated but not entirely
 //!   revoked.
 //!
-//! - An optional **endpoint URL**: pointing to the description of the services
-//!   the DID subject exposes. For more information, check the W3C DID Core
-//!   specification.
+//! - An optional **service endpoints description**: pointing to the description
+//!   of the services the DID subject exposes and storing a cryptographic hash
+//!   of that information to ensure the integrity of the content.
+//!  For more information, check the W3C DID Core specification.
 //!
 //! - A **transaction counter**: acts as a nonce to avoid replay or signature
 //!   forgery attacks. Each time a DID-signed transaction is executed, the
@@ -74,7 +75,7 @@
 //!
 //! - `create` - Register a new DID on the KILT blockchain under the given DID
 //!   identifier.
-//! - `update` - Update any keys or the endpoint URL of an existing DID.
+//! - `update` - Update any keys or the service endpoints of an existing DID.
 //! - `delete` - Delete the specified DID and all related keys from the KILT
 //!   blockchain.
 //! - `submit_did_call` - Proxy a dispatchable function for an extrinsic that
@@ -88,7 +89,9 @@
 //!   creation or update operation is bounded by `MaxNewKeyAgreementKeys`.
 //! - The maximum number of new keys that can be deleted in an update operation
 //!   is bounded by `MaxVerificationKeysToRevoke`.
-//! - The maximum length in ASCII characters of the endpoint URL is bounded by
+//! - The maximum number of endpoint URLs for a new DID service description is
+//!   bounded by `MaxEndpointUrlsCount`.
+//! - The maximum length in ASCII characters of any endpoint URL is bounded by
 //!   `MaxUrlLength`.
 //! - The chain performs basic checks over the endpoint URLs provided in
 //!   creation and deletion operations. The SDK will perform more in-depth
@@ -100,6 +103,7 @@
 pub mod default_weights;
 pub mod did_details;
 pub mod errors;
+pub mod migrations;
 pub mod origin;
 pub mod url;
 
@@ -113,12 +117,15 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+mod deprecated;
+
 pub use crate::{default_weights::WeightInfo, did_details::*, errors::*, origin::*, pallet::*, url::*};
 
 use codec::Encode;
 use frame_support::{
 	dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo},
 	ensure,
+	pallet_prelude::Weight,
 	storage::types::StorageMap,
 	traits::Get,
 	Parameter,
@@ -127,7 +134,9 @@ use frame_system::ensure_signed;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::RawOrigin;
 use sp_runtime::SaturatedConversion;
-use sp_std::{boxed::Box, convert::TryFrom, fmt::Debug, prelude::Clone, vec::Vec};
+use sp_std::{boxed::Box, convert::TryFrom, fmt::Debug, prelude::Clone, vec, vec::Vec};
+
+use migrations::*;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -186,6 +195,9 @@ pub mod pallet {
 		/// a creation or update operation.
 		#[pallet::constant]
 		type MaxUrlLength: Get<u32>;
+		/// Maximum number of URLs that a service endpoint can contain.
+		#[pallet::constant]
+		type MaxEndpointUrlsCount: Get<u32>;
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}
@@ -195,7 +207,21 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::hooks]
-	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		#[cfg(feature = "try-runtime")]
+		fn pre_upgrade() -> Result<(), &'static str> {
+			migrations::DidStorageMigrator::<T>::pre_migrate()
+		}
+
+		fn on_runtime_upgrade() -> Weight {
+			migrations::DidStorageMigrator::<T>::migrate()
+		}
+
+		#[cfg(feature = "try-runtime")]
+		fn post_upgrade() -> Result<(), &'static str> {
+			migrations::DidStorageMigrator::<T>::post_migrate()
+		}
+	}
 
 	/// DIDs stored on chain.
 	///
@@ -203,6 +229,11 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn get_did)]
 	pub type Did<T> = StorageMap<_, Blake2_128Concat, DidIdentifierOf<T>, DidDetails<T>>;
+
+	/// Contains the latest storage version deployed.
+	#[pallet::storage]
+	#[pallet::getter(fn last_version_migration_used)]
+	pub(crate) type StorageVersion<T> = StorageValue<_, DidStorageVersion, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -259,6 +290,8 @@ pub mod pallet {
 		MaxVerificationKeysToRemoveLimitExceeded,
 		/// A URL longer than the maximum size allowed has been provided.
 		MaxUrlLengthExceeded,
+		/// More than the maximum number of URLs have been specified.
+		MaxUrlsCountExceeded,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
 	}
@@ -314,6 +347,7 @@ pub mod pallet {
 				InputError::MaxKeyAgreementKeysLimitExceeded => Self::MaxKeyAgreementKeysLimitExceeded,
 				InputError::MaxVerificationKeysToRemoveLimitExceeded => Self::MaxVerificationKeysToRemoveLimitExceeded,
 				InputError::MaxUrlLengthExceeded => Self::MaxUrlLengthExceeded,
+				InputError::MaxUrlsCountExceeded => Self::MaxUrlsCountExceeded,
 			}
 		}
 	}
@@ -342,26 +376,37 @@ pub mod pallet {
 		///   new key agreement keys included in the operation as well as the
 		///   length of the URL endpoint, if present.
 		/// ---------
-		/// Weight: O(K) + O(E) where K is the number of new key agreement keys
-		/// bounded by `MaxNewKeyAgreementKeys` and E the length of the endpoint
-		/// URL bounded by `MaxUrlLength`.
+		/// Weight: O(K) + O(N * E) where K is the number of new key agreement
+		/// keys bounded by `MaxNewKeyAgreementKeys`, E the length of the
+		/// longest endpoint URL bounded by `MaxUrlLength`, and N the maximum
+		/// amount of endpoint URLs, bounded by `MaxEndpointUrlsCount`.
 		/// - Reads: [Origin Account], Did
-		/// - Writes: Did (with K new key agreement keys)
+		/// - Writes: Did (with K new key agreement keys and N endpoint URLs)
 		/// # </weight>
-		#[pallet::weight(
-			<T as pallet::Config>::WeightInfo::create_ed25519_keys(
-				details.new_key_agreement_keys.len().saturated_into::<u32>(),
-				details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
-			)
-			.max(<T as pallet::Config>::WeightInfo::create_sr25519_keys(
-				details.new_key_agreement_keys.len().saturated_into::<u32>(),
-				details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
-			))
-			.max(<T as pallet::Config>::WeightInfo::create_ecdsa_keys(
-				details.new_key_agreement_keys.len().saturated_into::<u32>(),
-				details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
-			))
-		)]
+		#[pallet::weight({
+			let new_key_agreement_keys = details.new_key_agreement_keys.len().saturated_into::<u32>();
+			let new_urls = details.new_service_endpoints.as_ref().map_or(vec![], |endpoint| endpoint.urls.clone());
+			// Max 3, so we can iterate quite easily.
+			let max_url_length = new_urls.iter().map(|url| url.len().saturated_into()).max().unwrap_or(0u32);
+
+			let ed25519_weight = <T as pallet::Config>::WeightInfo::create_ed25519_keys(
+				new_key_agreement_keys,
+				new_urls.len().saturated_into(),
+				max_url_length
+			);
+			let sr25519_weight = <T as pallet::Config>::WeightInfo::create_sr25519_keys(
+				new_key_agreement_keys,
+				new_urls.len().saturated_into(),
+				max_url_length
+			);
+			let ecdsa_weight = <T as pallet::Config>::WeightInfo::create_ecdsa_keys(
+				new_key_agreement_keys,
+				new_urls.len().saturated_into(),
+				max_url_length
+			);
+
+			ed25519_weight.max(sr25519_weight).max(ecdsa_weight)
+		})]
 		pub fn create(origin: OriginFor<T>, details: DidCreationDetails<T>, signature: DidSignature) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
@@ -432,34 +477,51 @@ pub mod pallet {
 		/// # <weight>
 		/// - The transaction's complexity is mainly dependent on the number of
 		///   new key agreement keys and public keys to remove included in the
-		///   operation as well as the length of the new URL endpoint, if
-		///   present.
+		///   operation as well as the length of the longest URL endpoint and
+		///   the number of new URL endpoints, if present.
 		/// ---------
-		/// Weight: O(K) + O(D) + O(E) where K is the number of new key
+		/// Weight: O(K) + O(D) + O(N * E) where K is the number of new key
 		/// agreement keys bounded by `MaxNewKeyAgreementKeys`, D is the number
 		/// of public keys to remove bounded by `MaxVerificationKeysToRevoke`,
-		/// and E the length of the new endpoint URL bounded by `MaxUrlLength`.
+		/// E the length of the longest endpoint
+		/// URL bounded by `MaxUrlLength`, and N the maximum amount of endpoint
+		/// URLs, bounded by `MaxEndpointUrlsCount`.
 		/// - Reads: [Origin Account], Did
-		/// - Writes: Did (with K new key agreement keys and removing D public
-		///   keys)
+		/// - Writes: Did (with K new key agreement keys, removing D public
+		///   keys, and replacing N service endpoint URLs)
 		/// # </weight>
-		#[pallet::weight(
-			<T as pallet::Config>::WeightInfo::update_ed25519_keys(
-				details.new_key_agreement_keys.len().saturated_into::<u32>(),
-				details.public_keys_to_remove.len().saturated_into::<u32>(),
-				details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
-			)
-			.max(<T as pallet::Config>::WeightInfo::update_sr25519_keys(
-				details.new_key_agreement_keys.len().saturated_into::<u32>(),
-				details.public_keys_to_remove.len().saturated_into::<u32>(),
-				details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
-			))
-			.max(<T as pallet::Config>::WeightInfo::update_ecdsa_keys(
-				details.new_key_agreement_keys.len().saturated_into::<u32>(),
-				details.public_keys_to_remove.len().saturated_into::<u32>(),
-				details.new_endpoint_url.as_ref().map_or(0u32, |url| url.len().saturated_into::<u32>())
-			))
-		)]
+		#[pallet::weight({
+			let new_key_agreement_keys = details.new_key_agreement_keys.len().saturated_into::<u32>();
+			let keys_to_delete = details.public_keys_to_remove.len().saturated_into::<u32>();
+			let new_urls = if let DidFragmentUpdateAction::Change(ref new_service_endpoints) = details.service_endpoints_update {
+				new_service_endpoints.urls.clone()
+			} else {
+				vec![]
+			};
+			// Again, max 3, so we can iterate quite easily.
+			let max_url_length = new_urls.iter().map(|url| url.len().saturated_into()).max().unwrap_or(0u32);
+
+			let ed25519_weight = <T as pallet::Config>::WeightInfo::update_ed25519_keys(
+				new_key_agreement_keys,
+				keys_to_delete,
+				new_urls.len().saturated_into(),
+				max_url_length
+			);
+			let sr25519_weight = <T as pallet::Config>::WeightInfo::update_sr25519_keys(
+				new_key_agreement_keys,
+				keys_to_delete,
+				new_urls.len().saturated_into(),
+				max_url_length
+			);
+			let ecdsa_weight = <T as pallet::Config>::WeightInfo::update_ecdsa_keys(
+				new_key_agreement_keys,
+				keys_to_delete,
+				new_urls.len().saturated_into(),
+				max_url_length
+			);
+
+			ed25519_weight.max(sr25519_weight).max(ecdsa_weight)
+		})]
 		pub fn update(origin: OriginFor<T>, details: DidUpdateDetails<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 

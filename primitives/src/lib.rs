@@ -22,6 +22,7 @@
 
 use codec::{Decode, Encode};
 use core::convert::TryFrom;
+use frame_support::dispatch::Weight;
 pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
 
 pub use sp_consensus_aura::sr25519::AuthorityId;
@@ -101,4 +102,17 @@ impl TryFrom<Vec<u8>> for CurrencyId {
 			_ => Err(()),
 		}
 	}
+}
+
+/// A trait that allows version migrators to access the underlying pallet's
+/// context, e.g., its Config trait.
+///
+/// In this way, the migrator can access the pallet's storage and the pallet's
+/// types directly.
+pub trait VersionMigratorTrait<T> {
+	#[cfg(feature = "try-runtime")]
+	fn pre_migrate(&self) -> Result<(), &str>;
+	fn migrate(&self) -> Weight;
+	#[cfg(feature = "try-runtime")]
+	fn post_migrate(&self) -> Result<(), &str>;
 }
