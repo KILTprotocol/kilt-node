@@ -18,6 +18,7 @@
 
 use crate::*;
 
+use frame_support::IterableStorageMap;
 use sp_runtime::traits::Zero;
 
 #[cfg(feature = "try-runtime")]
@@ -35,7 +36,11 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	log::info!("v1 -> v2 DID storage migrator started!");
 	let mut total_weight = Weight::zero();
 
-	Did::<T>::translate_values(|old_details| Some(old_to_new_did_details(old_details)));
+	deprecated::v1::storage::Did::<T>::drain().for_each(|(did_identifier, old_did_details)| {
+		Did::<T>::insert(did_identifier, old_to_new_did_details(old_did_details));
+		// Add a read from the old storage and a write for the new storage
+		total_weight = total_weight.saturating_add(T::DbWeight::get().reads_writes(1, 1));
+	});
 
 	StorageVersion::<T>::set(DidStorageVersion::V2);
 	// Adds a write from StorageVersion::set() weight.
