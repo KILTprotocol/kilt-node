@@ -336,7 +336,9 @@ impl<T: Config> DidDetails<T> {
 		);
 
 		if let DidFragmentUpdateAction::Change(ref service_endpoints) = update_details.service_endpoints_update {
-			service_endpoints.validate_against_config_limits::<T>().map_err(DidError::InputError)?;
+			service_endpoints
+				.validate_against_config_limits::<T>()
+				.map_err(DidError::InputError)?;
 		}
 
 		let current_block_number = <frame_system::Pallet<T>>::block_number();

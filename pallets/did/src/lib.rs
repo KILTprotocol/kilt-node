@@ -60,8 +60,9 @@
 //!   to any past attestation key that has been rotated but not entirely
 //!   revoked.
 //!
-//! - An optional **service endpoints description**: pointing to the description of the services
-//!   the DID subject exposes and storing a cryptographic hash of that information to ensure the integrity of the content.
+//! - An optional **service endpoints description**: pointing to the description
+//!   of the services the DID subject exposes and storing a cryptographic hash
+//!   of that information to ensure the integrity of the content.
 //!  For more information, check the W3C DID Core specification.
 //!
 //! - A **transaction counter**: acts as a nonce to avoid replay or signature
