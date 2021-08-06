@@ -295,18 +295,7 @@ impl<T: Config> DidDetails<T> {
 		);
 
 		if let Some(ref service_endpoints) = details.new_service_endpoints {
-			ensure!(
-				service_endpoints.urls.len() <= T::MaxEndpointUrlsCount::get().saturated_into::<usize>(),
-				InputError::MaxUrlsCountExceeded,
-			);
-			ensure!(
-				// Throws InputError::MaxUrlLengthExceeded if any URL is longer than the max allowed size.
-				!service_endpoints
-					.urls
-					.iter()
-					.any(|url| { url.len() > T::MaxUrlLength::get().saturated_into::<usize>() }),
-				InputError::MaxUrlLengthExceeded
-			)
+			service_endpoints.validate_against_config_limits::<T>()?;
 		}
 
 		let current_block_number = <frame_system::Pallet<T>>::block_number();
@@ -347,18 +336,7 @@ impl<T: Config> DidDetails<T> {
 		);
 
 		if let DidFragmentUpdateAction::Change(ref service_endpoints) = update_details.service_endpoints_update {
-			ensure!(
-				service_endpoints.urls.len() <= T::MaxEndpointUrlsCount::get().saturated_into::<usize>(),
-				DidError::InputError(InputError::MaxUrlsCountExceeded)
-			);
-			ensure!(
-				// Throws InputError::MaxUrlLengthExceeded if any URL is longer than the max allowed size.
-				!service_endpoints
-					.urls
-					.iter()
-					.any(|url| { url.len() > T::MaxUrlLength::get().saturated_into::<usize>() }),
-				DidError::InputError(InputError::MaxUrlLengthExceeded)
-			);
+			service_endpoints.validate_against_config_limits::<T>().map_err(DidError::InputError)?;
 		}
 
 		let current_block_number = <frame_system::Pallet<T>>::block_number();
@@ -672,6 +650,24 @@ pub struct ServiceEndpoints {
 	pub content_hash: Hash,
 	pub urls: Vec<Url>,
 	pub content_type: ContentType,
+}
+
+impl ServiceEndpoints {
+	pub(crate) fn validate_against_config_limits<T: Config>(&self) -> Result<(), InputError> {
+		ensure!(
+			self.urls.len() <= T::MaxEndpointUrlsCount::get().saturated_into::<usize>(),
+			InputError::MaxUrlsCountExceeded
+		);
+		ensure!(
+			// Throws InputError::MaxUrlLengthExceeded if any URL is longer than the max allowed size.
+			!self
+				.urls
+				.iter()
+				.any(|url| { url.len() > T::MaxUrlLength::get().saturated_into::<usize>() }),
+			InputError::MaxUrlLengthExceeded
+		);
+		Ok(())
+	}
 }
 
 /// Possible actions on a DID fragment (e.g, a verification key or the endpoint
