@@ -656,7 +656,7 @@ pub struct DidCreationDetails<T: Config> {
 // #[cfg(not(feature = "std"))]
 impl<T: Config> fmt::Debug for DidCreationDetails<T> {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		f.debug_tuple("DidCreationOperation")
+		f.debug_tuple("DidCreationDetails")
 			.field(&self.did)
 			.field(&self.new_key_agreement_keys.clone().into_inner())
 			.field(&self.new_attestation_key)
@@ -691,7 +691,7 @@ pub struct DidUpdateDetails<T: Config> {
 // #[cfg(not(feature = "std"))]
 impl<T: Config> fmt::Debug for DidUpdateDetails<T> {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		f.debug_tuple("DidUpdateOperation")
+		f.debug_tuple("DidUpdateDetails")
 			.field(&self.new_authentication_key)
 			.field(&self.new_key_agreement_keys.clone().into_inner())
 			.field(&self.attestation_key_update)
