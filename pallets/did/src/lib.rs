@@ -60,9 +60,9 @@
 //!   to any past attestation key that has been rotated but not entirely
 //!   revoked.
 //!
-//! - An optional **endpoint URL**: pointing to the description of the services
-//!   the DID subject exposes. For more information, check the W3C DID Core
-//!   specification.
+//! - An optional **service endpoints description**: pointing to the description of the services
+//!   the DID subject exposes and storing a cryptographic hash of that information to ensure the integrity of the content.
+//!  For more information, check the W3C DID Core specification.
 //!
 //! - A **transaction counter**: acts as a nonce to avoid replay or signature
 //!   forgery attacks. Each time a DID-signed transaction is executed, the
@@ -74,7 +74,7 @@
 //!
 //! - `create` - Register a new DID on the KILT blockchain under the given DID
 //!   identifier.
-//! - `update` - Update any keys or the endpoint URL of an existing DID.
+//! - `update` - Update any keys or the service endpoints of an existing DID.
 //! - `delete` - Delete the specified DID and all related keys from the KILT
 //!   blockchain.
 //! - `submit_did_call` - Proxy a dispatchable function for an extrinsic that
@@ -88,7 +88,9 @@
 //!   creation or update operation is bounded by `MaxNewKeyAgreementKeys`.
 //! - The maximum number of new keys that can be deleted in an update operation
 //!   is bounded by `MaxVerificationKeysToRevoke`.
-//! - The maximum length in ASCII characters of the endpoint URL is bounded by
+//! - The maximum number of endpoint URLs for a new DID service description is
+//!   bounded by `MaxEndpointUrlsCount`.
+//! - The maximum length in ASCII characters of any endpoint URL is bounded by
 //!   `MaxUrlLength`.
 //! - The chain performs basic checks over the endpoint URLs provided in
 //!   creation and deletion operations. The SDK will perform more in-depth
