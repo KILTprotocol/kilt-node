@@ -373,6 +373,7 @@ impl ctype::Config for Runtime {
 parameter_types! {
 	pub const MaxNewKeyAgreementKeys: u32 = 10u32;
 	pub const MaxVerificationKeysToRevoke: u32 = 10u32;
+	#[derive(Debug, Clone, PartialEq)]
 	pub const MaxUrlLength: u32 = 200u32;
 	// TODO: Find reasonable numbers
 	pub const MaxPublicKeysPerDidKeyIdentifier: u32 = 1000;

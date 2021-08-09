@@ -107,7 +107,7 @@ benchmarks! {
 		let did_key_agreement_keys = get_key_agreement_keys::<T>(n);
 		let did_public_att_key = get_ed25519_public_attestation_key();
 		let did_public_del_key = get_ed25519_public_delegation_key();
-		let did_endpoint = get_url_endpoint(u);
+		let did_endpoint = get_url_endpoint::<T>(u);
 
 		let mut did_creation_details = generate_base_did_creation_details::<T>(did_subject.clone());
 		did_creation_details.new_key_agreement_keys = did_key_agreement_keys;
@@ -156,7 +156,7 @@ benchmarks! {
 		let did_key_agreement_keys = get_key_agreement_keys::<T>(n);
 		let did_public_att_key = get_sr25519_public_attestation_key();
 		let did_public_del_key = get_sr25519_public_delegation_key();
-		let did_endpoint = get_url_endpoint(u);
+		let did_endpoint = get_url_endpoint::<T>(u);
 
 		let mut did_creation_details = generate_base_did_creation_details::<T>(did_subject.clone());
 		did_creation_details.new_key_agreement_keys = did_key_agreement_keys;
@@ -205,7 +205,7 @@ benchmarks! {
 		let did_key_agreement_keys = get_key_agreement_keys::<T>(n);
 		let did_public_att_key = get_ecdsa_public_attestation_key();
 		let did_public_del_key = get_ecdsa_public_delegation_key();
-		let did_endpoint = get_url_endpoint(u);
+		let did_endpoint = get_url_endpoint::<T>(u);
 
 		let mut did_creation_details = generate_base_did_creation_details::<T>(did_subject.clone());
 		did_creation_details.new_key_agreement_keys = did_key_agreement_keys;
@@ -263,7 +263,7 @@ benchmarks! {
 		let new_did_public_del_key = get_ed25519_public_delegation_key();
 		// Public keys obtained are generated using the same logic as the key agreement keys, so that we are sure they do not generate KeyNotPresent errors
 		let public_keys_to_remove = get_public_keys::<T>(m);
-		let new_url = get_url_endpoint(u);
+		let new_url = get_url_endpoint::<T>(u);
 
 		let mut did_update_details = generate_base_did_update_details::<T>();
 		did_update_details.new_authentication_key = Some(DidVerificationKey::from(new_did_public_auth_key));
@@ -324,7 +324,7 @@ benchmarks! {
 		let new_did_public_del_key = get_sr25519_public_delegation_key();
 		// Public keys obtained are generated using the same logic as the key agreement keys, so that we are sure they do not generate KeyNotPresent errors
 		let public_keys_to_remove = get_public_keys::<T>(m);
-		let new_url = get_url_endpoint(u);
+		let new_url = get_url_endpoint::<T>(u);
 
 		let mut did_update_details = generate_base_did_update_details::<T>();
 		did_update_details.new_authentication_key = Some(DidVerificationKey::from(new_did_public_auth_key));
@@ -385,7 +385,7 @@ benchmarks! {
 		let new_did_public_del_key = get_ecdsa_public_delegation_key();
 		// Public keys obtained are generated using the same logic as the key agreement keys, so that we are sure they do not generate KeyNotPresent errors
 		let public_keys_to_remove = get_public_keys::<T>(m);
-		let new_url = get_url_endpoint(u);
+		let new_url = get_url_endpoint::<T>(u);
 
 		let mut did_update_details = generate_base_did_update_details::<T>();
 		did_update_details.new_authentication_key = Some(DidVerificationKey::from(new_did_public_auth_key.clone()));

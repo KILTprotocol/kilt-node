@@ -212,7 +212,7 @@ pub mod pallet {
 		/// Maximum length in ASCII characters of the endpoint URL specified in
 		/// a creation or update operation.
 		#[pallet::constant]
-		type MaxUrlLength: Get<u32>;
+		type MaxUrlLength: Get<u32> + Debug + Clone + PartialEq;
 
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;

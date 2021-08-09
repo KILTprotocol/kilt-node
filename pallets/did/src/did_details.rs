@@ -246,7 +246,7 @@ pub struct DidDetails<T: Config> {
 	public_keys: BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>, T::MaxPublicKeysPerDidKeyIdentifier>,
 	/// \[OPTIONAL\] The URL pointing to the service endpoints the DID
 	/// subject publicly exposes.
-	pub endpoint_url: Option<Url>,
+	pub endpoint_url: Option<Url<T>>,
 	/// The counter used to avoid replay attacks, which is checked and
 	/// updated upon each DID operation involving with the subject as the
 	/// creator.
@@ -425,7 +425,7 @@ impl<T: Config> DidDetails<T> {
 	/// The new keys are added to the set of verification keys.
 	pub fn add_key_agreement_keys(
 		&mut self,
-		new_key_agreement_keys: BoundedBTreeSet<DidEncryptionKey, T::MaxTotalKeyAgreementKeys>,
+		new_key_agreement_keys: KeyAgreementKeys<T>,
 		block_number: BlockNumberOf<T>,
 	) -> Result<(), StorageError> {
 		for new_key_agreement_key in new_key_agreement_keys {
@@ -636,32 +636,35 @@ impl<T: Config> DidDetails<T> {
 	}
 }
 
+pub(crate) type KeyAgreementKeys<T> = BoundedBTreeSet<DidEncryptionKey, <T as Config>::MaxTotalKeyAgreementKeys>;
+
 /// The details of a new DID to create.
 #[derive(Clone, Decode, Encode, PartialEq)]
 pub struct DidCreationDetails<T: Config> {
 	/// The DID identifier. It has to be unique.
 	pub did: DidIdentifierOf<T>,
 	/// The new key agreement keys.
-	pub new_key_agreement_keys: BoundedBTreeSet<DidEncryptionKey, T::MaxTotalKeyAgreementKeys>,
+	pub new_key_agreement_keys: KeyAgreementKeys<T>,
 	/// \[OPTIONAL\] The new attestation key.
 	pub new_attestation_key: Option<DidVerificationKey>,
 	/// \[OPTIONAL\] The new delegation key.
 	pub new_delegation_key: Option<DidVerificationKey>,
 	/// \[OPTIONAL\] The URL containing the DID endpoints description.
-	pub new_endpoint_url: Option<Url>,
+	pub new_endpoint_url: Option<Url<T>>,
 }
 
 // required because BoundedTreeSet does not implement Debug outside of std
-// FIXME: Can we derive Debug and use custom impl only in std?
-// #[cfg(not(feature = "std"))]
 impl<T: Config> fmt::Debug for DidCreationDetails<T> {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		f.debug_tuple("DidCreationDetails")
-			.field(&self.did)
-			.field(&self.new_key_agreement_keys.clone().into_inner())
-			.field(&self.new_attestation_key)
-			.field(&self.new_delegation_key)
-			.field(&self.new_endpoint_url)
+		f.debug_struct("DidCreationDetails")
+			.field("did", &self.did)
+			.field(
+				"new_key_agreement_keys",
+				&self.new_key_agreement_keys.clone().into_inner(),
+			)
+			.field("new_attestation_key", &self.new_attestation_key)
+			.field("new_delegation_key", &self.new_delegation_key)
+			.field("new_endpoint_url", &self.new_endpoint_url)
 			.finish()
 	}
 }
@@ -672,7 +675,7 @@ pub struct DidUpdateDetails<T: Config> {
 	/// \[OPTIONAL\] The new authentication key.
 	pub new_authentication_key: Option<DidVerificationKey>,
 	/// A new set of key agreement keys to add to the ones already stored.
-	pub new_key_agreement_keys: BoundedBTreeSet<DidEncryptionKey, T::MaxTotalKeyAgreementKeys>,
+	pub new_key_agreement_keys: KeyAgreementKeys<T>,
 	/// \[OPTIONAL\] The attestation key update action.
 	pub attestation_key_update: DidVerificationKeyUpdateAction,
 	/// \[OPTIONAL\] The delegation key update action.
@@ -683,21 +686,25 @@ pub struct DidUpdateDetails<T: Config> {
 	/// possible to specify it for removal in this set.
 	pub public_keys_to_remove: BoundedBTreeSet<KeyIdOf<T>, T::MaxOldAttestationKeys>,
 	/// \[OPTIONAL\] The new endpoint URL.
-	pub new_endpoint_url: Option<Url>,
+	pub new_endpoint_url: Option<Url<T>>,
 }
 
-// required because BoundedTreeSet does not implement Debug outside of std
-// FIXME: Can we derive Debug and use custom impl only in std?
-// #[cfg(not(feature = "std"))]
+// required because BoundedTreeSet does not implement Debug outside of std]
 impl<T: Config> fmt::Debug for DidUpdateDetails<T> {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		f.debug_tuple("DidUpdateDetails")
-			.field(&self.new_authentication_key)
-			.field(&self.new_key_agreement_keys.clone().into_inner())
-			.field(&self.attestation_key_update)
-			.field(&self.delegation_key_update)
-			.field(&self.public_keys_to_remove.clone().into_inner())
-			.field(&self.new_endpoint_url)
+		f.debug_struct("DidUpdateDetails")
+			.field("new_authentication_key", &self.new_authentication_key)
+			.field(
+				"new_key_agreement_keys",
+				&self.new_key_agreement_keys.clone().into_inner(),
+			)
+			.field("attestation_key_update", &self.attestation_key_update)
+			.field("delegation_key_update", &self.delegation_key_update)
+			.field(
+				"public_keys_to_remove",
+				&self.public_keys_to_remove.clone().into_inner(),
+			)
+			.field("new_endpoint_url", &self.new_endpoint_url)
 			.finish()
 	}
 }

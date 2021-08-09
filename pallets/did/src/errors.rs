@@ -45,6 +45,12 @@ impl From<InputError> for DidError {
 	}
 }
 
+impl From<UrlError> for DidError {
+	fn from(err: UrlError) -> Self {
+		DidError::UrlError(err)
+	}
+}
+
 /// Error involving the pallet's storage.
 #[derive(Debug, Eq, PartialEq)]
 pub enum StorageError {

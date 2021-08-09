@@ -23,7 +23,7 @@ use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom};
 use crate::{
 	self as did,
 	mock::{std::*, *},
-	Config,
+	Config, DidError, FtpUrl, HttpUrl, IpfsUrl,
 };
 use ctype::mock as ctype_mock;
 
@@ -149,7 +149,7 @@ fn check_successful_complete_creation() {
 	let del_key = get_sr25519_delegation_key(true);
 	let att_key = get_ecdsa_attestation_key(true);
 	let new_url = did::Url::from(
-		did::HttpUrl::try_from("https://new_kilt.io".as_bytes())
+		HttpUrl::<Test>::try_from("https://new_kilt.io".as_bytes())
 			.expect("https://new_kilt.io should not be considered an invalid HTTP URL."),
 	);
 	let mut details = generate_base_did_creation_details::<Test>(alice_did.clone());
@@ -335,7 +335,7 @@ fn check_max_limit_key_agreement_keys_did_creation() {
 fn check_url_too_long_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let url_endpoint = get_url_endpoint(<Test as did::Config>::MaxUrlLength::get().saturating_add(1));
+	let url_endpoint = get_url_endpoint::<Test>(<Test as did::Config>::MaxUrlLength::get().saturating_add(1));
 	let mut details = generate_base_did_creation_details::<Test>(alice_did);
 	// Max length allowed + 1
 	details.new_endpoint_url = Some(url_endpoint);
@@ -369,7 +369,7 @@ fn check_successful_complete_update() {
 	let new_att_key = get_ed25519_attestation_key(false);
 	let new_del_key = get_sr25519_delegation_key(true);
 	let new_url = did::Url::from(
-		did::HttpUrl::try_from("https://new_kilt.io".as_bytes())
+		HttpUrl::<Test>::try_from("https://new_kilt.io".as_bytes())
 			.expect("https://new_kilt.io should not be considered an invalid HTTP URL."),
 	);
 
@@ -705,7 +705,7 @@ fn check_url_too_long_did_update() {
 	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
 	// Max URL length allowed + 1
-	let new_endpoint_url = get_url_endpoint(<Test as did::Config>::MaxUrlLength::get().saturating_add(1));
+	let new_endpoint_url = get_url_endpoint::<Test>(<Test as did::Config>::MaxUrlLength::get().saturating_add(1));
 
 	let mut details = generate_base_did_update_details::<Test>();
 	details.new_endpoint_url = Some(new_endpoint_url);
@@ -1442,7 +1442,7 @@ fn check_did_not_present_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			did::DidError::StorageError(did::StorageError::DidNotPresent)
+			DidError::StorageError(did::StorageError::DidNotPresent)
 		);
 	});
 }
@@ -1469,7 +1469,7 @@ fn check_max_tx_counter_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			did::DidError::StorageError(did::StorageError::MaxTxCounterValue)
+			DidError::StorageError(did::StorageError::MaxTxCounterValue)
 		);
 	});
 }
@@ -1495,7 +1495,7 @@ fn check_smaller_counter_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			did::DidError::SignatureError(did::SignatureError::InvalidNonce)
+			DidError::SignatureError(did::SignatureError::InvalidNonce)
 		);
 	});
 }
@@ -1520,7 +1520,7 @@ fn check_equal_counter_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			did::DidError::SignatureError(did::SignatureError::InvalidNonce)
+			DidError::SignatureError(did::SignatureError::InvalidNonce)
 		);
 	});
 }
@@ -1545,7 +1545,7 @@ fn check_too_large_counter_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			did::DidError::SignatureError(did::SignatureError::InvalidNonce)
+			DidError::SignatureError(did::SignatureError::InvalidNonce)
 		);
 	});
 }
@@ -1568,7 +1568,7 @@ fn check_verification_key_not_present_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			did::DidError::StorageError(did::StorageError::DidKeyNotPresent(
+			DidError::StorageError(did::StorageError::DidKeyNotPresent(
 				did::DidVerificationKeyRelationship::AssertionMethod
 			))
 		);
@@ -1595,7 +1595,7 @@ fn check_invalid_signature_format_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			did::DidError::SignatureError(did::SignatureError::InvalidSignatureFormat)
+			DidError::SignatureError(did::SignatureError::InvalidSignatureFormat)
 		);
 	});
 }
@@ -1620,7 +1620,7 @@ fn check_invalid_signature_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			did::DidError::SignatureError(did::SignatureError::InvalidSignature)
+			DidError::SignatureError(did::SignatureError::InvalidSignature)
 		);
 	});
 }
@@ -1629,48 +1629,48 @@ fn check_invalid_signature_operation_verification() {
 
 #[test]
 fn check_http_url() {
-	assert_ok!(did::HttpUrl::try_from("http://kilt.io".as_bytes()));
+	assert_ok!(HttpUrl::<Test>::try_from("http://kilt.io".as_bytes()));
 
-	assert_ok!(did::HttpUrl::try_from("https://kilt.io".as_bytes()));
+	assert_ok!(HttpUrl::<Test>::try_from("https://kilt.io".as_bytes()));
 
-	assert_ok!(did::HttpUrl::try_from(
+	assert_ok!(HttpUrl::<Test>::try_from(
 		"https://super.long.domain.kilt.io:12345/public/files/test.txt".as_bytes()
 	));
 
 	// All other valid ASCII characters
-	assert_ok!(did::HttpUrl::try_from("http://:/?#[]@!$&'()*+,;=-._~".as_bytes()));
+	assert_ok!(HttpUrl::<Test>::try_from("http://:/?#[]@!$&'()*+,;=-._~".as_bytes()));
 
 	assert_eq!(
-		did::HttpUrl::try_from("".as_bytes()),
-		Err(did::UrlError::InvalidUrlScheme)
+		HttpUrl::<Test>::try_from("".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 
 	// Non-printable ASCII characters
 	assert_eq!(
-		did::HttpUrl::try_from("http://kilt.io/\x00".as_bytes()),
-		Err(did::UrlError::InvalidUrlEncoding)
+		HttpUrl::<Test>::try_from("http://kilt.io/\x00".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlEncoding))
 	);
 
 	// Some invalid ASCII characters
 	assert_eq!(
-		did::HttpUrl::try_from("http://kilt.io/<tag>".as_bytes()),
-		Err(did::UrlError::InvalidUrlEncoding)
+		HttpUrl::<Test>::try_from("http://kilt.io/<tag>".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlEncoding))
 	);
 
 	// Non-ASCII characters
 	assert_eq!(
-		did::HttpUrl::try_from("http://¶.com".as_bytes()),
-		Err(did::UrlError::InvalidUrlEncoding)
+		HttpUrl::<Test>::try_from("http://¶.com".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlEncoding))
 	);
 
 	assert_eq!(
-		did::HttpUrl::try_from("htt://kilt.io".as_bytes()),
-		Err(did::UrlError::InvalidUrlScheme)
+		HttpUrl::<Test>::try_from("htt://kilt.io".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 
 	assert_eq!(
-		did::HttpUrl::try_from("httpss://kilt.io".as_bytes()),
-		Err(did::UrlError::InvalidUrlScheme)
+		HttpUrl::<Test>::try_from("httpss://kilt.io".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 }
 
@@ -1678,48 +1678,48 @@ fn check_http_url() {
 
 #[test]
 fn check_ftp_url() {
-	assert_ok!(did::FtpUrl::try_from("ftp://kilt.io".as_bytes()));
+	assert_ok!(FtpUrl::<Test>::try_from("ftp://kilt.io".as_bytes()));
 
-	assert_ok!(did::FtpUrl::try_from("ftps://kilt.io".as_bytes()));
+	assert_ok!(FtpUrl::<Test>::try_from("ftps://kilt.io".as_bytes()));
 
-	assert_ok!(did::FtpUrl::try_from(
+	assert_ok!(FtpUrl::<Test>::try_from(
 		"ftps://user@super.long.domain.kilt.io:12345/public/files/test.txt".as_bytes()
 	));
 
 	// All other valid ASCII characters
-	assert_ok!(did::FtpUrl::try_from("ftps://:/?#[]@%!$&'()*+,;=-._~".as_bytes()));
+	assert_ok!(FtpUrl::<Test>::try_from("ftps://:/?#[]@%!$&'()*+,;=-._~".as_bytes()));
 
 	assert_eq!(
-		did::FtpUrl::try_from("".as_bytes()),
-		Err(did::UrlError::InvalidUrlScheme)
+		FtpUrl::<Test>::try_from("".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 
 	// Non-printable ASCII characters
 	assert_eq!(
-		did::HttpUrl::try_from("http://kilt.io/\x00".as_bytes()),
-		Err(did::UrlError::InvalidUrlEncoding)
+		HttpUrl::<Test>::try_from("http://kilt.io/\x00".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlEncoding))
 	);
 
 	// Some invalid ASCII characters
 	assert_eq!(
-		did::FtpUrl::try_from("ftp://kilt.io/<tag>".as_bytes()),
-		Err(did::UrlError::InvalidUrlEncoding)
+		FtpUrl::<Test>::try_from("ftp://kilt.io/<tag>".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlEncoding))
 	);
 
 	// Non-ASCII characters
 	assert_eq!(
-		did::FtpUrl::try_from("ftps://¶.com".as_bytes()),
-		Err(did::UrlError::InvalidUrlEncoding)
+		FtpUrl::<Test>::try_from("ftps://¶.com".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlEncoding))
 	);
 
 	assert_eq!(
-		did::FtpUrl::try_from("ft://kilt.io".as_bytes()),
-		Err(did::UrlError::InvalidUrlScheme)
+		FtpUrl::<Test>::try_from("ft://kilt.io".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 
 	assert_eq!(
-		did::HttpUrl::try_from("ftpss://kilt.io".as_bytes()),
-		Err(did::UrlError::InvalidUrlScheme)
+		HttpUrl::<Test>::try_from("ftpss://kilt.io".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 }
 
@@ -1728,33 +1728,33 @@ fn check_ftp_url() {
 #[test]
 fn check_ipfs_url() {
 	// Base58 address
-	assert_ok!(did::IpfsUrl::try_from(
+	assert_ok!(IpfsUrl::<Test>::try_from(
 		"ipfs://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()
 	));
 
 	// Base32 address (at the moment, padding characters can appear anywhere in the
 	// string)
-	assert_ok!(did::IpfsUrl::try_from(
+	assert_ok!(IpfsUrl::<Test>::try_from(
 		"ipfs://OQQHHHTGMMYDQQ364YB4GDE=HREJQL==".as_bytes()
 	));
 
 	assert_eq!(
-		did::IpfsUrl::try_from("".as_bytes()),
-		Err(did::UrlError::InvalidUrlScheme)
+		IpfsUrl::<Test>::try_from("".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 
 	assert_eq!(
-		did::IpfsUrl::try_from("ipfs://¶QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()),
-		Err(did::UrlError::InvalidUrlEncoding)
+		IpfsUrl::<Test>::try_from("ipfs://¶QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlEncoding))
 	);
 
 	assert_eq!(
-		did::IpfsUrl::try_from("ipf://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()),
-		Err(did::UrlError::InvalidUrlScheme)
+		IpfsUrl::<Test>::try_from("ipf://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 
 	assert_eq!(
-		did::IpfsUrl::try_from("ipfss://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQk".as_bytes()),
-		Err(did::UrlError::InvalidUrlScheme)
+		IpfsUrl::<Test>::try_from("ipfss://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQk".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 }

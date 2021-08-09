@@ -28,9 +28,7 @@ use sp_std::{
 
 pub(crate) const DEFAULT_URL_SCHEME: [u8; 8] = *b"https://";
 
-pub fn get_key_agreement_keys<T: Config>(
-	n_keys: u32,
-) -> BoundedBTreeSet<DidEncryptionKey, T::MaxTotalKeyAgreementKeys> {
+pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> KeyAgreementKeys<T> {
 	BoundedBTreeSet::try_from(
 		(1..=n_keys)
 			.map(|i| {
@@ -66,11 +64,11 @@ pub fn get_public_keys<T: Config>(n_keys: u32) -> BoundedBTreeSet<KeyIdOf<T>, T:
 }
 
 // Assumes that the length of the URL is larger than 8 (length of the prefix https://)
-pub fn get_url_endpoint(length: u32) -> Url {
+pub fn get_url_endpoint<T: Config>(length: u32) -> Url<T> {
 	let total_length = usize::try_from(length).expect("Failed to convert URL max length value to usize value.");
 	let mut url_encoded_string = DEFAULT_URL_SCHEME.to_vec();
 	url_encoded_string.resize(total_length, b'0');
-	Url::Http(
+	Url::<T>::Http(
 		HttpUrl::try_from(url_encoded_string.as_ref()).expect("Failed to create default URL with provided length."),
 	)
 }
@@ -179,6 +177,7 @@ pub mod std {
 	parameter_types! {
 		pub const MaxNewKeyAgreementKeys: u32 = 10u32;
 		pub const MaxVerificationKeysToRevoke: u32 = 10u32;
+		#[derive(Debug, Clone, PartialEq)]
 		pub const MaxUrlLength: u32 = 200u32;
 		#[derive(Debug, Clone)]
 		pub const MaxPublicKeysPerDidKeyIdentifier: u32 = 1000;
