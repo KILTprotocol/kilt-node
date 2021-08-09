@@ -37,6 +37,15 @@ pub const FTPS_URI_SCHEME: &str = "ftps://";
 /// The expected URI scheme for IPFS endpoints.
 pub const IPFS_URI_SCHEME: &str = "ipfs://";
 
+/// The content type of a resource pointed by a service URL.
+#[derive(Clone, Decode, Debug, Encode, PartialEq, Eq)]
+pub enum ContentType {
+	/// application/json
+	ApplicationJson,
+	/// application/json+ld
+	ApplicationJsonLd,
+}
+
 pub(crate) type UrlPayload<T> = BoundedVec<u8, <T as Config>::MaxUrlLength>;
 
 /// A web URL starting with either http:// or https://

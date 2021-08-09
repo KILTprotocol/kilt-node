@@ -109,7 +109,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 18,
+	spec_version: 19,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -381,6 +381,8 @@ parameter_types! {
 	pub const MaxTotalKeyAgreementKeys: u32 = 1000;
 	#[derive(Debug, Clone, PartialEq)]
 	pub const MaxOldAttestationKeys: u32 = 100;
+	#[derive(Debug, Clone, PartialEq)]
+	pub const MaxEndpointUrlsCount: u32 = 3u32;
 }
 
 impl did::Config for Runtime {
@@ -398,6 +400,7 @@ impl did::Config for Runtime {
 	type MaxPublicKeysPerDidKeyIdentifier = MaxPublicKeysPerDidKeyIdentifier;
 	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 	type MaxUrlLength = MaxUrlLength;
+	type MaxEndpointUrlsCount = MaxEndpointUrlsCount;
 	type WeightInfo = ();
 }
 

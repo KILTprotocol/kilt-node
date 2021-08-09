@@ -20,13 +20,16 @@
 
 use crate::*;
 use did_details::*;
-use frame_support::storage::bounded_btree_set::BoundedBTreeSet;
+use frame_support::{storage::bounded_btree_set::BoundedBTreeSet, BoundedVec};
+use kilt_primitives::Hash;
 use sp_std::{
 	collections::btree_set::BTreeSet,
 	convert::{TryFrom, TryInto},
+	vec,
 };
 
 pub(crate) const DEFAULT_URL_SCHEME: [u8; 8] = *b"https://";
+const DEFAULT_SERVICE_ENDPOINT_HASH_SEED: u64 = 200u64;
 
 pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> KeyAgreementKeys<T> {
 	BoundedBTreeSet::try_from(
@@ -64,13 +67,24 @@ pub fn get_public_keys<T: Config>(n_keys: u32) -> BoundedBTreeSet<KeyIdOf<T>, T:
 }
 
 // Assumes that the length of the URL is larger than 8 (length of the prefix https://)
-pub fn get_url_endpoint<T: Config>(length: u32) -> Url<T> {
+pub fn get_service_endpoints<T: Config>(count: u32, length: u32) -> ServiceEndpoints<T> {
 	let total_length = usize::try_from(length).expect("Failed to convert URL max length value to usize value.");
+	let total_count = usize::try_from(count).expect("Failed to convert number (count) of URLs to usize value.");
 	let mut url_encoded_string = DEFAULT_URL_SCHEME.to_vec();
 	url_encoded_string.resize(total_length, b'0');
-	Url::<T>::Http(
+	let url = Url::<T>::Http(
 		HttpUrl::try_from(url_encoded_string.as_ref()).expect("Failed to create default URL with provided length."),
-	)
+	);
+
+	ServiceEndpoints::<T> {
+		#[cfg(not(feature = "std"))]
+		content_hash: Hash::default(),
+		#[cfg(feature = "std")]
+		content_hash: Hash::from_low_u64_be(DEFAULT_SERVICE_ENDPOINT_HASH_SEED),
+		urls: BoundedVec::<Url<T>, T::MaxEndpointUrlsCount>::try_from(vec![url; total_count])
+			.expect("Exceeded max endpoint urls when creating service endpoints"),
+		content_type: ContentType::ApplicationJson,
+	}
 }
 
 pub fn generate_base_did_creation_details<T: Config>(did: DidIdentifierOf<T>) -> DidCreationDetails<T> {
@@ -79,7 +93,7 @@ pub fn generate_base_did_creation_details<T: Config>(did: DidIdentifierOf<T>) ->
 		new_key_agreement_keys: BoundedBTreeSet::new(),
 		new_attestation_key: None,
 		new_delegation_key: None,
-		new_endpoint_url: None,
+		new_service_endpoints: None,
 	}
 }
 
@@ -87,9 +101,9 @@ pub fn generate_base_did_update_details<T: Config>() -> DidUpdateDetails<T> {
 	DidUpdateDetails {
 		new_authentication_key: None,
 		new_key_agreement_keys: BoundedBTreeSet::new(),
-		attestation_key_update: DidVerificationKeyUpdateAction::default(),
-		delegation_key_update: DidVerificationKeyUpdateAction::default(),
-		new_endpoint_url: None,
+		attestation_key_update: DidFragmentUpdateAction::default(),
+		delegation_key_update: DidFragmentUpdateAction::default(),
+		service_endpoints_update: DidFragmentUpdateAction::default(),
 		public_keys_to_remove: BoundedBTreeSet::new(),
 	}
 }
@@ -102,13 +116,9 @@ pub fn generate_base_did_details<T: Config>(authentication_key: DidVerificationK
 #[cfg(any(feature = "std", test))]
 pub mod std {
 	#![allow(dead_code)]
-	/// FIXME: Why does clippy not realize the complained functions are used in
-	/// the test?
-
-	#[cfg(feature = "runtime-benchmarks")]
-	use frame_system::EnsureSigned;
 
 	use frame_support::{parameter_types, weights::constants::RocksDbWeight};
+	use frame_system::EnsureSigned;
 	use sp_core::{ecdsa, ed25519, sr25519, Pair};
 	use sp_keystore::{testing::KeyStore, KeystoreExt};
 	use sp_runtime::{
@@ -185,16 +195,15 @@ pub mod std {
 		pub const MaxTotalKeyAgreementKeys: u32 = 1000;
 		#[derive(Debug, Clone, PartialEq)]
 		pub const MaxOldAttestationKeys: u32 = 100;
+		#[derive(Debug, Clone, PartialEq)]
+		pub const MaxEndpointUrlsCount: u32 = 3u32;
 	}
 
 	impl Config for Test {
 		type DidIdentifier = TestDidIdentifier;
 		type Origin = Origin;
 		type Call = Call;
-		#[cfg(feature = "runtime-benchmarks")]
 		type EnsureOrigin = EnsureSigned<TestDidIdentifier>;
-		#[cfg(not(feature = "runtime-benchmarks"))]
-		type EnsureOrigin = did::EnsureDidOrigin<TestDidIdentifier>;
 		type Event = ();
 		type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 		type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
@@ -202,6 +211,7 @@ pub mod std {
 		type MaxPublicKeysPerDidKeyIdentifier = MaxPublicKeysPerDidKeyIdentifier;
 		type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 		type MaxUrlLength = MaxUrlLength;
+		type MaxEndpointUrlsCount = MaxEndpointUrlsCount;
 		type WeightInfo = ();
 	}
 
@@ -401,17 +411,26 @@ pub mod std {
 	#[derive(Clone)]
 	pub struct ExtBuilder {
 		dids_stored: Vec<(TestDidIdentifier, did::DidDetails<Test>)>,
+		storage_version: DidStorageVersion,
 	}
 
 	impl Default for ExtBuilder {
 		fn default() -> Self {
-			Self { dids_stored: vec![] }
+			Self {
+				dids_stored: vec![],
+				storage_version: DidStorageVersion::default(),
+			}
 		}
 	}
 
 	impl ExtBuilder {
 		pub fn with_dids(mut self, dids: Vec<(TestDidIdentifier, did::DidDetails<Test>)>) -> Self {
 			self.dids_stored = dids;
+			self
+		}
+
+		pub fn with_storage_version(mut self, storage_version: DidStorageVersion) -> Self {
+			self.storage_version = storage_version;
 			self
 		}
 
@@ -430,6 +449,10 @@ pub mod std {
 					})
 				});
 			}
+
+			ext.execute_with(|| {
+				did::StorageVersion::<Test>::set(self.storage_version);
+			});
 
 			ext
 		}
