@@ -1044,7 +1044,6 @@ pub mod pallet {
 			let acc = ensure_signed(origin)?;
 			let is_active_candidate = Self::is_active_candidate(&acc);
 			ensure!(is_active_candidate.unwrap_or(true), Error::<T>::AlreadyLeaving);
-			ensure!(is_active_candidate.is_none(), Error::<T>::CandidateExists);
 			ensure!(!Self::is_delegator(&acc), Error::<T>::DelegatorExists);
 			ensure!(
 				stake >= T::MinCollatorCandidateStake::get(),
