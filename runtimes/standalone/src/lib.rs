@@ -376,7 +376,7 @@ parameter_types! {
 	#[derive(Debug, Clone, PartialEq)]
 	pub const MaxUrlLength: u32 = 200u32;
 	// TODO: Find reasonable numbers
-	pub const MaxPublicKeysPerDidKeyIdentifier: u32 = 1000;
+	pub const MaxPublicKeysPerDid: u32 = 1000;
 	#[derive(Debug, Clone, PartialEq)]
 	pub const MaxTotalKeyAgreementKeys: u32 = 1000;
 	#[derive(Debug, Clone, PartialEq)]
@@ -397,7 +397,7 @@ impl did::Config for Runtime {
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
 	type MaxOldAttestationKeys = MaxOldAttestationKeys;
-	type MaxPublicKeysPerDidKeyIdentifier = MaxPublicKeysPerDidKeyIdentifier;
+	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
 	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 	type MaxUrlLength = MaxUrlLength;
 	type MaxEndpointUrlsCount = MaxEndpointUrlsCount;

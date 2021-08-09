@@ -190,7 +190,7 @@ pub mod std {
 		#[derive(Debug, Clone, PartialEq)]
 		pub const MaxUrlLength: u32 = 200u32;
 		#[derive(Debug, Clone)]
-		pub const MaxPublicKeysPerDidKeyIdentifier: u32 = 1000;
+		pub const MaxPublicKeysPerDid: u32 = 1000;
 		#[derive(Debug, Clone, PartialEq)]
 		pub const MaxTotalKeyAgreementKeys: u32 = 1000;
 		#[derive(Debug, Clone, PartialEq)]
@@ -208,7 +208,7 @@ pub mod std {
 		type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 		type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
 		type MaxOldAttestationKeys = MaxOldAttestationKeys;
-		type MaxPublicKeysPerDidKeyIdentifier = MaxPublicKeysPerDidKeyIdentifier;
+		type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
 		type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 		type MaxUrlLength = MaxUrlLength;
 		type MaxEndpointUrlsCount = MaxEndpointUrlsCount;

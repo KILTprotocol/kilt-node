@@ -29,8 +29,7 @@ pub(crate) mod v1 {
 		pub(crate) key_agreement_keys: BoundedBTreeSet<T::Hash, T::MaxTotalKeyAgreementKeys>,
 		pub(crate) delegation_key: Option<KeyIdOf<T>>,
 		pub(crate) attestation_key: Option<KeyIdOf<T>>,
-		pub(crate) public_keys:
-			BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>, T::MaxPublicKeysPerDidKeyIdentifier>,
+		pub(crate) public_keys: BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>, T::MaxPublicKeysPerDid>,
 		pub(crate) endpoint_url: Option<Url<T>>,
 		pub(crate) last_tx_counter: u64,
 	}
@@ -38,11 +37,8 @@ pub(crate) mod v1 {
 	#[cfg(test)]
 	impl<T: Config> DidDetails<T> {
 		pub(crate) fn new(authentication_key: DidVerificationKey, block_number: BlockNumberOf<T>) -> Self {
-			let mut public_keys: BoundedBTreeMap<
-				KeyIdOf<T>,
-				DidPublicKeyDetails<T>,
-				T::MaxPublicKeysPerDidKeyIdentifier,
-			> = BoundedBTreeMap::default();
+			let mut public_keys: BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>, T::MaxPublicKeysPerDid> =
+				BoundedBTreeMap::default();
 			let authentication_key_id = utils::calculate_key_id::<T>(&authentication_key.clone().into());
 			public_keys
 				.try_insert(

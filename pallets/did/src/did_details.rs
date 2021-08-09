@@ -247,7 +247,7 @@ pub struct DidDetails<T: Config> {
 	/// the old attestation keys that have been rotated, i.e., they cannot
 	/// be used to create new attestations but can still be used to verify
 	/// previously issued attestations.
-	pub(crate) public_keys: BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>, T::MaxPublicKeysPerDidKeyIdentifier>,
+	pub(crate) public_keys: BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>, T::MaxPublicKeysPerDid>,
 	/// \[OPTIONAL\] The service endpoint details the DID
 	/// subject publicly exposes.
 	pub service_endpoints: Option<ServiceEndpoints<T>>,
@@ -263,8 +263,7 @@ impl<T: Config> DidDetails<T> {
 	///
 	/// The tx counter is automatically set to 0.
 	pub fn new(authentication_key: DidVerificationKey, block_number: BlockNumberOf<T>) -> Result<Self, StorageError> {
-		let mut public_keys =
-			BoundedBTreeMap::<KeyIdOf<T>, DidPublicKeyDetails<T>, T::MaxPublicKeysPerDidKeyIdentifier>::new();
+		let mut public_keys = BoundedBTreeMap::<KeyIdOf<T>, DidPublicKeyDetails<T>, T::MaxPublicKeysPerDid>::new();
 		let authentication_key_id = utils::calculate_key_id::<T>(&authentication_key.clone().into());
 		public_keys
 			.try_insert(
@@ -274,7 +273,7 @@ impl<T: Config> DidDetails<T> {
 					block_number,
 				},
 			)
-			.map_err(|_| StorageError::MaxPublicKeysPerDidKeyIdentifierExceeded)?;
+			.map_err(|_| StorageError::MaxPublicKeysPerDidExceeded)?;
 		Ok(Self {
 			authentication_key: authentication_key_id,
 			key_agreement_keys: BoundedBTreeSet::<KeyIdOf<T>, T::MaxTotalKeyAgreementKeys>::new(),
@@ -420,7 +419,7 @@ impl<T: Config> DidDetails<T> {
 					block_number,
 				},
 			)
-			.map_err(|_| StorageError::MaxPublicKeysPerDidKeyIdentifierExceeded)?;
+			.map_err(|_| StorageError::MaxPublicKeysPerDidExceeded)?;
 		Ok(())
 	}
 
@@ -442,7 +441,7 @@ impl<T: Config> DidDetails<T> {
 						block_number,
 					},
 				)
-				.map_err(|_| StorageError::MaxPublicKeysPerDidKeyIdentifierExceeded)?;
+				.map_err(|_| StorageError::MaxPublicKeysPerDidExceeded)?;
 			self.key_agreement_keys
 				.try_insert(new_key_agreement_id)
 				.map_err(|_| StorageError::MaxTotalKeyAgreementKeysExceeded)?;
@@ -470,7 +469,7 @@ impl<T: Config> DidDetails<T> {
 					block_number,
 				},
 			)
-			.map_err(|_| StorageError::MaxPublicKeysPerDidKeyIdentifierExceeded)?;
+			.map_err(|_| StorageError::MaxPublicKeysPerDidExceeded)?;
 		Ok(())
 	}
 
@@ -507,7 +506,7 @@ impl<T: Config> DidDetails<T> {
 					block_number,
 				},
 			)
-			.map_err(|_| StorageError::MaxPublicKeysPerDidKeyIdentifierExceeded)?;
+			.map_err(|_| StorageError::MaxPublicKeysPerDidExceeded)?;
 		Ok(())
 	}
 
@@ -592,9 +591,7 @@ impl<T: Config> DidDetails<T> {
 		&self.delegation_key
 	}
 
-	pub fn get_public_keys(
-		&self,
-	) -> &BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>, T::MaxPublicKeysPerDidKeyIdentifier> {
+	pub fn get_public_keys(&self) -> &BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>, T::MaxPublicKeysPerDid> {
 		&self.public_keys
 	}
 

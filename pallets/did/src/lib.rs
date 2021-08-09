@@ -194,7 +194,7 @@ pub mod pallet {
 		/// contains old attestation keys which cannot issue new attestations
 		/// but can still be used to verify previously issued attestations.
 		#[pallet::constant]
-		type MaxPublicKeysPerDidKeyIdentifier: Get<u32>;
+		type MaxPublicKeysPerDid: Get<u32>;
 
 		/// Maximum number of key agreement keys that can be added in a creation
 		/// or update operation.
@@ -325,7 +325,7 @@ pub mod pallet {
 		InternalError,
 		/// The maximum number of public keys for this DID key identifier has
 		/// been reached.
-		MaxPublicKeysPerDidKeyIdentifierExceeded,
+		MaxPublicKeysPerDidExceeded,
 		/// The maximum number of key agreements has been reached for the DID
 		/// subject.
 		MaxTotalKeyAgreementKeysExceeded,
@@ -356,9 +356,7 @@ pub mod pallet {
 				}
 				StorageError::MaxTxCounterValue => Self::MaxTxCounterValue,
 				StorageError::CurrentlyActiveKey => Self::CurrentlyActiveKey,
-				StorageError::MaxPublicKeysPerDidKeyIdentifierExceeded => {
-					Self::MaxPublicKeysPerDidKeyIdentifierExceeded
-				}
+				StorageError::MaxPublicKeysPerDidExceeded => Self::MaxPublicKeysPerDidExceeded,
 				StorageError::MaxTotalKeyAgreementKeysExceeded => Self::MaxTotalKeyAgreementKeysExceeded,
 				StorageError::MaxOldAttestationKeysExceeded => Self::MaxOldAttestationKeysExceeded,
 			}

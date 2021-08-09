@@ -72,7 +72,7 @@ pub enum StorageError {
 	MaxTxCounterValue,
 	/// The maximum number of public keys for this DID key identifier has
 	/// been reached.
-	MaxPublicKeysPerDidKeyIdentifierExceeded,
+	MaxPublicKeysPerDidExceeded,
 	/// The maximum number of key agreements has been reached for the DID
 	/// subject.
 	MaxTotalKeyAgreementKeysExceeded,
