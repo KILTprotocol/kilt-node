@@ -162,7 +162,6 @@ pub(crate) mod mock;
 #[cfg(test)]
 pub(crate) mod tests;
 
-mod deprecated;
 mod inflation;
 pub mod migrations;
 mod set;
@@ -1485,8 +1484,8 @@ pub mod pallet {
 
 			// can only throw if MaxCollatorsPerDelegator is set to 0 which should never
 			// occur in practice, even if the delegator rewards are set to 0
-			let delegator_state =
-				Delegator::try_new(collator.clone(), amount).map_err(|_| Error::<T>::MaxCollatorsPerDelegatorExceeded)?;
+			let delegator_state = Delegator::try_new(collator.clone(), amount)
+				.map_err(|_| Error::<T>::MaxCollatorsPerDelegatorExceeded)?;
 
 			// update state and potentially kick a delegator with less staked amount
 			state = if num_delegations_pre_insertion == T::MaxDelegatorsPerCollator::get() {

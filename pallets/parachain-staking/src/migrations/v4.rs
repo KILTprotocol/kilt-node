@@ -17,14 +17,11 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{
-	deprecated::v1_v4::{
-		storage::{CandidatePool, CollatorState, DelegatorState},
-		CollatorOf, Delegator,
-	},
 	migrations::StakingStorageVersion,
-	pallet::*,
+	types::{CollatorOf, Delegator},
+	CandidatePool, CollatorState, Config, DelegatorState, StorageVersion,
 };
-use frame_support::{dispatch::Weight, traits::Get, StoragePrefixedMap, StorageValue};
+use frame_support::{dispatch::Weight, traits::Get};
 
 #[cfg(feature = "try-runtime")]
 pub(crate) fn pre_migrate<T: Config>() -> Result<(), &'static str> {
@@ -40,18 +37,20 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	let mut n = 1u64;
 
 	// for each candidate: sort delegators from greatest to lowest
-	CollatorState::<T>::translate_values(|mut state: CollatorOf<T>| {
+	CollatorState::<T>::translate_values(|mut state: CollatorOf<T, T::MaxDelegatorsPerCollator>| {
 		state.delegators.sort_greatest_to_lowest();
 		n = n.saturating_add(1u64);
 		Some(state)
 	});
 
 	// for each delegator: sort delegations from greatest to lowest
-	DelegatorState::<T>::translate_values(|mut state: Delegator<T::AccountId, T::CurrencyBalance>| {
-		state.delegations.sort_greatest_to_lowest();
-		n = n.saturating_add(1u64);
-		Some(state)
-	});
+	DelegatorState::<T>::translate_values(
+		|mut state: Delegator<T::AccountId, T::CurrencyBalance, T::MaxCollatorsPerDelegator>| {
+			state.delegations.sort_greatest_to_lowest();
+			n = n.saturating_add(1u64);
+			Some(state)
+		},
+	);
 
 	StorageVersion::<T>::put(StakingStorageVersion::V4);
 	log::info!("Completed staking migration to StakingStorageVersion::V4");
@@ -63,7 +62,10 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 pub(crate) fn post_migrate<T: Config>() -> Result<(), &'static str> {
 	let mut candidates = CandidatePool::<T>::get();
 	candidates.sort_greatest_to_lowest();
-	assert_eq!(CandidatePool::<T>::get(), candidates);
+	assert_eq!(
+		CandidatePool::<T>::get().into_bounded_vec().into_inner(),
+		candidates.into_bounded_vec().into_inner()
+	);
 	assert_eq!(StorageVersion::<T>::get(), StakingStorageVersion::V4);
 	Ok(())
 }
