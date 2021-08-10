@@ -21,9 +21,8 @@ use sp_core::*;
 use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom};
 
 use crate::{
-	self as did,
-	mock::{std::*, *},
-	DidError, DidNewKeyAgreementKeys, DidVerificationKeysToRevoke, FtpUrl, HttpUrl, IpfsUrl,
+	self as did, mock::*, mock_utils::*, DidError, DidNewKeyAgreementKeys, DidVerificationKeysToRevoke, FtpUrl,
+	HttpUrl, IpfsUrl,
 };
 use ctype::mock as ctype_mock;
 

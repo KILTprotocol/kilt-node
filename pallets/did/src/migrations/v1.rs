@@ -86,8 +86,8 @@ mod tests {
 	use sp_core::Pair;
 
 	use super::*;
-	use crate::mock::std::Test as TestRuntime;
-	use mock::std::{get_did_identifier_from_ed25519_key, get_ed25519_authentication_key, ExtBuilder};
+	use crate::mock::Test as TestRuntime;
+	use mock::{get_did_identifier_from_ed25519_key, get_ed25519_authentication_key, ExtBuilder};
 	use sp_std::convert::TryFrom;
 
 	#[test]
