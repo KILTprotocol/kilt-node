@@ -18,7 +18,6 @@
 
 pub(crate) mod v1 {
 	use codec::{Decode, Encode};
-	use frame_support::storage::{bounded_btree_map::BoundedBTreeMap, bounded_btree_set::BoundedBTreeSet};
 
 	use crate::*;
 
@@ -26,10 +25,10 @@ pub(crate) mod v1 {
 	#[derive(Clone, Decode, Encode, PartialEq)]
 	pub struct DidDetails<T: Config> {
 		pub(crate) authentication_key: KeyIdOf<T>,
-		pub(crate) key_agreement_keys: BoundedBTreeSet<T::Hash, T::MaxTotalKeyAgreementKeys>,
+		pub(crate) key_agreement_keys: DidTotalKeyAgreementKeys<T>,
 		pub(crate) delegation_key: Option<KeyIdOf<T>>,
 		pub(crate) attestation_key: Option<KeyIdOf<T>>,
-		pub(crate) public_keys: BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>, T::MaxPublicKeysPerDid>,
+		pub(crate) public_keys: DidPublicKeyMap<T>,
 		pub(crate) endpoint_url: Option<Url<T>>,
 		pub(crate) last_tx_counter: u64,
 	}
@@ -37,8 +36,7 @@ pub(crate) mod v1 {
 	#[cfg(test)]
 	impl<T: Config> DidDetails<T> {
 		pub(crate) fn new(authentication_key: DidVerificationKey, block_number: BlockNumberOf<T>) -> Self {
-			let mut public_keys: BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>, T::MaxPublicKeysPerDid> =
-				BoundedBTreeMap::default();
+			let mut public_keys = DidPublicKeyMap::<T>::default();
 			let authentication_key_id = utils::calculate_key_id::<T>(&authentication_key.clone().into());
 			public_keys
 				.try_insert(
@@ -51,7 +49,7 @@ pub(crate) mod v1 {
 				.expect("Should not exceed BoundedBTreeMap bounds when setting public keys");
 			Self {
 				authentication_key: authentication_key_id,
-				key_agreement_keys: BoundedBTreeSet::<T::Hash, T::MaxTotalKeyAgreementKeys>::default(),
+				key_agreement_keys: DidTotalKeyAgreementKeys::<T>::default(),
 				attestation_key: None,
 				delegation_key: None,
 				endpoint_url: None,

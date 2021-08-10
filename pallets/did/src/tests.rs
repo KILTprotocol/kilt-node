@@ -16,14 +16,14 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{assert_err, assert_noop, assert_ok, storage::bounded_btree_set::BoundedBTreeSet};
+use frame_support::{assert_err, assert_noop, assert_ok};
 use sp_core::*;
 use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom};
 
 use crate::{
 	self as did,
 	mock::{std::*, *},
-	Config, DidError, FtpUrl, HttpUrl, IpfsUrl,
+	DidError, DidNewKeyAgreementKeys, DidVerificationKeysToRevoke, FtpUrl, HttpUrl, IpfsUrl,
 };
 use ctype::mock as ctype_mock;
 
@@ -139,13 +139,13 @@ fn check_successful_complete_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let auth_did_key = did::DidVerificationKey::from(auth_key.public());
-	let enc_keys = BoundedBTreeSet::<did::DidEncryptionKey, <Test as Config>::MaxTotalKeyAgreementKeys>::try_from(
+	let enc_keys = DidNewKeyAgreementKeys::<Test>::try_from(
 		vec![get_x25519_encryption_key(true), get_x25519_encryption_key(false)]
 			.iter()
 			.copied()
 			.collect::<BTreeSet<did::DidEncryptionKey>>(),
 	)
-	.expect("Exceeded BounddBTreeSet bounds when creating new key agreement keys");
+	.expect("Exceeded BoundedBTreeSet bounds when creating new key agreement keys");
 	let del_key = get_sr25519_delegation_key(true);
 	let att_key = get_ecdsa_attestation_key(true);
 	let new_service_endpoints = get_service_endpoints::<Test>(1, 10);
@@ -309,6 +309,7 @@ fn check_swapped_did_subject_did_creation() {
 }
 
 #[test]
+#[should_panic = "Failed to convert key_agreement_keys to BoundedBTreeSet"]
 fn check_max_limit_key_agreement_keys_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
@@ -406,7 +407,7 @@ fn check_successful_complete_update() {
 
 	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(old_auth_key.public()));
 	assert_ok!(old_did_details.add_key_agreement_keys(
-		BoundedBTreeSet::<did::DidEncryptionKey, <Test as Config>::MaxTotalKeyAgreementKeys>::try_from(
+		DidNewKeyAgreementKeys::<Test>::try_from(
 			vec![old_enc_key]
 				.iter()
 				.copied()
@@ -421,19 +422,18 @@ fn check_successful_complete_update() {
 	// removed.
 	let mut details = generate_base_did_update_details::<Test>();
 	details.new_authentication_key = Some(did::DidVerificationKey::from(new_auth_key.public()));
-	details.new_key_agreement_keys =
-		BoundedBTreeSet::<did::DidEncryptionKey, <Test as Config>::MaxTotalKeyAgreementKeys>::try_from(
-			vec![new_enc_key]
-				.iter()
-				.copied()
-				.collect::<BTreeSet<did::DidEncryptionKey>>(),
-		)
-		.expect("Should not fail to create BoundedBTreeSet from a single element");
+	details.new_key_agreement_keys = DidNewKeyAgreementKeys::<Test>::try_from(
+		vec![new_enc_key]
+			.iter()
+			.copied()
+			.collect::<BTreeSet<did::DidEncryptionKey>>(),
+	)
+	.expect("Should not fail to create BoundedBTreeSet from a single element");
 	details.attestation_key_update =
 		did::DidFragmentUpdateAction::Change(did::DidVerificationKey::from(new_att_key.public()));
 	details.delegation_key_update =
 		did::DidFragmentUpdateAction::Change(did::DidVerificationKey::from(new_del_key.public()));
-	details.public_keys_to_remove = BoundedBTreeSet::<TestKeyId, <Test as Config>::MaxOldAttestationKeys>::try_from(
+	details.public_keys_to_remove = DidVerificationKeysToRevoke::<Test>::try_from(
 		vec![generate_key_id(&old_enc_key.into())]
 			.iter()
 			.copied()
@@ -753,6 +753,7 @@ fn check_did_not_present_update() {
 }
 
 #[test]
+#[should_panic = "Failed to convert key_agreement_keys to BoundedBTreeSet"]
 fn check_max_limit_key_agreement_keys_did_update() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
@@ -782,6 +783,7 @@ fn check_max_limit_key_agreement_keys_did_update() {
 }
 
 #[test]
+#[should_panic = "Failed to convert get_public_keys to BoundedBTreeSet"]
 fn check_max_limit_public_keys_to_remove_did_update() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
@@ -880,7 +882,7 @@ fn check_currently_active_authentication_key_update() {
 	// Remove both attestation and delegation key
 	let mut details = generate_base_did_update_details::<Test>();
 	// Trying to remove the currently active authentication key
-	details.public_keys_to_remove = BoundedBTreeSet::<TestKeyId, <Test as Config>::MaxOldAttestationKeys>::try_from(
+	details.public_keys_to_remove = DidVerificationKeysToRevoke::<Test>::try_from(
 		vec![generate_key_id(
 			&did::DidVerificationKey::from(auth_key.public()).into(),
 		)]
@@ -917,7 +919,7 @@ fn check_currently_active_delegation_key_update() {
 	// Remove both attestation and delegation key
 	let mut details = generate_base_did_update_details::<Test>();
 	// Trying to remove the currently active delegation key
-	details.public_keys_to_remove = BoundedBTreeSet::<TestKeyId, <Test as Config>::MaxOldAttestationKeys>::try_from(
+	details.public_keys_to_remove = DidVerificationKeysToRevoke::<Test>::try_from(
 		vec![generate_key_id(&did::DidVerificationKey::from(del_key.public()).into())]
 			.iter()
 			.copied()
@@ -952,7 +954,7 @@ fn check_currently_active_attestation_key_update() {
 	// Remove both attestation and delegation key
 	let mut details = generate_base_did_update_details::<Test>();
 	// Trying to remove the currently active attestation key
-	details.public_keys_to_remove = BoundedBTreeSet::<TestKeyId, <Test as Config>::MaxOldAttestationKeys>::try_from(
+	details.public_keys_to_remove = DidVerificationKeysToRevoke::<Test>::try_from(
 		vec![generate_key_id(&did::DidVerificationKey::from(att_key.public()).into())]
 			.iter()
 			.copied()
@@ -986,7 +988,7 @@ fn check_verification_key_not_present_update() {
 	// Remove both attestation and delegation key
 	let mut details = generate_base_did_update_details::<Test>();
 	// Trying to remove the currently active authentication key
-	details.public_keys_to_remove = BoundedBTreeSet::<TestKeyId, <Test as Config>::MaxOldAttestationKeys>::try_from(
+	details.public_keys_to_remove = DidVerificationKeysToRevoke::<Test>::try_from(
 		vec![generate_key_id(
 			&did::DidVerificationKey::from(key_to_delete.public()).into(),
 		)]

@@ -231,7 +231,7 @@ pub struct DidDetails<T: Config> {
 	pub(crate) authentication_key: KeyIdOf<T>,
 	/// The set of the key agreement key IDs, which can be used to encrypt
 	/// data addressed to the DID subject.
-	pub(crate) key_agreement_keys: BoundedBTreeSet<KeyIdOf<T>, T::MaxTotalKeyAgreementKeys>,
+	pub(crate) key_agreement_keys: DidTotalKeyAgreementKeys<T>,
 	/// \[OPTIONAL\] The ID of the delegation key, used to verify the
 	/// signatures of the delegations created by the DID subject.
 	pub(crate) delegation_key: Option<KeyIdOf<T>>,
@@ -247,7 +247,7 @@ pub struct DidDetails<T: Config> {
 	/// the old attestation keys that have been rotated, i.e., they cannot
 	/// be used to create new attestations but can still be used to verify
 	/// previously issued attestations.
-	pub(crate) public_keys: BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>, T::MaxPublicKeysPerDid>,
+	pub(crate) public_keys: DidPublicKeyMap<T>,
 	/// \[OPTIONAL\] The service endpoint details the DID
 	/// subject publicly exposes.
 	pub service_endpoints: Option<ServiceEndpoints<T>>,
@@ -263,7 +263,7 @@ impl<T: Config> DidDetails<T> {
 	///
 	/// The tx counter is automatically set to 0.
 	pub fn new(authentication_key: DidVerificationKey, block_number: BlockNumberOf<T>) -> Result<Self, StorageError> {
-		let mut public_keys = BoundedBTreeMap::<KeyIdOf<T>, DidPublicKeyDetails<T>, T::MaxPublicKeysPerDid>::new();
+		let mut public_keys = DidPublicKeyMap::<T>::default();
 		let authentication_key_id = utils::calculate_key_id::<T>(&authentication_key.clone().into());
 		public_keys
 			.try_insert(
@@ -276,7 +276,7 @@ impl<T: Config> DidDetails<T> {
 			.map_err(|_| StorageError::MaxPublicKeysPerDidExceeded)?;
 		Ok(Self {
 			authentication_key: authentication_key_id,
-			key_agreement_keys: BoundedBTreeSet::<KeyIdOf<T>, T::MaxTotalKeyAgreementKeys>::new(),
+			key_agreement_keys: DidTotalKeyAgreementKeys::<T>::default(),
 			attestation_key: None,
 			delegation_key: None,
 			service_endpoints: None,
@@ -428,7 +428,7 @@ impl<T: Config> DidDetails<T> {
 	/// The new keys are added to the set of verification keys.
 	pub fn add_key_agreement_keys(
 		&mut self,
-		new_key_agreement_keys: KeyAgreementKeys<T>,
+		new_key_agreement_keys: DidNewKeyAgreementKeys<T>,
 		block_number: BlockNumberOf<T>,
 	) -> Result<(), StorageError> {
 		for new_key_agreement_key in new_key_agreement_keys {
@@ -591,7 +591,7 @@ impl<T: Config> DidDetails<T> {
 		&self.delegation_key
 	}
 
-	pub fn get_public_keys(&self) -> &BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>, T::MaxPublicKeysPerDid> {
+	pub fn get_public_keys(&self) -> &DidPublicKeyMap<T> {
 		&self.public_keys
 	}
 
@@ -637,7 +637,12 @@ impl<T: Config> DidDetails<T> {
 	}
 }
 
-pub(crate) type KeyAgreementKeys<T> = BoundedBTreeSet<DidEncryptionKey, <T as Config>::MaxTotalKeyAgreementKeys>;
+pub(crate) type DidNewKeyAgreementKeys<T> = BoundedBTreeSet<DidEncryptionKey, <T as Config>::MaxNewKeyAgreementKeys>;
+pub(crate) type DidTotalKeyAgreementKeys<T> = BoundedBTreeSet<KeyIdOf<T>, <T as Config>::MaxTotalKeyAgreementKeys>;
+pub(crate) type DidVerificationKeysToRevoke<T> =
+	BoundedBTreeSet<KeyIdOf<T>, <T as Config>::MaxVerificationKeysToRevoke>;
+pub(crate) type DidPublicKeyMap<T> =
+	BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>, <T as Config>::MaxPublicKeysPerDid>;
 
 /// The details of a new DID to create.
 #[derive(Clone, Decode, Encode, PartialEq)]
@@ -645,7 +650,7 @@ pub struct DidCreationDetails<T: Config> {
 	/// The DID identifier. It has to be unique.
 	pub did: DidIdentifierOf<T>,
 	/// The new key agreement keys.
-	pub new_key_agreement_keys: KeyAgreementKeys<T>,
+	pub new_key_agreement_keys: DidNewKeyAgreementKeys<T>,
 	/// \[OPTIONAL\] The new attestation key.
 	pub new_attestation_key: Option<DidVerificationKey>,
 	/// \[OPTIONAL\] The new delegation key.
@@ -676,7 +681,7 @@ pub struct DidUpdateDetails<T: Config> {
 	/// \[OPTIONAL\] The new authentication key.
 	pub new_authentication_key: Option<DidVerificationKey>,
 	/// A new set of key agreement keys to add to the ones already stored.
-	pub new_key_agreement_keys: KeyAgreementKeys<T>,
+	pub new_key_agreement_keys: DidNewKeyAgreementKeys<T>,
 	/// \[OPTIONAL\] The attestation key update action.
 	pub attestation_key_update: DidFragmentUpdateAction<DidVerificationKey>,
 	/// \[OPTIONAL\] The delegation key update action.
@@ -685,7 +690,7 @@ pub struct DidUpdateDetails<T: Config> {
 	/// If the operation also replaces the current attestation key, it will
 	/// not be considered for removal in this operation, so it is not
 	/// possible to specify it for removal in this set.
-	pub public_keys_to_remove: BoundedBTreeSet<KeyIdOf<T>, T::MaxOldAttestationKeys>,
+	pub public_keys_to_remove: DidVerificationKeysToRevoke<T>,
 	/// The update action on the service endpoints information.
 	pub service_endpoints_update: DidFragmentUpdateAction<ServiceEndpoints<T>>,
 }

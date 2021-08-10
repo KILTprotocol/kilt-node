@@ -254,8 +254,8 @@ benchmarks! {
 
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
-		// To cover cases in which m > n without failing, we add m + n keys to the set of keys before the update operation
-		let did_key_agreement_keys = get_key_agreement_keys::<T>(m + n);
+		// To cover cases in which m > n without failing, we add max(n, m) keys to the set of keys before the update operation
+		let did_key_agreement_keys = get_key_agreement_keys::<T>(n.max(m));
 
 		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key));
 		assert_ok!(did_details.add_key_agreement_keys(did_key_agreement_keys, BlockNumberOf::<T>::default()));
@@ -316,8 +316,8 @@ benchmarks! {
 
 		let did_public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
-		// To cover cases in which m > n without failing, we add m + n keys to the set of keys before the update operation
-		let did_key_agreement_keys = get_key_agreement_keys::<T>(m + n);
+		// To cover cases in which m > n without failing, we add max(n, m) keys to the set of keys before the update operation
+		let did_key_agreement_keys = get_key_agreement_keys::<T>(n.max(m));
 
 		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key));
 		assert_ok!(did_details.add_key_agreement_keys(did_key_agreement_keys, BlockNumberOf::<T>::default()));
@@ -378,8 +378,8 @@ benchmarks! {
 
 		let did_public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key.clone()).into_account().into();
-		// To cover cases in which m > n without failing, we add m + n keys to the set of keys before the update operation
-		let did_key_agreement_keys = get_key_agreement_keys::<T>(m + n);
+		// To cover cases in which m > n without failing, we add max(n, m) keys to the set of keys before the update operation
+		let did_key_agreement_keys = get_key_agreement_keys::<T>(n.max(m));
 
 		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key.clone()));
 		assert_ok!(did_details.add_key_agreement_keys(did_key_agreement_keys, BlockNumberOf::<T>::default()));

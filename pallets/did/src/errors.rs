@@ -76,9 +76,6 @@ pub enum StorageError {
 	/// The maximum number of key agreements has been reached for the DID
 	/// subject.
 	MaxTotalKeyAgreementKeysExceeded,
-	/// The maximum number of old attestation keys still stored for
-	/// attestation verification has been reached.
-	MaxOldAttestationKeysExceeded,
 }
 
 /// Error generated when validating a DID operation.

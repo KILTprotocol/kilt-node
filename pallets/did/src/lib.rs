@@ -212,12 +212,6 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxVerificationKeysToRevoke: Get<u32>;
 
-		/// Maximum number of old attestation keys which can still be used to
-		/// verify previously issued attestations but cannot create new
-		/// attestations.
-		#[pallet::constant]
-		type MaxOldAttestationKeys: Get<u32> + Debug + Clone + PartialEq;
-
 		/// Maximum length in ASCII characters of the endpoint URL specified in
 		/// a creation or update operation.
 		#[pallet::constant]
@@ -329,9 +323,6 @@ pub mod pallet {
 		/// The maximum number of key agreements has been reached for the DID
 		/// subject.
 		MaxTotalKeyAgreementKeysExceeded,
-		/// The maximum number of old attestation keys still stored for
-		/// attestation verification has been reached.
-		MaxOldAttestationKeysExceeded,
 	}
 
 	impl<T> From<DidError> for Error<T> {
@@ -358,7 +349,6 @@ pub mod pallet {
 				StorageError::CurrentlyActiveKey => Self::CurrentlyActiveKey,
 				StorageError::MaxPublicKeysPerDidExceeded => Self::MaxPublicKeysPerDidExceeded,
 				StorageError::MaxTotalKeyAgreementKeysExceeded => Self::MaxTotalKeyAgreementKeysExceeded,
-				StorageError::MaxOldAttestationKeysExceeded => Self::MaxOldAttestationKeysExceeded,
 			}
 		}
 	}

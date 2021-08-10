@@ -88,6 +88,7 @@ mod tests {
 	use super::*;
 	use crate::mock::std::Test as TestRuntime;
 	use mock::std::{get_did_identifier_from_ed25519_key, get_ed25519_authentication_key, ExtBuilder};
+	use sp_std::convert::TryFrom;
 
 	#[test]
 	fn fail_version_higher() {
@@ -168,7 +169,9 @@ mod tests {
 			let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 			let mut alice_did_details =
 				deprecated::v1::DidDetails::<TestRuntime>::new(DidVerificationKey::from(auth_key.public()), 0);
-			alice_did_details.endpoint_url = Some(Url::Http(HttpUrl::try_from(b"https://kilt.io".as_ref()).unwrap()));
+			alice_did_details.endpoint_url = Some(Url::<TestRuntime>::Http(
+				HttpUrl::try_from(b"https://kilt.io".as_ref()).unwrap(),
+			));
 
 			deprecated::v1::storage::Did::insert(&alice_did, alice_did_details);
 

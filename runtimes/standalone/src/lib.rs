@@ -380,8 +380,6 @@ parameter_types! {
 	#[derive(Debug, Clone, PartialEq)]
 	pub const MaxTotalKeyAgreementKeys: u32 = 1000;
 	#[derive(Debug, Clone, PartialEq)]
-	pub const MaxOldAttestationKeys: u32 = 100;
-	#[derive(Debug, Clone, PartialEq)]
 	pub const MaxEndpointUrlsCount: u32 = 3u32;
 }
 
@@ -396,7 +394,6 @@ impl did::Config for Runtime {
 	type EnsureOrigin = EnsureSigned<Self::DidIdentifier>;
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
-	type MaxOldAttestationKeys = MaxOldAttestationKeys;
 	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
 	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 	type MaxUrlLength = MaxUrlLength;

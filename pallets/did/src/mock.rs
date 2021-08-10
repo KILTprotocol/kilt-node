@@ -31,7 +31,7 @@ use sp_std::{
 pub(crate) const DEFAULT_URL_SCHEME: [u8; 8] = *b"https://";
 const DEFAULT_SERVICE_ENDPOINT_HASH_SEED: u64 = 200u64;
 
-pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> KeyAgreementKeys<T> {
+pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> DidNewKeyAgreementKeys<T> {
 	BoundedBTreeSet::try_from(
 		(1..=n_keys)
 			.map(|i| {
@@ -48,7 +48,7 @@ pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> KeyAgreementKeys<T> {
 	.expect("Failed to convert key_agreement_keys to BoundedBTreeSet")
 }
 
-pub fn get_public_keys<T: Config>(n_keys: u32) -> BoundedBTreeSet<KeyIdOf<T>, T::MaxOldAttestationKeys> {
+pub fn get_public_keys<T: Config>(n_keys: u32) -> DidVerificationKeysToRevoke<T> {
 	BoundedBTreeSet::try_from(
 		(1..=n_keys)
 			.map(|i| {
@@ -194,8 +194,6 @@ pub mod std {
 		#[derive(Debug, Clone, PartialEq)]
 		pub const MaxTotalKeyAgreementKeys: u32 = 1000;
 		#[derive(Debug, Clone, PartialEq)]
-		pub const MaxOldAttestationKeys: u32 = 100;
-		#[derive(Debug, Clone, PartialEq)]
 		pub const MaxEndpointUrlsCount: u32 = 3u32;
 	}
 
@@ -207,7 +205,6 @@ pub mod std {
 		type Event = ();
 		type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 		type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
-		type MaxOldAttestationKeys = MaxOldAttestationKeys;
 		type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
 		type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 		type MaxUrlLength = MaxUrlLength;
