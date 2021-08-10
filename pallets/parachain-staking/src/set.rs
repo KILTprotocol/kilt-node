@@ -229,7 +229,7 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 		// NOTE: BoundedVec does not implement DerefMut because it would allow for
 		// unchecked extension of the inner vector. Thus, we have to work with a
 		// clone unfortunately.
-		let mut sorted_v: sp_std::vec::Vec<T> = sp_std::mem::replace(&mut self.0, BoundedVec::default()).into();
+		let mut sorted_v: sp_std::vec::Vec<T> = sp_std::mem::take(&mut self.0).into();
 		sorted_v.sort_by(|a, b| b.cmp(a));
 		self.0 = sorted_v.try_into().expect("Did not extend size of bounded vec");
 	}
