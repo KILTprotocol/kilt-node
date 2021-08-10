@@ -134,7 +134,7 @@ pub mod pallet {
 	use pallet_balances::{BalanceLock, Locks};
 	use pallet_vesting::{Vesting, VestingInfo};
 	use sp_runtime::traits::{CheckedDiv, Convert, SaturatedConversion, Saturating};
-	use sp_std::convert::TryFrom;
+	use sp_std::convert::TryInto;
 
 	pub const KILT_LAUNCH_ID: LockIdentifier = *b"kiltlnch";
 	pub const VESTING_ID: LockIdentifier = *b"vesting ";
@@ -812,17 +812,15 @@ pub mod pallet {
 				// `UnlockingAt`
 				if max_amount.is_some() {
 					<UnlockingAt<T>>::try_mutate(unlock_block, |maybe_bv| -> DispatchResult {
-						if let Some(bv) = maybe_bv.as_ref() {
-							let filtered: Vec<T::AccountId> = bv
+						if let Some(bv) = maybe_bv {
+							*bv = bv
 								.clone()
 								.into_inner()
 								.into_iter()
 								.filter(|acc_id| acc_id != source)
-								.collect();
-							*maybe_bv = Some(
-								BoundedVec::<T::AccountId, T::MaxClaims>::try_from(filtered)
-									.map_err(|_| Error::<T>::MaxClaimsExceeded)?,
-							);
+								.collect::<Vec<T::AccountId>>()
+								.try_into()
+								.map_err(|_| Error::<T>::MaxClaimsExceeded)?
 						}
 						Ok(())
 					})?;
