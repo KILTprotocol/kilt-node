@@ -1483,6 +1483,11 @@ pub mod pallet {
 			// should never fail but let's be safe
 			ensure!(insert_delegator, Error::<T>::DelegatorExists);
 
+			// can only throw if MaxCollatorsPerDelegator is set to 0 which should never
+			// occur in practice, even if the delegator rewards are set to 0
+			let delegator_state =
+				Delegator::try_new(collator.clone(), amount).map_err(|_| Error::<T>::MaxCollatorsPerDelegatorExceeded)?;
+
 			// update state and potentially kick a delegator with less staked amount
 			state = if num_delegations_pre_insertion == T::MaxDelegatorsPerCollator::get() {
 				Self::do_update_delegator(delegation, state)?
@@ -1500,7 +1505,7 @@ pub mod pallet {
 
 			// update states
 			<CollatorState<T>>::insert(&collator, state);
-			<DelegatorState<T>>::insert(&acc, Delegator::new(collator.clone(), amount));
+			<DelegatorState<T>>::insert(&acc, delegator_state);
 			<LastDelegation<T>>::insert(&acc, delegation_counter);
 
 			// update candidates for next round

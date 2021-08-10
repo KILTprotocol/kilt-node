@@ -217,18 +217,17 @@ where
 	Balance: Copy + Add<Output = Balance> + Saturating + PartialOrd + Eq + Ord + Debug + Zero,
 	MaxCollatorsPerDelegator: Get<u32> + Debug + PartialEq,
 {
-	pub fn new(collator: AccountId, amount: Balance) -> Self {
-		Delegator {
+	pub fn try_new(collator: AccountId, amount: Balance) -> Result<Self, ()> {
+		Ok(Delegator {
 			delegations: OrderedSet::from(
 				vec![Stake {
 					owner: collator,
 					amount,
 				}]
-				.try_into()
-				.unwrap_or_default(),
+				.try_into()?,
 			),
 			total: amount,
-		}
+		})
 	}
 
 	/// Adds a new delegation.
