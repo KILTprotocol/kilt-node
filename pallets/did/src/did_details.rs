@@ -231,7 +231,7 @@ pub struct DidDetails<T: Config> {
 	pub(crate) authentication_key: KeyIdOf<T>,
 	/// The set of the key agreement key IDs, which can be used to encrypt
 	/// data addressed to the DID subject.
-	pub(crate) key_agreement_keys: DidTotalKeyAgreementKeys<T>,
+	pub(crate) key_agreement_keys: DidKeyAgreementKeys<T>,
 	/// \[OPTIONAL\] The ID of the delegation key, used to verify the
 	/// signatures of the delegations created by the DID subject.
 	pub(crate) delegation_key: Option<KeyIdOf<T>>,
@@ -276,7 +276,7 @@ impl<T: Config> DidDetails<T> {
 			.map_err(|_| StorageError::MaxPublicKeysPerDidExceeded)?;
 		Ok(Self {
 			authentication_key: authentication_key_id,
-			key_agreement_keys: DidTotalKeyAgreementKeys::<T>::default(),
+			key_agreement_keys: DidKeyAgreementKeys::<T>::default(),
 			attestation_key: None,
 			delegation_key: None,
 			service_endpoints: None,
@@ -638,7 +638,7 @@ impl<T: Config> DidDetails<T> {
 }
 
 pub(crate) type DidNewKeyAgreementKeys<T> = BoundedBTreeSet<DidEncryptionKey, <T as Config>::MaxNewKeyAgreementKeys>;
-pub(crate) type DidTotalKeyAgreementKeys<T> = BoundedBTreeSet<KeyIdOf<T>, <T as Config>::MaxTotalKeyAgreementKeys>;
+pub(crate) type DidKeyAgreementKeys<T> = BoundedBTreeSet<KeyIdOf<T>, <T as Config>::MaxTotalKeyAgreementKeys>;
 pub(crate) type DidVerificationKeysToRevoke<T> =
 	BoundedBTreeSet<KeyIdOf<T>, <T as Config>::MaxVerificationKeysToRevoke>;
 pub(crate) type DidPublicKeyMap<T> =
