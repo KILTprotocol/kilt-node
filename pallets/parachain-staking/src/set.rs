@@ -225,12 +225,11 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 	}
 
 	/// Sorts from greatest to lowest.
-	///
-	/// NOTE: BoundedVec does not implement DerefMut because it would allow for
-	/// unchecked extension of the inner vector. Thus, we have to work with a
-	/// clone unfortunately.
 	pub fn sort_greatest_to_lowest(&mut self) {
-		let mut sorted_v = self.0.clone().into_inner();
+		// NOTE: BoundedVec does not implement DerefMut because it would allow for
+		// unchecked extension of the inner vector. Thus, we have to work with a
+		// clone unfortunately.
+		let mut sorted_v: sp_std::vec::Vec<T> = sp_std::mem::replace(&mut self.0, BoundedVec::default()).into();
 		sorted_v.sort_by(|a, b| b.cmp(a));
 		self.0 = sorted_v.try_into().expect("Did not extend size of bounded vec");
 	}
