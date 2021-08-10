@@ -1065,7 +1065,7 @@ pub mod pallet {
 			// NOTE: We don't support replacing a candidate with fewer stake in case of
 			// excess right now, but will be in future.
 			let insert_candidate = candidates
-				.insert(Stake {
+				.try_insert(Stake {
 					owner: acc.clone(),
 					amount: stake,
 				})
@@ -1260,7 +1260,7 @@ pub mod pallet {
 			// NOTE: We don't support replacing a candidate with fewer stake in case of
 			// excess right now, but will be in future.
 			let insert_candidate = candidates
-				.insert(Stake {
+				.try_insert(Stake {
 					owner: acc.clone(),
 					amount: state.total,
 				})
@@ -1478,7 +1478,7 @@ pub mod pallet {
 			let insert_delegator = state
 				.delegators
 				// we handle TooManyDelegators error below in do_update_delegator
-				.insert(delegation.clone())
+				.try_insert(delegation.clone())
 				.unwrap_or(true);
 			// should never fail but let's be safe
 			ensure!(insert_delegator, Error::<T>::DelegatorExists);
@@ -1607,7 +1607,7 @@ pub mod pallet {
 			// throws if delegation insertion exceeds bounded vec limit which we will handle
 			// below in Self::do_update_delegator
 			ensure!(
-				state.delegators.insert(delegation.clone()).unwrap_or(true),
+				state.delegators.try_insert(delegation.clone()).unwrap_or(true),
 				Error::<T>::DelegatorExists
 			);
 
@@ -1961,7 +1961,7 @@ pub mod pallet {
 		fn update(candidate: T::AccountId, total: BalanceOf<T>) -> DispatchResult {
 			let mut candidates = <CandidatePool<T>>::get();
 			candidates
-				.upsert(Stake {
+				.try_upsert(Stake {
 					owner: candidate,
 					amount: total,
 				})

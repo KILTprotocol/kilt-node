@@ -1843,7 +1843,7 @@ fn should_not_reward_delegators_below_min_stake() {
 				owner: 4u64,
 				amount: delegator_stake_below_min,
 			};
-			assert_eq!(state.delegators.insert(impossible_bond), Ok(true));
+			assert_eq!(state.delegators.try_insert(impossible_bond), Ok(true));
 			<crate::CollatorState<Test>>::insert(&1u64, state);
 
 			let authors: Vec<Option<AccountId>> = vec![Some(1u64), Some(1u64), Some(1u64), Some(1u64)];

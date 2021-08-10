@@ -60,7 +60,7 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 	/// Throws if insertion would exceed the bounded vec's max size.
 	///
 	/// Returns true if the item is unique in the set, otherwise returns false.
-	pub fn insert(&mut self, value: T) -> Result<bool, ()> {
+	pub fn try_insert(&mut self, value: T) -> Result<bool, ()> {
 		match self.linear_search(&value) {
 			Ok(_) => Ok(false),
 			Err(loc) => {
@@ -99,7 +99,7 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 	///
 	/// Returns the old value if existing or None if the value did not exist
 	/// before.
-	pub fn upsert(&mut self, value: T) -> Result<Option<T>, ()> {
+	pub fn try_upsert(&mut self, value: T) -> Result<Option<T>, ()> {
 		match self.linear_search(&value) {
 			Ok(i) => {
 				let old = sp_std::mem::replace(&mut self.0[i], value);
@@ -340,16 +340,16 @@ mod tests {
 		let mut set: OrderedSet<i32, Eight> = OrderedSet::new();
 		assert_eq!(set, OrderedSet::<i32, Eight>::from(vec![].try_into().unwrap()));
 
-		assert_eq!(set.insert(1), Ok(true));
+		assert_eq!(set.try_insert(1), Ok(true));
 		assert_eq!(set, OrderedSet::<i32, Eight>::from(vec![1].try_into().unwrap()));
 
-		assert_eq!(set.insert(5), Ok(true));
+		assert_eq!(set.try_insert(5), Ok(true));
 		assert_eq!(set, OrderedSet::<i32, Eight>::from(vec![1, 5].try_into().unwrap()));
 
-		assert_eq!(set.insert(3), Ok(true));
+		assert_eq!(set.try_insert(3), Ok(true));
 		assert_eq!(set, OrderedSet::<i32, Eight>::from(vec![1, 3, 5].try_into().unwrap()));
 
-		assert_eq!(set.insert(3), Ok(false));
+		assert_eq!(set.try_insert(3), Ok(false));
 		assert_eq!(set, OrderedSet::<i32, Eight>::from(vec![1, 3, 5].try_into().unwrap()));
 	}
 
@@ -401,7 +401,7 @@ mod tests {
 	fn try_insert_replace() {
 		let mut set: OrderedSet<i32, Five> = OrderedSet::from(vec![10, 9, 8, 7, 5].try_into().unwrap());
 		assert_eq!(set.clone().into_bounded_vec().into_inner(), vec![10, 9, 8, 7, 5]);
-		assert!(set.insert(11).is_err());
+		assert!(set.try_insert(11).is_err());
 
 		assert_eq!(set.try_insert_replace(6), Ok(5));
 		assert_eq!(set.clone().into_bounded_vec().into_inner(), vec![10, 9, 8, 7, 6]);
@@ -417,7 +417,7 @@ mod tests {
 	#[test]
 	fn exceeding_max_size_should_fail() {
 		let mut set: OrderedSet<i32, Five> = OrderedSet::from(vec![1, 2, 3, 4, 5].try_into().unwrap());
-		let inserted = set.insert(6);
+		let inserted = set.try_insert(6);
 
 		assert!(inserted.is_err());
 	}
@@ -458,7 +458,7 @@ mod tests {
 			.try_into()
 			.unwrap(),
 		);
-		assert_eq!(set.insert(StakeOf::<Test> { owner: 2, amount: 75 }), Ok(true));
+		assert_eq!(set.try_insert(StakeOf::<Test> { owner: 2, amount: 75 }), Ok(true));
 		assert_eq!(
 			set,
 			OrderedSet::from(
@@ -475,7 +475,7 @@ mod tests {
 			)
 		);
 		assert_eq!(
-			set.upsert(StakeOf::<Test> { owner: 2, amount: 90 }),
+			set.try_upsert(StakeOf::<Test> { owner: 2, amount: 90 }),
 			Ok(Some(StakeOf::<Test> { owner: 2, amount: 75 }))
 		);
 		assert_eq!(
@@ -494,7 +494,7 @@ mod tests {
 			)
 		);
 		assert_eq!(
-			set.upsert(StakeOf::<Test> { owner: 2, amount: 60 }),
+			set.try_upsert(StakeOf::<Test> { owner: 2, amount: 60 }),
 			Ok(Some(StakeOf::<Test> { owner: 2, amount: 90 }))
 		);
 		assert_eq!(
