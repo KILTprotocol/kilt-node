@@ -225,7 +225,7 @@ where
 					amount,
 				}]
 				.try_into()
-				.expect("At least one collator per delegator should be enabled"),
+				.unwrap_or_default(),
 			),
 			total: amount,
 		}
