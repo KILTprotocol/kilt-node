@@ -62,7 +62,7 @@ def update_spec(input: typing.Dict):
             }
         ]
     ]
-    input["genesis"]["runtime"]["balances"]["balances"] += [
+    input["genesis"]["runtime"]["balances"]["balances"] = [
         [
             acc_col_1,
             10000000000000000000000000000

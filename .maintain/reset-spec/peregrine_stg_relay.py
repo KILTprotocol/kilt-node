@@ -24,7 +24,7 @@ def update_spec(input: typing.Dict):
             ]
         ]
     })
-    input["genesis"]["runtime"]["balances"]["balances"] += [
+    input["genesis"]["runtime"]["balances"]["balances"] = [
         [
             acc_alice,
             10000000000000000000000000000
