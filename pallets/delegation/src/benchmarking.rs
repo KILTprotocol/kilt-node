@@ -18,12 +18,12 @@
 
 use codec::Encode;
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
-use frame_support::dispatch::DispatchErrorWithPostInfo;
+use frame_support::{dispatch::DispatchErrorWithPostInfo, storage::bounded_btree_set::BoundedBTreeSet};
 use frame_system::RawOrigin;
 use sp_core::{offchain::KeyTypeId, sr25519};
 use sp_io::crypto::sr25519_generate;
 use sp_runtime::MultiSignature;
-use sp_std::{collections::btree_set::BTreeSet, num::NonZeroU32, vec::Vec};
+use sp_std::{num::NonZeroU32, vec::Vec};
 
 use crate::*;
 
@@ -223,7 +223,7 @@ benchmarks! {
 		let c in 1 .. T::MaxParentChecks::get();
 		let (_, hierarchy_id, leaf_acc, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
 		let root_node = DelegationNodes::<T>::get(hierarchy_id).expect("Root hierarchy node should be present on chain.");
-		let children: BTreeSet<T::DelegationNodeId> = root_node.children;
+		let children: BoundedBTreeSet<T::DelegationNodeId, T::MaxChildren> = root_node.children;
 		let child_id: T::DelegationNodeId = *children.iter().next().ok_or("Root should have children")?;
 		let child_delegation = DelegationNodes::<T>::get(child_id).ok_or("Child of root should have delegation id")?;
 	}: revoke_delegation(RawOrigin::Signed(child_delegation.details.owner.clone()), child_id, c, r)

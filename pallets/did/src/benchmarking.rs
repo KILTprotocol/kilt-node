@@ -18,22 +18,27 @@
 
 use codec::Encode;
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
+use frame_support::assert_ok;
 use frame_system::RawOrigin;
-use kilt_primitives::{AccountId, Hash};
+use kilt_primitives::AccountId;
 use sp_core::{crypto::KeyTypeId, ecdsa, ed25519, sr25519};
 use sp_io::crypto::{ecdsa_generate, ecdsa_sign, ed25519_generate, ed25519_sign, sr25519_generate, sr25519_sign};
 use sp_runtime::{traits::IdentifyAccount, MultiSigner, SaturatedConversion};
-use sp_std::{collections::btree_set::BTreeSet, convert::TryInto, vec};
 
-use crate::*;
-use did_details::*;
+use crate::{
+	did_details::*,
+	mock_utils::{
+		generate_base_did_creation_details, generate_base_did_details, generate_base_did_update_details,
+		get_key_agreement_keys, get_public_keys, get_service_endpoints, DEFAULT_URL_SCHEME,
+	},
+	*,
+};
 
 const DEFAULT_ACCOUNT_ID: &str = "tx_submitter";
 const DEFAULT_ACCOUNT_SEED: u32 = 0;
 const AUTHENTICATION_KEY_ID: KeyTypeId = KeyTypeId(*b"0000");
 const ATTESTATION_KEY_ID: KeyTypeId = KeyTypeId(*b"0001");
 const DELEGATION_KEY_ID: KeyTypeId = KeyTypeId(*b"0002");
-const DEFAULT_URL_SCHEME: [u8; 8] = *b"https://";
 
 fn get_ed25519_public_authentication_key() -> ed25519::Public {
 	ed25519_generate(AUTHENTICATION_KEY_ID, None)
@@ -45,35 +50,6 @@ fn get_sr25519_public_authentication_key() -> sr25519::Public {
 
 fn get_ecdsa_public_authentication_key() -> ecdsa::Public {
 	ecdsa_generate(AUTHENTICATION_KEY_ID, None)
-}
-
-fn get_key_agreement_keys(n_keys: u32) -> BTreeSet<DidEncryptionKey> {
-	(1..=n_keys)
-		.map(|i| {
-			// Converts the loop index to a 32-byte array;
-			let mut seed_vec = i.to_be_bytes().to_vec();
-			seed_vec.resize(32, 0u8);
-			let seed: [u8; 32] = seed_vec
-				.try_into()
-				.expect("Failed to create encryption key from raw seed.");
-			DidEncryptionKey::X25519(seed)
-		})
-		.collect::<BTreeSet<DidEncryptionKey>>()
-}
-
-fn get_public_keys<T: Config>(n_keys: u32) -> BTreeSet<KeyIdOf<T>> {
-	(1..=n_keys)
-		.map(|i| {
-			// Converts the loop index to a 32-byte array;
-			let mut seed_vec = i.to_be_bytes().to_vec();
-			seed_vec.resize(32, 0u8);
-			let seed: [u8; 32] = seed_vec
-				.try_into()
-				.expect("Failed to create encryption key from raw seed.");
-			let key = DidEncryptionKey::X25519(seed);
-			utils::calculate_key_id::<T>(&key.into())
-		})
-		.collect::<BTreeSet<KeyIdOf<T>>>()
 }
 
 fn get_ed25519_public_attestation_key() -> ed25519::Public {
@@ -98,48 +74,6 @@ fn get_sr25519_public_delegation_key() -> sr25519::Public {
 
 fn get_ecdsa_public_delegation_key() -> ecdsa::Public {
 	ecdsa_generate(DELEGATION_KEY_ID, None)
-}
-
-// Assumes that the length of the URL is larger than 8 (length of the prefix https://)
-fn get_service_endpoints(count: u32, length: u32) -> ServiceEndpoints {
-	let total_length = usize::try_from(length).expect("Failed to convert URL max length value to usize value.");
-	let total_count = usize::try_from(count).expect("Failed to convert max number of URLs value to usize value.");
-	let mut url_encoded_string = DEFAULT_URL_SCHEME.to_vec();
-	url_encoded_string.resize(total_length, b'0');
-	let url = Url::Http(
-		HttpUrl::try_from(url_encoded_string.as_ref()).expect("Failed to create default URL with provided length."),
-	);
-
-	ServiceEndpoints {
-		content_hash: Hash::default(),
-		urls: vec![url; total_count],
-		content_type: ContentType::ApplicationJson,
-	}
-}
-
-fn get_did_base_details<T: Config>(auth_key: DidVerificationKey) -> DidDetails<T> {
-	DidDetails::new(auth_key, BlockNumberOf::<T>::default())
-}
-
-fn generate_base_did_creation_details<T: Config>(did: DidIdentifierOf<T>) -> DidCreationDetails<T> {
-	DidCreationDetails {
-		did,
-		new_key_agreement_keys: BTreeSet::new(),
-		new_attestation_key: None,
-		new_delegation_key: None,
-		new_service_endpoints: None,
-	}
-}
-
-fn generate_base_did_update_details<T: Config>(_did: DidIdentifierOf<T>) -> DidUpdateDetails<T> {
-	DidUpdateDetails {
-		new_authentication_key: None,
-		new_key_agreement_keys: BTreeSet::new(),
-		attestation_key_update: DidFragmentUpdateAction::default(),
-		delegation_key_update: DidFragmentUpdateAction::default(),
-		service_endpoints_update: DidFragmentUpdateAction::default(),
-		public_keys_to_remove: BTreeSet::new(),
-	}
 }
 
 // Must always be dispatched with the DID authentication key
@@ -171,10 +105,10 @@ benchmarks! {
 
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
-		let did_key_agreement_keys = get_key_agreement_keys(n);
+		let did_key_agreement_keys = get_key_agreement_keys::<T>(n);
 		let did_public_att_key = get_ed25519_public_attestation_key();
 		let did_public_del_key = get_ed25519_public_delegation_key();
-		let service_endpoints = get_service_endpoints(c, u);
+		let service_endpoints = get_service_endpoints::<T>(c, u);
 
 		let mut did_creation_details = generate_base_did_creation_details::<T>(did_subject.clone());
 		did_creation_details.new_key_agreement_keys = did_key_agreement_keys;
@@ -221,10 +155,10 @@ benchmarks! {
 
 		let did_public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
-		let did_key_agreement_keys = get_key_agreement_keys(n);
+		let did_key_agreement_keys = get_key_agreement_keys::<T>(n);
 		let did_public_att_key = get_sr25519_public_attestation_key();
 		let did_public_del_key = get_sr25519_public_delegation_key();
-		let service_endpoints = get_service_endpoints(c, u);
+		let service_endpoints = get_service_endpoints::<T>(c, u);
 
 		let mut did_creation_details = generate_base_did_creation_details::<T>(did_subject.clone());
 		did_creation_details.new_key_agreement_keys = did_key_agreement_keys;
@@ -271,10 +205,10 @@ benchmarks! {
 
 		let did_public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key.clone()).into_account().into();
-		let did_key_agreement_keys = get_key_agreement_keys(n);
+		let did_key_agreement_keys = get_key_agreement_keys::<T>(n);
 		let did_public_att_key = get_ecdsa_public_attestation_key();
 		let did_public_del_key = get_ecdsa_public_delegation_key();
-		let service_endpoints = get_service_endpoints(c, u);
+		let service_endpoints = get_service_endpoints::<T>(c, u);
 
 		let mut did_creation_details = generate_base_did_creation_details::<T>(did_subject.clone());
 		did_creation_details.new_key_agreement_keys = did_key_agreement_keys;
@@ -320,22 +254,22 @@ benchmarks! {
 
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
-		// To cover cases in which m > n without failing, we add m + n keys to the set of keys before the update operation
-		let did_key_agreement_keys = get_key_agreement_keys(m + n);
+		// To cover cases in which m > n without failing, we add max(n, m) keys to the set of keys before the update operation
+		let did_key_agreement_keys = get_key_agreement_keys::<T>(n.max(m));
 
-		let mut did_details = get_did_base_details(DidVerificationKey::from(did_public_auth_key));
-		did_details.add_key_agreement_keys(did_key_agreement_keys, BlockNumberOf::<T>::default());
+		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key));
+		assert_ok!(did_details.add_key_agreement_keys(did_key_agreement_keys, BlockNumberOf::<T>::default()));
 		Did::<T>::insert(&did_subject, did_details);
 
 		let new_did_public_auth_key = get_ed25519_public_authentication_key();
-		let new_key_agreement_keys = get_key_agreement_keys(n);
+		let new_key_agreement_keys = get_key_agreement_keys::<T>(n);
 		let new_did_public_att_key = get_ed25519_public_attestation_key();
 		let new_did_public_del_key = get_ed25519_public_delegation_key();
 		// Public keys obtained are generated using the same logic as the key agreement keys, so that we are sure they do not generate KeyNotPresent errors
 		let public_keys_to_remove = get_public_keys::<T>(m);
-		let service_endpoints = get_service_endpoints(c, u);
+		let service_endpoints = get_service_endpoints::<T>(c, u);
 
-		let mut did_update_details = generate_base_did_update_details::<T>(did_subject.clone());
+		let mut did_update_details = generate_base_did_update_details::<T>();
 		did_update_details.new_authentication_key = Some(DidVerificationKey::from(new_did_public_auth_key));
 		did_update_details.new_key_agreement_keys = new_key_agreement_keys;
 		did_update_details.attestation_key_update = DidFragmentUpdateAction::Change(DidVerificationKey::from(new_did_public_att_key));
@@ -382,22 +316,22 @@ benchmarks! {
 
 		let did_public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
-		// To cover cases in which m > n without failing, we add m + n keys to the set of keys before the update operation
-		let did_key_agreement_keys = get_key_agreement_keys(m + n);
+		// To cover cases in which m > n without failing, we add max(n, m) keys to the set of keys before the update operation
+		let did_key_agreement_keys = get_key_agreement_keys::<T>(n.max(m));
 
-		let mut did_details = get_did_base_details(DidVerificationKey::from(did_public_auth_key));
-		did_details.add_key_agreement_keys(did_key_agreement_keys, BlockNumberOf::<T>::default());
+		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key));
+		assert_ok!(did_details.add_key_agreement_keys(did_key_agreement_keys, BlockNumberOf::<T>::default()));
 		Did::<T>::insert(&did_subject, did_details);
 
 		let new_did_public_auth_key = get_sr25519_public_authentication_key();
-		let new_key_agreement_keys = get_key_agreement_keys(n);
+		let new_key_agreement_keys = get_key_agreement_keys::<T>(n);
 		let new_did_public_att_key = get_sr25519_public_attestation_key();
 		let new_did_public_del_key = get_sr25519_public_delegation_key();
 		// Public keys obtained are generated using the same logic as the key agreement keys, so that we are sure they do not generate KeyNotPresent errors
 		let public_keys_to_remove = get_public_keys::<T>(m);
-		let service_endpoints = get_service_endpoints(c, u);
+		let service_endpoints = get_service_endpoints::<T>(c, u);
 
-		let mut did_update_details = generate_base_did_update_details::<T>(did_subject.clone());
+		let mut did_update_details = generate_base_did_update_details::<T>();
 		did_update_details.new_authentication_key = Some(DidVerificationKey::from(new_did_public_auth_key));
 		did_update_details.new_key_agreement_keys = new_key_agreement_keys;
 		did_update_details.attestation_key_update = DidFragmentUpdateAction::Change(DidVerificationKey::from(new_did_public_att_key));
@@ -444,22 +378,22 @@ benchmarks! {
 
 		let did_public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key.clone()).into_account().into();
-		// To cover cases in which m > n without failing, we add m + n keys to the set of keys before the update operation
-		let did_key_agreement_keys = get_key_agreement_keys(m + n);
+		// To cover cases in which m > n without failing, we add max(n, m) keys to the set of keys before the update operation
+		let did_key_agreement_keys = get_key_agreement_keys::<T>(n.max(m));
 
-		let mut did_details = get_did_base_details(DidVerificationKey::from(did_public_auth_key.clone()));
-		did_details.add_key_agreement_keys(did_key_agreement_keys, BlockNumberOf::<T>::default());
+		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key.clone()));
+		assert_ok!(did_details.add_key_agreement_keys(did_key_agreement_keys, BlockNumberOf::<T>::default()));
 		Did::<T>::insert(&did_subject, did_details);
 
 		let new_did_public_auth_key = get_ecdsa_public_authentication_key();
-		let new_key_agreement_keys = get_key_agreement_keys(n);
+		let new_key_agreement_keys = get_key_agreement_keys::<T>(n);
 		let new_did_public_att_key = get_ecdsa_public_attestation_key();
 		let new_did_public_del_key = get_ecdsa_public_delegation_key();
 		// Public keys obtained are generated using the same logic as the key agreement keys, so that we are sure they do not generate KeyNotPresent errors
 		let public_keys_to_remove = get_public_keys::<T>(m);
-		let service_endpoints = get_service_endpoints(c, u);
+		let service_endpoints = get_service_endpoints::<T>(c, u);
 
-		let mut did_update_details = generate_base_did_update_details::<T>(did_subject.clone());
+		let mut did_update_details = generate_base_did_update_details::<T>();
 		did_update_details.new_authentication_key = Some(DidVerificationKey::from(new_did_public_auth_key.clone()));
 		did_update_details.new_key_agreement_keys = new_key_agreement_keys;
 		did_update_details.attestation_key_update = DidFragmentUpdateAction::Change(DidVerificationKey::from(new_did_public_att_key.clone()));
@@ -500,13 +434,12 @@ benchmarks! {
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 
-		let did_details = get_did_base_details(DidVerificationKey::from(did_public_auth_key));
+		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key));
 		Did::<T>::insert(&did_subject, did_details);
 	}: _(RawOrigin::Signed(did_subject.clone()))
 	verify {
-		assert_eq!(
-			Did::<T>::get(&did_subject),
-			None
+		assert!(
+			Did::<T>::get(&did_subject).is_none()
 		);
 	}
 
@@ -516,7 +449,7 @@ benchmarks! {
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 
-		let did_details = get_did_base_details(DidVerificationKey::from(did_public_auth_key));
+		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key));
 		Did::<T>::insert(&did_subject, did_details);
 
 		let did_call_op = generate_base_did_call_operation::<T>(did_subject);
@@ -530,7 +463,7 @@ benchmarks! {
 		let did_public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 
-		let did_details = get_did_base_details(DidVerificationKey::from(did_public_auth_key));
+		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key));
 		Did::<T>::insert(&did_subject, did_details);
 
 		let did_call_op = generate_base_did_call_operation::<T>(did_subject);
@@ -544,7 +477,7 @@ benchmarks! {
 		let did_public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key.clone()).into_account().into();
 
-		let did_details = get_did_base_details(DidVerificationKey::from(did_public_auth_key.clone()));
+		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key.clone()));
 		Did::<T>::insert(&did_subject, did_details);
 
 		let did_call_op = generate_base_did_call_operation::<T>(did_subject);

@@ -161,7 +161,7 @@ benchmarks! {
 			block: UNLOCK_BLOCK.into(),
 			amount: (2 * AMOUNT).into(),
 		}), "Source BalanceLock not set");
-		assert_eq!(UnlockingAt::<T>::get::<T::BlockNumber>(UNLOCK_BLOCK.into()).expect("UnlockingAt should not be empty"), vec![source.clone()]);
+		assert_eq!(UnlockingAt::<T>::get::<T::BlockNumber>(UNLOCK_BLOCK.into()).expect("UnlockingAt should not be empty").into_inner(), vec![source.clone()]);
 
 		// Set custom lock with amount `AMOUNT` for target
 		let target: T::AccountId = account("target", 0, SEED);
@@ -171,12 +171,12 @@ benchmarks! {
 			block: UNLOCK_BLOCK.into(),
 			amount: AMOUNT.into(),
 		}), "Target BalanceLock not set");
-		assert_eq!(UnlockingAt::<T>::get::<T::BlockNumber>(UNLOCK_BLOCK.into()).expect("UnlockingAt should not be empty"), vec![source.clone(), target.clone()]);
+		assert_eq!(UnlockingAt::<T>::get::<T::BlockNumber>(UNLOCK_BLOCK.into()).expect("UnlockingAt should not be empty").into_inner(), vec![source.clone(), target.clone()]);
 
 		// Transfer AMOUNT from source to target
 	}: _(RawOrigin::Signed(source.clone()), target_lookup, AMOUNT.into())
 	verify {
-		assert_eq!(UnlockingAt::<T>::get::<T::BlockNumber>(UNLOCK_BLOCK.into()).expect("UnlockingAt should not be empty"), vec![source.clone(), target.clone()]);
+		assert_eq!(UnlockingAt::<T>::get::<T::BlockNumber>(UNLOCK_BLOCK.into()).expect("UnlockingAt should not be empty").into_inner(), vec![source.clone(), target.clone()]);
 		assert_eq!(BalanceLocks::<T>::get(&source), Some(LockedBalance::<T> {
 			block: UNLOCK_BLOCK.into(),
 			amount: AMOUNT.into(),
