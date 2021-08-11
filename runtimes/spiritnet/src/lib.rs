@@ -67,6 +67,8 @@ pub use sp_runtime::{Perbill, Permill};
 pub use parachain_staking::{InflationInfo, RewardRate, StakingInfo};
 
 mod fee;
+#[cfg(test)]
+mod tests;
 mod weights;
 
 #[cfg(any(feature = "std", test))]

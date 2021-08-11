@@ -56,6 +56,9 @@ use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 use static_assertions::const_assert;
 
+mod fee;
+#[cfg(test)]
+mod tests;
 mod weights;
 
 #[cfg(feature = "std")]
@@ -86,8 +89,6 @@ pub use attestation;
 pub use ctype;
 pub use delegation;
 pub use did;
-
-mod fee;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't
 /// need to know the specifics of the runtime. They can then be made to be
