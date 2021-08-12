@@ -85,8 +85,6 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
-use sp_std::vec::Vec;
-
 pub use crate::{attestations::*, default_weights::WeightInfo, pallet::*};
 
 use frame_support::traits::Get;
@@ -94,7 +92,7 @@ use frame_support::traits::Get;
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_support::pallet_prelude::*;
+	use frame_support::{pallet_prelude::*, BoundedVec};
 	use frame_system::pallet_prelude::*;
 
 	/// Type of a claim hash.
@@ -114,6 +112,11 @@ pub mod pallet {
 		type EnsureOrigin: EnsureOrigin<Success = AttesterOf<Self>, <Self as frame_system::Config>::Origin>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type WeightInfo: WeightInfo;
+
+		/// The maximum number of delegated attestations which can be made by
+		/// the same delegation.
+		#[pallet::constant]
+		type MaxDelegatedAttestations: Get<u32>;
 	}
 
 	#[pallet::pallet]
@@ -135,7 +138,12 @@ pub mod pallet {
 	/// It maps from a delegation ID to a vector of claim hashes.
 	#[pallet::storage]
 	#[pallet::getter(fn delegated_attestations)]
-	pub type DelegatedAttestations<T> = StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, Vec<ClaimHashOf<T>>>;
+	pub type DelegatedAttestations<T> = StorageMap<
+		_,
+		Blake2_128Concat,
+		DelegationNodeIdOf<T>,
+		BoundedVec<ClaimHashOf<T>, <T as Config>::MaxDelegatedAttestations>,
+	>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -178,6 +186,10 @@ pub mod pallet {
 		/// is but it has been revoked. Only when the revoker is not the
 		/// original attester.
 		UnauthorizedRevocation,
+		/// The maximum number of delegated attestations has already been
+		/// reached for the corresponding delegation id such that another one
+		/// cannot be added.
+		MaxDelegatedAttestationsExceeded,
 	}
 
 	#[pallet::call]
@@ -244,7 +256,9 @@ pub mod pallet {
 
 				// If the attestation is based on a delegation, store separately
 				let mut delegated_attestations = <DelegatedAttestations<T>>::get(delegation_id).unwrap_or_default();
-				delegated_attestations.push(claim_hash);
+				delegated_attestations
+					.try_push(claim_hash)
+					.map_err(|_| Error::<T>::MaxDelegatedAttestationsExceeded)?;
 				<DelegatedAttestations<T>>::insert(delegation_id, delegated_attestations);
 			}
 

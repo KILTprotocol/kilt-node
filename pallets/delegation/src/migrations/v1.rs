@@ -18,9 +18,12 @@
 
 use crate::*;
 
-use frame_support::{IterableStorageMap, StorageMap, StoragePrefixedMap};
+use frame_support::{storage::bounded_btree_set::BoundedBTreeSet, IterableStorageMap, StorageMap, StoragePrefixedMap};
 use sp_runtime::traits::Zero;
-use sp_std::collections::btree_map::BTreeMap;
+use sp_std::{
+	collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+	convert::TryFrom,
+};
 
 /// Checks whether the deployed storage version is v1. If not, it won't try
 /// migrate any data.
@@ -97,7 +100,9 @@ fn migrate_roots<T: Config>(new_nodes: &mut BTreeMap<DelegationNodeIdOf<T>, Dele
 			// later, when we know we have seen all the children already.
 			let mut new_root_node = DelegationNode::new_root_node(old_root_id, new_root_details);
 			if let Some(root_children_ids) = deprecated::v1::storage::Children::<T>::take(old_root_id) {
-				new_root_node.children = root_children_ids.iter().copied().collect();
+				let children_set: BTreeSet<DelegationNodeIdOf<T>> = root_children_ids.iter().copied().collect();
+				new_root_node.children =
+					BoundedBTreeSet::try_from(children_set).expect("Should not exceed MaxChildren");
 			}
 			// Add Children::take() weight
 			total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));
@@ -161,7 +166,8 @@ fn migrate_nodes<T: Config>(
 			let new_node_parent_id = old_node.parent.unwrap_or(old_node.root_id);
 			let mut new_node = DelegationNode::new_node(old_node.root_id, new_node_parent_id, new_node_details);
 			if let Some(children_ids) = deprecated::v1::storage::Children::<T>::take(old_node_id) {
-				new_node.children = children_ids.iter().copied().collect();
+				let children_set: BTreeSet<DelegationNodeIdOf<T>> = children_ids.iter().copied().collect();
+				new_node.children = BoundedBTreeSet::try_from(children_set).expect("Should not exceed MaxChildren");
 			}
 			// Add Children::take() weight
 			total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));

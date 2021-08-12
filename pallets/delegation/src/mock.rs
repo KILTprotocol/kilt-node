@@ -19,7 +19,7 @@
 #![allow(clippy::from_over_into)]
 
 use codec::Decode;
-use frame_support::{parameter_types, weights::constants::RocksDbWeight};
+use frame_support::{parameter_types, storage::bounded_btree_set::BoundedBTreeSet, weights::constants::RocksDbWeight};
 use frame_system::EnsureSigned;
 use sp_core::{ed25519, sr25519, Pair};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
@@ -28,7 +28,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSignature, MultiSigner,
 };
-use sp_std::{collections::btree_set::BTreeSet, sync::Arc};
+use sp_std::sync::Arc;
 
 #[cfg(test)]
 use codec::Encode;
@@ -101,6 +101,8 @@ parameter_types! {
 	pub const MaxSignatureByteLength: u16 = 64;
 	pub const MaxParentChecks: u32 = 5;
 	pub const MaxRevocations: u32 = 5;
+	#[derive(Clone)]
+	pub const MaxChildren: u32 = 1000;
 }
 
 impl Config for Test {
@@ -112,6 +114,7 @@ impl Config for Test {
 	type MaxSignatureByteLength = MaxSignatureByteLength;
 	type MaxParentChecks = MaxParentChecks;
 	type MaxRevocations = MaxRevocations;
+	type MaxChildren = MaxChildren;
 	type WeightInfo = ();
 }
 
@@ -228,7 +231,7 @@ pub fn generate_base_delegation_node(
 ) -> DelegationNode<Test> {
 	DelegationNode {
 		details: generate_base_delegation_details(owner),
-		children: BTreeSet::new(),
+		children: BoundedBTreeSet::new(),
 		hierarchy_root_id: hierarchy_id,
 		parent,
 	}
@@ -390,7 +393,8 @@ impl ExtBuilder {
 						del.1.clone(),
 						parent_node_id,
 						parent_node,
-					);
+					)
+					.expect("Should not exceed max children");
 				})
 			});
 		}

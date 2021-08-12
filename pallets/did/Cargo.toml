@@ -62,5 +62,6 @@ std = [
   "sp-std/std",
 ]
 try-runtime = [
-  "frame-support/try-runtime"
+  "frame-support/try-runtime",
+  "kilt-primitives/try-runtime",
 ]

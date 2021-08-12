@@ -23,7 +23,7 @@ sp-keystore = {branch = "polkadot-v0.9.8", default-features = false, git = "http
 [dependencies]
 # Internal dependencies
 ctype = {default-features = false, path = "../ctype", version = "0.24.0"}
-kilt-primitives = {default-features = false, optional = true, path = "../../primitives"}
+kilt-primitives = {default-features = false, path = "../../primitives"}
 
 #External dependencies
 bitflags = {default-features = false, version = "1.2.1"}
@@ -42,7 +42,6 @@ sp-std = {branch = "polkadot-v0.9.8", default-features = false, git = "https://g
 [features]
 default = ["std"]
 mock = [
-  "kilt-primitives",
   "serde",
   "sp-core",
   "sp-io",
@@ -68,5 +67,6 @@ std = [
   "sp-std/std",
 ]
 try-runtime = [
-  "frame-support/try-runtime"
+  "frame-support/try-runtime",
+  "kilt-primitives/try-runtime",
 ]
