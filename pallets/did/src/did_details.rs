@@ -298,7 +298,7 @@ impl<T: Config> DidDetails<T> {
 		);
 
 		if let Some(ref service_endpoints) = details.new_service_endpoints {
-			service_endpoints.validate_against_config_limits()?;
+			service_endpoints.validate_against_config_limits().map_err(|_| DidError::InternalError)?;
 		}
 
 		let current_block_number = <frame_system::Pallet<T>>::block_number();
@@ -484,8 +484,6 @@ impl<T: Config> DidDetails<T> {
 
 pub(crate) type DidNewKeyAgreementKeys<T> = BoundedBTreeSet<DidEncryptionKey, <T as Config>::MaxNewKeyAgreementKeys>;
 pub(crate) type DidKeyAgreementKeys<T> = BoundedBTreeSet<KeyIdOf<T>, <T as Config>::MaxTotalKeyAgreementKeys>;
-pub(crate) type DidVerificationKeysToRevoke<T> =
-	BoundedBTreeSet<KeyIdOf<T>, <T as Config>::MaxVerificationKeysToRevoke>;
 pub(crate) type DidPublicKeyMap<T> =
 	BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>, <T as Config>::MaxPublicKeysPerDid>;
 
@@ -520,46 +518,6 @@ impl<T: Config> fmt::Debug for DidCreationDetails<T> {
 	}
 }
 
-/// The details to update a DID.
-#[derive(Clone, Decode, Encode, PartialEq)]
-pub struct DidUpdateDetails<T: Config> {
-	/// \[OPTIONAL\] The new authentication key.
-	pub new_authentication_key: Option<DidVerificationKey>,
-	/// A new set of key agreement keys to add to the ones already stored.
-	pub new_key_agreement_keys: DidNewKeyAgreementKeys<T>,
-	/// \[OPTIONAL\] The attestation key update action.
-	pub attestation_key_update: DidFragmentUpdateAction<DidVerificationKey>,
-	/// \[OPTIONAL\] The delegation key update action.
-	pub delegation_key_update: DidFragmentUpdateAction<DidVerificationKey>,
-	/// The set of old attestation keys to remove, given their identifiers.
-	/// If the operation also replaces the current attestation key, it will
-	/// not be considered for removal in this operation, so it is not
-	/// possible to specify it for removal in this set.
-	pub public_keys_to_remove: DidVerificationKeysToRevoke<T>,
-	/// The update action on the service endpoints information.
-	pub service_endpoints_update: DidFragmentUpdateAction<ServiceEndpoints<T>>,
-}
-
-// required because BoundedTreeSet does not implement Debug outside of std
-impl<T: Config> fmt::Debug for DidUpdateDetails<T> {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		f.debug_struct("DidUpdateDetails")
-			.field("new_authentication_key", &self.new_authentication_key)
-			.field(
-				"new_key_agreement_keys",
-				&self.new_key_agreement_keys.clone().into_inner(),
-			)
-			.field("attestation_key_update", &self.attestation_key_update)
-			.field("delegation_key_update", &self.delegation_key_update)
-			.field(
-				"public_keys_to_remove",
-				&self.public_keys_to_remove.clone().into_inner(),
-			)
-			.field("service_endpoints_update", &self.service_endpoints_update)
-			.finish()
-	}
-}
-
 #[derive(Clone, Decode, Encode, PartialEq)]
 pub struct ServiceEndpoints<T: Config> {
 	pub content_hash: Hash,
@@ -579,10 +537,10 @@ impl<T: Config> fmt::Debug for ServiceEndpoints<T> {
 }
 
 impl<T: Config> ServiceEndpoints<T> {
-	pub(crate) fn validate_against_config_limits(&self) -> Result<(), InputError> {
+	pub(crate) fn validate_against_config_limits(&self) -> Result<(), crate::Error<T>> {
 		ensure!(
 			self.urls.len() <= T::MaxEndpointUrlsCount::get().saturated_into::<usize>(),
-			InputError::MaxUrlsCountExceeded
+			crate::Error::<T>::MaxUrlsCountExceeded
 		);
 		ensure!(
 			// Throws InputError::MaxUrlLengthExceeded if any URL is longer than the max allowed size.
@@ -590,7 +548,7 @@ impl<T: Config> ServiceEndpoints<T> {
 				.urls
 				.iter()
 				.any(|url| { url.len() > T::MaxUrlLength::get().saturated_into::<usize>() }),
-			InputError::MaxUrlLengthExceeded
+			crate::Error::<T>::MaxUrlLengthExceeded
 		);
 		Ok(())
 	}

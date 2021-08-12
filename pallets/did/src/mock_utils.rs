@@ -46,22 +46,19 @@ pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> DidNewKeyAgreementKeys<
 	.expect("Failed to convert key_agreement_keys to BoundedBTreeSet")
 }
 
-pub fn get_public_keys<T: Config>(n_keys: u32) -> DidVerificationKeysToRevoke<T> {
-	BoundedBTreeSet::try_from(
-		(1..=n_keys)
-			.map(|i| {
-				// Converts the loop index to a 32-byte array;
-				let mut seed_vec = i.to_be_bytes().to_vec();
-				seed_vec.resize(32, 0u8);
-				let seed: [u8; 32] = seed_vec
-					.try_into()
-					.expect("Failed to create encryption key from raw seed.");
-				let key = DidEncryptionKey::X25519(seed);
-				utils::calculate_key_id::<T>(&key.into())
-			})
-			.collect::<BTreeSet<KeyIdOf<T>>>(),
-	)
-	.expect("Failed to convert get_public_keys to BoundedBTreeSet")
+pub fn get_public_keys<T: Config>(n_keys: u32) -> BTreeSet<KeyIdOf<T>> {
+	(1..=n_keys)
+		.map(|i| {
+			// Converts the loop index to a 32-byte array;
+			let mut seed_vec = i.to_be_bytes().to_vec();
+			seed_vec.resize(32, 0u8);
+			let seed: [u8; 32] = seed_vec
+				.try_into()
+				.expect("Failed to create encryption key from raw seed.");
+			let key = DidEncryptionKey::X25519(seed);
+			utils::calculate_key_id::<T>(&key.into())
+		})
+		.collect()
 }
 
 // Assumes that the length of the URL is larger than 8 (length of the prefix https://)
@@ -92,17 +89,6 @@ pub fn generate_base_did_creation_details<T: Config>(did: DidIdentifierOf<T>) ->
 		new_attestation_key: None,
 		new_delegation_key: None,
 		new_service_endpoints: None,
-	}
-}
-
-pub fn generate_base_did_update_details<T: Config>() -> DidUpdateDetails<T> {
-	DidUpdateDetails {
-		new_authentication_key: None,
-		new_key_agreement_keys: BoundedBTreeSet::new(),
-		attestation_key_update: DidFragmentUpdateAction::default(),
-		delegation_key_update: DidFragmentUpdateAction::default(),
-		service_endpoints_update: DidFragmentUpdateAction::default(),
-		public_keys_to_remove: BoundedBTreeSet::new(),
 	}
 }
 

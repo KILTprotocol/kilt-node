@@ -590,7 +590,7 @@ pub mod pallet {
 				.try_insert(new_key_id)
 				.map_err(|_| <Error<T>>::MaxTotalKeyAgreementKeysExceeded)?;
 
-			log::debug!("Updating DID {:?}", did_subject);
+			log::debug!("Updating DID {:?}: add key agreement key", did_subject);
 			<Did<T>>::insert(&did_subject, did_details);
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
@@ -605,7 +605,41 @@ pub mod pallet {
 			if did_details.key_agreement_keys.remove(&key_id) {
 				did_details.remove_key_if_unused(key_id);
 
-				log::debug!("Updating DID {:?}", did_subject);
+				log::debug!("Updating DID {:?}: removing key agreement key", did_subject);
+				<Did<T>>::insert(&did_subject, did_details);
+
+				Self::deposit_event(Event::DidUpdated(did_subject));
+				Ok(())
+			} else {
+				Err(<Error<T>>::NotPresent.into())
+			}
+		}
+
+		#[pallet::weight(10)]
+		pub fn set_service_endpoints(origin: OriginFor<T>, service_endpoints: ServiceEndpoints<T>) -> DispatchResult {
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
+			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
+
+			ensure!(
+				service_endpoints.validate_against_config_limits().is_ok(),
+				Error::<T>::MaxUrlsCountExceeded
+			);
+
+			did_details.service_endpoints = Some(service_endpoints);
+			log::debug!("Updating DID {:?}: removing service endpoints", did_subject);
+			<Did<T>>::insert(&did_subject, did_details);
+
+			Self::deposit_event(Event::DidUpdated(did_subject));
+			Ok(())
+		}
+
+		#[pallet::weight(10)]
+		pub fn remove_service_endpoints(origin: OriginFor<T>) -> DispatchResult {
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
+			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
+
+			if did_details.service_endpoints.take().is_some() {
+				log::debug!("Updating DID {:?}: removing service endpoints", did_subject);
 				<Did<T>>::insert(&did_subject, did_details);
 
 				Self::deposit_event(Event::DidUpdated(did_subject));
