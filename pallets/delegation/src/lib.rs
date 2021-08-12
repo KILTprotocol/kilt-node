@@ -90,7 +90,7 @@ mod deprecated;
 
 pub use crate::{default_weights::WeightInfo, delegation_hierarchy::*, pallet::*};
 
-use frame_support::{ensure, pallet_prelude::Weight, traits::Get};
+use frame_support::{dispatch::DispatchResult, ensure, pallet_prelude::Weight, traits::Get};
 use sp_runtime::{traits::Hash, DispatchError};
 use sp_std::vec::Vec;
 
@@ -132,10 +132,21 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		#[pallet::constant]
 		type MaxSignatureByteLength: Get<u16>;
+
+		/// Maximum number of revocations.
 		#[pallet::constant]
 		type MaxRevocations: Get<u32>;
+
+		/// Maximum number of upwards traversals of the delegation tree from a
+		/// node to the root and thus the depth of the delegation tree.
 		#[pallet::constant]
 		type MaxParentChecks: Get<u32>;
+
+		/// Maximum number of all children for a delegation node. For a binary
+		/// tree, this should be twice the maximum depth of the tree, i.e.
+		/// `2 ^ MaxParentChecks`.
+		#[pallet::constant]
+		type MaxChildren: Get<u32> + Clone;
 		type WeightInfo: WeightInfo;
 	}
 
@@ -244,6 +255,9 @@ pub mod pallet {
 		MaxParentChecksTooLarge,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
+		/// The max number of all children has been reached for the
+		/// corresponding delegation node.
+		MaxChildrenExceeded,
 	}
 
 	#[pallet::call]
@@ -378,7 +392,7 @@ pub mod pallet {
 				),
 				parent_id,
 				parent_node,
-			);
+			)?;
 
 			Self::deposit_event(Event::DelegationCreated(
 				delegator,
@@ -398,7 +412,7 @@ pub mod pallet {
 		/// Revoking a delegation node results in the trust hierarchy starting
 		/// from the given node being revoked. Nevertheless, revocation starts
 		/// from the leave nodes upwards, so if the operation ends prematurely
-		/// because it runs out of gas, the delegation state would be consisent
+		/// because it runs out of gas, the delegation state would be consistent
 		/// as no child would "survive" its parent. As a consequence, if the
 		/// given node is revoked, the trust hierarchy with the node as root is
 		/// to be considered revoked.
@@ -505,11 +519,12 @@ impl<T: Config> Pallet<T> {
 		delegation_node: DelegationNode<T>,
 		parent_id: DelegationNodeIdOf<T>,
 		mut parent_node: DelegationNode<T>,
-	) {
+	) -> DispatchResult {
 		<DelegationNodes<T>>::insert(delegation_id, delegation_node);
 		// Add the new node as a child of that node
-		parent_node.add_child(delegation_id);
+		parent_node.try_add_child(delegation_id)?;
 		<DelegationNodes<T>>::insert(parent_id, parent_node);
+		Ok(())
 	}
 
 	/// Check if an identity is the owner of the given delegation node or any

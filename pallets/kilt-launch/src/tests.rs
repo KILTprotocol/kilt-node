@@ -249,7 +249,10 @@ fn check_migrate_accounts_locked() {
 		));
 
 		// Check unlocking info migration
-		assert_eq!(UnlockingAt::<Test>::get(100), Some(vec![USER]));
+		assert_eq!(
+			UnlockingAt::<Test>::get(100).unwrap_or_default().into_inner(),
+			vec![USER]
+		);
 		assert_eq!(BalanceLocks::<Test>::get(&USER), Some(locked_info.clone()));
 
 		// Check correct setting of lock
@@ -354,7 +357,7 @@ fn check_locked_transfer() {
 					reasons: Reasons::All,
 				}]
 			);
-			assert_eq!(UnlockingAt::<Test>::get(100), Some(vec![USER, PSEUDO_1]));
+			assert_eq!(UnlockingAt::<Test>::get(100).unwrap_or_default().into_inner(), vec![USER, PSEUDO_1]);
 			assert_balance(PSEUDO_1, locked_info.amount - 3000, 0, 0, false);
 
 			// Locked_Transfer rest
@@ -370,7 +373,7 @@ fn check_locked_transfer() {
 			);
 			assert!(BalanceLocks::<Test>::get(&USER).is_none());
 			assert_eq!(BalanceLocks::<Test>::get(&PSEUDO_1), Some(locked_info.clone()));
-			assert_eq!(UnlockingAt::<Test>::get(100), Some(vec![PSEUDO_1]));
+			assert_eq!(UnlockingAt::<Test>::get(100).unwrap_or_default().into_inner(), vec![PSEUDO_1]);
 			assert_balance(PSEUDO_1, locked_info.amount, 0, 0, false);
 
 			// Reach balance lock limit
@@ -570,7 +573,7 @@ fn check_negative_migrate_accounts_vested() {
 				vec![PSEUDO_1, PSEUDO_2, PSEUDO_3, PSEUDO_4],
 				USER
 			),
-			Error::<Test>::ExceedsMaxClaims
+			Error::<Test>::MaxClaimsExceeded
 		);
 
 		// Set up vesting with conflicting start block

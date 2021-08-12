@@ -58,7 +58,8 @@ fn setup_collator_candidates<T: Config>(
 	}
 
 	CandidatePool::<T>::get()
-		.into_vec()
+		.into_bounded_vec()
+		.into_inner()
 		.drain(..)
 		.map(|c| c.owner)
 		.collect()
@@ -401,7 +402,7 @@ benchmarks! {
 
 		// make sure delegator collated to collator
 		let state = <CollatorState<T>>::get(&collator).unwrap();
-		let delegator = state.delegators.into_vec()[0].owner.clone();
+		let delegator = state.delegators.into_bounded_vec()[0].owner.clone();
 		assert_eq!(<DelegatorState<T>>::get(&delegator).unwrap().total, amount);
 
 		// increase stake so we can unstake, because current stake is minimum
@@ -435,7 +436,7 @@ benchmarks! {
 
 		// make sure delegator collated to collator
 		let state = <CollatorState<T>>::get(&collator).unwrap();
-		let delegator = state.delegators.into_vec()[0].owner.clone();
+		let delegator = state.delegators.into_bounded_vec()[0].owner.clone();
 		assert_eq!(<DelegatorState<T>>::get(&delegator).unwrap().total, T::MinDelegatorStake::get());
 
 		// increase stake so we can unstake, because current stake is minimum
@@ -471,7 +472,7 @@ benchmarks! {
 
 		// make sure delegator collated to collator
 		let state = <CollatorState<T>>::get(&collator).unwrap();
-		let delegator = state.delegators.into_vec()[0].owner.clone();
+		let delegator = state.delegators.into_bounded_vec()[0].owner.clone();
 		assert_eq!(<DelegatorState<T>>::get(&delegator).unwrap().total, T::MinDelegatorStake::get());
 
 		// increase stake so we can unstake, because current stake is minimum
@@ -507,7 +508,7 @@ benchmarks! {
 
 		// make sure delegator collated to collator
 		let state = <CollatorState<T>>::get(&collator).unwrap();
-		let delegator = state.delegators.into_vec()[0].owner.clone();
+		let delegator = state.delegators.into_bounded_vec()[0].owner.clone();
 		assert_eq!(<DelegatorState<T>>::get(&delegator).unwrap().total, T::MinDelegatorStake::get());
 
 		// increase stake so we can unstake, because current stake is minimum
@@ -605,7 +606,7 @@ benchmarks! {
 
 	// 	// make sure delegator collated to collator_delegated
 	// 	let state_delegated = <CollatorState<T>>::get(&collator_delegated).unwrap();
-	// 	let delegator = state_delegated.delegators.into_vec()[0].owner.clone();
+	// 	let delegator = state_delegated.delegators.into_bounded_vec()[0].owner.clone();
 	// 	assert!(<DelegatorState<T>>::get(&delegator).is_some());
 
 	// 	// should not have delegated to collator yet

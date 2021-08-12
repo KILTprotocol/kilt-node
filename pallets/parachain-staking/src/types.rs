@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::traits::Currency;
+use frame_support::traits::{Currency, Get};
 use parity_scale_codec::{Decode, Encode};
 use sp_runtime::{
 	traits::{AtLeast32BitUnsigned, Saturating, Zero},
@@ -25,6 +25,7 @@ use sp_runtime::{
 use sp_staking::SessionIndex;
 use sp_std::{
 	cmp::Ordering,
+	convert::TryInto,
 	fmt::Debug,
 	ops::{Add, Sub},
 	vec,
@@ -100,12 +101,13 @@ impl Default for CollatorStatus {
 	}
 }
 
-#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq)]
+#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
 /// Global collator state with commission fee, staked funds, and delegations
-pub struct Collator<AccountId, Balance>
+pub struct Collator<AccountId, Balance, MaxDelegatorsPerCollator>
 where
 	AccountId: Eq + Ord + Debug,
 	Balance: Eq + Ord + Debug,
+	MaxDelegatorsPerCollator: Get<u32> + Debug + PartialEq,
 {
 	/// The collators account id.
 	pub id: AccountId,
@@ -114,7 +116,7 @@ where
 	pub stake: Balance,
 
 	/// The delegators that back the collator.
-	pub delegators: OrderedSet<Stake<AccountId, Balance>>,
+	pub delegators: OrderedSet<Stake<AccountId, Balance>, MaxDelegatorsPerCollator>,
 
 	/// The total backing a collator has.
 	///
@@ -126,10 +128,11 @@ where
 	pub state: CollatorStatus,
 }
 
-impl<A, B> Collator<A, B>
+impl<A, B, S> Collator<A, B, S>
 where
 	A: Ord + Clone + Debug,
 	B: AtLeast32BitUnsigned + Ord + Copy + Saturating + Debug + Zero,
+	S: Get<u32> + Debug + PartialEq,
 {
 	pub fn new(id: A, stake: B) -> Self {
 		let total = stake;
@@ -203,37 +206,41 @@ where
 }
 
 #[derive(Encode, Decode, RuntimeDebug, PartialEq)]
-pub struct Delegator<AccountId: Eq + Ord, Balance: Eq + Ord> {
-	pub delegations: OrderedSet<Stake<AccountId, Balance>>,
+pub struct Delegator<AccountId: Eq + Ord, Balance: Eq + Ord, MaxCollatorsPerDelegator: Get<u32>> {
+	pub delegations: OrderedSet<Stake<AccountId, Balance>, MaxCollatorsPerDelegator>,
 	pub total: Balance,
 }
 
-impl<AccountId, Balance> Delegator<AccountId, Balance>
+impl<AccountId, Balance, MaxCollatorsPerDelegator> Delegator<AccountId, Balance, MaxCollatorsPerDelegator>
 where
 	AccountId: Eq + Ord + Clone + Debug,
 	Balance: Copy + Add<Output = Balance> + Saturating + PartialOrd + Eq + Ord + Debug + Zero,
+	MaxCollatorsPerDelegator: Get<u32> + Debug + PartialEq,
 {
-	pub fn new(collator: AccountId, amount: Balance) -> Self {
-		Delegator {
-			delegations: OrderedSet::from(vec![Stake {
-				owner: collator,
-				amount,
-			}]),
+	pub fn try_new(collator: AccountId, amount: Balance) -> Result<Self, ()> {
+		Ok(Delegator {
+			delegations: OrderedSet::from(
+				vec![Stake {
+					owner: collator,
+					amount,
+				}]
+				.try_into()?,
+			),
 			total: amount,
-		}
+		})
 	}
 
 	/// Adds a new delegation.
 	///
 	/// If already delegating to the same account, this call returns false and
 	/// doesn't insert the new delegation.
-	pub fn add_delegation(&mut self, stake: Stake<AccountId, Balance>) -> bool {
+	pub fn add_delegation(&mut self, stake: Stake<AccountId, Balance>) -> Result<bool, ()> {
 		let amt = stake.amount;
-		if self.delegations.insert(stake) {
+		if self.delegations.try_insert(stake)? {
 			self.total = self.total.saturating_add(amt);
-			true
+			Ok(true)
 		} else {
-			false
+			Ok(false)
 		}
 	}
 
@@ -354,25 +361,7 @@ pub struct DelegationCounter {
 	pub counter: u32,
 }
 
-// A value placed in storage that represents the current version of the Staking
-// storage. This value is used by the `on_runtime_upgrade` logic to determine
-// whether we run storage migration logic. This should match directly with the
-// semantic versions of the Rust crate.
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, RuntimeDebug)]
-pub enum Releases {
-	V1_0_0,
-	V2_0_0, // New Reward calculation, MaxCollatorCandidateStake
-	V3_0_0, // Update InflationConfig
-	V4,     // Sort CandidatePool and delegations by amount
-}
-
-impl Default for Releases {
-	fn default() -> Self {
-		Releases::V3_0_0
-	}
-}
-
 pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
-pub type CollatorOf<T> = Collator<AccountIdOf<T>, BalanceOf<T>>;
+pub type CollatorOf<T, S> = Collator<AccountIdOf<T>, BalanceOf<T>, S>;
 pub type StakeOf<T> = Stake<AccountIdOf<T>, BalanceOf<T>>;

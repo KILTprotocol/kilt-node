@@ -23,7 +23,7 @@ use crate::*;
 use ctype::mock as ctype_mock;
 
 use codec::Decode;
-use frame_support::{ensure, parameter_types, weights::constants::RocksDbWeight};
+use frame_support::{ensure, parameter_types, weights::constants::RocksDbWeight, BoundedVec};
 use frame_system::EnsureSigned;
 use sp_core::{ed25519, sr25519, Pair};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
@@ -100,6 +100,8 @@ parameter_types! {
 	pub const MaxSignatureByteLength: u16 = 64;
 	pub const MaxParentChecks: u32 = 5;
 	pub const MaxRevocations: u32 = 5;
+	#[derive(Clone)]
+	pub const MaxChildren: u32 = 1000;
 }
 
 impl delegation::Config for Test {
@@ -111,13 +113,20 @@ impl delegation::Config for Test {
 	type MaxSignatureByteLength = MaxSignatureByteLength;
 	type MaxParentChecks = MaxParentChecks;
 	type MaxRevocations = MaxRevocations;
+	type MaxChildren = MaxChildren;
 	type WeightInfo = ();
+}
+
+parameter_types! {
+	// TODO: Find reasonable number
+	pub const MaxDelegatedAttestations: u32 = 1000;
 }
 
 impl Config for Test {
 	type EnsureOrigin = EnsureSigned<TestAttester>;
 	type Event = ();
 	type WeightInfo = ();
+	type MaxDelegatedAttestations = MaxDelegatedAttestations;
 }
 
 impl delegation::VerifyDelegateSignature for Test {
@@ -227,7 +236,10 @@ pub fn generate_base_attestation(attester: TestAttester) -> AttestationDetails<T
 #[derive(Clone)]
 pub struct ExtBuilder {
 	attestations_stored: Vec<(TestClaimHash, AttestationDetails<Test>)>,
-	delegated_attestations_stored: Vec<(TestDelegationNodeId, Vec<TestClaimHash>)>,
+	delegated_attestations_stored: Vec<(
+		TestDelegationNodeId,
+		BoundedVec<TestClaimHash, <Test as Config>::MaxDelegatedAttestations>,
+	)>,
 }
 
 impl Default for ExtBuilder {
@@ -247,7 +259,10 @@ impl ExtBuilder {
 
 	pub fn with_delegated_attestations(
 		mut self,
-		delegated_attestations: Vec<(TestDelegationNodeId, Vec<TestClaimHash>)>,
+		delegated_attestations: Vec<(
+			TestDelegationNodeId,
+			BoundedVec<TestClaimHash, <Test as Config>::MaxDelegatedAttestations>,
+		)>,
 	) -> Self {
 		self.delegated_attestations_stored = delegated_attestations;
 		self

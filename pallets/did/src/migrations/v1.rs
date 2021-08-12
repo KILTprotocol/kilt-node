@@ -87,10 +87,12 @@ mod tests {
 
 	use super::*;
 	use crate::mock::Test as TestRuntime;
+	use mock::{get_did_identifier_from_ed25519_key, get_ed25519_authentication_key, ExtBuilder};
+	use sp_std::convert::TryFrom;
 
 	#[test]
 	fn fail_version_higher() {
-		let mut ext = mock::ExtBuilder::default()
+		let mut ext = ExtBuilder::default()
 			.with_storage_version(DidStorageVersion::V2)
 			.build(None);
 		ext.execute_with(|| {
@@ -104,7 +106,7 @@ mod tests {
 
 	#[test]
 	fn ok_no_dids() {
-		let mut ext = mock::ExtBuilder::default()
+		let mut ext = ExtBuilder::default()
 			.with_storage_version(DidStorageVersion::V1)
 			.build(None);
 		ext.execute_with(|| {
@@ -126,12 +128,12 @@ mod tests {
 
 	#[test]
 	fn ok_no_prior_endpoint() {
-		let mut ext = mock::ExtBuilder::default()
+		let mut ext = ExtBuilder::default()
 			.with_storage_version(DidStorageVersion::V1)
 			.build(None);
 		ext.execute_with(|| {
-			let auth_key = mock::get_ed25519_authentication_key(true);
-			let alice_did = mock::get_did_identifier_from_ed25519_key(auth_key.public());
+			let auth_key = get_ed25519_authentication_key(true);
+			let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 			let alice_did_details =
 				deprecated::v1::DidDetails::<TestRuntime>::new(DidVerificationKey::from(auth_key.public()), 0);
 
@@ -159,15 +161,17 @@ mod tests {
 
 	#[test]
 	fn ok_prior_endpoint() {
-		let mut ext = mock::ExtBuilder::default()
+		let mut ext = ExtBuilder::default()
 			.with_storage_version(DidStorageVersion::V1)
 			.build(None);
 		ext.execute_with(|| {
-			let auth_key = mock::get_ed25519_authentication_key(true);
-			let alice_did = mock::get_did_identifier_from_ed25519_key(auth_key.public());
+			let auth_key = get_ed25519_authentication_key(true);
+			let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 			let mut alice_did_details =
 				deprecated::v1::DidDetails::<TestRuntime>::new(DidVerificationKey::from(auth_key.public()), 0);
-			alice_did_details.endpoint_url = Some(Url::Http(HttpUrl::try_from(b"https://kilt.io".as_ref()).unwrap()));
+			alice_did_details.endpoint_url = Some(Url::<TestRuntime>::Http(
+				HttpUrl::try_from(b"https://kilt.io".as_ref()).unwrap(),
+			));
 
 			deprecated::v1::storage::Did::insert(&alice_did, alice_did_details);
 

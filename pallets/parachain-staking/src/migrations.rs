@@ -15,131 +15,236 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-
-use crate::{
-	inflation::InflationInfo,
-	pallet::*,
-	types::{BalanceOf, Releases},
-};
+#[cfg(feature = "try-runtime")]
+use frame_support::ensure;
 use frame_support::{dispatch::Weight, traits::Get};
-use kilt_primitives::constants::MAX_COLLATOR_STAKE;
-use sp_runtime::traits::Zero;
+use sp_runtime::{
+	codec::{Decode, Encode},
+	traits::Zero,
+};
+use sp_std::marker::PhantomData;
 
-pub mod v2 {
+use crate::*;
 
-	use super::*;
+mod v2;
+mod v3;
+mod v4;
 
-	pub fn pre_migrate<T: Config>() -> Result<(), &'static str> {
-		assert!(
-			MaxCollatorCandidateStake::<T>::get().is_zero(),
-			"MaxCollatorCandidateStake already set."
+/// A trait that allows version migrators to access the underlying pallet's
+/// context, e.g., its Config trait.
+///
+/// In this way, the migrator can access the pallet's storage and the pallet's
+/// types directly.
+pub trait VersionMigratorTrait<T> {
+	#[cfg(feature = "try-runtime")]
+	fn pre_migrate(&self) -> Result<(), &str>;
+	fn migrate(&self) -> Weight;
+	#[cfg(feature = "try-runtime")]
+	fn post_migrate(&self) -> Result<(), &str>;
+}
+
+// A value placed in storage that represents the current version of the Staking
+// storage. This value is used by the `on_runtime_upgrade` logic to determine
+// whether we run storage migration logic. This should match directly with the
+// semantic versions of the Rust crate.
+#[derive(Copy, Clone, Encode, Eq, Decode, Debug, Ord, PartialEq, PartialOrd)]
+pub enum StakingStorageVersion {
+	V1_0_0,
+	V2_0_0, // New Reward calculation, MaxCollatorCandidateStake
+	V3_0_0, // Update InflationConfig
+	V4,     // Sort CandidatePool and parachain-stakings by amount
+}
+
+#[cfg(feature = "try-runtime")]
+impl StakingStorageVersion {
+	/// The latest storage version.
+	fn latest() -> Self {
+		Self::V4
+	}
+}
+
+// All nodes will default to this, which is not bad, as in case the "real"
+// version is a later one (i.e. the node has been started with already the
+// latest version), the migration will simply do nothing as there's nothing in
+// the old storage entries to migrate from.
+//
+// It might get updated in the future when we know that no node is running this
+// old version anymore.
+impl Default for StakingStorageVersion {
+	fn default() -> Self {
+		Self::V4
+	}
+}
+
+impl<T: Config> VersionMigratorTrait<T> for StakingStorageVersion {
+	// It runs the right pre_migrate logic depending on the current storage version.
+	#[cfg(feature = "try-runtime")]
+	fn pre_migrate(&self) -> Result<(), &str> {
+		match *self {
+			Self::V1_0_0 => v2::pre_migrate::<T>(),
+			Self::V2_0_0 => v3::pre_migrate::<T>(),
+			Self::V3_0_0 => v4::pre_migrate::<T>(),
+			Self::V4 => Err("Already on latest version v4."),
+		}
+	}
+
+	// It runs the right migration logic depending on the current storage version.
+	fn migrate(&self) -> Weight {
+		match *self {
+			Self::V1_0_0 => v2::migrate::<T>(),
+			Self::V2_0_0 => v3::migrate::<T>(),
+			Self::V3_0_0 => v4::migrate::<T>(),
+			Self::V4 => Weight::zero(),
+		}
+	}
+
+	// It runs the right post_migrate logic depending on the current storage
+	// version.
+	#[cfg(feature = "try-runtime")]
+	fn post_migrate(&self) -> Result<(), &str> {
+		match *self {
+			Self::V1_0_0 => v2::post_migrate::<T>(),
+			Self::V2_0_0 => v3::post_migrate::<T>(),
+			Self::V3_0_0 => v4::post_migrate::<T>(),
+			Self::V4 => Err("Migration from v4 should have never happened in the first place."),
+		}
+	}
+}
+
+/// The parachain-staking pallet's storage migrator, which handles all version
+/// migrations in a sequential fashion.
+///
+/// If a node has missed on more than one upgrade, the migrator will apply the
+/// needed migrations one after the other. Otherwise, if no migration is needed,
+/// the migrator will simply not do anything.
+pub struct StakingStorageMigrator<T>(PhantomData<T>);
+
+impl<T: Config> StakingStorageMigrator<T> {
+	// Contains the migration sequence logic.
+	fn get_next_storage_version(current: StakingStorageVersion) -> Option<StakingStorageVersion> {
+		match current {
+			StakingStorageVersion::V1_0_0 => Some(StakingStorageVersion::V2_0_0),
+			StakingStorageVersion::V2_0_0 => Some(StakingStorageVersion::V3_0_0),
+			// Migration happens naturally, no need to point to the latest version
+			StakingStorageVersion::V3_0_0 => None,
+			StakingStorageVersion::V4 => None,
+		}
+	}
+
+	/// Checks whether the latest storage version deployed is lower than the
+	/// latest possible.
+	#[cfg(feature = "try-runtime")]
+	pub(crate) fn pre_migrate() -> Result<(), &'static str> {
+		ensure!(
+			StorageVersion::<T>::get() < StakingStorageVersion::latest(),
+			"Already the latest storage version."
 		);
-		// should use default value if it has not existed before
-		assert_eq!(StorageVersion::<T>::get(), Releases::V1_0_0);
+
+		// Don't need to check for any other pre_migrate, as in try-runtime it is also
+		// called in the migrate() function. Same applies for post_migrate checks for
+		// each version migrator.
+
 		Ok(())
 	}
 
-	pub fn migrate<T: Config>() -> Weight {
-		log::info!("Migrating staking to Releases::V2_0_0");
+	/// Applies all the needed migrations from the currently deployed version to
+	/// the latest possible, one after the other.
+	///
+	/// It returns the total weight consumed by ALL the migrations applied.
+	pub(crate) fn migrate() -> Weight {
+		let mut current_version: Option<StakingStorageVersion> = Some(StorageVersion::<T>::get());
+		// Weight for StorageVersion::get().
+		let mut total_weight = T::DbWeight::get().reads(1);
 
-		MaxCollatorCandidateStake::<T>::put(BalanceOf::<T>::from(MAX_COLLATOR_STAKE));
+		while let Some(ver) = current_version {
+			// If any of the needed migrations pre-checks fail, the whole chain panics
+			// (during tests).
+			#[cfg(feature = "try-runtime")]
+			if let Err(err) = <StakingStorageVersion as VersionMigratorTrait<T>>::pre_migrate(&ver) {
+				panic!("{:?}", err);
+			}
+			let consumed_weight = <StakingStorageVersion as VersionMigratorTrait<T>>::migrate(&ver);
+			total_weight = total_weight.saturating_add(consumed_weight);
+			// If any of the needed migrations post-checks fail, the whole chain panics
+			// (during tests).
+			#[cfg(feature = "try-runtime")]
+			if let Err(err) = <StakingStorageVersion as VersionMigratorTrait<T>>::post_migrate(&ver) {
+				panic!("{:?}", err);
+			}
+			// If more migrations should be applied, current_version will not be None.
+			current_version = Self::get_next_storage_version(ver);
+		}
 
-		// update rewards per block
-		InflationConfig::<T>::mutate(|inflation| {
-			*inflation = InflationInfo::new(
-				inflation.collator.max_rate,
-				inflation.collator.reward_rate.annual,
-				inflation.delegator.max_rate,
-				inflation.delegator.reward_rate.annual,
+		total_weight
+	}
+
+	/// Checks whether the storage version after all the needed migrations match
+	/// the latest one.
+	#[cfg(feature = "try-runtime")]
+	pub(crate) fn post_migrate() -> Result<(), &'static str> {
+		ensure!(
+			StorageVersion::<T>::get() == StakingStorageVersion::latest(),
+			"Not updated to the latest version."
+		);
+
+		Ok(())
+	}
+}
+
+// Tests for the entire storage migrator.
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	use crate::mock::Test as TestRuntime;
+
+	#[test]
+	fn ok_from_v1_migration() {
+		let mut ext = mock::ExtBuilder::default()
+			.with_balances(vec![(1, 100), (2, 100)])
+			.with_collators(vec![(1, 100), (2, 100)])
+			.with_storage_version(StakingStorageVersion::V1_0_0)
+			.build();
+		ext.execute_with(|| {
+			#[cfg(feature = "try-runtime")]
+			assert!(
+				StakingStorageMigrator::<TestRuntime>::pre_migrate().is_ok(),
+				"Storage pre-migrate from v1 should not fail."
+			);
+
+			StakingStorageMigrator::<TestRuntime>::migrate();
+
+			#[cfg(feature = "try-runtime")]
+			assert!(
+				StakingStorageMigrator::<TestRuntime>::post_migrate().is_ok(),
+				"Storage post-migrate from v1 should not fail."
 			);
 		});
-
-		StorageVersion::<T>::put(Releases::V2_0_0);
-		log::info!("Completed staking migration to Releases::V2_0_0");
-
-		T::DbWeight::get().reads_writes(1, 3)
 	}
 
-	pub fn post_migrate<T: Config>() -> Result<(), &'static str> {
-		assert_eq!(
-			MaxCollatorCandidateStake::<T>::get(),
-			BalanceOf::<T>::from(MAX_COLLATOR_STAKE)
-		);
-		assert_eq!(StorageVersion::<T>::get(), Releases::V2_0_0);
-		Ok(())
-	}
-}
+	#[test]
+	fn ok_from_default_migration() {
+		let mut ext = mock::ExtBuilder::default()
+			.with_balances(vec![(1, 100), (2, 100)])
+			.with_collators(vec![(1, 100), (2, 100)])
+			.build();
+		ext.execute_with(|| {
+			#[cfg(feature = "try-runtime")]
+			if StakingStorageVersion::default() != StakingStorageVersion::latest() {
+				#[cfg(feature = "try-runtime")]
+				assert!(
+					StakingStorageMigrator::<TestRuntime>::pre_migrate().is_ok(),
+					"Storage pre-migrate from default version should not fail."
+				);
 
-pub mod v3 {
-	use kilt_primitives::constants::INFLATION_CONFIG;
+				StakingStorageMigrator::<TestRuntime>::migrate();
 
-	use super::*;
-
-	pub fn pre_migrate<T: Config>() -> Result<(), &'static str> {
-		assert_eq!(StorageVersion::<T>::get(), Releases::V2_0_0);
-		Ok(())
-	}
-
-	pub fn migrate<T: Config>() -> Weight {
-		log::info!("Migrating staking to Releases::V3_0_0");
-
-		// update rewards per block
-		InflationConfig::<T>::mutate(|inflation| *inflation = InflationInfo::from(INFLATION_CONFIG));
-
-		StorageVersion::<T>::put(Releases::V3_0_0);
-		log::info!("Completed staking migration to Releases::V3_0_0");
-
-		T::DbWeight::get().reads_writes(1, 2)
-	}
-
-	pub fn post_migrate<T: Config>() -> Result<(), &'static str> {
-		assert_eq!(InflationConfig::<T>::get(), InflationInfo::from(INFLATION_CONFIG));
-		assert_eq!(StorageVersion::<T>::get(), Releases::V3_0_0);
-		Ok(())
-	}
-}
-
-pub mod v4 {
-	use super::*;
-	use crate::types::{CollatorOf, Delegator};
-
-	pub fn pre_migrate<T: Config>() -> Result<(), &'static str> {
-		assert_eq!(StorageVersion::<T>::get(), Releases::V3_0_0);
-		Ok(())
-	}
-
-	pub fn migrate<T: Config>() -> Weight {
-		log::info!("Migrating staking to Releases::V4");
-
-		// sort candidates from greatest to lowest
-		CandidatePool::<T>::mutate(|candidates| candidates.sort_greatest_to_lowest());
-		let mut n = 1u64;
-
-		// for each candidate: sort delegators from greatest to lowest
-		CollatorState::<T>::translate_values(|mut state: CollatorOf<T>| {
-			state.delegators.sort_greatest_to_lowest();
-			n = n.saturating_add(1u64);
-			Some(state)
+				#[cfg(feature = "try-runtime")]
+				assert!(
+					StakingStorageMigrator::<TestRuntime>::post_migrate().is_ok(),
+					"Storage post-migrate from default version should not fail."
+				);
+			}
 		});
-
-		// for each delegator: sort delegations from greatest to lowest
-		DelegatorState::<T>::translate_values(|mut state: Delegator<T::AccountId, T::CurrencyBalance>| {
-			state.delegations.sort_greatest_to_lowest();
-			n = n.saturating_add(1u64);
-			Some(state)
-		});
-
-		StorageVersion::<T>::put(Releases::V4);
-		log::info!("Completed staking migration to Releases::V4");
-
-		T::DbWeight::get().reads_writes(n, n)
-	}
-
-	pub fn post_migrate<T: Config>() -> Result<(), &'static str> {
-		let mut candidates = CandidatePool::<T>::get();
-		candidates.sort_greatest_to_lowest();
-		assert_eq!(CandidatePool::<T>::get(), candidates);
-		assert_eq!(StorageVersion::<T>::get(), Releases::V4);
-		Ok(())
 	}
 }
