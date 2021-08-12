@@ -17,11 +17,10 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 #![allow(clippy::from_over_into)]
-#![allow(unused_must_use)]
+#![allow(dead_code)]
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use frame_system::EnsureSigned;
-use kilt_primitives::Hash;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
@@ -29,7 +28,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSigner,
 };
-use sp_std::{collections::btree_set::BTreeSet, convert::TryInto, sync::Arc};
+use sp_std::sync::Arc;
 
 use crate as did;
 use crate::*;
@@ -90,7 +89,13 @@ impl frame_system::Config for Test {
 parameter_types! {
 	pub const MaxNewKeyAgreementKeys: u32 = 10u32;
 	pub const MaxVerificationKeysToRevoke: u32 = 10u32;
+	#[derive(Debug, Clone, PartialEq)]
 	pub const MaxUrlLength: u32 = 200u32;
+	#[derive(Debug, Clone)]
+	pub const MaxPublicKeysPerDid: u32 = 1000;
+	#[derive(Debug, Clone, PartialEq)]
+	pub const MaxTotalKeyAgreementKeys: u32 = 1000;
+	#[derive(Debug, Clone, PartialEq)]
 	pub const MaxEndpointUrlsCount: u32 = 3u32;
 }
 
@@ -101,9 +106,11 @@ impl Config for Test {
 	type EnsureOrigin = EnsureSigned<TestDidIdentifier>;
 	type Event = ();
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
+	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
+	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
+	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 	type MaxUrlLength = MaxUrlLength;
 	type MaxEndpointUrlsCount = MaxEndpointUrlsCount;
-	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 	type WeightInfo = ();
 }
 
@@ -128,8 +135,6 @@ const DEFAULT_ATT_SEED: [u8; 32] = [6u8; 32];
 const ALTERNATIVE_ATT_SEED: [u8; 32] = [60u8; 32];
 const DEFAULT_DEL_SEED: [u8; 32] = [7u8; 32];
 const ALTERNATIVE_DEL_SEED: [u8; 32] = [70u8; 32];
-const DEFAULT_URL_SCHEME: [u8; 8] = *b"https://";
-const DEFAULT_SERVICE_ENDPOINT_HASH_SEED: u64 = 200u64;
 
 pub fn get_did_identifier_from_ed25519_key(public_key: ed25519::Public) -> TestDidIdentifier {
 	MultiSigner::from(public_key).into_account()
@@ -223,77 +228,6 @@ pub fn get_ecdsa_delegation_key(default: bool) -> ecdsa::Pair {
 	}
 }
 
-pub fn get_key_agreement_keys(n_keys: u32) -> BTreeSet<DidEncryptionKey> {
-	(1..=n_keys)
-		.map(|i| {
-			// Converts the loop index to a 32-byte array;
-			let mut seed_vec = i.to_be_bytes().to_vec();
-			seed_vec.resize(32, 0u8);
-			let seed: [u8; 32] = seed_vec
-				.try_into()
-				.expect("Failed to create encryption key from raw seed.");
-			DidEncryptionKey::X25519(seed)
-		})
-		.collect::<BTreeSet<DidEncryptionKey>>()
-}
-
-pub fn get_public_keys_to_remove(n_keys: u32) -> BTreeSet<TestKeyId> {
-	(1..=n_keys)
-		.map(|i| {
-			// Converts the loop index to a 32-byte array;
-			let mut seed_vec = i.to_be_bytes().to_vec();
-			seed_vec.resize(32, 0u8);
-			let seed: [u8; 32] = seed_vec
-				.try_into()
-				.expect("Failed to create encryption key from raw seed.");
-			let key = DidEncryptionKey::X25519(seed);
-			generate_key_id(&key.into())
-		})
-		.collect::<BTreeSet<TestKeyId>>()
-}
-
-// Assumes that the length of the URL is larger than 8 (length of the prefix https://)
-pub fn get_service_endpoints(count: u32, length: u32) -> ServiceEndpoints {
-	let total_length = usize::try_from(length).expect("Failed to convert URL max length value to usize value.");
-	let total_count = usize::try_from(count).expect("Failed to convert number (count) of URLs to usize value.");
-	let mut url_encoded_string = DEFAULT_URL_SCHEME.to_vec();
-	url_encoded_string.resize(total_length, b'0');
-	let url = Url::Http(
-		HttpUrl::try_from(url_encoded_string.as_ref()).expect("Failed to create default URL with provided length."),
-	);
-
-	ServiceEndpoints {
-		content_hash: Hash::from_low_u64_be(DEFAULT_SERVICE_ENDPOINT_HASH_SEED),
-		urls: vec![url; total_count],
-		content_type: ContentType::ApplicationJson,
-	}
-}
-
-pub fn generate_base_did_creation_details(did: TestDidIdentifier) -> did::DidCreationDetails<Test> {
-	DidCreationDetails {
-		did,
-		new_key_agreement_keys: BTreeSet::new(),
-		new_attestation_key: None,
-		new_delegation_key: None,
-		new_service_endpoints: None,
-	}
-}
-
-pub fn generate_base_did_update_details() -> did::DidUpdateDetails<Test> {
-	DidUpdateDetails {
-		new_authentication_key: None,
-		new_key_agreement_keys: BTreeSet::new(),
-		attestation_key_update: DidFragmentUpdateAction::default(),
-		delegation_key_update: DidFragmentUpdateAction::default(),
-		service_endpoints_update: DidFragmentUpdateAction::default(),
-		public_keys_to_remove: BTreeSet::new(),
-	}
-}
-
-pub fn generate_base_did_details(authentication_key: did::DidVerificationKey) -> did::DidDetails<Test> {
-	did::DidDetails::new(authentication_key, 0u64)
-}
-
 pub fn generate_key_id(key: &did::DidPublicKey) -> TestKeyId {
 	utils::calculate_key_id::<Test>(key)
 }
@@ -368,7 +302,7 @@ pub fn generate_test_did_call(
 	}
 }
 
-#[allow(dead_code)]
+#[allow(unused_must_use)]
 pub fn initialize_logger() {
 	env_logger::builder().is_test(true).try_init();
 }

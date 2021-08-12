@@ -20,7 +20,10 @@ use frame_support::{assert_err, assert_noop, assert_ok};
 use sp_core::*;
 use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom};
 
-use crate::{self as did, mock::*};
+use crate::{
+	self as did, mock::*, mock_utils::*, DidError, DidNewKeyAgreementKeys, DidVerificationKeysToRevoke, FtpUrl,
+	HttpUrl, IpfsUrl,
+};
 use ctype::mock as ctype_mock;
 
 // create
@@ -30,7 +33,7 @@ fn check_successful_simple_ed25519_creation() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let auth_did_key = did::DidVerificationKey::from(auth_key.public());
-	let details = generate_base_did_creation_details(alice_did.clone());
+	let details = generate_base_did_creation_details::<Test>(alice_did.clone());
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
@@ -65,7 +68,7 @@ fn check_successful_simple_sr25519_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let auth_did_key = did::DidVerificationKey::from(auth_key.public());
-	let details = generate_base_did_creation_details(alice_did.clone());
+	let details = generate_base_did_creation_details::<Test>(alice_did.clone());
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
@@ -100,7 +103,7 @@ fn check_successful_simple_ecdsa_creation() {
 	let auth_key = get_ecdsa_authentication_key(true);
 	let alice_did = get_did_identifier_from_ecdsa_key(auth_key.public());
 	let auth_did_key = did::DidVerificationKey::from(auth_key.public());
-	let details = generate_base_did_creation_details(alice_did.clone());
+	let details = generate_base_did_creation_details::<Test>(alice_did.clone());
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
@@ -135,15 +138,17 @@ fn check_successful_complete_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let auth_did_key = did::DidVerificationKey::from(auth_key.public());
-	let enc_keys: BTreeSet<did::DidEncryptionKey> =
+	let enc_keys = DidNewKeyAgreementKeys::<Test>::try_from(
 		vec![get_x25519_encryption_key(true), get_x25519_encryption_key(false)]
 			.iter()
 			.copied()
-			.collect();
+			.collect::<BTreeSet<did::DidEncryptionKey>>(),
+	)
+	.expect("Exceeded BoundedBTreeSet bounds when creating new key agreement keys");
 	let del_key = get_sr25519_delegation_key(true);
 	let att_key = get_ecdsa_attestation_key(true);
-	let new_service_endpoints = get_service_endpoints(1, 10);
-	let mut details = generate_base_did_creation_details(alice_did.clone());
+	let new_service_endpoints = get_service_endpoints::<Test>(1, 10);
+	let mut details = generate_base_did_creation_details::<Test>(alice_did.clone());
 	details.new_key_agreement_keys = enc_keys.clone();
 	details.new_attestation_key = Some(did::DidVerificationKey::from(att_key.public()));
 	details.new_delegation_key = Some(did::DidVerificationKey::from(del_key.public()));
@@ -212,8 +217,8 @@ fn check_duplicate_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let auth_did_key = did::DidVerificationKey::from(auth_key.public());
-	let mock_did = generate_base_did_details(auth_did_key);
-	let details = generate_base_did_creation_details(alice_did.clone());
+	let mock_did = generate_base_did_details::<Test>(auth_did_key);
+	let details = generate_base_did_creation_details::<Test>(alice_did.clone());
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
@@ -238,7 +243,7 @@ fn check_invalid_signature_format_did_creation() {
 	// Using an Ed25519 key where an Sr25519 is expected
 	let invalid_key = get_ed25519_authentication_key(true);
 	// DID creation contains auth_key, but signature is generated using invalid_key
-	let details = generate_base_did_creation_details(alice_did);
+	let details = generate_base_did_creation_details::<Test>(alice_did);
 
 	let signature = invalid_key.sign(details.encode().as_ref());
 
@@ -261,7 +266,7 @@ fn check_invalid_signature_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let alternative_key = get_sr25519_authentication_key(false);
-	let details = generate_base_did_creation_details(alice_did);
+	let details = generate_base_did_creation_details::<Test>(alice_did);
 
 	let signature = alternative_key.sign(details.encode().as_ref());
 
@@ -284,7 +289,7 @@ fn check_swapped_did_subject_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let swapped_key = get_sr25519_authentication_key(false);
 	let swapped_did = get_did_identifier_from_sr25519_key(swapped_key.public());
-	let details = generate_base_did_creation_details(swapped_did);
+	let details = generate_base_did_creation_details::<Test>(swapped_did);
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
@@ -303,12 +308,14 @@ fn check_swapped_did_subject_did_creation() {
 }
 
 #[test]
+#[should_panic = "Failed to convert key_agreement_keys to BoundedBTreeSet"]
 fn check_max_limit_key_agreement_keys_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	// Max keys allowed + 1
-	let enc_keys = get_key_agreement_keys(<Test as did::Config>::MaxNewKeyAgreementKeys::get().saturating_add(1));
-	let mut details = generate_base_did_creation_details(alice_did);
+	let enc_keys =
+		get_key_agreement_keys::<Test>(<Test as did::Config>::MaxNewKeyAgreementKeys::get().saturating_add(1));
+	let mut details = generate_base_did_creation_details::<Test>(alice_did);
 	details.new_key_agreement_keys = enc_keys;
 
 	let signature = auth_key.sign(details.encode().as_ref());
@@ -328,13 +335,15 @@ fn check_max_limit_key_agreement_keys_did_creation() {
 }
 
 #[test]
+#[should_panic = "Failed to create default URL with provided length"]
 fn check_url_too_long_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	// Max URL length allowed + 1
-	let service_endpoints = get_service_endpoints(1, <Test as did::Config>::MaxUrlLength::get().saturating_add(1));
+	let service_endpoints =
+		get_service_endpoints::<Test>(1, <Test as did::Config>::MaxUrlLength::get().saturating_add(1));
 
-	let mut details = generate_base_did_creation_details(alice_did);
+	let mut details = generate_base_did_creation_details::<Test>(alice_did);
 	details.new_service_endpoints = Some(service_endpoints);
 
 	let signature = auth_key.sign(details.encode().as_ref());
@@ -354,6 +363,7 @@ fn check_url_too_long_did_creation() {
 }
 
 #[test]
+#[should_panic = "Exceeded max endpoint urls when creating service endpoints"]
 fn check_too_many_urls_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
@@ -386,7 +396,7 @@ fn check_too_many_urls_did_creation() {
 fn check_successful_deletion() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	let did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), did_details)])
@@ -396,10 +406,10 @@ fn check_successful_deletion() {
 		assert_ok!(Did::delete(Origin::signed(alice_did.clone()),));
 	});
 
-	assert_eq!(ext.execute_with(|| Did::get_did(alice_did.clone())), None);
+	assert!(ext.execute_with(|| Did::get_did(alice_did.clone())).is_none());
 
 	// Re-adding the same DID identifier, which should not fail.
-	let details = generate_base_did_creation_details(alice_did.clone());
+	let details = generate_base_did_creation_details::<Test>(alice_did.clone());
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
@@ -460,7 +470,7 @@ fn check_max_counter_call_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = DEFAULT_ACCOUNT;
-	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	let mut mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 	mock_did.last_tx_counter = u64::MAX;
 
 	let mut ext = ExtBuilder::default()
@@ -487,7 +497,7 @@ fn check_too_small_tx_counter_call_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = DEFAULT_ACCOUNT;
-	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	let mut mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 	mock_did.last_tx_counter = 1u64;
 
 	let mut ext = ExtBuilder::default()
@@ -515,7 +525,7 @@ fn check_equal_tx_counter_call_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = DEFAULT_ACCOUNT;
-	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did.clone())])
@@ -542,7 +552,7 @@ fn check_too_large_tx_counter_call_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = DEFAULT_ACCOUNT;
-	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did.clone())])
@@ -569,7 +579,7 @@ fn check_verification_key_not_present_call_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = DEFAULT_ACCOUNT;
-	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
@@ -598,7 +608,7 @@ fn check_invalid_signature_format_call_error() {
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = DEFAULT_ACCOUNT;
 	let alternative_auth_key = get_ed25519_authentication_key(true);
-	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
@@ -625,7 +635,7 @@ fn check_invalid_signature_call_error() {
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = DEFAULT_ACCOUNT;
 	let alternative_auth_key = get_sr25519_authentication_key(false);
-	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
@@ -653,8 +663,8 @@ fn check_call_attestation_key_successful() {
 	let caller = DEFAULT_ACCOUNT;
 	let attestation_key = get_ed25519_attestation_key(true);
 
-	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	mock_did.update_attestation_key(did::DidVerificationKey::from(attestation_key.public()), 0);
+	let mut mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	assert_ok!(mock_did.update_attestation_key(did::DidVerificationKey::from(attestation_key.public()), 0));
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
@@ -679,8 +689,8 @@ fn check_call_attestation_key_error() {
 	let caller = DEFAULT_ACCOUNT;
 	let attestation_key = get_ed25519_attestation_key(true);
 
-	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	mock_did.update_attestation_key(did::DidVerificationKey::from(attestation_key.public()), 0);
+	let mut mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	assert_ok!(mock_did.update_attestation_key(did::DidVerificationKey::from(attestation_key.public()), 0));
 
 	let ext = ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
@@ -712,8 +722,8 @@ fn check_call_delegation_key_successful() {
 	let caller = DEFAULT_ACCOUNT;
 	let delegation_key = get_ed25519_delegation_key(true);
 
-	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	mock_did.set_delegation_key(did::DidVerificationKey::from(delegation_key.public()), 0);
+	let mut mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	assert_ok!(mock_did.update_delegation_key(did::DidVerificationKey::from(delegation_key.public()), 0));
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
@@ -738,8 +748,8 @@ fn check_call_delegation_key_error() {
 	let caller = DEFAULT_ACCOUNT;
 	let delegation_key = get_ed25519_delegation_key(true);
 
-	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	mock_did.set_delegation_key(did::DidVerificationKey::from(delegation_key.public()), 0);
+	let mut mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	assert_ok!(mock_did.update_delegation_key(did::DidVerificationKey::from(delegation_key.public()), 0));
 
 	let ext = ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
@@ -770,7 +780,7 @@ fn check_call_authentication_key_successful() {
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = DEFAULT_ACCOUNT;
 
-	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
@@ -794,7 +804,7 @@ fn check_call_authentication_key_error() {
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = DEFAULT_ACCOUNT;
 
-	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
 	let ext = ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
@@ -851,7 +861,7 @@ fn check_authentication_successful_operation_verification() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 
-	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did.clone())])
@@ -882,8 +892,8 @@ fn check_attestation_successful_operation_verification() {
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let attestation_key = get_ed25519_attestation_key(true);
 
-	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	mock_did.update_attestation_key(did::DidVerificationKey::from(attestation_key.public()), 0);
+	let mut mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	assert_ok!(mock_did.update_attestation_key(did::DidVerificationKey::from(attestation_key.public()), 0));
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did.clone())])
@@ -914,8 +924,8 @@ fn check_delegation_successful_operation_verification() {
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let delegation_key = get_ecdsa_delegation_key(true);
 
-	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-	mock_did.set_delegation_key(did::DidVerificationKey::from(delegation_key.public()), 0);
+	let mut mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	assert_ok!(mock_did.update_delegation_key(did::DidVerificationKey::from(delegation_key.public()), 0));
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did.clone())])
@@ -956,7 +966,7 @@ fn check_did_not_present_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			did::DidError::StorageError(did::StorageError::DidNotPresent)
+			DidError::StorageError(did::StorageError::DidNotPresent)
 		);
 	});
 }
@@ -966,7 +976,7 @@ fn check_max_tx_counter_operation_verification() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 
-	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	let mut mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 	mock_did.set_tx_counter(u64::MAX);
 
 	let mut ext = ExtBuilder::default()
@@ -983,7 +993,7 @@ fn check_max_tx_counter_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			did::DidError::StorageError(did::StorageError::MaxTxCounterValue)
+			DidError::StorageError(did::StorageError::MaxTxCounterValue)
 		);
 	});
 }
@@ -993,7 +1003,7 @@ fn check_smaller_counter_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let did = get_did_identifier_from_ed25519_key(auth_key.public());
 
-	let mut mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	let mut mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 	mock_did.last_tx_counter = 1;
 
 	let mut call_operation =
@@ -1009,7 +1019,7 @@ fn check_smaller_counter_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			did::DidError::SignatureError(did::SignatureError::InvalidNonce)
+			DidError::SignatureError(did::SignatureError::InvalidNonce)
 		);
 	});
 }
@@ -1019,7 +1029,7 @@ fn check_equal_counter_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let did = get_did_identifier_from_ed25519_key(auth_key.public());
 
-	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
 	let mut call_operation =
 		generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did.clone());
@@ -1034,7 +1044,7 @@ fn check_equal_counter_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			did::DidError::SignatureError(did::SignatureError::InvalidNonce)
+			DidError::SignatureError(did::SignatureError::InvalidNonce)
 		);
 	});
 }
@@ -1044,7 +1054,7 @@ fn check_too_large_counter_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let did = get_did_identifier_from_ed25519_key(auth_key.public());
 
-	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
 	let mut call_operation =
 		generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did.clone());
@@ -1059,7 +1069,7 @@ fn check_too_large_counter_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			did::DidError::SignatureError(did::SignatureError::InvalidNonce)
+			DidError::SignatureError(did::SignatureError::InvalidNonce)
 		);
 	});
 }
@@ -1069,7 +1079,7 @@ fn check_verification_key_not_present_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let did = get_did_identifier_from_ed25519_key(auth_key.public());
 
-	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
 	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::AssertionMethod, did.clone());
 	let signature = auth_key.sign(call_operation.encode().as_ref());
@@ -1082,7 +1092,7 @@ fn check_verification_key_not_present_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			did::DidError::StorageError(did::StorageError::DidKeyNotPresent(
+			DidError::StorageError(did::StorageError::DidKeyNotPresent(
 				did::DidVerificationKeyRelationship::AssertionMethod
 			))
 		);
@@ -1096,7 +1106,7 @@ fn check_invalid_signature_format_operation_verification() {
 	// Expected an Sr25519, given an Ed25519
 	let invalid_key = get_ed25519_authentication_key(true);
 
-	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
 	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did.clone());
 	let signature = invalid_key.sign(call_operation.encode().as_ref());
@@ -1109,7 +1119,7 @@ fn check_invalid_signature_format_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			did::DidError::SignatureError(did::SignatureError::InvalidSignatureFormat)
+			DidError::SignatureError(did::SignatureError::InvalidSignatureFormat)
 		);
 	});
 }
@@ -1121,7 +1131,7 @@ fn check_invalid_signature_operation_verification() {
 	// Using same key type but different seed (default = false)
 	let alternative_key = get_sr25519_authentication_key(false);
 
-	let mock_did = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
+	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
 	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did.clone());
 	let signature = alternative_key.sign(&call_operation.encode());
@@ -1134,7 +1144,7 @@ fn check_invalid_signature_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			did::DidError::SignatureError(did::SignatureError::InvalidSignature)
+			DidError::SignatureError(did::SignatureError::InvalidSignature)
 		);
 	});
 }
@@ -1143,48 +1153,48 @@ fn check_invalid_signature_operation_verification() {
 
 #[test]
 fn check_http_url() {
-	assert_ok!(did::HttpUrl::try_from("http://kilt.io".as_bytes()));
+	assert_ok!(HttpUrl::<Test>::try_from("http://kilt.io".as_bytes()));
 
-	assert_ok!(did::HttpUrl::try_from("https://kilt.io".as_bytes()));
+	assert_ok!(HttpUrl::<Test>::try_from("https://kilt.io".as_bytes()));
 
-	assert_ok!(did::HttpUrl::try_from(
+	assert_ok!(HttpUrl::<Test>::try_from(
 		"https://super.long.domain.kilt.io:12345/public/files/test.txt".as_bytes()
 	));
 
 	// All other valid ASCII characters
-	assert_ok!(did::HttpUrl::try_from("http://:/?#[]@!$&'()*+,;=-._~".as_bytes()));
+	assert_ok!(HttpUrl::<Test>::try_from("http://:/?#[]@!$&'()*+,;=-._~".as_bytes()));
 
 	assert_eq!(
-		did::HttpUrl::try_from("".as_bytes()),
-		Err(did::UrlError::InvalidUrlScheme)
+		HttpUrl::<Test>::try_from("".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 
 	// Non-printable ASCII characters
 	assert_eq!(
-		did::HttpUrl::try_from("http://kilt.io/\x00".as_bytes()),
-		Err(did::UrlError::InvalidUrlEncoding)
+		HttpUrl::<Test>::try_from("http://kilt.io/\x00".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlEncoding))
 	);
 
 	// Some invalid ASCII characters
 	assert_eq!(
-		did::HttpUrl::try_from("http://kilt.io/<tag>".as_bytes()),
-		Err(did::UrlError::InvalidUrlEncoding)
+		HttpUrl::<Test>::try_from("http://kilt.io/<tag>".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlEncoding))
 	);
 
 	// Non-ASCII characters
 	assert_eq!(
-		did::HttpUrl::try_from("http://¶.com".as_bytes()),
-		Err(did::UrlError::InvalidUrlEncoding)
+		HttpUrl::<Test>::try_from("http://¶.com".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlEncoding))
 	);
 
 	assert_eq!(
-		did::HttpUrl::try_from("htt://kilt.io".as_bytes()),
-		Err(did::UrlError::InvalidUrlScheme)
+		HttpUrl::<Test>::try_from("htt://kilt.io".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 
 	assert_eq!(
-		did::HttpUrl::try_from("httpss://kilt.io".as_bytes()),
-		Err(did::UrlError::InvalidUrlScheme)
+		HttpUrl::<Test>::try_from("httpss://kilt.io".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 }
 
@@ -1192,48 +1202,48 @@ fn check_http_url() {
 
 #[test]
 fn check_ftp_url() {
-	assert_ok!(did::FtpUrl::try_from("ftp://kilt.io".as_bytes()));
+	assert_ok!(FtpUrl::<Test>::try_from("ftp://kilt.io".as_bytes()));
 
-	assert_ok!(did::FtpUrl::try_from("ftps://kilt.io".as_bytes()));
+	assert_ok!(FtpUrl::<Test>::try_from("ftps://kilt.io".as_bytes()));
 
-	assert_ok!(did::FtpUrl::try_from(
+	assert_ok!(FtpUrl::<Test>::try_from(
 		"ftps://user@super.long.domain.kilt.io:12345/public/files/test.txt".as_bytes()
 	));
 
 	// All other valid ASCII characters
-	assert_ok!(did::FtpUrl::try_from("ftps://:/?#[]@%!$&'()*+,;=-._~".as_bytes()));
+	assert_ok!(FtpUrl::<Test>::try_from("ftps://:/?#[]@%!$&'()*+,;=-._~".as_bytes()));
 
 	assert_eq!(
-		did::FtpUrl::try_from("".as_bytes()),
-		Err(did::UrlError::InvalidUrlScheme)
+		FtpUrl::<Test>::try_from("".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 
 	// Non-printable ASCII characters
 	assert_eq!(
-		did::HttpUrl::try_from("http://kilt.io/\x00".as_bytes()),
-		Err(did::UrlError::InvalidUrlEncoding)
+		HttpUrl::<Test>::try_from("http://kilt.io/\x00".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlEncoding))
 	);
 
 	// Some invalid ASCII characters
 	assert_eq!(
-		did::FtpUrl::try_from("ftp://kilt.io/<tag>".as_bytes()),
-		Err(did::UrlError::InvalidUrlEncoding)
+		FtpUrl::<Test>::try_from("ftp://kilt.io/<tag>".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlEncoding))
 	);
 
 	// Non-ASCII characters
 	assert_eq!(
-		did::FtpUrl::try_from("ftps://¶.com".as_bytes()),
-		Err(did::UrlError::InvalidUrlEncoding)
+		FtpUrl::<Test>::try_from("ftps://¶.com".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlEncoding))
 	);
 
 	assert_eq!(
-		did::FtpUrl::try_from("ft://kilt.io".as_bytes()),
-		Err(did::UrlError::InvalidUrlScheme)
+		FtpUrl::<Test>::try_from("ft://kilt.io".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 
 	assert_eq!(
-		did::HttpUrl::try_from("ftpss://kilt.io".as_bytes()),
-		Err(did::UrlError::InvalidUrlScheme)
+		HttpUrl::<Test>::try_from("ftpss://kilt.io".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 }
 
@@ -1242,33 +1252,33 @@ fn check_ftp_url() {
 #[test]
 fn check_ipfs_url() {
 	// Base58 address
-	assert_ok!(did::IpfsUrl::try_from(
+	assert_ok!(IpfsUrl::<Test>::try_from(
 		"ipfs://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()
 	));
 
 	// Base32 address (at the moment, padding characters can appear anywhere in the
 	// string)
-	assert_ok!(did::IpfsUrl::try_from(
+	assert_ok!(IpfsUrl::<Test>::try_from(
 		"ipfs://OQQHHHTGMMYDQQ364YB4GDE=HREJQL==".as_bytes()
 	));
 
 	assert_eq!(
-		did::IpfsUrl::try_from("".as_bytes()),
-		Err(did::UrlError::InvalidUrlScheme)
+		IpfsUrl::<Test>::try_from("".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 
 	assert_eq!(
-		did::IpfsUrl::try_from("ipfs://¶QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()),
-		Err(did::UrlError::InvalidUrlEncoding)
+		IpfsUrl::<Test>::try_from("ipfs://¶QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlEncoding))
 	);
 
 	assert_eq!(
-		did::IpfsUrl::try_from("ipf://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()),
-		Err(did::UrlError::InvalidUrlScheme)
+		IpfsUrl::<Test>::try_from("ipf://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 
 	assert_eq!(
-		did::IpfsUrl::try_from("ipfss://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQk".as_bytes()),
-		Err(did::UrlError::InvalidUrlScheme)
+		IpfsUrl::<Test>::try_from("ipfss://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQk".as_bytes()),
+		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 }

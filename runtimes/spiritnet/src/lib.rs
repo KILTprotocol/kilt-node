@@ -102,7 +102,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("kilt-spiritnet"),
 	impl_name: create_runtime_str!("kilt-spiritnet"),
 	authoring_version: 1,
-	spec_version: 19,
+	spec_version: 20,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -364,14 +364,17 @@ parameter_types! {
 	/// We only allow one delegation per round.
 	pub const MaxDelegationsPerRound: u32 = 1;
 	/// Maximum 25 delegators per collator at launch, might be increased later
+	#[derive(Debug, PartialEq)]
 	pub const MaxDelegatorsPerCollator: u32 = 25;
 	/// Maximum 1 collator per delegator at launch, will be increased later
+	#[derive(Debug, PartialEq)]
 	pub const MaxCollatorsPerDelegator: u32 = 1;
 	/// Minimum stake required to be reserved to be a collator is 10_000
 	pub const MinCollatorStake: Balance = 10_000 * KILT;
 	/// Minimum stake required to be reserved to be a delegator is 1000
 	pub const MinDelegatorStake: Balance = 1000 * KILT;
 	/// Maximum number of collator candidates
+	#[derive(Debug, PartialEq)]
 	pub const MaxCollatorCandidates: u32 = 75;
 	/// Maximum number of concurrent requests to unlock unstaked balance
 	pub const MaxUnstakeRequests: u32 = 10;

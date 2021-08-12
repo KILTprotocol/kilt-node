@@ -134,6 +134,7 @@ pub mod pallet {
 	use pallet_balances::{BalanceLock, Locks};
 	use pallet_vesting::{Vesting, VestingInfo};
 	use sp_runtime::traits::{CheckedDiv, Convert, SaturatedConversion, Saturating};
+	use sp_std::convert::TryInto;
 
 	pub const KILT_LAUNCH_ID: LockIdentifier = *b"kiltlnch";
 	pub const VESTING_ID: LockIdentifier = *b"vesting ";
@@ -291,7 +292,7 @@ pub mod pallet {
 		_,
 		Blake2_128Concat,
 		<T as frame_system::Config>::BlockNumber,
-		Vec<<T as frame_system::Config>::AccountId>,
+		BoundedVec<<T as frame_system::Config>::AccountId, <T as Config>::MaxClaims>,
 	>;
 
 	/// Maps an account id to the (block, balance) pair in which the latter can
@@ -341,7 +342,7 @@ pub mod pallet {
 		ConflictingVestingStarts,
 		/// When migrating multiple accounts to the same target, the size of the
 		/// list of source addresses should never exceed `MaxClaims`.
-		ExceedsMaxClaims,
+		MaxClaimsExceeded,
 		/// The source address does not have any balance lock at all which is
 		/// required for `locked_transfer`.
 		ExpectedLocks,
@@ -520,7 +521,7 @@ pub mod pallet {
 
 			ensure!(
 				sources.len() < T::MaxClaims::get().saturated_into::<usize>(),
-				Error::<T>::ExceedsMaxClaims
+				Error::<T>::MaxClaimsExceeded
 			);
 
 			let mut post_weight: Weight = 0;
@@ -786,7 +787,7 @@ pub mod pallet {
 			} else {
 				// If no custom lock has been set up for target account, we can default to the
 				// one of the source account and append it to `UnlockingAt`
-				<UnlockingAt<T>>::append(unlock_block, &target);
+				<UnlockingAt<T>>::try_append(unlock_block, &target).map_err(|_| Error::<T>::MaxClaimsExceeded)?;
 				max_add_amount
 			};
 
@@ -810,12 +811,19 @@ pub mod pallet {
 				// `max_amount` is set because else the source address is never added to
 				// `UnlockingAt`
 				if max_amount.is_some() {
-					let remove_source_map: Vec<T::AccountId> = <UnlockingAt<T>>::take(unlock_block)
-						.unwrap_or_default()
-						.into_iter()
-						.filter(|acc_id| acc_id != source)
-						.collect();
-					<UnlockingAt<T>>::insert(unlock_block, remove_source_map);
+					<UnlockingAt<T>>::try_mutate(unlock_block, |maybe_bv| -> DispatchResult {
+						if let Some(bv) = maybe_bv {
+							*bv = bv
+								.clone()
+								.into_inner()
+								.into_iter()
+								.filter(|acc_id| acc_id != source)
+								.collect::<Vec<T::AccountId>>()
+								.try_into()
+								.map_err(|_| Error::<T>::MaxClaimsExceeded)?
+						}
+						Ok(())
+					})?;
 				}
 			} else {
 				// Reduce the locked amount

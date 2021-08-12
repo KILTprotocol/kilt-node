@@ -114,6 +114,8 @@ pub mod benchmarking;
 
 #[cfg(test)]
 mod mock;
+#[cfg(any(feature = "runtime-benchmarks", test))]
+mod mock_utils;
 #[cfg(test)]
 mod tests;
 
@@ -134,7 +136,7 @@ use frame_system::ensure_signed;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::RawOrigin;
 use sp_runtime::SaturatedConversion;
-use sp_std::{boxed::Box, convert::TryFrom, fmt::Debug, prelude::Clone, vec, vec::Vec};
+use sp_std::{boxed::Box, fmt::Debug, prelude::Clone};
 
 use migrations::*;
 
@@ -174,30 +176,53 @@ pub mod pallet {
 			+ Dispatchable<Origin = <Self as Config>::Origin, PostInfo = PostDispatchInfo>
 			+ GetDispatchInfo
 			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
+
 		/// Type for a DID subject identifier.
 		type DidIdentifier: Parameter + Default + DidVerifiableIdentifier;
+
 		#[cfg(not(feature = "runtime-benchmarks"))]
 		/// Origin type expected by the proxied dispatchable calls.
 		type Origin: From<DidRawOrigin<DidIdentifierOf<Self>>>;
+
 		#[cfg(feature = "runtime-benchmarks")]
 		type Origin: From<RawOrigin<DidIdentifierOf<Self>>>;
 		type EnsureOrigin: EnsureOrigin<Success = DidIdentifierOf<Self>, <Self as frame_system::Config>::Origin>;
 		/// Overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+
+		/// Maximum number of total public keys which can be stored per DID key
+		/// identifier. This includes the ones currently used for
+		/// authentication, key agreement, attestation, and delegation. It also
+		/// contains old attestation keys which cannot issue new attestations
+		/// but can still be used to verify previously issued attestations.
+		#[pallet::constant]
+		type MaxPublicKeysPerDid: Get<u32>;
+
 		/// Maximum number of key agreement keys that can be added in a creation
 		/// or update operation.
 		#[pallet::constant]
 		type MaxNewKeyAgreementKeys: Get<u32>;
+
+		/// Maximum number of total key agreement keys that can be stored for a
+		/// DID subject.
+		///
+		/// Should be greater than `MaxNewKeyAgreementKeys`.
+		#[pallet::constant]
+		type MaxTotalKeyAgreementKeys: Get<u32> + Debug + Clone + PartialEq;
+
 		/// Maximum number of keys that can be removed in an update operation.
 		#[pallet::constant]
 		type MaxVerificationKeysToRevoke: Get<u32>;
+
 		/// Maximum length in ASCII characters of the endpoint URL specified in
 		/// a creation or update operation.
 		#[pallet::constant]
-		type MaxUrlLength: Get<u32>;
+		type MaxUrlLength: Get<u32> + Debug + Clone + PartialEq;
+
 		/// Maximum number of URLs that a service endpoint can contain.
 		#[pallet::constant]
-		type MaxEndpointUrlsCount: Get<u32>;
+		type MaxEndpointUrlsCount: Get<u32> + Debug + Clone + PartialEq;
+
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}
@@ -296,6 +321,12 @@ pub mod pallet {
 		MaxUrlsCountExceeded,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
+		/// The maximum number of public keys for this DID key identifier has
+		/// been reached.
+		MaxPublicKeysPerDidExceeded,
+		/// The maximum number of key agreements has been reached for the DID
+		/// subject.
+		MaxTotalKeyAgreementKeysExceeded,
 	}
 
 	impl<T> From<DidError> for Error<T> {
@@ -320,6 +351,8 @@ pub mod pallet {
 				}
 				StorageError::MaxTxCounterValue => Self::MaxTxCounterValue,
 				StorageError::CurrentlyActiveKey => Self::CurrentlyActiveKey,
+				StorageError::MaxPublicKeysPerDidExceeded => Self::MaxPublicKeysPerDidExceeded,
+				StorageError::MaxTotalKeyAgreementKeysExceeded => Self::MaxTotalKeyAgreementKeysExceeded,
 			}
 		}
 	}
@@ -387,7 +420,7 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::weight({
 			let new_key_agreement_keys = details.new_key_agreement_keys.len().saturated_into::<u32>();
-			let new_urls = details.new_service_endpoints.as_ref().map_or(vec![], |endpoint| endpoint.urls.clone());
+			let new_urls = details.new_service_endpoints.as_ref().map_or(BoundedVec::default(), |endpoint| endpoint.urls.clone());
 			// Max 3, so we can iterate quite easily.
 			let max_url_length = new_urls.iter().map(|url| url.len().saturated_into()).max().unwrap_or(0u32);
 
@@ -437,17 +470,20 @@ pub mod pallet {
 		pub fn set_authentication_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
-
-			did_details.remove_key_if_unused(did_details.authentication_key);
+			let old_key_id = did_details.authentication_key;
 
 			did_details.authentication_key = utils::calculate_key_id::<T>(&new_key.clone().into());
-			did_details.public_keys.insert(
-				did_details.authentication_key,
-				DidPublicKeyDetails {
-					key: new_key.into(),
-					block_number: <frame_system::Pallet<T>>::block_number(),
-				},
-			);
+			did_details
+				.public_keys
+				.try_insert(
+					did_details.authentication_key,
+					DidPublicKeyDetails {
+						key: new_key.into(),
+						block_number: <frame_system::Pallet<T>>::block_number(),
+					},
+				)
+				.map_err(|_| <Error<T>>::MaxPublicKeysPerDidExceeded)?;
+			did_details.remove_key_if_unused(old_key_id);
 
 			log::debug!("Updating DID {:?}", did_subject);
 			<Did<T>>::insert(&did_subject, did_details);
@@ -498,13 +534,16 @@ pub mod pallet {
 
 			let new_key_id = utils::calculate_key_id::<T>(&new_key.clone().into());
 			did_details.attestation_key = Some(new_key_id);
-			did_details.public_keys.insert(
-				new_key_id,
-				DidPublicKeyDetails {
-					key: new_key.into(),
-					block_number: <frame_system::Pallet<T>>::block_number(),
-				},
-			);
+			did_details
+				.public_keys
+				.try_insert(
+					new_key_id,
+					DidPublicKeyDetails {
+						key: new_key.into(),
+						block_number: <frame_system::Pallet<T>>::block_number(),
+					},
+				)
+				.map_err(|_| <Error<T>>::MaxPublicKeysPerDidExceeded)?;
 
 			log::debug!("Updating DID {:?}", did_subject);
 			<Did<T>>::insert(&did_subject, did_details);
@@ -536,14 +575,20 @@ pub mod pallet {
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
 			let new_key_id = utils::calculate_key_id::<T>(&new_key.clone().into());
-			did_details.public_keys.insert(
-				new_key_id,
-				DidPublicKeyDetails {
-					key: new_key.into(),
-					block_number: <frame_system::Pallet<T>>::block_number(),
-				},
-			);
-			did_details.key_agreement_keys.insert(new_key_id);
+			did_details
+				.public_keys
+				.try_insert(
+					new_key_id,
+					DidPublicKeyDetails {
+						key: new_key.into(),
+						block_number: <frame_system::Pallet<T>>::block_number(),
+					},
+				)
+				.map_err(|_| <Error<T>>::MaxPublicKeysPerDidExceeded)?;
+			did_details
+				.key_agreement_keys
+				.try_insert(new_key_id)
+				.map_err(|_| <Error<T>>::MaxTotalKeyAgreementKeysExceeded)?;
 
 			log::debug!("Updating DID {:?}", did_subject);
 			<Did<T>>::insert(&did_subject, did_details);

@@ -19,7 +19,7 @@
 use bitflags::bitflags;
 use codec::{Decode, Encode};
 use ctype::CtypeHashOf;
-use sp_std::collections::btree_set::BTreeSet;
+use frame_support::{dispatch::DispatchResult, storage::bounded_btree_set::BoundedBTreeSet};
 
 use crate::*;
 
@@ -59,14 +59,14 @@ impl Default for Permissions {
 /// For quicker lookups of the hierarchy details, all nodes maintain a direct
 /// link to the hierarchy root node. Furthermore, all nodes have a parent except
 /// the root nodes, which point to themselves for the hierarchy root node link.
-#[derive(Clone, Debug, Encode, Decode, PartialEq)]
+#[derive(Clone, Encode, Decode, PartialEq)]
 pub struct DelegationNode<T: Config> {
 	/// The ID of the delegation hierarchy the node is part of.
 	pub hierarchy_root_id: DelegationNodeIdOf<T>,
 	/// The ID of the parent. For all but root nodes this is not None.
 	pub parent: Option<DelegationNodeIdOf<T>>,
 	/// The set of IDs of all the children nodes.
-	pub children: BTreeSet<DelegationNodeIdOf<T>>,
+	pub children: BoundedBTreeSet<DelegationNodeIdOf<T>, T::MaxChildren>,
 	/// The additional information attached to the delegation node.
 	pub details: DelegationDetails<T>,
 }
@@ -78,7 +78,7 @@ impl<T: Config> DelegationNode<T> {
 		Self {
 			hierarchy_root_id: id,
 			parent: None,
-			children: BTreeSet::new(),
+			children: BoundedBTreeSet::<DelegationNodeIdOf<T>, T::MaxChildren>::new(),
 			details,
 		}
 	}
@@ -93,14 +93,17 @@ impl<T: Config> DelegationNode<T> {
 		Self {
 			hierarchy_root_id,
 			parent: Some(parent),
-			children: BTreeSet::new(),
+			children: BoundedBTreeSet::<DelegationNodeIdOf<T>, T::MaxChildren>::new(),
 			details,
 		}
 	}
 
 	/// Adds a node by its ID to the current node's children.
-	pub fn add_child(&mut self, child_id: DelegationNodeIdOf<T>) {
-		self.children.insert(child_id);
+	pub fn try_add_child(&mut self, child_id: DelegationNodeIdOf<T>) -> DispatchResult {
+		self.children
+			.try_insert(child_id)
+			.map_err(|_| Error::<T>::MaxChildrenExceeded)?;
+		Ok(())
 	}
 }
 
