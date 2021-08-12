@@ -345,43 +345,45 @@ pub mod pallet {
 			let value: BalanceOf<T> = votes
 				.clone()
 				.iter()
-				.fold(BalanceOf::<T>::zero(), |mut acc, Vote { amount, .. }| {
+				.fold(BalanceOf::<T>::zero(), |acc, Vote { amount, .. }| {
 					acc.saturating_add(*amount)
 				});
 			ensure!(value > T::Currency::minimum_balance(), Error::<T>::LowBalance);
+			ensure!(
+				value <= T::Currency::total_balance(&who),
+				Error::<T>::InsufficientVoterFunds
+			);
+
 			// Reserve bond.
-			// let new_deposit = Self::deposit_of(votes.len());
-			// let Voter {
-			// 	deposit: old_deposit, ..
-			// } = <Voting<T>>::get(&who);
-			// match new_deposit.cmp(&old_deposit) {
-			// 	Ordering::Greater => {
-			// 		// Must reserve a bit more.
-			// 		let to_reserve = new_deposit - old_deposit;
-			// 		T::Currency::reserve(&who, to_reserve).map_err(|_|
-			// Error::<T>::UnableToPayBond)?; 	}
-			// 	Ordering::Equal => {}
-			// 	Ordering::Less => {
-			// 		// Must unreserve a bit.
-			// 		let to_unreserve = old_deposit - new_deposit;
-			// 		let _remainder = T::Currency::unreserve(&who, to_unreserve);
-			// 		debug_assert!(_remainder.is_zero());
-			// 	}
-			// };
+			let new_deposit = Self::deposit_of(votes.len());
+			let Voter {
+				deposit: old_deposit, ..
+			} = <Voting<T>>::get(&who);
+			match new_deposit.cmp(&old_deposit) {
+				Ordering::Greater => {
+					// Must reserve a bit more.
+					let to_reserve = new_deposit - old_deposit;
+					T::Currency::reserve(&who, to_reserve).map_err(|_| Error::<T>::UnableToPayBond)?;
+				}
+				Ordering::Equal => {}
+				Ordering::Less => {
+					// Must unreserve a bit.
+					let to_unreserve = old_deposit - new_deposit;
+					let _remainder = T::Currency::unreserve(&who, to_unreserve);
+					debug_assert!(_remainder.is_zero());
+				}
+			};
 
-			// // Amount to be locked up.
-			// let locked_stake = value.min(T::Currency::total_balance(&who));
-			// T::Currency::set_lock(T::PalletId::get(), &who, locked_stake,
-			// WithdrawReasons::all());
+			// Amount to be locked up.
+			T::Currency::set_lock(T::PalletId::get(), &who, value, WithdrawReasons::all());
 
-			// Voting::<T>::insert(
-			// 	&who,
-			// 	Voter {
-			// 		votes,
-			// 		deposit: new_deposit,
-			// 		stake: locked_stake,
-			// 	},
-			// );
+			Voting::<T>::insert(
+				&who,
+				Voter {
+					votes,
+					deposit: new_deposit,
+				},
+			);
 			Ok(None.into())
 		}
 
@@ -393,10 +395,9 @@ pub mod pallet {
 		// #[pallet::weight(T::WeightInfo::remove_voter())]
 		#[pallet::weight(1)]
 		pub fn remove_voter(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
-			// TODO: Potentially rewrite
-			// let who = ensure_signed(origin)?;
-			// ensure!(Self::is_voter(&who), Error::<T>::MustBeVoter);
-			// Self::do_remove_voter(&who);
+			let who = ensure_signed(origin)?;
+			ensure!(Self::is_voter(&who), Error::<T>::MustBeVoter);
+			Self::do_remove_voter(&who);
 			Ok(None.into())
 		}
 
@@ -652,6 +653,8 @@ pub mod pallet {
 		RunnerUpSubmit,
 		/// Candidate does not have enough funds.
 		InsufficientCandidateFunds,
+		/// Voter does not have enough funds.
+		InsufficientVoterFunds,
 		/// Not a member.
 		NotMember,
 		/// The provided count of number of candidates is incorrect.
@@ -774,408 +777,421 @@ pub mod pallet {
 	}
 }
 
-// TODO: Potentially rewrite
-// impl<T: Config> Pallet<T> {
-// 	/// The deposit value of `count` votes.
-// 	fn deposit_of(count: usize) -> BalanceOf<T> {
-// 		T::VotingBondBase::get().saturating_add(T::VotingBondFactor::get().
-// saturating_mul((count as u32).into())) 	}
+impl<T: Config> Pallet<T> {
+	/// The deposit value of `count` votes.
+	fn deposit_of(count: usize) -> BalanceOf<T> {
+		T::VotingBondBase::get().saturating_add(T::VotingBondFactor::get().saturating_mul((count as u32).into()))
+	}
 
-// 	/// Attempts to remove a member `who`. If a runner-up exists, it is used as
-// 	/// the replacement.
-// 	///
-// 	/// Returns:
-// 	///
-// 	/// - `Ok(true)` if the member was removed and a replacement was found.
-// 	/// - `Ok(false)` if the member was removed and but no replacement was
-// 	///   found.
-// 	/// - `Err(_)` if the member was no found.
-// 	///
-// 	/// Both `Members` and `RunnersUp` storage is updated accordingly.
-// 	/// `T::ChangeMember` is called if needed. If `slash` is true, the deposit
-// 	/// of the potentially removed member is slashed, else, it is unreserved.
-// 	///
-// 	/// ### Note: Prime preservation
-// 	///
-// 	/// This function attempts to preserve the prime. If the removed members is
-// 	/// not the prime, it is set again via [`Config::ChangeMembers`].
-// 	fn remove_and_replace_member(who: &T::AccountId, slash: bool) -> Result<bool,
-// DispatchError> { 		// closure will return:
-// 		// - `Ok(Option(replacement))` if member was removed and replacement was
-// 		//   replaced.
-// 		// - `Ok(None)` if member was removed but no replacement was found
-// 		// - `Err(_)` if who is not a member.
-// 		let maybe_replacement = <Members<T>>::try_mutate::<_, Error<T>, _>(|members|
-// { 			let remove_index = members
-// 				.binary_search_by(|m| m.who.cmp(who))
-// 				.map_err(|_| Error::<T>::NotMember)?;
-// 			// we remove the member anyhow, regardless of having a runner-up or not.
-// 			let removed = members.remove(remove_index);
+	// TODO: Potentially rewrite
+	// 	/// Attempts to remove a member `who`. If a runner-up exists, it is used as
+	// 	/// the replacement.
+	// 	///
+	// 	/// Returns:
+	// 	///
+	// 	/// - `Ok(true)` if the member was removed and a replacement was found.
+	// 	/// - `Ok(false)` if the member was removed and but no replacement was
+	// 	///   found.
+	// 	/// - `Err(_)` if the member was no found.
+	// 	///
+	// 	/// Both `Members` and `RunnersUp` storage is updated accordingly.
+	// 	/// `T::ChangeMember` is called if needed. If `slash` is true, the deposit
+	// 	/// of the potentially removed member is slashed, else, it is unreserved.
+	// 	///
+	// 	/// ### Note: Prime preservation
+	// 	///
+	// 	/// This function attempts to preserve the prime. If the removed members is
+	// 	/// not the prime, it is set again via [`Config::ChangeMembers`].
+	// 	fn remove_and_replace_member(who: &T::AccountId, slash: bool) -> Result<bool,
+	// DispatchError> { 		// closure will return:
+	// 		// - `Ok(Option(replacement))` if member was removed and replacement was
+	// 		//   replaced.
+	// 		// - `Ok(None)` if member was removed but no replacement was found
+	// 		// - `Err(_)` if who is not a member.
+	// 		let maybe_replacement = <Members<T>>::try_mutate::<_, Error<T>, _>(|members|
+	// { 			let remove_index = members
+	// 				.binary_search_by(|m| m.who.cmp(who))
+	// 				.map_err(|_| Error::<T>::NotMember)?;
+	// 			// we remove the member anyhow, regardless of having a runner-up or not.
+	// 			let removed = members.remove(remove_index);
 
-// 			// slash or unreserve
-// 			if slash {
-// 				let (imbalance, _remainder) = T::Currency::slash_reserved(who,
-// removed.deposit); 				debug_assert!(_remainder.is_zero());
-// 				T::LoserCandidate::on_unbalanced(imbalance);
-// 				Self::deposit_event(Event::SeatHolderSlashed(who.clone(), removed.deposit));
-// 			} else {
-// 				T::Currency::unreserve(who, removed.deposit);
-// 			}
+	// 			// slash or unreserve
+	// 			if slash {
+	// 				let (imbalance, _remainder) = T::Currency::slash_reserved(who,
+	// removed.deposit); 				debug_assert!(_remainder.is_zero());
+	// 				T::LoserCandidate::on_unbalanced(imbalance);
+	// 				Self::deposit_event(Event::SeatHolderSlashed(who.clone(), removed.deposit));
+	// 			} else {
+	// 				T::Currency::unreserve(who, removed.deposit);
+	// 			}
 
-// 			let maybe_next_best = <RunnersUp<T>>::mutate(|r| r.pop()).map(|next_best| {
-// 				// defensive-only: Members and runners-up are disjoint. This will always be
-// err 				// and give us an index to insert.
-// 				if let Err(index) = members.binary_search_by(|m| m.who.cmp(&next_best.who)) {
-// 					members.insert(index, next_best.clone());
-// 				} else {
-// 					// overlap. This can never happen. If so, it seems like our intended
-// replacement 					// is already a member, so not much more to do.
-// 					log::error!(
-// 						target: "runtime::elections-phragmen",
-// 						"A member seems to also be a runner-up.",
-// 					);
-// 				}
-// 				next_best
-// 			});
-// 			Ok(maybe_next_best)
-// 		})?;
+	// 			let maybe_next_best = <RunnersUp<T>>::mutate(|r| r.pop()).map(|next_best| {
+	// 				// defensive-only: Members and runners-up are disjoint. This will always be
+	// err 				// and give us an index to insert.
+	// 				if let Err(index) = members.binary_search_by(|m| m.who.cmp(&next_best.who)) {
+	// 					members.insert(index, next_best.clone());
+	// 				} else {
+	// 					// overlap. This can never happen. If so, it seems like our intended
+	// replacement 					// is already a member, so not much more to do.
+	// 					log::error!(
+	// 						target: "runtime::elections-phragmen",
+	// 						"A member seems to also be a runner-up.",
+	// 					);
+	// 				}
+	// 				next_best
+	// 			});
+	// 			Ok(maybe_next_best)
+	// 		})?;
 
-// 		let remaining_member_ids_sorted = Self::members().into_iter().map(|x|
-// x.who.clone()).collect::<Vec<_>>(); 		let outgoing = &[who.clone()];
-// 		let maybe_current_prime = T::ChangeMembers::get_prime();
-// 		let return_value = match maybe_replacement {
-// 			// member ids are already sorted, other two elements have one item.
-// 			Some(incoming) => {
-// 				T::ChangeMembers::change_members_sorted(&[incoming.who], outgoing,
-// &remaining_member_ids_sorted[..]); 				true
-// 			}
-// 			None => {
-// 				T::ChangeMembers::change_members_sorted(&[], outgoing,
-// &remaining_member_ids_sorted[..]); 				false
-// 			}
-// 		};
+	// 		let remaining_member_ids_sorted = Self::members().into_iter().map(|x|
+	// x.who.clone()).collect::<Vec<_>>(); 		let outgoing = &[who.clone()];
+	// 		let maybe_current_prime = T::ChangeMembers::get_prime();
+	// 		let return_value = match maybe_replacement {
+	// 			// member ids are already sorted, other two elements have one item.
+	// 			Some(incoming) => {
+	// 				T::ChangeMembers::change_members_sorted(&[incoming.who], outgoing,
+	// &remaining_member_ids_sorted[..]); 				true
+	// 			}
+	// 			None => {
+	// 				T::ChangeMembers::change_members_sorted(&[], outgoing,
+	// &remaining_member_ids_sorted[..]); 				false
+	// 			}
+	// 		};
 
-// 		// if there was a prime before and they are not the one being removed, then
-// set 		// them again.
-// 		if let Some(current_prime) = maybe_current_prime {
-// 			if &current_prime != who {
-// 				T::ChangeMembers::set_prime(Some(current_prime));
-// 			}
-// 		}
+	// 		// if there was a prime before and they are not the one being removed, then
+	// set 		// them again.
+	// 		if let Some(current_prime) = maybe_current_prime {
+	// 			if &current_prime != who {
+	// 				T::ChangeMembers::set_prime(Some(current_prime));
+	// 			}
+	// 		}
 
-// 		Ok(return_value)
-// 	}
+	// 		Ok(return_value)
+	// 	}
 
-// 	/// Check if `who` is a candidate. It returns the insert index if the
-// 	/// element does not exists as an error.
-// 	fn is_candidate(who: &T::AccountId) -> Result<(), usize> {
-// 		Self::candidates().binary_search_by(|c| c.0.cmp(who)).map(|_| ())
-// 	}
+	// TODO: Potentially rewrite
+	// 	/// Check if `who` is a candidate. It returns the insert index if the
+	// 	/// element does not exists as an error.
+	// 	fn is_candidate(who: &T::AccountId) -> Result<(), usize> {
+	// 		Self::candidates().binary_search_by(|c| c.0.cmp(who)).map(|_| ())
+	// 	}
 
-// 	/// Check if `who` is a voter. It may or may not be a _current_ one.
-// 	fn is_voter(who: &T::AccountId) -> bool {
-// 		Voting::<T>::contains_key(who)
-// 	}
+	/// Check if `who` is a voter. It may or may not be a _current_ one.
+	fn is_voter(who: &T::AccountId) -> bool {
+		Voting::<T>::contains_key(who)
+	}
 
-// 	/// Check if `who` is currently an active member.
-// 	fn is_member(who: &T::AccountId) -> bool {
-// 		Self::members().binary_search_by(|m| m.who.cmp(who)).is_ok()
-// 	}
+	// TODO: Potentially rewrite
+	// 	/// Check if `who` is currently an active member.
+	// 	fn is_member(who: &T::AccountId) -> bool {
+	// 		Self::members().binary_search_by(|m| m.who.cmp(who)).is_ok()
+	// 	}
 
-// 	/// Check if `who` is currently an active runner-up.
-// 	fn is_runner_up(who: &T::AccountId) -> bool {
-// 		Self::runners_up().iter().position(|r| &r.who == who).is_some()
-// 	}
+	// TODO: Potentially rewrite
+	// 	/// Check if `who` is currently an active runner-up.
+	// 	fn is_runner_up(who: &T::AccountId) -> bool {
+	// 		Self::runners_up().iter().position(|r| &r.who == who).is_some()
+	// 	}
 
-// 	/// Get the members' account ids.
-// 	fn members_ids() -> Vec<T::AccountId> {
-// 		Self::members()
-// 			.into_iter()
-// 			.map(|m| m.who)
-// 			.collect::<Vec<T::AccountId>>()
-// 	}
+	// TODO: Potentially rewrite
+	// 	/// Get the members' account ids.
+	// 	fn members_ids() -> Vec<T::AccountId> {
+	// 		Self::members()
+	// 			.into_iter()
+	// 			.map(|m| m.who)
+	// 			.collect::<Vec<T::AccountId>>()
+	// 	}
 
-// 	/// Get a concatenation of previous members and runners-up and their
-// 	/// deposits.
-// 	///
-// 	/// These accounts are essentially treated as candidates.
-// 	fn implicit_candidates_with_deposit() -> Vec<(T::AccountId, BalanceOf<T>)> {
-// 		// invariant: these two are always without duplicates.
-// 		Self::members()
-// 			.into_iter()
-// 			.map(|m| (m.who, m.deposit))
-// 			.chain(Self::runners_up().into_iter().map(|r| (r.who, r.deposit)))
-// 			.collect::<Vec<_>>()
-// 	}
+	// TODO: Potentially rewrite
+	// 	/// Get a concatenation of previous members and runners-up and their
+	// 	/// deposits.
+	// 	///
+	// 	/// These accounts are essentially treated as candidates.
+	// 	fn implicit_candidates_with_deposit() -> Vec<(T::AccountId, BalanceOf<T>)> {
+	// 		// invariant: these two are always without duplicates.
+	// 		Self::members()
+	// 			.into_iter()
+	// 			.map(|m| (m.who, m.deposit))
+	// 			.chain(Self::runners_up().into_iter().map(|r| (r.who, r.deposit)))
+	// 			.collect::<Vec<_>>()
+	// 	}
 
-// 	/// Check if `votes` will correspond to a defunct voter. As no origin is
-// 	/// part of the inputs, this function does not check the origin at all.
-// 	///
-// 	/// O(NLogM) with M candidates and `who` having voted for `N` of them.
-// 	/// Reads Members, RunnersUp, Candidates and Voting(who) from database.
-// 	fn is_defunct_voter(votes: &[T::AccountId]) -> bool {
-// 		votes
-// 			.iter()
-// 			.all(|v| !Self::is_member(v) && !Self::is_runner_up(v) &&
-// !Self::is_candidate(v).is_ok()) 	}
+	// TODO: Potentially rewrite
+	// 	/// Check if `votes` will correspond to a defunct voter. As no origin is
+	// 	/// part of the inputs, this function does not check the origin at all.
+	// 	///
+	// 	/// O(NLogM) with M candidates and `who` having voted for `N` of them.
+	// 	/// Reads Members, RunnersUp, Candidates and Voting(who) from database.
+	// 	fn is_defunct_voter(votes: &[T::AccountId]) -> bool {
+	// 		votes
+	// 			.iter()
+	// 			.all(|v| !Self::is_member(v) && !Self::is_runner_up(v) &&
+	// !Self::is_candidate(v).is_ok()) 	}
 
-// 	/// Remove a certain someone as a voter.
-// 	fn do_remove_voter(who: &T::AccountId) {
-// 		let Voter { deposit, .. } = <Voting<T>>::take(who);
+	/// Remove a certain someone as a voter.
+	fn do_remove_voter(who: &T::AccountId) {
+		let Voter { deposit, .. } = <Voting<T>>::take(who);
 
-// 		// remove storage, lock and unreserve.
-// 		T::Currency::remove_lock(T::PalletId::get(), who);
+		// remove storage, lock and unreserve.
+		T::Currency::remove_lock(T::PalletId::get(), who);
 
-// 		// NOTE: we could check the deposit amount before removing and skip if zero,
-// but 		// it will be a noop anyhow.
-// 		let _remainder = T::Currency::unreserve(who, deposit);
-// 		debug_assert!(_remainder.is_zero());
-// 	}
+		// NOTE: we could check the deposit amount before removing and skip if zero, but
+		// it will be a noop anyhow.
+		let _remainder = T::Currency::unreserve(who, deposit);
+		debug_assert!(_remainder.is_zero());
+	}
 
-// 	/// Run the phragmen election with all required side processes and state
-// 	/// updates, if election succeeds. Else, it will emit an `ElectionError`
-// 	/// event.
-// 	///
-// 	/// Calls the appropriate [`ChangeMembers`] function variant internally.
-// 	fn do_phragmen() -> Weight {
-// 		let desired_seats = T::DesiredMembers::get() as usize;
-// 		let desired_runners_up = T::DesiredRunnersUp::get() as usize;
-// 		let num_to_elect = desired_runners_up + desired_seats;
+	// TODO: Potentially rewrite
+	// 	/// Run the phragmen election with all required side processes and state
+	// 	/// updates, if election succeeds. Else, it will emit an `ElectionError`
+	// 	/// event.
+	// 	///
+	// 	/// Calls the appropriate [`ChangeMembers`] function variant internally.
+	// 	fn do_phragmen() -> Weight {
+	// 		let desired_seats = T::DesiredMembers::get() as usize;
+	// 		let desired_runners_up = T::DesiredRunnersUp::get() as usize;
+	// 		let num_to_elect = desired_runners_up + desired_seats;
 
-// 		let mut candidates_and_deposit = Self::candidates();
-// 		// add all the previous members and runners-up as candidates as well.
-// 		candidates_and_deposit.append(&mut Self::implicit_candidates_with_deposit());
+	// 		let mut candidates_and_deposit = Self::candidates();
+	// 		// add all the previous members and runners-up as candidates as well.
+	// 		candidates_and_deposit.append(&mut Self::implicit_candidates_with_deposit());
 
-// 		if candidates_and_deposit.len().is_zero() {
-// 			Self::deposit_event(Event::EmptyTerm);
-// 			return T::DbWeight::get().reads(5);
-// 		}
+	// 		if candidates_and_deposit.len().is_zero() {
+	// 			Self::deposit_event(Event::EmptyTerm);
+	// 			return T::DbWeight::get().reads(5);
+	// 		}
 
-// 		// All of the new winners that come out of phragmen will thus have a deposit
-// 		// recorded.
-// 		let candidate_ids = candidates_and_deposit
-// 			.iter()
-// 			.map(|(x, _)| x)
-// 			.cloned()
-// 			.collect::<Vec<_>>();
+	// 		// All of the new winners that come out of phragmen will thus have a deposit
+	// 		// recorded.
+	// 		let candidate_ids = candidates_and_deposit
+	// 			.iter()
+	// 			.map(|(x, _)| x)
+	// 			.cloned()
+	// 			.collect::<Vec<_>>();
 
-// 		// helper closures to deal with balance/stake.
-// 		let total_issuance = T::Currency::total_issuance();
-// 		let to_votes = |b: BalanceOf<T>| T::CurrencyToVote::to_vote(b,
-// total_issuance); 		let to_balance = |e: ExtendedBalance|
-// T::CurrencyToVote::to_currency(e, total_issuance);
+	// 		// helper closures to deal with balance/stake.
+	// 		let total_issuance = T::Currency::total_issuance();
+	// 		let to_votes = |b: BalanceOf<T>| T::CurrencyToVote::to_vote(b,
+	// total_issuance); 		let to_balance = |e: ExtendedBalance|
+	// T::CurrencyToVote::to_currency(e, total_issuance);
 
-// 		let mut num_edges: u32 = 0;
-// 		// used for prime election.
-// 		let voters_and_stakes = Voting::<T>::iter()
-// 			.map(|(voter, Voter { stake, votes, .. })| (voter, stake, votes))
-// 			.collect::<Vec<_>>();
-// 		// used for phragmen.
-// 		let voters_and_votes = voters_and_stakes
-// 			.iter()
-// 			.cloned()
-// 			.map(|(voter, stake, votes)| {
-// 				num_edges = num_edges.saturating_add(votes.len() as u32);
-// 				(voter, to_votes(stake), votes)
-// 			})
-// 			.collect::<Vec<_>>();
+	// 		let mut num_edges: u32 = 0;
+	// 		// used for prime election.
+	// 		let voters_and_stakes = Voting::<T>::iter()
+	// 			.map(|(voter, Voter { stake, votes, .. })| (voter, stake, votes))
+	// 			.collect::<Vec<_>>();
+	// 		// used for phragmen.
+	// 		let voters_and_votes = voters_and_stakes
+	// 			.iter()
+	// 			.cloned()
+	// 			.map(|(voter, stake, votes)| {
+	// 				num_edges = num_edges.saturating_add(votes.len() as u32);
+	// 				(voter, to_votes(stake), votes)
+	// 			})
+	// 			.collect::<Vec<_>>();
 
-// 		let weight_candidates = candidates_and_deposit.len() as u32;
-// 		let weight_voters = voters_and_votes.len() as u32;
-// 		let weight_edges = num_edges;
-// 		let _ = sp_npos_elections::seq_phragmen::<T::AccountId, Perbill>(
-// 			num_to_elect,
-// 			candidate_ids,
-// 			voters_and_votes.clone(),
-// 			None,
-// 		)
-// 		.map(
-// 			|ElectionResult {
-// 			     winners,
-// 			     assignments: _,
-// 			 }| {
-// 				// this is already sorted by id.
-// 				let old_members_ids_sorted = <Members<T>>::take()
-// 					.into_iter()
-// 					.map(|m| m.who)
-// 					.collect::<Vec<T::AccountId>>();
-// 				// this one needs a sort by id.
-// 				let mut old_runners_up_ids_sorted = <RunnersUp<T>>::take()
-// 					.into_iter()
-// 					.map(|r| r.who)
-// 					.collect::<Vec<T::AccountId>>();
-// 				old_runners_up_ids_sorted.sort();
+	// 		let weight_candidates = candidates_and_deposit.len() as u32;
+	// 		let weight_voters = voters_and_votes.len() as u32;
+	// 		let weight_edges = num_edges;
+	// 		let _ = sp_npos_elections::seq_phragmen::<T::AccountId, Perbill>(
+	// 			num_to_elect,
+	// 			candidate_ids,
+	// 			voters_and_votes.clone(),
+	// 			None,
+	// 		)
+	// 		.map(
+	// 			|ElectionResult {
+	// 			     winners,
+	// 			     assignments: _,
+	// 			 }| {
+	// 				// this is already sorted by id.
+	// 				let old_members_ids_sorted = <Members<T>>::take()
+	// 					.into_iter()
+	// 					.map(|m| m.who)
+	// 					.collect::<Vec<T::AccountId>>();
+	// 				// this one needs a sort by id.
+	// 				let mut old_runners_up_ids_sorted = <RunnersUp<T>>::take()
+	// 					.into_iter()
+	// 					.map(|r| r.who)
+	// 					.collect::<Vec<T::AccountId>>();
+	// 				old_runners_up_ids_sorted.sort();
 
-// 				// filter out those who end up with no backing stake.
-// 				let mut new_set_with_stake = winners
-// 					.into_iter()
-// 					.filter_map(|(m, b)| if b.is_zero() { None } else { Some((m, to_balance(b)))
-// }) 					.collect::<Vec<(T::AccountId, BalanceOf<T>)>>();
+	// 				// filter out those who end up with no backing stake.
+	// 				let mut new_set_with_stake = winners
+	// 					.into_iter()
+	// 					.filter_map(|(m, b)| if b.is_zero() { None } else { Some((m, to_balance(b)))
+	// }) 					.collect::<Vec<(T::AccountId, BalanceOf<T>)>>();
 
-// 				// OPTIMIZATION NOTE: we could bail out here if `new_set.len() == 0`. There
-// 				// isn't much left to do. Yet, re-arranging the code would require
-// duplicating 				// the slashing of exposed candidates, cleaning any previous
-// members, and so on. 				// For now, in favor of readability and veracity, we keep
-// it simple.
+	// 				// OPTIMIZATION NOTE: we could bail out here if `new_set.len() == 0`. There
+	// 				// isn't much left to do. Yet, re-arranging the code would require
+	// duplicating 				// the slashing of exposed candidates, cleaning any previous
+	// members, and so on. 				// For now, in favor of readability and veracity, we keep
+	// it simple.
 
-// 				// split new set into winners and runners up.
-// 				let split_point = desired_seats.min(new_set_with_stake.len());
-// 				let mut new_members_sorted_by_id =
-// new_set_with_stake.drain(..split_point).collect::<Vec<_>>();
-// 				new_members_sorted_by_id.sort_by(|i, j| i.0.cmp(&j.0));
+	// 				// split new set into winners and runners up.
+	// 				let split_point = desired_seats.min(new_set_with_stake.len());
+	// 				let mut new_members_sorted_by_id =
+	// new_set_with_stake.drain(..split_point).collect::<Vec<_>>();
+	// 				new_members_sorted_by_id.sort_by(|i, j| i.0.cmp(&j.0));
 
-// 				// all the rest will be runners-up
-// 				new_set_with_stake.reverse();
-// 				let new_runners_up_sorted_by_rank = new_set_with_stake;
-// 				let mut new_runners_up_ids_sorted = new_runners_up_sorted_by_rank
-// 					.iter()
-// 					.map(|(r, _)| r.clone())
-// 					.collect::<Vec<_>>();
-// 				new_runners_up_ids_sorted.sort();
+	// 				// all the rest will be runners-up
+	// 				new_set_with_stake.reverse();
+	// 				let new_runners_up_sorted_by_rank = new_set_with_stake;
+	// 				let mut new_runners_up_ids_sorted = new_runners_up_sorted_by_rank
+	// 					.iter()
+	// 					.map(|(r, _)| r.clone())
+	// 					.collect::<Vec<_>>();
+	// 				new_runners_up_ids_sorted.sort();
 
-// 				// Now we select a prime member using a [Borda
-// 				// count](https://en.wikipedia.org/wiki/Borda_count). We weigh everyone's vote for
-// 				// that new member by a multiplier based on the order of the votes. i.e. the
-// 				// first person a voter votes for gets a 16x multiplier, the next person gets
-// a 				// 15x multiplier, an so on... (assuming `MAXIMUM_VOTE` = 16)
-// 				let mut prime_votes = new_members_sorted_by_id
-// 					.iter()
-// 					.map(|c| (&c.0, BalanceOf::<T>::zero()))
-// 					.collect::<Vec<_>>();
-// 				for (_, stake, votes) in voters_and_stakes.into_iter() {
-// 					for (vote_multiplier, who) in votes
-// 						.iter()
-// 						.enumerate()
-// 						.map(|(vote_position, who)| ((MAXIMUM_VOTE - vote_position) as u32, who))
-// 					{
-// 						if let Ok(i) = prime_votes.binary_search_by_key(&who, |k| k.0) {
-// 							prime_votes[i].1 = prime_votes[i]
-// 								.1
-// 								.saturating_add(stake.saturating_mul(vote_multiplier.into()));
-// 						}
-// 					}
-// 				}
-// 				// We then select the new member with the highest weighted stake. In the case
-// of 				// a tie, the last person in the list with the tied score is selected.
-// This is 				// the person with the "highest" account id based on the sort above.
-// 				let prime = prime_votes.into_iter().max_by_key(|x| x.1).map(|x| x.0.clone());
+	// 				// Now we select a prime member using a [Borda
+	// 				// count](https://en.wikipedia.org/wiki/Borda_count). We weigh everyone's vote for
+	// 				// that new member by a multiplier based on the order of the votes. i.e. the
+	// 				// first person a voter votes for gets a 16x multiplier, the next person gets
+	// a 				// 15x multiplier, an so on... (assuming `MAXIMUM_VOTE` = 16)
+	// 				let mut prime_votes = new_members_sorted_by_id
+	// 					.iter()
+	// 					.map(|c| (&c.0, BalanceOf::<T>::zero()))
+	// 					.collect::<Vec<_>>();
+	// 				for (_, stake, votes) in voters_and_stakes.into_iter() {
+	// 					for (vote_multiplier, who) in votes
+	// 						.iter()
+	// 						.enumerate()
+	// 						.map(|(vote_position, who)| ((MAXIMUM_VOTE - vote_position) as u32, who))
+	// 					{
+	// 						if let Ok(i) = prime_votes.binary_search_by_key(&who, |k| k.0) {
+	// 							prime_votes[i].1 = prime_votes[i]
+	// 								.1
+	// 								.saturating_add(stake.saturating_mul(vote_multiplier.into()));
+	// 						}
+	// 					}
+	// 				}
+	// 				// We then select the new member with the highest weighted stake. In the case
+	// of 				// a tie, the last person in the list with the tied score is selected.
+	// This is 				// the person with the "highest" account id based on the sort above.
+	// 				let prime = prime_votes.into_iter().max_by_key(|x| x.1).map(|x| x.0.clone());
 
-// 				// new_members_sorted_by_id is sorted by account id.
-// 				let new_members_ids_sorted = new_members_sorted_by_id
-// 					.iter()
-// 					.map(|(m, _)| m.clone())
-// 					.collect::<Vec<T::AccountId>>();
+	// 				// new_members_sorted_by_id is sorted by account id.
+	// 				let new_members_ids_sorted = new_members_sorted_by_id
+	// 					.iter()
+	// 					.map(|(m, _)| m.clone())
+	// 					.collect::<Vec<T::AccountId>>();
 
-// 				// report member changes. We compute diff because we need the outgoing list.
-// 				let (incoming, outgoing) =
-// 					T::ChangeMembers::compute_members_diff_sorted(&new_members_ids_sorted,
-// &old_members_ids_sorted); 				T::ChangeMembers::change_members_sorted(&incoming,
-// &outgoing, &new_members_ids_sorted); 				T::ChangeMembers::set_prime(prime);
+	// 				// report member changes. We compute diff because we need the outgoing list.
+	// 				let (incoming, outgoing) =
+	// 					T::ChangeMembers::compute_members_diff_sorted(&new_members_ids_sorted,
+	// &old_members_ids_sorted); 				T::ChangeMembers::change_members_sorted(&incoming,
+	// &outgoing, &new_members_ids_sorted); 				T::ChangeMembers::set_prime(prime);
 
-// 				// All candidates/members/runners-up who are no longer retaining a position
-// as a 				// seat holder will lose their bond.
-// 				candidates_and_deposit.iter().for_each(|(c, d)| {
-// 					if new_members_ids_sorted.binary_search(c).is_err()
-// 						&& new_runners_up_ids_sorted.binary_search(c).is_err()
-// 					{
-// 						let (imbalance, _) = T::Currency::slash_reserved(c, *d);
-// 						T::LoserCandidate::on_unbalanced(imbalance);
-// 						Self::deposit_event(Event::CandidateSlashed(c.clone(), *d));
-// 					}
-// 				});
+	// 				// All candidates/members/runners-up who are no longer retaining a position
+	// as a 				// seat holder will lose their bond.
+	// 				candidates_and_deposit.iter().for_each(|(c, d)| {
+	// 					if new_members_ids_sorted.binary_search(c).is_err()
+	// 						&& new_runners_up_ids_sorted.binary_search(c).is_err()
+	// 					{
+	// 						let (imbalance, _) = T::Currency::slash_reserved(c, *d);
+	// 						T::LoserCandidate::on_unbalanced(imbalance);
+	// 						Self::deposit_event(Event::CandidateSlashed(c.clone(), *d));
+	// 					}
+	// 				});
 
-// 				// write final values to storage.
-// 				let deposit_of_candidate = |x: &T::AccountId| -> BalanceOf<T> {
-// 					// defensive-only. This closure is used against the new members and new
-// 					// runners-up, both of which are phragmen winners and thus must have deposit.
-// 					candidates_and_deposit
-// 						.iter()
-// 						.find_map(|(c, d)| if c == x { Some(*d) } else { None })
-// 						.unwrap_or_default()
-// 				};
-// 				// fetch deposits from the one recorded one. This will make sure that a
-// 				// candidate who submitted candidacy before a change to candidacy deposit
-// will 				// have the correct amount recorded.
-// 				<Members<T>>::put(
-// 					new_members_sorted_by_id
-// 						.iter()
-// 						.map(|(who, stake)| SeatHolder {
-// 							deposit: deposit_of_candidate(&who),
-// 							who: who.clone(),
-// 							stake: stake.clone(),
-// 						})
-// 						.collect::<Vec<_>>(),
-// 				);
-// 				<RunnersUp<T>>::put(
-// 					new_runners_up_sorted_by_rank
-// 						.into_iter()
-// 						.map(|(who, stake)| SeatHolder {
-// 							deposit: deposit_of_candidate(&who),
-// 							who,
-// 							stake,
-// 						})
-// 						.collect::<Vec<_>>(),
-// 				);
+	// 				// write final values to storage.
+	// 				let deposit_of_candidate = |x: &T::AccountId| -> BalanceOf<T> {
+	// 					// defensive-only. This closure is used against the new members and new
+	// 					// runners-up, both of which are phragmen winners and thus must have deposit.
+	// 					candidates_and_deposit
+	// 						.iter()
+	// 						.find_map(|(c, d)| if c == x { Some(*d) } else { None })
+	// 						.unwrap_or_default()
+	// 				};
+	// 				// fetch deposits from the one recorded one. This will make sure that a
+	// 				// candidate who submitted candidacy before a change to candidacy deposit
+	// will 				// have the correct amount recorded.
+	// 				<Members<T>>::put(
+	// 					new_members_sorted_by_id
+	// 						.iter()
+	// 						.map(|(who, stake)| SeatHolder {
+	// 							deposit: deposit_of_candidate(&who),
+	// 							who: who.clone(),
+	// 							stake: stake.clone(),
+	// 						})
+	// 						.collect::<Vec<_>>(),
+	// 				);
+	// 				<RunnersUp<T>>::put(
+	// 					new_runners_up_sorted_by_rank
+	// 						.into_iter()
+	// 						.map(|(who, stake)| SeatHolder {
+	// 							deposit: deposit_of_candidate(&who),
+	// 							who,
+	// 							stake,
+	// 						})
+	// 						.collect::<Vec<_>>(),
+	// 				);
 
-// 				// clean candidates.
-// 				<Candidates<T>>::kill();
+	// 				// clean candidates.
+	// 				<Candidates<T>>::kill();
 
-// 				Self::deposit_event(Event::NewTerm(new_members_sorted_by_id));
-// 				<ElectionRounds<T>>::mutate(|v| *v += 1);
-// 			},
-// 		)
-// 		.map_err(|e| {
-// 			log::error!(
-// 				target: "runtime::elections-phragmen",
-// 				"Failed to run election [{:?}].",
-// 				e,
-// 			);
-// 			Self::deposit_event(Event::ElectionError);
-// 		});
+	// 				Self::deposit_event(Event::NewTerm(new_members_sorted_by_id));
+	// 				<ElectionRounds<T>>::mutate(|v| *v += 1);
+	// 			},
+	// 		)
+	// 		.map_err(|e| {
+	// 			log::error!(
+	// 				target: "runtime::elections-phragmen",
+	// 				"Failed to run election [{:?}].",
+	// 				e,
+	// 			);
+	// 			Self::deposit_event(Event::ElectionError);
+	// 		});
 
-// 		T::WeightInfo::election_phragmen(weight_candidates, weight_voters,
-// weight_edges) 	}
-// }
+	// 		T::WeightInfo::election_phragmen(weight_candidates, weight_voters,
+	// weight_edges) 	}
+	// }
 
-// impl<T: Config> Contains<T::AccountId> for Pallet<T> {
-// 	fn contains(who: &T::AccountId) -> bool {
-// 		Self::is_member(who)
-// 	}
-// }
+	// TODO: Potentially rewrite
+	// impl<T: Config> Contains<T::AccountId> for Pallet<T> {
+	// 	fn contains(who: &T::AccountId) -> bool {
+	// 		Self::is_member(who)
+	// 	}
+	// }
 
-// impl<T: Config> SortedMembers<T::AccountId> for Pallet<T> {
-// 	fn contains(who: &T::AccountId) -> bool {
-// 		Self::is_member(who)
-// 	}
+	// TODO: Potentially rewrite
+	// impl<T: Config> SortedMembers<T::AccountId> for Pallet<T> {
+	// 	fn contains(who: &T::AccountId) -> bool {
+	// 		Self::is_member(who)
+	// 	}
 
-// 	fn sorted_members() -> Vec<T::AccountId> {
-// 		Self::members_ids()
-// 	}
+	// TODO: Potentially rewrite
+	// 	fn sorted_members() -> Vec<T::AccountId> {
+	// 		Self::members_ids()
+	// 	}
 
-// 	// A special function to populate members in this pallet for passing Origin
-// 	// checks in runtime benchmarking.
-// 	#[cfg(feature = "runtime-benchmarks")]
-// 	fn add(who: &T::AccountId) {
-// 		Members::<T>::mutate(|members| match members.binary_search_by(|m|
-// m.who.cmp(who)) { 			Ok(_) => (),
-// 			Err(pos) => members.insert(
-// 				pos,
-// 				SeatHolder {
-// 					who: who.clone(),
-// 					..Default::default()
-// 				},
-// 			),
-// 		})
-// 	}
-// }
+	// TODO: Potentially rewrite
+	// 	// A special function to populate members in this pallet for passing Origin
+	// 	// checks in runtime benchmarking.
+	// 	#[cfg(feature = "runtime-benchmarks")]
+	// 	fn add(who: &T::AccountId) {
+	// 		Members::<T>::mutate(|members| match members.binary_search_by(|m|
+	// m.who.cmp(who)) { 			Ok(_) => (),
+	// 			Err(pos) => members.insert(
+	// 				pos,
+	// 				SeatHolder {
+	// 					who: who.clone(),
+	// 					..Default::default()
+	// 				},
+	// 			),
+	// 		})
+	// 	}
+	// }
 
-// impl<T: Config> ContainsLengthBound for Pallet<T> {
-// 	fn min_len() -> usize {
-// 		0
-// 	}
+	// TODO: Potentially rewrite
+	// impl<T: Config> ContainsLengthBound for Pallet<T> {
+	// 	fn min_len() -> usize {
+	// 		0
+	// 	}
 
-// 	/// Implementation uses a parameter type so calling is cost-free.
-// 	fn max_len() -> usize {
-// 		T::DesiredMembers::get() as usize
-// 	}
-// }
+	// TODO: Potentially rewrite
+	// 	/// Implementation uses a parameter type so calling is cost-free.
+	// 	fn max_len() -> usize {
+	// 		T::DesiredMembers::get() as usize
+	// 	}
+}
