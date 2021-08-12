@@ -131,17 +131,6 @@ fn generate_base_did_creation_details<T: Config>(did: DidIdentifierOf<T>) -> Did
 	}
 }
 
-fn generate_base_did_update_details<T: Config>(_did: DidIdentifierOf<T>) -> DidUpdateDetails<T> {
-	DidUpdateDetails {
-		new_authentication_key: None,
-		new_key_agreement_keys: BTreeSet::new(),
-		attestation_key_update: DidFragmentUpdateAction::default(),
-		delegation_key_update: DidFragmentUpdateAction::default(),
-		service_endpoints_update: DidFragmentUpdateAction::default(),
-		public_keys_to_remove: BTreeSet::new(),
-	}
-}
-
 // Must always be dispatched with the DID authentication key
 fn generate_base_did_call_operation<T: Config>(did: DidIdentifierOf<T>) -> DidAuthorizedCallOperation<T> {
 	let test_call = <T as Config>::Call::get_call_for_did_call_benchmark();
@@ -312,129 +301,7 @@ benchmarks! {
 		assert_eq!(stored_did.last_tx_counter, 0u64);
 	}
 
-	update_ed25519_keys {
-		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
-		let m in 1 .. T::MaxVerificationKeysToRevoke::get();
-		let u in (DEFAULT_URL_SCHEME.len().saturated_into::<u32>()) .. T::MaxUrlLength::get();
-		let c in 1 .. T::MaxEndpointUrlsCount::get();
-
-		let did_public_auth_key = get_ed25519_public_authentication_key();
-		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
-		// To cover cases in which m > n without failing, we add m + n keys to the set of keys before the update operation
-		let did_key_agreement_keys = get_key_agreement_keys(m + n);
-
-		let mut did_details = get_did_base_details(DidVerificationKey::from(did_public_auth_key));
-		did_details.add_key_agreement_keys(did_key_agreement_keys, BlockNumberOf::<T>::default());
-		Did::<T>::insert(&did_subject, did_details);
-
-		let new_did_public_auth_key = get_ed25519_public_authentication_key();
-		let new_key_agreement_keys = get_key_agreement_keys(n);
-		let new_did_public_att_key = get_ed25519_public_attestation_key();
-		let new_did_public_del_key = get_ed25519_public_delegation_key();
-		// Public keys obtained are generated using the same logic as the key agreement keys, so that we are sure they do not generate KeyNotPresent errors
-		let public_keys_to_remove = get_public_keys::<T>(m);
-		let service_endpoints = get_service_endpoints(c, u);
-
-		let mut did_update_details = generate_base_did_update_details::<T>(did_subject.clone());
-		did_update_details.new_authentication_key = Some(DidVerificationKey::from(new_did_public_auth_key));
-		did_update_details.new_key_agreement_keys = new_key_agreement_keys;
-		did_update_details.attestation_key_update = DidFragmentUpdateAction::Change(DidVerificationKey::from(new_did_public_att_key));
-		did_update_details.delegation_key_update = DidFragmentUpdateAction::Change(DidVerificationKey::from(new_did_public_del_key));
-		did_update_details.public_keys_to_remove = public_keys_to_remove;
-		did_update_details.service_endpoints_update = DidFragmentUpdateAction::Change(service_endpoints.clone());
-
-		let did_update_signature = ed25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_update_details.encode().as_ref()).expect("Failed to create DID signature from raw ed25519 signature.");
-	}: update(RawOrigin::Signed(did_subject.clone()), did_update_details.clone())
-	verify {
-		let stored_did = Did::<T>::get(&did_subject).expect("DID should be stored on chain.");
-		let stored_key_agreement_keys_ids = stored_did.get_key_agreement_keys_ids();
-
-		let expected_authentication_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(new_did_public_auth_key).into());
-		let expected_delegation_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(new_did_public_del_key).into());
-		let expected_attestation_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(new_did_public_att_key).into());
-
-		assert_eq!(
-			stored_did.get_authentication_key_id(),
-			expected_authentication_key_id
-		);
-		for new_key in did_update_details.new_key_agreement_keys.iter().copied() {
-			assert!(
-				stored_key_agreement_keys_ids.contains(&utils::calculate_key_id::<T>(&new_key.into())))
-		}
-		assert_eq!(
-			stored_did.get_delegation_key_id(),
-			&Some(expected_delegation_key_id)
-		);
-		assert_eq!(
-			stored_did.get_attestation_key_id(),
-			&Some(expected_attestation_key_id)
-		);
-		assert_eq!(stored_did.service_endpoints, Some(service_endpoints));
-	}
-
-	update_sr25519_keys {
-		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
-		let m in 1 .. T::MaxVerificationKeysToRevoke::get();
-		let u in (DEFAULT_URL_SCHEME.len().saturated_into::<u32>()) .. T::MaxUrlLength::get();
-		let c in 1 .. T::MaxEndpointUrlsCount::get();
-
-		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
-
-		let did_public_auth_key = get_sr25519_public_authentication_key();
-		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
-		// To cover cases in which m > n without failing, we add m + n keys to the set of keys before the update operation
-		let did_key_agreement_keys = get_key_agreement_keys(m + n);
-
-		let mut did_details = get_did_base_details(DidVerificationKey::from(did_public_auth_key));
-		did_details.add_key_agreement_keys(did_key_agreement_keys, BlockNumberOf::<T>::default());
-		Did::<T>::insert(&did_subject, did_details);
-
-		let new_did_public_auth_key = get_sr25519_public_authentication_key();
-		let new_key_agreement_keys = get_key_agreement_keys(n);
-		let new_did_public_att_key = get_sr25519_public_attestation_key();
-		let new_did_public_del_key = get_sr25519_public_delegation_key();
-		// Public keys obtained are generated using the same logic as the key agreement keys, so that we are sure they do not generate KeyNotPresent errors
-		let public_keys_to_remove = get_public_keys::<T>(m);
-		let service_endpoints = get_service_endpoints(c, u);
-
-		let mut did_update_details = generate_base_did_update_details::<T>(did_subject.clone());
-		did_update_details.new_authentication_key = Some(DidVerificationKey::from(new_did_public_auth_key));
-		did_update_details.new_key_agreement_keys = new_key_agreement_keys;
-		did_update_details.attestation_key_update = DidFragmentUpdateAction::Change(DidVerificationKey::from(new_did_public_att_key));
-		did_update_details.delegation_key_update = DidFragmentUpdateAction::Change(DidVerificationKey::from(new_did_public_del_key));
-		did_update_details.public_keys_to_remove = public_keys_to_remove;
-		did_update_details.service_endpoints_update = DidFragmentUpdateAction::Change(service_endpoints.clone());
-
-		let did_update_signature = sr25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_update_details.encode().as_ref()).expect("Failed to create DID signature from raw sr25519 signature.");
-	}: update(RawOrigin::Signed(did_subject.clone()), did_update_details.clone())
-	verify {
-		let stored_did = Did::<T>::get(&did_subject).expect("DID should be stored on chain.");
-		let stored_key_agreement_keys_ids = stored_did.get_key_agreement_keys_ids();
-
-		let expected_authentication_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(new_did_public_auth_key).into());
-		let expected_delegation_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(new_did_public_del_key).into());
-		let expected_attestation_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(new_did_public_att_key).into());
-
-		assert_eq!(
-			stored_did.get_authentication_key_id(),
-			expected_authentication_key_id
-		);
-		for new_key in did_update_details.new_key_agreement_keys.iter().copied() {
-			assert!(
-				stored_key_agreement_keys_ids.contains(&utils::calculate_key_id::<T>(&new_key.into())))
-		}
-		assert_eq!(
-			stored_did.get_delegation_key_id(),
-			&Some(expected_delegation_key_id)
-		);
-		assert_eq!(
-			stored_did.get_attestation_key_id(),
-			&Some(expected_attestation_key_id)
-		);
-		assert_eq!(stored_did.service_endpoints, Some(service_endpoints));
-	}
-
-	update_ecdsa_keys {
+	set_authentication_key {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
 		let m in 1 .. T::MaxVerificationKeysToRevoke::get();
 		let u in (DEFAULT_URL_SCHEME.len().saturated_into::<u32>()) .. T::MaxUrlLength::get();
@@ -452,48 +319,16 @@ benchmarks! {
 		Did::<T>::insert(&did_subject, did_details);
 
 		let new_did_public_auth_key = get_ecdsa_public_authentication_key();
-		let new_key_agreement_keys = get_key_agreement_keys(n);
-		let new_did_public_att_key = get_ecdsa_public_attestation_key();
-		let new_did_public_del_key = get_ecdsa_public_delegation_key();
-		// Public keys obtained are generated using the same logic as the key agreement keys, so that we are sure they do not generate KeyNotPresent errors
-		let public_keys_to_remove = get_public_keys::<T>(m);
-		let service_endpoints = get_service_endpoints(c, u);
 
-		let mut did_update_details = generate_base_did_update_details::<T>(did_subject.clone());
-		did_update_details.new_authentication_key = Some(DidVerificationKey::from(new_did_public_auth_key.clone()));
-		did_update_details.new_key_agreement_keys = new_key_agreement_keys;
-		did_update_details.attestation_key_update = DidFragmentUpdateAction::Change(DidVerificationKey::from(new_did_public_att_key.clone()));
-		did_update_details.delegation_key_update = DidFragmentUpdateAction::Change(DidVerificationKey::from(new_did_public_del_key.clone()));
-		did_update_details.public_keys_to_remove = public_keys_to_remove;
-		did_update_details.service_endpoints_update = DidFragmentUpdateAction::Change(service_endpoints.clone());
-
-		let did_update_signature = ecdsa_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_update_details.encode().as_ref()).expect("Failed to create DID signature from raw ecdsa signature.");
-	}: update(RawOrigin::Signed(did_subject.clone()), did_update_details.clone())
+	}: _(RawOrigin::Signed(did_subject.clone()), DidVerificationKey::from(new_did_public_auth_key.clone()))
 	verify {
 		let stored_did = Did::<T>::get(&did_subject).expect("DID should be stored on chain.");
-		let stored_key_agreement_keys_ids = stored_did.get_key_agreement_keys_ids();
-
 		let expected_authentication_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(new_did_public_auth_key).into());
-		let expected_delegation_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(new_did_public_del_key).into());
-		let expected_attestation_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(new_did_public_att_key).into());
 
 		assert_eq!(
 			stored_did.get_authentication_key_id(),
 			expected_authentication_key_id
 		);
-		for new_key in did_update_details.new_key_agreement_keys.iter().copied() {
-			assert!(
-				stored_key_agreement_keys_ids.contains(&utils::calculate_key_id::<T>(&new_key.into())))
-		}
-		assert_eq!(
-			stored_did.get_delegation_key_id(),
-			&Some(expected_delegation_key_id)
-		);
-		assert_eq!(
-			stored_did.get_attestation_key_id(),
-			&Some(expected_attestation_key_id)
-		);
-		assert_eq!(stored_did.service_endpoints, Some(service_endpoints));
 	}
 
 	delete {

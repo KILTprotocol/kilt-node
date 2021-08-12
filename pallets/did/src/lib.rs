@@ -264,6 +264,8 @@ pub mod pallet {
 		DidAlreadyPresent,
 		/// No DID with the given identifier is present on chain.
 		DidNotPresent,
+		/// The storage entry is not present.
+		NotPresent,
 		/// One or more verification keys referenced are not stored in the set
 		/// of verification keys.
 		VerificationKeyNotPresent,
@@ -431,110 +433,141 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Update an existing DID on chain.
-		///
-		/// The referenced DID identifier must be present on chain before the
-		/// update operation is evaluated.
-		///
-		/// Any new key specified is added to the set of public keys, and a
-		/// reference to it is updated in the relative field, i.e.,
-		/// authentication, key agreement, attestation or delegation.
-		/// As there can always be at most one active authentication,
-		/// attestation, or delegation key at any given time, the old version of
-		/// those keys, if updated, is replaced with the new one and also
-		/// removed from the set of public keys. The only exception is
-		/// represented by *key agreement keys* and *attestation keys*. For the
-		/// former, new keys added via update operations are always added to the
-		/// set of public keys, and their removal happens by including the ID of
-		/// the keys to remove in the `public_keys_to_remove` set in subsequent
-		/// update operations. In the latter case, the old key is replaced from
-		/// the `attestation_key` field by the new one but it is not removed
-		/// from the set of public keys. This means that the key can still be
-		/// retrieved (and used) by other parties to validate the signature of
-		/// attestations issued with that key, but the issuance of new
-		/// attestations using the now disabled key will fail. A
-		/// disabled attestation key can also be completely deleted (rendering
-		/// all the attestations invalid) by including its ID in the set of
-		/// `public_keys_to_remove` in a subsequent update operation.
-		///
-		/// For both key agreement and attestation keys, it is not possible to
-		/// add (in the former case) or disable (in the latter) a key
-		/// and also delete it within the same update operation. To do
-		/// so, first an update operation adding/disabling the
-		/// key must be submitted. Then, a second update operation must be
-		/// submitted which references the key in the set of
-		/// `public_keys_to_remove`, removing it completely from the chain.
-		///
-		/// All keys that are written as the result of the update operation also
-		/// contain information about the block number when the operation is
-		/// evaluated and executed.
-		///
-		/// The dispatch origin must be a DID origin proxied via the
-		/// `submit_did_call` extrinsic.
-		///
-		/// Emits `DidUpdated`.
-		///
-		/// # <weight>
-		/// - The transaction's complexity is mainly dependent on the number of
-		///   new key agreement keys and public keys to remove included in the
-		///   operation as well as the length of the longest URL endpoint and
-		///   the number of new URL endpoints, if present.
-		/// ---------
-		/// Weight: O(K) + O(D) + O(N * E) where K is the number of new key
-		/// agreement keys bounded by `MaxNewKeyAgreementKeys`, D is the number
-		/// of public keys to remove bounded by `MaxVerificationKeysToRevoke`,
-		/// E the length of the longest endpoint
-		/// URL bounded by `MaxUrlLength`, and N the maximum amount of endpoint
-		/// URLs, bounded by `MaxEndpointUrlsCount`.
-		/// - Reads: [Origin Account], Did
-		/// - Writes: Did (with K new key agreement keys, removing D public
-		///   keys, and replacing N service endpoint URLs)
-		/// # </weight>
-		#[pallet::weight({
-			let new_key_agreement_keys = details.new_key_agreement_keys.len().saturated_into::<u32>();
-			let keys_to_delete = details.public_keys_to_remove.len().saturated_into::<u32>();
-			let new_urls = if let DidFragmentUpdateAction::Change(ref new_service_endpoints) = details.service_endpoints_update {
-				new_service_endpoints.urls.clone()
-			} else {
-				vec![]
-			};
-			// Again, max 3, so we can iterate quite easily.
-			let max_url_length = new_urls.iter().map(|url| url.len().saturated_into()).max().unwrap_or(0u32);
-
-			let ed25519_weight = <T as pallet::Config>::WeightInfo::update_ed25519_keys(
-				new_key_agreement_keys,
-				keys_to_delete,
-				new_urls.len().saturated_into(),
-				max_url_length
-			);
-			let sr25519_weight = <T as pallet::Config>::WeightInfo::update_sr25519_keys(
-				new_key_agreement_keys,
-				keys_to_delete,
-				new_urls.len().saturated_into(),
-				max_url_length
-			);
-			let ecdsa_weight = <T as pallet::Config>::WeightInfo::update_ecdsa_keys(
-				new_key_agreement_keys,
-				keys_to_delete,
-				new_urls.len().saturated_into(),
-				max_url_length
-			);
-
-			ed25519_weight.max(sr25519_weight).max(ecdsa_weight)
-		})]
-		pub fn update(origin: OriginFor<T>, details: DidUpdateDetails<T>) -> DispatchResult {
+		#[pallet::weight(10)]
+		pub fn set_authentication_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
-
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
-			did_details.apply_update_details(details).map_err(<Error<T>>::from)?;
+			did_details.remove_key_if_unused(did_details.authentication_key);
+
+			did_details.authentication_key = utils::calculate_key_id::<T>(&new_key.clone().into());
+			did_details.public_keys.insert(
+				did_details.authentication_key,
+				DidPublicKeyDetails {
+					key: new_key.into(),
+					block_number: <frame_system::Pallet<T>>::block_number(),
+				},
+			);
 
 			log::debug!("Updating DID {:?}", did_subject);
 			<Did<T>>::insert(&did_subject, did_details);
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
-
 			Ok(())
+		}
+
+		#[pallet::weight(10)]
+		pub fn set_delegation_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
+			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
+
+			if let Some(old_delegation_key) = did_details.delegation_key {
+				did_details.remove_key_if_unused(old_delegation_key);
+			}
+			let new_key_id = utils::calculate_key_id::<T>(&new_key.clone().into());
+			did_details.delegation_key = Some(new_key_id);
+
+			log::debug!("Updating DID {:?}", did_subject);
+			<Did<T>>::insert(&did_subject, did_details);
+
+			Self::deposit_event(Event::DidUpdated(did_subject));
+			Ok(())
+		}
+
+		#[pallet::weight(10)]
+		pub fn remove_delegation_key(origin: OriginFor<T>) -> DispatchResult {
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
+			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
+
+			let old_key_id = did_details.delegation_key.ok_or(<Error<T>>::NotPresent)?;
+
+			did_details.delegation_key = None;
+			did_details.remove_key_if_unused(old_key_id);
+
+			log::debug!("Updating DID {:?}", did_subject);
+			<Did<T>>::insert(&did_subject, did_details);
+
+			Self::deposit_event(Event::DidUpdated(did_subject));
+			Ok(())
+		}
+
+		#[pallet::weight(10)]
+		pub fn set_attestation_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
+			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
+
+			let new_key_id = utils::calculate_key_id::<T>(&new_key.clone().into());
+			did_details.attestation_key = Some(new_key_id);
+			did_details.public_keys.insert(
+				new_key_id,
+				DidPublicKeyDetails {
+					key: new_key.into(),
+					block_number: <frame_system::Pallet<T>>::block_number(),
+				},
+			);
+
+			log::debug!("Updating DID {:?}", did_subject);
+			<Did<T>>::insert(&did_subject, did_details);
+
+			Self::deposit_event(Event::DidUpdated(did_subject));
+			Ok(())
+		}
+
+		#[pallet::weight(10)]
+		pub fn remove_attestation_key(origin: OriginFor<T>) -> DispatchResult {
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
+			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
+
+			let old_key_id = did_details.attestation_key.ok_or(<Error<T>>::NotPresent)?;
+
+			did_details.attestation_key = None;
+			did_details.remove_key_if_unused(old_key_id);
+
+			log::debug!("Updating DID {:?}", did_subject);
+			<Did<T>>::insert(&did_subject, did_details);
+
+			Self::deposit_event(Event::DidUpdated(did_subject));
+			Ok(())
+		}
+
+		#[pallet::weight(10)]
+		pub fn add_key_agreement_key(origin: OriginFor<T>, new_key: DidEncryptionKey) -> DispatchResult {
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
+			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
+
+			let new_key_id = utils::calculate_key_id::<T>(&new_key.clone().into());
+			did_details.public_keys.insert(
+				new_key_id,
+				DidPublicKeyDetails {
+					key: new_key.into(),
+					block_number: <frame_system::Pallet<T>>::block_number(),
+				},
+			);
+			did_details.key_agreement_keys.insert(new_key_id);
+
+			log::debug!("Updating DID {:?}", did_subject);
+			<Did<T>>::insert(&did_subject, did_details);
+
+			Self::deposit_event(Event::DidUpdated(did_subject));
+			Ok(())
+		}
+
+		#[pallet::weight(10)]
+		pub fn remove_key_agreement_key(origin: OriginFor<T>, key_id: KeyIdOf<T>) -> DispatchResult {
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
+			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
+
+			if did_details.key_agreement_keys.remove(&key_id) {
+				did_details.remove_key_if_unused(key_id);
+
+				log::debug!("Updating DID {:?}", did_subject);
+				<Did<T>>::insert(&did_subject, did_details);
+
+				Self::deposit_event(Event::DidUpdated(did_subject));
+				Ok(())
+			} else {
+				Err(<Error<T>>::NotPresent.into())
+			}
 		}
 
 		/// Delete a DID from the chain and all information associated with it,
@@ -611,13 +644,13 @@ pub mod pallet {
 		/// # </weight>
 		#[allow(clippy::boxed_local)]
 		#[pallet::weight({
-    		let di = did_call.call.get_dispatch_info();
-    		let max_sig_weight = <T as pallet::Config>::WeightInfo::submit_did_call_ed25519_key()
-    		.max(<T as pallet::Config>::WeightInfo::submit_did_call_sr25519_key())
-    		.max(<T as pallet::Config>::WeightInfo::submit_did_call_ecdsa_key());
+			let di = did_call.call.get_dispatch_info();
+			let max_sig_weight = <T as pallet::Config>::WeightInfo::submit_did_call_ed25519_key()
+			.max(<T as pallet::Config>::WeightInfo::submit_did_call_sr25519_key())
+			.max(<T as pallet::Config>::WeightInfo::submit_did_call_ecdsa_key());
 
-    		(max_sig_weight.saturating_add(di.weight), di.class)
-  		})]
+			(max_sig_weight.saturating_add(di.weight), di.class)
+		})]
 		pub fn submit_did_call(
 			origin: OriginFor<T>,
 			did_call: Box<DidAuthorizedCallOperation<T>>,

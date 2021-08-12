@@ -310,111 +310,12 @@ impl<T: Config> DidDetails<T> {
 		}
 
 		if let Some(delegation_key) = details.new_delegation_key {
-			new_did_details.update_delegation_key(delegation_key, current_block_number);
+			new_did_details.set_delegation_key(delegation_key, current_block_number);
 		}
 
 		new_did_details.service_endpoints = details.new_service_endpoints;
 
 		Ok(new_did_details)
-	}
-
-	// Updates a DID entry by applying the changes in the [DidUpdateDetails].
-	//
-	// The operation fails with a [DidError] if the update details instructs to
-	// delete a verification key that is not associated with the DID.
-	pub fn apply_update_details(&mut self, update_details: DidUpdateDetails<T>) -> Result<(), DidError> {
-		ensure!(
-			update_details.new_key_agreement_keys.len()
-				<= <<T as Config>::MaxNewKeyAgreementKeys>::get().saturated_into::<usize>(),
-			DidError::InputError(InputError::MaxKeyAgreementKeysLimitExceeded)
-		);
-
-		ensure!(
-			update_details.public_keys_to_remove.len()
-				<= <<T as Config>::MaxVerificationKeysToRevoke>::get().saturated_into::<usize>(),
-			DidError::InputError(InputError::MaxVerificationKeysToRemoveLimitExceeded)
-		);
-
-		if let DidFragmentUpdateAction::Change(ref service_endpoints) = update_details.service_endpoints_update {
-			service_endpoints
-				.validate_against_config_limits::<T>()
-				.map_err(DidError::InputError)?;
-		}
-
-		let current_block_number = <frame_system::Pallet<T>>::block_number();
-
-		// Remove specified public keys.
-		self.remove_public_keys(&update_details.public_keys_to_remove)
-			.map_err(DidError::StorageError)?;
-
-		// Update the authentication key, if needed.
-		if let Some(new_authentication_key) = update_details.new_authentication_key {
-			self.update_authentication_key(new_authentication_key, current_block_number);
-		}
-
-		// Add any new key agreement keys.
-		self.add_key_agreement_keys(update_details.new_key_agreement_keys, current_block_number);
-
-		// Update/remove the attestation key, if needed.
-		match update_details.attestation_key_update {
-			DidFragmentUpdateAction::Delete => {
-				self.delete_attestation_key();
-			}
-			DidFragmentUpdateAction::Change(new_attestation_key) => {
-				self.update_attestation_key(new_attestation_key, current_block_number);
-			}
-			// Nothing happens.
-			DidFragmentUpdateAction::Ignore => {}
-		}
-
-		// Update/remove the delegation key, if needed.
-		match update_details.delegation_key_update {
-			DidFragmentUpdateAction::Delete => {
-				self.delete_delegation_key();
-			}
-			DidFragmentUpdateAction::Change(new_delegation_key) => {
-				self.update_delegation_key(new_delegation_key, current_block_number);
-			}
-			// Nothing happens.
-			DidFragmentUpdateAction::Ignore => {}
-		}
-
-		// Update/remove the service endpoints, if needed.
-		match update_details.service_endpoints_update {
-			DidFragmentUpdateAction::Delete => self.service_endpoints = None,
-			DidFragmentUpdateAction::Change(new_service_endpoints) => {
-				self.service_endpoints = Some(new_service_endpoints)
-			}
-			DidFragmentUpdateAction::Ignore => {}
-		}
-
-		Ok(())
-	}
-
-	/// Update the DID authentication key.
-	///
-	/// The old key is deleted from the set of verification keys if it is
-	/// not used in any other part of the DID. The new key is added to the
-	/// set of verification keys.
-	pub fn update_authentication_key(
-		&mut self,
-		new_authentication_key: DidVerificationKey,
-		block_number: BlockNumberOf<T>,
-	) {
-		let old_authentication_key_id = self.authentication_key;
-		let new_authentication_key_id = utils::calculate_key_id::<T>(&new_authentication_key.clone().into());
-		self.authentication_key = new_authentication_key_id;
-		// Remove old key ID from public keys, if not used anymore.
-		self.remove_key_if_unused(&old_authentication_key_id);
-		// Add new key ID to public keys. If a key with the same ID is already present,
-		// the result is simply that the block number is updated.
-		self.public_keys.insert(
-			new_authentication_key_id,
-			DidPublicKeyDetails {
-				key: new_authentication_key.into(),
-				block_number,
-			},
-		);
 	}
 
 	/// Add new key agreement keys to the DID.
@@ -455,26 +356,17 @@ impl<T: Config> DidDetails<T> {
 		);
 	}
 
-	/// Delete the DID attestation key.
-	///
-	/// Once deleted, it cannot be used to write new attestations anymore.
-	/// The old key is not removed from the set of verification keys, hence
-	/// it can still be used to verify past attestations.
-	pub fn delete_attestation_key(&mut self) {
-		self.attestation_key = None;
-	}
-
 	/// Update the DID delegation key.
 	///
 	/// The old key is deleted from the set of verification keys if it is
 	/// not used in any other part of the DID. The new key is added to the
 	/// set of verification keys.
-	pub fn update_delegation_key(&mut self, new_delegation_key: DidVerificationKey, block_number: BlockNumberOf<T>) {
+	pub fn set_delegation_key(&mut self, new_delegation_key: DidVerificationKey, block_number: BlockNumberOf<T>) {
 		let old_delegation_key_id = self.delegation_key;
 		let new_delegation_key_id = utils::calculate_key_id::<T>(&new_delegation_key.clone().into());
 		self.delegation_key = Some(new_delegation_key_id);
 		if let Some(old_delegation_key) = old_delegation_key_id {
-			self.remove_key_if_unused(&old_delegation_key);
+			self.remove_key_if_unused(old_delegation_key);
 		}
 		self.public_keys.insert(
 			new_delegation_key_id,
@@ -485,68 +377,15 @@ impl<T: Config> DidDetails<T> {
 		);
 	}
 
-	/// Delete the DID delegation key.
-	///
-	/// Once deleted, it cannot be used to write new delegations anymore.
-	/// The key is also removed from the set of verification keys if it not
-	/// used anywhere else in the DID.
-	pub fn delete_delegation_key(&mut self) {
-		if let Some(old_delegation_key_id) = self.delegation_key {
-			self.delegation_key = None;
-			self.remove_key_if_unused(&old_delegation_key_id);
-		}
-	}
-
-	/// Deletes a public key from the set of public keys stored on chain.
-	/// Additionally, if the public key to remove is among the key agreement
-	/// keys, it also eliminates it from there.
-	///
-	/// When deleting a public key, the following conditions are verified:
-	/// - 1. the set of keys to delete does not contain any of the currently
-	///   active verification keys, i.e., authentication, attestation, and
-	///   delegation key, i.e., only key agreement keys and past attestation
-	///   keys can be deleted.
-	/// - 2. the set of keys to delete contains key IDs that are not currently
-	///   stored on chain
-	fn remove_public_keys(&mut self, key_ids: &BTreeSet<KeyIdOf<T>>) -> Result<(), StorageError> {
-		// Consider the currently active authentication, attestation, and delegation key
-		// as forbidden to delete. They can be deleted with the right operation for the
-		// respective fields in the DidUpdateOperation.
-		let mut forbidden_verification_key_ids = BTreeSet::new();
-		forbidden_verification_key_ids.insert(self.authentication_key);
-		if let Some(attestation_key_id) = self.attestation_key {
-			forbidden_verification_key_ids.insert(attestation_key_id);
-		}
-		if let Some(delegation_key_id) = self.delegation_key {
-			forbidden_verification_key_ids.insert(delegation_key_id);
-		}
-
-		for key_id in key_ids.iter() {
-			// Check for condition 1.
-			ensure!(
-				!forbidden_verification_key_ids.contains(key_id),
-				StorageError::CurrentlyActiveKey
-			);
-			// Check for condition 2.
-			self.public_keys
-				.remove(key_id)
-				.ok_or(StorageError::VerificationKeyNotPresent)?;
-			// Also remove from the set of key agreement keys, if present.
-			self.key_agreement_keys.remove(key_id);
-		}
-
-		Ok(())
-	}
-
 	// Remove a key from the map of public keys if none of the other keys, i.e.,
 	// authentication, key agreement, attestation, or delegation, is referencing it.
-	fn remove_key_if_unused(&mut self, key_id: &KeyIdOf<T>) {
-		if self.authentication_key != *key_id
-			&& self.attestation_key != Some(*key_id)
-			&& self.delegation_key != Some(*key_id)
-			&& !self.key_agreement_keys.contains(key_id)
+	pub fn remove_key_if_unused(&mut self, key_id: KeyIdOf<T>) {
+		if self.authentication_key != key_id
+			&& self.attestation_key != Some(key_id)
+			&& self.delegation_key != Some(key_id)
+			&& !self.key_agreement_keys.contains(&key_id)
 		{
-			self.public_keys.remove(key_id);
+			self.public_keys.remove(&key_id);
 		}
 	}
 
