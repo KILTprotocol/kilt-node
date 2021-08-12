@@ -540,15 +540,17 @@ parameter_types! {
 	pub const VotingBondFactor: Balance = deposit(0, 32);
 	/// Daily council elections
 	pub const TermDuration: BlockNumber = TERM_DURATION;
-	pub const DesiredMembers: u32 = 19;
-	pub const DesiredRunnersUp: u32 = 19;
+	pub const DesiredMembers: u32 = 12;
+	pub const DesiredRunnersUp: u32 = 12;
+	#[derive(Debug, Default, Clone, PartialEq)]
+	pub const MaxElectionVotes: u32 = 12;
 }
 
 // Make sure that there are no more than MaxMembers members elected via
 // phragmen.
 const_assert!(DesiredMembers::get() <= CouncilMaxMembers::get());
 
-impl pallet_elections_phragmen::Config for Runtime {
+impl elections::Config for Runtime {
 	type PalletId = ElectionsPalletId;
 	type Event = Event;
 	type Currency = Balances;
@@ -566,6 +568,7 @@ impl pallet_elections_phragmen::Config for Runtime {
 	// FIXME: Benchmarks fail, but this pallet will be replaced by another election
 	// algorithm before replacing sudo with governance.
 	type WeightInfo = ();
+	type MaxVotes = MaxElectionVotes;
 }
 
 #[cfg(feature = "fast-gov")]
@@ -839,7 +842,7 @@ construct_runtime! {
 		Democracy: pallet_democracy::{Pallet, Call, Storage, Config<T>, Event<T>} = 30,
 		Council: pallet_collective::<Instance1>::{Pallet, Call, Storage, Origin<T>, Event<T>, Config<T>} = 31,
 		TechnicalCommittee: pallet_collective::<Instance2>::{Pallet, Call, Storage, Origin<T>, Event<T>, Config<T>} = 32,
-		ElectionsPhragmen: pallet_elections_phragmen::{Pallet, Call, Storage, Event<T>, Config<T>} = 33,
+		Elections: elections::{Pallet, Call, Storage, Event<T>, Config<T>} = 33,
 		TechnicalMembership: pallet_membership::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
 		Treasury: pallet_treasury::{Pallet, Call, Storage, Config, Event<T>} = 35,
 

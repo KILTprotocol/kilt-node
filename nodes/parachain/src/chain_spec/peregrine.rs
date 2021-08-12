@@ -232,7 +232,7 @@ fn testnet_genesis(
 			phantom: Default::default(),
 		},
 		treasury: Default::default(),
-		elections_phragmen: Default::default(),
+		elections: Default::default(),
 		technical_membership: Default::default(),
 		democracy: Default::default(),
 		parachain_staking: ParachainStakingConfig {
