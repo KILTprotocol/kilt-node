@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019  BOTLabs GmbH
+// Copyright (C) 2019-2021 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,13 +20,24 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use codec::{Decode, Encode};
+use core::convert::TryFrom;
+use frame_support::dispatch::Weight;
+pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
+
+pub use sp_consensus_aura::sr25519::AuthorityId;
+
 use sp_runtime::{
 	generic,
 	traits::{BlakeTwo256, IdentifyAccount, Verify},
-	MultiSignature,
+	MultiSignature, RuntimeDebug,
 };
+use sp_std::vec::Vec;
 
-pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
+
+pub mod constants;
 
 /// Opaque block header type.
 pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
@@ -37,19 +48,29 @@ pub type BlockId = generic::BlockId<Block>;
 /// An index to a block.
 pub type BlockNumber = u64;
 
-/// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
+/// Alias to 512-bit hash when used in the context of a transaction signature on
+/// the chain.
 pub type Signature = MultiSignature;
 
-/// Some way of identifying an account on the chain. We intentionally make it equivalent
-/// to the public key of our transaction signing scheme.
-pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+/// Alias to the public key used for this chain, actually a `MultiSigner`. Like
+/// the signature, this also isn't a fixed size when encoded, as different
+/// cryptos have different size public keys.
+pub type AccountPublic = <Signature as Verify>::Signer;
 
-/// The type for looking up accounts. We don't expect more than 4 billion of them, but you
-/// never know...
+/// Alias to the opaque account ID type for this chain, actually a
+/// `AccountId32`. This is always 32 bytes.
+pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
+
+/// The type for looking up accounts. We don't expect more than 4 billion of
+/// them, but you never know...
 pub type AccountIndex = u32;
+
+/// Identifier for a chain. 32-bit should be plenty.
+pub type ChainId = u32;
 
 /// Balance of an account.
 pub type Balance = u128;
+pub type Amount = i128;
 
 /// Index of a transaction in the chain.
 pub type Index = u64;
@@ -59,3 +80,39 @@ pub type Hash = sp_core::H256;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem<Hash>;
+
+/// A Kilt DID subject identifier.
+pub type DidIdentifier = AccountId;
+
+#[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+pub enum CurrencyId {
+	Dot = 0_isize,
+	Ksm,
+	Kilt,
+}
+
+impl TryFrom<Vec<u8>> for CurrencyId {
+	type Error = ();
+	fn try_from(v: Vec<u8>) -> Result<CurrencyId, ()> {
+		match v.as_slice() {
+			b"KILT" => Ok(CurrencyId::Kilt),
+			b"DOT" => Ok(CurrencyId::Dot),
+			b"KSM" => Ok(CurrencyId::Ksm),
+			_ => Err(()),
+		}
+	}
+}
+
+/// A trait that allows version migrators to access the underlying pallet's
+/// context, e.g., its Config trait.
+///
+/// In this way, the migrator can access the pallet's storage and the pallet's
+/// types directly.
+pub trait VersionMigratorTrait<T> {
+	#[cfg(feature = "try-runtime")]
+	fn pre_migrate(&self) -> Result<(), &str>;
+	fn migrate(&self) -> Weight;
+	#[cfg(feature = "try-runtime")]
+	fn post_migrate(&self) -> Result<(), &str>;
+}

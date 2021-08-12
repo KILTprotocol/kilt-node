@@ -1,0 +1,106 @@
+stages:
+  - test
+  - build
+
+clippy:
+  image: paritytech/ci-linux:105b919b-20210617
+  stage: test
+  timeout: 1 hours
+  script:
+    - rustup component add clippy --toolchain nightly
+    - cargo +nightly clippy --all-features --all-targets -- -D warnings
+
+fmt:
+  image: paritytech/ci-linux:105b919b-20210617
+  stage: test
+  timeout: 1 hours
+  script:
+    - rustup component add rustfmt --toolchain nightly
+    - cargo +nightly fmt -- --check
+
+test:
+  image: paritytech/ci-linux:105b919b-20210617
+  stage: test
+  timeout: 1 hours
+  script:
+    - cargo test --all-features --all-targets
+
+build:
+  image:
+    name: amazon/aws-cli
+    entrypoint: [""]
+  stage: build
+  only:
+    - develop
+  before_script:
+    - amazon-linux-extras install docker
+    - aws --version
+    - docker --version
+  script:
+    - echo -n $CI_REGISTRY_TOKEN | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+    - aws ecr get-login-password | docker login --username AWS --password-stdin $AWS_REGISTRY
+
+    - docker pull $AWS_REGISTRY/kilt-parachain/collator:builder-develop || true
+    - docker pull $AWS_REGISTRY/kilt-parachain/collator:develop || true
+    - docker pull $AWS_REGISTRY/kilt-prototype-chain:develop || true
+
+    - docker build --target builder --cache-from $AWS_REGISTRY/kilt-parachain/collator:builder-develop -t $AWS_REGISTRY/kilt-parachain/collator:builder-develop .
+    - docker build --cache-from $AWS_REGISTRY/kilt-parachain/collator:builder-develop --cache-from $AWS_REGISTRY/kilt-parachain/collator:develop --build-arg NODE_TYPE=kilt-parachain -t kiltprotocol/peregrine:develop .
+    - docker build --cache-from $AWS_REGISTRY/kilt-parachain/collator:builder-develop --cache-from $AWS_REGISTRY/kilt/prototype-chain:latest-develop --build-arg NODE_TYPE=mashnet-node -t kiltprotocol/mashnet-node:develop .
+
+    - docker tag kiltprotocol/mashnet-node:develop kiltprotocol/mashnet-node:$CI_COMMIT_SHORT_SHA
+    - docker tag kiltprotocol/peregrine:develop kiltprotocol/peregrine:$CI_COMMIT_SHORT_SHA
+
+    - docker push kiltprotocol/peregrine:develop
+    - docker push kiltprotocol/peregrine:$CI_COMMIT_SHORT_SHA
+    - docker push kiltprotocol/mashnet-node:develop
+    - docker push kiltprotocol/mashnet-node:$CI_COMMIT_SHORT_SHA
+
+    - docker tag kiltprotocol/mashnet-node:develop $AWS_REGISTRY/kilt/prototype-chain:latest-develop
+    - docker tag kiltprotocol/mashnet-node:develop $AWS_REGISTRY/kilt/prototype-chain:$CI_COMMIT_SHORT_SHA
+    - docker tag kiltprotocol/peregrine:develop $AWS_REGISTRY/kilt-parachain/collator:latest-develop
+    - docker tag kiltprotocol/peregrine:develop $AWS_REGISTRY/kilt-parachain/collator:$CI_COMMIT_SHORT_SHA
+    - docker push $AWS_REGISTRY/kilt/prototype-chain:latest-develop
+    - docker push $AWS_REGISTRY/kilt/prototype-chain:$CI_COMMIT_SHORT_SHA
+    - docker push $AWS_REGISTRY/kilt-parachain/collator:latest-develop
+    - docker push $AWS_REGISTRY/kilt-parachain/collator:$CI_COMMIT_SHORT_SHA
+
+build-wasm-peregrine:
+  image:
+    name: paritytech/srtool:1.53.0
+    entrypoint: [""]
+  stage: build
+  only:
+    - develop
+    - master
+  script:
+    - export PACKAGE=peregrine-runtime
+    - export RUNTIME_DIR=runtimes/peregrine
+    - cp -r * /build
+    - /srtool/build build
+    - mkdir ./out
+    - mv /out/* ./out/
+  artifacts:
+    paths:
+      - out/*.wasm
+    expire_in: 12 week
+
+build-wasm-spiritnet:
+  image:
+    name: paritytech/srtool:1.53.0
+    entrypoint: [""]
+  stage: build
+  only:
+    - develop
+    - master
+  script:
+    - export PACKAGE=spiritnet-runtime
+    - export RUNTIME_DIR=runtimes/spiritnet
+    - cp -r * /build
+    - /srtool/build build
+    - mkdir ./out
+    - mv /out/* ./out/
+  artifacts:
+    paths:
+      - out/*.wasm
+    expire_in: 12 week

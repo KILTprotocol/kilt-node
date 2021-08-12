@@ -4,67 +4,47 @@ description = "Enables adding and removing decentralized identifiers (DIDs)."
 edition = "2018"
 name = "did"
 repository = "https://github.com/KILTprotocol/mashnet-node"
-version = "0.24.0"
+version = "0.25.0"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
+[build-dependencies]
+substrate-wasm-builder-runner = {version = "3.0.0"}
+
 [dev-dependencies]
-kilt-primitives = {path = "../../primitives", default-features = false}
+ctype = {features = ["mock"], path = "../ctype", version = "0.25.0"}
+env_logger = {version = "0.8.3"}
+kilt-primitives = {default-features = false, path = "../../primitives"}
+pallet-membership = {branch = "polkadot-v0.9.8", default-features = false, git = "https://github.com/paritytech/substrate"}
 serde = {version = "1.0.101"}
 
-[dev-dependencies.sp-core]
-branch = "rococo-v1"
-default-features = false
-git = "https://github.com/paritytech/substrate"
-version = "3.0.0"
+[dependencies]
+# Internal dependencies
+ctype = {features = ["mock"], optional = true, path = "../ctype", version = "0.25.0"}
+kilt-primitives = {default-features = false, path = "../../primitives"}
 
-[dev-dependencies.sp-io]
-branch = "rococo-v1"
-default-features = false
-git = "https://github.com/paritytech/substrate"
-version = "3.0.0"
-
-[dependencies.codec]
-default-features = false
-features = ["derive"]
-package = "parity-scale-codec"
-version = "2.0.0"
-
-[dependencies.frame-support]
-branch = "rococo-v1"
-default-features = false
-git = "https://github.com/paritytech/substrate"
-version = "3.0.0"
-
-[dependencies.frame-system]
-branch = "rococo-v1"
-default-features = false
-git = "https://github.com/paritytech/substrate"
-version = "3.0.0"
-
-[dependencies.sp-runtime]
-branch = "rococo-v1"
-default-features = false
-git = "https://github.com/paritytech/substrate"
-version = "3.0.0"
-
-[dependencies.sp-std]
-branch = "rococo-v1"
-default-features = false
-git = "https://github.com/paritytech/substrate"
-version = "3.0.0"
-
-[dependencies.frame-benchmarking]
-branch = "rococo-v1"
-default-features = false
-git = "https://github.com/paritytech/substrate"
-optional = true
-version = "3.0.0"
-
+# External dependencies
+codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.0.0"}
+env_logger = {default-features = false, optional = true, version = "0.8.3"}
+frame-benchmarking = {branch = "polkadot-v0.9.8", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+frame-support = {branch = "polkadot-v0.9.8", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-system = {branch = "polkadot-v0.9.8", default-features = false, git = "https://github.com/paritytech/substrate"}
+hex = {default-features = false, features = ["alloc"], version = "0.4.2"}
+log = {default-features = false, version = "0.4.14"}
+sp-core = {branch = "polkadot-v0.9.8", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-io = {branch = "polkadot-v0.9.8", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-keystore = {branch = "polkadot-v0.9.8", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+sp-runtime = {branch = "polkadot-v0.9.8", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-std = {branch = "polkadot-v0.9.8", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [features]
 default = ["std"]
+mock = [
+  "ctype",
+  "env_logger",
+  "sp-keystore"
+]
 runtime-benchmarks = [
   "frame-benchmarking",
 ]
@@ -72,5 +52,16 @@ std = [
   "codec/std",
   "frame-support/std",
   "frame-system/std",
+  "kilt-primitives/std",
+  "hex/std",
+  "log/std",
+  "sp-core/std",
+  "sp-keystore/std",
+  "sp-io/std",
+  "sp-runtime/std",
   "sp-std/std",
+]
+try-runtime = [
+  "frame-support/try-runtime",
+  "kilt-primitives/try-runtime",
 ]

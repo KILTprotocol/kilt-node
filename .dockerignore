@@ -1,7 +1,7 @@
 .git
 .github
 .gitignore
-task-definition*
+.gitlab-ci.yml
 **/target
 **/*.rs.bk
 *.iml

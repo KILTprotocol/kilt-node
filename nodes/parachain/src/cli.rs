@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019  BOTLabs GmbH
+// Copyright (C) 2019-2021 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,9 +16,12 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use std::path::PathBuf;
-
+use crate::chain_spec;
+use std::{ops::Deref, path::PathBuf};
 use structopt::StructOpt;
+
+pub const DEFAULT_RUNTIME: &str = "peregrine";
+pub const DEFAULT_PARA_ID: &str = "2000";
 
 /// Sub-commands supported by the collator.
 #[derive(Debug, StructOpt)]
@@ -32,7 +35,7 @@ pub enum Subcommand {
 	ExportGenesisWasm(ExportGenesisWasmCommand),
 
 	/// Build a chain specification.
-	BuildSpec(sc_cli::BuildSpecCmd),
+	BuildSpec(BuildSpecCmd),
 
 	/// Validate blocks.
 	CheckBlock(sc_cli::CheckBlockCmd),
@@ -47,10 +50,42 @@ pub enum Subcommand {
 	ImportBlocks(sc_cli::ImportBlocksCmd),
 
 	/// Remove the whole chain.
-	PurgeChain(sc_cli::PurgeChainCmd),
+	PurgeChain(cumulus_client_cli::PurgeChainCmd),
 
 	/// Revert the chain to a previous state.
 	Revert(sc_cli::RevertCmd),
+
+	/// The custom benchmark subcommmand benchmarking runtime pallets.
+	#[structopt(name = "benchmark", about = "Benchmark runtime pallets.")]
+	Benchmark(frame_benchmarking_cli::BenchmarkCmd),
+
+	/// Try some command against runtime state.
+	#[cfg(feature = "try-runtime")]
+	TryRuntime(try_runtime_cli::TryRuntimeCmd),
+
+	/// Try some command against runtime state. Note: `try-runtime` feature must
+	/// be enabled.
+	#[cfg(not(feature = "try-runtime"))]
+	TryRuntime,
+}
+
+/// Command for building the genesis state of the parachain
+#[derive(Debug, StructOpt)]
+pub struct BuildSpecCmd {
+	#[structopt(flatten)]
+	pub inner_args: sc_cli::BuildSpecCmd,
+
+	/// The name of the runtime which should get executed.
+	#[structopt(long, default_value = DEFAULT_RUNTIME)]
+	pub runtime: String,
+}
+
+impl Deref for BuildSpecCmd {
+	type Target = sc_cli::BuildSpecCmd;
+
+	fn deref(&self) -> &Self::Target {
+		&self.inner_args
+	}
 }
 
 /// Command for exporting the genesis state of the parachain
@@ -61,7 +96,7 @@ pub struct ExportGenesisStateCommand {
 	pub output: Option<PathBuf>,
 
 	/// Id of the parachain this state is for.
-	#[structopt(long, default_value = "200")]
+	#[structopt(long, default_value = DEFAULT_PARA_ID)]
 	pub parachain_id: u32,
 
 	/// Write output in binary. Default is to write in hex.
@@ -71,6 +106,10 @@ pub struct ExportGenesisStateCommand {
 	/// The name of the chain for that the genesis state should be exported.
 	#[structopt(long)]
 	pub chain: Option<String>,
+
+	/// The name of the runtime which should get executed.
+	#[structopt(long, default_value = DEFAULT_RUNTIME)]
+	pub runtime: String,
 }
 
 /// Command for exporting the genesis wasm file.
@@ -87,24 +126,10 @@ pub struct ExportGenesisWasmCommand {
 	/// The name of the chain for that the genesis wasm file should be exported.
 	#[structopt(long)]
 	pub chain: Option<String>,
-}
 
-#[derive(Debug, StructOpt)]
-pub struct RunCmd {
-	#[structopt(flatten)]
-	pub base: sc_cli::RunCmd,
-
-	/// Id of the parachain this collator collates for.
+	/// The name of the runtime which should get executed.
 	#[structopt(long)]
-	pub parachain_id: Option<u32>,
-}
-
-impl std::ops::Deref for RunCmd {
-	type Target = sc_cli::RunCmd;
-
-	fn deref(&self) -> &Self::Target {
-		&self.base
-	}
+	pub runtime: Option<String>,
 }
 
 #[derive(Debug, StructOpt)]
@@ -118,13 +143,11 @@ pub struct Cli {
 	pub subcommand: Option<Subcommand>,
 
 	#[structopt(flatten)]
-	pub run: RunCmd,
+	pub run: cumulus_client_cli::RunCmd,
 
-	/// Run node as collator.
-	///
-	/// Note that this is the same as running with `--validator`.
-	#[structopt(long, conflicts_with = "validator")]
-	pub collator: bool,
+	/// The name of the runtime which should get executed.
+	#[structopt(long, default_value = DEFAULT_RUNTIME)]
+	pub runtime: String,
 
 	/// Relaychain arguments
 	#[structopt(raw = true)]
@@ -144,12 +167,15 @@ pub struct RelayChainCli {
 }
 
 impl RelayChainCli {
-	/// Create a new instance of `Self`.
+	/// Parse the relay chain CLI parameters using the para chain
+	/// `Configuration`.
 	pub fn new<'a>(
-		base_path: Option<PathBuf>,
-		chain_id: Option<String>,
+		para_config: &sc_service::Configuration,
 		relay_chain_args: impl Iterator<Item = &'a String>,
 	) -> Self {
+		let extension = chain_spec::Extensions::try_get(&*para_config.chain_spec);
+		let chain_id = extension.map(|e| e.relay_chain.clone());
+		let base_path = para_config.base_path.as_ref().map(|x| x.path().join("polkadot"));
 		Self {
 			base_path,
 			chain_id,

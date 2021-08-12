@@ -4,76 +4,70 @@ description = "Enables adding and revoking attestations."
 edition = "2018"
 name = "attestation"
 repository = "https://github.com/KILTprotocol/mashnet-node"
-version = "0.24.0"
+version = "0.25.0"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
+[build-dependencies]
+substrate-wasm-builder-runner = {version = "3.0.0"}
+
 [dev-dependencies]
-kilt-primitives = {path = "../../primitives", default-features = false}
+ctype = {features = ["mock"], path = "../ctype", version = "0.25.0"}
+delegation = {features = ["mock"], path = "../delegation", version = "0.25.0"}
+kilt-primitives = {default-features = false, path = "../../primitives"}
 serde = {version = "1.0.101"}
-sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1", version = "3.0.0"}
-sp-keystore = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1", version = "0.9.0"}
+sp-core = {branch = "polkadot-v0.9.8", default-features = false, git = "https://github.com/paritytech/substrate", version = "3.0.0"}
+sp-io = {branch = "polkadot-v0.9.8", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-keystore = {branch = "polkadot-v0.9.8", default-features = false, git = "https://github.com/paritytech/substrate", version = "0.9.0"}
 
-[build-dependencies.substrate-wasm-builder-runner]
-version = "1.0.6"
-
-# pallets
 [dependencies]
-ctype = {version = "0.24.0", default-features = false, path = "../ctype"}
-delegation = {version = "0.24.0", default-features = false, path = "../delegation"}
+# Internal dependencies
+ctype = {default-features = false, path = "../ctype", version = "0.25.0"}
+delegation = {default-features = false, path = "../delegation", version = "0.25.0"}
+kilt-primitives = {default-features = false, optional = true, path = "../../primitives"}
 
-# Optional imports for benchmarking
-frame-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "rococo-v1"}
-sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "rococo-v1"}
-
-[dependencies.codec]
-default-features = false
-features = ["derive"]
-package = "parity-scale-codec"
-version = "2.0.0"
-
-[dependencies.frame-support]
-branch = "rococo-v1"
-default-features = false
-git = "https://github.com/paritytech/substrate"
-
-[dependencies.frame-system]
-branch = "rococo-v1"
-default-features = false
-git = "https://github.com/paritytech/substrate"
-
-[dependencies.sp-runtime]
-branch = "rococo-v1"
-default-features = false
-git = "https://github.com/paritytech/substrate"
-
-[dependencies.sp-std]
-branch = "rococo-v1"
-default-features = false
-git = "https://github.com/paritytech/substrate"
-
-[dependencies.sp-io]
-branch = "rococo-v1"
-default-features = false
-git = "https://github.com/paritytech/substrate"
+#External dependencies
+codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.0.0"}
+frame-benchmarking = {branch = "polkadot-v0.9.8", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+frame-support = {branch = "polkadot-v0.9.8", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-system = {branch = "polkadot-v0.9.8", default-features = false, git = "https://github.com/paritytech/substrate"}
+log = {default-features = false, version = "0.4.14"}
+serde = {optional = true, version = "1.0.101"}
+sp-core = {branch = "polkadot-v0.9.8", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+sp-io = {branch = "polkadot-v0.9.8", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+sp-keystore = {branch = "polkadot-v0.9.8", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+sp-runtime = {branch = "polkadot-v0.9.8", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-std = {branch = "polkadot-v0.9.8", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [features]
 default = ["std"]
+mock = [
+  "kilt-primitives",
+  "serde",
+  "sp-core",
+  "sp-io",
+  "sp-keystore"
+]
 runtime-benchmarks = [
   "frame-benchmarking",
-  "sp-core",
-  "delegation/runtime-benchmarks",
+  "frame-system/runtime-benchmarks",
+  "frame-support/runtime-benchmarks",
+  "sp-core"
 ]
 std = [
   "codec/std",
-  "frame-support/std",
-  "frame-system/std",
-  "sp-runtime/std",
-  "sp-io/std",
-  "sp-std/std",
-  "sp-io/std",
   "ctype/std",
   "delegation/std",
+  "frame-support/std",
+  "frame-system/std",
+  "kilt-primitives/std",
+  "log/std",
   "sp-core/std",
+  "sp-io/std",
+  "sp-runtime/std",
+  "sp-std/std",
+]
+try-runtime = [
+  "frame-support/try-runtime"
 ]

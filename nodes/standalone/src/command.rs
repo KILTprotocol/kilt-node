@@ -1,18 +1,20 @@
-// Copyright 2017-2020 Parity Technologies (UK) Ltd.
-// This file is part of Substrate.
+// KILT Blockchain – https://botlabs.org
+// Copyright (C) 2019-2021 BOTLabs GmbH
 
-// Substrate is free software: you can redistribute it and/or modify
+// The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Substrate is distributed in the hope that it will be useful,
+// The KILT Blockchain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Substrate.  If not, see <http://www.gnu.org/licenses/>.
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+// If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{
 	chain_spec,
@@ -22,6 +24,9 @@ use crate::{
 use mashnet_node_runtime::opaque::Block;
 use sc_cli::{ChainSpec, Role, RuntimeVersion, SubstrateCli};
 use sc_service::PartialComponents;
+
+#[cfg(feature = "try-runtime")]
+use node_executor::Executor;
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
@@ -87,9 +92,7 @@ pub fn run() -> sc_cli::Result<()> {
 			let runner = cli.create_runner(cmd)?;
 			runner.async_run(|config| {
 				let PartialComponents {
-					client,
-					task_manager,
-					..
+					client, task_manager, ..
 				} = service::new_partial(&config)?;
 				Ok((cmd.run(client, config.database), task_manager))
 			})
@@ -98,9 +101,7 @@ pub fn run() -> sc_cli::Result<()> {
 			let runner = cli.create_runner(cmd)?;
 			runner.async_run(|config| {
 				let PartialComponents {
-					client,
-					task_manager,
-					..
+					client, task_manager, ..
 				} = service::new_partial(&config)?;
 				Ok((cmd.run(client, config.chain_spec), task_manager))
 			})
@@ -144,6 +145,23 @@ pub fn run() -> sc_cli::Result<()> {
 					.into())
 			}
 		}
+		#[cfg(feature = "try-runtime")]
+		Some(Subcommand::TryRuntime(cmd)) => {
+			let runner = cli.create_runner(cmd)?;
+			runner.async_run(|config| {
+				// we don't need any of the components of new_partial, just a runtime, or a task
+				// manager to do `async_run`.
+				let registry = config.prometheus_config.as_ref().map(|cfg| &cfg.registry);
+				let task_manager = sc_service::TaskManager::new(config.task_executor.clone(), registry)
+					.map_err(|e| sc_cli::Error::Service(sc_service::Error::Prometheus(e)))?;
+
+				Ok((cmd.run::<Block, Executor>(config), task_manager))
+			})
+		}
+		#[cfg(not(feature = "try-runtime"))]
+		Some(Subcommand::TryRuntime) => Err("TryRuntime wasn't enabled when building the node. \
+				You can enable it with `--features try-runtime`."
+			.into()),
 		None => {
 			let runner = cli.create_runner(&cli.run)?;
 			runner.run_node_until_exit(|config| async move {

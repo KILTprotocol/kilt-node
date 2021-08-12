@@ -1,8 +1,10 @@
 # this container builds the kilt-parachain binary from source files and the runtime library
 # pinned the version to avoid build cache invalidation
-FROM paritytech/ci-linux:94420526-20210215 as builder
+FROM paritytech/ci-linux:105b919b-20210617 as builder
 
 WORKDIR /build
+
+ARG FEATURES=default
 
 COPY ./nodes /build/nodes
 COPY ./pallets /build/pallets
@@ -11,7 +13,7 @@ COPY ./runtimes /build/runtimes
 COPY ./Cargo.lock /build/Cargo.lock
 COPY ./Cargo.toml /build/Cargo.toml
 
-RUN cargo build --release
+RUN cargo build --release --features $FEATURES
 
 # ===== SECOND STAGE ======
 

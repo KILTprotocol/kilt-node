@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019  BOTLabs GmbH
+// Copyright (C) 2019-2021 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,24 +16,19 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-#![cfg(feature = "runtime-benchmarks")]
-
-use super::*;
-
-use crate::Module as AttestationModule;
 use delegation::{benchmarking::setup_delegations, Permissions};
-use frame_benchmarking::benchmarks;
-use frame_support::storage::StorageMap;
+use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
 use frame_system::RawOrigin;
 use sp_core::sr25519;
 use sp_runtime::traits::Hash;
-use sp_std::{boxed::Box, num::NonZeroU32, vec};
+use sp_std::num::NonZeroU32;
 
-const MAX_DEPTH: u32 = 10;
+use crate::*;
+
 const ONE_CHILD_PER_LEVEL: Option<NonZeroU32> = NonZeroU32::new(1);
 
 benchmarks! {
-	where_clause { where T: core::fmt::Debug, T::Signature: From<sr25519::Signature>, T::AccountId: From<sr25519::Public>, 	T::DelegationNodeId: From<T::Hash> }
+	where_clause { where T: core::fmt::Debug, T::AccountId: From<sr25519::Public> + Into<T::DelegationEntityId>, T::DelegationNodeId: From<T::Hash> }
 
 	add {
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
@@ -43,16 +38,16 @@ benchmarks! {
 	}: _(RawOrigin::Signed(delegate_acc.clone()), claim_hash, ctype_hash, Some(delegation_id))
 	verify {
 		assert!(Attestations::<T>::contains_key(claim_hash));
-		assert_eq!(AttestationModule::<T>::attestations(claim_hash), Some(Attestation::<T> {
+		assert_eq!(Pallet::<T>::attestations(claim_hash), Some(AttestationDetails {
 			ctype_hash,
-			attester: delegate_acc,
+			attester: delegate_acc.into(),
 			delegation_id: Some(delegation_id),
 			revoked: false,
 		}));
 	}
 
 	revoke {
-		let d in 1 .. MAX_DEPTH;
+		let d in 1 .. T::MaxParentChecks::get();
 
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
@@ -62,31 +57,22 @@ benchmarks! {
 		let delegate_acc: T::AccountId = delegate_public.into();
 
 		// attest with leaf account
-		AttestationModule::<T>::add(RawOrigin::Signed(delegate_acc.clone()).into(), claim_hash, ctype_hash, Some(delegation_id))?;
+		Pallet::<T>::add(RawOrigin::Signed(delegate_acc.clone()).into(), claim_hash, ctype_hash, Some(delegation_id))?;
 		// revoke with root account, s.t. delegation tree needs to be traversed
-	}: _(RawOrigin::Signed(root_acc.clone()), claim_hash, d + 1)
+	}: _(RawOrigin::Signed(root_acc.clone()), claim_hash, d)
 	verify {
 		assert!(Attestations::<T>::contains_key(claim_hash));
-		assert_eq!(Attestations::<T>::get(claim_hash), Some(Attestation::<T> {
+		assert_eq!(Attestations::<T>::get(claim_hash), Some(AttestationDetails {
 			ctype_hash,
-			attester: delegate_acc,
+			attester: delegate_acc.into(),
 			delegation_id: Some(delegation_id),
 			revoked: true,
 		}));
 	}
 }
 
-#[cfg(test)]
-mod tests {
-	use super::*;
-	use crate::tests::{ExtBuilder, Test};
-	use frame_support::assert_ok;
-
-	#[test]
-	fn test_benchmarks() {
-		ExtBuilder::build_with_keystore().execute_with(|| {
-			assert_ok!(test_benchmark_add::<Test>());
-			assert_ok!(test_benchmark_revoke::<Test>());
-		});
-	}
+impl_benchmark_test_suite! {
+	Pallet,
+	crate::mock::ExtBuilder::default().build_with_keystore(None),
+	crate::mock::Test
 }

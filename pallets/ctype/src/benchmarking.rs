@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019  BOTLabs GmbH
+// Copyright (C) 2019-2021 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,13 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-#![cfg(feature = "runtime-benchmarks")]
-
-use super::*;
-
-use frame_benchmarking::{account, benchmarks};
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_system::RawOrigin;
-use sp_std::{boxed::Box, vec, vec::Vec};
+
+use crate::*;
 
 const SEED: u32 = 0;
 
@@ -33,20 +30,12 @@ benchmarks! {
 
 	}: _(RawOrigin::Signed(caller), hash)
 	verify {
-		CTYPEs::<T>::contains_key(hash)
+		Ctypes::<T>::contains_key(hash)
 	}
 }
 
-#[cfg(test)]
-mod tests {
-	use super::*;
-	use crate::tests::{new_test_ext, Test};
-	use frame_support::assert_ok;
-
-	#[test]
-	fn test_benchmarks() {
-		new_test_ext().execute_with(|| {
-			assert_ok!(test_benchmark_add::<Test>());
-		});
-	}
+impl_benchmark_test_suite! {
+	Pallet,
+	crate::mock::ExtBuilder::default().build_with_keystore(None),
+	crate::mock::Test
 }

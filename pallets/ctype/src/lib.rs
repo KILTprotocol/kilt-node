@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019  BOTLabs GmbH
+// Copyright (C) 2019-2021 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,86 +16,129 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-//! CTYPE: Handles CTYPEs on chain,
-//! adding CTYPEs.
-#![cfg_attr(not(feature = "std"), no_std)]
+//! # CType Pallet
+//!
+//! A simple pallet which enables users to store their CType hash (blake2b as
+//! hex string) on chain and associate it with their account id.
+//!
+//! - [`Config`]
+//! - [`Call`]
+//! - [`Pallet`]
+//!
+//! ### Terminology
+//!
+//! - **CType:**: CTypes are claim types. In everyday language, they are
+//!   standardised structures for credentials. For example, a company may need a
+//!   standard identification credential to identify workers that includes their
+//!   full name, date of birth, access level and id number. Each of these are
+//!   referred to as an attribute of a credential.
+//!
+//! ## Interface
+//!
+//! ### Dispatchable Functions
+//! - `add` - Create a new CType from a given unique CType hash and associate it
+//!   with the origin of the call.
+//!
+//! ## Assumptions
+//!
+//! - The CType hash was created using our KILT JS-SDK.
+//! - The underlying CType includes only the following required fields for the
+//!   JSON-Schema we use in the SDK: Identifier, KILT specific JSON-Schema,
+//!   Title and Properties.
 
-#[cfg(any(feature = "runtime-benchmarks", test))]
+#![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
+
+pub mod default_weights;
+
+#[cfg(any(feature = "mock", test))]
+pub mod mock;
+
+#[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
-/// Test module for CTYPEs
+
+/// Test module for CTypes
 #[cfg(test)]
 mod tests;
 
-pub mod default_weights;
-pub use default_weights::WeightInfo;
+pub use crate::{default_weights::WeightInfo, pallet::*};
 
-use frame_support::{
-	debug, decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure,
-	StorageMap,
-};
-use frame_system::{self, ensure_signed};
+#[frame_support::pallet]
+pub mod pallet {
+	use super::*;
+	use frame_support::pallet_prelude::*;
+	use frame_system::pallet_prelude::*;
 
-/// The CTYPE Config
-pub trait Config: frame_system::Config {
-	/// CTYPE specific event type
-	type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+	/// Type of a CType hash.
+	pub type CtypeHashOf<T> = <T as frame_system::Config>::Hash;
 
-	/// Weight information for extrinsics in this pallet.
-	type WeightInfo: WeightInfo;
-}
+	/// Type of a CType creator.
+	pub type CtypeCreatorOf<T> = <T as Config>::CtypeCreatorId;
 
-decl_event!(
-	/// Events for CTYPEs
-	pub enum Event<T> where <T as frame_system::Config>::AccountId, <T as frame_system::Config>::Hash {
-		/// A CTYPE has been added
-		CTypeCreated(AccountId, Hash),
+	#[pallet::config]
+	pub trait Config: frame_system::Config {
+		type CtypeCreatorId: Parameter + Default;
+		type EnsureOrigin: EnsureOrigin<Success = CtypeCreatorOf<Self>, <Self as frame_system::Config>::Origin>;
+		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type WeightInfo: WeightInfo;
 	}
-);
 
-// The pallet's errors
-decl_error! {
-	pub enum Error for Module<T: Config> {
-		NotFound,
-		AlreadyExists,
+	#[pallet::pallet]
+	#[pallet::generate_store(pub(super) trait Store)]
+	pub struct Pallet<T>(_);
+
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
+
+	/// CTypes stored on chain.
+	///
+	/// It maps from a CType hash to its creator.
+	#[pallet::storage]
+	#[pallet::getter(fn ctypes)]
+	pub type Ctypes<T> = StorageMap<_, Blake2_128Concat, CtypeHashOf<T>, CtypeCreatorOf<T>>;
+
+	#[pallet::event]
+	#[pallet::generate_deposit(pub(super) fn deposit_event)]
+	pub enum Event<T: Config> {
+		/// A new CType has been created.
+		/// \[creator identifier, CType hash\]
+		CTypeCreated(CtypeCreatorOf<T>, CtypeHashOf<T>),
 	}
-}
 
-decl_module! {
-	/// The CTYPE runtime module
-	pub struct Module<T: Config> for enum Call where origin: T::Origin {
+	#[pallet::error]
+	pub enum Error<T> {
+		/// There is no CType with the given hash.
+		CTypeNotFound,
+		/// The CType already exists.
+		CTypeAlreadyExists,
+	}
 
-		/// Deposit events
-		fn deposit_event() = default;
+	#[pallet::call]
+	impl<T: Config> Pallet<T> {
+		/// Create a new CType from the given unique CType hash and associates
+		/// it with its creator.
+		///
+		/// A CType with the same hash must not be stored on chain.
+		///
+		/// Emits `CTypeCreated`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: Ctypes
+		/// - Writes: Ctypes
+		/// # </weight>
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::add())]
+		pub fn add(origin: OriginFor<T>, hash: CtypeHashOf<T>) -> DispatchResult {
+			let creator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
-		// Initializing errors
-		// this includes information about your errors in the node's metadata.
-		// it is needed only if you are using errors in your pallet
-		type Error = Error<T>;
+			ensure!(!<Ctypes<T>>::contains_key(&hash), Error::<T>::CTypeAlreadyExists);
 
-		/// Adds a CTYPE on chain, where
-		/// origin - the origin of the transaction
-		/// hash - hash of the CTYPE of the claim
-		#[weight = <T as Config>::WeightInfo::add()]
-		pub fn add(origin, hash: T::Hash) -> DispatchResult {
-			// origin of the transaction needs to be a signed sender account
-			let sender = ensure_signed(origin)?;
+			log::debug!("Creating CType with hash {:?} and creator {:?}", &hash, &creator);
+			<Ctypes<T>>::insert(&hash, creator.clone());
 
-			// check if CTYPE already exists
-			ensure!(!<CTYPEs<T>>::contains_key(hash), Error::<T>::AlreadyExists);
+			Self::deposit_event(Event::CTypeCreated(creator, hash));
 
-			// add CTYPE to storage
-			debug::print!("insert CTYPE");
-			<CTYPEs<T>>::insert(hash, sender.clone());
-			// deposit event that the CTYPE has been added
-			Self::deposit_event(RawEvent::CTypeCreated(sender, hash));
 			Ok(())
 		}
-	}
-}
-
-decl_storage! {
-	trait Store for Module<T: Config> as Ctype {
-		// CTYPEs: ctype-hash -> account-id?
-		pub CTYPEs get(fn ctypes):map hasher(opaque_blake2_256) T::Hash => Option<T::AccountId>;
 	}
 }

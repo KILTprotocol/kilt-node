@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019  BOTLabs GmbH
+// Copyright (C) 2019-2021 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,462 +16,826 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate as pallet_attestation;
-use crate::*;
+use frame_support::{assert_noop, assert_ok};
+use sp_core::Pair;
 
-use codec::Encode;
-use frame_support::{
-	assert_noop, assert_ok,
-	dispatch::Weight,
-	parameter_types,
-	weights::{
-		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
-		DispatchClass,
-	},
-	StorageMap,
-};
-use frame_system::limits::{BlockLength, BlockWeights};
-use kilt_primitives::{AccountId, Signature};
-use sp_core::{ed25519, Pair, H256};
-use sp_io::TestExternalities;
-use sp_keystore::{testing::KeyStore, KeystoreExt};
-use sp_runtime::{
-	testing::Header,
-	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	MultiSignature, MultiSigner, Perbill,
-};
-use sp_std::sync::Arc;
+use crate::{self as attestation, mock::*};
+use ctype::mock as ctype_mock;
+use delegation::mock as delegation_mock;
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
-type Block = frame_system::mocking::MockBlock<Test>;
-
-frame_support::construct_runtime!(
-	pub enum Test where
-		Block = Block,
-		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic,
-	{
-		System: frame_system::{Module, Call, Config, Storage, Event<T>},
-		PalletAttestation: pallet_attestation::{Module, Call, Storage, Event<T>},
-		Delegation: delegation::{Module, Call, Storage, Event<T>},
-		CType: ctype::{Module, Call, Storage, Event<T>},
-	}
-);
-
-/// We assume that ~10% of the block weight is consumed by `on_initalize` handlers.
-/// This is used to limit the maximal weight of a single extrinsic.
-const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
-/// We allow `Normal` extrinsics to fill up the block up to 75%, the rest can be used
-/// by  Operational  extrinsics.
-const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
-/// We allow for 2 seconds of compute with a 6 second average block time.
-const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
-
-parameter_types! {
-	pub RuntimeBlockLength: BlockLength =
-		BlockLength::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
-	pub RuntimeBlockWeights: BlockWeights = BlockWeights::builder()
-		.base_block(BlockExecutionWeight::get())
-		.for_class(DispatchClass::all(), |weights| {
-			weights.base_extrinsic = ExtrinsicBaseWeight::get();
-		})
-		.for_class(DispatchClass::Normal, |weights| {
-			weights.max_total = Some(NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT);
-		})
-		.for_class(DispatchClass::Operational, |weights| {
-			weights.max_total = Some(MAXIMUM_BLOCK_WEIGHT);
-			// Operational transactions have some extra reserved space, so that they
-			// are included even if block reached `MAXIMUM_BLOCK_WEIGHT`.
-			weights.reserved = Some(
-				MAXIMUM_BLOCK_WEIGHT - NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT
-			);
-		})
-		.avg_block_initialization(AVERAGE_ON_INITIALIZE_RATIO)
-		.build_or_panic();
-	pub const SS58Prefix: u8 = 38;
-	pub const BlockHashCount: u64 = 250;
-}
-
-impl frame_system::Config for Test {
-	type Origin = Origin;
-	type Call = Call;
-	type Index = u64;
-	type BlockNumber = u64;
-	type Hash = H256;
-	type Hashing = BlakeTwo256;
-	type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
-	type Lookup = IdentityLookup<AccountId>;
-	type Header = Header;
-	type Event = ();
-	type BlockHashCount = BlockHashCount;
-	type DbWeight = RocksDbWeight;
-	type Version = ();
-
-	type PalletInfo = PalletInfo;
-	type AccountData = ();
-	type OnNewAccount = ();
-	type OnKilledAccount = ();
-	type BaseCallFilter = ();
-	type SystemWeightInfo = ();
-	type BlockWeights = RuntimeBlockWeights;
-	type BlockLength = RuntimeBlockLength;
-	type SS58Prefix = SS58Prefix;
-}
-
-impl ctype::Config for Test {
-	type Event = ();
-	type WeightInfo = ();
-}
-
-impl delegation::Config for Test {
-	type Event = ();
-	type Signature = Signature;
-	type Signer = <Self::Signature as Verify>::Signer;
-	type DelegationNodeId = H256;
-	type WeightInfo = ();
-}
-
-impl Config for Test {
-	type Event = ();
-	type WeightInfo = ();
-}
-
-pub fn new_test_ext() -> sp_io::TestExternalities {
-	frame_system::GenesisConfig::default()
-		.build_storage::<Test>()
-		.unwrap()
-		.into()
-}
-
-fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
-	hash.encode()
-}
-
-pub struct ExtBuilder;
-
-impl ExtBuilder {
-	pub fn build_with_keystore() -> TestExternalities {
-		let storage = frame_system::GenesisConfig::default()
-			.build_storage::<Test>()
-			.unwrap();
-		let mut ext = TestExternalities::from(storage);
-		// register keystore
-		let keystore = KeyStore::new();
-		ext.register_extension(KeystoreExt(Arc::new(keystore)));
-		// events are not emitted on default block number 0
-		ext.execute_with(|| System::set_block_number(1));
-		ext
-	}
-}
+// submit_attestation_creation_operation
 
 #[test]
-fn check_add_attestation() {
-	new_test_ext().execute_with(|| {
-		let pair = ed25519::Pair::from_seed(&*b"Alice                           ");
-		let hash = H256::from_low_u64_be(1);
-		let account_hash = MultiSigner::from(pair.public()).into_account();
-		assert_ok!(CType::add(Origin::signed(account_hash.clone()), hash));
-		assert_ok!(PalletAttestation::add(
-			Origin::signed(account_hash.clone()),
-			hash,
-			hash,
-			None
+fn attest_no_delegation_successful() {
+	let attester_keypair = get_alice_ed25519();
+	let attester = get_ed25519_account(attester_keypair.public());
+	let claim_hash = get_claim_hash(true);
+	let attestation = generate_base_attestation(attester.clone());
+
+	let operation = generate_base_attestation_creation_details(claim_hash, attestation);
+
+	let mut ext = ctype_mock::ExtBuilder::default()
+		.with_ctypes(vec![(operation.ctype_hash, attester.clone())])
+		.build(None);
+
+	ext.execute_with(|| {
+		assert_ok!(Attestation::add(
+			get_origin(attester.clone()),
+			operation.claim_hash,
+			operation.ctype_hash,
+			operation.delegation_id
 		));
-		let Attestation {
-			ctype_hash,
-			attester,
-			revoked,
-			delegation_id,
-		} = {
-			let opt = PalletAttestation::attestations(hash);
-			assert!(opt.is_some());
-			opt.unwrap()
-		};
-		assert_eq!(ctype_hash, hash);
-		assert_eq!(attester, account_hash);
-		assert_eq!(delegation_id, None);
-		assert_eq!(revoked, false);
 	});
+
+	let stored_attestation =
+		ext.execute_with(|| Attestation::attestations(&claim_hash).expect("Attestation should be present on chain."));
+
+	assert_eq!(stored_attestation.ctype_hash, operation.ctype_hash);
+	assert_eq!(stored_attestation.attester, attester);
+	assert_eq!(stored_attestation.delegation_id, operation.delegation_id);
+	assert!(!stored_attestation.revoked);
 }
 
 #[test]
-fn check_revoke_attestation() {
-	new_test_ext().execute_with(|| {
-		let pair = ed25519::Pair::from_seed(&*b"Alice                           ");
-		let hash = H256::from_low_u64_be(1);
-		let account_hash = MultiSigner::from(pair.public()).into_account();
-		assert_ok!(CType::add(Origin::signed(account_hash.clone()), hash));
-		assert_ok!(PalletAttestation::add(
-			Origin::signed(account_hash.clone()),
-			hash,
-			hash,
-			None
+fn attest_with_delegation_successful() {
+	let attester_keypair = get_alice_ed25519();
+	let attester = get_ed25519_account(attester_keypair.public());
+	let claim_hash = get_claim_hash(true);
+
+	let (hierarchy_root_id, hierarchy_details) = (
+		delegation_mock::get_delegation_hierarchy_id(true),
+		delegation_mock::generate_base_delegation_hierarchy_details(),
+	);
+	let (delegation_id, mut delegation_node) = (
+		delegation_mock::get_delegation_id(true),
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attester.clone(), Some(hierarchy_root_id)),
+	);
+	delegation_node.details.permissions = delegation::Permissions::ATTEST;
+	let mut attestation = generate_base_attestation(attester.clone());
+	attestation.delegation_id = Some(delegation_id);
+
+	let operation = generate_base_attestation_creation_details(claim_hash, attestation);
+
+	let ext = ctype_mock::ExtBuilder::default()
+		.with_ctypes(vec![(operation.ctype_hash, attester.clone())])
+		.build(None);
+	let mut ext = delegation_mock::ExtBuilder::default()
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, attester.clone())])
+		.with_delegations(vec![(delegation_id, delegation_node)])
+		.build(Some(ext));
+
+	ext.execute_with(|| {
+		assert_ok!(Attestation::add(
+			get_origin(attester.clone()),
+			operation.claim_hash,
+			operation.ctype_hash,
+			operation.delegation_id
 		));
-		assert_ok!(PalletAttestation::revoke(
-			Origin::signed(account_hash.clone()),
-			hash,
-			10
-		));
-		let Attestation {
-			ctype_hash,
-			attester,
-			revoked,
-			delegation_id,
-		} = {
-			let opt = PalletAttestation::attestations(hash);
-			assert!(opt.is_some());
-			opt.unwrap()
-		};
-		assert_eq!(ctype_hash, hash);
-		assert_eq!(attester, account_hash);
-		assert_eq!(delegation_id, None);
-		assert_eq!(revoked, true);
 	});
+
+	let stored_attestation =
+		ext.execute_with(|| Attestation::attestations(&claim_hash).expect("Attestation should be present on chain."));
+
+	assert_eq!(stored_attestation.ctype_hash, operation.ctype_hash);
+	assert_eq!(stored_attestation.attester, attester);
+	assert_eq!(stored_attestation.delegation_id, operation.delegation_id);
+	assert!(!stored_attestation.revoked);
+
+	let delegated_attestations = ext.execute_with(|| {
+		Attestation::delegated_attestations(&delegation_id).expect("Attested delegation should be present on chain.")
+	});
+
+	assert_eq!(delegated_attestations, vec![claim_hash]);
 }
 
 #[test]
-fn check_double_attestation() {
-	new_test_ext().execute_with(|| {
-		let pair = ed25519::Pair::from_seed(&*b"Alice                           ");
-		let hash = H256::from_low_u64_be(1);
-		let account_hash = MultiSigner::from(pair.public()).into_account();
-		assert_ok!(CType::add(Origin::signed(account_hash.clone()), hash));
-		assert_ok!(PalletAttestation::add(
-			Origin::signed(account_hash.clone()),
-			hash,
-			hash,
-			None
-		));
+fn ctype_not_present_attest_error() {
+	let attester_keypair = get_alice_ed25519();
+	let attester = get_ed25519_account(attester_keypair.public());
+	let claim_hash = get_claim_hash(true);
+	let attestation = generate_base_attestation(attester.clone());
+
+	let operation = generate_base_attestation_creation_details(claim_hash, attestation);
+
+	// No CType stored
+	let mut ext = ExtBuilder::default().build(None);
+
+	ext.execute_with(|| {
 		assert_noop!(
-			PalletAttestation::add(Origin::signed(account_hash), hash, hash, None),
-			Error::<Test>::AlreadyAttested
+			Attestation::add(
+				get_origin(attester.clone()),
+				operation.claim_hash,
+				operation.ctype_hash,
+				operation.delegation_id
+			),
+			ctype::Error::<Test>::CTypeNotFound
 		);
 	});
 }
 
 #[test]
-fn check_double_revoke_attestation() {
-	new_test_ext().execute_with(|| {
-		let pair = ed25519::Pair::from_seed(&*b"Alice                           ");
-		let hash = H256::from_low_u64_be(1);
-		let account_hash = MultiSigner::from(pair.public()).into_account();
-		assert_ok!(CType::add(Origin::signed(account_hash.clone()), hash));
-		assert_ok!(PalletAttestation::add(
-			Origin::signed(account_hash.clone()),
-			hash,
-			hash,
-			None
-		));
-		assert_ok!(PalletAttestation::revoke(
-			Origin::signed(account_hash.clone()),
-			hash,
-			10
-		));
+fn duplicate_attest_error() {
+	let attester_keypair = get_alice_ed25519();
+	let attester = get_ed25519_account(attester_keypair.public());
+	let claim_hash = get_claim_hash(true);
+	let attestation = generate_base_attestation(attester.clone());
+
+	let operation = generate_base_attestation_creation_details(claim_hash, attestation.clone());
+
+	let ext = ctype_mock::ExtBuilder::default()
+		.with_ctypes(vec![(operation.ctype_hash, attester.clone())])
+		.build(None);
+	let ext = delegation_mock::ExtBuilder::default().build(Some(ext));
+	let mut ext = ExtBuilder::default()
+		.with_attestations(vec![(claim_hash, attestation)])
+		.build(Some(ext));
+
+	ext.execute_with(|| {
 		assert_noop!(
-			PalletAttestation::revoke(Origin::signed(account_hash), hash, 10),
-			Error::<Test>::AlreadyRevoked
+			Attestation::add(
+				get_origin(attester.clone()),
+				operation.claim_hash,
+				operation.ctype_hash,
+				operation.delegation_id
+			),
+			attestation::Error::<Test>::AlreadyAttested
 		);
 	});
 }
 
 #[test]
-fn check_revoke_unknown() {
-	new_test_ext().execute_with(|| {
-		let pair = ed25519::Pair::from_seed(&*b"Alice                           ");
-		let hash = H256::from_low_u64_be(1);
-		let account_hash = MultiSigner::from(pair.public()).into_account();
+fn delegation_not_found_attest_error() {
+	let attester_keypair = get_alice_ed25519();
+	let attester = get_ed25519_account(attester_keypair.public());
+	let claim_hash = get_claim_hash(true);
+	let delegation_id = delegation_mock::get_delegation_id(true);
+	let mut attestation = generate_base_attestation(attester.clone());
+	attestation.delegation_id = Some(delegation_id);
+
+	let operation = generate_base_attestation_creation_details(claim_hash, attestation);
+
+	let mut ext = ctype_mock::ExtBuilder::default()
+		.with_ctypes(vec![(operation.ctype_hash, attester.clone())])
+		.build(None);
+
+	ext.execute_with(|| {
 		assert_noop!(
-			PalletAttestation::revoke(Origin::signed(account_hash), hash, 10),
-			Error::<Test>::AttestationNotFound
-		);
-	});
-}
-
-#[test]
-fn check_revoke_not_permitted() {
-	new_test_ext().execute_with(|| {
-		let pair_alice = ed25519::Pair::from_seed(&*b"Alice                           ");
-		let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
-		let pair_bob = ed25519::Pair::from_seed(&*b"Bob                             ");
-		let account_hash_bob = MultiSigner::from(pair_bob.public()).into_account();
-		let hash = H256::from_low_u64_be(1);
-		assert_ok!(CType::add(Origin::signed(account_hash_alice.clone()), hash));
-		assert_ok!(PalletAttestation::add(
-			Origin::signed(account_hash_alice),
-			hash,
-			hash,
-			None
-		));
-		assert_noop!(
-			PalletAttestation::revoke(Origin::signed(account_hash_bob), hash, 10),
-			Error::<Test>::UnauthorizedRevocation
-		);
-	});
-}
-
-#[test]
-fn check_add_attestation_with_delegation() {
-	new_test_ext().execute_with(|| {
-		let pair_alice = ed25519::Pair::from_seed(&*b"Alice                           ");
-		let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
-		let pair_bob = ed25519::Pair::from_seed(&*b"Bob                             ");
-		let account_hash_bob = MultiSigner::from(pair_bob.public()).into_account();
-		let pair_charlie = ed25519::Pair::from_seed(&*b"Charlie                         ");
-		let account_hash_charlie = MultiSigner::from(pair_charlie.public()).into_account();
-
-		let ctype_hash = H256::from_low_u64_be(1);
-		let other_ctype_hash = H256::from_low_u64_be(2);
-		let claim_hash = H256::from_low_u64_be(1);
-
-		let delegation_root = H256::from_low_u64_be(0);
-		let delegation_1 = H256::from_low_u64_be(1);
-		let delegation_2 = H256::from_low_u64_be(2);
-
-		assert_ok!(CType::add(
-			Origin::signed(account_hash_alice.clone()),
-			ctype_hash
-		));
-
-		// cannot add attestation based on a missing delegation
-		assert_noop!(
-			PalletAttestation::add(
-				Origin::signed(account_hash_alice.clone()),
-				claim_hash,
-				ctype_hash,
-				Some(delegation_root)
+			Attestation::add(
+				get_origin(attester.clone()),
+				operation.claim_hash,
+				operation.ctype_hash,
+				operation.delegation_id
 			),
 			delegation::Error::<Test>::DelegationNotFound
 		);
+	});
+}
 
-		// add root delegation
-		assert_ok!(Delegation::create_root(
-			Origin::signed(account_hash_alice.clone()),
-			delegation_root,
-			ctype_hash
-		));
+#[test]
+fn delegation_revoked_attest_error() {
+	let attester_keypair = get_alice_ed25519();
+	let attester = get_ed25519_account(attester_keypair.public());
+	let claim_hash = get_claim_hash(true);
+	let (hierarchy_root_id, hierarchy_details) = (
+		delegation_mock::get_delegation_hierarchy_id(true),
+		delegation_mock::generate_base_delegation_hierarchy_details(),
+	);
+	let (delegation_id, mut delegation_node) = (
+		delegation_mock::get_delegation_id(true),
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attester.clone(), Some(hierarchy_root_id)),
+	);
+	delegation_node.details.permissions = delegation::Permissions::ATTEST;
+	delegation_node.details.revoked = true;
+	let mut attestation = generate_base_attestation(attester.clone());
+	attestation.delegation_id = Some(delegation_id);
 
-		// add delegation_1 as child of root
-		assert_ok!(Delegation::add_delegation(
-			Origin::signed(account_hash_alice.clone()),
-			delegation_1,
-			delegation_root,
-			None,
-			account_hash_bob.clone(),
-			delegation::Permissions::DELEGATE,
-			MultiSignature::from(pair_bob.sign(&hash_to_u8(Delegation::calculate_hash(
-				delegation_1,
-				delegation_root,
-				None,
-				delegation::Permissions::DELEGATE
-			))))
-		));
+	let operation = generate_base_attestation_creation_details(claim_hash, attestation);
 
-		// add delegation_2 as child of root
-		assert_ok!(Delegation::add_delegation(
-			Origin::signed(account_hash_alice.clone()),
-			delegation_2,
-			delegation_root,
-			None,
-			account_hash_bob.clone(),
-			delegation::Permissions::ATTEST,
-			MultiSignature::from(pair_bob.sign(&hash_to_u8(Delegation::calculate_hash(
-				delegation_2,
-				delegation_root,
-				None,
-				delegation::Permissions::ATTEST
-			))))
-		));
+	let ext = ctype_mock::ExtBuilder::default()
+		.with_ctypes(vec![(operation.ctype_hash, attester.clone())])
+		.build(None);
+	let mut ext = delegation_mock::ExtBuilder::default()
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, attester.clone())])
+		.with_delegations(vec![(delegation_id, delegation_node)])
+		.build(Some(ext));
 
-		// cannot add attestation for missing ctype
+	ext.execute_with(|| {
 		assert_noop!(
-			PalletAttestation::add(
-				Origin::signed(account_hash_bob.clone()),
-				claim_hash,
-				other_ctype_hash,
-				Some(delegation_2)
+			Attestation::add(
+				get_origin(attester.clone()),
+				operation.claim_hash,
+				operation.ctype_hash,
+				operation.delegation_id
 			),
-			ctype::Error::<Test>::NotFound
+			attestation::Error::<Test>::DelegationRevoked
 		);
+	});
+}
 
-		// add missing ctype
-		assert_ok!(CType::add(
-			Origin::signed(account_hash_alice.clone()),
-			other_ctype_hash
-		));
+#[test]
+fn not_delegation_owner_attest_error() {
+	let attester_keypair = get_alice_ed25519();
+	let attester = get_ed25519_account(attester_keypair.public());
+	let alternative_owner_keypair = get_bob_ed25519();
+	let alternative_owner = get_ed25519_account(alternative_owner_keypair.public());
+	let claim_hash = get_claim_hash(true);
+	let (hierarchy_root_id, hierarchy_details) = (
+		delegation_mock::get_delegation_hierarchy_id(true),
+		delegation_mock::generate_base_delegation_hierarchy_details(),
+	);
+	let (delegation_id, mut delegation_node) = (
+		delegation_mock::get_delegation_id(true),
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, alternative_owner, Some(hierarchy_root_id)),
+	);
+	delegation_node.details.permissions = delegation::Permissions::ATTEST;
+	let mut attestation = generate_base_attestation(attester.clone());
+	attestation.delegation_id = Some(delegation_id);
 
-		// cannot add attestation with different ctype than in root
+	let operation = generate_base_attestation_creation_details(claim_hash, attestation);
+
+	let ext = ctype_mock::ExtBuilder::default()
+		.with_ctypes(vec![(operation.ctype_hash, attester.clone())])
+		.build(None);
+	let mut ext = delegation_mock::ExtBuilder::default()
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, attester.clone())])
+		.with_delegations(vec![(delegation_id, delegation_node)])
+		.build(Some(ext));
+
+	ext.execute_with(|| {
 		assert_noop!(
-			PalletAttestation::add(
-				Origin::signed(account_hash_bob.clone()),
-				claim_hash,
-				other_ctype_hash,
-				Some(delegation_2)
+			Attestation::add(
+				get_origin(attester.clone()),
+				operation.claim_hash,
+				operation.ctype_hash,
+				operation.delegation_id
 			),
-			Error::<Test>::CTypeMismatch
+			attestation::Error::<Test>::NotDelegatedToAttester
 		);
+	});
+}
 
-		// cannot add delegation if not owner (bob is owner of delegation_2)
+#[test]
+fn unauthorised_permissions_attest_error() {
+	let attester_keypair = get_alice_ed25519();
+	let attester = get_ed25519_account(attester_keypair.public());
+	let claim_hash = get_claim_hash(true);
+	let (hierarchy_root_id, hierarchy_details) = (
+		delegation_mock::get_delegation_hierarchy_id(true),
+		delegation_mock::generate_base_delegation_hierarchy_details(),
+	);
+	// Delegation node does not have permissions to attest.
+	let (delegation_id, delegation_node) = (
+		delegation_mock::get_delegation_id(true),
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attester.clone(), Some(hierarchy_root_id)),
+	);
+	let mut attestation = generate_base_attestation(attester.clone());
+	attestation.delegation_id = Some(delegation_id);
+
+	let operation = generate_base_attestation_creation_details(claim_hash, attestation);
+
+	let ext = ctype_mock::ExtBuilder::default()
+		.with_ctypes(vec![(operation.ctype_hash, attester.clone())])
+		.build(None);
+	let mut ext = delegation_mock::ExtBuilder::default()
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, attester.clone())])
+		.with_delegations(vec![(delegation_id, delegation_node)])
+		.build(Some(ext));
+
+	ext.execute_with(|| {
 		assert_noop!(
-			PalletAttestation::add(
-				Origin::signed(account_hash_alice.clone()),
-				claim_hash,
-				ctype_hash,
-				Some(delegation_2)
+			Attestation::add(
+				get_origin(attester.clone()),
+				operation.claim_hash,
+				operation.ctype_hash,
+				operation.delegation_id
 			),
-			Error::<Test>::NotDelegatedToAttester
+			attestation::Error::<Test>::DelegationUnauthorizedToAttest
 		);
-		// cannot add delegation if not owner (alice is owner of delegation_1)
+	});
+}
+
+#[test]
+fn root_not_present_attest_error() {
+	let attester_keypair = get_alice_ed25519();
+	let attester = get_ed25519_account(attester_keypair.public());
+	let claim_hash = get_claim_hash(true);
+	let (hierarchy_root_id, hierarchy_details) = (
+		delegation_mock::get_delegation_hierarchy_id(true),
+		delegation_mock::generate_base_delegation_hierarchy_details(),
+	);
+	let alternative_hierarchy_root_id = delegation_mock::get_delegation_hierarchy_id(false);
+	let (delegation_id, mut delegation_node) = (
+		delegation_mock::get_delegation_id(true),
+		delegation_mock::generate_base_delegation_node(
+			hierarchy_root_id,
+			attester.clone(),
+			Some(alternative_hierarchy_root_id),
+		),
+	);
+	delegation_node.details.permissions = delegation::Permissions::ATTEST;
+	let mut attestation = generate_base_attestation(attester.clone());
+	attestation.delegation_id = Some(delegation_id);
+
+	let operation = generate_base_attestation_creation_details(claim_hash, attestation);
+
+	let ext = ctype_mock::ExtBuilder::default()
+		.with_ctypes(vec![(operation.ctype_hash, attester.clone())])
+		.build(None);
+	let mut ext = delegation_mock::ExtBuilder::default()
+		.with_delegation_hierarchies(vec![(
+			alternative_hierarchy_root_id,
+			hierarchy_details,
+			attester.clone(),
+		)])
+		.with_delegations(vec![(delegation_id, delegation_node)])
+		.build(Some(ext));
+
+	ext.execute_with(|| {
 		assert_noop!(
-			PalletAttestation::add(
-				Origin::signed(account_hash_bob.clone()),
-				claim_hash,
-				ctype_hash,
-				Some(delegation_1)
+			Attestation::add(
+				get_origin(attester.clone()),
+				operation.claim_hash,
+				operation.ctype_hash,
+				operation.delegation_id
 			),
-			Error::<Test>::DelegationUnauthorizedToAttest
+			delegation::Error::<Test>::HierarchyNotFound
 		);
+	});
+}
 
-		// add attestation for delegation_2
-		assert_ok!(PalletAttestation::add(
-			Origin::signed(account_hash_bob.clone()),
-			claim_hash,
-			ctype_hash,
-			Some(delegation_2)
-		));
+#[test]
+fn root_ctype_mismatch_attest_error() {
+	let attester_keypair = get_alice_ed25519();
+	let attester = get_ed25519_account(attester_keypair.public());
+	let claim_hash = get_claim_hash(true);
+	let alternative_ctype_hash = ctype_mock::get_ctype_hash(false);
+	let (hierarchy_root_id, mut hierarchy_details) = (
+		delegation_mock::get_delegation_hierarchy_id(true),
+		delegation_mock::generate_base_delegation_hierarchy_details(),
+	);
+	hierarchy_details.ctype_hash = alternative_ctype_hash;
+	let (delegation_id, mut delegation_node) = (
+		delegation_mock::get_delegation_id(true),
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attester.clone(), Some(hierarchy_root_id)),
+	);
+	delegation_node.details.permissions = delegation::Permissions::ATTEST;
+	let mut attestation = generate_base_attestation(attester.clone());
+	attestation.delegation_id = Some(delegation_id);
 
-		let existing_attestations_for_delegation =
-			PalletAttestation::delegated_attestations(delegation_2);
-		assert_eq!(existing_attestations_for_delegation.len(), 1);
-		assert_eq!(existing_attestations_for_delegation[0], claim_hash);
+	let operation = generate_base_attestation_creation_details(claim_hash, attestation);
 
-		// revoke root delegation
-		assert_ok!(Delegation::revoke_root(
-			Origin::signed(account_hash_alice.clone()),
-			delegation_root,
-			2
-		));
+	let ext = ctype_mock::ExtBuilder::default()
+		.with_ctypes(vec![(operation.ctype_hash, attester.clone())])
+		.build(None);
+	let mut ext = delegation_mock::ExtBuilder::default()
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, attester.clone())])
+		.with_delegations(vec![(delegation_id, delegation_node)])
+		.build(Some(ext));
 
-		// cannot revoke attestation if not owner (alice is owner of attestation)
+	ext.execute_with(|| {
 		assert_noop!(
-			PalletAttestation::revoke(Origin::signed(account_hash_charlie), claim_hash, 10),
-			Error::<Test>::UnauthorizedRevocation
-		);
-		assert_ok!(PalletAttestation::revoke(
-			Origin::signed(account_hash_alice),
-			claim_hash,
-			10,
-		));
-
-		// remove attestation to catch for revoked delegation
-		Attestations::<Test>::remove(claim_hash);
-		assert_noop!(
-			PalletAttestation::add(
-				Origin::signed(account_hash_bob),
-				claim_hash,
-				ctype_hash,
-				Some(delegation_2)
+			Attestation::add(
+				get_origin(attester.clone()),
+				operation.claim_hash,
+				operation.ctype_hash,
+				operation.delegation_id
 			),
-			Error::<Test>::DelegationRevoked
+			attestation::Error::<Test>::CTypeMismatch
+		);
+	});
+}
+
+// submit_attestation_revocation_operation
+
+#[test]
+fn revoke_direct_successful() {
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let claim_hash = get_claim_hash(true);
+	let attestation = generate_base_attestation(revoker.clone());
+
+	let operation = generate_base_attestation_revocation_details(claim_hash);
+
+	let ext = ctype_mock::ExtBuilder::default()
+		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
+		.build(None);
+	let ext = delegation_mock::ExtBuilder::default().build(Some(ext));
+	let mut ext = ExtBuilder::default()
+		.with_attestations(vec![(operation.claim_hash, attestation)])
+		.build(Some(ext));
+
+	ext.execute_with(|| {
+		assert_ok!(Attestation::revoke(
+			get_origin(revoker.clone()),
+			operation.claim_hash,
+			operation.max_parent_checks
+		));
+	});
+
+	let stored_attestation =
+		ext.execute_with(|| Attestation::attestations(claim_hash).expect("Attestation should be present on chain."));
+
+	assert!(stored_attestation.revoked);
+}
+
+#[test]
+fn revoke_with_delegation_successful() {
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let attestation_owner_keypair = get_bob_ed25519();
+	let attestation_owner = get_ed25519_account(attestation_owner_keypair.public());
+	let claim_hash = get_claim_hash(true);
+
+	let (hierarchy_root_id, hierarchy_details) = (
+		delegation_mock::get_delegation_hierarchy_id(true),
+		delegation_mock::generate_base_delegation_hierarchy_details(),
+	);
+	let (delegation_id, mut delegation_node) = (
+		delegation_mock::get_delegation_id(true),
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
+	);
+	delegation_node.details.permissions = delegation::Permissions::ATTEST;
+	// Attestation owned by a different user, but delegation owned by the user
+	// submitting the operation.
+	let mut attestation = generate_base_attestation(attestation_owner);
+	attestation.delegation_id = Some(delegation_id);
+
+	let mut operation = generate_base_attestation_revocation_details(claim_hash);
+	// Set to 0 as we only need to check the delegation node itself and no parent.
+	operation.max_parent_checks = 0u32;
+
+	let ext = ctype_mock::ExtBuilder::default()
+		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
+		.build(None);
+	let ext = delegation_mock::ExtBuilder::default()
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
+		.with_delegations(vec![(delegation_id, delegation_node)])
+		.build(Some(ext));
+	let mut ext = ExtBuilder::default()
+		.with_attestations(vec![(operation.claim_hash, attestation)])
+		.build(Some(ext));
+
+	ext.execute_with(|| {
+		assert_ok!(Attestation::revoke(
+			get_origin(revoker.clone()),
+			operation.claim_hash,
+			operation.max_parent_checks
+		));
+	});
+
+	let stored_attestation = ext.execute_with(|| {
+		Attestation::attestations(operation.claim_hash).expect("Attestation should be present on chain.")
+	});
+
+	assert!(stored_attestation.revoked);
+}
+
+#[test]
+fn revoke_with_parent_delegation_successful() {
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let attestation_owner_keypair = get_bob_ed25519();
+	let attestation_owner = get_ed25519_account(attestation_owner_keypair.public());
+	let claim_hash = get_claim_hash(true);
+
+	let (hierarchy_root_id, hierarchy_details) = (
+		delegation_mock::get_delegation_hierarchy_id(true),
+		delegation_mock::generate_base_delegation_hierarchy_details(),
+	);
+	let (parent_id, mut parent_node) = (
+		delegation_mock::get_delegation_id(true),
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
+	);
+	parent_node.details.permissions = delegation::Permissions::ATTEST;
+	let (delegation_id, delegation_node) = (
+		delegation_mock::get_delegation_id(false),
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attestation_owner.clone(), Some(parent_id)),
+	);
+	let mut attestation = generate_base_attestation(attestation_owner);
+	attestation.delegation_id = Some(delegation_id);
+
+	let mut operation = generate_base_attestation_revocation_details(claim_hash);
+	// Set to 1 as the delegation referenced in the attestation is the child of the
+	// node we want to use
+	operation.max_parent_checks = 1u32;
+
+	let ext = ctype_mock::ExtBuilder::default()
+		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
+		.build(None);
+	let ext = delegation_mock::ExtBuilder::default()
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
+		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
+		.build(Some(ext));
+	let mut ext = ExtBuilder::default()
+		.with_attestations(vec![(operation.claim_hash, attestation)])
+		.build(Some(ext));
+
+	ext.execute_with(|| {
+		assert_ok!(Attestation::revoke(
+			get_origin(revoker.clone()),
+			operation.claim_hash,
+			operation.max_parent_checks
+		));
+	});
+
+	let stored_attestation =
+		ext.execute_with(|| Attestation::attestations(claim_hash).expect("Attestation should be present on chain."));
+
+	assert!(stored_attestation.revoked);
+}
+
+#[test]
+fn revoke_parent_delegation_no_attestation_permissions_successful() {
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let attestation_owner_keypair = get_bob_ed25519();
+	let attestation_owner = get_ed25519_account(attestation_owner_keypair.public());
+	let claim_hash = get_claim_hash(true);
+
+	let (hierarchy_root_id, hierarchy_details) = (
+		delegation_mock::get_delegation_hierarchy_id(true),
+		delegation_mock::generate_base_delegation_hierarchy_details(),
+	);
+	let (parent_id, mut parent_node) = (
+		delegation_mock::get_delegation_id(true),
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
+	);
+	parent_node.details.permissions = delegation::Permissions::DELEGATE;
+	let (delegation_id, delegation_node) = (
+		delegation_mock::get_delegation_id(false),
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attestation_owner.clone(), Some(parent_id)),
+	);
+	let mut attestation = generate_base_attestation(attestation_owner);
+	attestation.delegation_id = Some(delegation_id);
+
+	let mut operation = generate_base_attestation_revocation_details(claim_hash);
+	// Set to 1 as the delegation referenced in the attestation is the child of the
+	// node we want to use
+	operation.max_parent_checks = 1u32;
+
+	let ext = ctype_mock::ExtBuilder::default()
+		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
+		.build(None);
+	let ext = delegation_mock::ExtBuilder::default()
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
+		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
+		.build(Some(ext));
+	let mut ext = ExtBuilder::default()
+		.with_attestations(vec![(operation.claim_hash, attestation)])
+		.build(Some(ext));
+
+	ext.execute_with(|| {
+		assert_ok!(Attestation::revoke(
+			get_origin(revoker.clone()),
+			operation.claim_hash,
+			operation.max_parent_checks
+		));
+	});
+
+	let stored_attestation =
+		ext.execute_with(|| Attestation::attestations(claim_hash).expect("Attestation should be present on chain."));
+
+	assert!(stored_attestation.revoked);
+}
+
+#[test]
+fn revoke_parent_delegation_with_direct_delegation_revoked_successful() {
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let attestation_owner_keypair = get_bob_ed25519();
+	let attestation_owner = get_ed25519_account(attestation_owner_keypair.public());
+	let claim_hash = get_claim_hash(true);
+
+	let (hierarchy_root_id, hierarchy_details) = (
+		delegation_mock::get_delegation_hierarchy_id(true),
+		delegation_mock::generate_base_delegation_hierarchy_details(),
+	);
+	let (parent_id, mut parent_node) = (
+		delegation_mock::get_delegation_id(true),
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
+	);
+	parent_node.details.permissions = delegation::Permissions::ATTEST;
+	let (delegation_id, mut delegation_node) = (
+		delegation_mock::get_delegation_id(false),
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attestation_owner.clone(), Some(parent_id)),
+	);
+	delegation_node.details.revoked = true;
+	let mut attestation = generate_base_attestation(attestation_owner);
+	attestation.delegation_id = Some(delegation_id);
+
+	let mut operation = generate_base_attestation_revocation_details(claim_hash);
+	// Set to 1 as the delegation referenced in the attestation is the child of the
+	// node we want to use
+	operation.max_parent_checks = 1u32;
+
+	let ext = ctype_mock::ExtBuilder::default()
+		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
+		.build(None);
+	let ext = delegation_mock::ExtBuilder::default()
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
+		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
+		.build(Some(ext));
+	let mut ext = ExtBuilder::default()
+		.with_attestations(vec![(operation.claim_hash, attestation)])
+		.build(Some(ext));
+
+	ext.execute_with(|| {
+		assert_ok!(Attestation::revoke(
+			get_origin(revoker.clone()),
+			operation.claim_hash,
+			operation.max_parent_checks
+		));
+	});
+
+	let stored_attestation =
+		ext.execute_with(|| Attestation::attestations(claim_hash).expect("Attestation should be present on chain."));
+
+	assert!(stored_attestation.revoked);
+}
+
+#[test]
+fn attestation_not_present_revoke_error() {
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let claim_hash = get_claim_hash(true);
+
+	let attestation = generate_base_attestation(revoker.clone());
+
+	let operation = generate_base_attestation_revocation_details(claim_hash);
+
+	let mut ext = ctype_mock::ExtBuilder::default()
+		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
+		.build(None);
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Attestation::revoke(
+				get_origin(revoker.clone()),
+				operation.claim_hash,
+				operation.max_parent_checks
+			),
+			attestation::Error::<Test>::AttestationNotFound
+		);
+	});
+}
+
+#[test]
+fn already_revoked_revoke_error() {
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let claim_hash = get_claim_hash(true);
+
+	// Attestation already revoked
+	let mut attestation = generate_base_attestation(revoker.clone());
+	attestation.revoked = true;
+
+	let operation = generate_base_attestation_revocation_details(claim_hash);
+
+	let ext = ctype_mock::ExtBuilder::default()
+		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
+		.build(None);
+	let ext = delegation_mock::ExtBuilder::default().build(Some(ext));
+	let mut ext = ExtBuilder::default()
+		.with_attestations(vec![(operation.claim_hash, attestation)])
+		.build(Some(ext));
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Attestation::revoke(
+				get_origin(revoker.clone()),
+				operation.claim_hash,
+				operation.max_parent_checks
+			),
+			attestation::Error::<Test>::AlreadyRevoked
+		);
+	});
+}
+
+#[test]
+fn unauthorised_attestation_revoke_error() {
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let attestation_owner_keypair = get_bob_ed25519();
+	let attestation_owner = get_ed25519_account(attestation_owner_keypair.public());
+	let claim_hash = get_claim_hash(true);
+
+	// Attestation owned by a different user
+	let attestation = generate_base_attestation(attestation_owner);
+
+	let operation = generate_base_attestation_revocation_details(claim_hash);
+
+	let ext = ctype_mock::ExtBuilder::default()
+		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
+		.build(None);
+	let ext = delegation_mock::ExtBuilder::default().build(Some(ext));
+	let mut ext = ExtBuilder::default()
+		.with_attestations(vec![(operation.claim_hash, attestation)])
+		.build(Some(ext));
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Attestation::revoke(
+				get_origin(revoker.clone()),
+				operation.claim_hash,
+				operation.max_parent_checks
+			),
+			attestation::Error::<Test>::UnauthorizedRevocation
+		);
+	});
+}
+
+#[test]
+fn max_parent_lookups_revoke_error() {
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let attestation_owner_keypair = get_bob_ed25519();
+	let attestation_owner = get_ed25519_account(attestation_owner_keypair.public());
+	let claim_hash = get_claim_hash(true);
+
+	let (hierarchy_root_id, hierarchy_details) = (
+		delegation_mock::get_delegation_hierarchy_id(true),
+		delegation_mock::generate_base_delegation_hierarchy_details(),
+	);
+	let (parent_id, parent_node) = (
+		delegation_mock::get_delegation_id(true),
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
+	);
+	let (delegation_id, mut delegation_node) = (
+		delegation_mock::get_delegation_id(false),
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attestation_owner.clone(), Some(parent_id)),
+	);
+	delegation_node.details.permissions = delegation::Permissions::ATTEST;
+	let mut attestation = generate_base_attestation(attestation_owner);
+	attestation.delegation_id = Some(delegation_id);
+
+	let mut operation = generate_base_attestation_revocation_details(claim_hash);
+	operation.max_parent_checks = 0u32;
+
+	let ext = ctype_mock::ExtBuilder::default()
+		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
+		.build(None);
+	let ext = delegation_mock::ExtBuilder::default()
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
+		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
+		.build(Some(ext));
+	let mut ext = ExtBuilder::default()
+		.with_attestations(vec![(operation.claim_hash, attestation)])
+		.build(Some(ext));
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Attestation::revoke(
+				get_origin(revoker.clone()),
+				operation.claim_hash,
+				operation.max_parent_checks
+			),
+			delegation::Error::<Test>::MaxSearchDepthReached
+		);
+	});
+}
+
+#[test]
+fn revoked_delegation_revoke_error() {
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let attestation_owner_keypair = get_bob_ed25519();
+	let attestation_owner = get_ed25519_account(attestation_owner_keypair.public());
+	let claim_hash = get_claim_hash(true);
+
+	let (hierarchy_root_id, hierarchy_details) = (
+		delegation_mock::get_delegation_hierarchy_id(true),
+		delegation_mock::generate_base_delegation_hierarchy_details(),
+	);
+	let (delegation_id, mut delegation_node) = (
+		delegation_mock::get_delegation_id(true),
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
+	);
+	delegation_node.details.permissions = delegation::Permissions::ATTEST;
+	delegation_node.details.revoked = true;
+	let mut attestation = generate_base_attestation(attestation_owner);
+	attestation.delegation_id = Some(delegation_id);
+
+	let operation = generate_base_attestation_revocation_details(claim_hash);
+
+	let ext = ctype_mock::ExtBuilder::default()
+		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
+		.build(None);
+	let ext = delegation_mock::ExtBuilder::default()
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
+		.with_delegations(vec![(delegation_id, delegation_node)])
+		.build(Some(ext));
+	let mut ext = ExtBuilder::default()
+		.with_attestations(vec![(operation.claim_hash, attestation)])
+		.build(Some(ext));
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Attestation::revoke(
+				get_origin(revoker.clone()),
+				operation.claim_hash,
+				operation.max_parent_checks
+			),
+			attestation::Error::<Test>::UnauthorizedRevocation
 		);
 	});
 }

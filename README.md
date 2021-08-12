@@ -1,4 +1,5 @@
-# KILT mashnet-node &middot; [![Build and Test](https://github.com/KILTprotocol/mashnet-node/workflows/Build%20and%20Test/badge.svg)](https://github.com/KILTprotocol/mashnet-node/actions)
+# KILT mashnet-node &middot; [![tests](https://gitlab.com/kiltprotocol/mashnet-node/badges/develop/pipeline.svg)](https://gitlab.com/kiltprotocol/mashnet-node/-/commits/develop)
+
 
 <p align="center">
   <img src="/docs/media/kilt.png">
