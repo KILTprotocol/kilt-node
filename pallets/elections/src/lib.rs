@@ -425,22 +425,19 @@ pub mod pallet {
 			#[pallet::compact] candidate_count: u32,
 		) -> DispatchResultWithPostInfo {
 			// TODO: Potentially rewrite
-			// let who = ensure_signed(origin)?;
+			let who = ensure_signed(origin)?;
 
-			// let actual_count = <Candidates<T>>::decode_len().unwrap_or(0);
-			// ensure!(actual_count as u32 <= candidate_count,
-			// Error::<T>::InvalidWitnessData);
+			let actual_count = <Candidates<T>>::decode_len().unwrap_or(0);
+			ensure!(actual_count as u32 <= candidate_count, Error::<T>::InvalidWitnessData);
 
-			// let index =
-			// Self::is_candidate(&who).err().ok_or(Error::<T>::DuplicatedCandidate)?;
+			let index = Self::is_candidate(&who).err().ok_or(Error::<T>::DuplicatedCandidate)?;
 
-			// ensure!(!Self::is_member(&who), Error::<T>::MemberSubmit);
-			// ensure!(!Self::is_runner_up(&who), Error::<T>::RunnerUpSubmit);
+			ensure!(!Self::is_member(&who), Error::<T>::MemberSubmit);
+			ensure!(!Self::is_runner_up(&who), Error::<T>::RunnerUpSubmit);
 
-			// T::Currency::reserve(&who, T::CandidacyBond::get()).map_err(|_|
-			// Error::<T>::InsufficientCandidateFunds)?;
+			T::Currency::reserve(&who, T::CandidacyBond::get()).map_err(|_| Error::<T>::InsufficientCandidateFunds)?;
 
-			// <Candidates<T>>::mutate(|c| c.insert(index, (who, T::CandidacyBond::get())));
+			<Candidates<T>>::mutate(|c| c.insert(index, (who, T::CandidacyBond::get())));
 			Ok(None.into())
 		}
 
@@ -869,29 +866,26 @@ impl<T: Config> Pallet<T> {
 	// 		Ok(return_value)
 	// 	}
 
-	// TODO: Potentially rewrite
-	// 	/// Check if `who` is a candidate. It returns the insert index if the
-	// 	/// element does not exists as an error.
-	// 	fn is_candidate(who: &T::AccountId) -> Result<(), usize> {
-	// 		Self::candidates().binary_search_by(|c| c.0.cmp(who)).map(|_| ())
-	// 	}
+	/// Check if `who` is a candidate. It returns the insert index if the
+	/// element does not exists as an error.
+	fn is_candidate(who: &T::AccountId) -> Result<(), usize> {
+		Self::candidates().binary_search_by(|c| c.0.cmp(who)).map(|_| ())
+	}
 
 	/// Check if `who` is a voter. It may or may not be a _current_ one.
 	fn is_voter(who: &T::AccountId) -> bool {
 		Voting::<T>::contains_key(who)
 	}
 
-	// TODO: Potentially rewrite
-	// 	/// Check if `who` is currently an active member.
-	// 	fn is_member(who: &T::AccountId) -> bool {
-	// 		Self::members().binary_search_by(|m| m.who.cmp(who)).is_ok()
-	// 	}
+	/// Check if `who` is currently an active member.
+	fn is_member(who: &T::AccountId) -> bool {
+		Self::members().binary_search_by(|m| m.who.cmp(who)).is_ok()
+	}
 
-	// TODO: Potentially rewrite
-	// 	/// Check if `who` is currently an active runner-up.
-	// 	fn is_runner_up(who: &T::AccountId) -> bool {
-	// 		Self::runners_up().iter().position(|r| &r.who == who).is_some()
-	// 	}
+	/// Check if `who` is currently an active runner-up.
+	fn is_runner_up(who: &T::AccountId) -> bool {
+		Self::runners_up().iter().position(|r| &r.who == who).is_some()
+	}
 
 	// TODO: Potentially rewrite
 	// 	/// Get the members' account ids.
