@@ -469,41 +469,40 @@ pub mod pallet {
 		// })]
 		#[pallet::weight(1)]
 		pub fn renounce_candidacy(origin: OriginFor<T>, renouncing: Renouncing) -> DispatchResultWithPostInfo {
-			// TODO: Potentially rewrite
-			// let who = ensure_signed(origin)?;
-			// match renouncing {
-			// 	Renouncing::Member => {
-			// 		let _ = Self::remove_and_replace_member(&who, false).map_err(|_|
-			// Error::<T>::InvalidRenouncing)?; 		Self::deposit_event(Event::Renounced(who));
-			// 	}
-			// 	Renouncing::RunnerUp => {
-			// 		<RunnersUp<T>>::try_mutate::<_, Error<T>, _>(|runners_up| {
-			// 			let index = runners_up
-			// 				.iter()
-			// 				.position(|SeatHolder { who: r, .. }| r == &who)
-			// 				.ok_or(Error::<T>::InvalidRenouncing)?;
-			// 			// can't fail anymore.
-			// 			let SeatHolder { deposit, .. } = runners_up.remove(index);
-			// 			let _remainder = T::Currency::unreserve(&who, deposit);
-			// 			debug_assert!(_remainder.is_zero());
-			// 			Self::deposit_event(Event::Renounced(who));
-			// 			Ok(())
-			// 		})?;
-			// 	}
-			// 	Renouncing::Candidate(count) => {
-			// 		<Candidates<T>>::try_mutate::<_, Error<T>, _>(|candidates| {
-			// 			ensure!(count >= candidates.len() as u32, Error::<T>::InvalidWitnessData);
-			// 			let index = candidates
-			// 				.binary_search_by(|(c, _)| c.cmp(&who))
-			// 				.map_err(|_| Error::<T>::InvalidRenouncing)?;
-			// 			let (_removed, deposit) = candidates.remove(index);
-			// 			let _remainder = T::Currency::unreserve(&who, deposit);
-			// 			debug_assert!(_remainder.is_zero());
-			// 			Self::deposit_event(Event::Renounced(who));
-			// 			Ok(())
-			// 		})?;
-			// 	}
-			// };
+			let who = ensure_signed(origin)?;
+			match renouncing {
+				Renouncing::Member => {
+					let _ = Self::remove_and_replace_member(&who, false).map_err(|_| Error::<T>::InvalidRenouncing)?;
+					Self::deposit_event(Event::Renounced(who));
+				}
+				Renouncing::RunnerUp => {
+					<RunnersUp<T>>::try_mutate::<_, Error<T>, _>(|runners_up| {
+						let index = runners_up
+							.iter()
+							.position(|SeatHolder { who: r, .. }| r == &who)
+							.ok_or(Error::<T>::InvalidRenouncing)?;
+						// can't fail anymore.
+						let SeatHolder { deposit, .. } = runners_up.remove(index);
+						let _remainder = T::Currency::unreserve(&who, deposit);
+						debug_assert!(_remainder.is_zero());
+						Self::deposit_event(Event::Renounced(who));
+						Ok(())
+					})?;
+				}
+				Renouncing::Candidate(count) => {
+					<Candidates<T>>::try_mutate::<_, Error<T>, _>(|candidates| {
+						ensure!(count >= candidates.len() as u32, Error::<T>::InvalidWitnessData);
+						let index = candidates
+							.binary_search_by(|(c, _)| c.cmp(&who))
+							.map_err(|_| Error::<T>::InvalidRenouncing)?;
+						let (_removed, deposit) = candidates.remove(index);
+						let _remainder = T::Currency::unreserve(&who, deposit);
+						debug_assert!(_remainder.is_zero());
+						Self::deposit_event(Event::Renounced(who));
+						Ok(())
+					})?;
+				}
+			};
 			Ok(None.into())
 		}
 
@@ -780,91 +779,90 @@ impl<T: Config> Pallet<T> {
 		T::VotingBondBase::get().saturating_add(T::VotingBondFactor::get().saturating_mul((count as u32).into()))
 	}
 
-	// TODO: Potentially rewrite
-	// 	/// Attempts to remove a member `who`. If a runner-up exists, it is used as
-	// 	/// the replacement.
-	// 	///
-	// 	/// Returns:
-	// 	///
-	// 	/// - `Ok(true)` if the member was removed and a replacement was found.
-	// 	/// - `Ok(false)` if the member was removed and but no replacement was
-	// 	///   found.
-	// 	/// - `Err(_)` if the member was no found.
-	// 	///
-	// 	/// Both `Members` and `RunnersUp` storage is updated accordingly.
-	// 	/// `T::ChangeMember` is called if needed. If `slash` is true, the deposit
-	// 	/// of the potentially removed member is slashed, else, it is unreserved.
-	// 	///
-	// 	/// ### Note: Prime preservation
-	// 	///
-	// 	/// This function attempts to preserve the prime. If the removed members is
-	// 	/// not the prime, it is set again via [`Config::ChangeMembers`].
-	// 	fn remove_and_replace_member(who: &T::AccountId, slash: bool) -> Result<bool,
-	// DispatchError> { 		// closure will return:
-	// 		// - `Ok(Option(replacement))` if member was removed and replacement was
-	// 		//   replaced.
-	// 		// - `Ok(None)` if member was removed but no replacement was found
-	// 		// - `Err(_)` if who is not a member.
-	// 		let maybe_replacement = <Members<T>>::try_mutate::<_, Error<T>, _>(|members|
-	// { 			let remove_index = members
-	// 				.binary_search_by(|m| m.who.cmp(who))
-	// 				.map_err(|_| Error::<T>::NotMember)?;
-	// 			// we remove the member anyhow, regardless of having a runner-up or not.
-	// 			let removed = members.remove(remove_index);
+	/// Attempts to remove a member `who`. If a runner-up exists, it is used as
+	/// the replacement.
+	///
+	/// Returns:
+	///
+	/// - `Ok(true)` if the member was removed and a replacement was found.
+	/// - `Ok(false)` if the member was removed and but no replacement was
+	///   found.
+	/// - `Err(_)` if the member was no found.
+	///
+	/// Both `Members` and `RunnersUp` storage is updated accordingly.
+	/// `T::ChangeMember` is called if needed. If `slash` is true, the deposit
+	/// of the potentially removed member is slashed, else, it is unreserved.
+	///
+	/// ### Note: Prime preservation
+	///
+	/// This function attempts to preserve the prime. If the removed members is
+	/// not the prime, it is set again via [`Config::ChangeMembers`].
+	fn remove_and_replace_member(who: &T::AccountId, slash: bool) -> Result<bool, DispatchError> {
+		// closure will return:
+		// - `Ok(Option(replacement))` if member was removed and replacement was
+		//   replaced.
+		// - `Ok(None)` if member was removed but no replacement was found
+		// - `Err(_)` if who is not a member.
+		let maybe_replacement = <Members<T>>::try_mutate::<_, Error<T>, _>(|members| {
+			let remove_index = members
+				.binary_search_by(|m| m.who.cmp(who))
+				.map_err(|_| Error::<T>::NotMember)?;
+			// we remove the member anyhow, regardless of having a runner-up or not.
+			let removed = members.remove(remove_index);
 
-	// 			// slash or unreserve
-	// 			if slash {
-	// 				let (imbalance, _remainder) = T::Currency::slash_reserved(who,
-	// removed.deposit); 				debug_assert!(_remainder.is_zero());
-	// 				T::LoserCandidate::on_unbalanced(imbalance);
-	// 				Self::deposit_event(Event::SeatHolderSlashed(who.clone(), removed.deposit));
-	// 			} else {
-	// 				T::Currency::unreserve(who, removed.deposit);
-	// 			}
+			// slash or unreserve
+			if slash {
+				let (imbalance, _remainder) = T::Currency::slash_reserved(who, removed.deposit);
+				debug_assert!(_remainder.is_zero());
+				T::LoserCandidate::on_unbalanced(imbalance);
+				Self::deposit_event(Event::SeatHolderSlashed(who.clone(), removed.deposit));
+			} else {
+				T::Currency::unreserve(who, removed.deposit);
+			}
 
-	// 			let maybe_next_best = <RunnersUp<T>>::mutate(|r| r.pop()).map(|next_best| {
-	// 				// defensive-only: Members and runners-up are disjoint. This will always be
-	// err 				// and give us an index to insert.
-	// 				if let Err(index) = members.binary_search_by(|m| m.who.cmp(&next_best.who)) {
-	// 					members.insert(index, next_best.clone());
-	// 				} else {
-	// 					// overlap. This can never happen. If so, it seems like our intended
-	// replacement 					// is already a member, so not much more to do.
-	// 					log::error!(
-	// 						target: "runtime::elections-phragmen",
-	// 						"A member seems to also be a runner-up.",
-	// 					);
-	// 				}
-	// 				next_best
-	// 			});
-	// 			Ok(maybe_next_best)
-	// 		})?;
+			let maybe_next_best = <RunnersUp<T>>::mutate(|r| r.pop()).map(|next_best| {
+				// defensive-only: Members and runners-up are disjoint. This will always be err
+				// and give us an index to insert.
+				if let Err(index) = members.binary_search_by(|m| m.who.cmp(&next_best.who)) {
+					members.insert(index, next_best.clone());
+				} else {
+					// overlap. This can never happen. If so, it seems like our intended replacement
+					// is already a member, so not much more to do.
+					log::error!(
+						target: "runtime::elections",
+						"A member seems to also be a runner-up.",
+					);
+				}
+				next_best
+			});
+			Ok(maybe_next_best)
+		})?;
 
-	// 		let remaining_member_ids_sorted = Self::members().into_iter().map(|x|
-	// x.who.clone()).collect::<Vec<_>>(); 		let outgoing = &[who.clone()];
-	// 		let maybe_current_prime = T::ChangeMembers::get_prime();
-	// 		let return_value = match maybe_replacement {
-	// 			// member ids are already sorted, other two elements have one item.
-	// 			Some(incoming) => {
-	// 				T::ChangeMembers::change_members_sorted(&[incoming.who], outgoing,
-	// &remaining_member_ids_sorted[..]); 				true
-	// 			}
-	// 			None => {
-	// 				T::ChangeMembers::change_members_sorted(&[], outgoing,
-	// &remaining_member_ids_sorted[..]); 				false
-	// 			}
-	// 		};
+		let remaining_member_ids_sorted = Self::members().into_iter().map(|x| x.who.clone()).collect::<Vec<_>>();
+		let outgoing = &[who.clone()];
+		let maybe_current_prime = T::ChangeMembers::get_prime();
+		let return_value = match maybe_replacement {
+			// member ids are already sorted, other two elements have one item.
+			Some(incoming) => {
+				T::ChangeMembers::change_members_sorted(&[incoming.who], outgoing, &remaining_member_ids_sorted[..]);
+				true
+			}
+			None => {
+				T::ChangeMembers::change_members_sorted(&[], outgoing, &remaining_member_ids_sorted[..]);
+				false
+			}
+		};
 
-	// 		// if there was a prime before and they are not the one being removed, then
-	// set 		// them again.
-	// 		if let Some(current_prime) = maybe_current_prime {
-	// 			if &current_prime != who {
-	// 				T::ChangeMembers::set_prime(Some(current_prime));
-	// 			}
-	// 		}
+		// if there was a prime before and they are not the one being removed, then set
+		// // them again.
+		if let Some(current_prime) = maybe_current_prime {
+			if &current_prime != who {
+				T::ChangeMembers::set_prime(Some(current_prime));
+			}
+		}
 
-	// 		Ok(return_value)
-	// 	}
+		Ok(return_value)
+	}
 
 	/// Check if `who` is a candidate. It returns the insert index if the
 	/// element does not exists as an error.
