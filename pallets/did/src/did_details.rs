@@ -24,7 +24,7 @@ use frame_support::{
 use kilt_primitives::Hash;
 use sp_core::{ecdsa, ed25519, sr25519};
 use sp_runtime::traits::Verify;
-use sp_std::{collections::btree_set::BTreeSet, convert::TryInto, fmt};
+use sp_std::{convert::TryInto, fmt};
 
 use crate::*;
 
@@ -438,26 +438,6 @@ impl<T: Config> DidDetails<T> {
 		{
 			self.public_keys.remove(&key_id);
 		}
-	}
-
-	pub fn get_authentication_key_id(&self) -> KeyIdOf<T> {
-		self.authentication_key
-	}
-
-	pub fn get_key_agreement_keys_ids(&self) -> &BoundedBTreeSet<KeyIdOf<T>, T::MaxTotalKeyAgreementKeys> {
-		&self.key_agreement_keys
-	}
-
-	pub fn get_attestation_key_id(&self) -> &Option<KeyIdOf<T>> {
-		&self.attestation_key
-	}
-
-	pub fn get_delegation_key_id(&self) -> &Option<KeyIdOf<T>> {
-		&self.delegation_key
-	}
-
-	pub fn get_public_keys(&self) -> &DidPublicKeyMap<T> {
-		&self.public_keys
 	}
 
 	/// Returns a reference to a specific verification key given the type of

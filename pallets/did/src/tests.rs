@@ -49,15 +49,15 @@ fn check_successful_simple_ed25519_creation() {
 
 	let stored_did = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
 	assert_eq!(
-		stored_did.get_authentication_key_id(),
+		stored_did.authentication_key,
 		generate_key_id(&auth_did_key.clone().into())
 	);
-	assert_eq!(stored_did.get_key_agreement_keys_ids().len(), 0);
-	assert_eq!(stored_did.get_delegation_key_id(), &None);
-	assert_eq!(stored_did.get_attestation_key_id(), &None);
-	assert_eq!(stored_did.get_public_keys().len(), 1);
+	assert_eq!(stored_did.key_agreement_keys.len(), 0);
+	assert_eq!(stored_did.delegation_key, None);
+	assert_eq!(stored_did.attestation_key, None);
+	assert_eq!(stored_did.public_keys.len(), 1);
 	assert!(stored_did
-		.get_public_keys()
+		.public_keys
 		.contains_key(&generate_key_id(&auth_did_key.into())));
 	assert_eq!(stored_did.service_endpoints, None);
 	assert_eq!(stored_did.last_tx_counter, 0u64);
@@ -84,15 +84,15 @@ fn check_successful_simple_sr25519_creation() {
 
 	let stored_did = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
 	assert_eq!(
-		stored_did.get_authentication_key_id(),
+		stored_did.authentication_key,
 		generate_key_id(&auth_did_key.clone().into())
 	);
-	assert_eq!(stored_did.get_key_agreement_keys_ids().len(), 0);
-	assert_eq!(stored_did.get_delegation_key_id(), &None);
-	assert_eq!(stored_did.get_attestation_key_id(), &None);
-	assert_eq!(stored_did.get_public_keys().len(), 1);
+	assert_eq!(stored_did.key_agreement_keys.len(), 0);
+	assert_eq!(stored_did.delegation_key, None);
+	assert_eq!(stored_did.attestation_key, None);
+	assert_eq!(stored_did.public_keys.len(), 1);
 	assert!(stored_did
-		.get_public_keys()
+		.public_keys
 		.contains_key(&generate_key_id(&auth_did_key.into())));
 	assert_eq!(stored_did.service_endpoints, None);
 	assert_eq!(stored_did.last_tx_counter, 0u64);
@@ -119,15 +119,15 @@ fn check_successful_simple_ecdsa_creation() {
 
 	let stored_did = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
 	assert_eq!(
-		stored_did.get_authentication_key_id(),
+		stored_did.authentication_key,
 		generate_key_id(&auth_did_key.clone().into())
 	);
-	assert_eq!(stored_did.get_key_agreement_keys_ids().len(), 0);
-	assert_eq!(stored_did.get_delegation_key_id(), &None);
-	assert_eq!(stored_did.get_attestation_key_id(), &None);
-	assert_eq!(stored_did.get_public_keys().len(), 1);
+	assert_eq!(stored_did.key_agreement_keys.len(), 0);
+	assert_eq!(stored_did.delegation_key, None);
+	assert_eq!(stored_did.attestation_key, None);
+	assert_eq!(stored_did.public_keys.len(), 1);
 	assert!(stored_did
-		.get_public_keys()
+		.public_keys
 		.contains_key(&generate_key_id(&auth_did_key.into())));
 	assert_eq!(stored_did.service_endpoints, None);
 	assert_eq!(stored_did.last_tx_counter, 0u64);
@@ -168,41 +168,41 @@ fn check_successful_complete_creation() {
 
 	let stored_did = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
 	assert_eq!(
-		stored_did.get_authentication_key_id(),
+		stored_did.authentication_key,
 		generate_key_id(&auth_did_key.clone().into())
 	);
-	assert_eq!(stored_did.get_key_agreement_keys_ids().len(), 2);
+	assert_eq!(stored_did.key_agreement_keys.len(), 2);
 	for key in enc_keys.iter().copied() {
 		assert!(stored_did
-			.get_key_agreement_keys_ids()
+			.key_agreement_keys
 			.contains(&generate_key_id(&key.into())))
 	}
 	assert_eq!(
-		stored_did.get_delegation_key_id(),
-		&Some(generate_key_id(&details.new_delegation_key.clone().unwrap().into()))
+		stored_did.delegation_key,
+		Some(generate_key_id(&details.new_delegation_key.clone().unwrap().into()))
 	);
 	assert_eq!(
-		stored_did.get_attestation_key_id(),
-		&Some(generate_key_id(&details.new_attestation_key.clone().unwrap().into()))
+		stored_did.attestation_key,
+		Some(generate_key_id(&details.new_attestation_key.clone().unwrap().into()))
 	);
 	// Authentication key + 2 * Encryption key + Delegation key + Attestation key =
 	// 5
-	assert_eq!(stored_did.get_public_keys().len(), 5);
+	assert_eq!(stored_did.public_keys.len(), 5);
 	assert!(stored_did
-		.get_public_keys()
+		.public_keys
 		.contains_key(&generate_key_id(&auth_did_key.into())));
 	let mut key_agreement_keys_iterator = details.new_key_agreement_keys.iter().copied();
 	assert!(stored_did
-		.get_public_keys()
+		.public_keys
 		.contains_key(&generate_key_id(&key_agreement_keys_iterator.next().unwrap().into())));
 	assert!(stored_did
-		.get_public_keys()
+		.public_keys
 		.contains_key(&generate_key_id(&key_agreement_keys_iterator.next().unwrap().into())));
 	assert!(stored_did
-		.get_public_keys()
+		.public_keys
 		.contains_key(&generate_key_id(&details.new_attestation_key.clone().unwrap().into())));
 	assert!(stored_did
-		.get_public_keys()
+		.public_keys
 		.contains_key(&generate_key_id(&details.new_delegation_key.clone().unwrap().into())));
 	assert!(stored_did.service_endpoints.is_some());
 	assert_eq!(stored_did.service_endpoints.clone().unwrap().urls.len(), 1);

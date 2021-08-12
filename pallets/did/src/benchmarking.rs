@@ -120,14 +120,14 @@ benchmarks! {
 	}: create(RawOrigin::Signed(submitter), did_creation_details.clone(), DidSignature::from(did_creation_signature))
 	verify {
 		let stored_did = Did::<T>::get(&did_subject).expect("New DID should be stored on chain.");
-		let stored_key_agreement_keys_ids = stored_did.get_key_agreement_keys_ids();
+		let stored_key_agreement_keys_ids = stored_did.key_agreement_keys;
 
 		let expected_authentication_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(did_public_auth_key).into());
 		let expected_attestation_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(did_public_att_key).into());
 		let expected_delegation_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(did_public_del_key).into());
 
 		assert_eq!(
-			stored_did.get_authentication_key_id(),
+			stored_did.authentication_key,
 			expected_authentication_key_id
 		);
 		for new_key in did_creation_details.new_key_agreement_keys.iter().copied() {
@@ -135,12 +135,12 @@ benchmarks! {
 				stored_key_agreement_keys_ids.contains(&utils::calculate_key_id::<T>(&new_key.into())))
 		}
 		assert_eq!(
-			stored_did.get_delegation_key_id(),
-			&Some(expected_delegation_key_id)
+			stored_did.delegation_key,
+			Some(expected_delegation_key_id)
 		);
 		assert_eq!(
-			stored_did.get_attestation_key_id(),
-			&Some(expected_attestation_key_id)
+			stored_did.attestation_key,
+			Some(expected_attestation_key_id)
 		);
 		assert_eq!(stored_did.service_endpoints, did_creation_details.new_service_endpoints);
 		assert_eq!(stored_did.last_tx_counter, 0u64);
@@ -170,14 +170,14 @@ benchmarks! {
 	}: create(RawOrigin::Signed(submitter), did_creation_details.clone(), DidSignature::from(did_creation_signature))
 	verify {
 		let stored_did = Did::<T>::get(&did_subject).expect("New DID should be stored on chain.");
-		let stored_key_agreement_keys_ids = stored_did.get_key_agreement_keys_ids();
+		let stored_key_agreement_keys_ids = stored_did.key_agreement_keys;
 
 		let expected_authentication_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(did_public_auth_key).into());
 		let expected_attestation_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(did_public_att_key).into());
 		let expected_delegation_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(did_public_del_key).into());
 
 		assert_eq!(
-			stored_did.get_authentication_key_id(),
+			stored_did.authentication_key,
 			expected_authentication_key_id
 		);
 		for new_key in did_creation_details.new_key_agreement_keys.iter().copied() {
@@ -185,12 +185,12 @@ benchmarks! {
 				stored_key_agreement_keys_ids.contains(&utils::calculate_key_id::<T>(&new_key.into())))
 		}
 		assert_eq!(
-			stored_did.get_delegation_key_id(),
-			&Some(expected_delegation_key_id)
+			stored_did.delegation_key,
+			Some(expected_delegation_key_id)
 		);
 		assert_eq!(
-			stored_did.get_attestation_key_id(),
-			&Some(expected_attestation_key_id)
+			stored_did.attestation_key,
+			Some(expected_attestation_key_id)
 		);
 		assert_eq!(stored_did.service_endpoints, did_creation_details.new_service_endpoints);
 		assert_eq!(stored_did.last_tx_counter, 0u64);
@@ -220,14 +220,14 @@ benchmarks! {
 	}: create(RawOrigin::Signed(submitter), did_creation_details.clone(), DidSignature::from(did_creation_signature))
 	verify {
 		let stored_did = Did::<T>::get(&did_subject).expect("New DID should be stored on chain.");
-		let stored_key_agreement_keys_ids = stored_did.get_key_agreement_keys_ids();
+		let stored_key_agreement_keys_ids = stored_did.key_agreement_keys;
 
 		let expected_authentication_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(did_public_auth_key).into());
 		let expected_attestation_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(did_public_att_key).into());
 		let expected_delegation_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(did_public_del_key).into());
 
 		assert_eq!(
-			stored_did.get_authentication_key_id(),
+			stored_did.authentication_key,
 			expected_authentication_key_id
 		);
 		for new_key in did_creation_details.new_key_agreement_keys.iter().copied() {
@@ -235,12 +235,12 @@ benchmarks! {
 				stored_key_agreement_keys_ids.contains(&utils::calculate_key_id::<T>(&new_key.into())))
 		}
 		assert_eq!(
-			stored_did.get_delegation_key_id(),
-			&Some(expected_delegation_key_id)
+			stored_did.delegation_key,
+			Some(expected_delegation_key_id)
 		);
 		assert_eq!(
-			stored_did.get_attestation_key_id(),
-			&Some(expected_attestation_key_id)
+			stored_did.attestation_key,
+			Some(expected_attestation_key_id)
 		);
 		assert_eq!(stored_did.service_endpoints, did_creation_details.new_service_endpoints);
 		assert_eq!(stored_did.last_tx_counter, 0u64);

@@ -500,7 +500,7 @@ pub mod pallet {
 			if let Some(old_delegation_key) = did_details.delegation_key {
 				did_details.remove_key_if_unused(old_delegation_key);
 			}
-			let new_key_id = utils::calculate_key_id::<T>(&new_key.clone().into());
+			let new_key_id = utils::calculate_key_id::<T>(&new_key.into());
 			did_details.delegation_key = Some(new_key_id);
 
 			log::debug!("Updating DID {:?}", did_subject);
@@ -574,7 +574,7 @@ pub mod pallet {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
-			let new_key_id = utils::calculate_key_id::<T>(&new_key.clone().into());
+			let new_key_id = utils::calculate_key_id::<T>(&new_key.into());
 			did_details
 				.public_keys
 				.try_insert(
