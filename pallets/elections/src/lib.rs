@@ -575,11 +575,19 @@ pub mod pallet {
 			_num_voters: u32,
 			_num_defunct: u32,
 		) -> DispatchResultWithPostInfo {
-			// TODO: Potentially rewrite
-			// 	let _ = ensure_root(origin)?;
-			// 	<Voting<T>>::iter()
-			// 		.filter(|(_, x)| Self::is_defunct_voter(&x.votes))
-			// 		.for_each(|(dv, _)| Self::do_remove_voter(&dv));
+			let _ = ensure_root(origin)?;
+			<Voting<T>>::iter()
+				.filter(|(_, x)| {
+					let candidates = x
+						.votes
+						.clone()
+						.into_inner()
+						.into_iter()
+						.map(|Vote { who, .. }| who)
+						.collect::<Vec<T::AccountId>>();
+					Self::is_defunct_voter(&candidates)
+				})
+				.for_each(|(dv, _)| Self::do_remove_voter(&dv));
 
 			Ok(None.into())
 		}
@@ -908,17 +916,16 @@ impl<T: Config> Pallet<T> {
 	// 			.collect::<Vec<_>>()
 	// 	}
 
-	// TODO: Potentially rewrite
-	// 	/// Check if `votes` will correspond to a defunct voter. As no origin is
-	// 	/// part of the inputs, this function does not check the origin at all.
-	// 	///
-	// 	/// O(NLogM) with M candidates and `who` having voted for `N` of them.
-	// 	/// Reads Members, RunnersUp, Candidates and Voting(who) from database.
-	// 	fn is_defunct_voter(votes: &[T::AccountId]) -> bool {
-	// 		votes
-	// 			.iter()
-	// 			.all(|v| !Self::is_member(v) && !Self::is_runner_up(v) &&
-	// !Self::is_candidate(v).is_ok()) 	}
+	/// Check if `votes` will correspond to a defunct voter. As no origin is
+	/// part of the inputs, this function does not check the origin at all.
+	///
+	/// O(NLogM) with M candidates and `who` having voted for `N` of them.
+	/// Reads Members, RunnersUp, Candidates and Voting(who) from database.
+	fn is_defunct_voter(votes: &[T::AccountId]) -> bool {
+		votes
+			.iter()
+			.all(|v| !Self::is_member(v) && !Self::is_runner_up(v) && !Self::is_candidate(v).is_ok())
+	}
 
 	/// Remove a certain someone as a voter.
 	fn do_remove_voter(who: &T::AccountId) {
