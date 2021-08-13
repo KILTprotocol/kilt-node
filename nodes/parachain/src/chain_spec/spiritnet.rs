@@ -183,12 +183,42 @@ pub fn get_chain_spec_wilt() -> Result<ChainSpec, String> {
 	))
 }
 
-const SPIRIT_COL_ACC_1: [u8; 32] = hex!["dcae0b0169a344cbb3800ea34f438f5139687922ce34bfaf097a1314f5ee9069"];
-const SPIRIT_COL_SESSION_1: [u8; 32] = hex!["c2ef6ae55020c046a76e745133b75db6d10955f78d2224048aae6ac6f763fb6c"];
-const SPIRIT_COL_ACC_2: [u8; 32] = hex!["86e876d2aa97cc87a8b83b78b748f8795cac40883e6c6fc023f3fde3a094623d"];
-const SPIRIT_COL_SESSION_2: [u8; 32] = hex!["32280e5e31512fd4863bada1ab7f9ae0892bb1f9eb1d3506673c6de1ae90fe40"];
-const SPIRIT_SUDO_ACC: [u8; 32] = hex!["c48ed216c1ae656a501016efaaef59f4eb8778c64f84b245da3cc19321d4c22a"];
-const SPIRIT_TRANS_ACC: [u8; 32] = hex!["7a8604da79a9f89db6b35efdef3c4c84f9ae679b2fbd397f5bade3105a8a8e00"];
+const SPIRIT_COL_ACC_01: [u8; 32] = hex!["c48ed216c1ae656a501016efaaef59f4eb8778c64f84b245da3cc19321d4c22a"];
+const SPIRIT_COL_SESSION_01: [u8; 32] = hex!["709dddf36d5741239071b3537421f4ea620ddef1f20f82ca86d290fe0cb1d17e"];
+const SPIRIT_COL_ACC_02: [u8; 32] = hex!["628da4055a812ca4145c75c38734138b6c62f0402ff1feae649be54d4c42c32e"];
+const SPIRIT_COL_SESSION_02: [u8; 32] = hex!["1cbebf801ded95b160f683469d61c4dc85653bc14d9e2bdcd72eb985aac19943"];
+
+const SPIRIT_COL_ACC_03: [u8; 32] = hex!["ec9b89167a547f11a13ef71c9fea326d66b067d3dfd83744c83fda31d7fd4171"];
+const SPIRIT_COL_SESSION_03: [u8; 32] = hex!["30f7db5a399cb77cc55515fb8b85b3d39ac55b5fdd6b236a34248c75fbd90e60"];
+const SPIRIT_COL_ACC_04: [u8; 32] = hex!["10abf8ffbb90d92395d891a798e4476ade3d28ae5f8c5c955b9199d995871a62"];
+const SPIRIT_COL_SESSION_04: [u8; 32] = hex!["9433021147aae2723b197e25b0089bc2fce0f8e3f5b61178c45ef227abb4c22b"];
+const SPIRIT_COL_ACC_05: [u8; 32] = hex!["1664016a5caab8f5b4b1360b1e05b4aa84c1970f30a19d49ae4f40312404a538"];
+const SPIRIT_COL_SESSION_05: [u8; 32] = hex!["8a5c403f5cc5ca297b7fef06cad3a4e8bc8a0310d92adb5bbc2fbca116e0441a"];
+const SPIRIT_COL_ACC_06: [u8; 32] = hex!["fa53c9aba42da8645c332d15272cae9b939de4181b8ea261e3cb9c2e79e1dd36"];
+const SPIRIT_COL_SESSION_06: [u8; 32] = hex!["2ef0912b021321a65e2ab2e146796b1d5ddcd47298864be38edf5c70b869864f"];
+const SPIRIT_COL_ACC_07: [u8; 32] = hex!["0000000000000000000000000000000000000000000000000000000000000000"];
+const SPIRIT_COL_SESSION_07: [u8; 32] = hex!["4cd52e3d6742d5e090f5977cb5413d61a651b5bb643ac65b0aee61d1c0a68a0c"];
+const SPIRIT_COL_ACC_08: [u8; 32] = hex!["5270ec35ba01254d8bff046a1a58f16d3ae615c235efd6e99a35f233b2d9df2c"];
+const SPIRIT_COL_SESSION_08: [u8; 32] = hex!["e4acf473fa03cc55ddf05ab58d0816cc38f5a82128c90af7174080b186db2555"];
+const SPIRIT_COL_ACC_09: [u8; 32] = hex!["ec4635974882ab477e60fc38ea72f42636d60f0433a5c1ce2e5f3b4c9a879fe9"];
+const SPIRIT_COL_SESSION_09: [u8; 32] = hex!["64007bee2fd9d23e6cc6cf7bbb55badee773d5d99665ab0d3f3dd9415ef0585d"];
+const SPIRIT_COL_ACC_10: [u8; 32] = hex!["be1dbcf4234b70c81a518378e72b67aa7cd06b122ebb7658562472167e8e231c"];
+const SPIRIT_COL_SESSION_10: [u8; 32] = hex!["d08bae71b7184947656646fb5155e874632625f8227f299847d11516ca803e21"];
+const SPIRIT_COL_ACC_11: [u8; 32] = hex!["4294c4ffa38dc95fb9c57fc9f82ded3d02336b78f137c08636b849f9eb9ca60f"];
+const SPIRIT_COL_SESSION_11: [u8; 32] = hex!["60d1411a7316ac8aeca5750ddfb509c03adf1ac41a259be62bf57d9b9ec5bd29"];
+const SPIRIT_COL_ACC_12: [u8; 32] = hex!["6c9783e922b00e288d19b9020ffce919d1ab4ab20fc62d5d0b23ac1e61b2096b"];
+const SPIRIT_COL_SESSION_12: [u8; 32] = hex!["18a3abde01c55ee58633668c97c9855a6772f3d97f0b89ce8f60842a65af3212"];
+const SPIRIT_COL_ACC_13: [u8; 32] = hex!["eadbf15cd28e209358f6cef3b139a71e428254c2072948782bd94e9e8fcd3608"];
+const SPIRIT_COL_SESSION_13: [u8; 32] = hex!["d8e4758a39e623ef7e7841747fa788891bdd3b5f775cec05d0d2dd22fdfa2259"];
+const SPIRIT_COL_ACC_14: [u8; 32] = hex!["68a7a05e316865a68968f92b09e9ec6d5d1847e71e520e68e5d306b5730c2468"];
+const SPIRIT_COL_SESSION_14: [u8; 32] = hex!["3cf5f477056588cdb198e03852b1f4d1e1abe89f854a271e38e892c14f15182d"];
+const SPIRIT_COL_ACC_15: [u8; 32] = hex!["66241b171bd08521a33dc807061373a092faea04252f58b70792e7c7ecfd500e"];
+const SPIRIT_COL_SESSION_15: [u8; 32] = hex!["f0d87466a633cf242237b5807262e90f199704c07fc9c3d9bda861dc67ef6a32"];
+const SPIRIT_COL_ACC_16: [u8; 32] = hex!["4ebcfdc6cdc35cd99a8bb93c64ea81bb30731c2f01b0464bb400bad3f0d4b61f"];
+const SPIRIT_COL_SESSION_16: [u8; 32] = hex!["849769562be9e7f744754e79a74fd3479388e59d278e8fc2fd073f82f0799604"];
+
+const SPIRIT_SUDO_ACC: [u8; 32] = hex!["427b946b2cee9bd4ed03982e6f716d4eeaa5dc8410255e7a8ecf8d0080effe24"];
+const SPIRIT_TRANS_ACC: [u8; 32] = hex!["de28ef5b1691663300a2edb97202791e89bb6985ffdaa4c405d68c826b634b76"];
 
 pub fn get_chain_spec_spiritnet() -> Result<ChainSpec, String> {
 	let properties = get_properties("KILT", 15, 38);
@@ -203,19 +233,19 @@ pub fn get_chain_spec_spiritnet() -> Result<ChainSpec, String> {
 			testnet_genesis(
 				wasm,
 				vec![
-					(SPIRIT_COL_ACC_1.into(), None, MAX_COLLATOR_STAKE),
-					(SPIRIT_COL_ACC_2.into(), None, MAX_COLLATOR_STAKE),
+					(SPIRIT_COL_ACC_01.into(), None, MAX_COLLATOR_STAKE),
+					(SPIRIT_COL_ACC_02.into(), None, MAX_COLLATOR_STAKE),
 				],
 				kilt_inflation_config(),
 				MAX_COLLATOR_STAKE,
 				SPIRIT_SUDO_ACC.into(),
 				vec![
-					(SPIRIT_COL_ACC_1.into(), SPIRIT_COL_SESSION_1.unchecked_into()),
-					(SPIRIT_COL_ACC_2.into(), SPIRIT_COL_SESSION_2.unchecked_into()),
+					(SPIRIT_COL_ACC_01.into(), SPIRIT_COL_SESSION_01.unchecked_into()),
+					(SPIRIT_COL_ACC_02.into(), SPIRIT_COL_SESSION_02.unchecked_into()),
 				],
 				vec![
-					(SPIRIT_COL_ACC_1.into(), MAX_COLLATOR_STAKE + 100 * KILT),
-					(SPIRIT_COL_ACC_2.into(), MAX_COLLATOR_STAKE + 100 * KILT),
+					(SPIRIT_COL_ACC_01.into(), MAX_COLLATOR_STAKE + 100 * KILT),
+					(SPIRIT_COL_ACC_02.into(), MAX_COLLATOR_STAKE + 100 * KILT),
 					(SPIRIT_SUDO_ACC.into(), 10000 * KILT),
 					(SPIRIT_TRANS_ACC.into(), 10000 * KILT),
 				],
@@ -223,7 +253,14 @@ pub fn get_chain_spec_spiritnet() -> Result<ChainSpec, String> {
 				id,
 			)
 		},
-		vec![],
+		vec![
+			"/dns4/bootnode.kilt.io/tcp/30390/p2p/12D3KooWRPR7q1Rgwurd4QGyUUbVnN4nXYNVzbLeuhFsd9eXmHJk"
+				.parse()
+				.expect("bootnode address is formatted correctly; qed"),
+			"/dns4/bootnode.kilt.io/tcp/30391/p2p/12D3KooWDAEqpTRsL76itsabbh4SeaqtCM6v9npQ8eCeqPbbuFE9"
+				.parse()
+				.expect("bootnode address is formatted correctly; qed"),
+		],
 		Some(TelemetryEndpoints::new(vec![(TELEMETRY_URL.to_string(), 0)]).expect("KILT telemetry url is valid; qed")),
 		None,
 		Some(properties),
