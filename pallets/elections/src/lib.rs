@@ -893,28 +893,26 @@ impl<T: Config> Pallet<T> {
 		Self::runners_up().iter().position(|r| &r.who == who).is_some()
 	}
 
-	// TODO: Potentially rewrite
-	// 	/// Get the members' account ids.
-	// 	fn members_ids() -> Vec<T::AccountId> {
-	// 		Self::members()
-	// 			.into_iter()
-	// 			.map(|m| m.who)
-	// 			.collect::<Vec<T::AccountId>>()
-	// 	}
+	/// Get the members' account ids.
+	fn members_ids() -> Vec<T::AccountId> {
+		Self::members()
+			.into_iter()
+			.map(|m| m.who)
+			.collect::<Vec<T::AccountId>>()
+	}
 
-	// TODO: Potentially rewrite
-	// 	/// Get a concatenation of previous members and runners-up and their
-	// 	/// deposits.
-	// 	///
-	// 	/// These accounts are essentially treated as candidates.
-	// 	fn implicit_candidates_with_deposit() -> Vec<(T::AccountId, BalanceOf<T>)> {
-	// 		// invariant: these two are always without duplicates.
-	// 		Self::members()
-	// 			.into_iter()
-	// 			.map(|m| (m.who, m.deposit))
-	// 			.chain(Self::runners_up().into_iter().map(|r| (r.who, r.deposit)))
-	// 			.collect::<Vec<_>>()
-	// 	}
+	/// Get a concatenation of previous members and runners-up and their
+	/// deposits.
+	///
+	/// These accounts are essentially treated as candidates.
+	fn implicit_candidates_with_deposit() -> Vec<(T::AccountId, BalanceOf<T>)> {
+		// invariant: these two are always without duplicates.
+		Self::members()
+			.into_iter()
+			.map(|m| (m.who, m.deposit))
+			.chain(Self::runners_up().into_iter().map(|r| (r.who, r.deposit)))
+			.collect::<Vec<_>>()
+	}
 
 	/// Check if `votes` will correspond to a defunct voter. As no origin is
 	/// part of the inputs, this function does not check the origin at all.
@@ -940,10 +938,13 @@ impl<T: Config> Pallet<T> {
 		debug_assert!(_remainder.is_zero());
 	}
 
-	// TODO: Potentially rewrite
-	// 	/// Run the phragmen election with all required side processes and state
-	// 	/// updates, if election succeeds. Else, it will emit an `ElectionError`
-	// 	/// event.
+	// FIXME: Replace with more simple version. Might involve adding more storage to
+	// the pallet to efficiently calculate the top candidates (similar to staking
+	// pallet).
+	//
+	// /// Run the phragmen
+	// election with all required side processes and state 	/// updates, if election
+	// succeeds. Else, it will emit an `ElectionError` 	/// event.
 	// 	///
 	// 	/// Calls the appropriate [`ChangeMembers`] function variant internally.
 	// 	fn do_phragmen() -> Weight {
@@ -1145,52 +1146,48 @@ impl<T: Config> Pallet<T> {
 	// 		T::WeightInfo::election_phragmen(weight_candidates, weight_voters,
 	// weight_edges) 	}
 	// }
+}
+
+impl<T: Config> Contains<T::AccountId> for Pallet<T> {
+	fn contains(who: &T::AccountId) -> bool {
+		Self::is_member(who)
+	}
+}
+
+impl<T: Config> SortedMembers<T::AccountId> for Pallet<T> {
+	fn contains(who: &T::AccountId) -> bool {
+		Self::is_member(who)
+	}
+
+	fn sorted_members() -> Vec<T::AccountId> {
+		Self::members_ids()
+	}
 
 	// TODO: Potentially rewrite
-	// impl<T: Config> Contains<T::AccountId> for Pallet<T> {
-	// 	fn contains(who: &T::AccountId) -> bool {
-	// 		Self::is_member(who)
-	// 	}
-	// }
+	// A special function to populate members in this pallet for passing Origin
+	// checks in runtime benchmarking.
+	#[cfg(feature = "runtime-benchmarks")]
+	fn add(who: &T::AccountId) {
+		Members::<T>::mutate(|members| match members.binary_search_by(|m| m.who.cmp(who)) {
+			Ok(_) => (),
+			Err(pos) => members.insert(
+				pos,
+				SeatHolder {
+					who: who.clone(),
+					..Default::default()
+				},
+			),
+		})
+	}
+}
 
-	// TODO: Potentially rewrite
-	// impl<T: Config> SortedMembers<T::AccountId> for Pallet<T> {
-	// 	fn contains(who: &T::AccountId) -> bool {
-	// 		Self::is_member(who)
-	// 	}
+impl<T: Config> ContainsLengthBound for Pallet<T> {
+	fn min_len() -> usize {
+		0
+	}
 
-	// TODO: Potentially rewrite
-	// 	fn sorted_members() -> Vec<T::AccountId> {
-	// 		Self::members_ids()
-	// 	}
-
-	// TODO: Potentially rewrite
-	// 	// A special function to populate members in this pallet for passing Origin
-	// 	// checks in runtime benchmarking.
-	// 	#[cfg(feature = "runtime-benchmarks")]
-	// 	fn add(who: &T::AccountId) {
-	// 		Members::<T>::mutate(|members| match members.binary_search_by(|m|
-	// m.who.cmp(who)) { 			Ok(_) => (),
-	// 			Err(pos) => members.insert(
-	// 				pos,
-	// 				SeatHolder {
-	// 					who: who.clone(),
-	// 					..Default::default()
-	// 				},
-	// 			),
-	// 		})
-	// 	}
-	// }
-
-	// TODO: Potentially rewrite
-	// impl<T: Config> ContainsLengthBound for Pallet<T> {
-	// 	fn min_len() -> usize {
-	// 		0
-	// 	}
-
-	// TODO: Potentially rewrite
-	// 	/// Implementation uses a parameter type so calling is cost-free.
-	// 	fn max_len() -> usize {
-	// 		T::DesiredMembers::get() as usize
-	// 	}
+	/// Implementation uses a parameter type so calling is cost-free.
+	fn max_len() -> usize {
+		T::DesiredMembers::get() as usize
+	}
 }
