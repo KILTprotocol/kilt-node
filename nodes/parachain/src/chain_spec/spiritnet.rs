@@ -295,12 +295,12 @@ fn testnet_genesis(
 	type LockingPeriod = BlockNumber;
 
 	// vesting and locks as initially designed
-	let airdrop_accounts_json = &include_bytes!("../../res/genesis/genesis-accounts.json")[..];
+	let airdrop_accounts_json = &include_bytes!("../../res/genesis/claimable-accounts.json")[..];
 	let airdrop_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
 		serde_json::from_slice(airdrop_accounts_json).expect("The file genesis_accounts.json exists and is valid; qed");
 
 	// botlabs account should not be migrated but some have vesting
-	let botlabs_accounts_json = &include_bytes!("../../res/genesis/botlabs-accounts.json")[..];
+	let botlabs_accounts_json = &include_bytes!("../../res/genesis/owned-accounts.json")[..];
 	let botlabs_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
 		serde_json::from_slice(botlabs_accounts_json).expect("The file botlabs_accounts.json exists and is valid; qed");
 
