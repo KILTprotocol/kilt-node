@@ -533,26 +533,26 @@ pub mod pallet {
 			who: <T::Lookup as StaticLookup>::Source,
 			has_replacement: bool,
 		) -> DispatchResultWithPostInfo {
-			// TODO: Potentially rewrite
-			// ensure_root(origin)?;
-			// let who = T::Lookup::lookup(who)?;
+			ensure_root(origin)?;
+			let who = T::Lookup::lookup(who)?;
 
-			// let will_have_replacement = <RunnersUp<T>>::decode_len().map_or(false, |l| l
-			// > 0); if will_have_replacement != has_replacement {
-			// 	// In both cases, we will change more weight than need. Refund and abort.
-			// 	return Err(Error::<T>::InvalidReplacement.with_weight(
-			// 		// refund. The weight value comes from a benchmark which is special to this.
-			// 		T::WeightInfo::remove_member_wrong_refund(),
-			// 	));
-			// }
+			let will_have_replacement = <RunnersUp<T>>::decode_len().map_or(false, |l| l > 0);
+			if will_have_replacement != has_replacement {
+				// In both cases, we will change more weight than need. Refund and abort.
+				return Err(Error::<T>::InvalidReplacement.with_weight(
+					// refund. The weight value comes from a benchmark which is special to this.
+					// TODO: Enable  after benchmarks
+					// T::WeightInfo::remove_member_wrong_refund(),
+					0,
+				));
+			}
 
-			// let had_replacement = Self::remove_and_replace_member(&who, true)?;
-			// debug_assert_eq!(has_replacement, had_replacement);
-			// Self::deposit_event(Event::MemberKicked(who.clone()));
+			let had_replacement = Self::remove_and_replace_member(&who, true)?;
+			debug_assert_eq!(has_replacement, had_replacement);
+			Self::deposit_event(Event::MemberKicked(who.clone()));
 
-			// if !had_replacement {
-			// 	Self::do_phragmen();
-			// }
+			// FIXME: Replace with simple election algo
+			// if !had_replacement { // 	Self::do_phragmen(); // }
 
 			// no refund needed.
 			Ok(None.into())
