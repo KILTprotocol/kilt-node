@@ -23,7 +23,14 @@ test:
   stage: test
   timeout: 1 hours
   script:
-    - cargo test --all-features --all-targets
+    - cargo test --all --all-targets
+
+test-features:
+  image: paritytech/ci-linux:105b919b-20210617
+  stage: test
+  timeout: 1 hours
+  script:
+    - cargo test --all --all-features --all-targets
 
 build:
   image:
