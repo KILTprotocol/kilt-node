@@ -254,10 +254,10 @@ pub fn get_chain_spec_spiritnet() -> Result<ChainSpec, String> {
 			)
 		},
 		vec![
-			"/dns4/bootnode.kilt.io/tcp/30390/p2p/12D3KooWRPR7q1Rgwurd4QGyUUbVnN4nXYNVzbLeuhFsd9eXmHJk"
+			"/dns4/bootnode.kilt.io/tcp/30390/p2p/12D3KooWEViDAJgLbeB5hg1KBNg42Ys2V5C6FTCCv6jJXCft41g9"
 				.parse()
 				.expect("bootnode address is formatted correctly; qed"),
-			"/dns4/bootnode.kilt.io/tcp/30391/p2p/12D3KooWDAEqpTRsL76itsabbh4SeaqtCM6v9npQ8eCeqPbbuFE9"
+			"/dns4/bootnode.kilt.io/tcp/30391/p2p/12D3KooWQaP87gsVDjALr85bvF3HRdt2gN3ddDMrKbUkTvtoYNmj"
 				.parse()
 				.expect("bootnode address is formatted correctly; qed"),
 		],
