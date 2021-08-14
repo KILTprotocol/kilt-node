@@ -1,0 +1,13 @@
+[Unit]
+Description=Example
+
+[Service]
+EnvironmentFile=-/etc/default/mashnet-node
+ExecStart=/usr/bin/mashnet-node $DAEMON_OPTIONS
+User=kilt
+Group=kilt
+Restart=always
+RestartSec=120
+
+[Install]
+WantedBy=multi-user.target

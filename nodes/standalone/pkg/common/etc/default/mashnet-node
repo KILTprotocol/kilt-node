@@ -1,0 +1,3 @@
+# Default options from .deb package
+
+DAEMON_OPTIONS="--name=Dwellir --ws-port 9944 --ws-external --dev"

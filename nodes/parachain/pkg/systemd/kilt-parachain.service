@@ -1,0 +1,13 @@
+[Unit]
+Description=Example
+
+[Service]
+EnvironmentFile=-/etc/default/kilt-parachain
+ExecStart=/usr/bin/kilt-parachain $DAEMON_OPTIONS
+User=kilt
+Group=kilt
+Restart=always
+RestartSec=120
+
+[Install]
+WantedBy=multi-user.target

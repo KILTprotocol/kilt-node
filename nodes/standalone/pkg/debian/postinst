@@ -1,0 +1,34 @@
+#!/bin/sh
+set -e
+
+PARACHAIN_HOME="/var/lib/kilt/"
+PARACHAIN_USER="kilt"
+PARACHAIN_GROUP="kilt"
+
+create_user() {
+    if id ${PARACHAIN_USER} > /dev/null 2>&1; then return; fi
+    addgroup --system kilt
+    adduser --system --disabled-password --home "${PARACHAIN_HOME}" --ingroup "${PARACHAIN_GROUP}" "${PARACHAIN_USER}"
+    chmod 0700 "${PARACHAIN_HOME}"
+}
+
+install_defaults() {
+  # Install defaults only if it is not already installed.
+  if [ ! -f /etc/default/mashnet-node ]; then
+    cp /usr/share/mashnet-node/etc/default/mashnet-node /etc/default/
+  fi
+}
+
+set_ownership() {
+  chown kilt.kilt /var/lib/kilt
+}
+
+case "$1" in
+configure)
+    create_user
+    set_ownership
+    install_defaults
+    ;;
+esac
+
+#DEBHELPER#

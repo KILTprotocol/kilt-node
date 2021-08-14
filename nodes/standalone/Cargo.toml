@@ -77,3 +77,27 @@ try-runtime = [
   "node-executor",
   "try-runtime-cli"
 ]
+
+[package.metadata.deb]
+name = "mashnet-node"
+maintainer = "Erik Lönroth <erik.lonroth@gmail.com>"
+copyright = "2021, Erik Lönroth <erik.lonroth@gmail.com>"
+license-file = ["LICENSE", "0"]
+extended-description = """\
+Kilt mashnet-node (standalone) node. Part of the Polkadot ecosystem.\
+"""
+depends = "$auto"
+section = "utility"
+priority = "optional"
+assets = [
+    ["target/release/mashnet-node", "usr/bin/", "755"],
+    ["pkg/common/etc/default/mashnet-node", "usr/share/mashnet-node/etc/default/mashnet-node", "644"],
+    ["dev-specs/mashnet-node/*", "usr/share/mashnet-node/dev-specs/mashnet-node/", "644"],
+]
+maintainer-scripts = "pkg/debian"
+systemd-units = { unit-name = "mashnet-node", unit-scripts = "pkg/systemd/", enable = false }
+
+[package.metadata.deb.variants.ubuntu-focal]
+
+[package.metadata.deb.variants.ubuntu-bionic]
+

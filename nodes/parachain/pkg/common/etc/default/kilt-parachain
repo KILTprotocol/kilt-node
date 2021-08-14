@@ -1,0 +1,20 @@
+# Default options from .deb package
+
+DAEMON_OPTIONS="--name=Dwellir 
+--rpc-port=9933 \
+--rpc-external \
+--rpc-cors=all \
+--unsafe-rpc-external \
+--rpc-methods=unsafe \
+--chain=/usr/share/kilt-parachain/dev-specs/kilt-parachain/peregrine-kilt.json \
+--runtime=peregrine \
+--execution=wasm \
+--listen-addr=/ip4/0.0.0.0/tcp/30336 \
+--base-path /var/lib/kilt/parachain \
+--keystore-path /var/lib/kilt/keystore \
+--collator \
+-- \
+--listen-addr=/ip4/0.0.0.0/tcp/30333 \
+--base-path /var/lib/kilt/relay \
+--chain=westend \
+--execution=wasm"
