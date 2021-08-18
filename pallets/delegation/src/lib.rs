@@ -121,10 +121,11 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config {
+		type Signature: Parameter;
 		type DelegationSignatureVerification: VerifyDelegateSignature<
 			DelegateId = Self::DelegationEntityId,
 			Payload = Vec<u8>,
-			Signature = Vec<u8>,
+			Signature = Self::Signature,
 		>;
 		type DelegationEntityId: Parameter;
 		type DelegationNodeId: Parameter + Copy + AsRef<[u8]> + Eq + PartialEq + Ord + PartialOrd;
