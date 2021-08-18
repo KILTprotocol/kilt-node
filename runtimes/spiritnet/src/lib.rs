@@ -152,7 +152,6 @@ parameter_types! {
 	pub const SS58Prefix: u8 = 38;
 }
 
-/// Don't allow swaps until parathread story is more mature.
 pub struct BaseFilter;
 impl Filter<Call> for BaseFilter {
 	fn filter(c: &Call) -> bool {
@@ -160,9 +159,7 @@ impl Filter<Call> for BaseFilter {
 			c,
 			Call::Vesting(pallet_vesting::Call::vested_transfer(..))
 				| Call::KiltLaunch(kilt_launch::Call::locked_transfer(..))
-				| Call::Balances(pallet_balances::Call::transfer(..))
-				| Call::Balances(pallet_balances::Call::transfer_keep_alive(..))
-				| Call::Balances(pallet_balances::Call::transfer_all(..))
+				| Call::Balances(..)
 		)
 	}
 }
