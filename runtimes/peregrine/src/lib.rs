@@ -27,12 +27,11 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use codec::Decode;
 use did::DidSignature;
 use frame_support::{ensure, traits::LockIdentifier, PalletId};
 use frame_system::{
 	limits::{BlockLength, BlockWeights},
-	EnsureOneOf, EnsureRoot, EnsureSigned,
+	EnsureOneOf, EnsureRoot,
 };
 use kilt_primitives::{
 	constants::{
@@ -49,9 +48,9 @@ use sp_core::{
 };
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, FixedPointNumber, MultiSignature, Perquintill,
+	ApplyExtrinsicResult, FixedPointNumber, Perquintill,
 };
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
@@ -628,26 +627,23 @@ impl pallet_membership::Config for Runtime {
 	type WeightInfo = weights::pallet_membership::WeightInfo<Runtime>;
 }
 
-impl delegation::VerifyDelegateSignature for Runtime {
-	type DelegateId = DidIdentifier;
+pub struct DelegationSignatureVerifier<R>(sp_std::marker::PhantomData<R>);
+impl<R: did::Config> delegation::VerifyDelegateSignature for DelegationSignatureVerifier<R> {
+	type DelegateId = <R as did::Config>::DidIdentifier;
 	type Payload = Vec<u8>;
-	type Signature = Vec<u8>;
+	type Signature = DidSignature;
 
 	fn verify(
 		delegate: &Self::DelegateId,
 		payload: &Self::Payload,
 		signature: &Self::Signature,
 	) -> delegation::SignatureVerificationResult {
-		// Try to decode signature first.
-		let decoded_signature = DidSignature::decode(&mut &signature[..])
-			.map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
-
-		let delegate_details = did::Did::<Self>::get(&delegate)
-			.ok_or(delegation::SignatureVerificationError::SignerInformationNotPresent)?;
+		let delegate_details =
+			did::Did::<R>::get(delegate).ok_or(delegation::SignatureVerificationError::SignerInformationNotPresent)?;
 
 		did::Pallet::verify_payload_signature_with_did_key_type(
 			payload,
-			&decoded_signature,
+			&signature,
 			&delegate_details,
 			did::DidVerificationKeyRelationship::Authentication,
 		)
@@ -658,6 +654,7 @@ impl delegation::VerifyDelegateSignature for Runtime {
 		})
 	}
 }
+
 parameter_types! {
 	// TODO: Find reasonable number
 	pub const MaxDelegatedAttestations: u32 = 1000;
@@ -680,7 +677,8 @@ parameter_types! {
 }
 
 impl delegation::Config for Runtime {
-	type DelegationSignatureVerification = Self;
+	type Signature = DidSignature;
+	type DelegationSignatureVerification = DelegationSignatureVerifier<Runtime>;
 	type DelegationEntityId = AccountId;
 	type DelegationNodeId = Hash;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;

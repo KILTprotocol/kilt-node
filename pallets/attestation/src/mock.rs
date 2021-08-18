@@ -22,7 +22,6 @@ use crate as attestation;
 use crate::*;
 use ctype::mock as ctype_mock;
 
-use codec::Decode;
 use frame_support::{ensure, parameter_types, weights::constants::RocksDbWeight, BoundedVec};
 use frame_system::EnsureSigned;
 use sp_core::{ed25519, sr25519, Pair};
@@ -105,7 +104,8 @@ parameter_types! {
 }
 
 impl delegation::Config for Test {
-	type DelegationSignatureVerification = Self;
+	type Signature = MultiSignature;
+	type DelegationSignatureVerification = DelegateSignatureVerifier;
 	type DelegationEntityId = TestDelegatorId;
 	type DelegationNodeId = TestDelegationNodeId;
 	type EnsureOrigin = EnsureSigned<TestDelegatorId>;
@@ -129,10 +129,11 @@ impl Config for Test {
 	type MaxDelegatedAttestations = MaxDelegatedAttestations;
 }
 
-impl delegation::VerifyDelegateSignature for Test {
+pub struct DelegateSignatureVerifier;
+impl delegation::VerifyDelegateSignature for DelegateSignatureVerifier {
 	type DelegateId = TestDelegatorId;
 	type Payload = Vec<u8>;
-	type Signature = Vec<u8>;
+	type Signature = MultiSignature;
 
 	// No need to retrieve delegate details as it is simply an AccountId.
 	fn verify(
@@ -140,12 +141,8 @@ impl delegation::VerifyDelegateSignature for Test {
 		payload: &Self::Payload,
 		signature: &Self::Signature,
 	) -> delegation::SignatureVerificationResult {
-		// Try to decode signature first.
-		let decoded_signature = MultiSignature::decode(&mut &signature[..])
-			.map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
-
 		ensure!(
-			decoded_signature.verify(&payload[..], delegate),
+			signature.verify(&payload[..], delegate),
 			delegation::SignatureVerificationError::SignatureInvalid
 		);
 
