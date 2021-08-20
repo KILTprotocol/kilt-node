@@ -67,6 +67,8 @@ pub use sp_runtime::{Perbill, Permill};
 pub use parachain_staking::{InflationInfo, RewardRate, StakingInfo};
 
 mod fee;
+#[cfg(test)]
+mod tests;
 mod weights;
 
 #[cfg(any(feature = "std", test))]
@@ -150,7 +152,6 @@ parameter_types! {
 	pub const SS58Prefix: u8 = 38;
 }
 
-/// Don't allow swaps until parathread story is more mature.
 pub struct BaseFilter;
 impl Filter<Call> for BaseFilter {
 	fn filter(c: &Call) -> bool {
@@ -158,9 +159,9 @@ impl Filter<Call> for BaseFilter {
 			c,
 			Call::Vesting(pallet_vesting::Call::vested_transfer(..))
 				| Call::KiltLaunch(kilt_launch::Call::locked_transfer(..))
-				| Call::Balances(pallet_balances::Call::transfer(..))
-				| Call::Balances(pallet_balances::Call::transfer_keep_alive(..))
-				| Call::Balances(pallet_balances::Call::transfer_all(..))
+				| Call::Balances(..)
+				| Call::ParachainStaking(parachain_staking::Call::join_candidates(..))
+				| Call::Session(pallet_session::Call::set_keys(..))
 		)
 	}
 }

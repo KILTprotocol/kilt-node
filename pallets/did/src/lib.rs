@@ -644,13 +644,13 @@ pub mod pallet {
 		/// # </weight>
 		#[allow(clippy::boxed_local)]
 		#[pallet::weight({
-    		let di = did_call.call.get_dispatch_info();
-    		let max_sig_weight = <T as pallet::Config>::WeightInfo::submit_did_call_ed25519_key()
-    		.max(<T as pallet::Config>::WeightInfo::submit_did_call_sr25519_key())
-    		.max(<T as pallet::Config>::WeightInfo::submit_did_call_ecdsa_key());
+			let di = did_call.call.get_dispatch_info();
+			let max_sig_weight = <T as pallet::Config>::WeightInfo::submit_did_call_ed25519_key()
+			.max(<T as pallet::Config>::WeightInfo::submit_did_call_sr25519_key())
+			.max(<T as pallet::Config>::WeightInfo::submit_did_call_ecdsa_key());
 
-    		(max_sig_weight.saturating_add(di.weight), di.class)
-  		})]
+			(max_sig_weight.saturating_add(di.weight), di.class)
+		})]
 		pub fn submit_did_call(
 			origin: OriginFor<T>,
 			did_call: Box<DidAuthorizedCallOperation<T>>,
