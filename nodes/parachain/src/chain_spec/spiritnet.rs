@@ -223,7 +223,7 @@ const SPIRIT_TRANS_ACC: [u8; 32] = hex!["de28ef5b1691663300a2edb97202791e89bb698
 pub fn get_chain_spec_spiritnet() -> Result<ChainSpec, String> {
 	let properties = get_properties("KILT", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
-	let id: ParaId = 2005.into();
+	let id: ParaId = 2086.into();
 
 	Ok(ChainSpec::from_genesis(
 		"KILT Spiritnet",
