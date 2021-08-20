@@ -24,15 +24,15 @@ use crate::*;
 
 mod v1;
 
-/// Storage version of the delegation pallet.
+/// Storage version of the DID pallet.
 #[derive(Copy, Clone, Encode, Eq, Decode, Ord, PartialEq, PartialOrd)]
-pub enum DelegationStorageVersion {
+pub enum DidStorageVersion {
 	V1,
 	V2,
 }
 
 #[cfg(feature = "try-runtime")]
-impl DelegationStorageVersion {
+impl DidStorageVersion {
 	/// The latest storage version.
 	fn latest() -> Self {
 		Self::V2
@@ -46,13 +46,13 @@ impl DelegationStorageVersion {
 //
 // It might get updated in the future when we know that no node is running this
 // old version anymore.
-impl Default for DelegationStorageVersion {
+impl Default for DidStorageVersion {
 	fn default() -> Self {
 		Self::V1
 	}
 }
 
-impl<T: Config> VersionMigratorTrait<T> for DelegationStorageVersion {
+impl<T: Config> VersionMigratorTrait<T> for DidStorageVersion {
 	// It runs the right pre_migrate logic depending on the current storage version.
 	#[cfg(feature = "try-runtime")]
 	fn pre_migrate(&self) -> Result<(), &str> {
@@ -81,22 +81,22 @@ impl<T: Config> VersionMigratorTrait<T> for DelegationStorageVersion {
 	}
 }
 
-/// The delegation pallet's storage migrator, which handles all version
+/// The DID pallet's storage migrator, which handles all version
 /// migrations in a sequential fashion.
 ///
 /// If a node has missed on more than one upgrade, the migrator will apply the
 /// needed migrations one after the other. Otherwise, if no migration is needed,
 /// the migrator will simply not do anything.
-pub struct DelegationStorageMigrator<T>(PhantomData<T>);
+pub struct DidStorageMigrator<T>(PhantomData<T>);
 
-impl<T: Config> DelegationStorageMigrator<T> {
+impl<T: Config> DidStorageMigrator<T> {
 	// Contains the migration sequence logic.
-	fn get_next_storage_version(current: DelegationStorageVersion) -> Option<DelegationStorageVersion> {
+	fn get_next_storage_version(current: DidStorageVersion) -> Option<DidStorageVersion> {
 		// If the version current deployed is at least v1, there is no more migrations
 		// to run (other than the one from v1).
 		match current {
-			DelegationStorageVersion::V1 => None,
-			DelegationStorageVersion::V2 => None,
+			DidStorageVersion::V1 => None,
+			DidStorageVersion::V2 => None,
 		}
 	}
 
@@ -105,7 +105,7 @@ impl<T: Config> DelegationStorageMigrator<T> {
 	#[cfg(feature = "try-runtime")]
 	pub(crate) fn pre_migrate() -> Result<(), &'static str> {
 		ensure!(
-			StorageVersion::<T>::get() < DelegationStorageVersion::latest(),
+			StorageVersion::<T>::get() < DidStorageVersion::latest(),
 			"Already the latest storage version."
 		);
 
@@ -121,7 +121,7 @@ impl<T: Config> DelegationStorageMigrator<T> {
 	///
 	/// It returns the total weight consumed by ALL the migrations applied.
 	pub(crate) fn migrate() -> Weight {
-		let mut current_version: Option<DelegationStorageVersion> = Some(StorageVersion::<T>::get());
+		let mut current_version: Option<DidStorageVersion> = Some(StorageVersion::<T>::get());
 		// Weight for StorageVersion::get().
 		let mut total_weight = T::DbWeight::get().reads(1);
 
@@ -129,15 +129,15 @@ impl<T: Config> DelegationStorageMigrator<T> {
 			// If any of the needed migrations pre-checks fail, the whole chain panics
 			// (during tests).
 			#[cfg(feature = "try-runtime")]
-			if let Err(err) = <DelegationStorageVersion as VersionMigratorTrait<T>>::pre_migrate(&ver) {
+			if let Err(err) = <DidStorageVersion as VersionMigratorTrait<T>>::pre_migrate(&ver) {
 				panic!("{:?}", err);
 			}
-			let consumed_weight = <DelegationStorageVersion as VersionMigratorTrait<T>>::migrate(&ver);
+			let consumed_weight = <DidStorageVersion as VersionMigratorTrait<T>>::migrate(&ver);
 			total_weight = total_weight.saturating_add(consumed_weight);
 			// If any of the needed migrations post-checks fail, the whole chain panics
 			// (during tests).
 			#[cfg(feature = "try-runtime")]
-			if let Err(err) = <DelegationStorageVersion as VersionMigratorTrait<T>>::post_migrate(&ver) {
+			if let Err(err) = <DidStorageVersion as VersionMigratorTrait<T>>::post_migrate(&ver) {
 				panic!("{:?}", err);
 			}
 			// If more migrations should be applied, current_version will not be None.
@@ -152,7 +152,7 @@ impl<T: Config> DelegationStorageMigrator<T> {
 	#[cfg(feature = "try-runtime")]
 	pub(crate) fn post_migrate() -> Result<(), &'static str> {
 		ensure!(
-			StorageVersion::<T>::get() == DelegationStorageVersion::latest(),
+			StorageVersion::<T>::get() == DidStorageVersion::latest(),
 			"Not updated to the latest version."
 		);
 
@@ -160,52 +160,7 @@ impl<T: Config> DelegationStorageMigrator<T> {
 	}
 }
 
-// Tests for the entire storage migrator.
-#[cfg(test)]
-mod tests {
-	use super::*;
-
-	use crate::mock::Test as TestRuntime;
-
-	#[test]
-	fn ok_from_v1_migration() {
-		let mut ext = mock::ExtBuilder::default()
-			.with_storage_version(DelegationStorageVersion::V1)
-			.build(None);
-		ext.execute_with(|| {
-			#[cfg(feature = "try-runtime")]
-			assert!(
-				DelegationStorageMigrator::<TestRuntime>::pre_migrate().is_ok(),
-				"Storage pre-migrate from v1 should not fail."
-			);
-
-			DelegationStorageMigrator::<TestRuntime>::migrate();
-
-			#[cfg(feature = "try-runtime")]
-			assert!(
-				DelegationStorageMigrator::<TestRuntime>::post_migrate().is_ok(),
-				"Storage post-migrate from v1 should not fail."
-			);
-		});
-	}
-
-	#[test]
-	fn ok_from_default_migration() {
-		let mut ext = mock::ExtBuilder::default().build(None);
-		ext.execute_with(|| {
-			#[cfg(feature = "try-runtime")]
-			assert!(
-				DelegationStorageMigrator::<TestRuntime>::pre_migrate().is_ok(),
-				"Storage pre-migrate from default version should not fail."
-			);
-
-			DelegationStorageMigrator::<TestRuntime>::migrate();
-
-			#[cfg(feature = "try-runtime")]
-			assert!(
-				DelegationStorageMigrator::<TestRuntime>::post_migrate().is_ok(),
-				"Storage post-migrate from default version should not fail."
-			);
-		});
-	}
-}
+// The storage migrator is the same as in the delegation pallet, so those test
+// cases will suffice. We might want to refactor this into something generic
+// over a type implementing the `VersionMigratorTrait` trait, and have it tested
+// only once.

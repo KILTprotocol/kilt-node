@@ -56,6 +56,9 @@ use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 use static_assertions::const_assert;
 
+mod fee;
+#[cfg(test)]
+mod tests;
 mod weights;
 
 #[cfg(feature = "std")]
@@ -86,8 +89,6 @@ pub use attestation;
 pub use ctype;
 pub use delegation;
 pub use did;
-
-mod fee;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't
 /// need to know the specifics of the runtime. They can then be made to be
@@ -121,7 +122,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 18,
+	spec_version: 20,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -651,16 +652,25 @@ impl delegation::VerifyDelegateSignature for Runtime {
 	}
 }
 
+parameter_types! {
+	// TODO: Find reasonable number
+	pub const MaxDelegatedAttestations: u32 = 1000;
+}
+
 impl attestation::Config for Runtime {
 	type EnsureOrigin = EnsureSigned<<Self as delegation::Config>::DelegationEntityId>;
 	type Event = Event;
 	type WeightInfo = weights::attestation::WeightInfo<Runtime>;
+	type MaxDelegatedAttestations = MaxDelegatedAttestations;
 }
 
 parameter_types! {
 	pub const MaxSignatureByteLength: u16 = 64;
 	pub const MaxParentChecks: u32 = 5;
 	pub const MaxRevocations: u32 = 5;
+	// TODO: Find reasonable number
+	#[derive(Clone)]
+	pub const MaxChildren: u32 = 1000;
 }
 
 impl delegation::Config for Runtime {
@@ -672,6 +682,7 @@ impl delegation::Config for Runtime {
 	type MaxSignatureByteLength = MaxSignatureByteLength;
 	type MaxParentChecks = MaxParentChecks;
 	type MaxRevocations = MaxRevocations;
+	type MaxChildren = MaxChildren;
 	type WeightInfo = weights::delegation::WeightInfo<Runtime>;
 }
 
@@ -685,7 +696,14 @@ impl ctype::Config for Runtime {
 parameter_types! {
 	pub const MaxNewKeyAgreementKeys: u32 = 10u32;
 	pub const MaxVerificationKeysToRevoke: u32 = 10u32;
+	#[derive(Debug, Clone, PartialEq)]
 	pub const MaxUrlLength: u32 = 200u32;
+	// TODO: Find reasonable numbers
+	pub const MaxPublicKeysPerDid: u32 = 1000;
+	#[derive(Debug, Clone, PartialEq)]
+	pub const MaxTotalKeyAgreementKeys: u32 = 1000;
+	#[derive(Debug, Clone, PartialEq)]
+	pub const MaxEndpointUrlsCount: u32 = 3u32;
 }
 
 impl did::Config for Runtime {
@@ -698,8 +716,11 @@ impl did::Config for Runtime {
 	#[cfg(feature = "runtime-benchmarks")]
 	type EnsureOrigin = EnsureSigned<Self::DidIdentifier>;
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
+	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
+	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
 	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 	type MaxUrlLength = MaxUrlLength;
+	type MaxEndpointUrlsCount = MaxEndpointUrlsCount;
 	type WeightInfo = weights::did::WeightInfo<Runtime>;
 }
 
@@ -745,14 +766,17 @@ parameter_types! {
 	/// We only allow one delegation per round.
 	pub const MaxDelegationsPerRound: u32 = 1;
 	/// Maximum 25 delegators per collator at launch, might be increased later
+	#[derive(Debug, PartialEq)]
 	pub const MaxDelegatorsPerCollator: u32 = 25;
 	/// Maximum 1 collator per delegator at launch, will be increased later
+	#[derive(Debug, PartialEq)]
 	pub const MaxCollatorsPerDelegator: u32 = 1;
 	/// Minimum stake required to be reserved to be a collator is 10_000
 	pub const MinCollatorStake: Balance = 10_000 * KILT;
 	/// Minimum stake required to be reserved to be a delegator is 1000
 	pub const MinDelegatorStake: Balance = 1000 * KILT;
 	/// Maximum number of collator candidates
+	#[derive(Debug, PartialEq)]
 	pub const MaxCollatorCandidates: u32 = MAX_CANDIDATES;
 	/// Maximum number of concurrent requests to unlock unstaked balance
 	pub const MaxUnstakeRequests: u32 = 10;
