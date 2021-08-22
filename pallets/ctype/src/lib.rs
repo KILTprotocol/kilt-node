@@ -133,7 +133,7 @@ pub mod pallet {
 
 			ensure!(!<Ctypes<T>>::contains_key(&hash), Error::<T>::CTypeAlreadyExists);
 
-			log::debug!("Creating CType with hash {:?} and creator {:?}", &hash, &creator);
+			log::debug!("Creating CType with hash {:?} and creator {:?}", hash, creator);
 			<Ctypes<T>>::insert(&hash, creator.clone());
 
 			Self::deposit_event(Event::CTypeCreated(creator, hash));

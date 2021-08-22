@@ -203,7 +203,7 @@ impl frame_system::Config for Runtime {
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type DbWeight = RocksDbWeight;
-	type BaseCallFilter = ();
+	type BaseCallFilter = frame_support::traits::Everything;
 	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
 	type BlockWeights = RuntimeBlockWeights;
 	type BlockLength = RuntimeBlockLength;
@@ -298,6 +298,8 @@ impl cumulus_pallet_aura_ext::Config for Runtime {}
 
 impl pallet_aura::Config for Runtime {
 	type AuthorityId = AuthorityId;
+	//TODO: handle disabled validators
+	type DisabledValidators = ();
 }
 
 parameter_types! {
@@ -1030,6 +1032,52 @@ impl_runtime_apis! {
 
 	#[cfg(feature = "runtime-benchmarks")]
 	impl frame_benchmarking::Benchmark<Block> for Runtime {
+		fn benchmark_metadata(extra: bool) -> (
+			Vec<frame_benchmarking::BenchmarkList>,
+			Vec<frame_support::traits::StorageInfo>,
+		) {
+			use frame_benchmarking::{list_benchmark, Benchmarking, BenchmarkList};
+			use frame_support::traits::StorageInfoTrait;
+			use frame_system_benchmarking::Pallet as SystemBench;
+
+			let mut list = Vec::<BenchmarkList>::new();
+
+			// Substrate
+			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
+			list_benchmark!(list, extra, pallet_balances, Balances);
+			list_benchmark!(list, extra, pallet_collective, Council);
+			list_benchmark!(list, extra, pallet_democracy, Democracy);
+			list_benchmark!(list, extra, pallet_indices, Indices);
+			list_benchmark!(list, extra, pallet_membership, TechnicalMembership);
+			list_benchmark!(list, extra, parachain_staking, ParachainStaking);
+			list_benchmark!(list, extra, pallet_scheduler, Scheduler);
+			// list_benchmark!(list, extra, pallet_session, Session);
+			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
+			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
+			list_benchmark!(list, extra, pallet_treasury, Treasury);
+			list_benchmark!(list, extra, pallet_utility, Utility);
+
+			list_benchmark!(list, extra, attestation, Attestation);
+			list_benchmark!(list, extra, ctype, Ctype);
+			list_benchmark!(list, extra, delegation, Delegation);
+			list_benchmark!(list, extra, did, Did);
+			list_benchmark!(list, extra, kilt_launch, KiltLaunch);
+			list_benchmark!(list, extra, pallet_vesting, Vesting);
+
+			// No benchmarks for these pallets
+			// list_benchmark!(list, extra, cumulus_pallet_parachain_system, ParachainSystem);
+			// list_benchmark!(list, extra, parachain_info, ParachainInfo);
+			// list_benchmark!(list, extra, cumulus_pallet_xcmp_queue, XcmHandler);
+			// list_benchmark!(list, extra, orml_tokens, Tokens);
+			// list_benchmark!(list, extra, orml_currencies, Currencies);
+			// list_benchmark!(list, extra, orml_xtokens, XTokens);
+			// list_benchmark!(list, extra, orml_unknown_tokens, UnknownTokens);
+
+			let storage_info = AllPalletsWithSystem::storage_info();
+
+			(list, storage_info)
+		}
+
 		fn dispatch_benchmark(
 			config: frame_benchmarking::BenchmarkConfig
 		) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {

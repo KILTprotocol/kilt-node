@@ -237,7 +237,7 @@ pub fn get_chain_spec_spiritnet() -> Result<ChainSpec, String> {
 					(SPIRIT_COL_ACC_02.into(), None, MAX_COLLATOR_STAKE),
 					(SPIRIT_COL_ACC_03.into(), None, 10_000 * KILT),
 					(SPIRIT_COL_ACC_04.into(), None, MAX_COLLATOR_STAKE),
-					(SPIRIT_COL_ACC_05.into(), None, 30_000 * KILT),
+					(SPIRIT_COL_ACC_05.into(), None, 10_000 * KILT),
 					(SPIRIT_COL_ACC_06.into(), None, 12_750 * KILT),
 					(SPIRIT_COL_ACC_07.into(), None, 20_000 * KILT),
 					(SPIRIT_COL_ACC_08.into(), None, 10_000 * KILT),

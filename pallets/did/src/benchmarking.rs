@@ -455,7 +455,7 @@ benchmarks! {
 		let did_call_op = generate_base_did_call_operation::<T>(did_subject);
 
 		let did_call_signature = ed25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_call_op.encode().as_ref()).expect("Failed to create DID signature from raw ed25519 signature.");
-	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op.clone()), DidSignature::from(did_call_signature))
+	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op), DidSignature::from(did_call_signature))
 
 	submit_did_call_sr25519_key {
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
@@ -469,7 +469,7 @@ benchmarks! {
 		let did_call_op = generate_base_did_call_operation::<T>(did_subject);
 
 		let did_call_signature = sr25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_call_op.encode().as_ref()).expect("Failed to create DID signature from raw sr25519 signature.");
-	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op.clone()), DidSignature::from(did_call_signature))
+	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op), DidSignature::from(did_call_signature))
 
 	submit_did_call_ecdsa_key {
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
@@ -483,7 +483,7 @@ benchmarks! {
 		let did_call_op = generate_base_did_call_operation::<T>(did_subject);
 
 		let did_call_signature = ecdsa_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_call_op.encode().as_ref()).expect("Failed to create DID signature from raw ecdsa signature.");
-	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op.clone()), DidSignature::from(did_call_signature))
+	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op), DidSignature::from(did_call_signature))
 }
 
 impl_benchmark_test_suite! {
