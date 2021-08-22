@@ -26,7 +26,7 @@
 use std::sync::Arc;
 
 use kilt_primitives::{AccountId, Balance, Index};
-use mashnet_node_runtime::{opaque::Block};
+use mashnet_node_runtime::opaque::Block;
 pub use sc_rpc_api::DenyUnsafe;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
@@ -54,8 +54,8 @@ where
 	C::Api: BlockBuilder<Block>,
 	P: TransactionPool + 'static,
 {
-	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
 	use frame_rpc_system::{FullSystem, SystemApi};
+	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
 
 	let mut io = jsonrpc_core::IoHandler::default();
 	let FullDeps {
@@ -70,9 +70,7 @@ where
 		deny_unsafe,
 	)));
 
-	io.extend_with(TransactionPaymentApi::to_delegate(TransactionPayment::new(
-		client.clone(),
-	)));
+	io.extend_with(TransactionPaymentApi::to_delegate(TransactionPayment::new(client)));
 
 	// Extend this RPC with a custom API by using the following syntax.
 	// `YourRpcStruct` should have a reference to a client, which is needed
