@@ -49,7 +49,7 @@ type PartialComponents<Block, RuntimeApi, Executor, Telemetry, TelemetryWorkerHa
 	TFullClient<Block, RuntimeApi, Executor>,
 	TFullBackend<Block>,
 	(),
-	sp_consensus::DefaultImportQueue<Block, TFullClient<Block, RuntimeApi, Executor>>,
+	sc_consensus::DefaultImportQueue<Block, TFullClient<Block, RuntimeApi, Executor>>,
 	TransactionPool<Block, RuntimeApi, Executor>,
 	(Option<Telemetry>, Option<TelemetryWorkerHandle>),
 >;
@@ -94,7 +94,7 @@ where
 		Option<TelemetryHandle>,
 		&TaskManager,
 	) -> Result<
-		sp_consensus::DefaultImportQueue<Block, TFullClient<Block, RuntimeApi, Executor>>,
+		sc_consensus::DefaultImportQueue<Block, TFullClient<Block, RuntimeApi, Executor>>,
 		sc_service::Error,
 	>,
 {
@@ -188,7 +188,7 @@ where
 		Option<TelemetryHandle>,
 		&TaskManager,
 	) -> Result<
-		sp_consensus::DefaultImportQueue<Block, TFullClient<Block, RuntimeApi, Executor>>,
+		sc_consensus::DefaultImportQueue<Block, TFullClient<Block, RuntimeApi, Executor>>,
 		sc_service::Error,
 	>,
 	BIC: FnOnce(
@@ -243,6 +243,7 @@ where
 		import_queue: import_queue.clone(),
 		on_demand: None,
 		block_announce_validator_builder: Some(Box::new(|_| block_announce_validator)),
+		warp_sync: None,
 	})?;
 
 	sc_service::spawn_tasks(sc_service::SpawnTasksParams {
@@ -316,7 +317,7 @@ pub fn build_import_queue<RE, API>(
 	config: &Configuration,
 	telemetry: Option<TelemetryHandle>,
 	task_manager: &TaskManager,
-) -> Result<sp_consensus::DefaultImportQueue<Block, TFullClient<Block, API, RE>>, sc_service::Error>
+) -> Result<sc_consensus::DefaultImportQueue<Block, TFullClient<Block, API, RE>>, sc_service::Error>
 where
 	RE: NativeExecutionDispatch + 'static,
 	API: ConstructRuntimeApi<Block, TFullClient<Block, API, RE>> + Send + Sync + 'static,

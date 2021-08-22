@@ -23,7 +23,7 @@ mashnet-node-runtime = {path = "../../runtimes/standalone"}
 futures = "0.3"
 hex-literal = "0.2.1"
 log = "0.4"
-serde = { version = "1.0.119", features = ["derive"] }
+serde = {version = "1.0.119", features = ["derive"]}
 serde_json = "1.0.64"
 structopt = "0.3.8"
 
@@ -40,6 +40,7 @@ sc-network = {git = "https://github.com/paritytech/substrate", branch = "polkado
 sc-service = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.9"}
 sc-telemetry = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.9"}
 sc-transaction-pool = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.9"}
+sc-transaction-pool-api = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.9"}
 sp-api = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.9"}
 sp-block-builder = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.9"}
 sp-blockchain = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.9"}
@@ -53,8 +54,8 @@ sp-timestamp = {git = "https://github.com/paritytech/substrate", branch = "polka
 sp-transaction-pool = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.9"}
 
 # RPC related dependencies
-jsonrpc-core = "15.0.0"
 frame-rpc-system = {package = "substrate-frame-rpc-system", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.9"}
+jsonrpc-core = "15.0.0"
 pallet-transaction-payment-rpc = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.9"}
 sc-rpc = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.9"}
 sc-rpc-api = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.9"}
@@ -75,5 +76,5 @@ runtime-benchmarks = [
 try-runtime = [
   "mashnet-node-runtime/try-runtime",
   "node-executor",
-  "try-runtime-cli"
+  "try-runtime-cli",
 ]

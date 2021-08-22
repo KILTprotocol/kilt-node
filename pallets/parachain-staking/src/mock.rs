@@ -115,6 +115,7 @@ impl pallet_balances::Config for Test {
 
 impl pallet_aura::Config for Test {
 	type AuthorityId = AuthorityId;
+	type DisabledValidators = ();
 }
 
 impl pallet_authorship::Config for Test {

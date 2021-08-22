@@ -44,22 +44,25 @@ type FullClient = sc_service::TFullClient<Block, RuntimeApi, Executor>;
 type FullBackend = sc_service::TFullBackend<Block>;
 type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
 
-type PartialComponents = sc_service::PartialComponents<
-	FullClient,
-	FullBackend,
-	FullSelectChain,
-	sp_consensus::DefaultImportQueue<Block, FullClient>,
-	sc_transaction_pool::FullPool<Block, FullClient>,
-	(
-		sc_finality_grandpa::GrandpaBlockImport<FullBackend, Block, FullClient, FullSelectChain>,
-		sc_finality_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
-		Option<Telemetry>,
-	),
->;
-
-pub fn new_partial(config: &Configuration) -> Result<PartialComponents, ServiceError> {
+pub fn new_partial(
+	config: &Configuration,
+) -> Result<
+	sc_service::PartialComponents<
+		FullClient,
+		FullBackend,
+		FullSelectChain,
+		sc_consensus::DefaultImportQueue<Block, FullClient>,
+		sc_transaction_pool::FullPool<Block, FullClient>,
+		(
+			sc_finality_grandpa::GrandpaBlockImport<FullBackend, Block, FullClient, FullSelectChain>,
+			sc_finality_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
+			Option<Telemetry>,
+		),
+	>,
+	ServiceError,
+> {
 	if config.keystore_remote.is_some() {
-		return Err(ServiceError::Other("Remote Keystores are not supported.".to_string()));
+		return Err(ServiceError::Other(format!("Remote Keystores are not supported.")));
 	}
 
 	let telemetry = config
@@ -74,7 +77,7 @@ pub fn new_partial(config: &Configuration) -> Result<PartialComponents, ServiceE
 		.transpose()?;
 
 	let (client, backend, keystore_container, task_manager) = sc_service::new_full_parts::<Block, RuntimeApi, Executor>(
-		config,
+		&config,
 		telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
 	)?;
 	let client = Arc::new(client);
@@ -136,7 +139,7 @@ pub fn new_partial(config: &Configuration) -> Result<PartialComponents, ServiceE
 	})
 }
 
-fn remote_keystore(_url: &str) -> Result<Arc<LocalKeystore>, &'static str> {
+fn remote_keystore(_url: &String) -> Result<Arc<LocalKeystore>, &'static str> {
 	// FIXME: here would the concrete keystore be built,
 	//        must return a concrete type (NOT `LocalKeystore`) that
 	//        implements `CryptoStore` and `SyncCryptoStore`
@@ -172,6 +175,10 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		.network
 		.extra_sets
 		.push(sc_finality_grandpa::grandpa_peers_set_config());
+	let warp_sync = Arc::new(sc_finality_grandpa::warp_proof::NetworkProvider::new(
+		backend.clone(),
+		grandpa_link.shared_authority_set().clone(),
+	));
 
 	let (network, system_rpc_tx, network_starter) = sc_service::build_network(sc_service::BuildNetworkParams {
 		config: &config,
@@ -181,6 +188,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		import_queue,
 		on_demand: None,
 		block_announce_validator_builder: None,
+		warp_sync: Some(warp_sync),
 	})?;
 
 	if config.offchain_worker.enabled {
@@ -205,7 +213,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 				deny_unsafe,
 			};
 
-			crate::rpc::create_full(deps)
+			Ok(crate::rpc::create_full(deps))
 		})
 	};
 
@@ -240,7 +248,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 
 		let aura = sc_consensus_aura::start_aura::<AuraPair, _, _, _, _, _, _, _, _, _, _, _>(StartAuraParams {
 			slot_duration,
-			client,
+			client: client.clone(),
 			select_chain,
 			block_import,
 			proposer_factory,
@@ -260,10 +268,8 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 			can_author_with,
 			sync_oracle: network.clone(),
 			justification_sync_link: network.clone(),
-			// We got around 500ms for proposing
 			block_proposal_slot_portion: SlotProportion::new(2f32 / 3f32),
-			// And a maximum of 750ms if slots are skipped
-			max_block_proposal_slot_portion: Some(SlotProportion::new(1f32 / 16f32)),
+			max_block_proposal_slot_portion: None,
 			telemetry: telemetry.as_ref().map(|x| x.handle()),
 		})?;
 
@@ -361,7 +367,7 @@ pub fn new_light(mut config: Configuration) -> Result<TaskManager, ServiceError>
 	let (grandpa_block_import, grandpa_link) = sc_finality_grandpa::block_import(
 		client.clone(),
 		&(client.clone() as Arc<_>),
-		select_chain,
+		select_chain.clone(),
 		telemetry.as_ref().map(|x| x.handle()),
 	)?;
 
@@ -369,7 +375,7 @@ pub fn new_light(mut config: Configuration) -> Result<TaskManager, ServiceError>
 
 	let import_queue = sc_consensus_aura::import_queue::<AuraPair, _, _, _, _, _, _>(ImportQueueParams {
 		block_import: grandpa_block_import.clone(),
-		justification_import: Some(Box::new(grandpa_block_import)),
+		justification_import: Some(Box::new(grandpa_block_import.clone())),
 		client: client.clone(),
 		create_inherent_data_providers: move |_, ()| async move {
 			let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
@@ -388,6 +394,11 @@ pub fn new_light(mut config: Configuration) -> Result<TaskManager, ServiceError>
 		telemetry: telemetry.as_ref().map(|x| x.handle()),
 	})?;
 
+	let warp_sync = Arc::new(sc_finality_grandpa::warp_proof::NetworkProvider::new(
+		backend.clone(),
+		grandpa_link.shared_authority_set().clone(),
+	));
+
 	let (network, system_rpc_tx, network_starter) = sc_service::build_network(sc_service::BuildNetworkParams {
 		config: &config,
 		client: client.clone(),
@@ -396,6 +407,7 @@ pub fn new_light(mut config: Configuration) -> Result<TaskManager, ServiceError>
 		import_queue,
 		on_demand: Some(on_demand.clone()),
 		block_announce_validator_builder: None,
+		warp_sync: Some(warp_sync),
 	})?;
 
 	if config.offchain_worker.enabled {
@@ -427,7 +439,7 @@ pub fn new_light(mut config: Configuration) -> Result<TaskManager, ServiceError>
 		transaction_pool,
 		task_manager: &mut task_manager,
 		on_demand: Some(on_demand),
-		rpc_extensions_builder: Box::new(|_, _| ()),
+		rpc_extensions_builder: Box::new(|_, _| Ok(())),
 		config,
 		client,
 		keystore: keystore_container.sync_keystore(),
@@ -438,6 +450,5 @@ pub fn new_light(mut config: Configuration) -> Result<TaskManager, ServiceError>
 	})?;
 
 	network_starter.start_network();
-
 	Ok(task_manager)
 }
