@@ -8,5 +8,5 @@ example usage:
 
 ```
 python3 .maintain/reset-spec/ -i kiltprotocol/peregrine:develop --peregrine --peregrine-stg --peregrine-dev
-python3 .maintain/reset-spec/ -i parity/polkadot:v0.9.8 --peregrine-relay --peregrine-relay-stg
+python3 .maintain/reset-spec/ -i parity/polkadot:v0.9.9 --peregrine-relay --peregrine-relay-stg
 ```

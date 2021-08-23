@@ -73,7 +73,7 @@ parameter_types! {
 }
 
 impl frame_system::Config for Test {
-	type BaseCallFilter = ();
+	type BaseCallFilter = frame_support::traits::Everything;
 	type DbWeight = ();
 	type Origin = Origin;
 	type Index = u64;
@@ -115,6 +115,7 @@ impl pallet_balances::Config for Test {
 
 impl pallet_aura::Config for Test {
 	type AuthorityId = AuthorityId;
+	type DisabledValidators = ();
 }
 
 impl pallet_authorship::Config for Test {

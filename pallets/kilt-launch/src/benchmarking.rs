@@ -194,7 +194,7 @@ benchmarks! {
 		let ((transfer, transfer_lookup), s, _) = genesis_setup::<T>(1).expect("Genesis setup failure");
 		whitelist_account!(transfer);
 		let (source, source_lookup) = s.get(0).expect("Locking source should not be empty").clone();
-	}: migrate_genesis_account(RawOrigin::Signed(transfer), source_lookup.clone(), target_lookup)
+	}: migrate_genesis_account(RawOrigin::Signed(transfer), source_lookup, target_lookup)
 	verify {
 		assert!(UnownedAccount::<T>::get(&source).is_none());
 		assert!(!Vesting::<T>::contains_key(source), "Vesting schedule not removed");
@@ -213,7 +213,7 @@ benchmarks! {
 		let ((transfer, transfer_lookup), _, s) = genesis_setup::<T>(1).expect("Genesis setup failure");
 		whitelist_account!(transfer);
 		let (source, source_lookup) = s.get(0).expect("Locking source should not be empty").clone();
-	}: migrate_genesis_account(RawOrigin::Signed(transfer), source_lookup.clone(), target_lookup)
+	}: migrate_genesis_account(RawOrigin::Signed(transfer), source_lookup, target_lookup)
 	verify {
 		assert!(UnownedAccount::<T>::get(&source).is_none());
 		assert!(!BalanceLocks::<T>::contains_key(source), "BalanceLock not removed");
@@ -232,7 +232,7 @@ benchmarks! {
 
 		let ((transfer, transfer_lookup), s, _) = genesis_setup::<T>(n).expect("Genesis setup failure");
 		let source_lookups: Vec<<T::Lookup as StaticLookup>::Source> = s.into_iter().map(|(_, lookup)| lookup).collect();
-	}: migrate_multiple_genesis_accounts(RawOrigin::Signed(transfer), source_lookups.clone(), target_lookup)
+	}: migrate_multiple_genesis_accounts(RawOrigin::Signed(transfer), source_lookups, target_lookup)
 	verify {
 		assert_eq!(Vesting::<T>::get(&target), Some(VestingInfo::<BalanceOf<T>, T::BlockNumber> {
 			locked: (n as u128 * AMOUNT).into(),
@@ -251,7 +251,7 @@ benchmarks! {
 		let ((transfer, transfer_lookup), _, s) = genesis_setup::<T>(n).expect("Genesis setup failure");
 		whitelist_account!(transfer);
 		let source_lookups: Vec<<T::Lookup as StaticLookup>::Source> = s.into_iter().map(|(_, lookup)| lookup).collect();
-	}: migrate_multiple_genesis_accounts(RawOrigin::Signed(transfer), source_lookups.clone(), target_lookup)
+	}: migrate_multiple_genesis_accounts(RawOrigin::Signed(transfer), source_lookups, target_lookup)
 	verify {
 		assert_eq!(BalanceLocks::<T>::get(&target), Some(LockedBalance::<T> {
 			block: UNLOCK_BLOCK.into(),
