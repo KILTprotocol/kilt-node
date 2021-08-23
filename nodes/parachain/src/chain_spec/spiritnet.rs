@@ -318,14 +318,14 @@ fn testnet_genesis(
 	type LockingPeriod = BlockNumber;
 
 	// vesting and locks as initially designed
-	let airdrop_accounts_json = &include_bytes!("../../res/genesis/claimable-accounts.json")[..];
-	let airdrop_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
-		serde_json::from_slice(airdrop_accounts_json).expect("The file genesis_accounts.json exists and is valid; qed");
+	let claimable_accounts_json = &include_bytes!("../../res/genesis/claimable-accounts.json")[..];
+	let claimable_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
+		serde_json::from_slice(claimable_accounts_json).expect("The file genesis_accounts.json exists and is valid; qed");
 
 	// botlabs account should not be migrated but some have vesting
-	let botlabs_accounts_json = &include_bytes!("../../res/genesis/owned-accounts.json")[..];
-	let botlabs_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
-		serde_json::from_slice(botlabs_accounts_json).expect("The file botlabs_accounts.json exists and is valid; qed");
+	let owned_accounts_json = &include_bytes!("../../res/genesis/owned-accounts.json")[..];
+	let owned_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
+		serde_json::from_slice(owned_accounts_json).expect("The file botlabs_accounts.json exists and is valid; qed");
 
 	GenesisConfig {
 		system: SystemConfig {
@@ -336,32 +336,31 @@ fn testnet_genesis(
 			balances: endowed_accounts
 				.iter()
 				.cloned()
-				.chain(airdrop_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
-				.chain(botlabs_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
+				.chain(claimable_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
+				.chain(owned_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
 				.collect(),
 		},
 		sudo: SudoConfig { key: root_key },
 		parachain_info: ParachainInfoConfig { parachain_id: id },
 		kilt_launch: KiltLaunchConfig {
-			vesting: airdrop_accounts
+			vesting: claimable_accounts
 				.iter()
 				.cloned()
-				.map(|(who, amount, vesting_length, _)| (who, vesting_length * MINUTES, amount))
+				.map(|(who, amount, vesting_length, _)| (who, vesting_length, amount))
 				.collect(),
-			balance_locks: airdrop_accounts
+			balance_locks: claimable_accounts
 				.iter()
 				.cloned()
-				.map(|(who, amount, _, locking_length)| (who, locking_length * MINUTES, amount))
+				.map(|(who, amount, _, locking_length)| (who, locking_length, amount))
 				.collect(),
-			// TODO: Set this to another address (PRE-LAUNCH)
 			transfer_account,
 		},
 		vesting: VestingConfig {
-			vesting: botlabs_accounts
+			vesting: owned_accounts
 				.iter()
 				.cloned()
 				.filter(|(_, _, vesting_length, _)| !vesting_length.is_zero())
-				.map(|(who, amount, vesting_length, _)| (who, 0u64, vesting_length * MINUTES, amount))
+				.map(|(who, amount, vesting_length, _)| (who, 0u64, vesting_length, 0))
 				.collect(),
 		},
 		parachain_staking: ParachainStakingConfig {
