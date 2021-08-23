@@ -87,8 +87,6 @@
 //!
 //! - The maximum number of new key agreement keys that can be specified in a
 //!   creation or update operation is bounded by `MaxNewKeyAgreementKeys`.
-//! - The maximum number of new keys that can be deleted in an update operation
-//!   is bounded by `MaxVerificationKeysToRevoke`.
 //! - The maximum number of endpoint URLs for a new DID service description is
 //!   bounded by `MaxEndpointUrlsCount`.
 //! - The maximum length in ASCII characters of any endpoint URL is bounded by
@@ -186,20 +184,19 @@ pub mod pallet {
 
 		#[cfg(feature = "runtime-benchmarks")]
 		type Origin: From<RawOrigin<DidIdentifierOf<Self>>>;
+
 		type EnsureOrigin: EnsureOrigin<Success = DidIdentifierOf<Self>, <Self as frame_system::Config>::Origin>;
+
 		/// Overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
 		/// Maximum number of total public keys which can be stored per DID key
 		/// identifier. This includes the ones currently used for
-		/// authentication, key agreement, attestation, and delegation. It also
-		/// contains old attestation keys which cannot issue new attestations
-		/// but can still be used to verify previously issued attestations.
+		/// authentication, key agreement, attestation, and delegation.
 		#[pallet::constant]
 		type MaxPublicKeysPerDid: Get<u32>;
 
-		/// Maximum number of key agreement keys that can be added in a creation
-		/// or update operation.
+		/// Maximum number of key agreement keys that can be added in a creation operation.
 		#[pallet::constant]
 		type MaxNewKeyAgreementKeys: Get<u32>;
 
@@ -209,10 +206,6 @@ pub mod pallet {
 		/// Should be greater than `MaxNewKeyAgreementKeys`.
 		#[pallet::constant]
 		type MaxTotalKeyAgreementKeys: Get<u32> + Debug + Clone + PartialEq;
-
-		/// Maximum number of keys that can be removed in an update operation.
-		#[pallet::constant]
-		type MaxVerificationKeysToRevoke: Get<u32>;
 
 		/// Maximum length in ASCII characters of the endpoint URL specified in
 		/// a creation or update operation.
@@ -289,8 +282,8 @@ pub mod pallet {
 		DidAlreadyPresent,
 		/// No DID with the given identifier is present on chain.
 		DidNotPresent,
-		/// The storage entry is not present.
-		NotPresent,
+		/// The DID fragment is not present in the DID details.
+		DidFragmentNotPresent,
 		/// One or more verification keys referenced are not stored in the set
 		/// of verification keys.
 		VerificationKeyNotPresent,
@@ -319,14 +312,14 @@ pub mod pallet {
 		MaxUrlLengthExceeded,
 		/// More than the maximum number of URLs have been specified.
 		MaxUrlsCountExceeded,
-		/// An error that is not supposed to take place, yet it happened.
-		InternalError,
 		/// The maximum number of public keys for this DID key identifier has
 		/// been reached.
 		MaxPublicKeysPerDidExceeded,
 		/// The maximum number of key agreements has been reached for the DID
 		/// subject.
 		MaxTotalKeyAgreementKeysExceeded,
+		/// An error that is not supposed to take place, yet it happened.
+		InternalError,
 	}
 
 	impl<T> From<DidError> for Error<T> {
@@ -470,23 +463,13 @@ pub mod pallet {
 		pub fn set_authentication_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
-			let old_key_id = did_details.authentication_key;
 
-			did_details.authentication_key = utils::calculate_key_id::<T>(&new_key.clone().into());
-			did_details
-				.public_keys
-				.try_insert(
-					did_details.authentication_key,
-					DidPublicKeyDetails {
-						key: new_key.into(),
-						block_number: <frame_system::Pallet<T>>::block_number(),
-					},
-				)
-				.map_err(|_| <Error<T>>::MaxPublicKeysPerDidExceeded)?;
-			did_details.remove_key_if_unused(old_key_id);
+			log::debug!("Setting new authentication key {:?} for DID {:?}", &new_key, &did_subject);
 
-			log::debug!("Updating DID {:?}", did_subject);
+			did_details.update_authentication_key(new_key, <frame_system::Pallet<T>>::block_number()).map_err(<Error<T>>::from)?;
+
 			<Did<T>>::insert(&did_subject, did_details);
+			log::debug!("Authentication key set");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
 			Ok(())
@@ -497,14 +480,11 @@ pub mod pallet {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
-			if let Some(old_delegation_key) = did_details.delegation_key {
-				did_details.remove_key_if_unused(old_delegation_key);
-			}
-			let new_key_id = utils::calculate_key_id::<T>(&new_key.into());
-			did_details.delegation_key = Some(new_key_id);
+			log::debug!("Setting new delegation key {:?} for DID {:?}", &new_key, &did_subject);
+			did_details.update_delegation_key(new_key, <frame_system::Pallet<T>>::block_number()).map_err(<Error<T>>::from)?;
 
-			log::debug!("Updating DID {:?}", did_subject);
 			<Did<T>>::insert(&did_subject, did_details);
+			log::debug!("Delegation key set");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
 			Ok(())
@@ -515,13 +495,12 @@ pub mod pallet {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
-			let old_key_id = did_details.delegation_key.ok_or(<Error<T>>::NotPresent)?;
-
-			did_details.delegation_key = None;
+			log::debug!("Removing delegation key for DID {:?}", &did_subject);
+			let old_key_id = did_details.delegation_key.take().ok_or(<Error<T>>::DidFragmentNotPresent)?;
 			did_details.remove_key_if_unused(old_key_id);
 
-			log::debug!("Updating DID {:?}", did_subject);
 			<Did<T>>::insert(&did_subject, did_details);
+			log::debug!("Delegation key removed");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
 			Ok(())
@@ -532,21 +511,11 @@ pub mod pallet {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
-			let new_key_id = utils::calculate_key_id::<T>(&new_key.clone().into());
-			did_details.attestation_key = Some(new_key_id);
-			did_details
-				.public_keys
-				.try_insert(
-					new_key_id,
-					DidPublicKeyDetails {
-						key: new_key.into(),
-						block_number: <frame_system::Pallet<T>>::block_number(),
-					},
-				)
-				.map_err(|_| <Error<T>>::MaxPublicKeysPerDidExceeded)?;
+			log::debug!("Setting new attestation key {:?} for DID {:?}", &new_key, &did_subject);
+			did_details.update_attestation_key(new_key, <frame_system::Pallet<T>>::block_number()).map_err(<Error<T>>::from)?;
 
-			log::debug!("Updating DID {:?}", did_subject);
 			<Did<T>>::insert(&did_subject, did_details);
+			log::debug!("Attestation key set");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
 			Ok(())
@@ -557,14 +526,12 @@ pub mod pallet {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
-			let old_key_id = did_details.attestation_key.ok_or(<Error<T>>::NotPresent)?;
-
-			did_details.attestation_key = None;
-			//TODO: add a key_id parameter to allow for deletion of past attestation keys
+			log::debug!("Removing attestation key for DID {:?}", &did_subject);
+			let old_key_id = did_details.attestation_key.take().ok_or(<Error<T>>::DidFragmentNotPresent)?;
 			did_details.remove_key_if_unused(old_key_id);
 
-			log::debug!("Updating DID {:?}", did_subject);
 			<Did<T>>::insert(&did_subject, did_details);
+			log::debug!("Attestation key removed");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
 			Ok(())
@@ -575,24 +542,11 @@ pub mod pallet {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
-			let new_key_id = utils::calculate_key_id::<T>(&new_key.into());
-			did_details
-				.public_keys
-				.try_insert(
-					new_key_id,
-					DidPublicKeyDetails {
-						key: new_key.into(),
-						block_number: <frame_system::Pallet<T>>::block_number(),
-					},
-				)
-				.map_err(|_| <Error<T>>::MaxPublicKeysPerDidExceeded)?;
-			did_details
-				.key_agreement_keys
-				.try_insert(new_key_id)
-				.map_err(|_| <Error<T>>::MaxTotalKeyAgreementKeysExceeded)?;
+			log::debug!("Adding new key agreement key {:?} for DID {:?}", &new_key, &did_subject);
+			did_details.add_key_agreement_key(new_key, <frame_system::Pallet<T>>::block_number()).map_err(<Error<T>>::from)?;
 
-			log::debug!("Updating DID {:?}: add key agreement key", did_subject);
 			<Did<T>>::insert(&did_subject, did_details);
+			log::debug!("Key agreement key set");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
 			Ok(())
@@ -603,17 +557,19 @@ pub mod pallet {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
-			if did_details.key_agreement_keys.remove(&key_id) {
-				did_details.remove_key_if_unused(key_id);
+			log::debug!("Removing key agreement key for DID {:?}", &did_subject);
+			ensure!(
+				did_details.key_agreement_keys.remove(&key_id),
+				<Error<T>>::DidFragmentNotPresent
+			);
 
-				log::debug!("Updating DID {:?}: removing key agreement key", did_subject);
-				<Did<T>>::insert(&did_subject, did_details);
+			did_details.remove_key_if_unused(key_id);
 
-				Self::deposit_event(Event::DidUpdated(did_subject));
-				Ok(())
-			} else {
-				Err(<Error<T>>::NotPresent.into())
-			}
+			<Did<T>>::insert(&did_subject, did_details);
+			log::debug!("Key agreement key removed");
+
+			Self::deposit_event(Event::DidUpdated(did_subject));
+			Ok(())
 		}
 
 		#[pallet::weight(10)]
@@ -621,14 +577,13 @@ pub mod pallet {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
-			ensure!(
-				service_endpoints.validate_against_config_limits().is_ok(),
-				Error::<T>::MaxUrlsCountExceeded
-			);
+			log::debug!("Adding new service endpoints {:?} for DID {:?}", &service_endpoints, &did_subject);
+			service_endpoints.validate_against_config_limits().map_err(<Error<T>>::from)?;
 
 			did_details.service_endpoints = Some(service_endpoints);
-			log::debug!("Updating DID {:?}: removing service endpoints", did_subject);
+
 			<Did<T>>::insert(&did_subject, did_details);
+			log::debug!("Service endpoints set");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
 			Ok(())
@@ -639,15 +594,17 @@ pub mod pallet {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
-			if did_details.service_endpoints.take().is_some() {
-				log::debug!("Updating DID {:?}: removing service endpoints", did_subject);
-				<Did<T>>::insert(&did_subject, did_details);
+			log::debug!("Removing service endpoints for DID {:?}", &did_subject);
+			ensure!(
+				did_details.service_endpoints.take().is_some(),
+				<Error<T>>::DidFragmentNotPresent
+			);
 
-				Self::deposit_event(Event::DidUpdated(did_subject));
-				Ok(())
-			} else {
-				Err(<Error<T>>::NotPresent.into())
-			}
+			<Did<T>>::insert(&did_subject, did_details);
+			log::debug!("Service endpoints removed");
+
+			Self::deposit_event(Event::DidUpdated(did_subject));
+			Ok(())
 		}
 
 		/// Delete a DID from the chain and all information associated with it,
@@ -681,7 +638,7 @@ pub mod pallet {
 				<Error<T>>::DidNotPresent
 			);
 
-			log::debug!("Deleted DID {:?}", did_subject);
+			log::debug!("Deleting DID {:?}", did_subject);
 
 			Self::deposit_event(Event::DidDeleted(did_subject));
 

@@ -161,8 +161,6 @@ pub trait DidVerifiableIdentifier {
 	) -> Result<DidVerificationKey, SignatureError>;
 }
 
-// TODO: did not manage to implement this trait in the kilt_primitives crate due
-// to some circular dependency problems.
 impl DidVerifiableIdentifier for kilt_primitives::DidIdentifier {
 	fn verify_and_recover_signature(
 		&self,
@@ -231,7 +229,7 @@ pub struct DidDetails<T: Config> {
 	pub(crate) authentication_key: KeyIdOf<T>,
 	/// The set of the key agreement key IDs, which can be used to encrypt
 	/// data addressed to the DID subject.
-	pub(crate) key_agreement_keys: DidKeyAgreementKeys<T>,
+	pub(crate) key_agreement_keys: DidKeyAgreementKeySet<T>,
 	/// \[OPTIONAL\] The ID of the delegation key, used to verify the
 	/// signatures of the delegations created by the DID subject.
 	pub(crate) delegation_key: Option<KeyIdOf<T>>,
@@ -276,7 +274,7 @@ impl<T: Config> DidDetails<T> {
 			.map_err(|_| StorageError::MaxPublicKeysPerDidExceeded)?;
 		Ok(Self {
 			authentication_key: authentication_key_id,
-			key_agreement_keys: DidKeyAgreementKeys::<T>::default(),
+			key_agreement_keys: DidKeyAgreementKeySet::<T>::default(),
 			attestation_key: None,
 			delegation_key: None,
 			service_endpoints: None,
@@ -298,7 +296,7 @@ impl<T: Config> DidDetails<T> {
 		);
 
 		if let Some(ref service_endpoints) = details.new_service_endpoints {
-			service_endpoints.validate_against_config_limits().map_err(|_| DidError::InternalError)?;
+			service_endpoints.validate_against_config_limits()?;
 		}
 
 		let current_block_number = <frame_system::Pallet<T>>::block_number();
@@ -355,24 +353,36 @@ impl<T: Config> DidDetails<T> {
 	/// The new keys are added to the set of verification keys.
 	pub fn add_key_agreement_keys(
 		&mut self,
-		new_key_agreement_keys: DidNewKeyAgreementKeys<T>,
+		new_key_agreement_keys: DidNewKeyAgreementKeySet<T>,
 		block_number: BlockNumberOf<T>,
 	) -> Result<(), StorageError> {
 		for new_key_agreement_key in new_key_agreement_keys {
-			let new_key_agreement_id = utils::calculate_key_id::<T>(&new_key_agreement_key.into());
-			self.public_keys
-				.try_insert(
-					new_key_agreement_id,
-					DidPublicKeyDetails {
-						key: new_key_agreement_key.into(),
-						block_number,
-					},
-				)
-				.map_err(|_| StorageError::MaxPublicKeysPerDidExceeded)?;
-			self.key_agreement_keys
-				.try_insert(new_key_agreement_id)
-				.map_err(|_| StorageError::MaxTotalKeyAgreementKeysExceeded)?;
+			self.add_key_agreement_key(
+				new_key_agreement_key,
+				block_number,
+			)?;
 		}
+		Ok(())
+	}
+
+	pub fn add_key_agreement_key(
+		&mut self,
+		new_key_agreement_key: DidEncryptionKey,
+		block_number: BlockNumberOf<T>,
+	) -> Result<(), StorageError> {
+		let new_key_agreement_id = utils::calculate_key_id::<T>(&new_key_agreement_key.into());
+		self.public_keys
+			.try_insert(
+				new_key_agreement_id,
+				DidPublicKeyDetails {
+					key: new_key_agreement_key.into(),
+					block_number,
+				},
+			)
+			.map_err(|_| StorageError::MaxPublicKeysPerDidExceeded)?;
+		self.key_agreement_keys
+			.try_insert(new_key_agreement_id)
+			.map_err(|_| StorageError::MaxTotalKeyAgreementKeysExceeded)?;
 		Ok(())
 	}
 
@@ -430,7 +440,7 @@ impl<T: Config> DidDetails<T> {
 
 	// Remove a key from the map of public keys if none of the other keys, i.e.,
 	// authentication, key agreement, attestation, or delegation, is referencing it.
-	pub fn remove_key_if_unused(&mut self, key_id: KeyIdOf<T>) {
+	pub(crate) fn remove_key_if_unused(&mut self, key_id: KeyIdOf<T>) {
 		if self.authentication_key != key_id
 			&& self.attestation_key != Some(key_id)
 			&& self.delegation_key != Some(key_id)
@@ -482,8 +492,8 @@ impl<T: Config> DidDetails<T> {
 	}
 }
 
-pub(crate) type DidNewKeyAgreementKeys<T> = BoundedBTreeSet<DidEncryptionKey, <T as Config>::MaxNewKeyAgreementKeys>;
-pub(crate) type DidKeyAgreementKeys<T> = BoundedBTreeSet<KeyIdOf<T>, <T as Config>::MaxTotalKeyAgreementKeys>;
+pub(crate) type DidNewKeyAgreementKeySet<T> = BoundedBTreeSet<DidEncryptionKey, <T as Config>::MaxNewKeyAgreementKeys>;
+pub(crate) type DidKeyAgreementKeySet<T> = BoundedBTreeSet<KeyIdOf<T>, <T as Config>::MaxTotalKeyAgreementKeys>;
 pub(crate) type DidPublicKeyMap<T> =
 	BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>, <T as Config>::MaxPublicKeysPerDid>;
 
@@ -493,7 +503,7 @@ pub struct DidCreationDetails<T: Config> {
 	/// The DID identifier. It has to be unique.
 	pub did: DidIdentifierOf<T>,
 	/// The new key agreement keys.
-	pub new_key_agreement_keys: DidNewKeyAgreementKeys<T>,
+	pub new_key_agreement_keys: DidNewKeyAgreementKeySet<T>,
 	/// \[OPTIONAL\] The new attestation key.
 	pub new_attestation_key: Option<DidVerificationKey>,
 	/// \[OPTIONAL\] The new delegation key.
@@ -537,10 +547,10 @@ impl<T: Config> fmt::Debug for ServiceEndpoints<T> {
 }
 
 impl<T: Config> ServiceEndpoints<T> {
-	pub(crate) fn validate_against_config_limits(&self) -> Result<(), crate::Error<T>> {
+	pub(crate) fn validate_against_config_limits(&self) -> Result<(), InputError> {
 		ensure!(
 			self.urls.len() <= T::MaxEndpointUrlsCount::get().saturated_into::<usize>(),
-			crate::Error::<T>::MaxUrlsCountExceeded
+			InputError::MaxUrlsCountExceeded
 		);
 		ensure!(
 			// Throws InputError::MaxUrlLengthExceeded if any URL is longer than the max allowed size.
@@ -548,28 +558,9 @@ impl<T: Config> ServiceEndpoints<T> {
 				.urls
 				.iter()
 				.any(|url| { url.len() > T::MaxUrlLength::get().saturated_into::<usize>() }),
-			crate::Error::<T>::MaxUrlLengthExceeded
+				InputError::MaxUrlLengthExceeded
 		);
 		Ok(())
-	}
-}
-
-/// Possible actions on a DID fragment (e.g, a verification key or the endpoint
-/// services) within a [DidUpdateOperation].
-#[derive(Copy, Clone, Decode, Debug, Encode, Eq, PartialEq)]
-pub enum DidFragmentUpdateAction<FragmentType> {
-	/// Do not change the DID fragment.
-	Ignore,
-	/// Change the DID fragment to the new one provided.
-	Change(FragmentType),
-	/// Delete the DID fragment.
-	Delete,
-}
-
-// Return the ignore operation by default
-impl<FragmentType> Default for DidFragmentUpdateAction<FragmentType> {
-	fn default() -> Self {
-		Self::Ignore
 	}
 }
 

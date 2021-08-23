@@ -29,7 +29,7 @@ use sp_std::{
 pub(crate) const DEFAULT_URL_SCHEME: [u8; 8] = *b"https://";
 const DEFAULT_SERVICE_ENDPOINT_HASH_SEED: u64 = 200u64;
 
-pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> DidNewKeyAgreementKeys<T> {
+pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> DidNewKeyAgreementKeySet<T> {
 	BoundedBTreeSet::try_from(
 		(1..=n_keys)
 			.map(|i| {

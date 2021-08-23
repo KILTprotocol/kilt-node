@@ -21,7 +21,7 @@ use sp_core::*;
 use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom};
 
 use crate::{
-	self as did, mock::*, mock_utils::*, DidError, DidNewKeyAgreementKeys, FtpUrl,
+	self as did, mock::*, mock_utils::*, DidError, DidNewKeyAgreementKeySet, FtpUrl,
 	HttpUrl, IpfsUrl,
 };
 use ctype::mock as ctype_mock;
@@ -138,7 +138,7 @@ fn check_successful_complete_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let auth_did_key = did::DidVerificationKey::from(auth_key.public());
-	let enc_keys = DidNewKeyAgreementKeys::<Test>::try_from(
+	let enc_keys = DidNewKeyAgreementKeySet::<Test>::try_from(
 		vec![get_x25519_encryption_key(true), get_x25519_encryption_key(false)]
 			.iter()
 			.copied()
