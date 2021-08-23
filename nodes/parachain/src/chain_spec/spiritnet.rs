@@ -21,7 +21,7 @@
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
 use kilt_primitives::{
-	constants::{INFLATION_CONFIG, KILT, MAX_COLLATOR_STAKE, MINUTES},
+	constants::{INFLATION_CONFIG, KILT, MAX_COLLATOR_STAKE},
 	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use sc_service::ChainType;
@@ -320,7 +320,8 @@ fn testnet_genesis(
 	// vesting and locks as initially designed
 	let claimable_accounts_json = &include_bytes!("../../res/genesis/claimable-accounts.json")[..];
 	let claimable_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
-		serde_json::from_slice(claimable_accounts_json).expect("The file genesis_accounts.json exists and is valid; qed");
+		serde_json::from_slice(claimable_accounts_json)
+			.expect("The file genesis_accounts.json exists and is valid; qed");
 
 	// botlabs account should not be migrated but some have vesting
 	let owned_accounts_json = &include_bytes!("../../res/genesis/owned-accounts.json")[..];
@@ -336,7 +337,12 @@ fn testnet_genesis(
 			balances: endowed_accounts
 				.iter()
 				.cloned()
-				.chain(claimable_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
+				.chain(
+					claimable_accounts
+						.iter()
+						.cloned()
+						.map(|(who, total, _, _)| (who, total)),
+				)
 				.chain(owned_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
 				.collect(),
 		},
@@ -360,7 +366,7 @@ fn testnet_genesis(
 				.iter()
 				.cloned()
 				.filter(|(_, _, vesting_length, _)| !vesting_length.is_zero())
-				.map(|(who, amount, vesting_length, _)| (who, 0u64, vesting_length, 0))
+				.map(|(who, _, vesting_length, _)| (who, 0u64, vesting_length, 0))
 				.collect(),
 		},
 		parachain_staking: ParachainStakingConfig {

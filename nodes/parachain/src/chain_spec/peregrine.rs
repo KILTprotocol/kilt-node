@@ -21,7 +21,7 @@
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
 use kilt_primitives::{
-	constants::{INFLATION_CONFIG, KILT, MAX_COLLATOR_STAKE, MINUTES},
+	constants::{INFLATION_CONFIG, KILT, MAX_COLLATOR_STAKE},
 	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use peregrine_runtime::{
@@ -220,7 +220,7 @@ fn testnet_genesis(
 				.iter()
 				.cloned()
 				.filter(|(_, _, vesting_length, _)| !vesting_length.is_zero())
-				.map(|(who, amount, vesting_length, _)| (who, 0u64, vesting_length, amount))
+				.map(|(who, _, vesting_length, _)| (who, 0u64, vesting_length, 0))
 				.collect(),
 		},
 		council: CouncilConfig {
