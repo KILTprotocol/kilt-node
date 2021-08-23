@@ -560,6 +560,7 @@ pub mod pallet {
 			let old_key_id = did_details.attestation_key.ok_or(<Error<T>>::NotPresent)?;
 
 			did_details.attestation_key = None;
+			//TODO: add a key_id parameter to allow for deletion of past attestation keys
 			did_details.remove_key_if_unused(old_key_id);
 
 			log::debug!("Updating DID {:?}", did_subject);
