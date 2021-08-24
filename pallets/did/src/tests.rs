@@ -819,6 +819,113 @@ fn check_did_not_present_delegation_key_update_error() {
 }
 
 #[test]
+fn check_successful_delegation_key_deletion() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let old_del_key = get_sr25519_delegation_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+
+	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	assert_ok!(old_did_details.update_delegation_key(did::DidVerificationKey::from(old_del_key.public()), 0u64));
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.build(None);
+
+	ext.execute_with(|| {
+		assert_ok!(
+			Did::remove_delegation_key(
+				Origin::signed(alice_did.clone())
+			)
+		);
+	});
+
+	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
+	assert!(
+		new_did_details.delegation_key.is_none()
+	);
+	let public_keys = new_did_details.public_keys;
+	// Total is -1 for the removal + auth key = 1
+	assert_eq!(public_keys.len(), 1);
+	// Check for new delegation key
+	assert!(!public_keys.contains_key(&generate_key_id(
+		&did::DidVerificationKey::from(old_del_key.public()).into()
+	)));
+}
+
+#[test]
+fn check_successful_reused_delegation_key_deletion() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let old_del_key = auth_key.clone();
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+
+	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	assert_ok!(old_did_details.update_delegation_key(did::DidVerificationKey::from(old_del_key.public()), 0u64));
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
+		.build(None);
+
+	ext.execute_with(|| {
+		assert_ok!(
+			Did::remove_delegation_key(
+				Origin::signed(alice_did.clone())
+			)
+		);
+	});
+
+	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
+	assert!(
+		new_did_details.delegation_key.is_none()
+	);
+	let public_keys = new_did_details.public_keys;
+	// Total should be unchanged as the key was re-used so it is not completely deleted
+	assert_eq!(public_keys.len(), old_did_details.public_keys.len());
+	// Check for presence of old delegation key (authentication key)
+	assert!(public_keys.contains_key(&generate_key_id(
+		&did::DidVerificationKey::from(old_del_key.public()).into()
+	)));
+}
+
+#[test]
+fn check_did_not_present_delegation_key_deletion_error() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+
+	let mut ext = ExtBuilder::default()
+		.build(None);
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::remove_delegation_key(
+				Origin::signed(alice_did.clone())
+			),
+			did::Error::<Test>::DidNotPresent
+		);
+	});
+}
+
+#[test]
+fn check_key_not_present_delegation_key_deletion_error() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+
+	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
+		.build(None);
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::remove_delegation_key(
+				Origin::signed(alice_did.clone())
+			),
+			did::Error::<Test>::VerificationKeyNotPresent
+		);
+	});
+}
+
+#[test]
 fn check_successful_attestation_key_update() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let old_att_key = get_sr25519_attestation_key(true);
@@ -1054,6 +1161,113 @@ fn check_did_not_present_attestation_key_update_error() {
 }
 
 #[test]
+fn check_successful_attestation_key_deletion() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let old_att_key = get_sr25519_attestation_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+
+	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	assert_ok!(old_did_details.update_attestation_key(did::DidVerificationKey::from(old_att_key.public()), 0u64));
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.build(None);
+
+	ext.execute_with(|| {
+		assert_ok!(
+			Did::remove_attestation_key(
+				Origin::signed(alice_did.clone())
+			)
+		);
+	});
+
+	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
+	assert!(
+		new_did_details.attestation_key.is_none()
+	);
+	let public_keys = new_did_details.public_keys;
+	// Total is -1 for the removal + auth key = 1
+	assert_eq!(public_keys.len(), 1);
+	// Check for new attestation key
+	assert!(!public_keys.contains_key(&generate_key_id(
+		&did::DidVerificationKey::from(old_att_key.public()).into()
+	)));
+}
+
+#[test]
+fn check_successful_reused_attestation_key_deletion() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let old_att_key = auth_key.clone();
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+
+	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	assert_ok!(old_did_details.update_attestation_key(did::DidVerificationKey::from(old_att_key.public()), 0u64));
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
+		.build(None);
+
+	ext.execute_with(|| {
+		assert_ok!(
+			Did::remove_attestation_key(
+				Origin::signed(alice_did.clone())
+			)
+		);
+	});
+
+	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
+	assert!(
+		new_did_details.attestation_key.is_none()
+	);
+	let public_keys = new_did_details.public_keys;
+	// Total should be unchanged as the key was re-used so it is not completely deleted
+	assert_eq!(public_keys.len(), old_did_details.public_keys.len());
+	// Check for presence of old delegation key (authentication key)
+	assert!(public_keys.contains_key(&generate_key_id(
+		&did::DidVerificationKey::from(old_att_key.public()).into()
+	)));
+}
+
+#[test]
+fn check_did_not_present_attestation_key_deletion_error() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+
+	let mut ext = ExtBuilder::default()
+		.build(None);
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::remove_attestation_key(
+				Origin::signed(alice_did.clone())
+			),
+			did::Error::<Test>::DidNotPresent
+		);
+	});
+}
+
+#[test]
+fn check_key_not_present_attestation_key_deletion_error() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+
+	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
+		.build(None);
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::remove_attestation_key(
+				Origin::signed(alice_did.clone())
+			),
+			did::Error::<Test>::VerificationKeyNotPresent
+		);
+	});
+}
+
+#[test]
 fn check_successful_key_agreement_key_addition() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
@@ -1149,6 +1363,42 @@ fn check_did_not_present_key_agreement_key_addition_error() {
 			did::Error::<Test>::DidNotPresent
 		);
 	});
+}
+
+#[test]
+fn check_successful_key_agreement_key_deletion() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let old_enc_key = get_x25519_encryption_key(true);
+
+	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	assert_ok!(old_did_details.add_key_agreement_key(old_enc_key, 0u64));
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.build(None);
+
+	let new_block_number: TestBlockNumber = 1;
+
+	ext.execute_with(|| {
+		System::set_block_number(new_block_number);
+		assert_ok!(
+			Did::remove_key_agreement_key(
+				Origin::signed(alice_did.clone()),
+				generate_key_id(&old_enc_key.into()),
+			)
+		);
+	});
+
+	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
+	assert!(new_did_details.key_agreement_keys.is_empty());
+	let public_keys = new_did_details.public_keys;
+	// Total is -1 for the enc key removal + auth key = 1
+	assert_eq!(public_keys.len(), 1);
+	// Check for new key agreement key
+	assert!(!public_keys.contains_key(&generate_key_id(
+		&old_enc_key.into()
+	)));
 }
 
 #[test]

@@ -496,7 +496,7 @@ pub mod pallet {
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
 			log::debug!("Removing delegation key for DID {:?}", &did_subject);
-			did_details.remove_attestation_key().map_err(<Error<T>>::from)?;
+			did_details.remove_delegation_key().map_err(<Error<T>>::from)?;
 
 			<Did<T>>::insert(&did_subject, did_details);
 			log::debug!("Delegation key removed");
