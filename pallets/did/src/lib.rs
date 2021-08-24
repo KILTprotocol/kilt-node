@@ -339,7 +339,7 @@ pub mod pallet {
 			match error {
 				StorageError::DidNotPresent => Self::DidNotPresent,
 				StorageError::DidAlreadyPresent => Self::DidAlreadyPresent,
-				StorageError::DidKeyNotPresent(_) | StorageError::VerificationKeyNotPresent => {
+				StorageError::DidKeyNotPresent(_) | StorageError::KeyNotPresent => {
 					Self::VerificationKeyNotPresent
 				}
 				StorageError::MaxTxCounterValue => Self::MaxTxCounterValue,
@@ -496,8 +496,7 @@ pub mod pallet {
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
 			log::debug!("Removing delegation key for DID {:?}", &did_subject);
-			let old_key_id = did_details.delegation_key.take().ok_or(<Error<T>>::DidFragmentNotPresent)?;
-			did_details.remove_key_if_unused(old_key_id);
+			did_details.remove_attestation_key().map_err(<Error<T>>::from)?;
 
 			<Did<T>>::insert(&did_subject, did_details);
 			log::debug!("Delegation key removed");
@@ -527,8 +526,7 @@ pub mod pallet {
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
 			log::debug!("Removing attestation key for DID {:?}", &did_subject);
-			let old_key_id = did_details.attestation_key.take().ok_or(<Error<T>>::DidFragmentNotPresent)?;
-			did_details.remove_key_if_unused(old_key_id);
+			did_details.remove_attestation_key().map_err(<Error<T>>::from)?;
 
 			<Did<T>>::insert(&did_subject, did_details);
 			log::debug!("Attestation key removed");
@@ -558,12 +556,7 @@ pub mod pallet {
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
 			log::debug!("Removing key agreement key for DID {:?}", &did_subject);
-			ensure!(
-				did_details.key_agreement_keys.remove(&key_id),
-				<Error<T>>::DidFragmentNotPresent
-			);
-
-			did_details.remove_key_if_unused(key_id);
+			did_details.remove_key_agreement_key(key_id).map_err(<Error<T>>::from)?;
 
 			<Did<T>>::insert(&did_subject, did_details);
 			log::debug!("Key agreement key removed");

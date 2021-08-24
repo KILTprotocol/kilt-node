@@ -386,6 +386,18 @@ impl<T: Config> DidDetails<T> {
 		Ok(())
 	}
 
+	pub fn remove_key_agreement_key(
+		&mut self,
+		key_id: KeyIdOf<T>,
+	) -> Result<(), StorageError> {
+		ensure!(
+			self.key_agreement_keys.remove(&key_id),
+			StorageError::KeyNotPresent
+		);
+		self.remove_key_if_unused(key_id);
+		Ok(())
+	}
+
 	/// Update the DID attestation key.
 	///
 	/// The old key is not removed from the set of verification keys, hence
@@ -407,6 +419,14 @@ impl<T: Config> DidDetails<T> {
 				},
 			)
 			.map_err(|_| StorageError::MaxPublicKeysPerDidExceeded)?;
+		Ok(())
+	}
+
+	pub fn remove_attestation_key(
+		&mut self,
+	) -> Result<(), StorageError> {
+		let old_key_id = self.attestation_key.take().ok_or(StorageError::KeyNotPresent)?;
+		self.remove_key_if_unused(old_key_id);
 		Ok(())
 	}
 
@@ -438,9 +458,17 @@ impl<T: Config> DidDetails<T> {
 		Ok(())
 	}
 
+	pub fn remove_delegation_key(
+		&mut self,
+	) -> Result<(), StorageError> {
+		let old_key_id = self.delegation_key.take().ok_or(StorageError::KeyNotPresent)?;
+		self.remove_key_if_unused(old_key_id);
+		Ok(())
+	}
+
 	// Remove a key from the map of public keys if none of the other keys, i.e.,
 	// authentication, key agreement, attestation, or delegation, is referencing it.
-	pub(crate) fn remove_key_if_unused(&mut self, key_id: KeyIdOf<T>) {
+	pub fn remove_key_if_unused(&mut self, key_id: KeyIdOf<T>) {
 		if self.authentication_key != key_id
 			&& self.attestation_key != Some(key_id)
 			&& self.delegation_key != Some(key_id)
