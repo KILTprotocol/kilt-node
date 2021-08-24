@@ -384,7 +384,7 @@ fn testnet_genesis(
 					(
 						acc.clone(),
 						acc.clone(),
-						spiritnet_runtime::opaque::SessionKeys { aura: key.clone() },
+						spiritnet_runtime::SessionKeys { aura: key.clone() },
 					)
 				})
 				.collect::<Vec<_>>(),

@@ -250,7 +250,7 @@ fn testnet_genesis(
 					(
 						acc.clone(),
 						acc.clone(),
-						peregrine_runtime::opaque::SessionKeys { aura: key.clone() },
+						peregrine_runtime::SessionKeys { aura: key.clone() },
 					)
 				})
 				.collect::<Vec<_>>(),

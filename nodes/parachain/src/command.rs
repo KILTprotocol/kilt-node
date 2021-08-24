@@ -27,7 +27,7 @@ use cumulus_primitives_core::ParaId;
 use log::info;
 #[cfg(feature = "try-runtime")]
 use node_executor::Executor;
-use peregrine_runtime::Block;
+use kilt_primitives::Block;
 use polkadot_parachain::primitives::AccountIdConversion;
 use sc_cli::{
 	ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams, NetworkParams, Result,
