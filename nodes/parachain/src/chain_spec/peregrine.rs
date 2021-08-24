@@ -21,7 +21,7 @@
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
 use kilt_primitives::{
-	constants::{INFLATION_CONFIG, KILT, MAX_COLLATOR_STAKE, MINUTES},
+	constants::{INFLATION_CONFIG, KILT, MAX_COLLATOR_STAKE},
 	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use peregrine_runtime::{
@@ -206,12 +206,12 @@ fn testnet_genesis(
 			vesting: airdrop_accounts
 				.iter()
 				.cloned()
-				.map(|(who, amount, vesting_length, _)| (who, vesting_length * MINUTES, amount))
+				.map(|(who, amount, vesting_length, _)| (who, vesting_length, amount))
 				.collect(),
 			balance_locks: airdrop_accounts
 				.iter()
 				.cloned()
-				.map(|(who, amount, _, locking_length)| (who, locking_length * MINUTES, amount))
+				.map(|(who, amount, _, locking_length)| (who, locking_length, amount))
 				.collect(),
 			transfer_account: hex!["6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c"].into(),
 		},
@@ -220,7 +220,7 @@ fn testnet_genesis(
 				.iter()
 				.cloned()
 				.filter(|(_, _, vesting_length, _)| !vesting_length.is_zero())
-				.map(|(who, amount, vesting_length, _)| (who, 0u64, vesting_length * MINUTES, amount))
+				.map(|(who, _, vesting_length, _)| (who, 0u64, vesting_length, 0))
 				.collect(),
 		},
 		council: CouncilConfig {
@@ -250,7 +250,7 @@ fn testnet_genesis(
 					(
 						acc.clone(),
 						acc.clone(),
-						peregrine_runtime::opaque::SessionKeys { aura: key.clone() },
+						peregrine_runtime::SessionKeys { aura: key.clone() },
 					)
 				})
 				.collect::<Vec<_>>(),
