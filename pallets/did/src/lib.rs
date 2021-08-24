@@ -459,6 +459,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		//TODO: Add comment and weights after benchmarks
 		#[pallet::weight(10)]
 		pub fn set_authentication_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
@@ -475,6 +476,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		//TODO: Add comment and weights after benchmarks
 		#[pallet::weight(10)]
 		pub fn set_delegation_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
@@ -490,6 +492,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		//TODO: Add comment and weights after benchmarks
 		#[pallet::weight(10)]
 		pub fn remove_delegation_key(origin: OriginFor<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
@@ -505,6 +508,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		//TODO: Add comment and weights after benchmarks
 		#[pallet::weight(10)]
 		pub fn set_attestation_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
@@ -520,6 +524,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		//TODO: Add comment and weights after benchmarks
 		#[pallet::weight(10)]
 		pub fn remove_attestation_key(origin: OriginFor<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
@@ -535,6 +540,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		//TODO: Add comment and weights after benchmarks
 		#[pallet::weight(10)]
 		pub fn add_key_agreement_key(origin: OriginFor<T>, new_key: DidEncryptionKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
@@ -550,6 +556,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		//TODO: Add comment and weights after benchmarks
 		#[pallet::weight(10)]
 		pub fn remove_key_agreement_key(origin: OriginFor<T>, key_id: KeyIdOf<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
@@ -565,6 +572,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		//TODO: Add comment and weights after benchmarks
 		#[pallet::weight(10)]
 		pub fn set_service_endpoints(origin: OriginFor<T>, service_endpoints: ServiceEndpoints<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
@@ -582,6 +590,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		//TODO: Add comment and weights after benchmarks
 		#[pallet::weight(10)]
 		pub fn remove_service_endpoints(origin: OriginFor<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;

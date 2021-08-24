@@ -23,7 +23,7 @@ use frame_support::{
 };
 use kilt_primitives::Hash;
 use sp_core::{ecdsa, ed25519, sr25519};
-use sp_runtime::traits::Verify;
+use sp_runtime::{MultiSignature, traits::Verify};
 use sp_std::{convert::TryInto, fmt};
 
 use crate::*;
@@ -150,6 +150,16 @@ impl From<ecdsa::Signature> for DidSignature {
 	}
 }
 
+impl From<MultiSignature> for DidSignature {
+	fn from(sig: MultiSignature) -> Self {
+		match sig {
+			MultiSignature::Ed25519(sig) => Self::Ed25519(sig),
+			MultiSignature::Sr25519(sig) => Self::Sr25519(sig),
+			MultiSignature::Ecdsa(sig) => Self::Ecdsa(sig),
+		}
+	}
+}
+
 pub trait DidVerifiableIdentifier {
 	/// Allows a verifiable identifier to verify a signature it produces and
 	/// return the public key
@@ -213,7 +223,7 @@ impl DidVerifiableIdentifier for kilt_primitives::DidIdentifier {
 ///
 /// It is currently used to keep track of all the past and current
 /// attestation keys a DID might control.
-#[derive(Clone, Debug, Decode, Encode, PartialEq)]
+#[derive(Clone, Debug, Decode, Encode, PartialEq, Ord, PartialOrd, Eq)]
 pub struct DidPublicKeyDetails<T: Config> {
 	/// A public key the DID controls.
 	pub key: DidPublicKey,
@@ -321,9 +331,9 @@ impl<T: Config> DidDetails<T> {
 
 	/// Update the DID authentication key.
 	///
-	/// The old key is deleted from the set of verification keys if it is
+	/// The old key is deleted from the set of public keys if it is
 	/// not used in any other part of the DID. The new key is added to the
-	/// set of verification keys.
+	/// set of public keys.
 	pub fn update_authentication_key(
 		&mut self,
 		new_authentication_key: DidVerificationKey,
@@ -350,7 +360,7 @@ impl<T: Config> DidDetails<T> {
 
 	/// Add new key agreement keys to the DID.
 	///
-	/// The new keys are added to the set of verification keys.
+	/// The new keys are added to the set of public keys.
 	pub fn add_key_agreement_keys(
 		&mut self,
 		new_key_agreement_keys: DidNewKeyAgreementKeySet<T>,
@@ -365,6 +375,9 @@ impl<T: Config> DidDetails<T> {
 		Ok(())
 	}
 
+	/// Add a single new key agreement key to the DID.
+	///
+	/// The new key is added to the set of public keys.
 	pub fn add_key_agreement_key(
 		&mut self,
 		new_key_agreement_key: DidEncryptionKey,
@@ -386,6 +399,7 @@ impl<T: Config> DidDetails<T> {
 		Ok(())
 	}
 
+	/// Remove a key agreement key from both the set of key agreement keys and the one of public keys.
 	pub fn remove_key_agreement_key(
 		&mut self,
 		key_id: KeyIdOf<T>,
@@ -398,11 +412,11 @@ impl<T: Config> DidDetails<T> {
 		Ok(())
 	}
 
-	/// Update the DID attestation key.
+	/// Update the DID attestation key, replacing the old one with the new one.
 	///
-	/// The old key is not removed from the set of verification keys, hence
-	/// it can still be used to verify past attestations.
-	/// The new key is added to the set of verification keys.
+	/// The old key is deleted from the set of public keys if it is
+	/// not used in any other part of the DID. The new key is added to the
+	/// set of public keys.
 	pub fn update_attestation_key(
 		&mut self,
 		new_attestation_key: DidVerificationKey,
@@ -425,6 +439,11 @@ impl<T: Config> DidDetails<T> {
 		Ok(())
 	}
 
+	/// Remove the DID attestation key.
+	///
+	/// The old key is deleted from the set of public keys if it is
+	/// not used in any other part of the DID. The new key is added to the
+	/// set of public keys.
 	pub fn remove_attestation_key(
 		&mut self,
 	) -> Result<(), StorageError> {
@@ -433,11 +452,11 @@ impl<T: Config> DidDetails<T> {
 		Ok(())
 	}
 
-	/// Update the DID delegation key.
+	/// Update the DID delegation key, replacing the old one with the new one.
 	///
-	/// The old key is deleted from the set of verification keys if it is
+	/// The old key is deleted from the set of public keys if it is
 	/// not used in any other part of the DID. The new key is added to the
-	/// set of verification keys.
+	/// set of public keys.
 	pub fn update_delegation_key(
 		&mut self,
 		new_delegation_key: DidVerificationKey,
@@ -460,6 +479,11 @@ impl<T: Config> DidDetails<T> {
 		Ok(())
 	}
 
+	/// Remove the DID delegation key.
+	///
+	/// The old key is deleted from the set of public keys if it is
+	/// not used in any other part of the DID. The new key is added to the
+	/// set of public keys.
 	pub fn remove_delegation_key(
 		&mut self,
 	) -> Result<(), StorageError> {

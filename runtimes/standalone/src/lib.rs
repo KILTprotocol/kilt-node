@@ -27,6 +27,9 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+#[cfg(feature = "runtime-benchmarks")]
+use frame_system::EnsureSigned;
+
 use did::DidSignature;
 use kilt_primitives::{
 	constants::{KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
@@ -292,7 +295,7 @@ impl<R: did::Config> delegation::VerifyDelegateSignature for DelegationSignature
 
 		did::Pallet::verify_payload_signature_with_did_key_type(
 			payload,
-			&signature,
+			signature,
 			&delegate_details,
 			did::DidVerificationKeyRelationship::Authentication,
 		)
@@ -376,7 +379,6 @@ impl ctype::Config for Runtime {
 
 parameter_types! {
 	pub const MaxNewKeyAgreementKeys: u32 = 10u32;
-	pub const MaxVerificationKeysToRevoke: u32 = 10u32;
 	#[derive(Debug, Clone, PartialEq)]
 	pub const MaxUrlLength: u32 = 200u32;
 	// TODO: Find reasonable numbers
@@ -399,7 +401,6 @@ impl did::Config for Runtime {
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
 	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
-	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 	type MaxUrlLength = MaxUrlLength;
 	type MaxEndpointUrlsCount = MaxEndpointUrlsCount;
 	type WeightInfo = ();

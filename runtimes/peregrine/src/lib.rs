@@ -28,11 +28,13 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use did::DidSignature;
-use frame_support::{ensure, traits::LockIdentifier, PalletId};
+use frame_support::{PalletId, traits::LockIdentifier};
 use frame_system::{
 	limits::{BlockLength, BlockWeights},
 	EnsureOneOf, EnsureRoot,
 };
+#[cfg(feature = "runtime-benchmarks")]
+use frame_system::EnsureSigned;
 use kilt_primitives::{
 	constants::{
 		AVERAGE_ON_INITIALIZE_RATIO, DAYS, KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT,
@@ -646,7 +648,7 @@ impl<R: did::Config> delegation::VerifyDelegateSignature for DelegationSignature
 
 		did::Pallet::verify_payload_signature_with_did_key_type(
 			payload,
-			&signature,
+			signature,
 			&delegate_details,
 			did::DidVerificationKeyRelationship::Authentication,
 		)
@@ -702,7 +704,6 @@ impl ctype::Config for Runtime {
 
 parameter_types! {
 	pub const MaxNewKeyAgreementKeys: u32 = 10u32;
-	pub const MaxVerificationKeysToRevoke: u32 = 10u32;
 	#[derive(Debug, Clone, PartialEq)]
 	pub const MaxUrlLength: u32 = 200u32;
 	// TODO: Find reasonable numbers
@@ -725,7 +726,6 @@ impl did::Config for Runtime {
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
 	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
-	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 	type MaxUrlLength = MaxUrlLength;
 	type MaxEndpointUrlsCount = MaxEndpointUrlsCount;
 	type WeightInfo = weights::did::WeightInfo<Runtime>;

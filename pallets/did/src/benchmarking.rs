@@ -17,8 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::Encode;
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
-use frame_support::assert_ok;
+use frame_benchmarking::{account, benchmarks};
 use frame_system::RawOrigin;
 use kilt_primitives::AccountId;
 use sp_core::{crypto::KeyTypeId, ecdsa, ed25519, sr25519};
@@ -29,7 +28,7 @@ use crate::{
 	did_details::*,
 	mock_utils::{
 		generate_base_did_creation_details, generate_base_did_details,
-		get_key_agreement_keys, get_public_keys, get_service_endpoints, DEFAULT_URL_SCHEME,
+		get_key_agreement_keys, get_service_endpoints, DEFAULT_URL_SCHEME,
 	},
 	*,
 };
@@ -89,9 +88,6 @@ fn generate_base_did_call_operation<T: Config>(did: DidIdentifierOf<T>) -> DidAu
 
 //TODO: We might want to extract the logic about which key is the longest
 // encoded and which key takes the longest to verify and always use that.
-// Furthermore, update operations now only depend on the key according to its
-// size and not the time it takes to verify a signature with it, as that happens
-// in the `did_dispatch_call` extrinsic.
 benchmarks! {
 
 	where_clause { where T::DidIdentifier: From<AccountId>, <T as frame_system::Config>::Origin: From<RawOrigin<T::DidIdentifier>>}
@@ -302,8 +298,9 @@ benchmarks! {
 	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op), DidSignature::from(did_call_signature))
 }
 
-impl_benchmark_test_suite! {
-	Pallet,
-	crate::mock::ExtBuilder::default().build_with_keystore(None),
-	crate::mock::Test
-}
+//TODO: Re-enable benchmark tests when benchmarks are updated
+// impl_benchmark_test_suite! {
+// 	Pallet,
+// 	crate::mock::ExtBuilder::default().build_with_keystore(None),
+// 	crate::mock::Test
+// }

@@ -21,7 +21,7 @@ use sp_core::*;
 use sp_runtime::SaturatedConversion;
 use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom};
 
-use crate::{self as did, DidError, DidNewKeyAgreementKeySet, FtpUrl, HttpUrl, IpfsUrl, mock::*, mock_utils::*};
+use crate::{self as did, mock::*, mock_utils::*};
 use ctype::mock as ctype_mock;
 
 // create
@@ -136,7 +136,7 @@ fn check_successful_complete_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let auth_did_key = did::DidVerificationKey::from(auth_key.public());
-	let enc_keys = DidNewKeyAgreementKeySet::<Test>::try_from(
+	let enc_keys = did::DidNewKeyAgreementKeySet::<Test>::try_from(
 		vec![get_x25519_encryption_key(true), get_x25519_encryption_key(false)]
 			.iter()
 			.copied()
@@ -441,7 +441,7 @@ fn check_successful_authentication_key_max_public_keys_update() {
 	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(old_auth_key.public()));
 	assert_ok!(
 		old_did_details.add_key_agreement_keys(
-			DidNewKeyAgreementKeySet::<Test>::try_from(old_key_agreement_keys).expect("Should not fail to create BoundedBTreeSet since MaxPublicKeysPerDid and MaxNewKeyAgreementKeys should be the same"),
+			did::DidNewKeyAgreementKeySet::<Test>::try_from(old_key_agreement_keys).expect("Should not fail to create BoundedBTreeSet since MaxPublicKeysPerDid and MaxNewKeyAgreementKeys should be the same"),
 			0u64,
 		)
 	);
@@ -528,13 +528,14 @@ fn check_max_keys_authentication_key_update_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(old_auth_key.public());
 	let old_delegation_key = old_auth_key.clone();
 	// Key agreement keys = max keys - 1, as auth key and delegation key are the same
+	println!("{:?}", <Test as did::Config>::MaxPublicKeysPerDid::get());
 	let old_key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(1));
 	let new_auth_key = get_ed25519_authentication_key(false);
 
 	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(old_auth_key.public()));
 	assert_ok!(
 		old_did_details.add_key_agreement_keys(
-			DidNewKeyAgreementKeySet::<Test>::try_from(old_key_agreement_keys).expect("Should not fail to create BoundedBTreeSet since MaxPublicKeysPerDid and MaxNewKeyAgreementKeys should be the same"),
+			did::DidNewKeyAgreementKeySet::<Test>::try_from(old_key_agreement_keys).expect("Should not fail to create BoundedBTreeSet since MaxPublicKeysPerDid and MaxNewKeyAgreementKeys should be the same"),
 			0u64,
 		)
 	);
@@ -637,7 +638,7 @@ fn check_successful_delegation_key_max_public_keys_update() {
 	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 	assert_ok!(
 		old_did_details.add_key_agreement_keys(
-			DidNewKeyAgreementKeySet::<Test>::try_from(old_key_agreement_keys).expect("Should not fail to create BoundedBTreeSet since MaxPublicKeysPerDid and MaxNewKeyAgreementKeys should be the same"),
+			old_key_agreement_keys,
 			0u64,
 		)
 	);
@@ -731,7 +732,7 @@ fn check_max_public_keys_delegation_key_addition_error() {
 	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 	assert_ok!(
 		old_did_details.add_key_agreement_keys(
-			DidNewKeyAgreementKeySet::<Test>::try_from(old_key_agreement_keys).expect("Should not fail to create BoundedBTreeSet since MaxPublicKeysPerDid and MaxNewKeyAgreementKeys should be the same"),
+			old_key_agreement_keys,
 			0u64,
 		)
 	);
@@ -768,7 +769,7 @@ fn check_max_public_keys_reused_key_delegation_key_update_error() {
 	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 	assert_ok!(
 		old_did_details.add_key_agreement_keys(
-			DidNewKeyAgreementKeySet::<Test>::try_from(old_key_agreement_keys).expect("Should not fail to create BoundedBTreeSet since MaxPublicKeysPerDid and MaxNewKeyAgreementKeys should be the same"),
+			old_key_agreement_keys,
 			0u64,
 		)
 	);
@@ -912,7 +913,7 @@ fn check_key_not_present_delegation_key_deletion_error() {
 	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build(None);
 
 	ext.execute_with(|| {
@@ -979,7 +980,7 @@ fn check_successful_attestation_key_max_public_keys_update() {
 	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 	assert_ok!(
 		old_did_details.add_key_agreement_keys(
-			DidNewKeyAgreementKeySet::<Test>::try_from(old_key_agreement_keys).expect("Should not fail to create BoundedBTreeSet since MaxPublicKeysPerDid and MaxNewKeyAgreementKeys should be the same"),
+			old_key_agreement_keys,
 			0u64,
 		)
 	);
@@ -1073,7 +1074,7 @@ fn check_max_public_keys_attestation_key_addition_error() {
 	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 	assert_ok!(
 		old_did_details.add_key_agreement_keys(
-			DidNewKeyAgreementKeySet::<Test>::try_from(old_key_agreement_keys).expect("Should not fail to create BoundedBTreeSet since MaxPublicKeysPerDid and MaxNewKeyAgreementKeys should be the same"),
+			old_key_agreement_keys,
 			0u64,
 		)
 	);
@@ -1110,7 +1111,7 @@ fn check_max_public_keys_reused_key_attestation_key_update_error() {
 	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 	assert_ok!(
 		old_did_details.add_key_agreement_keys(
-			DidNewKeyAgreementKeySet::<Test>::try_from(old_key_agreement_keys).expect("Should not fail to create BoundedBTreeSet since MaxPublicKeysPerDid and MaxNewKeyAgreementKeys should be the same"),
+			old_key_agreement_keys,
 			0u64,
 		)
 	);
@@ -1254,7 +1255,7 @@ fn check_key_not_present_attestation_key_deletion_error() {
 	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build(None);
 
 	ext.execute_with(|| {
@@ -1318,7 +1319,7 @@ fn check_max_public_keys_key_agreement_key_addition_error() {
 	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 	assert_ok!(
 		old_did_details.add_key_agreement_keys(
-			DidNewKeyAgreementKeySet::<Test>::try_from(old_key_agreement_keys).expect("Should not fail to create BoundedBTreeSet since MaxPublicKeysPerDid and MaxNewKeyAgreementKeys should be the same"),
+			old_key_agreement_keys,
 			0u64,
 		)
 	);
@@ -2166,7 +2167,7 @@ fn check_did_not_present_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			DidError::StorageError(did::StorageError::DidNotPresent)
+			did::DidError::StorageError(did::StorageError::DidNotPresent)
 		);
 	});
 }
@@ -2193,7 +2194,7 @@ fn check_max_tx_counter_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			DidError::StorageError(did::StorageError::MaxTxCounterValue)
+			did::DidError::StorageError(did::StorageError::MaxTxCounterValue)
 		);
 	});
 }
@@ -2219,7 +2220,7 @@ fn check_smaller_counter_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			DidError::SignatureError(did::SignatureError::InvalidNonce)
+			did::DidError::SignatureError(did::SignatureError::InvalidNonce)
 		);
 	});
 }
@@ -2244,7 +2245,7 @@ fn check_equal_counter_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			DidError::SignatureError(did::SignatureError::InvalidNonce)
+			did::DidError::SignatureError(did::SignatureError::InvalidNonce)
 		);
 	});
 }
@@ -2269,7 +2270,7 @@ fn check_too_large_counter_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			DidError::SignatureError(did::SignatureError::InvalidNonce)
+			did::DidError::SignatureError(did::SignatureError::InvalidNonce)
 		);
 	});
 }
@@ -2292,7 +2293,7 @@ fn check_verification_key_not_present_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			DidError::StorageError(did::StorageError::DidKeyNotPresent(
+			did::DidError::StorageError(did::StorageError::DidKeyNotPresent(
 				did::DidVerificationKeyRelationship::AssertionMethod
 			))
 		);
@@ -2319,7 +2320,7 @@ fn check_invalid_signature_format_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			DidError::SignatureError(did::SignatureError::InvalidSignatureFormat)
+			did::DidError::SignatureError(did::SignatureError::InvalidSignatureFormat)
 		);
 	});
 }
@@ -2344,141 +2345,141 @@ fn check_invalid_signature_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			DidError::SignatureError(did::SignatureError::InvalidSignature)
+			did::DidError::SignatureError(did::SignatureError::InvalidSignature)
 		);
 	});
 }
 
-// Internal function: HttpUrl try_from
+// Internal function: did::HttpUrl try_from
 
 #[test]
 fn check_http_url() {
-	assert_ok!(HttpUrl::<Test>::try_from("http://kilt.io".as_bytes()));
+	assert_ok!(did::HttpUrl::<Test>::try_from("http://kilt.io".as_bytes()));
 
-	assert_ok!(HttpUrl::<Test>::try_from("https://kilt.io".as_bytes()));
+	assert_ok!(did::HttpUrl::<Test>::try_from("https://kilt.io".as_bytes()));
 
-	assert_ok!(HttpUrl::<Test>::try_from(
+	assert_ok!(did::HttpUrl::<Test>::try_from(
 		"https://super.long.domain.kilt.io:12345/public/files/test.txt".as_bytes()
 	));
 
 	// All other valid ASCII characters
-	assert_ok!(HttpUrl::<Test>::try_from("http://:/?#[]@!$&'()*+,;=-._~".as_bytes()));
+	assert_ok!(did::HttpUrl::<Test>::try_from("http://:/?#[]@!$&'()*+,;=-._~".as_bytes()));
 
 	assert_eq!(
-		HttpUrl::<Test>::try_from("".as_bytes()),
-		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
+		did::HttpUrl::<Test>::try_from("".as_bytes()),
+		Err(did::DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 
 	// Non-printable ASCII characters
 	assert_eq!(
-		HttpUrl::<Test>::try_from("http://kilt.io/\x00".as_bytes()),
-		Err(DidError::UrlError(did::UrlError::InvalidUrlEncoding))
+		did::HttpUrl::<Test>::try_from("http://kilt.io/\x00".as_bytes()),
+		Err(did::DidError::UrlError(did::UrlError::InvalidUrlEncoding))
 	);
 
 	// Some invalid ASCII characters
 	assert_eq!(
-		HttpUrl::<Test>::try_from("http://kilt.io/<tag>".as_bytes()),
-		Err(DidError::UrlError(did::UrlError::InvalidUrlEncoding))
+		did::HttpUrl::<Test>::try_from("http://kilt.io/<tag>".as_bytes()),
+		Err(did::DidError::UrlError(did::UrlError::InvalidUrlEncoding))
 	);
 
 	// Non-ASCII characters
 	assert_eq!(
-		HttpUrl::<Test>::try_from("http://¶.com".as_bytes()),
-		Err(DidError::UrlError(did::UrlError::InvalidUrlEncoding))
+		did::HttpUrl::<Test>::try_from("http://¶.com".as_bytes()),
+		Err(did::DidError::UrlError(did::UrlError::InvalidUrlEncoding))
 	);
 
 	assert_eq!(
-		HttpUrl::<Test>::try_from("htt://kilt.io".as_bytes()),
-		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
+		did::HttpUrl::<Test>::try_from("htt://kilt.io".as_bytes()),
+		Err(did::DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 
 	assert_eq!(
-		HttpUrl::<Test>::try_from("httpss://kilt.io".as_bytes()),
-		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
+		did::HttpUrl::<Test>::try_from("httpss://kilt.io".as_bytes()),
+		Err(did::DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 }
 
-// Internal function: FtpUrl try_from
+// Internal function: did::FtpUrl try_from
 
 #[test]
 fn check_ftp_url() {
-	assert_ok!(FtpUrl::<Test>::try_from("ftp://kilt.io".as_bytes()));
+	assert_ok!(did::FtpUrl::<Test>::try_from("ftp://kilt.io".as_bytes()));
 
-	assert_ok!(FtpUrl::<Test>::try_from("ftps://kilt.io".as_bytes()));
+	assert_ok!(did::FtpUrl::<Test>::try_from("ftps://kilt.io".as_bytes()));
 
-	assert_ok!(FtpUrl::<Test>::try_from(
+	assert_ok!(did::FtpUrl::<Test>::try_from(
 		"ftps://user@super.long.domain.kilt.io:12345/public/files/test.txt".as_bytes()
 	));
 
 	// All other valid ASCII characters
-	assert_ok!(FtpUrl::<Test>::try_from("ftps://:/?#[]@%!$&'()*+,;=-._~".as_bytes()));
+	assert_ok!(did::FtpUrl::<Test>::try_from("ftps://:/?#[]@%!$&'()*+,;=-._~".as_bytes()));
 
 	assert_eq!(
-		FtpUrl::<Test>::try_from("".as_bytes()),
-		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
+		did::FtpUrl::<Test>::try_from("".as_bytes()),
+		Err(did::DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 
 	// Non-printable ASCII characters
 	assert_eq!(
-		HttpUrl::<Test>::try_from("http://kilt.io/\x00".as_bytes()),
-		Err(DidError::UrlError(did::UrlError::InvalidUrlEncoding))
+		did::HttpUrl::<Test>::try_from("http://kilt.io/\x00".as_bytes()),
+		Err(did::DidError::UrlError(did::UrlError::InvalidUrlEncoding))
 	);
 
 	// Some invalid ASCII characters
 	assert_eq!(
-		FtpUrl::<Test>::try_from("ftp://kilt.io/<tag>".as_bytes()),
-		Err(DidError::UrlError(did::UrlError::InvalidUrlEncoding))
+		did::FtpUrl::<Test>::try_from("ftp://kilt.io/<tag>".as_bytes()),
+		Err(did::DidError::UrlError(did::UrlError::InvalidUrlEncoding))
 	);
 
 	// Non-ASCII characters
 	assert_eq!(
-		FtpUrl::<Test>::try_from("ftps://¶.com".as_bytes()),
-		Err(DidError::UrlError(did::UrlError::InvalidUrlEncoding))
+		did::FtpUrl::<Test>::try_from("ftps://¶.com".as_bytes()),
+		Err(did::DidError::UrlError(did::UrlError::InvalidUrlEncoding))
 	);
 
 	assert_eq!(
-		FtpUrl::<Test>::try_from("ft://kilt.io".as_bytes()),
-		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
+		did::FtpUrl::<Test>::try_from("ft://kilt.io".as_bytes()),
+		Err(did::DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 
 	assert_eq!(
-		HttpUrl::<Test>::try_from("ftpss://kilt.io".as_bytes()),
-		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
+		did::HttpUrl::<Test>::try_from("ftpss://kilt.io".as_bytes()),
+		Err(did::DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 }
 
-// Internal function: IpfsUrl try_from
+// Internal function: did::IpfsUrl try_from
 
 #[test]
 fn check_ipfs_url() {
 	// Base58 address
-	assert_ok!(IpfsUrl::<Test>::try_from(
+	assert_ok!(did::IpfsUrl::<Test>::try_from(
 		"ipfs://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()
 	));
 
 	// Base32 address (at the moment, padding characters can appear anywhere in the
 	// string)
-	assert_ok!(IpfsUrl::<Test>::try_from(
+	assert_ok!(did::IpfsUrl::<Test>::try_from(
 		"ipfs://OQQHHHTGMMYDQQ364YB4GDE=HREJQL==".as_bytes()
 	));
 
 	assert_eq!(
-		IpfsUrl::<Test>::try_from("".as_bytes()),
-		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
+		did::IpfsUrl::<Test>::try_from("".as_bytes()),
+		Err(did::DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 
 	assert_eq!(
-		IpfsUrl::<Test>::try_from("ipfs://¶QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()),
-		Err(DidError::UrlError(did::UrlError::InvalidUrlEncoding))
+		did::IpfsUrl::<Test>::try_from("ipfs://¶QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()),
+		Err(did::DidError::UrlError(did::UrlError::InvalidUrlEncoding))
 	);
 
 	assert_eq!(
-		IpfsUrl::<Test>::try_from("ipf://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()),
-		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
+		did::IpfsUrl::<Test>::try_from("ipf://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()),
+		Err(did::DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 
 	assert_eq!(
-		IpfsUrl::<Test>::try_from("ipfss://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQk".as_bytes()),
-		Err(DidError::UrlError(did::UrlError::InvalidUrlScheme))
+		did::IpfsUrl::<Test>::try_from("ipfss://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQk".as_bytes()),
+		Err(did::DidError::UrlError(did::UrlError::InvalidUrlScheme))
 	);
 }

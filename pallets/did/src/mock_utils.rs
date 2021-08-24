@@ -31,7 +31,7 @@ const DEFAULT_SERVICE_ENDPOINT_HASH_SEED: u64 = 200u64;
 
 pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> DidNewKeyAgreementKeySet<T> {
 	BoundedBTreeSet::try_from(
-		(1..=n_keys)
+		(1 ..= n_keys)
 			.map(|i| {
 				// Converts the loop index to a 32-byte array;
 				let mut seed_vec = i.to_be_bytes().to_vec();
@@ -44,21 +44,6 @@ pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> DidNewKeyAgreementKeySe
 			.collect::<BTreeSet<DidEncryptionKey>>(),
 	)
 	.expect("Failed to convert key_agreement_keys to BoundedBTreeSet")
-}
-
-pub fn get_public_keys<T: Config>(n_keys: u32) -> BTreeSet<KeyIdOf<T>> {
-	(1..=n_keys)
-		.map(|i| {
-			// Converts the loop index to a 32-byte array;
-			let mut seed_vec = i.to_be_bytes().to_vec();
-			seed_vec.resize(32, 0u8);
-			let seed: [u8; 32] = seed_vec
-				.try_into()
-				.expect("Failed to create encryption key from raw seed.");
-			let key = DidEncryptionKey::X25519(seed);
-			utils::calculate_key_id::<T>(&key.into())
-		})
-		.collect()
 }
 
 // Assumes that the length of the URL is larger than 8 (length of the prefix https://)
