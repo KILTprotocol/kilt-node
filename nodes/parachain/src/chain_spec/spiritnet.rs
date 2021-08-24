@@ -135,7 +135,7 @@ const WILT_TRANS_ACC: [u8; 32] = hex!["aaf5308b81f962ffdaccaa22352cc95b7bef70033
 pub fn get_chain_spec_wilt() -> Result<ChainSpec, String> {
 	let properties = get_properties("WILT", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
-	let id: ParaId = 2078.into();
+	let id: ParaId = 2085.into();
 
 	Ok(ChainSpec::from_genesis(
 		"WILT",
