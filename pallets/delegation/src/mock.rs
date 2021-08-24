@@ -130,7 +130,6 @@ impl VerifyDelegateSignature for DelegateSignatureVerifier {
 		payload: &Self::Payload,
 		signature: &Self::Signature,
 	) -> SignatureVerificationResult {
-
 		ensure!(
 			signature.verify(&payload[..], delegate),
 			SignatureVerificationError::SignatureInvalid

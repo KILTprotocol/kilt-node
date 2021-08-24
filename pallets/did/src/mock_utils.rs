@@ -31,7 +31,7 @@ const DEFAULT_SERVICE_ENDPOINT_HASH_SEED: u64 = 200u64;
 
 pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> DidNewKeyAgreementKeySet<T> {
 	BoundedBTreeSet::try_from(
-		(1 ..= n_keys)
+		(1..=n_keys)
 			.map(|i| {
 				// Converts the loop index to a 32-byte array;
 				let mut seed_vec = i.to_be_bytes().to_vec();

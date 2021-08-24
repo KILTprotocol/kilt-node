@@ -28,13 +28,13 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use did::DidSignature;
-use frame_support::{PalletId, traits::LockIdentifier};
+use frame_support::{traits::LockIdentifier, PalletId};
+#[cfg(feature = "runtime-benchmarks")]
+use frame_system::EnsureSigned;
 use frame_system::{
 	limits::{BlockLength, BlockWeights},
 	EnsureOneOf, EnsureRoot,
 };
-#[cfg(feature = "runtime-benchmarks")]
-use frame_system::EnsureSigned;
 use kilt_primitives::{
 	constants::{
 		AVERAGE_ON_INITIALIZE_RATIO, DAYS, KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT,
@@ -890,7 +890,8 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			// DID creation is not allowed through the DID proxy.
 			Call::Did(did::Call::create(..)) => None,
 			Call::Did(_) => Some(did::DidVerificationKeyRelationship::Authentication),
-			//TODO: add a batch call case that returns the right key type if all calls in the batch require the same key type as well, otherwise it returns None and fails.
+			//TODO: add a batch call case that returns the right key type if all calls in the batch require the same
+			// key type as well, otherwise it returns None and fails.
 			#[cfg(not(feature = "runtime-benchmarks"))]
 			_ => None,
 			// By default, returns the authentication key

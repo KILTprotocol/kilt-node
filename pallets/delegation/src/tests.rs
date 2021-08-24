@@ -1647,7 +1647,8 @@ fn is_delegating_root_after_max_limit() {
 	});
 }
 
-// !! This test is matched to a unit test in the SDK. Both must be updated in sync !!
+// !! This test is matched to a unit test in the SDK. Both must be updated in
+// sync !!
 #[test]
 fn calculate_reference_root_hash() {
 	let delegation_id = sp_core::H256::from_slice(&[

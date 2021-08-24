@@ -27,8 +27,8 @@ use sp_runtime::{traits::IdentifyAccount, MultiSigner, SaturatedConversion};
 use crate::{
 	did_details::*,
 	mock_utils::{
-		generate_base_did_creation_details, generate_base_did_details,
-		get_key_agreement_keys, get_service_endpoints, DEFAULT_URL_SCHEME,
+		generate_base_did_creation_details, generate_base_did_details, get_key_agreement_keys, get_service_endpoints,
+		DEFAULT_URL_SCHEME,
 	},
 	*,
 };

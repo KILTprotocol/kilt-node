@@ -23,7 +23,7 @@ use frame_support::{
 };
 use kilt_primitives::Hash;
 use sp_core::{ecdsa, ed25519, sr25519};
-use sp_runtime::{MultiSignature, traits::Verify};
+use sp_runtime::{traits::Verify, MultiSignature};
 use sp_std::{convert::TryInto, fmt};
 
 use crate::*;
@@ -367,10 +367,7 @@ impl<T: Config> DidDetails<T> {
 		block_number: BlockNumberOf<T>,
 	) -> Result<(), StorageError> {
 		for new_key_agreement_key in new_key_agreement_keys {
-			self.add_key_agreement_key(
-				new_key_agreement_key,
-				block_number,
-			)?;
+			self.add_key_agreement_key(new_key_agreement_key, block_number)?;
 		}
 		Ok(())
 	}
@@ -399,15 +396,10 @@ impl<T: Config> DidDetails<T> {
 		Ok(())
 	}
 
-	/// Remove a key agreement key from both the set of key agreement keys and the one of public keys.
-	pub fn remove_key_agreement_key(
-		&mut self,
-		key_id: KeyIdOf<T>,
-	) -> Result<(), StorageError> {
-		ensure!(
-			self.key_agreement_keys.remove(&key_id),
-			StorageError::KeyNotPresent
-		);
+	/// Remove a key agreement key from both the set of key agreement keys and
+	/// the one of public keys.
+	pub fn remove_key_agreement_key(&mut self, key_id: KeyIdOf<T>) -> Result<(), StorageError> {
+		ensure!(self.key_agreement_keys.remove(&key_id), StorageError::KeyNotPresent);
 		self.remove_key_if_unused(key_id);
 		Ok(())
 	}
@@ -444,9 +436,7 @@ impl<T: Config> DidDetails<T> {
 	/// The old key is deleted from the set of public keys if it is
 	/// not used in any other part of the DID. The new key is added to the
 	/// set of public keys.
-	pub fn remove_attestation_key(
-		&mut self,
-	) -> Result<(), StorageError> {
+	pub fn remove_attestation_key(&mut self) -> Result<(), StorageError> {
 		let old_key_id = self.attestation_key.take().ok_or(StorageError::KeyNotPresent)?;
 		self.remove_key_if_unused(old_key_id);
 		Ok(())
@@ -484,9 +474,7 @@ impl<T: Config> DidDetails<T> {
 	/// The old key is deleted from the set of public keys if it is
 	/// not used in any other part of the DID. The new key is added to the
 	/// set of public keys.
-	pub fn remove_delegation_key(
-		&mut self,
-	) -> Result<(), StorageError> {
+	pub fn remove_delegation_key(&mut self) -> Result<(), StorageError> {
 		let old_key_id = self.delegation_key.take().ok_or(StorageError::KeyNotPresent)?;
 		self.remove_key_if_unused(old_key_id);
 		Ok(())
@@ -612,7 +600,7 @@ impl<T: Config> ServiceEndpoints<T> {
 				.urls
 				.iter()
 				.any(|url| { url.len() > T::MaxUrlLength::get().saturated_into::<usize>() }),
-				InputError::MaxUrlLengthExceeded
+			InputError::MaxUrlLengthExceeded
 		);
 		Ok(())
 	}

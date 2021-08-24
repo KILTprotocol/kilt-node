@@ -171,9 +171,7 @@ fn check_successful_complete_creation() {
 	);
 	assert_eq!(stored_did.key_agreement_keys.len(), 2);
 	for key in enc_keys.iter().copied() {
-		assert!(stored_did
-			.key_agreement_keys
-			.contains(&generate_key_id(&key.into())))
+		assert!(stored_did.key_agreement_keys.contains(&generate_key_id(&key.into())))
 	}
 	assert_eq!(
 		stored_did.delegation_key,
@@ -407,12 +405,10 @@ fn check_successful_authentication_key_update() {
 	// Update authentication key. The old one should be removed.
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
-		assert_ok!(
-			Did::set_authentication_key(
-				Origin::signed(alice_did.clone()),
-				did::DidVerificationKey::from(new_auth_key.public())
-			)
-		);
+		assert_ok!(Did::set_authentication_key(
+			Origin::signed(alice_did.clone()),
+			did::DidVerificationKey::from(new_auth_key.public())
+		));
 	});
 
 	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
@@ -433,18 +429,16 @@ fn check_successful_authentication_key_update() {
 fn check_successful_authentication_key_max_public_keys_update() {
 	let old_auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(old_auth_key.public());
-	// Set maximum number of keys possible for the DID all inside the key agreement keys, yet the update should still go through since the old key is removed before the new one is added.
-	// So the # of new key agreement keys is max public key - 1 (since we already have the old authentication key)
-	let old_key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(1));
+	// Set maximum number of keys possible for the DID all inside the key agreement
+	// keys, yet the update should still go through since the old key is removed
+	// before the new one is added. So the # of new key agreement keys is max public
+	// key - 1 (since we already have the old authentication key)
+	let old_key_agreement_keys =
+		get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(1));
 	let new_auth_key = get_ed25519_authentication_key(false);
 
 	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(old_auth_key.public()));
-	assert_ok!(
-		old_did_details.add_key_agreement_keys(
-			did::DidNewKeyAgreementKeySet::<Test>::try_from(old_key_agreement_keys).expect("Should not fail to create BoundedBTreeSet since MaxPublicKeysPerDid and MaxNewKeyAgreementKeys should be the same"),
-			0u64,
-		)
-	);
+	assert_ok!(old_did_details.add_key_agreement_keys(old_key_agreement_keys, 0u64,));
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
@@ -455,12 +449,10 @@ fn check_successful_authentication_key_max_public_keys_update() {
 	// Update authentication key. The old one should be removed.
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
-		assert_ok!(
-			Did::set_authentication_key(
-				Origin::signed(alice_did.clone()),
-				did::DidVerificationKey::from(new_auth_key.public())
-			)
-		);
+		assert_ok!(Did::set_authentication_key(
+			Origin::signed(alice_did.clone()),
+			did::DidVerificationKey::from(new_auth_key.public())
+		));
 	});
 
 	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
@@ -470,7 +462,10 @@ fn check_successful_authentication_key_max_public_keys_update() {
 	);
 	let public_keys = new_did_details.public_keys;
 	// Total is the maximum allowed
-	assert_eq!(public_keys.len(), <Test as did::Config>::MaxPublicKeysPerDid::get().saturated_into::<usize>());
+	assert_eq!(
+		public_keys.len(),
+		<Test as did::Config>::MaxPublicKeysPerDid::get().saturated_into::<usize>()
+	);
 	// Check for new authentication key
 	assert!(public_keys.contains_key(&generate_key_id(
 		&did::DidVerificationKey::from(new_auth_key.public()).into()
@@ -486,7 +481,7 @@ fn check_reused_key_authentication_key_update() {
 
 	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(old_auth_key.public()));
 	// Same key for auth and del key
-	assert_ok!(old_did_details.update_delegation_key( did::DidVerificationKey::from(old_delegation_key.public()), 0u64));
+	assert_ok!(old_did_details.update_delegation_key(did::DidVerificationKey::from(old_delegation_key.public()), 0u64));
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
@@ -496,12 +491,10 @@ fn check_reused_key_authentication_key_update() {
 
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
-		assert_ok!(
-			Did::set_authentication_key(
-				Origin::signed(alice_did.clone()),
-				did::DidVerificationKey::from(new_auth_key.public())
-			)
-		);
+		assert_ok!(Did::set_authentication_key(
+			Origin::signed(alice_did.clone()),
+			did::DidVerificationKey::from(new_auth_key.public())
+		));
 	});
 
 	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
@@ -510,7 +503,8 @@ fn check_reused_key_authentication_key_update() {
 		generate_key_id(&did::DidVerificationKey::from(new_auth_key.public()).into())
 	);
 	let public_keys = new_did_details.public_keys;
-	// Total is +1 for the new auth key (the old key is still used as delegation key, so it is not removed)
+	// Total is +1 for the new auth key (the old key is still used as delegation
+	// key, so it is not removed)
 	assert_eq!(public_keys.len(), 2);
 	// Check for new authentication key
 	assert!(public_keys.contains_key(&generate_key_id(
@@ -527,19 +521,16 @@ fn check_max_keys_authentication_key_update_error() {
 	let old_auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(old_auth_key.public());
 	let old_delegation_key = old_auth_key.clone();
-	// Key agreement keys = max keys - 1, as auth key and delegation key are the same
+	// Key agreement keys = max keys - 1, as auth key and delegation key are the
+	// same
 	println!("{:?}", <Test as did::Config>::MaxPublicKeysPerDid::get());
-	let old_key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(1));
+	let old_key_agreement_keys =
+		get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(1));
 	let new_auth_key = get_ed25519_authentication_key(false);
 
 	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(old_auth_key.public()));
-	assert_ok!(
-		old_did_details.add_key_agreement_keys(
-			did::DidNewKeyAgreementKeySet::<Test>::try_from(old_key_agreement_keys).expect("Should not fail to create BoundedBTreeSet since MaxPublicKeysPerDid and MaxNewKeyAgreementKeys should be the same"),
-			0u64,
-		)
-	);
-	assert_ok!(old_did_details.update_delegation_key( did::DidVerificationKey::from(old_delegation_key.public()), 0u64));
+	assert_ok!(old_did_details.add_key_agreement_keys(old_key_agreement_keys, 0u64,));
+	assert_ok!(old_did_details.update_delegation_key(did::DidVerificationKey::from(old_delegation_key.public()), 0u64));
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
@@ -547,7 +538,9 @@ fn check_max_keys_authentication_key_update_error() {
 
 	let new_block_number: TestBlockNumber = 1;
 
-	// Update authentication key. Since the old one is not removed because it is the same as the delegation key, the update should fail as the max number of public keys is already present.
+	// Update authentication key. Since the old one is not removed because it is the
+	// same as the delegation key, the update should fail as the max number of
+	// public keys is already present.
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
@@ -566,8 +559,7 @@ fn check_did_not_present_authentication_key_update_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(old_auth_key.public());
 	let new_auth_key = get_ed25519_authentication_key(false);
 
-	let mut ext = ExtBuilder::default()
-		.build(None);
+	let mut ext = ExtBuilder::default().build(None);
 
 	let new_block_number: TestBlockNumber = 1;
 
@@ -603,21 +595,22 @@ fn check_successful_delegation_key_update() {
 	// Update delegation key. The old one should be removed.
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
-		assert_ok!(
-			Did::set_delegation_key(
-				Origin::signed(alice_did.clone()),
-				did::DidVerificationKey::from(new_del_key.public())
-			)
-		);
+		assert_ok!(Did::set_delegation_key(
+			Origin::signed(alice_did.clone()),
+			did::DidVerificationKey::from(new_del_key.public())
+		));
 	});
 
 	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
 	assert_eq!(
 		new_did_details.delegation_key,
-		Some(generate_key_id(&did::DidVerificationKey::from(new_del_key.public()).into()))
+		Some(generate_key_id(
+			&did::DidVerificationKey::from(new_del_key.public()).into()
+		))
 	);
 	let public_keys = new_did_details.public_keys;
-	// Total is +1 for the new del key, -1 for the old del key (replaced) + auth key = 2
+	// Total is +1 for the new del key, -1 for the old del key (replaced) + auth key
+	// = 2
 	assert_eq!(public_keys.len(), 2);
 	// Check for new delegation key
 	assert!(public_keys.contains_key(&generate_key_id(
@@ -630,18 +623,16 @@ fn check_successful_delegation_key_max_public_keys_update() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let old_del_key = get_sr25519_delegation_key(true);
-	// Set maximum number of keys possible for the DID all inside the key agreement keys, yet the update should still go through since the old key is removed before the new one is added.
-	// So the # of new key agreement keys is max public key - 2 (plus old authentication key and delegation key)
-	let old_key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(2));
+	// Set maximum number of keys possible for the DID all inside the key agreement
+	// keys, yet the update should still go through since the old key is removed
+	// before the new one is added. So the # of new key agreement keys is max public
+	// key - 2 (plus old authentication key and delegation key)
+	let old_key_agreement_keys =
+		get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(2));
 	let new_del_key = get_sr25519_delegation_key(false);
 
 	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
-	assert_ok!(
-		old_did_details.add_key_agreement_keys(
-			old_key_agreement_keys,
-			0u64,
-		)
-	);
+	assert_ok!(old_did_details.add_key_agreement_keys(old_key_agreement_keys, 0u64,));
 	assert_ok!(old_did_details.update_delegation_key(did::DidVerificationKey::from(old_del_key.public()), 0u64));
 
 	let mut ext = ExtBuilder::default()
@@ -653,22 +644,25 @@ fn check_successful_delegation_key_max_public_keys_update() {
 	// Update delegation key. The old one should be removed.
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
-		assert_ok!(
-			Did::set_delegation_key(
-				Origin::signed(alice_did.clone()),
-				did::DidVerificationKey::from(new_del_key.public())
-			)
-		);
+		assert_ok!(Did::set_delegation_key(
+			Origin::signed(alice_did.clone()),
+			did::DidVerificationKey::from(new_del_key.public())
+		));
 	});
 
 	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
 	assert_eq!(
 		new_did_details.delegation_key,
-		Some(generate_key_id(&did::DidVerificationKey::from(new_del_key.public()).into()))
+		Some(generate_key_id(
+			&did::DidVerificationKey::from(new_del_key.public()).into()
+		))
 	);
 	let public_keys = new_did_details.public_keys;
 	// Total is the maximum allowed
-	assert_eq!(public_keys.len(), <Test as did::Config>::MaxPublicKeysPerDid::get().saturated_into::<usize>());
+	assert_eq!(
+		public_keys.len(),
+		<Test as did::Config>::MaxPublicKeysPerDid::get().saturated_into::<usize>()
+	);
 	// Check for new delegation key
 	assert!(public_keys.contains_key(&generate_key_id(
 		&did::DidVerificationKey::from(new_del_key.public()).into()
@@ -684,7 +678,7 @@ fn check_reused_key_delegation_key_update() {
 
 	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(old_auth_key.public()));
 	// Same key for auth and del key
-	assert_ok!(old_did_details.update_delegation_key( did::DidVerificationKey::from(old_del_key.public()), 0u64));
+	assert_ok!(old_did_details.update_delegation_key(did::DidVerificationKey::from(old_del_key.public()), 0u64));
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
@@ -694,21 +688,22 @@ fn check_reused_key_delegation_key_update() {
 
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
-		assert_ok!(
-			Did::set_delegation_key(
-				Origin::signed(alice_did.clone()),
-				did::DidVerificationKey::from(new_del_key.public())
-			)
-		);
+		assert_ok!(Did::set_delegation_key(
+			Origin::signed(alice_did.clone()),
+			did::DidVerificationKey::from(new_del_key.public())
+		));
 	});
 
 	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
 	assert_eq!(
 		new_did_details.delegation_key,
-		Some(generate_key_id(&did::DidVerificationKey::from(new_del_key.public()).into()))
+		Some(generate_key_id(
+			&did::DidVerificationKey::from(new_del_key.public()).into()
+		))
 	);
 	let public_keys = new_did_details.public_keys;
-	// Total is +1 for the new del key (the old key is still used as authentication key, so it is not removed)
+	// Total is +1 for the new del key (the old key is still used as authentication
+	// key, so it is not removed)
 	assert_eq!(public_keys.len(), 2);
 	// Check for new delegation key
 	assert!(public_keys.contains_key(&generate_key_id(
@@ -725,17 +720,15 @@ fn check_max_public_keys_delegation_key_addition_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_del_key = get_sr25519_delegation_key(false);
-	// Set maximum number of keys possible for the DID all inside the key agreement keys, so that key update would fail (since key is added and not replaced).
-	// So the # of new key agreement keys is max public key - 1 (since we already have the authentication key)
-	let old_key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(1));
+	// Set maximum number of keys possible for the DID all inside the key agreement
+	// keys, so that key update would fail (since key is added and not replaced). So
+	// the # of new key agreement keys is max public key - 1 (since we already have
+	// the authentication key)
+	let old_key_agreement_keys =
+		get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(1));
 
 	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
-	assert_ok!(
-		old_did_details.add_key_agreement_keys(
-			old_key_agreement_keys,
-			0u64,
-		)
-	);
+	assert_ok!(old_did_details.add_key_agreement_keys(old_key_agreement_keys, 0u64,));
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
@@ -762,17 +755,15 @@ fn check_max_public_keys_reused_key_delegation_key_update_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let old_del_key = auth_key.clone();
 	let new_del_key = get_sr25519_delegation_key(true);
-	// Set maximum number of keys possible for the DID all inside the key agreement keys, so that key update would fail (since key is added and not replaced).
-	// So the # of new key agreement keys is max public key - 1 (since we already have the authentication and delegation keys which are actually the same key)
-	let old_key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(1));
+	// Set maximum number of keys possible for the DID all inside the key agreement
+	// keys, so that key update would fail (since key is added and not replaced). So
+	// the # of new key agreement keys is max public key - 1 (since we already have
+	// the authentication and delegation keys which are actually the same key)
+	let old_key_agreement_keys =
+		get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(1));
 
 	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
-	assert_ok!(
-		old_did_details.add_key_agreement_keys(
-			old_key_agreement_keys,
-			0u64,
-		)
-	);
+	assert_ok!(old_did_details.add_key_agreement_keys(old_key_agreement_keys, 0u64,));
 	// Same key for auth and delegation
 	assert_ok!(old_did_details.update_delegation_key(did::DidVerificationKey::from(old_del_key.public()), 0u64));
 
@@ -782,7 +773,8 @@ fn check_max_public_keys_reused_key_delegation_key_update_error() {
 
 	let new_block_number: TestBlockNumber = 1;
 
-	// Update delegation key. The old one should not be removed as it is still used as authentication key.
+	// Update delegation key. The old one should not be removed as it is still used
+	// as authentication key.
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
@@ -801,8 +793,7 @@ fn check_did_not_present_delegation_key_update_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_del_key = get_sr25519_delegation_key(false);
 
-	let mut ext = ExtBuilder::default()
-		.build(None);
+	let mut ext = ExtBuilder::default().build(None);
 
 	let new_block_number: TestBlockNumber = 1;
 
@@ -833,17 +824,11 @@ fn check_successful_delegation_key_deletion() {
 		.build(None);
 
 	ext.execute_with(|| {
-		assert_ok!(
-			Did::remove_delegation_key(
-				Origin::signed(alice_did.clone())
-			)
-		);
+		assert_ok!(Did::remove_delegation_key(Origin::signed(alice_did.clone())));
 	});
 
 	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
-	assert!(
-		new_did_details.delegation_key.is_none()
-	);
+	assert!(new_did_details.delegation_key.is_none());
 	let public_keys = new_did_details.public_keys;
 	// Total is -1 for the removal + auth key = 1
 	assert_eq!(public_keys.len(), 1);
@@ -867,19 +852,14 @@ fn check_successful_reused_delegation_key_deletion() {
 		.build(None);
 
 	ext.execute_with(|| {
-		assert_ok!(
-			Did::remove_delegation_key(
-				Origin::signed(alice_did.clone())
-			)
-		);
+		assert_ok!(Did::remove_delegation_key(Origin::signed(alice_did.clone())));
 	});
 
 	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
-	assert!(
-		new_did_details.delegation_key.is_none()
-	);
+	assert!(new_did_details.delegation_key.is_none());
 	let public_keys = new_did_details.public_keys;
-	// Total should be unchanged as the key was re-used so it is not completely deleted
+	// Total should be unchanged as the key was re-used so it is not completely
+	// deleted
 	assert_eq!(public_keys.len(), old_did_details.public_keys.len());
 	// Check for presence of old delegation key (authentication key)
 	assert!(public_keys.contains_key(&generate_key_id(
@@ -892,14 +872,11 @@ fn check_did_not_present_delegation_key_deletion_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
-	let mut ext = ExtBuilder::default()
-		.build(None);
+	let mut ext = ExtBuilder::default().build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::remove_delegation_key(
-				Origin::signed(alice_did.clone())
-			),
+			Did::remove_delegation_key(Origin::signed(alice_did.clone())),
 			did::Error::<Test>::DidNotPresent
 		);
 	});
@@ -918,9 +895,7 @@ fn check_key_not_present_delegation_key_deletion_error() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::remove_delegation_key(
-				Origin::signed(alice_did.clone())
-			),
+			Did::remove_delegation_key(Origin::signed(alice_did.clone())),
 			did::Error::<Test>::VerificationKeyNotPresent
 		);
 	});
@@ -945,21 +920,22 @@ fn check_successful_attestation_key_update() {
 	// Update attestation key. The old one should be removed.
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
-		assert_ok!(
-			Did::set_attestation_key(
-				Origin::signed(alice_did.clone()),
-				did::DidVerificationKey::from(new_att_key.public())
-			)
-		);
+		assert_ok!(Did::set_attestation_key(
+			Origin::signed(alice_did.clone()),
+			did::DidVerificationKey::from(new_att_key.public())
+		));
 	});
 
 	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
 	assert_eq!(
 		new_did_details.attestation_key,
-		Some(generate_key_id(&did::DidVerificationKey::from(new_att_key.public()).into()))
+		Some(generate_key_id(
+			&did::DidVerificationKey::from(new_att_key.public()).into()
+		))
 	);
 	let public_keys = new_did_details.public_keys;
-	// Total is +1 for the new att key, -1 for the old att key (replaced) + auth key = 2
+	// Total is +1 for the new att key, -1 for the old att key (replaced) + auth key
+	// = 2
 	assert_eq!(public_keys.len(), 2);
 	// Check for new attestation key
 	assert!(public_keys.contains_key(&generate_key_id(
@@ -972,18 +948,16 @@ fn check_successful_attestation_key_max_public_keys_update() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let old_att_key = get_sr25519_attestation_key(true);
-	// Set maximum number of keys possible for the DID all inside the key agreement keys, yet the update should still go through since the old key is removed before the new one is added.
-	// So the # of new key agreement keys is max public key - 2 (plus old authentication key and attestation key)
-	let old_key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(2));
+	// Set maximum number of keys possible for the DID all inside the key agreement
+	// keys, yet the update should still go through since the old key is removed
+	// before the new one is added. So the # of new key agreement keys is max public
+	// key - 2 (plus old authentication key and attestation key)
+	let old_key_agreement_keys =
+		get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(2));
 	let new_att_key = get_sr25519_attestation_key(false);
 
 	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
-	assert_ok!(
-		old_did_details.add_key_agreement_keys(
-			old_key_agreement_keys,
-			0u64,
-		)
-	);
+	assert_ok!(old_did_details.add_key_agreement_keys(old_key_agreement_keys, 0u64,));
 	assert_ok!(old_did_details.update_attestation_key(did::DidVerificationKey::from(old_att_key.public()), 0u64));
 
 	let mut ext = ExtBuilder::default()
@@ -995,22 +969,25 @@ fn check_successful_attestation_key_max_public_keys_update() {
 	// Update attestation key. The old one should be removed.
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
-		assert_ok!(
-			Did::set_attestation_key(
-				Origin::signed(alice_did.clone()),
-				did::DidVerificationKey::from(new_att_key.public())
-			)
-		);
+		assert_ok!(Did::set_attestation_key(
+			Origin::signed(alice_did.clone()),
+			did::DidVerificationKey::from(new_att_key.public())
+		));
 	});
 
 	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
 	assert_eq!(
 		new_did_details.attestation_key,
-		Some(generate_key_id(&did::DidVerificationKey::from(new_att_key.public()).into()))
+		Some(generate_key_id(
+			&did::DidVerificationKey::from(new_att_key.public()).into()
+		))
 	);
 	let public_keys = new_did_details.public_keys;
 	// Total is the maximum allowed
-	assert_eq!(public_keys.len(), <Test as did::Config>::MaxPublicKeysPerDid::get().saturated_into::<usize>());
+	assert_eq!(
+		public_keys.len(),
+		<Test as did::Config>::MaxPublicKeysPerDid::get().saturated_into::<usize>()
+	);
 	// Check for new attestation key
 	assert!(public_keys.contains_key(&generate_key_id(
 		&did::DidVerificationKey::from(new_att_key.public()).into()
@@ -1026,7 +1003,7 @@ fn check_reused_key_attestation_key_update() {
 
 	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(old_auth_key.public()));
 	// Same key for auth and att key
-	assert_ok!(old_did_details.update_attestation_key( did::DidVerificationKey::from(old_att_key.public()), 0u64));
+	assert_ok!(old_did_details.update_attestation_key(did::DidVerificationKey::from(old_att_key.public()), 0u64));
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
@@ -1036,21 +1013,22 @@ fn check_reused_key_attestation_key_update() {
 
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
-		assert_ok!(
-			Did::set_attestation_key(
-				Origin::signed(alice_did.clone()),
-				did::DidVerificationKey::from(new_att_key.public())
-			)
-		);
+		assert_ok!(Did::set_attestation_key(
+			Origin::signed(alice_did.clone()),
+			did::DidVerificationKey::from(new_att_key.public())
+		));
 	});
 
 	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
 	assert_eq!(
 		new_did_details.attestation_key,
-		Some(generate_key_id(&did::DidVerificationKey::from(new_att_key.public()).into()))
+		Some(generate_key_id(
+			&did::DidVerificationKey::from(new_att_key.public()).into()
+		))
 	);
 	let public_keys = new_did_details.public_keys;
-	// Total is +1 for the new att key (the old key is still used as authentication key, so it is not removed)
+	// Total is +1 for the new att key (the old key is still used as authentication
+	// key, so it is not removed)
 	assert_eq!(public_keys.len(), 2);
 	// Check for new attestation key
 	assert!(public_keys.contains_key(&generate_key_id(
@@ -1067,17 +1045,15 @@ fn check_max_public_keys_attestation_key_addition_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_att_key = get_sr25519_attestation_key(false);
-	// Set maximum number of keys possible for the DID all inside the key agreement keys, so that key update would fail (since key is added and not replaced).
-	// So the # of new key agreement keys is max public key - 1 (since we already have the authentication key)
-	let old_key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(1));
+	// Set maximum number of keys possible for the DID all inside the key agreement
+	// keys, so that key update would fail (since key is added and not replaced). So
+	// the # of new key agreement keys is max public key - 1 (since we already have
+	// the authentication key)
+	let old_key_agreement_keys =
+		get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(1));
 
 	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
-	assert_ok!(
-		old_did_details.add_key_agreement_keys(
-			old_key_agreement_keys,
-			0u64,
-		)
-	);
+	assert_ok!(old_did_details.add_key_agreement_keys(old_key_agreement_keys, 0u64,));
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
@@ -1104,17 +1080,15 @@ fn check_max_public_keys_reused_key_attestation_key_update_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let old_att_key = auth_key.clone();
 	let new_att_key = get_sr25519_delegation_key(true);
-	// Set maximum number of keys possible for the DID all inside the key agreement keys, so that key update would fail (since key is added and not replaced).
-	// So the # of new key agreement keys is max public key - 1 (since we already have the authentication and attestation keys which are actually the same key)
-	let old_key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(1));
+	// Set maximum number of keys possible for the DID all inside the key agreement
+	// keys, so that key update would fail (since key is added and not replaced). So
+	// the # of new key agreement keys is max public key - 1 (since we already have
+	// the authentication and attestation keys which are actually the same key)
+	let old_key_agreement_keys =
+		get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(1));
 
 	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
-	assert_ok!(
-		old_did_details.add_key_agreement_keys(
-			old_key_agreement_keys,
-			0u64,
-		)
-	);
+	assert_ok!(old_did_details.add_key_agreement_keys(old_key_agreement_keys, 0u64,));
 	// Same key for auth and attestation
 	assert_ok!(old_did_details.update_attestation_key(did::DidVerificationKey::from(old_att_key.public()), 0u64));
 
@@ -1124,7 +1098,8 @@ fn check_max_public_keys_reused_key_attestation_key_update_error() {
 
 	let new_block_number: TestBlockNumber = 1;
 
-	// Update attestation key. The old one should not be removed as it is still used as authentication key.
+	// Update attestation key. The old one should not be removed as it is still used
+	// as authentication key.
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
@@ -1143,8 +1118,7 @@ fn check_did_not_present_attestation_key_update_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_att_key = get_sr25519_delegation_key(false);
 
-	let mut ext = ExtBuilder::default()
-		.build(None);
+	let mut ext = ExtBuilder::default().build(None);
 
 	let new_block_number: TestBlockNumber = 1;
 
@@ -1175,17 +1149,11 @@ fn check_successful_attestation_key_deletion() {
 		.build(None);
 
 	ext.execute_with(|| {
-		assert_ok!(
-			Did::remove_attestation_key(
-				Origin::signed(alice_did.clone())
-			)
-		);
+		assert_ok!(Did::remove_attestation_key(Origin::signed(alice_did.clone())));
 	});
 
 	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
-	assert!(
-		new_did_details.attestation_key.is_none()
-	);
+	assert!(new_did_details.attestation_key.is_none());
 	let public_keys = new_did_details.public_keys;
 	// Total is -1 for the removal + auth key = 1
 	assert_eq!(public_keys.len(), 1);
@@ -1209,19 +1177,14 @@ fn check_successful_reused_attestation_key_deletion() {
 		.build(None);
 
 	ext.execute_with(|| {
-		assert_ok!(
-			Did::remove_attestation_key(
-				Origin::signed(alice_did.clone())
-			)
-		);
+		assert_ok!(Did::remove_attestation_key(Origin::signed(alice_did.clone())));
 	});
 
 	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
-	assert!(
-		new_did_details.attestation_key.is_none()
-	);
+	assert!(new_did_details.attestation_key.is_none());
 	let public_keys = new_did_details.public_keys;
-	// Total should be unchanged as the key was re-used so it is not completely deleted
+	// Total should be unchanged as the key was re-used so it is not completely
+	// deleted
 	assert_eq!(public_keys.len(), old_did_details.public_keys.len());
 	// Check for presence of old delegation key (authentication key)
 	assert!(public_keys.contains_key(&generate_key_id(
@@ -1234,14 +1197,11 @@ fn check_did_not_present_attestation_key_deletion_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
-	let mut ext = ExtBuilder::default()
-		.build(None);
+	let mut ext = ExtBuilder::default().build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::remove_attestation_key(
-				Origin::signed(alice_did.clone())
-			),
+			Did::remove_attestation_key(Origin::signed(alice_did.clone())),
 			did::Error::<Test>::DidNotPresent
 		);
 	});
@@ -1260,9 +1220,7 @@ fn check_key_not_present_attestation_key_deletion_error() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::remove_attestation_key(
-				Origin::signed(alice_did.clone())
-			),
+			Did::remove_attestation_key(Origin::signed(alice_did.clone())),
 			did::Error::<Test>::VerificationKeyNotPresent
 		);
 	});
@@ -1284,12 +1242,10 @@ fn check_successful_key_agreement_key_addition() {
 
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
-		assert_ok!(
-			Did::add_key_agreement_key(
-				Origin::signed(alice_did.clone()),
-				new_key_agreement_key,
-			)
-		);
+		assert_ok!(Did::add_key_agreement_key(
+			Origin::signed(alice_did.clone()),
+			new_key_agreement_key,
+		));
 	});
 
 	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
@@ -1302,27 +1258,23 @@ fn check_successful_key_agreement_key_addition() {
 	// Total is +1 for the new enc key + auth key = 2
 	assert_eq!(public_keys.len(), 2);
 	// Check for new key agreement key
-	assert!(public_keys.contains_key(&generate_key_id(
-		&new_key_agreement_key.into()
-	)));
+	assert!(public_keys.contains_key(&generate_key_id(&new_key_agreement_key.into())));
 }
 
 #[test]
 fn check_max_public_keys_key_agreement_key_addition_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	// Set maximum number of keys possible for the DID all inside the key agreement keys, so that key update would fail (since key is added and not replaced).
-	// So the # of new key agreement keys is max public key - 1 (since we already have the authentication key)
-	let old_key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(1));
+	// Set maximum number of keys possible for the DID all inside the key agreement
+	// keys, so that key update would fail (since key is added and not replaced). So
+	// the # of new key agreement keys is max public key - 1 (since we already have
+	// the authentication key)
+	let old_key_agreement_keys =
+		get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(1));
 	let new_key_agreement_key = get_x25519_encryption_key(true);
 
 	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
-	assert_ok!(
-		old_did_details.add_key_agreement_keys(
-			old_key_agreement_keys,
-			0u64,
-		)
-	);
+	assert_ok!(old_did_details.add_key_agreement_keys(old_key_agreement_keys, 0u64,));
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
@@ -1333,10 +1285,7 @@ fn check_max_public_keys_key_agreement_key_addition_error() {
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::add_key_agreement_key(
-				Origin::signed(alice_did.clone()),
-				new_key_agreement_key,
-			),
+			Did::add_key_agreement_key(Origin::signed(alice_did.clone()), new_key_agreement_key,),
 			did::Error::<Test>::MaxPublicKeysPerDidExceeded
 		);
 	});
@@ -1348,8 +1297,7 @@ fn check_did_not_present_key_agreement_key_addition_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_enc_key = get_x25519_encryption_key(true);
 
-	let mut ext = ExtBuilder::default()
-		.build(None);
+	let mut ext = ExtBuilder::default().build(None);
 
 	let new_block_number: TestBlockNumber = 1;
 
@@ -1357,10 +1305,7 @@ fn check_did_not_present_key_agreement_key_addition_error() {
 	ext.execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::add_key_agreement_key(
-				Origin::signed(alice_did.clone()),
-				new_enc_key
-			),
+			Did::add_key_agreement_key(Origin::signed(alice_did.clone()), new_enc_key),
 			did::Error::<Test>::DidNotPresent
 		);
 	});
@@ -1380,12 +1325,10 @@ fn check_successful_key_agreement_key_deletion() {
 		.build(None);
 
 	ext.execute_with(|| {
-		assert_ok!(
-			Did::remove_key_agreement_key(
-				Origin::signed(alice_did.clone()),
-				generate_key_id(&old_enc_key.into()),
-			)
-		);
+		assert_ok!(Did::remove_key_agreement_key(
+			Origin::signed(alice_did.clone()),
+			generate_key_id(&old_enc_key.into()),
+		));
 	});
 
 	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
@@ -1394,9 +1337,7 @@ fn check_successful_key_agreement_key_deletion() {
 	// Total is -1 for the enc key removal + auth key = 1
 	assert_eq!(public_keys.len(), 1);
 	// Check for new key agreement key
-	assert!(!public_keys.contains_key(&generate_key_id(
-		&old_enc_key.into()
-	)));
+	assert!(!public_keys.contains_key(&generate_key_id(&old_enc_key.into())));
 }
 
 #[test]
@@ -1405,15 +1346,11 @@ fn check_did_not_found_key_agreement_key_deletion_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let test_enc_key = get_x25519_encryption_key(true);
 
-	let mut ext = ExtBuilder::default()
-		.build(None);
+	let mut ext = ExtBuilder::default().build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::remove_key_agreement_key(
-				Origin::signed(alice_did.clone()),
-				generate_key_id(&test_enc_key.into()),
-			),
+			Did::remove_key_agreement_key(Origin::signed(alice_did.clone()), generate_key_id(&test_enc_key.into()),),
 			did::Error::<Test>::DidNotPresent
 		);
 	});
@@ -1434,10 +1371,7 @@ fn check_key_not_found_key_agreement_key_deletion_error() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::remove_key_agreement_key(
-				Origin::signed(alice_did.clone()),
-				generate_key_id(&test_enc_key.into()),
-			),
+			Did::remove_key_agreement_key(Origin::signed(alice_did.clone()), generate_key_id(&test_enc_key.into()),),
 			did::Error::<Test>::VerificationKeyNotPresent
 		);
 	});
@@ -1456,12 +1390,10 @@ fn check_successful_service_endpoints_update() {
 		.build(None);
 
 	ext.execute_with(|| {
-		assert_ok!(
-			Did::set_service_endpoints(
-				Origin::signed(alice_did.clone()),
-				new_service_endpoints.clone(),
-			)
-		);
+		assert_ok!(Did::set_service_endpoints(
+			Origin::signed(alice_did.clone()),
+			new_service_endpoints.clone(),
+		));
 	});
 
 	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
@@ -1491,10 +1423,7 @@ fn check_url_too_long_endpoint_update_error() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::set_service_endpoints(
-				Origin::signed(alice_did.clone()),
-				new_service_endpoints,
-			),
+			Did::set_service_endpoints(Origin::signed(alice_did.clone()), new_service_endpoints,),
 			did::Error::<Test>::MaxUrlLengthExceeded
 		);
 	});
@@ -1517,10 +1446,7 @@ fn check_too_many_urls_endpoint_update_error() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::set_service_endpoints(
-				Origin::signed(alice_did.clone()),
-				new_service_endpoints,
-			),
+			Did::set_service_endpoints(Origin::signed(alice_did.clone()), new_service_endpoints,),
 			did::Error::<Test>::MaxUrlsCountExceeded
 		);
 	});
@@ -1540,11 +1466,7 @@ fn check_successful_service_endpoints_deletion() {
 		.build(None);
 
 	ext.execute_with(|| {
-		assert_ok!(
-			Did::remove_service_endpoints(
-				Origin::signed(alice_did.clone())
-			)
-		);
+		assert_ok!(Did::remove_service_endpoints(Origin::signed(alice_did.clone())));
 	});
 
 	let new_did_details = ext.execute_with(|| Did::get_did(&alice_did).expect("ALICE_DID should be present on chain."));
@@ -1557,14 +1479,11 @@ fn check_did_not_present_service_endpoints_deletion_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
-	let mut ext = ExtBuilder::default()
-		.build(None);
+	let mut ext = ExtBuilder::default().build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::remove_service_endpoints(
-				Origin::signed(alice_did.clone())
-			),
+			Did::remove_service_endpoints(Origin::signed(alice_did.clone())),
 			did::Error::<Test>::DidNotPresent
 		);
 	});
@@ -1583,9 +1502,7 @@ fn check_endpoints_not_present_service_endpoints_deletion_error() {
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Did::remove_service_endpoints(
-				Origin::signed(alice_did.clone())
-			),
+			Did::remove_service_endpoints(Origin::signed(alice_did.clone())),
 			did::Error::<Test>::DidFragmentNotPresent
 		);
 	});
@@ -2363,7 +2280,9 @@ fn check_http_url() {
 	));
 
 	// All other valid ASCII characters
-	assert_ok!(did::HttpUrl::<Test>::try_from("http://:/?#[]@!$&'()*+,;=-._~".as_bytes()));
+	assert_ok!(did::HttpUrl::<Test>::try_from(
+		"http://:/?#[]@!$&'()*+,;=-._~".as_bytes()
+	));
 
 	assert_eq!(
 		did::HttpUrl::<Test>::try_from("".as_bytes()),
@@ -2412,7 +2331,9 @@ fn check_ftp_url() {
 	));
 
 	// All other valid ASCII characters
-	assert_ok!(did::FtpUrl::<Test>::try_from("ftps://:/?#[]@%!$&'()*+,;=-._~".as_bytes()));
+	assert_ok!(did::FtpUrl::<Test>::try_from(
+		"ftps://:/?#[]@%!$&'()*+,;=-._~".as_bytes()
+	));
 
 	assert_eq!(
 		did::FtpUrl::<Test>::try_from("".as_bytes()),

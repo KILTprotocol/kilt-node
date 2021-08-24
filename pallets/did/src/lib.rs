@@ -196,7 +196,8 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxPublicKeysPerDid: Get<u32>;
 
-		/// Maximum number of key agreement keys that can be added in a creation operation.
+		/// Maximum number of key agreement keys that can be added in a creation
+		/// operation.
 		#[pallet::constant]
 		type MaxNewKeyAgreementKeys: Get<u32>;
 
@@ -339,9 +340,7 @@ pub mod pallet {
 			match error {
 				StorageError::DidNotPresent => Self::DidNotPresent,
 				StorageError::DidAlreadyPresent => Self::DidAlreadyPresent,
-				StorageError::DidKeyNotPresent(_) | StorageError::KeyNotPresent => {
-					Self::VerificationKeyNotPresent
-				}
+				StorageError::DidKeyNotPresent(_) | StorageError::KeyNotPresent => Self::VerificationKeyNotPresent,
 				StorageError::MaxTxCounterValue => Self::MaxTxCounterValue,
 				StorageError::CurrentlyActiveKey => Self::CurrentlyActiveKey,
 				StorageError::MaxPublicKeysPerDidExceeded => Self::MaxPublicKeysPerDidExceeded,
@@ -465,9 +464,15 @@ pub mod pallet {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
-			log::debug!("Setting new authentication key {:?} for DID {:?}", &new_key, &did_subject);
+			log::debug!(
+				"Setting new authentication key {:?} for DID {:?}",
+				&new_key,
+				&did_subject
+			);
 
-			did_details.update_authentication_key(new_key, <frame_system::Pallet<T>>::block_number()).map_err(<Error<T>>::from)?;
+			did_details
+				.update_authentication_key(new_key, <frame_system::Pallet<T>>::block_number())
+				.map_err(<Error<T>>::from)?;
 
 			<Did<T>>::insert(&did_subject, did_details);
 			log::debug!("Authentication key set");
@@ -483,7 +488,9 @@ pub mod pallet {
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
 			log::debug!("Setting new delegation key {:?} for DID {:?}", &new_key, &did_subject);
-			did_details.update_delegation_key(new_key, <frame_system::Pallet<T>>::block_number()).map_err(<Error<T>>::from)?;
+			did_details
+				.update_delegation_key(new_key, <frame_system::Pallet<T>>::block_number())
+				.map_err(<Error<T>>::from)?;
 
 			<Did<T>>::insert(&did_subject, did_details);
 			log::debug!("Delegation key set");
@@ -515,7 +522,9 @@ pub mod pallet {
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
 			log::debug!("Setting new attestation key {:?} for DID {:?}", &new_key, &did_subject);
-			did_details.update_attestation_key(new_key, <frame_system::Pallet<T>>::block_number()).map_err(<Error<T>>::from)?;
+			did_details
+				.update_attestation_key(new_key, <frame_system::Pallet<T>>::block_number())
+				.map_err(<Error<T>>::from)?;
 
 			<Did<T>>::insert(&did_subject, did_details);
 			log::debug!("Attestation key set");
@@ -547,7 +556,9 @@ pub mod pallet {
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
 			log::debug!("Adding new key agreement key {:?} for DID {:?}", &new_key, &did_subject);
-			did_details.add_key_agreement_key(new_key, <frame_system::Pallet<T>>::block_number()).map_err(<Error<T>>::from)?;
+			did_details
+				.add_key_agreement_key(new_key, <frame_system::Pallet<T>>::block_number())
+				.map_err(<Error<T>>::from)?;
 
 			<Did<T>>::insert(&did_subject, did_details);
 			log::debug!("Key agreement key set");
@@ -578,8 +589,14 @@ pub mod pallet {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
-			log::debug!("Adding new service endpoints {:?} for DID {:?}", &service_endpoints, &did_subject);
-			service_endpoints.validate_against_config_limits().map_err(<Error<T>>::from)?;
+			log::debug!(
+				"Adding new service endpoints {:?} for DID {:?}",
+				&service_endpoints,
+				&did_subject
+			);
+			service_endpoints
+				.validate_against_config_limits()
+				.map_err(<Error<T>>::from)?;
 
 			did_details.service_endpoints = Some(service_endpoints);
 

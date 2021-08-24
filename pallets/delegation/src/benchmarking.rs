@@ -89,7 +89,7 @@ fn add_children<T: Config>(
 where
 	T::AccountId: From<sr25519::Public> + Into<T::DelegationEntityId>,
 	T::DelegationNodeId: From<T::Hash>,
-	T::Signature: From<MultiSignature>
+	T::Signature: From<MultiSignature>,
 {
 	if level == 0 {
 		return Ok((parent_acc_public, parent_acc_id, parent_id));
@@ -157,7 +157,7 @@ pub fn setup_delegations<T: Config>(
 where
 	T::AccountId: From<sr25519::Public> + Into<T::DelegationEntityId>,
 	T::DelegationNodeId: From<T::Hash>,
-	T::Signature: From<MultiSignature>
+	T::Signature: From<MultiSignature>,
 {
 	let (
 		DelegationTriplet::<T> {
