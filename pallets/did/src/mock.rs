@@ -128,8 +128,8 @@ pub(crate) const DEFAULT_ACCOUNT: kilt_primitives::AccountId = kilt_primitives::
 
 const DEFAULT_AUTH_SEED: [u8; 32] = [4u8; 32];
 const ALTERNATIVE_AUTH_SEED: [u8; 32] = [40u8; 32];
-const DEFAULT_ENC_SEED: [u8; 32] = [5u8; 32];
-const ALTERNATIVE_ENC_SEED: [u8; 32] = [50u8; 32];
+const DEFAULT_ENC_SEED: [u8; 32] = [254u8; 32];
+const ALTERNATIVE_ENC_SEED: [u8; 32] = [255u8; 32];
 const DEFAULT_ATT_SEED: [u8; 32] = [6u8; 32];
 const ALTERNATIVE_ATT_SEED: [u8; 32] = [60u8; 32];
 const DEFAULT_DEL_SEED: [u8; 32] = [7u8; 32];
