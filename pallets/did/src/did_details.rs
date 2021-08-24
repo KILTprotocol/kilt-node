@@ -409,6 +409,9 @@ impl<T: Config> DidDetails<T> {
 		block_number: BlockNumberOf<T>,
 	) -> Result<(), StorageError> {
 		let new_attestation_key_id = utils::calculate_key_id::<T>(&new_attestation_key.clone().into());
+		if let Some(old_attestation_key_id) = self.attestation_key.take() {
+			self.remove_key_if_unused(old_attestation_key_id);
+		}
 		self.attestation_key = Some(new_attestation_key_id);
 		self.public_keys
 			.try_insert(
@@ -440,12 +443,11 @@ impl<T: Config> DidDetails<T> {
 		new_delegation_key: DidVerificationKey,
 		block_number: BlockNumberOf<T>,
 	) -> Result<(), StorageError> {
-		let old_delegation_key_id = self.delegation_key;
 		let new_delegation_key_id = utils::calculate_key_id::<T>(&new_delegation_key.clone().into());
-		self.delegation_key = Some(new_delegation_key_id);
-		if let Some(old_delegation_key) = old_delegation_key_id {
-			self.remove_key_if_unused(old_delegation_key);
+		if let Some(old_delegation_key_id) = self.delegation_key.take() {
+			self.remove_key_if_unused(old_delegation_key_id);
 		}
+		self.delegation_key = Some(new_delegation_key_id);
 		self.public_keys
 			.try_insert(
 				new_delegation_key_id,

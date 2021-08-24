@@ -92,9 +92,9 @@ parameter_types! {
 	#[derive(Debug, Clone, PartialEq)]
 	pub const MaxUrlLength: u32 = 200u32;
 	#[derive(Debug, Clone)]
-	pub const MaxPublicKeysPerDid: u32 = 1000;
+	pub const MaxPublicKeysPerDid: u32 = 10u32;
 	#[derive(Debug, Clone, PartialEq)]
-	pub const MaxTotalKeyAgreementKeys: u32 = 1000;
+	pub const MaxTotalKeyAgreementKeys: u32 = 10u32;
 	#[derive(Debug, Clone, PartialEq)]
 	pub const MaxEndpointUrlsCount: u32 = 3u32;
 }
@@ -108,7 +108,6 @@ impl Config for Test {
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
 	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
-	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 	type MaxUrlLength = MaxUrlLength;
 	type MaxEndpointUrlsCount = MaxEndpointUrlsCount;
 	type WeightInfo = ();
