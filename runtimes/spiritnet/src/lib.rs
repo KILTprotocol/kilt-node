@@ -75,13 +75,11 @@ mod weights;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
-
 impl_opaque_keys! {
 	pub struct SessionKeys {
 		pub aura: Aura,
 	}
 }
-
 
 /// This runtime version.
 #[sp_version::runtime_version]

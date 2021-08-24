@@ -38,7 +38,7 @@ use kilt_primitives::{
 		AVERAGE_ON_INITIALIZE_RATIO, DAYS, KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT,
 		MIN_VESTED_TRANSFER_AMOUNT, NORMAL_DISPATCH_RATIO, SLOT_DURATION,
 	},
-	AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, Header
+	AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Hash, Header, Index, Signature,
 };
 use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
 use sp_api::impl_runtime_apis;
@@ -95,7 +95,6 @@ impl_opaque_keys! {
 		pub aura: Aura,
 	}
 }
-
 
 /// This runtime version.
 #[sp_version::runtime_version]
