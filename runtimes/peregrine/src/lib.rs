@@ -27,11 +27,13 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use codec::Decode;
-use frame_support::{ensure, traits::LockIdentifier, PalletId};
+use did::DidSignature;
+use frame_support::{traits::LockIdentifier, PalletId};
+#[cfg(feature = "runtime-benchmarks")]
+use frame_system::EnsureSigned;
 use frame_system::{
 	limits::{BlockLength, BlockWeights},
-	EnsureOneOf, EnsureRoot, EnsureSigned,
+	EnsureOneOf, EnsureRoot,
 };
 use kilt_primitives::{
 	constants::{
@@ -48,9 +50,9 @@ use sp_core::{
 };
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, FixedPointNumber, MultiSignature, Perquintill,
+	ApplyExtrinsicResult, FixedPointNumber, Perquintill,
 };
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
@@ -610,27 +612,31 @@ impl pallet_membership::Config for Runtime {
 	type WeightInfo = weights::pallet_membership::WeightInfo<Runtime>;
 }
 
-impl delegation::VerifyDelegateSignature for Runtime {
-	type DelegateId = AccountId;
+pub struct DelegationSignatureVerifier<R>(sp_std::marker::PhantomData<R>);
+impl<R: did::Config> delegation::VerifyDelegateSignature for DelegationSignatureVerifier<R> {
+	type DelegateId = <R as did::Config>::DidIdentifier;
 	type Payload = Vec<u8>;
-	type Signature = Vec<u8>;
+	type Signature = DidSignature;
 
-	// No need to retrieve delegate details as it is simply an AccountId.
 	fn verify(
 		delegate: &Self::DelegateId,
 		payload: &Self::Payload,
 		signature: &Self::Signature,
 	) -> delegation::SignatureVerificationResult {
-		// Try to decode signature first.
-		let decoded_signature = MultiSignature::decode(&mut &signature[..])
-			.map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
+		let delegate_details =
+			did::Did::<R>::get(delegate).ok_or(delegation::SignatureVerificationError::SignerInformationNotPresent)?;
 
-		ensure!(
-			decoded_signature.verify(&payload[..], delegate),
-			delegation::SignatureVerificationError::SignatureInvalid
-		);
-
-		Ok(())
+		did::Pallet::verify_payload_signature_with_did_key_type(
+			payload,
+			signature,
+			&delegate_details,
+			did::DidVerificationKeyRelationship::Authentication,
+		)
+		.map_err(|err| match err {
+			// Should never happen as a DID has always a valid authentication key and UrlErrors are never thrown here.
+			did::DidError::SignatureError(_) => delegation::SignatureVerificationError::SignatureInvalid,
+			_ => delegation::SignatureVerificationError::SignerInformationNotPresent,
+		})
 	}
 }
 
@@ -640,7 +646,7 @@ parameter_types! {
 }
 
 impl attestation::Config for Runtime {
-	type EnsureOrigin = EnsureSigned<<Self as delegation::Config>::DelegationEntityId>;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
 	type Event = Event;
 	type WeightInfo = weights::attestation::WeightInfo<Runtime>;
 	type MaxDelegatedAttestations = MaxDelegatedAttestations;
@@ -656,10 +662,11 @@ parameter_types! {
 }
 
 impl delegation::Config for Runtime {
-	type DelegationSignatureVerification = Self;
+	type Signature = DidSignature;
+	type DelegationSignatureVerification = DelegationSignatureVerifier<Runtime>;
 	type DelegationEntityId = AccountId;
 	type DelegationNodeId = Hash;
-	type EnsureOrigin = EnsureSigned<Self::DelegationEntityId>;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
 	type Event = Event;
 	type MaxSignatureByteLength = MaxSignatureByteLength;
 	type MaxParentChecks = MaxParentChecks;
@@ -670,14 +677,13 @@ impl delegation::Config for Runtime {
 
 impl ctype::Config for Runtime {
 	type CtypeCreatorId = AccountId;
-	type EnsureOrigin = EnsureSigned<Self::CtypeCreatorId>;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
 	type Event = Event;
 	type WeightInfo = weights::ctype::WeightInfo<Runtime>;
 }
 
 parameter_types! {
 	pub const MaxNewKeyAgreementKeys: u32 = 10u32;
-	pub const MaxVerificationKeysToRevoke: u32 = 10u32;
 	#[derive(Debug, Clone, PartialEq)]
 	pub const MaxUrlLength: u32 = 200u32;
 	// TODO: Find reasonable numbers
@@ -700,7 +706,6 @@ impl did::Config for Runtime {
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
 	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
-	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 	type MaxUrlLength = MaxUrlLength;
 	type MaxEndpointUrlsCount = MaxEndpointUrlsCount;
 	type WeightInfo = weights::did::WeightInfo<Runtime>;
@@ -865,6 +870,8 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			// DID creation is not allowed through the DID proxy.
 			Call::Did(did::Call::create(..)) => None,
 			Call::Did(_) => Some(did::DidVerificationKeyRelationship::Authentication),
+			//TODO: add a batch call case that returns the right key type if all calls in the batch require the same
+			// key type as well, otherwise it returns None and fails.
 			#[cfg(not(feature = "runtime-benchmarks"))]
 			_ => None,
 			// By default, returns the authentication key

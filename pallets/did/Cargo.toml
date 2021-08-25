@@ -21,7 +21,7 @@ kilt-primitives = {default-features = false, path = "../../primitives"}
 
 [dependencies]
 # Internal dependencies
-ctype = {features = ["mock"], optional = true, path = "../ctype", version = "0.25.0"}
+ctype = {optional = true, path = "../ctype", version = "0.25.0"}
 kilt-primitives = {default-features = false, path = "../../primitives"}
 
 # External dependencies

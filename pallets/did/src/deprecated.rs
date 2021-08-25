@@ -25,7 +25,7 @@ pub(crate) mod v1 {
 	#[derive(Clone, Decode, Encode, PartialEq)]
 	pub struct DidDetails<T: Config> {
 		pub(crate) authentication_key: KeyIdOf<T>,
-		pub(crate) key_agreement_keys: DidKeyAgreementKeys<T>,
+		pub(crate) key_agreement_keys: DidKeyAgreementKeySet<T>,
 		pub(crate) delegation_key: Option<KeyIdOf<T>>,
 		pub(crate) attestation_key: Option<KeyIdOf<T>>,
 		pub(crate) public_keys: DidPublicKeyMap<T>,
@@ -49,7 +49,7 @@ pub(crate) mod v1 {
 				.expect("Should not exceed BoundedBTreeMap bounds when setting public keys");
 			Self {
 				authentication_key: authentication_key_id,
-				key_agreement_keys: DidKeyAgreementKeys::<T>::default(),
+				key_agreement_keys: DidKeyAgreementKeySet::<T>::default(),
 				attestation_key: None,
 				delegation_key: None,
 				endpoint_url: None,

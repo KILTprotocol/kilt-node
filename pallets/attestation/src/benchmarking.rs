@@ -20,7 +20,7 @@ use delegation::{benchmarking::setup_delegations, Permissions};
 use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
 use frame_system::RawOrigin;
 use sp_core::sr25519;
-use sp_runtime::traits::Hash;
+use sp_runtime::{traits::Hash, MultiSignature};
 use sp_std::num::NonZeroU32;
 
 use crate::*;
@@ -28,7 +28,7 @@ use crate::*;
 const ONE_CHILD_PER_LEVEL: Option<NonZeroU32> = NonZeroU32::new(1);
 
 benchmarks! {
-	where_clause { where T: core::fmt::Debug, T::AccountId: From<sr25519::Public> + Into<T::DelegationEntityId>, T::DelegationNodeId: From<T::Hash> }
+	where_clause { where T: core::fmt::Debug, T::AccountId: From<sr25519::Public> + Into<T::DelegationEntityId>, T::DelegationNodeId: From<T::Hash>, T::Signature: From<MultiSignature> }
 
 	add {
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");

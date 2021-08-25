@@ -18,7 +18,6 @@
 
 #![allow(clippy::from_over_into)]
 
-use codec::Decode;
 use frame_support::{parameter_types, storage::bounded_btree_set::BoundedBTreeSet, weights::constants::RocksDbWeight};
 use frame_system::EnsureSigned;
 use sp_core::{ed25519, sr25519, Pair};
@@ -106,7 +105,8 @@ parameter_types! {
 }
 
 impl Config for Test {
-	type DelegationSignatureVerification = Self;
+	type Signature = MultiSignature;
+	type DelegationSignatureVerification = DelegateSignatureVerifier;
 	type DelegationEntityId = TestDelegatorId;
 	type DelegationNodeId = TestDelegationNodeId;
 	type EnsureOrigin = EnsureSigned<TestDelegatorId>;
@@ -118,10 +118,11 @@ impl Config for Test {
 	type WeightInfo = ();
 }
 
-impl VerifyDelegateSignature for Test {
+pub struct DelegateSignatureVerifier;
+impl VerifyDelegateSignature for DelegateSignatureVerifier {
 	type DelegateId = TestDelegatorId;
 	type Payload = Vec<u8>;
-	type Signature = Vec<u8>;
+	type Signature = MultiSignature;
 
 	// No need to retrieve delegate details as it is simply an AccountId.
 	fn verify(
@@ -129,12 +130,8 @@ impl VerifyDelegateSignature for Test {
 		payload: &Self::Payload,
 		signature: &Self::Signature,
 	) -> SignatureVerificationResult {
-		// Try to decode signature first.
-		let decoded_signature =
-			MultiSignature::decode(&mut &signature[..]).map_err(|_| SignatureVerificationError::SignatureInvalid)?;
-
 		ensure!(
-			decoded_signature.verify(&payload[..], delegate),
+			signature.verify(&payload[..], delegate),
 			SignatureVerificationError::SignatureInvalid
 		);
 

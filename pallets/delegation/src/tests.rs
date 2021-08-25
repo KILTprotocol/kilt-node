@@ -16,7 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::Encode;
 use frame_support::{assert_err, assert_noop, assert_ok};
 use sp_core::Pair;
 
@@ -154,7 +153,7 @@ fn create_delegation_direct_root_successful() {
 			operation.parent_id,
 			operation.delegate.clone(),
 			operation.permissions,
-			operation.delegate_signature.clone().encode(),
+			operation.delegate_signature.clone(),
 		));
 	});
 
@@ -224,7 +223,7 @@ fn create_delegation_with_parent_successful() {
 			operation.parent_id,
 			operation.delegate.clone(),
 			operation.permissions,
-			operation.delegate_signature.clone().encode(),
+			operation.delegate_signature.clone(),
 		));
 	});
 
@@ -296,7 +295,7 @@ fn create_delegation_direct_root_revoked_error() {
 				operation.parent_id,
 				delegate,
 				operation.permissions,
-				operation.delegate_signature.clone().encode(),
+				operation.delegate_signature.clone(),
 			),
 			delegation::Error::<Test>::ParentDelegationRevoked
 		);
@@ -357,7 +356,7 @@ fn create_delegation_with_parent_revoked_error() {
 				operation.parent_id,
 				delegate,
 				operation.permissions,
-				operation.delegate_signature.clone().encode(),
+				operation.delegate_signature.clone(),
 			),
 			delegation::Error::<Test>::ParentDelegationRevoked
 		);
@@ -406,7 +405,7 @@ fn invalid_delegate_signature_create_delegation_error() {
 				operation.parent_id,
 				delegate.clone(),
 				operation.permissions,
-				operation.delegate_signature.clone().encode(),
+				operation.delegate_signature.clone(),
 			),
 			delegation::Error::<Test>::InvalidDelegateSignature
 		);
@@ -455,7 +454,7 @@ fn duplicate_delegation_create_delegation_error() {
 				operation.parent_id,
 				delegate.clone(),
 				operation.permissions,
-				operation.delegate_signature.clone().encode(),
+				operation.delegate_signature.clone(),
 			),
 			delegation::Error::<Test>::DelegationAlreadyExists
 		);
@@ -502,7 +501,7 @@ fn parent_not_existing_create_delegation_error() {
 				operation.parent_id,
 				delegate.clone(),
 				operation.permissions,
-				operation.delegate_signature.clone().encode(),
+				operation.delegate_signature.clone(),
 			),
 			delegation::Error::<Test>::ParentDelegationNotFound
 		);
@@ -557,7 +556,7 @@ fn not_owner_of_parent_create_delegation_error() {
 				operation.parent_id,
 				delegate.clone(),
 				operation.permissions,
-				operation.delegate_signature.clone().encode(),
+				operation.delegate_signature.clone(),
 			),
 			delegation::Error::<Test>::NotOwnerOfParentDelegation
 		);
@@ -611,7 +610,7 @@ fn unauthorised_delegation_create_delegation_error() {
 				operation.parent_id,
 				delegate.clone(),
 				operation.permissions,
-				operation.delegate_signature.clone().encode(),
+				operation.delegate_signature.clone(),
 			),
 			delegation::Error::<Test>::UnauthorizedDelegation
 		);
@@ -1646,4 +1645,37 @@ fn is_delegating_root_after_max_limit() {
 			delegation::Error::<Test>::MaxSearchDepthReached
 		);
 	});
+}
+
+// !! This test is matched to a unit test in the SDK. Both must be updated in
+// sync !!
+#[test]
+fn calculate_reference_root_hash() {
+	let delegation_id = sp_core::H256::from_slice(&[
+		185, 126, 188, 188, 245, 142, 61, 132, 79, 33, 135, 134, 152, 6, 203, 109, 120, 38, 111, 103, 61, 241, 239,
+		138, 46, 66, 215, 123, 126, 94, 77, 66,
+	]);
+
+	let hierarchy_root_id = sp_core::H256::from_slice(&[
+		70, 167, 51, 210, 165, 28, 28, 139, 12, 153, 171, 25, 102, 201, 169, 88, 65, 125, 169, 191, 42, 153, 90, 138,
+		192, 111, 144, 8, 231, 196, 167, 51,
+	]);
+
+	let parent_id = sp_core::H256::from_slice(&[
+		41, 25, 184, 103, 76, 11, 115, 50, 39, 65, 32, 13, 205, 136, 227, 114, 253, 200, 50, 199, 71, 206, 216, 234,
+		99, 37, 221, 21, 199, 111, 91, 209,
+	]);
+
+	let permissions = delegation::Permissions::ATTEST;
+
+	let delegation_hash =
+		Delegation::calculate_delegation_creation_hash(&delegation_id, &hierarchy_root_id, &parent_id, &permissions);
+
+	assert_eq!(
+		delegation_hash,
+		sp_core::H256::from_slice(&[
+			163, 68, 221, 218, 225, 105, 180, 154, 248, 52, 210, 46, 111, 20, 142, 1, 154, 18, 189, 126, 217, 41, 151,
+			135, 19, 250, 243, 130, 33, 174, 133, 4,
+		])
+	)
 }
