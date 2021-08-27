@@ -1939,18 +1939,6 @@ pub mod pallet {
 			}
 		}
 
-		/// Check whether an account is currently among the selected collator
-		/// candidates for the current validation round.
-		///
-		/// # <weight>
-		/// Weight: O(N) where N is the number SelectedCandidates bounded by
-		/// `MaxCollatorCandidates`.
-		/// - Reads: SelectedCandidates
-		/// # </weight>
-		pub fn is_selected_candidate(acc: &T::AccountId) -> bool {
-			<SelectedCandidates<T>>::get().binary_search(acc).is_ok()
-		}
-
 		/// Update the staking information for an active collator candidate.
 		///
 		/// NOTE: it is assumed that the calling context checks whether the
