@@ -27,11 +27,13 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use codec::Decode;
-use frame_support::{ensure, traits::LockIdentifier, PalletId};
+use did::DidSignature;
+use frame_support::{traits::LockIdentifier, PalletId};
+#[cfg(feature = "runtime-benchmarks")]
+use frame_system::EnsureSigned;
 use frame_system::{
 	limits::{BlockLength, BlockWeights},
-	EnsureOneOf, EnsureRoot, EnsureSigned,
+	EnsureOneOf, EnsureRoot,
 };
 use kilt_primitives::{
 	constants::{
@@ -48,14 +50,17 @@ use sp_core::{
 };
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, FixedPointNumber, MultiSignature, Perquintill,
+	ApplyExtrinsicResult, FixedPointNumber, Perquintill,
 };
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 use static_assertions::const_assert;
 
+mod fee;
+#[cfg(test)]
+mod tests;
 mod weights;
 
 #[cfg(feature = "std")]
@@ -87,31 +92,9 @@ pub use ctype;
 pub use delegation;
 pub use did;
 
-mod fee;
-
-/// Opaque types. These are used by the CLI to instantiate machinery that don't
-/// need to know the specifics of the runtime. They can then be made to be
-/// agnostic over specific formats of data like extrinsics, allowing for them to
-/// continue syncing the network through upgrades to even the core data
-/// structures.
-pub mod opaque {
-	use super::*;
-
-	pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
-
-	pub type SessionHandlers = ();
-
-	/// Opaque block header type.
-	pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
-	/// Opaque block type.
-	pub type Block = generic::Block<Header, UncheckedExtrinsic>;
-	/// Opaque block identifier type.
-	pub type BlockId = generic::BlockId<Block>;
-
-	impl_opaque_keys! {
-		pub struct SessionKeys {
-			pub aura: Aura,
-		}
+impl_opaque_keys! {
+	pub struct SessionKeys {
+		pub aura: Aura,
 	}
 }
 
@@ -121,7 +104,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 20,
+	spec_version: 22,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -186,7 +169,7 @@ impl frame_system::Config for Runtime {
 	/// The hashing algorithm used.
 	type Hashing = BlakeTwo256;
 	/// The header type.
-	type Header = generic::Header<BlockNumber, BlakeTwo256>;
+	type Header = Header;
 	/// The ubiquitous event type.
 	type Event = Event;
 	/// The ubiquitous origin type.
@@ -202,7 +185,7 @@ impl frame_system::Config for Runtime {
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type DbWeight = RocksDbWeight;
-	type BaseCallFilter = ();
+	type BaseCallFilter = frame_support::traits::Everything;
 	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
 	type BlockWeights = RuntimeBlockWeights;
 	type BlockLength = RuntimeBlockLength;
@@ -297,6 +280,8 @@ impl cumulus_pallet_aura_ext::Config for Runtime {}
 
 impl pallet_aura::Config for Runtime {
 	type AuthorityId = AuthorityId;
+	//TODO: handle disabled validators
+	type DisabledValidators = ();
 }
 
 parameter_types! {
@@ -321,8 +306,8 @@ impl pallet_session::Config for Runtime {
 	type ShouldEndSession = ParachainStaking;
 	type NextSessionRotation = ParachainStaking;
 	type SessionManager = ParachainStaking;
-	type SessionHandler = <opaque::SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
-	type Keys = opaque::SessionKeys;
+	type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
+	type Keys = SessionKeys;
 	type DisabledValidatorsThreshold = DisabledValidatorsThreshold;
 	type WeightInfo = weights::pallet_session::WeightInfo<Runtime>;
 }
@@ -627,27 +612,31 @@ impl pallet_membership::Config for Runtime {
 	type WeightInfo = weights::pallet_membership::WeightInfo<Runtime>;
 }
 
-impl delegation::VerifyDelegateSignature for Runtime {
-	type DelegateId = AccountId;
+pub struct DelegationSignatureVerifier<R>(sp_std::marker::PhantomData<R>);
+impl<R: did::Config> delegation::VerifyDelegateSignature for DelegationSignatureVerifier<R> {
+	type DelegateId = <R as did::Config>::DidIdentifier;
 	type Payload = Vec<u8>;
-	type Signature = Vec<u8>;
+	type Signature = DidSignature;
 
-	// No need to retrieve delegate details as it is simply an AccountId.
 	fn verify(
 		delegate: &Self::DelegateId,
 		payload: &Self::Payload,
 		signature: &Self::Signature,
 	) -> delegation::SignatureVerificationResult {
-		// Try to decode signature first.
-		let decoded_signature = MultiSignature::decode(&mut &signature[..])
-			.map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
+		let delegate_details =
+			did::Did::<R>::get(delegate).ok_or(delegation::SignatureVerificationError::SignerInformationNotPresent)?;
 
-		ensure!(
-			decoded_signature.verify(&payload[..], delegate),
-			delegation::SignatureVerificationError::SignatureInvalid
-		);
-
-		Ok(())
+		did::Pallet::verify_payload_signature_with_did_key_type(
+			payload,
+			signature,
+			&delegate_details,
+			did::DidVerificationKeyRelationship::Authentication,
+		)
+		.map_err(|err| match err {
+			// Should never happen as a DID has always a valid authentication key and UrlErrors are never thrown here.
+			did::DidError::SignatureError(_) => delegation::SignatureVerificationError::SignatureInvalid,
+			_ => delegation::SignatureVerificationError::SignerInformationNotPresent,
+		})
 	}
 }
 
@@ -657,7 +646,7 @@ parameter_types! {
 }
 
 impl attestation::Config for Runtime {
-	type EnsureOrigin = EnsureSigned<<Self as delegation::Config>::DelegationEntityId>;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
 	type Event = Event;
 	type WeightInfo = weights::attestation::WeightInfo<Runtime>;
 	type MaxDelegatedAttestations = MaxDelegatedAttestations;
@@ -673,10 +662,11 @@ parameter_types! {
 }
 
 impl delegation::Config for Runtime {
-	type DelegationSignatureVerification = Self;
+	type Signature = DidSignature;
+	type DelegationSignatureVerification = DelegationSignatureVerifier<Runtime>;
 	type DelegationEntityId = AccountId;
 	type DelegationNodeId = Hash;
-	type EnsureOrigin = EnsureSigned<Self::DelegationEntityId>;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
 	type Event = Event;
 	type MaxSignatureByteLength = MaxSignatureByteLength;
 	type MaxParentChecks = MaxParentChecks;
@@ -687,14 +677,13 @@ impl delegation::Config for Runtime {
 
 impl ctype::Config for Runtime {
 	type CtypeCreatorId = AccountId;
-	type EnsureOrigin = EnsureSigned<Self::CtypeCreatorId>;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
 	type Event = Event;
 	type WeightInfo = weights::ctype::WeightInfo<Runtime>;
 }
 
 parameter_types! {
 	pub const MaxNewKeyAgreementKeys: u32 = 10u32;
-	pub const MaxVerificationKeysToRevoke: u32 = 10u32;
 	#[derive(Debug, Clone, PartialEq)]
 	pub const MaxUrlLength: u32 = 200u32;
 	// TODO: Find reasonable numbers
@@ -717,7 +706,6 @@ impl did::Config for Runtime {
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
 	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
-	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 	type MaxUrlLength = MaxUrlLength;
 	type MaxEndpointUrlsCount = MaxEndpointUrlsCount;
 	type WeightInfo = weights::did::WeightInfo<Runtime>;
@@ -882,6 +870,8 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			// DID creation is not allowed through the DID proxy.
 			Call::Did(did::Call::create(..)) => None,
 			Call::Did(_) => Some(did::DidVerificationKeyRelationship::Authentication),
+			//TODO: add a batch call case that returns the right key type if all calls in the batch require the same
+			// key type as well, otherwise it returns None and fails.
 			#[cfg(not(feature = "runtime-benchmarks"))]
 			_ => None,
 			// By default, returns the authentication key
@@ -909,6 +899,7 @@ pub type BlockId = generic::BlockId<Block>;
 /// The SignedExtension to the basic transaction logic.
 pub type SignedExtra = (
 	frame_system::CheckSpecVersion<Runtime>,
+	frame_system::CheckTxVersion<Runtime>,
 	frame_system::CheckGenesis<Runtime>,
 	frame_system::CheckEra<Runtime>,
 	frame_system::CheckNonce<Runtime>,
@@ -1003,11 +994,11 @@ impl_runtime_apis! {
 		fn decode_session_keys(
 			encoded: Vec<u8>,
 		) -> Option<Vec<(Vec<u8>, sp_core::crypto::KeyTypeId)>> {
-			opaque::SessionKeys::decode_into_raw_public_keys(&encoded)
+			SessionKeys::decode_into_raw_public_keys(&encoded)
 		}
 
 		fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
-			opaque::SessionKeys::generate(seed)
+			SessionKeys::generate(seed)
 		}
 	}
 
@@ -1029,6 +1020,52 @@ impl_runtime_apis! {
 
 	#[cfg(feature = "runtime-benchmarks")]
 	impl frame_benchmarking::Benchmark<Block> for Runtime {
+		fn benchmark_metadata(extra: bool) -> (
+			Vec<frame_benchmarking::BenchmarkList>,
+			Vec<frame_support::traits::StorageInfo>,
+		) {
+			use frame_benchmarking::{list_benchmark, Benchmarking, BenchmarkList};
+			use frame_support::traits::StorageInfoTrait;
+			use frame_system_benchmarking::Pallet as SystemBench;
+
+			let mut list = Vec::<BenchmarkList>::new();
+
+			// Substrate
+			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
+			list_benchmark!(list, extra, pallet_balances, Balances);
+			list_benchmark!(list, extra, pallet_collective, Council);
+			list_benchmark!(list, extra, pallet_democracy, Democracy);
+			list_benchmark!(list, extra, pallet_indices, Indices);
+			list_benchmark!(list, extra, pallet_membership, TechnicalMembership);
+			list_benchmark!(list, extra, parachain_staking, ParachainStaking);
+			list_benchmark!(list, extra, pallet_scheduler, Scheduler);
+			// list_benchmark!(list, extra, pallet_session, Session);
+			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
+			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
+			list_benchmark!(list, extra, pallet_treasury, Treasury);
+			list_benchmark!(list, extra, pallet_utility, Utility);
+
+			list_benchmark!(list, extra, attestation, Attestation);
+			list_benchmark!(list, extra, ctype, Ctype);
+			list_benchmark!(list, extra, delegation, Delegation);
+			list_benchmark!(list, extra, did, Did);
+			list_benchmark!(list, extra, kilt_launch, KiltLaunch);
+			list_benchmark!(list, extra, pallet_vesting, Vesting);
+
+			// No benchmarks for these pallets
+			// list_benchmark!(list, extra, cumulus_pallet_parachain_system, ParachainSystem);
+			// list_benchmark!(list, extra, parachain_info, ParachainInfo);
+			// list_benchmark!(list, extra, cumulus_pallet_xcmp_queue, XcmHandler);
+			// list_benchmark!(list, extra, orml_tokens, Tokens);
+			// list_benchmark!(list, extra, orml_currencies, Currencies);
+			// list_benchmark!(list, extra, orml_xtokens, XTokens);
+			// list_benchmark!(list, extra, orml_unknown_tokens, UnknownTokens);
+
+			let storage_info = AllPalletsWithSystem::storage_info();
+
+			(list, storage_info)
+		}
+
 		fn dispatch_benchmark(
 			config: frame_benchmarking::BenchmarkConfig
 		) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {

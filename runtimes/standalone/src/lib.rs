@@ -27,9 +27,10 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use codec::Decode;
-use frame_support::ensure;
+#[cfg(feature = "runtime-benchmarks")]
 use frame_system::EnsureSigned;
+
+use did::DidSignature;
 use kilt_primitives::{
 	constants::{KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature,
@@ -41,9 +42,9 @@ use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, MultiSignature,
+	ApplyExtrinsicResult,
 };
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
@@ -109,7 +110,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 20,
+	spec_version: 22,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -142,7 +143,7 @@ parameter_types! {
 
 impl frame_system::Config for Runtime {
 	/// The basic call filter to use in dispatchable.
-	type BaseCallFilter = ();
+	type BaseCallFilter = frame_support::traits::Everything;
 	/// Block & extrinsics weights: base values and limits.
 	type BlockWeights = BlockWeights;
 	/// The maximum length of a block (in bytes).
@@ -196,6 +197,7 @@ impl frame_system::Config for Runtime {
 
 impl pallet_aura::Config for Runtime {
 	type AuthorityId = AuraId;
+	type DisabledValidators = ();
 }
 
 impl pallet_grandpa::Config for Runtime {
@@ -277,27 +279,31 @@ where
 	}
 }
 
-impl delegation::VerifyDelegateSignature for Runtime {
-	type DelegateId = AccountId;
+pub struct DelegationSignatureVerifier<R>(sp_std::marker::PhantomData<R>);
+impl<R: did::Config> delegation::VerifyDelegateSignature for DelegationSignatureVerifier<R> {
+	type DelegateId = <R as did::Config>::DidIdentifier;
 	type Payload = Vec<u8>;
-	type Signature = Vec<u8>;
+	type Signature = DidSignature;
 
-	// No need to retrieve delegate details as it is simply an AccountId.
 	fn verify(
 		delegate: &Self::DelegateId,
 		payload: &Self::Payload,
 		signature: &Self::Signature,
 	) -> delegation::SignatureVerificationResult {
-		// Try to decode signature first.
-		let decoded_signature = MultiSignature::decode(&mut &signature[..])
-			.map_err(|_| delegation::SignatureVerificationError::SignatureInvalid)?;
+		let delegate_details =
+			did::Did::<R>::get(delegate).ok_or(delegation::SignatureVerificationError::SignerInformationNotPresent)?;
 
-		ensure!(
-			decoded_signature.verify(&payload[..], delegate),
-			delegation::SignatureVerificationError::SignatureInvalid
-		);
-
-		Ok(())
+		did::Pallet::verify_payload_signature_with_did_key_type(
+			payload,
+			signature,
+			&delegate_details,
+			did::DidVerificationKeyRelationship::Authentication,
+		)
+		.map_err(|err| match err {
+			// Should never happen as a DID has always a valid authentication key and UrlErrors are never thrown here.
+			did::DidError::SignatureError(_) => delegation::SignatureVerificationError::SignatureInvalid,
+			_ => delegation::SignatureVerificationError::SignerInformationNotPresent,
+		})
 	}
 }
 
@@ -335,7 +341,7 @@ parameter_types! {
 }
 
 impl attestation::Config for Runtime {
-	type EnsureOrigin = EnsureSigned<<Self as delegation::Config>::DelegationEntityId>;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
 	type Event = Event;
 	type WeightInfo = ();
 	type MaxDelegatedAttestations = MaxDelegatedAttestations;
@@ -351,10 +357,11 @@ parameter_types! {
 }
 
 impl delegation::Config for Runtime {
-	type DelegationSignatureVerification = Self;
-	type DelegationEntityId = AccountId;
+	type Signature = DidSignature;
+	type DelegationSignatureVerification = DelegationSignatureVerifier<Self>;
+	type DelegationEntityId = DidIdentifier;
 	type DelegationNodeId = Hash;
-	type EnsureOrigin = EnsureSigned<Self::DelegationEntityId>;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
 	type Event = Event;
 	type MaxSignatureByteLength = MaxSignatureByteLength;
 	type MaxParentChecks = MaxParentChecks;
@@ -364,15 +371,14 @@ impl delegation::Config for Runtime {
 }
 
 impl ctype::Config for Runtime {
-	type CtypeCreatorId = AccountId;
-	type EnsureOrigin = EnsureSigned<Self::CtypeCreatorId>;
+	type CtypeCreatorId = DidIdentifier;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
 	type Event = Event;
 	type WeightInfo = ();
 }
 
 parameter_types! {
 	pub const MaxNewKeyAgreementKeys: u32 = 10u32;
-	pub const MaxVerificationKeysToRevoke: u32 = 10u32;
 	#[derive(Debug, Clone, PartialEq)]
 	pub const MaxUrlLength: u32 = 200u32;
 	// TODO: Find reasonable numbers
@@ -395,7 +401,6 @@ impl did::Config for Runtime {
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
 	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
-	type MaxVerificationKeysToRevoke = MaxVerificationKeysToRevoke;
 	type MaxUrlLength = MaxUrlLength;
 	type MaxEndpointUrlsCount = MaxEndpointUrlsCount;
 	type WeightInfo = ();
@@ -649,6 +654,10 @@ impl_runtime_apis! {
 	}
 
 	impl fg_primitives::GrandpaApi<Block> for Runtime {
+		fn current_set_id() -> fg_primitives::SetId {
+			Grandpa::current_set_id()
+		}
+
 		fn grandpa_authorities() -> GrandpaAuthorityList {
 			Grandpa::grandpa_authorities()
 		}
@@ -676,6 +685,36 @@ impl_runtime_apis! {
 
 	#[cfg(feature = "runtime-benchmarks")]
 	impl frame_benchmarking::Benchmark<Block> for Runtime {
+		fn benchmark_metadata(extra: bool) -> (
+			Vec<frame_benchmarking::BenchmarkList>,
+			Vec<frame_support::traits::StorageInfo>,
+		) {
+			use frame_benchmarking::{list_benchmark, Benchmarking, BenchmarkList};
+			use frame_support::traits::StorageInfoTrait;
+			use frame_system_benchmarking::Pallet as SystemBench;
+
+			let mut list = Vec::<BenchmarkList>::new();
+
+			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
+			list_benchmark!(list, extra, pallet_balances, Balances);
+			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
+
+			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
+			list_benchmark!(list, extra, pallet_balances, Balances);
+			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
+			list_benchmark!(list, extra, kilt_launch, KiltLaunch);
+			list_benchmark!(list, extra, pallet_vesting, Vesting);
+
+			list_benchmark!(list, extra, did, Did);
+			list_benchmark!(list, extra, ctype, Ctype);
+			list_benchmark!(list, extra, delegation, Delegation);
+			list_benchmark!(list, extra, attestation, Attestation);
+
+			let storage_info = AllPalletsWithSystem::storage_info();
+
+			(list, storage_info)
+		}
+
 		fn dispatch_benchmark(
 			config: frame_benchmarking::BenchmarkConfig
 		) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {

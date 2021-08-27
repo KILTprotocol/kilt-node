@@ -3,7 +3,7 @@ stages:
   - build
 
 clippy:
-  image: paritytech/ci-linux:105b919b-20210617
+  image: paritytech/ci-linux:9575dfcd-20210729
   stage: test
   timeout: 1 hours
   script:
@@ -11,7 +11,7 @@ clippy:
     - cargo +nightly clippy --all-features --all-targets -- -D warnings
 
 fmt:
-  image: paritytech/ci-linux:105b919b-20210617
+  image: paritytech/ci-linux:9575dfcd-20210729
   stage: test
   timeout: 1 hours
   script:
@@ -19,14 +19,14 @@ fmt:
     - cargo +nightly fmt -- --check
 
 test:
-  image: paritytech/ci-linux:105b919b-20210617
+  image: paritytech/ci-linux:9575dfcd-20210729
   stage: test
   timeout: 1 hours
   script:
     - cargo test --all --all-targets
 
 test-features:
-  image: paritytech/ci-linux:105b919b-20210617
+  image: paritytech/ci-linux:9575dfcd-20210729
   stage: test
   timeout: 1 hours
   script:
@@ -39,6 +39,7 @@ build:
   stage: build
   only:
     - develop
+    - tags
   before_script:
     - amazon-linux-extras install docker
     - aws --version
@@ -55,22 +56,22 @@ build:
     - docker build --cache-from $AWS_REGISTRY/kilt-parachain/collator:builder-develop --cache-from $AWS_REGISTRY/kilt-parachain/collator:develop --build-arg NODE_TYPE=kilt-parachain -t kiltprotocol/peregrine:develop .
     - docker build --cache-from $AWS_REGISTRY/kilt-parachain/collator:builder-develop --cache-from $AWS_REGISTRY/kilt/prototype-chain:latest-develop --build-arg NODE_TYPE=mashnet-node -t kiltprotocol/mashnet-node:develop .
 
-    - docker tag kiltprotocol/mashnet-node:develop kiltprotocol/mashnet-node:$CI_COMMIT_SHORT_SHA
-    - docker tag kiltprotocol/peregrine:develop kiltprotocol/peregrine:$CI_COMMIT_SHORT_SHA
+    - docker tag kiltprotocol/mashnet-node:develop kiltprotocol/mashnet-node:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
+    - docker tag kiltprotocol/peregrine:develop kiltprotocol/peregrine:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
 
     - docker push kiltprotocol/peregrine:develop
-    - docker push kiltprotocol/peregrine:$CI_COMMIT_SHORT_SHA
+    - docker push kiltprotocol/peregrine:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
     - docker push kiltprotocol/mashnet-node:develop
-    - docker push kiltprotocol/mashnet-node:$CI_COMMIT_SHORT_SHA
+    - docker push kiltprotocol/mashnet-node:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
 
     - docker tag kiltprotocol/mashnet-node:develop $AWS_REGISTRY/kilt/prototype-chain:latest-develop
-    - docker tag kiltprotocol/mashnet-node:develop $AWS_REGISTRY/kilt/prototype-chain:$CI_COMMIT_SHORT_SHA
+    - docker tag kiltprotocol/mashnet-node:develop $AWS_REGISTRY/kilt/prototype-chain:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
     - docker tag kiltprotocol/peregrine:develop $AWS_REGISTRY/kilt-parachain/collator:latest-develop
-    - docker tag kiltprotocol/peregrine:develop $AWS_REGISTRY/kilt-parachain/collator:$CI_COMMIT_SHORT_SHA
+    - docker tag kiltprotocol/peregrine:develop $AWS_REGISTRY/kilt-parachain/collator:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
     - docker push $AWS_REGISTRY/kilt/prototype-chain:latest-develop
-    - docker push $AWS_REGISTRY/kilt/prototype-chain:$CI_COMMIT_SHORT_SHA
+    - docker push $AWS_REGISTRY/kilt/prototype-chain:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
     - docker push $AWS_REGISTRY/kilt-parachain/collator:latest-develop
-    - docker push $AWS_REGISTRY/kilt-parachain/collator:$CI_COMMIT_SHORT_SHA
+    - docker push $AWS_REGISTRY/kilt-parachain/collator:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
 
 build-wasm-peregrine:
   image:

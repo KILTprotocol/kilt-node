@@ -27,6 +27,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use frame_support::traits::Contains;
 use frame_system::limits::{BlockLength, BlockWeights};
 use kilt_primitives::{
 	constants::{
@@ -53,7 +54,7 @@ use sp_version::NativeVersion;
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{Filter, Get, Randomness},
+	traits::{Get, Randomness},
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
 		DispatchClass, IdentityFee, Weight,
@@ -67,32 +68,16 @@ pub use sp_runtime::{Perbill, Permill};
 pub use parachain_staking::{InflationInfo, RewardRate, StakingInfo};
 
 mod fee;
+#[cfg(test)]
+mod tests;
 mod weights;
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
-/// Opaque types. These are used by the CLI to instantiate machinery that don't
-/// need to know the specifics of the runtime. They can then be made to be
-/// agnostic over specific formats of data like extrinsics, allowing for them to
-/// continue syncing the network through upgrades to even the core data
-/// structures.
-pub mod opaque {
-	use super::*;
-
-	pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
-
-	/// Opaque block header type.
-	pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
-	/// Opaque block type.
-	pub type Block = generic::Block<Header, UncheckedExtrinsic>;
-	/// Opaque block identifier type.
-	pub type BlockId = generic::BlockId<Block>;
-
-	impl_opaque_keys! {
-		pub struct SessionKeys {
-			pub aura: Aura,
-		}
+impl_opaque_keys! {
+	pub struct SessionKeys {
+		pub aura: Aura,
 	}
 }
 
@@ -102,7 +87,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("kilt-spiritnet"),
 	impl_name: create_runtime_str!("kilt-spiritnet"),
 	authoring_version: 1,
-	spec_version: 20,
+	spec_version: 22,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -150,17 +135,16 @@ parameter_types! {
 	pub const SS58Prefix: u8 = 38;
 }
 
-/// Don't allow swaps until parathread story is more mature.
 pub struct BaseFilter;
-impl Filter<Call> for BaseFilter {
-	fn filter(c: &Call) -> bool {
+impl Contains<Call> for BaseFilter {
+	fn contains(c: &Call) -> bool {
 		!matches!(
 			c,
 			Call::Vesting(pallet_vesting::Call::vested_transfer(..))
 				| Call::KiltLaunch(kilt_launch::Call::locked_transfer(..))
-				| Call::Balances(pallet_balances::Call::transfer(..))
-				| Call::Balances(pallet_balances::Call::transfer_keep_alive(..))
-				| Call::Balances(pallet_balances::Call::transfer_all(..))
+				| Call::Balances(..)
+				| Call::ParachainStaking(parachain_staking::Call::join_candidates(..))
+				| Call::Session(pallet_session::Call::set_keys(..))
 		)
 	}
 }
@@ -182,7 +166,7 @@ impl frame_system::Config for Runtime {
 	/// The hashing algorithm used.
 	type Hashing = BlakeTwo256;
 	/// The header type.
-	type Header = generic::Header<BlockNumber, BlakeTwo256>;
+	type Header = kilt_primitives::Header;
 	/// The ubiquitous event type.
 	type Event = Event;
 	/// The ubiquitous origin type.
@@ -293,6 +277,8 @@ impl cumulus_pallet_aura_ext::Config for Runtime {}
 
 impl pallet_aura::Config for Runtime {
 	type AuthorityId = AuthorityId;
+	//TODO: handle disabled validators
+	type DisabledValidators = ();
 }
 
 parameter_types! {
@@ -317,8 +303,8 @@ impl pallet_session::Config for Runtime {
 	type ShouldEndSession = ParachainStaking;
 	type NextSessionRotation = ParachainStaking;
 	type SessionManager = ParachainStaking;
-	type SessionHandler = <opaque::SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
-	type Keys = opaque::SessionKeys;
+	type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
+	type Keys = SessionKeys;
 	type DisabledValidatorsThreshold = DisabledValidatorsThreshold;
 	type WeightInfo = weights::pallet_session::WeightInfo<Runtime>;
 }
@@ -555,11 +541,11 @@ impl_runtime_apis! {
 		fn decode_session_keys(
 			encoded: Vec<u8>,
 		) -> Option<Vec<(Vec<u8>, sp_core::crypto::KeyTypeId)>> {
-			opaque::SessionKeys::decode_into_raw_public_keys(&encoded)
+			SessionKeys::decode_into_raw_public_keys(&encoded)
 		}
 
 		fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
-			opaque::SessionKeys::generate(seed)
+			SessionKeys::generate(seed)
 		}
 	}
 
@@ -581,6 +567,35 @@ impl_runtime_apis! {
 
 	#[cfg(feature = "runtime-benchmarks")]
 	impl frame_benchmarking::Benchmark<Block> for Runtime {
+		fn benchmark_metadata(extra: bool) -> (
+			Vec<frame_benchmarking::BenchmarkList>,
+			Vec<frame_support::traits::StorageInfo>,
+		) {
+			use frame_benchmarking::{list_benchmark, Benchmarking, BenchmarkList};
+			use frame_support::traits::StorageInfoTrait;
+			use frame_system_benchmarking::Pallet as SystemBench;
+
+			let mut list = Vec::<BenchmarkList>::new();
+
+			// Substrate
+			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
+			list_benchmark!(list, extra, pallet_balances, Balances);
+			list_benchmark!(list, extra, pallet_indices, Indices);
+			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
+			// TODO: Enable after pallet is available on the Cumulus branch we use
+			// list_benchmark!(list, extra, pallet_session, SessionBench::<Runtime>);
+			list_benchmark!(list, extra, pallet_utility, Utility);
+			list_benchmark!(list, extra, pallet_vesting, Vesting);
+
+			// KILT
+			list_benchmark!(list, extra, kilt_launch, KiltLaunch);
+			list_benchmark!(list, extra, parachain_staking, ParachainStaking);
+
+			let storage_info = AllPalletsWithSystem::storage_info();
+
+			(list, storage_info)
+		}
+
 		fn dispatch_benchmark(
 			config: frame_benchmarking::BenchmarkConfig
 		) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {

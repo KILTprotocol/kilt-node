@@ -89,6 +89,7 @@ fn add_children<T: Config>(
 where
 	T::AccountId: From<sr25519::Public> + Into<T::DelegationEntityId>,
 	T::DelegationNodeId: From<T::Hash>,
+	T::Signature: From<MultiSignature>,
 {
 	if level == 0 {
 		return Ok((parent_acc_public, parent_acc_id, parent_id));
@@ -115,7 +116,7 @@ where
 			parent_id,
 			delegation_acc_id.clone().into(),
 			permissions,
-			MultiSignature::from(sig).encode(),
+			MultiSignature::from(sig).into(),
 		)?;
 
 		// only return first leaf
@@ -156,6 +157,7 @@ pub fn setup_delegations<T: Config>(
 where
 	T::AccountId: From<sr25519::Public> + Into<T::DelegationEntityId>,
 	T::DelegationNodeId: From<T::Hash>,
+	T::Signature: From<MultiSignature>,
 {
 	let (
 		DelegationTriplet::<T> {
@@ -180,7 +182,7 @@ where
 }
 
 benchmarks! {
-	where_clause { where T: core::fmt::Debug, T::AccountId: From<sr25519::Public> + Into<T::DelegationEntityId>, T::DelegationNodeId: From<T::Hash>, <T as frame_system::Config>::Origin: From<RawOrigin<<T as pallet::Config>::DelegationEntityId>> }
+	where_clause { where T: core::fmt::Debug, T::AccountId: From<sr25519::Public> + Into<T::DelegationEntityId>, T::DelegationNodeId: From<T::Hash>, <T as frame_system::Config>::Origin: From<RawOrigin<<T as pallet::Config>::DelegationEntityId>>, T::Signature: From<MultiSignature> }
 
 	create_hierarchy {
 		let caller: T::AccountId = account("caller", 0, SEED);
@@ -210,7 +212,7 @@ benchmarks! {
 
 		let delegate_acc_id: T::AccountId = delegate_acc_public.into();
 		let leaf_acc_id: T::AccountId = leaf_acc.into();
-	}: _(RawOrigin::Signed(leaf_acc_id), delegation_id, parent_id, delegate_acc_id.into(), perm, MultiSignature::from(sig).encode())
+	}: _(RawOrigin::Signed(leaf_acc_id), delegation_id, parent_id, delegate_acc_id.into(), perm, MultiSignature::from(sig).into())
 	verify {
 		assert!(DelegationNodes::<T>::contains_key(delegation_id));
 	}
