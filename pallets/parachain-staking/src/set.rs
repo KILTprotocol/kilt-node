@@ -57,7 +57,7 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 
 	/// Inserts an element, if no equal item exist in the set.
 	///
-	/// Throws if insertion would exceed the bounded vec's max size.
+	/// Returns an error if insertion would exceed the bounded vec's max size.
 	///
 	/// Returns true if the item is unique in the set, otherwise returns false.
 	pub fn try_insert(&mut self, value: T) -> Result<bool, ()> {
@@ -73,8 +73,8 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 	/// Attempts to replace the last element of the set with the provided value.
 	/// Assumes the set to have reached its bounded size.
 	///
-	/// Throws with `false` if the value already exists in the set.
-	/// Throws with `true` if the value has the least order in the set, i.e.,
+	/// Returns `Err(false)` if the value already exists in the set.
+	/// Returns `Err(true)` if the value has the least order in the set, i.e.,
 	/// it would be appended (inserted at i == length).
 	///
 	/// Returns the replaced element upon success.
@@ -94,7 +94,7 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 
 	/// Inserts a new element or updates the value of an existing one.
 	///
-	/// Throws if the maximum size of the bounded vec would be exceeded
+	/// Returns an error if the maximum size of the bounded vec would be exceeded
 	/// upon insertion.
 	///
 	/// Returns the old value if existing or None if the value did not exist
