@@ -910,21 +910,23 @@ pub mod pallet {
 
 			// iterate candidate pool and update all candidates with stake > max
 			<CandidatePool<T>>::mutate(|pool| {
-				for mut candidate in pool[..].iter_mut() {
-					// state should always exist but let's be safe
-					if let Some(mut state) = <CollatorState<T>>::get(&candidate.owner) {
-						if state.stake > new {
-							// safe because we ensure stake > new
-							let delta = state.stake - new;
-							state.stake_less(delta);
-							candidate.amount = candidate.amount.saturating_sub(delta);
+				pool.mutate(|vec| {
+					for mut candidate in vec[..].iter_mut() {
+						// state should always exist but let's be safe
+						if let Some(mut state) = <CollatorState<T>>::get(&candidate.owner) {
+							if state.stake > new {
+								// safe because we ensure stake > new
+								let delta = state.stake - new;
+								state.stake_less(delta);
+								candidate.amount = candidate.amount.saturating_sub(delta);
 
-							// immediately free delta by setting lock from old to new
-							T::Currency::set_lock(STAKING_ID, &candidate.owner, new, WithdrawReasons::all());
-							<CollatorState<T>>::insert(&candidate.owner, state);
+								// immediately free delta by setting lock from old to new
+								T::Currency::set_lock(STAKING_ID, &candidate.owner, new, WithdrawReasons::all());
+								<CollatorState<T>>::insert(&candidate.owner, state);
+							}
 						}
 					}
-				}
+				})
 			});
 
 			// update candidates for next round
@@ -2142,32 +2144,20 @@ pub mod pallet {
 		/// - Reads: CandidatePool, CollatorState, SelectedCandidates
 		/// # </weight>
 		fn get_collator_list(top_n: u32) -> BoundedVec<T::AccountId, T::MaxCollatorCandidates> {
-			let mut candidates = <CandidatePool<T>>::get().into_bounded_vec().into_inner();
+			let candidates = <CandidatePool<T>>::get();
 
 			log::trace!("{} Candidates for {} Collator seats", candidates.len(), top_n);
-
-			// Order candidates by their total stake (greatest to least)
-			//
-			// NOTE: Resorting reversely (from greatest to lowest) is required if a
-			// collator's total stake just changed before updating the selected candidates.
-			candidates.sort_by(|a, b| b.cmp(a));
 
 			// Should never fail
 			let top_n = top_n.saturated_into::<usize>();
 
 			// Choose the top MaxSelectedCandidates qualified candidates
 			let collators = candidates
-				.clone()
 				.into_iter()
 				.take(top_n)
 				.filter(|x| x.amount >= T::MinCollatorStake::get())
 				.map(|x| x.owner)
 				.collect::<Vec<T::AccountId>>();
-
-			// update pool
-			<CandidatePool<T>>::set(OrderedSet::from_sorted_set(
-				candidates.try_into().expect("Did not extend Candidates"),
-			));
 
 			collators.try_into().expect("Did not extend Collators")
 		}
