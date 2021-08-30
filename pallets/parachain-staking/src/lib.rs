@@ -585,6 +585,13 @@ pub mod pallet {
 		OptionQuery,
 	>;
 
+	/// The staking information for a candidate.
+	///
+	/// It maps from an account to its information.
+	#[pallet::storage]
+	#[pallet::getter(fn candidate_count)]
+	pub(crate) type CandidateCount<T: Config> = StorageValue<_, u32, ValueQuery>;
+
 	/// Total funds locked to back the currently selected collators.
 	/// The sum of all the delegator stake and collator stake.
 	///
@@ -668,6 +675,7 @@ pub mod pallet {
 			<InflationConfig<T>>::put(self.inflation_config.clone());
 			<MaxCollatorCandidateStake<T>>::put(self.max_candidate_stake);
 
+			// Setup delegate & collators
 			for &(ref actor, ref opt_val, balance) in &self.stakers {
 				assert!(
 					T::Currency::free_balance(actor) >= balance,
@@ -1034,9 +1042,9 @@ pub mod pallet {
 		/// by MaxCollatorCandidates)
 		/// - Reads: [Origin Account], DelegatorState,
 		///   MaxCollatorCandidateStake, Locks, TotalStake, CandidatePool,
-		///   MaxSelectedCandidates, (N + 1) * CollatorState
+		///   MaxSelectedCandidates, (N + 1) * CollatorState, CandidateCount
 		/// - Writes: Locks, TotalStake, CollatorState, CandidatePool,
-		///   SelectedCandidates
+		///   SelectedCandidates, CandidateCount
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::join_candidates(T::MaxCollatorCandidates::get(), T::MaxCollatorCandidates::get().saturating_mul(T::MaxDelegatorsPerCollator::get())))]
 		pub fn join_candidates(origin: OriginFor<T>, stake: BalanceOf<T>) -> DispatchResultWithPostInfo {
@@ -1077,6 +1085,9 @@ pub mod pallet {
 			let candidate = Candidate::new(acc.clone(), stake);
 			<CandidateState<T>>::insert(&acc, candidate);
 			<CandidatePool<T>>::put(candidates);
+			CandidateCount::<T>::mutate(|count| {
+				*count = count.saturating_add(1);
+			});
 
 			// update candidates for next round
 			let (num_collators, num_delegators, total_collators, _) = Self::update_total_stake();
@@ -1675,8 +1686,10 @@ pub mod pallet {
 		/// delegator bounded by `MaxCollatorsPerDelegator` and D the number of
 		/// total delegators for each C bounded by `MaxCollatorsPerDelegator`.
 		/// - Reads: [Origin Account], DelegatorState, BlockNumber, Unstaking,
-		///   CandidatePool, MaxSelectedCandidates, (N + 1) * CollatorState
-		/// - Writes: Unstaking, CollatorState, Total, SelectedCandidates
+		///   CandidatePool, MaxSelectedCandidates, (N + 1) * CollatorState,
+		///   CandidateCount
+		/// - Writes: Unstaking, CollatorState, Total, SelectedCandidates,
+		///   CandidateCount
 		/// - Kills: DelegatorState
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::leave_delegators(T::MaxCollatorCandidates::get(), T::MaxCollatorCandidates::get().saturating_mul(T::MaxDelegatorsPerCollator::get())))]
@@ -2367,6 +2380,7 @@ pub mod pallet {
 				.map(pallet_session::Pallet::<T>::disable_index);
 
 			<CandidateState<T>>::remove(&collator);
+			CandidateCount::<T>::mutate(|count| *count = count.saturating_sub(1));
 			Ok(())
 		}
 
