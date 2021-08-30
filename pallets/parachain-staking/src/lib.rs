@@ -442,8 +442,8 @@ pub mod pallet {
 		/// candidates. \[account, amount of funds un-staked\]
 		CollatorRemoved(T::AccountId, BalanceOf<T>),
 		/// The maximum candidate stake has been changed.
-		/// \[old max amount, new max amount\]
-		MaxCandidateStakeChanged(BalanceOf<T>, BalanceOf<T>),
+		/// \[new max amount\]
+		MaxCandidateStakeChanged(BalanceOf<T>),
 		/// A delegator has increased the amount of funds at stake for a
 		/// collator. \[delegator's account, collator's account, previous
 		/// delegation stake, new delegation stake\]
@@ -601,7 +601,12 @@ pub mod pallet {
 	#[pallet::getter(fn total_collator_stake)]
 	pub(crate) type TotalCollatorStake<T: Config> = StorageValue<_, TotalStake<BalanceOf<T>>, ValueQuery>;
 
-	/// The set of collator candidates, each with their total backing stake.
+	/// The collator candidates with the highest amount of stake.
+	///
+	/// Each time the stake of a collator is increased, it is checked whether is
+	/// pushes another candidate out of the list. When the stake is reduced, it
+	/// is not checked of another candidate has more stake, since this would
+	/// require the iterating over the [CandidatePool].
 	#[pallet::storage]
 	#[pallet::getter(fn top_candidates)]
 	pub(crate) type TopCandidates<T: Config> =
@@ -857,8 +862,8 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Increases the maximum amount a collator candidate can stake by the
-		/// provided amount.
+		/// Set the maximal amount a collator can stake. Existing stakes are not
+		/// changed.
 		///
 		/// The dispatch origin must be Root.
 		///
@@ -869,83 +874,18 @@ pub mod pallet {
 		/// - Reads: [Origin Account], MaxCollatorCandidateStake
 		/// - Writes: Round
 		/// # </weight>
-		#[pallet::weight(<T as Config>::WeightInfo::increase_max_candidate_stake_by())]
-		pub fn increase_max_candidate_stake_by(origin: OriginFor<T>, plus: BalanceOf<T>) -> DispatchResult {
+		#[pallet::weight(<T as Config>::WeightInfo::set_max_candidate_stake())]
+		pub fn set_max_candidate_stake(origin: OriginFor<T>, new: BalanceOf<T>) -> DispatchResult {
 			ensure_root(origin)?;
-			let old = <MaxCollatorCandidateStake<T>>::get();
-			let new = old.saturating_add(plus);
-			<MaxCollatorCandidateStake<T>>::put(new);
-
-			Self::deposit_event(Event::MaxCandidateStakeChanged(old, new));
-			Ok(())
-		}
-
-		/// Decreases the maximum amount a collator candidate can stake by the
-		/// provided amount. The new maximum cannot be lower than
-		/// MinCollatorCandidateStake.
-		///
-		/// The dispatch origin must be Root.
-		///
-		/// Emits `MaxCandidateStakeChanged`.
-		///
-		/// # <weight>
-		/// - The transaction's complexity is mainly dependent on updating the
-		///   `SelectedCandidates` storage in `select_top_candidates` which in
-		///   return depends on the number of `MaxSelectedCandidates` (N).
-		/// - For each N, we read `CollatorState` from the storage.
-		/// ---------
-		/// Weight: O(N) where N is `MaxSelectedCandidates` bounded by
-		/// `MaxCollatorCandidates`
-		/// - Reads: MaxCollatorCandidateStake, 2 * N * CollatorState,
-		///   TopCandidates
-		/// - Writes: MaxCollatorCandidateStake, N * CollatorState,
-		///   SelectedCandidates
-		/// # </weight>
-		#[pallet::weight(<T as Config>::WeightInfo::decrease_max_candidate_stake_by(T::MaxCollatorCandidates::get(), T::MaxCollatorCandidates::get().saturating_mul(T::MaxDelegatorsPerCollator::get())))]
-		pub fn decrease_max_candidate_stake_by(
-			origin: OriginFor<T>,
-			minus: BalanceOf<T>,
-		) -> DispatchResultWithPostInfo {
-			ensure_root(origin)?;
-			let old = <MaxCollatorCandidateStake<T>>::get();
-			let new = old.saturating_sub(minus);
 			ensure!(
 				new >= T::MinCollatorCandidateStake::get(),
 				Error::<T>::CannotSetBelowMin
 			);
 
-			// iterate candidate pool and update all candidates with stake > max
-			<TopCandidates<T>>::mutate(|pool| {
-				pool.mutate(|vec| {
-					for mut candidate in vec[..].iter_mut() {
-						// state should always exist but let's be safe
-						if let Some(mut state) = <CandidatePool<T>>::get(&candidate.owner) {
-							if state.stake > new {
-								// safe because we ensure stake > new
-								let delta = state.stake - new;
-								state.stake_less(delta);
-								candidate.amount = candidate.amount.saturating_sub(delta);
+			MaxCollatorCandidateStake::<T>::put(new);
 
-								// immediately free delta by setting lock from old to new
-								T::Currency::set_lock(STAKING_ID, &candidate.owner, new, WithdrawReasons::all());
-								<CandidatePool<T>>::insert(&candidate.owner, state);
-							}
-						}
-					}
-				})
-			});
-
-			// update candidates for next round
-			let (num_collators, num_delegators, _, _) = Self::update_total_stake();
-
-			<MaxCollatorCandidateStake<T>>::put(new);
-
-			Self::deposit_event(Event::MaxCandidateStakeChanged(old, new));
-			Ok(Some(<T as Config>::WeightInfo::decrease_max_candidate_stake_by(
-				num_collators,
-				num_delegators,
-			))
-			.into())
+			Self::deposit_event(Event::MaxCandidateStakeChanged(new));
+			Ok(())
 		}
 
 		/// Forcedly removes a collator candidate from the TopCandidates and
@@ -1062,11 +1002,6 @@ pub mod pallet {
 			);
 
 			let mut candidates = <TopCandidates<T>>::get();
-			// [Post-launch TODO] Replace with `check_collator_candidate_inclusion`.
-			ensure!(
-				(candidates.len().saturated_into::<u32>()) < T::MaxCollatorCandidates::get(),
-				Error::<T>::TooManyCollatorCandidates
-			);
 
 			// attempt to insert candidate and check for excess
 			// NOTE: We don't support replacing a candidate with fewer stake in case of

@@ -28,14 +28,13 @@ use frame_system::{Pallet as System, RawOrigin};
 use kilt_primitives::constants::BLOCKS_PER_YEAR;
 use pallet_session::Pallet as Session;
 use sp_runtime::{
-	traits::{One, SaturatedConversion, Saturating, StaticLookup},
+	traits::{One, SaturatedConversion, StaticLookup},
 	Perquintill,
 };
 use sp_std::{convert::TryInto, vec::Vec};
 
 const COLLATOR_ACCOUNT_SEED: u32 = 0;
 const DELEGATOR_ACCOUNT_SEED: u32 = 1;
-const MIN_COLLATORS: u32 = 4;
 
 /// Fills the candidate pool up to `num_candidates`.
 fn setup_collator_candidates<T: Config>(
@@ -556,33 +555,12 @@ benchmarks! {
 		assert_eq!(pallet_balances::Pallet::<T>::usable_balance(&candidate), (free_balance - stake - stake + T::CurrencyBalance::one()).into());
 	}
 
-	increase_max_candidate_stake_by {
+	set_max_candidate_stake {
 		let old = <MaxCollatorCandidateStake<T>>::get();
-	}: _(RawOrigin::Root, T::CurrencyBalance::one())
-	verify {
-		assert_eq!(<MaxCollatorCandidateStake<T>>::get(), old + T::CurrencyBalance::one());
-		assert!(old < <MaxCollatorCandidateStake<T>>::get());
-	}
-
-	decrease_max_candidate_stake_by {
-		let n in MIN_COLLATORS .. T::MaxCollatorCandidates::get();
-		let m in 0 .. T::MaxDelegatorsPerCollator::get();
-
-		// worst case: all candidates have staked more than new max
-		let old = <MaxCollatorCandidateStake<T>>::get();
-		let candidates = setup_collator_candidates::<T>(n, Some(old));
-		let candidate = candidates[0].clone();
-		assert_eq!(<CandidatePool<T>>::get(&candidate).unwrap().stake, old);
-
-		let new =  old.saturating_sub(T::CurrencyBalance::one());
-		for (i, c) in candidates.iter().enumerate() {
-			fill_delegators::<T>(m, c.clone(), i.saturated_into::<u32>());
-		}
-		assert_eq!(<CandidatePool<T>>::get(&candidate).unwrap().stake, old);
-	}: decrease_max_candidate_stake_by(RawOrigin::Root, old.saturating_sub(new))
+		let new = <MaxCollatorCandidateStake<T>>::get() + T::CurrencyBalance::from(10u128);
+	}: _(RawOrigin::Root, new)
 	verify {
 		assert_eq!(<MaxCollatorCandidateStake<T>>::get(), new);
-		assert_eq!(<CandidatePool<T>>::get(candidate).unwrap().stake, new);
 	}
 
 	// [Post-launch TODO]: Activate after increasing MaxCollatorsPerDelegator to at least 2. Expected to throw otherwise.
