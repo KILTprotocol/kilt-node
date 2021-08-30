@@ -19,7 +19,7 @@
 use crate::{
 	migrations::StakingStorageVersion,
 	types::{CollatorOf, Delegator},
-	CandidatePool, CollatorState, Config, DelegatorState, StorageVersion,
+	CandidatePool, CandidateState, Config, DelegatorState, StorageVersion,
 };
 use frame_support::{dispatch::Weight, traits::Get};
 
@@ -37,7 +37,7 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	let mut n = 1u64;
 
 	// for each candidate: sort delegators from greatest to lowest
-	CollatorState::<T>::translate_values(|mut state: CollatorOf<T, T::MaxDelegatorsPerCollator>| {
+	CandidateState::<T>::translate_values(|mut state: CollatorOf<T, T::MaxDelegatorsPerCollator>| {
 		state.delegators.sort_greatest_to_lowest();
 		n = n.saturating_add(1u64);
 		Some(state)
