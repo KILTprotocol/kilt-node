@@ -2229,21 +2229,19 @@ pub mod pallet {
 				pallet_balances::Error::<T>::InsufficientBalance
 			);
 
-			// update Unstaking by consuming up to {amount | more} and sum up balance locked
-			// in unstaking in case that unstaking.sum > amount
-			let mut total_locked: BalanceOf<T> = Zero::zero();
 			let mut unstaking_len = 0u32;
 
+			// update Unstaking by consuming up to {amount | more}
 			<Unstaking<T>>::try_mutate(who, |unstaking| -> DispatchResult {
 				// reduce {amount | more} by unstaking until either {amount | more} is zero or
 				// no unstaking is left
 				// if more is set, we only want to reduce by more to achieve 100 - 40 + 30 = 90
 				// locked
 				let mut amt_consuming_unstaking = if more.is_zero() { amount } else { more };
+				unstaking_len = unstaking.len().saturated_into();
 				for (block_number, locked_balance) in unstaking.clone() {
-					// append to total_locked if amount is not reducible anymore
 					if amt_consuming_unstaking.is_zero() {
-						total_locked = total_locked.saturating_add(locked_balance);
+						break;
 					} else if locked_balance > amt_consuming_unstaking {
 						// amount is only reducible by locked_balance - amt_consuming_unstaking
 						let delta = locked_balance.saturating_sub(amt_consuming_unstaking);
@@ -2252,13 +2250,11 @@ pub mod pallet {
 							.try_insert(block_number, delta)
 							.map_err(|_| Error::<T>::NoMoreUnstaking)?;
 						amt_consuming_unstaking = Zero::zero();
-						total_locked = total_locked.saturating_add(locked_balance);
 					} else {
 						// amount is either still reducible or reached
 						amt_consuming_unstaking = amt_consuming_unstaking.saturating_sub(locked_balance);
 						unstaking.remove(&block_number);
 					}
-					unstaking_len = unstaking_len.saturating_add(1u32);
 				}
 				Ok(())
 			})?;
