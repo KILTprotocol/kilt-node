@@ -192,12 +192,9 @@ benchmarks! {
 			fill_delegators::<T>(m, c.clone(), i.saturated_into::<u32>());
 		}
 		let old_candidate = candidates[0].clone();
-		let old_num_selected = <SelectedCandidates<T>>::get().len();
 	}: _(RawOrigin::Root, n)
 	verify {
 		assert_eq!(<MaxSelectedCandidates<T>>::get(), n);
-		assert_eq!(<SelectedCandidates<T>>::get().len().saturated_into::<u32>(), n);
-		assert_eq!(<SelectedCandidates<T>>::get().len(), old_num_selected + ((n - T::MinSelectedCandidates::get()) as usize));
 	}
 
 	set_blocks_per_round {
