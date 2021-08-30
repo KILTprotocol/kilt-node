@@ -21,7 +21,7 @@ use parity_scale_codec::{Decode, Encode};
 use sp_std::{
 	cmp::Ordering,
 	convert::TryInto,
-	ops::{Index, IndexMut, Range, RangeFull},
+	ops::{Index, Range, RangeFull},
 };
 #[cfg(feature = "std")]
 use sp_std::{fmt, prelude::*};
