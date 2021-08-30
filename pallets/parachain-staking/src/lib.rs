@@ -585,10 +585,13 @@ pub mod pallet {
 		OptionQuery,
 	>;
 
-	/// Total funds locked by this staking pallet.
+	/// Total funds locked to back the currently selected collators.
+	///
+	/// Note: There are more funds locked by this pallet, since the backing for
+	/// candidates (non collating) is not included in [TotalCollatorStake].
 	#[pallet::storage]
 	#[pallet::getter(fn total)]
-	pub(crate) type Total<T: Config> = StorageValue<_, TotalStake<BalanceOf<T>>, ValueQuery>;
+	pub(crate) type TotalCollatorStake<T: Config> = StorageValue<_, TotalStake<BalanceOf<T>>, ValueQuery>;
 
 	/// The set of collator candidates, each with their total backing stake.
 	#[pallet::storage]
@@ -2092,7 +2095,8 @@ pub mod pallet {
 
 			// Snapshot exposure for round for weighting reward distribution
 			for account in collators.iter() {
-				let state = <CollatorState<T>>::get(&account).expect("all members of CandidatePool must be candidates q.e.d");
+				let state =
+					<CollatorState<T>>::get(&account).expect("all members of CandidatePool must be candidates q.e.d");
 				num_of_delegators = num_of_delegators.saturating_add(state.delegators.len().saturated_into::<u32>());
 
 				// sum up total stake and amount of collators, delegators
@@ -2109,14 +2113,19 @@ pub mod pallet {
 				));
 			}
 
-			<Total<T>>::mutate(|total| {
+			<TotalCollatorStake<T>>::mutate(|total| {
 				total.collators = collator_stake;
 				total.delegators = delegator_stake;
 			});
 
 			// return number of selected candidates and the corresponding number of their
 			// delegators for post-weight correction
-			(collators.len().saturated_into(), num_of_delegators, collator_stake, delegator_stake)
+			(
+				collators.len().saturated_into(),
+				num_of_delegators,
+				collator_stake,
+				delegator_stake,
+			)
 		}
 
 		/// Return the best `MaxSelectedCandidates` many candidates.
@@ -2564,7 +2573,7 @@ pub mod pallet {
 				let TotalStake {
 					collators: total_collators,
 					delegators: total_delegators,
-				} = <Total<T>>::get();
+				} = <TotalCollatorStake<T>>::get();
 				let c_staking_rate = Perquintill::from_rational(total_collators, total_issuance);
 				let d_staking_rate = Perquintill::from_rational(total_delegators, total_issuance);
 				let inflation_config = <InflationConfig<T>>::get();
