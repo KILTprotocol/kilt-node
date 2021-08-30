@@ -201,7 +201,7 @@ pub mod pallet {
 		migrations::StakingStorageVersion,
 		set::OrderedSet,
 		types::{
-			BalanceOf, Candidate, CollatorOf, CandidateStatus, DelegationCounter, Delegator, RoundInfo, Stake, StakeOf,
+			BalanceOf, Candidate, CandidateOf, CandidateStatus, DelegationCounter, Delegator, RoundInfo, Stake, StakeOf,
 			TotalStake,
 		},
 	};
@@ -2177,7 +2177,7 @@ pub mod pallet {
 		fn do_update_delegator(
 			stake: Stake<T::AccountId, BalanceOf<T>>,
 			mut state: Candidate<T::AccountId, BalanceOf<T>, T::MaxDelegatorsPerCollator>,
-		) -> Result<CollatorOf<T, T::MaxDelegatorsPerCollator>, DispatchError> {
+		) -> Result<CandidateOf<T, T::MaxDelegatorsPerCollator>, DispatchError> {
 			// attempt to replace the last element of the set
 			let stake_to_remove = state
 				.delegators
@@ -2332,7 +2332,7 @@ pub mod pallet {
 		/// # </weight>
 		fn remove_candidate(
 			collator: &T::AccountId,
-			state: CollatorOf<T, T::MaxDelegatorsPerCollator>,
+			state: CandidateOf<T, T::MaxDelegatorsPerCollator>,
 		) -> DispatchResult {
 			// iterate over delegators
 			for stake in state.delegators.into_iter() {
