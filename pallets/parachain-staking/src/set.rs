@@ -18,6 +18,7 @@
 
 use frame_support::{traits::Get, BoundedVec, DefaultNoBound};
 use parity_scale_codec::{Decode, Encode};
+use sp_runtime::{traits::Zero, SaturatedConversion};
 use sp_std::{
 	cmp::Ordering,
 	convert::TryInto,
@@ -55,10 +56,12 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 		Self(bv)
 	}
 
-	///
+	/// TODO: doc
 	pub fn mutate<F: FnOnce(&mut BoundedVec<T, S>)>(&mut self, function: F) {
 		function(&mut self.0);
 		(self.0[..]).sort_by(|a, b| b.cmp(a));
+
+		// TODO: add dedup to BoundedVec
 		let mut i = 0;
 		while (i + 1) < self.len() {
 			if self[i] == self[i + 1] {
@@ -74,35 +77,45 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 	/// Returns an error if insertion would exceed the bounded vec's max size.
 	///
 	/// Returns true if the item is unique in the set, otherwise returns false.
-	pub fn try_insert(&mut self, value: T) -> Result<bool, ()> {
+	pub fn try_insert(&mut self, value: T) -> Result<bool, usize> {
 		match self.linear_search(&value) {
 			Ok(_) => Ok(false),
 			Err(loc) => {
-				self.0.try_insert(loc, value)?;
+				self.0.try_insert(loc, value).map_err(|_| loc)?;
 				Ok(true)
 			}
 		}
 	}
 
-	/// Attempts to replace the last element of the set with the provided value.
-	/// Assumes the set to have reached its bounded size.
+	/// Inserts an element, if no equal item exist in the set. If the set is
+	/// full, but an element with a lower rank is in the set, the element with
+	/// the lowest rank will be removed and the new element will be added.
 	///
-	/// Returns `Err(false)` if the value already exists in the set.
-	/// Returns `Err(true)` if the value has the least order in the set, i.e.,
-	/// it would be appended (inserted at i == length).
-	///
-	/// Returns the replaced element upon success.
-	pub fn try_insert_replace(&mut self, value: T) -> Result<T, bool> {
-		let last_idx = self.len().saturating_sub(1);
-		match self.linear_search(&value) {
-			Ok(_) => Err(false),
-			Err(i) if i < self.len() => {
+	/// Returns
+	/// * Ok(Some(old_element)) if the new element was added and an old element
+	///   had to removed.
+	/// * Ok(None) if the element was added without removing an element.
+	/// * Err(true) if the set is full and the new element has a lower rank than
+	///   the lowest element in the set.
+	/// * Err(false) if the element is already in the set.
+	pub fn try_insert_replace(&mut self, value: T) -> Result<Option<T>, bool> {
+		// the highest allowed index
+		let highest_index: usize = S::get().saturating_sub(1).saturated_into();
+		if highest_index.is_zero() {
+			return Err(false);
+		}
+		match self.try_insert(value.clone()) {
+			Err(loc) if loc <= highest_index => {
 				// always replace the last element
+				let last_idx = self.len().saturating_sub(1);
+				// accessing by index wont panic since we checked the index
 				let old = sp_std::mem::replace(&mut self.0[last_idx], value);
 				self.sort_greatest_to_lowest();
-				Ok(old)
+				Ok(Some(old))
 			}
-			_ => Err(true),
+			Err(_) => Err(true),
+			Ok(false) => Err(false),
+			Ok(_) => Ok(None),
 		}
 	}
 
@@ -394,18 +407,24 @@ mod tests {
 
 	#[test]
 	fn try_insert_replace() {
-		let mut set: OrderedSet<i32, Five> = OrderedSet::from(vec![10, 9, 8, 7, 5].try_into().unwrap());
-		assert_eq!(set.clone().into_bounded_vec().into_inner(), vec![10, 9, 8, 7, 5]);
+		let mut set: OrderedSet<i32, Five> = OrderedSet::from(vec![].try_into().unwrap());
+		assert_eq!(set.try_insert_replace(10), Ok(None));
+		assert_eq!(set.try_insert_replace(7), Ok(None));
+		assert_eq!(set.try_insert_replace(9), Ok(None));
+		assert_eq!(set.try_insert_replace(8), Ok(None));
+
+		assert_eq!(set.clone().into_bounded_vec().into_inner(), vec![10, 9, 8, 7]);
+		assert_eq!(set.try_insert_replace(5), Ok(None));
 		assert!(set.try_insert(11).is_err());
 
-		assert_eq!(set.try_insert_replace(6), Ok(5));
+		assert_eq!(set.try_insert_replace(6), Ok(Some(5)));
 		assert_eq!(set.clone().into_bounded_vec().into_inner(), vec![10, 9, 8, 7, 6]);
 
 		assert_eq!(set.try_insert_replace(6), Err(false));
 		assert_eq!(set.try_insert_replace(5), Err(true));
 
 		assert_eq!(set.try_insert_replace(10), Err(false));
-		assert_eq!(set.try_insert_replace(11), Ok(6));
+		assert_eq!(set.try_insert_replace(11), Ok(Some(6)));
 		assert_eq!(set.into_bounded_vec().into_inner(), vec![11, 10, 9, 8, 7]);
 	}
 

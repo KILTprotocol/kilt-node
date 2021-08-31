@@ -2139,23 +2139,25 @@ pub mod pallet {
 					}
 				})?;
 
-			// update total stake
-			state.total = state
-				.total
-				.saturating_sub(stake_to_remove.amount)
-				.saturating_add(stake.amount);
+			if let Some(stake_to_remove) = stake_to_remove {
+				// update total stake
+				state.total = state
+					.total
+					.saturating_sub(stake_to_remove.amount)
+					.saturating_add(stake.amount);
 
-			// update storage of kicked delegator
-			Self::kick_delegator(&stake_to_remove, &state.id)?;
+				// update storage of kicked delegator
+				Self::kick_delegator(&stake_to_remove, &state.id)?;
 
-			Self::deposit_event(Event::DelegationReplaced(
-				stake.owner,
-				stake.amount,
-				stake_to_remove.owner,
-				stake_to_remove.amount,
-				state.id.clone(),
-				state.total,
-			));
+				Self::deposit_event(Event::DelegationReplaced(
+					stake.owner,
+					stake.amount,
+					stake_to_remove.owner,
+					stake_to_remove.amount,
+					state.id.clone(),
+					state.total,
+				));
+			}
 
 			Ok(state)
 		}
