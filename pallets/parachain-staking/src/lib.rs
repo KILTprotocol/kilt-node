@@ -71,8 +71,10 @@
 //!
 //! ### Terminology
 //!
-//! - **Collator:** A user which locks up tokens to be included into the set of
+//! - **Candidate:** A user which locks up tokens to be included into the set of
 //!   authorities which author blocks and receive rewards for doing so.
+//!
+//! - **Collator:** A candidate that was chosen to collate this round.
 //!
 //! - **Delegator:** A user which locks up tokens for collators they trust. When
 //!   their collator authors a block, the corresponding delegators also receive
@@ -530,7 +532,7 @@ pub mod pallet {
 	/// True if network has been upgraded to this version.
 	/// Storage version of the pallet.
 	///
-	/// This is set to v2.0.0 for new networks.
+	/// This is set to v4 for new networks.
 	#[pallet::storage]
 	pub(crate) type StorageVersion<T: Config> = StorageValue<_, StakingStorageVersion, ValueQuery>;
 
@@ -580,9 +582,7 @@ pub mod pallet {
 		OptionQuery,
 	>;
 
-	/// The staking information for a candidate.
-	///
-	/// It maps from an account to its information.
+	/// The number of candidates in the pool.
 	#[pallet::storage]
 	#[pallet::getter(fn candidate_count)]
 	pub(crate) type CandidateCount<T: Config> = StorageValue<_, u32, ValueQuery>;
@@ -591,7 +591,7 @@ pub mod pallet {
 	/// The sum of all the delegator stake and collator stake.
 	///
 	/// Note: There are more funds locked by this pallet, since the backing for
-	/// candidates (non collating) is not included in [TotalCollatorStake].
+	/// non collating candidates is not included in [TotalCollatorStake].
 	#[pallet::storage]
 	#[pallet::getter(fn total_collator_stake)]
 	pub(crate) type TotalCollatorStake<T: Config> = StorageValue<_, TotalStake<BalanceOf<T>>, ValueQuery>;
@@ -602,6 +602,9 @@ pub mod pallet {
 	/// pushes another candidate out of the list. When the stake is reduced, it
 	/// is not checked of another candidate has more stake, since this would
 	/// require the iterating over the [CandidatePool].
+	///
+	/// There must always be more candidates than [MaxSelectedCandidates] so
+	/// that a collator can drop out of the collator set by reducing his stake.
 	#[pallet::storage]
 	#[pallet::getter(fn top_candidates)]
 	pub(crate) type TopCandidates<T: Config> =
