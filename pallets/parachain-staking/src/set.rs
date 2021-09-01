@@ -62,13 +62,14 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 		(self.0[..]).sort_by(|a, b| b.cmp(a));
 
 		// TODO: add dedup to BoundedVec
-		let mut i = 0;
+		let mut i: usize = 0;
 		let mut next = i.saturating_add(1);
 		while next < self.len() {
 			if self[i] == self[next] {
 				self.0.remove(next);
 			} else {
 				i = next;
+				next = next.saturating_add(1);
 			}
 		}
 	}
