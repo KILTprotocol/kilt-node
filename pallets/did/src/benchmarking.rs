@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::Encode;
-use frame_benchmarking::{account, benchmarks};
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_system::RawOrigin;
 use kilt_primitives::AccountId;
 use sp_core::{crypto::KeyTypeId, ecdsa, ed25519, sr25519};
@@ -298,9 +298,8 @@ benchmarks! {
 	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op), DidSignature::from(did_call_signature))
 }
 
-//TODO: Re-enable benchmark tests when benchmarks are updated
-// impl_benchmark_test_suite! {
-// 	Pallet,
-// 	crate::mock::ExtBuilder::default().build_with_keystore(None),
-// 	crate::mock::Test
-// }
+impl_benchmark_test_suite! {
+	Pallet,
+	crate::mock::ExtBuilder::default().build_with_keystore(None),
+	crate::mock::Test
+}
