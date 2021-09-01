@@ -19,7 +19,7 @@
 use crate::{
 	migrations::StakingStorageVersion,
 	types::{CandidateOf, Delegator},
-	TopCandidates, CandidatePool, Config, DelegatorState, StorageVersion,
+	CandidatePool, Config, DelegatorState, StorageVersion, TopCandidates,
 };
 use frame_support::{dispatch::Weight, traits::Get};
 
