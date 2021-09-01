@@ -77,6 +77,8 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 	/// Inserts an element, if no equal item exist in the set.
 	///
 	/// Returns an error if insertion would exceed the bounded vec's max size.
+	/// The error contains the index where the element would be inserted, if
+	/// enough space would be left.
 	///
 	/// Returns true if the item is unique in the set, otherwise returns false.
 	pub fn try_insert(&mut self, value: T) -> Result<bool, usize> {
@@ -153,35 +155,9 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 		}
 	}
 
-	/// Removes an element.
-	///
-	/// Returns true if removal happened.
-	pub fn remove_by<F>(&mut self, f: F) -> Option<T>
-	where
-		F: FnMut(&T) -> Ordering,
-	{
-		match self.0.binary_search_by(f) {
-			Ok(loc) => Some(self.0.remove(loc)),
-			Err(_) => None,
-		}
-	}
-
 	/// Return whether the set contains `value`.
 	pub fn contains(&self, value: &T) -> bool {
 		self.linear_search(value).is_ok()
-	}
-
-	/// Binary searches this ordered OrderedSet for a given element.
-	///
-	/// 1. If the value is found, then Result::Ok is returned, containing the
-	/// index of the matching element.
-	/// 2. If there are multiple matches, then any one of the matches could be
-	/// returned.
-	/// 3. If the value is not found then Result::Err is returned, containing
-	/// the index where a matching element could be inserted while maintaining
-	/// sorted order.
-	pub fn binary_search(&self, value: &T) -> Result<usize, usize> {
-		self.0.binary_search(value)
 	}
 
 	/// Iteratively searches this (from greatest to lowest) ordered set for a
@@ -216,23 +192,6 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 			.unwrap_or(Err(loc))
 	}
 
-	/// Binary searches this ordered OrderedSet for a given element with the
-	/// provided comparator.
-	///
-	/// 1. If the value is found, then Result::Ok is returned, containing the
-	/// index of the matching element.
-	/// 2. If there are multiple matches, then any one of the matches could be
-	/// returned.
-	/// 3. If the value is not found then Result::Err is returned, containing
-	/// the index where a matching element could be inserted while maintaining
-	/// sorted order.
-	pub fn binary_search_by<'a, F>(&'a self, f: F) -> Result<usize, usize>
-	where
-		F: FnMut(&'a T) -> Ordering,
-	{
-		self.0.binary_search_by(f)
-	}
-
 	/// Clear the set.
 	pub fn clear(&mut self) {
 		self.0 = BoundedVec::default();
@@ -255,12 +214,7 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 
 	/// Sorts from greatest to lowest.
 	pub fn sort_greatest_to_lowest(&mut self) {
-		// NOTE: BoundedVec does not implement DerefMut because it would allow for
-		// unchecked extension of the inner vector. Thus, we have to work with a
-		// clone unfortunately.
-		let mut sorted_v: sp_std::vec::Vec<T> = sp_std::mem::take(&mut self.0).into();
-		sorted_v.sort_by(|a, b| b.cmp(a));
-		self.0 = sorted_v.try_into().expect("Did not extend size of bounded vec");
+		(self.0[..]).sort_by(|a, b| b.cmp(a));
 	}
 }
 
@@ -446,6 +400,7 @@ mod tests {
 				StakeOf::<Test> { owner: 3, amount: 90 },
 				StakeOf::<Test> { owner: 5, amount: 80 },
 				StakeOf::<Test> { owner: 7, amount: 70 },
+				StakeOf::<Test> { owner: 8, amount: 70 },
 				StakeOf::<Test> { owner: 9, amount: 60 },
 			]
 			.try_into()
@@ -454,11 +409,12 @@ mod tests {
 		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 1, amount: 0 }), Ok(0));
 		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 7, amount: 100 }), Ok(3));
 		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 7, amount: 50 }), Ok(3));
+		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 8, amount: 50 }), Ok(4));
 		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 2, amount: 100 }), Err(1));
 		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 2, amount: 90 }), Err(2));
-		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 2, amount: 65 }), Err(4));
-		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 2, amount: 60 }), Err(5));
-		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 2, amount: 59 }), Err(5));
+		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 2, amount: 65 }), Err(5));
+		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 2, amount: 60 }), Err(6));
+		assert_eq!(set.linear_search(&StakeOf::<Test> { owner: 2, amount: 59 }), Err(6));
 	}
 
 	#[test]
