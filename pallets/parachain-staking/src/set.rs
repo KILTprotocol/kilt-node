@@ -63,11 +63,12 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 
 		// TODO: add dedup to BoundedVec
 		let mut i = 0;
-		while (i + 1) < self.len() {
-			if self[i] == self[i + 1] {
-				self.0.remove(i + 1);
+		let mut next = i.saturating_add(1);
+		while next < self.len() {
+			if self[i] == self[next] {
+				self.0.remove(next);
 			} else {
-				i += 1;
+				i = next;
 			}
 		}
 	}
