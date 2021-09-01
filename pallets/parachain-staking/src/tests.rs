@@ -1920,20 +1920,22 @@ fn should_deny_duplicate_collators() {
 }
 
 #[test]
-fn reach_max_collator_candidates() {
+fn reach_max_top_candidates() {
 	ExtBuilder::default()
 		.with_balances(vec![
-			(1, 10),
+			(1, 11),
 			(2, 20),
-			(3, 10),
-			(4, 10),
-			(5, 10),
-			(6, 10),
-			(7, 10),
-			(8, 10),
-			(9, 10),
-			(10, 10),
-			(11, 10),
+			(3, 11),
+			(4, 11),
+			(5, 11),
+			(6, 11),
+			(7, 11),
+			(8, 11),
+			(9, 11),
+			(10, 11),
+			(11, 11),
+			(12, 12),
+			(13, 13),
 		])
 		.with_collators(vec![
 			(1, 10),
@@ -1954,9 +1956,36 @@ fn reach_max_collator_candidates() {
 				<Test as Config>::MaxCollatorCandidates::get()
 			);
 			// should not be possible to join candidate pool, even with more stake
-			assert_noop!(
-				StakePallet::join_candidates(Origin::signed(11), 11),
-				Error::<Test>::TooManyCollatorCandidates
+			assert_ok!(StakePallet::join_candidates(Origin::signed(11), 11));
+			assert_eq!(
+				StakePallet::top_candidates()
+					.into_iter()
+					.map(|s| s.owner)
+					.collect::<Vec<u64>>(),
+				vec![2, 11, 1, 3, 4, 5, 6, 7, 8, 9]
+			);
+			// last come, last one in the list
+			assert_ok!(StakePallet::join_candidates(Origin::signed(12), 11));
+			assert_eq!(
+				StakePallet::top_candidates()
+					.into_iter()
+					.map(|s| s.owner)
+					.collect::<Vec<u64>>(),
+				vec![2, 11, 12, 1, 3, 4, 5, 6, 7, 8]
+			);
+			assert_ok!(StakePallet::candidate_stake_more(Origin::signed(1), 1));
+			assert_ok!(StakePallet::candidate_stake_more(Origin::signed(3), 1));
+			assert_ok!(StakePallet::candidate_stake_more(Origin::signed(4), 1));
+			assert_ok!(StakePallet::candidate_stake_more(Origin::signed(5), 1));
+			assert_ok!(StakePallet::candidate_stake_more(Origin::signed(6), 1));
+			assert_ok!(StakePallet::candidate_stake_more(Origin::signed(7), 1));
+			assert_ok!(StakePallet::candidate_stake_more(Origin::signed(8), 1));
+			assert_eq!(
+				StakePallet::top_candidates()
+					.into_iter()
+					.map(|s| s.owner)
+					.collect::<Vec<u64>>(),
+				vec![2, 11, 12, 1, 3, 4, 5, 6, 7, 8]
 			);
 		});
 }
@@ -2492,6 +2521,13 @@ fn candidate_leaves() {
 		.with_delegators(vec![(12, 1, 100), (13, 1, 10)])
 		.build()
 		.execute_with(|| {
+			assert_eq!(
+				StakePallet::top_candidates()
+					.into_iter()
+					.map(|s| s.owner)
+					.collect::<Vec<u64>>(),
+				vec![1, 2]
+			);
 			assert_noop!(
 				StakePallet::init_leave_candidates(Origin::signed(11)),
 				Error::<Test>::CandidateNotFound
@@ -2504,8 +2540,22 @@ fn candidate_leaves() {
 			for candidate in 3u64..11u64 {
 				assert_ok!(StakePallet::join_candidates(Origin::signed(candidate), 100));
 			}
+			assert_eq!(
+				StakePallet::top_candidates()
+					.into_iter()
+					.map(|s| s.owner)
+					.collect::<Vec<u64>>(),
+				(1u64..11u64).collect::<Vec<u64>>()
+			);
 			assert_eq!(CandidateCount::<Test>::get(), 10);
 			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(1)));
+			assert_eq!(
+				StakePallet::top_candidates()
+					.into_iter()
+					.map(|s| s.owner)
+					.collect::<Vec<u64>>(),
+				(2u64..11u64).collect::<Vec<u64>>()
+			);
 			assert_noop!(
 				StakePallet::join_delegators(Origin::signed(15), 1, 10),
 				Error::<Test>::CannotDelegateIfLeaving
@@ -2543,13 +2593,23 @@ fn candidate_leaves() {
 			// add 11 as candidate to reach max size for TopCandidates and then try leave
 			// again as 1 which should not be possible
 			assert_ok!(StakePallet::join_candidates(Origin::signed(11), 100));
-			assert_noop!(
-				StakePallet::cancel_leave_candidates(Origin::signed(1)),
-				Error::<Test>::TooManyCollatorCandidates
+			assert_eq!(
+				StakePallet::top_candidates()
+					.into_iter()
+					.map(|s| s.owner)
+					.collect::<Vec<u64>>(),
+				(2u64..12u64).collect::<Vec<u64>>()
 			);
 			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(11)));
 			// join back
 			assert_ok!(StakePallet::cancel_leave_candidates(Origin::signed(1)));
+			assert_eq!(
+				StakePallet::top_candidates()
+					.into_iter()
+					.map(|s| s.owner)
+					.collect::<Vec<u64>>(),
+				(1u64..11u64).collect::<Vec<u64>>()
+			);
 
 			let stake: Vec<Stake<AccountId, Balance>> = (1u64..11u64)
 				.zip(iter::once(210).chain(iter::repeat(100)))
