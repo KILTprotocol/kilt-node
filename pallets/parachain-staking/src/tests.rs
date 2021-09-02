@@ -2576,6 +2576,14 @@ fn candidate_leaves() {
 				Error::<Test>::CannotDelegateIfLeaving
 			);
 			assert_noop!(
+				StakePallet::candidate_stake_less(Origin::signed(1), 1),
+				Error::<Test>::CannotStakeIfLeaving
+			);
+			assert_noop!(
+				StakePallet::candidate_stake_more(Origin::signed(1), 1),
+				Error::<Test>::CannotStakeIfLeaving
+			);
+			assert_noop!(
 				StakePallet::init_leave_candidates(Origin::signed(1)),
 				Error::<Test>::AlreadyLeaving
 			);

@@ -1315,9 +1315,6 @@ pub mod pallet {
 			if state.is_active() {
 				Self::update_top_candidates(collator.clone(), before, state.total);
 			}
-
-			Self::update_top_candidates(collator.clone(), before, state.total);
-
 			<CandidatePool<T>>::insert(&collator, state);
 
 			// update candidates for next round
