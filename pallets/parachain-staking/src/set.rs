@@ -113,7 +113,9 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 			Err(loc) if loc <= highest_index => {
 				// always replace the last element
 				let last_idx = self.len().saturating_sub(1);
-				// accessing by index wont panic since we checked the index
+				// accessing by index wont panic since we checked the index, inserting the item
+				// at the end of the list to ensure last-in-least-priority-rule for collators.
+				// sorting algorithm must be stable!
 				let old = sp_std::mem::replace(&mut self.0[last_idx], value);
 				self.sort_greatest_to_lowest();
 				Ok(Some(old))
