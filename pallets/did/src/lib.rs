@@ -458,7 +458,23 @@ pub mod pallet {
 			Ok(())
 		}
 
-		//TODO: Add comment and weights after benchmarks
+		/// Update the DID authentication key.
+		///
+		/// The old key is deleted from the set of public keys if it is
+		/// not used in any other part of the DID. The new key is added to the
+		/// set of public keys.
+		///
+		/// The dispatch origin must be a DID origin proxied via the
+		/// `submit_did_call` extrinsic.
+		///
+		/// Emits `DidUpdated`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Did
+		/// - Writes: Did
+		/// # </weight>
+		// TODO: Set correct weight
 		#[pallet::weight(10)]
 		pub fn set_authentication_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
@@ -481,7 +497,23 @@ pub mod pallet {
 			Ok(())
 		}
 
-		//TODO: Add comment and weights after benchmarks
+		/// Set or update the DID delegation key.
+		///
+		/// If an old key existed, it is deleted from the set of public keys if
+		/// it is not used in any other part of the DID. The new key is added to
+		/// the set of public keys.
+		///
+		/// The dispatch origin must be a DID origin proxied via the
+		/// `submit_did_call` extrinsic.
+		///
+		/// Emits `DidUpdated`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Did
+		/// - Writes: Did
+		/// # </weight>
+		// TODO: Set correct weight
 		#[pallet::weight(10)]
 		pub fn set_delegation_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
@@ -499,7 +531,22 @@ pub mod pallet {
 			Ok(())
 		}
 
-		//TODO: Add comment and weights after benchmarks
+		/// Remove the DID delegation key.
+		///
+		/// The old key is deleted from the set of public keys if
+		/// it is not used in any other part of the DID.
+		///
+		/// The dispatch origin must be a DID origin proxied via the
+		/// `submit_did_call` extrinsic.
+		///
+		/// Emits `DidUpdated`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Did
+		/// - Writes: Did
+		/// # </weight>
+		// TODO: Set correct weight
 		#[pallet::weight(10)]
 		pub fn remove_delegation_key(origin: OriginFor<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
@@ -515,7 +562,23 @@ pub mod pallet {
 			Ok(())
 		}
 
-		//TODO: Add comment and weights after benchmarks
+		/// Set or update the DID attestation key.
+		///
+		/// If an old key existed, it is deleted from the set of public keys if
+		/// it is not used in any other part of the DID. The new key is added to
+		/// the set of public keys.
+		///
+		/// The dispatch origin must be a DID origin proxied via the
+		/// `submit_did_call` extrinsic.
+		///
+		/// Emits `DidUpdated`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Did
+		/// - Writes: Did
+		/// # </weight>
+		// TODO: Set correct weight
 		#[pallet::weight(10)]
 		pub fn set_attestation_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
@@ -533,7 +596,22 @@ pub mod pallet {
 			Ok(())
 		}
 
-		//TODO: Add comment and weights after benchmarks
+		/// Remove the DID attestation key.
+		///
+		/// The old key is deleted from the set of public keys if
+		/// it is not used in any other part of the DID.
+		///
+		/// The dispatch origin must be a DID origin proxied via the
+		/// `submit_did_call` extrinsic.
+		///
+		/// Emits `DidUpdated`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Did
+		/// - Writes: Did
+		/// # </weight>
+		// TODO: Set correct weight
 		#[pallet::weight(10)]
 		pub fn remove_attestation_key(origin: OriginFor<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
@@ -549,7 +627,21 @@ pub mod pallet {
 			Ok(())
 		}
 
-		//TODO: Add comment and weights after benchmarks
+		/// Add a single new key agreement key to the DID.
+		///
+		/// The new key is added to the set of public keys.
+		///
+		/// The dispatch origin must be a DID origin proxied via the
+		/// `submit_did_call` extrinsic.
+		///
+		/// Emits `DidUpdated`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Did
+		/// - Writes: Did
+		/// # </weight>
+		// TODO: Set correct weight
 		#[pallet::weight(10)]
 		pub fn add_key_agreement_key(origin: OriginFor<T>, new_key: DidEncryptionKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
@@ -567,7 +659,19 @@ pub mod pallet {
 			Ok(())
 		}
 
-		//TODO: Add comment and weights after benchmarks
+		/// Remove a DID key agreement key from both its set of key agreement
+		/// keys and as well as its public keys.
+		///
+		/// The dispatch origin must be a DID origin proxied via the
+		/// `submit_did_call` extrinsic.
+		///
+		/// Emits `DidUpdated`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Did
+		/// - Writes: Did
+		/// # </weight>
 		#[pallet::weight(10)]
 		pub fn remove_key_agreement_key(origin: OriginFor<T>, key_id: KeyIdOf<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
@@ -583,7 +687,19 @@ pub mod pallet {
 			Ok(())
 		}
 
-		//TODO: Add comment and weights after benchmarks
+		/// Set or replace the DID service endpoints.
+		///
+		/// The dispatch origin must be a DID origin proxied via the
+		/// `submit_did_call` extrinsic.
+		///
+		/// Emits `DidUpdated`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Did
+		/// - Writes: Did
+		/// # </weight>
+		// TODO: Set correct weight
 		#[pallet::weight(10)]
 		pub fn set_service_endpoints(origin: OriginFor<T>, service_endpoints: ServiceEndpoints<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
@@ -607,7 +723,19 @@ pub mod pallet {
 			Ok(())
 		}
 
-		//TODO: Add comment and weights after benchmarks
+		/// Remove the DID service endpoints.
+		///
+		/// The dispatch origin must be a DID origin proxied via the
+		/// `submit_did_call` extrinsic.
+		///
+		/// Emits `DidUpdated`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Did
+		/// - Writes: Did
+		/// # </weight>
+		// TODO: Set correct weight
 		#[pallet::weight(10)]
 		pub fn remove_service_endpoints(origin: OriginFor<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
