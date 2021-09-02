@@ -2131,12 +2131,11 @@ pub mod pallet {
 					}
 				})?;
 
+			state.total = state.total.saturating_add(stake.amount);
+
 			if let Some(stake_to_remove) = stake_to_remove {
 				// update total stake
-				state.total = state
-					.total
-					.saturating_sub(stake_to_remove.amount)
-					.saturating_add(stake.amount);
+				state.total = state.total.saturating_sub(stake_to_remove.amount);
 
 				// update storage of kicked delegator
 				Self::kick_delegator(&stake_to_remove, &state.id)?;
