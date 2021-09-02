@@ -398,6 +398,7 @@ fn collator_exit_executes_after_delay() {
 				Event::MaxSelectedCandidatesSet(2, 5),
 				Event::NewRound(5, 1),
 				Event::NewRound(10, 2),
+				Event::LeftTopCandidates(2),
 				Event::CollatorChosen(1, 500, 200),
 				Event::CollatorChosen(7, 100, 0),
 				Event::CollatorScheduledExit(2, 2, 4),
@@ -469,6 +470,7 @@ fn collator_selection_chooses_top_candidates() {
 				Event::CollatorChosen(5, 60, 0),
 				Event::MaxSelectedCandidatesSet(2, 5),
 				Event::NewRound(5, 1),
+				Event::LeftTopCandidates(6),
 				Event::CollatorChosen(1, 100, 0),
 				Event::CollatorChosen(2, 90, 0),
 				Event::CollatorChosen(3, 80, 0),
@@ -480,6 +482,7 @@ fn collator_selection_chooses_top_candidates() {
 				Event::NewRound(15, 3),
 				Event::CollatorLeft(6, 50),
 				Event::NewRound(20, 4),
+				Event::EnteredTopCandidates(6),
 				Event::CollatorChosen(1, 100, 0),
 				Event::CollatorChosen(2, 90, 0),
 				Event::CollatorChosen(3, 80, 0),
@@ -565,6 +568,7 @@ fn exit_queue_with_events() {
 
 			roll_to(30, vec![]);
 			let mut new_events = vec![
+				Event::LeftTopCandidates(6),
 				Event::CollatorChosen(1, 100, 0),
 				Event::CollatorChosen(2, 90, 0),
 				Event::CollatorChosen(3, 80, 0),
@@ -572,6 +576,7 @@ fn exit_queue_with_events() {
 				Event::CollatorChosen(5, 60, 0),
 				Event::CollatorScheduledExit(1, 6, 3),
 				Event::NewRound(10, 2),
+				Event::LeftTopCandidates(5),
 				Event::CollatorChosen(1, 100, 0),
 				Event::CollatorChosen(2, 90, 0),
 				Event::CollatorChosen(3, 80, 0),
@@ -579,6 +584,7 @@ fn exit_queue_with_events() {
 				Event::CollatorScheduledExit(2, 5, 4),
 				Event::NewRound(15, 3),
 				Event::CollatorLeft(6, 50),
+				Event::LeftTopCandidates(4),
 				Event::CollatorChosen(1, 100, 0),
 				Event::CollatorChosen(2, 90, 0),
 				Event::CollatorChosen(3, 80, 0),
@@ -1056,6 +1062,7 @@ fn multiple_delegations() {
 
 			roll_to(31, vec![]);
 			let mut new3 = vec![
+				Event::LeftTopCandidates(2),
 				Event::CollatorChosen(1, 20, 30),
 				Event::CollatorChosen(4, 20, 10),
 				Event::CollatorChosen(3, 20, 10),

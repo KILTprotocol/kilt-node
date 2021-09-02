@@ -409,6 +409,12 @@ pub mod pallet {
 		/// A new staking round has started.
 		/// \[block number, round number\]
 		NewRound(T::BlockNumber, SessionIndex),
+		/// A new account has joined the set of top candidates.
+		/// \[account\]
+		EnteredTopCandidates(T::AccountId),
+		/// An account was removed from the set of top candidates.
+		/// \[account\]
+		LeftTopCandidates(T::AccountId),
 		/// A new account has joined the set of collator candidates.
 		/// \[account, amount staked by the new candidate, new total stake of
 		/// collator candidates\]
@@ -927,6 +933,9 @@ pub mod pallet {
 				candidates.len().saturated_into::<u32>() > T::MinRequiredCollators::get(),
 				Error::<T>::TooFewCollatorCandidates
 			);
+
+			Self::remove_candidate(&collator, &state)?;
+
 			if candidates
 				.remove(&Stake {
 					owner: collator.clone(),
@@ -934,10 +943,8 @@ pub mod pallet {
 				})
 				.is_some()
 			{
-				<TopCandidates<T>>::put(candidates);
+				TopCandidates::<T>::put(candidates);
 			}
-
-			Self::remove_candidate(&collator, state)?;
 
 			// update candidates for next round
 			let (num_collators, num_delegators, _, _) = Self::update_total_stake();
@@ -1084,6 +1091,7 @@ pub mod pallet {
 				.is_some()
 			{
 				<TopCandidates<T>>::put(candidates);
+				Self::deposit_event(Event::LeftTopCandidates(collator.clone()))
 			}
 			<CandidatePool<T>>::insert(&collator, state);
 
@@ -1137,7 +1145,7 @@ pub mod pallet {
 
 			let num_delegators = state.delegators.len().saturated_into::<u32>();
 			let total_amount = state.total;
-			Self::remove_candidate(&collator, state)?;
+			Self::remove_candidate(&collator, &state)?;
 
 			Self::deposit_event(Event::CollatorLeft(collator, total_amount));
 
@@ -1887,13 +1895,13 @@ pub mod pallet {
 				});
 				TopCandidates::<T>::put(top_candidates);
 			} else if let Ok(drop_out) = top_candidates.try_insert_replace(Stake {
-				owner: candidate,
+				owner: candidate.clone(),
 				amount: new_total,
 			}) {
-				if let Some(_) = drop_out {
-					// TODO: event that candidate dropped out of top
+				if let Some(drop_out) = drop_out {
+					Self::deposit_event(Event::LeftTopCandidates(drop_out.owner));
 				}
-				// TODO: event that candidate is in top
+				Self::deposit_event(Event::EnteredTopCandidates(candidate));
 				TopCandidates::<T>::put(top_candidates);
 			}
 		}
@@ -2269,10 +2277,10 @@ pub mod pallet {
 		/// # </weight>
 		fn remove_candidate(
 			collator: &T::AccountId,
-			state: CandidateOf<T, T::MaxDelegatorsPerCollator>,
+			state: &CandidateOf<T, T::MaxDelegatorsPerCollator>,
 		) -> DispatchResult {
 			// iterate over delegators
-			for stake in state.delegators.into_iter() {
+			for stake in &state.delegators[..] {
 				// prepare unstaking of delegator
 				Self::prep_unstake(&stake.owner, stake.amount)?;
 				// remove delegation from delegator state
