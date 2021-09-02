@@ -56,7 +56,8 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 		Self(bv)
 	}
 
-	/// TODO: doc
+	/// Mutate the set without restrictions. After the set was mutated it will
+	/// be resorted and deduplicated.
 	pub fn mutate<F: FnOnce(&mut BoundedVec<T, S>)>(&mut self, function: F) {
 		function(&mut self.0);
 		(self.0[..]).sort_by(|a, b| b.cmp(a));
