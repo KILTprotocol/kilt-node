@@ -594,7 +594,7 @@ pub mod pallet {
 	pub(crate) type CandidateCount<T: Config> = StorageValue<_, u32, ValueQuery>;
 
 	/// Total funds locked to back the currently selected collators.
-	/// The sum of all the delegator stake and collator stake.
+	/// The sum of all collator and their delegator stakes.
 	///
 	/// Note: There are more funds locked by this pallet, since the backing for
 	/// non collating candidates is not included in [TotalCollatorStake].
