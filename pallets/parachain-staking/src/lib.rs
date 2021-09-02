@@ -201,8 +201,8 @@ pub mod pallet {
 		migrations::StakingStorageVersion,
 		set::OrderedSet,
 		types::{
-			BalanceOf, Candidate, CandidateOf, CandidateStatus, DelegationCounter, Delegator, RoundInfo, Stake, StakeOf,
-			TotalStake,
+			BalanceOf, Candidate, CandidateOf, CandidateStatus, DelegationCounter, Delegator, RoundInfo, Stake,
+			StakeOf, TotalStake,
 		},
 	};
 	use sp_std::{convert::TryInto, fmt::Debug};
