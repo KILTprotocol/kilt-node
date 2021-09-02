@@ -106,8 +106,8 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 	pub fn try_insert_replace(&mut self, value: T) -> Result<Option<T>, bool> {
 		// the highest allowed index
 		let highest_index: usize = S::get().saturating_sub(1).saturated_into();
-		if highest_index.is_zero() {
-			return Err(false);
+		if S::get().is_zero() {
+			return Err(true);
 		}
 		match self.try_insert(value.clone()) {
 			Err(loc) if loc <= highest_index => {
@@ -285,6 +285,10 @@ mod tests {
 
 	parameter_types! {
 		#[derive(PartialEq, RuntimeDebug)]
+		pub const Zero: u32 = 0;
+		#[derive(PartialEq, RuntimeDebug)]
+		pub const One: u32 = 1;
+		#[derive(PartialEq, RuntimeDebug)]
 		pub const Eight: u32 = 8;
 		#[derive(PartialEq, RuntimeDebug, Clone)]
 		pub const Five: u32 = 5;
@@ -364,6 +368,14 @@ mod tests {
 
 	#[test]
 	fn try_insert_replace() {
+		let mut set: OrderedSet<i32, Zero> = OrderedSet::from(vec![].try_into().unwrap());
+		assert_eq!(set.try_insert_replace(10), Err(true));
+
+		let mut set: OrderedSet<i32, One> = OrderedSet::from(vec![].try_into().unwrap());
+		assert_eq!(set.try_insert_replace(10), Ok(None));
+		assert_eq!(set.try_insert_replace(9), Err(true));
+		assert_eq!(set.try_insert_replace(11), Ok(Some(10)));
+
 		let mut set: OrderedSet<i32, Five> = OrderedSet::from(vec![].try_into().unwrap());
 		assert_eq!(set.try_insert_replace(10), Ok(None));
 		assert_eq!(set.try_insert_replace(7), Ok(None));
