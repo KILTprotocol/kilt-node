@@ -1184,20 +1184,20 @@ pub mod pallet {
 			T::MaxDelegatorsPerCollator::get(),
 		))]
 		pub fn cancel_leave_candidates(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
-			let collator = ensure_signed(origin)?;
-			let mut state = <CandidatePool<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
+			let candidate = ensure_signed(origin)?;
+			let mut state = <CandidatePool<T>>::get(&candidate).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(state.is_leaving(), Error::<T>::NotLeaving);
 
 			// revert leaving state
 			state.revert_leaving();
 
-			Self::update_top_candidates(collator.clone(), state.total, state.total);
+			Self::update_top_candidates(candidate.clone(), state.total, state.total);
 
 			// update candidates for next round
-			<CandidatePool<T>>::insert(&collator, state);
+			<CandidatePool<T>>::insert(&candidate, state);
 			let (num_collators, num_delegators, _, _) = Self::update_total_stake();
 
-			Self::deposit_event(Event::CollatorCanceledExit(collator));
+			Self::deposit_event(Event::CollatorCanceledExit(candidate));
 			Ok(Some(<T as pallet::Config>::WeightInfo::cancel_leave_candidates(
 				num_collators,
 				num_delegators,
