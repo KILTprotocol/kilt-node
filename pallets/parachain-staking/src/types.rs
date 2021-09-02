@@ -88,47 +88,47 @@ impl<AccountId: Ord, Balance: PartialEq + Ord> Ord for Stake<AccountId, Balance>
 
 /// The activity status of the collator.
 #[derive(Copy, Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
-pub enum CollatorStatus {
+pub enum CandidateStatus {
 	/// Committed to be online and producing valid blocks (not equivocating)
 	Active,
 	/// Staked until the inner round
 	Leaving(SessionIndex),
 }
 
-impl Default for CollatorStatus {
-	fn default() -> CollatorStatus {
-		CollatorStatus::Active
+impl Default for CandidateStatus {
+	fn default() -> CandidateStatus {
+		CandidateStatus::Active
 	}
 }
 
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
 /// Global collator state with commission fee, staked funds, and delegations
-pub struct Collator<AccountId, Balance, MaxDelegatorsPerCollator>
+pub struct Candidate<AccountId, Balance, MaxDelegatorsPerCandidate>
 where
 	AccountId: Eq + Ord + Debug,
 	Balance: Eq + Ord + Debug,
-	MaxDelegatorsPerCollator: Get<u32> + Debug + PartialEq,
+	MaxDelegatorsPerCandidate: Get<u32> + Debug + PartialEq,
 {
-	/// The collators account id.
+	/// Account id of the candidate.
 	pub id: AccountId,
 
-	/// The stake that the collator put down.
+	/// The stake that the candidate put down.
 	pub stake: Balance,
 
-	/// The delegators that back the collator.
-	pub delegators: OrderedSet<Stake<AccountId, Balance>, MaxDelegatorsPerCollator>,
+	/// The delegators that back the candidate.
+	pub delegators: OrderedSet<Stake<AccountId, Balance>, MaxDelegatorsPerCandidate>,
 
 	/// The total backing a collator has.
 	///
 	/// Should equal the sum of all delegators stake adding collators stake
 	pub total: Balance,
 
-	/// The current status of the collator. Indicates whether a collator is
-	/// active or leaving the collator set
-	pub state: CollatorStatus,
+	/// The current status of the candidate. Indicates whether a candidate is
+	/// active or leaving the candidate pool
+	pub status: CandidateStatus,
 }
 
-impl<A, B, S> Collator<A, B, S>
+impl<A, B, S> Candidate<A, B, S>
 where
 	A: Ord + Clone + Debug,
 	B: AtLeast32BitUnsigned + Ord + Copy + Saturating + Debug + Zero,
@@ -136,29 +136,29 @@ where
 {
 	pub fn new(id: A, stake: B) -> Self {
 		let total = stake;
-		Collator {
+		Candidate {
 			id,
 			stake,
 			delegators: OrderedSet::new(),
 			total,
-			state: CollatorStatus::default(), // default active
+			status: CandidateStatus::default(), // default active
 		}
 	}
 
 	pub fn is_active(&self) -> bool {
-		self.state == CollatorStatus::Active
+		self.status == CandidateStatus::Active
 	}
 
 	pub fn is_leaving(&self) -> bool {
-		matches!(self.state, CollatorStatus::Leaving(_))
+		matches!(self.status, CandidateStatus::Leaving(_))
 	}
 
 	pub fn can_exit(&self, when: u32) -> bool {
-		matches!(self.state, CollatorStatus::Leaving(at) if at <= when )
+		matches!(self.status, CandidateStatus::Leaving(at) if at <= when )
 	}
 
 	pub fn revert_leaving(&mut self) {
-		self.state = CollatorStatus::Active;
+		self.status = CandidateStatus::Active;
 	}
 
 	pub fn stake_more(&mut self, more: B) {
@@ -203,7 +203,7 @@ where
 	}
 
 	pub fn leave_candidates(&mut self, round: SessionIndex) {
-		self.state = CollatorStatus::Leaving(round);
+		self.status = CandidateStatus::Leaving(round);
 	}
 }
 
@@ -367,5 +367,5 @@ pub struct DelegationCounter {
 
 pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
-pub type CollatorOf<T, S> = Collator<AccountIdOf<T>, BalanceOf<T>, S>;
+pub type CandidateOf<T, S> = Candidate<AccountIdOf<T>, BalanceOf<T>, S>;
 pub type StakeOf<T> = Stake<AccountIdOf<T>, BalanceOf<T>>;

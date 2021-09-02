@@ -201,8 +201,8 @@ pub mod pallet {
 		migrations::StakingStorageVersion,
 		set::OrderedSet,
 		types::{
-			BalanceOf, Collator, CollatorOf, CollatorStatus, DelegationCounter, Delegator, RoundInfo, Stake, StakeOf,
-			TotalStake,
+			BalanceOf, Candidate, CandidateOf, CandidateStatus, DelegationCounter, Delegator, RoundInfo, Stake,
+			StakeOf, TotalStake,
 		},
 	};
 	use sp_std::{convert::TryInto, fmt::Debug};
@@ -572,25 +572,26 @@ pub mod pallet {
 		OptionQuery,
 	>;
 
-	/// Collator candidates staking information.
+	/// The staking information for a candidate.
 	///
-	/// It maps from an account to its collator details.
+	/// It maps from an account to its information.
 	#[pallet::storage]
-	#[pallet::getter(fn collator_state)]
-	pub(crate) type CollatorState<T: Config> = StorageMap<
+	#[pallet::getter(fn candidate_state)]
+	pub(crate) type CandidateState<T: Config> = StorageMap<
 		_,
 		Twox64Concat,
 		T::AccountId,
-		Collator<T::AccountId, BalanceOf<T>, T::MaxDelegatorsPerCollator>,
+		Candidate<T::AccountId, BalanceOf<T>, T::MaxDelegatorsPerCollator>,
 		OptionQuery,
 	>;
 
 	/// Total funds locked to back the currently selected collators.
+	/// The sum of all the delegator stake and collator stake.
 	///
 	/// Note: There are more funds locked by this pallet, since the backing for
 	/// candidates (non collating) is not included in [TotalCollatorStake].
 	#[pallet::storage]
-	#[pallet::getter(fn total)]
+	#[pallet::getter(fn total_collator_stake)]
 	pub(crate) type TotalCollatorStake<T: Config> = StorageValue<_, TotalStake<BalanceOf<T>>, ValueQuery>;
 
 	/// The set of collator candidates, each with their total backing stake.
@@ -910,7 +911,7 @@ pub mod pallet {
 				pool.mutate(|vec| {
 					for mut candidate in vec[..].iter_mut() {
 						// state should always exist but let's be safe
-						if let Some(mut state) = <CollatorState<T>>::get(&candidate.owner) {
+						if let Some(mut state) = <CandidateState<T>>::get(&candidate.owner) {
 							if state.stake > new {
 								// safe because we ensure stake > new
 								let delta = state.stake - new;
@@ -919,7 +920,7 @@ pub mod pallet {
 
 								// immediately free delta by setting lock from old to new
 								T::Currency::set_lock(STAKING_ID, &candidate.owner, new, WithdrawReasons::all());
-								<CollatorState<T>>::insert(&candidate.owner, state);
+								<CandidateState<T>>::insert(&candidate.owner, state);
 							}
 						}
 					}
@@ -972,7 +973,7 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
 			let collator = T::Lookup::lookup(collator)?;
-			let state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
+			let state = <CandidateState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
 			let total_amount = state.total;
 
 			let mut candidates = <CandidatePool<T>>::get();
@@ -1073,8 +1074,8 @@ pub mod pallet {
 
 			Self::increase_lock(&acc, stake, BalanceOf::<T>::zero())?;
 
-			let candidate = Collator::new(acc.clone(), stake);
-			<CollatorState<T>>::insert(&acc, candidate);
+			let candidate = Candidate::new(acc.clone(), stake);
+			<CandidateState<T>>::insert(&acc, candidate);
 			<CandidatePool<T>>::put(candidates);
 
 			// update candidates for next round
@@ -1131,7 +1132,7 @@ pub mod pallet {
 		))]
 		pub fn init_leave_candidates(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			let collator = ensure_signed(origin)?;
-			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
+			let mut state = <CandidateState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(!state.is_leaving(), Error::<T>::AlreadyLeaving);
 			let mut candidates = <CandidatePool<T>>::get();
 			ensure!(
@@ -1151,7 +1152,7 @@ pub mod pallet {
 			{
 				<CandidatePool<T>>::put(candidates);
 			}
-			<CollatorState<T>>::insert(&collator, state);
+			<CandidateState<T>>::insert(&collator, state);
 
 			// update candidates for next round
 			let (num_collators, num_delegators, _, _) = Self::update_total_stake();
@@ -1197,7 +1198,7 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;
 			let collator = T::Lookup::lookup(collator)?;
-			let state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
+			let state = <CandidateState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(state.is_leaving(), Error::<T>::NotLeaving);
 			ensure!(state.can_exit(<Round<T>>::get().current), Error::<T>::CannotLeaveYet);
 
@@ -1243,7 +1244,7 @@ pub mod pallet {
 		))]
 		pub fn cancel_leave_candidates(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			let acc = ensure_signed(origin)?;
-			let mut state = <CollatorState<T>>::get(&acc).ok_or(Error::<T>::CandidateNotFound)?;
+			let mut state = <CandidateState<T>>::get(&acc).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(state.is_leaving(), Error::<T>::NotLeaving);
 
 			// add candidate back to pool
@@ -1270,7 +1271,7 @@ pub mod pallet {
 			state.revert_leaving();
 
 			// update candidates for next round
-			<CollatorState<T>>::insert(&acc, state);
+			<CandidateState<T>>::insert(&acc, state);
 			<CandidatePool<T>>::put(candidates);
 			let (num_collators, num_delegators, _, _) = Self::update_total_stake();
 
@@ -1314,7 +1315,7 @@ pub mod pallet {
 			let collator = ensure_signed(origin)?;
 
 			ensure!(!more.is_zero(), Error::<T>::ValStakeZero);
-			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
+			let mut state = <CandidateState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(!state.is_leaving(), Error::<T>::CannotStakeIfLeaving);
 
 			let before = state.stake;
@@ -1330,7 +1331,7 @@ pub mod pallet {
 			if state.is_active() {
 				Self::update(collator.clone(), state.total)?;
 			}
-			<CollatorState<T>>::insert(&collator, state);
+			<CandidateState<T>>::insert(&collator, state);
 
 			// update candidates for next round
 			let (num_collators, num_delegators, _, _) = Self::update_total_stake();
@@ -1377,7 +1378,7 @@ pub mod pallet {
 			let collator = ensure_signed(origin)?;
 			ensure!(!less.is_zero(), Error::<T>::ValStakeZero);
 
-			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
+			let mut state = <CandidateState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(!state.is_leaving(), Error::<T>::CannotStakeIfLeaving);
 			let before = state.stake;
 			let after = state.stake_less(less).ok_or(Error::<T>::Underflow)?;
@@ -1392,7 +1393,7 @@ pub mod pallet {
 			if state.is_active() {
 				Self::update(collator.clone(), state.total)?;
 			}
-			<CollatorState<T>>::insert(&collator, state);
+			<CandidateState<T>>::insert(&collator, state);
 
 			// update candidates for next round
 			let (num_collators, num_delegators, _, _) = Self::update_total_stake();
@@ -1461,7 +1462,7 @@ pub mod pallet {
 			let delegation_counter = Self::get_delegation_counter(&acc)?;
 
 			// prepare update of collator state
-			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
+			let mut state = <CandidateState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
 			let num_delegations_pre_insertion: u32 = state.delegators.len().saturated_into();
 
 			ensure!(!state.is_leaving(), Error::<T>::CannotDelegateIfLeaving);
@@ -1502,7 +1503,7 @@ pub mod pallet {
 			}
 
 			// update states
-			<CollatorState<T>>::insert(&collator, state);
+			<CandidateState<T>>::insert(&collator, state);
 			<DelegatorState<T>>::insert(&acc, delegator_state);
 			<LastDelegation<T>>::insert(&acc, delegation_counter);
 
@@ -1586,7 +1587,7 @@ pub mod pallet {
 			let delegation_counter = Self::get_delegation_counter(&acc)?;
 
 			// prepare new collator state
-			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
+			let mut state = <CandidateState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
 			let num_delegations_pre_insertion: u32 = state.delegators.len().saturated_into();
 			ensure!(!state.is_leaving(), Error::<T>::CannotDelegateIfLeaving);
 
@@ -1630,7 +1631,7 @@ pub mod pallet {
 			}
 
 			// Update states
-			<CollatorState<T>>::insert(&collator, state);
+			<CandidateState<T>>::insert(&collator, state);
 			<DelegatorState<T>>::insert(&acc, delegator);
 			<LastDelegation<T>>::insert(&acc, delegation_counter);
 
@@ -1781,7 +1782,7 @@ pub mod pallet {
 
 			let candidate = T::Lookup::lookup(candidate)?;
 			let mut delegations = <DelegatorState<T>>::get(&delegator).ok_or(Error::<T>::DelegatorNotFound)?;
-			let mut collator = <CollatorState<T>>::get(&candidate).ok_or(Error::<T>::CandidateNotFound)?;
+			let mut collator = <CandidateState<T>>::get(&candidate).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(!collator.is_leaving(), Error::<T>::CannotDelegateIfLeaving);
 			let delegator_total = delegations
 				.inc_delegation(candidate.clone(), more)
@@ -1796,7 +1797,7 @@ pub mod pallet {
 			if collator.is_active() {
 				Self::update(candidate.clone(), collator.total)?;
 			}
-			<CollatorState<T>>::insert(&candidate, collator);
+			<CandidateState<T>>::insert(&candidate, collator);
 			<DelegatorState<T>>::insert(&delegator, delegations);
 
 			// update candidates for next round
@@ -1853,7 +1854,7 @@ pub mod pallet {
 
 			let candidate = T::Lookup::lookup(candidate)?;
 			let mut delegations = <DelegatorState<T>>::get(&delegator).ok_or(Error::<T>::DelegatorNotFound)?;
-			let mut collator = <CollatorState<T>>::get(&candidate).ok_or(Error::<T>::CandidateNotFound)?;
+			let mut collator = <CandidateState<T>>::get(&candidate).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(!collator.is_leaving(), Error::<T>::CannotDelegateIfLeaving);
 			let remaining = delegations
 				.dec_delegation(candidate.clone(), less)
@@ -1874,7 +1875,7 @@ pub mod pallet {
 			if collator.is_active() {
 				Self::update(candidate.clone(), collator.total)?;
 			}
-			<CollatorState<T>>::insert(&candidate, collator);
+			<CandidateState<T>>::insert(&candidate, collator);
 			<DelegatorState<T>>::insert(&delegator, delegations);
 
 			// update candidates for next round
@@ -1931,8 +1932,8 @@ pub mod pallet {
 		/// - Reads: CollatorState
 		/// # </weight>
 		pub fn is_active_candidate(acc: &T::AccountId) -> Option<bool> {
-			if let Some(state) = <CollatorState<T>>::get(acc) {
-				Some(state.state == CollatorStatus::Active)
+			if let Some(state) = <CandidateState<T>>::get(acc) {
+				Some(state.status == CandidateStatus::Active)
 			} else {
 				None
 			}
@@ -2018,7 +2019,7 @@ pub mod pallet {
 		/// - Writes: Unstaking, Total, CollatorState
 		/// # </weight>
 		fn delegator_leaves_collator(delegator: T::AccountId, collator: T::AccountId) -> DispatchResult {
-			let mut state = <CollatorState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
+			let mut state = <CandidateState<T>>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
 
 			let delegator_stake = state
 				.delegators
@@ -2039,7 +2040,7 @@ pub mod pallet {
 				Self::update(collator.clone(), state.total)?;
 			}
 			let new_total = state.total;
-			<CollatorState<T>>::insert(&collator, state);
+			<CandidateState<T>>::insert(&collator, state);
 
 			Self::deposit_event(Event::DelegatorLeftCollator(
 				delegator,
@@ -2096,7 +2097,7 @@ pub mod pallet {
 			// Snapshot exposure for round for weighting reward distribution
 			for account in collators.iter() {
 				let state =
-					<CollatorState<T>>::get(&account).expect("all members of CandidatePool must be candidates q.e.d");
+					<CandidateState<T>>::get(&account).expect("all members of CandidatePool must be candidates q.e.d");
 				num_of_delegators = num_of_delegators.saturating_add(state.delegators.len().saturated_into::<u32>());
 
 				// sum up total stake and amount of collators, delegators
@@ -2175,8 +2176,8 @@ pub mod pallet {
 		/// # </weight>
 		fn do_update_delegator(
 			stake: Stake<T::AccountId, BalanceOf<T>>,
-			mut state: Collator<T::AccountId, BalanceOf<T>, T::MaxDelegatorsPerCollator>,
-		) -> Result<CollatorOf<T, T::MaxDelegatorsPerCollator>, DispatchError> {
+			mut state: Candidate<T::AccountId, BalanceOf<T>, T::MaxDelegatorsPerCollator>,
+		) -> Result<CandidateOf<T, T::MaxDelegatorsPerCollator>, DispatchError> {
 			// attempt to replace the last element of the set
 			let stake_to_remove = state
 				.delegators
@@ -2331,7 +2332,7 @@ pub mod pallet {
 		/// # </weight>
 		fn remove_candidate(
 			collator: &T::AccountId,
-			state: CollatorOf<T, T::MaxDelegatorsPerCollator>,
+			state: CandidateOf<T, T::MaxDelegatorsPerCollator>,
 		) -> DispatchResult {
 			// iterate over delegators
 			for stake in state.delegators.into_iter() {
@@ -2365,7 +2366,7 @@ pub mod pallet {
 				// FIXME: Does not prevent the collator from being able to author a block in this (or potentially the next) session. See https://github.com/paritytech/substrate/issues/8004
 				.map(pallet_session::Pallet::<T>::disable_index);
 
-			<CollatorState<T>>::remove(&collator);
+			<CandidateState<T>>::remove(&collator);
 			Ok(())
 		}
 
@@ -2564,7 +2565,7 @@ pub mod pallet {
 			);
 			// should always include state except if the collator has been forcedly removed
 			// via `force_remove_candidate` in the current or previous round
-			if let Some(state) = <CollatorState<T>>::get(author.clone()) {
+			if let Some(state) = <CandidateState<T>>::get(author.clone()) {
 				let total_issuance = T::Currency::total_issuance();
 				let TotalStake {
 					collators: total_collators,
