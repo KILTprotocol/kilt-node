@@ -1011,7 +1011,7 @@ pub mod pallet {
 			Self::increase_lock(&sender, stake, BalanceOf::<T>::zero())?;
 
 			let candidate = Candidate::new(sender.clone(), stake);
-			<CandidatePool<T>>::insert(&sender, candidate);
+			CandidatePool::<T>::insert(&sender, candidate);
 			Self::update_top_candidates(sender.clone(), BalanceOf::<T>::zero(), stake);
 
 			CandidateCount::<T>::mutate(|count| {
