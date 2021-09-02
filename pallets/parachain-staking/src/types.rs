@@ -183,7 +183,8 @@ where
 			owner: delegator,
 			amount: B::zero(),
 		}) {
-			self.delegators[i].amount = self.delegators[i].amount.saturating_add(more);
+			self.delegators
+				.mutate(|vec| vec[i].amount = vec[i].amount.saturating_add(more));
 			self.total = self.total.saturating_add(more);
 			self.delegators.sort_greatest_to_lowest()
 		}
@@ -194,7 +195,8 @@ where
 			owner: delegator,
 			amount: B::zero(),
 		}) {
-			self.delegators[i].amount = self.delegators[i].amount.saturating_sub(less);
+			self.delegators
+				.mutate(|vec| vec[i].amount = vec[i].amount.saturating_sub(less));
 			self.total = self.total.saturating_sub(less);
 			self.delegators.sort_greatest_to_lowest()
 		}
@@ -267,7 +269,8 @@ where
 			owner: collator,
 			amount: Balance::zero(),
 		}) {
-			self.delegations[i].amount = self.delegations[i].amount.saturating_add(more);
+			self.delegations
+				.mutate(|vec| vec[i].amount = vec[i].amount.saturating_add(more));
 			self.total = self.total.saturating_add(more);
 			self.delegations.sort_greatest_to_lowest();
 			Some(self.delegations[i].amount)
@@ -284,7 +287,8 @@ where
 			amount: Balance::zero(),
 		}) {
 			if self.delegations[i].amount > less {
-				self.delegations[i].amount = self.delegations[i].amount.saturating_sub(less);
+				self.delegations
+					.mutate(|vec| vec[i].amount = vec[i].amount.saturating_sub(less));
 				self.total = self.total.saturating_sub(less);
 				self.delegations.sort_greatest_to_lowest();
 				Some(Some(self.delegations[i].amount))
