@@ -474,8 +474,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Writes: Did
 		/// # </weight>
-		// TODO: Set correct weight
-		#[pallet::weight(10)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_authentication_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_authentication_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_authentication_key()))]
 		pub fn set_authentication_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
@@ -513,8 +512,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Writes: Did
 		/// # </weight>
-		// TODO: Set correct weight
-		#[pallet::weight(10)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_delegation_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_delegation_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_delegation_key()))]
 		pub fn set_delegation_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
@@ -546,8 +544,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Writes: Did
 		/// # </weight>
-		// TODO: Set correct weight
-		#[pallet::weight(10)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_ed25519_delegation_key().max(<T as pallet::Config>::WeightInfo::remove_sr25519_delegation_key()).max(<T as pallet::Config>::WeightInfo::remove_ecdsa_delegation_key()))]
 		pub fn remove_delegation_key(origin: OriginFor<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
@@ -578,8 +575,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Writes: Did
 		/// # </weight>
-		// TODO: Set correct weight
-		#[pallet::weight(10)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_attestation_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_attestation_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_attestation_key()))]
 		pub fn set_attestation_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
@@ -611,8 +607,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Writes: Did
 		/// # </weight>
-		// TODO: Set correct weight
-		#[pallet::weight(10)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_ed25519_attestation_key().max(<T as pallet::Config>::WeightInfo::remove_sr25519_attestation_key()).max(<T as pallet::Config>::WeightInfo::remove_ecdsa_attestation_key()))]
 		pub fn remove_attestation_key(origin: OriginFor<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
@@ -641,8 +636,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Writes: Did
 		/// # </weight>
-		// TODO: Set correct weight
-		#[pallet::weight(10)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::add_ed25519_key_agreement_key().max(<T as pallet::Config>::WeightInfo::add_sr25519_key_agreement_key()).max(<T as pallet::Config>::WeightInfo::add_ecdsa_key_agreement_key()))]
 		pub fn add_key_agreement_key(origin: OriginFor<T>, new_key: DidEncryptionKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
@@ -672,7 +666,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Writes: Did
 		/// # </weight>
-		#[pallet::weight(10)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_ed25519_key_agreement_key().max(<T as pallet::Config>::WeightInfo::remove_sr25519_key_agreement_key()).max(<T as pallet::Config>::WeightInfo::remove_ecdsa_key_agreement_key()))]
 		pub fn remove_key_agreement_key(origin: OriginFor<T>, key_id: KeyIdOf<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
@@ -699,8 +693,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Writes: Did
 		/// # </weight>
-		// TODO: Set correct weight
-		#[pallet::weight(10)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_service_endpoints(T::MaxUrlLength::get(), T::MaxEndpointUrlsCount::get()))]
 		pub fn set_service_endpoints(origin: OriginFor<T>, service_endpoints: ServiceEndpoints<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
@@ -735,8 +728,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Writes: Did
 		/// # </weight>
-		// TODO: Set correct weight
-		#[pallet::weight(10)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_service_endpoints(T::MaxUrlLength::get(), T::MaxEndpointUrlsCount::get()))]
 		pub fn remove_service_endpoints(origin: OriginFor<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
