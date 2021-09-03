@@ -21,7 +21,7 @@ use parity_scale_codec::{Decode, Encode};
 use sp_std::{
 	cmp::Ordering,
 	convert::TryInto,
-	ops::{Index, IndexMut, Range, RangeFull},
+	ops::{Index, Range, RangeFull},
 };
 #[cfg(feature = "std")]
 use sp_std::{fmt, prelude::*};
@@ -55,9 +55,23 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 		Self(bv)
 	}
 
+	///
+	pub fn mutate<F: FnOnce(&mut BoundedVec<T, S>)>(&mut self, function: F) {
+		function(&mut self.0);
+		(self.0[..]).sort_by(|a, b| b.cmp(a));
+		let mut i = 0;
+		while (i + 1) < self.len() {
+			if self[i] == self[i + 1] {
+				self.0.remove(i + 1);
+			} else {
+				i += 1;
+			}
+		}
+	}
+
 	/// Inserts an element, if no equal item exist in the set.
 	///
-	/// Throws if insertion would exceed the bounded vec's max size.
+	/// Returns an error if insertion would exceed the bounded vec's max size.
 	///
 	/// Returns true if the item is unique in the set, otherwise returns false.
 	pub fn try_insert(&mut self, value: T) -> Result<bool, ()> {
@@ -73,8 +87,8 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 	/// Attempts to replace the last element of the set with the provided value.
 	/// Assumes the set to have reached its bounded size.
 	///
-	/// Throws with `false` if the value already exists in the set.
-	/// Throws with `true` if the value has the least order in the set, i.e.,
+	/// Returns `Err(false)` if the value already exists in the set.
+	/// Returns `Err(true)` if the value has the least order in the set, i.e.,
 	/// it would be appended (inserted at i == length).
 	///
 	/// Returns the replaced element upon success.
@@ -94,8 +108,8 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 
 	/// Inserts a new element or updates the value of an existing one.
 	///
-	/// Throws if the maximum size of the bounded vec would be exceeded
-	/// upon insertion.
+	/// Returns an error if the maximum size of the bounded vec would be
+	/// exceeded upon insertion.
 	///
 	/// Returns the old value if existing or None if the value did not exist
 	/// before.
@@ -276,12 +290,6 @@ impl<T: Ord + Clone, S: Get<u32>> Index<RangeFull> for OrderedSet<T, S> {
 	}
 }
 
-impl<T: Ord + Clone, S: Get<u32>> IndexMut<usize> for OrderedSet<T, S> {
-	fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-		&mut self.0[index]
-	}
-}
-
 impl<T: Ord + Clone, S: Get<u32>> IntoIterator for OrderedSet<T, S> {
 	type Item = T;
 	type IntoIter = sp_std::vec::IntoIter<Self::Item>;
@@ -294,18 +302,6 @@ impl<T: Ord + Clone, S: Get<u32>> IntoIterator for OrderedSet<T, S> {
 impl<T: Ord + Clone, S: Get<u32>> From<OrderedSet<T, S>> for BoundedVec<T, S> {
 	fn from(s: OrderedSet<T, S>) -> Self {
 		s.0
-	}
-}
-
-impl<T: Ord + Clone, S: Get<u32>> IndexMut<Range<usize>> for OrderedSet<T, S> {
-	fn index_mut(&mut self, range: Range<usize>) -> &mut Self::Output {
-		&mut self.0[range]
-	}
-}
-
-impl<T: Ord + Clone, S: Get<u32>> IndexMut<RangeFull> for OrderedSet<T, S> {
-	fn index_mut(&mut self, range: RangeFull) -> &mut Self::Output {
-		&mut self.0[range]
 	}
 }
 
