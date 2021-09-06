@@ -183,7 +183,7 @@ benchmarks! {
 	}
 
 	set_max_selected_candidates {
-		let n in (T::MinTopCandidates::get()) .. T::MaxTopCandidates::get();
+		let n in (T::MinCollators::get()) .. T::MaxTopCandidates::get();
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
 		let candidates = setup_collator_candidates::<T>(n, None);
@@ -204,7 +204,7 @@ benchmarks! {
 	}
 
 	force_remove_candidate {
-		let n in (T::MinTopCandidates::get() + 1) .. T::MaxTopCandidates::get();
+		let n in (T::MinCollators::get() + 1) .. T::MaxTopCandidates::get();
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
 		let candidates = setup_collator_candidates::<T>(n, None);
@@ -237,7 +237,7 @@ benchmarks! {
 	}
 
 	init_leave_candidates {
-		let n in (T::MinTopCandidates::get() + 1) .. T::MaxTopCandidates::get() - 1;
+		let n in (T::MinCollators::get() + 1) .. T::MaxTopCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
 		let candidates = setup_collator_candidates::<T>(n, None);
@@ -257,7 +257,7 @@ benchmarks! {
 	}
 
 	cancel_leave_candidates {
-		let n in (T::MinTopCandidates::get() + 1) .. T::MaxTopCandidates::get() - 1;
+		let n in (T::MinCollators::get() + 1) .. T::MaxTopCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
 		let candidates = setup_collator_candidates::<T>(n, None);
@@ -275,7 +275,7 @@ benchmarks! {
 	}
 
 	execute_leave_candidates {
-		let n in (T::MinTopCandidates::get() + 1) .. T::MaxTopCandidates::get() - 1;
+		let n in (T::MinCollators::get() + 1) .. T::MaxTopCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 		let u in 1 .. (T::MaxUnstakeRequests::get() as u32 - 1);
 

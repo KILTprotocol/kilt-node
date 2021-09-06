@@ -266,7 +266,7 @@ pub mod pallet {
 		/// Minimum number of collators selected from the set of candidates at
 		/// every validation round.
 		#[pallet::constant]
-		type MinTopCandidates: Get<u32>;
+		type MinCollators: Get<u32>;
 
 		/// Minimum number of collators which cannot leave the network if there
 		/// are no others.
@@ -704,7 +704,7 @@ pub mod pallet {
 				}
 			}
 			// Set total selected candidates to minimum config
-			<MaxSelectedCandidates<T>>::put(T::MinTopCandidates::get());
+			<MaxSelectedCandidates<T>>::put(T::MinCollators::get());
 
 			// Choose top MaxSelectedCandidates collator candidates
 			<Pallet<T>>::update_total_stake();
@@ -813,7 +813,7 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_max_selected_candidates(*new, (*new).saturating_mul(T::MaxDelegatorsPerCollator::get())))]
 		pub fn set_max_selected_candidates(origin: OriginFor<T>, new: u32) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
-			ensure!(new >= T::MinTopCandidates::get(), Error::<T>::CannotSetBelowMin);
+			ensure!(new >= T::MinCollators::get(), Error::<T>::CannotSetBelowMin);
 			let old = <MaxSelectedCandidates<T>>::get();
 			<MaxSelectedCandidates<T>>::put(new);
 
