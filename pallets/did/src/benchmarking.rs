@@ -39,6 +39,7 @@ const DEFAULT_ACCOUNT_SEED: u32 = 0;
 const AUTHENTICATION_KEY_ID: KeyTypeId = KeyTypeId(*b"0000");
 const ATTESTATION_KEY_ID: KeyTypeId = KeyTypeId(*b"0001");
 const DELEGATION_KEY_ID: KeyTypeId = KeyTypeId(*b"0002");
+const UNUSED_KEY_ID: KeyTypeId = KeyTypeId(*b"1111");
 
 fn get_ed25519_public_authentication_key() -> ed25519::Public {
 	ed25519_generate(AUTHENTICATION_KEY_ID, None)
@@ -310,7 +311,7 @@ benchmarks! {
 
 		Did::<T>::insert(&did_subject, did_details);
 
-		let new_did_public_auth_key = get_ed25519_public_authentication_key();
+		let new_did_public_auth_key = ed25519_generate(UNUSED_KEY_ID, None);
 	}: set_authentication_key(RawOrigin::Signed(did_subject.clone()), DidVerificationKey::from(new_did_public_auth_key))
 	verify {
 		let auth_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(new_did_public_auth_key)));
@@ -329,7 +330,7 @@ benchmarks! {
 
 		Did::<T>::insert(&did_subject, did_details);
 
-		let new_did_public_auth_key = get_sr25519_public_authentication_key();
+		let new_did_public_auth_key = sr25519_generate(UNUSED_KEY_ID, None);
 	}: set_authentication_key(RawOrigin::Signed(did_subject.clone()), DidVerificationKey::from(new_did_public_auth_key))
 	verify {
 		let auth_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(new_did_public_auth_key)));
@@ -348,7 +349,7 @@ benchmarks! {
 
 		Did::<T>::insert(&did_subject, did_details);
 
-		let new_did_public_auth_key = get_ecdsa_public_authentication_key();
+		let new_did_public_auth_key = ecdsa_generate(UNUSED_KEY_ID, None);
 	}: set_authentication_key(RawOrigin::Signed(did_subject.clone()), DidVerificationKey::from(new_did_public_auth_key.clone()))
 	verify {
 		let auth_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(new_did_public_auth_key)));
@@ -361,7 +362,7 @@ benchmarks! {
 		let public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let old_delegation_key = get_ed25519_public_delegation_key();
-		let new_delegation_key = get_ed25519_public_delegation_key();
+		let new_delegation_key = ed25519_generate(UNUSED_KEY_ID, None);
 
 		// fill up public keys to its max size
 		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(public_auth_key));
@@ -380,7 +381,7 @@ benchmarks! {
 		let public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let old_delegation_key = get_sr25519_public_delegation_key();
-		let new_delegation_key = get_sr25519_public_delegation_key();
+		let new_delegation_key = sr25519_generate(UNUSED_KEY_ID, None);
 
 		// fill up public keys to its max size
 		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(public_auth_key));
@@ -399,7 +400,7 @@ benchmarks! {
 		let public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key.clone()).into_account().into();
 		let old_delegation_key = get_ecdsa_public_delegation_key();
-		let new_delegation_key = get_ecdsa_public_delegation_key();
+		let new_delegation_key = ecdsa_generate(UNUSED_KEY_ID, None);
 
 		// fill up public keys to its max size
 		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(public_auth_key));
@@ -482,7 +483,7 @@ benchmarks! {
 		let public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let old_attestation_key = get_ed25519_public_attestation_key();
-		let new_attestation_key = get_ed25519_public_attestation_key();
+		let new_attestation_key = ed25519_generate(UNUSED_KEY_ID, None);
 
 		// fill up public keys to its max size
 		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(public_auth_key));
@@ -501,7 +502,7 @@ benchmarks! {
 		let public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let old_attestation_key = get_sr25519_public_attestation_key();
-		let new_attestation_key = get_sr25519_public_attestation_key();
+		let new_attestation_key = sr25519_generate(UNUSED_KEY_ID, None);
 
 		// fill up public keys to its max size
 		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(public_auth_key));
@@ -520,7 +521,7 @@ benchmarks! {
 		let public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key.clone()).into_account().into();
 		let old_attestation_key = get_ecdsa_public_attestation_key();
-		let new_attestation_key = get_ecdsa_public_attestation_key();
+		let new_attestation_key = ecdsa_generate(UNUSED_KEY_ID, None);
 
 		// fill up public keys to its max size
 		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(public_auth_key));
