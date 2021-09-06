@@ -1960,7 +1960,7 @@ fn reach_max_top_candidates() {
 		.execute_with(|| {
 			assert_eq!(
 				StakePallet::top_candidates().len().saturated_into::<u32>(),
-				<Test as Config>::MaxCollatorCandidates::get()
+				<Test as Config>::MaxTopCandidates::get()
 			);
 			// should not be possible to join candidate pool, even with more stake
 			assert_ok!(StakePallet::join_candidates(Origin::signed(11), 11));
@@ -2137,10 +2137,7 @@ fn set_max_selected_candidates() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				StakePallet::set_max_selected_candidates(
-					Origin::root(),
-					<Test as Config>::MinCollators::get() - 1
-				),
+				StakePallet::set_max_selected_candidates(Origin::root(), <Test as Config>::MinCollators::get() - 1),
 				Error::<Test>::CannotSetBelowMin
 			);
 			assert_ok!(StakePallet::set_max_selected_candidates(
