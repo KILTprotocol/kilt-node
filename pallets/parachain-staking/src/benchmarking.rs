@@ -183,7 +183,7 @@ benchmarks! {
 	}
 
 	set_max_selected_candidates {
-		let n in (T::MinSelectedCandidates::get()) .. T::MaxCollatorCandidates::get();
+		let n in (T::MinTopCandidates::get()) .. T::MaxTopCandidates::get();
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
 		let candidates = setup_collator_candidates::<T>(n, None);
@@ -204,7 +204,7 @@ benchmarks! {
 	}
 
 	force_remove_candidate {
-		let n in (T::MinSelectedCandidates::get() + 1) .. T::MaxCollatorCandidates::get();
+		let n in (T::MinTopCandidates::get() + 1) .. T::MaxTopCandidates::get();
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
 		let candidates = setup_collator_candidates::<T>(n, None);
@@ -219,7 +219,7 @@ benchmarks! {
 	}
 
 	join_candidates {
-		let n in 1 .. T::MaxCollatorCandidates::get() - 1;
+		let n in 1 .. T::MaxTopCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
 		let candidates = setup_collator_candidates::<T>(n, None);
@@ -237,7 +237,7 @@ benchmarks! {
 	}
 
 	init_leave_candidates {
-		let n in (T::MinSelectedCandidates::get() + 1) .. T::MaxCollatorCandidates::get() - 1;
+		let n in (T::MinTopCandidates::get() + 1) .. T::MaxTopCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
 		let candidates = setup_collator_candidates::<T>(n, None);
@@ -257,7 +257,7 @@ benchmarks! {
 	}
 
 	cancel_leave_candidates {
-		let n in (T::MinSelectedCandidates::get() + 1) .. T::MaxCollatorCandidates::get() - 1;
+		let n in (T::MinTopCandidates::get() + 1) .. T::MaxTopCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
 		let candidates = setup_collator_candidates::<T>(n, None);
@@ -275,7 +275,7 @@ benchmarks! {
 	}
 
 	execute_leave_candidates {
-		let n in (T::MinSelectedCandidates::get() + 1) .. T::MaxCollatorCandidates::get() - 1;
+		let n in (T::MinTopCandidates::get() + 1) .. T::MaxTopCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 		let u in 1 .. (T::MaxUnstakeRequests::get() as u32 - 1);
 
@@ -310,7 +310,7 @@ benchmarks! {
 	}
 
 	candidate_stake_more {
-		let n in 1 .. T::MaxCollatorCandidates::get() - 1;
+		let n in 1 .. T::MaxTopCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 		let u in 0 .. (T::MaxUnstakeRequests::get().saturated_into::<u32>());
 
@@ -338,7 +338,7 @@ benchmarks! {
 	}
 
 	candidate_stake_less {
-		let n in 1 .. T::MaxCollatorCandidates::get() - 1;
+		let n in 1 .. T::MaxTopCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
 		let candidates = setup_collator_candidates::<T>(n, None);
@@ -364,7 +364,7 @@ benchmarks! {
 	}
 
 	join_delegators {
-		let n in 1 .. T::MaxCollatorCandidates::get();
+		let n in 1 .. T::MaxTopCandidates::get();
 		let m in 1 .. T::MaxDelegatorsPerCollator::get() - 1;
 
 		let candidates = setup_collator_candidates::<T>(n, None);
@@ -384,7 +384,7 @@ benchmarks! {
 
 	delegator_stake_more {
 		// we need at least 1 collators
-		let n in 1 .. T::MaxCollatorCandidates::get();
+		let n in 1 .. T::MaxTopCandidates::get();
 		// we need at least 1 delegator
 		let m in 1 .. T::MaxDelegatorsPerCollator::get() - 1;
 		let u in 1 .. (T::MaxUnstakeRequests::get().saturated_into::<u32>());
@@ -419,7 +419,7 @@ benchmarks! {
 
 	delegator_stake_less {
 		// we need at least 1 collators
-		let n in 1 .. T::MaxCollatorCandidates::get();
+		let n in 1 .. T::MaxTopCandidates::get();
 		// we need at least 1 delegator
 		let m in 1 .. T::MaxDelegatorsPerCollator::get() - 1;
 
@@ -455,7 +455,7 @@ benchmarks! {
 
 	revoke_delegation {
 		// we need at least 1 collators
-		let n in 1 .. T::MaxCollatorCandidates::get();
+		let n in 1 .. T::MaxTopCandidates::get();
 		// we need at least 1 delegator
 		let m in 1 .. T::MaxDelegatorsPerCollator::get() - 1;
 
@@ -491,7 +491,7 @@ benchmarks! {
 
 	leave_delegators {
 		// we need at least 1 collators
-		let n in 1 .. T::MaxCollatorCandidates::get();
+		let n in 1 .. T::MaxTopCandidates::get();
 		// we need at least 1 delegator
 		let m in 1 .. T::MaxDelegatorsPerCollator::get() - 1;
 
@@ -566,7 +566,7 @@ benchmarks! {
 	// [Post-launch TODO]: Activate after increasing MaxCollatorsPerDelegator to at least 2. Expected to throw otherwise.
 	// delegate_another_candidate {
 	// 	// we need at least 2 collators
-	// 	let n in 2 .. T::MaxCollatorCandidates::get();
+	// 	let n in 2 .. T::MaxTopCandidates::get();
 	// 	// we need at least 1 delegator
 	// 	let m in 1 .. T::MaxDelegatorsPerCollator::get() - 1;
 	// 	let u in 0 .. (T::MaxUnstakeRequests::get().saturated_into::<u32>());

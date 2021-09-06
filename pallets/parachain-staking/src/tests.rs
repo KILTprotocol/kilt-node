@@ -187,7 +187,7 @@ fn genesis() {
 			// Safety first checks
 			assert_eq!(
 				StakePallet::max_selected_candidates(),
-				<Test as Config>::MinSelectedCandidates::get()
+				<Test as Config>::MinTopCandidates::get()
 			);
 			assert_eq!(
 				StakePallet::round(),
@@ -251,7 +251,7 @@ fn genesis() {
 			// Safety first checks
 			assert_eq!(
 				StakePallet::max_selected_candidates(),
-				<Test as Config>::MinSelectedCandidates::get()
+				<Test as Config>::MinTopCandidates::get()
 			);
 			assert_eq!(
 				StakePallet::round(),
@@ -2139,13 +2139,13 @@ fn set_max_selected_candidates() {
 			assert_noop!(
 				StakePallet::set_max_selected_candidates(
 					Origin::root(),
-					<Test as Config>::MinSelectedCandidates::get() - 1
+					<Test as Config>::MinTopCandidates::get() - 1
 				),
 				Error::<Test>::CannotSetBelowMin
 			);
 			assert_ok!(StakePallet::set_max_selected_candidates(
 				Origin::root(),
-				<Test as Config>::MinSelectedCandidates::get() + 1
+				<Test as Config>::MinTopCandidates::get() + 1
 			));
 		});
 }
