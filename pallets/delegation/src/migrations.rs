@@ -58,7 +58,7 @@ impl<T: Config> VersionMigratorTrait<T> for DelegationStorageVersion {
 	fn pre_migrate(&self) -> Result<(), &str> {
 		match *self {
 			Self::V1 => v1::pre_migrate::<T>(),
-			Self::V2 => Err("Already latest v2 version."),
+			Self::V2 => Ok(()),
 		}
 	}
 
@@ -76,7 +76,7 @@ impl<T: Config> VersionMigratorTrait<T> for DelegationStorageVersion {
 	fn post_migrate(&self) -> Result<(), &str> {
 		match *self {
 			Self::V1 => v1::post_migrate::<T>(),
-			Self::V2 => Err("Migration from v2 should have never happened in the first place."),
+			Self::V2 => Ok(()),
 		}
 	}
 }
@@ -104,11 +104,6 @@ impl<T: Config> DelegationStorageMigrator<T> {
 	/// latest possible.
 	#[cfg(feature = "try-runtime")]
 	pub(crate) fn pre_migrate() -> Result<(), &'static str> {
-		ensure!(
-			StorageVersion::<T>::get() < DelegationStorageVersion::latest(),
-			"Already the latest storage version."
-		);
-
 		// Don't need to check for any other pre_migrate, as in try-runtime it is also
 		// called in the migrate() function. Same applies for post_migrate checks for
 		// each version migrator.
