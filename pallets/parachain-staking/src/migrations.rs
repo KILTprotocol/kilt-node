@@ -29,6 +29,7 @@ use crate::*;
 mod v2;
 mod v3;
 mod v4;
+mod v5;
 
 /// A trait that allows version migrators to access the underlying pallet's
 /// context, e.g., its Config trait.
@@ -53,6 +54,7 @@ pub enum StakingStorageVersion {
 	V2_0_0, // New Reward calculation, MaxCollatorCandidateStake
 	V3_0_0, // Update InflationConfig
 	V4,     // Sort TopCandidates and parachain-stakings by amount
+	V5,     // Remove SelectedCandidates, Count Candidates
 }
 
 #[cfg(feature = "try-runtime")]
@@ -84,7 +86,8 @@ impl<T: Config> VersionMigratorTrait<T> for StakingStorageVersion {
 			Self::V1_0_0 => v2::pre_migrate::<T>(),
 			Self::V2_0_0 => v3::pre_migrate::<T>(),
 			Self::V3_0_0 => v4::pre_migrate::<T>(),
-			Self::V4 => Err("Already on latest version v4."),
+			Self::V4 => v5::pre_migrate::<T>(),
+			Self::V5 => Err("Already on latest version v5."),
 		}
 	}
 
@@ -94,7 +97,8 @@ impl<T: Config> VersionMigratorTrait<T> for StakingStorageVersion {
 			Self::V1_0_0 => v2::migrate::<T>(),
 			Self::V2_0_0 => v3::migrate::<T>(),
 			Self::V3_0_0 => v4::migrate::<T>(),
-			Self::V4 => Weight::zero(),
+			Self::V4 => v5::migrate::<T>(),
+			Self::V5 => Weight::zero(),
 		}
 	}
 
@@ -106,7 +110,8 @@ impl<T: Config> VersionMigratorTrait<T> for StakingStorageVersion {
 			Self::V1_0_0 => v2::post_migrate::<T>(),
 			Self::V2_0_0 => v3::post_migrate::<T>(),
 			Self::V3_0_0 => v4::post_migrate::<T>(),
-			Self::V4 => Err("Migration from v4 should have never happened in the first place."),
+			Self::V4 => v5::post_migrate::<T>(),
+			Self::V5 => Err("Migration from v4 should have never happened in the first place."),
 		}
 	}
 }
@@ -128,6 +133,7 @@ impl<T: Config> StakingStorageMigrator<T> {
 			// Migration happens naturally, no need to point to the latest version
 			StakingStorageVersion::V3_0_0 => None,
 			StakingStorageVersion::V4 => None,
+			StakingStorageVersion::V5 => None,
 		}
 	}
 
