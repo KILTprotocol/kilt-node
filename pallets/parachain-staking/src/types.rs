@@ -238,7 +238,7 @@ where
 	/// doesn't insert the new delegation.
 	pub fn add_delegation(&mut self, stake: Stake<AccountId, Balance>) -> Result<bool, ()> {
 		let amt = stake.amount;
-		if self.delegations.try_insert(stake)? {
+		if self.delegations.try_insert(stake).map_err(|_| ())? {
 			self.total = self.total.saturating_add(amt);
 			Ok(true)
 		} else {

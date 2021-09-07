@@ -344,7 +344,7 @@ parameter_types! {
 	/// Collator exit requests are delayed by 4 hours (2 rounds/sessions)
 	pub const ExitQueueDelay: u32 = 2;
 	/// Minimum 16 collators selected per round, default at genesis and minimum forever after
-	pub const MinSelectedCandidates: u32 = 16;
+	pub const MinCollators: u32 = 16;
 	/// At least 4 candidates which cannot leave the network if there are no other candidates.
 	pub const MinRequiredCollators: u32 = 4;
 	/// We only allow one delegation per round.
@@ -374,14 +374,14 @@ impl parachain_staking::Config for Runtime {
 	type DefaultBlocksPerRound = DefaultBlocksPerRound;
 	type StakeDuration = StakeDuration;
 	type ExitQueueDelay = ExitQueueDelay;
-	type MinSelectedCandidates = MinSelectedCandidates;
+	type MinCollators = MinCollators;
 	type MinRequiredCollators = MinRequiredCollators;
 	type MaxDelegationsPerRound = MaxDelegationsPerRound;
 	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
 	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
 	type MinCollatorStake = MinCollatorStake;
 	type MinCollatorCandidateStake = MinCollatorStake;
-	type MaxCollatorCandidates = MaxCollatorCandidates;
+	type MaxTopCandidates = MaxCollatorCandidates;
 	type MinDelegation = MinDelegatorStake;
 	type MinDelegatorStake = MinDelegatorStake;
 	type MaxUnstakeRequests = MaxUnstakeRequests;

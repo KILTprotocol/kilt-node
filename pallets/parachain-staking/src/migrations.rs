@@ -52,7 +52,7 @@ pub enum StakingStorageVersion {
 	V1_0_0,
 	V2_0_0, // New Reward calculation, MaxCollatorCandidateStake
 	V3_0_0, // Update InflationConfig
-	V4,     // Sort CandidatePool and parachain-stakings by amount
+	V4,     // Sort TopCandidates and parachain-stakings by amount
 }
 
 #[cfg(feature = "try-runtime")]
