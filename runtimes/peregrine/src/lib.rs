@@ -104,7 +104,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 22,
+	spec_version: 23,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -1131,12 +1131,15 @@ impl_runtime_apis! {
 		}
 	}
 
-	// From the Polkadot repo: https://github.com/paritytech/polkadot/blob/master/runtime/polkadot/src/lib.rs#L1371
+	// From the Polkadot repo: https://github.com/paritytech/polkadot/blob/1876963f254f31f8cd2d7b8d5fb26cd38b7836ab/runtime/polkadot/src/lib.rs#L1413
 	#[cfg(feature = "try-runtime")]
 	impl frame_try_runtime::TryRuntime<Block> for Runtime {
 		fn on_runtime_upgrade() -> Result<(Weight, Weight), sp_runtime::RuntimeString> {
 			log::info!("try-runtime::on_runtime_upgrade for peregrine runtime.");
-			let weight = Executive::try_runtime_upgrade()?;
+			let weight = Executive::try_runtime_upgrade().map_err(|err|{
+				log::info!("try-runtime::on_runtime_upgrade failed with: {:?}", err);
+				err
+			})?;
 			Ok((weight, RuntimeBlockWeights::get().max_block))
 		}
 	}

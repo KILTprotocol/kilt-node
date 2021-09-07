@@ -61,7 +61,7 @@ pub enum StakingStorageVersion {
 impl StakingStorageVersion {
 	/// The latest storage version.
 	fn latest() -> Self {
-		Self::V4
+		Self::V5
 	}
 }
 
@@ -87,7 +87,7 @@ impl<T: Config> VersionMigratorTrait<T> for StakingStorageVersion {
 			Self::V2_0_0 => v3::pre_migrate::<T>(),
 			Self::V3_0_0 => v4::pre_migrate::<T>(),
 			Self::V4 => v5::pre_migrate::<T>(),
-			Self::V5 => Err("Already on latest version v5."),
+			Self::V5 => Ok(()),
 		}
 	}
 
@@ -111,7 +111,7 @@ impl<T: Config> VersionMigratorTrait<T> for StakingStorageVersion {
 			Self::V2_0_0 => v3::post_migrate::<T>(),
 			Self::V3_0_0 => v4::post_migrate::<T>(),
 			Self::V4 => v5::post_migrate::<T>(),
-			Self::V5 => Err("Migration from v4 should have never happened in the first place."),
+			Self::V5 => Ok(()),
 		}
 	}
 }
@@ -131,8 +131,8 @@ impl<T: Config> StakingStorageMigrator<T> {
 			StakingStorageVersion::V1_0_0 => Some(StakingStorageVersion::V2_0_0),
 			StakingStorageVersion::V2_0_0 => Some(StakingStorageVersion::V3_0_0),
 			// Migration happens naturally, no need to point to the latest version
-			StakingStorageVersion::V3_0_0 => None,
-			StakingStorageVersion::V4 => None,
+			StakingStorageVersion::V3_0_0 => Some(StakingStorageVersion::V4),
+			StakingStorageVersion::V4 => Some(StakingStorageVersion::V5),
 			StakingStorageVersion::V5 => None,
 		}
 	}
@@ -141,11 +141,6 @@ impl<T: Config> StakingStorageMigrator<T> {
 	/// latest possible.
 	#[cfg(feature = "try-runtime")]
 	pub(crate) fn pre_migrate() -> Result<(), &'static str> {
-		ensure!(
-			StorageVersion::<T>::get() < StakingStorageVersion::latest(),
-			"Already the latest storage version."
-		);
-
 		// Don't need to check for any other pre_migrate, as in try-runtime it is also
 		// called in the migrate() function. Same applies for post_migrate checks for
 		// each version migrator.
