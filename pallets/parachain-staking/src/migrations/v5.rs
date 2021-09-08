@@ -39,12 +39,13 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	StorageVersion::<T>::put(StakingStorageVersion::V5);
 	log::info!("Completed staking migration to StakingStorageVersion::V5");
 
-	T::DbWeight::get().reads_writes(counter.saturating_add(2).into(), counter.saturating_add(3).into())
+	T::DbWeight::get().reads_writes(counter.saturating_add(2).into(), 3)
 }
 
 #[cfg(feature = "try-runtime")]
 pub(crate) fn post_migrate<T: Config>() -> Result<(), &'static str> {
-	// assert_eq!(StorageVersion::<T>::get(), StakingStorageVersion::V5);
+	assert_eq!(StorageVersion::<T>::get(), StakingStorageVersion::V5);
+	assert!(CandidateCount::<T>::get() > T::MinCollators::get());
 	Ok(())
 }
 
