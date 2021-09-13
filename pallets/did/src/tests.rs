@@ -429,19 +429,18 @@ fn check_successful_authentication_key_update() {
 fn check_successful_authentication_key_max_public_keys_update() {
 	let old_auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(old_auth_key.public());
-	// Set maximum number of keys possible for the DID all inside the key agreement
-	// keys, yet the update should still go through since the old key is removed
-	// before the new one is added. So the # of new key agreement keys is max public
-	// key - 1 (since we already have the old authentication key)
-	let old_key_agreement_keys =
-		get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(1));
 	let new_auth_key = get_ed25519_authentication_key(false);
+	let key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxTotalKeyAgreementKeys::get());
 
-	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(old_auth_key.public()));
-	assert_ok!(old_did_details.add_key_agreement_keys(old_key_agreement_keys, 0u64,));
+	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(old_auth_key.public()));
+	assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, 0u64,));
+
+	// Fill public key map to its max by adding
+	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
+	did_details = fill_public_keys(did_details);
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
@@ -520,20 +519,20 @@ fn check_reused_key_authentication_key_update() {
 fn check_max_keys_authentication_key_update_error() {
 	let old_auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(old_auth_key.public());
-	let old_delegation_key = old_auth_key.clone();
-	// Key agreement keys = max keys - 1, as auth key and delegation key are the
-	// same
-	println!("{:?}", <Test as did::Config>::MaxPublicKeysPerDid::get());
-	let old_key_agreement_keys =
-		get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(1));
+	let delegation_key = old_auth_key.clone();
 	let new_auth_key = get_ed25519_authentication_key(false);
+	let key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxTotalKeyAgreementKeys::get());
 
-	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(old_auth_key.public()));
-	assert_ok!(old_did_details.add_key_agreement_keys(old_key_agreement_keys, 0u64,));
-	assert_ok!(old_did_details.update_delegation_key(did::DidVerificationKey::from(old_delegation_key.public()), 0u64));
+	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(old_auth_key.public()));
+	assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, 0u64,));
+	assert_ok!(did_details.update_delegation_key(did::DidVerificationKey::from(delegation_key.public()), 0u64));
+
+	// Fill public key map to its max by adding
+	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
+	did_details = fill_public_keys(did_details);
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
@@ -623,20 +622,19 @@ fn check_successful_delegation_key_max_public_keys_update() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let old_del_key = get_sr25519_delegation_key(true);
-	// Set maximum number of keys possible for the DID all inside the key agreement
-	// keys, yet the update should still go through since the old key is removed
-	// before the new one is added. So the # of new key agreement keys is max public
-	// key - 2 (plus old authentication key and delegation key)
-	let old_key_agreement_keys =
-		get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(2));
 	let new_del_key = get_sr25519_delegation_key(false);
+	let key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxTotalKeyAgreementKeys::get());
 
-	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
-	assert_ok!(old_did_details.add_key_agreement_keys(old_key_agreement_keys, 0u64,));
-	assert_ok!(old_did_details.update_delegation_key(did::DidVerificationKey::from(old_del_key.public()), 0u64));
+	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, 0u64,));
+	assert_ok!(did_details.update_delegation_key(did::DidVerificationKey::from(old_del_key.public()), 0u64));
+
+	// Fill public key map to its max by adding
+	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
+	did_details = fill_public_keys(did_details);
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
@@ -720,18 +718,17 @@ fn check_max_public_keys_delegation_key_addition_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_del_key = get_sr25519_delegation_key(false);
-	// Set maximum number of keys possible for the DID all inside the key agreement
-	// keys, so that key update would fail (since key is added and not replaced). So
-	// the # of new key agreement keys is max public key - 1 (since we already have
-	// the authentication key)
-	let old_key_agreement_keys =
-		get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(1));
+	let key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxTotalKeyAgreementKeys::get());
 
-	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
-	assert_ok!(old_did_details.add_key_agreement_keys(old_key_agreement_keys, 0u64,));
+	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, 0u64,));
+
+	// Fill public key map to its max by adding
+	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
+	did_details = fill_public_keys(did_details);
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
@@ -755,20 +752,19 @@ fn check_max_public_keys_reused_key_delegation_key_update_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let old_del_key = auth_key.clone();
 	let new_del_key = get_sr25519_delegation_key(true);
-	// Set maximum number of keys possible for the DID all inside the key agreement
-	// keys, so that key update would fail (since key is added and not replaced). So
-	// the # of new key agreement keys is max public key - 1 (since we already have
-	// the authentication and delegation keys which are actually the same key)
-	let old_key_agreement_keys =
-		get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(1));
+	let key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxTotalKeyAgreementKeys::get());
 
-	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
-	assert_ok!(old_did_details.add_key_agreement_keys(old_key_agreement_keys, 0u64,));
+	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, 0u64,));
 	// Same key for auth and delegation
-	assert_ok!(old_did_details.update_delegation_key(did::DidVerificationKey::from(old_del_key.public()), 0u64));
+	assert_ok!(did_details.update_delegation_key(did::DidVerificationKey::from(old_del_key.public()), 0u64));
+
+	// Fill public key map to its max by adding
+	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
+	did_details = fill_public_keys(did_details);
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
@@ -948,20 +944,19 @@ fn check_successful_attestation_key_max_public_keys_update() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let old_att_key = get_sr25519_attestation_key(true);
-	// Set maximum number of keys possible for the DID all inside the key agreement
-	// keys, yet the update should still go through since the old key is removed
-	// before the new one is added. So the # of new key agreement keys is max public
-	// key - 2 (plus old authentication key and attestation key)
-	let old_key_agreement_keys =
-		get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(2));
+	let key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxTotalKeyAgreementKeys::get());
 	let new_att_key = get_sr25519_attestation_key(false);
 
-	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
-	assert_ok!(old_did_details.add_key_agreement_keys(old_key_agreement_keys, 0u64,));
-	assert_ok!(old_did_details.update_attestation_key(did::DidVerificationKey::from(old_att_key.public()), 0u64));
+	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, 0u64,));
+	assert_ok!(did_details.update_attestation_key(did::DidVerificationKey::from(old_att_key.public()), 0u64));
+
+	// Fill public key map to its max by adding
+	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
+	did_details = fill_public_keys(did_details);
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
@@ -1045,18 +1040,17 @@ fn check_max_public_keys_attestation_key_addition_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_att_key = get_sr25519_attestation_key(false);
-	// Set maximum number of keys possible for the DID all inside the key agreement
-	// keys, so that key update would fail (since key is added and not replaced). So
-	// the # of new key agreement keys is max public key - 1 (since we already have
-	// the authentication key)
-	let old_key_agreement_keys =
-		get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(1));
+	let key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxTotalKeyAgreementKeys::get());
 
-	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
-	assert_ok!(old_did_details.add_key_agreement_keys(old_key_agreement_keys, 0u64,));
+	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, 0u64,));
+
+	// Fill public key map to its max by adding
+	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
+	did_details = fill_public_keys(did_details);
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
@@ -1080,20 +1074,19 @@ fn check_max_public_keys_reused_key_attestation_key_update_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let old_att_key = auth_key.clone();
 	let new_att_key = get_sr25519_delegation_key(true);
-	// Set maximum number of keys possible for the DID all inside the key agreement
-	// keys, so that key update would fail (since key is added and not replaced). So
-	// the # of new key agreement keys is max public key - 1 (since we already have
-	// the authentication and attestation keys which are actually the same key)
-	let old_key_agreement_keys =
-		get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(1));
+	let key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxTotalKeyAgreementKeys::get());
 
-	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
-	assert_ok!(old_did_details.add_key_agreement_keys(old_key_agreement_keys, 0u64,));
+	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, 0u64,));
 	// Same key for auth and attestation
-	assert_ok!(old_did_details.update_attestation_key(did::DidVerificationKey::from(old_att_key.public()), 0u64));
+	assert_ok!(did_details.update_attestation_key(did::DidVerificationKey::from(old_att_key.public()), 0u64));
+
+	// Fill public key map to its max by adding
+	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
+	did_details = fill_public_keys(did_details);
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
@@ -1265,19 +1258,19 @@ fn check_successful_key_agreement_key_addition() {
 fn check_max_public_keys_key_agreement_key_addition_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	// Set maximum number of keys possible for the DID all inside the key agreement
-	// keys, so that key update would fail (since key is added and not replaced). So
-	// the # of new key agreement keys is max public key - 1 (since we already have
-	// the authentication key)
-	let old_key_agreement_keys =
-		get_key_agreement_keys::<Test>(<Test as did::Config>::MaxPublicKeysPerDid::get().saturating_sub(1));
+
+	let key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxTotalKeyAgreementKeys::get());
 	let new_key_agreement_key = get_x25519_encryption_key(true);
 
-	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
-	assert_ok!(old_did_details.add_key_agreement_keys(old_key_agreement_keys, 0u64,));
+	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, 0u64,));
+
+	// Fill public key map to its max by adding
+	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
+	did_details = fill_public_keys(did_details);
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build(None);
 
 	let new_block_number: TestBlockNumber = 1;
