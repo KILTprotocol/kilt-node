@@ -200,34 +200,10 @@ mod tests {
 	use crate::mock::Test as TestRuntime;
 
 	#[test]
-	fn ok_from_v1_migration() {
-		let mut ext = mock::ExtBuilder::default()
-			.with_balances(vec![(1, 100), (2, 100)])
-			.with_collators(vec![(1, 100), (2, 100)])
-			.with_storage_version(StakingStorageVersion::V1_0_0)
-			.build();
-		ext.execute_with(|| {
-			#[cfg(feature = "try-runtime")]
-			assert!(
-				StakingStorageMigrator::<TestRuntime>::pre_migrate().is_ok(),
-				"Storage pre-migrate from v1 should not fail."
-			);
-
-			StakingStorageMigrator::<TestRuntime>::migrate();
-
-			#[cfg(feature = "try-runtime")]
-			assert!(
-				StakingStorageMigrator::<TestRuntime>::post_migrate().is_ok(),
-				"Storage post-migrate from v1 should not fail."
-			);
-		});
-	}
-
-	#[test]
 	fn ok_from_default_migration() {
 		let mut ext = mock::ExtBuilder::default()
-			.with_balances(vec![(1, 100), (2, 100)])
-			.with_collators(vec![(1, 100), (2, 100)])
+			.with_balances((0..15).into_iter().map(|n| (n, 120)).collect())
+			.with_collators((0..15).into_iter().map(|n| (n, 100)).collect())
 			.build();
 		ext.execute_with(|| {
 			#[cfg(feature = "try-runtime")]
