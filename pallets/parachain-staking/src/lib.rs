@@ -313,6 +313,14 @@ pub mod pallet {
 
 		/// Max number of concurrent active unstaking requests before
 		/// unlocking.
+		///
+		/// NOTE: To protect against irremovability of a candidate or delegator,
+		/// we only allow for MaxUnstakeRequests - 1 many manual unstake
+		/// requests. The last one serves as a placeholder for the cases of
+		/// calling either `kick_delegator`, force_remove_candidate` or
+		/// `execute_leave_candidates`. Otherwise, a user could max out their
+		/// unstake requests and prevent themselves from being kicked from the
+		/// set of candidates/delegators until they unlock their funds.
 		#[pallet::constant]
 		type MaxUnstakeRequests: Get<u32>;
 
@@ -1310,7 +1318,7 @@ pub mod pallet {
 			);
 
 			// we don't unlock immediately
-			Self::prep_unstake(&collator, less)?;
+			Self::prep_unstake(&collator, less, T::MaxUnstakeRequests::get().saturating_sub(1))?;
 
 			if state.is_active() {
 				Self::update_top_candidates(collator.clone(), before, state.total);
@@ -1794,7 +1802,7 @@ pub mod pallet {
 				Error::<T>::NomStakeBelowMin
 			);
 
-			Self::prep_unstake(&delegator, less)?;
+			Self::prep_unstake(&delegator, less, T::MaxUnstakeRequests::get().saturating_sub(1))?;
 
 			let before = collator.total;
 			collator.dec_delegator(delegator.clone(), less);
@@ -1974,7 +1982,11 @@ pub mod pallet {
 			state.total = state.total.saturating_sub(delegator_stake);
 
 			// we don't unlock immediately
-			Self::prep_unstake(&delegator, delegator_stake)?;
+			Self::prep_unstake(
+				&delegator,
+				delegator_stake,
+				T::MaxUnstakeRequests::get().saturating_sub(1),
+			)?;
 
 			if state.is_active() {
 				Self::update_top_candidates(collator.clone(), old_total, state.total);
@@ -1995,7 +2007,7 @@ pub mod pallet {
 			let mut state = <DelegatorState<T>>::get(&delegation.owner).ok_or(Error::<T>::DelegatorNotFound)?;
 			state.rm_delegation(collator);
 			// we don't unlock immediately
-			Self::prep_unstake(&delegation.owner, delegation.amount)?;
+			Self::prep_unstake(&delegation.owner, delegation.amount, T::MaxUnstakeRequests::get())?;
 
 			// clear storage if no delegations are remaining
 			if state.delegations.is_empty() {
@@ -2229,14 +2241,12 @@ pub mod pallet {
 		/// requests exceed limit. The latter defends against stake reduction
 		/// spamming.
 		///
-		/// NOTE: Should never be called in `execute_leave_candidates`!
-		///
 		/// # <weight>
 		/// Weight: O(1)
 		/// - Reads: BlockNumber, Unstaking
 		/// - Writes: Unstaking
 		/// # </weight>
-		fn prep_unstake(who: &T::AccountId, amount: BalanceOf<T>) -> DispatchResult {
+		fn prep_unstake(who: &T::AccountId, amount: BalanceOf<T>, limit: u32) -> DispatchResult {
 			// should never occur but let's be safe
 			ensure!(!amount.is_zero(), Error::<T>::StakeNotFound);
 
@@ -2245,7 +2255,7 @@ pub mod pallet {
 			let mut unstaking = <Unstaking<T>>::get(who);
 
 			ensure!(
-				unstaking.len().saturated_into::<u32>() < T::MaxUnstakeRequests::get(),
+				unstaking.len().saturated_into::<u32>() < limit,
 				Error::<T>::NoMoreUnstaking,
 			);
 
@@ -2278,7 +2288,7 @@ pub mod pallet {
 			// iterate over delegators
 			for stake in &state.delegators[..] {
 				// prepare unstaking of delegator
-				Self::prep_unstake(&stake.owner, stake.amount)?;
+				Self::prep_unstake(&stake.owner, stake.amount, T::MaxUnstakeRequests::get())?;
 				// remove delegation from delegator state
 				if let Some(mut delegator) = <DelegatorState<T>>::get(&stake.owner) {
 					if let Some(remaining) = delegator.rm_delegation(collator) {
@@ -2291,7 +2301,7 @@ pub mod pallet {
 				}
 			}
 			// prepare unstaking of collator candidate
-			Self::prep_unstake(&state.id, state.stake)?;
+			Self::prep_unstake(&state.id, state.stake, T::MaxUnstakeRequests::get())?;
 
 			// disable validator for next session if they were in the set of validators
 			pallet_session::Pallet::<T>::validators()
