@@ -19,7 +19,7 @@
 use crate::{
 	migrations::StakingStorageVersion,
 	types::{CandidateOf, Delegator},
-	CandidatePool, CandidateState, Config, DelegatorState, StorageVersion,
+	CandidatePool, Config, DelegatorState, StorageVersion, TopCandidates,
 };
 use frame_support::{dispatch::Weight, traits::Get};
 
@@ -33,11 +33,11 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	log::info!("Migrating staking to StakingStorageVersion::V4");
 
 	// sort candidates from greatest to lowest
-	CandidatePool::<T>::mutate(|candidates| candidates.sort_greatest_to_lowest());
+	TopCandidates::<T>::mutate(|candidates| candidates.sort_greatest_to_lowest());
 	let mut n = 1u64;
 
 	// for each candidate: sort delegators from greatest to lowest
-	CandidateState::<T>::translate_values(|mut state: CandidateOf<T, T::MaxDelegatorsPerCollator>| {
+	CandidatePool::<T>::translate_values(|mut state: CandidateOf<T, T::MaxDelegatorsPerCollator>| {
 		state.delegators.sort_greatest_to_lowest();
 		n = n.saturating_add(1u64);
 		Some(state)
@@ -60,10 +60,10 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 
 #[cfg(feature = "try-runtime")]
 pub(crate) fn post_migrate<T: Config>() -> Result<(), &'static str> {
-	let mut candidates = CandidatePool::<T>::get();
+	let mut candidates = TopCandidates::<T>::get();
 	candidates.sort_greatest_to_lowest();
 	assert_eq!(
-		CandidatePool::<T>::get().into_bounded_vec().into_inner(),
+		TopCandidates::<T>::get().into_bounded_vec().into_inner(),
 		candidates.into_bounded_vec().into_inner()
 	);
 	assert_eq!(StorageVersion::<T>::get(), StakingStorageVersion::V4);

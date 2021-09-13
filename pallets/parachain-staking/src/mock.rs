@@ -130,7 +130,7 @@ parameter_types! {
 	pub const StakeDuration: u32 = 2;
 	pub const ExitQueueDelay: u32 = 2;
 	pub const DefaultBlocksPerRound: BlockNumber = BLOCKS_PER_ROUND;
-	pub const MinSelectedCandidates: u32 = 2;
+	pub const MinCollators: u32 = 2;
 	#[derive(Debug, PartialEq)]
 	pub const MaxDelegatorsPerCollator: u32 = 4;
 	#[derive(Debug, PartialEq)]
@@ -152,14 +152,14 @@ impl Config for Test {
 	type DefaultBlocksPerRound = DefaultBlocksPerRound;
 	type StakeDuration = StakeDuration;
 	type ExitQueueDelay = ExitQueueDelay;
-	type MinSelectedCandidates = MinSelectedCandidates;
-	type MinRequiredCollators = MinSelectedCandidates;
+	type MinCollators = MinCollators;
+	type MinRequiredCollators = MinCollators;
 	type MaxDelegationsPerRound = MaxDelegatorsPerCollator;
 	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
 	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
 	type MinCollatorStake = MinCollatorStake;
 	type MinCollatorCandidateStake = MinCollatorStake;
-	type MaxCollatorCandidates = MaxCollatorCandidates;
+	type MaxTopCandidates = MaxCollatorCandidates;
 	type MinDelegatorStake = MinDelegatorStake;
 	type MinDelegation = MinDelegation;
 	type MaxUnstakeRequests = MaxUnstakeRequests;
