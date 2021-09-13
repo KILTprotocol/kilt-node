@@ -4,7 +4,11 @@
   "chainType": "Live",
   "bootNodes": [
     "/dns4/bootnode.kilt.io/tcp/30390/p2p/12D3KooWEViDAJgLbeB5hg1KBNg42Ys2V5C6FTCCv6jJXCft41g9",
-    "/dns4/bootnode.kilt.io/tcp/30391/p2p/12D3KooWQaP87gsVDjALr85bvF3HRdt2gN3ddDMrKbUkTvtoYNmj"
+    "/dns4/bootnode.kilt.io/tcp/30391/p2p/12D3KooWQaP87gsVDjALr85bvF3HRdt2gN3ddDMrKbUkTvtoYNmj",
+    "/dns4/node-6840851017335005184-0.p2p.onfinality.io/tcp/13675/ws/p2p/12D3KooWP87Kz2W56vrnDaK9Ma7M23qQaBoGBAToNASQcuJHciMS",
+    "/dns4/node-6840569230186737664-0.p2p.onfinality.io/tcp/11578/ws/p2p/12D3KooWQapPfoSDxLBnsVZmpRA1yNApXEAEuhexPcFa7fECqpHa",
+    "/dns4/node-6840538829839884288-0.p2p.onfinality.io/tcp/10379/ws/p2p/12D3KooWMpqeRDxLVS2WsrPos9ZNa2KvSJNjGXrXdziWuScfoBDh",
+    "/dns4/node-6840781141641752576-0.p2p.onfinality.io/tcp/28779/ws/p2p/12D3KooWKMCaxjsvaNkYkdQGnPQnkYFouHFdJ3S36aBhV6QTXzaE"
   ],
   "telemetryEndpoints": [
     [
