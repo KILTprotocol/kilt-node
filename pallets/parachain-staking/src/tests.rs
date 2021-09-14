@@ -2519,7 +2519,7 @@ fn unlock_unstaked() {
 #[test]
 fn kick_candidate_with_full_unstaking() {
 	ExtBuilder::default()
-		.with_balances(vec![(1, 200), (2, 200), (3, 200)])
+		.with_balances(vec![(1, 200), (2, 200), (3, 300)])
 		.with_collators(vec![(1, 200), (2, 200), (3, 200)])
 		.build()
 		.execute_with(|| {
@@ -2542,13 +2542,21 @@ fn kick_candidate_with_full_unstaking() {
 
 			// Fill last unstake request by removing candidate and unstaking all stake
 			assert_ok!(StakePallet::force_remove_candidate(Origin::root(), 3));
+
+			// Cannot join with full unstaking
 			assert_eq!(StakePallet::unstaking(3).into_inner().len(), max_unstake_reqs + 1);
+			assert_noop!(
+				StakePallet::join_candidates(Origin::signed(3), 100),
+				Error::<Test>::CannotJoinBeforeUnlocking
+			);
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(3), 3));
+			assert_ok!(StakePallet::join_candidates(Origin::signed(3), 100));
 		});
 }
 #[test]
 fn kick_delegator_with_full_unstaking() {
 	ExtBuilder::default()
-		.with_balances(vec![(1, 200), (2, 200), (3, 200), (4, 200), (5, 200), (6, 200)])
+		.with_balances(vec![(1, 200), (2, 200), (3, 200), (4, 200), (5, 420), (6, 200)])
 		.with_collators(vec![(1, 200)])
 		.with_delegators(vec![(2, 1, 200), (3, 1, 200), (4, 1, 200), (5, 1, 200)])
 		.build()
@@ -2574,6 +2582,14 @@ fn kick_delegator_with_full_unstaking() {
 			assert_ok!(StakePallet::join_delegators(Origin::signed(6), 1, 200));
 			assert_eq!(StakePallet::unstaking(5).into_inner().len(), max_unstake_reqs + 1);
 			assert!(!StakePallet::is_delegator(&5));
+
+			// Cannot join with full unstaking
+			assert_noop!(
+				StakePallet::join_delegators(Origin::signed(5), 1, 100),
+				Error::<Test>::CannotJoinBeforeUnlocking
+			);
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(5), 5));
+			assert_ok!(StakePallet::join_delegators(Origin::signed(5), 1, 220));
 		});
 }
 

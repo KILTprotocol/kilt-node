@@ -359,6 +359,11 @@ pub mod pallet {
 		/// The collator tried to leave before waiting at least for
 		/// `ExitQueueDelay` many rounds.
 		CannotLeaveYet,
+		/// The account has a full list of unstaking requests and needs to
+		/// unlock at least one of these before being able to join (again).
+		/// NOTE: Can only happen if the account was a candidate or
+		/// delegator before and either got kicked or exited voluntarily.
+		CannotJoinBeforeUnlocking,
 		/// The account is already delegating the collator candidate.
 		AlreadyDelegating,
 		/// The account has not delegated any collator candidate yet, hence it
@@ -1015,6 +1020,10 @@ pub mod pallet {
 				stake <= <MaxCollatorCandidateStake<T>>::get(),
 				Error::<T>::ValStakeAboveMax
 			);
+			ensure!(
+				Unstaking::<T>::get(&sender).len().saturated_into::<u32>() < T::MaxUnstakeRequests::get(),
+				Error::<T>::CannotJoinBeforeUnlocking
+			);
 
 			Self::increase_lock(&sender, stake, BalanceOf::<T>::zero())?;
 
@@ -1387,6 +1396,10 @@ pub mod pallet {
 			ensure!(amount >= T::MinDelegatorStake::get(), Error::<T>::NomStakeBelowMin);
 			// cannot be a collator candidate and delegator with same AccountId
 			ensure!(!Self::is_active_candidate(&acc).is_some(), Error::<T>::CandidateExists);
+			ensure!(
+				Unstaking::<T>::get(&acc).len().saturated_into::<u32>() < T::MaxUnstakeRequests::get(),
+				Error::<T>::CannotJoinBeforeUnlocking
+			);
 			// cannot delegate if number of delegations in this round exceeds
 			// MaxDelegationsPerRound
 			let delegation_counter = Self::get_delegation_counter(&acc)?;
