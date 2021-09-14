@@ -364,9 +364,9 @@ pub const VOTING_PERIOD: BlockNumber = 7 * MINUTES;
 pub const VOTING_PERIOD: BlockNumber = 7 * DAYS;
 
 #[cfg(feature = "fast-gov")]
-pub const FAST_TRACK_VOTING_PERIOD: BlockNumber = 7 * MINUTES;
+pub const FAST_TRACK_VOTING_PERIOD: BlockNumber = 3 * MINUTES;
 #[cfg(not(feature = "fast-gov"))]
-pub const FAST_TRACK_VOTING_PERIOD: BlockNumber = 7 * DAYS;
+pub const FAST_TRACK_VOTING_PERIOD: BlockNumber = 3 * HOURS;
 
 #[cfg(feature = "fast-gov")]
 pub const ENACTMENT_PERIOD: BlockNumber = 8 * MINUTES;
