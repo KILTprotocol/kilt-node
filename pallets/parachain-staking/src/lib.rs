@@ -2263,10 +2263,15 @@ pub mod pallet {
 			let unlock_block = now.saturating_add(T::StakeDuration::get());
 			let mut unstaking = <Unstaking<T>>::get(who);
 
+			let allowed_unstakings = if is_removal {
+				// the account was forcedly removed and we allow to fill all unstake requests
+				T::MaxUnstakeRequests::get()
+			} else {
+				// we need to reserve a free slot for a forced removal of the account
+				T::MaxUnstakeRequests::get().saturating_sub(1)
+			};
 			ensure!(
-				// decrease max unstaking requests by one if it is not a removal
-				unstaking.len().saturated_into::<u32>()
-					< T::MaxUnstakeRequests::get().saturating_sub((!is_removal).into()),
+				unstaking.len().saturated_into::<u32>() < allowed_unstakings,
 				Error::<T>::NoMoreUnstaking,
 			);
 
