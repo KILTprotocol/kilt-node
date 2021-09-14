@@ -458,8 +458,23 @@ pub mod pallet {
 			Ok(())
 		}
 
-		//TODO: Add comment and weights after benchmarks
-		#[pallet::weight(10)]
+		/// Update the DID authentication key.
+		///
+		/// The old key is deleted from the set of public keys if it is
+		/// not used in any other part of the DID. The new key is added to the
+		/// set of public keys.
+		///
+		/// The dispatch origin must be a DID origin proxied via the
+		/// `submit_did_call` extrinsic.
+		///
+		/// Emits `DidUpdated`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Did
+		/// - Writes: Did
+		/// # </weight>
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_authentication_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_authentication_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_authentication_key()))]
 		pub fn set_authentication_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
@@ -481,8 +496,23 @@ pub mod pallet {
 			Ok(())
 		}
 
-		//TODO: Add comment and weights after benchmarks
-		#[pallet::weight(10)]
+		/// Set or update the DID delegation key.
+		///
+		/// If an old key existed, it is deleted from the set of public keys if
+		/// it is not used in any other part of the DID. The new key is added to
+		/// the set of public keys.
+		///
+		/// The dispatch origin must be a DID origin proxied via the
+		/// `submit_did_call` extrinsic.
+		///
+		/// Emits `DidUpdated`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Did
+		/// - Writes: Did
+		/// # </weight>
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_delegation_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_delegation_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_delegation_key()))]
 		pub fn set_delegation_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
@@ -499,8 +529,22 @@ pub mod pallet {
 			Ok(())
 		}
 
-		//TODO: Add comment and weights after benchmarks
-		#[pallet::weight(10)]
+		/// Remove the DID delegation key.
+		///
+		/// The old key is deleted from the set of public keys if
+		/// it is not used in any other part of the DID.
+		///
+		/// The dispatch origin must be a DID origin proxied via the
+		/// `submit_did_call` extrinsic.
+		///
+		/// Emits `DidUpdated`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Did
+		/// - Writes: Did
+		/// # </weight>
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_ed25519_delegation_key().max(<T as pallet::Config>::WeightInfo::remove_sr25519_delegation_key()).max(<T as pallet::Config>::WeightInfo::remove_ecdsa_delegation_key()))]
 		pub fn remove_delegation_key(origin: OriginFor<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
@@ -515,8 +559,23 @@ pub mod pallet {
 			Ok(())
 		}
 
-		//TODO: Add comment and weights after benchmarks
-		#[pallet::weight(10)]
+		/// Set or update the DID attestation key.
+		///
+		/// If an old key existed, it is deleted from the set of public keys if
+		/// it is not used in any other part of the DID. The new key is added to
+		/// the set of public keys.
+		///
+		/// The dispatch origin must be a DID origin proxied via the
+		/// `submit_did_call` extrinsic.
+		///
+		/// Emits `DidUpdated`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Did
+		/// - Writes: Did
+		/// # </weight>
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_attestation_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_attestation_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_attestation_key()))]
 		pub fn set_attestation_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
@@ -533,8 +592,22 @@ pub mod pallet {
 			Ok(())
 		}
 
-		//TODO: Add comment and weights after benchmarks
-		#[pallet::weight(10)]
+		/// Remove the DID attestation key.
+		///
+		/// The old key is deleted from the set of public keys if
+		/// it is not used in any other part of the DID.
+		///
+		/// The dispatch origin must be a DID origin proxied via the
+		/// `submit_did_call` extrinsic.
+		///
+		/// Emits `DidUpdated`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Did
+		/// - Writes: Did
+		/// # </weight>
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_ed25519_attestation_key().max(<T as pallet::Config>::WeightInfo::remove_sr25519_attestation_key()).max(<T as pallet::Config>::WeightInfo::remove_ecdsa_attestation_key()))]
 		pub fn remove_attestation_key(origin: OriginFor<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
@@ -549,8 +622,21 @@ pub mod pallet {
 			Ok(())
 		}
 
-		//TODO: Add comment and weights after benchmarks
-		#[pallet::weight(10)]
+		/// Add a single new key agreement key to the DID.
+		///
+		/// The new key is added to the set of public keys.
+		///
+		/// The dispatch origin must be a DID origin proxied via the
+		/// `submit_did_call` extrinsic.
+		///
+		/// Emits `DidUpdated`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Did
+		/// - Writes: Did
+		/// # </weight>
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::add_ed25519_key_agreement_key().max(<T as pallet::Config>::WeightInfo::add_sr25519_key_agreement_key()).max(<T as pallet::Config>::WeightInfo::add_ecdsa_key_agreement_key()))]
 		pub fn add_key_agreement_key(origin: OriginFor<T>, new_key: DidEncryptionKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
@@ -567,8 +653,20 @@ pub mod pallet {
 			Ok(())
 		}
 
-		//TODO: Add comment and weights after benchmarks
-		#[pallet::weight(10)]
+		/// Remove a DID key agreement key from both its set of key agreement
+		/// keys and as well as its public keys.
+		///
+		/// The dispatch origin must be a DID origin proxied via the
+		/// `submit_did_call` extrinsic.
+		///
+		/// Emits `DidUpdated`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Did
+		/// - Writes: Did
+		/// # </weight>
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_ed25519_key_agreement_key().max(<T as pallet::Config>::WeightInfo::remove_sr25519_key_agreement_key()).max(<T as pallet::Config>::WeightInfo::remove_ecdsa_key_agreement_key()))]
 		pub fn remove_key_agreement_key(origin: OriginFor<T>, key_id: KeyIdOf<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
@@ -583,8 +681,19 @@ pub mod pallet {
 			Ok(())
 		}
 
-		//TODO: Add comment and weights after benchmarks
-		#[pallet::weight(10)]
+		/// Set or replace the DID service endpoints.
+		///
+		/// The dispatch origin must be a DID origin proxied via the
+		/// `submit_did_call` extrinsic.
+		///
+		/// Emits `DidUpdated`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Did
+		/// - Writes: Did
+		/// # </weight>
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_service_endpoints(T::MaxUrlLength::get(), T::MaxEndpointUrlsCount::get()))]
 		pub fn set_service_endpoints(origin: OriginFor<T>, service_endpoints: ServiceEndpoints<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
@@ -607,8 +716,19 @@ pub mod pallet {
 			Ok(())
 		}
 
-		//TODO: Add comment and weights after benchmarks
-		#[pallet::weight(10)]
+		/// Remove the DID service endpoints.
+		///
+		/// The dispatch origin must be a DID origin proxied via the
+		/// `submit_did_call` extrinsic.
+		///
+		/// Emits `DidUpdated`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Did
+		/// - Writes: Did
+		/// # </weight>
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_service_endpoints(T::MaxUrlLength::get(), T::MaxEndpointUrlsCount::get()))]
 		pub fn remove_service_endpoints(origin: OriginFor<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;

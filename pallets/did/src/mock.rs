@@ -24,7 +24,7 @@ use frame_system::EnsureSigned;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
-	testing::Header,
+	testing::{Header, H256},
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSigner,
 };
@@ -92,8 +92,9 @@ parameter_types! {
 	pub const MaxUrlLength: u32 = 200u32;
 	#[derive(Debug, Clone, PartialEq)]
 	pub const MaxTotalKeyAgreementKeys: u32 = 10u32;
+	// IMPORTANT: Needs to be at least MaxTotalKeyAgreementKeys + 3 (auth, delegation, attestation keys) for benchmarks!
 	#[derive(Debug, Clone)]
-	pub const MaxPublicKeysPerDid: u32 = 10u32;
+	pub const MaxPublicKeysPerDid: u32 = 13u32;
 	#[derive(Debug, Clone, PartialEq)]
 	pub const MaxEndpointUrlsCount: u32 = 3u32;
 }
@@ -133,6 +134,27 @@ const DEFAULT_ATT_SEED: [u8; 32] = [6u8; 32];
 const ALTERNATIVE_ATT_SEED: [u8; 32] = [60u8; 32];
 const DEFAULT_DEL_SEED: [u8; 32] = [7u8; 32];
 const ALTERNATIVE_DEL_SEED: [u8; 32] = [70u8; 32];
+
+/// Solely used to fill public keys in unit tests to check for correct error
+/// throws. Thus, it does not matter whether the correct key types get added
+/// such that we can use the ed25519 for all key types per default.
+pub(crate) fn fill_public_keys(mut did_details: DidDetails<Test>) -> DidDetails<Test> {
+	while (did_details.public_keys.len() as u32) < <Test as Config>::MaxPublicKeysPerDid::get() {
+		did_details
+			.public_keys
+			.try_insert(
+				H256::random(),
+				did::DidPublicKeyDetails {
+					key: did::DidPublicKey::from(did::DidVerificationKey::from(ed25519::Public::from_h256(
+						H256::random(),
+					))),
+					block_number: 0u64,
+				},
+			)
+			.expect("Should not exceed BoundedBTreeMap size due to prior check");
+	}
+	did_details
+}
 
 pub fn get_did_identifier_from_ed25519_key(public_key: ed25519::Public) -> TestDidIdentifier {
 	MultiSigner::from(public_key).into_account()
