@@ -273,11 +273,6 @@ impl ExtBuilder {
 		self
 	}
 
-	pub(crate) fn with_storage_version(mut self, storage_version: StakingStorageVersion) -> Self {
-		self.storage_version = storage_version;
-		self
-	}
-
 	pub(crate) fn build(self) -> sp_io::TestExternalities {
 		let mut t = frame_system::GenesisConfig::default()
 			.build_storage::<Test>()

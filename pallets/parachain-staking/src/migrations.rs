@@ -29,6 +29,7 @@ use crate::*;
 mod v2;
 mod v3;
 mod v4;
+mod v5;
 
 /// A trait that allows version migrators to access the underlying pallet's
 /// context, e.g., its Config trait.
@@ -53,13 +54,14 @@ pub enum StakingStorageVersion {
 	V2_0_0, // New Reward calculation, MaxCollatorCandidateStake
 	V3_0_0, // Update InflationConfig
 	V4,     // Sort TopCandidates and parachain-stakings by amount
+	V5,     // Remove SelectedCandidates, Count Candidates
 }
 
 #[cfg(feature = "try-runtime")]
 impl StakingStorageVersion {
 	/// The latest storage version.
 	fn latest() -> Self {
-		Self::V4
+		Self::V5
 	}
 }
 
@@ -84,7 +86,8 @@ impl<T: Config> VersionMigratorTrait<T> for StakingStorageVersion {
 			Self::V1_0_0 => v2::pre_migrate::<T>(),
 			Self::V2_0_0 => v3::pre_migrate::<T>(),
 			Self::V3_0_0 => v4::pre_migrate::<T>(),
-			Self::V4 => Err("Already on latest version v4."),
+			Self::V4 => v5::pre_migrate::<T>(),
+			Self::V5 => Ok(()),
 		}
 	}
 
@@ -94,7 +97,8 @@ impl<T: Config> VersionMigratorTrait<T> for StakingStorageVersion {
 			Self::V1_0_0 => v2::migrate::<T>(),
 			Self::V2_0_0 => v3::migrate::<T>(),
 			Self::V3_0_0 => v4::migrate::<T>(),
-			Self::V4 => Weight::zero(),
+			Self::V4 => v5::migrate::<T>(),
+			Self::V5 => Weight::zero(),
 		}
 	}
 
@@ -106,7 +110,8 @@ impl<T: Config> VersionMigratorTrait<T> for StakingStorageVersion {
 			Self::V1_0_0 => v2::post_migrate::<T>(),
 			Self::V2_0_0 => v3::post_migrate::<T>(),
 			Self::V3_0_0 => v4::post_migrate::<T>(),
-			Self::V4 => Err("Migration from v4 should have never happened in the first place."),
+			Self::V4 => v5::post_migrate::<T>(),
+			Self::V5 => Ok(()),
 		}
 	}
 }
@@ -126,8 +131,9 @@ impl<T: Config> StakingStorageMigrator<T> {
 			StakingStorageVersion::V1_0_0 => Some(StakingStorageVersion::V2_0_0),
 			StakingStorageVersion::V2_0_0 => Some(StakingStorageVersion::V3_0_0),
 			// Migration happens naturally, no need to point to the latest version
-			StakingStorageVersion::V3_0_0 => None,
-			StakingStorageVersion::V4 => None,
+			StakingStorageVersion::V3_0_0 => Some(StakingStorageVersion::V4),
+			StakingStorageVersion::V4 => Some(StakingStorageVersion::V5),
+			StakingStorageVersion::V5 => None,
 		}
 	}
 
@@ -135,11 +141,6 @@ impl<T: Config> StakingStorageMigrator<T> {
 	/// latest possible.
 	#[cfg(feature = "try-runtime")]
 	pub(crate) fn pre_migrate() -> Result<(), &'static str> {
-		ensure!(
-			StorageVersion::<T>::get() < StakingStorageVersion::latest(),
-			"Already the latest storage version."
-		);
-
 		// Don't need to check for any other pre_migrate, as in try-runtime it is also
 		// called in the migrate() function. Same applies for post_migrate checks for
 		// each version migrator.
@@ -199,34 +200,10 @@ mod tests {
 	use crate::mock::Test as TestRuntime;
 
 	#[test]
-	fn ok_from_v1_migration() {
-		let mut ext = mock::ExtBuilder::default()
-			.with_balances(vec![(1, 100), (2, 100)])
-			.with_collators(vec![(1, 100), (2, 100)])
-			.with_storage_version(StakingStorageVersion::V1_0_0)
-			.build();
-		ext.execute_with(|| {
-			#[cfg(feature = "try-runtime")]
-			assert!(
-				StakingStorageMigrator::<TestRuntime>::pre_migrate().is_ok(),
-				"Storage pre-migrate from v1 should not fail."
-			);
-
-			StakingStorageMigrator::<TestRuntime>::migrate();
-
-			#[cfg(feature = "try-runtime")]
-			assert!(
-				StakingStorageMigrator::<TestRuntime>::post_migrate().is_ok(),
-				"Storage post-migrate from v1 should not fail."
-			);
-		});
-	}
-
-	#[test]
 	fn ok_from_default_migration() {
 		let mut ext = mock::ExtBuilder::default()
-			.with_balances(vec![(1, 100), (2, 100)])
-			.with_collators(vec![(1, 100), (2, 100)])
+			.with_balances((0..15).into_iter().map(|n| (n, 120)).collect())
+			.with_collators((0..15).into_iter().map(|n| (n, 100)).collect())
 			.build();
 		ext.execute_with(|| {
 			#[cfg(feature = "try-runtime")]
