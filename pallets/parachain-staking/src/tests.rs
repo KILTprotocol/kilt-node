@@ -2517,6 +2517,83 @@ fn unlock_unstaked() {
 }
 
 #[test]
+fn kick_candidate_with_full_unstaking() {
+	ExtBuilder::default()
+		.with_balances(vec![(1, 200), (2, 200), (3, 300)])
+		.with_collators(vec![(1, 200), (2, 200), (3, 200)])
+		.build()
+		.execute_with(|| {
+			let max_unstake_reqs: usize = <Test as Config>::MaxUnstakeRequests::get()
+				.saturating_sub(1)
+				.saturated_into();
+			// Fill unstake requests
+			for block in 1u64..1u64.saturating_add(max_unstake_reqs as u64) {
+				System::set_block_number(block);
+				assert_ok!(StakePallet::candidate_stake_less(Origin::signed(3), 1));
+			}
+			assert_eq!(StakePallet::unstaking(3).into_inner().len(), max_unstake_reqs);
+
+			// Additional unstake should fail
+			System::set_block_number(100);
+			assert_noop!(
+				StakePallet::candidate_stake_less(Origin::signed(3), 1),
+				Error::<Test>::NoMoreUnstaking
+			);
+
+			// Fill last unstake request by removing candidate and unstaking all stake
+			assert_ok!(StakePallet::force_remove_candidate(Origin::root(), 3));
+
+			// Cannot join with full unstaking
+			assert_eq!(StakePallet::unstaking(3).into_inner().len(), max_unstake_reqs + 1);
+			assert_noop!(
+				StakePallet::join_candidates(Origin::signed(3), 100),
+				Error::<Test>::CannotJoinBeforeUnlocking
+			);
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(3), 3));
+			assert_ok!(StakePallet::join_candidates(Origin::signed(3), 100));
+		});
+}
+#[test]
+fn kick_delegator_with_full_unstaking() {
+	ExtBuilder::default()
+		.with_balances(vec![(1, 200), (2, 200), (3, 200), (4, 200), (5, 420), (6, 200)])
+		.with_collators(vec![(1, 200)])
+		.with_delegators(vec![(2, 1, 200), (3, 1, 200), (4, 1, 200), (5, 1, 200)])
+		.build()
+		.execute_with(|| {
+			let max_unstake_reqs: usize = <Test as Config>::MaxUnstakeRequests::get()
+				.saturating_sub(1)
+				.saturated_into();
+			// Fill unstake requests
+			for block in 1u64..1u64.saturating_add(max_unstake_reqs as u64) {
+				System::set_block_number(block);
+				assert_ok!(StakePallet::delegator_stake_less(Origin::signed(5), 1, 1));
+			}
+			assert_eq!(StakePallet::unstaking(5).into_inner().len(), max_unstake_reqs);
+
+			// Additional unstake should fail
+			System::set_block_number(100);
+			assert_noop!(
+				StakePallet::delegator_stake_less(Origin::signed(5), 1, 1),
+				Error::<Test>::NoMoreUnstaking
+			);
+
+			// Fill last unstake request by replacing delegator
+			assert_ok!(StakePallet::join_delegators(Origin::signed(6), 1, 200));
+			assert_eq!(StakePallet::unstaking(5).into_inner().len(), max_unstake_reqs + 1);
+			assert!(!StakePallet::is_delegator(&5));
+
+			// Cannot join with full unstaking
+			assert_noop!(
+				StakePallet::join_delegators(Origin::signed(5), 1, 100),
+				Error::<Test>::CannotJoinBeforeUnlocking
+			);
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(5), 5));
+			assert_ok!(StakePallet::join_delegators(Origin::signed(5), 1, 220));
+		});
+}
+
+#[test]
 fn candidate_leaves() {
 	let balances: Vec<(AccountId, Balance)> = (1u64..15u64).map(|id| (id, 100)).collect();
 	ExtBuilder::default()
