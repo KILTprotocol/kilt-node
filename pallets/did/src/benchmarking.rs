@@ -78,7 +78,10 @@ fn get_ecdsa_public_delegation_key() -> ecdsa::Public {
 }
 
 // Must always be dispatched with the DID authentication key
-fn generate_base_did_call_operation<T: Config>(did: DidIdentifierOf<T>, submitter: AccountIdentifierOf<T>) -> DidAuthorizedCallOperation<T> {
+fn generate_base_did_call_operation<T: Config>(
+	did: DidIdentifierOf<T>,
+	submitter: AccountIdentifierOf<T>,
+) -> DidAuthorizedCallOperation<T> {
 	let test_call = <T as Config>::Call::get_call_for_did_call_benchmark();
 
 	DidAuthorizedCallOperation {

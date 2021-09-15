@@ -189,7 +189,7 @@ pub mod pallet {
 		type EnsureOrigin: EnsureOrigin<
 			Success = <Self as Config>::OriginSuccess,
 			<Self as frame_system::Config>::Origin,
-			>;
+		>;
 
 		/// The return type when the did origin check was successful.
 		type OriginSuccess: CallSources<AccountIdentifierOf<Self>, DidIdentifierOf<Self>>;
