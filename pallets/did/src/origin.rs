@@ -20,7 +20,6 @@ use frame_support::{
 	codec::{Decode, Encode},
 	traits::EnsureOrigin,
 };
-use kilt_primitives::{AccountId, DidIdentifier};
 use sp_runtime::RuntimeDebug;
 use sp_std::marker::PhantomData;
 

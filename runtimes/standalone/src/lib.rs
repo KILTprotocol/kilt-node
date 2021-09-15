@@ -27,7 +27,6 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use ctype::AccountIdOf;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::EnsureSigned;
 

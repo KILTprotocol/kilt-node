@@ -143,7 +143,6 @@ pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
-	use kilt_primitives::{AccountId, DidIdentifier};
 	use kilt_traits::CallSources;
 
 	/// Reference to a payload of data of variable size.
@@ -180,19 +179,20 @@ pub mod pallet {
 		/// Type for a DID subject identifier.
 		type DidIdentifier: Parameter + Default + DidVerifiableIdentifier;
 
-		#[cfg(not(feature = "runtime-benchmarks"))]
 		/// Origin type expected by the proxied dispatchable calls.
+		#[cfg(not(feature = "runtime-benchmarks"))]
 		type Origin: From<DidRawOrigin<DidIdentifierOf<Self>, AccountIdentifierOf<Self>>>;
-
-		type OriginSuccess: CallSources<AccountIdentifierOf<Self>, DidIdentifierOf<Self>>;
-
 		#[cfg(feature = "runtime-benchmarks")]
 		type Origin: From<RawOrigin<DidIdentifierOf<Self>>>;
 
+		/// The origin check for all did calls inside this pallet.
 		type EnsureOrigin: EnsureOrigin<
 			Success = <Self as Config>::OriginSuccess,
 			<Self as frame_system::Config>::Origin,
-		>;
+			>;
+
+		/// The return type when the did origin check was successful.
+		type OriginSuccess: CallSources<AccountIdentifierOf<Self>, DidIdentifierOf<Self>>;
 
 		/// Overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;

@@ -105,7 +105,6 @@ pub mod pallet {
 	/// Type of an attester identifier.
 	pub type AttesterOf<T> = delegation::DelegatorIdOf<T>;
 
-	/// Type of an attester identifier.
 	type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
 	/// Type of a delegation identifier.

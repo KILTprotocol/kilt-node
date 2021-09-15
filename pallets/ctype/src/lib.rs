@@ -76,7 +76,7 @@ pub mod pallet {
 	/// Type of a CType creator.
 	pub type CtypeCreatorOf<T> = <T as Config>::CtypeCreatorId;
 
-	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+	type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
