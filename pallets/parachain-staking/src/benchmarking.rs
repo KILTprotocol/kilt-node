@@ -312,7 +312,7 @@ benchmarks! {
 	candidate_stake_more {
 		let n in 1 .. T::MaxTopCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
-		let u in 0 .. (T::MaxUnstakeRequests::get().saturated_into::<u32>());
+		let u in 0 .. (T::MaxUnstakeRequests::get().saturated_into::<u32>() - 1);
 
 		let candidates = setup_collator_candidates::<T>(n, None);
 		for (i, c) in candidates.iter().enumerate() {
@@ -387,7 +387,7 @@ benchmarks! {
 		let n in 1 .. T::MaxTopCandidates::get();
 		// we need at least 1 delegator
 		let m in 1 .. T::MaxDelegatorsPerCollator::get() - 1;
-		let u in 1 .. (T::MaxUnstakeRequests::get().saturated_into::<u32>());
+		let u in 1 .. (T::MaxUnstakeRequests::get().saturated_into::<u32>() - 1);
 
 		let candidates = setup_collator_candidates::<T>(n, None);
 		for (i, c) in candidates.iter().enumerate() {
@@ -526,7 +526,7 @@ benchmarks! {
 	}
 
 	unlock_unstaked {
-		let u in 1 .. (T::MaxUnstakeRequests::get() as u32);
+		let u in 1 .. (T::MaxUnstakeRequests::get() as u32 - 1);
 
 		let candidate = account("collator", 0u32, COLLATOR_ACCOUNT_SEED);
 		let free_balance = T::CurrencyBalance::from(u128::MAX);
@@ -569,7 +569,7 @@ benchmarks! {
 	// 	let n in 2 .. T::MaxTopCandidates::get();
 	// 	// we need at least 1 delegator
 	// 	let m in 1 .. T::MaxDelegatorsPerCollator::get() - 1;
-	// 	let u in 0 .. (T::MaxUnstakeRequests::get().saturated_into::<u32>());
+	// 	let u in 0 .. (T::MaxUnstakeRequests::get().saturated_into::<u32>() - 1);
 
 	// 	let candidates = setup_collator_candidates::<T>(n, None);
 	// 	for (i, c) in candidates.iter().enumerate() {

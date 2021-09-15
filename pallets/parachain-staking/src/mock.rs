@@ -141,7 +141,7 @@ parameter_types! {
 	pub const MaxCollatorCandidates: u32 = 10;
 	pub const MinDelegatorStake: Balance = 5;
 	pub const MinDelegation: Balance = 3;
-	pub const MaxUnstakeRequests: u32 = 5;
+	pub const MaxUnstakeRequests: u32 = 6;
 }
 
 impl Config for Test {
