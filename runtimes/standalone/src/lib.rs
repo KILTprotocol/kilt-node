@@ -27,10 +27,11 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use ctype::AccountIdOf;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::EnsureSigned;
 
-use did::DidSignature;
+use did::{DidRawOrigin, DidSignature};
 use kilt_primitives::{
 	constants::{KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature,
@@ -341,7 +342,8 @@ parameter_types! {
 }
 
 impl attestation::Config for Runtime {
-	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type OriginSuccess = DidRawOrigin<DidIdentifier, AccountId>;
 	type Event = Event;
 	type WeightInfo = ();
 	type MaxDelegatedAttestations = MaxDelegatedAttestations;
@@ -361,7 +363,8 @@ impl delegation::Config for Runtime {
 	type DelegationSignatureVerification = DelegationSignatureVerifier<Self>;
 	type DelegationEntityId = DidIdentifier;
 	type DelegationNodeId = Hash;
-	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Event = Event;
 	type MaxSignatureByteLength = MaxSignatureByteLength;
 	type MaxParentChecks = MaxParentChecks;
@@ -372,7 +375,8 @@ impl delegation::Config for Runtime {
 
 impl ctype::Config for Runtime {
 	type CtypeCreatorId = DidIdentifier;
-	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
 	type Event = Event;
 	type WeightInfo = ();
 }
@@ -394,10 +398,17 @@ impl did::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
 	type Origin = Origin;
+
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	type EnsureOrigin = did::EnsureDidOrigin<Self::DidIdentifier>;
+	type EnsureOrigin = did::EnsureDidOrigin<Self::DidIdentifier, AccountId>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type OriginSuccess = did::DidRawOrigin<AccountId, Self::DidIdentifier>;
+
 	#[cfg(feature = "runtime-benchmarks")]
 	type EnsureOrigin = EnsureSigned<Self::DidIdentifier>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type OriginSuccess = Self::DidIdentifier;
+
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
 	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;

@@ -401,6 +401,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "kilt-primitives",
+ "kilt-traits",
  "log",
  "parity-scale-codec",
  "serde",
@@ -1471,6 +1472,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "kilt-primitives",
+ "kilt-traits",
  "log",
  "parity-scale-codec",
  "serde",
@@ -1885,6 +1887,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "kilt-primitives",
+ "kilt-traits",
  "log",
  "parity-scale-codec",
  "serde",
@@ -1945,6 +1948,7 @@ dependencies = [
  "frame-system",
  "hex",
  "kilt-primitives",
+ "kilt-traits",
  "log",
  "parity-scale-codec",
  "serde",
@@ -3767,6 +3771,10 @@ dependencies = [
  "sp-runtime",
  "sp-std",
 ]
+
+[[package]]
+name = "kilt-traits"
+version = "0.25.0"
 
 [[package]]
 name = "kv-log-macro"

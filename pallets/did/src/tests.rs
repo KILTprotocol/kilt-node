@@ -39,7 +39,7 @@ fn check_successful_simple_ed25519_creation() {
 
 	ext.execute_with(|| {
 		assert_ok!(Did::create(
-			Origin::signed(DEFAULT_ACCOUNT),
+			Origin::signed(ACCOUNT_00),
 			details,
 			did::DidSignature::from(signature),
 		));
@@ -74,7 +74,7 @@ fn check_successful_simple_sr25519_creation() {
 
 	ext.execute_with(|| {
 		assert_ok!(Did::create(
-			Origin::signed(DEFAULT_ACCOUNT),
+			Origin::signed(ACCOUNT_00),
 			details,
 			did::DidSignature::from(signature),
 		));
@@ -109,7 +109,7 @@ fn check_successful_simple_ecdsa_creation() {
 
 	ext.execute_with(|| {
 		assert_ok!(Did::create(
-			Origin::signed(DEFAULT_ACCOUNT),
+			Origin::signed(ACCOUNT_00),
 			details,
 			did::DidSignature::from(signature),
 		));
@@ -158,7 +158,7 @@ fn check_successful_complete_creation() {
 
 	ext.execute_with(|| {
 		assert_ok!(Did::create(
-			Origin::signed(DEFAULT_ACCOUNT),
+			Origin::signed(ACCOUNT_00),
 			details.clone(),
 			did::DidSignature::from(signature),
 		));
@@ -223,7 +223,7 @@ fn check_duplicate_did_creation() {
 	ext.execute_with(|| {
 		assert_noop!(
 			Did::create(
-				Origin::signed(DEFAULT_ACCOUNT),
+				Origin::signed(ACCOUNT_00),
 				details,
 				did::DidSignature::from(signature),
 			),
@@ -248,7 +248,7 @@ fn check_invalid_signature_format_did_creation() {
 	ext.execute_with(|| {
 		assert_noop!(
 			Did::create(
-				Origin::signed(DEFAULT_ACCOUNT),
+				Origin::signed(ACCOUNT_00),
 				details,
 				did::DidSignature::from(signature),
 			),
@@ -271,7 +271,7 @@ fn check_invalid_signature_did_creation() {
 	ext.execute_with(|| {
 		assert_noop!(
 			Did::create(
-				Origin::signed(DEFAULT_ACCOUNT),
+				Origin::signed(ACCOUNT_00),
 				details,
 				did::DidSignature::from(signature),
 			),
@@ -294,7 +294,7 @@ fn check_swapped_did_subject_did_creation() {
 	ext.execute_with(|| {
 		assert_noop!(
 			Did::create(
-				Origin::signed(DEFAULT_ACCOUNT),
+				Origin::signed(ACCOUNT_00),
 				details,
 				did::DidSignature::from(signature),
 			),
@@ -321,7 +321,7 @@ fn check_max_limit_key_agreement_keys_did_creation() {
 	ext.execute_with(|| {
 		assert_noop!(
 			Did::create(
-				Origin::signed(DEFAULT_ACCOUNT),
+				Origin::signed(ACCOUNT_00),
 				details,
 				did::DidSignature::from(signature),
 			),
@@ -349,7 +349,7 @@ fn check_url_too_long_did_creation() {
 	ext.execute_with(|| {
 		assert_noop!(
 			Did::create(
-				Origin::signed(DEFAULT_ACCOUNT),
+				Origin::signed(ACCOUNT_00),
 				details,
 				did::DidSignature::from(signature),
 			),
@@ -377,7 +377,7 @@ fn check_too_many_urls_did_creation() {
 	ext.execute_with(|| {
 		assert_noop!(
 			Did::create(
-				Origin::signed(DEFAULT_ACCOUNT),
+				Origin::signed(ACCOUNT_00),
 				details,
 				did::DidSignature::from(signature),
 			),
@@ -1556,12 +1556,18 @@ fn check_did_not_present_deletion() {
 fn check_did_not_found_call_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let caller = DEFAULT_ACCOUNT;
+	let caller = ACCOUNT_00;
 
 	// No DID added
 	let mut ext = ExtBuilder::default().build(None);
 
-	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did);
+	let submitter = kilt_primitives::AccountId::default();
+
+	let call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::Authentication,
+		did.clone(),
+		submitter,
+	);
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
@@ -1580,7 +1586,7 @@ fn check_did_not_found_call_error() {
 fn check_max_counter_call_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let caller = DEFAULT_ACCOUNT;
+	let caller = ACCOUNT_00;
 	let mut mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 	mock_did.last_tx_counter = u64::MAX;
 
@@ -1588,7 +1594,13 @@ fn check_max_counter_call_error() {
 		.with_dids(vec![(did.clone(), mock_did)])
 		.build(None);
 
-	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did);
+	let submitter = kilt_primitives::AccountId::default();
+
+	let call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::Authentication,
+		did.clone(),
+		submitter,
+	);
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
@@ -1607,7 +1619,7 @@ fn check_max_counter_call_error() {
 fn check_too_small_tx_counter_call_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let caller = DEFAULT_ACCOUNT;
+	let caller = ACCOUNT_00;
 	let mut mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 	mock_did.last_tx_counter = 1u64;
 
@@ -1615,7 +1627,13 @@ fn check_too_small_tx_counter_call_error() {
 		.with_dids(vec![(did.clone(), mock_did)])
 		.build(None);
 
-	let mut call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did);
+	let submitter = kilt_primitives::AccountId::default();
+
+	let mut call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::Authentication,
+		did.clone(),
+		submitter,
+	);
 	call_operation.operation.tx_counter = 0u64;
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
@@ -1635,14 +1653,20 @@ fn check_too_small_tx_counter_call_error() {
 fn check_equal_tx_counter_call_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let caller = DEFAULT_ACCOUNT;
+	let caller = ACCOUNT_00;
 	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did.clone())])
 		.build(None);
 
-	let mut call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did);
+	let submitter = kilt_primitives::AccountId::default();
+
+	let mut call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::Authentication,
+		did.clone(),
+		submitter,
+	);
 	call_operation.operation.tx_counter = mock_did.last_tx_counter;
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
@@ -1662,14 +1686,20 @@ fn check_equal_tx_counter_call_error() {
 fn check_too_large_tx_counter_call_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let caller = DEFAULT_ACCOUNT;
+	let caller = ACCOUNT_00;
 	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did.clone())])
 		.build(None);
 
-	let mut call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did);
+	let submitter = kilt_primitives::AccountId::default();
+
+	let mut call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::Authentication,
+		did.clone(),
+		submitter,
+	);
 	call_operation.operation.tx_counter = mock_did.last_tx_counter + 2u64;
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
@@ -1689,7 +1719,7 @@ fn check_too_large_tx_counter_call_error() {
 fn check_verification_key_not_present_call_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let caller = DEFAULT_ACCOUNT;
+	let caller = ACCOUNT_00;
 	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
 	let mut ext = ExtBuilder::default()
@@ -1698,7 +1728,13 @@ fn check_verification_key_not_present_call_error() {
 
 	// The operation requires the delegation key that is currently not stored for
 	// the given DID.
-	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did);
+	let submitter = kilt_primitives::AccountId::default();
+
+	let call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::CapabilityDelegation,
+		did.clone(),
+		submitter,
+	);
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
@@ -1717,7 +1753,7 @@ fn check_verification_key_not_present_call_error() {
 fn check_invalid_signature_format_call_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let caller = DEFAULT_ACCOUNT;
+	let caller = ACCOUNT_00;
 	let alternative_auth_key = get_ed25519_authentication_key(true);
 	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
@@ -1725,7 +1761,13 @@ fn check_invalid_signature_format_call_error() {
 		.with_dids(vec![(did.clone(), mock_did)])
 		.build(None);
 
-	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did);
+	let submitter = kilt_primitives::AccountId::default();
+
+	let call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::Authentication,
+		did.clone(),
+		submitter,
+	);
 	let signature = alternative_auth_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
@@ -1741,10 +1783,10 @@ fn check_invalid_signature_format_call_error() {
 }
 
 #[test]
-fn check_invalid_signature_call_error() {
+fn check_bad_submitter_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let caller = DEFAULT_ACCOUNT;
+	let caller = ACCOUNT_00;
 	let alternative_auth_key = get_sr25519_authentication_key(false);
 	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
@@ -1752,7 +1794,47 @@ fn check_invalid_signature_call_error() {
 		.with_dids(vec![(did.clone(), mock_did)])
 		.build(None);
 
-	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did);
+	let submitter = ACCOUNT_01;
+
+	let call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::Authentication,
+		did.clone(),
+		submitter,
+	);
+	let signature = alternative_auth_key.sign(call_operation.encode().as_ref());
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_call(
+				Origin::signed(caller),
+				Box::new(call_operation.operation),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::BadDidOrigin
+		);
+	});
+}
+
+
+#[test]
+fn check_invalid_signature_call_error() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let caller = ACCOUNT_00;
+	let alternative_auth_key = get_sr25519_authentication_key(false);
+	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(did.clone(), mock_did)])
+		.build(None);
+
+	let submitter = kilt_primitives::AccountId::default();
+
+	let call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::Authentication,
+		did.clone(),
+		submitter,
+	);
 	let signature = alternative_auth_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
@@ -1771,7 +1853,7 @@ fn check_invalid_signature_call_error() {
 fn check_call_attestation_key_successful() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let caller = DEFAULT_ACCOUNT;
+	let caller = ACCOUNT_00;
 	let attestation_key = get_ed25519_attestation_key(true);
 
 	let mut mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
@@ -1781,7 +1863,13 @@ fn check_call_attestation_key_successful() {
 		.with_dids(vec![(did.clone(), mock_did)])
 		.build(None);
 
-	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::AssertionMethod, did);
+	let submitter = kilt_primitives::AccountId::default();
+
+	let call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::AssertionMethod,
+		did.clone(),
+		submitter,
+	);
 	let signature = attestation_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
@@ -1797,7 +1885,7 @@ fn check_call_attestation_key_successful() {
 fn check_call_attestation_key_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let caller = DEFAULT_ACCOUNT;
+	let caller = ACCOUNT_00;
 	let attestation_key = get_ed25519_attestation_key(true);
 
 	let mut mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
@@ -1811,7 +1899,13 @@ fn check_call_attestation_key_error() {
 		.with_ctypes(vec![(get_attestation_key_test_input(), did.clone())])
 		.build(Some(ext));
 
-	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::AssertionMethod, did);
+	let submitter = kilt_primitives::AccountId::default();
+
+	let call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::AssertionMethod,
+		did.clone(),
+		submitter,
+	);
 	let signature = attestation_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
@@ -1830,7 +1924,7 @@ fn check_call_attestation_key_error() {
 fn check_call_delegation_key_successful() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let caller = DEFAULT_ACCOUNT;
+	let caller = ACCOUNT_00;
 	let delegation_key = get_ed25519_delegation_key(true);
 
 	let mut mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
@@ -1840,7 +1934,13 @@ fn check_call_delegation_key_successful() {
 		.with_dids(vec![(did.clone(), mock_did)])
 		.build(None);
 
-	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did);
+	let submitter = kilt_primitives::AccountId::default();
+
+	let call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::CapabilityDelegation,
+		did.clone(),
+		submitter,
+	);
 	let signature = delegation_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
@@ -1856,7 +1956,7 @@ fn check_call_delegation_key_successful() {
 fn check_call_delegation_key_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let caller = DEFAULT_ACCOUNT;
+	let caller = ACCOUNT_00;
 	let delegation_key = get_ed25519_delegation_key(true);
 
 	let mut mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
@@ -1870,7 +1970,13 @@ fn check_call_delegation_key_error() {
 		.with_ctypes(vec![(get_delegation_key_test_input(), did.clone())])
 		.build(Some(ext));
 
-	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did);
+	let submitter = kilt_primitives::AccountId::default();
+
+	let call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::CapabilityDelegation,
+		did.clone(),
+		submitter,
+	);
 	let signature = delegation_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
@@ -1889,7 +1995,7 @@ fn check_call_delegation_key_error() {
 fn check_call_authentication_key_successful() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let caller = DEFAULT_ACCOUNT;
+	let caller = ACCOUNT_00;
 
 	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
@@ -1897,7 +2003,13 @@ fn check_call_authentication_key_successful() {
 		.with_dids(vec![(did.clone(), mock_did)])
 		.build(None);
 
-	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did);
+	let submitter = kilt_primitives::AccountId::default();
+
+	let call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::Authentication,
+		did.clone(),
+		submitter,
+	);
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
@@ -1913,7 +2025,7 @@ fn check_call_authentication_key_successful() {
 fn check_call_authentication_key_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let caller = DEFAULT_ACCOUNT;
+	let caller = ACCOUNT_00;
 
 	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
@@ -1925,7 +2037,13 @@ fn check_call_authentication_key_error() {
 		.with_ctypes(vec![(get_authentication_key_test_input(), did.clone())])
 		.build(Some(ext));
 
-	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did);
+	let submitter = kilt_primitives::AccountId::default();
+
+	let call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::Authentication,
+		did.clone(),
+		submitter,
+	);
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
@@ -1944,13 +2062,19 @@ fn check_call_authentication_key_error() {
 fn check_null_key_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let caller = DEFAULT_ACCOUNT;
+	let caller = ACCOUNT_00;
 
 	let mut ext = ExtBuilder::default().build(None);
 
+	let submitter = kilt_primitives::AccountId::default();
+
 	// CapabilityInvocation is not supported at the moment, so it should return no
 	// key and hence the operation fail.
-	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityInvocation, did);
+	let call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::CapabilityInvocation,
+		did.clone(),
+		submitter,
+	);
 	let signature = ed25519::Signature::default();
 
 	ext.execute_with(|| {
@@ -1978,7 +2102,13 @@ fn check_authentication_successful_operation_verification() {
 		.with_dids(vec![(did.clone(), mock_did.clone())])
 		.build(None);
 
-	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did);
+	let submitter = kilt_primitives::AccountId::default();
+
+	let call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::Authentication,
+		did.clone(),
+		submitter,
+	);
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
@@ -2010,7 +2140,13 @@ fn check_attestation_successful_operation_verification() {
 		.with_dids(vec![(did.clone(), mock_did.clone())])
 		.build(None);
 
-	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::AssertionMethod, did);
+	let submitter = kilt_primitives::AccountId::default();
+
+	let call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::AssertionMethod,
+		did.clone(),
+		submitter,
+	);
 	let signature = attestation_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
@@ -2042,7 +2178,13 @@ fn check_delegation_successful_operation_verification() {
 		.with_dids(vec![(did.clone(), mock_did.clone())])
 		.build(None);
 
-	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did);
+	let submitter = kilt_primitives::AccountId::default();
+
+	let call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::CapabilityDelegation,
+		did.clone(),
+		submitter,
+	);
 	let signature = delegation_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
@@ -2068,7 +2210,13 @@ fn check_did_not_present_operation_verification() {
 
 	let mut ext = ExtBuilder::default().build(None);
 
-	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did);
+	let submitter = kilt_primitives::AccountId::default();
+
+	let call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::CapabilityDelegation,
+		did.clone(),
+		submitter,
+	);
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
@@ -2094,7 +2242,13 @@ fn check_max_tx_counter_operation_verification() {
 		.with_dids(vec![(did.clone(), mock_did.clone())])
 		.build(None);
 
-	let mut call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did);
+	let submitter = kilt_primitives::AccountId::default();
+
+	let mut call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::CapabilityDelegation,
+		did.clone(),
+		submitter,
+	);
 	call_operation.operation.tx_counter = mock_did.last_tx_counter;
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
@@ -2117,8 +2271,13 @@ fn check_smaller_counter_operation_verification() {
 	let mut mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 	mock_did.last_tx_counter = 1;
 
-	let mut call_operation =
-		generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did.clone());
+	let submitter = kilt_primitives::AccountId::default();
+
+	let mut call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::CapabilityDelegation,
+		did.clone(),
+		submitter,
+	);
 	call_operation.operation.tx_counter = 0u64;
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
@@ -2142,8 +2301,13 @@ fn check_equal_counter_operation_verification() {
 
 	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
-	let mut call_operation =
-		generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did.clone());
+	let submitter = kilt_primitives::AccountId::default();
+
+	let mut call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::CapabilityDelegation,
+		did.clone(),
+		submitter,
+	);
 	call_operation.operation.tx_counter = mock_did.last_tx_counter;
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
@@ -2167,8 +2331,13 @@ fn check_too_large_counter_operation_verification() {
 
 	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
-	let mut call_operation =
-		generate_test_did_call(did::DidVerificationKeyRelationship::CapabilityDelegation, did.clone());
+	let submitter = kilt_primitives::AccountId::default();
+
+	let mut call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::CapabilityDelegation,
+		did.clone(),
+		submitter,
+	);
 	call_operation.operation.tx_counter = mock_did.last_tx_counter + 2;
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
@@ -2192,7 +2361,13 @@ fn check_verification_key_not_present_operation_verification() {
 
 	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
-	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::AssertionMethod, did.clone());
+	let submitter = kilt_primitives::AccountId::default();
+
+	let call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::AssertionMethod,
+		did.clone(),
+		submitter,
+	);
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	let mut ext = ExtBuilder::default().with_dids(vec![(did, mock_did)]).build(None);
@@ -2219,7 +2394,13 @@ fn check_invalid_signature_format_operation_verification() {
 
 	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
-	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did.clone());
+	let submitter = kilt_primitives::AccountId::default();
+
+	let call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::Authentication,
+		did.clone(),
+		submitter,
+	);
 	let signature = invalid_key.sign(call_operation.encode().as_ref());
 
 	let mut ext = ExtBuilder::default().with_dids(vec![(did, mock_did)]).build(None);
@@ -2244,7 +2425,13 @@ fn check_invalid_signature_operation_verification() {
 
 	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
-	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did.clone());
+	let submitter = kilt_primitives::AccountId::default();
+
+	let call_operation = generate_test_did_call(
+		did::DidVerificationKeyRelationship::Authentication,
+		did.clone(),
+		submitter,
+	);
 	let signature = alternative_key.sign(&call_operation.encode());
 
 	let mut ext = ExtBuilder::default().with_dids(vec![(did, mock_did)]).build(None);

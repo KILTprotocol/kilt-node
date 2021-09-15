@@ -634,6 +634,8 @@ pub struct DidAuthorizedCallOperation<T: Config> {
 	pub tx_counter: u64,
 	/// The extrinsic call to authorize with the DID.
 	pub call: DidCallableOf<T>,
+	/// The account which is authorized to submit the did call.
+	pub submitter: AccountIdentifierOf<T>,
 }
 
 /// Wrapper around a [DidAuthorizedCallOperation].
