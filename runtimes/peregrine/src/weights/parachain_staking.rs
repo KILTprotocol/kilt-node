@@ -23,7 +23,7 @@
 //! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: None, DB CACHE: 128
 
 // Executed Command:
-// /home/willi/mashnet-node/target/release/kilt-parachain
+// target/release/kilt-parachain
 // benchmark
 // --execution=wasm
 // --wasm-execution=Compiled
@@ -33,9 +33,9 @@
 // --steps=50
 // --repeat=20
 // --output
-// ../../runtimes/peregrine/src/weights/parachain_staking.rs
+// runtimes/peregrine/src/weights/parachain_staking.rs
 // --template
-// ../../.maintain/runtime-weight-template.hbs
+// .maintain/runtime-weight-template.hbs
 
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
