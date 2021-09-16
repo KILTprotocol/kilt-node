@@ -92,7 +92,8 @@ use frame_support::traits::Get;
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_support::{pallet_prelude::*, BoundedVec};
+	use delegation::DelegationNodeIdOf;
+use frame_support::{pallet_prelude::*, BoundedVec};
 	use frame_system::pallet_prelude::*;
 	use kilt_traits::CallSources;
 
@@ -106,9 +107,6 @@ pub mod pallet {
 	pub type AttesterOf<T> = delegation::DelegatorIdOf<T>;
 
 	type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-
-	/// Type of a delegation identifier.
-	pub type DelegationNodeIdOf<T> = delegation::DelegationNodeIdOf<T>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config + delegation::Config {
@@ -166,6 +164,9 @@ pub mod pallet {
 		/// An attestation has been revoked.
 		/// \[revoker ID, claim hash\]
 		AttestationRevoked(AttesterOf<T>, ClaimHashOf<T>),
+		/// An attestation has been removed.
+		/// \[revoker ID, claim hash\]
+		AttestationRemoved(AttesterOf<T>, ClaimHashOf<T>),
 	}
 
 	#[pallet::error]
@@ -189,10 +190,8 @@ pub mod pallet {
 		/// The delegation node owner is different than the attester.
 		/// Only when the revoker is not the original attester.
 		NotDelegatedToAttester,
-		/// The delegation node is not under the control of the revoker, or it
-		/// is but it has been revoked. Only when the revoker is not the
-		/// original attester.
-		UnauthorizedRevocation,
+		/// The call origin is not authorized to change the attestation.
+		Unauthorized,
 		/// The maximum number of delegated attestations has already been
 		/// reached for the corresponding delegation id such that another one
 		/// cannot be added.
@@ -315,28 +314,16 @@ pub mod pallet {
 			max_parent_checks: u32,
 		) -> DispatchResultWithPostInfo {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
-			let revoker = source.subject();
+			let attester = source.subject();
 
 			let attestation = <Attestations<T>>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
 			ensure!(!attestation.revoked, Error::<T>::AlreadyRevoked);
 
-			// Check the delegation tree if the sender of the revocation operation is not
-			// the original attester
-			let revocations = if attestation.attester != revoker {
-				let delegation_id = attestation.delegation_id.ok_or(Error::<T>::UnauthorizedRevocation)?;
-				ensure!(
-					max_parent_checks <= T::MaxParentChecks::get(),
-					delegation::Error::<T>::MaxParentChecksTooLarge
-				);
-				// Check whether the sender of the revocation controls the delegation node
-				// specified, and that its status has not been revoked
-				let (is_delegating, revocations) =
-					<delegation::Pallet<T>>::is_delegating(&revoker, &delegation_id, max_parent_checks)?;
-				ensure!(is_delegating, Error::<T>::UnauthorizedRevocation);
-				revocations
+			let delegation_depth = if attestation.attester != attester {
+				Self::verify_delegated_access(&attester, &attestation, max_parent_checks)?
 			} else {
-				0u32
+				0
 			};
 
 			log::debug!("revoking Attestation");
@@ -348,9 +335,60 @@ pub mod pallet {
 				},
 			);
 
-			Self::deposit_event(Event::AttestationRevoked(revoker, claim_hash));
+			Self::deposit_event(Event::AttestationRevoked(attester, claim_hash));
 
-			Ok(Some(<T as pallet::Config>::WeightInfo::revoke(revocations)).into())
+			Ok(Some(<T as pallet::Config>::WeightInfo::revoke(delegation_depth)).into())
+		}
+
+		// TODO: Benchmarks
+		#[pallet::weight(10)]
+		pub fn remove(
+			origin: OriginFor<T>,
+			claim_hash: ClaimHashOf<T>,
+			max_parent_checks: u32,
+		) -> DispatchResultWithPostInfo {
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let attester = source.subject();
+
+			let attestation = <Attestations<T>>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
+
+			let delegation_depth = if attestation.attester != attester {
+				Self::verify_delegated_access(&attester, &attestation, max_parent_checks)?
+			} else {
+				0
+			};
+
+			log::debug!("removing Attestation");
+			<Attestations<T>>::remove(&claim_hash);
+
+			Self::deposit_event(Event::AttestationRemoved(attester, claim_hash));
+
+			// TODO: Benchmarks
+			Ok(().into())
+		}
+	}
+
+	impl<T: Config> Pallet<T> {
+		/// Check the delegation tree if the attester is authorized to access
+		/// the attestation.
+		fn verify_delegated_access(
+			attester: &AttesterOf<T>,
+			attestation: &AttestationDetails<T>,
+			max_parent_checks: u32,
+		) -> Result<u32, DispatchError> {
+			// Check the delegation tree if the sender of the revocation operation is not
+			// the original attester
+			let delegation_id = attestation.delegation_id.ok_or(Error::<T>::Unauthorized)?;
+			ensure!(
+				max_parent_checks <= T::MaxParentChecks::get(),
+				delegation::Error::<T>::MaxParentChecksTooLarge
+			);
+			// Check whether the sender of the revocation controls the delegation node
+			// specified, and that its status has not been revoked
+			let (is_delegating, delegation_depth) =
+				<delegation::Pallet<T>>::is_delegating(attester, &delegation_id, max_parent_checks)?;
+			ensure!(is_delegating, Error::<T>::Unauthorized);
+			Ok(delegation_depth)
 		}
 	}
 }
