@@ -202,8 +202,8 @@ mod tests {
 	#[test]
 	fn ok_from_default_migration() {
 		let mut ext = mock::ExtBuilder::default()
-			.with_balances((0..15).into_iter().map(|n| (n, 120)).collect())
-			.with_collators((0..15).into_iter().map(|n| (n, 100)).collect())
+			.with_balances((0..16).into_iter().map(|n| (n, 120)).collect())
+			.with_collators((0..16).into_iter().map(|n| (n, 100)).collect())
 			.build();
 		ext.execute_with(|| {
 			#[cfg(feature = "try-runtime")]

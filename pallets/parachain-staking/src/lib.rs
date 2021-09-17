@@ -593,7 +593,6 @@ pub mod pallet {
 	/// It maps from an account to its information.
 	#[pallet::storage]
 	#[pallet::getter(fn candidate_pool)]
-	#[pallet::storage_prefix = "CollatorState"]
 	pub(crate) type CandidatePool<T: Config> = StorageMap<
 		_,
 		Twox64Concat,
@@ -614,7 +613,6 @@ pub mod pallet {
 	/// non collating candidates is not included in [TotalCollatorStake].
 	#[pallet::storage]
 	#[pallet::getter(fn total_collator_stake)]
-	#[pallet::storage_prefix = "Total"]
 	pub(crate) type TotalCollatorStake<T: Config> = StorageValue<_, TotalStake<BalanceOf<T>>, ValueQuery>;
 
 	/// The collator candidates with the highest amount of stake.
@@ -628,7 +626,6 @@ pub mod pallet {
 	/// that a collator can drop out of the collator set by reducing his stake.
 	#[pallet::storage]
 	#[pallet::getter(fn top_candidates)]
-	#[pallet::storage_prefix = "CandidatePool"]
 	pub(crate) type TopCandidates<T: Config> =
 		StorageValue<_, OrderedSet<Stake<T::AccountId, BalanceOf<T>>, T::MaxTopCandidates>, ValueQuery>;
 
