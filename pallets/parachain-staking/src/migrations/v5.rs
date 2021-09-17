@@ -24,10 +24,9 @@ use crate::{
 };
 use frame_support::{
 	dispatch::Weight,
-	storage::{unhashed, IterableStorageMap, StorageValue},
+	storage::{IterableStorageMap, StorageValue},
 	traits::Get,
 };
-use hex_literal::hex;
 
 #[cfg(feature = "try-runtime")]
 pub(crate) fn pre_migrate<T: Config>() -> Result<(), &'static str> {
@@ -52,24 +51,20 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	TotalCollatorStake::<T>::set(total);
 	old::Total::<T>::kill();
 
-	// copy & count candidates
-	let counter: u32 = old::CollatorState::<T>::iter().fold(0, |acc, (key, candidate)| {
+	// kill, copy & count candidates
+	let counter: u32 = old::CollatorState::<T>::drain().fold(0, |acc, (key, candidate)| {
 		CandidatePool::<T>::insert(&key, candidate);
 		acc.saturating_add(1)
 	});
 	CandidateCount::<T>::put(counter);
 
-	// manually kill the ParachainStaking + CollatorState storage.
-	unhashed::kill_prefix(
-		&hex!["a686a3043d0adcf2fa655e57bc595a7885bb8cc4689168702092a11b929027d7"][..],
-		Some(32),
-	);
-
 	// update storage version
 	StorageVersion::<T>::put(StakingStorageVersion::V5);
 	log::info!("Completed staking migration to StakingStorageVersion::V5");
 
-	T::DbWeight::get().reads_writes(counter.saturating_add(2).into(), 3)
+	// Writes: 3 * Kill, 3 * Put, `counter` * inserts, at max 32 additional kills <
+	// counter + 38 Reads: (counter + 2) * get
+	T::DbWeight::get().reads_writes(counter.saturating_add(38).into(), counter.saturating_add(2).into())
 }
 
 #[cfg(feature = "try-runtime")]
@@ -94,6 +89,8 @@ pub(crate) fn post_migrate<T: Config>() -> Result<(), &'static str> {
 		TotalCollatorStake::<T>::get().collators
 			>= CandidateCount::<T>::get().saturated_into::<BalanceOf<T>>() * T::MinCollatorStake::get()
 	);
+	let counter: u32 = old::CollatorState::<T>::iter().fold(0, |acc, (_, _)| acc.saturating_add(1));
+	assert!(counter == 0);
 	Ok(())
 }
 
