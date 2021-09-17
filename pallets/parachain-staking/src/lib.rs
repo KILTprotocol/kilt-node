@@ -2607,7 +2607,14 @@ pub mod pallet {
 				DispatchClass::Mandatory,
 			);
 
-			Some(Pallet::<T>::selected_candidates().to_vec())
+			let collators = Pallet::<T>::selected_candidates().to_vec();
+			if collators.is_empty() {
+				// we never want to pass an empty set of collators. This would brick the chain.
+				log::error!("💥 keeping old session because of empty collator set!");
+				None
+			} else {
+				Some(collators)
+			}
 		}
 
 		fn end_session(_end_index: SessionIndex) {
