@@ -4,7 +4,7 @@ description = "Enables adding CTypes."
 edition = "2018"
 name = "ctype"
 repository = "https://github.com/KILTprotocol/mashnet-node"
-version = "0.25.1"
+version = "0.25.2"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
