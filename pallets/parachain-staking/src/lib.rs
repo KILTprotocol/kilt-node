@@ -628,7 +628,7 @@ pub mod pallet {
 	/// that a collator can drop out of the collator set by reducing his stake.
 	#[pallet::storage]
 	#[pallet::getter(fn top_candidates)]
-	#[pallet::storage_prefix = "CollatorPool"]
+	#[pallet::storage_prefix = "CandidatePool"]
 	pub(crate) type TopCandidates<T: Config> =
 		StorageValue<_, OrderedSet<Stake<T::AccountId, BalanceOf<T>>, T::MaxTopCandidates>, ValueQuery>;
 

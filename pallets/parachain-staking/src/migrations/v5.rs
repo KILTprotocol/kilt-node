@@ -44,8 +44,23 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 
 #[cfg(feature = "try-runtime")]
 pub(crate) fn post_migrate<T: Config>() -> Result<(), &'static str> {
+	use crate::TopCandidates;
+	use sp_runtime::SaturatedConversion;
+
 	assert_eq!(StorageVersion::<T>::get(), StakingStorageVersion::V5);
-	assert!(CandidateCount::<T>::get() > T::MinCollators::get());
+	log::info!(
+		"CandidateCount = {} >= {} = MinCollators",
+		CandidateCount::<T>::get(),
+		T::MinCollators::get()
+	);
+	assert!(CandidateCount::<T>::get() >= T::MinCollators::get());
+	log::info!(
+		"TopCandidates = {} >= {} = MinCollators",
+		TopCandidates::<T>::get().len(),
+		T::MinCollators::get()
+	);
+	assert!(TopCandidates::<T>::get().len().saturated_into::<u32>() >= T::MinCollators::get());
+	assert!(TopCandidates::<T>::get().len().saturated_into::<u32>() == CandidateCount::<T>::get());
 	Ok(())
 }
 
