@@ -24,6 +24,7 @@ use ctype::mock as ctype_mock;
 
 use frame_support::{ensure, parameter_types, weights::constants::RocksDbWeight, BoundedVec};
 use frame_system::EnsureSigned;
+use kilt_primitives::constants::MILLI_KILT;
 use sp_core::{ed25519, sr25519, Pair};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
@@ -42,6 +43,7 @@ pub type TestDelegationNodeId = kilt_primitives::Hash;
 pub type TestDelegatorId = kilt_primitives::AccountId;
 pub type TestClaimHash = kilt_primitives::Hash;
 pub type TestAttester = TestDelegatorId;
+pub type TestBalance = kilt_primitives::Balance;
 
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -53,6 +55,7 @@ frame_support::construct_runtime!(
 		Attestation: attestation::{Pallet, Call, Storage, Event<T>},
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>},
+		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 	}
 );
 
@@ -77,7 +80,7 @@ impl frame_system::Config for Test {
 	type Version = ();
 
 	type PalletInfo = PalletInfo;
-	type AccountData = ();
+	type AccountData = pallet_balances::AccountData<TestBalance>;
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type BaseCallFilter = frame_support::traits::Everything;
@@ -86,6 +89,24 @@ impl frame_system::Config for Test {
 	type BlockLength = ();
 	type SS58Prefix = SS58Prefix;
 	type OnSetCode = ();
+}
+
+parameter_types! {
+	pub const ExistentialDeposit: TestBalance = MILLI_KILT;
+	pub const MaxLocks: u32 = 50;
+	pub const MaxReserves: u32 = 50;
+}
+
+impl pallet_balances::Config for Test {
+	type Balance = TestBalance;
+	type DustRemoval = ();
+	type Event = ();
+	type ExistentialDeposit = ExistentialDeposit;
+	type AccountStore = System;
+	type WeightInfo = ();
+	type MaxLocks = MaxLocks;
+	type MaxReserves = MaxReserves;
+	type ReserveIdentifier = [u8; 8];
 }
 
 impl ctype::Config for Test {
@@ -122,6 +143,7 @@ impl delegation::Config for Test {
 parameter_types! {
 	// TODO: Find reasonable number
 	pub const MaxDelegatedAttestations: u32 = 1000;
+	pub const Deposit: TestBalance = 100 * MILLI_KILT;
 }
 
 impl Config for Test {
@@ -129,6 +151,9 @@ impl Config for Test {
 	type OriginSuccess = TestAttester;
 	type Event = ();
 	type WeightInfo = ();
+
+	type Currency = Balances;
+	type Deposit = Deposit;
 	type MaxDelegatedAttestations = MaxDelegatedAttestations;
 }
 

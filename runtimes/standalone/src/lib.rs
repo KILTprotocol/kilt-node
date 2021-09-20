@@ -337,6 +337,7 @@ impl pallet_sudo::Config for Runtime {
 parameter_types! {
 	// TODO: Find reasonable number
 	pub const MaxDelegatedAttestations: u32 = 1000;
+	pub const AttestationDeposit: Balance = 100 * MILLI_KILT;
 }
 
 impl attestation::Config for Runtime {
@@ -344,6 +345,9 @@ impl attestation::Config for Runtime {
 	type OriginSuccess = did::DidRawOrigin<DidIdentifier, AccountId>;
 	type Event = Event;
 	type WeightInfo = ();
+
+	type Currency = Balances;
+	type Deposit = AttestationDeposit;
 	type MaxDelegatedAttestations = MaxDelegatedAttestations;
 }
 

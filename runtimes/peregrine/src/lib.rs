@@ -536,8 +536,8 @@ impl<R: did::Config> delegation::VerifyDelegateSignature for DelegationSignature
 }
 
 parameter_types! {
-	// TODO: Find reasonable number
 	pub const MaxDelegatedAttestations: u32 = 1000;
+	pub const AttestationDeposit: Balance = 100 * MILLI_KILT;
 }
 
 impl attestation::Config for Runtime {
@@ -545,6 +545,9 @@ impl attestation::Config for Runtime {
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Event = Event;
 	type WeightInfo = weights::attestation::WeightInfo<Runtime>;
+
+	type Currency = Balances;
+	type Deposit = AttestationDeposit;
 	type MaxDelegatedAttestations = MaxDelegatedAttestations;
 }
 

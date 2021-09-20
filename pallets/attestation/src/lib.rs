@@ -75,6 +75,7 @@
 
 pub mod attestations;
 pub mod default_weights;
+pub mod deposit;
 
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
@@ -91,9 +92,15 @@ use frame_support::traits::Get;
 
 #[frame_support::pallet]
 pub mod pallet {
+	use crate::deposit::Deposit;
+
 	use super::*;
 	use delegation::DelegationNodeIdOf;
-use frame_support::{pallet_prelude::*, BoundedVec};
+	use frame_support::{
+		pallet_prelude::*,
+		traits::{Currency, ReservableCurrency},
+		BoundedVec,
+	};
 	use frame_system::pallet_prelude::*;
 	use kilt_traits::CallSources;
 
@@ -108,6 +115,10 @@ use frame_support::{pallet_prelude::*, BoundedVec};
 
 	type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
+	type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+
+	type CurrencyOf<T> = <T as Config>::Currency;
+
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config + delegation::Config {
 		type EnsureOrigin: EnsureOrigin<
@@ -117,6 +128,12 @@ use frame_support::{pallet_prelude::*, BoundedVec};
 		type OriginSuccess: CallSources<AccountIdOf<Self>, AttesterOf<Self>>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type WeightInfo: WeightInfo;
+
+		/// The currency that is used to reserve funds for each attestation.
+		type Currency: Currency<AccountIdOf<Self>> + ReservableCurrency<AccountIdOf<Self>>;
+
+		/// The deposit that is required
+		type Deposit: Get<BalanceOf<Self>>;
 
 		/// The maximum number of delegated attestations which can be made by
 		/// the same delegation.
@@ -149,6 +166,14 @@ use frame_support::{pallet_prelude::*, BoundedVec};
 		DelegationNodeIdOf<T>,
 		BoundedVec<ClaimHashOf<T>, <T as Config>::MaxDelegatedAttestations>,
 	>;
+
+	/// Attestations stored on chain.
+	///
+	/// It maps from a claim hash to the full attestation.
+	#[pallet::storage]
+	#[pallet::getter(fn deposits)]
+	pub type AttestationDeposits<T> =
+		StorageMap<_, Blake2_128Concat, ClaimHashOf<T>, Deposit<AccountIdOf<T>, BalanceOf<T>>>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -196,6 +221,10 @@ use frame_support::{pallet_prelude::*, BoundedVec};
 		/// reached for the corresponding delegation id such that another one
 		/// cannot be added.
 		MaxDelegatedAttestationsExceeded,
+		/// TODO: doc
+		InsufficientBalance,
+		/// TODO: doc
+		NoDeposit,
 	}
 
 	#[pallet::call]
@@ -229,16 +258,21 @@ use frame_support::{pallet_prelude::*, BoundedVec};
 			delegation_id: Option<DelegationNodeIdOf<T>>,
 		) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let payer = source.sender();
 			let attester = source.subject();
+			let deposit = T::Deposit::get();
 
 			ensure!(
 				<ctype::Ctypes<T>>::contains_key(&ctype_hash),
 				ctype::Error::<T>::CTypeNotFound
 			);
-
 			ensure!(
 				!<Attestations<T>>::contains_key(&claim_hash),
 				Error::<T>::AlreadyAttested
+			);
+			ensure!(
+				CurrencyOf::<T>::free_balance(&payer) > deposit,
+				Error::<T>::InsufficientBalance
 			);
 
 			// Check for validity of the delegation node if specified.
@@ -268,6 +302,9 @@ use frame_support::{pallet_prelude::*, BoundedVec};
 					.map_err(|_| Error::<T>::MaxDelegatedAttestationsExceeded)?;
 				<DelegatedAttestations<T>>::insert(delegation_id, delegated_attestations);
 			}
+
+			// should never fail since we ensured the free_balance above
+			Pallet::<T>::reserve_deposit(payer, &claim_hash, deposit)?;
 
 			log::debug!("insert Attestation");
 			<Attestations<T>>::insert(
@@ -340,6 +377,7 @@ use frame_support::{pallet_prelude::*, BoundedVec};
 			Ok(Some(<T as pallet::Config>::WeightInfo::revoke(delegation_depth)).into())
 		}
 
+		// TODO: Docs
 		// TODO: Benchmarks
 		#[pallet::weight(10)]
 		pub fn remove(
@@ -357,6 +395,9 @@ use frame_support::{pallet_prelude::*, BoundedVec};
 			} else {
 				0
 			};
+
+			// TODO: who to handle non-existing deposits?
+			Pallet::<T>::free_deposit(&claim_hash)?;
 
 			log::debug!("removing Attestation");
 			<Attestations<T>>::remove(&claim_hash);
@@ -389,6 +430,32 @@ use frame_support::{pallet_prelude::*, BoundedVec};
 				<delegation::Pallet<T>>::is_delegating(attester, &delegation_id, max_parent_checks)?;
 			ensure!(is_delegating, Error::<T>::Unauthorized);
 			Ok(delegation_depth)
+		}
+
+		/// Reserve the deposit and record the deposit on chain.
+		///
+		/// Fails if the `payer` has a balance less than deposit.
+		fn reserve_deposit(
+			payer: AccountIdOf<T>,
+			claim_hash: &ClaimHashOf<T>,
+			deposit: BalanceOf<T>,
+		) -> DispatchResult {
+			CurrencyOf::<T>::reserve(&payer, deposit)?;
+
+			AttestationDeposits::<T>::insert(
+				claim_hash,
+				Deposit::<AccountIdOf<T>, BalanceOf<T>> {
+					owner: payer,
+					amount: deposit,
+				},
+			);
+			Ok(())
+		}
+
+		fn free_deposit(claim_hash: &ClaimHashOf<T>) -> DispatchResult {
+			let deposit = AttestationDeposits::<T>::take(claim_hash).ok_or(Error::<T>::NoDeposit)?;
+			CurrencyOf::<T>::unreserve(&deposit.owner, deposit.amount);
+			Ok(())
 		}
 	}
 }

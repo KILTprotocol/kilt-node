@@ -403,6 +403,7 @@ dependencies = [
  "kilt-primitives",
  "kilt-traits",
  "log",
+ "pallet-balances",
  "parity-scale-codec",
  "serde",
  "sp-core",
