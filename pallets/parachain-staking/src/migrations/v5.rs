@@ -16,8 +16,17 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::{migrations::StakingStorageVersion, CandidateCount, CandidatePool, Config, StorageVersion};
-use frame_support::{dispatch::Weight, storage::StorageValue, traits::Get};
+use crate::{
+	migrations::StakingStorageVersion,
+	set::OrderedSet,
+	types::{BalanceOf, Candidate, Stake, TotalStake},
+	CandidateCount, CandidatePool, Config, StorageVersion, TopCandidates, TotalCollatorStake,
+};
+use frame_support::{
+	dispatch::Weight,
+	storage::{IterableStorageMap, StorageValue},
+	traits::Get,
+};
 
 #[cfg(feature = "try-runtime")]
 pub(crate) fn pre_migrate<T: Config>() -> Result<(), &'static str> {
@@ -31,21 +40,57 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	// Kill selected candidates list
 	old::SelectedCandidates::<T>::kill();
 
-	// count candidates
-	let counter: u32 = CandidatePool::<T>::iter().fold(0, |acc, _| acc.saturating_add(1));
+	// migrate CandidatePool to TopCandidates
+	// DANGER: this needs to happen before we write to the new CandidatePool!
+	let old_candidate_pool = old::CandidatePool::<T>::get();
+	TopCandidates::<T>::put(old_candidate_pool);
+	old::CandidatePool::<T>::kill();
+
+	// Copy over total
+	let total = old::Total::<T>::get();
+	TotalCollatorStake::<T>::set(total);
+	old::Total::<T>::kill();
+
+	// kill, copy & count candidates
+	let counter: u32 = old::CollatorState::<T>::drain().fold(0, |acc, (key, candidate)| {
+		CandidatePool::<T>::insert(&key, candidate);
+		acc.saturating_add(1)
+	});
 	CandidateCount::<T>::put(counter);
 
 	// update storage version
 	StorageVersion::<T>::put(StakingStorageVersion::V5);
 	log::info!("Completed staking migration to StakingStorageVersion::V5");
 
-	T::DbWeight::get().reads_writes(counter.saturating_add(2).into(), 3)
+	// Writes: 3 * Kill, 3 * Put, `counter` * inserts, at max 32 additional kills <
+	// counter + 38 Reads: (counter + 2) * get
+	T::DbWeight::get().reads_writes(counter.saturating_add(38).into(), counter.saturating_add(2).into())
 }
 
 #[cfg(feature = "try-runtime")]
 pub(crate) fn post_migrate<T: Config>() -> Result<(), &'static str> {
+	use sp_runtime::SaturatedConversion;
+
 	assert_eq!(StorageVersion::<T>::get(), StakingStorageVersion::V5);
-	assert!(CandidateCount::<T>::get() > T::MinCollators::get());
+	log::info!(
+		"CandidateCount = {} >= {} = MinCollators",
+		CandidateCount::<T>::get(),
+		T::MinCollators::get()
+	);
+	assert!(CandidateCount::<T>::get() >= T::MinCollators::get());
+	log::info!(
+		"TopCandidates = {} >= {} = MinCollators",
+		TopCandidates::<T>::get().len(),
+		T::MinCollators::get()
+	);
+	assert!(TopCandidates::<T>::get().len().saturated_into::<u32>() >= T::MinCollators::get());
+	assert!(TopCandidates::<T>::get().len().saturated_into::<u32>() <= CandidateCount::<T>::get());
+	assert!(
+		TotalCollatorStake::<T>::get().collators
+			>= CandidateCount::<T>::get().saturated_into::<BalanceOf<T>>() * T::MinCollatorStake::get()
+	);
+	let counter: u32 = old::CollatorState::<T>::iter().fold(0, |acc, (_, _)| acc.saturating_add(1));
+	assert!(counter == 0);
 	Ok(())
 }
 
@@ -60,7 +105,10 @@ pub(crate) mod old {
 
 	decl_storage! {
 		trait Store for OldPallet<T: Config> as ParachainStaking {
+			pub(crate) Total: TotalStake<BalanceOf<T>>;
 			pub(crate) SelectedCandidates: Vec<T::AccountId>;
+			pub(crate) CollatorState: map hasher(twox_64_concat) T::AccountId => Option<Candidate<T::AccountId, BalanceOf<T>, T::MaxDelegatorsPerCollator>>;
+			pub(crate) CandidatePool: OrderedSet<Stake<T::AccountId, BalanceOf<T>>, T::MaxTopCandidates>;
 		}
 	}
 }

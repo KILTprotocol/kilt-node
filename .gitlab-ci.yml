@@ -34,7 +34,7 @@ test-features:
 
 build:
   image:
-    name: amazon/aws-cli
+    name: amazon/aws-cli:2.2.38
     entrypoint: [""]
   stage: build
   only:

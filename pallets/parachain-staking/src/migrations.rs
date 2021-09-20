@@ -74,7 +74,7 @@ impl StakingStorageVersion {
 // old version anymore.
 impl Default for StakingStorageVersion {
 	fn default() -> Self {
-		Self::V4
+		Self::V5
 	}
 }
 
@@ -189,39 +189,5 @@ impl<T: Config> StakingStorageMigrator<T> {
 		);
 
 		Ok(())
-	}
-}
-
-// Tests for the entire storage migrator.
-#[cfg(test)]
-mod tests {
-	use super::*;
-
-	use crate::mock::Test as TestRuntime;
-
-	#[test]
-	fn ok_from_default_migration() {
-		let mut ext = mock::ExtBuilder::default()
-			.with_balances((0..15).into_iter().map(|n| (n, 120)).collect())
-			.with_collators((0..15).into_iter().map(|n| (n, 100)).collect())
-			.build();
-		ext.execute_with(|| {
-			#[cfg(feature = "try-runtime")]
-			if StakingStorageVersion::default() != StakingStorageVersion::latest() {
-				#[cfg(feature = "try-runtime")]
-				assert!(
-					StakingStorageMigrator::<TestRuntime>::pre_migrate().is_ok(),
-					"Storage pre-migrate from default version should not fail."
-				);
-
-				StakingStorageMigrator::<TestRuntime>::migrate();
-
-				#[cfg(feature = "try-runtime")]
-				assert!(
-					StakingStorageMigrator::<TestRuntime>::post_migrate().is_ok(),
-					"Storage post-migrate from default version should not fail."
-				);
-			}
-		});
 	}
 }
