@@ -658,8 +658,6 @@ impl did::Config for Runtime {
 	type WeightInfo = weights::did::WeightInfo<Runtime>;
 }
 
-/// Minimum round length is 1 hour (600 * 6 second block times)
-
 parameter_types! {
 	/// Minimum round length is 1 hour
 	pub const MinBlocksPerRound: BlockNumber = MIN_BLOCKS_PER_ROUND;

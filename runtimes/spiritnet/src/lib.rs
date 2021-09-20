@@ -27,8 +27,11 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use frame_support::traits::Contains;
-use frame_system::limits::{BlockLength, BlockWeights};
+use frame_support::{traits::Contains, PalletId};
+use frame_system::{
+	limits::{BlockLength, BlockWeights},
+	EnsureOneOf, EnsureRoot,
+};
 use kilt_primitives::{
 	constants::{
 		governance::{
@@ -43,7 +46,10 @@ use kilt_primitives::{
 };
 use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
 use sp_api::impl_runtime_apis;
-use sp_core::OpaqueMetadata;
+use sp_core::{
+	u32_trait::{_1, _2, _3, _5},
+	OpaqueMetadata,
+};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
@@ -114,6 +120,11 @@ pub fn native_version() -> NativeVersion {
 	}
 }
 
+// Pallet accounts of runtime
+parameter_types! {
+	pub const TreasuryPalletId: PalletId = PalletId(*b"kilt/tsy");
+}
+
 parameter_types! {
 	pub const BlockHashCount: BlockNumber = 250;
 	pub const Version: RuntimeVersion = VERSION;
@@ -149,7 +160,7 @@ impl Contains<Call> for BaseFilter {
 				| Call::KiltLaunch(kilt_launch::Call::locked_transfer(..))
 				| Call::Balances(..)
 				| Call::ParachainStaking(parachain_staking::Call::join_candidates(..))
-			)
+		)
 	}
 }
 
@@ -398,6 +409,175 @@ impl pallet_utility::Config for Runtime {
 	type WeightInfo = weights::pallet_utility::WeightInfo<Runtime>;
 }
 
+parameter_types! {
+	pub MaximumSchedulerWeight: Weight = Perbill::from_percent(80) * RuntimeBlockWeights::get().max_block;
+	pub const MaxScheduledPerBlock: u32 = 50;
+}
+
+impl pallet_scheduler::Config for Runtime {
+	type Event = Event;
+	type Origin = Origin;
+	type PalletsOrigin = OriginCaller;
+	type Call = Call;
+	type MaximumWeight = MaximumSchedulerWeight;
+	type ScheduleOrigin = EnsureRoot<AccountId>;
+	type MaxScheduledPerBlock = MaxScheduledPerBlock;
+	type WeightInfo = weights::pallet_scheduler::WeightInfo<Runtime>;
+}
+
+parameter_types! {
+	pub const LaunchPeriod: BlockNumber = LAUNCH_PERIOD;
+	pub const VotingPeriod: BlockNumber = VOTING_PERIOD;
+	pub const FastTrackVotingPeriod: BlockNumber = FAST_TRACK_VOTING_PERIOD;
+	pub const MinimumDeposit: Balance = KILT;
+	pub const EnactmentPeriod: BlockNumber = ENACTMENT_PERIOD;
+	pub const CooloffPeriod: BlockNumber = COOLOFF_PERIOD;
+	// One cent: $10,000 / MB
+	pub const PreimageByteDeposit: Balance = 10 * MILLI_KILT;
+	pub const InstantAllowed: bool = true;
+	pub const MaxVotes: u32 = 100;
+	pub const MaxProposals: u32 = 100;
+}
+
+impl pallet_democracy::Config for Runtime {
+	type Proposal = Call;
+	type Event = Event;
+	type Currency = Balances;
+	type EnactmentPeriod = EnactmentPeriod;
+	type LaunchPeriod = LaunchPeriod;
+	type VotingPeriod = VotingPeriod;
+	type MinimumDeposit = MinimumDeposit;
+	/// A straight majority of the council can decide what their next motion is.
+	type ExternalOrigin = pallet_collective::EnsureProportionAtLeast<_1, _2, AccountId, CouncilCollective>;
+	/// A majority can have the next scheduled referendum be a straight
+	/// majority-carries vote.
+	type ExternalMajorityOrigin = pallet_collective::EnsureProportionAtLeast<_1, _2, AccountId, CouncilCollective>;
+	/// A unanimous council can have the next scheduled referendum be a straight
+	/// default-carries (NTB) vote.
+	type ExternalDefaultOrigin = pallet_collective::EnsureProportionAtLeast<_1, _1, AccountId, CouncilCollective>;
+	/// Two thirds of the technical committee can have an
+	/// ExternalMajority/ExternalDefault vote be tabled immediately and with a
+	/// shorter voting/enactment period.
+	type FastTrackOrigin = pallet_collective::EnsureProportionAtLeast<_2, _3, AccountId, TechnicalCollective>;
+	type InstantOrigin = pallet_collective::EnsureProportionAtLeast<_1, _1, AccountId, TechnicalCollective>;
+	type InstantAllowed = InstantAllowed;
+	type FastTrackVotingPeriod = FastTrackVotingPeriod;
+	// To cancel a proposal which has been passed, 2/3 of the council must agree to
+	// it.
+	type CancellationOrigin = EnsureOneOf<
+		AccountId,
+		EnsureRoot<AccountId>,
+		pallet_collective::EnsureProportionAtLeast<_2, _3, AccountId, CouncilCollective>,
+	>;
+	// To cancel a proposal before it has been passed, the technical committee must
+	// be unanimous or Root must agree.
+	type CancelProposalOrigin = EnsureOneOf<
+		AccountId,
+		EnsureRoot<AccountId>,
+		pallet_collective::EnsureProportionAtLeast<_1, _1, AccountId, TechnicalCollective>,
+	>;
+	type BlacklistOrigin = EnsureRoot<AccountId>;
+	// Any single technical committee member may veto a coming council proposal,
+	// however they can only do it once and it lasts only for the cooloff period.
+	type VetoOrigin = pallet_collective::EnsureMember<AccountId, TechnicalCollective>;
+	type CooloffPeriod = CooloffPeriod;
+	type PreimageByteDeposit = PreimageByteDeposit;
+	type Slash = Treasury;
+	type Scheduler = Scheduler;
+	type PalletsOrigin = OriginCaller;
+	type MaxVotes = MaxVotes;
+	type OperationalPreimageOrigin = pallet_collective::EnsureMember<AccountId, CouncilCollective>;
+	type MaxProposals = MaxProposals;
+
+	type WeightInfo = weights::pallet_democracy::WeightInfo<Runtime>;
+}
+
+parameter_types! {
+	pub const ProposalBond: Permill = Permill::from_percent(5);
+	pub const ProposalBondMinimum: Balance = 20 * KILT; // TODO: how much?
+	pub const SpendPeriod: BlockNumber = SPEND_PERIOD;
+	pub const Burn: Permill = Permill::zero();
+	pub const MaxApprovals: u32 = 100;
+}
+
+type ApproveOrigin = EnsureOneOf<
+	AccountId,
+	EnsureRoot<AccountId>,
+	pallet_collective::EnsureProportionAtLeast<_3, _5, AccountId, CouncilCollective>,
+>;
+
+type MoreThanHalfCouncil = EnsureOneOf<
+	AccountId,
+	EnsureRoot<AccountId>,
+	pallet_collective::EnsureProportionMoreThan<_1, _2, AccountId, CouncilCollective>,
+>;
+
+impl pallet_treasury::Config for Runtime {
+	type PalletId = TreasuryPalletId;
+	type Currency = Balances;
+	type ApproveOrigin = ApproveOrigin;
+	type RejectOrigin = MoreThanHalfCouncil;
+	type Event = Event;
+	type OnSlash = Treasury;
+	type ProposalBond = ProposalBond;
+	type ProposalBondMinimum = ProposalBondMinimum;
+	type SpendPeriod = SpendPeriod;
+	type Burn = Burn;
+	type BurnDestination = ();
+	type SpendFunds = ();
+	type WeightInfo = weights::pallet_treasury::WeightInfo<Runtime>;
+	type MaxApprovals = MaxApprovals;
+}
+
+parameter_types! {
+	pub const CouncilMotionDuration: BlockNumber = COUNCIL_MOTION_DURATION;
+	pub const CouncilMaxProposals: u32 = 100;
+	pub const CouncilMaxMembers: u32 = 100;
+}
+
+type CouncilCollective = pallet_collective::Instance1;
+impl pallet_collective::Config<CouncilCollective> for Runtime {
+	type Origin = Origin;
+	type Proposal = Call;
+	type Event = Event;
+	type MotionDuration = CouncilMotionDuration;
+	type MaxProposals = CouncilMaxProposals;
+	type MaxMembers = CouncilMaxMembers;
+	type DefaultVote = pallet_collective::PrimeDefaultVote;
+	type WeightInfo = weights::pallet_collective::WeightInfo<Runtime>;
+}
+
+parameter_types! {
+	pub const TechnicalMotionDuration: BlockNumber = TECHNICAL_MOTION_DURATION;
+	pub const TechnicalMaxProposals: u32 = 100;
+	pub const TechnicalMaxMembers: u32 = 100;
+}
+
+type TechnicalCollective = pallet_collective::Instance2;
+impl pallet_collective::Config<TechnicalCollective> for Runtime {
+	type Origin = Origin;
+	type Proposal = Call;
+	type Event = Event;
+	type MotionDuration = TechnicalMotionDuration;
+	type MaxProposals = TechnicalMaxProposals;
+	type MaxMembers = TechnicalMaxMembers;
+	type DefaultVote = pallet_collective::PrimeDefaultVote;
+	type WeightInfo = weights::pallet_collective::WeightInfo<Runtime>;
+}
+
+impl pallet_membership::Config for Runtime {
+	type Event = Event;
+	type AddOrigin = MoreThanHalfCouncil;
+	type RemoveOrigin = MoreThanHalfCouncil;
+	type SwapOrigin = MoreThanHalfCouncil;
+	type ResetOrigin = MoreThanHalfCouncil;
+	type PrimeOrigin = MoreThanHalfCouncil;
+	type MembershipInitialized = TechnicalCommittee;
+	type MembershipChanged = TechnicalCommittee;
+	type MaxMembers = TechnicalMaxMembers;
+	type WeightInfo = weights::pallet_membership::WeightInfo<Runtime>;
+}
+
 impl pallet_randomness_collective_flip::Config for Runtime {}
 
 construct_runtime! {
@@ -424,11 +604,22 @@ construct_runtime! {
 		Aura: pallet_aura::{Pallet, Config<T>} = 23,
 		AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 24,
 
+		// Governance stuff; uncallable initially.
+		Democracy: pallet_democracy::{Pallet, Call, Storage, Config<T>, Event<T>} = 30,
+		Council: pallet_collective::<Instance1>::{Pallet, Call, Storage, Origin<T>, Event<T>, Config<T>} = 31,
+		TechnicalCommittee: pallet_collective::<Instance2>::{Pallet, Call, Storage, Origin<T>, Event<T>, Config<T>} = 32,
+		// placeholder: parachain council election = 33,
+		TechnicalMembership: pallet_membership::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
+		Treasury: pallet_treasury::{Pallet, Call, Storage, Config, Event<T>} = 35,
+
 		// Utility module.
 		Utility: pallet_utility::{Pallet, Call, Storage, Event} = 40,
 
 		// Vesting. Usable initially, but removed once all vesting is finished.
 		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 41,
+
+		// System scheduler.
+		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 42,
 
 		// KILT Pallets. Start indices 60 to leave room
 		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 60,
@@ -584,12 +775,17 @@ impl_runtime_apis! {
 			// Substrate
 			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
 			list_benchmark!(list, extra, pallet_balances, Balances);
+			list_benchmark!(list, extra, pallet_collective, Council);
+			list_benchmark!(list, extra, pallet_democracy, Democracy);
 			list_benchmark!(list, extra, pallet_indices, Indices);
+			list_benchmark!(list, extra, pallet_membership, TechnicalMembership);
+			list_benchmark!(list, extra, parachain_staking, ParachainStaking);
+			list_benchmark!(list, extra, pallet_scheduler, Scheduler);
+			// list_benchmark!(list, extra, pallet_session, Session);
+			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
 			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
-			// TODO: Enable after pallet is available on the Cumulus branch we use
-			// list_benchmark!(list, extra, pallet_session, SessionBench::<Runtime>);
+			list_benchmark!(list, extra, pallet_treasury, Treasury);
 			list_benchmark!(list, extra, pallet_utility, Utility);
-			list_benchmark!(list, extra, pallet_vesting, Vesting);
 
 			// KILT
 			list_benchmark!(list, extra, kilt_launch, KiltLaunch);
@@ -635,14 +831,18 @@ impl_runtime_apis! {
 			let params = (&config, &whitelist);
 
 			// Substrate
-			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_balances, Balances);
+			add_benchmark!(params, batches, pallet_collective, Council);
+			add_benchmark!(params, batches, pallet_democracy, Democracy);
 			add_benchmark!(params, batches, pallet_indices, Indices);
+			add_benchmark!(params, batches, pallet_membership, TechnicalMembership);
+			add_benchmark!(params, batches, parachain_staking, ParachainStaking);
+			add_benchmark!(params, batches, pallet_scheduler, Scheduler);
+			// add_benchmark!(params, batches, pallet_session, Session);
+			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
-			// TODO: Enable after pallet is available on the Cumulus branch we use
-			// add_benchmark!(params, batches, pallet_session, SessionBench::<Runtime>);
+			add_benchmark!(params, batches, pallet_treasury, Treasury);
 			add_benchmark!(params, batches, pallet_utility, Utility);
-			add_benchmark!(params, batches, pallet_vesting, Vesting);
 
 			// KILT
 			add_benchmark!(params, batches, kilt_launch, KiltLaunch);

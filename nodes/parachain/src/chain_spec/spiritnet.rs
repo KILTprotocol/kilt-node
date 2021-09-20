@@ -29,8 +29,9 @@ use sc_telemetry::TelemetryEndpoints;
 use sp_core::{crypto::UncheckedInto, sr25519};
 use sp_runtime::traits::Zero;
 use spiritnet_runtime::{
-	BalancesConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake, ParachainInfoConfig,
-	ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig, WASM_BINARY,
+	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake,
+	ParachainInfoConfig, ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig,
+	VestingConfig, WASM_BINARY,
 };
 
 use crate::chain_spec::{get_account_id_from_seed, get_from_seed, TELEMETRY_URL};
@@ -389,5 +390,16 @@ fn testnet_genesis(
 				})
 				.collect::<Vec<_>>(),
 		},
+		council: CouncilConfig {
+			members: vec![],
+			phantom: Default::default(),
+		},
+		technical_committee: TechnicalCommitteeConfig {
+			members: vec![],
+			phantom: Default::default(),
+		},
+		treasury: Default::default(),
+		technical_membership: Default::default(),
+		democracy: Default::default(),
 	}
 }
