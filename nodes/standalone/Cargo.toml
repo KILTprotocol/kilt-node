@@ -3,7 +3,7 @@ authors = ["KILT <info@kilt.io>"]
 build = "build.rs"
 edition = "2018"
 name = "mashnet-node"
-version = "0.25.0"
+version = "0.25.2"
 
 [[bin]]
 name = "mashnet-node"

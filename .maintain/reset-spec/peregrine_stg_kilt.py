@@ -16,7 +16,8 @@ def update_spec(input: typing.Dict):
         "chainType": "Live",
         "name": "KILT Peregrine Stagenet",
         "id": "peregrine_stg_kilt",
-        "para_id": 2000,
+        "protocolId": "pkilt2",
+        "para_id": 2001,
         "telemetryEndpoints": [
             [
                 "/dns/telemetry-backend.kilt.io/tcp/8080/x-parity-wss/%2Fsubmit",
@@ -62,7 +63,7 @@ def update_spec(input: typing.Dict):
             }
         ]
     ]
-    input["genesis"]["runtime"]["balances"]["balances"] = [
+    input["genesis"]["runtime"]["balances"]["balances"] += [
         [
             acc_col_1,
             10000000000000000000000000000

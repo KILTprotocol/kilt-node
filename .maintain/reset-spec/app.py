@@ -33,7 +33,7 @@ def run_check_process(cmd: typing.List[str]):
     logger.debug("Execute: %s", " ".join(cmd))
     process = subprocess.run(cmd, capture_output=True)
     if process.returncode != 0:
-        logger.error("Error while executing:", process.args)
+        logger.error("Error while executing: %s", " ".join(process.args))
         logger.error("Got stderr:")
         logger.error(process.stderr.decode("utf-8"))
         logger.error("Got stdout:")
@@ -79,7 +79,17 @@ def make_custom_spec(tmp_dir, docker_img, plain_file, out_file, update_spec, spe
     if runtime is not None:
         cmd_raw_spec += ["--runtime", runtime]
 
-    process = run_check_process(cmd_raw_spec)
+    try:
+        process = run_check_process(cmd_raw_spec)
+    except Exception as e:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", suffix=".json", delete=False) as tf:
+            json.dump(in_json, tf, indent="  ")
+            tf_name = tf.name
+
+        logger.error(
+            "Error while updating chain spec. Wrote intermediate result to '%s'", tf_name)
+        raise RuntimeError(
+            "Could not customize spec. Make sure to use the correct docker image.") from e
 
     logger.info("writing final spec to %s", out_file)
     with open(out_file, "wb") as f:
@@ -116,6 +126,8 @@ if __name__ == "__main__":
                      "Make sure that the current directory is the project root."),
         epilog="")
     parser.add_argument('-v', '--verbose', action='count', default=0)
+    # parser.add_argument('-d', '--debug', action='store_true',
+    #                     default=False, help="enable debug mode, don't delete tmp files.")
 
     parser.add_argument("--image", "-i", dest="image", required=True,
                         help="docker image to use for building chain spec")
