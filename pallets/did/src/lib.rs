@@ -328,7 +328,7 @@ pub mod pallet {
 		MaxTotalKeyAgreementKeysExceeded,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
-		/// The did call was submitted by the wrong account
+		/// The DID call was submitted by the wrong account
 		BadDidOrigin,
 	}
 
