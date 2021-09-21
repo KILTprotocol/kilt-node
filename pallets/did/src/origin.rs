@@ -56,14 +56,14 @@ where
 	}
 }
 
-impl<DidIdentifier: Clone, AccountId: Clone> kilt_traits::CallSources<DidIdentifier, AccountId>
+impl<DidIdentifier: Clone, AccountId: Clone> kilt_traits::CallSources<AccountId, DidIdentifier>
 	for DidRawOrigin<DidIdentifier, AccountId>
 {
-	fn sender(&self) -> DidIdentifier {
-		self.id.clone()
+	fn sender(&self) -> AccountId {
+		self.submitter.clone()
 	}
 
-	fn subject(&self) -> AccountId {
-		self.submitter.clone()
+	fn subject(&self) -> DidIdentifier {
+		self.id.clone()
 	}
 }

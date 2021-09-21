@@ -120,6 +120,8 @@ pub mod pallet {
 	/// information.
 	pub type DelegateSignatureTypeOf<T> = <DelegationSignatureVerificationOf<T> as VerifyDelegateSignature>::Signature;
 
+	type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config {
 		type Signature: Parameter;
@@ -134,7 +136,7 @@ pub mod pallet {
 			Success = <Self as Config>::OriginSuccess,
 			<Self as frame_system::Config>::Origin,
 		>;
-		type OriginSuccess: CallSources<<Self as frame_system::Config>::AccountId, DelegatorIdOf<Self>>;
+		type OriginSuccess: CallSources<AccountIdOf<Self>, DelegatorIdOf<Self>>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		#[pallet::constant]
 		type MaxSignatureByteLength: Get<u16>;

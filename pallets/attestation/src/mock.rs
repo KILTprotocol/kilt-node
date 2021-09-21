@@ -91,7 +91,7 @@ impl frame_system::Config for Test {
 impl ctype::Config for Test {
 	type CtypeCreatorId = TestCtypeOwner;
 	type EnsureOrigin = EnsureSigned<TestCtypeOwner>;
-	type OriginSuccess = kilt_primitives::AccountId;
+	type OriginSuccess = TestCtypeOwner;
 	type Event = ();
 	type WeightInfo = ();
 }
