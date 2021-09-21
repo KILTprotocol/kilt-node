@@ -191,7 +191,7 @@ pub mod pallet {
 			<Self as frame_system::Config>::Origin,
 		>;
 
-		/// The return type when the did origin check was successful.
+		/// The return type when the DID origin check was successful.
 		type OriginSuccess: CallSources<AccountIdentifierOf<Self>, DidIdentifierOf<Self>>;
 
 		/// Overarching event type.
