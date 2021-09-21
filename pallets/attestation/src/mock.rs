@@ -249,12 +249,16 @@ pub fn generate_base_attestation_revocation_details(claim_hash: TestClaimHash) -
 	}
 }
 
-pub fn generate_base_attestation(attester: TestAttester) -> AttestationDetails<Test> {
+pub fn generate_base_attestation(attester: TestAttester, payer: AccountIdOf<Test>) -> AttestationDetails<Test> {
 	AttestationDetails {
 		attester,
 		delegation_id: None,
 		ctype_hash: ctype_mock::get_ctype_hash(true),
 		revoked: false,
+		deposit: attestation::Deposit::<AccountIdOf<Test>, BalanceOf<Test>> {
+			owner: payer,
+			amount: Deposit::get(),
+		},
 	}
 }
 

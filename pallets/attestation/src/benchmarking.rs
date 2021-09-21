@@ -18,6 +18,7 @@
 
 use delegation::{benchmarking::setup_delegations, Permissions};
 use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
+use frame_support::traits::Get;
 use frame_system::RawOrigin;
 use sp_core::sr25519;
 use sp_runtime::{traits::Hash, MultiSignature};
@@ -43,6 +44,10 @@ benchmarks! {
 			attester: delegate_acc.into(),
 			delegation_id: Some(delegation_id),
 			revoked: false,
+			deposit: Deposit {
+				owner: delegate_public.into(),
+				amount: T::Deposit::get(),
+			}
 		}));
 	}
 
@@ -67,6 +72,10 @@ benchmarks! {
 			attester: delegate_acc.into(),
 			delegation_id: Some(delegation_id),
 			revoked: true,
+			deposit: Deposit {
+				owner: delegate_public.into(),
+				amount: T::Deposit::get(),
+			}
 		}));
 	}
 }

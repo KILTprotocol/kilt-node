@@ -18,8 +18,9 @@
 
 use codec::{Decode, Encode};
 use delegation::DelegationNodeIdOf;
+use ctype::CtypeHashOf;
 
-use crate::*;
+use crate::{AttesterOf, Config, AccountIdOf, BalanceOf};
 
 /// An on-chain attestation written by an attester.
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
@@ -33,4 +34,13 @@ pub struct AttestationDetails<T: Config> {
 	pub delegation_id: Option<DelegationNodeIdOf<T>>,
 	/// The flag indicating whether the attestation has been revoked or not.
 	pub revoked: bool,
+	/// TODO
+	pub deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
+}
+
+/// An on-chain attestation written by an attester.
+#[derive(Clone, Debug, Encode, Decode, PartialEq)]
+pub struct Deposit<Account, Balance> {
+	pub owner: Account,
+	pub amount: Balance,
 }

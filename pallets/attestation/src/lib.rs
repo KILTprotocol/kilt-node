@@ -75,7 +75,6 @@
 
 pub mod attestations;
 pub mod default_weights;
-pub mod deposit;
 
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
@@ -88,36 +87,30 @@ mod tests;
 
 pub use crate::{attestations::*, default_weights::WeightInfo, pallet::*};
 
-use frame_support::traits::Get;
-
 #[frame_support::pallet]
 pub mod pallet {
-	use crate::deposit::Deposit;
-
 	use super::*;
+	use ctype::CtypeHashOf;
 	use delegation::DelegationNodeIdOf;
 	use frame_support::{
 		pallet_prelude::*,
-		traits::{Currency, ReservableCurrency},
+		traits::{Currency, Get, ReservableCurrency},
 		BoundedVec,
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_traits::CallSources;
 
 	/// Type of a claim hash.
-	pub type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
-
-	/// Type of an attestation CType hash.
-	pub type CtypeHashOf<T> = ctype::CtypeHashOf<T>;
+	pub(crate) type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
 
 	/// Type of an attester identifier.
-	pub type AttesterOf<T> = delegation::DelegatorIdOf<T>;
+	pub(crate) type AttesterOf<T> = delegation::DelegatorIdOf<T>;
 
-	type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
-	type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
 
-	type CurrencyOf<T> = <T as Config>::Currency;
+	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config + delegation::Config {
@@ -260,7 +253,7 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let payer = source.sender();
 			let attester = source.subject();
-			let deposit = T::Deposit::get();
+			let deposit_amount = T::Deposit::get();
 
 			ensure!(
 				<ctype::Ctypes<T>>::contains_key(&ctype_hash),
@@ -270,13 +263,9 @@ pub mod pallet {
 				!<Attestations<T>>::contains_key(&claim_hash),
 				Error::<T>::AlreadyAttested
 			);
-			ensure!(
-				CurrencyOf::<T>::free_balance(&payer) > deposit,
-				Error::<T>::InsufficientBalance
-			);
 
 			// Check for validity of the delegation node if specified.
-			if let Some(delegation_id) = delegation_id {
+			let delegation_record = if let Some(delegation_id) = delegation_id {
 				let delegation = <delegation::DelegationNodes<T>>::get(delegation_id)
 					.ok_or(delegation::Error::<T>::DelegationNotFound)?;
 
@@ -300,11 +289,17 @@ pub mod pallet {
 				delegated_attestations
 					.try_push(claim_hash)
 					.map_err(|_| Error::<T>::MaxDelegatedAttestationsExceeded)?;
-				<DelegatedAttestations<T>>::insert(delegation_id, delegated_attestations);
-			}
+				Some((delegation_id, delegated_attestations))
+			} else {
+				None
+			};
 
-			// should never fail since we ensured the free_balance above
-			Pallet::<T>::reserve_deposit(payer, &claim_hash, deposit)?;
+			let deposit = Pallet::<T>::reserve_deposit(payer, &claim_hash, deposit_amount)?;
+			// *** No Fail beyond this point
+
+			if let Some((id, delegated_attestation)) = delegation_record {
+				<DelegatedAttestations<T>>::insert(id, delegated_attestation);
+			}
 
 			log::debug!("insert Attestation");
 			<Attestations<T>>::insert(
@@ -314,6 +309,7 @@ pub mod pallet {
 					attester: attester.clone(),
 					delegation_id,
 					revoked: false,
+					deposit,
 				},
 			);
 
@@ -363,6 +359,8 @@ pub mod pallet {
 				0
 			};
 
+			// *** No Fail beyond this point
+
 			log::debug!("revoking Attestation");
 			<Attestations<T>>::insert(
 				&claim_hash,
@@ -396,10 +394,10 @@ pub mod pallet {
 				0
 			};
 
-			// TODO: who to handle non-existing deposits?
-			Pallet::<T>::free_deposit(&claim_hash)?;
+			// *** No Fail beyond this point
 
 			log::debug!("removing Attestation");
+			Pallet::<T>::free_deposit(&attestation.deposit);
 			<Attestations<T>>::remove(&claim_hash);
 
 			Self::deposit_event(Event::AttestationRemoved(attester, claim_hash));
@@ -439,23 +437,17 @@ pub mod pallet {
 			payer: AccountIdOf<T>,
 			claim_hash: &ClaimHashOf<T>,
 			deposit: BalanceOf<T>,
-		) -> DispatchResult {
+		) -> Result<Deposit<AccountIdOf<T>, BalanceOf<T>>, DispatchError> {
 			CurrencyOf::<T>::reserve(&payer, deposit)?;
 
-			AttestationDeposits::<T>::insert(
-				claim_hash,
-				Deposit::<AccountIdOf<T>, BalanceOf<T>> {
-					owner: payer,
-					amount: deposit,
-				},
-			);
-			Ok(())
+			Ok(Deposit::<AccountIdOf<T>, BalanceOf<T>> {
+				owner: payer,
+				amount: deposit,
+			})
 		}
 
-		fn free_deposit(claim_hash: &ClaimHashOf<T>) -> DispatchResult {
-			let deposit = AttestationDeposits::<T>::take(claim_hash).ok_or(Error::<T>::NoDeposit)?;
+		fn free_deposit(deposit: &Deposit<AccountIdOf<T>, BalanceOf<T>>) {
 			CurrencyOf::<T>::unreserve(&deposit.owner, deposit.amount);
-			Ok(())
 		}
 	}
 }
