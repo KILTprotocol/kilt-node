@@ -38,12 +38,12 @@ use frame_system::{
 use kilt_primitives::{
 	constants::{
 		governance::{
-			CHALLENGE_PERIOD, COOLOFF_PERIOD, COUNCIL_MOTION_DURATION, ENACTMENT_PERIOD, FAST_TRACK_VOTING_PERIOD,
-			LAUNCH_PERIOD, ROTATION_PERIOD, SPEND_PERIOD, TECHNICAL_MOTION_DURATION, TERM_DURATION, VOTING_PERIOD,
+			COOLOFF_PERIOD, COUNCIL_MOTION_DURATION, ENACTMENT_PERIOD, FAST_TRACK_VOTING_PERIOD, LAUNCH_PERIOD,
+			SPEND_PERIOD, TECHNICAL_MOTION_DURATION, VOTING_PERIOD,
 		},
 		staking::{DEFAULT_BLOCKS_PER_ROUND, MAX_CANDIDATES, MIN_BLOCKS_PER_ROUND, MIN_COLLATORS, STAKE_DURATION},
-		AVERAGE_ON_INITIALIZE_RATIO, DAYS, KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT,
-		MIN_VESTED_TRANSFER_AMOUNT, NORMAL_DISPATCH_RATIO, SLOT_DURATION,
+		AVERAGE_ON_INITIALIZE_RATIO, KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT,
+		NORMAL_DISPATCH_RATIO, SLOT_DURATION,
 	},
 	AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Hash, Header, Index, Signature,
 };
@@ -61,7 +61,6 @@ use sp_runtime::{
 };
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
-use static_assertions::const_assert;
 
 mod fee;
 #[cfg(test)]
@@ -460,57 +459,6 @@ impl pallet_treasury::Config for Runtime {
 }
 
 parameter_types! {
-	pub const CandidateDeposit: Balance = 10 * KILT;
-	pub const WrongSideDeduction: Balance = 2 * KILT;
-	pub const MaxStrikes: u32 = 10;
-	pub const RotationPeriod: BlockNumber = ROTATION_PERIOD;
-	pub const PeriodSpend: Balance = 500 * KILT;
-	pub const MaxLockDuration: BlockNumber = 36 * 30 * DAYS;
-	pub const ChallengePeriod: BlockNumber = CHALLENGE_PERIOD;
-	pub const MaxCandidateIntake: u32 = 1;
-}
-
-pub const fn deposit(items: u32, bytes: u32) -> Balance {
-	items as Balance * 20 * KILT + (bytes as Balance) * 100 * MILLI_KILT
-}
-
-parameter_types! {
-	pub const CandidacyBond: Balance = 2 * KILT;
-	// 1 storage item created, key size is 32 bytes, value size is 16+16.
-	pub const VotingBondBase: Balance = deposit(1, 64);
-	// additional data per vote is 32 bytes (account id).
-	pub const VotingBondFactor: Balance = deposit(0, 32);
-	/// Daily council elections
-	pub const TermDuration: BlockNumber = TERM_DURATION;
-	pub const DesiredMembers: u32 = 19;
-	pub const DesiredRunnersUp: u32 = 19;
-}
-
-// Make sure that there are no more than MaxMembers members elected via
-// phragmen.
-const_assert!(DesiredMembers::get() <= CouncilMaxMembers::get());
-
-impl pallet_elections_phragmen::Config for Runtime {
-	type PalletId = ElectionsPalletId;
-	type Event = Event;
-	type Currency = Balances;
-	type ChangeMembers = Council;
-	type InitializeMembers = Council;
-	type CurrencyToVote = frame_support::traits::U128CurrencyToVote;
-	type CandidacyBond = CandidacyBond;
-	type VotingBondBase = VotingBondBase;
-	type VotingBondFactor = VotingBondFactor;
-	type LoserCandidate = Treasury;
-	type KickedMember = Treasury;
-	type DesiredMembers = DesiredMembers;
-	type DesiredRunnersUp = DesiredRunnersUp;
-	type TermDuration = TermDuration;
-	// FIXME: Benchmarks fail, but this pallet will be replaced by another election
-	// algorithm before replacing sudo with governance.
-	type WeightInfo = ();
-}
-
-parameter_types! {
 	pub const CouncilMotionDuration: BlockNumber = COUNCIL_MOTION_DURATION;
 	pub const CouncilMaxProposals: u32 = 100;
 	pub const CouncilMaxMembers: u32 = 100;
@@ -748,7 +696,7 @@ construct_runtime! {
 		Democracy: pallet_democracy::{Pallet, Call, Storage, Config<T>, Event<T>} = 30,
 		Council: pallet_collective::<Instance1>::{Pallet, Call, Storage, Origin<T>, Event<T>, Config<T>} = 31,
 		TechnicalCommittee: pallet_collective::<Instance2>::{Pallet, Call, Storage, Origin<T>, Event<T>, Config<T>} = 32,
-		ElectionsPhragmen: pallet_elections_phragmen::{Pallet, Call, Storage, Event<T>, Config<T>} = 33,
+		// placeholder: parachain council election = 33,
 		TechnicalMembership: pallet_membership::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
 		Treasury: pallet_treasury::{Pallet, Call, Storage, Config, Event<T>} = 35,
 

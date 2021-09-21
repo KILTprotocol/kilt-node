@@ -35,12 +35,12 @@ use frame_system::{
 use kilt_primitives::{
 	constants::{
 		governance::{
-			CHALLENGE_PERIOD, COOLOFF_PERIOD, COUNCIL_MOTION_DURATION, ENACTMENT_PERIOD, FAST_TRACK_VOTING_PERIOD,
-			LAUNCH_PERIOD, ROTATION_PERIOD, SPEND_PERIOD, TECHNICAL_MOTION_DURATION, TERM_DURATION, VOTING_PERIOD,
+			COOLOFF_PERIOD, COUNCIL_MOTION_DURATION, ENACTMENT_PERIOD, FAST_TRACK_VOTING_PERIOD, LAUNCH_PERIOD,
+			SPEND_PERIOD, TECHNICAL_MOTION_DURATION, VOTING_PERIOD,
 		},
 		staking::{DEFAULT_BLOCKS_PER_ROUND, MAX_CANDIDATES, MIN_BLOCKS_PER_ROUND, MIN_COLLATORS, STAKE_DURATION},
-		AVERAGE_ON_INITIALIZE_RATIO, DAYS, HOURS, KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT,
-		MIN_VESTED_TRANSFER_AMOUNT, NORMAL_DISPATCH_RATIO, SLOT_DURATION,
+		AVERAGE_ON_INITIALIZE_RATIO, KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT,
+		NORMAL_DISPATCH_RATIO, SLOT_DURATION,
 	},
 	AccountId, AuthorityId, Balance, BlockNumber, Hash, Header, Index, Signature,
 };
@@ -351,15 +351,15 @@ impl kilt_launch::Config for Runtime {
 
 parameter_types! {
 	/// Minimum round length is 1 hour
-	pub const MinBlocksPerRound: BlockNumber = HOURS;
+	pub const MinBlocksPerRound: BlockNumber = MIN_BLOCKS_PER_ROUND;
 	/// Default length of a round/session is 2 hours
-	pub const DefaultBlocksPerRound: BlockNumber = 2 * HOURS;
+	pub const DefaultBlocksPerRound: BlockNumber = DEFAULT_BLOCKS_PER_ROUND;
 	/// Unstaked balance can be unlocked after 7 days
-	pub const StakeDuration: BlockNumber = 7 * DAYS;
+	pub const StakeDuration: BlockNumber = STAKE_DURATION;
 	/// Collator exit requests are delayed by 4 hours (2 rounds/sessions)
 	pub const ExitQueueDelay: u32 = 2;
 	/// Minimum 16 collators selected per round, default at genesis and minimum forever after
-	pub const MinCollators: u32 = 16;
+	pub const MinCollators: u32 = MIN_COLLATORS;
 	/// At least 4 candidates which cannot leave the network if there are no other candidates.
 	pub const MinRequiredCollators: u32 = 4;
 	/// We only allow one delegation per round.
@@ -376,7 +376,7 @@ parameter_types! {
 	pub const MinDelegatorStake: Balance = 1000 * KILT;
 	/// Maximum number of collator candidates
 	#[derive(Debug, PartialEq)]
-	pub const MaxCollatorCandidates: u32 = 75;
+	pub const MaxCollatorCandidates: u32 = MAX_CANDIDATES;
 	/// Maximum number of concurrent requests to unlock unstaked balance
 	pub const MaxUnstakeRequests: u32 = 10;
 }
