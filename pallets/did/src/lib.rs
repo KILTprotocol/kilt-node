@@ -185,7 +185,7 @@ pub mod pallet {
 		#[cfg(feature = "runtime-benchmarks")]
 		type Origin: From<RawOrigin<DidIdentifierOf<Self>>>;
 
-		/// The origin check for all did calls inside this pallet.
+		/// The origin check for all DID calls inside this pallet.
 		type EnsureOrigin: EnsureOrigin<
 			Success = <Self as Config>::OriginSuccess,
 			<Self as frame_system::Config>::Origin,
