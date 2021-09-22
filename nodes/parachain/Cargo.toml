@@ -105,6 +105,7 @@ rococo-native=[
   "polkadot-cli/rococo-native",
 ]
 runtime-benchmarks = [
+  "polkadot-service/runtime-benchmarks",
   "peregrine-runtime/runtime-benchmarks",
   "spiritnet-runtime/runtime-benchmarks",
 ]

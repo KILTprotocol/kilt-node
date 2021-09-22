@@ -80,7 +80,6 @@ frame-benchmarking = {git = "https://github.com/paritytech/substrate", default-f
 frame-system-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.9"}
 hex-literal = {version = "0.3.1", optional = true}
 rococo-runtime = {git = "https://github.com/paritytech/polkadot", default-features = false, optional = true, branch = "release-v0.9.9"}
-pallet-society = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.9"}
 # cumulus-pallet-session-benchmarking = { git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.9", default-features = false, optional = true }
 
 # Runtime tests
@@ -109,7 +108,6 @@ runtime-benchmarks = [
   "pallet-indices/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
   "pallet-scheduler/runtime-benchmarks",
-  "pallet-society/runtime-benchmarks",
   # "cumulus-pallet-session-benchmarking",
   "pallet-timestamp/runtime-benchmarks",
   "pallet-treasury/runtime-benchmarks",
