@@ -110,7 +110,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 24,
+	spec_version: 25,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -489,9 +489,6 @@ construct_runtime!(
 		// ElectionsPhragmen: pallet_elections_phragmen::{Module, Call, Storage, Event<T>, Config<T>} = 28,
 		// TechnicalMembership: pallet_membership::{Module, Call, Storage, Event<T>, Config<T>} = 29,
 		// Treasury: pallet_treasury::{Module, Call, Storage, Config, Event<T>} = 30,
-
-		// // Society module.
-		// Society: pallet_society::{Module, Call, Storage, Event<T>} = 31,
 
 		// // System scheduler.
 		// Scheduler: pallet_scheduler::{Module, Call, Storage, Event<T>} = 32,
