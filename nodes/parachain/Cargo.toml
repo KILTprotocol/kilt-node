@@ -4,7 +4,7 @@ build = "build.rs"
 description = "KILT parachain"
 edition = "2018"
 name = "kilt-parachain"
-version = "0.25.2"
+version = "0.26.0"
 
 [[bin]]
 name = "kilt-parachain"
