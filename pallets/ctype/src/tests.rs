@@ -26,7 +26,7 @@ use crate::{self as ctype, mock::*};
 fn check_successful_ctype_creation() {
 	let creator = ALICE;
 
-	let operation = generate_base_ctype_creation_details();
+	let ctype_hash = get_ctype_hash::<Test>(true);
 
 	let builder = ExtBuilder::default();
 
@@ -34,12 +34,12 @@ fn check_successful_ctype_creation() {
 
 	// Write CType on chain
 	ext.execute_with(|| {
-		assert_ok!(Ctype::add(get_origin(creator.clone()), operation.hash));
+		assert_ok!(Ctype::add(get_origin(creator.clone()), ctype_hash));
 	});
 
 	// Verify the CType has the right owner
 	let stored_ctype_creator =
-		ext.execute_with(|| Ctype::ctypes(&operation.hash).expect("CType hash should be present on chain."));
+		ext.execute_with(|| Ctype::ctypes(&ctype_hash).expect("CType hash should be present on chain."));
 	assert_eq!(stored_ctype_creator, creator);
 }
 
@@ -47,15 +47,15 @@ fn check_successful_ctype_creation() {
 fn check_duplicate_ctype_creation() {
 	let creator = ALICE;
 
-	let operation = generate_base_ctype_creation_details();
+	let ctype_hash = get_ctype_hash::<Test>(true);
 
-	let builder = ExtBuilder::default().with_ctypes(vec![(operation.hash, creator.clone())]);
+	let builder = ExtBuilder::default().with_ctypes(vec![(ctype_hash, creator.clone())]);
 
 	let mut ext = builder.build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
-			Ctype::add(get_origin(creator.clone()), operation.hash),
+			Ctype::add(get_origin(creator.clone()), ctype_hash),
 			ctype::Error::<Test>::CTypeAlreadyExists
 		);
 	});

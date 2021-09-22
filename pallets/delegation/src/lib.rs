@@ -102,7 +102,7 @@ pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
-	use kilt_traits::CallSources;
+	use kilt_support::traits::CallSources;
 
 	/// Type of a delegation node identifier.
 	pub type DelegationNodeIdOf<T> = <T as Config>::DelegationNodeId;

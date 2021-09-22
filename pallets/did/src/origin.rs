@@ -56,7 +56,7 @@ where
 	}
 }
 
-impl<DidIdentifier: Clone, AccountId: Clone> kilt_traits::CallSources<AccountId, DidIdentifier>
+impl<DidIdentifier: Clone, AccountId: Clone> kilt_support::traits::CallSources<AccountId, DidIdentifier>
 	for DidRawOrigin<DidIdentifier, AccountId>
 {
 	fn sender(&self) -> AccountId {

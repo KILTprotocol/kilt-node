@@ -18,7 +18,7 @@
 
 use delegation::{benchmarking::setup_delegations, Permissions};
 use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
-use frame_support::traits::Get;
+use frame_support::traits::{Get, Currency};
 use frame_system::RawOrigin;
 use sp_core::sr25519;
 use sp_runtime::{traits::Hash, MultiSignature};
@@ -36,6 +36,8 @@ benchmarks! {
 		let ctype_hash: T::Hash = T::Hash::default();
 		let (_, _, delegate_public, delegation_id) = setup_delegations::<T>(1, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::ATTEST)?;
 		let delegate_acc: T::AccountId = delegate_public.into();
+		T::Currency::make_free_balance_be(&delegate_acc, T::Deposit::get() + T::Deposit::get());
+
 	}: _(RawOrigin::Signed(delegate_acc.clone()), claim_hash, ctype_hash, Some(delegation_id))
 	verify {
 		assert!(Attestations::<T>::contains_key(claim_hash));
@@ -60,6 +62,7 @@ benchmarks! {
 		let (root_public, _, delegate_public, delegation_id) = setup_delegations::<T>(d, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::ATTEST | Permissions::DELEGATE)?;
 		let root_acc: T::AccountId = root_public.into();
 		let delegate_acc: T::AccountId = delegate_public.into();
+		T::Currency::make_free_balance_be(&delegate_acc, T::Deposit::get() + T::Deposit::get());
 
 		// attest with leaf account
 		Pallet::<T>::add(RawOrigin::Signed(delegate_acc.clone()).into(), claim_hash, ctype_hash, Some(delegation_id))?;
@@ -82,6 +85,6 @@ benchmarks! {
 
 impl_benchmark_test_suite! {
 	Pallet,
-	crate::mock::ExtBuilder::default().build_with_keystore(None),
+	crate::mock::ExtBuilder::default().build_with_keystore(),
 	crate::mock::Test
 }

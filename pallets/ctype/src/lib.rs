@@ -68,7 +68,7 @@ pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
-	use kilt_traits::CallSources;
+	use kilt_support::traits::CallSources;
 
 	/// Type of a CType hash.
 	pub type CtypeHashOf<T> = <T as frame_system::Config>::Hash;

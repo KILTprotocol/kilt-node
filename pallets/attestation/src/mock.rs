@@ -22,6 +22,7 @@ use crate as attestation;
 use crate::*;
 use ctype::mock as ctype_mock;
 
+use delegation::{DelegationHierarchyDetails, DelegationNode, DelegatorIdOf};
 use frame_support::{ensure, parameter_types, weights::constants::RocksDbWeight, BoundedVec};
 use frame_system::EnsureSigned;
 use kilt_primitives::constants::MILLI_KILT;
@@ -253,7 +254,7 @@ pub fn generate_base_attestation(attester: TestAttester, payer: AccountIdOf<Test
 	AttestationDetails {
 		attester,
 		delegation_id: None,
-		ctype_hash: ctype_mock::get_ctype_hash(true),
+		ctype_hash: ctype_mock::get_ctype_hash::<Test>(true),
 		revoked: false,
 		deposit: attestation::Deposit::<AccountIdOf<Test>, BalanceOf<Test>> {
 			owner: payer,
@@ -263,9 +264,20 @@ pub fn generate_base_attestation(attester: TestAttester, payer: AccountIdOf<Test
 }
 
 #[derive(Clone)]
-pub struct ExtBuilder {
-	attestations_stored: Vec<(TestClaimHash, AttestationDetails<Test>)>,
-	delegated_attestations_stored: Vec<(
+pub(crate) struct ExtBuilder {
+	delegation_hierarchies: Vec<(
+		TestDelegationNodeId,
+		DelegationHierarchyDetails<Test>,
+		DelegatorIdOf<Test>,
+	)>,
+	delegations: Vec<(TestDelegationNodeId, DelegationNode<Test>)>,
+
+	/// initial ctypes & owners
+	ctypes: Vec<(TestCtypeHash, AccountIdOf<Test>)>,
+	/// endowed accounts with balances
+	balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>,
+	attestations: Vec<(TestClaimHash, AttestationDetails<Test>)>,
+	delegated_attestations: Vec<(
 		TestDelegationNodeId,
 		BoundedVec<TestClaimHash, <Test as Config>::MaxDelegatedAttestations>,
 	)>,
@@ -274,63 +286,94 @@ pub struct ExtBuilder {
 impl Default for ExtBuilder {
 	fn default() -> Self {
 		Self {
-			attestations_stored: vec![],
-			delegated_attestations_stored: vec![],
+			ctypes: vec![],
+			balances: vec![],
+			attestations: vec![],
+			delegated_attestations: vec![],
+			delegation_hierarchies: vec![],
+			delegations: vec![],
 		}
 	}
 }
 
 impl ExtBuilder {
-	pub fn with_attestations(mut self, attestations: Vec<(TestClaimHash, AttestationDetails<Test>)>) -> Self {
-		self.attestations_stored = attestations;
+	pub(crate) fn with_delegation_hierarchies(
+		mut self,
+		delegation_hierarchies: Vec<(
+			TestDelegationNodeId,
+			DelegationHierarchyDetails<Test>,
+			DelegatorIdOf<Test>,
+		)>,
+	) -> Self {
+		self.delegation_hierarchies = delegation_hierarchies;
 		self
 	}
 
-	pub fn with_delegated_attestations(
+	pub(crate) fn with_delegations(mut self, delegations: Vec<(TestDelegationNodeId, DelegationNode<Test>)>) -> Self {
+		self.delegations = delegations;
+		self
+	}
+
+	pub(crate) fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, TestCtypeOwner)>) -> Self {
+		self.ctypes = ctypes;
+		self
+	}
+
+	pub(crate) fn with_balances(mut self, balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>) -> Self {
+		self.balances = balances;
+		self
+	}
+
+	pub(crate) fn with_attestations(mut self, attestations: Vec<(TestClaimHash, AttestationDetails<Test>)>) -> Self {
+		self.attestations = attestations;
+		self
+	}
+
+	pub(crate) fn with_delegated_attestations(
 		mut self,
 		delegated_attestations: Vec<(
 			TestDelegationNodeId,
 			BoundedVec<TestClaimHash, <Test as Config>::MaxDelegatedAttestations>,
 		)>,
 	) -> Self {
-		self.delegated_attestations_stored = delegated_attestations;
+		self.delegated_attestations = delegated_attestations;
 		self
 	}
 
-	pub fn build(self, ext: Option<sp_io::TestExternalities>) -> sp_io::TestExternalities {
-		let mut ext = if let Some(ext) = ext {
-			ext
-		} else {
-			let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
-			sp_io::TestExternalities::new(storage)
-		};
-
-		if !self.attestations_stored.is_empty() {
-			ext.execute_with(|| {
-				self.attestations_stored.iter().for_each(|attestation| {
-					attestation::Attestations::<Test>::insert(attestation.0, attestation.1.clone());
-				})
-			});
+	pub(crate) fn build(self) -> sp_io::TestExternalities {
+		let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+		pallet_balances::GenesisConfig::<Test> {
+			balances: self.balances.clone(),
 		}
+		.assimilate_storage(&mut storage)
+		.expect("assimilate should not fail");
 
-		if !self.delegated_attestations_stored.is_empty() {
-			ext.execute_with(|| {
-				self.delegated_attestations_stored
-					.iter()
-					.for_each(|delegated_attestation| {
-						attestation::DelegatedAttestations::<Test>::insert(
-							delegated_attestation.0,
-							delegated_attestation.1.clone(),
-						);
-					})
-			});
-		}
+		let mut ext = sp_io::TestExternalities::new(storage);
+
+		ext.execute_with(|| {
+			for attestation in self.attestations {
+				attestation::Attestations::<Test>::insert(attestation.0, attestation.1.clone());
+			}
+
+			for delegated_attestation in self.delegated_attestations {
+				attestation::DelegatedAttestations::<Test>::insert(
+					delegated_attestation.0,
+					delegated_attestation.1.clone(),
+				);
+			}
+
+			for ctype in self.ctypes {
+				ctype::Ctypes::<Test>::insert(ctype.0, ctype.1.clone());
+			}
+
+			delegation::mock::initialize_pallet(self.delegations, self.delegation_hierarchies);
+		});
 
 		ext
 	}
 
-	pub fn build_with_keystore(self, ext: Option<sp_io::TestExternalities>) -> sp_io::TestExternalities {
-		let mut ext = self.build(ext);
+	pub(crate) fn build_with_keystore(self) -> sp_io::TestExternalities {
+		let mut ext = self.build();
 
 		let keystore = KeyStore::new();
 		ext.register_extension(KeystoreExt(Arc::new(keystore)));

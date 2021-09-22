@@ -19,6 +19,7 @@
 #![allow(clippy::from_over_into)]
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
+use sp_core::H256;
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
 	testing::Header,
@@ -96,21 +97,15 @@ pub fn get_origin(account: TestCtypeOwner) -> Origin {
 	Origin::signed(account)
 }
 
-pub fn get_ctype_hash(default: bool) -> TestCtypeHash {
+pub fn get_ctype_hash<T>(default: bool) -> CtypeHashOf<T>
+where
+	T: Config,
+	T::Hash: From<H256>,
+{
 	if default {
-		TestCtypeHash::from_low_u64_be(DEFAULT_CTYPE_HASH_SEED)
+		H256::from_low_u64_be(DEFAULT_CTYPE_HASH_SEED).into()
 	} else {
-		TestCtypeHash::from_low_u64_be(ALTERNATIVE_CTYPE_HASH_SEED)
-	}
-}
-
-pub struct CtypeCreationDetails {
-	pub hash: TestCtypeHash,
-}
-
-pub fn generate_base_ctype_creation_details() -> CtypeCreationDetails {
-	CtypeCreationDetails {
-		hash: get_ctype_hash(true),
+		H256::from_low_u64_be(ALTERNATIVE_CTYPE_HASH_SEED).into()
 	}
 }
 

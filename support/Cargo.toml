@@ -1,8 +1,8 @@
 [package]
 authors = ["KILT <info@kilt.io>"]
-description = "Traits used across the KILT pallets"
+description = "Shared traits and structs used across the KILT pallets"
 edition = "2018"
-name = "kilt-traits"
+name = "kilt-support"
 repository = "https://github.com/KILTprotocol/mashnet-node"
 version = "0.26.0"
 

@@ -98,7 +98,7 @@ pub mod pallet {
 		BoundedVec,
 	};
 	use frame_system::pallet_prelude::*;
-	use kilt_traits::CallSources;
+	use kilt_support::traits::CallSources;
 
 	/// Type of a claim hash.
 	pub(crate) type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
@@ -216,8 +216,6 @@ pub mod pallet {
 		MaxDelegatedAttestationsExceeded,
 		/// TODO: doc
 		InsufficientBalance,
-		/// TODO: doc
-		NoDeposit,
 	}
 
 	#[pallet::call]
@@ -294,14 +292,16 @@ pub mod pallet {
 				None
 			};
 
-			let deposit = Pallet::<T>::reserve_deposit(payer, &claim_hash, deposit_amount)?;
-			// *** No Fail beyond this point
+			let deposit = Pallet::<T>::reserve_deposit(payer, deposit_amount)?;
+			// *** No Fail beyond this point ***
 
+			log::debug!("insert Attestation");
+
+			// write delegation record, if any
 			if let Some((id, delegated_attestation)) = delegation_record {
 				<DelegatedAttestations<T>>::insert(id, delegated_attestation);
 			}
 
-			log::debug!("insert Attestation");
 			<Attestations<T>>::insert(
 				&claim_hash,
 				AttestationDetails {
@@ -319,7 +319,6 @@ pub mod pallet {
 				ctype_hash,
 				delegation_id,
 			));
-
 			Ok(())
 		}
 
@@ -359,7 +358,7 @@ pub mod pallet {
 				0
 			};
 
-			// *** No Fail beyond this point
+			// *** No Fail beyond this point ***
 
 			log::debug!("revoking Attestation");
 			<Attestations<T>>::insert(
@@ -394,7 +393,7 @@ pub mod pallet {
 				0
 			};
 
-			// *** No Fail beyond this point
+			// *** No Fail beyond this point ***
 
 			log::debug!("removing Attestation");
 			Pallet::<T>::free_deposit(&attestation.deposit);
@@ -435,7 +434,6 @@ pub mod pallet {
 		/// Fails if the `payer` has a balance less than deposit.
 		fn reserve_deposit(
 			payer: AccountIdOf<T>,
-			claim_hash: &ClaimHashOf<T>,
 			deposit: BalanceOf<T>,
 		) -> Result<Deposit<AccountIdOf<T>, BalanceOf<T>>, DispatchError> {
 			CurrencyOf::<T>::reserve(&payer, deposit)?;
