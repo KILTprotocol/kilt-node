@@ -185,35 +185,31 @@ const BOB_SEED: [u8; 32] = [1u8; 32];
 const DEFAULT_CLAIM_HASH_SEED: u64 = 1u64;
 const ALTERNATIVE_CLAIM_HASH_SEED: u64 = 2u64;
 
-pub fn get_origin(account: TestAttester) -> Origin {
-	Origin::signed(account)
-}
-
-pub fn get_ed25519_account(public_key: ed25519::Public) -> TestDelegatorId {
+pub(crate) fn get_ed25519_account(public_key: ed25519::Public) -> TestDelegatorId {
 	MultiSigner::from(public_key).into_account()
 }
 
-pub fn get_sr25519_account(public_key: sr25519::Public) -> TestDelegatorId {
+pub(crate) fn get_sr25519_account(public_key: sr25519::Public) -> TestDelegatorId {
 	MultiSigner::from(public_key).into_account()
 }
 
-pub fn get_alice_ed25519() -> ed25519::Pair {
+pub(crate) fn get_alice_ed25519() -> ed25519::Pair {
 	ed25519::Pair::from_seed(&ALICE_SEED)
 }
 
-pub fn get_alice_sr25519() -> sr25519::Pair {
+pub(crate) fn get_alice_sr25519() -> sr25519::Pair {
 	sr25519::Pair::from_seed(&ALICE_SEED)
 }
 
-pub fn get_bob_ed25519() -> ed25519::Pair {
+pub(crate) fn get_bob_ed25519() -> ed25519::Pair {
 	ed25519::Pair::from_seed(&BOB_SEED)
 }
 
-pub fn get_bob_sr25519() -> sr25519::Pair {
+pub(crate) fn get_bob_sr25519() -> sr25519::Pair {
 	sr25519::Pair::from_seed(&BOB_SEED)
 }
 
-pub fn get_claim_hash(default: bool) -> TestClaimHash {
+pub(crate) fn get_claim_hash(default: bool) -> TestClaimHash {
 	if default {
 		TestClaimHash::from_low_u64_be(DEFAULT_CLAIM_HASH_SEED)
 	} else {
@@ -263,6 +259,7 @@ pub fn generate_base_attestation(attester: TestAttester, payer: AccountIdOf<Test
 	}
 }
 
+#[cfg(test)]
 #[derive(Clone)]
 pub(crate) struct ExtBuilder {
 	delegation_hierarchies: Vec<(
@@ -283,6 +280,7 @@ pub(crate) struct ExtBuilder {
 	)>,
 }
 
+#[cfg(test)]
 impl Default for ExtBuilder {
 	fn default() -> Self {
 		Self {
@@ -296,6 +294,7 @@ impl Default for ExtBuilder {
 	}
 }
 
+#[cfg(test)]
 impl ExtBuilder {
 	pub(crate) fn with_delegation_hierarchies(
 		mut self,
