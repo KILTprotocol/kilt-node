@@ -27,6 +27,7 @@ use crate::{AccountIdOf, AttestationDetails, AttesterOf, BalanceOf, ClaimHashOf,
 use ctype::CtypeHashOf;
 use delegation::DelegationNodeIdOf;
 use frame_support::traits::Get;
+use kilt_support::deposit::Deposit;
 use sp_core::H256;
 
 #[cfg(test)]
@@ -73,7 +74,7 @@ where
 		delegation_id: None,
 		ctype_hash: ctype::mock::get_ctype_hash::<T>(true),
 		revoked: false,
-		deposit: crate::Deposit::<AccountIdOf<T>, BalanceOf<T>> {
+		deposit: Deposit::<AccountIdOf<T>, BalanceOf<T>> {
 			owner: payer,
 			amount: T::Deposit::get(),
 		},
@@ -327,10 +328,7 @@ pub mod runtime {
 			self
 		}
 
-		pub fn with_delegations(
-			mut self,
-			delegations: Vec<(TestDelegationNodeId, DelegationNode<Test>)>,
-		) -> Self {
+		pub fn with_delegations(mut self, delegations: Vec<(TestDelegationNodeId, DelegationNode<Test>)>) -> Self {
 			self.delegations = delegations;
 			self
 		}
@@ -345,10 +343,7 @@ pub mod runtime {
 			self
 		}
 
-		pub fn with_attestations(
-			mut self,
-			attestations: Vec<(TestClaimHash, AttestationDetails<Test>)>,
-		) -> Self {
+		pub fn with_attestations(mut self, attestations: Vec<(TestClaimHash, AttestationDetails<Test>)>) -> Self {
 			self.attestations = attestations;
 			self
 		}

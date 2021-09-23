@@ -19,7 +19,7 @@
 use frame_support::{assert_noop, assert_ok};
 use sp_core::Pair;
 
-use crate::{self as attestation, mock::*, AccountIdOf, mock::runtime::Test};
+use crate::{self as attestation, mock::*, AccountIdOf, Config};
 use ctype::mock as ctype_mock;
 use delegation::mock as delegation_mock;
 
@@ -36,7 +36,7 @@ fn attest_no_delegation_successful() {
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(operation.ctype_hash, attester.clone())])
-		.with_balances(vec![(attester.clone(), Deposit::get() * 100)])
+		.with_balances(vec![(attester.clone(), <Test as Config>::Deposit::get() * 100)])
 		.build()
 		.execute_with(|| {
 			assert_ok!(Attestation::add(
@@ -75,7 +75,7 @@ fn attest_with_delegation_successful() {
 		.with_ctypes(vec![(operation.ctype_hash, attester.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, attester.clone())])
 		.with_delegations(vec![(delegation_id, delegation_node)])
-		.with_balances(vec![(attester.clone(), Deposit::get() * 100)])
+		.with_balances(vec![(attester.clone(), <Test as Config>::Deposit::get() * 100)])
 		.build()
 		.execute_with(|| {
 			assert_ok!(Attestation::add(
@@ -230,7 +230,7 @@ fn not_delegation_owner_attest_error() {
 		.with_ctypes(vec![(operation.ctype_hash, attester.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, attester.clone())])
 		.with_delegations(vec![(delegation_id, delegation_node)])
-		.with_balances(vec![(attester.clone(), Deposit::get() * 100)])
+		.with_balances(vec![(attester.clone(), <Test as Config>::Deposit::get() * 100)])
 		.build()
 		.execute_with(|| {
 			assert_noop!(

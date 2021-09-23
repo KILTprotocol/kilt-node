@@ -98,7 +98,7 @@ pub mod pallet {
 		BoundedVec,
 	};
 	use frame_system::pallet_prelude::*;
-	use kilt_support::traits::CallSources;
+	use kilt_support::{deposit::Deposit, traits::CallSources};
 
 	/// Type of a claim hash.
 	pub(crate) type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
@@ -293,6 +293,7 @@ pub mod pallet {
 			};
 
 			let deposit = Pallet::<T>::reserve_deposit(payer, deposit_amount)?;
+
 			// *** No Fail beyond this point ***
 
 			log::debug!("insert Attestation");
