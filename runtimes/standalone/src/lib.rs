@@ -499,9 +499,6 @@ construct_runtime!(
 		// TechnicalMembership: pallet_membership::{Module, Call, Storage, Event<T>, Config<T>} = 29,
 		// Treasury: pallet_treasury::{Module, Call, Storage, Config, Event<T>} = 30,
 
-		// // Society module.
-		// Society: pallet_society::{Module, Call, Storage, Event<T>} = 31,
-
 		// // System scheduler.
 		// Scheduler: pallet_scheduler::{Module, Call, Storage, Event<T>} = 32,
 
