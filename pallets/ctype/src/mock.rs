@@ -81,6 +81,7 @@ impl frame_system::Config for Test {
 impl Config for Test {
 	type CtypeCreatorId = TestCtypeOwner;
 	type EnsureOrigin = frame_system::EnsureSigned<TestCtypeOwner>;
+	type OriginSuccess = TestCtypeOwner;
 	type Event = ();
 	type WeightInfo = ();
 }

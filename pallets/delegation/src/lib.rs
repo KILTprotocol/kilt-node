@@ -102,6 +102,7 @@ pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
+	use kilt_traits::CallSources;
 
 	/// Type of a delegation node identifier.
 	pub type DelegationNodeIdOf<T> = <T as Config>::DelegationNodeId;
@@ -119,6 +120,8 @@ pub mod pallet {
 	/// information.
 	pub type DelegateSignatureTypeOf<T> = <DelegationSignatureVerificationOf<T> as VerifyDelegateSignature>::Signature;
 
+	type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config {
 		type Signature: Parameter;
@@ -129,7 +132,11 @@ pub mod pallet {
 		>;
 		type DelegationEntityId: Parameter;
 		type DelegationNodeId: Parameter + Copy + AsRef<[u8]> + Eq + PartialEq + Ord + PartialOrd;
-		type EnsureOrigin: EnsureOrigin<Success = DelegatorIdOf<Self>, <Self as frame_system::Config>::Origin>;
+		type EnsureOrigin: EnsureOrigin<
+			Success = <Self as Config>::OriginSuccess,
+			<Self as frame_system::Config>::Origin,
+		>;
+		type OriginSuccess: CallSources<AccountIdOf<Self>, DelegatorIdOf<Self>>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		#[pallet::constant]
 		type MaxSignatureByteLength: Get<u16>;
@@ -287,7 +294,7 @@ pub mod pallet {
 			root_node_id: DelegationNodeIdOf<T>,
 			ctype_hash: CtypeHashOf<T>,
 		) -> DispatchResult {
-			let creator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let creator = <T as Config>::EnsureOrigin::ensure_origin(origin)?.subject();
 
 			ensure!(
 				!<DelegationHierarchies<T>>::contains_key(&root_node_id),
@@ -346,7 +353,7 @@ pub mod pallet {
 			permissions: Permissions,
 			delegate_signature: DelegateSignatureTypeOf<T>,
 		) -> DispatchResult {
-			let delegator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let delegator = <T as Config>::EnsureOrigin::ensure_origin(origin)?.subject();
 
 			ensure!(
 				!<DelegationNodes<T>>::contains_key(&delegation_id),
@@ -437,7 +444,7 @@ pub mod pallet {
 			max_parent_checks: u32,
 			max_revocations: u32,
 		) -> DispatchResultWithPostInfo {
-			let invoker = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let invoker = <T as Config>::EnsureOrigin::ensure_origin(origin)?.subject();
 
 			ensure!(
 				<DelegationNodes<T>>::contains_key(&delegation_id),

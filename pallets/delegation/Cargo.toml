@@ -24,6 +24,7 @@ sp-keystore = {branch = "polkadot-v0.9.9", default-features = false, git = "http
 # Internal dependencies
 ctype = {default-features = false, path = "../ctype", version = "0.26.0"}
 kilt-primitives = {default-features = false, path = "../../primitives"}
+kilt-traits = {default-features = false, path = "../../traits"}
 
 #External dependencies
 bitflags = {default-features = false, version = "1.2.1"}
@@ -65,6 +66,7 @@ std = [
   "sp-io/std",
   "sp-runtime/std",
   "sp-std/std",
+  "kilt-traits/std",
 ]
 try-runtime = [
   "frame-support/try-runtime",

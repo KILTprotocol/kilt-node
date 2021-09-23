@@ -23,6 +23,7 @@ kilt-primitives = {default-features = false, path = "../../primitives"}
 # Internal dependencies
 ctype = {optional = true, path = "../ctype", version = "0.26.0"}
 kilt-primitives = {default-features = false, path = "../../primitives"}
+kilt-traits = {default-features = false, path = "../../traits"}
 
 # External dependencies
 env_logger = {default-features = false, optional = true, version = "0.8.3"}

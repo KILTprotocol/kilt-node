@@ -27,25 +27,43 @@ use crate::*;
 
 /// Origin for modules that support DID-based authorization.
 #[derive(Clone, Decode, Encode, Eq, PartialEq, RuntimeDebug)]
-pub struct DidRawOrigin<DidIdentifier> {
+pub struct DidRawOrigin<DidIdentifier, AccountId> {
 	pub id: DidIdentifier,
+	pub submitter: AccountId,
 }
 
-pub struct EnsureDidOrigin<DidIdentifier>(PhantomData<DidIdentifier>);
+pub struct EnsureDidOrigin<DidIdentifier, AccountId>(PhantomData<(DidIdentifier, AccountId)>);
 
-impl<OuterOrigin, DidIdentifier> EnsureOrigin<OuterOrigin> for EnsureDidOrigin<DidIdentifier>
+impl<OuterOrigin, DidIdentifier, AccountId> EnsureOrigin<OuterOrigin> for EnsureDidOrigin<DidIdentifier, AccountId>
 where
-	OuterOrigin: Into<Result<DidRawOrigin<DidIdentifier>, OuterOrigin>> + From<DidRawOrigin<DidIdentifier>>,
+	OuterOrigin: Into<Result<DidRawOrigin<DidIdentifier, AccountId>, OuterOrigin>>
+		+ From<DidRawOrigin<DidIdentifier, AccountId>>,
 	DidIdentifier: Default,
+	AccountId: Default,
 {
-	type Success = DidIdentifier;
+	type Success = DidRawOrigin<DidIdentifier, AccountId>;
 
 	fn try_origin(o: OuterOrigin) -> Result<Self::Success, OuterOrigin> {
-		o.into().map(|o| o.id)
+		o.into()
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]
 	fn successful_origin() -> OuterOrigin {
-		OuterOrigin::from(DidRawOrigin { id: Default::default() })
+		OuterOrigin::from(DidRawOrigin {
+			id: Default::default(),
+			submitter: Default::default(),
+		})
+	}
+}
+
+impl<DidIdentifier: Clone, AccountId: Clone> kilt_traits::CallSources<AccountId, DidIdentifier>
+	for DidRawOrigin<DidIdentifier, AccountId>
+{
+	fn sender(&self) -> AccountId {
+		self.submitter.clone()
+	}
+
+	fn subject(&self) -> DidIdentifier {
+		self.id.clone()
 	}
 }

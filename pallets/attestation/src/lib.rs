@@ -94,6 +94,7 @@ pub mod pallet {
 	use super::*;
 	use frame_support::{pallet_prelude::*, BoundedVec};
 	use frame_system::pallet_prelude::*;
+	use kilt_traits::CallSources;
 
 	/// Type of a claim hash.
 	pub type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
@@ -104,12 +105,18 @@ pub mod pallet {
 	/// Type of an attester identifier.
 	pub type AttesterOf<T> = delegation::DelegatorIdOf<T>;
 
+	type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+
 	/// Type of a delegation identifier.
 	pub type DelegationNodeIdOf<T> = delegation::DelegationNodeIdOf<T>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config + delegation::Config {
-		type EnsureOrigin: EnsureOrigin<Success = AttesterOf<Self>, <Self as frame_system::Config>::Origin>;
+		type EnsureOrigin: EnsureOrigin<
+			Success = <Self as Config>::OriginSuccess,
+			<Self as frame_system::Config>::Origin,
+		>;
+		type OriginSuccess: CallSources<AccountIdOf<Self>, AttesterOf<Self>>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type WeightInfo: WeightInfo;
 
@@ -222,7 +229,8 @@ pub mod pallet {
 			ctype_hash: CtypeHashOf<T>,
 			delegation_id: Option<DelegationNodeIdOf<T>>,
 		) -> DispatchResult {
-			let attester = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let attester = source.subject();
 
 			ensure!(
 				<ctype::Ctypes<T>>::contains_key(&ctype_hash),
@@ -306,7 +314,8 @@ pub mod pallet {
 			claim_hash: ClaimHashOf<T>,
 			max_parent_checks: u32,
 		) -> DispatchResultWithPostInfo {
-			let revoker = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let revoker = source.subject();
 
 			let attestation = <Attestations<T>>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 

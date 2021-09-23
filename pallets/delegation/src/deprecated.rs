@@ -89,7 +89,7 @@ pub(crate) mod v1 {
 		use super::*;
 
 		decl_module! {
-			pub struct OldPallet<T: Config> for enum Call where origin: T::Origin {}
+			pub struct OldPallet<T: Config> for enum Call where origin: <T as frame_system::Config>::Origin {}
 		}
 
 		decl_storage! {

@@ -30,7 +30,6 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::EnsureSigned;
 
-use did::DidSignature;
 use kilt_primitives::{
 	constants::{KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature,
@@ -283,7 +282,7 @@ pub struct DelegationSignatureVerifier<R>(sp_std::marker::PhantomData<R>);
 impl<R: did::Config> delegation::VerifyDelegateSignature for DelegationSignatureVerifier<R> {
 	type DelegateId = <R as did::Config>::DidIdentifier;
 	type Payload = Vec<u8>;
-	type Signature = DidSignature;
+	type Signature = did::DidSignature;
 
 	fn verify(
 		delegate: &Self::DelegateId,
@@ -341,7 +340,8 @@ parameter_types! {
 }
 
 impl attestation::Config for Runtime {
-	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type OriginSuccess = did::DidRawOrigin<DidIdentifier, AccountId>;
 	type Event = Event;
 	type WeightInfo = ();
 	type MaxDelegatedAttestations = MaxDelegatedAttestations;
@@ -357,11 +357,12 @@ parameter_types! {
 }
 
 impl delegation::Config for Runtime {
-	type Signature = DidSignature;
+	type Signature = did::DidSignature;
 	type DelegationSignatureVerification = DelegationSignatureVerifier<Self>;
 	type DelegationEntityId = DidIdentifier;
 	type DelegationNodeId = Hash;
-	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Event = Event;
 	type MaxSignatureByteLength = MaxSignatureByteLength;
 	type MaxParentChecks = MaxParentChecks;
@@ -372,7 +373,8 @@ impl delegation::Config for Runtime {
 
 impl ctype::Config for Runtime {
 	type CtypeCreatorId = DidIdentifier;
-	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Event = Event;
 	type WeightInfo = ();
 }
@@ -394,10 +396,17 @@ impl did::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
 	type Origin = Origin;
+
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	type EnsureOrigin = did::EnsureDidOrigin<Self::DidIdentifier>;
+	type EnsureOrigin = did::EnsureDidOrigin<Self::DidIdentifier, AccountId>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type OriginSuccess = did::DidRawOrigin<AccountId, Self::DidIdentifier>;
+
 	#[cfg(feature = "runtime-benchmarks")]
 	type EnsureOrigin = EnsureSigned<Self::DidIdentifier>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type OriginSuccess = Self::DidIdentifier;
+
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
 	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;

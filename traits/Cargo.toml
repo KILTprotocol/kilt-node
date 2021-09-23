@@ -1,0 +1,14 @@
+[package]
+authors = ["KILT <info@kilt.io>"]
+description = "Traits used across the KILT pallets"
+edition = "2018"
+name = "kilt-traits"
+repository = "https://github.com/KILTprotocol/mashnet-node"
+version = "0.26.0"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[features]
+default = ["std"]
+std = []

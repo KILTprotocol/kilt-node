@@ -541,7 +541,8 @@ parameter_types! {
 }
 
 impl attestation::Config for Runtime {
-	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Event = Event;
 	type WeightInfo = weights::attestation::WeightInfo<Runtime>;
 	type MaxDelegatedAttestations = MaxDelegatedAttestations;
@@ -561,7 +562,8 @@ impl delegation::Config for Runtime {
 	type DelegationSignatureVerification = DelegationSignatureVerifier<Runtime>;
 	type DelegationEntityId = AccountId;
 	type DelegationNodeId = Hash;
-	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Event = Event;
 	type MaxSignatureByteLength = MaxSignatureByteLength;
 	type MaxParentChecks = MaxParentChecks;
@@ -572,7 +574,8 @@ impl delegation::Config for Runtime {
 
 impl ctype::Config for Runtime {
 	type CtypeCreatorId = AccountId;
-	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier>;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Event = Event;
 	type WeightInfo = weights::ctype::WeightInfo<Runtime>;
 }
@@ -594,10 +597,17 @@ impl did::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
 	type Origin = Origin;
+
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	type EnsureOrigin = did::EnsureDidOrigin<Self::DidIdentifier>;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+
 	#[cfg(feature = "runtime-benchmarks")]
 	type EnsureOrigin = EnsureSigned<Self::DidIdentifier>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type OriginSuccess = Self::DidIdentifier;
+
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
 	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
