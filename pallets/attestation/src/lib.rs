@@ -126,6 +126,7 @@ pub mod pallet {
 		type Currency: Currency<AccountIdOf<Self>> + ReservableCurrency<AccountIdOf<Self>>;
 
 		/// The deposit that is required
+		#[pallet::constant]
 		type Deposit: Get<BalanceOf<Self>>;
 
 		/// The maximum number of delegated attestations which can be made by
