@@ -10,6 +10,7 @@ COPY ./nodes /build/nodes
 COPY ./pallets /build/pallets
 COPY ./primitives /build/primitives
 COPY ./runtimes /build/runtimes
+COPY ./traits /build/traits
 COPY ./Cargo.lock /build/Cargo.lock
 COPY ./Cargo.toml /build/Cargo.toml
 

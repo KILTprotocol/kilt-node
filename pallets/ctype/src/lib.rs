@@ -68,6 +68,7 @@ pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
+	use kilt_traits::CallSources;
 
 	/// Type of a CType hash.
 	pub type CtypeHashOf<T> = <T as frame_system::Config>::Hash;
@@ -75,10 +76,13 @@ pub mod pallet {
 	/// Type of a CType creator.
 	pub type CtypeCreatorOf<T> = <T as Config>::CtypeCreatorId;
 
+	type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type CtypeCreatorId: Parameter + Default;
-		type EnsureOrigin: EnsureOrigin<Success = CtypeCreatorOf<Self>, <Self as frame_system::Config>::Origin>;
+		type EnsureOrigin: EnsureOrigin<Success = Self::OriginSuccess, <Self as frame_system::Config>::Origin>;
+		type OriginSuccess: CallSources<AccountIdOf<Self>, CtypeCreatorOf<Self>>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type WeightInfo: WeightInfo;
 	}
@@ -129,7 +133,8 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::add())]
 		pub fn add(origin: OriginFor<T>, hash: CtypeHashOf<T>) -> DispatchResult {
-			let creator = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let creator = source.subject();
 
 			ensure!(!<Ctypes<T>>::contains_key(&hash), Error::<T>::CTypeAlreadyExists);
 

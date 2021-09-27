@@ -92,6 +92,7 @@ impl frame_system::Config for Test {
 impl ctype::Config for Test {
 	type CtypeCreatorId = TestCtypeOwner;
 	type EnsureOrigin = EnsureSigned<TestCtypeOwner>;
+	type OriginSuccess = TestCtypeOwner;
 	type Event = ();
 	type WeightInfo = ();
 }
@@ -110,6 +111,7 @@ impl Config for Test {
 	type DelegationEntityId = TestDelegatorId;
 	type DelegationNodeId = TestDelegationNodeId;
 	type EnsureOrigin = EnsureSigned<TestDelegatorId>;
+	type OriginSuccess = TestDelegatorId;
 	type Event = ();
 	type MaxSignatureByteLength = MaxSignatureByteLength;
 	type MaxParentChecks = MaxParentChecks;

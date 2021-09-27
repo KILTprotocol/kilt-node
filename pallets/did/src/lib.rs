@@ -143,6 +143,7 @@ pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
+	use kilt_traits::CallSources;
 
 	/// Reference to a payload of data of variable size.
 	pub type Payload = [u8];
@@ -164,7 +165,7 @@ pub mod pallet {
 
 	/// Type for origin that supports a DID sender.
 	#[pallet::origin]
-	pub type Origin<T> = DidRawOrigin<DidIdentifierOf<T>>;
+	pub type Origin<T> = DidRawOrigin<DidIdentifierOf<T>, AccountIdentifierOf<T>>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + Debug {
@@ -178,14 +179,20 @@ pub mod pallet {
 		/// Type for a DID subject identifier.
 		type DidIdentifier: Parameter + Default + DidVerifiableIdentifier;
 
-		#[cfg(not(feature = "runtime-benchmarks"))]
 		/// Origin type expected by the proxied dispatchable calls.
-		type Origin: From<DidRawOrigin<DidIdentifierOf<Self>>>;
-
+		#[cfg(not(feature = "runtime-benchmarks"))]
+		type Origin: From<DidRawOrigin<DidIdentifierOf<Self>, AccountIdentifierOf<Self>>>;
 		#[cfg(feature = "runtime-benchmarks")]
 		type Origin: From<RawOrigin<DidIdentifierOf<Self>>>;
 
-		type EnsureOrigin: EnsureOrigin<Success = DidIdentifierOf<Self>, <Self as frame_system::Config>::Origin>;
+		/// The origin check for all DID calls inside this pallet.
+		type EnsureOrigin: EnsureOrigin<
+			Success = <Self as Config>::OriginSuccess,
+			<Self as frame_system::Config>::Origin,
+		>;
+
+		/// The return type when the DID origin check was successful.
+		type OriginSuccess: CallSources<AccountIdentifierOf<Self>, DidIdentifierOf<Self>>;
 
 		/// Overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
@@ -321,6 +328,8 @@ pub mod pallet {
 		MaxTotalKeyAgreementKeysExceeded,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
+		/// The DID call was submitted by the wrong account
+		BadDidOrigin,
 	}
 
 	impl<T> From<DidError> for Error<T> {
@@ -476,7 +485,7 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_authentication_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_authentication_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_authentication_key()))]
 		pub fn set_authentication_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
-			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
 			log::debug!(
@@ -514,7 +523,7 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_delegation_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_delegation_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_delegation_key()))]
 		pub fn set_delegation_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
-			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
 			log::debug!("Setting new delegation key {:?} for DID {:?}", &new_key, &did_subject);
@@ -546,7 +555,7 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_ed25519_delegation_key().max(<T as pallet::Config>::WeightInfo::remove_sr25519_delegation_key()).max(<T as pallet::Config>::WeightInfo::remove_ecdsa_delegation_key()))]
 		pub fn remove_delegation_key(origin: OriginFor<T>) -> DispatchResult {
-			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
 			log::debug!("Removing delegation key for DID {:?}", &did_subject);
@@ -577,7 +586,7 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_attestation_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_attestation_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_attestation_key()))]
 		pub fn set_attestation_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
-			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
 			log::debug!("Setting new attestation key {:?} for DID {:?}", &new_key, &did_subject);
@@ -609,7 +618,7 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_ed25519_attestation_key().max(<T as pallet::Config>::WeightInfo::remove_sr25519_attestation_key()).max(<T as pallet::Config>::WeightInfo::remove_ecdsa_attestation_key()))]
 		pub fn remove_attestation_key(origin: OriginFor<T>) -> DispatchResult {
-			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
 			log::debug!("Removing attestation key for DID {:?}", &did_subject);
@@ -638,7 +647,7 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::add_ed25519_key_agreement_key().max(<T as pallet::Config>::WeightInfo::add_sr25519_key_agreement_key()).max(<T as pallet::Config>::WeightInfo::add_ecdsa_key_agreement_key()))]
 		pub fn add_key_agreement_key(origin: OriginFor<T>, new_key: DidEncryptionKey) -> DispatchResult {
-			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
 			log::debug!("Adding new key agreement key {:?} for DID {:?}", &new_key, &did_subject);
@@ -668,7 +677,7 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_ed25519_key_agreement_key().max(<T as pallet::Config>::WeightInfo::remove_sr25519_key_agreement_key()).max(<T as pallet::Config>::WeightInfo::remove_ecdsa_key_agreement_key()))]
 		pub fn remove_key_agreement_key(origin: OriginFor<T>, key_id: KeyIdOf<T>) -> DispatchResult {
-			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
 			log::debug!("Removing key agreement key for DID {:?}", &did_subject);
@@ -695,7 +704,7 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_service_endpoints(T::MaxUrlLength::get(), T::MaxEndpointUrlsCount::get()))]
 		pub fn set_service_endpoints(origin: OriginFor<T>, service_endpoints: ServiceEndpoints<T>) -> DispatchResult {
-			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
 			log::debug!(
@@ -730,7 +739,7 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_service_endpoints(T::MaxUrlLength::get(), T::MaxEndpointUrlsCount::get()))]
 		pub fn remove_service_endpoints(origin: OriginFor<T>) -> DispatchResult {
-			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
 			log::debug!("Removing service endpoints for DID {:?}", &did_subject);
@@ -769,7 +778,8 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::delete())]
 		pub fn delete(origin: OriginFor<T>) -> DispatchResult {
-			let did_subject = T::EnsureOrigin::ensure_origin(origin)?;
+			let source = T::EnsureOrigin::ensure_origin(origin)?;
+			let did_subject = source.subject();
 
 			ensure!(
 				// `take` calls `kill` internally
@@ -832,7 +842,8 @@ pub mod pallet {
 			did_call: Box<DidAuthorizedCallOperation<T>>,
 			signature: DidSignature,
 		) -> DispatchResultWithPostInfo {
-			ensure_signed(origin)?;
+			let who = ensure_signed(origin)?;
+			ensure!(did_call.submitter == who, Error::<T>::BadDidOrigin);
 
 			let did_identifier = did_call.did.clone();
 
@@ -858,7 +869,13 @@ pub mod pallet {
 			let DidAuthorizedCallOperation { did, call, .. } = wrapped_operation.operation;
 
 			#[cfg(not(feature = "runtime-benchmarks"))]
-			let result = call.dispatch(DidRawOrigin { id: did }.into());
+			let result = call.dispatch(
+				DidRawOrigin {
+					id: did,
+					submitter: who,
+				}
+				.into(),
+			);
 			#[cfg(feature = "runtime-benchmarks")]
 			let result = call.dispatch(RawOrigin::Signed(did).into());
 

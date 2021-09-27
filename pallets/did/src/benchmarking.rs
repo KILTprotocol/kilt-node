@@ -78,13 +78,17 @@ fn get_ecdsa_public_delegation_key() -> ecdsa::Public {
 }
 
 // Must always be dispatched with the DID authentication key
-fn generate_base_did_call_operation<T: Config>(did: DidIdentifierOf<T>) -> DidAuthorizedCallOperation<T> {
+fn generate_base_did_call_operation<T: Config>(
+	did: DidIdentifierOf<T>,
+	submitter: AccountIdentifierOf<T>,
+) -> DidAuthorizedCallOperation<T> {
 	let test_call = <T as Config>::Call::get_call_for_did_call_benchmark();
 
 	DidAuthorizedCallOperation {
 		did,
 		call: test_call,
 		tx_counter: 1u64,
+		submitter,
 	}
 }
 
@@ -266,7 +270,7 @@ benchmarks! {
 		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key));
 		Did::<T>::insert(&did_subject, did_details);
 
-		let did_call_op = generate_base_did_call_operation::<T>(did_subject);
+		let did_call_op = generate_base_did_call_operation::<T>(did_subject, submitter.clone());
 
 		let did_call_signature = ed25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_call_op.encode().as_ref()).expect("Failed to create DID signature from raw ed25519 signature.");
 	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op), DidSignature::from(did_call_signature))
@@ -279,7 +283,7 @@ benchmarks! {
 		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key));
 		Did::<T>::insert(&did_subject, did_details);
 
-		let did_call_op = generate_base_did_call_operation::<T>(did_subject);
+		let did_call_op = generate_base_did_call_operation::<T>(did_subject, submitter.clone());
 
 		let did_call_signature = sr25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_call_op.encode().as_ref()).expect("Failed to create DID signature from raw sr25519 signature.");
 	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op), DidSignature::from(did_call_signature))
@@ -292,7 +296,7 @@ benchmarks! {
 		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key.clone()));
 		Did::<T>::insert(&did_subject, did_details);
 
-		let did_call_op = generate_base_did_call_operation::<T>(did_subject);
+		let did_call_op = generate_base_did_call_operation::<T>(did_subject, submitter.clone());
 
 		let did_call_signature = ecdsa_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_call_op.encode().as_ref()).expect("Failed to create DID signature from raw ecdsa signature.");
 	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op), DidSignature::from(did_call_signature))

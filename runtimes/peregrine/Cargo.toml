@@ -2,7 +2,7 @@
 authors = ["KILT <info@kilt.io>"]
 edition = "2018"
 name = "peregrine-runtime"
-version = "0.25.2"
+version = "0.26.0"
 
 [dependencies]
 bitflags = {version = "1.2.1", default-features = false}
@@ -55,7 +55,6 @@ pallet-membership = {git = "https://github.com/paritytech/substrate", default-fe
 pallet-randomness-collective-flip = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 pallet-scheduler = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 pallet-session = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
-pallet-society = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 pallet-sudo = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 pallet-timestamp = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 pallet-transaction-payment = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
@@ -90,7 +89,7 @@ substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branc
 
 [features]
 default = ["std"]
-fast-gov = []
+fast-gov = ["kilt-primitives/fast-gov"]
 runtime-benchmarks = [
   "attestation/runtime-benchmarks",
   "ctype/runtime-benchmarks",
@@ -107,9 +106,7 @@ runtime-benchmarks = [
   "pallet-democracy/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
-  "pallet-scheduler/runtime-benchmarks",
-  # "pallet-session/runtime-benchmarks",
-  "pallet-society/runtime-benchmarks",
+  "pallet-scheduler/runtime-benchmarks", # "cumulus-pallet-session-benchmarking",
   "pallet-timestamp/runtime-benchmarks",
   "pallet-treasury/runtime-benchmarks",
   "pallet-vesting/runtime-benchmarks",
@@ -131,8 +128,8 @@ std = [
   "did/std",
   "frame-executive/std",
   "frame-support/std",
-  "frame-system/std",
   "frame-system-rpc-runtime-api/std",
+  "frame-system/std",
   "frame-try-runtime/std",
   "kilt-launch/std",
   "kilt-primitives/std",
@@ -144,20 +141,19 @@ std = [
   "pallet-democracy/std",
   "pallet-elections-phragmen/std",
   "pallet-indices/std",
-  "parachain-info/std",
   "pallet-membership/std",
   "pallet-randomness-collective-flip/std",
   "pallet-scheduler/std",
   "pallet-session/std",
-  "pallet-society/std",
   "pallet-sudo/std",
   "pallet-timestamp/std",
-  "pallet-transaction-payment/std",
   "pallet-transaction-payment-rpc-runtime-api/std",
+  "pallet-transaction-payment/std",
   "pallet-treasury/std",
   "pallet-vesting/std",
-  "polkadot-parachain/std",
+  "parachain-info/std",
   "parachain-staking/std",
+  "polkadot-parachain/std",
   "serde",
   "sp-api/std",
   "sp-arithmetic/std",
@@ -172,9 +168,9 @@ std = [
   "sp-std/std",
   "sp-transaction-pool/std",
   "sp-version/std",
-  "xcm/std",
   "xcm-builder/std",
   "xcm-executor/std",
+  "xcm/std",
 ]
 try-runtime = [
   "attestation/try-runtime",
@@ -197,7 +193,6 @@ try-runtime = [
   "pallet-randomness-collective-flip/try-runtime",
   "pallet-scheduler/try-runtime",
   "pallet-session/try-runtime",
-  "pallet-society/try-runtime",
   "pallet-sudo/try-runtime",
   "pallet-timestamp/try-runtime",
   "pallet-transaction-payment/try-runtime",

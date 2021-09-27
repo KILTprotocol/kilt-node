@@ -6,4 +6,5 @@ members = [
   "nodes/*",
   "pallets/*",
   "runtimes/*",
+  "traits",
 ]

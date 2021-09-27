@@ -4,7 +4,7 @@ description = "Enables adding CTypes."
 edition = "2018"
 name = "ctype"
 repository = "https://github.com/KILTprotocol/mashnet-node"
-version = "0.25.2"
+version = "0.26.0"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
@@ -21,6 +21,7 @@ sp-keystore = {branch = "polkadot-v0.9.10", default-features = false, git = "htt
 [dependencies]
 # Internal dependencies
 kilt-primitives = {default-features = false, optional = true, path = "../../primitives"}
+kilt-traits = {default-features = false, path = "../../traits"}
 
 #External dependencies
 codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.0.0"}
@@ -42,7 +43,7 @@ mock = [
   "serde",
   "sp-core",
   "sp-io",
-  "sp-keystore"
+  "sp-keystore",
 ]
 runtime-benchmarks = [
   "frame-benchmarking",
@@ -59,7 +60,8 @@ std = [
   "sp-io/std",
   "sp-runtime/std",
   "sp-std/std",
+  "kilt-traits/std",
 ]
 try-runtime = [
-  "frame-support/try-runtime"
+  "frame-support/try-runtime",
 ]

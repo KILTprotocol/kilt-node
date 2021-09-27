@@ -21,6 +21,7 @@
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use frame_system::EnsureSigned;
+use kilt_primitives::AccountId;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
@@ -104,6 +105,7 @@ impl Config for Test {
 	type Origin = Origin;
 	type Call = Call;
 	type EnsureOrigin = EnsureSigned<TestDidIdentifier>;
+	type OriginSuccess = AccountId;
 	type Event = ();
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
@@ -115,16 +117,24 @@ impl Config for Test {
 
 impl ctype::Config for Test {
 	type CtypeCreatorId = TestCtypeOwner;
-	#[cfg(feature = "runtime-benchmarks")]
-	type EnsureOrigin = EnsureSigned<TestDidIdentifier>;
-	#[cfg(not(feature = "runtime-benchmarks"))]
-	type EnsureOrigin = did::EnsureDidOrigin<TestCtypeOwner>;
 	type Event = ();
 	type WeightInfo = ();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type EnsureOrigin = EnsureSigned<TestDidIdentifier>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type OriginSuccess = kilt_primitives::AccountId;
+
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type EnsureOrigin = did::EnsureDidOrigin<TestCtypeOwner, kilt_primitives::AccountId>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type OriginSuccess = did::DidRawOrigin<kilt_primitives::AccountId, TestCtypeOwner>;
 }
 
 #[cfg(test)]
-pub(crate) const DEFAULT_ACCOUNT: kilt_primitives::AccountId = kilt_primitives::AccountId::new([0u8; 32]);
+pub(crate) const ACCOUNT_00: kilt_primitives::AccountId = kilt_primitives::AccountId::new([0u8; 32]);
+#[cfg(test)]
+pub(crate) const ACCOUNT_01: kilt_primitives::AccountId = kilt_primitives::AccountId::new([1u8; 32]);
 
 const DEFAULT_AUTH_SEED: [u8; 32] = [4u8; 32];
 const ALTERNATIVE_AUTH_SEED: [u8; 32] = [40u8; 32];
@@ -305,6 +315,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 pub fn generate_test_did_call(
 	verification_key_required: did::DidVerificationKeyRelationship,
 	caller: TestDidIdentifier,
+	submitter: kilt_primitives::AccountId,
 ) -> did::DidAuthorizedCallOperationWithVerificationRelationship<Test> {
 	let call = match verification_key_required {
 		DidVerificationKeyRelationship::AssertionMethod => get_attestation_key_call(),
@@ -317,6 +328,7 @@ pub fn generate_test_did_call(
 			did: caller,
 			call,
 			tx_counter: 1u64,
+			submitter,
 		},
 		verification_key_relationship: verification_key_required,
 	}
