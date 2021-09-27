@@ -345,6 +345,7 @@ pub fn initialize_logger() {
 #[derive(Clone)]
 pub struct ExtBuilder {
 	dids_stored: Vec<(TestDidIdentifier, did::DidDetails<Test>)>,
+	deleted_dids: Vec<TestDidIdentifier>,
 	storage_version: DidStorageVersion,
 }
 
@@ -352,6 +353,7 @@ impl Default for ExtBuilder {
 	fn default() -> Self {
 		Self {
 			dids_stored: vec![],
+			deleted_dids: vec![],
 			storage_version: DidStorageVersion::default(),
 		}
 	}
@@ -360,6 +362,11 @@ impl Default for ExtBuilder {
 impl ExtBuilder {
 	pub fn with_dids(mut self, dids: Vec<(TestDidIdentifier, did::DidDetails<Test>)>) -> Self {
 		self.dids_stored = dids;
+		self
+	}
+
+	pub fn with_deleted_dids(mut self, dids: Vec<TestDidIdentifier>) -> Self {
+		self.deleted_dids = dids;
 		self
 	}
 
@@ -382,6 +389,14 @@ impl ExtBuilder {
 					did::Did::<Test>::insert(did.0.clone(), did.1.clone());
 				})
 			});
+		}
+
+		if !self.deleted_dids.is_empty() {
+			ext.execute_with(|| {
+				self.deleted_dids.iter().for_each(|did| {
+					did::DeletedDids::<Test>::insert(did.clone(), ());
+				})
+			})
 		}
 
 		ext.execute_with(|| {

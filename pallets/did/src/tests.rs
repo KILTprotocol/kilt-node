@@ -229,6 +229,24 @@ fn check_duplicate_did_creation() {
 }
 
 #[test]
+fn check_did_already_deleted_creation() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let details = generate_base_did_creation_details::<Test>(alice_did.clone());
+
+	let signature = auth_key.sign(details.encode().as_ref());
+
+	let mut ext = ExtBuilder::default().with_deleted_dids(vec![alice_did]).build(None);
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature),),
+			did::Error::<Test>::DidAlreadyDeleted
+		);
+	});
+}
+
+#[test]
 fn check_invalid_signature_format_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
@@ -1490,20 +1508,22 @@ fn check_successful_deletion() {
 	});
 
 	assert!(ext.execute_with(|| Did::get_did(alice_did.clone())).is_none());
+	assert!(ext.execute_with(|| Did::get_deleted_did(alice_did.clone())).is_some());
 
-	// Re-adding the same DID identifier, which should not fail.
+	// Re-adding the same DID identifier should fail.
 	let details = generate_base_did_creation_details::<Test>(alice_did.clone());
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	let mut ext = ExtBuilder::default().build(None);
-
 	ext.execute_with(|| {
-		assert_ok!(Did::create(
-			Origin::signed(alice_did.clone()),
-			details,
-			did::DidSignature::from(signature),
-		));
+		assert_noop!(
+			Did::create(
+				Origin::signed(alice_did.clone()),
+				details,
+				did::DidSignature::from(signature),
+			),
+			did::Error::<Test>::DidAlreadyDeleted
+		);
 	});
 }
 

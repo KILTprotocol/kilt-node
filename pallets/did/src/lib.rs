@@ -261,6 +261,13 @@ pub mod pallet {
 	#[pallet::getter(fn get_did)]
 	pub type Did<T> = StorageMap<_, Blake2_128Concat, DidIdentifierOf<T>, DidDetails<T>>;
 
+	/// The set of DIDs that have been deleted and cannot therefore be created again for security reasons.
+	///
+	/// It maps from a DID identifier to a unit tuple, for the sake of tracking DID identifiers.
+	#[pallet::storage]
+	#[pallet::getter(fn get_deleted_did)]
+	pub(crate) type DeletedDids<T> = StorageMap<_, Blake2_128Concat, DidIdentifierOf<T>, ()>;
+
 	/// Contains the latest storage version deployed.
 	#[pallet::storage]
 	#[pallet::getter(fn last_version_migration_used)]
@@ -335,6 +342,8 @@ pub mod pallet {
 		BadDidOrigin,
 		/// The block number provided in a DID-authorized operation is invalid.
 		OperationValidityExpired,
+		/// The DID has already been previously deleted.
+		DidAlreadyDeleted,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
 	}
@@ -360,6 +369,7 @@ pub mod pallet {
 				StorageError::CurrentlyActiveKey => Self::CurrentlyActiveKey,
 				StorageError::MaxPublicKeysPerDidExceeded => Self::MaxPublicKeysPerDidExceeded,
 				StorageError::MaxTotalKeyAgreementKeysExceeded => Self::MaxTotalKeyAgreementKeysExceeded,
+				StorageError::DidAlreadyDeleted => Self::DidAlreadyDeleted,
 			}
 		}
 	}
@@ -454,6 +464,9 @@ pub mod pallet {
 			let sender = ensure_signed(origin)?;
 
 			let did_identifier = details.did.clone();
+
+			// Make sure that DIDs cannot be created again after they have been deleted.
+			ensure!(!<DeletedDids<T>>::contains_key(&did_identifier), <Error<T>>::DidAlreadyDeleted);
 
 			// There has to be no other DID with the same identifier already saved on chain,
 			// otherwise generate a DidAlreadyPresent error.
@@ -793,6 +806,9 @@ pub mod pallet {
 				<Did<T>>::take(&did_subject).is_some(),
 				<Error<T>>::DidNotPresent
 			);
+
+			// Marking them as deleted and they're gone forever 👋👋👋
+			<DeletedDids<T>>::insert(&did_subject, ());
 
 			log::debug!("Deleting DID {:?}", did_subject);
 

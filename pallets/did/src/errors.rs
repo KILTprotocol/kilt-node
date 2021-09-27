@@ -72,6 +72,8 @@ pub enum StorageError {
 	/// The maximum number of key agreements has been reached for the DID
 	/// subject.
 	MaxTotalKeyAgreementKeysExceeded,
+	/// The DID has already been previously deleted.
+	DidAlreadyDeleted,
 }
 
 /// Error generated when validating a DID operation.
