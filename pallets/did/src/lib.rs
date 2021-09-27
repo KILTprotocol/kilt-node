@@ -133,7 +133,7 @@ use frame_support::{
 use frame_system::ensure_signed;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::RawOrigin;
-use sp_runtime::SaturatedConversion;
+use sp_runtime::{SaturatedConversion, traits::Saturating};
 use sp_std::{boxed::Box, fmt::Debug, prelude::Clone};
 
 use migrations::*;
@@ -223,6 +223,11 @@ pub mod pallet {
 		/// Maximum number of URLs that a service endpoint can contain.
 		#[pallet::constant]
 		type MaxEndpointUrlsCount: Get<u32> + Debug + Clone + PartialEq;
+
+		/// The maximum number of blocks a DID-authorized operation is considered valid
+		/// after its creation.
+		#[pallet::constant]
+		type MaxBlocksTxValidity: Get<BlockNumberOf<Self>>;
 
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
@@ -326,10 +331,12 @@ pub mod pallet {
 		/// The maximum number of key agreements has been reached for the DID
 		/// subject.
 		MaxTotalKeyAgreementKeysExceeded,
-		/// An error that is not supposed to take place, yet it happened.
-		InternalError,
 		/// The DID call was submitted by the wrong account
 		BadDidOrigin,
+		/// The block number provided in a DID-authorized operation is invalid.
+		OperationValidityExpired,
+		/// An error that is not supposed to take place, yet it happened.
+		InternalError,
 	}
 
 	impl<T> From<DidError> for Error<T> {
@@ -350,7 +357,6 @@ pub mod pallet {
 				StorageError::DidNotPresent => Self::DidNotPresent,
 				StorageError::DidAlreadyPresent => Self::DidAlreadyPresent,
 				StorageError::DidKeyNotPresent(_) | StorageError::KeyNotPresent => Self::VerificationKeyNotPresent,
-				StorageError::MaxTxCounterValue => Self::MaxTxCounterValue,
 				StorageError::CurrentlyActiveKey => Self::CurrentlyActiveKey,
 				StorageError::MaxPublicKeysPerDidExceeded => Self::MaxPublicKeysPerDidExceeded,
 				StorageError::MaxTotalKeyAgreementKeysExceeded => Self::MaxTotalKeyAgreementKeysExceeded,
@@ -364,6 +370,7 @@ pub mod pallet {
 				SignatureError::InvalidSignature => Self::InvalidSignature,
 				SignatureError::InvalidSignatureFormat => Self::InvalidSignatureFormat,
 				SignatureError::InvalidNonce => Self::InvalidNonce,
+				SignatureError::InvalidBlockNumber => Self::OperationValidityExpired,
 			}
 		}
 	}
@@ -902,13 +909,22 @@ impl<T: Config> Pallet<T> {
 		operation: &DidAuthorizedCallOperationWithVerificationRelationship<T>,
 		signature: &DidSignature,
 	) -> Result<(), DidError> {
+		let current_block_number = <frame_system::Pallet<T>>::block_number();
+		// Before accessing the storage, we check if the provided block number is valid,
+		// i.e., if it is in the inclusive range [current_block, current_block + MaxBlocksTxValidity].
+		let allowed_range = current_block_number..current_block_number.saturating_add(T::MaxBlocksTxValidity::get());
+		ensure!(
+			allowed_range.contains(&operation.block_number),
+			DidError::SignatureError(SignatureError::InvalidBlockNumber)
+		);
+
 		let mut did_details =
 			<Did<T>>::get(&operation.did).ok_or(DidError::StorageError(StorageError::DidNotPresent))?;
 
 		Self::validate_counter_value(operation.tx_counter, &did_details)?;
 		// Increase the tx counter as soon as it is considered valid, no matter if the
 		// signature is valid or not.
-		did_details.increase_tx_counter().map_err(DidError::StorageError)?;
+		did_details.increase_tx_counter();
 		Self::verify_payload_signature_with_did_key_type(
 			&operation.encode(),
 			signature,
@@ -928,17 +944,9 @@ impl<T: Config> Pallet<T> {
 	// mechanism in place to wrap the counter value around when the limit is
 	// reached.
 	fn validate_counter_value(counter: u64, did_details: &DidDetails<T>) -> Result<(), DidError> {
-		// Verify that the DID has not reached the maximum tx counter value
-		ensure!(
-			did_details.get_tx_counter_value() < u64::MAX,
-			DidError::StorageError(StorageError::MaxTxCounterValue)
-		);
-
-		// Verify that the operation counter is equal to the stored one + 1
-		let expected_nonce_value = did_details
-			.get_tx_counter_value()
-			.checked_add(1)
-			.ok_or(DidError::InternalError)?;
+		// Verify that the operation counter is equal to the stored one + 1,
+		// possibly wrapping around when u64::MAX is reached.
+		let expected_nonce_value = did_details.get_tx_counter_value().wrapping_add(1);
 		ensure!(
 			counter == expected_nonce_value,
 			DidError::SignatureError(SignatureError::InvalidNonce)

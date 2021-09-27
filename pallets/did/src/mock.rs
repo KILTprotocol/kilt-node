@@ -98,6 +98,7 @@ parameter_types! {
 	pub const MaxPublicKeysPerDid: u32 = 13u32;
 	#[derive(Debug, Clone, PartialEq)]
 	pub const MaxEndpointUrlsCount: u32 = 3u32;
+	pub const MaxBlocksTxValidity: u64 = 300u64;
 }
 
 impl Config for Test {
@@ -112,6 +113,7 @@ impl Config for Test {
 	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
 	type MaxUrlLength = MaxUrlLength;
 	type MaxEndpointUrlsCount = MaxEndpointUrlsCount;
+	type MaxBlocksTxValidity = MaxBlocksTxValidity;
 	type WeightInfo = ();
 }
 
@@ -328,6 +330,7 @@ pub fn generate_test_did_call(
 			did: caller,
 			call,
 			tx_counter: 1u64,
+			block_number: 0u64,
 			submitter,
 		},
 		verification_key_relationship: verification_key_required,

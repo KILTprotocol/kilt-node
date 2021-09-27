@@ -1551,20 +1551,22 @@ fn check_did_not_found_call_error() {
 }
 
 #[test]
-fn check_max_counter_call_error() {
+fn check_too_small_tx_counter_call_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
 	let mut mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
-	mock_did.last_tx_counter = u64::MAX;
+	mock_did.last_tx_counter = 1u64;
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(did.clone(), mock_did)])
+		.with_dids(vec![(did.clone(), mock_did.clone())])
 		.build(None);
 
 	let submitter = kilt_primitives::AccountId::default();
 
-	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did, submitter);
+	let mut call_operation =
+		generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did, submitter);
+	call_operation.operation.tx_counter = mock_did.last_tx_counter - 1;
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
@@ -1574,18 +1576,19 @@ fn check_max_counter_call_error() {
 				Box::new(call_operation.operation),
 				did::DidSignature::from(signature)
 			),
-			did::Error::<Test>::MaxTxCounterValue
+			did::Error::<Test>::InvalidNonce
 		);
 	});
 }
 
 #[test]
-fn check_too_small_tx_counter_call_error() {
+fn check_too_small_tx_counter_after_wrap_call_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
 	let mut mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
-	mock_did.last_tx_counter = 1u64;
+	// After wrapping tx_counter becomes 0 again.
+	mock_did.last_tx_counter = 0u64;
 
 	let mut ext = ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
@@ -1595,7 +1598,7 @@ fn check_too_small_tx_counter_call_error() {
 
 	let mut call_operation =
 		generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did, submitter);
-	call_operation.operation.tx_counter = 0u64;
+	call_operation.operation.tx_counter = u64::MAX;
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
@@ -1666,6 +1669,37 @@ fn check_too_large_tx_counter_call_error() {
 				did::DidSignature::from(signature)
 			),
 			did::Error::<Test>::InvalidNonce
+		);
+	});
+}
+
+#[test]
+fn check_tx_mortality_expired_error() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let caller = ACCOUNT_00;
+
+	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(did.clone(), mock_did)])
+		.build(None);
+
+	let submitter = kilt_primitives::AccountId::default();
+
+	let call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did, submitter);
+	let signature = auth_key.sign(call_operation.encode().as_ref());
+
+	ext.execute_with(|| {
+		// System block number 1 past the max block the operation was allowed for
+		System::set_block_number(call_operation.operation.block_number + <Test as did::Config>::MaxBlocksTxValidity::get() + 1);
+		assert_noop!(
+			Did::submit_did_call(
+				Origin::signed(caller),
+				Box::new(call_operation.operation),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::OperationValidityExpired
 		);
 	});
 }
@@ -2149,7 +2183,7 @@ fn check_did_not_present_operation_verification() {
 }
 
 #[test]
-fn check_max_tx_counter_operation_verification() {
+fn check_tx_counter_wrap_operation_verification() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 
@@ -2163,22 +2197,28 @@ fn check_max_tx_counter_operation_verification() {
 	let submitter = kilt_primitives::AccountId::default();
 
 	let mut call_operation = generate_test_did_call(
-		did::DidVerificationKeyRelationship::CapabilityDelegation,
+		did::DidVerificationKeyRelationship::Authentication,
 		did,
 		submitter,
 	);
-	call_operation.operation.tx_counter = mock_did.last_tx_counter;
+	// Counter should wrap, so 0 is now expected.
+	call_operation.operation.tx_counter = 0u64;
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
-		assert_noop!(
-			Did::verify_did_operation_signature_and_increase_nonce(
-				&call_operation,
-				&did::DidSignature::from(signature)
-			),
-			did::DidError::StorageError(did::StorageError::MaxTxCounterValue)
-		);
+		assert_ok!(Did::verify_did_operation_signature_and_increase_nonce(
+			&call_operation,
+			&did::DidSignature::from(signature)
+		));
 	});
+
+	// Verify that the DID tx counter has wrapped around
+	let did_details =
+		ext.execute_with(|| Did::get_did(&call_operation.operation.did).expect("DID should be present on chain."));
+	assert_eq!(
+		did_details.get_tx_counter_value(),
+		0u64
+	);
 }
 
 #[test]
