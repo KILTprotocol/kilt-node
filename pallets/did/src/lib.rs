@@ -344,6 +344,8 @@ pub mod pallet {
 		OperationValidityExpired,
 		/// The DID has already been previously deleted.
 		DidAlreadyDeleted,
+		/// The expiration time of the creation operation for the given DID has not yet expired.
+		CreationTimeoutInProgress,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
 	}
@@ -370,6 +372,7 @@ pub mod pallet {
 				StorageError::MaxPublicKeysPerDidExceeded => Self::MaxPublicKeysPerDidExceeded,
 				StorageError::MaxTotalKeyAgreementKeysExceeded => Self::MaxTotalKeyAgreementKeysExceeded,
 				StorageError::DidAlreadyDeleted => Self::DidAlreadyDeleted,
+				StorageError::CreationTimeoutInProgress => Self::CreationTimeoutInProgress,
 			}
 		}
 	}
@@ -800,6 +803,8 @@ pub mod pallet {
 		pub fn delete(origin: OriginFor<T>) -> DispatchResult {
 			let source = T::EnsureOrigin::ensure_origin(origin)?;
 			let did_subject = source.subject();
+
+			let did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
 			ensure!(
 				// `take` calls `kill` internally
