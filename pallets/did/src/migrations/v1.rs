@@ -32,12 +32,10 @@ pub(crate) fn pre_migrate<T: Config>() -> Result<(), &'static str> {
 }
 
 pub(crate) fn migrate<T: Config>() -> Weight {
-	use frame_support::storage::StoragePrefixedMap;
-
 	log::info!("v1 -> v2 DID storage migrator started!");
 	let mut total_weight = Weight::zero();
 
-	deprecated::v2::storage::Did::<T>::translate_values(|old_did_details: deprecated::v1::DidDetails<T>| {
+	Did::<T>::translate_values(|old_did_details: deprecated::v1::DidDetails<T>| {
 		// Add a read from the old storage and a write for the new storage
 		total_weight = total_weight.saturating_add(T::DbWeight::get().reads_writes(1, 1));
 		Some(old_to_new_did_details(old_did_details))
@@ -52,8 +50,8 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	total_weight
 }
 
-fn old_to_new_did_details<T: Config>(old: deprecated::v1::DidDetails<T>) -> deprecated::v2::DidDetails<T> {
-	deprecated::v2::DidDetails {
+fn old_to_new_did_details<T: Config>(old: deprecated::v1::DidDetails<T>) -> DidDetails<T> {
+	DidDetails {
 		authentication_key: old.authentication_key,
 		key_agreement_keys: old.key_agreement_keys,
 		attestation_key: old.attestation_key,
@@ -155,8 +153,8 @@ mod tests {
 				"Post-migration for v1 should not fail."
 			);
 
-			let new_stored_details = deprecated::v2::storage::Did::<TestRuntime>::get(&alice_did)
-				.expect("New DID details should exist in the storage.");
+			let new_stored_details =
+				Did::<TestRuntime>::get(&alice_did).expect("New DID details should exist in the storage.");
 			assert!(new_stored_details.service_endpoints.is_none());
 		});
 	}
@@ -191,8 +189,8 @@ mod tests {
 				"Post-migration for v1 should not fail."
 			);
 
-			let new_stored_details = deprecated::v2::storage::Did::<TestRuntime>::get(&alice_did)
-				.expect("New DID details should exist in the storage.");
+			let new_stored_details =
+				Did::<TestRuntime>::get(&alice_did).expect("New DID details should exist in the storage.");
 			assert!(new_stored_details.service_endpoints.is_none());
 		});
 	}

@@ -375,7 +375,6 @@ pub mod pallet {
 				StorageError::MaxPublicKeysPerDidExceeded => Self::MaxPublicKeysPerDidExceeded,
 				StorageError::MaxTotalKeyAgreementKeysExceeded => Self::MaxTotalKeyAgreementKeysExceeded,
 				StorageError::DidAlreadyDeleted => Self::DidAlreadyDeleted,
-				StorageError::CreationTimeoutInProgress => Self::CreationTimeoutInProgress,
 			}
 		}
 	}
@@ -810,17 +809,7 @@ pub mod pallet {
 			let source = T::EnsureOrigin::ensure_origin(origin)?;
 			let did_subject = source.subject();
 
-			let did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
-
-			// Check that at least MaxBlocksTxValidity have elapsed before trying to delete
-			// the DID.
-			ensure!(
-				<frame_system::Pallet<T>>::block_number().saturating_sub(did_details.creation_block_number)
-					> T::MaxBlocksTxValidity::get(),
-				<Error<T>>::CreationTimeoutInProgress
-			);
-
-			<Did<T>>::remove(&did_subject);
+			ensure!(<Did<T>>::take(&did_subject).is_some(), <Error<T>>::DidNotPresent);
 
 			// Marking them as deleted and they're gone forever 👋👋👋
 			<DeletedDids<T>>::insert(&did_subject, ());

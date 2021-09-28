@@ -1515,33 +1515,6 @@ fn check_successful_deletion() {
 }
 
 #[test]
-fn check_too_early_deletion_error() {
-	let auth_key = get_ed25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
-
-	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), did_details.clone())])
-		.build(None);
-
-	ext.execute_with(|| {
-		// Set the limit of the block validity.
-		System::set_block_number(did_details.creation_block_number + MaxBlocksTxValidity::get());
-		assert_noop!(
-			Did::delete(Origin::signed(alice_did.clone())),
-			did::Error::<Test>::CreationTimeoutInProgress
-		);
-	});
-
-	// When the next block is produced and the timeout expires, the DID can be
-	// correctly deleted.
-	ext.execute_with(|| {
-		System::set_block_number(did_details.creation_block_number + MaxBlocksTxValidity::get() + 1);
-		assert_ok!(Did::delete(Origin::signed(alice_did.clone())),);
-	});
-}
-
-#[test]
 fn check_did_not_present_deletion() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
