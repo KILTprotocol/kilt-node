@@ -1595,37 +1595,6 @@ fn check_did_not_found_call_error() {
 }
 
 #[test]
-fn check_too_small_tx_counter_call_error() {
-	let auth_key = get_sr25519_authentication_key(true);
-	let did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let caller = ACCOUNT_00;
-	let mut mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
-	mock_did.last_tx_counter = 1u64;
-
-	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(did.clone(), mock_did.clone())])
-		.build(None);
-
-	let submitter = kilt_primitives::AccountId::default();
-
-	let mut call_operation =
-		generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did, submitter);
-	call_operation.operation.tx_counter = mock_did.last_tx_counter - 1;
-	let signature = auth_key.sign(call_operation.encode().as_ref());
-
-	ext.execute_with(|| {
-		assert_noop!(
-			Did::submit_did_call(
-				Origin::signed(caller),
-				Box::new(call_operation.operation),
-				did::DidSignature::from(signature)
-			),
-			did::Error::<Test>::InvalidNonce
-		);
-	});
-}
-
-#[test]
 fn check_too_small_tx_counter_after_wrap_call_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
@@ -1643,6 +1612,37 @@ fn check_too_small_tx_counter_after_wrap_call_error() {
 	let mut call_operation =
 		generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did, submitter);
 	call_operation.operation.tx_counter = u64::MAX;
+	let signature = auth_key.sign(call_operation.encode().as_ref());
+
+	ext.execute_with(|| {
+		assert_noop!(
+			Did::submit_did_call(
+				Origin::signed(caller),
+				Box::new(call_operation.operation),
+				did::DidSignature::from(signature)
+			),
+			did::Error::<Test>::InvalidNonce
+		);
+	});
+}
+
+#[test]
+fn check_too_small_tx_counter_call_error() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let caller = ACCOUNT_00;
+	let mut mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	mock_did.last_tx_counter = 1u64;
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(did.clone(), mock_did.clone())])
+		.build(None);
+
+	let submitter = kilt_primitives::AccountId::default();
+
+	let mut call_operation =
+		generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did, submitter);
+	call_operation.operation.tx_counter = mock_did.last_tx_counter - 1;
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
@@ -1718,7 +1718,7 @@ fn check_too_large_tx_counter_call_error() {
 }
 
 #[test]
-fn check_tx_mortality_expired_error() {
+fn check_tx_block_number_too_low_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
@@ -1735,15 +1735,59 @@ fn check_tx_mortality_expired_error() {
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
-		// System block number 1 past the max block the operation was allowed for
+		// System block number 1 past the max block the operation was allowed for.
 		System::set_block_number(call_operation.operation.block_number + <Test as did::Config>::MaxBlocksTxValidity::get() + 1);
 		assert_noop!(
+			Did::submit_did_call(
+				Origin::signed(caller.clone()),
+				Box::new(call_operation.operation.clone()),
+				did::DidSignature::from(signature.clone())
+			),
+			did::Error::<Test>::InvalidOperationValidity
+		);
+	});
+
+	// But it would work if the system would be one block late.
+	ext.execute_with(|| {
+		System::set_block_number(call_operation.operation.block_number + <Test as did::Config>::MaxBlocksTxValidity::get());
+		assert_ok!(
 			Did::submit_did_call(
 				Origin::signed(caller),
 				Box::new(call_operation.operation),
 				did::DidSignature::from(signature)
 			),
-			did::Error::<Test>::OperationValidityExpired
+		);
+	});
+}
+
+#[test]
+fn check_tx_block_number_too_high_error() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let caller = ACCOUNT_00;
+
+	let mock_did = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+
+	let mut ext = ExtBuilder::default()
+		.with_dids(vec![(did.clone(), mock_did)])
+		.build(None);
+
+	let submitter = kilt_primitives::AccountId::default();
+
+	let mut call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did, submitter);
+	call_operation.operation.block_number = MaxBlocksTxValidity::get() + 100;
+	let signature = auth_key.sign(call_operation.encode().as_ref());
+
+	ext.execute_with(|| {
+		// System block number is still too low, meaning that the block number used in the operation was too high.
+		System::set_block_number(call_operation.operation.block_number - MaxBlocksTxValidity::get() - 1);
+		assert_noop!(
+			Did::submit_did_call(
+				Origin::signed(caller.clone()),
+				Box::new(call_operation.operation.clone()),
+				did::DidSignature::from(signature.clone())
+			),
+			did::Error::<Test>::InvalidOperationValidity
 		);
 	});
 }

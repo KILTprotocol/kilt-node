@@ -74,7 +74,7 @@ pub enum StorageError {
 	MaxTotalKeyAgreementKeysExceeded,
 	/// The DID has already been previously deleted.
 	DidAlreadyDeleted,
-	/// The expiration time of the creation operation for the given DID has not yet expired.
+	/// The expiration time of the creation operation for the given DID has not yet been reached.
 	CreationTimeoutInProgress,
 }
 

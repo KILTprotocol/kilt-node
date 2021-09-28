@@ -341,10 +341,10 @@ pub mod pallet {
 		/// The DID call was submitted by the wrong account
 		BadDidOrigin,
 		/// The block number provided in a DID-authorized operation is invalid.
-		OperationValidityExpired,
+		InvalidOperationValidity,
 		/// The DID has already been previously deleted.
 		DidAlreadyDeleted,
-		/// The expiration time of the creation operation for the given DID has not yet expired.
+		/// The expiration time of the creation operation for the given DID has not yet been reached.
 		CreationTimeoutInProgress,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
@@ -383,7 +383,7 @@ pub mod pallet {
 				SignatureError::InvalidSignature => Self::InvalidSignature,
 				SignatureError::InvalidSignatureFormat => Self::InvalidSignatureFormat,
 				SignatureError::InvalidNonce => Self::InvalidNonce,
-				SignatureError::InvalidBlockNumber => Self::OperationValidityExpired,
+				SignatureError::InvalidBlockNumber => Self::InvalidOperationValidity,
 			}
 		}
 	}
@@ -812,11 +812,7 @@ pub mod pallet {
 				<Error<T>>::CreationTimeoutInProgress
 			);
 
-			ensure!(
-				// `take` calls `kill` internally
-				<Did<T>>::take(&did_subject).is_some(),
-				<Error<T>>::DidNotPresent
-			);
+			<Did<T>>::remove(&did_subject);
 
 			// Marking them as deleted and they're gone forever 👋👋👋
 			<DeletedDids<T>>::insert(&did_subject, ());
@@ -938,10 +934,10 @@ impl<T: Config> Pallet<T> {
 	) -> Result<(), DidError> {
 		let current_block_number = <frame_system::Pallet<T>>::block_number();
 		// Before accessing the storage, we check if the provided block number is valid,
-		// i.e., if it is in the inclusive range [current_block, current_block + MaxBlocksTxValidity].
-		let allowed_range = current_block_number..current_block_number.saturating_add(T::MaxBlocksTxValidity::get());
+		// i.e., if the current blockchain block is in the inclusive range [operation_block_number, operation_block_number + MaxBlocksTxValidity].
+		let allowed_range = operation.block_number..=operation.block_number.saturating_add(T::MaxBlocksTxValidity::get());
 		ensure!(
-			allowed_range.contains(&operation.block_number),
+			allowed_range.contains(&current_block_number),
 			DidError::SignatureError(SignatureError::InvalidBlockNumber)
 		);
 
