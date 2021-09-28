@@ -260,7 +260,7 @@ pub struct DidDetails<T: Config> {
 	/// subject publicly exposes.
 	pub service_endpoints: Option<ServiceEndpoints<T>>,
 	/// The block number at which the DID was created.
-	pub creation_block_number: BlockNumberOf<T>,
+	pub(crate) creation_block_number: BlockNumberOf<T>,
 	/// The counter used to avoid replay attacks, which is checked and
 	/// updated upon each DID operation involving with the subject as the
 	/// creator.

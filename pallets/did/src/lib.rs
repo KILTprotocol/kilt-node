@@ -806,6 +806,12 @@ pub mod pallet {
 
 			let did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
+			// Check that at least MaxBlocksTxValidity have elapsed before trying to delete the DID.
+			ensure!(
+				<frame_system::Pallet<T>>::block_number().saturating_sub(did_details.creation_block_number) > T::MaxBlocksTxValidity::get(),
+				<Error<T>>::CreationTimeoutInProgress
+			);
+
 			ensure!(
 				// `take` calls `kill` internally
 				<Did<T>>::take(&did_subject).is_some(),

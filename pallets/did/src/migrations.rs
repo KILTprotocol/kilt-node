@@ -23,19 +23,21 @@ use sp_std::marker::PhantomData;
 use crate::*;
 
 mod v1;
+mod v2;
 
 /// Storage version of the DID pallet.
 #[derive(Copy, Clone, Encode, Eq, Decode, Ord, PartialEq, PartialOrd)]
 pub enum DidStorageVersion {
 	V1,
 	V2,
+	V3,
 }
 
 #[cfg(feature = "try-runtime")]
 impl DidStorageVersion {
 	/// The latest storage version.
 	fn latest() -> Self {
-		Self::V2
+		Self::V3
 	}
 }
 
@@ -48,7 +50,7 @@ impl DidStorageVersion {
 // old version anymore.
 impl Default for DidStorageVersion {
 	fn default() -> Self {
-		Self::V1
+		Self::V2
 	}
 }
 
@@ -58,7 +60,8 @@ impl<T: Config> VersionMigratorTrait<T> for DidStorageVersion {
 	fn pre_migrate(&self) -> Result<(), &str> {
 		match *self {
 			Self::V1 => v1::pre_migrate::<T>(),
-			Self::V2 => Ok(()),
+			Self::V2 => v2::pre_migrate::<T>(),
+			Self::V3 => Ok(()),
 		}
 	}
 
@@ -66,7 +69,8 @@ impl<T: Config> VersionMigratorTrait<T> for DidStorageVersion {
 	fn migrate(&self) -> Weight {
 		match *self {
 			Self::V1 => v1::migrate::<T>(),
-			Self::V2 => 0u64,
+			Self::V2 => v2::migrate::<T>(),
+			Self::V3 => 0u64,
 		}
 	}
 
@@ -76,7 +80,8 @@ impl<T: Config> VersionMigratorTrait<T> for DidStorageVersion {
 	fn post_migrate(&self) -> Result<(), &str> {
 		match *self {
 			Self::V1 => v1::post_migrate::<T>(),
-			Self::V2 => Ok(()),
+			Self::V2 => v2::post_migrate::<T>(),
+			Self::V3 => Ok(()),
 		}
 	}
 }
@@ -95,8 +100,9 @@ impl<T: Config> DidStorageMigrator<T> {
 		// If the version current deployed is at least v1, there is no more migrations
 		// to run (other than the one from v1).
 		match current {
-			DidStorageVersion::V1 => None,
-			DidStorageVersion::V2 => None,
+			DidStorageVersion::V1 => Some(DidStorageVersion::V2),
+			DidStorageVersion::V2 => Some(DidStorageVersion::V3),
+			DidStorageVersion::V3 => None,
 		}
 	}
 
