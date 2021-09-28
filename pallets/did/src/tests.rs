@@ -1541,10 +1541,14 @@ fn check_too_early_deletion_error() {
 	ext.execute_with(|| {
 		// Set the limit of the block validity.
 		System::set_block_number(did_details.creation_block_number + MaxBlocksTxValidity::get());
-		assert_noop!(Did::delete(Origin::signed(alice_did.clone())), did::Error::<Test>::CreationTimeoutInProgress);
+		assert_noop!(
+			Did::delete(Origin::signed(alice_did.clone())),
+			did::Error::<Test>::CreationTimeoutInProgress
+		);
 	});
 
-	// When the next block is produced and the timeout expires, the DID can be correctly deleted.
+	// When the next block is produced and the timeout expires, the DID can be
+	// correctly deleted.
 	ext.execute_with(|| {
 		System::set_block_number(did_details.creation_block_number + MaxBlocksTxValidity::get() + 1);
 		assert_ok!(Did::delete(Origin::signed(alice_did.clone())),);
@@ -1736,7 +1740,9 @@ fn check_tx_block_number_too_low_error() {
 
 	ext.execute_with(|| {
 		// System block number 1 past the max block the operation was allowed for.
-		System::set_block_number(call_operation.operation.block_number + <Test as did::Config>::MaxBlocksTxValidity::get() + 1);
+		System::set_block_number(
+			call_operation.operation.block_number + <Test as did::Config>::MaxBlocksTxValidity::get() + 1,
+		);
 		assert_noop!(
 			Did::submit_did_call(
 				Origin::signed(caller.clone()),
@@ -1749,14 +1755,14 @@ fn check_tx_block_number_too_low_error() {
 
 	// But it would work if the system would be one block late.
 	ext.execute_with(|| {
-		System::set_block_number(call_operation.operation.block_number + <Test as did::Config>::MaxBlocksTxValidity::get());
-		assert_ok!(
-			Did::submit_did_call(
-				Origin::signed(caller),
-				Box::new(call_operation.operation),
-				did::DidSignature::from(signature)
-			),
+		System::set_block_number(
+			call_operation.operation.block_number + <Test as did::Config>::MaxBlocksTxValidity::get(),
 		);
+		assert_ok!(Did::submit_did_call(
+			Origin::signed(caller),
+			Box::new(call_operation.operation),
+			did::DidSignature::from(signature)
+		),);
 	});
 }
 
@@ -1774,12 +1780,14 @@ fn check_tx_block_number_too_high_error() {
 
 	let submitter = kilt_primitives::AccountId::default();
 
-	let mut call_operation = generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did, submitter);
+	let mut call_operation =
+		generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did, submitter);
 	call_operation.operation.block_number = MaxBlocksTxValidity::get() + 100;
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ext.execute_with(|| {
-		// System block number is still too low, meaning that the block number used in the operation was too high.
+		// System block number is still too low, meaning that the block number used in
+		// the operation was too high.
 		System::set_block_number(call_operation.operation.block_number - MaxBlocksTxValidity::get() - 1);
 		assert_noop!(
 			Did::submit_did_call(
@@ -2284,11 +2292,8 @@ fn check_tx_counter_wrap_operation_verification() {
 
 	let submitter = kilt_primitives::AccountId::default();
 
-	let mut call_operation = generate_test_did_call(
-		did::DidVerificationKeyRelationship::Authentication,
-		did,
-		submitter,
-	);
+	let mut call_operation =
+		generate_test_did_call(did::DidVerificationKeyRelationship::Authentication, did, submitter);
 	// Counter should wrap, so 0 is now expected.
 	call_operation.operation.tx_counter = 0u64;
 	let signature = auth_key.sign(call_operation.encode().as_ref());
@@ -2303,10 +2308,7 @@ fn check_tx_counter_wrap_operation_verification() {
 	// Verify that the DID tx counter has wrapped around
 	let did_details =
 		ext.execute_with(|| Did::get_did(&call_operation.operation.did).expect("DID should be present on chain."));
-	assert_eq!(
-		did_details.get_tx_counter_value(),
-		0u64
-	);
+	assert_eq!(did_details.get_tx_counter_value(), 0u64);
 }
 
 #[test]

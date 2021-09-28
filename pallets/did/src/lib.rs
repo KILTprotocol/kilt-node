@@ -133,7 +133,7 @@ use frame_support::{
 use frame_system::ensure_signed;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::RawOrigin;
-use sp_runtime::{SaturatedConversion, traits::Saturating};
+use sp_runtime::{traits::Saturating, SaturatedConversion};
 use sp_std::{boxed::Box, fmt::Debug, prelude::Clone};
 
 use migrations::*;
@@ -224,8 +224,8 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxEndpointUrlsCount: Get<u32> + Debug + Clone + PartialEq;
 
-		/// The maximum number of blocks a DID-authorized operation is considered valid
-		/// after its creation.
+		/// The maximum number of blocks a DID-authorized operation is
+		/// considered valid after its creation.
 		#[pallet::constant]
 		type MaxBlocksTxValidity: Get<BlockNumberOf<Self>>;
 
@@ -261,9 +261,11 @@ pub mod pallet {
 	#[pallet::getter(fn get_did)]
 	pub type Did<T> = StorageMap<_, Blake2_128Concat, DidIdentifierOf<T>, DidDetails<T>>;
 
-	/// The set of DIDs that have been deleted and cannot therefore be created again for security reasons.
+	/// The set of DIDs that have been deleted and cannot therefore be created
+	/// again for security reasons.
 	///
-	/// It maps from a DID identifier to a unit tuple, for the sake of tracking DID identifiers.
+	/// It maps from a DID identifier to a unit tuple, for the sake of tracking
+	/// DID identifiers.
 	#[pallet::storage]
 	#[pallet::getter(fn get_deleted_did)]
 	pub(crate) type DeletedDids<T> = StorageMap<_, Blake2_128Concat, DidIdentifierOf<T>, ()>;
@@ -344,7 +346,8 @@ pub mod pallet {
 		InvalidOperationValidity,
 		/// The DID has already been previously deleted.
 		DidAlreadyDeleted,
-		/// The expiration time of the creation operation for the given DID has not yet been reached.
+		/// The expiration time of the creation operation for the given DID has
+		/// not yet been reached.
 		CreationTimeoutInProgress,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
@@ -469,7 +472,10 @@ pub mod pallet {
 			let did_identifier = details.did.clone();
 
 			// Make sure that DIDs cannot be created again after they have been deleted.
-			ensure!(!<DeletedDids<T>>::contains_key(&did_identifier), <Error<T>>::DidAlreadyDeleted);
+			ensure!(
+				!<DeletedDids<T>>::contains_key(&did_identifier),
+				<Error<T>>::DidAlreadyDeleted
+			);
 
 			// There has to be no other DID with the same identifier already saved on chain,
 			// otherwise generate a DidAlreadyPresent error.
@@ -806,9 +812,11 @@ pub mod pallet {
 
 			let did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
 
-			// Check that at least MaxBlocksTxValidity have elapsed before trying to delete the DID.
+			// Check that at least MaxBlocksTxValidity have elapsed before trying to delete
+			// the DID.
 			ensure!(
-				<frame_system::Pallet<T>>::block_number().saturating_sub(did_details.creation_block_number) > T::MaxBlocksTxValidity::get(),
+				<frame_system::Pallet<T>>::block_number().saturating_sub(did_details.creation_block_number)
+					> T::MaxBlocksTxValidity::get(),
 				<Error<T>>::CreationTimeoutInProgress
 			);
 
@@ -934,8 +942,10 @@ impl<T: Config> Pallet<T> {
 	) -> Result<(), DidError> {
 		let current_block_number = <frame_system::Pallet<T>>::block_number();
 		// Before accessing the storage, we check if the provided block number is valid,
-		// i.e., if the current blockchain block is in the inclusive range [operation_block_number, operation_block_number + MaxBlocksTxValidity].
-		let allowed_range = operation.block_number..=operation.block_number.saturating_add(T::MaxBlocksTxValidity::get());
+		// i.e., if the current blockchain block is in the inclusive range
+		// [operation_block_number, operation_block_number + MaxBlocksTxValidity].
+		let allowed_range =
+			operation.block_number..=operation.block_number.saturating_add(T::MaxBlocksTxValidity::get());
 		ensure!(
 			allowed_range.contains(&current_block_number),
 			DidError::SignatureError(SignatureError::InvalidBlockNumber)

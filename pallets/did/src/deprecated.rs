@@ -96,7 +96,10 @@ pub(crate) mod v2 {
 
 	#[cfg(test)]
 	impl<T: Config> DidDetails<T> {
-		pub fn new(authentication_key: DidVerificationKey, block_number: BlockNumberOf<T>) -> Result<Self, StorageError> {
+		pub fn new(
+			authentication_key: DidVerificationKey,
+			block_number: BlockNumberOf<T>,
+		) -> Result<Self, StorageError> {
 			let mut public_keys = DidPublicKeyMap::<T>::default();
 			let authentication_key_id = utils::calculate_key_id::<T>(&authentication_key.clone().into());
 			public_keys

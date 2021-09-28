@@ -155,8 +155,8 @@ mod tests {
 				"Post-migration for v1 should not fail."
 			);
 
-			let new_stored_details =
-			deprecated::v2::storage::Did::<TestRuntime>::get(&alice_did).expect("New DID details should exist in the storage.");
+			let new_stored_details = deprecated::v2::storage::Did::<TestRuntime>::get(&alice_did)
+				.expect("New DID details should exist in the storage.");
 			assert!(new_stored_details.service_endpoints.is_none());
 		});
 	}
@@ -191,8 +191,8 @@ mod tests {
 				"Post-migration for v1 should not fail."
 			);
 
-			let new_stored_details =
-				deprecated::v2::storage::Did::<TestRuntime>::get(&alice_did).expect("New DID details should exist in the storage.");
+			let new_stored_details = deprecated::v2::storage::Did::<TestRuntime>::get(&alice_did)
+				.expect("New DID details should exist in the storage.");
 			assert!(new_stored_details.service_endpoints.is_none());
 		});
 	}

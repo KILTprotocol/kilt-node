@@ -71,7 +71,7 @@ impl<T: Config> VersionMigratorTrait<T> for DidStorageVersion {
 		match *self {
 			Self::V1 => v1::migrate::<T>(),
 			Self::V2 => v2::migrate::<T>(),
-			Self::V3 =>  Weight::zero(),
+			Self::V3 => Weight::zero(),
 		}
 	}
 

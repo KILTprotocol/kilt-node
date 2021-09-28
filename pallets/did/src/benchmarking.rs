@@ -23,7 +23,10 @@ use frame_system::RawOrigin;
 use kilt_primitives::AccountId;
 use sp_core::{crypto::KeyTypeId, ecdsa, ed25519, sr25519};
 use sp_io::crypto::{ecdsa_generate, ecdsa_sign, ed25519_generate, ed25519_sign, sr25519_generate, sr25519_sign};
-use sp_runtime::{traits::IdentifyAccount, MultiSigner, SaturatedConversion};
+use sp_runtime::{
+	traits::{IdentifyAccount, One},
+	MultiSigner, SaturatedConversion,
+};
 
 use crate::{
 	did_details::*,
@@ -81,8 +84,7 @@ fn get_ecdsa_public_delegation_key() -> ecdsa::Public {
 fn generate_base_did_call_operation<T: Config>(
 	did: DidIdentifierOf<T>,
 	submitter: AccountIdentifierOf<T>,
-) -> DidAuthorizedCallOperation<T>
-	where T::BlockNumber: Default {
+) -> DidAuthorizedCallOperation<T> {
 	let test_call = <T as Config>::Call::get_call_for_did_call_benchmark();
 
 	DidAuthorizedCallOperation {
@@ -255,6 +257,9 @@ benchmarks! {
 
 		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key));
 		Did::<T>::insert(&did_subject, did_details);
+		let block_number = frame_system::Pallet::<T>::block_number();
+		// Move "time" forward enough to allow for deletion.
+		frame_system::Pallet::<T>::set_block_number(block_number + T::MaxBlocksTxValidity::get() + T::BlockNumber::one());
 	}: _(RawOrigin::Signed(did_subject.clone()))
 	verify {
 		assert!(
