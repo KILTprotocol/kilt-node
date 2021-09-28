@@ -2287,7 +2287,7 @@ fn check_tx_counter_wrap_operation_verification() {
 	mock_did.set_tx_counter(u64::MAX);
 
 	let mut ext = ExtBuilder::default()
-		.with_dids(vec![(did.clone(), mock_did.clone())])
+		.with_dids(vec![(did.clone(), mock_did)])
 		.build(None);
 
 	let submitter = kilt_primitives::AccountId::default();
