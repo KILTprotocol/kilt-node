@@ -77,7 +77,7 @@ pub(crate) fn post_migrate<T: Config>() -> Result<(), &'static str> {
 		!Did::<T>::iter_values().any(|did_details| { did_details.creation_block_number != block_number_set }),
 		"Some DIDs have a different block number than the expected one"
 	);
-	log::info!("Version storage migrated from v1 to v2");
+	log::info!("Version storage migrated from v2 to v3");
 	Ok(())
 }
 
