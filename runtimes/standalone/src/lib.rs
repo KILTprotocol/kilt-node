@@ -389,7 +389,8 @@ parameter_types! {
 	pub const MaxTotalKeyAgreementKeys: u32 = 1000;
 	#[derive(Debug, Clone, PartialEq)]
 	pub const MaxEndpointUrlsCount: u32 = 3u32;
-	pub const MaxBlocksTxValidity: u64 = 300u64;
+	// 600 blocks * 6s/block = 3.600s = 1h
+	pub const MaxBlocksTxValidity: u64 = 600u64;
 }
 
 impl did::Config for Runtime {

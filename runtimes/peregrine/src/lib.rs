@@ -590,6 +590,7 @@ parameter_types! {
 	pub const MaxTotalKeyAgreementKeys: u32 = 1000;
 	#[derive(Debug, Clone, PartialEq)]
 	pub const MaxEndpointUrlsCount: u32 = 3u32;
+	// 300 blocks * 12s/block = 3.600s = 1h
 	pub const MaxBlocksTxValidity: u64 = 300u64;
 }
 

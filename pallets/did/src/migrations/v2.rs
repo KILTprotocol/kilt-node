@@ -81,7 +81,7 @@ pub(crate) fn post_migrate<T: Config>() -> Result<(), &'static str> {
 	Ok(())
 }
 
-// Tests for the v1 storage migrator.
+// Tests for the v2 storage migrator.
 #[cfg(test)]
 mod tests {
 	use frame_support::StorageMap;

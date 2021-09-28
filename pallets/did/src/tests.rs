@@ -311,8 +311,7 @@ fn check_max_limit_key_agreement_keys_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	// Max keys allowed + 1
-	let enc_keys =
-		get_key_agreement_keys::<Test>(<Test as did::Config>::MaxNewKeyAgreementKeys::get().saturating_add(1));
+	let enc_keys = get_key_agreement_keys::<Test>(MaxNewKeyAgreementKeys::get().saturating_add(1));
 	let mut details = generate_base_did_creation_details::<Test>(alice_did);
 	details.new_key_agreement_keys = enc_keys;
 
@@ -334,8 +333,7 @@ fn check_url_too_long_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	// Max URL length allowed + 1
-	let service_endpoints =
-		get_service_endpoints::<Test>(1, <Test as did::Config>::MaxUrlLength::get().saturating_add(1));
+	let service_endpoints = get_service_endpoints::<Test>(1, MaxUrlLength::get().saturating_add(1));
 
 	let mut details = generate_base_did_creation_details::<Test>(alice_did);
 	details.new_service_endpoints = Some(service_endpoints);
@@ -358,8 +356,7 @@ fn check_too_many_urls_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	// Max number of URLs allowed + 1
-	let service_endpoints =
-		get_service_endpoints(<Test as did::Config>::MaxEndpointUrlsCount::get().saturating_add(1), 10);
+	let service_endpoints = get_service_endpoints(MaxEndpointUrlsCount::get().saturating_add(1), 10);
 
 	let mut details = generate_base_did_creation_details(alice_did);
 	details.new_service_endpoints = Some(service_endpoints);
@@ -420,7 +417,7 @@ fn check_successful_authentication_key_max_public_keys_update() {
 	let old_auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(old_auth_key.public());
 	let new_auth_key = get_ed25519_authentication_key(false);
-	let key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxTotalKeyAgreementKeys::get());
+	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
 
 	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(old_auth_key.public()));
 	assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, 0u64,));
@@ -451,10 +448,7 @@ fn check_successful_authentication_key_max_public_keys_update() {
 	);
 	let public_keys = new_did_details.public_keys;
 	// Total is the maximum allowed
-	assert_eq!(
-		public_keys.len(),
-		<Test as did::Config>::MaxPublicKeysPerDid::get().saturated_into::<usize>()
-	);
+	assert_eq!(public_keys.len(), MaxPublicKeysPerDid::get().saturated_into::<usize>());
 	// Check for new authentication key
 	assert!(public_keys.contains_key(&generate_key_id(
 		&did::DidVerificationKey::from(new_auth_key.public()).into()
@@ -511,7 +505,7 @@ fn check_max_keys_authentication_key_update_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(old_auth_key.public());
 	let delegation_key = old_auth_key.clone();
 	let new_auth_key = get_ed25519_authentication_key(false);
-	let key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxTotalKeyAgreementKeys::get());
+	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
 
 	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(old_auth_key.public()));
 	assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, 0u64,));
@@ -613,7 +607,7 @@ fn check_successful_delegation_key_max_public_keys_update() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let old_del_key = get_sr25519_delegation_key(true);
 	let new_del_key = get_sr25519_delegation_key(false);
-	let key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxTotalKeyAgreementKeys::get());
+	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
 
 	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 	assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, 0u64,));
@@ -647,10 +641,7 @@ fn check_successful_delegation_key_max_public_keys_update() {
 	);
 	let public_keys = new_did_details.public_keys;
 	// Total is the maximum allowed
-	assert_eq!(
-		public_keys.len(),
-		<Test as did::Config>::MaxPublicKeysPerDid::get().saturated_into::<usize>()
-	);
+	assert_eq!(public_keys.len(), MaxPublicKeysPerDid::get().saturated_into::<usize>());
 	// Check for new delegation key
 	assert!(public_keys.contains_key(&generate_key_id(
 		&did::DidVerificationKey::from(new_del_key.public()).into()
@@ -708,7 +699,7 @@ fn check_max_public_keys_delegation_key_addition_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_del_key = get_sr25519_delegation_key(false);
-	let key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxTotalKeyAgreementKeys::get());
+	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
 
 	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 	assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, 0u64,));
@@ -742,7 +733,7 @@ fn check_max_public_keys_reused_key_delegation_key_update_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let old_del_key = auth_key.clone();
 	let new_del_key = get_sr25519_delegation_key(true);
-	let key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxTotalKeyAgreementKeys::get());
+	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
 
 	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 	assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, 0u64,));
@@ -934,7 +925,7 @@ fn check_successful_attestation_key_max_public_keys_update() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let old_att_key = get_sr25519_attestation_key(true);
-	let key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxTotalKeyAgreementKeys::get());
+	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
 	let new_att_key = get_sr25519_attestation_key(false);
 
 	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
@@ -969,10 +960,7 @@ fn check_successful_attestation_key_max_public_keys_update() {
 	);
 	let public_keys = new_did_details.public_keys;
 	// Total is the maximum allowed
-	assert_eq!(
-		public_keys.len(),
-		<Test as did::Config>::MaxPublicKeysPerDid::get().saturated_into::<usize>()
-	);
+	assert_eq!(public_keys.len(), MaxPublicKeysPerDid::get().saturated_into::<usize>());
 	// Check for new attestation key
 	assert!(public_keys.contains_key(&generate_key_id(
 		&did::DidVerificationKey::from(new_att_key.public()).into()
@@ -1030,7 +1018,7 @@ fn check_max_public_keys_attestation_key_addition_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_att_key = get_sr25519_attestation_key(false);
-	let key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxTotalKeyAgreementKeys::get());
+	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
 
 	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 	assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, 0u64,));
@@ -1064,7 +1052,7 @@ fn check_max_public_keys_reused_key_attestation_key_update_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let old_att_key = auth_key.clone();
 	let new_att_key = get_sr25519_delegation_key(true);
-	let key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxTotalKeyAgreementKeys::get());
+	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
 
 	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 	assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, 0u64,));
@@ -1249,7 +1237,7 @@ fn check_max_public_keys_key_agreement_key_addition_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
-	let key_agreement_keys = get_key_agreement_keys::<Test>(<Test as did::Config>::MaxTotalKeyAgreementKeys::get());
+	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
 	let new_key_agreement_key = get_x25519_encryption_key(true);
 
 	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
@@ -1395,8 +1383,7 @@ fn check_url_too_long_endpoint_update_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	// Max URL length allowed + 1
-	let new_service_endpoints =
-		get_service_endpoints::<Test>(1, <Test as did::Config>::MaxUrlLength::get().saturating_add(1));
+	let new_service_endpoints = get_service_endpoints::<Test>(1, MaxUrlLength::get().saturating_add(1));
 
 	let did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 
@@ -1418,8 +1405,7 @@ fn check_too_many_urls_endpoint_update_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	// Max number of URLs allowed + 1
-	let new_service_endpoints =
-		get_service_endpoints(<Test as did::Config>::MaxEndpointUrlsCount::get().saturating_add(1), 10);
+	let new_service_endpoints = get_service_endpoints(MaxEndpointUrlsCount::get().saturating_add(1), 10);
 
 	let did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
 
@@ -1740,9 +1726,7 @@ fn check_tx_block_number_too_low_error() {
 
 	ext.execute_with(|| {
 		// System block number 1 past the max block the operation was allowed for.
-		System::set_block_number(
-			call_operation.operation.block_number + <Test as did::Config>::MaxBlocksTxValidity::get() + 1,
-		);
+		System::set_block_number(call_operation.operation.block_number + MaxBlocksTxValidity::get() + 1);
 		assert_noop!(
 			Did::submit_did_call(
 				Origin::signed(caller.clone()),
@@ -1753,11 +1737,9 @@ fn check_tx_block_number_too_low_error() {
 		);
 	});
 
-	// But it would work if the system would be one block late.
+	// But it would work if the system would be one block earlier.
 	ext.execute_with(|| {
-		System::set_block_number(
-			call_operation.operation.block_number + <Test as did::Config>::MaxBlocksTxValidity::get(),
-		);
+		System::set_block_number(call_operation.operation.block_number + MaxBlocksTxValidity::get());
 		assert_ok!(Did::submit_did_call(
 			Origin::signed(caller),
 			Box::new(call_operation.operation),
