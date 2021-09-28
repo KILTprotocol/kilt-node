@@ -79,13 +79,18 @@
 //! - `set_delegation_key` - Set the delegation key of a DID.
 //! - `remove_delegation_key` - Remove the delegation key of a DID, if present.
 //! - `set_attestation_key` - Set the attestation key of a DID.
-//! - `remove_attestation_key` - Remove the attestation key of a DID, if present.
-//! - `add_key_agreement_key` - Add a new key agreement key to the set of keys for the DID.
-//! - `remove_key_agreement_key` - Remove the key with the given ID from the set of key agreement keys, if present.
+//! - `remove_attestation_key` - Remove the attestation key of a DID, if
+//!   present.
+//! - `add_key_agreement_key` - Add a new key agreement key to the set of keys
+//!   for the DID.
+//! - `remove_key_agreement_key` - Remove the key with the given ID from the set
+//!   of key agreement keys, if present.
 //! - `set_service_endpoints` - Set a new set of service endpoints for the DID.
-//! - `remove_service_endpoints` - Remove the set of service endpoints from the DID.
+//! - `remove_service_endpoints` - Remove the set of service endpoints from the
+//!   DID.
 //! - `delete` - Delete the specified DID and all related keys from the KILT
-//!   blockchain. A DID with the same identifier cannot be created anymore after it is deleted.
+//!   blockchain. A DID with the same identifier cannot be created anymore after
+//!   it is deleted.
 //! - `submit_did_call` - Proxy a dispatchable function for an extrinsic that
 //!   expects a DID origin. The DID pallet verifies the signature and the nonce
 //!   of the wrapping operation and then dispatches the underlying extrinsic
@@ -102,10 +107,11 @@
 //! - The chain performs basic checks over the endpoint URLs provided in
 //!   creation and deletion operations. The SDK will perform more in-depth
 //!   validation of the URL string, e.g., by pattern-matching using regexes.
-//!   - After it is generated and signed by a client, a DID-authorised operation can
-//!   be submitted for evaluation anytime between the time the operation is created
-//!   and [MaxBlocksTxValidity] blocks after that. After this time has elapsed,
-//!   the operation is considered invalid.
+//!   - After it is generated and signed by a client, a DID-authorised operation
+//!     can
+//!   be submitted for evaluation anytime between the time the operation is
+//! created   and [MaxBlocksTxValidity] blocks after that. After this time has
+//! elapsed,   the operation is considered invalid.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
@@ -424,7 +430,8 @@ pub mod pallet {
 		/// Store a new DID on chain, after verifying that the creation
 		/// operation has been signed by the KILT account associated with the
 		/// identifier of the DID being created and that a DID with the same
-		/// identifier has not previously existed on (and then deleted from) the chain.
+		/// identifier has not previously existed on (and then deleted from) the
+		/// chain.
 		///
 		/// There must be no DID information stored on chain under the same DID
 		/// identifier.
@@ -850,14 +857,14 @@ pub mod pallet {
 		/// DID subject acting as the origin of the call, the DID's tx counter
 		/// (nonce), the dispatchable to call in case signature verification
 		/// succeeds, the type of DID key to use to verify the operation
-		/// signature, and the block number the operation was targeting for inclusion,
-		/// when it was created and signed.
+		/// signature, and the block number the operation was targeting for
+		/// inclusion, when it was created and signed.
 		///
 		/// In case the signature is incorrect, the nonce is not valid, the
-		/// required key is not present for the specified DID, or the block specified is too old
-		/// the verification fails and the call is not dispatched. Otherwise, the call is
-		/// properly dispatched with a `DidOrigin` origin indicating the DID
-		/// subject.
+		/// required key is not present for the specified DID, or the block
+		/// specified is too old the verification fails and the call is not
+		/// dispatched. Otherwise, the call is properly dispatched with a
+		/// `DidOrigin` origin indicating the DID subject.
 		///
 		/// A successful dispatch operation results in the tx counter associated
 		/// with the given DID to be incremented, to mitigate replay attacks.
@@ -934,9 +941,9 @@ pub mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
-	/// Verify the validity (i.e., nonce, signature and mortality) of a DID-authorized
-	/// operation and, if valid, update the DID state with the latest
-	/// nonce.
+	/// Verify the validity (i.e., nonce, signature and mortality) of a
+	/// DID-authorized operation and, if valid, update the DID state with the
+	/// latest nonce.
 	///
 	/// # <weight>
 	/// Weight: O(1)

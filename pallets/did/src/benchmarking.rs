@@ -23,10 +23,7 @@ use frame_system::RawOrigin;
 use kilt_primitives::AccountId;
 use sp_core::{crypto::KeyTypeId, ecdsa, ed25519, sr25519};
 use sp_io::crypto::{ecdsa_generate, ecdsa_sign, ed25519_generate, ed25519_sign, sr25519_generate, sr25519_sign};
-use sp_runtime::{
-	traits::{IdentifyAccount, One},
-	MultiSigner, SaturatedConversion,
-};
+use sp_runtime::{traits::IdentifyAccount, MultiSigner, SaturatedConversion};
 
 use crate::{
 	did_details::*,
