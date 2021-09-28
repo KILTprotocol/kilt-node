@@ -1490,7 +1490,6 @@ fn check_successful_deletion() {
 		.build(None);
 
 	ext.execute_with(|| {
-		System::set_block_number(u64::MAX);
 		assert_ok!(Did::delete(Origin::signed(alice_did.clone()),));
 	});
 

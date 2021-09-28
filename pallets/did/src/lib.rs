@@ -346,9 +346,6 @@ pub mod pallet {
 		InvalidOperationValidity,
 		/// The DID has already been previously deleted.
 		DidAlreadyDeleted,
-		/// The expiration time of the creation operation for the given DID has
-		/// not yet been reached.
-		CreationTimeoutInProgress,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
 	}
@@ -809,7 +806,11 @@ pub mod pallet {
 			let source = T::EnsureOrigin::ensure_origin(origin)?;
 			let did_subject = source.subject();
 
-			ensure!(<Did<T>>::take(&did_subject).is_some(), <Error<T>>::DidNotPresent);
+			ensure!(
+				// `take` calls `kill` internally
+				<Did<T>>::take(&did_subject).is_some(),
+				<Error<T>>::DidNotPresent
+			);
 
 			// Marking them as deleted and they're gone forever 👋👋👋
 			<DeletedDids<T>>::insert(&did_subject, ());

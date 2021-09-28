@@ -257,9 +257,6 @@ benchmarks! {
 
 		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key));
 		Did::<T>::insert(&did_subject, did_details);
-		let block_number = frame_system::Pallet::<T>::block_number();
-		// Move "time" forward enough to allow for deletion.
-		frame_system::Pallet::<T>::set_block_number(block_number + T::MaxBlocksTxValidity::get() + T::BlockNumber::one());
 	}: _(RawOrigin::Signed(did_subject.clone()))
 	verify {
 		assert!(
