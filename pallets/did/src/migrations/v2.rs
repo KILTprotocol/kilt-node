@@ -70,10 +70,10 @@ pub(crate) fn post_migrate<T: Config>() -> Result<(), &'static str> {
 		"The version after deployment is not 3 as expected."
 	);
 	// Make sure all DIDs have the same block number set.
-	let block_number_set = Did::<T>::iter().next().map_or(BlockNumberOf::<T>::default(), |details| details.creation_block_number);
+	let block_number_set = Did::<T>::iter_values().next().map_or(BlockNumberOf::<T>::default(), |details| details.creation_block_number);
 	ensure!(
-		!Did::<T>::iter_values().any(|did_details| { did_details.creation_block_number != block_number_set})
-		format!("Some DIDs have a different block number than the expected {}", block_number_set)
+		!Did::<T>::iter_values().any(|did_details| { did_details.creation_block_number != block_number_set}),
+		"Some DIDs have a different block number than the expected one"
 	);
 	log::info!("Version storage migrated from v1 to v2");
 	Ok(())

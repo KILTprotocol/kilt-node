@@ -81,13 +81,15 @@ fn get_ecdsa_public_delegation_key() -> ecdsa::Public {
 fn generate_base_did_call_operation<T: Config>(
 	did: DidIdentifierOf<T>,
 	submitter: AccountIdentifierOf<T>,
-) -> DidAuthorizedCallOperation<T> {
+) -> DidAuthorizedCallOperation<T>
+	where T::BlockNumber: Default {
 	let test_call = <T as Config>::Call::get_call_for_did_call_benchmark();
 
 	DidAuthorizedCallOperation {
 		did,
 		call: test_call,
 		tx_counter: 1u64,
+		block_number: T::BlockNumber::default(),
 		submitter,
 	}
 }
