@@ -17,10 +17,10 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::{Decode, Encode};
-use delegation::DelegationNodeIdOf;
 use ctype::CtypeHashOf;
+use delegation::DelegationNodeIdOf;
 
-use crate::{AttesterOf, Config, AccountIdOf, BalanceOf};
+use crate::{AccountIdOf, AttesterOf, BalanceOf, Config};
 
 /// An on-chain attestation written by an attester.
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]

@@ -327,10 +327,7 @@ pub mod runtime {
 			self
 		}
 
-		pub fn with_delegations(
-			mut self,
-			delegations: Vec<(TestDelegationNodeId, DelegationNode<Test>)>,
-		) -> Self {
+		pub fn with_delegations(mut self, delegations: Vec<(TestDelegationNodeId, DelegationNode<Test>)>) -> Self {
 			self.delegations = delegations;
 			self
 		}
@@ -345,10 +342,7 @@ pub mod runtime {
 			self
 		}
 
-		pub fn with_attestations(
-			mut self,
-			attestations: Vec<(TestClaimHash, AttestationDetails<Test>)>,
-		) -> Self {
+		pub fn with_attestations(mut self, attestations: Vec<(TestClaimHash, AttestationDetails<Test>)>) -> Self {
 			self.attestations = attestations;
 			self
 		}

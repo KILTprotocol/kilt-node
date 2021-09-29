@@ -251,7 +251,7 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let payer = source.sender();
 			let attester = source.subject();
-			let deposit_amount = T::Deposit::get();
+			let deposit_amount = <T as pallet::Config>::Deposit::get();
 
 			ensure!(
 				<ctype::Ctypes<T>>::contains_key(&ctype_hash),

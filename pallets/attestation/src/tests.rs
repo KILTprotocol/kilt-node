@@ -19,7 +19,11 @@
 use frame_support::{assert_noop, assert_ok};
 use sp_core::Pair;
 
-use crate::{self as attestation, mock::*, AccountIdOf, mock::runtime::Test};
+use crate::{
+	self as attestation,
+	mock::{runtime::Test, *},
+	AccountIdOf,
+};
 use ctype::mock as ctype_mock;
 use delegation::mock as delegation_mock;
 
