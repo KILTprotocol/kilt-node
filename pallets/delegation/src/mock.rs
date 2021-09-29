@@ -18,8 +18,11 @@
 
 #![allow(clippy::from_over_into)]
 
-use frame_support::{parameter_types, storage::bounded_btree_set::BoundedBTreeSet, weights::constants::RocksDbWeight};
+use frame_support::{
+	parameter_types, storage::bounded_btree_set::BoundedBTreeSet, traits::Get, weights::constants::RocksDbWeight,
+};
 use frame_system::EnsureSigned;
+use kilt_primitives::constants::MILLI_KILT;
 use sp_core::{ed25519, sr25519, Pair, H256};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
@@ -39,11 +42,11 @@ use ctype::mock as ctype_mock;
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
 
-pub type TestCtypeOwner = kilt_primitives::AccountId;
-pub type TestCtypeHash = kilt_primitives::Hash;
-pub type TestDelegationNodeId = kilt_primitives::Hash;
-pub type TestDelegatorId = TestCtypeOwner;
-pub type TestDelegateSignature = MultiSignature;
+type TestCtypeOwner = kilt_primitives::AccountId;
+type TestDelegationNodeId = kilt_primitives::Hash;
+type TestDelegatorId = TestCtypeOwner;
+type TestDelegateSignature = MultiSignature;
+type TestBalance = kilt_primitives::Balance;
 
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -54,6 +57,7 @@ frame_support::construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>},
+		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 	}
 );
 
@@ -78,7 +82,7 @@ impl frame_system::Config for Test {
 	type Version = ();
 
 	type PalletInfo = PalletInfo;
-	type AccountData = ();
+	type AccountData = pallet_balances::AccountData<TestBalance>;
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type BaseCallFilter = frame_support::traits::Everything;
@@ -87,6 +91,24 @@ impl frame_system::Config for Test {
 	type BlockLength = ();
 	type SS58Prefix = SS58Prefix;
 	type OnSetCode = ();
+}
+
+parameter_types! {
+	pub const ExistentialDeposit: TestBalance = MILLI_KILT;
+	pub const MaxLocks: u32 = 50;
+	pub const MaxReserves: u32 = 50;
+}
+
+impl pallet_balances::Config for Test {
+	type Balance = TestBalance;
+	type DustRemoval = ();
+	type Event = ();
+	type ExistentialDeposit = ExistentialDeposit;
+	type AccountStore = System;
+	type WeightInfo = ();
+	type MaxLocks = MaxLocks;
+	type MaxReserves = MaxReserves;
+	type ReserveIdentifier = [u8; 8];
 }
 
 impl ctype::Config for Test {
@@ -103,6 +125,7 @@ parameter_types! {
 	pub const MaxRevocations: u32 = 5;
 	#[derive(Clone)]
 	pub const MaxChildren: u32 = 1000;
+	pub const DepositAmount: TestBalance = 100 * MILLI_KILT;
 }
 
 impl Config for Test {
@@ -117,6 +140,8 @@ impl Config for Test {
 	type MaxParentChecks = MaxParentChecks;
 	type MaxRevocations = MaxRevocations;
 	type MaxChildren = MaxChildren;
+	type Currency = Balances;
+	type Deposit = DepositAmount;
 	type WeightInfo = ();
 }
 
@@ -237,10 +262,14 @@ pub fn generate_base_delegation_node<T: Config>(
 	parent: Option<T::DelegationNodeId>,
 ) -> DelegationNode<T> {
 	DelegationNode {
-		details: generate_base_delegation_details(owner),
+		details: generate_base_delegation_details(owner.clone()),
 		children: BoundedBTreeSet::new(),
 		hierarchy_root_id: hierarchy_id,
 		parent,
+		deposit: delegation::Deposit {
+			owner: owner.into(),
+			amount: <T as Config>::Deposit::get(),
+		},
 	}
 }
 
@@ -332,6 +361,7 @@ pub fn initialize_pallet<T: Config>(
 			delegation_hierarchy.0,
 			delegation_hierarchy.1.clone(),
 			delegation_hierarchy.2.clone(),
+			delegation_hierarchy.2.clone().into(),
 		);
 	}
 

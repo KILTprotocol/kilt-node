@@ -16,9 +16,18 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::*;
-
-use frame_support::{storage::bounded_btree_set::BoundedBTreeSet, IterableStorageMap, StorageMap, StoragePrefixedMap};
+use crate::{
+	deprecated::{
+		v1::storage::{Children, Delegations, Roots},
+		v2::{storage::DelegationNodes, DelegationNode},
+	},
+	migrations::DelegationStorageVersion,
+	Config, DelegationDetails, DelegationHierarchies, DelegationHierarchyDetails, DelegationNodeIdOf, Permissions,
+	StorageVersion, Weight,
+};
+use frame_support::{
+	storage::bounded_btree_set::BoundedBTreeSet, traits::Get, IterableStorageMap, StorageMap, StoragePrefixedMap,
+};
 use sp_runtime::traits::Zero;
 use sp_std::{
 	collections::{btree_map::BTreeMap, btree_set::BTreeSet},
@@ -83,69 +92,58 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 }
 
 fn migrate_roots<T: Config>(new_nodes: &mut BTreeMap<DelegationNodeIdOf<T>, DelegationNode<T>>) -> Weight {
-	let total_weight = deprecated::v1::storage::Roots::<T>::iter().fold(
-		Weight::zero(),
-		|mut total_weight, (old_root_id, old_root_node)| {
-			let new_hierarchy_details = DelegationHierarchyDetails::<T> {
-				ctype_hash: old_root_node.ctype_hash,
-			};
-			let new_root_details = DelegationDetails::<T> {
-				owner: old_root_node.owner,
-				// Old roots did not have any permissions. So now we give them all permissions.
-				permissions: Permissions::all(),
-				revoked: old_root_node.revoked,
-			};
-			// In here, we already check for potential children of root nodes and ONLY
-			// update the children information. The parent information will be updated
-			// later, when we know we have seen all the children already.
-			let mut new_root_node = DelegationNode::new_root_node(old_root_id, new_root_details);
-			if let Some(root_children_ids) = deprecated::v1::storage::Children::<T>::take(old_root_id) {
-				let children_set: BTreeSet<DelegationNodeIdOf<T>> = root_children_ids.iter().copied().collect();
-				new_root_node.children =
-					BoundedBTreeSet::try_from(children_set).expect("Should not exceed MaxChildren");
-			}
-			// Add Children::take() weight
-			total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));
+	let total_weight = Roots::<T>::iter().fold(Weight::zero(), |mut total_weight, (old_root_id, old_root_node)| {
+		let new_hierarchy_details = DelegationHierarchyDetails::<T> {
+			ctype_hash: old_root_node.ctype_hash,
+		};
+		let new_root_details = DelegationDetails::<T> {
+			owner: old_root_node.owner,
+			// Old roots did not have any permissions. So now we give them all permissions.
+			permissions: Permissions::all(),
+			revoked: old_root_node.revoked,
+		};
+		// In here, we already check for potential children of root nodes and ONLY
+		// update the children information. The parent information will be updated
+		// later, when we know we have seen all the children already.
+		let mut new_root_node = DelegationNode::new_root_node(old_root_id, new_root_details);
+		if let Some(root_children_ids) = Children::<T>::take(old_root_id) {
+			let children_set: BTreeSet<DelegationNodeIdOf<T>> = root_children_ids.iter().copied().collect();
+			new_root_node.children = BoundedBTreeSet::try_from(children_set).expect("Should not exceed MaxChildren");
+		}
+		// Add Children::take() weight
+		total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));
 
-			DelegationHierarchies::insert(old_root_id, new_hierarchy_details);
-			// Adds a read from Roots::drain() and a write from
-			// DelegationHierarchies::insert() weights
-			total_weight = total_weight.saturating_add(T::DbWeight::get().reads_writes(1, 1));
-			// Add the node to the temporary map of nodes to be added at the end.
-			new_nodes.insert(old_root_id, new_root_node);
+		DelegationHierarchies::insert(old_root_id, new_hierarchy_details);
+		// Adds a read from Roots::drain() and a write from
+		// DelegationHierarchies::insert() weights
+		total_weight = total_weight.saturating_add(T::DbWeight::get().reads_writes(1, 1));
+		// Add the node to the temporary map of nodes to be added at the end.
+		new_nodes.insert(old_root_id, new_root_node);
 
-			total_weight
-		},
-	);
+		total_weight
+	});
 
 	// If runtime testing, makes sure that the old number of roots is reflected in
 	// the new number of nodes and hierarchies migrated.
 	#[cfg(feature = "try-runtime")]
 	{
 		assert_eq!(
-			deprecated::v1::storage::Roots::<T>::iter().count(),
+			Roots::<T>::iter().count(),
 			DelegationHierarchies::<T>::iter().count(),
 			"The # of old roots does not match the # of new delegation hierarchies."
 		);
 
 		assert_eq!(
-			deprecated::v1::storage::Roots::<T>::iter().count(),
+			Roots::<T>::iter().count(),
 			new_nodes.iter().count(),
 			"The # of old roots does not match the current # of new delegation nodes."
 		);
 
-		log::info!(
-			"{} root(s) migrated.",
-			deprecated::v1::storage::Roots::<T>::iter().count()
-		);
+		log::info!("{} root(s) migrated.", Roots::<T>::iter().count());
 	}
 
 	// Removes the whole Roots storage.
-	frame_support::migration::remove_storage_prefix(
-		deprecated::v1::storage::Roots::<T>::module_prefix(),
-		deprecated::v1::storage::Roots::<T>::storage_prefix(),
-		b"",
-	);
+	frame_support::migration::remove_storage_prefix(Roots::<T>::module_prefix(), Roots::<T>::storage_prefix(), b"");
 
 	total_weight
 }
@@ -154,56 +152,50 @@ fn migrate_nodes<T: Config>(
 	new_nodes: &mut BTreeMap<DelegationNodeIdOf<T>, DelegationNode<T>>,
 	initial_weight: Weight,
 ) -> Weight {
-	let total_weight = deprecated::v1::storage::Delegations::<T>::iter().fold(
-		initial_weight,
-		|mut total_weight, (old_node_id, old_node)| {
-			let new_node_details = DelegationDetails::<T> {
-				owner: old_node.owner,
-				permissions: old_node.permissions,
-				revoked: old_node.revoked,
-			};
-			// In the old version, a parent None indicated the node is a child of the root.
-			let new_node_parent_id = old_node.parent.unwrap_or(old_node.root_id);
-			let mut new_node = DelegationNode::new_node(old_node.root_id, new_node_parent_id, new_node_details);
-			if let Some(children_ids) = deprecated::v1::storage::Children::<T>::take(old_node_id) {
-				let children_set: BTreeSet<DelegationNodeIdOf<T>> = children_ids.iter().copied().collect();
-				new_node.children = BoundedBTreeSet::try_from(children_set).expect("Should not exceed MaxChildren");
-			}
-			// Add Children::take() weight
-			total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));
-			// Adds a read from Roots::drain() weight
-			total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));
-			new_nodes.insert(old_node_id, new_node);
+	let total_weight = Delegations::<T>::iter().fold(initial_weight, |mut total_weight, (old_node_id, old_node)| {
+		let new_node_details = DelegationDetails::<T> {
+			owner: old_node.owner,
+			permissions: old_node.permissions,
+			revoked: old_node.revoked,
+		};
+		// In the old version, a parent None indicated the node is a child of the root.
+		let new_node_parent_id = old_node.parent.unwrap_or(old_node.root_id);
+		let mut new_node = DelegationNode::new_node(old_node.root_id, new_node_parent_id, new_node_details);
+		if let Some(children_ids) = Children::<T>::take(old_node_id) {
+			let children_set: BTreeSet<DelegationNodeIdOf<T>> = children_ids.iter().copied().collect();
+			new_node.children = BoundedBTreeSet::try_from(children_set).expect("Should not exceed MaxChildren");
+		}
+		// Add Children::take() weight
+		total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));
+		// Adds a read from Roots::drain() weight
+		total_weight = total_weight.saturating_add(T::DbWeight::get().reads(1));
+		new_nodes.insert(old_node_id, new_node);
 
-			total_weight
-		},
-	);
+		total_weight
+	});
 
 	// If runtime testing, makes sure that the old number of delegations is
 	// reflected in the new number of nodes that will be added to the storage.
 	#[cfg(feature = "try-runtime")]
 	{
 		assert_eq!(
-			deprecated::v1::storage::Delegations::<T>::iter().count(),
+			Delegations::<T>::iter().count(),
 			new_nodes.iter().count().saturating_sub(DelegationHierarchies::<T>::iter().count()),
 			"The # of old delegation nodes does not match the # of new delegation nodes (calculate as the total # of nodes - the # of delegation hierarchies)."
 		);
 
-		log::info!(
-			"{} regular node(s) migrated.",
-			deprecated::v1::storage::Delegations::<T>::iter().count()
-		);
+		log::info!("{} regular node(s) migrated.", Delegations::<T>::iter().count());
 	}
 
 	// Removes the whole Delegations and Children storages.
 	frame_support::migration::remove_storage_prefix(
-		deprecated::v1::storage::Delegations::<T>::module_prefix(),
-		deprecated::v1::storage::Delegations::<T>::storage_prefix(),
+		Delegations::<T>::module_prefix(),
+		Delegations::<T>::storage_prefix(),
 		b"",
 	);
 	frame_support::migration::remove_storage_prefix(
-		deprecated::v1::storage::Children::<T>::module_prefix(),
-		deprecated::v1::storage::Children::<T>::storage_prefix(),
+		Children::<T>::module_prefix(),
+		Children::<T>::storage_prefix(),
 		b"",
 	);
 
@@ -227,7 +219,7 @@ fn finalize_children_nodes<T: Config>(
 			// We can then finally insert the new delegation node in the storage as it won't
 			// be updated anymore during the migration.
 			DelegationNodes::<T>::insert(new_node_id, new_node);
-			// Adds a write from DelegationNodes::insert() weight
+			// Adds a write  from DelegationNodes::insert() weight
 			total_weight = total_weight.saturating_add(T::DbWeight::get().writes(1));
 
 			total_weight
@@ -327,7 +319,7 @@ mod tests {
 				ctype::mock::get_ctype_hash::<TestRuntime>(true),
 				alice,
 			);
-			deprecated::v1::storage::Roots::insert(old_root_id, old_root_node.clone());
+			Roots::insert(old_root_id, old_root_node.clone());
 
 			#[cfg(feature = "try-runtime")]
 			assert!(
@@ -343,15 +335,9 @@ mod tests {
 				"Post-migration for v1 should not fail."
 			);
 
-			assert_eq!(deprecated::v1::storage::Roots::<TestRuntime>::iter_values().count(), 0);
-			assert_eq!(
-				deprecated::v1::storage::Delegations::<TestRuntime>::iter_values().count(),
-				0
-			);
-			assert_eq!(
-				deprecated::v1::storage::Children::<TestRuntime>::iter_values().count(),
-				0
-			);
+			assert_eq!(Roots::<TestRuntime>::iter_values().count(), 0);
+			assert_eq!(Delegations::<TestRuntime>::iter_values().count(), 0);
+			assert_eq!(Children::<TestRuntime>::iter_values().count(), 0);
 
 			let new_stored_hierarchy = DelegationHierarchies::<TestRuntime>::get(old_root_id)
 				.expect("New delegation hierarchy should exist in the storage.");
@@ -375,21 +361,18 @@ mod tests {
 			let alice = mock::get_ed25519_account(mock::get_alice_ed25519().public());
 			let bob = mock::get_sr25519_account(mock::get_bob_sr25519().public());
 			let old_root_id = mock::get_delegation_id(true);
-			let old_root_node =
-				deprecated::v1::DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash::<TestRuntime>(true), alice.clone());
-			let old_node_id_1 = mock::get_delegation_id(false);
-			let old_node_1 = deprecated::v1::DelegationNode::<TestRuntime>::new_root_child(
-				old_root_id,
-				alice,
-				Permissions::DELEGATE,
+			let old_root_node = deprecated::v1::DelegationRoot::<TestRuntime>::new(
+				ctype::mock::get_ctype_hash::<TestRuntime>(true),
+				alice.clone(),
 			);
+			let old_node_id_1 = mock::get_delegation_id(false);
+			let old_node_1 = DelegationNode::<TestRuntime>::new_root_child(old_root_id, alice, Permissions::DELEGATE);
 			let old_node_id_2 = mock::get_delegation_id_2(true);
-			let old_node_2 =
-				deprecated::v1::DelegationNode::<TestRuntime>::new_root_child(old_root_id, bob, Permissions::ATTEST);
-			deprecated::v1::storage::Roots::insert(old_root_id, old_root_node.clone());
-			deprecated::v1::storage::Delegations::insert(old_node_id_1, old_node_1.clone());
-			deprecated::v1::storage::Delegations::insert(old_node_id_2, old_node_2.clone());
-			deprecated::v1::storage::Children::<TestRuntime>::insert(old_root_id, vec![old_node_id_1, old_node_id_2]);
+			let old_node_2 = DelegationNode::<TestRuntime>::new_root_child(old_root_id, bob, Permissions::ATTEST);
+			Roots::insert(old_root_id, old_root_node.clone());
+			Delegations::insert(old_node_id_1, old_node_1.clone());
+			Delegations::insert(old_node_id_2, old_node_2.clone());
+			Children::<TestRuntime>::insert(old_root_id, vec![old_node_id_1, old_node_id_2]);
 
 			#[cfg(feature = "try-runtime")]
 			assert!(
@@ -405,15 +388,9 @@ mod tests {
 				"Post-migration for v1 should not fail."
 			);
 
-			assert_eq!(deprecated::v1::storage::Roots::<TestRuntime>::iter_values().count(), 0);
-			assert_eq!(
-				deprecated::v1::storage::Delegations::<TestRuntime>::iter_values().count(),
-				0
-			);
-			assert_eq!(
-				deprecated::v1::storage::Children::<TestRuntime>::iter_values().count(),
-				0
-			);
+			assert_eq!(Roots::<TestRuntime>::iter_values().count(), 0);
+			assert_eq!(Delegations::<TestRuntime>::iter_values().count(), 0);
+			assert_eq!(Children::<TestRuntime>::iter_values().count(), 0);
 
 			let new_stored_hierarchy = DelegationHierarchies::<TestRuntime>::get(old_root_id)
 				.expect("New delegation hierarchy should exist in the storage.");
@@ -455,23 +432,20 @@ mod tests {
 			let alice = mock::get_ed25519_account(mock::get_alice_ed25519().public());
 			let bob = mock::get_sr25519_account(mock::get_bob_sr25519().public());
 			let old_root_id = mock::get_delegation_id(true);
-			let old_root_node =
-				deprecated::v1::DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash::<TestRuntime>(true), alice.clone());
-			let old_parent_id = mock::get_delegation_id(false);
-			let old_parent_node =
-				deprecated::v1::DelegationNode::<TestRuntime>::new_root_child(old_root_id, alice, Permissions::all());
-			let old_node_id = mock::get_delegation_id_2(true);
-			let old_node = deprecated::v1::DelegationNode::<TestRuntime>::new_node_child(
-				old_root_id,
-				old_parent_id,
-				bob,
-				Permissions::ATTEST,
+			let old_root_node = deprecated::v1::DelegationRoot::<TestRuntime>::new(
+				ctype::mock::get_ctype_hash::<TestRuntime>(true),
+				alice.clone(),
 			);
-			deprecated::v1::storage::Roots::insert(old_root_id, old_root_node.clone());
-			deprecated::v1::storage::Delegations::insert(old_parent_id, old_parent_node.clone());
-			deprecated::v1::storage::Delegations::insert(old_node_id, old_node.clone());
-			deprecated::v1::storage::Children::<TestRuntime>::insert(old_root_id, vec![old_parent_id]);
-			deprecated::v1::storage::Children::<TestRuntime>::insert(old_parent_id, vec![old_node_id]);
+			let old_parent_id = mock::get_delegation_id(false);
+			let old_parent_node = DelegationNode::<TestRuntime>::new_root_child(old_root_id, alice, Permissions::all());
+			let old_node_id = mock::get_delegation_id_2(true);
+			let old_node =
+				DelegationNode::<TestRuntime>::new_node_child(old_root_id, old_parent_id, bob, Permissions::ATTEST);
+			Roots::insert(old_root_id, old_root_node.clone());
+			Delegations::insert(old_parent_id, old_parent_node.clone());
+			Delegations::insert(old_node_id, old_node.clone());
+			Children::<TestRuntime>::insert(old_root_id, vec![old_parent_id]);
+			Children::<TestRuntime>::insert(old_parent_id, vec![old_node_id]);
 
 			#[cfg(feature = "try-runtime")]
 			assert!(
@@ -487,15 +461,9 @@ mod tests {
 				"Post-migration for v1 should not fail."
 			);
 
-			assert_eq!(deprecated::v1::storage::Roots::<TestRuntime>::iter_values().count(), 0);
-			assert_eq!(
-				deprecated::v1::storage::Delegations::<TestRuntime>::iter_values().count(),
-				0
-			);
-			assert_eq!(
-				deprecated::v1::storage::Children::<TestRuntime>::iter_values().count(),
-				0
-			);
+			assert_eq!(Roots::<TestRuntime>::iter_values().count(), 0);
+			assert_eq!(Delegations::<TestRuntime>::iter_values().count(), 0);
+			assert_eq!(Children::<TestRuntime>::iter_values().count(), 0);
 
 			let new_stored_hierarchy = DelegationHierarchies::<TestRuntime>::get(old_root_id)
 				.expect("New delegation hierarchy should exist in the storage.");

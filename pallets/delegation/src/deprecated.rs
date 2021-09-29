@@ -18,9 +18,9 @@
 
 /// Deprecated types used in version 1.
 pub(crate) mod v1 {
+	use crate::{Config, DelegationNodeIdOf, DelegatorIdOf, Permissions};
 	use codec::{Decode, Encode};
-
-	use crate::*;
+	use ctype::CtypeHashOf;
 
 	#[derive(Clone, Debug, Encode, Decode, PartialEq)]
 	pub struct DelegationRoot<T: Config> {
@@ -97,6 +97,63 @@ pub(crate) mod v1 {
 				pub(crate) Roots get(fn roots): map hasher(blake2_128_concat) DelegationNodeIdOf<T> => Option<DelegationRoot<T>>;
 				pub(crate) Delegations get(fn delegations): map hasher(blake2_128_concat) DelegationNodeIdOf<T> => Option<super::DelegationNode<T>>;
 				pub(crate) Children get(fn children): map hasher(blake2_128_concat) DelegationNodeIdOf<T> => Option<Vec<DelegationNodeIdOf<T>>>;
+			}
+		}
+	}
+}
+
+pub(crate) mod v2 {
+	use crate::{Config, DelegationDetails, DelegationNodeIdOf};
+	use codec::{Decode, Encode};
+	use frame_support::storage::bounded_btree_set::BoundedBTreeSet;
+
+	#[derive(Clone, Encode, Decode, PartialEq)]
+	pub struct DelegationNode<T: Config> {
+		pub(crate) hierarchy_root_id: DelegationNodeIdOf<T>,
+		pub(crate) parent: Option<DelegationNodeIdOf<T>>,
+		pub(crate) children: BoundedBTreeSet<DelegationNodeIdOf<T>, T::MaxChildren>,
+		pub(crate) details: DelegationDetails<T>,
+	}
+
+	impl<T: Config> DelegationNode<T> {
+		pub(crate) fn new_root_node(id: DelegationNodeIdOf<T>, details: DelegationDetails<T>) -> Self {
+			Self {
+				hierarchy_root_id: id,
+				parent: None,
+				children: BoundedBTreeSet::<DelegationNodeIdOf<T>, T::MaxChildren>::new(),
+				details,
+			}
+		}
+
+		/// Creates a new delegation node under the given hierarchy ID, with the
+		/// given parent and delegation details.
+		pub(crate) fn new_node(
+			hierarchy_root_id: DelegationNodeIdOf<T>,
+			parent: DelegationNodeIdOf<T>,
+			details: DelegationDetails<T>,
+		) -> Self {
+			Self {
+				hierarchy_root_id,
+				parent: Some(parent),
+				children: BoundedBTreeSet::<DelegationNodeIdOf<T>, T::MaxChildren>::new(),
+				details,
+			}
+		}
+	}
+
+	pub(crate) mod storage {
+		use frame_support::{decl_module, decl_storage};
+		use sp_std::prelude::*;
+
+		use super::*;
+
+		decl_module! {
+			pub struct OldPallet<T: Config> for enum Call where origin: <T as frame_system::Config>::Origin {}
+		}
+
+		decl_storage! {
+			pub(crate) trait Store for OldPallet<T: Config> as Delegation {
+				pub(crate) DelegationNodes get(fn delegation_nodes): map hasher(blake2_128_concat) DelegationNodeIdOf<T> => Option<DelegationNode<T>>;
 			}
 		}
 	}

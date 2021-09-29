@@ -86,12 +86,20 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
-mod deprecated;
+pub(crate) mod deprecated;
 
 pub use crate::{default_weights::WeightInfo, delegation_hierarchy::*, pallet::*};
 
-use frame_support::{dispatch::DispatchResult, ensure, pallet_prelude::Weight, traits::Get};
-use sp_runtime::{traits::Hash, DispatchError};
+use frame_support::{
+	dispatch::DispatchResult,
+	ensure,
+	pallet_prelude::Weight,
+	traits::{Get, ReservableCurrency},
+};
+use sp_runtime::{
+	traits::{Hash, Zero},
+	DispatchError,
+};
 use sp_std::vec::Vec;
 
 use migrations::*;
@@ -100,7 +108,7 @@ use migrations::*;
 pub mod pallet {
 
 	use super::*;
-	use frame_support::pallet_prelude::*;
+	use frame_support::{pallet_prelude::*, traits::Currency};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::traits::CallSources;
 
@@ -120,7 +128,11 @@ pub mod pallet {
 	/// information.
 	pub type DelegateSignatureTypeOf<T> = <DelegationSignatureVerificationOf<T> as VerifyDelegateSignature>::Signature;
 
-	type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+
+	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+
+	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config {
@@ -130,7 +142,9 @@ pub mod pallet {
 			Payload = Vec<u8>,
 			Signature = Self::Signature,
 		>;
-		type DelegationEntityId: Parameter;
+		// FIXME: Is there a better solution than restrict this to
+		// Into<AccountIdOf<Self>> to enable conversion between both types?
+		type DelegationEntityId: Parameter + Into<AccountIdOf<Self>>;
 		type DelegationNodeId: Parameter + Copy + AsRef<[u8]> + Eq + PartialEq + Ord + PartialOrd;
 		type EnsureOrigin: EnsureOrigin<
 			Success = <Self as Config>::OriginSuccess,
@@ -138,6 +152,15 @@ pub mod pallet {
 		>;
 		type OriginSuccess: CallSources<AccountIdOf<Self>, DelegatorIdOf<Self>>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type WeightInfo: WeightInfo;
+
+		/// The currency that is used to reserve funds for each delegation.
+		type Currency: Currency<AccountIdOf<Self>> + ReservableCurrency<AccountIdOf<Self>>;
+
+		/// The deposit that is required
+		#[pallet::constant]
+		type Deposit: Get<BalanceOf<Self>>;
+
 		#[pallet::constant]
 		type MaxSignatureByteLength: Get<u16>;
 
@@ -155,7 +178,6 @@ pub mod pallet {
 		/// `2 ^ MaxParentChecks`.
 		#[pallet::constant]
 		type MaxChildren: Get<u32> + Clone;
-		type WeightInfo: WeightInfo;
 	}
 
 	#[pallet::pallet]
@@ -199,6 +221,14 @@ pub mod pallet {
 	pub type DelegationHierarchies<T> =
 		StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, DelegationHierarchyDetails<T>>;
 
+	/// Delegation deposits stored on chain.
+	///
+	/// It maps from a node ID to the deposit.
+	#[pallet::storage]
+	#[pallet::getter(fn deposits)]
+	pub type DelegationDeposits<T> =
+		StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, Deposit<AccountIdOf<T>, BalanceOf<T>>>;
+
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
@@ -208,6 +238,9 @@ pub mod pallet {
 		/// A hierarchy has been revoked.
 		/// \[revoker ID, root node ID\]
 		HierarchyRevoked(DelegatorIdOf<T>, DelegationNodeIdOf<T>),
+		/// A hierarchy has been removed from the storage on chain.
+		/// \[remover ID, root node ID\]
+		HierarchyRemoved(DelegatorIdOf<T>, DelegationNodeIdOf<T>),
 		/// A new delegation has been created.
 		/// \[creator ID, root node ID, delegation node ID, parent node ID,
 		/// delegate ID, permissions\]
@@ -222,6 +255,9 @@ pub mod pallet {
 		/// A delegation has been revoked.
 		/// \[revoker ID, delegation node ID\]
 		DelegationRevoked(DelegatorIdOf<T>, DelegationNodeIdOf<T>),
+		/// A delegation has been removed.
+		/// \[remover ID, delegation node ID\]
+		DelegationRemoved(AccountIdOf<T>, DelegationNodeIdOf<T>),
 	}
 
 	#[pallet::error]
@@ -239,7 +275,7 @@ pub mod pallet {
 		HierarchyAlreadyExists,
 		/// No hierarchy with the given ID stored on chain.
 		HierarchyNotFound,
-		/// Max number of nodes checked without verifying the given condition.
+		/// The delegation was removed from the storage on chain.
 		MaxSearchDepthReached,
 		/// Max number of nodes checked without verifying the given condition.
 		NotOwnerOfParentDelegation,
@@ -254,9 +290,12 @@ pub mod pallet {
 		UnauthorizedRevocation,
 		/// The delegation creator is not allowed to create the delegation.
 		UnauthorizedDelegation,
-		/// Max number of delegation nodes revocation has been reached for the
-		/// operation.
+		/// Max number of revocations for delegation nodes has been reached for
+		/// the operation.
 		ExceededRevocationBounds,
+		/// Max number of removals for delegation nodes has been reached for the
+		/// operation.
+		ExceededRemovalBounds,
 		/// The max number of revocation exceeds the limit for the pallet.
 		MaxRevocationsTooLarge,
 		/// The max number of parent checks exceeds the limit for the pallet.
@@ -266,6 +305,8 @@ pub mod pallet {
 		/// The max number of all children has been reached for the
 		/// corresponding delegation node.
 		MaxChildrenExceeded,
+		/// The call origin is not authorized to remove the delegation.
+		UnauthorizedRemoval,
 	}
 
 	#[pallet::call]
@@ -294,7 +335,11 @@ pub mod pallet {
 			root_node_id: DelegationNodeIdOf<T>,
 			ctype_hash: CtypeHashOf<T>,
 		) -> DispatchResult {
-			let creator = <T as Config>::EnsureOrigin::ensure_origin(origin)?.subject();
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			// TODO: Add check that payer == creator for delegations?
+			let payer = source.sender();
+			let creator = source.subject();
+			let deposit_amount = T::Deposit::get();
 
 			ensure!(
 				!<DelegationHierarchies<T>>::contains_key(&root_node_id),
@@ -306,12 +351,17 @@ pub mod pallet {
 				<ctype::Error<T>>::CTypeNotFound
 			);
 
+			CurrencyOf::<T>::reserve(&payer, deposit_amount)?;
+
+			// *** No Fail beyond this point ***
+
 			log::debug!("insert Delegation Root");
 
 			Self::create_and_store_new_hierarchy(
 				root_node_id,
 				DelegationHierarchyDetails::<T> { ctype_hash },
 				creator.clone(),
+				payer,
 			);
 
 			Self::deposit_event(Event::HierarchyCreated(creator, root_node_id, ctype_hash));
@@ -353,7 +403,11 @@ pub mod pallet {
 			permissions: Permissions,
 			delegate_signature: DelegateSignatureTypeOf<T>,
 		) -> DispatchResult {
-			let delegator = <T as Config>::EnsureOrigin::ensure_origin(origin)?.subject();
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			// TODO: Add check that payer == creator for delegations?
+			let payer = source.sender();
+			let delegator = source.subject();
+			let deposit_amount = T::Deposit::get();
 
 			ensure!(
 				!<DelegationNodes<T>>::contains_key(&delegation_id),
@@ -387,6 +441,10 @@ pub mod pallet {
 				Error::<T>::UnauthorizedDelegation
 			);
 
+			CurrencyOf::<T>::reserve(&payer, deposit_amount)?;
+
+			// *** No Fail beyond this point ***
+
 			Self::store_delegation_under_parent(
 				delegation_id,
 				DelegationNode::new_node(
@@ -397,6 +455,7 @@ pub mod pallet {
 						permissions,
 						revoked: false,
 					},
+					payer,
 				),
 				parent_id,
 				parent_node,
@@ -481,6 +540,83 @@ pub mod pallet {
 			)
 			.into())
 		}
+
+		// TODO: Try to merge this with `revoke_delegation` as much as possible after
+		// setting up unit tests.
+		/// Remove a delegation node (potentially a root node) and all its
+		/// children.
+		///
+		/// Removing a delegation node results in the trust hierarchy starting
+		/// from the given node being removed. Nevertheless, removal starts
+		/// from the leave nodes upwards, so if the operation ends prematurely
+		/// because it runs out of gas, the delegation state would be consistent
+		/// as no child would "survive" its parent. As a consequence, if the
+		/// given node is removed, the trust hierarchy with the node as root is
+		/// to be considered removed.
+		///
+		/// The dispatch origin must be `DelegationEntityId`.
+		///
+		/// Emits C * `DelegationRevoked`.
+		///
+		/// # <weight>
+		/// Weight: O(C) where C is the number of children of the delegation
+		/// node which is bounded by `max_children`.
+		/// - Reads: [Origin Account], Roots, C * Delegations, C * Children.
+		/// - Writes: Roots, C * Delegations
+		/// # </weight>
+		#[pallet::weight(
+			<T as Config>::WeightInfo::revoke_delegation_root_child(*max_revocations, *max_parent_checks)
+				.max(<T as Config>::WeightInfo::revoke_delegation_leaf(*max_revocations, *max_parent_checks)))]
+		pub fn remove_delegation(
+			origin: OriginFor<T>,
+			delegation_id: DelegationNodeIdOf<T>,
+			max_parent_checks: u32,
+			max_revocations: u32,
+		) -> DispatchResultWithPostInfo {
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let sender = source.sender();
+			let invoker = source.subject();
+
+			let deposit_owner = <DelegationNodes<T>>::get(&delegation_id)
+				.ok_or(Error::<T>::DelegationNotFound)?
+				.deposit
+				.owner;
+
+			ensure!(
+				deposit_owner == sender || deposit_owner == invoker.clone().into(),
+				Error::<T>::UnauthorizedRemoval
+			);
+
+			ensure!(
+				max_parent_checks <= T::MaxParentChecks::get(),
+				Error::<T>::MaxParentChecksTooLarge
+			);
+
+			ensure!(
+				max_revocations <= T::MaxRevocations::get(),
+				Error::<T>::MaxRevocationsTooLarge
+			);
+
+			let (authorized, parent_checks) = Self::is_delegating(&invoker, &delegation_id, max_parent_checks)?;
+			ensure!(authorized, Error::<T>::UnauthorizedRevocation);
+
+			// Remove the delegation and recursively all of its children (add 1 to
+			// max_revocations to account for the node itself)
+			let (removal_checks, _) = Self::remove(&delegation_id, max_revocations.saturating_add(1))?;
+
+			// If the removed node is a root node, emit also a HierarchyRemoved event.
+			if DelegationHierarchies::<T>::contains_key(&delegation_id) {
+				Self::deposit_event(Event::HierarchyRemoved(invoker, delegation_id));
+			}
+
+			// Add worst case reads from `is_delegating`
+			Ok(Some(
+				<T as Config>::WeightInfo::revoke_delegation_root_child(removal_checks, parent_checks).max(
+					<T as Config>::WeightInfo::revoke_delegation_leaf(removal_checks, parent_checks),
+				),
+			)
+			.into())
+		}
 	}
 }
 
@@ -505,23 +641,29 @@ impl<T: Config> Pallet<T> {
 		T::Hashing::hash(&hashed_values)
 	}
 
-	// Creates a new root node with the given details and store the new hierarchy in
-	// the hierarchies storage and the new root node in the nodes storage.
+	/// Creates a new root node with the given details and store the new
+	/// hierarchy in the hierarchies storage and the new root node in the nodes
+	/// storage.
 	fn create_and_store_new_hierarchy(
 		root_id: DelegationNodeIdOf<T>,
 		hierarchy_details: DelegationHierarchyDetails<T>,
 		hierarchy_owner: DelegatorIdOf<T>,
+		deposit_owner: AccountIdOf<T>,
 	) {
-		let root_node = DelegationNode::new_root_node(root_id, DelegationDetails::default_with_owner(hierarchy_owner));
+		let root_node = DelegationNode::new_root_node(
+			root_id,
+			DelegationDetails::default_with_owner(hierarchy_owner),
+			deposit_owner,
+		);
 		<DelegationNodes<T>>::insert(root_id, root_node);
 		<DelegationHierarchies<T>>::insert(root_id, hierarchy_details);
 	}
 
-	// Adds the given node to the storage and updates the parent node to include the
-	// given node as child.
-	//
-	// This function assumes that the parent node is already stored on the chain. If
-	// not, the behaviour of the system is undefined.
+	/// Adds the given node to the storage and updates the parent node to
+	/// include the given node as child.
+	///
+	/// This function assumes that the parent node is already stored on the
+	/// chain. If not, the behaviour of the system is undefined.
 	fn store_delegation_under_parent(
 		delegation_id: DelegationNodeIdOf<T>,
 		delegation_node: DelegationNode<T>,
@@ -581,8 +723,8 @@ impl<T: Config> Pallet<T> {
 	/// # <weight>
 	/// Weight: O(C) where C is the number of children of the delegation node
 	/// which is bounded by `max_children`.
-	/// - Reads: C * Children, C * Delegations
-	/// - Writes: C * Delegations
+	/// - Reads: C * Delegations
+	/// - Writes: C * Delegations (indirectly in `revoke`)
 	/// # </weight>
 	fn revoke_children(
 		delegation: &DelegationNodeIdOf<T>,
@@ -655,5 +797,89 @@ impl<T: Config> Pallet<T> {
 			revocations = revocations.saturating_add(1);
 		}
 		Ok((revocations, consumed_weight))
+	}
+
+	// TODO: Try to merge this with `revoke_children` as much as possible after
+	// setting up unit tests.
+	/// Removes all children of a delegation.
+	/// Returns the number of removed delegations and the consumed weight.
+	///
+	/// # <weight>
+	/// Weight: O(C) where C is the number of children of the delegation node
+	/// which is bounded by `max_children`.
+	/// - Reads: C * Delegations
+	/// # </weight>
+	fn remove_children(delegation: &DelegationNodeIdOf<T>, max_removals: u32) -> Result<(u32, Weight), DispatchError> {
+		let mut removals: u32 = 0;
+		let mut consumed_weight: Weight = 0;
+		// Can't clear storage until we have reached a leaf
+		if let Some(delegation_node) = <DelegationNodes<T>>::get(delegation) {
+			// Iterate and remove all children
+			for child in delegation_node.children.iter() {
+				let remaining_removals = max_removals
+					.checked_sub(removals)
+					.ok_or(Error::<T>::ExceededRemovalBounds)?;
+
+				// Check whether we ran out of gas
+				ensure!(remaining_removals > 0, Error::<T>::ExceededRemovalBounds);
+
+				Self::remove(child, remaining_removals).map(|(r, w)| {
+					removals = removals.saturating_add(r);
+					consumed_weight = consumed_weight.saturating_add(w);
+				})?;
+			}
+		}
+		Ok((removals, consumed_weight.saturating_add(T::DbWeight::get().reads(1))))
+	}
+
+	// TODO: Try to merge this with `revoke` as much as possible after setting
+	// up unit tests.
+	/// Revoke a delegation and all of its children recursively.
+	///
+	/// Emits DelegationRevoked for each revoked node.
+	///
+	/// # <weight>
+	/// Weight: O(C) where C is the number of children of the root which is
+	/// bounded by `max_children`.
+	/// - Reads: 2 * C * Delegations, C * Balance
+	/// - Writes: C * Delegations, C * Balance
+	/// # </weight>
+	fn remove(delegation: &DelegationNodeIdOf<T>, max_removals: u32) -> Result<(u32, Weight), DispatchError> {
+		let mut removals: u32 = 0;
+		let mut consumed_weight: Weight = 0;
+		// Retrieve delegation node from storage
+		// Storage removal has to be postponed until children have been removed
+		let delegation_node = <DelegationNodes<T>>::get(*delegation).ok_or(Error::<T>::DelegationNotFound)?;
+		consumed_weight = consumed_weight.saturating_add(T::DbWeight::get().reads(1));
+
+		// First remove all children recursively
+		let remaining_removals = max_removals.checked_sub(1).ok_or(Error::<T>::ExceededRemovalBounds)?;
+		Self::remove_children(delegation, remaining_removals).map(|(r, w)| {
+			removals = removals.saturating_add(r);
+			consumed_weight = consumed_weight.saturating_add(w);
+		})?;
+
+		// If we run out of removal gas, we only remove children. The tree will be
+		// changed but is still valid.
+		ensure!(removals < max_removals, Error::<T>::ExceededRemovalBounds);
+
+		// *** No Fail beyond this point ***
+
+		// We can clear storage now that all children have been removed
+		<DelegationNodes<T>>::remove(*delegation);
+
+		// Unreserve deposit
+		let Deposit::<T::AccountId, BalanceOf<T>> {
+			owner: deposit_payer,
+			amount: deposit_amount,
+		} = delegation_node.deposit;
+		let err_amount = CurrencyOf::<T>::unreserve(&deposit_payer, deposit_amount);
+		debug_assert!(err_amount.is_zero());
+		consumed_weight = consumed_weight.saturating_add(T::DbWeight::get().reads_writes(1, 2));
+
+		// Deposit event that the delegation has been revoked
+		Self::deposit_event(Event::DelegationRemoved(deposit_payer, *delegation));
+		removals = removals.saturating_add(1);
+		Ok((removals, consumed_weight))
 	}
 }

@@ -16,6 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use crate::pallet::AccountIdOf;
 use bitflags::bitflags;
 use codec::{Decode, Encode};
 use ctype::CtypeHashOf;
@@ -69,17 +70,35 @@ pub struct DelegationNode<T: Config> {
 	pub children: BoundedBTreeSet<DelegationNodeIdOf<T>, T::MaxChildren>,
 	/// The additional information attached to the delegation node.
 	pub details: DelegationDetails<T>,
+	// TODO:
+	pub deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
+}
+
+/// A deposit which needs to be reserved over the lifetime of storing the
+/// delegation.
+#[derive(Clone, Debug, Encode, Decode, PartialEq)]
+pub struct Deposit<Account, Balance> {
+	pub owner: Account,
+	pub amount: Balance,
 }
 
 impl<T: Config> DelegationNode<T> {
 	/// Creates a new delegation root node with the given ID and delegation
 	/// details.
-	pub fn new_root_node(id: DelegationNodeIdOf<T>, details: DelegationDetails<T>) -> Self {
+	pub fn new_root_node(
+		id: DelegationNodeIdOf<T>,
+		details: DelegationDetails<T>,
+		deposit_owner: AccountIdOf<T>,
+	) -> Self {
 		Self {
 			hierarchy_root_id: id,
 			parent: None,
 			children: BoundedBTreeSet::<DelegationNodeIdOf<T>, T::MaxChildren>::new(),
 			details,
+			deposit: Deposit::<AccountIdOf<T>, BalanceOf<T>> {
+				owner: deposit_owner,
+				amount: T::Deposit::get(),
+			},
 		}
 	}
 
@@ -89,12 +108,17 @@ impl<T: Config> DelegationNode<T> {
 		hierarchy_root_id: DelegationNodeIdOf<T>,
 		parent: DelegationNodeIdOf<T>,
 		details: DelegationDetails<T>,
+		deposit_owner: AccountIdOf<T>,
 	) -> Self {
 		Self {
 			hierarchy_root_id,
 			parent: Some(parent),
 			children: BoundedBTreeSet::<DelegationNodeIdOf<T>, T::MaxChildren>::new(),
 			details,
+			deposit: Deposit::<AccountIdOf<T>, BalanceOf<T>> {
+				owner: deposit_owner,
+				amount: T::Deposit::get(),
+			},
 		}
 	}
 
