@@ -373,23 +373,13 @@ impl ExtBuilder {
 			sp_io::TestExternalities::new(storage)
 		};
 
-		if !self.dids_stored.is_empty() {
-			ext.execute_with(|| {
-				self.dids_stored.iter().for_each(|did| {
-					did::Did::<Test>::insert(did.0.clone(), did.1.clone());
-				})
-			});
-		}
-
-		if !self.deleted_dids.is_empty() {
-			ext.execute_with(|| {
-				self.deleted_dids.iter().for_each(|did| {
-					did::DeletedDids::<Test>::insert(did.clone(), ());
-				})
-			})
-		}
-
 		ext.execute_with(|| {
+			for did in self.dids_stored.iter() {
+				did::Did::<Test>::insert(did.0.clone(), did.1.clone());
+			}
+			for did in self.deleted_dids.iter() {
+				did::DidBlacklist::<Test>::insert(did.clone(), ());
+			}
 			did::StorageVersion::<Test>::set(self.storage_version);
 		});
 

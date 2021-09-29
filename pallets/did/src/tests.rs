@@ -1635,7 +1635,7 @@ fn check_tx_block_number_too_low_error() {
 					Box::new(call_operation.operation.clone()),
 					did::DidSignature::from(signature.clone())
 				),
-				did::Error::<Test>::InvalidOperationValidity
+				did::Error::<Test>::TransactionExpired
 			);
 
 			// But it would work if the system would be one block earlier.
@@ -1679,7 +1679,7 @@ fn check_tx_block_number_too_high_error() {
 					Box::new(call_operation.operation.clone()),
 					did::DidSignature::from(signature.clone())
 				),
-				did::Error::<Test>::InvalidOperationValidity
+				did::Error::<Test>::TransactionExpired
 			);
 		});
 }

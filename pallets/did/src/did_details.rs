@@ -309,7 +309,7 @@ impl<T: Config> DidDetails<T> {
 			service_endpoints.validate_against_config_limits()?;
 		}
 
-		let current_block_number = <frame_system::Pallet<T>>::block_number();
+		let current_block_number = frame_system::Pallet::<T>::block_number();
 
 		// Creates a new DID with the given authentication key.
 		let mut new_did_details = DidDetails::new(new_auth_key, current_block_number)?;

@@ -87,7 +87,7 @@ pub enum SignatureError {
 	/// The operation nonce is not equal to the current DID nonce + 1.
 	InvalidNonce,
 	/// The provided operation block number is not valid.
-	InvalidBlockNumber,
+	TransactionExpired,
 }
 
 /// Error generated when validating a byte-encoded endpoint URL.
