@@ -75,6 +75,9 @@ pub const INFLATION_CONFIG: (Perquintill, Perquintill, Perquintill, Perquintill)
 	Perquintill::from_percent(8),
 );
 
+pub const ATTESTATION_DEPOSIT: Balance = 100 * MILLI_KILT;
+pub const DELEGATION_DEPOSIT: Balance = 100 * MILLI_KILT;
+
 pub mod staking {
 	#[cfg(not(feature = "fast-gov"))]
 	use super::{DAYS, HOURS};

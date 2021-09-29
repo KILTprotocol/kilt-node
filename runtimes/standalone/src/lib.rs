@@ -31,7 +31,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use frame_system::EnsureSigned;
 
 use kilt_primitives::{
-	constants::{KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
+	constants::{ATTESTATION_DEPOSIT, DELEGATION_DEPOSIT, KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature,
 };
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
@@ -337,7 +337,7 @@ impl pallet_sudo::Config for Runtime {
 parameter_types! {
 	// TODO: Find reasonable number
 	pub const MaxDelegatedAttestations: u32 = 1000;
-	pub const AttestationDeposit: Balance = 100 * MILLI_KILT;
+	pub const AttestationDeposit: Balance = ATTESTATION_DEPOSIT;
 }
 
 impl attestation::Config for Runtime {
@@ -358,6 +358,7 @@ parameter_types! {
 	// TODO: Find reasonable number
 	#[derive(Clone)]
 	pub const MaxChildren: u32 = 1000;
+	pub const DelegationDeposit: Balance = DELEGATION_DEPOSIT;
 }
 
 impl delegation::Config for Runtime {
@@ -373,6 +374,8 @@ impl delegation::Config for Runtime {
 	type MaxRevocations = MaxRevocations;
 	type MaxChildren = MaxChildren;
 	type WeightInfo = ();
+	type Currency = Balances;
+	type Deposit = DelegationDeposit;
 }
 
 impl ctype::Config for Runtime {

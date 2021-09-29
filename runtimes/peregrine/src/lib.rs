@@ -42,8 +42,8 @@ use kilt_primitives::{
 			SPEND_PERIOD, TECHNICAL_MOTION_DURATION, VOTING_PERIOD,
 		},
 		staking::{DEFAULT_BLOCKS_PER_ROUND, MAX_CANDIDATES, MIN_BLOCKS_PER_ROUND, MIN_COLLATORS, STAKE_DURATION},
-		AVERAGE_ON_INITIALIZE_RATIO, KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT,
-		NORMAL_DISPATCH_RATIO, SLOT_DURATION,
+		ATTESTATION_DEPOSIT, AVERAGE_ON_INITIALIZE_RATIO, DELEGATION_DEPOSIT, KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT,
+		MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, NORMAL_DISPATCH_RATIO, SLOT_DURATION,
 	},
 	AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Hash, Header, Index, Signature,
 };
@@ -537,7 +537,7 @@ impl<R: did::Config> delegation::VerifyDelegateSignature for DelegationSignature
 
 parameter_types! {
 	pub const MaxDelegatedAttestations: u32 = 1000;
-	pub const AttestationDeposit: Balance = 100 * MILLI_KILT;
+	pub const AttestationDeposit: Balance = ATTESTATION_DEPOSIT;
 }
 
 impl attestation::Config for Runtime {
@@ -558,6 +558,7 @@ parameter_types! {
 	// TODO: Find reasonable number
 	#[derive(Clone)]
 	pub const MaxChildren: u32 = 1000;
+	pub const DelegationDeposit: Balance = DELEGATION_DEPOSIT;
 }
 
 impl delegation::Config for Runtime {
@@ -573,6 +574,8 @@ impl delegation::Config for Runtime {
 	type MaxRevocations = MaxRevocations;
 	type MaxChildren = MaxChildren;
 	type WeightInfo = weights::delegation::WeightInfo<Runtime>;
+	type Currency = Balances;
+	type Deposit = DelegationDeposit;
 }
 
 impl ctype::Config for Runtime {
