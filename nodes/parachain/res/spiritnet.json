@@ -5,6 +5,8 @@
   "bootNodes": [
     "/dns4/bootnode.kilt.io/tcp/30390/p2p/12D3KooWEViDAJgLbeB5hg1KBNg42Ys2V5C6FTCCv6jJXCft41g9",
     "/dns4/bootnode.kilt.io/tcp/30391/p2p/12D3KooWQaP87gsVDjALr85bvF3HRdt2gN3ddDMrKbUkTvtoYNmj",
+    "/dns4/hetzner-1.kilt.io/tcp/30333/p2p/12D3KooWKU8ehzuKAzHEMCy4i4kpJtgCFBCYYhqcub4Y1HR8FRoT",
+    "/dns4/hetzner-2.kilt.io/tcp/30333/p2p/12D3KooWDJzJ7TRNKvE2DWXMSSsoKR5TgxsnNy3W1eCBPveX6g9i",
     "/dns4/node-6840851017335005184-0.p2p.onfinality.io/tcp/13675/ws/p2p/12D3KooWP87Kz2W56vrnDaK9Ma7M23qQaBoGBAToNASQcuJHciMS",
     "/dns4/node-6840569230186737664-0.p2p.onfinality.io/tcp/11578/ws/p2p/12D3KooWQapPfoSDxLBnsVZmpRA1yNApXEAEuhexPcFa7fECqpHa",
     "/dns4/node-6840538829839884288-0.p2p.onfinality.io/tcp/10379/ws/p2p/12D3KooWMpqeRDxLVS2WsrPos9ZNa2KvSJNjGXrXdziWuScfoBDh",
