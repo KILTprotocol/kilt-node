@@ -29,7 +29,14 @@ use crate::*;
 const ONE_CHILD_PER_LEVEL: Option<NonZeroU32> = NonZeroU32::new(1);
 
 benchmarks! {
-	where_clause { where T: core::fmt::Debug, T::AccountId: From<sr25519::Public> + Into<T::DelegationEntityId>, T::DelegationNodeId: From<T::Hash>, T::Signature: From<MultiSignature> }
+	where_clause {
+		where
+		T: core::fmt::Debug,
+		T::AccountId: From<sr25519::Public> + Into<T::DelegationEntityId>,
+		T::DelegationNodeId: From<T::Hash>,
+		T::Signature: From<MultiSignature>,
+		T::CtypeCreatorId: From<T::AccountId>,
+	}
 
 	add {
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
@@ -46,7 +53,7 @@ benchmarks! {
 			attester: delegate_acc.into(),
 			delegation_id: Some(delegation_id),
 			revoked: false,
-			deposit: Deposit {
+			deposit: kilt_support::deposit::Deposit {
 				owner: delegate_public.into(),
 				amount: T::Deposit::get(),
 			}
@@ -75,7 +82,7 @@ benchmarks! {
 			attester: delegate_acc.into(),
 			delegation_id: Some(delegation_id),
 			revoked: true,
-			deposit: Deposit {
+			deposit: kilt_support::deposit::Deposit {
 				owner: delegate_public.into(),
 				amount: T::Deposit::get(),
 			}

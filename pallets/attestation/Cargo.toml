@@ -59,6 +59,7 @@ runtime-benchmarks = [
   "frame-system/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "sp-core",
+  "delegation/runtime-benchmarks",
 ]
 std = [
   "codec/std",
@@ -67,6 +68,7 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "kilt-primitives/std",
+  "pallet-balances/std",
   "log/std",
   "sp-core/std",
   "sp-io/std",
