@@ -53,7 +53,6 @@ fn check_successful_simple_ed25519_creation() {
 		assert!(stored_did
 			.public_keys
 			.contains_key(&generate_key_id(&auth_did_key.into())));
-		assert_eq!(stored_did.service_endpoints, None);
 		assert_eq!(stored_did.last_tx_counter, 0u64);
 	});
 }
@@ -85,7 +84,6 @@ fn check_successful_simple_sr25519_creation() {
 		assert!(stored_did
 			.public_keys
 			.contains_key(&generate_key_id(&auth_did_key.into())));
-		assert_eq!(stored_did.service_endpoints, None);
 		assert_eq!(stored_did.last_tx_counter, 0u64);
 	});
 }
@@ -117,7 +115,6 @@ fn check_successful_simple_ecdsa_creation() {
 		assert!(stored_did
 			.public_keys
 			.contains_key(&generate_key_id(&auth_did_key.into())));
-		assert_eq!(stored_did.service_endpoints, None);
 		assert_eq!(stored_did.last_tx_counter, 0u64);
 	});
 }
@@ -136,12 +133,10 @@ fn check_successful_complete_creation() {
 	.expect("Exceeded BoundedBTreeSet bounds when creating new key agreement keys");
 	let del_key = get_sr25519_delegation_key(true);
 	let att_key = get_ecdsa_attestation_key(true);
-	let new_service_endpoints = get_service_endpoints::<Test>(1, 10);
 	let mut details = generate_base_did_creation_details::<Test>(alice_did.clone());
 	details.new_key_agreement_keys = enc_keys.clone();
 	details.new_attestation_key = Some(did::DidVerificationKey::from(att_key.public()));
 	details.new_delegation_key = Some(did::DidVerificationKey::from(del_key.public()));
-	details.new_service_endpoints = Some(new_service_endpoints.clone());
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
@@ -188,12 +183,6 @@ fn check_successful_complete_creation() {
 		assert!(stored_did
 			.public_keys
 			.contains_key(&generate_key_id(&details.new_delegation_key.clone().unwrap().into())));
-		assert!(stored_did.service_endpoints.is_some());
-		assert_eq!(stored_did.service_endpoints.clone().unwrap().urls.len(), 1);
-		assert_eq!(
-			stored_did.service_endpoints.unwrap().urls[0],
-			new_service_endpoints.urls[0]
-		);
 	});
 }
 
@@ -306,48 +295,6 @@ fn check_max_limit_key_agreement_keys_did_creation() {
 		assert_noop!(
 			Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature),),
 			did::Error::<Test>::MaxKeyAgreementKeysLimitExceeded
-		);
-	});
-}
-
-#[test]
-#[should_panic = "Failed to create default URL with provided length"]
-fn check_url_too_long_did_creation() {
-	let auth_key = get_sr25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
-	// Max URL length allowed + 1
-	let service_endpoints = get_service_endpoints::<Test>(1, MaxUrlLength::get().saturating_add(1));
-
-	let mut details = generate_base_did_creation_details::<Test>(alice_did);
-	details.new_service_endpoints = Some(service_endpoints);
-
-	let signature = auth_key.sign(details.encode().as_ref());
-
-	ExtBuilder::default().build(None).execute_with(|| {
-		assert_noop!(
-			Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature),),
-			did::Error::<Test>::MaxUrlLengthExceeded
-		);
-	});
-}
-
-#[test]
-#[should_panic = "Exceeded max endpoint urls when creating service endpoints"]
-fn check_too_many_urls_did_creation() {
-	let auth_key = get_sr25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
-	// Max number of URLs allowed + 1
-	let service_endpoints = get_service_endpoints(MaxEndpointUrlsCount::get().saturating_add(1), 10);
-
-	let mut details = generate_base_did_creation_details(alice_did);
-	details.new_service_endpoints = Some(service_endpoints);
-
-	let signature = auth_key.sign(details.encode().as_ref());
-
-	ExtBuilder::default().build(None).execute_with(|| {
-		assert_noop!(
-			Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature),),
-			did::Error::<Test>::MaxUrlsCountExceeded
 		);
 	});
 }
@@ -1279,127 +1226,6 @@ fn check_key_not_found_key_agreement_key_deletion_error() {
 			assert_noop!(
 				Did::remove_key_agreement_key(Origin::signed(alice_did.clone()), generate_key_id(&test_enc_key.into()),),
 				did::Error::<Test>::VerificationKeyNotPresent
-			);
-		});
-}
-
-#[test]
-fn check_successful_service_endpoints_update() {
-	let auth_key = get_ed25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let new_service_endpoints = get_service_endpoints::<Test>(1, 10);
-
-	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
-
-	ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.build(None)
-		.execute_with(|| {
-			assert_ok!(Did::set_service_endpoints(
-				Origin::signed(alice_did.clone()),
-				new_service_endpoints.clone(),
-			));
-			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
-			// Check for new service endpoints
-			assert!(new_did_details.service_endpoints.is_some());
-			assert_eq!(new_did_details.service_endpoints.clone().unwrap().urls.len(), 1);
-			assert_eq!(
-				new_did_details.service_endpoints.unwrap().urls[0],
-				new_service_endpoints.urls[0]
-			);
-		});
-}
-
-#[test]
-#[should_panic = "Failed to create default URL with provided length"]
-fn check_url_too_long_endpoint_update_error() {
-	let auth_key = get_sr25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
-	// Max URL length allowed + 1
-	let new_service_endpoints = get_service_endpoints::<Test>(1, MaxUrlLength::get().saturating_add(1));
-
-	let did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-
-	ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), did_details)])
-		.build(None)
-		.execute_with(|| {
-			assert_noop!(
-				Did::set_service_endpoints(Origin::signed(alice_did.clone()), new_service_endpoints,),
-				did::Error::<Test>::MaxUrlLengthExceeded
-			);
-		});
-}
-
-#[test]
-#[should_panic = "Exceeded max endpoint urls when creating service endpoints"]
-fn check_too_many_urls_endpoint_update_error() {
-	let auth_key = get_sr25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
-	// Max number of URLs allowed + 1
-	let new_service_endpoints = get_service_endpoints(MaxEndpointUrlsCount::get().saturating_add(1), 10);
-
-	let did_details = generate_base_did_details(did::DidVerificationKey::from(auth_key.public()));
-
-	ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), did_details)])
-		.build(None)
-		.execute_with(|| {
-			assert_noop!(
-				Did::set_service_endpoints(Origin::signed(alice_did.clone()), new_service_endpoints,),
-				did::Error::<Test>::MaxUrlsCountExceeded
-			);
-		});
-}
-
-#[test]
-fn check_successful_service_endpoints_deletion() {
-	let auth_key = get_ed25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let service_endpoints = get_service_endpoints::<Test>(1, 10);
-
-	let mut old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
-	old_did_details.service_endpoints = Some(service_endpoints);
-
-	ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.build(None)
-		.execute_with(|| {
-			assert_ok!(Did::remove_service_endpoints(Origin::signed(alice_did.clone())));
-
-			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
-			// Check for new service endpoints
-			assert!(new_did_details.service_endpoints.is_none());
-		});
-}
-
-#[test]
-fn check_did_not_present_service_endpoints_deletion_error() {
-	let auth_key = get_ed25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-
-	ExtBuilder::default().build(None).execute_with(|| {
-		assert_noop!(
-			Did::remove_service_endpoints(Origin::signed(alice_did.clone())),
-			did::Error::<Test>::DidNotPresent
-		);
-	});
-}
-
-#[test]
-fn check_endpoints_not_present_service_endpoints_deletion_error() {
-	let auth_key = get_ed25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-
-	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
-
-	ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.build(None)
-		.execute_with(|| {
-			assert_noop!(
-				Did::remove_service_endpoints(Origin::signed(alice_did.clone())),
-				did::Error::<Test>::DidFragmentNotPresent
 			);
 		});
 }
@@ -2396,142 +2222,4 @@ fn check_invalid_signature_operation_verification() {
 				did::DidError::SignatureError(did::SignatureError::InvalidSignature)
 			);
 		});
-}
-
-// Internal function: did::HttpUrl try_from
-
-#[test]
-fn check_http_url() {
-	assert_ok!(did::HttpUrl::<Test>::try_from("http://kilt.io".as_bytes()));
-
-	assert_ok!(did::HttpUrl::<Test>::try_from("https://kilt.io".as_bytes()));
-
-	assert_ok!(did::HttpUrl::<Test>::try_from(
-		"https://super.long.domain.kilt.io:12345/public/files/test.txt".as_bytes()
-	));
-
-	// All other valid ASCII characters
-	assert_ok!(did::HttpUrl::<Test>::try_from(
-		"http://:/?#[]@!$&'()*+,;=-._~".as_bytes()
-	));
-
-	assert_eq!(
-		did::HttpUrl::<Test>::try_from("".as_bytes()),
-		Err(did::DidError::UrlError(did::UrlError::InvalidUrlScheme))
-	);
-
-	// Non-printable ASCII characters
-	assert_eq!(
-		did::HttpUrl::<Test>::try_from("http://kilt.io/\x00".as_bytes()),
-		Err(did::DidError::UrlError(did::UrlError::InvalidUrlEncoding))
-	);
-
-	// Some invalid ASCII characters
-	assert_eq!(
-		did::HttpUrl::<Test>::try_from("http://kilt.io/<tag>".as_bytes()),
-		Err(did::DidError::UrlError(did::UrlError::InvalidUrlEncoding))
-	);
-
-	// Non-ASCII characters
-	assert_eq!(
-		did::HttpUrl::<Test>::try_from("http://¶.com".as_bytes()),
-		Err(did::DidError::UrlError(did::UrlError::InvalidUrlEncoding))
-	);
-
-	assert_eq!(
-		did::HttpUrl::<Test>::try_from("htt://kilt.io".as_bytes()),
-		Err(did::DidError::UrlError(did::UrlError::InvalidUrlScheme))
-	);
-
-	assert_eq!(
-		did::HttpUrl::<Test>::try_from("httpss://kilt.io".as_bytes()),
-		Err(did::DidError::UrlError(did::UrlError::InvalidUrlScheme))
-	);
-}
-
-// Internal function: did::FtpUrl try_from
-
-#[test]
-fn check_ftp_url() {
-	assert_ok!(did::FtpUrl::<Test>::try_from("ftp://kilt.io".as_bytes()));
-
-	assert_ok!(did::FtpUrl::<Test>::try_from("ftps://kilt.io".as_bytes()));
-
-	assert_ok!(did::FtpUrl::<Test>::try_from(
-		"ftps://user@super.long.domain.kilt.io:12345/public/files/test.txt".as_bytes()
-	));
-
-	// All other valid ASCII characters
-	assert_ok!(did::FtpUrl::<Test>::try_from(
-		"ftps://:/?#[]@%!$&'()*+,;=-._~".as_bytes()
-	));
-
-	assert_eq!(
-		did::FtpUrl::<Test>::try_from("".as_bytes()),
-		Err(did::DidError::UrlError(did::UrlError::InvalidUrlScheme))
-	);
-
-	// Non-printable ASCII characters
-	assert_eq!(
-		did::HttpUrl::<Test>::try_from("http://kilt.io/\x00".as_bytes()),
-		Err(did::DidError::UrlError(did::UrlError::InvalidUrlEncoding))
-	);
-
-	// Some invalid ASCII characters
-	assert_eq!(
-		did::FtpUrl::<Test>::try_from("ftp://kilt.io/<tag>".as_bytes()),
-		Err(did::DidError::UrlError(did::UrlError::InvalidUrlEncoding))
-	);
-
-	// Non-ASCII characters
-	assert_eq!(
-		did::FtpUrl::<Test>::try_from("ftps://¶.com".as_bytes()),
-		Err(did::DidError::UrlError(did::UrlError::InvalidUrlEncoding))
-	);
-
-	assert_eq!(
-		did::FtpUrl::<Test>::try_from("ft://kilt.io".as_bytes()),
-		Err(did::DidError::UrlError(did::UrlError::InvalidUrlScheme))
-	);
-
-	assert_eq!(
-		did::HttpUrl::<Test>::try_from("ftpss://kilt.io".as_bytes()),
-		Err(did::DidError::UrlError(did::UrlError::InvalidUrlScheme))
-	);
-}
-
-// Internal function: did::IpfsUrl try_from
-
-#[test]
-fn check_ipfs_url() {
-	// Base58 address
-	assert_ok!(did::IpfsUrl::<Test>::try_from(
-		"ipfs://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()
-	));
-
-	// Base32 address (at the moment, padding characters can appear anywhere in the
-	// string)
-	assert_ok!(did::IpfsUrl::<Test>::try_from(
-		"ipfs://OQQHHHTGMMYDQQ364YB4GDE=HREJQL==".as_bytes()
-	));
-
-	assert_eq!(
-		did::IpfsUrl::<Test>::try_from("".as_bytes()),
-		Err(did::DidError::UrlError(did::UrlError::InvalidUrlScheme))
-	);
-
-	assert_eq!(
-		did::IpfsUrl::<Test>::try_from("ipfs://¶QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()),
-		Err(did::DidError::UrlError(did::UrlError::InvalidUrlEncoding))
-	);
-
-	assert_eq!(
-		did::IpfsUrl::<Test>::try_from("ipf://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQkL".as_bytes()),
-		Err(did::DidError::UrlError(did::UrlError::InvalidUrlScheme))
-	);
-
-	assert_eq!(
-		did::IpfsUrl::<Test>::try_from("ipfss://QmdQ1rHHHTbgbGorfuMMYDQQ36q4sxvYcB4GDEHREuJQk".as_bytes()),
-		Err(did::DidError::UrlError(did::UrlError::InvalidUrlScheme))
-	);
 }

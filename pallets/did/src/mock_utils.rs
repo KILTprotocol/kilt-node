@@ -18,16 +18,11 @@
 
 use crate::*;
 use did_details::*;
-use frame_support::{storage::bounded_btree_set::BoundedBTreeSet, BoundedVec};
-use kilt_primitives::Hash;
+use frame_support::{storage::bounded_btree_set::BoundedBTreeSet};
 use sp_std::{
 	collections::btree_set::BTreeSet,
 	convert::{TryFrom, TryInto},
-	vec,
 };
-
-pub(crate) const DEFAULT_URL_SCHEME: [u8; 8] = *b"https://";
-const DEFAULT_SERVICE_ENDPOINT_HASH_SEED: u64 = 200u64;
 
 pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> DidNewKeyAgreementKeySet<T> {
 	BoundedBTreeSet::try_from(
@@ -46,34 +41,12 @@ pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> DidNewKeyAgreementKeySe
 	.expect("Failed to convert key_agreement_keys to BoundedBTreeSet")
 }
 
-// Assumes that the length of the URL is larger than 8 (length of the prefix https://)
-pub fn get_service_endpoints<T: Config>(count: u32, length: u32) -> ServiceEndpoints<T> {
-	let total_length = usize::try_from(length).expect("Failed to convert URL max length value to usize value.");
-	let total_count = usize::try_from(count).expect("Failed to convert number (count) of URLs to usize value.");
-	let mut url_encoded_string = DEFAULT_URL_SCHEME.to_vec();
-	url_encoded_string.resize(total_length, b'0');
-	let url = Url::<T>::Http(
-		HttpUrl::try_from(url_encoded_string.as_ref()).expect("Failed to create default URL with provided length."),
-	);
-
-	ServiceEndpoints::<T> {
-		#[cfg(not(feature = "std"))]
-		content_hash: Hash::default(),
-		#[cfg(feature = "std")]
-		content_hash: Hash::from_low_u64_be(DEFAULT_SERVICE_ENDPOINT_HASH_SEED),
-		urls: BoundedVec::<Url<T>, T::MaxEndpointUrlsCount>::try_from(vec![url; total_count])
-			.expect("Exceeded max endpoint urls when creating service endpoints"),
-		content_type: ContentType::ApplicationJson,
-	}
-}
-
 pub fn generate_base_did_creation_details<T: Config>(did: DidIdentifierOf<T>) -> DidCreationDetails<T> {
 	DidCreationDetails {
 		did,
 		new_key_agreement_keys: BoundedBTreeSet::new(),
 		new_attestation_key: None,
 		new_delegation_key: None,
-		new_service_endpoints: None,
 	}
 }
 

@@ -347,7 +347,6 @@ pub mod pallet {
 			match error {
 				DidError::StorageError(storage_error) => Self::from(storage_error),
 				DidError::SignatureError(operation_error) => Self::from(operation_error),
-				DidError::UrlError(url_error) => Self::from(url_error),
 				DidError::InputError(input_error) => Self::from(input_error),
 				DidError::InternalError => Self::InternalError,
 			}
@@ -379,22 +378,11 @@ pub mod pallet {
 		}
 	}
 
-	impl<T> From<UrlError> for Error<T> {
-		fn from(error: UrlError) -> Self {
-			match error {
-				UrlError::InvalidUrlEncoding => Self::InvalidUrlEncoding,
-				UrlError::InvalidUrlScheme => Self::InvalidUrlScheme,
-			}
-		}
-	}
-
 	impl<T> From<InputError> for Error<T> {
 		fn from(error: InputError) -> Self {
 			match error {
 				InputError::MaxKeyAgreementKeysLimitExceeded => Self::MaxKeyAgreementKeysLimitExceeded,
 				InputError::MaxVerificationKeysToRemoveLimitExceeded => Self::MaxVerificationKeysToRemoveLimitExceeded,
-				InputError::MaxUrlLengthExceeded => Self::MaxUrlLengthExceeded,
-				InputError::MaxUrlsCountExceeded => Self::MaxUrlsCountExceeded,
 			}
 		}
 	}
