@@ -233,22 +233,13 @@ pub fn generate_base_attestation(attester: TestAttester) -> AttestationDetails<T
 	}
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct ExtBuilder {
 	attestations_stored: Vec<(TestClaimHash, AttestationDetails<Test>)>,
 	delegated_attestations_stored: Vec<(
 		TestDelegationNodeId,
 		BoundedVec<TestClaimHash, <Test as Config>::MaxDelegatedAttestations>,
 	)>,
-}
-
-impl Default for ExtBuilder {
-	fn default() -> Self {
-		Self {
-			attestations_stored: vec![],
-			delegated_attestations_stored: vec![],
-		}
-	}
 }
 
 impl ExtBuilder {

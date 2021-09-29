@@ -114,15 +114,9 @@ pub fn generate_base_ctype_creation_details() -> CtypeCreationDetails {
 	}
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct ExtBuilder {
 	ctypes_stored: Vec<(TestCtypeHash, TestCtypeOwner)>,
-}
-
-impl Default for ExtBuilder {
-	fn default() -> Self {
-		Self { ctypes_stored: vec![] }
-	}
 }
 
 impl ExtBuilder {
