@@ -23,13 +23,12 @@ use frame_system::RawOrigin;
 use kilt_primitives::AccountId;
 use sp_core::{crypto::KeyTypeId, ecdsa, ed25519, sr25519};
 use sp_io::crypto::{ecdsa_generate, ecdsa_sign, ed25519_generate, ed25519_sign, sr25519_generate, sr25519_sign};
-use sp_runtime::{traits::IdentifyAccount, MultiSigner, SaturatedConversion};
+use sp_runtime::{traits::IdentifyAccount, MultiSigner};
 
 use crate::{
 	did_details::*,
 	mock_utils::{
-		generate_base_did_creation_details, generate_base_did_details, get_key_agreement_keys,
-		DEFAULT_URL_SCHEME,
+		generate_base_did_creation_details, generate_base_did_details, get_key_agreement_keys
 	},
 	*,
 };
@@ -102,7 +101,6 @@ benchmarks! {
 	/* create extrinsic */
 	create_ed25519_keys {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
-		let u in (DEFAULT_URL_SCHEME.len().saturated_into::<u32>()) .. T::MaxUrlLength::get();
 
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
@@ -147,7 +145,6 @@ benchmarks! {
 	}
 	create_sr25519_keys {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
-		let u in (DEFAULT_URL_SCHEME.len().saturated_into::<u32>()) .. T::MaxUrlLength::get();
 
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
@@ -192,7 +189,6 @@ benchmarks! {
 	}
 	create_ecdsa_keys {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
-		let u in (DEFAULT_URL_SCHEME.len().saturated_into::<u32>()) .. T::MaxUrlLength::get();
 
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 

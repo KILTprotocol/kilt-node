@@ -81,7 +81,8 @@ impl<T: Config> VersionMigratorTrait<T> for DidStorageVersion {
 	fn post_migrate(&self) -> Result<(), &str> {
 		match *self {
 			Self::V1 => v1::post_migrate::<T>(),
-			Self::V2 => Ok(()),
+			Self::V2 => v2::post_migrate::<T>(),
+			Self::V3 => Ok(()),
 		}
 	}
 }

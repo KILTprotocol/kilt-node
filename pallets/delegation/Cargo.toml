@@ -61,6 +61,7 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "kilt-primitives/std",
+  "kilt-traits/std",
   "log/std",
   "sp-core/std",
   "sp-io/std",
@@ -70,5 +71,6 @@ std = [
 ]
 try-runtime = [
   "frame-support/try-runtime",
+  "kilt-traits/try-runtime",
   "kilt-primitives/try-runtime",
 ]
