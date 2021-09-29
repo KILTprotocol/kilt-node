@@ -134,6 +134,7 @@ use frame_support::{
 use frame_system::ensure_signed;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::RawOrigin;
+use kilt_primitives::StorageMigrator;
 use sp_runtime::{traits::Saturating, SaturatedConversion};
 use sp_std::{boxed::Box, fmt::Debug, prelude::Clone};
 
@@ -233,16 +234,16 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		#[cfg(feature = "try-runtime")]
 		fn pre_upgrade() -> Result<(), &'static str> {
-			migrations::DidStorageMigrator::<T>::pre_migrate()
+			StorageMigrator::<DidStorageVersion, T>::pre_migrate(StorageVersion::<T>::get())
 		}
 
 		fn on_runtime_upgrade() -> Weight {
-			migrations::DidStorageMigrator::<T>::migrate()
+			StorageMigrator::<DidStorageVersion, T>::migrate(StorageVersion::<T>::get())
 		}
 
 		#[cfg(feature = "try-runtime")]
 		fn post_upgrade() -> Result<(), &'static str> {
-			migrations::DidStorageMigrator::<T>::post_migrate()
+			StorageMigrator::<DidStorageVersion, T>::post_migrate(StorageVersion::<T>::get())
 		}
 	}
 
