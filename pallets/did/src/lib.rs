@@ -107,11 +107,10 @@
 //! - The chain performs basic checks over the endpoint URLs provided in
 //!   creation and deletion operations. The SDK will perform more in-depth
 //!   validation of the URL string, e.g., by pattern-matching using regexes.
-//!   - After it is generated and signed by a client, a DID-authorised operation
-//!     can
-//!   be submitted for evaluation anytime between the time the operation is
-//! created   and [MaxBlocksTxValidity] blocks after that. After this time has
-//! elapsed,   the operation is considered invalid.
+//! - After it is generated and signed by a client, a DID-authorised operation
+//!   can be submitted for evaluation anytime between the time the operation is
+//!   created and [MaxBlocksTxValidity] blocks after that. After this time has
+//!   elapsed, the operation is considered invalid.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
@@ -835,7 +834,8 @@ pub mod pallet {
 				<Error<T>>::DidNotPresent
 			);
 
-			// Marking them as deleted and they're gone forever 👋👋👋
+			// Mark as deleted to prevent potential replay-attacks of re-adding a previously
+			// deleted DID.
 			<DeletedDids<T>>::insert(&did_subject, ());
 
 			log::debug!("Deleting DID {:?}", did_subject);
