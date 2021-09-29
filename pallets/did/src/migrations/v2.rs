@@ -20,6 +20,13 @@ use crate::*;
 
 use sp_runtime::traits::Zero;
 
+// Added for consistency even not (yet) unused.
+#[allow(dead_code)]
+type OldDidStorage<T> = deprecated::v2::storage::Did<T>;
+type OldDidDetails<T> = deprecated::v2::DidDetails<T>;
+type NewDidStorage<T> = Did<T>;
+type NewDidDetails<T> = DidDetails<T>;
+
 #[cfg(feature = "try-runtime")]
 pub(crate) fn pre_migrate<T: Config>() -> Result<(), &'static str> {
 	ensure!(
@@ -35,7 +42,7 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	log::info!("v2 -> v3 DID storage migrator started!");
 	let mut total_weight = Weight::zero();
 
-	Did::<T>::translate_values(|old_did_details: deprecated::v2::DidDetails<T>| {
+	NewDidStorage::<T>::translate_values(|old_did_details: OldDidDetails<T>| {
 		// Add a read from the old storage and a write for the new storage
 		total_weight = total_weight.saturating_add(T::DbWeight::get().reads_writes(1, 1));
 		Some(old_to_new_did_details(old_did_details))
@@ -50,8 +57,8 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	total_weight
 }
 
-fn old_to_new_did_details<T: Config>(old: deprecated::v2::DidDetails<T>) -> DidDetails<T> {
-	DidDetails {
+fn old_to_new_did_details<T: Config>(old: OldDidDetails<T>) -> NewDidDetails<T> {
+	NewDidDetails {
 		authentication_key: old.authentication_key,
 		key_agreement_keys: old.key_agreement_keys,
 		attestation_key: old.attestation_key,

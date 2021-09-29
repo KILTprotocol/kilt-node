@@ -18,7 +18,7 @@
 
 use crate::*;
 use did_details::*;
-use frame_support::{storage::bounded_btree_set::BoundedBTreeSet};
+use frame_support::storage::bounded_btree_set::BoundedBTreeSet;
 use sp_std::{
 	collections::btree_set::BTreeSet,
 	convert::{TryFrom, TryInto},

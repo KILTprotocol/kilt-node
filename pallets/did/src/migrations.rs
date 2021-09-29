@@ -42,6 +42,18 @@ impl DidStorageVersion {
 	}
 }
 
+impl Iterator for DidStorageVersion {
+	type Item = Self;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		match self {
+			DidStorageVersion::V1 => Some(DidStorageVersion::V2),
+			DidStorageVersion::V2 => Some(DidStorageVersion::V3),
+			DidStorageVersion::V3 => None,
+		}
+	}
+}
+
 // All nodes will default to this, which is not bad, as in case the "real"
 // version is a later one (i.e. the node has been started with already the
 // latest version), the migration will simply do nothing as there's nothing in
@@ -51,7 +63,7 @@ impl DidStorageVersion {
 // old version anymore.
 impl Default for DidStorageVersion {
 	fn default() -> Self {
-		Self::V3
+		Self::V1
 	}
 }
 

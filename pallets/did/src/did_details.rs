@@ -17,9 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::{Decode, Encode, WrapperTypeEncode};
-use frame_support::{
-	storage::{bounded_btree_map::BoundedBTreeMap, bounded_btree_set::BoundedBTreeSet}
-};
+use frame_support::storage::{bounded_btree_map::BoundedBTreeMap, bounded_btree_set::BoundedBTreeSet};
 use sp_core::{ecdsa, ed25519, sr25519};
 use sp_runtime::{traits::Verify, MultiSignature};
 use sp_std::{convert::TryInto, fmt};

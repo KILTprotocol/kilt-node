@@ -21,6 +21,12 @@ use crate::*;
 use frame_support::storage::StoragePrefixedMap;
 use sp_runtime::traits::Zero;
 
+#[cfg(test)]
+type OldDidStorage<T> = deprecated::v1::storage::Did<T>;
+type OldDidDetails<T> = deprecated::v1::DidDetails<T>;
+type NewDidStorage<T> = deprecated::v2::storage::Did<T>;
+type NewDidDetails<T> = deprecated::v2::DidDetails<T>;
+
 #[cfg(feature = "try-runtime")]
 pub(crate) fn pre_migrate<T: Config>() -> Result<(), &'static str> {
 	ensure!(
@@ -36,7 +42,7 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	log::info!("v1 -> v2 DID storage migrator started!");
 	let mut total_weight = Weight::zero();
 
-	deprecated::v2::storage::Did::<T>::translate_values(|old_did_details: deprecated::v1::DidDetails<T>| {
+	NewDidStorage::<T>::translate_values(|old_did_details: OldDidDetails<T>| {
 		// Add a read from the old storage and a write for the new storage
 		total_weight = total_weight.saturating_add(T::DbWeight::get().reads_writes(1, 1));
 		Some(old_to_new_did_details(old_did_details))
@@ -51,8 +57,8 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	total_weight
 }
 
-fn old_to_new_did_details<T: Config>(old: deprecated::v1::DidDetails<T>) -> deprecated::v2::DidDetails<T> {
-	deprecated::v2::DidDetails {
+fn old_to_new_did_details<T: Config>(old: OldDidDetails<T>) -> NewDidDetails<T> {
+	NewDidDetails {
 		authentication_key: old.authentication_key,
 		key_agreement_keys: old.key_agreement_keys,
 		attestation_key: old.attestation_key,
@@ -73,8 +79,7 @@ pub(crate) fn post_migrate<T: Config>() -> Result<(), &'static str> {
 		"The version after deployment is not 2 as expected."
 	);
 	ensure!(
-		!deprecated::v2::storage::Did::<T>::iter_values()
-			.any(|did_details| { did_details.service_endpoints.is_some() }),
+		!NewDidStorage::<T>::iter_values().any(|did_details| { did_details.service_endpoints.is_some() }),
 		"There are DIDs that do not have the new service endpoints set to None."
 	);
 	log::info!("Version storage migrated from v1 to v2");
@@ -89,8 +94,8 @@ mod tests {
 
 	use super::*;
 	use crate::mock::Test as TestRuntime;
-	use mock::{get_did_identifier_from_ed25519_key, get_ed25519_authentication_key, ExtBuilder};
 	use deprecated::v1::*;
+	use mock::{get_did_identifier_from_ed25519_key, get_ed25519_authentication_key, ExtBuilder};
 
 	#[test]
 	fn fail_version_higher() {
@@ -137,9 +142,9 @@ mod tests {
 				let auth_key = get_ed25519_authentication_key(true);
 				let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 				let alice_did_details =
-					deprecated::v1::DidDetails::<TestRuntime>::new(DidVerificationKey::from(auth_key.public()), 0);
+					OldDidDetails::<TestRuntime>::new(DidVerificationKey::from(auth_key.public()), 0);
 
-				deprecated::v1::storage::Did::insert(&alice_did, alice_did_details);
+				OldDidStorage::<TestRuntime>::insert(&alice_did, alice_did_details);
 
 				#[cfg(feature = "try-runtime")]
 				assert!(
@@ -155,7 +160,7 @@ mod tests {
 					"Post-migration for v1 should not fail."
 				);
 
-				let new_stored_details = deprecated::v2::storage::Did::<TestRuntime>::get(&alice_did)
+				let new_stored_details = NewDidStorage::<TestRuntime>::get(&alice_did)
 					.expect("New DID details should exist in the storage.");
 				assert!(new_stored_details.service_endpoints.is_none());
 			});
@@ -170,12 +175,12 @@ mod tests {
 				let auth_key = get_ed25519_authentication_key(true);
 				let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 				let mut alice_did_details =
-					deprecated::v1::DidDetails::<TestRuntime>::new(DidVerificationKey::from(auth_key.public()), 0);
-				alice_did_details.endpoint_url = Some(Url::Http(
-					HttpUrl { payload: b"https://kilt.io".to_vec() },
-				));
+					OldDidDetails::<TestRuntime>::new(DidVerificationKey::from(auth_key.public()), 0);
+				alice_did_details.endpoint_url = Some(Url::Http(HttpUrl {
+					payload: b"https://kilt.io".to_vec(),
+				}));
 
-				deprecated::v1::storage::Did::insert(&alice_did, alice_did_details);
+				OldDidStorage::<TestRuntime>::insert(&alice_did, alice_did_details);
 
 				#[cfg(feature = "try-runtime")]
 				assert!(
@@ -191,7 +196,7 @@ mod tests {
 					"Post-migration for v1 should not fail."
 				);
 
-				let new_stored_details = deprecated::v2::storage::Did::<TestRuntime>::get(&alice_did)
+				let new_stored_details = NewDidStorage::<TestRuntime>::get(&alice_did)
 					.expect("New DID details should exist in the storage.");
 				assert!(new_stored_details.service_endpoints.is_none());
 			});
