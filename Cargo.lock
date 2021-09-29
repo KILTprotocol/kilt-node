@@ -3731,7 +3731,7 @@ dependencies = [
 name = "kilt-support"
 version = "0.26.0"
 dependencies = [
- "parity-scale-codec",
+ "frame-support",
 ]
 
 [[package]]
@@ -6195,6 +6195,7 @@ dependencies = [
  "frame-system",
  "hex-literal 0.2.1",
  "kilt-primitives",
+ "kilt-traits",
  "log",
  "pallet-aura",
  "pallet-authorship",

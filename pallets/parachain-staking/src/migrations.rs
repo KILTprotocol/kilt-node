@@ -18,6 +18,7 @@
 #[cfg(feature = "try-runtime")]
 use frame_support::ensure;
 use frame_support::{dispatch::Weight, traits::Get};
+use kilt_traits::VersionMigratorTrait;
 use sp_runtime::{
 	codec::{Decode, Encode},
 	traits::Zero,
@@ -30,19 +31,6 @@ mod v2;
 mod v3;
 mod v4;
 mod v5;
-
-/// A trait that allows version migrators to access the underlying pallet's
-/// context, e.g., its Config trait.
-///
-/// In this way, the migrator can access the pallet's storage and the pallet's
-/// types directly.
-pub trait VersionMigratorTrait<T> {
-	#[cfg(feature = "try-runtime")]
-	fn pre_migrate(&self) -> Result<(), &str>;
-	fn migrate(&self) -> Weight;
-	#[cfg(feature = "try-runtime")]
-	fn post_migrate(&self) -> Result<(), &str>;
-}
 
 // A value placed in storage that represents the current version of the Staking
 // storage. This value is used by the `on_runtime_upgrade` logic to determine

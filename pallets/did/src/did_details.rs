@@ -18,10 +18,8 @@
 
 use codec::{Decode, Encode, WrapperTypeEncode};
 use frame_support::{
-	storage::{bounded_btree_map::BoundedBTreeMap, bounded_btree_set::BoundedBTreeSet},
-	BoundedVec,
+	storage::{bounded_btree_map::BoundedBTreeMap, bounded_btree_set::BoundedBTreeSet}
 };
-use kilt_primitives::Hash;
 use sp_core::{ecdsa, ed25519, sr25519};
 use sp_runtime::{traits::Verify, MultiSignature};
 use sp_std::{convert::TryInto, fmt};
@@ -256,9 +254,6 @@ pub struct DidDetails<T: Config> {
 	/// be used to create new attestations but can still be used to verify
 	/// previously issued attestations.
 	pub(crate) public_keys: DidPublicKeyMap<T>,
-	/// \[OPTIONAL\] The service endpoint details the DID
-	/// subject publicly exposes.
-	pub service_endpoints: Option<ServiceEndpoints<T>>,
 	/// The counter used to avoid replay attacks, which is checked and
 	/// updated upon each DID operation involving with the subject as the
 	/// creator.
@@ -287,7 +282,6 @@ impl<T: Config> DidDetails<T> {
 			key_agreement_keys: DidKeyAgreementKeySet::<T>::default(),
 			attestation_key: None,
 			delegation_key: None,
-			service_endpoints: None,
 			public_keys,
 			last_tx_counter: 0u64,
 		})
@@ -305,11 +299,7 @@ impl<T: Config> DidDetails<T> {
 			InputError::MaxKeyAgreementKeysLimitExceeded
 		);
 
-		if let Some(ref service_endpoints) = details.new_service_endpoints {
-			service_endpoints.validate_against_config_limits()?;
-		}
-
-		let current_block_number = frame_system::Pallet::<T>::block_number();
+		let current_block_number = <frame_system::Pallet<T>>::block_number();
 
 		// Creates a new DID with the given authentication key.
 		let mut new_did_details = DidDetails::new(new_auth_key, current_block_number)?;
@@ -323,8 +313,6 @@ impl<T: Config> DidDetails<T> {
 		if let Some(delegation_key) = details.new_delegation_key {
 			new_did_details.update_delegation_key(delegation_key, current_block_number)?;
 		}
-
-		new_did_details.service_endpoints = details.new_service_endpoints;
 
 		Ok(new_did_details)
 	}
@@ -547,8 +535,6 @@ pub struct DidCreationDetails<T: Config> {
 	pub new_attestation_key: Option<DidVerificationKey>,
 	/// \[OPTIONAL\] The new delegation key.
 	pub new_delegation_key: Option<DidVerificationKey>,
-	/// \[OPTIONAL\] The service endpoints publicly exposed.
-	pub new_service_endpoints: Option<ServiceEndpoints<T>>,
 }
 
 // required because BoundedTreeSet does not implement Debug outside of std
@@ -562,44 +548,7 @@ impl<T: Config> fmt::Debug for DidCreationDetails<T> {
 			)
 			.field("new_attestation_key", &self.new_attestation_key)
 			.field("new_delegation_key", &self.new_delegation_key)
-			.field("new_service_endpoints", &self.new_service_endpoints)
 			.finish()
-	}
-}
-
-#[derive(Clone, Decode, Encode, PartialEq)]
-pub struct ServiceEndpoints<T: Config> {
-	pub content_hash: Hash,
-	pub urls: BoundedVec<Url<T>, T::MaxEndpointUrlsCount>,
-	pub content_type: ContentType,
-}
-
-// required because BoundedTreeSet does not implement Debug outside of std
-impl<T: Config> fmt::Debug for ServiceEndpoints<T> {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		f.debug_struct("ServiceEndpoints")
-			.field("content_hash", &self.content_hash)
-			.field("urls", &self.urls.clone().into_inner())
-			.field("content_type", &self.content_type)
-			.finish()
-	}
-}
-
-impl<T: Config> ServiceEndpoints<T> {
-	pub(crate) fn validate_against_config_limits(&self) -> Result<(), InputError> {
-		ensure!(
-			self.urls.len() <= T::MaxEndpointUrlsCount::get().saturated_into::<usize>(),
-			InputError::MaxUrlsCountExceeded
-		);
-		ensure!(
-			// Throws InputError::MaxUrlLengthExceeded if any URL is longer than the max allowed size.
-			!self
-				.urls
-				.iter()
-				.any(|url| { url.len() > T::MaxUrlLength::get().saturated_into::<usize>() }),
-			InputError::MaxUrlLengthExceeded
-		);
-		Ok(())
 	}
 }
 

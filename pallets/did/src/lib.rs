@@ -60,11 +60,6 @@
 //!   to any past attestation key that has been rotated but not entirely
 //!   revoked.
 //!
-//! - An optional **service endpoints description**: pointing to the description
-//!   of the services the DID subject exposes and storing a cryptographic hash
-//!   of that information to ensure the integrity of the content.
-//!  For more information, check the W3C DID Core specification.
-//!
 //! - A **transaction counter**: acts as a nonce to avoid replay or signature
 //!   forgery attacks. Each time a DID-signed transaction is executed, the
 //!   counter is incremented.
@@ -85,9 +80,6 @@
 //!   for the DID.
 //! - `remove_key_agreement_key` - Remove the key with the given ID from the set
 //!   of key agreement keys, if present.
-//! - `set_service_endpoints` - Set a new set of service endpoints for the DID.
-//! - `remove_service_endpoints` - Remove the set of service endpoints from the
-//!   DID.
 //! - `delete` - Delete the specified DID and all related keys from the KILT
 //!   blockchain. A DID with the same identifier cannot be created anymore after
 //!   it is deleted.
@@ -100,13 +92,6 @@
 //!
 //! - The maximum number of new key agreement keys that can be specified in a
 //!   creation or update operation is bounded by `MaxNewKeyAgreementKeys`.
-//! - The maximum number of endpoint URLs for a new DID service description is
-//!   bounded by `MaxEndpointUrlsCount`.
-//! - The maximum length in ASCII characters of any endpoint URL is bounded by
-//!   `MaxUrlLength`.
-//! - The chain performs basic checks over the endpoint URLs provided in
-//!   creation and deletion operations. The SDK will perform more in-depth
-//!   validation of the URL string, e.g., by pattern-matching using regexes.
 //! - After it is generated and signed by a client, a DID-authorised operation
 //!   can be submitted for evaluation anytime between the time the operation is
 //!   created and [MaxBlocksTxValidity] blocks after that. After this time has
@@ -120,7 +105,6 @@ pub mod did_details;
 pub mod errors;
 pub mod migrations;
 pub mod origin;
-pub mod url;
 
 mod utils;
 
@@ -136,7 +120,7 @@ mod tests;
 
 mod deprecated;
 
-pub use crate::{default_weights::WeightInfo, did_details::*, errors::*, origin::*, pallet::*, url::*};
+pub use crate::{default_weights::WeightInfo, did_details::*, errors::*, origin::*, pallet::*};
 
 use codec::Encode;
 use frame_support::{
@@ -231,15 +215,6 @@ pub mod pallet {
 		/// Should be greater than `MaxNewKeyAgreementKeys`.
 		#[pallet::constant]
 		type MaxTotalKeyAgreementKeys: Get<u32> + Debug + Clone + PartialEq;
-
-		/// Maximum length in ASCII characters of the endpoint URL specified in
-		/// a creation or update operation.
-		#[pallet::constant]
-		type MaxUrlLength: Get<u32> + Debug + Clone + PartialEq;
-
-		/// Maximum number of URLs that a service endpoint can contain.
-		#[pallet::constant]
-		type MaxEndpointUrlsCount: Get<u32> + Debug + Clone + PartialEq;
 
 		/// The maximum number of blocks a DID-authorized operation is
 		/// considered valid after its creation.
@@ -447,40 +422,14 @@ pub mod pallet {
 		///
 		/// # <weight>
 		/// - The transaction's complexity is mainly dependent on the number of
-		///   new key agreement keys included in the operation as well as the
-		///   length of the URL endpoint, if present.
+		///   new key agreement keys included in the operation.
 		/// ---------
-		/// Weight: O(K) + O(N * E) where K is the number of new key agreement
-		/// keys bounded by `MaxNewKeyAgreementKeys`, E the length of the
-		/// longest endpoint URL bounded by `MaxUrlLength`, and N the maximum
-		/// amount of endpoint URLs, bounded by `MaxEndpointUrlsCount`.
+		/// Weight: O(K) where K is the number of new key agreement
+		/// keys bounded by `MaxNewKeyAgreementKeys`.
 		/// - Reads: [Origin Account], Did
-		/// - Writes: Did (with K new key agreement keys and N endpoint URLs)
+		/// - Writes: Did (with K new key agreement keys)
 		/// # </weight>
-		#[pallet::weight({
-			let new_key_agreement_keys = details.new_key_agreement_keys.len().saturated_into::<u32>();
-			let new_urls = details.new_service_endpoints.as_ref().map_or(BoundedVec::default(), |endpoint| endpoint.urls.clone());
-			// Max 3, so we can iterate quite easily.
-			let max_url_length = new_urls.iter().map(|url| url.len().saturated_into()).max().unwrap_or(0u32);
-
-			let ed25519_weight = <T as pallet::Config>::WeightInfo::create_ed25519_keys(
-				new_key_agreement_keys,
-				new_urls.len().saturated_into(),
-				max_url_length
-			);
-			let sr25519_weight = <T as pallet::Config>::WeightInfo::create_sr25519_keys(
-				new_key_agreement_keys,
-				new_urls.len().saturated_into(),
-				max_url_length
-			);
-			let ecdsa_weight = <T as pallet::Config>::WeightInfo::create_ecdsa_keys(
-				new_key_agreement_keys,
-				new_urls.len().saturated_into(),
-				max_url_length
-			);
-
-			ed25519_weight.max(sr25519_weight).max(ecdsa_weight)
-		})]
+		#[pallet::weight(1)]
 		pub fn create(origin: OriginFor<T>, details: DidCreationDetails<T>, signature: DidSignature) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
@@ -729,71 +678,6 @@ pub mod pallet {
 
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Key agreement key removed");
-
-			Self::deposit_event(Event::DidUpdated(did_subject));
-			Ok(())
-		}
-
-		/// Set or replace the DID service endpoints.
-		///
-		/// The dispatch origin must be a DID origin proxied via the
-		/// `submit_did_call` extrinsic.
-		///
-		/// Emits `DidUpdated`.
-		///
-		/// # <weight>
-		/// Weight: O(1)
-		/// - Reads: [Origin Account], Did
-		/// - Writes: Did
-		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_service_endpoints(T::MaxUrlLength::get(), T::MaxEndpointUrlsCount::get()))]
-		pub fn set_service_endpoints(origin: OriginFor<T>, service_endpoints: ServiceEndpoints<T>) -> DispatchResult {
-			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
-			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
-
-			log::debug!(
-				"Adding new service endpoints {:?} for DID {:?}",
-				&service_endpoints,
-				&did_subject
-			);
-			service_endpoints
-				.validate_against_config_limits()
-				.map_err(Error::<T>::from)?;
-
-			did_details.service_endpoints = Some(service_endpoints);
-
-			Did::<T>::insert(&did_subject, did_details);
-			log::debug!("Service endpoints set");
-
-			Self::deposit_event(Event::DidUpdated(did_subject));
-			Ok(())
-		}
-
-		/// Remove the DID service endpoints.
-		///
-		/// The dispatch origin must be a DID origin proxied via the
-		/// `submit_did_call` extrinsic.
-		///
-		/// Emits `DidUpdated`.
-		///
-		/// # <weight>
-		/// Weight: O(1)
-		/// - Reads: [Origin Account], Did
-		/// - Writes: Did
-		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_service_endpoints(T::MaxUrlLength::get(), T::MaxEndpointUrlsCount::get()))]
-		pub fn remove_service_endpoints(origin: OriginFor<T>) -> DispatchResult {
-			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
-			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
-
-			log::debug!("Removing service endpoints for DID {:?}", &did_subject);
-			ensure!(
-				did_details.service_endpoints.take().is_some(),
-				Error::<T>::DidFragmentNotPresent
-			);
-
-			Did::<T>::insert(&did_subject, did_details);
-			log::debug!("Service endpoints removed");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
 			Ok(())
