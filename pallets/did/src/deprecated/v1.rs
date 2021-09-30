@@ -18,7 +18,7 @@
 
 use codec::{Decode, Encode};
 
-use crate::{*, deprecated::Url};
+use crate::{deprecated::Url, *};
 
 #[derive(Clone, Decode, Encode, PartialEq)]
 pub struct DidDetails<T: Config> {

@@ -19,7 +19,7 @@
 use codec::{Decode, Encode};
 use kilt_primitives::Hash;
 
-use crate::{*, deprecated::Url};
+use crate::{deprecated::Url, *};
 use sp_std::vec::Vec;
 
 #[derive(Clone, Decode, Encode, PartialEq, Eq)]

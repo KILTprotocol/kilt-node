@@ -27,7 +27,6 @@ pub use sp_consensus_aura::sr25519::AuthorityId;
 
 pub use opaque::*;
 
-
 use sp_runtime::{
 	generic,
 	traits::{IdentifyAccount, Verify},

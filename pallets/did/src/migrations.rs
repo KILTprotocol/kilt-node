@@ -85,4 +85,3 @@ impl<T: Config> VersionMigratorTrait<T> for DidStorageVersion {
 		}
 	}
 }
-

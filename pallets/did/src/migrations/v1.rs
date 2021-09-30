@@ -93,7 +93,10 @@ mod tests {
 	use sp_core::Pair;
 
 	use super::*;
-	use crate::{mock::Test as TestRuntime, deprecated::{HttpUrl, Url}};
+	use crate::{
+		deprecated::{HttpUrl, Url},
+		mock::Test as TestRuntime,
+	};
 	use mock::{get_did_identifier_from_ed25519_key, get_ed25519_authentication_key, ExtBuilder};
 
 	#[test]
