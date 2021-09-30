@@ -51,13 +51,11 @@ pub fn make_dev_spec(id: ParaId) -> Result<ChainSpec, String> {
 				wasm,
 				vec![
 					(
-						// TODO: Change before launch
 						get_account_id_from_seed::<sr25519::Public>("Alice"),
 						None,
 						2 * MinCollatorStake::get(),
 					),
 					(
-						// TODO: Change before launch
 						get_account_id_from_seed::<sr25519::Public>("Bob"),
 						None,
 						2 * MinCollatorStake::get(),
