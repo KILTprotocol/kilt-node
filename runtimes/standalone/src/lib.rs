@@ -335,7 +335,6 @@ impl pallet_sudo::Config for Runtime {
 }
 
 parameter_types! {
-	// TODO: Find reasonable number
 	pub const MaxDelegatedAttestations: u32 = 1000;
 	pub const AttestationDeposit: Balance = 100 * MILLI_KILT;
 }
