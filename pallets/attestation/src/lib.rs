@@ -215,8 +215,6 @@ pub mod pallet {
 		/// reached for the corresponding delegation id such that another one
 		/// cannot be added.
 		MaxDelegatedAttestationsExceeded,
-		/// TODO: doc
-		InsufficientBalance,
 	}
 
 	#[pallet::call]
