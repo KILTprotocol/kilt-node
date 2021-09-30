@@ -110,7 +110,7 @@ fn ctype_not_present_attest_error() {
 
 		assert_noop!(
 			Attestation::add(
-				Origin::signed(attester.clone()),
+				Origin::signed(attester),
 				operation.claim_hash,
 				operation.ctype_hash,
 				operation.delegation_id
