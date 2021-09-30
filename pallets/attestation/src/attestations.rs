@@ -35,6 +35,7 @@ pub struct AttestationDetails<T: Config> {
 	pub delegation_id: Option<DelegationNodeIdOf<T>>,
 	/// The flag indicating whether the attestation has been revoked or not.
 	pub revoked: bool,
-	/// The deposit that was taken to incentivise fair use of the on chain storage.
+	/// The deposit that was taken to incentivise fair use of the on chain
+	/// storage.
 	pub deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
 }

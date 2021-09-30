@@ -101,12 +101,11 @@ benchmarks! {
 		T::Currency::make_free_balance_be(&delegate_acc, T::Deposit::get() + T::Deposit::get());
 
 		// attest with leaf account
-		Pallet::<T>::add(RawOrigin::Signed(delegate_acc.clone()).into(), claim_hash, ctype_hash, Some(delegation_id))?;
+		Pallet::<T>::add(RawOrigin::Signed(delegate_acc).into(), claim_hash, ctype_hash, Some(delegation_id))?;
 		// revoke with root account, s.t. delegation tree needs to be traversed
 	}: _(RawOrigin::Signed(root_acc.clone()), claim_hash, d)
 	verify {
 		assert!(!Attestations::<T>::contains_key(claim_hash));
-		
 	}
 }
 
