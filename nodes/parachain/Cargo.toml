@@ -4,7 +4,7 @@ build = "build.rs"
 description = "KILT parachain"
 edition = "2018"
 name = "kilt-parachain"
-version = "0.26.0"
+version = "0.26.1"
 
 [[bin]]
 name = "kilt-parachain"
@@ -86,8 +86,8 @@ polkadot-primitives = {git = "https://github.com/paritytech/polkadot", branch = 
 polkadot-service = {git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.10"}
 
 # Benchmarking
-frame-benchmarking = {git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.10"}
-frame-benchmarking-cli = {git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.10"}
+frame-benchmarking = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.10"}
+frame-benchmarking-cli = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.10"}
 
 # Runtime tests
 node-executor = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.10", optional = true}
