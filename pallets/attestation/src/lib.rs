@@ -161,14 +161,6 @@ pub mod pallet {
 		BoundedVec<ClaimHashOf<T>, <T as Config>::MaxDelegatedAttestations>,
 	>;
 
-	/// Attestations stored on chain.
-	///
-	/// It maps from a claim hash to the full attestation.
-	#[pallet::storage]
-	#[pallet::getter(fn deposits)]
-	pub type AttestationDeposits<T> =
-		StorageMap<_, Blake2_128Concat, ClaimHashOf<T>, Deposit<AccountIdOf<T>, BalanceOf<T>>>;
-
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
