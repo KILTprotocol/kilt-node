@@ -20,6 +20,7 @@ use kilt_traits::VersionMigratorTrait;
 
 use sp_runtime::traits::Zero;
 
+/// A generic storage migrator supporting pre and post migration checks where needed.
 pub struct StorageMigrator<VersionMigrator, T>(
 	sp_std::marker::PhantomData<VersionMigrator>,
 	sp_std::marker::PhantomData<T>,

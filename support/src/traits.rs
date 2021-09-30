@@ -58,6 +58,9 @@ pub trait VersionMigratorTrait<T>: Sized {
 	#[cfg(feature = "try-runtime")]
 	fn pre_migrate(&self) -> Result<(), &'static str>;
 	fn migrate(&self) -> frame_support::weights::Weight;
+	// If needed to chain multiple migrations/upgrades, next_version can
+	// be implemented accordingly. Otherwise, only the specific version
+	// migration is executed.
 	fn next_version(&self) -> Option<Self> {
 		None
 	}
