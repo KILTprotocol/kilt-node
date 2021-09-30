@@ -48,6 +48,7 @@ use sp_std::marker::PhantomData;
 pub trait WeightInfo {
 	fn add() -> Weight;
 	fn revoke(d: u32, ) -> Weight;
+	fn remove(d: u32, ) -> Weight;
 }
 
 /// Weights for attestation using the Substrate node and recommended hardware.
@@ -66,6 +67,14 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(d as Weight)))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
+	fn remove(d: u32, ) -> Weight {
+		(46_093_000_u64)
+			// Standard Error: 202_000
+			.saturating_add((8_252_000_u64).saturating_mul(d as Weight))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(d as Weight)))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
 }
 
 // For backwards compatibility and tests
@@ -76,6 +85,14 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
 	}
 	fn revoke(d: u32, ) -> Weight {
+		(46_093_000_u64)
+			// Standard Error: 202_000
+			.saturating_add((8_252_000_u64).saturating_mul(d as Weight))
+			.saturating_add(RocksDbWeight::get().reads(2_u64))
+			.saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(d as Weight)))
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+	fn remove(d: u32, ) -> Weight {
 		(46_093_000_u64)
 			// Standard Error: 202_000
 			.saturating_add((8_252_000_u64).saturating_mul(d as Weight))

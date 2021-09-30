@@ -366,9 +366,24 @@ pub mod pallet {
 			Ok(Some(<T as pallet::Config>::WeightInfo::revoke(delegation_depth)).into())
 		}
 
-		// TODO: Docs
-		// TODO: Benchmarks
-		#[pallet::weight(10)]
+		/// Remove an attestation.
+		///
+		/// The origin must be either the creator of the attestation being or
+		/// an entity that in the delegation tree is an ancestor of the
+		/// attester, i.e., it was either the delegator of the attester or an
+		/// ancestor thereof.
+		///
+		/// Emits `AttestationRemoved`.
+		///
+		/// # <weight>
+		/// Weight: O(P) where P is the number of steps required to verify that
+		/// the dispatch Origin controls the delegation entitled to revoke the
+		/// attestation. It is bounded by `max_parent_checks`.
+		/// - Reads: [Origin Account], Attestations, delegation::Roots
+		/// - Reads per delegation step P: delegation::Delegations
+		/// - Writes: Attestations, DelegatedAttestations
+		/// # </weight>
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove(*max_parent_checks))]
 		pub fn remove(
 			origin: OriginFor<T>,
 			claim_hash: ClaimHashOf<T>,
@@ -393,8 +408,7 @@ pub mod pallet {
 
 			Self::deposit_event(Event::AttestationRemoved(attester, claim_hash));
 
-			// TODO: Benchmarks
-			Ok(().into())
+			Ok(Some(<T as pallet::Config>::WeightInfo::remove(delegation_depth)).into())
 		}
 	}
 
