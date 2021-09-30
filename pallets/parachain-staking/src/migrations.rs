@@ -15,15 +15,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-#[cfg(feature = "try-runtime")]
-use frame_support::ensure;
-use frame_support::{dispatch::Weight, traits::Get};
+use frame_support::dispatch::Weight;
 use kilt_traits::VersionMigratorTrait;
 use sp_runtime::{
 	codec::{Decode, Encode},
 	traits::Zero,
 };
-use sp_std::marker::PhantomData;
 
 use crate::*;
 
@@ -45,14 +42,6 @@ pub enum StakingStorageVersion {
 	V5,     // Remove SelectedCandidates, Count Candidates
 }
 
-#[cfg(feature = "try-runtime")]
-impl StakingStorageVersion {
-	/// The latest storage version.
-	fn latest() -> Self {
-		Self::V5
-	}
-}
-
 // All nodes will default to this, which is not bad, as in case the "real"
 // version is a later one (i.e. the node has been started with already the
 // latest version), the migration will simply do nothing as there's nothing in
@@ -69,7 +58,7 @@ impl Default for StakingStorageVersion {
 impl<T: Config> VersionMigratorTrait<T> for StakingStorageVersion {
 	// It runs the right pre_migrate logic depending on the current storage version.
 	#[cfg(feature = "try-runtime")]
-	fn pre_migrate(&self) -> Result<(), &str> {
+	fn pre_migrate(&self) -> Result<(), &'static str> {
 		match *self {
 			Self::V1_0_0 => v2::pre_migrate::<T>(),
 			Self::V2_0_0 => v3::pre_migrate::<T>(),
@@ -90,32 +79,8 @@ impl<T: Config> VersionMigratorTrait<T> for StakingStorageVersion {
 		}
 	}
 
-	// It runs the right post_migrate logic depending on the current storage
-	// version.
-	#[cfg(feature = "try-runtime")]
-	fn post_migrate(&self) -> Result<(), &str> {
-		match *self {
-			Self::V1_0_0 => v2::post_migrate::<T>(),
-			Self::V2_0_0 => v3::post_migrate::<T>(),
-			Self::V3_0_0 => v4::post_migrate::<T>(),
-			Self::V4 => v5::post_migrate::<T>(),
-			Self::V5 => Ok(()),
-		}
-	}
-}
-
-/// The parachain-staking pallet's storage migrator, which handles all version
-/// migrations in a sequential fashion.
-///
-/// If a node has missed on more than one upgrade, the migrator will apply the
-/// needed migrations one after the other. Otherwise, if no migration is needed,
-/// the migrator will simply not do anything.
-pub struct StakingStorageMigrator<T>(PhantomData<T>);
-
-impl<T: Config> StakingStorageMigrator<T> {
-	// Contains the migration sequence logic.
-	fn get_next_storage_version(current: StakingStorageVersion) -> Option<StakingStorageVersion> {
-		match current {
+	fn next_version(&self) -> Option<Self> {
+		match self {
 			StakingStorageVersion::V1_0_0 => Some(StakingStorageVersion::V2_0_0),
 			StakingStorageVersion::V2_0_0 => Some(StakingStorageVersion::V3_0_0),
 			// Migration happens naturally, no need to point to the latest version
@@ -125,57 +90,16 @@ impl<T: Config> StakingStorageMigrator<T> {
 		}
 	}
 
-	/// Checks whether the latest storage version deployed is lower than the
-	/// latest possible.
+	// It runs the right post_migrate logic depending on the current storage
+	// version.
 	#[cfg(feature = "try-runtime")]
-	pub(crate) fn pre_migrate() -> Result<(), &'static str> {
-		// Don't need to check for any other pre_migrate, as in try-runtime it is also
-		// called in the migrate() function. Same applies for post_migrate checks for
-		// each version migrator.
-
-		Ok(())
-	}
-
-	/// Applies all the needed migrations from the currently deployed version to
-	/// the latest possible, one after the other.
-	///
-	/// It returns the total weight consumed by ALL the migrations applied.
-	pub(crate) fn migrate() -> Weight {
-		let mut current_version: Option<StakingStorageVersion> = Some(StorageVersion::<T>::get());
-		// Weight for StorageVersion::get().
-		let mut total_weight = T::DbWeight::get().reads(1);
-
-		while let Some(ver) = current_version {
-			// If any of the needed migrations pre-checks fail, the whole chain panics
-			// (during tests).
-			#[cfg(feature = "try-runtime")]
-			if let Err(err) = <StakingStorageVersion as VersionMigratorTrait<T>>::pre_migrate(&ver) {
-				panic!("{:?}", err);
-			}
-			let consumed_weight = <StakingStorageVersion as VersionMigratorTrait<T>>::migrate(&ver);
-			total_weight = total_weight.saturating_add(consumed_weight);
-			// If any of the needed migrations post-checks fail, the whole chain panics
-			// (during tests).
-			#[cfg(feature = "try-runtime")]
-			if let Err(err) = <StakingStorageVersion as VersionMigratorTrait<T>>::post_migrate(&ver) {
-				panic!("{:?}", err);
-			}
-			// If more migrations should be applied, current_version will not be None.
-			current_version = Self::get_next_storage_version(ver);
+	fn post_migrate(&self) -> Result<(), &'static str> {
+		match *self {
+			Self::V1_0_0 => v2::post_migrate::<T>(),
+			Self::V2_0_0 => v3::post_migrate::<T>(),
+			Self::V3_0_0 => v4::post_migrate::<T>(),
+			Self::V4 => v5::post_migrate::<T>(),
+			Self::V5 => Ok(()),
 		}
-
-		total_weight
-	}
-
-	/// Checks whether the storage version after all the needed migrations match
-	/// the latest one.
-	#[cfg(feature = "try-runtime")]
-	pub(crate) fn post_migrate() -> Result<(), &'static str> {
-		ensure!(
-			StorageVersion::<T>::get() == StakingStorageVersion::latest(),
-			"Not updated to the latest version."
-		);
-
-		Ok(())
 	}
 }

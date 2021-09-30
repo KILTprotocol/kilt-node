@@ -20,7 +20,7 @@ use crate::*;
 
 use sp_runtime::traits::Zero;
 
-// Added for consistency even not (yet) unused.
+// Added for consistency even if not (yet) unused.
 #[allow(dead_code)]
 type OldDidStorage<T> = deprecated::v2::storage::Did<T>;
 type OldDidDetails<T> = deprecated::v2::DidDetails<T>;

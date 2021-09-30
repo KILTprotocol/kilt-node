@@ -90,6 +90,7 @@ mod deprecated;
 
 pub use crate::{default_weights::WeightInfo, delegation_hierarchy::*, pallet::*};
 
+use kilt_primitives::migrations::StorageMigrator;
 use frame_support::{dispatch::DispatchResult, ensure, pallet_prelude::Weight, traits::Get};
 use sp_runtime::{traits::Hash, DispatchError};
 use sp_std::vec::Vec;
@@ -166,16 +167,16 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		#[cfg(feature = "try-runtime")]
 		fn pre_upgrade() -> Result<(), &'static str> {
-			migrations::DelegationStorageMigrator::<T>::pre_migrate()
+			StorageMigrator::<DelegationStorageVersion, T>::pre_migrate(StorageVersion::<T>::get())
 		}
 
 		fn on_runtime_upgrade() -> Weight {
-			migrations::DelegationStorageMigrator::<T>::migrate()
+			StorageMigrator::<DelegationStorageVersion, T>::migrate(StorageVersion::<T>::get())
 		}
 
 		#[cfg(feature = "try-runtime")]
 		fn post_upgrade() -> Result<(), &'static str> {
-			migrations::DelegationStorageMigrator::<T>::post_migrate()
+			StorageMigrator::<DelegationStorageVersion, T>::post_migrate(StorageVersion::<T>::get())
 		}
 	}
 

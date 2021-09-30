@@ -172,6 +172,7 @@ mod types;
 use frame_support::pallet;
 
 pub use crate::{default_weights::WeightInfo, pallet::*};
+use kilt_primitives::migrations::StorageMigrator;
 
 #[pallet]
 pub mod pallet {
@@ -535,16 +536,16 @@ pub mod pallet {
 
 		#[cfg(feature = "try-runtime")]
 		fn pre_upgrade() -> Result<(), &'static str> {
-			migrations::StakingStorageMigrator::<T>::pre_migrate()
+			StorageMigrator::<StakingStorageVersion, T>::pre_migrate(StorageVersion::<T>::get())
 		}
 
 		fn on_runtime_upgrade() -> Weight {
-			migrations::StakingStorageMigrator::<T>::migrate()
+			StorageMigrator::<StakingStorageVersion, T>::migrate(StorageVersion::<T>::get())
 		}
 
 		#[cfg(feature = "try-runtime")]
 		fn post_upgrade() -> Result<(), &'static str> {
-			migrations::StakingStorageMigrator::<T>::post_migrate()
+			StorageMigrator::<StakingStorageVersion, T>::post_migrate(StorageVersion::<T>::get())
 		}
 	}
 

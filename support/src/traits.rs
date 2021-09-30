@@ -56,11 +56,11 @@ impl<S: Clone, P: Clone> CallSources<S, P> for (S, P) {
 /// types directly.
 pub trait VersionMigratorTrait<T>: Sized {
 	#[cfg(feature = "try-runtime")]
-	fn pre_migrate(&self) -> Result<(), String>;
+	fn pre_migrate(&self) -> Result<(), &'static str>;
 	fn migrate(&self) -> frame_support::weights::Weight;
 	fn next_version(&self) -> Option<Self> {
 		None
 	}
 	#[cfg(feature = "try-runtime")]
-	fn post_migrate(&self) -> Result<(), String>;
+	fn post_migrate(&self) -> Result<(), &'static str>;
 }

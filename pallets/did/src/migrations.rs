@@ -33,14 +33,6 @@ pub enum DidStorageVersion {
 	V3,
 }
 
-#[cfg(feature = "try-runtime")]
-impl DidStorageVersion {
-	/// The latest storage version.
-	fn latest() -> Self {
-		Self::V3
-	}
-}
-
 // All nodes will default to this, which is not bad, as in case the "real"
 // version is a later one (i.e. the node has been started with already the
 // latest version), the migration will simply do nothing as there's nothing in
@@ -57,7 +49,7 @@ impl Default for DidStorageVersion {
 impl<T: Config> VersionMigratorTrait<T> for DidStorageVersion {
 	// It runs the right pre_migrate logic depending on the current storage version.
 	#[cfg(feature = "try-runtime")]
-	fn pre_migrate(&self) -> Result<(), String> {
+	fn pre_migrate(&self) -> Result<(), &'static str> {
 		match *self {
 			Self::V1 => v1::pre_migrate::<T>(),
 			Self::V2 => v2::pre_migrate::<T>(),
@@ -77,7 +69,7 @@ impl<T: Config> VersionMigratorTrait<T> for DidStorageVersion {
 	// It runs the right post_migrate logic depending on the current storage
 	// version.
 	#[cfg(feature = "try-runtime")]
-	fn post_migrate(&self) -> Result<(), String> {
+	fn post_migrate(&self) -> Result<(), &'static str> {
 		match *self {
 			Self::V1 => v1::post_migrate::<T>(),
 			Self::V2 => v2::post_migrate::<T>(),

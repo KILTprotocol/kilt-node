@@ -27,11 +27,10 @@ pub use sp_consensus_aura::sr25519::AuthorityId;
 
 pub use opaque::*;
 
-use kilt_traits::VersionMigratorTrait;
 
 use sp_runtime::{
 	generic,
-	traits::{IdentifyAccount, Verify, Zero},
+	traits::{IdentifyAccount, Verify},
 	MultiSignature, RuntimeDebug,
 };
 use sp_std::vec::Vec;
@@ -40,6 +39,7 @@ use sp_std::vec::Vec;
 use serde::{Deserialize, Serialize};
 
 pub mod constants;
+pub mod migrations;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't
 /// need to know the specifics of the runtime. They can then be made to be
@@ -115,42 +115,5 @@ impl TryFrom<Vec<u8>> for CurrencyId {
 			b"KSM" => Ok(CurrencyId::Ksm),
 			_ => Err(()),
 		}
-	}
-}
-
-pub struct StorageMigrator<VersionMigrator, T>(std::marker::PhantomData<VersionMigrator>, std::marker::PhantomData<T>);
-
-impl<VersionMigrator, T> StorageMigrator<VersionMigrator, T> where VersionMigrator: VersionMigratorTrait<T> {
-	#[cfg(feature = "try-runtime")]
-	pub fn pre_migrate(migrator: VersionMigrator) -> Result<(), String> {
-		migrator.pre_migrate()
-	}
-	pub fn migrate(migrator: VersionMigrator) -> frame_support::weights::Weight {
-		let mut current_version = Some(migrator);
-		let mut total_weight = frame_support::weights::Weight::zero();
-
-		while let Some(ver) = current_version {
-			// If any of the needed migrations pre-checks fail, the whole chain panics
-			// (during tests).
-			#[cfg(feature = "try-runtime")]
-			if let Err(err) = ver.pre_migrate() {
-				panic!("{:?}", err);
-			}
-			let consumed_weight = ver.migrate();
-			total_weight = total_weight.saturating_add(consumed_weight);
-			// If any of the needed migrations post-checks fail, the whole chain panics
-			// (during tests).
-			#[cfg(feature = "try-runtime")]
-			if let Err(err) = ver.post_migrate() {
-				panic!("{:?}", err);
-			}
-			// If more migrations should be applied, current_version will not be None.
-			current_version = ver.next_version();
-		}
-		total_weight
-	}
-	#[cfg(feature = "try-runtime")]
-	pub fn post_migrate(migrator: VersionMigrator) -> Result<(), String> {
-		migrator.post_migrate()
 	}
 }
