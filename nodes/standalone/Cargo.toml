@@ -3,7 +3,7 @@ authors = ["KILT <info@kilt.io>"]
 build = "build.rs"
 edition = "2018"
 name = "mashnet-node"
-version = "0.26.0"
+version = "0.26.1"
 
 [[bin]]
 name = "mashnet-node"
@@ -61,8 +61,8 @@ sc-rpc = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0
 sc-rpc-api = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.10"}
 
 # Benchmarking
-frame-benchmarking = {git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.10"}
-frame-benchmarking-cli = {git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.10"}
+frame-benchmarking = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.10"}
+frame-benchmarking-cli = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.10"}
 
 # Runtime tests
 node-executor = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.10", optional = true}
