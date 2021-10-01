@@ -92,7 +92,6 @@ pub mod pallet {
 	use super::*;
 	use ctype::CtypeHashOf;
 	use delegation::DelegationNodeIdOf;
-	use sp_runtime::traits::Zero;
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{Currency, Get, ReservableCurrency},
@@ -100,6 +99,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{deposit::Deposit, traits::CallSources};
+	use sp_runtime::traits::Zero;
 
 	/// Type of a claim hash.
 	pub(crate) type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
@@ -306,12 +306,7 @@ pub mod pallet {
 				},
 			);
 
-			Self::deposit_event(Event::AttestationCreated(
-				who,
-				claim_hash,
-				ctype_hash,
-				delegation_id,
-			));
+			Self::deposit_event(Event::AttestationCreated(who, claim_hash, ctype_hash, delegation_id));
 			Ok(())
 		}
 
@@ -393,7 +388,7 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let who = source.subject();
 
-			let attestation = <Attestations<T>>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
+			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
 			let delegation_depth = if attestation.attester != who {
 				Self::verify_delegated_access(&who, &attestation, max_parent_checks)?
@@ -405,7 +400,14 @@ pub mod pallet {
 
 			log::debug!("removing Attestation");
 			Pallet::<T>::free_deposit(&attestation.deposit);
-			<Attestations<T>>::remove(&claim_hash);
+			Attestations::<T>::remove(&claim_hash);
+			if let Some(delegation_id) = attestation.delegation_id {
+				DelegatedAttestations::<T>::mutate(&delegation_id, |maybe_attestation| {
+					maybe_attestation
+						.as_mut()
+						.map(|attestations| attestations.retain(|&elem| elem != claim_hash));
+				});
+			}
 
 			Self::deposit_event(Event::AttestationRemoved(who, claim_hash));
 
@@ -439,7 +441,7 @@ pub mod pallet {
 		/// Reserve the deposit and record the deposit on chain.
 		///
 		/// Fails if the `payer` has a balance less than deposit.
-		fn reserve_deposit(
+		pub(crate) fn reserve_deposit(
 			payer: AccountIdOf<T>,
 			deposit: BalanceOf<T>,
 		) -> Result<Deposit<AccountIdOf<T>, BalanceOf<T>>, DispatchError> {

@@ -19,7 +19,11 @@
 use frame_support::{assert_noop, assert_ok};
 use sp_core::Pair;
 
-use crate::{self as attestation, mock::*, AccountIdOf, Config};
+use crate::{
+	self as attestation,
+	mock::{runtime::Balances, *},
+	AccountIdOf, Config, DelegatedAttestations,
+};
 use ctype::mock as ctype_mock;
 use delegation::mock as delegation_mock;
 
@@ -101,23 +105,26 @@ fn attest_with_delegation_successful() {
 
 #[test]
 fn ctype_not_present_attest_error() {
-	ExtBuilder::default().build().execute_with(|| {
-		let attester: AccountIdOf<Test> = get_alice_ed25519().public().into();
-		let claim_hash = get_claim_hash(true);
-		let attestation = generate_base_attestation::<Test>(attester.clone(), attester.clone());
+	let attester: AccountIdOf<Test> = get_alice_ed25519().public().into();
+	let claim_hash = get_claim_hash(true);
+	let attestation = generate_base_attestation::<Test>(attester.clone(), attester.clone());
 
-		let operation = generate_base_attestation_creation_details(claim_hash, attestation);
+	let operation = generate_base_attestation_creation_details(claim_hash, attestation);
 
-		assert_noop!(
-			Attestation::add(
-				Origin::signed(attester),
-				operation.claim_hash,
-				operation.ctype_hash,
-				operation.delegation_id
-			),
-			ctype::Error::<Test>::CTypeNotFound
-		);
-	});
+	ExtBuilder::default()
+		.with_balances(vec![(attester.clone(), <Test as Config>::Deposit::get() * 100)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Attestation::add(
+					Origin::signed(attester),
+					operation.claim_hash,
+					operation.ctype_hash,
+					operation.delegation_id
+				),
+				ctype::Error::<Test>::CTypeNotFound
+			);
+		});
 }
 
 #[test]
@@ -129,6 +136,7 @@ fn duplicate_attest_error() {
 	let operation = generate_base_attestation_creation_details(claim_hash, attestation.clone());
 
 	ExtBuilder::default()
+		.with_balances(vec![(attester.clone(), <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(operation.ctype_hash, attester.clone())])
 		.with_attestations(vec![(claim_hash, attestation)])
 		.build()
@@ -156,6 +164,7 @@ fn delegation_not_found_attest_error() {
 	let operation = generate_base_attestation_creation_details(claim_hash, attestation);
 
 	ExtBuilder::default()
+		.with_balances(vec![(attester.clone(), <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(operation.ctype_hash, attester.clone())])
 		.build()
 		.execute_with(|| {
@@ -189,6 +198,7 @@ fn delegation_revoked_attest_error() {
 	let operation = generate_base_attestation_creation_details(claim_hash, attestation);
 
 	ExtBuilder::default()
+		.with_balances(vec![(attester.clone(), <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(operation.ctype_hash, attester.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, attester.clone())])
 		.with_delegations(vec![(delegation_id, delegation_node)])
@@ -227,6 +237,7 @@ fn not_delegation_owner_attest_error() {
 	let operation = generate_base_attestation_creation_details(claim_hash, attestation);
 
 	ExtBuilder::default()
+		.with_balances(vec![(attester.clone(), <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(operation.ctype_hash, attester.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, attester.clone())])
 		.with_delegations(vec![(delegation_id, delegation_node)])
@@ -261,6 +272,7 @@ fn unauthorised_permissions_attest_error() {
 	let operation = generate_base_attestation_creation_details(claim_hash, attestation);
 
 	ExtBuilder::default()
+		.with_balances(vec![(attester.clone(), <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(operation.ctype_hash, attester.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, attester.clone())])
 		.with_delegations(vec![(delegation_id, delegation_node)])
@@ -298,6 +310,7 @@ fn root_not_present_attest_error() {
 	let operation = generate_base_attestation_creation_details(claim_hash, attestation);
 
 	ExtBuilder::default()
+		.with_balances(vec![(attester.clone(), <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(operation.ctype_hash, attester.clone())])
 		.with_delegation_hierarchies(vec![(
 			alternative_hierarchy_root_id,
@@ -337,6 +350,7 @@ fn root_ctype_mismatch_attest_error() {
 	let operation = generate_base_attestation_creation_details(claim_hash, attestation);
 
 	ExtBuilder::default()
+		.with_balances(vec![(attester.clone(), <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(operation.ctype_hash, attester.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, attester.clone())])
 		.with_delegations(vec![(delegation_id, delegation_node)])
@@ -366,6 +380,7 @@ fn revoke_direct_successful() {
 	let operation = generate_base_attestation_revocation_details::<Test>(claim_hash);
 
 	ExtBuilder::default()
+		.with_balances(vec![(revoker.clone(), <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
 		.with_attestations(vec![(operation.claim_hash, attestation)])
 		.build()
@@ -396,7 +411,7 @@ fn revoke_with_delegation_successful() {
 	delegation_node.details.permissions = delegation::Permissions::ATTEST;
 	// Attestation owned by a different user, but delegation owned by the user
 	// submitting the operation.
-	let mut attestation = generate_base_attestation::<Test>(attestation_owner.clone(), attestation_owner);
+	let mut attestation = generate_base_attestation::<Test>(attestation_owner.clone(), attestation_owner.clone());
 	attestation.delegation_id = Some(delegation_id);
 
 	let mut operation = generate_base_attestation_revocation_details::<Test>(claim_hash);
@@ -404,6 +419,10 @@ fn revoke_with_delegation_successful() {
 	operation.max_parent_checks = 0u32;
 
 	ExtBuilder::default()
+		.with_balances(vec![
+			(revoker.clone(), <Test as Config>::Deposit::get() * 100),
+			(attestation_owner.clone(), <Test as Config>::Deposit::get() * 100),
+		])
 		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
 		.with_delegations(vec![(delegation_id, delegation_node)])
@@ -437,7 +456,7 @@ fn revoke_with_parent_delegation_successful() {
 	let delegation_id = delegation_mock::get_delegation_id(false);
 	let delegation_node =
 		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attestation_owner.clone(), Some(parent_id));
-	let mut attestation = generate_base_attestation::<Test>(attestation_owner.clone(), attestation_owner);
+	let mut attestation = generate_base_attestation::<Test>(attestation_owner.clone(), attestation_owner.clone());
 	attestation.delegation_id = Some(delegation_id);
 
 	let mut operation = generate_base_attestation_revocation_details::<Test>(claim_hash);
@@ -446,6 +465,10 @@ fn revoke_with_parent_delegation_successful() {
 	operation.max_parent_checks = 1u32;
 
 	ExtBuilder::default()
+		.with_balances(vec![
+			(revoker.clone(), <Test as Config>::Deposit::get() * 100),
+			(attestation_owner.clone(), <Test as Config>::Deposit::get() * 100),
+		])
 		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
@@ -481,7 +504,7 @@ fn revoke_parent_delegation_no_attestation_permissions_successful() {
 	let delegation_node =
 		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attestation_owner.clone(), Some(parent_id));
 
-	let mut attestation = generate_base_attestation::<Test>(attestation_owner.clone(), attestation_owner);
+	let mut attestation = generate_base_attestation::<Test>(attestation_owner.clone(), attestation_owner.clone());
 	attestation.delegation_id = Some(delegation_id);
 
 	let mut operation = generate_base_attestation_revocation_details::<Test>(claim_hash);
@@ -490,6 +513,10 @@ fn revoke_parent_delegation_no_attestation_permissions_successful() {
 	operation.max_parent_checks = 1u32;
 
 	ExtBuilder::default()
+		.with_balances(vec![
+			(revoker.clone(), <Test as Config>::Deposit::get() * 100),
+			(attestation_owner.clone(), <Test as Config>::Deposit::get() * 100),
+		])
 		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
@@ -526,7 +553,7 @@ fn revoke_parent_delegation_with_direct_delegation_revoked_successful() {
 		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attestation_owner.clone(), Some(parent_id));
 
 	delegation_node.details.revoked = true;
-	let mut attestation = generate_base_attestation::<Test>(attestation_owner.clone(), attestation_owner);
+	let mut attestation = generate_base_attestation::<Test>(attestation_owner.clone(), attestation_owner.clone());
 	attestation.delegation_id = Some(delegation_id);
 
 	let mut operation = generate_base_attestation_revocation_details::<Test>(claim_hash);
@@ -535,6 +562,10 @@ fn revoke_parent_delegation_with_direct_delegation_revoked_successful() {
 	operation.max_parent_checks = 1u32;
 
 	ExtBuilder::default()
+		.with_balances(vec![
+			(revoker.clone(), <Test as Config>::Deposit::get() * 100),
+			(attestation_owner.clone(), <Test as Config>::Deposit::get() * 100),
+		])
 		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
@@ -563,6 +594,7 @@ fn attestation_not_present_revoke_error() {
 	let operation = generate_base_attestation_revocation_details::<Test>(claim_hash);
 
 	ExtBuilder::default()
+		.with_balances(vec![(revoker.clone(), <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
 		.build()
 		.execute_with(|| {
@@ -589,6 +621,7 @@ fn already_revoked_revoke_error() {
 	let operation = generate_base_attestation_revocation_details::<Test>(claim_hash);
 
 	ExtBuilder::default()
+		.with_balances(vec![(revoker.clone(), <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
 		.with_attestations(vec![(operation.claim_hash, attestation)])
 		.build()
@@ -611,11 +644,15 @@ fn unauthorised_attestation_revoke_error() {
 	let claim_hash = get_claim_hash(true);
 
 	// Attestation owned by a different user
-	let attestation = generate_base_attestation::<Test>(attestation_owner.clone(), attestation_owner);
+	let attestation = generate_base_attestation::<Test>(attestation_owner.clone(), attestation_owner.clone());
 
 	let operation = generate_base_attestation_revocation_details::<Test>(claim_hash);
 
 	ExtBuilder::default()
+		.with_balances(vec![
+			(revoker.clone(), <Test as Config>::Deposit::get() * 100),
+			(attestation_owner.clone(), <Test as Config>::Deposit::get() * 100),
+		])
 		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
 		.with_attestations(vec![(operation.claim_hash, attestation)])
 		.build()
@@ -647,13 +684,17 @@ fn max_parent_lookups_revoke_error() {
 		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attestation_owner.clone(), Some(parent_id));
 
 	delegation_node.details.permissions = delegation::Permissions::ATTEST;
-	let mut attestation = generate_base_attestation::<Test>(attestation_owner.clone(), attestation_owner);
+	let mut attestation = generate_base_attestation::<Test>(attestation_owner.clone(), attestation_owner.clone());
 	attestation.delegation_id = Some(delegation_id);
 
 	let mut operation = generate_base_attestation_revocation_details::<Test>(claim_hash);
 	operation.max_parent_checks = 0u32;
 
 	ExtBuilder::default()
+		.with_balances(vec![
+			(revoker.clone(), <Test as Config>::Deposit::get() * 100),
+			(attestation_owner.clone(), <Test as Config>::Deposit::get() * 100),
+		])
 		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
@@ -684,12 +725,16 @@ fn revoked_delegation_revoke_error() {
 		delegation_mock::generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id));
 	delegation_node.details.permissions = delegation::Permissions::ATTEST;
 	delegation_node.details.revoked = true;
-	let mut attestation = generate_base_attestation::<Test>(attestation_owner.clone(), attestation_owner);
+	let mut attestation = generate_base_attestation::<Test>(attestation_owner.clone(), attestation_owner.clone());
 	attestation.delegation_id = Some(delegation_id);
 
 	let operation = generate_base_attestation_revocation_details::<Test>(claim_hash);
 
 	ExtBuilder::default()
+		.with_balances(vec![
+			(revoker.clone(), <Test as Config>::Deposit::get() * 100),
+			(attestation_owner.clone(), <Test as Config>::Deposit::get() * 100),
+		])
 		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
 		.with_delegations(vec![(delegation_id, delegation_node)])
@@ -719,6 +764,7 @@ fn remove_direct_successful() {
 	let operation = generate_base_attestation_revocation_details::<Test>(claim_hash);
 
 	ExtBuilder::default()
+		.with_balances(vec![(revoker.clone(), <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
 		.with_attestations(vec![(operation.claim_hash, attestation)])
 		.build()
@@ -746,7 +792,7 @@ fn remove_with_delegation_successful() {
 	delegation_node.details.permissions = delegation::Permissions::ATTEST;
 	// Attestation owned by a different user, but delegation owned by the user
 	// submitting the operation.
-	let mut attestation = generate_base_attestation::<Test>(attestation_owner.clone(), attestation_owner);
+	let mut attestation = generate_base_attestation::<Test>(attestation_owner.clone(), attestation_owner.clone());
 	attestation.delegation_id = Some(delegation_id);
 
 	let mut operation = generate_base_attestation_revocation_details::<Test>(claim_hash);
@@ -754,18 +800,27 @@ fn remove_with_delegation_successful() {
 	operation.max_parent_checks = 0u32;
 
 	ExtBuilder::default()
+		.with_balances(vec![
+			(attester.clone(), <Test as Config>::Deposit::get() * 100),
+			(attestation_owner.clone(), <Test as Config>::Deposit::get() * 100),
+		])
 		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, attester.clone())])
 		.with_delegations(vec![(delegation_id, delegation_node)])
 		.with_attestations(vec![(operation.claim_hash, attestation)])
 		.build()
 		.execute_with(|| {
+			assert_eq!(
+				Balances::reserved_balance(attestation_owner.clone()),
+				<Test as Config>::Deposit::get()
+			);
 			assert_ok!(Attestation::remove(
 				Origin::signed(attester.clone()),
 				operation.claim_hash,
 				operation.max_parent_checks
 			));
-			assert!(Attestation::attestations(operation.claim_hash).is_none())
+			assert!(Attestation::attestations(operation.claim_hash).is_none());
+			assert_eq!(Balances::reserved_balance(attestation_owner.clone()), 0);
 		});
 }
 
@@ -779,9 +834,12 @@ fn attestation_not_present_remove_error() {
 	let operation = generate_base_attestation_revocation_details::<Test>(claim_hash);
 
 	ExtBuilder::default()
+		.with_balances(vec![(attester.clone(), <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
 		.build()
 		.execute_with(|| {
+			assert_eq!(Balances::reserved_balance(attester.clone()), 0,);
+
 			assert_noop!(
 				Attestation::remove(
 					Origin::signed(attester.clone()),
@@ -790,32 +848,45 @@ fn attestation_not_present_remove_error() {
 				),
 				attestation::Error::<Test>::AttestationNotFound
 			);
+			assert_eq!(Balances::reserved_balance(attester.clone()), 0,);
 		});
 }
 
 #[test]
 fn unauthorised_attestation_remove_error() {
-	let attester: AccountIdOf<Test> = get_alice_ed25519().public().into();
+	let remover: AccountIdOf<Test> = get_alice_ed25519().public().into();
 	let attestation_owner: AccountIdOf<Test> = get_bob_ed25519().public().into();
 	let claim_hash = get_claim_hash(true);
 
 	// Attestation owned by a different user
-	let attestation = generate_base_attestation::<Test>(attestation_owner.clone(), attestation_owner);
+	let attestation = generate_base_attestation::<Test>(attestation_owner.clone(), attestation_owner.clone());
 
 	let operation = generate_base_attestation_revocation_details::<Test>(claim_hash);
 
 	ExtBuilder::default()
-		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
+		.with_balances(vec![
+			(remover.clone(), <Test as Config>::Deposit::get() * 100),
+			(attestation_owner.clone(), <Test as Config>::Deposit::get() * 100),
+		])
+		.with_ctypes(vec![(attestation.ctype_hash, remover.clone())])
 		.with_attestations(vec![(operation.claim_hash, attestation)])
 		.build()
 		.execute_with(|| {
+			assert_eq!(
+				Balances::reserved_balance(attestation_owner.clone()),
+				<Test as Config>::Deposit::get()
+			);
 			assert_noop!(
 				Attestation::remove(
-					Origin::signed(attester.clone()),
+					Origin::signed(remover.clone()),
 					operation.claim_hash,
 					operation.max_parent_checks
 				),
 				attestation::Error::<Test>::Unauthorized
+			);
+			assert_eq!(
+				Balances::reserved_balance(attestation_owner.clone()),
+				<Test as Config>::Deposit::get()
 			);
 		});
 }
@@ -834,18 +905,26 @@ fn revoked_delegation_remove_error() {
 	);
 	delegation_node.details.permissions = delegation::Permissions::ATTEST;
 	delegation_node.details.revoked = true;
-	let mut attestation = generate_base_attestation::<Test>(attestation_owner.clone(), attestation_owner);
+	let mut attestation = generate_base_attestation::<Test>(attestation_owner.clone(), attestation_owner.clone());
 	attestation.delegation_id = Some(delegation_id);
 
 	let operation = generate_base_attestation_revocation_details::<Test>(claim_hash);
 
 	ExtBuilder::default()
+		.with_balances(vec![
+			(attester.clone(), <Test as Config>::Deposit::get() * 100),
+			(attestation_owner.clone(), <Test as Config>::Deposit::get() * 100),
+		])
 		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, attester.clone())])
 		.with_delegations(vec![(delegation_id, delegation_node)])
 		.with_attestations(vec![(operation.claim_hash, attestation)])
 		.build()
 		.execute_with(|| {
+			assert_eq!(
+				Balances::reserved_balance(attestation_owner.clone()),
+				<Test as Config>::Deposit::get()
+			);
 			assert_noop!(
 				Attestation::remove(
 					Origin::signed(attester.clone()),
@@ -853,6 +932,69 @@ fn revoked_delegation_remove_error() {
 					operation.max_parent_checks
 				),
 				attestation::Error::<Test>::Unauthorized
+			);
+			assert_eq!(
+				Balances::reserved_balance(attestation_owner.clone()),
+				<Test as Config>::Deposit::get()
+			);
+		});
+}
+
+#[test]
+fn remove_delegated_attestation() {
+	let attester: AccountIdOf<Test> = get_alice_ed25519().public().into();
+	let attestation_owner: AccountIdOf<Test> = get_bob_ed25519().public().into();
+	let claim_hash = get_claim_hash(true);
+
+	let hierarchy_root_id = delegation_mock::get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = delegation_mock::generate_base_delegation_hierarchy_details();
+	let (delegation_id, mut delegation_node) = (
+		delegation_mock::get_delegation_id(true),
+		delegation_mock::generate_base_delegation_node(hierarchy_root_id, attester.clone(), Some(hierarchy_root_id)),
+	);
+	delegation_node.details.permissions = delegation::Permissions::ATTEST;
+	let mut attestation = generate_base_attestation::<Test>(attestation_owner.clone(), attestation_owner.clone());
+	attestation.delegation_id = Some(delegation_id);
+
+	let operation = generate_base_attestation_revocation_details::<Test>(claim_hash);
+
+	ExtBuilder::default()
+		.with_balances(vec![
+			(attester.clone(), <Test as Config>::Deposit::get() * 100),
+			(attestation_owner.clone(), <Test as Config>::Deposit::get() * 100),
+		])
+		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, attester.clone())])
+		.with_delegations(vec![(delegation_id, delegation_node)])
+		.with_attestations(vec![(operation.claim_hash, attestation)])
+		.build()
+		.execute_with(|| {
+			assert_eq!(
+				Balances::reserved_balance(attestation_owner.clone()),
+				<Test as Config>::Deposit::get()
+			);
+			assert!(
+				DelegatedAttestations::<Test>::get(delegation_id)
+					.unwrap_or_default()
+					.iter()
+					.find(|&ch| ch == &operation.claim_hash)
+					.is_some(),
+				"delegated attestation entry should be present before removal"
+			);
+
+			assert_ok!(Attestation::remove(
+				Origin::signed(attester.clone()),
+				operation.claim_hash,
+				operation.max_parent_checks
+			));
+			assert_eq!(Balances::reserved_balance(attestation_owner.clone()), 0);
+			assert!(
+				DelegatedAttestations::<Test>::get(delegation_id)
+					.unwrap_or_default()
+					.iter()
+					.find(|&ch| ch == &operation.claim_hash)
+					.is_none(),
+				"delegated attestation entry should be removed"
 			);
 		});
 }
