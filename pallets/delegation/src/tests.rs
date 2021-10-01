@@ -21,6 +21,7 @@ use sp_core::Pair;
 
 use crate::{self as delegation, mock::*};
 use ctype::mock as ctype_mock;
+use sp_runtime::traits::Zero;
 
 // submit_delegation_root_creation_operation()
 
@@ -30,36 +31,36 @@ fn create_root_delegation_successful() {
 	let creator = get_ed25519_account(creator_keypair.public());
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-
 	let operation = generate_base_delegation_hierarchy_creation_operation::<Test>(hierarchy_root_id);
 
-	let mut ext = ctype_mock::ExtBuilder::default()
+	ExtBuilder::default()
 		.with_ctypes(vec![(operation.ctype_hash, creator.clone())])
-		.build(None);
+		.with_balances(vec![(creator.clone(), DepositMock::get())])
+		.build(None)
+		.execute_with(|| {
+			// Create root hierarchy
+			assert_ok!(Delegation::create_hierarchy(
+				get_origin(creator.clone()),
+				operation.id,
+				operation.ctype_hash
+			));
+			assert_eq!(Balances::reserved_balance(creator.clone()), DepositMock::get());
 
-	ext.execute_with(|| {
-		assert_ok!(Delegation::create_hierarchy(
-			get_origin(creator.clone()),
-			operation.id,
-			operation.ctype_hash
-		));
-	});
+			// Get stored hierarchy
+			let stored_hierarchy_details = Delegation::delegation_hierarchies(&hierarchy_root_id)
+				.expect("Delegation hierarchy should be present on chain.");
+			assert_eq!(stored_hierarchy_details.ctype_hash, operation.ctype_hash);
 
-	let stored_hierarchy_details = ext.execute_with(|| {
-		Delegation::delegation_hierarchies(&hierarchy_root_id)
-			.expect("Delegation hierarchy should be present on chain.")
-	});
-	assert_eq!(stored_hierarchy_details.ctype_hash, operation.ctype_hash);
-
-	let stored_delegation_root = ext.execute_with(|| {
-		Delegation::delegation_nodes(&hierarchy_root_id).expect("Delegation root should be present on chain.")
-	});
-
-	assert_eq!(stored_delegation_root.hierarchy_root_id, hierarchy_root_id);
-	assert_eq!(stored_delegation_root.parent, None);
-	assert_eq!(stored_delegation_root.children.len(), 0);
-	assert_eq!(stored_delegation_root.details.owner, creator);
-	assert!(!stored_delegation_root.details.revoked);
+			// Check root delegation
+			let stored_delegation_root =
+				Delegation::delegation_nodes(&hierarchy_root_id).expect("Delegation root should be present on chain.");
+			assert_eq!(stored_delegation_root.hierarchy_root_id, hierarchy_root_id);
+			assert!(stored_delegation_root.parent.is_none());
+			assert!(stored_delegation_root.children.len().is_zero());
+			assert_eq!(stored_delegation_root.details.owner, creator.clone());
+			assert_eq!(stored_delegation_root.deposit.owner, creator);
+			assert!(!stored_delegation_root.details.revoked);
+		});
 }
 
 #[test]
@@ -122,58 +123,56 @@ fn create_delegation_direct_root_successful() {
 		get_delegation_hierarchy_id::<Test>(true),
 		generate_base_delegation_hierarchy_details(),
 	);
-	let (delegation_id, delegation_node) = (
-		get_delegation_id(true),
-		generate_base_delegation_node(hierarchy_root_id, delegate, Some(hierarchy_root_id)),
-	);
 
-	let delegation_info = Delegation::calculate_delegation_creation_hash(
-		&delegation_id,
-		&hierarchy_root_id,
-		&hierarchy_root_id,
-		&delegation_node.details.permissions,
-	);
-
-	let delegate_signature = delegate_keypair.sign(&hash_to_u8(delegation_info));
-
-	let operation =
-		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
-
-	let ext = ctype_mock::ExtBuilder::default()
+	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
-		.build(None);
-	let mut ext = ExtBuilder::default()
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
-		.build(Some(ext));
+		.with_balances(vec![
+			(creator.clone(), DepositMock::get()),
+			(delegate.clone(), DepositMock::get()),
+		])
+		.build(None)
+		.execute_with(|| {
+			// Create delegation to root
+			let (delegation_id, delegation_node) = (
+				get_delegation_id(true),
+				generate_base_delegation_node(hierarchy_root_id, delegate, Some(hierarchy_root_id)),
+			);
+			let delegation_info = Delegation::calculate_delegation_creation_hash(
+				&delegation_id,
+				&hierarchy_root_id,
+				&hierarchy_root_id,
+				&delegation_node.details.permissions,
+			);
+			let delegate_signature = delegate_keypair.sign(&hash_to_u8(delegation_info));
+			let operation =
+				generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
 
-	ext.execute_with(|| {
-		assert_ok!(Delegation::add_delegation(
-			get_origin(creator.clone()),
-			operation.delegation_id,
-			operation.parent_id,
-			operation.delegate.clone(),
-			operation.permissions,
-			operation.delegate_signature.clone(),
-		));
-	});
+			// Add delegation to root
+			assert_ok!(Delegation::add_delegation(
+				get_origin(creator.clone()),
+				operation.delegation_id,
+				operation.parent_id,
+				operation.delegate.clone(),
+				operation.permissions,
+				operation.delegate_signature.clone(),
+			));
 
-	let stored_delegation = ext.execute_with(|| {
-		Delegation::delegation_nodes(&operation.delegation_id).expect("Delegation should be present on chain.")
-	});
+			// Check stored delegation against operation
+			let stored_delegation =
+				Delegation::delegation_nodes(&operation.delegation_id).expect("Delegation should be present on chain.");
+			assert_eq!(stored_delegation.hierarchy_root_id, operation.hierarchy_id);
+			assert_eq!(stored_delegation.parent, Some(operation.parent_id));
+			assert!(stored_delegation.children.is_empty());
+			assert_eq!(stored_delegation.details.owner, operation.delegate);
+			assert_eq!(stored_delegation.details.permissions, operation.permissions);
+			assert!(!stored_delegation.details.revoked);
 
-	assert_eq!(stored_delegation.hierarchy_root_id, operation.hierarchy_id);
-	assert_eq!(stored_delegation.parent, Some(operation.parent_id));
-	assert!(stored_delegation.children.is_empty());
-	assert_eq!(stored_delegation.details.owner, operation.delegate);
-	assert_eq!(stored_delegation.details.permissions, operation.permissions);
-	assert!(!stored_delegation.details.revoked);
-
-	// Verify that the root has the new delegation among its children
-	let stored_root = ext.execute_with(|| {
-		Delegation::delegation_nodes(&operation.hierarchy_id).expect("Delegation root should be present on chain.")
-	});
-
-	assert!(stored_root.children.contains(&operation.delegation_id));
+			// Verify that the root has the new delegation among its children
+			let stored_root = Delegation::delegation_nodes(&operation.hierarchy_id)
+				.expect("Delegation root should be present on chain.");
+			assert!(stored_root.children.contains(&operation.delegation_id));
+		});
 }
 
 #[test]
@@ -191,59 +190,61 @@ fn create_delegation_with_parent_successful() {
 		get_delegation_id(true),
 		generate_base_delegation_node(hierarchy_root_id, creator.clone(), Some(hierarchy_root_id)),
 	);
-	let (delegation_id, delegation_node) = (
-		get_delegation_id(false),
-		generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id)),
-	);
 
-	let delegation_info = Delegation::calculate_delegation_creation_hash(
-		&delegation_id,
-		&hierarchy_root_id,
-		&parent_id,
-		&delegation_node.details.permissions,
-	);
-
-	let delegate_signature = delegate_keypair.sign(&hash_to_u8(delegation_info));
-
-	let operation =
-		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
-
-	let ext = ctype_mock::ExtBuilder::default()
+	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
-		.build(None);
-	let mut ext = ExtBuilder::default()
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
 		.with_delegations(vec![(parent_id, parent_node)])
-		.build(Some(ext));
+		.with_balances(vec![
+			(creator.clone(), DepositMock::get()),
+			(delegate.clone(), DepositMock::get()),
+		])
+		.build(None)
+		.execute_with(|| {
+			// Create sub-delegation
+			let (delegation_id, delegation_node) = (
+				get_delegation_id(false),
+				generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
+			);
+			let delegation_info = Delegation::calculate_delegation_creation_hash(
+				&delegation_id,
+				&hierarchy_root_id,
+				&parent_id,
+				&delegation_node.details.permissions,
+			);
+			let delegate_signature = delegate_keypair.sign(&hash_to_u8(delegation_info));
+			let operation =
+				generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
 
-	ext.execute_with(|| {
-		assert_ok!(Delegation::add_delegation(
-			get_origin(creator.clone()),
-			operation.delegation_id,
-			operation.parent_id,
-			operation.delegate.clone(),
-			operation.permissions,
-			operation.delegate_signature.clone(),
-		));
-	});
+			// Add sub-delegation
+			assert_ok!(Delegation::add_delegation(
+				get_origin(creator.clone()),
+				delegation_id,
+				parent_id,
+				operation.delegate.clone(),
+				operation.permissions,
+				operation.delegate_signature.clone(),
+			));
+			assert_eq!(Balances::reserved_balance(&creator), DepositMock::get());
+			assert!(Balances::reserved_balance(delegate).is_zero());
 
-	let stored_delegation = ext.execute_with(|| {
-		Delegation::delegation_nodes(&operation.delegation_id).expect("Delegation should be present on chain.")
-	});
+			// Data in stored delegation and operation should match
+			let stored_delegation =
+				Delegation::delegation_nodes(&operation.delegation_id).expect("Delegation should be present on chain.");
+			assert_eq!(stored_delegation.hierarchy_root_id, operation.hierarchy_id);
+			assert_eq!(stored_delegation.parent, Some(operation.parent_id));
+			assert!(stored_delegation.children.is_empty());
+			assert_eq!(stored_delegation.details.owner, operation.delegate);
+			assert_eq!(stored_delegation.details.permissions, operation.permissions);
+			assert!(!stored_delegation.details.revoked);
+			assert_eq!(stored_delegation.deposit.owner, creator);
 
-	assert_eq!(stored_delegation.hierarchy_root_id, operation.hierarchy_id);
-	assert_eq!(stored_delegation.parent, Some(operation.parent_id));
-	assert!(stored_delegation.children.is_empty());
-	assert_eq!(stored_delegation.details.owner, operation.delegate);
-	assert_eq!(stored_delegation.details.permissions, operation.permissions);
-	assert!(!stored_delegation.details.revoked);
+			// Verify that the parent has the new delegation among its children
+			let stored_parent =
+				Delegation::delegation_nodes(&operation.parent_id).expect("Delegation parent be present on chain.");
 
-	// Verify that the parent has the new delegation among its children
-	let stored_parent = ext.execute_with(|| {
-		Delegation::delegation_nodes(&operation.parent_id).expect("Delegation parent should be present on chain.")
-	});
-
-	assert!(stored_parent.children.contains(&operation.delegation_id));
+			assert!(stored_parent.children.contains(&operation.delegation_id));
+		});
 }
 
 #[test]

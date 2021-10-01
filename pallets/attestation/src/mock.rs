@@ -75,7 +75,7 @@ where
 		revoked: false,
 		deposit: crate::Deposit::<AccountIdOf<T>, BalanceOf<T>> {
 			owner: payer,
-			amount: T::Deposit::get(),
+			amount: <T as Config>::Deposit::get(),
 		},
 	}
 }
@@ -203,6 +203,8 @@ pub mod runtime {
 		type MaxRevocations = MaxRevocations;
 		type MaxChildren = MaxChildren;
 		type WeightInfo = ();
+		type Currency = Balances;
+		type Deposit = Deposit;
 	}
 
 	parameter_types! {

@@ -19,14 +19,15 @@
 use crate::{
 	deprecated::{
 		v1::storage::{Children, Delegations, Roots},
-		v2::{storage::DelegationNodes, DelegationNode},
+		v2::{storage::DelegationNodes, DelegationNode as DelegationNodeV2},
 	},
 	migrations::DelegationStorageVersion,
 	Config, DelegationDetails, DelegationHierarchies, DelegationHierarchyDetails, DelegationNodeIdOf, Permissions,
 	StorageVersion, Weight,
 };
 use frame_support::{
-	storage::bounded_btree_set::BoundedBTreeSet, traits::Get, IterableStorageMap, StorageMap, StoragePrefixedMap,
+	ensure, storage::bounded_btree_set::BoundedBTreeSet, traits::Get, IterableStorageMap, StorageMap,
+	StoragePrefixedMap,
 };
 use sp_runtime::traits::Zero;
 use sp_std::{
@@ -69,7 +70,7 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	// the `parent` link of each node accordingly. Otherwise, we would need to save
 	// the node in the storage, and then retrieve it again to update the parent
 	// link.
-	let mut new_nodes: BTreeMap<DelegationNodeIdOf<T>, DelegationNode<T>> = BTreeMap::new();
+	let mut new_nodes: BTreeMap<DelegationNodeIdOf<T>, DelegationNodeV2<T>> = BTreeMap::new();
 
 	// First iterate over the delegation roots and translate them to hierarchies.
 	total_weight = total_weight.saturating_add(migrate_roots::<T>(&mut new_nodes));
@@ -91,7 +92,7 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	total_weight
 }
 
-fn migrate_roots<T: Config>(new_nodes: &mut BTreeMap<DelegationNodeIdOf<T>, DelegationNode<T>>) -> Weight {
+fn migrate_roots<T: Config>(new_nodes: &mut BTreeMap<DelegationNodeIdOf<T>, DelegationNodeV2<T>>) -> Weight {
 	let total_weight = Roots::<T>::iter().fold(Weight::zero(), |mut total_weight, (old_root_id, old_root_node)| {
 		let new_hierarchy_details = DelegationHierarchyDetails::<T> {
 			ctype_hash: old_root_node.ctype_hash,
@@ -105,7 +106,7 @@ fn migrate_roots<T: Config>(new_nodes: &mut BTreeMap<DelegationNodeIdOf<T>, Dele
 		// In here, we already check for potential children of root nodes and ONLY
 		// update the children information. The parent information will be updated
 		// later, when we know we have seen all the children already.
-		let mut new_root_node = DelegationNode::new_root_node(old_root_id, new_root_details);
+		let mut new_root_node = DelegationNodeV2::new_root_node(old_root_id, new_root_details);
 		if let Some(root_children_ids) = Children::<T>::take(old_root_id) {
 			let children_set: BTreeSet<DelegationNodeIdOf<T>> = root_children_ids.iter().copied().collect();
 			new_root_node.children = BoundedBTreeSet::try_from(children_set).expect("Should not exceed MaxChildren");
@@ -149,7 +150,7 @@ fn migrate_roots<T: Config>(new_nodes: &mut BTreeMap<DelegationNodeIdOf<T>, Dele
 }
 
 fn migrate_nodes<T: Config>(
-	new_nodes: &mut BTreeMap<DelegationNodeIdOf<T>, DelegationNode<T>>,
+	new_nodes: &mut BTreeMap<DelegationNodeIdOf<T>, DelegationNodeV2<T>>,
 	initial_weight: Weight,
 ) -> Weight {
 	let total_weight = Delegations::<T>::iter().fold(initial_weight, |mut total_weight, (old_node_id, old_node)| {
@@ -160,7 +161,7 @@ fn migrate_nodes<T: Config>(
 		};
 		// In the old version, a parent None indicated the node is a child of the root.
 		let new_node_parent_id = old_node.parent.unwrap_or(old_node.root_id);
-		let mut new_node = DelegationNode::new_node(old_node.root_id, new_node_parent_id, new_node_details);
+		let mut new_node = DelegationNodeV2::new_node(old_node.root_id, new_node_parent_id, new_node_details);
 		if let Some(children_ids) = Children::<T>::take(old_node_id) {
 			let children_set: BTreeSet<DelegationNodeIdOf<T>> = children_ids.iter().copied().collect();
 			new_node.children = BoundedBTreeSet::try_from(children_set).expect("Should not exceed MaxChildren");
@@ -203,7 +204,7 @@ fn migrate_nodes<T: Config>(
 }
 
 fn finalize_children_nodes<T: Config>(
-	new_nodes: &mut BTreeMap<DelegationNodeIdOf<T>, DelegationNode<T>>,
+	new_nodes: &mut BTreeMap<DelegationNodeIdOf<T>, DelegationNodeV2<T>>,
 	initial_weight: Weight,
 ) -> Weight {
 	new_nodes
@@ -269,7 +270,11 @@ mod tests {
 	use sp_core::Pair;
 
 	use super::*;
-	use crate::mock::Test as TestRuntime;
+	use crate::{
+		deprecated::v1::{DelegationNode as DelegationNodeV1, DelegationRoot},
+		mock,
+		mock::Test as TestRuntime,
+	};
 
 	#[test]
 	fn fail_version_higher() {
@@ -315,10 +320,8 @@ mod tests {
 		ext.execute_with(|| {
 			let alice = mock::get_ed25519_account(mock::get_alice_ed25519().public());
 			let old_root_id = mock::get_delegation_id(true);
-			let old_root_node = crate::deprecated::v1::DelegationRoot::<TestRuntime>::new(
-				ctype::mock::get_ctype_hash::<TestRuntime>(true),
-				alice,
-			);
+			let old_root_node =
+				DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash::<TestRuntime>(true), alice);
 			Roots::insert(old_root_id, old_root_node.clone());
 
 			#[cfg(feature = "try-runtime")]
@@ -361,14 +364,12 @@ mod tests {
 			let alice = mock::get_ed25519_account(mock::get_alice_ed25519().public());
 			let bob = mock::get_sr25519_account(mock::get_bob_sr25519().public());
 			let old_root_id = mock::get_delegation_id(true);
-			let old_root_node = deprecated::v1::DelegationRoot::<TestRuntime>::new(
-				ctype::mock::get_ctype_hash::<TestRuntime>(true),
-				alice.clone(),
-			);
+			let old_root_node =
+				DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash::<TestRuntime>(true), alice.clone());
 			let old_node_id_1 = mock::get_delegation_id(false);
-			let old_node_1 = DelegationNode::<TestRuntime>::new_root_child(old_root_id, alice, Permissions::DELEGATE);
+			let old_node_1 = DelegationNodeV1::<TestRuntime>::new_root_child(old_root_id, alice, Permissions::DELEGATE);
 			let old_node_id_2 = mock::get_delegation_id_2(true);
-			let old_node_2 = DelegationNode::<TestRuntime>::new_root_child(old_root_id, bob, Permissions::ATTEST);
+			let old_node_2 = DelegationNodeV1::<TestRuntime>::new_root_child(old_root_id, bob, Permissions::ATTEST);
 			Roots::insert(old_root_id, old_root_node.clone());
 			Delegations::insert(old_node_id_1, old_node_1.clone());
 			Delegations::insert(old_node_id_2, old_node_2.clone());
@@ -432,15 +433,14 @@ mod tests {
 			let alice = mock::get_ed25519_account(mock::get_alice_ed25519().public());
 			let bob = mock::get_sr25519_account(mock::get_bob_sr25519().public());
 			let old_root_id = mock::get_delegation_id(true);
-			let old_root_node = deprecated::v1::DelegationRoot::<TestRuntime>::new(
-				ctype::mock::get_ctype_hash::<TestRuntime>(true),
-				alice.clone(),
-			);
+			let old_root_node =
+				DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash::<TestRuntime>(true), alice.clone());
 			let old_parent_id = mock::get_delegation_id(false);
-			let old_parent_node = DelegationNode::<TestRuntime>::new_root_child(old_root_id, alice, Permissions::all());
+			let old_parent_node =
+				DelegationNodeV1::<TestRuntime>::new_root_child(old_root_id, alice, Permissions::all());
 			let old_node_id = mock::get_delegation_id_2(true);
 			let old_node =
-				DelegationNode::<TestRuntime>::new_node_child(old_root_id, old_parent_id, bob, Permissions::ATTEST);
+				DelegationNodeV1::<TestRuntime>::new_node_child(old_root_id, old_parent_id, bob, Permissions::ATTEST);
 			Roots::insert(old_root_id, old_root_node.clone());
 			Delegations::insert(old_parent_id, old_parent_node.clone());
 			Delegations::insert(old_node_id, old_node.clone());

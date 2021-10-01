@@ -47,6 +47,7 @@ type TestDelegationNodeId = kilt_primitives::Hash;
 type TestDelegatorId = TestCtypeOwner;
 type TestDelegateSignature = MultiSignature;
 type TestBalance = kilt_primitives::Balance;
+type TestCtypeHash = ctype_mock::TestCtypeHash;
 
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -94,7 +95,7 @@ impl frame_system::Config for Test {
 }
 
 parameter_types! {
-	pub const ExistentialDeposit: TestBalance = MILLI_KILT;
+	pub const ExistentialDeposit: TestBalance = 0;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxReserves: u32 = 50;
 }
@@ -125,7 +126,7 @@ parameter_types! {
 	pub const MaxRevocations: u32 = 5;
 	#[derive(Clone)]
 	pub const MaxChildren: u32 = 1000;
-	pub const DepositAmount: TestBalance = 100 * MILLI_KILT;
+	pub const DepositMock: TestBalance = 100 * MILLI_KILT;
 }
 
 impl Config for Test {
@@ -141,7 +142,7 @@ impl Config for Test {
 	type MaxRevocations = MaxRevocations;
 	type MaxChildren = MaxChildren;
 	type Currency = Balances;
-	type Deposit = DepositAmount;
+	type Deposit = DepositMock;
 	type WeightInfo = ();
 }
 
@@ -378,6 +379,10 @@ pub fn initialize_pallet<T: Config>(
 
 #[derive(Clone)]
 pub struct ExtBuilder {
+	/// endowed accounts with balances
+	balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>,
+	/// initial ctypes & owners
+	ctypes: Vec<(TestCtypeHash, AccountIdOf<Test>)>,
 	ctype_builder: Option<ctype_mock::ExtBuilder>,
 	delegation_hierarchies_stored: Vec<(
 		TestDelegationNodeId,
@@ -391,6 +396,8 @@ pub struct ExtBuilder {
 impl Default for ExtBuilder {
 	fn default() -> Self {
 		Self {
+			balances: vec![],
+			ctypes: vec![],
 			ctype_builder: None,
 			delegation_hierarchies_stored: vec![],
 			delegations_stored: vec![],
@@ -412,6 +419,16 @@ impl ExtBuilder {
 		self
 	}
 
+	pub fn with_balances(mut self, balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>) -> Self {
+		self.balances = balances;
+		self
+	}
+
+	pub fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, TestCtypeOwner)>) -> Self {
+		self.ctypes = ctypes;
+		self
+	}
+
 	pub fn with_delegations(mut self, delegations: Vec<(TestDelegationNodeId, DelegationNode<Test>)>) -> Self {
 		self.delegations_stored = delegations;
 		self
@@ -426,12 +443,22 @@ impl ExtBuilder {
 		let mut ext = if let Some(ext) = ext {
 			ext
 		} else {
-			let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+			pallet_balances::GenesisConfig::<Test> {
+				balances: self.balances.clone(),
+			}
+			.assimilate_storage(&mut storage)
+			.expect("assimilate should not fail");
+
 			sp_io::TestExternalities::new(storage)
 		};
 
 		ext.execute_with(|| {
 			initialize_pallet(self.delegations_stored, self.delegation_hierarchies_stored);
+
+			for genesis_ctype in &self.ctypes {
+				ctype::Ctypes::<Test>::insert(genesis_ctype.0, genesis_ctype.1.clone());
+			}
 
 			delegation::StorageVersion::<Test>::set(self.storage_version);
 		});
