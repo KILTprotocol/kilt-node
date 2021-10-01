@@ -421,7 +421,7 @@ fn revoke_with_delegation_successful() {
 	ExtBuilder::default()
 		.with_balances(vec![
 			(revoker.clone(), <Test as Config>::Deposit::get() * 100),
-			(attestation_owner.clone(), <Test as Config>::Deposit::get() * 100),
+			(attestation_owner, <Test as Config>::Deposit::get() * 100),
 		])
 		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
@@ -467,7 +467,7 @@ fn revoke_with_parent_delegation_successful() {
 	ExtBuilder::default()
 		.with_balances(vec![
 			(revoker.clone(), <Test as Config>::Deposit::get() * 100),
-			(attestation_owner.clone(), <Test as Config>::Deposit::get() * 100),
+			(attestation_owner, <Test as Config>::Deposit::get() * 100),
 		])
 		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
@@ -515,7 +515,7 @@ fn revoke_parent_delegation_no_attestation_permissions_successful() {
 	ExtBuilder::default()
 		.with_balances(vec![
 			(revoker.clone(), <Test as Config>::Deposit::get() * 100),
-			(attestation_owner.clone(), <Test as Config>::Deposit::get() * 100),
+			(attestation_owner, <Test as Config>::Deposit::get() * 100),
 		])
 		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
@@ -564,7 +564,7 @@ fn revoke_parent_delegation_with_direct_delegation_revoked_successful() {
 	ExtBuilder::default()
 		.with_balances(vec![
 			(revoker.clone(), <Test as Config>::Deposit::get() * 100),
-			(attestation_owner.clone(), <Test as Config>::Deposit::get() * 100),
+			(attestation_owner, <Test as Config>::Deposit::get() * 100),
 		])
 		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
@@ -651,7 +651,7 @@ fn unauthorised_attestation_revoke_error() {
 	ExtBuilder::default()
 		.with_balances(vec![
 			(revoker.clone(), <Test as Config>::Deposit::get() * 100),
-			(attestation_owner.clone(), <Test as Config>::Deposit::get() * 100),
+			(attestation_owner, <Test as Config>::Deposit::get() * 100),
 		])
 		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
 		.with_attestations(vec![(operation.claim_hash, attestation)])
@@ -693,7 +693,7 @@ fn max_parent_lookups_revoke_error() {
 	ExtBuilder::default()
 		.with_balances(vec![
 			(revoker.clone(), <Test as Config>::Deposit::get() * 100),
-			(attestation_owner.clone(), <Test as Config>::Deposit::get() * 100),
+			(attestation_owner, <Test as Config>::Deposit::get() * 100),
 		])
 		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
@@ -733,7 +733,7 @@ fn revoked_delegation_revoke_error() {
 	ExtBuilder::default()
 		.with_balances(vec![
 			(revoker.clone(), <Test as Config>::Deposit::get() * 100),
-			(attestation_owner.clone(), <Test as Config>::Deposit::get() * 100),
+			(attestation_owner, <Test as Config>::Deposit::get() * 100),
 		])
 		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
@@ -820,7 +820,7 @@ fn remove_with_delegation_successful() {
 				operation.max_parent_checks
 			));
 			assert!(Attestation::attestations(operation.claim_hash).is_none());
-			assert_eq!(Balances::reserved_balance(attestation_owner.clone()), 0);
+			assert_eq!(Balances::reserved_balance(attestation_owner), 0);
 		});
 }
 
@@ -885,7 +885,7 @@ fn unauthorised_attestation_remove_error() {
 				attestation::Error::<Test>::Unauthorized
 			);
 			assert_eq!(
-				Balances::reserved_balance(attestation_owner.clone()),
+				Balances::reserved_balance(attestation_owner),
 				<Test as Config>::Deposit::get()
 			);
 		});
@@ -934,7 +934,7 @@ fn revoked_delegation_remove_error() {
 				attestation::Error::<Test>::Unauthorized
 			);
 			assert_eq!(
-				Balances::reserved_balance(attestation_owner.clone()),
+				Balances::reserved_balance(attestation_owner),
 				<Test as Config>::Deposit::get()
 			);
 		});
@@ -977,8 +977,7 @@ fn remove_delegated_attestation() {
 				DelegatedAttestations::<Test>::get(delegation_id)
 					.unwrap_or_default()
 					.iter()
-					.find(|&ch| ch == &operation.claim_hash)
-					.is_some(),
+					.any(|&ch| ch == operation.claim_hash),
 				"delegated attestation entry should be present before removal"
 			);
 
@@ -987,13 +986,12 @@ fn remove_delegated_attestation() {
 				operation.claim_hash,
 				operation.max_parent_checks
 			));
-			assert_eq!(Balances::reserved_balance(attestation_owner.clone()), 0);
+			assert_eq!(Balances::reserved_balance(attestation_owner), 0);
 			assert!(
-				DelegatedAttestations::<Test>::get(delegation_id)
+				!DelegatedAttestations::<Test>::get(delegation_id)
 					.unwrap_or_default()
 					.iter()
-					.find(|&ch| ch == &operation.claim_hash)
-					.is_none(),
+					.any(|&ch| ch == operation.claim_hash),
 				"delegated attestation entry should be removed"
 			);
 		});
