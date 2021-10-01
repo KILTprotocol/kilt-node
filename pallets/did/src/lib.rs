@@ -954,16 +954,8 @@ impl<T: Config> Pallet<T> {
 		operation: &DidAuthorizedCallOperationWithVerificationRelationship<T>,
 		signature: &DidSignature,
 	) -> Result<(), DidError> {
-		let current_block_number = frame_system::Pallet::<T>::block_number();
-		// Before accessing the storage, we check if the provided block number is valid,
-		// i.e., if the current blockchain block is in the inclusive range
-		// [operation_block_number, operation_block_number + MaxBlocksTxValidity].
-		let allowed_range =
-			operation.block_number..=operation.block_number.saturating_add(T::MaxBlocksTxValidity::get());
-		ensure!(
-			allowed_range.contains(&current_block_number),
-			DidError::SignatureError(SignatureError::TransactionExpired)
-		);
+		// Check that the tx has not expired.
+		Self::validate_block_number_value(operation.block_number)?;
 
 		let mut did_details =
 			Did::<T>::get(&operation.did).ok_or(DidError::StorageError(StorageError::DidNotPresent))?;
@@ -980,6 +972,21 @@ impl<T: Config> Pallet<T> {
 		)?;
 
 		Did::<T>::insert(&operation.did, did_details);
+
+		Ok(())
+	}
+	// Check if the provided block number is valid,
+	// i.e., if the current blockchain block is in the inclusive range
+	// [operation_block_number, operation_block_number + MaxBlocksTxValidity].
+	fn validate_block_number_value(block_number: BlockNumberOf<T>) -> Result<(), DidError> {
+		let current_block_number = frame_system::Pallet::<T>::block_number();
+		let allowed_range =
+		block_number..=block_number.saturating_add(T::MaxBlocksTxValidity::get());
+
+		ensure!(
+			allowed_range.contains(&current_block_number),
+			DidError::SignatureError(SignatureError::TransactionExpired)
+		);
 
 		Ok(())
 	}
