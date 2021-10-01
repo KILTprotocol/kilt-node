@@ -975,6 +975,7 @@ impl<T: Config> Pallet<T> {
 
 		Ok(())
 	}
+
 	// Check if the provided block number is valid,
 	// i.e., if the current blockchain block is in the inclusive range
 	// [operation_block_number, operation_block_number + MaxBlocksTxValidity].
