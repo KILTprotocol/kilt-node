@@ -92,7 +92,7 @@ pub mod pallet {
 	use super::*;
 	use ctype::CtypeHashOf;
 	use delegation::DelegationNodeIdOf;
-	use frame_benchmarking::Zero;
+	use sp_runtime::traits::Zero;
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{Currency, Get, ReservableCurrency},
