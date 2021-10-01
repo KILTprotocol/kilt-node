@@ -403,9 +403,9 @@ pub mod pallet {
 			Attestations::<T>::remove(&claim_hash);
 			if let Some(delegation_id) = attestation.delegation_id {
 				DelegatedAttestations::<T>::mutate(&delegation_id, |maybe_attestation| {
-					maybe_attestation
-						.as_mut()
-						.map(|attestations| attestations.retain(|&elem| elem != claim_hash));
+					if let Some(attestations) = maybe_attestation.as_mut() {
+						attestations.retain(|&elem| elem != claim_hash);
+					}
 				});
 			}
 
