@@ -980,8 +980,7 @@ impl<T: Config> Pallet<T> {
 	// [operation_block_number, operation_block_number + MaxBlocksTxValidity].
 	fn validate_block_number_value(block_number: BlockNumberOf<T>) -> Result<(), DidError> {
 		let current_block_number = frame_system::Pallet::<T>::block_number();
-		let allowed_range =
-		block_number..=block_number.saturating_add(T::MaxBlocksTxValidity::get());
+		let allowed_range = block_number..=block_number.saturating_add(T::MaxBlocksTxValidity::get());
 
 		ensure!(
 			allowed_range.contains(&current_block_number),
