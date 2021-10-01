@@ -309,7 +309,7 @@ impl<T: Config> DidDetails<T> {
 			service_endpoints.validate_against_config_limits()?;
 		}
 
-		let current_block_number = <frame_system::Pallet<T>>::block_number();
+		let current_block_number = frame_system::Pallet::<T>::block_number();
 
 		// Creates a new DID with the given authentication key.
 		let mut new_did_details = DidDetails::new(new_auth_key, current_block_number)?;
@@ -514,12 +514,9 @@ impl<T: Config> DidDetails<T> {
 	}
 
 	/// Increase the tx counter of the DID.
-	pub fn increase_tx_counter(&mut self) -> Result<(), StorageError> {
-		self.last_tx_counter = self
-			.last_tx_counter
-			.checked_add(1)
-			.ok_or(StorageError::MaxTxCounterValue)?;
-		Ok(())
+	pub fn increase_tx_counter(&mut self) {
+		// Since we have transaction mortality now, we can safely wrap nonces around.
+		self.last_tx_counter = self.last_tx_counter.wrapping_add(1);
 	}
 
 	/// Returns the last used tx counter for the DID.
@@ -634,6 +631,8 @@ pub struct DidAuthorizedCallOperation<T: Config> {
 	pub tx_counter: u64,
 	/// The extrinsic call to authorize with the DID.
 	pub call: DidCallableOf<T>,
+	/// The block number at which the operation was created.
+	pub block_number: BlockNumberOf<T>,
 	/// The account which is authorized to submit the did call.
 	pub submitter: AccountIdentifierOf<T>,
 }

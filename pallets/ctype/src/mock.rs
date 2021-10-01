@@ -109,15 +109,9 @@ where
 	}
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct ExtBuilder {
 	ctypes_stored: Vec<(TestCtypeHash, TestCtypeOwner)>,
-}
-
-impl Default for ExtBuilder {
-	fn default() -> Self {
-		Self { ctypes_stored: vec![] }
-	}
 }
 
 impl ExtBuilder {

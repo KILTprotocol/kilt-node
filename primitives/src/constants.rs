@@ -169,3 +169,19 @@ pub mod governance {
 	#[cfg(not(feature = "fast-gov"))]
 	pub const TECHNICAL_MOTION_DURATION: BlockNumber = 3 * DAYS;
 }
+
+pub mod did {
+	use crate::BlockNumber;
+
+	use super::HOURS;
+
+	pub const MAX_KEY_AGREEMENT_KEYS: u32 = 10;
+	pub const MAX_URL_LENGTH: u32 = 200;
+	// This has been reduced from the previous 100, but it might still need
+	// fine-tuning depending on our needs.
+	pub const MAX_PUBLIC_KEYS_PER_DID: u32 = 20;
+	// At most the max number of keys - 1 for authentication
+	pub const MAX_TOTAL_KEY_AGREEMENT_KEYS: u32 = MAX_PUBLIC_KEYS_PER_DID - 1;
+	pub const MAX_ENDPOINT_URLS_COUNT: u32 = 3;
+	pub const MAX_BLOCKS_TX_VALIDITY: BlockNumber = HOURS;
+}

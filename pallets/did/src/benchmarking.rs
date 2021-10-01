@@ -88,6 +88,7 @@ fn generate_base_did_call_operation<T: Config>(
 		did,
 		call: test_call,
 		tx_counter: 1u64,
+		block_number: T::BlockNumber::default(),
 		submitter,
 	}
 }

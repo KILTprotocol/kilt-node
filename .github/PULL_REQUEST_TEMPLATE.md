@@ -10,13 +10,13 @@ If necessary provide information about dependencies (specific configuration, bra
 - Step 2
 - etc.
 
-### custom types
+### Custom types
 
 This PR introduces new custom JS-types which are required for compatibility with [our SDK](https://github.com/KILTprotocol/sdk-js) and the [Polkadot Apps](https://polkadot.js.org/apps/#/extrinsics). Please use the following types to test the code with the Polkadot Apps:
 
 <details>
   <summary>JS-Types</summary>
-  
+
   ```json
   {}
   ```

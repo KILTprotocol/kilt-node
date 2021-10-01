@@ -66,15 +66,14 @@ pub enum StorageError {
 	/// The user tries to delete a verification key that is currently being
 	/// used to authorize operations, and this is not allowed.
 	CurrentlyActiveKey,
-	/// The maximum supported value for the DID tx counter has been reached.
-	/// No more operations with the DID are allowed.
-	MaxTxCounterValue,
 	/// The maximum number of public keys for this DID key identifier has
 	/// been reached.
 	MaxPublicKeysPerDidExceeded,
 	/// The maximum number of key agreements has been reached for the DID
 	/// subject.
 	MaxTotalKeyAgreementKeysExceeded,
+	/// The DID has already been previously deleted.
+	DidAlreadyDeleted,
 }
 
 /// Error generated when validating a DID operation.
@@ -87,6 +86,8 @@ pub enum SignatureError {
 	InvalidSignature,
 	/// The operation nonce is not equal to the current DID nonce + 1.
 	InvalidNonce,
+	/// The provided operation block number is not valid.
+	TransactionExpired,
 }
 
 /// Error generated when validating a byte-encoded endpoint URL.

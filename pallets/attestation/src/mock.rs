@@ -282,7 +282,7 @@ pub mod runtime {
 		}
 	}
 
-	#[derive(Clone)]
+	#[derive(Clone, Default)]
 	pub struct ExtBuilder {
 		delegation_hierarchies: Vec<(
 			TestDelegationNodeId,
@@ -300,19 +300,6 @@ pub mod runtime {
 			TestDelegationNodeId,
 			BoundedVec<TestClaimHash, <Test as Config>::MaxDelegatedAttestations>,
 		)>,
-	}
-
-	impl Default for ExtBuilder {
-		fn default() -> Self {
-			Self {
-				ctypes: vec![],
-				balances: vec![],
-				attestations: vec![],
-				delegated_attestations: vec![],
-				delegation_hierarchies: vec![],
-				delegations: vec![],
-			}
-		}
 	}
 
 	impl ExtBuilder {
