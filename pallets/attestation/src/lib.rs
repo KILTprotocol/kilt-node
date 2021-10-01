@@ -242,7 +242,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let payer = source.sender();
-			let attester = source.subject();
+			let who = source.subject();
 			let deposit_amount = T::Deposit::get();
 
 			ensure!(
@@ -261,7 +261,7 @@ pub mod pallet {
 
 				ensure!(!delegation.details.revoked, Error::<T>::DelegationRevoked);
 
-				ensure!(delegation.details.owner == attester, Error::<T>::NotDelegatedToAttester);
+				ensure!(delegation.details.owner == who, Error::<T>::NotDelegatedToAttester);
 
 				ensure!(
 					(delegation.details.permissions & delegation::Permissions::ATTEST)
@@ -299,7 +299,7 @@ pub mod pallet {
 				&claim_hash,
 				AttestationDetails {
 					ctype_hash,
-					attester: attester.clone(),
+					attester: who.clone(),
 					delegation_id,
 					revoked: false,
 					deposit,
@@ -307,7 +307,7 @@ pub mod pallet {
 			);
 
 			Self::deposit_event(Event::AttestationCreated(
-				attester,
+				who,
 				claim_hash,
 				ctype_hash,
 				delegation_id,
@@ -339,14 +339,14 @@ pub mod pallet {
 			max_parent_checks: u32,
 		) -> DispatchResultWithPostInfo {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
-			let attester = source.subject();
+			let who = source.subject();
 
 			let attestation = <Attestations<T>>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
 			ensure!(!attestation.revoked, Error::<T>::AlreadyRevoked);
 
-			let delegation_depth = if attestation.attester != attester {
-				Self::verify_delegated_access(&attester, &attestation, max_parent_checks)?
+			let delegation_depth = if attestation.attester != who {
+				Self::verify_delegated_access(&who, &attestation, max_parent_checks)?
 			} else {
 				0
 			};
@@ -362,7 +362,7 @@ pub mod pallet {
 				},
 			);
 
-			Self::deposit_event(Event::AttestationRevoked(attester, claim_hash));
+			Self::deposit_event(Event::AttestationRevoked(who, claim_hash));
 
 			Ok(Some(<T as pallet::Config>::WeightInfo::revoke(delegation_depth)).into())
 		}
@@ -391,12 +391,12 @@ pub mod pallet {
 			max_parent_checks: u32,
 		) -> DispatchResultWithPostInfo {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
-			let attester = source.subject();
+			let who = source.subject();
 
 			let attestation = <Attestations<T>>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
-			let delegation_depth = if attestation.attester != attester {
-				Self::verify_delegated_access(&attester, &attestation, max_parent_checks)?
+			let delegation_depth = if attestation.attester != who {
+				Self::verify_delegated_access(&who, &attestation, max_parent_checks)?
 			} else {
 				0
 			};
@@ -407,7 +407,7 @@ pub mod pallet {
 			Pallet::<T>::free_deposit(&attestation.deposit);
 			<Attestations<T>>::remove(&claim_hash);
 
-			Self::deposit_event(Event::AttestationRemoved(attester, claim_hash));
+			Self::deposit_event(Event::AttestationRemoved(who, claim_hash));
 
 			Ok(Some(<T as pallet::Config>::WeightInfo::remove(delegation_depth)).into())
 		}
