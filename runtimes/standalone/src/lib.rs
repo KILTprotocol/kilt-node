@@ -380,6 +380,7 @@ impl delegation::Config for Runtime {
 }
 
 impl ctype::Config for Runtime {
+	type FeeHandler = ();
 	type CtypeCreatorId = DidIdentifier;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;

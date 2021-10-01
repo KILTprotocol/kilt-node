@@ -90,6 +90,7 @@ impl frame_system::Config for Test {
 }
 
 impl ctype::Config for Test {
+	type FeeHandler = ();
 	type CtypeCreatorId = TestCtypeOwner;
 	type EnsureOrigin = EnsureSigned<TestCtypeOwner>;
 	type OriginSuccess = TestCtypeOwner;

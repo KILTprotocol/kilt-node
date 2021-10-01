@@ -178,6 +178,7 @@ pub(crate) mod runtime {
 	}
 
 	impl ctype::Config for Test {
+		type FeeHandler = ();
 		type CtypeCreatorId = TestCtypeOwner;
 		type EnsureOrigin = EnsureSigned<TestCtypeOwner>;
 		type OriginSuccess = TestCtypeOwner;

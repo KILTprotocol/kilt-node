@@ -118,6 +118,7 @@ impl Config for Test {
 }
 
 impl ctype::Config for Test {
+	type FeeHandler = ();
 	type CtypeCreatorId = TestCtypeOwner;
 	type Event = ();
 	type WeightInfo = ();
@@ -264,26 +265,26 @@ pub fn generate_key_id(key: &did::DidPublicKey) -> TestKeyId {
 	utils::calculate_key_id::<Test>(key)
 }
 
-pub(crate) fn get_attestation_key_test_input() -> TestCtypeHash {
-	TestCtypeHash::from_slice(&[0u8; 32])
+pub(crate) fn get_attestation_key_test_input() -> Vec<u8> {
+	[0u8; 32].to_vec()
 }
 pub(crate) fn get_attestation_key_call() -> Call {
 	Call::Ctype(ctype::Call::add(get_attestation_key_test_input()))
 }
-pub(crate) fn get_authentication_key_test_input() -> TestCtypeHash {
-	TestCtypeHash::from_slice(&[1u8; 32])
+pub(crate) fn get_authentication_key_test_input() -> Vec<u8> {
+	[1u8; 32].to_vec()
 }
 pub(crate) fn get_authentication_key_call() -> Call {
 	Call::Ctype(ctype::Call::add(get_authentication_key_test_input()))
 }
-pub(crate) fn get_delegation_key_test_input() -> TestCtypeHash {
-	TestCtypeHash::from_slice(&[2u8; 32])
+pub(crate) fn get_delegation_key_test_input() -> Vec<u8> {
+	[2u8; 32].to_vec()
 }
 pub(crate) fn get_delegation_key_call() -> Call {
 	Call::Ctype(ctype::Call::add(get_delegation_key_test_input()))
 }
-pub(crate) fn get_none_key_test_input() -> TestCtypeHash {
-	TestCtypeHash::from_slice(&[3u8; 32])
+pub(crate) fn get_none_key_test_input() -> Vec<u8> {
+	[3u8; 32].to_vec()
 }
 pub(crate) fn get_none_key_call() -> Call {
 	Call::Ctype(ctype::Call::add(get_none_key_test_input()))

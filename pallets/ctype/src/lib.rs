@@ -47,7 +47,6 @@
 //!   Title and Properties.
 
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(clippy::unused_unit)]
 
 pub mod default_weights;
 
@@ -74,13 +73,21 @@ pub trait PayFee<AccountId> {
 	fn pay_fee(payer: AccountId, ctype_size: usize);
 }
 
+impl<AccountId> PayFee<AccountId> for () {
+	fn secure_fee(_payer: AccountId, _ctype_size: usize) -> Result<(), ()> {
+		Ok(())
+	}
+
+	fn pay_fee(_payer: AccountId, _ctype_size: usize) {}
+}
+
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_support::pallet_prelude::*;
+	use frame_support::{pallet_prelude::*, sp_runtime::traits::Hash};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::traits::CallSources;
-	use sp_core::Hasher;
+	use sp_std::vec::Vec;
 
 	/// Type of a CType hash.
 	pub type CtypeHashOf<T> = <T as frame_system::Config>::Hash;
@@ -152,9 +159,9 @@ pub mod pallet {
 			let creator = source.subject();
 			let payer = source.sender();
 
-			T::FeeHandler::secure_fee(payer, ctype.len()).map_err(|_| Error::<T>::UnableToPayFees)?;
+			T::FeeHandler::secure_fee(payer.clone(), ctype.len()).map_err(|_| Error::<T>::UnableToPayFees)?;
 
-			let hash = T::Hashing::hash(&ctype[..]);
+			let hash = <T as frame_system::Config>::Hashing::hash(&ctype[..]);
 
 			ensure!(!<Ctypes<T>>::contains_key(&hash), Error::<T>::CTypeAlreadyExists);
 

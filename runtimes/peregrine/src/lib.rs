@@ -27,8 +27,12 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use ctype::PayFee;
 use did::DidSignature;
-use frame_support::{traits::LockIdentifier, PalletId};
+use frame_support::{
+	traits::{Currency, ExistenceRequirement, LockIdentifier},
+	PalletId,
+};
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::EnsureSigned;
 use frame_system::{
@@ -61,7 +65,7 @@ use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, FixedPointNumber, Perquintill,
+	ApplyExtrinsicResult, FixedPointNumber, Perquintill, SaturatedConversion,
 };
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
@@ -596,8 +600,41 @@ impl delegation::Config for Runtime {
 	type WeightInfo = weights::delegation::WeightInfo<Runtime>;
 }
 
+pub struct CtypeFeeHandler<R>(sp_std::marker::PhantomData<R>);
+impl<R> PayFee<<R as frame_system::Config>::AccountId> for CtypeFeeHandler<R>
+where
+	R: pallet_balances::Config + frame_system::Config + pallet_treasury::Config,
+	<R as pallet_balances::Config>::Balance: From<Balance>,
+{
+	fn secure_fee(payer: <R as frame_system::Config>::AccountId, ctype_size: usize) -> Result<(), ()> {
+		let fee = ctype_size.saturated_into::<Balance>() * MICRO_KILT;
+
+		if pallet_balances::Pallet::<R>::free_balance(payer) > fee.into() {
+			Ok(())
+		} else {
+			Err(())
+		}
+	}
+
+	fn pay_fee(payer: <R as frame_system::Config>::AccountId, ctype_size: usize) {
+		let treasury_account = pallet_treasury::Pallet::<R>::account_id();
+		let fee = ctype_size.saturated_into::<Balance>() * MICRO_KILT;
+
+		// this could fail if the balance was reduced in the meantime.
+		// Since we know that this is not happening in the ctype pallet, this call should never fail.
+		let result = <pallet_balances::Pallet<R> as Currency<_>>::transfer(
+			&payer,
+			&treasury_account,
+			fee.into(),
+			ExistenceRequirement::AllowDeath,
+		);
+		debug_assert!(result.is_ok());
+	}
+}
+
 impl ctype::Config for Runtime {
 	type CtypeCreatorId = AccountId;
+	type FeeHandler = CtypeFeeHandler<Runtime>;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;

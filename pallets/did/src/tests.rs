@@ -1868,7 +1868,10 @@ fn check_call_attestation_key_error() {
 		.build(None);
 	// CType already added to storage
 	ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(get_attestation_key_test_input(), did)])
+		.with_ctypes(vec![(
+			<Test as frame_system::Config>::Hashing::hash(&get_attestation_key_test_input()[..]),
+			did,
+		)])
 		.build(Some(did_ext))
 		.execute_with(|| {
 			assert_err!(
@@ -1937,7 +1940,10 @@ fn check_call_delegation_key_error() {
 		.build(None);
 	// CType already added to storage
 	ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(get_delegation_key_test_input(), did)])
+		.with_ctypes(vec![(
+			<Test as frame_system::Config>::Hashing::hash(&get_delegation_key_test_input()[..]),
+			did,
+		)])
 		.build(Some(did_ext))
 		.execute_with(|| {
 			assert_err!(
@@ -2002,7 +2008,10 @@ fn check_call_authentication_key_error() {
 		.build(None);
 	// CType already added to storage
 	ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(get_authentication_key_test_input(), did)])
+		.with_ctypes(vec![(
+			<Test as frame_system::Config>::Hashing::hash(&get_authentication_key_test_input()[..]),
+			did,
+		)])
 		.build(Some(did_ext))
 		.execute_with(|| {
 			assert_err!(

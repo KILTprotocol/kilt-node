@@ -16,6 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use sp_std::{convert::TryInto, vec::Vec};
+
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_system::RawOrigin;
 
@@ -25,12 +27,13 @@ const SEED: u32 = 0;
 
 benchmarks! {
 	add {
-		let caller = account("caller", 0, SEED);
-		let hash = <T::Hash as Default>::default();
+		let l in 1 .. 2_000_000;
 
-	}: _(RawOrigin::Signed(caller), hash)
+		let caller = account("caller", 0, SEED);
+		let ctype: Vec<u8> = (0u8..u8::MAX).cycle().take(l.try_into().unwrap()).collect();
+
+	}: _(RawOrigin::Signed(caller), ctype)
 	verify {
-		Ctypes::<T>::contains_key(hash)
 	}
 }
 

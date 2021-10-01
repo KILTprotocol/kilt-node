@@ -16,8 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-#![allow(clippy::from_over_into)]
-
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use sp_core::H256;
 use sp_keystore::{testing::KeyStore, KeystoreExt};
@@ -80,6 +78,7 @@ impl frame_system::Config for Test {
 }
 
 impl Config for Test {
+	type FeeHandler = ();
 	type CtypeCreatorId = TestCtypeOwner;
 	type EnsureOrigin = frame_system::EnsureSigned<TestCtypeOwner>;
 	type OriginSuccess = TestCtypeOwner;
