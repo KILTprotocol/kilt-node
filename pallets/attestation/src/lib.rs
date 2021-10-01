@@ -92,6 +92,7 @@ pub mod pallet {
 	use super::*;
 	use ctype::CtypeHashOf;
 	use delegation::DelegationNodeIdOf;
+	use frame_benchmarking::Zero;
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{Currency, Get, ReservableCurrency},
@@ -451,7 +452,8 @@ pub mod pallet {
 		}
 
 		fn free_deposit(deposit: &Deposit<AccountIdOf<T>, BalanceOf<T>>) {
-			CurrencyOf::<T>::unreserve(&deposit.owner, deposit.amount);
+			let err_amount = CurrencyOf::<T>::unreserve(&deposit.owner, deposit.amount);
+			debug_assert!(err_amount.is_zero());
 		}
 	}
 }
