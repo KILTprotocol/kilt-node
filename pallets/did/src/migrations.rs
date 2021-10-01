@@ -18,6 +18,7 @@
 
 use codec::{Decode, Encode};
 use kilt_primitives::VersionMigratorTrait;
+use sp_runtime::traits::Zero;
 use sp_std::marker::PhantomData;
 
 use crate::*;
@@ -48,7 +49,7 @@ impl DidStorageVersion {
 // old version anymore.
 impl Default for DidStorageVersion {
 	fn default() -> Self {
-		Self::V1
+		Self::V2
 	}
 }
 
@@ -66,7 +67,7 @@ impl<T: Config> VersionMigratorTrait<T> for DidStorageVersion {
 	fn migrate(&self) -> Weight {
 		match *self {
 			Self::V1 => v1::migrate::<T>(),
-			Self::V2 => 0u64,
+			Self::V2 => Weight::zero(),
 		}
 	}
 
@@ -95,7 +96,7 @@ impl<T: Config> DidStorageMigrator<T> {
 		// If the version current deployed is at least v1, there is no more migrations
 		// to run (other than the one from v1).
 		match current {
-			DidStorageVersion::V1 => None,
+			DidStorageVersion::V1 => Some(DidStorageVersion::V2),
 			DidStorageVersion::V2 => None,
 		}
 	}

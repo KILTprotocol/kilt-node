@@ -31,7 +31,13 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use frame_system::EnsureSigned;
 
 use kilt_primitives::{
-	constants::{KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION},
+	constants::{
+		did::{
+			MAX_BLOCKS_TX_VALIDITY, MAX_ENDPOINT_URLS_COUNT, MAX_KEY_AGREEMENT_KEYS, MAX_PUBLIC_KEYS_PER_DID,
+			MAX_TOTAL_KEY_AGREEMENT_KEYS, MAX_URL_LENGTH,
+		},
+		KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION,
+	},
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature,
 };
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
@@ -109,7 +115,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 25,
+	spec_version: 26,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -380,15 +386,16 @@ impl ctype::Config for Runtime {
 }
 
 parameter_types! {
-	pub const MaxNewKeyAgreementKeys: u32 = 10u32;
+	pub const MaxNewKeyAgreementKeys: u32 = MAX_KEY_AGREEMENT_KEYS;
 	#[derive(Debug, Clone, PartialEq)]
-	pub const MaxUrlLength: u32 = 200u32;
-	// TODO: Find reasonable numbers
-	pub const MaxPublicKeysPerDid: u32 = 1000;
+	pub const MaxUrlLength: u32 = MAX_URL_LENGTH;
+	pub const MaxPublicKeysPerDid: u32 = MAX_PUBLIC_KEYS_PER_DID;
 	#[derive(Debug, Clone, PartialEq)]
-	pub const MaxTotalKeyAgreementKeys: u32 = 1000;
+	pub const MaxTotalKeyAgreementKeys: u32 = MAX_TOTAL_KEY_AGREEMENT_KEYS;
 	#[derive(Debug, Clone, PartialEq)]
-	pub const MaxEndpointUrlsCount: u32 = 3u32;
+	pub const MaxEndpointUrlsCount: u32 = MAX_ENDPOINT_URLS_COUNT;
+	// Standalone block time is half the duration of a parachain block.
+	pub const MaxBlocksTxValidity: BlockNumber = MAX_BLOCKS_TX_VALIDITY * 2;
 }
 
 impl did::Config for Runtime {
@@ -412,6 +419,7 @@ impl did::Config for Runtime {
 	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
 	type MaxUrlLength = MaxUrlLength;
 	type MaxEndpointUrlsCount = MaxEndpointUrlsCount;
+	type MaxBlocksTxValidity = MaxBlocksTxValidity;
 	type WeightInfo = ();
 }
 

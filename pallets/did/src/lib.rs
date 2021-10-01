@@ -75,9 +75,22 @@
 //!
 //! - `create` - Register a new DID on the KILT blockchain under the given DID
 //!   identifier.
-//! - `update` - Update any keys or the service endpoints of an existing DID.
+//! - `set_authentication_key` - Replace the authentication key of a DID.
+//! - `set_delegation_key` - Set the delegation key of a DID.
+//! - `remove_delegation_key` - Remove the delegation key of a DID, if present.
+//! - `set_attestation_key` - Set the attestation key of a DID.
+//! - `remove_attestation_key` - Remove the attestation key of a DID, if
+//!   present.
+//! - `add_key_agreement_key` - Add a new key agreement key to the set of keys
+//!   for the DID.
+//! - `remove_key_agreement_key` - Remove the key with the given ID from the set
+//!   of key agreement keys, if present.
+//! - `set_service_endpoints` - Set a new set of service endpoints for the DID.
+//! - `remove_service_endpoints` - Remove the set of service endpoints from the
+//!   DID.
 //! - `delete` - Delete the specified DID and all related keys from the KILT
-//!   blockchain.
+//!   blockchain. A DID with the same identifier cannot be created anymore after
+//!   it is deleted.
 //! - `submit_did_call` - Proxy a dispatchable function for an extrinsic that
 //!   expects a DID origin. The DID pallet verifies the signature and the nonce
 //!   of the wrapping operation and then dispatches the underlying extrinsic
@@ -94,6 +107,10 @@
 //! - The chain performs basic checks over the endpoint URLs provided in
 //!   creation and deletion operations. The SDK will perform more in-depth
 //!   validation of the URL string, e.g., by pattern-matching using regexes.
+//! - After it is generated and signed by a client, a DID-authorised operation
+//!   can be submitted for evaluation anytime between the time the operation is
+//!   created and [MaxBlocksTxValidity] blocks after that. After this time has
+//!   elapsed, the operation is considered invalid.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
@@ -133,7 +150,7 @@ use frame_support::{
 use frame_system::ensure_signed;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::RawOrigin;
-use sp_runtime::SaturatedConversion;
+use sp_runtime::{traits::Saturating, SaturatedConversion};
 use sp_std::{boxed::Box, fmt::Debug, prelude::Clone};
 
 use migrations::*;
@@ -224,6 +241,11 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxEndpointUrlsCount: Get<u32> + Debug + Clone + PartialEq;
 
+		/// The maximum number of blocks a DID-authorized operation is
+		/// considered valid after its creation.
+		#[pallet::constant]
+		type MaxBlocksTxValidity: Get<BlockNumberOf<Self>>;
+
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}
@@ -255,6 +277,15 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn get_did)]
 	pub type Did<T> = StorageMap<_, Blake2_128Concat, DidIdentifierOf<T>, DidDetails<T>>;
+
+	/// The set of DIDs that have been deleted and cannot therefore be created
+	/// again for security reasons.
+	///
+	/// It maps from a DID identifier to a unit tuple, for the sake of tracking
+	/// DID identifiers.
+	#[pallet::storage]
+	#[pallet::getter(fn get_deleted_did)]
+	pub(crate) type DidBlacklist<T> = StorageMap<_, Blake2_128Concat, DidIdentifierOf<T>, ()>;
 
 	/// Contains the latest storage version deployed.
 	#[pallet::storage]
@@ -326,10 +357,14 @@ pub mod pallet {
 		/// The maximum number of key agreements has been reached for the DID
 		/// subject.
 		MaxTotalKeyAgreementKeysExceeded,
-		/// An error that is not supposed to take place, yet it happened.
-		InternalError,
 		/// The DID call was submitted by the wrong account
 		BadDidOrigin,
+		/// The block number provided in a DID-authorized operation is invalid.
+		TransactionExpired,
+		/// The DID has already been previously deleted.
+		DidAlreadyDeleted,
+		/// An error that is not supposed to take place, yet it happened.
+		InternalError,
 	}
 
 	impl<T> From<DidError> for Error<T> {
@@ -350,10 +385,10 @@ pub mod pallet {
 				StorageError::DidNotPresent => Self::DidNotPresent,
 				StorageError::DidAlreadyPresent => Self::DidAlreadyPresent,
 				StorageError::DidKeyNotPresent(_) | StorageError::KeyNotPresent => Self::VerificationKeyNotPresent,
-				StorageError::MaxTxCounterValue => Self::MaxTxCounterValue,
 				StorageError::CurrentlyActiveKey => Self::CurrentlyActiveKey,
 				StorageError::MaxPublicKeysPerDidExceeded => Self::MaxPublicKeysPerDidExceeded,
 				StorageError::MaxTotalKeyAgreementKeysExceeded => Self::MaxTotalKeyAgreementKeysExceeded,
+				StorageError::DidAlreadyDeleted => Self::DidAlreadyDeleted,
 			}
 		}
 	}
@@ -364,6 +399,7 @@ pub mod pallet {
 				SignatureError::InvalidSignature => Self::InvalidSignature,
 				SignatureError::InvalidSignatureFormat => Self::InvalidSignatureFormat,
 				SignatureError::InvalidNonce => Self::InvalidNonce,
+				SignatureError::TransactionExpired => Self::TransactionExpired,
 			}
 		}
 	}
@@ -392,7 +428,9 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		/// Store a new DID on chain, after verifying that the creation
 		/// operation has been signed by the KILT account associated with the
-		/// identifier of the DID being created.
+		/// identifier of the DID being created and that a DID with the same
+		/// identifier has not previously existed on (and then deleted from) the
+		/// chain.
 		///
 		/// There must be no DID information stored on chain under the same DID
 		/// identifier.
@@ -448,19 +486,25 @@ pub mod pallet {
 
 			let did_identifier = details.did.clone();
 
+			// Make sure that DIDs cannot be created again after they have been deleted.
+			ensure!(
+				!DidBlacklist::<T>::contains_key(&did_identifier),
+				Error::<T>::DidAlreadyDeleted
+			);
+
 			// There has to be no other DID with the same identifier already saved on chain,
 			// otherwise generate a DidAlreadyPresent error.
-			ensure!(!<Did<T>>::contains_key(&did_identifier), <Error<T>>::DidAlreadyPresent);
+			ensure!(!Did::<T>::contains_key(&did_identifier), Error::<T>::DidAlreadyPresent);
 
 			let account_did_auth_key = did_identifier
 				.verify_and_recover_signature(&details.encode(), &signature)
-				.map_err(<Error<T>>::from)?;
+				.map_err(Error::<T>::from)?;
 
 			let did_entry =
-				DidDetails::from_creation_details(details, account_did_auth_key).map_err(<Error<T>>::from)?;
+				DidDetails::from_creation_details(details, account_did_auth_key).map_err(Error::<T>::from)?;
 
 			log::debug!("Creating DID {:?}", &did_identifier);
-			<Did<T>>::insert(&did_identifier, did_entry);
+			Did::<T>::insert(&did_identifier, did_entry);
 
 			Self::deposit_event(Event::DidCreated(sender, did_identifier));
 
@@ -486,7 +530,7 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_authentication_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_authentication_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_authentication_key()))]
 		pub fn set_authentication_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
-			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
+			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 
 			log::debug!(
 				"Setting new authentication key {:?} for DID {:?}",
@@ -495,10 +539,10 @@ pub mod pallet {
 			);
 
 			did_details
-				.update_authentication_key(new_key, <frame_system::Pallet<T>>::block_number())
-				.map_err(<Error<T>>::from)?;
+				.update_authentication_key(new_key, frame_system::Pallet::<T>::block_number())
+				.map_err(Error::<T>::from)?;
 
-			<Did<T>>::insert(&did_subject, did_details);
+			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Authentication key set");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
@@ -524,14 +568,14 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_delegation_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_delegation_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_delegation_key()))]
 		pub fn set_delegation_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
-			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
+			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 
 			log::debug!("Setting new delegation key {:?} for DID {:?}", &new_key, &did_subject);
 			did_details
-				.update_delegation_key(new_key, <frame_system::Pallet<T>>::block_number())
-				.map_err(<Error<T>>::from)?;
+				.update_delegation_key(new_key, frame_system::Pallet::<T>::block_number())
+				.map_err(Error::<T>::from)?;
 
-			<Did<T>>::insert(&did_subject, did_details);
+			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Delegation key set");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
@@ -556,12 +600,12 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_ed25519_delegation_key().max(<T as pallet::Config>::WeightInfo::remove_sr25519_delegation_key()).max(<T as pallet::Config>::WeightInfo::remove_ecdsa_delegation_key()))]
 		pub fn remove_delegation_key(origin: OriginFor<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
-			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
+			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 
 			log::debug!("Removing delegation key for DID {:?}", &did_subject);
-			did_details.remove_delegation_key().map_err(<Error<T>>::from)?;
+			did_details.remove_delegation_key().map_err(Error::<T>::from)?;
 
-			<Did<T>>::insert(&did_subject, did_details);
+			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Delegation key removed");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
@@ -587,14 +631,14 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_attestation_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_attestation_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_attestation_key()))]
 		pub fn set_attestation_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
-			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
+			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 
 			log::debug!("Setting new attestation key {:?} for DID {:?}", &new_key, &did_subject);
 			did_details
-				.update_attestation_key(new_key, <frame_system::Pallet<T>>::block_number())
-				.map_err(<Error<T>>::from)?;
+				.update_attestation_key(new_key, frame_system::Pallet::<T>::block_number())
+				.map_err(Error::<T>::from)?;
 
-			<Did<T>>::insert(&did_subject, did_details);
+			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Attestation key set");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
@@ -619,12 +663,12 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_ed25519_attestation_key().max(<T as pallet::Config>::WeightInfo::remove_sr25519_attestation_key()).max(<T as pallet::Config>::WeightInfo::remove_ecdsa_attestation_key()))]
 		pub fn remove_attestation_key(origin: OriginFor<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
-			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
+			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 
 			log::debug!("Removing attestation key for DID {:?}", &did_subject);
-			did_details.remove_attestation_key().map_err(<Error<T>>::from)?;
+			did_details.remove_attestation_key().map_err(Error::<T>::from)?;
 
-			<Did<T>>::insert(&did_subject, did_details);
+			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Attestation key removed");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
@@ -648,14 +692,14 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::add_ed25519_key_agreement_key().max(<T as pallet::Config>::WeightInfo::add_sr25519_key_agreement_key()).max(<T as pallet::Config>::WeightInfo::add_ecdsa_key_agreement_key()))]
 		pub fn add_key_agreement_key(origin: OriginFor<T>, new_key: DidEncryptionKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
-			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
+			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 
 			log::debug!("Adding new key agreement key {:?} for DID {:?}", &new_key, &did_subject);
 			did_details
-				.add_key_agreement_key(new_key, <frame_system::Pallet<T>>::block_number())
-				.map_err(<Error<T>>::from)?;
+				.add_key_agreement_key(new_key, frame_system::Pallet::<T>::block_number())
+				.map_err(Error::<T>::from)?;
 
-			<Did<T>>::insert(&did_subject, did_details);
+			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Key agreement key set");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
@@ -678,12 +722,12 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_ed25519_key_agreement_key().max(<T as pallet::Config>::WeightInfo::remove_sr25519_key_agreement_key()).max(<T as pallet::Config>::WeightInfo::remove_ecdsa_key_agreement_key()))]
 		pub fn remove_key_agreement_key(origin: OriginFor<T>, key_id: KeyIdOf<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
-			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
+			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 
 			log::debug!("Removing key agreement key for DID {:?}", &did_subject);
-			did_details.remove_key_agreement_key(key_id).map_err(<Error<T>>::from)?;
+			did_details.remove_key_agreement_key(key_id).map_err(Error::<T>::from)?;
 
-			<Did<T>>::insert(&did_subject, did_details);
+			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Key agreement key removed");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
@@ -705,7 +749,7 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_service_endpoints(T::MaxUrlLength::get(), T::MaxEndpointUrlsCount::get()))]
 		pub fn set_service_endpoints(origin: OriginFor<T>, service_endpoints: ServiceEndpoints<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
-			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
+			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 
 			log::debug!(
 				"Adding new service endpoints {:?} for DID {:?}",
@@ -714,11 +758,11 @@ pub mod pallet {
 			);
 			service_endpoints
 				.validate_against_config_limits()
-				.map_err(<Error<T>>::from)?;
+				.map_err(Error::<T>::from)?;
 
 			did_details.service_endpoints = Some(service_endpoints);
 
-			<Did<T>>::insert(&did_subject, did_details);
+			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Service endpoints set");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
@@ -740,15 +784,15 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_service_endpoints(T::MaxUrlLength::get(), T::MaxEndpointUrlsCount::get()))]
 		pub fn remove_service_endpoints(origin: OriginFor<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
-			let mut did_details = <Did<T>>::get(&did_subject).ok_or(<Error<T>>::DidNotPresent)?;
+			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 
 			log::debug!("Removing service endpoints for DID {:?}", &did_subject);
 			ensure!(
 				did_details.service_endpoints.take().is_some(),
-				<Error<T>>::DidFragmentNotPresent
+				Error::<T>::DidFragmentNotPresent
 			);
 
-			<Did<T>>::insert(&did_subject, did_details);
+			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Service endpoints removed");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
@@ -761,6 +805,9 @@ pub mod pallet {
 		///
 		/// The referenced DID identifier must be present on chain before the
 		/// delete operation is evaluated.
+		///
+		/// After it is deleted, a DID with the same identifier cannot be
+		/// re-created ever again.
 		///
 		/// As the result of the deletion, all traces of the DID are removed
 		/// from the storage, which results in the invalidation of all
@@ -783,9 +830,13 @@ pub mod pallet {
 
 			ensure!(
 				// `take` calls `kill` internally
-				<Did<T>>::take(&did_subject).is_some(),
-				<Error<T>>::DidNotPresent
+				Did::<T>::take(&did_subject).is_some(),
+				Error::<T>::DidNotPresent
 			);
+
+			// Mark as deleted to prevent potential replay-attacks of re-adding a previously
+			// deleted DID.
+			DidBlacklist::<T>::insert(&did_subject, ());
 
 			log::debug!("Deleting DID {:?}", did_subject);
 
@@ -805,14 +856,15 @@ pub mod pallet {
 		/// by the `DidAuthorizedCallOperation` parameter, which specifies the
 		/// DID subject acting as the origin of the call, the DID's tx counter
 		/// (nonce), the dispatchable to call in case signature verification
-		/// succeeds, and the type of DID key to use to verify the operation
-		/// signature.
+		/// succeeds, the type of DID key to use to verify the operation
+		/// signature, and the block number the operation was targeting for
+		/// inclusion, when it was created and signed.
 		///
-		/// In case the signature is incorrect, the nonce is not valid, or the
-		/// required key is not present for the specified DID, the verification
-		/// fails and the call is not dispatched. Otherwise, the call is
-		/// properly dispatched with a `DidOrigin` origin indicating the DID
-		/// subject.
+		/// In case the signature is incorrect, the nonce is not valid, the
+		/// required key is not present for the specified DID, or the block
+		/// specified is too old the verification fails and the call is not
+		/// dispatched. Otherwise, the call is properly dispatched with a
+		/// `DidOrigin` origin indicating the DID subject.
 		///
 		/// A successful dispatch operation results in the tx counter associated
 		/// with the given DID to be incremented, to mitigate replay attacks.
@@ -852,7 +904,7 @@ pub mod pallet {
 			let verification_key_relationship = did_call
 				.call
 				.derive_verification_key_relationship()
-				.ok_or(<Error<T>>::UnsupportedDidAuthorizationCall)?;
+				.ok_or(Error::<T>::UnsupportedDidAuthorizationCall)?;
 
 			// Wrap the operation in the expected structure, specifying the key retrieved
 			let wrapped_operation = DidAuthorizedCallOperationWithVerificationRelationship {
@@ -861,7 +913,7 @@ pub mod pallet {
 			};
 
 			Self::verify_did_operation_signature_and_increase_nonce(&wrapped_operation, &signature)
-				.map_err(<Error<T>>::from)?;
+				.map_err(Error::<T>::from)?;
 
 			log::debug!("Dispatch call from DID {:?}", did_identifier);
 
@@ -889,9 +941,9 @@ pub mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
-	/// Verify the validity (i.e., nonce and signature) of a DID-authorized
-	/// operation and, if valid, update the DID state with the latest
-	/// nonce.
+	/// Verify the validity (i.e., nonce, signature and mortality) of a
+	/// DID-authorized operation and, if valid, update the DID state with the
+	/// latest nonce.
 	///
 	/// # <weight>
 	/// Weight: O(1)
@@ -902,13 +954,16 @@ impl<T: Config> Pallet<T> {
 		operation: &DidAuthorizedCallOperationWithVerificationRelationship<T>,
 		signature: &DidSignature,
 	) -> Result<(), DidError> {
+		// Check that the tx has not expired.
+		Self::validate_block_number_value(operation.block_number)?;
+
 		let mut did_details =
-			<Did<T>>::get(&operation.did).ok_or(DidError::StorageError(StorageError::DidNotPresent))?;
+			Did::<T>::get(&operation.did).ok_or(DidError::StorageError(StorageError::DidNotPresent))?;
 
 		Self::validate_counter_value(operation.tx_counter, &did_details)?;
 		// Increase the tx counter as soon as it is considered valid, no matter if the
 		// signature is valid or not.
-		did_details.increase_tx_counter().map_err(DidError::StorageError)?;
+		did_details.increase_tx_counter();
 		Self::verify_payload_signature_with_did_key_type(
 			&operation.encode(),
 			signature,
@@ -916,7 +971,22 @@ impl<T: Config> Pallet<T> {
 			operation.verification_key_relationship,
 		)?;
 
-		<Did<T>>::insert(&operation.did, did_details);
+		Did::<T>::insert(&operation.did, did_details);
+
+		Ok(())
+	}
+
+	// Check if the provided block number is valid,
+	// i.e., if the current blockchain block is in the inclusive range
+	// [operation_block_number, operation_block_number + MaxBlocksTxValidity].
+	fn validate_block_number_value(block_number: BlockNumberOf<T>) -> Result<(), DidError> {
+		let current_block_number = frame_system::Pallet::<T>::block_number();
+		let allowed_range = block_number..=block_number.saturating_add(T::MaxBlocksTxValidity::get());
+
+		ensure!(
+			allowed_range.contains(&current_block_number),
+			DidError::SignatureError(SignatureError::TransactionExpired)
+		);
 
 		Ok(())
 	}
@@ -928,17 +998,9 @@ impl<T: Config> Pallet<T> {
 	// mechanism in place to wrap the counter value around when the limit is
 	// reached.
 	fn validate_counter_value(counter: u64, did_details: &DidDetails<T>) -> Result<(), DidError> {
-		// Verify that the DID has not reached the maximum tx counter value
-		ensure!(
-			did_details.get_tx_counter_value() < u64::MAX,
-			DidError::StorageError(StorageError::MaxTxCounterValue)
-		);
-
-		// Verify that the operation counter is equal to the stored one + 1
-		let expected_nonce_value = did_details
-			.get_tx_counter_value()
-			.checked_add(1)
-			.ok_or(DidError::InternalError)?;
+		// Verify that the operation counter is equal to the stored one + 1,
+		// possibly wrapping around when u64::MAX is reached.
+		let expected_nonce_value = did_details.get_tx_counter_value().wrapping_add(1);
 		ensure!(
 			counter == expected_nonce_value,
 			DidError::SignatureError(SignatureError::InvalidNonce)
