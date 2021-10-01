@@ -63,12 +63,24 @@ mod tests;
 
 pub use crate::{default_weights::WeightInfo, pallet::*};
 
+pub trait PayFee<AccountId> {
+	/// Make sure that the fee can be paid.
+	///
+	/// This function must not change any storage value since the ctype might
+	/// not get created.
+	fn secure_fee(payer: AccountId, ctype_size: usize) -> Result<(), ()>;
+
+	/// Actually pay the fee.
+	fn pay_fee(payer: AccountId, ctype_size: usize);
+}
+
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 	use kilt_support::traits::CallSources;
+	use sp_core::Hasher;
 
 	/// Type of a CType hash.
 	pub type CtypeHashOf<T> = <T as frame_system::Config>::Hash;
@@ -80,11 +92,12 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type CtypeCreatorId: Parameter + Default;
 		type EnsureOrigin: EnsureOrigin<Success = Self::OriginSuccess, <Self as frame_system::Config>::Origin>;
 		type OriginSuccess: CallSources<AccountIdOf<Self>, CtypeCreatorOf<Self>>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type WeightInfo: WeightInfo;
+		type CtypeCreatorId: Parameter + Default;
+		type FeeHandler: PayFee<AccountIdOf<Self>>;
 	}
 
 	#[pallet::pallet]
@@ -115,6 +128,8 @@ pub mod pallet {
 		CTypeNotFound,
 		/// The CType already exists.
 		CTypeAlreadyExists,
+		/// The paying account was unable to pay the fees for creating a ctype.
+		UnableToPayFees,
 	}
 
 	#[pallet::call]
@@ -132,14 +147,20 @@ pub mod pallet {
 		/// - Writes: Ctypes
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::add())]
-		pub fn add(origin: OriginFor<T>, hash: CtypeHashOf<T>) -> DispatchResult {
+		pub fn add(origin: OriginFor<T>, ctype: Vec<u8>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let creator = source.subject();
+			let payer = source.sender();
+
+			T::FeeHandler::secure_fee(payer, ctype.len()).map_err(|_| Error::<T>::UnableToPayFees)?;
+
+			let hash = T::Hashing::hash(&ctype[..]);
 
 			ensure!(!<Ctypes<T>>::contains_key(&hash), Error::<T>::CTypeAlreadyExists);
 
 			log::debug!("Creating CType with hash {:?} and creator {:?}", hash, creator);
 			<Ctypes<T>>::insert(&hash, creator.clone());
+			T::FeeHandler::pay_fee(payer, ctype.len());
 
 			Self::deposit_event(Event::CTypeCreated(creator, hash));
 
