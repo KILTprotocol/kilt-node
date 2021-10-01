@@ -83,7 +83,7 @@ where
 
 /// Mocks that are only used internally
 #[cfg(test)]
-pub mod runtime {
+pub(crate) mod runtime {
 	use std::sync::Arc;
 
 	use super::*;

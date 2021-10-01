@@ -125,7 +125,7 @@ pub mod pallet {
 		/// The currency that is used to reserve funds for each attestation.
 		type Currency: Currency<AccountIdOf<Self>> + ReservableCurrency<AccountIdOf<Self>>;
 
-		/// The deposit that is required
+		/// The deposit that is required for storing an attestation.
 		#[pallet::constant]
 		type Deposit: Get<BalanceOf<Self>>;
 
@@ -368,10 +368,10 @@ pub mod pallet {
 
 		/// Remove an attestation.
 		///
-		/// The origin must be either the creator of the attestation being or
-		/// an entity that in the delegation tree is an ancestor of the
-		/// attester, i.e., it was either the delegator of the attester or an
-		/// ancestor thereof.
+		/// The origin must be either the creator of the attestation or an
+		/// entity which is an ancestor of the attester in the delegation tree,
+		/// i.e., it was either the delegator of the attester or an ancestor
+		/// thereof.
 		///
 		/// Emits `AttestationRemoved`.
 		///
@@ -420,15 +420,15 @@ pub mod pallet {
 			attestation: &AttestationDetails<T>,
 			max_parent_checks: u32,
 		) -> Result<u32, DispatchError> {
-			// Check the delegation tree if the sender of the revocation operation is not
-			// the original attester
+			// if there is no delegation id, access to this attestation wasn't delegated to
+			// anyone.
 			let delegation_id = attestation.delegation_id.ok_or(Error::<T>::Unauthorized)?;
 			ensure!(
 				max_parent_checks <= T::MaxParentChecks::get(),
 				delegation::Error::<T>::MaxParentChecksTooLarge
 			);
-			// Check whether the sender of the revocation controls the delegation node
-			// specified, and that its status has not been revoked
+			// Check whether the sender of the revocation controls the delegation node and
+			// that the delegation has not been revoked
 			let (is_delegating, delegation_depth) =
 				<delegation::Pallet<T>>::is_delegating(attester, &delegation_id, max_parent_checks)?;
 			ensure!(is_delegating, Error::<T>::Unauthorized);
