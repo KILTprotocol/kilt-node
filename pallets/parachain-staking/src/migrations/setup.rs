@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::{Config, StorageVersion, migrations::StakingStorageVersion};
+use crate::{migrations::StakingStorageVersion, Config, StorageVersion};
 use frame_support::{traits::Get, weights::Weight};
 
 #[cfg(feature = "try-runtime")]

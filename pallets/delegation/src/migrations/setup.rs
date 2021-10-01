@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::{Config, StorageVersion, DelegationStorageVersion, Weight};
+use crate::{Config, DelegationStorageVersion, StorageVersion, Weight};
 
 use frame_support::traits::Get;
 
