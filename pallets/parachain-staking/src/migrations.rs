@@ -24,6 +24,7 @@ use sp_runtime::{
 
 use crate::*;
 
+mod setup;
 mod v2;
 mod v3;
 mod v4;
@@ -35,6 +36,7 @@ mod v5;
 // semantic versions of the Rust crate.
 #[derive(Copy, Clone, Encode, Eq, Decode, Debug, Ord, PartialEq, PartialOrd)]
 pub enum StakingStorageVersion {
+	None,
 	V1_0_0,
 	V2_0_0, // New Reward calculation, MaxCollatorCandidateStake
 	V3_0_0, // Update InflationConfig
@@ -42,16 +44,15 @@ pub enum StakingStorageVersion {
 	V5,     // Remove SelectedCandidates, Count Candidates
 }
 
-// All nodes will default to this, which is not bad, as in case the "real"
-// version is a later one (i.e. the node has been started with already the
-// latest version), the migration will simply do nothing as there's nothing in
-// the old storage entries to migrate from.
-//
-// It might get updated in the future when we know that no node is running this
-// old version anymore.
+impl StakingStorageVersion {
+	fn latest() -> Self {
+		Self::V5
+	}
+}
+
 impl Default for StakingStorageVersion {
 	fn default() -> Self {
-		Self::V5
+		Self::None
 	}
 }
 
@@ -60,6 +61,7 @@ impl<T: Config> VersionMigratorTrait<T> for StakingStorageVersion {
 	#[cfg(feature = "try-runtime")]
 	fn pre_migrate(&self) -> Result<(), &'static str> {
 		match *self {
+			Self::None => setup::pre_migrate::<T>(),
 			Self::V1_0_0 => v2::pre_migrate::<T>(),
 			Self::V2_0_0 => v3::pre_migrate::<T>(),
 			Self::V3_0_0 => v4::pre_migrate::<T>(),
@@ -71,6 +73,7 @@ impl<T: Config> VersionMigratorTrait<T> for StakingStorageVersion {
 	// It runs the right migration logic depending on the current storage version.
 	fn migrate(&self) -> Weight {
 		match *self {
+			Self::None => setup::migrate::<T>(),
 			Self::V1_0_0 => v2::migrate::<T>(),
 			Self::V2_0_0 => v3::migrate::<T>(),
 			Self::V3_0_0 => v4::migrate::<T>(),
@@ -81,12 +84,12 @@ impl<T: Config> VersionMigratorTrait<T> for StakingStorageVersion {
 
 	fn next_version(&self) -> Option<Self> {
 		match self {
-			StakingStorageVersion::V1_0_0 => Some(StakingStorageVersion::V2_0_0),
-			StakingStorageVersion::V2_0_0 => Some(StakingStorageVersion::V3_0_0),
+			Self::V1_0_0 => Some(Self::V2_0_0),
+			Self::V2_0_0 => Some(Self::V3_0_0),
 			// Migration happens naturally, no need to point to the latest version
-			StakingStorageVersion::V3_0_0 => Some(StakingStorageVersion::V4),
-			StakingStorageVersion::V4 => Some(StakingStorageVersion::V5),
-			StakingStorageVersion::V5 => None,
+			Self::V3_0_0 => Some(Self::V4),
+			Self::V4 => Some(Self::V5),
+			Self::V5 | Self::None => None,
 		}
 	}
 
@@ -95,6 +98,7 @@ impl<T: Config> VersionMigratorTrait<T> for StakingStorageVersion {
 	#[cfg(feature = "try-runtime")]
 	fn post_migrate(&self) -> Result<(), &'static str> {
 		match *self {
+			Self::None => setup::post_migrate::<T>(),
 			Self::V1_0_0 => v2::post_migrate::<T>(),
 			Self::V2_0_0 => v3::post_migrate::<T>(),
 			Self::V3_0_0 => v4::post_migrate::<T>(),

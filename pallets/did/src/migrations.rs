@@ -22,27 +22,28 @@ use sp_runtime::traits::Zero;
 
 use crate::*;
 
+mod setup;
 mod v1;
 mod v2;
 
 /// Storage version of the DID pallet.
 #[derive(Copy, Clone, Encode, Eq, Decode, Ord, PartialEq, PartialOrd)]
 pub enum DidStorageVersion {
+	None,
 	V1,
 	V2,
 	V3,
 }
 
-// All nodes will default to this, which is not bad, as in case the "real"
-// version is a later one (i.e. the node has been started with already the
-// latest version), the migration will simply do nothing as there's nothing in
-// the old storage entries to migrate from.
-//
-// It might get updated in the future when we know that no node is running this
-// old version anymore.
+impl DidStorageVersion {
+	fn latest() -> Self {
+		Self::V3
+	}
+}
+
 impl Default for DidStorageVersion {
 	fn default() -> Self {
-		Self::V1
+		Self::None
 	}
 }
 
@@ -51,6 +52,7 @@ impl<T: Config> VersionMigratorTrait<T> for DidStorageVersion {
 	#[cfg(feature = "try-runtime")]
 	fn pre_migrate(&self) -> Result<(), &'static str> {
 		match *self {
+			Self::None => setup::pre_migrate::<T>(),
 			Self::V1 => v1::pre_migrate::<T>(),
 			Self::V2 => v2::pre_migrate::<T>(),
 			Self::V3 => Ok(()),
@@ -60,9 +62,18 @@ impl<T: Config> VersionMigratorTrait<T> for DidStorageVersion {
 	// It runs the right migration logic depending on the current storage version.
 	fn migrate(&self) -> Weight {
 		match *self {
+			Self::None => setup::migrate::<T>(),
 			Self::V1 => v1::migrate::<T>(),
 			Self::V2 => v2::migrate::<T>(),
 			Self::V3 => Weight::zero(),
+		}
+	}
+
+	fn next_version(&self) -> Option<Self> {
+		match self {
+			Self::V1 => Some(Self::V2),
+			Self::V2 => Some(Self::V3),
+			Self::V3 | Self::None => None,
 		}
 	}
 
@@ -71,17 +82,10 @@ impl<T: Config> VersionMigratorTrait<T> for DidStorageVersion {
 	#[cfg(feature = "try-runtime")]
 	fn post_migrate(&self) -> Result<(), &'static str> {
 		match *self {
+			Self::None => setup::post_migrate::<T>(),
 			Self::V1 => v1::post_migrate::<T>(),
 			Self::V2 => v2::post_migrate::<T>(),
 			Self::V3 => Ok(()),
-		}
-	}
-
-	fn next_version(&self) -> Option<Self> {
-		match self {
-			DidStorageVersion::V1 => Some(DidStorageVersion::V2),
-			DidStorageVersion::V2 => Some(DidStorageVersion::V3),
-			DidStorageVersion::V3 => None,
 		}
 	}
 }

@@ -238,7 +238,9 @@ pub mod pallet {
 		}
 
 		fn on_runtime_upgrade() -> Weight {
-			StorageMigrator::<DidStorageVersion, T>::migrate(StorageVersion::<T>::get())
+			let migration_weight = StorageMigrator::<DidStorageVersion, T>::migrate(StorageVersion::<T>::get());
+			// Add one read to get the current storage version
+			migration_weight.saturating_add(T::DbWeight::get().reads(1))
 		}
 
 		#[cfg(feature = "try-runtime")]

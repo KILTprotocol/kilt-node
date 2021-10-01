@@ -34,6 +34,7 @@ where
 	pub fn pre_migrate(migrator: VersionMigrator) -> Result<(), &'static str> {
 		migrator.pre_migrate()
 	}
+
 	pub fn migrate(migrator: VersionMigrator) -> frame_support::weights::Weight {
 		let mut current_version = Some(migrator);
 		let mut total_weight = frame_support::weights::Weight::zero();
@@ -58,6 +59,7 @@ where
 		}
 		total_weight
 	}
+
 	#[cfg(feature = "try-runtime")]
 	pub fn post_migrate(migrator: VersionMigrator) -> Result<(), &'static str> {
 		migrator.post_migrate()
