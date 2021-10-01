@@ -36,12 +36,14 @@ mod v5;
 // semantic versions of the Rust crate.
 #[derive(Copy, Clone, Encode, Eq, Decode, Debug, Ord, PartialEq, PartialOrd)]
 pub enum StakingStorageVersion {
-	None,
 	V1_0_0,
 	V2_0_0, // New Reward calculation, MaxCollatorCandidateStake
 	V3_0_0, // Update InflationConfig
 	V4,     // Sort TopCandidates and parachain-stakings by amount
 	V5,     // Remove SelectedCandidates, Count Candidates
+	// None must always be last otherwise it messes up with encoding/decoding
+	// since enums are encoded/decoded based on their position in the declaration.
+	None,
 }
 
 impl StakingStorageVersion {

@@ -29,10 +29,12 @@ mod v2;
 /// Storage version of the DID pallet.
 #[derive(Copy, Clone, Encode, Eq, Decode, Ord, PartialEq, PartialOrd)]
 pub enum DidStorageVersion {
-	None,
 	V1,
 	V2,
 	V3,
+	// None must always be last otherwise it messes up with encoding/decoding
+	// since enums are encoded/decoded based on their position in the declaration.
+	None,
 }
 
 impl DidStorageVersion {

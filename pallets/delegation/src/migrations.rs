@@ -28,9 +28,11 @@ mod v1;
 /// Storage version of the delegation pallet.
 #[derive(Copy, Clone, Encode, Eq, Decode, Ord, PartialEq, PartialOrd)]
 pub enum DelegationStorageVersion {
-	None,
 	V1,
 	V2,
+	// None must always be last otherwise it messes up with encoding/decoding
+	// since enums are encoded/decoded based on their position in the declaration.
+	None,
 }
 
 impl DelegationStorageVersion {
