@@ -350,7 +350,6 @@ impl attestation::Config for Runtime {
 	type OriginSuccess = did::DidRawOrigin<DidIdentifier, AccountId>;
 	type Event = Event;
 	type WeightInfo = ();
-
 	type Currency = Balances;
 	type Deposit = AttestationDeposit;
 	type MaxDelegatedAttestations = MaxDelegatedAttestations;
