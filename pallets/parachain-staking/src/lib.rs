@@ -537,7 +537,10 @@ pub mod pallet {
 		#[cfg(feature = "try-runtime")]
 		fn pre_upgrade() -> Result<(), &'static str> {
 			let current_storage_version = StorageVersion::<T>::get();
-			log::info!("Staking storage version before migration -> {:?}", current_storage_version);
+			log::info!(
+				"Staking storage version before migration -> {:?}",
+				current_storage_version
+			);
 			StorageMigrator::<StakingStorageVersion, T>::pre_migrate(current_storage_version)
 		}
 
@@ -550,7 +553,10 @@ pub mod pallet {
 		#[cfg(feature = "try-runtime")]
 		fn post_upgrade() -> Result<(), &'static str> {
 			let current_storage_version = StorageVersion::<T>::get();
-			log::info!("Staking storage version after migration -> {:?}", current_storage_version);
+			log::info!(
+				"Staking storage version after migration -> {:?}",
+				current_storage_version
+			);
 			StorageMigrator::<StakingStorageVersion, T>::post_migrate(current_storage_version)
 		}
 	}
