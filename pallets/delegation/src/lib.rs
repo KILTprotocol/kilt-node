@@ -102,7 +102,7 @@ pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
-	use kilt_traits::CallSources;
+	use kilt_support::traits::CallSources;
 
 	/// Type of a delegation node identifier.
 	pub type DelegationNodeIdOf<T> = <T as Config>::DelegationNodeId;
@@ -507,14 +507,16 @@ impl<T: Config> Pallet<T> {
 
 	// Creates a new root node with the given details and store the new hierarchy in
 	// the hierarchies storage and the new root node in the nodes storage.
-	fn create_and_store_new_hierarchy(
+	pub(crate) fn create_and_store_new_hierarchy(
 		root_id: DelegationNodeIdOf<T>,
 		hierarchy_details: DelegationHierarchyDetails<T>,
 		hierarchy_owner: DelegatorIdOf<T>,
-	) {
+	) -> DelegationNode<T> {
 		let root_node = DelegationNode::new_root_node(root_id, DelegationDetails::default_with_owner(hierarchy_owner));
-		<DelegationNodes<T>>::insert(root_id, root_node);
+		<DelegationNodes<T>>::insert(root_id, root_node.clone());
 		<DelegationHierarchies<T>>::insert(root_id, hierarchy_details);
+
+		root_node
 	}
 
 	// Adds the given node to the storage and updates the parent node to include the
@@ -522,7 +524,7 @@ impl<T: Config> Pallet<T> {
 	//
 	// This function assumes that the parent node is already stored on the chain. If
 	// not, the behaviour of the system is undefined.
-	fn store_delegation_under_parent(
+	pub(crate) fn store_delegation_under_parent(
 		delegation_id: DelegationNodeIdOf<T>,
 		delegation_node: DelegationNode<T>,
 		parent_id: DelegationNodeIdOf<T>,

@@ -52,13 +52,16 @@ fn add_delegation_hierarchy<T: Config>(
 where
 	T::AccountId: From<sr25519::Public>,
 	T::DelegationNodeId: From<T::Hash>,
+	T::CtypeCreatorId: From<T::AccountId>,
 {
+	log::info!("create delegation root");
 	let root_public = sr25519_generate(KeyTypeId(*b"aura"), None);
 	let root_acc: T::AccountId = root_public.into();
 	let ctype_hash = <T::Hash as Default>::default();
 	let hierarchy_root_id = generate_delegation_id::<T>(number);
 
-	ctype::Pallet::<T>::add(RawOrigin::Signed(root_acc.clone()).into(), ctype_hash)?;
+	ctype::Ctypes::<T>::insert(&ctype_hash, T::CtypeCreatorId::from(root_acc.clone()));
+
 	Pallet::<T>::create_hierarchy(
 		RawOrigin::Signed(root_acc.clone()).into(),
 		hierarchy_root_id,
@@ -88,6 +91,7 @@ fn add_children<T: Config>(
 ) -> Result<(sr25519::Public, T::AccountId, T::DelegationNodeId), DispatchErrorWithPostInfo>
 where
 	T::AccountId: From<sr25519::Public> + Into<T::DelegationEntityId>,
+	T::CtypeCreatorId: From<T::AccountId>,
 	T::DelegationNodeId: From<T::Hash>,
 	T::Signature: From<MultiSignature>,
 {
@@ -157,6 +161,7 @@ pub fn setup_delegations<T: Config>(
 where
 	T::AccountId: From<sr25519::Public> + Into<T::DelegationEntityId>,
 	T::DelegationNodeId: From<T::Hash>,
+	T::CtypeCreatorId: From<T::AccountId>,
 	T::Signature: From<MultiSignature>,
 {
 	let (
@@ -182,13 +187,21 @@ where
 }
 
 benchmarks! {
-	where_clause { where T: core::fmt::Debug, T::AccountId: From<sr25519::Public> + Into<T::DelegationEntityId>, T::DelegationNodeId: From<T::Hash>, <T as frame_system::Config>::Origin: From<RawOrigin<<T as pallet::Config>::DelegationEntityId>>, T::Signature: From<MultiSignature> }
+	where_clause {
+		where
+		T: core::fmt::Debug,
+		T::AccountId: From<sr25519::Public> + Into<T::DelegationEntityId>,
+		T::DelegationNodeId: From<T::Hash>,
+		<T as frame_system::Config>::Origin: From<RawOrigin<<T as pallet::Config>::DelegationEntityId>>,
+		T::CtypeCreatorId: From<T::AccountId>,
+		T::Signature: From<MultiSignature>,
+	}
 
 	create_hierarchy {
 		let caller: T::AccountId = account("caller", 0, SEED);
 		let ctype = <T::Hash as Default>::default();
 		let delegation = generate_delegation_id::<T>(0);
-		ctype::Pallet::<T>::add(RawOrigin::Signed(caller.clone()).into(), ctype)?;
+		ctype::Ctypes::<T>::insert(&ctype, T::CtypeCreatorId::from(caller.clone()));
 	}: _(RawOrigin::Signed(caller), delegation, ctype)
 	verify {
 		assert!(DelegationHierarchies::<T>::contains_key(delegation));

@@ -540,15 +540,26 @@ impl<R: did::Config> delegation::VerifyDelegateSignature for DelegationSignature
 }
 
 parameter_types! {
-	// TODO: Find reasonable number
 	pub const MaxDelegatedAttestations: u32 = 1000;
+	pub const AttestationDeposit: Balance = 100 * MILLI_KILT;
 }
 
 impl attestation::Config for Runtime {
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type EnsureOrigin = EnsureSigned<DidIdentifier>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type OriginSuccess = DidIdentifier;
+
 	type Event = Event;
 	type WeightInfo = weights::attestation::WeightInfo<Runtime>;
+
+	type Currency = Balances;
+	type Deposit = AttestationDeposit;
 	type MaxDelegatedAttestations = MaxDelegatedAttestations;
 }
 
@@ -566,8 +577,17 @@ impl delegation::Config for Runtime {
 	type DelegationSignatureVerification = DelegationSignatureVerifier<Runtime>;
 	type DelegationEntityId = AccountId;
 	type DelegationNodeId = Hash;
+
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type EnsureOrigin = EnsureSigned<DidIdentifier>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type OriginSuccess = DidIdentifier;
+
 	type Event = Event;
 	type MaxSignatureByteLength = MaxSignatureByteLength;
 	type MaxParentChecks = MaxParentChecks;
@@ -578,8 +598,17 @@ impl delegation::Config for Runtime {
 
 impl ctype::Config for Runtime {
 	type CtypeCreatorId = AccountId;
+
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type EnsureOrigin = EnsureSigned<DidIdentifier>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type OriginSuccess = DidIdentifier;
+
 	type Event = Event;
 	type WeightInfo = weights::ctype::WeightInfo<Runtime>;
 }
@@ -609,9 +638,9 @@ impl did::Config for Runtime {
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 
 	#[cfg(feature = "runtime-benchmarks")]
-	type EnsureOrigin = EnsureSigned<Self::DidIdentifier>;
+	type EnsureOrigin = EnsureSigned<DidIdentifier>;
 	#[cfg(feature = "runtime-benchmarks")]
-	type OriginSuccess = Self::DidIdentifier;
+	type OriginSuccess = DidIdentifier;
 
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;

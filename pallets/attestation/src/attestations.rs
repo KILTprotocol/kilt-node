@@ -17,8 +17,11 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::{Decode, Encode};
+use ctype::CtypeHashOf;
+use delegation::DelegationNodeIdOf;
+use kilt_support::deposit::Deposit;
 
-use crate::*;
+use crate::{AccountIdOf, AttesterOf, BalanceOf, Config};
 
 /// An on-chain attestation written by an attester.
 #[derive(Clone, Debug, Encode, Decode, PartialEq)]
@@ -32,4 +35,7 @@ pub struct AttestationDetails<T: Config> {
 	pub delegation_id: Option<DelegationNodeIdOf<T>>,
 	/// The flag indicating whether the attestation has been revoked or not.
 	pub revoked: bool,
+	/// The deposit that was taken to incentivise fair use of the on chain
+	/// storage.
+	pub deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
 }

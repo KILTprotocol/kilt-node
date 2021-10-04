@@ -323,8 +323,10 @@ mod tests {
 		ext.execute_with(|| {
 			let alice = mock::get_ed25519_account(mock::get_alice_ed25519().public());
 			let old_root_id = mock::get_delegation_id(true);
-			let old_root_node =
-				crate::deprecated::v1::DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash(true), alice);
+			let old_root_node = crate::deprecated::v1::DelegationRoot::<TestRuntime>::new(
+				ctype::mock::get_ctype_hash::<TestRuntime>(true),
+				alice,
+			);
 			deprecated::v1::storage::Roots::insert(old_root_id, old_root_node.clone());
 
 			#[cfg(feature = "try-runtime")]
@@ -373,8 +375,10 @@ mod tests {
 			let alice = mock::get_ed25519_account(mock::get_alice_ed25519().public());
 			let bob = mock::get_sr25519_account(mock::get_bob_sr25519().public());
 			let old_root_id = mock::get_delegation_id(true);
-			let old_root_node =
-				deprecated::v1::DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash(true), alice.clone());
+			let old_root_node = deprecated::v1::DelegationRoot::<TestRuntime>::new(
+				ctype::mock::get_ctype_hash::<TestRuntime>(true),
+				alice.clone(),
+			);
 			let old_node_id_1 = mock::get_delegation_id(false);
 			let old_node_1 = deprecated::v1::DelegationNode::<TestRuntime>::new_root_child(
 				old_root_id,
@@ -453,8 +457,10 @@ mod tests {
 			let alice = mock::get_ed25519_account(mock::get_alice_ed25519().public());
 			let bob = mock::get_sr25519_account(mock::get_bob_sr25519().public());
 			let old_root_id = mock::get_delegation_id(true);
-			let old_root_node =
-				deprecated::v1::DelegationRoot::<TestRuntime>::new(ctype::mock::get_ctype_hash(true), alice.clone());
+			let old_root_node = deprecated::v1::DelegationRoot::<TestRuntime>::new(
+				ctype::mock::get_ctype_hash::<TestRuntime>(true),
+				alice.clone(),
+			);
 			let old_parent_id = mock::get_delegation_id(false);
 			let old_parent_node =
 				deprecated::v1::DelegationNode::<TestRuntime>::new_root_child(old_root_id, alice, Permissions::all());

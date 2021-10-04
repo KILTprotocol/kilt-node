@@ -385,8 +385,9 @@ dependencies = [
  "frame-support",
  "frame-system",
  "kilt-primitives",
- "kilt-traits",
+ "kilt-support",
  "log",
+ "pallet-balances",
  "parity-scale-codec",
  "serde",
  "sp-core",
@@ -1451,7 +1452,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "kilt-primitives",
- "kilt-traits",
+ "kilt-support",
  "log",
  "parity-scale-codec",
  "serde",
@@ -1866,7 +1867,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "kilt-primitives",
- "kilt-traits",
+ "kilt-support",
  "log",
  "parity-scale-codec",
  "serde",
@@ -1927,7 +1928,7 @@ dependencies = [
  "frame-system",
  "hex",
  "kilt-primitives",
- "kilt-traits",
+ "kilt-support",
  "log",
  "parity-scale-codec",
  "serde",
@@ -3727,8 +3728,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "kilt-traits"
+name = "kilt-support"
 version = "0.26.0"
+dependencies = [
+ "parity-scale-codec",
+]
 
 [[package]]
 name = "kusama-runtime"

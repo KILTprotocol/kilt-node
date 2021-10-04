@@ -21,7 +21,7 @@ sp-keystore = {branch = "polkadot-v0.9.10", default-features = false, git = "htt
 [dependencies]
 # Internal dependencies
 kilt-primitives = {default-features = false, optional = true, path = "../../primitives"}
-kilt-traits = {default-features = false, path = "../../traits"}
+kilt-support = {default-features = false, path = "../../support"}
 
 #External dependencies
 codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.0.0"}
@@ -60,7 +60,7 @@ std = [
   "sp-io/std",
   "sp-runtime/std",
   "sp-std/std",
-  "kilt-traits/std",
+  "kilt-support/std",
 ]
 try-runtime = [
   "frame-support/try-runtime",

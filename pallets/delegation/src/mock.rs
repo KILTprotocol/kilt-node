@@ -20,7 +20,7 @@
 
 use frame_support::{parameter_types, storage::bounded_btree_set::BoundedBTreeSet, weights::constants::RocksDbWeight};
 use frame_system::EnsureSigned;
-use sp_core::{ed25519, sr25519, Pair};
+use sp_core::{ed25519, sr25519, Pair, H256};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
 	testing::Header,
@@ -188,11 +188,15 @@ pub fn get_charlie_sr25519() -> sr25519::Pair {
 	sr25519::Pair::from_seed(&CHARLIE_SEED)
 }
 
-pub fn get_delegation_hierarchy_id(default: bool) -> TestDelegationNodeId {
+pub fn get_delegation_hierarchy_id<T>(default: bool) -> T::DelegationNodeId
+where
+	T: Config,
+	T::DelegationNodeId: From<H256>,
+{
 	if default {
-		TestDelegationNodeId::from_low_u64_be(DEFAULT_HIERARCHY_ID_SEED)
+		H256::from_low_u64_be(DEFAULT_HIERARCHY_ID_SEED).into()
 	} else {
-		TestDelegationNodeId::from_low_u64_be(ALTERNATIVE_HIERARCHY_ID_SEED)
+		H256::from_low_u64_be(ALTERNATIVE_HIERARCHY_ID_SEED).into()
 	}
 }
 
@@ -217,17 +221,21 @@ pub(crate) fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
 	hash.encode()
 }
 
-pub fn generate_base_delegation_hierarchy_details() -> DelegationHierarchyDetails<Test> {
+pub fn generate_base_delegation_hierarchy_details<T>() -> DelegationHierarchyDetails<T>
+where
+	T: Config,
+	T::Hash: From<H256>,
+{
 	DelegationHierarchyDetails {
-		ctype_hash: ctype_mock::get_ctype_hash(true),
+		ctype_hash: ctype_mock::get_ctype_hash::<T>(true),
 	}
 }
 
-pub fn generate_base_delegation_node(
-	hierarchy_id: TestDelegationNodeId,
-	owner: TestDelegatorId,
-	parent: Option<TestDelegationNodeId>,
-) -> DelegationNode<Test> {
+pub fn generate_base_delegation_node<T: Config>(
+	hierarchy_id: T::DelegationNodeId,
+	owner: T::DelegationEntityId,
+	parent: Option<T::DelegationNodeId>,
+) -> DelegationNode<T> {
 	DelegationNode {
 		details: generate_base_delegation_details(owner),
 		children: BoundedBTreeSet::new(),
@@ -236,7 +244,7 @@ pub fn generate_base_delegation_node(
 	}
 }
 
-pub fn generate_base_delegation_details(owner: TestDelegatorId) -> DelegationDetails<Test> {
+pub fn generate_base_delegation_details<T: Config>(owner: T::DelegationEntityId) -> DelegationDetails<T> {
 	DelegationDetails {
 		owner,
 		permissions: Permissions::DELEGATE,
@@ -244,17 +252,21 @@ pub fn generate_base_delegation_details(owner: TestDelegatorId) -> DelegationDet
 	}
 }
 
-pub struct DelegationHierarchyCreationOperation {
-	pub id: TestDelegationNodeId,
-	pub ctype_hash: TestCtypeHash,
+pub struct DelegationHierarchyCreationOperation<DelegationNodeId, CtypeHash> {
+	pub id: DelegationNodeId,
+	pub ctype_hash: CtypeHash,
 }
 
-pub fn generate_base_delegation_hierarchy_creation_operation(
-	id: TestDelegationNodeId,
-) -> DelegationHierarchyCreationOperation {
+pub fn generate_base_delegation_hierarchy_creation_operation<T>(
+	id: T::DelegationNodeId,
+) -> DelegationHierarchyCreationOperation<T::DelegationNodeId, CtypeHashOf<T>>
+where
+	T: Config,
+	T::Hash: From<H256>,
+{
 	DelegationHierarchyCreationOperation {
 		id,
-		ctype_hash: ctype::mock::get_ctype_hash(true),
+		ctype_hash: ctype::mock::get_ctype_hash::<T>(true),
 	}
 }
 
@@ -311,6 +323,29 @@ pub fn generate_base_delegation_revocation_operation(
 	}
 }
 
+pub fn initialize_pallet<T: Config>(
+	delegations: Vec<(T::DelegationNodeId, DelegationNode<T>)>,
+	delegation_hierarchies: Vec<(T::DelegationNodeId, DelegationHierarchyDetails<T>, DelegatorIdOf<T>)>,
+) {
+	for delegation_hierarchy in delegation_hierarchies {
+		delegation::Pallet::<T>::create_and_store_new_hierarchy(
+			delegation_hierarchy.0,
+			delegation_hierarchy.1.clone(),
+			delegation_hierarchy.2.clone(),
+		);
+	}
+
+	for del in delegations {
+		let parent_node_id = del
+			.1
+			.parent
+			.expect("Delegation node that is not a root must have a parent ID specified.");
+		let parent_node = delegation::DelegationNodes::<T>::get(parent_node_id).unwrap();
+		delegation::Pallet::<T>::store_delegation_under_parent(del.0, del.1.clone(), parent_node_id, parent_node)
+			.expect("Should not exceed max children");
+	}
+}
+
 #[derive(Clone, Default)]
 pub struct ExtBuilder {
 	delegation_hierarchies_stored: Vec<(
@@ -353,40 +388,9 @@ impl ExtBuilder {
 			sp_io::TestExternalities::new(storage)
 		};
 
-		if !self.delegation_hierarchies_stored.is_empty() {
-			ext.execute_with(|| {
-				self.delegation_hierarchies_stored
-					.iter()
-					.for_each(|delegation_hierarchy| {
-						delegation::Pallet::create_and_store_new_hierarchy(
-							delegation_hierarchy.0,
-							delegation_hierarchy.1.clone(),
-							delegation_hierarchy.2.clone(),
-						);
-					})
-			});
-		}
-
-		if !self.delegations_stored.is_empty() {
-			ext.execute_with(|| {
-				self.delegations_stored.iter().for_each(|del| {
-					let parent_node_id = del
-						.1
-						.parent
-						.expect("Delegation node that is not a root must have a parent ID specified.");
-					let parent_node = delegation::DelegationNodes::<Test>::get(&parent_node_id).unwrap();
-					delegation::Pallet::store_delegation_under_parent(
-						del.0,
-						del.1.clone(),
-						parent_node_id,
-						parent_node,
-					)
-					.expect("Should not exceed max children");
-				})
-			});
-		}
-
 		ext.execute_with(|| {
+			initialize_pallet(self.delegations_stored, self.delegation_hierarchies_stored);
+
 			delegation::StorageVersion::<Test>::set(self.storage_version);
 		});
 

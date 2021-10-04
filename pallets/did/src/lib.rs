@@ -160,7 +160,7 @@ pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
-	use kilt_traits::CallSources;
+	use kilt_support::traits::CallSources;
 
 	/// Reference to a payload of data of variable size.
 	pub type Payload = [u8];
