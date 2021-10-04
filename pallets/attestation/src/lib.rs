@@ -402,8 +402,8 @@ pub mod pallet {
 			Pallet::<T>::free_deposit(&attestation.deposit);
 			Attestations::<T>::remove(&claim_hash);
 			if let Some(delegation_id) = attestation.delegation_id {
-				DelegatedAttestations::<T>::mutate(&delegation_id, |maybe_attestation| {
-					if let Some(attestations) = maybe_attestation.as_mut() {
+				DelegatedAttestations::<T>::mutate(&delegation_id, |maybe_attestations| {
+					if let Some(attestations) = maybe_attestations.as_mut() {
 						attestations.retain(|&elem| elem != claim_hash);
 					}
 				});
