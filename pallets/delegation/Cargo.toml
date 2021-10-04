@@ -64,6 +64,7 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "kilt-primitives/std",
+  "pallet-balances/std",
   "log/std",
   "sp-core/std",
   "sp-io/std",

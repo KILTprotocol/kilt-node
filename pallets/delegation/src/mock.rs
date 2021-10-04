@@ -18,8 +18,12 @@
 
 #![allow(clippy::from_over_into)]
 
+use crate::CurrencyOf;
 use frame_support::{
-	parameter_types, storage::bounded_btree_set::BoundedBTreeSet, traits::Get, weights::constants::RocksDbWeight,
+	parameter_types,
+	storage::bounded_btree_set::BoundedBTreeSet,
+	traits::{Currency, Get, ReservableCurrency},
+	weights::constants::RocksDbWeight,
 };
 use frame_system::EnsureSigned;
 use kilt_primitives::constants::MILLI_KILT;
@@ -364,6 +368,12 @@ pub fn initialize_pallet<T: Config>(
 			delegation_hierarchy.2.clone(),
 			delegation_hierarchy.2.clone().into(),
 		);
+
+		// manually mint and reserve because the latter happens in an extrinsic
+		let deposit_owner = delegation_hierarchy.2;
+		let balance = CurrencyOf::<T>::free_balance(&deposit_owner.clone().into());
+		CurrencyOf::<T>::make_free_balance_be(&deposit_owner.clone().into(), balance + T::Deposit::get());
+		frame_support::assert_ok!(CurrencyOf::<T>::reserve(&deposit_owner.into(), T::Deposit::get()));
 	}
 
 	for del in delegations {
@@ -372,8 +382,19 @@ pub fn initialize_pallet<T: Config>(
 			.parent
 			.expect("Delegation node that is not a root must have a parent ID specified.");
 		let parent_node = delegation::DelegationNodes::<T>::get(parent_node_id).unwrap();
-		delegation::Pallet::<T>::store_delegation_under_parent(del.0, del.1.clone(), parent_node_id, parent_node)
-			.expect("Should not exceed max children");
+		delegation::Pallet::<T>::store_delegation_under_parent(
+			del.0,
+			del.1.clone(),
+			parent_node_id,
+			parent_node.clone(),
+		)
+		.expect("Should not exceed max children");
+
+		// manually mint and reserve because the latter happens in an extrinsic
+		let deposit_owner = del.1.details.owner;
+		let balance = CurrencyOf::<T>::free_balance(&deposit_owner.clone().into());
+		CurrencyOf::<T>::make_free_balance_be(&deposit_owner.clone().into(), balance + T::Deposit::get());
+		frame_support::assert_ok!(CurrencyOf::<T>::reserve(&deposit_owner.into(), T::Deposit::get()));
 	}
 }
 
@@ -439,6 +460,7 @@ impl ExtBuilder {
 		self
 	}
 
+	// TODO: Remove optional input ext
 	pub fn build(self, ext: Option<sp_io::TestExternalities>) -> sp_io::TestExternalities {
 		let mut ext = if let Some(ext) = ext {
 			ext

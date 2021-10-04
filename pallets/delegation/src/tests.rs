@@ -19,7 +19,7 @@
 use frame_support::{assert_err, assert_noop, assert_ok};
 use sp_core::Pair;
 
-use crate::{self as delegation, mock::*};
+use crate::{self as delegation, mock::*, Error};
 use ctype::mock as ctype_mock;
 use sp_runtime::traits::Zero;
 
@@ -85,7 +85,7 @@ fn duplicate_create_root_delegation_error() {
 	ext.execute_with(|| {
 		assert_noop!(
 			Delegation::create_hierarchy(get_origin(creator.clone()), operation.id, operation.ctype_hash),
-			delegation::Error::<Test>::HierarchyAlreadyExists
+			Error::<Test>::HierarchyAlreadyExists
 		);
 	});
 }
@@ -218,6 +218,7 @@ fn create_delegation_with_parent_successful() {
 
 			// Add sub-delegation
 			assert_ok!(Delegation::add_delegation(
+				// TODO: Check for correctness (mb delegate?)
 				get_origin(creator.clone()),
 				delegation_id,
 				parent_id,
@@ -225,7 +226,9 @@ fn create_delegation_with_parent_successful() {
 				operation.permissions,
 				operation.delegate_signature.clone(),
 			));
-			assert_eq!(Balances::reserved_balance(&creator), DepositMock::get());
+
+			// Should deposited for hierarcy, parent delegation and sub-delegation
+			assert_eq!(Balances::reserved_balance(&creator), 3 * DepositMock::get());
 			assert!(Balances::reserved_balance(delegate).is_zero());
 
 			// Data in stored delegation and operation should match
@@ -298,7 +301,7 @@ fn create_delegation_direct_root_revoked_error() {
 				operation.permissions,
 				operation.delegate_signature.clone(),
 			),
-			delegation::Error::<Test>::ParentDelegationRevoked
+			Error::<Test>::ParentDelegationRevoked
 		);
 	});
 }
@@ -359,7 +362,7 @@ fn create_delegation_with_parent_revoked_error() {
 				operation.permissions,
 				operation.delegate_signature.clone(),
 			),
-			delegation::Error::<Test>::ParentDelegationRevoked
+			Error::<Test>::ParentDelegationRevoked
 		);
 	});
 }
@@ -408,7 +411,7 @@ fn invalid_delegate_signature_create_delegation_error() {
 				operation.permissions,
 				operation.delegate_signature.clone(),
 			),
-			delegation::Error::<Test>::InvalidDelegateSignature
+			Error::<Test>::InvalidDelegateSignature
 		);
 	});
 }
@@ -457,7 +460,7 @@ fn duplicate_delegation_create_delegation_error() {
 				operation.permissions,
 				operation.delegate_signature.clone(),
 			),
-			delegation::Error::<Test>::DelegationAlreadyExists
+			Error::<Test>::DelegationAlreadyExists
 		);
 	});
 }
@@ -504,7 +507,7 @@ fn parent_not_existing_create_delegation_error() {
 				operation.permissions,
 				operation.delegate_signature.clone(),
 			),
-			delegation::Error::<Test>::ParentDelegationNotFound
+			Error::<Test>::ParentDelegationNotFound
 		);
 	});
 }
@@ -559,7 +562,7 @@ fn not_owner_of_parent_create_delegation_error() {
 				operation.permissions,
 				operation.delegate_signature.clone(),
 			),
-			delegation::Error::<Test>::NotOwnerOfParentDelegation
+			Error::<Test>::NotOwnerOfParentDelegation
 		);
 	});
 }
@@ -613,7 +616,7 @@ fn unauthorised_delegation_create_delegation_error() {
 				operation.permissions,
 				operation.delegate_signature.clone(),
 			),
-			delegation::Error::<Test>::UnauthorizedDelegation
+			Error::<Test>::UnauthorizedDelegation
 		);
 	});
 }
@@ -656,7 +659,7 @@ fn empty_revoke_root_successful() {
 }
 
 #[test]
-fn list_hierarchy_revoke_root_successful() {
+fn list_hierarchy_revoke_and_remove_root_successful() {
 	let revoker_keypair = get_alice_ed25519();
 	let revoker = get_ed25519_account(revoker_keypair.public());
 	let delegate_keypair = get_bob_sr25519();
@@ -672,46 +675,72 @@ fn list_hierarchy_revoke_root_successful() {
 	);
 	let (delegation_id, delegation_node) = (
 		get_delegation_id(false),
-		generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id)),
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
 	);
 
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	operation.max_children = 2u32;
 
-	let ext = ctype_mock::ExtBuilder::default()
+	ExtBuilder::default()
+		.with_balances(vec![
+			(revoker.clone(), DepositMock::get() * 2),
+			(delegate.clone(), DepositMock::get()),
+		])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.build(None);
-	let mut ext = ExtBuilder::default()
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
-		.build(Some(ext));
+		.build(None)
+		.execute_with(|| {
+			// Revoke root
+			assert_ok!(Delegation::revoke_delegation(
+				get_origin(revoker.clone()),
+				operation.id,
+				0u32,
+				operation.max_children
+			));
 
-	ext.execute_with(|| {
-		assert_ok!(Delegation::revoke_delegation(
-			get_origin(revoker.clone()),
-			operation.id,
-			0u32,
-			operation.max_children
-		));
-	});
+			// Root and children should still be stored with revoked status
+			assert!(
+				Delegation::delegation_nodes(&operation.id)
+					.expect("Delegation root should be present on chain.")
+					.details
+					.revoked
+			);
+			assert!(
+				Delegation::delegation_nodes(&parent_id)
+					.expect("Parent delegation should be present on chain.")
+					.details
+					.revoked
+			);
+			assert!(
+				Delegation::delegation_nodes(&delegation_id)
+					.expect("Delegation should be present on chain.")
+					.details
+					.revoked
+			);
 
-	let stored_delegation_hierarchy_root = ext.execute_with(|| {
-		Delegation::delegation_nodes(&operation.id).expect("Delegation root should be present on chain.")
-	});
-	assert!(stored_delegation_hierarchy_root.details.revoked);
+			assert_eq!(Balances::reserved_balance(revoker.clone()), 2 * DepositMock::get());
+			assert_eq!(Balances::reserved_balance(delegate.clone()), DepositMock::get());
 
-	let stored_parent_delegation = ext.execute_with(|| {
-		Delegation::delegation_nodes(&parent_id).expect("Parent delegation should be present on chain.")
-	});
-	assert!(stored_parent_delegation.details.revoked);
+			// Removing root should also remove children and hierarchy
+			assert_ok!(Delegation::remove_delegation(
+				get_origin(revoker.clone()),
+				operation.id,
+				0u32,
+				operation.max_children
+			));
 
-	let stored_delegation = ext
-		.execute_with(|| Delegation::delegation_nodes(&delegation_id).expect("Delegation should be present on chain."));
-	assert!(stored_delegation.details.revoked);
+			assert!(Delegation::delegation_nodes(&operation.id).is_none());
+			assert!(Delegation::delegation_hierarchies(&hierarchy_root_id).is_none());
+			assert!(Delegation::delegation_nodes(&parent_id).is_none());
+			assert!(Delegation::delegation_nodes(&delegation_id).is_none());
+			assert!(Balances::reserved_balance(revoker.clone()).is_zero());
+			assert!(Balances::reserved_balance(delegate.clone()).is_zero());
+		});
 }
 
 #[test]
-fn tree_hierarchy_revoke_root_successful() {
+fn tree_hierarchy_revoke_and_remove_root_successful() {
 	let revoker_keypair = get_alice_ed25519();
 	let revoker = get_ed25519_account(revoker_keypair.public());
 	let delegate_keypair = get_bob_sr25519();
@@ -727,50 +756,75 @@ fn tree_hierarchy_revoke_root_successful() {
 	);
 	let (delegation2_id, delegation2_node) = (
 		get_delegation_id(false),
-		generate_base_delegation_node(hierarchy_root_id, delegate, Some(hierarchy_root_id)),
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
 	);
 
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	operation.max_children = 2u32;
 
-	let ext = ctype_mock::ExtBuilder::default()
+	ExtBuilder::default()
+		.with_balances(vec![
+			(revoker.clone(), DepositMock::get() * 2),
+			(delegate.clone(), DepositMock::get()),
+		])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.build(None);
-	let mut ext = ExtBuilder::default()
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
 		.with_delegations(vec![
 			(delegation1_id, delegation1_node),
 			(delegation2_id, delegation2_node),
 		])
-		.build(Some(ext));
+		.build(None)
+		.execute_with(|| {
+			// Revoke root
+			assert_ok!(Delegation::revoke_delegation(
+				get_origin(revoker.clone()),
+				operation.id,
+				0u32,
+				operation.max_children
+			));
 
-	ext.execute_with(|| {
-		assert_ok!(Delegation::revoke_delegation(
-			get_origin(revoker.clone()),
-			operation.id,
-			0u32,
-			operation.max_children
-		));
-	});
+			// Root and children should still be stored with revoked status
+			assert!(
+				Delegation::delegation_nodes(&operation.id)
+					.expect("Delegation root should be present on chain.")
+					.details
+					.revoked
+			);
+			assert!(
+				Delegation::delegation_nodes(&delegation1_id)
+					.expect("Delegation 1 should be present on chain.")
+					.details
+					.revoked
+			);
+			assert!(
+				Delegation::delegation_nodes(&delegation2_id)
+					.expect("Delegation 2 should be present on chain.")
+					.details
+					.revoked
+			);
 
-	let stored_delegation_hierarchy_root = ext.execute_with(|| {
-		Delegation::delegation_nodes(&operation.id).expect("Delegation root should be present on chain.")
-	});
-	assert!(stored_delegation_hierarchy_root.details.revoked);
+			assert_eq!(Balances::reserved_balance(revoker.clone()), 2 * DepositMock::get());
+			assert_eq!(Balances::reserved_balance(delegate.clone()), DepositMock::get());
 
-	let stored_delegation_1 = ext.execute_with(|| {
-		Delegation::delegation_nodes(&delegation1_id).expect("Delegation 1 should be present on chain.")
-	});
-	assert!(stored_delegation_1.details.revoked);
+			// Removing root should also remove children and hierarchy
+			assert_ok!(Delegation::remove_delegation(
+				get_origin(revoker.clone()),
+				operation.id,
+				0u32,
+				operation.max_children
+			));
 
-	let stored_delegation_2 = ext.execute_with(|| {
-		Delegation::delegation_nodes(&delegation2_id).expect("Delegation 2 should be present on chain.")
-	});
-	assert!(stored_delegation_2.details.revoked);
+			assert!(Delegation::delegation_nodes(&operation.id).is_none());
+			assert!(Delegation::delegation_hierarchies(&hierarchy_root_id).is_none());
+			assert!(Delegation::delegation_nodes(&delegation1_id).is_none());
+			assert!(Delegation::delegation_nodes(&delegation2_id).is_none());
+			assert!(Balances::reserved_balance(revoker.clone()).is_zero());
+			assert!(Balances::reserved_balance(delegate.clone()).is_zero());
+		});
 }
 
 #[test]
-fn max_max_revocations_revoke_successful() {
+fn max_max_revocations_revoke_and_remove_successful() {
 	let revoker_keypair = get_alice_ed25519();
 	let revoker = get_ed25519_account(revoker_keypair.public());
 	let delegate_keypair = get_bob_sr25519();
@@ -786,46 +840,72 @@ fn max_max_revocations_revoke_successful() {
 	);
 	let (delegation_id, delegation_node) = (
 		get_delegation_id(false),
-		generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id)),
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
 	);
 
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	operation.max_children = MaxRevocations::get();
 
-	let ext = ctype_mock::ExtBuilder::default()
+	ExtBuilder::default()
+		.with_balances(vec![
+			(revoker.clone(), DepositMock::get() * 2),
+			(delegate.clone(), DepositMock::get()),
+		])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.build(None);
-	let mut ext = ExtBuilder::default()
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
-		.build(Some(ext));
+		.build(None)
+		.execute_with(|| {
+			// Revoke root
+			assert_ok!(Delegation::revoke_delegation(
+				get_origin(revoker.clone()),
+				operation.id,
+				0u32,
+				operation.max_children
+			));
 
-	ext.execute_with(|| {
-		assert_ok!(Delegation::revoke_delegation(
-			get_origin(revoker.clone()),
-			operation.id,
-			0u32,
-			operation.max_children
-		));
-	});
+			// Root and children should still be stored with revoked status
+			assert!(
+				Delegation::delegation_nodes(&operation.id)
+					.expect("Delegation root should be present on chain.")
+					.details
+					.revoked
+			);
+			assert!(
+				Delegation::delegation_nodes(&parent_id)
+					.expect("Parent delegation should be present on chain.")
+					.details
+					.revoked
+			);
+			assert!(
+				Delegation::delegation_nodes(&delegation_id)
+					.expect("Delegation should be present on chain.")
+					.details
+					.revoked
+			);
 
-	let stored_delegation_hierarchy_root = ext.execute_with(|| {
-		Delegation::delegation_nodes(&operation.id).expect("Delegation root should be present on chain.")
-	});
-	assert!(stored_delegation_hierarchy_root.details.revoked);
+			assert_eq!(Balances::reserved_balance(revoker.clone()), 2 * DepositMock::get());
+			assert_eq!(Balances::reserved_balance(delegate.clone()), DepositMock::get());
 
-	let stored_parent_delegation = ext.execute_with(|| {
-		Delegation::delegation_nodes(&parent_id).expect("Parent delegation should be present on chain.")
-	});
-	assert!(stored_parent_delegation.details.revoked);
+			// Removing root should also remove children and hierarchy
+			assert_ok!(Delegation::remove_delegation(
+				get_origin(revoker.clone()),
+				operation.id,
+				0u32,
+				operation.max_children
+			));
 
-	let stored_delegation = ext
-		.execute_with(|| Delegation::delegation_nodes(&delegation_id).expect("Delegation should be present on chain."));
-	assert!(stored_delegation.details.revoked);
+			assert!(Delegation::delegation_nodes(&operation.id).is_none());
+			assert!(Delegation::delegation_hierarchies(&hierarchy_root_id).is_none());
+			assert!(Delegation::delegation_nodes(&parent_id).is_none());
+			assert!(Delegation::delegation_nodes(&delegation_id).is_none());
+			assert!(Balances::reserved_balance(revoker.clone()).is_zero());
+			assert!(Balances::reserved_balance(delegate.clone()).is_zero());
+		});
 }
 
 #[test]
-fn root_not_found_revoke_root_error() {
+fn root_not_found_revoke_and_remove_root_error() {
 	let revoker_keypair = get_alice_ed25519();
 	let revoker = get_ed25519_account(revoker_keypair.public());
 
@@ -833,22 +913,24 @@ fn root_not_found_revoke_root_error() {
 
 	let operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 
-	let mut ext = ExtBuilder::default().build(None);
-
-	ext.execute_with(|| {
+	ExtBuilder::default().build(None).execute_with(|| {
 		assert_noop!(
 			Delegation::revoke_delegation(get_origin(revoker.clone()), operation.id, 0u32, operation.max_children),
-			delegation::Error::<Test>::DelegationNotFound
+			Error::<Test>::DelegationNotFound
+		);
+		assert_noop!(
+			Delegation::remove_delegation(get_origin(revoker.clone()), operation.id, 0u32, operation.max_children),
+			Error::<Test>::DelegationNotFound
 		);
 	});
 }
 
 #[test]
-fn different_root_creator_revoke_root_error() {
-	let revoker_keypair = get_alice_ed25519();
-	let revoker = get_ed25519_account(revoker_keypair.public());
-	let alternative_revoker_keypair = get_charlie_ed25519();
-	let alternative_revoker = get_ed25519_account(alternative_revoker_keypair.public());
+fn different_root_creator_revoke_and_remove_root_error() {
+	let owner_keypair = get_alice_ed25519();
+	let owner = get_ed25519_account(owner_keypair.public());
+	let unauthorized_keypair = get_charlie_ed25519();
+	let unauthorized = get_ed25519_account(unauthorized_keypair.public());
 
 	let (hierarchy_root_id, hierarchy_details) = (
 		get_delegation_hierarchy_id::<Test>(true),
@@ -857,26 +939,41 @@ fn different_root_creator_revoke_root_error() {
 
 	let operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.build(None);
-	let mut ext = ExtBuilder::default()
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, alternative_revoker)])
-		.build(Some(ext));
-
-	ext.execute_with(|| {
-		assert_noop!(
-			Delegation::revoke_delegation(get_origin(revoker.clone()), operation.id, 0u32, operation.max_children),
-			delegation::Error::<Test>::UnauthorizedRevocation
-		);
-	});
+	ExtBuilder::default()
+		.with_balances(vec![
+			(owner.clone(), DepositMock::get()),
+			(unauthorized.clone(), DepositMock::get()),
+		])
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, owner.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, owner.clone())])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Delegation::revoke_delegation(
+					get_origin(unauthorized.clone()),
+					operation.id,
+					0u32,
+					operation.max_children
+				),
+				Error::<Test>::UnauthorizedRevocation
+			);
+			assert_noop!(
+				Delegation::remove_delegation(
+					get_origin(unauthorized.clone()),
+					operation.id,
+					0u32,
+					operation.max_children
+				),
+				Error::<Test>::UnauthorizedRemoval
+			);
+		});
 }
 
 #[test]
-fn too_small_max_revocations_revoke_root_error() {
+fn too_small_max_revocations_revoke_and_remove_root_error() {
 	let revoker_keypair = get_alice_ed25519();
 	let revoker = get_ed25519_account(revoker_keypair.public());
-	let delegate_keypair = get_alice_ed25519();
+	let delegate_keypair = get_bob_ed25519();
 	let delegate = get_ed25519_account(delegate_keypair.public());
 
 	let (hierarchy_root_id, hierarchy_details) = (
@@ -885,33 +982,38 @@ fn too_small_max_revocations_revoke_root_error() {
 	);
 	let (delegation_id, delegation_node) = (
 		get_delegation_id(false),
-		generate_base_delegation_node(hierarchy_root_id, delegate, Some(hierarchy_root_id)),
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
 	);
 
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	operation.max_children = 0u32;
 
-	let ext = ctype_mock::ExtBuilder::default()
+	ExtBuilder::default()
+		.with_balances(vec![
+			(revoker.clone(), DepositMock::get() * 2),
+			(delegate.clone(), DepositMock::get()),
+		])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.build(None);
-	let mut ext = ExtBuilder::default()
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
 		.with_delegations(vec![(delegation_id, delegation_node)])
-		.build(Some(ext));
-
-	ext.execute_with(|| {
-		assert_noop!(
-			Delegation::revoke_delegation(get_origin(revoker.clone()), operation.id, 0u32, operation.max_children),
-			delegation::Error::<Test>::ExceededRevocationBounds
-		);
-	});
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Delegation::revoke_delegation(get_origin(revoker.clone()), operation.id, 0u32, operation.max_children),
+				Error::<Test>::ExceededRevocationBounds
+			);
+			assert_noop!(
+				Delegation::remove_delegation(get_origin(revoker.clone()), operation.id, 0u32, operation.max_children),
+				Error::<Test>::ExceededRemovalBounds
+			);
+		});
 }
 
 #[test]
-fn exact_children_max_revocations_revoke_root_error() {
+fn exact_children_max_revocations_revoke_and_remove_root_error() {
 	let revoker_keypair = get_alice_ed25519();
 	let revoker = get_ed25519_account(revoker_keypair.public());
-	let delegate_keypair = get_alice_ed25519();
+	let delegate_keypair = get_bob_ed25519();
 	let delegate = get_ed25519_account(delegate_keypair.public());
 
 	let (hierarchy_root_id, hierarchy_details) = (
@@ -928,63 +1030,88 @@ fn exact_children_max_revocations_revoke_root_error() {
 	);
 	let (delegation3_id, delegation3_node) = (
 		get_delegation_id_2(true),
-		generate_base_delegation_node(hierarchy_root_id, delegate, Some(delegation1_id)),
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(delegation1_id)),
 	);
 
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
+	// set max children below required minimum of 3 to revoke/remove entire tree
 	operation.max_children = 2u32;
 
-	let ext = ctype_mock::ExtBuilder::default()
+	ExtBuilder::default()
+		.with_balances(vec![
+			(revoker.clone(), DepositMock::get()),
+			(delegate.clone(), DepositMock::get() * 3),
+		])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.build(None);
-	let mut ext = ExtBuilder::default()
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
 		.with_delegations(vec![
 			(delegation1_id, delegation1_node),
 			(delegation2_id, delegation2_node),
 			(delegation3_id, delegation3_node),
 		])
-		.build(Some(ext));
+		.build(None)
+		.execute_with(|| {
+			// Should not revoke root because tree traversal steps are insufficient
+			// assert_err and not assert_noop becase the storage is indeed changed, even tho
+			// partially
+			assert_err!(
+				Delegation::revoke_delegation(get_origin(revoker.clone()), operation.id, 0u32, operation.max_children),
+				Error::<Test>::ExceededRevocationBounds
+			);
 
-	ext.execute_with(|| {
-		// assert_err and not asser_noop becase the storage is indeed changed, even tho
-		// partially
-		assert_err!(
-			Delegation::revoke_delegation(get_origin(revoker.clone()), operation.id, 0u32, operation.max_children),
-			delegation::Error::<Test>::ExceededRevocationBounds
-		);
-	});
+			// Only Delegation 2 should have been revoked
+			assert!(
+				!Delegation::delegation_nodes(&operation.id)
+					.expect("Delegation root should be present on chain.")
+					.details
+					.revoked
+			);
+			assert!(
+				!Delegation::delegation_nodes(&delegation1_id)
+					.expect("Delegation 1 should be present on chain.")
+					.details
+					.revoked
+			);
+			assert!(
+				Delegation::delegation_nodes(&delegation2_id)
+					.expect("Delegation 2 should be present on chain.")
+					.details
+					.revoked
+			);
+			assert!(
+				!Delegation::delegation_nodes(&delegation3_id)
+					.expect("Delegation 3 should be present on chain.")
+					.details
+					.revoked
+			);
 
-	let stored_delegation_root = ext.execute_with(|| {
-		Delegation::delegation_nodes(&operation.id).expect("Delegation root should be present on chain.")
-	});
-	assert!(!stored_delegation_root.details.revoked);
-
-	let stored_delegation_1 = ext.execute_with(|| {
-		Delegation::delegation_nodes(&delegation1_id).expect("Delegation 1 should be present on chain.")
-	});
-	assert!(!stored_delegation_1.details.revoked);
-
-	// Only this leaf should have been revoked as it is the first child of
-	// delegation_1
-	let stored_delegation_2 = ext.execute_with(|| {
-		Delegation::delegation_nodes(&delegation2_id).expect("Delegation 2 should be present on chain.")
-	});
-	assert!(stored_delegation_2.details.revoked);
-
-	let stored_delegation_3 = ext.execute_with(|| {
-		Delegation::delegation_nodes(&delegation3_id).expect("Delegation 3 should be present on chain.")
-	});
-	assert!(!stored_delegation_3.details.revoked);
+			// Should not remove root because tree traversal steps are insufficient
+			assert_eq!(Balances::reserved_balance(revoker.clone()), DepositMock::get());
+			assert_eq!(Balances::reserved_balance(delegate.clone()), 3 * DepositMock::get());
+			// assert_err and not assert_noop becase the storage is indeed changed, even tho
+			// partially
+			assert_err!(
+				Delegation::remove_delegation(get_origin(revoker.clone()), operation.id, 0u32, operation.max_children),
+				Error::<Test>::ExceededRemovalBounds
+			);
+			assert!(Delegation::delegation_nodes(&operation.id).is_some());
+			assert!(Delegation::delegation_nodes(&delegation1_id).is_some());
+			assert!(Delegation::delegation_nodes(&delegation2_id).is_none());
+			assert!(Delegation::delegation_nodes(&delegation3_id).is_some());
+			assert_eq!(Balances::reserved_balance(revoker.clone()), DepositMock::get());
+			assert_eq!(Balances::reserved_balance(delegate.clone()), 2 * DepositMock::get());
+		});
 }
 
 // submit_delegation_revocation_operation()
 
+// difference to `max_max_revocations_revoke_and_remove_successful`: doesn't
+// revoke hierarchy but direct child of hierarchy root
 #[test]
-fn direct_owner_revoke_delegation_successful() {
+fn direct_owner_revoke_and_remove_delegation_successful() {
 	let revoker_keypair = get_alice_ed25519();
 	let revoker = get_ed25519_account(revoker_keypair.public());
-	let delegate_keypair = get_alice_ed25519();
+	let delegate_keypair = get_bob_ed25519();
 	let delegate = get_ed25519_account(delegate_keypair.public());
 
 	let (hierarchy_root_id, hierarchy_details) = (
@@ -997,45 +1124,75 @@ fn direct_owner_revoke_delegation_successful() {
 	);
 	let (delegation_id, delegation_node) = (
 		get_delegation_id(false),
-		generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id)),
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
 	);
 
 	let mut operation = generate_base_delegation_revocation_operation(parent_id);
 	operation.max_revocations = 2u32;
 
-	let ext = ctype_mock::ExtBuilder::default()
+	ExtBuilder::default()
+		.with_balances(vec![
+			(revoker.clone(), DepositMock::get() * 2),
+			(delegate.clone(), DepositMock::get()),
+		])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.build(None);
-	let mut ext = ExtBuilder::default()
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
-		.build(Some(ext));
+		.build(None)
+		.execute_with(|| {
+			// Revoke direct child of hierarchy root
+			assert_ok!(Delegation::revoke_delegation(
+				get_origin(revoker.clone()),
+				operation.delegation_id,
+				operation.max_parent_checks,
+				operation.max_revocations
+			));
 
-	ext.execute_with(|| {
-		assert_ok!(Delegation::revoke_delegation(
-			get_origin(revoker.clone()),
-			operation.delegation_id,
-			operation.max_parent_checks,
-			operation.max_revocations
-		));
-	});
+			// Root hierarchy and children should still be stored with revoked status
+			assert!(
+				Delegation::delegation_nodes(&operation.delegation_id)
+					.expect("Delegation root should be present on chain.")
+					.details
+					.revoked
+			);
+			assert!(
+				Delegation::delegation_nodes(&parent_id)
+					.expect("Parent delegation should be present on chain.")
+					.details
+					.revoked
+			);
+			assert!(
+				Delegation::delegation_nodes(&delegation_id)
+					.expect("Delegation should be present on chain.")
+					.details
+					.revoked
+			);
 
-	let stored_parent_delegation = ext.execute_with(|| {
-		Delegation::delegation_nodes(&parent_id).expect("Parent delegation should be present on chain.")
-	});
-	assert!(stored_parent_delegation.details.revoked);
+			assert_eq!(Balances::reserved_balance(revoker.clone()), 2 * DepositMock::get());
+			assert_eq!(Balances::reserved_balance(delegate.clone()), DepositMock::get());
 
-	let stored_child_delegation = ext.execute_with(|| {
-		Delegation::delegation_nodes(&delegation_id).expect("Child delegation should be present on chain.")
-	});
-	assert!(stored_child_delegation.details.revoked);
+			// Removing root delegation should also remove its child but not hierarchy root
+			assert_ok!(Delegation::remove_delegation(
+				get_origin(revoker.clone()),
+				operation.delegation_id,
+				operation.max_parent_checks,
+				operation.max_revocations
+			));
+
+			assert!(Delegation::delegation_hierarchies(&hierarchy_root_id).is_some());
+			assert!(Delegation::delegation_nodes(&operation.delegation_id).is_none());
+			assert!(Delegation::delegation_nodes(&parent_id).is_none());
+			assert!(Delegation::delegation_nodes(&delegation_id).is_none());
+			assert_eq!(Balances::reserved_balance(revoker.clone()), DepositMock::get());
+			assert!(Balances::reserved_balance(delegate.clone()).is_zero());
+		});
 }
 
 #[test]
 fn parent_owner_revoke_delegation_successful() {
 	let revoker_keypair = get_alice_ed25519();
 	let revoker = get_ed25519_account(revoker_keypair.public());
-	let delegate_keypair = get_alice_ed25519();
+	let delegate_keypair = get_bob_ed25519();
 	let delegate = get_ed25519_account(delegate_keypair.public());
 
 	let (hierarchy_root_id, hierarchy_details) = (
@@ -1048,39 +1205,120 @@ fn parent_owner_revoke_delegation_successful() {
 	);
 	let (delegation_id, delegation_node) = (
 		get_delegation_id(false),
-		generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id)),
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
 	);
 
 	let mut operation = generate_base_delegation_revocation_operation(delegation_id);
 	operation.max_parent_checks = 1u32;
 	operation.max_revocations = 1u32;
 
-	let ext = ctype_mock::ExtBuilder::default()
+	ExtBuilder::default()
+		.with_balances(vec![
+			(revoker.clone(), DepositMock::get() * 2),
+			(delegate.clone(), DepositMock::get()),
+		])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.build(None);
-	let mut ext = ExtBuilder::default()
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
-		.build(Some(ext));
+		.build(None)
+		.execute_with(|| {
+			// Revoke direct child of hierarchy root
+			assert_ok!(Delegation::revoke_delegation(
+				get_origin(revoker.clone()),
+				operation.delegation_id,
+				operation.max_parent_checks,
+				operation.max_revocations
+			));
 
-	ext.execute_with(|| {
-		assert_ok!(Delegation::revoke_delegation(
-			get_origin(revoker.clone()),
-			operation.delegation_id,
-			operation.max_parent_checks,
-			operation.max_revocations
-		));
-	});
+			// Only child should be revoked
+			assert!(
+				!Delegation::delegation_nodes(&parent_id)
+					.expect("Parent delegation should be present on chain.")
+					.details
+					.revoked
+			);
+			assert!(
+				Delegation::delegation_nodes(&delegation_id)
+					.expect("Delegation should be present on chain.")
+					.details
+					.revoked
+			);
 
-	let stored_parent_delegation = ext.execute_with(|| {
-		Delegation::delegation_nodes(&parent_id).expect("Parent delegation should be present on chain.")
-	});
-	assert!(!stored_parent_delegation.details.revoked);
+			// Parent should not be able to remove because delegation was revoked
+			assert_eq!(Balances::reserved_balance(revoker.clone()), 2 * DepositMock::get());
+			assert_eq!(Balances::reserved_balance(delegate.clone()), DepositMock::get());
+			assert_noop!(
+				Delegation::remove_delegation(
+					get_origin(revoker.clone()),
+					operation.delegation_id,
+					operation.max_parent_checks,
+					operation.max_revocations
+				),
+				Error::<Test>::UnauthorizedRemoval
+			);
+			assert_ok!(Delegation::remove_delegation(
+				get_origin(delegate.clone()),
+				operation.delegation_id,
+				operation.max_parent_checks,
+				operation.max_revocations
+			));
 
-	let stored_child_delegation = ext.execute_with(|| {
-		Delegation::delegation_nodes(&delegation_id).expect("Child delegation should be present on chain.")
-	});
-	assert!(stored_child_delegation.details.revoked);
+			assert!(Delegation::delegation_nodes(&delegation_id).is_none());
+			assert_eq!(Balances::reserved_balance(revoker.clone()), 2 * DepositMock::get());
+			assert!(Balances::reserved_balance(delegate.clone()).is_zero());
+		});
+}
+#[test]
+fn parent_owner_remove_delegation_successful() {
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let delegate_keypair = get_bob_ed25519();
+	let delegate = get_ed25519_account(delegate_keypair.public());
+
+	let (hierarchy_root_id, hierarchy_details) = (
+		get_delegation_hierarchy_id::<Test>(true),
+		generate_base_delegation_hierarchy_details(),
+	);
+	let (parent_id, parent_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
+	);
+
+	let mut operation = generate_base_delegation_revocation_operation(delegation_id);
+	operation.max_parent_checks = 1u32;
+	operation.max_revocations = 1u32;
+
+	ExtBuilder::default()
+		.with_balances(vec![
+			(revoker.clone(), DepositMock::get() * 2),
+			(delegate.clone(), DepositMock::get()),
+		])
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
+		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
+		.build(None)
+		.execute_with(|| {
+			// Parent should be able to remove
+			assert_eq!(Balances::reserved_balance(revoker.clone()), 2 * DepositMock::get());
+			assert_eq!(Balances::reserved_balance(delegate.clone()), DepositMock::get());
+
+			assert_ok!(Delegation::remove_delegation(
+				get_origin(revoker.clone()),
+				operation.delegation_id,
+				operation.max_parent_checks,
+				operation.max_revocations
+			));
+
+			assert!(Delegation::delegation_hierarchies(&hierarchy_root_id).is_some());
+			assert!(Delegation::delegation_nodes(&parent_id).is_some());
+			assert!(Delegation::delegation_nodes(&delegation_id).is_none());
+			assert_eq!(Balances::reserved_balance(revoker.clone()), 2 * DepositMock::get());
+			assert!(Balances::reserved_balance(delegate.clone()).is_zero());
+		});
 }
 
 #[test]
@@ -1111,7 +1349,7 @@ fn delegation_not_found_revoke_delegation_error() {
 				operation.max_parent_checks,
 				operation.max_revocations
 			),
-			delegation::Error::<Test>::DelegationNotFound
+			Error::<Test>::DelegationNotFound
 		);
 	});
 }
@@ -1151,7 +1389,7 @@ fn not_delegating_revoke_delegation_error() {
 				operation.max_parent_checks,
 				operation.max_revocations
 			),
-			delegation::Error::<Test>::UnauthorizedRevocation
+			Error::<Test>::UnauthorizedRevocation
 		);
 	});
 }
@@ -1197,7 +1435,7 @@ fn parent_too_far_revoke_delegation_error() {
 				operation.max_parent_checks,
 				operation.max_revocations
 			),
-			delegation::Error::<Test>::MaxSearchDepthReached
+			Error::<Test>::MaxSearchDepthReached
 		);
 	});
 }
@@ -1240,7 +1478,7 @@ fn too_many_revocations_revoke_delegation_error() {
 				operation.max_parent_checks,
 				operation.max_revocations
 			),
-			delegation::Error::<Test>::ExceededRevocationBounds
+			Error::<Test>::ExceededRevocationBounds
 		);
 	});
 }
@@ -1573,6 +1811,7 @@ fn is_delegating_root_owner_revoked() {
 	ext.execute_with(|| {
 		// First revoke the hierarchy, then test is_delegating.
 		let _ = Delegation::revoke_delegation(get_origin(user_1.clone()), hierarchy_root_id, 0u32, 2);
+
 		assert_eq!(
 			Delegation::is_delegating(&user_1, &delegation_id, max_parent_checks),
 			Ok((false, 0u32))
@@ -1601,7 +1840,7 @@ fn is_delegating_delegation_not_found() {
 	ext.execute_with(|| {
 		assert_noop!(
 			Delegation::is_delegating(&user_1, &delegation_id, max_parent_checks),
-			delegation::Error::<Test>::DelegationNotFound
+			Error::<Test>::DelegationNotFound
 		);
 	});
 }
@@ -1639,13 +1878,52 @@ fn is_delegating_root_after_max_limit() {
 	ext.execute_with(|| {
 		assert_noop!(
 			Delegation::is_delegating(&user_1, &delegation_id, max_parent_checks),
-			delegation::Error::<Test>::MaxSearchDepthReached
+			Error::<Test>::MaxSearchDepthReached
 		);
 	});
 }
 
-// !! This test is matched to a unit test in the SDK. Both must be updated in
-// sync !!
+#[test]
+fn remove_single_hierarchy() {
+	let creator_keypair = get_alice_ed25519();
+	let creator = get_ed25519_account(creator_keypair.public());
+	let attacker_keypair = get_bob_sr25519();
+	let attacker = get_sr25519_account(attacker_keypair.public());
+
+	let (hierarchy_root_id, hierarchy_details) = (
+		get_delegation_hierarchy_id::<Test>(true),
+		generate_base_delegation_hierarchy_details(),
+	);
+
+	ExtBuilder::default()
+		.with_balances(vec![(creator.clone(), DepositMock::get())])
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
+		.build(None)
+		.execute_with(|| {
+			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_some());
+			assert!(Delegation::delegation_nodes(hierarchy_root_id).is_some());
+			assert_eq!(Balances::reserved_balance(creator.clone()), DepositMock::get());
+
+			// Remove
+			assert_noop!(
+				Delegation::remove_delegation(get_origin(attacker), hierarchy_root_id, 0, 0),
+				Error::<Test>::UnauthorizedRemoval
+			);
+			assert_ok!(Delegation::remove_delegation(
+				get_origin(creator.clone()),
+				hierarchy_root_id,
+				0,
+				0
+			),);
+			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_none());
+			assert!(Delegation::delegation_nodes(hierarchy_root_id).is_none());
+			assert!(Balances::reserved_balance(creator).is_zero());
+		});
+}
+
+// ⚠️ This test is matched to a unit test in the SDK. Both must be updated in
+// sync ⚠️
 #[test]
 fn calculate_reference_root_hash() {
 	let delegation_id = sp_core::H256::from_slice(&[

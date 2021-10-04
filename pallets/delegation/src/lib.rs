@@ -288,6 +288,8 @@ pub mod pallet {
 		ParentDelegationRevoked,
 		/// The delegation revoker is not allowed to revoke the delegation.
 		UnauthorizedRevocation,
+		/// The call origin is not authorized to remove the delegation.
+		UnauthorizedRemoval,
 		/// The delegation creator is not allowed to create the delegation.
 		UnauthorizedDelegation,
 		/// Max number of revocations for delegation nodes has been reached for
@@ -298,6 +300,8 @@ pub mod pallet {
 		ExceededRemovalBounds,
 		/// The max number of revocation exceeds the limit for the pallet.
 		MaxRevocationsTooLarge,
+		/// The max number of removals exceeds the limit for the pallet.
+		MaxRemovalsTooLarge,
 		/// The max number of parent checks exceeds the limit for the pallet.
 		MaxParentChecksTooLarge,
 		/// An error that is not supposed to take place, yet it happened.
@@ -305,8 +309,6 @@ pub mod pallet {
 		/// The max number of all children has been reached for the
 		/// corresponding delegation node.
 		MaxChildrenExceeded,
-		/// The call origin is not authorized to remove the delegation.
-		UnauthorizedRemoval,
 	}
 
 	#[pallet::call]
@@ -565,27 +567,20 @@ pub mod pallet {
 		/// - Writes: Roots, C * Delegations
 		/// # </weight>
 		#[pallet::weight(
-			<T as Config>::WeightInfo::revoke_delegation_root_child(*max_revocations, *max_parent_checks)
-				.max(<T as Config>::WeightInfo::revoke_delegation_leaf(*max_revocations, *max_parent_checks)))]
+			<T as Config>::WeightInfo::revoke_delegation_root_child(*max_removals, *max_parent_checks)
+				.max(<T as Config>::WeightInfo::revoke_delegation_leaf(*max_removals, *max_parent_checks)))]
 		pub fn remove_delegation(
 			origin: OriginFor<T>,
 			delegation_id: DelegationNodeIdOf<T>,
 			max_parent_checks: u32,
-			max_revocations: u32,
+			max_removals: u32,
 		) -> DispatchResultWithPostInfo {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let sender = source.sender();
 			let invoker = source.subject();
 
-			let deposit_owner = <DelegationNodes<T>>::get(&delegation_id)
-				.ok_or(Error::<T>::DelegationNotFound)?
-				.deposit
-				.owner;
-
-			ensure!(
-				deposit_owner == sender || deposit_owner == invoker.clone().into(),
-				Error::<T>::UnauthorizedRemoval
-			);
+			let delegation = <DelegationNodes<T>>::get(&delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
+			let deposit_owner = delegation.deposit.owner;
 
 			ensure!(
 				max_parent_checks <= T::MaxParentChecks::get(),
@@ -593,19 +588,28 @@ pub mod pallet {
 			);
 
 			ensure!(
-				max_revocations <= T::MaxRevocations::get(),
-				Error::<T>::MaxRevocationsTooLarge
+				// TODO: Create separate parameter?
+				max_removals <= T::MaxRevocations::get(),
+				Error::<T>::MaxRemovalsTooLarge
 			);
 
+			// TODO: Ensure all three cases are valid (!!!)
+			// Removal is authorized if either
+			// 1. The invoker is a parent delegation
+			// 2. The invoker is the deposit owner
+			// 3. The origin is the deposit owner
 			let (authorized, parent_checks) = Self::is_delegating(&invoker, &delegation_id, max_parent_checks)?;
-			ensure!(authorized, Error::<T>::UnauthorizedRevocation);
+			ensure!(
+				authorized || deposit_owner == sender || deposit_owner == invoker.clone().into(),
+				Error::<T>::UnauthorizedRemoval
+			);
 
 			// Remove the delegation and recursively all of its children (add 1 to
-			// max_revocations to account for the node itself)
-			let (removal_checks, _) = Self::remove(&delegation_id, max_revocations.saturating_add(1))?;
+			// max_removals to account for the node itself)
+			let (removal_checks, _) = Self::remove(&delegation_id, max_removals.saturating_add(1))?;
 
 			// If the removed node is a root node, emit also a HierarchyRemoved event.
-			if DelegationHierarchies::<T>::contains_key(&delegation_id) {
+			if DelegationHierarchies::<T>::take(&delegation_id).is_some() {
 				Self::deposit_event(Event::HierarchyRemoved(invoker, delegation_id));
 			}
 
@@ -699,7 +703,7 @@ impl<T: Config> Pallet<T> {
 		let delegation_node = <DelegationNodes<T>>::get(delegation).ok_or(Error::<T>::DelegationNotFound)?;
 
 		// Check if the given account is the owner of the delegation and that the
-		// delegation has not been removed
+		// delegation has not been revoked
 		if &delegation_node.details.owner == identity {
 			Ok((!delegation_node.details.revoked, 0u32))
 		} else if let Some(parent) = delegation_node.parent {
