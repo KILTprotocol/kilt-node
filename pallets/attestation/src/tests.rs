@@ -18,6 +18,7 @@
 
 use frame_support::{assert_noop, assert_ok};
 use sp_core::Pair;
+use sp_runtime::traits::Zero;
 
 use crate::{
 	self as attestation,
@@ -372,7 +373,7 @@ fn root_ctype_mismatch_attest_error() {
 // submit_attestation_revocation_operation
 
 #[test]
-fn revoke_direct_successful() {
+fn revoke_and_remove_direct_successful() {
 	let revoker: AccountIdOf<Test> = get_alice_ed25519().public().into();
 	let claim_hash = get_claim_hash(true);
 	let attestation = generate_base_attestation::<Test>(revoker.clone(), revoker.clone());
@@ -394,6 +395,18 @@ fn revoke_direct_successful() {
 				Attestation::attestations(claim_hash).expect("Attestation should be present on chain.");
 
 			assert!(stored_attestation.revoked);
+			assert_eq!(
+				Balances::reserved_balance(revoker.clone()),
+				<Test as Config>::Deposit::get()
+			);
+
+			assert_ok!(Attestation::remove(
+				Origin::signed(revoker.clone()),
+				operation.claim_hash,
+				operation.max_parent_checks
+			));
+			assert!(Attestation::attestations(claim_hash).is_none());
+			assert!(Balances::reserved_balance(revoker).is_zero());
 		});
 }
 
@@ -820,7 +833,7 @@ fn remove_with_delegation_successful() {
 				operation.max_parent_checks
 			));
 			assert!(Attestation::attestations(operation.claim_hash).is_none());
-			assert_eq!(Balances::reserved_balance(attestation_owner), 0);
+			assert!(Balances::reserved_balance(attestation_owner).is_zero());
 		});
 }
 
@@ -848,7 +861,7 @@ fn attestation_not_present_remove_error() {
 				),
 				attestation::Error::<Test>::AttestationNotFound
 			);
-			assert_eq!(Balances::reserved_balance(attester.clone()), 0,);
+			assert!(Balances::reserved_balance(attester.clone()).is_zero());
 		});
 }
 
@@ -986,7 +999,7 @@ fn remove_delegated_attestation() {
 				operation.claim_hash,
 				operation.max_parent_checks
 			));
-			assert_eq!(Balances::reserved_balance(attestation_owner), 0);
+			assert!(Balances::reserved_balance(attestation_owner).is_zero());
 			assert!(
 				!DelegatedAttestations::<Test>::get(delegation_id)
 					.unwrap_or_default()
