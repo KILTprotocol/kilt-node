@@ -29,6 +29,7 @@ mod v2;
 /// Storage version of the DID pallet.
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Decode, Encode, Eq, Ord, PartialEq, PartialOrd)]
+#[allow(clippy::unnecessary_cast)]
 pub enum DidStorageVersion {
 	None = u8::MAX,
 	V1 = 0,

@@ -36,6 +36,7 @@ mod v5;
 // semantic versions of the Rust crate.
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Decode, Encode, Eq, Ord, PartialEq, PartialOrd)]
+#[allow(clippy::unnecessary_cast)]
 pub enum StakingStorageVersion {
 	None = u8::MAX,
 	V1_0_0 = 0,

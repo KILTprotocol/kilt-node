@@ -28,6 +28,7 @@ mod v1;
 /// Storage version of the delegation pallet.
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Decode, Encode, Eq, Ord, PartialEq, PartialOrd)]
+#[allow(clippy::unnecessary_cast)]
 pub enum DelegationStorageVersion {
 	None = u8::MAX,
 	V1 = 0,
