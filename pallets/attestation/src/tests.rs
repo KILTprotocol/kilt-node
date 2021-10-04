@@ -769,7 +769,7 @@ fn revoked_delegation_revoke_error() {
 // remove attestation
 
 #[test]
-fn remove_direct_successful() {
+fn subject_remove_direct_successful() {
 	let revoker: AccountIdOf<Test> = get_alice_ed25519().public().into();
 	let claim_hash = get_claim_hash(true);
 	let attestation = generate_base_attestation::<Test>(revoker.clone(), revoker.clone());
@@ -784,6 +784,30 @@ fn remove_direct_successful() {
 		.execute_with(|| {
 			assert_ok!(Attestation::remove(
 				Origin::signed(revoker.clone()),
+				operation.claim_hash,
+				operation.max_parent_checks
+			));
+			assert_eq!(Attestation::attestations(claim_hash), None)
+		});
+}
+
+#[test]
+fn deposit_owner_remove_direct_successful() {
+	let deposit_owner: AccountIdOf<Test> = get_alice_ed25519().public().into();
+	let attester: AccountIdOf<Test> = get_bob_ed25519().public().into();
+	let claim_hash = get_claim_hash(true);
+	let attestation = generate_base_attestation::<Test>(attester, deposit_owner.clone());
+
+	let operation = generate_base_attestation_revocation_details::<Test>(claim_hash);
+
+	ExtBuilder::default()
+		.with_balances(vec![(deposit_owner.clone(), <Test as Config>::Deposit::get() * 100)])
+		.with_ctypes(vec![(attestation.ctype_hash, deposit_owner.clone())])
+		.with_attestations(vec![(operation.claim_hash, attestation)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(Attestation::remove(
+				Origin::signed(deposit_owner.clone()),
 				operation.claim_hash,
 				operation.max_parent_checks
 			));

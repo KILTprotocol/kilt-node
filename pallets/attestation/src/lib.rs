@@ -387,10 +387,11 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let who = source.subject();
+			let sender = source.sender();
 
 			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
-			let delegation_depth = if attestation.attester != who {
+			let delegation_depth = if attestation.attester != who && attestation.deposit.owner != sender {
 				Self::verify_delegated_access(&who, &attestation, max_parent_checks)?
 			} else {
 				0

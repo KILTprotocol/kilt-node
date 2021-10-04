@@ -351,7 +351,7 @@ pub(crate) mod runtime {
 				delegation::mock::initialize_pallet(self.delegations, self.delegation_hierarchies);
 
 				for (claim_hash, details) in self.attestations {
-					Pallet::<Test>::reserve_deposit(details.attester.clone(), details.deposit.amount)
+					Pallet::<Test>::reserve_deposit(details.deposit.owner.clone(), details.deposit.amount)
 						.expect("Should have balance");
 
 					crate::Attestations::<Test>::insert(&claim_hash, details.clone());
