@@ -234,7 +234,9 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		#[cfg(feature = "try-runtime")]
 		fn pre_upgrade() -> Result<(), &'static str> {
-			StorageMigrator::<DidStorageVersion, T>::pre_migrate(StorageVersion::<T>::get())
+			let current_storage_version = StorageVersion::<T>::get();
+			log::info!("DID storage version before migration -> {:?}", current_storage_version);
+			StorageMigrator::<DidStorageVersion, T>::pre_migrate(current_storage_version)
 		}
 
 		fn on_runtime_upgrade() -> Weight {
@@ -245,7 +247,9 @@ pub mod pallet {
 
 		#[cfg(feature = "try-runtime")]
 		fn post_upgrade() -> Result<(), &'static str> {
-			StorageMigrator::<DidStorageVersion, T>::post_migrate(StorageVersion::<T>::get())
+			let current_storage_version = StorageVersion::<T>::get();
+			log::info!("DID storage version after migration -> {:?}", current_storage_version);
+			StorageMigrator::<DidStorageVersion, T>::post_migrate(current_storage_version)
 		}
 	}
 

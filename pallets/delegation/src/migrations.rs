@@ -26,13 +26,12 @@ mod setup;
 mod v1;
 
 /// Storage version of the delegation pallet.
-#[derive(Copy, Clone, Encode, Eq, Decode, Ord, PartialEq, PartialOrd)]
+#[repr(u8)]
+#[derive(Clone, Copy, Debug, Decode, Encode, Eq, Ord, PartialEq, PartialOrd)]
 pub enum DelegationStorageVersion {
-	V1,
-	V2,
-	// None must always be last otherwise it messes up with encoding/decoding
-	// since enums are encoded/decoded based on their position in the declaration.
-	None,
+	V1 = 0,
+	V2 = 1,
+	None = u8::MAX,
 }
 
 impl DelegationStorageVersion {

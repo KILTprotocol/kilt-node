@@ -34,16 +34,15 @@ mod v5;
 // storage. This value is used by the `on_runtime_upgrade` logic to determine
 // whether we run storage migration logic. This should match directly with the
 // semantic versions of the Rust crate.
-#[derive(Copy, Clone, Encode, Eq, Decode, Debug, Ord, PartialEq, PartialOrd)]
+#[repr(u8)]
+#[derive(Clone, Copy, Debug, Decode, Encode, Eq, Ord, PartialEq, PartialOrd)]
 pub enum StakingStorageVersion {
-	V1_0_0,
-	V2_0_0, // New Reward calculation, MaxCollatorCandidateStake
-	V3_0_0, // Update InflationConfig
-	V4,     // Sort TopCandidates and parachain-stakings by amount
-	V5,     // Remove SelectedCandidates, Count Candidates
-	// None must always be last otherwise it messes up with encoding/decoding
-	// since enums are encoded/decoded based on their position in the declaration.
-	None,
+	V1_0_0 = 0,
+	V2_0_0 = 1, // New Reward calculation, MaxCollatorCandidateStake
+	V3_0_0 = 2, // Update InflationConfig
+	V4 = 3,     // Sort TopCandidates and parachain-stakings by amount
+	V5 = 4,     // Remove SelectedCandidates, Count Candidates
+	None = u8::MAX,
 }
 
 impl StakingStorageVersion {
