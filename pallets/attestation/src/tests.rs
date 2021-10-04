@@ -787,16 +787,16 @@ fn subject_remove_direct_successful() {
 				operation.claim_hash,
 				operation.max_parent_checks
 			));
-			assert_eq!(Attestation::attestations(claim_hash), None)
+			assert!(Attestation::attestations(claim_hash).is_none())
 		});
 }
 
 #[test]
-fn deposit_owner_remove_direct_successful() {
+fn reclaim_deposit() {
 	let deposit_owner: AccountIdOf<Test> = get_alice_ed25519().public().into();
 	let attester: AccountIdOf<Test> = get_bob_ed25519().public().into();
 	let claim_hash = get_claim_hash(true);
-	let attestation = generate_base_attestation::<Test>(attester, deposit_owner.clone());
+	let attestation = generate_base_attestation::<Test>(attester.clone(), deposit_owner.clone());
 
 	let operation = generate_base_attestation_revocation_details::<Test>(claim_hash);
 
@@ -806,12 +806,15 @@ fn deposit_owner_remove_direct_successful() {
 		.with_attestations(vec![(operation.claim_hash, attestation)])
 		.build()
 		.execute_with(|| {
-			assert_ok!(Attestation::remove(
+			assert_noop!(
+				Attestation::reclaim_deposit(Origin::signed(attester), operation.claim_hash),
+				attestation::Error::<Test>::Unauthorized,
+			);
+			assert_ok!(Attestation::reclaim_deposit(
 				Origin::signed(deposit_owner.clone()),
 				operation.claim_hash,
-				operation.max_parent_checks
 			));
-			assert_eq!(Attestation::attestations(claim_hash), None)
+			assert!(Attestation::attestations(claim_hash).is_none())
 		});
 }
 
