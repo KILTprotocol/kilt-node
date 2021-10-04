@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 use frame_support::dispatch::Weight;
-use kilt_traits::VersionMigratorTrait;
+use kilt_support::traits::VersionMigratorTrait;
 use sp_runtime::{
 	codec::{Decode, Encode},
 	traits::Zero,

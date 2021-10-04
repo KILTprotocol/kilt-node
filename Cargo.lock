@@ -3719,7 +3719,6 @@ name = "kilt-primitives"
 version = "0.1.0"
 dependencies = [
  "frame-support",
- "kilt-traits",
  "parity-scale-codec",
  "serde",
  "sp-consensus-aura",
@@ -3733,6 +3732,9 @@ name = "kilt-support"
 version = "0.26.0"
 dependencies = [
  "frame-support",
+ "parity-scale-codec",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -6196,7 +6198,7 @@ dependencies = [
  "frame-system",
  "hex-literal 0.2.1",
  "kilt-primitives",
- "kilt-traits",
+ "kilt-support",
  "log",
  "pallet-aura",
  "pallet-authorship",

@@ -16,33 +16,5 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode};
-use sp_std::vec::Vec;
-
 pub(crate) mod v1;
 pub(crate) mod v2;
-
-type UrlPayload = Vec<u8>;
-
-/// Supported URLs.
-#[derive(Clone, Decode, Encode, PartialEq)]
-pub(crate) enum Url {
-	Http(HttpUrl),
-	Ftp(FtpUrl),
-	Ipfs(IpfsUrl),
-}
-
-#[derive(Clone, Decode, Encode, PartialEq)]
-pub(crate) struct IpfsUrl {
-	pub(crate) payload: UrlPayload,
-}
-
-#[derive(Clone, Decode, Encode, PartialEq)]
-pub(crate) struct FtpUrl {
-	pub(crate) payload: UrlPayload,
-}
-
-#[derive(Clone, Decode, Encode, PartialEq)]
-pub(crate) struct HttpUrl {
-	pub(crate) payload: UrlPayload,
-}

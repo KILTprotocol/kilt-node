@@ -8,7 +8,7 @@ version = "1.0.0"
 [dependencies]
 hex-literal = "0.2.1"
 kilt-primitives = { path = "../../primitives", default-features = false }
-kilt-traits = {default-features = false, path = "../../traits"}
+kilt-support = {default-features = false, path = "../../support"}
 log = "*"
 parity-scale-codec = { version = "2.0.0", default-features = false, features = ["derive"] }
 
@@ -44,7 +44,7 @@ std = [
   "frame-system/std",
   "log/std",
   "kilt-primitives/std",
-  "kilt-traits/std",
+  "kilt-support/std",
   "pallet-authorship/std",
   "pallet-balances/std",
   "parity-scale-codec/std",
@@ -57,5 +57,5 @@ std = [
 try-runtime = [
   "frame-support/try-runtime",
   "kilt-primitives/try-runtime",
-  "kilt-traits/try-runtime",
+  "kilt-support/try-runtime",
 ]

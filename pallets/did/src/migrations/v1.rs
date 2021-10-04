@@ -94,7 +94,7 @@ mod tests {
 
 	use super::*;
 	use crate::{
-		deprecated::{HttpUrl, Url},
+		deprecated::v2::{HttpUrl, Url},
 		mock::Test as TestRuntime,
 	};
 	use mock::{get_did_identifier_from_ed25519_key, get_ed25519_authentication_key, ExtBuilder};

@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use kilt_traits::VersionMigratorTrait;
+use crate::traits::VersionMigratorTrait;
 
 use sp_runtime::traits::Zero;
 

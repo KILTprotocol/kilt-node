@@ -91,7 +91,7 @@ mod deprecated;
 pub use crate::{default_weights::WeightInfo, delegation_hierarchy::*, pallet::*};
 
 use frame_support::{dispatch::DispatchResult, ensure, pallet_prelude::Weight, traits::Get};
-use kilt_primitives::migrations::StorageMigrator;
+use kilt_support::migrations::StorageMigrator;
 use sp_runtime::{traits::Hash, DispatchError};
 use sp_std::vec::Vec;
 

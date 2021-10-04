@@ -172,7 +172,7 @@ mod types;
 use frame_support::pallet;
 
 pub use crate::{default_weights::WeightInfo, pallet::*};
-use kilt_primitives::migrations::StorageMigrator;
+use kilt_support::migrations::StorageMigrator;
 
 #[pallet]
 pub mod pallet {
