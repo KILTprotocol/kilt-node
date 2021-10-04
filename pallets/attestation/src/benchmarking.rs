@@ -43,7 +43,7 @@ benchmarks! {
 		let ctype_hash: T::Hash = T::Hash::default();
 		let (_, _, delegate_public, delegation_id) = setup_delegations::<T>(1, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::ATTEST)?;
 		let delegate_acc: T::AccountId = delegate_public.into();
-		T::Currency::make_free_balance_be(&delegate_acc, T::Deposit::get() + T::Deposit::get());
+		<T as Config>::Currency::make_free_balance_be(&delegate_acc, T::Deposit::get() + T::Deposit::get());
 
 	}: _(RawOrigin::Signed(delegate_acc.clone()), claim_hash, ctype_hash, Some(delegation_id))
 	verify {
@@ -69,7 +69,7 @@ benchmarks! {
 		let (root_public, _, delegate_public, delegation_id) = setup_delegations::<T>(d, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::ATTEST | Permissions::DELEGATE)?;
 		let root_acc: T::AccountId = root_public.into();
 		let delegate_acc: T::AccountId = delegate_public.into();
-		T::Currency::make_free_balance_be(&delegate_acc, T::Deposit::get() + T::Deposit::get());
+		<T as Config>::Currency::make_free_balance_be(&delegate_acc, T::Deposit::get() + T::Deposit::get());
 
 		// attest with leaf account
 		Pallet::<T>::add(RawOrigin::Signed(delegate_acc.clone()).into(), claim_hash, ctype_hash, Some(delegation_id))?;
@@ -98,7 +98,7 @@ benchmarks! {
 		let (root_public, _, delegate_public, delegation_id) = setup_delegations::<T>(d, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::ATTEST | Permissions::DELEGATE)?;
 		let root_acc: T::AccountId = root_public.into();
 		let delegate_acc: T::AccountId = delegate_public.into();
-		T::Currency::make_free_balance_be(&delegate_acc, T::Deposit::get() + T::Deposit::get());
+		<T as Config>::Currency::make_free_balance_be(&delegate_acc, T::Deposit::get() + T::Deposit::get());
 
 		// attest with leaf account
 		Pallet::<T>::add(RawOrigin::Signed(delegate_acc).into(), claim_hash, ctype_hash, Some(delegation_id))?;
@@ -115,7 +115,7 @@ benchmarks! {
 		let (root_public, _, delegate_public, delegation_id) = setup_delegations::<T>(1, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::ATTEST | Permissions::DELEGATE)?;
 		let root_acc: T::AccountId = root_public.into();
 		let delegate_acc: T::AccountId = delegate_public.into();
-		T::Currency::make_free_balance_be(&delegate_acc, T::Deposit::get() + T::Deposit::get());
+		<T as Config>::Currency::make_free_balance_be(&delegate_acc, T::Deposit::get() + T::Deposit::get());
 
 		// attest with leaf account
 		Pallet::<T>::add(RawOrigin::Signed(delegate_acc.clone()).into(), claim_hash, ctype_hash, Some(delegation_id))?;

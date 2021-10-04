@@ -18,10 +18,10 @@
 
 use sp_std::{convert::TryInto, vec::Vec};
 
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
-use frame_system::RawOrigin;
-
 use crate::*;
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
+use frame_support::traits::{Currency, Get};
+use frame_system::RawOrigin;
 
 const SEED: u32 = 0;
 
@@ -31,6 +31,7 @@ benchmarks! {
 
 		let caller = account("caller", 0, SEED);
 		let ctype: Vec<u8> = (0u8..u8::MAX).cycle().take(l.try_into().unwrap()).collect();
+		<T as Config>::Currency::make_free_balance_be(&caller, <T as Config>::Fee::get() + <T as Config>::Fee::get());
 
 	}: _(RawOrigin::Signed(caller), ctype)
 	verify {
@@ -39,6 +40,6 @@ benchmarks! {
 
 impl_benchmark_test_suite! {
 	Pallet,
-	crate::mock::ExtBuilder::default().build_with_keystore(None),
+	crate::mock::ExtBuilder::default().build_with_keystore(),
 	crate::mock::Test
 }

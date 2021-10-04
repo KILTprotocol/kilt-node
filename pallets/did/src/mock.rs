@@ -21,7 +21,7 @@
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use frame_system::EnsureSigned;
-use kilt_primitives::AccountId;
+use kilt_primitives::{AccountId, Balance};
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
@@ -51,6 +51,7 @@ frame_support::construct_runtime!(
 	{
 		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>},
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
+		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 	}
 );
@@ -76,7 +77,7 @@ impl frame_system::Config for Test {
 	type Version = ();
 
 	type PalletInfo = PalletInfo;
-	type AccountData = ();
+	type AccountData = pallet_balances::AccountData<Balance>;
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type BaseCallFilter = frame_support::traits::Everything;
@@ -117,12 +118,29 @@ impl Config for Test {
 	type WeightInfo = ();
 }
 
-impl ctype::Config for Test {
-	type FeeHandler = ();
-	type CtypeCreatorId = TestCtypeOwner;
-	type Event = ();
-	type WeightInfo = ();
+parameter_types! {
+	pub const ExistentialDeposit: Balance = 500;
+	pub const MaxLocks: u32 = 50;
+	pub const MaxReserves: u32 = 50;
+}
 
+impl pallet_balances::Config for Test {
+	type Balance = Balance;
+	type DustRemoval = ();
+	type Event = ();
+	type ExistentialDeposit = ExistentialDeposit;
+	type AccountStore = System;
+	type WeightInfo = ();
+	type MaxLocks = MaxLocks;
+	type MaxReserves = MaxReserves;
+	type ReserveIdentifier = [u8; 8];
+}
+
+parameter_types! {
+	pub const Fee: Balance = 500;
+}
+
+impl ctype::Config for Test {
 	#[cfg(feature = "runtime-benchmarks")]
 	type EnsureOrigin = EnsureSigned<TestDidIdentifier>;
 	#[cfg(feature = "runtime-benchmarks")]
@@ -132,6 +150,13 @@ impl ctype::Config for Test {
 	type EnsureOrigin = did::EnsureDidOrigin<TestCtypeOwner, kilt_primitives::AccountId>;
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type OriginSuccess = did::DidRawOrigin<kilt_primitives::AccountId, TestCtypeOwner>;
+
+	type CtypeCreatorId = TestCtypeOwner;
+	type Event = ();
+	type WeightInfo = ();
+	type Currency = Balances;
+	type Fee = Fee;
+	type FeeCollector = ();
 }
 
 #[cfg(test)]

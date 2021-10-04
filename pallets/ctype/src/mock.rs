@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
+use kilt_primitives::Balance;
 use sp_core::H256;
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
@@ -42,6 +43,7 @@ frame_support::construct_runtime!(
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
+		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 	}
 );
 
@@ -66,7 +68,7 @@ impl frame_system::Config for Test {
 	type Version = ();
 
 	type PalletInfo = PalletInfo;
-	type AccountData = ();
+	type AccountData = pallet_balances::AccountData<Balance>;
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type BaseCallFilter = frame_support::traits::Everything;
@@ -77,13 +79,38 @@ impl frame_system::Config for Test {
 	type OnSetCode = ();
 }
 
+parameter_types! {
+	pub const ExistentialDeposit: Balance = 500;
+	pub const MaxLocks: u32 = 50;
+	pub const MaxReserves: u32 = 50;
+}
+
+impl pallet_balances::Config for Test {
+	type Balance = Balance;
+	type DustRemoval = ();
+	type Event = ();
+	type ExistentialDeposit = ExistentialDeposit;
+	type AccountStore = System;
+	type WeightInfo = ();
+	type MaxLocks = MaxLocks;
+	type MaxReserves = MaxReserves;
+	type ReserveIdentifier = [u8; 8];
+}
+
+parameter_types! {
+	pub const Fee: Balance = 500;
+}
+
 impl Config for Test {
-	type FeeHandler = ();
 	type CtypeCreatorId = TestCtypeOwner;
 	type EnsureOrigin = frame_system::EnsureSigned<TestCtypeOwner>;
 	type OriginSuccess = TestCtypeOwner;
 	type Event = ();
 	type WeightInfo = ();
+
+	type Currency = Balances;
+	type Fee = Fee;
+	type FeeCollector = ();
 }
 
 #[cfg(test)]
@@ -111,6 +138,7 @@ where
 #[derive(Clone, Default)]
 pub struct ExtBuilder {
 	ctypes_stored: Vec<(TestCtypeHash, TestCtypeOwner)>,
+	balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>,
 }
 
 impl ExtBuilder {
@@ -119,27 +147,35 @@ impl ExtBuilder {
 		self
 	}
 
+	pub fn with_balances(mut self, balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>) -> Self {
+		self.balances = balances;
+		self
+	}
+
 	pub fn build(self, ext: Option<sp_io::TestExternalities>) -> sp_io::TestExternalities {
 		let mut ext = if let Some(ext) = ext {
 			ext
 		} else {
-			let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+			pallet_balances::GenesisConfig::<Test> {
+				balances: self.balances.clone(),
+			}
+			.assimilate_storage(&mut storage)
+			.expect("assimilate should not fail");
 			sp_io::TestExternalities::new(storage)
 		};
 
-		if !self.ctypes_stored.is_empty() {
-			ext.execute_with(|| {
-				self.ctypes_stored.iter().for_each(|ctype| {
-					ctype::Ctypes::<Test>::insert(ctype.0, ctype.1.clone());
-				})
-			});
-		}
+		ext.execute_with(|| {
+			for (ctype_hash, owner) in self.ctypes_stored.iter() {
+				ctype::Ctypes::<Test>::insert(ctype_hash, owner);
+			}
+		});
 
 		ext
 	}
 
-	pub fn build_with_keystore(self, ext: Option<sp_io::TestExternalities>) -> sp_io::TestExternalities {
-		let mut ext = self.build(ext);
+	pub fn build_with_keystore(self) -> sp_io::TestExternalities {
+		let mut ext = self.build(None);
 
 		let keystore = KeyStore::new();
 		ext.register_extension(KeystoreExt(Arc::new(keystore)));

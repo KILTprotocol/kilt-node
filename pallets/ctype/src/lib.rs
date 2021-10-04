@@ -62,29 +62,14 @@ mod tests;
 
 pub use crate::{default_weights::WeightInfo, pallet::*};
 
-pub trait PayFee<AccountId> {
-	/// Make sure that the fee can be paid.
-	///
-	/// This function must not change any storage value since the ctype might
-	/// not get created.
-	fn secure_fee(payer: AccountId, ctype_size: usize) -> Result<(), ()>;
-
-	/// Actually pay the fee.
-	fn pay_fee(payer: AccountId, ctype_size: usize);
-}
-
-impl<AccountId> PayFee<AccountId> for () {
-	fn secure_fee(_payer: AccountId, _ctype_size: usize) -> Result<(), ()> {
-		Ok(())
-	}
-
-	fn pay_fee(_payer: AccountId, _ctype_size: usize) {}
-}
-
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_support::{pallet_prelude::*, sp_runtime::traits::Hash};
+	use frame_support::{
+		pallet_prelude::*,
+		sp_runtime::traits::Hash,
+		traits::{Currency, ExistenceRequirement, OnUnbalanced, WithdrawReasons},
+	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::traits::CallSources;
 	use sp_std::vec::Vec;
@@ -95,16 +80,21 @@ pub mod pallet {
 	/// Type of a CType creator.
 	pub type CtypeCreatorOf<T> = <T as Config>::CtypeCreatorId;
 
-	type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+
+	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+	type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::NegativeImbalance;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type EnsureOrigin: EnsureOrigin<Success = Self::OriginSuccess, <Self as frame_system::Config>::Origin>;
 		type OriginSuccess: CallSources<AccountIdOf<Self>, CtypeCreatorOf<Self>>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type Currency: Currency<AccountIdOf<Self>>;
 		type WeightInfo: WeightInfo;
 		type CtypeCreatorId: Parameter + Default;
-		type FeeHandler: PayFee<AccountIdOf<Self>>;
+		type Fee: Get<BalanceOf<Self>>;
+		type FeeCollector: OnUnbalanced<NegativeImbalanceOf<Self>>;
 	}
 
 	#[pallet::pallet]
@@ -150,8 +140,8 @@ pub mod pallet {
 		///
 		/// # <weight>
 		/// Weight: O(1)
-		/// - Reads: Ctypes
-		/// - Writes: Ctypes
+		/// - Reads: Ctypes, Balance
+		/// - Writes: Ctypes, Balance
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::add())]
 		pub fn add(origin: OriginFor<T>, ctype: Vec<u8>) -> DispatchResult {
@@ -159,15 +149,32 @@ pub mod pallet {
 			let creator = source.subject();
 			let payer = source.sender();
 
-			T::FeeHandler::secure_fee(payer.clone(), ctype.len()).map_err(|_| Error::<T>::UnableToPayFees)?;
+			// Check the free balance before we do any heave work (e.g. calculate the ctype
+			// hash)
+			ensure!(
+				<T::Currency as Currency<AccountIdOf<T>>>::free_balance(&payer) >= T::Fee::get(),
+				Error::<T>::UnableToPayFees
+			);
 
 			let hash = <T as frame_system::Config>::Hashing::hash(&ctype[..]);
 
-			ensure!(!<Ctypes<T>>::contains_key(&hash), Error::<T>::CTypeAlreadyExists);
+			ensure!(!Ctypes::<T>::contains_key(&hash), Error::<T>::CTypeAlreadyExists);
 
+			// Collect the fees. This should not fail since we checked the free balance in
+			// the beginning.
+			let imbalance = <T::Currency as Currency<AccountIdOf<T>>>::withdraw(
+				&payer,
+				T::Fee::get(),
+				WithdrawReasons::FEE,
+				ExistenceRequirement::AllowDeath,
+			)
+			.map_err(|_| Error::<T>::UnableToPayFees)?;
+
+			// *** No Fail beyond this point ***
+
+			T::FeeCollector::on_unbalanced(imbalance);
 			log::debug!("Creating CType with hash {:?} and creator {:?}", hash, creator);
-			<Ctypes<T>>::insert(&hash, creator.clone());
-			T::FeeHandler::pay_fee(payer, ctype.len());
+			Ctypes::<T>::insert(&hash, creator.clone());
 
 			Self::deposit_event(Event::CTypeCreated(creator, hash));
 

@@ -19,6 +19,7 @@ kilt-primitives = {default-features = false, path = "../../primitives"}
 serde = {version = "1.0.101"}
 sp-core = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-keystore = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
+pallet-balances = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [dependencies]
 # Internal dependencies
@@ -39,6 +40,7 @@ sp-io = {branch = "polkadot-v0.9.10", default-features = false, git = "https://g
 sp-keystore = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
 sp-runtime = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-std = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
+pallet-balances = {optional = true, branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [features]
 default = ["std"]

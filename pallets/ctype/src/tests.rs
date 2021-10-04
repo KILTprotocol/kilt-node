@@ -28,12 +28,28 @@ fn check_successful_ctype_creation() {
 	let ctype = [9u8; 256].to_vec();
 	let ctype_hash = <Test as frame_system::Config>::Hashing::hash(&ctype[..]);
 
-	ExtBuilder::default().build(None).execute_with(|| {
-		assert_ok!(Ctype::add(get_origin(creator.clone()), ctype));
-		let stored_ctype_creator = Ctype::ctypes(&ctype_hash).expect("CType hash should be present on chain.");
+	ExtBuilder::default()
+		.with_balances(vec![(creator.clone(), <Test as ctype::Config>::Fee::get() * 2)])
+		.build(None)
+		.execute_with(|| {
+			assert_ok!(Ctype::add(get_origin(creator.clone()), ctype));
+			let stored_ctype_creator = Ctype::ctypes(&ctype_hash).expect("CType hash should be present on chain.");
 
-		// Verify the CType has the right owner
-		assert_eq!(stored_ctype_creator, creator);
+			// Verify the CType has the right owner
+			assert_eq!(stored_ctype_creator, creator);
+		});
+}
+
+#[test]
+fn insufficient_funds() {
+	let creator = ALICE;
+	let ctype = [9u8; 256].to_vec();
+
+	ExtBuilder::default().build(None).execute_with(|| {
+		assert_noop!(
+			Ctype::add(get_origin(creator.clone()), ctype),
+			ctype::Error::<Test>::UnableToPayFees
+		);
 	});
 }
 
@@ -45,6 +61,7 @@ fn check_duplicate_ctype_creation() {
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(ctype_hash, creator.clone())])
+		.with_balances(vec![(creator.clone(), <Test as ctype::Config>::Fee::get() * 2)])
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(

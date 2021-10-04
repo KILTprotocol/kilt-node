@@ -20,6 +20,7 @@
 
 use frame_support::{parameter_types, storage::bounded_btree_set::BoundedBTreeSet, weights::constants::RocksDbWeight};
 use frame_system::EnsureSigned;
+use kilt_primitives::Balance;
 use sp_core::{ed25519, sr25519, Pair, H256};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
@@ -53,6 +54,7 @@ frame_support::construct_runtime!(
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
+		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>},
 	}
 );
@@ -78,7 +80,7 @@ impl frame_system::Config for Test {
 	type Version = ();
 
 	type PalletInfo = PalletInfo;
-	type AccountData = ();
+	type AccountData = pallet_balances::AccountData<Balance>;
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type BaseCallFilter = frame_support::traits::Everything;
@@ -89,13 +91,38 @@ impl frame_system::Config for Test {
 	type OnSetCode = ();
 }
 
+parameter_types! {
+	pub const ExistentialDeposit: Balance = 500;
+	pub const MaxLocks: u32 = 50;
+	pub const MaxReserves: u32 = 50;
+}
+
+impl pallet_balances::Config for Test {
+	type Balance = Balance;
+	type DustRemoval = ();
+	type Event = ();
+	type ExistentialDeposit = ExistentialDeposit;
+	type AccountStore = System;
+	type WeightInfo = ();
+	type MaxLocks = MaxLocks;
+	type MaxReserves = MaxReserves;
+	type ReserveIdentifier = [u8; 8];
+}
+
+parameter_types! {
+	pub const Fee: Balance = 500;
+}
+
 impl ctype::Config for Test {
-	type FeeHandler = ();
 	type CtypeCreatorId = TestCtypeOwner;
-	type EnsureOrigin = EnsureSigned<TestCtypeOwner>;
+	type EnsureOrigin = frame_system::EnsureSigned<TestCtypeOwner>;
 	type OriginSuccess = TestCtypeOwner;
 	type Event = ();
 	type WeightInfo = ();
+
+	type Currency = Balances;
+	type Fee = Fee;
+	type FeeCollector = ();
 }
 
 parameter_types! {
