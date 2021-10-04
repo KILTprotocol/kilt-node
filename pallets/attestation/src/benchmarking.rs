@@ -107,6 +107,23 @@ benchmarks! {
 	verify {
 		assert!(!Attestations::<T>::contains_key(claim_hash));
 	}
+
+	reclaim_deposit {
+		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
+		let ctype_hash: T::Hash = T::Hash::default();
+
+		let (root_public, _, delegate_public, delegation_id) = setup_delegations::<T>(1, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::ATTEST | Permissions::DELEGATE)?;
+		let root_acc: T::AccountId = root_public.into();
+		let delegate_acc: T::AccountId = delegate_public.into();
+		T::Currency::make_free_balance_be(&delegate_acc, T::Deposit::get() + T::Deposit::get());
+
+		// attest with leaf account
+		Pallet::<T>::add(RawOrigin::Signed(delegate_acc.clone()).into(), claim_hash, ctype_hash, Some(delegation_id))?;
+		// revoke with root account, s.t. delegation tree needs to be traversed
+	}: _(RawOrigin::Signed(delegate_acc.clone()), claim_hash)
+	verify {
+		assert!(!Attestations::<T>::contains_key(claim_hash));
+	}
 }
 
 impl_benchmark_test_suite! {
