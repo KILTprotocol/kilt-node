@@ -28,7 +28,7 @@ pub(crate) fn pre_migrate<T: Config>() -> Result<(), &'static str> {
 }
 
 pub(crate) fn migrate<T: Config>() -> Weight {
-	log::info!("Migrating staking to StakingStorageVersion::V2_0_0");
+	log::trace!("Migrating staking to StakingStorageVersion::V2_0_0");
 
 	MaxCollatorCandidateStake::<T>::put(BalanceOf::<T>::from(MAX_COLLATOR_STAKE));
 
@@ -43,7 +43,7 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	});
 
 	StorageVersion::<T>::put(StakingStorageVersion::V2_0_0);
-	log::info!("Completed staking migration to StakingStorageVersion::V2_0_0");
+	log::trace!("Completed staking migration to StakingStorageVersion::V2_0_0");
 
 	T::DbWeight::get().reads_writes(1, 3)
 }

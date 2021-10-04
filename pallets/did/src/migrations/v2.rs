@@ -34,12 +34,12 @@ pub(crate) fn pre_migrate<T: Config>() -> Result<(), &'static str> {
 		"Current deployed version is not v2."
 	);
 
-	log::info!("Version storage migrating from v2 to v3");
+	log::debug!("Version storage migrating from v2 to v3");
 	Ok(())
 }
 
 pub(crate) fn migrate<T: Config>() -> Weight {
-	log::info!("v2 -> v3 DID storage migrator started!");
+	log::trace!("v2 -> v3 DID storage migrator started!");
 	let mut total_weight = Weight::zero();
 
 	NewDidStorage::<T>::translate_values(|old_did_details: OldDidDetails<T>| {
@@ -52,7 +52,7 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	// Adds a write from StorageVersion::set() weight.
 	total_weight = total_weight.saturating_add(T::DbWeight::get().writes(1));
 	log::debug!("Total weight consumed: {}", total_weight);
-	log::info!("v2 -> v3 DID storage migrator finished!");
+	log::trace!("v2 -> v3 DID storage migrator finished!");
 
 	total_weight
 }
@@ -74,6 +74,6 @@ pub(crate) fn post_migrate<T: Config>() -> Result<(), &'static str> {
 		StorageVersion::<T>::get() == DidStorageVersion::V3,
 		"The version after deployment is not 3 as expected."
 	);
-	log::info!("Version storage migrated from v2 to v3");
+	log::debug!("Version storage migrated from v2 to v3");
 	Ok(())
 }

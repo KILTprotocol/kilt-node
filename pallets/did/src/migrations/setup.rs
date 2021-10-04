@@ -33,7 +33,7 @@ pub(crate) fn pre_migrate<T: Config>() -> Result<(), &'static str> {
 }
 
 pub(crate) fn migrate<T: Config>() -> Weight {
-	log::info!("Setting up DID storage version to latest declared.");
+	log::trace!("Setting up DID storage version to latest declared.");
 
 	StorageVersion::<T>::set(DidStorageVersion::latest());
 	T::DbWeight::get().writes(1)

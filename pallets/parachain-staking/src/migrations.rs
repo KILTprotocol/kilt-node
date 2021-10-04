@@ -37,12 +37,12 @@ mod v5;
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Decode, Encode, Eq, Ord, PartialEq, PartialOrd)]
 pub enum StakingStorageVersion {
+	None = u8::MAX,
 	V1_0_0 = 0,
 	V2_0_0 = 1, // New Reward calculation, MaxCollatorCandidateStake
 	V3_0_0 = 2, // Update InflationConfig
 	V4 = 3,     // Sort TopCandidates and parachain-stakings by amount
 	V5 = 4,     // Remove SelectedCandidates, Count Candidates
-	None = u8::MAX,
 }
 
 impl StakingStorageVersion {

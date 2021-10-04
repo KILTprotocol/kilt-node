@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, EncodeLike};
 use kilt_traits::VersionMigratorTrait;
 use sp_runtime::traits::Zero;
 
@@ -29,9 +29,9 @@ mod v1;
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Decode, Encode, Eq, Ord, PartialEq, PartialOrd)]
 pub enum DelegationStorageVersion {
+	None = u8::MAX,
 	V1 = 0,
 	V2 = 1,
-	None = u8::MAX,
 }
 
 impl DelegationStorageVersion {

@@ -35,7 +35,7 @@ pub(crate) fn pre_migrate<T: Config>() -> Result<(), &'static str> {
 }
 
 pub(crate) fn migrate<T: Config>() -> Weight {
-	log::info!("Migrating staking to StakingStorageVersion::V5");
+	log::trace!("Migrating staking to StakingStorageVersion::V5");
 
 	// Kill selected candidates list
 	old::SelectedCandidates::<T>::kill();
@@ -60,7 +60,7 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 
 	// update storage version
 	StorageVersion::<T>::put(StakingStorageVersion::V5);
-	log::info!("Completed staking migration to StakingStorageVersion::V5");
+	log::trace!("Completed staking migration to StakingStorageVersion::V5");
 
 	// Writes: 3 * Kill, 3 * Put, `counter` * inserts, at max 32 additional kills <
 	// counter + 38 Reads: (counter + 2) * get
@@ -72,13 +72,13 @@ pub(crate) fn post_migrate<T: Config>() -> Result<(), &'static str> {
 	use sp_runtime::SaturatedConversion;
 
 	assert_eq!(StorageVersion::<T>::get(), StakingStorageVersion::V5);
-	log::info!(
+	log::debug!(
 		"CandidateCount = {} >= {} = MinCollators",
 		CandidateCount::<T>::get(),
 		T::MinCollators::get()
 	);
 	assert!(CandidateCount::<T>::get() >= T::MinCollators::get());
-	log::info!(
+	log::debug!(
 		"TopCandidates = {} >= {} = MinCollators",
 		TopCandidates::<T>::get().len(),
 		T::MinCollators::get()

@@ -34,12 +34,12 @@ pub(crate) fn pre_migrate<T: Config>() -> Result<(), &'static str> {
 		"Current deployed version is not v1."
 	);
 
-	log::info!("Version storage migrating from v1 to v2");
+	log::debug!("Version storage migrating from v1 to v2");
 	Ok(())
 }
 
 pub(crate) fn migrate<T: Config>() -> Weight {
-	log::info!("v1 -> v2 DID storage migrator started!");
+	log::trace!("v1 -> v2 DID storage migrator started!");
 	let mut total_weight = Weight::zero();
 
 	NewDidStorage::<T>::translate_values(|old_did_details: OldDidDetails<T>| {
@@ -82,7 +82,7 @@ pub(crate) fn post_migrate<T: Config>() -> Result<(), &'static str> {
 		!NewDidStorage::<T>::iter_values().any(|did_details| { did_details.service_endpoints.is_some() }),
 		"There are DIDs that do not have the new service endpoints set to None."
 	);
-	log::info!("Version storage migrated from v1 to v2");
+	log::debug!("Version storage migrated from v1 to v2");
 	Ok(())
 }
 

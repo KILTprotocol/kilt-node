@@ -30,10 +30,10 @@ mod v2;
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Decode, Encode, Eq, Ord, PartialEq, PartialOrd)]
 pub enum DidStorageVersion {
+	None = u8::MAX,
 	V1 = 0,
 	V2 = 1,
 	V3 = 2,
-	None = u8::MAX,
 }
 
 impl DidStorageVersion {
