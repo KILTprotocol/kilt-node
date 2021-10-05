@@ -50,6 +50,7 @@ std = [
   "pallet-vesting/std",
   "sp-runtime/std",
   "sp-std/std",
+  "kilt-primitives/std",
 ]
 try-runtime = [
   "frame-support/try-runtime",

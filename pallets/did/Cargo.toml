@@ -49,10 +49,11 @@ mock = [
   "ctype",
   "env_logger",
   "sp-keystore",
+  "pallet-balances",
 ]
 runtime-benchmarks = [
+  # "ctype/runtime-benchmarks", # enabling this results in an error that's impossible to link to this line.
   "frame-benchmarking",
-  "ctype/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
 ]

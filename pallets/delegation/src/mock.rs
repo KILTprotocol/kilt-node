@@ -115,7 +115,7 @@ parameter_types! {
 
 impl ctype::Config for Test {
 	type CtypeCreatorId = TestCtypeOwner;
-	type EnsureOrigin = frame_system::EnsureSigned<TestCtypeOwner>;
+	type EnsureOrigin = EnsureSigned<TestCtypeOwner>;
 	type OriginSuccess = TestCtypeOwner;
 	type Event = ();
 	type WeightInfo = ();

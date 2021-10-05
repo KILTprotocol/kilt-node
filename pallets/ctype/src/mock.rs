@@ -19,12 +19,10 @@
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use kilt_primitives::Balance;
 use sp_core::H256;
-use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 };
-use sp_std::sync::Arc;
 
 use crate as ctype;
 use crate::*;
@@ -172,7 +170,11 @@ impl ExtBuilder {
 		ext
 	}
 
+	#[cfg(feature = "runtime-benchmarks")]
 	pub(crate) fn build_with_keystore(self) -> sp_io::TestExternalities {
+		use sp_keystore::{testing::KeyStore, KeystoreExt};
+		use sp_std::sync::Arc;
+
 		let mut ext = self.build();
 
 		let keystore = KeyStore::new();

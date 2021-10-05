@@ -15,7 +15,6 @@ static_assertions = "1.1.0"
 # RPC
 frame-system-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 pallet-transaction-payment-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
-pallet-vesting = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 
 # KILT pallets & primitives
 attestation = {default-features = false, path = "../../pallets/attestation"}
@@ -60,6 +59,7 @@ pallet-timestamp = {git = "https://github.com/paritytech/substrate", default-fea
 pallet-transaction-payment = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 pallet-treasury = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 pallet-utility = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
+pallet-vesting = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 
 # Cumulus dependencies
 cumulus-pallet-aura-ext = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.10"}
@@ -109,13 +109,15 @@ runtime-benchmarks = [
   "pallet-scheduler/runtime-benchmarks", # "cumulus-pallet-session-benchmarking",
   "pallet-timestamp/runtime-benchmarks",
   "pallet-treasury/runtime-benchmarks",
-  "pallet-vesting/runtime-benchmarks",
   "pallet-utility/runtime-benchmarks",
+  "pallet-vesting/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
   "rococo-runtime/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
 ]
 std = [
+  "frame-benchmarking/std",
+  "frame-system-benchmarking/std",
   "attestation/std",
   "codec/std",
   "ctype/std",
@@ -150,7 +152,6 @@ std = [
   "pallet-transaction-payment-rpc-runtime-api/std",
   "pallet-transaction-payment/std",
   "pallet-treasury/std",
-  "pallet-vesting/std",
   "parachain-info/std",
   "parachain-staking/std",
   "polkadot-parachain/std",
@@ -171,6 +172,8 @@ std = [
   "xcm-builder/std",
   "xcm-executor/std",
   "xcm/std",
+  "rococo-runtime/std",
+  "pallet-vesting/std",
 ]
 try-runtime = [
   "attestation/try-runtime",
@@ -198,6 +201,6 @@ try-runtime = [
   "pallet-transaction-payment/try-runtime",
   "pallet-treasury/try-runtime",
   "pallet-utility/try-runtime",
-  "pallet-vesting/try-runtime",
   "parachain-staking/try-runtime",
+  "pallet-vesting/try-runtime",
 ]

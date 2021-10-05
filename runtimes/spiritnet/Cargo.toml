@@ -158,6 +158,7 @@ std = [
   "xcm/std",
   "xcm-builder/std",
   "xcm-executor/std",
+  "rococo-runtime/std",
 ]
 try-runtime = [
   "frame-executive/try-runtime",
