@@ -16,7 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use sp_std::{convert::TryInto, vec::Vec};
+use sp_std::{
+	convert::{TryFrom, TryInto},
+	vec::Vec,
+};
 
 use crate::*;
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
@@ -26,12 +29,19 @@ use frame_system::RawOrigin;
 const SEED: u32 = 0;
 
 benchmarks! {
+	where_clause {
+		where
+		<<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance: TryFrom<usize>,
+		<<<T as pallet::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance as TryFrom<usize>>::Error: sp_std::fmt::Debug,
+	}
+
 	add {
 		let l in 1 .. 2_000_000;
 
 		let caller = account("caller", 0, SEED);
 		let ctype: Vec<u8> = (0u8..u8::MAX).cycle().take(l.try_into().unwrap()).collect();
-		<T as Config>::Currency::make_free_balance_be(&caller, <T as Config>::Fee::get() + <T as Config>::Fee::get());
+		let initial_balance = <T as Config>::Fee::get() * ctype.len().try_into().unwrap() + <T as Config>::Currency::minimum_balance();
+		<T as Config>::Currency::make_free_balance_be(&caller, initial_balance);
 
 	}: _(RawOrigin::Signed(caller), ctype)
 	verify {
