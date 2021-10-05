@@ -85,8 +85,7 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
-pub use crate::{attestations::*, default_weights::WeightInfo, pallet::*};
-use kilt_support::deposit::Deposit;
+pub use crate::{attestations::AttestationDetails, default_weights::WeightInfo, pallet::*};
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -128,7 +127,7 @@ pub mod pallet {
 		type Currency: Currency<AccountIdOf<Self>> + ReservableCurrency<AccountIdOf<Self>>;
 
 		/// The deposit that is required for storing an attestation.
-		#[pallet::constant]
+		// FIXME: Add back #[pallet::constant] once the fix is merged
 		type Deposit: Get<BalanceOf<Self>>;
 
 		/// The maximum number of delegated attestations which can be made by
@@ -247,7 +246,7 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let payer = source.sender();
 			let who = source.subject();
-			let deposit_amount = <T as pallet::Config>::Deposit::get();
+			let deposit_amount = <T as crate::Config>::Deposit::get();
 
 			ensure!(
 				<ctype::Ctypes<T>>::contains_key(&ctype_hash),

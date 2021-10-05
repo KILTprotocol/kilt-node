@@ -221,7 +221,6 @@ fn create_delegation_with_parent_successful() {
 
 			// Add sub-delegation
 			assert_ok!(Delegation::add_delegation(
-				// TODO: Check for correctness (mb delegate?)
 				get_origin(creator.clone()),
 				delegation_id,
 				parent_id,
@@ -966,7 +965,7 @@ fn different_root_creator_revoke_and_remove_root_error() {
 			(unauthorized.clone(), <Test as Config>::Deposit::get()),
 		])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, owner.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, owner.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, owner)])
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
@@ -1007,7 +1006,7 @@ fn too_small_max_revocations_revoke_and_remove_root_error() {
 	ExtBuilder::default()
 		.with_balances(vec![
 			(revoker.clone(), <Test as Config>::Deposit::get() * 2),
-			(delegate.clone(), <Test as Config>::Deposit::get()),
+			(delegate, <Test as Config>::Deposit::get()),
 		])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
@@ -1388,7 +1387,7 @@ fn not_delegating_revoke_and_remove_delegation_error() {
 	ExtBuilder::default()
 		.with_balances(vec![(owner.clone(), <Test as Config>::Deposit::get() * 2)])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, owner.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, owner.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, owner)])
 		.with_delegations(vec![(delegation_id, delegation_node)])
 		.build(None)
 		.execute_with(|| {

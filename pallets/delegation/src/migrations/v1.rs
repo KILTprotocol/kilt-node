@@ -26,8 +26,7 @@ use crate::{
 	StorageVersion, Weight,
 };
 use frame_support::{
-	ensure, storage::bounded_btree_set::BoundedBTreeSet, traits::Get, IterableStorageMap, StorageMap,
-	StoragePrefixedMap,
+	storage::bounded_btree_set::BoundedBTreeSet, traits::Get, IterableStorageMap, StorageMap, StoragePrefixedMap,
 };
 use sp_runtime::traits::Zero;
 use sp_std::{
@@ -45,7 +44,7 @@ use sp_std::{
 /// simply result in the update of the storage deployed version.
 #[cfg(feature = "try-runtime")]
 pub(crate) fn pre_migrate<T: Config>() -> Result<(), &'static str> {
-	ensure!(
+	frame_support::ensure!(
 		StorageVersion::<T>::get() == DelegationStorageVersion::V1,
 		"Current deployed version is not v1."
 	);
@@ -231,11 +230,11 @@ fn finalize_children_nodes<T: Config>(
 /// parent-child link has gone missing.
 #[cfg(feature = "try-runtime")]
 pub(crate) fn post_migrate<T: Config>() -> Result<(), &'static str> {
-	ensure!(
+	frame_support::ensure!(
 		StorageVersion::<T>::get() == DelegationStorageVersion::V2,
 		"The version after deployment is not 2 as expected."
 	);
-	ensure!(
+	frame_support::ensure!(
 		verify_parent_children_integrity::<T>(),
 		"Some parent-child relationship has been broken in the migration."
 	);

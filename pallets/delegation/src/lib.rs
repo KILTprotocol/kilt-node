@@ -332,7 +332,6 @@ pub mod pallet {
 			ctype_hash: CtypeHashOf<T>,
 		) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
-			// TODO: Add check that payer == creator for delegations?
 			let payer = source.sender();
 			let creator = source.subject();
 			let deposit_amount = <T as Config>::Deposit::get();
@@ -400,7 +399,6 @@ pub mod pallet {
 			delegate_signature: DelegateSignatureTypeOf<T>,
 		) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
-			// TODO: Add check that payer == creator for delegations?
 			let payer = source.sender();
 			let delegator = source.subject();
 			let deposit_amount = <T as Config>::Deposit::get();

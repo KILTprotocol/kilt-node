@@ -93,7 +93,7 @@ pub(crate) mod runtime {
 	use delegation::{DelegationHierarchyDetails, DelegationNode, DelegatorIdOf};
 	use frame_support::{ensure, parameter_types, weights::constants::RocksDbWeight};
 	use frame_system::EnsureSigned;
-	use kilt_primitives::constants::{ATTESTATION_DEPOSIT, DELEGATION_DEPOSIT};
+	use kilt_primitives::constants::{ATTESTATION_DEPOSIT, DELEGATION_DEPOSIT, MILLI_KILT};
 	use sp_core::{ed25519, sr25519, Pair};
 	use sp_keystore::{testing::KeyStore, KeystoreExt};
 	use sp_runtime::{
@@ -213,7 +213,6 @@ pub(crate) mod runtime {
 	}
 
 	parameter_types! {
-		// TODO: Find reasonable number
 		pub const MaxDelegatedAttestations: u32 = 1000;
 		pub const Deposit: TestBalance = ATTESTATION_DEPOSIT;
 	}
