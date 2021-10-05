@@ -40,8 +40,8 @@ sp-runtime = {branch = "polkadot-v0.9.10", default-features = false, git = "http
 sp-std = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 frame-benchmarking = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-sp-keystore = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
 pallet-balances = {optional = true, branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-keystore = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
 
 [features]
 default = ["std"]
@@ -52,6 +52,9 @@ mock = [
 ]
 runtime-benchmarks = [
   "frame-benchmarking",
+  "ctype/runtime-benchmarks",
+  "pallet-balances/runtime-benchmarks",
+  "frame-support/runtime-benchmarks",
 ]
 std = [
   "codec/std",
@@ -65,6 +68,9 @@ std = [
   "sp-io/std",
   "sp-runtime/std",
   "sp-std/std",
+  "pallet-balances/std",
+  "ctype/std",
+  "kilt-support/std",
 ]
 try-runtime = [
   "frame-support/try-runtime",

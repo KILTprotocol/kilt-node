@@ -135,12 +135,14 @@ where
 	}
 }
 
+#[cfg(test)]
 #[derive(Clone, Default)]
 pub(crate) struct ExtBuilder {
 	ctypes_stored: Vec<(TestCtypeHash, TestCtypeOwner)>,
 	balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>,
 }
 
+#[cfg(test)]
 impl ExtBuilder {
 	pub(crate) fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, TestCtypeOwner)>) -> Self {
 		self.ctypes_stored = ctypes;

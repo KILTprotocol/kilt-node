@@ -137,7 +137,7 @@ impl pallet_balances::Config for Test {
 }
 
 parameter_types! {
-	pub const Fee: Balance = 500;
+	pub const Fee: Balance = 0;
 }
 
 impl ctype::Config for Test {
@@ -373,11 +373,23 @@ pub struct ExtBuilder {
 	dids_stored: Vec<(TestDidIdentifier, did::DidDetails<Test>)>,
 	deleted_dids: Vec<TestDidIdentifier>,
 	storage_version: DidStorageVersion,
+	ctypes_stored: Vec<(TestCtypeHash, TestCtypeOwner)>,
+	balances: Vec<(AccountIdentifierOf<Test>, Balance)>,
 }
 
 impl ExtBuilder {
 	pub fn with_dids(mut self, dids: Vec<(TestDidIdentifier, did::DidDetails<Test>)>) -> Self {
 		self.dids_stored = dids;
+		self
+	}
+
+	pub(crate) fn with_balances(mut self, balances: Vec<(AccountIdentifierOf<Test>, Balance)>) -> Self {
+		self.balances = balances;
+		self
+	}
+
+	pub fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, TestCtypeOwner)>) -> Self {
+		self.ctypes_stored = ctypes;
 		self
 	}
 
@@ -395,11 +407,20 @@ impl ExtBuilder {
 		let mut ext = if let Some(ext) = ext {
 			ext
 		} else {
-			let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+			pallet_balances::GenesisConfig::<Test> {
+				balances: self.balances.clone(),
+			}
+			.assimilate_storage(&mut storage)
+			.expect("assimilate should not fail");
 			sp_io::TestExternalities::new(storage)
 		};
 
 		ext.execute_with(|| {
+			for (ctype_hash, owner) in self.ctypes_stored.iter() {
+				ctype::Ctypes::<Test>::insert(ctype_hash, owner);
+			}
+
 			for did in self.dids_stored.iter() {
 				did::Did::<Test>::insert(did.0.clone(), did.1.clone());
 			}
@@ -414,8 +435,8 @@ impl ExtBuilder {
 
 	// allowance only required for clippy, this function is actually used
 	#[allow(dead_code)]
-	pub fn build_with_keystore(self, ext: Option<sp_io::TestExternalities>) -> sp_io::TestExternalities {
-		let mut ext = self.build(ext);
+	pub fn build_with_keystore(self) -> sp_io::TestExternalities {
+		let mut ext = self.build(None);
 
 		let keystore = KeyStore::new();
 		ext.register_extension(KeystoreExt(Arc::new(keystore)));
