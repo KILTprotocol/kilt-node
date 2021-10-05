@@ -543,8 +543,6 @@ pub mod pallet {
 			.into())
 		}
 
-		// TODO: Try to merge this with `revoke_delegation` as much as possible after
-		// setting up unit tests.
 		/// Remove a delegation node (potentially a root node) and all its
 		/// children.
 		///
@@ -564,15 +562,14 @@ pub mod pallet {
 		/// Weight: O(C) where C is the number of children of the delegation
 		/// node which is bounded by `max_children`.
 		/// - Reads: [Origin Account], Roots, C * Delegations, C * Children.
-		/// - Writes: Roots, C * Delegations
+		/// - Writes: Roots, 2 * C * Delegations
 		/// # </weight>
 		#[pallet::weight(
-			<T as Config>::WeightInfo::revoke_delegation_root_child(*max_removals, *max_parent_checks)
-				.max(<T as Config>::WeightInfo::revoke_delegation_leaf(*max_removals, *max_parent_checks)))]
+			<T as Config>::WeightInfo::remove_delegation_root_child(*max_removals)
+				.max(<T as Config>::WeightInfo::remove_delegation_leaf(*max_removals)))]
 		pub fn remove_delegation(
 			origin: OriginFor<T>,
 			delegation_id: DelegationNodeIdOf<T>,
-			max_parent_checks: u32,
 			max_removals: u32,
 		) -> DispatchResultWithPostInfo {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
@@ -582,26 +579,17 @@ pub mod pallet {
 			let delegation = <DelegationNodes<T>>::get(&delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
 			let deposit_owner = delegation.deposit.owner;
 
+			// Node can only be removed by deposit or node owner, not the parent or another
+			// ancestor
 			ensure!(
-				max_parent_checks <= T::MaxParentChecks::get(),
-				Error::<T>::MaxParentChecksTooLarge
+				deposit_owner == sender || deposit_owner == invoker.clone().into(),
+				Error::<T>::UnauthorizedRemoval
 			);
 
 			ensure!(
 				// TODO: Create separate parameter?
 				max_removals <= T::MaxRevocations::get(),
 				Error::<T>::MaxRemovalsTooLarge
-			);
-
-			// TODO: Ensure all three cases are valid (!!!)
-			// Removal is authorized if either
-			// 1. The invoker is a parent delegation
-			// 2. The invoker is the deposit owner
-			// 3. The origin is the deposit owner
-			let (authorized, parent_checks) = Self::is_delegating(&invoker, &delegation_id, max_parent_checks)?;
-			ensure!(
-				authorized || deposit_owner == sender || deposit_owner == invoker.clone().into(),
-				Error::<T>::UnauthorizedRemoval
 			);
 
 			// Remove the delegation and recursively all of its children (add 1 to
@@ -615,9 +603,8 @@ pub mod pallet {
 
 			// Add worst case reads from `is_delegating`
 			Ok(Some(
-				<T as Config>::WeightInfo::revoke_delegation_root_child(removal_checks, parent_checks).max(
-					<T as Config>::WeightInfo::revoke_delegation_leaf(removal_checks, parent_checks),
-				),
+				<T as Config>::WeightInfo::remove_delegation_root_child(removal_checks)
+					.max(<T as Config>::WeightInfo::remove_delegation_leaf(removal_checks)),
 			)
 			.into())
 		}
@@ -803,23 +790,26 @@ impl<T: Config> Pallet<T> {
 		Ok((revocations, consumed_weight))
 	}
 
-	// TODO: Try to merge this with `revoke_children` as much as possible after
-	// setting up unit tests.
 	/// Removes all children of a delegation.
 	/// Returns the number of removed delegations and the consumed weight.
+	///
+	/// Updates the children BTreeSet after each child removal in case the
+	/// entire root removal runs out of gas and stops pre-emptively.
 	///
 	/// # <weight>
 	/// Weight: O(C) where C is the number of children of the delegation node
 	/// which is bounded by `max_children`.
+	/// - Writes: C * Delegations
 	/// - Reads: C * Delegations
 	/// # </weight>
 	fn remove_children(delegation: &DelegationNodeIdOf<T>, max_removals: u32) -> Result<(u32, Weight), DispatchError> {
 		let mut removals: u32 = 0;
 		let mut consumed_weight: Weight = 0;
+
 		// Can't clear storage until we have reached a leaf
-		if let Some(delegation_node) = <DelegationNodes<T>>::get(delegation) {
+		if let Some(mut delegation_node) = <DelegationNodes<T>>::get(delegation) {
 			// Iterate and remove all children
-			for child in delegation_node.children.iter() {
+			for child in delegation_node.clone().children.iter() {
 				let remaining_removals = max_removals
 					.checked_sub(removals)
 					.ok_or(Error::<T>::ExceededRemovalBounds)?;
@@ -831,13 +821,16 @@ impl<T: Config> Pallet<T> {
 					removals = removals.saturating_add(r);
 					consumed_weight = consumed_weight.saturating_add(w);
 				})?;
+
+				// Remove child from set and update parent node in case of pre-emptive stops due
+				// to insufficient removal gas
+				delegation_node.children.remove(child);
+				<DelegationNodes<T>>::insert(delegation, delegation_node.clone());
 			}
 		}
 		Ok((removals, consumed_weight.saturating_add(T::DbWeight::get().reads(1))))
 	}
 
-	// TODO: Try to merge this with `revoke` as much as possible after setting
-	// up unit tests.
 	/// Revoke a delegation and all of its children recursively.
 	///
 	/// Emits DelegationRevoked for each revoked node.
@@ -851,6 +844,7 @@ impl<T: Config> Pallet<T> {
 	fn remove(delegation: &DelegationNodeIdOf<T>, max_removals: u32) -> Result<(u32, Weight), DispatchError> {
 		let mut removals: u32 = 0;
 		let mut consumed_weight: Weight = 0;
+
 		// Retrieve delegation node from storage
 		// Storage removal has to be postponed until children have been removed
 		let delegation_node = <DelegationNodes<T>>::get(*delegation).ok_or(Error::<T>::DelegationNotFound)?;
@@ -879,6 +873,7 @@ impl<T: Config> Pallet<T> {
 		} = delegation_node.deposit;
 		let err_amount = CurrencyOf::<T>::unreserve(&deposit_payer, deposit_amount);
 		debug_assert!(err_amount.is_zero());
+
 		consumed_weight = consumed_weight.saturating_add(T::DbWeight::get().reads_writes(1, 2));
 
 		// Deposit event that the delegation has been revoked
