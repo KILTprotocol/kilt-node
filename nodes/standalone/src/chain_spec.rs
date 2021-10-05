@@ -261,7 +261,6 @@ fn testnet_genesis(
 				.cloned()
 				.map(|(who, amount, vesting_length, _)| (who, vesting_length * BLOCKS_PER_YEAR / 12, amount))
 				.collect(),
-			// TODO: Set this to another address (PRE-LAUNCH)
 			transfer_account: hex!["6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c"].into(),
 		},
 		vesting: VestingConfig { vesting: vec![] },

@@ -27,6 +27,8 @@ use crate::{AccountIdOf, AttestationDetails, AttesterOf, BalanceOf, ClaimHashOf,
 use ctype::CtypeHashOf;
 use delegation::DelegationNodeIdOf;
 use frame_support::traits::Get;
+use kilt_primitives::constants::{ATTESTATION_DEPOSIT, DELEGATION_DEPOSIT};
+use kilt_support::deposit::Deposit;
 use sp_core::H256;
 
 #[cfg(test)]
@@ -73,7 +75,7 @@ where
 		delegation_id: None,
 		ctype_hash: ctype::mock::get_ctype_hash::<T>(true),
 		revoked: false,
-		deposit: crate::Deposit::<AccountIdOf<T>, BalanceOf<T>> {
+		deposit: Deposit::<AccountIdOf<T>, BalanceOf<T>> {
 			owner: payer,
 			amount: <T as Config>::Deposit::get(),
 		},
@@ -82,15 +84,17 @@ where
 
 /// Mocks that are only used internally
 #[cfg(test)]
-pub mod runtime {
+pub(crate) mod runtime {
 	use std::sync::Arc;
+
+	use crate::Pallet;
 
 	use super::*;
 
 	use delegation::{DelegationHierarchyDetails, DelegationNode, DelegatorIdOf};
-	use frame_support::{ensure, parameter_types, weights::constants::RocksDbWeight, BoundedVec};
+	use frame_support::{ensure, parameter_types, weights::constants::RocksDbWeight};
 	use frame_system::EnsureSigned;
-	use kilt_primitives::constants::MILLI_KILT;
+	use kilt_primitives::constants::{DELEGATION_DEPOSIT, MILLI_KILT};
 	use sp_core::{ed25519, sr25519, Pair};
 	use sp_keystore::{testing::KeyStore, KeystoreExt};
 	use sp_runtime::{
@@ -188,6 +192,7 @@ pub mod runtime {
 		pub const MaxRevocations: u32 = 5;
 		#[derive(Clone)]
 		pub const MaxChildren: u32 = 1000;
+		pub const DelegationDeposit: TestBalance = DELEGATION_DEPOSIT;
 	}
 
 	impl delegation::Config for Test {
@@ -203,6 +208,7 @@ pub mod runtime {
 		type MaxRevocations = MaxRevocations;
 		type MaxChildren = MaxChildren;
 		type WeightInfo = ();
+
 		type Currency = Balances;
 		type Deposit = Deposit;
 	}
@@ -210,7 +216,7 @@ pub mod runtime {
 	parameter_types! {
 		// TODO: Find reasonable number
 		pub const MaxDelegatedAttestations: u32 = 1000;
-		pub const Deposit: TestBalance = 100 * MILLI_KILT;
+		pub const Deposit: TestBalance = ATTESTATION_DEPOSIT;
 	}
 
 	impl Config for Test {
@@ -283,7 +289,7 @@ pub mod runtime {
 		}
 	}
 
-	#[derive(Clone)]
+	#[derive(Clone, Default)]
 	pub struct ExtBuilder {
 		delegation_hierarchies: Vec<(
 			TestDelegationNodeId,
@@ -297,23 +303,6 @@ pub mod runtime {
 		/// endowed accounts with balances
 		balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>,
 		attestations: Vec<(TestClaimHash, AttestationDetails<Test>)>,
-		delegated_attestations: Vec<(
-			TestDelegationNodeId,
-			BoundedVec<TestClaimHash, <Test as Config>::MaxDelegatedAttestations>,
-		)>,
-	}
-
-	impl Default for ExtBuilder {
-		fn default() -> Self {
-			Self {
-				ctypes: vec![],
-				balances: vec![],
-				attestations: vec![],
-				delegated_attestations: vec![],
-				delegation_hierarchies: vec![],
-				delegations: vec![],
-			}
-		}
 	}
 
 	impl ExtBuilder {
@@ -349,17 +338,6 @@ pub mod runtime {
 			self
 		}
 
-		pub fn with_delegated_attestations(
-			mut self,
-			delegated_attestations: Vec<(
-				TestDelegationNodeId,
-				BoundedVec<TestClaimHash, <Test as Config>::MaxDelegatedAttestations>,
-			)>,
-		) -> Self {
-			self.delegated_attestations = delegated_attestations;
-			self
-		}
-
 		pub fn build(self) -> sp_io::TestExternalities {
 			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
@@ -371,22 +349,25 @@ pub mod runtime {
 			let mut ext = sp_io::TestExternalities::new(storage);
 
 			ext.execute_with(|| {
-				for attestation in self.attestations {
-					crate::Attestations::<Test>::insert(attestation.0, attestation.1.clone());
-				}
-
-				for delegated_attestation in self.delegated_attestations {
-					crate::DelegatedAttestations::<Test>::insert(
-						delegated_attestation.0,
-						delegated_attestation.1.clone(),
-					);
-				}
-
 				for ctype in self.ctypes {
 					ctype::Ctypes::<Test>::insert(ctype.0, ctype.1.clone());
 				}
 
 				delegation::mock::initialize_pallet(self.delegations, self.delegation_hierarchies);
+
+				for (claim_hash, details) in self.attestations {
+					Pallet::<Test>::reserve_deposit(details.deposit.owner.clone(), details.deposit.amount)
+						.expect("Should have balance");
+
+					crate::Attestations::<Test>::insert(&claim_hash, details.clone());
+					if let Some(delegation_id) = details.delegation_id.as_ref() {
+						crate::DelegatedAttestations::<Test>::try_mutate(delegation_id, |attestations| {
+							let attestations = attestations.get_or_insert_with(Default::default);
+							attestations.try_push(claim_hash)
+						})
+						.expect("Couldn't initialise delegated attestation");
+					}
+				}
 			});
 
 			ext

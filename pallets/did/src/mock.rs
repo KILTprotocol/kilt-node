@@ -98,6 +98,7 @@ parameter_types! {
 	pub const MaxPublicKeysPerDid: u32 = 13u32;
 	#[derive(Debug, Clone, PartialEq)]
 	pub const MaxEndpointUrlsCount: u32 = 3u32;
+	pub const MaxBlocksTxValidity: u64 = 300u64;
 }
 
 impl Config for Test {
@@ -112,6 +113,7 @@ impl Config for Test {
 	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
 	type MaxUrlLength = MaxUrlLength;
 	type MaxEndpointUrlsCount = MaxEndpointUrlsCount;
+	type MaxBlocksTxValidity = MaxBlocksTxValidity;
 	type WeightInfo = ();
 }
 
@@ -328,6 +330,7 @@ pub fn generate_test_did_call(
 			did: caller,
 			call,
 			tx_counter: 1u64,
+			block_number: 0u64,
 			submitter,
 		},
 		verification_key_relationship: verification_key_required,
@@ -339,24 +342,21 @@ pub fn initialize_logger() {
 	env_logger::builder().is_test(true).try_init();
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct ExtBuilder {
 	dids_stored: Vec<(TestDidIdentifier, did::DidDetails<Test>)>,
+	deleted_dids: Vec<TestDidIdentifier>,
 	storage_version: DidStorageVersion,
-}
-
-impl Default for ExtBuilder {
-	fn default() -> Self {
-		Self {
-			dids_stored: vec![],
-			storage_version: DidStorageVersion::default(),
-		}
-	}
 }
 
 impl ExtBuilder {
 	pub fn with_dids(mut self, dids: Vec<(TestDidIdentifier, did::DidDetails<Test>)>) -> Self {
 		self.dids_stored = dids;
+		self
+	}
+
+	pub fn with_deleted_dids(mut self, dids: Vec<TestDidIdentifier>) -> Self {
+		self.deleted_dids = dids;
 		self
 	}
 
@@ -373,15 +373,13 @@ impl ExtBuilder {
 			sp_io::TestExternalities::new(storage)
 		};
 
-		if !self.dids_stored.is_empty() {
-			ext.execute_with(|| {
-				self.dids_stored.iter().for_each(|did| {
-					did::Did::<Test>::insert(did.0.clone(), did.1.clone());
-				})
-			});
-		}
-
 		ext.execute_with(|| {
+			for did in self.dids_stored.iter() {
+				did::Did::<Test>::insert(did.0.clone(), did.1.clone());
+			}
+			for did in self.deleted_dids.iter() {
+				did::DidBlacklist::<Test>::insert(did.clone(), ());
+			}
 			did::StorageVersion::<Test>::set(self.storage_version);
 		});
 

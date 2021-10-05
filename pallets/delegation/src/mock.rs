@@ -26,7 +26,7 @@ use frame_support::{
 	weights::constants::RocksDbWeight,
 };
 use frame_system::EnsureSigned;
-use kilt_primitives::constants::MILLI_KILT;
+use kilt_primitives::constants::{DELEGATION_DEPOSIT, MILLI_KILT};
 use sp_core::{ed25519, sr25519, Pair, H256};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
@@ -130,7 +130,7 @@ parameter_types! {
 	pub const MaxRevocations: u32 = 5;
 	#[derive(Clone)]
 	pub const MaxChildren: u32 = 1000;
-	pub const DepositMock: TestBalance = 100 * MILLI_KILT;
+	pub const DepositMock: TestBalance = DELEGATION_DEPOSIT;
 }
 
 impl Config for Test {
@@ -372,8 +372,11 @@ pub fn initialize_pallet<T: Config>(
 		// manually mint and reserve because the latter happens in an extrinsic
 		let deposit_owner = delegation_hierarchy.2;
 		let balance = CurrencyOf::<T>::free_balance(&deposit_owner.clone().into());
-		CurrencyOf::<T>::make_free_balance_be(&deposit_owner.clone().into(), balance + T::Deposit::get());
-		frame_support::assert_ok!(CurrencyOf::<T>::reserve(&deposit_owner.into(), T::Deposit::get()));
+		CurrencyOf::<T>::make_free_balance_be(&deposit_owner.clone().into(), balance + <T as Config>::Deposit::get());
+		frame_support::assert_ok!(CurrencyOf::<T>::reserve(
+			&deposit_owner.into(),
+			<T as Config>::Deposit::get()
+		));
 	}
 
 	for del in delegations {
@@ -393,8 +396,11 @@ pub fn initialize_pallet<T: Config>(
 		// manually mint and reserve because the latter happens in an extrinsic
 		let deposit_owner = del.1.details.owner;
 		let balance = CurrencyOf::<T>::free_balance(&deposit_owner.clone().into());
-		CurrencyOf::<T>::make_free_balance_be(&deposit_owner.clone().into(), balance + T::Deposit::get());
-		frame_support::assert_ok!(CurrencyOf::<T>::reserve(&deposit_owner.into(), T::Deposit::get()));
+		CurrencyOf::<T>::make_free_balance_be(&deposit_owner.clone().into(), balance + <T as Config>::Deposit::get());
+		frame_support::assert_ok!(CurrencyOf::<T>::reserve(
+			&deposit_owner.into(),
+			<T as Config>::Deposit::get()
+		));
 	}
 }
 

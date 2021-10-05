@@ -98,7 +98,8 @@ pub mod pallet {
 		BoundedVec,
 	};
 	use frame_system::pallet_prelude::*;
-	use kilt_support::traits::CallSources;
+	use kilt_support::{deposit::Deposit, traits::CallSources};
+	use sp_runtime::traits::Zero;
 
 	/// Type of a claim hash.
 	pub(crate) type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
@@ -125,7 +126,8 @@ pub mod pallet {
 		/// The currency that is used to reserve funds for each attestation.
 		type Currency: Currency<AccountIdOf<Self>> + ReservableCurrency<AccountIdOf<Self>>;
 
-		/// The deposit that is required
+		/// The deposit that is required for storing an attestation.
+		#[pallet::constant]
 		type Deposit: Get<BalanceOf<Self>>;
 
 		/// The maximum number of delegated attestations which can be made by
@@ -180,11 +182,14 @@ pub mod pallet {
 			Option<DelegationNodeIdOf<T>>,
 		),
 		/// An attestation has been revoked.
-		/// \[revoker ID, claim hash\]
+		/// \[account id, claim hash\]
 		AttestationRevoked(AttesterOf<T>, ClaimHashOf<T>),
 		/// An attestation has been removed.
-		/// \[revoker ID, claim hash\]
+		/// \[account id, claim hash\]
 		AttestationRemoved(AttesterOf<T>, ClaimHashOf<T>),
+		/// The deposit owner reclaimed a deposit by removing an attestation.
+		/// \[account id, claim hash\]
+		DepositReclaimed(AccountIdOf<T>, ClaimHashOf<T>),
 	}
 
 	#[pallet::error]
@@ -250,8 +255,8 @@ pub mod pallet {
 		) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let payer = source.sender();
-			let attester = source.subject();
-			let deposit_amount = <T as pallet::Config>::Deposit::get();
+			let who = source.subject();
+			let deposit_amount = <T as Config>::Deposit::get();
 
 			ensure!(
 				<ctype::Ctypes<T>>::contains_key(&ctype_hash),
@@ -269,7 +274,7 @@ pub mod pallet {
 
 				ensure!(!delegation.details.revoked, Error::<T>::DelegationRevoked);
 
-				ensure!(delegation.details.owner == attester, Error::<T>::NotDelegatedToAttester);
+				ensure!(delegation.details.owner == who, Error::<T>::NotDelegatedToAttester);
 
 				ensure!(
 					(delegation.details.permissions & delegation::Permissions::ATTEST)
@@ -306,19 +311,14 @@ pub mod pallet {
 				&claim_hash,
 				AttestationDetails {
 					ctype_hash,
-					attester: attester.clone(),
+					attester: who.clone(),
 					delegation_id,
 					revoked: false,
 					deposit,
 				},
 			);
 
-			Self::deposit_event(Event::AttestationCreated(
-				attester,
-				claim_hash,
-				ctype_hash,
-				delegation_id,
-			));
+			Self::deposit_event(Event::AttestationCreated(who, claim_hash, ctype_hash, delegation_id));
 			Ok(())
 		}
 
@@ -346,14 +346,14 @@ pub mod pallet {
 			max_parent_checks: u32,
 		) -> DispatchResultWithPostInfo {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
-			let attester = source.subject();
+			let who = source.subject();
 
 			let attestation = <Attestations<T>>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
 			ensure!(!attestation.revoked, Error::<T>::AlreadyRevoked);
 
-			let delegation_depth = if attestation.attester != attester {
-				Self::verify_delegated_access(&attester, &attestation, max_parent_checks)?
+			let delegation_depth = if attestation.attester != who {
+				Self::verify_delegated_access(&who, &attestation, max_parent_checks)?
 			} else {
 				0
 			};
@@ -369,26 +369,41 @@ pub mod pallet {
 				},
 			);
 
-			Self::deposit_event(Event::AttestationRevoked(attester, claim_hash));
+			Self::deposit_event(Event::AttestationRevoked(who, claim_hash));
 
 			Ok(Some(<T as pallet::Config>::WeightInfo::revoke(delegation_depth)).into())
 		}
 
-		// TODO: Docs
-		// TODO: Benchmarks
-		#[pallet::weight(10)]
+		/// Remove an attestation.
+		///
+		/// The origin must be either the creator of the attestation or an
+		/// entity which is an ancestor of the attester in the delegation tree,
+		/// i.e., it was either the delegator of the attester or an ancestor
+		/// thereof.
+		///
+		/// Emits `AttestationRemoved`.
+		///
+		/// # <weight>
+		/// Weight: O(P) where P is the number of steps required to verify that
+		/// the dispatch Origin controls the delegation entitled to revoke the
+		/// attestation. It is bounded by `max_parent_checks`.
+		/// - Reads: [Origin Account], Attestations, delegation::Roots
+		/// - Reads per delegation step P: delegation::Delegations
+		/// - Writes: Attestations, DelegatedAttestations
+		/// # </weight>
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove(*max_parent_checks))]
 		pub fn remove(
 			origin: OriginFor<T>,
 			claim_hash: ClaimHashOf<T>,
 			max_parent_checks: u32,
 		) -> DispatchResultWithPostInfo {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
-			let attester = source.subject();
+			let who = source.subject();
 
-			let attestation = <Attestations<T>>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
+			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
-			let delegation_depth = if attestation.attester != attester {
-				Self::verify_delegated_access(&attester, &attestation, max_parent_checks)?
+			let delegation_depth = if attestation.attester != who {
+				Self::verify_delegated_access(&who, &attestation, max_parent_checks)?
 			} else {
 				0
 			};
@@ -396,13 +411,37 @@ pub mod pallet {
 			// *** No Fail beyond this point ***
 
 			log::debug!("removing Attestation");
-			Pallet::<T>::free_deposit(&attestation.deposit);
-			<Attestations<T>>::remove(&claim_hash);
 
-			Self::deposit_event(Event::AttestationRemoved(attester, claim_hash));
+			Self::remove_attestation(attestation, claim_hash);
+			Self::deposit_event(Event::AttestationRemoved(who, claim_hash));
 
-			// TODO: Benchmarks
-			Ok(().into())
+			Ok(Some(<T as pallet::Config>::WeightInfo::remove(delegation_depth)).into())
+		}
+
+		/// Reclaim a storage deposit by removing an attestation
+		///
+		/// Emits `DepositReclaimed`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Attestations, DelegatedAttestations
+		/// - Writes: Attestations, DelegatedAttestations
+		/// # </weight>
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit())]
+		pub fn reclaim_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
+
+			ensure!(attestation.deposit.owner == who, Error::<T>::Unauthorized);
+
+			// *** No Fail beyond this point ***
+
+			log::debug!("removing Attestation");
+
+			Self::remove_attestation(attestation, claim_hash);
+			Self::deposit_event(Event::DepositReclaimed(who, claim_hash));
+
+			Ok(())
 		}
 	}
 
@@ -414,15 +453,15 @@ pub mod pallet {
 			attestation: &AttestationDetails<T>,
 			max_parent_checks: u32,
 		) -> Result<u32, DispatchError> {
-			// Check the delegation tree if the sender of the revocation operation is not
-			// the original attester
+			// if there is no delegation id, access to this attestation wasn't delegated to
+			// anyone.
 			let delegation_id = attestation.delegation_id.ok_or(Error::<T>::Unauthorized)?;
 			ensure!(
 				max_parent_checks <= T::MaxParentChecks::get(),
 				delegation::Error::<T>::MaxParentChecksTooLarge
 			);
-			// Check whether the sender of the revocation controls the delegation node
-			// specified, and that its status has not been revoked
+			// Check whether the sender of the revocation controls the delegation node and
+			// that the delegation has not been revoked
 			let (is_delegating, delegation_depth) =
 				<delegation::Pallet<T>>::is_delegating(attester, &delegation_id, max_parent_checks)?;
 			ensure!(is_delegating, Error::<T>::Unauthorized);
@@ -432,7 +471,7 @@ pub mod pallet {
 		/// Reserve the deposit and record the deposit on chain.
 		///
 		/// Fails if the `payer` has a balance less than deposit.
-		fn reserve_deposit(
+		pub(crate) fn reserve_deposit(
 			payer: AccountIdOf<T>,
 			deposit: BalanceOf<T>,
 		) -> Result<Deposit<AccountIdOf<T>, BalanceOf<T>>, DispatchError> {
@@ -445,7 +484,20 @@ pub mod pallet {
 		}
 
 		fn free_deposit(deposit: &Deposit<AccountIdOf<T>, BalanceOf<T>>) {
-			CurrencyOf::<T>::unreserve(&deposit.owner, deposit.amount);
+			let err_amount = CurrencyOf::<T>::unreserve(&deposit.owner, deposit.amount);
+			debug_assert!(err_amount.is_zero());
+		}
+
+		fn remove_attestation(attestation: AttestationDetails<T>, claim_hash: ClaimHashOf<T>) {
+			Pallet::<T>::free_deposit(&attestation.deposit);
+			Attestations::<T>::remove(&claim_hash);
+			if let Some(delegation_id) = attestation.delegation_id {
+				DelegatedAttestations::<T>::mutate(&delegation_id, |maybe_attestations| {
+					if let Some(attestations) = maybe_attestations.as_mut() {
+						attestations.retain(|&elem| elem != claim_hash);
+					}
+				});
+			}
 		}
 	}
 }

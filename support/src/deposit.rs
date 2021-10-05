@@ -15,3 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
+use codec::{Decode, Encode};
+
+/// An on-chain attestation written by an attester.
+#[derive(Clone, Debug, Encode, Decode, PartialEq)]
+pub struct Deposit<Account, Balance> {
+	pub owner: Account,
+	pub amount: Balance,
+}

@@ -21,6 +21,7 @@ use bitflags::bitflags;
 use codec::{Decode, Encode};
 use ctype::CtypeHashOf;
 use frame_support::{dispatch::DispatchResult, storage::bounded_btree_set::BoundedBTreeSet};
+use kilt_support::deposit::Deposit;
 
 use crate::*;
 
@@ -70,16 +71,9 @@ pub struct DelegationNode<T: Config> {
 	pub children: BoundedBTreeSet<DelegationNodeIdOf<T>, T::MaxChildren>,
 	/// The additional information attached to the delegation node.
 	pub details: DelegationDetails<T>,
-	// TODO:
+	/// The deposit that was taken to incentivise fair use of the on chain
+	/// storage.
 	pub deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
-}
-
-/// A deposit which needs to be reserved over the lifetime of storing the
-/// delegation.
-#[derive(Clone, Debug, Encode, Decode, PartialEq)]
-pub struct Deposit<Account, Balance> {
-	pub owner: Account,
-	pub amount: Balance,
 }
 
 impl<T: Config> DelegationNode<T> {
@@ -97,7 +91,7 @@ impl<T: Config> DelegationNode<T> {
 			details,
 			deposit: Deposit::<AccountIdOf<T>, BalanceOf<T>> {
 				owner: deposit_owner,
-				amount: T::Deposit::get(),
+				amount: <T as Config>::Deposit::get(),
 			},
 		}
 	}
@@ -117,7 +111,7 @@ impl<T: Config> DelegationNode<T> {
 			details,
 			deposit: Deposit::<AccountIdOf<T>, BalanceOf<T>> {
 				owner: deposit_owner,
-				amount: T::Deposit::get(),
+				amount: <T as Config>::Deposit::get(),
 			},
 		}
 	}

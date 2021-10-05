@@ -96,6 +96,7 @@ use frame_support::{
 	pallet_prelude::Weight,
 	traits::{Get, ReservableCurrency},
 };
+use kilt_support::deposit::Deposit;
 use sp_runtime::{
 	traits::{Hash, Zero},
 	DispatchError,
@@ -341,7 +342,7 @@ pub mod pallet {
 			// TODO: Add check that payer == creator for delegations?
 			let payer = source.sender();
 			let creator = source.subject();
-			let deposit_amount = T::Deposit::get();
+			let deposit_amount = <T as Config>::Deposit::get();
 
 			ensure!(
 				!<DelegationHierarchies<T>>::contains_key(&root_node_id),
@@ -409,7 +410,7 @@ pub mod pallet {
 			// TODO: Add check that payer == creator for delegations?
 			let payer = source.sender();
 			let delegator = source.subject();
-			let deposit_amount = T::Deposit::get();
+			let deposit_amount = <T as Config>::Deposit::get();
 
 			ensure!(
 				!<DelegationNodes<T>>::contains_key(&delegation_id),
@@ -650,12 +651,12 @@ impl<T: Config> Pallet<T> {
 		<DelegationHierarchies<T>>::insert(root_id, hierarchy_details);
 	}
 
-	/// Adds the given node to the storage and updates the parent node to
-	/// include the given node as child.
-	///
-	/// This function assumes that the parent node is already stored on the
-	/// chain. If not, the behaviour of the system is undefined.
-	fn store_delegation_under_parent(
+	// Adds the given node to the storage and updates the parent node to include the
+	// given node as child.
+	//
+	// This function assumes that the parent node is already stored on the chain. If
+	// not, the behaviour of the system is undefined.
+	pub(crate) fn store_delegation_under_parent(
 		delegation_id: DelegationNodeIdOf<T>,
 		delegation_node: DelegationNode<T>,
 		parent_id: DelegationNodeIdOf<T>,
