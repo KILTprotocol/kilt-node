@@ -27,13 +27,13 @@ pub(crate) fn pre_migrate<T: Config>() -> Result<(), &'static str> {
 }
 
 pub(crate) fn migrate<T: Config>() -> Weight {
-	log::trace!("Migrating staking to StakingStorageVersion::V3_0_0");
+	log::info!("Migrating staking to StakingStorageVersion::V3_0_0");
 
 	// update rewards per block
 	InflationConfig::<T>::mutate(|inflation| *inflation = InflationInfo::from(INFLATION_CONFIG));
 
 	StorageVersion::<T>::put(StakingStorageVersion::V3_0_0);
-	log::trace!("Completed staking migration to StakingStorageVersion::V3_0_0");
+	log::info!("Completed staking migration to StakingStorageVersion::V3_0_0");
 
 	T::DbWeight::get().reads_writes(1, 2)
 }

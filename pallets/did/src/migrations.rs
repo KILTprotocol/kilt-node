@@ -19,33 +19,39 @@
 use codec::{Decode, Encode};
 use kilt_support::traits::VersionMigratorTrait;
 use sp_runtime::traits::Zero;
+use sp_std::marker::PhantomData;
 
 use crate::*;
 
-mod setup;
 mod v1;
 mod v2;
 
 /// Storage version of the DID pallet.
-#[repr(u8)]
-#[derive(Clone, Copy, Debug, Decode, Encode, Eq, Ord, PartialEq, PartialOrd)]
-#[allow(clippy::unnecessary_cast)]
+#[derive(Copy, Clone, Encode, Eq, Decode, Ord, PartialEq, PartialOrd)]
 pub enum DidStorageVersion {
-	None = u8::MAX,
-	V1 = 0,
-	V2 = 1,
-	V3 = 2,
+	V1,
+	V2,
+	V3,
 }
 
+#[cfg(feature = "try-runtime")]
 impl DidStorageVersion {
+	/// The latest storage version.
 	fn latest() -> Self {
 		Self::V3
 	}
 }
 
+// All nodes will default to this, which is not bad, as in case the "real"
+// version is a later one (i.e. the node has been started with already the
+// latest version), the migration will simply do nothing as there's nothing in
+// the old storage entries to migrate from.
+//
+// It might get updated in the future when we know that no node is running this
+// old version anymore.
 impl Default for DidStorageVersion {
 	fn default() -> Self {
-		Self::None
+		Self::V3
 	}
 }
 
@@ -54,7 +60,6 @@ impl<T: Config> VersionMigratorTrait<T> for DidStorageVersion {
 	#[cfg(feature = "try-runtime")]
 	fn pre_migrate(&self) -> Result<(), &'static str> {
 		match *self {
-			Self::None => setup::pre_migrate::<T>(),
 			Self::V1 => v1::pre_migrate::<T>(),
 			Self::V2 => v2::pre_migrate::<T>(),
 			Self::V3 => Ok(()),
@@ -64,18 +69,9 @@ impl<T: Config> VersionMigratorTrait<T> for DidStorageVersion {
 	// It runs the right migration logic depending on the current storage version.
 	fn migrate(&self) -> Weight {
 		match *self {
-			Self::None => setup::migrate::<T>(),
 			Self::V1 => v1::migrate::<T>(),
 			Self::V2 => v2::migrate::<T>(),
 			Self::V3 => Weight::zero(),
-		}
-	}
-
-	fn next_version(&self) -> Option<Self> {
-		match self {
-			Self::V1 => Some(Self::V2),
-			Self::V2 => Some(Self::V3),
-			Self::V3 | Self::None => None,
 		}
 	}
 
@@ -84,10 +80,89 @@ impl<T: Config> VersionMigratorTrait<T> for DidStorageVersion {
 	#[cfg(feature = "try-runtime")]
 	fn post_migrate(&self) -> Result<(), &'static str> {
 		match *self {
-			Self::None => setup::post_migrate::<T>(),
 			Self::V1 => v1::post_migrate::<T>(),
 			Self::V2 => v2::post_migrate::<T>(),
 			Self::V3 => Ok(()),
 		}
 	}
 }
+
+/// The DID pallet's storage migrator, which handles all version
+/// migrations in a sequential fashion.
+///
+/// If a node has missed on more than one upgrade, the migrator will apply the
+/// needed migrations one after the other. Otherwise, if no migration is needed,
+/// the migrator will simply not do anything.
+pub struct DidStorageMigrator<T>(PhantomData<T>);
+
+impl<T: Config> DidStorageMigrator<T> {
+	// Contains the migration sequence logic.
+	fn get_next_storage_version(current: DidStorageVersion) -> Option<DidStorageVersion> {
+		// If the version current deployed is at least v1, there is no more migrations
+		// to run (other than the one from v1).
+		match current {
+			DidStorageVersion::V1 => Some(DidStorageVersion::V2),
+			DidStorageVersion::V2 => Some(DidStorageVersion::V3),
+			DidStorageVersion::V3 => None,
+		}
+	}
+
+	/// Checks whether the latest storage version deployed is lower than the
+	/// latest possible.
+	#[cfg(feature = "try-runtime")]
+	pub(crate) fn pre_migrate() -> Result<(), &'static str> {
+		// Don't need to check for any other pre_migrate, as in try-runtime it is also
+		// called in the migrate() function. Same applies for post_migrate checks for
+		// each version migrator.
+
+		Ok(())
+	}
+
+	/// Applies all the needed migrations from the currently deployed version to
+	/// the latest possible, one after the other.
+	///
+	/// It returns the total weight consumed by ALL the migrations applied.
+	pub(crate) fn migrate() -> Weight {
+		let mut current_version: Option<DidStorageVersion> = Some(StorageVersion::<T>::get());
+		// Weight for StorageVersion::get().
+		let mut total_weight = T::DbWeight::get().reads(1);
+
+		while let Some(ver) = current_version {
+			// If any of the needed migrations pre-checks fail, the whole chain panics
+			// (during tests).
+			#[cfg(feature = "try-runtime")]
+			if let Err(err) = <DidStorageVersion as VersionMigratorTrait<T>>::pre_migrate(&ver) {
+				panic!("{:?}", err);
+			}
+			let consumed_weight = <DidStorageVersion as VersionMigratorTrait<T>>::migrate(&ver);
+			total_weight = total_weight.saturating_add(consumed_weight);
+			// If any of the needed migrations post-checks fail, the whole chain panics
+			// (during tests).
+			#[cfg(feature = "try-runtime")]
+			if let Err(err) = <DidStorageVersion as VersionMigratorTrait<T>>::post_migrate(&ver) {
+				panic!("{:?}", err);
+			}
+			// If more migrations should be applied, current_version will not be None.
+			current_version = Self::get_next_storage_version(ver);
+		}
+
+		total_weight
+	}
+
+	/// Checks whether the storage version after all the needed migrations match
+	/// the latest one.
+	#[cfg(feature = "try-runtime")]
+	pub(crate) fn post_migrate() -> Result<(), &'static str> {
+		ensure!(
+			StorageVersion::<T>::get() == DidStorageVersion::latest(),
+			"Not updated to the latest version."
+		);
+
+		Ok(())
+	}
+}
+
+// The storage migrator is the same as in the delegation pallet, so those test
+// cases will suffice. We might want to refactor this into something generic
+// over a type implementing the `VersionMigratorTrait` trait, and have it tested
+// only once.

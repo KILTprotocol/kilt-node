@@ -134,7 +134,6 @@ use frame_support::{
 use frame_system::ensure_signed;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::RawOrigin;
-use kilt_support::migrations::StorageMigrator;
 use sp_runtime::{traits::Saturating, SaturatedConversion};
 use sp_std::{boxed::Box, fmt::Debug, prelude::Clone};
 
@@ -234,22 +233,16 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		#[cfg(feature = "try-runtime")]
 		fn pre_upgrade() -> Result<(), &'static str> {
-			let current_storage_version = StorageVersion::<T>::get();
-			log::info!("DID storage version before migration -> {:?}", current_storage_version);
-			StorageMigrator::<DidStorageVersion, T>::pre_migrate(current_storage_version)
+			migrations::DidStorageMigrator::<T>::pre_migrate()
 		}
 
 		fn on_runtime_upgrade() -> Weight {
-			let migration_weight = StorageMigrator::<DidStorageVersion, T>::migrate(StorageVersion::<T>::get());
-			// Add one read to get the current storage version
-			migration_weight.saturating_add(T::DbWeight::get().reads(1))
+			migrations::DidStorageMigrator::<T>::migrate()
 		}
 
 		#[cfg(feature = "try-runtime")]
 		fn post_upgrade() -> Result<(), &'static str> {
-			let current_storage_version = StorageVersion::<T>::get();
-			log::info!("DID storage version after migration -> {:?}", current_storage_version);
-			StorageMigrator::<DidStorageVersion, T>::post_migrate(current_storage_version)
+			migrations::DidStorageMigrator::<T>::post_migrate()
 		}
 	}
 

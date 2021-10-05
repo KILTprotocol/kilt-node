@@ -30,7 +30,7 @@ pub(crate) fn pre_migrate<T: Config>() -> Result<(), &'static str> {
 }
 
 pub(crate) fn migrate<T: Config>() -> Weight {
-	log::trace!("Migrating staking to StakingStorageVersion::V4");
+	log::info!("Migrating staking to StakingStorageVersion::V4");
 
 	// sort candidates from greatest to lowest
 	TopCandidates::<T>::mutate(|candidates| candidates.sort_greatest_to_lowest());
@@ -53,7 +53,7 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	);
 
 	StorageVersion::<T>::put(StakingStorageVersion::V4);
-	log::trace!("Completed staking migration to StakingStorageVersion::V4");
+	log::info!("Completed staking migration to StakingStorageVersion::V4");
 
 	T::DbWeight::get().reads_writes(n, n)
 }

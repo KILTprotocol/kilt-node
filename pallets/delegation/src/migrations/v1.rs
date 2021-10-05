@@ -40,7 +40,7 @@ pub(crate) fn pre_migrate<T: Config>() -> Result<(), &'static str> {
 		"Current deployed version is not v1."
 	);
 
-	log::debug!("Version storage migrating from v1 to v2");
+	log::info!("Version storage migrating from v1 to v2");
 	Ok(())
 }
 
@@ -52,7 +52,7 @@ pub(crate) fn pre_migrate<T: Config>() -> Result<(), &'static str> {
 /// stored under DelegationNodes, with any children from the Children
 /// storage entry added to the nodes under the children set.
 pub(crate) fn migrate<T: Config>() -> Weight {
-	log::trace!("v1 -> v2 delegation storage migrator started!");
+	log::info!("v1 -> v2 delegation storage migrator started!");
 	let mut total_weight = Weight::zero();
 
 	// Before being stored, the nodes are saved in a map so that after we go over
@@ -77,7 +77,7 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	// Adds a write from StorageVersion::set() weight.
 	total_weight = total_weight.saturating_add(T::DbWeight::get().writes(1));
 	log::debug!("Total weight consumed: {}", total_weight);
-	log::trace!("v1 -> v2 delegation storage migrator finished!");
+	log::info!("v1 -> v2 delegation storage migrator finished!");
 
 	total_weight
 }
@@ -246,7 +246,7 @@ pub(crate) fn post_migrate<T: Config>() -> Result<(), &'static str> {
 		verify_parent_children_integrity::<T>(),
 		"Some parent-child relationship has been broken in the migration."
 	);
-	log::debug!("Version storage migrated from v1 to v2");
+	log::info!("Version storage migrated from v1 to v2");
 	Ok(())
 }
 

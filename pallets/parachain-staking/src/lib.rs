@@ -172,7 +172,6 @@ mod types;
 use frame_support::pallet;
 
 pub use crate::{default_weights::WeightInfo, pallet::*};
-use kilt_support::migrations::StorageMigrator;
 
 #[pallet]
 pub mod pallet {
@@ -536,28 +535,16 @@ pub mod pallet {
 
 		#[cfg(feature = "try-runtime")]
 		fn pre_upgrade() -> Result<(), &'static str> {
-			let current_storage_version = StorageVersion::<T>::get();
-			log::info!(
-				"Staking storage version before migration -> {:?}",
-				current_storage_version
-			);
-			StorageMigrator::<StakingStorageVersion, T>::pre_migrate(current_storage_version)
+			migrations::StakingStorageMigrator::<T>::pre_migrate()
 		}
 
 		fn on_runtime_upgrade() -> Weight {
-			let migration_weight = StorageMigrator::<StakingStorageVersion, T>::migrate(StorageVersion::<T>::get());
-			// Add one read to get the current storage version
-			migration_weight.saturating_add(T::DbWeight::get().reads(1))
+			migrations::StakingStorageMigrator::<T>::migrate()
 		}
 
 		#[cfg(feature = "try-runtime")]
 		fn post_upgrade() -> Result<(), &'static str> {
-			let current_storage_version = StorageVersion::<T>::get();
-			log::info!(
-				"Staking storage version after migration -> {:?}",
-				current_storage_version
-			);
-			StorageMigrator::<StakingStorageVersion, T>::post_migrate(current_storage_version)
+			migrations::StakingStorageMigrator::<T>::post_migrate()
 		}
 	}
 

@@ -18,5 +18,4 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod deposit;
-pub mod migrations;
 pub mod traits;

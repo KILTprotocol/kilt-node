@@ -91,7 +91,6 @@ mod deprecated;
 pub use crate::{default_weights::WeightInfo, delegation_hierarchy::*, pallet::*};
 
 use frame_support::{dispatch::DispatchResult, ensure, pallet_prelude::Weight, traits::Get};
-use kilt_support::migrations::StorageMigrator;
 use sp_runtime::{traits::Hash, DispatchError};
 use sp_std::vec::Vec;
 
@@ -167,28 +166,16 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		#[cfg(feature = "try-runtime")]
 		fn pre_upgrade() -> Result<(), &'static str> {
-			let current_storage_version = StorageVersion::<T>::get();
-			log::info!(
-				"Delegation storage version before migration -> {:?}",
-				current_storage_version
-			);
-			StorageMigrator::<DelegationStorageVersion, T>::pre_migrate(current_storage_version)
+			migrations::DelegationStorageMigrator::<T>::pre_migrate()
 		}
 
 		fn on_runtime_upgrade() -> Weight {
-			let migration_weight = StorageMigrator::<DelegationStorageVersion, T>::migrate(StorageVersion::<T>::get());
-			// Add one read to get the current storage version
-			migration_weight.saturating_add(T::DbWeight::get().reads(1))
+			migrations::DelegationStorageMigrator::<T>::migrate()
 		}
 
 		#[cfg(feature = "try-runtime")]
 		fn post_upgrade() -> Result<(), &'static str> {
-			let current_storage_version = StorageVersion::<T>::get();
-			log::info!(
-				"Delegation storage version after migration -> {:?}",
-				current_storage_version
-			);
-			StorageMigrator::<DelegationStorageVersion, T>::post_migrate(current_storage_version)
+			migrations::DelegationStorageMigrator::<T>::post_migrate()
 		}
 	}
 
