@@ -383,6 +383,7 @@ pub struct ExtBuilder {
 	)>,
 	delegations_stored: Vec<(TestDelegationNodeId, DelegationNode<Test>)>,
 	storage_version: DelegationStorageVersion,
+	ctypes_stored: Vec<(TestCtypeHash, TestCtypeOwner)>,
 }
 
 impl ExtBuilder {
@@ -395,6 +396,11 @@ impl ExtBuilder {
 		)>,
 	) -> Self {
 		self.delegation_hierarchies_stored = delegation_hierarchies;
+		self
+	}
+
+	pub fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, TestCtypeOwner)>) -> Self {
+		self.ctypes_stored = ctypes;
 		self
 	}
 
@@ -417,6 +423,10 @@ impl ExtBuilder {
 		};
 
 		ext.execute_with(|| {
+			for (ctype_hash, owner) in self.ctypes_stored.iter() {
+				ctype::Ctypes::<Test>::insert(ctype_hash, owner);
+			}
+
 			initialize_pallet(self.delegations_stored, self.delegation_hierarchies_stored);
 
 			delegation::StorageVersion::<Test>::set(self.storage_version);

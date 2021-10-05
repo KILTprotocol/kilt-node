@@ -33,7 +33,7 @@ fn create_root_delegation_successful() {
 
 	let operation = generate_base_delegation_hierarchy_creation_operation::<Test>(hierarchy_root_id);
 
-	let mut ext = ctype_mock::ExtBuilder::default()
+	let mut ext = ExtBuilder::default()
 		.with_ctypes(vec![(operation.ctype_hash, creator.clone())])
 		.build(None);
 
@@ -74,12 +74,10 @@ fn duplicate_create_root_delegation_error() {
 
 	let operation = generate_base_delegation_hierarchy_creation_operation::<Test>(hierarchy_root_id);
 
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(operation.ctype_hash, creator.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
-		.build(Some(ext));
+		.with_ctypes(vec![(operation.ctype_hash, creator.clone())])
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -139,12 +137,10 @@ fn create_delegation_direct_root_successful() {
 	let operation =
 		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
 
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_ok!(Delegation::add_delegation(
@@ -208,13 +204,11 @@ fn create_delegation_with_parent_successful() {
 	let operation =
 		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
 
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
 		.with_delegations(vec![(parent_id, parent_node)])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_ok!(Delegation::add_delegation(
@@ -274,12 +268,10 @@ fn create_delegation_direct_root_revoked_error() {
 	let operation =
 		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
 
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		let _ = Delegation::revoke_delegation(
@@ -334,13 +326,11 @@ fn create_delegation_with_parent_revoked_error() {
 	let operation =
 		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
 
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
 		.with_delegations(vec![(parent_id, parent_node)])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		let _ = Delegation::revoke_delegation(
@@ -390,12 +380,10 @@ fn invalid_delegate_signature_create_delegation_error() {
 	let operation =
 		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
 
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -438,13 +426,11 @@ fn duplicate_delegation_create_delegation_error() {
 	let operation =
 		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node.clone());
 
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
 		.with_delegations(vec![(delegation_id, delegation_node)])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -487,7 +473,7 @@ fn parent_not_existing_create_delegation_error() {
 	let operation =
 		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
 
-	let ext = ctype_mock::ExtBuilder::default()
+	let ext = ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
 		.build(None);
 	// No delegations added to the pallet storage
@@ -540,13 +526,11 @@ fn not_owner_of_parent_create_delegation_error() {
 	let operation =
 		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
 
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
 		.with_delegations(vec![(parent_id, parent_node)])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -594,13 +578,11 @@ fn unauthorised_delegation_create_delegation_error() {
 	let operation =
 		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
 
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
 		.with_delegations(vec![(parent_id, parent_node)])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -631,12 +613,10 @@ fn empty_revoke_root_successful() {
 
 	let operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_ok!(Delegation::revoke_delegation(
@@ -677,13 +657,11 @@ fn list_hierarchy_revoke_root_successful() {
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	operation.max_children = 2u32;
 
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_ok!(Delegation::revoke_delegation(
@@ -732,16 +710,14 @@ fn tree_hierarchy_revoke_root_successful() {
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	operation.max_children = 2u32;
 
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
 		.with_delegations(vec![
 			(delegation1_id, delegation1_node),
 			(delegation2_id, delegation2_node),
 		])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_ok!(Delegation::revoke_delegation(
@@ -791,14 +767,11 @@ fn max_max_revocations_revoke_successful() {
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	operation.max_children = MaxRevocations::get();
 
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
-		.build(Some(ext));
-
+		.build(None);
 	ext.execute_with(|| {
 		assert_ok!(Delegation::revoke_delegation(
 			get_origin(revoker.clone()),
@@ -856,12 +829,10 @@ fn different_root_creator_revoke_root_error() {
 
 	let operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, alternative_revoker)])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -890,13 +861,11 @@ fn too_small_max_revocations_revoke_root_error() {
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	operation.max_children = 0u32;
 
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
 		.with_delegations(vec![(delegation_id, delegation_node)])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -933,17 +902,15 @@ fn exact_children_max_revocations_revoke_root_error() {
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	operation.max_children = 2u32;
 
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
 		.with_delegations(vec![
 			(delegation1_id, delegation1_node),
 			(delegation2_id, delegation2_node),
 			(delegation3_id, delegation3_node),
 		])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		// assert_err and not asser_noop becase the storage is indeed changed, even tho
@@ -1002,13 +969,11 @@ fn direct_owner_revoke_delegation_successful() {
 	let mut operation = generate_base_delegation_revocation_operation(parent_id);
 	operation.max_revocations = 2u32;
 
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_ok!(Delegation::revoke_delegation(
@@ -1054,13 +1019,11 @@ fn parent_owner_revoke_delegation_successful() {
 	operation.max_parent_checks = 1u32;
 	operation.max_revocations = 1u32;
 
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_ok!(Delegation::revoke_delegation(
@@ -1095,12 +1058,10 @@ fn delegation_not_found_revoke_delegation_error() {
 
 	let operation = generate_base_delegation_revocation_operation(delegation_id);
 
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -1134,13 +1095,11 @@ fn not_delegating_revoke_delegation_error() {
 	let mut operation = generate_base_delegation_revocation_operation(delegation_id);
 	operation.max_parent_checks = MaxParentChecks::get();
 
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, owner)])
 		.with_delegations(vec![(delegation_id, delegation_node)])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -1180,13 +1139,11 @@ fn parent_too_far_revoke_delegation_error() {
 	let mut operation = generate_base_delegation_revocation_operation(delegation_id);
 	operation.max_parent_checks = 0u32;
 
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, owner.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, owner.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, owner)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -1223,13 +1180,11 @@ fn too_many_revocations_revoke_delegation_error() {
 
 	let operation = generate_base_delegation_revocation_operation(parent_id);
 
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_noop!(
@@ -1271,13 +1226,11 @@ fn is_delegating_direct_not_revoked() {
 	let max_parent_checks = 0u32;
 
 	// Root -> Parent -> Delegation
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_eq!(
@@ -1312,13 +1265,11 @@ fn is_delegating_direct_not_revoked_max_parent_checks_value() {
 	let max_parent_checks = u32::MAX;
 
 	// Root -> Parent -> Delegation
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_eq!(
@@ -1354,13 +1305,11 @@ fn is_delegating_direct_revoked() {
 	let max_parent_checks = 0u32;
 
 	// Root -> Parent -> Delegation
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_eq!(
@@ -1396,13 +1345,11 @@ fn is_delegating_direct_revoked_max_parent_checks_value() {
 	let max_parent_checks = u32::MAX;
 
 	// Root -> Parent -> Delegation
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_eq!(
@@ -1437,13 +1384,11 @@ fn is_delegating_max_parent_not_revoked() {
 	let max_parent_checks = 1u32;
 
 	// Root -> Parent -> Delegation
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_eq!(
@@ -1479,13 +1424,11 @@ fn is_delegating_max_parent_revoked() {
 	let max_parent_checks = 2u32;
 
 	// Root -> Parent -> Delegation
-	let ext = ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
-		.build(None);
 	let mut ext = ExtBuilder::default()
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
-		.build(Some(ext));
+		.build(None);
 
 	ext.execute_with(|| {
 		assert_eq!(
@@ -1520,13 +1463,11 @@ fn is_delegating_root_owner_not_revoked() {
 	let max_parent_checks = 2u32;
 
 	// Root -> Parent -> Delegation
-	let ext = ctype_mock::ExtBuilder::default()
+	let mut ext = ExtBuilder::default()
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details.clone(), user_1.clone())])
+		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
 		.build(None);
-	let mut ext = ExtBuilder::default()
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone())])
-		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
-		.build(Some(ext));
 
 	ext.execute_with(|| {
 		assert_eq!(
@@ -1561,13 +1502,11 @@ fn is_delegating_root_owner_revoked() {
 	let max_parent_checks = 2u32;
 
 	// Root -> Parent -> Delegation
-	let ext = ctype_mock::ExtBuilder::default()
+	let mut ext = ExtBuilder::default()
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details.clone(), user_1.clone())])
+		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
 		.build(None);
-	let mut ext = ExtBuilder::default()
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone())])
-		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
-		.build(Some(ext));
 
 	ext.execute_with(|| {
 		// First revoke the hierarchy, then test is_delegating.
@@ -1627,13 +1566,11 @@ fn is_delegating_root_after_max_limit() {
 	let max_parent_checks = 1u32;
 
 	// Root -> Parent -> Delegation
-	let ext = ctype_mock::ExtBuilder::default()
+	let mut ext = ExtBuilder::default()
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details.clone(), user_1.clone())])
+		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
 		.build(None);
-	let mut ext = ExtBuilder::default()
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone())])
-		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
-		.build(Some(ext));
 
 	ext.execute_with(|| {
 		assert_noop!(

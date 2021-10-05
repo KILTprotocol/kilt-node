@@ -136,34 +136,30 @@ where
 }
 
 #[derive(Clone, Default)]
-pub struct ExtBuilder {
+pub(crate) struct ExtBuilder {
 	ctypes_stored: Vec<(TestCtypeHash, TestCtypeOwner)>,
 	balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>,
 }
 
 impl ExtBuilder {
-	pub fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, TestCtypeOwner)>) -> Self {
+	pub(crate) fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, TestCtypeOwner)>) -> Self {
 		self.ctypes_stored = ctypes;
 		self
 	}
 
-	pub fn with_balances(mut self, balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>) -> Self {
+	pub(crate) fn with_balances(mut self, balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>) -> Self {
 		self.balances = balances;
 		self
 	}
 
-	pub fn build(self, ext: Option<sp_io::TestExternalities>) -> sp_io::TestExternalities {
-		let mut ext = if let Some(ext) = ext {
-			ext
-		} else {
-			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
-			pallet_balances::GenesisConfig::<Test> {
-				balances: self.balances.clone(),
-			}
-			.assimilate_storage(&mut storage)
-			.expect("assimilate should not fail");
-			sp_io::TestExternalities::new(storage)
-		};
+	pub(crate) fn build(self) -> sp_io::TestExternalities {
+		let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+		pallet_balances::GenesisConfig::<Test> {
+			balances: self.balances.clone(),
+		}
+		.assimilate_storage(&mut storage)
+		.expect("assimilate should not fail");
+		let mut ext = sp_io::TestExternalities::new(storage);
 
 		ext.execute_with(|| {
 			for (ctype_hash, owner) in self.ctypes_stored.iter() {
@@ -174,8 +170,8 @@ impl ExtBuilder {
 		ext
 	}
 
-	pub fn build_with_keystore(self) -> sp_io::TestExternalities {
-		let mut ext = self.build(None);
+	pub(crate) fn build_with_keystore(self) -> sp_io::TestExternalities {
+		let mut ext = self.build();
 
 		let keystore = KeyStore::new();
 		ext.register_extension(KeystoreExt(Arc::new(keystore)));
