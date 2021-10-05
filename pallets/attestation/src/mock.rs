@@ -93,7 +93,7 @@ pub(crate) mod runtime {
 	use delegation::{DelegationHierarchyDetails, DelegationNode, DelegatorIdOf};
 	use frame_support::{ensure, parameter_types, weights::constants::RocksDbWeight};
 	use frame_system::EnsureSigned;
-	use kilt_primitives::constants::{ATTESTATION_DEPOSIT, DELEGATION_DEPOSIT, MILLI_KILT};
+	use kilt_primitives::constants::{attestation::ATTESTATION_DEPOSIT, delegation::DELEGATION_DEPOSIT, MILLI_KILT};
 	use sp_core::{ed25519, sr25519, Pair};
 	use sp_keystore::{testing::KeyStore, KeystoreExt};
 	use sp_runtime::{
@@ -189,6 +189,7 @@ pub(crate) mod runtime {
 		pub const MaxSignatureByteLength: u16 = 64;
 		pub const MaxParentChecks: u32 = 5;
 		pub const MaxRevocations: u32 = 5;
+		pub const MaxRemovals: u32 = 5;
 		#[derive(Clone)]
 		pub const MaxChildren: u32 = 1000;
 		pub const DelegationDeposit: TestBalance = DELEGATION_DEPOSIT;
@@ -205,6 +206,7 @@ pub(crate) mod runtime {
 		type MaxSignatureByteLength = MaxSignatureByteLength;
 		type MaxParentChecks = MaxParentChecks;
 		type MaxRevocations = MaxRevocations;
+		type MaxRemovals = MaxRemovals;
 		type MaxChildren = MaxChildren;
 		type WeightInfo = ();
 

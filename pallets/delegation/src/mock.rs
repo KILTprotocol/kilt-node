@@ -26,7 +26,7 @@ use frame_support::{
 	weights::constants::RocksDbWeight,
 };
 use frame_system::EnsureSigned;
-use kilt_primitives::constants::DELEGATION_DEPOSIT;
+use kilt_primitives::constants::delegation::DELEGATION_DEPOSIT;
 use sp_core::{ed25519, sr25519, Pair, H256};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
@@ -128,6 +128,7 @@ parameter_types! {
 	pub const MaxSignatureByteLength: u16 = 64;
 	pub const MaxParentChecks: u32 = 5;
 	pub const MaxRevocations: u32 = 5;
+	pub const MaxRemovals: u32 = 5;
 	#[derive(Clone)]
 	pub const MaxChildren: u32 = 1000;
 	pub const DepositMock: TestBalance = DELEGATION_DEPOSIT;
@@ -144,6 +145,7 @@ impl Config for Test {
 	type MaxSignatureByteLength = MaxSignatureByteLength;
 	type MaxParentChecks = MaxParentChecks;
 	type MaxRevocations = MaxRevocations;
+	type MaxRemovals = MaxRemovals;
 	type MaxChildren = MaxChildren;
 	type Currency = Balances;
 	type Deposit = DepositMock;

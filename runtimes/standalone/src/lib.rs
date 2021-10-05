@@ -32,11 +32,16 @@ use frame_system::EnsureSigned;
 
 use kilt_primitives::{
 	constants::{
+		attestation::ATTESTATION_DEPOSIT,
+		delegation::{
+			DELEGATION_DEPOSIT, MAX_CHILDREN, MAX_PARENT_CHECKS, MAX_REMOVALS, MAX_REVOCATIONS,
+			MAX_SIGNATURE_BYTE_LENGTH,
+		},
 		did::{
 			MAX_BLOCKS_TX_VALIDITY, MAX_ENDPOINT_URLS_COUNT, MAX_KEY_AGREEMENT_KEYS, MAX_PUBLIC_KEYS_PER_DID,
 			MAX_TOTAL_KEY_AGREEMENT_KEYS, MAX_URL_LENGTH,
 		},
-		ATTESTATION_DEPOSIT, DELEGATION_DEPOSIT, KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION,
+		KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION,
 	},
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature,
 };
@@ -356,11 +361,12 @@ impl attestation::Config for Runtime {
 }
 
 parameter_types! {
-	pub const MaxSignatureByteLength: u16 = 64;
-	pub const MaxParentChecks: u32 = 5;
-	pub const MaxRevocations: u32 = 5;
+	pub const MaxSignatureByteLength: u16 = MAX_SIGNATURE_BYTE_LENGTH;
+	pub const MaxParentChecks: u32 = MAX_PARENT_CHECKS;
+	pub const MaxRevocations: u32 = MAX_REVOCATIONS;
+	pub const MaxRemovals: u32 = MAX_REMOVALS;
 	#[derive(Clone)]
-	pub const MaxChildren: u32 = 1000;
+	pub const MaxChildren: u32 = MAX_CHILDREN;
 	pub const DelegationDeposit: Balance = DELEGATION_DEPOSIT;
 }
 
@@ -375,6 +381,7 @@ impl delegation::Config for Runtime {
 	type MaxSignatureByteLength = MaxSignatureByteLength;
 	type MaxParentChecks = MaxParentChecks;
 	type MaxRevocations = MaxRevocations;
+	type MaxRemovals = MaxRemovals;
 	type MaxChildren = MaxChildren;
 	type WeightInfo = ();
 	type Currency = Balances;

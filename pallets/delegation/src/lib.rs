@@ -169,6 +169,10 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxRevocations: Get<u32>;
 
+		/// Maximum number of removals. Should be same as MaxRevocations
+		#[pallet::constant]
+		type MaxRemovals: Get<u32>;
+
 		/// Maximum number of upwards traversals of the delegation tree from a
 		/// node to the root and thus the depth of the delegation tree.
 		#[pallet::constant]
@@ -580,7 +584,7 @@ pub mod pallet {
 
 			ensure!(
 				// TODO: Create separate parameter?
-				max_removals <= T::MaxRevocations::get(),
+				max_removals <= T::MaxRemovals::get(),
 				Error::<T>::MaxRemovalsTooLarge
 			);
 
