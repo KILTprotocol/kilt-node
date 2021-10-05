@@ -86,6 +86,7 @@ pub mod benchmarking;
 mod tests;
 
 pub use crate::{attestations::*, default_weights::WeightInfo, pallet::*};
+use kilt_support::deposit::Deposit;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -162,14 +163,6 @@ pub mod pallet {
 		BoundedVec<ClaimHashOf<T>, <T as Config>::MaxDelegatedAttestations>,
 	>;
 
-	/// Attestations stored on chain.
-	///
-	/// It maps from a claim hash to the full attestation.
-	#[pallet::storage]
-	#[pallet::getter(fn deposits)]
-	pub type AttestationDeposits<T> =
-		StorageMap<_, Blake2_128Concat, ClaimHashOf<T>, Deposit<AccountIdOf<T>, BalanceOf<T>>>;
-
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
@@ -219,8 +212,6 @@ pub mod pallet {
 		/// reached for the corresponding delegation id such that another one
 		/// cannot be added.
 		MaxDelegatedAttestationsExceeded,
-		/// TODO: doc
-		InsufficientBalance,
 	}
 
 	#[pallet::call]
@@ -256,7 +247,7 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let payer = source.sender();
 			let who = source.subject();
-			let deposit_amount = <T as Config>::Deposit::get();
+			let deposit_amount = <T as pallet::Config>::Deposit::get();
 
 			ensure!(
 				<ctype::Ctypes<T>>::contains_key(&ctype_hash),
@@ -298,6 +289,7 @@ pub mod pallet {
 			};
 
 			let deposit = Pallet::<T>::reserve_deposit(payer, deposit_amount)?;
+
 			// *** No Fail beyond this point ***
 
 			log::debug!("insert Attestation");

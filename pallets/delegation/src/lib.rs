@@ -158,7 +158,7 @@ pub mod pallet {
 		/// The currency that is used to reserve funds for each delegation.
 		type Currency: Currency<AccountIdOf<Self>> + ReservableCurrency<AccountIdOf<Self>>;
 
-		/// The deposit that is required
+		/// The deposit that is required for storing a delegation.
 		#[pallet::constant]
 		type Deposit: Get<BalanceOf<Self>>;
 
@@ -222,14 +222,6 @@ pub mod pallet {
 	pub type DelegationHierarchies<T> =
 		StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, DelegationHierarchyDetails<T>>;
 
-	/// Delegation deposits stored on chain.
-	///
-	/// It maps from a node ID to the deposit.
-	#[pallet::storage]
-	#[pallet::getter(fn deposits)]
-	pub type DelegationDeposits<T> =
-		StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, Deposit<AccountIdOf<T>, BalanceOf<T>>>;
-
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
@@ -276,12 +268,13 @@ pub mod pallet {
 		HierarchyAlreadyExists,
 		/// No hierarchy with the given ID stored on chain.
 		HierarchyNotFound,
-		/// The delegation was removed from the storage on chain.
-		MaxSearchDepthReached,
 		/// Max number of nodes checked without verifying the given condition.
+		MaxSearchDepthReached,
+		/// The delegation creator is not allowed to write the delegation
+		/// because they are not the owner of the delegation parent node.
 		NotOwnerOfParentDelegation,
 		/// The delegation creator is not allowed to write the delegation
-		/// because he is not the owner of the delegation root node.
+		/// because they are not the owner of the delegation root node.
 		NotOwnerOfDelegationHierarchy,
 		/// No parent delegation with the given ID stored on chain.
 		ParentDelegationNotFound,

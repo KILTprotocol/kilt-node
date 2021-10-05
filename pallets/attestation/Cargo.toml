@@ -53,7 +53,6 @@ mock = [
   "sp-core",
   "sp-io",
   "sp-keystore",
-  "pallet-balances",
 ]
 runtime-benchmarks = [
   "frame-benchmarking",

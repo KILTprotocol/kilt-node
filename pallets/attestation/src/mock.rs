@@ -27,7 +27,6 @@ use crate::{AccountIdOf, AttestationDetails, AttesterOf, BalanceOf, ClaimHashOf,
 use ctype::CtypeHashOf;
 use delegation::DelegationNodeIdOf;
 use frame_support::traits::Get;
-use kilt_primitives::constants::{ATTESTATION_DEPOSIT, DELEGATION_DEPOSIT};
 use kilt_support::deposit::Deposit;
 use sp_core::H256;
 
@@ -94,7 +93,7 @@ pub(crate) mod runtime {
 	use delegation::{DelegationHierarchyDetails, DelegationNode, DelegatorIdOf};
 	use frame_support::{ensure, parameter_types, weights::constants::RocksDbWeight};
 	use frame_system::EnsureSigned;
-	use kilt_primitives::constants::{DELEGATION_DEPOSIT, MILLI_KILT};
+	use kilt_primitives::constants::{ATTESTATION_DEPOSIT, DELEGATION_DEPOSIT};
 	use sp_core::{ed25519, sr25519, Pair};
 	use sp_keystore::{testing::KeyStore, KeystoreExt};
 	use sp_runtime::{
@@ -210,7 +209,7 @@ pub(crate) mod runtime {
 		type WeightInfo = ();
 
 		type Currency = Balances;
-		type Deposit = Deposit;
+		type Deposit = DelegationDeposit;
 	}
 
 	parameter_types! {

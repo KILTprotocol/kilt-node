@@ -26,7 +26,7 @@ use frame_support::{
 	weights::constants::RocksDbWeight,
 };
 use frame_system::EnsureSigned;
-use kilt_primitives::constants::{DELEGATION_DEPOSIT, MILLI_KILT};
+use kilt_primitives::constants::DELEGATION_DEPOSIT;
 use sp_core::{ed25519, sr25519, Pair, H256};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
