@@ -458,7 +458,7 @@ pub mod pallet {
 						revoked: false,
 					},
 					payer.clone(),
-					// <T as Config>::Deposit::get(),
+					<T as Config>::Deposit::get(),
 				),
 				parent_id,
 				parent_node,
@@ -659,6 +659,7 @@ impl<T: Config> Pallet<T> {
 			root_id,
 			DelegationDetails::default_with_owner(hierarchy_owner),
 			deposit_owner,
+			<T as Config>::Deposit::get(),
 		);
 
 		DelegationNodes::<T>::insert(root_id, root_node);
