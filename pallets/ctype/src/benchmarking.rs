@@ -18,6 +18,7 @@
 
 use sp_std::{
 	convert::{TryFrom, TryInto},
+	fmt::Debug,
 	vec::Vec,
 };
 
@@ -27,16 +28,17 @@ use frame_support::traits::{Currency, Get};
 use frame_system::RawOrigin;
 
 const SEED: u32 = 0;
+const MAX_CTYPE_SIZE: u32 = 5 * 1024 * 1024;
 
 benchmarks! {
 	where_clause {
 		where
 		<<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance: TryFrom<usize>,
-		<<<T as pallet::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance as TryFrom<usize>>::Error: sp_std::fmt::Debug,
+		<<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance as TryFrom<usize>>::Error: Debug,
 	}
 
 	add {
-		let l in 1 .. 2_000_000;
+		let l in 1 .. MAX_CTYPE_SIZE;
 
 		let caller = account("caller", 0, SEED);
 		let ctype: Vec<u8> = (0u8..u8::MAX).cycle().take(l.try_into().unwrap()).collect();
