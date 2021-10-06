@@ -27,9 +27,9 @@ fn check_successful_ctype_creation() {
 	let creator = ALICE;
 	let ctype = [9u8; 256].to_vec();
 	let ctype_hash = <Test as frame_system::Config>::Hashing::hash(&ctype[..]);
-
+	let initial_balance = <Test as ctype::Config>::Fee::get() * 2;
 	ExtBuilder::default()
-		.with_balances(vec![(creator.clone(), <Test as ctype::Config>::Fee::get() * 2)])
+		.with_balances(vec![(creator.clone(), initial_balance)])
 		.build()
 		.execute_with(|| {
 			assert_ok!(Ctype::add(get_origin(creator.clone()), ctype));
@@ -37,6 +37,10 @@ fn check_successful_ctype_creation() {
 
 			// Verify the CType has the right owner
 			assert_eq!(stored_ctype_creator, creator);
+			assert_eq!(
+				Balances::free_balance(creator),
+				initial_balance.saturating_sub(<Test as ctype::Config>::Fee::get())
+			);
 		});
 }
 

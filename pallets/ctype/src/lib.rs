@@ -72,6 +72,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::traits::CallSources;
+	use sp_runtime::traits::Saturating;
 	use sp_std::vec::Vec;
 
 	/// Type of a CType hash.
@@ -151,10 +152,13 @@ pub mod pallet {
 
 			// Check the free balance before we do any heave work (e.g. calculate the ctype
 			// hash)
-			ensure!(
-				<T::Currency as Currency<AccountIdOf<T>>>::free_balance(&payer) >= T::Fee::get(),
-				Error::<T>::UnableToPayFees
-			);
+			let new_balance = <T::Currency as Currency<AccountIdOf<T>>>::free_balance(&payer);
+			<T::Currency as Currency<AccountIdOf<T>>>::ensure_can_withdraw(
+				&payer,
+				T::Fee::get(),
+				WithdrawReasons::FEE,
+				new_balance.saturating_sub(T::Fee::get()),
+			)?;
 
 			let hash = <T as frame_system::Config>::Hashing::hash(&ctype[..]);
 
