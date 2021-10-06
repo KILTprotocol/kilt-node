@@ -18,7 +18,11 @@
 
 use codec::Encode;
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
-use frame_support::{dispatch::DispatchErrorWithPostInfo, storage::bounded_btree_set::BoundedBTreeSet};
+use frame_support::{
+	dispatch::DispatchErrorWithPostInfo,
+	storage::bounded_btree_set::BoundedBTreeSet,
+	traits::{Currency, Get},
+};
 use frame_system::RawOrigin;
 use sp_core::{offchain::KeyTypeId, sr25519};
 use sp_io::crypto::sr25519_generate;
@@ -59,6 +63,11 @@ where
 	let root_acc: T::AccountId = root_public.into();
 	let ctype_hash = <T::Hash as Default>::default();
 	let hierarchy_root_id = generate_delegation_id::<T>(number);
+
+	<T as Config>::Currency::make_free_balance_be(
+		&root_acc,
+		<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get() + <T as Config>::Deposit::get(),
+	);
 
 	ctype::Ctypes::<T>::insert(&ctype_hash, T::CtypeCreatorId::from(root_acc.clone()));
 
@@ -114,6 +123,10 @@ where
 			.ok_or("Error while building signature of delegation.")?;
 
 		// add delegation from delegate to parent
+		<T as Config>::Currency::make_free_balance_be(
+			&parent_acc_id,
+			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get() + <T as Config>::Deposit::get(),
+		);
 		let _ = Pallet::<T>::add_delegation(
 			RawOrigin::Signed(parent_acc_id.clone()).into(),
 			delegation_id,
@@ -191,6 +204,7 @@ benchmarks! {
 		where
 		T: core::fmt::Debug,
 		T::AccountId: From<sr25519::Public> + Into<T::DelegationEntityId>,
+		T::DelegationEntityId: Into<T::AccountId>,
 		T::DelegationNodeId: From<T::Hash>,
 		<T as frame_system::Config>::Origin: From<RawOrigin<<T as pallet::Config>::DelegationEntityId>>,
 		T::CtypeCreatorId: From<T::AccountId>,
@@ -202,6 +216,10 @@ benchmarks! {
 		let ctype = <T::Hash as Default>::default();
 		let delegation = generate_delegation_id::<T>(0);
 		ctype::Ctypes::<T>::insert(&ctype, T::CtypeCreatorId::from(caller.clone()));
+		<T as Config>::Currency::make_free_balance_be(
+			&caller,
+			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get(),
+		);
 	}: _(RawOrigin::Signed(caller), delegation, ctype)
 	verify {
 		assert!(DelegationHierarchies::<T>::contains_key(delegation));
@@ -225,6 +243,10 @@ benchmarks! {
 
 		let delegate_acc_id: T::AccountId = delegate_acc_public.into();
 		let leaf_acc_id: T::AccountId = leaf_acc.into();
+		<T as Config>::Currency::make_free_balance_be(
+			&leaf_acc_id,
+			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get(),
+		);
 	}: _(RawOrigin::Signed(leaf_acc_id), delegation_id, parent_id, delegate_acc_id.into(), perm, MultiSignature::from(sig).into())
 	verify {
 		assert!(DelegationNodes::<T>::contains_key(delegation_id));
@@ -241,6 +263,10 @@ benchmarks! {
 		let children: BoundedBTreeSet<T::DelegationNodeId, T::MaxChildren> = root_node.children;
 		let child_id: T::DelegationNodeId = *children.iter().next().ok_or("Root should have children")?;
 		let child_delegation = DelegationNodes::<T>::get(child_id).ok_or("Child of root should have delegation id")?;
+		<T as Config>::Currency::make_free_balance_be(
+			&child_delegation.details.owner.clone().into(),
+			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get(),
+		);
 	}: revoke_delegation(RawOrigin::Signed(child_delegation.details.owner.clone()), child_id, c, r)
 	verify {
 		assert!(DelegationNodes::<T>::contains_key(child_id));
@@ -269,10 +295,28 @@ benchmarks! {
 		assert!(details.revoked);
 	}
 	// TODO: Might want to add variant iterating over children instead of depth at some later point
+
+	// worst case is achieved by removing the root node, since `is_delegating` is not called in remove extrinsic,
+	remove_delegation {
+		let r in 1 .. T::MaxRevocations::get();
+		let (root_acc, hierarchy_id, _, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
+		let root_owner = T::AccountId::from(root_acc).into();
+		let root_node = DelegationNodes::<T>::get(hierarchy_id).expect("Root hierarchy node should be present on chain.");
+		let children: BoundedBTreeSet<T::DelegationNodeId, T::MaxChildren> = root_node.children;
+		let child_id: T::DelegationNodeId = *children.iter().next().ok_or("Root should have children")?;
+		let child_delegation = DelegationNodes::<T>::get(child_id).ok_or("Child of root should have delegation id")?;
+		assert!(!<T as Config>::Currency::reserved_balance(&root_owner.clone().into()).is_zero());
+	}: remove_delegation(RawOrigin::Signed(root_owner.clone()), hierarchy_id, r)
+	verify {
+		assert!(!DelegationNodes::<T>::contains_key(hierarchy_id));
+		assert!(!DelegationNodes::<T>::contains_key(child_id));
+		assert!(!DelegationNodes::<T>::contains_key(leaf_id));
+		assert!(<T as Config>::Currency::reserved_balance(&root_owner.into()).is_zero());
+	}
 }
 
 impl_benchmark_test_suite! {
 	Pallet,
-	crate::mock::ExtBuilder::default().build_with_keystore(None),
+	crate::mock::ExtBuilder::default().build_with_keystore(),
 	crate::mock::Test
 }
