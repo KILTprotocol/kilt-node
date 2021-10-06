@@ -43,6 +43,8 @@ fn create_root_delegation_successful() {
 				operation.id,
 				operation.ctype_hash
 			));
+
+			// Check reserved balance
 			assert_eq!(
 				Balances::reserved_balance(creator.clone()),
 				<Test as Config>::Deposit::get()
@@ -99,10 +101,8 @@ fn ctype_not_found_create_root_delegation_error() {
 
 	let operation = generate_base_delegation_hierarchy_creation_operation::<Test>(hierarchy_root_id);
 
-	// No CType stored,
-	let mut ext = ExtBuilder::default().build();
-
-	ext.execute_with(|| {
+	// No CType stored
+	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
 			Delegation::create_hierarchy(get_origin(creator.clone()), operation.id, operation.ctype_hash),
 			ctype::Error::<Test>::CTypeNotFound
@@ -148,6 +148,12 @@ fn create_delegation_direct_root_successful() {
 			let operation =
 				generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
 
+			// 1 Deposit should be reserved for hierarchy
+			assert_eq!(
+				Balances::reserved_balance(creator.clone()),
+				<Test as Config>::Deposit::get()
+			);
+
 			// Add delegation to root
 			assert_ok!(Delegation::add_delegation(
 				get_origin(creator.clone()),
@@ -157,6 +163,12 @@ fn create_delegation_direct_root_successful() {
 				operation.permissions,
 				operation.delegate_signature.clone(),
 			));
+
+			// 2 Deposits should be reserved for hierarchy and delegation to root
+			assert_eq!(
+				Balances::reserved_balance(creator.clone()),
+				2 * <Test as Config>::Deposit::get()
+			);
 
 			// Check stored delegation against operation
 			let stored_delegation =
@@ -216,6 +228,12 @@ fn create_delegation_with_parent_successful() {
 			let operation =
 				generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
 
+			// Should have deposited for hierarchy and parent delegation
+			assert_eq!(
+				Balances::reserved_balance(&creator),
+				2 * <Test as Config>::Deposit::get()
+			);
+
 			// Add sub-delegation
 			assert_ok!(Delegation::add_delegation(
 				get_origin(creator.clone()),
@@ -226,7 +244,7 @@ fn create_delegation_with_parent_successful() {
 				operation.delegate_signature.clone(),
 			));
 
-			// Should deposited for hierarchy, parent delegation and sub-delegation
+			// Should have deposited for hierarchy, parent delegation and sub-delegation
 			assert_eq!(
 				Balances::reserved_balance(&creator),
 				3 * <Test as Config>::Deposit::get()
