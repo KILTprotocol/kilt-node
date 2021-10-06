@@ -406,13 +406,12 @@ pub fn initialize_pallet<T: Config>(
 	}
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct ExtBuilder {
 	/// endowed accounts with balances
 	balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>,
 	/// initial ctypes & owners
 	ctypes: Vec<(TestCtypeHash, AccountIdOf<Test>)>,
-	ctype_builder: Option<ctype_mock::ExtBuilder>,
 	delegation_hierarchies_stored: Vec<(
 		TestDelegationNodeId,
 		DelegationHierarchyDetails<Test>,
@@ -420,19 +419,6 @@ pub struct ExtBuilder {
 	)>,
 	delegations_stored: Vec<(TestDelegationNodeId, DelegationNode<Test>)>,
 	storage_version: DelegationStorageVersion,
-}
-
-impl Default for ExtBuilder {
-	fn default() -> Self {
-		Self {
-			balances: vec![],
-			ctypes: vec![],
-			ctype_builder: None,
-			delegation_hierarchies_stored: vec![],
-			delegations_stored: vec![],
-			storage_version: DelegationStorageVersion::default(),
-		}
-	}
 }
 
 impl ExtBuilder {
@@ -468,20 +454,15 @@ impl ExtBuilder {
 		self
 	}
 
-	// TODO: Remove optional input ext
-	pub fn build(self, ext: Option<sp_io::TestExternalities>) -> sp_io::TestExternalities {
-		let mut ext = if let Some(ext) = ext {
-			ext
-		} else {
-			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
-			pallet_balances::GenesisConfig::<Test> {
-				balances: self.balances.clone(),
-			}
-			.assimilate_storage(&mut storage)
-			.expect("assimilate should not fail");
+	pub fn build(self) -> sp_io::TestExternalities {
+		let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+		pallet_balances::GenesisConfig::<Test> {
+			balances: self.balances.clone(),
+		}
+		.assimilate_storage(&mut storage)
+		.expect("assimilate should not fail");
 
-			sp_io::TestExternalities::new(storage)
-		};
+		let mut ext = sp_io::TestExternalities::new(storage);
 
 		ext.execute_with(|| {
 			initialize_pallet(self.delegations_stored, self.delegation_hierarchies_stored);
@@ -496,8 +477,8 @@ impl ExtBuilder {
 		ext
 	}
 
-	pub fn build_with_keystore(self, ext: Option<sp_io::TestExternalities>) -> sp_io::TestExternalities {
-		let mut ext = self.build(ext);
+	pub fn build_with_keystore(self) -> sp_io::TestExternalities {
+		let mut ext = self.build();
 
 		let keystore = KeyStore::new();
 		ext.register_extension(KeystoreExt(Arc::new(keystore)));
