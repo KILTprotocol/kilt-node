@@ -66,7 +66,7 @@ where
 
 	<T as Config>::Currency::make_free_balance_be(
 		&root_acc,
-		<T as Config>::Deposit::get() + <T as Config>::Deposit::get(),
+		<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get() + <T as Config>::Deposit::get(),
 	);
 
 	ctype::Ctypes::<T>::insert(&ctype_hash, T::CtypeCreatorId::from(root_acc.clone()));
@@ -125,7 +125,7 @@ where
 		// add delegation from delegate to parent
 		<T as Config>::Currency::make_free_balance_be(
 			&parent_acc_id,
-			<T as Config>::Deposit::get() + <T as Config>::Deposit::get(),
+			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get() + <T as Config>::Deposit::get(),
 		);
 		let _ = Pallet::<T>::add_delegation(
 			RawOrigin::Signed(parent_acc_id.clone()).into(),
@@ -217,7 +217,7 @@ benchmarks! {
 		ctype::Ctypes::<T>::insert(&ctype, T::CtypeCreatorId::from(caller.clone()));
 		<T as Config>::Currency::make_free_balance_be(
 			&caller,
-			<T as Config>::Deposit::get(),
+			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get(),
 		);
 	}: _(RawOrigin::Signed(caller), delegation, ctype)
 	verify {
@@ -244,7 +244,7 @@ benchmarks! {
 		let leaf_acc_id: T::AccountId = leaf_acc.into();
 		<T as Config>::Currency::make_free_balance_be(
 			&leaf_acc_id,
-			<T as Config>::Deposit::get(),
+			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get(),
 		);
 	}: _(RawOrigin::Signed(leaf_acc_id), delegation_id, parent_id, delegate_acc_id.into(), perm, MultiSignature::from(sig).into())
 	verify {
@@ -264,7 +264,7 @@ benchmarks! {
 		let child_delegation = DelegationNodes::<T>::get(child_id).ok_or("Child of root should have delegation id")?;
 		<T as Config>::Currency::make_free_balance_be(
 			&child_delegation.details.owner.clone().into(),
-			<T as Config>::Deposit::get(),
+			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get(),
 		);
 	}: revoke_delegation(RawOrigin::Signed(child_delegation.details.owner.clone()), child_id, c, r)
 	verify {
