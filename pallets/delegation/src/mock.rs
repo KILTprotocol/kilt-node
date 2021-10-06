@@ -435,7 +435,6 @@ pub struct ExtBuilder {
 	)>,
 	delegations_stored: Vec<(TestDelegationNodeId, DelegationNode<Test>)>,
 	storage_version: DelegationStorageVersion,
-	ctypes_stored: Vec<(TestCtypeHash, TestCtypeOwner)>,
 }
 
 impl ExtBuilder {
@@ -483,7 +482,7 @@ impl ExtBuilder {
 		let mut ext = sp_io::TestExternalities::new(storage);
 
 		ext.execute_with(|| {
-			for (ctype_hash, owner) in self.ctypes_stored.iter() {
+			for (ctype_hash, owner) in self.ctypes.iter() {
 				ctype::Ctypes::<Test>::insert(ctype_hash, owner);
 			}
 
