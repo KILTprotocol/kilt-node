@@ -489,10 +489,6 @@ impl ExtBuilder {
 
 			initialize_pallet(self.delegations_stored, self.delegation_hierarchies_stored);
 
-			for genesis_ctype in &self.ctypes {
-				ctype::Ctypes::<Test>::insert(genesis_ctype.0, genesis_ctype.1.clone());
-			}
-
 			delegation::StorageVersion::<Test>::set(self.storage_version);
 		});
 

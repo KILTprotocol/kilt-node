@@ -71,7 +71,6 @@ impl<DidIdentifier: Clone, AccountId: Clone> kilt_support::traits::CallSources<A
 #[cfg(test)]
 #[cfg(feature = "runtime-benchmarks")]
 mod tests {
-	#[cfg(feature = "runtime-benchmarks")]
 	use crate::EnsureDidOrigin;
 
 	#[test]

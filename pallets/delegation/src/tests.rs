@@ -80,13 +80,14 @@ fn duplicate_create_root_delegation_error() {
 	let operation = generate_base_delegation_hierarchy_creation_operation::<Test>(hierarchy_root_id);
 
 	ExtBuilder::default()
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
 		.with_ctypes(vec![(operation.ctype_hash, creator.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
+		.with_balances(vec![(creator.clone(), <Test as Config>::Deposit::get())])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
 				Delegation::create_hierarchy(get_origin(creator.clone()), operation.id, operation.ctype_hash),
-				delegation::Error::<Test>::HierarchyAlreadyExists
+				Error::<Test>::HierarchyAlreadyExists
 			);
 		});
 }
