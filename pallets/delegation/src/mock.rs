@@ -18,8 +18,15 @@
 
 #![allow(clippy::from_over_into)]
 
-use frame_support::{parameter_types, storage::bounded_btree_set::BoundedBTreeSet, weights::constants::RocksDbWeight};
+use crate::CurrencyOf;
+use frame_support::{
+	parameter_types,
+	storage::bounded_btree_set::BoundedBTreeSet,
+	traits::{Currency, Get},
+	weights::constants::RocksDbWeight,
+};
 use frame_system::EnsureSigned;
+use kilt_primitives::constants::delegation::DELEGATION_DEPOSIT;
 use sp_core::{ed25519, sr25519, Pair, H256};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
@@ -39,11 +46,12 @@ use ctype::mock as ctype_mock;
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
 
-pub type TestCtypeOwner = kilt_primitives::AccountId;
-pub type TestCtypeHash = kilt_primitives::Hash;
-pub type TestDelegationNodeId = kilt_primitives::Hash;
-pub type TestDelegatorId = TestCtypeOwner;
-pub type TestDelegateSignature = MultiSignature;
+type TestCtypeOwner = kilt_primitives::AccountId;
+type TestDelegationNodeId = kilt_primitives::Hash;
+type TestDelegatorId = TestCtypeOwner;
+type TestDelegateSignature = MultiSignature;
+type TestBalance = kilt_primitives::Balance;
+type TestCtypeHash = ctype_mock::TestCtypeHash;
 
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -54,6 +62,7 @@ frame_support::construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>},
+		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 	}
 );
 
@@ -78,7 +87,7 @@ impl frame_system::Config for Test {
 	type Version = ();
 
 	type PalletInfo = PalletInfo;
-	type AccountData = ();
+	type AccountData = pallet_balances::AccountData<TestBalance>;
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type BaseCallFilter = frame_support::traits::Everything;
@@ -87,6 +96,24 @@ impl frame_system::Config for Test {
 	type BlockLength = ();
 	type SS58Prefix = SS58Prefix;
 	type OnSetCode = ();
+}
+
+parameter_types! {
+	pub const ExistentialDeposit: TestBalance = 0;
+	pub const MaxLocks: u32 = 50;
+	pub const MaxReserves: u32 = 50;
+}
+
+impl pallet_balances::Config for Test {
+	type Balance = TestBalance;
+	type DustRemoval = ();
+	type Event = ();
+	type ExistentialDeposit = ExistentialDeposit;
+	type AccountStore = System;
+	type WeightInfo = ();
+	type MaxLocks = MaxLocks;
+	type MaxReserves = MaxReserves;
+	type ReserveIdentifier = [u8; 8];
 }
 
 impl ctype::Config for Test {
@@ -101,8 +128,10 @@ parameter_types! {
 	pub const MaxSignatureByteLength: u16 = 64;
 	pub const MaxParentChecks: u32 = 5;
 	pub const MaxRevocations: u32 = 5;
+	pub const MaxRemovals: u32 = 5;
 	#[derive(Clone)]
 	pub const MaxChildren: u32 = 1000;
+	pub const DepositMock: TestBalance = DELEGATION_DEPOSIT;
 }
 
 impl Config for Test {
@@ -116,7 +145,10 @@ impl Config for Test {
 	type MaxSignatureByteLength = MaxSignatureByteLength;
 	type MaxParentChecks = MaxParentChecks;
 	type MaxRevocations = MaxRevocations;
+	type MaxRemovals = MaxRemovals;
 	type MaxChildren = MaxChildren;
+	type Currency = Balances;
+	type Deposit = DepositMock;
 	type WeightInfo = ();
 }
 
@@ -235,12 +267,19 @@ pub fn generate_base_delegation_node<T: Config>(
 	hierarchy_id: T::DelegationNodeId,
 	owner: T::DelegationEntityId,
 	parent: Option<T::DelegationNodeId>,
-) -> DelegationNode<T> {
+) -> DelegationNode<T>
+where
+	DelegatorIdOf<T>: Into<AccountIdOf<T>>,
+{
 	DelegationNode {
-		details: generate_base_delegation_details(owner),
+		details: generate_base_delegation_details(owner.clone()),
 		children: BoundedBTreeSet::new(),
 		hierarchy_root_id: hierarchy_id,
 		parent,
+		deposit: delegation::Deposit {
+			owner: owner.into(),
+			amount: <T as Config>::Deposit::get(),
+		},
 	}
 }
 
@@ -325,14 +364,29 @@ pub fn generate_base_delegation_revocation_operation(
 
 pub fn initialize_pallet<T: Config>(
 	delegations: Vec<(T::DelegationNodeId, DelegationNode<T>)>,
-	delegation_hierarchies: Vec<(T::DelegationNodeId, DelegationHierarchyDetails<T>, DelegatorIdOf<T>)>,
-) {
+	delegation_hierarchies: Vec<(
+		T::DelegationNodeId,
+		DelegationHierarchyDetails<T>,
+		DelegatorIdOf<T>,
+		// AccountIdOf<T>,
+	)>,
+) where
+	DelegatorIdOf<T>: Into<AccountIdOf<T>>,
+{
 	for delegation_hierarchy in delegation_hierarchies {
+		// manually mint to enable deposit reserving
+		let deposit_owner = delegation_hierarchy.2.clone().into();
+		let balance = CurrencyOf::<T>::free_balance(&deposit_owner.clone());
+		CurrencyOf::<T>::make_free_balance_be(&deposit_owner.clone(), balance + <T as Config>::Deposit::get());
+
+		// reserve deposit and store
 		delegation::Pallet::<T>::create_and_store_new_hierarchy(
 			delegation_hierarchy.0,
 			delegation_hierarchy.1.clone(),
 			delegation_hierarchy.2.clone(),
-		);
+			deposit_owner.clone(),
+		)
+		.expect("Each deposit owner should have sufficient balance to create a hierarchy");
 	}
 
 	for del in delegations {
@@ -341,17 +395,35 @@ pub fn initialize_pallet<T: Config>(
 			.parent
 			.expect("Delegation node that is not a root must have a parent ID specified.");
 		let parent_node = delegation::DelegationNodes::<T>::get(parent_node_id).unwrap();
-		delegation::Pallet::<T>::store_delegation_under_parent(del.0, del.1.clone(), parent_node_id, parent_node)
-			.expect("Should not exceed max children");
+
+		// manually mint to enable deposit reserving
+		let deposit_owner = del.1.deposit.owner.clone();
+		let balance = CurrencyOf::<T>::free_balance(&deposit_owner.clone());
+		CurrencyOf::<T>::make_free_balance_be(&deposit_owner.clone(), balance + <T as Config>::Deposit::get());
+
+		// reserve deposit and store
+		delegation::Pallet::<T>::store_delegation_under_parent(
+			del.0,
+			del.1.clone(),
+			parent_node_id,
+			parent_node.clone(),
+			deposit_owner,
+		)
+		.expect("Should not exceed max children");
 	}
 }
 
 #[derive(Clone, Default)]
 pub struct ExtBuilder {
+	/// endowed accounts with balances
+	balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>,
+	/// initial ctypes & owners
+	ctypes: Vec<(TestCtypeHash, AccountIdOf<Test>)>,
 	delegation_hierarchies_stored: Vec<(
 		TestDelegationNodeId,
 		DelegationHierarchyDetails<Test>,
 		DelegatorIdOf<Test>,
+		// AccountIdOf<Test>,
 	)>,
 	delegations_stored: Vec<(TestDelegationNodeId, DelegationNode<Test>)>,
 	storage_version: DelegationStorageVersion,
@@ -364,9 +436,20 @@ impl ExtBuilder {
 			TestDelegationNodeId,
 			DelegationHierarchyDetails<Test>,
 			DelegatorIdOf<Test>,
+			// AccountIdOf<Test>,
 		)>,
 	) -> Self {
 		self.delegation_hierarchies_stored = delegation_hierarchies;
+		self
+	}
+
+	pub fn with_balances(mut self, balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>) -> Self {
+		self.balances = balances;
+		self
+	}
+
+	pub fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, TestCtypeOwner)>) -> Self {
+		self.ctypes = ctypes;
 		self
 	}
 
@@ -380,16 +463,22 @@ impl ExtBuilder {
 		self
 	}
 
-	pub fn build(self, ext: Option<sp_io::TestExternalities>) -> sp_io::TestExternalities {
-		let mut ext = if let Some(ext) = ext {
-			ext
-		} else {
-			let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
-			sp_io::TestExternalities::new(storage)
-		};
+	pub fn build(self) -> sp_io::TestExternalities {
+		let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+		pallet_balances::GenesisConfig::<Test> {
+			balances: self.balances.clone(),
+		}
+		.assimilate_storage(&mut storage)
+		.expect("assimilate should not fail");
+
+		let mut ext = sp_io::TestExternalities::new(storage);
 
 		ext.execute_with(|| {
 			initialize_pallet(self.delegations_stored, self.delegation_hierarchies_stored);
+
+			for genesis_ctype in &self.ctypes {
+				ctype::Ctypes::<Test>::insert(genesis_ctype.0, genesis_ctype.1.clone());
+			}
 
 			delegation::StorageVersion::<Test>::set(self.storage_version);
 		});
@@ -397,8 +486,8 @@ impl ExtBuilder {
 		ext
 	}
 
-	pub fn build_with_keystore(self, ext: Option<sp_io::TestExternalities>) -> sp_io::TestExternalities {
-		let mut ext = self.build(ext);
+	pub fn build_with_keystore(self) -> sp_io::TestExternalities {
+		let mut ext = self.build();
 
 		let keystore = KeyStore::new();
 		ext.register_extension(KeystoreExt(Arc::new(keystore)));

@@ -164,30 +164,29 @@ mod tests {
 
 	#[test]
 	fn ok_from_v1_migration() {
-		let mut ext = mock::ExtBuilder::default()
+		mock::ExtBuilder::default()
 			.with_storage_version(DelegationStorageVersion::V1)
-			.build(None);
-		ext.execute_with(|| {
-			#[cfg(feature = "try-runtime")]
-			assert!(
-				DelegationStorageMigrator::<TestRuntime>::pre_migrate().is_ok(),
-				"Storage pre-migrate from v1 should not fail."
-			);
+			.build()
+			.execute_with(|| {
+				#[cfg(feature = "try-runtime")]
+				assert!(
+					DelegationStorageMigrator::<TestRuntime>::pre_migrate().is_ok(),
+					"Storage pre-migrate from v1 should not fail."
+				);
 
-			DelegationStorageMigrator::<TestRuntime>::migrate();
+				DelegationStorageMigrator::<TestRuntime>::migrate();
 
-			#[cfg(feature = "try-runtime")]
-			assert!(
-				DelegationStorageMigrator::<TestRuntime>::post_migrate().is_ok(),
-				"Storage post-migrate from v1 should not fail."
-			);
-		});
+				#[cfg(feature = "try-runtime")]
+				assert!(
+					DelegationStorageMigrator::<TestRuntime>::post_migrate().is_ok(),
+					"Storage post-migrate from v1 should not fail."
+				);
+			});
 	}
 
 	#[test]
 	fn ok_from_default_migration() {
-		let mut ext = mock::ExtBuilder::default().build(None);
-		ext.execute_with(|| {
+		mock::ExtBuilder::default().build().execute_with(|| {
 			#[cfg(feature = "try-runtime")]
 			assert!(
 				DelegationStorageMigrator::<TestRuntime>::pre_migrate().is_ok(),

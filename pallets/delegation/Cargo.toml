@@ -19,6 +19,7 @@ kilt-primitives = {default-features = false, path = "../../primitives"}
 serde = {version = "1.0.101"}
 sp-core = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-keystore = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
+pallet-balances = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [dependencies]
 # Internal dependencies
@@ -33,6 +34,7 @@ frame-benchmarking = {branch = "polkadot-v0.9.10", default-features = false, git
 frame-support = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
 frame-system = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
 log = {default-features = false, version = "0.4.14"}
+pallet-balances = {optional = true, branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
 serde = {optional = true, version = "1.0.101"}
 sp-core = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
 sp-io = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
@@ -43,6 +45,7 @@ sp-std = {branch = "polkadot-v0.9.10", default-features = false, git = "https://
 [features]
 default = ["std"]
 mock = [
+  "pallet-balances",
   "serde",
   "sp-core",
   "sp-io",
@@ -61,6 +64,7 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "kilt-primitives/std",
+  "pallet-balances/std",
   "log/std",
   "sp-core/std",
   "sp-io/std",
