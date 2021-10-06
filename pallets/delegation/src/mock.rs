@@ -376,8 +376,8 @@ pub fn initialize_pallet<T: Config>(
 	for delegation_hierarchy in delegation_hierarchies {
 		// manually mint to enable deposit reserving
 		let deposit_owner = delegation_hierarchy.2.clone().into();
-		let balance = CurrencyOf::<T>::free_balance(&deposit_owner.clone().into());
-		CurrencyOf::<T>::make_free_balance_be(&deposit_owner.clone().into(), balance + <T as Config>::Deposit::get());
+		let balance = CurrencyOf::<T>::free_balance(&deposit_owner.clone());
+		CurrencyOf::<T>::make_free_balance_be(&deposit_owner.clone(), balance + <T as Config>::Deposit::get());
 
 		// reserve deposit and store
 		delegation::Pallet::<T>::create_and_store_new_hierarchy(
@@ -398,8 +398,8 @@ pub fn initialize_pallet<T: Config>(
 
 		// manually mint to enable deposit reserving
 		let deposit_owner = del.1.deposit.owner.clone();
-		let balance = CurrencyOf::<T>::free_balance(&deposit_owner.clone().into());
-		CurrencyOf::<T>::make_free_balance_be(&deposit_owner.clone().into(), balance + <T as Config>::Deposit::get());
+		let balance = CurrencyOf::<T>::free_balance(&deposit_owner.clone());
+		CurrencyOf::<T>::make_free_balance_be(&deposit_owner.clone(), balance + <T as Config>::Deposit::get());
 
 		// reserve deposit and store
 		delegation::Pallet::<T>::store_delegation_under_parent(

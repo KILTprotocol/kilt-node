@@ -1531,7 +1531,7 @@ fn too_many_revocations_revoke_delegation_error() {
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.with_balances(vec![
 			(revoker.clone(), <Test as Config>::Deposit::get()),
-			(delegate.clone(), <Test as Config>::Deposit::get()),
+			(delegate, <Test as Config>::Deposit::get()),
 		])
 		.build()
 		.execute_with(|| {
@@ -1580,8 +1580,8 @@ fn is_delegating_direct_not_revoked() {
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone())])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.with_balances(vec![
-			(user_1.clone(), <Test as Config>::Deposit::get()),
-			(user_2.clone(), <Test as Config>::Deposit::get()),
+			(user_1, <Test as Config>::Deposit::get()),
+			(user_2, <Test as Config>::Deposit::get()),
 			(user_3.clone(), <Test as Config>::Deposit::get()),
 		])
 		.build()
@@ -1623,8 +1623,8 @@ fn is_delegating_direct_not_revoked_max_parent_checks_value() {
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone())])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.with_balances(vec![
-			(user_1.clone(), <Test as Config>::Deposit::get()),
-			(user_2.clone(), <Test as Config>::Deposit::get()),
+			(user_1, <Test as Config>::Deposit::get()),
+			(user_2, <Test as Config>::Deposit::get()),
 			(user_3.clone(), <Test as Config>::Deposit::get()),
 		])
 		.build()
@@ -1668,8 +1668,8 @@ fn is_delegating_direct_revoked() {
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone())])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.with_balances(vec![
-			(user_1.clone(), <Test as Config>::Deposit::get()),
-			(user_2.clone(), <Test as Config>::Deposit::get()),
+			(user_1, <Test as Config>::Deposit::get()),
+			(user_2, <Test as Config>::Deposit::get()),
 			(user_3.clone(), <Test as Config>::Deposit::get()),
 		])
 		.build()
@@ -1713,8 +1713,8 @@ fn is_delegating_direct_revoked_max_parent_checks_value() {
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone())])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.with_balances(vec![
-			(user_1.clone(), <Test as Config>::Deposit::get()),
-			(user_2.clone(), <Test as Config>::Deposit::get()),
+			(user_1, <Test as Config>::Deposit::get()),
+			(user_2, <Test as Config>::Deposit::get()),
 			(user_3.clone(), <Test as Config>::Deposit::get()),
 		])
 		.build()
@@ -1757,9 +1757,9 @@ fn is_delegating_max_parent_not_revoked() {
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone())])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.with_balances(vec![
-			(user_1.clone(), <Test as Config>::Deposit::get()),
+			(user_1, <Test as Config>::Deposit::get()),
 			(user_2.clone(), <Test as Config>::Deposit::get()),
-			(user_3.clone(), <Test as Config>::Deposit::get()),
+			(user_3, <Test as Config>::Deposit::get()),
 		])
 		.build()
 		.execute_with(|| {
@@ -1802,9 +1802,9 @@ fn is_delegating_max_parent_revoked() {
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone())])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.with_balances(vec![
-			(user_1.clone(), <Test as Config>::Deposit::get()),
+			(user_1, <Test as Config>::Deposit::get()),
 			(user_2.clone(), <Test as Config>::Deposit::get()),
-			(user_3.clone(), <Test as Config>::Deposit::get()),
+			(user_3, <Test as Config>::Deposit::get()),
 		])
 		.build()
 		.execute_with(|| {
@@ -1847,8 +1847,8 @@ fn is_delegating_root_owner_not_revoked() {
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.with_balances(vec![
 			(user_1.clone(), <Test as Config>::Deposit::get()),
-			(user_2.clone(), <Test as Config>::Deposit::get()),
-			(user_3.clone(), <Test as Config>::Deposit::get()),
+			(user_2, <Test as Config>::Deposit::get()),
+			(user_3, <Test as Config>::Deposit::get()),
 		])
 		.build()
 		.execute_with(|| {
@@ -1891,8 +1891,8 @@ fn is_delegating_root_owner_revoked() {
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.with_balances(vec![
 			(user_1.clone(), <Test as Config>::Deposit::get()),
-			(user_2.clone(), <Test as Config>::Deposit::get()),
-			(user_3.clone(), <Test as Config>::Deposit::get()),
+			(user_2, <Test as Config>::Deposit::get()),
+			(user_3, <Test as Config>::Deposit::get()),
 		])
 		.build()
 		.execute_with(|| {
@@ -1961,8 +1961,8 @@ fn is_delegating_root_after_max_limit() {
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.with_balances(vec![
 			(user_1.clone(), <Test as Config>::Deposit::get()),
-			(user_2.clone(), <Test as Config>::Deposit::get()),
-			(user_3.clone(), <Test as Config>::Deposit::get()),
+			(user_2, <Test as Config>::Deposit::get()),
+			(user_3, <Test as Config>::Deposit::get()),
 		])
 		.build()
 		.execute_with(|| {
