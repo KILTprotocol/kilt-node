@@ -150,7 +150,7 @@ pub mod pallet {
 			let creator = source.subject();
 			let payer = source.sender();
 
-			// Check the free balance before we do any heave work (e.g. calculate the ctype
+			// Check the free balance before we do any heavy work (e.g. calculate the ctype
 			// hash)
 			let new_balance = <T::Currency as Currency<AccountIdOf<T>>>::free_balance(&payer);
 			<T::Currency as Currency<AccountIdOf<T>>>::ensure_can_withdraw(
