@@ -96,8 +96,6 @@ parameter_types! {
 	// IMPORTANT: Needs to be at least MaxTotalKeyAgreementKeys + 3 (auth, delegation, attestation keys) for benchmarks!
 	#[derive(Debug, Clone)]
 	pub const MaxPublicKeysPerDid: u32 = 13u32;
-	#[derive(Debug, Clone, PartialEq)]
-	pub const MaxEndpointUrlsCount: u32 = 3u32;
 	pub const MaxBlocksTxValidity: u64 = 300u64;
 }
 
@@ -111,8 +109,6 @@ impl Config for Test {
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
 	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
-	type MaxUrlLength = MaxUrlLength;
-	type MaxEndpointUrlsCount = MaxEndpointUrlsCount;
 	type MaxBlocksTxValidity = MaxBlocksTxValidity;
 	type WeightInfo = ();
 }

@@ -73,8 +73,6 @@ pub trait WeightInfo {
 	fn remove_ed25519_key_agreement_key() -> Weight;
 	fn remove_sr25519_key_agreement_key() -> Weight;
 	fn remove_ecdsa_key_agreement_key() -> Weight;
-	fn set_service_endpoints(u: u32, c: u32, ) -> Weight;
-	fn remove_service_endpoints(u: u32, c: u32, ) -> Weight;
 }
 
 /// Weights for did using the Substrate node and recommended hardware.
@@ -238,24 +236,6 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
-	fn set_service_endpoints(u: u32, c: u32, ) -> Weight {
-		(28_245_000_u64)
-			// Standard Error: 0
-			.saturating_add((7_000_u64).saturating_mul(u as Weight))
-			// Standard Error: 41_000
-			.saturating_add((795_000_u64).saturating_mul(c as Weight))
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
-	}
-	fn remove_service_endpoints(u: u32, c: u32, ) -> Weight {
-		(27_640_000_u64)
-			// Standard Error: 0
-			.saturating_add((3_000_u64).saturating_mul(u as Weight))
-			// Standard Error: 36_000
-			.saturating_add((674_000_u64).saturating_mul(c as Weight))
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
-	}
 }
 
 // For backwards compatibility and tests
@@ -415,24 +395,6 @@ impl WeightInfo for () {
 	}
 	fn remove_ecdsa_key_agreement_key() -> Weight {
 		(46_479_000_u64)
-			.saturating_add(RocksDbWeight::get().reads(1_u64))
-			.saturating_add(RocksDbWeight::get().writes(1_u64))
-	}
-	fn set_service_endpoints(u: u32, c: u32, ) -> Weight {
-		(28_245_000_u64)
-			// Standard Error: 0
-			.saturating_add((7_000_u64).saturating_mul(u as Weight))
-			// Standard Error: 41_000
-			.saturating_add((795_000_u64).saturating_mul(c as Weight))
-			.saturating_add(RocksDbWeight::get().reads(1_u64))
-			.saturating_add(RocksDbWeight::get().writes(1_u64))
-	}
-	fn remove_service_endpoints(u: u32, c: u32, ) -> Weight {
-		(27_640_000_u64)
-			// Standard Error: 0
-			.saturating_add((3_000_u64).saturating_mul(u as Weight))
-			// Standard Error: 36_000
-			.saturating_add((674_000_u64).saturating_mul(c as Weight))
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}

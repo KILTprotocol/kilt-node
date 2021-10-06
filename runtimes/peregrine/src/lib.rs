@@ -654,8 +654,6 @@ impl did::Config for Runtime {
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
 	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
-	type MaxUrlLength = MaxUrlLength;
-	type MaxEndpointUrlsCount = MaxEndpointUrlsCount;
 	type MaxBlocksTxValidity = MaxBlocksTxValidity;
 	type WeightInfo = weights::did::WeightInfo<Runtime>;
 }

@@ -18,6 +18,7 @@ serde = {version = "1.0.101"}
 
 ctype = {features = ["mock"], path = "../ctype", version = "0.26.1"}
 kilt-primitives = {default-features = false, path = "../../primitives"}
+kilt-support = {default-features = false, path = "../../support"}
 
 [dependencies]
 # Internal dependencies
@@ -56,6 +57,7 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "kilt-primitives/std",
+  "kilt-support/std",
   "hex/std",
   "log/std",
   "sp-core/std",
@@ -66,5 +68,5 @@ std = [
 ]
 try-runtime = [
   "frame-support/try-runtime",
-  "kilt-primitives/try-runtime",
+  "kilt-support/try-runtime",
 ]

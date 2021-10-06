@@ -275,7 +275,7 @@ pub mod pallet {
 		}
 	}
 
-	/// Account which is permitted to do token tranfers in PoA phase.
+	/// Account which is permitted to do token transfers in PoA phase.
 	///
 	/// Required for the claiming process.
 	#[pallet::storage]
@@ -320,7 +320,7 @@ pub mod pallet {
 		/// A KILT balance lock has been removed in the corresponding block.
 		/// \[block, len\]
 		Unlocked(T::BlockNumber, u32),
-		/// An account transfered their locked balance to another account.
+		/// An account transferred their locked balance to another account.
 		/// \[from, value, target\]
 		LockedTransfer(T::AccountId, T::Balance, T::AccountId),
 		/// A KILT balance lock has been set. \[who, value, until\]
@@ -372,7 +372,7 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		/// Forcely remove KILT balance locks via sudo for the specified block
+		/// Forcedly remove KILT balance locks via sudo for the specified block
 		/// number.
 		///
 		/// The dispatch origin must be Root.

@@ -48,3 +48,16 @@ impl<S: Clone, P: Clone> CallSources<S, P> for (S, P) {
 		self.1.clone()
 	}
 }
+
+/// A trait that allows version migrators to access the underlying pallet's
+/// context, e.g., its Config trait.
+///
+/// In this way, the migrator can access the pallet's storage and the pallet's
+/// types directly.
+pub trait VersionMigratorTrait<T>: Sized {
+	#[cfg(feature = "try-runtime")]
+	fn pre_migrate(&self) -> Result<(), &'static str>;
+	fn migrate(&self) -> frame_support::weights::Weight;
+	#[cfg(feature = "try-runtime")]
+	fn post_migrate(&self) -> Result<(), &'static str>;
+}

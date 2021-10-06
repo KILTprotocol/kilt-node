@@ -23,14 +23,11 @@ use frame_system::RawOrigin;
 use kilt_primitives::AccountId;
 use sp_core::{crypto::KeyTypeId, ecdsa, ed25519, sr25519};
 use sp_io::crypto::{ecdsa_generate, ecdsa_sign, ed25519_generate, ed25519_sign, sr25519_generate, sr25519_sign};
-use sp_runtime::{traits::IdentifyAccount, MultiSigner, SaturatedConversion};
+use sp_runtime::{traits::IdentifyAccount, MultiSigner};
 
 use crate::{
 	did_details::*,
-	mock_utils::{
-		generate_base_did_creation_details, generate_base_did_details, get_key_agreement_keys, get_service_endpoints,
-		DEFAULT_URL_SCHEME,
-	},
+	mock_utils::{generate_base_did_creation_details, generate_base_did_details, get_key_agreement_keys},
 	*,
 };
 
@@ -102,8 +99,6 @@ benchmarks! {
 	/* create extrinsic */
 	create_ed25519_keys {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
-		let u in (DEFAULT_URL_SCHEME.len().saturated_into::<u32>()) .. T::MaxUrlLength::get();
-		let c in 1 .. T::MaxEndpointUrlsCount::get();
 
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
@@ -112,13 +107,11 @@ benchmarks! {
 		let did_key_agreement_keys = get_key_agreement_keys::<T>(n);
 		let did_public_att_key = get_ed25519_public_attestation_key();
 		let did_public_del_key = get_ed25519_public_delegation_key();
-		let service_endpoints = get_service_endpoints::<T>(c, u);
 
 		let mut did_creation_details = generate_base_did_creation_details::<T>(did_subject.clone());
 		did_creation_details.new_key_agreement_keys = did_key_agreement_keys;
 		did_creation_details.new_attestation_key = Some(DidVerificationKey::from(did_public_att_key));
 		did_creation_details.new_delegation_key = Some(DidVerificationKey::from(did_public_del_key));
-		did_creation_details.new_service_endpoints = Some(service_endpoints);
 
 		let did_creation_signature = ed25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_creation_details.encode().as_ref()).expect("Failed to create DID signature from raw ed25519 signature.");
 	}: create(RawOrigin::Signed(submitter), did_creation_details.clone(), DidSignature::from(did_creation_signature))
@@ -146,13 +139,10 @@ benchmarks! {
 			stored_did.attestation_key,
 			Some(expected_attestation_key_id)
 		);
-		assert_eq!(stored_did.service_endpoints, did_creation_details.new_service_endpoints);
 		assert_eq!(stored_did.last_tx_counter, 0u64);
 	}
 	create_sr25519_keys {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
-		let u in (DEFAULT_URL_SCHEME.len().saturated_into::<u32>()) .. T::MaxUrlLength::get();
-		let c in 1 .. T::MaxEndpointUrlsCount::get();
 
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
@@ -161,13 +151,11 @@ benchmarks! {
 		let did_key_agreement_keys = get_key_agreement_keys::<T>(n);
 		let did_public_att_key = get_sr25519_public_attestation_key();
 		let did_public_del_key = get_sr25519_public_delegation_key();
-		let service_endpoints = get_service_endpoints::<T>(c, u);
 
 		let mut did_creation_details = generate_base_did_creation_details::<T>(did_subject.clone());
 		did_creation_details.new_key_agreement_keys = did_key_agreement_keys;
 		did_creation_details.new_attestation_key = Some(DidVerificationKey::from(did_public_att_key));
 		did_creation_details.new_delegation_key = Some(DidVerificationKey::from(did_public_del_key));
-		did_creation_details.new_service_endpoints = Some(service_endpoints);
 
 		let did_creation_signature = sr25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_creation_details.encode().as_ref()).expect("Failed to create DID signature from raw sr25519 signature.");
 	}: create(RawOrigin::Signed(submitter), did_creation_details.clone(), DidSignature::from(did_creation_signature))
@@ -195,13 +183,10 @@ benchmarks! {
 			stored_did.attestation_key,
 			Some(expected_attestation_key_id)
 		);
-		assert_eq!(stored_did.service_endpoints, did_creation_details.new_service_endpoints);
 		assert_eq!(stored_did.last_tx_counter, 0u64);
 	}
 	create_ecdsa_keys {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
-		let u in (DEFAULT_URL_SCHEME.len().saturated_into::<u32>()) .. T::MaxUrlLength::get();
-		let c in 1 .. T::MaxEndpointUrlsCount::get();
 
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
@@ -210,13 +195,11 @@ benchmarks! {
 		let did_key_agreement_keys = get_key_agreement_keys::<T>(n);
 		let did_public_att_key = get_ecdsa_public_attestation_key();
 		let did_public_del_key = get_ecdsa_public_delegation_key();
-		let service_endpoints = get_service_endpoints::<T>(c, u);
 
 		let mut did_creation_details = generate_base_did_creation_details::<T>(did_subject.clone());
 		did_creation_details.new_key_agreement_keys = did_key_agreement_keys;
 		did_creation_details.new_attestation_key = Some(DidVerificationKey::from(did_public_att_key.clone()));
 		did_creation_details.new_delegation_key = Some(DidVerificationKey::from(did_public_del_key.clone()));
-		did_creation_details.new_service_endpoints = Some(service_endpoints);
 
 		let did_creation_signature = ecdsa_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_creation_details.encode().as_ref()).expect("Failed to create DID signature from raw ecdsa signature.");
 	}: create(RawOrigin::Signed(submitter), did_creation_details.clone(), DidSignature::from(did_creation_signature))
@@ -244,7 +227,6 @@ benchmarks! {
 			stored_did.attestation_key,
 			Some(expected_attestation_key_id)
 		);
-		assert_eq!(stored_did.service_endpoints, did_creation_details.new_service_endpoints);
 		assert_eq!(stored_did.last_tx_counter, 0u64);
 	}
 
@@ -734,37 +716,6 @@ benchmarks! {
 	}: remove_key_agreement_key(RawOrigin::Signed(did_subject.clone()), key_agreement_key_id)
 	verify {
 		assert!(!Did::<T>::get(&did_subject).unwrap().key_agreement_keys.contains(&key_agreement_key_id));
-	}
-
-	set_service_endpoints {
-		let u in (DEFAULT_URL_SCHEME.len().saturated_into::<u32>()) .. T::MaxUrlLength::get();
-		let c in 1 .. T::MaxEndpointUrlsCount::get();
-
-		let public_auth_key = get_ed25519_public_authentication_key();
-		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
-		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(public_auth_key));
-		Did::<T>::insert(&did_subject, did_details);
-
-		let service_endpoints = get_service_endpoints::<T>(c, u);
-	}: _(RawOrigin::Signed(did_subject.clone()), service_endpoints.clone())
-	verify {
-		assert_eq!(Did::<T>::get(&did_subject).unwrap().service_endpoints, Some(service_endpoints))
-	}
-
-	remove_service_endpoints {
-		let u in (DEFAULT_URL_SCHEME.len().saturated_into::<u32>()) .. T::MaxUrlLength::get();
-		let c in 1 .. T::MaxEndpointUrlsCount::get();
-
-		let public_auth_key = get_ed25519_public_authentication_key();
-		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
-		let service_endpoints = get_service_endpoints::<T>(c, u);
-		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(public_auth_key));
-		did_details.service_endpoints = Some(service_endpoints);
-
-		Did::<T>::insert(&did_subject, did_details);
-	}: _(RawOrigin::Signed(did_subject.clone()))
-	verify {
-		assert!(Did::<T>::get(&did_subject).unwrap().service_endpoints.is_none())
 	}
 }
 
