@@ -39,7 +39,7 @@ pub(crate) fn pre_migrate<T: Config>() -> Result<(), &'static str> {
 }
 
 pub(crate) fn migrate<T: Config>() -> Weight {
-	log::trace!("v2 -> v3 DID storage migrator started!");
+	log::info!("v2 -> v3 DID storage migrator started!");
 	let mut total_weight = Weight::zero();
 
 	NewDidStorage::<T>::translate_values(|old_did_details: OldDidDetails<T>| {
@@ -52,7 +52,7 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	// Adds a write from StorageVersion::set() weight.
 	total_weight = total_weight.saturating_add(T::DbWeight::get().writes(1));
 	log::debug!("Total weight consumed: {}", total_weight);
-	log::trace!("v2 -> v3 DID storage migrator finished!");
+	log::info!("v2 -> v3 DID storage migrator finished!");
 
 	total_weight
 }
