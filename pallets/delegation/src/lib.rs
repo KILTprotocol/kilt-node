@@ -320,7 +320,14 @@ pub mod pallet {
 		/// there must be already a CType with the given hash stored in the
 		/// CType pallet.
 		///
-		/// The dispatch origin must be `DelegationEntityId`.
+		/// The dispatch origin must be split into
+		/// * a submitter of type `AccountId` who is responsible for paying the
+		///   transaction fee and
+		/// * a DID subject of type `DelegationEntityId` who creates, owns and
+		///   can revoke the delegation.
+		///
+		/// Requires the sender of the transaction to have a reservable balance
+		/// of at least `Deposit` many tokens.
 		///
 		/// Emits `RootCreated`.
 		///
@@ -384,7 +391,14 @@ pub mod pallet {
 		/// present on chain and contain the valid permissions and revocation
 		/// status (i.e., not revoked).
 		///
-		/// The dispatch origin must be `DelegationEntityId`.
+		/// The dispatch origin must be split into
+		/// * a submitter of type `AccountId` who is responsible for paying the
+		///   transaction fee and
+		/// * a DID subject of type `DelegationEntityId` who creates, owns and
+		///   can revoke the delegation.
+		///
+		/// Requires the sender of the transaction to have a reservable balance
+		/// of at least `Deposit` many tokens.
 		///
 		/// Emits `DelegationCreated`.
 		///
@@ -474,6 +488,10 @@ pub mod pallet {
 		/// Revoke a delegation node (potentially a root node) and all its
 		/// children.
 		///
+		/// Does not refund the delegation back to the deposit owner as the
+		/// node is still stored on chain. Requires to additionally call
+		/// `remove_delegation` to unreserve the deposit.
+		///
 		/// Revoking a delegation node results in the trust hierarchy starting
 		/// from the given node being revoked. Nevertheless, revocation starts
 		/// from the leave nodes upwards, so if the operation ends prematurely
@@ -482,7 +500,11 @@ pub mod pallet {
 		/// given node is revoked, the trust hierarchy with the node as root is
 		/// to be considered revoked.
 		///
-		/// The dispatch origin must be `DelegationEntityId`.
+		/// The dispatch origin must be split into
+		/// * a submitter of type `AccountId` who is responsible for paying the
+		///   transaction fee and
+		/// * a DID subject of type `DelegationEntityId` who creates, owns and
+		///   can revoke the delegation.
 		///
 		/// Emits C * `DelegationRevoked`.
 		///
@@ -542,6 +564,9 @@ pub mod pallet {
 		/// Remove a delegation node (potentially a root node) and all its
 		/// children.
 		///
+		/// Returns the delegation deposit back to the deposit owner for each
+		/// removed DelegationNode by unreserving it.
+		///
 		/// Removing a delegation node results in the trust hierarchy starting
 		/// from the given node being removed. Nevertheless, removal starts
 		/// from the leave nodes upwards, so if the operation ends prematurely
@@ -550,9 +575,13 @@ pub mod pallet {
 		/// given node is removed, the trust hierarchy with the node as root is
 		/// to be considered removed.
 		///
-		/// The dispatch origin must be `DelegationEntityId`.
+		/// The dispatch origin must be split into
+		/// * a submitter of type `AccountId` who is responsible for paying the
+		///   transaction fee and
+		/// * a DID subject of type `DelegationEntityId` who creates, owns and
+		///   can revoke the delegation.
 		///
-		/// Emits C * `DelegationRevoked`.
+		/// Emits C * `DelegationRemoved`.
 		///
 		/// # <weight>
 		/// Weight: O(C) where C is the number of children of the delegation
@@ -582,11 +611,7 @@ pub mod pallet {
 				Error::<T>::UnauthorizedRemoval
 			);
 
-			ensure!(
-				// TODO: Create separate parameter?
-				max_removals <= T::MaxRemovals::get(),
-				Error::<T>::MaxRemovalsTooLarge
-			);
+			ensure!(max_removals <= T::MaxRemovals::get(), Error::<T>::MaxRemovalsTooLarge);
 
 			// Remove the delegation and recursively all of its children (add 1 to
 			// max_removals to account for the node itself)
@@ -790,7 +815,7 @@ impl<T: Config> Pallet<T> {
 	/// Returns the number of removed delegations and the consumed weight.
 	///
 	/// Updates the children BTreeSet after each child removal in case the
-	/// entire root removal runs out of gas and stops pre-emptively.
+	/// entire root removal runs out of gas and stops prematurely.
 	///
 	/// # <weight>
 	/// Weight: O(C) where C is the number of children of the delegation node
@@ -827,7 +852,7 @@ impl<T: Config> Pallet<T> {
 		Ok((removals, consumed_weight.saturating_add(T::DbWeight::get().reads(1))))
 	}
 
-	/// Revoke a delegation and all of its children recursively.
+	/// Remove a delegation and all of its children recursively.
 	///
 	/// Emits DelegationRevoked for each revoked node.
 	///
