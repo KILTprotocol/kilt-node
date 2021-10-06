@@ -48,8 +48,8 @@ default = ["std"]
 mock = [
   "ctype",
   "env_logger",
-  "sp-keystore",
   "pallet-balances",
+  "sp-keystore",
 ]
 runtime-benchmarks = [
   # "ctype/runtime-benchmarks", # enabling this results in an error that's impossible to link to this line.
@@ -59,20 +59,20 @@ runtime-benchmarks = [
 ]
 std = [
   "codec/std",
+  "ctype/std",
   "frame-support/std",
   "frame-system/std",
+  "hex/std",
   "kilt-primitives/std",
   "kilt-support/std",
-  "hex/std",
+  "kilt-support/std",
   "log/std",
+  "pallet-balances/std",
   "sp-core/std",
-  "sp-keystore/std",
   "sp-io/std",
+  "sp-keystore/std",
   "sp-runtime/std",
   "sp-std/std",
-  "pallet-balances/std",
-  "ctype/std",
-  "kilt-support/std",
 ]
 try-runtime = [
   "frame-support/try-runtime",

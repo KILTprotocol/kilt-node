@@ -46,16 +46,16 @@ sp-std = {branch = "polkadot-v0.9.10", default-features = false, git = "https://
 default = ["std"]
 mock = [
   "pallet-balances",
+  "pallet-balances",
   "serde",
   "sp-core",
   "sp-io",
   "sp-keystore",
-  "pallet-balances",
 ]
 runtime-benchmarks = [
   "frame-benchmarking",
-  "frame-system/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
+  "frame-system/runtime-benchmarks",
   "sp-core",
   "sp-io",
 ]
@@ -65,14 +65,14 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "kilt-primitives/std",
-  "pallet-balances/std",
+  "kilt-support/std",
   "log/std",
+  "pallet-balances/std",
+  "pallet-balances/std",
   "sp-core/std",
   "sp-io/std",
   "sp-runtime/std",
   "sp-std/std",
-  "kilt-support/std",
-  "pallet-balances/std",
 ]
 try-runtime = [
   "frame-support/try-runtime",

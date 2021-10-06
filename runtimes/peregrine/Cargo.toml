@@ -97,8 +97,8 @@ runtime-benchmarks = [
   "did/runtime-benchmarks",
   "frame-benchmarking",
   "frame-support/runtime-benchmarks",
-  "frame-system/runtime-benchmarks",
   "frame-system-benchmarking",
+  "frame-system/runtime-benchmarks",
   "hex-literal",
   "kilt-launch/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
@@ -116,8 +116,6 @@ runtime-benchmarks = [
   "sp-runtime/runtime-benchmarks",
 ]
 std = [
-  "frame-benchmarking/std",
-  "frame-system-benchmarking/std",
   "attestation/std",
   "codec/std",
   "ctype/std",
@@ -128,8 +126,10 @@ std = [
   "cumulus-primitives-timestamp/std",
   "delegation/std",
   "did/std",
+  "frame-benchmarking/std",
   "frame-executive/std",
   "frame-support/std",
+  "frame-system-benchmarking/std",
   "frame-system-rpc-runtime-api/std",
   "frame-system/std",
   "frame-try-runtime/std",
@@ -152,9 +152,11 @@ std = [
   "pallet-transaction-payment-rpc-runtime-api/std",
   "pallet-transaction-payment/std",
   "pallet-treasury/std",
+  "pallet-vesting/std",
   "parachain-info/std",
   "parachain-staking/std",
   "polkadot-parachain/std",
+  "rococo-runtime/std",
   "serde",
   "sp-api/std",
   "sp-arithmetic/std",
@@ -172,8 +174,6 @@ std = [
   "xcm-builder/std",
   "xcm-executor/std",
   "xcm/std",
-  "rococo-runtime/std",
-  "pallet-vesting/std",
 ]
 try-runtime = [
   "attestation/try-runtime",
@@ -201,6 +201,6 @@ try-runtime = [
   "pallet-transaction-payment/try-runtime",
   "pallet-treasury/try-runtime",
   "pallet-utility/try-runtime",
-  "parachain-staking/try-runtime",
   "pallet-vesting/try-runtime",
+  "parachain-staking/try-runtime",
 ]
