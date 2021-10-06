@@ -75,6 +75,23 @@ pub const INFLATION_CONFIG: (Perquintill, Perquintill, Perquintill, Perquintill)
 	Perquintill::from_percent(8),
 );
 
+pub mod attestation {
+	use super::*;
+
+	pub const ATTESTATION_DEPOSIT: Balance = 100 * MILLI_KILT;
+}
+
+pub mod delegation {
+	use super::*;
+
+	pub const DELEGATION_DEPOSIT: Balance = 100 * MILLI_KILT;
+	pub const MAX_SIGNATURE_BYTE_LENGTH: u16 = 64;
+	pub const MAX_PARENT_CHECKS: u32 = 5;
+	pub const MAX_REVOCATIONS: u32 = 5;
+	pub const MAX_REMOVALS: u32 = MAX_REVOCATIONS;
+	pub const MAX_CHILDREN: u32 = 1000;
+}
+
 pub mod staking {
 	#[cfg(not(feature = "fast-gov"))]
 	use super::{DAYS, HOURS};

@@ -77,4 +77,22 @@ impl<T: frame_system::Config> delegation::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(c as Weight)))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
+	// TODO: Needs to be updated once benchmarks are working again
+	fn remove_delegation_root_child(r: u32) -> Weight {
+		(32_769_000_u64)
+			// Standard Error: 373_000
+			.saturating_add((29_614_000_u64).saturating_mul(r as Weight))
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(r as Weight)))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(r as Weight)))
+	}
+	// TODO: Needs to be updated once benchmarks are working again
+	fn remove_delegation_leaf(r: u32) -> Weight {
+		(54_214_000_u64)
+			// Standard Error: 196_000
+			.saturating_add((484_000_u64).saturating_mul(r as Weight))
+			// Standard Error: 196_000
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
 }

@@ -45,6 +45,7 @@ sp-std = {branch = "polkadot-v0.9.10", default-features = false, git = "https://
 [features]
 default = ["std"]
 mock = [
+  "pallet-balances",
   "serde",
   "sp-core",
   "sp-io",
@@ -64,6 +65,7 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "kilt-primitives/std",
+  "pallet-balances/std",
   "log/std",
   "sp-core/std",
   "sp-io/std",

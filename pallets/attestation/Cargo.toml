@@ -48,11 +48,11 @@ sp-std = {branch = "polkadot-v0.9.10", default-features = false, git = "https://
 default = ["std"]
 mock = [
   "kilt-primitives",
+  "pallet-balances",
   "serde",
   "sp-core",
   "sp-io",
   "sp-keystore",
-  "pallet-balances",
 ]
 runtime-benchmarks = [
   "frame-benchmarking",
