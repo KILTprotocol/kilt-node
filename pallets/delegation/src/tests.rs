@@ -226,7 +226,7 @@ fn create_delegation_with_parent_successful() {
 				operation.delegate_signature.clone(),
 			));
 
-			// Should deposited for hierarcy, parent delegation and sub-delegation
+			// Should deposited for hierarchy, parent delegation and sub-delegation
 			assert_eq!(
 				Balances::reserved_balance(&creator),
 				3 * <Test as Config>::Deposit::get()
@@ -684,6 +684,16 @@ fn list_hierarchy_revoke_and_remove_root_successful() {
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.build()
 		.execute_with(|| {
+			assert!(Delegation::delegation_hierarchies(&hierarchy_root_id).is_some());
+			assert_eq!(
+				Balances::reserved_balance(revoker.clone()),
+				2 * <Test as Config>::Deposit::get()
+			);
+			assert_eq!(
+				Balances::reserved_balance(delegate.clone()),
+				<Test as Config>::Deposit::get()
+			);
+
 			// Revoke root
 			assert_ok!(Delegation::revoke_delegation(
 				get_origin(revoker.clone()),
@@ -710,15 +720,6 @@ fn list_hierarchy_revoke_and_remove_root_successful() {
 					.expect("Delegation should be present on chain.")
 					.details
 					.revoked
-			);
-
-			assert_eq!(
-				Balances::reserved_balance(revoker.clone()),
-				2 * <Test as Config>::Deposit::get()
-			);
-			assert_eq!(
-				Balances::reserved_balance(delegate.clone()),
-				<Test as Config>::Deposit::get()
 			);
 
 			// Removing root should also remove children and hierarchy
