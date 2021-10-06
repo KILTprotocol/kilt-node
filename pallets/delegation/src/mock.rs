@@ -22,7 +22,7 @@ use crate::CurrencyOf;
 use frame_support::{
 	parameter_types,
 	storage::bounded_btree_set::BoundedBTreeSet,
-	traits::{Currency, Get, ReservableCurrency},
+	traits::{Currency, Get},
 	weights::constants::RocksDbWeight,
 };
 use frame_system::EnsureSigned;
@@ -267,7 +267,10 @@ pub fn generate_base_delegation_node<T: Config>(
 	hierarchy_id: T::DelegationNodeId,
 	owner: T::DelegationEntityId,
 	parent: Option<T::DelegationNodeId>,
-) -> DelegationNode<T> {
+) -> DelegationNode<T>
+where
+	DelegatorIdOf<T>: Into<AccountIdOf<T>>,
+{
 	DelegationNode {
 		details: generate_base_delegation_details(owner.clone()),
 		children: BoundedBTreeSet::new(),
@@ -361,24 +364,29 @@ pub fn generate_base_delegation_revocation_operation(
 
 pub fn initialize_pallet<T: Config>(
 	delegations: Vec<(T::DelegationNodeId, DelegationNode<T>)>,
-	delegation_hierarchies: Vec<(T::DelegationNodeId, DelegationHierarchyDetails<T>, DelegatorIdOf<T>)>,
-) {
+	delegation_hierarchies: Vec<(
+		T::DelegationNodeId,
+		DelegationHierarchyDetails<T>,
+		DelegatorIdOf<T>,
+		// AccountIdOf<T>,
+	)>,
+) where
+	DelegatorIdOf<T>: Into<AccountIdOf<T>>,
+{
 	for delegation_hierarchy in delegation_hierarchies {
+		// manually mint to enable deposit reserving
+		let deposit_owner = delegation_hierarchy.2.clone().into();
+		let balance = CurrencyOf::<T>::free_balance(&deposit_owner.clone().into());
+		CurrencyOf::<T>::make_free_balance_be(&deposit_owner.clone().into(), balance + <T as Config>::Deposit::get());
+
+		// reserve deposit and store
 		delegation::Pallet::<T>::create_and_store_new_hierarchy(
 			delegation_hierarchy.0,
 			delegation_hierarchy.1.clone(),
 			delegation_hierarchy.2.clone(),
-			delegation_hierarchy.2.clone().into(),
-		);
-
-		// manually mint and reserve because the latter happens in an extrinsic
-		let deposit_owner = delegation_hierarchy.2;
-		let balance = CurrencyOf::<T>::free_balance(&deposit_owner.clone().into());
-		CurrencyOf::<T>::make_free_balance_be(&deposit_owner.clone().into(), balance + <T as Config>::Deposit::get());
-		frame_support::assert_ok!(CurrencyOf::<T>::reserve(
-			&deposit_owner.into(),
-			<T as Config>::Deposit::get()
-		));
+			deposit_owner.clone(),
+		)
+		.expect("Each deposit owner should have sufficient balance to create a hierarchy");
 	}
 
 	for del in delegations {
@@ -387,22 +395,21 @@ pub fn initialize_pallet<T: Config>(
 			.parent
 			.expect("Delegation node that is not a root must have a parent ID specified.");
 		let parent_node = delegation::DelegationNodes::<T>::get(parent_node_id).unwrap();
+
+		// manually mint to enable deposit reserving
+		let deposit_owner = del.1.deposit.owner.clone();
+		let balance = CurrencyOf::<T>::free_balance(&deposit_owner.clone().into());
+		CurrencyOf::<T>::make_free_balance_be(&deposit_owner.clone().into(), balance + <T as Config>::Deposit::get());
+
+		// reserve deposit and store
 		delegation::Pallet::<T>::store_delegation_under_parent(
 			del.0,
 			del.1.clone(),
 			parent_node_id,
 			parent_node.clone(),
+			deposit_owner,
 		)
 		.expect("Should not exceed max children");
-
-		// manually mint and reserve because the latter happens in an extrinsic
-		let deposit_owner = del.1.details.owner;
-		let balance = CurrencyOf::<T>::free_balance(&deposit_owner.clone().into());
-		CurrencyOf::<T>::make_free_balance_be(&deposit_owner.clone().into(), balance + <T as Config>::Deposit::get());
-		frame_support::assert_ok!(CurrencyOf::<T>::reserve(
-			&deposit_owner.into(),
-			<T as Config>::Deposit::get()
-		));
 	}
 }
 
@@ -416,6 +423,7 @@ pub struct ExtBuilder {
 		TestDelegationNodeId,
 		DelegationHierarchyDetails<Test>,
 		DelegatorIdOf<Test>,
+		// AccountIdOf<Test>,
 	)>,
 	delegations_stored: Vec<(TestDelegationNodeId, DelegationNode<Test>)>,
 	storage_version: DelegationStorageVersion,
@@ -428,6 +436,7 @@ impl ExtBuilder {
 			TestDelegationNodeId,
 			DelegationHierarchyDetails<Test>,
 			DelegatorIdOf<Test>,
+			// AccountIdOf<Test>,
 		)>,
 	) -> Self {
 		self.delegation_hierarchies_stored = delegation_hierarchies;

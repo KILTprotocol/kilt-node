@@ -204,6 +204,7 @@ benchmarks! {
 		where
 		T: core::fmt::Debug,
 		T::AccountId: From<sr25519::Public> + Into<T::DelegationEntityId>,
+		T::DelegationEntityId: Into<T::AccountId>,
 		T::DelegationNodeId: From<T::Hash>,
 		<T as frame_system::Config>::Origin: From<RawOrigin<<T as pallet::Config>::DelegationEntityId>>,
 		T::CtypeCreatorId: From<T::AccountId>,

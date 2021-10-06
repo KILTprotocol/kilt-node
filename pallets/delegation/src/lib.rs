@@ -143,9 +143,7 @@ pub mod pallet {
 			Payload = Vec<u8>,
 			Signature = Self::Signature,
 		>;
-		// FIXME: Is there a better solution than restrict this to
-		// Into<AccountIdOf<Self>> to enable conversion between both types?
-		type DelegationEntityId: Parameter + Into<AccountIdOf<Self>>;
+		type DelegationEntityId: Parameter;
 		type DelegationNodeId: Parameter + Copy + AsRef<[u8]> + Eq + PartialEq + Ord + PartialOrd;
 		type EnsureOrigin: EnsureOrigin<
 			Success = <Self as Config>::OriginSuccess,
@@ -345,7 +343,6 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let payer = source.sender();
 			let creator = source.subject();
-			let deposit_amount = <T as Config>::Deposit::get();
 
 			ensure!(
 				!<DelegationHierarchies<T>>::contains_key(&root_node_id),
@@ -357,18 +354,14 @@ pub mod pallet {
 				<ctype::Error<T>>::CTypeNotFound
 			);
 
-			CurrencyOf::<T>::reserve(&payer, deposit_amount)?;
-
-			// *** No Fail beyond this point ***
-
-			log::debug!("insert Delegation Root");
+			log::debug!("trying to insert Delegation Root");
 
 			Self::create_and_store_new_hierarchy(
 				root_node_id,
 				DelegationHierarchyDetails::<T> { ctype_hash },
 				creator.clone(),
 				payer,
-			);
+			)?;
 
 			Self::deposit_event(Event::HierarchyCreated(creator, root_node_id, ctype_hash));
 
@@ -419,7 +412,6 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let payer = source.sender();
 			let delegator = source.subject();
-			let deposit_amount = <T as Config>::Deposit::get();
 
 			ensure!(
 				!<DelegationNodes<T>>::contains_key(&delegation_id),
@@ -453,8 +445,6 @@ pub mod pallet {
 				Error::<T>::UnauthorizedDelegation
 			);
 
-			CurrencyOf::<T>::reserve(&payer, deposit_amount)?;
-
 			// *** No Fail beyond this point ***
 
 			Self::store_delegation_under_parent(
@@ -467,10 +457,12 @@ pub mod pallet {
 						permissions,
 						revoked: false,
 					},
-					payer,
+					payer.clone(),
+					// <T as Config>::Deposit::get(),
 				),
 				parent_id,
 				parent_node,
+				payer,
 			)?;
 
 			Self::deposit_event(Event::DelegationCreated(
@@ -602,12 +594,11 @@ pub mod pallet {
 			let invoker = source.subject();
 
 			let delegation = DelegationNodes::<T>::get(&delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
-			let deposit_owner = delegation.deposit.owner;
 
-			// Node can only be removed by deposit or node owner, not the parent or another
-			// ancestor
+			// Node can only be removed by owner of either the deposit or the node, not the
+			// parent or another ancestor
 			ensure!(
-				deposit_owner == sender || deposit_owner == invoker.clone().into(),
+				delegation.deposit.owner == sender || delegation.details.owner == invoker,
 				Error::<T>::UnauthorizedRemoval
 			);
 
@@ -661,14 +652,19 @@ impl<T: Config> Pallet<T> {
 		hierarchy_details: DelegationHierarchyDetails<T>,
 		hierarchy_owner: DelegatorIdOf<T>,
 		deposit_owner: AccountIdOf<T>,
-	) {
+	) -> DispatchResult {
+		CurrencyOf::<T>::reserve(&deposit_owner, <T as Config>::Deposit::get())?;
+
 		let root_node = DelegationNode::new_root_node(
 			root_id,
 			DelegationDetails::default_with_owner(hierarchy_owner),
 			deposit_owner,
 		);
+
 		DelegationNodes::<T>::insert(root_id, root_node);
 		<DelegationHierarchies<T>>::insert(root_id, hierarchy_details);
+
+		Ok(())
 	}
 
 	// Adds the given node to the storage and updates the parent node to include the
@@ -681,7 +677,10 @@ impl<T: Config> Pallet<T> {
 		delegation_node: DelegationNode<T>,
 		parent_id: DelegationNodeIdOf<T>,
 		mut parent_node: DelegationNode<T>,
+		deposit_owner: AccountIdOf<T>,
 	) -> DispatchResult {
+		CurrencyOf::<T>::reserve(&deposit_owner, <T as Config>::Deposit::get())?;
+
 		<DelegationNodes<T>>::insert(delegation_id, delegation_node);
 		// Add the new node as a child of that node
 		parent_node.try_add_child(delegation_id)?;

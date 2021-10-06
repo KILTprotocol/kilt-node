@@ -83,6 +83,7 @@ impl<T: Config> DelegationNode<T> {
 		id: DelegationNodeIdOf<T>,
 		details: DelegationDetails<T>,
 		deposit_owner: AccountIdOf<T>,
+		// deposit_amount: BalanceOf<T>,
 	) -> Self {
 		Self {
 			hierarchy_root_id: id,
@@ -92,6 +93,7 @@ impl<T: Config> DelegationNode<T> {
 			deposit: Deposit::<AccountIdOf<T>, BalanceOf<T>> {
 				owner: deposit_owner,
 				amount: <T as Config>::Deposit::get(),
+				// amount: deposit_amount,
 			},
 		}
 	}
@@ -103,6 +105,7 @@ impl<T: Config> DelegationNode<T> {
 		parent: DelegationNodeIdOf<T>,
 		details: DelegationDetails<T>,
 		deposit_owner: AccountIdOf<T>,
+		// deposit_amount: BalanceOf<T>,
 	) -> Self {
 		Self {
 			hierarchy_root_id,
@@ -112,6 +115,7 @@ impl<T: Config> DelegationNode<T> {
 			deposit: Deposit::<AccountIdOf<T>, BalanceOf<T>> {
 				owner: deposit_owner,
 				amount: <T as Config>::Deposit::get(),
+				// amount: deposit_amount,
 			},
 		}
 	}
