@@ -281,6 +281,21 @@ benchmarks! {
 	}
 	// TODO: Might want to add variant iterating over children instead of depth at some later point
 
+	// worst case #2: revoke leaf node as root
+	// because `is_delegating` has to traverse up to the root
+	// complexitiy: O(h) with h = height of the delegation tree
+	revoke_delegation_leaf {
+		let r in 1 .. T::MaxRevocations::get();
+		let c in 1 .. T::MaxParentChecks::get();
+		let (root_acc, _, _, leaf_id) = setup_delegations::<T>(c, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
+	}: revoke_delegation(RawOrigin::Signed(T::AccountId::from(root_acc).into()), leaf_id, c, r)
+	verify {
+		assert!(DelegationNodes::<T>::contains_key(leaf_id));
+		let DelegationNode::<T> { details, .. } = DelegationNodes::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
+		assert!(details.revoked);
+	}
+	// TODO: Might want to add variant iterating over children instead of depth at some later point
+
 	// worst case is achieved by removing the root node, since `is_delegating` is not called in remove extrinsic,
 	remove_delegation {
 		let r in 1 .. T::MaxRevocations::get();
