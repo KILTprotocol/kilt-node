@@ -572,7 +572,7 @@ pub mod pallet {
 			let sender = source.sender();
 			let invoker = source.subject();
 
-			let delegation = <DelegationNodes<T>>::get(&delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
+			let delegation = DelegationNodes::<T>::get(&delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
 			let deposit_owner = delegation.deposit.owner;
 
 			// Node can only be removed by deposit or node owner, not the parent or another
@@ -642,7 +642,7 @@ impl<T: Config> Pallet<T> {
 			DelegationDetails::default_with_owner(hierarchy_owner),
 			deposit_owner,
 		);
-		<DelegationNodes<T>>::insert(root_id, root_node);
+		DelegationNodes::<T>::insert(root_id, root_node);
 		<DelegationHierarchies<T>>::insert(root_id, hierarchy_details);
 	}
 
@@ -803,7 +803,7 @@ impl<T: Config> Pallet<T> {
 		let mut consumed_weight: Weight = 0;
 
 		// Can't clear storage until we have reached a leaf
-		if let Some(mut delegation_node) = <DelegationNodes<T>>::get(delegation) {
+		if let Some(mut delegation_node) = DelegationNodes::<T>::get(delegation) {
 			// Iterate and remove all children
 			for child in delegation_node.clone().children.iter() {
 				let remaining_removals = max_removals
@@ -821,7 +821,7 @@ impl<T: Config> Pallet<T> {
 				// Remove child from set and update parent node in case of pre-emptive stops due
 				// to insufficient removal gas
 				delegation_node.children.remove(child);
-				<DelegationNodes<T>>::insert(delegation, delegation_node.clone());
+				DelegationNodes::<T>::insert(delegation, delegation_node.clone());
 			}
 		}
 		Ok((removals, consumed_weight.saturating_add(T::DbWeight::get().reads(1))))
@@ -843,7 +843,8 @@ impl<T: Config> Pallet<T> {
 
 		// Retrieve delegation node from storage
 		// Storage removal has to be postponed until children have been removed
-		let delegation_node = <DelegationNodes<T>>::get(*delegation).ok_or(Error::<T>::DelegationNotFound)?;
+
+		let delegation_node = DelegationNodes::<T>::get(*delegation).ok_or(Error::<T>::DelegationNotFound)?;
 		consumed_weight = consumed_weight.saturating_add(T::DbWeight::get().reads(1));
 
 		// First remove all children recursively
@@ -860,7 +861,7 @@ impl<T: Config> Pallet<T> {
 		// *** No Fail beyond this point ***
 
 		// We can clear storage now that all children have been removed
-		<DelegationNodes<T>>::remove(*delegation);
+		DelegationNodes::<T>::remove(*delegation);
 
 		// Unreserve deposit
 		let Deposit::<T::AccountId, BalanceOf<T>> {
@@ -872,7 +873,7 @@ impl<T: Config> Pallet<T> {
 
 		consumed_weight = consumed_weight.saturating_add(T::DbWeight::get().reads_writes(1, 2));
 
-		// Deposit event that the delegation has been revoked
+		// Deposit event that the delegation has been removed
 		Self::deposit_event(Event::DelegationRemoved(deposit_payer, *delegation));
 		removals = removals.saturating_add(1);
 		Ok((removals, consumed_weight))
