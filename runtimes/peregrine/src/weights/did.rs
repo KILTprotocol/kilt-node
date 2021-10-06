@@ -204,22 +204,4 @@ impl<T: frame_system::Config> did::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
-	fn set_service_endpoints(u: u32, c: u32, ) -> Weight {
-		(28_348_000_u64)
-			// Standard Error: 0
-			.saturating_add((9_000_u64).saturating_mul(u as Weight))
-			// Standard Error: 43_000
-			.saturating_add((982_000_u64).saturating_mul(c as Weight))
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
-	}
-	fn remove_service_endpoints(u: u32, c: u32, ) -> Weight {
-		(28_452_000_u64)
-			// Standard Error: 0
-			.saturating_add((3_000_u64).saturating_mul(u as Weight))
-			// Standard Error: 46_000
-			.saturating_add((592_000_u64).saturating_mul(c as Weight))
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
-	}
 }

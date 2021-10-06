@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::{Decode, Encode};
-use kilt_primitives::VersionMigratorTrait;
+use kilt_support::traits::VersionMigratorTrait;
 use sp_std::marker::PhantomData;
 
 use crate::*;
@@ -55,7 +55,7 @@ impl Default for DelegationStorageVersion {
 impl<T: Config> VersionMigratorTrait<T> for DelegationStorageVersion {
 	// It runs the right pre_migrate logic depending on the current storage version.
 	#[cfg(feature = "try-runtime")]
-	fn pre_migrate(&self) -> Result<(), &str> {
+	fn pre_migrate(&self) -> Result<(), &'static str> {
 		match *self {
 			Self::V1 => v1::pre_migrate::<T>(),
 			Self::V2 => Ok(()),
@@ -73,7 +73,7 @@ impl<T: Config> VersionMigratorTrait<T> for DelegationStorageVersion {
 	// It runs the right post_migrate logic depending on the current storage
 	// version.
 	#[cfg(feature = "try-runtime")]
-	fn post_migrate(&self) -> Result<(), &str> {
+	fn post_migrate(&self) -> Result<(), &'static str> {
 		match *self {
 			Self::V1 => v1::post_migrate::<T>(),
 			Self::V2 => Ok(()),
