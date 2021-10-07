@@ -22,7 +22,6 @@ use sp_runtime::SaturatedConversion;
 use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom};
 
 use crate::{self as did, mock::*, mock_utils::*};
-use ctype::mock as ctype_mock;
 
 // create
 
@@ -1689,13 +1688,13 @@ fn check_call_attestation_key_error() {
 	);
 	let signature = attestation_key.sign(call_operation.encode().as_ref());
 
-	let did_ext = ExtBuilder::default()
+	ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
-		.build(None);
-	// CType already added to storage
-	ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(get_attestation_key_test_input(), did)])
-		.build(Some(did_ext))
+		.with_ctypes(vec![(
+			<Test as frame_system::Config>::Hashing::hash(&get_attestation_key_test_input()[..]),
+			did,
+		)])
+		.build(None)
 		.execute_with(|| {
 			assert_err!(
 				Did::submit_did_call(
@@ -1758,13 +1757,13 @@ fn check_call_delegation_key_error() {
 	);
 	let signature = delegation_key.sign(call_operation.encode().as_ref());
 
-	let did_ext = ExtBuilder::default()
+	ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
-		.build(None);
-	// CType already added to storage
-	ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(get_delegation_key_test_input(), did)])
-		.build(Some(did_ext))
+		.with_ctypes(vec![(
+			<Test as frame_system::Config>::Hashing::hash(&get_delegation_key_test_input()[..]),
+			did,
+		)])
+		.build(None)
 		.execute_with(|| {
 			assert_err!(
 				Did::submit_did_call(
@@ -1823,13 +1822,13 @@ fn check_call_authentication_key_error() {
 	);
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
-	let did_ext = ExtBuilder::default()
+	ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
-		.build(None);
-	// CType already added to storage
-	ctype_mock::ExtBuilder::default()
-		.with_ctypes(vec![(get_authentication_key_test_input(), did)])
-		.build(Some(did_ext))
+		.with_ctypes(vec![(
+			<Test as frame_system::Config>::Hashing::hash(&get_authentication_key_test_input()[..]),
+			did,
+		)])
+		.build(None)
 		.execute_with(|| {
 			assert_err!(
 				Did::submit_did_call(

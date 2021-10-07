@@ -1574,7 +1574,6 @@ fn is_delegating_direct_not_revoked() {
 	let max_parent_checks = 0u32;
 
 	// Root -> Parent -> Delegation
-	// Root -> Parent -> Delegation
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone())])
@@ -1662,7 +1661,6 @@ fn is_delegating_direct_revoked() {
 	let max_parent_checks = 0u32;
 
 	// Root -> Parent -> Delegation
-	// Root -> Parent -> Delegation
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone())])
@@ -1707,7 +1705,6 @@ fn is_delegating_direct_revoked_max_parent_checks_value() {
 	let max_parent_checks = u32::MAX;
 
 	// Root -> Parent -> Delegation
-	// Root -> Parent -> Delegation
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone())])
@@ -1750,7 +1747,6 @@ fn is_delegating_max_parent_not_revoked() {
 
 	let max_parent_checks = 1u32;
 
-	// Root -> Parent -> Delegation
 	// Root -> Parent -> Delegation
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
@@ -1796,7 +1792,6 @@ fn is_delegating_max_parent_revoked() {
 	let max_parent_checks = 2u32;
 
 	// Root -> Parent -> Delegation
-	// Root -> Parent -> Delegation
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone())])
@@ -1840,7 +1835,6 @@ fn is_delegating_root_owner_not_revoked() {
 	let max_parent_checks = 2u32;
 
 	// Root -> Parent -> Delegation
-	// Root -> Parent -> Delegation
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone())])
@@ -1883,7 +1877,6 @@ fn is_delegating_root_owner_revoked() {
 
 	let max_parent_checks = 2u32;
 
-	// Root -> Parent -> Delegation
 	// Root -> Parent -> Delegation
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
@@ -1953,7 +1946,6 @@ fn is_delegating_root_after_max_limit() {
 	// 1 less than needed
 	let max_parent_checks = 1u32;
 
-	// Root -> Parent -> Delegation
 	// Root -> Parent -> Delegation
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])

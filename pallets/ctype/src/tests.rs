@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{assert_noop, assert_ok};
+use frame_support::{assert_noop, assert_ok, sp_runtime::traits::Hash};
 
 use crate::{self as ctype, mock::*};
 
@@ -25,38 +25,52 @@ use crate::{self as ctype, mock::*};
 #[test]
 fn check_successful_ctype_creation() {
 	let creator = ALICE;
+	let ctype = [9u8; 256].to_vec();
+	let ctype_hash = <Test as frame_system::Config>::Hashing::hash(&ctype[..]);
+	let initial_balance = <Test as ctype::Config>::Fee::get() * 2;
+	ExtBuilder::default()
+		.with_balances(vec![(creator.clone(), initial_balance)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(Ctype::add(get_origin(creator.clone()), ctype));
+			let stored_ctype_creator = Ctype::ctypes(&ctype_hash).expect("CType hash should be present on chain.");
 
-	let ctype_hash = get_ctype_hash::<Test>(true);
+			// Verify the CType has the right owner
+			assert_eq!(stored_ctype_creator, creator);
+			assert_eq!(
+				Balances::free_balance(creator),
+				initial_balance.saturating_sub(<Test as ctype::Config>::Fee::get())
+			);
+		});
+}
 
-	let builder = ExtBuilder::default();
+#[test]
+fn insufficient_funds() {
+	let creator = ALICE;
+	let ctype = [9u8; 256].to_vec();
 
-	let mut ext = builder.build(None);
-
-	// Write CType on chain
-	ext.execute_with(|| {
-		assert_ok!(Ctype::add(get_origin(creator.clone()), ctype_hash));
+	ExtBuilder::default().build().execute_with(|| {
+		assert_noop!(
+			Ctype::add(get_origin(creator.clone()), ctype),
+			ctype::Error::<Test>::UnableToPayFees
+		);
 	});
-
-	// Verify the CType has the right owner
-	let stored_ctype_creator =
-		ext.execute_with(|| Ctype::ctypes(&ctype_hash).expect("CType hash should be present on chain."));
-	assert_eq!(stored_ctype_creator, creator);
 }
 
 #[test]
 fn check_duplicate_ctype_creation() {
 	let creator = ALICE;
+	let ctype = [9u8; 256].to_vec();
+	let ctype_hash = <Test as frame_system::Config>::Hashing::hash(&ctype[..]);
 
-	let ctype_hash = get_ctype_hash::<Test>(true);
-
-	let builder = ExtBuilder::default().with_ctypes(vec![(ctype_hash, creator.clone())]);
-
-	let mut ext = builder.build(None);
-
-	ext.execute_with(|| {
-		assert_noop!(
-			Ctype::add(get_origin(creator.clone()), ctype_hash),
-			ctype::Error::<Test>::CTypeAlreadyExists
-		);
-	});
+	ExtBuilder::default()
+		.with_ctypes(vec![(ctype_hash, creator.clone())])
+		.with_balances(vec![(creator.clone(), <Test as ctype::Config>::Fee::get() * 2)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Ctype::add(get_origin(creator.clone()), ctype),
+				ctype::Error::<Test>::CTypeAlreadyExists
+			);
+		});
 }

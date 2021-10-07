@@ -9,10 +9,10 @@ codec = {package = "parity-scale-codec", version = "2.0.0", default-features = f
 serde = {version = "1.0.101", optional = true, features = ["derive"]}
 
 frame-support = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
+sp-consensus-aura = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 sp-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 sp-std = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
-sp-consensus-aura = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 
 [features]
 default = ["std"]
@@ -24,5 +24,5 @@ std = [
   "sp-consensus-aura/std",
   "sp-core/std",
   "sp-runtime/std",
-  "sp-std/std"
+  "sp-std/std",
 ]

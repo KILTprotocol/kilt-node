@@ -116,12 +116,20 @@ impl pallet_balances::Config for Test {
 	type ReserveIdentifier = [u8; 8];
 }
 
+parameter_types! {
+	pub const Fee: TestBalance = 500;
+}
+
 impl ctype::Config for Test {
 	type CtypeCreatorId = TestCtypeOwner;
 	type EnsureOrigin = EnsureSigned<TestCtypeOwner>;
 	type OriginSuccess = TestCtypeOwner;
 	type Event = ();
 	type WeightInfo = ();
+
+	type Currency = Balances;
+	type Fee = Fee;
+	type FeeCollector = ();
 }
 
 parameter_types! {
@@ -474,11 +482,11 @@ impl ExtBuilder {
 		let mut ext = sp_io::TestExternalities::new(storage);
 
 		ext.execute_with(|| {
-			initialize_pallet(self.delegations_stored, self.delegation_hierarchies_stored);
-
-			for genesis_ctype in &self.ctypes {
-				ctype::Ctypes::<Test>::insert(genesis_ctype.0, genesis_ctype.1.clone());
+			for (ctype_hash, owner) in self.ctypes.iter() {
+				ctype::Ctypes::<Test>::insert(ctype_hash, owner);
 			}
+
+			initialize_pallet(self.delegations_stored, self.delegation_hierarchies_stored);
 
 			delegation::StorageVersion::<Test>::set(self.storage_version);
 		});

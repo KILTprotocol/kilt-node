@@ -16,26 +16,42 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
-use frame_system::RawOrigin;
+use sp_std::{
+	convert::{TryFrom, TryInto},
+	fmt::Debug,
+	vec::Vec,
+};
 
 use crate::*;
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
+use frame_support::traits::{Currency, Get};
+use frame_system::RawOrigin;
 
 const SEED: u32 = 0;
+const MAX_CTYPE_SIZE: u32 = 5 * 1024 * 1024;
 
 benchmarks! {
-	add {
-		let caller = account("caller", 0, SEED);
-		let hash = <T::Hash as Default>::default();
+	where_clause {
+		where
+		<<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance: TryFrom<usize>,
+		<<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance as TryFrom<usize>>::Error: Debug,
+	}
 
-	}: _(RawOrigin::Signed(caller), hash)
+	add {
+		let l in 1 .. MAX_CTYPE_SIZE;
+
+		let caller = account("caller", 0, SEED);
+		let ctype: Vec<u8> = (0u8..u8::MAX).cycle().take(l.try_into().unwrap()).collect();
+		let initial_balance = <T as Config>::Fee::get() * ctype.len().try_into().unwrap() + <T as Config>::Currency::minimum_balance();
+		<T as Config>::Currency::make_free_balance_be(&caller, initial_balance);
+
+	}: _(RawOrigin::Signed(caller), ctype)
 	verify {
-		Ctypes::<T>::contains_key(hash)
 	}
 }
 
 impl_benchmark_test_suite! {
 	Pallet,
-	crate::mock::ExtBuilder::default().build_with_keystore(None),
+	crate::mock::ExtBuilder::default().build_with_keystore(),
 	crate::mock::Test
 }

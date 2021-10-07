@@ -96,11 +96,13 @@ try-runtime-cli = {git = "https://github.com/paritytech/substrate", branch = "po
 [build-dependencies]
 substrate-build-script-utils = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.10"}
 
-
 [features]
 default = []
-fast-gov = ["peregrine-runtime/fast-gov", "kilt-primitives/fast-gov"]
-rococo-native=[
+fast-gov = [
+  "peregrine-runtime/fast-gov",
+  "kilt-primitives/fast-gov",
+]
+rococo-native = [
   "polkadot-service/rococo-native",
   "polkadot-cli/rococo-native",
 ]
@@ -115,7 +117,7 @@ try-runtime = [
   "spiritnet-runtime/try-runtime",
   "try-runtime-cli",
 ]
-westend-native=[
+westend-native = [
   "polkadot-service/westend-native",
   "polkadot-cli/westend-native",
 ]

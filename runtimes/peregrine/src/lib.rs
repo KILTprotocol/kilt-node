@@ -605,8 +605,15 @@ impl delegation::Config for Runtime {
 	type Deposit = DelegationDeposit;
 }
 
+parameter_types! {
+	pub const Fee: Balance = MILLI_KILT;
+}
+
 impl ctype::Config for Runtime {
 	type CtypeCreatorId = AccountId;
+	type Currency = Balances;
+	type Fee = Fee;
+	type FeeCollector = Treasury;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;

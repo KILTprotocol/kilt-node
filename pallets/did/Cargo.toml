@@ -18,7 +18,7 @@ serde = {version = "1.0.101"}
 
 ctype = {features = ["mock"], path = "../ctype", version = "0.26.1"}
 kilt-primitives = {default-features = false, path = "../../primitives"}
-kilt-support = {default-features = false, path = "../../support"}
+pallet-balances = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [dependencies]
 # Internal dependencies
@@ -40,6 +40,7 @@ sp-runtime = {branch = "polkadot-v0.9.10", default-features = false, git = "http
 sp-std = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 frame-benchmarking = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+pallet-balances = {optional = true, branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-keystore = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
 
 [features]
@@ -47,22 +48,29 @@ default = ["std"]
 mock = [
   "ctype",
   "env_logger",
+  "pallet-balances",
   "sp-keystore",
 ]
 runtime-benchmarks = [
+  # "ctype/runtime-benchmarks", # enabling this results in an error that's impossible to link to this line.
   "frame-benchmarking",
+  "pallet-balances/runtime-benchmarks",
+  "frame-support/runtime-benchmarks",
 ]
 std = [
   "codec/std",
+  "ctype/std",
   "frame-support/std",
   "frame-system/std",
+  "hex/std",
   "kilt-primitives/std",
   "kilt-support/std",
-  "hex/std",
+  "kilt-support/std",
   "log/std",
+  "pallet-balances/std",
   "sp-core/std",
-  "sp-keystore/std",
   "sp-io/std",
+  "sp-keystore/std",
   "sp-runtime/std",
   "sp-std/std",
 ]

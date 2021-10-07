@@ -55,11 +55,11 @@ mock = [
   "sp-keystore",
 ]
 runtime-benchmarks = [
-  "frame-benchmarking",
-  "frame-system/runtime-benchmarks",
-  "frame-support/runtime-benchmarks",
-  "sp-core",
   "delegation/runtime-benchmarks",
+  "frame-benchmarking",
+  "frame-support/runtime-benchmarks",
+  "frame-system/runtime-benchmarks",
+  "sp-core",
 ]
 std = [
   "codec/std",
@@ -68,13 +68,13 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "kilt-primitives/std",
-  "pallet-balances/std",
+  "kilt-support/std",
   "log/std",
+  "pallet-balances/std",
   "sp-core/std",
   "sp-io/std",
   "sp-runtime/std",
   "sp-std/std",
-  "kilt-support/std",
 ]
 try-runtime = [
   "frame-support/try-runtime",

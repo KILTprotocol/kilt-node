@@ -21,7 +21,7 @@
 
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use frame_system::EnsureSigned;
-use kilt_primitives::AccountId;
+use kilt_primitives::{AccountId, Balance};
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
@@ -51,6 +51,7 @@ frame_support::construct_runtime!(
 	{
 		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>},
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
+		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 	}
 );
@@ -76,7 +77,7 @@ impl frame_system::Config for Test {
 	type Version = ();
 
 	type PalletInfo = PalletInfo;
-	type AccountData = ();
+	type AccountData = pallet_balances::AccountData<Balance>;
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type BaseCallFilter = frame_support::traits::Everything;
@@ -113,11 +114,29 @@ impl Config for Test {
 	type WeightInfo = ();
 }
 
-impl ctype::Config for Test {
-	type CtypeCreatorId = TestCtypeOwner;
-	type Event = ();
-	type WeightInfo = ();
+parameter_types! {
+	pub const ExistentialDeposit: Balance = 500;
+	pub const MaxLocks: u32 = 50;
+	pub const MaxReserves: u32 = 50;
+}
 
+impl pallet_balances::Config for Test {
+	type Balance = Balance;
+	type DustRemoval = ();
+	type Event = ();
+	type ExistentialDeposit = ExistentialDeposit;
+	type AccountStore = System;
+	type WeightInfo = ();
+	type MaxLocks = MaxLocks;
+	type MaxReserves = MaxReserves;
+	type ReserveIdentifier = [u8; 8];
+}
+
+parameter_types! {
+	pub const Fee: Balance = 0;
+}
+
+impl ctype::Config for Test {
 	#[cfg(feature = "runtime-benchmarks")]
 	type EnsureOrigin = EnsureSigned<TestDidIdentifier>;
 	#[cfg(feature = "runtime-benchmarks")]
@@ -127,6 +146,13 @@ impl ctype::Config for Test {
 	type EnsureOrigin = did::EnsureDidOrigin<TestCtypeOwner, kilt_primitives::AccountId>;
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type OriginSuccess = did::DidRawOrigin<kilt_primitives::AccountId, TestCtypeOwner>;
+
+	type CtypeCreatorId = TestCtypeOwner;
+	type Event = ();
+	type WeightInfo = ();
+	type Currency = Balances;
+	type Fee = Fee;
+	type FeeCollector = ();
 }
 
 #[cfg(test)]
@@ -260,26 +286,26 @@ pub fn generate_key_id(key: &did::DidPublicKey) -> TestKeyId {
 	utils::calculate_key_id::<Test>(key)
 }
 
-pub(crate) fn get_attestation_key_test_input() -> TestCtypeHash {
-	TestCtypeHash::from_slice(&[0u8; 32])
+pub(crate) fn get_attestation_key_test_input() -> Vec<u8> {
+	[0u8; 32].to_vec()
 }
 pub(crate) fn get_attestation_key_call() -> Call {
 	Call::Ctype(ctype::Call::add(get_attestation_key_test_input()))
 }
-pub(crate) fn get_authentication_key_test_input() -> TestCtypeHash {
-	TestCtypeHash::from_slice(&[1u8; 32])
+pub(crate) fn get_authentication_key_test_input() -> Vec<u8> {
+	[1u8; 32].to_vec()
 }
 pub(crate) fn get_authentication_key_call() -> Call {
 	Call::Ctype(ctype::Call::add(get_authentication_key_test_input()))
 }
-pub(crate) fn get_delegation_key_test_input() -> TestCtypeHash {
-	TestCtypeHash::from_slice(&[2u8; 32])
+pub(crate) fn get_delegation_key_test_input() -> Vec<u8> {
+	[2u8; 32].to_vec()
 }
 pub(crate) fn get_delegation_key_call() -> Call {
 	Call::Ctype(ctype::Call::add(get_delegation_key_test_input()))
 }
-pub(crate) fn get_none_key_test_input() -> TestCtypeHash {
-	TestCtypeHash::from_slice(&[3u8; 32])
+pub(crate) fn get_none_key_test_input() -> Vec<u8> {
+	[3u8; 32].to_vec()
 }
 pub(crate) fn get_none_key_call() -> Call {
 	Call::Ctype(ctype::Call::add(get_none_key_test_input()))
@@ -343,11 +369,23 @@ pub struct ExtBuilder {
 	dids_stored: Vec<(TestDidIdentifier, did::DidDetails<Test>)>,
 	deleted_dids: Vec<TestDidIdentifier>,
 	storage_version: DidStorageVersion,
+	ctypes_stored: Vec<(TestCtypeHash, TestCtypeOwner)>,
+	balances: Vec<(AccountIdentifierOf<Test>, Balance)>,
 }
 
 impl ExtBuilder {
 	pub fn with_dids(mut self, dids: Vec<(TestDidIdentifier, did::DidDetails<Test>)>) -> Self {
 		self.dids_stored = dids;
+		self
+	}
+
+	pub(crate) fn with_balances(mut self, balances: Vec<(AccountIdentifierOf<Test>, Balance)>) -> Self {
+		self.balances = balances;
+		self
+	}
+
+	pub fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, TestCtypeOwner)>) -> Self {
+		self.ctypes_stored = ctypes;
 		self
 	}
 
@@ -365,11 +403,20 @@ impl ExtBuilder {
 		let mut ext = if let Some(ext) = ext {
 			ext
 		} else {
-			let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+			pallet_balances::GenesisConfig::<Test> {
+				balances: self.balances.clone(),
+			}
+			.assimilate_storage(&mut storage)
+			.expect("assimilate should not fail");
 			sp_io::TestExternalities::new(storage)
 		};
 
 		ext.execute_with(|| {
+			for (ctype_hash, owner) in self.ctypes_stored.iter() {
+				ctype::Ctypes::<Test>::insert(ctype_hash, owner);
+			}
+
 			for did in self.dids_stored.iter() {
 				did::Did::<Test>::insert(did.0.clone(), did.1.clone());
 			}
@@ -384,8 +431,8 @@ impl ExtBuilder {
 
 	// allowance only required for clippy, this function is actually used
 	#[allow(dead_code)]
-	pub fn build_with_keystore(self, ext: Option<sp_io::TestExternalities>) -> sp_io::TestExternalities {
-		let mut ext = self.build(ext);
+	pub fn build_with_keystore(self) -> sp_io::TestExternalities {
+		let mut ext = self.build(None);
 
 		let keystore = KeyStore::new();
 		ext.register_extension(KeystoreExt(Arc::new(keystore)));

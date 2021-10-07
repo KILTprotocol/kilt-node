@@ -177,12 +177,20 @@ pub(crate) mod runtime {
 		type ReserveIdentifier = [u8; 8];
 	}
 
+	parameter_types! {
+		pub const Fee: TestBalance = 500;
+	}
+
 	impl ctype::Config for Test {
 		type CtypeCreatorId = TestCtypeOwner;
 		type EnsureOrigin = EnsureSigned<TestCtypeOwner>;
 		type OriginSuccess = TestCtypeOwner;
 		type Event = ();
 		type WeightInfo = ();
+
+		type Currency = Balances;
+		type Fee = Fee;
+		type FeeCollector = ();
 	}
 
 	parameter_types! {

@@ -40,14 +40,15 @@ runtime-benchmarks = [
   "kilt-primitives",
 ]
 std = [
-  "serde",
   "codec/std",
+  "frame-benchmarking/std",
   "frame-support/std",
   "frame-system/std",
-  "frame-benchmarking/std",
+  "kilt-primitives/std",
   "log/std",
   "pallet-balances/std",
   "pallet-vesting/std",
+  "serde",
   "sp-runtime/std",
   "sp-std/std",
 ]

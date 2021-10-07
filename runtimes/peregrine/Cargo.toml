@@ -15,7 +15,6 @@ static_assertions = "1.1.0"
 # RPC
 frame-system-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 pallet-transaction-payment-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
-pallet-vesting = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 
 # KILT pallets & primitives
 attestation = {default-features = false, path = "../../pallets/attestation"}
@@ -60,6 +59,7 @@ pallet-timestamp = {git = "https://github.com/paritytech/substrate", default-fea
 pallet-transaction-payment = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 pallet-treasury = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 pallet-utility = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
+pallet-vesting = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 
 # Cumulus dependencies
 cumulus-pallet-aura-ext = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.10"}
@@ -97,8 +97,8 @@ runtime-benchmarks = [
   "did/runtime-benchmarks",
   "frame-benchmarking",
   "frame-support/runtime-benchmarks",
-  "frame-system/runtime-benchmarks",
   "frame-system-benchmarking",
+  "frame-system/runtime-benchmarks",
   "hex-literal",
   "kilt-launch/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
@@ -109,8 +109,8 @@ runtime-benchmarks = [
   "pallet-scheduler/runtime-benchmarks", # "cumulus-pallet-session-benchmarking",
   "pallet-timestamp/runtime-benchmarks",
   "pallet-treasury/runtime-benchmarks",
-  "pallet-vesting/runtime-benchmarks",
   "pallet-utility/runtime-benchmarks",
+  "pallet-vesting/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
   "rococo-runtime/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
@@ -126,8 +126,10 @@ std = [
   "cumulus-primitives-timestamp/std",
   "delegation/std",
   "did/std",
+  "frame-benchmarking/std",
   "frame-executive/std",
   "frame-support/std",
+  "frame-system-benchmarking/std",
   "frame-system-rpc-runtime-api/std",
   "frame-system/std",
   "frame-try-runtime/std",
@@ -154,6 +156,7 @@ std = [
   "parachain-info/std",
   "parachain-staking/std",
   "polkadot-parachain/std",
+  "rococo-runtime/std",
   "serde",
   "sp-api/std",
   "sp-arithmetic/std",

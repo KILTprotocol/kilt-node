@@ -721,6 +721,6 @@ benchmarks! {
 
 impl_benchmark_test_suite! {
 	Pallet,
-	crate::mock::ExtBuilder::default().build_with_keystore(None),
+	crate::mock::ExtBuilder::default().build_with_keystore(),
 	crate::mock::Test
 }
