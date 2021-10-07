@@ -226,6 +226,8 @@ benchmarks! {
 	}
 
 	add_delegation {
+		assert_eq!(DelegationHierarchies::<T>::iter().collect::<Vec<(T::DelegationNodeId, DelegationHierarchyDetails<T>)>>().len(), 0);
+
 		// do setup
 		let (_, hierarchy_id, leaf_acc, leaf_id) = setup_delegations::<T>(1, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
 
