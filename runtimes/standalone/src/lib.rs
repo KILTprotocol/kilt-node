@@ -41,7 +41,7 @@ use kilt_primitives::{
 			MAX_BLOCKS_TX_VALIDITY, MAX_ENDPOINT_URLS_COUNT, MAX_KEY_AGREEMENT_KEYS, MAX_PUBLIC_KEYS_PER_DID,
 			MAX_TOTAL_KEY_AGREEMENT_KEYS, MAX_URL_LENGTH,
 		},
-		KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION,
+		KILT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION,
 	},
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature,
 };
@@ -415,6 +415,7 @@ parameter_types! {
 	pub const MaxEndpointUrlsCount: u32 = MAX_ENDPOINT_URLS_COUNT;
 	// Standalone block time is half the duration of a parachain block.
 	pub const MaxBlocksTxValidity: BlockNumber = MAX_BLOCKS_TX_VALIDITY * 2;
+	pub const DidDeposit: Balance = 100 * MICRO_KILT;
 }
 
 impl did::Config for Runtime {
@@ -422,6 +423,8 @@ impl did::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
 	type Origin = Origin;
+	type Currency = Balances;
+	type Deposit = DidDeposit;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<Self::DidIdentifier, AccountId>;

@@ -142,9 +142,12 @@ use migrations::*;
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_support::pallet_prelude::*;
+	use frame_support::{
+		pallet_prelude::*,
+		traits::{Currency, ReservableCurrency},
+	};
 	use frame_system::pallet_prelude::*;
-	use kilt_support::traits::CallSources;
+	use kilt_support::{deposit::Deposit, traits::CallSources};
 
 	/// Reference to a payload of data of variable size.
 	pub type Payload = [u8];
@@ -167,6 +170,10 @@ pub mod pallet {
 	/// Type for origin that supports a DID sender.
 	#[pallet::origin]
 	pub type Origin<T> = DidRawOrigin<DidIdentifierOf<T>, AccountIdentifierOf<T>>;
+
+	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
+
+	pub(crate) type BalanceOf<T> = <CurrencyOf<T> as Currency<AccountIdentifierOf<T>>>::Balance;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + Debug {
@@ -197,6 +204,12 @@ pub mod pallet {
 
 		/// Overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+
+		/// The currency that is used to reserve funds for each did.
+		type Currency: Currency<AccountIdentifierOf<Self>> + ReservableCurrency<AccountIdentifierOf<Self>>;
+
+		// TODO: doc
+		type Deposit: Get<BalanceOf<Self>>;
 
 		/// Maximum number of total public keys which can be stored per DID key
 		/// identifier. This includes the ones currently used for
@@ -437,8 +450,17 @@ pub mod pallet {
 				.verify_and_recover_signature(&details.encode(), &signature)
 				.map_err(Error::<T>::from)?;
 
-			let did_entry =
-				DidDetails::from_creation_details(details, account_did_auth_key).map_err(Error::<T>::from)?;
+			let did_entry = DidDetails::from_creation_details(
+				details,
+				account_did_auth_key,
+				Deposit {
+					owner: sender.clone(),
+					amount: T::Deposit::get(),
+				},
+			)
+			.map_err(Error::<T>::from)?;
+
+			// *** No Fail beyond this point ***
 
 			log::debug!("Creating DID {:?}", &did_identifier);
 			Did::<T>::insert(&did_identifier, did_entry);

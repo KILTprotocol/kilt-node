@@ -19,9 +19,10 @@
 #![allow(clippy::from_over_into)]
 #![allow(dead_code)]
 
-use frame_support::{parameter_types, weights::constants::RocksDbWeight};
+use frame_support::{parameter_types, traits::Currency, weights::constants::RocksDbWeight};
 use frame_system::EnsureSigned;
-use kilt_primitives::{AccountId, Balance};
+use kilt_primitives::{constants::MICRO_KILT, AccountId, Balance};
+use kilt_support::deposit;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
@@ -98,6 +99,7 @@ parameter_types! {
 	#[derive(Debug, Clone)]
 	pub const MaxPublicKeysPerDid: u32 = 13u32;
 	pub const MaxBlocksTxValidity: u64 = 300u64;
+	pub const Deposit: Balance = MICRO_KILT;
 }
 
 impl Config for Test {
@@ -107,6 +109,8 @@ impl Config for Test {
 	type EnsureOrigin = EnsureSigned<TestDidIdentifier>;
 	type OriginSuccess = AccountId;
 	type Event = ();
+	type Currency = Balances;
+	type Deposit = Deposit;
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
 	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
