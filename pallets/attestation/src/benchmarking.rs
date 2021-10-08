@@ -34,8 +34,8 @@ benchmarks! {
 		T: core::fmt::Debug,
 		T::AccountId: From<sr25519::Public> + Into<T::DelegationEntityId>,
 		T::DelegationNodeId: From<T::Hash>,
-		T::Signature: From<MultiSignature>,
 		T::CtypeCreatorId: From<T::AccountId>,
+		T::DelegationEntityId: From<T::AccountId>,
 	}
 
 	add {

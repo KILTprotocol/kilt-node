@@ -16,9 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-#![allow(clippy::from_over_into)]
-
-use crate::CurrencyOf;
+use ctype::mock as ctype_mock;
 use frame_support::{
 	parameter_types,
 	storage::bounded_btree_set::BoundedBTreeSet,
@@ -32,16 +30,15 @@ use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	MultiSignature, MultiSigner,
+	MultiSigner,
 };
 use sp_std::sync::Arc;
 
+use crate as delegation;
+use crate::{delegation_hierarchy::VerifyDelegateSignature, CurrencyOf, *};
+
 #[cfg(test)]
 use codec::Encode;
-
-use crate as delegation;
-use crate::*;
-use ctype::mock as ctype_mock;
 
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
@@ -49,7 +46,7 @@ pub type Block = frame_system::mocking::MockBlock<Test>;
 type TestCtypeOwner = kilt_primitives::AccountId;
 type TestDelegationNodeId = kilt_primitives::Hash;
 type TestDelegatorId = TestCtypeOwner;
-type TestDelegateSignature = MultiSignature;
+type TestDelegateSignature = (TestDelegatorId, Vec<u8>);
 type TestBalance = kilt_primitives::Balance;
 type TestCtypeHash = ctype_mock::TestCtypeHash;
 
@@ -143,8 +140,8 @@ parameter_types! {
 }
 
 impl Config for Test {
-	type Signature = MultiSignature;
-	type DelegationSignatureVerification = DelegateSignatureVerifier;
+	type Signature = TestDelegateSignature;
+	type DelegationSignatureVerification = EqualVerify<Self::DelegationEntityId, Vec<u8>>;
 	type DelegationEntityId = TestDelegatorId;
 	type DelegationNodeId = TestDelegationNodeId;
 	type EnsureOrigin = EnsureSigned<TestDelegatorId>;
@@ -158,27 +155,6 @@ impl Config for Test {
 	type Currency = Balances;
 	type Deposit = DepositMock;
 	type WeightInfo = ();
-}
-
-pub struct DelegateSignatureVerifier;
-impl VerifyDelegateSignature for DelegateSignatureVerifier {
-	type DelegateId = TestDelegatorId;
-	type Payload = Vec<u8>;
-	type Signature = MultiSignature;
-
-	// No need to retrieve delegate details as it is simply an AccountId.
-	fn verify(
-		delegate: &Self::DelegateId,
-		payload: &Self::Payload,
-		signature: &Self::Signature,
-	) -> SignatureVerificationResult {
-		ensure!(
-			signature.verify(&payload[..], delegate),
-			SignatureVerificationError::SignatureInvalid
-		);
-
-		Ok(())
-	}
 }
 
 const ALICE_SEED: [u8; 32] = [0u8; 32];

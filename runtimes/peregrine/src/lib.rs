@@ -29,8 +29,6 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use did::DidSignature;
 use frame_support::{traits::LockIdentifier, PalletId};
-#[cfg(feature = "runtime-benchmarks")]
-use frame_system::EnsureSigned;
 use frame_system::{
 	limits::{BlockLength, BlockWeights},
 	EnsureOneOf, EnsureRoot,
@@ -71,13 +69,16 @@ use sp_runtime::{
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 
+#[cfg(feature = "std")]
+use sp_version::NativeVersion;
+
+#[cfg(feature = "runtime-benchmarks")]
+use {delegation::AlwaysVerify, frame_system::EnsureSigned};
+
 mod fee;
 #[cfg(test)]
 mod tests;
 mod weights;
-
-#[cfg(feature = "std")]
-use sp_version::NativeVersion;
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
@@ -542,6 +543,13 @@ impl<R: did::Config> delegation::VerifyDelegateSignature for DelegationSignature
 			_ => delegation::SignatureVerificationError::SignerInformationNotPresent,
 		})
 	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn valid_signature(_: &Self::DelegateId, _: &Self::Payload) -> Self::Signature {
+		// This is unimplemented because this implementation shouldn't be used for benchmarking a pallet.
+		// the verify function get's benchmarked separately.
+		unimplemented!()
+	}
 }
 
 parameter_types! {
@@ -579,20 +587,27 @@ parameter_types! {
 }
 
 impl delegation::Config for Runtime {
-	type Signature = DidSignature;
-	type DelegationSignatureVerification = DelegationSignatureVerifier<Runtime>;
-	type DelegationEntityId = AccountId;
+
+	type DelegationEntityId = DidIdentifier;
 	type DelegationNodeId = Hash;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type DelegationSignatureVerification = DelegationSignatureVerifier<Runtime>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type Signature = DidSignature;
 
 	#[cfg(feature = "runtime-benchmarks")]
 	type EnsureOrigin = EnsureSigned<DidIdentifier>;
 	#[cfg(feature = "runtime-benchmarks")]
 	type OriginSuccess = DidIdentifier;
+	#[cfg(feature = "runtime-benchmarks")]
+	type DelegationSignatureVerification = AlwaysVerify<Self::DelegationEntityId, Vec<u8>, Self::Signature>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type Signature = ();
 
 	type Event = Event;
 	type MaxSignatureByteLength = MaxSignatureByteLength;

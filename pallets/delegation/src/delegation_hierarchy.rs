@@ -16,14 +16,14 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::pallet::AccountIdOf;
 use bitflags::bitflags;
 use codec::{Decode, Encode};
 use ctype::CtypeHashOf;
 use frame_support::{dispatch::DispatchResult, storage::bounded_btree_set::BoundedBTreeSet};
 use kilt_support::deposit::Deposit;
+use sp_std::marker::PhantomData;
 
-use crate::*;
+use crate::{pallet::AccountIdOf, *};
 
 bitflags! {
 	/// Bitflags for permissions.
@@ -190,4 +190,61 @@ pub trait VerifyDelegateSignature {
 		payload: &Self::Payload,
 		signature: &Self::Signature,
 	) -> SignatureVerificationResult;
+
+	#[cfg(any(feature = "runtime-benchmarks", test))]
+	fn valid_signature(delegate: &Self::DelegateId, payload: &Self::Payload) -> Self::Signature;
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+pub struct AlwaysVerify<A, B, C>(PhantomData<(A, B, C)>);
+#[cfg(feature = "runtime-benchmarks")]
+impl<Account, Payload, Signature: Default> VerifyDelegateSignature for AlwaysVerify<Account, Payload, Signature> {
+	type DelegateId = Account;
+
+	type Payload = Payload;
+
+	type Signature = Signature;
+
+	fn verify(
+		_delegate: &Self::DelegateId,
+		_payload: &Self::Payload,
+		_signature: &Self::Signature,
+	) -> SignatureVerificationResult {
+		SignatureVerificationResult::Ok(())
+	}
+
+	fn valid_signature(_delegate: &Self::DelegateId, _payload: &Self::Payload) -> Self::Signature {
+		Default::default()
+	}
+}
+
+#[cfg(any(feature = "runtime-benchmarks", test))]
+pub struct EqualVerify<A, B>(PhantomData<(A, B)>);
+#[cfg(any(feature = "runtime-benchmarks", test))]
+impl<Account, Payload> VerifyDelegateSignature for EqualVerify<Account, Payload>
+where
+	Account: PartialEq + Clone,
+	Payload: PartialEq + Clone,
+{
+	type DelegateId = Account;
+
+	type Payload = Payload;
+
+	type Signature = (Account, Payload);
+
+	fn verify(
+		delegate: &Self::DelegateId,
+		payload: &Self::Payload,
+		signature: &Self::Signature,
+	) -> SignatureVerificationResult {
+		if (delegate, payload) == (&signature.0, &signature.1) {
+			SignatureVerificationResult::Ok(())
+		} else {
+			SignatureVerificationResult::Err(SignatureVerificationError::SignatureInvalid)
+		}
+	}
+
+	fn valid_signature(delegate: &Self::DelegateId, payload: &Self::Payload) -> Self::Signature {
+		(delegate.clone(), payload.clone())
+	}
 }
