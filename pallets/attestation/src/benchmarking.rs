@@ -21,7 +21,7 @@ use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
 use frame_support::traits::{Currency, Get};
 use frame_system::RawOrigin;
 use sp_core::sr25519;
-use sp_runtime::{traits::Hash, MultiSignature};
+use sp_runtime::traits::Hash;
 use sp_std::num::NonZeroU32;
 
 use crate::*;

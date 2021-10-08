@@ -20,6 +20,7 @@ use codec::Encode;
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
 	dispatch::DispatchErrorWithPostInfo,
+	storage::bounded_btree_set::BoundedBTreeSet,
 	traits::{Currency, Get},
 };
 use frame_system::RawOrigin;
@@ -206,10 +207,24 @@ benchmarks! {
 		<T as frame_system::Config>::Origin: From<RawOrigin<<T as pallet::Config>::DelegationEntityId>>,
 		T::CtypeCreatorId: From<T::AccountId>,
 	}
-	add_delegation {
+
+	create_hierarchy {
 		assert_eq!(DelegationHierarchies::<T>::iter().collect::<Vec<(T::DelegationNodeId, DelegationHierarchyDetails<T>)>>().len(), 0);
 
-		// do setup
+		let caller: T::AccountId = account("caller", 0, SEED);
+		let ctype = <T::Hash as Default>::default();
+		let delegation = generate_delegation_id::<T>(0);
+		ctype::Ctypes::<T>::insert(&ctype, T::CtypeCreatorId::from(caller.clone()));
+		<T as Config>::Currency::make_free_balance_be(
+			&caller,
+			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get(),
+		);
+	}: _(RawOrigin::Signed(caller), delegation, ctype)
+	verify {
+		assert!(DelegationHierarchies::<T>::contains_key(delegation));
+	}
+
+	add_delegation {
 		let (
 			DelegationTriplet::<T> {
 				public: root_public,
@@ -241,6 +256,69 @@ benchmarks! {
 	}: _(RawOrigin::Signed(leaf_acc_id), delegation_id, hierarchy_id, delegate_acc_id.into(), perm, sig)
 	verify {
 		assert!(DelegationNodes::<T>::contains_key(delegation_id));
+	}
+
+	// worst case #1: revoke a child of the root delegation
+	// because all of its children have to be revoked
+	// complexitiy: O(h * c) with h = height of the delegation tree, c = max number of children in a level
+	revoke_delegation_root_child {
+		let r in 1 .. T::MaxRevocations::get();
+		let c in 1 .. T::MaxParentChecks::get();
+		let (_, hierarchy_id, leaf_acc, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
+
+		let root_node = DelegationNodes::<T>::get(hierarchy_id).expect("Root hierarchy node should be present on chain.");
+		let children: BoundedBTreeSet<T::DelegationNodeId, T::MaxChildren> = root_node.children;
+		let child_id: T::DelegationNodeId = *children.iter().next().ok_or("Root should have children")?;
+		let child_delegation = DelegationNodes::<T>::get(child_id).ok_or("Child of root should have delegation id")?;
+		<T as Config>::Currency::make_free_balance_be(
+			&child_delegation.deposit.owner.clone(),
+			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get(),
+		);
+	}: revoke_delegation(RawOrigin::Signed(child_delegation.details.owner.clone()), child_id, c, r)
+	verify {
+		assert!(DelegationNodes::<T>::contains_key(child_id));
+		let DelegationNode::<T> { details, .. } = DelegationNodes::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
+		assert!(details.revoked);
+
+		assert!(DelegationNodes::<T>::contains_key(leaf_id));
+		let leaf_delegation = DelegationNodes::<T>::get(leaf_id).ok_or("Missing leaf delegation")?;
+		assert_eq!(leaf_delegation.hierarchy_root_id, hierarchy_id);
+		assert_eq!(leaf_delegation.details.owner, T::AccountId::from(leaf_acc).into());
+		assert!(leaf_delegation.details.revoked);
+	}
+	// TODO: Might want to add variant iterating over children instead of depth at some later point
+
+	// worst case #2: revoke leaf node as root
+	// because `is_delegating` has to traverse up to the root
+	// complexitiy: O(h) with h = height of the delegation tree
+	revoke_delegation_leaf {
+		let r in 1 .. T::MaxRevocations::get();
+		let c in 1 .. T::MaxParentChecks::get();
+		let (root_acc, _, _, leaf_id) = setup_delegations::<T>(c, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
+	}: revoke_delegation(RawOrigin::Signed(T::AccountId::from(root_acc).into()), leaf_id, c, r)
+	verify {
+		assert!(DelegationNodes::<T>::contains_key(leaf_id));
+		let DelegationNode::<T> { details, .. } = DelegationNodes::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
+		assert!(details.revoked);
+	}
+	// TODO: Might want to add variant iterating over children instead of depth at some later point
+
+	// worst case is achieved by removing the root node, since `is_delegating` is not called in remove extrinsic,
+	remove_delegation {
+		let r in 1 .. T::MaxRevocations::get();
+		let (root_acc, hierarchy_id, _, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
+		let root_owner = T::AccountId::from(root_acc).into();
+		let root_node = DelegationNodes::<T>::get(hierarchy_id).expect("Root hierarchy node should be present on chain.");
+		let children: BoundedBTreeSet<T::DelegationNodeId, T::MaxChildren> = root_node.children;
+		let child_id: T::DelegationNodeId = *children.iter().next().ok_or("Root should have children")?;
+		let child_delegation = DelegationNodes::<T>::get(child_id).ok_or("Child of root should have delegation id")?;
+		assert!(!<T as Config>::Currency::reserved_balance(&root_acc.clone().into()).is_zero());
+	}: remove_delegation(RawOrigin::Signed(root_owner.clone()), hierarchy_id, r)
+	verify {
+		assert!(!DelegationNodes::<T>::contains_key(hierarchy_id));
+		assert!(!DelegationNodes::<T>::contains_key(child_id));
+		assert!(!DelegationNodes::<T>::contains_key(leaf_id));
+		assert!(<T as Config>::Currency::reserved_balance(&root_acc.into()).is_zero());
 	}
 }
 
