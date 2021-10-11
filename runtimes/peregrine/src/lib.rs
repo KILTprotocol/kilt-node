@@ -76,6 +76,8 @@ mod fee;
 mod tests;
 mod weights;
 
+mod migrations;
+
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 
