@@ -19,10 +19,9 @@
 #![allow(clippy::from_over_into)]
 #![allow(dead_code)]
 
-use frame_support::{parameter_types, traits::Currency, weights::constants::RocksDbWeight};
+use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use frame_system::EnsureSigned;
 use kilt_primitives::{constants::MICRO_KILT, AccountId, Balance};
-use kilt_support::deposit;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{

@@ -16,12 +16,12 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{assert_err, assert_noop, assert_ok};
+use frame_support::{assert_err, assert_noop, assert_ok, traits::Currency};
 use sp_core::*;
 use sp_runtime::SaturatedConversion;
 use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom};
 
-use crate::{self as did, mock::*, mock_utils::*};
+use crate::{self as did, mock::*, mock_utils::*, AccountIdentifierOf};
 
 // create
 
@@ -34,26 +34,35 @@ fn check_successful_simple_ed25519_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	ExtBuilder::default().build(None).execute_with(|| {
-		assert_ok!(Did::create(
-			Origin::signed(ACCOUNT_00),
-			details,
-			did::DidSignature::from(signature),
-		));
-		let stored_did = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
-		assert_eq!(
-			stored_did.authentication_key,
-			generate_key_id(&auth_did_key.clone().into())
-		);
-		assert_eq!(stored_did.key_agreement_keys.len(), 0);
-		assert_eq!(stored_did.delegation_key, None);
-		assert_eq!(stored_did.attestation_key, None);
-		assert_eq!(stored_did.public_keys.len(), 1);
-		assert!(stored_did
-			.public_keys
-			.contains_key(&generate_key_id(&auth_did_key.into())));
-		assert_eq!(stored_did.last_tx_counter, 0u64);
-	});
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.build(None)
+		.execute_with(|| {
+			assert_ok!(Did::create(
+				Origin::signed(ACCOUNT_00),
+				details,
+				did::DidSignature::from(signature),
+			));
+			let stored_did = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
+			assert_eq!(
+				stored_did.authentication_key,
+				generate_key_id(&auth_did_key.clone().into())
+			);
+			assert_eq!(stored_did.key_agreement_keys.len(), 0);
+			assert_eq!(stored_did.delegation_key, None);
+			assert_eq!(stored_did.attestation_key, None);
+			assert_eq!(stored_did.public_keys.len(), 1);
+			assert!(stored_did
+				.public_keys
+				.contains_key(&generate_key_id(&auth_did_key.into())));
+			assert_eq!(stored_did.last_tx_counter, 0u64);
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as did::Config>::Deposit::get()
+			);
+		});
 }
 
 #[test]
@@ -65,26 +74,35 @@ fn check_successful_simple_sr25519_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	ExtBuilder::default().build(None).execute_with(|| {
-		assert_ok!(Did::create(
-			Origin::signed(ACCOUNT_00),
-			details,
-			did::DidSignature::from(signature),
-		));
-		let stored_did = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
-		assert_eq!(
-			stored_did.authentication_key,
-			generate_key_id(&auth_did_key.clone().into())
-		);
-		assert_eq!(stored_did.key_agreement_keys.len(), 0);
-		assert_eq!(stored_did.delegation_key, None);
-		assert_eq!(stored_did.attestation_key, None);
-		assert_eq!(stored_did.public_keys.len(), 1);
-		assert!(stored_did
-			.public_keys
-			.contains_key(&generate_key_id(&auth_did_key.into())));
-		assert_eq!(stored_did.last_tx_counter, 0u64);
-	});
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.build(None)
+		.execute_with(|| {
+			assert_ok!(Did::create(
+				Origin::signed(ACCOUNT_00),
+				details,
+				did::DidSignature::from(signature),
+			));
+			let stored_did = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
+			assert_eq!(
+				stored_did.authentication_key,
+				generate_key_id(&auth_did_key.clone().into())
+			);
+			assert_eq!(stored_did.key_agreement_keys.len(), 0);
+			assert_eq!(stored_did.delegation_key, None);
+			assert_eq!(stored_did.attestation_key, None);
+			assert_eq!(stored_did.public_keys.len(), 1);
+			assert!(stored_did
+				.public_keys
+				.contains_key(&generate_key_id(&auth_did_key.into())));
+			assert_eq!(stored_did.last_tx_counter, 0u64);
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as did::Config>::Deposit::get()
+			);
+		});
 }
 
 #[test]
@@ -96,26 +114,35 @@ fn check_successful_simple_ecdsa_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	ExtBuilder::default().build(None).execute_with(|| {
-		assert_ok!(Did::create(
-			Origin::signed(ACCOUNT_00),
-			details,
-			did::DidSignature::from(signature),
-		));
-		let stored_did = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
-		assert_eq!(
-			stored_did.authentication_key,
-			generate_key_id(&auth_did_key.clone().into())
-		);
-		assert_eq!(stored_did.key_agreement_keys.len(), 0);
-		assert_eq!(stored_did.delegation_key, None);
-		assert_eq!(stored_did.attestation_key, None);
-		assert_eq!(stored_did.public_keys.len(), 1);
-		assert!(stored_did
-			.public_keys
-			.contains_key(&generate_key_id(&auth_did_key.into())));
-		assert_eq!(stored_did.last_tx_counter, 0u64);
-	});
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.build(None)
+		.execute_with(|| {
+			assert_ok!(Did::create(
+				Origin::signed(ACCOUNT_00),
+				details,
+				did::DidSignature::from(signature),
+			));
+			let stored_did = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
+			assert_eq!(
+				stored_did.authentication_key,
+				generate_key_id(&auth_did_key.clone().into())
+			);
+			assert_eq!(stored_did.key_agreement_keys.len(), 0);
+			assert_eq!(stored_did.delegation_key, None);
+			assert_eq!(stored_did.attestation_key, None);
+			assert_eq!(stored_did.public_keys.len(), 1);
+			assert!(stored_did
+				.public_keys
+				.contains_key(&generate_key_id(&auth_did_key.into())));
+			assert_eq!(stored_did.last_tx_counter, 0u64);
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as did::Config>::Deposit::get()
+			);
+		});
 }
 
 #[test]
@@ -139,50 +166,59 @@ fn check_successful_complete_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	ExtBuilder::default().build(None).execute_with(|| {
-		assert_ok!(Did::create(
-			Origin::signed(ACCOUNT_00),
-			details.clone(),
-			did::DidSignature::from(signature),
-		));
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.build(None)
+		.execute_with(|| {
+			assert_ok!(Did::create(
+				Origin::signed(ACCOUNT_00),
+				details.clone(),
+				did::DidSignature::from(signature),
+			));
 
-		let stored_did = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
-		assert_eq!(
-			stored_did.authentication_key,
-			generate_key_id(&auth_did_key.clone().into())
-		);
-		assert_eq!(stored_did.key_agreement_keys.len(), 2);
-		for key in enc_keys.iter().copied() {
-			assert!(stored_did.key_agreement_keys.contains(&generate_key_id(&key.into())))
-		}
-		assert_eq!(
-			stored_did.delegation_key,
-			Some(generate_key_id(&details.new_delegation_key.clone().unwrap().into()))
-		);
-		assert_eq!(
-			stored_did.attestation_key,
-			Some(generate_key_id(&details.new_attestation_key.clone().unwrap().into()))
-		);
-		// Authentication key + 2 * Encryption key + Delegation key + Attestation key =
-		// 5
-		assert_eq!(stored_did.public_keys.len(), 5);
-		assert!(stored_did
-			.public_keys
-			.contains_key(&generate_key_id(&auth_did_key.into())));
-		let mut key_agreement_keys_iterator = details.new_key_agreement_keys.iter().copied();
-		assert!(stored_did
-			.public_keys
-			.contains_key(&generate_key_id(&key_agreement_keys_iterator.next().unwrap().into())));
-		assert!(stored_did
-			.public_keys
-			.contains_key(&generate_key_id(&key_agreement_keys_iterator.next().unwrap().into())));
-		assert!(stored_did
-			.public_keys
-			.contains_key(&generate_key_id(&details.new_attestation_key.clone().unwrap().into())));
-		assert!(stored_did
-			.public_keys
-			.contains_key(&generate_key_id(&details.new_delegation_key.clone().unwrap().into())));
-	});
+			let stored_did = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
+			assert_eq!(
+				stored_did.authentication_key,
+				generate_key_id(&auth_did_key.clone().into())
+			);
+			assert_eq!(stored_did.key_agreement_keys.len(), 2);
+			for key in enc_keys.iter().copied() {
+				assert!(stored_did.key_agreement_keys.contains(&generate_key_id(&key.into())))
+			}
+			assert_eq!(
+				stored_did.delegation_key,
+				Some(generate_key_id(&details.new_delegation_key.clone().unwrap().into()))
+			);
+			assert_eq!(
+				stored_did.attestation_key,
+				Some(generate_key_id(&details.new_attestation_key.clone().unwrap().into()))
+			);
+			// Authentication key + 2 * Encryption key + Delegation key + Attestation key =
+			// 5
+			assert_eq!(stored_did.public_keys.len(), 5);
+			assert!(stored_did
+				.public_keys
+				.contains_key(&generate_key_id(&auth_did_key.into())));
+			let mut key_agreement_keys_iterator = details.new_key_agreement_keys.iter().copied();
+			assert!(stored_did
+				.public_keys
+				.contains_key(&generate_key_id(&key_agreement_keys_iterator.next().unwrap().into())));
+			assert!(stored_did
+				.public_keys
+				.contains_key(&generate_key_id(&key_agreement_keys_iterator.next().unwrap().into())));
+			assert!(stored_did
+				.public_keys
+				.contains_key(&generate_key_id(&details.new_attestation_key.clone().unwrap().into())));
+			assert!(stored_did
+				.public_keys
+				.contains_key(&generate_key_id(&details.new_delegation_key.clone().unwrap().into())));
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as did::Config>::Deposit::get()
+			);
+		});
 }
 
 #[test]

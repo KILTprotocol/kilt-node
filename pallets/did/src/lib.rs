@@ -460,7 +460,9 @@ pub mod pallet {
 			)
 			.map_err(Error::<T>::from)?;
 
-			// *** No Fail beyond this point ***
+			// *** No Fail beyond this call ***
+			CurrencyOf::<T>::reserve(&did_entry.deposit.owner, did_entry.deposit.amount)?;
+
 
 			log::debug!("Creating DID {:?}", &did_identifier);
 			Did::<T>::insert(&did_identifier, did_entry);
