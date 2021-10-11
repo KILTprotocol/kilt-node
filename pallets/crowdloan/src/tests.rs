@@ -113,7 +113,7 @@ fn test_set_new_contribution_bad_origin_error() {
 	let contribution = BALANCE_01;
 
 	ExtBuilder::default()
-		.with_admin_account(admin.clone())
+		.with_admin_account(admin)
 		.build()
 		.execute_with(|| {
 			assert_noop!(
@@ -153,7 +153,7 @@ fn test_remove_contribution_bad_origin_error() {
 	let contribution = BALANCE_01;
 
 	ExtBuilder::default()
-		.with_admin_account(admin.clone())
+		.with_admin_account(admin)
 		.with_contributions(vec![(contributor.clone(), contribution)])
 		.build()
 		.execute_with(|| {
