@@ -894,9 +894,9 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	// Check if the provided block number is valid,
-	// i.e., if the current blockchain block is in the inclusive range
-	// [operation_block_number, operation_block_number + MaxBlocksTxValidity].
+	/// Check if the provided block number is valid,
+	/// i.e., if the current blockchain block is in the inclusive range
+	/// [operation_block_number, operation_block_number + MaxBlocksTxValidity].
 	fn validate_block_number_value(block_number: BlockNumberOf<T>) -> Result<(), DidError> {
 		let current_block_number = frame_system::Pallet::<T>::block_number();
 		let allowed_range = block_number..=block_number.saturating_add(T::MaxBlocksTxValidity::get());
@@ -909,12 +909,12 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	// Verify the validity of a DID-authorized operation nonce.
-	// To be valid, the nonce must be equal to the one currently stored + 1.
-	// This is to avoid quickly "consuming" all the possible values for the counter,
-	// as that would result in the DID being unusable, since we do not have yet any
-	// mechanism in place to wrap the counter value around when the limit is
-	// reached.
+	/// Verify the validity of a DID-authorized operation nonce.
+	/// To be valid, the nonce must be equal to the one currently stored + 1.
+	/// This is to avoid quickly "consuming" all the possible values for the counter,
+	/// as that would result in the DID being unusable, since we do not have yet any
+	/// mechanism in place to wrap the counter value around when the limit is
+	/// reached.
 	fn validate_counter_value(counter: u64, did_details: &DidDetails<T>) -> Result<(), DidError> {
 		// Verify that the operation counter is equal to the stored one + 1,
 		// possibly wrapping around when u64::MAX is reached.
@@ -927,7 +927,7 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	// Verify a generic payload signature using a given DID verification key type.
+	/// Verify a generic payload signature using a given DID verification key type.
 	pub fn verify_payload_signature_with_did_key_type(
 		payload: &Payload,
 		signature: &DidSignature,
