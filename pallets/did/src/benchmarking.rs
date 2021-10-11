@@ -252,6 +252,19 @@ benchmarks! {
 		);
 	}
 
+	reclaim_deposit {
+		let did_public_auth_key = get_ed25519_public_authentication_key();
+		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
+
+		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key));
+		Did::<T>::insert(&did_subject.clone(), did_details.clone());
+	}: _(RawOrigin::Signed(did_details.deposit.owner.clone()), did_subject.clone())
+	verify {
+		assert!(
+			Did::<T>::get(&did_subject).is_none()
+		);
+	}
+
 	/* submit_did_call extrinsic */
 	submit_did_call_ed25519_key {
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);

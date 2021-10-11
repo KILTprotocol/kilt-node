@@ -124,7 +124,7 @@ pub use crate::{default_weights::WeightInfo, did_details::*, errors::*, origin::
 
 use codec::Encode;
 use frame_support::{
-	dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo},
+	dispatch::{DispatchResult, Dispatchable, GetDispatchInfo, PostDispatchInfo},
 	ensure,
 	pallet_prelude::Weight,
 	storage::types::StorageMap,
@@ -353,6 +353,8 @@ pub mod pallet {
 		DidAlreadyDeleted,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
+		/// Only the owner of the deposit can reclaim its reserved balance.
+		NotOwnerOfDeposit,
 	}
 
 	impl<T> From<DidError> for Error<T> {
@@ -462,7 +464,6 @@ pub mod pallet {
 
 			// *** No Fail beyond this call ***
 			CurrencyOf::<T>::reserve(&did_entry.deposit.owner, did_entry.deposit.amount)?;
-
 
 			log::debug!("Creating DID {:?}", &did_identifier);
 			Did::<T>::insert(&did_identifier, did_entry);
@@ -724,21 +725,42 @@ pub mod pallet {
 			let source = T::EnsureOrigin::ensure_origin(origin)?;
 			let did_subject = source.subject();
 
-			ensure!(
-				// `take` calls `kill` internally
-				Did::<T>::take(&did_subject).is_some(),
-				Error::<T>::DidNotPresent
-			);
+			Pallet::<T>::delete_did(did_subject)
+		}
 
-			// Mark as deleted to prevent potential replay-attacks of re-adding a previously
-			// deleted DID.
-			DidBlacklist::<T>::insert(&did_subject, ());
+		/// Delete a DID from the chain and all information associated with it,
+		/// after verifying that the delete operation has been signed by the DID
+		/// subject using the authentication key currently stored on chain.
+		///
+		/// The referenced DID identifier must be present on chain before the
+		/// delete operation is evaluated.
+		///
+		/// After it is deleted, a DID with the same identifier cannot be
+		/// re-created ever again.
+		///
+		/// As the result of the deletion, all traces of the DID are removed
+		/// from the storage, which results in the invalidation of all
+		/// attestations issued by the DID subject.
+		///
+		/// The dispatch origin must be a DID origin proxied via the
+		/// `submit_did_call` extrinsic.
+		///
+		/// Emits `DidDeleted`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Did
+		/// - Kills: Did entry associated to the DID identifier
+		/// # </weight>
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit())]
+		pub fn reclaim_deposit(origin: OriginFor<T>, did_subject: DidIdentifierOf<T>) -> DispatchResult {
+			let source = ensure_signed(origin)?;
 
-			log::debug!("Deleting DID {:?}", did_subject);
+			let did_entry = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 
-			Self::deposit_event(Event::DidDeleted(did_subject));
+			ensure!(did_entry.deposit.owner == source, Error::<T>::NotOwnerOfDeposit);
 
-			Ok(())
+			Pallet::<T>::delete_did(did_subject)
 		}
 
 		/// Proxy a dispatchable call of another runtime extrinsic that
@@ -923,5 +945,24 @@ impl<T: Config> Pallet<T> {
 		verification_key
 			.verify_signature(payload, signature)
 			.map_err(DidError::SignatureError)
+	}
+
+	/// Deletes DID details from storage, adds the identifier to the blacklisted
+	/// DIDs and frees the deposit.
+	fn delete_did(did_subject: DidIdentifierOf<T>) -> DispatchResult {
+		// `take` calls `kill` internally
+		let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
+		// *** No Fail beyond this point ***
+
+		kilt_support::free_deposit::<AccountIdentifierOf<T>, CurrencyOf<T>>(&did_entry.deposit);
+		// Mark as deleted to prevent potential replay-attacks of re-adding a previously
+		// deleted DID.
+		DidBlacklist::<T>::insert(&did_subject, ());
+
+		log::debug!("Deleting DID {:?}", did_subject);
+
+		Self::deposit_event(Event::DidDeleted(did_subject));
+
+		Ok(())
 	}
 }
