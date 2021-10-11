@@ -19,10 +19,7 @@
 use crate::pallet as pallet_crowdloan;
 use frame_support::parameter_types;
 use kilt_primitives::{constants::KILT, AccountId, Balance, BlockNumber, Hash, Index};
-use sp_runtime::{
-	testing::Header,
-	traits::{BlakeTwo256, IdentityLookup},
-};
+use sp_runtime::{key_types::ACCOUNT, testing::Header, traits::{BlakeTwo256, IdentityLookup}};
 
 type TestUncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type TestBlock = frame_system::mocking::MockBlock<Test>;
@@ -90,8 +87,13 @@ impl pallet_balances::Config for Test {
 	type WeightInfo = ();
 }
 
+parameter_types! {
+	pub const InitialAdmin: TestAccountId = ACCOUNT_00;
+}
+
 impl pallet_crowdloan::Config for Test {
 	type Currency = Balances;
+	type InitialAdmin = InitialAdmin;
 	type Event = Event;
 	type WeightInfo = ();
 }

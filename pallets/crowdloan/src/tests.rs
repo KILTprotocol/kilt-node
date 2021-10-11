@@ -46,6 +46,27 @@ fn test_set_admin_account() {
 }
 
 #[test]
+fn test_no_admin_set() {
+	let admin = ACCOUNT_00;
+	let new_admin = ACCOUNT_01;
+
+	ExtBuilder::default()
+		.build()
+		.execute_with(|| {
+			assert_eq!(Crowdloan::admin_account(), admin);
+
+			// Change admin
+			assert_ok!(Crowdloan::set_admin_account(
+				Origin::signed(admin.clone()),
+				new_admin.clone()
+			));
+
+			// Test new admin is the one set
+			assert_eq!(Crowdloan::admin_account(), new_admin);
+		});
+}
+
+#[test]
 fn test_set_admin_account_bad_origin_error() {
 	let admin = ACCOUNT_00;
 	let other_admin = ACCOUNT_01;
