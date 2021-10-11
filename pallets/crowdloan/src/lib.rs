@@ -21,6 +21,9 @@
 #[cfg(test)]
 mod tests;
 
+#[cfg(test)]
+pub(crate) mod mock;
+
 pub use crate::pallet::*;
 
 #[frame_support::pallet]
@@ -31,7 +34,7 @@ pub mod pallet {
 		traits::{Currency, StorageVersion},
 	};
 	use frame_system::{pallet_prelude::*, WeightInfo};
-	use sp_runtime::traits::BadOrigin;
+	use sp_runtime::traits::{BadOrigin, StaticLookup};
 
 	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 	pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
@@ -98,15 +101,16 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(1)]
-		pub fn set_admin_account(origin: OriginFor<T>, new_account: AccountIdOf<T>) -> DispatchResult {
+		pub fn set_admin_account(origin: OriginFor<T>, new_account: <<T as frame_system::Config>::Lookup as StaticLookup>::Source) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			let old_account = AdminAccount::<T>::get();
 			ensure!(who == old_account, BadOrigin);
 
-			AdminAccount::<T>::set(new_account.clone());
+			let looked_up_account = <T as frame_system::Config>::Lookup::lookup(new_account)?;
+			AdminAccount::<T>::set(looked_up_account.clone());
 
-			Self::deposit_event(Event::NewAdminAccountSet(old_account, new_account));
+			Self::deposit_event(Event::NewAdminAccountSet(old_account, looked_up_account));
 
 			Ok(())
 		}
@@ -115,29 +119,33 @@ pub mod pallet {
 		#[pallet::weight(1)]
 		pub fn set_new_contribution(
 			origin: OriginFor<T>,
-			contributor_account: AccountIdOf<T>,
+			contributor_account: <<T as frame_system::Config>::Lookup as StaticLookup>::Source,
 			amount: BalanceOf<T>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			ensure!(who == AdminAccount::<T>::get(), BadOrigin);
 
-			let old_amount = Contributions::<T>::mutate(&contributor_account, |entry| {
+			let looked_up_account = <T as frame_system::Config>::Lookup::lookup(contributor_account)?;
+			let old_amount = Contributions::<T>::mutate(&looked_up_account, |entry| {
 				let existing_entry = *entry;
 				*entry = Some(amount);
 				existing_entry
 			});
 
-			Self::deposit_event(Event::NewContributionSet(contributor_account, old_amount, amount));
+			Self::deposit_event(Event::NewContributionSet(looked_up_account, old_amount, amount));
 
 			Ok(())
 		}
 
 		#[pallet::weight(1)]
-		pub fn remove_contribution(origin: OriginFor<T>, contributor_account: AccountIdOf<T>) -> DispatchResult {
+		pub fn remove_contribution(origin: OriginFor<T>, contributor_account: <<T as frame_system::Config>::Lookup as StaticLookup>::Source) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			ensure!(who == AdminAccount::<T>::get(), BadOrigin);
 
-			Contributions::<T>::take(contributor_account).ok_or(Error::<T>::ContributorNotPresent)?;
+			let looked_up_account = <T as frame_system::Config>::Lookup::lookup(contributor_account)?;
+			Contributions::<T>::take(&looked_up_account).ok_or(Error::<T>::ContributorNotPresent)?;
+
+			Self::deposit_event(Event::ContributionRemoved(looked_up_account));
 
 			Ok(())
 		}
