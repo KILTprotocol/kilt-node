@@ -18,7 +18,7 @@
 
 use frame_support::{assert_err, assert_noop, assert_ok, traits::Currency};
 use sp_core::*;
-use sp_runtime::SaturatedConversion;
+use sp_runtime::{traits::Zero, SaturatedConversion};
 use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom};
 
 use crate::{self as did, mock::*, mock_utils::*, AccountIdentifierOf};
@@ -240,6 +240,22 @@ fn check_duplicate_did_creation() {
 				did::Error::<Test>::DidAlreadyPresent
 			);
 		});
+}
+
+#[test]
+fn create_fail_insufficient_balance() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let details = generate_base_did_creation_details::<Test>(alice_did.clone());
+
+	let signature = auth_key.sign(details.encode().as_ref());
+
+	ExtBuilder::default().build(None).execute_with(|| {
+		assert_noop!(
+			Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature),),
+			pallet_balances::Error::<Test>::InsufficientBalance
+		);
+	});
 }
 
 #[test]
@@ -1271,15 +1287,26 @@ fn check_key_not_found_key_agreement_key_deletion_error() {
 fn check_successful_deletion() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	did_details.deposit.owner = ACCOUNT_00;
+	did_details.deposit.amount = <Test as did::Config>::Deposit::get();
+
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build(None)
 		.execute_with(|| {
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as did::Config>::Deposit::get()
+			);
 			assert_ok!(Did::delete(Origin::signed(alice_did.clone()),));
 			assert!(Did::get_did(alice_did.clone()).is_none());
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
+			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 
 			// Re-adding the same DID identifier should fail.
 			let details = generate_base_did_creation_details::<Test>(alice_did.clone());
@@ -1308,6 +1335,79 @@ fn check_did_not_present_deletion() {
 			did::Error::<Test>::DidNotPresent
 		);
 	});
+}
+
+// reclaim_deposit
+
+#[test]
+fn check_successful_reclaiming() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	did_details.deposit.owner = ACCOUNT_00;
+	did_details.deposit.amount = <Test as did::Config>::Deposit::get();
+
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.with_dids(vec![(alice_did.clone(), did_details)])
+		.build(None)
+		.execute_with(|| {
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as did::Config>::Deposit::get()
+			);
+			assert_ok!(Did::reclaim_deposit(
+				Origin::signed(ACCOUNT_00.clone()),
+				alice_did.clone()
+			));
+			assert!(Did::get_did(alice_did.clone()).is_none());
+			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
+			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+
+			// Re-adding the same DID identifier should fail.
+			let details = generate_base_did_creation_details::<Test>(alice_did.clone());
+
+			let signature = auth_key.sign(details.encode().as_ref());
+
+			assert_noop!(
+				Did::create(
+					Origin::signed(alice_did.clone()),
+					details,
+					did::DidSignature::from(signature),
+				),
+				did::Error::<Test>::DidAlreadyDeleted
+			);
+		});
+}
+
+#[test]
+fn unauthorized_reclaiming() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	did_details.deposit.owner = ACCOUNT_00;
+	did_details.deposit.amount = <Test as did::Config>::Deposit::get();
+
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.with_dids(vec![(alice_did.clone(), did_details)])
+		.build(None)
+		.execute_with(|| {
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as did::Config>::Deposit::get()
+			);
+			assert_noop!(
+				Did::reclaim_deposit(Origin::signed(ACCOUNT_01.clone()), alice_did.clone()),
+				did::Error::<Test>::NotOwnerOfDeposit
+			);
+		});
 }
 
 // submit_did_call

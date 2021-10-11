@@ -19,7 +19,7 @@
 #![allow(clippy::from_over_into)]
 #![allow(dead_code)]
 
-use frame_support::{parameter_types, weights::constants::RocksDbWeight};
+use frame_support::{parameter_types, traits::ReservableCurrency, weights::constants::RocksDbWeight};
 use frame_system::EnsureSigned;
 use kilt_primitives::{constants::MICRO_KILT, AccountId, Balance};
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
@@ -422,6 +422,8 @@ impl ExtBuilder {
 
 			for did in self.dids_stored.iter() {
 				did::Did::<Test>::insert(did.0.clone(), did.1.clone());
+				CurrencyOf::<Test>::reserve(&did.1.deposit.owner, did.1.deposit.amount)
+					.expect("Deposit owner should have enough balance");
 			}
 			for did in self.deleted_dids.iter() {
 				did::DidBlacklist::<Test>::insert(did.clone(), ());
