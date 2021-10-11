@@ -35,7 +35,7 @@ use sp_runtime::{
 use sp_std::sync::Arc;
 
 use crate as delegation;
-use crate::{delegation_hierarchy::VerifyDelegateSignature, CurrencyOf, *};
+use crate::*;
 
 #[cfg(test)]
 use codec::Encode;

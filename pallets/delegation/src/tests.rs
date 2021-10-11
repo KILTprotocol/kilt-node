@@ -409,8 +409,7 @@ fn invalid_delegate_signature_create_delegation_error() {
 		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
 	);
 
-	let delegate_signature =
-		<Test as Config>::DelegationSignatureVerification::valid_signature(&delegate, &vec![]);
+	let delegate_signature = <Test as Config>::DelegationSignatureVerification::valid_signature(&delegate, &vec![]);
 
 	let operation =
 		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);

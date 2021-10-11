@@ -209,7 +209,7 @@ benchmarks! {
 	}
 
 	create_hierarchy {
-		assert_eq!(DelegationHierarchies::<T>::iter().collect::<Vec<(T::DelegationNodeId, DelegationHierarchyDetails<T>)>>().len(), 0);
+		assert_eq!(DelegationHierarchies::<T>::iter().count(), 0);
 
 		let caller: T::AccountId = account("caller", 0, SEED);
 		let ctype = <T::Hash as Default>::default();
@@ -271,7 +271,7 @@ benchmarks! {
 		let child_id: T::DelegationNodeId = *children.iter().next().ok_or("Root should have children")?;
 		let child_delegation = DelegationNodes::<T>::get(child_id).ok_or("Child of root should have delegation id")?;
 		<T as Config>::Currency::make_free_balance_be(
-			&child_delegation.deposit.owner.clone(),
+			&child_delegation.deposit.owner,
 			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get(),
 		);
 	}: revoke_delegation(RawOrigin::Signed(child_delegation.details.owner.clone()), child_id, c, r)
@@ -312,7 +312,7 @@ benchmarks! {
 		let children: BoundedBTreeSet<T::DelegationNodeId, T::MaxChildren> = root_node.children;
 		let child_id: T::DelegationNodeId = *children.iter().next().ok_or("Root should have children")?;
 		let child_delegation = DelegationNodes::<T>::get(child_id).ok_or("Child of root should have delegation id")?;
-		assert!(!<T as Config>::Currency::reserved_balance(&root_acc.clone().into()).is_zero());
+		assert!(!<T as Config>::Currency::reserved_balance(&root_acc.into()).is_zero());
 	}: remove_delegation(RawOrigin::Signed(root_owner.clone()), hierarchy_id, r)
 	verify {
 		assert!(!DelegationNodes::<T>::contains_key(hierarchy_id));

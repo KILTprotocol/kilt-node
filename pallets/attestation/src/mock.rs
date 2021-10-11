@@ -92,7 +92,7 @@ pub(crate) mod runtime {
 	use super::*;
 
 	use delegation::{DelegationHierarchyDetails, DelegationNode, DelegatorIdOf, EqualVerify};
-	use frame_support::{ensure, parameter_types, weights::constants::RocksDbWeight};
+	use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 	use frame_system::EnsureSigned;
 	use kilt_primitives::constants::{attestation::ATTESTATION_DEPOSIT, delegation::DELEGATION_DEPOSIT, MILLI_KILT};
 	use sp_core::{ed25519, sr25519, Pair};
@@ -100,7 +100,7 @@ pub(crate) mod runtime {
 	use sp_runtime::{
 		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		MultiSignature, MultiSigner,
+		MultiSigner,
 	};
 
 	type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;

@@ -318,8 +318,8 @@ impl<R: did::Config> delegation::VerifyDelegateSignature for DelegationSignature
 
 	#[cfg(feature = "runtime-benchmarks")]
 	fn valid_signature(_: &Self::DelegateId, _: &Self::Payload) -> Self::Signature {
-		// This is unimplemented because this implementation shouldn't be used for benchmarking a pallet.
-		// the verify function get's benchmarked separately.
+		// This is unimplemented because this implementation shouldn't be used for
+		// benchmarking a pallet. the verify function get's benchmarked separately.
 		unimplemented!()
 	}
 }
