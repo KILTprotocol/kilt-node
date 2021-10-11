@@ -102,7 +102,7 @@ benchmarks! {
 
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
-		let balance = <CurrencyOf<T> as Currency<AccountIdentifierOf<T>>>::minimum_balance() + <T as Config>::Deposit::get();
+		let balance = <CurrencyOf<T> as Currency<AccountIdentifierOf<T>>>::minimum_balance() + <T as Config>::Deposit::get() + <T as Config>::Fee::get();
 		<CurrencyOf<T> as Currency<AccountIdentifierOf<T>>>::make_free_balance_be(&submitter, balance);
 
 		let did_public_auth_key = get_ed25519_public_authentication_key();
@@ -149,7 +149,7 @@ benchmarks! {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
 
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
-		let balance = <CurrencyOf<T> as Currency<AccountIdentifierOf<T>>>::minimum_balance() + <T as Config>::Deposit::get();
+		let balance = <CurrencyOf<T> as Currency<AccountIdentifierOf<T>>>::minimum_balance() + <T as Config>::Deposit::get() + <T as Config>::Fee::get();
 		<CurrencyOf<T> as Currency<AccountIdentifierOf<T>>>::make_free_balance_be(&submitter, balance);
 
 		let did_public_auth_key = get_sr25519_public_authentication_key();
@@ -196,7 +196,7 @@ benchmarks! {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
 
 		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
-		let balance = <CurrencyOf<T> as Currency<AccountIdentifierOf<T>>>::minimum_balance() + <T as Config>::Deposit::get();
+		let balance = <CurrencyOf<T> as Currency<AccountIdentifierOf<T>>>::minimum_balance() + <T as Config>::Deposit::get() + <T as Config>::Fee::get();
 		<CurrencyOf<T> as Currency<AccountIdentifierOf<T>>>::make_free_balance_be(&submitter, balance);
 
 		let did_public_auth_key = get_ecdsa_public_authentication_key();

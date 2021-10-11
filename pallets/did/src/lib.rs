@@ -120,6 +120,7 @@ mod tests;
 
 mod deprecated;
 
+use crate::migrations::*;
 pub use crate::{default_weights::WeightInfo, did_details::*, errors::*, origin::*, pallet::*};
 
 use codec::Encode;
@@ -128,23 +129,22 @@ use frame_support::{
 	ensure,
 	pallet_prelude::Weight,
 	storage::types::StorageMap,
-	traits::Get,
+	traits::{Get, OnUnbalanced, WithdrawReasons},
 	Parameter,
 };
 use frame_system::ensure_signed;
-#[cfg(feature = "runtime-benchmarks")]
-use frame_system::RawOrigin;
 use sp_runtime::{traits::Saturating, SaturatedConversion};
 use sp_std::{boxed::Box, fmt::Debug, prelude::Clone};
 
-use migrations::*;
+#[cfg(feature = "runtime-benchmarks")]
+use frame_system::RawOrigin;
 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
 	use frame_support::{
 		pallet_prelude::*,
-		traits::{Currency, ReservableCurrency},
+		traits::{Currency, ExistenceRequirement, Imbalance, ReservableCurrency},
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{deposit::Deposit, traits::CallSources};
@@ -172,8 +172,9 @@ pub mod pallet {
 	pub type Origin<T> = DidRawOrigin<DidIdentifierOf<T>, AccountIdentifierOf<T>>;
 
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
-
 	pub(crate) type BalanceOf<T> = <CurrencyOf<T> as Currency<AccountIdentifierOf<T>>>::Balance;
+	pub(crate) type NegativeImbalanceOf<T> =
+		<<T as Config>::Currency as Currency<AccountIdentifierOf<T>>>::NegativeImbalance;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + Debug {
@@ -208,9 +209,18 @@ pub mod pallet {
 		/// The currency that is used to reserve funds for each did.
 		type Currency: Currency<AccountIdentifierOf<Self>> + ReservableCurrency<AccountIdentifierOf<Self>>;
 
-		// The amount of balance that will be taken for each DID as a deposit to
-		// incentivise fair use of the on chain storage
+		/// The amount of balance that will be taken for each DID as a deposit
+		/// to incentivise fair use of the on chain storage. The deposit can be
+		/// reclaimed when the DID is deleted.
 		type Deposit: Get<BalanceOf<Self>>;
+
+		/// The amount of balance that will be taken for each DID as a fee to
+		/// incentivise fair use of the on chain storage. The fee will not get
+		/// refunded when the DID is deleted.
+		type Fee: Get<BalanceOf<Self>>;
+
+		/// The logic for handling the fee.
+		type FeeCollector: OnUnbalanced<NegativeImbalanceOf<Self>>;
 
 		/// Maximum number of total public keys which can be stored per DID key
 		/// identifier. This includes the ones currently used for
@@ -356,6 +366,8 @@ pub mod pallet {
 		InternalError,
 		/// Only the owner of the deposit can reclaim its reserved balance.
 		NotOwnerOfDeposit,
+		/// Only the owner of the deposit can reclaim its reserved balance.
+		UnableToPayFees,
 	}
 
 	impl<T> From<DidError> for Error<T> {
@@ -439,6 +451,16 @@ pub mod pallet {
 
 			let did_identifier = details.did.clone();
 
+			// TODO: who to ensure reserve AND withdraw!?
+			// Check the free balance before we do any heavy work
+			ensure!(
+				<T::Currency as ReservableCurrency<AccountIdentifierOf<T>>>::can_reserve(
+					&sender,
+					<T as Config>::Deposit::get() + <T as Config>::Fee::get()
+				),
+				Error::<T>::UnableToPayFees
+			);
+
 			// Make sure that DIDs cannot be created again after they have been deleted.
 			ensure!(
 				!DidBlacklist::<T>::contains_key(&did_identifier),
@@ -466,7 +488,18 @@ pub mod pallet {
 			// *** No Fail beyond this call ***
 			CurrencyOf::<T>::reserve(&did_entry.deposit.owner, did_entry.deposit.amount)?;
 
+			// withdraw the fee, we made sure that enough balance is available. But if this
+			// fails, we don't withdraw anything.
+			let imbalance = <T::Currency as Currency<AccountIdentifierOf<T>>>::withdraw(
+				&did_entry.deposit.owner,
+				T::Fee::get(),
+				WithdrawReasons::FEE,
+				ExistenceRequirement::AllowDeath,
+			)
+			.unwrap_or_else(|_| NegativeImbalanceOf::<T>::zero());
+
 			log::debug!("Creating DID {:?}", &did_identifier);
+			T::FeeCollector::on_unbalanced(imbalance);
 			Did::<T>::insert(&did_identifier, did_entry);
 
 			Self::deposit_event(Event::DidCreated(sender, did_identifier));

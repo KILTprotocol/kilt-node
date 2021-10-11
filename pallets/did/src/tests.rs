@@ -35,6 +35,7 @@ fn check_successful_simple_ed25519_creation() {
 	let signature = auth_key.sign(details.encode().as_ref());
 
 	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
@@ -62,6 +63,7 @@ fn check_successful_simple_ed25519_creation() {
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as did::Config>::Deposit::get()
 			);
+			assert_eq!(Balances::free_balance(ACCOUNT_FEE), <Test as did::Config>::Fee::get());
 		});
 }
 
@@ -75,6 +77,7 @@ fn check_successful_simple_sr25519_creation() {
 	let signature = auth_key.sign(details.encode().as_ref());
 
 	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
@@ -102,6 +105,7 @@ fn check_successful_simple_sr25519_creation() {
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as did::Config>::Deposit::get()
 			);
+			assert_eq!(Balances::free_balance(ACCOUNT_FEE), <Test as did::Config>::Fee::get());
 		});
 }
 
@@ -115,6 +119,7 @@ fn check_successful_simple_ecdsa_creation() {
 	let signature = auth_key.sign(details.encode().as_ref());
 
 	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
@@ -142,6 +147,7 @@ fn check_successful_simple_ecdsa_creation() {
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as did::Config>::Deposit::get()
 			);
+			assert_eq!(Balances::free_balance(ACCOUNT_FEE), <Test as did::Config>::Fee::get());
 		});
 }
 
@@ -167,6 +173,7 @@ fn check_successful_complete_creation() {
 	let signature = auth_key.sign(details.encode().as_ref());
 
 	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
@@ -218,6 +225,7 @@ fn check_successful_complete_creation() {
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as did::Config>::Deposit::get()
 			);
+			assert_eq!(Balances::free_balance(ACCOUNT_FEE), <Test as did::Config>::Fee::get());
 		});
 }
 
@@ -231,7 +239,11 @@ fn check_duplicate_did_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
+		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did, mock_did)])
 		.build(None)
 		.execute_with(|| {
@@ -252,8 +264,8 @@ fn create_fail_insufficient_balance() {
 
 	ExtBuilder::default().build(None).execute_with(|| {
 		assert_noop!(
-			Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature),),
-			pallet_balances::Error::<Test>::InsufficientBalance
+			Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
+			did::Error::<Test>::UnableToPayFees
 		);
 	});
 }
@@ -266,7 +278,11 @@ fn check_did_already_deleted_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
+		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_deleted_dids(vec![alice_did])
 		.build(None)
 		.execute_with(|| {
@@ -288,12 +304,18 @@ fn check_invalid_signature_format_did_creation() {
 
 	let signature = invalid_key.sign(details.encode().as_ref());
 
-	ExtBuilder::default().build(None).execute_with(|| {
-		assert_noop!(
-			Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature),),
-			did::Error::<Test>::InvalidSignature
-		);
-	});
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
+		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature),),
+				did::Error::<Test>::InvalidSignature
+			);
+		});
 }
 
 #[test]
@@ -305,12 +327,18 @@ fn check_invalid_signature_did_creation() {
 
 	let signature = alternative_key.sign(details.encode().as_ref());
 
-	ExtBuilder::default().build(None).execute_with(|| {
-		assert_noop!(
-			Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature),),
-			did::Error::<Test>::InvalidSignature
-		);
-	});
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
+		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature),),
+				did::Error::<Test>::InvalidSignature
+			);
+		});
 }
 
 #[test]
@@ -322,12 +350,18 @@ fn check_swapped_did_subject_did_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	ExtBuilder::default().build(None).execute_with(|| {
-		assert_noop!(
-			Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature),),
-			did::Error::<Test>::InvalidSignature
-		);
-	});
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
+		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature),),
+				did::Error::<Test>::InvalidSignature
+			);
+		});
 }
 
 #[test]
@@ -342,12 +376,18 @@ fn check_max_limit_key_agreement_keys_did_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	ExtBuilder::default().build(None).execute_with(|| {
-		assert_noop!(
-			Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature),),
-			did::Error::<Test>::MaxKeyAgreementKeysLimitExceeded
-		);
-	});
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
+		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature),),
+				did::Error::<Test>::MaxKeyAgreementKeysLimitExceeded
+			);
+		});
 }
 
 // updates
@@ -1291,7 +1331,8 @@ fn check_successful_deletion() {
 	did_details.deposit.owner = ACCOUNT_00;
 	did_details.deposit.amount = <Test as did::Config>::Deposit::get();
 
-	let balance = <Test as did::Config>::Deposit::get()
+	let balance = <Test as did::Config>::Deposit::get() * 2
+		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()
@@ -1315,7 +1356,7 @@ fn check_successful_deletion() {
 
 			assert_noop!(
 				Did::create(
-					Origin::signed(alice_did.clone()),
+					Origin::signed(ACCOUNT_00.clone()),
 					details,
 					did::DidSignature::from(signature),
 				),
@@ -1329,12 +1370,18 @@ fn check_did_not_present_deletion() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
-	ExtBuilder::default().build(None).execute_with(|| {
-		assert_noop!(
-			Did::delete(Origin::signed(alice_did)),
-			did::Error::<Test>::DidNotPresent
-		);
-	});
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
+		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::delete(Origin::signed(alice_did)),
+				did::Error::<Test>::DidNotPresent
+			);
+		});
 }
 
 // reclaim_deposit
@@ -1347,7 +1394,8 @@ fn check_successful_reclaiming() {
 	did_details.deposit.owner = ACCOUNT_00;
 	did_details.deposit.amount = <Test as did::Config>::Deposit::get();
 
-	let balance = <Test as did::Config>::Deposit::get()
+	let balance = <Test as did::Config>::Deposit::get() * 2
+		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()
@@ -1374,7 +1422,7 @@ fn check_successful_reclaiming() {
 
 			assert_noop!(
 				Did::create(
-					Origin::signed(alice_did.clone()),
+					Origin::signed(ACCOUNT_00.clone()),
 					details,
 					did::DidSignature::from(signature),
 				),
@@ -1392,6 +1440,7 @@ fn unauthorized_reclaiming() {
 	did_details.deposit.amount = <Test as did::Config>::Deposit::get();
 
 	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()

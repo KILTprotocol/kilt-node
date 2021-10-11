@@ -416,6 +416,7 @@ parameter_types! {
 	// Standalone block time is half the duration of a parachain block.
 	pub const MaxBlocksTxValidity: BlockNumber = MAX_BLOCKS_TX_VALIDITY * 2;
 	pub const DidDeposit: Balance = 100 * MICRO_KILT;
+	pub const DidFee: Balance = MICRO_KILT;
 }
 
 impl did::Config for Runtime {
@@ -425,6 +426,8 @@ impl did::Config for Runtime {
 	type Origin = Origin;
 	type Currency = Balances;
 	type Deposit = DidDeposit;
+	type Fee = DidFee;
+	type FeeCollector = ToAuthor<Runtime>;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<Self::DidIdentifier, AccountId>;
