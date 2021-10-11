@@ -18,7 +18,7 @@
 
 use crate::pallet as pallet_crowdloan;
 use frame_support::parameter_types;
-use kilt_primitives::{AccountId, Balance, BlockNumber, Hash, Index};
+use kilt_primitives::{constants::KILT, AccountId, Balance, BlockNumber, Hash, Index};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
@@ -100,6 +100,10 @@ impl pallet_crowdloan::Config for Test {
 pub(crate) const ACCOUNT_00: TestAccountId = AccountId::new([0u8; 32]);
 #[cfg(test)]
 pub(crate) const ACCOUNT_01: TestAccountId = AccountId::new([1u8; 32]);
+#[cfg(test)]
+pub(crate) const BALANCE_01: TestBalance = 1 * KILT;
+#[cfg(test)]
+pub(crate) const BALANCE_02: TestBalance = 2 * KILT;
 
 #[derive(Default)]
 pub(crate) struct ExtBuilder {

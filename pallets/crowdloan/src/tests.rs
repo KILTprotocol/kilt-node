@@ -19,7 +19,7 @@
 use frame_support::{assert_noop, assert_ok};
 use sp_runtime::traits::BadOrigin;
 
-use crate::mock::*;
+use crate::{mock::*, Error};
 
 // set_admin_account
 
@@ -35,9 +35,10 @@ fn test_set_admin_account() {
 			assert_eq!(Crowdloan::admin_account(), admin);
 
 			// Change admin
-			assert_ok!(
-				Crowdloan::set_admin_account(Origin::signed(admin.clone()), new_admin.clone())
-			);
+			assert_ok!(Crowdloan::set_admin_account(
+				Origin::signed(admin.clone()),
+				new_admin.clone()
+			));
 
 			// Test new admin is the one set
 			assert_eq!(Crowdloan::admin_account(), new_admin);
@@ -45,26 +46,136 @@ fn test_set_admin_account() {
 }
 
 #[test]
-fn test_set_admin_account_bad_origin_error() {}
+fn test_set_admin_account_bad_origin_error() {
+	let admin = ACCOUNT_00;
+	let other_admin = ACCOUNT_01;
+
+	ExtBuilder::default()
+		.with_admin_account(admin.clone())
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Crowdloan::set_admin_account(Origin::signed(other_admin), admin),
+				BadOrigin
+			);
+		});
+}
 
 // set_new_contribution
 
 #[test]
-fn test_set_new_contribution() {}
+fn test_set_new_contribution() {
+	let admin = ACCOUNT_00;
+	let contributor = ACCOUNT_01;
+	let contribution = BALANCE_01;
+
+	ExtBuilder::default()
+		.with_admin_account(admin.clone())
+		.build()
+		.execute_with(|| {
+			assert!(Crowdloan::contributions(&contributor).is_none());
+			assert_ok!(Crowdloan::set_new_contribution(
+				Origin::signed(admin.clone()),
+				contributor.clone(),
+				contribution
+			));
+			assert_eq!(Crowdloan::contributions(&contributor), Some(contribution));
+		});
+}
 
 #[test]
-fn test_override_contribution() {}
+fn test_override_contribution() {
+	let admin = ACCOUNT_00;
+	let contributor = ACCOUNT_01;
+	let contribution = BALANCE_01;
+	let new_contribution = BALANCE_02;
+
+	ExtBuilder::default()
+		.with_admin_account(admin.clone())
+		.with_contributions(vec![(contributor.clone(), contribution)])
+		.build()
+		.execute_with(|| {
+			assert_eq!(Crowdloan::contributions(&contributor), Some(contribution));
+			assert_ok!(Crowdloan::set_new_contribution(
+				Origin::signed(admin.clone()),
+				contributor.clone(),
+				new_contribution
+			));
+			assert_eq!(Crowdloan::contributions(&contributor), Some(new_contribution));
+		});
+}
 
 #[test]
-fn test_set_new_contribution_bad_origin_error() {}
+fn test_set_new_contribution_bad_origin_error() {
+	let admin = ACCOUNT_00;
+	let other_admin = ACCOUNT_01;
+	let contributor = ACCOUNT_01;
+	let contribution = BALANCE_01;
+
+	ExtBuilder::default()
+		.with_admin_account(admin.clone())
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Crowdloan::set_new_contribution(Origin::signed(other_admin.clone()), contributor, contribution),
+				BadOrigin
+			);
+		});
+}
 
 // remove_contribution
 
 #[test]
-fn test_remove_contribution() {}
+fn test_remove_contribution() {
+	let admin = ACCOUNT_00;
+	let contributor = ACCOUNT_01;
+	let contribution = BALANCE_01;
+
+	ExtBuilder::default()
+		.with_admin_account(admin.clone())
+		.with_contributions(vec![(contributor.clone(), contribution)])
+		.build()
+		.execute_with(|| {
+			assert!(Crowdloan::contributions(&contributor).is_some());
+			assert_ok!(Crowdloan::remove_contribution(
+				Origin::signed(admin.clone()),
+				contributor.clone()
+			));
+			assert!(Crowdloan::contributions(&contributor).is_none());
+		});
+}
 
 #[test]
-fn test_remove_contribution_bad_origin_error() {}
+fn test_remove_contribution_bad_origin_error() {
+	let admin = ACCOUNT_00;
+	let other_admin = ACCOUNT_01;
+	let contributor = ACCOUNT_01;
+	let contribution = BALANCE_01;
+
+	ExtBuilder::default()
+		.with_admin_account(admin.clone())
+		.with_contributions(vec![(contributor.clone(), contribution)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Crowdloan::remove_contribution(Origin::signed(other_admin.clone()), contributor),
+				BadOrigin
+			);
+		});
+}
 
 #[test]
-fn test_remove_contribution_absent_error() {}
+fn test_remove_contribution_absent_error() {
+	let admin = ACCOUNT_00;
+	let contributor = ACCOUNT_01;
+
+	ExtBuilder::default()
+		.with_admin_account(admin.clone())
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Crowdloan::remove_contribution(Origin::signed(admin), contributor),
+				Error::<Test>::ContributorNotPresent
+			);
+		});
+}
