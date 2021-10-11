@@ -257,7 +257,7 @@ benchmarks! {
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 
 		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key));
-		Did::<T>::insert(&did_subject.clone(), did_details.clone());
+		Did::<T>::insert(&did_subject, did_details.clone());
 	}: _(RawOrigin::Signed(did_details.deposit.owner.clone()), did_subject.clone())
 	verify {
 		assert!(
