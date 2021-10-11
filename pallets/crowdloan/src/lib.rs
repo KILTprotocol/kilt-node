@@ -101,7 +101,10 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(1)]
-		pub fn set_admin_account(origin: OriginFor<T>, new_account: <<T as frame_system::Config>::Lookup as StaticLookup>::Source) -> DispatchResult {
+		pub fn set_admin_account(
+			origin: OriginFor<T>,
+			new_account: <<T as frame_system::Config>::Lookup as StaticLookup>::Source,
+		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			let old_account = AdminAccount::<T>::get();
@@ -138,7 +141,10 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(1)]
-		pub fn remove_contribution(origin: OriginFor<T>, contributor_account: <<T as frame_system::Config>::Lookup as StaticLookup>::Source) -> DispatchResult {
+		pub fn remove_contribution(
+			origin: OriginFor<T>,
+			contributor_account: <<T as frame_system::Config>::Lookup as StaticLookup>::Source,
+		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			ensure!(who == AdminAccount::<T>::get(), BadOrigin);
 
