@@ -257,7 +257,8 @@ pub struct DidDetails<T: Config> {
 	/// updated upon each DID operation involving with the subject as the
 	/// creator.
 	pub(crate) last_tx_counter: u64,
-	//TODO: doc
+	/// The deposit that was taken to incentivise fair use of the on chain
+	/// storage.
 	pub(crate) deposit: Deposit<T::AccountId, BalanceOf<T>>,
 }
 

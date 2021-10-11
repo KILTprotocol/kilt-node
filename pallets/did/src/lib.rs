@@ -208,7 +208,8 @@ pub mod pallet {
 		/// The currency that is used to reserve funds for each did.
 		type Currency: Currency<AccountIdentifierOf<Self>> + ReservableCurrency<AccountIdentifierOf<Self>>;
 
-		// TODO: doc
+		// The amount of balance that will be taken for each DID as a deposit to
+		// incentivise fair use of the on chain storage
 		type Deposit: Get<BalanceOf<Self>>;
 
 		/// Maximum number of total public keys which can be stored per DID key
@@ -911,10 +912,10 @@ impl<T: Config> Pallet<T> {
 
 	/// Verify the validity of a DID-authorized operation nonce.
 	/// To be valid, the nonce must be equal to the one currently stored + 1.
-	/// This is to avoid quickly "consuming" all the possible values for the counter,
-	/// as that would result in the DID being unusable, since we do not have yet any
-	/// mechanism in place to wrap the counter value around when the limit is
-	/// reached.
+	/// This is to avoid quickly "consuming" all the possible values for the
+	/// counter, as that would result in the DID being unusable, since we do not
+	/// have yet any mechanism in place to wrap the counter value around when
+	/// the limit is reached.
 	fn validate_counter_value(counter: u64, did_details: &DidDetails<T>) -> Result<(), DidError> {
 		// Verify that the operation counter is equal to the stored one + 1,
 		// possibly wrapping around when u64::MAX is reached.
@@ -927,7 +928,8 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	/// Verify a generic payload signature using a given DID verification key type.
+	/// Verify a generic payload signature using a given DID verification key
+	/// type.
 	pub fn verify_payload_signature_with_did_key_type(
 		payload: &Payload,
 		signature: &DidSignature,
