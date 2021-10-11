@@ -1391,23 +1391,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "crowdloan"
-version = "0.26.1"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "kilt-primitives",
- "pallet-balances",
- "parity-scale-codec",
- "serde",
- "sp-io",
- "sp-runtime",
- "sp-std",
- "substrate-wasm-builder-runner",
-]
-
-[[package]]
 name = "crunchy"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3644,6 +3627,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "kilt-crowdloan"
+version = "0.26.1"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "kilt-primitives",
+ "pallet-balances",
+ "parity-scale-codec",
+ "serde",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "substrate-wasm-builder-runner",
+]
+
+[[package]]
 name = "kilt-launch"
 version = "0.1.0"
 dependencies = [
@@ -4619,6 +4619,7 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal 0.3.3",
+ "kilt-crowdloan",
  "kilt-launch",
  "kilt-primitives",
  "log",
@@ -6539,6 +6540,7 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal 0.3.3",
+ "kilt-crowdloan",
  "kilt-launch",
  "kilt-primitives",
  "log",
@@ -10950,6 +10952,7 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal 0.3.3",
+ "kilt-crowdloan",
  "kilt-launch",
  "kilt-primitives",
  "log",

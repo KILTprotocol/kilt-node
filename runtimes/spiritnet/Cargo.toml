@@ -18,6 +18,7 @@ pallet-vesting = {git = "https://github.com/paritytech/substrate", default-featu
 
 # KILT pallets & primitives
 kilt-launch = {path = "../../pallets/kilt-launch", default-features = false}
+kilt-crowdloan = {path = "../../pallets/crowdloan", default-features = false}
 kilt-primitives = {path = "../../primitives", default-features = false}
 parachain-staking = {default-features = false, path = "../../pallets/parachain-staking"}
 
@@ -92,6 +93,7 @@ runtime-benchmarks = [
   "frame-system/runtime-benchmarks",
   "frame-system-benchmarking",
   "hex-literal",
+  "kilt-crowdloan/runtime-benchmarks",
   "kilt-launch/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-collective/runtime-benchmarks",
@@ -119,6 +121,7 @@ std = [
   "frame-system-rpc-runtime-api/std",
   "frame-system/std",
   "frame-try-runtime/std",
+  "kilt-crowdloan/std",
   "kilt-launch/std",
   "kilt-primitives/std",
   "log/std",
@@ -165,6 +168,7 @@ try-runtime = [
   "frame-support/try-runtime",
   "frame-system/try-runtime",
   "frame-try-runtime",
+  "kilt-crowdloan/try-runtime",
   "kilt-launch/try-runtime",
   "pallet-aura/try-runtime",
   "pallet-authorship/try-runtime",

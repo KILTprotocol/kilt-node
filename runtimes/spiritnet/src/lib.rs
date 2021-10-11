@@ -580,6 +580,12 @@ impl pallet_membership::Config for Runtime {
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
 
+impl kilt_crowdloan::Config for Runtime {
+	type Currency = Balances;
+	type Event = Event;
+	type WeightInfo = ();
+}
+
 construct_runtime! {
 	pub enum Runtime where
 		Block = Block,
@@ -623,6 +629,7 @@ construct_runtime! {
 
 		// KILT Pallets. Start indices 60 to leave room
 		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 60,
+		CrowdloanContributors: kilt_crowdloan::{Pallet, Call, Storage, Event<T>, Config<T>} = 61,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>, Config} = 80,

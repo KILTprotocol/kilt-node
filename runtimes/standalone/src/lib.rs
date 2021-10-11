@@ -491,6 +491,12 @@ impl pallet_utility::Config for Runtime {
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
 
+impl kilt_crowdloan::Config for Runtime {
+	type Currency = Balances;
+	type Event = Event;
+	type WeightInfo = ();
+}
+
 construct_runtime!(
 	pub enum Runtime where
 		Block = Block,
@@ -531,6 +537,7 @@ construct_runtime!(
 		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 33,
 		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
 		Utility: pallet_utility::{Pallet, Call, Storage, Event} = 35,
+		CrowdloanContributors: kilt_crowdloan::{Pallet, Call, Storage, Event<T>, Config<T>} = 36,
 	}
 );
 

@@ -31,7 +31,7 @@ use sp_runtime::traits::Zero;
 use spiritnet_runtime::{
 	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake,
 	ParachainInfoConfig, ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig,
-	VestingConfig, WASM_BINARY,
+	VestingConfig, CrowdloanContributorsConfig, WASM_BINARY,
 };
 
 use crate::chain_spec::{get_account_id_from_seed, get_from_seed, TELEMETRY_URL};
@@ -345,6 +345,7 @@ fn testnet_genesis(
 				.chain(owned_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
 				.collect(),
 		},
+		crowdloan_contributors: CrowdloanContributorsConfig { admin_account: transfer_account.clone() },
 		sudo: SudoConfig { key: root_key },
 		parachain_info: ParachainInfoConfig { parachain_id: id },
 		kilt_launch: KiltLaunchConfig {

@@ -2,7 +2,7 @@
 authors = ["KILT <info@kilt.io>"]
 description = "Substrate pallet allowing crowdloan contributors to claim their rewards."
 edition = "2018"
-name = "crowdloan"
+name = "kilt-crowdloan"
 repository = "https://github.com/KILTprotocol/mashnet-node"
 version = "0.26.1"
 
