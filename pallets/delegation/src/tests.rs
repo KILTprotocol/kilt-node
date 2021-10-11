@@ -565,7 +565,7 @@ fn not_owner_of_parent_create_delegation_error() {
 		<Test as Config>::DelegationSignatureVerification::valid_signature(&delegate, &delegation_hash);
 
 	let operation =
-		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
+		generate_base_delegation_creation_operation(delegation_id, delegate_signature, delegation_node);
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])

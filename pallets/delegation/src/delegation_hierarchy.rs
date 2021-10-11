@@ -21,6 +21,8 @@ use codec::{Decode, Encode};
 use ctype::CtypeHashOf;
 use frame_support::{dispatch::DispatchResult, storage::bounded_btree_set::BoundedBTreeSet};
 use kilt_support::deposit::Deposit;
+
+#[cfg(any(test, feature = "mock", feature = "runtime-benchmarks"))]
 use sp_std::marker::PhantomData;
 
 use crate::{pallet::AccountIdOf, *};
@@ -191,7 +193,7 @@ pub trait VerifyDelegateSignature {
 		signature: &Self::Signature,
 	) -> SignatureVerificationResult;
 
-	#[cfg(any(feature = "runtime-benchmarks", test))]
+	#[cfg(any(test, feature = "mock", feature = "runtime-benchmarks"))]
 	fn valid_signature(delegate: &Self::DelegateId, payload: &Self::Payload) -> Self::Signature;
 }
 
@@ -218,9 +220,9 @@ impl<Account, Payload, Signature: Default> VerifyDelegateSignature for AlwaysVer
 	}
 }
 
-#[cfg(any(feature = "runtime-benchmarks", test))]
+#[cfg(any(test, feature = "mock", feature = "runtime-benchmarks"))]
 pub struct EqualVerify<A, B>(PhantomData<(A, B)>);
-#[cfg(any(feature = "runtime-benchmarks", test))]
+#[cfg(any(test, feature = "mock", feature = "runtime-benchmarks"))]
 impl<Account, Payload> VerifyDelegateSignature for EqualVerify<Account, Payload>
 where
 	Account: PartialEq + Clone,
