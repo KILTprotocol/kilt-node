@@ -450,8 +450,7 @@ pub mod pallet {
 
 			let did_identifier = details.did.clone();
 
-			// TODO: how to ensure reserve AND withdraw!?
-			// Check the free balance before we do any heavy work
+			// Check the free balance before we do any heavy work.
 			ensure!(
 				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
 					&sender,
@@ -487,7 +486,7 @@ pub mod pallet {
 			// *** No Fail beyond this call ***
 			CurrencyOf::<T>::reserve(&did_entry.deposit.owner, did_entry.deposit.amount)?;
 
-			// withdraw the fee, we made sure that enough balance is available. But if this
+			// Withdraw the fee. We made sure that enough balance is available. But if this
 			// fails, we don't withdraw anything.
 			let imbalance = <T::Currency as Currency<AccountIdOf<T>>>::withdraw(
 				&did_entry.deposit.owner,
