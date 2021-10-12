@@ -23,8 +23,8 @@ use frame_support::traits::{StorageVersion, GetStorageVersion};
 use kilt_primitives::AccountId;
 use crate::Runtime;
 
-// Same as Peregrine transfer account.
-pub const NEW_ADMIN_ACCOUNT: [u8; 32] = hex!("6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c");
+// Same as Spiritnet transfer account.
+pub const NEW_ADMIN_ACCOUNT: [u8; 32] = hex!("de28ef5b1691663300a2edb97202791e89bb6985ffdaa4c405d68c826b634b76");
 
 pub struct CrowdloanContributionsSetup;
 

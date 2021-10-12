@@ -70,12 +70,12 @@ use sp_runtime::{
 };
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
+use migrations::crowdloan_contributions::CrowdloanContributionsSetup;
 
 mod fee;
 #[cfg(test)]
 mod tests;
 mod weights;
-
 mod migrations;
 
 #[cfg(feature = "std")]
@@ -849,7 +849,7 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signatu
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various modules.
 pub type Executive =
-	frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllPallets>;
+	frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllPallets, CrowdloanContributionsSetup>;
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {

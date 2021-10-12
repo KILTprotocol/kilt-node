@@ -24,22 +24,10 @@ mod tests;
 #[cfg(test)]
 pub(crate) mod mock;
 
-use frame_support::traits::Get;
-
 pub use crate::pallet::*;
-
-pub struct GetDefaultAdmin<T>(sp_std::marker::PhantomData<T>);
-
-impl<T: Config> Get<AccountIdOf<T>> for GetDefaultAdmin<T> {
-    fn get() -> AccountIdOf<T> {
-       T::InitialAdmin::get()
-    }
-}
 
 #[frame_support::pallet]
 pub mod pallet {
-
-	use super::GetDefaultAdmin;
 
 	use frame_support::{
 		pallet_prelude::*,
@@ -57,7 +45,6 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		type Currency: Currency<AccountIdOf<Self>>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-		type InitialAdmin: Get<AccountIdOf<Self>>;
 		type WeightInfo: WeightInfo;
 	}
 
@@ -92,7 +79,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn admin_account)]
-	pub type AdminAccount<T> = StorageValue<_, AccountIdOf<T>, ValueQuery, GetDefaultAdmin<T>>;
+	pub type AdminAccount<T> = StorageValue<_, AccountIdOf<T>, ValueQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn contributions)]
