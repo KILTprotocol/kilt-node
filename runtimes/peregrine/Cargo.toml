@@ -7,6 +7,7 @@ version = "0.26.1"
 [dependencies]
 bitflags = {version = "1.2.1", default-features = false}
 codec = {package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"]}
+hex-literal = {version = "0.3.1"}
 log = {default-features = false, version = "0.4.14"}
 serde = {version = "1.0.101", optional = true, features = ["derive"]}
 smallvec = "1.6.1"
@@ -79,7 +80,6 @@ xcm-executor = {git = "https://github.com/paritytech/polkadot", default-features
 # Benchmarking
 frame-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.10"}
 frame-system-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.10"}
-hex-literal = {version = "0.3.1"}
 rococo-runtime = {git = "https://github.com/paritytech/polkadot", default-features = false, optional = true, branch = "release-v0.9.10"}
 
 # Runtime tests

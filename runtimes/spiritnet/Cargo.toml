@@ -6,6 +6,7 @@ version = "0.26.1"
 
 [dependencies]
 codec = {package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"]}
+hex-literal = {version = "0.3.1"}
 log = {default-features = false, version = "0.4.14"}
 serde = {version = "1.0.101", optional = true, features = ["derive"]}
 smallvec = "1.6.1"
@@ -73,7 +74,6 @@ xcm-executor = {git = "https://github.com/paritytech/polkadot", default-features
 # Benchmarking
 frame-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.10"}
 frame-system-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.10"}
-hex-literal = {version = "0.3.1", optional = true}
 rococo-runtime = {git = "https://github.com/paritytech/polkadot", default-features = false, optional = true, branch = "release-v0.9.10"}
 # TODO: Enable after pallet is available on the Cumulus branch we use
 # pallet-session-benchmarking = { git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.10", default-features = false, optional = true }
@@ -92,7 +92,6 @@ runtime-benchmarks = [
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "frame-system-benchmarking",
-  "hex-literal",
   "kilt-crowdloan/runtime-benchmarks",
   "kilt-launch/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
