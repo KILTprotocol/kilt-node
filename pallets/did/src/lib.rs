@@ -451,7 +451,7 @@ pub mod pallet {
 
 			let did_identifier = details.did.clone();
 
-			// TODO: who to ensure reserve AND withdraw!?
+			// TODO: how to ensure reserve AND withdraw!?
 			// Check the free balance before we do any heavy work
 			ensure!(
 				<T::Currency as ReservableCurrency<AccountIdentifierOf<T>>>::can_reserve(

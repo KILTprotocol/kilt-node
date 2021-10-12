@@ -16,7 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{assert_err, assert_noop, assert_ok, traits::Currency};
+use frame_support::{
+	assert_err, assert_noop, assert_ok,
+	traits::{Currency, LockIdentifier, LockableCurrency, WithdrawReasons},
+};
 use sp_core::*;
 use sp_runtime::{traits::Zero, SaturatedConversion};
 use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom};
@@ -248,7 +251,7 @@ fn check_duplicate_did_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature),),
+				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
 				did::Error::<Test>::DidAlreadyPresent
 			);
 		});
@@ -287,7 +290,7 @@ fn check_did_already_deleted_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature),),
+				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
 				did::Error::<Test>::DidAlreadyDeleted
 			);
 		});
@@ -312,7 +315,7 @@ fn check_invalid_signature_format_did_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature),),
+				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
 				did::Error::<Test>::InvalidSignature
 			);
 		});
@@ -335,7 +338,7 @@ fn check_invalid_signature_did_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature),),
+				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
 				did::Error::<Test>::InvalidSignature
 			);
 		});
@@ -358,7 +361,7 @@ fn check_swapped_did_subject_did_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature),),
+				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
 				did::Error::<Test>::InvalidSignature
 			);
 		});
@@ -384,7 +387,7 @@ fn check_max_limit_key_agreement_keys_did_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature),),
+				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
 				did::Error::<Test>::MaxKeyAgreementKeysLimitExceeded
 			);
 		});
@@ -1295,7 +1298,7 @@ fn check_did_not_found_key_agreement_key_deletion_error() {
 
 	ExtBuilder::default().build(None).execute_with(|| {
 		assert_noop!(
-			Did::remove_key_agreement_key(Origin::signed(alice_did.clone()), generate_key_id(&test_enc_key.into()),),
+			Did::remove_key_agreement_key(Origin::signed(alice_did.clone()), generate_key_id(&test_enc_key.into())),
 			did::Error::<Test>::DidNotPresent
 		);
 	});
@@ -1315,7 +1318,7 @@ fn check_key_not_found_key_agreement_key_deletion_error() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::remove_key_agreement_key(Origin::signed(alice_did.clone()), generate_key_id(&test_enc_key.into()),),
+				Did::remove_key_agreement_key(Origin::signed(alice_did.clone()), generate_key_id(&test_enc_key.into())),
 				did::Error::<Test>::VerificationKeyNotPresent
 			);
 		});
@@ -1344,7 +1347,7 @@ fn check_successful_deletion() {
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as did::Config>::Deposit::get()
 			);
-			assert_ok!(Did::delete(Origin::signed(alice_did.clone()),));
+			assert_ok!(Did::delete(Origin::signed(alice_did.clone())));
 			assert!(Did::get_did(alice_did.clone()).is_none());
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
@@ -1654,7 +1657,7 @@ fn check_tx_block_number_too_low_error() {
 				Origin::signed(caller),
 				Box::new(call_operation.operation),
 				did::DidSignature::from(signature)
-			),);
+			));
 		});
 }
 
