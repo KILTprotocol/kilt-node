@@ -2056,7 +2056,7 @@ pub mod pallet {
 		fn kick_delegator(
 			delegation: &StakeOf<T>,
 			collator: &T::AccountId,
-		) -> Result<ReplacedDelegator<T::AccountId, BalanceOf<T>, T::MaxCollatorsPerDelegator>, DispatchError> {
+		) -> Result<ReplacedDelegator<T>, DispatchError> {
 			let mut state = <DelegatorState<T>>::get(&delegation.owner).ok_or(Error::<T>::DelegatorNotFound)?;
 			state.rm_delegation(collator);
 
@@ -2079,9 +2079,7 @@ pub mod pallet {
 
 		/// Either clear the storage of a kicked delegator or update its
 		/// delegation state if it still contains other delegations.
-		fn clear_kicked_delegator_storage(
-			delegator: Option<ReplacedDelegator<T::AccountId, BalanceOf<T>, T::MaxCollatorsPerDelegator>>,
-		) {
+		fn clear_kicked_delegator_storage(delegator: Option<ReplacedDelegator<T>>) {
 			match delegator {
 				Some(ReplacedDelegator {
 					who,
@@ -2200,13 +2198,14 @@ pub mod pallet {
 		/// bounded by `MaxDelegatorsPerCollator`.
 		/// - Reads/Writes: 0
 		/// # </weight>
+		#[allow(clippy::type_complexity)]
 		fn do_update_delegator(
 			stake: Stake<T::AccountId, BalanceOf<T>>,
 			mut state: Candidate<T::AccountId, BalanceOf<T>, T::MaxDelegatorsPerCollator>,
 		) -> Result<
 			(
 				CandidateOf<T, T::MaxDelegatorsPerCollator>,
-				Option<ReplacedDelegator<T::AccountId, BalanceOf<T>, T::MaxCollatorsPerDelegator>>,
+				Option<ReplacedDelegator<T>>,
 			),
 			DispatchError,
 		> {
