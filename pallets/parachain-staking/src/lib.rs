@@ -172,7 +172,7 @@ mod types;
 use frame_support::pallet;
 
 pub use crate::{default_weights::WeightInfo, pallet::*};
-use types::KickedDelegator;
+use types::ReplacedDelegator;
 
 #[pallet]
 pub mod pallet {
@@ -2040,7 +2040,7 @@ pub mod pallet {
 				delegator,
 				collator,
 				delegator_stake,
-				new_totx1l,
+				new_total,
 			));
 			Ok(())
 		}
@@ -2056,7 +2056,7 @@ pub mod pallet {
 		fn kick_delegator(
 			delegation: &StakeOf<T>,
 			collator: &T::AccountId,
-		) -> Result<KickedDelegator<T::AccountId, BalanceOf<T>, T::MaxCollatorsPerDelegator>, DispatchError> {
+		) -> Result<ReplacedDelegator<T::AccountId, BalanceOf<T>, T::MaxCollatorsPerDelegator>, DispatchError> {
 			let mut state = <DelegatorState<T>>::get(&delegation.owner).ok_or(Error::<T>::DelegatorNotFound)?;
 			state.rm_delegation(collator);
 
@@ -2065,12 +2065,12 @@ pub mod pallet {
 
 			// return state if not empty for later removal after all checks have passed
 			if state.delegations.is_empty() {
-				Ok(KickedDelegator {
+				Ok(ReplacedDelegator {
 					who: delegation.owner.clone(),
 					state: None,
 				})
 			} else {
-				Ok(KickedDelegator {
+				Ok(ReplacedDelegator {
 					who: delegation.owner.clone(),
 					state: Some(state),
 				})
@@ -2080,14 +2080,14 @@ pub mod pallet {
 		/// Either clear the storage of a kicked delegator or update its
 		/// delegation state if it still contains other delegations.
 		fn clear_kicked_delegator_storage(
-			delegator: Option<KickedDelegator<T::AccountId, BalanceOf<T>, T::MaxCollatorsPerDelegator>>,
+			delegator: Option<ReplacedDelegator<T::AccountId, BalanceOf<T>, T::MaxCollatorsPerDelegator>>,
 		) {
 			match delegator {
-				Some(KickedDelegator {
+				Some(ReplacedDelegator {
 					who,
 					state: Some(state),
 				}) => DelegatorState::<T>::insert(who, state),
-				Some(KickedDelegator { who, .. }) => DelegatorState::<T>::remove(who),
+				Some(ReplacedDelegator { who, .. }) => DelegatorState::<T>::remove(who),
 				_ => (),
 			}
 		}
@@ -2206,7 +2206,7 @@ pub mod pallet {
 		) -> Result<
 			(
 				CandidateOf<T, T::MaxDelegatorsPerCollator>,
-				Option<KickedDelegator<T::AccountId, BalanceOf<T>, T::MaxCollatorsPerDelegator>>,
+				Option<ReplacedDelegator<T::AccountId, BalanceOf<T>, T::MaxCollatorsPerDelegator>>,
 			),
 			DispatchError,
 		> {
