@@ -159,7 +159,7 @@ pub mod pallet {
 	pub type DidIdentifierOf<T> = <T as Config>::DidIdentifier;
 
 	/// Type for a Kilt account identifier.
-	pub type AccountIdentifierOf<T> = <T as frame_system::Config>::AccountId;
+	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
 	/// Type for a block number.
 	pub type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
@@ -169,12 +169,12 @@ pub mod pallet {
 
 	/// Type for origin that supports a DID sender.
 	#[pallet::origin]
-	pub type Origin<T> = DidRawOrigin<DidIdentifierOf<T>, AccountIdentifierOf<T>>;
+	pub type Origin<T> = DidRawOrigin<DidIdentifierOf<T>, AccountIdOf<T>>;
 
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
-	pub(crate) type BalanceOf<T> = <CurrencyOf<T> as Currency<AccountIdentifierOf<T>>>::Balance;
+	pub(crate) type BalanceOf<T> = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::Balance;
 	pub(crate) type NegativeImbalanceOf<T> =
-		<<T as Config>::Currency as Currency<AccountIdentifierOf<T>>>::NegativeImbalance;
+		<<T as Config>::Currency as Currency<AccountIdOf<T>>>::NegativeImbalance;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + Debug {
@@ -190,7 +190,7 @@ pub mod pallet {
 
 		/// Origin type expected by the proxied dispatchable calls.
 		#[cfg(not(feature = "runtime-benchmarks"))]
-		type Origin: From<DidRawOrigin<DidIdentifierOf<Self>, AccountIdentifierOf<Self>>>;
+		type Origin: From<DidRawOrigin<DidIdentifierOf<Self>, AccountIdOf<Self>>>;
 		#[cfg(feature = "runtime-benchmarks")]
 		type Origin: From<RawOrigin<DidIdentifierOf<Self>>>;
 
@@ -201,13 +201,13 @@ pub mod pallet {
 		>;
 
 		/// The return type when the DID origin check was successful.
-		type OriginSuccess: CallSources<AccountIdentifierOf<Self>, DidIdentifierOf<Self>>;
+		type OriginSuccess: CallSources<AccountIdOf<Self>, DidIdentifierOf<Self>>;
 
 		/// Overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
 		/// The currency that is used to reserve funds for each did.
-		type Currency: Currency<AccountIdentifierOf<Self>> + ReservableCurrency<AccountIdentifierOf<Self>>;
+		type Currency: Currency<AccountIdOf<Self>> + ReservableCurrency<AccountIdOf<Self>>;
 
 		/// The amount of balance that will be taken for each DID as a deposit
 		/// to incentivise fair use of the on chain storage. The deposit can be
@@ -296,7 +296,7 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// A new DID has been created.
 		/// \[transaction signer, DID identifier\]
-		DidCreated(AccountIdentifierOf<T>, DidIdentifierOf<T>),
+		DidCreated(AccountIdOf<T>, DidIdentifierOf<T>),
 		/// A DID has been updated.
 		/// \[DID identifier\]
 		DidUpdated(DidIdentifierOf<T>),
@@ -454,7 +454,7 @@ pub mod pallet {
 			// TODO: how to ensure reserve AND withdraw!?
 			// Check the free balance before we do any heavy work
 			ensure!(
-				<T::Currency as ReservableCurrency<AccountIdentifierOf<T>>>::can_reserve(
+				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
 					&sender,
 					<T as Config>::Deposit::get() + <T as Config>::Fee::get()
 				),
@@ -490,7 +490,7 @@ pub mod pallet {
 
 			// withdraw the fee, we made sure that enough balance is available. But if this
 			// fails, we don't withdraw anything.
-			let imbalance = <T::Currency as Currency<AccountIdentifierOf<T>>>::withdraw(
+			let imbalance = <T::Currency as Currency<AccountIdOf<T>>>::withdraw(
 				&did_entry.deposit.owner,
 				T::Fee::get(),
 				WithdrawReasons::FEE,
@@ -989,7 +989,7 @@ impl<T: Config> Pallet<T> {
 		let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 		// *** No Fail beyond this point ***
 
-		kilt_support::free_deposit::<AccountIdentifierOf<T>, CurrencyOf<T>>(&did_entry.deposit);
+		kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&did_entry.deposit);
 		// Mark as deleted to prevent potential replay-attacks of re-adding a previously
 		// deleted DID.
 		DidBlacklist::<T>::insert(&did_subject, ());

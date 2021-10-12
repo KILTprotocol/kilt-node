@@ -259,7 +259,7 @@ pub struct DidDetails<T: Config> {
 	pub(crate) last_tx_counter: u64,
 	/// The deposit that was taken to incentivise fair use of the on chain
 	/// storage.
-	pub(crate) deposit: Deposit<T::AccountId, BalanceOf<T>>,
+	pub(crate) deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
 }
 
 impl<T: Config> DidDetails<T> {
@@ -270,7 +270,7 @@ impl<T: Config> DidDetails<T> {
 	pub fn new(
 		authentication_key: DidVerificationKey,
 		block_number: BlockNumberOf<T>,
-		deposit: Deposit<T::AccountId, BalanceOf<T>>,
+		deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
 	) -> Result<Self, StorageError> {
 		let mut public_keys = DidPublicKeyMap::<T>::default();
 		let authentication_key_id = utils::calculate_key_id::<T>(&authentication_key.clone().into());
@@ -299,7 +299,7 @@ impl<T: Config> DidDetails<T> {
 	pub fn from_creation_details(
 		details: DidCreationDetails<T>,
 		new_auth_key: DidVerificationKey,
-		deposit: Deposit<AccountIdentifierOf<T>, BalanceOf<T>>,
+		deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
 	) -> Result<Self, DidError> {
 		ensure!(
 			details.new_key_agreement_keys.len()
@@ -591,7 +591,7 @@ pub struct DidAuthorizedCallOperation<T: Config> {
 	/// The block number at which the operation was created.
 	pub block_number: BlockNumberOf<T>,
 	/// The account which is authorized to submit the did call.
-	pub submitter: AccountIdentifierOf<T>,
+	pub submitter: AccountIdOf<T>,
 }
 
 /// Wrapper around a [DidAuthorizedCallOperation].

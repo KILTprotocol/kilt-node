@@ -16,15 +16,12 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{
-	assert_err, assert_noop, assert_ok,
-	traits::{Currency, LockIdentifier, LockableCurrency, WithdrawReasons},
-};
+use frame_support::{assert_err, assert_noop, assert_ok, traits::Currency};
 use sp_core::*;
 use sp_runtime::{traits::Zero, SaturatedConversion};
 use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom};
 
-use crate::{self as did, mock::*, mock_utils::*, AccountIdentifierOf};
+use crate::{self as did, mock::*, mock_utils::*, AccountIdOf};
 
 // create
 
@@ -39,7 +36,7 @@ fn check_successful_simple_ed25519_creation() {
 
 	let balance = <Test as did::Config>::Deposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build(None)
@@ -81,7 +78,7 @@ fn check_successful_simple_sr25519_creation() {
 
 	let balance = <Test as did::Config>::Deposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build(None)
@@ -123,7 +120,7 @@ fn check_successful_simple_ecdsa_creation() {
 
 	let balance = <Test as did::Config>::Deposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build(None)
@@ -177,7 +174,7 @@ fn check_successful_complete_creation() {
 
 	let balance = <Test as did::Config>::Deposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build(None)
@@ -244,7 +241,7 @@ fn check_duplicate_did_creation() {
 
 	let balance = <Test as did::Config>::Deposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did, mock_did)])
@@ -283,7 +280,7 @@ fn check_did_already_deleted_creation() {
 
 	let balance = <Test as did::Config>::Deposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_deleted_dids(vec![alice_did])
@@ -309,7 +306,7 @@ fn check_invalid_signature_format_did_creation() {
 
 	let balance = <Test as did::Config>::Deposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build(None)
@@ -332,7 +329,7 @@ fn check_invalid_signature_did_creation() {
 
 	let balance = <Test as did::Config>::Deposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build(None)
@@ -355,7 +352,7 @@ fn check_swapped_did_subject_did_creation() {
 
 	let balance = <Test as did::Config>::Deposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build(None)
@@ -381,7 +378,7 @@ fn check_max_limit_key_agreement_keys_did_creation() {
 
 	let balance = <Test as did::Config>::Deposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build(None)
@@ -1336,7 +1333,7 @@ fn check_successful_deletion() {
 
 	let balance = <Test as did::Config>::Deposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
-		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
@@ -1375,7 +1372,7 @@ fn check_did_not_present_deletion() {
 
 	let balance = <Test as did::Config>::Deposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build(None)
@@ -1399,7 +1396,7 @@ fn check_successful_reclaiming() {
 
 	let balance = <Test as did::Config>::Deposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
-		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
@@ -1444,7 +1441,7 @@ fn unauthorized_reclaiming() {
 
 	let balance = <Test as did::Config>::Deposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<AccountIdentifierOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])

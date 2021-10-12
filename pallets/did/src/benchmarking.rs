@@ -77,7 +77,7 @@ fn get_ecdsa_public_delegation_key() -> ecdsa::Public {
 // Must always be dispatched with the DID authentication key
 fn generate_base_did_call_operation<T: Config>(
 	did: DidIdentifierOf<T>,
-	submitter: AccountIdentifierOf<T>,
+	submitter: AccountIdOf<T>,
 ) -> DidAuthorizedCallOperation<T> {
 	let test_call = <T as Config>::Call::get_call_for_did_call_benchmark();
 
@@ -100,10 +100,10 @@ benchmarks! {
 	create_ed25519_keys {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
 
-		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
+		let submitter: AccountIdOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
-		let balance = <CurrencyOf<T> as Currency<AccountIdentifierOf<T>>>::minimum_balance() + <T as Config>::Deposit::get() + <T as Config>::Fee::get();
-		<CurrencyOf<T> as Currency<AccountIdentifierOf<T>>>::make_free_balance_be(&submitter, balance);
+		let balance = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::minimum_balance() + <T as Config>::Deposit::get() + <T as Config>::Fee::get();
+		<CurrencyOf<T> as Currency<AccountIdOf<T>>>::make_free_balance_be(&submitter, balance);
 
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
@@ -148,9 +148,9 @@ benchmarks! {
 	create_sr25519_keys {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
 
-		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
-		let balance = <CurrencyOf<T> as Currency<AccountIdentifierOf<T>>>::minimum_balance() + <T as Config>::Deposit::get() + <T as Config>::Fee::get();
-		<CurrencyOf<T> as Currency<AccountIdentifierOf<T>>>::make_free_balance_be(&submitter, balance);
+		let submitter: AccountIdOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
+		let balance = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::minimum_balance() + <T as Config>::Deposit::get() + <T as Config>::Fee::get();
+		<CurrencyOf<T> as Currency<AccountIdOf<T>>>::make_free_balance_be(&submitter, balance);
 
 		let did_public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
@@ -195,9 +195,9 @@ benchmarks! {
 	create_ecdsa_keys {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
 
-		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
-		let balance = <CurrencyOf<T> as Currency<AccountIdentifierOf<T>>>::minimum_balance() + <T as Config>::Deposit::get() + <T as Config>::Fee::get();
-		<CurrencyOf<T> as Currency<AccountIdentifierOf<T>>>::make_free_balance_be(&submitter, balance);
+		let submitter: AccountIdOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
+		let balance = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::minimum_balance() + <T as Config>::Deposit::get() + <T as Config>::Fee::get();
+		<CurrencyOf<T> as Currency<AccountIdOf<T>>>::make_free_balance_be(&submitter, balance);
 
 		let did_public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key.clone()).into_account().into();
@@ -267,7 +267,7 @@ benchmarks! {
 
 	/* submit_did_call extrinsic */
 	submit_did_call_ed25519_key {
-		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
+		let submitter: AccountIdOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
@@ -281,7 +281,7 @@ benchmarks! {
 	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op), DidSignature::from(did_call_signature))
 
 	submit_did_call_sr25519_key {
-		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
+		let submitter: AccountIdOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
 		let did_public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
@@ -295,7 +295,7 @@ benchmarks! {
 	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op), DidSignature::from(did_call_signature))
 
 	submit_did_call_ecdsa_key {
-		let submitter: AccountIdentifierOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
+		let submitter: AccountIdOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
 		let did_public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key.clone()).into_account().into();

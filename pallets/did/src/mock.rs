@@ -395,7 +395,7 @@ pub struct ExtBuilder {
 	deleted_dids: Vec<TestDidIdentifier>,
 	storage_version: DidStorageVersion,
 	ctypes_stored: Vec<(TestCtypeHash, TestCtypeOwner)>,
-	balances: Vec<(AccountIdentifierOf<Test>, Balance)>,
+	balances: Vec<(AccountIdOf<Test>, Balance)>,
 }
 
 impl ExtBuilder {
@@ -404,7 +404,7 @@ impl ExtBuilder {
 		self
 	}
 
-	pub(crate) fn with_balances(mut self, balances: Vec<(AccountIdentifierOf<Test>, Balance)>) -> Self {
+	pub(crate) fn with_balances(mut self, balances: Vec<(AccountIdOf<Test>, Balance)>) -> Self {
 		self.balances = balances;
 		self
 	}

@@ -66,7 +66,7 @@ fn old_to_new_did_details<T: Config>(old: OldDidDetails<T>) -> NewDidDetails<T> 
 		delegation_key: old.delegation_key,
 		public_keys: old.public_keys,
 		last_tx_counter: old.last_tx_counter,
-		deposit: Deposit::<AccountIdentifierOf<T>, BalanceOf<T>> {
+		deposit: Deposit::<AccountIdOf<T>, BalanceOf<T>> {
 			owner: Default::default(),
 			amount: Zero::zero(),
 		},
