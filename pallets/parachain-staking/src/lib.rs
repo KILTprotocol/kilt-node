@@ -1458,7 +1458,7 @@ pub mod pallet {
 				Self::update_top_candidates(collator.clone(), old_total, new_total);
 			}
 
-			// ** no fail beyond this line *
+			// *** No Fail beyond this point ***
 
 			// update states
 			<CandidatePool<T>>::insert(&collator, state);
@@ -1603,6 +1603,8 @@ pub mod pallet {
 			if state.is_active() {
 				Self::update_top_candidates(collator.clone(), old_total, new_total);
 			}
+
+			// *** No Fail beyond this point ***
 
 			// Update states
 			<CandidatePool<T>>::insert(&collator, state);
@@ -2038,7 +2040,7 @@ pub mod pallet {
 				delegator,
 				collator,
 				delegator_stake,
-				new_total,
+				new_totx1l,
 			));
 			Ok(())
 		}
