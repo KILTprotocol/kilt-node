@@ -20,8 +20,8 @@
 
 use kilt_primitives::{constants::BLOCKS_PER_YEAR, AccountId, AccountPublic, Balance, BlockNumber};
 use mashnet_node_runtime::{
-	BalancesConfig, GenesisConfig, KiltLaunchConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig,
-	WASM_BINARY,
+	BalancesConfig, CrowdloanContributorsConfig, GenesisConfig, KiltLaunchConfig, SessionConfig, SudoConfig,
+	SystemConfig, VestingConfig, WASM_BINARY,
 };
 
 use hex_literal::hex;
@@ -263,6 +263,9 @@ fn testnet_genesis(
 				.map(|(who, amount, vesting_length, _)| (who, vesting_length * BLOCKS_PER_YEAR / 12, amount))
 				.collect(),
 			transfer_account: TRANSFER_ACCOUNT.into(),
+		},
+		crowdloan_contributors: CrowdloanContributorsConfig {
+			admin_account: TRANSFER_ACCOUNT.into(),
 		},
 		vesting: VestingConfig { vesting: vec![] },
 	}

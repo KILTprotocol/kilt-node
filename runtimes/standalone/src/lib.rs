@@ -45,6 +45,7 @@ use kilt_primitives::{
 	},
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature,
 };
+use migrations::crowdloan_contributions::CrowdloanContributionsSetup;
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
 use sp_api::impl_runtime_apis;
@@ -82,6 +83,8 @@ pub use attestation;
 pub use ctype;
 pub use delegation;
 pub use did;
+
+mod migrations;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem<Hash>;
@@ -531,6 +534,7 @@ construct_runtime!(
 		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 33,
 		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
 		Utility: pallet_utility::{Pallet, Call, Storage, Event} = 35,
+		CrowdloanContributors: kilt_crowdloan::{Pallet, Call, Storage, Event<T>, Config<T>} = 36,
 	}
 );
 
@@ -558,6 +562,12 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	}
 }
 
+impl kilt_crowdloan::Config for Runtime {
+	type Currency = Balances;
+	type Event = Event;
+	type WeightInfo = ();
+}
+
 /// The address format for describing accounts.
 pub type Address = sp_runtime::MultiAddress<AccountId, ()>;
 /// Block header type as expected by this runtime.
@@ -583,8 +593,14 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signatu
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various Pallets.
-pub type Executive =
-	frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllPallets>;
+pub type Executive = frame_executive::Executive<
+	Runtime,
+	Block,
+	frame_system::ChainContext<Runtime>,
+	Runtime,
+	AllPallets,
+	CrowdloanContributionsSetup,
+>;
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {

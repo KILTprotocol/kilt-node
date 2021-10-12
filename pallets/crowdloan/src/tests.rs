@@ -57,10 +57,7 @@ fn test_set_admin_account_with_sudo() {
 			assert_eq!(Crowdloan::admin_account(), admin);
 
 			// Change admin with sudo account
-			assert_ok!(Crowdloan::set_admin_account(
-				Origin::root(),
-				new_admin.clone()
-			));
+			assert_ok!(Crowdloan::set_admin_account(Origin::root(), new_admin.clone()));
 
 			// Test new admin is the one set
 			assert_eq!(Crowdloan::admin_account(), new_admin);

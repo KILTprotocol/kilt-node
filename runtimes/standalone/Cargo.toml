@@ -18,6 +18,7 @@ ctype = {default-features = false, path = "../../pallets/ctype"}
 delegation = {default-features = false, path = "../../pallets/delegation"}
 did = {default-features = false, path = "../../pallets/did"}
 kilt-launch = {default-features = false, path = "../../pallets/kilt-launch"}
+kilt-crowdloan = {default-features = false, path = "../../pallets/crowdloan"}
 kilt-primitives = {path = "../../primitives", default-features = false}
 
 # kilt specific
@@ -75,6 +76,7 @@ runtime-benchmarks = [
   "frame-system/runtime-benchmarks",
   "frame-system-benchmarking",
   "hex-literal",
+  "kilt-crowdloan/runtime-benchmarks",
   "kilt-launch/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
@@ -93,6 +95,7 @@ std = [
   "frame-system/std",
   "frame-system-rpc-runtime-api/std",
   "frame-try-runtime/std",
+  "kilt-crowdloan/std",
   "kilt-launch/std",
   "kilt-primitives/std",
   "log/std",
@@ -132,6 +135,7 @@ try-runtime = [
   "frame-support/try-runtime",
   "frame-system/try-runtime",
   "frame-try-runtime",
+  "kilt-crowdloan/try-runtime",
   "kilt-launch/try-runtime",
   "pallet-aura/try-runtime",
   "pallet-authorship/try-runtime",
