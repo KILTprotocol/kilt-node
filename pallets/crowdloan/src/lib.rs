@@ -148,6 +148,8 @@ pub mod pallet {
 		///
 		/// The dispatch origin can be either Sudo or the current admin account.
 		///
+		/// Emits `NewAdminAccountSet`.
+		///
 		/// # <weight>
 		/// Weight: O(1)
 		/// - Reads: [Origin Account], AdminAccount
@@ -182,6 +184,8 @@ pub mod pallet {
 		///
 		/// The dispatch origin must be the current admin account.
 		///
+		/// Emits `NewContributionSet`.
+		///
 		/// # <weight>
 		/// Weight: O(1)
 		/// - Reads: [Origin Account], AdminAccount, Contributions
@@ -213,6 +217,8 @@ pub mod pallet {
 		/// contributor's account.
 		///
 		/// The dispatch origin must be the current admin account.
+		///
+		/// Emits `ContributionRemoved`.
 		///
 		/// # <weight>
 		/// Weight: O(1)
