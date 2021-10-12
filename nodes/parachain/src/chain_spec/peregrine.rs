@@ -25,9 +25,9 @@ use kilt_primitives::{
 	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use peregrine_runtime::{
-	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake,
-	ParachainInfoConfig, ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig,
-	VestingConfig, CrowdloanContributorsConfig, WASM_BINARY,
+	BalancesConfig, CouncilConfig, CrowdloanContributorsConfig, GenesisConfig, InflationInfo, KiltLaunchConfig,
+	MinCollatorStake, ParachainInfoConfig, ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig,
+	TechnicalCommitteeConfig, VestingConfig, WASM_BINARY,
 };
 use sc_service::ChainType;
 use sp_core::{crypto::UncheckedInto, sr25519};
@@ -200,7 +200,9 @@ fn testnet_genesis(
 				.chain(botlabs_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
 				.collect(),
 		},
-		crowdloan_contributors: CrowdloanContributorsConfig { admin_account: TRANSFER_ACCOUNT.into() },
+		crowdloan_contributors: CrowdloanContributorsConfig {
+			admin_account: TRANSFER_ACCOUNT.into(),
+		},
 		sudo: SudoConfig { key: root_key },
 		parachain_info: ParachainInfoConfig { parachain_id: id },
 		kilt_launch: KiltLaunchConfig {

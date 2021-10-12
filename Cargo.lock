@@ -4619,7 +4619,6 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal 0.3.3",
- "kilt-crowdloan",
  "kilt-launch",
  "kilt-primitives",
  "log",

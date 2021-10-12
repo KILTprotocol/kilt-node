@@ -19,7 +19,10 @@
 use crate::pallet as pallet_crowdloan;
 use frame_support::parameter_types;
 use kilt_primitives::{constants::KILT, AccountId, Balance, BlockNumber, Hash, Index};
-use sp_runtime::{testing::Header, traits::{BlakeTwo256, IdentityLookup}};
+use sp_runtime::{
+	testing::Header,
+	traits::{BlakeTwo256, IdentityLookup},
+};
 
 type TestUncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type TestBlock = frame_system::mocking::MockBlock<Test>;

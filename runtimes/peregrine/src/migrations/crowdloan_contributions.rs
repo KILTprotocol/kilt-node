@@ -16,12 +16,12 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use hex_literal::hex;
-use frame_support::traits::{OnRuntimeUpgrade};
-#[cfg(feature = "try-runtime")]
-use frame_support::traits::{StorageVersion, GetStorageVersion};
-use kilt_primitives::AccountId;
 use crate::Runtime;
+#[cfg(feature = "try-runtime")]
+use frame_support::traits::GetStorageVersion;
+use frame_support::traits::{OnRuntimeUpgrade, StorageVersion};
+use hex_literal::hex;
+use kilt_primitives::AccountId;
 
 // Same as Peregrine transfer account.
 pub const NEW_ADMIN_ACCOUNT: [u8; 32] = hex!("6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c");
@@ -29,7 +29,6 @@ pub const NEW_ADMIN_ACCOUNT: [u8; 32] = hex!("6a3c793cec9dbe330b349dc4eea6801090
 pub struct CrowdloanContributionsSetup;
 
 impl OnRuntimeUpgrade for CrowdloanContributionsSetup {
-
 	#[cfg(feature = "try-runtime")]
 	fn pre_upgrade() -> Result<(), &'static str> {
 		assert_eq!(
@@ -41,9 +40,12 @@ impl OnRuntimeUpgrade for CrowdloanContributionsSetup {
 		Ok(())
 	}
 
-    fn on_runtime_upgrade() -> frame_support::weights::Weight {
+	fn on_runtime_upgrade() -> frame_support::weights::Weight {
 		let admin_account = AccountId::new(NEW_ADMIN_ACCOUNT);
-		log::info!("Setting crowdloan rewards pallet admin account to {:?}.", &admin_account);
+		log::info!(
+			"Setting crowdloan rewards pallet admin account to {:?}.",
+			&admin_account
+		);
 		kilt_crowdloan::AdminAccount::<Runtime>::set(admin_account);
 		StorageVersion::put::<kilt_crowdloan::Pallet<Runtime>>(&kilt_crowdloan::STORAGE_VERSION);
 

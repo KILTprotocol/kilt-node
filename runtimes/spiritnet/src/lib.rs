@@ -81,10 +81,10 @@ pub use parachain_staking::{InflationInfo, RewardRate, StakingInfo};
 use migrations::crowdloan_contributions::CrowdloanContributionsSetup;
 
 mod fee;
+mod migrations;
 #[cfg(test)]
 mod tests;
 mod weights;
-mod migrations;
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -663,8 +663,14 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signatu
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various modules.
-pub type Executive =
-	frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllPallets, CrowdloanContributionsSetup>;
+pub type Executive = frame_executive::Executive<
+	Runtime,
+	Block,
+	frame_system::ChainContext<Runtime>,
+	Runtime,
+	AllPallets,
+	CrowdloanContributionsSetup,
+>;
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {

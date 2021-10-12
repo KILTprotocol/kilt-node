@@ -56,6 +56,7 @@ use kilt_primitives::{
 	},
 	AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Hash, Header, Index, Signature,
 };
+use migrations::crowdloan_contributions::CrowdloanContributionsSetup;
 use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
 use sp_api::impl_runtime_apis;
 use sp_core::{
@@ -70,13 +71,12 @@ use sp_runtime::{
 };
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
-use migrations::crowdloan_contributions::CrowdloanContributionsSetup;
 
 mod fee;
+mod migrations;
 #[cfg(test)]
 mod tests;
 mod weights;
-mod migrations;
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -848,8 +848,14 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signatu
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various modules.
-pub type Executive =
-	frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllPallets, CrowdloanContributionsSetup>;
+pub type Executive = frame_executive::Executive<
+	Runtime,
+	Block,
+	frame_system::ChainContext<Runtime>,
+	Runtime,
+	AllPallets,
+	CrowdloanContributionsSetup,
+>;
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {

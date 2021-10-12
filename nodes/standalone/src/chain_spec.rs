@@ -20,7 +20,7 @@
 
 use kilt_primitives::{constants::BLOCKS_PER_YEAR, AccountId, AccountPublic, Balance, BlockNumber};
 use mashnet_node_runtime::{
-	BalancesConfig, GenesisConfig, KiltLaunchConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig, CrowdloanContributorsConfig,
+	BalancesConfig, GenesisConfig, KiltLaunchConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig,
 	WASM_BINARY,
 };
 
@@ -233,7 +233,6 @@ fn testnet_genesis(
 				.chain(airdrop_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
 				.collect(),
 		},
-		crowdloan_contributors: CrowdloanContributorsConfig { admin_account: TRANSFER_ACCOUNT.into() },
 		session: SessionConfig {
 			keys: initial_authorities
 				.iter()
