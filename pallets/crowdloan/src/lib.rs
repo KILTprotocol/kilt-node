@@ -123,13 +123,13 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// A new admin has been set.
-		/// \[Old administrator account, new administrator account\]
+		/// \[old administrator account, new administrator account\]
 		NewAdminAccountSet(AccountIdOf<T>, AccountIdOf<T>),
 		/// A new contribution has been set.
-		/// \[Contributor account, old amount (OPTIONAL), new amount\]
+		/// \[contributor account, old amount (OPTIONAL), new amount\]
 		NewContributionSet(AccountIdOf<T>, Option<BalanceOf<T>>, BalanceOf<T>),
 		/// A contribution has been removed.
-		/// \[Contributor account\]
+		/// \[contributor account\]
 		ContributionRemoved(AccountIdOf<T>),
 	}
 
