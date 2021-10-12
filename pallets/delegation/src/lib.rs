@@ -97,10 +97,7 @@ use frame_support::{
 	traits::{Get, ReservableCurrency},
 };
 use kilt_support::deposit::Deposit;
-use sp_runtime::{
-	traits::{Hash, Zero},
-	DispatchError,
-};
+use sp_runtime::{traits::Hash, DispatchError};
 use sp_std::vec::Vec;
 
 use migrations::*;
