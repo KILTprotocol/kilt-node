@@ -60,8 +60,11 @@ pub mod pallet {
 		pallet_prelude::*,
 		traits::{Currency, StorageVersion},
 	};
-	use frame_system::{pallet_prelude::*, WeightInfo};
-	use sp_runtime::traits::{BadOrigin, StaticLookup};
+	use frame_system::{pallet_prelude::*, EnsureOneOf, EnsureRoot, EnsureSigned, WeightInfo};
+	use sp_runtime::{
+		traits::{BadOrigin, StaticLookup},
+		Either,
+	};
 
 	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 	pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
@@ -143,7 +146,7 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		/// Sets a new account as the admin of this pallet.
 		///
-		/// The dispatch origin must be the current admin account.
+		/// The dispatch origin can be either Sudo or the current admin account.
 		///
 		/// # <weight>
 		/// Weight: O(1)
@@ -154,10 +157,16 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			new_account: <<T as frame_system::Config>::Lookup as StaticLookup>::Source,
 		) -> DispatchResult {
-			let who = ensure_signed(origin)?;
+			let who =
+				EnsureOneOf::<AccountIdOf<T>, EnsureRoot<AccountIdOf<T>>, EnsureSigned<AccountIdOf<T>>>::ensure_origin(
+					origin,
+				)?;
 
 			let old_account = AdminAccount::<T>::get();
-			ensure!(who == old_account, BadOrigin);
+
+			if let Either::Right(signed_origin) = who {
+				ensure!(signed_origin == old_account, BadOrigin);
+			}
 
 			let looked_up_account = <T as frame_system::Config>::Lookup::lookup(new_account)?;
 			AdminAccount::<T>::set(looked_up_account.clone());

@@ -46,6 +46,28 @@ fn test_set_admin_account() {
 }
 
 #[test]
+fn test_set_admin_account_with_sudo() {
+	let admin = ACCOUNT_00;
+	let new_admin = ACCOUNT_01;
+
+	ExtBuilder::default()
+		.with_admin_account(admin.clone())
+		.build()
+		.execute_with(|| {
+			assert_eq!(Crowdloan::admin_account(), admin);
+
+			// Change admin with sudo account
+			assert_ok!(Crowdloan::set_admin_account(
+				Origin::root(),
+				new_admin.clone()
+			));
+
+			// Test new admin is the one set
+			assert_eq!(Crowdloan::admin_account(), new_admin);
+		});
+}
+
+#[test]
 fn test_no_admin_set() {
 	let admin = ACCOUNT_00;
 	let new_admin = ACCOUNT_01;
