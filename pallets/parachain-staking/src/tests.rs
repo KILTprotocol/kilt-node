@@ -3497,12 +3497,10 @@ fn replace_lowest_delegator() {
 			);
 
 			// 5 attempts to replace 6 with more balance than available
-			// FIXME: Should be assert_noop!
 			frame_support::assert_noop!(
 				StakePallet::join_delegators(Origin::signed(5), 1, 101),
 				BalancesError::<Test>::InsufficientBalance
 			);
-			// FIXME: Should be some
 			assert!(StakePallet::delegator_state(6).is_some());
 		})
 }
