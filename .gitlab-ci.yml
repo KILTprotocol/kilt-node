@@ -1,36 +1,36 @@
 stages:
+  - check
   - test
   - build
 
-clippy:
+check:
   image: paritytech/ci-linux:9575dfcd-20210729
-  stage: test
+  stage: check
   timeout: 1 hours
   script:
     - rustup component add clippy --toolchain nightly
-    - cargo +nightly clippy --all-features --all-targets -- -D warnings
+    - cargo +nightly clippy --workspace --all-targets --no-default-features -- -D warnings
+    - cargo +nightly clippy --workspace --all-targets --features try-runtime -- -D warnings
+    - cargo +nightly clippy --workspace --all-targets --features runtime-benchmarks -- -D warnings
+    - cargo +nightly clippy --workspace --all-targets --features mock -- -D warnings
+    - cargo +nightly clippy --workspace --all-targets --features std -- -D warnings
+    - cargo +nightly clippy --workspace --all-targets --all-features -- -D warnings
 
 fmt:
   image: paritytech/ci-linux:9575dfcd-20210729
-  stage: test
+  stage: check
   timeout: 1 hours
   script:
     - rustup component add rustfmt --toolchain nightly
-    - cargo +nightly fmt -- --check
+    - cargo +nightly fmt --all -- --check
 
 test:
   image: paritytech/ci-linux:9575dfcd-20210729
   stage: test
   timeout: 1 hours
   script:
-    - cargo test --all --all-targets
-
-test-features:
-  image: paritytech/ci-linux:9575dfcd-20210729
-  stage: test
-  timeout: 1 hours
-  script:
-    - cargo test --all --all-features --all-targets
+    - cargo test --workspace --all-targets
+    - cargo test --workspace --all-targets --all-features
 
 build:
   image:
