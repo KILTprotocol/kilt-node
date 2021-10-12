@@ -2078,20 +2078,17 @@ pub mod pallet {
 		}
 
 		/// Either clear the storage of a kicked delegator or update its
-		/// delegation state.
+		/// delegation state if it still contains other delegations.
 		fn clear_kicked_delegator_storage(
 			delegator: Option<KickedDelegator<T::AccountId, BalanceOf<T>, T::MaxCollatorsPerDelegator>>,
 		) {
-			if let Some(KickedDelegator {
-				who,
-				state: maybe_state,
-			}) = delegator
-			{
-				if let Some(state) = maybe_state {
-					DelegatorState::<T>::insert(who, state);
-				} else {
-					DelegatorState::<T>::remove(who);
-				}
+			match delegator {
+				Some(KickedDelegator {
+					who,
+					state: Some(state),
+				}) => DelegatorState::<T>::insert(who, state),
+				Some(KickedDelegator { who, .. }) => DelegatorState::<T>::remove(who),
+				_ => (),
 			}
 		}
 
