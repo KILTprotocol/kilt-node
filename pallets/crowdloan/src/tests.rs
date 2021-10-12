@@ -65,7 +65,7 @@ fn test_set_admin_account_with_sudo() {
 }
 
 #[test]
-fn test_no_admin_set() {
+fn test_no_custom_admin_set() {
 	let admin = ACCOUNT_00;
 	let new_admin = ACCOUNT_01;
 
