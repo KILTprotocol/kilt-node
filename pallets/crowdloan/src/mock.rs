@@ -133,4 +133,17 @@ impl ExtBuilder {
 
 		ext
 	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	pub(crate) fn build_with_keystore(self) -> sp_io::TestExternalities {
+		use sp_keystore::{testing::KeyStore, KeystoreExt};
+		use sp_std::sync::Arc;
+
+		let mut ext = self.build();
+
+		let keystore = KeyStore::new();
+		ext.register_extension(KeystoreExt(Arc::new(keystore)));
+
+		ext
+	}
 }

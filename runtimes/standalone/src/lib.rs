@@ -762,6 +762,7 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, ctype, Ctype);
 			list_benchmark!(list, extra, delegation, Delegation);
 			list_benchmark!(list, extra, attestation, Attestation);
+			// list_benchmark!(list, extra, kilt_crowdloan, CrowdloanContributors);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
 

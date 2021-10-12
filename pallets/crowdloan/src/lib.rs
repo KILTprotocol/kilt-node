@@ -51,6 +51,9 @@ mod tests;
 #[cfg(test)]
 pub(crate) mod mock;
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+
 pub use crate::pallet::*;
 
 #[frame_support::pallet]

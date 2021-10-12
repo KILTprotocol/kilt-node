@@ -3638,6 +3638,7 @@ dependencies = [
  "parity-scale-codec",
  "serde",
  "sp-io",
+ "sp-keystore",
  "sp-runtime",
  "sp-std",
  "substrate-wasm-builder-runner",

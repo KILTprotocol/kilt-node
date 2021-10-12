@@ -1001,6 +1001,7 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, did, Did);
 			list_benchmark!(list, extra, kilt_launch, KiltLaunch);
 			list_benchmark!(list, extra, pallet_vesting, Vesting);
+			// list_benchmark!(list, extra, kilt_crowdloan, CrowdloanContributors);
 
 			// No benchmarks for these pallets
 			// list_benchmark!(list, extra, cumulus_pallet_parachain_system, ParachainSystem);

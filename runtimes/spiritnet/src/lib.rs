@@ -807,6 +807,7 @@ impl_runtime_apis! {
 			// KILT
 			list_benchmark!(list, extra, kilt_launch, KiltLaunch);
 			list_benchmark!(list, extra, parachain_staking, ParachainStaking);
+			// list_benchmark!(list, extra, kilt_crowdloan, CrowdloanContributors);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
 
