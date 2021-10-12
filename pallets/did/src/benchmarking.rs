@@ -74,6 +74,13 @@ fn get_ecdsa_public_delegation_key() -> ecdsa::Public {
 	ecdsa_generate(DELEGATION_KEY_ID, None)
 }
 
+fn make_free_for_did<T: Config>(account: &AccountIdOf<T>) {
+	let balance = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::minimum_balance()
+		+ <T as Config>::Deposit::get()
+		+ <T as Config>::Fee::get();
+	<CurrencyOf<T> as Currency<AccountIdOf<T>>>::make_free_balance_be(account, balance);
+}
+
 // Must always be dispatched with the DID authentication key
 fn generate_base_did_call_operation<T: Config>(
 	did: DidIdentifierOf<T>,
@@ -102,8 +109,7 @@ benchmarks! {
 
 		let submitter: AccountIdOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
-		let balance = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::minimum_balance() + <T as Config>::Deposit::get() + <T as Config>::Fee::get();
-		<CurrencyOf<T> as Currency<AccountIdOf<T>>>::make_free_balance_be(&submitter, balance);
+		make_free_for_did::<T>(&submitter);
 
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
@@ -149,8 +155,7 @@ benchmarks! {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
 
 		let submitter: AccountIdOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
-		let balance = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::minimum_balance() + <T as Config>::Deposit::get() + <T as Config>::Fee::get();
-		<CurrencyOf<T> as Currency<AccountIdOf<T>>>::make_free_balance_be(&submitter, balance);
+		make_free_for_did::<T>(&submitter);
 
 		let did_public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
@@ -196,8 +201,7 @@ benchmarks! {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
 
 		let submitter: AccountIdOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
-		let balance = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::minimum_balance() + <T as Config>::Deposit::get() + <T as Config>::Fee::get();
-		<CurrencyOf<T> as Currency<AccountIdOf<T>>>::make_free_balance_be(&submitter, balance);
+		make_free_for_did::<T>(&submitter);
 
 		let did_public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key.clone()).into_account().into();
