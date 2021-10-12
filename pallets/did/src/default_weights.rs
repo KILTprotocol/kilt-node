@@ -73,6 +73,7 @@ pub trait WeightInfo {
 	fn remove_ed25519_key_agreement_key() -> Weight;
 	fn remove_sr25519_key_agreement_key() -> Weight;
 	fn remove_ecdsa_key_agreement_key() -> Weight;
+	fn reclaim_deposit() -> Weight;
 }
 
 /// Weights for did using the Substrate node and recommended hardware.
@@ -236,6 +237,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
+	fn reclaim_deposit() -> Weight {
+		(26_928_000_u64)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+	}
 }
 
 // For backwards compatibility and tests
@@ -397,5 +403,10 @@ impl WeightInfo for () {
 		(46_479_000_u64)
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+	fn reclaim_deposit() -> Weight {
+		(26_928_000_u64)
+			.saturating_add(RocksDbWeight::get().reads(1_u64))
+			.saturating_add(RocksDbWeight::get().writes(2_u64))
 	}
 }

@@ -99,7 +99,6 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{deposit::Deposit, traits::CallSources};
-	use sp_runtime::traits::Zero;
 
 	/// Type of a claim hash.
 	pub(crate) type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
@@ -474,13 +473,8 @@ pub mod pallet {
 			})
 		}
 
-		fn free_deposit(deposit: &Deposit<AccountIdOf<T>, BalanceOf<T>>) {
-			let err_amount = CurrencyOf::<T>::unreserve(&deposit.owner, deposit.amount);
-			debug_assert!(err_amount.is_zero());
-		}
-
 		fn remove_attestation(attestation: AttestationDetails<T>, claim_hash: ClaimHashOf<T>) {
-			Pallet::<T>::free_deposit(&attestation.deposit);
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&attestation.deposit);
 			Attestations::<T>::remove(&claim_hash);
 			if let Some(delegation_id) = attestation.delegation_id {
 				DelegatedAttestations::<T>::mutate(&delegation_id, |maybe_attestations| {

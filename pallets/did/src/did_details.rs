@@ -18,6 +18,7 @@
 
 use codec::{Decode, Encode, WrapperTypeEncode};
 use frame_support::storage::{bounded_btree_map::BoundedBTreeMap, bounded_btree_set::BoundedBTreeSet};
+use kilt_support::deposit::Deposit;
 use sp_core::{ecdsa, ed25519, sr25519};
 use sp_runtime::{traits::Verify, MultiSignature};
 use sp_std::{convert::TryInto, fmt};
@@ -256,6 +257,9 @@ pub struct DidDetails<T: Config> {
 	/// updated upon each DID operation involving with the subject as the
 	/// creator.
 	pub(crate) last_tx_counter: u64,
+	/// The deposit that was taken to incentivise fair use of the on chain
+	/// storage.
+	pub(crate) deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
 }
 
 impl<T: Config> DidDetails<T> {
@@ -263,7 +267,11 @@ impl<T: Config> DidDetails<T> {
 	/// i.e., an authentication key and the block creation time.
 	///
 	/// The tx counter is automatically set to 0.
-	pub fn new(authentication_key: DidVerificationKey, block_number: BlockNumberOf<T>) -> Result<Self, StorageError> {
+	pub fn new(
+		authentication_key: DidVerificationKey,
+		block_number: BlockNumberOf<T>,
+		deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
+	) -> Result<Self, StorageError> {
 		let mut public_keys = DidPublicKeyMap::<T>::default();
 		let authentication_key_id = utils::calculate_key_id::<T>(&authentication_key.clone().into());
 		public_keys
@@ -282,6 +290,7 @@ impl<T: Config> DidDetails<T> {
 			delegation_key: None,
 			public_keys,
 			last_tx_counter: 0u64,
+			deposit,
 		})
 	}
 
@@ -290,6 +299,7 @@ impl<T: Config> DidDetails<T> {
 	pub fn from_creation_details(
 		details: DidCreationDetails<T>,
 		new_auth_key: DidVerificationKey,
+		deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
 	) -> Result<Self, DidError> {
 		ensure!(
 			details.new_key_agreement_keys.len()
@@ -300,7 +310,7 @@ impl<T: Config> DidDetails<T> {
 		let current_block_number = frame_system::Pallet::<T>::block_number();
 
 		// Creates a new DID with the given authentication key.
-		let mut new_did_details = DidDetails::new(new_auth_key, current_block_number)?;
+		let mut new_did_details = DidDetails::new(new_auth_key, current_block_number, deposit)?;
 
 		new_did_details.add_key_agreement_keys(details.new_key_agreement_keys, current_block_number)?;
 
@@ -581,7 +591,7 @@ pub struct DidAuthorizedCallOperation<T: Config> {
 	/// The block number at which the operation was created.
 	pub block_number: BlockNumberOf<T>,
 	/// The account which is authorized to submit the did call.
-	pub submitter: AccountIdentifierOf<T>,
+	pub submitter: AccountIdOf<T>,
 }
 
 /// Wrapper around a [DidAuthorizedCallOperation].

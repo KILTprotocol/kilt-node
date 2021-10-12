@@ -120,31 +120,34 @@ mod tests;
 
 mod deprecated;
 
+use crate::migrations::*;
 pub use crate::{default_weights::WeightInfo, did_details::*, errors::*, origin::*, pallet::*};
 
 use codec::Encode;
 use frame_support::{
-	dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo},
+	dispatch::{DispatchResult, Dispatchable, GetDispatchInfo, PostDispatchInfo},
 	ensure,
 	pallet_prelude::Weight,
 	storage::types::StorageMap,
-	traits::Get,
+	traits::{Get, OnUnbalanced, WithdrawReasons},
 	Parameter,
 };
 use frame_system::ensure_signed;
-#[cfg(feature = "runtime-benchmarks")]
-use frame_system::RawOrigin;
 use sp_runtime::{traits::Saturating, SaturatedConversion};
 use sp_std::{boxed::Box, fmt::Debug, prelude::Clone};
 
-use migrations::*;
+#[cfg(feature = "runtime-benchmarks")]
+use frame_system::RawOrigin;
 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_support::pallet_prelude::*;
+	use frame_support::{
+		pallet_prelude::*,
+		traits::{Currency, ExistenceRequirement, Imbalance, ReservableCurrency},
+	};
 	use frame_system::pallet_prelude::*;
-	use kilt_support::traits::CallSources;
+	use kilt_support::{deposit::Deposit, traits::CallSources};
 
 	/// Reference to a payload of data of variable size.
 	pub type Payload = [u8];
@@ -156,7 +159,7 @@ pub mod pallet {
 	pub type DidIdentifierOf<T> = <T as Config>::DidIdentifier;
 
 	/// Type for a Kilt account identifier.
-	pub type AccountIdentifierOf<T> = <T as frame_system::Config>::AccountId;
+	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
 	/// Type for a block number.
 	pub type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
@@ -166,7 +169,11 @@ pub mod pallet {
 
 	/// Type for origin that supports a DID sender.
 	#[pallet::origin]
-	pub type Origin<T> = DidRawOrigin<DidIdentifierOf<T>, AccountIdentifierOf<T>>;
+	pub type Origin<T> = DidRawOrigin<DidIdentifierOf<T>, AccountIdOf<T>>;
+
+	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
+	pub(crate) type BalanceOf<T> = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::Balance;
+	pub(crate) type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::NegativeImbalance;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + Debug {
@@ -182,7 +189,7 @@ pub mod pallet {
 
 		/// Origin type expected by the proxied dispatchable calls.
 		#[cfg(not(feature = "runtime-benchmarks"))]
-		type Origin: From<DidRawOrigin<DidIdentifierOf<Self>, AccountIdentifierOf<Self>>>;
+		type Origin: From<DidRawOrigin<DidIdentifierOf<Self>, AccountIdOf<Self>>>;
 		#[cfg(feature = "runtime-benchmarks")]
 		type Origin: From<RawOrigin<DidIdentifierOf<Self>>>;
 
@@ -193,10 +200,26 @@ pub mod pallet {
 		>;
 
 		/// The return type when the DID origin check was successful.
-		type OriginSuccess: CallSources<AccountIdentifierOf<Self>, DidIdentifierOf<Self>>;
+		type OriginSuccess: CallSources<AccountIdOf<Self>, DidIdentifierOf<Self>>;
 
 		/// Overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+
+		/// The currency that is used to reserve funds for each did.
+		type Currency: Currency<AccountIdOf<Self>> + ReservableCurrency<AccountIdOf<Self>>;
+
+		/// The amount of balance that will be taken for each DID as a deposit
+		/// to incentivise fair use of the on chain storage. The deposit can be
+		/// reclaimed when the DID is deleted.
+		type Deposit: Get<BalanceOf<Self>>;
+
+		/// The amount of balance that will be taken for each DID as a fee to
+		/// incentivise fair use of the on chain storage. The fee will not get
+		/// refunded when the DID is deleted.
+		type Fee: Get<BalanceOf<Self>>;
+
+		/// The logic for handling the fee.
+		type FeeCollector: OnUnbalanced<NegativeImbalanceOf<Self>>;
 
 		/// Maximum number of total public keys which can be stored per DID key
 		/// identifier. This includes the ones currently used for
@@ -272,7 +295,7 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// A new DID has been created.
 		/// \[transaction signer, DID identifier\]
-		DidCreated(AccountIdentifierOf<T>, DidIdentifierOf<T>),
+		DidCreated(AccountIdOf<T>, DidIdentifierOf<T>),
 		/// A DID has been updated.
 		/// \[DID identifier\]
 		DidUpdated(DidIdentifierOf<T>),
@@ -340,6 +363,10 @@ pub mod pallet {
 		DidAlreadyDeleted,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
+		/// Only the owner of the deposit can reclaim its reserved balance.
+		NotOwnerOfDeposit,
+		/// The origin is unable to reserve the deposit and pay the fee.
+		UnableToPayFees,
 	}
 
 	impl<T> From<DidError> for Error<T> {
@@ -423,6 +450,15 @@ pub mod pallet {
 
 			let did_identifier = details.did.clone();
 
+			// Check the free balance before we do any heavy work.
+			ensure!(
+				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
+					&sender,
+					<T as Config>::Deposit::get() + <T as Config>::Fee::get()
+				),
+				Error::<T>::UnableToPayFees
+			);
+
 			// Make sure that DIDs cannot be created again after they have been deleted.
 			ensure!(
 				!DidBlacklist::<T>::contains_key(&did_identifier),
@@ -437,10 +473,31 @@ pub mod pallet {
 				.verify_and_recover_signature(&details.encode(), &signature)
 				.map_err(Error::<T>::from)?;
 
-			let did_entry =
-				DidDetails::from_creation_details(details, account_did_auth_key).map_err(Error::<T>::from)?;
+			let did_entry = DidDetails::from_creation_details(
+				details,
+				account_did_auth_key,
+				Deposit {
+					owner: sender.clone(),
+					amount: T::Deposit::get(),
+				},
+			)
+			.map_err(Error::<T>::from)?;
+
+			// *** No Fail beyond this call ***
+			CurrencyOf::<T>::reserve(&did_entry.deposit.owner, did_entry.deposit.amount)?;
+
+			// Withdraw the fee. We made sure that enough balance is available. But if this
+			// fails, we don't withdraw anything.
+			let imbalance = <T::Currency as Currency<AccountIdOf<T>>>::withdraw(
+				&did_entry.deposit.owner,
+				T::Fee::get(),
+				WithdrawReasons::FEE,
+				ExistenceRequirement::AllowDeath,
+			)
+			.unwrap_or_else(|_| NegativeImbalanceOf::<T>::zero());
 
 			log::debug!("Creating DID {:?}", &did_identifier);
+			T::FeeCollector::on_unbalanced(imbalance);
 			Did::<T>::insert(&did_identifier, did_entry);
 
 			Self::deposit_event(Event::DidCreated(sender, did_identifier));
@@ -700,21 +757,39 @@ pub mod pallet {
 			let source = T::EnsureOrigin::ensure_origin(origin)?;
 			let did_subject = source.subject();
 
-			ensure!(
-				// `take` calls `kill` internally
-				Did::<T>::take(&did_subject).is_some(),
-				Error::<T>::DidNotPresent
-			);
+			Pallet::<T>::delete_did(did_subject)
+		}
 
-			// Mark as deleted to prevent potential replay-attacks of re-adding a previously
-			// deleted DID.
-			DidBlacklist::<T>::insert(&did_subject, ());
+		/// Reclaim a deposit for a DID. This will delete the DID and all
+		/// information associated with it, after verifying that the caller is
+		/// the owner of the deposit.
+		///
+		/// The referenced DID identifier must be present on chain before the
+		/// delete operation is evaluated.
+		///
+		/// After it is deleted, a DID with the same identifier cannot be
+		/// re-created ever again.
+		///
+		/// As the result of the deletion, all traces of the DID are removed
+		/// from the storage, which results in the invalidation of all
+		/// attestations issued by the DID subject.
+		///
+		/// Emits `DidDeleted`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Did
+		/// - Kills: Did entry associated to the DID identifier
+		/// # </weight>
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit())]
+		pub fn reclaim_deposit(origin: OriginFor<T>, did_subject: DidIdentifierOf<T>) -> DispatchResult {
+			let source = ensure_signed(origin)?;
 
-			log::debug!("Deleting DID {:?}", did_subject);
+			let did_entry = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 
-			Self::deposit_event(Event::DidDeleted(did_subject));
+			ensure!(did_entry.deposit.owner == source, Error::<T>::NotOwnerOfDeposit);
 
-			Ok(())
+			Pallet::<T>::delete_did(did_subject)
 		}
 
 		/// Proxy a dispatchable call of another runtime extrinsic that
@@ -848,9 +923,9 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	// Check if the provided block number is valid,
-	// i.e., if the current blockchain block is in the inclusive range
-	// [operation_block_number, operation_block_number + MaxBlocksTxValidity].
+	/// Check if the provided block number is valid,
+	/// i.e., if the current blockchain block is in the inclusive range
+	/// [operation_block_number, operation_block_number + MaxBlocksTxValidity].
 	fn validate_block_number_value(block_number: BlockNumberOf<T>) -> Result<(), DidError> {
 		let current_block_number = frame_system::Pallet::<T>::block_number();
 		let allowed_range = block_number..=block_number.saturating_add(T::MaxBlocksTxValidity::get());
@@ -863,12 +938,12 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	// Verify the validity of a DID-authorized operation nonce.
-	// To be valid, the nonce must be equal to the one currently stored + 1.
-	// This is to avoid quickly "consuming" all the possible values for the counter,
-	// as that would result in the DID being unusable, since we do not have yet any
-	// mechanism in place to wrap the counter value around when the limit is
-	// reached.
+	/// Verify the validity of a DID-authorized operation nonce.
+	/// To be valid, the nonce must be equal to the one currently stored + 1.
+	/// This is to avoid quickly "consuming" all the possible values for the
+	/// counter, as that would result in the DID being unusable, since we do not
+	/// have yet any mechanism in place to wrap the counter value around when
+	/// the limit is reached.
 	fn validate_counter_value(counter: u64, did_details: &DidDetails<T>) -> Result<(), DidError> {
 		// Verify that the operation counter is equal to the stored one + 1,
 		// possibly wrapping around when u64::MAX is reached.
@@ -881,7 +956,8 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	// Verify a generic payload signature using a given DID verification key type.
+	/// Verify a generic payload signature using a given DID verification key
+	/// type.
 	pub fn verify_payload_signature_with_did_key_type(
 		payload: &Payload,
 		signature: &DidSignature,
@@ -899,5 +975,24 @@ impl<T: Config> Pallet<T> {
 		verification_key
 			.verify_signature(payload, signature)
 			.map_err(DidError::SignatureError)
+	}
+
+	/// Deletes DID details from storage, adds the identifier to the blacklisted
+	/// DIDs and frees the deposit.
+	fn delete_did(did_subject: DidIdentifierOf<T>) -> DispatchResult {
+		// `take` calls `kill` internally
+		let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
+		// *** No Fail beyond this point ***
+
+		kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&did_entry.deposit);
+		// Mark as deleted to prevent potential replay-attacks of re-adding a previously
+		// deleted DID.
+		DidBlacklist::<T>::insert(&did_subject, ());
+
+		log::debug!("Deleting DID {:?}", did_subject);
+
+		Self::deposit_event(Event::DidDeleted(did_subject));
+
+		Ok(())
 	}
 }
