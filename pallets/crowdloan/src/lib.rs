@@ -16,6 +16,33 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+//! # Crowdloan rewards Pallet
+//!
+//! Provides means of registering the contributors to the KILT crowdloan.
+//!
+//! - [`Config`]
+//! - [`Call`]
+//! - [`Pallet`]
+//!
+//! ## Interface
+//!
+//! ### Dispatchable Functions
+//! - `set_admin_account` - Set the account that is allow to register and delete
+//!   contribution entries into/from this pallet's storage.
+//! - `set_new_contribution` - Add or replace a crowdload contribution, which
+//!   contains the contributor's address and the contributed amount.
+//! - `remove_contribution` - Remove a contribution entry from the pallet
+//!   storage.
+//!
+//! ## Genesis config
+//!
+//! The crowdloan contributions pallet depends on the [`GenesisConfig`].
+//!
+//! ## Assumptions
+//!
+//! - At any time, there is one and only one admin account which can manage the
+//!   pallet storage.
+
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(test)]
@@ -43,8 +70,11 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
+		/// Currency type.
 		type Currency: Currency<AccountIdOf<Self>>;
+		/// Overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}
 
@@ -77,10 +107,14 @@ pub mod pallet {
 		}
 	}
 
+	/// The administrator account allowed to manage the pallet storage.
 	#[pallet::storage]
 	#[pallet::getter(fn admin_account)]
 	pub type AdminAccount<T> = StorageValue<_, AccountIdOf<T>, ValueQuery>;
 
+	/// The set of contributions.
+	///
+	/// It maps from contributor's account to amount contributed.
 	#[pallet::storage]
 	#[pallet::getter(fn contributions)]
 	pub type Contributions<T> = StorageMap<_, Blake2_128Concat, AccountIdOf<T>, BalanceOf<T>>;
@@ -88,18 +122,33 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
+		/// A new admin has been set.
+		/// \[Old administrator account, new administrator account\]
 		NewAdminAccountSet(AccountIdOf<T>, AccountIdOf<T>),
+		/// A new contribution has been set.
+		/// \[Contributor account, old amount (OPTIONAL), new amount\]
 		NewContributionSet(AccountIdOf<T>, Option<BalanceOf<T>>, BalanceOf<T>),
+		/// A contribution has been removed.
+		/// \[Contributor account\]
 		ContributionRemoved(AccountIdOf<T>),
 	}
 
 	#[pallet::error]
 	pub enum Error<T> {
+		/// The to-delete contribution is not present.
 		ContributorNotPresent,
 	}
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
+		/// Sets a new account as the admin of this pallet.
+		///
+		/// The dispatch origin must be the current admin account.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], AdminAccount
+		/// - Writes: AdminAccount
 		#[pallet::weight(1)]
 		pub fn set_admin_account(
 			origin: OriginFor<T>,
@@ -118,7 +167,16 @@ pub mod pallet {
 			Ok(())
 		}
 
-		// Allow for overrides.
+		/// Sets a new contribution amount for a given contributor's account.
+		///
+		/// If a previous contribution is present, it is overridden.
+		///
+		/// The dispatch origin must be the current admin account.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], AdminAccount, Contributions
+		/// - Writes: Contributions
 		#[pallet::weight(1)]
 		pub fn set_new_contribution(
 			origin: OriginFor<T>,
@@ -140,6 +198,17 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Removes a contribution entry from the storage, if present.
+		///
+		/// It returns an error if there is no contribution for the given
+		/// contributor's account.
+		///
+		/// The dispatch origin must be the current admin account.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], AdminAccount, Contributions
+		/// - Writes: Contributions
 		#[pallet::weight(1)]
 		pub fn remove_contribution(
 			origin: OriginFor<T>,
