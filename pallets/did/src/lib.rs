@@ -173,8 +173,7 @@ pub mod pallet {
 
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 	pub(crate) type BalanceOf<T> = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::Balance;
-	pub(crate) type NegativeImbalanceOf<T> =
-		<<T as Config>::Currency as Currency<AccountIdOf<T>>>::NegativeImbalance;
+	pub(crate) type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::NegativeImbalance;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + Debug {
@@ -366,7 +365,7 @@ pub mod pallet {
 		InternalError,
 		/// Only the owner of the deposit can reclaim its reserved balance.
 		NotOwnerOfDeposit,
-		/// Only the owner of the deposit can reclaim its reserved balance.
+		/// The origin is unable to reserve the deposit and pay the fee.
 		UnableToPayFees,
 	}
 
@@ -762,9 +761,9 @@ pub mod pallet {
 			Pallet::<T>::delete_did(did_subject)
 		}
 
-		/// Delete a DID from the chain and all information associated with it,
-		/// after verifying that the delete operation has been signed by the DID
-		/// subject using the authentication key currently stored on chain.
+		/// Reclaim a deposit for a DID. This will delete the DID and all
+		/// information associated with it, after verifying that the caller is
+		/// the owner of the deposit.
 		///
 		/// The referenced DID identifier must be present on chain before the
 		/// delete operation is evaluated.
@@ -775,9 +774,6 @@ pub mod pallet {
 		/// As the result of the deletion, all traces of the DID are removed
 		/// from the storage, which results in the invalidation of all
 		/// attestations issued by the DID subject.
-		///
-		/// The dispatch origin must be a DID origin proxied via the
-		/// `submit_did_call` extrinsic.
 		///
 		/// Emits `DidDeleted`.
 		///
