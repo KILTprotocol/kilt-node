@@ -365,8 +365,8 @@ pub struct DelegationCounter {
 	pub counter: u32,
 }
 
-/// Internal type which is used if a delegator is replaced by another one to
-/// delay the storage entry removal until failure cannot happen anymore.
+/// Internal type which is only used when a delegator is replaced by another
+/// one to delay the storage entry removal until failure cannot happen anymore.
 pub(crate) struct ReplacedDelegator<T: Config> {
 	pub who: AccountIdOf<T>,
 	pub state: Option<Delegator<AccountIdOf<T>, BalanceOf<T>, T::MaxCollatorsPerDelegator>>,

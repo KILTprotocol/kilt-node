@@ -38,8 +38,7 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 	for candidate in CandidatePool::<T>::iter_values() {
 		reads = reads.saturating_add(1u64);
 		for delegation in candidate.delegators.into_iter() {
-			// since MaxCollatorsPerDelegator == 1, we do not have to mutate existing
-			// entries
+			// we do not have to mutate existing entries since MaxCollatorsPerDelegator = 1
 			if !DelegatorState::<T>::contains_key(delegation.owner.clone()) {
 				DelegatorState::<T>::insert(
 					delegation.owner,
