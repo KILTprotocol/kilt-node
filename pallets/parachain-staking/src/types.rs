@@ -365,6 +365,12 @@ pub struct DelegationCounter {
 	pub counter: u32,
 }
 
+///
+pub(crate) struct KickedDelegator<AccountId: Eq + Ord, Balance: Eq + Ord, MaxCollatorsPerDelegator: Get<u32>> {
+	pub who: AccountId,
+	pub state: Option<Delegator<AccountId, Balance, MaxCollatorsPerDelegator>>,
+}
+
 pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
 pub type CandidateOf<T, S> = Candidate<AccountIdOf<T>, BalanceOf<T>, S>;

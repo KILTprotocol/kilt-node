@@ -172,6 +172,7 @@ mod types;
 use frame_support::pallet;
 
 pub use crate::{default_weights::WeightInfo, pallet::*};
+use types::KickedDelegator;
 
 #[pallet]
 pub mod pallet {
@@ -1391,9 +1392,17 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let acc = ensure_signed(origin)?;
 			let collator = T::Lookup::lookup(collator)?;
+
+			// check balance
+			ensure!(
+				pallet_balances::Pallet::<T>::free_balance(acc.clone()) >= amount.into(),
+				pallet_balances::Error::<T>::InsufficientBalance
+			);
+
 			// first delegation
 			ensure!(<DelegatorState<T>>::get(&acc).is_none(), Error::<T>::AlreadyDelegating);
 			ensure!(amount >= T::MinDelegatorStake::get(), Error::<T>::NomStakeBelowMin);
+
 			// cannot be a collator candidate and delegator with same AccountId
 			ensure!(!Self::is_active_candidate(&acc).is_some(), Error::<T>::CandidateExists);
 			ensure!(
@@ -1431,12 +1440,15 @@ pub mod pallet {
 				.map_err(|_| Error::<T>::MaxCollatorsPerDelegatorExceeded)?;
 
 			let old_total = state.total;
-			// update state and potentially kick a delegator with less staked amount
-			state = if num_delegations_pre_insertion == T::MaxDelegatorsPerCollator::get() {
+
+			// update state and potentially prepare kicking a delegator with less staked
+			// amount
+			let (state, maybe_kicked_delegator) = if num_delegations_pre_insertion == T::MaxDelegatorsPerCollator::get()
+			{
 				Self::do_update_delegator(delegation, state)?
 			} else {
 				state.total = state.total.saturating_add(amount);
-				state
+				(state, None)
 			};
 			let new_total = state.total;
 
@@ -1446,10 +1458,15 @@ pub mod pallet {
 				Self::update_top_candidates(collator.clone(), old_total, new_total);
 			}
 
+			// ** no fail beyond this line *
+
 			// update states
 			<CandidatePool<T>>::insert(&collator, state);
 			<DelegatorState<T>>::insert(&acc, delegator_state);
 			<LastDelegation<T>>::insert(&acc, delegation_counter);
+
+			// update or clear storage of potentially kicked delegator
+			Self::clear_kicked_delegator_storage(maybe_kicked_delegator);
 
 			// update candidates for next round
 			let (num_collators, num_delegators, _, _) = Self::update_total_stake();
@@ -1520,6 +1537,14 @@ pub mod pallet {
 			let acc = ensure_signed(origin)?;
 			let collator = T::Lookup::lookup(collator)?;
 			let mut delegator = <DelegatorState<T>>::get(&acc).ok_or(Error::<T>::NotYetDelegating)?;
+
+			// check balance
+			ensure!(
+				pallet_balances::Pallet::<T>::free_balance(acc.clone())
+					>= delegator.total.saturating_add(amount).into(),
+				pallet_balances::Error::<T>::InsufficientBalance
+			);
+
 			// delegation after first
 			ensure!(amount >= T::MinDelegation::get(), Error::<T>::DelegationBelowMin);
 			ensure!(
@@ -1535,9 +1560,10 @@ pub mod pallet {
 			let num_delegations_pre_insertion: u32 = state.delegators.len().saturated_into();
 			ensure!(!state.is_leaving(), Error::<T>::CannotDelegateIfLeaving);
 
-			// attempt to insert delegator and check for uniqueness
-			// NOTE: excess is handled below because we support replacing a delegator with
-			// fewer stake
+			// attempt to insert delegation, check for uniqueness and update total delegated
+			// amount
+			// NOTE: excess is handled below because we support replacing a delegator
+			// with fewer stake
 			ensure!(
 				delegator
 					.add_delegation(Stake {
@@ -1561,12 +1587,14 @@ pub mod pallet {
 
 			let old_total = state.total;
 
-			// update state and potentially kick a delegator with less staked amount
-			state = if num_delegations_pre_insertion == T::MaxDelegatorsPerCollator::get() {
+			// update state and potentially prepare kicking a delegator with less staked
+			// amount
+			let (state, maybe_kicked_delegator) = if num_delegations_pre_insertion == T::MaxDelegatorsPerCollator::get()
+			{
 				Self::do_update_delegator(delegation, state)?
 			} else {
 				state.total = state.total.saturating_add(amount);
-				state
+				(state, None)
 			};
 			let new_total = state.total;
 
@@ -1580,6 +1608,9 @@ pub mod pallet {
 			<CandidatePool<T>>::insert(&collator, state);
 			<DelegatorState<T>>::insert(&acc, delegator);
 			<LastDelegation<T>>::insert(&acc, delegation_counter);
+
+			// update or clear storage of potentially kicked delegator
+			Self::clear_kicked_delegator_storage(maybe_kicked_delegator);
 
 			// update candidates for next round
 			let (num_collators, num_delegators, _, _) = Self::update_total_stake();
@@ -2012,19 +2043,54 @@ pub mod pallet {
 			Ok(())
 		}
 
-		fn kick_delegator(delegation: &StakeOf<T>, collator: &T::AccountId) -> DispatchResult {
+		/// Check for remaining delegations of the delegator which has been
+		/// removed from the given collator.
+		///
+		/// Returns the removed delegators address and
+		/// * Either the updated delegator state if other delegations are still
+		///   remaining
+		/// * Or `None`, signalling the delegator state should be cleared once
+		///   the transaction cannot fail anymore.
+		fn kick_delegator(
+			delegation: &StakeOf<T>,
+			collator: &T::AccountId,
+		) -> Result<KickedDelegator<T::AccountId, BalanceOf<T>, T::MaxCollatorsPerDelegator>, DispatchError> {
 			let mut state = <DelegatorState<T>>::get(&delegation.owner).ok_or(Error::<T>::DelegatorNotFound)?;
 			state.rm_delegation(collator);
+
 			// we don't unlock immediately
 			Self::prep_unstake(&delegation.owner, delegation.amount, true)?;
 
-			// clear storage if no delegations are remaining
+			// return state if not empty for later removal after all checks have passed
 			if state.delegations.is_empty() {
-				<DelegatorState<T>>::remove(&delegation.owner);
+				Ok(KickedDelegator {
+					who: delegation.owner.clone(),
+					state: None,
+				})
 			} else {
-				<DelegatorState<T>>::insert(&delegation.owner, state);
+				Ok(KickedDelegator {
+					who: delegation.owner.clone(),
+					state: Some(state),
+				})
 			}
-			Ok(())
+		}
+
+		/// Either clear the storage of a kicked delegator or update its
+		/// delegation state.
+		fn clear_kicked_delegator_storage(
+			delegator: Option<KickedDelegator<T::AccountId, BalanceOf<T>, T::MaxCollatorsPerDelegator>>,
+		) {
+			if let Some(KickedDelegator {
+				who,
+				state: maybe_state,
+			}) = delegator
+			{
+				if let Some(state) = maybe_state {
+					DelegatorState::<T>::insert(who, state);
+				} else {
+					DelegatorState::<T>::remove(who);
+				}
+			}
 		}
 
 		/// Select the top `MaxSelectedCandidates` many collators in terms of
@@ -2138,7 +2204,13 @@ pub mod pallet {
 		fn do_update_delegator(
 			stake: Stake<T::AccountId, BalanceOf<T>>,
 			mut state: Candidate<T::AccountId, BalanceOf<T>, T::MaxDelegatorsPerCollator>,
-		) -> Result<CandidateOf<T, T::MaxDelegatorsPerCollator>, DispatchError> {
+		) -> Result<
+			(
+				CandidateOf<T, T::MaxDelegatorsPerCollator>,
+				Option<KickedDelegator<T::AccountId, BalanceOf<T>, T::MaxCollatorsPerDelegator>>,
+			),
+			DispatchError,
+		> {
 			// attempt to replace the last element of the set
 			let stake_to_remove = state
 				.delegators
@@ -2159,7 +2231,7 @@ pub mod pallet {
 				state.total = state.total.saturating_sub(stake_to_remove.amount);
 
 				// update storage of kicked delegator
-				Self::kick_delegator(&stake_to_remove, &state.id)?;
+				let kicked_delegator = Self::kick_delegator(&stake_to_remove, &state.id)?;
 
 				Self::deposit_event(Event::DelegationReplaced(
 					stake.owner,
@@ -2169,9 +2241,11 @@ pub mod pallet {
 					state.id.clone(),
 					state.total,
 				));
-			}
 
-			Ok(state)
+				Ok((state, Some(kicked_delegator)))
+			} else {
+				Ok((state, None))
+			}
 		}
 
 		/// Either set or increase the BalanceLock of target account to
