@@ -258,7 +258,7 @@ fn check_duplicate_did_creation() {
 fn create_fail_insufficient_balance() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let details = generate_base_did_creation_details::<Test>(alice_did.clone());
+	let details = generate_base_did_creation_details::<Test>(alice_did);
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
