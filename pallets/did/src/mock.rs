@@ -19,9 +19,14 @@
 #![allow(clippy::from_over_into)]
 #![allow(dead_code)]
 
-use frame_support::{parameter_types, weights::constants::RocksDbWeight};
+use frame_support::{
+	parameter_types,
+	traits::{Currency, ReservableCurrency},
+	weights::constants::RocksDbWeight,
+};
 use frame_system::EnsureSigned;
-use kilt_primitives::{AccountId, Balance};
+use kilt_primitives::{constants::MICRO_KILT, AccountId, Balance};
+use pallet_balances::NegativeImbalance;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
@@ -98,6 +103,20 @@ parameter_types! {
 	#[derive(Debug, Clone)]
 	pub const MaxPublicKeysPerDid: u32 = 13u32;
 	pub const MaxBlocksTxValidity: u64 = 300u64;
+	pub const Deposit: Balance = 10 * MICRO_KILT;
+	pub const DidFee: Balance = MICRO_KILT;
+}
+
+pub struct ToAccount<R>(sp_std::marker::PhantomData<R>);
+
+impl<R> OnUnbalanced<NegativeImbalance<R>> for ToAccount<R>
+where
+	R: pallet_balances::Config,
+	<R as frame_system::Config>::AccountId: From<AccountId>,
+{
+	fn on_nonzero_unbalanced(amount: NegativeImbalance<R>) {
+		pallet_balances::Pallet::<R>::resolve_creating(&ACCOUNT_FEE.into(), amount);
+	}
 }
 
 impl Config for Test {
@@ -107,6 +126,10 @@ impl Config for Test {
 	type EnsureOrigin = EnsureSigned<TestDidIdentifier>;
 	type OriginSuccess = AccountId;
 	type Event = ();
+	type Currency = Balances;
+	type Deposit = Deposit;
+	type Fee = DidFee;
+	type FeeCollector = ToAccount<Test>;
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
 	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
@@ -159,6 +182,8 @@ impl ctype::Config for Test {
 pub(crate) const ACCOUNT_00: kilt_primitives::AccountId = kilt_primitives::AccountId::new([0u8; 32]);
 #[cfg(test)]
 pub(crate) const ACCOUNT_01: kilt_primitives::AccountId = kilt_primitives::AccountId::new([1u8; 32]);
+#[cfg(test)]
+pub(crate) const ACCOUNT_FEE: kilt_primitives::AccountId = kilt_primitives::AccountId::new([u8::MAX; 32]);
 
 const DEFAULT_AUTH_SEED: [u8; 32] = [4u8; 32];
 const ALTERNATIVE_AUTH_SEED: [u8; 32] = [40u8; 32];
@@ -370,7 +395,7 @@ pub struct ExtBuilder {
 	deleted_dids: Vec<TestDidIdentifier>,
 	storage_version: DidStorageVersion,
 	ctypes_stored: Vec<(TestCtypeHash, TestCtypeOwner)>,
-	balances: Vec<(AccountIdentifierOf<Test>, Balance)>,
+	balances: Vec<(AccountIdOf<Test>, Balance)>,
 }
 
 impl ExtBuilder {
@@ -379,7 +404,7 @@ impl ExtBuilder {
 		self
 	}
 
-	pub(crate) fn with_balances(mut self, balances: Vec<(AccountIdentifierOf<Test>, Balance)>) -> Self {
+	pub(crate) fn with_balances(mut self, balances: Vec<(AccountIdOf<Test>, Balance)>) -> Self {
 		self.balances = balances;
 		self
 	}
@@ -419,6 +444,8 @@ impl ExtBuilder {
 
 			for did in self.dids_stored.iter() {
 				did::Did::<Test>::insert(did.0.clone(), did.1.clone());
+				CurrencyOf::<Test>::reserve(&did.1.deposit.owner, did.1.deposit.amount)
+					.expect("Deposit owner should have enough balance");
 			}
 			for did in self.deleted_dids.iter() {
 				did::DidBlacklist::<Test>::insert(did.clone(), ());
