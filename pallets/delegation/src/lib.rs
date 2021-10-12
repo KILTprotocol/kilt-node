@@ -888,18 +888,12 @@ impl<T: Config> Pallet<T> {
 		// We can clear storage now that all children have been removed
 		DelegationNodes::<T>::remove(*delegation);
 
-		// Unreserve deposit
-		let Deposit::<T::AccountId, BalanceOf<T>> {
-			owner: deposit_payer,
-			amount: deposit_amount,
-		} = delegation_node.deposit;
-		let err_amount = CurrencyOf::<T>::unreserve(&deposit_payer, deposit_amount);
-		debug_assert!(err_amount.is_zero());
+		kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&delegation_node.deposit);
 
 		consumed_weight = consumed_weight.saturating_add(T::DbWeight::get().reads_writes(1, 2));
 
 		// Deposit event that the delegation has been removed
-		Self::deposit_event(Event::DelegationRemoved(deposit_payer, *delegation));
+		Self::deposit_event(Event::DelegationRemoved(delegation_node.deposit.owner, *delegation));
 		removals = removals.saturating_add(1);
 		Ok((removals, consumed_weight))
 	}
