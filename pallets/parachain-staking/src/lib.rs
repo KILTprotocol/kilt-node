@@ -1466,7 +1466,7 @@ pub mod pallet {
 			<LastDelegation<T>>::insert(&acc, delegation_counter);
 
 			// update or clear storage of potentially kicked delegator
-			Self::clear_kicked_delegator_storage(maybe_kicked_delegator);
+			Self::update_kicked_delegator_storage(maybe_kicked_delegator);
 
 			// update candidates for next round
 			let (num_collators, num_delegators, _, _) = Self::update_total_stake();
@@ -1612,7 +1612,7 @@ pub mod pallet {
 			<LastDelegation<T>>::insert(&acc, delegation_counter);
 
 			// update or clear storage of potentially kicked delegator
-			Self::clear_kicked_delegator_storage(maybe_kicked_delegator);
+			Self::update_kicked_delegator_storage(maybe_kicked_delegator);
 
 			// update candidates for next round
 			let (num_collators, num_delegators, _, _) = Self::update_total_stake();
@@ -2079,7 +2079,7 @@ pub mod pallet {
 
 		/// Either clear the storage of a kicked delegator or update its
 		/// delegation state if it still contains other delegations.
-		fn clear_kicked_delegator_storage(delegator: Option<ReplacedDelegator<T>>) {
+		fn update_kicked_delegator_storage(delegator: Option<ReplacedDelegator<T>>) {
 			match delegator {
 				Some(ReplacedDelegator {
 					who,
