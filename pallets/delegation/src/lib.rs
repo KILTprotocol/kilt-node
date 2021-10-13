@@ -96,7 +96,11 @@ use frame_support::{
 	pallet_prelude::Weight,
 	traits::{Get, ReservableCurrency},
 };
-use sp_runtime::{traits::Hash, DispatchError};
+use kilt_support::deposit::Deposit;
+use sp_runtime::{
+	traits::{Hash, Zero},
+	DispatchError,
+};
 use sp_std::vec::Vec;
 
 use migrations::*;
