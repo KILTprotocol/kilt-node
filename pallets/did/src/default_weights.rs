@@ -81,6 +81,7 @@ pub trait WeightInfo {
 	fn signature_verification_sr(l: u32, ) -> Weight;
 	fn signature_verification_ed(l: u32, ) -> Weight;
 	fn signature_verification_ecdsa(l: u32, ) -> Weight;
+	fn reclaim_deposit() -> Weight;
 }
 
 /// Weights for did using the Substrate node and recommended hardware.
@@ -249,6 +250,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			// Standard Error: 0
 			.saturating_add((1_000_u64).saturating_mul(l as Weight))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
+	fn reclaim_deposit() -> Weight {
+		(26_928_000_u64)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 }
 
@@ -417,5 +422,9 @@ impl WeightInfo for () {
 			// Standard Error: 0
 			.saturating_add((1_000_u64).saturating_mul(l as Weight))
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
+	fn reclaim_deposit() -> Weight {
+		(26_928_000_u64)
+			.saturating_add(RocksDbWeight::get().reads(1_u64))
+			.saturating_add(RocksDbWeight::get().writes(2_u64))
 	}
 }

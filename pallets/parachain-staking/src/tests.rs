@@ -346,7 +346,7 @@ fn collator_exit_executes_after_delay() {
 		.with_balances(vec![
 			(1, 1000),
 			(2, 300),
-			(3, 100),
+			(3, 110),
 			(4, 100),
 			(5, 100),
 			(6, 100),
@@ -2595,7 +2595,7 @@ fn kick_delegator_with_full_unstaking() {
 
 #[test]
 fn candidate_leaves() {
-	let balances: Vec<(AccountId, Balance)> = (1u64..15u64).map(|id| (id, 100)).collect();
+	let balances: Vec<(AccountId, Balance)> = (1u64..=15u64).map(|id| (id, 100)).collect();
 	ExtBuilder::default()
 		.with_balances(balances)
 		.with_collators(vec![(1, 100), (2, 100)])
@@ -3464,4 +3464,43 @@ fn force_new_round() {
 			assert_eq!(Session::validators(), vec![3, 4]);
 			assert!(!StakePallet::new_round_forced());
 		});
+}
+
+#[test]
+fn replace_lowest_delegator() {
+	ExtBuilder::default()
+		.with_balances(vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100), (6, 100)])
+		.with_collators(vec![(1, 100)])
+		.with_delegators(vec![(2, 1, 51), (3, 1, 51), (4, 1, 51), (5, 1, 50)])
+		.build()
+		.execute_with(|| {
+			assert_eq!(
+				StakePallet::candidate_pool(1).unwrap().delegators.len() as u32,
+				<Test as Config>::MaxDelegatorsPerCollator::get()
+			);
+
+			// 6 replaces 5
+			assert_ok!(StakePallet::join_delegators(Origin::signed(6), 1, 51));
+			assert!(StakePallet::delegator_state(5).is_none());
+			assert_eq!(
+				StakePallet::candidate_pool(1)
+					.unwrap()
+					.delegators
+					.into_bounded_vec()
+					.into_inner(),
+				vec![
+					Stake { owner: 2, amount: 51 },
+					Stake { owner: 3, amount: 51 },
+					Stake { owner: 4, amount: 51 },
+					Stake { owner: 6, amount: 51 }
+				]
+			);
+
+			// 5 attempts to replace 6 with more balance than available
+			frame_support::assert_noop!(
+				StakePallet::join_delegators(Origin::signed(5), 1, 101),
+				BalancesError::<Test>::InsufficientBalance
+			);
+			assert!(StakePallet::delegator_state(6).is_some());
+		})
 }

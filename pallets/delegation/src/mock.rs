@@ -262,7 +262,7 @@ where
 		children: BoundedBTreeSet::new(),
 		hierarchy_root_id: hierarchy_id,
 		parent,
-		deposit: delegation::Deposit {
+		deposit: Deposit {
 			owner: owner.into(),
 			amount: <T as Config>::Deposit::get(),
 		},

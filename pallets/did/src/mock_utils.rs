@@ -19,6 +19,8 @@
 use crate::*;
 use did_details::*;
 use frame_support::storage::bounded_btree_set::BoundedBTreeSet;
+use kilt_support::deposit::Deposit;
+use sp_runtime::traits::Zero;
 use sp_std::{
 	collections::btree_set::BTreeSet,
 	convert::{TryFrom, TryInto},
@@ -41,9 +43,13 @@ pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> DidNewKeyAgreementKeySe
 	.expect("Failed to convert key_agreement_keys to BoundedBTreeSet")
 }
 
-pub fn generate_base_did_creation_details<T: Config>(did: DidIdentifierOf<T>) -> DidCreationDetails<T> {
+pub fn generate_base_did_creation_details<T: Config>(
+	did: DidIdentifierOf<T>,
+	submitter: AccountIdOf<T>,
+) -> DidCreationDetails<T> {
 	DidCreationDetails {
 		did,
+		submitter,
 		new_key_agreement_keys: BoundedBTreeSet::new(),
 		new_attestation_key: None,
 		new_delegation_key: None,
@@ -51,6 +57,13 @@ pub fn generate_base_did_creation_details<T: Config>(did: DidIdentifierOf<T>) ->
 }
 
 pub fn generate_base_did_details<T: Config>(authentication_key: DidVerificationKey) -> DidDetails<T> {
-	DidDetails::new(authentication_key, BlockNumberOf::<T>::default())
-		.expect("Failed to generate new DidDetails from auth_key due to BoundedBTreeSet bound")
+	DidDetails::new(
+		authentication_key,
+		BlockNumberOf::<T>::default(),
+		Deposit {
+			owner: Default::default(),
+			amount: Zero::zero(),
+		},
+	)
+	.expect("Failed to generate new DidDetails from auth_key due to BoundedBTreeSet bound")
 }
