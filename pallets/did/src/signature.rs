@@ -18,11 +18,11 @@
 
 use frame_support::dispatch;
 use kilt_support::signature::{SignatureVerificationError, SignatureVerificationResult, VerifyDelegateSignature};
-use sp_std::vec::Vec;
+use sp_std::{marker::PhantomData, vec::Vec};
 
-use crate::{Config, Did, DidError, DidSignature, DidVerificationKeyRelationship, Pallet};
+use crate::{Config, Did, DidError, DidSignature, DidVerificationKeyRelationship, Pallet, WeightInfo};
 
-pub struct DidSignatureVerify<T>(sp_std::marker::PhantomData<T>);
+pub struct DidSignatureVerify<T>(PhantomData<T>);
 impl<T: Config> VerifyDelegateSignature for DidSignatureVerify<T> {
 	type DelegateId = <T as Config>::DidIdentifier;
 	type Payload = Vec<u8>;
@@ -49,7 +49,10 @@ impl<T: Config> VerifyDelegateSignature for DidSignatureVerify<T> {
 		})
 	}
 
-	fn weight() -> dispatch::Weight {
-		todo!()
+	fn weight(payload_byte_length: u32) -> dispatch::Weight {
+		<T as Config>::WeightInfo::signature_verification_sr(payload_byte_length).max(
+			<T as Config>::WeightInfo::signature_verification_ed(payload_byte_length)
+				.max(<T as Config>::WeightInfo::signature_verification_ecdsa(payload_byte_length)),
+		)
 	}
 }

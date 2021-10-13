@@ -26,6 +26,7 @@ use {sp_runtime::traits::Zero, sp_std::marker::PhantomData};
 pub type SignatureVerificationResult = Result<(), SignatureVerificationError>;
 
 /// Types of errors the signature verification is expected to generate.
+#[derive(Debug, Clone, Copy)]
 pub enum SignatureVerificationError {
 	/// The delegate's information is not present on chain.
 	SignerInformationNotPresent,
@@ -51,7 +52,7 @@ pub trait VerifyDelegateSignature {
 		signature: &Self::Signature,
 	) -> SignatureVerificationResult;
 
-	fn weight() -> Weight;
+	fn weight(payload_byte_length: u32) -> Weight;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -72,7 +73,7 @@ impl<Account, Payload, Signature: Default> VerifyDelegateSignature for AlwaysVer
 		SignatureVerificationResult::Ok(())
 	}
 
-	fn weight() -> Weight {
+	fn weight(_: u32) -> Weight {
 		Weight::zero()
 	}
 }
@@ -103,7 +104,7 @@ where
 		}
 	}
 
-	fn weight() -> Weight {
+	fn weight(_: u32) -> Weight {
 		Weight::zero()
 	}
 }
