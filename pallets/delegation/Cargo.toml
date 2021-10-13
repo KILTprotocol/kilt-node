@@ -51,11 +51,13 @@ mock = [
   "sp-core",
   "sp-io",
   "sp-keystore",
+  "kilt-support/mock",
 ]
 runtime-benchmarks = [
   "frame-benchmarking",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
+  "kilt-support/runtime-benchmarks",
   "sp-core",
   "sp-io",
 ]

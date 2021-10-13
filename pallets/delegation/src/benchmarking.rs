@@ -27,6 +27,7 @@ use frame_system::RawOrigin;
 use sp_core::{offchain::KeyTypeId, sr25519};
 use sp_io::crypto::sr25519_generate;
 use sp_std::{num::NonZeroU32, vec::Vec};
+use kilt_support::signature::VerifyDelegateSignature;
 
 use crate::*;
 

@@ -22,8 +22,6 @@ use ctype::CtypeHashOf;
 use frame_support::{dispatch::DispatchResult, storage::bounded_btree_set::BoundedBTreeSet};
 use kilt_support::deposit::Deposit;
 
-#[cfg(any(test, feature = "mock", feature = "runtime-benchmarks"))]
-use sp_std::marker::PhantomData;
 
 use crate::{pallet::AccountIdOf, *};
 
@@ -161,81 +159,4 @@ pub struct DelegationHierarchyDetails<T: Config> {
 	/// The authorised CTYPE hash that attesters can attest using this
 	/// delegation hierarchy.
 	pub ctype_hash: CtypeHashOf<T>,
-}
-
-/// The result that the delegation pallet expects from the implementer of the
-/// delegate's signature verification operation.
-pub type SignatureVerificationResult = Result<(), SignatureVerificationError>;
-
-/// Types of errors the signature verification is expected to generate.
-pub enum SignatureVerificationError {
-	/// The delegate's information is not present on chain.
-	SignerInformationNotPresent,
-	/// The signature over the delegation information is invalid.
-	SignatureInvalid,
-}
-
-/// Trait to implement to provide to the delegation pallet signature
-/// verification over a delegation details.
-pub trait VerifyDelegateSignature {
-	/// The type of the delegate identifier.
-	type DelegateId;
-	/// The type of the encoded delegation details.
-	type Payload;
-	/// The type of the signature generated.
-	type Signature;
-
-	/// Verifies that the signature matches the payload and has been generated
-	/// by the delegate.
-	fn verify(
-		delegate: &Self::DelegateId,
-		payload: &Self::Payload,
-		signature: &Self::Signature,
-	) -> SignatureVerificationResult;
-}
-
-#[cfg(feature = "runtime-benchmarks")]
-pub struct AlwaysVerify<A, P, S>(PhantomData<(A, P, S)>);
-#[cfg(feature = "runtime-benchmarks")]
-impl<Account, Payload, Signature: Default> VerifyDelegateSignature for AlwaysVerify<Account, Payload, Signature> {
-	type DelegateId = Account;
-
-	type Payload = Payload;
-
-	type Signature = Signature;
-
-	fn verify(
-		_delegate: &Self::DelegateId,
-		_payload: &Self::Payload,
-		_signature: &Self::Signature,
-	) -> SignatureVerificationResult {
-		SignatureVerificationResult::Ok(())
-	}
-}
-
-#[cfg(any(test, feature = "mock", feature = "runtime-benchmarks"))]
-pub struct EqualVerify<A, B>(PhantomData<(A, B)>);
-#[cfg(any(test, feature = "mock", feature = "runtime-benchmarks"))]
-impl<Account, Payload> VerifyDelegateSignature for EqualVerify<Account, Payload>
-where
-	Account: PartialEq + Clone,
-	Payload: PartialEq + Clone,
-{
-	type DelegateId = Account;
-
-	type Payload = Payload;
-
-	type Signature = (Account, Payload);
-
-	fn verify(
-		delegate: &Self::DelegateId,
-		payload: &Self::Payload,
-		signature: &Self::Signature,
-	) -> SignatureVerificationResult {
-		if (delegate, payload) == (&signature.0, &signature.1) {
-			SignatureVerificationResult::Ok(())
-		} else {
-			SignatureVerificationResult::Err(SignatureVerificationError::SignatureInvalid)
-		}
-	}
 }

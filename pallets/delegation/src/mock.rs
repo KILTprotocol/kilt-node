@@ -34,6 +34,8 @@ use sp_runtime::{
 };
 use sp_std::sync::Arc;
 
+use kilt_support::signature::EqualVerify;
+
 use crate as delegation;
 use crate::*;
 

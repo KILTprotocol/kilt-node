@@ -25,7 +25,6 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use did::DidSignature;
 use frame_support::{traits::LockIdentifier, PalletId};
 use frame_system::{
 	limits::{BlockLength, BlockWeights},
@@ -71,7 +70,7 @@ use sp_version::RuntimeVersion;
 use sp_version::NativeVersion;
 
 #[cfg(feature = "runtime-benchmarks")]
-use {delegation::AlwaysVerify, frame_system::EnsureSigned, kilt_primitives::benchmarks::DummySignature};
+use {frame_system::EnsureSigned, kilt_primitives::benchmarks::DummySignature, kilt_support::signature::AlwaysVerify};
 
 mod fee;
 #[cfg(test)]
@@ -515,34 +514,6 @@ impl pallet_membership::Config for Runtime {
 	type WeightInfo = weights::pallet_membership::WeightInfo<Runtime>;
 }
 
-pub struct DelegationSignatureVerifier<R>(sp_std::marker::PhantomData<R>);
-impl<R: did::Config> delegation::VerifyDelegateSignature for DelegationSignatureVerifier<R> {
-	type DelegateId = <R as did::Config>::DidIdentifier;
-	type Payload = Vec<u8>;
-	type Signature = DidSignature;
-
-	fn verify(
-		delegate: &Self::DelegateId,
-		payload: &Self::Payload,
-		signature: &Self::Signature,
-	) -> delegation::SignatureVerificationResult {
-		let delegate_details =
-			did::Did::<R>::get(delegate).ok_or(delegation::SignatureVerificationError::SignerInformationNotPresent)?;
-
-		did::Pallet::verify_payload_signature_with_did_key_type(
-			payload,
-			signature,
-			&delegate_details,
-			did::DidVerificationKeyRelationship::Authentication,
-		)
-		.map_err(|err| match err {
-			// Should never happen as a DID has always a valid authentication key and UrlErrors are never thrown here.
-			did::DidError::SignatureError(_) => delegation::SignatureVerificationError::SignatureInvalid,
-			_ => delegation::SignatureVerificationError::SignerInformationNotPresent,
-		})
-	}
-}
-
 parameter_types! {
 	pub const MaxDelegatedAttestations: u32 = 1000;
 	pub const AttestationDeposit: Balance = ATTESTATION_DEPOSIT;
@@ -586,9 +557,9 @@ impl delegation::Config for Runtime {
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	type DelegationSignatureVerification = DelegationSignatureVerifier<Runtime>;
+	type DelegationSignatureVerification = did::DidSignatureVerify<Runtime>;
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	type Signature = DidSignature;
+	type Signature = did::DidSignature;
 
 	#[cfg(feature = "runtime-benchmarks")]
 	type EnsureOrigin = EnsureSigned<DidIdentifier>;

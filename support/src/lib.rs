@@ -19,3 +19,4 @@
 
 pub mod deposit;
 pub mod traits;
+pub mod signature;

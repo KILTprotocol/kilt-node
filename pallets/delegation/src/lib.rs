@@ -111,7 +111,10 @@ pub mod pallet {
 	use super::*;
 	use frame_support::{pallet_prelude::*, traits::Currency};
 	use frame_system::pallet_prelude::*;
-	use kilt_support::traits::CallSources;
+	use kilt_support::{
+		signature::{SignatureVerificationError, VerifyDelegateSignature},
+		traits::CallSources,
+	};
 
 	/// Type of a delegation node identifier.
 	pub type DelegationNodeIdOf<T> = <T as Config>::DelegationNodeId;

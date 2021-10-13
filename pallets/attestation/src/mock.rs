@@ -91,10 +91,11 @@ pub(crate) mod runtime {
 
 	use super::*;
 
-	use delegation::{DelegationHierarchyDetails, DelegationNode, DelegatorIdOf, EqualVerify};
+	use delegation::{DelegationHierarchyDetails, DelegationNode, DelegatorIdOf};
 	use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 	use frame_system::EnsureSigned;
 	use kilt_primitives::constants::{attestation::ATTESTATION_DEPOSIT, delegation::DELEGATION_DEPOSIT, MILLI_KILT};
+	use kilt_support::signature::EqualVerify;
 	use sp_core::{ed25519, sr25519, Pair};
 	use sp_keystore::{testing::KeyStore, KeystoreExt};
 	use sp_runtime::{
