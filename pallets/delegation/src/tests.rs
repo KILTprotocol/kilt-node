@@ -144,10 +144,7 @@ fn create_delegation_direct_root_successful() {
 				&hierarchy_root_id,
 				&delegation_node.details.permissions,
 			);
-			let delegate_signature = (
-				delegate.clone(),
-				hash_to_u8(delegation_info).clone(),
-			);
+			let delegate_signature = (delegate.clone(), hash_to_u8(delegation_info));
 			let operation =
 				generate_base_delegation_creation_operation(delegation_id, delegate_signature, delegation_node);
 
@@ -227,10 +224,7 @@ fn create_delegation_with_parent_successful() {
 				&parent_id,
 				&delegation_node.details.permissions,
 			);
-			let delegate_signature = (
-				delegate.clone(),
-				hash_to_u8(delegation_info).clone(),
-			);
+			let delegate_signature = (delegate.clone(), hash_to_u8(delegation_info));
 			let operation =
 				generate_base_delegation_creation_operation(delegation_id, delegate_signature, delegation_node);
 
@@ -300,8 +294,7 @@ fn create_delegation_direct_root_revoked_error() {
 	));
 	let delegate_signature = (delegate.clone(), delegation_hash.clone());
 
-	let operation =
-		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
+	let operation = generate_base_delegation_creation_operation(delegation_id, delegate_signature, delegation_node);
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
@@ -356,10 +349,9 @@ fn create_delegation_with_parent_revoked_error() {
 		&delegation_node.details.permissions,
 	);
 
-	let delegate_signature = (delegate.clone(), hash_to_u8(delegation_info).clone());
+	let delegate_signature = (delegate.clone(), hash_to_u8(delegation_info));
 
-	let operation =
-		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
+	let operation = generate_base_delegation_creation_operation(delegation_id, delegate_signature, delegation_node);
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
@@ -409,8 +401,7 @@ fn invalid_delegate_signature_create_delegation_error() {
 
 	let delegate_signature = (delegate.clone(), vec![]);
 
-	let operation =
-		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
+	let operation = generate_base_delegation_creation_operation(delegation_id, delegate_signature, delegation_node);
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
@@ -507,8 +498,7 @@ fn parent_not_existing_create_delegation_error() {
 	));
 	let delegate_signature = (delegate.clone(), delegation_hash.clone());
 
-	let operation =
-		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
+	let operation = generate_base_delegation_creation_operation(delegation_id, delegate_signature, delegation_node);
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
@@ -559,8 +549,7 @@ fn not_owner_of_parent_create_delegation_error() {
 	));
 	let delegate_signature = (delegate.clone(), delegation_hash.clone());
 
-	let operation =
-		generate_base_delegation_creation_operation(delegation_id, delegate_signature, delegation_node);
+	let operation = generate_base_delegation_creation_operation(delegation_id, delegate_signature, delegation_node);
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
@@ -612,8 +601,7 @@ fn unauthorised_delegation_create_delegation_error() {
 	));
 	let delegate_signature = (delegate.clone(), delegation_hash.clone());
 
-	let operation =
-		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
+	let operation = generate_base_delegation_creation_operation(delegation_id, delegate_signature, delegation_node);
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
