@@ -37,15 +37,12 @@ pub(crate) fn pre_migrate<T: Config>() -> Result<(), &'static str> {
 		for delegation in candidate.delegators.into_iter() {
 			if let Some(state) = DelegatorState::<T>::get(delegation.owner.clone()) {
 				assert_eq!(state.delegations.len(), 1);
-				let Stake::<T::AccountId, BalanceOf<T>> { amount, owner } = state
-					.delegations
-					.into_bounded_vec()
-					.into_inner()
-					.get(0)
-					.expect("Just validated existance by ensuring size is one. q.e.d")
-					.clone();
-				assert_eq!(amount, state.total);
-				assert_eq!(owner, candidate.id);
+				if let Some(Stake::<T::AccountId, BalanceOf<T>> { amount, owner }) =
+					state.delegations.into_bounded_vec().into_inner().get(0)
+				{
+					assert_eq!(amount, &state.total);
+					assert_eq!(owner, &candidate.id);
+				}
 			} else {
 				corrupt_delegation = corrupt_delegation.saturating_add(1);
 			}
@@ -68,7 +65,7 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 		for delegation in candidate.delegators.into_iter() {
 			// we do not have to mutate existing entries since MaxCollatorsPerDelegator = 1
 			if !DelegatorState::<T>::contains_key(delegation.owner.clone()) {
-				if let (Ok(delegator)) = Delegator::try_new(candidate.id.clone(), delegation.amount) {
+				if let Ok(delegator) = Delegator::try_new(candidate.id.clone(), delegation.amount) {
 					DelegatorState::<T>::insert(delegation.owner, delegator);
 					writes = writes.saturating_add(1u64);
 				}
