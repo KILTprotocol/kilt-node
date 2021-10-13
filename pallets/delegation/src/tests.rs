@@ -19,7 +19,7 @@
 use frame_support::{assert_err, assert_noop, assert_ok};
 use sp_core::Pair;
 
-use crate::{self as delegation, delegation_hierarchy::VerifyDelegateSignature, mock::*, Config, Error};
+use crate::{self as delegation, mock::*, Config, Error};
 use sp_runtime::traits::Zero;
 
 // submit_delegation_root_creation_operation()
@@ -144,9 +144,9 @@ fn create_delegation_direct_root_successful() {
 				&hierarchy_root_id,
 				&delegation_node.details.permissions,
 			);
-			let delegate_signature = <Test as Config>::DelegationSignatureVerification::valid_signature(
-				&delegate,
-				&hash_to_u8(delegation_info),
+			let delegate_signature = (
+				delegate.clone(),
+				hash_to_u8(delegation_info).clone(),
 			);
 			let operation =
 				generate_base_delegation_creation_operation(delegation_id, delegate_signature, delegation_node);
@@ -227,9 +227,9 @@ fn create_delegation_with_parent_successful() {
 				&parent_id,
 				&delegation_node.details.permissions,
 			);
-			let delegate_signature = <Test as Config>::DelegationSignatureVerification::valid_signature(
-				&delegate,
-				&hash_to_u8(delegation_info),
+			let delegate_signature = (
+				delegate.clone(),
+				hash_to_u8(delegation_info).clone(),
 			);
 			let operation =
 				generate_base_delegation_creation_operation(delegation_id, delegate_signature, delegation_node);
@@ -298,8 +298,7 @@ fn create_delegation_direct_root_revoked_error() {
 		&hierarchy_root_id,
 		&delegation_node.details.permissions,
 	));
-	let delegate_signature =
-		<Test as Config>::DelegationSignatureVerification::valid_signature(&delegate, &delegation_hash);
+	let delegate_signature = (delegate.clone(), delegation_hash.clone());
 
 	let operation =
 		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
@@ -357,8 +356,7 @@ fn create_delegation_with_parent_revoked_error() {
 		&delegation_node.details.permissions,
 	);
 
-	let delegate_signature =
-		<Test as Config>::DelegationSignatureVerification::valid_signature(&delegate, &hash_to_u8(delegation_info));
+	let delegate_signature = (delegate.clone(), hash_to_u8(delegation_info).clone());
 
 	let operation =
 		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
@@ -409,7 +407,7 @@ fn invalid_delegate_signature_create_delegation_error() {
 		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
 	);
 
-	let delegate_signature = <Test as Config>::DelegationSignatureVerification::valid_signature(&delegate, &vec![]);
+	let delegate_signature = (delegate.clone(), vec![]);
 
 	let operation =
 		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
@@ -456,8 +454,7 @@ fn duplicate_delegation_create_delegation_error() {
 		&hierarchy_root_id,
 		&delegation_node.details.permissions,
 	));
-	let delegate_signature =
-		<Test as Config>::DelegationSignatureVerification::valid_signature(&delegate, &delegation_hash);
+	let delegate_signature = (delegate.clone(), delegation_hash.clone());
 
 	let operation =
 		generate_base_delegation_creation_operation(delegation_id, delegate_signature, delegation_node.clone());
@@ -508,8 +505,7 @@ fn parent_not_existing_create_delegation_error() {
 		&hierarchy_root_id,
 		&delegation_node.details.permissions,
 	));
-	let delegate_signature =
-		<Test as Config>::DelegationSignatureVerification::valid_signature(&delegate, &delegation_hash);
+	let delegate_signature = (delegate.clone(), delegation_hash.clone());
 
 	let operation =
 		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
@@ -561,8 +557,7 @@ fn not_owner_of_parent_create_delegation_error() {
 		&parent_id,
 		&delegation_node.details.permissions,
 	));
-	let delegate_signature =
-		<Test as Config>::DelegationSignatureVerification::valid_signature(&delegate, &delegation_hash);
+	let delegate_signature = (delegate.clone(), delegation_hash.clone());
 
 	let operation =
 		generate_base_delegation_creation_operation(delegation_id, delegate_signature, delegation_node);
@@ -615,8 +610,7 @@ fn unauthorised_delegation_create_delegation_error() {
 		&parent_id,
 		&delegation_node.details.permissions,
 	));
-	let delegate_signature =
-		<Test as Config>::DelegationSignatureVerification::valid_signature(&delegate, &delegation_hash);
+	let delegate_signature = (delegate.clone(), delegation_hash.clone());
 
 	let operation =
 		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);

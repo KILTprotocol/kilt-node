@@ -315,13 +315,6 @@ impl<R: did::Config> delegation::VerifyDelegateSignature for DelegationSignature
 			_ => delegation::SignatureVerificationError::SignerInformationNotPresent,
 		})
 	}
-
-	#[cfg(any(feature = "runtime-benchmarks", feature = "delegation/mock"))]
-	fn valid_signature(_: &Self::DelegateId, _: &Self::Payload) -> Self::Signature {
-		// This is unimplemented because this implementation shouldn't be used for
-		// benchmarking a pallet. the verify function get's benchmarked separately.
-		unimplemented!()
-	}
 }
 
 parameter_types! {
@@ -378,8 +371,16 @@ parameter_types! {
 }
 
 impl delegation::Config for Runtime {
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	type Signature = did::DidSignature;
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	type DelegationSignatureVerification = DelegationSignatureVerifier<Self>;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type Signature = kilt_primitives::benchmarks::DummySignature;
+	#[cfg(feature = "runtime-benchmarks")]
+	type DelegationSignatureVerification = delegation::AlwaysVerify<AccountId, Vec<u8>, Self::Signature>;
+
 	type DelegationEntityId = DidIdentifier;
 	type DelegationNodeId = Hash;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;

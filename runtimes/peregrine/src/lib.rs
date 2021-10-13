@@ -20,8 +20,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
-// The `from_over_into` warning originates from `construct_runtime` macro.
-#![allow(clippy::from_over_into)]
 
 // Make the WASM binary available.
 #[cfg(feature = "std")]
@@ -73,7 +71,7 @@ use sp_version::RuntimeVersion;
 use sp_version::NativeVersion;
 
 #[cfg(feature = "runtime-benchmarks")]
-use {delegation::AlwaysVerify, frame_system::EnsureSigned};
+use {delegation::AlwaysVerify, frame_system::EnsureSigned, kilt_primitives::benchmarks::DummySignature};
 
 mod fee;
 #[cfg(test)]
@@ -543,13 +541,6 @@ impl<R: did::Config> delegation::VerifyDelegateSignature for DelegationSignature
 			_ => delegation::SignatureVerificationError::SignerInformationNotPresent,
 		})
 	}
-
-	#[cfg(any(feature = "runtime-benchmarks", feature = "delegation/mock"))]
-	fn valid_signature(_: &Self::DelegateId, _: &Self::Payload) -> Self::Signature {
-		// This is unimplemented because this implementation shouldn't be used for
-		// benchmarking a pallet. the verify function get's benchmarked separately.
-		unimplemented!()
-	}
 }
 
 parameter_types! {
@@ -604,9 +595,9 @@ impl delegation::Config for Runtime {
 	#[cfg(feature = "runtime-benchmarks")]
 	type OriginSuccess = DidIdentifier;
 	#[cfg(feature = "runtime-benchmarks")]
-	type DelegationSignatureVerification = AlwaysVerify<Self::DelegationEntityId, Vec<u8>, Self::Signature>;
+	type Signature = DummySignature;
 	#[cfg(feature = "runtime-benchmarks")]
-	type Signature = ();
+	type DelegationSignatureVerification = AlwaysVerify<AccountId, Vec<u8>, Self::Signature>;
 
 	type Event = Event;
 	type MaxSignatureByteLength = MaxSignatureByteLength;

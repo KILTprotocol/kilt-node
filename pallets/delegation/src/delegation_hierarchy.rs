@@ -192,13 +192,10 @@ pub trait VerifyDelegateSignature {
 		payload: &Self::Payload,
 		signature: &Self::Signature,
 	) -> SignatureVerificationResult;
-
-	#[cfg(any(test, feature = "mock", feature = "runtime-benchmarks"))]
-	fn valid_signature(delegate: &Self::DelegateId, payload: &Self::Payload) -> Self::Signature;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-pub struct AlwaysVerify<A, B, C>(PhantomData<(A, B, C)>);
+pub struct AlwaysVerify<A, P, S>(PhantomData<(A, P, S)>);
 #[cfg(feature = "runtime-benchmarks")]
 impl<Account, Payload, Signature: Default> VerifyDelegateSignature for AlwaysVerify<Account, Payload, Signature> {
 	type DelegateId = Account;
@@ -213,10 +210,6 @@ impl<Account, Payload, Signature: Default> VerifyDelegateSignature for AlwaysVer
 		_signature: &Self::Signature,
 	) -> SignatureVerificationResult {
 		SignatureVerificationResult::Ok(())
-	}
-
-	fn valid_signature(_delegate: &Self::DelegateId, _payload: &Self::Payload) -> Self::Signature {
-		Default::default()
 	}
 }
 
@@ -244,9 +237,5 @@ where
 		} else {
 			SignatureVerificationResult::Err(SignatureVerificationError::SignatureInvalid)
 		}
-	}
-
-	fn valid_signature(delegate: &Self::DelegateId, payload: &Self::Payload) -> Self::Signature {
-		(delegate.clone(), payload.clone())
 	}
 }

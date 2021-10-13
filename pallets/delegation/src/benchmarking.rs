@@ -102,6 +102,10 @@ where
 	T::CtypeCreatorId: From<T::AccountId>,
 	T::DelegationNodeId: From<T::Hash>,
 	T::DelegationEntityId: From<T::AccountId>,
+	<<T as Config>::DelegationSignatureVerification as VerifyDelegateSignature>::Signature: From<(
+		T::AccountId,
+		<<T as Config>::DelegationSignatureVerification as VerifyDelegateSignature>::Payload,
+	)>,
 {
 	if level == 0 {
 		return Ok((parent_acc_public, parent_acc_id, parent_id));
@@ -118,7 +122,7 @@ where
 		let hash: Vec<u8> =
 			Pallet::<T>::calculate_delegation_creation_hash(&delegation_id, &root_id, &parent_id, &permissions)
 				.encode();
-		let sig = T::DelegationSignatureVerification::valid_signature(&delegation_acc_id.clone().into(), &hash);
+		let sig = (delegation_acc_id.clone(), hash.clone()).into();
 
 		// add delegation from delegate to parent
 		<T as Config>::Currency::make_free_balance_be(
@@ -174,6 +178,10 @@ where
 	T::DelegationNodeId: From<T::Hash>,
 	T::CtypeCreatorId: From<T::AccountId>,
 	T::DelegationEntityId: From<T::AccountId>,
+	<<T as Config>::DelegationSignatureVerification as VerifyDelegateSignature>::Signature: From<(
+		T::AccountId,
+		<<T as Config>::DelegationSignatureVerification as VerifyDelegateSignature>::Payload,
+	)>,
 {
 	let (
 		DelegationTriplet::<T> {
@@ -206,6 +214,10 @@ benchmarks! {
 		T::DelegationNodeId: From<T::Hash>,
 		<T as frame_system::Config>::Origin: From<RawOrigin<<T as pallet::Config>::DelegationEntityId>>,
 		T::CtypeCreatorId: From<T::AccountId>,
+		<<T as Config>::DelegationSignatureVerification as VerifyDelegateSignature>::Signature: From<(
+			T::AccountId,
+			<<T as Config>::DelegationSignatureVerification as VerifyDelegateSignature>::Payload,
+		)>,
 	}
 
 	create_hierarchy {
@@ -246,7 +258,7 @@ benchmarks! {
 
 		let perm: Permissions = Permissions::ATTEST | Permissions::DELEGATE;
 		let hash_root = Pallet::<T>::calculate_delegation_creation_hash(&delegation_id, &hierarchy_id, &parent_id, &perm);
-		let sig = T::DelegationSignatureVerification::valid_signature(&delegate_acc_id.clone().into(), &AsRef::<[u8]>::as_ref(&hash_root).to_vec());
+		let sig = (delegate_acc_id.clone(), AsRef::<[u8]>::as_ref(&hash_root).to_vec()).into();
 
 		let leaf_acc_id: T::AccountId = root_public.into();
 		<T as Config>::Currency::make_free_balance_be(

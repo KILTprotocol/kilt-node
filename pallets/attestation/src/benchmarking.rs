@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use delegation::{benchmarking::setup_delegations, Permissions};
+use delegation::{benchmarking::setup_delegations, Permissions, VerifyDelegateSignature};
 use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
 use frame_support::traits::{Currency, Get};
 use frame_system::RawOrigin;
@@ -36,6 +36,10 @@ benchmarks! {
 		T::DelegationNodeId: From<T::Hash>,
 		T::CtypeCreatorId: From<T::AccountId>,
 		T::DelegationEntityId: From<T::AccountId>,
+		<<T as delegation::Config>::DelegationSignatureVerification as VerifyDelegateSignature>::Signature: From<(
+			T::AccountId,
+			<<T as delegation::Config>::DelegationSignatureVerification as VerifyDelegateSignature>::Payload,
+		)>,
 	}
 
 	add {

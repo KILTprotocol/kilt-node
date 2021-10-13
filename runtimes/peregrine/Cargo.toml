@@ -100,6 +100,7 @@ runtime-benchmarks = [
   "frame-system-benchmarking",
   "frame-system/runtime-benchmarks",
   "hex-literal",
+  "kilt-primitives/runtime-benchmarks",
   "kilt-launch/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-collective/runtime-benchmarks",
