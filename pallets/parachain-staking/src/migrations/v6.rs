@@ -19,12 +19,40 @@
 use frame_support::{dispatch::Weight, traits::Get};
 
 use crate::{
-	migrations::StakingStorageVersion, types::Delegator, CandidatePool, Config, DelegatorState, StorageVersion,
+	migrations::StakingStorageVersion,
+	types::{BalanceOf, Delegator},
+	CandidatePool, Config, DelegatorState, StorageVersion,
 };
 
 #[cfg(feature = "try-runtime")]
 pub(crate) fn pre_migrate<T: Config>() -> Result<(), &'static str> {
+	use crate::types::Stake;
+
 	assert_eq!(StorageVersion::<T>::get(), StakingStorageVersion::V5);
+
+	// ensure each delegator has at most one delegation (ideally should have exactly
+	// one)
+	let mut invalid_delegations: u32 = 0;
+	for candidate in CandidatePool::<T>::iter_values() {
+		for delegation in candidate.delegators.into_iter() {
+			if let Some(state) = DelegatorState::<T>::get(delegation.owner.clone()) {
+				assert_eq!(state.delegations.len(), 1);
+				let Stake::<T::AccountId, BalanceOf<T>> { amount, owner } = state
+					.delegations
+					.into_bounded_vec()
+					.into_inner()
+					.get(0)
+					.unwrap()
+					.clone();
+				assert_eq!(amount, state.total);
+				assert_eq!(owner, candidate.id);
+			} else {
+				invalid_delegations = invalid_delegations.saturating_add(1);
+			}
+		}
+	}
+
+	log::info!("Found {} broken delegations", invalid_delegations);
 	Ok(())
 }
 
@@ -42,8 +70,7 @@ pub(crate) fn migrate<T: Config>() -> Weight {
 			if !DelegatorState::<T>::contains_key(delegation.owner.clone()) {
 				DelegatorState::<T>::insert(
 					delegation.owner,
-					Delegator::try_new(candidate.id.clone(), delegation.amount)
-						.expect("MaxCollatorsPerDelegator is greater than one"),
+					Delegator::try_new(candidate.id.clone(), delegation.amount).unwrap(),
 				);
 				writes = writes.saturating_add(1u64);
 			}
