@@ -19,14 +19,12 @@
 use frame_support::{dispatch::Weight, traits::Get};
 
 use crate::{
-	migrations::StakingStorageVersion,
-	types::{BalanceOf, Delegator},
-	CandidatePool, Config, DelegatorState, StorageVersion,
+	migrations::StakingStorageVersion, types::Delegator, CandidatePool, Config, DelegatorState, StorageVersion,
 };
 
 #[cfg(feature = "try-runtime")]
 pub(crate) fn pre_migrate<T: Config>() -> Result<(), &'static str> {
-	use crate::types::Stake;
+	use crate::types::{BalanceOf, Stake};
 
 	assert_eq!(StorageVersion::<T>::get(), StakingStorageVersion::V5);
 
