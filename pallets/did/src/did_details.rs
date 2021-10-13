@@ -299,7 +299,6 @@ impl<T: Config> DidDetails<T> {
 	pub fn from_creation_details(
 		details: DidCreationDetails<T>,
 		new_auth_key: DidVerificationKey,
-		deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
 	) -> Result<Self, DidError> {
 		ensure!(
 			details.new_key_agreement_keys.len()
@@ -308,6 +307,11 @@ impl<T: Config> DidDetails<T> {
 		);
 
 		let current_block_number = frame_system::Pallet::<T>::block_number();
+
+		let deposit = Deposit {
+			owner: details.submitter,
+			amount: T::Deposit::get(),
+		};
 
 		// Creates a new DID with the given authentication key.
 		let mut new_did_details = DidDetails::new(new_auth_key, current_block_number, deposit)?;
@@ -537,6 +541,8 @@ pub(crate) type DidPublicKeyMap<T> =
 pub struct DidCreationDetails<T: Config> {
 	/// The DID identifier. It has to be unique.
 	pub did: DidIdentifierOf<T>,
+	/// The authorised submitter of the creation operation.
+	pub submitter: AccountIdOf<T>,
 	/// The new key agreement keys.
 	pub new_key_agreement_keys: DidNewKeyAgreementKeySet<T>,
 	/// \[OPTIONAL\] The new attestation key.
@@ -550,6 +556,7 @@ impl<T: Config> fmt::Debug for DidCreationDetails<T> {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		f.debug_struct("DidCreationDetails")
 			.field("did", &self.did)
+			.field("submitter", &self.submitter)
 			.field(
 				"new_key_agreement_keys",
 				&self.new_key_agreement_keys.clone().into_inner(),
