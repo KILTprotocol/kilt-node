@@ -2048,12 +2048,12 @@ pub mod pallet {
 		/// Check for remaining delegations of the delegator which has been
 		/// removed from the given collator.
 		///
-		/// Returns the removed delegators address and
+		/// Returns the removed delegator's address and
 		/// * Either the updated delegator state if other delegations are still
 		///   remaining
 		/// * Or `None`, signalling the delegator state should be cleared once
 		///   the transaction cannot fail anymore.
-		fn kick_delegator(
+		fn prep_kick_delegator(
 			delegation: &StakeOf<T>,
 			collator: &T::AccountId,
 		) -> Result<ReplacedDelegator<T>, DispatchError> {
@@ -2188,7 +2188,9 @@ pub mod pallet {
 		/// amount is at most the minimum staked value of the original delegator
 		/// set, an error is returned.
 		///
-		/// Returns the old delegation that is updated, if any.
+		/// Returns a tuple which contains the updated candidate state as well
+		/// as the potentially replaced delegation which will be used later when
+		/// updating the storage of the replaced delegator.
 		///
 		/// Emits `DelegationReplaced` if the stake exceeds one of the current
 		/// delegations.
@@ -2229,7 +2231,7 @@ pub mod pallet {
 				state.total = state.total.saturating_sub(stake_to_remove.amount);
 
 				// update storage of kicked delegator
-				let kicked_delegator = Self::kick_delegator(&stake_to_remove, &state.id)?;
+				let kicked_delegator = Self::prep_kick_delegator(&stake_to_remove, &state.id)?;
 
 				Self::deposit_event(Event::DelegationReplaced(
 					stake.owner,
