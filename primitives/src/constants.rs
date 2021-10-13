@@ -147,7 +147,7 @@ pub mod governance {
 	pub const FAST_TRACK_VOTING_PERIOD: BlockNumber = 3 * HOURS;
 
 	#[cfg(feature = "fast-gov")]
-	pub const ENACTMENT_PERIOD: BlockNumber = MINUTES;
+	pub const ENACTMENT_PERIOD: BlockNumber = 8 * MINUTES;
 	#[cfg(not(feature = "fast-gov"))]
 	pub const ENACTMENT_PERIOD: BlockNumber = DAYS;
 
