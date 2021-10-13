@@ -27,6 +27,7 @@ use frame_support::{
 };
 use frame_system::EnsureSigned;
 use kilt_primitives::constants::delegation::DELEGATION_DEPOSIT;
+use kilt_support::deposit::Deposit;
 use sp_core::{ed25519, sr25519, Pair, H256};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
@@ -284,7 +285,7 @@ where
 		children: BoundedBTreeSet::new(),
 		hierarchy_root_id: hierarchy_id,
 		parent,
-		deposit: delegation::Deposit {
+		deposit: Deposit {
 			owner: owner.into(),
 			amount: <T as Config>::Deposit::get(),
 		},
