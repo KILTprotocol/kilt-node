@@ -18,6 +18,7 @@
 
 use frame_support::dispatch;
 use kilt_support::signature::{SignatureVerificationError, SignatureVerificationResult, VerifyDelegateSignature};
+use sp_runtime::SaturatedConversion;
 use sp_std::{marker::PhantomData, vec::Vec};
 
 use crate::{Config, Did, DidError, DidSignature, DidVerificationKeyRelationship, Pallet, WeightInfo};
@@ -49,10 +50,13 @@ impl<T: Config> VerifyDelegateSignature for DidSignatureVerify<T> {
 		})
 	}
 
-	fn weight(payload_byte_length: u32) -> dispatch::Weight {
-		<T as Config>::WeightInfo::signature_verification_sr(payload_byte_length).max(
-			<T as Config>::WeightInfo::signature_verification_ed(payload_byte_length)
-				.max(<T as Config>::WeightInfo::signature_verification_ecdsa(payload_byte_length)),
-		)
+	fn weight(payload_byte_length: usize) -> dispatch::Weight {
+		<T as Config>::WeightInfo::signature_verification_sr(payload_byte_length.saturated_into())
+			.max(<T as Config>::WeightInfo::signature_verification_ed(
+				payload_byte_length.saturated_into(),
+			))
+			.max(<T as Config>::WeightInfo::signature_verification_ecdsa(
+				payload_byte_length.saturated_into(),
+			))
 	}
 }

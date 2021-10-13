@@ -52,7 +52,7 @@ pub trait VerifyDelegateSignature {
 		signature: &Self::Signature,
 	) -> SignatureVerificationResult;
 
-	fn weight(payload_byte_length: u32) -> Weight;
+	fn weight(payload_byte_length: usize) -> Weight;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -73,7 +73,7 @@ impl<Account, Payload, Signature: Default> VerifyDelegateSignature for AlwaysVer
 		SignatureVerificationResult::Ok(())
 	}
 
-	fn weight(_: u32) -> Weight {
+	fn weight(_: usize) -> Weight {
 		Weight::zero()
 	}
 }
@@ -104,7 +104,7 @@ where
 		}
 	}
 
-	fn weight(_: u32) -> Weight {
+	fn weight(_: usize) -> Weight {
 		Weight::zero()
 	}
 }

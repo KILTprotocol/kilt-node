@@ -403,7 +403,10 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Roots, Delegations
 		/// - Writes: Delegations
 		/// # </weight>
-		#[pallet::weight(<T as Config>::WeightInfo::add_delegation())]
+		#[pallet::weight(
+			<T as Config>::WeightInfo::add_delegation()
+				.saturating_add(DelegationSignatureVerificationOf::<T>::weight(T::Hash::max_encoded_len()))
+		)]
 		pub fn add_delegation(
 			origin: OriginFor<T>,
 			delegation_id: DelegationNodeIdOf<T>,

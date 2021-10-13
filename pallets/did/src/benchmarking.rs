@@ -732,7 +732,7 @@ benchmarks! {
 		let block_number = T::BlockNumber::zero();
 
 		let public_auth_key = get_sr25519_public_authentication_key();
-		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key.clone()).into_account().into();
+		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let key_agreement_keys = get_key_agreement_keys::<T>(T::MaxNewKeyAgreementKeys::get());
 
 		// get first entry
@@ -759,7 +759,7 @@ benchmarks! {
 		let block_number = T::BlockNumber::zero();
 
 		let public_auth_key = get_ed25519_public_authentication_key();
-		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key.clone()).into_account().into();
+		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let key_agreement_keys = get_key_agreement_keys::<T>(T::MaxNewKeyAgreementKeys::get());
 
 		// get first entry

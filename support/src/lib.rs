@@ -18,5 +18,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod deposit;
-pub mod traits;
 pub mod signature;
+pub mod traits;
