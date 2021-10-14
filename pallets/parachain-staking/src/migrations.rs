@@ -18,10 +18,9 @@
 #[cfg(feature = "try-runtime")]
 use frame_support::ensure;
 use frame_support::{dispatch::Weight, traits::Get};
-use sp_runtime::{
-	codec::{Decode, Encode},
-	traits::Zero,
-};
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+use scale_info::TypeInfo;
+use sp_runtime::traits::Zero;
 use sp_std::marker::PhantomData;
 
 use crate::*;
@@ -49,7 +48,7 @@ pub trait VersionMigratorTrait<T> {
 // storage. This value is used by the `on_runtime_upgrade` logic to determine
 // whether we run storage migration logic. This should match directly with the
 // semantic versions of the Rust crate.
-#[derive(Copy, Clone, Encode, Eq, Decode, Debug, Ord, PartialEq, PartialOrd)]
+#[derive(Copy, Clone, Encode, Eq, Decode, Debug, Ord, PartialEq, PartialOrd, MaxEncodedLen, TypeInfo)]
 pub enum StakingStorageVersion {
 	V1_0_0,
 	V2_0_0, // New Reward calculation, MaxCollatorCandidateStake

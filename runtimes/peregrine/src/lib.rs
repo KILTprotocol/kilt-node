@@ -57,6 +57,7 @@ use kilt_primitives::{
 	AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Hash, Header, Index, Signature,
 };
 use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
+use scale_info::TypeInfo;
 use sp_api::impl_runtime_apis;
 use sp_core::{
 	u32_trait::{_1, _2, _3, _5},
@@ -687,17 +688,17 @@ parameter_types! {
 	/// We only allow one delegation per round.
 	pub const MaxDelegationsPerRound: u32 = 1;
 	/// Maximum 25 delegators per collator at launch, might be increased later
-	#[derive(Debug, PartialEq)]
+	#[derive(Debug, PartialEq, MaxEncodedLen, TypeInfo)]
 	pub const MaxDelegatorsPerCollator: u32 = 25;
 	/// Maximum 1 collator per delegator at launch, will be increased later
-	#[derive(Debug, PartialEq)]
+	#[derive(Debug, PartialEq, MaxEncodedLen, TypeInfo)]
 	pub const MaxCollatorsPerDelegator: u32 = 1;
 	/// Minimum stake required to be reserved to be a collator is 10_000
 	pub const MinCollatorStake: Balance = 10_000 * KILT;
 	/// Minimum stake required to be reserved to be a delegator is 1000
 	pub const MinDelegatorStake: Balance = 1000 * KILT;
 	/// Maximum number of collator candidates
-	#[derive(Debug, PartialEq)]
+	#[derive(Debug, PartialEq, MaxEncodedLen, TypeInfo)]
 	pub const MaxCollatorCandidates: u32 = MAX_CANDIDATES;
 	/// Maximum number of concurrent requests to unlock unstaked balance
 	pub const MaxUnstakeRequests: u32 = 10;

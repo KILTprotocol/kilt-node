@@ -16,9 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode, WrapperTypeEncode};
+use codec::{Decode, Encode, MaxEncodedLen, WrapperTypeEncode};
 use frame_support::storage::{bounded_btree_map::BoundedBTreeMap, bounded_btree_set::BoundedBTreeSet};
 use kilt_support::deposit::Deposit;
+use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519};
 use sp_runtime::{traits::Verify, MultiSignature};
 use sp_std::{convert::TryInto, fmt};
@@ -26,7 +27,7 @@ use sp_std::{convert::TryInto, fmt};
 use crate::*;
 
 /// Types of verification keys a DID can control.
-#[derive(Clone, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd, MaxEncodedLen, TypeInfo)]
 pub enum DidVerificationKey {
 	/// An Ed25519 public key.
 	Ed25519(ed25519::Public),
@@ -77,14 +78,14 @@ impl From<ecdsa::Public> for DidVerificationKey {
 }
 
 /// Types of encryption keys a DID can control.
-#[derive(Clone, Copy, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd, MaxEncodedLen, TypeInfo)]
 pub enum DidEncryptionKey {
 	/// An X25519 public key.
 	X25519([u8; 32]),
 }
 
 /// A general public key under the control of the DID.
-#[derive(Clone, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd, MaxEncodedLen, TypeInfo)]
 pub enum DidPublicKey {
 	/// A verification key, used to generate and verify signatures.
 	PublicVerificationKey(DidVerificationKey),
@@ -106,7 +107,7 @@ impl From<DidEncryptionKey> for DidPublicKey {
 
 /// Verification methods a verification key can
 /// fulfil, according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
-#[derive(Clone, Copy, Debug, Decode, Encode, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Decode, Encode, PartialEq, Eq, MaxEncodedLen, TypeInfo)]
 pub enum DidVerificationKeyRelationship {
 	/// Key used to authenticate all the DID operations.
 	Authentication,
@@ -119,7 +120,7 @@ pub enum DidVerificationKeyRelationship {
 }
 
 /// Types of signatures supported by this pallet.
-#[derive(Clone, Decode, Debug, Encode, Eq, PartialEq)]
+#[derive(Clone, Decode, Debug, Encode, Eq, PartialEq, MaxEncodedLen, TypeInfo)]
 pub enum DidSignature {
 	/// A Ed25519 signature.
 	Ed25519(ed25519::Signature),
@@ -220,7 +221,7 @@ impl DidVerifiableIdentifier for kilt_primitives::DidIdentifier {
 ///
 /// It is currently used to keep track of all the past and current
 /// attestation keys a DID might control.
-#[derive(Clone, Debug, Decode, Encode, PartialEq, Ord, PartialOrd, Eq)]
+#[derive(Clone, Debug, Decode, Encode, PartialEq, Ord, PartialOrd, Eq, MaxEncodedLen, TypeInfo)]
 pub struct DidPublicKeyDetails<T: Config> {
 	/// A public key the DID controls.
 	pub key: DidPublicKey,
@@ -229,7 +230,7 @@ pub struct DidPublicKeyDetails<T: Config> {
 }
 
 /// The details associated to a DID identity.
-#[derive(Clone, Decode, Encode, PartialEq)]
+#[derive(Clone, Decode, Encode, PartialEq, MaxEncodedLen, TypeInfo)]
 pub struct DidDetails<T: Config> {
 	/// The ID of the authentication key, used to authenticate DID-related
 	/// operations.
@@ -533,7 +534,7 @@ pub(crate) type DidPublicKeyMap<T> =
 	BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>, <T as Config>::MaxPublicKeysPerDid>;
 
 /// The details of a new DID to create.
-#[derive(Clone, Decode, Encode, PartialEq)]
+#[derive(Clone, Decode, Encode, PartialEq, MaxEncodedLen, TypeInfo)]
 pub struct DidCreationDetails<T: Config> {
 	/// The DID identifier. It has to be unique.
 	pub did: DidIdentifierOf<T>,
@@ -580,7 +581,7 @@ pub trait DeriveDidCallAuthorizationVerificationKeyRelationship {
 /// A DID operation that wraps other extrinsic calls, allowing those
 /// extrinsic to have a DID origin and perform DID-based authorization upon
 /// their invocation.
-#[derive(Clone, Debug, Decode, Encode, PartialEq)]
+#[derive(Clone, Debug, Decode, Encode, PartialEq, MaxEncodedLen, TypeInfo)]
 pub struct DidAuthorizedCallOperation<T: Config> {
 	/// The DID identifier.
 	pub did: DidIdentifierOf<T>,
@@ -598,7 +599,7 @@ pub struct DidAuthorizedCallOperation<T: Config> {
 ///
 /// It contains additional information about the type of DID key to used for
 /// authorization.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, MaxEncodedLen, TypeInfo)]
 pub struct DidAuthorizedCallOperationWithVerificationRelationship<T: Config> {
 	/// The wrapped [DidAuthorizedCallOperation].
 	pub operation: DidAuthorizedCallOperation<T>,

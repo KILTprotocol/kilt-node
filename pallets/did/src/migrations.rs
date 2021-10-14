@@ -28,7 +28,7 @@ mod v1;
 mod v2;
 
 /// Storage version of the DID pallet.
-#[derive(Copy, Clone, Encode, Eq, Decode, Ord, PartialEq, PartialOrd)]
+#[derive(Copy, Clone, Encode, Eq, Decode, Ord, PartialEq, PartialOrd, MaxEncodedLen, scale_info::TypeInfo)]
 pub enum DidStorageVersion {
 	V1,
 	V2,

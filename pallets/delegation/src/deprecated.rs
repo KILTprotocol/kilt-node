@@ -19,10 +19,11 @@
 /// Deprecated types used in version 1.
 pub(crate) mod v1 {
 	use crate::{Config, DelegationNodeIdOf, DelegatorIdOf, Permissions};
-	use codec::{Decode, Encode};
+	use codec::{Decode, Encode, MaxEncodedLen};
 	use ctype::CtypeHashOf;
+	use scale_info::TypeInfo;
 
-	#[derive(Clone, Debug, Encode, Decode, PartialEq)]
+	#[derive(Clone, Debug, Encode, Decode, PartialEq, MaxEncodedLen, TypeInfo)]
 	pub struct DelegationRoot<T: Config> {
 		pub(crate) ctype_hash: CtypeHashOf<T>,
 		pub(crate) owner: DelegatorIdOf<T>,
@@ -40,7 +41,7 @@ pub(crate) mod v1 {
 		}
 	}
 
-	#[derive(Clone, Debug, Encode, Decode, PartialEq)]
+	#[derive(Clone, Debug, Encode, Decode, PartialEq, MaxEncodedLen, TypeInfo)]
 	pub struct DelegationNode<T: Config> {
 		pub(crate) root_id: DelegationNodeIdOf<T>,
 		pub(crate) parent: Option<DelegationNodeIdOf<T>>,
@@ -104,10 +105,11 @@ pub(crate) mod v1 {
 
 pub(crate) mod v2 {
 	use crate::{Config, DelegationDetails, DelegationNodeIdOf};
-	use codec::{Decode, Encode};
+	use codec::{Decode, Encode, MaxEncodedLen};
 	use frame_support::storage::bounded_btree_set::BoundedBTreeSet;
+	use scale_info::TypeInfo;
 
-	#[derive(Clone, Encode, Decode, PartialEq)]
+	#[derive(Clone, Encode, Decode, PartialEq, MaxEncodedLen, TypeInfo)]
 	pub struct DelegationNode<T: Config> {
 		pub(crate) hierarchy_root_id: DelegationNodeIdOf<T>,
 		pub(crate) parent: Option<DelegationNodeIdOf<T>>,

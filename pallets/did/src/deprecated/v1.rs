@@ -16,11 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
 
 use crate::{deprecated::v2::Url, *};
 
-#[derive(Clone, Decode, Encode, PartialEq)]
+#[derive(Clone, Decode, Encode, PartialEq, MaxEncodedLen, scale_info::TypeInfo)]
 pub struct DidDetails<T: Config> {
 	pub(crate) authentication_key: KeyIdOf<T>,
 	pub(crate) key_agreement_keys: DidKeyAgreementKeySet<T>,

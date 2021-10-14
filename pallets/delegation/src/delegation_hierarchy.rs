@@ -18,10 +18,11 @@
 
 use crate::pallet::AccountIdOf;
 use bitflags::bitflags;
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
 use ctype::CtypeHashOf;
 use frame_support::{dispatch::DispatchResult, storage::bounded_btree_set::BoundedBTreeSet};
 use kilt_support::deposit::Deposit;
+use scale_info::TypeInfo;
 
 use crate::*;
 
@@ -29,7 +30,7 @@ bitflags! {
 	/// Bitflags for permissions.
 	///
 	/// Permission bits can be combined to express multiple permissions.
-	#[derive(Encode, Decode)]
+	#[derive(Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct Permissions: u32 {
 		/// Permission to write attestations on chain.
 		const ATTEST = 0b0000_0001;
@@ -61,7 +62,7 @@ impl Default for Permissions {
 /// For quicker lookups of the hierarchy details, all nodes maintain a direct
 /// link to the hierarchy root node. Furthermore, all nodes have a parent except
 /// the root nodes, which point to themselves for the hierarchy root node link.
-#[derive(Clone, Encode, Decode, PartialEq)]
+#[derive(Clone, Encode, Decode, PartialEq, MaxEncodedLen, TypeInfo)]
 pub struct DelegationNode<T: Config> {
 	/// The ID of the delegation hierarchy the node is part of.
 	pub hierarchy_root_id: DelegationNodeIdOf<T>,
@@ -128,7 +129,7 @@ impl<T: Config> DelegationNode<T> {
 }
 
 /// Delegation information attached to delegation nodes.
-#[derive(Clone, Debug, Encode, Decode, PartialEq)]
+#[derive(Clone, Debug, Encode, Decode, PartialEq, MaxEncodedLen, TypeInfo)]
 pub struct DelegationDetails<T: Config> {
 	/// The owner of the delegation (and its node).
 	pub owner: DelegatorIdOf<T>,
@@ -154,7 +155,7 @@ impl<T: Config> DelegationDetails<T> {
 }
 
 /// The details associated with a delegation hierarchy.
-#[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, MaxEncodedLen, TypeInfo)]
 pub struct DelegationHierarchyDetails<T: Config> {
 	/// The authorised CTYPE hash that attesters can attest using this
 	/// delegation hierarchy.

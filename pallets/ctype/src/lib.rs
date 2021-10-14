@@ -65,6 +65,7 @@ pub use crate::{default_weights::WeightInfo, pallet::*};
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
+	use codec::MaxEncodedLen;
 	use frame_support::{
 		pallet_prelude::*,
 		sp_runtime::traits::Hash,
@@ -93,13 +94,14 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type Currency: Currency<AccountIdOf<Self>>;
 		type WeightInfo: WeightInfo;
-		type CtypeCreatorId: Parameter + Default;
+		type CtypeCreatorId: Parameter + Default + MaxEncodedLen;
 		type Fee: Get<BalanceOf<Self>>;
 		type FeeCollector: OnUnbalanced<NegativeImbalanceOf<Self>>;
 	}
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
+	#[pallet::generate_storage_info]
 	pub struct Pallet<T>(_);
 
 	#[pallet::hooks]

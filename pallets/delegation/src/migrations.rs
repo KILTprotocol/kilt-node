@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
 use kilt_support::traits::VersionMigratorTrait;
 use sp_std::marker::PhantomData;
 
@@ -25,7 +25,7 @@ use crate::*;
 mod v1;
 
 /// Storage version of the delegation pallet.
-#[derive(Copy, Clone, Encode, Eq, Decode, Ord, PartialEq, PartialOrd)]
+#[derive(Copy, Clone, Encode, Eq, Decode, Ord, PartialEq, PartialOrd, MaxEncodedLen, scale_info::TypeInfo)]
 pub enum DelegationStorageVersion {
 	V1,
 	V2,

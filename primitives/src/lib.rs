@@ -20,8 +20,9 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
 use core::convert::TryFrom;
+use scale_info::TypeInfo;
 
 pub use sp_consensus_aura::sr25519::AuthorityId;
 
@@ -96,7 +97,7 @@ pub type DigestItem = generic::DigestItem<Hash>;
 /// A Kilt DID subject identifier.
 pub type DidIdentifier = AccountId;
 
-#[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
+#[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord, MaxEncodedLen, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub enum CurrencyId {
 	Dot = 0_isize,

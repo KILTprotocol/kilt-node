@@ -193,6 +193,8 @@ pub mod pallet {
 	use kilt_primitives::constants::BLOCKS_PER_YEAR;
 	use pallet_balances::{BalanceLock, Locks};
 	use pallet_session::ShouldEndSession;
+	use parity_scale_codec::MaxEncodedLen;
+	use scale_info::TypeInfo;
 	use sp_runtime::{
 		traits::{Convert, One, SaturatedConversion, Saturating, StaticLookup, Zero},
 		Permill, Perquintill,
@@ -244,7 +246,8 @@ pub mod pallet {
 			+ From<u64>
 			+ From<u128>
 			+ Into<<Self as pallet_balances::Config>::Balance>
-			+ From<<Self as pallet_balances::Config>::Balance>;
+			+ From<<Self as pallet_balances::Config>::Balance>
+			+ TypeInfo;
 
 		/// Minimum number of blocks validation rounds can last.
 		#[pallet::constant]
@@ -284,15 +287,15 @@ pub mod pallet {
 
 		/// Maximum number of delegators a single collator can have.
 		#[pallet::constant]
-		type MaxDelegatorsPerCollator: Get<u32> + Debug + PartialEq;
+		type MaxDelegatorsPerCollator: Get<u32> + Debug + PartialEq + TypeInfo;
 
 		/// Maximum number of collators a single delegator can delegate.
 		#[pallet::constant]
-		type MaxCollatorsPerDelegator: Get<u32> + Debug + PartialEq;
+		type MaxCollatorsPerDelegator: Get<u32> + Debug + PartialEq + TypeInfo;
 
 		/// Maximum size of the top candidates set.
 		#[pallet::constant]
-		type MaxTopCandidates: Get<u32> + Debug + PartialEq;
+		type MaxTopCandidates: Get<u32> + Debug + PartialEq + TypeInfo;
 
 		/// Minimum stake required for any account to be elected as validator
 		/// for a round.

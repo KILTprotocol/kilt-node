@@ -123,7 +123,7 @@ mod deprecated;
 use crate::migrations::*;
 pub use crate::{default_weights::WeightInfo, did_details::*, errors::*, origin::*, pallet::*};
 
-use codec::Encode;
+use codec::{Encode, MaxEncodedLen};
 use frame_support::{
 	dispatch::{DispatchResult, Dispatchable, GetDispatchInfo, PostDispatchInfo},
 	ensure,
@@ -250,6 +250,7 @@ pub mod pallet {
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
+	#[pallet::generate_storage_info]
 	pub struct Pallet<T>(_);
 
 	#[pallet::hooks]

@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{
-	codec::{Decode, Encode},
+	codec::{Decode, Encode, MaxEncodedLen},
 	traits::EnsureOrigin,
 };
 use sp_runtime::RuntimeDebug;
@@ -26,7 +26,7 @@ use sp_std::marker::PhantomData;
 use crate::*;
 
 /// Origin for modules that support DID-based authorization.
-#[derive(Clone, Decode, Encode, Eq, PartialEq, RuntimeDebug)]
+#[derive(Clone, Decode, Encode, Eq, PartialEq, RuntimeDebug, MaxEncodedLen, scale_info::TypeInfo)]
 pub struct DidRawOrigin<DidIdentifier, AccountId> {
 	pub id: DidIdentifier,
 	pub submitter: AccountId,
