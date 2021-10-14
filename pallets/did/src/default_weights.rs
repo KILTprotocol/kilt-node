@@ -78,8 +78,8 @@ pub trait WeightInfo {
 	fn remove_ed25519_key_agreement_key() -> Weight;
 	fn remove_sr25519_key_agreement_key() -> Weight;
 	fn remove_ecdsa_key_agreement_key() -> Weight;
-	fn signature_verification_sr(l: u32, ) -> Weight;
-	fn signature_verification_ed(l: u32, ) -> Weight;
+	fn signature_verification_sr25519(l: u32, ) -> Weight;
+	fn signature_verification_ed25519(l: u32, ) -> Weight;
 	fn signature_verification_ecdsa(l: u32, ) -> Weight;
 	fn reclaim_deposit() -> Weight;
 }
@@ -233,13 +233,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
-	fn signature_verification_sr(l: u32, ) -> Weight {
+	fn signature_verification_sr25519(l: u32, ) -> Weight {
 		(123_913_000_u64)
 			// Standard Error: 0
 			.saturating_add((4_000_u64).saturating_mul(l as Weight))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 	}
-	fn signature_verification_ed(l: u32, ) -> Weight {
+	fn signature_verification_ed25519(l: u32, ) -> Weight {
 		(67_995_000_u64)
 			// Standard Error: 0
 			.saturating_add((1_000_u64).saturating_mul(l as Weight))
@@ -406,13 +406,13 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
-	fn signature_verification_sr(l: u32, ) -> Weight {
+	fn signature_verification_sr25519(l: u32, ) -> Weight {
 		(123_913_000_u64)
 			// Standard Error: 0
 			.saturating_add((4_000_u64).saturating_mul(l as Weight))
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
 	}
-	fn signature_verification_ed(l: u32, ) -> Weight {
+	fn signature_verification_ed25519(l: u32, ) -> Weight {
 		(67_995_000_u64)
 			// Standard Error: 0
 			.saturating_add((1_000_u64).saturating_mul(l as Weight))

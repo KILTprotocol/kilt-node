@@ -39,7 +39,7 @@ const AUTHENTICATION_KEY_ID: KeyTypeId = KeyTypeId(*b"0000");
 const ATTESTATION_KEY_ID: KeyTypeId = KeyTypeId(*b"0001");
 const DELEGATION_KEY_ID: KeyTypeId = KeyTypeId(*b"0002");
 const UNUSED_KEY_ID: KeyTypeId = KeyTypeId(*b"1111");
-const MAX_SIGNATURE_BYTE_LENGTH: u32 = 5 * 1024 * 1024;
+const MAX_PAYLOAD_BYTE_LENGTH: u32 = 5 * 1024 * 1024;
 
 fn get_ed25519_public_authentication_key() -> ed25519::Public {
 	ed25519_generate(AUTHENTICATION_KEY_ID, None)
@@ -767,8 +767,8 @@ benchmarks! {
 		assert!(!Did::<T>::get(&did_subject).unwrap().key_agreement_keys.contains(&key_agreement_key_id));
 	}
 
-	signature_verification_sr {
-		let l in 1 .. MAX_SIGNATURE_BYTE_LENGTH;
+	signature_verification_sr25519 {
+		let l in 1 .. MAX_PAYLOAD_BYTE_LENGTH;
 
 		let payload: Vec<u8> = (0u8..u8::MAX).cycle().take(l.try_into().unwrap()).collect();
 		let block_number = T::BlockNumber::zero();
@@ -794,8 +794,8 @@ benchmarks! {
 		DidSignatureVerify::<T>::verify(&did_subject, &payload, &did_signature).expect("should verify");
 	}
 	verify {}
-	signature_verification_ed {
-		let l in 1 .. MAX_SIGNATURE_BYTE_LENGTH;
+	signature_verification_ed25519 {
+		let l in 1 .. MAX_PAYLOAD_BYTE_LENGTH;
 
 		let payload: Vec<u8> = (0u8..u8::MAX).cycle().take(l.try_into().unwrap()).collect();
 		let block_number = T::BlockNumber::zero();
@@ -822,7 +822,7 @@ benchmarks! {
 	}
 	verify {}
 	signature_verification_ecdsa {
-		let l in 1 .. MAX_SIGNATURE_BYTE_LENGTH;
+		let l in 1 .. MAX_PAYLOAD_BYTE_LENGTH;
 
 		let payload: Vec<u8> = (0u8..u8::MAX).cycle().take(l.try_into().unwrap()).collect();
 		let block_number = T::BlockNumber::zero();

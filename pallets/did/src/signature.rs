@@ -51,8 +51,8 @@ impl<T: Config> VerifyDelegateSignature for DidSignatureVerify<T> {
 	}
 
 	fn weight(payload_byte_length: usize) -> dispatch::Weight {
-		<T as Config>::WeightInfo::signature_verification_sr(payload_byte_length.saturated_into())
-			.max(<T as Config>::WeightInfo::signature_verification_ed(
+		<T as Config>::WeightInfo::signature_verification_sr25519(payload_byte_length.saturated_into())
+			.max(<T as Config>::WeightInfo::signature_verification_ed25519(
 				payload_byte_length.saturated_into(),
 			))
 			.max(<T as Config>::WeightInfo::signature_verification_ecdsa(

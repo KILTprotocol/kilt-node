@@ -195,13 +195,13 @@ impl<T: frame_system::Config> did::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
-	fn signature_verification_sr(l: u32, ) -> Weight {
+	fn signature_verification_sr25519(l: u32, ) -> Weight {
 		(133_928_000_u64)
 			// Standard Error: 0
 			.saturating_add((4_000_u64).saturating_mul(l as Weight))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 	}
-	fn signature_verification_ed(l: u32, ) -> Weight {
+	fn signature_verification_ed25519(l: u32, ) -> Weight {
 		(67_874_000_u64)
 			// Standard Error: 0
 			.saturating_add((1_000_u64).saturating_mul(l as Weight))
