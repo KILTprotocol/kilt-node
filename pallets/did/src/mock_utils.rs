@@ -43,9 +43,13 @@ pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> DidNewKeyAgreementKeySe
 	.expect("Failed to convert key_agreement_keys to BoundedBTreeSet")
 }
 
-pub fn generate_base_did_creation_details<T: Config>(did: DidIdentifierOf<T>) -> DidCreationDetails<T> {
+pub fn generate_base_did_creation_details<T: Config>(
+	did: DidIdentifierOf<T>,
+	submitter: AccountIdOf<T>,
+) -> DidCreationDetails<T> {
 	DidCreationDetails {
 		did,
+		submitter,
 		new_key_agreement_keys: BoundedBTreeSet::new(),
 		new_attestation_key: None,
 		new_delegation_key: None,
