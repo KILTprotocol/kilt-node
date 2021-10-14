@@ -22,7 +22,7 @@ use ctype::CtypeHashOf;
 use frame_support::{dispatch::DispatchResult, storage::bounded_btree_set::BoundedBTreeSet};
 use kilt_support::deposit::Deposit;
 
-use crate::{pallet::AccountIdOf, *};
+use crate::*;
 
 bitflags! {
 	/// Bitflags for permissions.
