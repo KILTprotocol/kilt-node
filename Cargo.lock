@@ -10937,7 +10937,6 @@ dependencies = [
  "hex-literal 0.3.3",
  "kilt-launch",
  "kilt-primitives",
- "kilt-support",
  "log",
  "pallet-aura",
  "pallet-authorship",
