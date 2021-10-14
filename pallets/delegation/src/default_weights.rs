@@ -57,39 +57,39 @@ pub trait WeightInfo {
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn create_hierarchy() -> Weight {
-		(55_479_000_u64)
+		(55_299_000_u64)
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	fn add_delegation() -> Weight {
-		(66_540_000_u64)
+		(66_125_000_u64)
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	fn revoke_delegation_root_child(r: u32, c: u32, ) -> Weight {
-		(24_373_000_u64)
-			// Standard Error: 53_000
-			.saturating_add((22_210_000_u64).saturating_mul(r as Weight))
-			// Standard Error: 53_000
-			.saturating_add((92_000_u64).saturating_mul(c as Weight))
+		(25_180_000_u64)
+			// Standard Error: 55_000
+			.saturating_add((21_858_000_u64).saturating_mul(r as Weight))
+			// Standard Error: 55_000
+			.saturating_add((32_000_u64).saturating_mul(c as Weight))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(r as Weight)))
 			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(r as Weight)))
 	}
 	fn revoke_delegation_leaf(r: u32, c: u32, ) -> Weight {
-		(45_545_000_u64)
-			// Standard Error: 25_000
-			.saturating_add((4_000_u64).saturating_mul(r as Weight))
-			// Standard Error: 25_000
-			.saturating_add((6_492_000_u64).saturating_mul(c as Weight))
+		(46_038_000_u64)
+			// Standard Error: 31_000
+			.saturating_add((16_000_u64).saturating_mul(r as Weight))
+			// Standard Error: 31_000
+			.saturating_add((6_274_000_u64).saturating_mul(c as Weight))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(c as Weight)))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn remove_delegation(r: u32, ) -> Weight {
-		(69_800_000_u64)
-			// Standard Error: 146_000
-			.saturating_add((45_931_000_u64).saturating_mul(r as Weight))
+		(69_409_000_u64)
+			// Standard Error: 88_000
+			.saturating_add((45_380_000_u64).saturating_mul(r as Weight))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(r as Weight)))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
@@ -100,39 +100,39 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 // For backwards compatibility and tests
 impl WeightInfo for () {
 	fn create_hierarchy() -> Weight {
-		(55_479_000_u64)
+		(55_299_000_u64)
 			.saturating_add(RocksDbWeight::get().reads(3_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
 	}
 	fn add_delegation() -> Weight {
-		(66_540_000_u64)
+		(66_125_000_u64)
 			.saturating_add(RocksDbWeight::get().reads(3_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
 	}
 	fn revoke_delegation_root_child(r: u32, c: u32, ) -> Weight {
-		(24_373_000_u64)
-			// Standard Error: 53_000
-			.saturating_add((22_210_000_u64).saturating_mul(r as Weight))
-			// Standard Error: 53_000
-			.saturating_add((92_000_u64).saturating_mul(c as Weight))
+		(25_180_000_u64)
+			// Standard Error: 55_000
+			.saturating_add((21_858_000_u64).saturating_mul(r as Weight))
+			// Standard Error: 55_000
+			.saturating_add((32_000_u64).saturating_mul(c as Weight))
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
 			.saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(r as Weight)))
 			.saturating_add(RocksDbWeight::get().writes((1_u64).saturating_mul(r as Weight)))
 	}
 	fn revoke_delegation_leaf(r: u32, c: u32, ) -> Weight {
-		(45_545_000_u64)
-			// Standard Error: 25_000
-			.saturating_add((4_000_u64).saturating_mul(r as Weight))
-			// Standard Error: 25_000
-			.saturating_add((6_492_000_u64).saturating_mul(c as Weight))
+		(46_038_000_u64)
+			// Standard Error: 31_000
+			.saturating_add((16_000_u64).saturating_mul(r as Weight))
+			// Standard Error: 31_000
+			.saturating_add((6_274_000_u64).saturating_mul(c as Weight))
 			.saturating_add(RocksDbWeight::get().reads(2_u64))
 			.saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(c as Weight)))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
 	fn remove_delegation(r: u32, ) -> Weight {
-		(69_800_000_u64)
-			// Standard Error: 146_000
-			.saturating_add((45_931_000_u64).saturating_mul(r as Weight))
+		(69_409_000_u64)
+			// Standard Error: 88_000
+			.saturating_add((45_380_000_u64).saturating_mul(r as Weight))
 			.saturating_add(RocksDbWeight::get().reads(2_u64))
 			.saturating_add(RocksDbWeight::get().reads((2_u64).saturating_mul(r as Weight)))
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
