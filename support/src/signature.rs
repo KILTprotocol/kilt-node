@@ -82,8 +82,8 @@ pub struct EqualVerify<A, B>(PhantomData<(A, B)>);
 #[cfg(any(test, feature = "mock", feature = "runtime-benchmarks"))]
 impl<Account, Payload> VerifySignature for EqualVerify<Account, Payload>
 where
-	Account: PartialEq + Clone,
-	Payload: PartialEq + Clone,
+	Account: PartialEq,
+	Payload: PartialEq,
 {
 	type SignerId = Account;
 
