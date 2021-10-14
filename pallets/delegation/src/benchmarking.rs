@@ -321,7 +321,7 @@ benchmarks! {
 
 	// worst case is achieved by removing the root node, since `is_delegating` is not called in remove extrinsic,
 	remove_delegation {
-		let r in 1 .. T::MaxRevocations::get();
+		let r in 1 .. T::MaxRemovals::get();
 		let (root_acc, hierarchy_id, _, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
 		let root_owner = T::AccountId::from(root_acc).into();
 		let root_node = DelegationNodes::<T>::get(hierarchy_id).expect("Root hierarchy node should be present on chain.");

@@ -587,9 +587,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Roots, C * Delegations, C * Children.
 		/// - Writes: Roots, 2 * C * Delegations
 		/// # </weight>
-		#[pallet::weight(
-			<T as Config>::WeightInfo::remove_delegation_root_child(*max_removals)
-				.max(<T as Config>::WeightInfo::remove_delegation_leaf(*max_removals)))]
+		#[pallet::weight(<T as Config>::WeightInfo::remove_delegation(*max_removals))]
 		pub fn remove_delegation(
 			origin: OriginFor<T>,
 			delegation_id: DelegationNodeIdOf<T>,
@@ -620,11 +618,7 @@ pub mod pallet {
 			}
 
 			// Add worst case reads from `is_delegating`
-			Ok(Some(
-				<T as Config>::WeightInfo::remove_delegation_root_child(removal_checks)
-					.max(<T as Config>::WeightInfo::remove_delegation_leaf(removal_checks)),
-			)
-			.into())
+			Ok(Some(<T as Config>::WeightInfo::remove_delegation(removal_checks)).into())
 		}
 	}
 }
