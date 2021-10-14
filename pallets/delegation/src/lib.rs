@@ -112,7 +112,7 @@ pub mod pallet {
 	use frame_support::{pallet_prelude::*, traits::Currency};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
-		signature::{SignatureVerificationError, VerifyDelegateSignature},
+		signature::{SignatureVerificationError, VerifySignature},
 		traits::CallSources,
 	};
 
@@ -130,7 +130,7 @@ pub mod pallet {
 
 	/// Type of the signature that the delegate generates over the delegation
 	/// information.
-	pub type DelegateSignatureTypeOf<T> = <DelegationSignatureVerificationOf<T> as VerifyDelegateSignature>::Signature;
+	pub type DelegateSignatureTypeOf<T> = <DelegationSignatureVerificationOf<T> as VerifySignature>::Signature;
 
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
@@ -141,8 +141,8 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config {
 		type Signature: Parameter;
-		type DelegationSignatureVerification: VerifyDelegateSignature<
-			DelegateId = Self::DelegationEntityId,
+		type DelegationSignatureVerification: VerifySignature<
+			SignerId = Self::DelegationEntityId,
 			Payload = Vec<u8>,
 			Signature = Self::Signature,
 		>;

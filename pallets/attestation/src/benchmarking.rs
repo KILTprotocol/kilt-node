@@ -20,7 +20,7 @@ use delegation::{benchmarking::setup_delegations, Permissions};
 use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
 use frame_support::traits::{Currency, Get};
 use frame_system::RawOrigin;
-use kilt_support::signature::VerifyDelegateSignature;
+use kilt_support::signature::VerifySignature;
 use sp_core::sr25519;
 use sp_runtime::traits::Hash;
 use sp_std::num::NonZeroU32;
@@ -37,9 +37,9 @@ benchmarks! {
 		T::DelegationNodeId: From<T::Hash>,
 		T::CtypeCreatorId: From<T::AccountId>,
 		T::DelegationEntityId: From<T::AccountId>,
-		<<T as delegation::Config>::DelegationSignatureVerification as VerifyDelegateSignature>::Signature: From<(
+		<<T as delegation::Config>::DelegationSignatureVerification as VerifySignature>::Signature: From<(
 			T::AccountId,
-			<<T as delegation::Config>::DelegationSignatureVerification as VerifyDelegateSignature>::Payload,
+			<<T as delegation::Config>::DelegationSignatureVerification as VerifySignature>::Payload,
 		)>,
 	}
 

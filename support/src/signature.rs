@@ -21,52 +21,51 @@ use frame_support::dispatch::Weight;
 #[cfg(any(test, feature = "mock", feature = "runtime-benchmarks"))]
 use {sp_runtime::traits::Zero, sp_std::marker::PhantomData};
 
-/// The result that the delegation pallet expects from the implementer of the
-/// delegate's signature verification operation.
+/// The Result of the signature verification.
 pub type SignatureVerificationResult = Result<(), SignatureVerificationError>;
 
-/// Types of errors the signature verification is expected to generate.
+/// The Errors that can occur during signature verification.
 #[derive(Debug, Clone, Copy)]
 pub enum SignatureVerificationError {
-	/// The delegate's information is not present on chain.
+	/// The signers information is not present on chain.
 	SignerInformationNotPresent,
-	/// The signature over the delegation information is invalid.
+	/// The signature is not valid for the given payload.
 	SignatureInvalid,
 }
 
-/// Trait to implement to provide to the delegation pallet signature
-/// verification over a delegation details.
-pub trait VerifyDelegateSignature {
-	/// The type of the delegate identifier.
-	type DelegateId;
-	/// The type of the encoded delegation details.
+/// A signature verification implementation.
+pub trait VerifySignature {
+	/// The identifier of the signer.
+	type SignerId;
+	/// The type of the payload that can be verified with the implementation.
 	type Payload;
-	/// The type of the signature generated.
+	/// The type of the signature that is expected by the implementation.
 	type Signature;
 
 	/// Verifies that the signature matches the payload and has been generated
-	/// by the delegate.
+	/// by the signer.
 	fn verify(
-		delegate: &Self::DelegateId,
+		signer: &Self::SignerId,
 		payload: &Self::Payload,
 		signature: &Self::Signature,
 	) -> SignatureVerificationResult;
 
+	/// The weight if the signature verification.
 	fn weight(payload_byte_length: usize) -> Weight;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
 pub struct AlwaysVerify<A, P, S>(PhantomData<(A, P, S)>);
 #[cfg(feature = "runtime-benchmarks")]
-impl<Account, Payload, Signature: Default> VerifyDelegateSignature for AlwaysVerify<Account, Payload, Signature> {
-	type DelegateId = Account;
+impl<Account, Payload, Signature: Default> VerifySignature for AlwaysVerify<Account, Payload, Signature> {
+	type SignerId = Account;
 
 	type Payload = Payload;
 
 	type Signature = Signature;
 
 	fn verify(
-		_delegate: &Self::DelegateId,
+		_delegate: &Self::SignerId,
 		_payload: &Self::Payload,
 		_signature: &Self::Signature,
 	) -> SignatureVerificationResult {
@@ -81,19 +80,19 @@ impl<Account, Payload, Signature: Default> VerifyDelegateSignature for AlwaysVer
 #[cfg(any(test, feature = "mock", feature = "runtime-benchmarks"))]
 pub struct EqualVerify<A, B>(PhantomData<(A, B)>);
 #[cfg(any(test, feature = "mock", feature = "runtime-benchmarks"))]
-impl<Account, Payload> VerifyDelegateSignature for EqualVerify<Account, Payload>
+impl<Account, Payload> VerifySignature for EqualVerify<Account, Payload>
 where
 	Account: PartialEq + Clone,
 	Payload: PartialEq + Clone,
 {
-	type DelegateId = Account;
+	type SignerId = Account;
 
 	type Payload = Payload;
 
 	type Signature = (Account, Payload);
 
 	fn verify(
-		delegate: &Self::DelegateId,
+		delegate: &Self::SignerId,
 		payload: &Self::Payload,
 		signature: &Self::Signature,
 	) -> SignatureVerificationResult {

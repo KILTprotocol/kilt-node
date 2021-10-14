@@ -24,7 +24,7 @@ use frame_support::{
 	traits::{Currency, Get},
 };
 use frame_system::RawOrigin;
-use kilt_support::signature::VerifyDelegateSignature;
+use kilt_support::signature::VerifySignature;
 use sp_core::{offchain::KeyTypeId, sr25519};
 use sp_io::crypto::sr25519_generate;
 use sp_std::{num::NonZeroU32, vec::Vec};
@@ -103,9 +103,9 @@ where
 	T::CtypeCreatorId: From<T::AccountId>,
 	T::DelegationNodeId: From<T::Hash>,
 	T::DelegationEntityId: From<T::AccountId>,
-	<<T as Config>::DelegationSignatureVerification as VerifyDelegateSignature>::Signature: From<(
+	<<T as Config>::DelegationSignatureVerification as VerifySignature>::Signature: From<(
 		T::AccountId,
-		<<T as Config>::DelegationSignatureVerification as VerifyDelegateSignature>::Payload,
+		<<T as Config>::DelegationSignatureVerification as VerifySignature>::Payload,
 	)>,
 {
 	if level == 0 {
@@ -181,9 +181,9 @@ where
 	T::DelegationNodeId: From<T::Hash>,
 	T::CtypeCreatorId: From<T::AccountId>,
 	T::DelegationEntityId: From<T::AccountId>,
-	<<T as Config>::DelegationSignatureVerification as VerifyDelegateSignature>::Signature: From<(
+	<<T as Config>::DelegationSignatureVerification as VerifySignature>::Signature: From<(
 		T::AccountId,
-		<<T as Config>::DelegationSignatureVerification as VerifyDelegateSignature>::Payload,
+		<<T as Config>::DelegationSignatureVerification as VerifySignature>::Payload,
 	)>,
 {
 	let (
@@ -217,9 +217,9 @@ benchmarks! {
 		T::DelegationNodeId: From<T::Hash>,
 		<T as frame_system::Config>::Origin: From<RawOrigin<<T as pallet::Config>::DelegationEntityId>>,
 		T::CtypeCreatorId: From<T::AccountId>,
-		<<T as Config>::DelegationSignatureVerification as VerifyDelegateSignature>::Signature: From<(
+		<<T as Config>::DelegationSignatureVerification as VerifySignature>::Signature: From<(
 			T::AccountId,
-			<<T as Config>::DelegationSignatureVerification as VerifyDelegateSignature>::Payload,
+			<<T as Config>::DelegationSignatureVerification as VerifySignature>::Payload,
 		)>,
 	}
 

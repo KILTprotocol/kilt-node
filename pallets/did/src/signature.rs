@@ -17,20 +17,20 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::dispatch;
-use kilt_support::signature::{SignatureVerificationError, SignatureVerificationResult, VerifyDelegateSignature};
+use kilt_support::signature::{SignatureVerificationError, SignatureVerificationResult, VerifySignature};
 use sp_runtime::SaturatedConversion;
 use sp_std::{marker::PhantomData, vec::Vec};
 
 use crate::{Config, Did, DidError, DidSignature, DidVerificationKeyRelationship, Pallet, WeightInfo};
 
 pub struct DidSignatureVerify<T>(PhantomData<T>);
-impl<T: Config> VerifyDelegateSignature for DidSignatureVerify<T> {
-	type DelegateId = <T as Config>::DidIdentifier;
+impl<T: Config> VerifySignature for DidSignatureVerify<T> {
+	type SignerId = <T as Config>::DidIdentifier;
 	type Payload = Vec<u8>;
 	type Signature = DidSignature;
 
 	fn verify(
-		delegate: &Self::DelegateId,
+		delegate: &Self::SignerId,
 		payload: &Self::Payload,
 		signature: &Self::Signature,
 	) -> SignatureVerificationResult {
