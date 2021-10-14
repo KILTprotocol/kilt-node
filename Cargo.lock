@@ -377,7 +377,7 @@ checksum = "065374052e7df7ee4047b1160cca5e1467a12351a40b3da123c870ba0b8eda2a"
 
 [[package]]
 name = "attestation"
-version = "0.26.1"
+version = "0.26.2"
 dependencies = [
  "ctype",
  "delegation",
@@ -1444,7 +1444,7 @@ dependencies = [
 
 [[package]]
 name = "ctype"
-version = "0.26.1"
+version = "0.26.2"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -1855,7 +1855,7 @@ dependencies = [
 
 [[package]]
 name = "delegation"
-version = "0.26.1"
+version = "0.26.2"
 dependencies = [
  "bitflags",
  "ctype",
@@ -1915,7 +1915,7 @@ dependencies = [
 
 [[package]]
 name = "did"
-version = "0.26.1"
+version = "0.26.2"
 dependencies = [
  "ctype",
  "env_logger 0.8.4",
@@ -3639,7 +3639,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-parachain"
-version = "0.26.1"
+version = "0.26.2"
 dependencies = [
  "cumulus-client-cli",
  "cumulus-client-collator",
@@ -4520,7 +4520,7 @@ checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
 
 [[package]]
 name = "mashnet-node"
-version = "0.26.1"
+version = "0.26.2"
 dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
@@ -4569,7 +4569,7 @@ dependencies = [
 
 [[package]]
 name = "mashnet-node-runtime"
-version = "0.26.1"
+version = "0.26.2"
 dependencies = [
  "attestation",
  "bitflags",
@@ -6483,7 +6483,7 @@ checksum = "d4fd5641d01c8f18a23da7b6fe29298ff4b55afcccdf78973b24cf3175fee32e"
 
 [[package]]
 name = "peregrine-runtime"
-version = "0.26.1"
+version = "0.26.2"
 dependencies = [
  "attestation",
  "bitflags",
@@ -10899,7 +10899,7 @@ checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 
 [[package]]
 name = "spiritnet-runtime"
-version = "0.26.1"
+version = "0.26.2"
 dependencies = [
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
