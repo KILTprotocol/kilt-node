@@ -100,10 +100,7 @@ fn generate_base_did_call_operation<T: Config>(
 	}
 }
 
-//TODO: We might want to extract the logic about which key is the longest
-// encoded and which key takes the longest to verify and always use that.
 benchmarks! {
-
 	where_clause {
 		where
 		T::DidIdentifier: From<AccountId>,
