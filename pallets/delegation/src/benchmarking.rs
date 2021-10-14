@@ -123,8 +123,8 @@ where
 		let hash: Vec<u8> =
 			Pallet::<T>::calculate_delegation_creation_hash(&delegation_id, &root_id, &parent_id, &permissions)
 				.encode();
-		// Either EqualVerify or AlwaysVerify should be used for benchmarks. Therefore we build a
-		// signature that can be verified by both.
+		// Either EqualVerify or AlwaysVerify should be used for benchmarks. Therefore
+		// we build a signature that can be verified by both.
 		let sig = (delegation_acc_id.clone(), hash.clone()).into();
 
 		// add delegation from delegate to parent
