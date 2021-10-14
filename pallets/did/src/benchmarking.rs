@@ -117,7 +117,7 @@ benchmarks! {
 		let did_public_att_key = get_ed25519_public_attestation_key();
 		let did_public_del_key = get_ed25519_public_delegation_key();
 
-		let mut did_creation_details = generate_base_did_creation_details::<T>(did_subject.clone());
+		let mut did_creation_details = generate_base_did_creation_details::<T>(did_subject.clone(), submitter.clone());
 		did_creation_details.new_key_agreement_keys = did_key_agreement_keys;
 		did_creation_details.new_attestation_key = Some(DidVerificationKey::from(did_public_att_key));
 		did_creation_details.new_delegation_key = Some(DidVerificationKey::from(did_public_del_key));
@@ -163,7 +163,7 @@ benchmarks! {
 		let did_public_att_key = get_sr25519_public_attestation_key();
 		let did_public_del_key = get_sr25519_public_delegation_key();
 
-		let mut did_creation_details = generate_base_did_creation_details::<T>(did_subject.clone());
+		let mut did_creation_details = generate_base_did_creation_details::<T>(did_subject.clone(), submitter.clone());
 		did_creation_details.new_key_agreement_keys = did_key_agreement_keys;
 		did_creation_details.new_attestation_key = Some(DidVerificationKey::from(did_public_att_key));
 		did_creation_details.new_delegation_key = Some(DidVerificationKey::from(did_public_del_key));
@@ -209,7 +209,7 @@ benchmarks! {
 		let did_public_att_key = get_ecdsa_public_attestation_key();
 		let did_public_del_key = get_ecdsa_public_delegation_key();
 
-		let mut did_creation_details = generate_base_did_creation_details::<T>(did_subject.clone());
+		let mut did_creation_details = generate_base_did_creation_details::<T>(did_subject.clone(), submitter.clone());
 		did_creation_details.new_key_agreement_keys = did_key_agreement_keys;
 		did_creation_details.new_attestation_key = Some(DidVerificationKey::from(did_public_att_key.clone()));
 		did_creation_details.new_delegation_key = Some(DidVerificationKey::from(did_public_del_key.clone()));

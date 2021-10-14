@@ -147,7 +147,8 @@ pub mod pallet {
 		traits::{Currency, ExistenceRequirement, Imbalance, ReservableCurrency},
 	};
 	use frame_system::pallet_prelude::*;
-	use kilt_support::{deposit::Deposit, traits::CallSources};
+	use kilt_support::traits::CallSources;
+	use sp_runtime::traits::BadOrigin;
 
 	/// Reference to a payload of data of variable size.
 	pub type Payload = [u8];
@@ -448,6 +449,8 @@ pub mod pallet {
 		pub fn create(origin: OriginFor<T>, details: DidCreationDetails<T>, signature: DidSignature) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
+			ensure!(sender == details.submitter, BadOrigin);
+
 			let did_identifier = details.did.clone();
 
 			// Check the free balance before we do any heavy work.
@@ -473,15 +476,8 @@ pub mod pallet {
 				.verify_and_recover_signature(&details.encode(), &signature)
 				.map_err(Error::<T>::from)?;
 
-			let did_entry = DidDetails::from_creation_details(
-				details,
-				account_did_auth_key,
-				Deposit {
-					owner: sender.clone(),
-					amount: T::Deposit::get(),
-				},
-			)
-			.map_err(Error::<T>::from)?;
+			let did_entry =
+				DidDetails::from_creation_details(details, account_did_auth_key).map_err(Error::<T>::from)?;
 
 			// *** No Fail beyond this call ***
 			CurrencyOf::<T>::reserve(&did_entry.deposit.owner, did_entry.deposit.amount)?;

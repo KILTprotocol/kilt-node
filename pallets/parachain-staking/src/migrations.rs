@@ -30,6 +30,7 @@ mod v2;
 mod v3;
 mod v4;
 mod v5;
+mod v6;
 
 /// A trait that allows version migrators to access the underlying pallet's
 /// context, e.g., its Config trait.
@@ -55,6 +56,7 @@ pub enum StakingStorageVersion {
 	V3_0_0, // Update InflationConfig
 	V4,     // Sort TopCandidates and parachain-stakings by amount
 	V5,     // Remove SelectedCandidates, Count Candidates
+	V6,     // Fix delegator replacement bug
 }
 
 #[cfg(feature = "try-runtime")]
@@ -87,7 +89,8 @@ impl<T: Config> VersionMigratorTrait<T> for StakingStorageVersion {
 			Self::V2_0_0 => v3::pre_migrate::<T>(),
 			Self::V3_0_0 => v4::pre_migrate::<T>(),
 			Self::V4 => v5::pre_migrate::<T>(),
-			Self::V5 => Ok(()),
+			Self::V5 => v6::pre_migrate::<T>(),
+			Self::V6 => Ok(()),
 		}
 	}
 
@@ -98,7 +101,8 @@ impl<T: Config> VersionMigratorTrait<T> for StakingStorageVersion {
 			Self::V2_0_0 => v3::migrate::<T>(),
 			Self::V3_0_0 => v4::migrate::<T>(),
 			Self::V4 => v5::migrate::<T>(),
-			Self::V5 => Weight::zero(),
+			Self::V5 => v6::migrate::<T>(),
+			Self::V6 => Weight::zero(),
 		}
 	}
 
@@ -111,7 +115,8 @@ impl<T: Config> VersionMigratorTrait<T> for StakingStorageVersion {
 			Self::V2_0_0 => v3::post_migrate::<T>(),
 			Self::V3_0_0 => v4::post_migrate::<T>(),
 			Self::V4 => v5::post_migrate::<T>(),
-			Self::V5 => Ok(()),
+			Self::V5 => v6::post_migrate::<T>(),
+			Self::V6 => Ok(()),
 		}
 	}
 }
@@ -133,7 +138,8 @@ impl<T: Config> StakingStorageMigrator<T> {
 			// Migration happens naturally, no need to point to the latest version
 			StakingStorageVersion::V3_0_0 => Some(StakingStorageVersion::V4),
 			StakingStorageVersion::V4 => Some(StakingStorageVersion::V5),
-			StakingStorageVersion::V5 => None,
+			StakingStorageVersion::V5 => Some(StakingStorageVersion::V6),
+			StakingStorageVersion::V6 => None,
 		}
 	}
 

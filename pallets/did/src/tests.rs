@@ -18,7 +18,10 @@
 
 use frame_support::{assert_err, assert_noop, assert_ok, traits::Currency};
 use sp_core::*;
-use sp_runtime::{traits::Zero, SaturatedConversion};
+use sp_runtime::{
+	traits::{BadOrigin, Zero},
+	SaturatedConversion,
+};
 use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom};
 
 use crate::{self as did, mock::*, mock_utils::*, AccountIdOf};
@@ -30,7 +33,7 @@ fn check_successful_simple_ed25519_creation() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let auth_did_key = did::DidVerificationKey::from(auth_key.public());
-	let details = generate_base_did_creation_details::<Test>(alice_did.clone());
+	let details = generate_base_did_creation_details::<Test>(alice_did.clone(), ACCOUNT_00);
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
@@ -72,7 +75,7 @@ fn check_successful_simple_sr25519_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let auth_did_key = did::DidVerificationKey::from(auth_key.public());
-	let details = generate_base_did_creation_details::<Test>(alice_did.clone());
+	let details = generate_base_did_creation_details::<Test>(alice_did.clone(), ACCOUNT_00);
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
@@ -114,7 +117,7 @@ fn check_successful_simple_ecdsa_creation() {
 	let auth_key = get_ecdsa_authentication_key(true);
 	let alice_did = get_did_identifier_from_ecdsa_key(auth_key.public());
 	let auth_did_key = did::DidVerificationKey::from(auth_key.public());
-	let details = generate_base_did_creation_details::<Test>(alice_did.clone());
+	let details = generate_base_did_creation_details::<Test>(alice_did.clone(), ACCOUNT_00);
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
@@ -165,7 +168,7 @@ fn check_successful_complete_creation() {
 	.expect("Exceeded BoundedBTreeSet bounds when creating new key agreement keys");
 	let del_key = get_sr25519_delegation_key(true);
 	let att_key = get_ecdsa_attestation_key(true);
-	let mut details = generate_base_did_creation_details::<Test>(alice_did.clone());
+	let mut details = generate_base_did_creation_details::<Test>(alice_did.clone(), ACCOUNT_00);
 	details.new_key_agreement_keys = enc_keys.clone();
 	details.new_attestation_key = Some(did::DidVerificationKey::from(att_key.public()));
 	details.new_delegation_key = Some(did::DidVerificationKey::from(del_key.public()));
@@ -235,7 +238,7 @@ fn check_duplicate_did_creation() {
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let auth_did_key = did::DidVerificationKey::from(auth_key.public());
 	let mock_did = generate_base_did_details::<Test>(auth_did_key);
-	let details = generate_base_did_creation_details::<Test>(alice_did.clone());
+	let details = generate_base_did_creation_details::<Test>(alice_did.clone(), ACCOUNT_00);
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
@@ -255,10 +258,37 @@ fn check_duplicate_did_creation() {
 }
 
 #[test]
+fn check_unauthorised_submitter_did_creation_error() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let auth_did_key = did::DidVerificationKey::from(auth_key.public());
+	let mock_did = generate_base_did_details::<Test>(auth_did_key);
+	// Use ACCOUNT_01 to generate the DID creation operation
+	let details = generate_base_did_creation_details::<Test>(alice_did.clone(), ACCOUNT_01);
+
+	let signature = auth_key.sign(details.encode().as_ref());
+
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
+		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.with_dids(vec![(alice_did, mock_did)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				// Use ACCOUNT_00 to submit the transaction
+				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
+				BadOrigin
+			);
+		});
+}
+
+#[test]
 fn create_fail_insufficient_balance() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let details = generate_base_did_creation_details::<Test>(alice_did);
+	let details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
@@ -274,7 +304,7 @@ fn create_fail_insufficient_balance() {
 fn check_did_already_deleted_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let details = generate_base_did_creation_details::<Test>(alice_did.clone());
+	let details = generate_base_did_creation_details::<Test>(alice_did.clone(), ACCOUNT_00);
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
@@ -300,7 +330,7 @@ fn check_invalid_signature_format_did_creation() {
 	// Using an Ed25519 key where an Sr25519 is expected
 	let invalid_key = get_ed25519_authentication_key(true);
 	// DID creation contains auth_key, but signature is generated using invalid_key
-	let details = generate_base_did_creation_details::<Test>(alice_did);
+	let details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
 
 	let signature = invalid_key.sign(details.encode().as_ref());
 
@@ -323,7 +353,7 @@ fn check_invalid_signature_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let alternative_key = get_sr25519_authentication_key(false);
-	let details = generate_base_did_creation_details::<Test>(alice_did);
+	let details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
 
 	let signature = alternative_key.sign(details.encode().as_ref());
 
@@ -346,7 +376,7 @@ fn check_swapped_did_subject_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let swapped_key = get_sr25519_authentication_key(false);
 	let swapped_did = get_did_identifier_from_sr25519_key(swapped_key.public());
-	let details = generate_base_did_creation_details::<Test>(swapped_did);
+	let details = generate_base_did_creation_details::<Test>(swapped_did, ACCOUNT_00);
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
@@ -371,7 +401,7 @@ fn check_max_limit_key_agreement_keys_did_creation() {
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	// Max keys allowed + 1
 	let enc_keys = get_key_agreement_keys::<Test>(MaxNewKeyAgreementKeys::get().saturating_add(1));
-	let mut details = generate_base_did_creation_details::<Test>(alice_did);
+	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
 	details.new_key_agreement_keys = enc_keys;
 
 	let signature = auth_key.sign(details.encode().as_ref());
@@ -1350,7 +1380,7 @@ fn check_successful_deletion() {
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 
 			// Re-adding the same DID identifier should fail.
-			let details = generate_base_did_creation_details::<Test>(alice_did.clone());
+			let details = generate_base_did_creation_details::<Test>(alice_did.clone(), ACCOUNT_00);
 
 			let signature = auth_key.sign(details.encode().as_ref());
 
@@ -1416,7 +1446,7 @@ fn check_successful_reclaiming() {
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 
 			// Re-adding the same DID identifier should fail.
-			let details = generate_base_did_creation_details::<Test>(alice_did.clone());
+			let details = generate_base_did_creation_details::<Test>(alice_did.clone(), ACCOUNT_00);
 
 			let signature = auth_key.sign(details.encode().as_ref());
 

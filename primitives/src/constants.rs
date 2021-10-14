@@ -149,7 +149,7 @@ pub mod governance {
 	#[cfg(feature = "fast-gov")]
 	pub const ENACTMENT_PERIOD: BlockNumber = 8 * MINUTES;
 	#[cfg(not(feature = "fast-gov"))]
-	pub const ENACTMENT_PERIOD: BlockNumber = 8 * DAYS;
+	pub const ENACTMENT_PERIOD: BlockNumber = DAYS;
 
 	#[cfg(feature = "fast-gov")]
 	pub const COOLOFF_PERIOD: BlockNumber = 7 * MINUTES;
@@ -165,11 +165,6 @@ pub mod governance {
 	pub const ROTATION_PERIOD: BlockNumber = 80 * MINUTES;
 	#[cfg(not(feature = "fast-gov"))]
 	pub const ROTATION_PERIOD: BlockNumber = 80 * HOURS;
-
-	#[cfg(feature = "fast-gov")]
-	pub const CHALLENGE_PERIOD: BlockNumber = 7 * MINUTES;
-	#[cfg(not(feature = "fast-gov"))]
-	pub const CHALLENGE_PERIOD: BlockNumber = 7 * DAYS;
 
 	#[cfg(feature = "fast-gov")]
 	pub const TERM_DURATION: BlockNumber = 15 * MINUTES;
