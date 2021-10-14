@@ -4,7 +4,7 @@ description = "Enables creating and revoking root nodes of delegation hierarchie
 edition = "2018"
 name = "delegation"
 repository = "https://github.com/KILTprotocol/mashnet-node"
-version = "0.26.1"
+version = "0.26.2"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
@@ -13,7 +13,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 substrate-wasm-builder-runner = {version = "3.0.0"}
 
 [dev-dependencies]
-ctype = {features = ["mock"], path = "../ctype", version = "0.26.1"}
+ctype = {features = ["mock"], path = "../ctype", version = "0.26.2"}
 env_logger = {version = "0.8.4"}
 kilt-primitives = {default-features = false, path = "../../primitives"}
 pallet-balances = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
@@ -23,7 +23,7 @@ sp-keystore = {branch = "polkadot-v0.9.10", default-features = false, git = "htt
 
 [dependencies]
 # Internal dependencies
-ctype = {default-features = false, path = "../ctype", version = "0.26.1"}
+ctype = {default-features = false, path = "../ctype", version = "0.26.2"}
 kilt-primitives = {default-features = false, path = "../../primitives"}
 kilt-support = {default-features = false, path = "../../support"}
 
