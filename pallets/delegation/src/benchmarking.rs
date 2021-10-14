@@ -123,6 +123,8 @@ where
 		let hash: Vec<u8> =
 			Pallet::<T>::calculate_delegation_creation_hash(&delegation_id, &root_id, &parent_id, &permissions)
 				.encode();
+		// Either EqualVerify or AlwaysVerify should be used for benchmarks. Therefore we build a
+		// signature that can be verified by both.
 		let sig = (delegation_acc_id.clone(), hash.clone()).into();
 
 		// add delegation from delegate to parent
@@ -222,8 +224,6 @@ benchmarks! {
 	}
 
 	create_hierarchy {
-		assert_eq!(DelegationHierarchies::<T>::iter().count(), 0);
-
 		let caller: T::AccountId = account("caller", 0, SEED);
 		let ctype = <T::Hash as Default>::default();
 		let delegation = generate_delegation_id::<T>(0);
@@ -259,6 +259,9 @@ benchmarks! {
 
 		let perm: Permissions = Permissions::ATTEST | Permissions::DELEGATE;
 		let hash_root = Pallet::<T>::calculate_delegation_creation_hash(&delegation_id, &hierarchy_id, &parent_id, &perm);
+
+		// Either EqualVerify or AlwaysVerify should be used for benchmarks. Therefore we build a
+		// signature that can be verified by both.
 		let sig = (delegate_acc_id.clone(), AsRef::<[u8]>::as_ref(&hash_root).to_vec()).into();
 
 		let leaf_acc_id: T::AccountId = root_public.into();
