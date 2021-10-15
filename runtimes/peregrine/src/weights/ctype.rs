@@ -57,7 +57,7 @@ use sp_std::marker::PhantomData;
 /// Weights for ctype using the recommended hardware.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> ctype::WeightInfo for WeightInfo<T> {
-	fn add() -> Weight {
+	fn add(x: u32) -> Weight {
 		32_491_000_u64
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
