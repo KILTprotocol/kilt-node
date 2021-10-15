@@ -24,7 +24,6 @@ use sp_std::marker::PhantomData;
 
 use crate::*;
 
-mod v1;
 mod v2;
 
 /// Storage version of the DID pallet.
@@ -52,7 +51,7 @@ impl DidStorageVersion {
 // old version anymore.
 impl Default for DidStorageVersion {
 	fn default() -> Self {
-		Self::V3
+		Self::V2
 	}
 }
 
@@ -61,7 +60,7 @@ impl<T: Config> VersionMigratorTrait<T> for DidStorageVersion {
 	#[cfg(feature = "try-runtime")]
 	fn pre_migrate(&self) -> Result<(), &'static str> {
 		match *self {
-			Self::V1 => v1::pre_migrate::<T>(),
+			Self::V1 => Ok(()),
 			Self::V2 => v2::pre_migrate::<T>(),
 			Self::V3 => Ok(()),
 		}
@@ -70,7 +69,7 @@ impl<T: Config> VersionMigratorTrait<T> for DidStorageVersion {
 	// It runs the right migration logic depending on the current storage version.
 	fn migrate(&self) -> Weight {
 		match *self {
-			Self::V1 => v1::migrate::<T>(),
+			Self::V1 => Weight::zero(),
 			Self::V2 => v2::migrate::<T>(),
 			Self::V3 => Weight::zero(),
 		}
@@ -81,7 +80,7 @@ impl<T: Config> VersionMigratorTrait<T> for DidStorageVersion {
 	#[cfg(feature = "try-runtime")]
 	fn post_migrate(&self) -> Result<(), &'static str> {
 		match *self {
-			Self::V1 => v1::post_migrate::<T>(),
+			Self::V1 => Ok(()),
 			Self::V2 => v2::post_migrate::<T>(),
 			Self::V3 => Ok(()),
 		}
@@ -102,7 +101,7 @@ impl<T: Config> DidStorageMigrator<T> {
 		// If the version current deployed is at least v1, there is no more migrations
 		// to run (other than the one from v1).
 		match current {
-			DidStorageVersion::V1 => Some(DidStorageVersion::V2),
+			DidStorageVersion::V1 => None,
 			DidStorageVersion::V2 => Some(DidStorageVersion::V3),
 			DidStorageVersion::V3 => None,
 		}
@@ -115,6 +114,9 @@ impl<T: Config> DidStorageMigrator<T> {
 		// Don't need to check for any other pre_migrate, as in try-runtime it is also
 		// called in the migrate() function. Same applies for post_migrate checks for
 		// each version migrator.
+
+		let storage_version = StorageVersion::<T>::get();
+		assert!(storage_version == DidStorageVersion::default() || storage_version == DidStorageVersion::latest());
 
 		Ok(())
 	}

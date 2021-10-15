@@ -16,5 +16,4 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-pub(crate) mod v1;
 pub(crate) mod v2;
