@@ -22,8 +22,6 @@ use sp_std::marker::PhantomData;
 
 use crate::*;
 
-mod v1;
-
 /// Storage version of the delegation pallet.
 #[derive(Copy, Clone, Encode, Eq, Decode, Ord, PartialEq, PartialOrd)]
 pub enum DelegationStorageVersion {
@@ -57,7 +55,7 @@ impl<T: Config> VersionMigratorTrait<T> for DelegationStorageVersion {
 	#[cfg(feature = "try-runtime")]
 	fn pre_migrate(&self) -> Result<(), &'static str> {
 		match *self {
-			Self::V1 => v1::pre_migrate::<T>(),
+			Self::V1 => Ok(()),
 			Self::V2 => Ok(()),
 		}
 	}
@@ -65,8 +63,8 @@ impl<T: Config> VersionMigratorTrait<T> for DelegationStorageVersion {
 	// It runs the right migration logic depending on the current storage version.
 	fn migrate(&self) -> Weight {
 		match *self {
-			Self::V1 => v1::migrate::<T>(),
-			Self::V2 => 0u64,
+			Self::V1 => Weight::zero(),
+			Self::V2 => Weight::zero(),
 		}
 	}
 
@@ -75,7 +73,7 @@ impl<T: Config> VersionMigratorTrait<T> for DelegationStorageVersion {
 	#[cfg(feature = "try-runtime")]
 	fn post_migrate(&self) -> Result<(), &'static str> {
 		match *self {
-			Self::V1 => v1::post_migrate::<T>(),
+			Self::V1 => Ok(()),
 			Self::V2 => Ok(()),
 		}
 	}
@@ -107,6 +105,12 @@ impl<T: Config> DelegationStorageMigrator<T> {
 		// Don't need to check for any other pre_migrate, as in try-runtime it is also
 		// called in the migrate() function. Same applies for post_migrate checks for
 		// each version migrator.
+
+		let storage_version = StorageVersion::<T>::get();
+		assert!(
+			storage_version == DelegationStorageVersion::default()
+				|| storage_version == DelegationStorageVersion::latest()
+		);
 
 		Ok(())
 	}
@@ -152,54 +156,5 @@ impl<T: Config> DelegationStorageMigrator<T> {
 		);
 
 		Ok(())
-	}
-}
-
-// Tests for the entire storage migrator.
-#[cfg(test)]
-mod tests {
-	use super::*;
-
-	use crate::mock::Test as TestRuntime;
-
-	#[test]
-	fn ok_from_v1_migration() {
-		mock::ExtBuilder::default()
-			.with_storage_version(DelegationStorageVersion::V1)
-			.build()
-			.execute_with(|| {
-				#[cfg(feature = "try-runtime")]
-				assert!(
-					DelegationStorageMigrator::<TestRuntime>::pre_migrate().is_ok(),
-					"Storage pre-migrate from v1 should not fail."
-				);
-
-				DelegationStorageMigrator::<TestRuntime>::migrate();
-
-				#[cfg(feature = "try-runtime")]
-				assert!(
-					DelegationStorageMigrator::<TestRuntime>::post_migrate().is_ok(),
-					"Storage post-migrate from v1 should not fail."
-				);
-			});
-	}
-
-	#[test]
-	fn ok_from_default_migration() {
-		mock::ExtBuilder::default().build().execute_with(|| {
-			#[cfg(feature = "try-runtime")]
-			assert!(
-				DelegationStorageMigrator::<TestRuntime>::pre_migrate().is_ok(),
-				"Storage pre-migrate from default version should not fail."
-			);
-
-			DelegationStorageMigrator::<TestRuntime>::migrate();
-
-			#[cfg(feature = "try-runtime")]
-			assert!(
-				DelegationStorageMigrator::<TestRuntime>::post_migrate().is_ok(),
-				"Storage post-migrate from default version should not fail."
-			);
-		});
 	}
 }
