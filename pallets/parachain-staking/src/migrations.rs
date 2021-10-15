@@ -26,8 +26,6 @@ use sp_std::marker::PhantomData;
 
 use crate::*;
 
-mod v6;
-
 /// A trait that allows version migrators to access the underlying pallet's
 /// context, e.g., its Config trait.
 ///
@@ -85,7 +83,7 @@ impl<T: Config> VersionMigratorTrait<T> for StakingStorageVersion {
 			Self::V2_0_0 => Ok(()),
 			Self::V3_0_0 => Ok(()),
 			Self::V4 => Ok(()),
-			Self::V5 => v6::pre_migrate::<T>(),
+			Self::V5 => Ok(()),
 			Self::V6 => Ok(()),
 		}
 	}
@@ -97,7 +95,7 @@ impl<T: Config> VersionMigratorTrait<T> for StakingStorageVersion {
 			Self::V2_0_0 => Weight::zero(),
 			Self::V3_0_0 => Weight::zero(),
 			Self::V4 => Weight::zero(),
-			Self::V5 => v6::migrate::<T>(),
+			Self::V5 => Weight::zero(),
 			Self::V6 => Weight::zero(),
 		}
 	}
@@ -111,7 +109,7 @@ impl<T: Config> VersionMigratorTrait<T> for StakingStorageVersion {
 			Self::V2_0_0 => Ok(()),
 			Self::V3_0_0 => Ok(()),
 			Self::V4 => Ok(()),
-			Self::V5 => v6::post_migrate::<T>(),
+			Self::V5 => Ok(()),
 			Self::V6 => Ok(()),
 		}
 	}
