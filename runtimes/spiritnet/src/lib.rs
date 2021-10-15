@@ -98,13 +98,13 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("kilt-spiritnet"),
 	impl_name: create_runtime_str!("kilt-spiritnet"),
 	authoring_version: 1,
-	spec_version: 2602,
+	spec_version: 2700,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
 };
 
-	spec_version: 2700ode, codec::Decode)]
+#[derive(codec::Encode, codec::Decode)]
 pub enum XcmpMessage<XAccountId, XBalance> {
 	/// Transfer tokens to the given account from the Parachain account.
 	TransferToken(XAccountId, XBalance),
