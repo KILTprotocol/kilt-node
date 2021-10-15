@@ -6505,7 +6505,6 @@ name = "peregrine-runtime"
 version = "0.26.2"
 dependencies = [
  "attestation",
- "bitflags",
  "ctype",
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
@@ -6530,7 +6529,6 @@ dependencies = [
  "pallet-balances",
  "pallet-collective",
  "pallet-democracy",
- "pallet-elections-phragmen",
  "pallet-indices",
  "pallet-membership",
  "pallet-randomness-collective-flip",
@@ -10920,11 +10918,15 @@ checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 name = "spiritnet-runtime"
 version = "0.26.2"
 dependencies = [
+ "attestation",
+ "ctype",
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
  "cumulus-primitives-timestamp",
+ "delegation",
+ "did",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",

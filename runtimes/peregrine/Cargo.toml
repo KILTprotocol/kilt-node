@@ -5,7 +5,6 @@ name = "peregrine-runtime"
 version = "0.26.2"
 
 [dependencies]
-bitflags = {version = "1.2.1", default-features = false}
 codec = {package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"]}
 log = {default-features = false, version = "0.4.14"}
 serde = {version = "1.0.101", optional = true, features = ["derive"]}
@@ -48,7 +47,6 @@ pallet-authorship = {git = "https://github.com/paritytech/substrate", default-fe
 pallet-balances = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 pallet-collective = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 pallet-democracy = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
-pallet-elections-phragmen = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 pallet-indices = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 pallet-membership = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 pallet-randomness-collective-flip = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
@@ -106,11 +104,11 @@ runtime-benchmarks = [
   "pallet-democracy/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
-  "pallet-scheduler/runtime-benchmarks", # "cumulus-pallet-session-benchmarking",
+  "pallet-scheduler/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
   "pallet-treasury/runtime-benchmarks",
-  "pallet-utility/runtime-benchmarks",
   "pallet-vesting/runtime-benchmarks",
+  "pallet-utility/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
   "rococo-runtime/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
@@ -141,7 +139,6 @@ std = [
   "pallet-balances/std",
   "pallet-collective/std",
   "pallet-democracy/std",
-  "pallet-elections-phragmen/std",
   "pallet-indices/std",
   "pallet-membership/std",
   "pallet-randomness-collective-flip/std",
@@ -190,7 +187,6 @@ try-runtime = [
   "pallet-balances/try-runtime",
   "pallet-collective/try-runtime",
   "pallet-democracy/try-runtime",
-  "pallet-elections-phragmen/try-runtime",
   "pallet-indices/try-runtime",
   "pallet-membership/try-runtime",
   "pallet-randomness-collective-flip/try-runtime",
