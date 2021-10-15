@@ -145,6 +145,11 @@ impl<T: Config> StakingStorageMigrator<T> {
 		// called in the migrate() function. Same applies for post_migrate checks for
 		// each version migrator.
 
+		let storage_version = StorageVersion::<T>::get();
+		assert!(
+			storage_version == StakingStorageVersion::default() || storage_version == StakingStorageVersion::latest()
+		);
+
 		Ok(())
 	}
 

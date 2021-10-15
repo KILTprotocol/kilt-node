@@ -51,7 +51,7 @@ impl DidStorageVersion {
 // old version anymore.
 impl Default for DidStorageVersion {
 	fn default() -> Self {
-		Self::V3
+		Self::V2
 	}
 }
 
@@ -114,6 +114,9 @@ impl<T: Config> DidStorageMigrator<T> {
 		// Don't need to check for any other pre_migrate, as in try-runtime it is also
 		// called in the migrate() function. Same applies for post_migrate checks for
 		// each version migrator.
+
+		let storage_version = StorageVersion::<T>::get();
+		assert!(storage_version == DidStorageVersion::default() || storage_version == DidStorageVersion::latest());
 
 		Ok(())
 	}
