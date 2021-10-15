@@ -159,6 +159,7 @@ impl Contains<Call> for BaseFilter {
 			Call::Vesting(pallet_vesting::Call::vested_transfer(..))
 				| Call::KiltLaunch(kilt_launch::Call::locked_transfer(..))
 				| Call::Balances(..)
+				| Call::Delegation(..)
 				| Call::ParachainStaking(parachain_staking::Call::join_candidates(..))
 		)
 	}
