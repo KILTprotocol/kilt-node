@@ -53,6 +53,13 @@ use frame_system::EnsureSigned;
 use sp_version::NativeVersion;
 
 use did::DidSignature;
+use frame_support::{
+	construct_runtime, parameter_types,
+	weights::{
+		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
+		DispatchClass, Weight,
+	},
+};
 use kilt_primitives::{
 	constants::{
 		attestation::ATTESTATION_DEPOSIT,
@@ -73,13 +80,6 @@ use kilt_primitives::{
 		NORMAL_DISPATCH_RATIO, SLOT_DURATION,
 	},
 	AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Hash, Header, Index, Signature,
-};
-use frame_support::{
-	construct_runtime, parameter_types,
-	weights::{
-		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
-		DispatchClass, Weight,
-	},
 };
 
 mod fee;
