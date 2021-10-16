@@ -23,7 +23,7 @@
 //! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("dev"), DB CACHE: 128
 
 // Executed Command:
-// target/release/kilt-parachain
+// ./target/release/kilt-parachain
 // benchmark
 // --chain=dev
 // --steps=50
@@ -53,7 +53,7 @@ pub trait WeightInfo {
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn add(l: u32, ) -> Weight {
-		(1_167_000_u64)
+		(0_u64)
 			// Standard Error: 0
 			.saturating_add((2_000_u64).saturating_mul(l as Weight))
 			.saturating_add(T::DbWeight::get().reads(3_u64))
@@ -64,7 +64,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 // For backwards compatibility and tests
 impl WeightInfo for () {
 	fn add(l: u32, ) -> Weight {
-		(1_167_000_u64)
+		(0_u64)
 			// Standard Error: 0
 			.saturating_add((2_000_u64).saturating_mul(l as Weight))
 			.saturating_add(RocksDbWeight::get().reads(3_u64))

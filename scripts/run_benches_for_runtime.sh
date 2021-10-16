@@ -4,7 +4,7 @@
 # Should be run on a reference machine to gain accurate benchmarks
 # current Substrate reference machine: https://github.com/paritytech/substrate/pull/5848
 
-runtime="$1"
+runtime=${1-"peregrine"}
 chain=$([ "$1" == "spiritnet" ] && echo "spiritnet-dev" || echo "dev")
 standard_args="--release --locked --features=runtime-benchmarks --bin=kilt-parachain"
 
@@ -22,7 +22,7 @@ echo "[+] Running all benchmarks for $runtime --chain=$chain"
 for pallet in "${pallets[@]}"; do
     echo "Runtime: $runtime. Pallet: $pallet";
     # shellcheck disable=SC2086
-    cargo +nightly run $standard_args -- benchmark \
+    cargo run $standard_args -- benchmark \
     --chain="${chain}" \
     --steps=50 \
     --repeat=20 \
