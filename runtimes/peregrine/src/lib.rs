@@ -924,6 +924,7 @@ impl_runtime_apis! {
 
 			// Substrate
 			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
+			list_benchmark!(list, extra, pallet_session, SessionBench::<Runtime>);
 			list_benchmark!(list, extra, pallet_balances, Balances);
 			list_benchmark!(list, extra, pallet_collective, Council);
 			list_benchmark!(list, extra, pallet_democracy, Democracy);
@@ -934,7 +935,6 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, pallet_treasury, Treasury);
 			list_benchmark!(list, extra, pallet_utility, Utility);
 			list_benchmark!(list, extra, pallet_vesting, Vesting);
-			list_benchmark!(list, extra, pallet_session, SessionBench);
 
 			// KILT
 			list_benchmark!(list, extra, attestation, Attestation);
@@ -953,12 +953,11 @@ impl_runtime_apis! {
 			config: frame_benchmarking::BenchmarkConfig
 		) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
 			use frame_benchmarking::{Benchmarking, BenchmarkBatch, add_benchmark, TrackedStorageKey};
-
 			use frame_system_benchmarking::Pallet as SystemBench;
-			impl frame_system_benchmarking::Config for Runtime {}
+			use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
 
-			// use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
-			// impl cumulus_pallet_session_benchmarking::Config for Runtime {}
+			impl frame_system_benchmarking::Config for Runtime {}
+			impl cumulus_pallet_session_benchmarking::Config for Runtime {}
 
 			let whitelist: Vec<TrackedStorageKey> = vec![
 				// Block Number
@@ -990,7 +989,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_indices, Indices);
 			add_benchmark!(params, batches, pallet_membership, TechnicalMembership);
 			add_benchmark!(params, batches, pallet_scheduler, Scheduler);
-			// add_benchmark!(params, batches, pallet_session, SessionBench::<Runtime>);
+			add_benchmark!(params, batches, pallet_session, SessionBench::<Runtime>);
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
 			add_benchmark!(params, batches, pallet_treasury, Treasury);

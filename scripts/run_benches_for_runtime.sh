@@ -9,22 +9,22 @@ chain=$([ "$1" == "spiritnet" ] && echo "spiritnet-dev" || echo "dev")
 standard_args="--release --locked --features=runtime-benchmarks --bin=kilt-parachain"
 
 pallets=(
-    attestation
-    ctype
-    delegation
-    did
-    kilt_launch
-    parachain_staking
-    frame_system
-    pallet_balances
-    pallet_collective
-    pallet_democracy
-    pallet_indices
-    pallet_membership
-    pallet_scheduler
-    pallet_timestamp
-    pallet_treasury
-    pallet_utility
+    # attestation
+    # ctype
+    # delegation
+    # did
+    # kilt_launch
+    # parachain_staking
+    # frame_system
+    # pallet_balances
+    # pallet_collective
+    # pallet_democracy
+    # pallet_indices
+    # pallet_membership
+    # pallet_scheduler
+    # pallet_timestamp
+    # pallet_treasury
+    # pallet_utility
 	pallet_session
 )
 
