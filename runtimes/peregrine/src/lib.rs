@@ -25,7 +25,14 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use frame_support::PalletId;
+use frame_support::{
+	construct_runtime, parameter_types,
+	weights::{
+		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
+		DispatchClass, Weight,
+	},
+	PalletId,
+};
 use frame_system::{
 	limits::{BlockLength, BlockWeights},
 	EnsureOneOf, EnsureRoot,
@@ -45,14 +52,6 @@ use sp_runtime::{
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 
-use did::DidSignature;
-use frame_support::{
-	construct_runtime, parameter_types,
-	weights::{
-		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
-		DispatchClass, Weight,
-	},
-};
 use kilt_primitives::{
 	constants::{
 		attestation::ATTESTATION_DEPOSIT,
