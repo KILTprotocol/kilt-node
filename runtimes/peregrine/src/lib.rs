@@ -918,7 +918,7 @@ impl_runtime_apis! {
 			use frame_benchmarking::{list_benchmark, Benchmarking, BenchmarkList};
 			use frame_support::traits::StorageInfoTrait;
 			use frame_system_benchmarking::Pallet as SystemBench;
-			// use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
+			use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
 
 			let mut list = Vec::<BenchmarkList>::new();
 
@@ -934,7 +934,7 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, pallet_treasury, Treasury);
 			list_benchmark!(list, extra, pallet_utility, Utility);
 			list_benchmark!(list, extra, pallet_vesting, Vesting);
-			// list_benchmark!(list, extra, pallet_session, Session);
+			list_benchmark!(list, extra, pallet_session, SessionBench);
 
 			// KILT
 			list_benchmark!(list, extra, attestation, Attestation);
