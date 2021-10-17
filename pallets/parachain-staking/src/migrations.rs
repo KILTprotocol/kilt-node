@@ -26,12 +26,6 @@ use sp_std::marker::PhantomData;
 
 use crate::*;
 
-mod v2;
-mod v3;
-mod v4;
-mod v5;
-mod v6;
-
 /// A trait that allows version migrators to access the underlying pallet's
 /// context, e.g., its Config trait.
 ///
@@ -63,7 +57,7 @@ pub enum StakingStorageVersion {
 impl StakingStorageVersion {
 	/// The latest storage version.
 	fn latest() -> Self {
-		Self::V5
+		Self::V6
 	}
 }
 
@@ -76,7 +70,7 @@ impl StakingStorageVersion {
 // old version anymore.
 impl Default for StakingStorageVersion {
 	fn default() -> Self {
-		Self::V5
+		Self::V6
 	}
 }
 
@@ -85,11 +79,11 @@ impl<T: Config> VersionMigratorTrait<T> for StakingStorageVersion {
 	#[cfg(feature = "try-runtime")]
 	fn pre_migrate(&self) -> Result<(), &str> {
 		match *self {
-			Self::V1_0_0 => v2::pre_migrate::<T>(),
-			Self::V2_0_0 => v3::pre_migrate::<T>(),
-			Self::V3_0_0 => v4::pre_migrate::<T>(),
-			Self::V4 => v5::pre_migrate::<T>(),
-			Self::V5 => v6::pre_migrate::<T>(),
+			Self::V1_0_0 => Ok(()),
+			Self::V2_0_0 => Ok(()),
+			Self::V3_0_0 => Ok(()),
+			Self::V4 => Ok(()),
+			Self::V5 => Ok(()),
 			Self::V6 => Ok(()),
 		}
 	}
@@ -97,11 +91,11 @@ impl<T: Config> VersionMigratorTrait<T> for StakingStorageVersion {
 	// It runs the right migration logic depending on the current storage version.
 	fn migrate(&self) -> Weight {
 		match *self {
-			Self::V1_0_0 => v2::migrate::<T>(),
-			Self::V2_0_0 => v3::migrate::<T>(),
-			Self::V3_0_0 => v4::migrate::<T>(),
-			Self::V4 => v5::migrate::<T>(),
-			Self::V5 => v6::migrate::<T>(),
+			Self::V1_0_0 => Weight::zero(),
+			Self::V2_0_0 => Weight::zero(),
+			Self::V3_0_0 => Weight::zero(),
+			Self::V4 => Weight::zero(),
+			Self::V5 => Weight::zero(),
 			Self::V6 => Weight::zero(),
 		}
 	}
@@ -111,11 +105,11 @@ impl<T: Config> VersionMigratorTrait<T> for StakingStorageVersion {
 	#[cfg(feature = "try-runtime")]
 	fn post_migrate(&self) -> Result<(), &str> {
 		match *self {
-			Self::V1_0_0 => v2::post_migrate::<T>(),
-			Self::V2_0_0 => v3::post_migrate::<T>(),
-			Self::V3_0_0 => v4::post_migrate::<T>(),
-			Self::V4 => v5::post_migrate::<T>(),
-			Self::V5 => v6::post_migrate::<T>(),
+			Self::V1_0_0 => Ok(()),
+			Self::V2_0_0 => Ok(()),
+			Self::V3_0_0 => Ok(()),
+			Self::V4 => Ok(()),
+			Self::V5 => Ok(()),
 			Self::V6 => Ok(()),
 		}
 	}
@@ -133,12 +127,12 @@ impl<T: Config> StakingStorageMigrator<T> {
 	// Contains the migration sequence logic.
 	fn get_next_storage_version(current: StakingStorageVersion) -> Option<StakingStorageVersion> {
 		match current {
-			StakingStorageVersion::V1_0_0 => Some(StakingStorageVersion::V2_0_0),
-			StakingStorageVersion::V2_0_0 => Some(StakingStorageVersion::V3_0_0),
-			// Migration happens naturally, no need to point to the latest version
-			StakingStorageVersion::V3_0_0 => Some(StakingStorageVersion::V4),
-			StakingStorageVersion::V4 => Some(StakingStorageVersion::V5),
+			StakingStorageVersion::V1_0_0 => None,
+			StakingStorageVersion::V2_0_0 => None,
+			StakingStorageVersion::V3_0_0 => None,
+			StakingStorageVersion::V4 => None,
 			StakingStorageVersion::V5 => Some(StakingStorageVersion::V6),
+			// Migration happens naturally, no need to point to the latest version
 			StakingStorageVersion::V6 => None,
 		}
 	}
@@ -150,6 +144,11 @@ impl<T: Config> StakingStorageMigrator<T> {
 		// Don't need to check for any other pre_migrate, as in try-runtime it is also
 		// called in the migrate() function. Same applies for post_migrate checks for
 		// each version migrator.
+
+		let storage_version = StorageVersion::<T>::get();
+		assert!(
+			storage_version == StakingStorageVersion::default() || storage_version == StakingStorageVersion::latest()
+		);
 
 		Ok(())
 	}
