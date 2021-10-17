@@ -9,12 +9,12 @@ chain=$([ "$1" == "spiritnet" ] && echo "spiritnet-dev" || echo "dev")
 standard_args="--release --locked --features=runtime-benchmarks --bin=kilt-parachain"
 
 pallets=(
-#    attestation
-#    ctype
-#    delegation
-#    did
-#    kilt_launch
-#    parachain_staking
+    attestation
+    ctype
+    delegation
+    did
+    kilt_launch
+    parachain_staking
     frame_system
     pallet_balances
     pallet_collective
@@ -29,10 +29,11 @@ pallets=(
 
 echo "[+] Running all benchmarks for $runtime --chain=$chain"
 
+cargo build $standard_args
 for pallet in "${pallets[@]}"; do
     echo "Runtime: $runtime. Pallet: $pallet";
     # shellcheck disable=SC2086
-    cargo run $standard_args -- benchmark \
+    ./target/release/kilt-parachain benchmark \
     --chain="${chain}" \
     --steps=50 \
     --repeat=20 \
