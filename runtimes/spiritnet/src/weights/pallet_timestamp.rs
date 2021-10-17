@@ -23,7 +23,7 @@
 //! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("spiritnet-dev"), DB CACHE: 128
 
 // Executed Command:
-// target/release/kilt-parachain
+// ./target/release/kilt-parachain
 // benchmark
 // --chain=spiritnet-dev
 // --steps=50
@@ -48,11 +48,11 @@ use sp_std::marker::PhantomData;
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_timestamp::WeightInfo for WeightInfo<T> {
 	fn set() -> Weight {
-		(8_868_000_u64)
+		(8_468_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn on_finalize() -> Weight {
-		(4_989_000_u64)
+		(4_951_000_u64)
 	}
 }

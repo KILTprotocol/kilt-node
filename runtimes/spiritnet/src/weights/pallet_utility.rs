@@ -23,7 +23,7 @@
 //! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("spiritnet-dev"), DB CACHE: 128
 
 // Executed Command:
-// target/release/kilt-parachain
+// ./target/release/kilt-parachain
 // benchmark
 // --chain=spiritnet-dev
 // --steps=50
@@ -48,16 +48,16 @@ use sp_std::marker::PhantomData;
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_utility::WeightInfo for WeightInfo<T> {
 	fn batch(c: u32, ) -> Weight {
-		(29_126_000_u64)
+		(16_903_000_u64)
 			// Standard Error: 2_000
-			.saturating_add((6_354_000_u64).saturating_mul(c as Weight))
+			.saturating_add((6_763_000_u64).saturating_mul(c as Weight))
 	}
 	fn as_derivative() -> Weight {
-		(4_024_000_u64)
+		(4_425_000_u64)
 	}
 	fn batch_all(c: u32, ) -> Weight {
-		(28_636_000_u64)
+		(21_115_000_u64)
 			// Standard Error: 2_000
-			.saturating_add((6_886_000_u64).saturating_mul(c as Weight))
+			.saturating_add((7_318_000_u64).saturating_mul(c as Weight))
 	}
 }
