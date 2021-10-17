@@ -23,12 +23,13 @@
 //! other tests. Internal functions/structs can only be used in attestation
 //! tests.
 
-use crate::{AccountIdOf, AttestationDetails, AttesterOf, BalanceOf, ClaimHashOf, Config};
 use ctype::CtypeHashOf;
 use delegation::DelegationNodeIdOf;
 use frame_support::traits::Get;
 use kilt_support::deposit::Deposit;
 use sp_core::H256;
+
+use crate::{AccountIdOf, AttestationDetails, AttesterOf, BalanceOf, ClaimHashOf, Config};
 
 #[cfg(test)]
 pub use crate::mock::runtime::*;
@@ -91,15 +92,16 @@ pub(crate) mod runtime {
 	use super::*;
 
 	use delegation::{DelegationHierarchyDetails, DelegationNode, DelegatorIdOf};
-	use frame_support::{ensure, parameter_types, weights::constants::RocksDbWeight};
+	use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 	use frame_system::EnsureSigned;
 	use kilt_primitives::constants::{attestation::ATTESTATION_DEPOSIT, delegation::DELEGATION_DEPOSIT, MILLI_KILT};
+	use kilt_support::signature::EqualVerify;
 	use sp_core::{ed25519, sr25519, Pair};
 	use sp_keystore::{testing::KeyStore, KeystoreExt};
 	use sp_runtime::{
 		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		MultiSignature, MultiSigner,
+		MultiSigner,
 	};
 
 	type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -204,8 +206,8 @@ pub(crate) mod runtime {
 	}
 
 	impl delegation::Config for Test {
-		type Signature = MultiSignature;
-		type DelegationSignatureVerification = DelegateSignatureVerifier;
+		type Signature = (Self::DelegationEntityId, Vec<u8>);
+		type DelegationSignatureVerification = EqualVerify<Self::DelegationEntityId, Vec<u8>>;
 		type DelegationEntityId = TestDelegatorId;
 		type DelegationNodeId = TestDelegationNodeId;
 		type EnsureOrigin = EnsureSigned<TestDelegatorId>;
@@ -236,27 +238,6 @@ pub(crate) mod runtime {
 		type Currency = Balances;
 		type Deposit = Deposit;
 		type MaxDelegatedAttestations = MaxDelegatedAttestations;
-	}
-
-	pub struct DelegateSignatureVerifier;
-	impl delegation::VerifyDelegateSignature for DelegateSignatureVerifier {
-		type DelegateId = TestDelegatorId;
-		type Payload = Vec<u8>;
-		type Signature = MultiSignature;
-
-		// No need to retrieve delegate details as it is simply an AccountId.
-		fn verify(
-			delegate: &Self::DelegateId,
-			payload: &Self::Payload,
-			signature: &Self::Signature,
-		) -> delegation::SignatureVerificationResult {
-			ensure!(
-				signature.verify(&payload[..], delegate),
-				delegation::SignatureVerificationError::SignatureInvalid
-			);
-
-			Ok(())
-		}
 	}
 
 	const ALICE_SEED: [u8; 32] = [0u8; 32];

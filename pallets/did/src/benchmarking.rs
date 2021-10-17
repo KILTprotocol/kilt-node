@@ -21,9 +21,11 @@ use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, Zero};
 use frame_support::{assert_ok, traits::Currency};
 use frame_system::RawOrigin;
 use kilt_primitives::AccountId;
+use kilt_support::signature::VerifySignature;
 use sp_core::{crypto::KeyTypeId, ecdsa, ed25519, sr25519};
 use sp_io::crypto::{ecdsa_generate, ecdsa_sign, ed25519_generate, ed25519_sign, sr25519_generate, sr25519_sign};
 use sp_runtime::{traits::IdentifyAccount, MultiSigner};
+use sp_std::{convert::TryInto, vec::Vec};
 
 use crate::{
 	did_details::*,
@@ -37,6 +39,7 @@ const AUTHENTICATION_KEY_ID: KeyTypeId = KeyTypeId(*b"0000");
 const ATTESTATION_KEY_ID: KeyTypeId = KeyTypeId(*b"0001");
 const DELEGATION_KEY_ID: KeyTypeId = KeyTypeId(*b"0002");
 const UNUSED_KEY_ID: KeyTypeId = KeyTypeId(*b"1111");
+const MAX_PAYLOAD_BYTE_LENGTH: u32 = 5 * 1024 * 1024;
 
 fn get_ed25519_public_authentication_key() -> ed25519::Public {
 	ed25519_generate(AUTHENTICATION_KEY_ID, None)
@@ -97,11 +100,12 @@ fn generate_base_did_call_operation<T: Config>(
 	}
 }
 
-//TODO: We might want to extract the logic about which key is the longest
-// encoded and which key takes the longest to verify and always use that.
 benchmarks! {
-
-	where_clause { where T::DidIdentifier: From<AccountId>, <T as frame_system::Config>::Origin: From<RawOrigin<T::DidIdentifier>>}
+	where_clause {
+		where
+		T::DidIdentifier: From<AccountId>,
+		<T as frame_system::Config>::Origin: From<RawOrigin<T::DidIdentifier>>
+	}
 
 	/* create extrinsic */
 	create_ed25519_keys {
@@ -759,6 +763,88 @@ benchmarks! {
 	verify {
 		assert!(!Did::<T>::get(&did_subject).unwrap().key_agreement_keys.contains(&key_agreement_key_id));
 	}
+
+	signature_verification_sr25519 {
+		let l in 1 .. MAX_PAYLOAD_BYTE_LENGTH;
+
+		let payload: Vec<u8> = (0u8..u8::MAX).cycle().take(l.try_into().unwrap()).collect();
+		let block_number = T::BlockNumber::zero();
+
+		let public_auth_key = get_sr25519_public_authentication_key();
+		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
+		let key_agreement_keys = get_key_agreement_keys::<T>(T::MaxNewKeyAgreementKeys::get());
+
+		// get first entry
+		let key_agreement_key = *key_agreement_keys.clone().into_inner().iter().next().unwrap();
+		let key_agreement_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(key_agreement_key));
+
+		// fill up public keys to its max size because max public keys = # of max key agreement keys + 3
+		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(public_auth_key));
+		assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, block_number));
+		assert_ok!(did_details.update_delegation_key(DidVerificationKey::from(get_ecdsa_public_delegation_key()), block_number));
+		assert_ok!(did_details.update_attestation_key(DidVerificationKey::from(get_ecdsa_public_attestation_key()), block_number));
+
+		Did::<T>::insert(&did_subject, did_details);
+		let signature = sr25519_sign(AUTHENTICATION_KEY_ID, &public_auth_key, &payload).expect("Failed to create DID signature from raw sr25519 signature.");
+		let did_signature = DidSignature::Sr25519(signature);
+	}: {
+		DidSignatureVerify::<T>::verify(&did_subject, &payload, &did_signature).expect("should verify");
+	}
+	verify {}
+	signature_verification_ed25519 {
+		let l in 1 .. MAX_PAYLOAD_BYTE_LENGTH;
+
+		let payload: Vec<u8> = (0u8..u8::MAX).cycle().take(l.try_into().unwrap()).collect();
+		let block_number = T::BlockNumber::zero();
+
+		let public_auth_key = get_ed25519_public_authentication_key();
+		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
+		let key_agreement_keys = get_key_agreement_keys::<T>(T::MaxNewKeyAgreementKeys::get());
+
+		// get first entry
+		let key_agreement_key = *key_agreement_keys.clone().into_inner().iter().next().unwrap();
+		let key_agreement_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(key_agreement_key));
+
+		// fill up public keys to its max size because max public keys = # of max key agreement keys + 3
+		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(public_auth_key));
+		assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, block_number));
+		assert_ok!(did_details.update_delegation_key(DidVerificationKey::from(get_ecdsa_public_delegation_key()), block_number));
+		assert_ok!(did_details.update_attestation_key(DidVerificationKey::from(get_ecdsa_public_attestation_key()), block_number));
+
+		Did::<T>::insert(&did_subject, did_details);
+		let signature = ed25519_sign(AUTHENTICATION_KEY_ID, &public_auth_key, &payload).expect("Failed to create DID signature from raw ed25519 signature.");
+		let did_signature = DidSignature::Ed25519(signature);
+	}: {
+		DidSignatureVerify::<T>::verify(&did_subject, &payload, &did_signature).expect("should verify");
+	}
+	verify {}
+	signature_verification_ecdsa {
+		let l in 1 .. MAX_PAYLOAD_BYTE_LENGTH;
+
+		let payload: Vec<u8> = (0u8..u8::MAX).cycle().take(l.try_into().unwrap()).collect();
+		let block_number = T::BlockNumber::zero();
+
+		let public_auth_key = get_ecdsa_public_authentication_key();
+		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key.clone()).into_account().into();
+		let key_agreement_keys = get_key_agreement_keys::<T>(T::MaxNewKeyAgreementKeys::get());
+
+		// get first entry
+		let key_agreement_key = *key_agreement_keys.clone().into_inner().iter().next().unwrap();
+		let key_agreement_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(key_agreement_key));
+
+		// fill up public keys to its max size because max public keys = # of max key agreement keys + 3
+		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(public_auth_key.clone()));
+		assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, block_number));
+		assert_ok!(did_details.update_delegation_key(DidVerificationKey::from(get_ecdsa_public_delegation_key()), block_number));
+		assert_ok!(did_details.update_attestation_key(DidVerificationKey::from(get_ecdsa_public_attestation_key()), block_number));
+
+		Did::<T>::insert(&did_subject, did_details);
+		let signature = ecdsa_sign(AUTHENTICATION_KEY_ID, &public_auth_key, &payload).expect("Failed to create DID signature from raw ecdsa signature.");
+		let did_signature = DidSignature::Ecdsa(signature);
+	}: {
+		DidSignatureVerify::<T>::verify(&did_subject, &payload, &did_signature).expect("should verify");
+	}
+	verify {}
 }
 
 impl_benchmark_test_suite! {

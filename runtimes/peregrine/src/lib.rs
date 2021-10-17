@@ -20,17 +20,12 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
-// The `from_over_into` warning originates from `construct_runtime` macro.
-#![allow(clippy::from_over_into)]
 
 // Make the WASM binary available.
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use did::DidSignature;
 use frame_support::{traits::LockIdentifier, PalletId};
-#[cfg(feature = "runtime-benchmarks")]
-use frame_system::EnsureSigned;
 use frame_system::{
 	limits::{BlockLength, BlockWeights},
 	EnsureOneOf, EnsureRoot,
@@ -71,13 +66,16 @@ use sp_runtime::{
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 
+#[cfg(feature = "std")]
+use sp_version::NativeVersion;
+
+#[cfg(feature = "runtime-benchmarks")]
+use {frame_system::EnsureSigned, kilt_primitives::benchmarks::DummySignature, kilt_support::signature::AlwaysVerify};
+
 mod fee;
 #[cfg(test)]
 mod tests;
 mod weights;
-
-#[cfg(feature = "std")]
-use sp_version::NativeVersion;
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
@@ -516,34 +514,6 @@ impl pallet_membership::Config for Runtime {
 	type WeightInfo = weights::pallet_membership::WeightInfo<Runtime>;
 }
 
-pub struct DelegationSignatureVerifier<R>(sp_std::marker::PhantomData<R>);
-impl<R: did::Config> delegation::VerifyDelegateSignature for DelegationSignatureVerifier<R> {
-	type DelegateId = <R as did::Config>::DidIdentifier;
-	type Payload = Vec<u8>;
-	type Signature = DidSignature;
-
-	fn verify(
-		delegate: &Self::DelegateId,
-		payload: &Self::Payload,
-		signature: &Self::Signature,
-	) -> delegation::SignatureVerificationResult {
-		let delegate_details =
-			did::Did::<R>::get(delegate).ok_or(delegation::SignatureVerificationError::SignerInformationNotPresent)?;
-
-		did::Pallet::verify_payload_signature_with_did_key_type(
-			payload,
-			signature,
-			&delegate_details,
-			did::DidVerificationKeyRelationship::Authentication,
-		)
-		.map_err(|err| match err {
-			// Should never happen as a DID has always a valid authentication key and UrlErrors are never thrown here.
-			did::DidError::SignatureError(_) => delegation::SignatureVerificationError::SignatureInvalid,
-			_ => delegation::SignatureVerificationError::SignerInformationNotPresent,
-		})
-	}
-}
-
 parameter_types! {
 	pub const MaxDelegatedAttestations: u32 = 1000;
 	pub const AttestationDeposit: Balance = ATTESTATION_DEPOSIT;
@@ -579,20 +549,26 @@ parameter_types! {
 }
 
 impl delegation::Config for Runtime {
-	type Signature = DidSignature;
-	type DelegationSignatureVerification = DelegationSignatureVerifier<Runtime>;
-	type DelegationEntityId = AccountId;
+	type DelegationEntityId = DidIdentifier;
 	type DelegationNodeId = Hash;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type DelegationSignatureVerification = did::DidSignatureVerify<Runtime>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type Signature = did::DidSignature;
 
 	#[cfg(feature = "runtime-benchmarks")]
 	type EnsureOrigin = EnsureSigned<DidIdentifier>;
 	#[cfg(feature = "runtime-benchmarks")]
 	type OriginSuccess = DidIdentifier;
+	#[cfg(feature = "runtime-benchmarks")]
+	type Signature = DummySignature;
+	#[cfg(feature = "runtime-benchmarks")]
+	type DelegationSignatureVerification = AlwaysVerify<AccountId, Vec<u8>, Self::Signature>;
 
 	type Event = Event;
 	type MaxSignatureByteLength = MaxSignatureByteLength;

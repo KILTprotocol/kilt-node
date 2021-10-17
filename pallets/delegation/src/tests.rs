@@ -116,8 +116,7 @@ fn ctype_not_found_create_root_delegation_error() {
 fn create_delegation_direct_root_successful() {
 	let creator_keypair = get_alice_ed25519();
 	let creator = get_ed25519_account(creator_keypair.public());
-	let delegate_keypair = get_bob_sr25519();
-	let delegate = get_sr25519_account(delegate_keypair.public());
+	let delegate = get_sr25519_account(get_bob_sr25519().public());
 
 	let (hierarchy_root_id, hierarchy_details) = (
 		get_delegation_hierarchy_id::<Test>(true),
@@ -136,7 +135,7 @@ fn create_delegation_direct_root_successful() {
 			// Create delegation to root
 			let (delegation_id, delegation_node) = (
 				get_delegation_id(true),
-				generate_base_delegation_node(hierarchy_root_id, delegate, Some(hierarchy_root_id)),
+				generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
 			);
 			let delegation_info = Delegation::calculate_delegation_creation_hash(
 				&delegation_id,
@@ -144,9 +143,9 @@ fn create_delegation_direct_root_successful() {
 				&hierarchy_root_id,
 				&delegation_node.details.permissions,
 			);
-			let delegate_signature = delegate_keypair.sign(&hash_to_u8(delegation_info));
+			let delegate_signature = (delegate.clone(), hash_to_u8(delegation_info));
 			let operation =
-				generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
+				generate_base_delegation_creation_operation(delegation_id, delegate_signature, delegation_node);
 
 			// 1 Deposit should be reserved for hierarchy
 			assert_eq!(
@@ -191,8 +190,7 @@ fn create_delegation_direct_root_successful() {
 fn create_delegation_with_parent_successful() {
 	let creator_keypair = get_alice_ed25519();
 	let creator = get_ed25519_account(creator_keypair.public());
-	let delegate_keypair = get_bob_sr25519();
-	let delegate = get_sr25519_account(delegate_keypair.public());
+	let delegate = get_sr25519_account(get_bob_sr25519().public());
 
 	let (hierarchy_root_id, hierarchy_details) = (
 		get_delegation_hierarchy_id::<Test>(true),
@@ -224,9 +222,9 @@ fn create_delegation_with_parent_successful() {
 				&parent_id,
 				&delegation_node.details.permissions,
 			);
-			let delegate_signature = delegate_keypair.sign(&hash_to_u8(delegation_info));
+			let delegate_signature = (delegate.clone(), hash_to_u8(delegation_info));
 			let operation =
-				generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
+				generate_base_delegation_creation_operation(delegation_id, delegate_signature, delegation_node);
 
 			// Should have deposited for hierarchy and parent delegation
 			assert_eq!(
@@ -274,8 +272,7 @@ fn create_delegation_with_parent_successful() {
 fn create_delegation_direct_root_revoked_error() {
 	let creator_keypair = get_alice_ed25519();
 	let creator = get_ed25519_account(creator_keypair.public());
-	let delegate_keypair = get_bob_sr25519();
-	let delegate = get_sr25519_account(delegate_keypair.public());
+	let delegate = get_sr25519_account(get_bob_sr25519().public());
 
 	let (hierarchy_root_id, hierarchy_details) = (
 		get_delegation_hierarchy_id::<Test>(true),
@@ -286,17 +283,15 @@ fn create_delegation_direct_root_revoked_error() {
 		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
 	);
 
-	let delegation_info = Delegation::calculate_delegation_creation_hash(
+	let delegation_hash = &hash_to_u8(Delegation::calculate_delegation_creation_hash(
 		&delegation_id,
 		&hierarchy_root_id,
 		&hierarchy_root_id,
 		&delegation_node.details.permissions,
-	);
+	));
+	let delegate_signature = (delegate.clone(), delegation_hash.clone());
 
-	let delegate_signature = delegate_keypair.sign(&hash_to_u8(delegation_info));
-
-	let operation =
-		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
+	let operation = generate_base_delegation_creation_operation(delegation_id, delegate_signature, delegation_node);
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
@@ -328,8 +323,7 @@ fn create_delegation_direct_root_revoked_error() {
 fn create_delegation_with_parent_revoked_error() {
 	let creator_keypair = get_alice_ed25519();
 	let creator = get_ed25519_account(creator_keypair.public());
-	let delegate_keypair = get_bob_sr25519();
-	let delegate = get_sr25519_account(delegate_keypair.public());
+	let delegate = get_sr25519_account(get_bob_sr25519().public());
 
 	let (hierarchy_root_id, hierarchy_details) = (
 		get_delegation_hierarchy_id::<Test>(true),
@@ -351,10 +345,9 @@ fn create_delegation_with_parent_revoked_error() {
 		&delegation_node.details.permissions,
 	);
 
-	let delegate_signature = delegate_keypair.sign(&hash_to_u8(delegation_info));
+	let delegate_signature = (delegate.clone(), hash_to_u8(delegation_info));
 
-	let operation =
-		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
+	let operation = generate_base_delegation_creation_operation(delegation_id, delegate_signature, delegation_node);
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
@@ -390,9 +383,7 @@ fn create_delegation_with_parent_revoked_error() {
 fn invalid_delegate_signature_create_delegation_error() {
 	let creator_keypair = get_alice_ed25519();
 	let creator = get_ed25519_account(creator_keypair.public());
-	let alternative_keypair = get_alice_sr25519();
-	let delegate_keypair = get_bob_sr25519();
-	let delegate = get_sr25519_account(delegate_keypair.public());
+	let delegate = get_sr25519_account(get_bob_sr25519().public());
 
 	let (hierarchy_root_id, hierarchy_details) = (
 		get_delegation_hierarchy_id::<Test>(true),
@@ -403,15 +394,9 @@ fn invalid_delegate_signature_create_delegation_error() {
 		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
 	);
 
-	let delegate_signature = alternative_keypair.sign(&hash_to_u8(Delegation::calculate_delegation_creation_hash(
-		&delegation_id,
-		&hierarchy_root_id,
-		&hierarchy_root_id,
-		&delegation_node.details.permissions,
-	)));
+	let delegate_signature = (delegate.clone(), vec![]);
 
-	let operation =
-		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
+	let operation = generate_base_delegation_creation_operation(delegation_id, delegate_signature, delegation_node);
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
@@ -437,8 +422,7 @@ fn invalid_delegate_signature_create_delegation_error() {
 fn duplicate_delegation_create_delegation_error() {
 	let creator_keypair = get_alice_ed25519();
 	let creator = get_ed25519_account(creator_keypair.public());
-	let delegate_keypair = get_bob_sr25519();
-	let delegate = get_sr25519_account(delegate_keypair.public());
+	let delegate = get_sr25519_account(get_bob_sr25519().public());
 
 	let (hierarchy_root_id, hierarchy_details) = (
 		get_delegation_hierarchy_id::<Test>(true),
@@ -449,15 +433,16 @@ fn duplicate_delegation_create_delegation_error() {
 		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
 	);
 
-	let delegate_signature = delegate_keypair.sign(&hash_to_u8(Delegation::calculate_delegation_creation_hash(
+	let delegation_hash = &hash_to_u8(Delegation::calculate_delegation_creation_hash(
 		&delegation_id,
 		&hierarchy_root_id,
 		&hierarchy_root_id,
 		&delegation_node.details.permissions,
-	)));
+	));
+	let delegate_signature = (delegate.clone(), delegation_hash.clone());
 
 	let operation =
-		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node.clone());
+		generate_base_delegation_creation_operation(delegation_id, delegate_signature, delegation_node.clone());
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
@@ -487,8 +472,7 @@ fn duplicate_delegation_create_delegation_error() {
 fn parent_not_existing_create_delegation_error() {
 	let creator_keypair = get_alice_ed25519();
 	let creator = get_ed25519_account(creator_keypair.public());
-	let delegate_keypair = get_bob_sr25519();
-	let delegate = get_sr25519_account(delegate_keypair.public());
+	let delegate = get_sr25519_account(get_bob_sr25519().public());
 
 	let (hierarchy_root_id, hierarchy_details) = (
 		get_delegation_hierarchy_id::<Test>(true),
@@ -499,15 +483,15 @@ fn parent_not_existing_create_delegation_error() {
 		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
 	);
 
-	let delegate_signature = delegate_keypair.sign(&hash_to_u8(Delegation::calculate_delegation_creation_hash(
+	let delegation_hash = &hash_to_u8(Delegation::calculate_delegation_creation_hash(
 		&delegation_id,
 		&hierarchy_root_id,
 		&hierarchy_root_id,
 		&delegation_node.details.permissions,
-	)));
+	));
+	let delegate_signature = (delegate.clone(), delegation_hash.clone());
 
-	let operation =
-		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
+	let operation = generate_base_delegation_creation_operation(delegation_id, delegate_signature, delegation_node);
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
@@ -534,8 +518,7 @@ fn not_owner_of_parent_create_delegation_error() {
 	let creator = get_ed25519_account(creator_keypair.public());
 	let alternative_owner_keypair = get_charlie_ed25519();
 	let alternative_owner = get_ed25519_account(alternative_owner_keypair.public());
-	let delegate_keypair = get_bob_sr25519();
-	let delegate = get_sr25519_account(delegate_keypair.public());
+	let delegate = get_sr25519_account(get_bob_sr25519().public());
 
 	let (hierarchy_root_id, hierarchy_details) = (
 		get_delegation_hierarchy_id::<Test>(true),
@@ -550,15 +533,15 @@ fn not_owner_of_parent_create_delegation_error() {
 		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
 	);
 
-	let delegate_signature = delegate_keypair.sign(&hash_to_u8(Delegation::calculate_delegation_creation_hash(
+	let delegation_hash = &hash_to_u8(Delegation::calculate_delegation_creation_hash(
 		&delegation_id,
 		&hierarchy_root_id,
 		&parent_id,
 		&delegation_node.details.permissions,
-	)));
+	));
+	let delegate_signature = (delegate.clone(), delegation_hash.clone());
 
-	let operation =
-		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
+	let operation = generate_base_delegation_creation_operation(delegation_id, delegate_signature, delegation_node);
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
@@ -585,8 +568,7 @@ fn not_owner_of_parent_create_delegation_error() {
 fn unauthorised_delegation_create_delegation_error() {
 	let creator_keypair = get_alice_ed25519();
 	let creator = get_ed25519_account(creator_keypair.public());
-	let delegate_keypair = get_bob_sr25519();
-	let delegate = get_sr25519_account(delegate_keypair.public());
+	let delegate = get_sr25519_account(get_bob_sr25519().public());
 
 	let (hierarchy_root_id, hierarchy_details) = (
 		get_delegation_hierarchy_id::<Test>(true),
@@ -602,15 +584,15 @@ fn unauthorised_delegation_create_delegation_error() {
 		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
 	);
 
-	let delegate_signature = delegate_keypair.sign(&hash_to_u8(Delegation::calculate_delegation_creation_hash(
+	let delegation_hash = &hash_to_u8(Delegation::calculate_delegation_creation_hash(
 		&delegation_id,
 		&hierarchy_root_id,
 		&parent_id,
 		&delegation_node.details.permissions,
-	)));
+	));
+	let delegate_signature = (delegate.clone(), delegation_hash.clone());
 
-	let operation =
-		generate_base_delegation_creation_operation(delegation_id, delegate_signature.into(), delegation_node);
+	let operation = generate_base_delegation_creation_operation(delegation_id, delegate_signature, delegation_node);
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
@@ -673,8 +655,7 @@ fn empty_revoke_root_successful() {
 fn list_hierarchy_revoke_and_remove_root_successful() {
 	let revoker_keypair = get_alice_ed25519();
 	let revoker = get_ed25519_account(revoker_keypair.public());
-	let delegate_keypair = get_bob_sr25519();
-	let delegate = get_sr25519_account(delegate_keypair.public());
+	let delegate = get_sr25519_account(get_bob_sr25519().public());
 
 	let (hierarchy_root_id, hierarchy_details) = (
 		get_delegation_hierarchy_id::<Test>(true),
@@ -760,8 +741,7 @@ fn list_hierarchy_revoke_and_remove_root_successful() {
 fn tree_hierarchy_revoke_and_remove_root_successful() {
 	let revoker_keypair = get_alice_ed25519();
 	let revoker = get_ed25519_account(revoker_keypair.public());
-	let delegate_keypair = get_bob_sr25519();
-	let delegate = get_sr25519_account(delegate_keypair.public());
+	let delegate = get_sr25519_account(get_bob_sr25519().public());
 
 	let (hierarchy_root_id, hierarchy_details) = (
 		get_delegation_hierarchy_id::<Test>(true),
@@ -849,8 +829,7 @@ fn tree_hierarchy_revoke_and_remove_root_successful() {
 fn max_max_revocations_revoke_and_remove_successful() {
 	let revoker_keypair = get_alice_ed25519();
 	let revoker = get_ed25519_account(revoker_keypair.public());
-	let delegate_keypair = get_bob_sr25519();
-	let delegate = get_sr25519_account(delegate_keypair.public());
+	let delegate = get_sr25519_account(get_bob_sr25519().public());
 
 	let (hierarchy_root_id, hierarchy_details) = (
 		get_delegation_hierarchy_id::<Test>(true),
@@ -995,8 +974,7 @@ fn different_root_creator_revoke_and_remove_root_error() {
 fn too_small_max_revocations_revoke_and_remove_root_error() {
 	let revoker_keypair = get_alice_ed25519();
 	let revoker = get_ed25519_account(revoker_keypair.public());
-	let delegate_keypair = get_bob_ed25519();
-	let delegate = get_ed25519_account(delegate_keypair.public());
+	let delegate = get_ed25519_account(get_bob_ed25519().public());
 
 	let (hierarchy_root_id, hierarchy_details) = (
 		get_delegation_hierarchy_id::<Test>(true),
@@ -1035,8 +1013,7 @@ fn too_small_max_revocations_revoke_and_remove_root_error() {
 fn exact_children_max_revocations_revoke_and_remove_root_error() {
 	let revoker_keypair = get_alice_ed25519();
 	let revoker = get_ed25519_account(revoker_keypair.public());
-	let delegate_keypair = get_bob_ed25519();
-	let delegate = get_ed25519_account(delegate_keypair.public());
+	let delegate = get_ed25519_account(get_bob_ed25519().public());
 
 	let (hierarchy_root_id, hierarchy_details) = (
 		get_delegation_hierarchy_id::<Test>(true),
@@ -1157,8 +1134,7 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 fn direct_owner_revoke_and_remove_delegation_successful() {
 	let revoker_keypair = get_alice_ed25519();
 	let revoker = get_ed25519_account(revoker_keypair.public());
-	let delegate_keypair = get_bob_ed25519();
-	let delegate = get_ed25519_account(delegate_keypair.public());
+	let delegate = get_ed25519_account(get_bob_ed25519().public());
 
 	let (hierarchy_root_id, hierarchy_details) = (
 		get_delegation_hierarchy_id::<Test>(true),
@@ -1246,8 +1222,7 @@ fn direct_owner_revoke_and_remove_delegation_successful() {
 fn parent_owner_revoke_delegation_successful() {
 	let revoker_keypair = get_alice_ed25519();
 	let revoker = get_ed25519_account(revoker_keypair.public());
-	let delegate_keypair = get_bob_ed25519();
-	let delegate = get_ed25519_account(delegate_keypair.public());
+	let delegate = get_ed25519_account(get_bob_ed25519().public());
 
 	let (hierarchy_root_id, hierarchy_details) = (
 		get_delegation_hierarchy_id::<Test>(true),
@@ -1424,8 +1399,7 @@ fn parent_too_far_revoke_and_remove_delegation_error() {
 	let owner = get_ed25519_account(owner_keypair.public());
 	let intermediate_keypair = get_charlie_ed25519();
 	let intermediate = get_ed25519_account(intermediate_keypair.public());
-	let delegate_keypair = get_bob_ed25519();
-	let delegate = get_ed25519_account(delegate_keypair.public());
+	let delegate = get_ed25519_account(get_bob_ed25519().public());
 
 	let (hierarchy_root_id, hierarchy_details) = (
 		get_delegation_hierarchy_id::<Test>(true),
@@ -1507,8 +1481,7 @@ fn parent_too_far_revoke_and_remove_delegation_error() {
 fn too_many_revocations_revoke_delegation_error() {
 	let revoker_keypair = get_alice_ed25519();
 	let revoker = get_ed25519_account(revoker_keypair.public());
-	let delegate_keypair = get_bob_ed25519();
-	let delegate = get_ed25519_account(delegate_keypair.public());
+	let delegate = get_ed25519_account(get_bob_ed25519().public());
 
 	let (hierarchy_root_id, hierarchy_details) = (
 		get_delegation_hierarchy_id::<Test>(true),
@@ -2010,8 +1983,7 @@ fn remove_single_hierarchy() {
 fn remove_children_gas_runs_out() {
 	let revoker_keypair = get_alice_ed25519();
 	let revoker = get_ed25519_account(revoker_keypair.public());
-	let delegate_keypair = get_bob_ed25519();
-	let delegate = get_ed25519_account(delegate_keypair.public());
+	let delegate = get_ed25519_account(get_bob_ed25519().public());
 	let child_keypair = get_charlie_ed25519();
 	let child = get_ed25519_account(child_keypair.public());
 

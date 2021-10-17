@@ -289,34 +289,6 @@ where
 	}
 }
 
-pub struct DelegationSignatureVerifier<R>(sp_std::marker::PhantomData<R>);
-impl<R: did::Config> delegation::VerifyDelegateSignature for DelegationSignatureVerifier<R> {
-	type DelegateId = <R as did::Config>::DidIdentifier;
-	type Payload = Vec<u8>;
-	type Signature = did::DidSignature;
-
-	fn verify(
-		delegate: &Self::DelegateId,
-		payload: &Self::Payload,
-		signature: &Self::Signature,
-	) -> delegation::SignatureVerificationResult {
-		let delegate_details =
-			did::Did::<R>::get(delegate).ok_or(delegation::SignatureVerificationError::SignerInformationNotPresent)?;
-
-		did::Pallet::verify_payload_signature_with_did_key_type(
-			payload,
-			signature,
-			&delegate_details,
-			did::DidVerificationKeyRelationship::Authentication,
-		)
-		.map_err(|err| match err {
-			// Should never happen as a DID has always a valid authentication key and UrlErrors are never thrown here.
-			did::DidError::SignatureError(_) => delegation::SignatureVerificationError::SignatureInvalid,
-			_ => delegation::SignatureVerificationError::SignerInformationNotPresent,
-		})
-	}
-}
-
 parameter_types! {
 	pub const MaxClaims: u32 = 50;
 	pub const UsableBalance: Balance = KILT;
@@ -371,8 +343,16 @@ parameter_types! {
 }
 
 impl delegation::Config for Runtime {
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	type Signature = did::DidSignature;
-	type DelegationSignatureVerification = DelegationSignatureVerifier<Self>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type DelegationSignatureVerification = did::DidSignatureVerify<Self>;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type Signature = kilt_primitives::benchmarks::DummySignature;
+	#[cfg(feature = "runtime-benchmarks")]
+	type DelegationSignatureVerification = kilt_support::signature::AlwaysVerify<AccountId, Vec<u8>, Self::Signature>;
+
 	type DelegationEntityId = DidIdentifier;
 	type DelegationNodeId = Hash;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
