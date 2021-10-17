@@ -72,7 +72,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::traits::CallSources;
-	use sp_runtime::traits::Saturating;
+	use sp_runtime::{traits::Saturating, SaturatedConversion};
 	use sp_std::vec::Vec;
 
 	/// Type of a CType hash.
@@ -144,7 +144,7 @@ pub mod pallet {
 		/// - Reads: Ctypes, Balance
 		/// - Writes: Ctypes, Balance
 		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::add())]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::add(ctype.len().saturated_into()))]
 		pub fn add(origin: OriginFor<T>, ctype: Vec<u8>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let creator = source.subject();

@@ -39,6 +39,9 @@ use serde::{Deserialize, Serialize};
 
 pub mod constants;
 
+#[cfg(feature = "runtime-benchmarks")]
+pub mod benchmarks;
+
 /// Opaque types. These are used by the CLI to instantiate machinery that don't
 /// need to know the specifics of the runtime. They can then be made to be
 /// agnostic over specific formats of data like extrinsics, allowing for them to

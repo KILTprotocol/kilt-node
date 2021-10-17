@@ -19,6 +19,7 @@ delegation = {default-features = false, path = "../../pallets/delegation"}
 did = {default-features = false, path = "../../pallets/did"}
 kilt-launch = {default-features = false, path = "../../pallets/kilt-launch"}
 kilt-primitives = {path = "../../primitives", default-features = false}
+kilt-support = {path = "../../support", default-features = false, optional = true}
 
 # kilt specific
 pallet-vesting = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
@@ -76,6 +77,9 @@ runtime-benchmarks = [
   "frame-system-benchmarking",
   "hex-literal",
   "kilt-launch/runtime-benchmarks",
+  "kilt-primitives/runtime-benchmarks",
+  "kilt-support",
+  "kilt-support/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",

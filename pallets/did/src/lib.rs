@@ -106,8 +106,6 @@ pub mod errors;
 pub mod migrations;
 pub mod origin;
 
-mod utils;
-
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
 
@@ -119,9 +117,11 @@ mod mock_utils;
 mod tests;
 
 mod deprecated;
+mod signature;
+mod utils;
 
 use crate::migrations::*;
-pub use crate::{default_weights::WeightInfo, did_details::*, errors::*, origin::*, pallet::*};
+pub use crate::{default_weights::WeightInfo, did_details::*, errors::*, origin::*, pallet::*, signature::*};
 
 use codec::Encode;
 use frame_support::{

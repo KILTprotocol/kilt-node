@@ -15,20 +15,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-#![cfg_attr(not(feature = "std"), no_std)]
+use codec::{Decode, Encode};
+use sp_std::vec::Vec;
 
-use deposit::Deposit;
-use frame_support::traits::{Currency, ReservableCurrency};
-use sp_runtime::traits::Zero;
+#[derive(Clone, Copy, Default, Debug, Encode, Decode, PartialEq, Eq)]
+pub struct DummySignature;
 
-pub mod deposit;
-pub mod signature;
-pub mod traits;
-
-pub fn free_deposit<A, C>(deposit: &Deposit<A, C::Balance>)
-where
-	C: Currency<A> + ReservableCurrency<A>,
-{
-	let err_amount = C::unreserve(&deposit.owner, deposit.amount);
-	debug_assert!(err_amount.is_zero());
+impl<A> From<(A, Vec<u8>)> for DummySignature {
+	fn from(_: (A, Vec<u8>)) -> Self {
+		DummySignature
+	}
 }

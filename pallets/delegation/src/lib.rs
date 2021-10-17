@@ -111,7 +111,10 @@ pub mod pallet {
 	use super::*;
 	use frame_support::{pallet_prelude::*, traits::Currency};
 	use frame_system::pallet_prelude::*;
-	use kilt_support::traits::CallSources;
+	use kilt_support::{
+		signature::{SignatureVerificationError, VerifySignature},
+		traits::CallSources,
+	};
 
 	/// Type of a delegation node identifier.
 	pub type DelegationNodeIdOf<T> = <T as Config>::DelegationNodeId;
@@ -127,7 +130,7 @@ pub mod pallet {
 
 	/// Type of the signature that the delegate generates over the delegation
 	/// information.
-	pub type DelegateSignatureTypeOf<T> = <DelegationSignatureVerificationOf<T> as VerifyDelegateSignature>::Signature;
+	pub type DelegateSignatureTypeOf<T> = <DelegationSignatureVerificationOf<T> as VerifySignature>::Signature;
 
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
@@ -138,8 +141,8 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config {
 		type Signature: Parameter;
-		type DelegationSignatureVerification: VerifyDelegateSignature<
-			DelegateId = Self::DelegationEntityId,
+		type DelegationSignatureVerification: VerifySignature<
+			SignerId = Self::DelegationEntityId,
 			Payload = Vec<u8>,
 			Signature = Self::Signature,
 		>;
@@ -400,7 +403,10 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Roots, Delegations
 		/// - Writes: Delegations
 		/// # </weight>
-		#[pallet::weight(<T as Config>::WeightInfo::add_delegation())]
+		#[pallet::weight(
+			<T as Config>::WeightInfo::add_delegation()
+				.saturating_add(DelegationSignatureVerificationOf::<T>::weight(T::Hash::max_encoded_len()))
+		)]
 		pub fn add_delegation(
 			origin: OriginFor<T>,
 			delegation_id: DelegationNodeIdOf<T>,
@@ -581,9 +587,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Roots, C * Delegations, C * Children.
 		/// - Writes: Roots, 2 * C * Delegations
 		/// # </weight>
-		#[pallet::weight(
-			<T as Config>::WeightInfo::remove_delegation_root_child(*max_removals)
-				.max(<T as Config>::WeightInfo::remove_delegation_leaf(*max_removals)))]
+		#[pallet::weight(<T as Config>::WeightInfo::remove_delegation(*max_removals))]
 		pub fn remove_delegation(
 			origin: OriginFor<T>,
 			delegation_id: DelegationNodeIdOf<T>,
@@ -614,11 +618,7 @@ pub mod pallet {
 			}
 
 			// Add worst case reads from `is_delegating`
-			Ok(Some(
-				<T as Config>::WeightInfo::remove_delegation_root_child(removal_checks)
-					.max(<T as Config>::WeightInfo::remove_delegation_leaf(removal_checks)),
-			)
-			.into())
+			Ok(Some(<T as Config>::WeightInfo::remove_delegation(removal_checks)).into())
 		}
 	}
 }
