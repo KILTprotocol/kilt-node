@@ -774,12 +774,12 @@ construct_runtime! {
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
 		match self {
-			Call::Attestation(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
-			Call::Ctype(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
-			Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
+			Call::Attestation { .. } => Some(did::DidVerificationKeyRelationship::AssertionMethod),
+			Call::Ctype { .. } => Some(did::DidVerificationKeyRelationship::AssertionMethod),
+			Call::Delegation { .. } => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
 			// DID creation is not allowed through the DID proxy.
-			Call::Did(did::Call::create(..)) => None,
-			Call::Did(_) => Some(did::DidVerificationKeyRelationship::Authentication),
+			Call::Did(did::Call::create { .. }) => None,
+			Call::Did { .. } => Some(did::DidVerificationKeyRelationship::Authentication),
 			//TODO: add a batch call case that returns the right key type if all calls in the batch require the same
 			// key type as well, otherwise it returns None and fails.
 			#[cfg(not(feature = "runtime-benchmarks"))]
@@ -793,7 +793,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	// Always return a System::remark() extrinsic call
 	#[cfg(feature = "runtime-benchmarks")]
 	fn get_call_for_did_call_benchmark() -> Self {
-		Call::System(frame_system::Call::remark(vec![]))
+		Call::System(frame_system::Call::remark { remark: vec![] })
 	}
 }
 
@@ -841,7 +841,7 @@ impl_runtime_apis! {
 
 	impl sp_api::Metadata<Block> for Runtime {
 		fn metadata() -> OpaqueMetadata {
-			Runtime::metadata().into()
+			OpaqueMetadata::new(Runtime::metadata().into())
 		}
 	}
 

@@ -10,6 +10,7 @@ substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branc
 [dependencies]
 bitflags = {default-features = false, version = "1.2.1"}
 log = {default-features = false, version = "0.4.14"}
+scale-info = { version = "1.0", default-features = false, features = ["derive"] }
 serde = {features = ["derive"], optional = true, version = "1.0"}
 
 # kilt functionality
@@ -112,6 +113,7 @@ std = [
   "pallet-transaction-payment/std",
   "pallet-transaction-payment-rpc-runtime-api/std",
   "pallet-vesting/std",
+  "scale-info/std",
   "serde",
   "sp-api/std",
   "sp-arithmetic/std",

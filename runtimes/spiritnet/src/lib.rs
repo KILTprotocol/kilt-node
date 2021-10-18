@@ -45,6 +45,7 @@ use kilt_primitives::{
 	AccountId, AuthorityId, Balance, BlockNumber, Hash, Header, Index, Signature,
 };
 use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
+use scale_info::TypeInfo;
 use sp_api::impl_runtime_apis;
 use sp_core::{
 	u32_trait::{_1, _2, _3, _5},
@@ -156,10 +157,10 @@ impl Contains<Call> for BaseFilter {
 	fn contains(c: &Call) -> bool {
 		!matches!(
 			c,
-			Call::Vesting(pallet_vesting::Call::vested_transfer(..))
-				| Call::KiltLaunch(kilt_launch::Call::locked_transfer(..))
-				| Call::Balances(..)
-				| Call::ParachainStaking(parachain_staking::Call::join_candidates(..))
+			Call::Vesting(pallet_vesting::Call::vested_transfer { .. })
+				| Call::KiltLaunch(kilt_launch::Call::locked_transfer { .. })
+				| Call::Balances { .. }
+				| Call::ParachainStaking(parachain_staking::Call::join_candidates { .. })
 		)
 	}
 }
@@ -673,7 +674,7 @@ impl_runtime_apis! {
 
 	impl sp_api::Metadata<Block> for Runtime {
 		fn metadata() -> OpaqueMetadata {
-			Runtime::metadata().into()
+			OpaqueMetadata::new(Runtime::metadata().into())
 		}
 	}
 
