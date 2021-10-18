@@ -24,7 +24,7 @@ pub const DEFAULT_RUNTIME: &str = "peregrine";
 pub const DEFAULT_PARA_ID: &str = "2000";
 
 /// Sub-commands supported by the collator.
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, TypeInfo)]
 pub enum Subcommand {
 	/// Export the genesis state of the parachain.
 	#[structopt(name = "export-genesis-state")]
@@ -70,7 +70,7 @@ pub enum Subcommand {
 }
 
 /// Command for building the genesis state of the parachain
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, TypeInfo)]
 pub struct BuildSpecCmd {
 	#[structopt(flatten)]
 	pub inner_args: sc_cli::BuildSpecCmd,
@@ -89,7 +89,7 @@ impl Deref for BuildSpecCmd {
 }
 
 /// Command for exporting the genesis state of the parachain
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, TypeInfo)]
 pub struct ExportGenesisStateCommand {
 	/// Output file name or stdout if unspecified.
 	#[structopt(parse(from_os_str))]
@@ -113,7 +113,7 @@ pub struct ExportGenesisStateCommand {
 }
 
 /// Command for exporting the genesis wasm file.
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, TypeInfo)]
 pub struct ExportGenesisWasmCommand {
 	/// Output file name or stdout if unspecified.
 	#[structopt(parse(from_os_str))]
@@ -132,7 +132,7 @@ pub struct ExportGenesisWasmCommand {
 	pub runtime: Option<String>,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, TypeInfo)]
 #[structopt(settings = &[
 	structopt::clap::AppSettings::GlobalVersion,
 	structopt::clap::AppSettings::ArgsNegateSubcommands,
@@ -154,7 +154,7 @@ pub struct Cli {
 	pub relaychain_args: Vec<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, TypeInfo)]
 pub struct RelayChainCli {
 	/// The actual relay chain cli object.
 	pub base: polkadot_cli::RunCmd,

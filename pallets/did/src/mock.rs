@@ -27,6 +27,7 @@ use frame_support::{
 use frame_system::EnsureSigned;
 use kilt_primitives::{constants::MICRO_KILT, AccountId, Balance};
 use pallet_balances::NegativeImbalance;
+use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
@@ -34,6 +35,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSigner,
 };
+
 use sp_std::sync::Arc;
 
 use crate as did;
@@ -389,7 +391,7 @@ pub fn initialize_logger() {
 	env_logger::builder().is_test(true).try_init();
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, TypeInfo)]
 pub struct ExtBuilder {
 	dids_stored: Vec<(TestDidIdentifier, did::DidDetails<Test>)>,
 	deleted_dids: Vec<TestDidIdentifier>,

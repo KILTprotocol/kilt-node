@@ -24,11 +24,13 @@ use sp_std::{
 	convert::TryInto,
 	ops::{Index, Range, RangeFull},
 };
+use scale_info::TypeInfo;
+
 #[cfg(feature = "std")]
 use sp_std::{fmt, prelude::*};
 
 /// An ordered set backed by `BoundedVec`.
-#[derive(PartialEq, Eq, Encode, Decode, DefaultNoBound, Clone)]
+#[derive(PartialEq, Eq, Encode, Decode, DefaultNoBound, Clone, TypeInfo)]
 pub struct OrderedSet<T, S>(BoundedVec<T, S>);
 
 impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {

@@ -17,9 +17,10 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::*;
+use scale_info::TypeInfo;
 
 /// All the errors that can be generated when validating a DID operation.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, TypeInfo)]
 pub enum DidError {
 	/// See [StorageError].
 	StorageError(StorageError),
@@ -44,7 +45,7 @@ impl From<InputError> for DidError {
 }
 
 /// Error involving the pallet's storage.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, TypeInfo)]
 pub enum StorageError {
 	/// The DID being created is already present on chain.
 	DidAlreadyPresent,
@@ -69,7 +70,7 @@ pub enum StorageError {
 }
 
 /// Error generated when validating a DID operation.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, TypeInfo)]
 pub enum SignatureError {
 	/// The signature is not in the format the verification key expects.
 	InvalidSignatureFormat,
@@ -84,7 +85,7 @@ pub enum SignatureError {
 
 /// Error generated when some extrinsic input does not respect the pallet's
 /// constraints.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, TypeInfo)]
 pub enum InputError {
 	/// A number of new key agreement keys greater than the maximum allowed has
 	/// been provided.

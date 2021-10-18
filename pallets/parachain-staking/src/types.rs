@@ -30,6 +30,7 @@ use sp_std::{
 	ops::{Add, Sub},
 	vec,
 };
+use scale_info::TypeInfo;
 
 use crate::{set::OrderedSet, Config};
 
@@ -37,7 +38,7 @@ use crate::{set::OrderedSet, Config};
 ///
 /// The stake has a destination account (to which the stake is directed) and an
 /// amount of funds staked.
-#[derive(Default, Clone, Encode, Decode, RuntimeDebug, PartialEq, Eq)]
+#[derive(Default, Clone, Encode, Decode, RuntimeDebug, PartialEq, Eq, TypeInfo)]
 pub struct Stake<AccountId, Balance>
 where
 	AccountId: Eq + Ord,
@@ -87,7 +88,7 @@ impl<AccountId: Ord, Balance: PartialEq + Ord> Ord for Stake<AccountId, Balance>
 }
 
 /// The activity status of the collator.
-#[derive(Copy, Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
+#[derive(Copy, Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub enum CandidateStatus {
 	/// Committed to be online and producing valid blocks (not equivocating)
 	Active,
@@ -101,7 +102,7 @@ impl Default for CandidateStatus {
 	}
 }
 
-#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
+#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo)]
 /// Global collator state with commission fee, staked funds, and delegations
 pub struct Candidate<AccountId, Balance, MaxDelegatorsPerCandidate>
 where
@@ -207,7 +208,7 @@ where
 	}
 }
 
-#[derive(Encode, Decode, RuntimeDebug, PartialEq)]
+#[derive(Encode, Decode, RuntimeDebug, PartialEq, TypeInfo)]
 pub struct Delegator<AccountId: Eq + Ord, Balance: Eq + Ord, MaxCollatorsPerDelegator: Get<u32>> {
 	pub delegations: OrderedSet<Stake<AccountId, Balance>, MaxCollatorsPerDelegator>,
 	pub total: Balance,
@@ -303,7 +304,7 @@ where
 }
 
 /// The current round index and transition information.
-#[derive(Copy, Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
+#[derive(Copy, Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct RoundInfo<BlockNumber> {
 	/// Current round index.
 	pub current: SessionIndex,
@@ -349,7 +350,7 @@ where
 /// The total stake of the pallet.
 ///
 /// The stake includes both collators' and delegators' staked funds.
-#[derive(Default, Clone, Encode, Decode, RuntimeDebug, PartialEq, Eq)]
+#[derive(Default, Clone, Encode, Decode, RuntimeDebug, PartialEq, Eq, TypeInfo)]
 pub struct TotalStake<Balance: Default> {
 	pub collators: Balance,
 	pub delegators: Balance,
@@ -357,7 +358,7 @@ pub struct TotalStake<Balance: Default> {
 
 /// The number of delegations a delegator has done within the last session in
 /// which they delegated.
-#[derive(Default, Clone, Encode, Decode, RuntimeDebug, PartialEq)]
+#[derive(Default, Clone, Encode, Decode, RuntimeDebug, PartialEq, TypeInfo)]
 pub struct DelegationCounter {
 	/// The index of the last delegation.
 	pub round: SessionIndex,

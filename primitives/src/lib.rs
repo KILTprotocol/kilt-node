@@ -27,6 +27,7 @@ pub use sp_consensus_aura::sr25519::AuthorityId;
 
 pub use opaque::*;
 
+use scale_info::TypeInfo;
 use sp_runtime::{
 	generic,
 	traits::{IdentifyAccount, Verify},
@@ -99,7 +100,7 @@ pub type DigestItem = generic::DigestItem<Hash>;
 /// A Kilt DID subject identifier.
 pub type DidIdentifier = AccountId;
 
-#[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord)]
+#[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub enum CurrencyId {
 	Dot = 0_isize,

@@ -314,7 +314,6 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, <T as frame_system::Config>::AccountId, (), OptionQuery>;
 
 	#[pallet::event]
-	#[pallet::metadata(T::BlockNumber = "BlockNumber", T::AccountId = "AccountId", T::Balance = "Balance")]
 	#[pallet::generate_deposit(pub fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// A KILT balance lock has been removed in the corresponding block.

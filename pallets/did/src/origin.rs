@@ -22,11 +22,12 @@ use frame_support::{
 };
 use sp_runtime::RuntimeDebug;
 use sp_std::marker::PhantomData;
+use scale_info::TypeInfo;
 
 use crate::*;
 
 /// Origin for modules that support DID-based authorization.
-#[derive(Clone, Decode, Encode, Eq, PartialEq, RuntimeDebug)]
+#[derive(Clone, Decode, Encode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
 pub struct DidRawOrigin<DidIdentifier, AccountId> {
 	pub id: DidIdentifier,
 	pub submitter: AccountId,

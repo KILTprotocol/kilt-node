@@ -104,7 +104,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	transaction_version: 1,
 };
 
-#[derive(codec::Encode, codec::Decode)]
+#[derive(codec::Encode, codec::Decode, TypeInfo)]
 pub enum XcmpMessage<XAccountId, XBalance> {
 	/// Transfer tokens to the given account from the Parachain account.
 	TransferToken(XAccountId, XBalance),

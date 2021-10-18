@@ -14,30 +14,31 @@ substrate-wasm-builder-runner = {version = "3.0.0"}
 
 [dev-dependencies]
 kilt-primitives = {default-features = false, path = "../../primitives"}
-pallet-balances = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
-serde = {version = "1.0.101"}
-sp-core = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-keystore = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
+pallet-balances = {branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate"}
+serde = {version = "1.0.124"}
+sp-core = {branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-keystore = {branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [dependencies]
 log = {default-features = false, version = "0.4.14"}
-serde = {optional = true, version = "1.0.101"}
+serde = {optional = true, version = "1.0.124"}
 
 # Internal dependencies
 kilt-primitives = {default-features = false, optional = true, path = "../../primitives"}
 kilt-support = {default-features = false, path = "../../support"}
 
 # Substrate dependencies
-codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.0.0"}
-frame-benchmarking = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-frame-support = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
-frame-system = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
-pallet-balances = {optional = true, branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-core = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-sp-io = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-sp-keystore = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-sp-runtime = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-std = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate"}
+codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.3.1"}
+frame-benchmarking = {branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+frame-support = {branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-system = {branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate"}
+pallet-balances = {optional = true, branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate"}
+scale-info = { version = "1.0", default-features = false, features = ["derive"], optional = true }
+sp-core = {branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+sp-io = {branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+sp-keystore = {branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+sp-runtime = {branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-std = {branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [features]
 default = ["std"]
@@ -45,6 +46,7 @@ mock = [
   "kilt-primitives",
   "pallet-balances",
   "serde",
+  "scale-info",
   "sp-core",
   "sp-io",
   "sp-keystore",
@@ -63,6 +65,7 @@ std = [
   "kilt-support/std",
   "log/std",
   "pallet-balances/std",
+  "scale-info/std",
   "sp-core/std",
   "sp-io/std",
   "sp-keystore/std",

@@ -25,6 +25,7 @@ use frame_support::{
 };
 use frame_system::EnsureSigned;
 use kilt_primitives::constants::delegation::DELEGATION_DEPOSIT;
+use scale_info::TypeInfo;
 use sp_core::{ed25519, sr25519, Pair, H256};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
@@ -399,7 +400,7 @@ pub fn initialize_pallet<T: Config>(
 	}
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, TypeInfo)]
 pub struct ExtBuilder {
 	/// endowed accounts with balances
 	balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>,

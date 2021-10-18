@@ -16,16 +16,16 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use crate as ctype;
+use crate::*;
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use kilt_primitives::Balance;
+use scale_info::TypeInfo;
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 };
-
-use crate as ctype;
-use crate::*;
 
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
@@ -134,7 +134,7 @@ where
 }
 
 #[cfg(test)]
-#[derive(Clone, Default)]
+#[derive(Clone, Default, TypeInfo)]
 pub(crate) struct ExtBuilder {
 	ctypes_stored: Vec<(TestCtypeHash, TestCtypeOwner)>,
 	balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>,

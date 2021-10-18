@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::dispatch::Weight;
+use scale_info::TypeInfo;
 
 #[cfg(any(test, feature = "mock", feature = "runtime-benchmarks"))]
 use {sp_runtime::traits::Zero, sp_std::marker::PhantomData};
@@ -25,7 +26,7 @@ use {sp_runtime::traits::Zero, sp_std::marker::PhantomData};
 pub type SignatureVerificationResult = Result<(), SignatureVerificationError>;
 
 /// The Errors that can occur during signature verification.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, TypeInfo)]
 pub enum SignatureVerificationError {
 	/// The signers information is not present on chain.
 	SignerInformationNotPresent,

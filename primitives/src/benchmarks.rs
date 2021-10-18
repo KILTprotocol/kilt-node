@@ -18,7 +18,7 @@
 use codec::{Decode, Encode};
 use sp_std::vec::Vec;
 
-#[derive(Clone, Copy, Default, Debug, Encode, Decode, PartialEq, Eq)]
+#[derive(Clone, Copy, Default, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct DummySignature;
 
 impl<A> From<(A, Vec<u8>)> for DummySignature {
