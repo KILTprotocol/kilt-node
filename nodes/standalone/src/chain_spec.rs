@@ -42,7 +42,7 @@ pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
 /// The chain specification option. This is expected to come in from the CLI and
 /// is little more than one of a number of alternatives which can easily be
 /// converted from a string (`--chain=...`) into a `ChainSpec`.
-#[derive(Clone, Debug, TypeInfo)]
+#[derive(Clone, Debug)]
 pub enum Alternative {
 	/// Whatever the current runtime is, with just Alice as an auth.
 	Development,

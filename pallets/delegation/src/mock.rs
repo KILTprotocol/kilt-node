@@ -400,7 +400,7 @@ pub fn initialize_pallet<T: Config>(
 	}
 }
 
-#[derive(Clone, Default, TypeInfo)]
+#[derive(Clone, Default)]
 pub struct ExtBuilder {
 	/// endowed accounts with balances
 	balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>,

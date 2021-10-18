@@ -134,7 +134,7 @@ where
 }
 
 #[cfg(test)]
-#[derive(Clone, Default, TypeInfo)]
+#[derive(Clone, Default)]
 pub(crate) struct ExtBuilder {
 	ctypes_stored: Vec<(TestCtypeHash, TestCtypeOwner)>,
 	balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>,
