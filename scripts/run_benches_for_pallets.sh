@@ -1,5 +1,8 @@
 #!/bin/bash
-
+usage() {
+    echo "Usage: $0 <Runtime|Spiritnet-runtime|peregrine" 1>&2
+    exit 1
+}
 # Runs all benchmarks for all pallets, for a given runtime, provided by $1
 # Should be run on a reference machine to gain accurate benchmarks
 # current Substrate reference machine: https://github.com/paritytech/substrate/pull/5848
