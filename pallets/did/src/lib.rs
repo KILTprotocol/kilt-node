@@ -148,6 +148,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::traits::CallSources;
+	use scale_info::{StaticTypeInfo, TypeInfo};
 	use sp_runtime::traits::BadOrigin;
 
 	/// Reference to a payload of data of variable size.
@@ -183,10 +184,11 @@ pub mod pallet {
 		type Call: Parameter
 			+ Dispatchable<Origin = <Self as Config>::Origin, PostInfo = PostDispatchInfo>
 			+ GetDispatchInfo
-			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
+			+ DeriveDidCallAuthorizationVerificationKeyRelationship
+			+ StaticTypeInfo;
 
 		/// Type for a DID subject identifier.
-		type DidIdentifier: Parameter + Default + DidVerifiableIdentifier;
+		type DidIdentifier: Parameter + Default + DidVerifiableIdentifier + TypeInfo;
 
 		/// Origin type expected by the proxied dispatchable calls.
 		#[cfg(not(feature = "runtime-benchmarks"))]
@@ -207,7 +209,7 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
 		/// The currency that is used to reserve funds for each did.
-		type Currency: Currency<AccountIdOf<Self>> + ReservableCurrency<AccountIdOf<Self>>;
+		type Currency: Currency<AccountIdOf<Self>> + ReservableCurrency<AccountIdOf<Self>> + TypeInfo;
 
 		/// The amount of balance that will be taken for each DID as a deposit
 		/// to incentivise fair use of the on chain storage. The deposit can be

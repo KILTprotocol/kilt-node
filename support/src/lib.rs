@@ -19,13 +19,14 @@
 
 use deposit::Deposit;
 use frame_support::traits::{Currency, ReservableCurrency};
+use scale_info::TypeInfo;
 use sp_runtime::traits::Zero;
 
 pub mod deposit;
 pub mod signature;
 pub mod traits;
 
-pub fn free_deposit<A, C>(deposit: &Deposit<A, C::Balance>)
+pub fn free_deposit<A: TypeInfo, C: TypeInfo>(deposit: &Deposit<A, C::Balance>)
 where
 	C: Currency<A> + ReservableCurrency<A>,
 {

@@ -115,6 +115,7 @@ pub mod pallet {
 		signature::{SignatureVerificationError, VerifySignature},
 		traits::CallSources,
 	};
+	use scale_info::TypeInfo;
 
 	/// Type of a delegation node identifier.
 	pub type DelegationNodeIdOf<T> = <T as Config>::DelegationNodeId;
@@ -146,8 +147,8 @@ pub mod pallet {
 			Payload = Vec<u8>,
 			Signature = Self::Signature,
 		>;
-		type DelegationEntityId: Parameter;
-		type DelegationNodeId: Parameter + Copy + AsRef<[u8]> + Eq + PartialEq + Ord + PartialOrd;
+		type DelegationEntityId: Parameter + TypeInfo;
+		type DelegationNodeId: Parameter + Copy + AsRef<[u8]> + Eq + PartialEq + Ord + PartialOrd + TypeInfo;
 		type EnsureOrigin: EnsureOrigin<
 			Success = <Self as Config>::OriginSuccess,
 			<Self as frame_system::Config>::Origin,
@@ -157,7 +158,7 @@ pub mod pallet {
 		type WeightInfo: WeightInfo;
 
 		/// The currency that is used to reserve funds for each delegation.
-		type Currency: Currency<AccountIdOf<Self>> + ReservableCurrency<AccountIdOf<Self>>;
+		type Currency: Currency<AccountIdOf<Self>> + ReservableCurrency<AccountIdOf<Self>> + TypeInfo;
 
 		/// The deposit that is required for storing a delegation.
 		#[pallet::constant]
