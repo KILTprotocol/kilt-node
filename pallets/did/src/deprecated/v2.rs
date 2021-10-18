@@ -63,6 +63,8 @@ pub(crate) struct ServiceEndpoints {
 }
 
 #[derive(Clone, Decode, Encode, PartialEq, TypeInfo)]
+#[scale_info(skip_type_params(T))]
+
 pub struct DidDetails<T: Config> {
 	pub(crate) authentication_key: KeyIdOf<T>,
 	pub(crate) key_agreement_keys: DidKeyAgreementKeySet<T>,

@@ -62,6 +62,8 @@ impl Default for Permissions {
 /// link to the hierarchy root node. Furthermore, all nodes have a parent except
 /// the root nodes, which point to themselves for the hierarchy root node link.
 #[derive(Clone, Encode, Decode, PartialEq, TypeInfo)]
+#[scale_info(skip_type_params(T))]
+
 pub struct DelegationNode<T: Config> {
 	/// The ID of the delegation hierarchy the node is part of.
 	pub hierarchy_root_id: DelegationNodeIdOf<T>,
@@ -129,6 +131,8 @@ impl<T: Config> DelegationNode<T> {
 
 /// Delegation information attached to delegation nodes.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, TypeInfo)]
+#[scale_info(skip_type_params(T))]
+
 pub struct DelegationDetails<T: Config> {
 	/// The owner of the delegation (and its node).
 	pub owner: DelegatorIdOf<T>,
@@ -155,6 +159,8 @@ impl<T: Config> DelegationDetails<T> {
 
 /// The details associated with a delegation hierarchy.
 #[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, TypeInfo)]
+#[scale_info(skip_type_params(T))]
+
 pub struct DelegationHierarchyDetails<T: Config> {
 	/// The authorised CTYPE hash that attesters can attest using this
 	/// delegation hierarchy.

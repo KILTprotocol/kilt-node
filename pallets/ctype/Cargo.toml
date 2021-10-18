@@ -33,7 +33,7 @@ frame-benchmarking = {branch = "polkadot-v0.9.11", default-features = false, git
 frame-support = {branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate"}
 frame-system = {branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate"}
 pallet-balances = {optional = true, branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate"}
-scale-info = { version = "1.0", default-features = false, features = ["derive"], optional = true }
+scale-info = { version = "1.0", default-features = false, features = ["derive"]}
 sp-core = {branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
 sp-io = {branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
 sp-keystore = {branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
@@ -45,8 +45,8 @@ default = ["std"]
 mock = [
   "kilt-primitives",
   "pallet-balances",
+  # "scale-info",
   "serde",
-  "scale-info",
   "sp-core",
   "sp-io",
   "sp-keystore",

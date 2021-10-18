@@ -135,12 +135,16 @@ pub mod pallet {
 	use pallet_vesting::{MaxVestingSchedulesGet, Vesting, VestingInfo};
 	use scale_info::TypeInfo;
 	use sp_runtime::traits::{CheckedDiv, Convert, SaturatedConversion, Saturating};
-	use sp_std::convert::{TryFrom, TryInto};
+	use sp_std::{
+		convert::{TryFrom, TryInto},
+		vec,
+	};
 
 	pub const KILT_LAUNCH_ID: LockIdentifier = *b"kiltlnch";
 	pub const VESTING_ID: LockIdentifier = *b"vesting ";
 
 	#[derive(Debug, Encode, Decode, PartialEq, Eq, Clone, TypeInfo)]
+	#[scale_info(skip_type_params(T))]
 	pub struct LockedBalance<T: Config> {
 		pub block: T::BlockNumber,
 		pub amount: <T as pallet_balances::Config>::Balance,
@@ -676,7 +680,7 @@ pub mod pallet {
 		/// has to be called actively to unlock more of the vested funds.
 		fn migrate_vesting(source: &T::AccountId, target: &T::AccountId) -> Result<Weight, DispatchError> {
 			let source_vesting = if let Some(source_vesting) = Vesting::<T>::take(source).unwrap_or_default().get(0) {
-				source_vesting
+				source_vesting.clone()
 			} else {
 				return Ok(T::DbWeight::get().reads(1));
 			};
@@ -696,16 +700,16 @@ pub mod pallet {
 						target_vesting.starting_block() == source_vesting.starting_block(),
 						Error::<T>::ConflictingVestingStarts
 					);
-					VestingInfo::<BalanceOf<T>, T::BlockNumber> {
-						// We can simply sum `locked` and `per_block` because of the above requirement
-						locked: target_vesting.locked().saturating_add(source_vesting.locked()),
-						per_block: target_vesting.per_block().saturating_add(source_vesting.per_block()),
-						starting_block: target_vesting.starting_block(),
-					}
+					// We can simply sum `locked` and `per_block` because of the above requirement
+					VestingInfo::<BalanceOf<T>, T::BlockNumber>::new(
+						target_vesting.locked().saturating_add(source_vesting.locked()),
+						target_vesting.per_block().saturating_add(source_vesting.per_block()),
+						target_vesting.starting_block(),
+					)
 				} else {
 					// If vesting hasn't been set up for target account, we can default to the one
 					// of the source account
-					*source_vesting
+					source_vesting
 				};
 			let bv =
 				BoundedVec::<VestingInfo<BalanceOf<T>, T::BlockNumber>, MaxVestingSchedulesGet<T>>::try_from(vec![

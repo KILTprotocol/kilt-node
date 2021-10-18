@@ -75,6 +75,9 @@ pub const INFLATION_CONFIG: (Perquintill, Perquintill, Perquintill, Perquintill)
 	Perquintill::from_percent(8),
 );
 
+/// Copied from Kusama & Polkadot runtime
+pub const MAX_VESTING_SCHEDULES: u32 = 28;
+
 pub mod attestation {
 	use super::*;
 
@@ -119,7 +122,7 @@ pub mod staking {
 	pub const MIN_COLLATORS: u32 = 16;
 
 	#[cfg(feature = "fast-gov")]
-	pub const MAX_CANDIDATES: u32 = 16;
+	pub const MAX_CANDIDATES: u32 = 17;
 	#[cfg(not(feature = "fast-gov"))]
 	pub const MAX_CANDIDATES: u32 = 75;
 }

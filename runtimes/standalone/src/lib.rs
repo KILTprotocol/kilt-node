@@ -30,8 +30,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::EnsureSigned;
 
-use kilt_primitives::{
-	constants::{
+use kilt_primitives::{AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate, constants::{
 		attestation::ATTESTATION_DEPOSIT,
 		delegation::{
 			DELEGATION_DEPOSIT, MAX_CHILDREN, MAX_PARENT_CHECKS, MAX_REMOVALS, MAX_REVOCATIONS,
@@ -41,10 +40,9 @@ use kilt_primitives::{
 			MAX_BLOCKS_TX_VALIDITY, MAX_ENDPOINT_URLS_COUNT, MAX_KEY_AGREEMENT_KEYS, MAX_PUBLIC_KEYS_PER_DID,
 			MAX_TOTAL_KEY_AGREEMENT_KEYS, MAX_URL_LENGTH,
 		},
+		staking::MAX_CANDIDATES,
 		KILT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION,
-	},
-	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature,
-};
+	}};
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
 use sp_api::impl_runtime_apis;
@@ -205,9 +203,14 @@ impl frame_system::Config for Runtime {
 	type OnSetCode = ();
 }
 
+parameter_types! {
+	pub const MaxAuthorities: u32  = MAX_CANDIDATES;
+}
+
 impl pallet_aura::Config for Runtime {
 	type AuthorityId = AuraId;
 	type DisabledValidators = ();
+	type MaxAuthorities = MaxAuthorities;
 }
 
 impl pallet_grandpa::Config for Runtime {
@@ -302,14 +305,18 @@ impl kilt_launch::Config for Runtime {
 }
 
 parameter_types! {
-	pub const TransactionByteFee: Balance = 0;
+	pub const TransactionByteFee: Balance = MICRO_KILT;
+	/// This value increases the priority of `Operational` transactions by adding
+	/// a "virtual tip" that's equal to the `OperationalFeeMultiplier * final_fee`.
+	pub const OperationalFeeMultiplier: u8 = 5;
 }
 
 impl pallet_transaction_payment::Config for Runtime {
 	type OnChargeTransaction = CurrencyAdapter<Balances, ToAuthor<Runtime>>;
 	type TransactionByteFee = TransactionByteFee;
+	type OperationalFeeMultiplier = OperationalFeeMultiplier;
 	type WeightToFee = IdentityFee<Balance>;
-	type FeeMultiplierUpdate = ();
+	type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
 }
 
 impl pallet_sudo::Config for Runtime {

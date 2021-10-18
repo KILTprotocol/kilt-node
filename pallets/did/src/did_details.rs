@@ -222,6 +222,8 @@ impl DidVerifiableIdentifier for kilt_primitives::DidIdentifier {
 /// It is currently used to keep track of all the past and current
 /// attestation keys a DID might control.
 #[derive(Clone, Debug, Decode, Encode, PartialEq, Ord, PartialOrd, Eq, TypeInfo)]
+#[scale_info(skip_type_params(T))]
+
 pub struct DidPublicKeyDetails<T: Config> {
 	/// A public key the DID controls.
 	pub key: DidPublicKey,
@@ -231,6 +233,8 @@ pub struct DidPublicKeyDetails<T: Config> {
 
 /// The details associated to a DID identity.
 #[derive(Clone, Decode, Encode, PartialEq, TypeInfo)]
+#[scale_info(skip_type_params(T))]
+
 pub struct DidDetails<T: Config> {
 	/// The ID of the authentication key, used to authenticate DID-related
 	/// operations.
@@ -539,6 +543,8 @@ pub(crate) type DidPublicKeyMap<T> =
 
 /// The details of a new DID to create.
 #[derive(Clone, Decode, Encode, PartialEq, TypeInfo)]
+#[scale_info(skip_type_params(T))]
+
 pub struct DidCreationDetails<T: Config> {
 	/// The DID identifier. It has to be unique.
 	pub did: DidIdentifierOf<T>,
@@ -589,6 +595,8 @@ pub trait DeriveDidCallAuthorizationVerificationKeyRelationship {
 /// extrinsic to have a DID origin and perform DID-based authorization upon
 /// their invocation.
 #[derive(Clone, Debug, Decode, Encode, PartialEq, TypeInfo)]
+#[scale_info(skip_type_params(T))]
+
 pub struct DidAuthorizedCallOperation<T: Config> {
 	/// The DID identifier.
 	pub did: DidIdentifierOf<T>,
@@ -607,6 +615,8 @@ pub struct DidAuthorizedCallOperation<T: Config> {
 /// It contains additional information about the type of DID key to used for
 /// authorization.
 #[derive(Clone, Debug, PartialEq, TypeInfo)]
+#[scale_info(skip_type_params(T))]
+
 pub struct DidAuthorizedCallOperationWithVerificationRelationship<T: Config> {
 	/// The wrapped [DidAuthorizedCallOperation].
 	pub operation: DidAuthorizedCallOperation<T>,

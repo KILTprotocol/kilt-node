@@ -127,28 +127,7 @@ parameter_types! {
 }
 
 parameter_types! {
-	pub const BlockHashCount: BlockNumber = 250;
 	pub const Version: RuntimeVersion = VERSION;
-	pub RuntimeBlockLength: BlockLength =
-		BlockLength::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
-	pub RuntimeBlockWeights: BlockWeights = BlockWeights::builder()
-		.base_block(BlockExecutionWeight::get())
-		.for_class(DispatchClass::all(), |weights| {
-			weights.base_extrinsic = ExtrinsicBaseWeight::get();
-		})
-		.for_class(DispatchClass::Normal, |weights| {
-			weights.max_total = Some(NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT);
-		})
-		.for_class(DispatchClass::Operational, |weights| {
-			weights.max_total = Some(MAXIMUM_BLOCK_WEIGHT);
-			// Operational transactions have some extra reserved space, so that they
-			// are included even if block reached `MAXIMUM_BLOCK_WEIGHT`.
-			weights.reserved = Some(
-				MAXIMUM_BLOCK_WEIGHT - NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT
-			);
-		})
-		.avg_block_initialization(AVERAGE_ON_INITIALIZE_RATIO)
-		.build_or_panic();
 	pub const SS58Prefix: u8 = 38;
 }
 
@@ -200,8 +179,8 @@ impl frame_system::Config for Runtime {
 	type DbWeight = RocksDbWeight;
 	type BaseCallFilter = BaseFilter;
 	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
-	type BlockWeights = RuntimeBlockWeights;
-	type BlockLength = RuntimeBlockLength;
+	type BlockWeights = BlockWeights;
+	type BlockLength = BlockLength;
 	type SS58Prefix = SS58Prefix;
 	/// The set code logic
 	type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Runtime>;
@@ -249,21 +228,17 @@ impl pallet_balances::Config for Runtime {
 }
 
 parameter_types! {
-	pub const TargetBlockFullness: Perquintill = Perquintill::from_percent(25);
-	/// Minimum amount of the multiplier. This value cannot be too low. A test case should ensure
-	/// that combined with `AdjustmentVariable`, we can recover from the minimum.
-	/// See `multiplier_can_grow_from_zero`.
-	pub Minimum: Multiplier = Multiplier::saturating_from_rational(1, 1);
-	/// The adjustment variable of the runtime. Higher values will cause `TargetBlockFullness` to
-	/// change the fees more rapidly.
-	pub Variability: Multiplier = Multiplier::saturating_from_rational(3, 100_000);
+	/// This value increases the priority of `Operational` transactions by adding
+	/// a "virtual tip" that's equal to the `OperationalFeeMultiplier * final_fee`.
+	pub const OperationalFeeMultiplier: u8 = 5;
 }
 
 impl pallet_transaction_payment::Config for Runtime {
 	type OnChargeTransaction = pallet_transaction_payment::CurrencyAdapter<Balances, ()>;
 	type TransactionByteFee = TransactionByteFee;
+	type OperationalFeeMultiplier = OperationalFeeMultiplier;
 	type WeightToFee = fee::WeightToFee;
-	type FeeMultiplierUpdate = TargetedFeeAdjustment<Runtime, TargetBlockFullness, Variability, Minimum>;
+	type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
 }
 
 impl pallet_sudo::Config for Runtime {
@@ -291,10 +266,15 @@ impl parachain_info::Config for Runtime {}
 
 impl cumulus_pallet_aura_ext::Config for Runtime {}
 
+parameter_types! {
+	pub const MaxAuthorities: u32  = MAX_CANDIDATES;
+}
+
 impl pallet_aura::Config for Runtime {
-	type AuthorityId = AuthorityId;
+	type AuthorityId = AuraId;
 	//TODO: handle disabled validators
 	type DisabledValidators = ();
+	type MaxAuthorities = MaxAuthorities;
 }
 
 parameter_types! {
@@ -336,6 +316,7 @@ impl pallet_vesting::Config for Runtime {
 	// disable vested transfers by setting min amount to max balance
 	type MinVestedTransfer = MinVestedTransfer;
 	type WeightInfo = weights::pallet_vesting::WeightInfo<Runtime>;
+	const MAX_VESTING_SCHEDULES: u32 = kilt_primitives::constants::MAX_VESTING_SCHEDULES;
 }
 
 parameter_types! {

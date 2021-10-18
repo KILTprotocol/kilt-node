@@ -30,8 +30,7 @@ use frame_system::{
 	limits::{BlockLength, BlockWeights},
 	EnsureOneOf, EnsureRoot,
 };
-use kilt_primitives::{
-	constants::{
+use kilt_primitives::{AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate, constants::{
 		attestation::ATTESTATION_DEPOSIT,
 		delegation::{
 			DELEGATION_DEPOSIT, MAX_CHILDREN, MAX_PARENT_CHECKS, MAX_REMOVALS, MAX_REVOCATIONS,
@@ -48,9 +47,7 @@ use kilt_primitives::{
 		staking::{DEFAULT_BLOCKS_PER_ROUND, MAX_CANDIDATES, MIN_BLOCKS_PER_ROUND, MIN_COLLATORS, STAKE_DURATION},
 		AVERAGE_ON_INITIALIZE_RATIO, KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT,
 		NORMAL_DISPATCH_RATIO, SLOT_DURATION,
-	},
-	AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Hash, Header, Index, Signature,
-};
+	}};
 use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
 use sp_api::impl_runtime_apis;
 use sp_core::{
@@ -244,21 +241,17 @@ impl pallet_balances::Config for Runtime {
 }
 
 parameter_types! {
-	pub const TargetBlockFullness: Perquintill = Perquintill::from_percent(25);
-	/// Minimum amount of the multiplier. This value cannot be too low. A test case should ensure
-	/// that combined with `AdjustmentVariable`, we can recover from the minimum.
-	/// See `multiplier_can_grow_from_zero`.
-	pub Minimum: Multiplier = Multiplier::saturating_from_rational(1, 1);
-	/// The adjustment variable of the runtime. Higher values will cause `TargetBlockFullness` to
-	/// change the fees more rapidly.
-	pub Variability: Multiplier = Multiplier::saturating_from_rational(3, 100_000);
+	/// This value increases the priority of `Operational` transactions by adding
+	/// a "virtual tip" that's equal to the `OperationalFeeMultiplier * final_fee`.
+	pub const OperationalFeeMultiplier: u8 = 5;
 }
 
 impl pallet_transaction_payment::Config for Runtime {
 	type OnChargeTransaction = pallet_transaction_payment::CurrencyAdapter<Balances, ()>;
 	type TransactionByteFee = TransactionByteFee;
+	type OperationalFeeMultiplier = OperationalFeeMultiplier;
 	type WeightToFee = fee::WeightToFee;
-	type FeeMultiplierUpdate = TargetedFeeAdjustment<Runtime, TargetBlockFullness, Variability, Minimum>;
+	type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
 }
 
 impl pallet_sudo::Config for Runtime {
@@ -286,10 +279,15 @@ impl parachain_info::Config for Runtime {}
 
 impl cumulus_pallet_aura_ext::Config for Runtime {}
 
+parameter_types! {
+	pub const MaxAuthorities: u32  = MAX_CANDIDATES;
+}
+
 impl pallet_aura::Config for Runtime {
-	type AuthorityId = AuthorityId;
+	type AuthorityId = AuraId;
 	//TODO: handle disabled validators
 	type DisabledValidators = ();
+	type MaxAuthorities = MaxAuthorities;
 }
 
 parameter_types! {
@@ -331,6 +329,7 @@ impl pallet_vesting::Config for Runtime {
 	// disable vested transfers by setting min amount to max balance
 	type MinVestedTransfer = MinVestedTransfer;
 	type WeightInfo = weights::pallet_vesting::WeightInfo<Runtime>;
+	const MAX_VESTING_SCHEDULES: u32 = kilt_primitives::constants::MAX_VESTING_SCHEDULES;
 }
 
 parameter_types! {
