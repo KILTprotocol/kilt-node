@@ -56,28 +56,28 @@ pub trait WeightInfo {
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn add() -> Weight {
-		(78_255_000_u64)
+		(77_744_000_u64)
 			.saturating_add(T::DbWeight::get().reads(6_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	fn revoke(d: u32, ) -> Weight {
-		(39_225_000_u64)
-			// Standard Error: 59_000
-			.saturating_add((6_253_000_u64).saturating_mul(d as Weight))
+		(39_185_000_u64)
+			// Standard Error: 28_000
+			.saturating_add((6_311_000_u64).saturating_mul(d as Weight))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(d as Weight)))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn remove(d: u32, ) -> Weight {
-		(67_516_000_u64)
-			// Standard Error: 82_000
-			.saturating_add((6_182_000_u64).saturating_mul(d as Weight))
+		(67_798_000_u64)
+			// Standard Error: 42_000
+			.saturating_add((6_029_000_u64).saturating_mul(d as Weight))
 			.saturating_add(T::DbWeight::get().reads(4_u64))
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(d as Weight)))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	fn reclaim_deposit() -> Weight {
-		(59_143_000_u64)
+		(59_425_000_u64)
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
@@ -86,28 +86,28 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 // For backwards compatibility and tests
 impl WeightInfo for () {
 	fn add() -> Weight {
-		(78_255_000_u64)
+		(77_744_000_u64)
 			.saturating_add(RocksDbWeight::get().reads(6_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
 	}
 	fn revoke(d: u32, ) -> Weight {
-		(39_225_000_u64)
-			// Standard Error: 59_000
-			.saturating_add((6_253_000_u64).saturating_mul(d as Weight))
+		(39_185_000_u64)
+			// Standard Error: 28_000
+			.saturating_add((6_311_000_u64).saturating_mul(d as Weight))
 			.saturating_add(RocksDbWeight::get().reads(2_u64))
 			.saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(d as Weight)))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
 	fn remove(d: u32, ) -> Weight {
-		(67_516_000_u64)
-			// Standard Error: 82_000
-			.saturating_add((6_182_000_u64).saturating_mul(d as Weight))
+		(67_798_000_u64)
+			// Standard Error: 42_000
+			.saturating_add((6_029_000_u64).saturating_mul(d as Weight))
 			.saturating_add(RocksDbWeight::get().reads(4_u64))
 			.saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(d as Weight)))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
 	}
 	fn reclaim_deposit() -> Weight {
-		(59_143_000_u64)
+		(59_425_000_u64)
 			.saturating_add(RocksDbWeight::get().reads(3_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
 	}
