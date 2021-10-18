@@ -128,13 +128,13 @@ pub mod pallet {
 		sp_runtime::traits::{StaticLookup, Zero},
 		storage::types::StorageMap,
 		traits::{Currency, ExistenceRequirement::AllowDeath, Get, LockIdentifier, LockableCurrency, WithdrawReasons},
-		transactional,
+		transactional, BoundedVec,
 	};
 	use frame_system::pallet_prelude::*;
 	use pallet_balances::{BalanceLock, Locks};
-	use pallet_vesting::{Vesting, VestingInfo};
+	use pallet_vesting::{MaxVestingSchedulesGet, Vesting, VestingInfo};
 	use sp_runtime::traits::{CheckedDiv, Convert, SaturatedConversion, Saturating};
-	use sp_std::convert::TryInto;
+	use sp_std::convert::{TryFrom, TryInto};
 
 	pub const KILT_LAUNCH_ID: LockIdentifier = *b"kiltlnch";
 	pub const VESTING_ID: LockIdentifier = *b"vesting ";
@@ -255,14 +255,8 @@ pub mod pallet {
 					let length_as_balance = T::BlockNumberToBalance::convert(length);
 					let per_block = locked.checked_div(&length_as_balance).unwrap_or(locked);
 
-					Vesting::<T>::insert(
-						who,
-						VestingInfo::<BalanceOf<T>, T::BlockNumber> {
-							locked,
-							per_block,
-							starting_block: T::BlockNumber::zero(),
-						},
-					);
+					let vesting_info = VestingInfo::new(locked, per_block, T::BlockNumber::zero());
+					Vesting::<T>::try_append(who, vesting_info).expect("Too many vesting schedules at genesis");
 					// Instead of setting the lock now, we do so in
 					// `migrate_genesis_account`, see there for explanation
 				}
@@ -354,6 +348,9 @@ pub mod pallet {
 		/// The source address is not a valid address which was set up as an
 		/// unowned account in the genesis build.
 		NotUnownedAccount,
+		/// The source address has more than one vesting scheme which should
+		/// only be a theoretical issue.
+		MultipleVestingSchemes,
 		/// The target address should not be the source address.
 		SameDestination,
 		/// The signing account is not the transfer account.
@@ -677,7 +674,7 @@ pub mod pallet {
 		/// transactions. One of these would be `pallet_vesting::vest()` which
 		/// has to be called actively to unlock more of the vested funds.
 		fn migrate_vesting(source: &T::AccountId, target: &T::AccountId) -> Result<Weight, DispatchError> {
-			let source_vesting = if let Some(source_vesting) = Vesting::<T>::take(source) {
+			let source_vesting = if let Some(source_vesting) = Vesting::<T>::take(source).unwrap_or_default().get(0) {
 				source_vesting
 			} else {
 				return Ok(T::DbWeight::get().reads(1));
@@ -686,29 +683,35 @@ pub mod pallet {
 			// Check for an already existing vesting schedule for the target account
 			// which would be the case if the claimer requests migration from multiple
 			// source accounts to the same target
-			let vesting = if let Some(VestingInfo {
-				locked,
-				per_block,
-				starting_block,
-			}) = Vesting::<T>::take(&target)
-			{
-				// Should never throw because all source accounts start vesting in genesis block
-				ensure!(
-					starting_block == source_vesting.starting_block,
-					Error::<T>::ConflictingVestingStarts
-				);
-				VestingInfo {
-					// We can simply sum `locked` and `per_block` because of the above requirement
-					locked: locked.saturating_add(source_vesting.locked),
-					per_block: per_block.saturating_add(source_vesting.per_block),
-					starting_block,
-				}
-			} else {
-				// If vesting hasn't been set up for target account, we can default to the one
-				// of the source account
-				source_vesting
-			};
-			Vesting::<T>::insert(target, vesting);
+			ensure!(
+				Vesting::<T>::decode_len(&target).unwrap_or_default() <= 1,
+				Error::<T>::MultipleVestingSchemes
+			);
+
+			let vesting =
+				if let Some(target_vesting) = Vesting::<T>::take(&target).unwrap_or_default().into_inner().first() {
+					// Should never throw because all source accounts start vesting in genesis block
+					ensure!(
+						target_vesting.starting_block() == source_vesting.starting_block(),
+						Error::<T>::ConflictingVestingStarts
+					);
+					VestingInfo::<BalanceOf<T>, T::BlockNumber> {
+						// We can simply sum `locked` and `per_block` because of the above requirement
+						locked: target_vesting.locked().saturating_add(source_vesting.locked()),
+						per_block: target_vesting.per_block().saturating_add(source_vesting.per_block()),
+						starting_block: target_vesting.starting_block(),
+					}
+				} else {
+					// If vesting hasn't been set up for target account, we can default to the one
+					// of the source account
+					*source_vesting
+				};
+			let bv =
+				BoundedVec::<VestingInfo<BalanceOf<T>, T::BlockNumber>, MaxVestingSchedulesGet<T>>::try_from(vec![
+					vesting,
+				])
+				.map_err(|_| pallet_vesting::Error::<T>::AtMaxVestingSchedules)?;
+			Vesting::<T>::insert(target, bv);
 			// Only lock funds from now until vesting expires.
 			// Enables the user to have funds before actively calling `vest` if claimed
 			// after the genesis block.
@@ -722,7 +725,11 @@ pub mod pallet {
 			<<T as pallet_vesting::Config>::Currency as LockableCurrency<T::AccountId>>::set_lock(
 				VESTING_ID, target, locked_now, reasons,
 			);
-			Self::deposit_event(Event::AddedVesting(target.clone(), vesting.per_block, vesting.locked));
+			Self::deposit_event(Event::AddedVesting(
+				target.clone(),
+				vesting.per_block(),
+				vesting.locked(),
+			));
 			Ok(<T as pallet::Config>::WeightInfo::migrate_genesis_account_vesting())
 		}
 
