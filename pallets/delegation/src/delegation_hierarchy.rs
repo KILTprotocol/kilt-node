@@ -29,7 +29,7 @@ bitflags! {
 	/// Bitflags for permissions.
 	///
 	/// Permission bits can be combined to express multiple permissions.
-	#[derive(Encode, Decode)]
+	#[derive(Encode, Decode, TypeInfo)]
 	pub struct Permissions: u32 {
 		/// Permission to write attestations on chain.
 		const ATTEST = 0b0000_0001;

@@ -18,6 +18,7 @@
 
 use frame_support::traits::{Currency, Get};
 use parity_scale_codec::{Decode, Encode};
+use scale_info::TypeInfo;
 use sp_runtime::{
 	traits::{AtLeast32BitUnsigned, Saturating, Zero},
 	RuntimeDebug,
@@ -30,7 +31,6 @@ use sp_std::{
 	ops::{Add, Sub},
 	vec,
 };
-use scale_info::TypeInfo;
 
 use crate::{set::OrderedSet, Config};
 

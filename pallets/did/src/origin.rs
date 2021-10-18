@@ -20,9 +20,9 @@ use frame_support::{
 	codec::{Decode, Encode},
 	traits::EnsureOrigin,
 };
+use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 use sp_std::marker::PhantomData;
-use scale_info::TypeInfo;
 
 use crate::*;
 

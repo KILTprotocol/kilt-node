@@ -133,13 +133,14 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use pallet_balances::{BalanceLock, Locks};
 	use pallet_vesting::{MaxVestingSchedulesGet, Vesting, VestingInfo};
+	use scale_info::TypeInfo;
 	use sp_runtime::traits::{CheckedDiv, Convert, SaturatedConversion, Saturating};
 	use sp_std::convert::{TryFrom, TryInto};
 
 	pub const KILT_LAUNCH_ID: LockIdentifier = *b"kiltlnch";
 	pub const VESTING_ID: LockIdentifier = *b"vesting ";
 
-	#[derive(Debug, Encode, Decode, PartialEq, Eq, Clone)]
+	#[derive(Debug, Encode, Decode, PartialEq, Eq, Clone, TypeInfo)]
 	pub struct LockedBalance<T: Config> {
 		pub block: T::BlockNumber,
 		pub amount: <T as pallet_balances::Config>::Balance,

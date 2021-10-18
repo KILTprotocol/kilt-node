@@ -18,13 +18,13 @@
 
 use frame_support::{traits::Get, BoundedVec, DefaultNoBound};
 use parity_scale_codec::{Decode, Encode};
+use scale_info::TypeInfo;
 use sp_runtime::{traits::Zero, SaturatedConversion};
 use sp_std::{
 	cmp::Ordering,
 	convert::TryInto,
 	ops::{Index, Range, RangeFull},
 };
-use scale_info::TypeInfo;
 
 #[cfg(feature = "std")]
 use sp_std::{fmt, prelude::*};

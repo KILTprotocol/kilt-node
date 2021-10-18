@@ -391,7 +391,7 @@ pub fn initialize_logger() {
 	env_logger::builder().is_test(true).try_init();
 }
 
-#[derive(Clone, Default, TypeInfo)]
+#[derive(Clone, Default)]
 pub struct ExtBuilder {
 	dids_stored: Vec<(TestDidIdentifier, did::DidDetails<Test>)>,
 	deleted_dids: Vec<TestDidIdentifier>,
