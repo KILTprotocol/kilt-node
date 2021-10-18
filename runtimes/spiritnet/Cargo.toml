@@ -14,11 +14,15 @@ static_assertions = "1.1.0"
 # RPC
 frame-system-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 pallet-transaction-payment-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
-pallet-vesting = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 
 # KILT pallets & primitives
+attestation = {default-features = false, path = "../../pallets/attestation"}
+ctype = {default-features = false, path = "../../pallets/ctype"}
+delegation = {default-features = false, path = "../../pallets/delegation"}
+did = {default-features = false, path = "../../pallets/did"}
 kilt-launch = {path = "../../pallets/kilt-launch", default-features = false}
 kilt-primitives = {path = "../../primitives", default-features = false}
+kilt-support = {path = "../../support", default-features = false, optional = true}
 parachain-staking = {default-features = false, path = "../../pallets/parachain-staking"}
 
 # Substrate dependencies
@@ -54,6 +58,7 @@ pallet-timestamp = {git = "https://github.com/paritytech/substrate", default-fea
 pallet-transaction-payment = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 pallet-treasury = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 pallet-utility = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
+pallet-vesting = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10"}
 
 # Cumulus dependencies
 cumulus-pallet-aura-ext = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.10"}
@@ -70,6 +75,7 @@ xcm-builder = {git = "https://github.com/paritytech/polkadot", default-features 
 xcm-executor = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.10"}
 
 # Benchmarking
+cumulus-pallet-session-benchmarking = {git = "https://github.com/paritytech/cumulus", default-features = false, optional = true, branch = "polkadot-v0.9.10"}
 frame-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.10"}
 frame-system-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.10"}
 hex-literal = {version = "0.3.1", optional = true}
@@ -87,18 +93,27 @@ substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branc
 default = ["std"]
 fast-gov = ["kilt-primitives/fast-gov"]
 runtime-benchmarks = [
+  "attestation/runtime-benchmarks",
+  "ctype/runtime-benchmarks",
+  "cumulus-pallet-session-benchmarking",
+  "cumulus-pallet-session-benchmarking/runtime-benchmarks",
+  "delegation/runtime-benchmarks",
+  "did/runtime-benchmarks",
   "frame-benchmarking",
   "frame-support/runtime-benchmarks",
-  "frame-system/runtime-benchmarks",
   "frame-system-benchmarking",
+  "frame-system/runtime-benchmarks",
   "hex-literal",
+  "kilt-primitives/runtime-benchmarks",
+  "kilt-support",
+  "kilt-support/runtime-benchmarks",
   "kilt-launch/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-collective/runtime-benchmarks",
   "pallet-democracy/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
-  "pallet-scheduler/runtime-benchmarks", # "cumulus-pallet-session-benchmarking/runtime-benchmarks",
+  "pallet-scheduler/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
   "pallet-treasury/runtime-benchmarks",
   "pallet-vesting/runtime-benchmarks",
@@ -108,14 +123,20 @@ runtime-benchmarks = [
   "sp-runtime/runtime-benchmarks",
 ]
 std = [
+  "attestation/std",
   "codec/std",
+  "ctype/std",
   "cumulus-pallet-aura-ext/std",
   "cumulus-pallet-parachain-system/std",
   "cumulus-pallet-xcmp-queue/std",
   "cumulus-primitives-core/std",
   "cumulus-primitives-timestamp/std",
+  "delegation/std",
+  "did/std",
+  "frame-benchmarking/std",
   "frame-executive/std",
   "frame-support/std",
+  "frame-system-benchmarking/std",
   "frame-system-rpc-runtime-api/std",
   "frame-system/std",
   "frame-try-runtime/std",
@@ -161,6 +182,10 @@ std = [
   "xcm/std",
 ]
 try-runtime = [
+  "attestation/try-runtime",
+  "ctype/try-runtime",
+  "delegation/try-runtime",
+  "did/try-runtime",
   "frame-executive/try-runtime",
   "frame-support/try-runtime",
   "frame-system/try-runtime",

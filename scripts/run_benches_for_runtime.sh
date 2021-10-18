@@ -25,6 +25,7 @@ pallets=(
     pallet_timestamp
     pallet_treasury
     pallet_utility
+    pallet_session
 )
 
 echo "[+] Running all benchmarks for $runtime --chain=$chain"

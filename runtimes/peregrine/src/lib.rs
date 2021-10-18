@@ -25,11 +25,33 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use frame_support::{traits::LockIdentifier, PalletId};
+use frame_support::{
+	construct_runtime, parameter_types,
+	weights::{
+		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
+		DispatchClass, Weight,
+	},
+	PalletId,
+};
 use frame_system::{
 	limits::{BlockLength, BlockWeights},
 	EnsureOneOf, EnsureRoot,
 };
+use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
+use sp_api::impl_runtime_apis;
+use sp_core::{
+	u32_trait::{_1, _2, _3, _5},
+	OpaqueMetadata,
+};
+use sp_runtime::{
+	create_runtime_str, generic, impl_opaque_keys,
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
+	transaction_validity::{TransactionSource, TransactionValidity},
+	ApplyExtrinsicResult, FixedPointNumber, Perbill, Permill, Perquintill,
+};
+use sp_std::prelude::*;
+use sp_version::RuntimeVersion;
+
 use kilt_primitives::{
 	constants::{
 		attestation::ATTESTATION_DEPOSIT,
@@ -51,20 +73,6 @@ use kilt_primitives::{
 	},
 	AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Hash, Header, Index, Signature,
 };
-use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
-use sp_api::impl_runtime_apis;
-use sp_core::{
-	u32_trait::{_1, _2, _3, _5},
-	OpaqueMetadata,
-};
-use sp_runtime::{
-	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
-	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, FixedPointNumber, Perquintill,
-};
-use sp_std::prelude::*;
-use sp_version::RuntimeVersion;
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -77,28 +85,10 @@ mod fee;
 mod tests;
 mod weights;
 
-// A few exports that help ease life for downstream crates.
-pub use frame_support::{
-	construct_runtime, parameter_types,
-	traits::{Get, Randomness},
-	weights::{
-		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
-		DispatchClass, IdentityFee, Weight,
-	},
-	StorageValue,
-};
-pub use parachain_staking::{InflationInfo, RewardRate, StakingInfo};
-
-pub use pallet_balances::Call as BalancesCall;
-pub use pallet_timestamp::Call as TimestampCall;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
-pub use sp_runtime::{Perbill, Permill};
 
-pub use attestation;
-pub use ctype;
-pub use delegation;
-pub use did;
+pub use parachain_staking::InflationInfo;
 
 impl_opaque_keys! {
 	pub struct SessionKeys {
@@ -131,7 +121,6 @@ pub fn native_version() -> NativeVersion {
 // Pallet accounts of runtime
 parameter_types! {
 	pub const TreasuryPalletId: PalletId = PalletId(*b"kilt/tsy");
-	pub const ElectionsPalletId: LockIdentifier = *b"kilt/elc";
 }
 
 parameter_types! {
@@ -177,7 +166,7 @@ impl frame_system::Config for Runtime {
 	/// The hashing algorithm used.
 	type Hashing = BlakeTwo256;
 	/// The header type.
-	type Header = Header;
+	type Header = kilt_primitives::Header;
 	/// The ubiquitous event type.
 	type Event = Event;
 	/// The ubiquitous origin type.
@@ -198,7 +187,7 @@ impl frame_system::Config for Runtime {
 	type BlockWeights = RuntimeBlockWeights;
 	type BlockLength = RuntimeBlockLength;
 	type SS58Prefix = SS58Prefix;
-	/// The set code logic, just the default since we're not a parachain.
+	/// The set code logic
 	type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Runtime>;
 }
 
@@ -650,11 +639,11 @@ impl did::Config for Runtime {
 parameter_types! {
 	/// Minimum round length is 1 hour
 	pub const MinBlocksPerRound: BlockNumber = MIN_BLOCKS_PER_ROUND;
-	/// Default BlocksPerRound is every 6 hours
+	/// Default length of a round/session is 2 hours
 	pub const DefaultBlocksPerRound: BlockNumber = DEFAULT_BLOCKS_PER_ROUND;
 	/// Unstaked balance can be unlocked after 7 days
 	pub const StakeDuration: BlockNumber = STAKE_DURATION;
-	/// Collator exit requests are delayed by 4 (2 rounds/sessions)
+	/// Collator exit requests are delayed by 4 hours (2 rounds/sessions)
 	pub const ExitQueueDelay: u32 = 2;
 	/// Minimum 16 collators selected per round, default at genesis and minimum forever after
 	pub const MinCollators: u32 = MIN_COLLATORS;
@@ -760,14 +749,6 @@ construct_runtime! {
 		// Parachains pallets. Start indices at 80 to leave room.
 		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>, Config} = 80,
 		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 81,
-
-		// Pallet for sending XCM.
-		// XcmHandler: cumulus_pallet_xcmp_queue::{Pallet, Call, Event<T>, Origin} = 100,
-		// Tokens: orml_tokens::{Pallet, Call, Storage, Event<T>} = 101,
-		// Currencies: orml_currencies::{Pallet, Call, Storage, Event<T>} = 102,
-		// XTokens: orml_xtokens::{Pallet, Call, Storage, Event<T>} = 103,
-		// UnknownTokens: orml_unknown_tokens::{Pallet, Storage, Event} = 104,
-
 	}
 }
 
@@ -937,40 +918,31 @@ impl_runtime_apis! {
 			use frame_benchmarking::{list_benchmark, Benchmarking, BenchmarkList};
 			use frame_support::traits::StorageInfoTrait;
 			use frame_system_benchmarking::Pallet as SystemBench;
-			// use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
+			use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
 
 			let mut list = Vec::<BenchmarkList>::new();
 
 			// Substrate
 			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
+			list_benchmark!(list, extra, pallet_session, SessionBench::<Runtime>);
 			list_benchmark!(list, extra, pallet_balances, Balances);
 			list_benchmark!(list, extra, pallet_collective, Council);
 			list_benchmark!(list, extra, pallet_democracy, Democracy);
 			list_benchmark!(list, extra, pallet_indices, Indices);
 			list_benchmark!(list, extra, pallet_membership, TechnicalMembership);
-			list_benchmark!(list, extra, parachain_staking, ParachainStaking);
 			list_benchmark!(list, extra, pallet_scheduler, Scheduler);
-			// list_benchmark!(list, extra, pallet_session, Session);
-			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
 			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
 			list_benchmark!(list, extra, pallet_treasury, Treasury);
 			list_benchmark!(list, extra, pallet_utility, Utility);
+			list_benchmark!(list, extra, pallet_vesting, Vesting);
 
+			// KILT
 			list_benchmark!(list, extra, attestation, Attestation);
 			list_benchmark!(list, extra, ctype, Ctype);
 			list_benchmark!(list, extra, delegation, Delegation);
 			list_benchmark!(list, extra, did, Did);
 			list_benchmark!(list, extra, kilt_launch, KiltLaunch);
-			list_benchmark!(list, extra, pallet_vesting, Vesting);
-
-			// No benchmarks for these pallets
-			// list_benchmark!(list, extra, cumulus_pallet_parachain_system, ParachainSystem);
-			// list_benchmark!(list, extra, parachain_info, ParachainInfo);
-			// list_benchmark!(list, extra, cumulus_pallet_xcmp_queue, XcmHandler);
-			// list_benchmark!(list, extra, orml_tokens, Tokens);
-			// list_benchmark!(list, extra, orml_currencies, Currencies);
-			// list_benchmark!(list, extra, orml_xtokens, XTokens);
-			// list_benchmark!(list, extra, orml_unknown_tokens, UnknownTokens);
+			list_benchmark!(list, extra, parachain_staking, ParachainStaking);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
 
@@ -981,12 +953,11 @@ impl_runtime_apis! {
 			config: frame_benchmarking::BenchmarkConfig
 		) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
 			use frame_benchmarking::{Benchmarking, BenchmarkBatch, add_benchmark, TrackedStorageKey};
-
 			use frame_system_benchmarking::Pallet as SystemBench;
-			impl frame_system_benchmarking::Config for Runtime {}
+			use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
 
-			// use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
-			// impl cumulus_pallet_session_benchmarking::Config for Runtime {}
+			impl frame_system_benchmarking::Config for Runtime {}
+			impl cumulus_pallet_session_benchmarking::Config for Runtime {}
 
 			let whitelist: Vec<TrackedStorageKey> = vec![
 				// Block Number
@@ -1011,34 +982,31 @@ impl_runtime_apis! {
 			let mut batches = Vec::<BenchmarkBatch>::new();
 			let params = (&config, &whitelist);
 
+			// Substrate
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_collective, Council);
 			add_benchmark!(params, batches, pallet_democracy, Democracy);
 			add_benchmark!(params, batches, pallet_indices, Indices);
 			add_benchmark!(params, batches, pallet_membership, TechnicalMembership);
-			add_benchmark!(params, batches, parachain_staking, ParachainStaking);
 			add_benchmark!(params, batches, pallet_scheduler, Scheduler);
-			// add_benchmark!(params, batches, pallet_session, SessionBench::<Runtime>);
+			add_benchmark!(params, batches, pallet_session, SessionBench::<Runtime>);
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
 			add_benchmark!(params, batches, pallet_treasury, Treasury);
 			add_benchmark!(params, batches, pallet_utility, Utility);
 
+			// KILT
 			add_benchmark!(params, batches, attestation, Attestation);
 			add_benchmark!(params, batches, ctype, Ctype);
 			add_benchmark!(params, batches, delegation, Delegation);
 			add_benchmark!(params, batches, did, Did);
 			add_benchmark!(params, batches, kilt_launch, KiltLaunch);
 			add_benchmark!(params, batches, pallet_vesting, Vesting);
+			add_benchmark!(params, batches, parachain_staking, ParachainStaking);
 
 			// No benchmarks for these pallets
 			// add_benchmark!(params, batches, cumulus_pallet_parachain_system, ParachainSystem);
 			// add_benchmark!(params, batches, parachain_info, ParachainInfo);
-			// add_benchmark!(params, batches, cumulus_pallet_xcmp_queue, XcmHandler);
-			// add_benchmark!(params, batches, orml_tokens, Tokens);
-			// add_benchmark!(params, batches, orml_currencies, Currencies);
-			// add_benchmark!(params, batches, orml_xtokens, XTokens);
-			// add_benchmark!(params, batches, orml_unknown_tokens, UnknownTokens);
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
 			Ok(batches)

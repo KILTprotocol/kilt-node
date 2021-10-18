@@ -20,29 +20,23 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
-// The `from_over_into` warning originates from `construct_runtime` macro.
-#![allow(clippy::from_over_into)]
 
 // Make the WASM binary available.
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use frame_support::{traits::Contains, PalletId};
+use frame_support::{
+	construct_runtime, parameter_types,
+	traits::Contains,
+	weights::{
+		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
+		DispatchClass, Weight,
+	},
+	PalletId,
+};
 use frame_system::{
 	limits::{BlockLength, BlockWeights},
 	EnsureOneOf, EnsureRoot,
-};
-use kilt_primitives::{
-	constants::{
-		governance::{
-			COOLOFF_PERIOD, COUNCIL_MOTION_DURATION, ENACTMENT_PERIOD, FAST_TRACK_VOTING_PERIOD, LAUNCH_PERIOD,
-			SPEND_PERIOD, TECHNICAL_MOTION_DURATION, VOTING_PERIOD,
-		},
-		staking::{DEFAULT_BLOCKS_PER_ROUND, MAX_CANDIDATES, MIN_BLOCKS_PER_ROUND, MIN_COLLATORS, STAKE_DURATION},
-		AVERAGE_ON_INITIALIZE_RATIO, KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT,
-		NORMAL_DISPATCH_RATIO, SLOT_DURATION,
-	},
-	AccountId, AuthorityId, Balance, BlockNumber, Hash, Header, Index, Signature,
 };
 use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
 use sp_api::impl_runtime_apis;
@@ -54,29 +48,38 @@ use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, FixedPointNumber, Perquintill,
+	ApplyExtrinsicResult, FixedPointNumber, Perbill, Permill, Perquintill,
 };
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 
+use kilt_primitives::{
+	constants::{
+		attestation::ATTESTATION_DEPOSIT,
+		delegation::{
+			DELEGATION_DEPOSIT, MAX_CHILDREN, MAX_PARENT_CHECKS, MAX_REMOVALS, MAX_REVOCATIONS,
+			MAX_SIGNATURE_BYTE_LENGTH,
+		},
+		did::{
+			MAX_BLOCKS_TX_VALIDITY, MAX_ENDPOINT_URLS_COUNT, MAX_KEY_AGREEMENT_KEYS, MAX_PUBLIC_KEYS_PER_DID,
+			MAX_TOTAL_KEY_AGREEMENT_KEYS, MAX_URL_LENGTH,
+		},
+		governance::{
+			COOLOFF_PERIOD, COUNCIL_MOTION_DURATION, ENACTMENT_PERIOD, FAST_TRACK_VOTING_PERIOD, LAUNCH_PERIOD,
+			SPEND_PERIOD, TECHNICAL_MOTION_DURATION, VOTING_PERIOD,
+		},
+		staking::{DEFAULT_BLOCKS_PER_ROUND, MAX_CANDIDATES, MIN_BLOCKS_PER_ROUND, MIN_COLLATORS, STAKE_DURATION},
+		AVERAGE_ON_INITIALIZE_RATIO, KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT,
+		NORMAL_DISPATCH_RATIO, SLOT_DURATION,
+	},
+	AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Hash, Header, Index, Signature,
+};
+
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 
-// A few exports that help ease life for downstream crates.
-pub use frame_support::{
-	construct_runtime, parameter_types,
-	traits::{Get, Randomness},
-	weights::{
-		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
-		DispatchClass, IdentityFee, Weight,
-	},
-	StorageValue,
-};
-pub use pallet_balances::Call as BalancesCall;
-pub use pallet_timestamp::Call as TimestampCall;
-pub use sp_runtime::{Perbill, Permill};
-
-pub use parachain_staking::{InflationInfo, RewardRate, StakingInfo};
+#[cfg(feature = "runtime-benchmarks")]
+use {frame_system::EnsureSigned, kilt_primitives::benchmarks::DummySignature, kilt_support::signature::AlwaysVerify};
 
 mod fee;
 #[cfg(test)]
@@ -85,6 +88,8 @@ mod weights;
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
+
+pub use parachain_staking::InflationInfo;
 
 impl_opaque_keys! {
 	pub struct SessionKeys {
@@ -103,12 +108,6 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
 };
-
-#[derive(codec::Encode, codec::Decode)]
-pub enum XcmpMessage<XAccountId, XBalance> {
-	/// Transfer tokens to the given account from the Parachain account.
-	TransferToken(XAccountId, XBalance),
-}
 
 /// The version information used to identify this runtime when compiled
 /// natively.
@@ -159,6 +158,7 @@ impl Contains<Call> for BaseFilter {
 			Call::Vesting(pallet_vesting::Call::vested_transfer(..))
 				| Call::KiltLaunch(kilt_launch::Call::locked_transfer(..))
 				| Call::Balances(..)
+				| Call::Delegation(..)
 				| Call::ParachainStaking(parachain_staking::Call::join_candidates(..))
 		)
 	}
@@ -350,66 +350,6 @@ impl kilt_launch::Config for Runtime {
 }
 
 parameter_types! {
-	/// Minimum round length is 1 hour
-	pub const MinBlocksPerRound: BlockNumber = MIN_BLOCKS_PER_ROUND;
-	/// Default length of a round/session is 2 hours
-	pub const DefaultBlocksPerRound: BlockNumber = DEFAULT_BLOCKS_PER_ROUND;
-	/// Unstaked balance can be unlocked after 7 days
-	pub const StakeDuration: BlockNumber = STAKE_DURATION;
-	/// Collator exit requests are delayed by 4 hours (2 rounds/sessions)
-	pub const ExitQueueDelay: u32 = 2;
-	/// Minimum 16 collators selected per round, default at genesis and minimum forever after
-	pub const MinCollators: u32 = MIN_COLLATORS;
-	/// At least 4 candidates which cannot leave the network if there are no other candidates.
-	pub const MinRequiredCollators: u32 = 4;
-	/// We only allow one delegation per round.
-	pub const MaxDelegationsPerRound: u32 = 1;
-	/// Maximum 25 delegators per collator at launch, might be increased later
-	#[derive(Debug, PartialEq)]
-	pub const MaxDelegatorsPerCollator: u32 = 25;
-	/// Maximum 1 collator per delegator at launch, will be increased later
-	#[derive(Debug, PartialEq)]
-	pub const MaxCollatorsPerDelegator: u32 = 1;
-	/// Minimum stake required to be reserved to be a collator is 10_000
-	pub const MinCollatorStake: Balance = 10_000 * KILT;
-	/// Minimum stake required to be reserved to be a delegator is 1000
-	pub const MinDelegatorStake: Balance = 1000 * KILT;
-	/// Maximum number of collator candidates
-	#[derive(Debug, PartialEq)]
-	pub const MaxCollatorCandidates: u32 = MAX_CANDIDATES;
-	/// Maximum number of concurrent requests to unlock unstaked balance
-	pub const MaxUnstakeRequests: u32 = 10;
-}
-
-impl parachain_staking::Config for Runtime {
-	type Event = Event;
-	type Currency = Balances;
-	type CurrencyBalance = Balance;
-	type MinBlocksPerRound = MinBlocksPerRound;
-	type DefaultBlocksPerRound = DefaultBlocksPerRound;
-	type StakeDuration = StakeDuration;
-	type ExitQueueDelay = ExitQueueDelay;
-	type MinCollators = MinCollators;
-	type MinRequiredCollators = MinRequiredCollators;
-	type MaxDelegationsPerRound = MaxDelegationsPerRound;
-	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
-	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
-	type MinCollatorStake = MinCollatorStake;
-	type MinCollatorCandidateStake = MinCollatorStake;
-	type MaxTopCandidates = MaxCollatorCandidates;
-	type MinDelegation = MinDelegatorStake;
-	type MinDelegatorStake = MinDelegatorStake;
-	type MaxUnstakeRequests = MaxUnstakeRequests;
-	type WeightInfo = weights::parachain_staking::WeightInfo<Runtime>;
-}
-
-impl pallet_utility::Config for Runtime {
-	type Event = Event;
-	type Call = Call;
-	type WeightInfo = weights::pallet_utility::WeightInfo<Runtime>;
-}
-
-parameter_types! {
 	pub MaximumSchedulerWeight: Weight = Perbill::from_percent(80) * RuntimeBlockWeights::get().max_block;
 	pub const MaxScheduledPerBlock: u32 = 50;
 }
@@ -578,6 +518,199 @@ impl pallet_membership::Config for Runtime {
 	type WeightInfo = weights::pallet_membership::WeightInfo<Runtime>;
 }
 
+parameter_types! {
+	pub const MaxDelegatedAttestations: u32 = 1000;
+	pub const AttestationDeposit: Balance = ATTESTATION_DEPOSIT;
+}
+
+impl attestation::Config for Runtime {
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type EnsureOrigin = EnsureSigned<DidIdentifier>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type OriginSuccess = DidIdentifier;
+
+	type Event = Event;
+	type WeightInfo = weights::attestation::WeightInfo<Runtime>;
+
+	type Currency = Balances;
+	type Deposit = AttestationDeposit;
+	type MaxDelegatedAttestations = MaxDelegatedAttestations;
+}
+
+parameter_types! {
+	pub const MaxSignatureByteLength: u16 = MAX_SIGNATURE_BYTE_LENGTH;
+	pub const MaxParentChecks: u32 = MAX_PARENT_CHECKS;
+	pub const MaxRevocations: u32 = MAX_REVOCATIONS;
+	pub const MaxRemovals: u32 = MAX_REMOVALS;
+	#[derive(Clone)]
+	pub const MaxChildren: u32 = MAX_CHILDREN;
+	pub const DelegationDeposit: Balance = DELEGATION_DEPOSIT;
+}
+
+impl delegation::Config for Runtime {
+	type DelegationEntityId = DidIdentifier;
+	type DelegationNodeId = Hash;
+
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type DelegationSignatureVerification = did::DidSignatureVerify<Runtime>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type Signature = did::DidSignature;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type EnsureOrigin = EnsureSigned<DidIdentifier>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type OriginSuccess = DidIdentifier;
+	#[cfg(feature = "runtime-benchmarks")]
+	type Signature = DummySignature;
+	#[cfg(feature = "runtime-benchmarks")]
+	type DelegationSignatureVerification = AlwaysVerify<AccountId, Vec<u8>, Self::Signature>;
+
+	type Event = Event;
+	type MaxSignatureByteLength = MaxSignatureByteLength;
+	type MaxParentChecks = MaxParentChecks;
+	type MaxRevocations = MaxRevocations;
+	type MaxRemovals = MaxRemovals;
+	type MaxChildren = MaxChildren;
+	type WeightInfo = weights::delegation::WeightInfo<Runtime>;
+	type Currency = Balances;
+	type Deposit = DelegationDeposit;
+}
+
+parameter_types! {
+	pub const Fee: Balance = MILLI_KILT;
+}
+
+impl ctype::Config for Runtime {
+	type CtypeCreatorId = AccountId;
+	type Currency = Balances;
+	type Fee = Fee;
+	type FeeCollector = Treasury;
+
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type EnsureOrigin = EnsureSigned<DidIdentifier>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type OriginSuccess = DidIdentifier;
+
+	type Event = Event;
+	type WeightInfo = weights::ctype::WeightInfo<Runtime>;
+}
+
+parameter_types! {
+	pub const MaxNewKeyAgreementKeys: u32 = MAX_KEY_AGREEMENT_KEYS;
+	#[derive(Debug, Clone, PartialEq)]
+	pub const MaxUrlLength: u32 = MAX_URL_LENGTH;
+	pub const MaxPublicKeysPerDid: u32 = MAX_PUBLIC_KEYS_PER_DID;
+	#[derive(Debug, Clone, PartialEq)]
+	pub const MaxTotalKeyAgreementKeys: u32 = MAX_TOTAL_KEY_AGREEMENT_KEYS;
+	#[derive(Debug, Clone, PartialEq)]
+	pub const MaxEndpointUrlsCount: u32 = MAX_ENDPOINT_URLS_COUNT;
+	// Standalone block time is half the duration of a parachain block.
+	pub const MaxBlocksTxValidity: BlockNumber = MAX_BLOCKS_TX_VALIDITY;
+	pub const DidDeposit: Balance = 100 * MILLI_KILT;
+	pub const DidFee: Balance = 10 * MILLI_KILT;
+}
+
+impl did::Config for Runtime {
+	type DidIdentifier = DidIdentifier;
+	type Event = Event;
+	type Call = Call;
+	type Origin = Origin;
+	type Currency = Balances;
+	type Deposit = DidDeposit;
+	type Fee = DidFee;
+	type FeeCollector = Treasury;
+
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type EnsureOrigin = EnsureSigned<DidIdentifier>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type OriginSuccess = DidIdentifier;
+
+	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
+	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
+	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
+	type MaxBlocksTxValidity = MaxBlocksTxValidity;
+	type WeightInfo = weights::did::WeightInfo<Runtime>;
+}
+
+parameter_types! {
+	/// Minimum round length is 1 hour
+	pub const MinBlocksPerRound: BlockNumber = MIN_BLOCKS_PER_ROUND;
+	/// Default length of a round/session is 2 hours
+	pub const DefaultBlocksPerRound: BlockNumber = DEFAULT_BLOCKS_PER_ROUND;
+	/// Unstaked balance can be unlocked after 7 days
+	pub const StakeDuration: BlockNumber = STAKE_DURATION;
+	/// Collator exit requests are delayed by 4 hours (2 rounds/sessions)
+	pub const ExitQueueDelay: u32 = 2;
+	/// Minimum 16 collators selected per round, default at genesis and minimum forever after
+	pub const MinCollators: u32 = MIN_COLLATORS;
+	/// At least 4 candidates which cannot leave the network if there are no other candidates.
+	pub const MinRequiredCollators: u32 = 4;
+	/// We only allow one delegation per round.
+	pub const MaxDelegationsPerRound: u32 = 1;
+	/// Maximum 25 delegators per collator at launch, might be increased later
+	#[derive(Debug, PartialEq)]
+	pub const MaxDelegatorsPerCollator: u32 = 25;
+	/// Maximum 1 collator per delegator at launch, will be increased later
+	#[derive(Debug, PartialEq)]
+	pub const MaxCollatorsPerDelegator: u32 = 1;
+	/// Minimum stake required to be reserved to be a collator is 10_000
+	pub const MinCollatorStake: Balance = 10_000 * KILT;
+	/// Minimum stake required to be reserved to be a delegator is 1000
+	pub const MinDelegatorStake: Balance = 1000 * KILT;
+	/// Maximum number of collator candidates
+	#[derive(Debug, PartialEq)]
+	pub const MaxCollatorCandidates: u32 = MAX_CANDIDATES;
+	/// Maximum number of concurrent requests to unlock unstaked balance
+	pub const MaxUnstakeRequests: u32 = 10;
+}
+
+impl parachain_staking::Config for Runtime {
+	type Event = Event;
+	type Currency = Balances;
+	type CurrencyBalance = Balance;
+	type MinBlocksPerRound = MinBlocksPerRound;
+	type DefaultBlocksPerRound = DefaultBlocksPerRound;
+	type StakeDuration = StakeDuration;
+	type ExitQueueDelay = ExitQueueDelay;
+	type MinCollators = MinCollators;
+	type MinRequiredCollators = MinRequiredCollators;
+	type MaxDelegationsPerRound = MaxDelegationsPerRound;
+	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
+	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
+	type MinCollatorStake = MinCollatorStake;
+	type MinCollatorCandidateStake = MinCollatorStake;
+	type MaxTopCandidates = MaxCollatorCandidates;
+	type MinDelegation = MinDelegatorStake;
+	type MinDelegatorStake = MinDelegatorStake;
+	type MaxUnstakeRequests = MaxUnstakeRequests;
+	type WeightInfo = weights::parachain_staking::WeightInfo<Runtime>;
+}
+
+impl pallet_utility::Config for Runtime {
+	type Event = Event;
+	type Call = Call;
+	type WeightInfo = weights::pallet_utility::WeightInfo<Runtime>;
+}
+
 impl pallet_randomness_collective_flip::Config for Runtime {}
 
 construct_runtime! {
@@ -623,10 +756,40 @@ construct_runtime! {
 
 		// KILT Pallets. Start indices 60 to leave room
 		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 60,
+		Ctype: ctype::{Pallet, Call, Storage, Event<T>} = 61,
+		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 62,
+		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 63,
+		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 64,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>, Config} = 80,
 		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 81,
+	}
+}
+
+impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
+	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
+		match self {
+			Call::Attestation(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
+			Call::Ctype(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
+			Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
+			// DID creation is not allowed through the DID proxy.
+			Call::Did(did::Call::create(..)) => None,
+			Call::Did(_) => Some(did::DidVerificationKeyRelationship::Authentication),
+			//TODO: add a batch call case that returns the right key type if all calls in the batch require the same
+			// key type as well, otherwise it returns None and fails.
+			#[cfg(not(feature = "runtime-benchmarks"))]
+			_ => None,
+			// By default, returns the authentication key
+			#[cfg(feature = "runtime-benchmarks")]
+			_ => Some(did::DidVerificationKeyRelationship::Authentication),
+		}
+	}
+
+	// Always return a System::remark() extrinsic call
+	#[cfg(feature = "runtime-benchmarks")]
+	fn get_call_for_did_call_benchmark() -> Self {
+		Call::System(frame_system::Call::remark(vec![]))
 	}
 }
 
@@ -642,6 +805,7 @@ pub type BlockId = generic::BlockId<Block>;
 /// The SignedExtension to the basic transaction logic.
 pub type SignedExtra = (
 	frame_system::CheckSpecVersion<Runtime>,
+	frame_system::CheckTxVersion<Runtime>,
 	frame_system::CheckGenesis<Runtime>,
 	frame_system::CheckEra<Runtime>,
 	frame_system::CheckNonce<Runtime>,
@@ -769,7 +933,7 @@ impl_runtime_apis! {
 			use frame_benchmarking::{list_benchmark, Benchmarking, BenchmarkList};
 			use frame_support::traits::StorageInfoTrait;
 			use frame_system_benchmarking::Pallet as SystemBench;
-			// use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
+			use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
 
 			let mut list = Vec::<BenchmarkList>::new();
 
@@ -780,15 +944,18 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, pallet_democracy, Democracy);
 			list_benchmark!(list, extra, pallet_indices, Indices);
 			list_benchmark!(list, extra, pallet_membership, TechnicalMembership);
-			list_benchmark!(list, extra, parachain_staking, ParachainStaking);
 			list_benchmark!(list, extra, pallet_scheduler, Scheduler);
-			// list_benchmark!(list, extra, pallet_session, SessionBench::<Runtime>);
-			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
 			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
 			list_benchmark!(list, extra, pallet_treasury, Treasury);
 			list_benchmark!(list, extra, pallet_utility, Utility);
+			list_benchmark!(list, extra, pallet_vesting, Vesting);
+			list_benchmark!(list, extra, pallet_session, SessionBench::<Runtime>);
 
 			// KILT
+			list_benchmark!(list, extra, attestation, Attestation);
+			list_benchmark!(list, extra, ctype, Ctype);
+			list_benchmark!(list, extra, delegation, Delegation);
+			list_benchmark!(list, extra, did, Did);
 			list_benchmark!(list, extra, kilt_launch, KiltLaunch);
 			list_benchmark!(list, extra, parachain_staking, ParachainStaking);
 
@@ -801,12 +968,11 @@ impl_runtime_apis! {
 			config: frame_benchmarking::BenchmarkConfig
 		) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
 			use frame_benchmarking::{Benchmarking, BenchmarkBatch, add_benchmark, TrackedStorageKey};
-
 			use frame_system_benchmarking::Pallet as SystemBench;
-			impl frame_system_benchmarking::Config for Runtime {}
+			use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
 
-			// use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
-			// impl cumulus_pallet_session_benchmarking::Config for Runtime {}
+			impl frame_system_benchmarking::Config for Runtime {}
+			impl cumulus_pallet_session_benchmarking::Config for Runtime {}
 
 			let whitelist: Vec<TrackedStorageKey> = vec![
 				// Block Number
@@ -837,16 +1003,20 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_democracy, Democracy);
 			add_benchmark!(params, batches, pallet_indices, Indices);
 			add_benchmark!(params, batches, pallet_membership, TechnicalMembership);
-			add_benchmark!(params, batches, parachain_staking, ParachainStaking);
 			add_benchmark!(params, batches, pallet_scheduler, Scheduler);
-			// add_benchmark!(params, batches, pallet_session, SessionBench::<Runtime>);
+			add_benchmark!(params, batches, pallet_session, SessionBench::<Runtime>);
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
 			add_benchmark!(params, batches, pallet_treasury, Treasury);
 			add_benchmark!(params, batches, pallet_utility, Utility);
 
 			// KILT
+			add_benchmark!(params, batches, attestation, Attestation);
+			add_benchmark!(params, batches, ctype, Ctype);
+			add_benchmark!(params, batches, delegation, Delegation);
+			add_benchmark!(params, batches, did, Did);
 			add_benchmark!(params, batches, kilt_launch, KiltLaunch);
+			add_benchmark!(params, batches, pallet_vesting, Vesting);
 			add_benchmark!(params, batches, parachain_staking, ParachainStaking);
 
 			// No benchmarks for these pallets
@@ -858,12 +1028,15 @@ impl_runtime_apis! {
 		}
 	}
 
-	// From the Polkadot repo: https://github.com/paritytech/polkadot/blob/master/runtime/polkadot/src/lib.rs#L1371
+	// From the Polkadot repo: https://github.com/paritytech/polkadot/blob/1876963f254f31f8cd2d7b8d5fb26cd38b7836ab/runtime/polkadot/src/lib.rs#L1413
 	#[cfg(feature = "try-runtime")]
 	impl frame_try_runtime::TryRuntime<Block> for Runtime {
 		fn on_runtime_upgrade() -> Result<(Weight, Weight), sp_runtime::RuntimeString> {
 			log::info!("try-runtime::on_runtime_upgrade for spiritnet runtime.");
-			let weight = Executive::try_runtime_upgrade()?;
+			let weight = Executive::try_runtime_upgrade().map_err(|err|{
+				log::info!("try-runtime::on_runtime_upgrade failed with: {:?}", err);
+				err
+			})?;
 			Ok((weight, RuntimeBlockWeights::get().max_block))
 		}
 	}
