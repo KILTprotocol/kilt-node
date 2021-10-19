@@ -24,16 +24,6 @@
 //! - [`Call`]
 //! - [`Pallet`]
 //!
-//! ## Interface
-//!
-//! ### Dispatchable Functions
-//! - `set_admin_account` - Set the account that is allow to register and delete
-//!   contribution entries into/from this pallet's storage.
-//! - `set_new_contribution` - Add or replace a crowdload contribution, which
-//!   contains the contributor's address and the contributed amount.
-//! - `remove_contribution` - Remove a contribution entry from the pallet
-//!   storage.
-//!
 //! ## Genesis config
 //!
 //! The crowdloan contributions pallet depends on the [`GenesisConfig`].
