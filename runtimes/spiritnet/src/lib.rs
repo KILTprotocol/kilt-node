@@ -61,8 +61,8 @@ use kilt_primitives::{
 			MAX_SIGNATURE_BYTE_LENGTH,
 		},
 		did::{
-			MAX_BLOCKS_TX_VALIDITY, MAX_ENDPOINT_URLS_COUNT, MAX_KEY_AGREEMENT_KEYS, MAX_PUBLIC_KEYS_PER_DID,
-			MAX_TOTAL_KEY_AGREEMENT_KEYS, MAX_URL_LENGTH,
+			DID_DEPOSIT, DID_FEE, MAX_BLOCKS_TX_VALIDITY, MAX_ENDPOINT_URLS_COUNT, MAX_KEY_AGREEMENT_KEYS,
+			MAX_PUBLIC_KEYS_PER_DID, MAX_TOTAL_KEY_AGREEMENT_KEYS, MAX_URL_LENGTH,
 		},
 		governance::{
 			COOLOFF_PERIOD, COUNCIL_MOTION_DURATION, ENACTMENT_PERIOD, FAST_TRACK_VOTING_PERIOD, LAUNCH_PERIOD,
@@ -620,8 +620,8 @@ parameter_types! {
 	pub const MaxEndpointUrlsCount: u32 = MAX_ENDPOINT_URLS_COUNT;
 	// Standalone block time is half the duration of a parachain block.
 	pub const MaxBlocksTxValidity: BlockNumber = MAX_BLOCKS_TX_VALIDITY;
-	pub const DidDeposit: Balance = 100 * MILLI_KILT;
-	pub const DidFee: Balance = 10 * MILLI_KILT;
+	pub const DidDeposit: Balance = DID_DEPOSIT;
+	pub const DidFee: Balance = DID_FEE;
 }
 
 impl did::Config for Runtime {
