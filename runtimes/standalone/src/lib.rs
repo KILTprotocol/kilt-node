@@ -30,7 +30,8 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::EnsureSigned;
 
-use kilt_primitives::{AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate, constants::{
+use kilt_primitives::{
+	constants::{
 		attestation::ATTESTATION_DEPOSIT,
 		delegation::{
 			DELEGATION_DEPOSIT, MAX_CHILDREN, MAX_PARENT_CHECKS, MAX_REMOVALS, MAX_REVOCATIONS,
@@ -42,7 +43,9 @@ use kilt_primitives::{AccountId, Balance, BlockNumber, DidIdentifier, Hash, Inde
 		},
 		staking::MAX_CANDIDATES,
 		KILT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION,
-	}};
+	},
+	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
+};
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
 use sp_api::impl_runtime_apis;
@@ -227,6 +230,7 @@ impl pallet_grandpa::Config for Runtime {
 	type HandleEquivocation = ();
 
 	type WeightInfo = ();
+	type MaxAuthorities = MaxAuthorities;
 }
 
 parameter_types! {
@@ -473,6 +477,7 @@ impl pallet_vesting::Config for Runtime {
 	type BlockNumberToBalance = ConvertInto;
 	// disable vested transfers by setting min amount to max balance
 	type MinVestedTransfer = MinVestedTransfer;
+	const MAX_VESTING_SCHEDULES: u32 = kilt_primitives::constants::MAX_VESTING_SCHEDULES;
 	type WeightInfo = ();
 }
 
@@ -673,7 +678,7 @@ impl_runtime_apis! {
 		}
 
 		fn authorities() -> Vec<AuraId> {
-			Aura::authorities()
+			Aura::authorities().into_inner()
 		}
 	}
 

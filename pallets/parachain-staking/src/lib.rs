@@ -286,15 +286,15 @@ pub mod pallet {
 
 		/// Maximum number of delegators a single collator can have.
 		#[pallet::constant]
-		type MaxDelegatorsPerCollator: Get<u32> + Debug + PartialEq + TypeInfo;
+		type MaxDelegatorsPerCollator: Get<u32> + Debug + PartialEq;
 
 		/// Maximum number of collators a single delegator can delegate.
 		#[pallet::constant]
-		type MaxCollatorsPerDelegator: Get<u32> + Debug + PartialEq + TypeInfo;
+		type MaxCollatorsPerDelegator: Get<u32> + Debug + PartialEq;
 
 		/// Maximum size of the top candidates set.
 		#[pallet::constant]
-		type MaxTopCandidates: Get<u32> + Debug + PartialEq + TypeInfo;
+		type MaxTopCandidates: Get<u32> + Debug + PartialEq;
 
 		/// Minimum stake required for any account to be elected as validator
 		/// for a round.

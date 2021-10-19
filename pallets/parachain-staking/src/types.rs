@@ -103,6 +103,7 @@ impl Default for CandidateStatus {
 }
 
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo)]
+#[scale_info(skip_type_params(MaxDelegatorsPerCandidate))]
 /// Global collator state with commission fee, staked funds, and delegations
 pub struct Candidate<AccountId, Balance, MaxDelegatorsPerCandidate>
 where
@@ -209,6 +210,7 @@ where
 }
 
 #[derive(Encode, Decode, RuntimeDebug, PartialEq, TypeInfo)]
+#[scale_info(skip_type_params(MaxCollatorsPerDelegator))]
 pub struct Delegator<AccountId: Eq + Ord, Balance: Eq + Ord, MaxCollatorsPerDelegator: Get<u32>> {
 	pub delegations: OrderedSet<Stake<AccountId, Balance>, MaxCollatorsPerDelegator>,
 	pub total: Balance,

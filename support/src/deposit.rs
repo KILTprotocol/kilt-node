@@ -20,7 +20,7 @@ use scale_info::TypeInfo;
 
 /// An on-chain attestation written by an attester.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, TypeInfo)]
-pub struct Deposit<Account: TypeInfo, Balance: TypeInfo> {
+pub struct Deposit<Account, Balance> {
 	pub owner: Account,
 	pub amount: Balance,
 }

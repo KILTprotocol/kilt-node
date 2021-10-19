@@ -158,7 +158,7 @@ pub mod pallet {
 		type WeightInfo: WeightInfo;
 
 		/// The currency that is used to reserve funds for each delegation.
-		type Currency: Currency<AccountIdOf<Self>> + ReservableCurrency<AccountIdOf<Self>> + TypeInfo;
+		type Currency: Currency<AccountIdOf<Self>> + ReservableCurrency<AccountIdOf<Self>>;
 
 		/// The deposit that is required for storing a delegation.
 		#[pallet::constant]

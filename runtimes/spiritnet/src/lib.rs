@@ -28,10 +28,7 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use frame_support::{traits::Contains, PalletId};
-use frame_system::{
-	limits::{BlockLength, BlockWeights},
-	EnsureOneOf, EnsureRoot,
-};
+use frame_system::{EnsureOneOf, EnsureRoot};
 use kilt_primitives::{
 	constants::{
 		governance::{
@@ -42,7 +39,8 @@ use kilt_primitives::{
 		AVERAGE_ON_INITIALIZE_RATIO, KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT,
 		NORMAL_DISPATCH_RATIO, SLOT_DURATION,
 	},
-	AccountId, AuthorityId, Balance, BlockNumber, Hash, Header, Index, Signature,
+	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, Hash, Header, Index,
+	Signature, SlowAdjustingFeeUpdate,
 };
 use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
 use scale_info::TypeInfo;
@@ -271,7 +269,7 @@ parameter_types! {
 }
 
 impl pallet_aura::Config for Runtime {
-	type AuthorityId = AuraId;
+	type AuthorityId = AuthorityId;
 	//TODO: handle disabled validators
 	type DisabledValidators = ();
 	type MaxAuthorities = MaxAuthorities;
@@ -392,7 +390,7 @@ impl pallet_utility::Config for Runtime {
 }
 
 parameter_types! {
-	pub MaximumSchedulerWeight: Weight = Perbill::from_percent(80) * RuntimeBlockWeights::get().max_block;
+	pub MaximumSchedulerWeight: Weight = Perbill::from_percent(80) * BlockWeights::get().max_block;
 	pub const MaxScheduledPerBlock: u32 = 50;
 }
 
@@ -426,6 +424,7 @@ impl pallet_democracy::Config for Runtime {
 	type Event = Event;
 	type Currency = Balances;
 	type EnactmentPeriod = EnactmentPeriod;
+	type VoteLockingPeriod = EnactmentPeriod;
 	type LaunchPeriod = LaunchPeriod;
 	type VotingPeriod = VotingPeriod;
 	type MinimumDeposit = MinimumDeposit;
@@ -732,7 +731,7 @@ impl_runtime_apis! {
 		}
 
 		fn authorities() -> Vec<AuthorityId> {
-			Aura::authorities()
+			Aura::authorities().into_inner()
 		}
 	}
 
@@ -846,7 +845,7 @@ impl_runtime_apis! {
 		fn on_runtime_upgrade() -> Result<(Weight, Weight), sp_runtime::RuntimeString> {
 			log::info!("try-runtime::on_runtime_upgrade for spiritnet runtime.");
 			let weight = Executive::try_runtime_upgrade()?;
-			Ok((weight, RuntimeBlockWeights::get().max_block))
+			Ok((weight, BlockWeights::get().max_block))
 		}
 	}
 }
