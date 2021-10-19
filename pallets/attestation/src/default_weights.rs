@@ -20,12 +20,12 @@
 //!
 //! THIS FILE WAS AUTO-GENERATED USING THE SUBSTRATE BENCHMARK CLI VERSION 4.0.0-dev
 //! DATE: 2021-10-19, STEPS: {{cmd.steps}}\, REPEAT: {{cmd.repeat}}\, LOW RANGE: {{cmd.lowest_range_values}}\, HIGH RANGE: {{cmd.highest_range_values}}\
-//! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("dev"), DB CACHE: 128
+//! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("spiritnet-dev"), DB CACHE: 128
 
 // Executed Command:
 // target/release/kilt-parachain
 // benchmark
-// --chain=dev
+// --chain=spiritnet-dev
 // --steps=50
 // --repeat=20
 // --pallet=attestation
@@ -56,28 +56,28 @@ pub trait WeightInfo {
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn add() -> Weight {
-		(79_619_000_u64)
+		(78_739_000_u64)
 			.saturating_add(T::DbWeight::get().reads(6_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	fn revoke(d: u32, ) -> Weight {
-		(39_998_000_u64)
-			// Standard Error: 30_000
-			.saturating_add((6_353_000_u64).saturating_mul(d as Weight))
+		(39_511_000_u64)
+			// Standard Error: 31_000
+			.saturating_add((6_592_000_u64).saturating_mul(d as Weight))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(d as Weight)))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn remove(d: u32, ) -> Weight {
-		(69_083_000_u64)
-			// Standard Error: 41_000
-			.saturating_add((6_168_000_u64).saturating_mul(d as Weight))
+		(67_254_000_u64)
+			// Standard Error: 40_000
+			.saturating_add((6_613_000_u64).saturating_mul(d as Weight))
 			.saturating_add(T::DbWeight::get().reads(4_u64))
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(d as Weight)))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	fn reclaim_deposit() -> Weight {
-		(61_469_000_u64)
+		(59_545_000_u64)
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
@@ -86,28 +86,28 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 // For backwards compatibility and tests
 impl WeightInfo for () {
 	fn add() -> Weight {
-		(79_619_000_u64)
+		(78_739_000_u64)
 			.saturating_add(RocksDbWeight::get().reads(6_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
 	}
 	fn revoke(d: u32, ) -> Weight {
-		(39_998_000_u64)
-			// Standard Error: 30_000
-			.saturating_add((6_353_000_u64).saturating_mul(d as Weight))
+		(39_511_000_u64)
+			// Standard Error: 31_000
+			.saturating_add((6_592_000_u64).saturating_mul(d as Weight))
 			.saturating_add(RocksDbWeight::get().reads(2_u64))
 			.saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(d as Weight)))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
 	fn remove(d: u32, ) -> Weight {
-		(69_083_000_u64)
-			// Standard Error: 41_000
-			.saturating_add((6_168_000_u64).saturating_mul(d as Weight))
+		(67_254_000_u64)
+			// Standard Error: 40_000
+			.saturating_add((6_613_000_u64).saturating_mul(d as Weight))
 			.saturating_add(RocksDbWeight::get().reads(4_u64))
 			.saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(d as Weight)))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
 	}
 	fn reclaim_deposit() -> Weight {
-		(61_469_000_u64)
+		(59_545_000_u64)
 			.saturating_add(RocksDbWeight::get().reads(3_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
 	}
