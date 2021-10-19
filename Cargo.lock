@@ -377,7 +377,7 @@ checksum = "065374052e7df7ee4047b1160cca5e1467a12351a40b3da123c870ba0b8eda2a"
 
 [[package]]
 name = "attestation"
-version = "0.26.1"
+version = "0.26.2"
 dependencies = [
  "ctype",
  "delegation",
@@ -1446,7 +1446,7 @@ dependencies = [
 
 [[package]]
 name = "ctype"
-version = "0.26.1"
+version = "0.26.2"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -1725,6 +1725,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "cumulus-pallet-session-benchmarking"
+version = "3.0.0"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.10#870b214693856e768ba482fe2d3b9a83b24e4540"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-session",
+ "sp-io",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+]
+
+[[package]]
 name = "cumulus-pallet-xcmp-queue"
 version = "0.1.0"
 source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.10#870b214693856e768ba482fe2d3b9a83b24e4540"
@@ -1859,7 +1874,7 @@ dependencies = [
 
 [[package]]
 name = "delegation"
-version = "0.26.1"
+version = "0.26.2"
 dependencies = [
  "bitflags",
  "ctype",
@@ -1921,7 +1936,7 @@ dependencies = [
 
 [[package]]
 name = "did"
-version = "0.26.1"
+version = "0.26.2"
 dependencies = [
  "ctype",
  "env_logger 0.8.4",
@@ -3665,7 +3680,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-parachain"
-version = "0.26.1"
+version = "0.26.2"
 dependencies = [
  "cumulus-client-cli",
  "cumulus-client-collator",
@@ -3750,7 +3765,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-support"
-version = "0.26.0"
+version = "0.26.1"
 dependencies = [
  "frame-support",
  "parity-scale-codec",
@@ -4556,7 +4571,7 @@ checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
 
 [[package]]
 name = "mashnet-node"
-version = "0.26.1"
+version = "0.26.2"
 dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
@@ -4605,7 +4620,7 @@ dependencies = [
 
 [[package]]
 name = "mashnet-node-runtime"
-version = "0.26.1"
+version = "0.26.2"
 dependencies = [
  "attestation",
  "bitflags",
@@ -4623,6 +4638,7 @@ dependencies = [
  "kilt-crowdloan",
  "kilt-launch",
  "kilt-primitives",
+ "kilt-support",
  "log",
  "pallet-aura",
  "pallet-authorship",
@@ -6521,13 +6537,13 @@ checksum = "d4fd5641d01c8f18a23da7b6fe29298ff4b55afcccdf78973b24cf3175fee32e"
 
 [[package]]
 name = "peregrine-runtime"
-version = "0.26.1"
+version = "0.26.2"
 dependencies = [
  "attestation",
- "bitflags",
  "ctype",
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
+ "cumulus-pallet-session-benchmarking",
  "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
  "cumulus-primitives-timestamp",
@@ -6544,13 +6560,13 @@ dependencies = [
  "kilt-crowdloan",
  "kilt-launch",
  "kilt-primitives",
+ "kilt-support",
  "log",
  "pallet-aura",
  "pallet-authorship",
  "pallet-balances",
  "pallet-collective",
  "pallet-democracy",
- "pallet-elections-phragmen",
  "pallet-indices",
  "pallet-membership",
  "pallet-randomness-collective-flip",
@@ -10938,13 +10954,18 @@ checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 
 [[package]]
 name = "spiritnet-runtime"
-version = "0.26.1"
+version = "0.26.2"
 dependencies = [
+ "attestation",
+ "ctype",
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
+ "cumulus-pallet-session-benchmarking",
  "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
  "cumulus-primitives-timestamp",
+ "delegation",
+ "did",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -10956,6 +10977,7 @@ dependencies = [
  "kilt-crowdloan",
  "kilt-launch",
  "kilt-primitives",
+ "kilt-support",
  "log",
  "pallet-aura",
  "pallet-authorship",
@@ -11908,7 +11930,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f559b464de2e2bdabcac6a210d12e9b5a5973c251e102c44c585c71d51bd78e"
 dependencies = [
  "cfg-if 1.0.0",
- "rand 0.6.5",
+ "rand 0.8.4",
  "static_assertions",
 ]
 

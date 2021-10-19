@@ -17,6 +17,9 @@ sp-std = {git = "https://github.com/paritytech/substrate", default-features = fa
 [features]
 default = ["std"]
 fast-gov = []
+runtime-benchmarks = [
+  "sp-runtime/runtime-benchmarks",
+]
 std = [
   "codec/std",
   "frame-support/std",
