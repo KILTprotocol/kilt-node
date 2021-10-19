@@ -133,7 +133,7 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
-		/// The to-delete contribution is not present.
+		/// The contribution is not present.
 		ContributorNotPresent,
 	}
 
