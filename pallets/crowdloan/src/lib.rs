@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-//! # Crowdloan rewards Pallet
+//! # Crowdloan contributions Pallet
 //!
 //! Provides means of registering the contributors to the KILT crowdloan.
 //!
