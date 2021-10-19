@@ -99,10 +99,10 @@ fn test_set_registrar_account_bad_origin_error() {
 		});
 }
 
-// set_new_contribution
+// set_contribution
 
 #[test]
-fn test_set_new_contribution() {
+fn test_set_contribution() {
 	let registrar = ACCOUNT_00;
 	let contributor = ACCOUNT_01;
 	let contribution = BALANCE_01;
@@ -112,7 +112,7 @@ fn test_set_new_contribution() {
 		.build()
 		.execute_with(|| {
 			assert!(Crowdloan::contributions(&contributor).is_none());
-			assert_ok!(Crowdloan::set_new_contribution(
+			assert_ok!(Crowdloan::set_contribution(
 				Origin::signed(registrar.clone()),
 				contributor.clone(),
 				contribution
@@ -134,7 +134,7 @@ fn test_override_contribution() {
 		.build()
 		.execute_with(|| {
 			assert_eq!(Crowdloan::contributions(&contributor), Some(contribution));
-			assert_ok!(Crowdloan::set_new_contribution(
+			assert_ok!(Crowdloan::set_contribution(
 				Origin::signed(registrar.clone()),
 				contributor.clone(),
 				new_contribution
@@ -144,7 +144,7 @@ fn test_override_contribution() {
 }
 
 #[test]
-fn test_set_new_contribution_bad_origin_error() {
+fn test_set_contribution_bad_origin_error() {
 	let registrar = ACCOUNT_00;
 	let other_registrar = ACCOUNT_01;
 	let contributor = ACCOUNT_01;
@@ -155,7 +155,7 @@ fn test_set_new_contribution_bad_origin_error() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Crowdloan::set_new_contribution(Origin::signed(other_registrar.clone()), contributor, contribution),
+				Crowdloan::set_contribution(Origin::signed(other_registrar.clone()), contributor, contribution),
 				BadOrigin
 			);
 		});

@@ -39,7 +39,7 @@ benchmarks! {
 		);
 	}
 
-	set_new_contribution {
+	set_contribution {
 		let registrar: AccountIdOf<T> = account("registrar", 0, SEED_1);
 		let contributor: AccountIdOf<T> = account("contributor", 0, SEED_2);
 		let contribution: BalanceOf<T> = BalanceOf::<T>::one();

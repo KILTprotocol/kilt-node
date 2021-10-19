@@ -186,7 +186,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], RegistrarAccount, Contributions
 		/// - Writes: Contributions
 		#[pallet::weight(1)]
-		pub fn set_new_contribution(
+		pub fn set_contribution(
 			origin: OriginFor<T>,
 			contributor_account: <T::Lookup as StaticLookup>::Source,
 			amount: BalanceOf<T>,
