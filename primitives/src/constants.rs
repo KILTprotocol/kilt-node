@@ -78,13 +78,13 @@ pub const INFLATION_CONFIG: (Perquintill, Perquintill, Perquintill, Perquintill)
 pub mod attestation {
 	use super::*;
 
-	pub const ATTESTATION_DEPOSIT: Balance = 100 * MILLI_KILT;
+	pub const ATTESTATION_DEPOSIT: Balance = KILT;
 }
 
 pub mod delegation {
 	use super::*;
 
-	pub const DELEGATION_DEPOSIT: Balance = 100 * MILLI_KILT;
+	pub const DELEGATION_DEPOSIT: Balance = KILT;
 	pub const MAX_SIGNATURE_BYTE_LENGTH: u16 = 64;
 	pub const MAX_PARENT_CHECKS: u32 = 5;
 	pub const MAX_REVOCATIONS: u32 = 5;
@@ -185,8 +185,10 @@ pub mod governance {
 pub mod did {
 	use crate::BlockNumber;
 
-	use super::HOURS;
+	use super::{Balance, HOURS, KILT, MILLI_KILT};
 
+	pub const DID_DEPOSIT: Balance = 2 * KILT;
+	pub const DID_FEE: Balance = 50 * MILLI_KILT;
 	pub const MAX_KEY_AGREEMENT_KEYS: u32 = 10;
 	pub const MAX_URL_LENGTH: u32 = 200;
 	// This has been reduced from the previous 100, but it might still need
