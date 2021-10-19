@@ -196,9 +196,7 @@ pub mod pallet {
 
 			let looked_up_account = <T as frame_system::Config>::Lookup::lookup(contributor_account)?;
 			let old_amount = Contributions::<T>::mutate(&looked_up_account, |entry| {
-				let existing_entry = *entry;
-				*entry = Some(amount);
-				existing_entry
+				entry.replace(amount)
 			});
 
 			Self::deposit_event(Event::NewContributionSet(looked_up_account, old_amount, amount));
