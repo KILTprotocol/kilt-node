@@ -22,9 +22,6 @@ sp-io = {branch = "polkadot-v0.9.10", default-features = false, git = "https://g
 [dependencies]
 serde = {optional = true, version = "1.0.101"}
 
-# Internal dependencies
-kilt-primitives = {default-features = false, optional = true, path = "../../primitives"}
-
 # Substrate dependencies
 codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.0.0"}
 frame-benchmarking = {branch = "polkadot-v0.9.10", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
