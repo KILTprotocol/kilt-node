@@ -38,6 +38,8 @@
 //!
 //! The crowdloan contributions pallet depends on the [`GenesisConfig`].
 //!
+//! The genesis config sets the initial transfer account that can update the pallet's storage.
+//!
 //! ## Assumptions
 //!
 //! - At any time, there is one and only one admin account which can manage the
