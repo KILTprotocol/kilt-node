@@ -346,7 +346,7 @@ fn testnet_genesis(
 				.collect(),
 		},
 		crowdloan_contributors: CrowdloanContributorsConfig {
-			admin_account: transfer_account.clone(),
+			registrar_account: transfer_account.clone(),
 		},
 		sudo: SudoConfig { key: root_key },
 		parachain_info: ParachainInfoConfig { parachain_id: id },

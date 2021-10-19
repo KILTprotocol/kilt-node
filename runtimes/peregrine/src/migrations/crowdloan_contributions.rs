@@ -46,7 +46,7 @@ impl OnRuntimeUpgrade for CrowdloanContributionsSetup {
 			"Setting crowdloan rewards pallet admin account to {:?}.",
 			&admin_account
 		);
-		kilt_crowdloan::AdminAccount::<Runtime>::set(admin_account);
+		kilt_crowdloan::RegistrarAccount::<Runtime>::set(admin_account);
 		StorageVersion::put::<kilt_crowdloan::Pallet<Runtime>>(&kilt_crowdloan::STORAGE_VERSION);
 
 		<Runtime as frame_system::Config>::DbWeight::get().writes(2)
@@ -60,7 +60,7 @@ impl OnRuntimeUpgrade for CrowdloanContributionsSetup {
 			"On-chain storage version for crowdloan pallet post-migration not the latest."
 		);
 		assert_eq!(
-			kilt_crowdloan::AdminAccount::<Runtime>::get(),
+			kilt_crowdloan::RegistrarAccount::<Runtime>::get(),
 			AccountId::new(NEW_ADMIN_ACCOUNT),
 			"Admin account set different than the expected one."
 		);

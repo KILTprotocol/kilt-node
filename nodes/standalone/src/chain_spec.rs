@@ -265,7 +265,7 @@ fn testnet_genesis(
 			transfer_account: TRANSFER_ACCOUNT.into(),
 		},
 		crowdloan_contributors: CrowdloanContributorsConfig {
-			admin_account: TRANSFER_ACCOUNT.into(),
+			registrar_account: TRANSFER_ACCOUNT.into(),
 		},
 		vesting: VestingConfig { vesting: vec![] },
 	}

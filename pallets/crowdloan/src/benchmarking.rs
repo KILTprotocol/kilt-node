@@ -26,25 +26,25 @@ const SEED_1: u32 = 1;
 const SEED_2: u32 = 2;
 
 benchmarks! {
-	set_admin_account {
-		let admin: AccountIdOf<T> = account("admin", 0, SEED_1);
-		let new_admin: AccountIdOf<T> = account("new_admin", 0, SEED_2);
-		AdminAccount::<T>::set(admin.clone());
-	}: _(RawOrigin::Signed(admin), T::Lookup::unlookup(new_admin.clone()))
+	set_registrar_account {
+		let registrar: AccountIdOf<T> = account("registrar", 0, SEED_1);
+		let new_registrar: AccountIdOf<T> = account("new_registrar", 0, SEED_2);
+		RegistrarAccount::<T>::set(registrar.clone());
+	}: _(RawOrigin::Signed(registrar), T::Lookup::unlookup(new_registrar.clone()))
 	verify {
 		assert_eq!(
-			AdminAccount::<T>::get(),
-			new_admin,
-			"Admin account different than expected"
+			RegistrarAccount::<T>::get(),
+			new_registrar,
+			"Registrar account different than expected"
 		);
 	}
 
 	set_new_contribution {
-		let admin: AccountIdOf<T> = account("admin", 0, SEED_1);
+		let registrar: AccountIdOf<T> = account("registrar", 0, SEED_1);
 		let contributor: AccountIdOf<T> = account("contributor", 0, SEED_2);
 		let contribution: BalanceOf<T> = BalanceOf::<T>::one();
-		AdminAccount::<T>::set(admin.clone());
-	}: _(RawOrigin::Signed(admin), T::Lookup::unlookup(contributor.clone()), contribution)
+		RegistrarAccount::<T>::set(registrar.clone());
+	}: _(RawOrigin::Signed(registrar), T::Lookup::unlookup(contributor.clone()), contribution)
 	verify {
 		assert_eq!(
 			Contributions::<T>::get(&contributor),
@@ -54,12 +54,12 @@ benchmarks! {
 	}
 
 	remove_contribution {
-		let admin: AccountIdOf<T> = account("admin", 0, SEED_1);
+		let registrar: AccountIdOf<T> = account("registrar", 0, SEED_1);
 		let contributor: AccountIdOf<T> = account("contributor", 0, SEED_2);
 		let contribution: BalanceOf<T> = BalanceOf::<T>::one();
-		AdminAccount::<T>::set(admin.clone());
+		RegistrarAccount::<T>::set(registrar.clone());
 		Contributions::<T>::insert(&contributor, contribution);
-	}: _(RawOrigin::Signed(admin), T::Lookup::unlookup(contributor.clone()))
+	}: _(RawOrigin::Signed(registrar), T::Lookup::unlookup(contributor.clone()))
 	verify {
 		assert!(
 			Contributions::<T>::get(&contributor).is_none(),

@@ -104,13 +104,13 @@ pub(crate) const BALANCE_02: TestBalance = 2 * KILT;
 
 #[derive(Default)]
 pub(crate) struct ExtBuilder {
-	admin_account: TestAccountId,
+	registrar_account: TestAccountId,
 	contributions: Vec<(TestAccountId, TestBalance)>,
 }
 
 impl ExtBuilder {
-	pub(crate) fn with_admin_account(mut self, account: TestAccountId) -> Self {
-		self.admin_account = account;
+	pub(crate) fn with_registrar_account(mut self, account: TestAccountId) -> Self {
+		self.registrar_account = account;
 		self
 	}
 
@@ -124,7 +124,7 @@ impl ExtBuilder {
 		let mut ext = sp_io::TestExternalities::new(storage);
 
 		ext.execute_with(|| {
-			pallet_crowdloan::AdminAccount::<Test>::set(self.admin_account);
+			pallet_crowdloan::RegistrarAccount::<Test>::set(self.registrar_account);
 
 			for (contributor_account, contribution_amount) in self.contributions.iter() {
 				pallet_crowdloan::Contributions::<Test>::insert(contributor_account, contribution_amount);

@@ -28,11 +28,11 @@
 //!
 //! The crowdloan contributions pallet depends on the [`GenesisConfig`].
 //!
-//! The genesis config sets the initial transfer account that can update the pallet's storage.
+//! The genesis config sets the initial registrar account that can update the pallet's storage.
 //!
 //! ## Assumptions
 //!
-//! - At any time, there is one and only one admin account which can manage the
+//! - At any time, there is one and only one registrar account which can manage the
 //!   pallet storage.
 
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -86,14 +86,14 @@ pub mod pallet {
 
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
-		pub admin_account: AccountIdOf<T>,
+		pub registrar_account: AccountIdOf<T>,
 	}
 
 	#[cfg(feature = "std")]
 	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
 			Self {
-				admin_account: AccountIdOf::<T>::default(),
+				registrar_account: AccountIdOf::<T>::default(),
 			}
 		}
 	}
@@ -101,14 +101,14 @@ pub mod pallet {
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
-			AdminAccount::<T>::set(self.admin_account.clone());
+			RegistrarAccount::<T>::set(self.registrar_account.clone());
 		}
 	}
 
-	/// The administrator account allowed to manage the pallet storage.
+	/// The registrar account allowed to manage the pallet storage.
 	#[pallet::storage]
-	#[pallet::getter(fn admin_account)]
-	pub type AdminAccount<T> = StorageValue<_, AccountIdOf<T>, ValueQuery>;
+	#[pallet::getter(fn registrar_account)]
+	pub type RegistrarAccount<T> = StorageValue<_, AccountIdOf<T>, ValueQuery>;
 
 	/// The set of contributions.
 	///
@@ -120,9 +120,9 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		/// A new admin has been set.
-		/// \[old administrator account, new administrator account\]
-		NewAdminAccountSet(AccountIdOf<T>, AccountIdOf<T>),
+		/// A new registrar has been set.
+		/// \[old registrar account, new registrar account\]
+		NewRegistrarAccountSet(AccountIdOf<T>, AccountIdOf<T>),
 		/// A new contribution has been set.
 		/// \[contributor account, old amount (OPTIONAL), new amount\]
 		NewContributionSet(AccountIdOf<T>, Option<BalanceOf<T>>, BalanceOf<T>),
@@ -139,18 +139,18 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		/// Sets a new account as the admin of this pallet.
+		/// Sets a new account as the registrar of this pallet.
 		///
-		/// The dispatch origin can be either Sudo or the current admin account.
+		/// The dispatch origin can be either Sudo or the current registrar account.
 		///
-		/// Emits `NewAdminAccountSet`.
+		/// Emits `NewRegistrarAccountSet`.
 		///
 		/// # <weight>
 		/// Weight: O(1)
-		/// - Reads: [Origin Account], AdminAccount
-		/// - Writes: AdminAccount
+		/// - Reads: [Origin Account], RegistrarAccount
+		/// - Writes: RegistrarAccount
 		#[pallet::weight(1)]
-		pub fn set_admin_account(
+		pub fn set_registrar_account(
 			origin: OriginFor<T>,
 			new_account: <T::Lookup as StaticLookup>::Source,
 		) -> DispatchResult {
@@ -159,16 +159,16 @@ pub mod pallet {
 					origin,
 				)?;
 
-			let old_account = AdminAccount::<T>::get();
+			let old_account = RegistrarAccount::<T>::get();
 
 			if let Either::Right(signed_origin) = who {
 				ensure!(signed_origin == old_account, BadOrigin);
 			}
 
 			let looked_up_account = <T as frame_system::Config>::Lookup::lookup(new_account)?;
-			AdminAccount::<T>::set(looked_up_account.clone());
+			RegistrarAccount::<T>::set(looked_up_account.clone());
 
-			Self::deposit_event(Event::NewAdminAccountSet(old_account, looked_up_account));
+			Self::deposit_event(Event::NewRegistrarAccountSet(old_account, looked_up_account));
 
 			Ok(())
 		}
@@ -177,13 +177,13 @@ pub mod pallet {
 		///
 		/// If a previous contribution is present, it is overridden.
 		///
-		/// The dispatch origin must be the current admin account.
+		/// The dispatch origin must be the current registrar account.
 		///
 		/// Emits `NewContributionSet`.
 		///
 		/// # <weight>
 		/// Weight: O(1)
-		/// - Reads: [Origin Account], AdminAccount, Contributions
+		/// - Reads: [Origin Account], RegistrarAccount, Contributions
 		/// - Writes: Contributions
 		#[pallet::weight(1)]
 		pub fn set_new_contribution(
@@ -192,7 +192,7 @@ pub mod pallet {
 			amount: BalanceOf<T>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			ensure!(who == AdminAccount::<T>::get(), BadOrigin);
+			ensure!(who == RegistrarAccount::<T>::get(), BadOrigin);
 
 			let looked_up_account = <T as frame_system::Config>::Lookup::lookup(contributor_account)?;
 			let old_amount = Contributions::<T>::mutate(&looked_up_account, |entry| {
@@ -211,13 +211,13 @@ pub mod pallet {
 		/// It returns an error if there is no contribution for the given
 		/// contributor's account.
 		///
-		/// The dispatch origin must be the current admin account.
+		/// The dispatch origin must be the current registrar account.
 		///
 		/// Emits `ContributionRemoved`.
 		///
 		/// # <weight>
 		/// Weight: O(1)
-		/// - Reads: [Origin Account], AdminAccount, Contributions
+		/// - Reads: [Origin Account], RegistrarAccount, Contributions
 		/// - Writes: Contributions
 		#[pallet::weight(1)]
 		pub fn remove_contribution(
@@ -225,7 +225,7 @@ pub mod pallet {
 			contributor_account: <T::Lookup as StaticLookup>::Source,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			ensure!(who == AdminAccount::<T>::get(), BadOrigin);
+			ensure!(who == RegistrarAccount::<T>::get(), BadOrigin);
 
 			let looked_up_account = <T as frame_system::Config>::Lookup::lookup(contributor_account)?;
 			Contributions::<T>::take(&looked_up_account).ok_or(Error::<T>::ContributorNotPresent)?;

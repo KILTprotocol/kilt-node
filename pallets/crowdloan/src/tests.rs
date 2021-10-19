@@ -21,79 +21,79 @@ use sp_runtime::traits::BadOrigin;
 
 use crate::{mock::*, Error};
 
-// set_admin_account
+// set_registrar_account
 
 #[test]
-fn test_set_admin_account() {
-	let admin = ACCOUNT_00;
-	let new_admin = ACCOUNT_01;
+fn test_set_registrar_account() {
+	let registrar = ACCOUNT_00;
+	let new_registrar = ACCOUNT_01;
 
 	ExtBuilder::default()
-		.with_admin_account(admin.clone())
+		.with_registrar_account(registrar.clone())
 		.build()
 		.execute_with(|| {
-			assert_eq!(Crowdloan::admin_account(), admin);
+			assert_eq!(Crowdloan::registrar_account(), registrar);
 
-			// Change admin
-			assert_ok!(Crowdloan::set_admin_account(
-				Origin::signed(admin.clone()),
-				new_admin.clone()
+			// Change registrar
+			assert_ok!(Crowdloan::set_registrar_account(
+				Origin::signed(registrar.clone()),
+				new_registrar.clone()
 			));
 
-			// Test new admin is the one set
-			assert_eq!(Crowdloan::admin_account(), new_admin);
+			// Test new registrar is the one set
+			assert_eq!(Crowdloan::registrar_account(), new_registrar);
 		});
 }
 
 #[test]
-fn test_set_admin_account_with_sudo() {
-	let admin = ACCOUNT_00;
-	let new_admin = ACCOUNT_01;
+fn test_set_registrar_account_with_sudo() {
+	let registrar = ACCOUNT_00;
+	let new_registrar = ACCOUNT_01;
 
 	ExtBuilder::default()
-		.with_admin_account(admin.clone())
+		.with_registrar_account(registrar.clone())
 		.build()
 		.execute_with(|| {
-			assert_eq!(Crowdloan::admin_account(), admin);
+			assert_eq!(Crowdloan::registrar_account(), registrar);
 
-			// Change admin with sudo account
-			assert_ok!(Crowdloan::set_admin_account(Origin::root(), new_admin.clone()));
+			// Change registrar with sudo account
+			assert_ok!(Crowdloan::set_registrar_account(Origin::root(), new_registrar.clone()));
 
-			// Test new admin is the one set
-			assert_eq!(Crowdloan::admin_account(), new_admin);
+			// Test new registrar is the one set
+			assert_eq!(Crowdloan::registrar_account(), new_registrar);
 		});
 }
 
 #[test]
-fn test_no_custom_admin_set() {
-	let admin = ACCOUNT_00;
-	let new_admin = ACCOUNT_01;
+fn test_no_custom_registrar_set() {
+	let registrar = ACCOUNT_00;
+	let new_registrar = ACCOUNT_01;
 
 	ExtBuilder::default().build().execute_with(|| {
-		assert_eq!(Crowdloan::admin_account(), admin);
+		assert_eq!(Crowdloan::registrar_account(), registrar);
 
-		// Change admin
-		assert_ok!(Crowdloan::set_admin_account(
-			Origin::signed(admin.clone()),
-			new_admin.clone()
+		// Change registrar
+		assert_ok!(Crowdloan::set_registrar_account(
+			Origin::signed(registrar.clone()),
+			new_registrar.clone()
 		));
 
-		// Test new admin is the one set
-		assert_eq!(Crowdloan::admin_account(), new_admin);
+		// Test new registrar is the one set
+		assert_eq!(Crowdloan::registrar_account(), new_registrar);
 	});
 }
 
 #[test]
-fn test_set_admin_account_bad_origin_error() {
-	let admin = ACCOUNT_00;
-	let other_admin = ACCOUNT_01;
+fn test_set_registrar_account_bad_origin_error() {
+	let registrar = ACCOUNT_00;
+	let other_registrar = ACCOUNT_01;
 
 	ExtBuilder::default()
-		.with_admin_account(admin.clone())
+		.with_registrar_account(registrar.clone())
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Crowdloan::set_admin_account(Origin::signed(other_admin), admin),
+				Crowdloan::set_registrar_account(Origin::signed(other_registrar), registrar),
 				BadOrigin
 			);
 		});
@@ -103,17 +103,17 @@ fn test_set_admin_account_bad_origin_error() {
 
 #[test]
 fn test_set_new_contribution() {
-	let admin = ACCOUNT_00;
+	let registrar = ACCOUNT_00;
 	let contributor = ACCOUNT_01;
 	let contribution = BALANCE_01;
 
 	ExtBuilder::default()
-		.with_admin_account(admin.clone())
+		.with_registrar_account(registrar.clone())
 		.build()
 		.execute_with(|| {
 			assert!(Crowdloan::contributions(&contributor).is_none());
 			assert_ok!(Crowdloan::set_new_contribution(
-				Origin::signed(admin.clone()),
+				Origin::signed(registrar.clone()),
 				contributor.clone(),
 				contribution
 			));
@@ -123,19 +123,19 @@ fn test_set_new_contribution() {
 
 #[test]
 fn test_override_contribution() {
-	let admin = ACCOUNT_00;
+	let registrar = ACCOUNT_00;
 	let contributor = ACCOUNT_01;
 	let contribution = BALANCE_01;
 	let new_contribution = BALANCE_02;
 
 	ExtBuilder::default()
-		.with_admin_account(admin.clone())
+		.with_registrar_account(registrar.clone())
 		.with_contributions(vec![(contributor.clone(), contribution)])
 		.build()
 		.execute_with(|| {
 			assert_eq!(Crowdloan::contributions(&contributor), Some(contribution));
 			assert_ok!(Crowdloan::set_new_contribution(
-				Origin::signed(admin.clone()),
+				Origin::signed(registrar.clone()),
 				contributor.clone(),
 				new_contribution
 			));
@@ -145,17 +145,17 @@ fn test_override_contribution() {
 
 #[test]
 fn test_set_new_contribution_bad_origin_error() {
-	let admin = ACCOUNT_00;
-	let other_admin = ACCOUNT_01;
+	let registrar = ACCOUNT_00;
+	let other_registrar = ACCOUNT_01;
 	let contributor = ACCOUNT_01;
 	let contribution = BALANCE_01;
 
 	ExtBuilder::default()
-		.with_admin_account(admin)
+		.with_registrar_account(registrar)
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Crowdloan::set_new_contribution(Origin::signed(other_admin.clone()), contributor, contribution),
+				Crowdloan::set_new_contribution(Origin::signed(other_registrar.clone()), contributor, contribution),
 				BadOrigin
 			);
 		});
@@ -165,18 +165,18 @@ fn test_set_new_contribution_bad_origin_error() {
 
 #[test]
 fn test_remove_contribution() {
-	let admin = ACCOUNT_00;
+	let registrar = ACCOUNT_00;
 	let contributor = ACCOUNT_01;
 	let contribution = BALANCE_01;
 
 	ExtBuilder::default()
-		.with_admin_account(admin.clone())
+		.with_registrar_account(registrar.clone())
 		.with_contributions(vec![(contributor.clone(), contribution)])
 		.build()
 		.execute_with(|| {
 			assert!(Crowdloan::contributions(&contributor).is_some());
 			assert_ok!(Crowdloan::remove_contribution(
-				Origin::signed(admin.clone()),
+				Origin::signed(registrar.clone()),
 				contributor.clone()
 			));
 			assert!(Crowdloan::contributions(&contributor).is_none());
@@ -185,18 +185,18 @@ fn test_remove_contribution() {
 
 #[test]
 fn test_remove_contribution_bad_origin_error() {
-	let admin = ACCOUNT_00;
-	let other_admin = ACCOUNT_01;
+	let registrar = ACCOUNT_00;
+	let other_registrar = ACCOUNT_01;
 	let contributor = ACCOUNT_01;
 	let contribution = BALANCE_01;
 
 	ExtBuilder::default()
-		.with_admin_account(admin)
+		.with_registrar_account(registrar)
 		.with_contributions(vec![(contributor.clone(), contribution)])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Crowdloan::remove_contribution(Origin::signed(other_admin.clone()), contributor),
+				Crowdloan::remove_contribution(Origin::signed(other_registrar.clone()), contributor),
 				BadOrigin
 			);
 		});
@@ -204,15 +204,15 @@ fn test_remove_contribution_bad_origin_error() {
 
 #[test]
 fn test_remove_contribution_absent_error() {
-	let admin = ACCOUNT_00;
+	let registrar = ACCOUNT_00;
 	let contributor = ACCOUNT_01;
 
 	ExtBuilder::default()
-		.with_admin_account(admin.clone())
+		.with_registrar_account(registrar.clone())
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Crowdloan::remove_contribution(Origin::signed(admin), contributor),
+				Crowdloan::remove_contribution(Origin::signed(registrar), contributor),
 				Error::<Test>::ContributorNotPresent
 			);
 		});
