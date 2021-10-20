@@ -1391,6 +1391,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "crowdloan"
+version = "0.26.2"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "kilt-primitives",
+ "pallet-balances",
+ "parity-scale-codec",
+ "serde",
+ "sp-io",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-std",
+ "substrate-wasm-builder-runner",
+]
+
+[[package]]
 name = "crunchy"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3642,24 +3660,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "kilt-crowdloan"
-version = "0.26.2"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "kilt-primitives",
- "pallet-balances",
- "parity-scale-codec",
- "serde",
- "sp-io",
- "sp-keystore",
- "sp-runtime",
- "sp-std",
- "substrate-wasm-builder-runner",
-]
-
-[[package]]
 name = "kilt-launch"
 version = "0.1.0"
 dependencies = [
@@ -4624,6 +4624,7 @@ version = "0.26.2"
 dependencies = [
  "attestation",
  "bitflags",
+ "crowdloan",
  "ctype",
  "delegation",
  "did",
@@ -4635,7 +4636,6 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal 0.3.3",
- "kilt-crowdloan",
  "kilt-launch",
  "kilt-primitives",
  "kilt-support",
@@ -6540,6 +6540,7 @@ name = "peregrine-runtime"
 version = "0.26.2"
 dependencies = [
  "attestation",
+ "crowdloan",
  "ctype",
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
@@ -6557,7 +6558,6 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal 0.3.3",
- "kilt-crowdloan",
  "kilt-launch",
  "kilt-primitives",
  "kilt-support",
@@ -10957,6 +10957,7 @@ name = "spiritnet-runtime"
 version = "0.26.2"
 dependencies = [
  "attestation",
+ "crowdloan",
  "ctype",
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
@@ -10974,7 +10975,6 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal 0.3.3",
- "kilt-crowdloan",
  "kilt-launch",
  "kilt-primitives",
  "kilt-support",

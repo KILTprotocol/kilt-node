@@ -53,6 +53,7 @@ use sp_runtime::{
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 
+use crowdloan as kilt_crowdloan;
 use kilt_primitives::{
 	constants::{
 		attestation::ATTESTATION_DEPOSIT,

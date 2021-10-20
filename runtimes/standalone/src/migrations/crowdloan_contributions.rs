@@ -32,7 +32,7 @@ impl OnRuntimeUpgrade for CrowdloanContributionsSetup {
 	#[cfg(feature = "try-runtime")]
 	fn pre_upgrade() -> Result<(), &'static str> {
 		assert_eq!(
-			kilt_crowdloan::Pallet::<Runtime>::on_chain_storage_version(),
+			crowdloan::Pallet::<Runtime>::on_chain_storage_version(),
 			StorageVersion::default(),
 			"On-chain storage version for crowdloan pallet pre-migration not the expected default."
 		);
@@ -46,8 +46,8 @@ impl OnRuntimeUpgrade for CrowdloanContributionsSetup {
 			"Setting crowdloan contributions pallet admin account to {:?}.",
 			&admin_account
 		);
-		kilt_crowdloan::RegistrarAccount::<Runtime>::set(admin_account);
-		StorageVersion::put::<kilt_crowdloan::Pallet<Runtime>>(&kilt_crowdloan::STORAGE_VERSION);
+		crowdloan::RegistrarAccount::<Runtime>::set(admin_account);
+		StorageVersion::put::<crowdloan::Pallet<Runtime>>(&crowdloan::STORAGE_VERSION);
 
 		<Runtime as frame_system::Config>::DbWeight::get().writes(2)
 	}
@@ -55,12 +55,12 @@ impl OnRuntimeUpgrade for CrowdloanContributionsSetup {
 	#[cfg(feature = "try-runtime")]
 	fn post_upgrade() -> Result<(), &'static str> {
 		assert_eq!(
-			kilt_crowdloan::Pallet::<Runtime>::on_chain_storage_version(),
-			kilt_crowdloan::Pallet::<Runtime>::current_storage_version(),
+			crowdloan::Pallet::<Runtime>::on_chain_storage_version(),
+			crowdloan::Pallet::<Runtime>::current_storage_version(),
 			"On-chain storage version for crowdloan pallet post-migration not the latest."
 		);
 		assert_eq!(
-			kilt_crowdloan::RegistrarAccount::<Runtime>::get(),
+			crowdloan::RegistrarAccount::<Runtime>::get(),
 			AccountId::new(NEW_ADMIN_ACCOUNT),
 			"Admin account set different than the expected one."
 		);

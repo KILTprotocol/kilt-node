@@ -639,7 +639,7 @@ impl did::Config for Runtime {
 	type WeightInfo = weights::did::WeightInfo<Runtime>;
 }
 
-impl kilt_crowdloan::Config for Runtime {
+impl crowdloan::Config for Runtime {
 	type Currency = Balances;
 	type EnsureRegistrarOrigin = MoreThanHalfCouncil;
 	type Event = Event;
@@ -755,7 +755,7 @@ construct_runtime! {
 		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 62,
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 63,
 		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 64,
-		CrowdloanContributors: kilt_crowdloan::{Pallet, Call, Storage, Event<T>, Config<T>} = 65,
+		CrowdloanContributors: crowdloan::{Pallet, Call, Storage, Event<T>, Config<T>} = 65,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>, Config} = 80,
@@ -955,7 +955,7 @@ impl_runtime_apis! {
 
 			// KILT
 			list_benchmark!(list, extra, attestation, Attestation);
-			list_benchmark!(list, extra, kilt_crowdloan, CrowdloanContributors);
+			list_benchmark!(list, extra, crowdloan, CrowdloanContributors);
 			list_benchmark!(list, extra, ctype, Ctype);
 			list_benchmark!(list, extra, delegation, Delegation);
 			list_benchmark!(list, extra, did, Did);
@@ -1016,7 +1016,7 @@ impl_runtime_apis! {
 			// KILT
 			add_benchmark!(params, batches, attestation, Attestation);
 			add_benchmark!(params, batches, ctype, Ctype);
-			add_benchmark!(params, batches, kilt_crowdloan, CrowdloanContributors);
+			add_benchmark!(params, batches, crowdloan, CrowdloanContributors);
 			add_benchmark!(params, batches, delegation, Delegation);
 			add_benchmark!(params, batches, did, Did);
 			add_benchmark!(params, batches, kilt_launch, KiltLaunch);

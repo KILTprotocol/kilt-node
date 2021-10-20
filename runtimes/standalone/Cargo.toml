@@ -15,11 +15,11 @@ serde = {features = ["derive"], optional = true, version = "1.0"}
 
 # kilt functionality
 attestation = {default-features = false, path = "../../pallets/attestation"}
+crowdloan = {default-features = false, path = "../../pallets/crowdloan"}
 ctype = {default-features = false, path = "../../pallets/ctype"}
 delegation = {default-features = false, path = "../../pallets/delegation"}
 did = {default-features = false, path = "../../pallets/did"}
 kilt-launch = {default-features = false, path = "../../pallets/kilt-launch"}
-kilt-crowdloan = {default-features = false, path = "../../pallets/crowdloan"}
 kilt-primitives = {path = "../../primitives", default-features = false}
 kilt-support = {path = "../../support", default-features = false, optional = true}
 
@@ -69,6 +69,7 @@ frame-try-runtime = {git = "https://github.com/paritytech/substrate", default-fe
 default = ["std"]
 runtime-benchmarks = [
   "attestation/runtime-benchmarks",
+  "crowdloan/runtime-benchmarks",
   "ctype/runtime-benchmarks",
   "delegation/runtime-benchmarks",
   "did/runtime-benchmarks",
@@ -76,7 +77,6 @@ runtime-benchmarks = [
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "frame-system-benchmarking",
-  "kilt-crowdloan/runtime-benchmarks",
   "kilt-launch/runtime-benchmarks",
   "kilt-primitives/runtime-benchmarks",
   "kilt-support",
@@ -90,6 +90,7 @@ runtime-benchmarks = [
 std = [
   "attestation/std",
   "codec/std",
+  "crowdloan/std",
   "ctype/std",
   "delegation/std",
   "did/std",
@@ -98,7 +99,6 @@ std = [
   "frame-system/std",
   "frame-system-rpc-runtime-api/std",
   "frame-try-runtime/std",
-  "kilt-crowdloan/std",
   "kilt-launch/std",
   "kilt-primitives/std",
   "log/std",
@@ -132,13 +132,13 @@ std = [
 try-runtime = [
   "attestation/try-runtime",
   "delegation/try-runtime",
+  "crowdloan/try-runtime",
   "ctype/try-runtime",
   "did/try-runtime",
   "frame-executive/try-runtime",
   "frame-support/try-runtime",
   "frame-system/try-runtime",
   "frame-try-runtime",
-  "kilt-crowdloan/try-runtime",
   "kilt-launch/try-runtime",
   "pallet-aura/try-runtime",
   "pallet-authorship/try-runtime",

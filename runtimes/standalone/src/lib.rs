@@ -31,6 +31,7 @@ use frame_system::EnsureRoot;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::EnsureSigned;
 
+use crowdloan as kilt_crowdloan;
 use kilt_primitives::{
 	constants::{
 		attestation::ATTESTATION_DEPOSIT,
