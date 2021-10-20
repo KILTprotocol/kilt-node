@@ -36,14 +36,14 @@ impl OnRuntimeUpgrade for CrowdloanContributionsSetup {
 			StorageVersion::default(),
 			"On-chain storage version for crowdloan pallet pre-migration not the expected default."
 		);
-		log::info!("Setting up crowdloan rewards pallet.");
+		log::info!("Setting up crowdloan contributions pallet.");
 		Ok(())
 	}
 
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
 		let admin_account = AccountId::new(NEW_ADMIN_ACCOUNT);
 		log::info!(
-			"Setting crowdloan rewards pallet admin account to {:?}.",
+			"Setting crowdloan contributions pallet admin account to {:?}.",
 			&admin_account
 		);
 		kilt_crowdloan::RegistrarAccount::<Runtime>::set(admin_account);
@@ -64,7 +64,7 @@ impl OnRuntimeUpgrade for CrowdloanContributionsSetup {
 			AccountId::new(NEW_ADMIN_ACCOUNT),
 			"Admin account set different than the expected one."
 		);
-		log::info!("Crowdloan rewards pallet set up.");
+		log::info!("Crowdloan contributions pallet set up.");
 		Ok(())
 	}
 }
