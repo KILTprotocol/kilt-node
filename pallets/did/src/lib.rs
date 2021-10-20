@@ -104,6 +104,7 @@ pub mod default_weights;
 pub mod did_details;
 pub mod errors;
 pub mod migrations;
+pub mod service_endpoints;
 pub mod origin;
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -121,7 +122,7 @@ mod signature;
 mod utils;
 
 use crate::migrations::*;
-pub use crate::{default_weights::WeightInfo, did_details::*, errors::*, origin::*, pallet::*, signature::*};
+pub use crate::{default_weights::WeightInfo, did_details::*, errors::*, origin::*, service_endpoints::*, pallet::*, signature::*};
 
 use codec::Encode;
 use frame_support::{
@@ -507,7 +508,7 @@ pub mod pallet {
 
 			// Validate all the size constraints for the service endpoints.
 			let input_service_endpoints = details.new_service_details.clone();
-			utils::validate_new_service_endpoints(&input_service_endpoints).map_err(Error::<T>::from)?;
+			service_endpoints::utils::validate_new_service_endpoints(&input_service_endpoints).map_err(Error::<T>::from)?;
 
 			let did_entry =
 				DidDetails::from_creation_details(details, account_did_auth_key).map_err(Error::<T>::from)?;
@@ -766,7 +767,7 @@ pub mod pallet {
 		pub fn add_service_endpoint(origin: OriginFor<T>, service_endpoint: DidEndpointDetails<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 
-			utils::validate_single_service_endpoint(&service_endpoint).map_err(Error::<T>::from)?;
+			service_endpoints::utils::validate_single_service_endpoint(&service_endpoint).map_err(Error::<T>::from)?;
 
 			// Verify that the DID is present.
 			ensure!(Did::<T>::get(&did_subject).is_some(), Error::<T>::DidNotPresent);
