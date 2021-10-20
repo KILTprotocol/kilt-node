@@ -247,6 +247,24 @@ pub mod pallet {
 
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
+
+		#[pallet::constant]
+		type MaxServiceIdLength: Get<u32>;
+
+		#[pallet::constant]
+		type MaxServiceTypeLength: Get<u32>;
+
+		#[pallet::constant]
+		type MaxServiceUrlLength: Get<u32>;
+
+		#[pallet::constant]
+		type MaxTypeCountPerService: Get<u32>;
+
+		#[pallet::constant]
+		type MaxUrlCountPerService: Get<u32>;
+
+		#[pallet::constant]
+		type MaxDidServicesCount: Get<u32>;
 	}
 
 	#[pallet::pallet]
@@ -276,6 +294,13 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn get_did)]
 	pub type Did<T> = StorageMap<_, Blake2_128Concat, DidIdentifierOf<T>, DidDetails<T>>;
+
+	/// Service endpoints associated with DIDs.
+	///
+	/// It maps from (DID identifier, service ID) to the service details.
+	#[pallet::storage]
+	#[pallet::getter(fn get_service_endpoints)]
+	pub type ServiceEndpoints<T> = StorageDoubleMap<_, Twox64Concat, DidIdentifierOf<T>, Blake2_128Concat, Vec<u8>, DidEndpointDetails<T>>;
 
 	/// The set of DIDs that have been deleted and cannot therefore be created
 	/// again for security reasons.
@@ -346,10 +371,6 @@ pub mod pallet {
 		/// A number of new verification keys to remove greater than the maximum
 		/// allowed has been provided.
 		MaxVerificationKeysToRemoveLimitExceeded,
-		/// A URL longer than the maximum size allowed has been provided.
-		MaxUrlLengthExceeded,
-		/// More than the maximum number of URLs have been specified.
-		MaxUrlsCountExceeded,
 		/// The maximum number of public keys for this DID key identifier has
 		/// been reached.
 		MaxPublicKeysPerDidExceeded,
@@ -362,12 +383,18 @@ pub mod pallet {
 		TransactionExpired,
 		/// The DID has already been previously deleted.
 		DidAlreadyDeleted,
-		/// An error that is not supposed to take place, yet it happened.
-		InternalError,
 		/// Only the owner of the deposit can reclaim its reserved balance.
 		NotOwnerOfDeposit,
 		/// The origin is unable to reserve the deposit and pay the fee.
 		UnableToPayFees,
+		MaxIdLengthExceeded,
+		MaxUrlLengthExceeded,
+		MaxTypeLengthExceeded,
+		MaxUrlCountExceeded,
+		MaxTypeCountExceeded,
+		MaxServicesCountExceeded,
+		/// An error that is not supposed to take place, yet it happened.
+		InternalError,
 	}
 
 	impl<T> From<DidError> for Error<T> {
@@ -411,6 +438,12 @@ pub mod pallet {
 			match error {
 				InputError::MaxKeyAgreementKeysLimitExceeded => Self::MaxKeyAgreementKeysLimitExceeded,
 				InputError::MaxVerificationKeysToRemoveLimitExceeded => Self::MaxVerificationKeysToRemoveLimitExceeded,
+				InputError::MaxIdLengthExceeded => Self::MaxIdLengthExceeded,
+				InputError::MaxServicesCountExceeded => Self::MaxServicesCountExceeded,
+				InputError::MaxTypeCountExceeded => Self::MaxTypeCountExceeded,
+				InputError::MaxTypeLengthExceeded => Self::MaxTypeLengthExceeded,
+				InputError::MaxUrlCountExceeded => Self::MaxUrlCountExceeded,
+				InputError::MaxUrlLengthExceeded => Self::MaxUrlLengthExceeded,
 			}
 		}
 	}
@@ -476,6 +509,10 @@ pub mod pallet {
 				.verify_and_recover_signature(&details.encode(), &signature)
 				.map_err(Error::<T>::from)?;
 
+			// Validate all the size constraints for the service endpoints.
+			let input_service_endpoints = details.new_service_details.clone();
+			utils::validate_service_endpoints(&input_service_endpoints).map_err(Error::<T>::from)?;
+
 			let did_entry =
 				DidDetails::from_creation_details(details, account_did_auth_key).map_err(Error::<T>::from)?;
 
@@ -494,7 +531,12 @@ pub mod pallet {
 
 			log::debug!("Creating DID {:?}", &did_identifier);
 			T::FeeCollector::on_unbalanced(imbalance);
+
 			Did::<T>::insert(&did_identifier, did_entry);
+
+			input_service_endpoints.iter().for_each(|service| {
+				ServiceEndpoints::<T>::insert(&did_identifier, &service.id, service);
+			});
 
 			Self::deposit_event(Event::DidCreated(sender, did_identifier));
 

@@ -92,4 +92,10 @@ pub enum InputError {
 	/// A number of new verification keys to remove greater than the maximum
 	/// allowed has been provided.
 	MaxVerificationKeysToRemoveLimitExceeded,
+	MaxServicesCountExceeded,
+	MaxUrlCountExceeded,
+	MaxTypeCountExceeded,
+	MaxIdLengthExceeded,
+	MaxUrlLengthExceeded,
+	MaxTypeLengthExceeded,
 }

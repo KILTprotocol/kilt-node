@@ -21,7 +21,7 @@ use frame_support::storage::{bounded_btree_map::BoundedBTreeMap, bounded_btree_s
 use kilt_support::deposit::Deposit;
 use sp_core::{ecdsa, ed25519, sr25519};
 use sp_runtime::{traits::Verify, MultiSignature};
-use sp_std::{convert::TryInto, fmt};
+use sp_std::convert::TryInto;
 
 use crate::*;
 
@@ -531,13 +531,29 @@ impl<T: Config> DidDetails<T> {
 	}
 }
 
+// pub type ServiceEndpointId<T> = BoundedVec<u8, <T as Config>::MaxServiceIdLength>;
+pub type ServiceEndpointId = Vec<u8>;
+// pub type ServiceEndpointType<T> = BoundedVec<u8, <T as Config>::MaxServiceTypeLength>;
+pub type ServiceEndpointType = Vec<u8>;
+// pub type ServiceEndpointUrl<T> = BoundedVec<u8, <T as Config>::MaxServiceUrlLength>;
+pub type ServiceEndpointUrl = Vec<u8>;
+
+#[derive(Clone, Debug, Decode, Encode, PartialEq, Eq)]
+pub struct DidEndpointDetails<T: Config> {
+	phantom_data: sp_std::marker::PhantomData<T>,
+	pub(crate) id: ServiceEndpointId,
+	pub(crate) service_type: [ServiceEndpointType; 5],
+	pub(crate) url: Vec<ServiceEndpointUrl>,
+}
+
 pub(crate) type DidNewKeyAgreementKeySet<T> = BoundedBTreeSet<DidEncryptionKey, <T as Config>::MaxNewKeyAgreementKeys>;
 pub(crate) type DidKeyAgreementKeySet<T> = BoundedBTreeSet<KeyIdOf<T>, <T as Config>::MaxTotalKeyAgreementKeys>;
 pub(crate) type DidPublicKeyMap<T> =
 	BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>, <T as Config>::MaxPublicKeysPerDid>;
+// pub(crate) type DidNewServiceEndpoints<T> = BoundedBTreeSet<DidEndpointDetails<T>, <T as Config>::MaxDidServicesCount>;
 
 /// The details of a new DID to create.
-#[derive(Clone, Decode, Encode, PartialEq)]
+#[derive(Clone, Debug, Decode, Encode, PartialEq)]
 pub struct DidCreationDetails<T: Config> {
 	/// The DID identifier. It has to be unique.
 	pub did: DidIdentifierOf<T>,
@@ -549,22 +565,7 @@ pub struct DidCreationDetails<T: Config> {
 	pub new_attestation_key: Option<DidVerificationKey>,
 	/// \[OPTIONAL\] The new delegation key.
 	pub new_delegation_key: Option<DidVerificationKey>,
-}
-
-// required because BoundedTreeSet does not implement Debug outside of std
-impl<T: Config> fmt::Debug for DidCreationDetails<T> {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		f.debug_struct("DidCreationDetails")
-			.field("did", &self.did)
-			.field("submitter", &self.submitter)
-			.field(
-				"new_key_agreement_keys",
-				&self.new_key_agreement_keys.clone().into_inner(),
-			)
-			.field("new_attestation_key", &self.new_attestation_key)
-			.field("new_delegation_key", &self.new_delegation_key)
-			.finish()
-	}
+	pub new_service_details: Vec<DidEndpointDetails<T>>,
 }
 
 /// Trait for extrinsic DID-based authorization.
