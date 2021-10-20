@@ -49,10 +49,11 @@ mod mock;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
-pub use crate::pallet::*;
+pub use crate::{default_weights::WeightInfo, pallet::*};
 
 #[frame_support::pallet]
 pub mod pallet {
+	use super::WeightInfo;
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{Currency, StorageVersion},
@@ -62,7 +63,6 @@ pub mod pallet {
 		traits::{BadOrigin, StaticLookup},
 		Either,
 	};
-	use crate::default_weights::WeightInfo;
 
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;

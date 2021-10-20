@@ -31,7 +31,6 @@ use frame_system::EnsureRoot;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::EnsureSigned;
 
-use crowdloan as kilt_crowdloan;
 use kilt_primitives::{
 	constants::{
 		attestation::ATTESTATION_DEPOSIT,
@@ -522,7 +521,7 @@ construct_runtime!(
 		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 33,
 		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
 		Utility: pallet_utility::{Pallet, Call, Storage, Event} = 35,
-		CrowdloanContributors: kilt_crowdloan::{Pallet, Call, Storage, Event<T>, Config<T>} = 36,
+		CrowdloanContributors: crowdloan::{Pallet, Call, Storage, Event<T>, Config<T>} = 36,
 	}
 );
 
@@ -550,7 +549,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	}
 }
 
-impl kilt_crowdloan::Config for Runtime {
+impl crowdloan::Config for Runtime {
 	type Currency = Balances;
 	type EnsureRegistrarOrigin = EnsureRoot<AccountId>;
 	type Event = Event;
@@ -743,7 +742,7 @@ impl_runtime_apis! {
 
 			list_benchmark!(list, extra, did, Did);
 			list_benchmark!(list, extra, ctype, Ctype);
-			list_benchmark!(list, extra, kilt_crowdloan, CrowdloanContributors);
+			list_benchmark!(list, extra, crowdloan, CrowdloanContributors);
 			list_benchmark!(list, extra, delegation, Delegation);
 			list_benchmark!(list, extra, attestation, Attestation);
 
@@ -791,7 +790,7 @@ impl_runtime_apis! {
 
 			add_benchmark!(params, batches, did, Did);
 			add_benchmark!(params, batches, ctype, Ctype);
-			add_benchmark!(params, batches, kilt_crowdloan, CrowdloanContributors);
+			add_benchmark!(params, batches, crowdloan, CrowdloanContributors);
 			add_benchmark!(params, batches, delegation, Delegation);
 			add_benchmark!(params, batches, attestation, Attestation);
 

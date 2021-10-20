@@ -643,7 +643,7 @@ impl crowdloan::Config for Runtime {
 	type Currency = Balances;
 	type EnsureRegistrarOrigin = MoreThanHalfCouncil;
 	type Event = Event;
-	type WeightInfo = ();
+	type WeightInfo = weights::crowdloan::WeightInfo<Runtime>;
 }
 
 parameter_types! {
