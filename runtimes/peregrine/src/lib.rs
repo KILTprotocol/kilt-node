@@ -641,6 +641,7 @@ impl did::Config for Runtime {
 
 impl kilt_crowdloan::Config for Runtime {
 	type Currency = Balances;
+	type EnsureRegistrarOrigin = MoreThanHalfCouncil;
 	type Event = Event;
 	type WeightInfo = ();
 }

@@ -27,6 +27,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use frame_system::EnsureRoot;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::EnsureSigned;
 
@@ -550,6 +551,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 
 impl kilt_crowdloan::Config for Runtime {
 	type Currency = Balances;
+	type EnsureRegistrarOrigin = EnsureRoot<AccountId>;
 	type Event = Event;
 	type WeightInfo = ();
 }

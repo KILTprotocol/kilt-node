@@ -46,7 +46,7 @@ fn test_set_registrar_account() {
 }
 
 #[test]
-fn test_set_registrar_account_with_sudo() {
+fn test_set_registrar_account_with_allowed_registrar_origin() {
 	let registrar = ACCOUNT_00;
 	let new_registrar = ACCOUNT_01;
 

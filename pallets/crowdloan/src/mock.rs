@@ -18,6 +18,7 @@
 
 use crate::pallet as pallet_crowdloan;
 use frame_support::parameter_types;
+use frame_system::EnsureRoot;
 use kilt_primitives::{constants::KILT, AccountId, Balance, BlockNumber, Hash, Index};
 use sp_runtime::{
 	testing::Header,
@@ -28,6 +29,7 @@ type TestUncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test
 type TestBlock = frame_system::mocking::MockBlock<Test>;
 type TestAccountId = AccountId;
 type TestBalance = Balance;
+type TestOrigin = EnsureRoot<TestAccountId>;
 
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -92,6 +94,7 @@ impl pallet_balances::Config for Test {
 
 impl pallet_crowdloan::Config for Test {
 	type Currency = Balances;
+	type EnsureRegistrarOrigin = TestOrigin;
 	type Event = Event;
 	type WeightInfo = ();
 }

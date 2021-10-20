@@ -55,7 +55,7 @@ pub mod pallet {
 		pallet_prelude::*,
 		traits::{Currency, StorageVersion},
 	};
-	use frame_system::{pallet_prelude::*, EnsureOneOf, EnsureRoot, EnsureSigned, WeightInfo};
+	use frame_system::{pallet_prelude::*, EnsureOneOf, EnsureSigned, WeightInfo};
 	use sp_runtime::{
 		traits::{BadOrigin, StaticLookup},
 		Either,
@@ -72,6 +72,8 @@ pub mod pallet {
 		type Currency: Currency<AccountIdOf<Self>>;
 		/// Overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		/// The origin allowed to change the registrar account.
+		type EnsureRegistrarOrigin: EnsureOrigin<Self::Origin>;
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}
@@ -155,7 +157,7 @@ pub mod pallet {
 			new_account: <T::Lookup as StaticLookup>::Source,
 		) -> DispatchResult {
 			let who =
-				EnsureOneOf::<AccountIdOf<T>, EnsureRoot<AccountIdOf<T>>, EnsureSigned<AccountIdOf<T>>>::ensure_origin(
+				EnsureOneOf::<AccountIdOf<T>, T::EnsureRegistrarOrigin, EnsureSigned<AccountIdOf<T>>>::ensure_origin(
 					origin,
 				)?;
 
