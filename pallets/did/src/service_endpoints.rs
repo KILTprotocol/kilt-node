@@ -34,9 +34,9 @@ pub type ServiceEndpointUrl = Vec<u8>;
 
 #[derive(Clone, Debug, Decode, Encode, PartialEq, Eq)]
 pub struct DidEndpointDetails<T: Config> {
-	phantom_data: sp_std::marker::PhantomData<T>,
+	phantom_data: Option<sp_std::marker::PhantomData<T>>,
 	pub(crate) id: ServiceEndpointId,
-	pub(crate) service_type: [ServiceEndpointType; 5],
+	pub(crate) service_type: Vec<ServiceEndpointType>,
 	pub(crate) url: Vec<ServiceEndpointUrl>,
 }
 
