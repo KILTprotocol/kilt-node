@@ -531,11 +531,14 @@ impl<T: Config> DidDetails<T> {
 	}
 }
 
-// pub type ServiceEndpointId<T> = BoundedVec<u8, <T as Config>::MaxServiceIdLength>;
+// pub type ServiceEndpointId<T> = BoundedVec<u8, <T as
+// Config>::MaxServiceIdLength>;
 pub type ServiceEndpointId = Vec<u8>;
-// pub type ServiceEndpointType<T> = BoundedVec<u8, <T as Config>::MaxServiceTypeLength>;
+// pub type ServiceEndpointType<T> = BoundedVec<u8, <T as
+// Config>::MaxServiceTypeLength>;
 pub type ServiceEndpointType = Vec<u8>;
-// pub type ServiceEndpointUrl<T> = BoundedVec<u8, <T as Config>::MaxServiceUrlLength>;
+// pub type ServiceEndpointUrl<T> = BoundedVec<u8, <T as
+// Config>::MaxServiceUrlLength>;
 pub type ServiceEndpointUrl = Vec<u8>;
 
 #[derive(Clone, Debug, Decode, Encode, PartialEq, Eq)]
@@ -550,7 +553,8 @@ pub(crate) type DidNewKeyAgreementKeySet<T> = BoundedBTreeSet<DidEncryptionKey, 
 pub(crate) type DidKeyAgreementKeySet<T> = BoundedBTreeSet<KeyIdOf<T>, <T as Config>::MaxTotalKeyAgreementKeys>;
 pub(crate) type DidPublicKeyMap<T> =
 	BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>, <T as Config>::MaxPublicKeysPerDid>;
-// pub(crate) type DidNewServiceEndpoints<T> = BoundedBTreeSet<DidEndpointDetails<T>, <T as Config>::MaxDidServicesCount>;
+// pub(crate) type DidNewServiceEndpoints<T> =
+// BoundedBTreeSet<DidEndpointDetails<T>, <T as Config>::MaxDidServicesCount>;
 
 /// The details of a new DID to create.
 #[derive(Clone, Debug, Decode, Encode, PartialEq)]

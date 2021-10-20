@@ -300,7 +300,8 @@ pub mod pallet {
 	/// It maps from (DID identifier, service ID) to the service details.
 	#[pallet::storage]
 	#[pallet::getter(fn get_service_endpoints)]
-	pub type ServiceEndpoints<T> = StorageDoubleMap<_, Twox64Concat, DidIdentifierOf<T>, Blake2_128Concat, Vec<u8>, DidEndpointDetails<T>>;
+	pub type ServiceEndpoints<T> =
+		StorageDoubleMap<_, Twox64Concat, DidIdentifierOf<T>, Blake2_128Concat, Vec<u8>, DidEndpointDetails<T>>;
 
 	/// The set of DIDs that have been deleted and cannot therefore be created
 	/// again for security reasons.
@@ -352,13 +353,6 @@ pub mod pallet {
 		VerificationKeyNotPresent,
 		/// The DID operation nonce is not equal to the current DID nonce + 1.
 		InvalidNonce,
-		/// The URL specified is not ASCII-encoded.
-		InvalidUrlEncoding,
-		/// The URL specified is not properly formatted.
-		InvalidUrlScheme,
-		/// The maximum supported value for the DID tx counter has been reached.
-		/// No more operations with the DID are allowed.
-		MaxTxCounterValue,
 		/// The user tries to delete a verification key that is currently being
 		/// used as an authentication, delegation, or attestation key, and this
 		/// is not allowed.
@@ -393,6 +387,8 @@ pub mod pallet {
 		MaxUrlCountExceeded,
 		MaxTypeCountExceeded,
 		MaxServicesCountExceeded,
+		ServiceAlreadyPresent,
+		ServiceNotPresent,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
 	}
@@ -511,7 +507,7 @@ pub mod pallet {
 
 			// Validate all the size constraints for the service endpoints.
 			let input_service_endpoints = details.new_service_details.clone();
-			utils::validate_service_endpoints(&input_service_endpoints).map_err(Error::<T>::from)?;
+			utils::validate_new_service_endpoints(&input_service_endpoints).map_err(Error::<T>::from)?;
 
 			let did_entry =
 				DidDetails::from_creation_details(details, account_did_auth_key).map_err(Error::<T>::from)?;
@@ -763,6 +759,45 @@ pub mod pallet {
 			log::debug!("Key agreement key removed");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
+			Ok(())
+		}
+
+		#[pallet::weight(100_000)]
+		pub fn add_service_endpoint(origin: OriginFor<T>, service_endpoint: DidEndpointDetails<T>) -> DispatchResult {
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
+
+			utils::validate_single_service_endpoint(&service_endpoint).map_err(Error::<T>::from)?;
+
+			// Verify that the DID is present.
+			ensure!(Did::<T>::get(&did_subject).is_some(), Error::<T>::DidNotPresent);
+
+			// Verify that there are less than the maximum limit of services stored.
+			ensure!(
+				ServiceEndpoints::<T>::iter_prefix(&did_subject).count()
+					< T::MaxDidServicesCount::get().saturated_into(),
+				Error::<T>::MaxServicesCountExceeded
+			);
+
+			// Verify that the service with the given ID does not exist.
+			ensure!(
+				ServiceEndpoints::<T>::get(&did_subject, &service_endpoint.id).is_none(),
+				Error::<T>::ServiceAlreadyPresent
+			);
+
+			ServiceEndpoints::<T>::insert(&did_subject, service_endpoint.id.clone(), service_endpoint);
+
+			Ok(())
+		}
+
+		#[pallet::weight(100_000)]
+		pub fn remove_service_endpoint(origin: OriginFor<T>, service_id: Vec<u8>) -> DispatchResult {
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
+
+			ensure!(
+				ServiceEndpoints::<T>::take(&did_subject, &service_id).is_some(),
+				Error::<T>::ServiceNotPresent
+			);
+
 			Ok(())
 		}
 
@@ -1020,8 +1055,9 @@ impl<T: Config> Pallet<T> {
 	fn delete_did(did_subject: DidIdentifierOf<T>) -> DispatchResult {
 		// `take` calls `kill` internally
 		let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
-		// *** No Fail beyond this point ***
 
+		// *** No Fail beyond this point ***
+		ServiceEndpoints::<T>::remove_prefix(&did_subject, Some(T::MaxDidServicesCount::get()));
 		kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&did_entry.deposit);
 		// Mark as deleted to prevent potential replay-attacks of re-adding a previously
 		// deleted DID.

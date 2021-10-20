@@ -17,19 +17,19 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::Encode;
-use sp_runtime::{traits::{Hash, SaturatedConversion}};
+use sp_runtime::traits::{Hash, SaturatedConversion};
 use sp_std::vec::Vec;
 
 use frame_support::{ensure, traits::Get};
 
-use crate::{Config, DidPublicKey, KeyIdOf, InputError, DidEndpointDetails};
+use crate::{Config, DidEndpointDetails, DidPublicKey, InputError, KeyIdOf};
 
 pub fn calculate_key_id<T: Config>(key: &DidPublicKey) -> KeyIdOf<T> {
 	let hashed_values: Vec<u8> = key.encode();
 	T::Hashing::hash(&hashed_values)
 }
 
-pub(crate) fn validate_service_endpoints<T: Config>(endpoints: &[DidEndpointDetails<T>]) -> Result<(), InputError> {
+pub(crate) fn validate_new_service_endpoints<T: Config>(endpoints: &[DidEndpointDetails<T>]) -> Result<(), InputError> {
 	// Check if the maximum number of endpoints is provided
 	ensure!(
 		endpoints.len() <= T::MaxDidServicesCount::get().saturated_into(),
@@ -37,39 +37,43 @@ pub(crate) fn validate_service_endpoints<T: Config>(endpoints: &[DidEndpointDeta
 	);
 
 	// For each service...
-	endpoints.iter().try_for_each(|endpoint| {
-		// Check that the maximum number of service types is provided.
-		ensure!(
-			endpoint.service_type.len() <= T::MaxTypeCountPerService::get().saturated_into(),
-			InputError::MaxTypeCountExceeded
-		);
-		// Check that the maximum number of URLs is provided.
-		ensure!(
-			endpoint.url.len() <= T::MaxUrlCountPerService::get().saturated_into(),
-			InputError::MaxUrlCountExceeded
-		);
-		// Check that the ID is the maximum allowed length.
-		ensure!(
-			endpoint.id.len() <= T::MaxServiceIdLength::get().saturated_into(),
-			InputError::MaxIdLengthExceeded
-		);
-		// Check that all types are the maximum allowed length.
-		endpoint.service_type.iter().try_for_each(|s_type| {
-			ensure!(
-				s_type.len() <= T::MaxServiceTypeLength::get().saturated_into(),
-				InputError::MaxTypeLengthExceeded
-			);
-			Ok(())
-		})?;
-		// Check that all URLs are the maximum allowed length.
-		endpoint.url.iter().try_for_each(|s_url| {
-			ensure!(
-				s_url.len() <= T::MaxServiceUrlLength::get().saturated_into(),
-				InputError::MaxUrlLengthExceeded
-			);
-			Ok(())
-		})?;
+	endpoints
+		.iter()
+		.try_for_each(|endpoint| validate_single_service_endpoint(endpoint))?;
 
+	Ok(())
+}
+
+pub(crate) fn validate_single_service_endpoint<T: Config>(endpoint: &DidEndpointDetails<T>) -> Result<(), InputError> {
+	// Check that the maximum number of service types is provided.
+	ensure!(
+		endpoint.service_type.len() <= T::MaxTypeCountPerService::get().saturated_into(),
+		InputError::MaxTypeCountExceeded
+	);
+	// Check that the maximum number of URLs is provided.
+	ensure!(
+		endpoint.url.len() <= T::MaxUrlCountPerService::get().saturated_into(),
+		InputError::MaxUrlCountExceeded
+	);
+	// Check that the ID is the maximum allowed length.
+	ensure!(
+		endpoint.id.len() <= T::MaxServiceIdLength::get().saturated_into(),
+		InputError::MaxIdLengthExceeded
+	);
+	// Check that all types are the maximum allowed length.
+	endpoint.service_type.iter().try_for_each(|s_type| {
+		ensure!(
+			s_type.len() <= T::MaxServiceTypeLength::get().saturated_into(),
+			InputError::MaxTypeLengthExceeded
+		);
+		Ok(())
+	})?;
+	// Check that all URLs are the maximum allowed length.
+	endpoint.url.iter().try_for_each(|s_url| {
+		ensure!(
+			s_url.len() <= T::MaxServiceUrlLength::get().saturated_into(),
+			InputError::MaxUrlLengthExceeded
+		);
 		Ok(())
 	})?;
 
