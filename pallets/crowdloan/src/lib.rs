@@ -28,12 +28,13 @@
 //!
 //! The crowdloan contributions pallet depends on the [`GenesisConfig`].
 //!
-//! The genesis config sets the initial registrar account that can update the pallet's storage.
+//! The genesis config sets the initial registrar account that can update the
+//! pallet's storage.
 //!
 //! ## Assumptions
 //!
-//! - At any time, there is one and only one registrar account which can manage the
-//!   pallet storage.
+//! - At any time, there is one and only one registrar account which can manage
+//!   the pallet storage.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -125,9 +126,9 @@ pub mod pallet {
 		/// A new registrar has been set.
 		/// \[old registrar account, new registrar account\]
 		NewRegistrarAccountSet(AccountIdOf<T>, AccountIdOf<T>),
-		/// A new contribution has been set.
+		/// A contribution has been set.
 		/// \[contributor account, old amount (OPTIONAL), new amount\]
-		NewContributionSet(AccountIdOf<T>, Option<BalanceOf<T>>, BalanceOf<T>),
+		ContributionSet(AccountIdOf<T>, Option<BalanceOf<T>>, BalanceOf<T>),
 		/// A contribution has been removed.
 		/// \[contributor account\]
 		ContributionRemoved(AccountIdOf<T>),
@@ -143,7 +144,8 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		/// Sets a new account as the registrar of this pallet.
 		///
-		/// The dispatch origin can be either Sudo or the current registrar account.
+		/// The dispatch origin can be either Sudo or the current registrar
+		/// account.
 		///
 		/// Emits `NewRegistrarAccountSet`.
 		///
@@ -197,11 +199,9 @@ pub mod pallet {
 			ensure!(who == RegistrarAccount::<T>::get(), BadOrigin);
 
 			let looked_up_account = <T as frame_system::Config>::Lookup::lookup(contributor_account)?;
-			let old_amount = Contributions::<T>::mutate(&looked_up_account, |entry| {
-				entry.replace(amount)
-			});
+			let old_amount = Contributions::<T>::mutate(&looked_up_account, |entry| entry.replace(amount));
 
-			Self::deposit_event(Event::NewContributionSet(looked_up_account, old_amount, amount));
+			Self::deposit_event(Event::ContributionSet(looked_up_account, old_amount, amount));
 
 			Ok(())
 		}

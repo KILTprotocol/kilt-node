@@ -18,7 +18,7 @@
 
 use crate::pallet as pallet_crowdloan;
 use frame_support::parameter_types;
-use frame_system::EnsureRoot;
+use frame_system::{EnsureRoot, EventRecord};
 use kilt_primitives::{constants::KILT, AccountId, Balance, BlockNumber, Hash, Index};
 use sp_runtime::{
 	testing::Header,
@@ -105,6 +105,14 @@ pub(crate) const ACCOUNT_01: TestAccountId = AccountId::new([1u8; 32]);
 pub(crate) const BALANCE_01: TestBalance = 1 * KILT;
 pub(crate) const BALANCE_02: TestBalance = 2 * KILT;
 
+pub(crate) fn get_generated_events() -> Vec<EventRecord<Event, kilt_primitives::Hash>> {
+	let events = System::events();
+	events
+		.into_iter()
+		.filter(|event_details| matches!(event_details.event, Event::Crowdloan(_)))
+		.collect()
+}
+
 #[derive(Default)]
 pub(crate) struct ExtBuilder {
 	registrar_account: TestAccountId,
@@ -127,6 +135,8 @@ impl ExtBuilder {
 		let mut ext = sp_io::TestExternalities::new(storage);
 
 		ext.execute_with(|| {
+			// Needed to test event generation.
+			System::set_block_number(1);
 			pallet_crowdloan::RegistrarAccount::<Test>::set(self.registrar_account);
 
 			for (contributor_account, contribution_amount) in self.contributions.iter() {

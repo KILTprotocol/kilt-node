@@ -19,7 +19,7 @@
 use frame_support::{assert_noop, assert_ok};
 use sp_runtime::traits::BadOrigin;
 
-use crate::{mock::*, Error};
+use crate::mock::*;
 
 // set_registrar_account
 
@@ -42,6 +42,14 @@ fn test_set_registrar_account() {
 
 			// Test new registrar is the one set
 			assert_eq!(Crowdloan::registrar_account(), new_registrar);
+
+			// Test that the expected event is properly generated
+			let mut crowdloan_events = get_generated_events();
+			assert_eq!(crowdloan_events.len(), 1);
+			assert_eq!(
+				crowdloan_events.pop().unwrap().event,
+				Event::Crowdloan(crate::Event::NewRegistrarAccountSet(registrar, new_registrar,),)
+			)
 		});
 }
 
@@ -118,6 +126,14 @@ fn test_set_contribution() {
 				contribution
 			));
 			assert_eq!(Crowdloan::contributions(&contributor), Some(contribution));
+
+			// Test that the expected event is properly generated
+			let mut crowdloan_events = get_generated_events();
+			assert_eq!(crowdloan_events.len(), 1);
+			assert_eq!(
+				crowdloan_events.pop().unwrap().event,
+				Event::Crowdloan(crate::Event::ContributionSet(contributor, None, contribution,),)
+			)
 		});
 }
 
@@ -180,6 +196,14 @@ fn test_remove_contribution() {
 				contributor.clone()
 			));
 			assert!(Crowdloan::contributions(&contributor).is_none());
+
+			// Test that the expected event is properly generated
+			let mut crowdloan_events = get_generated_events();
+			assert_eq!(crowdloan_events.len(), 1);
+			assert_eq!(
+				crowdloan_events.pop().unwrap().event,
+				Event::Crowdloan(crate::Event::ContributionRemoved(contributor),)
+			)
 		});
 }
 
@@ -213,7 +237,7 @@ fn test_remove_contribution_absent_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Crowdloan::remove_contribution(Origin::signed(registrar), contributor),
-				Error::<Test>::ContributorNotPresent
+				crate::Error::<Test>::ContributorNotPresent
 			);
 		});
 }
