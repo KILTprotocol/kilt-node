@@ -973,11 +973,11 @@ impl_runtime_apis! {
 			// KILT
 			list_benchmark!(list, extra, attestation, Attestation);
 			list_benchmark!(list, extra, ctype, Ctype);
+			list_benchmark!(list, extra, kilt_crowdloan, CrowdloanContributors);
 			list_benchmark!(list, extra, delegation, Delegation);
 			list_benchmark!(list, extra, did, Did);
 			list_benchmark!(list, extra, kilt_launch, KiltLaunch);
 			list_benchmark!(list, extra, parachain_staking, ParachainStaking);
-			list_benchmark!(list, extra, kilt_crowdloan, CrowdloanContributors);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
 
@@ -1033,6 +1033,7 @@ impl_runtime_apis! {
 			// KILT
 			add_benchmark!(params, batches, attestation, Attestation);
 			add_benchmark!(params, batches, ctype, Ctype);
+			add_benchmark!(params, batches, kilt_crowdloan, CrowdloanContributors);
 			add_benchmark!(params, batches, delegation, Delegation);
 			add_benchmark!(params, batches, did, Did);
 			add_benchmark!(params, batches, kilt_launch, KiltLaunch);

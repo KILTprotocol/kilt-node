@@ -38,6 +38,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+pub mod default_weights;
+
 #[cfg(test)]
 mod tests;
 
@@ -51,16 +53,16 @@ pub use crate::pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
-
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{Currency, StorageVersion},
 	};
-	use frame_system::{pallet_prelude::*, EnsureOneOf, EnsureSigned, WeightInfo};
+	use frame_system::{pallet_prelude::*, EnsureOneOf, EnsureSigned};
 	use sp_runtime::{
 		traits::{BadOrigin, StaticLookup},
 		Either,
 	};
+	use crate::default_weights::WeightInfo;
 
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
@@ -153,7 +155,7 @@ pub mod pallet {
 		/// Weight: O(1)
 		/// - Reads: [Origin Account], RegistrarAccount
 		/// - Writes: RegistrarAccount
-		#[pallet::weight(1)]
+		#[pallet::weight(T::WeightInfo::set_registrar_account())]
 		pub fn set_registrar_account(
 			origin: OriginFor<T>,
 			new_account: <T::Lookup as StaticLookup>::Source,
@@ -189,7 +191,7 @@ pub mod pallet {
 		/// Weight: O(1)
 		/// - Reads: [Origin Account], RegistrarAccount, Contributions
 		/// - Writes: Contributions
-		#[pallet::weight(1)]
+		#[pallet::weight(T::WeightInfo::set_contribution())]
 		pub fn set_contribution(
 			origin: OriginFor<T>,
 			contributor_account: <T::Lookup as StaticLookup>::Source,
@@ -219,7 +221,7 @@ pub mod pallet {
 		/// Weight: O(1)
 		/// - Reads: [Origin Account], RegistrarAccount, Contributions
 		/// - Writes: Contributions
-		#[pallet::weight(1)]
+		#[pallet::weight(T::WeightInfo::remove_contribution())]
 		pub fn remove_contribution(
 			origin: OriginFor<T>,
 			contributor_account: <T::Lookup as StaticLookup>::Source,
