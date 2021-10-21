@@ -52,18 +52,13 @@ fn check_build_genesis_config() {
 			assert_eq!(Balances::reserved_balance(&PSEUDO_3), 0);
 
 			// Check vesting
-			let pseudo_1_vesting = VestingInfo::new(
-				10_000, // Vesting over 10 blocks
-				1000, 0,
-			);
-			let pseudo_2_vesting = VestingInfo::new(
-				10_000, // Vesting over 20 blocks
-				500, 0,
-			);
-			let pseudo_3_vesting = VestingInfo::new(
-				300_000, // Vesting over 20 blocks
-				10_000, 0,
-			);
+
+			// Vesting over 10 blocks
+			let pseudo_1_vesting = VestingInfo::new(10_000, 1000, 0);
+			// Vesting over 20 blocks
+			let pseudo_2_vesting = VestingInfo::new(10_000, 500, 0);
+			// Vesting over 20 blocks
+			let pseudo_3_vesting = VestingInfo::new(300_000, 10_000, 0);
 			assert_eq!(
 				Vesting::vesting(&PSEUDO_1)
 					.expect("Missing vesting info")
@@ -409,10 +404,8 @@ fn check_migrate_single_account_vested() {
 			Error::<Test>::NotUnownedAccount
 		);
 
-		let user_vesting_schedule = VestingInfo::new(
-			10_000, 1000, // Vesting over 10 blocks
-			0,
-		);
+		// Vesting over 10 blocks
+		let user_vesting_schedule = VestingInfo::new(10_000, 1000, 0);
 
 		// Migration of vesting info and balance locks
 		ensure_single_migration_works(&PSEUDO_1, &USER, Some(user_vesting_schedule), None);
@@ -436,17 +429,16 @@ fn check_migrate_single_account_vested() {
 fn check_migrate_single_account_twice_vested() {
 	ExtBuilder::default().pseudos_vest_all().build().execute_with(|| {
 		// Migration of vesting info from pseudo_1 to user_1
-		let mut user_vesting_schedule = VestingInfo::new(
-			10_000, 1000, // Vesting over 10 blocks
-			0,
-		);
+		// Vesting over 10 blocks
+		let mut user_vesting_schedule = VestingInfo::new(10_000, 1000, 0);
 		ensure_single_migration_works(&PSEUDO_1, &USER, Some(user_vesting_schedule), None);
 
 		// Migration of vesting info from pseudo_2 with different vesting period to
 		// user_1
+		// Vesting over 10 blocks
 		user_vesting_schedule = VestingInfo::new(
 			user_vesting_schedule.locked() + 10_000,
-			user_vesting_schedule.per_block() + 500, // Vesting over 10 blocks
+			user_vesting_schedule.per_block() + 500,
 			0,
 		);
 		ensure_single_migration_works(&PSEUDO_2, &USER, Some(user_vesting_schedule), None);
