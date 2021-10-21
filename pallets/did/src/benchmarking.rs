@@ -854,10 +854,9 @@ benchmarks! {
 			T::MaxServiceUrlLength::get(),
 		);
 		let new_service_endpoint = DidEndpointDetails {
-			id: b"id".to_vec(),
-			service_type: vec![b"type".to_vec()],
-			url: vec![b"url".to_vec()],
-			phantom_data: None,
+			id: b"id".to_vec().try_into().unwrap(),
+			service_type: vec![b"type".to_vec().try_into().unwrap()].try_into().unwrap(),
+			url: vec![b"url".to_vec().try_into().unwrap()].try_into().unwrap(),
 		};
 
 		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(public_auth_key));

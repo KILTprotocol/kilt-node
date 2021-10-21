@@ -305,8 +305,14 @@ pub mod pallet {
 	/// It maps from (DID identifier, service ID) to the service details.
 	#[pallet::storage]
 	#[pallet::getter(fn get_service_endpoints)]
-	pub type ServiceEndpoints<T> =
-		StorageDoubleMap<_, Twox64Concat, DidIdentifierOf<T>, Blake2_128Concat, Vec<u8>, DidEndpointDetails<T>>;
+	pub type ServiceEndpoints<T> = StorageDoubleMap<
+		_,
+		Twox64Concat,
+		DidIdentifierOf<T>,
+		Blake2_128Concat,
+		ServiceEndpointId<T>,
+		DidEndpointDetails<T>,
+	>;
 
 	/// The set of DIDs that have been deleted and cannot therefore be created
 	/// again for security reasons.
@@ -528,7 +534,7 @@ pub mod pallet {
 			Did::<T>::insert(&did_identifier, did_entry);
 
 			input_service_endpoints.iter().for_each(|service| {
-				ServiceEndpoints::<T>::insert(&did_identifier, &service.id, service);
+				ServiceEndpoints::<T>::insert(&did_identifier, &service.id, service.clone());
 			});
 
 			Self::deposit_event(Event::DidCreated(sender, did_identifier));
@@ -763,7 +769,8 @@ pub mod pallet {
 		pub fn add_service_endpoint(origin: OriginFor<T>, service_endpoint: DidEndpointDetails<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 
-			service_endpoints_utils::validate_single_service_endpoint(&service_endpoint).map_err(Error::<T>::from)?;
+			service_endpoints_utils::validate_single_service_endpoint_entry(&service_endpoint)
+				.map_err(Error::<T>::from)?;
 
 			// Verify that the DID is present.
 			ensure!(Did::<T>::get(&did_subject).is_some(), Error::<T>::DidNotPresent);
@@ -791,7 +798,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(100_000)]
-		pub fn remove_service_endpoint(origin: OriginFor<T>, service_id: Vec<u8>) -> DispatchResult {
+		pub fn remove_service_endpoint(origin: OriginFor<T>, service_id: ServiceEndpointId<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 
 			ensure!(
@@ -1058,9 +1065,11 @@ impl<T: Config> Pallet<T> {
 		let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 
 		// *** No Fail beyond this point ***
-		let storage_kill_result = ServiceEndpoints::<T>::remove_prefix(&did_subject, Some(T::MaxDidServicesCount::get()));
+		let storage_kill_result =
+			ServiceEndpoints::<T>::remove_prefix(&did_subject, Some(T::MaxDidServicesCount::get()));
 
-		// If some items are remaining, it means that there were more than MaxDidServicesCount stored, and that should never happen.
+		// If some items are remaining, it means that there were more than
+		// MaxDidServicesCount stored, and that should never happen.
 		if let KillStorageResult::SomeRemaining(_) = storage_kill_result {
 			return Err(Error::<T>::InternalError.into());
 		};

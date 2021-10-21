@@ -69,12 +69,7 @@ pub fn get_service_endpoints<T: Config>(
 					endpoint_url
 				})
 				.collect();
-			DidEndpointDetails {
-				id: endpoint_id,
-				service_type: endpoint_types,
-				url: endpoint_urls,
-				phantom_data: None,
-			}
+			DidEndpointDetails::new(endpoint_id, endpoint_types, endpoint_urls)
 		})
 		.collect()
 }

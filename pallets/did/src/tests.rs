@@ -22,7 +22,7 @@ use sp_runtime::{
 	traits::{BadOrigin, Zero},
 	SaturatedConversion,
 };
-use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom};
+use sp_std::{collections::btree_set::BTreeSet, convert::{TryFrom, TryInto}};
 
 use crate::{self as did, mock::*, mock_utils::*, DidEndpointDetails};
 
@@ -469,6 +469,7 @@ fn check_max_limit_service_endpoints_count_did_creation() {
 }
 
 #[test]
+#[should_panic = "Service ID too long."]
 fn check_max_limit_service_id_length_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
@@ -493,6 +494,7 @@ fn check_max_limit_service_id_length_did_creation() {
 }
 
 #[test]
+#[should_panic = "Too many types for the given service."]
 fn check_max_limit_service_type_count_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
@@ -517,6 +519,7 @@ fn check_max_limit_service_type_count_did_creation() {
 }
 
 #[test]
+#[should_panic = "Service type too long."]
 fn check_max_limit_service_type_length_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
@@ -541,6 +544,7 @@ fn check_max_limit_service_type_length_did_creation() {
 }
 
 #[test]
+#[should_panic = "Too many URLs for the given service."]
 fn check_max_limit_service_url_count_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
@@ -565,6 +569,7 @@ fn check_max_limit_service_url_count_did_creation() {
 }
 
 #[test]
+#[should_panic = "URL too long."]
 fn check_max_limit_service_url_length_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
@@ -592,12 +597,8 @@ fn check_max_limit_service_url_length_did_creation() {
 fn check_invalid_service_id_character_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let new_service_details = DidEndpointDetails::<Test> {
-		phantom_data: None,
-		id: "å".bytes().collect(),
-		service_type: vec![b"type".to_vec()],
-		url: vec![b"url".to_vec()]
-	};
+	let new_service_details =
+		DidEndpointDetails::new("å".bytes().collect(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
 	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
 	details.new_service_details = vec![new_service_details];
 
@@ -621,12 +622,8 @@ fn check_invalid_service_id_character_did_creation() {
 fn check_invalid_service_type_character_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let new_service_details = DidEndpointDetails::<Test> {
-		phantom_data: None,
-		id: b"id".to_vec(),
-		service_type: vec!["å".bytes().collect()],
-		url: vec![b"url".to_vec()]
-	};
+	let new_service_details =
+		DidEndpointDetails::new(b"id".to_vec(), vec!["å".bytes().collect()], vec![b"url".to_vec()]);
 	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
 	details.new_service_details = vec![new_service_details];
 
@@ -650,12 +647,8 @@ fn check_invalid_service_type_character_did_creation() {
 fn check_invalid_service_url_character_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let new_service_details = DidEndpointDetails::<Test> {
-		phantom_data: None,
-		id: b"id".to_vec(),
-		service_type: vec![b"type".to_vec()],
-		url: vec!["å".bytes().collect()]
-	};
+	let new_service_details =
+		DidEndpointDetails::new(b"id".to_vec(), vec![b"type".to_vec()], vec!["å".bytes().collect()]);
 	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
 	details.new_service_details = vec![new_service_details];
 
@@ -1610,12 +1603,7 @@ fn check_key_not_found_key_agreement_key_deletion_error() {
 fn check_service_addition_no_prior_service_successful() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let new_service_endpoint = DidEndpointDetails {
-		id: b"id".to_vec(),
-		service_type: vec![b"type".to_vec()],
-		url: vec![b"url".to_vec()],
-		phantom_data: None,
-	};
+	let new_service_endpoint = DidEndpointDetails::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
 
 	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
@@ -1646,12 +1634,7 @@ fn check_service_addition_one_from_full_successful() {
 		<Test as did::Config>::MaxUrlCountPerService::get(),
 		<Test as did::Config>::MaxServiceUrlLength::get(),
 	);
-	let new_service_endpoint = DidEndpointDetails {
-		id: b"id".to_vec(),
-		service_type: vec![b"type".to_vec()],
-		url: vec![b"url".to_vec()],
-		phantom_data: None,
-	};
+	let new_service_endpoint = DidEndpointDetails::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
 
 	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
@@ -1680,12 +1663,7 @@ fn check_service_addition_one_from_full_successful() {
 fn check_did_not_present_services_addition_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let new_service_endpoint = DidEndpointDetails {
-		id: b"id".to_vec(),
-		service_type: vec![b"type".to_vec()],
-		url: vec![b"url".to_vec()],
-		phantom_data: None,
-	};
+	let new_service_endpoint = DidEndpointDetails::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
 
 	ExtBuilder::default().build(None).execute_with(|| {
 		assert_noop!(
@@ -1699,12 +1677,7 @@ fn check_did_not_present_services_addition_error() {
 fn check_service_already_present_addition_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let service_endpoint = DidEndpointDetails {
-		id: b"id".to_vec(),
-		service_type: vec![b"type".to_vec()],
-		url: vec![b"url".to_vec()],
-		phantom_data: None,
-	};
+	let service_endpoint = DidEndpointDetails::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
 
 	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
@@ -1732,12 +1705,7 @@ fn check_max_services_count_addition_error() {
 		<Test as did::Config>::MaxUrlCountPerService::get(),
 		<Test as did::Config>::MaxServiceUrlLength::get(),
 	);
-	let new_service_endpoint = DidEndpointDetails {
-		id: b"id".to_vec(),
-		service_type: vec![b"type".to_vec()],
-		url: vec![b"url".to_vec()],
-		phantom_data: None,
-	};
+	let new_service_endpoint = DidEndpointDetails::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
 
 	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
@@ -1754,6 +1722,7 @@ fn check_max_services_count_addition_error() {
 }
 
 #[test]
+#[should_panic = "Service ID too long."]
 fn check_max_service_id_length_addition_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
@@ -1781,6 +1750,7 @@ fn check_max_service_id_length_addition_error() {
 }
 
 #[test]
+#[should_panic = "Service type too long."]
 fn check_max_service_type_length_addition_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
@@ -1808,6 +1778,7 @@ fn check_max_service_type_length_addition_error() {
 }
 
 #[test]
+#[should_panic = "Too many types for the given service."]
 fn check_max_service_type_count_addition_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
@@ -1835,6 +1806,7 @@ fn check_max_service_type_count_addition_error() {
 }
 
 #[test]
+#[should_panic = "Service URL too long."]
 fn check_max_service_url_length_addition_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
@@ -1862,6 +1834,7 @@ fn check_max_service_url_length_addition_error() {
 }
 
 #[test]
+#[should_panic = "Too many URLs for the given service."]
 fn check_max_service_url_count_addition_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
@@ -1892,12 +1865,8 @@ fn check_max_service_url_count_addition_error() {
 fn check_invalid_service_id_character_addition_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let new_service_details = DidEndpointDetails::<Test> {
-		phantom_data: None,
-		id: "å".bytes().collect(),
-		service_type: vec![b"type".to_vec()],
-		url: vec![b"url".to_vec()]
-	};
+	let new_service_details =
+		DidEndpointDetails::new("å".bytes().collect(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
 
 	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
@@ -1916,12 +1885,8 @@ fn check_invalid_service_id_character_addition_error() {
 fn check_invalid_service_type_character_addition_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let new_service_details = DidEndpointDetails::<Test> {
-		phantom_data: None,
-		id: b"id".to_vec(),
-		service_type: vec!["å".bytes().collect()],
-		url: vec![b"url".to_vec()]
-	};
+	let new_service_details =
+		DidEndpointDetails::new(b"id".to_vec(), vec!["å".bytes().collect()], vec![b"url".to_vec()]);
 
 	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
@@ -1940,12 +1905,8 @@ fn check_invalid_service_type_character_addition_error() {
 fn check_invalid_service_url_character_addition_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let new_service_details = DidEndpointDetails::<Test> {
-		phantom_data: None,
-		id: b"id".to_vec(),
-		service_type: vec![b"url".to_vec()],
-		url: vec!["å".bytes().collect()]
-	};
+	let new_service_details =
+		DidEndpointDetails::new(b"id".to_vec(), vec![b"type".to_vec()], vec!["å".bytes().collect()]);
 
 	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
@@ -1964,12 +1925,7 @@ fn check_invalid_service_url_character_addition_error() {
 fn check_service_deletion_successful() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let old_service_endpoint = DidEndpointDetails {
-		id: b"id".to_vec(),
-		service_type: vec![b"type".to_vec()],
-		url: vec![b"url".to_vec()],
-		phantom_data: None,
-	};
+	let old_service_endpoint = DidEndpointDetails::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
 
 	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 
@@ -2002,7 +1958,7 @@ fn check_service_not_present_deletion_error() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::remove_service_endpoint(Origin::signed(alice_did.clone()), service_id),
+				Did::remove_service_endpoint(Origin::signed(alice_did.clone()), service_id.try_into().expect("Service ID to delete too long")),
 				did::Error::<Test>::ServiceNotPresent
 			);
 		});
@@ -2014,12 +1970,7 @@ fn check_service_not_present_deletion_error() {
 fn check_successful_deletion() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let service_endpoint = DidEndpointDetails {
-		id: b"id".to_vec(),
-		service_type: vec![b"type".to_vec()],
-		url: vec![b"url".to_vec()],
-		phantom_data: None,
-	};
+	let service_endpoint = DidEndpointDetails::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
 
 	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 	did_details.deposit.owner = ACCOUNT_00;
@@ -2094,12 +2045,7 @@ fn check_did_not_present_deletion() {
 fn check_successful_reclaiming() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let old_service_endpoint = DidEndpointDetails {
-		id: b"id".to_vec(),
-		service_type: vec![b"type".to_vec()],
-		url: vec![b"url".to_vec()],
-		phantom_data: None,
-	};
+	let old_service_endpoint = DidEndpointDetails::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
 	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 	did_details.deposit.owner = ACCOUNT_00;
 	did_details.deposit.amount = <Test as did::Config>::Deposit::get();

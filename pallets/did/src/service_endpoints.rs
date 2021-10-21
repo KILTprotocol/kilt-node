@@ -18,29 +18,51 @@
 
 use crate::Config;
 use codec::{Decode, Encode};
+use frame_support::BoundedVec;
 use sp_std::str;
+#[cfg(test)]
+use sp_std::convert::TryInto;
 
 use crate::utils as crate_utils;
 
-// pub type ServiceEndpointId<T> = BoundedVec<u8, <T as
-// Config>::MaxServiceIdLength>;
-pub type ServiceEndpointId = Vec<u8>;
-// pub type ServiceEndpointType<T> = BoundedVec<u8, <T as
-// Config>::MaxServiceTypeLength>;
-pub type ServiceEndpointType = Vec<u8>;
-// pub type ServiceEndpointUrl<T> = BoundedVec<u8, <T as
-// Config>::MaxServiceUrlLength>;
-pub type ServiceEndpointUrl = Vec<u8>;
+pub type ServiceEndpointId<T> = BoundedVec<u8, <T as Config>::MaxServiceIdLength>;
 
-// pub(crate) type DidNewServiceEndpoints<T> =
-// BoundedBTreeSet<DidEndpointDetails<T>, <T as Config>::MaxDidServicesCount>;
+pub type ServiceEndpointType<T> = BoundedVec<u8, <T as Config>::MaxServiceTypeLength>;
+pub type ServiceEndpointTypeEntries<T> = BoundedVec<ServiceEndpointType<T>, <T as Config>::MaxTypeCountPerService>;
+
+pub type ServiceEndpointUrl<T> = BoundedVec<u8, <T as Config>::MaxServiceUrlLength>;
+pub type ServiceEndpointUrlEntries<T> = BoundedVec<ServiceEndpointUrl<T>, <T as Config>::MaxUrlCountPerService>;
 
 #[derive(Clone, Debug, Decode, Encode, PartialEq, Eq)]
 pub struct DidEndpointDetails<T: Config> {
-	pub(crate) phantom_data: Option<sp_std::marker::PhantomData<T>>,
-	pub(crate) id: ServiceEndpointId,
-	pub(crate) service_type: Vec<ServiceEndpointType>,
-	pub(crate) url: Vec<ServiceEndpointUrl>,
+	pub(crate) id: ServiceEndpointId<T>,
+	pub(crate) service_type: ServiceEndpointTypeEntries<T>,
+	pub(crate) url: ServiceEndpointUrlEntries<T>,
+}
+
+#[cfg(test)]
+impl<T: Config> DidEndpointDetails<T> {
+	pub(crate) fn new(id: Vec<u8>, types: Vec<Vec<u8>>, urls: Vec<Vec<u8>>) -> Self {
+		let bounded_id = id.try_into().expect("Service ID too long.");
+		let bounded_types = types
+			.iter()
+			.map(|el| el.to_vec().try_into().expect("Service type too long."))
+			.collect::<Vec<ServiceEndpointType<T>>>()
+			.try_into()
+			.expect("Too many types for the given service.");
+		let bounded_urls = urls
+			.iter()
+			.map(|el| el.to_vec().try_into().expect("Service URL too long."))
+			.collect::<Vec<ServiceEndpointUrl<T>>>()
+			.try_into()
+			.expect("Too many URLs for the given service.");
+
+		Self {
+			id: bounded_id,
+			service_type: bounded_types,
+			url: bounded_urls,
+		}
+	}
 }
 
 pub mod utils {
@@ -61,12 +83,12 @@ pub mod utils {
 		// For each service...
 		endpoints
 			.iter()
-			.try_for_each(|endpoint| validate_single_service_endpoint(endpoint))?;
+			.try_for_each(|endpoint| validate_single_service_endpoint_entry(endpoint))?;
 
 		Ok(())
 	}
 
-	pub(crate) fn validate_single_service_endpoint<T: Config>(
+	pub(crate) fn validate_single_service_endpoint_entry<T: Config>(
 		endpoint: &DidEndpointDetails<T>,
 	) -> Result<(), InputError> {
 		// Check that the maximum number of service types is provided.
@@ -79,31 +101,43 @@ pub mod utils {
 			endpoint.url.len() <= T::MaxUrlCountPerService::get().saturated_into(),
 			InputError::MaxUrlCountExceeded
 		);
-		// Check that the ID is the maximum allowed length and only contain ASCII characters.
+		// Check that the ID is the maximum allowed length and only contain ASCII
+		// characters.
 		ensure!(
 			endpoint.id.len() <= T::MaxServiceIdLength::get().saturated_into(),
 			InputError::MaxIdLengthExceeded
 		);
 		let str_id = str::from_utf8(&endpoint.id).map_err(|_| InputError::InvalidUrlEncoding)?;
-		ensure!(crate_utils::is_valid_ascii_string(str_id), InputError::InvalidUrlEncoding);
-		// Check that all types are the maximum allowed length and only contain ASCII characters.
+		ensure!(
+			crate_utils::is_valid_ascii_string(str_id),
+			InputError::InvalidUrlEncoding
+		);
+		// Check that all types are the maximum allowed length and only contain ASCII
+		// characters.
 		endpoint.service_type.iter().try_for_each(|s_type| {
 			ensure!(
 				s_type.len() <= T::MaxServiceTypeLength::get().saturated_into(),
 				InputError::MaxTypeLengthExceeded
 			);
 			let str_type = str::from_utf8(s_type).map_err(|_| InputError::InvalidUrlEncoding)?;
-			ensure!(crate_utils::is_valid_ascii_string(str_type), InputError::InvalidUrlEncoding);
+			ensure!(
+				crate_utils::is_valid_ascii_string(str_type),
+				InputError::InvalidUrlEncoding
+			);
 			Ok(())
 		})?;
-		// Check that all URLs are the maximum allowed length AND only contain ASCII characters.
+		// Check that all URLs are the maximum allowed length AND only contain ASCII
+		// characters.
 		endpoint.url.iter().try_for_each(|s_url| {
 			ensure!(
 				s_url.len() <= T::MaxServiceUrlLength::get().saturated_into(),
 				InputError::MaxUrlLengthExceeded
 			);
 			let str_url = str::from_utf8(s_url).map_err(|_| InputError::InvalidUrlEncoding)?;
-			ensure!(crate_utils::is_valid_ascii_string(str_url), InputError::InvalidUrlEncoding);
+			ensure!(
+				crate_utils::is_valid_ascii_string(str_url),
+				InputError::InvalidUrlEncoding
+			);
 			Ok(())
 		})?;
 		Ok(())

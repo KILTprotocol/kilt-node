@@ -27,11 +27,10 @@ pub fn calculate_key_id<T: Config>(key: &DidPublicKey) -> KeyIdOf<T> {
 	T::Hashing::hash(&hashed_values)
 }
 
-/// Verifies that an input string contains only traditional (non-extended) ASCII characters.
+/// Verifies that an input string contains only traditional (non-extended) ASCII
+/// characters.
 pub(crate) fn is_valid_ascii_string(input: &str) -> bool {
-	input.chars().all(|c| {
-		c.is_ascii()
-	})
+	input.chars().all(|c| c.is_ascii())
 }
 
 #[test]
