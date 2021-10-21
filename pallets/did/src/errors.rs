@@ -55,9 +55,6 @@ pub enum StorageError {
 	DidKeyNotPresent(DidVerificationKeyRelationship),
 	/// At least one key referenced is not stored under the given DID.
 	KeyNotPresent,
-	/// The user tries to delete a verification key that is currently being
-	/// used to authorize operations, and this is not allowed.
-	CurrentlyActiveKey,
 	/// The maximum number of public keys for this DID key identifier has
 	/// been reached.
 	MaxPublicKeysPerDidExceeded,
@@ -89,9 +86,6 @@ pub enum InputError {
 	/// A number of new key agreement keys greater than the maximum allowed has
 	/// been provided.
 	MaxKeyAgreementKeysLimitExceeded,
-	/// A number of new verification keys to remove greater than the maximum
-	/// allowed has been provided.
-	MaxVerificationKeysToRemoveLimitExceeded,
 	MaxServicesCountExceeded,
 	MaxUrlCountExceeded,
 	MaxTypeCountExceeded,

@@ -351,25 +351,16 @@ pub mod pallet {
 		DidAlreadyPresent,
 		/// No DID with the given identifier is present on chain.
 		DidNotPresent,
-		/// The DID fragment is not present in the DID details.
-		DidFragmentNotPresent,
 		/// One or more verification keys referenced are not stored in the set
 		/// of verification keys.
 		VerificationKeyNotPresent,
 		/// The DID operation nonce is not equal to the current DID nonce + 1.
 		InvalidNonce,
-		/// The user tries to delete a verification key that is currently being
-		/// used as an authentication, delegation, or attestation key, and this
-		/// is not allowed.
-		CurrentlyActiveKey,
 		/// The called extrinsic does not support DID authorisation.
 		UnsupportedDidAuthorizationCall,
 		/// A number of new key agreement keys greater than the maximum allowed
 		/// has been provided.
 		MaxKeyAgreementKeysLimitExceeded,
-		/// A number of new verification keys to remove greater than the maximum
-		/// allowed has been provided.
-		MaxVerificationKeysToRemoveLimitExceeded,
 		/// The maximum number of public keys for this DID key identifier has
 		/// been reached.
 		MaxPublicKeysPerDidExceeded,
@@ -416,7 +407,6 @@ pub mod pallet {
 				StorageError::DidNotPresent => Self::DidNotPresent,
 				StorageError::DidAlreadyPresent => Self::DidAlreadyPresent,
 				StorageError::DidKeyNotPresent(_) | StorageError::KeyNotPresent => Self::VerificationKeyNotPresent,
-				StorageError::CurrentlyActiveKey => Self::CurrentlyActiveKey,
 				StorageError::MaxPublicKeysPerDidExceeded => Self::MaxPublicKeysPerDidExceeded,
 				StorageError::MaxTotalKeyAgreementKeysExceeded => Self::MaxTotalKeyAgreementKeysExceeded,
 				StorageError::DidAlreadyDeleted => Self::DidAlreadyDeleted,
@@ -439,7 +429,6 @@ pub mod pallet {
 		fn from(error: InputError) -> Self {
 			match error {
 				InputError::MaxKeyAgreementKeysLimitExceeded => Self::MaxKeyAgreementKeysLimitExceeded,
-				InputError::MaxVerificationKeysToRemoveLimitExceeded => Self::MaxVerificationKeysToRemoveLimitExceeded,
 				InputError::MaxIdLengthExceeded => Self::MaxIdLengthExceeded,
 				InputError::MaxServicesCountExceeded => Self::MaxServicesCountExceeded,
 				InputError::MaxTypeCountExceeded => Self::MaxTypeCountExceeded,
