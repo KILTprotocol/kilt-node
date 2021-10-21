@@ -20,7 +20,6 @@ use crate as ctype;
 use crate::*;
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use kilt_primitives::Balance;
-use scale_info::TypeInfo;
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,

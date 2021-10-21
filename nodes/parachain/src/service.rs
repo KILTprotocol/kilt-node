@@ -340,6 +340,7 @@ where
 	Ok((task_manager, client))
 }
 
+#[allow(clippy::type_complexity)]
 /// Build the import queue for THE runtime.
 pub fn build_import_queue<RE, API>(
 	client: Arc<TFullClient<Block, API, NativeElseWasmExecutor<RE>>>,

@@ -680,7 +680,7 @@ pub mod pallet {
 		/// has to be called actively to unlock more of the vested funds.
 		fn migrate_vesting(source: &T::AccountId, target: &T::AccountId) -> Result<Weight, DispatchError> {
 			let source_vesting = if let Some(source_vesting) = Vesting::<T>::take(source).unwrap_or_default().get(0) {
-				source_vesting.clone()
+				*source_vesting
 			} else {
 				return Ok(T::DbWeight::get().reads(1));
 			};

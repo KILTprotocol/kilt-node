@@ -43,13 +43,11 @@ use kilt_primitives::{
 			SPEND_PERIOD, TECHNICAL_MOTION_DURATION, VOTING_PERIOD,
 		},
 		staking::{DEFAULT_BLOCKS_PER_ROUND, MAX_CANDIDATES, MIN_BLOCKS_PER_ROUND, MIN_COLLATORS, STAKE_DURATION},
-		AVERAGE_ON_INITIALIZE_RATIO, KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT,
-		NORMAL_DISPATCH_RATIO, SLOT_DURATION,
+		KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION,
 	},
 	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier, Hash,
 	Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
-use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
 use sp_api::impl_runtime_apis;
 use sp_core::{
 	u32_trait::{_1, _2, _3, _5},
@@ -59,7 +57,7 @@ use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, FixedPointNumber, Perquintill,
+	ApplyExtrinsicResult,
 };
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;

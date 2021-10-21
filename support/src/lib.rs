@@ -19,7 +19,6 @@
 
 use deposit::Deposit;
 use frame_support::traits::{Currency, ReservableCurrency};
-use scale_info::TypeInfo;
 use sp_runtime::traits::Zero;
 
 pub mod deposit;

@@ -27,7 +27,6 @@ use frame_support::{
 use frame_system::EnsureSigned;
 use kilt_primitives::{constants::MICRO_KILT, AccountId, Balance};
 use pallet_balances::NegativeImbalance;
-use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{

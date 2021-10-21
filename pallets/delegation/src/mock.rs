@@ -25,7 +25,6 @@ use frame_support::{
 };
 use frame_system::EnsureSigned;
 use kilt_primitives::constants::delegation::DELEGATION_DEPOSIT;
-use scale_info::TypeInfo;
 use sp_core::{ed25519, sr25519, Pair, H256};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{

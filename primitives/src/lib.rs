@@ -29,10 +29,7 @@ pub use sp_consensus_aura::sr25519::AuthorityId;
 pub use opaque::*;
 
 pub use frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight};
-use frame_support::{
-	parameter_types,
-	weights::{constants::WEIGHT_PER_SECOND, DispatchClass},
-};
+use frame_support::{parameter_types, weights::DispatchClass};
 use frame_system::limits;
 use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
 use scale_info::TypeInfo;
