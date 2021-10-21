@@ -1678,6 +1678,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "cumulus-pallet-session-benchmarking"
+version = "3.0.0"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.11#ede4d527c4fc5d84c43216b408a873625488574b"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-session",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "cumulus-pallet-xcmp-queue"
 version = "0.1.0"
 source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.11#ede4d527c4fc5d84c43216b408a873625488574b"
@@ -6501,10 +6514,10 @@ name = "peregrine-runtime"
 version = "0.26.2"
 dependencies = [
  "attestation",
- "bitflags",
  "ctype",
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
+ "cumulus-pallet-session-benchmarking",
  "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
  "cumulus-primitives-timestamp",
@@ -6527,7 +6540,6 @@ dependencies = [
  "pallet-balances",
  "pallet-collective",
  "pallet-democracy",
- "pallet-elections-phragmen",
  "pallet-indices",
  "pallet-membership",
  "pallet-randomness-collective-flip",
@@ -10751,11 +10763,16 @@ checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 name = "spiritnet-runtime"
 version = "0.26.2"
 dependencies = [
+ "attestation",
+ "ctype",
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
+ "cumulus-pallet-session-benchmarking",
  "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
  "cumulus-primitives-timestamp",
+ "delegation",
+ "did",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -10766,6 +10783,7 @@ dependencies = [
  "hex-literal 0.3.3",
  "kilt-launch",
  "kilt-primitives",
+ "kilt-support",
  "log",
  "pallet-aura",
  "pallet-authorship",

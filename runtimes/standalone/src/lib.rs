@@ -38,8 +38,8 @@ use kilt_primitives::{
 			MAX_SIGNATURE_BYTE_LENGTH,
 		},
 		did::{
-			MAX_BLOCKS_TX_VALIDITY, MAX_ENDPOINT_URLS_COUNT, MAX_KEY_AGREEMENT_KEYS, MAX_PUBLIC_KEYS_PER_DID,
-			MAX_TOTAL_KEY_AGREEMENT_KEYS, MAX_URL_LENGTH,
+			DID_DEPOSIT, DID_FEE, MAX_BLOCKS_TX_VALIDITY, MAX_ENDPOINT_URLS_COUNT, MAX_KEY_AGREEMENT_KEYS,
+			MAX_PUBLIC_KEYS_PER_DID, MAX_TOTAL_KEY_AGREEMENT_KEYS, MAX_URL_LENGTH,
 		},
 		staking::MAX_CANDIDATES,
 		KILT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION,
@@ -121,7 +121,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 2700,
+	spec_version: 2701,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -406,8 +406,8 @@ parameter_types! {
 	pub const MaxEndpointUrlsCount: u32 = MAX_ENDPOINT_URLS_COUNT;
 	// Standalone block time is half the duration of a parachain block.
 	pub const MaxBlocksTxValidity: BlockNumber = MAX_BLOCKS_TX_VALIDITY * 2;
-	pub const DidDeposit: Balance = 100 * MICRO_KILT;
-	pub const DidFee: Balance = MICRO_KILT;
+	pub const DidDeposit: Balance = DID_DEPOSIT;
+	pub const DidFee: Balance = DID_FEE;
 }
 
 impl did::Config for Runtime {
@@ -796,7 +796,10 @@ impl_runtime_apis! {
 	impl frame_try_runtime::TryRuntime<Block> for Runtime {
 		fn on_runtime_upgrade() -> (Weight, Weight) {
 			log::info!("try-runtime::on_runtime_upgrade standalone runtime.");
-			let weight = Executive::try_runtime_upgrade().unwrap();
+			let weight = Executive::try_runtime_upgrade().map_err(|err|{
+				log::info!("try-runtime::on_runtime_upgrade failed with: {:?}", err);
+				err
+			}).unwrap();
 			(weight, BlockWeights::get().max_block)
 		}
 		fn execute_block_no_check(block: Block) -> Weight {

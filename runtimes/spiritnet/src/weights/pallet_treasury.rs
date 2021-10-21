@@ -23,7 +23,7 @@
 //! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("spiritnet-dev"), DB CACHE: 128
 
 // Executed Command:
-// target/release/kilt-parachain
+// ./target/release/kilt-parachain
 // benchmark
 // --chain=spiritnet-dev
 // --steps=50
@@ -48,26 +48,26 @@ use sp_std::marker::PhantomData;
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_treasury::WeightInfo for WeightInfo<T> {
 	fn propose_spend() -> Weight {
-		(43_722_000_u64)
+		(44_114_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	fn reject_proposal() -> Weight {
-		(56_314_000_u64)
+		(56_598_000_u64)
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	fn approve_proposal(p: u32, ) -> Weight {
-		(13_522_000_u64)
-			// Standard Error: 0
-			.saturating_add((150_000_u64).saturating_mul(p as Weight))
+		(13_812_000_u64)
+			// Standard Error: 1_000
+			.saturating_add((146_000_u64).saturating_mul(p as Weight))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn on_initialize_proposals(p: u32, ) -> Weight {
-		(57_056_000_u64)
-			// Standard Error: 25_000
-			.saturating_add((62_201_000_u64).saturating_mul(p as Weight))
+		(52_787_000_u64)
+			// Standard Error: 24_000
+			.saturating_add((62_358_000_u64).saturating_mul(p as Weight))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().reads((3_u64).saturating_mul(p as Weight)))
 			.saturating_add(T::DbWeight::get().writes(2_u64))

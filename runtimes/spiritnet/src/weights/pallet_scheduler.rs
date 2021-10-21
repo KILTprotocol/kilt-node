@@ -23,7 +23,7 @@
 //! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("spiritnet-dev"), DB CACHE: 128
 
 // Executed Command:
-// target/release/kilt-parachain
+// ./target/release/kilt-parachain
 // benchmark
 // --chain=spiritnet-dev
 // --steps=50
@@ -48,30 +48,30 @@ use sp_std::marker::PhantomData;
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_scheduler::WeightInfo for WeightInfo<T> {
 	fn schedule(s: u32, ) -> Weight {
-		(27_070_000_u64)
+		(27_545_000_u64)
 			// Standard Error: 1_000
-			.saturating_add((99_000_u64).saturating_mul(s as Weight))
+			.saturating_add((105_000_u64).saturating_mul(s as Weight))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn cancel(s: u32, ) -> Weight {
-		(26_242_000_u64)
-			// Standard Error: 3_000
-			.saturating_add((873_000_u64).saturating_mul(s as Weight))
+		(26_885_000_u64)
+			// Standard Error: 4_000
+			.saturating_add((1_077_000_u64).saturating_mul(s as Weight))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	fn schedule_named(s: u32, ) -> Weight {
-		(34_232_000_u64)
+		(34_763_000_u64)
 			// Standard Error: 1_000
-			.saturating_add((115_000_u64).saturating_mul(s as Weight))
+			.saturating_add((121_000_u64).saturating_mul(s as Weight))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	fn cancel_named(s: u32, ) -> Weight {
-		(29_132_000_u64)
-			// Standard Error: 3_000
-			.saturating_add((889_000_u64).saturating_mul(s as Weight))
+		(30_184_000_u64)
+			// Standard Error: 4_000
+			.saturating_add((1_074_000_u64).saturating_mul(s as Weight))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
