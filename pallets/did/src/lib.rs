@@ -148,7 +148,6 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::traits::CallSources;
-	use scale_info::{StaticTypeInfo, TypeInfo};
 	use sp_runtime::traits::BadOrigin;
 
 	/// Reference to a payload of data of variable size.
@@ -184,11 +183,10 @@ pub mod pallet {
 		type Call: Parameter
 			+ Dispatchable<Origin = <Self as Config>::Origin, PostInfo = PostDispatchInfo>
 			+ GetDispatchInfo
-			+ DeriveDidCallAuthorizationVerificationKeyRelationship
-			+ StaticTypeInfo;
+			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
 
 		/// Type for a DID subject identifier.
-		type DidIdentifier: Parameter + Default + DidVerifiableIdentifier + TypeInfo;
+		type DidIdentifier: Parameter + Default + DidVerifiableIdentifier;
 
 		/// Origin type expected by the proxied dispatchable calls.
 		#[cfg(not(feature = "runtime-benchmarks"))]

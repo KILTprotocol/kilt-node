@@ -148,7 +148,7 @@ pub mod pallet {
 			Signature = Self::Signature,
 		>;
 		type DelegationEntityId: Parameter + TypeInfo;
-		type DelegationNodeId: Parameter + Copy + AsRef<[u8]> + Eq + PartialEq + Ord + PartialOrd + TypeInfo;
+		type DelegationNodeId: Parameter + Copy + AsRef<[u8]> + Eq + PartialEq + Ord + PartialOrd;
 		type EnsureOrigin: EnsureOrigin<
 			Success = <Self as Config>::OriginSuccess,
 			<Self as frame_system::Config>::Origin,
