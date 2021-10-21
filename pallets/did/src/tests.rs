@@ -22,7 +22,10 @@ use sp_runtime::{
 	traits::{BadOrigin, Zero},
 	SaturatedConversion,
 };
-use sp_std::{collections::btree_set::BTreeSet, convert::{TryFrom, TryInto}};
+use sp_std::{
+	collections::btree_set::BTreeSet,
+	convert::{TryFrom, TryInto},
+};
 
 use crate::{self as did, mock::*, mock_utils::*, DidEndpointDetails};
 
@@ -1958,7 +1961,10 @@ fn check_service_not_present_deletion_error() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::remove_service_endpoint(Origin::signed(alice_did.clone()), service_id.try_into().expect("Service ID to delete too long")),
+				Did::remove_service_endpoint(
+					Origin::signed(alice_did.clone()),
+					service_id.try_into().expect("Service ID to delete too long")
+				),
 				did::Error::<Test>::ServiceNotPresent
 			);
 		});
@@ -1983,7 +1989,7 @@ fn check_successful_deletion() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
-		.with_endpoints(vec![(alice_did.clone(), vec![service_endpoint.clone()])])
+		.with_endpoints(vec![(alice_did.clone(), vec![service_endpoint])])
 		.build(None)
 		.execute_with(|| {
 			assert_eq!(
@@ -2057,7 +2063,7 @@ fn check_successful_reclaiming() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
-		.with_endpoints(vec![(alice_did.clone(), vec![old_service_endpoint.clone()])])
+		.with_endpoints(vec![(alice_did.clone(), vec![old_service_endpoint])])
 		.build(None)
 		.execute_with(|| {
 			assert_eq!(

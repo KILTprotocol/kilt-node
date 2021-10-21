@@ -20,8 +20,8 @@ use crate::Config;
 use codec::{Decode, Encode};
 use frame_support::BoundedVec;
 use sp_std::str;
-#[cfg(test)]
-use sp_std::convert::TryInto;
+#[cfg(any(test, feature = "runtime-benchmarks"))]
+use sp_std::{convert::TryInto, vec::Vec};
 
 use crate::utils as crate_utils;
 
@@ -33,14 +33,24 @@ pub type ServiceEndpointTypeEntries<T> = BoundedVec<ServiceEndpointType<T>, <T a
 pub type ServiceEndpointUrl<T> = BoundedVec<u8, <T as Config>::MaxServiceUrlLength>;
 pub type ServiceEndpointUrlEntries<T> = BoundedVec<ServiceEndpointUrl<T>, <T as Config>::MaxUrlCountPerService>;
 
-#[derive(Clone, Debug, Decode, Encode, PartialEq, Eq)]
+#[derive(Clone, Decode, Encode, PartialEq, Eq)]
 pub struct DidEndpointDetails<T: Config> {
 	pub(crate) id: ServiceEndpointId<T>,
 	pub(crate) service_type: ServiceEndpointTypeEntries<T>,
 	pub(crate) url: ServiceEndpointUrlEntries<T>,
 }
 
-#[cfg(test)]
+impl<T: Config> sp_std::fmt::Debug for DidEndpointDetails<T> {
+	fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
+		f.debug_struct("DidEndpointDetails")
+			.field("id", &self.id.clone().into_inner())
+			.field("service_type", &self.service_type.encode())
+			.field("url", &self.url.encode())
+			.finish()
+	}
+}
+
+#[cfg(any(test, feature = "runtime-benchmarks"))]
 impl<T: Config> DidEndpointDetails<T> {
 	pub(crate) fn new(id: Vec<u8>, types: Vec<Vec<u8>>, urls: Vec<Vec<u8>>) -> Self {
 		let bounded_id = id.try_into().expect("Service ID too long.");

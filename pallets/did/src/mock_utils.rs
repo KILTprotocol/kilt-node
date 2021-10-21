@@ -24,6 +24,7 @@ use sp_runtime::traits::Zero;
 use sp_std::{
 	collections::btree_set::BTreeSet,
 	convert::{TryFrom, TryInto},
+	vec::Vec,
 };
 
 pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> DidNewKeyAgreementKeySet<T> {

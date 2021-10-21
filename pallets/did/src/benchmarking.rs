@@ -25,7 +25,7 @@ use kilt_support::signature::VerifySignature;
 use sp_core::{crypto::KeyTypeId, ecdsa, ed25519, sr25519};
 use sp_io::crypto::{ecdsa_generate, ecdsa_sign, ed25519_generate, ed25519_sign, sr25519_generate, sr25519_sign};
 use sp_runtime::{traits::IdentifyAccount, MultiSigner};
-use sp_std::{convert::TryInto, vec::Vec};
+use sp_std::{convert::TryInto, vec, vec::Vec};
 
 use crate::{
 	did_details::*,
