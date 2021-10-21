@@ -136,6 +136,7 @@ use frame_support::{
 	Parameter,
 };
 use frame_system::ensure_signed;
+use sp_io::KillStorageResult;
 use sp_runtime::{traits::Saturating, SaturatedConversion};
 use sp_std::{boxed::Box, fmt::Debug, prelude::Clone};
 
@@ -1066,7 +1067,12 @@ impl<T: Config> Pallet<T> {
 		let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 
 		// *** No Fail beyond this point ***
-		ServiceEndpoints::<T>::remove_prefix(&did_subject, Some(T::MaxDidServicesCount::get()));
+		let storage_kill_result = ServiceEndpoints::<T>::remove_prefix(&did_subject, Some(T::MaxDidServicesCount::get()));
+
+		// If some items are remaining, it means that there were more than MaxDidServicesCount stored, and that should never happen.
+		if let KillStorageResult::SomeRemaining(_) = storage_kill_result {
+			return Err(Error::<T>::InternalError.into());
+		};
 		kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&did_entry.deposit);
 		// Mark as deleted to prevent potential replay-attacks of re-adding a previously
 		// deleted DID.
