@@ -105,6 +105,12 @@ parameter_types! {
 	pub const MaxBlocksTxValidity: u64 = 300u64;
 	pub const Deposit: Balance = 10 * MICRO_KILT;
 	pub const DidFee: Balance = MICRO_KILT;
+	pub const MaxDidServicesCount: u32 = 25u32;
+	pub const MaxServiceIdLength: u32 = 50u32;
+	pub const MaxServiceTypeLength: u32 = 50u32;
+	pub const MaxServiceUrlLength: u32 = 100u32;
+	pub const MaxTypeCountPerService: u32 = 1u32;
+	pub const MaxUrlCountPerService: u32 = 1u32;
 }
 
 pub struct ToAccount<R>(sp_std::marker::PhantomData<R>);
@@ -135,6 +141,12 @@ impl Config for Test {
 	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
 	type MaxBlocksTxValidity = MaxBlocksTxValidity;
 	type WeightInfo = ();
+	type MaxDidServicesCount = MaxDidServicesCount;
+	type MaxServiceIdLength = MaxServiceIdLength;
+	type MaxServiceTypeLength = MaxServiceTypeLength;
+	type MaxServiceUrlLength = MaxServiceUrlLength;
+	type MaxTypeCountPerService = MaxTypeCountPerService;
+	type MaxUrlCountPerService = MaxUrlCountPerService;
 }
 
 parameter_types! {
@@ -392,6 +404,7 @@ pub fn initialize_logger() {
 #[derive(Clone, Default)]
 pub struct ExtBuilder {
 	dids_stored: Vec<(TestDidIdentifier, did::DidDetails<Test>)>,
+	service_endpoints: Vec<(TestDidIdentifier, Vec<DidEndpointDetails<Test>>)>,
 	deleted_dids: Vec<TestDidIdentifier>,
 	storage_version: DidStorageVersion,
 	ctypes_stored: Vec<(TestCtypeHash, TestCtypeOwner)>,
@@ -401,6 +414,11 @@ pub struct ExtBuilder {
 impl ExtBuilder {
 	pub fn with_dids(mut self, dids: Vec<(TestDidIdentifier, did::DidDetails<Test>)>) -> Self {
 		self.dids_stored = dids;
+		self
+	}
+
+	pub fn with_endpoints(mut self, endpoints: Vec<(TestDidIdentifier, Vec<DidEndpointDetails<Test>>)>) -> Self {
+		self.service_endpoints = endpoints;
 		self
 	}
 
@@ -443,12 +461,17 @@ impl ExtBuilder {
 			}
 
 			for did in self.dids_stored.iter() {
-				did::Did::<Test>::insert(did.0.clone(), did.1.clone());
+				did::Did::<Test>::insert(&did.0, did.1.clone());
 				CurrencyOf::<Test>::reserve(&did.1.deposit.owner, did.1.deposit.amount)
 					.expect("Deposit owner should have enough balance");
 			}
 			for did in self.deleted_dids.iter() {
-				did::DidBlacklist::<Test>::insert(did.clone(), ());
+				did::DidBlacklist::<Test>::insert(&did, ());
+			}
+			for (did, endpoints) in self.service_endpoints.iter() {
+				for endpoint in endpoints.iter() {
+					did::ServiceEndpoints::<Test>::insert(&did, &endpoint.id, endpoint)
+				}
 			}
 			did::StorageVersion::<Test>::set(self.storage_version);
 		});

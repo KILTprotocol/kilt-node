@@ -20,7 +20,7 @@ use crate::*;
 use did_details::*;
 use frame_support::storage::bounded_btree_set::BoundedBTreeSet;
 use kilt_support::deposit::Deposit;
-use sp_runtime::{app_crypto::IsWrappedBy, traits::Zero};
+use sp_runtime::traits::Zero;
 use sp_std::{
 	collections::btree_set::BTreeSet,
 	convert::{TryFrom, TryInto},
@@ -43,37 +43,40 @@ pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> DidNewKeyAgreementKeySe
 	.expect("Failed to convert key_agreement_keys to BoundedBTreeSet")
 }
 
-pub fn get_service_endpoints<T: Config>(count: u32, endpoint_id_length: u32, endpoint_type_count: u32, endpoint_type_length: u32, endpoint_url_count: u32, endpoint_url_length: u32) -> Vec<DidEndpointDetails<T>> {
-	(0..count).map(|i| {
-		let a: Vec<u8> = vec![i.to_be_bytes(); endpoint_id_length.saturated_into()];
-		let endpoint_id = Vec::from(a.as_ref().iter());
-		let endpoint_types = (0..endpoint_type_count).map(|t| {
-			Vec::from(vec![t.to_be_bytes(); endpoint_url_length.saturated_into()].as_ref().iter())
-		}).collect();
-		let endpoint_urls = (0..endpoint_url_count).map(|u| {
-			Vec::from(vec![u.to_be_bytes(); endpoint_url_length.saturated_into()].as_ref().iter())
-		}).collect();
-		DidEndpointDetails {
-			id: endpoint_id,
-			service_type: endpoint_types,
-			url: endpoint_urls,
-			phantom_data: None
-		}
-	});
-	// BoundedBTreeSet::try_from(
-	// 	(1..=n_keys)
-	// 		.map(|i| {
-	// 			// Converts the loop index to a 32-byte array;
-	// 			let mut seed_vec = i.to_be_bytes().to_vec();
-	// 			seed_vec.resize(32, 0u8);
-	// 			let seed: [u8; 32] = seed_vec
-	// 				.try_into()
-	// 				.expect("Failed to create encryption key from raw seed.");
-	// 			DidEncryptionKey::X25519(seed)
-	// 		})
-	// 		.collect::<BTreeSet<DidEncryptionKey>>(),
-	// )
-	// .expect("Failed to convert key_agreement_keys to BoundedBTreeSet")
+pub fn get_service_endpoints<T: Config>(
+	count: u32,
+	endpoint_id_length: u32,
+	endpoint_type_count: u32,
+	endpoint_type_length: u32,
+	endpoint_url_count: u32,
+	endpoint_url_length: u32,
+) -> Vec<DidEndpointDetails<T>> {
+	(0..count)
+		.map(|i| {
+			let mut endpoint_id = i.to_be_bytes().to_vec();
+			endpoint_id.resize(endpoint_id_length.saturated_into(), 0u8);
+			let endpoint_types = (0..endpoint_type_count)
+				.map(|t| {
+					let mut endpoint_type = t.to_be_bytes().to_vec();
+					endpoint_type.resize(endpoint_type_length.saturated_into(), 0u8);
+					endpoint_type
+				})
+				.collect();
+			let endpoint_urls = (0..endpoint_url_count)
+				.map(|u| {
+					let mut endpoint_url = u.to_be_bytes().to_vec();
+					endpoint_url.resize(endpoint_url_length.saturated_into(), 0u8);
+					endpoint_url
+				})
+				.collect();
+			DidEndpointDetails {
+				id: endpoint_id,
+				service_type: endpoint_types,
+				url: endpoint_urls,
+				phantom_data: None,
+			}
+		})
+		.collect()
 }
 
 pub fn generate_base_did_creation_details<T: Config>(

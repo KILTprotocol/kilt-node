@@ -104,8 +104,8 @@ pub mod default_weights;
 pub mod did_details;
 pub mod errors;
 pub mod migrations;
-pub mod service_endpoints;
 pub mod origin;
+pub mod service_endpoints;
 
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
@@ -122,7 +122,9 @@ mod signature;
 mod utils;
 
 use crate::migrations::*;
-pub use crate::{default_weights::WeightInfo, did_details::*, errors::*, origin::*, service_endpoints::*, pallet::*, signature::*};
+pub use crate::{
+	default_weights::WeightInfo, did_details::*, errors::*, origin::*, pallet::*, service_endpoints::*, signature::*,
+};
 
 use codec::Encode;
 use frame_support::{
@@ -508,7 +510,8 @@ pub mod pallet {
 
 			// Validate all the size constraints for the service endpoints.
 			let input_service_endpoints = details.new_service_details.clone();
-			service_endpoints::utils::validate_new_service_endpoints(&input_service_endpoints).map_err(Error::<T>::from)?;
+			service_endpoints::utils::validate_new_service_endpoints(&input_service_endpoints)
+				.map_err(Error::<T>::from)?;
 
 			let did_entry =
 				DidDetails::from_creation_details(details, account_did_auth_key).map_err(Error::<T>::from)?;
@@ -784,6 +787,8 @@ pub mod pallet {
 				ServiceEndpoints::<T>::get(&did_subject, &service_endpoint.id).is_none(),
 				Error::<T>::ServiceAlreadyPresent
 			);
+
+			// *** No Fail beyond this point ***
 
 			ServiceEndpoints::<T>::insert(&did_subject, service_endpoint.id.clone(), service_endpoint);
 

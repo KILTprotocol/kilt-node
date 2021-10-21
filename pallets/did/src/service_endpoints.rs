@@ -16,8 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Encode, Decode};
 use crate::Config;
+use codec::{Decode, Encode};
 
 // pub type ServiceEndpointId<T> = BoundedVec<u8, <T as
 // Config>::MaxServiceIdLength>;
@@ -34,7 +34,7 @@ pub type ServiceEndpointUrl = Vec<u8>;
 
 #[derive(Clone, Debug, Decode, Encode, PartialEq, Eq)]
 pub struct DidEndpointDetails<T: Config> {
-	phantom_data: Option<sp_std::marker::PhantomData<T>>,
+	pub(crate) phantom_data: Option<sp_std::marker::PhantomData<T>>,
 	pub(crate) id: ServiceEndpointId,
 	pub(crate) service_type: Vec<ServiceEndpointType>,
 	pub(crate) url: Vec<ServiceEndpointUrl>,
@@ -46,7 +46,9 @@ pub mod utils {
 	use frame_support::{ensure, traits::Get};
 	use sp_runtime::traits::SaturatedConversion;
 
-	pub(crate) fn validate_new_service_endpoints<T: Config>(endpoints: &[DidEndpointDetails<T>]) -> Result<(), InputError> {
+	pub(crate) fn validate_new_service_endpoints<T: Config>(
+		endpoints: &[DidEndpointDetails<T>],
+	) -> Result<(), InputError> {
 		// Check if the maximum number of endpoints is provided
 		ensure!(
 			endpoints.len() <= T::MaxDidServicesCount::get().saturated_into(),
@@ -61,7 +63,9 @@ pub mod utils {
 		Ok(())
 	}
 
-	pub(crate) fn validate_single_service_endpoint<T: Config>(endpoint: &DidEndpointDetails<T>) -> Result<(), InputError> {
+	pub(crate) fn validate_single_service_endpoint<T: Config>(
+		endpoint: &DidEndpointDetails<T>,
+	) -> Result<(), InputError> {
 		// Check that the maximum number of service types is provided.
 		ensure!(
 			endpoint.service_type.len() <= T::MaxTypeCountPerService::get().saturated_into(),

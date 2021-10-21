@@ -198,4 +198,11 @@ pub mod did {
 	pub const MAX_TOTAL_KEY_AGREEMENT_KEYS: u32 = MAX_PUBLIC_KEYS_PER_DID - 1;
 	pub const MAX_ENDPOINT_URLS_COUNT: u32 = 3;
 	pub const MAX_BLOCKS_TX_VALIDITY: BlockNumber = HOURS;
+
+	pub const MAX_SERVICE_ID_LENGTH: u32 = 50;
+	pub const MAX_SERVICE_TYPE_LENGTH: u32 = 50;
+	pub const MAX_SERVICE_URL_LENGTH: u32 = 100;
+	pub const MAX_SERVICE_TYPE_COUNT: u32 = 1;
+	pub const MAX_SERVICE_URL_COUNT: u32 = 1;
+	pub const MAX_DID_SERVICES_COUNT: u32 = 25;
 }
