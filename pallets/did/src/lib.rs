@@ -394,6 +394,7 @@ pub mod pallet {
 		MaxServicesCountExceeded,
 		ServiceAlreadyPresent,
 		ServiceNotPresent,
+		InvalidUrlEncoding,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
 	}
@@ -445,6 +446,7 @@ pub mod pallet {
 				InputError::MaxTypeLengthExceeded => Self::MaxTypeLengthExceeded,
 				InputError::MaxUrlCountExceeded => Self::MaxUrlCountExceeded,
 				InputError::MaxUrlLengthExceeded => Self::MaxUrlLengthExceeded,
+				InputError::InvalidUrlEncoding => Self::InvalidUrlEncoding,
 			}
 		}
 	}

@@ -98,4 +98,5 @@ pub enum InputError {
 	MaxIdLengthExceeded,
 	MaxUrlLengthExceeded,
 	MaxTypeLengthExceeded,
+	InvalidUrlEncoding,
 }

@@ -18,6 +18,9 @@
 
 use crate::Config;
 use codec::{Decode, Encode};
+use sp_std::str;
+
+use crate::utils as crate_utils;
 
 // pub type ServiceEndpointId<T> = BoundedVec<u8, <T as
 // Config>::MaxServiceIdLength>;
@@ -43,7 +46,8 @@ pub struct DidEndpointDetails<T: Config> {
 pub mod utils {
 	use super::*;
 	use crate::InputError;
-	use frame_support::{ensure, traits::Get};
+	use codec::Input;
+use frame_support::{ensure, traits::Get};
 	use sp_runtime::traits::SaturatedConversion;
 
 	pub(crate) fn validate_new_service_endpoints<T: Config>(
@@ -76,28 +80,33 @@ pub mod utils {
 			endpoint.url.len() <= T::MaxUrlCountPerService::get().saturated_into(),
 			InputError::MaxUrlCountExceeded
 		);
-		// Check that the ID is the maximum allowed length.
+		// Check that the ID is the maximum allowed length and only contain ASCII characters.
 		ensure!(
 			endpoint.id.len() <= T::MaxServiceIdLength::get().saturated_into(),
 			InputError::MaxIdLengthExceeded
 		);
-		// Check that all types are the maximum allowed length.
+		let str_id = str::from_utf8(&endpoint.id).map_err(|_| InputError::InvalidUrlEncoding)?;
+		ensure!(crate_utils::is_valid_ascii_url(str_id), InputError::InvalidUrlEncoding);
+		// Check that all types are the maximum allowed length and only contain ASCII characters.
 		endpoint.service_type.iter().try_for_each(|s_type| {
 			ensure!(
 				s_type.len() <= T::MaxServiceTypeLength::get().saturated_into(),
 				InputError::MaxTypeLengthExceeded
 			);
+			let str_type = str::from_utf8(s_type).map_err(|_| InputError::InvalidUrlEncoding)?;
+			ensure!(crate_utils::is_valid_ascii_url(str_type), InputError::InvalidUrlEncoding);
 			Ok(())
 		})?;
-		// Check that all URLs are the maximum allowed length.
+		// Check that all URLs are the maximum allowed length AND only contain ASCII characters.
 		endpoint.url.iter().try_for_each(|s_url| {
 			ensure!(
 				s_url.len() <= T::MaxServiceUrlLength::get().saturated_into(),
 				InputError::MaxUrlLengthExceeded
 			);
+			let str_url = str::from_utf8(s_url).map_err(|_| InputError::InvalidUrlEncoding)?;
+			ensure!(crate_utils::is_valid_ascii_url(str_url), InputError::InvalidUrlEncoding);
 			Ok(())
 		})?;
-
 		Ok(())
 	}
 }
