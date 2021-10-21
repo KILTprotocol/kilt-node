@@ -1025,16 +1025,16 @@ impl_runtime_apis! {
 		}
 	}
 
-	// From the Polkadot repo: https://github.com/paritytech/polkadot/blob/1876963f254f31f8cd2d7b8d5fb26cd38b7836ab/runtime/polkadot/src/lib.rs#L1413
+	// From the Polkadot repo: https://github.com/paritytech/polkadot/tree/release-v0.9.11/runtime/polkadot/src/lib.rs#L1853
 	#[cfg(feature = "try-runtime")]
 	impl frame_try_runtime::TryRuntime<Block> for Runtime {
-		fn on_runtime_upgrade() -> Result<(Weight, Weight), sp_runtime::RuntimeString> {
-			log::info!("try-runtime::on_runtime_upgrade for peregrine runtime.");
-			let weight = Executive::try_runtime_upgrade().map_err(|err|{
-				log::info!("try-runtime::on_runtime_upgrade failed with: {:?}", err);
-				err
-			})?;
-			Ok((weight, BlockWeights::get().max_block))
+		fn on_runtime_upgrade() -> (Weight, Weight) {
+			log::info!("try-runtime::on_runtime_upgrade peregrine runtime.");
+			let weight = Executive::try_runtime_upgrade().unwrap();
+			(weight, BlockWeights::get().max_block)
+		}
+		fn execute_block_no_check(block: Block) -> Weight {
+			Executive::execute_block_no_check(block)
 		}
 	}
 }

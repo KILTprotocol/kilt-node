@@ -27,7 +27,7 @@ use cumulus_primitives_core::ParaId;
 use kilt_primitives::Block;
 use log::info;
 #[cfg(feature = "try-runtime")]
-use node_executor::Executor;
+use node_executor::ExecutorDispatch;
 use polkadot_parachain::primitives::AccountIdConversion;
 use sc_cli::{
 	ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams, NetworkParams, Result,
@@ -315,7 +315,7 @@ pub fn run() -> Result<()> {
 				let task_manager = sc_service::TaskManager::new(config.tokio_handle.clone(), registry)
 					.map_err(|e| sc_cli::Error::Service(sc_service::Error::Prometheus(e)))?;
 
-				Ok((cmd.run::<Block, Executor>(config), task_manager))
+				Ok((cmd.run::<Block, ExecutorDispatch>(config), task_manager))
 			})
 		}
 		#[cfg(not(feature = "try-runtime"))]
