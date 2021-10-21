@@ -1955,6 +1955,12 @@ fn check_did_not_present_deletion() {
 fn check_successful_reclaiming() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let old_service_endpoint = DidEndpointDetails {
+		id: b"id".to_vec(),
+		service_type: vec![b"type".to_vec()],
+		url: vec![b"url".to_vec()],
+		phantom_data: None,
+	};
 	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 	did_details.deposit.owner = ACCOUNT_00;
 	did_details.deposit.amount = <Test as did::Config>::Deposit::get();
@@ -1966,8 +1972,12 @@ fn check_successful_reclaiming() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
+		.with_endpoints(vec![(alice_did.clone(), vec![old_service_endpoint.clone()])])
 		.build(None)
 		.execute_with(|| {
+			assert_eq!(
+				did::pallet::ServiceEndpoints::<Test>::iter_prefix(&alice_did).count(), 1
+			);
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as did::Config>::Deposit::get()
@@ -1979,6 +1989,9 @@ fn check_successful_reclaiming() {
 			assert!(Did::get_did(alice_did.clone()).is_none());
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+			assert_eq!(
+				did::pallet::ServiceEndpoints::<Test>::iter_prefix(&alice_did).count(), 0
+			);
 
 			// Re-adding the same DID identifier should fail.
 			let details = generate_base_did_creation_details::<Test>(alice_did.clone(), ACCOUNT_00);
