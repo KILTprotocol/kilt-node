@@ -145,6 +145,7 @@ use frame_system::RawOrigin;
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
+	use crate::service_endpoints::utils as service_endpoints_utils;
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{Currency, ExistenceRequirement, Imbalance, ReservableCurrency},
@@ -510,7 +511,7 @@ pub mod pallet {
 
 			// Validate all the size constraints for the service endpoints.
 			let input_service_endpoints = details.new_service_details.clone();
-			service_endpoints::utils::validate_new_service_endpoints(&input_service_endpoints)
+			service_endpoints_utils::validate_new_service_endpoints(&input_service_endpoints)
 				.map_err(Error::<T>::from)?;
 
 			let did_entry =
@@ -770,7 +771,7 @@ pub mod pallet {
 		pub fn add_service_endpoint(origin: OriginFor<T>, service_endpoint: DidEndpointDetails<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 
-			service_endpoints::utils::validate_single_service_endpoint(&service_endpoint).map_err(Error::<T>::from)?;
+			service_endpoints_utils::validate_single_service_endpoint(&service_endpoint).map_err(Error::<T>::from)?;
 
 			// Verify that the DID is present.
 			ensure!(Did::<T>::get(&did_subject).is_some(), Error::<T>::DidNotPresent);
@@ -782,15 +783,17 @@ pub mod pallet {
 				Error::<T>::MaxServicesCountExceeded
 			);
 
-			// Verify that the service with the given ID does not exist.
-			ensure!(
-				ServiceEndpoints::<T>::get(&did_subject, &service_endpoint.id).is_none(),
-				Error::<T>::ServiceAlreadyPresent
-			);
-
 			// *** No Fail beyond this point ***
 
-			ServiceEndpoints::<T>::insert(&did_subject, service_endpoint.id.clone(), service_endpoint);
+			ServiceEndpoints::<T>::try_mutate_exists(
+				&did_subject,
+				service_endpoint.id.clone(),
+				|existing_service| -> Result<(), Error<T>> {
+					ensure!(&existing_service.is_none(), Error::<T>::ServiceAlreadyPresent);
+					*existing_service = Some(service_endpoint);
+					Ok(())
+				},
+			)?;
 
 			Ok(())
 		}
