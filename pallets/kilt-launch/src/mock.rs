@@ -128,6 +128,7 @@ impl pallet_vesting::Config for Test {
 	// disable vested transfers by setting min amount to max balance
 	type MinVestedTransfer = MinVestedTransfer;
 	type WeightInfo = ();
+	const MAX_VESTING_SCHEDULES: u32 = kilt_primitives::constants::MAX_VESTING_SCHEDULES;
 }
 
 pub struct ExtBuilder {
@@ -176,8 +177,14 @@ pub fn ensure_single_migration_works(
 	let mut locked_balance: Balance = Balance::zero();
 	let mut num_of_locks = 0;
 	if let Some(vesting) = vesting_info {
-		assert_eq!(Vesting::vesting(dest), Some(vesting));
-		locked_balance = vesting.locked;
+		assert_eq!(
+			Vesting::vesting(dest)
+				.expect("missing vesting info")
+				.into_inner()
+				.get(0),
+			Some(&vesting)
+		);
+		locked_balance = vesting.locked();
 		num_of_locks += 1;
 	}
 	if let Some((lock, _)) = locked_info.clone() {
@@ -204,9 +211,9 @@ pub fn ensure_single_migration_works(
 	for BalanceLock { id, amount, reasons } in balance_locks {
 		match id {
 			crate::VESTING_ID => {
-				let VestingInfo { locked, per_block, .. } = vesting_info.expect("No vesting schedule found");
-				fee_balance = locked;
-				usable_balance = per_block;
+				let vesting = vesting_info.expect("No vesting schedule found");
+				fee_balance = vesting.locked();
+				usable_balance = vesting.per_block();
 				assert_eq!(reasons, Reasons::Misc);
 			}
 			crate::KILT_LAUNCH_ID => {
