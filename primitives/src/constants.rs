@@ -122,7 +122,7 @@ pub mod staking {
 	pub const MIN_COLLATORS: u32 = 16;
 
 	#[cfg(feature = "fast-gov")]
-	pub const MAX_CANDIDATES: u32 = 17;
+	pub const MAX_CANDIDATES: u32 = 16;
 	#[cfg(not(feature = "fast-gov"))]
 	pub const MAX_CANDIDATES: u32 = 75;
 }

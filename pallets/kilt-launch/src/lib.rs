@@ -695,7 +695,8 @@ pub mod pallet {
 
 			let vesting =
 				if let Some(target_vesting) = Vesting::<T>::take(&target).unwrap_or_default().into_inner().first() {
-					// Should never throw because all source accounts start vesting in genesis block
+					// Should never return an error all source accounts start vesting in genesis
+					// block
 					ensure!(
 						target_vesting.starting_block() == source_vesting.starting_block(),
 						Error::<T>::ConflictingVestingStarts
