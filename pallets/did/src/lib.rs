@@ -476,7 +476,26 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Writes: Did (with K new key agreement keys)
 		/// # </weight>
-		#[pallet::weight(1)]
+		#[pallet::weight({
+			let new_key_agreement_keys = details.new_key_agreement_keys.len().saturated_into::<u32>();
+			// We only consider the number of new endpoints.
+			let new_services_count = details.new_service_details.len();
+
+			let ed25519_weight = <T as pallet::Config>::WeightInfo::create_ed25519_keys(
+				new_key_agreement_keys,
+				new_services_count
+			);
+			let sr25519_weight = <T as pallet::Config>::WeightInfo::create_sr25519_keys(
+				new_key_agreement_keys,
+				new_services_count
+			);
+			let ecdsa_weight = <T as pallet::Config>::WeightInfo::create_ecdsa_keys(
+				new_key_agreement_keys,
+				new_services_count
+			);
+
+			ed25519_weight.max(sr25519_weight).max(ecdsa_weight)
+		})]
 		pub fn create(origin: OriginFor<T>, details: DidCreationDetails<T>, signature: DidSignature) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
