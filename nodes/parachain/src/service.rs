@@ -42,7 +42,7 @@ type Header = sp_runtime::generic::Header<BlockNumber, sp_runtime::traits::Blake
 pub type Block = sp_runtime::generic::Block<Header, sp_runtime::OpaqueExtrinsic>;
 type Hash = sp_core::H256;
 pub type TransactionPool<Block, RuntimeApi, Executor> =
-	sc_transaction_pool::FullPool<Block, TFullClient<Block, RuntimeApi, NativeElseWasmExecutor<Executor>>>;
+	sc_transaction_pool::FullPool<Block, TFullClient<Block, RuntimeApi, Executor>>;
 type PartialComponents<Block, RuntimeApi, Executor, Telemetry, TelemetryWorkerHandle> = sc_service::PartialComponents<
 	TFullClient<Block, RuntimeApi, NativeElseWasmExecutor<Executor>>,
 	TFullBackend<Block>,
@@ -90,10 +90,7 @@ impl sc_executor::NativeExecutionDispatch for MashRuntimeExecutor {
 pub fn new_partial<RuntimeApi, Executor, BIQ>(
 	config: &Configuration,
 	build_import_queue: BIQ,
-) -> Result<
-	PartialComponents<Block, RuntimeApi, NativeElseWasmExecutor<Executor>, Telemetry, TelemetryWorkerHandle>,
-	sc_service::Error,
->
+) -> Result<PartialComponents<Block, RuntimeApi, Executor, Telemetry, TelemetryWorkerHandle>, sc_service::Error>
 where
 	RuntimeApi: ConstructRuntimeApi<Block, TFullClient<Block, RuntimeApi, NativeElseWasmExecutor<Executor>>>
 		+ Send
@@ -106,7 +103,7 @@ where
 		+ sp_offchain::OffchainWorkerApi<Block>
 		+ sp_block_builder::BlockBuilder<Block>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
-	Executor: sc_executor::NativeExecutionDispatch + 'static,
+	Executor: NativeExecutionDispatch + 'static,
 	BIQ: FnOnce(
 		Arc<TFullClient<Block, RuntimeApi, NativeElseWasmExecutor<Executor>>>,
 		&Configuration,
@@ -209,8 +206,8 @@ where
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
 	Executor: sc_executor::NativeExecutionDispatch + 'static,
 	RB: FnOnce(
-			Arc<TFullClient<Block, RuntimeApi, Executor>>,
-			Arc<TransactionPool<Block, RuntimeApi, Executor>>,
+			Arc<TFullClient<Block, RuntimeApi, NativeElseWasmExecutor<Executor>>>,
+			Arc<TransactionPool<Block, RuntimeApi, NativeElseWasmExecutor<Executor>>>,
 		) -> Box<dyn RpcExtensionBuilder<Output = jsonrpc_core::IoHandler<sc_rpc::Metadata>> + Send>
 		+ Send
 		+ 'static,
@@ -345,14 +342,17 @@ where
 
 /// Build the import queue for THE runtime.
 pub fn build_import_queue<RE, API>(
-	client: Arc<TFullClient<Block, API, RE>>,
+	client: Arc<TFullClient<Block, API, NativeElseWasmExecutor<RE>>>,
 	config: &Configuration,
 	telemetry: Option<TelemetryHandle>,
 	task_manager: &TaskManager,
-) -> Result<sc_consensus::DefaultImportQueue<Block, TFullClient<Block, API, RE>>, sc_service::Error>
+) -> Result<
+	sc_consensus::DefaultImportQueue<Block, TFullClient<Block, API, NativeElseWasmExecutor<RE>>>,
+	sc_service::Error,
+>
 where
-	RE: NativeExecutionDispatch + 'static,
-	API: ConstructRuntimeApi<Block, TFullClient<Block, API, RE>> + Send + Sync + 'static,
+	RE: sc_executor::NativeExecutionDispatch + 'static,
+	API: ConstructRuntimeApi<Block, TFullClient<Block, API, NativeElseWasmExecutor<RE>>> + Send + Sync + 'static,
 	API::RuntimeApi: sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>
 		+ sp_api::Metadata<Block>
 		+ sp_session::SessionKeys<Block>
@@ -395,10 +395,10 @@ pub async fn start_node<RE, API>(
 	parachain_config: Configuration,
 	polkadot_config: Configuration,
 	id: ParaId,
-) -> sc_service::error::Result<(TaskManager, Arc<TFullClient<Block, API, RE>>)>
+) -> sc_service::error::Result<(TaskManager, Arc<TFullClient<Block, API, NativeElseWasmExecutor<RE>>>)>
 where
-	RE: NativeExecutionDispatch + 'static,
-	API: ConstructRuntimeApi<Block, TFullClient<Block, API, RE>> + Send + Sync + 'static,
+	RE: sc_executor::NativeExecutionDispatch + 'static,
+	API: ConstructRuntimeApi<Block, TFullClient<Block, API, NativeElseWasmExecutor<RE>>> + Send + Sync + 'static,
 	API::RuntimeApi: sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>
 		+ sp_api::Metadata<Block>
 		+ sp_session::SessionKeys<Block>
@@ -412,8 +412,8 @@ where
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
 {
 	let rpc_extensions_builder =
-		|client: Arc<TFullClient<Block, API, RE>>,
-		 pool: Arc<TransactionPool<Block, API, RE>>|
+		|client: Arc<TFullClient<Block, API, NativeElseWasmExecutor<RE>>>,
+		 pool: Arc<TransactionPool<Block, API, NativeElseWasmExecutor<RE>>>|
 		 -> Box<dyn RpcExtensionBuilder<Output = jsonrpc_core::IoHandler<sc_rpc::Metadata>> + std::marker::Send> {
 			Box::new(move |deny_unsafe, _| {
 				let deps = crate::rpc::FullDeps {
