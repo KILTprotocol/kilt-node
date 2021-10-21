@@ -27,19 +27,15 @@ pub fn calculate_key_id<T: Config>(key: &DidPublicKey) -> KeyIdOf<T> {
 	T::Hashing::hash(&hashed_values)
 }
 
-/// Verifies that an input string contains only URL-allowed ASCII characters.
-/// For more info about what those characters are, please visit the official RFC
-/// 3986.
-pub(crate) fn is_valid_ascii_url(input: &str) -> bool {
-	// Matches [0-9], [a-z], [A-Z], plus the symbols as in the RFC.
+/// Verifies that an input string contains only traditional (non-extended) ASCII characters.
+pub(crate) fn is_valid_ascii_string(input: &str) -> bool {
 	input.chars().all(|c| {
-		matches!(c, ':' | '/' | '?' | '#' | '[' | ']' | '@' | '!' | '$' | '&' | '\'' | '(' | ')' | '*' | '+' | ',' | ';'
-	| '=' | '-' | '.' | '_' | '~' | '%' | '0'..='9' | 'a'..='z' | 'A'..='Z')
+		c.is_ascii()
 	})
 }
 
 #[test]
-fn check_is_valid_ascii_url() {
+fn check_is_valid_ascii_string() {
 	let test_cases = [
 		("kilt.io", true),
 		("super.long.domain.com:12345/path/to/directory#fragment?arg=value", true),
@@ -49,16 +45,14 @@ fn check_is_valid_ascii_url() {
 		("âinvalid.character.domain.org", false),
 		("invalid.character.domain.orgâ", false),
 		("", true),
-		("kilt.io/<tag>/invalid_ascii.com", false),
-		("<kilt.io/<tag>/invalid_ascii.com", false),
-		("kilt.io/<tag>/invalid_ascii.com>", false),
+		("例子.領域.cn", false),
 		("kilt.io/%3Ctag%3E/encoded_upper_case_ascii.com", true),
 		("kilt.io/%3ctag%3e/encoded_lower_case_ascii.com", true),
 	];
 
 	test_cases.iter().for_each(|(input, expected_result)| {
 		assert_eq!(
-			is_valid_ascii_url(input),
+			is_valid_ascii_string(input),
 			*expected_result,
 			"Test case for \"{}\" returned wrong result.",
 			input

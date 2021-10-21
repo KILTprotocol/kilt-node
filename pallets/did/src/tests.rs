@@ -588,6 +588,93 @@ fn check_max_limit_service_url_length_did_creation() {
 		});
 }
 
+#[test]
+fn check_invalid_service_id_character_did_creation() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let new_service_details = DidEndpointDetails::<Test> {
+		phantom_data: None,
+		id: "å".bytes().collect(),
+		service_type: vec![b"type".to_vec()],
+		url: vec![b"url".to_vec()]
+	};
+	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
+	details.new_service_details = vec![new_service_details];
+
+	let signature = auth_key.sign(details.encode().as_ref());
+
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
+				did::Error::<Test>::InvalidUrlEncoding
+			);
+		});
+}
+
+#[test]
+fn check_invalid_service_type_character_did_creation() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let new_service_details = DidEndpointDetails::<Test> {
+		phantom_data: None,
+		id: b"id".to_vec(),
+		service_type: vec!["å".bytes().collect()],
+		url: vec![b"url".to_vec()]
+	};
+	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
+	details.new_service_details = vec![new_service_details];
+
+	let signature = auth_key.sign(details.encode().as_ref());
+
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
+				did::Error::<Test>::InvalidUrlEncoding
+			);
+		});
+}
+
+#[test]
+fn check_invalid_service_url_character_did_creation() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let new_service_details = DidEndpointDetails::<Test> {
+		phantom_data: None,
+		id: b"id".to_vec(),
+		service_type: vec![b"type".to_vec()],
+		url: vec!["å".bytes().collect()]
+	};
+	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
+	details.new_service_details = vec![new_service_details];
+
+	let signature = auth_key.sign(details.encode().as_ref());
+
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
+				did::Error::<Test>::InvalidUrlEncoding
+			);
+		});
+}
+
 // updates
 
 #[test]
@@ -1797,6 +1884,78 @@ fn check_max_service_url_count_addition_error() {
 			assert_noop!(
 				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_endpoint),
 				did::Error::<Test>::MaxUrlCountExceeded
+			);
+		});
+}
+
+#[test]
+fn check_invalid_service_id_character_addition_error() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let new_service_details = DidEndpointDetails::<Test> {
+		phantom_data: None,
+		id: "å".bytes().collect(),
+		service_type: vec![b"type".to_vec()],
+		url: vec![b"url".to_vec()]
+	};
+
+	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+
+	ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_details),
+				did::Error::<Test>::InvalidUrlEncoding
+			);
+		});
+}
+
+#[test]
+fn check_invalid_service_type_character_addition_error() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let new_service_details = DidEndpointDetails::<Test> {
+		phantom_data: None,
+		id: b"id".to_vec(),
+		service_type: vec!["å".bytes().collect()],
+		url: vec![b"url".to_vec()]
+	};
+
+	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+
+	ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_details),
+				did::Error::<Test>::InvalidUrlEncoding
+			);
+		});
+}
+
+#[test]
+fn check_invalid_service_url_character_addition_error() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let new_service_details = DidEndpointDetails::<Test> {
+		phantom_data: None,
+		id: b"id".to_vec(),
+		service_type: vec![b"url".to_vec()],
+		url: vec!["å".bytes().collect()]
+	};
+
+	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+
+	ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_details),
+				did::Error::<Test>::InvalidUrlEncoding
 			);
 		});
 }

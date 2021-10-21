@@ -46,8 +46,7 @@ pub struct DidEndpointDetails<T: Config> {
 pub mod utils {
 	use super::*;
 	use crate::InputError;
-	use codec::Input;
-use frame_support::{ensure, traits::Get};
+	use frame_support::{ensure, traits::Get};
 	use sp_runtime::traits::SaturatedConversion;
 
 	pub(crate) fn validate_new_service_endpoints<T: Config>(
@@ -86,7 +85,7 @@ use frame_support::{ensure, traits::Get};
 			InputError::MaxIdLengthExceeded
 		);
 		let str_id = str::from_utf8(&endpoint.id).map_err(|_| InputError::InvalidUrlEncoding)?;
-		ensure!(crate_utils::is_valid_ascii_url(str_id), InputError::InvalidUrlEncoding);
+		ensure!(crate_utils::is_valid_ascii_string(str_id), InputError::InvalidUrlEncoding);
 		// Check that all types are the maximum allowed length and only contain ASCII characters.
 		endpoint.service_type.iter().try_for_each(|s_type| {
 			ensure!(
@@ -94,7 +93,7 @@ use frame_support::{ensure, traits::Get};
 				InputError::MaxTypeLengthExceeded
 			);
 			let str_type = str::from_utf8(s_type).map_err(|_| InputError::InvalidUrlEncoding)?;
-			ensure!(crate_utils::is_valid_ascii_url(str_type), InputError::InvalidUrlEncoding);
+			ensure!(crate_utils::is_valid_ascii_string(str_type), InputError::InvalidUrlEncoding);
 			Ok(())
 		})?;
 		// Check that all URLs are the maximum allowed length AND only contain ASCII characters.
@@ -104,7 +103,7 @@ use frame_support::{ensure, traits::Get};
 				InputError::MaxUrlLengthExceeded
 			);
 			let str_url = str::from_utf8(s_url).map_err(|_| InputError::InvalidUrlEncoding)?;
-			ensure!(crate_utils::is_valid_ascii_url(str_url), InputError::InvalidUrlEncoding);
+			ensure!(crate_utils::is_valid_ascii_string(str_url), InputError::InvalidUrlEncoding);
 			Ok(())
 		})?;
 		Ok(())
