@@ -19,6 +19,7 @@
 use codec::{Decode, Encode};
 use frame_support::dispatch::Weight;
 use kilt_support::traits::VersionMigratorTrait;
+use scale_info::TypeInfo;
 use sp_runtime::traits::Zero;
 use sp_std::marker::PhantomData;
 
@@ -27,7 +28,7 @@ use crate::*;
 mod v2;
 
 /// Storage version of the DID pallet.
-#[derive(Copy, Clone, Encode, Eq, Decode, Ord, PartialEq, PartialOrd)]
+#[derive(Copy, Clone, Encode, Eq, Decode, Ord, PartialEq, PartialOrd, TypeInfo)]
 pub enum DidStorageVersion {
 	V1,
 	V2,

@@ -26,6 +26,7 @@
 use std::sync::Arc;
 
 use kilt_primitives::{AccountId, Balance, Block, Index};
+use polkadot_service::AuxStore;
 use sc_service::Error;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
@@ -48,12 +49,13 @@ pub struct FullDeps<C, P> {
 pub fn create_full<C, P>(deps: FullDeps<C, P>) -> Result<jsonrpc_core::IoHandler<sc_rpc::Metadata>, Error>
 where
 	C: ProvideRuntimeApi<Block>,
+	C: AuxStore,
 	C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError> + 'static,
 	C: Send + Sync + 'static,
 	C::Api: frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: BlockBuilder<Block>,
-	P: TransactionPool + 'static,
+	P: TransactionPool + Sync + Send + 'static,
 {
 	use frame_rpc_system::{FullSystem, SystemApi};
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};

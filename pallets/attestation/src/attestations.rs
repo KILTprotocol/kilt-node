@@ -20,11 +20,13 @@ use codec::{Decode, Encode};
 use ctype::CtypeHashOf;
 use delegation::DelegationNodeIdOf;
 use kilt_support::deposit::Deposit;
+use scale_info::TypeInfo;
 
 use crate::{AccountIdOf, AttesterOf, BalanceOf, Config};
 
 /// An on-chain attestation written by an attester.
-#[derive(Clone, Debug, Encode, Decode, PartialEq)]
+#[derive(Clone, Debug, Encode, Decode, PartialEq, TypeInfo)]
+#[scale_info(skip_type_params(T))]
 pub struct AttestationDetails<T: Config> {
 	/// The hash of the CType used for this attestation.
 	pub ctype_hash: CtypeHashOf<T>,

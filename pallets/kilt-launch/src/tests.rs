@@ -52,27 +52,34 @@ fn check_build_genesis_config() {
 			assert_eq!(Balances::reserved_balance(&PSEUDO_3), 0);
 
 			// Check vesting
-			let pseudo_1_vesting = VestingInfo {
-				locked: 10_000,
-				// Vesting over 10 blocks
-				per_block: 1000,
-				starting_block: 0,
-			};
-			let pseudo_2_vesting = VestingInfo {
-				locked: 10_000,
-				// Vesting over 20 blocks
-				per_block: 500,
-				starting_block: 0,
-			};
-			let pseudo_3_vesting = VestingInfo {
-				locked: 300_000,
-				// Vesting over 20 blocks
-				per_block: 10_000,
-				starting_block: 0,
-			};
-			assert_eq!(Vesting::vesting(&PSEUDO_1), Some(pseudo_1_vesting));
-			assert_eq!(Vesting::vesting(&PSEUDO_2), Some(pseudo_2_vesting));
-			assert_eq!(Vesting::vesting(&PSEUDO_3), Some(pseudo_3_vesting));
+
+			// Vesting over 10 blocks
+			let pseudo_1_vesting = VestingInfo::new(10_000, 1000, 0);
+			// Vesting over 20 blocks
+			let pseudo_2_vesting = VestingInfo::new(10_000, 500, 0);
+			// Vesting over 20 blocks
+			let pseudo_3_vesting = VestingInfo::new(300_000, 10_000, 0);
+			assert_eq!(
+				Vesting::vesting(&PSEUDO_1)
+					.expect("Missing vesting info")
+					.into_inner()
+					.get(0),
+				Some(&pseudo_1_vesting)
+			);
+			assert_eq!(
+				Vesting::vesting(&PSEUDO_2)
+					.expect("Missing vesting info")
+					.into_inner()
+					.get(0),
+				Some(&pseudo_2_vesting)
+			);
+			assert_eq!(
+				Vesting::vesting(&PSEUDO_3)
+					.expect("Missing vesting info")
+					.into_inner()
+					.get(0),
+				Some(&pseudo_3_vesting)
+			);
 
 			// Check balance locks
 			let pseudo_1_lock = LockedBalance::<Test> {
@@ -397,11 +404,8 @@ fn check_migrate_single_account_vested() {
 			Error::<Test>::NotUnownedAccount
 		);
 
-		let user_vesting_schedule = VestingInfo {
-			locked: 10_000,
-			per_block: 1000, // Vesting over 10 blocks
-			starting_block: 0,
-		};
+		// Vesting over 10 blocks
+		let user_vesting_schedule = VestingInfo::new(10_000, 1000, 0);
 
 		// Migration of vesting info and balance locks
 		ensure_single_migration_works(&PSEUDO_1, &USER, Some(user_vesting_schedule), None);
@@ -416,7 +420,7 @@ fn check_migrate_single_account_vested() {
 		assert_ok!(Balances::transfer(
 			Origin::signed(USER),
 			PSEUDO_1,
-			user_vesting_schedule.locked - user_vesting_schedule.per_block
+			user_vesting_schedule.locked() - user_vesting_schedule.per_block()
 		));
 	});
 }
@@ -425,32 +429,36 @@ fn check_migrate_single_account_vested() {
 fn check_migrate_single_account_twice_vested() {
 	ExtBuilder::default().pseudos_vest_all().build().execute_with(|| {
 		// Migration of vesting info from pseudo_1 to user_1
-		let mut user_vesting_schedule = VestingInfo {
-			locked: 10_000,
-			per_block: 1000, // Vesting over 10 blocks
-			starting_block: 0,
-		};
+		// Vesting over 10 blocks
+		let mut user_vesting_schedule = VestingInfo::new(10_000, 1000, 0);
 		ensure_single_migration_works(&PSEUDO_1, &USER, Some(user_vesting_schedule), None);
 
 		// Migration of vesting info from pseudo_2 with different vesting period to
 		// user_1
-		user_vesting_schedule = VestingInfo {
-			locked: user_vesting_schedule.locked + 10_000,
-			per_block: user_vesting_schedule.per_block + 500, // Vesting over 10 blocks
-			starting_block: 0,
-		};
+		// Vesting over 10 blocks
+		user_vesting_schedule = VestingInfo::new(
+			user_vesting_schedule.locked() + 10_000,
+			user_vesting_schedule.per_block() + 500,
+			0,
+		);
 		ensure_single_migration_works(&PSEUDO_2, &USER, Some(user_vesting_schedule), None);
 
 		// Reach first vesting limit
 		System::set_block_number(10);
 		assert_ok!(Vesting::vest(Origin::signed(USER)));
-		assert_eq!(Vesting::vesting(&USER), Some(user_vesting_schedule));
+		assert_eq!(
+			Vesting::vesting(&USER)
+				.expect("Missing vesting info")
+				.into_inner()
+				.get(0),
+			Some(&user_vesting_schedule)
+		);
 		assert_eq!(Locks::<Test>::get(&USER).len(), 1);
 		assert_balance(
 			USER,
-			user_vesting_schedule.locked,
-			user_vesting_schedule.locked,
-			user_vesting_schedule.locked - 500 * 10,
+			user_vesting_schedule.locked(),
+			user_vesting_schedule.locked(),
+			user_vesting_schedule.locked() - 500 * 10,
 			false,
 		);
 
@@ -462,9 +470,9 @@ fn check_migrate_single_account_twice_vested() {
 		// Should be able to transfer the remaining tokens
 		assert_balance(
 			USER,
-			user_vesting_schedule.locked,
-			user_vesting_schedule.locked,
-			user_vesting_schedule.locked,
+			user_vesting_schedule.locked(),
+			user_vesting_schedule.locked(),
+			user_vesting_schedule.locked(),
 			true,
 		);
 	});
@@ -496,14 +504,16 @@ fn check_migrate_accounts_vested() {
 			USER
 		));
 
-		let vesting_info = VestingInfo {
-			locked: 10_000 + 10_000 + 300_000,
-			per_block: 10_000 / 10 + 10_000 / 20 + 300_000 / 30,
-			starting_block: 0,
-		};
+		let vesting_info = VestingInfo::new(10_000 + 10_000 + 300_000, 10_000 / 10 + 10_000 / 20 + 300_000 / 30, 0);
 
 		// Check vesting info migration
-		assert_eq!(Vesting::vesting(&USER), Some(vesting_info));
+		assert_eq!(
+			Vesting::vesting(&USER)
+				.expect("Missing vesting info")
+				.into_inner()
+				.get(0),
+			Some(&vesting_info)
+		);
 
 		// Check correct setting of lock
 		let balance_locks = Locks::<Test>::get(&USER);
@@ -511,7 +521,7 @@ fn check_migrate_accounts_vested() {
 		for BalanceLock { id, amount, reasons } in balance_locks {
 			match id {
 				crate::VESTING_ID => {
-					assert_eq!(amount, vesting_info.locked - vesting_info.per_block);
+					assert_eq!(amount, vesting_info.locked() - vesting_info.per_block());
 					assert_eq!(reasons, Reasons::Misc);
 				}
 				_ => panic!("Unexpected balance lock id {:?}", id),
@@ -521,9 +531,9 @@ fn check_migrate_accounts_vested() {
 		// Check balance migration
 		assert_balance(
 			USER,
-			vesting_info.locked,
-			vesting_info.locked,
-			vesting_info.per_block,
+			vesting_info.locked(),
+			vesting_info.locked(),
+			vesting_info.per_block(),
 			false,
 		);
 
@@ -537,16 +547,22 @@ fn check_migrate_accounts_vested() {
 				Locks::<Test>::get(USER),
 				vec![BalanceLock {
 					id: VESTING_ID,
-					amount: vesting_info.locked - vesting_info.per_block * (*block as u128),
+					amount: vesting_info.locked() - vesting_info.per_block() * (*block as u128),
 					reasons: Reasons::Misc
 				}]
 			);
-			assert_eq!(Vesting::vesting(&USER), Some(vesting_info));
+			assert_eq!(
+				Vesting::vesting(&USER)
+					.expect("Missing vesting info")
+					.into_inner()
+					.get(0),
+				Some(&vesting_info)
+			);
 			assert_balance(
 				USER,
-				vesting_info.locked,
-				vesting_info.locked,
-				vesting_info.per_block * (*block as u128),
+				vesting_info.locked(),
+				vesting_info.locked(),
+				vesting_info.per_block() * (*block as u128),
 				false,
 			);
 		}
@@ -577,12 +593,8 @@ fn check_negative_migrate_accounts_vested() {
 		);
 
 		// Set up vesting with conflicting start block
-		let pseudo_4_vesting = VestingInfo {
-			locked: 10_000,
-			per_block: 1,
-			starting_block: 1,
-		};
-		VestingStorage::<Test>::insert(PSEUDO_4, pseudo_4_vesting);
+		let pseudo_4_vesting = VestingInfo::new(10_000, 1, 1);
+		assert_ok!(VestingStorage::<Test>::try_append(PSEUDO_4, pseudo_4_vesting));
 		assert_noop!(
 			KiltLaunch::migrate_multiple_genesis_accounts(
 				Origin::signed(TRANSFER_ACCOUNT),
