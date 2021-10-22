@@ -25,9 +25,9 @@ use kilt_primitives::{
 	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use peregrine_runtime::{
-	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake,
-	ParachainInfoConfig, ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig,
-	VestingConfig, WASM_BINARY,
+	BalancesConfig, CouncilConfig, CrowdloanContributorsConfig, GenesisConfig, InflationInfo, KiltLaunchConfig,
+	MinCollatorStake, ParachainInfoConfig, ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig,
+	TechnicalCommitteeConfig, VestingConfig, WASM_BINARY,
 };
 use sc_service::ChainType;
 use sp_core::{crypto::UncheckedInto, sr25519};
@@ -37,6 +37,8 @@ use crate::chain_spec::{get_account_id_from_seed, get_from_seed, get_properties,
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;
+
+const TRANSFER_ACCOUNT: [u8; 32] = hex!["6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c"];
 
 pub fn make_dev_spec(id: ParaId) -> Result<ChainSpec, String> {
 	let properties = get_properties("PILT", 15, 38);
@@ -198,6 +200,9 @@ fn testnet_genesis(
 				.chain(botlabs_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
 				.collect(),
 		},
+		crowdloan_contributors: CrowdloanContributorsConfig {
+			registrar_account: TRANSFER_ACCOUNT.into(),
+		},
 		sudo: SudoConfig { key: root_key },
 		parachain_info: ParachainInfoConfig { parachain_id: id },
 		kilt_launch: KiltLaunchConfig {
@@ -211,7 +216,7 @@ fn testnet_genesis(
 				.cloned()
 				.map(|(who, amount, _, locking_length)| (who, locking_length, amount))
 				.collect(),
-			transfer_account: hex!["6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c"].into(),
+			transfer_account: TRANSFER_ACCOUNT.into(),
 		},
 		vesting: VestingConfig {
 			vesting: botlabs_accounts

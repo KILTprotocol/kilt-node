@@ -9,12 +9,14 @@ substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branc
 
 [dependencies]
 bitflags = {default-features = false, version = "1.3.2"}
+hex-literal = {version = "0.3.1"}
 log = {default-features = false, version = "0.4.14"}
 scale-info = { version = "1.0", default-features = false, features = ["derive"] }
 serde = {features = ["derive"], optional = true, version = "1.0"}
 
 # kilt functionality
 attestation = {default-features = false, path = "../../pallets/attestation"}
+crowdloan = {default-features = false, path = "../../pallets/crowdloan"}
 ctype = {default-features = false, path = "../../pallets/ctype"}
 delegation = {default-features = false, path = "../../pallets/delegation"}
 did = {default-features = false, path = "../../pallets/did"}
@@ -28,7 +30,6 @@ pallet-vesting = {git = "https://github.com/paritytech/substrate", default-featu
 # Benchmarking
 frame-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.11"}
 frame-system-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.11"}
-hex-literal = {version = "0.3.1", optional = true}
 
 # Substrate
 codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.3.1"}
@@ -69,6 +70,7 @@ frame-try-runtime = {git = "https://github.com/paritytech/substrate", default-fe
 default = ["std"]
 runtime-benchmarks = [
   "attestation/runtime-benchmarks",
+  "crowdloan/runtime-benchmarks",
   "ctype/runtime-benchmarks",
   "delegation/runtime-benchmarks",
   "did/runtime-benchmarks",
@@ -76,7 +78,6 @@ runtime-benchmarks = [
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "frame-system-benchmarking",
-  "hex-literal",
   "kilt-launch/runtime-benchmarks",
   "kilt-primitives/runtime-benchmarks",
   "kilt-support",
@@ -90,6 +91,7 @@ runtime-benchmarks = [
 std = [
   "attestation/std",
   "codec/std",
+  "crowdloan/std",
   "ctype/std",
   "delegation/std",
   "did/std",
@@ -132,6 +134,7 @@ std = [
 try-runtime = [
   "attestation/try-runtime",
   "delegation/try-runtime",
+  "crowdloan/try-runtime",
   "ctype/try-runtime",
   "did/try-runtime",
   "frame-executive/try-runtime",

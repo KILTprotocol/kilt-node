@@ -1341,6 +1341,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "crowdloan"
+version = "0.26.2"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "kilt-primitives",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-io",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-std",
+ "substrate-wasm-builder-runner",
+]
+
+[[package]]
 name = "crunchy"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4531,6 +4550,7 @@ version = "1.0.0"
 dependencies = [
  "attestation",
  "bitflags",
+ "crowdloan",
  "ctype",
  "delegation",
  "did",
@@ -6514,6 +6534,7 @@ name = "peregrine-runtime"
 version = "1.0.0"
 dependencies = [
  "attestation",
+ "crowdloan",
  "ctype",
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
@@ -10764,6 +10785,7 @@ name = "spiritnet-runtime"
 version = "1.0.0"
 dependencies = [
  "attestation",
+ "crowdloan",
  "ctype",
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",

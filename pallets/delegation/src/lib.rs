@@ -96,7 +96,6 @@ use frame_support::{
 	pallet_prelude::Weight,
 	traits::{Get, ReservableCurrency},
 };
-use kilt_support::deposit::Deposit;
 use sp_runtime::{
 	traits::{Hash, Zero},
 	DispatchError,

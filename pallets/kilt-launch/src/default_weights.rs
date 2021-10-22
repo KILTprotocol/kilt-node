@@ -28,7 +28,7 @@
 // --chain=spiritnet-dev
 // --steps=50
 // --repeat=20
-// --pallet=kilt-launch
+// --pallet=kilt_launch
 // --extrinsic=*
 // --execution=wasm
 // --wasm-execution=compiled

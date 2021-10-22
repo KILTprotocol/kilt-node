@@ -27,6 +27,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use frame_system::EnsureRoot;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::EnsureSigned;
 
@@ -121,7 +122,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 2800,
+	spec_version: 2900,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -529,6 +530,7 @@ construct_runtime!(
 		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 33,
 		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
 		Utility: pallet_utility::{Pallet, Call, Storage, Event} = 35,
+		CrowdloanContributors: crowdloan::{Pallet, Call, Storage, Event<T>, Config<T>} = 36,
 	}
 );
 
@@ -554,6 +556,13 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	fn get_call_for_did_call_benchmark() -> Self {
 		Call::System(frame_system::Call::remark { remark: vec![] })
 	}
+}
+
+impl crowdloan::Config for Runtime {
+	type Currency = Balances;
+	type EnsureRegistrarOrigin = EnsureRoot<AccountId>;
+	type Event = Event;
+	type WeightInfo = ();
 }
 
 /// The address format for describing accounts.
@@ -736,6 +745,7 @@ impl_runtime_apis! {
 
 			list_benchmark!(list, extra, did, Did);
 			list_benchmark!(list, extra, ctype, Ctype);
+			list_benchmark!(list, extra, crowdloan, CrowdloanContributors);
 			list_benchmark!(list, extra, delegation, Delegation);
 			list_benchmark!(list, extra, attestation, Attestation);
 
@@ -783,6 +793,7 @@ impl_runtime_apis! {
 
 			add_benchmark!(params, batches, did, Did);
 			add_benchmark!(params, batches, ctype, Ctype);
+			add_benchmark!(params, batches, crowdloan, CrowdloanContributors);
 			add_benchmark!(params, batches, delegation, Delegation);
 			add_benchmark!(params, batches, attestation, Attestation);
 
