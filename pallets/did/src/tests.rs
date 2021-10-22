@@ -247,8 +247,8 @@ fn check_successful_complete_creation() {
 			// ... and that the number of elements in the creation operation is the same as
 			// the number of elements stored.
 			assert_eq!(
-				did::pallet::ServiceEndpoints::<Test>::iter_prefix(&alice_did).count(),
-				details.new_service_details.len()
+				did::pallet::DidEndpointsCount::<Test>::get(&alice_did).unwrap_or_default(),
+				details.new_service_details.len().saturated_into::<u32>()
 			);
 
 			assert_eq!(
@@ -1602,6 +1602,8 @@ fn check_key_not_found_key_agreement_key_deletion_error() {
 		});
 }
 
+// add_service_endpoint
+
 #[test]
 fn check_service_addition_no_prior_service_successful() {
 	let auth_key = get_ed25519_authentication_key(true);
@@ -1621,6 +1623,7 @@ fn check_service_addition_no_prior_service_successful() {
 			let stored_endpoint = did::pallet::ServiceEndpoints::<Test>::get(&alice_did, &new_service_endpoint.id)
 				.expect("Service endpoint should be stored.");
 			assert_eq!(stored_endpoint, new_service_endpoint);
+			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did).unwrap_or_default(), 1);
 		});
 }
 
@@ -1651,9 +1654,7 @@ fn check_service_addition_one_from_full_successful() {
 				new_service_endpoint.clone()
 			),);
 			assert_eq!(
-				did::pallet::ServiceEndpoints::<Test>::iter_prefix(&alice_did)
-					.count()
-					.saturated_into::<u32>(),
+				did::pallet::DidEndpointsCount::<Test>::get(&alice_did).unwrap_or_default(),
 				<Test as did::Config>::MaxNumberOfServicesPerDid::get()
 			);
 			let stored_endpoint = did::pallet::ServiceEndpoints::<Test>::get(&alice_did, &new_service_endpoint.id)
@@ -1924,8 +1925,11 @@ fn check_invalid_service_url_character_addition_error() {
 		});
 }
 
+// remove_service_endpoint
+
 #[test]
 fn check_service_deletion_successful() {
+	initialize_logger();
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let old_service_endpoint = DidEndpointDetails::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
@@ -1941,9 +1945,9 @@ fn check_service_deletion_successful() {
 				Origin::signed(alice_did.clone()),
 				old_service_endpoint.id
 			),);
-			assert_eq!(
-				did::pallet::ServiceEndpoints::<Test>::iter_prefix(&alice_did).count(),
-				0
+			// Counter should be deleted from the storage.
+			assert!(
+				did::pallet::DidEndpointsCount::<Test>::get(&alice_did).is_none()
 			);
 		});
 }
@@ -1993,7 +1997,7 @@ fn check_successful_deletion() {
 		.build(None)
 		.execute_with(|| {
 			assert_eq!(
-				did::pallet::ServiceEndpoints::<Test>::iter_prefix(&alice_did).count(),
+				did::pallet::DidEndpointsCount::<Test>::get(&alice_did).unwrap_or_default(),
 				1
 			);
 			assert_eq!(
@@ -2006,7 +2010,7 @@ fn check_successful_deletion() {
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 
 			assert_eq!(
-				did::pallet::ServiceEndpoints::<Test>::iter_prefix(&alice_did).count(),
+				did::pallet::DidEndpointsCount::<Test>::get(&alice_did).unwrap_or_default(),
 				0
 			);
 
@@ -2067,7 +2071,7 @@ fn check_successful_reclaiming() {
 		.build(None)
 		.execute_with(|| {
 			assert_eq!(
-				did::pallet::ServiceEndpoints::<Test>::iter_prefix(&alice_did).count(),
+				did::pallet::DidEndpointsCount::<Test>::get(&alice_did).unwrap_or_default(),
 				1
 			);
 			assert_eq!(
@@ -2082,7 +2086,7 @@ fn check_successful_reclaiming() {
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 			assert_eq!(
-				did::pallet::ServiceEndpoints::<Test>::iter_prefix(&alice_did).count(),
+				did::pallet::DidEndpointsCount::<Test>::get(&alice_did).unwrap_or_default(),
 				0
 			);
 

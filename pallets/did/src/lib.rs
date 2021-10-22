@@ -314,6 +314,9 @@ pub mod pallet {
 		DidEndpointDetails<T>,
 	>;
 
+	#[pallet::storage]
+	pub(crate) type DidEndpointsCount<T> = StorageMap<_, Blake2_128Concat, DidIdentifierOf<T>, u32>;
+
 	/// The set of DIDs that have been deleted and cannot therefore be created
 	/// again for security reasons.
 	///
@@ -556,6 +559,8 @@ pub mod pallet {
 				ServiceEndpoints::<T>::insert(&did_identifier, &service.id, service.clone());
 			});
 
+			DidEndpointsCount::<T>::insert(&did_identifier, input_service_endpoints.len().saturated_into::<u32>());
+
 			Self::deposit_event(Event::DidCreated(sender, did_identifier));
 
 			Ok(())
@@ -784,7 +789,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::weight(100_000)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::add_service_endpoint())]
 		pub fn add_service_endpoint(origin: OriginFor<T>, service_endpoint: DidEndpointDetails<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 
@@ -794,10 +799,11 @@ pub mod pallet {
 			// Verify that the DID is present.
 			ensure!(Did::<T>::get(&did_subject).is_some(), Error::<T>::DidNotPresent);
 
+			let currently_stored_endpoints_count = DidEndpointsCount::<T>::get(&did_subject).unwrap_or_default();
+
 			// Verify that there are less than the maximum limit of services stored.
 			ensure!(
-				ServiceEndpoints::<T>::iter_prefix(&did_subject).count()
-					< T::MaxNumberOfServicesPerDid::get().saturated_into(),
+				currently_stored_endpoints_count < T::MaxNumberOfServicesPerDid::get(),
 				Error::<T>::MaxNumberOfServicesPerDidExceeded
 			);
 
@@ -813,10 +819,12 @@ pub mod pallet {
 				},
 			)?;
 
+			DidEndpointsCount::<T>::insert(&did_subject, currently_stored_endpoints_count.saturating_add(1));
+
 			Ok(())
 		}
 
-		#[pallet::weight(100_000)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_service_endpoint())]
 		pub fn remove_service_endpoint(origin: OriginFor<T>, service_id: ServiceEndpointId<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 
@@ -824,6 +832,16 @@ pub mod pallet {
 				ServiceEndpoints::<T>::take(&did_subject, &service_id).is_some(),
 				Error::<T>::ServiceNotPresent
 			);
+
+			// Decrease the endpoints counter or delete the entry if it reaches 0
+			DidEndpointsCount::<T>::mutate_exists(&did_subject, |existing_endpoint_count| {
+				let new_value = existing_endpoint_count.unwrap_or_default().saturating_sub(1);
+				if new_value == 0u32 {
+					*existing_endpoint_count = None;
+				} else {
+					*existing_endpoint_count = Some(new_value);
+				}
+			});
 
 			Ok(())
 		}
@@ -1092,6 +1110,7 @@ impl<T: Config> Pallet<T> {
 		if let KillStorageResult::SomeRemaining(_) = storage_kill_result {
 			return Err(Error::<T>::InternalError.into());
 		};
+		DidEndpointsCount::<T>::remove(&did_subject);
 		kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&did_entry.deposit);
 		// Mark as deleted to prevent potential replay-attacks of re-adding a previously
 		// deleted DID.

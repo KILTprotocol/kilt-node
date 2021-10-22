@@ -472,6 +472,7 @@ impl ExtBuilder {
 				for endpoint in endpoints.iter() {
 					did::ServiceEndpoints::<Test>::insert(&did, &endpoint.id, endpoint)
 				}
+				did::DidEndpointsCount::<Test>::insert(&did, endpoints.len().saturated_into::<u32>());
 			}
 			did::StorageVersion::<Test>::set(self.storage_version);
 		});
