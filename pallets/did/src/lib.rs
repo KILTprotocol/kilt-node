@@ -499,7 +499,7 @@ pub mod pallet {
 
 			ed25519_weight.max(sr25519_weight).max(ecdsa_weight)
 		})]
-		pub fn create(origin: OriginFor<T>, details: DidCreationDetails<T>, signature: DidSignature) -> DispatchResult {
+		pub fn create(origin: OriginFor<T>, details: Box<DidCreationDetails<T>>, signature: DidSignature) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
 			ensure!(sender == details.submitter, BadOrigin);
@@ -535,7 +535,7 @@ pub mod pallet {
 				.map_err(Error::<T>::from)?;
 
 			let did_entry =
-				DidDetails::from_creation_details(details, account_did_auth_key).map_err(Error::<T>::from)?;
+				DidDetails::from_creation_details(*details, account_did_auth_key).map_err(Error::<T>::from)?;
 
 			// *** No Fail beyond this call ***
 			CurrencyOf::<T>::reserve(&did_entry.deposit.owner, did_entry.deposit.amount)?;

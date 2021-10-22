@@ -148,7 +148,7 @@ benchmarks! {
 		did_creation_details.new_service_details = service_endpoints.clone();
 
 		let did_creation_signature = ed25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_creation_details.encode().as_ref()).expect("Failed to create DID signature from raw ed25519 signature.");
-	}: create(RawOrigin::Signed(submitter), did_creation_details.clone(), DidSignature::from(did_creation_signature))
+	}: create(RawOrigin::Signed(submitter), Box::new(did_creation_details.clone()), DidSignature::from(did_creation_signature))
 	verify {
 		let stored_did = Did::<T>::get(&did_subject).expect("New DID should be stored on chain.");
 		let stored_key_agreement_keys_ids = stored_did.key_agreement_keys;
@@ -212,7 +212,7 @@ benchmarks! {
 		did_creation_details.new_service_details = service_endpoints.clone();
 
 		let did_creation_signature = sr25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_creation_details.encode().as_ref()).expect("Failed to create DID signature from raw sr25519 signature.");
-	}: create(RawOrigin::Signed(submitter), did_creation_details.clone(), DidSignature::from(did_creation_signature))
+	}: create(RawOrigin::Signed(submitter), Box::new(did_creation_details.clone()), DidSignature::from(did_creation_signature))
 	verify {
 		let stored_did = Did::<T>::get(&did_subject).expect("New DID should be stored on chain.");
 		let stored_key_agreement_keys_ids = stored_did.key_agreement_keys;
@@ -276,7 +276,7 @@ benchmarks! {
 		did_creation_details.new_service_details = service_endpoints.clone();
 
 		let did_creation_signature = ecdsa_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_creation_details.encode().as_ref()).expect("Failed to create DID signature from raw ecdsa signature.");
-	}: create(RawOrigin::Signed(submitter), did_creation_details.clone(), DidSignature::from(did_creation_signature))
+	}: create(RawOrigin::Signed(submitter), Box::new(did_creation_details.clone()), DidSignature::from(did_creation_signature))
 	verify {
 		let stored_did = Did::<T>::get(&did_subject).expect("New DID should be stored on chain.");
 		let stored_key_agreement_keys_ids = stored_did.key_agreement_keys;
