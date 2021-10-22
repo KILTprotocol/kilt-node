@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 pub mod attestation;
+pub mod crowdloan;
 pub mod ctype;
 pub mod delegation;
 pub mod did;

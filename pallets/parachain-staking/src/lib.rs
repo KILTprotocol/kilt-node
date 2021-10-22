@@ -193,6 +193,7 @@ pub mod pallet {
 	use kilt_primitives::constants::BLOCKS_PER_YEAR;
 	use pallet_balances::{BalanceLock, Locks};
 	use pallet_session::ShouldEndSession;
+	use scale_info::TypeInfo;
 	use sp_runtime::{
 		traits::{Convert, One, SaturatedConversion, Saturating, StaticLookup, Zero},
 		Permill, Perquintill,
@@ -244,7 +245,8 @@ pub mod pallet {
 			+ From<u64>
 			+ From<u128>
 			+ Into<<Self as pallet_balances::Config>::Balance>
-			+ From<<Self as pallet_balances::Config>::Balance>;
+			+ From<<Self as pallet_balances::Config>::Balance>
+			+ TypeInfo;
 
 		/// Minimum number of blocks validation rounds can last.
 		#[pallet::constant]

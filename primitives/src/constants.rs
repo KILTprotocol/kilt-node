@@ -75,6 +75,9 @@ pub const INFLATION_CONFIG: (Perquintill, Perquintill, Perquintill, Perquintill)
 	Perquintill::from_percent(8),
 );
 
+/// Copied from Kusama & Polkadot runtime
+pub const MAX_VESTING_SCHEDULES: u32 = 28;
+
 pub mod attestation {
 	use super::*;
 

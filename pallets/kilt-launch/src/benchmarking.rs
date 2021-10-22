@@ -22,6 +22,7 @@ use super::*;
 use crate::{BalanceLocks, BalanceOf, LockedBalance, Pallet as KiltLaunch, UnownedAccount, KILT_LAUNCH_ID};
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, vec, whitelist_account, Zero};
 use frame_support::{
+	assert_ok,
 	inherent::Vec,
 	traits::{Currency, Get},
 };
@@ -89,14 +90,10 @@ where
 		UnownedAccount::<T>::insert(&lock_acc, ());
 
 		// Set vesting info by mocking the Pallet's GenesisBuild
-		Vesting::<T>::insert(
+		assert_ok!(Vesting::<T>::try_append(
 			&vest_acc,
-			VestingInfo::<BalanceOf<T>, T::BlockNumber> {
-				locked: AMOUNT.into(),
-				per_block: PER_BLOCK.into(),
-				starting_block: T::BlockNumber::zero(),
-			},
-		);
+			VestingInfo::<BalanceOf<T>, T::BlockNumber>::new(AMOUNT.into(), PER_BLOCK.into(), T::BlockNumber::zero()),
+		));
 		// Set locking info by mocking the Pallet's GenesisBuild
 		BalanceLocks::<T>::insert(
 			&lock_acc,
@@ -198,11 +195,8 @@ benchmarks! {
 	verify {
 		assert!(UnownedAccount::<T>::get(&source).is_none());
 		assert!(!Vesting::<T>::contains_key(source), "Vesting schedule not removed");
-		assert_eq!(Vesting::<T>::get(&target), Some(VestingInfo::<BalanceOf<T>, T::BlockNumber> {
-			locked: AMOUNT.into(),
-			per_block: PER_BLOCK.into(),
-			starting_block: T::BlockNumber::zero(),
-		}), "Vesting schedule not migrated");
+		let expected_vesting = VestingInfo::<BalanceOf<T>, T::BlockNumber>::new(AMOUNT.into(), PER_BLOCK.into(), T::BlockNumber::zero());
+		assert_eq!(Vesting::<T>::get(&target).expect("Missing vesting info").into_inner().get(0), Some(&expected_vesting), "Vesting schedule not migrated");
 		assert_eq!(Locks::<T>::get(&target).len(), 1, "Lock not set");
 	}
 
@@ -234,11 +228,11 @@ benchmarks! {
 		let source_lookups: Vec<<T::Lookup as StaticLookup>::Source> = s.into_iter().map(|(_, lookup)| lookup).collect();
 	}: migrate_multiple_genesis_accounts(RawOrigin::Signed(transfer), source_lookups, target_lookup)
 	verify {
-		assert_eq!(Vesting::<T>::get(&target), Some(VestingInfo::<BalanceOf<T>, T::BlockNumber> {
-			locked: (n as u128 * AMOUNT).into(),
-			per_block: (n * PER_BLOCK).into(),
-			starting_block: T::BlockNumber::zero(),
-		}), "Vesting schedule not migrated");
+		assert_eq!(Vesting::<T>::get(&target).expect("Missing vesting info").into_inner().get(0), Some(&VestingInfo::<BalanceOf<T>, T::BlockNumber>::new(
+			(n as u128 * AMOUNT).into(),
+			(n * PER_BLOCK).into(),
+			T::BlockNumber::zero(),
+		)), "Vesting schedule not migrated");
 		assert_eq!(Locks::<T>::get(&target).len(), 1, "Lock not set");
 	}
 

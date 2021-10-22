@@ -16,6 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+#[cfg(test)]
+use crate::{AccountIdOf, BalanceOf, Ctypes};
+use crate::{Config, CtypeHashOf};
 use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 use kilt_primitives::Balance;
 use sp_core::H256;
@@ -23,9 +26,6 @@ use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 };
-
-use crate as ctype;
-use crate::*;
 
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
@@ -40,7 +40,7 @@ frame_support::construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
+		Ctype: crate::{Pallet, Call, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 	}
 );
@@ -163,7 +163,7 @@ impl ExtBuilder {
 
 		ext.execute_with(|| {
 			for (ctype_hash, owner) in self.ctypes_stored.iter() {
-				ctype::Ctypes::<Test>::insert(ctype_hash, owner);
+				Ctypes::<Test>::insert(ctype_hash, owner);
 			}
 		});
 

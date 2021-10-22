@@ -20,8 +20,8 @@
 
 use kilt_primitives::{constants::BLOCKS_PER_YEAR, AccountId, AccountPublic, Balance, BlockNumber};
 use mashnet_node_runtime::{
-	BalancesConfig, GenesisConfig, KiltLaunchConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig,
-	WASM_BINARY,
+	BalancesConfig, CrowdloanContributorsConfig, GenesisConfig, KiltLaunchConfig, SessionConfig, SudoConfig,
+	SystemConfig, VestingConfig, WASM_BINARY,
 };
 
 use hex_literal::hex;
@@ -92,6 +92,7 @@ const DEV_AUTH_ALICE: [u8; 32] = hex!("d44da634611d9c26837e3b5114a7d460a4cb7d688
 const DEV_AUTH_BOB: [u8; 32] = hex!("06815321f16a5ae0fe246ee19285f8d8858fe60d5c025e060922153fcf8e54f9");
 const DEV_AUTH_CHARLIE: [u8; 32] = hex!("6d2d775fdc628134e3613a766459ccc57a29fd380cd410c91c6c79bc9c03b344");
 const DEV_FAUCET: [u8; 32] = hex!("2c9e9c40e15a2767e2d04dc1f05d824dd76d1d37bada3d7bb1d40eca29f3a4ff");
+const TRANSFER_ACCOUNT: [u8; 32] = hex!("6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c");
 
 impl Alternative {
 	/// Get an actual chain config from one of the alternatives.
@@ -261,7 +262,10 @@ fn testnet_genesis(
 				.cloned()
 				.map(|(who, amount, vesting_length, _)| (who, vesting_length * BLOCKS_PER_YEAR / 12, amount))
 				.collect(),
-			transfer_account: hex!["6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c"].into(),
+			transfer_account: TRANSFER_ACCOUNT.into(),
+		},
+		crowdloan_contributors: CrowdloanContributorsConfig {
+			registrar_account: TRANSFER_ACCOUNT.into(),
 		},
 		vesting: VestingConfig { vesting: vec![] },
 	}
