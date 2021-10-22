@@ -21,47 +21,50 @@ use codec::{Decode, Encode};
 use crate::*;
 use kilt_primitives::Hash;
 
+use scale_info::TypeInfo;
 use sp_std::vec::Vec;
 
 type UrlPayload = Vec<u8>;
 
 /// Supported URLs.
-#[derive(Clone, Decode, Encode, PartialEq)]
+#[derive(Clone, Decode, Encode, PartialEq, TypeInfo)]
 pub(crate) enum Url {
 	Http(HttpUrl),
 	Ftp(FtpUrl),
 	Ipfs(IpfsUrl),
 }
 
-#[derive(Clone, Decode, Encode, PartialEq)]
+#[derive(Clone, Decode, Encode, PartialEq, TypeInfo)]
 pub(crate) struct IpfsUrl {
 	pub(crate) payload: UrlPayload,
 }
 
-#[derive(Clone, Decode, Encode, PartialEq)]
+#[derive(Clone, Decode, Encode, PartialEq, TypeInfo)]
 pub(crate) struct FtpUrl {
 	pub(crate) payload: UrlPayload,
 }
 
-#[derive(Clone, Decode, Encode, PartialEq)]
+#[derive(Clone, Decode, Encode, PartialEq, TypeInfo)]
 pub(crate) struct HttpUrl {
 	pub(crate) payload: UrlPayload,
 }
 
-#[derive(Clone, Decode, Encode, PartialEq, Eq)]
+#[derive(Clone, Decode, Encode, PartialEq, Eq, TypeInfo)]
 pub(crate) enum ContentType {
 	ApplicationJson,
 	ApplicationJsonLd,
 }
 
-#[derive(Clone, Decode, Encode, PartialEq)]
+#[derive(Clone, Decode, Encode, PartialEq, TypeInfo)]
 pub(crate) struct ServiceEndpoints {
 	pub content_hash: Hash,
 	pub urls: Vec<Url>,
 	pub content_type: ContentType,
 }
 
-#[derive(Clone, Decode, Encode, PartialEq)]
+#[derive(Clone, Decode, Encode, PartialEq, TypeInfo)]
+#[scale_info(skip_type_params(T))]
+
 pub struct DidDetails<T: Config> {
 	pub(crate) authentication_key: KeyIdOf<T>,
 	pub(crate) key_agreement_keys: DidKeyAgreementKeySet<T>,

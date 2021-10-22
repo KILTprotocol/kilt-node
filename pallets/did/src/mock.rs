@@ -34,6 +34,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSigner,
 };
+
 use sp_std::sync::Arc;
 
 use crate as did;
@@ -315,25 +316,33 @@ pub(crate) fn get_attestation_key_test_input() -> Vec<u8> {
 	[0u8; 32].to_vec()
 }
 pub(crate) fn get_attestation_key_call() -> Call {
-	Call::Ctype(ctype::Call::add(get_attestation_key_test_input()))
+	Call::Ctype(ctype::Call::add {
+		ctype: get_attestation_key_test_input(),
+	})
 }
 pub(crate) fn get_authentication_key_test_input() -> Vec<u8> {
 	[1u8; 32].to_vec()
 }
 pub(crate) fn get_authentication_key_call() -> Call {
-	Call::Ctype(ctype::Call::add(get_authentication_key_test_input()))
+	Call::Ctype(ctype::Call::add {
+		ctype: get_authentication_key_test_input(),
+	})
 }
 pub(crate) fn get_delegation_key_test_input() -> Vec<u8> {
 	[2u8; 32].to_vec()
 }
 pub(crate) fn get_delegation_key_call() -> Call {
-	Call::Ctype(ctype::Call::add(get_delegation_key_test_input()))
+	Call::Ctype(ctype::Call::add {
+		ctype: get_delegation_key_test_input(),
+	})
 }
 pub(crate) fn get_none_key_test_input() -> Vec<u8> {
 	[3u8; 32].to_vec()
 }
 pub(crate) fn get_none_key_call() -> Call {
-	Call::Ctype(ctype::Call::add(get_none_key_test_input()))
+	Call::Ctype(ctype::Call::add {
+		ctype: get_none_key_test_input(),
+	})
 }
 
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
@@ -357,7 +366,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	// Always return a System::remark() extrinsic call
 	#[cfg(feature = "runtime-benchmarks")]
 	fn get_call_for_did_call_benchmark() -> Self {
-		Call::System(frame_system::Call::remark(vec![]))
+		Call::System(frame_system::Call::remark { remark: vec![] })
 	}
 }
 

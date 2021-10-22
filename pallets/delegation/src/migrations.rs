@@ -18,12 +18,13 @@
 
 use codec::{Decode, Encode};
 use kilt_support::traits::VersionMigratorTrait;
+use scale_info::TypeInfo;
 use sp_std::marker::PhantomData;
 
 use crate::*;
 
 /// Storage version of the delegation pallet.
-#[derive(Copy, Clone, Encode, Eq, Decode, Ord, PartialEq, PartialOrd)]
+#[derive(Copy, Clone, Encode, Eq, Decode, Ord, PartialEq, PartialOrd, TypeInfo)]
 pub enum DelegationStorageVersion {
 	V1,
 	V2,
