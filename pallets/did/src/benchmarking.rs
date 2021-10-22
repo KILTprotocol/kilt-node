@@ -102,6 +102,7 @@ fn generate_base_did_call_operation<T: Config>(
 	}
 }
 
+	}
 benchmarks! {
 	where_clause {
 		where
@@ -320,9 +321,7 @@ benchmarks! {
 		);
 
 		Did::<T>::insert(&did_subject, did_details);
-		for endpoint in service_endpoints.iter() {
-			ServiceEndpoints::<T>::insert(&did_subject, &endpoint.id, endpoint.clone());
-		}
+		save_service_endpoints(&did_subject, &service_endpoints);
 	}: _(RawOrigin::Signed(did_subject.clone()))
 	verify {
 		assert!(
@@ -352,9 +351,7 @@ benchmarks! {
 		);
 
 		Did::<T>::insert(&did_subject, did_details.clone());
-		for endpoint in service_endpoints.iter() {
-			ServiceEndpoints::<T>::insert(&did_subject, &endpoint.id, endpoint.clone());
-		}
+		save_service_endpoints(&did_subject, &service_endpoints);
 	}: _(RawOrigin::Signed(did_details.deposit.owner.clone()), did_subject.clone())
 	verify {
 		assert!(
@@ -873,7 +870,7 @@ benchmarks! {
 			T::MaxServiceUrlLength::get(),
 		);
 		// New endpoint with max length and count for all the properties.
-		let new_service_endpoint = get_service_endpoints::<T>(
+		let mut new_service_endpoint = get_service_endpoints::<T>(
 			1,
 			T::MaxServiceIdLength::get(),
 			T::MaxNumberOfTypesPerService::get(),
@@ -881,12 +878,12 @@ benchmarks! {
 			T::MaxNumberOfUrlsPerService::get(),
 			T::MaxServiceUrlLength::get(),
 		)[0].clone();
+		// Changing from the default ID otherwise it would be the same as the one first one in `old_service_endpoints`.
+		new_service_endpoint.id = b"new_id".to_vec().try_into().unwrap();
 
 		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(public_auth_key));
 		Did::<T>::insert(&did_subject, did_details);
-		for old_endpoint in old_service_endpoints.iter() {
-			ServiceEndpoints::<T>::insert(&did_subject, &old_endpoint.id, old_endpoint.clone());
-		}
+		save_service_endpoints(&did_subject, &old_service_endpoints);
 	}: _(RawOrigin::Signed(did_subject.clone()), new_service_endpoint.clone())
 	verify {
 		assert_eq!(
@@ -919,9 +916,7 @@ benchmarks! {
 
 		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(public_auth_key));
 		Did::<T>::insert(&did_subject, did_details);
-		for old_endpoint in old_service_endpoints.iter() {
-			ServiceEndpoints::<T>::insert(&did_subject, &old_endpoint.id, old_endpoint.clone());
-		}
+		save_service_endpoints(&did_subject, &old_service_endpoints);
 	}: _(RawOrigin::Signed(did_subject.clone()), endpoint_id.clone())
 	verify {
 		assert!(
