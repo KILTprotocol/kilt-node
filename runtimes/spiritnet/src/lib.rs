@@ -662,7 +662,7 @@ impl did::Config for Runtime {
 	type MaxServiceUrlLength = MaxServiceUrlLength;
 	type MaxNumberOfTypesPerService = MaxNumberOfTypesPerService;
 	type MaxNumberOfUrlsPerService = MaxNumberOfUrlsPerService;
-	type WeightInfo = ();
+	type WeightInfo = weights::did::WeightInfo<Runtime>;
 }
 
 parameter_types! {
