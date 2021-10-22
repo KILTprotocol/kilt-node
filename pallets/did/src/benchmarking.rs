@@ -25,7 +25,7 @@ use kilt_support::signature::VerifySignature;
 use sp_core::{crypto::KeyTypeId, ecdsa, ed25519, sr25519};
 use sp_io::crypto::{ecdsa_generate, ecdsa_sign, ed25519_generate, ed25519_sign, sr25519_generate, sr25519_sign};
 use sp_runtime::{traits::IdentifyAccount, MultiSigner};
-use sp_std::{convert::TryInto, vec, vec::Vec};
+use sp_std::{convert::TryInto, vec::Vec};
 
 use crate::{
 	did_details::*,
@@ -167,6 +167,10 @@ benchmarks! {
 			Some(expected_attestation_key_id)
 		);
 		assert_eq!(
+			DidEndpointsCount::<T>::get(&did_subject).unwrap_or_default().saturated_into::<usize>(),
+			service_endpoints.len()
+		);
+		assert_eq!(
 			ServiceEndpoints::<T>::iter_prefix(&did_subject).count(),
 			service_endpoints.len()
 		);
@@ -225,6 +229,10 @@ benchmarks! {
 		assert_eq!(
 			stored_did.attestation_key,
 			Some(expected_attestation_key_id)
+		);
+		assert_eq!(
+			DidEndpointsCount::<T>::get(&did_subject).unwrap_or_default().saturated_into::<usize>(),
+			service_endpoints.len()
 		);
 		assert_eq!(
 			ServiceEndpoints::<T>::iter_prefix(&did_subject).count(),
@@ -287,6 +295,10 @@ benchmarks! {
 			Some(expected_attestation_key_id)
 		);
 		assert_eq!(
+			DidEndpointsCount::<T>::get(&did_subject).unwrap_or_default().saturated_into::<usize>(),
+			service_endpoints.len()
+		);
+		assert_eq!(
 			ServiceEndpoints::<T>::iter_prefix(&did_subject).count(),
 			service_endpoints.len()
 		);
@@ -316,6 +328,9 @@ benchmarks! {
 		assert!(
 			Did::<T>::get(&did_subject).is_none()
 		);
+		assert!(
+			DidEndpointsCount::<T>::get(&did_subject).is_none()
+		);
 		assert_eq!(
 			ServiceEndpoints::<T>::iter_prefix(&did_subject).count(),
 			0
@@ -344,6 +359,9 @@ benchmarks! {
 	verify {
 		assert!(
 			Did::<T>::get(&did_subject).is_none()
+		);
+		assert!(
+			DidEndpointsCount::<T>::get(&did_subject).is_none()
 		);
 		assert_eq!(
 			ServiceEndpoints::<T>::iter_prefix(&did_subject).count(),
@@ -845,6 +863,7 @@ benchmarks! {
 	add_service_endpoint {
 		let public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key.clone()).into_account().into();
+		// Max allowed - 1.
 		let old_service_endpoints = get_service_endpoints::<T>(
 			T::MaxNumberOfServicesPerDid::get() - 1,
 			T::MaxServiceIdLength::get(),
@@ -853,11 +872,15 @@ benchmarks! {
 			T::MaxNumberOfUrlsPerService::get(),
 			T::MaxServiceUrlLength::get(),
 		);
-		let new_service_endpoint = DidEndpointDetails {
-			id: b"id".to_vec().try_into().unwrap(),
-			service_type: vec![b"type".to_vec().try_into().unwrap()].try_into().unwrap(),
-			url: vec![b"url".to_vec().try_into().unwrap()].try_into().unwrap(),
-		};
+		// New endpoint with max length and count for all the properties.
+		let new_service_endpoint = get_service_endpoints::<T>(
+			1,
+			T::MaxServiceIdLength::get(),
+			T::MaxNumberOfTypesPerService::get(),
+			T::MaxServiceTypeLength::get(),
+			T::MaxNumberOfUrlsPerService::get(),
+			T::MaxServiceUrlLength::get(),
+		)[0].clone();
 
 		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(public_auth_key));
 		Did::<T>::insert(&did_subject, did_details);
@@ -871,6 +894,10 @@ benchmarks! {
 			Some(new_service_endpoint)
 		);
 		assert_eq!(
+			DidEndpointsCount::<T>::get(&did_subject).unwrap_or_default(),
+			T::MaxNumberOfServicesPerDid::get()
+		);
+		assert_eq!(
 			ServiceEndpoints::<T>::iter_prefix(&did_subject).count(),
 			T::MaxNumberOfServicesPerDid::get().saturated_into::<usize>()
 		);
@@ -879,6 +906,7 @@ benchmarks! {
 	remove_service_endpoint {
 		let public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key.clone()).into_account().into();
+		// All set to max.
 		let old_service_endpoints = get_service_endpoints::<T>(
 			T::MaxNumberOfServicesPerDid::get(),
 			T::MaxServiceIdLength::get(),
@@ -898,6 +926,10 @@ benchmarks! {
 	verify {
 		assert!(
 			ServiceEndpoints::<T>::get(&did_subject, &endpoint_id).is_none()
+		);
+		assert_eq!(
+			DidEndpointsCount::<T>::get(&did_subject).unwrap_or_default(),
+			T::MaxNumberOfServicesPerDid::get() - 1
 		);
 		assert_eq!(
 			ServiceEndpoints::<T>::iter_prefix(&did_subject).count(),

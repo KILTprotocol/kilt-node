@@ -137,7 +137,7 @@ use frame_support::{
 };
 use frame_system::ensure_signed;
 use sp_io::KillStorageResult;
-use sp_runtime::{traits::Saturating, SaturatedConversion};
+use sp_runtime::{traits::{Saturating, Zero}, SaturatedConversion};
 use sp_std::{boxed::Box, fmt::Debug, prelude::Clone};
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -813,12 +813,11 @@ pub mod pallet {
 				&did_subject,
 				service_endpoint.id.clone(),
 				|existing_service| -> Result<(), Error<T>> {
-					ensure!(&existing_service.is_none(), Error::<T>::ServiceAlreadyPresent);
+					ensure!(existing_service.is_none(), Error::<T>::ServiceAlreadyPresent);
 					*existing_service = Some(service_endpoint);
 					Ok(())
 				},
 			)?;
-
 			DidEndpointsCount::<T>::insert(&did_subject, currently_stored_endpoints_count.saturating_add(1));
 
 			Ok(())
@@ -833,10 +832,12 @@ pub mod pallet {
 				Error::<T>::ServiceNotPresent
 			);
 
-			// Decrease the endpoints counter or delete the entry if it reaches 0
+			// *** No Fail beyond this point ***
+
+			// Decrease the endpoints counter or delete the entry if it reaches 0.
 			DidEndpointsCount::<T>::mutate_exists(&did_subject, |existing_endpoint_count| {
 				let new_value = existing_endpoint_count.unwrap_or_default().saturating_sub(1);
-				if new_value == 0u32 {
+				if new_value == u32::zero() {
 					*existing_endpoint_count = None;
 				} else {
 					*existing_endpoint_count = Some(new_value);
@@ -1102,6 +1103,7 @@ impl<T: Config> Pallet<T> {
 		let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 
 		// *** No Fail beyond this point ***
+
 		let services_count = DidEndpointsCount::<T>::take(&did_subject).unwrap_or_default();
 		let storage_kill_result = ServiceEndpoints::<T>::remove_prefix(&did_subject, Some(services_count));
 		// If some items are remaining, it means that there were more than

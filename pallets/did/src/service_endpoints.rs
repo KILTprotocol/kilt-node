@@ -19,6 +19,7 @@
 use crate::Config;
 use codec::{Decode, Encode};
 use frame_support::BoundedVec;
+use scale_info::TypeInfo;
 use sp_std::str;
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 use sp_std::{convert::TryInto, vec::Vec};
@@ -27,13 +28,14 @@ use crate::utils as crate_utils;
 
 pub type ServiceEndpointId<T> = BoundedVec<u8, <T as Config>::MaxServiceIdLength>;
 
-pub type ServiceEndpointType<T> = BoundedVec<u8, <T as Config>::MaxServiceTypeLength>;
-pub type ServiceEndpointTypeEntries<T> = BoundedVec<ServiceEndpointType<T>, <T as Config>::MaxNumberOfTypesPerService>;
+pub(crate) type ServiceEndpointType<T> = BoundedVec<u8, <T as Config>::MaxServiceTypeLength>;
+pub(crate) type ServiceEndpointTypeEntries<T> = BoundedVec<ServiceEndpointType<T>, <T as Config>::MaxNumberOfTypesPerService>;
 
-pub type ServiceEndpointUrl<T> = BoundedVec<u8, <T as Config>::MaxServiceUrlLength>;
-pub type ServiceEndpointUrlEntries<T> = BoundedVec<ServiceEndpointUrl<T>, <T as Config>::MaxNumberOfUrlsPerService>;
+pub(crate) type ServiceEndpointUrl<T> = BoundedVec<u8, <T as Config>::MaxServiceUrlLength>;
+pub(crate) type ServiceEndpointUrlEntries<T> = BoundedVec<ServiceEndpointUrl<T>, <T as Config>::MaxNumberOfUrlsPerService>;
 
-#[derive(Clone, Decode, Encode, PartialEq, Eq)]
+#[derive(Clone, Decode, Encode, PartialEq, Eq, TypeInfo)]
+#[scale_info(skip_type_params(T))]
 pub struct DidEndpointDetails<T: Config> {
 	pub(crate) id: ServiceEndpointId<T>,
 	pub(crate) service_type: ServiceEndpointTypeEntries<T>,
@@ -84,13 +86,13 @@ pub mod utils {
 	pub(crate) fn validate_new_service_endpoints<T: Config>(
 		endpoints: &[DidEndpointDetails<T>],
 	) -> Result<(), InputError> {
-		// Check if the maximum number of endpoints is provided
+		// Check if up the maximum number of endpoints is provided.
 		ensure!(
 			endpoints.len() <= T::MaxNumberOfServicesPerDid::get().saturated_into(),
 			InputError::MaxServicesCountExceeded
 		);
 
-		// For each service...
+		// Then validate each service.
 		endpoints
 			.iter()
 			.try_for_each(|endpoint| validate_single_service_endpoint_entry(endpoint))?;
