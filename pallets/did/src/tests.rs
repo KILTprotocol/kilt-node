@@ -176,11 +176,11 @@ fn check_successful_complete_creation() {
 	details.new_attestation_key = Some(did::DidVerificationKey::from(att_key.public()));
 	details.new_delegation_key = Some(did::DidVerificationKey::from(del_key.public()));
 	details.new_service_details = get_service_endpoints(
-		<Test as did::Config>::MaxDidServicesCount::get(),
+		<Test as did::Config>::MaxNumberOfServicesPerDid::get(),
 		<Test as did::Config>::MaxServiceIdLength::get(),
-		<Test as did::Config>::MaxTypeCountPerService::get(),
+		<Test as did::Config>::MaxNumberOfTypesPerService::get(),
 		<Test as did::Config>::MaxServiceTypeLength::get(),
-		<Test as did::Config>::MaxUrlCountPerService::get(),
+		<Test as did::Config>::MaxNumberOfUrlsPerService::get(),
 		<Test as did::Config>::MaxServiceUrlLength::get(),
 	);
 	let signature = auth_key.sign(details.encode().as_ref());
@@ -453,7 +453,7 @@ fn check_max_limit_service_endpoints_count_did_creation() {
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
 	details.new_service_details =
-		get_service_endpoints(<Test as did::Config>::MaxDidServicesCount::get() + 1, 1, 1, 1, 1, 1);
+		get_service_endpoints(<Test as did::Config>::MaxNumberOfServicesPerDid::get() + 1, 1, 1, 1, 1, 1);
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
@@ -466,7 +466,7 @@ fn check_max_limit_service_endpoints_count_did_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
-				did::Error::<Test>::MaxServicesCountExceeded
+				did::Error::<Test>::MaxNumberOfServicesPerDidExceeded
 			);
 		});
 }
@@ -491,7 +491,7 @@ fn check_max_limit_service_id_length_did_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
-				did::Error::<Test>::MaxIdLengthExceeded
+				did::Error::<Test>::MaxServiceIdLengthExceeded
 			);
 		});
 }
@@ -503,7 +503,7 @@ fn check_max_limit_service_type_count_did_creation() {
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
 	details.new_service_details =
-		get_service_endpoints(1, 1, <Test as did::Config>::MaxTypeCountPerService::get() + 1, 1, 1, 1);
+		get_service_endpoints(1, 1, <Test as did::Config>::MaxNumberOfTypesPerService::get() + 1, 1, 1, 1);
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
@@ -516,7 +516,7 @@ fn check_max_limit_service_type_count_did_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
-				did::Error::<Test>::MaxTypeCountExceeded
+				did::Error::<Test>::MaxNumberOfTypesPerServiceExceeded
 			);
 		});
 }
@@ -541,7 +541,7 @@ fn check_max_limit_service_type_length_did_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
-				did::Error::<Test>::MaxTypeLengthExceeded
+				did::Error::<Test>::MaxServiceTypeLengthExceeded
 			);
 		});
 }
@@ -553,7 +553,7 @@ fn check_max_limit_service_url_count_did_creation() {
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
 	details.new_service_details =
-		get_service_endpoints(1, 1, 1, 1, <Test as did::Config>::MaxUrlCountPerService::get() + 1, 1);
+		get_service_endpoints(1, 1, 1, 1, <Test as did::Config>::MaxNumberOfUrlsPerService::get() + 1, 1);
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
@@ -566,7 +566,7 @@ fn check_max_limit_service_url_count_did_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
-				did::Error::<Test>::MaxUrlCountExceeded
+				did::Error::<Test>::MaxNumberOfUrlsPerServiceExceeded
 			);
 		});
 }
@@ -591,7 +591,7 @@ fn check_max_limit_service_url_length_did_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
-				did::Error::<Test>::MaxUrlLengthExceeded
+				did::Error::<Test>::MaxServiceUrlLengthExceeded
 			);
 		});
 }
@@ -616,7 +616,7 @@ fn check_invalid_service_id_character_did_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
-				did::Error::<Test>::InvalidUrlEncoding
+				did::Error::<Test>::InvalidServiceEncoding
 			);
 		});
 }
@@ -641,7 +641,7 @@ fn check_invalid_service_type_character_did_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
-				did::Error::<Test>::InvalidUrlEncoding
+				did::Error::<Test>::InvalidServiceEncoding
 			);
 		});
 }
@@ -666,7 +666,7 @@ fn check_invalid_service_url_character_did_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
-				did::Error::<Test>::InvalidUrlEncoding
+				did::Error::<Test>::InvalidServiceEncoding
 			);
 		});
 }
@@ -1630,11 +1630,11 @@ fn check_service_addition_one_from_full_successful() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let old_service_endpoints = get_service_endpoints(
 		// -1 from the max number
-		<Test as did::Config>::MaxDidServicesCount::get() - 1,
+		<Test as did::Config>::MaxNumberOfServicesPerDid::get() - 1,
 		<Test as did::Config>::MaxServiceIdLength::get(),
-		<Test as did::Config>::MaxTypeCountPerService::get(),
+		<Test as did::Config>::MaxNumberOfTypesPerService::get(),
 		<Test as did::Config>::MaxServiceTypeLength::get(),
-		<Test as did::Config>::MaxUrlCountPerService::get(),
+		<Test as did::Config>::MaxNumberOfUrlsPerService::get(),
 		<Test as did::Config>::MaxServiceUrlLength::get(),
 	);
 	let new_service_endpoint = DidEndpointDetails::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
@@ -1654,7 +1654,7 @@ fn check_service_addition_one_from_full_successful() {
 				did::pallet::ServiceEndpoints::<Test>::iter_prefix(&alice_did)
 					.count()
 					.saturated_into::<u32>(),
-				<Test as did::Config>::MaxDidServicesCount::get()
+				<Test as did::Config>::MaxNumberOfServicesPerDid::get()
 			);
 			let stored_endpoint = did::pallet::ServiceEndpoints::<Test>::get(&alice_did, &new_service_endpoint.id)
 				.expect("Service endpoint should be stored.");
@@ -1701,11 +1701,11 @@ fn check_max_services_count_addition_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let old_service_endpoints = get_service_endpoints(
-		<Test as did::Config>::MaxDidServicesCount::get(),
+		<Test as did::Config>::MaxNumberOfServicesPerDid::get(),
 		<Test as did::Config>::MaxServiceIdLength::get(),
-		<Test as did::Config>::MaxTypeCountPerService::get(),
+		<Test as did::Config>::MaxNumberOfTypesPerService::get(),
 		<Test as did::Config>::MaxServiceTypeLength::get(),
-		<Test as did::Config>::MaxUrlCountPerService::get(),
+		<Test as did::Config>::MaxNumberOfUrlsPerService::get(),
 		<Test as did::Config>::MaxServiceUrlLength::get(),
 	);
 	let new_service_endpoint = DidEndpointDetails::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
@@ -1719,7 +1719,7 @@ fn check_max_services_count_addition_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_endpoint),
-				did::Error::<Test>::MaxServicesCountExceeded
+				did::Error::<Test>::MaxNumberOfServicesPerDidExceeded
 			);
 		});
 }
@@ -1732,9 +1732,9 @@ fn check_max_service_id_length_addition_error() {
 	let new_service_endpoint = get_service_endpoints(
 		1,
 		<Test as did::Config>::MaxServiceIdLength::get() + 1,
-		<Test as did::Config>::MaxTypeCountPerService::get(),
+		<Test as did::Config>::MaxNumberOfTypesPerService::get(),
 		<Test as did::Config>::MaxServiceTypeLength::get(),
-		<Test as did::Config>::MaxUrlCountPerService::get(),
+		<Test as did::Config>::MaxNumberOfUrlsPerService::get(),
 		<Test as did::Config>::MaxServiceUrlLength::get(),
 	)[0]
 	.clone();
@@ -1747,7 +1747,7 @@ fn check_max_service_id_length_addition_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_endpoint),
-				did::Error::<Test>::MaxIdLengthExceeded
+				did::Error::<Test>::MaxServiceIdLengthExceeded
 			);
 		});
 }
@@ -1760,9 +1760,9 @@ fn check_max_service_type_length_addition_error() {
 	let new_service_endpoint = get_service_endpoints(
 		1,
 		<Test as did::Config>::MaxServiceIdLength::get(),
-		<Test as did::Config>::MaxTypeCountPerService::get(),
+		<Test as did::Config>::MaxNumberOfTypesPerService::get(),
 		<Test as did::Config>::MaxServiceTypeLength::get() + 1,
-		<Test as did::Config>::MaxUrlCountPerService::get(),
+		<Test as did::Config>::MaxNumberOfUrlsPerService::get(),
 		<Test as did::Config>::MaxServiceUrlLength::get(),
 	)[0]
 	.clone();
@@ -1775,7 +1775,7 @@ fn check_max_service_type_length_addition_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_endpoint),
-				did::Error::<Test>::MaxTypeLengthExceeded
+				did::Error::<Test>::MaxServiceTypeLengthExceeded
 			);
 		});
 }
@@ -1788,9 +1788,9 @@ fn check_max_service_type_count_addition_error() {
 	let new_service_endpoint = get_service_endpoints(
 		1,
 		<Test as did::Config>::MaxServiceIdLength::get(),
-		<Test as did::Config>::MaxTypeCountPerService::get() + 1,
+		<Test as did::Config>::MaxNumberOfTypesPerService::get() + 1,
 		<Test as did::Config>::MaxServiceTypeLength::get(),
-		<Test as did::Config>::MaxUrlCountPerService::get(),
+		<Test as did::Config>::MaxNumberOfUrlsPerService::get(),
 		<Test as did::Config>::MaxServiceUrlLength::get(),
 	)[0]
 	.clone();
@@ -1803,7 +1803,7 @@ fn check_max_service_type_count_addition_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_endpoint),
-				did::Error::<Test>::MaxTypeCountExceeded
+				did::Error::<Test>::MaxNumberOfTypesPerServiceExceeded
 			);
 		});
 }
@@ -1816,9 +1816,9 @@ fn check_max_service_url_length_addition_error() {
 	let new_service_endpoint = get_service_endpoints(
 		1,
 		<Test as did::Config>::MaxServiceIdLength::get(),
-		<Test as did::Config>::MaxTypeCountPerService::get(),
+		<Test as did::Config>::MaxNumberOfTypesPerService::get(),
 		<Test as did::Config>::MaxServiceTypeLength::get(),
-		<Test as did::Config>::MaxUrlCountPerService::get(),
+		<Test as did::Config>::MaxNumberOfUrlsPerService::get(),
 		<Test as did::Config>::MaxServiceUrlLength::get() + 1,
 	)[0]
 	.clone();
@@ -1831,7 +1831,7 @@ fn check_max_service_url_length_addition_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_endpoint),
-				did::Error::<Test>::MaxUrlLengthExceeded
+				did::Error::<Test>::MaxServiceUrlLengthExceeded
 			);
 		});
 }
@@ -1844,9 +1844,9 @@ fn check_max_service_url_count_addition_error() {
 	let new_service_endpoint = get_service_endpoints(
 		1,
 		<Test as did::Config>::MaxServiceIdLength::get(),
-		<Test as did::Config>::MaxTypeCountPerService::get(),
+		<Test as did::Config>::MaxNumberOfTypesPerService::get(),
 		<Test as did::Config>::MaxServiceTypeLength::get(),
-		<Test as did::Config>::MaxUrlCountPerService::get() + 1,
+		<Test as did::Config>::MaxNumberOfUrlsPerService::get() + 1,
 		<Test as did::Config>::MaxServiceUrlLength::get(),
 	)[0]
 	.clone();
@@ -1859,7 +1859,7 @@ fn check_max_service_url_count_addition_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_endpoint),
-				did::Error::<Test>::MaxUrlCountExceeded
+				did::Error::<Test>::MaxNumberOfUrlsPerServiceExceeded
 			);
 		});
 }
@@ -1879,7 +1879,7 @@ fn check_invalid_service_id_character_addition_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_details),
-				did::Error::<Test>::InvalidUrlEncoding
+				did::Error::<Test>::InvalidServiceEncoding
 			);
 		});
 }
@@ -1899,7 +1899,7 @@ fn check_invalid_service_type_character_addition_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_details),
-				did::Error::<Test>::InvalidUrlEncoding
+				did::Error::<Test>::InvalidServiceEncoding
 			);
 		});
 }
@@ -1919,7 +1919,7 @@ fn check_invalid_service_url_character_addition_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_details),
-				did::Error::<Test>::InvalidUrlEncoding
+				did::Error::<Test>::InvalidServiceEncoding
 			);
 		});
 }

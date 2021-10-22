@@ -28,10 +28,10 @@ use crate::utils as crate_utils;
 pub type ServiceEndpointId<T> = BoundedVec<u8, <T as Config>::MaxServiceIdLength>;
 
 pub type ServiceEndpointType<T> = BoundedVec<u8, <T as Config>::MaxServiceTypeLength>;
-pub type ServiceEndpointTypeEntries<T> = BoundedVec<ServiceEndpointType<T>, <T as Config>::MaxTypeCountPerService>;
+pub type ServiceEndpointTypeEntries<T> = BoundedVec<ServiceEndpointType<T>, <T as Config>::MaxNumberOfTypesPerService>;
 
 pub type ServiceEndpointUrl<T> = BoundedVec<u8, <T as Config>::MaxServiceUrlLength>;
-pub type ServiceEndpointUrlEntries<T> = BoundedVec<ServiceEndpointUrl<T>, <T as Config>::MaxUrlCountPerService>;
+pub type ServiceEndpointUrlEntries<T> = BoundedVec<ServiceEndpointUrl<T>, <T as Config>::MaxNumberOfUrlsPerService>;
 
 #[derive(Clone, Decode, Encode, PartialEq, Eq)]
 pub struct DidEndpointDetails<T: Config> {
@@ -86,7 +86,7 @@ pub mod utils {
 	) -> Result<(), InputError> {
 		// Check if the maximum number of endpoints is provided
 		ensure!(
-			endpoints.len() <= T::MaxDidServicesCount::get().saturated_into(),
+			endpoints.len() <= T::MaxNumberOfServicesPerDid::get().saturated_into(),
 			InputError::MaxServicesCountExceeded
 		);
 
@@ -103,12 +103,12 @@ pub mod utils {
 	) -> Result<(), InputError> {
 		// Check that the maximum number of service types is provided.
 		ensure!(
-			endpoint.service_type.len() <= T::MaxTypeCountPerService::get().saturated_into(),
+			endpoint.service_type.len() <= T::MaxNumberOfTypesPerService::get().saturated_into(),
 			InputError::MaxTypeCountExceeded
 		);
 		// Check that the maximum number of URLs is provided.
 		ensure!(
-			endpoint.url.len() <= T::MaxUrlCountPerService::get().saturated_into(),
+			endpoint.url.len() <= T::MaxNumberOfUrlsPerService::get().saturated_into(),
 			InputError::MaxUrlCountExceeded
 		);
 		// Check that the ID is the maximum allowed length and only contain ASCII

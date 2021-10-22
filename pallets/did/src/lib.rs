@@ -254,22 +254,22 @@ pub mod pallet {
 		type WeightInfo: WeightInfo;
 
 		#[pallet::constant]
+		type MaxNumberOfServicesPerDid: Get<u32>;
+
+		#[pallet::constant]
 		type MaxServiceIdLength: Get<u32>;
 
 		#[pallet::constant]
 		type MaxServiceTypeLength: Get<u32>;
 
 		#[pallet::constant]
+		type MaxNumberOfTypesPerService: Get<u32>;
+
+		#[pallet::constant]
 		type MaxServiceUrlLength: Get<u32>;
 
 		#[pallet::constant]
-		type MaxTypeCountPerService: Get<u32>;
-
-		#[pallet::constant]
-		type MaxUrlCountPerService: Get<u32>;
-
-		#[pallet::constant]
-		type MaxDidServicesCount: Get<u32>;
+		type MaxNumberOfUrlsPerService: Get<u32>;
 	}
 
 	#[pallet::pallet]
@@ -383,15 +383,15 @@ pub mod pallet {
 		NotOwnerOfDeposit,
 		/// The origin is unable to reserve the deposit and pay the fee.
 		UnableToPayFees,
-		MaxIdLengthExceeded,
-		MaxUrlLengthExceeded,
-		MaxTypeLengthExceeded,
-		MaxUrlCountExceeded,
-		MaxTypeCountExceeded,
-		MaxServicesCountExceeded,
+		MaxNumberOfServicesPerDidExceeded,
+		MaxServiceIdLengthExceeded,
+		MaxServiceTypeLengthExceeded,
+		MaxNumberOfTypesPerServiceExceeded,
+		MaxServiceUrlLengthExceeded,
+		MaxNumberOfUrlsPerServiceExceeded,
 		ServiceAlreadyPresent,
 		ServiceNotPresent,
-		InvalidUrlEncoding,
+		InvalidServiceEncoding,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
 	}
@@ -435,13 +435,13 @@ pub mod pallet {
 		fn from(error: InputError) -> Self {
 			match error {
 				InputError::MaxKeyAgreementKeysLimitExceeded => Self::MaxKeyAgreementKeysLimitExceeded,
-				InputError::MaxIdLengthExceeded => Self::MaxIdLengthExceeded,
-				InputError::MaxServicesCountExceeded => Self::MaxServicesCountExceeded,
-				InputError::MaxTypeCountExceeded => Self::MaxTypeCountExceeded,
-				InputError::MaxTypeLengthExceeded => Self::MaxTypeLengthExceeded,
-				InputError::MaxUrlCountExceeded => Self::MaxUrlCountExceeded,
-				InputError::MaxUrlLengthExceeded => Self::MaxUrlLengthExceeded,
-				InputError::InvalidUrlEncoding => Self::InvalidUrlEncoding,
+				InputError::MaxIdLengthExceeded => Self::MaxServiceIdLengthExceeded,
+				InputError::MaxServicesCountExceeded => Self::MaxNumberOfServicesPerDidExceeded,
+				InputError::MaxTypeCountExceeded => Self::MaxNumberOfTypesPerServiceExceeded,
+				InputError::MaxTypeLengthExceeded => Self::MaxServiceTypeLengthExceeded,
+				InputError::MaxUrlCountExceeded => Self::MaxNumberOfUrlsPerServiceExceeded,
+				InputError::MaxUrlLengthExceeded => Self::MaxServiceUrlLengthExceeded,
+				InputError::InvalidUrlEncoding => Self::InvalidServiceEncoding,
 			}
 		}
 	}
@@ -479,19 +479,19 @@ pub mod pallet {
 		#[pallet::weight({
 			let new_key_agreement_keys = details.new_key_agreement_keys.len().saturated_into::<u32>();
 			// We only consider the number of new endpoints.
-			let new_services_count = details.new_service_details.len();
+			let new_services_count = details.new_service_details.len().saturated_into::<u32>();
 
 			let ed25519_weight = <T as pallet::Config>::WeightInfo::create_ed25519_keys(
 				new_key_agreement_keys,
-				new_services_count
+				new_services_count,
 			);
 			let sr25519_weight = <T as pallet::Config>::WeightInfo::create_sr25519_keys(
 				new_key_agreement_keys,
-				new_services_count
+				new_services_count,
 			);
 			let ecdsa_weight = <T as pallet::Config>::WeightInfo::create_ecdsa_keys(
 				new_key_agreement_keys,
-				new_services_count
+				new_services_count,
 			);
 
 			ed25519_weight.max(sr25519_weight).max(ecdsa_weight)
@@ -797,8 +797,8 @@ pub mod pallet {
 			// Verify that there are less than the maximum limit of services stored.
 			ensure!(
 				ServiceEndpoints::<T>::iter_prefix(&did_subject).count()
-					< T::MaxDidServicesCount::get().saturated_into(),
-				Error::<T>::MaxServicesCountExceeded
+					< T::MaxNumberOfServicesPerDid::get().saturated_into(),
+				Error::<T>::MaxNumberOfServicesPerDidExceeded
 			);
 
 			// *** No Fail beyond this point ***
@@ -1085,10 +1085,10 @@ impl<T: Config> Pallet<T> {
 
 		// *** No Fail beyond this point ***
 		let storage_kill_result =
-			ServiceEndpoints::<T>::remove_prefix(&did_subject, Some(T::MaxDidServicesCount::get()));
+			ServiceEndpoints::<T>::remove_prefix(&did_subject, Some(T::MaxNumberOfServicesPerDid::get()));
 
 		// If some items are remaining, it means that there were more than
-		// MaxDidServicesCount stored, and that should never happen.
+		// MaxNumberOfServicesPerDid stored, and that should never happen.
 		if let KillStorageResult::SomeRemaining(_) = storage_kill_result {
 			return Err(Error::<T>::InternalError.into());
 		};

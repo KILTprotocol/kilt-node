@@ -199,10 +199,10 @@ pub mod did {
 	pub const MAX_ENDPOINT_URLS_COUNT: u32 = 3;
 	pub const MAX_BLOCKS_TX_VALIDITY: BlockNumber = HOURS;
 
+	pub const MAX_NUMBER_OF_SERVICES_PER_DID: u32 = 25;
 	pub const MAX_SERVICE_ID_LENGTH: u32 = 50;
 	pub const MAX_SERVICE_TYPE_LENGTH: u32 = 50;
+	pub const MAX_NUMBER_OF_TYPES_PER_SERVICE: u32 = 1;
 	pub const MAX_SERVICE_URL_LENGTH: u32 = 100;
-	pub const MAX_SERVICE_TYPE_COUNT: u32 = 1;
-	pub const MAX_SERVICE_URL_COUNT: u32 = 1;
-	pub const MAX_DID_SERVICES_COUNT: u32 = 25;
+	pub const MAX_NUMBER_OF_URLS_PER_SERVICE: u32 = 1;
 }

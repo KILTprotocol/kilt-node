@@ -105,12 +105,12 @@ parameter_types! {
 	pub const MaxBlocksTxValidity: u64 = 300u64;
 	pub const Deposit: Balance = 10 * MICRO_KILT;
 	pub const DidFee: Balance = MICRO_KILT;
-	pub const MaxDidServicesCount: u32 = 25u32;
+	pub const MaxNumberOfServicesPerDid: u32 = 25u32;
 	pub const MaxServiceIdLength: u32 = 50u32;
 	pub const MaxServiceTypeLength: u32 = 50u32;
 	pub const MaxServiceUrlLength: u32 = 100u32;
-	pub const MaxTypeCountPerService: u32 = 1u32;
-	pub const MaxUrlCountPerService: u32 = 1u32;
+	pub const MaxNumberOfTypesPerService: u32 = 1u32;
+	pub const MaxNumberOfUrlsPerService: u32 = 1u32;
 }
 
 pub struct ToAccount<R>(sp_std::marker::PhantomData<R>);
@@ -141,12 +141,12 @@ impl Config for Test {
 	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
 	type MaxBlocksTxValidity = MaxBlocksTxValidity;
 	type WeightInfo = ();
-	type MaxDidServicesCount = MaxDidServicesCount;
+	type MaxNumberOfServicesPerDid = MaxNumberOfServicesPerDid;
 	type MaxServiceIdLength = MaxServiceIdLength;
 	type MaxServiceTypeLength = MaxServiceTypeLength;
 	type MaxServiceUrlLength = MaxServiceUrlLength;
-	type MaxTypeCountPerService = MaxTypeCountPerService;
-	type MaxUrlCountPerService = MaxUrlCountPerService;
+	type MaxNumberOfTypesPerService = MaxNumberOfTypesPerService;
+	type MaxNumberOfUrlsPerService = MaxNumberOfUrlsPerService;
 }
 
 parameter_types! {

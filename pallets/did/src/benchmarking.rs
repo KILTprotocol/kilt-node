@@ -114,7 +114,7 @@ benchmarks! {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
 		// We only calculate weights based on how many endpoints are specified. For each endpoint, we use the max possible length and count for its components.
 		// This makes weight computation easier at runtime, at the cost of always having worst-case weights for any # of endpoints c.
-		let c in 1 .. T::MaxDidServicesCount::get();
+		let c in 1 .. T::MaxNumberOfServicesPerDid::get();
 
 		let submitter: AccountIdOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
@@ -128,9 +128,9 @@ benchmarks! {
 		let service_endpoints = get_service_endpoints::<T>(
 			c,
 			T::MaxServiceIdLength::get(),
-			T::MaxTypeCountPerService::get(),
+			T::MaxNumberOfTypesPerService::get(),
 			T::MaxServiceTypeLength::get(),
-			T::MaxUrlCountPerService::get(),
+			T::MaxNumberOfUrlsPerService::get(),
 			T::MaxServiceUrlLength::get(),
 		);
 
@@ -175,7 +175,7 @@ benchmarks! {
 
 	create_sr25519_keys {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
-		let c in 1 .. T::MaxDidServicesCount::get();
+		let c in 1 .. T::MaxNumberOfServicesPerDid::get();
 
 		let submitter: AccountIdOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 		make_free_for_did::<T>(&submitter);
@@ -188,9 +188,9 @@ benchmarks! {
 		let service_endpoints = get_service_endpoints::<T>(
 			c,
 			T::MaxServiceIdLength::get(),
-			T::MaxTypeCountPerService::get(),
+			T::MaxNumberOfTypesPerService::get(),
 			T::MaxServiceTypeLength::get(),
-			T::MaxUrlCountPerService::get(),
+			T::MaxNumberOfUrlsPerService::get(),
 			T::MaxServiceUrlLength::get(),
 		);
 
@@ -235,7 +235,7 @@ benchmarks! {
 
 	create_ecdsa_keys {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
-		let c in 1 .. T::MaxDidServicesCount::get();
+		let c in 1 .. T::MaxNumberOfServicesPerDid::get();
 
 		let submitter: AccountIdOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 		make_free_for_did::<T>(&submitter);
@@ -248,9 +248,9 @@ benchmarks! {
 		let service_endpoints = get_service_endpoints::<T>(
 			c,
 			T::MaxServiceIdLength::get(),
-			T::MaxTypeCountPerService::get(),
+			T::MaxNumberOfTypesPerService::get(),
 			T::MaxServiceTypeLength::get(),
-			T::MaxUrlCountPerService::get(),
+			T::MaxNumberOfUrlsPerService::get(),
 			T::MaxServiceUrlLength::get(),
 		);
 
@@ -299,11 +299,11 @@ benchmarks! {
 
 		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key));
 		let service_endpoints = get_service_endpoints::<T>(
-			T::MaxDidServicesCount::get(),
+			T::MaxNumberOfServicesPerDid::get(),
 			T::MaxServiceIdLength::get(),
-			T::MaxTypeCountPerService::get(),
+			T::MaxNumberOfTypesPerService::get(),
 			T::MaxServiceTypeLength::get(),
-			T::MaxUrlCountPerService::get(),
+			T::MaxNumberOfUrlsPerService::get(),
 			T::MaxServiceUrlLength::get(),
 		);
 
@@ -328,11 +328,11 @@ benchmarks! {
 
 		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key));
 		let service_endpoints = get_service_endpoints::<T>(
-			T::MaxDidServicesCount::get(),
+			T::MaxNumberOfServicesPerDid::get(),
 			T::MaxServiceIdLength::get(),
-			T::MaxTypeCountPerService::get(),
+			T::MaxNumberOfTypesPerService::get(),
 			T::MaxServiceTypeLength::get(),
-			T::MaxUrlCountPerService::get(),
+			T::MaxNumberOfUrlsPerService::get(),
 			T::MaxServiceUrlLength::get(),
 		);
 
@@ -846,11 +846,11 @@ benchmarks! {
 		let public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key.clone()).into_account().into();
 		let old_service_endpoints = get_service_endpoints::<T>(
-			T::MaxDidServicesCount::get() - 1,
+			T::MaxNumberOfServicesPerDid::get() - 1,
 			T::MaxServiceIdLength::get(),
-			T::MaxTypeCountPerService::get(),
+			T::MaxNumberOfTypesPerService::get(),
 			T::MaxServiceTypeLength::get(),
-			T::MaxUrlCountPerService::get(),
+			T::MaxNumberOfUrlsPerService::get(),
 			T::MaxServiceUrlLength::get(),
 		);
 		let new_service_endpoint = DidEndpointDetails {
@@ -872,7 +872,7 @@ benchmarks! {
 		);
 		assert_eq!(
 			ServiceEndpoints::<T>::iter_prefix(&did_subject).count().saturated_into::<u32>(),
-			T::MaxDidServicesCount::get()
+			T::MaxNumberOfServicesPerDid::get()
 		);
 	}
 
@@ -880,11 +880,11 @@ benchmarks! {
 		let public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key.clone()).into_account().into();
 		let old_service_endpoints = get_service_endpoints::<T>(
-			T::MaxDidServicesCount::get(),
+			T::MaxNumberOfServicesPerDid::get(),
 			T::MaxServiceIdLength::get(),
-			T::MaxTypeCountPerService::get(),
+			T::MaxNumberOfTypesPerService::get(),
 			T::MaxServiceTypeLength::get(),
-			T::MaxUrlCountPerService::get(),
+			T::MaxNumberOfUrlsPerService::get(),
 			T::MaxServiceUrlLength::get(),
 		);
 		let endpoint_id = old_service_endpoints[0].id.clone();
@@ -901,7 +901,7 @@ benchmarks! {
 		);
 		assert_eq!(
 			ServiceEndpoints::<T>::iter_prefix(&did_subject).count().saturated_into::<u32>(),
-			T::MaxDidServicesCount::get() - 1
+			T::MaxNumberOfServicesPerDid::get() - 1
 		);
 	}
 
