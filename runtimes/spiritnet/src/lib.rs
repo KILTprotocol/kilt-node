@@ -61,9 +61,9 @@ use kilt_primitives::{
 			MAX_SIGNATURE_BYTE_LENGTH,
 		},
 		did::{
-			DID_DEPOSIT, DID_FEE, MAX_BLOCKS_TX_VALIDITY, MAX_DID_SERVICES_COUNT, MAX_ENDPOINT_URLS_COUNT,
-			MAX_KEY_AGREEMENT_KEYS, MAX_PUBLIC_KEYS_PER_DID, MAX_SERVICE_ID_LENGTH, MAX_SERVICE_TYPE_COUNT,
-			MAX_SERVICE_TYPE_LENGTH, MAX_SERVICE_URL_COUNT, MAX_SERVICE_URL_LENGTH, MAX_TOTAL_KEY_AGREEMENT_KEYS,
+			DID_DEPOSIT, DID_FEE, MAX_BLOCKS_TX_VALIDITY, MAX_NUMBER_OF_SERVICES_PER_DID, MAX_ENDPOINT_URLS_COUNT,
+			MAX_KEY_AGREEMENT_KEYS, MAX_PUBLIC_KEYS_PER_DID, MAX_SERVICE_ID_LENGTH, MAX_NUMBER_OF_TYPES_PER_SERVICE,
+			MAX_SERVICE_TYPE_LENGTH, MAX_NUMBER_OF_URLS_PER_SERVICE, MAX_SERVICE_URL_LENGTH, MAX_TOTAL_KEY_AGREEMENT_KEYS,
 			MAX_URL_LENGTH,
 		},
 		governance::{
@@ -624,12 +624,12 @@ parameter_types! {
 	pub const MaxBlocksTxValidity: BlockNumber = MAX_BLOCKS_TX_VALIDITY;
 	pub const DidDeposit: Balance = DID_DEPOSIT;
 	pub const DidFee: Balance = DID_FEE;
-	pub const MaxDidServicesCount: u32 = MAX_DID_SERVICES_COUNT;
+	pub const MaxNumberOfServicesPerDid: u32 = MAX_NUMBER_OF_SERVICES_PER_DID;
 	pub const MaxServiceIdLength: u32 = MAX_SERVICE_ID_LENGTH;
 	pub const MaxServiceTypeLength: u32 = MAX_SERVICE_TYPE_LENGTH;
 	pub const MaxServiceUrlLength: u32 = MAX_SERVICE_URL_LENGTH;
-	pub const MaxTypeCountPerService: u32 = MAX_SERVICE_TYPE_COUNT;
-	pub const MaxUrlCountPerService: u32 = MAX_SERVICE_URL_COUNT;
+	pub const MaxNumberOfTypesPerService: u32 = MAX_NUMBER_OF_TYPES_PER_SERVICE;
+	pub const MaxNumberOfUrlsPerService: u32 = MAX_NUMBER_OF_URLS_PER_SERVICE;
 }
 
 impl did::Config for Runtime {
@@ -656,13 +656,13 @@ impl did::Config for Runtime {
 	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
 	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
 	type MaxBlocksTxValidity = MaxBlocksTxValidity;
-	type MaxDidServicesCount = MaxDidServicesCount;
+	type MaxNumberOfServicesPerDid = MaxNumberOfServicesPerDid;
 	type MaxServiceIdLength = MaxServiceIdLength;
 	type MaxServiceTypeLength = MaxServiceTypeLength;
 	type MaxServiceUrlLength = MaxServiceUrlLength;
-	type MaxTypeCountPerService = MaxTypeCountPerService;
-	type MaxUrlCountPerService = MaxUrlCountPerService;
-	type WeightInfo = weights::did::WeightInfo<Runtime>;
+	type MaxNumberOfTypesPerService = MaxNumberOfTypesPerService;
+	type MaxNumberOfUrlsPerService = MaxNumberOfUrlsPerService;
+	type WeightInfo = ();
 }
 
 parameter_types! {
