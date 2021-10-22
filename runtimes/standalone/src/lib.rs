@@ -46,7 +46,6 @@ use kilt_primitives::{
 	},
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature,
 };
-use migrations::crowdloan_contributions::CrowdloanContributionsSetup;
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
 use sp_api::impl_runtime_apis;
@@ -84,8 +83,6 @@ pub use attestation;
 pub use ctype;
 pub use delegation;
 pub use did;
-
-mod migrations;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem<Hash>;
@@ -586,8 +583,7 @@ pub type Executive = frame_executive::Executive<
 	Block,
 	frame_system::ChainContext<Runtime>,
 	Runtime,
-	AllPallets,
-	CrowdloanContributionsSetup,
+	AllPallets
 >;
 
 impl_runtime_apis! {
