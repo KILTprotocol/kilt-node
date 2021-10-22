@@ -809,7 +809,7 @@ pub mod pallet {
 
 			// *** No Fail beyond this point ***
 
-			ServiceEndpoints::<T>::try_mutate_exists(
+			ServiceEndpoints::<T>::try_mutate(
 				&did_subject,
 				service_endpoint.id.clone(),
 				|existing_service| -> Result<(), Error<T>> {
@@ -1102,15 +1102,13 @@ impl<T: Config> Pallet<T> {
 		let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 
 		// *** No Fail beyond this point ***
-		let storage_kill_result =
-			ServiceEndpoints::<T>::remove_prefix(&did_subject, Some(T::MaxNumberOfServicesPerDid::get()));
-
+		let services_count = DidEndpointsCount::<T>::take(&did_subject).unwrap_or_default();
+		let storage_kill_result = ServiceEndpoints::<T>::remove_prefix(&did_subject, Some(services_count));
 		// If some items are remaining, it means that there were more than
-		// MaxNumberOfServicesPerDid stored, and that should never happen.
+		// the counter stored in `DidEndpointsCount`, and that should never happen.
 		if let KillStorageResult::SomeRemaining(_) = storage_kill_result {
 			return Err(Error::<T>::InternalError.into());
 		};
-		DidEndpointsCount::<T>::remove(&did_subject);
 		kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&did_entry.deposit);
 		// Mark as deleted to prevent potential replay-attacks of re-adding a previously
 		// deleted DID.

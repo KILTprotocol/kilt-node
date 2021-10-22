@@ -245,10 +245,16 @@ fn check_successful_complete_creation() {
 				assert_eq!(stored_service.service_type, new_service.service_type);
 			});
 			// ... and that the number of elements in the creation operation is the same as
-			// the number of elements stored.
+			// the number of elements stored in `ServiceEndpoints` and `DidEndpointsCount`.
 			assert_eq!(
-				did::pallet::DidEndpointsCount::<Test>::get(&alice_did).unwrap_or_default(),
-				details.new_service_details.len().saturated_into::<u32>()
+				did::pallet::ServiceEndpoints::<Test>::iter_prefix(&alice_did).count(),
+				details.new_service_details.len()
+			);
+			assert_eq!(
+				did::pallet::DidEndpointsCount::<Test>::get(&alice_did)
+					.unwrap_or_default()
+					.saturated_into::<usize>(),
+				details.new_service_details.len()
 			);
 
 			assert_eq!(
@@ -452,8 +458,14 @@ fn check_max_limit_service_endpoints_count_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
-	details.new_service_details =
-		get_service_endpoints(<Test as did::Config>::MaxNumberOfServicesPerDid::get() + 1, 1, 1, 1, 1, 1);
+	details.new_service_details = get_service_endpoints(
+		<Test as did::Config>::MaxNumberOfServicesPerDid::get() + 1,
+		1,
+		1,
+		1,
+		1,
+		1,
+	);
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
@@ -502,8 +514,14 @@ fn check_max_limit_service_type_count_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
-	details.new_service_details =
-		get_service_endpoints(1, 1, <Test as did::Config>::MaxNumberOfTypesPerService::get() + 1, 1, 1, 1);
+	details.new_service_details = get_service_endpoints(
+		1,
+		1,
+		<Test as did::Config>::MaxNumberOfTypesPerService::get() + 1,
+		1,
+		1,
+		1,
+	);
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
@@ -552,8 +570,14 @@ fn check_max_limit_service_url_count_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
-	details.new_service_details =
-		get_service_endpoints(1, 1, 1, 1, <Test as did::Config>::MaxNumberOfUrlsPerService::get() + 1, 1);
+	details.new_service_details = get_service_endpoints(
+		1,
+		1,
+		1,
+		1,
+		<Test as did::Config>::MaxNumberOfUrlsPerService::get() + 1,
+		1,
+	);
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
@@ -1623,7 +1647,14 @@ fn check_service_addition_no_prior_service_successful() {
 			let stored_endpoint = did::pallet::ServiceEndpoints::<Test>::get(&alice_did, &new_service_endpoint.id)
 				.expect("Service endpoint should be stored.");
 			assert_eq!(stored_endpoint, new_service_endpoint);
-			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did).unwrap_or_default(), 1);
+			assert_eq!(
+				did::pallet::ServiceEndpoints::<Test>::iter_prefix(&alice_did).count(),
+				1
+			);
+			assert_eq!(
+				did::pallet::DidEndpointsCount::<Test>::get(&alice_did).unwrap_or_default(),
+				1
+			);
 		});
 }
 
@@ -1656,6 +1687,10 @@ fn check_service_addition_one_from_full_successful() {
 			assert_eq!(
 				did::pallet::DidEndpointsCount::<Test>::get(&alice_did).unwrap_or_default(),
 				<Test as did::Config>::MaxNumberOfServicesPerDid::get()
+			);
+			assert_eq!(
+				did::pallet::ServiceEndpoints::<Test>::iter_prefix(&alice_did).count(),
+				<Test as did::Config>::MaxNumberOfServicesPerDid::get().saturated_into::<usize>()
 			);
 			let stored_endpoint = did::pallet::ServiceEndpoints::<Test>::get(&alice_did, &new_service_endpoint.id)
 				.expect("Service endpoint should be stored.");
@@ -1946,8 +1981,10 @@ fn check_service_deletion_successful() {
 				old_service_endpoint.id
 			),);
 			// Counter should be deleted from the storage.
-			assert!(
-				did::pallet::DidEndpointsCount::<Test>::get(&alice_did).is_none()
+			assert!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did).is_none());
+			assert_eq!(
+				did::pallet::ServiceEndpoints::<Test>::iter_prefix(&alice_did).count(),
+				0
 			);
 		});
 }
@@ -1977,7 +2014,53 @@ fn check_service_not_present_deletion_error() {
 // delete
 
 #[test]
-fn check_successful_deletion() {
+fn check_successful_deletion_no_endpoints() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+
+	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	did_details.deposit.owner = ACCOUNT_00;
+	did_details.deposit.amount = <Test as did::Config>::Deposit::get();
+
+	let balance = <Test as did::Config>::Deposit::get() * 2
+		+ <Test as did::Config>::Fee::get() * 2
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.with_dids(vec![(alice_did.clone(), did_details)])
+		.build(None)
+		.execute_with(|| {
+			assert!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did).is_none());
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as did::Config>::Deposit::get()
+			);
+			assert_ok!(Did::delete(Origin::signed(alice_did.clone())));
+			assert!(Did::get_did(alice_did.clone()).is_none());
+			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
+			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+
+			assert!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did).is_none());
+
+			// Re-adding the same DID identifier should fail.
+			let details = generate_base_did_creation_details::<Test>(alice_did.clone(), ACCOUNT_00);
+
+			let signature = auth_key.sign(details.encode().as_ref());
+
+			assert_noop!(
+				Did::create(
+					Origin::signed(ACCOUNT_00.clone()),
+					details,
+					did::DidSignature::from(signature),
+				),
+				did::Error::<Test>::DidAlreadyDeleted
+			);
+		});
+}
+
+#[test]
+fn check_successful_deletion_with_endpoints() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let service_endpoint = DidEndpointDetails::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
@@ -2009,10 +2092,7 @@ fn check_successful_deletion() {
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 
-			assert_eq!(
-				did::pallet::DidEndpointsCount::<Test>::get(&alice_did).unwrap_or_default(),
-				0
-			);
+			assert!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did).is_none(),);
 
 			// Re-adding the same DID identifier should fail.
 			let details = generate_base_did_creation_details::<Test>(alice_did.clone(), ACCOUNT_00);

@@ -871,8 +871,8 @@ benchmarks! {
 			Some(new_service_endpoint)
 		);
 		assert_eq!(
-			ServiceEndpoints::<T>::iter_prefix(&did_subject).count().saturated_into::<u32>(),
-			T::MaxNumberOfServicesPerDid::get()
+			ServiceEndpoints::<T>::iter_prefix(&did_subject).count(),
+			T::MaxNumberOfServicesPerDid::get().saturated_into::<usize>()
 		);
 	}
 
@@ -900,8 +900,8 @@ benchmarks! {
 			ServiceEndpoints::<T>::get(&did_subject, &endpoint_id).is_none()
 		);
 		assert_eq!(
-			ServiceEndpoints::<T>::iter_prefix(&did_subject).count().saturated_into::<u32>(),
-			T::MaxNumberOfServicesPerDid::get() - 1
+			ServiceEndpoints::<T>::iter_prefix(&did_subject).count(),
+			T::MaxNumberOfServicesPerDid::get().saturated_into::<usize>() - 1
 		);
 	}
 
