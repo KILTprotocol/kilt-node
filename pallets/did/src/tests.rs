@@ -284,7 +284,11 @@ fn check_duplicate_did_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), Box::new(details), did::DidSignature::from(signature)),
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
 				did::Error::<Test>::DidAlreadyPresent
 			);
 		});
@@ -311,7 +315,11 @@ fn check_unauthorised_submitter_did_creation_error() {
 		.execute_with(|| {
 			assert_noop!(
 				// Use ACCOUNT_00 to submit the transaction
-				Did::create(Origin::signed(ACCOUNT_00), Box::new(details), did::DidSignature::from(signature)),
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
 				BadOrigin
 			);
 		});
@@ -327,7 +335,11 @@ fn create_fail_insufficient_balance() {
 
 	ExtBuilder::default().build(None).execute_with(|| {
 		assert_noop!(
-			Did::create(Origin::signed(ACCOUNT_00), Box::new(details), did::DidSignature::from(signature)),
+			Did::create(
+				Origin::signed(ACCOUNT_00),
+				Box::new(details),
+				did::DidSignature::from(signature)
+			),
 			did::Error::<Test>::UnableToPayFees
 		);
 	});
@@ -350,7 +362,11 @@ fn check_did_already_deleted_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), Box::new(details), did::DidSignature::from(signature)),
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
 				did::Error::<Test>::DidAlreadyDeleted
 			);
 		});
@@ -375,7 +391,11 @@ fn check_invalid_signature_format_did_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), Box::new(details), did::DidSignature::from(signature)),
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
 				did::Error::<Test>::InvalidSignature
 			);
 		});
@@ -398,7 +418,11 @@ fn check_invalid_signature_did_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), Box::new(details), did::DidSignature::from(signature)),
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
 				did::Error::<Test>::InvalidSignature
 			);
 		});
@@ -421,7 +445,11 @@ fn check_swapped_did_subject_did_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), Box::new(details), did::DidSignature::from(signature)),
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
 				did::Error::<Test>::InvalidSignature
 			);
 		});
@@ -447,7 +475,11 @@ fn check_max_limit_key_agreement_keys_did_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), Box::new(details), did::DidSignature::from(signature)),
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
 				did::Error::<Test>::MaxKeyAgreementKeysLimitExceeded
 			);
 		});
@@ -477,7 +509,11 @@ fn check_max_limit_service_endpoints_count_did_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), Box::new(details), did::DidSignature::from(signature)),
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
 				did::Error::<Test>::MaxNumberOfServicesPerDidExceeded
 			);
 		});
@@ -502,7 +538,11 @@ fn check_max_limit_service_id_length_did_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), Box::new(details), did::DidSignature::from(signature)),
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
 				did::Error::<Test>::MaxServiceIdLengthExceeded
 			);
 		});
@@ -533,7 +573,11 @@ fn check_max_limit_service_type_count_did_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), Box::new(details), did::DidSignature::from(signature)),
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
 				did::Error::<Test>::MaxNumberOfTypesPerServiceExceeded
 			);
 		});
@@ -558,7 +602,11 @@ fn check_max_limit_service_type_length_did_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), Box::new(details), did::DidSignature::from(signature)),
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
 				did::Error::<Test>::MaxServiceTypeLengthExceeded
 			);
 		});
@@ -589,7 +637,11 @@ fn check_max_limit_service_url_count_did_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), Box::new(details), did::DidSignature::from(signature)),
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
 				did::Error::<Test>::MaxNumberOfUrlsPerServiceExceeded
 			);
 		});
@@ -614,7 +666,11 @@ fn check_max_limit_service_url_length_did_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), Box::new(details), did::DidSignature::from(signature)),
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
 				did::Error::<Test>::MaxServiceUrlLengthExceeded
 			);
 		});
@@ -639,7 +695,11 @@ fn check_invalid_service_id_character_did_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), Box::new(details), did::DidSignature::from(signature)),
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
 				did::Error::<Test>::InvalidServiceEncoding
 			);
 		});
@@ -664,7 +724,11 @@ fn check_invalid_service_type_character_did_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), Box::new(details), did::DidSignature::from(signature)),
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
 				did::Error::<Test>::InvalidServiceEncoding
 			);
 		});
@@ -689,7 +753,11 @@ fn check_invalid_service_url_character_did_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), Box::new(details), did::DidSignature::from(signature)),
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
 				did::Error::<Test>::InvalidServiceEncoding
 			);
 		});

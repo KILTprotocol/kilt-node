@@ -16,32 +16,42 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::Config;
+use crate::{Config, InputError};
 use codec::{Decode, Encode};
-use frame_support::{BoundedVec, ensure};
+use frame_support::{ensure, traits::Get, BoundedVec};
 use scale_info::TypeInfo;
+use sp_runtime::traits::SaturatedConversion;
 use sp_std::str;
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 use sp_std::{convert::TryInto, vec::Vec};
-use sp_runtime::traits::SaturatedConversion;
-use crate::InputError;
-use frame_support::traits::Get;
 
 use crate::utils as crate_utils;
 
+/// A bounded vector of bytes for a service endpoint ID.
 pub type ServiceEndpointId<T> = BoundedVec<u8, <T as Config>::MaxServiceIdLength>;
 
+/// A bounded vectors of bytes for a service endpoint type.
 pub(crate) type ServiceEndpointType<T> = BoundedVec<u8, <T as Config>::MaxServiceTypeLength>;
-pub(crate) type ServiceEndpointTypeEntries<T> = BoundedVec<ServiceEndpointType<T>, <T as Config>::MaxNumberOfTypesPerService>;
+/// A bounded vector of [ServiceEndpointType]s.
+pub(crate) type ServiceEndpointTypeEntries<T> =
+	BoundedVec<ServiceEndpointType<T>, <T as Config>::MaxNumberOfTypesPerService>;
 
+/// A bounded vectors of bytes for a service endpoint URL.
 pub(crate) type ServiceEndpointUrl<T> = BoundedVec<u8, <T as Config>::MaxServiceUrlLength>;
-pub(crate) type ServiceEndpointUrlEntries<T> = BoundedVec<ServiceEndpointUrl<T>, <T as Config>::MaxNumberOfUrlsPerService>;
+/// A bounded vector of [ServiceEndpointUrl]s.
+pub(crate) type ServiceEndpointUrlEntries<T> =
+	BoundedVec<ServiceEndpointUrl<T>, <T as Config>::MaxNumberOfUrlsPerService>;
 
+/// A single service endpoint description.
 #[derive(Clone, Decode, Encode, PartialEq, Eq, TypeInfo)]
 #[scale_info(skip_type_params(T))]
 pub struct DidEndpointDetails<T: Config> {
+	/// The ID of the service endpoint. Allows the endpoint to be queried and
+	/// resolved directly.
 	pub(crate) id: ServiceEndpointId<T>,
+	/// A vector of types description for the service.
 	pub(crate) service_types: ServiceEndpointTypeEntries<T>,
+	/// A vector of URLs the service points to.
 	pub(crate) urls: ServiceEndpointUrlEntries<T>,
 }
 
@@ -56,6 +66,8 @@ impl<T: Config> sp_std::fmt::Debug for DidEndpointDetails<T> {
 }
 
 impl<T: Config> DidEndpointDetails<T> {
+	/// Validates a given [DidEndpointDetails] instance against the constraint
+	/// set in the pallet's [Config].
 	pub(crate) fn validate_against_constraints(&self) -> Result<(), InputError> {
 		// Check that the maximum number of service types is provided.
 		ensure!(
@@ -73,11 +85,8 @@ impl<T: Config> DidEndpointDetails<T> {
 			self.id.len() <= T::MaxServiceIdLength::get().saturated_into(),
 			InputError::MaxIdLengthExceeded
 		);
-		let str_id = str::from_utf8(&self.id).map_err(|_| InputError::InvalidUrlEncoding)?;
-		ensure!(
-			crate_utils::is_valid_ascii_string(str_id),
-			InputError::InvalidUrlEncoding
-		);
+		let str_id = str::from_utf8(&self.id).map_err(|_| InputError::InvalidEncoding)?;
+		ensure!(crate_utils::is_valid_ascii_string(str_id), InputError::InvalidEncoding);
 		// Check that all types are the maximum allowed length and only contain ASCII
 		// characters.
 		self.service_types.iter().try_for_each(|s_type| {
@@ -85,10 +94,10 @@ impl<T: Config> DidEndpointDetails<T> {
 				s_type.len() <= T::MaxServiceTypeLength::get().saturated_into(),
 				InputError::MaxTypeLengthExceeded
 			);
-			let str_type = str::from_utf8(s_type).map_err(|_| InputError::InvalidUrlEncoding)?;
+			let str_type = str::from_utf8(s_type).map_err(|_| InputError::InvalidEncoding)?;
 			ensure!(
 				crate_utils::is_valid_ascii_string(str_type),
-				InputError::InvalidUrlEncoding
+				InputError::InvalidEncoding
 			);
 			Ok(())
 		})?;
@@ -99,11 +108,8 @@ impl<T: Config> DidEndpointDetails<T> {
 				s_url.len() <= T::MaxServiceUrlLength::get().saturated_into(),
 				InputError::MaxUrlLengthExceeded
 			);
-			let str_url = str::from_utf8(s_url).map_err(|_| InputError::InvalidUrlEncoding)?;
-			ensure!(
-				crate_utils::is_valid_ascii_string(str_url),
-				InputError::InvalidUrlEncoding
-			);
+			let str_url = str::from_utf8(s_url).map_err(|_| InputError::InvalidEncoding)?;
+			ensure!(crate_utils::is_valid_ascii_string(str_url), InputError::InvalidEncoding);
 			Ok(())
 		})?;
 		Ok(())

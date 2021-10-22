@@ -87,11 +87,18 @@ pub enum InputError {
 	/// A number of new key agreement keys greater than the maximum allowed has
 	/// been provided.
 	MaxKeyAgreementKeysLimitExceeded,
+	/// The maximum number of service endpoints for a DID has been exceeded.
 	MaxServicesCountExceeded,
+	/// The maximum number of URLs for a service endpoint has been exceeded.
 	MaxUrlCountExceeded,
+	/// The maximum number of types for a service endpoint has been exceeded.
 	MaxTypeCountExceeded,
+	/// The service endpoint ID exceeded the maximum allowed length.
 	MaxIdLengthExceeded,
+	/// One of the service endpoint URLs exceeded the maximum allowed length.
 	MaxUrlLengthExceeded,
+	/// One of the service endpoint types exceeded the maximum allowed length.
 	MaxTypeLengthExceeded,
-	InvalidUrlEncoding,
+	/// One of the service endpoint details contains non-ASCII characters.
+	InvalidEncoding,
 }

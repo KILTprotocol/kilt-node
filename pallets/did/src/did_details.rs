@@ -556,6 +556,7 @@ pub struct DidCreationDetails<T: Config> {
 	pub new_attestation_key: Option<DidVerificationKey>,
 	/// \[OPTIONAL\] The new delegation key.
 	pub new_delegation_key: Option<DidVerificationKey>,
+	/// The service endpoints details.
 	pub new_service_details: Vec<DidEndpointDetails<T>>,
 }
 
