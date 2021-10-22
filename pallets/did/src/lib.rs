@@ -793,8 +793,7 @@ pub mod pallet {
 		pub fn add_service_endpoint(origin: OriginFor<T>, service_endpoint: DidEndpointDetails<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 
-			service_endpoints_utils::validate_single_service_endpoint_entry(&service_endpoint)
-				.map_err(Error::<T>::from)?;
+			service_endpoint.validate_against_constraints().map_err(Error::<T>::from)?;
 
 			// Verify that the DID is present.
 			ensure!(Did::<T>::get(&did_subject).is_some(), Error::<T>::DidNotPresent);

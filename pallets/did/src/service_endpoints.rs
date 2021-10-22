@@ -18,11 +18,14 @@
 
 use crate::Config;
 use codec::{Decode, Encode};
-use frame_support::BoundedVec;
+use frame_support::{BoundedVec, ensure};
 use scale_info::TypeInfo;
 use sp_std::str;
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 use sp_std::{convert::TryInto, vec::Vec};
+use sp_runtime::traits::SaturatedConversion;
+use crate::InputError;
+use frame_support::traits::Get;
 
 use crate::utils as crate_utils;
 
@@ -38,17 +41,72 @@ pub(crate) type ServiceEndpointUrlEntries<T> = BoundedVec<ServiceEndpointUrl<T>,
 #[scale_info(skip_type_params(T))]
 pub struct DidEndpointDetails<T: Config> {
 	pub(crate) id: ServiceEndpointId<T>,
-	pub(crate) service_type: ServiceEndpointTypeEntries<T>,
-	pub(crate) url: ServiceEndpointUrlEntries<T>,
+	pub(crate) service_types: ServiceEndpointTypeEntries<T>,
+	pub(crate) urls: ServiceEndpointUrlEntries<T>,
 }
 
 impl<T: Config> sp_std::fmt::Debug for DidEndpointDetails<T> {
 	fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
 		f.debug_struct("DidEndpointDetails")
 			.field("id", &self.id.clone().into_inner())
-			.field("service_type", &self.service_type.encode())
-			.field("url", &self.url.encode())
+			.field("service_types", &self.service_types.encode())
+			.field("urls", &self.urls.encode())
 			.finish()
+	}
+}
+
+impl<T: Config> DidEndpointDetails<T> {
+	pub(crate) fn validate_against_constraints(&self) -> Result<(), InputError> {
+		// Check that the maximum number of service types is provided.
+		ensure!(
+			self.service_types.len() <= T::MaxNumberOfTypesPerService::get().saturated_into(),
+			InputError::MaxTypeCountExceeded
+		);
+		// Check that the maximum number of URLs is provided.
+		ensure!(
+			self.urls.len() <= T::MaxNumberOfUrlsPerService::get().saturated_into(),
+			InputError::MaxUrlCountExceeded
+		);
+		// Check that the ID is the maximum allowed length and only contain ASCII
+		// characters.
+		ensure!(
+			self.id.len() <= T::MaxServiceIdLength::get().saturated_into(),
+			InputError::MaxIdLengthExceeded
+		);
+		let str_id = str::from_utf8(&self.id).map_err(|_| InputError::InvalidUrlEncoding)?;
+		ensure!(
+			crate_utils::is_valid_ascii_string(str_id),
+			InputError::InvalidUrlEncoding
+		);
+		// Check that all types are the maximum allowed length and only contain ASCII
+		// characters.
+		self.service_types.iter().try_for_each(|s_type| {
+			ensure!(
+				s_type.len() <= T::MaxServiceTypeLength::get().saturated_into(),
+				InputError::MaxTypeLengthExceeded
+			);
+			let str_type = str::from_utf8(s_type).map_err(|_| InputError::InvalidUrlEncoding)?;
+			ensure!(
+				crate_utils::is_valid_ascii_string(str_type),
+				InputError::InvalidUrlEncoding
+			);
+			Ok(())
+		})?;
+		// Check that all URLs are the maximum allowed length AND only contain ASCII
+		// characters.
+		self.urls.iter().try_for_each(|s_url| {
+			ensure!(
+				s_url.len() <= T::MaxServiceUrlLength::get().saturated_into(),
+				InputError::MaxUrlLengthExceeded
+			);
+			let str_url = str::from_utf8(s_url).map_err(|_| InputError::InvalidUrlEncoding)?;
+			ensure!(
+				crate_utils::is_valid_ascii_string(str_url),
+				InputError::InvalidUrlEncoding
+			);
+			Ok(())
+		})?;
+		Ok(())
 	}
 }
 
@@ -71,17 +129,14 @@ impl<T: Config> DidEndpointDetails<T> {
 
 		Self {
 			id: bounded_id,
-			service_type: bounded_types,
-			url: bounded_urls,
+			service_types: bounded_types,
+			urls: bounded_urls,
 		}
 	}
 }
 
 pub mod utils {
 	use super::*;
-	use crate::InputError;
-	use frame_support::{ensure, traits::Get};
-	use sp_runtime::traits::SaturatedConversion;
 
 	pub(crate) fn validate_new_service_endpoints<T: Config>(
 		endpoints: &[DidEndpointDetails<T>],
@@ -95,63 +150,8 @@ pub mod utils {
 		// Then validate each service.
 		endpoints
 			.iter()
-			.try_for_each(|endpoint| validate_single_service_endpoint_entry(endpoint))?;
+			.try_for_each(|endpoint| endpoint.validate_against_constraints())?;
 
-		Ok(())
-	}
-
-	pub(crate) fn validate_single_service_endpoint_entry<T: Config>(
-		endpoint: &DidEndpointDetails<T>,
-	) -> Result<(), InputError> {
-		// Check that the maximum number of service types is provided.
-		ensure!(
-			endpoint.service_type.len() <= T::MaxNumberOfTypesPerService::get().saturated_into(),
-			InputError::MaxTypeCountExceeded
-		);
-		// Check that the maximum number of URLs is provided.
-		ensure!(
-			endpoint.url.len() <= T::MaxNumberOfUrlsPerService::get().saturated_into(),
-			InputError::MaxUrlCountExceeded
-		);
-		// Check that the ID is the maximum allowed length and only contain ASCII
-		// characters.
-		ensure!(
-			endpoint.id.len() <= T::MaxServiceIdLength::get().saturated_into(),
-			InputError::MaxIdLengthExceeded
-		);
-		let str_id = str::from_utf8(&endpoint.id).map_err(|_| InputError::InvalidUrlEncoding)?;
-		ensure!(
-			crate_utils::is_valid_ascii_string(str_id),
-			InputError::InvalidUrlEncoding
-		);
-		// Check that all types are the maximum allowed length and only contain ASCII
-		// characters.
-		endpoint.service_type.iter().try_for_each(|s_type| {
-			ensure!(
-				s_type.len() <= T::MaxServiceTypeLength::get().saturated_into(),
-				InputError::MaxTypeLengthExceeded
-			);
-			let str_type = str::from_utf8(s_type).map_err(|_| InputError::InvalidUrlEncoding)?;
-			ensure!(
-				crate_utils::is_valid_ascii_string(str_type),
-				InputError::InvalidUrlEncoding
-			);
-			Ok(())
-		})?;
-		// Check that all URLs are the maximum allowed length AND only contain ASCII
-		// characters.
-		endpoint.url.iter().try_for_each(|s_url| {
-			ensure!(
-				s_url.len() <= T::MaxServiceUrlLength::get().saturated_into(),
-				InputError::MaxUrlLengthExceeded
-			);
-			let str_url = str::from_utf8(s_url).map_err(|_| InputError::InvalidUrlEncoding)?;
-			ensure!(
-				crate_utils::is_valid_ascii_string(str_url),
-				InputError::InvalidUrlEncoding
-			);
-			Ok(())
-		})?;
 		Ok(())
 	}
 }
