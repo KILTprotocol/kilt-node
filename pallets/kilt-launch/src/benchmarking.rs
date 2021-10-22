@@ -195,11 +195,8 @@ benchmarks! {
 	verify {
 		assert!(UnownedAccount::<T>::get(&source).is_none());
 		assert!(!Vesting::<T>::contains_key(source), "Vesting schedule not removed");
-		assert_eq!(Vesting::<T>::get(&target).expect("Missing vesting info").into_inner().get(0), Some(&VestingInfo::<BalanceOf<T>, T::BlockNumber>::new(
-AMOUNT.into(),
-PER_BLOCK.into(),
-T::BlockNumber::zero(),
-		)), "Vesting schedule not migrated");
+		let expected_vesting = VestingInfo::<BalanceOf<T>, T::BlockNumber>::new(AMOUNT.into(), PER_BLOCK.into(), T::BlockNumber::zero());
+		assert_eq!(Vesting::<T>::get(&target).expect("Missing vesting info").into_inner().get(0), Some(&expected_vesting), "Vesting schedule not migrated");
 		assert_eq!(Locks::<T>::get(&target).len(), 1, "Lock not set");
 	}
 
