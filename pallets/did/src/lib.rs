@@ -829,7 +829,7 @@ pub mod pallet {
 				Error::<T>::MaxNumberOfServicesPerDidExceeded
 			);
 
-			// *** No Fail beyond this point ***
+			// *** No Fail after the following storage write ***
 
 			ServiceEndpoints::<T>::try_mutate(
 				&did_subject,
