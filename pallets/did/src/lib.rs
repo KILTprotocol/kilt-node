@@ -546,6 +546,7 @@ pub mod pallet {
 				DidDetails::from_creation_details(*details, account_did_auth_key).map_err(Error::<T>::from)?;
 
 			// *** No Fail beyond this call ***
+
 			CurrencyOf::<T>::reserve(&did_entry.deposit.owner, did_entry.deposit.amount)?;
 
 			// Withdraw the fee. We made sure that enough balance is available. But if this
@@ -603,6 +604,8 @@ pub mod pallet {
 				.update_authentication_key(new_key, frame_system::Pallet::<T>::block_number())
 				.map_err(Error::<T>::from)?;
 
+			// *** No Fail beyond this call ***
+
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Authentication key set");
 
@@ -636,6 +639,8 @@ pub mod pallet {
 				.update_delegation_key(new_key, frame_system::Pallet::<T>::block_number())
 				.map_err(Error::<T>::from)?;
 
+			// *** No Fail beyond this call ***
+
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Delegation key set");
 
@@ -665,6 +670,8 @@ pub mod pallet {
 
 			log::debug!("Removing delegation key for DID {:?}", &did_subject);
 			did_details.remove_delegation_key().map_err(Error::<T>::from)?;
+
+			// *** No Fail beyond this call ***
 
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Delegation key removed");
@@ -699,6 +706,8 @@ pub mod pallet {
 				.update_attestation_key(new_key, frame_system::Pallet::<T>::block_number())
 				.map_err(Error::<T>::from)?;
 
+			// *** No Fail beyond this call ***
+
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Attestation key set");
 
@@ -728,6 +737,8 @@ pub mod pallet {
 
 			log::debug!("Removing attestation key for DID {:?}", &did_subject);
 			did_details.remove_attestation_key().map_err(Error::<T>::from)?;
+
+			// *** No Fail beyond this call ***
 
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Attestation key removed");
@@ -760,6 +771,8 @@ pub mod pallet {
 				.add_key_agreement_key(new_key, frame_system::Pallet::<T>::block_number())
 				.map_err(Error::<T>::from)?;
 
+			// *** No Fail beyond this call ***
+
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Key agreement key set");
 
@@ -787,6 +800,8 @@ pub mod pallet {
 
 			log::debug!("Removing key agreement key for DID {:?}", &did_subject);
 			did_details.remove_key_agreement_key(key_id).map_err(Error::<T>::from)?;
+
+			// *** No Fail beyond this call ***
 
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Key agreement key removed");
@@ -864,11 +879,6 @@ pub mod pallet {
 		) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 
-			ensure!(
-				ServiceEndpoints::<T>::take(&did_subject, &service_id).is_some(),
-				Error::<T>::ServiceNotPresent
-			);
-
 			let current_endpoints_count = DidEndpointsCount::<T>::get(&did_subject);
 			ensure!(
 				current_endpoints_count <= endpoints_to_remove,
@@ -876,6 +886,11 @@ pub mod pallet {
 			);
 
 			// *** No Fail beyond this point ***
+
+			ensure!(
+				ServiceEndpoints::<T>::take(&did_subject, &service_id).is_some(),
+				Error::<T>::ServiceNotPresent
+			);
 
 			// Decrease the endpoints counter or delete the entry if it reaches 0.
 			let new_endpoints_count = current_endpoints_count.saturating_sub(1);
@@ -950,7 +965,6 @@ pub mod pallet {
 			endpoints_to_remove: u32,
 		) -> DispatchResult {
 			let source = ensure_signed(origin)?;
-
 			let did_entry = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 
 			ensure!(did_entry.deposit.owner == source, Error::<T>::NotOwnerOfDeposit);
@@ -1032,6 +1046,8 @@ pub mod pallet {
 
 			// Dispatch the referenced [Call] instance and return its result
 			let DidAuthorizedCallOperation { did, call, .. } = wrapped_operation.operation;
+
+			// *** No Fail beyond this point ***
 
 			#[cfg(not(feature = "runtime-benchmarks"))]
 			let result = call.dispatch(
@@ -1147,26 +1163,25 @@ impl<T: Config> Pallet<T> {
 	/// endpoints, adds the identifier to the blacklisted DIDs and frees the
 	/// deposit.
 	fn delete_did(did_subject: DidIdentifierOf<T>, endpoints_to_remove: u32) -> DispatchResult {
-		// `take` calls `kill` internally
-		let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
-
 		let current_endpoints_count = DidEndpointsCount::<T>::get(&did_subject);
 		ensure!(
 			current_endpoints_count <= endpoints_to_remove,
 			Error::<T>::StoredEndpointsCountTooLarge
 		);
 
+		// *** No Fail beyond this point ***
+
+		// `take` calls `kill` internally
+		let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
+
 		// This one can fail, albeit this should **never** be the case as we check for
 		// the preconditions above.
-
 		let storage_kill_result = ServiceEndpoints::<T>::remove_prefix(&did_subject, Some(current_endpoints_count));
 		// If some items are remaining, it means that there were more than
 		// the counter stored in `DidEndpointsCount`, and that should never happen.
 		if let KillStorageResult::SomeRemaining(_) = storage_kill_result {
 			return Err(Error::<T>::InternalError.into());
 		};
-
-		// *** No Fail beyond this point ***
 
 		DidEndpointsCount::<T>::remove(&did_subject);
 		kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&did_entry.deposit);
