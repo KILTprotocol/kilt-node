@@ -880,10 +880,10 @@ pub mod pallet {
 
 			// Decrease the endpoints counter or delete the entry if it reaches 0.
 			let new_endpoints_count = current_endpoints_count.saturating_sub(1);
-			if new_endpoints_count > u32::zero() {
-				DidEndpointsCount::<T>::insert(&did_subject, new_endpoints_count)
-			} else {
+			if new_endpoints_count.is_zero() {
 				DidEndpointsCount::<T>::remove(&did_subject);
+			} else {
+				DidEndpointsCount::<T>::insert(&did_subject, new_endpoints_count)
 			};
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
@@ -1153,15 +1153,18 @@ impl<T: Config> Pallet<T> {
 			Error::<T>::StoredEndpointsCountTooLarge
 		);
 
-		// *** No Fail beyond this point ***
+		// This one can fail, albeit this should **never** be the case as we check for the preconditions above.
 
-		DidEndpointsCount::<T>::remove(&did_subject);
 		let storage_kill_result = ServiceEndpoints::<T>::remove_prefix(&did_subject, Some(current_endpoints_count));
 		// If some items are remaining, it means that there were more than
 		// the counter stored in `DidEndpointsCount`, and that should never happen.
 		if let KillStorageResult::SomeRemaining(_) = storage_kill_result {
 			return Err(Error::<T>::InternalError.into());
 		};
+
+		// *** No Fail beyond this point ***
+
+		DidEndpointsCount::<T>::remove(&did_subject);
 		kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&did_entry.deposit);
 		// Mark as deleted to prevent potential replay-attacks of re-adding a previously
 		// deleted DID.
