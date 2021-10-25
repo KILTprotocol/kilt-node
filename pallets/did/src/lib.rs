@@ -300,7 +300,7 @@ pub mod pallet {
 		DidIdentifierOf<T>,
 		Blake2_128Concat,
 		ServiceEndpointId<T>,
-		DidEndpointDetails<T>,
+		DidEndpoint<T>,
 	>;
 
 	/// Counter of service endpoints for each DID.
@@ -811,7 +811,7 @@ pub mod pallet {
 		/// - Writes: Did, ServiceEndpoints, DidEndpointsCount
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::add_service_endpoint())]
-		pub fn add_service_endpoint(origin: OriginFor<T>, service_endpoint: DidEndpointDetails<T>) -> DispatchResult {
+		pub fn add_service_endpoint(origin: OriginFor<T>, service_endpoint: DidEndpoint<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 
 			service_endpoint

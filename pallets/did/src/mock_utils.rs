@@ -51,7 +51,7 @@ pub fn get_service_endpoints<T: Config>(
 	endpoint_type_length: u32,
 	endpoint_url_count: u32,
 	endpoint_url_length: u32,
-) -> Vec<DidEndpointDetails<T>> {
+) -> Vec<DidEndpoint<T>> {
 	(0..count)
 		.map(|i| {
 			let mut endpoint_id = i.to_be_bytes().to_vec();
@@ -70,7 +70,7 @@ pub fn get_service_endpoints<T: Config>(
 					endpoint_url
 				})
 				.collect();
-			DidEndpointDetails::new(endpoint_id, endpoint_types, endpoint_urls)
+			DidEndpoint::new(endpoint_id, endpoint_types, endpoint_urls)
 		})
 		.collect()
 }

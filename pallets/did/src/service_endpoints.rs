@@ -45,7 +45,7 @@ pub(crate) type ServiceEndpointUrlEntries<T> =
 /// A single service endpoint description.
 #[derive(Clone, Decode, Encode, PartialEq, Eq, TypeInfo)]
 #[scale_info(skip_type_params(T))]
-pub struct DidEndpointDetails<T: Config> {
+pub struct DidEndpoint<T: Config> {
 	/// The ID of the service endpoint. Allows the endpoint to be queried and
 	/// resolved directly.
 	pub id: ServiceEndpointId<T>,
@@ -55,9 +55,9 @@ pub struct DidEndpointDetails<T: Config> {
 	pub urls: ServiceEndpointUrlEntries<T>,
 }
 
-impl<T: Config> sp_std::fmt::Debug for DidEndpointDetails<T> {
+impl<T: Config> sp_std::fmt::Debug for DidEndpoint<T> {
 	fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
-		f.debug_struct("DidEndpointDetails")
+		f.debug_struct("DidEndpoint")
 			.field("id", &self.id.clone().into_inner())
 			.field("service_types", &self.service_types.encode())
 			.field("urls", &self.urls.encode())
@@ -65,8 +65,8 @@ impl<T: Config> sp_std::fmt::Debug for DidEndpointDetails<T> {
 	}
 }
 
-impl<T: Config> DidEndpointDetails<T> {
-	/// Validates a given [DidEndpointDetails] instance against the constraint
+impl<T: Config> DidEndpoint<T> {
+	/// Validates a given [DidEndpoint] instance against the constraint
 	/// set in the pallet's [Config].
 	pub(crate) fn validate_against_constraints(&self) -> Result<(), InputError> {
 		// Check that the maximum number of service types is provided.
@@ -117,7 +117,7 @@ impl<T: Config> DidEndpointDetails<T> {
 }
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
-impl<T: Config> DidEndpointDetails<T> {
+impl<T: Config> DidEndpoint<T> {
 	pub(crate) fn new(id: Vec<u8>, types: Vec<Vec<u8>>, urls: Vec<Vec<u8>>) -> Self {
 		let bounded_id = id.try_into().expect("Service ID too long.");
 		let bounded_types = types
@@ -145,7 +145,7 @@ pub mod utils {
 	use super::*;
 
 	pub(crate) fn validate_new_service_endpoints<T: Config>(
-		endpoints: &[DidEndpointDetails<T>],
+		endpoints: &[DidEndpoint<T>],
 	) -> Result<(), InputError> {
 		// Check if up the maximum number of endpoints is provided.
 		ensure!(

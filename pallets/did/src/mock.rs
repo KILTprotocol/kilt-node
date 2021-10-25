@@ -413,7 +413,7 @@ pub fn initialize_logger() {
 #[derive(Clone, Default)]
 pub struct ExtBuilder {
 	dids_stored: Vec<(TestDidIdentifier, did::DidDetails<Test>)>,
-	service_endpoints: Vec<(TestDidIdentifier, Vec<DidEndpointDetails<Test>>)>,
+	service_endpoints: Vec<(TestDidIdentifier, Vec<DidEndpoint<Test>>)>,
 	deleted_dids: Vec<TestDidIdentifier>,
 	storage_version: DidStorageVersion,
 	ctypes_stored: Vec<(TestCtypeHash, TestCtypeOwner)>,
@@ -426,7 +426,7 @@ impl ExtBuilder {
 		self
 	}
 
-	pub fn with_endpoints(mut self, endpoints: Vec<(TestDidIdentifier, Vec<DidEndpointDetails<Test>>)>) -> Self {
+	pub fn with_endpoints(mut self, endpoints: Vec<(TestDidIdentifier, Vec<DidEndpoint<Test>>)>) -> Self {
 		self.service_endpoints = endpoints;
 		self
 	}

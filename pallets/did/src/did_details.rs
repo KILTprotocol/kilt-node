@@ -557,7 +557,7 @@ pub struct DidCreationDetails<T: Config> {
 	/// \[OPTIONAL\] The new delegation key.
 	pub new_delegation_key: Option<DidVerificationKey>,
 	/// The service endpoints details.
-	pub new_service_details: Vec<DidEndpointDetails<T>>,
+	pub new_service_details: Vec<DidEndpoint<T>>,
 }
 
 impl<T: Config> sp_std::fmt::Debug for DidCreationDetails<T> {
