@@ -399,6 +399,8 @@ pub mod pallet {
 		ServiceNotPresent,
 		/// One of the service endpoint details contains non-ASCII characters.
 		InvalidServiceEncoding,
+		/// The number of service endpoints stored under the DID is larger than the number of endpoints to delete.
+		StoredEndpointsCountTooLarge,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
 	}
@@ -859,8 +861,8 @@ pub mod pallet {
 		/// - Reads: [Origin Account], ServiceEndpoints, DidEndpointsCount
 		/// - Writes: Did, ServiceEndpoints, DidEndpointsCount
 		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_service_endpoint())]
-		pub fn remove_service_endpoint(origin: OriginFor<T>, service_id: ServiceEndpointId<T>) -> DispatchResult {
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_service_endpoint(*endpoints_to_remove))]
+		pub fn remove_service_endpoint(origin: OriginFor<T>, service_id: ServiceEndpointId<T>, endpoints_to_remove: u32) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 
 			ensure!(
@@ -868,17 +870,21 @@ pub mod pallet {
 				Error::<T>::ServiceNotPresent
 			);
 
+			let current_endpoints_count = DidEndpointsCount::<T>::get(&did_subject).unwrap_or_default();
+			ensure!(
+				current_endpoints_count <= endpoints_to_remove,
+				Error::<T>::StoredEndpointsCountTooLarge
+			);
+
 			// *** No Fail beyond this point ***
 
 			// Decrease the endpoints counter or delete the entry if it reaches 0.
-			DidEndpointsCount::<T>::mutate_exists(&did_subject, |existing_endpoint_count| {
-				let new_value = existing_endpoint_count.unwrap_or_default().saturating_sub(1);
-				if new_value == u32::zero() {
-					*existing_endpoint_count = None;
-				} else {
-					*existing_endpoint_count = Some(new_value);
-				}
-			});
+			let new_endpoints_count = current_endpoints_count.saturating_sub(1);
+			if new_endpoints_count > u32::zero() {
+				DidEndpointsCount::<T>::insert(&did_subject, new_endpoints_count)
+			} else {
+				DidEndpointsCount::<T>::remove(&did_subject);
+			};
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
 
@@ -909,12 +915,12 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Kills: Did entry associated to the DID identifier
 		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::delete())]
-		pub fn delete(origin: OriginFor<T>) -> DispatchResult {
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::delete(*endpoints_to_remove))]
+		pub fn delete(origin: OriginFor<T>, endpoints_to_remove: u32) -> DispatchResult {
 			let source = T::EnsureOrigin::ensure_origin(origin)?;
 			let did_subject = source.subject();
 
-			Pallet::<T>::delete_did(did_subject)
+			Pallet::<T>::delete_did(did_subject, endpoints_to_remove)
 		}
 
 		/// Reclaim a deposit for a DID. This will delete the DID and all
@@ -938,15 +944,15 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Kills: Did entry associated to the DID identifier
 		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit())]
-		pub fn reclaim_deposit(origin: OriginFor<T>, did_subject: DidIdentifierOf<T>) -> DispatchResult {
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit(*endpoints_to_remove))]
+		pub fn reclaim_deposit(origin: OriginFor<T>, did_subject: DidIdentifierOf<T>, endpoints_to_remove: u32) -> DispatchResult {
 			let source = ensure_signed(origin)?;
 
 			let did_entry = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 
 			ensure!(did_entry.deposit.owner == source, Error::<T>::NotOwnerOfDeposit);
 
-			Pallet::<T>::delete_did(did_subject)
+			Pallet::<T>::delete_did(did_subject, endpoints_to_remove)
 		}
 
 		/// Proxy a dispatchable call of another runtime extrinsic that
@@ -1137,14 +1143,20 @@ impl<T: Config> Pallet<T> {
 	/// Deletes DID details from storage, including its linked service
 	/// endpoints, adds the identifier to the blacklisted DIDs and frees the
 	/// deposit.
-	fn delete_did(did_subject: DidIdentifierOf<T>) -> DispatchResult {
+	fn delete_did(did_subject: DidIdentifierOf<T>, endpoints_to_remove: u32) -> DispatchResult {
 		// `take` calls `kill` internally
 		let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 
+		let current_endpoints_count = DidEndpointsCount::<T>::get(&did_subject).unwrap_or_default();
+		ensure!(
+			current_endpoints_count <= endpoints_to_remove,
+			Error::<T>::StoredEndpointsCountTooLarge
+		);
+
 		// *** No Fail beyond this point ***
 
-		let services_count = DidEndpointsCount::<T>::take(&did_subject).unwrap_or_default();
-		let storage_kill_result = ServiceEndpoints::<T>::remove_prefix(&did_subject, Some(services_count));
+		DidEndpointsCount::<T>::remove(&did_subject);
+		let storage_kill_result = ServiceEndpoints::<T>::remove_prefix(&did_subject, Some(current_endpoints_count));
 		// If some items are remaining, it means that there were more than
 		// the counter stored in `DidEndpointsCount`, and that should never happen.
 		if let KillStorageResult::SomeRemaining(_) = storage_kill_result {

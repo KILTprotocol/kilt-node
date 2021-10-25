@@ -48,187 +48,197 @@ use sp_std::marker::PhantomData;
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> did::WeightInfo for WeightInfo<T> {
 	fn create_ed25519_keys(n: u32, c: u32, ) -> Weight {
-		(108_176_000_u64)
-			// Standard Error: 241_000
-			.saturating_add((4_481_000_u64).saturating_mul(n as Weight))
-			// Standard Error: 75_000
-			.saturating_add((9_351_000_u64).saturating_mul(c as Weight))
+		(121_133_000_u64)
+			// Standard Error: 89_000
+			.saturating_add((2_124_000_u64).saturating_mul(n as Weight))
+			// Standard Error: 33_000
+			.saturating_add((8_147_000_u64).saturating_mul(c as Weight))
 			.saturating_add(T::DbWeight::get().reads(4_u64))
-			.saturating_add(T::DbWeight::get().writes(3_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(c as Weight)))
 	}
-	fn create_sr25519_keys(_n: u32, c: u32, ) -> Weight {
-		(171_118_000_u64)
-			// Standard Error: 76_000
-			.saturating_add((9_207_000_u64).saturating_mul(c as Weight))
+	fn create_sr25519_keys(n: u32, c: u32, ) -> Weight {
+		(124_207_000_u64)
+			// Standard Error: 117_000
+			.saturating_add((2_129_000_u64).saturating_mul(n as Weight))
+			// Standard Error: 44_000
+			.saturating_add((8_584_000_u64).saturating_mul(c as Weight))
 			.saturating_add(T::DbWeight::get().reads(4_u64))
-			.saturating_add(T::DbWeight::get().writes(3_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(c as Weight)))
 	}
 	fn create_ecdsa_keys(n: u32, c: u32, ) -> Weight {
-		(223_404_000_u64)
-			// Standard Error: 186_000
-			.saturating_add((3_119_000_u64).saturating_mul(n as Weight))
-			// Standard Error: 58_000
-			.saturating_add((9_215_000_u64).saturating_mul(c as Weight))
+		(225_138_000_u64)
+			// Standard Error: 105_000
+			.saturating_add((1_798_000_u64).saturating_mul(n as Weight))
+			// Standard Error: 39_000
+			.saturating_add((8_024_000_u64).saturating_mul(c as Weight))
 			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(c as Weight)))
+	}
+	fn delete(c: u32, ) -> Weight {
+		(28_882_000_u64)
+			// Standard Error: 9_000
+			.saturating_add((773_000_u64).saturating_mul(c as Weight))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(c as Weight)))
 	}
-	fn delete() -> Weight {
-		(48_642_000_u64)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(27_u64))
-	}
-	fn reclaim_deposit() -> Weight {
-		(53_300_000_u64)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(27_u64))
+	fn reclaim_deposit(c: u32, ) -> Weight {
+		(32_879_000_u64)
+			// Standard Error: 14_000
+			.saturating_add((765_000_u64).saturating_mul(c as Weight))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(c as Weight)))
 	}
 	fn submit_did_call_ed25519_key() -> Weight {
-		(73_979_000_u64)
+		(68_188_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn submit_did_call_sr25519_key() -> Weight {
-		(76_314_000_u64)
+		(70_542_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn submit_did_call_ecdsa_key() -> Weight {
-		(177_954_000_u64)
+		(168_296_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn set_ed25519_authentication_key() -> Weight {
-		(41_358_000_u64)
+		(37_110_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn set_sr25519_authentication_key() -> Weight {
-		(41_848_000_u64)
+		(37_851_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn set_ecdsa_authentication_key() -> Weight {
-		(41_578_000_u64)
+		(42_199_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn set_ed25519_delegation_key() -> Weight {
-		(41_107_000_u64)
+		(37_160_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn set_sr25519_delegation_key() -> Weight {
-		(41_538_000_u64)
+		(35_938_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn set_ecdsa_delegation_key() -> Weight {
-		(41_958_000_u64)
+		(36_037_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn remove_ed25519_delegation_key() -> Weight {
-		(38_693_000_u64)
+		(33_833_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn remove_sr25519_delegation_key() -> Weight {
-		(38_402_000_u64)
+		(34_484_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn remove_ecdsa_delegation_key() -> Weight {
-		(39_134_000_u64)
+		(34_224_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn set_ed25519_attestation_key() -> Weight {
-		(41_197_000_u64)
+		(36_518_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn set_sr25519_attestation_key() -> Weight {
-		(40_797_000_u64)
+		(36_799_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn set_ecdsa_attestation_key() -> Weight {
-		(42_069_000_u64)
+		(37_430_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn remove_ed25519_attestation_key() -> Weight {
-		(37_862_000_u64)
+		(32_892_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn remove_sr25519_attestation_key() -> Weight {
-		(38_462_000_u64)
+		(33_683_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn remove_ecdsa_attestation_key() -> Weight {
-		(38_582_000_u64)
+		(33_292_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn add_ed25519_key_agreement_key() -> Weight {
-		(40_215_000_u64)
+		(34_916_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn add_sr25519_key_agreement_key() -> Weight {
-		(40_526_000_u64)
+		(35_928_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn add_ecdsa_key_agreement_key() -> Weight {
-		(40_857_000_u64)
+		(35_737_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn remove_ed25519_key_agreement_key() -> Weight {
-		(38_282_000_u64)
+		(33_353_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn remove_sr25519_key_agreement_key() -> Weight {
-		(39_494_000_u64)
+		(33_603_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn remove_ecdsa_key_agreement_key() -> Weight {
-		(38_462_000_u64)
+		(33_492_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn add_service_endpoint() -> Weight {
-		(226_335_000_u64)
-			.saturating_add(T::DbWeight::get().reads(27_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		(31_278_000_u64)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
-	fn remove_service_endpoint() -> Weight {
-		(10_841_000_u64)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+	fn remove_service_endpoint(c: u32, ) -> Weight {
+		(22_774_000_u64)
+			// Standard Error: 5_000
+			.saturating_add((74_000_u64).saturating_mul(c as Weight))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	fn signature_verification_sr25519(l: u32, ) -> Weight {
-		(0_u64)
+		(58_482_000_u64)
 			// Standard Error: 0
-			.saturating_add((4_000_u64).saturating_mul(l as Weight))
+			.saturating_add((3_000_u64).saturating_mul(l as Weight))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 	}
 	fn signature_verification_ed25519(l: u32, ) -> Weight {
-		(331_203_000_u64)
+		(56_187_000_u64)
 			// Standard Error: 0
-			.saturating_add((2_000_u64).saturating_mul(l as Weight))
+			.saturating_add((1_000_u64).saturating_mul(l as Weight))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 	}
 	fn signature_verification_ecdsa(l: u32, ) -> Weight {
-		(142_753_000_u64)
+		(155_859_000_u64)
 			// Standard Error: 0
 			.saturating_add((1_000_u64).saturating_mul(l as Weight))
 			.saturating_add(T::DbWeight::get().reads(1_u64))

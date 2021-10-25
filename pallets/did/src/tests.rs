@@ -2046,7 +2046,8 @@ fn check_service_deletion_successful() {
 		.execute_with(|| {
 			assert_ok!(Did::remove_service_endpoint(
 				Origin::signed(alice_did.clone()),
-				old_service_endpoint.id
+				old_service_endpoint.id,
+				1
 			),);
 			// Counter should be deleted from the storage.
 			assert!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did).is_none());
@@ -2072,7 +2073,8 @@ fn check_service_not_present_deletion_error() {
 			assert_noop!(
 				Did::remove_service_endpoint(
 					Origin::signed(alice_did.clone()),
-					service_id.try_into().expect("Service ID to delete too long")
+					service_id.try_into().expect("Service ID to delete too long"),
+					0
 				),
 				did::Error::<Test>::ServiceNotPresent
 			);
@@ -2104,7 +2106,7 @@ fn check_successful_deletion_no_endpoints() {
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as did::Config>::Deposit::get()
 			);
-			assert_ok!(Did::delete(Origin::signed(alice_did.clone())));
+			assert_ok!(Did::delete(Origin::signed(alice_did.clone()), 0));
 			assert!(Did::get_did(alice_did.clone()).is_none());
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
@@ -2155,7 +2157,7 @@ fn check_successful_deletion_with_endpoints() {
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as did::Config>::Deposit::get()
 			);
-			assert_ok!(Did::delete(Origin::signed(alice_did.clone())));
+			assert_ok!(Did::delete(Origin::signed(alice_did.clone()), 1));
 			assert!(Did::get_did(alice_did.clone()).is_none());
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
@@ -2191,7 +2193,7 @@ fn check_did_not_present_deletion() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::delete(Origin::signed(alice_did)),
+				Did::delete(Origin::signed(alice_did), 0),
 				did::Error::<Test>::DidNotPresent
 			);
 		});
@@ -2228,7 +2230,8 @@ fn check_successful_reclaiming() {
 			);
 			assert_ok!(Did::reclaim_deposit(
 				Origin::signed(ACCOUNT_00.clone()),
-				alice_did.clone()
+				alice_did.clone(),
+				1
 			));
 			assert!(Did::get_did(alice_did.clone()).is_none());
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
@@ -2276,7 +2279,7 @@ fn unauthorized_reclaiming() {
 				<Test as did::Config>::Deposit::get()
 			);
 			assert_noop!(
-				Did::reclaim_deposit(Origin::signed(ACCOUNT_01.clone()), alice_did.clone()),
+				Did::reclaim_deposit(Origin::signed(ACCOUNT_01.clone()), alice_did.clone(), 0),
 				did::Error::<Test>::NotOwnerOfDeposit
 			);
 		});
