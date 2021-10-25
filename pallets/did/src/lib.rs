@@ -1171,9 +1171,6 @@ impl<T: Config> Pallet<T> {
 
 		// *** No Fail beyond this point ***
 
-		// `take` calls `kill` internally
-		let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
-
 		// This one can fail, albeit this should **never** be the case as we check for
 		// the preconditions above.
 		let storage_kill_result = ServiceEndpoints::<T>::remove_prefix(&did_subject, Some(current_endpoints_count));
@@ -1182,6 +1179,9 @@ impl<T: Config> Pallet<T> {
 		if let KillStorageResult::SomeRemaining(_) = storage_kill_result {
 			return Err(Error::<T>::InternalError.into());
 		};
+
+		// `take` calls `kill` internally
+		let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 
 		DidEndpointsCount::<T>::remove(&did_subject);
 		kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&did_entry.deposit);

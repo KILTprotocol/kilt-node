@@ -2070,6 +2070,26 @@ fn check_service_not_present_deletion_error() {
 		});
 }
 
+#[test]
+fn check_too_small_service_count_deletion_error() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let old_service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
+
+	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+
+	ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_endpoints(vec![(alice_did.clone(), vec![old_service_endpoint.clone()])])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::remove_service_endpoint(Origin::signed(alice_did.clone()), old_service_endpoint.id, 0),
+				did::Error::<Test>::StoredEndpointsCountTooLarge
+			);
+		});
+}
+
 // delete
 
 #[test]
@@ -2185,6 +2205,33 @@ fn check_did_not_present_deletion() {
 		});
 }
 
+#[test]
+fn check_service_count_too_small_deletion_error() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
+
+	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	did_details.deposit.owner = ACCOUNT_00;
+	did_details.deposit.amount = <Test as did::Config>::Deposit::get();
+
+	let balance = <Test as did::Config>::Deposit::get() * 2
+		+ <Test as did::Config>::Fee::get() * 2
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.with_dids(vec![(alice_did.clone(), did_details)])
+		.with_endpoints(vec![(alice_did.clone(), vec![service_endpoint])])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::delete(Origin::signed(alice_did.clone()), 0),
+				did::Error::<Test>::StoredEndpointsCountTooLarge
+			);
+		});
+}
+
 // reclaim_deposit
 
 #[test]
@@ -2261,6 +2308,33 @@ fn unauthorized_reclaiming() {
 			assert_noop!(
 				Did::reclaim_deposit(Origin::signed(ACCOUNT_01.clone()), alice_did.clone(), 0),
 				did::Error::<Test>::NotOwnerOfDeposit
+			);
+		});
+}
+
+#[test]
+fn check_service_count_too_small_reclaim_error() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
+
+	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	did_details.deposit.owner = ACCOUNT_00;
+	did_details.deposit.amount = <Test as did::Config>::Deposit::get();
+
+	let balance = <Test as did::Config>::Deposit::get() * 2
+		+ <Test as did::Config>::Fee::get() * 2
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.with_dids(vec![(alice_did.clone(), did_details)])
+		.with_endpoints(vec![(alice_did.clone(), vec![service_endpoint])])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::reclaim_deposit(Origin::signed(ACCOUNT_00.clone()), alice_did.clone(), 0),
+				did::Error::<Test>::StoredEndpointsCountTooLarge
 			);
 		});
 }
