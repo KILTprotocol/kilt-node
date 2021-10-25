@@ -294,14 +294,8 @@ pub mod pallet {
 	/// It maps from (DID identifier, service ID) to the service details.
 	#[pallet::storage]
 	#[pallet::getter(fn get_service_endpoints)]
-	pub type ServiceEndpoints<T> = StorageDoubleMap<
-		_,
-		Twox64Concat,
-		DidIdentifierOf<T>,
-		Blake2_128Concat,
-		ServiceEndpointId<T>,
-		DidEndpoint<T>,
-	>;
+	pub type ServiceEndpoints<T> =
+		StorageDoubleMap<_, Twox64Concat, DidIdentifierOf<T>, Blake2_128Concat, ServiceEndpointId<T>, DidEndpoint<T>>;
 
 	/// Counter of service endpoints for each DID.
 	///
@@ -399,7 +393,8 @@ pub mod pallet {
 		ServiceNotPresent,
 		/// One of the service endpoint details contains non-ASCII characters.
 		InvalidServiceEncoding,
-		/// The number of service endpoints stored under the DID is larger than the number of endpoints to delete.
+		/// The number of service endpoints stored under the DID is larger than
+		/// the number of endpoints to delete.
 		StoredEndpointsCountTooLarge,
 		/// An error that is not supposed to take place, yet it happened.
 		InternalError,
@@ -862,7 +857,11 @@ pub mod pallet {
 		/// - Writes: Did, ServiceEndpoints, DidEndpointsCount
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_service_endpoint(*endpoints_to_remove))]
-		pub fn remove_service_endpoint(origin: OriginFor<T>, service_id: ServiceEndpointId<T>, endpoints_to_remove: u32) -> DispatchResult {
+		pub fn remove_service_endpoint(
+			origin: OriginFor<T>,
+			service_id: ServiceEndpointId<T>,
+			endpoints_to_remove: u32,
+		) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 
 			ensure!(
@@ -945,7 +944,11 @@ pub mod pallet {
 		/// - Kills: Did entry associated to the DID identifier
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit(*endpoints_to_remove))]
-		pub fn reclaim_deposit(origin: OriginFor<T>, did_subject: DidIdentifierOf<T>, endpoints_to_remove: u32) -> DispatchResult {
+		pub fn reclaim_deposit(
+			origin: OriginFor<T>,
+			did_subject: DidIdentifierOf<T>,
+			endpoints_to_remove: u32,
+		) -> DispatchResult {
 			let source = ensure_signed(origin)?;
 
 			let did_entry = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
@@ -1153,7 +1156,8 @@ impl<T: Config> Pallet<T> {
 			Error::<T>::StoredEndpointsCountTooLarge
 		);
 
-		// This one can fail, albeit this should **never** be the case as we check for the preconditions above.
+		// This one can fail, albeit this should **never** be the case as we check for
+		// the preconditions above.
 
 		let storage_kill_result = ServiceEndpoints::<T>::remove_prefix(&did_subject, Some(current_endpoints_count));
 		// If some items are remaining, it means that there were more than
