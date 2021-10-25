@@ -48,11 +48,11 @@ pub(crate) type ServiceEndpointUrlEntries<T> =
 pub struct DidEndpointDetails<T: Config> {
 	/// The ID of the service endpoint. Allows the endpoint to be queried and
 	/// resolved directly.
-	pub(crate) id: ServiceEndpointId<T>,
+	pub id: ServiceEndpointId<T>,
 	/// A vector of types description for the service.
-	pub(crate) service_types: ServiceEndpointTypeEntries<T>,
+	pub service_types: ServiceEndpointTypeEntries<T>,
 	/// A vector of URLs the service points to.
-	pub(crate) urls: ServiceEndpointUrlEntries<T>,
+	pub urls: ServiceEndpointUrlEntries<T>,
 }
 
 impl<T: Config> sp_std::fmt::Debug for DidEndpointDetails<T> {
