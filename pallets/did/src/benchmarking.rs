@@ -174,7 +174,7 @@ benchmarks! {
 			Some(expected_attestation_key_id)
 		);
 		assert_eq!(
-			DidEndpointsCount::<T>::get(&did_subject).unwrap_or_default().saturated_into::<usize>(),
+			DidEndpointsCount::<T>::get(&did_subject).saturated_into::<usize>(),
 			service_endpoints.len()
 		);
 		assert_eq!(
@@ -238,7 +238,7 @@ benchmarks! {
 			Some(expected_attestation_key_id)
 		);
 		assert_eq!(
-			DidEndpointsCount::<T>::get(&did_subject).unwrap_or_default().saturated_into::<usize>(),
+			DidEndpointsCount::<T>::get(&did_subject).saturated_into::<usize>(),
 			service_endpoints.len()
 		);
 		assert_eq!(
@@ -302,7 +302,7 @@ benchmarks! {
 			Some(expected_attestation_key_id)
 		);
 		assert_eq!(
-			DidEndpointsCount::<T>::get(&did_subject).unwrap_or_default().saturated_into::<usize>(),
+			DidEndpointsCount::<T>::get(&did_subject).saturated_into::<usize>(),
 			service_endpoints.len()
 		);
 		assert_eq!(
@@ -335,8 +335,8 @@ benchmarks! {
 		assert!(
 			Did::<T>::get(&did_subject).is_none()
 		);
-		assert!(
-			DidEndpointsCount::<T>::get(&did_subject).is_none()
+		assert_eq!(
+			DidEndpointsCount::<T>::get(&did_subject), 0
 		);
 		assert_eq!(
 			ServiceEndpoints::<T>::iter_prefix(&did_subject).count(),
@@ -367,8 +367,8 @@ benchmarks! {
 		assert!(
 			Did::<T>::get(&did_subject).is_none()
 		);
-		assert!(
-			DidEndpointsCount::<T>::get(&did_subject).is_none()
+		assert_eq!(
+			DidEndpointsCount::<T>::get(&did_subject), 0
 		);
 		assert_eq!(
 			ServiceEndpoints::<T>::iter_prefix(&did_subject).count(),
@@ -901,7 +901,7 @@ benchmarks! {
 			Some(new_service_endpoint)
 		);
 		assert_eq!(
-			DidEndpointsCount::<T>::get(&did_subject).unwrap_or_default(),
+			DidEndpointsCount::<T>::get(&did_subject),
 			T::MaxNumberOfServicesPerDid::get()
 		);
 		assert_eq!(
@@ -935,7 +935,7 @@ benchmarks! {
 			ServiceEndpoints::<T>::get(&did_subject, &endpoint_id).is_none()
 		);
 		assert_eq!(
-			DidEndpointsCount::<T>::get(&did_subject).unwrap_or_default(),
+			DidEndpointsCount::<T>::get(&did_subject),
 			c - 1
 		);
 		assert_eq!(

@@ -307,7 +307,7 @@ pub mod pallet {
 	///
 	/// It maps from (DID identifier) to a 32-bit counter.
 	#[pallet::storage]
-	pub(crate) type DidEndpointsCount<T> = StorageMap<_, Blake2_128Concat, DidIdentifierOf<T>, u32>;
+	pub(crate) type DidEndpointsCount<T> = StorageMap<_, Blake2_128Concat, DidIdentifierOf<T>, u32, ValueQuery>;
 
 	/// The set of DIDs that have been deleted and cannot therefore be created
 	/// again for security reasons.
@@ -823,7 +823,7 @@ pub mod pallet {
 			// Verify that the DID is present.
 			ensure!(Did::<T>::get(&did_subject).is_some(), Error::<T>::DidNotPresent);
 
-			let currently_stored_endpoints_count = DidEndpointsCount::<T>::get(&did_subject).unwrap_or_default();
+			let currently_stored_endpoints_count = DidEndpointsCount::<T>::get(&did_subject);
 
 			// Verify that there are less than the maximum limit of services stored.
 			ensure!(
@@ -870,7 +870,7 @@ pub mod pallet {
 				Error::<T>::ServiceNotPresent
 			);
 
-			let current_endpoints_count = DidEndpointsCount::<T>::get(&did_subject).unwrap_or_default();
+			let current_endpoints_count = DidEndpointsCount::<T>::get(&did_subject);
 			ensure!(
 				current_endpoints_count <= endpoints_to_remove,
 				Error::<T>::StoredEndpointsCountTooLarge
@@ -1147,7 +1147,7 @@ impl<T: Config> Pallet<T> {
 		// `take` calls `kill` internally
 		let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 
-		let current_endpoints_count = DidEndpointsCount::<T>::get(&did_subject).unwrap_or_default();
+		let current_endpoints_count = DidEndpointsCount::<T>::get(&did_subject);
 		ensure!(
 			current_endpoints_count <= endpoints_to_remove,
 			Error::<T>::StoredEndpointsCountTooLarge

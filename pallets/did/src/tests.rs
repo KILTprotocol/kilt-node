@@ -252,7 +252,6 @@ fn check_successful_complete_creation() {
 			);
 			assert_eq!(
 				did::pallet::DidEndpointsCount::<Test>::get(&alice_did)
-					.unwrap_or_default()
 					.saturated_into::<usize>(),
 				details.new_service_details.len()
 			);
@@ -1720,7 +1719,7 @@ fn check_service_addition_no_prior_service_successful() {
 				1
 			);
 			assert_eq!(
-				did::pallet::DidEndpointsCount::<Test>::get(&alice_did).unwrap_or_default(),
+				did::pallet::DidEndpointsCount::<Test>::get(&alice_did),
 				1
 			);
 		});
@@ -1753,7 +1752,7 @@ fn check_service_addition_one_from_full_successful() {
 				new_service_endpoint.clone()
 			),);
 			assert_eq!(
-				did::pallet::DidEndpointsCount::<Test>::get(&alice_did).unwrap_or_default(),
+				did::pallet::DidEndpointsCount::<Test>::get(&alice_did),
 				<Test as did::Config>::MaxNumberOfServicesPerDid::get()
 			);
 			assert_eq!(
@@ -2050,7 +2049,7 @@ fn check_service_deletion_successful() {
 				1
 			),);
 			// Counter should be deleted from the storage.
-			assert!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did).is_none());
+			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 0);
 			assert_eq!(
 				did::pallet::ServiceEndpoints::<Test>::iter_prefix(&alice_did).count(),
 				0
@@ -2101,7 +2100,7 @@ fn check_successful_deletion_no_endpoints() {
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build(None)
 		.execute_with(|| {
-			assert!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did).is_none());
+			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 0);
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as did::Config>::Deposit::get()
@@ -2111,7 +2110,7 @@ fn check_successful_deletion_no_endpoints() {
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 
-			assert!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did).is_none());
+			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 0);
 
 			// Re-adding the same DID identifier should fail.
 			let details = generate_base_did_creation_details::<Test>(alice_did.clone(), ACCOUNT_00);
@@ -2150,7 +2149,7 @@ fn check_successful_deletion_with_endpoints() {
 		.build(None)
 		.execute_with(|| {
 			assert_eq!(
-				did::pallet::DidEndpointsCount::<Test>::get(&alice_did).unwrap_or_default(),
+				did::pallet::DidEndpointsCount::<Test>::get(&alice_did),
 				1
 			);
 			assert_eq!(
@@ -2162,7 +2161,7 @@ fn check_successful_deletion_with_endpoints() {
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 
-			assert!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did).is_none(),);
+			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 0);
 
 			// Re-adding the same DID identifier should fail.
 			let details = generate_base_did_creation_details::<Test>(alice_did.clone(), ACCOUNT_00);
@@ -2221,7 +2220,7 @@ fn check_successful_reclaiming() {
 		.build(None)
 		.execute_with(|| {
 			assert_eq!(
-				did::pallet::DidEndpointsCount::<Test>::get(&alice_did).unwrap_or_default(),
+				did::pallet::DidEndpointsCount::<Test>::get(&alice_did),
 				1
 			);
 			assert_eq!(
@@ -2237,7 +2236,7 @@ fn check_successful_reclaiming() {
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 			assert_eq!(
-				did::pallet::DidEndpointsCount::<Test>::get(&alice_did).unwrap_or_default(),
+				did::pallet::DidEndpointsCount::<Test>::get(&alice_did),
 				0
 			);
 
