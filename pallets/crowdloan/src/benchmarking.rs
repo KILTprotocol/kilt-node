@@ -44,7 +44,7 @@ benchmarks! {
 		let contributor: AccountIdOf<T> = account("contributor", 0, SEED_2);
 		let contribution: BalanceOf<T> = BalanceOf::<T>::one();
 		RegistrarAccount::<T>::set(registrar.clone());
-	}: _(RawOrigin::Signed(registrar), T::Lookup::unlookup(contributor.clone()), contribution)
+	}: _(RawOrigin::Signed(registrar), contributor.clone(), contribution)
 	verify {
 		assert_eq!(
 			Contributions::<T>::get(&contributor),
@@ -59,7 +59,7 @@ benchmarks! {
 		let contribution: BalanceOf<T> = BalanceOf::<T>::one();
 		RegistrarAccount::<T>::set(registrar.clone());
 		Contributions::<T>::insert(&contributor, contribution);
-	}: _(RawOrigin::Signed(registrar), T::Lookup::unlookup(contributor.clone()))
+	}: _(RawOrigin::Signed(registrar), contributor.clone())
 	verify {
 		assert!(
 			Contributions::<T>::get(&contributor).is_none(),

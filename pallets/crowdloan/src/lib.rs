@@ -62,7 +62,7 @@ pub mod pallet {
 	};
 	use frame_system::{pallet_prelude::*, EnsureOneOf, EnsureSigned};
 	use sp_runtime::{
-		traits::{BadOrigin, Saturating, StaticLookup},
+		traits::{BadOrigin, CheckedDiv, CheckedSub, Saturating, StaticLookup},
 		Either,
 	};
 	use sp_std::vec;
@@ -79,7 +79,10 @@ pub mod pallet {
 	pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config {
+	pub trait Config: frame_system::Config
+	where
+		Self::Balance: From<BlockNumberOf<Self>>,
+	{
 		/// Currency type.
 		type Currency: Currency<AccountIdOf<Self>, Balance = Self::Balance>;
 		type Vesting: VestingSchedule<AccountIdOf<Self>, Currency = Self::Currency, Moment = BlockNumberOf<Self>>;
@@ -176,6 +179,9 @@ pub mod pallet {
 	pub enum Error<T> {
 		/// The contribution is not present.
 		ContributorNotPresent,
+
+		/// The reserve account run out of funds.
+		InsufficientBalance,
 	}
 
 	#[pallet::call]
@@ -328,20 +334,40 @@ pub mod pallet {
 			let vested = config.vested_share.mul_floor(amount);
 			let free = amount.saturating_sub(vested);
 
-			let vested_acc_balance = CurrencyOf::<T>::free_balance(&reserve.vested);
-			let free_acc_balance = CurrencyOf::<T>::free_balance(&reserve.vested);
-			CurrencyOf::<T>::ensure_can_withdraw(&reserve.vested, free, WithdrawReasons::TRANSFER, vested_acc_balance)?;
-			CurrencyOf::<T>::ensure_can_withdraw(&reserve.free, free, WithdrawReasons::TRANSFER, free_acc_balance)?;
+			let new_free_acc_balance = CurrencyOf::<T>::free_balance(&reserve.free)
+				.checked_sub(&free)
+				.ok_or(Error::<T>::InsufficientBalance)?;
+			let mut new_vested_acc_balance = CurrencyOf::<T>::free_balance(&reserve.vested)
+				.checked_sub(&vested)
+				.ok_or(Error::<T>::InsufficientBalance)?;
+			if reserve.free == reserve.vested {
+				// if free and vested are the same we need to make sure that we can withdraw
+				// both from the same account
+				new_vested_acc_balance = new_vested_acc_balance
+					.checked_sub(&free)
+					.ok_or(Error::<T>::InsufficientBalance)?;
+			}
+			CurrencyOf::<T>::ensure_can_withdraw(&reserve.free, free, WithdrawReasons::TRANSFER, new_free_acc_balance)?;
+			CurrencyOf::<T>::ensure_can_withdraw(
+				&reserve.vested,
+				vested,
+				WithdrawReasons::TRANSFER,
+				new_vested_acc_balance,
+			)?;
 
 			Contributions::<T>::remove(&receiver);
 			// *** No failure beyond this point! The contributor was removed. ***
 
-			// Transfer the free amount. Should not fail since checked we ensure_can_withdraw.
+			// Transfer the free amount. Should not fail since checked we
+			// ensure_can_withdraw.
 			CurrencyOf::<T>::transfer(&reserve.free, &receiver, free, ExistenceRequirement::AllowDeath)?;
 
-			// Transfer the vested amount and set the vesting schedule. Should not fail since checked we ensure_can_withdraw.
+			// Transfer the vested amount and set the vesting schedule. Should not fail
+			// since checked we ensure_can_withdraw.
 			CurrencyOf::<T>::transfer(&reserve.vested, &receiver, vested, ExistenceRequirement::AllowDeath)?;
-			let per_block = config.per_block_vesting.mul_ceil(vested);
+			let per_block = vested
+				.checked_div(&BalanceOf::<T>::from(config.vesting_length))
+				.unwrap_or(vested);
 			// vesting should not fail since we have transferred enough free balance.
 			VestingOf::<T>::add_vesting_schedule(&receiver, vested, per_block, config.start_block)?;
 

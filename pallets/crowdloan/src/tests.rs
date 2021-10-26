@@ -16,10 +16,17 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{assert_noop, assert_ok};
-use sp_runtime::traits::BadOrigin;
+use codec::Encode;
+use frame_support::{
+	assert_noop, assert_ok,
+	pallet_prelude::{InvalidTransaction, TransactionLongevity, ValidTransaction},
+};
+use sp_runtime::{
+	traits::{BadOrigin, Zero},
+	Perquintill,
+};
 
-use crate::mock::*;
+use crate::{mock::*, GratitudeConfig, ReserveAccounts};
 
 // set_registrar_account
 
@@ -240,4 +247,244 @@ fn test_remove_contribution_absent_error() {
 				crate::Error::<Test>::ContributorNotPresent
 			);
 		});
+}
+
+#[test]
+fn test_send_gratitude_success() {
+	let registrar = ACCOUNT_00;
+	let contributor = ACCOUNT_01;
+	let free_reserve = ACCOUNT_02;
+	let vested_reserve = ACCOUNT_03;
+
+	ExtBuilder::default()
+		.with_reserve(ReserveAccounts {
+			vested: vested_reserve.clone(),
+			free: free_reserve.clone(),
+		})
+		.with_registrar_account(registrar.clone())
+		.with_balances(vec![
+			(free_reserve.clone(), BALANCE_01),
+			(vested_reserve.clone(), BALANCE_01),
+		])
+		.with_contributions(vec![(contributor.clone(), BALANCE_02)])
+		.with_configuration(GratitudeConfig {
+			vested_share: Perquintill::from_percent(50),
+			start_block: 1,
+			vesting_length: 10,
+		})
+		.build()
+		.execute_with(|| {
+			assert_ok!(Crowdloan::receive_gratitude(Origin::none(), contributor.clone()));
+			assert_eq!(
+				pallet_balances::Pallet::<Test>::free_balance(contributor.clone()),
+				BALANCE_02
+			);
+			assert!(pallet_balances::Pallet::<Test>::free_balance(free_reserve.clone()).is_zero());
+			assert!(pallet_balances::Pallet::<Test>::free_balance(vested_reserve.clone()).is_zero());
+			assert!(crate::Contributions::<Test>::get(&contributor).is_none());
+
+			assert_noop!(
+				Crowdloan::receive_gratitude(Origin::none(), contributor.clone()),
+				crate::Error::<Test>::ContributorNotPresent
+			);
+		});
+}
+
+#[test]
+fn test_send_gratitude_empty_free_reserve() {
+	let registrar = ACCOUNT_00;
+	let contributor = ACCOUNT_01;
+	let free_reserve = ACCOUNT_02;
+	let vested_reserve = ACCOUNT_03;
+
+	ExtBuilder::default()
+		.with_reserve(ReserveAccounts {
+			vested: vested_reserve.clone(),
+			free: free_reserve.clone(),
+		})
+		.with_registrar_account(registrar.clone())
+		.with_balances(vec![(vested_reserve.clone(), BALANCE_02)])
+		.with_contributions(vec![(contributor.clone(), BALANCE_02)])
+		.with_configuration(GratitudeConfig {
+			vested_share: Perquintill::from_percent(50),
+			start_block: 1,
+			vesting_length: 10,
+		})
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Crowdloan::receive_gratitude(Origin::none(), contributor),
+				crate::Error::<Test>::InsufficientBalance
+			);
+		});
+}
+
+#[test]
+fn test_send_gratitude_empty_vest_reserve() {
+	let registrar = ACCOUNT_00;
+	let contributor = ACCOUNT_01;
+	let free_reserve = ACCOUNT_02;
+	let vested_reserve = ACCOUNT_03;
+
+	ExtBuilder::default()
+		.with_reserve(ReserveAccounts {
+			vested: vested_reserve.clone(),
+			free: free_reserve.clone(),
+		})
+		.with_registrar_account(registrar.clone())
+		.with_balances(vec![(free_reserve.clone(), BALANCE_02)])
+		.with_contributions(vec![(contributor.clone(), BALANCE_02)])
+		.with_configuration(GratitudeConfig {
+			vested_share: Perquintill::from_percent(50),
+			start_block: 1,
+			vesting_length: 10,
+		})
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Crowdloan::receive_gratitude(Origin::none(), contributor),
+				crate::Error::<Test>::InsufficientBalance
+			);
+		});
+}
+
+#[test]
+fn test_send_gratitude_same_account_success() {
+	let registrar = ACCOUNT_00;
+	let contributor = ACCOUNT_01;
+	let free_reserve = ACCOUNT_02;
+	let vested_reserve = ACCOUNT_02;
+
+	ExtBuilder::default()
+		.with_reserve(ReserveAccounts {
+			vested: vested_reserve.clone(),
+			free: free_reserve.clone(),
+		})
+		.with_registrar_account(registrar.clone())
+		.with_balances(vec![(free_reserve.clone(), BALANCE_02)])
+		.with_contributions(vec![(contributor.clone(), BALANCE_02)])
+		.with_configuration(GratitudeConfig {
+			vested_share: Perquintill::from_percent(50),
+			start_block: 1,
+			vesting_length: 10,
+		})
+		.build()
+		.execute_with(|| {
+			assert_ok!(Crowdloan::receive_gratitude(Origin::none(), contributor.clone()));
+			assert_eq!(
+				pallet_balances::Pallet::<Test>::free_balance(contributor.clone()),
+				BALANCE_02
+			);
+			assert!(pallet_balances::Pallet::<Test>::free_balance(free_reserve.clone()).is_zero());
+			assert!(crate::Contributions::<Test>::get(&contributor).is_none());
+
+			assert_noop!(
+				Crowdloan::receive_gratitude(Origin::none(), contributor.clone()),
+				crate::Error::<Test>::ContributorNotPresent
+			);
+		});
+}
+
+#[test]
+fn test_send_gratitude_same_account_out_of_funds() {
+	let registrar = ACCOUNT_00;
+	let contributor = ACCOUNT_01;
+	let free_reserve = ACCOUNT_02;
+	let vested_reserve = ACCOUNT_02;
+
+	ExtBuilder::default()
+		.with_reserve(ReserveAccounts {
+			vested: vested_reserve.clone(),
+			free: free_reserve.clone(),
+		})
+		.with_registrar_account(registrar.clone())
+		.with_balances(vec![(free_reserve.clone(), BALANCE_01)])
+		.with_contributions(vec![(contributor.clone(), BALANCE_02)])
+		.with_configuration(GratitudeConfig {
+			vested_share: Perquintill::from_percent(50),
+			start_block: 1,
+			vesting_length: 10,
+		})
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Crowdloan::receive_gratitude(Origin::none(), contributor),
+				crate::Error::<Test>::InsufficientBalance
+			);
+		});
+}
+
+#[test]
+fn test_send_gratitude_contribution_not_found() {
+	let registrar = ACCOUNT_00;
+	let contributor = ACCOUNT_01;
+	let free_reserve = ACCOUNT_02;
+	let vested_reserve = ACCOUNT_02;
+
+	ExtBuilder::default()
+		.with_reserve(ReserveAccounts {
+			vested: vested_reserve.clone(),
+			free: free_reserve.clone(),
+		})
+		.with_registrar_account(registrar.clone())
+		.with_balances(vec![(free_reserve.clone(), BALANCE_01)])
+		.with_configuration(GratitudeConfig {
+			vested_share: Perquintill::from_percent(50),
+			start_block: 1,
+			vesting_length: 10,
+		})
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Crowdloan::receive_gratitude(Origin::none(), contributor),
+				crate::Error::<Test>::ContributorNotPresent
+			);
+		});
+}
+
+#[test]
+fn validate_unsigned_works() {
+	use sp_runtime::traits::ValidateUnsigned;
+	let source = sp_runtime::transaction_validity::TransactionSource::External;
+	let contributor = || ACCOUNT_00.clone();
+	ExtBuilder::default()
+		.with_contributions(vec![(contributor(), BALANCE_02)])
+		.build()
+		.execute_with(|| {
+			assert_eq!(
+				crate::Pallet::<Test>::validate_unsigned(
+					source,
+					&crate::Call::receive_gratitude {
+						receiver: contributor()
+					}
+				),
+				Ok(ValidTransaction {
+					priority: 100,
+					requires: vec![],
+					provides: vec![("gratitude", contributor()).encode()],
+					longevity: TransactionLongevity::max_value(),
+					propagate: true,
+				})
+			);
+
+			assert_eq!(
+				crate::Pallet::<Test>::validate_unsigned(
+					source,
+					&crate::Call::receive_gratitude {
+						receiver: ACCOUNT_02.clone()
+					}
+				),
+				Err(InvalidTransaction::BadProof.into())
+			);
+
+			assert_eq!(
+				crate::Pallet::<Test>::validate_unsigned(
+					source,
+					&crate::Call::remove_contribution {
+						contributor: ACCOUNT_02.clone()
+					}
+				),
+				Err(InvalidTransaction::Call.into())
+			);
+		})
 }

@@ -29,5 +29,5 @@ pub struct ReserveAccounts<A: Default> {
 pub struct GratitudeConfig<BlockNumber: Default> {
 	pub vested_share: Perquintill,
 	pub start_block: BlockNumber,
-	pub per_block_vesting: Perquintill,
+	pub vesting_length: BlockNumber,
 }
