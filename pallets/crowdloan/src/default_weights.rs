@@ -47,13 +47,21 @@ use sp_std::marker::PhantomData;
 /// Weight functions needed for crowdloan.
 pub trait WeightInfo {
 	fn set_registrar_account() -> Weight;
+	fn set_reserve_accounts() -> Weight;
 	fn set_contribution() -> Weight;
 	fn remove_contribution() -> Weight;
+	fn receive_gratitude() -> Weight;
+	fn set_config() -> Weight;
 }
 
 /// Weights for crowdloan using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+	fn set_reserve_accounts() -> Weight {
+		(18_544_000_u64)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
 	fn set_registrar_account() -> Weight {
 		(18_544_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
@@ -69,10 +77,25 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
+	fn receive_gratitude() -> Weight {
+		(21_661_000_u64)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
+	fn set_config() -> Weight {
+		(21_661_000_u64)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
 }
 
 // For backwards compatibility and tests
 impl WeightInfo for () {
+	fn set_reserve_accounts() -> Weight {
+		(18_544_000_u64)
+			.saturating_add(RocksDbWeight::get().reads(1_u64))
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
 	fn set_registrar_account() -> Weight {
 		(18_544_000_u64)
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
@@ -84,6 +107,16 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
 	fn remove_contribution() -> Weight {
+		(21_661_000_u64)
+			.saturating_add(RocksDbWeight::get().reads(2_u64))
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+	fn receive_gratitude() -> Weight {
+		(21_661_000_u64)
+			.saturating_add(RocksDbWeight::get().reads(2_u64))
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+	fn set_config() -> Weight {
 		(21_661_000_u64)
 			.saturating_add(RocksDbWeight::get().reads(2_u64))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))

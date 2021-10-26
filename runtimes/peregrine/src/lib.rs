@@ -616,6 +616,8 @@ impl did::Config for Runtime {
 
 impl crowdloan::Config for Runtime {
 	type Currency = Balances;
+	type Vesting = Vesting;
+	type Balance = Balance;
 	type EnsureRegistrarOrigin = MoreThanHalfCouncil;
 	type Event = Event;
 	type WeightInfo = weights::crowdloan::WeightInfo<Runtime>;

@@ -1349,6 +1349,7 @@ dependencies = [
  "frame-system",
  "kilt-primitives",
  "pallet-balances",
+ "pallet-vesting",
  "parity-scale-codec",
  "scale-info",
  "serde",

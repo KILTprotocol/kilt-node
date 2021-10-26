@@ -49,31 +49,41 @@ mod mock;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
-pub use crate::{default_weights::WeightInfo, pallet::*};
+mod storage;
+
+pub use crate::{default_weights::WeightInfo, pallet::*, storage::*};
 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::WeightInfo;
 	use frame_support::{
 		pallet_prelude::*,
-		traits::{Currency, StorageVersion},
+		traits::{Currency, ExistenceRequirement, StorageVersion, VestingSchedule, WithdrawReasons},
 	};
 	use frame_system::{pallet_prelude::*, EnsureOneOf, EnsureSigned};
 	use sp_runtime::{
-		traits::{BadOrigin, StaticLookup},
+		traits::{BadOrigin, Saturating, StaticLookup},
 		Either,
 	};
+	use sp_std::vec;
+
+	use crate::storage::{GratitudeConfig, ReserveAccounts};
 
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
+	pub(crate) type VestingOf<T> = <T as Config>::Vesting;
 	pub(crate) type WeightInfoOf<T> = <T as Config>::WeightInfo;
+	pub(crate) type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
 
 	pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		/// Currency type.
-		type Currency: Currency<AccountIdOf<Self>>;
+		type Currency: Currency<AccountIdOf<Self>, Balance = Self::Balance>;
+		type Vesting: VestingSchedule<AccountIdOf<Self>, Currency = Self::Currency, Moment = BlockNumberOf<Self>>;
+		type Balance: sp_runtime::traits::AtLeast32BitUnsigned + Parameter + Copy + Default + From<u64>;
 		/// Overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		/// The origin allowed to change the registrar account.
@@ -116,6 +126,16 @@ pub mod pallet {
 	#[pallet::getter(fn registrar_account)]
 	pub type RegistrarAccount<T> = StorageValue<_, AccountIdOf<T>, ValueQuery>;
 
+	/// The account from which the vested amount is transferred.
+	#[pallet::storage]
+	#[pallet::getter(fn reserve)]
+	pub type Reserve<T> = StorageValue<_, ReserveAccounts<AccountIdOf<T>>, ValueQuery>;
+
+	/// The account from which the free amount is transferred.
+	#[pallet::storage]
+	#[pallet::getter(fn configuration)]
+	pub type Configuration<T> = StorageValue<_, GratitudeConfig<<T as frame_system::Config>::BlockNumber>, ValueQuery>;
+
 	/// The set of contributions.
 	///
 	/// It maps from contributor's account to amount contributed.
@@ -129,12 +149,27 @@ pub mod pallet {
 		/// A new registrar has been set.
 		/// \[old registrar account, new registrar account\]
 		NewRegistrarAccountSet(AccountIdOf<T>, AccountIdOf<T>),
+
+		/// New reserve accounts have been set.
+		/// \[old vested reserve account, old free reserve account, new vested
+		/// reserve account, new free reserve account\]
+		NewReserveAccounts(AccountIdOf<T>, AccountIdOf<T>, AccountIdOf<T>, AccountIdOf<T>),
+
 		/// A contribution has been set.
 		/// \[contributor account, old amount (OPTIONAL), new amount\]
 		ContributionSet(AccountIdOf<T>, Option<BalanceOf<T>>, BalanceOf<T>),
+
 		/// A contribution has been removed.
 		/// \[contributor account\]
 		ContributionRemoved(AccountIdOf<T>),
+
+		/// Our gratitude goes out to the \[account\].
+		/// \[contributor account\]
+		GratitudeReceived(AccountIdOf<T>),
+
+		/// A new configuration was set.
+		/// \[new configuration\]
+		UpdatedConfig(GratitudeConfig<BlockNumberOf<T>>),
 	}
 
 	#[pallet::error]
@@ -176,6 +211,50 @@ pub mod pallet {
 			RegistrarAccount::<T>::set(looked_up_account.clone());
 
 			Self::deposit_event(Event::NewRegistrarAccountSet(old_account, looked_up_account));
+
+			Ok(())
+		}
+
+		#[pallet::weight(WeightInfoOf::<T>::set_reserve_accounts())]
+		pub fn set_reserve_accounts(
+			origin: OriginFor<T>,
+			new_vested_reserve: <T::Lookup as StaticLookup>::Source,
+			new_free_reserve: <T::Lookup as StaticLookup>::Source,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			ensure!(who == RegistrarAccount::<T>::get(), BadOrigin);
+
+			let new_vested_reserve_acc = <T as frame_system::Config>::Lookup::lookup(new_vested_reserve)?;
+			let new_free_reserve_acc = <T as frame_system::Config>::Lookup::lookup(new_free_reserve)?;
+
+			let ReserveAccounts {
+				vested: old_vested,
+				free: old_free,
+			} = Reserve::<T>::get();
+
+			Reserve::<T>::set(ReserveAccounts {
+				vested: new_vested_reserve_acc.clone(),
+				free: new_free_reserve_acc.clone(),
+			});
+
+			Self::deposit_event(Event::NewReserveAccounts(
+				old_vested,
+				old_free,
+				new_vested_reserve_acc,
+				new_free_reserve_acc,
+			));
+
+			Ok(())
+		}
+
+		#[pallet::weight(WeightInfoOf::<T>::set_config())]
+		pub fn set_config(origin: OriginFor<T>, new_config: GratitudeConfig<BlockNumberOf<T>>) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			ensure!(who == RegistrarAccount::<T>::get(), BadOrigin);
+
+			Configuration::<T>::set(new_config.clone());
+
+			Self::deposit_event(Event::UpdatedConfig(new_config));
 
 			Ok(())
 		}
@@ -231,6 +310,74 @@ pub mod pallet {
 			Self::deposit_event(Event::ContributionRemoved(contributor));
 
 			Ok(())
+		}
+
+		/// Receive the gratitude.
+		///
+		/// Moves tokens to the given account according to the vote that was
+		/// giving in favour of our parachain.
+		#[pallet::weight((WeightInfoOf::<T>::receive_gratitude(), DispatchClass::Normal, Pays::No))]
+		pub fn receive_gratitude(origin: OriginFor<T>, receiver: AccountIdOf<T>) -> DispatchResult {
+			ensure_none(origin)?;
+
+			let amount = Contributions::<T>::get(&receiver).ok_or(Error::<T>::ContributorNotPresent)?;
+			let config = Configuration::<T>::get();
+			let reserve = Reserve::<T>::get();
+
+			// A two without any trait bounds (no From<u32>).
+			let vested = config.vested_share.mul_floor(amount);
+			let free = amount.saturating_sub(vested);
+
+			let vested_acc_balance = CurrencyOf::<T>::free_balance(&reserve.vested);
+			let free_acc_balance = CurrencyOf::<T>::free_balance(&reserve.vested);
+			CurrencyOf::<T>::ensure_can_withdraw(&reserve.vested, free, WithdrawReasons::TRANSFER, vested_acc_balance)?;
+			CurrencyOf::<T>::ensure_can_withdraw(&reserve.free, free, WithdrawReasons::TRANSFER, free_acc_balance)?;
+
+			Contributions::<T>::remove(&receiver);
+			// *** No failure beyond this point! The contributor was removed. ***
+
+			// Transfer the free amount. Should not fail since checked we ensure_can_withdraw.
+			CurrencyOf::<T>::transfer(&reserve.free, &receiver, free, ExistenceRequirement::AllowDeath)?;
+
+			// Transfer the vested amount and set the vesting schedule. Should not fail since checked we ensure_can_withdraw.
+			CurrencyOf::<T>::transfer(&reserve.vested, &receiver, vested, ExistenceRequirement::AllowDeath)?;
+			let per_block = config.per_block_vesting.mul_ceil(vested);
+			// vesting should not fail since we have transferred enough free balance.
+			VestingOf::<T>::add_vesting_schedule(&receiver, vested, per_block, config.start_block)?;
+
+			Self::deposit_event(Event::GratitudeReceived(receiver));
+
+			Ok(())
+		}
+	}
+
+	#[pallet::validate_unsigned]
+	impl<T: Config> ValidateUnsigned for Pallet<T> {
+		type Call = Call<T>;
+
+		fn validate_unsigned(_source: TransactionSource, call: &Self::Call) -> TransactionValidity {
+			const PRIORITY: u64 = 100;
+
+			let claiming_account = match call {
+				// <weight>
+				// The weight of this logic must be included in the `receive_gratitude` call.
+				// </weight>
+				Call::receive_gratitude { receiver: account } => account,
+				_ => return Err(InvalidTransaction::Call.into()),
+			};
+
+			ensure!(
+				Contributions::<T>::contains_key(claiming_account),
+				InvalidTransaction::BadProof
+			);
+
+			Ok(ValidTransaction {
+				priority: PRIORITY,
+				requires: vec![],
+				provides: vec![("gratitude", claiming_account).encode()],
+				longevity: TransactionLongevity::max_value(),
+				propagate: true,
+			})
 		}
 	}
 }

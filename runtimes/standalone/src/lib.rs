@@ -438,6 +438,15 @@ impl did::Config for Runtime {
 	type WeightInfo = ();
 }
 
+impl crowdloan::Config for Runtime {
+	type Currency = Balances;
+	type Vesting = Vesting;
+	type Balance = Balance;
+	type EnsureRegistrarOrigin = EnsureRoot<AccountId>;
+	type Event = Event;
+	type WeightInfo = ();
+}
+
 parameter_types! {
 	pub const DisabledValidatorsThreshold: Perbill = Perbill::from_percent(17);
 	pub const Period: u64 = 0xFFFF_FFFF_FFFF_FFFF;
@@ -556,13 +565,6 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	fn get_call_for_did_call_benchmark() -> Self {
 		Call::System(frame_system::Call::remark { remark: vec![] })
 	}
-}
-
-impl crowdloan::Config for Runtime {
-	type Currency = Balances;
-	type EnsureRegistrarOrigin = EnsureRoot<AccountId>;
-	type Event = Event;
-	type WeightInfo = ();
 }
 
 /// The address format for describing accounts.

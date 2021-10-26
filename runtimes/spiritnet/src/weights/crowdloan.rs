@@ -47,6 +47,11 @@ use sp_std::marker::PhantomData;
 /// Weights for crowdloan using the recommended hardware.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> crowdloan::WeightInfo for WeightInfo<T> {
+	fn set_reserve_accounts() -> Weight {
+		(18_544_000_u64)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
 	fn set_registrar_account() -> Weight {
 		(21_643_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
@@ -59,6 +64,16 @@ impl<T: frame_system::Config> crowdloan::WeightInfo for WeightInfo<T> {
 	}
 	fn remove_contribution() -> Weight {
 		(25_340_000_u64)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
+	fn receive_gratitude() -> Weight {
+		(21_661_000_u64)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
+	fn set_config() -> Weight {
+		(21_661_000_u64)
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
