@@ -28,6 +28,7 @@ use sp_runtime::{
 
 use crate::{mock::*, GratitudeConfig, ReserveAccounts};
 
+// #############################################################################
 // set_registrar_account
 
 #[test]
@@ -114,6 +115,7 @@ fn test_set_registrar_account_bad_origin_error() {
 		});
 }
 
+// #############################################################################
 // set_contribution
 
 #[test]
@@ -184,6 +186,7 @@ fn test_set_contribution_bad_origin_error() {
 		});
 }
 
+// #############################################################################
 // remove_contribution
 
 #[test]
@@ -248,6 +251,9 @@ fn test_remove_contribution_absent_error() {
 			);
 		});
 }
+
+// #############################################################################
+// Send Gratitude
 
 #[test]
 fn test_send_gratitude_success() {
@@ -442,6 +448,9 @@ fn test_send_gratitude_contribution_not_found() {
 		});
 }
 
+// #############################################################################
+// validate_unsigned
+
 #[test]
 fn validate_unsigned_works() {
 	use sp_runtime::traits::ValidateUnsigned;
@@ -487,4 +496,78 @@ fn validate_unsigned_works() {
 				Err(InvalidTransaction::Call.into())
 			);
 		})
+}
+
+// #############################################################################
+// Set configuration
+
+#[test]
+fn test_set_configuration() {
+	let registrar = ACCOUNT_00;
+	let contributor = ACCOUNT_01;
+	let free_reserve = ACCOUNT_02;
+	let vested_reserve = ACCOUNT_02;
+	let config = GratitudeConfig {
+		vested_share: Perquintill::from_percent(50),
+		start_block: 1,
+		vesting_length: 10,
+	};
+
+	ExtBuilder::default()
+		.with_reserve(ReserveAccounts {
+			vested: vested_reserve.clone(),
+			free: free_reserve.clone(),
+		})
+		.with_registrar_account(registrar.clone())
+		.build()
+		.execute_with(|| {
+			assert!(crate::Configuration::<Test>::get() != config);
+			assert_ok!(Crowdloan::set_config(Origin::signed(registrar), config.clone()));
+			assert_eq!(crate::Configuration::<Test>::get(), config);
+			assert_noop!(Crowdloan::set_config(Origin::signed(contributor), config), BadOrigin);
+		});
+}
+
+// #############################################################################
+// Set reserve
+
+#[test]
+fn test_set_reserve() {
+	let registrar = || ACCOUNT_00.clone();
+	let contributor = || ACCOUNT_01.clone();
+	let free_reserve_old = || ACCOUNT_01.clone();
+	let vested_reserve_old = || ACCOUNT_02.clone();
+	let free_reserve_new = || ACCOUNT_03.clone();
+	let vested_reserve_new = || ACCOUNT_04.clone();
+
+	ExtBuilder::default()
+		.with_reserve(ReserveAccounts {
+			vested: vested_reserve_old(),
+			free: free_reserve_old(),
+		})
+		.with_registrar_account(registrar())
+		.build()
+		.execute_with(|| {
+			assert_ok!(Crowdloan::set_reserve_accounts(
+				Origin::signed(registrar()),
+				vested_reserve_new(),
+				free_reserve_new()
+			));
+			assert_eq!(
+				crate::Reserve::<Test>::get(),
+				ReserveAccounts {
+					vested: vested_reserve_new(),
+					free: free_reserve_new(),
+				}
+			);
+
+			assert_noop!(
+				Crowdloan::set_reserve_accounts(
+					Origin::signed(contributor()),
+					vested_reserve_old(),
+					free_reserve_old()
+				),
+				BadOrigin
+			);
+		});
 }

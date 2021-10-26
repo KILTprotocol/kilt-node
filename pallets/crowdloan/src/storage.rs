@@ -19,7 +19,7 @@ use codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_runtime::Perquintill;
 
-#[derive(Clone, Debug, Default, Decode, Encode, TypeInfo)]
+#[derive(Clone, Debug, Default, Decode, PartialEq, Encode, TypeInfo)]
 pub struct ReserveAccounts<A: Default> {
 	pub vested: A,
 	pub free: A,

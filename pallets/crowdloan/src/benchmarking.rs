@@ -18,14 +18,21 @@
 
 use crate::*;
 
+use codec::{Decode, Encode};
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
+use frame_support::{dispatch::UnfilteredDispatchable, traits::Currency, unsigned::ValidateUnsigned};
 use frame_system::RawOrigin;
-use sp_runtime::traits::{One, StaticLookup};
+use sp_runtime::{
+	traits::{One, StaticLookup},
+	Perquintill,
+};
 
 const SEED_1: u32 = 1;
 const SEED_2: u32 = 2;
 
 benchmarks! {
+	where_clause { where <T as frame_system::Config>::BlockNumber: From<u32> }
+
 	set_registrar_account {
 		let registrar: AccountIdOf<T> = account("registrar", 0, SEED_1);
 		let new_registrar: AccountIdOf<T> = account("new_registrar", 0, SEED_2);
@@ -51,6 +58,81 @@ benchmarks! {
 			Some(contribution),
 			"Contribution different than the expected one."
 		);
+	}
+
+	set_config {
+		let registrar: AccountIdOf<T> = account("registrar", 0, SEED_1);
+		RegistrarAccount::<T>::set(registrar.clone());
+
+		let config = GratitudeConfig::<T::BlockNumber> {
+			vested_share: Perquintill::from_percent(42),
+			start_block: 1.into(),
+			vesting_length: 10.into(),
+		};
+	}: _(RawOrigin::Signed(registrar), config.clone())
+	verify {
+		assert_eq!(
+			Configuration::<T>::get(),
+			config,
+		);
+	}
+
+	set_reserve_accounts {
+		let registrar: AccountIdOf<T> = account("registrar", 0, SEED_1);
+		let reserve_free: AccountIdOf<T> = account("reserve_free", 0, SEED_1);
+		let reserve_vested: AccountIdOf<T> = account("reserve_vested", 0, SEED_1);
+		RegistrarAccount::<T>::set(registrar.clone());
+
+	}: _(
+		RawOrigin::Signed(registrar),
+		T::Lookup::unlookup(reserve_vested.clone()),
+		T::Lookup::unlookup(reserve_free.clone())
+	)
+	verify {
+		assert_eq!(
+			crate::Reserve::<T>::get(),
+			ReserveAccounts {
+				vested: reserve_vested,
+				free: reserve_free,
+			}
+		);
+	}
+
+	// receive_gratitude is benchmarked together with validate_unsigned to accommodate for the additional cost of validate_unsigned
+	receive_gratitude {
+		let registrar: AccountIdOf<T> = account("registrar", 0, SEED_1);
+		let reserve_free: AccountIdOf<T> = account("reserve_free", 0, SEED_1);
+		let reserve_vested: AccountIdOf<T> = account("reserve_vested", 0, SEED_1);
+		let contributor: AccountIdOf<T> = account("contributor", 0, SEED_1);
+
+		let contribution: BalanceOf<T> = CurrencyOf::<T>::minimum_balance()
+			+ CurrencyOf::<T>::minimum_balance()
+			+ CurrencyOf::<T>::minimum_balance();
+
+		RegistrarAccount::<T>::set(registrar.clone());
+		Reserve::<T>::set(ReserveAccounts {
+			vested: reserve_vested.clone(),
+			free: reserve_free.clone(),
+		});
+		Contributions::<T>::insert(&contributor, contribution);
+		Configuration::<T>::set(GratitudeConfig {
+			vested_share: Perquintill::from_percent(50),
+			start_block: 1.into(),
+			vesting_length: 10.into(),
+		});
+
+		let source = sp_runtime::transaction_validity::TransactionSource::External;
+		let call_enc = Call::<T>::receive_gratitude {
+			receiver: contributor.clone(),
+		}.encode();
+	}: {
+		let call = <Call<T> as Decode>::decode(&mut &*call_enc)
+			.expect("call is encoded above, encoding must be correct");
+		crate::Pallet::<T>::validate_unsigned(source, &call).map_err(|e| -> &'static str { e.into() })?;
+		call.dispatch_bypass_filter(RawOrigin::None.into())?;
+	}
+	verify {
+		assert!(crate::Contributions::<T>::get(contributor).is_none());
 	}
 
 	remove_contribution {
