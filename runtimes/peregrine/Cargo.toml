@@ -8,7 +8,7 @@ version = "1.0.0"
 codec = {package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"]}
 hex-literal = {version = "0.3.1"}
 log = {default-features = false, version = "0.4.14"}
-scale-info = { version = "1.0", default-features = false, features = ["derive"] }
+scale-info = {version = "1.0", default-features = false, features = ["derive"]}
 serde = {version = "1.0.124", optional = true, features = ["derive"]}
 smallvec = "1.7.0"
 static_assertions = "1.1.0"
@@ -78,9 +78,9 @@ xcm-builder = {git = "https://github.com/paritytech/polkadot", default-features 
 xcm-executor = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.11"}
 
 # Benchmarking
+cumulus-pallet-session-benchmarking = {git = "https://github.com/paritytech/cumulus", default-features = false, optional = true, branch = "polkadot-v0.9.11"}
 frame-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.11"}
 frame-system-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.11"}
-cumulus-pallet-session-benchmarking = {git = "https://github.com/paritytech/cumulus", default-features = false, optional = true, branch = "polkadot-v0.9.11"}
 rococo-runtime = {git = "https://github.com/paritytech/polkadot", default-features = false, optional = true, branch = "release-v0.9.11"}
 
 # Runtime tests
@@ -211,4 +211,10 @@ try-runtime = [
   "pallet-utility/try-runtime",
   "pallet-vesting/try-runtime",
   "parachain-staking/try-runtime",
+]
+# A feature that should be enabled when the runtime should be build for on-chain
+# deployment. This will disable stuff that shouldn't be part of the on-chain wasm
+# to make it smaller like logging for example.
+on-chain-release-build = [
+  "sp-api/disable-logging",
 ]
