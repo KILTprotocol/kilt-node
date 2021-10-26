@@ -66,6 +66,7 @@ pub mod pallet {
 
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+	pub(crate) type WeightInfoOf<T> = <T as Config>::WeightInfo;
 
 	pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
@@ -155,7 +156,7 @@ pub mod pallet {
 		/// Weight: O(1)
 		/// - Reads: [Origin Account], RegistrarAccount
 		/// - Writes: RegistrarAccount
-		#[pallet::weight(T::WeightInfo::set_registrar_account())]
+		#[pallet::weight(WeightInfoOf::<T>::set_registrar_account())]
 		pub fn set_registrar_account(
 			origin: OriginFor<T>,
 			new_account: <T::Lookup as StaticLookup>::Source,
@@ -191,19 +192,18 @@ pub mod pallet {
 		/// Weight: O(1)
 		/// - Reads: [Origin Account], RegistrarAccount, Contributions
 		/// - Writes: Contributions
-		#[pallet::weight(T::WeightInfo::set_contribution())]
+		#[pallet::weight(WeightInfoOf::<T>::set_contribution())]
 		pub fn set_contribution(
 			origin: OriginFor<T>,
-			contributor_account: <T::Lookup as StaticLookup>::Source,
+			contributor: AccountIdOf<T>,
 			amount: BalanceOf<T>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			ensure!(who == RegistrarAccount::<T>::get(), BadOrigin);
 
-			let looked_up_account = <T as frame_system::Config>::Lookup::lookup(contributor_account)?;
-			let old_amount = Contributions::<T>::mutate(&looked_up_account, |entry| entry.replace(amount));
+			let old_amount = Contributions::<T>::mutate(&contributor, |entry| entry.replace(amount));
 
-			Self::deposit_event(Event::ContributionSet(looked_up_account, old_amount, amount));
+			Self::deposit_event(Event::ContributionSet(contributor, old_amount, amount));
 
 			Ok(())
 		}
@@ -221,18 +221,14 @@ pub mod pallet {
 		/// Weight: O(1)
 		/// - Reads: [Origin Account], RegistrarAccount, Contributions
 		/// - Writes: Contributions
-		#[pallet::weight(T::WeightInfo::remove_contribution())]
-		pub fn remove_contribution(
-			origin: OriginFor<T>,
-			contributor_account: <T::Lookup as StaticLookup>::Source,
-		) -> DispatchResult {
+		#[pallet::weight(WeightInfoOf::<T>::remove_contribution())]
+		pub fn remove_contribution(origin: OriginFor<T>, contributor: AccountIdOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			ensure!(who == RegistrarAccount::<T>::get(), BadOrigin);
 
-			let looked_up_account = <T as frame_system::Config>::Lookup::lookup(contributor_account)?;
-			Contributions::<T>::take(&looked_up_account).ok_or(Error::<T>::ContributorNotPresent)?;
+			Contributions::<T>::take(&contributor).ok_or(Error::<T>::ContributorNotPresent)?;
 
-			Self::deposit_event(Event::ContributionRemoved(looked_up_account));
+			Self::deposit_event(Event::ContributionRemoved(contributor));
 
 			Ok(())
 		}
