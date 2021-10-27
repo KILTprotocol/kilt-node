@@ -33,20 +33,11 @@ frame-system = {branch = "polkadot-v0.9.11", default-features = false, git = "ht
 sp-runtime = {branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-std = {branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate"}
 
-pallet-balances = {branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-pallet-vesting = {branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-kilt-primitives = {default-features = false, path = "../../primitives", optional = true}
-
 [features]
 default = ["std"]
 
 runtime-benchmarks = [
   "frame-benchmarking",
-  "pallet-balances",
-  "pallet-balances/frame-benchmarking",
-  "pallet-vesting",
-  "pallet-vesting/frame-benchmarking",
-  "kilt-primitives",
 ]
 
 std = [
@@ -57,9 +48,6 @@ std = [
   "scale-info/std",
   "sp-runtime/std",
   "sp-std/std",
-  "kilt-primitives/std",
-  "pallet-balances/std",
-  "pallet-vesting/std",
 ]
 
 try-runtime = [
