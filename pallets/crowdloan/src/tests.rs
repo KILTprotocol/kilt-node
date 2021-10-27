@@ -455,16 +455,16 @@ fn test_send_gratitude_contribution_not_found() {
 fn validate_unsigned_works() {
 	use sp_runtime::traits::ValidateUnsigned;
 	let source = sp_runtime::transaction_validity::TransactionSource::External;
-	let contributor = || ACCOUNT_00.clone();
+	let contributor = ACCOUNT_00;
 	ExtBuilder::default()
-		.with_contributions(vec![(contributor(), BALANCE_02)])
+		.with_contributions(vec![(contributor.clone(), BALANCE_02)])
 		.build()
 		.execute_with(|| {
 			assert_eq!(
 				crate::Pallet::<Test>::validate_unsigned(
 					source,
 					&crate::Call::receive_gratitude {
-						receiver: contributor()
+						receiver: contributor.clone()
 					}
 				),
 				Ok(ValidTransaction {
@@ -533,39 +533,39 @@ fn test_set_configuration() {
 
 #[test]
 fn test_set_reserve() {
-	let registrar = || ACCOUNT_00.clone();
-	let contributor = || ACCOUNT_01.clone();
-	let free_reserve_old = || ACCOUNT_01.clone();
-	let vested_reserve_old = || ACCOUNT_02.clone();
-	let free_reserve_new = || ACCOUNT_03.clone();
-	let vested_reserve_new = || ACCOUNT_04.clone();
+	let registrar = ACCOUNT_00;
+	let contributor = ACCOUNT_01;
+	let free_reserve_old = ACCOUNT_01;
+	let vested_reserve_old = ACCOUNT_02;
+	let free_reserve_new = ACCOUNT_03;
+	let vested_reserve_new = ACCOUNT_04;
 
 	ExtBuilder::default()
 		.with_reserve(ReserveAccounts {
-			vested: vested_reserve_old(),
-			free: free_reserve_old(),
+			vested: vested_reserve_old.clone(),
+			free: free_reserve_old.clone(),
 		})
-		.with_registrar_account(registrar())
+		.with_registrar_account(registrar.clone())
 		.build()
 		.execute_with(|| {
 			assert_ok!(Crowdloan::set_reserve_accounts(
-				Origin::signed(registrar()),
-				vested_reserve_new(),
-				free_reserve_new()
+				Origin::signed(registrar.clone()),
+				vested_reserve_new.clone(),
+				free_reserve_new.clone()
 			));
 			assert_eq!(
 				crate::Reserve::<Test>::get(),
 				ReserveAccounts {
-					vested: vested_reserve_new(),
-					free: free_reserve_new(),
+					vested: vested_reserve_new,
+					free: free_reserve_new,
 				}
 			);
 
 			assert_noop!(
 				Crowdloan::set_reserve_accounts(
-					Origin::signed(contributor()),
-					vested_reserve_old(),
-					free_reserve_old()
+					Origin::signed(contributor),
+					vested_reserve_old,
+					free_reserve_old
 				),
 				BadOrigin
 			);
