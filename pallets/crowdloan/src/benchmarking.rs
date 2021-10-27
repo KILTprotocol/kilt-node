@@ -120,6 +120,8 @@ benchmarks! {
 			start_block: 1.into(),
 			vesting_length: 10.into(),
 		});
+		CurrencyOf::<T>::make_free_balance_be(&reserve_vested, contribution);
+		CurrencyOf::<T>::make_free_balance_be(&reserve_free, contribution);
 
 		let source = sp_runtime::transaction_validity::TransactionSource::External;
 		let call_enc = Call::<T>::receive_gratitude {
