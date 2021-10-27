@@ -24,7 +24,7 @@ use frame_support::{dispatch::UnfilteredDispatchable, traits::Currency, unsigned
 use frame_system::RawOrigin;
 use sp_runtime::{
 	traits::{One, StaticLookup},
-	Perquintill,
+	Permill,
 };
 
 const SEED_1: u32 = 1;
@@ -65,7 +65,7 @@ benchmarks! {
 		RegistrarAccount::<T>::set(registrar.clone());
 
 		let config = GratitudeConfig::<T::BlockNumber> {
-			vested_share: Perquintill::from_percent(42),
+			vested_share: Permill::from_percent(42),
 			start_block: 1.into(),
 			vesting_length: 10.into(),
 		};
@@ -116,7 +116,7 @@ benchmarks! {
 		});
 		Contributions::<T>::insert(&contributor, contribution);
 		Configuration::<T>::set(GratitudeConfig {
-			vested_share: Perquintill::from_percent(50),
+			vested_share: Permill::from_percent(50),
 			start_block: 1.into(),
 			vesting_length: 10.into(),
 		});

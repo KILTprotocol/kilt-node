@@ -23,7 +23,7 @@ use frame_support::{
 };
 use sp_runtime::{
 	traits::{BadOrigin, Zero},
-	Perquintill,
+	Permill,
 };
 
 use crate::{mock::*, GratitudeConfig, ReserveAccounts};
@@ -274,7 +274,7 @@ fn test_send_gratitude_success() {
 		])
 		.with_contributions(vec![(contributor.clone(), BALANCE_02)])
 		.with_configuration(GratitudeConfig {
-			vested_share: Perquintill::from_percent(50),
+			vested_share: Permill::from_percent(50),
 			start_block: 1,
 			vesting_length: 10,
 		})
@@ -287,6 +287,7 @@ fn test_send_gratitude_success() {
 			);
 			assert!(pallet_balances::Pallet::<Test>::free_balance(free_reserve.clone()).is_zero());
 			assert!(pallet_balances::Pallet::<Test>::free_balance(vested_reserve.clone()).is_zero());
+			assert_eq!(pallet_balances::Pallet::<Test>::free_balance(contributor.clone()), BALANCE_02);
 			assert!(crate::Contributions::<Test>::get(&contributor).is_none());
 
 			assert_noop!(
@@ -312,7 +313,7 @@ fn test_send_gratitude_empty_free_reserve() {
 		.with_balances(vec![(vested_reserve, BALANCE_02)])
 		.with_contributions(vec![(contributor.clone(), BALANCE_02)])
 		.with_configuration(GratitudeConfig {
-			vested_share: Perquintill::from_percent(50),
+			vested_share: Permill::from_percent(50),
 			start_block: 1,
 			vesting_length: 10,
 		})
@@ -341,7 +342,7 @@ fn test_send_gratitude_empty_vest_reserve() {
 		.with_balances(vec![(free_reserve, BALANCE_02)])
 		.with_contributions(vec![(contributor.clone(), BALANCE_02)])
 		.with_configuration(GratitudeConfig {
-			vested_share: Perquintill::from_percent(50),
+			vested_share: Permill::from_percent(50),
 			start_block: 1,
 			vesting_length: 10,
 		})
@@ -370,7 +371,7 @@ fn test_send_gratitude_same_account_success() {
 		.with_balances(vec![(free_reserve.clone(), BALANCE_02)])
 		.with_contributions(vec![(contributor.clone(), BALANCE_02)])
 		.with_configuration(GratitudeConfig {
-			vested_share: Perquintill::from_percent(50),
+			vested_share: Permill::from_percent(50),
 			start_block: 1,
 			vesting_length: 10,
 		})
@@ -407,7 +408,7 @@ fn test_send_gratitude_same_account_out_of_funds() {
 		.with_balances(vec![(free_reserve, BALANCE_01)])
 		.with_contributions(vec![(contributor.clone(), BALANCE_02)])
 		.with_configuration(GratitudeConfig {
-			vested_share: Perquintill::from_percent(50),
+			vested_share: Permill::from_percent(50),
 			start_block: 1,
 			vesting_length: 10,
 		})
@@ -435,7 +436,7 @@ fn test_send_gratitude_contribution_not_found() {
 		.with_registrar_account(registrar)
 		.with_balances(vec![(free_reserve, BALANCE_01)])
 		.with_configuration(GratitudeConfig {
-			vested_share: Perquintill::from_percent(50),
+			vested_share: Permill::from_percent(50),
 			start_block: 1,
 			vesting_length: 10,
 		})
@@ -508,7 +509,7 @@ fn test_set_configuration() {
 	let free_reserve = ACCOUNT_02;
 	let vested_reserve = ACCOUNT_02;
 	let config = GratitudeConfig {
-		vested_share: Perquintill::from_percent(50),
+		vested_share: Permill::from_percent(50),
 		start_block: 1,
 		vesting_length: 10,
 	};
