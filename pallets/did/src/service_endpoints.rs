@@ -103,15 +103,14 @@ impl<T: Config> DidEndpoint<T> {
 		})?;
 		// Check that all URLs are the maximum allowed length AND only contain ASCII
 		// characters.
-		self.urls.iter().try_for_each(|s_url| {
+		for s_url in self.urls.iter() {
 			ensure!(
 				s_url.len() <= T::MaxServiceUrlLength::get().saturated_into(),
 				InputError::MaxUrlLengthExceeded
 			);
 			let str_url = str::from_utf8(s_url).map_err(|_| InputError::InvalidEncoding)?;
 			ensure!(crate_utils::is_valid_ascii_string(str_url), InputError::InvalidEncoding);
-			Ok(())
-		})?;
+		}
 		Ok(())
 	}
 }
