@@ -399,16 +399,16 @@ pub mod pallet {
 			let reserve = Reserve::<T>::get();
 
 			let new_free_acc_balance = CurrencyOf::<T>::free_balance(&reserve.free)
-				.checked_sub(&free)
+				.checked_sub(free)
 				.ok_or(Error::<T>::InsufficientBalance)?;
 			let mut new_vested_acc_balance = CurrencyOf::<T>::free_balance(&reserve.vested)
-				.checked_sub(&vested)
+				.checked_sub(vested)
 				.ok_or(Error::<T>::InsufficientBalance)?;
 			if reserve.free == reserve.vested {
 				// if free and vested are the same we need to make sure that we can withdraw
 				// both from the same account
 				new_vested_acc_balance = new_vested_acc_balance
-					.checked_sub(&free)
+					.checked_sub(free)
 					.ok_or(Error::<T>::InsufficientBalance)?;
 			}
 			CurrencyOf::<T>::ensure_can_withdraw(
