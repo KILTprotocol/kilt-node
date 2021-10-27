@@ -19,15 +19,22 @@ use codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_runtime::Perquintill;
 
+/// A set of reserve accounts
 #[derive(Clone, Debug, Default, Decode, PartialEq, Encode, TypeInfo)]
 pub struct ReserveAccounts<A: Default> {
+	/// The account that is used to do vested transfers.
 	pub vested: A,
+	/// The account that is used to do free and unlocked transfers.
 	pub free: A,
 }
 
+/// The configuration of the gratitude.
 #[derive(Clone, Debug, Default, Decode, Encode, PartialEq, TypeInfo)]
 pub struct GratitudeConfig<BlockNumber: Default> {
+	/// The perquintill of vested tokens that are given.
 	pub vested_share: Perquintill,
+	/// The start block of the vesting.
 	pub start_block: BlockNumber,
+	/// The length of the vesting.
 	pub vesting_length: BlockNumber,
 }

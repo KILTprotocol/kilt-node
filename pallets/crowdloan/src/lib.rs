@@ -221,6 +221,14 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Change the reserve accounts.
+		///
+		/// Only the registrar can change the reserve accounts.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: RegistrarAccount, Reserve
+		/// - Writes: Reserve
 		#[pallet::weight(WeightInfoOf::<T>::set_reserve_accounts())]
 		pub fn set_reserve_accounts(
 			origin: OriginFor<T>,
@@ -253,6 +261,14 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Change the configuration of this pallet.
+		///
+		/// Only the registrar can change the configuration.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: RegistrarAccount
+		/// - Writes: Configuration
 		#[pallet::weight(WeightInfoOf::<T>::set_config())]
 		pub fn set_config(origin: OriginFor<T>, new_config: GratitudeConfig<BlockNumberOf<T>>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
@@ -322,6 +338,12 @@ pub mod pallet {
 		///
 		/// Moves tokens to the given account according to the vote that was
 		/// giving in favour of our parachain.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: Contributions, Reserve, Configuration, [receiver account],
+		///   [free reserve account], [vested reserve account]
+		/// - Writes: Contributions
 		#[pallet::weight((WeightInfoOf::<T>::receive_gratitude(), DispatchClass::Normal, Pays::No))]
 		pub fn receive_gratitude(origin: OriginFor<T>, receiver: AccountIdOf<T>) -> DispatchResult {
 			ensure_none(origin)?;
