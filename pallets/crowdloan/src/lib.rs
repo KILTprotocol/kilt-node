@@ -431,9 +431,9 @@ pub mod pallet {
 	/// Custom validity errors while validating transactions.
 	#[repr(u8)]
 	pub enum ValidityError {
-		/// The Ethereum signature is invalid.
+		/// The account is not registered and therefore not allowed to make this call.
 		NoContributor = 0,
-		/// The signer has no claim.
+		/// An internal error prevents the call from being submitted.
 		CannotSendGratitude = 1,
 	}
 
