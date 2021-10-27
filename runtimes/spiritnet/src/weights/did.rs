@@ -218,10 +218,8 @@ impl<T: frame_system::Config> did::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
-	fn remove_service_endpoint(c: u32, ) -> Weight {
-		(22_774_000_u64)
-			// Standard Error: 5_000
-			.saturating_add((74_000_u64).saturating_mul(c as Weight))
+	fn remove_service_endpoint() -> Weight {
+		(61_756_000_u64)
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}

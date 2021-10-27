@@ -871,13 +871,8 @@ pub mod pallet {
 		/// - Reads: [Origin Account], ServiceEndpoints, DidEndpointsCount
 		/// - Writes: Did, ServiceEndpoints, DidEndpointsCount
 		/// # </weight>
-		// #[pallet::weight(<T as pallet::Config>::WeightInfo::remove_service_endpoint())]
-		// TODO: replace
-		#[pallet::weight(1)]
-		pub fn remove_service_endpoint(
-			origin: OriginFor<T>,
-			service_id: ServiceEndpointId<T>
-		) -> DispatchResult {
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_service_endpoint())]
+		pub fn remove_service_endpoint(origin: OriginFor<T>, service_id: ServiceEndpointId<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 
 			// *** No Fail after the next call succeeds ***
