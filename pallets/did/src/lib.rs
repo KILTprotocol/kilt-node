@@ -871,21 +871,16 @@ pub mod pallet {
 		/// - Reads: [Origin Account], ServiceEndpoints, DidEndpointsCount
 		/// - Writes: Did, ServiceEndpoints, DidEndpointsCount
 		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_service_endpoint(*endpoints_to_remove))]
+		// #[pallet::weight(<T as pallet::Config>::WeightInfo::remove_service_endpoint())]
+		// TODO: replace
+		#[pallet::weight(1)]
 		pub fn remove_service_endpoint(
 			origin: OriginFor<T>,
-			service_id: ServiceEndpointId<T>,
-			endpoints_to_remove: u32,
+			service_id: ServiceEndpointId<T>
 		) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 
-			let current_endpoints_count = DidEndpointsCount::<T>::get(&did_subject);
-			ensure!(
-				current_endpoints_count <= endpoints_to_remove,
-				Error::<T>::StoredEndpointsCountTooLarge
-			);
-
-			// *** No Fail beyond this point ***
+			// *** No Fail after the next call succeeds ***
 
 			ensure!(
 				ServiceEndpoints::<T>::take(&did_subject, &service_id).is_some(),
@@ -893,12 +888,14 @@ pub mod pallet {
 			);
 
 			// Decrease the endpoints counter or delete the entry if it reaches 0.
-			let new_endpoints_count = current_endpoints_count.saturating_sub(1);
-			if new_endpoints_count.is_zero() {
-				DidEndpointsCount::<T>::remove(&did_subject);
-			} else {
-				DidEndpointsCount::<T>::insert(&did_subject, new_endpoints_count)
-			};
+			DidEndpointsCount::<T>::mutate_exists(&did_subject, |existing_endpoint_count| {
+				let new_value = existing_endpoint_count.unwrap_or_default().saturating_sub(1);
+				if new_value.is_zero() {
+					*existing_endpoint_count = None;
+				} else {
+					*existing_endpoint_count = Some(new_value);
+				}
+			});
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
 

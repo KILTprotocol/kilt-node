@@ -911,13 +911,11 @@ benchmarks! {
 	}
 
 	remove_service_endpoint {
-		let c in 1 .. T::MaxNumberOfServicesPerDid::get();
-
 		let public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key.clone()).into_account().into();
 		// All set to max.
 		let old_service_endpoints = get_service_endpoints::<T>(
-			c,
+			T::MaxNumberOfServicesPerDid::get(),
 			T::MaxServiceIdLength::get(),
 			T::MaxNumberOfTypesPerService::get(),
 			T::MaxServiceTypeLength::get(),
@@ -929,18 +927,18 @@ benchmarks! {
 		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(public_auth_key));
 		Did::<T>::insert(&did_subject, did_details);
 		save_service_endpoints(&did_subject, &old_service_endpoints);
-	}: _(RawOrigin::Signed(did_subject.clone()), endpoint_id.clone(), c)
+	}: _(RawOrigin::Signed(did_subject.clone()), endpoint_id.clone())
 	verify {
 		assert!(
 			ServiceEndpoints::<T>::get(&did_subject, &endpoint_id).is_none()
 		);
 		assert_eq!(
 			DidEndpointsCount::<T>::get(&did_subject),
-			c - 1
+			T::MaxNumberOfServicesPerDid::get() - 1
 		);
 		assert_eq!(
 			ServiceEndpoints::<T>::iter_prefix(&did_subject).count(),
-			c.saturated_into::<usize>() - 1
+			T::MaxNumberOfServicesPerDid::get().saturated_into::<usize>() - 1
 		);
 	}
 

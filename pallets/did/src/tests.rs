@@ -2035,8 +2035,7 @@ fn check_service_deletion_successful() {
 		.execute_with(|| {
 			assert_ok!(Did::remove_service_endpoint(
 				Origin::signed(alice_did.clone()),
-				old_service_endpoint.id,
-				1
+				old_service_endpoint.id
 			),);
 			// Counter should be deleted from the storage.
 			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 0);
@@ -2062,30 +2061,9 @@ fn check_service_not_present_deletion_error() {
 			assert_noop!(
 				Did::remove_service_endpoint(
 					Origin::signed(alice_did.clone()),
-					service_id.try_into().expect("Service ID to delete too long"),
-					0
+					service_id.try_into().expect("Service ID to delete too long")
 				),
 				did::Error::<Test>::ServiceNotPresent
-			);
-		});
-}
-
-#[test]
-fn check_too_small_service_count_deletion_error() {
-	let auth_key = get_ed25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let old_service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
-
-	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
-
-	ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.with_endpoints(vec![(alice_did.clone(), vec![old_service_endpoint.clone()])])
-		.build(None)
-		.execute_with(|| {
-			assert_noop!(
-				Did::remove_service_endpoint(Origin::signed(alice_did.clone()), old_service_endpoint.id, 0),
-				did::Error::<Test>::StoredEndpointsCountTooLarge
 			);
 		});
 }
