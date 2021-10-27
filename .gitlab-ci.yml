@@ -40,6 +40,9 @@ build:
   only:
     - develop
     - tags
+  variables:
+    DOCKER_HUB_PARACHAIN: "kiltprotocol/kilt-node"
+    DOCKER_HUB_STANDALONE: "kiltprotocol/mashnet-node"
   before_script:
     - amazon-linux-extras install docker
     - aws --version
@@ -56,18 +59,18 @@ build:
     - docker build --cache-from $AWS_REGISTRY/kilt-parachain/collator:builder-develop --cache-from $AWS_REGISTRY/kilt-parachain/collator:develop --build-arg NODE_TYPE=kilt-parachain -t kiltprotocol/kilt-node:develop .
     - docker build --cache-from $AWS_REGISTRY/kilt-parachain/collator:builder-develop --cache-from $AWS_REGISTRY/kilt/prototype-chain:latest-develop --build-arg NODE_TYPE=mashnet-node -t kiltprotocol/mashnet-node:develop .
 
-    - docker tag kiltprotocol/mashnet-node:develop kiltprotocol/mashnet-node:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
-    - docker tag kiltprotocol/kilt-node:develop kiltprotocol/kilt-node:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
+    - docker tag ${DOCKER_HUB_STANDALONE}:develop ${DOCKER_HUB_STANDALONE}:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
+    - docker tag ${DOCKER_HUB_PARACHAIN}:develop ${DOCKER_HUB_PARACHAIN}:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
 
-    - docker push kiltprotocol/kilt-node:develop
-    - docker push kiltprotocol/kilt-node:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
-    - docker push kiltprotocol/mashnet-node:develop
-    - docker push kiltprotocol/mashnet-node:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
+    - docker push ${DOCKER_HUB_PARACHAIN}:develop
+    - docker push ${DOCKER_HUB_PARACHAIN}:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
+    - docker push ${DOCKER_HUB_STANDALONE}:develop
+    - docker push ${DOCKER_HUB_STANDALONE}:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
 
-    - docker tag kiltprotocol/mashnet-node:develop $AWS_REGISTRY/kilt/prototype-chain:latest-develop
-    - docker tag kiltprotocol/mashnet-node:develop $AWS_REGISTRY/kilt/prototype-chain:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
-    - docker tag kiltprotocol/kilt-node:develop $AWS_REGISTRY/kilt-parachain/collator:latest-develop
-    - docker tag kiltprotocol/kilt-node:develop $AWS_REGISTRY/kilt-parachain/collator:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
+    - docker tag ${DOCKER_HUB_STANDALONE}:develop $AWS_REGISTRY/kilt/prototype-chain:latest-develop
+    - docker tag ${DOCKER_HUB_STANDALONE}:develop $AWS_REGISTRY/kilt/prototype-chain:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
+    - docker tag ${DOCKER_HUB_PARACHAIN}:develop $AWS_REGISTRY/kilt-parachain/collator:latest-develop
+    - docker tag ${DOCKER_HUB_PARACHAIN}:develop $AWS_REGISTRY/kilt-parachain/collator:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
     - docker push $AWS_REGISTRY/kilt/prototype-chain:latest-develop
     - docker push $AWS_REGISTRY/kilt/prototype-chain:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
     - docker push $AWS_REGISTRY/kilt-parachain/collator:latest-develop
