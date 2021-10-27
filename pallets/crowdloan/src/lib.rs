@@ -343,7 +343,8 @@ pub mod pallet {
 		/// Weight: O(1)
 		/// - Reads: Contributions, Reserve, Configuration, [receiver account],
 		///   [free reserve account], [vested reserve account]
-		/// - Writes: Contributions, [free reserve account], [vested reserve account], [receiver account]
+		/// - Writes: Contributions, [free reserve account], [vested reserve
+		///   account], [receiver account]
 		#[pallet::weight((WeightInfoOf::<T>::receive_gratitude(), DispatchClass::Normal, Pays::No))]
 		pub fn receive_gratitude(origin: OriginFor<T>, receiver: AccountIdOf<T>) -> DispatchResult {
 			ensure_none(origin)?;

@@ -562,11 +562,7 @@ fn test_set_reserve() {
 			);
 
 			assert_noop!(
-				Crowdloan::set_reserve_accounts(
-					Origin::signed(contributor),
-					vested_reserve_old,
-					free_reserve_old
-				),
+				Crowdloan::set_reserve_accounts(Origin::signed(contributor), vested_reserve_old, free_reserve_old),
 				BadOrigin
 			);
 		});
