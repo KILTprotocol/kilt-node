@@ -31,7 +31,7 @@ pub struct ReserveAccounts<A: Default> {
 /// The configuration of the gratitude.
 #[derive(Clone, Debug, Default, Decode, Encode, PartialEq, TypeInfo)]
 pub struct GratitudeConfig<BlockNumber: Default> {
-	/// The perquintill of vested tokens that are given.
+	/// The permill of vested tokens that are given.
 	pub vested_share: Permill,
 	/// The start block of the vesting.
 	pub start_block: BlockNumber,

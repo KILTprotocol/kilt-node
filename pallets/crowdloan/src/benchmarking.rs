@@ -82,7 +82,6 @@ benchmarks! {
 		let reserve_free: AccountIdOf<T> = account("reserve_free", 0, SEED_1);
 		let reserve_vested: AccountIdOf<T> = account("reserve_vested", 0, SEED_1);
 		RegistrarAccount::<T>::set(registrar.clone());
-
 	}: _(
 		RawOrigin::Signed(registrar),
 		T::Lookup::unlookup(reserve_vested.clone()),
@@ -90,7 +89,7 @@ benchmarks! {
 	)
 	verify {
 		assert_eq!(
-			crate::Reserve::<T>::get(),
+			Reserve::<T>::get(),
 			ReserveAccounts {
 				vested: reserve_vested,
 				free: reserve_free,
@@ -130,11 +129,12 @@ benchmarks! {
 	}: {
 		let call = <Call<T> as Decode>::decode(&mut &*call_enc)
 			.expect("call is encoded above, encoding must be correct");
-		crate::Pallet::<T>::validate_unsigned(source, &call).map_err(|e| -> &'static str { e.into() })?;
+		Pallet::<T>::validate_unsigned(source, &call).map_err(|e| -> &'static str { e.into() })?;
 		call.dispatch_bypass_filter(RawOrigin::None.into())?;
 	}
 	verify {
-		assert!(crate::Contributions::<T>::get(contributor).is_none());
+		assert!(Contributions::<T>::get(contributor.clone()).is_none());
+		assert_eq!(CurrencyOf::<T>::free_balance(&contributor), contribution);
 	}
 
 	remove_contribution {

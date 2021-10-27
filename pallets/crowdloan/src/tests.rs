@@ -456,8 +456,28 @@ fn validate_unsigned_works() {
 	use sp_runtime::traits::ValidateUnsigned;
 	let source = sp_runtime::transaction_validity::TransactionSource::External;
 	let contributor = ACCOUNT_00;
+	let free_reserve = ACCOUNT_01;
+	let vested_reserve = ACCOUNT_02;
+	let contributor2 = ACCOUNT_03;
+
 	ExtBuilder::default()
-		.with_contributions(vec![(contributor.clone(), BALANCE_02)])
+		.with_contributions(vec![
+			(contributor.clone(), BALANCE_02),
+			(contributor2.clone(), BALANCE_02 + BALANCE_02),
+		])
+		.with_balances(vec![
+			(free_reserve.clone(), BALANCE_01),
+			(vested_reserve.clone(), BALANCE_01),
+		])
+		.with_reserve(ReserveAccounts {
+			vested: vested_reserve,
+			free: free_reserve,
+		})
+		.with_configuration(GratitudeConfig {
+			vested_share: Permill::from_percent(50),
+			start_block: 1,
+			vesting_length: 10,
+		})
 		.build()
 		.execute_with(|| {
 			assert_eq!(
@@ -483,7 +503,17 @@ fn validate_unsigned_works() {
 						receiver: ACCOUNT_02.clone()
 					}
 				),
-				Err(InvalidTransaction::BadProof.into())
+				Err(InvalidTransaction::Custom(crate::ValidityError::NoContributor as u8).into())
+			);
+
+			assert_eq!(
+				crate::Pallet::<Test>::validate_unsigned(
+					source,
+					&crate::Call::receive_gratitude {
+						receiver: contributor2
+					}
+				),
+				Err(InvalidTransaction::Custom(crate::ValidityError::CannotSendGratitude as u8).into())
 			);
 
 			assert_eq!(
