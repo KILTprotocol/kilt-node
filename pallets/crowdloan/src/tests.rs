@@ -287,7 +287,10 @@ fn test_send_gratitude_success() {
 			);
 			assert!(pallet_balances::Pallet::<Test>::free_balance(free_reserve.clone()).is_zero());
 			assert!(pallet_balances::Pallet::<Test>::free_balance(vested_reserve.clone()).is_zero());
-			assert_eq!(pallet_balances::Pallet::<Test>::free_balance(contributor.clone()), BALANCE_02);
+			assert_eq!(
+				pallet_balances::Pallet::<Test>::free_balance(contributor.clone()),
+				BALANCE_02
+			);
 			assert!(crate::Contributions::<Test>::get(&contributor).is_none());
 
 			assert_noop!(
