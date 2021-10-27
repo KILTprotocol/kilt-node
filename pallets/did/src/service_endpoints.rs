@@ -154,7 +154,7 @@ pub mod utils {
 		// Then validate each service.
 		endpoints
 			.iter()
-			.try_for_each(|endpoint| endpoint.validate_against_constraints())?;
+			.try_for_each(DidEndpoint::<T>::validate_against_constraints)?;
 
 		Ok(())
 	}
