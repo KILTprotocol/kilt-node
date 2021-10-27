@@ -273,11 +273,6 @@ fn test_send_gratitude_success() {
 			(vested_reserve.clone(), BALANCE_01),
 		])
 		.with_contributions(vec![(contributor.clone(), BALANCE_02)])
-		.with_configuration(GratitudeConfig {
-			vested_share: Permill::from_percent(50),
-			start_block: 1,
-			vesting_length: 10,
-		})
 		.build()
 		.execute_with(|| {
 			assert_ok!(Crowdloan::receive_gratitude(Origin::none(), contributor.clone()));
@@ -311,11 +306,6 @@ fn test_send_gratitude_empty_free_reserve() {
 		.with_registrar_account(registrar)
 		.with_balances(vec![(vested_reserve, BALANCE_02)])
 		.with_contributions(vec![(contributor.clone(), BALANCE_02)])
-		.with_configuration(GratitudeConfig {
-			vested_share: Permill::from_percent(50),
-			start_block: 1,
-			vesting_length: 10,
-		})
 		.build()
 		.execute_with(|| {
 			assert_noop!(
@@ -340,11 +330,6 @@ fn test_send_gratitude_empty_vest_reserve() {
 		.with_registrar_account(registrar)
 		.with_balances(vec![(free_reserve, BALANCE_02)])
 		.with_contributions(vec![(contributor.clone(), BALANCE_02)])
-		.with_configuration(GratitudeConfig {
-			vested_share: Permill::from_percent(50),
-			start_block: 1,
-			vesting_length: 10,
-		})
 		.build()
 		.execute_with(|| {
 			assert_noop!(
@@ -369,11 +354,6 @@ fn test_send_gratitude_same_account_success() {
 		.with_registrar_account(registrar)
 		.with_balances(vec![(free_reserve.clone(), BALANCE_02)])
 		.with_contributions(vec![(contributor.clone(), BALANCE_02)])
-		.with_configuration(GratitudeConfig {
-			vested_share: Permill::from_percent(50),
-			start_block: 1,
-			vesting_length: 10,
-		})
 		.build()
 		.execute_with(|| {
 			assert_ok!(Crowdloan::receive_gratitude(Origin::none(), contributor.clone()));
@@ -406,11 +386,6 @@ fn test_send_gratitude_same_account_out_of_funds() {
 		.with_registrar_account(registrar)
 		.with_balances(vec![(free_reserve, BALANCE_01)])
 		.with_contributions(vec![(contributor.clone(), BALANCE_02)])
-		.with_configuration(GratitudeConfig {
-			vested_share: Permill::from_percent(50),
-			start_block: 1,
-			vesting_length: 10,
-		})
 		.build()
 		.execute_with(|| {
 			assert_noop!(
@@ -434,11 +409,6 @@ fn test_send_gratitude_contribution_not_found() {
 		})
 		.with_registrar_account(registrar)
 		.with_balances(vec![(free_reserve, BALANCE_01)])
-		.with_configuration(GratitudeConfig {
-			vested_share: Permill::from_percent(50),
-			start_block: 1,
-			vesting_length: 10,
-		})
 		.build()
 		.execute_with(|| {
 			assert_noop!(
@@ -472,11 +442,6 @@ fn validate_unsigned_works() {
 		.with_reserve(ReserveAccounts {
 			vested: vested_reserve,
 			free: free_reserve,
-		})
-		.with_configuration(GratitudeConfig {
-			vested_share: Permill::from_percent(50),
-			start_block: 1,
-			vesting_length: 10,
 		})
 		.build()
 		.execute_with(|| {
@@ -536,9 +501,9 @@ fn test_set_configuration() {
 	let free_reserve = ACCOUNT_02;
 	let vested_reserve = ACCOUNT_02;
 	let config = GratitudeConfig {
-		vested_share: Permill::from_percent(50),
-		start_block: 1,
-		vesting_length: 10,
+		vested_share: Permill::from_percent(5),
+		start_block: 2,
+		vesting_length: 20,
 	};
 
 	ExtBuilder::default()

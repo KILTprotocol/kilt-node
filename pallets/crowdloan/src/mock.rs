@@ -23,6 +23,7 @@ use kilt_primitives::{constants::KILT, AccountId, Balance, BlockNumber, Hash, In
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, ConvertInto, IdentityLookup},
+	Permill,
 };
 
 type TestUncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -124,6 +125,11 @@ pub(crate) const ACCOUNT_04: TestAccountId = AccountId::new([4u8; 32]);
 #[allow(clippy::identity_op)]
 pub(crate) const BALANCE_01: TestBalance = 1 * KILT;
 pub(crate) const BALANCE_02: TestBalance = 2 * KILT;
+pub(crate) const GRATITUDE_CONFIG: GratitudeConfig<BlockNumber> = GratitudeConfig {
+	vested_share: Permill::from_percent(50),
+	start_block: 1,
+	vesting_length: 10,
+};
 
 pub(crate) fn get_generated_events() -> Vec<EventRecord<Event, kilt_primitives::Hash>> {
 	let events = System::events();
@@ -137,7 +143,6 @@ pub(crate) fn get_generated_events() -> Vec<EventRecord<Event, kilt_primitives::
 pub(crate) struct ExtBuilder {
 	registrar_account: TestAccountId,
 	contributions: Vec<(TestAccountId, TestBalance)>,
-	config: GratitudeConfig<BlockNumber>,
 	reserve: ReserveAccounts<TestAccountId>,
 	balances: Vec<(TestAccountId, TestBalance)>,
 }
@@ -150,11 +155,6 @@ impl ExtBuilder {
 
 	pub(crate) fn with_contributions(mut self, contributions: Vec<(TestAccountId, TestBalance)>) -> Self {
 		self.contributions = contributions;
-		self
-	}
-
-	pub(crate) fn with_configuration(mut self, config: GratitudeConfig<BlockNumber>) -> Self {
-		self.config = config;
 		self
 	}
 
@@ -182,7 +182,7 @@ impl ExtBuilder {
 			System::set_block_number(1);
 			pallet_crowdloan::RegistrarAccount::<Test>::set(self.registrar_account);
 			pallet_crowdloan::Reserve::<Test>::set(self.reserve);
-			pallet_crowdloan::Configuration::<Test>::set(self.config);
+			pallet_crowdloan::Configuration::<Test>::set(GRATITUDE_CONFIG.clone());
 
 			for (contributor_account, contribution_amount) in self.contributions.iter() {
 				pallet_crowdloan::Contributions::<Test>::insert(contributor_account, contribution_amount);
