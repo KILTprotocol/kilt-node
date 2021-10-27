@@ -7,6 +7,6 @@ This script uses docker images.
 example usage:
 
 ```
-python3 .maintain/reset-spec/ -i kiltprotocol/peregrine:develop --peregrine --peregrine-stg --peregrine-dev
+python3 .maintain/reset-spec/ -i kiltprotocol/kilt-node:develop --peregrine --peregrine-stg --peregrine-dev
 python3 .maintain/reset-spec/ -i parity/polkadot:v0.9.10 --peregrine-relay --peregrine-relay-stg
 ```
