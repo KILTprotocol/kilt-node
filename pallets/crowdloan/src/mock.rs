@@ -40,7 +40,7 @@ frame_support::construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>},
-		Crowdloan: pallet_crowdloan::{Pallet, Call, Config<T>, Storage, Event<T>}
+		Crowdloan: pallet_crowdloan::{Pallet, Call, Config<T>, Storage, Event<T>, ValidateUnsigned}
 	}
 );
 
