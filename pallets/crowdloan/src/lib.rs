@@ -349,37 +349,15 @@ pub mod pallet {
 		pub fn receive_gratitude(origin: OriginFor<T>, receiver: AccountIdOf<T>) -> DispatchResult {
 			ensure_none(origin)?;
 
-			let amount = Contributions::<T>::get(&receiver).ok_or(Error::<T>::ContributorNotPresent)?;
+			let gratitude = Self::split_gratitude_for(&receiver)?;
+			Self::ensure_can_send_gratitude(&gratitude)?;
+
+			// *** No failure beyond this call! The contributor was removed. ***
+			Contributions::<T>::remove(&receiver);
+
+			let SplitGratitude { vested, free } = gratitude;
 			let config = Configuration::<T>::get();
 			let reserve = Reserve::<T>::get();
-
-			// A two without any trait bounds (no From<u32>).
-			let vested = config.vested_share.mul_floor(amount);
-			let free = amount.saturating_sub(vested);
-
-			let new_free_acc_balance = CurrencyOf::<T>::free_balance(&reserve.free)
-				.checked_sub(&free)
-				.ok_or(Error::<T>::InsufficientBalance)?;
-			let mut new_vested_acc_balance = CurrencyOf::<T>::free_balance(&reserve.vested)
-				.checked_sub(&vested)
-				.ok_or(Error::<T>::InsufficientBalance)?;
-			if reserve.free == reserve.vested {
-				// if free and vested are the same we need to make sure that we can withdraw
-				// both from the same account
-				new_vested_acc_balance = new_vested_acc_balance
-					.checked_sub(&free)
-					.ok_or(Error::<T>::InsufficientBalance)?;
-			}
-			CurrencyOf::<T>::ensure_can_withdraw(&reserve.free, free, WithdrawReasons::TRANSFER, new_free_acc_balance)?;
-			CurrencyOf::<T>::ensure_can_withdraw(
-				&reserve.vested,
-				vested,
-				WithdrawReasons::TRANSFER,
-				new_vested_acc_balance,
-			)?;
-
-			Contributions::<T>::remove(&receiver);
-			// *** No failure beyond this point! The contributor was removed. ***
 
 			// Transfer the free amount. Should not fail since checked we
 			// ensure_can_withdraw.
@@ -400,6 +378,56 @@ pub mod pallet {
 		}
 	}
 
+	struct SplitGratitude<Balance> {
+		vested: Balance,
+		free: Balance,
+	}
+
+	impl<T: Config> Pallet<T> {
+		fn split_gratitude_for(receiver: &AccountIdOf<T>) -> Result<SplitGratitude<BalanceOf<T>>, DispatchError> {
+			let amount = Contributions::<T>::get(receiver).ok_or(Error::<T>::ContributorNotPresent)?;
+			let config = Configuration::<T>::get();
+
+			// A two without any trait bounds (no From<u32>).
+			let vested = config.vested_share.mul_floor(amount);
+			let free = amount.saturating_sub(vested);
+
+			Ok(SplitGratitude { vested, free })
+		}
+
+		fn ensure_can_send_gratitude(SplitGratitude { vested, free }: &SplitGratitude<BalanceOf<T>>) -> DispatchResult {
+			let reserve = Reserve::<T>::get();
+
+			let new_free_acc_balance = CurrencyOf::<T>::free_balance(&reserve.free)
+				.checked_sub(&free)
+				.ok_or(Error::<T>::InsufficientBalance)?;
+			let mut new_vested_acc_balance = CurrencyOf::<T>::free_balance(&reserve.vested)
+				.checked_sub(&vested)
+				.ok_or(Error::<T>::InsufficientBalance)?;
+			if reserve.free == reserve.vested {
+				// if free and vested are the same we need to make sure that we can withdraw
+				// both from the same account
+				new_vested_acc_balance = new_vested_acc_balance
+					.checked_sub(&free)
+					.ok_or(Error::<T>::InsufficientBalance)?;
+			}
+			CurrencyOf::<T>::ensure_can_withdraw(
+				&reserve.free,
+				*free,
+				WithdrawReasons::TRANSFER,
+				new_free_acc_balance,
+			)?;
+			CurrencyOf::<T>::ensure_can_withdraw(
+				&reserve.vested,
+				*vested,
+				WithdrawReasons::TRANSFER,
+				new_vested_acc_balance,
+			)?;
+
+			Ok(())
+		}
+	}
+
 	#[pallet::validate_unsigned]
 	impl<T: Config> ValidateUnsigned for Pallet<T> {
 		type Call = Call<T>;
@@ -407,7 +435,7 @@ pub mod pallet {
 		fn validate_unsigned(_source: TransactionSource, call: &Self::Call) -> TransactionValidity {
 			const PRIORITY: u64 = 100;
 
-			let claiming_account = match call {
+			let receiver = match call {
 				// <weight>
 				// The weight of this logic must be included in the `receive_gratitude` call.
 				// </weight>
@@ -415,15 +443,15 @@ pub mod pallet {
 				_ => return Err(InvalidTransaction::Call.into()),
 			};
 
-			ensure!(
-				Contributions::<T>::contains_key(claiming_account),
-				InvalidTransaction::BadProof
-			);
+			ensure!(Contributions::<T>::contains_key(receiver), InvalidTransaction::BadProof);
+
+			let gratitude = Self::split_gratitude_for(receiver).map_err(|_| InvalidTransaction::Call)?;
+			Self::ensure_can_send_gratitude(&gratitude).map_err(|_| InvalidTransaction::Call)?;
 
 			Ok(ValidTransaction {
 				priority: PRIORITY,
 				requires: vec![],
-				provides: vec![("gratitude", claiming_account).encode()],
+				provides: vec![("gratitude", receiver).encode()],
 				longevity: TransactionLongevity::max_value(),
 				propagate: true,
 			})
