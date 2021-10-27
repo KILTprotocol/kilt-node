@@ -749,7 +749,7 @@ construct_runtime! {
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 63,
 		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 64,
 
-		CrowdloanContributors: crowdloan::{Pallet, Call, Storage, Event<T>, Config<T>} = 65,
+		CrowdloanContributors: crowdloan::{Pallet, Call, Storage, Event<T>, Config<T>, ValidateUnsigned} = 65,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>, Config} = 80,

@@ -539,7 +539,7 @@ construct_runtime!(
 		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 33,
 		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
 		Utility: pallet_utility::{Pallet, Call, Storage, Event} = 35,
-		CrowdloanContributors: crowdloan::{Pallet, Call, Storage, Event<T>, Config<T>} = 36,
+		CrowdloanContributors: crowdloan::{Pallet, Call, Storage, Event<T>, Config<T>, ValidateUnsigned} = 36,
 	}
 );
 
