@@ -3594,7 +3594,6 @@ dependencies = [
  "frame-system",
  "pallet-transaction-payment",
  "parity-scale-codec",
- "polkadot-runtime-common",
  "scale-info",
  "serde",
  "sp-consensus-aura",
