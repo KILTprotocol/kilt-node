@@ -428,6 +428,15 @@ pub mod pallet {
 		}
 	}
 
+	/// Custom validity errors while validating transactions.
+	#[repr(u8)]
+	pub enum ValidityError {
+		/// The Ethereum signature is invalid.
+		NoContributor = 0,
+		/// The signer has no claim.
+		CannotSendGratitude = 1,
+	}
+
 	#[pallet::validate_unsigned]
 	impl<T: Config> ValidateUnsigned for Pallet<T> {
 		type Call = Call<T>;
@@ -443,10 +452,10 @@ pub mod pallet {
 				_ => return Err(InvalidTransaction::Call.into()),
 			};
 
-			ensure!(Contributions::<T>::contains_key(receiver), InvalidTransaction::BadProof);
-
-			let gratitude = Self::split_gratitude_for(receiver).map_err(|_| InvalidTransaction::Call)?;
-			Self::ensure_can_send_gratitude(&gratitude).map_err(|_| InvalidTransaction::Call)?;
+			let gratitude = Self::split_gratitude_for(receiver)
+				.map_err(|_| InvalidTransaction::Custom(ValidityError::NoContributor as u8))?;
+			Self::ensure_can_send_gratitude(&gratitude)
+				.map_err(|_| InvalidTransaction::Custom(ValidityError::CannotSendGratitude as u8))?;
 
 			Ok(ValidTransaction {
 				priority: PRIORITY,
