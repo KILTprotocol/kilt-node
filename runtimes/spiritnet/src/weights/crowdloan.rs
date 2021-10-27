@@ -48,32 +48,32 @@ use sp_std::marker::PhantomData;
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> crowdloan::WeightInfo for WeightInfo<T> {
 	fn set_registrar_account() -> Weight {
-		(19_796_000_u64)
+		(20_990_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn set_contribution() -> Weight {
-		(22_134_000_u64)
+		(23_380_000_u64)
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn set_config() -> Weight {
-		(19_503_000_u64)
+		(20_196_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn set_reserve_accounts() -> Weight {
-		(22_988_000_u64)
+		(24_140_000_u64)
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn receive_gratitude() -> Weight {
-		(162_343_000_u64)
+		(180_866_000_u64)
 			.saturating_add(T::DbWeight::get().reads(8_u64))
 			.saturating_add(T::DbWeight::get().writes(6_u64))
 	}
 	fn remove_contribution() -> Weight {
-		(24_258_000_u64)
+		(23_617_000_u64)
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
