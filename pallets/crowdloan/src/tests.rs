@@ -267,7 +267,7 @@ fn test_send_gratitude_success() {
 			vested: vested_reserve.clone(),
 			free: free_reserve.clone(),
 		})
-		.with_registrar_account(registrar.clone())
+		.with_registrar_account(registrar)
 		.with_balances(vec![
 			(free_reserve.clone(), BALANCE_01),
 			(vested_reserve.clone(), BALANCE_01),
@@ -306,10 +306,10 @@ fn test_send_gratitude_empty_free_reserve() {
 	ExtBuilder::default()
 		.with_reserve(ReserveAccounts {
 			vested: vested_reserve.clone(),
-			free: free_reserve.clone(),
+			free: free_reserve,
 		})
-		.with_registrar_account(registrar.clone())
-		.with_balances(vec![(vested_reserve.clone(), BALANCE_02)])
+		.with_registrar_account(registrar)
+		.with_balances(vec![(vested_reserve, BALANCE_02)])
 		.with_contributions(vec![(contributor.clone(), BALANCE_02)])
 		.with_configuration(GratitudeConfig {
 			vested_share: Perquintill::from_percent(50),
@@ -334,11 +334,11 @@ fn test_send_gratitude_empty_vest_reserve() {
 
 	ExtBuilder::default()
 		.with_reserve(ReserveAccounts {
-			vested: vested_reserve.clone(),
+			vested: vested_reserve,
 			free: free_reserve.clone(),
 		})
-		.with_registrar_account(registrar.clone())
-		.with_balances(vec![(free_reserve.clone(), BALANCE_02)])
+		.with_registrar_account(registrar)
+		.with_balances(vec![(free_reserve, BALANCE_02)])
 		.with_contributions(vec![(contributor.clone(), BALANCE_02)])
 		.with_configuration(GratitudeConfig {
 			vested_share: Perquintill::from_percent(50),
@@ -363,10 +363,10 @@ fn test_send_gratitude_same_account_success() {
 
 	ExtBuilder::default()
 		.with_reserve(ReserveAccounts {
-			vested: vested_reserve.clone(),
+			vested: vested_reserve,
 			free: free_reserve.clone(),
 		})
-		.with_registrar_account(registrar.clone())
+		.with_registrar_account(registrar)
 		.with_balances(vec![(free_reserve.clone(), BALANCE_02)])
 		.with_contributions(vec![(contributor.clone(), BALANCE_02)])
 		.with_configuration(GratitudeConfig {
@@ -400,11 +400,11 @@ fn test_send_gratitude_same_account_out_of_funds() {
 
 	ExtBuilder::default()
 		.with_reserve(ReserveAccounts {
-			vested: vested_reserve.clone(),
+			vested: vested_reserve,
 			free: free_reserve.clone(),
 		})
-		.with_registrar_account(registrar.clone())
-		.with_balances(vec![(free_reserve.clone(), BALANCE_01)])
+		.with_registrar_account(registrar)
+		.with_balances(vec![(free_reserve, BALANCE_01)])
 		.with_contributions(vec![(contributor.clone(), BALANCE_02)])
 		.with_configuration(GratitudeConfig {
 			vested_share: Perquintill::from_percent(50),
@@ -429,11 +429,11 @@ fn test_send_gratitude_contribution_not_found() {
 
 	ExtBuilder::default()
 		.with_reserve(ReserveAccounts {
-			vested: vested_reserve.clone(),
+			vested: vested_reserve,
 			free: free_reserve.clone(),
 		})
-		.with_registrar_account(registrar.clone())
-		.with_balances(vec![(free_reserve.clone(), BALANCE_01)])
+		.with_registrar_account(registrar)
+		.with_balances(vec![(free_reserve, BALANCE_01)])
 		.with_configuration(GratitudeConfig {
 			vested_share: Perquintill::from_percent(50),
 			start_block: 1,
@@ -515,8 +515,8 @@ fn test_set_configuration() {
 
 	ExtBuilder::default()
 		.with_reserve(ReserveAccounts {
-			vested: vested_reserve.clone(),
-			free: free_reserve.clone(),
+			vested: vested_reserve,
+			free: free_reserve,
 		})
 		.with_registrar_account(registrar.clone())
 		.build()

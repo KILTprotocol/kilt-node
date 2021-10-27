@@ -109,7 +109,7 @@ benchmarks! {
 			+ CurrencyOf::<T>::minimum_balance()
 			+ CurrencyOf::<T>::minimum_balance();
 
-		RegistrarAccount::<T>::set(registrar.clone());
+		RegistrarAccount::<T>::set(registrar);
 		Reserve::<T>::set(ReserveAccounts {
 			vested: reserve_vested.clone(),
 			free: reserve_free.clone(),
