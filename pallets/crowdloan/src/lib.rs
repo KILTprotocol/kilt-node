@@ -431,7 +431,8 @@ pub mod pallet {
 	/// Custom validity errors while validating transactions.
 	#[repr(u8)]
 	pub enum ValidityError {
-		/// The account is not registered and therefore not allowed to make this call.
+		/// The account is not registered and therefore not allowed to make this
+		/// call.
 		NoContributor = 0,
 		/// An internal error prevents the call from being submitted.
 		CannotSendGratitude = 1,

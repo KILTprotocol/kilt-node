@@ -509,9 +509,7 @@ fn validate_unsigned_works() {
 			assert_eq!(
 				crate::Pallet::<Test>::validate_unsigned(
 					source,
-					&crate::Call::receive_gratitude {
-						receiver: contributor2
-					}
+					&crate::Call::receive_gratitude { receiver: contributor2 }
 				),
 				Err(InvalidTransaction::Custom(crate::ValidityError::CannotSendGratitude as u8).into())
 			);
