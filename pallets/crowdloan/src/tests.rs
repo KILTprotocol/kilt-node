@@ -470,7 +470,7 @@ fn validate_unsigned_works() {
 				Ok(ValidTransaction {
 					priority: 100,
 					requires: vec![],
-					provides: vec![("gratitude", contributor()).encode()],
+					provides: vec![("gratitude", contributor.clone()).encode()],
 					longevity: TransactionLongevity::max_value(),
 					propagate: true,
 				})
