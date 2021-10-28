@@ -31,8 +31,6 @@ const SEED_1: u32 = 1;
 const SEED_2: u32 = 2;
 
 benchmarks! {
-	where_clause { where <T as frame_system::Config>::BlockNumber: From<u32> }
-
 	set_registrar_account {
 		let registrar: AccountIdOf<T> = account("registrar", 0, SEED_1);
 		let new_registrar: AccountIdOf<T> = account("new_registrar", 0, SEED_2);
@@ -66,8 +64,8 @@ benchmarks! {
 
 		let config = GratitudeConfig::<T::BlockNumber> {
 			vested_share: Permill::from_percent(42),
-			start_block: 1.into(),
-			vesting_length: 10.into(),
+			start_block: 1_u32.into(),
+			vesting_length: 10_u32.into(),
 		};
 	}: _(RawOrigin::Signed(registrar), config.clone())
 	verify {
@@ -82,10 +80,14 @@ benchmarks! {
 		let reserve_free: AccountIdOf<T> = account("reserve_free", 0, SEED_1);
 		let reserve_vested: AccountIdOf<T> = account("reserve_vested", 0, SEED_1);
 		RegistrarAccount::<T>::set(registrar.clone());
+
+		let unlookup_reserve_vested = T::Lookup::unlookup(reserve_vested.clone());
+		let unlookup_reserve_free = T::Lookup::unlookup(reserve_free.clone());
+
 	}: _(
 		RawOrigin::Signed(registrar),
-		T::Lookup::unlookup(reserve_vested.clone()),
-		T::Lookup::unlookup(reserve_free.clone())
+		unlookup_reserve_vested,
+		unlookup_reserve_free
 	)
 	verify {
 		assert_eq!(
@@ -104,9 +106,7 @@ benchmarks! {
 		let reserve_vested: AccountIdOf<T> = account("reserve_vested", 0, SEED_1);
 		let contributor: AccountIdOf<T> = account("contributor", 0, SEED_1);
 
-		let contribution: BalanceOf<T> = CurrencyOf::<T>::minimum_balance()
-			+ CurrencyOf::<T>::minimum_balance()
-			+ CurrencyOf::<T>::minimum_balance();
+		let contribution: BalanceOf<T> = CurrencyOf::<T>::minimum_balance() * 3_u32.into();
 
 		RegistrarAccount::<T>::set(registrar);
 		Reserve::<T>::set(ReserveAccounts {
@@ -116,8 +116,8 @@ benchmarks! {
 		Contributions::<T>::insert(&contributor, contribution);
 		Configuration::<T>::set(GratitudeConfig {
 			vested_share: Permill::from_percent(50),
-			start_block: 1.into(),
-			vesting_length: 10.into(),
+			start_block: 1_u32.into(),
+			vesting_length: 10_u32.into(),
 		});
 		CurrencyOf::<T>::make_free_balance_be(&reserve_vested, contribution);
 		CurrencyOf::<T>::make_free_balance_be(&reserve_free, contribution);
