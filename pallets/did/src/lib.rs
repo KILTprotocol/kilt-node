@@ -200,11 +200,13 @@ pub mod pallet {
 		/// The amount of balance that will be taken for each DID as a deposit
 		/// to incentivise fair use of the on chain storage. The deposit can be
 		/// reclaimed when the DID is deleted.
+		#[pallet::constant]
 		type Deposit: Get<BalanceOf<Self>>;
 
 		/// The amount of balance that will be taken for each DID as a fee to
 		/// incentivise fair use of the on chain storage. The fee will not get
 		/// refunded when the DID is deleted.
+		#[pallet::constant]
 		type Fee: Get<BalanceOf<Self>>;
 
 		/// The logic for handling the fee.
