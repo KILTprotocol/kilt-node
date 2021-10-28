@@ -43,13 +43,9 @@ std = [
   "frame-benchmarking/std",
   "frame-support/std",
   "frame-system/std",
-  "kilt-primitives/std",
-  "pallet-balances/std",
-  "pallet-treasury/std",
   "serde",
   "scale-info/std",
   "sp-core/std",
-  "sp-io/std",
   "sp-runtime/std",
   "sp-std/std",
 ]
