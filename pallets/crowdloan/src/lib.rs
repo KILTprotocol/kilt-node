@@ -172,6 +172,9 @@ pub mod pallet {
 			}
 
 			let looked_up_account = <T as frame_system::Config>::Lookup::lookup(new_account)?;
+
+			// *** No Fail beyond this point ***
+
 			RegistrarAccount::<T>::set(looked_up_account.clone());
 
 			Self::deposit_event(Event::NewRegistrarAccountSet(old_account, looked_up_account));
@@ -201,6 +204,9 @@ pub mod pallet {
 			ensure!(who == RegistrarAccount::<T>::get(), BadOrigin);
 
 			let looked_up_account = <T as frame_system::Config>::Lookup::lookup(contributor_account)?;
+
+			// *** No Fail beyond this point ***
+
 			let old_amount = Contributions::<T>::mutate(&looked_up_account, |entry| entry.replace(amount));
 
 			Self::deposit_event(Event::ContributionSet(looked_up_account, old_amount, amount));
@@ -230,6 +236,9 @@ pub mod pallet {
 			ensure!(who == RegistrarAccount::<T>::get(), BadOrigin);
 
 			let looked_up_account = <T as frame_system::Config>::Lookup::lookup(contributor_account)?;
+
+			// *** No Fail except ContributorNotPresent beyond this point ***
+
 			Contributions::<T>::take(&looked_up_account).ok_or(Error::<T>::ContributorNotPresent)?;
 
 			Self::deposit_event(Event::ContributionRemoved(looked_up_account));
