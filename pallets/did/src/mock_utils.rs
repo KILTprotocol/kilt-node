@@ -24,6 +24,7 @@ use sp_runtime::traits::Zero;
 use sp_std::{
 	collections::btree_set::BTreeSet,
 	convert::{TryFrom, TryInto},
+	vec::Vec,
 };
 
 pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> DidNewKeyAgreementKeySet<T> {
@@ -43,6 +44,37 @@ pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> DidNewKeyAgreementKeySe
 	.expect("Failed to convert key_agreement_keys to BoundedBTreeSet")
 }
 
+pub fn get_service_endpoints<T: Config>(
+	count: u32,
+	endpoint_id_length: u32,
+	endpoint_type_count: u32,
+	endpoint_type_length: u32,
+	endpoint_url_count: u32,
+	endpoint_url_length: u32,
+) -> Vec<DidEndpoint<T>> {
+	(0..count)
+		.map(|i| {
+			let mut endpoint_id = i.to_be_bytes().to_vec();
+			endpoint_id.resize(endpoint_id_length.saturated_into(), 0u8);
+			let endpoint_types = (0..endpoint_type_count)
+				.map(|t| {
+					let mut endpoint_type = t.to_be_bytes().to_vec();
+					endpoint_type.resize(endpoint_type_length.saturated_into(), 0u8);
+					endpoint_type
+				})
+				.collect();
+			let endpoint_urls = (0..endpoint_url_count)
+				.map(|u| {
+					let mut endpoint_url = u.to_be_bytes().to_vec();
+					endpoint_url.resize(endpoint_url_length.saturated_into(), 0u8);
+					endpoint_url
+				})
+				.collect();
+			DidEndpoint::new(endpoint_id, endpoint_types, endpoint_urls)
+		})
+		.collect()
+}
+
 pub fn generate_base_did_creation_details<T: Config>(
 	did: DidIdentifierOf<T>,
 	submitter: AccountIdOf<T>,
@@ -53,6 +85,7 @@ pub fn generate_base_did_creation_details<T: Config>(
 		new_key_agreement_keys: BoundedBTreeSet::new(),
 		new_attestation_key: None,
 		new_delegation_key: None,
+		new_service_details: Vec::new(),
 	}
 }
 
