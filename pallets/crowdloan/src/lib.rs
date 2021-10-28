@@ -170,6 +170,10 @@ pub mod pallet {
 		/// \[contributor account\]
 		GratitudeReceived(AccountIdOf<T>),
 
+		/// There was an error while sending the gratitude.
+		/// \[contributor account\]
+		GratitudeError(AccountIdOf<T>),
+
 		/// A new configuration was set.
 		/// \[new configuration\]
 		UpdatedConfig(GratitudeConfig<BlockNumberOf<T>>),
@@ -339,20 +343,22 @@ pub mod pallet {
 		/// Moves tokens to the given account according to the vote that was
 		/// giving in favour of our parachain.
 		///
+		/// This is an unsigned extrinsic. The validity needs to be checked with
+		/// `ValidateUnsigned`.
+		///
 		/// # <weight>
 		/// Weight: O(1)
 		/// - Reads: Contributions, Reserve, Configuration, [receiver account],
 		///   [free reserve account], [vested reserve account]
 		/// - Writes: Contributions, [free reserve account], [vested reserve
 		///   account], [receiver account]
-		#[pallet::weight((WeightInfoOf::<T>::receive_gratitude(), DispatchClass::Normal, Pays::No))]
+		#[pallet::weight(WeightInfoOf::<T>::receive_gratitude())]
 		pub fn receive_gratitude(origin: OriginFor<T>, receiver: AccountIdOf<T>) -> DispatchResult {
 			ensure_none(origin)?;
 
 			let gratitude = Self::split_gratitude_for(&receiver)?;
 			Self::ensure_can_send_gratitude(&gratitude)?;
 
-			// *** No failure beyond this call! The contributor was removed. ***
 			Contributions::<T>::remove(&receiver);
 
 			let SplitGratitude { vested, free } = gratitude;
@@ -361,18 +367,38 @@ pub mod pallet {
 
 			// Transfer the free amount. Should not fail since checked we
 			// ensure_can_withdraw.
-			CurrencyOf::<T>::transfer(&reserve.free, &receiver, free, ExistenceRequirement::AllowDeath)?;
+			let result_free_transfer =
+				CurrencyOf::<T>::transfer(&reserve.free, &receiver, free, ExistenceRequirement::AllowDeath);
+			debug_assert!(
+				result_free_transfer.is_ok(),
+				"free transfer failed after we checked in ensure_can_withdraw"
+			);
 
 			// Transfer the vested amount and set the vesting schedule. Should not fail
 			// since checked we ensure_can_withdraw.
-			CurrencyOf::<T>::transfer(&reserve.vested, &receiver, vested, ExistenceRequirement::AllowDeath)?;
+			let result_vest_transfer =
+				CurrencyOf::<T>::transfer(&reserve.vested, &receiver, vested, ExistenceRequirement::AllowDeath);
+			debug_assert!(
+				result_vest_transfer.is_ok(),
+				"vested transfer failed after we checked in ensure_can_withdraw"
+			);
+
 			let per_block = vested
 				.checked_div(&BalanceOf::<T>::from(config.vesting_length))
 				.unwrap_or(vested);
 			// vesting should not fail since we have transferred enough free balance.
-			VestingOf::<T>::add_vesting_schedule(&receiver, vested, per_block, config.start_block)?;
+			let result_versting =
+				VestingOf::<T>::add_vesting_schedule(&receiver, vested, per_block, config.start_block);
+			debug_assert!(
+				result_versting.is_ok(),
+				"vesting failed for vested coins after we transferred enough coins that ought to be vestable."
+			);
 
-			Self::deposit_event(Event::GratitudeReceived(receiver));
+			if result_versting.is_ok() && result_vest_transfer.is_ok() && result_free_transfer.is_ok() {
+				Self::deposit_event(Event::GratitudeReceived(receiver));
+			} else {
+				Self::deposit_event(Event::GratitudeError(receiver));
+			}
 
 			Ok(())
 		}
