@@ -16,12 +16,12 @@ substrate-wasm-builder-runner = {version = "3.0.0"}
 kilt-primitives = {default-features = false, path = "../../primitives"}
 pallet-balances = {branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate"}
 pallet-vesting = {branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate"}
-serde = {version = "1.0.101"}
+serde = {version = "1.0.124"}
 sp-io = {branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-keystore = {branch = "polkadot-v0.9.11", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [dependencies]
-serde = {optional = true, version = "1.0.101"}
+serde = {optional = true, version = "1.0.124"}
 
 codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.0.0"}
 scale-info = {version = "1.0", default-features = false, features = ["derive"]}
