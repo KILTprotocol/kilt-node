@@ -397,11 +397,11 @@ pub mod pallet {
 			let result_vesting =
 				VestingOf::<T>::add_vesting_schedule(&receiver, vested, per_block, config.start_block);
 			debug_assert!(
-				result_versting.is_ok(),
+				result_vesting.is_ok(),
 				"vesting failed for vested coins after we transferred enough coins that ought to be vestable."
 			);
 
-			if result_versting.is_ok() && result_vest_transfer.is_ok() && result_free_transfer.is_ok() {
+			if result_vesting.is_ok() && result_vest_transfer.is_ok() && result_free_transfer.is_ok() {
 				Self::deposit_event(Event::GratitudeReceived(receiver));
 			} else {
 				Self::deposit_event(Event::GratitudeError(receiver));
