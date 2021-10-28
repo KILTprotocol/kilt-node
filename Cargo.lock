@@ -1342,13 +1342,14 @@ dependencies = [
 
 [[package]]
 name = "crowdloan"
-version = "0.26.2"
+version = "1.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
  "kilt-primitives",
  "pallet-balances",
+ "pallet-vesting",
  "parity-scale-codec",
  "scale-info",
  "serde",
@@ -3603,7 +3604,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-support"
-version = "0.26.1"
+version = "1.0.0"
 dependencies = [
  "frame-support",
  "parity-scale-codec",
