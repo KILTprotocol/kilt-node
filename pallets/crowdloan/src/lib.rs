@@ -394,8 +394,7 @@ pub mod pallet {
 				.checked_div(&BalanceOf::<T>::from(config.vesting_length))
 				.unwrap_or(vested);
 			// vesting should not fail since we have transferred enough free balance.
-			let result_vesting =
-				VestingOf::<T>::add_vesting_schedule(&receiver, vested, per_block, config.start_block);
+			let result_vesting = VestingOf::<T>::add_vesting_schedule(&receiver, vested, per_block, config.start_block);
 			debug_assert!(
 				result_vesting.is_ok(),
 				"vesting failed for vested coins after we transferred enough coins that ought to be vestable."
