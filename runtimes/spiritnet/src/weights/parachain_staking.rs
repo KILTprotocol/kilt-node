@@ -41,6 +41,8 @@
 #![allow(unused_parens)]
 #![allow(unused_imports)]
 
+ // TODO: Re-run benchmarks
+
 use frame_support::{traits::Get, weights::Weight};
 use sp_std::marker::PhantomData;
 
@@ -57,6 +59,11 @@ impl<T: frame_system::Config> parachain_staking::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn on_initialize_new_year() -> Weight {
+		(37_277_000_u64)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	fn on_initialize_network_rewards() -> Weight {
 		(37_277_000_u64)
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))

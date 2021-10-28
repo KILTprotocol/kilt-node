@@ -44,11 +44,14 @@
 use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
 use sp_std::marker::PhantomData;
 
+// TODO: Re-run benchmarks
+
 /// Weight functions needed for parachain_staking.
 pub trait WeightInfo {
 	fn on_initialize_no_action() -> Weight;
 	fn on_initialize_round_update() -> Weight;
 	fn on_initialize_new_year() -> Weight;
+	fn on_initialize_network_rewards() -> Weight;
 	fn force_new_round() -> Weight;
 	fn set_inflation() -> Weight;
 	fn set_max_selected_candidates(n: u32, m: u32, ) -> Weight;
@@ -82,6 +85,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	fn on_initialize_new_year() -> Weight {
+		(37_372_000_u64)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	fn on_initialize_network_rewards() -> Weight {
 		(37_372_000_u64)
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
@@ -252,6 +260,11 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
 	fn on_initialize_new_year() -> Weight {
+		(37_372_000_u64)
+			.saturating_add(RocksDbWeight::get().reads(3_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+	fn on_initialize_network_rewards() -> Weight {
 		(37_372_000_u64)
 			.saturating_add(RocksDbWeight::get().reads(3_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))

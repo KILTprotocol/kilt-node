@@ -25,8 +25,14 @@ use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{GenesisBuild, OnFinalize, OnInitialize},
 	weights::Weight,
+	PalletId,
 };
-use kilt_primitives::constants::KILT;
+use kilt_primitives::constants::{
+	governance::SPEND_PERIOD,
+	staking::NETWORK_REWARD_RATE,
+	treasury::{INITIAL_PERIOD_LENGTH, TREASURY_PALLET_ID},
+	KILT,
+};
 use pallet_authorship::EventHandler;
 use sp_consensus_aura::sr25519::AuthorityId;
 use sp_core::H256;
@@ -34,7 +40,7 @@ use sp_runtime::{
 	impl_opaque_keys,
 	testing::{Header, UintAuthorityId},
 	traits::{BlakeTwo256, ConvertInto, IdentityLookup, OpaqueKeys},
-	Perbill, Perquintill,
+	Perbill, Permill, Perquintill,
 };
 use sp_std::fmt::Debug;
 
@@ -61,6 +67,7 @@ construct_runtime!(
 		StakePallet: stake::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
 		Aura: pallet_aura::{Pallet, Storage},
+		Treasury: pallet_treasury::{Pallet, Call, Storage, Config, Event<T>},
 	}
 );
 
@@ -136,13 +143,14 @@ parameter_types! {
 	pub const MaxDelegatorsPerCollator: u32 = 4;
 	#[derive(Debug, PartialEq)]
 	pub const MaxCollatorsPerDelegator: u32 = 4;
-	pub const DefaultCollatorCommission: Perbill = Perbill::from_percent(20);
 	pub const MinCollatorStake: Balance = 10;
 	#[derive(Debug, PartialEq)]
 	pub const MaxCollatorCandidates: u32 = 10;
 	pub const MinDelegatorStake: Balance = 5;
 	pub const MinDelegation: Balance = 3;
 	pub const MaxUnstakeRequests: u32 = 6;
+	pub const NetworkRewardRate: Perquintill = NETWORK_REWARD_RATE;
+	pub const NetworkRewardStart: BlockNumber = INITIAL_PERIOD_LENGTH;
 }
 
 impl Config for Test {
@@ -164,6 +172,9 @@ impl Config for Test {
 	type MinDelegatorStake = MinDelegatorStake;
 	type MinDelegation = MinDelegation;
 	type MaxUnstakeRequests = MaxUnstakeRequests;
+	type NetworkRewardRate = NetworkRewardRate;
+	type NetworkRewardStart = NetworkRewardStart;
+	type NetworkRewardTarget = Treasury;
 	type WeightInfo = ();
 }
 
@@ -199,6 +210,32 @@ impl pallet_timestamp::Config for Test {
 	type OnTimestampSet = ();
 	type MinimumPeriod = MinimumPeriod;
 	type WeightInfo = ();
+}
+
+parameter_types! {
+	pub const TreasuryPalletId: PalletId = TREASURY_PALLET_ID;
+	pub const ProposalBond: Permill = Permill::from_percent(5);
+	pub const ProposalBondMinimum: Balance = 20 * KILT;
+	pub const SpendPeriod: BlockNumber = SPEND_PERIOD;
+	pub const Burn: Permill = Permill::zero();
+	pub const MaxApprovals: u32 = 100;
+}
+
+impl pallet_treasury::Config for Test {
+	type PalletId = TreasuryPalletId;
+	type Currency = Balances;
+	type ApproveOrigin = frame_system::EnsureRoot<AccountId>;
+	type RejectOrigin = frame_system::EnsureRoot<AccountId>;
+	type Event = Event;
+	type OnSlash = Treasury;
+	type ProposalBond = ProposalBond;
+	type ProposalBondMinimum = ProposalBondMinimum;
+	type SpendPeriod = SpendPeriod;
+	type Burn = Burn;
+	type BurnDestination = ();
+	type SpendFunds = ();
+	type WeightInfo = ();
+	type MaxApprovals = MaxApprovals;
 }
 
 pub(crate) struct ExtBuilder {

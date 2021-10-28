@@ -146,6 +146,17 @@ benchmarks! {
 		assert!(new.collator.reward_rate.annual < old.collator.reward_rate.annual);
 	}
 
+	on_initialize_network_rewards {
+		let issuance = T::Currency::total_issuance();
+	}: { Pallet::<T>::on_initialize(T::NetworkRewardStart::get() + T::BlockNumber::one()) }
+	verify {
+		let new_issuance = T::Currency::total_issuance();
+		let max_col_reward = InflationConfig::<T>::get().collator.reward_rate.per_block * MaxCollatorCandidateStake::<T>::get() * MaxSelectedCandidates::<T>::get().into();
+		let network_block_reward = T::NetworkRewardRate::get() * max_col_reward;
+		assert!(new_issuance > issuance);
+		assert_eq!(new_issuance - issuance, network_block_reward)
+	}
+
 	force_new_round {
 		let round = <Round<T>>::get();
 		let now = System::<T>::block_number();
