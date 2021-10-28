@@ -500,7 +500,7 @@ pub mod pallet {
 
 			let gratitude = Self::split_gratitude_for(receiver)
 				.map_err(|_| InvalidTransaction::Custom(ValidityError::NoContributor as u8))?;
-			Self::ensure_can_send_gratitude(&receiver, gratitude)
+			Self::ensure_can_send_gratitude(receiver, gratitude)
 				.map_err(|_| InvalidTransaction::Custom(ValidityError::CannotSendGratitude as u8))?;
 
 			Ok(ValidTransaction {
