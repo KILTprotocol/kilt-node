@@ -135,6 +135,7 @@ impl Contains<Call> for BaseFilter {
 				| Call::Balances { .. }
 				| Call::Delegation { .. }
 				| Call::ParachainStaking(parachain_staking::Call::join_candidates { .. })
+				| Call::CrowdloanContributors(crowdloan::Call::receive_gratitude { .. })
 		)
 	}
 }
@@ -629,6 +630,15 @@ impl did::Config for Runtime {
 	type WeightInfo = weights::did::WeightInfo<Runtime>;
 }
 
+impl crowdloan::Config for Runtime {
+	type Currency = Balances;
+	type Vesting = Vesting;
+	type Balance = Balance;
+	type EnsureRegistrarOrigin = MoreThanHalfCouncil;
+	type Event = Event;
+	type WeightInfo = weights::crowdloan::WeightInfo<Runtime>;
+}
+
 parameter_types! {
 	/// Minimum round length is 1 hour
 	pub const MinBlocksPerRound: BlockNumber = MIN_BLOCKS_PER_ROUND;
@@ -691,13 +701,6 @@ impl pallet_utility::Config for Runtime {
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
 
-impl crowdloan::Config for Runtime {
-	type Currency = Balances;
-	type EnsureRegistrarOrigin = MoreThanHalfCouncil;
-	type Event = Event;
-	type WeightInfo = weights::crowdloan::WeightInfo<Runtime>;
-}
-
 construct_runtime! {
 	pub enum Runtime where
 		Block = Block,
@@ -747,7 +750,7 @@ construct_runtime! {
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 63,
 		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 64,
 
-		CrowdloanContributors: crowdloan::{Pallet, Call, Storage, Event<T>, Config<T>} = 65,
+		CrowdloanContributors: crowdloan::{Pallet, Call, Storage, Event<T>, Config<T>, ValidateUnsigned} = 65,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>, Config} = 80,
@@ -758,12 +761,12 @@ construct_runtime! {
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
 		match self {
-			Call::Attestation(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
-			Call::Ctype(_) => Some(did::DidVerificationKeyRelationship::AssertionMethod),
-			Call::Delegation(_) => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
+			Call::Attestation { .. } => Some(did::DidVerificationKeyRelationship::AssertionMethod),
+			Call::Ctype { .. } => Some(did::DidVerificationKeyRelationship::AssertionMethod),
+			Call::Delegation { .. } => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
 			// DID creation is not allowed through the DID proxy.
 			Call::Did(did::Call::create { .. }) => None,
-			Call::Did(_) => Some(did::DidVerificationKeyRelationship::Authentication),
+			Call::Did { .. } => Some(did::DidVerificationKeyRelationship::Authentication),
 			//TODO: add a batch call case that returns the right key type if all calls in the batch require the same
 			// key type as well, otherwise it returns None and fails.
 			#[cfg(not(feature = "runtime-benchmarks"))]
@@ -933,6 +936,7 @@ impl_runtime_apis! {
 
 			// Substrate
 			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
+			list_benchmark!(list, extra, pallet_session, SessionBench::<Runtime>);
 			list_benchmark!(list, extra, pallet_balances, Balances);
 			list_benchmark!(list, extra, pallet_collective, Council);
 			list_benchmark!(list, extra, pallet_democracy, Democracy);
@@ -943,12 +947,11 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, pallet_treasury, Treasury);
 			list_benchmark!(list, extra, pallet_utility, Utility);
 			list_benchmark!(list, extra, pallet_vesting, Vesting);
-			list_benchmark!(list, extra, pallet_session, SessionBench::<Runtime>);
 
 			// KILT
 			list_benchmark!(list, extra, attestation, Attestation);
-			list_benchmark!(list, extra, ctype, Ctype);
 			list_benchmark!(list, extra, crowdloan, CrowdloanContributors);
+			list_benchmark!(list, extra, ctype, Ctype);
 			list_benchmark!(list, extra, delegation, Delegation);
 			list_benchmark!(list, extra, did, Did);
 			list_benchmark!(list, extra, kilt_launch, KiltLaunch);

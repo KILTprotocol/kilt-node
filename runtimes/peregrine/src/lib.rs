@@ -616,6 +616,8 @@ impl did::Config for Runtime {
 
 impl crowdloan::Config for Runtime {
 	type Currency = Balances;
+	type Vesting = Vesting;
+	type Balance = Balance;
 	type EnsureRegistrarOrigin = MoreThanHalfCouncil;
 	type Event = Event;
 	type WeightInfo = weights::crowdloan::WeightInfo<Runtime>;
@@ -726,11 +728,13 @@ construct_runtime! {
 
 		// KILT Pallets. Start indices 60 to leave room
 		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 60,
+
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>} = 61,
 		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 62,
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 63,
 		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 64,
-		CrowdloanContributors: crowdloan::{Pallet, Call, Storage, Event<T>, Config<T>} = 65,
+
+		CrowdloanContributors: crowdloan::{Pallet, Call, Storage, Event<T>, Config<T>, ValidateUnsigned} = 65,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>, Config} = 80,
