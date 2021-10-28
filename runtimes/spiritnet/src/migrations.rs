@@ -16,4 +16,4 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-pub(crate) mod crowdloan_contributions;
+pub(crate) mod remove_sudo;
