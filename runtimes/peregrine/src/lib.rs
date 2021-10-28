@@ -268,10 +268,6 @@ impl pallet_authorship::Config for Runtime {
 	type EventHandler = ParachainStaking;
 }
 
-parameter_types! {
-	pub const DisabledValidatorsThreshold: Perbill = Perbill::from_percent(17);
-}
-
 impl pallet_session::Config for Runtime {
 	type Event = Event;
 	type ValidatorId = AccountId;
@@ -281,7 +277,6 @@ impl pallet_session::Config for Runtime {
 	type SessionManager = ParachainStaking;
 	type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
 	type Keys = SessionKeys;
-	type DisabledValidatorsThreshold = DisabledValidatorsThreshold;
 	type WeightInfo = weights::pallet_session::WeightInfo<Runtime>;
 }
 
@@ -1011,7 +1006,7 @@ impl_runtime_apis! {
 		}
 	}
 
-	// From the Polkadot repo: https://github.com/paritytech/polkadot/tree/release-v0.9.11/runtime/polkadot/src/lib.rs#L1853
+	// From the Polkadot repo: https://github.com/paritytech/polkadot/tree/release-v0.9.12/runtime/polkadot/src/lib.rs#L1853
 	#[cfg(feature = "try-runtime")]
 	impl frame_try_runtime::TryRuntime<Block> for Runtime {
 		fn on_runtime_upgrade() -> (Weight, Weight) {
