@@ -45,7 +45,6 @@ std = [
   "frame-system/std",
   "serde",
   "scale-info/std",
-  "sp-core/std",
   "sp-runtime/std",
   "sp-std/std",
 ]
