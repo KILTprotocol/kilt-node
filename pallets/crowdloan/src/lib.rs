@@ -394,7 +394,7 @@ pub mod pallet {
 				.checked_div(&BalanceOf::<T>::from(config.vesting_length))
 				.unwrap_or(vested);
 			// vesting should not fail since we have transferred enough free balance.
-			let result_versting =
+			let result_vesting =
 				VestingOf::<T>::add_vesting_schedule(&receiver, vested, per_block, config.start_block);
 			debug_assert!(
 				result_versting.is_ok(),
