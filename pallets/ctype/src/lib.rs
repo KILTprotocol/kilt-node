@@ -164,6 +164,8 @@ pub mod pallet {
 
 			ensure!(!Ctypes::<T>::contains_key(&hash), Error::<T>::CTypeAlreadyExists);
 
+			// *** No Fail except during withdraw beyond this point  ***
+
 			// Collect the fees. This should not fail since we checked the free balance in
 			// the beginning.
 			let imbalance = <T::Currency as Currency<AccountIdOf<T>>>::withdraw(
@@ -173,8 +175,6 @@ pub mod pallet {
 				ExistenceRequirement::AllowDeath,
 			)
 			.map_err(|_| Error::<T>::UnableToPayFees)?;
-
-			// *** No Fail beyond this point ***
 
 			T::FeeCollector::on_unbalanced(imbalance);
 			log::debug!("Creating CType with hash {:?} and creator {:?}", hash, creator);

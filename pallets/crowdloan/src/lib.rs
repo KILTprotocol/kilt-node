@@ -218,6 +218,9 @@ pub mod pallet {
 			}
 
 			let looked_up_account = <T as frame_system::Config>::Lookup::lookup(new_account)?;
+
+			// *** No Fail beyond this point ***
+
 			RegistrarAccount::<T>::set(looked_up_account.clone());
 
 			Self::deposit_event(Event::NewRegistrarAccountSet(old_account, looked_up_account));
@@ -306,6 +309,8 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 			ensure!(who == RegistrarAccount::<T>::get(), BadOrigin);
 
+			// *** No Fail beyond this point ***
+
 			let old_amount = Contributions::<T>::mutate(&contributor, |entry| entry.replace(amount));
 
 			Self::deposit_event(Event::ContributionSet(contributor, old_amount, amount));
@@ -330,6 +335,8 @@ pub mod pallet {
 		pub fn remove_contribution(origin: OriginFor<T>, contributor: AccountIdOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			ensure!(who == RegistrarAccount::<T>::get(), BadOrigin);
+
+			// *** No Fail except ContributorNotPresent beyond this point ***
 
 			Contributions::<T>::take(&contributor).ok_or(Error::<T>::ContributorNotPresent)?;
 
