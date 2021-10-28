@@ -357,7 +357,7 @@ pub mod pallet {
 			ensure_none(origin)?;
 
 			let gratitude = Self::split_gratitude_for(&receiver)?;
-			Self::ensure_can_send_gratitude(&gratitude)?;
+			Self::ensure_can_send_gratitude(&receiver, gratitude)?;
 
 			Contributions::<T>::remove(&receiver);
 
@@ -404,6 +404,7 @@ pub mod pallet {
 		}
 	}
 
+	#[derive(Clone, Copy, Debug)]
 	struct SplitGratitude<Balance> {
 		vested: Balance,
 		free: Balance,
@@ -421,34 +422,52 @@ pub mod pallet {
 			Ok(SplitGratitude { vested, free })
 		}
 
-		fn ensure_can_send_gratitude(SplitGratitude { vested, free }: &SplitGratitude<BalanceOf<T>>) -> DispatchResult {
+		fn ensure_can_send_gratitude(
+			receiver: &AccountIdOf<T>,
+			SplitGratitude { vested, free }: SplitGratitude<BalanceOf<T>>,
+		) -> DispatchResult {
 			let reserve = Reserve::<T>::get();
+			let config = Configuration::<T>::get();
 
-			let new_free_acc_balance = CurrencyOf::<T>::free_balance(&reserve.free)
-				.checked_sub(free)
-				.ok_or(Error::<T>::InsufficientBalance)?;
-			let mut new_vested_acc_balance = CurrencyOf::<T>::free_balance(&reserve.vested)
-				.checked_sub(vested)
-				.ok_or(Error::<T>::InsufficientBalance)?;
 			if reserve.free == reserve.vested {
-				// if free and vested are the same we need to make sure that we can withdraw
-				// both from the same account
-				new_vested_acc_balance = new_vested_acc_balance
-					.checked_sub(free)
+				let amount = free.saturating_add(vested);
+				let new_acc_balance = CurrencyOf::<T>::free_balance(&reserve.free)
+					.checked_sub(&amount)
 					.ok_or(Error::<T>::InsufficientBalance)?;
+
+				CurrencyOf::<T>::ensure_can_withdraw(
+					&reserve.free,
+					amount,
+					WithdrawReasons::TRANSFER,
+					new_acc_balance,
+				)?;
+			} else {
+				let new_free_acc_balance = CurrencyOf::<T>::free_balance(&reserve.free)
+					.checked_sub(&free)
+					.ok_or(Error::<T>::InsufficientBalance)?;
+				let new_vested_acc_balance = CurrencyOf::<T>::free_balance(&reserve.vested)
+					.checked_sub(&vested)
+					.ok_or(Error::<T>::InsufficientBalance)?;
+
+				CurrencyOf::<T>::ensure_can_withdraw(
+					&reserve.free,
+					free,
+					WithdrawReasons::TRANSFER,
+					new_free_acc_balance,
+				)?;
+				CurrencyOf::<T>::ensure_can_withdraw(
+					&reserve.vested,
+					vested,
+					WithdrawReasons::TRANSFER,
+					new_vested_acc_balance,
+				)?;
 			}
-			CurrencyOf::<T>::ensure_can_withdraw(
-				&reserve.free,
-				*free,
-				WithdrawReasons::TRANSFER,
-				new_free_acc_balance,
-			)?;
-			CurrencyOf::<T>::ensure_can_withdraw(
-				&reserve.vested,
-				*vested,
-				WithdrawReasons::TRANSFER,
-				new_vested_acc_balance,
-			)?;
+
+			let per_block = vested
+				.checked_div(&BalanceOf::<T>::from(config.vesting_length))
+				.unwrap_or(vested);
+			// vesting should not fail since we have transferred enough free balance.
+			VestingOf::<T>::can_add_vesting_schedule(receiver, vested, per_block, config.start_block)?;
 
 			Ok(())
 		}
@@ -481,7 +500,7 @@ pub mod pallet {
 
 			let gratitude = Self::split_gratitude_for(receiver)
 				.map_err(|_| InvalidTransaction::Custom(ValidityError::NoContributor as u8))?;
-			Self::ensure_can_send_gratitude(&gratitude)
+			Self::ensure_can_send_gratitude(&receiver, gratitude)
 				.map_err(|_| InvalidTransaction::Custom(ValidityError::CannotSendGratitude as u8))?;
 
 			Ok(ValidTransaction {
