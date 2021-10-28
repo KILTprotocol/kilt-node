@@ -40,7 +40,9 @@ use kilt_primitives::{
 		},
 		did::{
 			DID_DEPOSIT, DID_FEE, MAX_BLOCKS_TX_VALIDITY, MAX_ENDPOINT_URLS_COUNT, MAX_KEY_AGREEMENT_KEYS,
-			MAX_PUBLIC_KEYS_PER_DID, MAX_TOTAL_KEY_AGREEMENT_KEYS, MAX_URL_LENGTH,
+			MAX_NUMBER_OF_SERVICES_PER_DID, MAX_NUMBER_OF_TYPES_PER_SERVICE, MAX_NUMBER_OF_URLS_PER_SERVICE,
+			MAX_PUBLIC_KEYS_PER_DID, MAX_SERVICE_ID_LENGTH, MAX_SERVICE_TYPE_LENGTH, MAX_SERVICE_URL_LENGTH,
+			MAX_TOTAL_KEY_AGREEMENT_KEYS, MAX_URL_LENGTH,
 		},
 		staking::MAX_CANDIDATES,
 		KILT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION,
@@ -409,6 +411,12 @@ parameter_types! {
 	pub const MaxBlocksTxValidity: BlockNumber = MAX_BLOCKS_TX_VALIDITY * 2;
 	pub const DidDeposit: Balance = DID_DEPOSIT;
 	pub const DidFee: Balance = DID_FEE;
+	pub const MaxNumberOfServicesPerDid: u32 = MAX_NUMBER_OF_SERVICES_PER_DID;
+	pub const MaxServiceIdLength: u32 = MAX_SERVICE_ID_LENGTH;
+	pub const MaxServiceTypeLength: u32 = MAX_SERVICE_TYPE_LENGTH;
+	pub const MaxServiceUrlLength: u32 = MAX_SERVICE_URL_LENGTH;
+	pub const MaxNumberOfTypesPerService: u32 = MAX_NUMBER_OF_TYPES_PER_SERVICE;
+	pub const MaxNumberOfUrlsPerService: u32 = MAX_NUMBER_OF_URLS_PER_SERVICE;
 }
 
 impl did::Config for Runtime {
@@ -435,6 +443,12 @@ impl did::Config for Runtime {
 	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
 	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
 	type MaxBlocksTxValidity = MaxBlocksTxValidity;
+	type MaxNumberOfServicesPerDid = MaxNumberOfServicesPerDid;
+	type MaxServiceIdLength = MaxServiceIdLength;
+	type MaxServiceTypeLength = MaxServiceTypeLength;
+	type MaxServiceUrlLength = MaxServiceUrlLength;
+	type MaxNumberOfTypesPerService = MaxNumberOfTypesPerService;
+	type MaxNumberOfUrlsPerService = MaxNumberOfUrlsPerService;
 	type WeightInfo = ();
 }
 

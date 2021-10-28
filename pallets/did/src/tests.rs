@@ -22,9 +22,12 @@ use sp_runtime::{
 	traits::{BadOrigin, Zero},
 	SaturatedConversion,
 };
-use sp_std::{collections::btree_set::BTreeSet, convert::TryFrom};
+use sp_std::{
+	collections::btree_set::BTreeSet,
+	convert::{TryFrom, TryInto},
+};
 
-use crate::{self as did, mock::*, mock_utils::*, AccountIdOf};
+use crate::{self as did, mock::*, mock_utils::*, DidEndpoint};
 
 // create
 
@@ -39,14 +42,14 @@ fn check_successful_simple_ed25519_creation() {
 
 	let balance = <Test as did::Config>::Deposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build(None)
 		.execute_with(|| {
 			assert_ok!(Did::create(
 				Origin::signed(ACCOUNT_00),
-				details,
+				Box::new(details),
 				did::DidSignature::from(signature),
 			));
 			let stored_did = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
@@ -81,14 +84,14 @@ fn check_successful_simple_sr25519_creation() {
 
 	let balance = <Test as did::Config>::Deposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build(None)
 		.execute_with(|| {
 			assert_ok!(Did::create(
 				Origin::signed(ACCOUNT_00),
-				details,
+				Box::new(details),
 				did::DidSignature::from(signature),
 			));
 			let stored_did = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
@@ -123,14 +126,14 @@ fn check_successful_simple_ecdsa_creation() {
 
 	let balance = <Test as did::Config>::Deposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build(None)
 		.execute_with(|| {
 			assert_ok!(Did::create(
 				Origin::signed(ACCOUNT_00),
-				details,
+				Box::new(details),
 				did::DidSignature::from(signature),
 			));
 			let stored_did = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
@@ -172,19 +175,26 @@ fn check_successful_complete_creation() {
 	details.new_key_agreement_keys = enc_keys.clone();
 	details.new_attestation_key = Some(did::DidVerificationKey::from(att_key.public()));
 	details.new_delegation_key = Some(did::DidVerificationKey::from(del_key.public()));
-
+	details.new_service_details = get_service_endpoints(
+		<Test as did::Config>::MaxNumberOfServicesPerDid::get(),
+		<Test as did::Config>::MaxServiceIdLength::get(),
+		<Test as did::Config>::MaxNumberOfTypesPerService::get(),
+		<Test as did::Config>::MaxServiceTypeLength::get(),
+		<Test as did::Config>::MaxNumberOfUrlsPerService::get(),
+		<Test as did::Config>::MaxServiceUrlLength::get(),
+	);
 	let signature = auth_key.sign(details.encode().as_ref());
 
 	let balance = <Test as did::Config>::Deposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build(None)
 		.execute_with(|| {
 			assert_ok!(Did::create(
 				Origin::signed(ACCOUNT_00),
-				details.clone(),
+				Box::new(details.clone()),
 				did::DidSignature::from(signature),
 			));
 
@@ -224,6 +234,27 @@ fn check_successful_complete_creation() {
 			assert!(stored_did
 				.public_keys
 				.contains_key(&generate_key_id(&details.new_delegation_key.clone().unwrap().into())));
+
+			// We check that the service details in the creation operation have been all
+			// stored in the storage...
+			details.new_service_details.iter().for_each(|new_service| {
+				let stored_service = Did::get_service_endpoints(&alice_did, &new_service.id)
+					.expect("Service endpoint should be stored.");
+				assert_eq!(stored_service.id, new_service.id);
+				assert_eq!(stored_service.urls, new_service.urls);
+				assert_eq!(stored_service.service_types, new_service.service_types);
+			});
+			// ... and that the number of elements in the creation operation is the same as
+			// the number of elements stored in `ServiceEndpoints` and `DidEndpointsCount`.
+			assert_eq!(
+				did::pallet::ServiceEndpoints::<Test>::iter_prefix(&alice_did).count(),
+				details.new_service_details.len()
+			);
+			assert_eq!(
+				did::pallet::DidEndpointsCount::<Test>::get(&alice_did).saturated_into::<usize>(),
+				details.new_service_details.len()
+			);
+
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as did::Config>::Deposit::get()
@@ -244,14 +275,18 @@ fn check_duplicate_did_creation() {
 
 	let balance = <Test as did::Config>::Deposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did, mock_did)])
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
 				did::Error::<Test>::DidAlreadyPresent
 			);
 		});
@@ -270,7 +305,7 @@ fn check_unauthorised_submitter_did_creation_error() {
 
 	let balance = <Test as did::Config>::Deposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did, mock_did)])
@@ -278,7 +313,11 @@ fn check_unauthorised_submitter_did_creation_error() {
 		.execute_with(|| {
 			assert_noop!(
 				// Use ACCOUNT_00 to submit the transaction
-				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
 				BadOrigin
 			);
 		});
@@ -294,7 +333,11 @@ fn create_fail_insufficient_balance() {
 
 	ExtBuilder::default().build(None).execute_with(|| {
 		assert_noop!(
-			Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
+			Did::create(
+				Origin::signed(ACCOUNT_00),
+				Box::new(details),
+				did::DidSignature::from(signature)
+			),
 			did::Error::<Test>::UnableToPayFees
 		);
 	});
@@ -310,14 +353,18 @@ fn check_did_already_deleted_creation() {
 
 	let balance = <Test as did::Config>::Deposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_deleted_dids(vec![alice_did])
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
 				did::Error::<Test>::DidAlreadyDeleted
 			);
 		});
@@ -336,13 +383,17 @@ fn check_invalid_signature_format_did_creation() {
 
 	let balance = <Test as did::Config>::Deposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
 				did::Error::<Test>::InvalidSignature
 			);
 		});
@@ -359,13 +410,17 @@ fn check_invalid_signature_did_creation() {
 
 	let balance = <Test as did::Config>::Deposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
 				did::Error::<Test>::InvalidSignature
 			);
 		});
@@ -382,13 +437,17 @@ fn check_swapped_did_subject_did_creation() {
 
 	let balance = <Test as did::Config>::Deposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
 				did::Error::<Test>::InvalidSignature
 			);
 		});
@@ -408,14 +467,293 @@ fn check_max_limit_key_agreement_keys_did_creation() {
 
 	let balance = <Test as did::Config>::Deposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
 				did::Error::<Test>::MaxKeyAgreementKeysLimitExceeded
+			);
+		});
+}
+
+#[test]
+fn check_max_limit_service_endpoints_count_did_creation() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
+	details.new_service_details = get_service_endpoints(
+		<Test as did::Config>::MaxNumberOfServicesPerDid::get() + 1,
+		1,
+		1,
+		1,
+		1,
+		1,
+	);
+
+	let signature = auth_key.sign(details.encode().as_ref());
+
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
+				did::Error::<Test>::MaxNumberOfServicesPerDidExceeded
+			);
+		});
+}
+
+#[test]
+#[should_panic = "Service ID too long."]
+fn check_max_limit_service_id_length_did_creation() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
+	details.new_service_details =
+		get_service_endpoints(1, <Test as did::Config>::MaxServiceIdLength::get() + 1, 1, 1, 1, 1);
+
+	let signature = auth_key.sign(details.encode().as_ref());
+
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
+				did::Error::<Test>::MaxServiceIdLengthExceeded
+			);
+		});
+}
+
+#[test]
+#[should_panic = "Too many types for the given service."]
+fn check_max_limit_service_type_count_did_creation() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
+	details.new_service_details = get_service_endpoints(
+		1,
+		1,
+		<Test as did::Config>::MaxNumberOfTypesPerService::get() + 1,
+		1,
+		1,
+		1,
+	);
+
+	let signature = auth_key.sign(details.encode().as_ref());
+
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
+				did::Error::<Test>::MaxNumberOfTypesPerServiceExceeded
+			);
+		});
+}
+
+#[test]
+#[should_panic = "Service type too long."]
+fn check_max_limit_service_type_length_did_creation() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
+	details.new_service_details =
+		get_service_endpoints(1, 1, 1, <Test as did::Config>::MaxServiceTypeLength::get() + 1, 1, 1);
+
+	let signature = auth_key.sign(details.encode().as_ref());
+
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
+				did::Error::<Test>::MaxServiceTypeLengthExceeded
+			);
+		});
+}
+
+#[test]
+#[should_panic = "Too many URLs for the given service."]
+fn check_max_limit_service_url_count_did_creation() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
+	details.new_service_details = get_service_endpoints(
+		1,
+		1,
+		1,
+		1,
+		<Test as did::Config>::MaxNumberOfUrlsPerService::get() + 1,
+		1,
+	);
+
+	let signature = auth_key.sign(details.encode().as_ref());
+
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
+				did::Error::<Test>::MaxNumberOfUrlsPerServiceExceeded
+			);
+		});
+}
+
+#[test]
+#[should_panic = "URL too long."]
+fn check_max_limit_service_url_length_did_creation() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
+	details.new_service_details =
+		get_service_endpoints(1, 1, 1, 1, 1, <Test as did::Config>::MaxServiceUrlLength::get() + 1);
+
+	let signature = auth_key.sign(details.encode().as_ref());
+
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
+				did::Error::<Test>::MaxServiceUrlLengthExceeded
+			);
+		});
+}
+
+#[test]
+fn check_invalid_service_id_character_did_creation() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let new_service_details = DidEndpoint::new("å".bytes().collect(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
+	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
+	details.new_service_details = vec![new_service_details];
+
+	let signature = auth_key.sign(details.encode().as_ref());
+
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
+				did::Error::<Test>::InvalidServiceEncoding
+			);
+		});
+}
+
+#[test]
+fn check_invalid_service_type_character_did_creation() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let new_service_details = DidEndpoint::new(b"id".to_vec(), vec!["å".bytes().collect()], vec![b"url".to_vec()]);
+	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
+	details.new_service_details = vec![new_service_details];
+
+	let signature = auth_key.sign(details.encode().as_ref());
+
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
+				did::Error::<Test>::InvalidServiceEncoding
+			);
+		});
+}
+
+#[test]
+fn check_invalid_service_url_character_did_creation() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let new_service_details = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec!["å".bytes().collect()]);
+	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
+	details.new_service_details = vec![new_service_details];
+
+	let signature = auth_key.sign(details.encode().as_ref());
+
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::create(
+					Origin::signed(ACCOUNT_00),
+					Box::new(details),
+					did::DidSignature::from(signature)
+				),
+				did::Error::<Test>::InvalidServiceEncoding
 			);
 		});
 }
@@ -1351,33 +1689,416 @@ fn check_key_not_found_key_agreement_key_deletion_error() {
 		});
 }
 
+// add_service_endpoint
+
+#[test]
+fn check_service_addition_no_prior_service_successful() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let new_service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
+
+	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+
+	ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.build(None)
+		.execute_with(|| {
+			assert_ok!(Did::add_service_endpoint(
+				Origin::signed(alice_did.clone()),
+				new_service_endpoint.clone()
+			),);
+			let stored_endpoint = did::pallet::ServiceEndpoints::<Test>::get(&alice_did, &new_service_endpoint.id)
+				.expect("Service endpoint should be stored.");
+			assert_eq!(stored_endpoint, new_service_endpoint);
+			assert_eq!(
+				did::pallet::ServiceEndpoints::<Test>::iter_prefix(&alice_did).count(),
+				1
+			);
+			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 1);
+		});
+}
+
+#[test]
+fn check_service_addition_one_from_full_successful() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let old_service_endpoints = get_service_endpoints(
+		// -1 from the max number
+		<Test as did::Config>::MaxNumberOfServicesPerDid::get() - 1,
+		<Test as did::Config>::MaxServiceIdLength::get(),
+		<Test as did::Config>::MaxNumberOfTypesPerService::get(),
+		<Test as did::Config>::MaxServiceTypeLength::get(),
+		<Test as did::Config>::MaxNumberOfUrlsPerService::get(),
+		<Test as did::Config>::MaxServiceUrlLength::get(),
+	);
+	let new_service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
+
+	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+
+	ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_endpoints(vec![(alice_did.clone(), old_service_endpoints)])
+		.build(None)
+		.execute_with(|| {
+			assert_ok!(Did::add_service_endpoint(
+				Origin::signed(alice_did.clone()),
+				new_service_endpoint.clone()
+			),);
+			assert_eq!(
+				did::pallet::DidEndpointsCount::<Test>::get(&alice_did),
+				<Test as did::Config>::MaxNumberOfServicesPerDid::get()
+			);
+			assert_eq!(
+				did::pallet::ServiceEndpoints::<Test>::iter_prefix(&alice_did).count(),
+				<Test as did::Config>::MaxNumberOfServicesPerDid::get().saturated_into::<usize>()
+			);
+			let stored_endpoint = did::pallet::ServiceEndpoints::<Test>::get(&alice_did, &new_service_endpoint.id)
+				.expect("Service endpoint should be stored.");
+			assert_eq!(stored_endpoint, new_service_endpoint);
+		});
+}
+
+#[test]
+fn check_did_not_present_services_addition_error() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let new_service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
+
+	ExtBuilder::default().build(None).execute_with(|| {
+		assert_noop!(
+			Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_endpoint),
+			did::Error::<Test>::DidNotPresent
+		);
+	});
+}
+
+#[test]
+fn check_service_already_present_addition_error() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
+
+	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+
+	ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_endpoints(vec![(alice_did.clone(), vec![service_endpoint.clone()])])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::add_service_endpoint(Origin::signed(alice_did.clone()), service_endpoint),
+				did::Error::<Test>::ServiceAlreadyPresent
+			);
+		});
+}
+
+#[test]
+fn check_max_services_count_addition_error() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let old_service_endpoints = get_service_endpoints(
+		<Test as did::Config>::MaxNumberOfServicesPerDid::get(),
+		<Test as did::Config>::MaxServiceIdLength::get(),
+		<Test as did::Config>::MaxNumberOfTypesPerService::get(),
+		<Test as did::Config>::MaxServiceTypeLength::get(),
+		<Test as did::Config>::MaxNumberOfUrlsPerService::get(),
+		<Test as did::Config>::MaxServiceUrlLength::get(),
+	);
+	let new_service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
+
+	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+
+	ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_endpoints(vec![(alice_did.clone(), old_service_endpoints)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_endpoint),
+				did::Error::<Test>::MaxNumberOfServicesPerDidExceeded
+			);
+		});
+}
+
+#[test]
+#[should_panic = "Service ID too long."]
+fn check_max_service_id_length_addition_error() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let new_service_endpoint = get_service_endpoints(
+		1,
+		<Test as did::Config>::MaxServiceIdLength::get() + 1,
+		<Test as did::Config>::MaxNumberOfTypesPerService::get(),
+		<Test as did::Config>::MaxServiceTypeLength::get(),
+		<Test as did::Config>::MaxNumberOfUrlsPerService::get(),
+		<Test as did::Config>::MaxServiceUrlLength::get(),
+	)[0]
+	.clone();
+
+	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+
+	ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_endpoint),
+				did::Error::<Test>::MaxServiceIdLengthExceeded
+			);
+		});
+}
+
+#[test]
+#[should_panic = "Service type too long."]
+fn check_max_service_type_length_addition_error() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let new_service_endpoint = get_service_endpoints(
+		1,
+		<Test as did::Config>::MaxServiceIdLength::get(),
+		<Test as did::Config>::MaxNumberOfTypesPerService::get(),
+		<Test as did::Config>::MaxServiceTypeLength::get() + 1,
+		<Test as did::Config>::MaxNumberOfUrlsPerService::get(),
+		<Test as did::Config>::MaxServiceUrlLength::get(),
+	)[0]
+	.clone();
+
+	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+
+	ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_endpoint),
+				did::Error::<Test>::MaxServiceTypeLengthExceeded
+			);
+		});
+}
+
+#[test]
+#[should_panic = "Too many types for the given service."]
+fn check_max_service_type_count_addition_error() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let new_service_endpoint = get_service_endpoints(
+		1,
+		<Test as did::Config>::MaxServiceIdLength::get(),
+		<Test as did::Config>::MaxNumberOfTypesPerService::get() + 1,
+		<Test as did::Config>::MaxServiceTypeLength::get(),
+		<Test as did::Config>::MaxNumberOfUrlsPerService::get(),
+		<Test as did::Config>::MaxServiceUrlLength::get(),
+	)[0]
+	.clone();
+
+	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+
+	ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_endpoint),
+				did::Error::<Test>::MaxNumberOfTypesPerServiceExceeded
+			);
+		});
+}
+
+#[test]
+#[should_panic = "Service URL too long."]
+fn check_max_service_url_length_addition_error() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let new_service_endpoint = get_service_endpoints(
+		1,
+		<Test as did::Config>::MaxServiceIdLength::get(),
+		<Test as did::Config>::MaxNumberOfTypesPerService::get(),
+		<Test as did::Config>::MaxServiceTypeLength::get(),
+		<Test as did::Config>::MaxNumberOfUrlsPerService::get(),
+		<Test as did::Config>::MaxServiceUrlLength::get() + 1,
+	)[0]
+	.clone();
+
+	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+
+	ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_endpoint),
+				did::Error::<Test>::MaxServiceUrlLengthExceeded
+			);
+		});
+}
+
+#[test]
+#[should_panic = "Too many URLs for the given service."]
+fn check_max_service_url_count_addition_error() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let new_service_endpoint = get_service_endpoints(
+		1,
+		<Test as did::Config>::MaxServiceIdLength::get(),
+		<Test as did::Config>::MaxNumberOfTypesPerService::get(),
+		<Test as did::Config>::MaxServiceTypeLength::get(),
+		<Test as did::Config>::MaxNumberOfUrlsPerService::get() + 1,
+		<Test as did::Config>::MaxServiceUrlLength::get(),
+	)[0]
+	.clone();
+
+	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+
+	ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_endpoint),
+				did::Error::<Test>::MaxNumberOfUrlsPerServiceExceeded
+			);
+		});
+}
+
+#[test]
+fn check_invalid_service_id_character_addition_error() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let new_service_details = DidEndpoint::new("å".bytes().collect(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
+
+	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+
+	ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_details),
+				did::Error::<Test>::InvalidServiceEncoding
+			);
+		});
+}
+
+#[test]
+fn check_invalid_service_type_character_addition_error() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let new_service_details = DidEndpoint::new(b"id".to_vec(), vec!["å".bytes().collect()], vec![b"url".to_vec()]);
+
+	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+
+	ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_details),
+				did::Error::<Test>::InvalidServiceEncoding
+			);
+		});
+}
+
+#[test]
+fn check_invalid_service_url_character_addition_error() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let new_service_details = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec!["å".bytes().collect()]);
+
+	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+
+	ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_details),
+				did::Error::<Test>::InvalidServiceEncoding
+			);
+		});
+}
+
+// remove_service_endpoint
+
+#[test]
+fn check_service_deletion_successful() {
+	initialize_logger();
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let old_service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
+
+	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+
+	ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_endpoints(vec![(alice_did.clone(), vec![old_service_endpoint.clone()])])
+		.build(None)
+		.execute_with(|| {
+			assert_ok!(Did::remove_service_endpoint(
+				Origin::signed(alice_did.clone()),
+				old_service_endpoint.id
+			),);
+			// Counter should be deleted from the storage.
+			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 0);
+			assert_eq!(
+				did::pallet::ServiceEndpoints::<Test>::iter_prefix(&alice_did).count(),
+				0
+			);
+		});
+}
+
+#[test]
+fn check_service_not_present_deletion_error() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let service_id = b"id".to_vec();
+
+	let old_did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+
+	ExtBuilder::default()
+		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::remove_service_endpoint(
+					Origin::signed(alice_did.clone()),
+					service_id.try_into().expect("Service ID to delete too long")
+				),
+				did::Error::<Test>::ServiceNotPresent
+			);
+		});
+}
+
 // delete
 
 #[test]
-fn check_successful_deletion() {
+fn check_successful_deletion_no_endpoints() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+
 	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 	did_details.deposit.owner = ACCOUNT_00;
 	did_details.deposit.amount = <Test as did::Config>::Deposit::get();
 
 	let balance = <Test as did::Config>::Deposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
-		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build(None)
 		.execute_with(|| {
+			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 0);
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as did::Config>::Deposit::get()
 			);
-			assert_ok!(Did::delete(Origin::signed(alice_did.clone())));
+			assert_ok!(Did::delete(Origin::signed(alice_did.clone()), 0));
 			assert!(Did::get_did(alice_did.clone()).is_none());
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+
+			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 0);
 
 			// Re-adding the same DID identifier should fail.
 			let details = generate_base_did_creation_details::<Test>(alice_did.clone(), ACCOUNT_00);
@@ -1387,7 +2108,55 @@ fn check_successful_deletion() {
 			assert_noop!(
 				Did::create(
 					Origin::signed(ACCOUNT_00.clone()),
-					details,
+					Box::new(details),
+					did::DidSignature::from(signature),
+				),
+				did::Error::<Test>::DidAlreadyDeleted
+			);
+		});
+}
+
+#[test]
+fn check_successful_deletion_with_endpoints() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
+
+	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	did_details.deposit.owner = ACCOUNT_00;
+	did_details.deposit.amount = <Test as did::Config>::Deposit::get();
+
+	let balance = <Test as did::Config>::Deposit::get() * 2
+		+ <Test as did::Config>::Fee::get() * 2
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.with_dids(vec![(alice_did.clone(), did_details)])
+		.with_endpoints(vec![(alice_did.clone(), vec![service_endpoint])])
+		.build(None)
+		.execute_with(|| {
+			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 1);
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as did::Config>::Deposit::get()
+			);
+			assert_ok!(Did::delete(Origin::signed(alice_did.clone()), 1));
+			assert!(Did::get_did(alice_did.clone()).is_none());
+			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
+			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+
+			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 0);
+
+			// Re-adding the same DID identifier should fail.
+			let details = generate_base_did_creation_details::<Test>(alice_did.clone(), ACCOUNT_00);
+
+			let signature = auth_key.sign(details.encode().as_ref());
+
+			assert_noop!(
+				Did::create(
+					Origin::signed(ACCOUNT_00.clone()),
+					Box::new(details),
 					did::DidSignature::from(signature),
 				),
 				did::Error::<Test>::DidAlreadyDeleted
@@ -1402,14 +2171,41 @@ fn check_did_not_present_deletion() {
 
 	let balance = <Test as did::Config>::Deposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::delete(Origin::signed(alice_did)),
+				Did::delete(Origin::signed(alice_did), 0),
 				did::Error::<Test>::DidNotPresent
+			);
+		});
+}
+
+#[test]
+fn check_service_count_too_small_deletion_error() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
+
+	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	did_details.deposit.owner = ACCOUNT_00;
+	did_details.deposit.amount = <Test as did::Config>::Deposit::get();
+
+	let balance = <Test as did::Config>::Deposit::get() * 2
+		+ <Test as did::Config>::Fee::get() * 2
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.with_dids(vec![(alice_did.clone(), did_details)])
+		.with_endpoints(vec![(alice_did.clone(), vec![service_endpoint])])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::delete(Origin::signed(alice_did.clone()), 0),
+				did::Error::<Test>::StoredEndpointsCountTooLarge
 			);
 		});
 }
@@ -1420,30 +2216,35 @@ fn check_did_not_present_deletion() {
 fn check_successful_reclaiming() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let old_service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
 	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
 	did_details.deposit.owner = ACCOUNT_00;
 	did_details.deposit.amount = <Test as did::Config>::Deposit::get();
 
 	let balance = <Test as did::Config>::Deposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
-		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
+		.with_endpoints(vec![(alice_did.clone(), vec![old_service_endpoint])])
 		.build(None)
 		.execute_with(|| {
+			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 1);
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as did::Config>::Deposit::get()
 			);
 			assert_ok!(Did::reclaim_deposit(
 				Origin::signed(ACCOUNT_00.clone()),
-				alice_did.clone()
+				alice_did.clone(),
+				1
 			));
 			assert!(Did::get_did(alice_did.clone()).is_none());
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 0);
 
 			// Re-adding the same DID identifier should fail.
 			let details = generate_base_did_creation_details::<Test>(alice_did.clone(), ACCOUNT_00);
@@ -1453,7 +2254,7 @@ fn check_successful_reclaiming() {
 			assert_noop!(
 				Did::create(
 					Origin::signed(ACCOUNT_00.clone()),
-					details,
+					Box::new(details),
 					did::DidSignature::from(signature),
 				),
 				did::Error::<Test>::DidAlreadyDeleted
@@ -1471,7 +2272,7 @@ fn unauthorized_reclaiming() {
 
 	let balance = <Test as did::Config>::Deposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
@@ -1483,8 +2284,35 @@ fn unauthorized_reclaiming() {
 				<Test as did::Config>::Deposit::get()
 			);
 			assert_noop!(
-				Did::reclaim_deposit(Origin::signed(ACCOUNT_01.clone()), alice_did.clone()),
+				Did::reclaim_deposit(Origin::signed(ACCOUNT_01.clone()), alice_did.clone(), 0),
 				did::Error::<Test>::NotOwnerOfDeposit
+			);
+		});
+}
+
+#[test]
+fn check_service_count_too_small_reclaim_error() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
+
+	let mut did_details = generate_base_did_details::<Test>(did::DidVerificationKey::from(auth_key.public()));
+	did_details.deposit.owner = ACCOUNT_00;
+	did_details.deposit.amount = <Test as did::Config>::Deposit::get();
+
+	let balance = <Test as did::Config>::Deposit::get() * 2
+		+ <Test as did::Config>::Fee::get() * 2
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.with_dids(vec![(alice_did.clone(), did_details)])
+		.with_endpoints(vec![(alice_did.clone(), vec![service_endpoint])])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::reclaim_deposit(Origin::signed(ACCOUNT_00.clone()), alice_did.clone(), 0),
+				did::Error::<Test>::StoredEndpointsCountTooLarge
 			);
 		});
 }

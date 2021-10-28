@@ -56,9 +56,6 @@ pub enum StorageError {
 	DidKeyNotPresent(DidVerificationKeyRelationship),
 	/// At least one key referenced is not stored under the given DID.
 	KeyNotPresent,
-	/// The user tries to delete a verification key that is currently being
-	/// used to authorize operations, and this is not allowed.
-	CurrentlyActiveKey,
 	/// The maximum number of public keys for this DID key identifier has
 	/// been reached.
 	MaxPublicKeysPerDidExceeded,
@@ -90,7 +87,18 @@ pub enum InputError {
 	/// A number of new key agreement keys greater than the maximum allowed has
 	/// been provided.
 	MaxKeyAgreementKeysLimitExceeded,
-	/// A number of new verification keys to remove greater than the maximum
-	/// allowed has been provided.
-	MaxVerificationKeysToRemoveLimitExceeded,
+	/// The maximum number of service endpoints for a DID has been exceeded.
+	MaxServicesCountExceeded,
+	/// The maximum number of URLs for a service endpoint has been exceeded.
+	MaxUrlCountExceeded,
+	/// The maximum number of types for a service endpoint has been exceeded.
+	MaxTypeCountExceeded,
+	/// The service endpoint ID exceeded the maximum allowed length.
+	MaxIdLengthExceeded,
+	/// One of the service endpoint URLs exceeded the maximum allowed length.
+	MaxUrlLengthExceeded,
+	/// One of the service endpoint types exceeded the maximum allowed length.
+	MaxTypeLengthExceeded,
+	/// One of the service endpoint details contains non-ASCII characters.
+	InvalidEncoding,
 }

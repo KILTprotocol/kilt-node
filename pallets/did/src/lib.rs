@@ -60,33 +60,13 @@
 //!   to any past attestation key that has been rotated but not entirely
 //!   revoked.
 //!
+//! - A set of **service endpoints**: pointing to the description of the
+//!   services the DID subject exposes. For more information, check the W3C DID
+//!   Core specification.
+//!
 //! - A **transaction counter**: acts as a nonce to avoid replay or signature
 //!   forgery attacks. Each time a DID-signed transaction is executed, the
 //!   counter is incremented.
-//!
-//! ## Interface
-//!
-//! ### Dispatchable Functions
-//!
-//! - `create` - Register a new DID on the KILT blockchain under the given DID
-//!   identifier.
-//! - `set_authentication_key` - Replace the authentication key of a DID.
-//! - `set_delegation_key` - Set the delegation key of a DID.
-//! - `remove_delegation_key` - Remove the delegation key of a DID, if present.
-//! - `set_attestation_key` - Set the attestation key of a DID.
-//! - `remove_attestation_key` - Remove the attestation key of a DID, if
-//!   present.
-//! - `add_key_agreement_key` - Add a new key agreement key to the set of keys
-//!   for the DID.
-//! - `remove_key_agreement_key` - Remove the key with the given ID from the set
-//!   of key agreement keys, if present.
-//! - `delete` - Delete the specified DID and all related keys from the KILT
-//!   blockchain. A DID with the same identifier cannot be created anymore after
-//!   it is deleted.
-//! - `submit_did_call` - Proxy a dispatchable function for an extrinsic that
-//!   expects a DID origin. The DID pallet verifies the signature and the nonce
-//!   of the wrapping operation and then dispatches the underlying extrinsic
-//!   upon successful verification.
 //!
 //! ## Assumptions
 //!
@@ -105,6 +85,7 @@ pub mod did_details;
 pub mod errors;
 pub mod migrations;
 pub mod origin;
+pub mod service_endpoints;
 
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
@@ -121,7 +102,9 @@ mod signature;
 mod utils;
 
 use crate::migrations::*;
-pub use crate::{default_weights::WeightInfo, did_details::*, errors::*, origin::*, pallet::*, signature::*};
+pub use crate::{
+	default_weights::WeightInfo, did_details::*, errors::*, origin::*, pallet::*, service_endpoints::*, signature::*,
+};
 
 use codec::Encode;
 use frame_support::{
@@ -133,7 +116,11 @@ use frame_support::{
 	Parameter,
 };
 use frame_system::ensure_signed;
-use sp_runtime::{traits::Saturating, SaturatedConversion};
+use sp_io::KillStorageResult;
+use sp_runtime::{
+	traits::{Saturating, Zero},
+	SaturatedConversion,
+};
 use sp_std::{boxed::Box, fmt::Debug, prelude::Clone};
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -142,6 +129,7 @@ use frame_system::RawOrigin;
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
+	use crate::service_endpoints::utils as service_endpoints_utils;
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{Currency, ExistenceRequirement, Imbalance, ReservableCurrency},
@@ -245,6 +233,30 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxBlocksTxValidity: Get<BlockNumberOf<Self>>;
 
+		/// The maximum number of services that can be stored under a DID.
+		#[pallet::constant]
+		type MaxNumberOfServicesPerDid: Get<u32>;
+
+		/// The maximum length of a service ID.
+		#[pallet::constant]
+		type MaxServiceIdLength: Get<u32>;
+
+		/// The maximum length of a service type description.
+		#[pallet::constant]
+		type MaxServiceTypeLength: Get<u32>;
+
+		/// The maximum number of a types description for a service endpoint.
+		#[pallet::constant]
+		type MaxNumberOfTypesPerService: Get<u32>;
+
+		/// The maximum length of a service URL.
+		#[pallet::constant]
+		type MaxServiceUrlLength: Get<u32>;
+
+		/// The maximum number of a URLs for a service endpoint.
+		#[pallet::constant]
+		type MaxNumberOfUrlsPerService: Get<u32>;
+
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}
@@ -276,6 +288,20 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn get_did)]
 	pub type Did<T> = StorageMap<_, Blake2_128Concat, DidIdentifierOf<T>, DidDetails<T>>;
+
+	/// Service endpoints associated with DIDs.
+	///
+	/// It maps from (DID identifier, service ID) to the service details.
+	#[pallet::storage]
+	#[pallet::getter(fn get_service_endpoints)]
+	pub type ServiceEndpoints<T> =
+		StorageDoubleMap<_, Twox64Concat, DidIdentifierOf<T>, Blake2_128Concat, ServiceEndpointId<T>, DidEndpoint<T>>;
+
+	/// Counter of service endpoints for each DID.
+	///
+	/// It maps from (DID identifier) to a 32-bit counter.
+	#[pallet::storage]
+	pub(crate) type DidEndpointsCount<T> = StorageMap<_, Blake2_128Concat, DidIdentifierOf<T>, u32, ValueQuery>;
 
 	/// The set of DIDs that have been deleted and cannot therefore be created
 	/// again for security reasons.
@@ -320,36 +346,16 @@ pub mod pallet {
 		DidAlreadyPresent,
 		/// No DID with the given identifier is present on chain.
 		DidNotPresent,
-		/// The DID fragment is not present in the DID details.
-		DidFragmentNotPresent,
 		/// One or more verification keys referenced are not stored in the set
 		/// of verification keys.
 		VerificationKeyNotPresent,
 		/// The DID operation nonce is not equal to the current DID nonce + 1.
 		InvalidNonce,
-		/// The URL specified is not ASCII-encoded.
-		InvalidUrlEncoding,
-		/// The URL specified is not properly formatted.
-		InvalidUrlScheme,
-		/// The maximum supported value for the DID tx counter has been reached.
-		/// No more operations with the DID are allowed.
-		MaxTxCounterValue,
-		/// The user tries to delete a verification key that is currently being
-		/// used as an authentication, delegation, or attestation key, and this
-		/// is not allowed.
-		CurrentlyActiveKey,
 		/// The called extrinsic does not support DID authorisation.
 		UnsupportedDidAuthorizationCall,
 		/// A number of new key agreement keys greater than the maximum allowed
 		/// has been provided.
 		MaxKeyAgreementKeysLimitExceeded,
-		/// A number of new verification keys to remove greater than the maximum
-		/// allowed has been provided.
-		MaxVerificationKeysToRemoveLimitExceeded,
-		/// A URL longer than the maximum size allowed has been provided.
-		MaxUrlLengthExceeded,
-		/// More than the maximum number of URLs have been specified.
-		MaxUrlsCountExceeded,
 		/// The maximum number of public keys for this DID key identifier has
 		/// been reached.
 		MaxPublicKeysPerDidExceeded,
@@ -362,12 +368,36 @@ pub mod pallet {
 		TransactionExpired,
 		/// The DID has already been previously deleted.
 		DidAlreadyDeleted,
-		/// An error that is not supposed to take place, yet it happened.
-		InternalError,
 		/// Only the owner of the deposit can reclaim its reserved balance.
 		NotOwnerOfDeposit,
 		/// The origin is unable to reserve the deposit and pay the fee.
 		UnableToPayFees,
+		/// The maximum number of service endpoints for a DID has been exceeded.
+		MaxNumberOfServicesPerDidExceeded,
+		/// The service endpoint ID exceeded the maximum allowed length.
+		MaxServiceIdLengthExceeded,
+		/// One of the service endpoint types exceeded the maximum allowed
+		/// length.
+		MaxServiceTypeLengthExceeded,
+		/// The maximum number of types for a service endpoint has been
+		/// exceeded.
+		MaxNumberOfTypesPerServiceExceeded,
+		/// One of the service endpoint URLs exceeded the maximum allowed
+		/// length.
+		MaxServiceUrlLengthExceeded,
+		/// The maximum number of URLs for a service endpoint has been exceeded.
+		MaxNumberOfUrlsPerServiceExceeded,
+		/// A service with the provided ID is already present for the given DID.
+		ServiceAlreadyPresent,
+		/// A service with the provided ID is not present under the given DID.
+		ServiceNotPresent,
+		/// One of the service endpoint details contains non-ASCII characters.
+		InvalidServiceEncoding,
+		/// The number of service endpoints stored under the DID is larger than
+		/// the number of endpoints to delete.
+		StoredEndpointsCountTooLarge,
+		/// An error that is not supposed to take place, yet it happened.
+		InternalError,
 	}
 
 	impl<T> From<DidError> for Error<T> {
@@ -387,7 +417,6 @@ pub mod pallet {
 				StorageError::DidNotPresent => Self::DidNotPresent,
 				StorageError::DidAlreadyPresent => Self::DidAlreadyPresent,
 				StorageError::DidKeyNotPresent(_) | StorageError::KeyNotPresent => Self::VerificationKeyNotPresent,
-				StorageError::CurrentlyActiveKey => Self::CurrentlyActiveKey,
 				StorageError::MaxPublicKeysPerDidExceeded => Self::MaxPublicKeysPerDidExceeded,
 				StorageError::MaxTotalKeyAgreementKeysExceeded => Self::MaxTotalKeyAgreementKeysExceeded,
 				StorageError::DidAlreadyDeleted => Self::DidAlreadyDeleted,
@@ -410,7 +439,13 @@ pub mod pallet {
 		fn from(error: InputError) -> Self {
 			match error {
 				InputError::MaxKeyAgreementKeysLimitExceeded => Self::MaxKeyAgreementKeysLimitExceeded,
-				InputError::MaxVerificationKeysToRemoveLimitExceeded => Self::MaxVerificationKeysToRemoveLimitExceeded,
+				InputError::MaxIdLengthExceeded => Self::MaxServiceIdLengthExceeded,
+				InputError::MaxServicesCountExceeded => Self::MaxNumberOfServicesPerDidExceeded,
+				InputError::MaxTypeCountExceeded => Self::MaxNumberOfTypesPerServiceExceeded,
+				InputError::MaxTypeLengthExceeded => Self::MaxServiceTypeLengthExceeded,
+				InputError::MaxUrlCountExceeded => Self::MaxNumberOfUrlsPerServiceExceeded,
+				InputError::MaxUrlLengthExceeded => Self::MaxServiceUrlLengthExceeded,
+				InputError::InvalidEncoding => Self::InvalidServiceEncoding,
 			}
 		}
 	}
@@ -438,15 +473,41 @@ pub mod pallet {
 		///
 		/// # <weight>
 		/// - The transaction's complexity is mainly dependent on the number of
-		///   new key agreement keys included in the operation.
+		///   new key agreement keys and the number of new service endpoints
+		///   included in the operation.
 		/// ---------
-		/// Weight: O(K) where K is the number of new key agreement
-		/// keys bounded by `MaxNewKeyAgreementKeys`.
-		/// - Reads: [Origin Account], Did
-		/// - Writes: Did (with K new key agreement keys)
+		/// Weight: O(K) + O(N) where K is the number of new key agreement
+		/// keys bounded by `MaxNewKeyAgreementKeys`, while N is the number of
+		/// new service endpoints bounded by `MaxNumberOfServicesPerDid`.
+		/// - Reads: [Origin Account], Did, DidBlacklist
+		/// - Writes: Did (with K new key agreement keys), ServiceEndpoints
+		///   (with N new service endpoints), DidEndpointsCount
 		/// # </weight>
-		#[pallet::weight(1)]
-		pub fn create(origin: OriginFor<T>, details: DidCreationDetails<T>, signature: DidSignature) -> DispatchResult {
+		#[pallet::weight({
+			let new_key_agreement_keys = details.new_key_agreement_keys.len().saturated_into::<u32>();
+			// We only consider the number of new endpoints.
+			let new_services_count = details.new_service_details.len().saturated_into::<u32>();
+
+			let ed25519_weight = <T as pallet::Config>::WeightInfo::create_ed25519_keys(
+				new_key_agreement_keys,
+				new_services_count,
+			);
+			let sr25519_weight = <T as pallet::Config>::WeightInfo::create_sr25519_keys(
+				new_key_agreement_keys,
+				new_services_count,
+			);
+			let ecdsa_weight = <T as pallet::Config>::WeightInfo::create_ecdsa_keys(
+				new_key_agreement_keys,
+				new_services_count,
+			);
+
+			ed25519_weight.max(sr25519_weight).max(ecdsa_weight)
+		})]
+		pub fn create(
+			origin: OriginFor<T>,
+			details: Box<DidCreationDetails<T>>,
+			signature: DidSignature,
+		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
 			ensure!(sender == details.submitter, BadOrigin);
@@ -476,10 +537,16 @@ pub mod pallet {
 				.verify_and_recover_signature(&details.encode(), &signature)
 				.map_err(Error::<T>::from)?;
 
+			// Validate all the size constraints for the service endpoints.
+			let input_service_endpoints = details.new_service_details.clone();
+			service_endpoints_utils::validate_new_service_endpoints(&input_service_endpoints)
+				.map_err(Error::<T>::from)?;
+
 			let did_entry =
-				DidDetails::from_creation_details(details, account_did_auth_key).map_err(Error::<T>::from)?;
+				DidDetails::from_creation_details(*details, account_did_auth_key).map_err(Error::<T>::from)?;
 
 			// *** No Fail beyond this call ***
+
 			CurrencyOf::<T>::reserve(&did_entry.deposit.owner, did_entry.deposit.amount)?;
 
 			// Withdraw the fee. We made sure that enough balance is available. But if this
@@ -494,7 +561,12 @@ pub mod pallet {
 
 			log::debug!("Creating DID {:?}", &did_identifier);
 			T::FeeCollector::on_unbalanced(imbalance);
+
 			Did::<T>::insert(&did_identifier, did_entry);
+			input_service_endpoints.iter().for_each(|service| {
+				ServiceEndpoints::<T>::insert(&did_identifier, &service.id, service.clone());
+			});
+			DidEndpointsCount::<T>::insert(&did_identifier, input_service_endpoints.len().saturated_into::<u32>());
 
 			Self::deposit_event(Event::DidCreated(sender, did_identifier));
 
@@ -532,6 +604,8 @@ pub mod pallet {
 				.update_authentication_key(new_key, frame_system::Pallet::<T>::block_number())
 				.map_err(Error::<T>::from)?;
 
+			// *** No Fail beyond this call ***
+
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Authentication key set");
 
@@ -565,6 +639,8 @@ pub mod pallet {
 				.update_delegation_key(new_key, frame_system::Pallet::<T>::block_number())
 				.map_err(Error::<T>::from)?;
 
+			// *** No Fail beyond this call ***
+
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Delegation key set");
 
@@ -594,6 +670,8 @@ pub mod pallet {
 
 			log::debug!("Removing delegation key for DID {:?}", &did_subject);
 			did_details.remove_delegation_key().map_err(Error::<T>::from)?;
+
+			// *** No Fail beyond this call ***
 
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Delegation key removed");
@@ -628,6 +706,8 @@ pub mod pallet {
 				.update_attestation_key(new_key, frame_system::Pallet::<T>::block_number())
 				.map_err(Error::<T>::from)?;
 
+			// *** No Fail beyond this call ***
+
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Attestation key set");
 
@@ -657,6 +737,8 @@ pub mod pallet {
 
 			log::debug!("Removing attestation key for DID {:?}", &did_subject);
 			did_details.remove_attestation_key().map_err(Error::<T>::from)?;
+
+			// *** No Fail beyond this call ***
 
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Attestation key removed");
@@ -689,6 +771,8 @@ pub mod pallet {
 				.add_key_agreement_key(new_key, frame_system::Pallet::<T>::block_number())
 				.map_err(Error::<T>::from)?;
 
+			// *** No Fail beyond this call ***
+
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Key agreement key set");
 
@@ -717,10 +801,99 @@ pub mod pallet {
 			log::debug!("Removing key agreement key for DID {:?}", &did_subject);
 			did_details.remove_key_agreement_key(key_id).map_err(Error::<T>::from)?;
 
+			// *** No Fail beyond this call ***
+
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Key agreement key removed");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
+			Ok(())
+		}
+
+		/// Add a new service endpoint under the given DID.
+		///
+		/// The dispatch origin must be a DID origin proxied via the
+		/// `submit_did_call` extrinsic.
+		///
+		/// Emits `DidUpdated`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Did, ServiceEndpoints, DidEndpointsCount
+		/// - Writes: Did, ServiceEndpoints, DidEndpointsCount
+		/// # </weight>
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::add_service_endpoint())]
+		pub fn add_service_endpoint(origin: OriginFor<T>, service_endpoint: DidEndpoint<T>) -> DispatchResult {
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
+
+			service_endpoint
+				.validate_against_constraints()
+				.map_err(Error::<T>::from)?;
+
+			// Verify that the DID is present.
+			ensure!(Did::<T>::get(&did_subject).is_some(), Error::<T>::DidNotPresent);
+
+			let currently_stored_endpoints_count = DidEndpointsCount::<T>::get(&did_subject);
+
+			// Verify that there are less than the maximum limit of services stored.
+			ensure!(
+				currently_stored_endpoints_count < T::MaxNumberOfServicesPerDid::get(),
+				Error::<T>::MaxNumberOfServicesPerDidExceeded
+			);
+
+			// *** No Fail after the following storage write ***
+
+			ServiceEndpoints::<T>::try_mutate(
+				&did_subject,
+				service_endpoint.id.clone(),
+				|existing_service| -> Result<(), Error<T>> {
+					ensure!(existing_service.is_none(), Error::<T>::ServiceAlreadyPresent);
+					*existing_service = Some(service_endpoint);
+					Ok(())
+				},
+			)?;
+			DidEndpointsCount::<T>::insert(&did_subject, currently_stored_endpoints_count.saturating_add(1));
+
+			Self::deposit_event(Event::DidUpdated(did_subject));
+
+			Ok(())
+		}
+
+		/// Remove the service with the provided ID from the DID.
+		///
+		/// The dispatch origin must be a DID origin proxied via the
+		/// `submit_did_call` extrinsic.
+		///
+		/// Emits `DidUpdated`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], ServiceEndpoints, DidEndpointsCount
+		/// - Writes: Did, ServiceEndpoints, DidEndpointsCount
+		/// # </weight>
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_service_endpoint())]
+		pub fn remove_service_endpoint(origin: OriginFor<T>, service_id: ServiceEndpointId<T>) -> DispatchResult {
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
+
+			// *** No Fail after the next call succeeds ***
+
+			ensure!(
+				ServiceEndpoints::<T>::take(&did_subject, &service_id).is_some(),
+				Error::<T>::ServiceNotPresent
+			);
+
+			// Decrease the endpoints counter or delete the entry if it reaches 0.
+			DidEndpointsCount::<T>::mutate_exists(&did_subject, |existing_endpoint_count| {
+				let new_value = existing_endpoint_count.unwrap_or_default().saturating_sub(1);
+				if new_value.is_zero() {
+					*existing_endpoint_count = None;
+				} else {
+					*existing_endpoint_count = Some(new_value);
+				}
+			});
+
+			Self::deposit_event(Event::DidUpdated(did_subject));
+
 			Ok(())
 		}
 
@@ -748,12 +921,12 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Kills: Did entry associated to the DID identifier
 		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::delete())]
-		pub fn delete(origin: OriginFor<T>) -> DispatchResult {
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::delete(*endpoints_to_remove))]
+		pub fn delete(origin: OriginFor<T>, endpoints_to_remove: u32) -> DispatchResult {
 			let source = T::EnsureOrigin::ensure_origin(origin)?;
 			let did_subject = source.subject();
 
-			Pallet::<T>::delete_did(did_subject)
+			Pallet::<T>::delete_did(did_subject, endpoints_to_remove)
 		}
 
 		/// Reclaim a deposit for a DID. This will delete the DID and all
@@ -777,15 +950,18 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Kills: Did entry associated to the DID identifier
 		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit())]
-		pub fn reclaim_deposit(origin: OriginFor<T>, did_subject: DidIdentifierOf<T>) -> DispatchResult {
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit(*endpoints_to_remove))]
+		pub fn reclaim_deposit(
+			origin: OriginFor<T>,
+			did_subject: DidIdentifierOf<T>,
+			endpoints_to_remove: u32,
+		) -> DispatchResult {
 			let source = ensure_signed(origin)?;
-
 			let did_entry = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 
 			ensure!(did_entry.deposit.owner == source, Error::<T>::NotOwnerOfDeposit);
 
-			Pallet::<T>::delete_did(did_subject)
+			Pallet::<T>::delete_did(did_subject, endpoints_to_remove)
 		}
 
 		/// Proxy a dispatchable call of another runtime extrinsic that
@@ -862,6 +1038,8 @@ pub mod pallet {
 
 			// Dispatch the referenced [Call] instance and return its result
 			let DidAuthorizedCallOperation { did, call, .. } = wrapped_operation.operation;
+
+			// *** No Fail beyond this point ***
 
 			#[cfg(not(feature = "runtime-benchmarks"))]
 			let result = call.dispatch(
@@ -973,13 +1151,31 @@ impl<T: Config> Pallet<T> {
 			.map_err(DidError::SignatureError)
 	}
 
-	/// Deletes DID details from storage, adds the identifier to the blacklisted
-	/// DIDs and frees the deposit.
-	fn delete_did(did_subject: DidIdentifierOf<T>) -> DispatchResult {
-		// `take` calls `kill` internally
-		let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
+	/// Deletes DID details from storage, including its linked service
+	/// endpoints, adds the identifier to the blacklisted DIDs and frees the
+	/// deposit.
+	fn delete_did(did_subject: DidIdentifierOf<T>, endpoints_to_remove: u32) -> DispatchResult {
+		let current_endpoints_count = DidEndpointsCount::<T>::get(&did_subject);
+		ensure!(
+			current_endpoints_count <= endpoints_to_remove,
+			Error::<T>::StoredEndpointsCountTooLarge
+		);
+
 		// *** No Fail beyond this point ***
 
+		// This one can fail, albeit this should **never** be the case as we check for
+		// the preconditions above.
+		let storage_kill_result = ServiceEndpoints::<T>::remove_prefix(&did_subject, Some(current_endpoints_count));
+		// If some items are remaining, it means that there were more than
+		// the counter stored in `DidEndpointsCount`, and that should never happen.
+		if let KillStorageResult::SomeRemaining(_) = storage_kill_result {
+			return Err(Error::<T>::InternalError.into());
+		};
+
+		// `take` calls `kill` internally
+		let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
+
+		DidEndpointsCount::<T>::remove(&did_subject);
 		kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&did_entry.deposit);
 		// Mark as deleted to prevent potential replay-attacks of re-adding a previously
 		// deleted DID.

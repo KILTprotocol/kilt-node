@@ -22,7 +22,7 @@ use kilt_support::deposit::Deposit;
 use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519};
 use sp_runtime::{traits::Verify, MultiSignature};
-use sp_std::{convert::TryInto, fmt};
+use sp_std::{convert::TryInto, vec::Vec};
 
 use crate::*;
 
@@ -556,11 +556,12 @@ pub struct DidCreationDetails<T: Config> {
 	pub new_attestation_key: Option<DidVerificationKey>,
 	/// \[OPTIONAL\] The new delegation key.
 	pub new_delegation_key: Option<DidVerificationKey>,
+	/// The service endpoints details.
+	pub new_service_details: Vec<DidEndpoint<T>>,
 }
 
-// required because BoundedTreeSet does not implement Debug outside of std
-impl<T: Config> fmt::Debug for DidCreationDetails<T> {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl<T: Config> sp_std::fmt::Debug for DidCreationDetails<T> {
+	fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
 		f.debug_struct("DidCreationDetails")
 			.field("did", &self.did)
 			.field("submitter", &self.submitter)
@@ -570,6 +571,7 @@ impl<T: Config> fmt::Debug for DidCreationDetails<T> {
 			)
 			.field("new_attestation_key", &self.new_attestation_key)
 			.field("new_delegation_key", &self.new_delegation_key)
+			.field("new_service_details", &self.new_service_details)
 			.finish()
 	}
 }
