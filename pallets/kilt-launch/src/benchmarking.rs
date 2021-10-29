@@ -257,8 +257,16 @@ benchmarks! {
 	on_initialize_unlock {
 		let n in 1 .. T::AutoUnlockBound::get();
 
-		let ((transfer, transfer_lookup), s, _) = genesis_setup::<T>(n).expect("Genesis setup failure");
+		let ((transfer, _), _, s) = genesis_setup::<T>(n).expect("Genesis setup failure");
+
+		// Migrate balance locks 1 by 1 to fill UnlockingAt
+		for (c, (_, source_lookup)) in s.into_iter().enumerate() {
+			let target: T::AccountId = account("target", u32::try_from(c).unwrap(), SEED);
+			let target_lookup: <T::Lookup as StaticLookup>::Source = as_lookup::<T>(target);
+			KiltLaunch::<T>::migrate_genesis_account(RawOrigin::Signed(transfer.clone()).into(), source_lookup, target_lookup)?;
+		}
 		let block: T::BlockNumber = UNLOCK_BLOCK.into();
+		assert_eq!(UnlockingAt::<T>::get(&block).expect("UnlockingAt should not be empty").len(), n as usize);
 	}: { KiltLaunch::<T>::on_initialize(block) }
 	verify {
 		assert!(UnlockingAt::<T>::get(&block).is_none());
