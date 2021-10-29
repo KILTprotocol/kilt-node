@@ -126,7 +126,7 @@ pub mod pallet {
 		type Currency: Currency<AccountIdOf<Self>> + ReservableCurrency<AccountIdOf<Self>>;
 
 		/// The deposit that is required for storing an attestation.
-		// FIXME: Add back #[pallet::constant] once https://github.com/paritytech/substrate/pull/9942 is merged
+		#[pallet::constant]
 		type Deposit: Get<BalanceOf<Self>>;
 
 		/// The maximum number of delegated attestations which can be made by
