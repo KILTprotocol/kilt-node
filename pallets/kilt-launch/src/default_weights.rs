@@ -20,20 +20,20 @@
 //!
 //! THIS FILE WAS AUTO-GENERATED USING THE SUBSTRATE BENCHMARK CLI VERSION 4.0.0-dev
 //! DATE: 2021-10-29, STEPS: {{cmd.steps}}\, REPEAT: {{cmd.repeat}}\, LOW RANGE: {{cmd.lowest_range_values}}\, HIGH RANGE: {{cmd.highest_range_values}}\
-//! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("spiritnet-dev"), DB CACHE: 128
+//! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("dev"), DB CACHE: 128
 
 // Executed Command:
 // target/release/kilt-parachain
 // benchmark
-// --chain=spiritnet-dev
+// --chain=dev
 // --steps=50
 // --repeat=20
-// --pallet=kilt_launch
+// --pallet=kilt-launch
 // --extrinsic=*
 // --execution=wasm
 // --wasm-execution=compiled
 // --heap-pages=4096
-// --output=./pallets/kilt-launch/src/default_weights.rs
+// --output=pallets/kilt-launch/src/default_weights.rs
 // --template=.maintain/weight-template.hbs
 
 
@@ -63,7 +63,7 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: KiltLaunch TransferAccount (r:0 w:1)
 	fn change_transfer_account() -> Weight {
-		(2_134_000_u64)
+		(2_981_000_u64)
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: KiltLaunch UnlockingAt (r:1 w:1)
@@ -71,9 +71,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: KiltLaunch BalanceLocks (r:0 w:1)
 	fn force_unlock(n: u32, ) -> Weight {
-		(0_u64)
-			// Standard Error: 723_000
-			.saturating_add((31_402_000_u64).saturating_mul(n as Weight))
+		(26_446_000_u64)
+			// Standard Error: 17_000
+			.saturating_add((27_230_000_u64).saturating_mul(n as Weight))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(n as Weight)))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
@@ -83,7 +83,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: KiltLaunch BalanceLocks (r:2 w:2)
 	// Storage: Balances Locks (r:2 w:2)
 	fn locked_transfer() -> Weight {
-		(110_258_000_u64)
+		(132_907_000_u64)
 			.saturating_add(T::DbWeight::get().reads(6_u64))
 			.saturating_add(T::DbWeight::get().writes(6_u64))
 	}
@@ -94,7 +94,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Vesting Vesting (r:2 w:2)
 	// Storage: KiltLaunch BalanceLocks (r:1 w:0)
 	fn migrate_genesis_account_vesting() -> Weight {
-		(123_573_000_u64)
+		(147_997_000_u64)
 			.saturating_add(T::DbWeight::get().reads(9_u64))
 			.saturating_add(T::DbWeight::get().writes(6_u64))
 	}
@@ -106,7 +106,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: KiltLaunch BalanceLocks (r:2 w:2)
 	// Storage: KiltLaunch UnlockingAt (r:1 w:1)
 	fn migrate_genesis_account_locking() -> Weight {
-		(126_357_000_u64)
+		(151_816_000_u64)
 			.saturating_add(T::DbWeight::get().reads(10_u64))
 			.saturating_add(T::DbWeight::get().writes(7_u64))
 	}
@@ -117,9 +117,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Vesting Vesting (r:2 w:2)
 	// Storage: KiltLaunch BalanceLocks (r:1 w:0)
 	fn migrate_multiple_genesis_accounts_vesting(n: u32, ) -> Weight {
-		(25_969_000_u64)
-			// Standard Error: 233_000
-			.saturating_add((85_424_000_u64).saturating_mul(n as Weight))
+		(48_179_000_u64)
+			// Standard Error: 47_000
+			.saturating_add((96_707_000_u64).saturating_mul(n as Weight))
 			.saturating_add(T::DbWeight::get().reads(4_u64))
 			.saturating_add(T::DbWeight::get().reads((5_u64).saturating_mul(n as Weight)))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
@@ -133,9 +133,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: KiltLaunch BalanceLocks (r:2 w:2)
 	// Storage: KiltLaunch UnlockingAt (r:1 w:1)
 	fn migrate_multiple_genesis_accounts_locking(n: u32, ) -> Weight {
-		(53_640_000_u64)
-			// Standard Error: 60_000
-			.saturating_add((82_661_000_u64).saturating_mul(n as Weight))
+		(57_434_000_u64)
+			// Standard Error: 95_000
+			.saturating_add((94_182_000_u64).saturating_mul(n as Weight))
 			.saturating_add(T::DbWeight::get().reads(5_u64))
 			.saturating_add(T::DbWeight::get().reads((5_u64).saturating_mul(n as Weight)))
 			.saturating_add(T::DbWeight::get().writes(4_u64))
@@ -146,9 +146,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: KiltLaunch BalanceLocks (r:0 w:1)
 	fn on_initialize_unlock(n: u32, ) -> Weight {
-		(0_u64)
-			// Standard Error: 548_000
-			.saturating_add((41_693_000_u64).saturating_mul(n as Weight))
+		(26_036_000_u64)
+			// Standard Error: 10_000
+			.saturating_add((27_339_000_u64).saturating_mul(n as Weight))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(n as Weight)))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
@@ -156,7 +156,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	}
 	// Storage: KiltLaunch UnlockingAt (r:1 w:0)
 	fn on_initialize_no_action() -> Weight {
-		(6_202_000_u64)
+		(4_341_000_u64)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 	}
 }
@@ -164,62 +164,62 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 // For backwards compatibility and tests
 impl WeightInfo for () {
 	fn change_transfer_account() -> Weight {
-		(2_134_000_u64)
+		(2_981_000_u64)
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
 	fn force_unlock(n: u32, ) -> Weight {
-		(0_u64)
-			// Standard Error: 723_000
-			.saturating_add((31_402_000_u64).saturating_mul(n as Weight))
+		(26_446_000_u64)
+			// Standard Error: 17_000
+			.saturating_add((27_230_000_u64).saturating_mul(n as Weight))
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
 			.saturating_add(RocksDbWeight::get().reads((2_u64).saturating_mul(n as Weight)))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 			.saturating_add(RocksDbWeight::get().writes((3_u64).saturating_mul(n as Weight)))
 	}
 	fn locked_transfer() -> Weight {
-		(110_258_000_u64)
+		(132_907_000_u64)
 			.saturating_add(RocksDbWeight::get().reads(6_u64))
 			.saturating_add(RocksDbWeight::get().writes(6_u64))
 	}
 	fn migrate_genesis_account_vesting() -> Weight {
-		(123_573_000_u64)
+		(147_997_000_u64)
 			.saturating_add(RocksDbWeight::get().reads(9_u64))
 			.saturating_add(RocksDbWeight::get().writes(6_u64))
 	}
 	fn migrate_genesis_account_locking() -> Weight {
-		(126_357_000_u64)
+		(151_816_000_u64)
 			.saturating_add(RocksDbWeight::get().reads(10_u64))
 			.saturating_add(RocksDbWeight::get().writes(7_u64))
 	}
 	fn migrate_multiple_genesis_accounts_vesting(n: u32, ) -> Weight {
-		(25_969_000_u64)
-			// Standard Error: 233_000
-			.saturating_add((85_424_000_u64).saturating_mul(n as Weight))
+		(48_179_000_u64)
+			// Standard Error: 47_000
+			.saturating_add((96_707_000_u64).saturating_mul(n as Weight))
 			.saturating_add(RocksDbWeight::get().reads(4_u64))
 			.saturating_add(RocksDbWeight::get().reads((5_u64).saturating_mul(n as Weight)))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
 			.saturating_add(RocksDbWeight::get().writes((3_u64).saturating_mul(n as Weight)))
 	}
 	fn migrate_multiple_genesis_accounts_locking(n: u32, ) -> Weight {
-		(53_640_000_u64)
-			// Standard Error: 60_000
-			.saturating_add((82_661_000_u64).saturating_mul(n as Weight))
+		(57_434_000_u64)
+			// Standard Error: 95_000
+			.saturating_add((94_182_000_u64).saturating_mul(n as Weight))
 			.saturating_add(RocksDbWeight::get().reads(5_u64))
 			.saturating_add(RocksDbWeight::get().reads((5_u64).saturating_mul(n as Weight)))
 			.saturating_add(RocksDbWeight::get().writes(4_u64))
 			.saturating_add(RocksDbWeight::get().writes((3_u64).saturating_mul(n as Weight)))
 	}
 	fn on_initialize_unlock(n: u32, ) -> Weight {
-		(0_u64)
-			// Standard Error: 548_000
-			.saturating_add((41_693_000_u64).saturating_mul(n as Weight))
+		(26_036_000_u64)
+			// Standard Error: 10_000
+			.saturating_add((27_339_000_u64).saturating_mul(n as Weight))
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
 			.saturating_add(RocksDbWeight::get().reads((2_u64).saturating_mul(n as Weight)))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 			.saturating_add(RocksDbWeight::get().writes((3_u64).saturating_mul(n as Weight)))
 	}
 	fn on_initialize_no_action() -> Weight {
-		(6_202_000_u64)
+		(4_341_000_u64)
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
 	}
 }
