@@ -27,6 +27,7 @@ pub mod pallet_balances;
 pub mod pallet_collective;
 pub mod pallet_democracy;
 pub mod pallet_indices;
+pub mod pallet_inflation;
 pub mod pallet_membership;
 pub mod pallet_scheduler;
 pub mod pallet_session;

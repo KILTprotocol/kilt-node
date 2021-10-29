@@ -96,6 +96,8 @@ pub mod delegation {
 }
 
 pub mod staking {
+	use sp_runtime::Perquintill;
+
 	#[cfg(not(feature = "fast-gov"))]
 	use super::{DAYS, HOURS};
 	use crate::BlockNumber;
@@ -125,6 +127,8 @@ pub mod staking {
 	pub const MAX_CANDIDATES: u32 = 16;
 	#[cfg(not(feature = "fast-gov"))]
 	pub const MAX_CANDIDATES: u32 = 75;
+
+	pub const NETWORK_REWARD_RATE: Perquintill = Perquintill::from_percent(10);
 }
 
 pub mod governance {
@@ -208,4 +212,16 @@ pub mod did {
 	pub const MAX_NUMBER_OF_TYPES_PER_SERVICE: u32 = 1;
 	pub const MAX_SERVICE_URL_LENGTH: u32 = 100;
 	pub const MAX_NUMBER_OF_URLS_PER_SERVICE: u32 = 1;
+}
+
+pub mod treasury {
+	use crate::{Balance, BlockNumber};
+	use frame_support::PalletId;
+
+	use super::{BLOCKS_PER_YEAR, KILT};
+
+	pub const INITIAL_PERIOD_LENGTH: BlockNumber = BLOCKS_PER_YEAR.saturating_mul(5);
+	const YEARLY_REWARD: Balance = 2_000_000u128 * KILT;
+	pub const INITIAL_PERIOD_REWARD_PER_BLOCK: Balance = YEARLY_REWARD / (BLOCKS_PER_YEAR as Balance);
+	pub const TREASURY_PALLET_ID: PalletId = PalletId(*b"kilt/tsy");
 }
