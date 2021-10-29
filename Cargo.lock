@@ -5703,6 +5703,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-inflation"
+version = "1.0.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "kilt-primitives",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-lottery"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.11#57346f6b24875f8935280dba51fa8ab0a9ba1e39"
@@ -6562,6 +6580,7 @@ dependencies = [
  "pallet-collective",
  "pallet-democracy",
  "pallet-indices",
+ "pallet-inflation",
  "pallet-membership",
  "pallet-randomness-collective-flip",
  "pallet-scheduler",
@@ -10813,6 +10832,7 @@ dependencies = [
  "pallet-collective",
  "pallet-democracy",
  "pallet-indices",
+ "pallet-inflation",
  "pallet-membership",
  "pallet-randomness-collective-flip",
  "pallet-scheduler",
