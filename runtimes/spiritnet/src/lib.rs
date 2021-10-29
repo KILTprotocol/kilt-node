@@ -140,7 +140,6 @@ impl Contains<Call> for BaseFilter {
 				| Call::KiltLaunch(kilt_launch::Call::locked_transfer { .. })
 				| Call::Balances { .. }
 				| Call::Delegation { .. }
-				| Call::ParachainStaking(parachain_staking::Call::join_candidates { .. })
 				| Call::CrowdloanContributors(crowdloan::Call::receive_gratitude { .. })
 		)
 	}
