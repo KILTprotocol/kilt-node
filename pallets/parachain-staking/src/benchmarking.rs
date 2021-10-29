@@ -150,7 +150,8 @@ benchmarks! {
 
 	on_initialize_network_rewards {
 		let issuance = T::Currency::total_issuance();
-		let block = T::NetworkRewardStart::get() + T::BlockNumber::one();
+		// if we only add by one, we also initialize a new year
+		let block = T::NetworkRewardStart::get() + T::BlockNumber::one() * 2_u64.into();
 	}: { Pallet::<T>::on_initialize(block) }
 	verify {
 		let new_issuance = T::Currency::total_issuance();
