@@ -982,7 +982,6 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, pallet_indices, Indices);
 			list_benchmark!(list, extra, pallet_membership, TechnicalMembership);
 			list_benchmark!(list, extra, pallet_scheduler, Scheduler);
-			list_benchmark!(list, extra, pallet_session, SessionBench::<Runtime>);
 			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
 			list_benchmark!(list, extra, pallet_treasury, Treasury);
 			list_benchmark!(list, extra, pallet_utility, Utility);
