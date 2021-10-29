@@ -21,26 +21,28 @@
 
 use super::*;
 
-#[allow(unused)]
-use crate::Pallet as KiltTreasury;
+use crate::Pallet as Inflation;
 use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
 use frame_support::traits::{Currency, Get, OnInitialize};
-use sp_runtime::traits::{One, Saturating, Zero};
+use sp_runtime::traits::{One, Saturating};
 
 benchmarks! {
+
 	on_initialize_mint_to_treasury {
-		assert!(T::Currency::free_balance(&KiltTreasury::<T>::account_id()).is_zero());
-	}: { KiltTreasury::<T>::on_initialize(T::BlockNumber::one()) }
+		let issuance = T::Currency::total_issuance();
+		let block = T::BlockNumber::one();
+	}: { Inflation::<T>::on_initialize(block) }
 	verify {
-		assert_eq!(T::Currency::free_balance(&KiltTreasury::<T>::account_id()), T::InitialPeriodReward::get());
+		assert!(T::Currency::total_issuance() > issuance);
 	}
 
 	on_initialize_no_action {
-		assert!(T::Currency::free_balance(&KiltTreasury::<T>::account_id()).is_zero());
-	}: { KiltTreasury::<T>::on_initialize(T::InitialPeriodLength::get().saturating_add(<T as frame_system::Config>::BlockNumber::one())) }
+		let issuance = T::Currency::total_issuance();
+		let block = T::InitialPeriodLength::get().saturating_add(<T as frame_system::Config>::BlockNumber::one());
+	}: { Inflation::<T>::on_initialize(block) }
 	verify {
-		assert!(T::Currency::free_balance(&KiltTreasury::<T>::account_id()).is_zero());
+		assert_eq!(T::Currency::total_issuance(), issuance);
 	}
 }
 
-impl_benchmark_test_suite!(KiltTreasury, crate::mock::new_test_ext(), crate::mock::Test);
+impl_benchmark_test_suite!(Inflation, crate::mock::new_test_ext(), crate::mock::Test);

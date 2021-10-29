@@ -650,7 +650,7 @@ impl pallet_inflation::Config for Runtime {
 	type Currency = Balances;
 	type InitialPeriodLength = InitialPeriodLength;
 	type InitialPeriodReward = InitialPeriodReward;
-	type TreasuryPalletId = TreasuryPalletId;
+	type Beneficiary = Treasury;
 	type WeightInfo = ();
 }
 
@@ -773,7 +773,7 @@ construct_runtime! {
 		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 64,
 
 		CrowdloanContributors: crowdloan::{Pallet, Call, Storage, Event<T>, Config<T>, ValidateUnsigned} = 65,
-		KiltTreasury: pallet_inflation::{Pallet, Storage} = 66,
+		Inflation: pallet_inflation::{Pallet, Storage} = 66,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>, Config} = 80,
@@ -978,7 +978,7 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, delegation, Delegation);
 			list_benchmark!(list, extra, did, Did);
 			list_benchmark!(list, extra, kilt_launch, KiltLaunch);
-			list_benchmark!(list, extra, pallet_inflation, KiltTreasury);
+			list_benchmark!(list, extra, pallet_inflation, Inflation);
 			list_benchmark!(list, extra, parachain_staking, ParachainStaking);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
@@ -1040,7 +1040,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, delegation, Delegation);
 			add_benchmark!(params, batches, did, Did);
 			add_benchmark!(params, batches, kilt_launch, KiltLaunch);
-			add_benchmark!(params, batches, pallet_inflation, KiltTreasury);
+			add_benchmark!(params, batches, pallet_inflation, Inflation);
 			add_benchmark!(params, batches, parachain_staking, ParachainStaking);
 
 			// No benchmarks for these pallets

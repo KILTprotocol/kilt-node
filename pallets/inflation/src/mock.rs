@@ -17,28 +17,24 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate as pallet_inflation;
+use crate::NegativeImbalanceOf;
 use frame_support::{
 	parameter_types,
-	traits::{OnFinalize, OnInitialize},
-	PalletId,
+	traits::{Currency, OnFinalize, OnInitialize, OnUnbalanced},
 };
-use frame_system::EnsureRoot;
 use kilt_primitives::{
-	constants::{
-		governance::SPEND_PERIOD,
-		treasury::{INITIAL_PERIOD_LENGTH, INITIAL_PERIOD_REWARD_PER_BLOCK, TREASURY_PALLET_ID},
-		KILT,
-	},
+	constants::treasury::{INITIAL_PERIOD_LENGTH, INITIAL_PERIOD_REWARD_PER_BLOCK},
 	AccountId, Balance, BlockHashCount, BlockNumber, Hash, Index,
 };
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
-	Permill,
 };
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
+
+pub(crate) const TREASURY_ACC: AccountId = kilt_primitives::AccountId::new([0u8; 32]);
 
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -48,8 +44,7 @@ frame_support::construct_runtime!(
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-		Treasury: pallet_treasury::{Pallet, Call, Storage, Config, Event<T>},
-		KiltTreasury: pallet_inflation::{Pallet, Storage},
+		Inflation: pallet_inflation::{Pallet, Storage},
 	}
 );
 
@@ -101,30 +96,12 @@ impl pallet_balances::Config for Test {
 	type WeightInfo = ();
 }
 
-parameter_types! {
-	pub const TreasuryPalletId: PalletId = TREASURY_PALLET_ID;
-	pub const ProposalBond: Permill = Permill::from_percent(5);
-	pub const ProposalBondMinimum: Balance = 20 * KILT;
-	pub const SpendPeriod: BlockNumber = SPEND_PERIOD;
-	pub const Burn: Permill = Permill::zero();
-	pub const MaxApprovals: u32 = 100;
-}
-
-impl pallet_treasury::Config for Test {
-	type PalletId = TreasuryPalletId;
-	type Currency = Balances;
-	type ApproveOrigin = EnsureRoot<AccountId>;
-	type RejectOrigin = EnsureRoot<AccountId>;
-	type Event = Event;
-	type OnSlash = Treasury;
-	type ProposalBond = ProposalBond;
-	type ProposalBondMinimum = ProposalBondMinimum;
-	type SpendPeriod = SpendPeriod;
-	type Burn = Burn;
-	type BurnDestination = ();
-	type SpendFunds = ();
-	type WeightInfo = ();
-	type MaxApprovals = MaxApprovals;
+pub struct ToBeneficiary();
+impl OnUnbalanced<NegativeImbalanceOf<Test>> for ToBeneficiary {
+	fn on_nonzero_unbalanced(amount: NegativeImbalanceOf<Test>) {
+		// Must resolve into existing but better to be safe.
+		<Test as pallet_inflation::Config>::Currency::resolve_creating(&TREASURY_ACC, amount);
+	}
 }
 
 parameter_types! {
@@ -136,7 +113,7 @@ impl pallet_inflation::Config for Test {
 	type Currency = Balances;
 	type InitialPeriodLength = InitialPeriodLength;
 	type InitialPeriodReward = InitialPeriodReward;
-	type TreasuryPalletId = TreasuryPalletId;
+	type Beneficiary = ToBeneficiary;
 	type WeightInfo = ();
 }
 

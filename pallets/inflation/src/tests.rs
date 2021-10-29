@@ -23,12 +23,12 @@ use crate::{mock::*, pallet::Config};
 #[test]
 fn during_initial_period() {
 	new_test_ext().execute_with(|| {
-		assert!(Balances::free_balance(&Treasury::account_id()).is_zero());
+		assert!(Balances::free_balance(&TREASURY_ACC).is_zero());
 		assert!(<Test as Config>::Currency::total_issuance().is_zero());
 
 		roll_to(1);
 		assert_eq!(
-			Balances::free_balance(&Treasury::account_id()),
+			Balances::free_balance(&TREASURY_ACC),
 			<Test as Config>::InitialPeriodReward::get()
 		);
 		assert_eq!(
@@ -38,7 +38,7 @@ fn during_initial_period() {
 
 		roll_to(2);
 		assert_eq!(
-			Balances::free_balance(&Treasury::account_id()),
+			Balances::free_balance(&TREASURY_ACC),
 			2 * <Test as Config>::InitialPeriodReward::get()
 		);
 		assert_eq!(
@@ -48,7 +48,7 @@ fn during_initial_period() {
 
 		roll_to(100);
 		assert_eq!(
-			Balances::free_balance(&Treasury::account_id()),
+			Balances::free_balance(&TREASURY_ACC),
 			100 * <Test as Config>::InitialPeriodReward::get()
 		);
 		assert_eq!(
@@ -61,16 +61,16 @@ fn during_initial_period() {
 #[test]
 fn after_initial_period() {
 	new_test_ext().execute_with(|| {
-		assert!(Balances::free_balance(&Treasury::account_id()).is_zero());
+		assert!(Balances::free_balance(&TREASURY_ACC).is_zero());
 		assert!(<Test as Config>::Currency::total_issuance().is_zero());
 
 		System::set_block_number(<Test as Config>::InitialPeriodLength::get());
 		roll_to(<Test as Config>::InitialPeriodLength::get() + 1);
-		assert!(Balances::free_balance(&Treasury::account_id()).is_zero());
+		assert!(Balances::free_balance(&TREASURY_ACC).is_zero());
 		assert!(<Test as Config>::Currency::total_issuance().is_zero());
 
 		roll_to(<Test as Config>::InitialPeriodLength::get() + 100);
-		assert!(Balances::free_balance(&Treasury::account_id()).is_zero());
+		assert!(Balances::free_balance(&TREASURY_ACC).is_zero());
 		assert!(<Test as Config>::Currency::total_issuance().is_zero());
 	});
 }

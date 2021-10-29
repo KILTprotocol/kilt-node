@@ -47,14 +47,13 @@ pub mod pallet {
 	use super::WeightInfo;
 	use frame_support::{
 		pallet_prelude::*,
-		traits::{Currency, StorageVersion},
-		PalletId,
+		traits::{Currency, OnUnbalanced, StorageVersion},
 	};
 	use frame_system::pallet_prelude::*;
-	use sp_runtime::traits::AccountIdConversion;
 
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+	pub(crate) type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::NegativeImbalance;
 
 	pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
@@ -64,19 +63,18 @@ pub mod pallet {
 		type Currency: Currency<AccountIdOf<Self>>;
 
 		/// The length of the initial period in which the constant reward is
-		/// minted.
+		/// minted. Once the current block exceeds this, rewards are no further
+		/// issued.
 		#[pallet::constant]
 		type InitialPeriodLength: Get<<Self as frame_system::Config>::BlockNumber>;
 
-		/// The amount of newly minted tokens per block during the initial
+		/// The amount of newly issued tokens per block during the initial
 		/// period.
 		#[pallet::constant]
 		type InitialPeriodReward: Get<BalanceOf<Self>>;
 
-		/// The treasury's pallet id, used for deriving its sovereign account
-		/// ID.
-		#[pallet::constant]
-		type TreasuryPalletId: Get<PalletId>;
+		/// The beneficiary to receive the rewards.
+		type Beneficiary: OnUnbalanced<NegativeImbalanceOf<Self>>;
 
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
@@ -92,21 +90,12 @@ pub mod pallet {
 		fn on_initialize(now: T::BlockNumber) -> Weight {
 			// The complement of this is handled in ParachainStaking.
 			if now <= T::InitialPeriodLength::get() {
-				T::Currency::deposit_creating(&Self::account_id(), T::InitialPeriodReward::get());
+				let reward = T::Currency::issue(T::InitialPeriodReward::get());
+				T::Beneficiary::on_unbalanced(reward);
 				<T as Config>::WeightInfo::on_initialize_mint_to_treasury()
 			} else {
 				<T as Config>::WeightInfo::on_initialize_no_action()
 			}
-		}
-	}
-
-	impl<T: Config> Pallet<T> {
-		/// The account ID of the treasury pot.
-		///
-		/// This actually does computation. If you need to keep using it, then
-		/// make sure you cache the value and only call this once.
-		pub fn account_id() -> T::AccountId {
-			T::TreasuryPalletId::get().into_account()
 		}
 	}
 }
