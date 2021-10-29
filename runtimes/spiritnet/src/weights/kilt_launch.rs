@@ -50,7 +50,7 @@ pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> kilt_launch::WeightInfo for WeightInfo<T> {
 	// Storage: KiltLaunch TransferAccount (r:0 w:1)
 	fn change_transfer_account() -> Weight {
-		(2_826_000 as Weight)
+		(3_081_000 as Weight)
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
 	// Storage: KiltLaunch UnlockingAt (r:1 w:1)
@@ -58,9 +58,9 @@ impl<T: frame_system::Config> kilt_launch::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: KiltLaunch BalanceLocks (r:0 w:1)
 	fn force_unlock(n: u32, ) -> Weight {
-		(28_776_000 as Weight)
-			// Standard Error: 15_000
-			.saturating_add((27_000_000 as Weight).saturating_mul(n as Weight))
+		(23_367_000 as Weight)
+			// Standard Error: 23_000
+			.saturating_add((28_602_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
 			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(n as Weight)))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
@@ -70,7 +70,7 @@ impl<T: frame_system::Config> kilt_launch::WeightInfo for WeightInfo<T> {
 	// Storage: KiltLaunch BalanceLocks (r:2 w:2)
 	// Storage: Balances Locks (r:2 w:2)
 	fn locked_transfer() -> Weight {
-		(131_601_000 as Weight)
+		(138_045_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(6 as Weight))
 			.saturating_add(T::DbWeight::get().writes(6 as Weight))
 	}
@@ -81,7 +81,7 @@ impl<T: frame_system::Config> kilt_launch::WeightInfo for WeightInfo<T> {
 	// Storage: Vesting Vesting (r:2 w:2)
 	// Storage: KiltLaunch BalanceLocks (r:1 w:0)
 	fn migrate_genesis_account_vesting() -> Weight {
-		(146_346_000 as Weight)
+		(151_792_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(9 as Weight))
 			.saturating_add(T::DbWeight::get().writes(6 as Weight))
 	}
@@ -93,7 +93,7 @@ impl<T: frame_system::Config> kilt_launch::WeightInfo for WeightInfo<T> {
 	// Storage: KiltLaunch BalanceLocks (r:2 w:2)
 	// Storage: KiltLaunch UnlockingAt (r:1 w:1)
 	fn migrate_genesis_account_locking() -> Weight {
-		(149_706_000 as Weight)
+		(155_177_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(10 as Weight))
 			.saturating_add(T::DbWeight::get().writes(7 as Weight))
 	}
@@ -104,9 +104,9 @@ impl<T: frame_system::Config> kilt_launch::WeightInfo for WeightInfo<T> {
 	// Storage: Vesting Vesting (r:2 w:2)
 	// Storage: KiltLaunch BalanceLocks (r:1 w:0)
 	fn migrate_multiple_genesis_accounts_vesting(n: u32, ) -> Weight {
-		(42_666_000 as Weight)
-			// Standard Error: 80_000
-			.saturating_add((95_762_000 as Weight).saturating_mul(n as Weight))
+		(46_828_000 as Weight)
+			// Standard Error: 51_000
+			.saturating_add((100_849_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().reads((5 as Weight).saturating_mul(n as Weight)))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
@@ -120,24 +120,30 @@ impl<T: frame_system::Config> kilt_launch::WeightInfo for WeightInfo<T> {
 	// Storage: KiltLaunch BalanceLocks (r:2 w:2)
 	// Storage: KiltLaunch UnlockingAt (r:1 w:1)
 	fn migrate_multiple_genesis_accounts_locking(n: u32, ) -> Weight {
-		(62_313_000 as Weight)
-			// Standard Error: 41_000
-			.saturating_add((93_275_000 as Weight).saturating_mul(n as Weight))
+		(52_280_000 as Weight)
+			// Standard Error: 47_000
+			.saturating_add((98_937_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(T::DbWeight::get().reads(5 as Weight))
 			.saturating_add(T::DbWeight::get().reads((5 as Weight).saturating_mul(n as Weight)))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes((3 as Weight).saturating_mul(n as Weight)))
 	}
-	// Storage: KiltLaunch UnlockingAt (r:1 w:0)
+	// Storage: KiltLaunch UnlockingAt (r:1 w:1)
+	// Storage: Balances Locks (r:1 w:1)
+	// Storage: System Account (r:1 w:1)
+	// Storage: KiltLaunch BalanceLocks (r:0 w:1)
 	fn on_initialize_unlock(n: u32, ) -> Weight {
-		(6_733_000 as Weight)
-			// Standard Error: 0
-			.saturating_add((11_000 as Weight).saturating_mul(n as Weight))
+		(26_534_000 as Weight)
+			// Standard Error: 11_000
+			.saturating_add((28_512_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(n as Weight)))
+			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(T::DbWeight::get().writes((3 as Weight).saturating_mul(n as Weight)))
 	}
 	// Storage: KiltLaunch UnlockingAt (r:1 w:0)
 	fn on_initialize_no_action() -> Weight {
-		(4_532_000 as Weight)
+		(4_524_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
 	}
 }
