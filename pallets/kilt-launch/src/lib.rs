@@ -645,7 +645,7 @@ pub mod pallet {
 				}
 
 				Self::deposit_event(Event::Unlocked(block, unlocking_balance.len().saturated_into::<u32>()));
-				// Safe because `UnlockingAt` will be ~6 in our case
+				// Safe because the vec is bound by an u32
 				unlocking_balance.len().saturated_into::<u32>()
 			} else {
 				0
