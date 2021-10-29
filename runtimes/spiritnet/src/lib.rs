@@ -736,7 +736,7 @@ impl pallet_inflation::Config for Runtime {
 	type InitialPeriodLength = InitialPeriodLength;
 	type InitialPeriodReward = InitialPeriodReward;
 	type Beneficiary = Treasury;
-	type WeightInfo = ();
+	type WeightInfo = weights::pallet_inflation::WeightInfo<Runtime>;
 }
 
 construct_runtime! {
