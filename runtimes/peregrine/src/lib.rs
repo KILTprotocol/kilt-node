@@ -1020,7 +1020,6 @@ impl_runtime_apis! {
 		}
 	}
 
-	// From the Polkadot repo: https://github.com/paritytech/polkadot/tree/release-v0.9.12/runtime/polkadot/src/lib.rs#L1853
 	#[cfg(feature = "try-runtime")]
 	impl frame_try_runtime::TryRuntime<Block> for Runtime {
 		fn on_runtime_upgrade() -> (Weight, Weight) {
