@@ -371,7 +371,12 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_initialize(now: T::BlockNumber) -> Weight {
-			Self::unlock_balance(now).into()
+			let locks = Self::unlock_balance(now);
+			if locks > 0 {
+				<T as pallet::Config>::WeightInfo::on_initialize_unlock(locks)
+			} else {
+				<T as pallet::Config>::WeightInfo::on_initialize_no_action()
+			}
 		}
 	}
 

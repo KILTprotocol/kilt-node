@@ -93,4 +93,14 @@ impl<T: frame_system::Config> kilt_launch::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().writes(4_u64))
 			.saturating_add(T::DbWeight::get().writes((3_u64).saturating_mul(n as Weight)))
 	}
+	fn on_initialize_unlock(n: u32, ) -> Weight {
+		(4_841_000_u64)
+			// Standard Error: 0
+			.saturating_add((6_000_u64).saturating_mul(n as Weight))
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+	}
+	fn on_initialize_no_action() -> Weight {
+		(3_617_000_u64)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+	}
 }

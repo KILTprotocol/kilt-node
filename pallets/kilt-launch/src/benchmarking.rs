@@ -24,7 +24,7 @@ use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, vec, wh
 use frame_support::{
 	assert_ok,
 	inherent::Vec,
-	traits::{Currency, Get},
+	traits::{Currency, Get, Hooks},
 };
 use frame_system::{Pallet as System, RawOrigin};
 use kilt_primitives::{constants::KILT, Balance};
@@ -252,6 +252,21 @@ benchmarks! {
 			amount: (n as u128 * AMOUNT).into(),
 		}), "BalanceLock not migrated");
 		assert_eq!(Locks::<T>::get(&target).len(), 1, "Lock not set");
+	}
+
+	on_initialize_unlock {
+		let n in 1 .. T::AutoUnlockBound::get();
+
+		let ((transfer, transfer_lookup), s, _) = genesis_setup::<T>(n).expect("Genesis setup failure");
+		let block: T::BlockNumber = UNLOCK_BLOCK.into();
+	}: { KiltLaunch::<T>::on_initialize(block) }
+	verify {
+		assert!(UnlockingAt::<T>::get(&block).is_none());
+	}
+
+	on_initialize_no_action {
+	}: { KiltLaunch::<T>::on_initialize(0_u32.into()) }
+	verify {
 	}
 }
 
