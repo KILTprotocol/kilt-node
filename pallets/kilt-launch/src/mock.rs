@@ -108,12 +108,14 @@ impl pallet_balances::Config for Test {
 parameter_types! {
 	pub const MaxClaims: u32 = 4;
 	pub const UsableBalance: Balance = 1;
+	pub const AutoUnlockBound: u32 = 70;
 }
 
 impl kilt_launch::Config for Test {
 	type Event = Event;
 	type MaxClaims = MaxClaims;
 	type UsableBalance = UsableBalance;
+	type AutoUnlockBound = AutoUnlockBound;
 	type WeightInfo = ();
 }
 
