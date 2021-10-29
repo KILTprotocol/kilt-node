@@ -164,6 +164,10 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxClaims: Get<u32>;
 
+		/// Maximum number of accounts that get unlocked in a single block.
+		#[pallet::constant]
+		type AutoUnlockBound: Get<u32>;
+
 		/// Amount of Balance which will be made available for each account
 		/// which has either vesting or locking such that transaction fees can
 		/// be paid from this.
@@ -291,7 +295,7 @@ pub mod pallet {
 		_,
 		Blake2_128Concat,
 		<T as frame_system::Config>::BlockNumber,
-		BoundedVec<<T as frame_system::Config>::AccountId, <T as Config>::MaxClaims>,
+		BoundedVec<<T as frame_system::Config>::AccountId, <T as Config>::AutoUnlockBound>,
 	>;
 
 	/// Maps an account id to the (block, balance) pair in which the latter can
@@ -367,7 +371,12 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_initialize(now: T::BlockNumber) -> Weight {
-			Self::unlock_balance(now).into()
+			let locks = Self::unlock_balance(now);
+			if locks > 0 {
+				<T as pallet::Config>::WeightInfo::on_initialize_unlock(locks)
+			} else {
+				<T as pallet::Config>::WeightInfo::on_initialize_no_action()
+			}
 		}
 	}
 
@@ -636,7 +645,7 @@ pub mod pallet {
 				}
 
 				Self::deposit_event(Event::Unlocked(block, unlocking_balance.len().saturated_into::<u32>()));
-				// Safe because `UnlockingAt` will be ~6 in our case
+				// Safe because the vec is bound by an u32
 				unlocking_balance.len().saturated_into::<u32>()
 			} else {
 				0

@@ -38,7 +38,7 @@ pub const DAYS: BlockNumber = HOURS * 24;
 // Julian year as Substrate handles it
 pub const BLOCKS_PER_YEAR: BlockNumber = DAYS * 36525 / 100;
 
-pub const MIN_VESTED_TRANSFER_AMOUNT: Balance = 1000 * KILT;
+pub const MIN_VESTED_TRANSFER_AMOUNT: Balance = 100 * MILLI_KILT;
 pub const MAX_COLLATOR_STAKE: Balance = 200_000 * KILT;
 
 /// One KILT
