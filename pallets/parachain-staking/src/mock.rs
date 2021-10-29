@@ -20,19 +20,13 @@
 #![allow(clippy::from_over_into)]
 
 use super::*;
-use crate::{self as stake, migrations::StakingStorageVersion};
+use crate::{self as stake, migrations::StakingStorageVersion, types::NegativeImbalanceOf};
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{GenesisBuild, OnFinalize, OnInitialize},
+	traits::{Currency, GenesisBuild, OnFinalize, OnInitialize, OnUnbalanced},
 	weights::Weight,
-	PalletId,
 };
-use kilt_primitives::constants::{
-	governance::SPEND_PERIOD,
-	staking::NETWORK_REWARD_RATE,
-	treasury::{INITIAL_PERIOD_LENGTH, TREASURY_PALLET_ID},
-	KILT,
-};
+use kilt_primitives::constants::{staking::NETWORK_REWARD_RATE, treasury::INITIAL_PERIOD_LENGTH, KILT};
 use pallet_authorship::EventHandler;
 use sp_consensus_aura::sr25519::AuthorityId;
 use sp_core::H256;
@@ -40,7 +34,7 @@ use sp_runtime::{
 	impl_opaque_keys,
 	testing::{Header, UintAuthorityId},
 	traits::{BlakeTwo256, ConvertInto, IdentityLookup, OpaqueKeys},
-	Perbill, Permill, Perquintill,
+	Perbill, Perquintill,
 };
 use sp_std::fmt::Debug;
 
@@ -53,6 +47,8 @@ pub const DECIMALS: Balance = KILT;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
+
+pub(crate) const TREASURY_ACC: AccountId = u64::MAX;
 
 // Configure a mock runtime to test the pallet.
 construct_runtime!(
@@ -67,7 +63,6 @@ construct_runtime!(
 		StakePallet: stake::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
 		Aura: pallet_aura::{Pallet, Storage},
-		Treasury: pallet_treasury::{Pallet, Call, Storage, Config, Event<T>},
 	}
 );
 
@@ -153,6 +148,14 @@ parameter_types! {
 	pub const NetworkRewardStart: BlockNumber = INITIAL_PERIOD_LENGTH;
 }
 
+pub struct ToBeneficiary();
+impl OnUnbalanced<NegativeImbalanceOf<Test>> for ToBeneficiary {
+	fn on_nonzero_unbalanced(amount: NegativeImbalanceOf<Test>) {
+		// Must resolve into existing but better to be safe.
+		<Test as Config>::Currency::resolve_creating(&TREASURY_ACC, amount);
+	}
+}
+
 impl Config for Test {
 	type Event = Event;
 	type Currency = Balances;
@@ -174,7 +177,7 @@ impl Config for Test {
 	type MaxUnstakeRequests = MaxUnstakeRequests;
 	type NetworkRewardRate = NetworkRewardRate;
 	type NetworkRewardStart = NetworkRewardStart;
-	type NetworkRewardBeneficiary = Treasury;
+	type NetworkRewardBeneficiary = ToBeneficiary;
 	type WeightInfo = ();
 }
 
@@ -210,32 +213,6 @@ impl pallet_timestamp::Config for Test {
 	type OnTimestampSet = ();
 	type MinimumPeriod = MinimumPeriod;
 	type WeightInfo = ();
-}
-
-parameter_types! {
-	pub const TreasuryPalletId: PalletId = TREASURY_PALLET_ID;
-	pub const ProposalBond: Permill = Permill::from_percent(5);
-	pub const ProposalBondMinimum: Balance = 20 * KILT;
-	pub const SpendPeriod: BlockNumber = SPEND_PERIOD;
-	pub const Burn: Permill = Permill::zero();
-	pub const MaxApprovals: u32 = 100;
-}
-
-impl pallet_treasury::Config for Test {
-	type PalletId = TreasuryPalletId;
-	type Currency = Balances;
-	type ApproveOrigin = frame_system::EnsureRoot<AccountId>;
-	type RejectOrigin = frame_system::EnsureRoot<AccountId>;
-	type Event = Event;
-	type OnSlash = Treasury;
-	type ProposalBond = ProposalBond;
-	type ProposalBondMinimum = ProposalBondMinimum;
-	type SpendPeriod = SpendPeriod;
-	type Burn = Burn;
-	type BurnDestination = ();
-	type SpendFunds = ();
-	type WeightInfo = ();
-	type MaxApprovals = MaxApprovals;
 }
 
 pub(crate) struct ExtBuilder {

@@ -33,7 +33,7 @@ use kilt_primitives::constants::BLOCKS_PER_YEAR;
 use crate::{
 	mock::{
 		almost_equal, events, last_event, roll_to, AccountId, Balance, Balances, BlockNumber, Event as MetaEvent,
-		ExtBuilder, Origin, Session, StakePallet, System, Test, Treasury, BLOCKS_PER_ROUND, DECIMALS,
+		ExtBuilder, Origin, Session, StakePallet, System, Test, BLOCKS_PER_ROUND, DECIMALS, TREASURY_ACC,
 	},
 	set::OrderedSet,
 	types::{
@@ -3520,13 +3520,13 @@ fn network_reward_multiple_blocks() {
 			assert_eq!(max_stake, StakePallet::max_candidate_stake());
 			let total_collator_stake = max_stake.saturating_mul(<Test as Config>::MinCollators::get().into());
 			assert_eq!(total_collator_stake, StakePallet::total_collator_stake().collators);
-			assert!(Balances::free_balance(&Treasury::account_id()).is_zero());
+			assert!(Balances::free_balance(&TREASURY_ACC).is_zero());
 			let total_issuance = <Test as Config>::Currency::total_issuance();
 
 			// total issuance should not increase when not noting authors because we haven't
 			// reached NetworkRewardStart yet
 			roll_to(10, vec![None]);
-			assert!(Balances::free_balance(&Treasury::account_id()).is_zero());
+			assert!(Balances::free_balance(&TREASURY_ACC).is_zero());
 			assert_eq!(total_issuance, <Test as Config>::Currency::total_issuance());
 
 			// set current block to one block before NetworkRewardStart
@@ -3535,12 +3535,12 @@ fn network_reward_multiple_blocks() {
 
 			// network rewards should only appear 1 block after start
 			roll_to(network_reward_start, vec![None]);
-			assert!(Balances::free_balance(&Treasury::account_id()).is_zero());
+			assert!(Balances::free_balance(&TREASURY_ACC).is_zero());
 			assert_eq!(total_issuance, <Test as Config>::Currency::total_issuance());
 
 			// should mint to treasury now
 			roll_to(network_reward_start + 1, vec![None]);
-			let network_reward = Balances::free_balance(&Treasury::account_id());
+			let network_reward = Balances::free_balance(&TREASURY_ACC);
 			assert!(!network_reward.is_zero());
 			assert_eq!(
 				total_issuance + network_reward,
@@ -3552,7 +3552,7 @@ fn network_reward_multiple_blocks() {
 
 			// should mint exactly the same amount
 			roll_to(network_reward_start + 2, vec![None]);
-			assert_eq!(2 * network_reward, Balances::free_balance(&Treasury::account_id()));
+			assert_eq!(2 * network_reward, Balances::free_balance(&TREASURY_ACC));
 			assert_eq!(
 				total_issuance + 2 * network_reward,
 				<Test as Config>::Currency::total_issuance()
@@ -3560,7 +3560,7 @@ fn network_reward_multiple_blocks() {
 
 			// should mint exactly the same amount in each block
 			roll_to(network_reward_start + 100, vec![None]);
-			assert_eq!(100 * network_reward, Balances::free_balance(&Treasury::account_id()));
+			assert_eq!(100 * network_reward, Balances::free_balance(&TREASURY_ACC));
 			assert_eq!(
 				total_issuance + 100 * network_reward,
 				<Test as Config>::Currency::total_issuance()
@@ -3570,7 +3570,7 @@ fn network_reward_multiple_blocks() {
 			// based on MaxCollatorCandidateStake and MaxSelectedCandidates
 			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(1)));
 			roll_to(network_reward_start + 101, vec![None]);
-			assert_eq!(101 * network_reward, Balances::free_balance(&Treasury::account_id()));
+			assert_eq!(101 * network_reward, Balances::free_balance(&TREASURY_ACC));
 			assert_eq!(
 				total_issuance + 101 * network_reward,
 				<Test as Config>::Currency::total_issuance()
@@ -3596,7 +3596,7 @@ fn network_reward_increase_max_candidate_stake() {
 
 			// should mint to treasury now
 			roll_to(network_reward_start + 1, vec![None]);
-			let reward_before = Balances::free_balance(&Treasury::account_id());
+			let reward_before = Balances::free_balance(&TREASURY_ACC);
 			assert!(!reward_before.is_zero());
 			assert_eq!(
 				total_issuance + reward_before,
@@ -3608,10 +3608,7 @@ fn network_reward_increase_max_candidate_stake() {
 			let reward_after = 2 * reward_before;
 			assert_ok!(StakePallet::set_max_candidate_stake(Origin::root(), max_stake_doubled));
 			roll_to(network_reward_start + 2, vec![None]);
-			assert_eq!(
-				reward_before + reward_after,
-				Balances::free_balance(&Treasury::account_id())
-			);
+			assert_eq!(reward_before + reward_after, Balances::free_balance(&TREASURY_ACC));
 			assert_eq!(
 				reward_before + reward_after + total_issuance,
 				<Test as Config>::Currency::total_issuance()
@@ -3637,7 +3634,7 @@ fn network_reward_increase_max_collator_count() {
 
 			// should mint to treasury now
 			roll_to(network_reward_start + 1, vec![None]);
-			let reward_before = Balances::free_balance(&Treasury::account_id());
+			let reward_before = Balances::free_balance(&TREASURY_ACC);
 			assert!(!reward_before.is_zero());
 			assert_eq!(
 				total_issuance + reward_before,
@@ -3651,10 +3648,7 @@ fn network_reward_increase_max_collator_count() {
 				<Test as Config>::MinCollators::get() * 3
 			));
 			roll_to(network_reward_start + 2, vec![None]);
-			assert_eq!(
-				reward_before + reward_after,
-				Balances::free_balance(&Treasury::account_id())
-			);
+			assert_eq!(reward_before + reward_after, Balances::free_balance(&TREASURY_ACC));
 			assert_eq!(
 				reward_before + reward_after + total_issuance,
 				<Test as Config>::Currency::total_issuance()
