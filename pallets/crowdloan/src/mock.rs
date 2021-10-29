@@ -16,13 +16,14 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::pallet as pallet_crowdloan;
+use crate::{pallet as pallet_crowdloan, GratitudeConfig, ReserveAccounts};
 use frame_support::parameter_types;
 use frame_system::{EnsureRoot, EventRecord};
 use kilt_primitives::{constants::KILT, AccountId, Balance, BlockNumber, Hash, Index};
 use sp_runtime::{
 	testing::Header,
-	traits::{BlakeTwo256, IdentityLookup},
+	traits::{BlakeTwo256, ConvertInto, IdentityLookup},
+	Permill,
 };
 
 type TestUncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -39,7 +40,8 @@ frame_support::construct_runtime!(
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-		Crowdloan: pallet_crowdloan::{Pallet, Call, Config<T>, Storage, Event<T>}
+		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>},
+		Crowdloan: pallet_crowdloan::{Pallet, Call, Config<T>, Storage, Event<T>, ValidateUnsigned}
 	}
 );
 
@@ -92,8 +94,24 @@ impl pallet_balances::Config for Test {
 	type WeightInfo = ();
 }
 
+parameter_types! {
+	pub const MinVestedTransfer: TestBalance = 500;
+}
+
+impl pallet_vesting::Config for Test {
+	type Event = Event;
+	type Currency = Balances;
+	type BlockNumberToBalance = ConvertInto;
+	// disable vested transfers by setting min amount to max balance
+	type MinVestedTransfer = MinVestedTransfer;
+	type WeightInfo = ();
+	const MAX_VESTING_SCHEDULES: u32 = kilt_primitives::constants::MAX_VESTING_SCHEDULES;
+}
+
 impl pallet_crowdloan::Config for Test {
 	type Currency = Balances;
+	type Vesting = Vesting;
+	type Balance = TestBalance;
 	type EnsureRegistrarOrigin = TestOrigin;
 	type Event = Event;
 	type WeightInfo = ();
@@ -101,9 +119,17 @@ impl pallet_crowdloan::Config for Test {
 
 pub(crate) const ACCOUNT_00: TestAccountId = AccountId::new([0u8; 32]);
 pub(crate) const ACCOUNT_01: TestAccountId = AccountId::new([1u8; 32]);
+pub(crate) const ACCOUNT_02: TestAccountId = AccountId::new([2u8; 32]);
+pub(crate) const ACCOUNT_03: TestAccountId = AccountId::new([3u8; 32]);
+pub(crate) const ACCOUNT_04: TestAccountId = AccountId::new([4u8; 32]);
 #[allow(clippy::identity_op)]
 pub(crate) const BALANCE_01: TestBalance = 1 * KILT;
 pub(crate) const BALANCE_02: TestBalance = 2 * KILT;
+pub(crate) const GRATITUDE_CONFIG: GratitudeConfig<BlockNumber> = GratitudeConfig {
+	vested_share: Permill::from_percent(50),
+	start_block: 1,
+	vesting_length: 10,
+};
 
 pub(crate) fn get_generated_events() -> Vec<EventRecord<Event, kilt_primitives::Hash>> {
 	let events = System::events();
@@ -117,6 +143,8 @@ pub(crate) fn get_generated_events() -> Vec<EventRecord<Event, kilt_primitives::
 pub(crate) struct ExtBuilder {
 	registrar_account: TestAccountId,
 	contributions: Vec<(TestAccountId, TestBalance)>,
+	reserve: ReserveAccounts<TestAccountId>,
+	balances: Vec<(TestAccountId, TestBalance)>,
 }
 
 impl ExtBuilder {
@@ -130,14 +158,31 @@ impl ExtBuilder {
 		self
 	}
 
+	pub(crate) fn with_reserve(mut self, reserve: ReserveAccounts<TestAccountId>) -> Self {
+		self.reserve = reserve;
+		self
+	}
+
+	pub(crate) fn with_balances(mut self, balances: Vec<(TestAccountId, TestBalance)>) -> Self {
+		self.balances = balances;
+		self
+	}
+
 	pub(crate) fn build(self) -> sp_io::TestExternalities {
-		let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+		let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+		pallet_balances::GenesisConfig::<Test> {
+			balances: self.balances.clone(),
+		}
+		.assimilate_storage(&mut storage)
+		.expect("assimilate should not fail");
 		let mut ext = sp_io::TestExternalities::new(storage);
 
 		ext.execute_with(|| {
 			// Needed to test event generation.
 			System::set_block_number(1);
 			pallet_crowdloan::RegistrarAccount::<Test>::set(self.registrar_account);
+			pallet_crowdloan::Reserve::<Test>::set(self.reserve);
+			pallet_crowdloan::Configuration::<Test>::set(GRATITUDE_CONFIG.clone());
 
 			for (contributor_account, contribution_amount) in self.contributions.iter() {
 				pallet_crowdloan::Contributions::<Test>::insert(contributor_account, contribution_amount);

@@ -29,7 +29,9 @@ use sp_std::{convert::TryInto, vec::Vec};
 
 use crate::{
 	did_details::*,
-	mock_utils::{generate_base_did_creation_details, generate_base_did_details, get_key_agreement_keys},
+	mock_utils::{
+		generate_base_did_creation_details, generate_base_did_details, get_key_agreement_keys, get_service_endpoints,
+	},
 	*,
 };
 
@@ -100,6 +102,13 @@ fn generate_base_did_call_operation<T: Config>(
 	}
 }
 
+fn save_service_endpoints<T: Config>(did_subject: &DidIdentifierOf<T>, endpoints: &[DidEndpoint<T>]) {
+	for endpoint in endpoints.iter() {
+		ServiceEndpoints::<T>::insert(&did_subject, &endpoint.id, endpoint.clone());
+	}
+	DidEndpointsCount::<T>::insert(&did_subject, endpoints.len().saturated_into::<u32>());
+}
+
 benchmarks! {
 	where_clause {
 		where
@@ -110,6 +119,9 @@ benchmarks! {
 	/* create extrinsic */
 	create_ed25519_keys {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
+		// We only calculate weights based on how many endpoints are specified. For each endpoint, we use the max possible length and count for its components.
+		// This makes weight computation easier at runtime, at the cost of always having worst-case weights for any # of endpoints c.
+		let c in 1 .. T::MaxNumberOfServicesPerDid::get();
 
 		let submitter: AccountIdOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
@@ -120,14 +132,23 @@ benchmarks! {
 		let did_key_agreement_keys = get_key_agreement_keys::<T>(n);
 		let did_public_att_key = get_ed25519_public_attestation_key();
 		let did_public_del_key = get_ed25519_public_delegation_key();
+		let service_endpoints = get_service_endpoints::<T>(
+			c,
+			T::MaxServiceIdLength::get(),
+			T::MaxNumberOfTypesPerService::get(),
+			T::MaxServiceTypeLength::get(),
+			T::MaxNumberOfUrlsPerService::get(),
+			T::MaxServiceUrlLength::get(),
+		);
 
 		let mut did_creation_details = generate_base_did_creation_details::<T>(did_subject.clone(), submitter.clone());
 		did_creation_details.new_key_agreement_keys = did_key_agreement_keys;
 		did_creation_details.new_attestation_key = Some(DidVerificationKey::from(did_public_att_key));
 		did_creation_details.new_delegation_key = Some(DidVerificationKey::from(did_public_del_key));
+		did_creation_details.new_service_details = service_endpoints.clone();
 
 		let did_creation_signature = ed25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_creation_details.encode().as_ref()).expect("Failed to create DID signature from raw ed25519 signature.");
-	}: create(RawOrigin::Signed(submitter), did_creation_details.clone(), DidSignature::from(did_creation_signature))
+	}: create(RawOrigin::Signed(submitter), Box::new(did_creation_details.clone()), DidSignature::from(did_creation_signature))
 	verify {
 		let stored_did = Did::<T>::get(&did_subject).expect("New DID should be stored on chain.");
 		let stored_key_agreement_keys_ids = stored_did.key_agreement_keys;
@@ -152,11 +173,20 @@ benchmarks! {
 			stored_did.attestation_key,
 			Some(expected_attestation_key_id)
 		);
+		assert_eq!(
+			DidEndpointsCount::<T>::get(&did_subject).saturated_into::<usize>(),
+			service_endpoints.len()
+		);
+		assert_eq!(
+			ServiceEndpoints::<T>::iter_prefix(&did_subject).count(),
+			service_endpoints.len()
+		);
 		assert_eq!(stored_did.last_tx_counter, 0u64);
 	}
 
 	create_sr25519_keys {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
+		let c in 1 .. T::MaxNumberOfServicesPerDid::get();
 
 		let submitter: AccountIdOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 		make_free_for_did::<T>(&submitter);
@@ -166,14 +196,23 @@ benchmarks! {
 		let did_key_agreement_keys = get_key_agreement_keys::<T>(n);
 		let did_public_att_key = get_sr25519_public_attestation_key();
 		let did_public_del_key = get_sr25519_public_delegation_key();
+		let service_endpoints = get_service_endpoints::<T>(
+			c,
+			T::MaxServiceIdLength::get(),
+			T::MaxNumberOfTypesPerService::get(),
+			T::MaxServiceTypeLength::get(),
+			T::MaxNumberOfUrlsPerService::get(),
+			T::MaxServiceUrlLength::get(),
+		);
 
 		let mut did_creation_details = generate_base_did_creation_details::<T>(did_subject.clone(), submitter.clone());
 		did_creation_details.new_key_agreement_keys = did_key_agreement_keys;
 		did_creation_details.new_attestation_key = Some(DidVerificationKey::from(did_public_att_key));
 		did_creation_details.new_delegation_key = Some(DidVerificationKey::from(did_public_del_key));
+		did_creation_details.new_service_details = service_endpoints.clone();
 
 		let did_creation_signature = sr25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_creation_details.encode().as_ref()).expect("Failed to create DID signature from raw sr25519 signature.");
-	}: create(RawOrigin::Signed(submitter), did_creation_details.clone(), DidSignature::from(did_creation_signature))
+	}: create(RawOrigin::Signed(submitter), Box::new(did_creation_details.clone()), DidSignature::from(did_creation_signature))
 	verify {
 		let stored_did = Did::<T>::get(&did_subject).expect("New DID should be stored on chain.");
 		let stored_key_agreement_keys_ids = stored_did.key_agreement_keys;
@@ -198,11 +237,20 @@ benchmarks! {
 			stored_did.attestation_key,
 			Some(expected_attestation_key_id)
 		);
+		assert_eq!(
+			DidEndpointsCount::<T>::get(&did_subject).saturated_into::<usize>(),
+			service_endpoints.len()
+		);
+		assert_eq!(
+			ServiceEndpoints::<T>::iter_prefix(&did_subject).count(),
+			service_endpoints.len()
+		);
 		assert_eq!(stored_did.last_tx_counter, 0u64);
 	}
 
 	create_ecdsa_keys {
 		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
+		let c in 1 .. T::MaxNumberOfServicesPerDid::get();
 
 		let submitter: AccountIdOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 		make_free_for_did::<T>(&submitter);
@@ -212,14 +260,23 @@ benchmarks! {
 		let did_key_agreement_keys = get_key_agreement_keys::<T>(n);
 		let did_public_att_key = get_ecdsa_public_attestation_key();
 		let did_public_del_key = get_ecdsa_public_delegation_key();
+		let service_endpoints = get_service_endpoints::<T>(
+			c,
+			T::MaxServiceIdLength::get(),
+			T::MaxNumberOfTypesPerService::get(),
+			T::MaxServiceTypeLength::get(),
+			T::MaxNumberOfUrlsPerService::get(),
+			T::MaxServiceUrlLength::get(),
+		);
 
 		let mut did_creation_details = generate_base_did_creation_details::<T>(did_subject.clone(), submitter.clone());
 		did_creation_details.new_key_agreement_keys = did_key_agreement_keys;
 		did_creation_details.new_attestation_key = Some(DidVerificationKey::from(did_public_att_key.clone()));
 		did_creation_details.new_delegation_key = Some(DidVerificationKey::from(did_public_del_key.clone()));
+		did_creation_details.new_service_details = service_endpoints.clone();
 
 		let did_creation_signature = ecdsa_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_creation_details.encode().as_ref()).expect("Failed to create DID signature from raw ecdsa signature.");
-	}: create(RawOrigin::Signed(submitter), did_creation_details.clone(), DidSignature::from(did_creation_signature))
+	}: create(RawOrigin::Signed(submitter), Box::new(did_creation_details.clone()), DidSignature::from(did_creation_signature))
 	verify {
 		let stored_did = Did::<T>::get(&did_subject).expect("New DID should be stored on chain.");
 		let stored_key_agreement_keys_ids = stored_did.key_agreement_keys;
@@ -244,32 +301,78 @@ benchmarks! {
 			stored_did.attestation_key,
 			Some(expected_attestation_key_id)
 		);
+		assert_eq!(
+			DidEndpointsCount::<T>::get(&did_subject).saturated_into::<usize>(),
+			service_endpoints.len()
+		);
+		assert_eq!(
+			ServiceEndpoints::<T>::iter_prefix(&did_subject).count(),
+			service_endpoints.len()
+		);
 		assert_eq!(stored_did.last_tx_counter, 0u64);
 	}
 
 	delete {
+		let c in 1 .. T::MaxNumberOfServicesPerDid::get();
+
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 
 		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key));
+		let service_endpoints = get_service_endpoints::<T>(
+			c,
+			T::MaxServiceIdLength::get(),
+			T::MaxNumberOfTypesPerService::get(),
+			T::MaxServiceTypeLength::get(),
+			T::MaxNumberOfUrlsPerService::get(),
+			T::MaxServiceUrlLength::get(),
+		);
+
 		Did::<T>::insert(&did_subject, did_details);
-	}: _(RawOrigin::Signed(did_subject.clone()))
+		save_service_endpoints(&did_subject, &service_endpoints);
+	}: _(RawOrigin::Signed(did_subject.clone()), c)
 	verify {
 		assert!(
 			Did::<T>::get(&did_subject).is_none()
 		);
+		assert_eq!(
+			DidEndpointsCount::<T>::get(&did_subject), 0
+		);
+		assert_eq!(
+			ServiceEndpoints::<T>::iter_prefix(&did_subject).count(),
+			0
+		);
 	}
 
 	reclaim_deposit {
+		let c in 1 .. T::MaxNumberOfServicesPerDid::get();
+
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 
 		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key));
+		let service_endpoints = get_service_endpoints::<T>(
+			c,
+			T::MaxServiceIdLength::get(),
+			T::MaxNumberOfTypesPerService::get(),
+			T::MaxServiceTypeLength::get(),
+			T::MaxNumberOfUrlsPerService::get(),
+			T::MaxServiceUrlLength::get(),
+		);
+
 		Did::<T>::insert(&did_subject, did_details.clone());
-	}: _(RawOrigin::Signed(did_details.deposit.owner.clone()), did_subject.clone())
+		save_service_endpoints(&did_subject, &service_endpoints);
+	}: _(RawOrigin::Signed(did_details.deposit.owner.clone()), did_subject.clone(), c)
 	verify {
 		assert!(
 			Did::<T>::get(&did_subject).is_none()
+		);
+		assert_eq!(
+			DidEndpointsCount::<T>::get(&did_subject), 0
+		);
+		assert_eq!(
+			ServiceEndpoints::<T>::iter_prefix(&did_subject).count(),
+			0
 		);
 	}
 
@@ -762,6 +865,81 @@ benchmarks! {
 	}: remove_key_agreement_key(RawOrigin::Signed(did_subject.clone()), key_agreement_key_id)
 	verify {
 		assert!(!Did::<T>::get(&did_subject).unwrap().key_agreement_keys.contains(&key_agreement_key_id));
+	}
+
+	add_service_endpoint {
+		let public_auth_key = get_ecdsa_public_authentication_key();
+		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key.clone()).into_account().into();
+		// Max allowed - 1.
+		let old_service_endpoints = get_service_endpoints::<T>(
+			T::MaxNumberOfServicesPerDid::get() - 1,
+			T::MaxServiceIdLength::get(),
+			T::MaxNumberOfTypesPerService::get(),
+			T::MaxServiceTypeLength::get(),
+			T::MaxNumberOfUrlsPerService::get(),
+			T::MaxServiceUrlLength::get(),
+		);
+		// New endpoint with max length and count for all the properties.
+		let mut new_service_endpoint = get_service_endpoints::<T>(
+			1,
+			T::MaxServiceIdLength::get(),
+			T::MaxNumberOfTypesPerService::get(),
+			T::MaxServiceTypeLength::get(),
+			T::MaxNumberOfUrlsPerService::get(),
+			T::MaxServiceUrlLength::get(),
+		)[0].clone();
+		// Changing from the default ID otherwise it would be the same as the one first one in `old_service_endpoints`.
+		new_service_endpoint.id = b"new_id".to_vec().try_into().unwrap();
+
+		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(public_auth_key));
+		Did::<T>::insert(&did_subject, did_details);
+		save_service_endpoints(&did_subject, &old_service_endpoints);
+	}: _(RawOrigin::Signed(did_subject.clone()), new_service_endpoint.clone())
+	verify {
+		assert_eq!(
+			ServiceEndpoints::<T>::get(&did_subject, &new_service_endpoint.id),
+			Some(new_service_endpoint)
+		);
+		assert_eq!(
+			DidEndpointsCount::<T>::get(&did_subject),
+			T::MaxNumberOfServicesPerDid::get()
+		);
+		assert_eq!(
+			ServiceEndpoints::<T>::iter_prefix(&did_subject).count(),
+			T::MaxNumberOfServicesPerDid::get().saturated_into::<usize>()
+		);
+	}
+
+	remove_service_endpoint {
+		let public_auth_key = get_ecdsa_public_authentication_key();
+		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key.clone()).into_account().into();
+		// All set to max.
+		let old_service_endpoints = get_service_endpoints::<T>(
+			T::MaxNumberOfServicesPerDid::get(),
+			T::MaxServiceIdLength::get(),
+			T::MaxNumberOfTypesPerService::get(),
+			T::MaxServiceTypeLength::get(),
+			T::MaxNumberOfUrlsPerService::get(),
+			T::MaxServiceUrlLength::get(),
+		);
+		let endpoint_id = old_service_endpoints[0].id.clone();
+
+		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(public_auth_key));
+		Did::<T>::insert(&did_subject, did_details);
+		save_service_endpoints(&did_subject, &old_service_endpoints);
+	}: _(RawOrigin::Signed(did_subject.clone()), endpoint_id.clone())
+	verify {
+		assert!(
+			ServiceEndpoints::<T>::get(&did_subject, &endpoint_id).is_none()
+		);
+		assert_eq!(
+			DidEndpointsCount::<T>::get(&did_subject),
+			T::MaxNumberOfServicesPerDid::get() - 1
+		);
+		assert_eq!(
+			ServiceEndpoints::<T>::iter_prefix(&did_subject).count(),
+			T::MaxNumberOfServicesPerDid::get().saturated_into::<usize>() - 1
+		);
 	}
 
 	signature_verification_sr25519 {

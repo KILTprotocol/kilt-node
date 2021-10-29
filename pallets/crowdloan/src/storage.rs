@@ -15,24 +15,26 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
+use codec::{Decode, Encode};
+use scale_info::TypeInfo;
+use sp_runtime::Permill;
 
-pub mod attestation;
-pub mod crowdloan;
-pub mod ctype;
-pub mod delegation;
-pub mod did;
-pub mod frame_system;
-pub mod kilt_launch;
-pub mod pallet_balances;
-pub mod pallet_collective;
-pub mod pallet_democracy;
-pub mod pallet_indices;
-pub mod pallet_inflation;
-pub mod pallet_membership;
-pub mod pallet_scheduler;
-pub mod pallet_session;
-pub mod pallet_timestamp;
-pub mod pallet_treasury;
-pub mod pallet_utility;
-pub mod pallet_vesting;
-pub mod parachain_staking;
+/// A set of reserve accounts
+#[derive(Clone, Debug, Default, Decode, PartialEq, Encode, TypeInfo)]
+pub struct ReserveAccounts<A: Default> {
+	/// The account that is used to do vested transfers.
+	pub vested: A,
+	/// The account that is used to do free and unlocked transfers.
+	pub free: A,
+}
+
+/// The configuration of the gratitude.
+#[derive(Clone, Debug, Default, Decode, Encode, PartialEq, TypeInfo)]
+pub struct GratitudeConfig<BlockNumber: Default> {
+	/// The permill of vested tokens that are given.
+	pub vested_share: Permill,
+	/// The start block of the vesting.
+	pub start_block: BlockNumber,
+	/// The length of the vesting.
+	pub vesting_length: BlockNumber,
+}

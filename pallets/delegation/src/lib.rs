@@ -357,8 +357,9 @@ pub mod pallet {
 				<ctype::Error<T>>::CTypeNotFound
 			);
 
-			log::debug!("trying to insert Delegation Root");
+			// *** No Fail beyond this point ***
 
+			log::debug!("trying to insert Delegation Root");
 			Self::create_and_store_new_hierarchy(
 				root_node_id,
 				DelegationHierarchyDetails::<T> { ctype_hash },
@@ -451,7 +452,7 @@ pub mod pallet {
 				Error::<T>::UnauthorizedDelegation
 			);
 
-			// *** No Fail beyond this point ***
+			// *** No Fail except during store_delegation_under_parent beyond this point ***
 
 			Self::store_delegation_under_parent(
 				delegation_id,
@@ -541,6 +542,8 @@ pub mod pallet {
 			let (authorized, parent_checks) = Self::is_delegating(&invoker, &delegation_id, max_parent_checks)?;
 			ensure!(authorized, Error::<T>::UnauthorizedRevocation);
 
+			// *** No Fail except during revocation beyond this point ***
+
 			// Revoke the delegation and recursively all of its children (add 1 to
 			// max_revocations to account for the node itself)
 			let (revocation_checks, _) = Self::revoke(&delegation_id, &invoker, max_revocations.saturating_add(1))?;
@@ -608,6 +611,8 @@ pub mod pallet {
 
 			ensure!(max_removals <= T::MaxRemovals::get(), Error::<T>::MaxRemovalsTooLarge);
 
+			// *** No Fail except during removal beyond this point ***
+
 			// Remove the delegation and recursively all of its children (add 1 to
 			// max_removals to account for the node itself)
 			let (removal_checks, _) = Self::remove(&delegation_id, max_removals.saturating_add(1))?;
@@ -655,6 +660,8 @@ impl<T: Config> Pallet<T> {
 	) -> DispatchResult {
 		CurrencyOf::<T>::reserve(&deposit_owner, <T as Config>::Deposit::get())?;
 
+		// *** No Fail beyond this point ***
+
 		let root_node = DelegationNode::new_root_node(
 			root_id,
 			DelegationDetails::default_with_owner(hierarchy_owner),
@@ -682,9 +689,12 @@ impl<T: Config> Pallet<T> {
 	) -> DispatchResult {
 		CurrencyOf::<T>::reserve(&deposit_owner, <T as Config>::Deposit::get())?;
 
-		<DelegationNodes<T>>::insert(delegation_id, delegation_node);
 		// Add the new node as a child of that node
 		parent_node.try_add_child(delegation_id)?;
+
+		// *** No Fail beyond this point ***
+
+		<DelegationNodes<T>>::insert(delegation_id, delegation_node);
 		<DelegationNodes<T>>::insert(parent_id, parent_node);
 		Ok(())
 	}
@@ -799,6 +809,8 @@ impl<T: Config> Pallet<T> {
 			// If we run out of revocation gas, we only revoke children. The tree will be
 			// changed but is still valid.
 			ensure!(revocations < max_revocations, Error::<T>::ExceededRevocationBounds);
+
+			// *** No Fail beyond this point ***
 
 			// Set revoked flag and store delegation node
 			delegation_node.details.revoked = true;

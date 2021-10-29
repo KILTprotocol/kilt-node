@@ -184,7 +184,7 @@ pub mod pallet {
 		pallet_prelude::*,
 		storage::bounded_btree_map::BoundedBTreeMap,
 		traits::{
-			Currency, EstimateNextSessionRotation, Get, Imbalance, LockIdentifier, LockableCurrency,
+			Currency, EstimateNextSessionRotation, Get, Imbalance, LockIdentifier, LockableCurrency, OnUnbalanced,
 			ReservableCurrency, WithdrawReasons,
 		},
 		BoundedVec,
@@ -205,8 +205,8 @@ pub mod pallet {
 		migrations::StakingStorageVersion,
 		set::OrderedSet,
 		types::{
-			BalanceOf, Candidate, CandidateOf, CandidateStatus, DelegationCounter, Delegator, RoundInfo, Stake,
-			StakeOf, TotalStake,
+			BalanceOf, Candidate, CandidateOf, CandidateStatus, DelegationCounter, Delegator, NegativeImbalanceOf,
+			RoundInfo, Stake, StakeOf, TotalStake,
 		},
 	};
 	use sp_std::{convert::TryInto, fmt::Debug};
@@ -326,6 +326,21 @@ pub mod pallet {
 		/// set of candidates/delegators until they unlock their funds.
 		#[pallet::constant]
 		type MaxUnstakeRequests: Get<u32>;
+
+		/// The starting block number for the network rewards. Once the current
+		/// block number exceeds this start, the beneficiary will receive the
+		/// configured reward in each block.
+		#[pallet::constant]
+		type NetworkRewardStart: Get<<Self as frame_system::Config>::BlockNumber>;
+
+		/// The rate in percent for the network rewards which are based on the
+		/// maximum number of collators and the maximum amount a collator can
+		/// stake.
+		#[pallet::constant]
+		type NetworkRewardRate: Get<Perquintill>;
+
+		/// The beneficiary to receive the network rewards.
+		type NetworkRewardBeneficiary: OnUnbalanced<NegativeImbalanceOf<Self>>;
 
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
@@ -532,6 +547,11 @@ pub mod pallet {
 			// check for InflationInfo update
 			if now > BLOCKS_PER_YEAR.saturated_into::<T::BlockNumber>() {
 				post_weight = post_weight.saturating_add(Self::adjust_reward_rates(now));
+			}
+			// check for network reward
+			if now > T::NetworkRewardStart::get() {
+				T::NetworkRewardBeneficiary::on_unbalanced(Self::get_network_reward());
+				post_weight = post_weight.saturating_add(<T as Config>::WeightInfo::on_initialize_network_rewards());
 			}
 			post_weight
 		}
@@ -831,6 +851,9 @@ pub mod pallet {
 			ensure_root(origin)?;
 			ensure!(new >= T::MinCollators::get(), Error::<T>::CannotSetBelowMin);
 			let old = <MaxSelectedCandidates<T>>::get();
+
+			// *** No Fail beyond this point ***
+
 			<MaxSelectedCandidates<T>>::put(new);
 
 			// update candidates for next round
@@ -868,6 +891,9 @@ pub mod pallet {
 			ensure!(new >= T::MinBlocksPerRound::get(), Error::<T>::CannotSetBelowMin);
 
 			let old_round = <Round<T>>::get();
+
+			// *** No Fail beyond this point ***
+
 			<Round<T>>::put(RoundInfo {
 				length: new,
 				..old_round
@@ -901,6 +927,8 @@ pub mod pallet {
 				new >= T::MinCollatorCandidateStake::get(),
 				Error::<T>::CannotSetBelowMin
 			);
+
+			// *** No Fail beyond this point ***
 
 			MaxCollatorCandidateStake::<T>::put(new);
 
@@ -949,6 +977,8 @@ pub mod pallet {
 				candidates.len().saturated_into::<u32>() > T::MinRequiredCollators::get(),
 				Error::<T>::TooFewCollatorCandidates
 			);
+
+			// *** No Fail except during remove_candidate beyond this point ***
 
 			Self::remove_candidate(&collator, &state)?;
 
@@ -1028,6 +1058,8 @@ pub mod pallet {
 				Error::<T>::CannotJoinBeforeUnlocking
 			);
 
+			// *** No Fail except during increase_lock beyond this point ***
+
 			Self::increase_lock(&sender, stake, BalanceOf::<T>::zero())?;
 
 			let candidate = Candidate::new(sender.clone(), stake);
@@ -1103,6 +1135,9 @@ pub mod pallet {
 			let now = <Round<T>>::get().current;
 			let when = now.saturating_add(T::ExitQueueDelay::get());
 			state.leave_candidates(when);
+
+			// *** No Fail beyond this point ***
+
 			if candidates
 				.remove(&Stake {
 					owner: collator.clone(),
@@ -1165,6 +1200,9 @@ pub mod pallet {
 
 			let num_delegators = state.delegators.len().saturated_into::<u32>();
 			let total_amount = state.total;
+
+			// *** No Fail except during remove_candidate beyond this point ***
+
 			Self::remove_candidate(&collator, &state)?;
 
 			Self::deposit_event(Event::CollatorLeft(collator, total_amount));
@@ -1210,6 +1248,8 @@ pub mod pallet {
 
 			// revert leaving state
 			state.revert_leaving();
+
+			// *** No Fail beyond this point ***
 
 			Self::update_top_candidates(candidate.clone(), state.total, state.total);
 
@@ -1267,6 +1307,8 @@ pub mod pallet {
 				after <= <MaxCollatorCandidateStake<T>>::get(),
 				Error::<T>::ValStakeAboveMax
 			);
+
+			// *** No Fail except during increase_lock beyond this point ***
 
 			let unstaking_len = Self::increase_lock(&collator, after, more)?;
 
@@ -1328,6 +1370,8 @@ pub mod pallet {
 				after >= T::MinCollatorCandidateStake::get(),
 				Error::<T>::ValStakeBelowMin
 			);
+
+			// *** No Fail except during prep_unstake beyond this point ***
 
 			// we don't unlock immediately
 			Self::prep_unstake(&collator, less, false)?;
@@ -1454,13 +1498,14 @@ pub mod pallet {
 			};
 			let new_total = state.total;
 
+			// *** No Fail except during increase_lock beyond this point ***
+
 			// lock stake
 			Self::increase_lock(&acc, amount, BalanceOf::<T>::zero())?;
+
 			if state.is_active() {
 				Self::update_top_candidates(collator.clone(), old_total, new_total);
 			}
-
-			// *** No Fail beyond this point ***
 
 			// update states
 			<CandidatePool<T>>::insert(&collator, state);
@@ -1600,13 +1645,14 @@ pub mod pallet {
 			};
 			let new_total = state.total;
 
+			// *** No Fail except during increase_lock beyond this point ***
+
 			// lock stake
 			Self::increase_lock(&acc, delegator.total, amount)?;
+
 			if state.is_active() {
 				Self::update_top_candidates(collator.clone(), old_total, new_total);
 			}
-
-			// *** No Fail beyond this point ***
 
 			// Update states
 			<CandidatePool<T>>::insert(&collator, state);
@@ -1669,6 +1715,9 @@ pub mod pallet {
 			for stake in delegator.delegations.into_iter() {
 				Self::delegator_leaves_collator(acc.clone(), stake.owner.clone())?;
 			}
+
+			// *** No Fail beyond this point ***
+
 			<DelegatorState<T>>::remove(&acc);
 
 			// update candidates for next round
@@ -1719,6 +1768,9 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let collator = T::Lookup::lookup(collator)?;
 			let delegator = ensure_signed(origin)?;
+
+			// *** No Fail except during delegator_revokes_collator beyond this point ***
+
 			Self::delegator_revokes_collator(delegator, collator)?;
 
 			// update candidates for next round
@@ -1771,8 +1823,11 @@ pub mod pallet {
 				.inc_delegation(candidate.clone(), more)
 				.ok_or(Error::<T>::DelegationNotFound)?;
 
+			// *** No Fail except during increase_lock beyond this point ***
+
 			// update lock
 			let unstaking_len = Self::increase_lock(&delegator, delegator_total, more)?;
+
 			let before = collator.total;
 			collator.inc_delegator(delegator.clone(), more);
 			let after = collator.total;
@@ -1849,6 +1904,8 @@ pub mod pallet {
 				delegations.total >= T::MinDelegatorStake::get(),
 				Error::<T>::NomStakeBelowMin
 			);
+
+			// *** No Fail except during prep_unstake beyond this point ***
 
 			Self::prep_unstake(&delegator, less, false)?;
 
@@ -2270,6 +2327,8 @@ pub mod pallet {
 
 			let mut unstaking_len = 0u32;
 
+			// *** No Fail except during Unstaking mutation beyond this point ***
+
 			// update Unstaking by consuming up to {amount | more}
 			<Unstaking<T>>::try_mutate(who, |unstaking| -> DispatchResult {
 				// reduce {amount | more} by unstaking until either {amount | more} is zero or
@@ -2394,6 +2453,8 @@ pub mod pallet {
 			}
 			// prepare unstaking of collator candidate
 			Self::prep_unstake(&state.id, state.stake, true)?;
+
+			// *** No Fail beyond this point ***
 
 			// disable validator for next session if they were in the set of validators
 			pallet_session::Pallet::<T>::validators()
@@ -2549,6 +2610,33 @@ pub mod pallet {
 				round: round.current,
 				counter: counter.saturating_add(1),
 			})
+		}
+
+		/// Calculates the network rewards per block with the current data and
+		/// issues these rewards to the network. The imbalance will be handled
+		/// in `on_initialize` by adding it to the free balance of
+		/// `NetworkRewardBeneficiary`.
+		///
+		/// The expected rewards are the product of
+		///  * the current total maximum collator rewards
+		///  * and the configured NetworkRewardRate
+		///
+		/// `col_reward_rate_per_block * col_max_stake * max_num_of_collators *
+		/// NetworkRewardRate`
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: InflationConfig, MaxCollatorCandidateStake,
+		///   MaxSelectedCandidates
+		/// # </weight>
+		fn get_network_reward() -> NegativeImbalanceOf<T> {
+			// Multiplication with Perquintill cannot overflow
+			let max_col_rewards = InflationConfig::<T>::get().collator.reward_rate.per_block
+				* MaxCollatorCandidateStake::<T>::get()
+				* MaxSelectedCandidates::<T>::get().into();
+			let network_reward = T::NetworkRewardRate::get() * max_col_rewards;
+
+			T::Currency::issue(network_reward)
 		}
 
 		// [Post-launch TODO] Think about Collator stake or total stake?

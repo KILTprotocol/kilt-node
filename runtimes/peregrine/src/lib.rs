@@ -40,7 +40,7 @@ use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, Perbill, Permill,
+	ApplyExtrinsicResult, Perbill, Permill, Perquintill,
 };
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
@@ -54,13 +54,19 @@ use kilt_primitives::{
 		},
 		did::{
 			DID_DEPOSIT, DID_FEE, MAX_BLOCKS_TX_VALIDITY, MAX_ENDPOINT_URLS_COUNT, MAX_KEY_AGREEMENT_KEYS,
-			MAX_PUBLIC_KEYS_PER_DID, MAX_TOTAL_KEY_AGREEMENT_KEYS, MAX_URL_LENGTH,
+			MAX_NUMBER_OF_SERVICES_PER_DID, MAX_NUMBER_OF_TYPES_PER_SERVICE, MAX_NUMBER_OF_URLS_PER_SERVICE,
+			MAX_PUBLIC_KEYS_PER_DID, MAX_SERVICE_ID_LENGTH, MAX_SERVICE_TYPE_LENGTH, MAX_SERVICE_URL_LENGTH,
+			MAX_TOTAL_KEY_AGREEMENT_KEYS, MAX_URL_LENGTH,
 		},
 		governance::{
 			COOLOFF_PERIOD, COUNCIL_MOTION_DURATION, ENACTMENT_PERIOD, FAST_TRACK_VOTING_PERIOD, LAUNCH_PERIOD,
 			SPEND_PERIOD, TECHNICAL_MOTION_DURATION, VOTING_PERIOD,
 		},
-		staking::{DEFAULT_BLOCKS_PER_ROUND, MAX_CANDIDATES, MIN_BLOCKS_PER_ROUND, MIN_COLLATORS, STAKE_DURATION},
+		staking::{
+			DEFAULT_BLOCKS_PER_ROUND, MAX_CANDIDATES, MIN_BLOCKS_PER_ROUND, MIN_COLLATORS, NETWORK_REWARD_RATE,
+			STAKE_DURATION,
+		},
+		treasury::{INITIAL_PERIOD_LENGTH, INITIAL_PERIOD_REWARD_PER_BLOCK, TREASURY_PALLET_ID},
 		KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION,
 	},
 	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier, Hash,
@@ -116,7 +122,7 @@ pub fn native_version() -> NativeVersion {
 
 // Pallet accounts of runtime
 parameter_types! {
-	pub const TreasuryPalletId: PalletId = PalletId(*b"kilt/tsy");
+	pub const TreasuryPalletId: PalletId = TREASURY_PALLET_ID;
 }
 
 parameter_types! {
@@ -585,6 +591,12 @@ parameter_types! {
 	pub const MaxBlocksTxValidity: BlockNumber = MAX_BLOCKS_TX_VALIDITY;
 	pub const DidDeposit: Balance = DID_DEPOSIT;
 	pub const DidFee: Balance = DID_FEE;
+	pub const MaxNumberOfServicesPerDid: u32 = MAX_NUMBER_OF_SERVICES_PER_DID;
+	pub const MaxServiceIdLength: u32 = MAX_SERVICE_ID_LENGTH;
+	pub const MaxServiceTypeLength: u32 = MAX_SERVICE_TYPE_LENGTH;
+	pub const MaxServiceUrlLength: u32 = MAX_SERVICE_URL_LENGTH;
+	pub const MaxNumberOfTypesPerService: u32 = MAX_NUMBER_OF_TYPES_PER_SERVICE;
+	pub const MaxNumberOfUrlsPerService: u32 = MAX_NUMBER_OF_URLS_PER_SERVICE;
 }
 
 impl did::Config for Runtime {
@@ -611,14 +623,35 @@ impl did::Config for Runtime {
 	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
 	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
 	type MaxBlocksTxValidity = MaxBlocksTxValidity;
+	type MaxNumberOfServicesPerDid = MaxNumberOfServicesPerDid;
+	type MaxServiceIdLength = MaxServiceIdLength;
+	type MaxServiceTypeLength = MaxServiceTypeLength;
+	type MaxServiceUrlLength = MaxServiceUrlLength;
+	type MaxNumberOfTypesPerService = MaxNumberOfTypesPerService;
+	type MaxNumberOfUrlsPerService = MaxNumberOfUrlsPerService;
 	type WeightInfo = weights::did::WeightInfo<Runtime>;
 }
 
 impl crowdloan::Config for Runtime {
 	type Currency = Balances;
+	type Vesting = Vesting;
+	type Balance = Balance;
 	type EnsureRegistrarOrigin = MoreThanHalfCouncil;
 	type Event = Event;
 	type WeightInfo = weights::crowdloan::WeightInfo<Runtime>;
+}
+
+parameter_types! {
+	pub const InitialPeriodLength: BlockNumber = INITIAL_PERIOD_LENGTH;
+	pub const InitialPeriodReward: Balance = INITIAL_PERIOD_REWARD_PER_BLOCK;
+}
+
+impl pallet_inflation::Config for Runtime {
+	type Currency = Balances;
+	type InitialPeriodLength = InitialPeriodLength;
+	type InitialPeriodReward = InitialPeriodReward;
+	type Beneficiary = Treasury;
+	type WeightInfo = weights::pallet_inflation::WeightInfo<Runtime>;
 }
 
 parameter_types! {
@@ -651,6 +684,10 @@ parameter_types! {
 	pub const MaxCollatorCandidates: u32 = MAX_CANDIDATES;
 	/// Maximum number of concurrent requests to unlock unstaked balance
 	pub const MaxUnstakeRequests: u32 = 10;
+	/// The starting block number for the network rewards
+	pub const NetworkRewardStart: BlockNumber = INITIAL_PERIOD_LENGTH;
+	/// The rate in percent for the network rewards
+	pub const NetworkRewardRate: Perquintill = NETWORK_REWARD_RATE;
 }
 
 impl parachain_staking::Config for Runtime {
@@ -672,6 +709,9 @@ impl parachain_staking::Config for Runtime {
 	type MinDelegation = MinDelegatorStake;
 	type MinDelegatorStake = MinDelegatorStake;
 	type MaxUnstakeRequests = MaxUnstakeRequests;
+	type NetworkRewardRate = NetworkRewardRate;
+	type NetworkRewardStart = NetworkRewardStart;
+	type NetworkRewardBeneficiary = Treasury;
 	type WeightInfo = weights::parachain_staking::WeightInfo<Runtime>;
 }
 
@@ -726,11 +766,14 @@ construct_runtime! {
 
 		// KILT Pallets. Start indices 60 to leave room
 		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 60,
+
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>} = 61,
 		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 62,
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 63,
 		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 64,
-		CrowdloanContributors: crowdloan::{Pallet, Call, Storage, Event<T>, Config<T>} = 65,
+
+		CrowdloanContributors: crowdloan::{Pallet, Call, Storage, Event<T>, Config<T>, ValidateUnsigned} = 65,
+		Inflation: pallet_inflation::{Pallet, Storage} = 66,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>, Config} = 80,
@@ -935,6 +978,7 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, delegation, Delegation);
 			list_benchmark!(list, extra, did, Did);
 			list_benchmark!(list, extra, kilt_launch, KiltLaunch);
+			list_benchmark!(list, extra, pallet_inflation, Inflation);
 			list_benchmark!(list, extra, parachain_staking, ParachainStaking);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
@@ -987,6 +1031,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
 			add_benchmark!(params, batches, pallet_treasury, Treasury);
 			add_benchmark!(params, batches, pallet_utility, Utility);
+			add_benchmark!(params, batches, pallet_vesting, Vesting);
 
 			// KILT
 			add_benchmark!(params, batches, attestation, Attestation);
@@ -995,7 +1040,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, delegation, Delegation);
 			add_benchmark!(params, batches, did, Did);
 			add_benchmark!(params, batches, kilt_launch, KiltLaunch);
-			add_benchmark!(params, batches, pallet_vesting, Vesting);
+			add_benchmark!(params, batches, pallet_inflation, Inflation);
 			add_benchmark!(params, batches, parachain_staking, ParachainStaking);
 
 			// No benchmarks for these pallets
