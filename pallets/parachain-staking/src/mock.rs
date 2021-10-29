@@ -174,7 +174,7 @@ impl Config for Test {
 	type MaxUnstakeRequests = MaxUnstakeRequests;
 	type NetworkRewardRate = NetworkRewardRate;
 	type NetworkRewardStart = NetworkRewardStart;
-	type NetworkRewardTarget = Treasury;
+	type NetworkRewardBeneficiary = Treasury;
 	type WeightInfo = ();
 }
 

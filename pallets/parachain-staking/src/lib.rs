@@ -327,16 +327,20 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxUnstakeRequests: Get<u32>;
 
-		/// The starting block number for the network rewards.
+		/// The starting block number for the network rewards. Once the current
+		/// block number exceeds this start, the beneficiary will receive the
+		/// configured reward in each block.
 		#[pallet::constant]
 		type NetworkRewardStart: Get<<Self as frame_system::Config>::BlockNumber>;
 
-		/// The rate in percent for the network rewards.
+		/// The rate in percent for the network rewards which are based on the
+		/// maximum number of collators and the maximum amount a collator can
+		/// stake.
 		#[pallet::constant]
 		type NetworkRewardRate: Get<Perquintill>;
 
-		/// The target to receive the network rewards.
-		type NetworkRewardTarget: OnUnbalanced<NegativeImbalanceOf<Self>>;
+		/// The beneficiary to receive the network rewards.
+		type NetworkRewardBeneficiary: OnUnbalanced<NegativeImbalanceOf<Self>>;
 
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
@@ -546,7 +550,7 @@ pub mod pallet {
 			}
 			// check for network reward
 			if now > T::NetworkRewardStart::get() {
-				T::NetworkRewardTarget::on_unbalanced(Self::get_network_reward());
+				T::NetworkRewardBeneficiary::on_unbalanced(Self::get_network_reward());
 				post_weight = post_weight.saturating_add(<T as Config>::WeightInfo::on_initialize_network_rewards());
 			}
 			post_weight
@@ -2611,13 +2615,13 @@ pub mod pallet {
 		/// Calculates the network rewards per block with the current data and
 		/// issues these rewards to the network. The imbalance will be handled
 		/// in `on_initialize` by adding it to the free balance of
-		/// `NetworkRewardTarget`.
+		/// `NetworkRewardBeneficiary`.
 		///
-		/// The expected rewards are the the product of
+		/// The expected rewards are the product of
 		///  * the current total maximum collator rewards
 		///  * and the configured NetworkRewardRate
 		///
-		/// `col_reward_rate_per_block * col_max_stake * num_of_collators *
+		/// `col_reward_rate_per_block * col_max_stake * max_num_of_collators *
 		/// NetworkRewardRate`
 		///
 		/// # <weight>
