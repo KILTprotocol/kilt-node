@@ -222,6 +222,6 @@ pub mod treasury {
 
 	pub const INITIAL_PERIOD_LENGTH: BlockNumber = BLOCKS_PER_YEAR.saturating_mul(5);
 	const YEARLY_REWARD: Balance = 2_000_000u128 * KILT;
-	pub const INITIAL_PERIOD_REWARD: Balance = YEARLY_REWARD / (BLOCKS_PER_YEAR as Balance);
+	pub const INITIAL_PERIOD_REWARD_PER_BLOCK: Balance = YEARLY_REWARD / (BLOCKS_PER_YEAR as Balance);
 	pub const TREASURY_PALLET_ID: PalletId = PalletId(*b"kilt/tsy");
 }

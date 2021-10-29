@@ -26,7 +26,7 @@ use frame_system::EnsureRoot;
 use kilt_primitives::{
 	constants::{
 		governance::SPEND_PERIOD,
-		treasury::{INITIAL_PERIOD_LENGTH, INITIAL_PERIOD_REWARD, TREASURY_PALLET_ID},
+		treasury::{INITIAL_PERIOD_LENGTH, INITIAL_PERIOD_REWARD_PER_BLOCK, TREASURY_PALLET_ID},
 		KILT,
 	},
 	AccountId, Balance, BlockHashCount, BlockNumber, Hash, Index,
@@ -129,7 +129,7 @@ impl pallet_treasury::Config for Test {
 
 parameter_types! {
 	pub const InitialPeriodLength: BlockNumber = INITIAL_PERIOD_LENGTH;
-	pub const InitialPeriodReward: Balance = INITIAL_PERIOD_REWARD;
+	pub const InitialPeriodReward: Balance = INITIAL_PERIOD_REWARD_PER_BLOCK;
 }
 
 impl pallet_inflation::Config for Test {

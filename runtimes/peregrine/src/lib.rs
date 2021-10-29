@@ -66,7 +66,7 @@ use kilt_primitives::{
 			DEFAULT_BLOCKS_PER_ROUND, MAX_CANDIDATES, MIN_BLOCKS_PER_ROUND, MIN_COLLATORS, NETWORK_REWARD_RATE,
 			STAKE_DURATION,
 		},
-		treasury::{INITIAL_PERIOD_LENGTH, INITIAL_PERIOD_REWARD, TREASURY_PALLET_ID},
+		treasury::{INITIAL_PERIOD_LENGTH, INITIAL_PERIOD_REWARD_PER_BLOCK, TREASURY_PALLET_ID},
 		KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION,
 	},
 	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier, Hash,
@@ -643,7 +643,7 @@ impl crowdloan::Config for Runtime {
 
 parameter_types! {
 	pub const InitialPeriodLength: BlockNumber = INITIAL_PERIOD_LENGTH;
-	pub const InitialPeriodReward: Balance = INITIAL_PERIOD_REWARD;
+	pub const InitialPeriodReward: Balance = INITIAL_PERIOD_REWARD_PER_BLOCK;
 }
 
 impl pallet_inflation::Config for Runtime {
