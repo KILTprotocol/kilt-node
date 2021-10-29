@@ -20,13 +20,13 @@
 #![allow(clippy::from_over_into)]
 
 use super::*;
-use crate::{self as stake, migrations::StakingStorageVersion};
+use crate::{self as stake, migrations::StakingStorageVersion, types::NegativeImbalanceOf};
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{GenesisBuild, OnFinalize, OnInitialize},
+	traits::{Currency, GenesisBuild, OnFinalize, OnInitialize, OnUnbalanced},
 	weights::Weight,
 };
-use kilt_primitives::constants::KILT;
+use kilt_primitives::constants::{staking::NETWORK_REWARD_RATE, treasury::INITIAL_PERIOD_LENGTH, KILT};
 use pallet_authorship::EventHandler;
 use sp_consensus_aura::sr25519::AuthorityId;
 use sp_core::H256;
@@ -47,6 +47,8 @@ pub const DECIMALS: Balance = KILT;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
+
+pub(crate) const TREASURY_ACC: AccountId = u64::MAX;
 
 // Configure a mock runtime to test the pallet.
 construct_runtime!(
@@ -136,13 +138,22 @@ parameter_types! {
 	pub const MaxDelegatorsPerCollator: u32 = 4;
 	#[derive(Debug, PartialEq)]
 	pub const MaxCollatorsPerDelegator: u32 = 4;
-	pub const DefaultCollatorCommission: Perbill = Perbill::from_percent(20);
 	pub const MinCollatorStake: Balance = 10;
 	#[derive(Debug, PartialEq)]
 	pub const MaxCollatorCandidates: u32 = 10;
 	pub const MinDelegatorStake: Balance = 5;
 	pub const MinDelegation: Balance = 3;
 	pub const MaxUnstakeRequests: u32 = 6;
+	pub const NetworkRewardRate: Perquintill = NETWORK_REWARD_RATE;
+	pub const NetworkRewardStart: BlockNumber = INITIAL_PERIOD_LENGTH;
+}
+
+pub struct ToBeneficiary();
+impl OnUnbalanced<NegativeImbalanceOf<Test>> for ToBeneficiary {
+	fn on_nonzero_unbalanced(amount: NegativeImbalanceOf<Test>) {
+		// Must resolve into existing but better to be safe.
+		<Test as Config>::Currency::resolve_creating(&TREASURY_ACC, amount);
+	}
 }
 
 impl Config for Test {
@@ -164,6 +175,9 @@ impl Config for Test {
 	type MinDelegatorStake = MinDelegatorStake;
 	type MinDelegation = MinDelegation;
 	type MaxUnstakeRequests = MaxUnstakeRequests;
+	type NetworkRewardRate = NetworkRewardRate;
+	type NetworkRewardStart = NetworkRewardStart;
+	type NetworkRewardBeneficiary = ToBeneficiary;
 	type WeightInfo = ();
 }
 
