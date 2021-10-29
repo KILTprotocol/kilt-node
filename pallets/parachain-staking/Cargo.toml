@@ -25,12 +25,10 @@ sp-std = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0
 
 # benchmarking
 frame-benchmarking = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.11", default-features = false, optional = true}
-pallet-treasury = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.11", default-features = false, optional = true}
 
 [dev-dependencies]
 pallet-aura = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.11", default-features = false}
 pallet-timestamp = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.11", default-features = false}
-pallet-treasury = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.11", default-features = false}
 sp-consensus-aura = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.11", default-features = false}
 sp-core = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.11", default-features = false}
 sp-io = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.11", default-features = false}
@@ -51,7 +49,6 @@ std = [
   "pallet-authorship/std",
   "pallet-balances/std",
   "pallet-session/std",
-  "pallet-treasury/std",
   "parity-scale-codec/std",
   "scale-info/std",
   "serde",
