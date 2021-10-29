@@ -164,6 +164,10 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxClaims: Get<u32>;
 
+		/// Maximum number of accounts that get unlocked in a single block.
+		#[pallet::constant]
+		type AutoUnlockBound: Get<u32>;
+
 		/// Amount of Balance which will be made available for each account
 		/// which has either vesting or locking such that transaction fees can
 		/// be paid from this.
@@ -291,7 +295,7 @@ pub mod pallet {
 		_,
 		Blake2_128Concat,
 		<T as frame_system::Config>::BlockNumber,
-		BoundedVec<<T as frame_system::Config>::AccountId, <T as Config>::MaxClaims>,
+		BoundedVec<<T as frame_system::Config>::AccountId, <T as Config>::AutoUnlockBound>,
 	>;
 
 	/// Maps an account id to the (block, balance) pair in which the latter can
