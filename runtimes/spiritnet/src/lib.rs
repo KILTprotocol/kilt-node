@@ -140,7 +140,6 @@ impl Contains<Call> for BaseFilter {
 				| Call::KiltLaunch(kilt_launch::Call::locked_transfer { .. })
 				| Call::Balances { .. }
 				| Call::Delegation { .. }
-				| Call::ParachainStaking(parachain_staking::Call::join_candidates { .. })
 				| Call::CrowdloanContributors(crowdloan::Call::receive_gratitude { .. })
 		)
 	}
@@ -319,12 +318,14 @@ impl pallet_vesting::Config for Runtime {
 parameter_types! {
 	pub const MaxClaims: u32 = 50;
 	pub const UsableBalance: Balance = KILT;
+	pub const AutoUnlockBound: u32 = 100;
 }
 
 impl kilt_launch::Config for Runtime {
 	type Event = Event;
 	type MaxClaims = MaxClaims;
 	type UsableBalance = UsableBalance;
+	type AutoUnlockBound = AutoUnlockBound;
 	type WeightInfo = weights::kilt_launch::WeightInfo<Runtime>;
 }
 

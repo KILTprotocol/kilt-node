@@ -24,7 +24,7 @@ use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, vec, wh
 use frame_support::{
 	assert_ok,
 	inherent::Vec,
-	traits::{Currency, Get},
+	traits::{Currency, Get, Hooks},
 };
 use frame_system::{Pallet as System, RawOrigin};
 use kilt_primitives::{constants::KILT, Balance};
@@ -252,6 +252,29 @@ benchmarks! {
 			amount: (n as u128 * AMOUNT).into(),
 		}), "BalanceLock not migrated");
 		assert_eq!(Locks::<T>::get(&target).len(), 1, "Lock not set");
+	}
+
+	on_initialize_unlock {
+		let n in 1 .. T::AutoUnlockBound::get();
+
+		let ((transfer, _), _, s) = genesis_setup::<T>(n).expect("Genesis setup failure");
+
+		// Migrate balance locks 1 by 1 to fill UnlockingAt
+		for (c, (_, source_lookup)) in s.into_iter().enumerate() {
+			let target: T::AccountId = account("target", u32::try_from(c).unwrap(), SEED);
+			let target_lookup: <T::Lookup as StaticLookup>::Source = as_lookup::<T>(target);
+			KiltLaunch::<T>::migrate_genesis_account(RawOrigin::Signed(transfer.clone()).into(), source_lookup, target_lookup)?;
+		}
+		let block: T::BlockNumber = UNLOCK_BLOCK.into();
+		assert_eq!(UnlockingAt::<T>::get(&block).expect("UnlockingAt should not be empty").len(), n as usize);
+	}: { KiltLaunch::<T>::on_initialize(block) }
+	verify {
+		assert!(UnlockingAt::<T>::get(&block).is_none());
+	}
+
+	on_initialize_no_action {
+	}: { KiltLaunch::<T>::on_initialize(0_u32.into()) }
+	verify {
 	}
 }
 
