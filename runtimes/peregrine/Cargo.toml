@@ -26,7 +26,7 @@ did = {default-features = false, path = "../../pallets/did"}
 kilt-launch = {path = "../../pallets/kilt-launch", default-features = false}
 kilt-primitives = {path = "../../primitives", default-features = false}
 kilt-support = {path = "../../support", default-features = false, optional = true}
-pallet-inflation = {path = "../../pallets/inflation", default-features = false}
+pallet-inflation = {path = "../../pallets/pallet-inflation", default-features = false}
 parachain-staking = {default-features = false, path = "../../pallets/parachain-staking"}
 
 # Substrate dependencies
