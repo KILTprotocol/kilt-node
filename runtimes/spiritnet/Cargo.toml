@@ -26,7 +26,7 @@ did = {default-features = false, path = "../../pallets/did"}
 kilt-launch = {path = "../../pallets/kilt-launch", default-features = false}
 kilt-primitives = {path = "../../primitives", default-features = false}
 kilt-support = {path = "../../support", default-features = false, optional = true}
-kilt-treasury = {path = "../../pallets/kilt-treasury", default-features = false}
+pallet-inflation = {path = "../../pallets/inflation", default-features = false}
 parachain-staking = {default-features = false, path = "../../pallets/parachain-staking"}
 
 # Substrate dependencies
@@ -109,11 +109,11 @@ runtime-benchmarks = [
   "kilt-primitives/runtime-benchmarks",
   "kilt-support",
   "kilt-support/runtime-benchmarks",
-  "kilt-treasury/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-collective/runtime-benchmarks",
   "pallet-democracy/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
+  "pallet-inflation/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
   "pallet-scheduler/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
@@ -145,7 +145,6 @@ std = [
   "frame-try-runtime/std",
   "kilt-launch/std",
   "kilt-primitives/std",
-  "kilt-treasury/std",
   "log/std",
   "pallet-aura/std",
   "pallet-authorship/std",
@@ -153,6 +152,7 @@ std = [
   "pallet-collective/std",
   "pallet-democracy/std",
   "pallet-indices/std",
+  "pallet-inflation/std",
   "pallet-membership/std",
   "pallet-randomness-collective-flip/std",
   "pallet-scheduler/std",

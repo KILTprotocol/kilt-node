@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate as kilt_treasury;
+use crate as pallet_inflation;
 use frame_support::{
 	parameter_types,
 	traits::{OnFinalize, OnInitialize},
@@ -49,7 +49,7 @@ frame_support::construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 		Treasury: pallet_treasury::{Pallet, Call, Storage, Config, Event<T>},
-		KiltTreasury: kilt_treasury::{Pallet, Storage},
+		KiltTreasury: pallet_inflation::{Pallet, Storage},
 	}
 );
 
@@ -132,7 +132,7 @@ parameter_types! {
 	pub const InitialPeriodReward: Balance = INITIAL_PERIOD_REWARD;
 }
 
-impl kilt_treasury::Config for Test {
+impl pallet_inflation::Config for Test {
 	type Currency = Balances;
 	type InitialPeriodLength = InitialPeriodLength;
 	type InitialPeriodReward = InitialPeriodReward;

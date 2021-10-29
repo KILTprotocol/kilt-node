@@ -1,8 +1,8 @@
 [package]
 authors = ["KILT <info@kilt.io>"]
-description = "Substrate pallet enabling minting to the treasury."
+description = "Substrate pallet issueing a pre-configured amount of tokens to the treasury."
 edition = "2018"
-name = "kilt-treasury"
+name = "pallet-inflation"
 repository = "https://github.com/KILTprotocol/mashnet-node"
 version = "1.0.0"
 

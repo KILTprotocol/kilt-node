@@ -3614,25 +3614,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "kilt-treasury"
-version = "1.0.0"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "kilt-primitives",
- "pallet-balances",
- "pallet-treasury",
- "parity-scale-codec",
- "scale-info",
- "serde",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "kusama-runtime"
 version = "0.9.11"
 source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.11#eb9f107e3a04687dcf80111563f2bcea7d5b15d3"
@@ -5722,6 +5703,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-inflation"
+version = "1.0.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "kilt-primitives",
+ "pallet-balances",
+ "pallet-treasury",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-lottery"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.11#57346f6b24875f8935280dba51fa8ab0a9ba1e39"
@@ -6575,7 +6575,6 @@ dependencies = [
  "kilt-launch",
  "kilt-primitives",
  "kilt-support",
- "kilt-treasury",
  "log",
  "pallet-aura",
  "pallet-authorship",
@@ -6583,6 +6582,7 @@ dependencies = [
  "pallet-collective",
  "pallet-democracy",
  "pallet-indices",
+ "pallet-inflation",
  "pallet-membership",
  "pallet-randomness-collective-flip",
  "pallet-scheduler",
@@ -10827,7 +10827,6 @@ dependencies = [
  "kilt-launch",
  "kilt-primitives",
  "kilt-support",
- "kilt-treasury",
  "log",
  "pallet-aura",
  "pallet-authorship",
@@ -10835,6 +10834,7 @@ dependencies = [
  "pallet-collective",
  "pallet-democracy",
  "pallet-indices",
+ "pallet-inflation",
  "pallet-membership",
  "pallet-randomness-collective-flip",
  "pallet-scheduler",
