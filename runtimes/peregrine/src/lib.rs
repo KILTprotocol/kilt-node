@@ -841,7 +841,6 @@ pub type Executive = frame_executive::Executive<
 	Runtime,
 	AllPallets,
 	(
-		CrowdloanContributionsSetup,
 		CouncilStoragePrefixMigration,
 		TechnicalCommitteeStoragePrefixMigration,
 		TechnicalMembershipStoragePrefixMigration,
