@@ -191,7 +191,7 @@ impl<T: Config> StakingStorageMigrator<T> {
 	pub(crate) fn post_migrate() -> Result<(), &'static str> {
 		ensure!(
 			StorageVersion::<T>::get() == StakingStorageVersion::latest(),
-			"Not updated to the latest version."
+			"Staking not updated to the latest version."
 		);
 
 		Ok(())
