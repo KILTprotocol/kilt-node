@@ -41,7 +41,7 @@ impl OnRuntimeUpgrade for RemoveSudo {
 
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
 		// Magic bytes are the sudo pallet prefix
-		let res = frame_support::storage::unhashed::kill_prefix(&hex!["5c0d1176a568c1f92944340dbfed9e9c"], Some(2));
+		let _ = frame_support::storage::unhashed::kill_prefix(&hex!["5c0d1176a568c1f92944340dbfed9e9c"], Some(2));
 
 		<Runtime as frame_system::Config>::DbWeight::get().writes(2)
 	}
