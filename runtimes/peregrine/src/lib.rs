@@ -27,6 +27,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use frame_support::{
 	construct_runtime, parameter_types,
+	traits::OnRuntimeUpgrade,
 	weights::{constants::RocksDbWeight, Weight},
 	PalletId,
 };
@@ -354,7 +355,7 @@ impl pallet_democracy::Config for Runtime {
 	type Event = Event;
 	type Currency = Balances;
 	type EnactmentPeriod = EnactmentPeriod;
-	type VoteLockingPeriod = EnactmentPeriod;
+	type VoteLockingPeriod = VotingPeriod;
 	type LaunchPeriod = LaunchPeriod;
 	type VotingPeriod = VotingPeriod;
 	type MinimumDeposit = MinimumDeposit;
@@ -839,8 +840,96 @@ pub type Executive = frame_executive::Executive<
 	frame_system::ChainContext<Runtime>,
 	Runtime,
 	AllPallets,
-	CrowdloanContributionsSetup,
+	(
+		CrowdloanContributionsSetup,
+		CouncilStoragePrefixMigration,
+		TechnicalCommitteeStoragePrefixMigration,
+		TechnicalMembershipStoragePrefixMigration,
+	),
 >;
+
+const COUNCIL_OLD_PREFIX: &str = "Instance1Collective";
+/// Migrate from `Instance1Collective` to the new pallet prefix `Council`
+pub struct CouncilStoragePrefixMigration;
+
+impl OnRuntimeUpgrade for CouncilStoragePrefixMigration {
+	fn on_runtime_upgrade() -> frame_support::weights::Weight {
+		pallet_collective::migrations::v4::migrate::<Runtime, Council, _>(COUNCIL_OLD_PREFIX)
+	}
+
+	#[cfg(feature = "try-runtime")]
+	fn pre_upgrade() -> Result<(), &'static str> {
+		pallet_collective::migrations::v4::pre_migrate::<Council, _>(COUNCIL_OLD_PREFIX);
+		Ok(())
+	}
+
+	#[cfg(feature = "try-runtime")]
+	fn post_upgrade() -> Result<(), &'static str> {
+		pallet_collective::migrations::v4::post_migrate::<Council, _>(COUNCIL_OLD_PREFIX);
+		Ok(())
+	}
+}
+
+const TECHNICAL_COMMITTEE_OLD_PREFIX: &str = "Instance2Collective";
+/// Migrate from `Instance2Collective` to the new pallet prefix
+/// `TechnicalCommittee`
+pub struct TechnicalCommitteeStoragePrefixMigration;
+
+impl OnRuntimeUpgrade for TechnicalCommitteeStoragePrefixMigration {
+	fn on_runtime_upgrade() -> frame_support::weights::Weight {
+		pallet_collective::migrations::v4::migrate::<Runtime, TechnicalCommittee, _>(TECHNICAL_COMMITTEE_OLD_PREFIX)
+	}
+
+	#[cfg(feature = "try-runtime")]
+	fn pre_upgrade() -> Result<(), &'static str> {
+		pallet_collective::migrations::v4::pre_migrate::<TechnicalCommittee, _>(TECHNICAL_COMMITTEE_OLD_PREFIX);
+		Ok(())
+	}
+
+	#[cfg(feature = "try-runtime")]
+	fn post_upgrade() -> Result<(), &'static str> {
+		pallet_collective::migrations::v4::post_migrate::<TechnicalCommittee, _>(TECHNICAL_COMMITTEE_OLD_PREFIX);
+		Ok(())
+	}
+}
+
+const TECHNICAL_MEMBERSHIP_OLD_PREFIX: &str = "Instance1Membership";
+/// Migrate from `Instance1Membership` to the new pallet prefix
+/// `TechnicalMembership`
+pub struct TechnicalMembershipStoragePrefixMigration;
+
+impl OnRuntimeUpgrade for TechnicalMembershipStoragePrefixMigration {
+	fn on_runtime_upgrade() -> frame_support::weights::Weight {
+		use frame_support::traits::PalletInfo;
+		let name = <Runtime as frame_system::Config>::PalletInfo::name::<TechnicalMembership>()
+			.expect("TechnicalMembership is part of runtime, so it has a name; qed");
+		pallet_membership::migrations::v4::migrate::<Runtime, TechnicalMembership, _>(
+			TECHNICAL_MEMBERSHIP_OLD_PREFIX,
+			name,
+		)
+	}
+
+	#[cfg(feature = "try-runtime")]
+	fn pre_upgrade() -> Result<(), &'static str> {
+		use frame_support::traits::PalletInfo;
+		let name = <Runtime as frame_system::Config>::PalletInfo::name::<TechnicalMembership>()
+			.expect("TechnicalMembership is part of runtime, so it has a name; qed");
+		pallet_membership::migrations::v4::pre_migrate::<TechnicalMembership, _>(TECHNICAL_MEMBERSHIP_OLD_PREFIX, name);
+		Ok(())
+	}
+
+	#[cfg(feature = "try-runtime")]
+	fn post_upgrade() -> Result<(), &'static str> {
+		use frame_support::traits::PalletInfo;
+		let name = <Runtime as frame_system::Config>::PalletInfo::name::<TechnicalMembership>()
+			.expect("TechnicalMembership is part of runtime, so it has a name; qed");
+		pallet_membership::migrations::v4::post_migrate::<TechnicalMembership, _>(
+			TECHNICAL_MEMBERSHIP_OLD_PREFIX,
+			name,
+		);
+		Ok(())
+	}
+}
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
