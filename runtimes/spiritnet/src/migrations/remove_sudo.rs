@@ -25,23 +25,40 @@ pub struct RemoveSudo;
 impl OnRuntimeUpgrade for RemoveSudo {
 	#[cfg(feature = "try-runtime")]
 	fn pre_upgrade() -> Result<(), &'static str> {
+		use kilt_primitives::AccountId;
+
 		log::info!("Pre check Sudo-Removal.");
-		Ok(())
+		let res = frame_support::storage::unhashed::get::<AccountId>(&hex![
+			"5c0d1176a568c1f92944340dbfed9e9c530ebca703c85910e7164cb7d1c9e47b"
+		])
+		.map(|addr| addr != Default::default());
+		if let Some(true) = res {
+			Ok(())
+		} else {
+			Err("Sudo key not present")
+		}
 	}
 
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
 		// Magic bytes are the sudo pallet prefix
-		let res = frame_support::storage::unhashed::kill_prefix(&hex!["5c0d1176a568c1f92944340dbfed9e9c"], Some(1));
+		let res = frame_support::storage::unhashed::kill_prefix(&hex!["5c0d1176a568c1f92944340dbfed9e9c"], Some(2));
 
-		// there should only be one key removed.
-		debug_assert!(matches!(res, sp_io::KillStorageResult::AllRemoved(1)));
-
-		<Runtime as frame_system::Config>::DbWeight::get().writes(1)
+		<Runtime as frame_system::Config>::DbWeight::get().writes(2)
 	}
 
 	#[cfg(feature = "try-runtime")]
 	fn post_upgrade() -> Result<(), &'static str> {
+		use kilt_primitives::AccountId;
+
 		log::info!("Post check Sudo-Removal.");
-		Ok(())
+		let res = frame_support::storage::unhashed::get::<AccountId>(&hex![
+			"5c0d1176a568c1f92944340dbfed9e9c530ebca703c85910e7164cb7d1c9e47b"
+		])
+		.map(|addr| addr != Default::default());
+		if let Some(true) = res {
+			Err("Sudo key not removed")
+		} else {
+			Ok(())
+		}
 	}
 }
