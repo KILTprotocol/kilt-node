@@ -159,7 +159,7 @@ impl<T: Config> DidStorageMigrator<T> {
 	pub(crate) fn post_migrate() -> Result<(), &'static str> {
 		ensure!(
 			StorageVersion::<T>::get() == DidStorageVersion::latest(),
-			"Not updated to the latest version."
+			"DID not updated to the latest version."
 		);
 
 		Ok(())
