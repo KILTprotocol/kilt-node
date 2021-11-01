@@ -80,8 +80,6 @@ use sp_version::NativeVersion;
 #[cfg(feature = "runtime-benchmarks")]
 use {frame_system::EnsureSigned, kilt_primitives::benchmarks::DummySignature, kilt_support::signature::AlwaysVerify};
 
-use migrations::crowdloan_contributions::CrowdloanContributionsSetup;
-
 mod fee;
 mod migrations;
 #[cfg(test)]
