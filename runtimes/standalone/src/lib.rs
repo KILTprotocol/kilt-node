@@ -301,6 +301,7 @@ where
 
 parameter_types! {
 	pub const MaxClaims: u32 = 50;
+	pub const AutoUnlockBound: u32 = 100;
 	pub const UsableBalance: Balance = KILT;
 }
 
@@ -309,6 +310,7 @@ impl kilt_launch::Config for Runtime {
 	type MaxClaims = MaxClaims;
 	type UsableBalance = UsableBalance;
 	type WeightInfo = ();
+	type AutoUnlockBound = AutoUnlockBound;
 }
 
 parameter_types! {
@@ -462,7 +464,6 @@ impl crowdloan::Config for Runtime {
 }
 
 parameter_types! {
-	pub const DisabledValidatorsThreshold: Perbill = Perbill::from_percent(17);
 	pub const Period: u64 = 0xFFFF_FFFF_FFFF_FFFF;
 	pub const Offset: u64 = 0xFFFF_FFFF_FFFF_FFFF;
 }
@@ -476,7 +477,6 @@ impl pallet_session::Config for Runtime {
 	type SessionManager = ();
 	type SessionHandler = <opaque::SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
 	type Keys = opaque::SessionKeys;
-	type DisabledValidatorsThreshold = DisabledValidatorsThreshold;
 	type WeightInfo = ();
 }
 
@@ -818,7 +818,6 @@ impl_runtime_apis! {
 		}
 	}
 
-	// From the Polkadot repo: https://github.com/paritytech/polkadot/tree/release-v0.9.11/runtime/polkadot/src/lib.rs#L1853
 	#[cfg(feature = "try-runtime")]
 	impl frame_try_runtime::TryRuntime<Block> for Runtime {
 		fn on_runtime_upgrade() -> (Weight, Weight) {
