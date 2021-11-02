@@ -80,8 +80,6 @@ use sp_version::NativeVersion;
 #[cfg(feature = "runtime-benchmarks")]
 use {frame_system::EnsureSigned, kilt_primitives::benchmarks::DummySignature, kilt_support::signature::AlwaysVerify};
 
-use migrations::crowdloan_contributions::CrowdloanContributionsSetup;
-
 mod fee;
 mod migrations;
 #[cfg(test)]
@@ -240,11 +238,6 @@ impl pallet_transaction_payment::Config for Runtime {
 	type OperationalFeeMultiplier = OperationalFeeMultiplier;
 	type WeightToFee = fee::WeightToFee;
 	type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
-}
-
-impl pallet_sudo::Config for Runtime {
-	type Call = Call;
-	type Event = Event;
 }
 
 parameter_types! {
@@ -749,7 +742,6 @@ construct_runtime! {
 		Indices: pallet_indices::{Pallet, Call, Storage, Event<T>} = 5,
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>} = 6,
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage} = 7,
-		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>} = 8,
 
 		// Consensus support.
 		// The following order MUST NOT be changed: Authorship -> Staking -> Session -> Aura -> AuraExt
@@ -849,7 +841,7 @@ pub type Executive = frame_executive::Executive<
 	frame_system::ChainContext<Runtime>,
 	Runtime,
 	AllPallets,
-	CrowdloanContributionsSetup,
+	migrations::remove_sudo::RemoveSudo,
 >;
 
 impl_runtime_apis! {

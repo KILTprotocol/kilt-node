@@ -57,7 +57,6 @@ pallet-membership = {git = "https://github.com/paritytech/substrate", default-fe
 pallet-randomness-collective-flip = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.12"}
 pallet-scheduler = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.12"}
 pallet-session = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.12"}
-pallet-sudo = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.12"}
 pallet-timestamp = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.12"}
 pallet-transaction-payment = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.12"}
 pallet-treasury = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.12"}
@@ -157,7 +156,6 @@ std = [
   "pallet-randomness-collective-flip/std",
   "pallet-scheduler/std",
   "pallet-session/std",
-  "pallet-sudo/std",
   "pallet-timestamp/std",
   "pallet-transaction-payment-rpc-runtime-api/std",
   "pallet-transaction-payment/std",
@@ -207,7 +205,6 @@ try-runtime = [
   "pallet-randomness-collective-flip/try-runtime",
   "pallet-scheduler/try-runtime",
   "pallet-session/try-runtime",
-  "pallet-sudo/try-runtime",
   "pallet-timestamp/try-runtime",
   "pallet-transaction-payment/try-runtime",
   "pallet-treasury/try-runtime",

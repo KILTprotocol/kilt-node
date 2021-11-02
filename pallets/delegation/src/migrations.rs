@@ -47,7 +47,7 @@ impl DelegationStorageVersion {
 // old version anymore.
 impl Default for DelegationStorageVersion {
 	fn default() -> Self {
-		Self::V1
+		Self::V2
 	}
 }
 
@@ -153,7 +153,7 @@ impl<T: Config> DelegationStorageMigrator<T> {
 	pub(crate) fn post_migrate() -> Result<(), &'static str> {
 		ensure!(
 			StorageVersion::<T>::get() == DelegationStorageVersion::latest(),
-			"Not updated to the latest version."
+			"Delegations not updated to the latest version."
 		);
 
 		Ok(())
