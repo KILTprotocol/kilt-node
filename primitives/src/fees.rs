@@ -16,7 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::{constants::MILLI_KILT, Balance};
 use frame_support::{
 	traits::{Currency, Get, Imbalance, OnUnbalanced},
 	weights::{DispatchClass, WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
@@ -25,7 +24,7 @@ use pallet_balances::WeightInfo;
 use smallvec::smallvec;
 use sp_runtime::Perbill;
 
-use crate::{AccountId, NegativeImbalanceOf};
+use crate::{constants::MILLI_KILT, AccountId, Balance, NegativeImbalanceOf};
 
 pub struct SplitFeesByRatio<R, Ratio, Beneficiary1, Beneficiary2>(
 	sp_std::marker::PhantomData<(R, Ratio, Beneficiary1, Beneficiary2)>,
@@ -41,7 +40,6 @@ where
 	fn on_unbalanceds<B>(mut fees_then_tips: impl Iterator<Item = NegativeImbalanceOf<R>>) {
 		let ratio = Ratio::get();
 		if let Some(fees) = fees_then_tips.next() {
-			// for fees, 80% to treasury, 20% to author
 			let mut split = fees.ration(ratio.0, ratio.1);
 			if let Some(tips) = fees_then_tips.next() {
 				// for tips, if any, 100% to author
