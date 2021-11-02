@@ -134,11 +134,7 @@ impl Contains<Call> for BaseFilter {
 	fn contains(c: &Call) -> bool {
 		!matches!(
 			c,
-			Call::Vesting(pallet_vesting::Call::vested_transfer { .. })
-				| Call::KiltLaunch(kilt_launch::Call::locked_transfer { .. })
-				| Call::Balances { .. }
-				| Call::Delegation { .. }
-				| Call::CrowdloanContributors(crowdloan::Call::receive_gratitude { .. })
+			Call::KiltLaunch(kilt_launch::Call::locked_transfer { .. }) | Call::Delegation { .. }
 		)
 	}
 }
