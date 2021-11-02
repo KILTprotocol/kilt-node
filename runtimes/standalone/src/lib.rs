@@ -47,6 +47,7 @@ use kilt_primitives::{
 		staking::MAX_CANDIDATES,
 		KILT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION,
 	},
+	fees::ToAuthor,
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
 };
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
@@ -280,25 +281,6 @@ impl pallet_balances::Config for Runtime {
 	type WeightInfo = ();
 }
 
-/// Logic for the author to get a portion of fees.
-pub struct ToAuthor<R>(sp_std::marker::PhantomData<R>);
-
-impl<R> OnUnbalanced<NegativeImbalance<R>> for ToAuthor<R>
-where
-	R: pallet_balances::Config + pallet_authorship::Config,
-	<R as frame_system::Config>::AccountId: From<AccountId>,
-	<R as frame_system::Config>::AccountId: Into<AccountId>,
-	<R as frame_system::Config>::Event: From<pallet_balances::Event<Runtime>>,
-	<R as pallet_balances::Config>::Balance: Into<u128>,
-{
-	fn on_nonzero_unbalanced(amount: NegativeImbalance<R>) {
-		let numeric_amount = amount.peek();
-		let author = <pallet_authorship::Pallet<R>>::author();
-		<pallet_balances::Pallet<R>>::resolve_creating(&author, amount);
-		<frame_system::Pallet<R>>::deposit_event(pallet_balances::Event::Deposit(author.into(), numeric_amount.into()));
-	}
-}
-
 parameter_types! {
 	pub const MaxClaims: u32 = 50;
 	pub const AutoUnlockBound: u32 = 100;
@@ -321,7 +303,7 @@ parameter_types! {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
-	type OnChargeTransaction = CurrencyAdapter<Balances, ToAuthor<Runtime>>;
+	type OnChargeTransaction = CurrencyAdapter<Balances, kilt_primitives::fees::ToAuthor<Runtime>>;
 	type TransactionByteFee = TransactionByteFee;
 	type OperationalFeeMultiplier = OperationalFeeMultiplier;
 	type WeightToFee = IdentityFee<Balance>;
@@ -391,7 +373,7 @@ parameter_types! {
 impl ctype::Config for Runtime {
 	type Currency = Balances;
 	type Fee = Fee;
-	type FeeCollector = ToAuthor<Runtime>;
+	type FeeCollector = kilt_primitives::fees::ToAuthor<Runtime>;
 
 	type CtypeCreatorId = DidIdentifier;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;

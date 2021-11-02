@@ -23,13 +23,14 @@
 use codec::{Decode, Encode};
 use constants::{AVERAGE_ON_INITIALIZE_RATIO, MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO};
 use core::convert::TryFrom;
+use fees::SplitFeesByRatio;
 
 pub use sp_consensus_aura::sr25519::AuthorityId;
 
 pub use opaque::*;
 
 pub use frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight};
-use frame_support::{parameter_types, weights::DispatchClass};
+use frame_support::{parameter_types, traits::Currency, weights::DispatchClass};
 use frame_system::limits;
 use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
 use scale_info::TypeInfo;
@@ -44,6 +45,7 @@ use sp_std::vec::Vec;
 use serde::{Deserialize, Serialize};
 
 pub mod constants;
+pub mod fees;
 
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarks;
@@ -105,6 +107,9 @@ pub type DigestItem = generic::DigestItem<Hash>;
 /// A Kilt DID subject identifier.
 pub type DidIdentifier = AccountId;
 
+pub type NegativeImbalanceOf<T> =
+	<pallet_balances::Pallet<T> as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
+
 #[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub enum CurrencyId {
@@ -160,7 +165,14 @@ parameter_types! {
 		})
 		.avg_block_initialization(AVERAGE_ON_INITIALIZE_RATIO)
 		.build_or_panic();
+
+	/// Fee split ratio between block author and treasury.
+	pub const FeeSplitRatio: (u32, u32) = (50, 50);
 }
+
+/// Split the fees using a preconfigured Ratio
+/// (`kilt_primitives::FeeSplitRatio`).
+pub type FeeSplit<R, B1, B2> = SplitFeesByRatio<R, FeeSplitRatio, B1, B2>;
 
 /// Parameterized slow adjusting fee updated based on
 /// https://w3f-research.readthedocs.io/en/latest/polkadot/Token%20Economics.html#-2.-slow-adjusting-mechanism

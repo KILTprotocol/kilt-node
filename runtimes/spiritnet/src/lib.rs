@@ -70,8 +70,9 @@ use kilt_primitives::{
 		treasury::{INITIAL_PERIOD_LENGTH, INITIAL_PERIOD_REWARD_PER_BLOCK, TREASURY_PALLET_ID},
 		KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION,
 	},
-	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier, Hash,
-	Header, Index, Signature, SlowAdjustingFeeUpdate,
+	fees::{ToAuthor, WeightToFee},
+	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier, FeeSplit,
+	Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
 #[cfg(feature = "std")]
@@ -80,7 +81,6 @@ use sp_version::NativeVersion;
 #[cfg(feature = "runtime-benchmarks")]
 use {frame_system::EnsureSigned, kilt_primitives::benchmarks::DummySignature, kilt_support::signature::AlwaysVerify};
 
-mod fee;
 mod migrations;
 #[cfg(test)]
 mod tests;
@@ -134,11 +134,7 @@ impl Contains<Call> for BaseFilter {
 	fn contains(c: &Call) -> bool {
 		!matches!(
 			c,
-			Call::Vesting(pallet_vesting::Call::vested_transfer { .. })
-				| Call::KiltLaunch(kilt_launch::Call::locked_transfer { .. })
-				| Call::Balances { .. }
-				| Call::Delegation { .. }
-				| Call::CrowdloanContributors(crowdloan::Call::receive_gratitude { .. })
+			Call::KiltLaunch(kilt_launch::Call::locked_transfer { .. }) | Call::Delegation { .. }
 		)
 	}
 }
@@ -233,10 +229,11 @@ parameter_types! {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
-	type OnChargeTransaction = pallet_transaction_payment::CurrencyAdapter<Balances, ()>;
+	type OnChargeTransaction =
+		pallet_transaction_payment::CurrencyAdapter<Balances, FeeSplit<Runtime, ToAuthor<Runtime>, Treasury>>;
 	type TransactionByteFee = TransactionByteFee;
 	type OperationalFeeMultiplier = OperationalFeeMultiplier;
-	type WeightToFee = fee::WeightToFee;
+	type WeightToFee = WeightToFee<Runtime>;
 	type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
 }
 
