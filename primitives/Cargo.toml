@@ -4,6 +4,9 @@ edition = "2018"
 name = "kilt-primitives"
 version = "0.1.0"
 
+[dev-dependencies]
+sp-io = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.12"}
+
 [dependencies]
 codec = {package = "parity-scale-codec", version = "2.3.1", default-features = false, features = ["derive"]}
 scale-info = {version = "1.0", default-features = false, features = ["derive"]}

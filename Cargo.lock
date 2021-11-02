@@ -3555,6 +3555,7 @@ dependencies = [
  "smallvec 1.7.0",
  "sp-consensus-aura",
  "sp-core",
+ "sp-io",
  "sp-runtime",
  "sp-std",
 ]
