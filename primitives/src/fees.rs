@@ -16,22 +16,22 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use crate::{constants::MILLI_KILT, Balance};
 use frame_support::{
 	traits::{Currency, Get, Imbalance, OnUnbalanced},
 	weights::{DispatchClass, WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
 };
-use crate::{constants::MILLI_KILT, Balance};
 use pallet_balances::WeightInfo;
 use smallvec::smallvec;
 use sp_runtime::Perbill;
 
 use crate::{AccountId, NegativeImbalanceOf};
 
-pub struct SplitFeesRatio<R, Ratio, Beneficiary1, Beneficiary2>(
+pub struct SplitFeesByRatio<R, Ratio, Beneficiary1, Beneficiary2>(
 	sp_std::marker::PhantomData<(R, Ratio, Beneficiary1, Beneficiary2)>,
 );
 impl<R, Ratio, Beneficiary1, Beneficiary2> OnUnbalanced<NegativeImbalanceOf<R>>
-	for SplitFeesRatio<R, Ratio, Beneficiary1, Beneficiary2>
+	for SplitFeesByRatio<R, Ratio, Beneficiary1, Beneficiary2>
 where
 	R: pallet_balances::Config,
 	Beneficiary1: OnUnbalanced<NegativeImbalanceOf<R>>,

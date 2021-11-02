@@ -22,8 +22,8 @@
 
 use codec::{Decode, Encode};
 use constants::{AVERAGE_ON_INITIALIZE_RATIO, MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO};
-use fees::SplitFeesRatio;
 use core::convert::TryFrom;
+use fees::SplitFeesByRatio;
 
 pub use sp_consensus_aura::sr25519::AuthorityId;
 
@@ -170,8 +170,9 @@ parameter_types! {
 	pub const FeeSplitRatio: (u32, u32) = (50, 50);
 }
 
-/// Split the fees using a preconfigured Ratio (`kilt_primitives::FeeSplitRatio`).
-pub type FeeSplit<R, B1, B2> = SplitFeesRatio<R, FeeSplitRatio, B1, B2>;
+/// Split the fees using a preconfigured Ratio
+/// (`kilt_primitives::FeeSplitRatio`).
+pub type FeeSplit<R, B1, B2> = SplitFeesByRatio<R, FeeSplitRatio, B1, B2>;
 
 /// Parameterized slow adjusting fee updated based on
 /// https://w3f-research.readthedocs.io/en/latest/polkadot/Token%20Economics.html#-2.-slow-adjusting-mechanism
