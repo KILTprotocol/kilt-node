@@ -79,7 +79,7 @@ def update_spec(input: typing.Dict):
                     ]
         ]
     })
-    input["genesis"]["runtime"]["parachainsConfiguration"]["config"].update(
+    input["genesis"]["runtime"]["configuration"]["config"].update(
         {
             "max_code_size": 3145728,
             "max_head_data_size": 20480,
