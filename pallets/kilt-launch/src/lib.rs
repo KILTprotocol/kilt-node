@@ -171,6 +171,7 @@ pub mod pallet {
 		/// Amount of Balance which will be made available for each account
 		/// which has either vesting or locking such that transaction fees can
 		/// be paid from this.
+		#[pallet::constant]
 		type UsableBalance: Get<<Self as pallet_balances::Config>::Balance>;
 
 		/// Weight information for extrinsics in this pallet.
