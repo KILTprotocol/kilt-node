@@ -787,10 +787,10 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 		fn single_key_relationship(calls: &[Call]) -> Option<did::DidVerificationKeyRelationship> {
 			let init = calls.get(0).map(Call::derive_verification_key_relationship).flatten()?;
 			calls
-				.as_ref()
 				.iter()
-				.flat_map(Call::derive_verification_key_relationship)
-				.try_fold(init, |acc, next| if next == acc { Some(acc) } else { None })
+				.skip(1)
+				.map(Call::derive_verification_key_relationship)
+				.try_fold(init, |acc, next| if Some(acc) == next { Some(acc) } else { None })
 		}
 		match self {
 			Call::Attestation { .. } => Some(did::DidVerificationKeyRelationship::AssertionMethod),
