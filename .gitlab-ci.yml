@@ -39,6 +39,7 @@ build:
   stage: build
   only:
     - develop
+    - master
     - tags
   variables:
     DOCKER_HUB_PARACHAIN: "kiltprotocol/kilt-node"
