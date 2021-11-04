@@ -71,7 +71,7 @@ def update_spec(input: typing.Dict):
                     ]
         ]
     })
-    input["genesis"]["runtime"]["parachainsConfiguration"]["config"].update(
+    input["genesis"]["runtime"]["configuration"]["config"].update(
         {
             "max_code_size": 3145728,
             "max_head_data_size": 20480,
@@ -80,8 +80,8 @@ def update_spec(input: typing.Dict):
             "max_upward_message_size": 51200,
             "max_upward_message_num_per_candidate": 10,
             "hrmp_max_message_num_per_candidate": 10,
-            "validation_upgrade_frequency": 14400,
-            "validation_upgrade_delay": 600,
+            "validation_upgrade_frequency": 120,
+            "validation_upgrade_delay": 60,
             "max_pov_size": 5242880,
             "max_downward_message_size": 51200,
             "preferred_dispatchable_upward_messages_step_weight": 100000000000,
