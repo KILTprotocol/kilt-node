@@ -568,7 +568,7 @@ pub mod pallet {
 		/// Remove a delegation node (potentially a root node) and all its
 		/// children.
 		///
-		/// Returns the delegation deposit back to the deposit owner for each
+		/// Returns the delegation deposit to the deposit owner for each
 		/// removed DelegationNode by unreserving it.
 		///
 		/// Removing a delegation node results in the trust hierarchy starting
@@ -629,10 +629,10 @@ pub mod pallet {
 			Ok(Some(<T as Config>::WeightInfo::remove_delegation(removal_checks)).into())
 		}
 
-		/// Reclaim back the deposit for a delegation node (potentially a root
+		/// Reclaim the deposit for a delegation node (potentially a root
 		/// node), removing the node and all its children.
 		///
-		/// Returns the delegation deposit back to the deposit owner for each
+		/// Returns the delegation deposit to the deposit owner for each
 		/// removed DelegationNode by unreserving it.
 		///
 		/// Removing a delegation node results in the trust hierarchy starting
