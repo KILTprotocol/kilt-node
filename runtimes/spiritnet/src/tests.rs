@@ -101,6 +101,31 @@ fn test_derive_did_verification_relation_nested_fail() {
 }
 
 #[test]
+fn test_derive_did_verification_relation_nested() {
+	let c1 = Call::Ctype(ctype::Call::add {
+		ctype: vec![0, 1, 2, 3],
+	});
+	let c2 = Call::Ctype(ctype::Call::add {
+		ctype: vec![0, 1, 2, 3, 3],
+	});
+	let c4 = Call::Ctype(ctype::Call::add {
+		ctype: vec![0, 1, 2, 100],
+	});
+
+	let cb = Call::Utility(pallet_utility::Call::batch {
+		calls: vec![c1.clone(), c2.clone(), c4.clone()],
+	});
+
+	let cb = Call::Utility(pallet_utility::Call::batch {
+		calls: vec![c1, c2, cb, c4],
+	});
+	assert_eq!(
+		cb.derive_verification_key_relationship(),
+		Some(did::DidVerificationKeyRelationship::AssertionMethod)
+	);
+}
+
+#[test]
 fn test_derive_did_verification_relation_single() {
 	let c1 = Call::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 3],
@@ -112,4 +137,11 @@ fn test_derive_did_verification_relation_single() {
 		cb.derive_verification_key_relationship(),
 		Some(did::DidVerificationKeyRelationship::AssertionMethod)
 	);
+}
+
+#[test]
+fn test_derive_did_verification_relation_empty() {
+	let cb = Call::Utility(pallet_utility::Call::batch { calls: vec![] });
+
+	assert_eq!(cb.derive_verification_key_relationship(), None);
 }
