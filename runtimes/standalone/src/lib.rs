@@ -541,6 +541,14 @@ construct_runtime!(
 
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
+		fn single_key_relationship(calls: &[Call]) -> Option<did::DidVerificationKeyRelationship> {
+			let init = calls.get(0).map(Call::derive_verification_key_relationship).flatten()?;
+			calls
+				.iter()
+				.skip(1)
+				.map(Call::derive_verification_key_relationship)
+				.try_fold(init, |acc, next| if Some(acc) == next { Some(acc) } else { None })
+		}
 		match self {
 			Call::Attestation { .. } => Some(did::DidVerificationKeyRelationship::AssertionMethod),
 			Call::Ctype { .. } => Some(did::DidVerificationKeyRelationship::AssertionMethod),
@@ -548,6 +556,8 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			// DID creation is not allowed through the DID proxy.
 			Call::Did(did::Call::create { .. }) => None,
 			Call::Did { .. } => Some(did::DidVerificationKeyRelationship::Authentication),
+			Call::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(&calls[..]),
+			Call::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(&calls[..]),
 			#[cfg(not(feature = "runtime-benchmarks"))]
 			_ => None,
 			// By default, returns the authentication key
