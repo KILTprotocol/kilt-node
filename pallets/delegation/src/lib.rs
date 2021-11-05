@@ -256,7 +256,7 @@ pub mod pallet {
 		/// A delegation has been removed.
 		/// \[remover ID, delegation node ID\]
 		DelegationRemoved(AccountIdOf<T>, DelegationNodeIdOf<T>),
-		/// The deposit owner reclaimed a deposit by removing a delegation.
+		/// The deposit owner reclaimed a deposit by removing a delegation subtree.
 		/// \[revoker ID, delegation node ID\]
 		DepositReclaimed(AccountIdOf<T>, DelegationNodeIdOf<T>),
 	}
@@ -649,7 +649,7 @@ pub mod pallet {
 		///
 		/// # <weight>
 		/// Weight: O(C) where C is the number of children of the delegation
-		/// node which is bounded by `max_children`.
+		/// node which is bounded by `max_removals`.
 		/// - Reads: [Origin Account], Roots, C * Delegations, C * Children.
 		/// - Writes: Roots, 2 * C * Delegations
 		/// # </weight>
