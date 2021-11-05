@@ -338,6 +338,11 @@ pub struct DelegationRevocationOperation {
 	pub max_revocations: u32,
 }
 
+pub struct DelegationDepositClaimOperation {
+	pub delegation_id: TestDelegationNodeId,
+	pub max_removals: u32,
+}
+
 pub fn generate_base_delegation_revocation_operation(
 	delegation_id: TestDelegationNodeId,
 ) -> DelegationRevocationOperation {
@@ -345,6 +350,15 @@ pub fn generate_base_delegation_revocation_operation(
 		delegation_id,
 		max_parent_checks: 0u32,
 		max_revocations: 0u32,
+	}
+}
+
+pub fn generate_base_delegation_deposit_claim_operation(
+	delegation_id: TestDelegationNodeId,
+) -> DelegationDepositClaimOperation {
+	DelegationDepositClaimOperation {
+		delegation_id,
+		max_removals: 0u32,
 	}
 }
 

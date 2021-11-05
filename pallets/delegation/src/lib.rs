@@ -620,12 +620,17 @@ pub mod pallet {
 			// max_removals to account for the node itself)
 			let (removal_checks, _) = Self::remove(&delegation_id, max_removals.saturating_add(1))?;
 
+			// If the removed node is a root node, emit also a HierarchyRemoved event.
+			if DelegationHierarchies::<T>::take(&delegation_id).is_some() {
+				Self::deposit_event(Event::HierarchyRemoved(invoker, delegation_id));
+			}
+
 			// Add worst case reads from `is_delegating`
 			Ok(Some(<T as Config>::WeightInfo::remove_delegation(removal_checks)).into())
 		}
 
-		/// Reclaim back the deposit for a delegation node (potentially a root node), removing the node and all its
-		/// children.
+		/// Reclaim back the deposit for a delegation node (potentially a root
+		/// node), removing the node and all its children.
 		///
 		/// Returns the delegation deposit back to the deposit owner for each
 		/// removed DelegationNode by unreserving it.
@@ -660,20 +665,20 @@ pub mod pallet {
 
 			// Deposit can only be removed by the owner of the deposit, not the
 			// parent or another ancestor.
-			ensure!(
-				delegation.deposit.owner == who,
-				Error::<T>::UnauthorizedRemoval
-			);
+			ensure!(delegation.deposit.owner == who, Error::<T>::UnauthorizedRemoval);
 
 			ensure!(max_removals <= T::MaxRemovals::get(), Error::<T>::MaxRemovalsTooLarge);
 
 			// *** No Fail except during removal beyond this point ***
 
 			// Remove the delegation and recursively all of its children (add 1 to
-			// max_removals to account for the node itself), releasing the associated deposit
+			// max_removals to account for the node itself), releasing the associated
+			// deposit
 			let (removal_checks, _) = Self::remove(&delegation_id, max_removals.saturating_add(1))?;
 
-			// No even generated as we don't have information about the owner DID here.
+			// Delete the delegation hierarchy details, if the provided ID was for a root
+			// node. No event generated as we don't have information about the owner DID
+			// here.
 			DelegationHierarchies::<T>::remove(&delegation_id);
 
 			// Add worst case reads from `is_delegating`

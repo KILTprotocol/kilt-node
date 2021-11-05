@@ -1520,6 +1520,172 @@ fn too_many_revocations_revoke_delegation_error() {
 		});
 }
 
+// reclaim_deposit
+
+#[test]
+fn direct_owner_reclaim_deposit_delegation_successful() {
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let delegate = get_ed25519_account(get_bob_ed25519().public());
+
+	let (hierarchy_root_id, hierarchy_details) = (
+		get_delegation_hierarchy_id::<Test>(true),
+		generate_base_delegation_hierarchy_details(),
+	);
+	let (parent_id, parent_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
+	);
+
+	let mut operation = generate_base_delegation_deposit_claim_operation(hierarchy_root_id);
+	operation.max_removals = 2u32;
+
+	ExtBuilder::default()
+		.with_balances(vec![
+			(revoker.clone(), <Test as Config>::Deposit::get() * 2),
+			(delegate.clone(), <Test as Config>::Deposit::get()),
+		])
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
+		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
+		.build()
+		.execute_with(|| {
+			// Revoke direct child of hierarchy root
+			assert_ok!(Delegation::reclaim_deposit(
+				get_origin(revoker.clone()),
+				operation.delegation_id,
+				operation.max_removals
+			));
+
+			// Root hierarchy and children should not be stored anymore
+			assert!(Delegation::delegation_nodes(&operation.delegation_id).is_none());
+			assert!(Delegation::delegation_nodes(&parent_id).is_none());
+			assert!(Delegation::delegation_nodes(&delegation_id).is_none());
+
+			// We have released all the deposits by deleting the root node.
+			assert!(Balances::reserved_balance(revoker.clone()).is_zero());
+			assert!(Balances::reserved_balance(delegate.clone()).is_zero());
+		});
+}
+
+// Implicitely checks the case where deposit owner != signed origin
+#[test]
+fn parent_owner_reclaim_deposit_error() {
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+	let delegate = get_ed25519_account(get_bob_ed25519().public());
+
+	let (hierarchy_root_id, hierarchy_details) = (
+		get_delegation_hierarchy_id::<Test>(true),
+		generate_base_delegation_hierarchy_details(),
+	);
+	let (parent_id, parent_node) = (
+		get_delegation_id(true),
+		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
+	);
+	let (delegation_id, delegation_node) = (
+		get_delegation_id(false),
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
+	);
+
+	let mut operation = generate_base_delegation_deposit_claim_operation(delegation_id);
+	operation.max_removals = 1u32;
+
+	ExtBuilder::default()
+		.with_balances(vec![
+			(revoker.clone(), <Test as Config>::Deposit::get() * 2),
+			(delegate.clone(), <Test as Config>::Deposit::get()),
+		])
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
+		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
+		.build()
+		.execute_with(|| {
+			// Parent should not be able to claim the deposit for the child delegation
+			// directly
+			assert_eq!(
+				Balances::reserved_balance(revoker.clone()),
+				2 * <Test as Config>::Deposit::get()
+			);
+			assert_eq!(
+				Balances::reserved_balance(delegate.clone()),
+				<Test as Config>::Deposit::get()
+			);
+			assert_noop!(
+				Delegation::reclaim_deposit(
+					get_origin(revoker.clone()),
+					operation.delegation_id,
+					operation.max_removals
+				),
+				Error::<Test>::UnauthorizedRemoval
+			);
+		});
+}
+
+#[test]
+fn delegation_not_found_reclaim_deposit_error() {
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+
+	let (hierarchy_root_id, hierarchy_details) = (
+		get_delegation_hierarchy_id::<Test>(true),
+		generate_base_delegation_hierarchy_details(),
+	);
+	let delegation_id = get_delegation_id(false);
+
+	let operation = generate_base_delegation_deposit_claim_operation(delegation_id);
+
+	ExtBuilder::default()
+		.with_balances(vec![(revoker.clone(), <Test as Config>::Deposit::get())])
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Delegation::reclaim_deposit(
+					get_origin(revoker.clone()),
+					operation.delegation_id,
+					operation.max_removals
+				),
+				Error::<Test>::DelegationNotFound
+			);
+		});
+}
+
+#[test]
+fn max_removals_too_large_reclaim_deposit_error() {
+	let revoker_keypair = get_alice_ed25519();
+	let revoker = get_ed25519_account(revoker_keypair.public());
+
+	let (hierarchy_root_id, hierarchy_details) = (
+		get_delegation_hierarchy_id::<Test>(true),
+		generate_base_delegation_hierarchy_details(),
+	);
+
+	let mut operation = generate_base_delegation_deposit_claim_operation(hierarchy_root_id);
+	operation.max_removals = <Test as Config>::MaxRemovals::get() + 1;
+
+	ExtBuilder::default()
+		.with_balances(vec![(revoker.clone(), <Test as Config>::Deposit::get())])
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Delegation::reclaim_deposit(
+					get_origin(revoker.clone()),
+					operation.delegation_id,
+					operation.max_removals
+				),
+				Error::<Test>::MaxRemovalsTooLarge
+			);
+		});
+}
+
 // Internal function: is_delegating()
 
 #[test]
