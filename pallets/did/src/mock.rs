@@ -358,20 +358,20 @@ pub(crate) fn get_none_key_call() -> Call {
 }
 
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
-	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
+	fn derive_verification_key_relationship(&self) -> did::DeriveDidCallKeyRelationshipResult {
 		if *self == get_attestation_key_call() {
-			Some(did::DidVerificationKeyRelationship::AssertionMethod)
+			Ok(did::DidVerificationKeyRelationship::AssertionMethod)
 		} else if *self == get_authentication_key_call() {
-			Some(did::DidVerificationKeyRelationship::Authentication)
+			Ok(did::DidVerificationKeyRelationship::Authentication)
 		} else if *self == get_delegation_key_call() {
-			Some(did::DidVerificationKeyRelationship::CapabilityDelegation)
+			Ok(did::DidVerificationKeyRelationship::CapabilityDelegation)
 		} else {
 			#[cfg(feature = "runtime-benchmarks")]
 			if *self == Self::get_call_for_did_call_benchmark() {
 				// Always require an authentication key to dispatch calls during benchmarking
-				return Some(did::DidVerificationKeyRelationship::Authentication);
+				return Ok(did::DidVerificationKeyRelationship::Authentication);
 			}
-			None
+			Err(did::RelationshipDeriveError::NotCallableByDid)
 		}
 	}
 

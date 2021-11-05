@@ -50,7 +50,7 @@ fn test_derive_did_verification_relation_ctype() {
 	});
 	assert_eq!(
 		cb.derive_verification_key_relationship(),
-		Some(did::DidVerificationKeyRelationship::AssertionMethod)
+		Ok(did::DidVerificationKeyRelationship::AssertionMethod)
 	);
 }
 
@@ -72,7 +72,17 @@ fn test_derive_did_verification_relation_fail() {
 	let cb = Call::Utility(pallet_utility::Call::batch {
 		calls: vec![c1, c2, c3, c4],
 	});
-	assert_eq!(cb.derive_verification_key_relationship(), None);
+
+	#[cfg(feature = "runtime-benchmarks")]
+	assert_eq!(
+		cb.derive_verification_key_relationship(),
+		Err(did::RelationshipDeriveError::InvalidCallParameter)
+	);
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	assert_eq!(
+		cb.derive_verification_key_relationship(),
+		Err(did::RelationshipDeriveError::NotCallableByDid)
+	);
 }
 
 #[test]
@@ -97,7 +107,17 @@ fn test_derive_did_verification_relation_nested_fail() {
 	let cb = Call::Utility(pallet_utility::Call::batch {
 		calls: vec![c1, c2, cb, f3, c4],
 	});
-	assert_eq!(cb.derive_verification_key_relationship(), None);
+
+	#[cfg(feature = "runtime-benchmarks")]
+	assert_eq!(
+		cb.derive_verification_key_relationship(),
+		Err(did::RelationshipDeriveError::InvalidCallParameter)
+	);
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	assert_eq!(
+		cb.derive_verification_key_relationship(),
+		Err(did::RelationshipDeriveError::NotCallableByDid)
+	);
 }
 
 #[test]
@@ -121,7 +141,7 @@ fn test_derive_did_verification_relation_nested() {
 	});
 	assert_eq!(
 		cb.derive_verification_key_relationship(),
-		Some(did::DidVerificationKeyRelationship::AssertionMethod)
+		Ok(did::DidVerificationKeyRelationship::AssertionMethod)
 	);
 }
 
@@ -135,7 +155,7 @@ fn test_derive_did_verification_relation_single() {
 
 	assert_eq!(
 		cb.derive_verification_key_relationship(),
-		Some(did::DidVerificationKeyRelationship::AssertionMethod)
+		Ok(did::DidVerificationKeyRelationship::AssertionMethod)
 	);
 }
 
@@ -143,5 +163,8 @@ fn test_derive_did_verification_relation_single() {
 fn test_derive_did_verification_relation_empty() {
 	let cb = Call::Utility(pallet_utility::Call::batch { calls: vec![] });
 
-	assert_eq!(cb.derive_verification_key_relationship(), None);
+	assert_eq!(
+		cb.derive_verification_key_relationship(),
+		Err(did::RelationshipDeriveError::InvalidCallParameter)
+	);
 }
