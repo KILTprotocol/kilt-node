@@ -256,8 +256,8 @@ pub mod pallet {
 		/// A delegation has been removed.
 		/// \[remover ID, delegation node ID\]
 		DelegationRemoved(AccountIdOf<T>, DelegationNodeIdOf<T>),
-		/// The deposit owner reclaimed a deposit by removing a delegation subtree.
-		/// \[revoker ID, delegation node ID\]
+		/// The deposit owner reclaimed a deposit by removing a delegation
+		/// subtree. \[revoker ID, delegation node ID\]
 		DepositReclaimed(AccountIdOf<T>, DelegationNodeIdOf<T>),
 	}
 
