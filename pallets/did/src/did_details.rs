@@ -576,14 +576,14 @@ impl<T: Config> sp_std::fmt::Debug for DidCreationDetails<T> {
 	}
 }
 
-/// Errors that might occure while deriving the authorization verification key
+/// Errors that might occur while deriving the authorization verification key
 /// relationship.
 #[derive(Clone, Debug, Decode, Encode, PartialEq)]
 pub enum RelationshipDeriveError {
 	/// The call is not callable by a did origin.
 	NotCallableByDid,
 
-	/// The parameter of the call where invalid.
+	/// The parameters of the call where invalid.
 	InvalidCallParameter,
 }
 

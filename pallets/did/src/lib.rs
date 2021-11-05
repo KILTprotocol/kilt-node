@@ -355,7 +355,7 @@ pub mod pallet {
 		InvalidNonce,
 		/// The called extrinsic does not support DID authorisation.
 		UnsupportedDidAuthorizationCall,
-		/// The called extrinsic had parameter that conflicted with each other
+		/// The call had parameters that conflicted with each other.
 		/// or were invalid.
 		InvalidDidAuthorizationCall,
 		/// A number of new key agreement keys greater than the maximum allowed
