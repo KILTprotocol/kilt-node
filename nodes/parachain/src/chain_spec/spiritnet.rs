@@ -275,11 +275,11 @@ fn testnet_genesis(
 				.collect::<Vec<_>>(),
 		},
 		council: CouncilConfig {
-			members: vec![],
+			members: initial_authorities.iter().map(|(acc, _)| acc).cloned().collect(),
 			phantom: Default::default(),
 		},
 		technical_committee: TechnicalCommitteeConfig {
-			members: vec![],
+			members: initial_authorities.iter().map(|(acc, _)| acc).cloned().collect(),
 			phantom: Default::default(),
 		},
 		treasury: Default::default(),
