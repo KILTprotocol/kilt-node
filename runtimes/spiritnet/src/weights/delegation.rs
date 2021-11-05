@@ -86,4 +86,14 @@ impl<T: frame_system::Config> delegation::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(r as Weight)))
 	}
+
+	fn reclaim_deposit(r: u32, ) -> Weight {
+		(68_203_000_u64)
+			// Standard Error: 75_000
+			.saturating_add((44_542_000_u64).saturating_mul(r as Weight))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(r as Weight)))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(r as Weight)))
+	}
 }
