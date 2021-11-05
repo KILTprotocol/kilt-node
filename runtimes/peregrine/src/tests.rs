@@ -107,7 +107,7 @@ fn test_derive_did_verification_relation_single() {
 	});
 
 	let cb = Call::Utility(pallet_utility::Call::batch {
-		calls: vec![c1.clone()],
+		calls: vec![c1],
 	});
 
 	assert_eq!(
