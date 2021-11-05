@@ -106,9 +106,7 @@ fn test_derive_did_verification_relation_single() {
 		ctype: vec![0, 1, 2, 3],
 	});
 
-	let cb = Call::Utility(pallet_utility::Call::batch {
-		calls: vec![c1],
-	});
+	let cb = Call::Utility(pallet_utility::Call::batch { calls: vec![c1] });
 
 	assert_eq!(
 		cb.derive_verification_key_relationship(),
