@@ -355,6 +355,9 @@ pub mod pallet {
 		InvalidNonce,
 		/// The called extrinsic does not support DID authorisation.
 		UnsupportedDidAuthorizationCall,
+		/// The call had parameters that conflicted with each other
+		/// or were invalid.
+		InvalidDidAuthorizationCall,
 		/// A number of new key agreement keys greater than the maximum allowed
 		/// has been provided.
 		MaxKeyAgreementKeysLimitExceeded,
@@ -448,6 +451,15 @@ pub mod pallet {
 				InputError::MaxUrlCountExceeded => Self::MaxNumberOfUrlsPerServiceExceeded,
 				InputError::MaxUrlLengthExceeded => Self::MaxServiceUrlLengthExceeded,
 				InputError::InvalidEncoding => Self::InvalidServiceEncoding,
+			}
+		}
+	}
+
+	impl<T> From<RelationshipDeriveError> for Error<T> {
+		fn from(error: RelationshipDeriveError) -> Self {
+			match error {
+				RelationshipDeriveError::InvalidCallParameter => Self::InvalidDidAuthorizationCall,
+				RelationshipDeriveError::NotCallableByDid => Self::UnsupportedDidAuthorizationCall,
 			}
 		}
 	}
@@ -1025,7 +1037,7 @@ pub mod pallet {
 			let verification_key_relationship = did_call
 				.call
 				.derive_verification_key_relationship()
-				.ok_or(Error::<T>::UnsupportedDidAuthorizationCall)?;
+				.map_err(Error::<T>::from)?;
 
 			// Wrap the operation in the expected structure, specifying the key retrieved
 			let wrapped_operation = DidAuthorizedCallOperationWithVerificationRelationship {
