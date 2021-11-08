@@ -319,7 +319,7 @@ benchmarks! {
 	}
 	// TODO: Might want to add variant iterating over children instead of depth at some later point
 
-	// worst case is achieved by removing the root node, since `is_delegating` is not called in remove extrinsic,
+	// worst case is achieved by removing the root node, since `is_delegating` is not called in remove extrinsic
 	remove_delegation {
 		let r in 1 .. T::MaxRemovals::get();
 		let (root_acc, hierarchy_id, _, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
@@ -329,7 +329,25 @@ benchmarks! {
 		let child_id: T::DelegationNodeId = *children.iter().next().ok_or("Root should have children")?;
 		let child_delegation = DelegationNodes::<T>::get(child_id).ok_or("Child of root should have delegation id")?;
 		assert!(!<T as Config>::Currency::reserved_balance(&root_acc.into()).is_zero());
-	}: remove_delegation(RawOrigin::Signed(root_owner.clone()), hierarchy_id, r)
+	}: _(RawOrigin::Signed(root_owner.clone()), hierarchy_id, r)
+	verify {
+		assert!(!DelegationNodes::<T>::contains_key(hierarchy_id));
+		assert!(!DelegationNodes::<T>::contains_key(child_id));
+		assert!(!DelegationNodes::<T>::contains_key(leaf_id));
+		assert!(<T as Config>::Currency::reserved_balance(&root_acc.into()).is_zero());
+	}
+
+	// worst case is achieved by removing the root node, since `is_delegating` is not called in remove extrinsic
+	reclaim_deposit {
+		let r in 1 .. T::MaxRemovals::get();
+		let (root_acc, hierarchy_id, _, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
+		let root_owner = T::AccountId::from(root_acc).into();
+		let root_node = DelegationNodes::<T>::get(hierarchy_id).expect("Root hierarchy node should be present on chain.");
+		let children: BoundedBTreeSet<T::DelegationNodeId, T::MaxChildren> = root_node.children;
+		let child_id: T::DelegationNodeId = *children.iter().next().ok_or("Root should have children")?;
+		let child_delegation = DelegationNodes::<T>::get(child_id).ok_or("Child of root should have delegation id")?;
+		assert!(!<T as Config>::Currency::reserved_balance(&root_acc.into()).is_zero());
+	}: _(RawOrigin::Signed(root_owner.clone()), hierarchy_id, r)
 	verify {
 		assert!(!DelegationNodes::<T>::contains_key(hierarchy_id));
 		assert!(!DelegationNodes::<T>::contains_key(child_id));

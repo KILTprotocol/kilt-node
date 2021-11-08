@@ -256,6 +256,9 @@ pub mod pallet {
 		/// A delegation has been removed.
 		/// \[remover ID, delegation node ID\]
 		DelegationRemoved(AccountIdOf<T>, DelegationNodeIdOf<T>),
+		/// The deposit owner reclaimed a deposit by removing a delegation
+		/// subtree. \[revoker ID, delegation node ID\]
+		DepositReclaimed(AccountIdOf<T>, DelegationNodeIdOf<T>),
 	}
 
 	#[pallet::error]
@@ -553,7 +556,6 @@ pub mod pallet {
 				Self::deposit_event(Event::HierarchyRevoked(invoker, delegation_id));
 			}
 
-			// Add worst case reads from `is_delegating`
 			Ok(Some(
 				<T as Config>::WeightInfo::revoke_delegation_root_child(revocation_checks, parent_checks).max(
 					<T as Config>::WeightInfo::revoke_delegation_leaf(revocation_checks, parent_checks),
@@ -565,7 +567,7 @@ pub mod pallet {
 		/// Remove a delegation node (potentially a root node) and all its
 		/// children.
 		///
-		/// Returns the delegation deposit back to the deposit owner for each
+		/// Returns the delegation deposit to the deposit owner for each
 		/// removed DelegationNode by unreserving it.
 		///
 		/// Removing a delegation node results in the trust hierarchy starting
@@ -622,7 +624,61 @@ pub mod pallet {
 				Self::deposit_event(Event::HierarchyRemoved(invoker, delegation_id));
 			}
 
-			// Add worst case reads from `is_delegating`
+			Ok(Some(<T as Config>::WeightInfo::remove_delegation(removal_checks)).into())
+		}
+
+		/// Reclaim the deposit for a delegation node (potentially a root
+		/// node), removing the node and all its children.
+		///
+		/// Returns the delegation deposit to the deposit owner for each
+		/// removed DelegationNode by unreserving it.
+		///
+		/// Removing a delegation node results in the trust hierarchy starting
+		/// from the given node being removed. Nevertheless, removal starts
+		/// from the leave nodes upwards, so if the operation ends prematurely
+		/// because it runs out of gas, the delegation state would be consistent
+		/// as no child would "survive" its parent. As a consequence, if the
+		/// given node is removed, the trust hierarchy with the node as root is
+		/// to be considered removed.
+		///
+		/// The dispatch origin must be signed by the delegation deposit owner.
+		///
+		/// `DepositReclaimed`.
+		///
+		/// # <weight>
+		/// Weight: O(C) where C is the number of children of the delegation
+		/// node which is bounded by `max_removals`.
+		/// - Reads: [Origin Account], Roots, C * Delegations, C * Children.
+		/// - Writes: Roots, 2 * C * Delegations
+		/// # </weight>
+		#[pallet::weight(<T as Config>::WeightInfo::reclaim_deposit(*max_removals))]
+		pub fn reclaim_deposit(
+			origin: OriginFor<T>,
+			delegation_id: DelegationNodeIdOf<T>,
+			max_removals: u32,
+		) -> DispatchResultWithPostInfo {
+			let who = ensure_signed(origin)?;
+
+			let delegation = DelegationNodes::<T>::get(&delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
+
+			// Deposit can only be removed by the owner of the deposit, not the
+			// parent or another ancestor.
+			ensure!(delegation.deposit.owner == who, Error::<T>::UnauthorizedRemoval);
+
+			ensure!(max_removals <= T::MaxRemovals::get(), Error::<T>::MaxRemovalsTooLarge);
+
+			// *** No Fail except during removal beyond this point ***
+
+			// Remove the delegation and recursively all of its children (add 1 to
+			// max_removals to account for the node itself), releasing the associated
+			// deposit
+			let (removal_checks, _) = Self::remove(&delegation_id, max_removals.saturating_add(1))?;
+
+			// Delete the delegation hierarchy details, if the provided ID was for a root
+			// node. No event generated as we don't have information about the owner DID
+			// here.
+			DelegationHierarchies::<T>::remove(&delegation_id);
+
 			Ok(Some(<T as Config>::WeightInfo::remove_delegation(removal_checks)).into())
 		}
 	}
