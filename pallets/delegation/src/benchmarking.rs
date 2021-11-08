@@ -319,7 +319,7 @@ benchmarks! {
 	}
 	// TODO: Might want to add variant iterating over children instead of depth at some later point
 
-	// worst case is achieved by removing the root node, since `is_delegating` is not called in remove extrinsic,
+	// worst case is achieved by removing the root node, since `is_delegating` is not called in remove extrinsic
 	remove_delegation {
 		let r in 1 .. T::MaxRemovals::get();
 		let (root_acc, hierarchy_id, _, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
@@ -337,7 +337,7 @@ benchmarks! {
 		assert!(<T as Config>::Currency::reserved_balance(&root_acc.into()).is_zero());
 	}
 
-	// worst case is achieved by removing the root node, since `is_delegating` is not called in remove extrinsic,
+	// worst case is achieved by removing the root node, since `is_delegating` is not called in remove extrinsic
 	reclaim_deposit {
 		let r in 1 .. T::MaxRemovals::get();
 		let (root_acc, hierarchy_id, _, leaf_id) = setup_delegations::<T>(r, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
