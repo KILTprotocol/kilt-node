@@ -556,7 +556,6 @@ pub mod pallet {
 				Self::deposit_event(Event::HierarchyRevoked(invoker, delegation_id));
 			}
 
-			// Add worst case reads from `is_delegating`
 			Ok(Some(
 				<T as Config>::WeightInfo::revoke_delegation_root_child(revocation_checks, parent_checks).max(
 					<T as Config>::WeightInfo::revoke_delegation_leaf(revocation_checks, parent_checks),
@@ -625,7 +624,6 @@ pub mod pallet {
 				Self::deposit_event(Event::HierarchyRemoved(invoker, delegation_id));
 			}
 
-			// Add worst case reads from `is_delegating`
 			Ok(Some(<T as Config>::WeightInfo::remove_delegation(removal_checks)).into())
 		}
 
@@ -681,7 +679,6 @@ pub mod pallet {
 			// here.
 			DelegationHierarchies::<T>::remove(&delegation_id);
 
-			// Add worst case reads from `is_delegating`
 			Ok(Some(<T as Config>::WeightInfo::remove_delegation(removal_checks)).into())
 		}
 	}
