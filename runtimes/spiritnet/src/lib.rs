@@ -644,6 +644,19 @@ impl crowdloan::Config for Runtime {
 }
 
 parameter_types! {
+	pub const InitialPeriodLength: BlockNumber = INITIAL_PERIOD_LENGTH;
+	pub const InitialPeriodReward: Balance = INITIAL_PERIOD_REWARD_PER_BLOCK;
+}
+
+impl pallet_inflation::Config for Runtime {
+	type Currency = Balances;
+	type InitialPeriodLength = InitialPeriodLength;
+	type InitialPeriodReward = InitialPeriodReward;
+	type Beneficiary = Treasury;
+	type WeightInfo = weights::pallet_inflation::WeightInfo<Runtime>;
+}
+
+parameter_types! {
 	/// Minimum round length is 1 hour
 	pub const MinBlocksPerRound: BlockNumber = MIN_BLOCKS_PER_ROUND;
 	/// Default length of a round/session is 2 hours
@@ -712,19 +725,6 @@ impl pallet_utility::Config for Runtime {
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
 
-parameter_types! {
-	pub const InitialPeriodLength: BlockNumber = INITIAL_PERIOD_LENGTH;
-	pub const InitialPeriodReward: Balance = INITIAL_PERIOD_REWARD_PER_BLOCK;
-}
-
-impl pallet_inflation::Config for Runtime {
-	type Currency = Balances;
-	type InitialPeriodLength = InitialPeriodLength;
-	type InitialPeriodReward = InitialPeriodReward;
-	type Beneficiary = Treasury;
-	type WeightInfo = weights::pallet_inflation::WeightInfo<Runtime>;
-}
-
 construct_runtime! {
 	pub enum Runtime where
 		Block = Block,
@@ -783,21 +783,41 @@ construct_runtime! {
 }
 
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
-	fn derive_verification_key_relationship(&self) -> Option<did::DidVerificationKeyRelationship> {
+	fn derive_verification_key_relationship(&self) -> did::DeriveDidCallKeyRelationshipResult {
+		/// ensure that all calls have the same VerificationKeyRelationship
+		fn single_key_relationship(calls: &[Call]) -> did::DeriveDidCallKeyRelationshipResult {
+			let init = calls
+				.get(0)
+				.ok_or(did::RelationshipDeriveError::InvalidCallParameter)?
+				.derive_verification_key_relationship()?;
+			calls
+				.iter()
+				.skip(1)
+				.map(Call::derive_verification_key_relationship)
+				.try_fold(init, |acc, next| {
+					if next.is_err() {
+						next
+					} else if Ok(acc) == next {
+						Ok(acc)
+					} else {
+						Err(did::RelationshipDeriveError::InvalidCallParameter)
+					}
+				})
+		}
 		match self {
-			Call::Attestation { .. } => Some(did::DidVerificationKeyRelationship::AssertionMethod),
-			Call::Ctype { .. } => Some(did::DidVerificationKeyRelationship::AssertionMethod),
-			Call::Delegation { .. } => Some(did::DidVerificationKeyRelationship::CapabilityDelegation),
+			Call::Attestation { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
+			Call::Ctype { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
+			Call::Delegation { .. } => Ok(did::DidVerificationKeyRelationship::CapabilityDelegation),
 			// DID creation is not allowed through the DID proxy.
-			Call::Did(did::Call::create { .. }) => None,
-			Call::Did { .. } => Some(did::DidVerificationKeyRelationship::Authentication),
-			//TODO: add a batch call case that returns the right key type if all calls in the batch require the same
-			// key type as well, otherwise it returns None and fails.
+			Call::Did(did::Call::create { .. }) => Err(did::RelationshipDeriveError::NotCallableByDid),
+			Call::Did { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
+			Call::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(&calls[..]),
+			Call::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(&calls[..]),
 			#[cfg(not(feature = "runtime-benchmarks"))]
-			_ => None,
+			_ => Err(did::RelationshipDeriveError::NotCallableByDid),
 			// By default, returns the authentication key
 			#[cfg(feature = "runtime-benchmarks")]
-			_ => Some(did::DidVerificationKeyRelationship::Authentication),
+			_ => Ok(did::DidVerificationKeyRelationship::Authentication),
 		}
 	}
 

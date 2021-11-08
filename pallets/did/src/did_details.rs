@@ -576,6 +576,19 @@ impl<T: Config> sp_std::fmt::Debug for DidCreationDetails<T> {
 	}
 }
 
+/// Errors that might occur while deriving the authorization verification key
+/// relationship.
+#[derive(Clone, Debug, Decode, Encode, PartialEq)]
+pub enum RelationshipDeriveError {
+	/// The call is not callable by a did origin.
+	NotCallableByDid,
+
+	/// The parameters of the call where invalid.
+	InvalidCallParameter,
+}
+
+pub type DeriveDidCallKeyRelationshipResult = Result<DidVerificationKeyRelationship, RelationshipDeriveError>;
+
 /// Trait for extrinsic DID-based authorization.
 ///
 /// The trait allows
@@ -586,7 +599,7 @@ impl<T: Config> sp_std::fmt::Debug for DidCreationDetails<T> {
 pub trait DeriveDidCallAuthorizationVerificationKeyRelationship {
 	/// The type of the verification key to be used to validate the
 	/// wrapped extrinsic.
-	fn derive_verification_key_relationship(&self) -> Option<DidVerificationKeyRelationship>;
+	fn derive_verification_key_relationship(&self) -> DeriveDidCallKeyRelationshipResult;
 
 	// Return a call to dispatch in order to test the pallet proxy feature.
 	#[cfg(feature = "runtime-benchmarks")]
