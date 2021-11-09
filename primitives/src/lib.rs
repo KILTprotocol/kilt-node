@@ -166,7 +166,7 @@ parameter_types! {
 		.avg_block_initialization(AVERAGE_ON_INITIALIZE_RATIO)
 		.build_or_panic();
 
-	/// Fee split ratio between block author and treasury.
+	/// Fee split ratio between treasury and block author (order is important).
 	pub const FeeSplitRatio: (u32, u32) = (50, 50);
 }
 
