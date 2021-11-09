@@ -4,7 +4,7 @@ description = "Enables creating and revoking root nodes of delegation hierarchie
 edition = "2018"
 name = "delegation"
 repository = "https://github.com/KILTprotocol/mashnet-node"
-version = "1.1.1"
+version = "1.2.0"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
@@ -13,8 +13,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 substrate-wasm-builder-runner = {version = "3.0.0"}
 
 [dev-dependencies]
-# Internal dependencies
-ctype = {features = ["mock"], path = "../ctype", version = "1.1.1"}
+ctype = {features = ["mock"], path = "../ctype"}
 kilt-primitives = {default-features = false, path = "../../primitives"}
 
 # External dependencies
@@ -28,7 +27,7 @@ sp-keystore = {branch = "polkadot-v0.9.12", default-features = false, git = "htt
 
 [dependencies]
 # Internal dependencies
-ctype = {default-features = false, path = "../ctype", version = "1.1.1"}
+ctype = {default-features = false, path = "../ctype"}
 kilt-primitives = {default-features = false, path = "../../primitives"}
 kilt-support = {default-features = false, path = "../../support"}
 
@@ -36,7 +35,7 @@ kilt-support = {default-features = false, path = "../../support"}
 bitflags = {default-features = false, version = "1.3.2"}
 codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.3.1"}
 log = {default-features = false, version = "0.4.14"}
-scale-info = { version = "1.0", default-features = false, features = ["derive"] }
+scale-info = {version = "1.0", default-features = false, features = ["derive"]}
 serde = {version = "1.0.124", optional = true}
 
 # Substrate dependencies

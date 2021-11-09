@@ -26,6 +26,12 @@ use sp_runtime::Perbill;
 
 use crate::{constants::MILLI_KILT, AccountId, Balance, NegativeImbalanceOf};
 
+/// Split two Imbalances between two unbalanced handlers.
+/// The first Imbalance will be split according to the given ratio. The second
+/// Imbalance will be handled by the second beneficiary.
+///
+/// In case of transaction payment, the first Imbalance is the fee and the
+/// second imbalance the tip.
 pub struct SplitFeesByRatio<R, Ratio, Beneficiary1, Beneficiary2>(
 	sp_std::marker::PhantomData<(R, Ratio, Beneficiary1, Beneficiary2)>,
 );
