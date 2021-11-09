@@ -2,15 +2,17 @@ import typing
 
 
 def update_spec(input: typing.Dict):
+    para_id = 2000
+
     input.update({
         "bootNodes": [],
         "chainType": "Local",
         "name": "KILT Peregrine Testnet",
         "id": "peregrine_kilt",
-        "para_id": 2000,
+        "para_id": para_id,
     })
     input["properties"]["tokenSymbol"] = "PILT"
-    input["genesis"]["runtime"]["parachainInfo"]["parachainId"] = 2000
+    input["genesis"]["runtime"]["parachainInfo"]["parachainId"] = para_id
     input["genesis"]["runtime"]["sudo"]["key"] = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
     input["genesis"]["runtime"]["kiltLaunch"]["transferAccount"] = "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
     input["genesis"]["runtime"]["parachainStaking"]["stakers"] = [
