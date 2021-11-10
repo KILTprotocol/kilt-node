@@ -6,6 +6,7 @@ def update_spec(input: typing.Dict):
     acc_col_2 = "5FxhtaNtvGWTUQzmqq8NbKVVvz8AiXvaXxnSs8WbfBXYs79M"
     # not an initial collator
     acc_col_3 = "5CvmyN8kLcPKNg98A6nMmrPDqoNN8hJrmFfoYyCesCmfd3se"
+    para_id = 2001
 
     input.update({
         "bootNodes": [
@@ -17,7 +18,7 @@ def update_spec(input: typing.Dict):
         "name": "KILT Peregrine Stagenet",
         "id": "peregrine_stg_kilt",
         "protocolId": "pkilt2",
-        "para_id": 2001,
+        "para_id": para_id,
         "telemetryEndpoints": [
             [
                 "/dns/telemetry-backend.kilt.io/tcp/8080/x-parity-wss/%2Fsubmit",
@@ -26,7 +27,7 @@ def update_spec(input: typing.Dict):
         ]
     })
     input["properties"]["tokenSymbol"] = "PILT"
-    input["genesis"]["runtime"]["parachainInfo"]["parachainId"] = 2000
+    input["genesis"]["runtime"]["parachainInfo"]["parachainId"] = para_id
     input["genesis"]["runtime"]["sudo"]["key"] = acc_col_1
     input["genesis"]["runtime"]["kiltLaunch"]["transferAccount"] = acc_col_2
     input["genesis"]["runtime"]["parachainStaking"]["stakers"] = [
