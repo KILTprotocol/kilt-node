@@ -65,14 +65,11 @@ where
 	R: pallet_balances::Config + pallet_authorship::Config,
 	<R as frame_system::Config>::AccountId: From<AccountId>,
 	<R as frame_system::Config>::AccountId: Into<AccountId>,
-	<R as frame_system::Config>::Event: From<pallet_balances::Event<R>>,
 	<R as pallet_balances::Config>::Balance: Into<u128>,
 {
 	fn on_nonzero_unbalanced(amount: NegativeImbalanceOf<R>) {
-		let numeric_amount = amount.peek();
 		let author = pallet_authorship::Pallet::<R>::author();
 		pallet_balances::Pallet::<R>::resolve_creating(&author, amount);
-		frame_system::Pallet::<R>::deposit_event(pallet_balances::Event::Deposit(author, numeric_amount));
 	}
 }
 
