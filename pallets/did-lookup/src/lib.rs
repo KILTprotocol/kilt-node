@@ -16,16 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-//! # Treasury minting pallet
+//! # DID lookup pallet
 //!
-//! Mints a pre-configured amount of tokens to the Treasury once every block.
+//! This pallet stores a map from account IDs to DIDs.
 //!
 //! - [`Pallet`]
-//!
-//! ## Assumptions
-//!
-//! - The minting of rewards after [InitialPeriodLength] many blocks is handled
-//!   by another pallet, e.g., ParachainStaking.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -85,9 +80,7 @@ pub mod pallet {
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
 
-	/// CTypes stored on chain.
-	///
-	/// It maps from a CType hash to its creator.
+	/// Mapping from account identifiers to DIDs.
 	#[pallet::storage]
 	#[pallet::getter(fn connected_dids)]
 	pub type ConnectedDids<T> = StorageMap<_, Blake2_128Concat, AccountIdOf<T>, DidAccountOf<T>>;
@@ -95,21 +88,40 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
+		/// A new association between a DID and an account ID was created.
 		AssociationEstablished(AccountIdOf<T>, DidAccountOf<T>),
+
+		/// An association between a DID and an account ID was removed.
 		AssociationRemoved(AccountIdOf<T>, DidAccountOf<T>),
 	}
 
 	#[pallet::error]
 	pub enum Error<T> {
+		/// The association does not exist.
 		AssociationNotFound,
+
+		/// The origin was not allowed to manage the association between the did
+		/// and the account ID.
 		NotAuthorized,
 	}
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		// TODO: doc
 		// TODO: test
 		// TODO: benchmark
+		/// Associate the given account to the DID that authorized this call.
+		///
+		/// The account has to sign the did in order to authorize the
+		/// association.
+		///
+		/// Emits `AssociationEstablished` and, optionally, `AssociationRemoved`
+		/// if there was a previous association for the account.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: ConnectedDids + DID Origin Check
+		/// - Writes: ConnectedDids
+		/// # </weight>
 		#[pallet::weight(10)]
 		pub fn associate_account(
 			origin: OriginFor<T>,
@@ -128,32 +140,61 @@ pub mod pallet {
 			Ok(())
 		}
 
-		// TODO: doc
 		// TODO: test
 		// TODO: benchmark
+		/// Associate the sender of the call to the DID that authorized this
+		/// call.
+		///
+		/// Emits `AssociationEstablished` and, optionally, `AssociationRemoved`
+		/// if there was a previous association for the account.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: ConnectedDids + DID Origin Check
+		/// - Writes: ConnectedDids
+		/// # </weight>
 		#[pallet::weight(10)]
 		pub fn associate_sender(origin: OriginFor<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
 			Self::add_association(source.subject(), source.sender());
-
 			Ok(())
 		}
 
-		// TODO: doc
 		// TODO: test
 		// TODO: benchmark
+		/// Remove the association of the sender account. This call doesn't
+		/// require the authorization of the DID.
+		///
+		/// Emits `AssociationRemoved`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: ConnectedDids
+		/// - Writes: ConnectedDids
+		/// # </weight>
 		#[pallet::weight(10)]
-		pub fn invalidate_sender_association(origin: OriginFor<T>) -> DispatchResult {
+		pub fn remove_sender_association(origin: OriginFor<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
+
 			Self::remove_association(who)
 		}
 
-		// TODO: doc
 		// TODO: test
 		// TODO: benchmark
+		/// Remove the association of the provided account ID. This call doesn't
+		/// require the authorization of the account ID, but the associated DID
+		/// needs to match the DID that authorized this call.
+		///
+		/// Emits `AssociationRemoved`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: ConnectedDids + DID Origin Check
+		/// - Writes: ConnectedDids
+		/// # </weight>
 		#[pallet::weight(10)]
-		pub fn invalidate_account_association(origin: OriginFor<T>, account: AccountIdOf<T>) -> DispatchResult {
+		pub fn remove_account_association(origin: OriginFor<T>, account: AccountIdOf<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
 			let did_account = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::AssociationNotFound)?;
