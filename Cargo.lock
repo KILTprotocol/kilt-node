@@ -5524,6 +5524,8 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "kilt-primitives",
+ "kilt-support",
  "parity-scale-codec",
  "scale-info",
  "sp-runtime",

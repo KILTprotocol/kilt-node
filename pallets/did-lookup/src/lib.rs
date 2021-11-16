@@ -45,15 +45,37 @@ pub use crate::{default_weights::WeightInfo, pallet::*};
 #[frame_support::pallet]
 pub mod pallet {
 	use super::WeightInfo;
-	use frame_support::{pallet_prelude::*, traits::StorageVersion};
+	use frame_support::{ensure, pallet_prelude::*, traits::StorageVersion};
 	use frame_system::pallet_prelude::*;
 
+	use kilt_support::traits::CallSources;
+	use sp_runtime::traits::{IdentifyAccount, Verify};
+
+	/// The identifier to which the accounts can be associated.
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+
+	/// The identifier to which the accounts can be associated.
+	pub(crate) type DidAccountOf<T> = <T as Config>::DidAccount;
+
+	pub(crate) type SignatureOf<T> = <T as Config>::Signature;
 
 	pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
+		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type Signature: Verify<Signer = Self::Signer> + Parameter;
+		type Signer: IdentifyAccount<AccountId = AccountIdOf<Self>> + Parameter;
+
+		/// The origin that can associate accounts to itself.
+		type EnsureOrigin: EnsureOrigin<Success = Self::OriginSuccess, <Self as frame_system::Config>::Origin>;
+
+		/// The information that is returned by the origin check.
+		type OriginSuccess: CallSources<AccountIdOf<Self>, DidAccountOf<Self>>;
+
+		/// The identifier to which accounts can get associated.
+		type DidAccount: Parameter + Default;
+
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}
@@ -63,31 +85,101 @@ pub mod pallet {
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
 
+	/// CTypes stored on chain.
+	///
+	/// It maps from a CType hash to its creator.
+	#[pallet::storage]
+	#[pallet::getter(fn connected_dids)]
+	pub type ConnectedDids<T> = StorageMap<_, Blake2_128Concat, AccountIdOf<T>, DidAccountOf<T>>;
+
+	#[pallet::event]
+	#[pallet::generate_deposit(pub(super) fn deposit_event)]
+	pub enum Event<T: Config> {
+		AssociationEstablished(AccountIdOf<T>, DidAccountOf<T>),
+		AssociationRemoved(AccountIdOf<T>, DidAccountOf<T>),
+	}
+
+	#[pallet::error]
+	pub enum Error<T> {
+		AssociationNotFound,
+		NotAuthorized,
+	}
+
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		// TODO: doc
 		// TODO: test
 		// TODO: benchmark
 		#[pallet::weight(10)]
-		pub fn associate_address(
+		pub fn associate_account(
 			origin: OriginFor<T>,
 			account: AccountIdOf<T>,
-			proof: Vec<u8>,
-		) -> DispatchResultWithPostInfo {
-			
-			Ok(().into())
+			proof: SignatureOf<T>,
+		) -> DispatchResult {
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let did_account = source.subject();
+
+			ensure!(
+				proof.verify(&did_account.encode()[..], &account),
+				Error::<T>::NotAuthorized
+			);
+			Self::add_association(did_account, account);
+
+			Ok(())
 		}
 
 		// TODO: doc
 		// TODO: test
 		// TODO: benchmark
 		#[pallet::weight(10)]
-		pub fn invalidate_association(
-			origin: OriginFor<T>,
-			account: AccountIdOf<T>,
-			proof: Vec<u8>,
-		) -> DispatchResultWithPostInfo {
-			Ok(().into())
+		pub fn associate_sender(origin: OriginFor<T>) -> DispatchResult {
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+
+			Self::add_association(source.subject(), source.sender());
+
+			Ok(())
+		}
+
+		// TODO: doc
+		// TODO: test
+		// TODO: benchmark
+		#[pallet::weight(10)]
+		pub fn invalidate_sender_association(origin: OriginFor<T>) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			Self::remove_association(who)
+		}
+
+		// TODO: doc
+		// TODO: test
+		// TODO: benchmark
+		#[pallet::weight(10)]
+		pub fn invalidate_account_association(origin: OriginFor<T>, account: AccountIdOf<T>) -> DispatchResult {
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+
+			let did_account = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::AssociationNotFound)?;
+			ensure!(did_account == source.subject(), Error::<T>::NotAuthorized);
+
+			Self::remove_association(account)
+		}
+	}
+
+	impl<T: Config> Pallet<T> {
+		fn add_association(did_account: DidAccountOf<T>, account: AccountIdOf<T>) {
+			ConnectedDids::<T>::mutate(&account, |did_entry| {
+				if let Some(old_did) = did_entry.replace(did_account.clone()) {
+					Self::deposit_event(Event::<T>::AssociationRemoved(account.clone(), old_did));
+				}
+			});
+			Self::deposit_event(Event::AssociationEstablished(account, did_account));
+		}
+
+		fn remove_association(account: AccountIdOf<T>) -> DispatchResult {
+			if let Some(did_account) = ConnectedDids::<T>::take(&account) {
+				Self::deposit_event(Event::AssociationRemoved(account, did_account));
+				Ok(())
+			} else {
+				Err(Error::<T>::AssociationNotFound.into())
+			}
 		}
 	}
 }

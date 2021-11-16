@@ -16,8 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate as pallet_inflation;
-use crate::NegativeImbalanceOf;
+use crate as pallet_did_lookup;
 use frame_support::{
 	parameter_types,
 	traits::{Currency, OnFinalize, OnInitialize, OnUnbalanced},
@@ -42,7 +41,7 @@ frame_support::construct_runtime!(
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-		did_lookup: pallet_did_lookup::{Pallet, Storage},
+		did_lookup: pallet_did_lookup::{Pallet, Storage, Call},
 	}
 );
 
