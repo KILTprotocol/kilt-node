@@ -101,7 +101,7 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 	///
 	/// Returns
 	/// * Ok(Some(old_element)) if the new element was added and an old element
-	///   had to removed.
+	///   had to be removed.
 	/// * Ok(None) if the element was added without removing an element.
 	/// * Err(true) if the set is full and the new element has a lower rank than
 	///   the lowest element in the set.

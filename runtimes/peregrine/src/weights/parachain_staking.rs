@@ -139,12 +139,8 @@ impl<T: frame_system::Config> parachain_staking::WeightInfo for WeightInfo<T> {
 	// Storage: ParachainStaking CandidateCount (r:1 w:1)
 	// Storage: ParachainStaking MaxSelectedCandidates (r:1 w:0)
 	// Storage: ParachainStaking TotalCollatorStake (r:1 w:1)
-	fn join_candidates(n: u32, m: u32, ) -> Weight {
+	fn join_candidates() -> Weight {
 		(83_635_000 as Weight)
-			// Standard Error: 58_000
-			.saturating_add((4_079_000 as Weight).saturating_mul(n as Weight))
-			// Standard Error: 213_000
-			.saturating_add((9_583_000 as Weight).saturating_mul(m as Weight))
 			.saturating_add(T::DbWeight::get().reads(18 as Weight))
 			.saturating_add(T::DbWeight::get().writes(7 as Weight))
 	}
@@ -166,12 +162,8 @@ impl<T: frame_system::Config> parachain_staking::WeightInfo for WeightInfo<T> {
 	// Storage: ParachainStaking TopCandidates (r:1 w:1)
 	// Storage: ParachainStaking MaxSelectedCandidates (r:1 w:0)
 	// Storage: ParachainStaking TotalCollatorStake (r:1 w:1)
-	fn cancel_leave_candidates(n: u32, m: u32, ) -> Weight {
+	fn cancel_leave_candidates() -> Weight {
 		(137_072_000 as Weight)
-			// Standard Error: 11_000
-			.saturating_add((2_550_000 as Weight).saturating_mul(n as Weight))
-			// Standard Error: 31_000
-			.saturating_add((8_705_000 as Weight).saturating_mul(m as Weight))
 			.saturating_add(T::DbWeight::get().reads(19 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
@@ -190,9 +182,7 @@ impl<T: frame_system::Config> parachain_staking::WeightInfo for WeightInfo<T> {
 			// Standard Error: 39_000
 			.saturating_add((28_966_000 as Weight).saturating_mul(m as Weight))
 			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(m as Weight)))
 			.saturating_add(T::DbWeight::get().writes(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes((2 as Weight).saturating_mul(m as Weight)))
 	}
 	// Storage: ParachainStaking CandidatePool (r:2 w:1)
 	// Storage: ParachainStaking MaxCollatorCandidateStake (r:1 w:0)
@@ -202,12 +192,8 @@ impl<T: frame_system::Config> parachain_staking::WeightInfo for WeightInfo<T> {
 	// Storage: ParachainStaking TopCandidates (r:1 w:1)
 	// Storage: ParachainStaking MaxSelectedCandidates (r:1 w:0)
 	// Storage: ParachainStaking TotalCollatorStake (r:1 w:1)
-	fn candidate_stake_more(n: u32, m: u32, u: u32, ) -> Weight {
+	fn candidate_stake_more(u: u32, ) -> Weight {
 		(0 as Weight)
-			// Standard Error: 64_000
-			.saturating_add((4_847_000 as Weight).saturating_mul(n as Weight))
-			// Standard Error: 237_000
-			.saturating_add((12_324_000 as Weight).saturating_mul(m as Weight))
 			// Standard Error: 905_000
 			.saturating_add((6_229_000 as Weight).saturating_mul(u as Weight))
 			.saturating_add(T::DbWeight::get().reads(13 as Weight))
@@ -218,12 +204,8 @@ impl<T: frame_system::Config> parachain_staking::WeightInfo for WeightInfo<T> {
 	// Storage: ParachainStaking TopCandidates (r:1 w:1)
 	// Storage: ParachainStaking MaxSelectedCandidates (r:1 w:0)
 	// Storage: ParachainStaking TotalCollatorStake (r:1 w:1)
-	fn candidate_stake_less(n: u32, m: u32, ) -> Weight {
+	fn candidate_stake_less() -> Weight {
 		(0 as Weight)
-			// Standard Error: 70_000
-			.saturating_add((4_804_000 as Weight).saturating_mul(n as Weight))
-			// Standard Error: 257_000
-			.saturating_add((12_130_000 as Weight).saturating_mul(m as Weight))
 			.saturating_add(T::DbWeight::get().reads(12 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}
@@ -237,12 +219,8 @@ impl<T: frame_system::Config> parachain_staking::WeightInfo for WeightInfo<T> {
 	// Storage: ParachainStaking TopCandidates (r:1 w:1)
 	// Storage: ParachainStaking MaxSelectedCandidates (r:1 w:0)
 	// Storage: ParachainStaking TotalCollatorStake (r:1 w:1)
-	fn join_delegators(n: u32, m: u32, ) -> Weight {
+	fn join_delegators() -> Weight {
 		(38_983_000 as Weight)
-			// Standard Error: 69_000
-			.saturating_add((4_884_000 as Weight).saturating_mul(n as Weight))
-			// Standard Error: 284_000
-			.saturating_add((12_982_000 as Weight).saturating_mul(m as Weight))
 			.saturating_add(T::DbWeight::get().reads(18 as Weight))
 			.saturating_add(T::DbWeight::get().writes(8 as Weight))
 	}
@@ -254,12 +232,8 @@ impl<T: frame_system::Config> parachain_staking::WeightInfo for WeightInfo<T> {
 	// Storage: ParachainStaking TopCandidates (r:1 w:1)
 	// Storage: ParachainStaking MaxSelectedCandidates (r:1 w:0)
 	// Storage: ParachainStaking TotalCollatorStake (r:1 w:1)
-	fn delegator_stake_more(n: u32, m: u32, u: u32, ) -> Weight {
+	fn delegator_stake_more(u: u32, ) -> Weight {
 		(0 as Weight)
-			// Standard Error: 65_000
-			.saturating_add((4_805_000 as Weight).saturating_mul(n as Weight))
-			// Standard Error: 273_000
-			.saturating_add((12_728_000 as Weight).saturating_mul(m as Weight))
 			// Standard Error: 1_092_000
 			.saturating_add((7_634_000 as Weight).saturating_mul(u as Weight))
 			.saturating_add(T::DbWeight::get().reads(12 as Weight))
@@ -271,12 +245,8 @@ impl<T: frame_system::Config> parachain_staking::WeightInfo for WeightInfo<T> {
 	// Storage: ParachainStaking TopCandidates (r:1 w:1)
 	// Storage: ParachainStaking MaxSelectedCandidates (r:1 w:0)
 	// Storage: ParachainStaking TotalCollatorStake (r:1 w:1)
-	fn delegator_stake_less(n: u32, m: u32, ) -> Weight {
+	fn delegator_stake_less() -> Weight {
 		(5_521_000 as Weight)
-			// Standard Error: 72_000
-			.saturating_add((4_556_000 as Weight).saturating_mul(n as Weight))
-			// Standard Error: 297_000
-			.saturating_add((12_025_000 as Weight).saturating_mul(m as Weight))
 			.saturating_add(T::DbWeight::get().reads(13 as Weight))
 			.saturating_add(T::DbWeight::get().writes(5 as Weight))
 	}
@@ -286,12 +256,8 @@ impl<T: frame_system::Config> parachain_staking::WeightInfo for WeightInfo<T> {
 	// Storage: ParachainStaking TopCandidates (r:1 w:1)
 	// Storage: ParachainStaking MaxSelectedCandidates (r:1 w:0)
 	// Storage: ParachainStaking TotalCollatorStake (r:1 w:1)
-	fn revoke_delegation(n: u32, m: u32, ) -> Weight {
+	fn revoke_delegation( ) -> Weight {
 		(29_370_000 as Weight)
-			// Standard Error: 69_000
-			.saturating_add((4_356_000 as Weight).saturating_mul(n as Weight))
-			// Standard Error: 287_000
-			.saturating_add((11_536_000 as Weight).saturating_mul(m as Weight))
 			.saturating_add(T::DbWeight::get().reads(13 as Weight))
 			.saturating_add(T::DbWeight::get().writes(5 as Weight))
 	}
@@ -301,12 +267,10 @@ impl<T: frame_system::Config> parachain_staking::WeightInfo for WeightInfo<T> {
 	// Storage: ParachainStaking TopCandidates (r:1 w:1)
 	// Storage: ParachainStaking MaxSelectedCandidates (r:1 w:0)
 	// Storage: ParachainStaking TotalCollatorStake (r:1 w:1)
-	fn leave_delegators(n: u32, m: u32, ) -> Weight {
+	fn leave_delegators(n: u32, ) -> Weight {
 		(25_052_000 as Weight)
 			// Standard Error: 68_000
 			.saturating_add((4_397_000 as Weight).saturating_mul(n as Weight))
-			// Standard Error: 283_000
-			.saturating_add((11_569_000 as Weight).saturating_mul(m as Weight))
 			.saturating_add(T::DbWeight::get().reads(13 as Weight))
 			.saturating_add(T::DbWeight::get().writes(5 as Weight))
 	}

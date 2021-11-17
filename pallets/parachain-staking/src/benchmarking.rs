@@ -234,6 +234,7 @@ benchmarks! {
 		assert!(!candidates.into_iter().any(|other| other.owner == candidate));
 	}
 
+	// TODO: Remove (n, m) params
 	join_candidates {
 		let n in 1 .. T::MaxTopCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
@@ -273,6 +274,7 @@ benchmarks! {
 		assert!(<CandidatePool<T>>::get(candidate).unwrap().can_exit(unlocking_at));
 	}
 
+	// TODO: Remove (n, m) params
 	cancel_leave_candidates {
 		let n in (T::MinCollators::get() + 1) .. T::MaxTopCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
@@ -327,6 +329,7 @@ benchmarks! {
 		assert_eq!(<Unstaking<T>>::get(&candidate).len().saturated_into::<u32>(), u.saturating_add(1u32));
 	}
 
+	// TODO: Remove (n, m) params
 	candidate_stake_more {
 		let n in 1 .. T::MaxTopCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
@@ -355,6 +358,7 @@ benchmarks! {
 		assert_eq!(new_stake, old_stake + more_stake + more_stake - T::CurrencyBalance::from(u as u64));
 	}
 
+	// TODO: Remove (n, m) params
 	candidate_stake_less {
 		let n in 1 .. T::MaxTopCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
@@ -381,6 +385,7 @@ benchmarks! {
 		assert_eq!(new_stake, old_stake);
 	}
 
+	// TODO: Remove (n, m) params
 	join_delegators {
 		let n in 1 .. T::MaxTopCandidates::get();
 		let m in 1 .. T::MaxDelegatorsPerCollator::get() - 1;
@@ -401,6 +406,7 @@ benchmarks! {
 		assert!(state.delegators.into_iter().any(|x| x.owner == delegator));
 	}
 
+	// TODO: Remove (n, m) params
 	delegator_stake_more {
 		// we need at least 1 collators
 		let n in 1 .. T::MaxTopCandidates::get();
@@ -437,6 +443,7 @@ benchmarks! {
 		assert!(<Unstaking<T>>::get(&delegator).is_empty());
 	}
 
+	// TODO: Remove (n, m) params
 	delegator_stake_less {
 		// we need at least 1 collators
 		let n in 1 .. T::MaxTopCandidates::get();
@@ -474,6 +481,7 @@ benchmarks! {
 		assert_eq!(<Unstaking<T>>::get(&delegator).len(), 2);
 	}
 
+	// TODO: Remove (n, m) params
 	revoke_delegation {
 		// we need at least 1 collators
 		let n in 1 .. T::MaxTopCandidates::get();
@@ -511,6 +519,7 @@ benchmarks! {
 		assert_eq!(<Unstaking<T>>::get(&delegator).len(), 2);
 	}
 
+	// TODO: Remove (n, m) params
 	leave_delegators {
 		// we need at least 1 collators
 		let n in 1 .. T::MaxTopCandidates::get();
