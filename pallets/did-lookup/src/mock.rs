@@ -17,14 +17,8 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate as pallet_did_lookup;
-use frame_support::{
-	parameter_types,
-	traits::{Currency, OnFinalize, OnInitialize, OnUnbalanced},
-};
-use kilt_primitives::{
-	constants::treasury::{INITIAL_PERIOD_LENGTH, INITIAL_PERIOD_REWARD_PER_BLOCK},
-	AccountId, Balance, BlockHashCount, BlockNumber, Hash, Index,
-};
+use frame_support::parameter_types;
+use kilt_primitives::{AccountId, AccountPublic, BlockHashCount, BlockNumber, Hash, Index, Signature};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
@@ -40,8 +34,8 @@ frame_support::construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-		did_lookup: pallet_did_lookup::{Pallet, Storage, Call},
+		DidLookup: pallet_did_lookup::{Pallet, Storage, Call, Event<T>},
+		MockOrigin: mock_origin::{Pallet, Origin}
 	}
 );
 
@@ -67,7 +61,7 @@ impl frame_system::Config for Test {
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
 	type PalletInfo = PalletInfo;
-	type AccountData = pallet_balances::AccountData<Balance>;
+	type AccountData = ();
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type SystemWeightInfo = ();
@@ -75,30 +69,71 @@ impl frame_system::Config for Test {
 	type OnSetCode = ();
 }
 
-parameter_types! {
-	pub const ExistentialDeposit: Balance = 500;
-	pub const MaxLocks: u32 = 50;
-	pub const MaxReserves: u32 = 50;
-}
-
-impl pallet_balances::Config for Test {
-	type MaxLocks = MaxLocks;
-	type MaxReserves = MaxReserves;
-	type ReserveIdentifier = [u8; 8];
-	type Balance = Balance;
-	type Event = Event;
-	type DustRemoval = ();
-	type ExistentialDeposit = ExistentialDeposit;
-	type AccountStore = System;
-	type WeightInfo = ();
-}
-
 impl pallet_did_lookup::Config for Test {
-	type Currency = Balances;
-	type InitialPeriodLength = InitialPeriodLength;
-	type InitialPeriodReward = InitialPeriodReward;
-	type Beneficiary = ToBeneficiary;
+	type Event = Event;
+	type Signature = Signature;
+	type Signer = AccountPublic;
+
+	type EnsureOrigin = mock_origin::EnsureDoubleOrigin;
+	type OriginSuccess = mock_origin::DoubleOrigin;
+	type DidAccount = u64;
+
 	type WeightInfo = ();
+}
+
+impl mock_origin::Config for Test {
+	type Origin = Origin;
+}
+
+#[frame_support::pallet]
+mod mock_origin {
+	use super::AccountId;
+	use kilt_support::traits::CallSources;
+
+	use codec::{Decode, Encode};
+	use frame_support::traits::EnsureOrigin;
+	use scale_info::TypeInfo;
+
+	#[pallet::config]
+	pub trait Config: frame_system::Config {
+		type Origin: From<DoubleOrigin>;
+	}
+
+	#[pallet::pallet]
+	pub struct Pallet<T>(_);
+
+	#[pallet::origin]
+	pub type Origin = DoubleOrigin;
+
+	#[derive(Debug, Clone, Default, PartialEq, Eq, TypeInfo, Encode, Decode)]
+	pub struct DoubleOrigin(AccountId, u64);
+	impl CallSources<AccountId, u64> for DoubleOrigin {
+		fn sender(&self) -> AccountId {
+			self.0.clone()
+		}
+
+		fn subject(&self) -> u64 {
+			self.1.clone()
+		}
+	}
+
+	pub struct EnsureDoubleOrigin;
+
+	impl<OuterOrigin> EnsureOrigin<OuterOrigin> for EnsureDoubleOrigin
+	where
+		OuterOrigin: Into<Result<DoubleOrigin, OuterOrigin>> + From<DoubleOrigin>,
+	{
+		type Success = DoubleOrigin;
+
+		fn try_origin(o: OuterOrigin) -> Result<Self::Success, OuterOrigin> {
+			o.into()
+		}
+
+		#[cfg(feature = "runtime-benchmarks")]
+		fn successful_origin() -> OuterOrigin {
+			OuterOrigin::from(Default::default())
+		}
+	}
 }
 
 // Build genesis storage according to the mock runtime.

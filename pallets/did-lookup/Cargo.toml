@@ -12,6 +12,8 @@ targets = ["x86_64-unknown-linux-gnu"]
 [dev-dependencies]
 kilt-primitives = {path = "../../primitives", default-features = false}
 
+sp-io = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
+
 [dependencies]
 codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.3.1"}
 scale-info = {version = "1.0", default-features = false, features = ["derive"]}
@@ -43,6 +45,8 @@ std = [
   "scale-info/std",
   "sp-runtime/std",
   "sp-std/std",
+  "sp-io/std",
+  "kilt-primitives/std",
 ]
 
 try-runtime = [
