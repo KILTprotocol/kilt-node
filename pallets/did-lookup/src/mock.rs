@@ -85,8 +85,12 @@ impl mock_origin::Config for Test {
 	type Origin = Origin;
 }
 
+pub(crate) const ACCOUNT_00: kilt_primitives::AccountId = kilt_primitives::AccountId::new([0u8; 32]);
+pub(crate) const ACCOUNT_01: kilt_primitives::AccountId = kilt_primitives::AccountId::new([1u8; 32]);
+
 #[frame_support::pallet]
-mod mock_origin {
+#[allow(dead_code)]
+pub mod mock_origin {
 	use super::AccountId;
 	use kilt_support::traits::CallSources;
 
@@ -106,7 +110,7 @@ mod mock_origin {
 	pub type Origin = DoubleOrigin;
 
 	#[derive(Debug, Clone, Default, PartialEq, Eq, TypeInfo, Encode, Decode)]
-	pub struct DoubleOrigin(AccountId, u64);
+	pub struct DoubleOrigin(pub AccountId, pub u64);
 	impl CallSources<AccountId, u64> for DoubleOrigin {
 		fn sender(&self) -> AccountId {
 			self.0.clone()
