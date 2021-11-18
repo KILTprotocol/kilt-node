@@ -22,7 +22,8 @@ scale-info = {version = "1.0", default-features = false, features = ["derive"]}
 kilt-support = {default-features = false, path = "../../support"}
 
 # benchmarking
-frame-benchmarking = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12", default-features = false, optional = true}
+frame-benchmarking = {branch = "polkadot-v0.9.12", optional = true, default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-io = {branch = "polkadot-v0.9.12", optional = true, default-features = false, git = "https://github.com/paritytech/substrate"}
 
 # Substrate dependencies
 frame-support = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
@@ -35,6 +36,7 @@ default = ["std"]
 
 runtime-benchmarks = [
   "frame-benchmarking",
+  "sp-io",
 ]
 
 std = [
@@ -45,8 +47,6 @@ std = [
   "scale-info/std",
   "sp-runtime/std",
   "sp-std/std",
-  "sp-io/std",
-  "kilt-primitives/std",
 ]
 
 try-runtime = [

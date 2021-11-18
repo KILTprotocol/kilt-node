@@ -22,26 +22,66 @@
 use super::*;
 
 use crate::Pallet as DidLookup;
-use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
+use codec::Encode;
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
+use frame_system::RawOrigin;
+use sp_io::crypto::sr25519_generate;
+use sp_runtime::{app_crypto::sr25519, KeyTypeId};
+
+const SEED: u32 = 0;
 
 benchmarks! {
-	associate_address {
-
-	}: _(origin
-		account
-		proof)
-	verify {
-
+	where_clause {
+		where
+		T::AccountId: From<sr25519::Public>,
+		T::DidAccount: From<T::AccountId>,
+		T::Signature: From<sr25519::Signature>,
+		T::Signer: Default,
 	}
 
-	invalidate_association {
+	associate_account {
+		let caller: T::AccountId = account("caller", 0, SEED);
+		let connected_acc = sr25519_generate(KeyTypeId(*b"aura"), None);
+		let connected_acc_id: T::AccountId = connected_acc.clone().into();
 
-	}: _(origin
-		account
-		proof)
+		let sig: T::Signature = sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &connected_acc, &Encode::encode(&caller)[..])
+			.ok_or("Error while building signature.")?
+			.into();
+
+		let origin = RawOrigin::Signed(caller.clone());
+	}: _(origin, connected_acc_id, sig)
 	verify {
+		assert!(ConnectedDids::<T>::get(T::AccountId::from(connected_acc)).is_some());
 	}
 
+	associate_sender {
+		let caller: T::AccountId = account("caller", 0, SEED);
+
+		let origin = RawOrigin::Signed(caller.clone());
+	}: _(origin)
+	verify {
+		assert!(ConnectedDids::<T>::get(caller).is_some());
+	}
+
+	remove_sender_association {
+		let caller: T::AccountId = account("caller", 0, SEED);
+		ConnectedDids::<T>::insert(&caller, T::DidAccount::from(caller.clone()));
+
+		let origin = RawOrigin::Signed(caller.clone());
+	}: _(origin)
+	verify {
+		assert!(ConnectedDids::<T>::get(caller).is_none());
+	}
+
+	remove_account_association {
+		let caller: T::AccountId = account("caller", 0, SEED);
+		ConnectedDids::<T>::insert(&caller, T::DidAccount::from(caller.clone()));
+
+		let origin = RawOrigin::Signed(caller.clone());
+	}: _(origin, caller.clone())
+	verify {
+		assert!(ConnectedDids::<T>::get(caller).is_none());
+	}
 }
 
 impl_benchmark_test_suite!(DidLookup, crate::mock::new_test_ext(), crate::mock::Test);

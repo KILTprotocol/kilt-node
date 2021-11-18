@@ -48,7 +48,7 @@ use kilt_primitives::{
 		KILT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION,
 	},
 	fees::ToAuthor,
-	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
+	AccountId, AccountPublic, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
 };
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
@@ -436,6 +436,25 @@ impl did::Config for Runtime {
 	type WeightInfo = ();
 }
 
+impl pallet_did_lookup::Config for Runtime {
+	type Event = Event;
+	type Signature = Signature;
+	type Signer = AccountPublic;
+	type DidAccount = DidIdentifier;
+
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type EnsureOrigin = EnsureSigned<DidIdentifier>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type OriginSuccess = DidIdentifier;
+
+	type WeightInfo = ();
+}
+
 impl crowdloan::Config for Runtime {
 	type Currency = Balances;
 	type Vesting = Vesting;
@@ -516,6 +535,7 @@ construct_runtime!(
 		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 10,
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 11,
 		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 12,
+		DidLookup: pallet_did_lookup::{Pallet, Call, Storage, Event<T>} = 13,
 
 		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>} = 15,
 		Authorship: pallet_authorship::{Pallet, Call, Storage} = 16,
