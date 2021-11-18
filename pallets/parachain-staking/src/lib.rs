@@ -420,7 +420,7 @@ pub mod pallet {
 		/// The collator delegate or the delegator is trying to un-stake more
 		/// funds that are currently staked.
 		Underflow,
-		/// The number of selected candidatesper staking round is
+		/// The number of selected candidates per staking round is
 		/// above the maximum value allowed.
 		CannotSetAboveMax,
 		/// The number of selected candidates per staking round is
@@ -1143,7 +1143,7 @@ pub mod pallet {
 		/// changes to the top candidates afterwards do not effect the set of
 		/// authors for session_i+1.
 		/// Thus, we have to make sure none of these collators can
-		/// leave before session_i+1 ends by keeping them in the delaying their
+		/// leave before session_i+1 ends by delaying their
 		/// exit for `ExitDelay` many blocks.
 		///
 		/// Emits `CollatorScheduledExit`.
