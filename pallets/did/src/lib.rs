@@ -97,14 +97,24 @@ mod mock_utils;
 #[cfg(test)]
 mod tests;
 
-mod deprecated;
 mod signature;
 mod utils;
 
-use crate::migrations::*;
+use crate::errors::SignatureError;
 pub use crate::{
-	default_weights::WeightInfo, did_details::*, errors::*, origin::*, pallet::*, service_endpoints::*, signature::*,
+	default_weights::WeightInfo,
+	did_details::{
+		DeriveDidCallAuthorizationVerificationKeyRelationship, DeriveDidCallKeyRelationshipResult,
+		DidVerificationKeyRelationship, RelationshipDeriveError,
+	},
+	origin::{DidRawOrigin, EnsureDidOrigin},
+	pallet::*,
 };
+
+// TODO: Check why these are required
+use did_details::{DidAuthorizedCallOperationWithVerificationRelationship, DidDetails, DidSignature};
+use errors::{DidError, StorageError};
+use migrations::DidStorageVersion;
 
 use codec::Encode;
 use frame_support::{
@@ -137,6 +147,16 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use kilt_support::traits::CallSources;
 	use sp_runtime::traits::BadOrigin;
+
+	use crate::{
+		did_details::{
+			DeriveDidCallAuthorizationVerificationKeyRelationship, DidAuthorizedCallOperation, DidCreationDetails,
+			DidDetails, DidEncryptionKey, DidSignature, DidVerifiableIdentifier, DidVerificationKey,
+			RelationshipDeriveError,
+		},
+		errors::{DidError, InputError, SignatureError},
+		service_endpoints::{DidEndpoint, ServiceEndpointId},
+	};
 
 	/// Reference to a payload of data of variable size.
 	pub type Payload = [u8];
@@ -271,16 +291,16 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		#[cfg(feature = "try-runtime")]
 		fn pre_upgrade() -> Result<(), &'static str> {
-			migrations::DidStorageMigrator::<T>::pre_migrate()
+			Ok(())
 		}
 
 		fn on_runtime_upgrade() -> Weight {
-			migrations::DidStorageMigrator::<T>::migrate()
+			Weight::zero()
 		}
 
 		#[cfg(feature = "try-runtime")]
 		fn post_upgrade() -> Result<(), &'static str> {
-			migrations::DidStorageMigrator::<T>::post_migrate()
+			Ok(())
 		}
 	}
 

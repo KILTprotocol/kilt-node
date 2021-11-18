@@ -17,14 +17,22 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::{Decode, Encode, WrapperTypeEncode};
-use frame_support::storage::{bounded_btree_map::BoundedBTreeMap, bounded_btree_set::BoundedBTreeSet};
+use frame_support::{
+	ensure,
+	storage::{bounded_btree_map::BoundedBTreeMap, bounded_btree_set::BoundedBTreeSet},
+	traits::Get,
+};
 use kilt_support::deposit::Deposit;
 use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519};
-use sp_runtime::{traits::Verify, MultiSignature};
+use sp_runtime::{traits::Verify, MultiSignature, SaturatedConversion};
 use sp_std::{convert::TryInto, vec::Vec};
 
-use crate::*;
+use crate::{
+	errors::{DidError, InputError, SignatureError, StorageError},
+	service_endpoints::DidEndpoint,
+	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, DidCallableOf, DidIdentifierOf, KeyIdOf, Payload,
+};
 
 /// Types of verification keys a DID can control.
 #[derive(Clone, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo)]

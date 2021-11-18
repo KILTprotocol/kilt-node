@@ -558,16 +558,16 @@ pub mod pallet {
 
 		#[cfg(feature = "try-runtime")]
 		fn pre_upgrade() -> Result<(), &'static str> {
-			migrations::StakingStorageMigrator::<T>::pre_migrate()
+			Ok(())
 		}
 
 		fn on_runtime_upgrade() -> Weight {
-			migrations::StakingStorageMigrator::<T>::migrate()
+			Weight::zero()
 		}
 
 		#[cfg(feature = "try-runtime")]
 		fn post_upgrade() -> Result<(), &'static str> {
-			migrations::StakingStorageMigrator::<T>::post_migrate()
+			Ok(())
 		}
 	}
 

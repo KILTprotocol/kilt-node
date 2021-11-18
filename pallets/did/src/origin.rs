@@ -24,8 +24,6 @@ use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 use sp_std::marker::PhantomData;
 
-use crate::*;
-
 /// Origin for modules that support DID-based authorization.
 #[derive(Clone, Decode, Encode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
 pub struct DidRawOrigin<DidIdentifier, AccountId> {
@@ -71,7 +69,7 @@ impl<DidIdentifier: Clone, AccountId: Clone> kilt_support::traits::CallSources<A
 
 #[cfg(all(test, feature = "runtime-benchmarks"))]
 mod tests {
-	use crate::EnsureDidOrigin;
+	use super::EnsureDidOrigin;
 
 	#[test]
 	pub fn successful_origin() {

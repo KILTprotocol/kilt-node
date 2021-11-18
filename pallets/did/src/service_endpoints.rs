@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::{Config, InputError};
+use crate::{errors::InputError, Config};
 use codec::{Decode, Encode};
 use frame_support::{ensure, traits::Get, BoundedVec};
 use scale_info::TypeInfo;
