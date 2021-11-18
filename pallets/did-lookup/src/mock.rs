@@ -16,13 +16,17 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate as pallet_did_lookup;
+use codec::{Decode, Encode};
 use frame_support::parameter_types;
-use kilt_primitives::{AccountId, AccountPublic, BlockHashCount, BlockNumber, Hash, Index, Signature};
+use scale_info::TypeInfo;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
+	AccountId32,
 };
+
+use crate as pallet_did_lookup;
+use kilt_primitives::{AccountId, AccountPublic, BlockHashCount, BlockNumber, Hash, Index, Signature};
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -76,7 +80,7 @@ impl pallet_did_lookup::Config for Test {
 
 	type EnsureOrigin = mock_origin::EnsureDoubleOrigin;
 	type OriginSuccess = mock_origin::DoubleOrigin;
-	type DidAccount = u64;
+	type DidAccount = DidIdentifier;
 
 	type WeightInfo = ();
 }
@@ -87,11 +91,22 @@ impl mock_origin::Config for Test {
 
 pub(crate) const ACCOUNT_00: kilt_primitives::AccountId = kilt_primitives::AccountId::new([0u8; 32]);
 pub(crate) const ACCOUNT_01: kilt_primitives::AccountId = kilt_primitives::AccountId::new([1u8; 32]);
+pub(crate) const DID_00: DidIdentifier = DidIdentifier(ACCOUNT_00);
+pub(crate) const DID_01: DidIdentifier = DidIdentifier(ACCOUNT_01);
+
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeInfo, Default)]
+pub struct DidIdentifier(AccountId32);
+
+impl From<AccountId32> for DidIdentifier {
+	fn from(acc: AccountId32) -> Self {
+		DidIdentifier(acc)
+	}
+}
 
 #[frame_support::pallet]
 #[allow(dead_code)]
 pub mod mock_origin {
-	use super::AccountId;
+	use super::{AccountId, DidIdentifier};
 	use kilt_support::traits::CallSources;
 
 	use codec::{Decode, Encode};
@@ -110,13 +125,13 @@ pub mod mock_origin {
 	pub type Origin = DoubleOrigin;
 
 	#[derive(Debug, Clone, Default, PartialEq, Eq, TypeInfo, Encode, Decode)]
-	pub struct DoubleOrigin(pub AccountId, pub u64);
-	impl CallSources<AccountId, u64> for DoubleOrigin {
+	pub struct DoubleOrigin(pub AccountId, pub DidIdentifier);
+	impl CallSources<AccountId, DidIdentifier> for DoubleOrigin {
 		fn sender(&self) -> AccountId {
 			self.0.clone()
 		}
 
-		fn subject(&self) -> u64 {
+		fn subject(&self) -> DidIdentifier {
 			self.1.clone()
 		}
 	}

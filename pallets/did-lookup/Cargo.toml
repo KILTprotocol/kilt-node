@@ -10,9 +10,9 @@ version = "1.2.0"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dev-dependencies]
-kilt-primitives = {path = "../../primitives", default-features = false}
+kilt-primitives = {path = "../../primitives"}
 
-sp-io = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-io = {branch = "polkadot-v0.9.12", git = "https://github.com/paritytech/substrate"}
 
 [dependencies]
 codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.3.1"}
@@ -21,15 +21,15 @@ scale-info = {version = "1.0", default-features = false, features = ["derive"]}
 # KILT
 kilt-support = {default-features = false, path = "../../support"}
 
-# benchmarking
-frame-benchmarking = {branch = "polkadot-v0.9.12", optional = true, default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-io = {branch = "polkadot-v0.9.12", optional = true, default-features = false, git = "https://github.com/paritytech/substrate"}
-
 # Substrate dependencies
 frame-support = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
 frame-system = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-runtime = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-std = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
+
+# benchmarking
+frame-benchmarking = {branch = "polkadot-v0.9.12", optional = true, default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-io = {branch = "polkadot-v0.9.12", optional = true, default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [features]
 default = ["std"]
@@ -37,6 +37,8 @@ default = ["std"]
 runtime-benchmarks = [
   "frame-benchmarking",
   "sp-io",
+  "kilt-support/runtime-benchmarks",
+  "frame-system/runtime-benchmarks",
 ]
 
 std = [

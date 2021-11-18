@@ -19,11 +19,10 @@
 
 //! Benchmarking
 
-use super::*;
+use crate::{Call, Config, ConnectedDids, Pallet};
 
-use crate::Pallet as DidLookup;
 use codec::Encode;
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
+use frame_benchmarking::{account, benchmarks};
 use frame_system::RawOrigin;
 use sp_io::crypto::sr25519_generate;
 use sp_runtime::{app_crypto::sr25519, KeyTypeId};
@@ -84,4 +83,4 @@ benchmarks! {
 	}
 }
 
-impl_benchmark_test_suite!(DidLookup, crate::mock::new_test_ext(), crate::mock::Test);
+// TODO: add benchmark tests

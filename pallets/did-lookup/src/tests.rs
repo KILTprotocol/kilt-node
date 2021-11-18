@@ -30,12 +30,12 @@ use crate::{mock::*, ConnectedDids, Error};
 fn test_add_association_sender() {
 	new_test_ext().execute_with(|| {
 		// new association. No overwrite
-		assert!(DidLookup::associate_sender(mock_origin::DoubleOrigin(ACCOUNT_00, 0).into()).is_ok());
-		assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), Some(0));
+		assert!(DidLookup::associate_sender(mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into()).is_ok());
+		assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), Some(DID_00));
 
 		// overwrite existing association
-		assert!(DidLookup::associate_sender(mock_origin::DoubleOrigin(ACCOUNT_00, 1).into()).is_ok());
-		assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), Some(1));
+		assert!(DidLookup::associate_sender(mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into()).is_ok());
+		assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), Some(DID_01));
 	});
 }
 
@@ -44,26 +44,26 @@ fn test_add_association_account() {
 	new_test_ext().execute_with(|| {
 		let pair_alice = sr25519::Pair::from_seed(&*b"Alice                           ");
 		let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
-		let sig_alice_0 = MultiSignature::from(pair_alice.sign(&Encode::encode(&0_u64)[..]));
-		let sig_alice_1 = MultiSignature::from(pair_alice.sign(&Encode::encode(&1_u64)[..]));
+		let sig_alice_0 = MultiSignature::from(pair_alice.sign(&Encode::encode(&DID_00)[..]));
+		let sig_alice_1 = MultiSignature::from(pair_alice.sign(&Encode::encode(&DID_01)[..]));
 
 		// new association. No overwrite
 		assert!(DidLookup::associate_account(
-			mock_origin::DoubleOrigin(ACCOUNT_00, 0).into(),
+			mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
 			account_hash_alice.clone(),
 			sig_alice_0
 		)
 		.is_ok());
-		assert_eq!(ConnectedDids::<Test>::get(&account_hash_alice), Some(0));
+		assert_eq!(ConnectedDids::<Test>::get(&account_hash_alice), Some(DID_00));
 
 		// overwrite existing association
 		assert!(DidLookup::associate_account(
-			mock_origin::DoubleOrigin(ACCOUNT_00, 1).into(),
+			mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
 			account_hash_alice.clone(),
 			sig_alice_1
 		)
 		.is_ok());
-		assert_eq!(ConnectedDids::<Test>::get(&account_hash_alice), Some(1));
+		assert_eq!(ConnectedDids::<Test>::get(&account_hash_alice), Some(DID_01));
 	});
 }
 
@@ -76,7 +76,7 @@ fn test_add_association_account_invalid_signature() {
 
 		assert_noop!(
 			DidLookup::associate_account(
-				mock_origin::DoubleOrigin(ACCOUNT_00, 1).into(),
+				mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
 				account_hash_alice,
 				sig_alice_0
 			),
@@ -89,8 +89,8 @@ fn test_add_association_account_invalid_signature() {
 fn test_remove_association_sender() {
 	new_test_ext().execute_with(|| {
 		// insert association
-		ConnectedDids::<Test>::insert(ACCOUNT_00, 1);
-		assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), Some(1));
+		ConnectedDids::<Test>::insert(ACCOUNT_00, DID_01);
+		assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), Some(DID_01));
 
 		// remove association
 		assert!(DidLookup::remove_sender_association(Origin::signed(ACCOUNT_00)).is_ok());
@@ -114,13 +114,14 @@ fn test_remove_association_sender_not_found() {
 fn test_remove_association_account() {
 	new_test_ext().execute_with(|| {
 		new_test_ext().execute_with(|| {
-			ConnectedDids::<Test>::insert(ACCOUNT_00, 1);
-			assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), Some(1));
+			ConnectedDids::<Test>::insert(ACCOUNT_00, DID_01);
+			assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), Some(DID_01));
 
-			assert!(
-				DidLookup::remove_account_association(mock_origin::DoubleOrigin(ACCOUNT_00, 1).into(), ACCOUNT_00)
-					.is_ok()
-			);
+			assert!(DidLookup::remove_account_association(
+				mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
+				ACCOUNT_00
+			)
+			.is_ok());
 			assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), None);
 		});
 	});
@@ -132,7 +133,7 @@ fn test_remove_association_account_not_found() {
 		assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), None);
 
 		assert_noop!(
-			DidLookup::remove_account_association(mock_origin::DoubleOrigin(ACCOUNT_01, 1).into(), ACCOUNT_00),
+			DidLookup::remove_account_association(mock_origin::DoubleOrigin(ACCOUNT_01, DID_01).into(), ACCOUNT_00),
 			Error::<Test>::AssociationNotFound
 		);
 	});
@@ -142,12 +143,12 @@ fn test_remove_association_account_not_found() {
 fn test_remove_association_account_not_authorized() {
 	new_test_ext().execute_with(|| {
 		// create association for DID 1
-		ConnectedDids::<Test>::insert(ACCOUNT_00, 1);
-		assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), Some(1));
+		ConnectedDids::<Test>::insert(ACCOUNT_00, DID_01);
+		assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), Some(DID_01));
 
 		// DID 0 tries to remove association
 		assert_noop!(
-			DidLookup::remove_account_association(mock_origin::DoubleOrigin(ACCOUNT_01, 0).into(), ACCOUNT_00),
+			DidLookup::remove_account_association(mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(), ACCOUNT_00),
 			Error::<Test>::NotAuthorized
 		);
 	});
