@@ -41,13 +41,13 @@ benchmarks! {
 	associate_account {
 		let caller: T::AccountId = account("caller", 0, SEED);
 		let connected_acc = sr25519_generate(KeyTypeId(*b"aura"), None);
-		let connected_acc_id: T::AccountId = connected_acc.clone().into();
+		let connected_acc_id: T::AccountId = connected_acc.into();
 
 		let sig: T::Signature = sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &connected_acc, &Encode::encode(&caller)[..])
 			.ok_or("Error while building signature.")?
 			.into();
 
-		let origin = RawOrigin::Signed(caller.clone());
+		let origin = RawOrigin::Signed(caller);
 	}: _(origin, connected_acc_id, sig)
 	verify {
 		assert!(ConnectedDids::<T>::get(T::AccountId::from(connected_acc)).is_some());
