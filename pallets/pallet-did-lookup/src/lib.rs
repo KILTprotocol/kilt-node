@@ -107,7 +107,6 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		// TODO: benchmark
 		/// Associate the given account to the DID that authorized this call.
 		///
 		/// The account has to sign the DID in order to authorize the
@@ -139,7 +138,6 @@ pub mod pallet {
 			Ok(())
 		}
 
-		// TODO: benchmark
 		/// Associate the sender of the call to the DID that authorized this
 		/// call.
 		///
@@ -159,7 +157,6 @@ pub mod pallet {
 			Ok(())
 		}
 
-		// TODO: benchmark
 		/// Remove the association of the sender account. This call doesn't
 		/// require the authorization of the DID.
 		///
@@ -177,7 +174,6 @@ pub mod pallet {
 			Self::remove_association(who)
 		}
 
-		// TODO: benchmark
 		/// Remove the association of the provided account ID. This call doesn't
 		/// require the authorization of the account ID, but the associated DID
 		/// needs to match the DID that authorized this call.
