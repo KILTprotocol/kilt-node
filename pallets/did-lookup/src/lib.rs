@@ -100,7 +100,7 @@ pub mod pallet {
 		/// The association does not exist.
 		AssociationNotFound,
 
-		/// The origin was not allowed to manage the association between the did
+		/// The origin was not allowed to manage the association between the DID
 		/// and the account ID.
 		NotAuthorized,
 	}
@@ -110,7 +110,7 @@ pub mod pallet {
 		// TODO: benchmark
 		/// Associate the given account to the DID that authorized this call.
 		///
-		/// The account has to sign the did in order to authorize the
+		/// The account has to sign the DID in order to authorize the
 		/// association.
 		///
 		/// Emits `AssociationEstablished` and, optionally, `AssociationRemoved`
