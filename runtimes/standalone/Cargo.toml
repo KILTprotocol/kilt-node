@@ -23,7 +23,7 @@ did = {default-features = false, path = "../../pallets/did"}
 kilt-launch = {default-features = false, path = "../../pallets/kilt-launch"}
 kilt-primitives = {path = "../../primitives", default-features = false}
 kilt-support = {path = "../../support", default-features = false, optional = true}
-pallet-did-lookup = {default-features = false, path = "../../pallets/did-lookup"}
+pallet-did-lookup = {default-features = false, path = "../../pallets/pallet-did-lookup"}
 
 # kilt specific
 pallet-vesting = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.12"}
