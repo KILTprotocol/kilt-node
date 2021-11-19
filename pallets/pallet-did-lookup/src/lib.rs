@@ -121,7 +121,7 @@ pub mod pallet {
 		/// - Reads: ConnectedDids + DID Origin Check
 		/// - Writes: ConnectedDids
 		/// # </weight>
-		#[pallet::weight(10)]
+		#[pallet::weight(<T as Config>::WeightInfo::associate_account())]
 		pub fn associate_account(
 			origin: OriginFor<T>,
 			account: AccountIdOf<T>,
@@ -151,7 +151,7 @@ pub mod pallet {
 		/// - Reads: ConnectedDids + DID Origin Check
 		/// - Writes: ConnectedDids
 		/// # </weight>
-		#[pallet::weight(10)]
+		#[pallet::weight(<T as Config>::WeightInfo::associate_sender())]
 		pub fn associate_sender(origin: OriginFor<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
@@ -170,7 +170,7 @@ pub mod pallet {
 		/// - Reads: ConnectedDids
 		/// - Writes: ConnectedDids
 		/// # </weight>
-		#[pallet::weight(10)]
+		#[pallet::weight(<T as Config>::WeightInfo::remove_sender_association())]
 		pub fn remove_sender_association(origin: OriginFor<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
@@ -189,7 +189,7 @@ pub mod pallet {
 		/// - Reads: ConnectedDids + DID Origin Check
 		/// - Writes: ConnectedDids
 		/// # </weight>
-		#[pallet::weight(10)]
+		#[pallet::weight(<T as Config>::WeightInfo::remove_account_association())]
 		pub fn remove_account_association(origin: OriginFor<T>, account: AccountIdOf<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 

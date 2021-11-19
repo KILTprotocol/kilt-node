@@ -643,7 +643,7 @@ impl pallet_did_lookup::Config for Runtime {
 	#[cfg(feature = "runtime-benchmarks")]
 	type OriginSuccess = DidIdentifier;
 
-	type WeightInfo = ();
+	type WeightInfo = weights::pallet_did_lookup::WeightInfo<Runtime>;
 }
 
 impl crowdloan::Config for Runtime {
