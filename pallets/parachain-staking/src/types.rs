@@ -147,6 +147,16 @@ where
 		}
 	}
 
+	pub fn new_dummy(id: A, stake: B, total: B, delegators: OrderedSet<Stake<A, B>, S>) -> Self {
+		Candidate {
+			id,
+			stake,
+			delegators,
+			total,
+			status: CandidateStatus::default(), // default active
+		}
+	}
+
 	pub fn is_active(&self) -> bool {
 		self.status == CandidateStatus::Active
 	}

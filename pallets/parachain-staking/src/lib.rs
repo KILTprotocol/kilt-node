@@ -860,45 +860,38 @@ pub mod pallet {
 			MaxSelectedCandidates::<T>::put(new);
 
 			// Update total amount at stake for new top collators and their delegators
-			let (num_collators, num_delegators) = match new {
-				x if x > old => {
-					let candidates = TopCandidates::<T>::get();
-					let num_new_collators: usize = candidates
-						.len()
-						.min(new.saturated_into())
-						.saturating_sub(old.saturated_into());
-					let (col_stake, del_stake, num_delegators) =
-						// FIXME: Check for more simple solution to take slice [old + 1, ..., num_new]
-						candidates.into_iter().take(new.saturated_into()).rev().take(num_new_collators).fold(
-							(BalanceOf::<T>::zero(), BalanceOf::<T>::zero(), 0u32),
-							|(col_stake, del_stake, num_delegators), candidate| {
-								if let Some(state) = CandidatePool::<T>::get(&candidate.owner) {
-									(
-										col_stake.saturating_add(state.stake),
-										del_stake.saturating_add(state.total - state.stake),
-										num_delegators.max(state.delegators.len().saturated_into()),
-									)
-								} else {
-									(col_stake, del_stake, num_delegators)
-								}
-							},
-						);
+			let start = old.min(new);
+			let end = old.max(new);
 
-					TotalCollatorStake::<T>::mutate(|total| {
-						total.collators = total.collators.saturating_add(col_stake);
-						total.delegators = total.delegators.saturating_add(del_stake);
-					});
+			let (diff_collation, diff_delegation, num_delegators) = TopCandidates::<T>::get()
+				.into_iter()
+				.skip(start.saturated_into())
+				.take((end - start).saturated_into())
+				.filter_map(|candidate| CandidatePool::<T>::get(&candidate.owner))
+				.map(|state| {
+					(
+						state.stake,
+						state.total - state.stake,
+						state.delegators.len().saturated_into::<u32>(),
+					)
+				})
+				.reduce(|a, b| (a.0.saturating_add(b.0), a.1.saturating_add(b.1), a.2.max(b.2)))
+				.unwrap_or((BalanceOf::<T>::zero(), BalanceOf::<T>::zero(), 0u32));
 
-					(num_new_collators.saturated_into::<u32>(), num_delegators)
+			TotalCollatorStake::<T>::mutate(|total| {
+				if new > old {
+					total.collators = total.collators.saturating_add(diff_collation);
+					total.delegators = total.delegators.saturating_add(diff_delegation);
+				} else {
+					total.collators = total.collators.saturating_sub(diff_collation);
+					total.delegators = total.delegators.saturating_sub(diff_delegation);
 				}
-				x if x < old => Self::update_total_stake(),
-				_ => (0u32, 0u32),
-			};
+			});
 
 			Self::deposit_event(Event::MaxSelectedCandidatesSet(old, new));
 
 			Ok(Some(<T as pallet::Config>::WeightInfo::set_max_selected_candidates(
-				num_collators,
+				end - start,
 				num_delegators,
 			))
 			.into())
@@ -1103,7 +1096,6 @@ pub mod pallet {
 			Self::increase_lock(&sender, stake, BalanceOf::<T>::zero())?;
 
 			let candidate = Candidate::new(sender.clone(), stake);
-			CandidatePool::<T>::insert(&sender, candidate);
 			let n = Self::update_top_candidates(
 				sender.clone(),
 				BalanceOf::<T>::zero(),
@@ -1111,6 +1103,7 @@ pub mod pallet {
 				stake,
 				BalanceOf::<T>::zero(),
 			);
+			CandidatePool::<T>::insert(&sender, candidate);
 
 			CandidateCount::<T>::mutate(|count| {
 				*count = count.saturating_add(1);
@@ -1882,14 +1875,14 @@ pub mod pallet {
 			let mut delegations = DelegatorState::<T>::get(&delegator).ok_or(Error::<T>::DelegatorNotFound)?;
 			let mut collator = CandidatePool::<T>::get(&candidate).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(!collator.is_leaving(), Error::<T>::CannotDelegateIfLeaving);
-			let delegator_total = delegations
+			let delegatodrop_total = delegations
 				.inc_delegation(candidate.clone(), more)
 				.ok_or(Error::<T>::DelegationNotFound)?;
 
 			// *** No Fail except during increase_lock beyond this point ***
 
 			// update lock
-			let unstaking_len = Self::increase_lock(&delegator, delegator_total, more)?;
+			let unstaking_len = Self::increase_lock(&delegator, delegatodrop_total, more)?;
 
 			let CandidateOf::<T, _> {
 				stake: before_stake,
@@ -2082,8 +2075,8 @@ pub mod pallet {
 			new_self: BalanceOf<T>,
 			new_delegators: BalanceOf<T>,
 		) -> u32 {
-			// check if candidate is in top_candidates (and update)
-			// or if candidate will ascend into top_candidates
+			// check if candidate is in TopCandidates (and update)
+			// or if candidate will ascend into TopCandidates
 			let mut top_candidates = TopCandidates::<T>::get();
 			let num_top_candidates: u32 = top_candidates.len().saturated_into();
 			let old_stake = Stake {
@@ -2092,6 +2085,15 @@ pub mod pallet {
 			};
 			let new_total = new_self.saturating_add(new_delegators);
 
+			// case 1 (Already member with old): Ok(i) = top_candidates.linear_search(old)
+			// case 2 (Not yet member with old): Err(i) = top_candidates.linear_search(old)
+			// case 3 (Member with new): Ok(i) = top_candidates.linear_search(new)
+			// case 4 (Member with new): Ok(None) = top_candidates.try_insert_replace(new)
+			// 2 + 3 + 4 same
+			// case 5 (Replaces someone with new): Ok(Some(stake)) =
+			// top_candidates.try_insert_replace(new)
+
+			// case 1: candidate has been a member of TopCandidates
 			if let Ok(i) = top_candidates.linear_search(&old_stake) {
 				top_candidates.mutate(|vec| {
 					if let Some(stake) = vec.get_mut(i) {
@@ -2100,36 +2102,48 @@ pub mod pallet {
 				});
 				TopCandidates::<T>::put(top_candidates);
 
-				// Update total amount at stake
-				TotalCollatorStake::<T>::mutate(|total| {
-					total.collators = total.collators.saturating_sub(old_self).saturating_add(new_self);
-					total.delegators = total
-						.delegators
-						.saturating_sub(old_delegators)
-						.saturating_add(new_delegators);
-				});
+				// update total amount at stake only if candidate is collator
+				if i.saturated_into::<u32>() <= MaxSelectedCandidates::<T>::get() {
+					TotalCollatorStake::<T>::mutate(|total| {
+						total.collators = total.collators.saturating_sub(old_self).saturating_add(new_self);
+						total.delegators = total
+							.delegators
+							.saturating_sub(old_delegators)
+							.saturating_add(new_delegators);
+					});
+				}
+			// case 2: candidate will become member of TopCandidates
 			} else if let Ok(drop_out) = top_candidates.try_insert_replace(Stake {
 				owner: candidate.clone(),
 				amount: new_total,
 			}) {
 				if let Some(drop_out) = drop_out {
-					// Replace total amount at stake
-					if let Some(Candidate {
-						stake: candidate_stake,
-						total: candidate_total,
-						..
-					}) = CandidatePool::<T>::get(&drop_out.owner)
+					let (id, candidate_stake, candidate_total) = CandidatePool::<T>::get(&drop_out.owner)
+						.map(|state| (state.id, state.stake, state.total))
+						.unwrap_or((candidate.clone(), new_self, new_self.saturating_add(new_delegators)));
+					if let Ok(i) = top_candidates
+						.linear_search(&Stake {
+							owner: id.clone(),
+							amount: candidate_total,
+						})
+						.map_err(|i| i)
 					{
-						TotalCollatorStake::<T>::mutate(|total| {
-							total.collators = total.collators.saturating_sub(old_self).saturating_add(candidate_stake);
-							total.delegators = total
-								.delegators
-								.saturating_sub(old_delegators)
-								// safe because total >= stake
-								.saturating_add(candidate_total - candidate_stake);
-						});
+						if i.saturated_into::<u32>() <= MaxSelectedCandidates::<T>::get() {
+							TotalCollatorStake::<T>::mutate(|total| {
+								total.collators =
+									total.collators.saturating_sub(old_self).saturating_add(candidate_stake);
+								total.delegators = total
+									.delegators
+									.saturating_sub(old_delegators)
+									// safe because total >= stake
+									.saturating_add(candidate_total - candidate_stake);
+							});
+						}
+
+						if &id != &drop_out.owner {
+							Self::deposit_event(Event::LeftTopCandidates(drop_out.owner));
+						}
 					}
-					Self::deposit_event(Event::LeftTopCandidates(drop_out.owner));
 				}
 				Self::deposit_event(Event::EnteredTopCandidates(candidate));
 				TopCandidates::<T>::put(top_candidates);

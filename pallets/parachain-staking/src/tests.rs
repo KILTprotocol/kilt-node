@@ -3705,3 +3705,6 @@ fn network_reward_increase_max_collator_count() {
 			);
 		});
 }
+
+// TODO: Add tests to check for adding new candidate who does not become top
+// candidate in all cases 1-5
