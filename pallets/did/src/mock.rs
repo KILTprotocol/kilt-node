@@ -48,6 +48,8 @@ use crate::{
 	utils as crate_utils, AccountIdOf, Config, CurrencyOf, DidBlacklist, DidEndpointsCount, DidStorageVersion, KeyIdOf,
 	ServiceEndpoints, StorageVersion,
 };
+#[cfg(not(feature = "runtime-benchmarks"))]
+use crate::{DidRawOrigin, EnsureDidOrigin};
 
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;

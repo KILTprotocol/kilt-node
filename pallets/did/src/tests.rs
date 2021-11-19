@@ -31,6 +31,7 @@ use sp_std::{
 use crate::{
 	self as did,
 	did_details::{DidEncryptionKey, DidNewKeyAgreementKeySet, DidVerificationKey, DidVerificationKeyRelationship},
+	errors::{DidError, SignatureError, StorageError},
 	mock::*,
 	mock_utils::*,
 	service_endpoints::DidEndpoint,
@@ -2949,7 +2950,7 @@ fn check_did_not_present_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			did::DidError::StorageError(did::StorageError::DidNotPresent)
+			DidError::StorageError(StorageError::DidNotPresent)
 		);
 	});
 }
@@ -3011,7 +3012,7 @@ fn check_smaller_counter_operation_verification() {
 					&call_operation,
 					&did::DidSignature::from(signature)
 				),
-				did::DidError::SignatureError(did::SignatureError::InvalidNonce)
+				DidError::SignatureError(SignatureError::InvalidNonce)
 			);
 		});
 }
@@ -3042,7 +3043,7 @@ fn check_equal_counter_operation_verification() {
 					&call_operation,
 					&did::DidSignature::from(signature)
 				),
-				did::DidError::SignatureError(did::SignatureError::InvalidNonce)
+				DidError::SignatureError(SignatureError::InvalidNonce)
 			);
 		});
 }
@@ -3073,7 +3074,7 @@ fn check_too_large_counter_operation_verification() {
 					&call_operation,
 					&did::DidSignature::from(signature)
 				),
-				did::DidError::SignatureError(did::SignatureError::InvalidNonce)
+				DidError::SignatureError(SignatureError::InvalidNonce)
 			);
 		});
 }
@@ -3100,7 +3101,7 @@ fn check_verification_key_not_present_operation_verification() {
 					&call_operation,
 					&did::DidSignature::from(signature)
 				),
-				did::DidError::StorageError(did::StorageError::DidKeyNotPresent(
+				DidError::StorageError(StorageError::DidKeyNotPresent(
 					DidVerificationKeyRelationship::AssertionMethod
 				))
 			);
@@ -3130,7 +3131,7 @@ fn check_invalid_signature_format_operation_verification() {
 					&call_operation,
 					&did::DidSignature::from(signature)
 				),
-				did::DidError::SignatureError(did::SignatureError::InvalidSignatureFormat)
+				DidError::SignatureError(SignatureError::InvalidSignatureFormat)
 			);
 		});
 }
@@ -3158,7 +3159,7 @@ fn check_invalid_signature_operation_verification() {
 					&call_operation,
 					&did::DidSignature::from(signature)
 				),
-				did::DidError::SignatureError(did::SignatureError::InvalidSignature)
+				DidError::SignatureError(SignatureError::InvalidSignature)
 			);
 		});
 }

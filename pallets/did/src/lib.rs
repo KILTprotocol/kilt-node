@@ -100,20 +100,17 @@ mod tests;
 mod signature;
 mod utils;
 
-use crate::errors::SignatureError;
 pub use crate::{
 	default_weights::WeightInfo,
 	did_details::{
 		DeriveDidCallAuthorizationVerificationKeyRelationship, DeriveDidCallKeyRelationshipResult,
-		DidVerificationKeyRelationship, RelationshipDeriveError,
+		DidAuthorizedCallOperationWithVerificationRelationship, DidSignature, DidVerificationKeyRelationship,
+		RelationshipDeriveError,
 	},
 	origin::{DidRawOrigin, EnsureDidOrigin},
 	pallet::*,
+	signature::DidSignatureVerify,
 };
-
-// TODO: Check why these are required
-use did_details::{DidAuthorizedCallOperationWithVerificationRelationship, DidDetails, DidSignature};
-use errors::{DidError, StorageError};
 use migrations::DidStorageVersion;
 
 use codec::Encode;
@@ -154,7 +151,7 @@ pub mod pallet {
 			DidDetails, DidEncryptionKey, DidSignature, DidVerifiableIdentifier, DidVerificationKey,
 			RelationshipDeriveError,
 		},
-		errors::{DidError, InputError, SignatureError},
+		errors::{DidError, InputError, SignatureError, StorageError},
 		service_endpoints::{DidEndpoint, ServiceEndpointId},
 	};
 
@@ -1093,132 +1090,133 @@ pub mod pallet {
 			result
 		}
 	}
-}
 
-impl<T: Config> Pallet<T> {
-	/// Verify the validity (i.e., nonce, signature and mortality) of a
-	/// DID-authorized operation and, if valid, update the DID state with the
-	/// latest nonce.
-	///
-	/// # <weight>
-	/// Weight: O(1)
-	/// - Reads: Did
-	/// - Writes: Did
-	/// # </weight>
-	pub fn verify_did_operation_signature_and_increase_nonce(
-		operation: &DidAuthorizedCallOperationWithVerificationRelationship<T>,
-		signature: &DidSignature,
-	) -> Result<(), DidError> {
-		// Check that the tx has not expired.
-		Self::validate_block_number_value(operation.block_number)?;
+	impl<T: Config> Pallet<T> {
+		/// Verify the validity (i.e., nonce, signature and mortality) of a
+		/// DID-authorized operation and, if valid, update the DID state with
+		/// the latest nonce.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: Did
+		/// - Writes: Did
+		/// # </weight>
+		pub fn verify_did_operation_signature_and_increase_nonce(
+			operation: &DidAuthorizedCallOperationWithVerificationRelationship<T>,
+			signature: &DidSignature,
+		) -> Result<(), DidError> {
+			// Check that the tx has not expired.
+			Self::validate_block_number_value(operation.block_number)?;
 
-		let mut did_details =
-			Did::<T>::get(&operation.did).ok_or(DidError::StorageError(StorageError::DidNotPresent))?;
+			let mut did_details =
+				Did::<T>::get(&operation.did).ok_or(DidError::StorageError(StorageError::DidNotPresent))?;
 
-		Self::validate_counter_value(operation.tx_counter, &did_details)?;
-		// Increase the tx counter as soon as it is considered valid, no matter if the
-		// signature is valid or not.
-		did_details.increase_tx_counter();
-		Self::verify_payload_signature_with_did_key_type(
-			&operation.encode(),
-			signature,
-			&did_details,
-			operation.verification_key_relationship,
-		)?;
+			Self::validate_counter_value(operation.tx_counter, &did_details)?;
+			// Increase the tx counter as soon as it is considered valid, no matter if the
+			// signature is valid or not.
+			did_details.increase_tx_counter();
+			Self::verify_payload_signature_with_did_key_type(
+				&operation.encode(),
+				signature,
+				&did_details,
+				operation.verification_key_relationship,
+			)?;
 
-		Did::<T>::insert(&operation.did, did_details);
+			Did::<T>::insert(&operation.did, did_details);
 
-		Ok(())
-	}
+			Ok(())
+		}
 
-	/// Check if the provided block number is valid,
-	/// i.e., if the current blockchain block is in the inclusive range
-	/// [operation_block_number, operation_block_number + MaxBlocksTxValidity].
-	fn validate_block_number_value(block_number: BlockNumberOf<T>) -> Result<(), DidError> {
-		let current_block_number = frame_system::Pallet::<T>::block_number();
-		let allowed_range = block_number..=block_number.saturating_add(T::MaxBlocksTxValidity::get());
+		/// Check if the provided block number is valid,
+		/// i.e., if the current blockchain block is in the inclusive range
+		/// [operation_block_number, operation_block_number +
+		/// MaxBlocksTxValidity].
+		fn validate_block_number_value(block_number: BlockNumberOf<T>) -> Result<(), DidError> {
+			let current_block_number = frame_system::Pallet::<T>::block_number();
+			let allowed_range = block_number..=block_number.saturating_add(T::MaxBlocksTxValidity::get());
 
-		ensure!(
-			allowed_range.contains(&current_block_number),
-			DidError::SignatureError(SignatureError::TransactionExpired)
-		);
+			ensure!(
+				allowed_range.contains(&current_block_number),
+				DidError::SignatureError(SignatureError::TransactionExpired)
+			);
 
-		Ok(())
-	}
+			Ok(())
+		}
 
-	/// Verify the validity of a DID-authorized operation nonce.
-	/// To be valid, the nonce must be equal to the one currently stored + 1.
-	/// This is to avoid quickly "consuming" all the possible values for the
-	/// counter, as that would result in the DID being unusable, since we do not
-	/// have yet any mechanism in place to wrap the counter value around when
-	/// the limit is reached.
-	fn validate_counter_value(counter: u64, did_details: &DidDetails<T>) -> Result<(), DidError> {
-		// Verify that the operation counter is equal to the stored one + 1,
-		// possibly wrapping around when u64::MAX is reached.
-		let expected_nonce_value = did_details.get_tx_counter_value().wrapping_add(1);
-		ensure!(
-			counter == expected_nonce_value,
-			DidError::SignatureError(SignatureError::InvalidNonce)
-		);
+		/// Verify the validity of a DID-authorized operation nonce.
+		/// To be valid, the nonce must be equal to the one currently stored +
+		/// 1. This is to avoid quickly "consuming" all the possible values for
+		/// the counter, as that would result in the DID being unusable, since
+		/// we do not have yet any mechanism in place to wrap the counter value
+		/// around when the limit is reached.
+		fn validate_counter_value(counter: u64, did_details: &DidDetails<T>) -> Result<(), DidError> {
+			// Verify that the operation counter is equal to the stored one + 1,
+			// possibly wrapping around when u64::MAX is reached.
+			let expected_nonce_value = did_details.get_tx_counter_value().wrapping_add(1);
+			ensure!(
+				counter == expected_nonce_value,
+				DidError::SignatureError(SignatureError::InvalidNonce)
+			);
 
-		Ok(())
-	}
+			Ok(())
+		}
 
-	/// Verify a generic payload signature using a given DID verification key
-	/// type.
-	pub fn verify_payload_signature_with_did_key_type(
-		payload: &Payload,
-		signature: &DidSignature,
-		did_details: &DidDetails<T>,
-		key_type: DidVerificationKeyRelationship,
-	) -> Result<(), DidError> {
-		// Retrieve the needed verification key from the DID details, or generate an
-		// error if there is no key of the type required
-		let verification_key = did_details
-			.get_verification_key_for_key_type(key_type)
-			.ok_or(DidError::StorageError(StorageError::DidKeyNotPresent(key_type)))?;
+		/// Verify a generic payload signature using a given DID verification
+		/// key type.
+		pub fn verify_payload_signature_with_did_key_type(
+			payload: &Payload,
+			signature: &DidSignature,
+			did_details: &DidDetails<T>,
+			key_type: DidVerificationKeyRelationship,
+		) -> Result<(), DidError> {
+			// Retrieve the needed verification key from the DID details, or generate an
+			// error if there is no key of the type required
+			let verification_key = did_details
+				.get_verification_key_for_key_type(key_type)
+				.ok_or(DidError::StorageError(StorageError::DidKeyNotPresent(key_type)))?;
 
-		// Verify that the signature matches the expected format, otherwise generate
-		// an error
-		verification_key
-			.verify_signature(payload, signature)
-			.map_err(DidError::SignatureError)
-	}
+			// Verify that the signature matches the expected format, otherwise generate
+			// an error
+			verification_key
+				.verify_signature(payload, signature)
+				.map_err(DidError::SignatureError)
+		}
 
-	/// Deletes DID details from storage, including its linked service
-	/// endpoints, adds the identifier to the blacklisted DIDs and frees the
-	/// deposit.
-	fn delete_did(did_subject: DidIdentifierOf<T>, endpoints_to_remove: u32) -> DispatchResult {
-		let current_endpoints_count = DidEndpointsCount::<T>::get(&did_subject);
-		ensure!(
-			current_endpoints_count <= endpoints_to_remove,
-			Error::<T>::StoredEndpointsCountTooLarge
-		);
+		/// Deletes DID details from storage, including its linked service
+		/// endpoints, adds the identifier to the blacklisted DIDs and frees the
+		/// deposit.
+		fn delete_did(did_subject: DidIdentifierOf<T>, endpoints_to_remove: u32) -> DispatchResult {
+			let current_endpoints_count = DidEndpointsCount::<T>::get(&did_subject);
+			ensure!(
+				current_endpoints_count <= endpoints_to_remove,
+				Error::<T>::StoredEndpointsCountTooLarge
+			);
 
-		// *** No Fail beyond this point ***
+			// *** No Fail beyond this point ***
 
-		// This one can fail, albeit this should **never** be the case as we check for
-		// the preconditions above.
-		let storage_kill_result = ServiceEndpoints::<T>::remove_prefix(&did_subject, Some(current_endpoints_count));
-		// If some items are remaining, it means that there were more than
-		// the counter stored in `DidEndpointsCount`, and that should never happen.
-		if let KillStorageResult::SomeRemaining(_) = storage_kill_result {
-			return Err(Error::<T>::InternalError.into());
-		};
+			// This one can fail, albeit this should **never** be the case as we check for
+			// the preconditions above.
+			let storage_kill_result = ServiceEndpoints::<T>::remove_prefix(&did_subject, Some(current_endpoints_count));
+			// If some items are remaining, it means that there were more than
+			// the counter stored in `DidEndpointsCount`, and that should never happen.
+			if let KillStorageResult::SomeRemaining(_) = storage_kill_result {
+				return Err(Error::<T>::InternalError.into());
+			};
 
-		// `take` calls `kill` internally
-		let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
+			// `take` calls `kill` internally
+			let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 
-		DidEndpointsCount::<T>::remove(&did_subject);
-		kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&did_entry.deposit);
-		// Mark as deleted to prevent potential replay-attacks of re-adding a previously
-		// deleted DID.
-		DidBlacklist::<T>::insert(&did_subject, ());
+			DidEndpointsCount::<T>::remove(&did_subject);
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&did_entry.deposit);
+			// Mark as deleted to prevent potential replay-attacks of re-adding a previously
+			// deleted DID.
+			DidBlacklist::<T>::insert(&did_subject, ());
 
-		log::debug!("Deleting DID {:?}", did_subject);
+			log::debug!("Deleting DID {:?}", did_subject);
 
-		Self::deposit_event(Event::DidDeleted(did_subject));
+			Self::deposit_event(Event::DidDeleted(did_subject));
 
-		Ok(())
+			Ok(())
+		}
 	}
 }
