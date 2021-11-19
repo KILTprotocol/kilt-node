@@ -153,6 +153,18 @@ pub mod mock_origin {
 			OuterOrigin::from(Default::default())
 		}
 	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	impl<OuterOrigin> kilt_support::traits::GenerateBenchmarkOrigin<OuterOrigin, AccountId, DidIdentifier>
+		for EnsureDoubleOrigin
+	where
+		OuterOrigin: Into<Result<DoubleOrigin, OuterOrigin>>
+			+ From<DoubleOrigin>,
+	{
+		fn generate_origin(sender: AccountId, subject: DidIdentifier) -> OuterOrigin {
+			OuterOrigin::from(DoubleOrigin(sender, subject))
+		}
+	}
 }
 
 // Build genesis storage according to the mock runtime.
@@ -161,4 +173,17 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 		.build_storage::<Test>()
 		.unwrap()
 		.into()
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+pub(crate) fn new_test_ext_with_keystore() -> sp_io::TestExternalities {
+	use sp_keystore::{testing::KeyStore, KeystoreExt};
+	use sp_std::sync::Arc;
+
+	let mut ext = new_test_ext();
+
+	let keystore = KeyStore::new();
+	ext.register_extension(KeystoreExt(Arc::new(keystore)));
+
+	ext
 }

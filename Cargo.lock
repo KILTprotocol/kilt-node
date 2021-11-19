@@ -5530,6 +5530,7 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "sp-io",
+ "sp-keystore",
  "sp-runtime",
  "sp-std",
 ]

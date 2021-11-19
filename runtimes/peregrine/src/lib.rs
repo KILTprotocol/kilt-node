@@ -633,15 +633,8 @@ impl pallet_did_lookup::Config for Runtime {
 	type Signer = AccountPublic;
 	type DidAccount = DidIdentifier;
 
-	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
-	#[cfg(not(feature = "runtime-benchmarks"))]
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
-
-	#[cfg(feature = "runtime-benchmarks")]
-	type EnsureOrigin = EnsureSigned<DidIdentifier>;
-	#[cfg(feature = "runtime-benchmarks")]
-	type OriginSuccess = DidIdentifier;
 
 	type WeightInfo = weights::pallet_did_lookup::WeightInfo<Runtime>;
 }

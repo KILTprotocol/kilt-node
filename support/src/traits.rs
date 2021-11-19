@@ -61,3 +61,8 @@ pub trait VersionMigratorTrait<T>: Sized {
 	#[cfg(feature = "try-runtime")]
 	fn post_migrate(&self) -> Result<(), &'static str>;
 }
+
+#[cfg(feature = "runtime-benchmarks")]
+pub trait GenerateBenchmarkOrigin<OuterOrigin, AccountId, SubjectId> {
+	fn generate_origin(sender: AccountId, subject: SubjectId) -> OuterOrigin;
+}

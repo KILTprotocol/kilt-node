@@ -22,8 +22,9 @@
 use crate::{Call, Config, ConnectedDids, Pallet};
 
 use codec::Encode;
-use frame_benchmarking::{account, benchmarks};
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_system::RawOrigin;
+use kilt_support::traits::GenerateBenchmarkOrigin;
 use sp_io::crypto::sr25519_generate;
 use sp_runtime::{app_crypto::sr25519, KeyTypeId};
 
@@ -36,35 +37,39 @@ benchmarks! {
 		T::DidAccount: From<T::AccountId>,
 		T::Signature: From<sr25519::Signature>,
 		T::Signer: Default,
+		T::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::DidAccount>,
 	}
 
 	associate_account {
 		let caller: T::AccountId = account("caller", 0, SEED);
+		let did: T::DidAccount = account("did", 0, SEED);
 		let connected_acc = sr25519_generate(KeyTypeId(*b"aura"), None);
 		let connected_acc_id: T::AccountId = connected_acc.into();
 
-		let sig: T::Signature = sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &connected_acc, &Encode::encode(&caller)[..])
+		let sig: T::Signature = sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &connected_acc, &Encode::encode(&did)[..])
 			.ok_or("Error while building signature.")?
 			.into();
 
-		let origin = RawOrigin::Signed(caller);
-	}: _(origin, connected_acc_id, sig)
+		let origin = T::EnsureOrigin::generate_origin(caller, did);
+	}: _<T::Origin>(origin, connected_acc_id, sig)
 	verify {
 		assert!(ConnectedDids::<T>::get(T::AccountId::from(connected_acc)).is_some());
 	}
 
 	associate_sender {
 		let caller: T::AccountId = account("caller", 0, SEED);
+		let did: T::DidAccount = account("did", 0, SEED);
 
-		let origin = RawOrigin::Signed(caller.clone());
-	}: _(origin)
+		let origin = T::EnsureOrigin::generate_origin(caller.clone(), did);
+	}: _<T::Origin>(origin)
 	verify {
 		assert!(ConnectedDids::<T>::get(caller).is_some());
 	}
 
 	remove_sender_association {
 		let caller: T::AccountId = account("caller", 0, SEED);
-		ConnectedDids::<T>::insert(&caller, T::DidAccount::from(caller.clone()));
+		let did: T::DidAccount = account("did", 0, SEED);
+		ConnectedDids::<T>::insert(&caller, did.clone());
 
 		let origin = RawOrigin::Signed(caller.clone());
 	}: _(origin)
@@ -74,13 +79,17 @@ benchmarks! {
 
 	remove_account_association {
 		let caller: T::AccountId = account("caller", 0, SEED);
-		ConnectedDids::<T>::insert(&caller, T::DidAccount::from(caller.clone()));
+		let did: T::DidAccount = account("did", 0, SEED);
+		ConnectedDids::<T>::insert(&caller, did.clone());
 
-		let origin = RawOrigin::Signed(caller.clone());
-	}: _(origin, caller.clone())
+		let origin = T::EnsureOrigin::generate_origin(caller.clone(), did);
+	}: _<T::Origin>(origin, caller.clone())
 	verify {
 		assert!(ConnectedDids::<T>::get(caller).is_none());
 	}
 }
 
-// TODO: add benchmark tests
+#[cfg(test)]
+use crate::Pallet as DidLookup;
+
+impl_benchmark_test_suite!(DidLookup, crate::mock::new_test_ext_with_keystore(), crate::mock::Test);
