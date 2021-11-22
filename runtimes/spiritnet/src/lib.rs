@@ -641,7 +641,7 @@ impl pallet_did_lookup::Config for Runtime {
 	type Event = Event;
 	type Signature = Signature;
 	type Signer = AccountPublic;
-	type DidAccount = DidIdentifier;
+	type DidIdentifier = DidIdentifier;
 
 	type Currency = Balances;
 	type Deposit = DidLookupDeposit;

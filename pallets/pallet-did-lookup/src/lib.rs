@@ -54,7 +54,7 @@ pub mod pallet {
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
 	/// The identifier to which the accounts can be associated.
-	pub(crate) type DidAccountOf<T> = <T as Config>::DidAccount;
+	pub(crate) type DidIdentifierOf<T> = <T as Config>::DidIdentifier;
 
 	/// The signature type of the account that can get connected.
 	pub(crate) type SignatureOf<T> = <T as Config>::Signature;
@@ -68,7 +68,7 @@ pub mod pallet {
 		pub deposit: Deposit<Account, Balance>,
 	}
 
-	pub(crate) type ConnectionRecordOf<T> = ConnectionRecord<DidAccountOf<T>, AccountIdOf<T>, BalanceOf<T>>;
+	pub(crate) type ConnectionRecordOf<T> = ConnectionRecord<DidIdentifierOf<T>, AccountIdOf<T>, BalanceOf<T>>;
 
 	pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
@@ -82,10 +82,10 @@ pub mod pallet {
 		type EnsureOrigin: EnsureOrigin<Success = Self::OriginSuccess, <Self as frame_system::Config>::Origin>;
 
 		/// The information that is returned by the origin check.
-		type OriginSuccess: CallSources<AccountIdOf<Self>, DidAccountOf<Self>>;
+		type OriginSuccess: CallSources<AccountIdOf<Self>, DidIdentifierOf<Self>>;
 
 		/// The identifier to which accounts can get associated.
-		type DidAccount: Parameter + Default;
+		type DidIdentifier: Parameter + Default;
 
 		/// The currency that is used to reserve funds for each did.
 		type Currency: Currency<AccountIdOf<Self>> + ReservableCurrency<AccountIdOf<Self>>;
@@ -114,10 +114,10 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// A new association between a DID and an account ID was created.
-		AssociationEstablished(AccountIdOf<T>, DidAccountOf<T>),
+		AssociationEstablished(AccountIdOf<T>, DidIdentifierOf<T>),
 
 		/// An association between a DID and an account ID was removed.
-		AssociationRemoved(AccountIdOf<T>, DidAccountOf<T>),
+		AssociationRemoved(AccountIdOf<T>, DidIdentifierOf<T>),
 	}
 
 	#[pallet::error]
@@ -245,7 +245,7 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		pub(crate) fn add_association(
 			sender: AccountIdOf<T>,
-			did_account: DidAccountOf<T>,
+			did_account: DidIdentifierOf<T>,
 			account: AccountIdOf<T>,
 		) -> DispatchResult {
 			let deposit = Deposit {

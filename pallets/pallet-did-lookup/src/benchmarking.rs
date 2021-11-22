@@ -40,15 +40,15 @@ benchmarks! {
 	where_clause {
 		where
 		T::AccountId: From<sr25519::Public>,
-		T::DidAccount: From<T::AccountId>,
+		T::DidIdentifier: From<T::AccountId>,
 		T::Signature: From<sr25519::Signature>,
 		T::Signer: Default,
-		T::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::DidAccount>,
+		T::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::DidIdentifier>,
 	}
 
 	associate_account {
 		let caller: T::AccountId = account("caller", 0, SEED);
-		let did: T::DidAccount = account("did", 0, SEED);
+		let did: T::DidIdentifier = account("did", 0, SEED);
 		let connected_acc = sr25519_generate(KeyTypeId(*b"aura"), None);
 		let connected_acc_id: T::AccountId = connected_acc.into();
 
@@ -65,7 +65,7 @@ benchmarks! {
 
 	associate_sender {
 		let caller: T::AccountId = account("caller", 0, SEED);
-		let did: T::DidAccount = account("did", 0, SEED);
+		let did: T::DidIdentifier = account("did", 0, SEED);
 
 		make_free_for_did::<T>(&caller);
 		let origin = T::EnsureOrigin::generate_origin(caller.clone(), did);
@@ -76,7 +76,7 @@ benchmarks! {
 
 	remove_sender_association {
 		let caller: T::AccountId = account("caller", 0, SEED);
-		let did: T::DidAccount = account("did", 0, SEED);
+		let did: T::DidIdentifier = account("did", 0, SEED);
 
 		make_free_for_did::<T>(&caller);
 		Pallet::<T>::add_association(caller.clone(), did, caller.clone()).expect("should create association");
@@ -89,7 +89,7 @@ benchmarks! {
 
 	remove_account_association {
 		let caller: T::AccountId = account("caller", 0, SEED);
-		let did: T::DidAccount = account("did", 0, SEED);
+		let did: T::DidIdentifier = account("did", 0, SEED);
 		make_free_for_did::<T>(&caller);
 
 		Pallet::<T>::add_association(caller.clone(), did.clone(), caller.clone()).expect("should create association");

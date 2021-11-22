@@ -106,7 +106,7 @@ impl pallet_did_lookup::Config for Test {
 
 	type EnsureOrigin = mock_origin::EnsureDoubleOrigin;
 	type OriginSuccess = mock_origin::DoubleOrigin;
-	type DidAccount = DidIdentifier;
+	type DidIdentifier = DidIdentifier;
 
 	type WeightInfo = ();
 }
