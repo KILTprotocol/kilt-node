@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::{Decode, Encode};
-use frame_support::{parameter_types};
+use frame_support::parameter_types;
 use scale_info::TypeInfo;
 use sp_runtime::{
 	testing::Header,
@@ -220,8 +220,8 @@ impl ExtBuilder {
 
 		ext.execute_with(|| {
 			for (sender, did, account) in self.connections {
-				pallet_did_lookup::Pallet::<Test>::add_association(sender, did, account).expect("Should create connection");
-
+				pallet_did_lookup::Pallet::<Test>::add_association(sender, did, account)
+					.expect("Should create connection");
 			}
 		});
 		ext
