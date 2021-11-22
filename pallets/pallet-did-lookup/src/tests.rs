@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::Encode;
-use frame_support::assert_noop;
+use frame_support::{assert_noop, assert_ok};
 use kilt_support::deposit::Deposit;
 use sp_runtime::{
 	app_crypto::{sr25519, Pair},
@@ -45,6 +45,10 @@ fn test_add_association_sender() {
 					}
 				})
 			);
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as crate::Config>::Deposit::get()
+			);
 
 			// overwrite existing association
 			assert!(DidLookup::associate_sender(mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into()).is_ok());
@@ -57,6 +61,10 @@ fn test_add_association_sender() {
 						amount: 10,
 					}
 				})
+			);
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as crate::Config>::Deposit::get()
 			);
 		});
 }
@@ -89,12 +97,16 @@ fn test_add_association_account() {
 					}
 				})
 			);
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as crate::Config>::Deposit::get()
+			);
 
 			// overwrite existing association
 			assert!(DidLookup::associate_account(
 				mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
 				account_hash_alice.clone(),
-				sig_alice_1
+				sig_alice_1.clone()
 			)
 			.is_ok());
 			assert_eq!(
@@ -106,6 +118,33 @@ fn test_add_association_account() {
 						amount: 10,
 					}
 				})
+			);
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as crate::Config>::Deposit::get()
+			);
+
+			// overwrite existing deposit
+			assert!(DidLookup::associate_account(
+				mock_origin::DoubleOrigin(ACCOUNT_01, DID_01).into(),
+				account_hash_alice.clone(),
+				sig_alice_1
+			)
+			.is_ok());
+			assert_eq!(
+				ConnectedDids::<Test>::get(&account_hash_alice),
+				Some(ConnectionRecord {
+					did: DID_01,
+					deposit: Deposit {
+						owner: ACCOUNT_01,
+						amount: 10,
+					}
+				})
+			);
+			assert_eq!(Balances::reserved_balance(ACCOUNT_00), 0);
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_01),
+				<Test as crate::Config>::Deposit::get()
 			);
 		});
 }
@@ -141,6 +180,7 @@ fn test_remove_association_sender() {
 			// remove association
 			assert!(DidLookup::remove_sender_association(Origin::signed(ACCOUNT_00)).is_ok());
 			assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), None);
+			assert_eq!(Balances::reserved_balance(ACCOUNT_00), 0);
 		});
 }
 
@@ -161,7 +201,7 @@ fn test_remove_association_sender_not_found() {
 fn test_remove_association_account() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
-		.with_connections(vec![(ACCOUNT_00, DID_01, ACCOUNT_00)])
+		.with_connections(vec![(ACCOUNT_01, DID_01, ACCOUNT_00)])
 		.build()
 		.execute_with(|| {
 			assert!(DidLookup::remove_account_association(
@@ -170,6 +210,7 @@ fn test_remove_association_account() {
 			)
 			.is_ok());
 			assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), None);
+			assert_eq!(Balances::reserved_balance(ACCOUNT_01), 0);
 		});
 }
 
@@ -192,34 +233,49 @@ fn test_remove_association_account_not_found() {
 fn test_remove_association_account_not_authorized() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
+		.with_connections(vec![(ACCOUNT_01, DID_01, ACCOUNT_00)])
 		.build()
 		.execute_with(|| {
-			// create association for DID 1
-			ConnectedDids::<Test>::insert(
-				ACCOUNT_00,
-				ConnectionRecord {
-					did: DID_01,
-					deposit: Deposit {
-						owner: ACCOUNT_00,
-						amount: 10,
-					},
-				},
-			);
-			assert_eq!(
-				ConnectedDids::<Test>::get(ACCOUNT_00),
-				Some(ConnectionRecord {
-					did: DID_01,
-					deposit: Deposit {
-						owner: ACCOUNT_00,
-						amount: 10,
-					}
-				})
-			);
-
-			// DID 0 tries to remove association
 			assert_noop!(
 				DidLookup::remove_account_association(mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(), ACCOUNT_00),
 				Error::<Test>::NotAuthorized
+			);
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_01),
+				<Test as crate::Config>::Deposit::get()
+			);
+		});
+}
+
+#[test]
+fn test_reclaim_deposit() {
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
+		.with_connections(vec![(ACCOUNT_01, DID_01, ACCOUNT_00)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(DidLookup::reclaim_deposit(
+				Origin::signed(ACCOUNT_01).into(),
+				ACCOUNT_00
+			));
+			assert_eq!(Balances::reserved_balance(ACCOUNT_01), 0);
+		});
+}
+
+#[test]
+fn test_reclaim_deposit_not_authorized() {
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
+		.with_connections(vec![(ACCOUNT_01, DID_01, ACCOUNT_00)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				DidLookup::reclaim_deposit(Origin::signed(ACCOUNT_00).into(), ACCOUNT_00),
+				Error::<Test>::NotAuthorized
+			);
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_01),
+				<Test as crate::Config>::Deposit::get()
 			);
 		});
 }

@@ -240,6 +240,26 @@ pub mod pallet {
 
 			Self::remove_association(account)
 		}
+
+		/// Remove the association of the provided account. This call can only
+		/// be called from the deposit owner. The reserved deposit will be
+		/// freed.
+		///
+		/// Emits `AssociationRemoved`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: ConnectedDids
+		/// - Writes: ConnectedDids
+		/// # </weight>
+		#[pallet::weight(<T as Config>::WeightInfo::remove_sender_association())]
+		pub fn reclaim_deposit(origin: OriginFor<T>, account: AccountIdOf<T>) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::AssociationNotFound)?;
+			ensure!(record.deposit.owner == who, Error::<T>::NotAuthorized);
+			Self::remove_association(account)
+		}
 	}
 
 	impl<T: Config> Pallet<T> {
