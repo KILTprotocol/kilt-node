@@ -40,10 +40,14 @@ pub use crate::{default_weights::WeightInfo, pallet::*};
 #[frame_support::pallet]
 pub mod pallet {
 	use super::WeightInfo;
-	use frame_support::{ensure, pallet_prelude::*, traits::StorageVersion};
+	use frame_support::{
+		ensure,
+		pallet_prelude::*,
+		traits::{Currency, ReservableCurrency, StorageVersion},
+	};
 	use frame_system::pallet_prelude::*;
-
-	use kilt_support::traits::CallSources;
+	use kilt_support::{deposit::Deposit, traits::CallSources};
+	use scale_info::TypeInfo;
 	use sp_runtime::traits::{IdentifyAccount, Verify};
 
 	/// The identifier to which the accounts can be associated.
@@ -52,7 +56,19 @@ pub mod pallet {
 	/// The identifier to which the accounts can be associated.
 	pub(crate) type DidAccountOf<T> = <T as Config>::DidAccount;
 
+	/// The signature type of the account that can get connected.
 	pub(crate) type SignatureOf<T> = <T as Config>::Signature;
+
+	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
+
+	#[derive(Clone, Decode, Debug, Encode, TypeInfo, PartialEq)]
+	pub struct ConnectionRecord<DidIdentifier, Account, Balance> {
+		pub did: DidIdentifier,
+		pub deposit: Deposit<Account, Balance>,
+	}
+
+	pub(crate) type ConnectionRecordOf<T> = ConnectionRecord<DidAccountOf<T>, AccountIdOf<T>, BalanceOf<T>>;
 
 	pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
@@ -71,6 +87,15 @@ pub mod pallet {
 		/// The identifier to which accounts can get associated.
 		type DidAccount: Parameter + Default;
 
+		/// The currency that is used to reserve funds for each did.
+		type Currency: Currency<AccountIdOf<Self>> + ReservableCurrency<AccountIdOf<Self>>;
+
+		/// The amount of balance that will be taken for each DID as a deposit
+		/// to incentivise fair use of the on chain storage. The deposit can be
+		/// reclaimed when the DID is deleted.
+		#[pallet::constant]
+		type Deposit: Get<BalanceOf<Self>>;
+
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}
@@ -83,7 +108,7 @@ pub mod pallet {
 	/// Mapping from account identifiers to DIDs.
 	#[pallet::storage]
 	#[pallet::getter(fn connected_dids)]
-	pub type ConnectedDids<T> = StorageMap<_, Blake2_128Concat, AccountIdOf<T>, DidAccountOf<T>>;
+	pub type ConnectedDids<T> = StorageMap<_, Blake2_128Concat, AccountIdOf<T>, ConnectionRecordOf<T>>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -103,6 +128,10 @@ pub mod pallet {
 		/// The origin was not allowed to manage the association between the DID
 		/// and the account ID.
 		NotAuthorized,
+
+		/// The account has insufficient funds and can't pay the fees or reserve
+		/// the deposit.
+		InsufficientFunds,
 	}
 
 	#[pallet::call]
@@ -128,12 +157,21 @@ pub mod pallet {
 		) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let did_account = source.subject();
+			let sender = source.sender();
 
 			ensure!(
 				proof.verify(&did_account.encode()[..], &account),
 				Error::<T>::NotAuthorized
 			);
-			Self::add_association(did_account, account);
+			ensure!(
+				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
+					&sender,
+					<T as Config>::Deposit::get()
+				),
+				Error::<T>::InsufficientFunds
+			);
+
+			Self::add_association(sender, did_account, account)?;
 
 			Ok(())
 		}
@@ -153,7 +191,15 @@ pub mod pallet {
 		pub fn associate_sender(origin: OriginFor<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
-			Self::add_association(source.subject(), source.sender());
+			ensure!(
+				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
+					&source.sender(),
+					<T as Config>::Deposit::get()
+				),
+				Error::<T>::InsufficientFunds
+			);
+
+			Self::add_association(source.sender(), source.subject(), source.sender())?;
 			Ok(())
 		}
 
@@ -190,25 +236,45 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
 			let did_account = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::AssociationNotFound)?;
-			ensure!(did_account == source.subject(), Error::<T>::NotAuthorized);
+			ensure!(did_account.did == source.subject(), Error::<T>::NotAuthorized);
 
 			Self::remove_association(account)
 		}
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn add_association(did_account: DidAccountOf<T>, account: AccountIdOf<T>) {
+		pub(crate) fn add_association(
+			sender: AccountIdOf<T>,
+			did_account: DidAccountOf<T>,
+			account: AccountIdOf<T>,
+		) -> DispatchResult {
+			let deposit = Deposit {
+				owner: sender,
+				amount: T::Deposit::get(),
+			};
+			let record = ConnectionRecord {
+				deposit,
+				did: did_account.clone(),
+			};
+
+			CurrencyOf::<T>::reserve(&record.deposit.owner, record.deposit.amount)?;
+
 			ConnectedDids::<T>::mutate(&account, |did_entry| {
-				if let Some(old_did) = did_entry.replace(did_account.clone()) {
-					Self::deposit_event(Event::<T>::AssociationRemoved(account.clone(), old_did));
+				if let Some(old_did) = did_entry.replace(record) {
+					Self::deposit_event(Event::<T>::AssociationRemoved(account.clone(), old_did.did));
+					kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&old_did.deposit);
 				}
 			});
 			Self::deposit_event(Event::AssociationEstablished(account, did_account));
+
+			Ok(())
 		}
 
-		fn remove_association(account: AccountIdOf<T>) -> DispatchResult {
-			if let Some(did_account) = ConnectedDids::<T>::take(&account) {
-				Self::deposit_event(Event::AssociationRemoved(account, did_account));
+		pub(crate) fn remove_association(account: AccountIdOf<T>) -> DispatchResult {
+			if let Some(connection) = ConnectedDids::<T>::take(&account) {
+				kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&connection.deposit);
+				Self::deposit_event(Event::AssociationRemoved(account, connection.did));
+
 				Ok(())
 			} else {
 				Err(Error::<T>::AssociationNotFound.into())

@@ -5527,6 +5527,7 @@ dependencies = [
  "frame-system",
  "kilt-primitives",
  "kilt-support",
+ "pallet-balances",
  "parity-scale-codec",
  "scale-info",
  "sp-io",

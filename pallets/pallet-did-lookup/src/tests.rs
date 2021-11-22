@@ -18,105 +18,152 @@
 
 use codec::Encode;
 use frame_support::assert_noop;
+use kilt_support::deposit::Deposit;
 use sp_runtime::{
 	app_crypto::{sr25519, Pair},
 	traits::IdentifyAccount,
 	MultiSignature, MultiSigner,
 };
 
-use crate::{mock::*, ConnectedDids, Error};
+use crate::{mock::*, ConnectedDids, ConnectionRecord, Error};
 
 #[test]
 fn test_add_association_sender() {
-	new_test_ext().execute_with(|| {
-		// new association. No overwrite
-		assert!(DidLookup::associate_sender(mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into()).is_ok());
-		assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), Some(DID_00));
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
+		.build()
+		.execute_with(|| {
+			// new association. No overwrite
+			assert!(DidLookup::associate_sender(mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into()).is_ok());
+			assert_eq!(
+				ConnectedDids::<Test>::get(ACCOUNT_00),
+				Some(ConnectionRecord {
+					did: DID_00,
+					deposit: Deposit {
+						owner: ACCOUNT_00,
+						amount: 10,
+					}
+				})
+			);
 
-		// overwrite existing association
-		assert!(DidLookup::associate_sender(mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into()).is_ok());
-		assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), Some(DID_01));
-	});
+			// overwrite existing association
+			assert!(DidLookup::associate_sender(mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into()).is_ok());
+			assert_eq!(
+				ConnectedDids::<Test>::get(ACCOUNT_00),
+				Some(ConnectionRecord {
+					did: DID_01,
+					deposit: Deposit {
+						owner: ACCOUNT_00,
+						amount: 10,
+					}
+				})
+			);
+		});
 }
 
 #[test]
 fn test_add_association_account() {
-	new_test_ext().execute_with(|| {
-		let pair_alice = sr25519::Pair::from_seed(&*b"Alice                           ");
-		let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
-		let sig_alice_0 = MultiSignature::from(pair_alice.sign(&Encode::encode(&DID_00)[..]));
-		let sig_alice_1 = MultiSignature::from(pair_alice.sign(&Encode::encode(&DID_01)[..]));
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
+		.build()
+		.execute_with(|| {
+			let pair_alice = sr25519::Pair::from_seed(&*b"Alice                           ");
+			let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
+			let sig_alice_0 = MultiSignature::from(pair_alice.sign(&Encode::encode(&DID_00)[..]));
+			let sig_alice_1 = MultiSignature::from(pair_alice.sign(&Encode::encode(&DID_01)[..]));
 
-		// new association. No overwrite
-		assert!(DidLookup::associate_account(
-			mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
-			account_hash_alice.clone(),
-			sig_alice_0
-		)
-		.is_ok());
-		assert_eq!(ConnectedDids::<Test>::get(&account_hash_alice), Some(DID_00));
+			// new association. No overwrite
+			assert!(DidLookup::associate_account(
+				mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
+				account_hash_alice.clone(),
+				sig_alice_0
+			)
+			.is_ok());
+			assert_eq!(
+				ConnectedDids::<Test>::get(&account_hash_alice),
+				Some(ConnectionRecord {
+					did: DID_00,
+					deposit: Deposit {
+						owner: ACCOUNT_00,
+						amount: 10,
+					}
+				})
+			);
 
-		// overwrite existing association
-		assert!(DidLookup::associate_account(
-			mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
-			account_hash_alice.clone(),
-			sig_alice_1
-		)
-		.is_ok());
-		assert_eq!(ConnectedDids::<Test>::get(&account_hash_alice), Some(DID_01));
-	});
+			// overwrite existing association
+			assert!(DidLookup::associate_account(
+				mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
+				account_hash_alice.clone(),
+				sig_alice_1
+			)
+			.is_ok());
+			assert_eq!(
+				ConnectedDids::<Test>::get(&account_hash_alice),
+				Some(ConnectionRecord {
+					did: DID_01,
+					deposit: Deposit {
+						owner: ACCOUNT_00,
+						amount: 10,
+					}
+				})
+			);
+		});
 }
 
 #[test]
 fn test_add_association_account_invalid_signature() {
-	new_test_ext().execute_with(|| {
-		let pair_alice = sr25519::Pair::from_seed(&*b"Alice                           ");
-		let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
-		let sig_alice_0 = MultiSignature::from(pair_alice.sign(&Encode::encode(&0_u64)[..]));
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
+		.build()
+		.execute_with(|| {
+			let pair_alice = sr25519::Pair::from_seed(&*b"Alice                           ");
+			let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
+			let sig_alice_0 = MultiSignature::from(pair_alice.sign(&Encode::encode(&0_u64)[..]));
 
-		assert_noop!(
-			DidLookup::associate_account(
-				mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
-				account_hash_alice,
-				sig_alice_0
-			),
-			Error::<Test>::NotAuthorized
-		);
-	});
+			assert_noop!(
+				DidLookup::associate_account(
+					mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
+					account_hash_alice,
+					sig_alice_0
+				),
+				Error::<Test>::NotAuthorized
+			);
+		});
 }
 
 #[test]
 fn test_remove_association_sender() {
-	new_test_ext().execute_with(|| {
-		// insert association
-		ConnectedDids::<Test>::insert(ACCOUNT_00, DID_01);
-		assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), Some(DID_01));
-
-		// remove association
-		assert!(DidLookup::remove_sender_association(Origin::signed(ACCOUNT_00)).is_ok());
-		assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), None);
-	});
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
+		.with_connections(vec![(ACCOUNT_00, DID_01, ACCOUNT_00)])
+		.build()
+		.execute_with(|| {
+			// remove association
+			assert!(DidLookup::remove_sender_association(Origin::signed(ACCOUNT_00)).is_ok());
+			assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), None);
+		});
 }
 
 #[test]
 fn test_remove_association_sender_not_found() {
-	new_test_ext().execute_with(|| {
-		assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), None);
-
-		assert_noop!(
-			DidLookup::remove_sender_association(Origin::signed(ACCOUNT_00)),
-			Error::<Test>::AssociationNotFound
-		);
-	});
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				DidLookup::remove_sender_association(Origin::signed(ACCOUNT_00)),
+				Error::<Test>::AssociationNotFound
+			);
+		});
 }
 
 #[test]
 fn test_remove_association_account() {
-	new_test_ext().execute_with(|| {
-		new_test_ext().execute_with(|| {
-			ConnectedDids::<Test>::insert(ACCOUNT_00, DID_01);
-			assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), Some(DID_01));
-
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
+		.with_connections(vec![(ACCOUNT_00, DID_01, ACCOUNT_00)])
+		.build()
+		.execute_with(|| {
 			assert!(DidLookup::remove_account_association(
 				mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
 				ACCOUNT_00
@@ -124,32 +171,55 @@ fn test_remove_association_account() {
 			.is_ok());
 			assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), None);
 		});
-	});
 }
 
 #[test]
 fn test_remove_association_account_not_found() {
-	new_test_ext().execute_with(|| {
-		assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), None);
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
+		.build()
+		.execute_with(|| {
+			assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), None);
 
-		assert_noop!(
-			DidLookup::remove_account_association(mock_origin::DoubleOrigin(ACCOUNT_01, DID_01).into(), ACCOUNT_00),
-			Error::<Test>::AssociationNotFound
-		);
-	});
+			assert_noop!(
+				DidLookup::remove_account_association(mock_origin::DoubleOrigin(ACCOUNT_01, DID_01).into(), ACCOUNT_00),
+				Error::<Test>::AssociationNotFound
+			);
+		});
 }
 
 #[test]
 fn test_remove_association_account_not_authorized() {
-	new_test_ext().execute_with(|| {
-		// create association for DID 1
-		ConnectedDids::<Test>::insert(ACCOUNT_00, DID_01);
-		assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), Some(DID_01));
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
+		.build()
+		.execute_with(|| {
+			// create association for DID 1
+			ConnectedDids::<Test>::insert(
+				ACCOUNT_00,
+				ConnectionRecord {
+					did: DID_01,
+					deposit: Deposit {
+						owner: ACCOUNT_00,
+						amount: 10,
+					},
+				},
+			);
+			assert_eq!(
+				ConnectedDids::<Test>::get(ACCOUNT_00),
+				Some(ConnectionRecord {
+					did: DID_01,
+					deposit: Deposit {
+						owner: ACCOUNT_00,
+						amount: 10,
+					}
+				})
+			);
 
-		// DID 0 tries to remove association
-		assert_noop!(
-			DidLookup::remove_account_association(mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(), ACCOUNT_00),
-			Error::<Test>::NotAuthorized
-		);
-	});
+			// DID 0 tries to remove association
+			assert_noop!(
+				DidLookup::remove_account_association(mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(), ACCOUNT_00),
+				Error::<Test>::NotAuthorized
+			);
+		});
 }

@@ -436,11 +436,18 @@ impl did::Config for Runtime {
 	type WeightInfo = ();
 }
 
+parameter_types! {
+	pub const DidLookupDeposit: Balance = KILT;
+}
+
 impl pallet_did_lookup::Config for Runtime {
 	type Event = Event;
 	type Signature = Signature;
 	type Signer = AccountPublic;
 	type DidAccount = DidIdentifier;
+
+	type Currency = Balances;
+	type Deposit = DidLookupDeposit;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;

@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::{Decode, Encode};
-use frame_support::parameter_types;
+use frame_support::{parameter_types};
 use scale_info::TypeInfo;
 use sp_runtime::{
 	testing::Header,
@@ -26,7 +26,7 @@ use sp_runtime::{
 };
 
 use crate as pallet_did_lookup;
-use kilt_primitives::{AccountId, AccountPublic, BlockHashCount, BlockNumber, Hash, Index, Signature};
+use kilt_primitives::{AccountId, AccountPublic, Balance, BlockHashCount, BlockNumber, Hash, Index, Signature};
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -38,8 +38,9 @@ frame_support::construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 		DidLookup: pallet_did_lookup::{Pallet, Storage, Call, Event<T>},
-		MockOrigin: mock_origin::{Pallet, Origin}
+		MockOrigin: mock_origin::{Pallet, Origin},
 	}
 );
 
@@ -65,7 +66,7 @@ impl frame_system::Config for Test {
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
 	type PalletInfo = PalletInfo;
-	type AccountData = ();
+	type AccountData = pallet_balances::AccountData<Balance>;
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type SystemWeightInfo = ();
@@ -73,10 +74,35 @@ impl frame_system::Config for Test {
 	type OnSetCode = ();
 }
 
+parameter_types! {
+	pub const ExistentialDeposit: Balance = 10;
+	pub const MaxLocks: u32 = 50;
+	pub const MaxReserves: u32 = 50;
+}
+
+impl pallet_balances::Config for Test {
+	type Balance = Balance;
+	type DustRemoval = ();
+	type Event = Event;
+	type ExistentialDeposit = ExistentialDeposit;
+	type AccountStore = System;
+	type MaxLocks = MaxLocks;
+	type MaxReserves = MaxReserves;
+	type ReserveIdentifier = [u8; 8];
+	type WeightInfo = ();
+}
+
+parameter_types! {
+	pub const DidLookupDeposit: Balance = 10;
+}
+
 impl pallet_did_lookup::Config for Test {
 	type Event = Event;
 	type Signature = Signature;
 	type Signer = AccountPublic;
+
+	type Currency = Balances;
+	type Deposit = DidLookupDeposit;
 
 	type EnsureOrigin = mock_origin::EnsureDoubleOrigin;
 	type OriginSuccess = mock_origin::DoubleOrigin;
@@ -166,23 +192,49 @@ pub mod mock_origin {
 	}
 }
 
-// Build genesis storage according to the mock runtime.
-pub fn new_test_ext() -> sp_io::TestExternalities {
-	frame_system::GenesisConfig::default()
-		.build_storage::<Test>()
-		.unwrap()
-		.into()
+#[derive(Clone, Default)]
+pub struct ExtBuilder {
+	balances: Vec<(AccountId, Balance)>,
+	connections: Vec<(AccountId, DidIdentifier, AccountId)>,
 }
 
-#[cfg(feature = "runtime-benchmarks")]
-pub(crate) fn new_test_ext_with_keystore() -> sp_io::TestExternalities {
-	use sp_keystore::{testing::KeyStore, KeystoreExt};
-	use sp_std::sync::Arc;
+impl ExtBuilder {
+	pub fn with_balances(mut self, balances: Vec<(AccountId, Balance)>) -> Self {
+		self.balances = balances;
+		self
+	}
 
-	let mut ext = new_test_ext();
+	pub fn with_connections(mut self, connections: Vec<(AccountId, DidIdentifier, AccountId)>) -> Self {
+		self.connections = connections;
+		self
+	}
 
-	let keystore = KeyStore::new();
-	ext.register_extension(KeystoreExt(Arc::new(keystore)));
+	pub fn build(self) -> sp_io::TestExternalities {
+		let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+		pallet_balances::GenesisConfig::<Test> {
+			balances: self.balances.clone(),
+		}
+		.assimilate_storage(&mut storage)
+		.expect("assimilate should not fail");
+		let mut ext = sp_io::TestExternalities::new(storage);
 
-	ext
+		ext.execute_with(|| {
+			for (sender, did, account) in self.connections {
+				pallet_did_lookup::Pallet::<Test>::add_association(sender, did, account).expect("Should create connection");
+
+			}
+		});
+		ext
+	}
+
+	// allowance only required for clippy, this function is actually used
+	#[cfg(feature = "runtime-benchmarks")]
+	pub fn build_with_keystore(self) -> sp_io::TestExternalities {
+		let mut ext = self.build();
+
+		let keystore = sp_keystore::testing::KeyStore::new();
+		ext.register_extension(sp_keystore::KeystoreExt(std::sync::Arc::new(keystore)));
+
+		ext
+	}
 }
