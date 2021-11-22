@@ -19,16 +19,22 @@
 
 //! Benchmarking
 
-use crate::{Call, Config, ConnectedDids, Pallet};
+use crate::{AccountIdOf, Call, Config, ConnectedDids, CurrencyOf, Pallet};
 
 use codec::Encode;
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
+use frame_support::traits::{Currency, Get};
 use frame_system::RawOrigin;
 use kilt_support::traits::GenerateBenchmarkOrigin;
 use sp_io::crypto::sr25519_generate;
 use sp_runtime::{app_crypto::sr25519, KeyTypeId};
 
 const SEED: u32 = 0;
+
+fn make_free_for_did<T: Config>(account: &AccountIdOf<T>) {
+	let balance = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::minimum_balance() + <T as Config>::Deposit::get();
+	<CurrencyOf<T> as Currency<AccountIdOf<T>>>::make_free_balance_be(account, balance);
+}
 
 benchmarks! {
 	where_clause {
@@ -50,6 +56,7 @@ benchmarks! {
 			.ok_or("Error while building signature.")?
 			.into();
 
+		make_free_for_did::<T>(&caller);
 		let origin = T::EnsureOrigin::generate_origin(caller, did);
 	}: _<T::Origin>(origin, connected_acc_id, sig)
 	verify {
@@ -60,6 +67,7 @@ benchmarks! {
 		let caller: T::AccountId = account("caller", 0, SEED);
 		let did: T::DidAccount = account("did", 0, SEED);
 
+		make_free_for_did::<T>(&caller);
 		let origin = T::EnsureOrigin::generate_origin(caller.clone(), did);
 	}: _<T::Origin>(origin)
 	verify {
@@ -69,7 +77,9 @@ benchmarks! {
 	remove_sender_association {
 		let caller: T::AccountId = account("caller", 0, SEED);
 		let did: T::DidAccount = account("did", 0, SEED);
-		ConnectedDids::<T>::insert(&caller, did);
+
+		make_free_for_did::<T>(&caller);
+		Pallet::<T>::add_association(caller.clone(), did, caller.clone()).expect("should create association");
 
 		let origin = RawOrigin::Signed(caller.clone());
 	}: _(origin)
@@ -80,7 +90,9 @@ benchmarks! {
 	remove_account_association {
 		let caller: T::AccountId = account("caller", 0, SEED);
 		let did: T::DidAccount = account("did", 0, SEED);
-		ConnectedDids::<T>::insert(&caller, did.clone());
+		make_free_for_did::<T>(&caller);
+
+		Pallet::<T>::add_association(caller.clone(), did.clone(), caller.clone()).expect("should create association");
 
 		let origin = T::EnsureOrigin::generate_origin(caller.clone(), did);
 	}: _<T::Origin>(origin, caller.clone())
@@ -92,4 +104,8 @@ benchmarks! {
 #[cfg(test)]
 use crate::Pallet as DidLookup;
 
-impl_benchmark_test_suite!(DidLookup, crate::mock::new_test_ext_with_keystore(), crate::mock::Test);
+impl_benchmark_test_suite!(
+	DidLookup,
+	crate::mock::ExtBuilder::default().build_with_keystore(),
+	crate::mock::Test
+);
