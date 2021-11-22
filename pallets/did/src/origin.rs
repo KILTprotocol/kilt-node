@@ -71,7 +71,8 @@ impl<DidIdentifier: Clone, AccountId: Clone> CallSources<AccountId, DidIdentifie
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-impl<OuterOrigin, AccountId, DidIdentifier> kilt_support::traits::GenerateBenchmarkOrigin<OuterOrigin, AccountId, DidIdentifier>
+impl<OuterOrigin, AccountId, DidIdentifier>
+	kilt_support::traits::GenerateBenchmarkOrigin<OuterOrigin, AccountId, DidIdentifier>
 	for EnsureDidOrigin<DidIdentifier, AccountId>
 where
 	OuterOrigin: Into<Result<DidRawOrigin<DidIdentifier, AccountId>, OuterOrigin>>

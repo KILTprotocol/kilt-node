@@ -69,7 +69,7 @@ benchmarks! {
 	remove_sender_association {
 		let caller: T::AccountId = account("caller", 0, SEED);
 		let did: T::DidAccount = account("did", 0, SEED);
-		ConnectedDids::<T>::insert(&caller, did.clone());
+		ConnectedDids::<T>::insert(&caller, did);
 
 		let origin = RawOrigin::Signed(caller.clone());
 	}: _(origin)

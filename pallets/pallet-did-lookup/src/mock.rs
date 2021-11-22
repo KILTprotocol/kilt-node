@@ -158,8 +158,7 @@ pub mod mock_origin {
 	impl<OuterOrigin> kilt_support::traits::GenerateBenchmarkOrigin<OuterOrigin, AccountId, DidIdentifier>
 		for EnsureDoubleOrigin
 	where
-		OuterOrigin: Into<Result<DoubleOrigin, OuterOrigin>>
-			+ From<DoubleOrigin>,
+		OuterOrigin: Into<Result<DoubleOrigin, OuterOrigin>> + From<DoubleOrigin>,
 	{
 		fn generate_origin(sender: AccountId, subject: DidIdentifier) -> OuterOrigin {
 			OuterOrigin::from(DoubleOrigin(sender, subject))
