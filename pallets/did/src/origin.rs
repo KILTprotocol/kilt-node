@@ -20,7 +20,7 @@ use frame_support::{
 	codec::{Decode, Encode},
 	traits::EnsureOrigin,
 };
-use kilt_support::traits::{CallSources, GenerateBenchmarkOrigin};
+use kilt_support::traits::CallSources;
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 use sp_std::marker::PhantomData;
@@ -71,7 +71,7 @@ impl<DidIdentifier: Clone, AccountId: Clone> CallSources<AccountId, DidIdentifie
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-impl<OuterOrigin, AccountId, DidIdentifier> GenerateBenchmarkOrigin<OuterOrigin, AccountId, DidIdentifier>
+impl<OuterOrigin, AccountId, DidIdentifier> kilt_support::traits::GenerateBenchmarkOrigin<OuterOrigin, AccountId, DidIdentifier>
 	for EnsureDidOrigin<DidIdentifier, AccountId>
 where
 	OuterOrigin: Into<Result<DidRawOrigin<DidIdentifier, AccountId>, OuterOrigin>>
