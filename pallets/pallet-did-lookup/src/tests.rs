@@ -254,10 +254,7 @@ fn test_reclaim_deposit() {
 		.with_connections(vec![(ACCOUNT_01, DID_01, ACCOUNT_00)])
 		.build()
 		.execute_with(|| {
-			assert_ok!(DidLookup::reclaim_deposit(
-				Origin::signed(ACCOUNT_01).into(),
-				ACCOUNT_00
-			));
+			assert_ok!(DidLookup::reclaim_deposit(Origin::signed(ACCOUNT_01), ACCOUNT_00));
 			assert_eq!(Balances::reserved_balance(ACCOUNT_01), 0);
 		});
 }
@@ -270,7 +267,7 @@ fn test_reclaim_deposit_not_authorized() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				DidLookup::reclaim_deposit(Origin::signed(ACCOUNT_00).into(), ACCOUNT_00),
+				DidLookup::reclaim_deposit(Origin::signed(ACCOUNT_00), ACCOUNT_00),
 				Error::<Test>::NotAuthorized
 			);
 			assert_eq!(
