@@ -48,7 +48,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{deposit::Deposit, traits::CallSources};
-	use sp_runtime::traits::{IdentifyAccount, Verify};
+	use sp_runtime::traits::{BlockNumberProvider, IdentifyAccount, Verify};
 
 	pub use crate::connection_record::ConnectionRecord;
 
@@ -138,8 +138,12 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		/// Associate the given account to the DID that authorized this call.
 		///
-		/// The account has to sign the DID (the binary representation of the
-		/// method specific id) in order to authorize the association.
+		/// The account has to sign the DID and a blocknumber after which the
+		/// signature expires in order to authorize the association.
+		///
+		/// The signature will be checked against the scale encoded tuple of the
+		/// method specific id of the did identifier and the block number after
+		/// which the signature should be regarded invalid.
 		///
 		/// Emits `AssociationEstablished` and, optionally, `AssociationRemoved`
 		/// if there was a previous association for the account.
@@ -153,6 +157,7 @@ pub mod pallet {
 		pub fn associate_account(
 			origin: OriginFor<T>,
 			account: AccountIdOf<T>,
+			expiration: <T as frame_system::Config>::BlockNumber,
 			proof: SignatureOf<T>,
 		) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
@@ -160,7 +165,11 @@ pub mod pallet {
 			let sender = source.sender();
 
 			ensure!(
-				proof.verify(&did_identifier.encode()[..], &account),
+				frame_system::Pallet::<T>::current_block_number() <= expiration,
+				Error::<T>::NotAuthorized
+			);
+			ensure!(
+				proof.verify(&(&did_identifier, expiration).encode()[..], &account),
 				Error::<T>::NotAuthorized
 			);
 			ensure!(

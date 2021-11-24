@@ -51,14 +51,15 @@ benchmarks! {
 		let did: T::DidIdentifier = account("did", 0, SEED);
 		let connected_acc = sr25519_generate(KeyTypeId(*b"aura"), None);
 		let connected_acc_id: T::AccountId = connected_acc.into();
+		let bn: <T as frame_system::Config>::BlockNumber = 500_u32.into();
 
-		let sig: T::Signature = sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &connected_acc, &Encode::encode(&did)[..])
+		let sig: T::Signature = sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &connected_acc, &Encode::encode(&(&did, bn))[..])
 			.ok_or("Error while building signature.")?
 			.into();
 
 		make_free_for_did::<T>(&caller);
 		let origin = T::EnsureOrigin::generate_origin(caller, did);
-	}: _<T::Origin>(origin, connected_acc_id, sig)
+	}: _<T::Origin>(origin, connected_acc_id, bn, sig)
 	verify {
 		assert!(ConnectedDids::<T>::get(T::AccountId::from(connected_acc)).is_some());
 	}

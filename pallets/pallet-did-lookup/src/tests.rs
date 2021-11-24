@@ -18,6 +18,7 @@
 
 use codec::Encode;
 use frame_support::{assert_noop, assert_ok};
+use kilt_primitives::BlockNumber;
 use kilt_support::deposit::Deposit;
 use sp_runtime::{
 	app_crypto::{sr25519, Pair},
@@ -76,14 +77,16 @@ fn test_add_association_account() {
 		.build()
 		.execute_with(|| {
 			let pair_alice = sr25519::Pair::from_seed(&*b"Alice                           ");
+			let expire_at: BlockNumber = 500;
 			let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
-			let sig_alice_0 = MultiSignature::from(pair_alice.sign(&Encode::encode(&DID_00)[..]));
-			let sig_alice_1 = MultiSignature::from(pair_alice.sign(&Encode::encode(&DID_01)[..]));
+			let sig_alice_0 = MultiSignature::from(pair_alice.sign(&Encode::encode(&(&DID_00, expire_at))[..]));
+			let sig_alice_1 = MultiSignature::from(pair_alice.sign(&Encode::encode(&(&DID_01, expire_at))[..]));
 
 			// new association. No overwrite
 			assert!(DidLookup::associate_account(
 				mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
 				account_hash_alice.clone(),
+				expire_at,
 				sig_alice_0
 			)
 			.is_ok());
@@ -106,6 +109,7 @@ fn test_add_association_account() {
 			assert!(DidLookup::associate_account(
 				mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
 				account_hash_alice.clone(),
+				expire_at,
 				sig_alice_1.clone()
 			)
 			.is_ok());
@@ -128,6 +132,7 @@ fn test_add_association_account() {
 			assert!(DidLookup::associate_account(
 				mock_origin::DoubleOrigin(ACCOUNT_01, DID_01).into(),
 				account_hash_alice.clone(),
+				expire_at,
 				sig_alice_1
 			)
 			.is_ok());
@@ -158,11 +163,37 @@ fn test_add_association_account_invalid_signature() {
 			let pair_alice = sr25519::Pair::from_seed(&*b"Alice                           ");
 			let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
 			let sig_alice_0 = MultiSignature::from(pair_alice.sign(&Encode::encode(&0_u64)[..]));
+			let expire_at: BlockNumber = 500;
 
 			assert_noop!(
 				DidLookup::associate_account(
 					mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
 					account_hash_alice,
+					expire_at,
+					sig_alice_0
+				),
+				Error::<Test>::NotAuthorized
+			);
+		});
+}
+
+#[test]
+fn test_add_association_account_expired() {
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
+		.build()
+		.execute_with(|| {
+			let pair_alice = sr25519::Pair::from_seed(&*b"Alice                           ");
+			let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
+			let sig_alice_0 = MultiSignature::from(pair_alice.sign(&Encode::encode(&0_u64)[..]));
+			let expire_at: BlockNumber = 2;
+			System::set_block_number(3);
+
+			assert_noop!(
+				DidLookup::associate_account(
+					mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
+					account_hash_alice,
+					expire_at,
 					sig_alice_0
 				),
 				Error::<Test>::NotAuthorized
