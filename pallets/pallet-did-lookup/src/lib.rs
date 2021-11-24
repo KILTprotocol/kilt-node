@@ -216,7 +216,7 @@ pub mod pallet {
 		}
 
 		/// Remove the association of the sender account. This call doesn't
-		/// require the authorization of the DID.
+		/// require the authorization of the DID, but requires a signed origin.
 		///
 		/// Emits `AssociationRemoved`.
 		///
