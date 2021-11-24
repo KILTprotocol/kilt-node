@@ -24,6 +24,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+mod connection_record;
 pub mod default_weights;
 
 #[cfg(test)]
@@ -47,8 +48,9 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{deposit::Deposit, traits::CallSources};
-	use scale_info::TypeInfo;
 	use sp_runtime::traits::{IdentifyAccount, Verify};
+
+	pub use crate::connection_record::ConnectionRecord;
 
 	/// The identifier to which the accounts can be associated.
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
@@ -59,15 +61,13 @@ pub mod pallet {
 	/// The signature type of the account that can get connected.
 	pub(crate) type SignatureOf<T> = <T as Config>::Signature;
 
+	/// The type used to describe a balance.
 	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+
+	/// The currency module that keeps track of balances.
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 
-	#[derive(Clone, Decode, Debug, Encode, TypeInfo, PartialEq)]
-	pub struct ConnectionRecord<DidIdentifier, Account, Balance> {
-		pub did: DidIdentifier,
-		pub deposit: Deposit<Account, Balance>,
-	}
-
+	/// The connection record type.
 	pub(crate) type ConnectionRecordOf<T> = ConnectionRecord<DidIdentifierOf<T>, AccountIdOf<T>, BalanceOf<T>>;
 
 	pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
