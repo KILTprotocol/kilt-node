@@ -39,7 +39,7 @@ use sp_core::{
 };
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, Perbill, Permill, Perquintill,
 };
@@ -71,7 +71,7 @@ use kilt_primitives::{
 		KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION,
 	},
 	fees::{ToAuthor, WeightToFee},
-	AccountId, AccountPublic, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights,
+	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights,
 	DidIdentifier, FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
@@ -640,7 +640,7 @@ parameter_types! {
 impl pallet_did_lookup::Config for Runtime {
 	type Event = Event;
 	type Signature = Signature;
-	type Signer = AccountPublic;
+	type Signer = <Signature as Verify>::Signer;
 	type DidIdentifier = DidIdentifier;
 
 	type Currency = Balances;
