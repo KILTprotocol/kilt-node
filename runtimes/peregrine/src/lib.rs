@@ -70,8 +70,8 @@ use kilt_primitives::{
 		KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION,
 	},
 	fees::{ToAuthor, WeightToFee},
-	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights,
-	DidIdentifier, FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
+	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier, FeeSplit,
+	Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
 #[cfg(feature = "std")]
