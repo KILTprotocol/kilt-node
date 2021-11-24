@@ -62,6 +62,8 @@ pub trait VersionMigratorTrait<T>: Sized {
 	fn post_migrate(&self) -> Result<(), &'static str>;
 }
 
+/// Trait to simulate an origin with different sender and subject.
+/// This origin is only used on benchmarks and testing.
 #[cfg(feature = "runtime-benchmarks")]
 pub trait GenerateBenchmarkOrigin<OuterOrigin, AccountId, SubjectId> {
 	fn generate_origin(sender: AccountId, subject: SubjectId) -> OuterOrigin;
