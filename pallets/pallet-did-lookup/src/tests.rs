@@ -196,7 +196,7 @@ fn test_add_association_account_expired() {
 					expire_at,
 					sig_alice_0
 				),
-				Error::<Test>::NotAuthorized
+				Error::<Test>::OutdatedProof
 			);
 		});
 }

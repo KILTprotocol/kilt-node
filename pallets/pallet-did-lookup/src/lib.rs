@@ -129,6 +129,9 @@ pub mod pallet {
 		/// and the account ID.
 		NotAuthorized,
 
+		/// The supplied proof of ownership was outdated and will not
+		OutdatedProof,
+
 		/// The account has insufficient funds and can't pay the fees or reserve
 		/// the deposit.
 		InsufficientFunds,
@@ -166,7 +169,7 @@ pub mod pallet {
 
 			ensure!(
 				frame_system::Pallet::<T>::current_block_number() <= expiration,
-				Error::<T>::NotAuthorized
+				Error::<T>::OutdatedProof
 			);
 			ensure!(
 				proof.verify(&(&did_identifier, expiration).encode()[..], &account),
@@ -286,6 +289,7 @@ pub mod pallet {
 				did: did_identifier.clone(),
 			};
 
+			// *** NO FAILURE beyond the reserve call ***
 			CurrencyOf::<T>::reserve(&record.deposit.owner, record.deposit.amount)?;
 
 			ConnectedDids::<T>::mutate(&account, |did_entry| {
