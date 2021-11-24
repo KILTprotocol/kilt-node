@@ -156,11 +156,11 @@ pub mod pallet {
 			proof: SignatureOf<T>,
 		) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
-			let did_account = source.subject();
+			let did_identifier = source.subject();
 			let sender = source.sender();
 
 			ensure!(
-				proof.verify(&did_account.encode()[..], &account),
+				proof.verify(&did_identifier.encode()[..], &account),
 				Error::<T>::NotAuthorized
 			);
 			ensure!(
@@ -171,7 +171,7 @@ pub mod pallet {
 				Error::<T>::InsufficientFunds
 			);
 
-			Self::add_association(sender, did_account, account)?;
+			Self::add_association(sender, did_identifier, account)?;
 
 			Ok(())
 		}
@@ -235,8 +235,8 @@ pub mod pallet {
 		pub fn remove_account_association(origin: OriginFor<T>, account: AccountIdOf<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
-			let did_account = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::AssociationNotFound)?;
-			ensure!(did_account.did == source.subject(), Error::<T>::NotAuthorized);
+			let connection_record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::AssociationNotFound)?;
+			ensure!(connection_record.did == source.subject(), Error::<T>::NotAuthorized);
 
 			Self::remove_association(account)
 		}
@@ -265,7 +265,7 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		pub(crate) fn add_association(
 			sender: AccountIdOf<T>,
-			did_account: DidIdentifierOf<T>,
+			did_identifier: DidIdentifierOf<T>,
 			account: AccountIdOf<T>,
 		) -> DispatchResult {
 			let deposit = Deposit {
@@ -274,7 +274,7 @@ pub mod pallet {
 			};
 			let record = ConnectionRecord {
 				deposit,
-				did: did_account.clone(),
+				did: did_identifier.clone(),
 			};
 
 			CurrencyOf::<T>::reserve(&record.deposit.owner, record.deposit.amount)?;
@@ -285,7 +285,7 @@ pub mod pallet {
 					kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&old_did.deposit);
 				}
 			});
-			Self::deposit_event(Event::AssociationEstablished(account, did_account));
+			Self::deposit_event(Event::AssociationEstablished(account, did_identifier));
 
 			Ok(())
 		}
