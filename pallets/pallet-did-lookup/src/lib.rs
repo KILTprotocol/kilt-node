@@ -138,8 +138,8 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		/// Associate the given account to the DID that authorized this call.
 		///
-		/// The account has to sign the DID in order to authorize the
-		/// association.
+		/// The account has to sign the DID (the binary representation of the
+		/// method specific id) in order to authorize the association.
 		///
 		/// Emits `AssociationEstablished` and, optionally, `AssociationRemoved`
 		/// if there was a previous association for the account.
