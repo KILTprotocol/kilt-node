@@ -51,5 +51,4 @@ std = [
   "scale-info/std",
   "sp-runtime/std",
   "sp-std/std",
-  "pallet-balances/std",
 ]
