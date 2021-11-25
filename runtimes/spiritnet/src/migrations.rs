@@ -41,7 +41,7 @@ impl OnRuntimeUpgrade for RemoveCrowdloanContributors {
 	}
 
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		let entries = 4 + 6142;
+		let entries = 4;
 		frame_support::storage::unhashed::kill_prefix(&Twox128::hash(b"CrowdloanContributors"), Some(entries));
 
 		<Runtime as frame_system::Config>::DbWeight::get().writes(entries.into())
