@@ -50,7 +50,7 @@ type TestDelegationNodeId = kilt_primitives::Hash;
 type TestDelegatorId = TestCtypeOwner;
 type TestDelegateSignature = (TestDelegatorId, Vec<u8>);
 type TestBalance = kilt_primitives::Balance;
-type TestCtypeHash = ctype_mock::TestCtypeHash;
+type TestCtypeHash = kilt_primitives::Hash;
 
 frame_support::construct_runtime!(
 	pub enum Test where

@@ -544,15 +544,8 @@ impl ctype::Config for Runtime {
 	type Fee = Fee;
 	type FeeCollector = Treasury;
 
-	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
-	#[cfg(not(feature = "runtime-benchmarks"))]
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
-
-	#[cfg(feature = "runtime-benchmarks")]
-	type EnsureOrigin = EnsureSigned<DidIdentifier>;
-	#[cfg(feature = "runtime-benchmarks")]
-	type OriginSuccess = DidIdentifier;
 
 	type Event = Event;
 	type WeightInfo = weights::ctype::WeightInfo<Runtime>;
