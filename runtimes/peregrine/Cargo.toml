@@ -5,10 +5,10 @@ name = "peregrine-runtime"
 version = "1.2.0"
 
 [dependencies]
-codec = {package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"]}
+codec = {package = "parity-scale-codec", version = "2.3.1", default-features = false, features = ["derive"]}
 hex-literal = {version = "0.3.1"}
 log = {default-features = false, version = "0.4.14"}
-scale-info = { version = "1.0", default-features = false, features = ["derive"] }
+scale-info = {version = "1.0", default-features = false, features = ["derive"]}
 serde = {version = "1.0.124", optional = true, features = ["derive"]}
 smallvec = "1.7.0"
 static_assertions = "1.1.0"
@@ -26,6 +26,7 @@ did = {default-features = false, path = "../../pallets/did"}
 kilt-launch = {path = "../../pallets/kilt-launch", default-features = false}
 kilt-primitives = {path = "../../primitives", default-features = false}
 kilt-support = {path = "../../support", default-features = false, optional = true}
+pallet-did-lookup = {default-features = false, path = "../../pallets/pallet-did-lookup"}
 pallet-inflation = {path = "../../pallets/pallet-inflation", default-features = false}
 parachain-staking = {default-features = false, path = "../../pallets/parachain-staking"}
 
@@ -79,9 +80,9 @@ xcm-builder = {git = "https://github.com/paritytech/polkadot", default-features 
 xcm-executor = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.12"}
 
 # Benchmarking
+cumulus-pallet-session-benchmarking = {git = "https://github.com/paritytech/cumulus", default-features = false, optional = true, branch = "polkadot-v0.9.12"}
 frame-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.12"}
 frame-system-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.12"}
-cumulus-pallet-session-benchmarking = {git = "https://github.com/paritytech/cumulus", default-features = false, optional = true, branch = "polkadot-v0.9.12"}
 rococo-runtime = {git = "https://github.com/paritytech/polkadot", default-features = false, optional = true, branch = "release-v0.9.12"}
 
 # Runtime tests
@@ -112,6 +113,7 @@ runtime-benchmarks = [
   "pallet-balances/runtime-benchmarks",
   "pallet-collective/runtime-benchmarks",
   "pallet-democracy/runtime-benchmarks",
+  "pallet-did-lookup/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
   "pallet-inflation/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
@@ -151,6 +153,7 @@ std = [
   "pallet-balances/std",
   "pallet-collective/std",
   "pallet-democracy/std",
+  "pallet-did-lookup/std",
   "pallet-indices/std",
   "pallet-inflation/std",
   "pallet-membership/std",

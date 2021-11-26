@@ -8,7 +8,7 @@ version = "1.2.0"
 codec = {package = "parity-scale-codec", version = "2.3.1", default-features = false, features = ["derive"]}
 hex-literal = {version = "0.3.1"}
 log = {default-features = false, version = "0.4.14"}
-scale-info = { version = "1.0", default-features = false, features = ["derive"] }
+scale-info = {version = "1.0", default-features = false, features = ["derive"]}
 serde = {version = "1.0.124", optional = true, features = ["derive"]}
 smallvec = "1.7.0"
 static_assertions = "1.1.0"
@@ -26,6 +26,7 @@ did = {default-features = false, path = "../../pallets/did"}
 kilt-launch = {path = "../../pallets/kilt-launch", default-features = false}
 kilt-primitives = {path = "../../primitives", default-features = false}
 kilt-support = {path = "../../support", default-features = false, optional = true}
+pallet-did-lookup = {default-features = false, path = "../../pallets/pallet-did-lookup"}
 pallet-inflation = {path = "../../pallets/pallet-inflation", default-features = false}
 parachain-staking = {default-features = false, path = "../../pallets/parachain-staking"}
 
@@ -111,6 +112,7 @@ runtime-benchmarks = [
   "pallet-balances/runtime-benchmarks",
   "pallet-collective/runtime-benchmarks",
   "pallet-democracy/runtime-benchmarks",
+  "pallet-did-lookup/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
   "pallet-inflation/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
@@ -150,6 +152,7 @@ std = [
   "pallet-balances/std",
   "pallet-collective/std",
   "pallet-democracy/std",
+  "pallet-did-lookup/std",
   "pallet-indices/std",
   "pallet-inflation/std",
   "pallet-membership/std",
