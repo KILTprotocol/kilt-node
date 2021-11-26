@@ -57,7 +57,7 @@ use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult,
 };
@@ -436,6 +436,25 @@ impl did::Config for Runtime {
 	type WeightInfo = ();
 }
 
+parameter_types! {
+	pub const DidLookupDeposit: Balance = KILT;
+}
+
+impl pallet_did_lookup::Config for Runtime {
+	type Event = Event;
+	type Signature = Signature;
+	type Signer = <Signature as Verify>::Signer;
+	type DidIdentifier = DidIdentifier;
+
+	type Currency = Balances;
+	type Deposit = DidLookupDeposit;
+
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+
+	type WeightInfo = ();
+}
+
 impl crowdloan::Config for Runtime {
 	type Currency = Balances;
 	type Vesting = Vesting;
@@ -516,6 +535,7 @@ construct_runtime!(
 		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 10,
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 11,
 		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 12,
+		DidLookup: pallet_did_lookup::{Pallet, Call, Storage, Event<T>} = 13,
 
 		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>} = 15,
 		Authorship: pallet_authorship::{Pallet, Call, Storage} = 16,

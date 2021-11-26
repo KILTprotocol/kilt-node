@@ -11,7 +11,7 @@ substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branc
 bitflags = {default-features = false, version = "1.3.2"}
 hex-literal = {version = "0.3.1"}
 log = {default-features = false, version = "0.4.14"}
-scale-info = { version = "1.0", default-features = false, features = ["derive"] }
+scale-info = {version = "1.0", default-features = false, features = ["derive"]}
 serde = {features = ["derive"], optional = true, version = "1.0"}
 
 # kilt functionality
@@ -23,6 +23,7 @@ did = {default-features = false, path = "../../pallets/did"}
 kilt-launch = {default-features = false, path = "../../pallets/kilt-launch"}
 kilt-primitives = {path = "../../primitives", default-features = false}
 kilt-support = {path = "../../support", default-features = false, optional = true}
+pallet-did-lookup = {default-features = false, path = "../../pallets/pallet-did-lookup"}
 
 # kilt specific
 pallet-vesting = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.12"}
@@ -83,6 +84,7 @@ runtime-benchmarks = [
   "kilt-support",
   "kilt-support/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
+  "pallet-did-lookup/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
   "pallet-vesting/runtime-benchmarks",
@@ -106,6 +108,7 @@ std = [
   "pallet-aura/std",
   "pallet-authorship/std",
   "pallet-balances/std",
+  "pallet-did-lookup/std",
   "pallet-grandpa/std",
   "pallet-indices/std",
   "pallet-randomness-collective-flip/std",
