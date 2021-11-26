@@ -3565,6 +3565,7 @@ name = "kilt-support"
 version = "1.2.0"
 dependencies = [
  "frame-support",
+ "frame-system",
  "parity-scale-codec",
  "scale-info",
  "sp-runtime",
