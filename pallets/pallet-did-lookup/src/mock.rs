@@ -18,7 +18,7 @@
 
 use codec::{Decode, Encode};
 use frame_support::parameter_types;
-use kilt_support::{mock::mock_origin};
+use kilt_support::mock::mock_origin;
 use scale_info::TypeInfo;
 use sp_runtime::{
 	testing::Header,
