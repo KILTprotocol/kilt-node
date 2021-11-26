@@ -103,7 +103,7 @@ pub mod staking {
 	use super::{DAYS, HOURS};
 	use crate::{Balance, BlockNumber};
 
-	/// Minimum round length is 1 hour (600 * 6 second block times)
+	/// Minimum round length is 1 hour (300 * 12 second block times)
 	#[cfg(feature = "fast-gov")]
 	pub const MIN_BLOCKS_PER_ROUND: BlockNumber = 10;
 	#[cfg(not(feature = "fast-gov"))]
