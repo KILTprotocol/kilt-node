@@ -48,6 +48,7 @@ use sp_version::RuntimeVersion;
 
 use kilt_primitives::{
 	constants::{
+		self,
 		attestation::ATTESTATION_DEPOSIT,
 		delegation::{
 			DELEGATION_DEPOSIT, MAX_CHILDREN, MAX_PARENT_CHECKS, MAX_REMOVALS, MAX_REVOCATIONS,
@@ -62,10 +63,6 @@ use kilt_primitives::{
 		governance::{
 			COOLOFF_PERIOD, COUNCIL_MOTION_DURATION, ENACTMENT_PERIOD, FAST_TRACK_VOTING_PERIOD, LAUNCH_PERIOD,
 			SPEND_PERIOD, TECHNICAL_MOTION_DURATION, VOTING_PERIOD,
-		},
-		staking::{
-			DEFAULT_BLOCKS_PER_ROUND, MAX_CANDIDATES, MIN_BLOCKS_PER_ROUND, MIN_COLLATORS, NETWORK_REWARD_RATE,
-			STAKE_DURATION,
 		},
 		treasury::{INITIAL_PERIOD_LENGTH, INITIAL_PERIOD_REWARD_PER_BLOCK, TREASURY_PALLET_ID},
 		KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION,
@@ -258,7 +255,7 @@ impl parachain_info::Config for Runtime {}
 impl cumulus_pallet_aura_ext::Config for Runtime {}
 
 parameter_types! {
-	pub const MaxAuthorities: u32  = MAX_CANDIDATES;
+	pub const MaxAuthorities: u32 = constants::staking::MAX_CANDIDATES;
 }
 
 impl pallet_aura::Config for Runtime {
@@ -677,15 +674,15 @@ impl pallet_inflation::Config for Runtime {
 
 parameter_types! {
 	/// Minimum round length is 1 hour
-	pub const MinBlocksPerRound: BlockNumber = MIN_BLOCKS_PER_ROUND;
+	pub const MinBlocksPerRound: BlockNumber = constants::staking::MIN_BLOCKS_PER_ROUND;
 	/// Default length of a round/session is 2 hours
-	pub const DefaultBlocksPerRound: BlockNumber = DEFAULT_BLOCKS_PER_ROUND;
+	pub const DefaultBlocksPerRound: BlockNumber = constants::staking::DEFAULT_BLOCKS_PER_ROUND;
 	/// Unstaked balance can be unlocked after 7 days
-	pub const StakeDuration: BlockNumber = STAKE_DURATION;
+	pub const StakeDuration: BlockNumber = constants::staking::STAKE_DURATION;
 	/// Collator exit requests are delayed by 4 hours (2 rounds/sessions)
 	pub const ExitQueueDelay: u32 = 2;
 	/// Minimum 16 collators selected per round, default at genesis and minimum forever after
-	pub const MinCollators: u32 = MIN_COLLATORS;
+	pub const MinCollators: u32 = constants::staking::MIN_COLLATORS;
 	/// At least 4 candidates which cannot leave the network if there are no other candidates.
 	pub const MinRequiredCollators: u32 = 4;
 	/// We only allow one delegation per round.
@@ -699,16 +696,16 @@ parameter_types! {
 	/// Minimum stake required to be reserved to be a collator is 10_000
 	pub const MinCollatorStake: Balance = 10_000 * KILT;
 	/// Minimum stake required to be reserved to be a delegator is 1000
-	pub const MinDelegatorStake: Balance = 1000 * KILT;
+	pub const MinDelegatorStake: Balance = constants::staking::MIN_DELEGATOR_STAKE;
 	/// Maximum number of collator candidates
 	#[derive(Debug, PartialEq)]
-	pub const MaxCollatorCandidates: u32 = MAX_CANDIDATES;
+	pub const MaxCollatorCandidates: u32 = constants::staking::MAX_CANDIDATES;
 	/// Maximum number of concurrent requests to unlock unstaked balance
 	pub const MaxUnstakeRequests: u32 = 10;
 	/// The starting block number for the network rewards
 	pub const NetworkRewardStart: BlockNumber = INITIAL_PERIOD_LENGTH;
 	/// The rate in percent for the network rewards
-	pub const NetworkRewardRate: Perquintill = NETWORK_REWARD_RATE;
+	pub const NetworkRewardRate: Perquintill = constants::staking::NETWORK_REWARD_RATE;
 }
 
 impl parachain_staking::Config for Runtime {
