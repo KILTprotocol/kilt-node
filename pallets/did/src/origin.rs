@@ -20,6 +20,7 @@ use frame_support::{
 	codec::{Decode, Encode},
 	traits::EnsureOrigin,
 };
+use kilt_support::traits::CallSources;
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 use sp_std::marker::PhantomData;
@@ -57,7 +58,7 @@ where
 	}
 }
 
-impl<DidIdentifier: Clone, AccountId: Clone> kilt_support::traits::CallSources<AccountId, DidIdentifier>
+impl<DidIdentifier: Clone, AccountId: Clone> CallSources<AccountId, DidIdentifier>
 	for DidRawOrigin<DidIdentifier, AccountId>
 {
 	fn sender(&self) -> AccountId {
@@ -66,6 +67,22 @@ impl<DidIdentifier: Clone, AccountId: Clone> kilt_support::traits::CallSources<A
 
 	fn subject(&self) -> DidIdentifier {
 		self.id.clone()
+	}
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<OuterOrigin, AccountId, DidIdentifier>
+	kilt_support::traits::GenerateBenchmarkOrigin<OuterOrigin, AccountId, DidIdentifier>
+	for EnsureDidOrigin<DidIdentifier, AccountId>
+where
+	OuterOrigin: Into<Result<DidRawOrigin<DidIdentifier, AccountId>, OuterOrigin>>
+		+ From<DidRawOrigin<DidIdentifier, AccountId>>,
+{
+	fn generate_origin(sender: AccountId, subject: DidIdentifier) -> OuterOrigin {
+		OuterOrigin::from(DidRawOrigin {
+			id: subject,
+			submitter: sender,
+		})
 	}
 }
 

@@ -4520,6 +4520,7 @@ dependencies = [
  "pallet-aura",
  "pallet-authorship",
  "pallet-balances",
+ "pallet-did-lookup",
  "pallet-grandpa",
  "pallet-indices",
  "pallet-randomness-collective-flip",
@@ -5513,6 +5514,24 @@ dependencies = [
  "scale-info",
  "serde",
  "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-did-lookup"
+version = "1.2.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "kilt-primitives",
+ "kilt-support",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-io",
+ "sp-keystore",
  "sp-runtime",
  "sp-std",
 ]
@@ -6527,6 +6546,7 @@ dependencies = [
  "pallet-balances",
  "pallet-collective",
  "pallet-democracy",
+ "pallet-did-lookup",
  "pallet-indices",
  "pallet-inflation",
  "pallet-membership",
@@ -10745,6 +10765,7 @@ dependencies = [
  "pallet-balances",
  "pallet-collective",
  "pallet-democracy",
+ "pallet-did-lookup",
  "pallet-indices",
  "pallet-inflation",
  "pallet-membership",
