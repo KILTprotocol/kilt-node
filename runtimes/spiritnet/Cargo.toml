@@ -2,7 +2,7 @@
 authors = ["KILT <info@kilt.io>"]
 edition = "2018"
 name = "spiritnet-runtime"
-version = "1.2.0"
+version = "1.3.0"
 
 [dependencies]
 codec = {package = "parity-scale-codec", version = "2.3.1", default-features = false, features = ["derive"]}
