@@ -98,11 +98,12 @@ pub mod delegation {
 pub mod staking {
 	use sp_runtime::Perquintill;
 
+	use super::KILT;
 	#[cfg(not(feature = "fast-gov"))]
 	use super::{DAYS, HOURS};
-	use crate::BlockNumber;
+	use crate::{Balance, BlockNumber};
 
-	// Minimum round length is 1 hour (600 * 6 second block times)
+	/// Minimum round length is 1 hour (300 * 12 second block times)
 	#[cfg(feature = "fast-gov")]
 	pub const MIN_BLOCKS_PER_ROUND: BlockNumber = 10;
 	#[cfg(not(feature = "fast-gov"))]
@@ -127,6 +128,8 @@ pub mod staking {
 	pub const MAX_CANDIDATES: u32 = 16;
 	#[cfg(not(feature = "fast-gov"))]
 	pub const MAX_CANDIDATES: u32 = 75;
+
+	pub const MIN_DELEGATOR_STAKE: Balance = 20 * KILT;
 
 	pub const NETWORK_REWARD_RATE: Perquintill = Perquintill::from_percent(10);
 }
