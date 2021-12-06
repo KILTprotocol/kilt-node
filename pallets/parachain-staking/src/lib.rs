@@ -2112,36 +2112,38 @@ pub mod pallet {
 							.saturating_add(new_delegators);
 					});
 				}
-			// case 2: candidate will become member of TopCandidates
+			// case 5: candidate newly joins TopCandidates and might replace
+			// someone else
 			} else if let Ok(drop_out) = top_candidates.try_insert_replace(Stake {
 				owner: candidate.clone(),
 				amount: new_total,
 			}) {
+				// check if candidate replaces someone else
 				if let Some(drop_out) = drop_out {
-					let (id, candidate_stake, candidate_total) = CandidatePool::<T>::get(&drop_out.owner)
-						.map(|state| (state.id, state.stake, state.total))
-						.unwrap_or((candidate.clone(), new_self, new_self.saturating_add(new_delegators)));
-					if let Ok(i) = top_candidates
-						.linear_search(&Stake {
-							owner: id.clone(),
-							amount: candidate_total,
-						})
-						.map_err(|i| i)
-					{
+					// retrieve position in TopCandidatesd of drop_out
+					if let Ok(i) = top_candidates.linear_search(&Stake {
+						owner: drop_out.owner.clone(),
+						amount: drop_out.amount,
+					}) {
+						// update TotalStake if position if drop_out was collator
 						if i.saturated_into::<u32>() <= MaxSelectedCandidates::<T>::get() {
-							TotalCollatorStake::<T>::mutate(|total| {
-								total.collators =
-									total.collators.saturating_sub(old_self).saturating_add(candidate_stake);
-								total.delegators = total
-									.delegators
-									.saturating_sub(old_delegators)
-									// safe because total >= stake
-									.saturating_add(candidate_total - candidate_stake);
-							});
-						}
-
-						if &id != &drop_out.owner {
-							Self::deposit_event(Event::LeftTopCandidates(drop_out.owner));
+							// get drop_out state (should always exist)
+							if let Some(Candidate { stake: drop_stake, .. }) = CandidatePool::<T>::get(&drop_out.owner)
+							{
+								TotalCollatorStake::<T>::mutate(|total| {
+									total.collators =
+										total.collators.saturating_sub(drop_stake).saturating_add(new_self);
+									total.delegators = total
+										.delegators
+										// safe because total >= stake
+										.saturating_sub(drop_out.amount - drop_stake)
+										.saturating_add(new_delegators);
+								});
+							}
+							// only trigger event if candidate and drop_out differ
+							if candidate != drop_out.owner {
+								Self::deposit_event(Event::LeftTopCandidates(drop_out.owner));
+							}
 						}
 					}
 				}
