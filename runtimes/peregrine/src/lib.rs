@@ -38,7 +38,7 @@ use sp_core::{
 };
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, Perbill, Permill, Perquintill,
 };
@@ -47,6 +47,7 @@ use sp_version::RuntimeVersion;
 
 use kilt_primitives::{
 	constants::{
+		self,
 		attestation::ATTESTATION_DEPOSIT,
 		delegation::{
 			DELEGATION_DEPOSIT, MAX_CHILDREN, MAX_PARENT_CHECKS, MAX_REMOVALS, MAX_REVOCATIONS,
@@ -62,10 +63,6 @@ use kilt_primitives::{
 			COOLOFF_PERIOD, COUNCIL_MOTION_DURATION, ENACTMENT_PERIOD, FAST_TRACK_VOTING_PERIOD, LAUNCH_PERIOD,
 			SPEND_PERIOD, TECHNICAL_MOTION_DURATION, VOTING_PERIOD,
 		},
-		staking::{
-			DEFAULT_BLOCKS_PER_ROUND, MAX_CANDIDATES, MIN_BLOCKS_PER_ROUND, MIN_COLLATORS, NETWORK_REWARD_RATE,
-			STAKE_DURATION,
-		},
 		treasury::{INITIAL_PERIOD_LENGTH, INITIAL_PERIOD_REWARD_PER_BLOCK, TREASURY_PALLET_ID},
 		KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION,
 	},
@@ -80,6 +77,7 @@ use sp_version::NativeVersion;
 #[cfg(feature = "runtime-benchmarks")]
 use {frame_system::EnsureSigned, kilt_primitives::benchmarks::DummySignature, kilt_support::signature::AlwaysVerify};
 
+mod migrations;
 #[cfg(test)]
 mod tests;
 mod weights;
@@ -101,7 +99,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 10200,
+	spec_version: 10300,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -201,7 +199,7 @@ impl pallet_balances::Config for Runtime {
 	type Balance = Balance;
 	/// The ubiquitous event type.
 	type Event = Event;
-	type DustRemoval = ();
+	type DustRemoval = Treasury;
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type WeightInfo = weights::pallet_balances::WeightInfo<Runtime>;
@@ -251,7 +249,7 @@ impl parachain_info::Config for Runtime {}
 impl cumulus_pallet_aura_ext::Config for Runtime {}
 
 parameter_types! {
-	pub const MaxAuthorities: u32  = MAX_CANDIDATES;
+	pub const MaxAuthorities: u32 = constants::staking::MAX_CANDIDATES;
 }
 
 impl pallet_aura::Config for Runtime {
@@ -627,6 +625,25 @@ impl did::Config for Runtime {
 	type WeightInfo = weights::did::WeightInfo<Runtime>;
 }
 
+parameter_types! {
+	pub const DidLookupDeposit: Balance = KILT;
+}
+
+impl pallet_did_lookup::Config for Runtime {
+	type Event = Event;
+	type Signature = Signature;
+	type Signer = <Signature as Verify>::Signer;
+	type DidIdentifier = DidIdentifier;
+
+	type Currency = Balances;
+	type Deposit = DidLookupDeposit;
+
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+
+	type WeightInfo = weights::pallet_did_lookup::WeightInfo<Runtime>;
+}
+
 impl crowdloan::Config for Runtime {
 	type Currency = Balances;
 	type Vesting = Vesting;
@@ -651,15 +668,15 @@ impl pallet_inflation::Config for Runtime {
 
 parameter_types! {
 	/// Minimum round length is 1 hour
-	pub const MinBlocksPerRound: BlockNumber = MIN_BLOCKS_PER_ROUND;
+	pub const MinBlocksPerRound: BlockNumber = constants::staking::MIN_BLOCKS_PER_ROUND;
 	/// Default length of a round/session is 2 hours
-	pub const DefaultBlocksPerRound: BlockNumber = DEFAULT_BLOCKS_PER_ROUND;
+	pub const DefaultBlocksPerRound: BlockNumber = constants::staking::DEFAULT_BLOCKS_PER_ROUND;
 	/// Unstaked balance can be unlocked after 7 days
-	pub const StakeDuration: BlockNumber = STAKE_DURATION;
+	pub const StakeDuration: BlockNumber = constants::staking::STAKE_DURATION;
 	/// Collator exit requests are delayed by 4 hours (2 rounds/sessions)
 	pub const ExitQueueDelay: u32 = 2;
 	/// Minimum 16 collators selected per round, default at genesis and minimum forever after
-	pub const MinCollators: u32 = MIN_COLLATORS;
+	pub const MinCollators: u32 = constants::staking::MIN_COLLATORS;
 	/// At least 4 candidates which cannot leave the network if there are no other candidates.
 	pub const MinRequiredCollators: u32 = 4;
 	/// We only allow one delegation per round.
@@ -673,16 +690,16 @@ parameter_types! {
 	/// Minimum stake required to be reserved to be a collator is 10_000
 	pub const MinCollatorStake: Balance = 10_000 * KILT;
 	/// Minimum stake required to be reserved to be a delegator is 1000
-	pub const MinDelegatorStake: Balance = 1000 * KILT;
+	pub const MinDelegatorStake: Balance = constants::staking::MIN_DELEGATOR_STAKE;
 	/// Maximum number of collator candidates
 	#[derive(Debug, PartialEq)]
-	pub const MaxCollatorCandidates: u32 = MAX_CANDIDATES;
+	pub const MaxCollatorCandidates: u32 = constants::staking::MAX_CANDIDATES;
 	/// Maximum number of concurrent requests to unlock unstaked balance
 	pub const MaxUnstakeRequests: u32 = 10;
 	/// The starting block number for the network rewards
 	pub const NetworkRewardStart: BlockNumber = INITIAL_PERIOD_LENGTH;
 	/// The rate in percent for the network rewards
-	pub const NetworkRewardRate: Perquintill = NETWORK_REWARD_RATE;
+	pub const NetworkRewardRate: Perquintill = constants::staking::NETWORK_REWARD_RATE;
 }
 
 impl parachain_staking::Config for Runtime {
@@ -742,7 +759,7 @@ construct_runtime! {
 		Aura: pallet_aura::{Pallet, Config<T>} = 23,
 		AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 24,
 
-		// Governance stuff; uncallable initially.
+		// Governance stuff
 		Democracy: pallet_democracy::{Pallet, Call, Storage, Config<T>, Event<T>} = 30,
 		Council: pallet_collective::<Instance1>::{Pallet, Call, Storage, Origin<T>, Event<T>, Config<T>} = 31,
 		TechnicalCommittee: pallet_collective::<Instance2>::{Pallet, Call, Storage, Origin<T>, Event<T>, Config<T>} = 32,
@@ -761,14 +778,13 @@ construct_runtime! {
 
 		// KILT Pallets. Start indices 60 to leave room
 		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 60,
-
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>} = 61,
 		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 62,
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 63,
 		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 64,
-
 		CrowdloanContributors: crowdloan::{Pallet, Call, Storage, Event<T>, Config<T>, ValidateUnsigned} = 65,
 		Inflation: pallet_inflation::{Pallet, Storage} = 66,
+		DidLookup: pallet_did_lookup::{Pallet, Call, Storage, Event<T>} = 67,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>, Config} = 80,
@@ -846,8 +862,14 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signatu
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various modules.
-pub type Executive =
-	frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllPallets>;
+pub type Executive = frame_executive::Executive<
+	Runtime,
+	Block,
+	frame_system::ChainContext<Runtime>,
+	Runtime,
+	AllPallets,
+	migrations::RemoveCrowdloanContributors,
+>;
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
@@ -986,6 +1008,7 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, ctype, Ctype);
 			list_benchmark!(list, extra, delegation, Delegation);
 			list_benchmark!(list, extra, did, Did);
+			list_benchmark!(list, extra, pallet_did_lookup, DidLookup);
 			list_benchmark!(list, extra, kilt_launch, KiltLaunch);
 			list_benchmark!(list, extra, pallet_inflation, Inflation);
 			list_benchmark!(list, extra, parachain_staking, ParachainStaking);
@@ -1048,6 +1071,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, crowdloan, CrowdloanContributors);
 			add_benchmark!(params, batches, delegation, Delegation);
 			add_benchmark!(params, batches, did, Did);
+			add_benchmark!(params, batches, pallet_did_lookup, DidLookup);
 			add_benchmark!(params, batches, kilt_launch, KiltLaunch);
 			add_benchmark!(params, batches, pallet_inflation, Inflation);
 			add_benchmark!(params, batches, parachain_staking, ParachainStaking);

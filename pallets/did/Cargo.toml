@@ -4,7 +4,7 @@ description = "Enables adding and removing decentralized identifiers (DIDs)."
 edition = "2018"
 name = "did"
 repository = "https://github.com/KILTprotocol/mashnet-node"
-version = "1.2.0"
+version = "1.3.0"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
@@ -40,6 +40,7 @@ sp-io = {branch = "polkadot-v0.9.12", default-features = false, git = "https://g
 sp-runtime = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-std = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
 
+# benchmarking
 frame-benchmarking = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
 pallet-balances = {optional = true, branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-keystore = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
