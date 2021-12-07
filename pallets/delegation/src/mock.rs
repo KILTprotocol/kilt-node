@@ -72,6 +72,7 @@ pub mod runtime {
 	use ctype::mock as ctype_mock;
 	use kilt_primitives::constants::delegation::DELEGATION_DEPOSIT;
 	use kilt_support::{deposit::Deposit, signature::EqualVerify};
+	use kilt_support::mock::mock_origin;
 
 	pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	pub type Block = frame_system::mocking::MockBlock<Test>;
@@ -93,6 +94,7 @@ pub mod runtime {
 			Ctype: ctype::{Pallet, Call, Storage, Event<T>},
 			Delegation: delegation::{Pallet, Call, Storage, Event<T>},
 			Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
+			MockOrigin: mock_origin::{Pallet, Origin<T>},
 		}
 	);
 
@@ -146,14 +148,20 @@ pub mod runtime {
 		type ReserveIdentifier = [u8; 8];
 	}
 
+	impl mock_origin::Config for Test {
+		type Origin = Origin;
+		type AccountId = kilt_primitives::AccountId;
+		type DidIdentifier = kilt_primitives::AccountId;
+	}
+
 	parameter_types! {
 		pub const Fee: TestBalance = 500;
 	}
 
 	impl ctype::Config for Test {
 		type CtypeCreatorId = TestCtypeOwner;
-		type EnsureOrigin = EnsureSigned<TestCtypeOwner>;
-		type OriginSuccess = TestCtypeOwner;
+		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<kilt_primitives::AccountId, Self::CtypeCreatorId>;
+		type OriginSuccess = mock_origin::DoubleOrigin<kilt_primitives::AccountId, Self::CtypeCreatorId>;
 		type Event = ();
 		type WeightInfo = ();
 
@@ -177,8 +185,8 @@ pub mod runtime {
 		type DelegationSignatureVerification = EqualVerify<Self::DelegationEntityId, Vec<u8>>;
 		type DelegationEntityId = TestDelegatorId;
 		type DelegationNodeId = TestDelegationNodeId;
-		type EnsureOrigin = EnsureSigned<TestDelegatorId>;
-		type OriginSuccess = TestDelegatorId;
+		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<kilt_primitives::AccountId, Self::DelegationEntityId>;
+		type OriginSuccess = mock_origin::DoubleOrigin<kilt_primitives::AccountId, Self::DelegationEntityId>;
 		type Event = ();
 		type MaxSignatureByteLength = MaxSignatureByteLength;
 		type MaxParentChecks = MaxParentChecks;
