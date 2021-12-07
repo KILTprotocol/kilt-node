@@ -218,6 +218,11 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 		self.0
 	}
 
+	/// Returns a reference to an element or None if out of bounds.
+	pub fn get(&self, index: usize) -> Option<&T> {
+		self.0.get(index)
+	}
+
 	/// Sorts from greatest to lowest.
 	pub fn sort_greatest_to_lowest(&mut self) {
 		(self.0[..]).sort_by(|a, b| b.cmp(a));

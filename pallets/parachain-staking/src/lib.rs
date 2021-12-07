@@ -469,7 +469,7 @@ pub mod pallet {
 		CollatorCanceledExit(T::AccountId),
 		/// An account has left the set of collator candidates.
 		/// \[account, amount of funds un-staked\]
-		CollatorLeft(T::AccountId, BalanceOf<T>),
+		CandidateLeft(T::AccountId, BalanceOf<T>),
 		/// An account was forcedly removed from the  set of collator
 		/// candidates. \[account, amount of funds un-staked\]
 		CollatorRemoved(T::AccountId, BalanceOf<T>),
@@ -1245,7 +1245,7 @@ pub mod pallet {
 
 			Self::remove_candidate(&collator, &state)?;
 
-			Self::deposit_event(Event::CollatorLeft(collator, total_amount));
+			Self::deposit_event(Event::CandidateLeft(collator, total_amount));
 
 			Ok(Some(<T as pallet::Config>::WeightInfo::execute_leave_candidates(
 				T::MaxTopCandidates::get(),
@@ -2085,14 +2085,6 @@ pub mod pallet {
 			};
 			let new_total = new_self.saturating_add(new_delegators);
 
-			// case 1 (Already member with old): Ok(i) = top_candidates.linear_search(old)
-			// case 2 (Not yet member with old): Err(i) = top_candidates.linear_search(old)
-			// case 3 (Member with new): Ok(i) = top_candidates.linear_search(new)
-			// case 4 (Member with new): Ok(None) = top_candidates.try_insert_replace(new)
-			// 2 + 3 + 4 same
-			// case 5 (Replaces someone with new): Ok(Some(stake)) =
-			// top_candidates.try_insert_replace(new)
-
 			// case 1: candidate has been a member of TopCandidates
 			if let Ok(i) = top_candidates.linear_search(&old_stake) {
 				top_candidates.mutate(|vec| {
@@ -2103,7 +2095,7 @@ pub mod pallet {
 				TopCandidates::<T>::put(top_candidates);
 
 				// update total amount at stake only if candidate is collator
-				if i.saturated_into::<u32>() <= MaxSelectedCandidates::<T>::get() {
+				if i.saturated_into::<u32>() < MaxSelectedCandidates::<T>::get() {
 					TotalCollatorStake::<T>::mutate(|total| {
 						total.collators = total.collators.saturating_sub(old_self).saturating_add(new_self);
 						total.delegators = total
@@ -2112,37 +2104,46 @@ pub mod pallet {
 							.saturating_add(new_delegators);
 					});
 				}
-			// case 5: candidate newly joins TopCandidates and might replace
-			// someone else
+			// case 2: candidate newly joins TopCandidates and either replaces
+			// another candidate in the list or updates their own stake
 			} else if let Ok(drop_out) = top_candidates.try_insert_replace(Stake {
 				owner: candidate.clone(),
 				amount: new_total,
 			}) {
-				// check if candidate replaces someone else
-				if let Some(drop_out) = drop_out {
-					// retrieve position in TopCandidatesd of drop_out
-					if let Ok(i) = top_candidates.linear_search(&Stake {
-						owner: drop_out.owner.clone(),
-						amount: drop_out.amount,
-					}) {
-						// update TotalStake if position if drop_out was collator
-						if i.saturated_into::<u32>() <= MaxSelectedCandidates::<T>::get() {
-							// get drop_out state (should always exist)
-							if let Some(Candidate { stake: drop_stake, .. }) = CandidatePool::<T>::get(&drop_out.owner)
-							{
-								TotalCollatorStake::<T>::mutate(|total| {
-									total.collators =
-										total.collators.saturating_sub(drop_stake).saturating_add(new_self);
-									total.delegators = total
-										.delegators
-										// safe because total >= stake
-										.saturating_sub(drop_out.amount - drop_stake)
-										.saturating_add(new_delegators);
-								});
-							}
-							// only trigger event if candidate and drop_out differ
-							if candidate != drop_out.owner {
-								Self::deposit_event(Event::LeftTopCandidates(drop_out.owner));
+				// retrieve position of candidate in TopCandidates
+				if let Ok(i) = top_candidates.linear_search(&Stake {
+					owner: candidate.clone(),
+					amount: new_total,
+				}) {
+					// update TotalStake only if candidate becomes collator
+					let max_selected_candidates = MaxSelectedCandidates::<T>::get().saturated_into::<usize>();
+					if i < max_selected_candidates {
+						// candidate either pushed out the least staked collator or updated their own
+						// stake
+						let dropped_col_index = max_selected_candidates.min(top_candidates.len().saturating_sub(1));
+
+						// get amount to substract from TotalCollatorStake
+						let (drop_self, drop_delegators) = top_candidates
+							.get(dropped_col_index)
+							.map(|stake| CandidatePool::<T>::get(&stake.owner))
+							.flatten()
+							// safe because total >= stake
+							.map(|state| (state.stake, state.total - state.stake))
+							// default to old stake because candidate replaced themselves if drop_out DNE
+							.unwrap_or((old_self, old_delegators));
+
+						TotalCollatorStake::<T>::mutate(|total| {
+							total.collators = total.collators.saturating_sub(drop_self).saturating_add(new_self);
+							total.delegators = total
+								.delegators
+								.saturating_sub(drop_delegators)
+								.saturating_add(new_delegators);
+						});
+
+						// only trigger event if candidate and drop_out differ
+						if let Some(Stake { owner: drop_id, .. }) = drop_out {
+							if drop_id != candidate {
+								Self::deposit_event(Event::LeftTopCandidates(drop_id));
 							}
 						}
 					}
