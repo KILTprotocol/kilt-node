@@ -95,10 +95,7 @@ use frame_support::{
 	traits::{Get, ReservableCurrency},
 };
 use migrations::DelegationStorageVersion;
-use sp_runtime::{
-	traits::{Hash, Zero},
-	DispatchError,
-};
+use sp_runtime::{traits::Hash, DispatchError};
 use sp_std::vec::Vec;
 
 #[frame_support::pallet]

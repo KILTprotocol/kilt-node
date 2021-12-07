@@ -117,7 +117,6 @@ use codec::Encode;
 use frame_support::{
 	dispatch::{DispatchResult, Dispatchable, GetDispatchInfo, PostDispatchInfo},
 	ensure,
-	pallet_prelude::Weight,
 	storage::types::StorageMap,
 	traits::{Get, OnUnbalanced, WithdrawReasons},
 	Parameter,
