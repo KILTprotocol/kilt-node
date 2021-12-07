@@ -24,7 +24,7 @@ use frame_support::{
 	traits::{Currency, Get},
 };
 use frame_system::RawOrigin;
-use kilt_support::signature::VerifySignature;
+use kilt_support::{signature::VerifySignature, traits::GenerateBenchmarkOrigin};
 use sp_core::{offchain::KeyTypeId, sr25519};
 use sp_io::crypto::sr25519_generate;
 use sp_std::{num::NonZeroU32, vec::Vec};
@@ -221,6 +221,7 @@ benchmarks! {
 			T::AccountId,
 			<<T as Config>::DelegationSignatureVerification as VerifySignature>::Payload,
 		)>,
+		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::CtypeCreatorId>,
 	}
 
 	create_hierarchy {
