@@ -23,6 +23,7 @@ use crate::*;
 
 const DEFAULT_HIERARCHY_ID_SEED: u64 = 1u64;
 const ALTERNATIVE_HIERARCHY_ID_SEED: u64 = 2u64;
+
 pub const DELEGATION_ID_SEED_1: u64 = 3u64;
 pub const DELEGATION_ID_SEED_2: u64 = 4u64;
 pub const DELEGATION_ID_SEED_3: u64 = 5u64;
@@ -52,35 +53,41 @@ where
 pub mod runtime {
 	use super::*;
 
-	use codec::Encode;
+	use codec::{Decode, Encode};
 	use frame_support::{
 		parameter_types,
 		storage::bounded_btree_set::BoundedBTreeSet,
 		traits::{Currency, Get},
 		weights::constants::RocksDbWeight,
 	};
-	use frame_system::EnsureSigned;
+	use scale_info::TypeInfo;
 	use sp_core::{ed25519, sr25519, Pair, H256};
 	use sp_keystore::{testing::KeyStore, KeystoreExt};
 	use sp_runtime::{
 		testing::Header,
-		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		MultiSigner,
+		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup},
+		AccountId32, MultiSigner,
 	};
 	use sp_std::sync::Arc;
 
 	use ctype::mock as ctype_mock;
 	use kilt_primitives::constants::delegation::DELEGATION_DEPOSIT;
-	use kilt_support::{deposit::Deposit, signature::EqualVerify};
-	use kilt_support::mock::mock_origin;
+	use kilt_support::{deposit::Deposit, mock::mock_origin, signature::EqualVerify};
 
 	pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	pub type Block = frame_system::mocking::MockBlock<Test>;
 
-	type TestCtypeOwner = kilt_primitives::AccountId;
+	#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeInfo, Default)]
+	pub struct DidIdentifier(AccountId32);
+
+	impl From<AccountId32> for DidIdentifier {
+		fn from(acc: AccountId32) -> Self {
+			DidIdentifier(acc)
+		}
+	}
+
 	type TestDelegationNodeId = kilt_primitives::Hash;
-	type TestDelegatorId = TestCtypeOwner;
-	type TestDelegateSignature = (TestDelegatorId, Vec<u8>);
+	type TestDelegateSignature = (DidIdentifier, Vec<u8>);
 	type TestBalance = kilt_primitives::Balance;
 	type TestCtypeHash = kilt_primitives::Hash;
 
@@ -110,7 +117,7 @@ pub mod runtime {
 		type BlockNumber = u64;
 		type Hash = kilt_primitives::Hash;
 		type Hashing = BlakeTwo256;
-		type AccountId = <<kilt_primitives::Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+		type AccountId = kilt_primitives::AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
 		type Header = Header;
 		type Event = ();
@@ -151,7 +158,7 @@ pub mod runtime {
 	impl mock_origin::Config for Test {
 		type Origin = Origin;
 		type AccountId = kilt_primitives::AccountId;
-		type DidIdentifier = kilt_primitives::AccountId;
+		type DidIdentifier = DidIdentifier;
 	}
 
 	parameter_types! {
@@ -159,7 +166,7 @@ pub mod runtime {
 	}
 
 	impl ctype::Config for Test {
-		type CtypeCreatorId = TestCtypeOwner;
+		type CtypeCreatorId = DidIdentifier;
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<kilt_primitives::AccountId, Self::CtypeCreatorId>;
 		type OriginSuccess = mock_origin::DoubleOrigin<kilt_primitives::AccountId, Self::CtypeCreatorId>;
 		type Event = ();
@@ -183,7 +190,7 @@ pub mod runtime {
 	impl Config for Test {
 		type Signature = TestDelegateSignature;
 		type DelegationSignatureVerification = EqualVerify<Self::DelegationEntityId, Vec<u8>>;
-		type DelegationEntityId = TestDelegatorId;
+		type DelegationEntityId = DidIdentifier;
 		type DelegationNodeId = TestDelegationNodeId;
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<kilt_primitives::AccountId, Self::DelegationEntityId>;
 		type OriginSuccess = mock_origin::DoubleOrigin<kilt_primitives::AccountId, Self::DelegationEntityId>;
@@ -198,20 +205,24 @@ pub mod runtime {
 		type WeightInfo = ();
 	}
 
+	pub(crate) const ACCOUNT_00: kilt_primitives::AccountId = kilt_primitives::AccountId::new([1u8; 32]);
+	pub(crate) const ACCOUNT_01: kilt_primitives::AccountId = kilt_primitives::AccountId::new([2u8; 32]);
+	pub(crate) const ACCOUNT_02: kilt_primitives::AccountId = kilt_primitives::AccountId::new([3u8; 32]);
+
 	const ALICE_SEED: [u8; 32] = [0u8; 32];
 	const BOB_SEED: [u8; 32] = [1u8; 32];
 	const CHARLIE_SEED: [u8; 32] = [2u8; 32];
 
-	pub fn get_origin(account: TestDelegatorId) -> Origin {
-		Origin::signed(account)
+	pub fn get_ed25519_did(public_key: ed25519::Public) -> DidIdentifier {
+		MultiSigner::from(public_key).into_account().into()
 	}
 
-	pub fn get_ed25519_account(public_key: ed25519::Public) -> TestDelegatorId {
-		MultiSigner::from(public_key).into_account()
+	pub fn get_sr25519_did(public_key: sr25519::Public) -> DidIdentifier {
+		MultiSigner::from(public_key).into_account().into()
 	}
 
-	pub fn get_sr25519_account(public_key: sr25519::Public) -> TestDelegatorId {
-		MultiSigner::from(public_key).into_account()
+	pub(crate) fn ed_25519_pair(seed: [u8; 32]) -> ed25519::Pair {
+		ed25519::Pair::from_seed(&seed)
 	}
 
 	pub fn get_alice_ed25519() -> ed25519::Pair {
@@ -256,17 +267,15 @@ pub mod runtime {
 		hierarchy_id: T::DelegationNodeId,
 		owner: T::DelegationEntityId,
 		parent: Option<T::DelegationNodeId>,
-	) -> DelegationNode<T>
-	where
-		DelegatorIdOf<T>: Into<AccountIdOf<T>>,
-	{
+		deposit_owner: <T as frame_system::Config>::AccountId,
+	) -> DelegationNode<T> {
 		DelegationNode {
 			details: generate_base_delegation_details(owner.clone()),
 			children: BoundedBTreeSet::new(),
 			hierarchy_root_id: hierarchy_id,
 			parent,
 			deposit: Deposit {
-				owner: owner.into(),
+				owner: deposit_owner,
 				amount: <T as Config>::Deposit::get(),
 			},
 		}
@@ -302,7 +311,7 @@ pub mod runtime {
 		pub delegation_id: TestDelegationNodeId,
 		pub hierarchy_id: TestDelegationNodeId,
 		pub parent_id: TestDelegationNodeId,
-		pub delegate: TestDelegatorId,
+		pub delegate: DidIdentifier,
 		pub permissions: Permissions,
 		pub delegate_signature: TestDelegateSignature,
 	}
@@ -371,23 +380,21 @@ pub mod runtime {
 			T::DelegationNodeId,
 			DelegationHierarchyDetails<T>,
 			DelegatorIdOf<T>,
-			// AccountIdOf<T>,
+			AccountIdOf<T>,
 		)>,
 	) where
-		DelegatorIdOf<T>: Into<AccountIdOf<T>>,
 		T: Config,
 	{
-		for delegation_hierarchy in delegation_hierarchies {
+		for ( root_id, details, hierarchy_owner, deposit_owner) in delegation_hierarchies {
 			// manually mint to enable deposit reserving
-			let deposit_owner = delegation_hierarchy.2.clone().into();
-			let balance = CurrencyOf::<T>::free_balance(&deposit_owner.clone());
-			CurrencyOf::<T>::make_free_balance_be(&deposit_owner.clone(), balance + <T as Config>::Deposit::get());
+			let balance = CurrencyOf::<T>::free_balance(&deposit_owner);
+			CurrencyOf::<T>::make_free_balance_be(&deposit_owner, balance + <T as Config>::Deposit::get());
 
 			// reserve deposit and store
 			delegation::Pallet::<T>::create_and_store_new_hierarchy(
-				delegation_hierarchy.0,
-				delegation_hierarchy.1.clone(),
-				delegation_hierarchy.2.clone(),
+				root_id,
+				details,
+				hierarchy_owner,
 				deposit_owner.clone(),
 			)
 			.expect("Each deposit owner should have sufficient balance to create a hierarchy");
@@ -422,12 +429,12 @@ pub mod runtime {
 		/// endowed accounts with balances
 		balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>,
 		/// initial ctypes & owners
-		ctypes: Vec<(TestCtypeHash, AccountIdOf<Test>)>,
+		ctypes: Vec<(TestCtypeHash, DidIdentifier)>,
 		delegation_hierarchies_stored: Vec<(
 			TestDelegationNodeId,
 			DelegationHierarchyDetails<Test>,
 			DelegatorIdOf<Test>,
-			// AccountIdOf<Test>,
+			AccountIdOf<Test>,
 		)>,
 		delegations_stored: Vec<(TestDelegationNodeId, DelegationNode<Test>)>,
 		storage_version: DelegationStorageVersion,
@@ -440,7 +447,7 @@ pub mod runtime {
 				TestDelegationNodeId,
 				DelegationHierarchyDetails<Test>,
 				DelegatorIdOf<Test>,
-				// AccountIdOf<Test>,
+				AccountIdOf<Test>,
 			)>,
 		) -> Self {
 			self.delegation_hierarchies_stored = delegation_hierarchies;
@@ -452,7 +459,7 @@ pub mod runtime {
 			self
 		}
 
-		pub fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, TestCtypeOwner)>) -> Self {
+		pub fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, DidIdentifier)>) -> Self {
 			self.ctypes = ctypes;
 			self
 		}

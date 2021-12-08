@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{assert_err, assert_noop, assert_ok};
+use kilt_support::mock::mock_origin::DoubleOrigin;
 use sp_core::Pair;
 
 use crate::{
@@ -31,26 +32,26 @@ use sp_runtime::traits::Zero;
 #[test]
 fn create_root_delegation_successful() {
 	let creator_keypair = get_alice_ed25519();
-	let creator = get_ed25519_account(creator_keypair.public());
+	let creator = get_ed25519_did(creator_keypair.public());
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let operation = generate_base_delegation_hierarchy_creation_operation::<Test>(hierarchy_root_id);
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(operation.ctype_hash, creator.clone())])
-		.with_balances(vec![(creator.clone(), <Test as Config>::Deposit::get())])
+		.with_balances(vec![(ACCOUNT_00.clone(), <Test as Config>::Deposit::get())])
 		.build()
 		.execute_with(|| {
 			// Create root hierarchy
 			assert_ok!(Delegation::create_hierarchy(
-				get_origin(creator.clone()),
+				DoubleOrigin(ACCOUNT_00.clone(), creator.clone()).into(),
 				operation.id,
 				operation.ctype_hash
 			));
 
 			// Check reserved balance
 			assert_eq!(
-				Balances::reserved_balance(creator.clone()),
+				Balances::reserved_balance(ACCOUNT_00.clone()),
 				<Test as Config>::Deposit::get()
 			);
 
@@ -66,7 +67,7 @@ fn create_root_delegation_successful() {
 			assert!(stored_delegation_root.parent.is_none());
 			assert!(stored_delegation_root.children.len().is_zero());
 			assert_eq!(stored_delegation_root.details.owner, creator.clone());
-			assert_eq!(stored_delegation_root.deposit.owner, creator);
+			assert_eq!(stored_delegation_root.deposit.owner, ACCOUNT_00);
 			assert!(!stored_delegation_root.details.revoked);
 		});
 }
@@ -74,23 +75,30 @@ fn create_root_delegation_successful() {
 #[test]
 fn duplicate_create_root_delegation_error() {
 	let creator_keypair = get_alice_ed25519();
-	let creator = get_ed25519_account(creator_keypair.public());
+	let creator = get_ed25519_did(creator_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
 
 	let operation = generate_base_delegation_hierarchy_creation_operation::<Test>(hierarchy_root_id);
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
-		.with_balances(vec![(creator.clone(), <Test as Config>::Deposit::get())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			creator.clone(),
+			ACCOUNT_00,
+		)])
+		.with_balances(vec![(ACCOUNT_00.clone(), <Test as Config>::Deposit::get())])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Delegation::create_hierarchy(get_origin(creator.clone()), operation.id, operation.ctype_hash),
+				Delegation::create_hierarchy(
+					DoubleOrigin(ACCOUNT_00.clone(), creator.clone()).into(),
+					operation.id,
+					operation.ctype_hash
+				),
 				Error::<Test>::HierarchyAlreadyExists
 			);
 		});
@@ -99,7 +107,7 @@ fn duplicate_create_root_delegation_error() {
 #[test]
 fn ctype_not_found_create_root_delegation_error() {
 	let creator_keypair = get_alice_ed25519();
-	let creator = get_ed25519_account(creator_keypair.public());
+	let creator = get_ed25519_did(creator_keypair.public());
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 
@@ -108,7 +116,11 @@ fn ctype_not_found_create_root_delegation_error() {
 	// No CType stored
 	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
-			Delegation::create_hierarchy(get_origin(creator.clone()), operation.id, operation.ctype_hash),
+			Delegation::create_hierarchy(
+				DoubleOrigin(ACCOUNT_00.clone(), creator.clone()).into(),
+				operation.id,
+				operation.ctype_hash
+			),
 			ctype::Error::<Test>::CTypeNotFound
 		);
 	});
@@ -119,28 +131,30 @@ fn ctype_not_found_create_root_delegation_error() {
 #[test]
 fn create_delegation_direct_root_successful() {
 	let creator_keypair = get_alice_ed25519();
-	let creator = get_ed25519_account(creator_keypair.public());
-	let delegate = get_sr25519_account(get_bob_sr25519().public());
+	let creator = get_ed25519_did(creator_keypair.public());
+	let delegate = get_sr25519_did(get_bob_sr25519().public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			creator.clone(),
+			ACCOUNT_00,
+		)])
 		.with_balances(vec![
-			(creator.clone(), <Test as Config>::Deposit::get()),
-			(delegate.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_00.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_01.clone(), <Test as Config>::Deposit::get()),
 		])
 		.build()
 		.execute_with(|| {
 			// Create delegation to root
-			let (delegation_id, delegation_node) = (
-				delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-				generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
-			);
+			let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+			let delegation_node =
+				generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id), ACCOUNT_01);
 			let delegation_info = Delegation::calculate_delegation_creation_hash(
 				&delegation_id,
 				&hierarchy_root_id,
@@ -153,13 +167,13 @@ fn create_delegation_direct_root_successful() {
 
 			// 1 Deposit should be reserved for hierarchy
 			assert_eq!(
-				Balances::reserved_balance(creator.clone()),
+				Balances::reserved_balance(ACCOUNT_00.clone()),
 				<Test as Config>::Deposit::get()
 			);
 
 			// Add delegation to root
 			assert_ok!(Delegation::add_delegation(
-				get_origin(creator.clone()),
+				DoubleOrigin(ACCOUNT_00.clone(), creator.clone()).into(),
 				operation.delegation_id,
 				operation.parent_id,
 				operation.delegate.clone(),
@@ -169,7 +183,7 @@ fn create_delegation_direct_root_successful() {
 
 			// 2 Deposits should be reserved for hierarchy and delegation to root
 			assert_eq!(
-				Balances::reserved_balance(creator.clone()),
+				Balances::reserved_balance(ACCOUNT_00.clone()),
 				2 * <Test as Config>::Deposit::get()
 			);
 
@@ -193,33 +207,34 @@ fn create_delegation_direct_root_successful() {
 #[test]
 fn create_delegation_with_parent_successful() {
 	let creator_keypair = get_alice_ed25519();
-	let creator = get_ed25519_account(creator_keypair.public());
-	let delegate = get_sr25519_account(get_bob_sr25519().public());
+	let creator = get_ed25519_did(creator_keypair.public());
+	let delegate = get_sr25519_did(get_bob_sr25519().public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
-	let (parent_id, parent_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, creator.clone(), Some(hierarchy_root_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let parent_node =
+		generate_base_delegation_node(hierarchy_root_id, creator.clone(), Some(hierarchy_root_id), ACCOUNT_00);
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			creator.clone(),
+			ACCOUNT_00,
+		)])
 		.with_delegations(vec![(parent_id, parent_node)])
 		.with_balances(vec![
-			(creator.clone(), <Test as Config>::Deposit::get()),
-			(delegate.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_00, <Test as Config>::Deposit::get()),
+			(ACCOUNT_01, <Test as Config>::Deposit::get()),
 		])
 		.build()
 		.execute_with(|| {
 			// Create sub-delegation
-			let (delegation_id, delegation_node) = (
-				delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2),
-				generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
-			);
+			let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+			let delegation_node =
+				generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_00);
 			let delegation_info = Delegation::calculate_delegation_creation_hash(
 				&delegation_id,
 				&hierarchy_root_id,
@@ -232,13 +247,13 @@ fn create_delegation_with_parent_successful() {
 
 			// Should have deposited for hierarchy and parent delegation
 			assert_eq!(
-				Balances::reserved_balance(&creator),
+				Balances::reserved_balance(ACCOUNT_00),
 				2 * <Test as Config>::Deposit::get()
 			);
 
 			// Add sub-delegation
 			assert_ok!(Delegation::add_delegation(
-				get_origin(creator.clone()),
+				DoubleOrigin(ACCOUNT_00.clone(), creator.clone()).into(),
 				delegation_id,
 				parent_id,
 				operation.delegate.clone(),
@@ -248,10 +263,10 @@ fn create_delegation_with_parent_successful() {
 
 			// Should have deposited for hierarchy, parent delegation and sub-delegation
 			assert_eq!(
-				Balances::reserved_balance(&creator),
+				Balances::reserved_balance(ACCOUNT_00),
 				3 * <Test as Config>::Deposit::get()
 			);
-			assert!(Balances::reserved_balance(delegate).is_zero());
+			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
 
 			// Data in stored delegation and operation should match
 			let stored_delegation =
@@ -262,7 +277,7 @@ fn create_delegation_with_parent_successful() {
 			assert_eq!(stored_delegation.details.owner, operation.delegate);
 			assert_eq!(stored_delegation.details.permissions, operation.permissions);
 			assert!(!stored_delegation.details.revoked);
-			assert_eq!(stored_delegation.deposit.owner, creator);
+			assert_eq!(stored_delegation.deposit.owner, ACCOUNT_00);
 
 			// Verify that the parent has the new delegation among its children
 			let stored_parent =
@@ -275,17 +290,14 @@ fn create_delegation_with_parent_successful() {
 #[test]
 fn create_delegation_direct_root_revoked_error() {
 	let creator_keypair = get_alice_ed25519();
-	let creator = get_ed25519_account(creator_keypair.public());
-	let delegate = get_sr25519_account(get_bob_sr25519().public());
+	let creator = get_ed25519_did(creator_keypair.public());
+	let delegate = get_sr25519_did(get_bob_sr25519().public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
-	let (delegation_id, delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let delegation_node =
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id), ACCOUNT_00);
 
 	let delegation_hash = &hash_to_u8(Delegation::calculate_delegation_creation_hash(
 		&delegation_id,
@@ -299,19 +311,24 @@ fn create_delegation_direct_root_revoked_error() {
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
-		.with_balances(vec![(creator.clone(), <Test as Config>::Deposit::get())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			creator.clone(),
+			ACCOUNT_00,
+		)])
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get())])
 		.build()
 		.execute_with(|| {
 			let _ = Delegation::revoke_delegation(
-				get_origin(creator.clone()),
+				DoubleOrigin(ACCOUNT_00.clone(), creator.clone()).into(),
 				operation.hierarchy_id,
 				0u32,
 				MaxRevocations::get(),
 			);
 			assert_noop!(
 				Delegation::add_delegation(
-					get_origin(creator.clone()),
+					DoubleOrigin(ACCOUNT_00.clone(), creator.clone()).into(),
 					operation.delegation_id,
 					operation.parent_id,
 					delegate,
@@ -326,21 +343,19 @@ fn create_delegation_direct_root_revoked_error() {
 #[test]
 fn create_delegation_with_parent_revoked_error() {
 	let creator_keypair = get_alice_ed25519();
-	let creator = get_ed25519_account(creator_keypair.public());
-	let delegate = get_sr25519_account(get_bob_sr25519().public());
+	let creator = get_ed25519_did(creator_keypair.public());
+	let delegate = get_sr25519_did(get_bob_sr25519().public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
-	let (parent_id, parent_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, creator.clone(), Some(hierarchy_root_id)),
-	);
-	let (delegation_id, delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2),
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let parent_node =
+		generate_base_delegation_node(hierarchy_root_id, creator.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let delegation_node =
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_00);
 
 	let delegation_info = Delegation::calculate_delegation_creation_hash(
 		&delegation_id,
@@ -355,23 +370,28 @@ fn create_delegation_with_parent_revoked_error() {
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			creator.clone(),
+			ACCOUNT_00,
+		)])
 		.with_delegations(vec![(parent_id, parent_node)])
 		.with_balances(vec![
-			(creator.clone(), <Test as Config>::Deposit::get()),
-			(delegate.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_00, <Test as Config>::Deposit::get()),
+			(ACCOUNT_01, <Test as Config>::Deposit::get()),
 		])
 		.build()
 		.execute_with(|| {
 			let _ = Delegation::revoke_delegation(
-				get_origin(creator.clone()),
+				DoubleOrigin(ACCOUNT_00.clone(), creator.clone()).into(),
 				operation.parent_id,
 				MaxRevocations::get(),
 				MaxParentChecks::get(),
 			);
 			assert_noop!(
 				Delegation::add_delegation(
-					get_origin(creator.clone()),
+					DoubleOrigin(ACCOUNT_00.clone(), creator.clone()).into(),
 					operation.delegation_id,
 					operation.parent_id,
 					delegate,
@@ -386,17 +406,14 @@ fn create_delegation_with_parent_revoked_error() {
 #[test]
 fn invalid_delegate_signature_create_delegation_error() {
 	let creator_keypair = get_alice_ed25519();
-	let creator = get_ed25519_account(creator_keypair.public());
-	let delegate = get_sr25519_account(get_bob_sr25519().public());
+	let creator = get_ed25519_did(creator_keypair.public());
+	let delegate = get_sr25519_did(get_bob_sr25519().public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
-	let (delegation_id, delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let delegation_node =
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id), ACCOUNT_00);
 
 	let delegate_signature = (delegate.clone(), vec![]);
 
@@ -404,13 +421,18 @@ fn invalid_delegate_signature_create_delegation_error() {
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
-		.with_balances(vec![(creator.clone(), <Test as Config>::Deposit::get())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			creator.clone(),
+			ACCOUNT_00,
+		)])
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get())])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
 				Delegation::add_delegation(
-					get_origin(creator.clone()),
+					DoubleOrigin(ACCOUNT_00.clone(), creator.clone()).into(),
 					operation.delegation_id,
 					operation.parent_id,
 					delegate.clone(),
@@ -425,17 +447,14 @@ fn invalid_delegate_signature_create_delegation_error() {
 #[test]
 fn duplicate_delegation_create_delegation_error() {
 	let creator_keypair = get_alice_ed25519();
-	let creator = get_ed25519_account(creator_keypair.public());
-	let delegate = get_sr25519_account(get_bob_sr25519().public());
+	let creator = get_ed25519_did(creator_keypair.public());
+	let delegate = get_sr25519_did(get_bob_sr25519().public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
-	let (delegation_id, delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let delegation_node =
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id), ACCOUNT_00);
 
 	let delegation_hash = &hash_to_u8(Delegation::calculate_delegation_creation_hash(
 		&delegation_id,
@@ -450,17 +469,22 @@ fn duplicate_delegation_create_delegation_error() {
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			creator.clone(),
+			ACCOUNT_00,
+		)])
 		.with_delegations(vec![(delegation_id, delegation_node)])
 		.with_balances(vec![
-			(creator.clone(), <Test as Config>::Deposit::get()),
-			(delegate.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_00, <Test as Config>::Deposit::get()),
+			(ACCOUNT_01, <Test as Config>::Deposit::get()),
 		])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
 				Delegation::add_delegation(
-					get_origin(creator.clone()),
+					DoubleOrigin(ACCOUNT_00.clone(), creator.clone()).into(),
 					operation.delegation_id,
 					operation.parent_id,
 					delegate.clone(),
@@ -475,17 +499,15 @@ fn duplicate_delegation_create_delegation_error() {
 #[test]
 fn parent_not_existing_create_delegation_error() {
 	let creator_keypair = get_alice_ed25519();
-	let creator = get_ed25519_account(creator_keypair.public());
-	let delegate = get_sr25519_account(get_bob_sr25519().public());
+	let creator = get_ed25519_did(creator_keypair.public());
+	let delegate = get_sr25519_did(get_bob_sr25519().public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details::<Test>(),
-	);
-	let (delegation_id, delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
+
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let delegation_node =
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id), ACCOUNT_00);
 
 	let delegation_hash = &hash_to_u8(Delegation::calculate_delegation_creation_hash(
 		&delegation_id,
@@ -499,12 +521,12 @@ fn parent_not_existing_create_delegation_error() {
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
-		.with_balances(vec![(creator.clone(), <Test as Config>::Deposit::get())])
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get())])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
 				Delegation::add_delegation(
-					get_origin(creator.clone()),
+					DoubleOrigin(ACCOUNT_00.clone(), creator.clone()).into(),
 					operation.delegation_id,
 					operation.parent_id,
 					delegate.clone(),
@@ -519,23 +541,24 @@ fn parent_not_existing_create_delegation_error() {
 #[test]
 fn not_owner_of_parent_create_delegation_error() {
 	let creator_keypair = get_alice_ed25519();
-	let creator = get_ed25519_account(creator_keypair.public());
+	let creator = get_ed25519_did(creator_keypair.public());
 	let alternative_owner_keypair = get_charlie_ed25519();
-	let alternative_owner = get_ed25519_account(alternative_owner_keypair.public());
-	let delegate = get_sr25519_account(get_bob_sr25519().public());
+	let alternative_owner = get_ed25519_did(alternative_owner_keypair.public());
+	let delegate = get_sr25519_did(get_bob_sr25519().public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let parent_node = generate_base_delegation_node(
+		hierarchy_root_id,
+		alternative_owner,
+		Some(hierarchy_root_id),
+		ACCOUNT_00,
 	);
-	let (parent_id, parent_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, alternative_owner, Some(hierarchy_root_id)),
-	);
-	let (delegation_id, delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2),
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
-	);
+
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let delegation_node =
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_00);
 
 	let delegation_hash = &hash_to_u8(Delegation::calculate_delegation_creation_hash(
 		&delegation_id,
@@ -549,14 +572,19 @@ fn not_owner_of_parent_create_delegation_error() {
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			creator.clone(),
+			ACCOUNT_00,
+		)])
 		.with_delegations(vec![(parent_id, parent_node)])
-		.with_balances(vec![(creator.clone(), <Test as Config>::Deposit::get())])
+		.with_balances(vec![(ACCOUNT_00.clone(), <Test as Config>::Deposit::get())])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
 				Delegation::add_delegation(
-					get_origin(creator.clone()),
+					DoubleOrigin(ACCOUNT_00.clone(), creator.clone()).into(),
 					operation.delegation_id,
 					operation.parent_id,
 					delegate.clone(),
@@ -571,22 +599,19 @@ fn not_owner_of_parent_create_delegation_error() {
 #[test]
 fn unauthorised_delegation_create_delegation_error() {
 	let creator_keypair = get_alice_ed25519();
-	let creator = get_ed25519_account(creator_keypair.public());
-	let delegate = get_sr25519_account(get_bob_sr25519().public());
+	let creator = get_ed25519_did(creator_keypair.public());
+	let delegate = get_sr25519_did(get_bob_sr25519().public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
-	let (parent_id, mut parent_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node::<Test>(hierarchy_root_id, creator.clone(), Some(hierarchy_root_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let mut parent_node =
+		generate_base_delegation_node::<Test>(hierarchy_root_id, creator.clone(), Some(hierarchy_root_id), ACCOUNT_00);
 	parent_node.details.permissions = delegation::Permissions::ATTEST;
-	let (delegation_id, delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2),
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
-	);
+
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let delegation_node =
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_00);
 
 	let delegation_hash = &hash_to_u8(Delegation::calculate_delegation_creation_hash(
 		&delegation_id,
@@ -600,14 +625,19 @@ fn unauthorised_delegation_create_delegation_error() {
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
-		.with_balances(vec![(creator.clone(), <Test as Config>::Deposit::get())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			creator.clone(),
+			ACCOUNT_00,
+		)])
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get())])
 		.with_delegations(vec![(parent_id, parent_node)])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
 				Delegation::add_delegation(
-					get_origin(creator.clone()),
+					DoubleOrigin(ACCOUNT_00.clone(), creator.clone()).into(),
 					operation.delegation_id,
 					operation.parent_id,
 					delegate.clone(),
@@ -624,23 +654,26 @@ fn unauthorised_delegation_create_delegation_error() {
 #[test]
 fn empty_revoke_root_successful() {
 	let revoker_keypair = get_alice_ed25519();
-	let revoker = get_ed25519_account(revoker_keypair.public());
+	let revoker = get_ed25519_did(revoker_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
 
 	let operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
-		.with_balances(vec![(revoker.clone(), <Test as Config>::Deposit::get())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			revoker.clone(),
+			ACCOUNT_00,
+		)])
+		.with_balances(vec![(ACCOUNT_00.clone(), <Test as Config>::Deposit::get())])
 		.build()
 		.execute_with(|| {
 			assert_ok!(Delegation::revoke_delegation(
-				get_origin(revoker.clone()),
+				DoubleOrigin(ACCOUNT_00.clone(), revoker.clone()).into(),
 				operation.id,
 				0u32,
 				operation.max_children
@@ -658,48 +691,50 @@ fn empty_revoke_root_successful() {
 #[test]
 fn list_hierarchy_revoke_and_remove_root_successful() {
 	let revoker_keypair = get_alice_ed25519();
-	let revoker = get_ed25519_account(revoker_keypair.public());
-	let delegate = get_sr25519_account(get_bob_sr25519().public());
+	let revoker = get_ed25519_did(revoker_keypair.public());
+	let delegate = get_sr25519_did(get_bob_sr25519().public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
-	let (parent_id, parent_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
-	);
-	let (delegation_id, delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2),
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let parent_node =
+		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let delegation_node =
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_01);
 
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	operation.max_children = 2u32;
 
 	ExtBuilder::default()
 		.with_balances(vec![
-			(revoker.clone(), <Test as Config>::Deposit::get() * 2),
-			(delegate.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_00.clone(), <Test as Config>::Deposit::get() * 2),
+			(ACCOUNT_01.clone(), <Test as Config>::Deposit::get()),
 		])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			revoker.clone(),
+			ACCOUNT_00,
+		)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.build()
 		.execute_with(|| {
 			assert!(Delegation::delegation_hierarchies(&hierarchy_root_id).is_some());
 			assert_eq!(
-				Balances::reserved_balance(revoker.clone()),
+				Balances::reserved_balance(ACCOUNT_00.clone()),
 				2 * <Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::reserved_balance(delegate.clone()),
+				Balances::reserved_balance(ACCOUNT_01.clone()),
 				<Test as Config>::Deposit::get()
 			);
 
 			// Revoke root
 			assert_ok!(Delegation::revoke_delegation(
-				get_origin(revoker.clone()),
+				DoubleOrigin(ACCOUNT_00.clone(), revoker.clone()).into(),
 				operation.id,
 				0u32,
 				operation.max_children
@@ -727,7 +762,7 @@ fn list_hierarchy_revoke_and_remove_root_successful() {
 
 			// Removing root should also remove children and hierarchy
 			assert_ok!(Delegation::remove_delegation(
-				get_origin(revoker.clone()),
+				DoubleOrigin(ACCOUNT_00.clone(), revoker.clone()).into(),
 				operation.id,
 				operation.max_children
 			));
@@ -736,40 +771,42 @@ fn list_hierarchy_revoke_and_remove_root_successful() {
 			assert!(Delegation::delegation_hierarchies(&hierarchy_root_id).is_none());
 			assert!(Delegation::delegation_nodes(&parent_id).is_none());
 			assert!(Delegation::delegation_nodes(&delegation_id).is_none());
-			assert!(Balances::reserved_balance(revoker.clone()).is_zero());
-			assert!(Balances::reserved_balance(delegate.clone()).is_zero());
+			assert!(Balances::reserved_balance(ACCOUNT_00.clone()).is_zero());
+			assert!(Balances::reserved_balance(ACCOUNT_01.clone()).is_zero());
 		});
 }
 
 #[test]
 fn tree_hierarchy_revoke_and_remove_root_successful() {
 	let revoker_keypair = get_alice_ed25519();
-	let revoker = get_ed25519_account(revoker_keypair.public());
-	let delegate = get_sr25519_account(get_bob_sr25519().public());
+	let revoker = get_ed25519_did(revoker_keypair.public());
+	let delegate = get_sr25519_did(get_bob_sr25519().public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
-	let (delegation1_id, delegation1_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
-	);
-	let (delegation2_id, delegation2_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2),
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let delegation1_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let delegation1_node =
+		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+
+	let delegation2_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let delegation2_node =
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id), ACCOUNT_01);
 
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	operation.max_children = 2u32;
 
 	ExtBuilder::default()
 		.with_balances(vec![
-			(revoker.clone(), <Test as Config>::Deposit::get() * 2),
-			(delegate.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_00.clone(), <Test as Config>::Deposit::get() * 2),
+			(ACCOUNT_01.clone(), <Test as Config>::Deposit::get()),
 		])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			revoker.clone(),
+			ACCOUNT_00,
+		)])
 		.with_delegations(vec![
 			(delegation1_id, delegation1_node),
 			(delegation2_id, delegation2_node),
@@ -778,7 +815,7 @@ fn tree_hierarchy_revoke_and_remove_root_successful() {
 		.execute_with(|| {
 			// Revoke root
 			assert_ok!(Delegation::revoke_delegation(
-				get_origin(revoker.clone()),
+				DoubleOrigin(ACCOUNT_00.clone(), revoker.clone()).into(),
 				operation.id,
 				0u32,
 				operation.max_children
@@ -805,17 +842,17 @@ fn tree_hierarchy_revoke_and_remove_root_successful() {
 			);
 
 			assert_eq!(
-				Balances::reserved_balance(revoker.clone()),
+				Balances::reserved_balance(ACCOUNT_00.clone()),
 				2 * <Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::reserved_balance(delegate.clone()),
+				Balances::reserved_balance(ACCOUNT_01.clone()),
 				<Test as Config>::Deposit::get()
 			);
 
 			// Removing root should also remove children and hierarchy
 			assert_ok!(Delegation::remove_delegation(
-				get_origin(revoker.clone()),
+				DoubleOrigin(ACCOUNT_00.clone(), revoker.clone()).into(),
 				operation.id,
 				operation.max_children
 			));
@@ -824,46 +861,48 @@ fn tree_hierarchy_revoke_and_remove_root_successful() {
 			assert!(Delegation::delegation_hierarchies(&hierarchy_root_id).is_none());
 			assert!(Delegation::delegation_nodes(&delegation1_id).is_none());
 			assert!(Delegation::delegation_nodes(&delegation2_id).is_none());
-			assert!(Balances::reserved_balance(revoker.clone()).is_zero());
-			assert!(Balances::reserved_balance(delegate.clone()).is_zero());
+			assert!(Balances::reserved_balance(ACCOUNT_00.clone()).is_zero());
+			assert!(Balances::reserved_balance(ACCOUNT_01.clone()).is_zero());
 		});
 }
 
 #[test]
 fn max_max_revocations_revoke_and_remove_successful() {
 	let revoker_keypair = get_alice_ed25519();
-	let revoker = get_ed25519_account(revoker_keypair.public());
-	let delegate = get_sr25519_account(get_bob_sr25519().public());
+	let revoker = get_ed25519_did(revoker_keypair.public());
+	let delegate = get_sr25519_did(get_bob_sr25519().public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
-	let (parent_id, parent_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
-	);
-	let (delegation_id, delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2),
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let parent_node =
+		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let delegation_node =
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_01);
 
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	operation.max_children = MaxRevocations::get();
 
 	ExtBuilder::default()
 		.with_balances(vec![
-			(revoker.clone(), <Test as Config>::Deposit::get() * 2),
-			(delegate.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_00.clone(), <Test as Config>::Deposit::get() * 2),
+			(ACCOUNT_01.clone(), <Test as Config>::Deposit::get()),
 		])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			revoker.clone(),
+			ACCOUNT_00,
+		)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.build()
 		.execute_with(|| {
 			// Revoke root
 			assert_ok!(Delegation::revoke_delegation(
-				get_origin(revoker.clone()),
+				DoubleOrigin(ACCOUNT_00.clone(), revoker.clone()).into(),
 				operation.id,
 				0u32,
 				operation.max_children
@@ -890,17 +929,17 @@ fn max_max_revocations_revoke_and_remove_successful() {
 			);
 
 			assert_eq!(
-				Balances::reserved_balance(revoker.clone()),
+				Balances::reserved_balance(ACCOUNT_00.clone()),
 				2 * <Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::reserved_balance(delegate.clone()),
+				Balances::reserved_balance(ACCOUNT_01.clone()),
 				<Test as Config>::Deposit::get()
 			);
 
 			// Removing root should also remove children and hierarchy
 			assert_ok!(Delegation::remove_delegation(
-				get_origin(revoker.clone()),
+				DoubleOrigin(ACCOUNT_00.clone(), revoker.clone()).into(),
 				operation.id,
 				operation.max_children
 			));
@@ -909,15 +948,15 @@ fn max_max_revocations_revoke_and_remove_successful() {
 			assert!(Delegation::delegation_hierarchies(&hierarchy_root_id).is_none());
 			assert!(Delegation::delegation_nodes(&parent_id).is_none());
 			assert!(Delegation::delegation_nodes(&delegation_id).is_none());
-			assert!(Balances::reserved_balance(revoker.clone()).is_zero());
-			assert!(Balances::reserved_balance(delegate.clone()).is_zero());
+			assert!(Balances::reserved_balance(ACCOUNT_00.clone()).is_zero());
+			assert!(Balances::reserved_balance(ACCOUNT_01.clone()).is_zero());
 		});
 }
 
 #[test]
 fn root_not_found_revoke_and_remove_root_error() {
 	let revoker_keypair = get_alice_ed25519();
-	let revoker = get_ed25519_account(revoker_keypair.public());
+	let revoker = get_ed25519_did(revoker_keypair.public());
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 
@@ -925,11 +964,20 @@ fn root_not_found_revoke_and_remove_root_error() {
 
 	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
-			Delegation::revoke_delegation(get_origin(revoker.clone()), operation.id, 0u32, operation.max_children),
+			Delegation::revoke_delegation(
+				DoubleOrigin(ACCOUNT_00.clone(), revoker.clone()).into(),
+				operation.id,
+				0u32,
+				operation.max_children
+			),
 			Error::<Test>::DelegationNotFound
 		);
 		assert_noop!(
-			Delegation::remove_delegation(get_origin(revoker.clone()), operation.id, operation.max_children),
+			Delegation::remove_delegation(
+				DoubleOrigin(ACCOUNT_00.clone(), revoker.clone()).into(),
+				operation.id,
+				operation.max_children
+			),
 			Error::<Test>::DelegationNotFound
 		);
 	});
@@ -938,29 +986,27 @@ fn root_not_found_revoke_and_remove_root_error() {
 #[test]
 fn different_root_creator_revoke_and_remove_root_error() {
 	let owner_keypair = get_alice_ed25519();
-	let owner = get_ed25519_account(owner_keypair.public());
+	let owner = get_ed25519_did(owner_keypair.public());
 	let unauthorized_keypair = get_charlie_ed25519();
-	let unauthorized = get_ed25519_account(unauthorized_keypair.public());
+	let unauthorized = get_ed25519_did(unauthorized_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
 
 	let operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 
 	ExtBuilder::default()
 		.with_balances(vec![
-			(owner.clone(), <Test as Config>::Deposit::get()),
-			(unauthorized.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_00.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_01.clone(), <Test as Config>::Deposit::get()),
 		])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, owner.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, owner)])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, owner, ACCOUNT_00)])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
 				Delegation::revoke_delegation(
-					get_origin(unauthorized.clone()),
+					DoubleOrigin(ACCOUNT_00.clone(), unauthorized.clone()).into(),
 					operation.id,
 					0u32,
 					operation.max_children
@@ -968,7 +1014,11 @@ fn different_root_creator_revoke_and_remove_root_error() {
 				Error::<Test>::UnauthorizedRevocation
 			);
 			assert_noop!(
-				Delegation::remove_delegation(get_origin(unauthorized.clone()), operation.id, operation.max_children),
+				Delegation::remove_delegation(
+					DoubleOrigin(ACCOUNT_00.clone(), unauthorized.clone()).into(),
+					operation.id,
+					operation.max_children
+				),
 				Error::<Test>::UnauthorizedRemoval
 			);
 		});
@@ -977,37 +1027,49 @@ fn different_root_creator_revoke_and_remove_root_error() {
 #[test]
 fn too_small_max_revocations_revoke_and_remove_root_error() {
 	let revoker_keypair = get_alice_ed25519();
-	let revoker = get_ed25519_account(revoker_keypair.public());
-	let delegate = get_ed25519_account(get_bob_ed25519().public());
+	let revoker = get_ed25519_did(revoker_keypair.public());
+	let delegate = get_ed25519_did(get_bob_ed25519().public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
-	let (delegation_id, delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2),
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let delegation_node =
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id), ACCOUNT_00);
 
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	operation.max_children = 0u32;
 
 	ExtBuilder::default()
 		.with_balances(vec![
-			(revoker.clone(), <Test as Config>::Deposit::get() * 2),
-			(delegate, <Test as Config>::Deposit::get()),
+			(ACCOUNT_00.clone(), <Test as Config>::Deposit::get() * 2),
+			(ACCOUNT_01, <Test as Config>::Deposit::get()),
 		])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			revoker.clone(),
+			ACCOUNT_00,
+		)])
 		.with_delegations(vec![(delegation_id, delegation_node)])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Delegation::revoke_delegation(get_origin(revoker.clone()), operation.id, 0u32, operation.max_children),
+				Delegation::revoke_delegation(
+					DoubleOrigin(ACCOUNT_00.clone(), revoker.clone()).into(),
+					operation.id,
+					0u32,
+					operation.max_children
+				),
 				Error::<Test>::ExceededRevocationBounds
 			);
 			assert_noop!(
-				Delegation::remove_delegation(get_origin(revoker.clone()), operation.id, operation.max_children),
+				Delegation::remove_delegation(
+					DoubleOrigin(ACCOUNT_00.clone(), revoker.clone()).into(),
+					operation.id,
+					operation.max_children
+				),
 				Error::<Test>::ExceededRemovalBounds
 			);
 		});
@@ -1016,25 +1078,22 @@ fn too_small_max_revocations_revoke_and_remove_root_error() {
 #[test]
 fn exact_children_max_revocations_revoke_and_remove_root_error() {
 	let revoker_keypair = get_alice_ed25519();
-	let revoker = get_ed25519_account(revoker_keypair.public());
-	let delegate = get_ed25519_account(get_bob_ed25519().public());
+	let revoker = get_ed25519_did(revoker_keypair.public());
+	let delegate = get_ed25519_did(get_bob_ed25519().public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
-	let (delegation1_id, delegation1_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
-	);
-	let (delegation2_id, delegation2_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2),
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(delegation1_id)),
-	);
-	let (delegation3_id, delegation3_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_3),
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(delegation1_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let delegation1_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let delegation1_node =
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id), ACCOUNT_01);
+
+	let delegation2_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let delegation2_node =
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(delegation1_id), ACCOUNT_01);
+
+	let delegation3_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_3);
+	let delegation3_node =
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(delegation1_id), ACCOUNT_01);
 
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	// set max children below required minimum of 3 to revoke/remove entire tree
@@ -1042,11 +1101,16 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 
 	ExtBuilder::default()
 		.with_balances(vec![
-			(revoker.clone(), <Test as Config>::Deposit::get()),
-			(delegate.clone(), <Test as Config>::Deposit::get() * 3),
+			(ACCOUNT_00.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_01.clone(), <Test as Config>::Deposit::get() * 3),
 		])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			revoker.clone(),
+			ACCOUNT_00,
+		)])
 		.with_delegations(vec![
 			(delegation1_id, delegation1_node),
 			(delegation2_id, delegation2_node),
@@ -1054,11 +1118,18 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 		])
 		.build()
 		.execute_with(|| {
+			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
+
 			// Should not revoke root because tree traversal steps are insufficient
 			// assert_err and not assert_noop because the storage is indeed changed, but
 			// only partially (only #2 is revoked)
 			assert_err!(
-				Delegation::revoke_delegation(get_origin(revoker.clone()), operation.id, 0u32, operation.max_children),
+				Delegation::revoke_delegation(
+					DoubleOrigin(ACCOUNT_00.clone(), revoker.clone()).into(),
+					operation.id,
+					0u32,
+					operation.max_children
+				),
 				Error::<Test>::ExceededRevocationBounds
 			);
 
@@ -1089,44 +1160,42 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 			);
 
 			// Should not remove root because tree traversal steps are insufficient
+			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 			assert_eq!(
-				Balances::reserved_balance(revoker.clone()),
-				<Test as Config>::Deposit::get()
-			);
-			assert_eq!(
-				Balances::reserved_balance(delegate.clone()),
+				Balances::reserved_balance(ACCOUNT_01),
 				3 * <Test as Config>::Deposit::get()
 			);
 			// assert_err and not assert_noop because the storage is indeed changed, but
 			// only partially (only #2 is removed)
 			assert_err!(
-				Delegation::remove_delegation(get_origin(revoker.clone()), operation.id, operation.max_children),
+				Delegation::remove_delegation(
+					DoubleOrigin(ACCOUNT_00, revoker.clone()).into(),
+					operation.id,
+					operation.max_children
+				),
 				Error::<Test>::ExceededRemovalBounds
 			);
 			assert!(Delegation::delegation_nodes(&operation.id).is_some());
 			assert!(Delegation::delegation_nodes(&delegation1_id).is_some());
 			assert!(Delegation::delegation_nodes(&delegation2_id).is_none());
 			assert!(Delegation::delegation_nodes(&delegation3_id).is_some());
+			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 			assert_eq!(
-				Balances::reserved_balance(revoker.clone()),
-				<Test as Config>::Deposit::get()
-			);
-			assert_eq!(
-				Balances::reserved_balance(delegate.clone()),
+				Balances::reserved_balance(ACCOUNT_01),
 				2 * <Test as Config>::Deposit::get()
 			);
 
 			// Should be able to remove root now (because # of remaining children = 2)
 			assert_ok!(Delegation::remove_delegation(
-				get_origin(revoker.clone()),
+				DoubleOrigin(ACCOUNT_00, revoker.clone()).into(),
 				operation.id,
 				operation.max_children
 			),);
 			assert!(Delegation::delegation_nodes(&operation.id).is_none());
 			assert!(Delegation::delegation_nodes(&delegation1_id).is_none());
 			assert!(Delegation::delegation_nodes(&delegation3_id).is_none());
-			assert!(Balances::reserved_balance(revoker.clone()).is_zero());
-			assert!(Balances::reserved_balance(delegate.clone()).is_zero());
+			assert!(Balances::reserved_balance(ACCOUNT_00.clone()).is_zero());
+			assert!(Balances::reserved_balance(ACCOUNT_01.clone()).is_zero());
 		});
 }
 
@@ -1137,38 +1206,41 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 #[test]
 fn direct_owner_revoke_and_remove_delegation_successful() {
 	let revoker_keypair = get_alice_ed25519();
-	let revoker = get_ed25519_account(revoker_keypair.public());
-	let delegate = get_ed25519_account(get_bob_ed25519().public());
+	let revoker = get_ed25519_did(revoker_keypair.public());
+	let delegate = get_ed25519_did(get_bob_ed25519().public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
-	let (parent_id, parent_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
-	);
-	let (delegation_id, delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2),
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let parent_node =
+		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let delegation_node =
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_01);
 
 	let mut operation = generate_base_delegation_revocation_operation(parent_id);
 	operation.max_revocations = 2u32;
 
 	ExtBuilder::default()
 		.with_balances(vec![
-			(revoker.clone(), <Test as Config>::Deposit::get() * 2),
-			(delegate.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_00.clone(), <Test as Config>::Deposit::get() * 2),
+			(ACCOUNT_01.clone(), <Test as Config>::Deposit::get()),
 		])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			revoker.clone(),
+			ACCOUNT_00,
+		)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.build()
 		.execute_with(|| {
 			// Revoke direct child of hierarchy root
 			assert_ok!(Delegation::revoke_delegation(
-				get_origin(revoker.clone()),
+				DoubleOrigin(ACCOUNT_00.clone(), revoker.clone()).into(),
 				operation.delegation_id,
 				operation.max_parent_checks,
 				operation.max_revocations
@@ -1195,17 +1267,17 @@ fn direct_owner_revoke_and_remove_delegation_successful() {
 			);
 
 			assert_eq!(
-				Balances::reserved_balance(revoker.clone()),
+				Balances::reserved_balance(ACCOUNT_00.clone()),
 				2 * <Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::reserved_balance(delegate.clone()),
+				Balances::reserved_balance(ACCOUNT_01.clone()),
 				<Test as Config>::Deposit::get()
 			);
 
 			// Removing root delegation should also remove its child but not hierarchy root
 			assert_ok!(Delegation::remove_delegation(
-				get_origin(revoker.clone()),
+				DoubleOrigin(ACCOUNT_00.clone(), revoker.clone()).into(),
 				operation.delegation_id,
 				operation.max_revocations
 			));
@@ -1215,31 +1287,29 @@ fn direct_owner_revoke_and_remove_delegation_successful() {
 			assert!(Delegation::delegation_nodes(&parent_id).is_none());
 			assert!(Delegation::delegation_nodes(&delegation_id).is_none());
 			assert_eq!(
-				Balances::reserved_balance(revoker.clone()),
+				Balances::reserved_balance(ACCOUNT_00.clone()),
 				<Test as Config>::Deposit::get()
 			);
-			assert!(Balances::reserved_balance(delegate.clone()).is_zero());
+			assert!(Balances::reserved_balance(ACCOUNT_01.clone()).is_zero());
 		});
 }
 
 #[test]
 fn parent_owner_revoke_delegation_successful() {
 	let revoker_keypair = get_alice_ed25519();
-	let revoker = get_ed25519_account(revoker_keypair.public());
-	let delegate = get_ed25519_account(get_bob_ed25519().public());
+	let revoker = get_ed25519_did(revoker_keypair.public());
+	let delegate = get_ed25519_did(get_bob_ed25519().public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
-	let (parent_id, parent_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
-	);
-	let (delegation_id, delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2),
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let parent_node =
+		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let delegation_node =
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_01);
 
 	let mut operation = generate_base_delegation_revocation_operation(delegation_id);
 	operation.max_parent_checks = 1u32;
@@ -1247,26 +1317,31 @@ fn parent_owner_revoke_delegation_successful() {
 
 	ExtBuilder::default()
 		.with_balances(vec![
-			(revoker.clone(), <Test as Config>::Deposit::get() * 2),
-			(delegate.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_00.clone(), <Test as Config>::Deposit::get() * 2),
+			(ACCOUNT_01.clone(), <Test as Config>::Deposit::get()),
 		])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			revoker.clone(),
+			ACCOUNT_00,
+		)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.build()
 		.execute_with(|| {
 			// Parent should not be able to remove the child delegation directly
 			assert_eq!(
-				Balances::reserved_balance(revoker.clone()),
+				Balances::reserved_balance(ACCOUNT_00.clone()),
 				2 * <Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::reserved_balance(delegate.clone()),
+				Balances::reserved_balance(ACCOUNT_01.clone()),
 				<Test as Config>::Deposit::get()
 			);
 			assert_noop!(
 				Delegation::remove_delegation(
-					get_origin(revoker.clone()),
+					DoubleOrigin(ACCOUNT_00.clone(), revoker.clone()).into(),
 					operation.delegation_id,
 					operation.max_revocations
 				),
@@ -1275,7 +1350,7 @@ fn parent_owner_revoke_delegation_successful() {
 
 			// Revoke direct child of hierarchy root
 			assert_ok!(Delegation::revoke_delegation(
-				get_origin(revoker.clone()),
+				DoubleOrigin(ACCOUNT_00.clone(), revoker.clone()).into(),
 				operation.delegation_id,
 				operation.max_parent_checks,
 				operation.max_revocations
@@ -1297,7 +1372,7 @@ fn parent_owner_revoke_delegation_successful() {
 
 			// Only owner can still remove the delegation to claim back deposit
 			assert_ok!(Delegation::remove_delegation(
-				get_origin(delegate.clone()),
+				DoubleOrigin(ACCOUNT_01.clone(), delegate.clone()).into(),
 				operation.delegation_id,
 				operation.max_revocations
 			));
@@ -1305,35 +1380,38 @@ fn parent_owner_revoke_delegation_successful() {
 			assert!(Delegation::delegation_nodes(&parent_id).is_some());
 			assert!(Delegation::delegation_nodes(&delegation_id).is_none());
 			assert_eq!(
-				Balances::reserved_balance(revoker.clone()),
+				Balances::reserved_balance(ACCOUNT_00.clone()),
 				2 * <Test as Config>::Deposit::get()
 			);
-			assert!(Balances::reserved_balance(delegate.clone()).is_zero());
+			assert!(Balances::reserved_balance(ACCOUNT_01.clone()).is_zero());
 		});
 }
 
 #[test]
 fn delegation_not_found_revoke_and_remove_delegation_error() {
 	let revoker_keypair = get_alice_ed25519();
-	let revoker = get_ed25519_account(revoker_keypair.public());
+	let revoker = get_ed25519_did(revoker_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
 
 	let operation = generate_base_delegation_revocation_operation(delegation_id);
 
 	ExtBuilder::default()
-		.with_balances(vec![(revoker.clone(), <Test as Config>::Deposit::get())])
+		.with_balances(vec![(ACCOUNT_00.clone(), <Test as Config>::Deposit::get())])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			revoker.clone(),
+			ACCOUNT_00,
+		)])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
 				Delegation::revoke_delegation(
-					get_origin(revoker.clone()),
+					DoubleOrigin(ACCOUNT_00.clone(), revoker.clone()).into(),
 					operation.delegation_id,
 					operation.max_parent_checks,
 					operation.max_revocations
@@ -1342,7 +1420,7 @@ fn delegation_not_found_revoke_and_remove_delegation_error() {
 			);
 			assert_noop!(
 				Delegation::remove_delegation(
-					get_origin(revoker.clone()),
+					DoubleOrigin(ACCOUNT_00.clone(), revoker.clone()).into(),
 					operation.delegation_id,
 					operation.max_revocations
 				),
@@ -1354,32 +1432,30 @@ fn delegation_not_found_revoke_and_remove_delegation_error() {
 #[test]
 fn not_delegating_revoke_and_remove_delegation_error() {
 	let owner_keypair = get_alice_ed25519();
-	let owner = get_ed25519_account(owner_keypair.public());
+	let owner = get_ed25519_did(owner_keypair.public());
 	let revoker_keypair = get_bob_ed25519();
-	let revoker = get_ed25519_account(revoker_keypair.public());
+	let revoker = get_ed25519_did(revoker_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
 	let (delegation_id, delegation_node) = (
 		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, owner.clone(), Some(hierarchy_root_id)),
+		generate_base_delegation_node(hierarchy_root_id, owner.clone(), Some(hierarchy_root_id), ACCOUNT_00),
 	);
 
 	let mut operation = generate_base_delegation_revocation_operation(delegation_id);
 	operation.max_parent_checks = MaxParentChecks::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(owner.clone(), <Test as Config>::Deposit::get() * 2)])
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 2)])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, owner.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, owner)])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, owner, ACCOUNT_00)])
 		.with_delegations(vec![(delegation_id, delegation_node)])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
 				Delegation::revoke_delegation(
-					get_origin(revoker.clone()),
+					DoubleOrigin(ACCOUNT_01, revoker.clone()).into(),
 					operation.delegation_id,
 					operation.max_parent_checks,
 					operation.max_revocations
@@ -1388,7 +1464,7 @@ fn not_delegating_revoke_and_remove_delegation_error() {
 			);
 			assert_noop!(
 				Delegation::remove_delegation(
-					get_origin(revoker.clone()),
+					DoubleOrigin(ACCOUNT_01, revoker.clone()).into(),
 					operation.delegation_id,
 					operation.max_revocations
 				),
@@ -1400,23 +1476,24 @@ fn not_delegating_revoke_and_remove_delegation_error() {
 #[test]
 fn parent_too_far_revoke_and_remove_delegation_error() {
 	let owner_keypair = get_alice_ed25519();
-	let owner = get_ed25519_account(owner_keypair.public());
+	let owner = get_ed25519_did(owner_keypair.public());
 	let intermediate_keypair = get_charlie_ed25519();
-	let intermediate = get_ed25519_account(intermediate_keypair.public());
-	let delegate = get_ed25519_account(get_bob_ed25519().public());
+	let intermediate = get_ed25519_did(intermediate_keypair.public());
+	let delegate = get_ed25519_did(get_bob_ed25519().public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let parent_node = generate_base_delegation_node(
+		hierarchy_root_id,
+		intermediate.clone(),
+		Some(hierarchy_root_id),
+		ACCOUNT_01,
 	);
-	let (parent_id, parent_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, intermediate.clone(), Some(hierarchy_root_id)),
-	);
-	let (delegation_id, delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2),
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
-	);
+
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let delegation_node =
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_02);
 
 	let mut operation = generate_base_delegation_revocation_operation(delegation_id);
 	operation.max_revocations = 2u32;
@@ -1424,18 +1501,18 @@ fn parent_too_far_revoke_and_remove_delegation_error() {
 
 	ExtBuilder::default()
 		.with_balances(vec![
-			(owner.clone(), <Test as Config>::Deposit::get()),
-			(intermediate.clone(), <Test as Config>::Deposit::get()),
-			(delegate.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_00.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_01.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_02.clone(), <Test as Config>::Deposit::get()),
 		])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, owner.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, owner.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, owner.clone(), ACCOUNT_00)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
 				Delegation::revoke_delegation(
-					get_origin(intermediate.clone()),
+					DoubleOrigin(ACCOUNT_01.clone(), intermediate.clone()).into(),
 					operation.delegation_id,
 					operation.max_parent_checks,
 					operation.max_revocations
@@ -1445,21 +1522,21 @@ fn parent_too_far_revoke_and_remove_delegation_error() {
 
 			// removal
 			assert_eq!(
-				Balances::reserved_balance(owner.clone()),
+				Balances::reserved_balance(ACCOUNT_00.clone()),
 				<Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::reserved_balance(intermediate.clone()),
+				Balances::reserved_balance(ACCOUNT_02.clone()),
 				<Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::reserved_balance(delegate.clone()),
+				Balances::reserved_balance(ACCOUNT_01.clone()),
 				<Test as Config>::Deposit::get()
 			);
 
 			assert_noop!(
 				Delegation::remove_delegation(
-					get_origin(owner.clone()),
+					DoubleOrigin(ACCOUNT_01.clone(), intermediate.clone()).into(),
 					operation.delegation_id,
 					operation.max_revocations
 				),
@@ -1467,14 +1544,14 @@ fn parent_too_far_revoke_and_remove_delegation_error() {
 			);
 			assert_noop!(
 				Delegation::remove_delegation(
-					get_origin(intermediate.clone()),
+					DoubleOrigin(ACCOUNT_01.clone(), intermediate.clone()).into(),
 					operation.delegation_id,
 					operation.max_revocations
 				),
 				Error::<Test>::UnauthorizedRemoval
 			);
 			assert_ok!(Delegation::remove_delegation(
-				get_origin(delegate.clone()),
+				DoubleOrigin(ACCOUNT_02.clone(), delegate.clone()).into(),
 				operation.delegation_id,
 				0u32
 			));
@@ -1484,37 +1561,38 @@ fn parent_too_far_revoke_and_remove_delegation_error() {
 #[test]
 fn too_many_revocations_revoke_delegation_error() {
 	let revoker_keypair = get_alice_ed25519();
-	let revoker = get_ed25519_account(revoker_keypair.public());
-	let delegate = get_ed25519_account(get_bob_ed25519().public());
+	let revoker = get_ed25519_did(revoker_keypair.public());
+	let delegate = get_ed25519_did(get_bob_ed25519().public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
-	let (parent_id, parent_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
-	);
-	let (delegation_id, delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2),
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let parent_node =
+		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let delegation_node =
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_00);
 
 	let operation = generate_base_delegation_revocation_operation(parent_id);
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			revoker.clone(),
+			ACCOUNT_00,
+		)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.with_balances(vec![
-			(revoker.clone(), <Test as Config>::Deposit::get()),
-			(delegate, <Test as Config>::Deposit::get()),
+			(ACCOUNT_00.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_01, <Test as Config>::Deposit::get()),
 		])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
 				Delegation::revoke_delegation(
-					get_origin(revoker.clone()),
+					DoubleOrigin(ACCOUNT_00.clone(), revoker.clone()).into(),
 					operation.delegation_id,
 					operation.max_parent_checks,
 					operation.max_revocations
@@ -1529,38 +1607,39 @@ fn too_many_revocations_revoke_delegation_error() {
 #[test]
 fn direct_owner_reclaim_deposit_delegation_successful() {
 	let revoker_keypair = get_alice_ed25519();
-	let revoker = get_ed25519_account(revoker_keypair.public());
-	let delegate = get_ed25519_account(get_bob_ed25519().public());
+	let revoker = get_ed25519_did(revoker_keypair.public());
+	let delegate = get_ed25519_did(get_bob_ed25519().public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
-	let (parent_id, parent_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
-	);
-	let (delegation_id, delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2),
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let parent_node =
+		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let delegation_node =
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_00);
 
 	let mut operation = generate_base_delegation_deposit_claim_operation(hierarchy_root_id);
 	operation.max_removals = 2u32;
 
 	ExtBuilder::default()
 		.with_balances(vec![
-			(revoker.clone(), <Test as Config>::Deposit::get() * 2),
-			(delegate.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_00, <Test as Config>::Deposit::get() * 2),
+			(ACCOUNT_01, <Test as Config>::Deposit::get()),
 		])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			revoker.clone(),
+			ACCOUNT_00,
+		)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.build()
 		.execute_with(|| {
 			// Revoke direct child of hierarchy root
 			assert_ok!(Delegation::reclaim_deposit(
-				get_origin(revoker.clone()),
+				Origin::signed(ACCOUNT_00).into(),
 				operation.delegation_id,
 				operation.max_removals
 			));
@@ -1571,8 +1650,8 @@ fn direct_owner_reclaim_deposit_delegation_successful() {
 			assert!(Delegation::delegation_nodes(&delegation_id).is_none());
 
 			// We have released all the deposits by deleting the root node.
-			assert!(Balances::reserved_balance(revoker.clone()).is_zero());
-			assert!(Balances::reserved_balance(delegate.clone()).is_zero());
+			assert!(Balances::reserved_balance(ACCOUNT_00.clone()).is_zero());
+			assert!(Balances::reserved_balance(ACCOUNT_01.clone()).is_zero());
 		});
 }
 
@@ -1580,48 +1659,49 @@ fn direct_owner_reclaim_deposit_delegation_successful() {
 #[test]
 fn parent_owner_reclaim_deposit_error() {
 	let revoker_keypair = get_alice_ed25519();
-	let revoker = get_ed25519_account(revoker_keypair.public());
-	let delegate = get_ed25519_account(get_bob_ed25519().public());
+	let revoker = get_ed25519_did(revoker_keypair.public());
+	let delegate = get_ed25519_did(get_bob_ed25519().public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
-	let (parent_id, parent_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id)),
-	);
-	let (delegation_id, delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2),
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let parent_node =
+		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let delegation_node =
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_01);
 
 	let mut operation = generate_base_delegation_deposit_claim_operation(delegation_id);
 	operation.max_removals = 1u32;
 
 	ExtBuilder::default()
 		.with_balances(vec![
-			(revoker.clone(), <Test as Config>::Deposit::get() * 2),
-			(delegate.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_00, <Test as Config>::Deposit::get() * 2),
+			(ACCOUNT_01, <Test as Config>::Deposit::get()),
 		])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			revoker.clone(),
+			ACCOUNT_00,
+		)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.build()
 		.execute_with(|| {
 			// Parent should not be able to claim the deposit for the child delegation
 			// directly
 			assert_eq!(
-				Balances::reserved_balance(revoker.clone()),
+				Balances::reserved_balance(ACCOUNT_00),
 				2 * <Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::reserved_balance(delegate.clone()),
+				Balances::reserved_balance(ACCOUNT_01),
 				<Test as Config>::Deposit::get()
 			);
 			assert_noop!(
 				Delegation::reclaim_deposit(
-					get_origin(revoker.clone()),
+					Origin::signed(ACCOUNT_00).into(),
 					operation.delegation_id,
 					operation.max_removals
 				),
@@ -1633,25 +1713,28 @@ fn parent_owner_reclaim_deposit_error() {
 #[test]
 fn delegation_not_found_reclaim_deposit_error() {
 	let revoker_keypair = get_alice_ed25519();
-	let revoker = get_ed25519_account(revoker_keypair.public());
+	let revoker = get_ed25519_did(revoker_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
 
 	let operation = generate_base_delegation_deposit_claim_operation(delegation_id);
 
 	ExtBuilder::default()
-		.with_balances(vec![(revoker.clone(), <Test as Config>::Deposit::get())])
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get())])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			revoker.clone(),
+			ACCOUNT_00,
+		)])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
 				Delegation::reclaim_deposit(
-					get_origin(revoker.clone()),
+					Origin::signed(ACCOUNT_00).into(),
 					operation.delegation_id,
 					operation.max_removals
 				),
@@ -1663,25 +1746,28 @@ fn delegation_not_found_reclaim_deposit_error() {
 #[test]
 fn max_removals_too_large_reclaim_deposit_error() {
 	let revoker_keypair = get_alice_ed25519();
-	let revoker = get_ed25519_account(revoker_keypair.public());
+	let revoker = get_ed25519_did(revoker_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
 
 	let mut operation = generate_base_delegation_deposit_claim_operation(hierarchy_root_id);
 	operation.max_removals = <Test as Config>::MaxRemovals::get() + 1;
 
 	ExtBuilder::default()
-		.with_balances(vec![(revoker.clone(), <Test as Config>::Deposit::get())])
+		.with_balances(vec![(ACCOUNT_00.clone(), <Test as Config>::Deposit::get())])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			revoker.clone(),
+			ACCOUNT_00,
+		)])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
 				Delegation::reclaim_deposit(
-					get_origin(revoker.clone()),
+					Origin::signed(ACCOUNT_00).into(),
 					operation.delegation_id,
 					operation.max_removals
 				),
@@ -1695,36 +1781,32 @@ fn max_removals_too_large_reclaim_deposit_error() {
 #[test]
 fn is_delegating_direct_not_revoked() {
 	let user_1_keypair = get_alice_ed25519();
-	let user_1 = get_ed25519_account(user_1_keypair.public());
+	let user_1 = get_ed25519_did(user_1_keypair.public());
 	let user_2_keypair = get_bob_ed25519();
-	let user_2 = get_ed25519_account(user_2_keypair.public());
+	let user_2 = get_ed25519_did(user_2_keypair.public());
 	let user_3_keypair = get_charlie_ed25519();
-	let user_3 = get_ed25519_account(user_3_keypair.public());
+	let user_3 = get_ed25519_did(user_3_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
-	let (parent_id, parent_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id)),
-	);
-	let (delegation_id, delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2),
-		generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let parent_node =
+		generate_base_delegation_node(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let delegation_node = generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id), ACCOUNT_01);
 
 	let max_parent_checks = 0u32;
 
 	// Root -> Parent -> Delegation
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone(), ACCOUNT_00)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.with_balances(vec![
-			(user_1, <Test as Config>::Deposit::get()),
-			(user_2, <Test as Config>::Deposit::get()),
-			(user_3.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_00, <Test as Config>::Deposit::get()),
+			(ACCOUNT_01, <Test as Config>::Deposit::get()),
+			(ACCOUNT_02.clone(), <Test as Config>::Deposit::get()),
 		])
 		.build()
 		.execute_with(|| {
@@ -1738,36 +1820,32 @@ fn is_delegating_direct_not_revoked() {
 #[test]
 fn is_delegating_direct_not_revoked_max_parent_checks_value() {
 	let user_1_keypair = get_alice_ed25519();
-	let user_1 = get_ed25519_account(user_1_keypair.public());
+	let user_1 = get_ed25519_did(user_1_keypair.public());
 	let user_2_keypair = get_bob_ed25519();
-	let user_2 = get_ed25519_account(user_2_keypair.public());
+	let user_2 = get_ed25519_did(user_2_keypair.public());
 	let user_3_keypair = get_charlie_ed25519();
-	let user_3 = get_ed25519_account(user_3_keypair.public());
+	let user_3 = get_ed25519_did(user_3_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
-	let (parent_id, parent_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id)),
-	);
-	let (delegation_id, delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2),
-		generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let parent_node =
+		generate_base_delegation_node(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let delegation_node = generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id), ACCOUNT_01);
 
 	let max_parent_checks = u32::MAX;
 
 	// Root -> Parent -> Delegation
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone(), ACCOUNT_00)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.with_balances(vec![
-			(user_1, <Test as Config>::Deposit::get()),
-			(user_2, <Test as Config>::Deposit::get()),
-			(user_3.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_00, <Test as Config>::Deposit::get()),
+			(ACCOUNT_01, <Test as Config>::Deposit::get()),
+			(ACCOUNT_02.clone(), <Test as Config>::Deposit::get()),
 		])
 		.build()
 		.execute_with(|| {
@@ -1781,24 +1859,21 @@ fn is_delegating_direct_not_revoked_max_parent_checks_value() {
 #[test]
 fn is_delegating_direct_revoked() {
 	let user_1_keypair = get_alice_ed25519();
-	let user_1 = get_ed25519_account(user_1_keypair.public());
+	let user_1 = get_ed25519_did(user_1_keypair.public());
 	let user_2_keypair = get_bob_ed25519();
-	let user_2 = get_ed25519_account(user_2_keypair.public());
+	let user_2 = get_ed25519_did(user_2_keypair.public());
 	let user_3_keypair = get_charlie_ed25519();
-	let user_3 = get_ed25519_account(user_3_keypair.public());
+	let user_3 = get_ed25519_did(user_3_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
-	let (parent_id, parent_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id)),
-	);
-	let (delegation_id, mut delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2),
-		generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let parent_node =
+		generate_base_delegation_node(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let mut delegation_node =
+		generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id), ACCOUNT_00);
 	delegation_node.details.revoked = true;
 
 	let max_parent_checks = 0u32;
@@ -1806,12 +1881,12 @@ fn is_delegating_direct_revoked() {
 	// Root -> Parent -> Delegation
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone(), ACCOUNT_00)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.with_balances(vec![
-			(user_1, <Test as Config>::Deposit::get()),
-			(user_2, <Test as Config>::Deposit::get()),
-			(user_3.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_00, <Test as Config>::Deposit::get()),
+			(ACCOUNT_01, <Test as Config>::Deposit::get()),
+			(ACCOUNT_02.clone(), <Test as Config>::Deposit::get()),
 		])
 		.build()
 		.execute_with(|| {
@@ -1825,24 +1900,21 @@ fn is_delegating_direct_revoked() {
 #[test]
 fn is_delegating_direct_revoked_max_parent_checks_value() {
 	let user_1_keypair = get_alice_ed25519();
-	let user_1 = get_ed25519_account(user_1_keypair.public());
+	let user_1 = get_ed25519_did(user_1_keypair.public());
 	let user_2_keypair = get_bob_ed25519();
-	let user_2 = get_ed25519_account(user_2_keypair.public());
+	let user_2 = get_ed25519_did(user_2_keypair.public());
 	let user_3_keypair = get_charlie_ed25519();
-	let user_3 = get_ed25519_account(user_3_keypair.public());
+	let user_3 = get_ed25519_did(user_3_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
-	let (parent_id, parent_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id)),
-	);
-	let (delegation_id, mut delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2),
-		generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let parent_node =
+		generate_base_delegation_node(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let mut delegation_node =
+		generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id), ACCOUNT_00);
 	delegation_node.details.revoked = true;
 
 	let max_parent_checks = u32::MAX;
@@ -1850,12 +1922,12 @@ fn is_delegating_direct_revoked_max_parent_checks_value() {
 	// Root -> Parent -> Delegation
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone(), ACCOUNT_00)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.with_balances(vec![
-			(user_1, <Test as Config>::Deposit::get()),
-			(user_2, <Test as Config>::Deposit::get()),
-			(user_3.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_00, <Test as Config>::Deposit::get()),
+			(ACCOUNT_01, <Test as Config>::Deposit::get()),
+			(ACCOUNT_02.clone(), <Test as Config>::Deposit::get()),
 		])
 		.build()
 		.execute_with(|| {
@@ -1869,36 +1941,32 @@ fn is_delegating_direct_revoked_max_parent_checks_value() {
 #[test]
 fn is_delegating_max_parent_not_revoked() {
 	let user_1_keypair = get_alice_ed25519();
-	let user_1 = get_ed25519_account(user_1_keypair.public());
+	let user_1 = get_ed25519_did(user_1_keypair.public());
 	let user_2_keypair = get_bob_ed25519();
-	let user_2 = get_ed25519_account(user_2_keypair.public());
+	let user_2 = get_ed25519_did(user_2_keypair.public());
 	let user_3_keypair = get_charlie_ed25519();
-	let user_3 = get_ed25519_account(user_3_keypair.public());
+	let user_3 = get_ed25519_did(user_3_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
-	let (parent_id, parent_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id)),
-	);
-	let (delegation_id, delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2),
-		generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let parent_node =
+		generate_base_delegation_node(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let delegation_node = generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id), ACCOUNT_01);
 
 	let max_parent_checks = 1u32;
 
 	// Root -> Parent -> Delegation
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone(), ACCOUNT_00)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.with_balances(vec![
-			(user_1, <Test as Config>::Deposit::get()),
-			(user_2.clone(), <Test as Config>::Deposit::get()),
-			(user_3, <Test as Config>::Deposit::get()),
+			(ACCOUNT_00, <Test as Config>::Deposit::get()),
+			(ACCOUNT_01.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_02, <Test as Config>::Deposit::get()),
 		])
 		.build()
 		.execute_with(|| {
@@ -1912,37 +1980,34 @@ fn is_delegating_max_parent_not_revoked() {
 #[test]
 fn is_delegating_max_parent_revoked() {
 	let user_1_keypair = get_alice_ed25519();
-	let user_1 = get_ed25519_account(user_1_keypair.public());
+	let user_1 = get_ed25519_did(user_1_keypair.public());
 	let user_2_keypair = get_bob_ed25519();
-	let user_2 = get_ed25519_account(user_2_keypair.public());
+	let user_2 = get_ed25519_did(user_2_keypair.public());
 	let user_3_keypair = get_charlie_ed25519();
-	let user_3 = get_ed25519_account(user_3_keypair.public());
+	let user_3 = get_ed25519_did(user_3_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
-	let (parent_id, mut parent_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let mut parent_node =
+		generate_base_delegation_node(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+
 	parent_node.details.revoked = true;
-	let (delegation_id, delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2),
-		generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id)),
-	);
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let delegation_node = generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id), ACCOUNT_01);
 
 	let max_parent_checks = 2u32;
 
 	// Root -> Parent -> Delegation
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone(), ACCOUNT_00)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.with_balances(vec![
-			(user_1, <Test as Config>::Deposit::get()),
-			(user_2.clone(), <Test as Config>::Deposit::get()),
-			(user_3, <Test as Config>::Deposit::get()),
+			(ACCOUNT_00, <Test as Config>::Deposit::get()),
+			(ACCOUNT_01.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_02, <Test as Config>::Deposit::get()),
 		])
 		.build()
 		.execute_with(|| {
@@ -1956,36 +2021,33 @@ fn is_delegating_max_parent_revoked() {
 #[test]
 fn is_delegating_root_owner_not_revoked() {
 	let user_1_keypair = get_alice_ed25519();
-	let user_1 = get_ed25519_account(user_1_keypair.public());
+	let user_1 = get_ed25519_did(user_1_keypair.public());
 	let user_2_keypair = get_bob_ed25519();
-	let user_2 = get_ed25519_account(user_2_keypair.public());
+	let user_2 = get_ed25519_did(user_2_keypair.public());
 	let user_3_keypair = get_charlie_ed25519();
-	let user_3 = get_ed25519_account(user_3_keypair.public());
+	let user_3 = get_ed25519_did(user_3_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
-	let (parent_id, parent_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id)),
-	);
-	let (delegation_id, delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2),
-		generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let parent_node =
+		generate_base_delegation_node(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let delegation_node = generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id), ACCOUNT_01);
 
 	let max_parent_checks = 2u32;
 
 	// Root -> Parent -> Delegation
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone(), ACCOUNT_00)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.with_balances(vec![
-			(user_1.clone(), <Test as Config>::Deposit::get()),
-			(user_2, <Test as Config>::Deposit::get()),
-			(user_3, <Test as Config>::Deposit::get()),
+			(ACCOUNT_00.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_01, <Test as Config>::Deposit::get()),
+			(ACCOUNT_02, <Test as Config>::Deposit::get()),
 		])
 		.build()
 		.execute_with(|| {
@@ -1999,41 +2061,42 @@ fn is_delegating_root_owner_not_revoked() {
 #[test]
 fn is_delegating_root_owner_revoked() {
 	let user_1_keypair = get_alice_ed25519();
-	let user_1 = get_ed25519_account(user_1_keypair.public());
+	let user_1 = get_ed25519_did(user_1_keypair.public());
 	let user_2_keypair = get_bob_ed25519();
-	let user_2 = get_ed25519_account(user_2_keypair.public());
+	let user_2 = get_ed25519_did(user_2_keypair.public());
 	let user_3_keypair = get_charlie_ed25519();
-	let user_3 = get_ed25519_account(user_3_keypair.public());
+	let user_3 = get_ed25519_did(user_3_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
-	let (parent_id, parent_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id)),
-	);
-	let (delegation_id, delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2),
-		generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let parent_node =
+		generate_base_delegation_node(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let delegation_node = generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id), ACCOUNT_01);
 
 	let max_parent_checks = 2u32;
 
 	// Root -> Parent -> Delegation
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone(), ACCOUNT_00)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.with_balances(vec![
-			(user_1.clone(), <Test as Config>::Deposit::get()),
-			(user_2, <Test as Config>::Deposit::get()),
-			(user_3, <Test as Config>::Deposit::get()),
+			(ACCOUNT_00.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_01, <Test as Config>::Deposit::get()),
+			(ACCOUNT_02, <Test as Config>::Deposit::get()),
 		])
 		.build()
 		.execute_with(|| {
 			// First revoke the hierarchy, then test is_delegating.
-			let _ = Delegation::revoke_delegation(get_origin(user_1.clone()), hierarchy_root_id, 0u32, 2);
+			let _ = Delegation::revoke_delegation(
+				DoubleOrigin(ACCOUNT_00.clone(), user_1.clone()).into(),
+				hierarchy_root_id,
+				0u32,
+				2,
+			);
 
 			assert_eq!(
 				Delegation::is_delegating(&user_1, &delegation_id, max_parent_checks),
@@ -2045,19 +2108,17 @@ fn is_delegating_root_owner_revoked() {
 #[test]
 fn is_delegating_delegation_not_found() {
 	let user_1_keypair = get_alice_ed25519();
-	let user_1 = get_ed25519_account(user_1_keypair.public());
+	let user_1 = get_ed25519_did(user_1_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 
 	let max_parent_checks = 2u32;
 
 	// Root -> Delegation 1
 	let mut ext = ExtBuilder::default()
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone(), ACCOUNT_00)])
 		.build();
 
 	ext.execute_with(|| {
@@ -2071,20 +2132,21 @@ fn is_delegating_delegation_not_found() {
 #[test]
 fn is_delegating_root_after_max_limit() {
 	let user_1_keypair = get_alice_ed25519();
-	let user_1 = get_ed25519_account(user_1_keypair.public());
+	let user_1 = get_ed25519_did(user_1_keypair.public());
 	let user_2_keypair = get_bob_ed25519();
-	let user_2 = get_ed25519_account(user_2_keypair.public());
+	let user_2 = get_ed25519_did(user_2_keypair.public());
 	let user_3_keypair = get_charlie_ed25519();
-	let user_3 = get_ed25519_account(user_3_keypair.public());
+	let user_3 = get_ed25519_did(user_3_keypair.public());
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
+
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
-	let parent_node = generate_base_delegation_node(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id));
-	let (delegation_id, delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2),
-		generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id)),
-	);
+	let parent_node =
+		generate_base_delegation_node(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let delegation_node = generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id), ACCOUNT_01);
 
 	// 1 less than needed
 	let max_parent_checks = 1u32;
@@ -2092,12 +2154,12 @@ fn is_delegating_root_after_max_limit() {
 	// Root -> Parent -> Delegation
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone(), ACCOUNT_00)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.with_balances(vec![
-			(user_1.clone(), <Test as Config>::Deposit::get()),
-			(user_2, <Test as Config>::Deposit::get()),
-			(user_3, <Test as Config>::Deposit::get()),
+			(ACCOUNT_00.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_01, <Test as Config>::Deposit::get()),
+			(ACCOUNT_02, <Test as Config>::Deposit::get()),
 		])
 		.build()
 		.execute_with(|| {
@@ -2111,72 +2173,76 @@ fn is_delegating_root_after_max_limit() {
 #[test]
 fn remove_single_hierarchy() {
 	let creator_keypair = get_alice_ed25519();
-	let creator = get_ed25519_account(creator_keypair.public());
+	let creator = get_ed25519_did(creator_keypair.public());
 	let attacker_keypair = get_bob_sr25519();
-	let attacker = get_sr25519_account(attacker_keypair.public());
+	let attacker = get_sr25519_did(attacker_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
 
 	ExtBuilder::default()
-		.with_balances(vec![(creator.clone(), <Test as Config>::Deposit::get())])
+		.with_balances(vec![(ACCOUNT_00.clone(), <Test as Config>::Deposit::get())])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator.clone())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			creator.clone(),
+			ACCOUNT_00,
+		)])
 		.build()
 		.execute_with(|| {
 			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_some());
 			assert!(Delegation::delegation_nodes(hierarchy_root_id).is_some());
 			assert_eq!(
-				Balances::reserved_balance(creator.clone()),
+				Balances::reserved_balance(ACCOUNT_00.clone()),
 				<Test as Config>::Deposit::get()
 			);
 
 			// Remove
 			assert_noop!(
-				Delegation::remove_delegation(get_origin(attacker), hierarchy_root_id, 0u32),
+				Delegation::remove_delegation(
+					DoubleOrigin(ACCOUNT_00.clone(), attacker.clone()).into(),
+					hierarchy_root_id,
+					0u32
+				),
 				Error::<Test>::UnauthorizedRemoval
 			);
 			assert_ok!(Delegation::remove_delegation(
-				get_origin(creator.clone()),
+				DoubleOrigin(ACCOUNT_00.clone(), creator.clone()).into(),
 				hierarchy_root_id,
 				0
 			),);
 			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_none());
 			assert!(Delegation::delegation_nodes(hierarchy_root_id).is_none());
-			assert!(Balances::reserved_balance(creator).is_zero());
+			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 		});
 }
 
 #[test]
 fn remove_children_gas_runs_out() {
 	let revoker_keypair = get_alice_ed25519();
-	let revoker = get_ed25519_account(revoker_keypair.public());
-	let delegate = get_ed25519_account(get_bob_ed25519().public());
+	let revoker = get_ed25519_did(revoker_keypair.public());
+	let delegate = get_ed25519_did(get_bob_ed25519().public());
 	let child_keypair = get_charlie_ed25519();
-	let child = get_ed25519_account(child_keypair.public());
+	let child = get_ed25519_did(child_keypair.public());
 
-	let (hierarchy_root_id, hierarchy_details) = (
-		get_delegation_hierarchy_id::<Test>(true),
-		generate_base_delegation_hierarchy_details(),
-	);
-	let (delegation1_id, delegation1_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id)),
-	);
-	let (delegation2_id, delegation2_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2),
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(delegation1_id)),
-	);
-	let (delegation3_id, delegation3_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_3),
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(delegation1_id)),
-	);
-	let (delegation4_id, delegation4_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_4),
-		generate_base_delegation_node(hierarchy_root_id, child.clone(), Some(delegation3_id)),
-	);
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let delegation1_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let delegation1_node =
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id), ACCOUNT_01);
+
+	let delegation2_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let delegation2_node =
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(delegation1_id), ACCOUNT_01);
+
+	let delegation3_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_3);
+	let delegation3_node =
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(delegation1_id), ACCOUNT_01);
+
+	let delegation4_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_4);
+	let delegation4_node =
+		generate_base_delegation_node(hierarchy_root_id, child.clone(), Some(delegation3_id), ACCOUNT_02);
 
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	// set max children below required minimum of 4 to revoke/remove entire tree
@@ -2184,12 +2250,17 @@ fn remove_children_gas_runs_out() {
 
 	ExtBuilder::default()
 		.with_balances(vec![
-			(revoker.clone(), <Test as Config>::Deposit::get()),
-			(delegate.clone(), <Test as Config>::Deposit::get() * 3),
-			(child.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_00.clone(), <Test as Config>::Deposit::get()),
+			(ACCOUNT_01.clone(), <Test as Config>::Deposit::get() * 3),
+			(ACCOUNT_02.clone(), <Test as Config>::Deposit::get()),
 		])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, revoker.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, revoker.clone())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			revoker.clone(),
+			ACCOUNT_00,
+		)])
 		.with_delegations(vec![
 			(delegation1_id, delegation1_node),
 			(delegation2_id, delegation2_node),
@@ -2199,15 +2270,15 @@ fn remove_children_gas_runs_out() {
 		.build()
 		.execute_with(|| {
 			assert_eq!(
-				Balances::reserved_balance(revoker.clone()),
+				Balances::reserved_balance(ACCOUNT_00.clone()),
 				<Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::reserved_balance(delegate.clone()),
+				Balances::reserved_balance(ACCOUNT_01.clone()),
 				3 * <Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::reserved_balance(child.clone()),
+				Balances::reserved_balance(ACCOUNT_02.clone()),
 				<Test as Config>::Deposit::get()
 			);
 
@@ -2216,7 +2287,11 @@ fn remove_children_gas_runs_out() {
 			// assert_err and not assert_noop because the storage is indeed changed, but
 			// only partially (only #4 is removed)
 			assert_err!(
-				Delegation::remove_delegation(get_origin(revoker.clone()), operation.id, operation.max_children),
+				Delegation::remove_delegation(
+					DoubleOrigin(ACCOUNT_00.clone(), revoker.clone()).into(),
+					operation.id,
+					operation.max_children
+				),
 				Error::<Test>::ExceededRemovalBounds
 			);
 			assert!(Delegation::delegation_nodes(&operation.id).is_some());
@@ -2225,21 +2300,21 @@ fn remove_children_gas_runs_out() {
 			assert!(Delegation::delegation_nodes(&delegation3_id).is_some());
 			assert!(Delegation::delegation_nodes(&delegation4_id).is_some());
 			assert_eq!(
-				Balances::reserved_balance(revoker.clone()),
+				Balances::reserved_balance(ACCOUNT_00.clone()),
 				<Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::reserved_balance(delegate.clone()),
+				Balances::reserved_balance(ACCOUNT_01.clone()),
 				2 * <Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::reserved_balance(child.clone()),
+				Balances::reserved_balance(ACCOUNT_02.clone()),
 				<Test as Config>::Deposit::get()
 			);
 
 			// Should be able to remove root now because #_of_children = 3
 			assert_ok!(Delegation::remove_delegation(
-				get_origin(revoker.clone()),
+				DoubleOrigin(ACCOUNT_00.clone(), revoker.clone()).into(),
 				operation.id,
 				operation.max_children
 			),);
@@ -2247,9 +2322,9 @@ fn remove_children_gas_runs_out() {
 			assert!(Delegation::delegation_nodes(&delegation1_id).is_none());
 			assert!(Delegation::delegation_nodes(&delegation2_id).is_none());
 			assert!(Delegation::delegation_nodes(&delegation3_id).is_none());
-			assert!(Balances::reserved_balance(revoker.clone()).is_zero());
-			assert!(Balances::reserved_balance(delegate.clone()).is_zero());
-			assert!(Balances::reserved_balance(child.clone()).is_zero());
+			assert!(Balances::reserved_balance(ACCOUNT_00.clone()).is_zero());
+			assert!(Balances::reserved_balance(ACCOUNT_01.clone()).is_zero());
+			assert!(Balances::reserved_balance(ACCOUNT_02.clone()).is_zero());
 		});
 }
 
