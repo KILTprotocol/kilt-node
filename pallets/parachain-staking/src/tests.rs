@@ -3708,15 +3708,122 @@ fn network_reward_increase_max_collator_count() {
 }
 
 #[test]
-fn update_total_stake_candidate_replaces_collator() {
+fn update_total_stake_collators_stay() {
 	ExtBuilder::default()
-		.with_balances((1u64..22u64).map(|id| (id, 201)).collect())
-		.with_collators(vec![(1, 100)])
-		.with_delegators(vec![(13, 1, 100)])
+		.with_balances(vec![(1, 200), (2, 200), (3, 200), (4, 200)])
+		.with_collators(vec![(1, 100), (2, 50)])
+		.with_delegators(vec![(3, 1, 100), (4, 2, 50)])
 		.build()
 		.execute_with(|| {
-			// initial collators: [1]
-			let mut collators: Vec<StakeOf<Test>> = vec![Stake { owner: 1, amount: 200 }];
+			assert_eq!(
+				StakePallet::total_collator_stake(),
+				TotalStake {
+					collators: 150,
+					delegators: 150
+				}
+			);
+			assert_ok!(StakePallet::candidate_stake_more(Origin::signed(1), 10));
+			assert_eq!(
+				StakePallet::total_collator_stake(),
+				TotalStake {
+					collators: 160,
+					delegators: 150
+				}
+			);
+			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(2), 5));
+			assert_eq!(
+				StakePallet::total_collator_stake(),
+				TotalStake {
+					collators: 155,
+					delegators: 150
+				}
+			);
+			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(3), 1, 10));
+			assert_eq!(
+				StakePallet::total_collator_stake(),
+				TotalStake {
+					collators: 155,
+					delegators: 160
+				}
+			);
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(4), 2, 5));
+			assert_eq!(
+				StakePallet::total_collator_stake(),
+				TotalStake {
+					collators: 155,
+					delegators: 155
+				}
+			);
+		});
+}
+
+#[test]
+fn update_total_stake_displace_collators() {
+	ExtBuilder::default()
+		.with_balances(vec![
+			(1, 200),
+			(2, 200),
+			(3, 200),
+			(4, 200),
+			(5, 200),
+			(6, 200),
+			(7, 200),
+			(8, 200),
+			(1337, 200),
+		])
+		.with_collators(vec![(1, 10), (2, 20), (3, 30), (4, 40)])
+		.with_delegators(vec![(5, 1, 50), (6, 2, 50), (7, 3, 55), (8, 4, 55)])
+		.build()
+		.execute_with(|| {
+			assert_eq!(
+				StakePallet::total_collator_stake(),
+				TotalStake {
+					collators: 70,
+					delegators: 110
+				}
+			);
+
+			// 4 is pushed out by staking less
+			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(4), 30));
+			assert_eq!(
+				StakePallet::total_collator_stake(),
+				TotalStake {
+					collators: 50,
+					delegators: 105
+				}
+			);
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(8), 4, 45));
+
+			// 3 is pushed out by delegator staking less
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(7), 3, 45));
+			assert_eq!(
+				StakePallet::total_collator_stake(),
+				TotalStake {
+					collators: 30,
+					delegators: 100
+				}
+			);
+
+			// 1 is pushed out by new candidate
+			assert_ok!(StakePallet::join_candidates(Origin::signed(1337), 100));
+			assert_eq!(
+				StakePallet::total_collator_stake(),
+				TotalStake {
+					collators: 120,
+					delegators: 50
+				}
+			);
+		});
+}
+
+#[test]
+fn update_total_stake_new_collators() {
+	ExtBuilder::default()
+		.with_balances(vec![(1, 100), (2, 100), (3, 100), (4, 100)])
+		.with_collators(vec![(1, 100)])
+		.with_delegators(vec![(4, 1, 100)])
+		.build()
+		.execute_with(|| {
 			assert_eq!(
 				StakePallet::total_collator_stake(),
 				TotalStake {
@@ -3724,102 +3831,169 @@ fn update_total_stake_candidate_replaces_collator() {
 					delegators: 100
 				}
 			);
-
-			// new candidate 2 joins and becomes collator
-			assert_eq!(StakePallet::max_selected_candidates(), 2);
 			assert_ok!(StakePallet::join_candidates(Origin::signed(2), 100));
-			assert_ok!(StakePallet::join_delegators(Origin::signed(14), 2, 98));
-			collators.push(Stake { owner: 2, amount: 198 });
 			assert_eq!(
 				StakePallet::total_collator_stake(),
 				TotalStake {
 					collators: 200,
-					delegators: 198,
+					delegators: 100
 				}
 			);
-
-			// candidates 3 to 9 join but only become top candidates
-			for owner in 3u64..10u64 {
-				assert_ok!(StakePallet::join_candidates(Origin::signed(owner), 100));
-				assert_ok!(StakePallet::join_delegators(
-					Origin::signed(owner + 12u64),
-					owner,
-					(100 - owner).into()
-				));
-				collators.push(Stake {
-					owner,
-					amount: (100 + 100 - owner).into(),
-				})
-			}
-			assert_eq!(StakePallet::top_candidates().into_bounded_vec().into_inner(), collators);
-			assert_eq!(StakePallet::selected_candidates().into_inner(), vec![1, 2]);
+			assert_ok!(StakePallet::join_delegators(Origin::signed(3), 2, 50));
 			assert_eq!(
 				StakePallet::total_collator_stake(),
 				TotalStake {
 					collators: 200,
-					delegators: 198
+					delegators: 150
 				}
 			);
-
-			// add new
-			assert_ok!(StakePallet::join_candidates(Origin::signed(10), 100));
-			collators.push(Stake { owner: 10, amount: 100 });
-			assert_eq!(StakePallet::top_candidates().into_bounded_vec().into_inner(), collators);
+			assert_ok!(StakePallet::leave_delegators(Origin::signed(4)));
 			assert_eq!(
 				StakePallet::total_collator_stake(),
 				TotalStake {
 					collators: 200,
-					delegators: 198
+					delegators: 50
 				}
 			);
-
-			// increase existing
-			assert_ok!(StakePallet::candidate_stake_more(Origin::signed(2), 50));
-			collators[1] = collators[0].clone();
-			collators[0] = Stake { owner: 2, amount: 248 };
-			assert_eq!(StakePallet::top_candidates().into_bounded_vec().into_inner(), collators);
-			assert_eq!(
-				StakePallet::total_collator_stake(),
-				TotalStake {
-					collators: 250,
-					delegators: 198
-				}
-			);
-
-			// decrease existing
-			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(2), 48));
-			collators[0].amount = 200;
-			assert_eq!(StakePallet::top_candidates().into_bounded_vec().into_inner(), collators);
-			assert_eq!(
-				StakePallet::total_collator_stake(),
-				TotalStake {
-					collators: 202,
-					delegators: 198
-				}
-			);
-
-			// new candidate joins with insufficient stake to become top candidate
-			assert_ok!(StakePallet::join_candidates(Origin::signed(11), 100));
-			assert_eq!(StakePallet::top_candidates().into_bounded_vec().into_inner(), collators);
-			assert_eq!(
-				StakePallet::total_collator_stake(),
-				TotalStake {
-					collators: 202,
-					delegators: 198
-				}
-			);
-
-			// new candidate replaces existing collator
-			assert_ok!(StakePallet::join_candidates(Origin::signed(12), 201));
-			collators.pop();
-			collators.insert(0, Stake { owner: 12, amount: 201 });
-			assert_eq!(StakePallet::top_candidates().into_bounded_vec().into_inner(), collators);
-			assert_eq!(
-				StakePallet::total_collator_stake(),
-				TotalStake {
-					collators: 303,
-					delegators: 98
-				}
-			);
-		})
+		});
 }
+
+// #[test]
+// fn update_total_stake_no_collator_changes() {
+
+// }
+
+// #[test]
+// fn update_total_stake_candidate_replaces_collator() {
+// 	ExtBuilder::default()
+// 		.with_balances((1u64..22u64).map(|id| (id, 201)).collect())
+// 		.with_collators(vec![(1, 100)])
+// 		.with_delegators(vec![(13, 1, 100)])
+// 		.build()
+// 		.execute_with(|| {
+// 			// initial collators: [1]
+// 			let mut collators: Vec<StakeOf<Test>> = vec![Stake { owner: 1, amount: 200
+// }]; 			assert_eq!(
+// 				StakePallet::total_collator_stake(),
+// 				TotalStake {
+// 					collators: 100,
+// 					delegators: 100
+// 				}
+// 			);
+
+// 			// new candidate 2 joins and becomes collator
+// 			assert_eq!(StakePallet::max_selected_candidates(), 2);
+// 			assert_ok!(StakePallet::join_candidates(Origin::signed(2), 100));
+// 			assert_ok!(StakePallet::join_delegators(Origin::signed(14), 2, 98));
+// 			collators.push(Stake { owner: 2, amount: 198 });
+// 			assert_eq!(
+// 				StakePallet::total_collator_stake(),
+// 				TotalStake {
+// 					collators: 200,
+// 					delegators: 198,
+// 				}
+// 			);
+
+// 			// fill up TopCandidates but one slot:
+// 			// candidates 3 to 9 join but don't become collators
+// 			for owner in 3u64..10u64 {
+// 				assert_ok!(StakePallet::join_candidates(Origin::signed(owner), 100));
+// 				assert_ok!(StakePallet::join_delegators(
+// 					Origin::signed(owner + 12u64),
+// 					owner,
+// 					(100 - owner).into()
+// 				));
+// 				collators.push(Stake {
+// 					owner,
+// 					amount: (100 + 100 - owner).into(),
+// 				})
+// 			}
+// 			assert_eq!(StakePallet::top_candidates().into_bounded_vec().into_inner(),
+// collators); 			assert_eq!(StakePallet::selected_candidates().into_inner(),
+// vec![1, 2]); 			assert_eq!(
+// 				StakePallet::total_collator_stake(),
+// 				TotalStake {
+// 					collators: 200,
+// 					delegators: 198
+// 				}
+// 			);
+
+// 			// add new candidate (10, 100, 0) which doesn't make collators but
+// TopCandidates 			assert_ok!(StakePallet::join_candidates(Origin::signed(10),
+// 100)); 			collators.push(Stake { owner: 10, amount: 100 });
+// 			assert_eq!(StakePallet::top_candidates().into_bounded_vec().into_inner(),
+// collators); 			assert_eq!(
+// 				StakePallet::total_collator_stake(),
+// 				TotalStake {
+// 					collators: 200,
+// 					delegators: 198
+// 				}
+// 			);
+
+// 			// increase existing collator stake of 2
+// 			// s.t. collators = [(2, 150, 98), (1, 100, 100)]
+// 			assert_ok!(StakePallet::candidate_stake_more(Origin::signed(2), 50));
+// 			collators[1] = collators[0].clone();
+// 			collators[0] = Stake { owner: 2, amount: 248 };
+// 			assert_eq!(StakePallet::top_candidates().into_bounded_vec().into_inner(),
+// collators); 			assert_eq!(
+// 				StakePallet::total_collator_stake(),
+// 				TotalStake {
+// 					collators: 250,
+// 					delegators: 198
+// 				}
+// 			);
+
+// 			// decrease existing collator stake of 2
+// 			// s.t. collators = [(2, 102, 98), (1, 100, 100)]
+// 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(2), 48));
+// 			collators[0].amount = 200;
+// 			assert_eq!(StakePallet::top_candidates().into_bounded_vec().into_inner(),
+// collators); 			assert_eq!(
+// 				StakePallet::total_collator_stake(),
+// 				TotalStake {
+// 					collators: 202,
+// 					delegators: 198
+// 				}
+// 			);
+
+// 			// new candidate (11, 100, 0) joins with insufficient stake to become
+// 			// TopCandidate
+// 			assert_ok!(StakePallet::join_candidates(Origin::signed(11), 100));
+// 			assert_eq!(StakePallet::top_candidates().into_bounded_vec().into_inner(),
+// collators); 			assert_eq!(
+// 				StakePallet::total_collator_stake(),
+// 				TotalStake {
+// 					collators: 202,
+// 					delegators: 198
+// 				}
+// 			);
+
+// 			// new candidate (12, 201, 0) replaces existing collator (1, 100, 100)
+// 			assert_ok!(StakePallet::join_candidates(Origin::signed(12), 201));
+// 			collators.pop();
+// 			collators.insert(0, Stake { owner: 12, amount: 201 });
+// 			assert_eq!(StakePallet::top_candidates().into_bounded_vec().into_inner(),
+// collators); 			assert_eq!(
+// 				StakePallet::total_collator_stake(),
+// 				TotalStake {
+// 					collators: 303,
+// 					delegators: 98
+// 				}
+// 			);
+
+// 			// existing collator reduces stake (2, 100, 98) to be displaced by
+// 			// next candidate in TopCandidates (1, 100, 100)
+// 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(2), 2));
+// 			collators[1] = collators[2].clone();
+// 			collators[2] = Stake { owner: 2, amount: 198 };
+// 			assert_eq!(StakePallet::top_candidates().into_bounded_vec().into_inner(),
+// collators); 			assert_eq!(
+// 				StakePallet::total_collator_stake(),
+// 				TotalStake {
+// 					collators: 301,
+// 					delegators: 100,
+// 				}
+// 			);
+// 		})
+// }
