@@ -16,14 +16,13 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use crate::{AccountIdOf, BalanceOf, Config, DelegationNodeIdOf, DelegatorIdOf, Error};
 use bitflags::bitflags;
 use codec::{Decode, Encode};
 use ctype::CtypeHashOf;
 use frame_support::{dispatch::DispatchResult, storage::bounded_btree_set::BoundedBTreeSet};
 use kilt_support::deposit::Deposit;
 use scale_info::TypeInfo;
-
-use crate::*;
 
 bitflags! {
 	/// Bitflags for permissions.

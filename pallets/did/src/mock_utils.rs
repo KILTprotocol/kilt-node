@@ -16,15 +16,19 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::*;
-use did_details::*;
 use frame_support::storage::bounded_btree_set::BoundedBTreeSet;
 use kilt_support::deposit::Deposit;
-use sp_runtime::traits::Zero;
+use sp_runtime::{traits::Zero, SaturatedConversion};
 use sp_std::{
 	collections::btree_set::BTreeSet,
 	convert::{TryFrom, TryInto},
 	vec::Vec,
+};
+
+use crate::{
+	did_details::{DidCreationDetails, DidDetails, DidEncryptionKey, DidNewKeyAgreementKeySet, DidVerificationKey},
+	service_endpoints::DidEndpoint,
+	AccountIdOf, BlockNumberOf, Config, DidIdentifierOf,
 };
 
 pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> DidNewKeyAgreementKeySet<T> {

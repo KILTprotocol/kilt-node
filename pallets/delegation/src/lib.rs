@@ -86,8 +86,6 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
-pub(crate) mod deprecated;
-
 pub use crate::{default_weights::WeightInfo, delegation_hierarchy::*, pallet::*};
 
 use frame_support::{
@@ -96,13 +94,9 @@ use frame_support::{
 	pallet_prelude::Weight,
 	traits::{Get, ReservableCurrency},
 };
-use sp_runtime::{
-	traits::{Hash, Zero},
-	DispatchError,
-};
+use migrations::DelegationStorageVersion;
+use sp_runtime::{traits::Hash, DispatchError};
 use sp_std::vec::Vec;
-
-use migrations::*;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -189,23 +183,6 @@ pub mod pallet {
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
-
-	#[pallet::hooks]
-	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-		#[cfg(feature = "try-runtime")]
-		fn pre_upgrade() -> Result<(), &'static str> {
-			migrations::DelegationStorageMigrator::<T>::pre_migrate()
-		}
-
-		fn on_runtime_upgrade() -> Weight {
-			migrations::DelegationStorageMigrator::<T>::migrate()
-		}
-
-		#[cfg(feature = "try-runtime")]
-		fn post_upgrade() -> Result<(), &'static str> {
-			migrations::DelegationStorageMigrator::<T>::post_migrate()
-		}
-	}
 
 	/// Contains the latest storage version deployed.
 	#[pallet::storage]

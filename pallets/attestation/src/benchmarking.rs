@@ -16,6 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use super::*;
 use delegation::{benchmarking::setup_delegations, Permissions};
 use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
 use frame_support::traits::{Currency, Get};
@@ -24,8 +25,6 @@ use kilt_support::signature::VerifySignature;
 use sp_core::sr25519;
 use sp_runtime::traits::Hash;
 use sp_std::num::NonZeroU32;
-
-use crate::*;
 
 const ONE_CHILD_PER_LEVEL: Option<NonZeroU32> = NonZeroU32::new(1);
 

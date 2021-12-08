@@ -16,6 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use super::*;
+
 use codec::Encode;
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, Zero};
 use frame_support::{assert_ok, traits::Currency};
@@ -28,11 +30,15 @@ use sp_runtime::{traits::IdentifyAccount, MultiSigner};
 use sp_std::{convert::TryInto, vec::Vec};
 
 use crate::{
-	did_details::*,
+	did_details::{
+		DeriveDidCallAuthorizationVerificationKeyRelationship, DidAuthorizedCallOperation, DidPublicKey, DidSignature,
+		DidVerificationKey,
+	},
 	mock_utils::{
 		generate_base_did_creation_details, generate_base_did_details, get_key_agreement_keys, get_service_endpoints,
 	},
-	*,
+	service_endpoints::DidEndpoint,
+	signature::DidSignatureVerify,
 };
 
 const DEFAULT_ACCOUNT_ID: &str = "tx_submitter";
