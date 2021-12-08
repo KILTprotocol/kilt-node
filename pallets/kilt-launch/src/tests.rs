@@ -27,8 +27,7 @@ use frame_support::{
 };
 use kilt_primitives::{AccountId, BlockNumber};
 use pallet_balances::{BalanceLock, Locks, Reasons};
-#[allow(unused_imports)]
-use pallet_vesting::{Call::vest, Vesting as VestingStorage, VestingInfo};
+use pallet_vesting::{Vesting as VestingStorage, VestingInfo};
 use sp_runtime::traits::Zero;
 
 #[test]

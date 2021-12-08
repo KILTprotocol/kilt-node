@@ -16,6 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use super::*;
+
 use codec::Encode;
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
@@ -27,9 +29,8 @@ use frame_system::RawOrigin;
 use kilt_support::signature::VerifySignature;
 use sp_core::{offchain::KeyTypeId, sr25519};
 use sp_io::crypto::sr25519_generate;
+use sp_runtime::traits::Zero;
 use sp_std::{num::NonZeroU32, vec::Vec};
-
-use crate::*;
 
 const SEED: u32 = 0;
 const ONE_CHILD_PER_LEVEL: Option<NonZeroU32> = NonZeroU32::new(1);

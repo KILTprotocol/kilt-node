@@ -16,8 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::*;
 use scale_info::TypeInfo;
+
+use crate::did_details::DidVerificationKeyRelationship;
 
 /// All the errors that can be generated when validating a DID operation.
 #[derive(Debug, Eq, PartialEq, TypeInfo)]

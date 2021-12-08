@@ -51,7 +51,11 @@ mod benchmarking;
 
 mod storage;
 
-pub use crate::{default_weights::WeightInfo, pallet::*, storage::*};
+pub use crate::{
+	default_weights::WeightInfo,
+	pallet::*,
+	storage::{GratitudeConfig, ReserveAccounts},
+};
 
 #[frame_support::pallet]
 pub mod pallet {

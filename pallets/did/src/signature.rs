@@ -21,7 +21,11 @@ use kilt_support::signature::{SignatureVerificationError, SignatureVerificationR
 use sp_runtime::SaturatedConversion;
 use sp_std::{marker::PhantomData, vec::Vec};
 
-use crate::{Config, Did, DidError, DidSignature, DidVerificationKeyRelationship, Pallet, WeightInfo};
+use crate::{
+	did_details::{DidSignature, DidVerificationKeyRelationship},
+	errors::DidError,
+	Config, Did, Pallet, WeightInfo,
+};
 
 pub struct DidSignatureVerify<T>(PhantomData<T>);
 impl<T: Config> VerifySignature for DidSignatureVerify<T> {

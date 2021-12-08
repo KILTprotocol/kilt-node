@@ -16,16 +16,16 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use super::*;
+
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
+use frame_support::traits::{Currency, Get};
+use frame_system::RawOrigin;
 use sp_std::{
 	convert::{TryFrom, TryInto},
 	fmt::Debug,
 	vec::Vec,
 };
-
-use crate::*;
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
-use frame_support::traits::{Currency, Get};
-use frame_system::RawOrigin;
 
 const SEED: u32 = 0;
 const MAX_CTYPE_SIZE: u32 = 5 * 1024 * 1024;

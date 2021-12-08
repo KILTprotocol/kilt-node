@@ -21,7 +21,7 @@
 
 use frame_support::{
 	parameter_types,
-	traits::{Currency, ReservableCurrency},
+	traits::{Currency, OnUnbalanced, ReservableCurrency},
 	weights::constants::RocksDbWeight,
 };
 use frame_system::EnsureSigned;
@@ -32,19 +32,30 @@ use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
 	testing::{Header, H256},
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	MultiSigner,
+	MultiSigner, SaturatedConversion,
 };
-
 use sp_std::sync::Arc;
 
-use crate as did;
-use crate::*;
+use crate::{
+	self as did,
+	did_details::{
+		DeriveDidCallAuthorizationVerificationKeyRelationship, DeriveDidCallKeyRelationshipResult,
+		DidAuthorizedCallOperation, DidAuthorizedCallOperationWithVerificationRelationship, DidDetails,
+		DidEncryptionKey, DidPublicKey, DidPublicKeyDetails, DidVerificationKey, DidVerificationKeyRelationship,
+		RelationshipDeriveError,
+	},
+	service_endpoints::DidEndpoint,
+	utils as crate_utils, AccountIdOf, Config, CurrencyOf, DidBlacklist, DidEndpointsCount, DidStorageVersion, KeyIdOf,
+	ServiceEndpoints, StorageVersion,
+};
+#[cfg(not(feature = "runtime-benchmarks"))]
+use crate::{DidRawOrigin, EnsureDidOrigin};
 
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
 
 pub type TestDidIdentifier = kilt_primitives::AccountId;
-pub type TestKeyId = did::KeyIdOf<Test>;
+pub type TestKeyId = KeyIdOf<Test>;
 pub type TestBlockNumber = kilt_primitives::BlockNumber;
 pub type TestCtypeOwner = TestDidIdentifier;
 pub type TestCtypeHash = kilt_primitives::Hash;
@@ -179,9 +190,9 @@ impl ctype::Config for Test {
 	type OriginSuccess = kilt_primitives::AccountId;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	type EnsureOrigin = did::EnsureDidOrigin<TestCtypeOwner, kilt_primitives::AccountId>;
+	type EnsureOrigin = EnsureDidOrigin<TestCtypeOwner, kilt_primitives::AccountId>;
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	type OriginSuccess = did::DidRawOrigin<kilt_primitives::AccountId, TestCtypeOwner>;
+	type OriginSuccess = DidRawOrigin<kilt_primitives::AccountId, TestCtypeOwner>;
 
 	type CtypeCreatorId = TestCtypeOwner;
 	type Event = ();
@@ -216,10 +227,8 @@ pub(crate) fn fill_public_keys(mut did_details: DidDetails<Test>) -> DidDetails<
 			.public_keys
 			.try_insert(
 				H256::random(),
-				did::DidPublicKeyDetails {
-					key: did::DidPublicKey::from(did::DidVerificationKey::from(ed25519::Public::from_h256(
-						H256::random(),
-					))),
+				DidPublicKeyDetails {
+					key: DidPublicKey::from(DidVerificationKey::from(ed25519::Public::from_h256(H256::random()))),
 					block_number: 0u64,
 				},
 			)
@@ -320,8 +329,8 @@ pub fn get_ecdsa_delegation_key(default: bool) -> ecdsa::Pair {
 	}
 }
 
-pub fn generate_key_id(key: &did::DidPublicKey) -> TestKeyId {
-	utils::calculate_key_id::<Test>(key)
+pub fn generate_key_id(key: &DidPublicKey) -> TestKeyId {
+	crate_utils::calculate_key_id::<Test>(key)
 }
 
 pub(crate) fn get_attestation_key_test_input() -> Vec<u8> {
@@ -357,21 +366,21 @@ pub(crate) fn get_none_key_call() -> Call {
 	})
 }
 
-impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
-	fn derive_verification_key_relationship(&self) -> did::DeriveDidCallKeyRelationshipResult {
+impl DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
+	fn derive_verification_key_relationship(&self) -> DeriveDidCallKeyRelationshipResult {
 		if *self == get_attestation_key_call() {
-			Ok(did::DidVerificationKeyRelationship::AssertionMethod)
+			Ok(DidVerificationKeyRelationship::AssertionMethod)
 		} else if *self == get_authentication_key_call() {
-			Ok(did::DidVerificationKeyRelationship::Authentication)
+			Ok(DidVerificationKeyRelationship::Authentication)
 		} else if *self == get_delegation_key_call() {
-			Ok(did::DidVerificationKeyRelationship::CapabilityDelegation)
+			Ok(DidVerificationKeyRelationship::CapabilityDelegation)
 		} else {
 			#[cfg(feature = "runtime-benchmarks")]
 			if *self == Self::get_call_for_did_call_benchmark() {
 				// Always require an authentication key to dispatch calls during benchmarking
-				return Ok(did::DidVerificationKeyRelationship::Authentication);
+				return Ok(DidVerificationKeyRelationship::Authentication);
 			}
-			Err(did::RelationshipDeriveError::NotCallableByDid)
+			Err(RelationshipDeriveError::NotCallableByDid)
 		}
 	}
 
@@ -383,18 +392,18 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 }
 
 pub fn generate_test_did_call(
-	verification_key_required: did::DidVerificationKeyRelationship,
+	verification_key_required: DidVerificationKeyRelationship,
 	caller: TestDidIdentifier,
 	submitter: kilt_primitives::AccountId,
-) -> did::DidAuthorizedCallOperationWithVerificationRelationship<Test> {
+) -> DidAuthorizedCallOperationWithVerificationRelationship<Test> {
 	let call = match verification_key_required {
 		DidVerificationKeyRelationship::AssertionMethod => get_attestation_key_call(),
 		DidVerificationKeyRelationship::Authentication => get_authentication_key_call(),
 		DidVerificationKeyRelationship::CapabilityDelegation => get_delegation_key_call(),
 		_ => get_none_key_call(),
 	};
-	did::DidAuthorizedCallOperationWithVerificationRelationship {
-		operation: did::DidAuthorizedCallOperation {
+	DidAuthorizedCallOperationWithVerificationRelationship {
+		operation: DidAuthorizedCallOperation {
 			did: caller,
 			call,
 			tx_counter: 1u64,
@@ -412,7 +421,7 @@ pub fn initialize_logger() {
 
 #[derive(Clone, Default)]
 pub struct ExtBuilder {
-	dids_stored: Vec<(TestDidIdentifier, did::DidDetails<Test>)>,
+	dids_stored: Vec<(TestDidIdentifier, DidDetails<Test>)>,
 	service_endpoints: Vec<(TestDidIdentifier, Vec<DidEndpoint<Test>>)>,
 	deleted_dids: Vec<TestDidIdentifier>,
 	storage_version: DidStorageVersion,
@@ -421,7 +430,7 @@ pub struct ExtBuilder {
 }
 
 impl ExtBuilder {
-	pub fn with_dids(mut self, dids: Vec<(TestDidIdentifier, did::DidDetails<Test>)>) -> Self {
+	pub fn with_dids(mut self, dids: Vec<(TestDidIdentifier, DidDetails<Test>)>) -> Self {
 		self.dids_stored = dids;
 		self
 	}
@@ -475,15 +484,15 @@ impl ExtBuilder {
 					.expect("Deposit owner should have enough balance");
 			}
 			for did in self.deleted_dids.iter() {
-				did::DidBlacklist::<Test>::insert(&did, ());
+				DidBlacklist::<Test>::insert(&did, ());
 			}
 			for (did, endpoints) in self.service_endpoints.iter() {
 				for endpoint in endpoints.iter() {
-					did::ServiceEndpoints::<Test>::insert(&did, &endpoint.id, endpoint)
+					ServiceEndpoints::<Test>::insert(&did, &endpoint.id, endpoint)
 				}
-				did::DidEndpointsCount::<Test>::insert(&did, endpoints.len().saturated_into::<u32>());
+				DidEndpointsCount::<Test>::insert(&did, endpoints.len().saturated_into::<u32>());
 			}
-			did::StorageVersion::<Test>::set(self.storage_version);
+			StorageVersion::<Test>::set(self.storage_version);
 		});
 
 		ext

@@ -19,7 +19,7 @@
 use frame_support::weights::{constants::WEIGHT_PER_SECOND, Weight};
 use sp_runtime::{Perbill, Perquintill};
 
-use crate::*;
+use crate::{Balance, BlockNumber};
 
 /// This determines the average expected block time that we are targetting.
 /// Blocks will be produced at a minimum duration defined by `SLOT_DURATION`.
