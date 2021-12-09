@@ -849,6 +849,7 @@ pub mod pallet {
 			let start = old.min(new);
 			let end = old.max(new);
 
+			// The slice [start, end] contains the added or removed collators. We sum up their stake to adjust the total stake.
 			let (diff_collation, diff_delegation, num_delegators) = TopCandidates::<T>::get()
 				.into_iter()
 				.skip(start.saturated_into())
@@ -857,6 +858,7 @@ pub mod pallet {
 				.map(|state| {
 					(
 						state.stake,
+						// SAFETY: the total is always more than the stake
 						state.total - state.stake,
 						state.delegators.len().saturated_into::<u32>(),
 					)
@@ -877,6 +879,7 @@ pub mod pallet {
 			Self::deposit_event(Event::MaxSelectedCandidatesSet(old, new));
 
 			Ok(Some(<T as pallet::Config>::WeightInfo::set_max_selected_candidates(
+				// SAFETY: we ensured that end > start further above.
 				end - start,
 				num_delegators,
 			))
