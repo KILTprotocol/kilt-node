@@ -853,6 +853,7 @@ pub mod pallet {
 			let (diff_collation, diff_delegation, num_delegators) = TopCandidates::<T>::get()
 				.into_iter()
 				.skip(start.saturated_into())
+				// SAFETY: we ensured that end > start further above.
 				.take((end - start).saturated_into())
 				.filter_map(|candidate| CandidatePool::<T>::get(&candidate.owner))
 				.map(|state| {
@@ -1866,14 +1867,14 @@ pub mod pallet {
 			let mut delegations = DelegatorState::<T>::get(&delegator).ok_or(Error::<T>::DelegatorNotFound)?;
 			let mut collator = CandidatePool::<T>::get(&candidate).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(!collator.is_leaving(), Error::<T>::CannotDelegateIfLeaving);
-			let delegatodrop_total = delegations
+			let delegator_total = delegations
 				.inc_delegation(candidate.clone(), more)
 				.ok_or(Error::<T>::DelegationNotFound)?;
 
 			// *** No Fail except during increase_lock beyond this point ***
 
 			// update lock
-			let unstaking_len = Self::increase_lock(&delegator, delegatodrop_total, more)?;
+			let unstaking_len = Self::increase_lock(&delegator, delegator_total, more)?;
 
 			let CandidateOf::<T, _> {
 				stake: before_stake,
