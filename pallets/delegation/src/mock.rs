@@ -18,8 +18,7 @@
 
 use sp_core::H256;
 
-use crate as delegation;
-use crate::*;
+use crate::Config;
 
 const DEFAULT_HIERARCHY_ID_SEED: u64 = 1u64;
 const ALTERNATIVE_HIERARCHY_ID_SEED: u64 = 2u64;
@@ -51,6 +50,11 @@ where
 
 #[cfg(test)]
 pub mod runtime {
+	use crate::{
+		self as delegation, migrations::DelegationStorageVersion, AccountIdOf, BalanceOf, CurrencyOf,
+		DelegationDetails, DelegationHierarchyDetails, DelegationNode, DelegatorIdOf, Permissions,
+	};
+
 	use super::*;
 
 	use codec::{Decode, Encode};
@@ -70,7 +74,7 @@ pub mod runtime {
 	};
 	use sp_std::sync::Arc;
 
-	use ctype::mock as ctype_mock;
+	use ctype::{mock as ctype_mock, CtypeHashOf};
 	use kilt_primitives::constants::delegation::DELEGATION_DEPOSIT;
 	use kilt_support::{deposit::Deposit, mock::mock_origin, signature::EqualVerify};
 
@@ -371,7 +375,7 @@ pub mod runtime {
 	) where
 		T: Config,
 	{
-		for ( root_id, details, hierarchy_owner, deposit_owner) in delegation_hierarchies {
+		for (root_id, details, hierarchy_owner, deposit_owner) in delegation_hierarchies {
 			// manually mint to enable deposit reserving
 			let balance = CurrencyOf::<T>::free_balance(&deposit_owner);
 			CurrencyOf::<T>::make_free_balance_be(&deposit_owner, balance + <T as Config>::Deposit::get());
