@@ -606,10 +606,7 @@ pub mod pallet {
 
 			// Node can only be removed by owner of either the deposit or the node, not the
 			// parent or another ancestor
-			ensure!(
-				delegation.deposit.owner == sender || delegation.details.owner == invoker,
-				Error::<T>::UnauthorizedRemoval
-			);
+			ensure!(delegation.details.owner == invoker, Error::<T>::UnauthorizedRemoval);
 
 			ensure!(max_removals <= T::MaxRemovals::get(), Error::<T>::MaxRemovalsTooLarge);
 
