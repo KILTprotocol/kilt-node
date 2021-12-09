@@ -555,20 +555,6 @@ pub mod pallet {
 			}
 			post_weight
 		}
-
-		#[cfg(feature = "try-runtime")]
-		fn pre_upgrade() -> Result<(), &'static str> {
-			migrations::StakingStorageMigrator::<T>::pre_migrate()
-		}
-
-		fn on_runtime_upgrade() -> Weight {
-			migrations::StakingStorageMigrator::<T>::migrate()
-		}
-
-		#[cfg(feature = "try-runtime")]
-		fn post_upgrade() -> Result<(), &'static str> {
-			migrations::StakingStorageMigrator::<T>::post_migrate()
-		}
 	}
 
 	/// True if network has been upgraded to this version.

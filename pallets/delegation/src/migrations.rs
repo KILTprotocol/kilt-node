@@ -17,11 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::{Decode, Encode};
-use kilt_support::traits::VersionMigratorTrait;
 use scale_info::TypeInfo;
-use sp_std::marker::PhantomData;
-
-use crate::*;
 
 /// Storage version of the delegation pallet.
 #[derive(Copy, Clone, Encode, Eq, Decode, Ord, PartialEq, PartialOrd, TypeInfo)]
@@ -33,6 +29,7 @@ pub enum DelegationStorageVersion {
 #[cfg(feature = "try-runtime")]
 impl DelegationStorageVersion {
 	/// The latest storage version.
+	#[allow(dead_code)]
 	fn latest() -> Self {
 		Self::V2
 	}
@@ -48,114 +45,5 @@ impl DelegationStorageVersion {
 impl Default for DelegationStorageVersion {
 	fn default() -> Self {
 		Self::V2
-	}
-}
-
-impl<T: Config> VersionMigratorTrait<T> for DelegationStorageVersion {
-	// It runs the right pre_migrate logic depending on the current storage version.
-	#[cfg(feature = "try-runtime")]
-	fn pre_migrate(&self) -> Result<(), &'static str> {
-		match *self {
-			Self::V1 => Ok(()),
-			Self::V2 => Ok(()),
-		}
-	}
-
-	// It runs the right migration logic depending on the current storage version.
-	fn migrate(&self) -> Weight {
-		match *self {
-			Self::V1 => Weight::zero(),
-			Self::V2 => Weight::zero(),
-		}
-	}
-
-	// It runs the right post_migrate logic depending on the current storage
-	// version.
-	#[cfg(feature = "try-runtime")]
-	fn post_migrate(&self) -> Result<(), &'static str> {
-		match *self {
-			Self::V1 => Ok(()),
-			Self::V2 => Ok(()),
-		}
-	}
-}
-
-/// The delegation pallet's storage migrator, which handles all version
-/// migrations in a sequential fashion.
-///
-/// If a node has missed on more than one upgrade, the migrator will apply the
-/// needed migrations one after the other. Otherwise, if no migration is needed,
-/// the migrator will simply not do anything.
-pub struct DelegationStorageMigrator<T>(PhantomData<T>);
-
-impl<T: Config> DelegationStorageMigrator<T> {
-	// Contains the migration sequence logic.
-	fn get_next_storage_version(current: DelegationStorageVersion) -> Option<DelegationStorageVersion> {
-		// If the version current deployed is at least v1, there is no more migrations
-		// to run (other than the one from v1).
-		match current {
-			DelegationStorageVersion::V1 => None,
-			DelegationStorageVersion::V2 => None,
-		}
-	}
-
-	/// Checks whether the latest storage version deployed is lower than the
-	/// latest possible.
-	#[cfg(feature = "try-runtime")]
-	pub(crate) fn pre_migrate() -> Result<(), &'static str> {
-		// Don't need to check for any other pre_migrate, as in try-runtime it is also
-		// called in the migrate() function. Same applies for post_migrate checks for
-		// each version migrator.
-
-		let storage_version = StorageVersion::<T>::get();
-		assert!(
-			storage_version == DelegationStorageVersion::default()
-				|| storage_version == DelegationStorageVersion::latest()
-		);
-
-		Ok(())
-	}
-
-	/// Applies all the needed migrations from the currently deployed version to
-	/// the latest possible, one after the other.
-	///
-	/// It returns the total weight consumed by ALL the migrations applied.
-	pub(crate) fn migrate() -> Weight {
-		let mut current_version: Option<DelegationStorageVersion> = Some(StorageVersion::<T>::get());
-		// Weight for StorageVersion::get().
-		let mut total_weight = T::DbWeight::get().reads(1);
-
-		while let Some(ver) = current_version {
-			// If any of the needed migrations pre-checks fail, the whole chain panics
-			// (during tests).
-			#[cfg(feature = "try-runtime")]
-			if let Err(err) = <DelegationStorageVersion as VersionMigratorTrait<T>>::pre_migrate(&ver) {
-				panic!("{:?}", err);
-			}
-			let consumed_weight = <DelegationStorageVersion as VersionMigratorTrait<T>>::migrate(&ver);
-			total_weight = total_weight.saturating_add(consumed_weight);
-			// If any of the needed migrations post-checks fail, the whole chain panics
-			// (during tests).
-			#[cfg(feature = "try-runtime")]
-			if let Err(err) = <DelegationStorageVersion as VersionMigratorTrait<T>>::post_migrate(&ver) {
-				panic!("{:?}", err);
-			}
-			// If more migrations should be applied, current_version will not be None.
-			current_version = Self::get_next_storage_version(ver);
-		}
-
-		total_weight
-	}
-
-	/// Checks whether the storage version after all the needed migrations match
-	/// the latest one.
-	#[cfg(feature = "try-runtime")]
-	pub(crate) fn post_migrate() -> Result<(), &'static str> {
-		ensure!(
-			StorageVersion::<T>::get() == DelegationStorageVersion::latest(),
-			"Delegations not updated to the latest version."
-		);
-
-		Ok(())
 	}
 }

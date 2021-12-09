@@ -16,18 +16,20 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::*;
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
 	sp_runtime::traits::Hash,
 	traits::{Currency, Get},
 };
-use kilt_support::traits::GenerateBenchmarkOrigin;
 use sp_std::{
 	convert::{TryFrom, TryInto},
 	fmt::Debug,
 	vec::Vec,
 };
+
+use kilt_support::traits::GenerateBenchmarkOrigin;
+
+use crate::*;
 
 const SEED: u32 = 0;
 const MAX_CTYPE_SIZE: u32 = 5 * 1024 * 1024;
