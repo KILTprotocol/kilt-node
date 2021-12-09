@@ -849,7 +849,8 @@ pub mod pallet {
 			let start = old.min(new);
 			let end = old.max(new);
 
-			// The slice [start, end] contains the added or removed collators. We sum up their stake to adjust the total stake.
+			// The slice [start, end] contains the added or removed collators. We sum up
+			// their stake to adjust the total stake.
 			let (diff_collation, diff_delegation, num_delegators) = TopCandidates::<T>::get()
 				.into_iter()
 				.skip(start.saturated_into())
@@ -2142,7 +2143,8 @@ pub mod pallet {
 			num_top_candidates
 		}
 
-		// TODO: Docs
+		/// Retrieve the staked amounts (self, sum of delegators) of member of
+		/// [TopCandidates] at the given index, if it exists.
 		fn get_top_candidate_stake_at(
 			top_candidates: &OrderedSet<StakeOf<T>, T::MaxTopCandidates>,
 			index: usize,
@@ -2155,7 +2157,8 @@ pub mod pallet {
 				.map(|state| (state.stake, state.total - state.stake))
 		}
 
-		// TODO: Docs
+		/// Mutate the [TotalCollatorStake] by both incrementing and decreasing
+		/// it by the provided values.
 		fn update_total_stake_by(
 			add_collators: BalanceOf<T>,
 			add_delegators: BalanceOf<T>,
