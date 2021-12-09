@@ -2177,6 +2177,53 @@ pub mod pallet {
 			});
 		}
 
+		/// Iterate over the top `MaxSelectedCandidates` many collators in terms
+		/// of cumulated stake (self + from delegators) from the [TopCandidates]
+		/// and recalculate the [TotalCollatorStake] from scratch.
+		///
+		/// NOTE: Should only be called in rare circumstances in which we cannot
+		/// guarantee a single candidate's stake has changed, e.g. on genesis or
+		/// when a collator leaves. Otherwise, please use
+		/// [update_total_stake_by].
+		///
+		/// # <weight>
+		/// Weight: O(N) where N is `MaxSelectedCandidates` bounded by
+		/// `MaxTopCandidates`
+		/// - Reads: TopCandidates, MaxSelectedCandidates, N * CandidatePool,
+		///   TotalCollatorStake
+		/// - Writes: TotalCollatorStake
+		/// # </weight>
+		fn update_total_stake() -> (u32, u32) {
+			let mut num_of_delegators = 0u32;
+			let mut collator_stake = BalanceOf::<T>::zero();
+			let mut delegator_stake = BalanceOf::<T>::zero();
+
+			let collators = Self::selected_candidates();
+
+			// Snapshot exposure for round for weighting reward distribution
+			for account in collators.iter() {
+				let state =
+					<CandidatePool<T>>::get(&account).expect("all members of TopCandidates must be candidates q.e.d");
+				num_of_delegators = num_of_delegators.max(state.delegators.len().saturated_into::<u32>());
+
+				// sum up total stake and amount of collators, delegators
+				let amount_collator = state.stake;
+				collator_stake = collator_stake.saturating_add(state.stake);
+				// safe to subtract because total >= stake
+				let amount_delegators = state.total - amount_collator;
+				delegator_stake = delegator_stake.saturating_add(amount_delegators);
+			}
+
+			TotalCollatorStake::<T>::mutate(|total| {
+				total.collators = collator_stake;
+				total.delegators = delegator_stake;
+			});
+
+			// return number of selected candidates and the corresponding number of their
+			// delegators for post-weight correction
+			(collators.len().saturated_into(), num_of_delegators)
+		}
+
 		/// Update the delegator's state by removing the collator candidate from
 		/// the set of ongoing delegations.
 		///
@@ -2313,59 +2360,6 @@ pub mod pallet {
 				Some(ReplacedDelegator { who, .. }) => DelegatorState::<T>::remove(who),
 				_ => (),
 			}
-		}
-
-		/// Select the top `MaxSelectedCandidates` many collators in terms of
-		/// cumulated stake (self + from delegators) from the TopCandidates to
-		/// become block authors for the next round. The number of candidates
-		/// selected can be `n` or lower in case there are less candidates
-		/// available.
-		///
-		/// We do not want to execute this function in `on_initialize` or
-		/// `new_session` because we could exceed the PoV size limit and brick
-		/// our chain.
-		/// Instead, we execute this function in every extrinsic which mutates
-		/// the amount at stake (collator or delegator). This will heavily
-		/// increase the weight of each of these transactions it enables us to
-		/// do a simple storage read to get the top candidates when a session
-		/// starts in `new_session`.
-		///
-		/// # <weight>
-		/// Weight: O(N) where N is `MaxSelectedCandidates` bounded by
-		/// `MaxTopCandidates`
-		/// - Reads: TopCandidates, MaxSelectedCandidates, N * CandidatePool,
-		///   TotalCollatorStake
-		/// - Writes: TotalCollatorStake
-		/// # </weight>
-		fn update_total_stake() -> (u32, u32) {
-			let mut num_of_delegators = 0u32;
-			let mut collator_stake = BalanceOf::<T>::zero();
-			let mut delegator_stake = BalanceOf::<T>::zero();
-
-			let collators = Self::selected_candidates();
-
-			// Snapshot exposure for round for weighting reward distribution
-			for account in collators.iter() {
-				let state =
-					<CandidatePool<T>>::get(&account).expect("all members of TopCandidates must be candidates q.e.d");
-				num_of_delegators = num_of_delegators.max(state.delegators.len().saturated_into::<u32>());
-
-				// sum up total stake and amount of collators, delegators
-				let amount_collator = state.stake;
-				collator_stake = collator_stake.saturating_add(state.stake);
-				// safe to subtract because total >= stake
-				let amount_delegators = state.total - amount_collator;
-				delegator_stake = delegator_stake.saturating_add(amount_delegators);
-			}
-
-			<TotalCollatorStake<T>>::mutate(|total| {
-				total.collators = collator_stake;
-				total.delegators = delegator_stake;
-			});
-
-			// return number of selected candidates and the corresponding number of their
-			// delegators for post-weight correction
-			(collators.len().saturated_into(), num_of_delegators)
 		}
 
 		/// Return the best `MaxSelectedCandidates` many candidates.
