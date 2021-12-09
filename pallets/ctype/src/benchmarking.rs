@@ -38,7 +38,7 @@ benchmarks! {
 		<<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance: TryFrom<usize>,
 		<<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance as TryFrom<usize>>::Error: Debug,
 		T::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::CtypeCreatorId>,
-		T::CtypeCreatorId: From<T::AccountId>,
+		T::CtypeCreatorId: Default
 	}
 
 	add {
