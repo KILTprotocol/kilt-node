@@ -98,7 +98,7 @@ pub(crate) mod runtime {
 	};
 	use std::sync::Arc;
 
-	use delegation::{DelegationHierarchyDetails, DelegationNode, DelegatorIdOf};
+	use delegation::{mock::DelegationHierarchyInitialization, DelegationNode};
 	use kilt_primitives::constants::{attestation::ATTESTATION_DEPOSIT, delegation::DELEGATION_DEPOSIT, MILLI_KILT};
 	use kilt_support::{mock::mock_origin, signature::EqualVerify};
 
@@ -313,12 +313,7 @@ pub(crate) mod runtime {
 
 	#[derive(Clone, Default)]
 	pub struct ExtBuilder {
-		delegation_hierarchies: Vec<(
-			TestDelegationNodeId,
-			DelegationHierarchyDetails<Test>,
-			DelegatorIdOf<Test>,
-			AccountIdOf<Test>,
-		)>,
+		delegation_hierarchies: DelegationHierarchyInitialization<Test>,
 		delegations: Vec<(TestDelegationNodeId, DelegationNode<Test>)>,
 
 		/// initial ctypes & owners
@@ -331,12 +326,7 @@ pub(crate) mod runtime {
 	impl ExtBuilder {
 		pub fn with_delegation_hierarchies(
 			mut self,
-			delegation_hierarchies: Vec<(
-				TestDelegationNodeId,
-				DelegationHierarchyDetails<Test>,
-				DelegatorIdOf<Test>,
-				AccountIdOf<Test>,
-			)>,
+			delegation_hierarchies: DelegationHierarchyInitialization<Test>,
 		) -> Self {
 			self.delegation_hierarchies = delegation_hierarchies;
 			self

@@ -58,14 +58,16 @@ where
 	H256::from_low_u64_be(seed).into()
 }
 
+pub type DelegationHierarchyInitialization<T> = Vec<(
+	<T as Config>::DelegationNodeId,
+	DelegationHierarchyDetails<T>,
+	DelegatorIdOf<T>,
+	AccountIdOf<T>,
+)>;
+
 pub fn initialize_pallet<T>(
 	delegations: Vec<(T::DelegationNodeId, DelegationNode<T>)>,
-	delegation_hierarchies: Vec<(
-		T::DelegationNodeId,
-		DelegationHierarchyDetails<T>,
-		DelegatorIdOf<T>,
-		AccountIdOf<T>,
-	)>,
+	delegation_hierarchies: DelegationHierarchyInitialization<T>,
 ) where
 	T: Config,
 {
@@ -421,12 +423,7 @@ pub mod runtime {
 		balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>,
 		/// initial ctypes & owners
 		ctypes: Vec<(TestCtypeHash, DidIdentifier)>,
-		delegation_hierarchies_stored: Vec<(
-			TestDelegationNodeId,
-			DelegationHierarchyDetails<Test>,
-			DelegatorIdOf<Test>,
-			AccountIdOf<Test>,
-		)>,
+		delegation_hierarchies_stored: DelegationHierarchyInitialization<Test>,
 		delegations_stored: Vec<(TestDelegationNodeId, DelegationNode<Test>)>,
 		storage_version: DelegationStorageVersion,
 	}
@@ -434,12 +431,7 @@ pub mod runtime {
 	impl ExtBuilder {
 		pub fn with_delegation_hierarchies(
 			mut self,
-			delegation_hierarchies: Vec<(
-				TestDelegationNodeId,
-				DelegationHierarchyDetails<Test>,
-				DelegatorIdOf<Test>,
-				AccountIdOf<Test>,
-			)>,
+			delegation_hierarchies: DelegationHierarchyInitialization<Test>,
 		) -> Self {
 			self.delegation_hierarchies_stored = delegation_hierarchies;
 			self

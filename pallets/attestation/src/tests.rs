@@ -747,7 +747,7 @@ fn unauthorised_attestation_revoke_error() {
 	let claim_hash = get_claim_hash(true);
 
 	// Attestation owned by a different user
-	let attestation = generate_base_attestation::<Test>(attestation_owner.clone(), ACCOUNT_00);
+	let attestation = generate_base_attestation::<Test>(attestation_owner, ACCOUNT_00);
 
 	let operation = generate_base_attestation_revocation_details::<Test>(claim_hash);
 
@@ -1030,10 +1030,7 @@ fn unauthorised_attestation_remove_error() {
 		.with_attestations(vec![(operation.claim_hash, attestation)])
 		.build()
 		.execute_with(|| {
-			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
-				<Test as Config>::Deposit::get()
-			);
+			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 			assert_noop!(
 				Attestation::remove(
 					DoubleOrigin(ACCOUNT_00, remover.clone()).into(),
