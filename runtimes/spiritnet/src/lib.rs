@@ -473,15 +473,8 @@ parameter_types! {
 }
 
 impl attestation::Config for Runtime {
-	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
-	#[cfg(not(feature = "runtime-benchmarks"))]
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
-
-	#[cfg(feature = "runtime-benchmarks")]
-	type EnsureOrigin = EnsureSigned<DidIdentifier>;
-	#[cfg(feature = "runtime-benchmarks")]
-	type OriginSuccess = DidIdentifier;
 
 	type Event = Event;
 	type WeightInfo = weights::attestation::WeightInfo<Runtime>;
@@ -505,19 +498,14 @@ impl delegation::Config for Runtime {
 	type DelegationEntityId = DidIdentifier;
 	type DelegationNodeId = Hash;
 
-	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
-	#[cfg(not(feature = "runtime-benchmarks"))]
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type DelegationSignatureVerification = did::DidSignatureVerify<Runtime>;
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type Signature = did::DidSignature;
 
-	#[cfg(feature = "runtime-benchmarks")]
-	type EnsureOrigin = EnsureSigned<DidIdentifier>;
-	#[cfg(feature = "runtime-benchmarks")]
-	type OriginSuccess = DidIdentifier;
 	#[cfg(feature = "runtime-benchmarks")]
 	type Signature = DummySignature;
 	#[cfg(feature = "runtime-benchmarks")]

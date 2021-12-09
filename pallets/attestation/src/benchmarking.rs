@@ -60,7 +60,7 @@ benchmarks! {
 		assert!(Attestations::<T>::contains_key(claim_hash));
 		assert_eq!(Pallet::<T>::attestations(claim_hash), Some(AttestationDetails {
 			ctype_hash,
-			attester: delegate_acc.into(),
+			attester: delegate_acc,
 			delegation_id: Some(delegation_id),
 			revoked: false,
 			deposit: kilt_support::deposit::Deposit {
@@ -86,13 +86,13 @@ benchmarks! {
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), delegate_acc.clone());
 		Pallet::<T>::add(origin, claim_hash, ctype_hash, Some(delegation_id))?;
 		// revoke with root account, s.t. delegation tree needs to be traversed
-		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), root_acc.clone());
+		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), root_acc);
 	}: _<T::Origin>(origin, claim_hash, d)
 	verify {
 		assert!(Attestations::<T>::contains_key(claim_hash));
 		assert_eq!(Attestations::<T>::get(claim_hash), Some(AttestationDetails {
 			ctype_hash,
-			attester: delegate_acc.into(),
+			attester: delegate_acc,
 			delegation_id: Some(delegation_id),
 			revoked: true,
 			deposit: kilt_support::deposit::Deposit {
@@ -115,10 +115,10 @@ benchmarks! {
 		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		// attest with leaf account
-		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), delegate_acc.clone());
+		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), delegate_acc);
 		Pallet::<T>::add(origin, claim_hash, ctype_hash, Some(delegation_id))?;
 		// revoke with root account, s.t. delegation tree needs to be traversed
-		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), root_acc.clone());
+		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, root_acc);
 	}: _<T::Origin>(origin, claim_hash, d)
 	verify {
 		assert!(!Attestations::<T>::contains_key(claim_hash));
@@ -135,7 +135,7 @@ benchmarks! {
 		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		// attest with leaf account
-		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), delegate_acc.clone());
+		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), delegate_acc);
 		Pallet::<T>::add(origin, claim_hash, ctype_hash, Some(delegation_id))?;
 		// revoke with root account, s.t. delegation tree needs to be traversed
 		let origin = RawOrigin::Signed(sender);

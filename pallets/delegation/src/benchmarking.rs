@@ -237,7 +237,7 @@ benchmarks! {
 			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get(),
 		);
 
-		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, creator.clone());
+		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, creator);
 	}: _<T::Origin>(origin, delegation, ctype)
 	verify {
 		assert!(DelegationHierarchies::<T>::contains_key(delegation));
@@ -277,8 +277,8 @@ benchmarks! {
 			&sender,
 			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get(),
 		);
-		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, leaf_acc_id.clone());
-	}: _<T::Origin>(origin, delegation_id, hierarchy_id, delegate_acc_id.into(), perm, sig)
+		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, leaf_acc_id);
+	}: _<T::Origin>(origin, delegation_id, hierarchy_id, delegate_acc_id, perm, sig)
 	verify {
 		assert!(DelegationNodes::<T>::contains_key(delegation_id));
 	}
@@ -301,7 +301,7 @@ benchmarks! {
 			&child_delegation.deposit.owner,
 			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get(),
 		);
-		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, child_delegation.details.owner.clone());
+		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, child_delegation.details.owner);
 	}: revoke_delegation<T::Origin>(origin, child_id, c, r)
 	verify {
 		assert!(DelegationNodes::<T>::contains_key(child_id));
@@ -325,7 +325,7 @@ benchmarks! {
 
 		let sender: T::AccountId = account("sender", 0, SEED);
 		let (root_acc, _, _, leaf_id) = setup_delegations::<T>(c, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
-		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, root_acc.clone().into());
+		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, root_acc.into());
 	}: revoke_delegation<T::Origin>(origin, leaf_id, c, r)
 	verify {
 		assert!(DelegationNodes::<T>::contains_key(leaf_id));
@@ -346,7 +346,7 @@ benchmarks! {
 		let child_id: T::DelegationNodeId = *children.iter().next().ok_or("Root should have children")?;
 		let child_delegation = DelegationNodes::<T>::get(child_id).ok_or("Child of root should have delegation id")?;
 		assert!(!<T as Config>::Currency::reserved_balance(&sender).is_zero());
-		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), root_acc.clone().into());
+		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), root_acc.into());
 	}: _<T::Origin>(origin, hierarchy_id, r)
 	verify {
 		assert!(!DelegationNodes::<T>::contains_key(hierarchy_id));

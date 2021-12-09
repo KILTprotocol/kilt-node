@@ -125,7 +125,7 @@ pub fn generate_base_delegation_node<T: Config>(
 	deposit_owner: <T as frame_system::Config>::AccountId,
 ) -> DelegationNode<T> {
 	DelegationNode {
-		details: generate_base_delegation_details(owner.clone()),
+		details: generate_base_delegation_details(owner),
 		children: BoundedBTreeSet::new(),
 		hierarchy_root_id: hierarchy_id,
 		parent,
