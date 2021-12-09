@@ -85,34 +85,49 @@ where
 /// Mocks that are only used internally
 #[cfg(test)]
 pub(crate) mod runtime {
-	use std::sync::Arc;
-
-	use crate::Pallet;
-
-	use super::*;
-
-	use delegation::{DelegationHierarchyDetails, DelegationNode, DelegatorIdOf};
+	use codec::{Decode, Encode};
+	use ctype::CtypeCreatorOf;
 	use frame_support::{parameter_types, weights::constants::RocksDbWeight};
-	use frame_system::EnsureSigned;
-	use kilt_primitives::constants::{attestation::ATTESTATION_DEPOSIT, delegation::DELEGATION_DEPOSIT, MILLI_KILT};
-	use kilt_support::signature::EqualVerify;
+	use scale_info::TypeInfo;
 	use sp_core::{ed25519, sr25519, Pair};
 	use sp_keystore::{testing::KeyStore, KeystoreExt};
 	use sp_runtime::{
 		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		MultiSigner,
+		AccountId32, MultiSigner,
 	};
+	use std::sync::Arc;
+
+	use delegation::{DelegationHierarchyDetails, DelegationNode, DelegatorIdOf};
+	use kilt_primitives::constants::{attestation::ATTESTATION_DEPOSIT, delegation::DELEGATION_DEPOSIT, MILLI_KILT};
+	use kilt_support::{mock::mock_origin, signature::EqualVerify};
+
+	use super::*;
+	use crate::Pallet;
+
+	#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeInfo, Default)]
+	pub struct DidIdentifier(AccountId32);
+
+	impl From<AccountId32> for DidIdentifier {
+		fn from(acc: AccountId32) -> Self {
+			DidIdentifier(acc)
+		}
+	}
+
+	impl From<sp_core::sr25519::Public> for DidIdentifier {
+		fn from(acc: sp_core::sr25519::Public) -> Self {
+			DidIdentifier(acc.into())
+		}
+	}
 
 	type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	type Block = frame_system::mocking::MockBlock<Test>;
 
-	type TestCtypeOwner = kilt_primitives::AccountId;
+	type TestCtypeOwner = DidIdentifier;
 	type TestCtypeHash = kilt_primitives::Hash;
 	type TestDelegationNodeId = kilt_primitives::Hash;
-	type TestDelegatorId = kilt_primitives::AccountId;
+	type TestDelegatorId = DidIdentifier;
 	type TestClaimHash = kilt_primitives::Hash;
-	type TestAttester = TestDelegatorId;
 	type TestBalance = kilt_primitives::Balance;
 
 	frame_support::construct_runtime!(
@@ -126,6 +141,7 @@ pub(crate) mod runtime {
 			Ctype: ctype::{Pallet, Call, Storage, Event<T>},
 			Delegation: delegation::{Pallet, Call, Storage, Event<T>},
 			Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
+			MockOrigin: mock_origin::{Pallet, Origin<T>},
 		}
 	);
 
@@ -185,8 +201,8 @@ pub(crate) mod runtime {
 
 	impl ctype::Config for Test {
 		type CtypeCreatorId = TestCtypeOwner;
-		type EnsureOrigin = EnsureSigned<TestCtypeOwner>;
-		type OriginSuccess = TestCtypeOwner;
+		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<kilt_primitives::AccountId, Self::CtypeCreatorId>;
+		type OriginSuccess = mock_origin::DoubleOrigin<kilt_primitives::AccountId, Self::CtypeCreatorId>;
 		type Event = ();
 		type WeightInfo = ();
 
@@ -210,8 +226,8 @@ pub(crate) mod runtime {
 		type DelegationSignatureVerification = EqualVerify<Self::DelegationEntityId, Vec<u8>>;
 		type DelegationEntityId = TestDelegatorId;
 		type DelegationNodeId = TestDelegationNodeId;
-		type EnsureOrigin = EnsureSigned<TestDelegatorId>;
-		type OriginSuccess = TestDelegatorId;
+		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<kilt_primitives::AccountId, Self::DelegationEntityId>;
+		type OriginSuccess = mock_origin::DoubleOrigin<kilt_primitives::AccountId, Self::DelegationEntityId>;
 		type Event = ();
 		type MaxSignatureByteLength = MaxSignatureByteLength;
 		type MaxParentChecks = MaxParentChecks;
@@ -224,14 +240,20 @@ pub(crate) mod runtime {
 		type Deposit = DelegationDeposit;
 	}
 
+	impl mock_origin::Config for Test {
+		type Origin = Origin;
+		type AccountId = kilt_primitives::AccountId;
+		type DidIdentifier = DidIdentifier;
+	}
+
 	parameter_types! {
 		pub const MaxDelegatedAttestations: u32 = 1000;
 		pub const Deposit: TestBalance = ATTESTATION_DEPOSIT;
 	}
 
 	impl Config for Test {
-		type EnsureOrigin = EnsureSigned<TestAttester>;
-		type OriginSuccess = TestAttester;
+		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<kilt_primitives::AccountId, AttesterOf<Self>>;
+		type OriginSuccess = mock_origin::DoubleOrigin<kilt_primitives::AccountId, AttesterOf<Self>>;
 		type Event = ();
 		type WeightInfo = ();
 
@@ -240,18 +262,29 @@ pub(crate) mod runtime {
 		type MaxDelegatedAttestations = MaxDelegatedAttestations;
 	}
 
-	const ALICE_SEED: [u8; 32] = [0u8; 32];
-	const BOB_SEED: [u8; 32] = [1u8; 32];
+	pub(crate) const ACCOUNT_00: kilt_primitives::AccountId = kilt_primitives::AccountId::new([1u8; 32]);
+	pub(crate) const ACCOUNT_01: kilt_primitives::AccountId = kilt_primitives::AccountId::new([2u8; 32]);
+
+	pub(crate) const ALICE_SEED: [u8; 32] = [1u8; 32];
+	pub(crate) const BOB_SEED: [u8; 32] = [2u8; 32];
 
 	const DEFAULT_CLAIM_HASH_SEED: u64 = 1u64;
 	const ALTERNATIVE_CLAIM_HASH_SEED: u64 = 2u64;
 
-	pub fn get_ed25519_account(public_key: ed25519::Public) -> TestDelegatorId {
-		MultiSigner::from(public_key).into_account()
+	pub fn ed25519_did_from_seed(seed: &[u8; 32]) -> TestDelegatorId {
+		MultiSigner::from(ed25519::Pair::from_seed(seed).public())
+			.into_account()
+			.into()
+	}
+
+	pub fn sr25519_did_from_seed(seed: &[u8; 32]) -> TestDelegatorId {
+		MultiSigner::from(sr25519::Pair::from_seed(seed).public())
+			.into_account()
+			.into()
 	}
 
 	pub fn get_sr25519_account(public_key: sr25519::Public) -> TestDelegatorId {
-		MultiSigner::from(public_key).into_account()
+		MultiSigner::from(public_key).into_account().into()
 	}
 
 	pub fn get_alice_ed25519() -> ed25519::Pair {
@@ -284,11 +317,12 @@ pub(crate) mod runtime {
 			TestDelegationNodeId,
 			DelegationHierarchyDetails<Test>,
 			DelegatorIdOf<Test>,
+			AccountIdOf<Test>,
 		)>,
 		delegations: Vec<(TestDelegationNodeId, DelegationNode<Test>)>,
 
 		/// initial ctypes & owners
-		ctypes: Vec<(TestCtypeHash, AccountIdOf<Test>)>,
+		ctypes: Vec<(TestCtypeHash, CtypeCreatorOf<Test>)>,
 		/// endowed accounts with balances
 		balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>,
 		attestations: Vec<(TestClaimHash, AttestationDetails<Test>)>,
@@ -301,6 +335,7 @@ pub(crate) mod runtime {
 				TestDelegationNodeId,
 				DelegationHierarchyDetails<Test>,
 				DelegatorIdOf<Test>,
+				AccountIdOf<Test>,
 			)>,
 		) -> Self {
 			self.delegation_hierarchies = delegation_hierarchies;
@@ -312,7 +347,7 @@ pub(crate) mod runtime {
 			self
 		}
 
-		pub fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, TestCtypeOwner)>) -> Self {
+		pub fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, CtypeCreatorOf<Test>)>) -> Self {
 			self.ctypes = ctypes;
 			self
 		}

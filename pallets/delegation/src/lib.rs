@@ -599,7 +599,6 @@ pub mod pallet {
 			max_removals: u32,
 		) -> DispatchResultWithPostInfo {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
-			let sender = source.sender();
 			let invoker = source.subject();
 
 			let delegation = DelegationNodes::<T>::get(&delegation_id).ok_or(Error::<T>::DelegationNotFound)?;

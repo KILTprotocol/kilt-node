@@ -16,9 +16,19 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use frame_support::{
+	storage::bounded_btree_set::BoundedBTreeSet,
+	traits::{Currency, Get},
+};
 use sp_core::H256;
 
-use crate::Config;
+use ctype::{mock as ctype_mock, CtypeHashOf};
+use kilt_support::deposit::Deposit;
+
+use crate::{
+	self as delegation, AccountIdOf, Config, CurrencyOf, DelegationDetails, DelegationHierarchyDetails, DelegationNode,
+	DelegatorIdOf, Permissions,
+};
 
 const DEFAULT_HIERARCHY_ID_SEED: u64 = 1u64;
 const ALTERNATIVE_HIERARCHY_ID_SEED: u64 = 2u64;
@@ -48,24 +58,120 @@ where
 	H256::from_low_u64_be(seed).into()
 }
 
+pub fn initialize_pallet<T>(
+	delegations: Vec<(T::DelegationNodeId, DelegationNode<T>)>,
+	delegation_hierarchies: Vec<(
+		T::DelegationNodeId,
+		DelegationHierarchyDetails<T>,
+		DelegatorIdOf<T>,
+		AccountIdOf<T>,
+	)>,
+) where
+	T: Config,
+{
+	for (root_id, details, hierarchy_owner, deposit_owner) in delegation_hierarchies {
+		// manually mint to enable deposit reserving
+		let balance = CurrencyOf::<T>::free_balance(&deposit_owner);
+		CurrencyOf::<T>::make_free_balance_be(&deposit_owner, balance + <T as Config>::Deposit::get());
+
+		// reserve deposit and store
+		delegation::Pallet::<T>::create_and_store_new_hierarchy(
+			root_id,
+			details,
+			hierarchy_owner,
+			deposit_owner.clone(),
+		)
+		.expect("Each deposit owner should have sufficient balance to create a hierarchy");
+	}
+
+	for del in delegations {
+		let parent_node_id = del
+			.1
+			.parent
+			.expect("Delegation node that is not a root must have a parent ID specified.");
+		let parent_node = delegation::DelegationNodes::<T>::get(parent_node_id).unwrap();
+
+		// manually mint to enable deposit reserving
+		let deposit_owner = del.1.deposit.owner.clone();
+		let balance = CurrencyOf::<T>::free_balance(&deposit_owner.clone());
+		CurrencyOf::<T>::make_free_balance_be(&deposit_owner.clone(), balance + <T as Config>::Deposit::get());
+
+		// reserve deposit and store
+		delegation::Pallet::<T>::store_delegation_under_parent(
+			del.0,
+			del.1.clone(),
+			parent_node_id,
+			parent_node.clone(),
+			deposit_owner,
+		)
+		.expect("Should not exceed max children");
+	}
+}
+
+pub fn generate_base_delegation_hierarchy_details<T>() -> DelegationHierarchyDetails<T>
+where
+	T: Config,
+	T::Hash: From<H256>,
+{
+	DelegationHierarchyDetails {
+		ctype_hash: ctype_mock::get_ctype_hash::<T>(true),
+	}
+}
+
+pub fn generate_base_delegation_node<T: Config>(
+	hierarchy_id: T::DelegationNodeId,
+	owner: T::DelegationEntityId,
+	parent: Option<T::DelegationNodeId>,
+	deposit_owner: <T as frame_system::Config>::AccountId,
+) -> DelegationNode<T> {
+	DelegationNode {
+		details: generate_base_delegation_details(owner.clone()),
+		children: BoundedBTreeSet::new(),
+		hierarchy_root_id: hierarchy_id,
+		parent,
+		deposit: Deposit {
+			owner: deposit_owner,
+			amount: <T as Config>::Deposit::get(),
+		},
+	}
+}
+
+pub fn generate_base_delegation_details<T: Config>(owner: T::DelegationEntityId) -> DelegationDetails<T> {
+	DelegationDetails {
+		owner,
+		permissions: Permissions::DELEGATE,
+		revoked: false,
+	}
+}
+
+pub struct DelegationHierarchyCreationOperation<DelegationNodeId, CtypeHash> {
+	pub id: DelegationNodeId,
+	pub ctype_hash: CtypeHash,
+}
+
+pub fn generate_base_delegation_hierarchy_creation_operation<T>(
+	id: T::DelegationNodeId,
+) -> DelegationHierarchyCreationOperation<T::DelegationNodeId, CtypeHashOf<T>>
+where
+	T: Config,
+	T::Hash: From<H256>,
+{
+	DelegationHierarchyCreationOperation {
+		id,
+		ctype_hash: ctype::mock::get_ctype_hash::<T>(true),
+	}
+}
+
 #[cfg(test)]
 pub mod runtime {
-	use crate::{
-		self as delegation, migrations::DelegationStorageVersion, AccountIdOf, BalanceOf, CurrencyOf,
-		DelegationDetails, DelegationHierarchyDetails, DelegationNode, DelegatorIdOf, Permissions,
-	};
+	use crate::{migrations::DelegationStorageVersion, BalanceOf};
 
 	use super::*;
 
 	use codec::{Decode, Encode};
-	use frame_support::{
-		parameter_types,
-		storage::bounded_btree_set::BoundedBTreeSet,
-		traits::{Currency, Get},
-		weights::constants::RocksDbWeight,
-	};
+	use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 	use scale_info::TypeInfo;
-	use sp_core::{ed25519, sr25519, Pair, H256};
+	use sp_core::{ed25519, sr25519, Pair};
 	use sp_keystore::{testing::KeyStore, KeystoreExt};
 	use sp_runtime::{
 		testing::Header,
@@ -74,9 +180,8 @@ pub mod runtime {
 	};
 	use sp_std::sync::Arc;
 
-	use ctype::{mock as ctype_mock, CtypeHashOf};
 	use kilt_primitives::constants::delegation::DELEGATION_DEPOSIT;
-	use kilt_support::{deposit::Deposit, mock::mock_origin, signature::EqualVerify};
+	use kilt_support::{mock::mock_origin, signature::EqualVerify};
 
 	pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	pub type Block = frame_system::mocking::MockBlock<Test>;
@@ -243,60 +348,6 @@ pub mod runtime {
 		hash.encode()
 	}
 
-	pub fn generate_base_delegation_hierarchy_details<T>() -> DelegationHierarchyDetails<T>
-	where
-		T: Config,
-		T::Hash: From<H256>,
-	{
-		DelegationHierarchyDetails {
-			ctype_hash: ctype_mock::get_ctype_hash::<T>(true),
-		}
-	}
-
-	pub fn generate_base_delegation_node<T: Config>(
-		hierarchy_id: T::DelegationNodeId,
-		owner: T::DelegationEntityId,
-		parent: Option<T::DelegationNodeId>,
-		deposit_owner: <T as frame_system::Config>::AccountId,
-	) -> DelegationNode<T> {
-		DelegationNode {
-			details: generate_base_delegation_details(owner.clone()),
-			children: BoundedBTreeSet::new(),
-			hierarchy_root_id: hierarchy_id,
-			parent,
-			deposit: Deposit {
-				owner: deposit_owner,
-				amount: <T as Config>::Deposit::get(),
-			},
-		}
-	}
-
-	pub fn generate_base_delegation_details<T: Config>(owner: T::DelegationEntityId) -> DelegationDetails<T> {
-		DelegationDetails {
-			owner,
-			permissions: Permissions::DELEGATE,
-			revoked: false,
-		}
-	}
-
-	pub struct DelegationHierarchyCreationOperation<DelegationNodeId, CtypeHash> {
-		pub id: DelegationNodeId,
-		pub ctype_hash: CtypeHash,
-	}
-
-	pub fn generate_base_delegation_hierarchy_creation_operation<T>(
-		id: T::DelegationNodeId,
-	) -> DelegationHierarchyCreationOperation<T::DelegationNodeId, CtypeHashOf<T>>
-	where
-		T: Config,
-		T::Hash: From<H256>,
-	{
-		DelegationHierarchyCreationOperation {
-			id,
-			ctype_hash: ctype::mock::get_ctype_hash::<T>(true),
-		}
-	}
-
 	pub struct DelegationCreationOperation {
 		pub delegation_id: TestDelegationNodeId,
 		pub hierarchy_id: TestDelegationNodeId,
@@ -361,56 +412,6 @@ pub mod runtime {
 		DelegationDepositClaimOperation {
 			delegation_id,
 			max_removals: 0u32,
-		}
-	}
-
-	pub fn initialize_pallet<T>(
-		delegations: Vec<(T::DelegationNodeId, DelegationNode<T>)>,
-		delegation_hierarchies: Vec<(
-			T::DelegationNodeId,
-			DelegationHierarchyDetails<T>,
-			DelegatorIdOf<T>,
-			AccountIdOf<T>,
-		)>,
-	) where
-		T: Config,
-	{
-		for (root_id, details, hierarchy_owner, deposit_owner) in delegation_hierarchies {
-			// manually mint to enable deposit reserving
-			let balance = CurrencyOf::<T>::free_balance(&deposit_owner);
-			CurrencyOf::<T>::make_free_balance_be(&deposit_owner, balance + <T as Config>::Deposit::get());
-
-			// reserve deposit and store
-			delegation::Pallet::<T>::create_and_store_new_hierarchy(
-				root_id,
-				details,
-				hierarchy_owner,
-				deposit_owner.clone(),
-			)
-			.expect("Each deposit owner should have sufficient balance to create a hierarchy");
-		}
-
-		for del in delegations {
-			let parent_node_id = del
-				.1
-				.parent
-				.expect("Delegation node that is not a root must have a parent ID specified.");
-			let parent_node = delegation::DelegationNodes::<T>::get(parent_node_id).unwrap();
-
-			// manually mint to enable deposit reserving
-			let deposit_owner = del.1.deposit.owner.clone();
-			let balance = CurrencyOf::<T>::free_balance(&deposit_owner.clone());
-			CurrencyOf::<T>::make_free_balance_be(&deposit_owner.clone(), balance + <T as Config>::Deposit::get());
-
-			// reserve deposit and store
-			delegation::Pallet::<T>::store_delegation_under_parent(
-				del.0,
-				del.1.clone(),
-				parent_node_id,
-				parent_node.clone(),
-				deposit_owner,
-			)
-			.expect("Should not exceed max children");
 		}
 	}
 
