@@ -86,6 +86,12 @@ pub mod runtime {
 		}
 	}
 
+	impl From<sp_core::sr25519::Public> for DidIdentifier {
+		fn from(acc: sp_core::sr25519::Public) -> Self {
+			DidIdentifier(acc.into())
+		}
+	}
+
 	type TestDelegationNodeId = kilt_primitives::Hash;
 	type TestDelegateSignature = (DidIdentifier, Vec<u8>);
 	type TestBalance = kilt_primitives::Balance;
@@ -209,44 +215,24 @@ pub mod runtime {
 	pub(crate) const ACCOUNT_01: kilt_primitives::AccountId = kilt_primitives::AccountId::new([2u8; 32]);
 	pub(crate) const ACCOUNT_02: kilt_primitives::AccountId = kilt_primitives::AccountId::new([3u8; 32]);
 
-	const ALICE_SEED: [u8; 32] = [0u8; 32];
-	const BOB_SEED: [u8; 32] = [1u8; 32];
-	const CHARLIE_SEED: [u8; 32] = [2u8; 32];
+	pub(crate) const ALICE_SEED: [u8; 32] = [0u8; 32];
+	pub(crate) const BOB_SEED: [u8; 32] = [1u8; 32];
+	pub(crate) const CHARLIE_SEED: [u8; 32] = [2u8; 32];
 
-	pub fn get_ed25519_did(public_key: ed25519::Public) -> DidIdentifier {
+	pub(crate) fn get_ed25519_did(public_key: ed25519::Public) -> DidIdentifier {
 		MultiSigner::from(public_key).into_account().into()
 	}
 
-	pub fn get_sr25519_did(public_key: sr25519::Public) -> DidIdentifier {
+	pub(crate) fn get_sr25519_did(public_key: sr25519::Public) -> DidIdentifier {
 		MultiSigner::from(public_key).into_account().into()
 	}
 
-	pub(crate) fn ed_25519_pair(seed: [u8; 32]) -> ed25519::Pair {
+	pub(crate) fn get_ed25519_pair(seed: [u8; 32]) -> ed25519::Pair {
 		ed25519::Pair::from_seed(&seed)
 	}
 
-	pub fn get_alice_ed25519() -> ed25519::Pair {
-		ed25519::Pair::from_seed(&ALICE_SEED)
-	}
-
-	pub fn get_alice_sr25519() -> sr25519::Pair {
-		sr25519::Pair::from_seed(&ALICE_SEED)
-	}
-
-	pub fn get_bob_ed25519() -> ed25519::Pair {
-		ed25519::Pair::from_seed(&BOB_SEED)
-	}
-
-	pub fn get_bob_sr25519() -> sr25519::Pair {
-		sr25519::Pair::from_seed(&BOB_SEED)
-	}
-
-	pub fn get_charlie_ed25519() -> ed25519::Pair {
-		ed25519::Pair::from_seed(&CHARLIE_SEED)
-	}
-
-	pub fn get_charlie_sr25519() -> sr25519::Pair {
-		sr25519::Pair::from_seed(&CHARLIE_SEED)
+	pub(crate) fn get_sr25519_pair(seed: [u8; 32]) -> sr25519::Pair {
+		sr25519::Pair::from_seed(&seed)
 	}
 
 	pub(crate) fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
