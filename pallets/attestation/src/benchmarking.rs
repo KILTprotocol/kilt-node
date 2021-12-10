@@ -23,8 +23,8 @@ use sp_core::sr25519;
 use sp_runtime::traits::Hash;
 use sp_std::num::NonZeroU32;
 
+use delegation::{benchmarking::setup_delegations, Config as DelegationConfig, Permissions};
 use kilt_support::{signature::VerifySignature, traits::GenerateBenchmarkOrigin};
-use delegation::{Config as DelegationConfig, benchmarking::setup_delegations, Permissions};
 
 use crate::*;
 
