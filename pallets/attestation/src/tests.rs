@@ -1051,15 +1051,15 @@ fn revoked_delegation_remove_error() {
 
 	let hierarchy_root_id = delegation_mock::get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = delegation_mock::generate_base_delegation_hierarchy_details();
-	let (delegation_id, mut delegation_node) = (
-		delegation_mock::delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		delegation_mock::generate_base_delegation_node(
-			hierarchy_root_id,
-			attester.clone(),
-			Some(hierarchy_root_id),
-			ACCOUNT_01,
-		),
+
+	let delegation_id = delegation_mock::delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let mut delegation_node = delegation_mock::generate_base_delegation_node(
+		hierarchy_root_id,
+		attester.clone(),
+		Some(hierarchy_root_id),
+		ACCOUNT_01,
 	);
+
 	delegation_node.details.permissions = delegation::Permissions::ATTEST;
 	delegation_node.details.revoked = true;
 	let mut attestation = generate_base_attestation::<Test>(attestation_owner, ACCOUNT_00);

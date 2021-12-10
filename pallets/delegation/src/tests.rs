@@ -1410,10 +1410,10 @@ fn not_delegating_revoke_and_remove_delegation_error() {
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
-	let (delegation_id, delegation_node) = (
-		delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1),
-		generate_base_delegation_node(hierarchy_root_id, owner.clone(), Some(hierarchy_root_id), ACCOUNT_00),
-	);
+
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let delegation_node =
+		generate_base_delegation_node(hierarchy_root_id, owner.clone(), Some(hierarchy_root_id), ACCOUNT_00);
 
 	let mut operation = generate_base_delegation_revocation_operation(delegation_id);
 	operation.max_parent_checks = MaxParentChecks::get();
