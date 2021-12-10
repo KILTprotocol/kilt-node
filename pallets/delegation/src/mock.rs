@@ -330,20 +330,16 @@ pub mod runtime {
 	pub(crate) const BOB_SEED: [u8; 32] = [1u8; 32];
 	pub(crate) const CHARLIE_SEED: [u8; 32] = [2u8; 32];
 
-	pub(crate) fn get_ed25519_did(public_key: ed25519::Public) -> DidIdentifier {
-		MultiSigner::from(public_key).into_account().into()
+	pub fn ed25519_did_from_seed(seed: &[u8; 32]) -> DidIdentifier {
+		MultiSigner::from(ed25519::Pair::from_seed(seed).public())
+			.into_account()
+			.into()
 	}
 
-	pub(crate) fn get_sr25519_did(public_key: sr25519::Public) -> DidIdentifier {
-		MultiSigner::from(public_key).into_account().into()
-	}
-
-	pub(crate) fn get_ed25519_pair(seed: [u8; 32]) -> ed25519::Pair {
-		ed25519::Pair::from_seed(&seed)
-	}
-
-	pub(crate) fn get_sr25519_pair(seed: [u8; 32]) -> sr25519::Pair {
-		sr25519::Pair::from_seed(&seed)
+	pub fn sr25519_did_from_seed(seed: &[u8; 32]) -> DidIdentifier {
+		MultiSigner::from(sr25519::Pair::from_seed(seed).public())
+			.into_account()
+			.into()
 	}
 
 	pub(crate) fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {

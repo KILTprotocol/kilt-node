@@ -271,36 +271,16 @@ pub(crate) mod runtime {
 	const DEFAULT_CLAIM_HASH_SEED: u64 = 1u64;
 	const ALTERNATIVE_CLAIM_HASH_SEED: u64 = 2u64;
 
-	pub fn ed25519_did_from_seed(seed: &[u8; 32]) -> TestDelegatorId {
+	pub fn ed25519_did_from_seed(seed: &[u8; 32]) -> DidIdentifier {
 		MultiSigner::from(ed25519::Pair::from_seed(seed).public())
 			.into_account()
 			.into()
 	}
 
-	pub fn sr25519_did_from_seed(seed: &[u8; 32]) -> TestDelegatorId {
+	pub fn sr25519_did_from_seed(seed: &[u8; 32]) -> DidIdentifier {
 		MultiSigner::from(sr25519::Pair::from_seed(seed).public())
 			.into_account()
 			.into()
-	}
-
-	pub fn get_sr25519_account(public_key: sr25519::Public) -> TestDelegatorId {
-		MultiSigner::from(public_key).into_account().into()
-	}
-
-	pub fn get_alice_ed25519() -> ed25519::Pair {
-		ed25519::Pair::from_seed(&ALICE_SEED)
-	}
-
-	pub fn get_alice_sr25519() -> sr25519::Pair {
-		sr25519::Pair::from_seed(&ALICE_SEED)
-	}
-
-	pub fn get_bob_ed25519() -> ed25519::Pair {
-		ed25519::Pair::from_seed(&BOB_SEED)
-	}
-
-	pub fn get_bob_sr25519() -> sr25519::Pair {
-		sr25519::Pair::from_seed(&BOB_SEED)
 	}
 
 	pub fn get_claim_hash(default: bool) -> TestClaimHash {

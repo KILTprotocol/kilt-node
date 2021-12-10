@@ -18,7 +18,6 @@
 
 use frame_support::{assert_err, assert_noop, assert_ok};
 use kilt_support::mock::mock_origin::DoubleOrigin;
-use sp_core::Pair;
 
 use crate::{
 	self as delegation,
@@ -31,8 +30,7 @@ use sp_runtime::traits::Zero;
 
 #[test]
 fn create_root_delegation_successful() {
-	let creator_keypair = get_ed25519_pair(ALICE_SEED);
-	let creator = get_ed25519_did(creator_keypair.public());
+	let creator = ed25519_did_from_seed(&ALICE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let operation = generate_base_delegation_hierarchy_creation_operation::<Test>(hierarchy_root_id);
@@ -71,8 +69,7 @@ fn create_root_delegation_successful() {
 
 #[test]
 fn duplicate_create_root_delegation_error() {
-	let creator_keypair = get_ed25519_pair(ALICE_SEED);
-	let creator = get_ed25519_did(creator_keypair.public());
+	let creator = ed25519_did_from_seed(&ALICE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -103,8 +100,7 @@ fn duplicate_create_root_delegation_error() {
 
 #[test]
 fn ctype_not_found_create_root_delegation_error() {
-	let creator_keypair = get_ed25519_pair(ALICE_SEED);
-	let creator = get_ed25519_did(creator_keypair.public());
+	let creator = ed25519_did_from_seed(&ALICE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 
@@ -127,9 +123,8 @@ fn ctype_not_found_create_root_delegation_error() {
 
 #[test]
 fn create_delegation_direct_root_successful() {
-	let creator_keypair = get_ed25519_pair(ALICE_SEED);
-	let creator = get_ed25519_did(creator_keypair.public());
-	let delegate = get_sr25519_did(get_sr25519_pair(BOB_SEED).public());
+	let creator = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -200,9 +195,8 @@ fn create_delegation_direct_root_successful() {
 
 #[test]
 fn create_delegation_with_parent_successful() {
-	let creator_keypair = get_ed25519_pair(ALICE_SEED);
-	let creator = get_ed25519_did(creator_keypair.public());
-	let delegate = get_sr25519_did(get_sr25519_pair(BOB_SEED).public());
+	let creator = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -283,9 +277,8 @@ fn create_delegation_with_parent_successful() {
 
 #[test]
 fn create_delegation_direct_root_revoked_error() {
-	let creator_keypair = get_ed25519_pair(ALICE_SEED);
-	let creator = get_ed25519_did(creator_keypair.public());
-	let delegate = get_sr25519_did(get_sr25519_pair(BOB_SEED).public());
+	let creator = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -336,9 +329,8 @@ fn create_delegation_direct_root_revoked_error() {
 
 #[test]
 fn create_delegation_with_parent_revoked_error() {
-	let creator_keypair = get_ed25519_pair(ALICE_SEED);
-	let creator = get_ed25519_did(creator_keypair.public());
-	let delegate = get_sr25519_did(get_sr25519_pair(BOB_SEED).public());
+	let creator = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -399,9 +391,8 @@ fn create_delegation_with_parent_revoked_error() {
 
 #[test]
 fn invalid_delegate_signature_create_delegation_error() {
-	let creator_keypair = get_ed25519_pair(ALICE_SEED);
-	let creator = get_ed25519_did(creator_keypair.public());
-	let delegate = get_sr25519_did(get_sr25519_pair(BOB_SEED).public());
+	let creator = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -440,9 +431,8 @@ fn invalid_delegate_signature_create_delegation_error() {
 
 #[test]
 fn duplicate_delegation_create_delegation_error() {
-	let creator_keypair = get_ed25519_pair(ALICE_SEED);
-	let creator = get_ed25519_did(creator_keypair.public());
-	let delegate = get_sr25519_did(get_sr25519_pair(BOB_SEED).public());
+	let creator = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -492,9 +482,8 @@ fn duplicate_delegation_create_delegation_error() {
 
 #[test]
 fn parent_not_existing_create_delegation_error() {
-	let creator_keypair = get_ed25519_pair(ALICE_SEED);
-	let creator = get_ed25519_did(creator_keypair.public());
-	let delegate = get_sr25519_did(get_sr25519_pair(BOB_SEED).public());
+	let creator = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
@@ -534,11 +523,9 @@ fn parent_not_existing_create_delegation_error() {
 
 #[test]
 fn not_owner_of_parent_create_delegation_error() {
-	let creator_keypair = get_ed25519_pair(ALICE_SEED);
-	let creator = get_ed25519_did(creator_keypair.public());
-	let alternative_owner_keypair = get_ed25519_pair(CHARLIE_SEED);
-	let alternative_owner = get_ed25519_did(alternative_owner_keypair.public());
-	let delegate = get_sr25519_did(get_sr25519_pair(BOB_SEED).public());
+	let creator = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = sr25519_did_from_seed(&BOB_SEED);
+	let alternative_owner = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -592,9 +579,8 @@ fn not_owner_of_parent_create_delegation_error() {
 
 #[test]
 fn unauthorised_delegation_create_delegation_error() {
-	let creator_keypair = get_ed25519_pair(ALICE_SEED);
-	let creator = get_ed25519_did(creator_keypair.public());
-	let delegate = get_sr25519_did(get_sr25519_pair(BOB_SEED).public());
+	let creator = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -647,8 +633,7 @@ fn unauthorised_delegation_create_delegation_error() {
 
 #[test]
 fn empty_revoke_root_successful() {
-	let revoker_keypair = get_ed25519_pair(ALICE_SEED);
-	let revoker = get_ed25519_did(revoker_keypair.public());
+	let revoker = ed25519_did_from_seed(&ALICE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -684,9 +669,8 @@ fn empty_revoke_root_successful() {
 
 #[test]
 fn list_hierarchy_revoke_and_remove_root_successful() {
-	let revoker_keypair = get_ed25519_pair(ALICE_SEED);
-	let revoker = get_ed25519_did(revoker_keypair.public());
-	let delegate = get_sr25519_did(get_sr25519_pair(BOB_SEED).public());
+	let revoker = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -768,9 +752,8 @@ fn list_hierarchy_revoke_and_remove_root_successful() {
 
 #[test]
 fn tree_hierarchy_revoke_and_remove_root_successful() {
-	let revoker_keypair = get_ed25519_pair(ALICE_SEED);
-	let revoker = get_ed25519_did(revoker_keypair.public());
-	let delegate = get_sr25519_did(get_sr25519_pair(BOB_SEED).public());
+	let revoker = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -855,9 +838,8 @@ fn tree_hierarchy_revoke_and_remove_root_successful() {
 
 #[test]
 fn max_max_revocations_revoke_and_remove_successful() {
-	let revoker_keypair = get_ed25519_pair(ALICE_SEED);
-	let revoker = get_ed25519_did(revoker_keypair.public());
-	let delegate = get_sr25519_did(get_sr25519_pair(BOB_SEED).public());
+	let revoker = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -938,8 +920,7 @@ fn max_max_revocations_revoke_and_remove_successful() {
 
 #[test]
 fn root_not_found_revoke_and_remove_root_error() {
-	let revoker_keypair = get_ed25519_pair(ALICE_SEED);
-	let revoker = get_ed25519_did(revoker_keypair.public());
+	let revoker = ed25519_did_from_seed(&ALICE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 
@@ -968,10 +949,8 @@ fn root_not_found_revoke_and_remove_root_error() {
 
 #[test]
 fn different_root_creator_revoke_and_remove_root_error() {
-	let owner_keypair = get_ed25519_pair(ALICE_SEED);
-	let owner = get_ed25519_did(owner_keypair.public());
-	let unauthorized_keypair = get_ed25519_pair(CHARLIE_SEED);
-	let unauthorized = get_ed25519_did(unauthorized_keypair.public());
+	let owner = ed25519_did_from_seed(&ALICE_SEED);
+	let unauthorized = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -1009,9 +988,8 @@ fn different_root_creator_revoke_and_remove_root_error() {
 
 #[test]
 fn too_small_max_revocations_revoke_and_remove_root_error() {
-	let revoker_keypair = get_ed25519_pair(ALICE_SEED);
-	let revoker = get_ed25519_did(revoker_keypair.public());
-	let delegate = get_ed25519_did(get_ed25519_pair(BOB_SEED).public());
+	let revoker = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -1060,9 +1038,8 @@ fn too_small_max_revocations_revoke_and_remove_root_error() {
 
 #[test]
 fn exact_children_max_revocations_revoke_and_remove_root_error() {
-	let revoker_keypair = get_ed25519_pair(ALICE_SEED);
-	let revoker = get_ed25519_did(revoker_keypair.public());
-	let delegate = get_ed25519_did(get_ed25519_pair(BOB_SEED).public());
+	let revoker = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -1187,9 +1164,8 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 // revoke hierarchy but direct child of hierarchy root
 #[test]
 fn direct_owner_revoke_and_remove_delegation_successful() {
-	let revoker_keypair = get_ed25519_pair(ALICE_SEED);
-	let revoker = get_ed25519_did(revoker_keypair.public());
-	let delegate = get_ed25519_did(get_ed25519_pair(BOB_SEED).public());
+	let revoker = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -1271,9 +1247,8 @@ fn direct_owner_revoke_and_remove_delegation_successful() {
 
 #[test]
 fn parent_owner_revoke_delegation_successful() {
-	let revoker_keypair = get_ed25519_pair(ALICE_SEED);
-	let revoker = get_ed25519_did(revoker_keypair.public());
-	let delegate = get_ed25519_did(get_ed25519_pair(BOB_SEED).public());
+	let revoker = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -1361,8 +1336,7 @@ fn parent_owner_revoke_delegation_successful() {
 
 #[test]
 fn delegation_not_found_revoke_and_remove_delegation_error() {
-	let revoker_keypair = get_ed25519_pair(ALICE_SEED);
-	let revoker = get_ed25519_did(revoker_keypair.public());
+	let revoker = ed25519_did_from_seed(&ALICE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -1403,10 +1377,8 @@ fn delegation_not_found_revoke_and_remove_delegation_error() {
 
 #[test]
 fn not_delegating_revoke_and_remove_delegation_error() {
-	let owner_keypair = get_ed25519_pair(ALICE_SEED);
-	let owner = get_ed25519_did(owner_keypair.public());
-	let revoker_keypair = get_ed25519_pair(BOB_SEED);
-	let revoker = get_ed25519_did(revoker_keypair.public());
+	let owner = ed25519_did_from_seed(&ALICE_SEED);
+	let revoker = ed25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -1447,11 +1419,9 @@ fn not_delegating_revoke_and_remove_delegation_error() {
 
 #[test]
 fn parent_too_far_revoke_and_remove_delegation_error() {
-	let owner_keypair = get_ed25519_pair(ALICE_SEED);
-	let owner = get_ed25519_did(owner_keypair.public());
-	let intermediate_keypair = get_ed25519_pair(CHARLIE_SEED);
-	let intermediate = get_ed25519_did(intermediate_keypair.public());
-	let delegate = get_ed25519_did(get_ed25519_pair(BOB_SEED).public());
+	let owner = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = ed25519_did_from_seed(&BOB_SEED);
+	let intermediate = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -1523,9 +1493,8 @@ fn parent_too_far_revoke_and_remove_delegation_error() {
 
 #[test]
 fn too_many_revocations_revoke_delegation_error() {
-	let revoker_keypair = get_ed25519_pair(ALICE_SEED);
-	let revoker = get_ed25519_did(revoker_keypair.public());
-	let delegate = get_ed25519_did(get_ed25519_pair(BOB_SEED).public());
+	let revoker = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -1568,9 +1537,8 @@ fn too_many_revocations_revoke_delegation_error() {
 
 #[test]
 fn direct_owner_reclaim_deposit_delegation_successful() {
-	let revoker_keypair = get_ed25519_pair(ALICE_SEED);
-	let revoker = get_ed25519_did(revoker_keypair.public());
-	let delegate = get_ed25519_did(get_ed25519_pair(BOB_SEED).public());
+	let revoker = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -1614,9 +1582,8 @@ fn direct_owner_reclaim_deposit_delegation_successful() {
 // Implicitely checks the case where deposit owner != signed origin
 #[test]
 fn parent_owner_reclaim_deposit_error() {
-	let revoker_keypair = get_ed25519_pair(ALICE_SEED);
-	let revoker = get_ed25519_did(revoker_keypair.public());
-	let delegate = get_ed25519_did(get_ed25519_pair(BOB_SEED).public());
+	let revoker = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -1659,8 +1626,7 @@ fn parent_owner_reclaim_deposit_error() {
 
 #[test]
 fn delegation_not_found_reclaim_deposit_error() {
-	let revoker_keypair = get_ed25519_pair(ALICE_SEED);
-	let revoker = get_ed25519_did(revoker_keypair.public());
+	let revoker = ed25519_did_from_seed(&ALICE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -1687,8 +1653,7 @@ fn delegation_not_found_reclaim_deposit_error() {
 
 #[test]
 fn max_removals_too_large_reclaim_deposit_error() {
-	let revoker_keypair = get_ed25519_pair(ALICE_SEED);
-	let revoker = get_ed25519_did(revoker_keypair.public());
+	let revoker = ed25519_did_from_seed(&ALICE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -1717,12 +1682,9 @@ fn max_removals_too_large_reclaim_deposit_error() {
 
 #[test]
 fn is_delegating_direct_not_revoked() {
-	let user_1_keypair = get_ed25519_pair(ALICE_SEED);
-	let user_1 = get_ed25519_did(user_1_keypair.public());
-	let user_2_keypair = get_ed25519_pair(BOB_SEED);
-	let user_2 = get_ed25519_did(user_2_keypair.public());
-	let user_3_keypair = get_ed25519_pair(CHARLIE_SEED);
-	let user_3 = get_ed25519_did(user_3_keypair.public());
+	let user_1 = ed25519_did_from_seed(&ALICE_SEED);
+	let user_2 = ed25519_did_from_seed(&BOB_SEED);
+	let user_3 = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -1755,12 +1717,9 @@ fn is_delegating_direct_not_revoked() {
 
 #[test]
 fn is_delegating_direct_not_revoked_max_parent_checks_value() {
-	let user_1_keypair = get_ed25519_pair(ALICE_SEED);
-	let user_1 = get_ed25519_did(user_1_keypair.public());
-	let user_2_keypair = get_ed25519_pair(BOB_SEED);
-	let user_2 = get_ed25519_did(user_2_keypair.public());
-	let user_3_keypair = get_ed25519_pair(CHARLIE_SEED);
-	let user_3 = get_ed25519_did(user_3_keypair.public());
+	let user_1 = ed25519_did_from_seed(&ALICE_SEED);
+	let user_2 = ed25519_did_from_seed(&BOB_SEED);
+	let user_3 = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -1793,12 +1752,9 @@ fn is_delegating_direct_not_revoked_max_parent_checks_value() {
 
 #[test]
 fn is_delegating_direct_revoked() {
-	let user_1_keypair = get_ed25519_pair(ALICE_SEED);
-	let user_1 = get_ed25519_did(user_1_keypair.public());
-	let user_2_keypair = get_ed25519_pair(BOB_SEED);
-	let user_2 = get_ed25519_did(user_2_keypair.public());
-	let user_3_keypair = get_ed25519_pair(CHARLIE_SEED);
-	let user_3 = get_ed25519_did(user_3_keypair.public());
+	let user_1 = ed25519_did_from_seed(&ALICE_SEED);
+	let user_2 = ed25519_did_from_seed(&BOB_SEED);
+	let user_3 = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -1833,12 +1789,9 @@ fn is_delegating_direct_revoked() {
 
 #[test]
 fn is_delegating_direct_revoked_max_parent_checks_value() {
-	let user_1_keypair = get_ed25519_pair(ALICE_SEED);
-	let user_1 = get_ed25519_did(user_1_keypair.public());
-	let user_2_keypair = get_ed25519_pair(BOB_SEED);
-	let user_2 = get_ed25519_did(user_2_keypair.public());
-	let user_3_keypair = get_ed25519_pair(CHARLIE_SEED);
-	let user_3 = get_ed25519_did(user_3_keypair.public());
+	let user_1 = ed25519_did_from_seed(&ALICE_SEED);
+	let user_2 = ed25519_did_from_seed(&BOB_SEED);
+	let user_3 = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -1873,12 +1826,9 @@ fn is_delegating_direct_revoked_max_parent_checks_value() {
 
 #[test]
 fn is_delegating_max_parent_not_revoked() {
-	let user_1_keypair = get_ed25519_pair(ALICE_SEED);
-	let user_1 = get_ed25519_did(user_1_keypair.public());
-	let user_2_keypair = get_ed25519_pair(BOB_SEED);
-	let user_2 = get_ed25519_did(user_2_keypair.public());
-	let user_3_keypair = get_ed25519_pair(CHARLIE_SEED);
-	let user_3 = get_ed25519_did(user_3_keypair.public());
+	let user_1 = ed25519_did_from_seed(&ALICE_SEED);
+	let user_2 = ed25519_did_from_seed(&BOB_SEED);
+	let user_3 = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -1912,12 +1862,9 @@ fn is_delegating_max_parent_not_revoked() {
 
 #[test]
 fn is_delegating_max_parent_revoked() {
-	let user_1_keypair = get_ed25519_pair(ALICE_SEED);
-	let user_1 = get_ed25519_did(user_1_keypair.public());
-	let user_2_keypair = get_ed25519_pair(BOB_SEED);
-	let user_2 = get_ed25519_did(user_2_keypair.public());
-	let user_3_keypair = get_ed25519_pair(CHARLIE_SEED);
-	let user_3 = get_ed25519_did(user_3_keypair.public());
+	let user_1 = ed25519_did_from_seed(&ALICE_SEED);
+	let user_2 = ed25519_did_from_seed(&BOB_SEED);
+	let user_3 = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -1953,12 +1900,9 @@ fn is_delegating_max_parent_revoked() {
 
 #[test]
 fn is_delegating_root_owner_not_revoked() {
-	let user_1_keypair = get_ed25519_pair(ALICE_SEED);
-	let user_1 = get_ed25519_did(user_1_keypair.public());
-	let user_2_keypair = get_ed25519_pair(BOB_SEED);
-	let user_2 = get_ed25519_did(user_2_keypair.public());
-	let user_3_keypair = get_ed25519_pair(CHARLIE_SEED);
-	let user_3 = get_ed25519_did(user_3_keypair.public());
+	let user_1 = ed25519_did_from_seed(&ALICE_SEED);
+	let user_2 = ed25519_did_from_seed(&BOB_SEED);
+	let user_3 = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -1992,12 +1936,9 @@ fn is_delegating_root_owner_not_revoked() {
 
 #[test]
 fn is_delegating_root_owner_revoked() {
-	let user_1_keypair = get_ed25519_pair(ALICE_SEED);
-	let user_1 = get_ed25519_did(user_1_keypair.public());
-	let user_2_keypair = get_ed25519_pair(BOB_SEED);
-	let user_2 = get_ed25519_did(user_2_keypair.public());
-	let user_3_keypair = get_ed25519_pair(CHARLIE_SEED);
-	let user_3 = get_ed25519_did(user_3_keypair.public());
+	let user_1 = ed25519_did_from_seed(&ALICE_SEED);
+	let user_2 = ed25519_did_from_seed(&BOB_SEED);
+	let user_3 = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -2038,8 +1979,7 @@ fn is_delegating_root_owner_revoked() {
 
 #[test]
 fn is_delegating_delegation_not_found() {
-	let user_1_keypair = get_ed25519_pair(ALICE_SEED);
-	let user_1 = get_ed25519_did(user_1_keypair.public());
+	let user_1 = ed25519_did_from_seed(&ALICE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -2062,12 +2002,9 @@ fn is_delegating_delegation_not_found() {
 
 #[test]
 fn is_delegating_root_after_max_limit() {
-	let user_1_keypair = get_ed25519_pair(ALICE_SEED);
-	let user_1 = get_ed25519_did(user_1_keypair.public());
-	let user_2_keypair = get_ed25519_pair(BOB_SEED);
-	let user_2 = get_ed25519_did(user_2_keypair.public());
-	let user_3_keypair = get_ed25519_pair(CHARLIE_SEED);
-	let user_3 = get_ed25519_did(user_3_keypair.public());
+	let user_1 = ed25519_did_from_seed(&ALICE_SEED);
+	let user_2 = ed25519_did_from_seed(&BOB_SEED);
+	let user_3 = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -2102,10 +2039,8 @@ fn is_delegating_root_after_max_limit() {
 
 #[test]
 fn remove_single_hierarchy() {
-	let creator_keypair = get_ed25519_pair(ALICE_SEED);
-	let creator = get_ed25519_did(creator_keypair.public());
-	let attacker_keypair = get_sr25519_pair(BOB_SEED);
-	let attacker = get_sr25519_did(attacker_keypair.public());
+	let creator = ed25519_did_from_seed(&ALICE_SEED);
+	let attacker = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
@@ -2147,11 +2082,9 @@ fn remove_single_hierarchy() {
 
 #[test]
 fn remove_children_gas_runs_out() {
-	let revoker_keypair = get_ed25519_pair(ALICE_SEED);
-	let revoker = get_ed25519_did(revoker_keypair.public());
-	let delegate = get_ed25519_did(get_ed25519_pair(BOB_SEED).public());
-	let child_keypair = get_ed25519_pair(CHARLIE_SEED);
-	let child = get_ed25519_did(child_keypair.public());
+	let revoker = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = ed25519_did_from_seed(&BOB_SEED);
+	let child = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details();
