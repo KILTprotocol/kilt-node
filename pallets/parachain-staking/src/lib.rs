@@ -2080,7 +2080,7 @@ pub mod pallet {
 			};
 
 			// update TopCandidates set
-			let working_title = if let Ok(i) = top_candidates.linear_search(&old_stake) {
+			let maybe_top_candidate_update = if let Ok(i) = top_candidates.linear_search(&old_stake) {
 				// case 1: candidate is member of TopCandidates with old stake
 				top_candidates.mutate(|vec| {
 					if let Some(stake) = vec.get_mut(i) {
@@ -2099,7 +2099,7 @@ pub mod pallet {
 			};
 
 			// update storage for TotalCollatorStake and TopCandidates
-			if let Some((maybe_old_idx, top_candidates)) = working_title {
+			if let Some((maybe_old_idx, top_candidates)) = maybe_top_candidate_update {
 				let max_selected_candidates = MaxSelectedCandidates::<T>::get().saturated_into::<usize>();
 				let was_collating = maybe_old_idx.map(|i| i < max_selected_candidates).unwrap_or(false);
 				let is_collating = top_candidates
@@ -2107,30 +2107,34 @@ pub mod pallet {
 					.map(|i| i < max_selected_candidates)
 					.unwrap_or(false);
 
-				// only update TopCollatorStake storageif candidate was or will be a collator
+				// update TopCollatorStake storage iff candidate was or will be a collator
 				match (was_collating, is_collating) {
 					(true, true) => {
 						Self::update_total_stake_by(new_self, new_delegators, old_self, old_delegators);
 					}
 					(true, false) => {
-						// candidate was displaced out of collators the current last collator with index
-						// max_selected_candidates - 1
-						let i = max_selected_candidates.min(top_candidates.len()).saturating_sub(1);
+						// candidate left the collator set because they staked less and have been
+						// replaced by the next candidate in the queue at position
+						// min(max_selected_candidates, top_candidates) - 1 in TopCandidates
+						let new_col_idx = max_selected_candidates.min(top_candidates.len()).saturating_sub(1);
 
 						// get displacer
-						let (add_collators, add_delegators) = Self::get_top_candidate_stake_at(&top_candidates, i)
-							// shouldn't be possible to fail, but we handle it gracefully
-							.unwrap_or((new_self, new_delegators));
+						let (add_collators, add_delegators) =
+							Self::get_top_candidate_stake_at(&top_candidates, new_col_idx)
+								// shouldn't be possible to fail, but we handle it gracefully
+								.unwrap_or((new_self, new_delegators));
 						Self::update_total_stake_by(add_collators, add_delegators, old_self, old_delegators);
 					}
 					(false, true) => {
-						// candidate was pushed out of collators, e.g. index is max_selected_candidates
-						let i = max_selected_candidates.min(top_candidates.len().saturating_sub(1));
+						// candidate pushed out the least staked collator which is now at position
+						// min(max_selected_top_candidates, top_candidates - 1) in TopCandidates
+						let old_col_idx = max_selected_candidates.min(top_candidates.len().saturating_sub(1));
 
-						// get amount to substract from TotalCollatorStake
-						let (drop_self, drop_delegators) = Self::get_top_candidate_stake_at(&top_candidates, i)
-							// default to zero if candidate DNE, e.g. TopCandidates is not full
-							.unwrap_or((BalanceOf::<T>::zero(), BalanceOf::<T>::zero()));
+						// get amount to subtract from TotalCollatorStake
+						let (drop_self, drop_delegators) =
+							Self::get_top_candidate_stake_at(&top_candidates, old_col_idx)
+								// default to zero if candidate DNE, e.g. TopCandidates is not full
+								.unwrap_or((BalanceOf::<T>::zero(), BalanceOf::<T>::zero()));
 						Self::update_total_stake_by(new_self, new_delegators, drop_self, drop_delegators);
 					}
 					_ => {}
@@ -2203,7 +2207,7 @@ pub mod pallet {
 			// Snapshot exposure for round for weighting reward distribution
 			for account in collators.iter() {
 				let state =
-					<CandidatePool<T>>::get(&account).expect("all members of TopCandidates must be candidates q.e.d");
+					CandidatePool::<T>::get(&account).expect("all members of TopCandidates must be candidates q.e.d");
 				num_of_delegators = num_of_delegators.max(state.delegators.len().saturated_into::<u32>());
 
 				// sum up total stake and amount of collators, delegators
