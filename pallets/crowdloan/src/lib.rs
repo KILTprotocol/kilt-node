@@ -63,10 +63,11 @@ pub mod pallet {
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{Currency, ExistenceRequirement, StorageVersion, VestingSchedule, WithdrawReasons},
+		PalletId,
 	};
 	use frame_system::{pallet_prelude::*, EnsureOneOf, EnsureSigned};
 	use sp_runtime::{
-		traits::{BadOrigin, CheckedDiv, CheckedSub, Saturating, StaticLookup},
+		traits::{AccountIdConversion, BadOrigin, CheckedDiv, CheckedSub, Saturating, StaticLookup},
 		Either,
 	};
 	use sp_std::vec;
@@ -87,6 +88,10 @@ pub mod pallet {
 	where
 		Self::Balance: From<BlockNumberOf<Self>>,
 	{
+		/// The crowdloan's pallet id, used for deriving its sovereign account
+		/// ID.
+		#[pallet::constant]
+		type PalletId: Get<PalletId>;
 		/// Currency type.
 		type Currency: Currency<AccountIdOf<Self>, Balance = Self::Balance>;
 		type Vesting: VestingSchedule<AccountIdOf<Self>, Currency = Self::Currency, Moment = BlockNumberOf<Self>>;
@@ -116,7 +121,7 @@ pub mod pallet {
 	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
 			Self {
-				registrar_account: AccountIdOf::<T>::default(),
+				registrar_account: Pallet::<T>::account_id(),
 			}
 		}
 	}
@@ -421,6 +426,14 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
+		/// The account ID of the initial registrar account.
+		///
+		/// This actually does computation. If you need to keep using it, then
+		/// make sure you cache the value and only call this once.
+		pub fn account_id() -> T::AccountId {
+			T::PalletId::get().into_account()
+		}
+
 		fn split_gratitude_for(receiver: &AccountIdOf<T>) -> Result<SplitGratitude<BalanceOf<T>>, DispatchError> {
 			let amount = Contributions::<T>::get(receiver).ok_or(Error::<T>::ContributorNotPresent)?;
 			let config = Configuration::<T>::get();

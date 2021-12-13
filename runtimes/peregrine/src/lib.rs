@@ -63,7 +63,7 @@ use kilt_primitives::{
 			COOLOFF_PERIOD, COUNCIL_MOTION_DURATION, ENACTMENT_PERIOD, FAST_TRACK_VOTING_PERIOD, LAUNCH_PERIOD,
 			SPEND_PERIOD, TECHNICAL_MOTION_DURATION, VOTING_PERIOD,
 		},
-		treasury::{INITIAL_PERIOD_LENGTH, INITIAL_PERIOD_REWARD_PER_BLOCK, TREASURY_PALLET_ID},
+		treasury::{INITIAL_PERIOD_LENGTH, INITIAL_PERIOD_REWARD_PER_BLOCK},
 		KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION,
 	},
 	fees::{ToAuthor, WeightToFee},
@@ -117,7 +117,9 @@ pub fn native_version() -> NativeVersion {
 
 // Pallet accounts of runtime
 parameter_types! {
-	pub const TreasuryPalletId: PalletId = TREASURY_PALLET_ID;
+	pub const TreasuryPalletId: PalletId = PalletId(*b"kilt/tsy");
+	pub const LaunchPalletId: PalletId = PalletId(*b"kilt/lch");
+	pub const CrowdPalletId: PalletId = PalletId(*b"kilt/thx");
 }
 
 parameter_types! {
@@ -308,6 +310,7 @@ impl kilt_launch::Config for Runtime {
 	type UsableBalance = UsableBalance;
 	type AutoUnlockBound = AutoUnlockBound;
 	type WeightInfo = weights::kilt_launch::WeightInfo<Runtime>;
+	type PalletId = LaunchPalletId;
 }
 
 parameter_types! {
@@ -651,6 +654,7 @@ impl crowdloan::Config for Runtime {
 	type EnsureRegistrarOrigin = MoreThanHalfCouncil;
 	type Event = Event;
 	type WeightInfo = weights::crowdloan::WeightInfo<Runtime>;
+	type PalletId = CrowdPalletId;
 }
 
 parameter_types! {
