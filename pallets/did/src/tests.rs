@@ -3112,11 +3112,8 @@ fn check_invalid_signature_format_operation_verification() {
 
 	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
 
-	let call_operation = generate_test_did_call(
-		DidVerificationKeyRelationship::Authentication,
-		did.clone(),
-		ACCOUNT_00,
-	);
+	let call_operation =
+		generate_test_did_call(DidVerificationKeyRelationship::Authentication, did.clone(), ACCOUNT_00);
 	let signature = invalid_key.sign(call_operation.encode().as_ref());
 
 	ExtBuilder::default()
@@ -3142,11 +3139,8 @@ fn check_invalid_signature_operation_verification() {
 
 	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
 
-	let call_operation = generate_test_did_call(
-		DidVerificationKeyRelationship::Authentication,
-		did.clone(),
-		ACCOUNT_00,
-	);
+	let call_operation =
+		generate_test_did_call(DidVerificationKeyRelationship::Authentication, did.clone(), ACCOUNT_00);
 	let signature = alternative_key.sign(&call_operation.encode());
 
 	ExtBuilder::default()
