@@ -85,48 +85,34 @@ where
 /// Mocks that are only used internally
 #[cfg(test)]
 pub(crate) mod runtime {
-	use codec::{Decode, Encode};
 	use ctype::CtypeCreatorOf;
 	use frame_support::{parameter_types, weights::constants::RocksDbWeight};
-	use scale_info::TypeInfo;
 	use sp_core::{ed25519, sr25519, Pair};
 	use sp_keystore::{testing::KeyStore, KeystoreExt};
 	use sp_runtime::{
 		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		AccountId32, MultiSigner,
+		MultiSigner,
 	};
 	use std::sync::Arc;
 
 	use delegation::{mock::DelegationHierarchyInitialization, DelegationNode};
 	use kilt_primitives::constants::{attestation::ATTESTATION_DEPOSIT, delegation::DELEGATION_DEPOSIT, MILLI_KILT};
-	use kilt_support::{mock::mock_origin, signature::EqualVerify};
+	use kilt_support::{
+		mock::{mock_origin, SubjectId},
+		signature::EqualVerify,
+	};
 
 	use super::*;
 	use crate::Pallet;
 
-	#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeInfo, Default)]
-	pub struct DidIdentifier(AccountId32);
-
-	impl From<AccountId32> for DidIdentifier {
-		fn from(acc: AccountId32) -> Self {
-			DidIdentifier(acc)
-		}
-	}
-
-	impl From<sp_core::sr25519::Public> for DidIdentifier {
-		fn from(acc: sp_core::sr25519::Public) -> Self {
-			DidIdentifier(acc.into())
-		}
-	}
-
 	type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	type Block = frame_system::mocking::MockBlock<Test>;
 
-	type TestCtypeOwner = DidIdentifier;
+	type TestCtypeOwner = SubjectId;
 	type TestCtypeHash = kilt_primitives::Hash;
 	type TestDelegationNodeId = kilt_primitives::Hash;
-	type TestDelegatorId = DidIdentifier;
+	type TestDelegatorId = SubjectId;
 	type TestClaimHash = kilt_primitives::Hash;
 	type TestBalance = kilt_primitives::Balance;
 
@@ -243,7 +229,7 @@ pub(crate) mod runtime {
 	impl mock_origin::Config for Test {
 		type Origin = Origin;
 		type AccountId = kilt_primitives::AccountId;
-		type DidIdentifier = DidIdentifier;
+		type SubjectId = SubjectId;
 	}
 
 	parameter_types! {
@@ -271,13 +257,13 @@ pub(crate) mod runtime {
 	const DEFAULT_CLAIM_HASH_SEED: u64 = 1u64;
 	const ALTERNATIVE_CLAIM_HASH_SEED: u64 = 2u64;
 
-	pub fn ed25519_did_from_seed(seed: &[u8; 32]) -> DidIdentifier {
+	pub fn ed25519_did_from_seed(seed: &[u8; 32]) -> SubjectId {
 		MultiSigner::from(ed25519::Pair::from_seed(seed).public())
 			.into_account()
 			.into()
 	}
 
-	pub fn sr25519_did_from_seed(seed: &[u8; 32]) -> DidIdentifier {
+	pub fn sr25519_did_from_seed(seed: &[u8; 32]) -> SubjectId {
 		MultiSigner::from(sr25519::Pair::from_seed(seed).public())
 			.into_account()
 			.into()

@@ -170,41 +170,28 @@ pub mod runtime {
 
 	use super::*;
 
-	use codec::{Decode, Encode};
+	use codec::Encode;
 	use frame_support::{parameter_types, weights::constants::RocksDbWeight};
-	use scale_info::TypeInfo;
 	use sp_core::{ed25519, sr25519, Pair};
 	use sp_keystore::{testing::KeyStore, KeystoreExt};
 	use sp_runtime::{
 		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup},
-		AccountId32, MultiSigner,
+		MultiSigner,
 	};
 	use sp_std::sync::Arc;
 
 	use kilt_primitives::constants::delegation::DELEGATION_DEPOSIT;
-	use kilt_support::{mock::mock_origin, signature::EqualVerify};
+	use kilt_support::{
+		mock::{mock_origin, SubjectId},
+		signature::EqualVerify,
+	};
 
 	pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	pub type Block = frame_system::mocking::MockBlock<Test>;
 
-	#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeInfo, Default)]
-	pub struct DidIdentifier(AccountId32);
-
-	impl From<AccountId32> for DidIdentifier {
-		fn from(acc: AccountId32) -> Self {
-			DidIdentifier(acc)
-		}
-	}
-
-	impl From<sp_core::sr25519::Public> for DidIdentifier {
-		fn from(acc: sp_core::sr25519::Public) -> Self {
-			DidIdentifier(acc.into())
-		}
-	}
-
 	type TestDelegationNodeId = kilt_primitives::Hash;
-	type TestDelegateSignature = (DidIdentifier, Vec<u8>);
+	type TestDelegateSignature = (SubjectId, Vec<u8>);
 	type TestBalance = kilt_primitives::Balance;
 	type TestCtypeHash = kilt_primitives::Hash;
 
@@ -275,7 +262,7 @@ pub mod runtime {
 	impl mock_origin::Config for Test {
 		type Origin = Origin;
 		type AccountId = kilt_primitives::AccountId;
-		type DidIdentifier = DidIdentifier;
+		type SubjectId = SubjectId;
 	}
 
 	parameter_types! {
@@ -283,7 +270,7 @@ pub mod runtime {
 	}
 
 	impl ctype::Config for Test {
-		type CtypeCreatorId = DidIdentifier;
+		type CtypeCreatorId = SubjectId;
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<kilt_primitives::AccountId, Self::CtypeCreatorId>;
 		type OriginSuccess = mock_origin::DoubleOrigin<kilt_primitives::AccountId, Self::CtypeCreatorId>;
 		type Event = ();
@@ -307,7 +294,7 @@ pub mod runtime {
 	impl Config for Test {
 		type Signature = TestDelegateSignature;
 		type DelegationSignatureVerification = EqualVerify<Self::DelegationEntityId, Vec<u8>>;
-		type DelegationEntityId = DidIdentifier;
+		type DelegationEntityId = SubjectId;
 		type DelegationNodeId = TestDelegationNodeId;
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<kilt_primitives::AccountId, Self::DelegationEntityId>;
 		type OriginSuccess = mock_origin::DoubleOrigin<kilt_primitives::AccountId, Self::DelegationEntityId>;
@@ -330,13 +317,13 @@ pub mod runtime {
 	pub(crate) const BOB_SEED: [u8; 32] = [1u8; 32];
 	pub(crate) const CHARLIE_SEED: [u8; 32] = [2u8; 32];
 
-	pub fn ed25519_did_from_seed(seed: &[u8; 32]) -> DidIdentifier {
+	pub fn ed25519_did_from_seed(seed: &[u8; 32]) -> SubjectId {
 		MultiSigner::from(ed25519::Pair::from_seed(seed).public())
 			.into_account()
 			.into()
 	}
 
-	pub fn sr25519_did_from_seed(seed: &[u8; 32]) -> DidIdentifier {
+	pub fn sr25519_did_from_seed(seed: &[u8; 32]) -> SubjectId {
 		MultiSigner::from(sr25519::Pair::from_seed(seed).public())
 			.into_account()
 			.into()
@@ -350,7 +337,7 @@ pub mod runtime {
 		pub delegation_id: TestDelegationNodeId,
 		pub hierarchy_id: TestDelegationNodeId,
 		pub parent_id: TestDelegationNodeId,
-		pub delegate: DidIdentifier,
+		pub delegate: SubjectId,
 		pub permissions: Permissions,
 		pub delegate_signature: TestDelegateSignature,
 	}
@@ -418,7 +405,7 @@ pub mod runtime {
 		/// endowed accounts with balances
 		balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>,
 		/// initial ctypes & owners
-		ctypes: Vec<(TestCtypeHash, DidIdentifier)>,
+		ctypes: Vec<(TestCtypeHash, SubjectId)>,
 		delegation_hierarchies_stored: DelegationHierarchyInitialization<Test>,
 		delegations_stored: Vec<(TestDelegationNodeId, DelegationNode<Test>)>,
 		storage_version: DelegationStorageVersion,
@@ -438,7 +425,7 @@ pub mod runtime {
 			self
 		}
 
-		pub fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, DidIdentifier)>) -> Self {
+		pub fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, SubjectId)>) -> Self {
 			self.ctypes = ctypes;
 			self
 		}

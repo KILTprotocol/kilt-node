@@ -16,14 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode};
 use frame_support::parameter_types;
-use kilt_support::mock::mock_origin;
-use scale_info::TypeInfo;
+use kilt_support::mock::{mock_origin, SubjectId};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
-	AccountId32,
 };
 
 use crate as pallet_did_lookup;
@@ -105,9 +102,9 @@ impl pallet_did_lookup::Config for Test {
 	type Currency = Balances;
 	type Deposit = DidLookupDeposit;
 
-	type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, DidIdentifier>;
-	type OriginSuccess = mock_origin::DoubleOrigin<AccountId, DidIdentifier>;
-	type DidIdentifier = DidIdentifier;
+	type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, SubjectId>;
+	type OriginSuccess = mock_origin::DoubleOrigin<AccountId, SubjectId>;
+	type DidIdentifier = SubjectId;
 
 	type WeightInfo = ();
 }
@@ -115,27 +112,18 @@ impl pallet_did_lookup::Config for Test {
 impl mock_origin::Config for Test {
 	type Origin = Origin;
 	type AccountId = AccountId;
-	type DidIdentifier = DidIdentifier;
+	type SubjectId = SubjectId;
 }
 
 pub(crate) const ACCOUNT_00: kilt_primitives::AccountId = kilt_primitives::AccountId::new([0u8; 32]);
 pub(crate) const ACCOUNT_01: kilt_primitives::AccountId = kilt_primitives::AccountId::new([1u8; 32]);
-pub(crate) const DID_00: DidIdentifier = DidIdentifier(ACCOUNT_00);
-pub(crate) const DID_01: DidIdentifier = DidIdentifier(ACCOUNT_01);
-
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeInfo, Default)]
-pub struct DidIdentifier(AccountId32);
-
-impl From<AccountId32> for DidIdentifier {
-	fn from(acc: AccountId32) -> Self {
-		DidIdentifier(acc)
-	}
-}
+pub(crate) const DID_00: SubjectId = SubjectId(ACCOUNT_00);
+pub(crate) const DID_01: SubjectId = SubjectId(ACCOUNT_01);
 
 #[derive(Clone, Default)]
 pub struct ExtBuilder {
 	balances: Vec<(AccountId, Balance)>,
-	connections: Vec<(AccountId, DidIdentifier, AccountId)>,
+	connections: Vec<(AccountId, SubjectId, AccountId)>,
 }
 
 impl ExtBuilder {
@@ -144,7 +132,7 @@ impl ExtBuilder {
 		self
 	}
 
-	pub fn with_connections(mut self, connections: Vec<(AccountId, DidIdentifier, AccountId)>) -> Self {
+	pub fn with_connections(mut self, connections: Vec<(AccountId, SubjectId, AccountId)>) -> Self {
 		self.connections = connections;
 		self
 	}

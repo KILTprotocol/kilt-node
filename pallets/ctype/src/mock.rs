@@ -36,11 +36,9 @@ where
 
 #[cfg(test)]
 pub mod runtime {
-	use codec::{Decode, Encode};
 	use frame_support::parameter_types;
 	use kilt_primitives::{Balance, Header, RocksDbWeight};
-	use kilt_support::mock::mock_origin;
-	use scale_info::TypeInfo;
+	use kilt_support::mock::{mock_origin, SubjectId};
 	use sp_runtime::{
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 		AccountId32,
@@ -53,15 +51,6 @@ pub mod runtime {
 	pub type TestCtypeHash = kilt_primitives::Hash;
 	pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	pub type Block = frame_system::mocking::MockBlock<Test>;
-
-	#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeInfo, Default)]
-	pub struct DidIdentifier(AccountId32);
-
-	impl From<AccountId32> for DidIdentifier {
-		fn from(acc: AccountId32) -> Self {
-			DidIdentifier(acc)
-		}
-	}
 
 	frame_support::construct_runtime!(
 		pub enum Test where
@@ -129,7 +118,7 @@ pub mod runtime {
 	impl mock_origin::Config for Test {
 		type Origin = Origin;
 		type AccountId = kilt_primitives::AccountId;
-		type DidIdentifier = DidIdentifier;
+		type SubjectId = SubjectId;
 	}
 
 	parameter_types! {
@@ -137,9 +126,9 @@ pub mod runtime {
 	}
 
 	impl Config for Test {
-		type CtypeCreatorId = DidIdentifier;
-		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<kilt_primitives::AccountId, DidIdentifier>;
-		type OriginSuccess = mock_origin::DoubleOrigin<kilt_primitives::AccountId, DidIdentifier>;
+		type CtypeCreatorId = SubjectId;
+		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<kilt_primitives::AccountId, SubjectId>;
+		type OriginSuccess = mock_origin::DoubleOrigin<kilt_primitives::AccountId, SubjectId>;
 		type Event = ();
 		type WeightInfo = ();
 
@@ -148,17 +137,17 @@ pub mod runtime {
 		type FeeCollector = ();
 	}
 
-	pub(crate) const DID_00: DidIdentifier = DidIdentifier(AccountId32::new([0u8; 32]));
+	pub(crate) const DID_00: SubjectId = SubjectId(AccountId32::new([0u8; 32]));
 	pub(crate) const ACCOUNT_00: kilt_primitives::AccountId = kilt_primitives::AccountId::new([0u8; 32]);
 
 	#[derive(Clone, Default)]
 	pub(crate) struct ExtBuilder {
-		ctypes_stored: Vec<(TestCtypeHash, DidIdentifier)>,
+		ctypes_stored: Vec<(TestCtypeHash, SubjectId)>,
 		balances: Vec<(kilt_primitives::AccountId, BalanceOf<Test>)>,
 	}
 
 	impl ExtBuilder {
-		pub(crate) fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, DidIdentifier)>) -> Self {
+		pub(crate) fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, SubjectId)>) -> Self {
 			self.ctypes_stored = ctypes;
 			self
 		}
