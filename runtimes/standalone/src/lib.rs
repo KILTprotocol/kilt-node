@@ -27,6 +27,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use frame_support::PalletId;
 use frame_system::EnsureRoot;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::EnsureSigned;
@@ -139,6 +140,12 @@ pub fn native_version() -> NativeVersion {
 		runtime_version: VERSION,
 		can_author_with: Default::default(),
 	}
+}
+
+// Pallet accounts of runtime
+parameter_types! {
+	pub const LaunchPalletId: PalletId = PalletId(*b"kilt/lch");
+	pub const CrowdPalletId: PalletId = PalletId(*b"kilt/thx");
 }
 
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
@@ -293,6 +300,7 @@ impl kilt_launch::Config for Runtime {
 	type UsableBalance = UsableBalance;
 	type WeightInfo = ();
 	type AutoUnlockBound = AutoUnlockBound;
+	type PalletId = LaunchPalletId;
 }
 
 parameter_types! {
@@ -462,6 +470,7 @@ impl crowdloan::Config for Runtime {
 	type EnsureRegistrarOrigin = EnsureRoot<AccountId>;
 	type Event = Event;
 	type WeightInfo = ();
+	type PalletId = CrowdPalletId;
 }
 
 parameter_types! {
