@@ -286,7 +286,7 @@ benchmarks! {
 
 	// worst case #1: revoke a child of the root delegation
 	// because all of its children have to be revoked
-	// // complexitiy: O(h * c) with h = height of the delegation tree, c = max number of children in a level
+	// complexitiy: O(h * c) with h = height of the delegation tree, c = max number of children in a level
 	revoke_delegation_root_child {
 		let r in 1 .. T::MaxRevocations::get();
 		let c in 1 .. T::MaxParentChecks::get();

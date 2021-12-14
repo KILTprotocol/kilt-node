@@ -580,8 +580,8 @@ pub mod pallet {
 
 			let delegation = DelegationNodes::<T>::get(&delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
 
-			// Node can only be removed by owner of either the deposit or the node, not the
-			// parent or another ancestor
+			// Node can only be removed by owner of the node, not the parent or another
+			// ancestor
 			ensure!(delegation.details.owner == invoker, Error::<T>::UnauthorizedRemoval);
 
 			ensure!(max_removals <= T::MaxRemovals::get(), Error::<T>::MaxRemovalsTooLarge);
