@@ -137,8 +137,8 @@ pub mod runtime {
 		type FeeCollector = ();
 	}
 
-	pub(crate) const DID_00: SubjectId = SubjectId(AccountId32::new([0u8; 32]));
-	pub(crate) const ACCOUNT_00: kilt_primitives::AccountId = kilt_primitives::AccountId::new([0u8; 32]);
+	pub(crate) const DID_00: SubjectId = SubjectId(AccountId32::new([1u8; 32]));
+	pub(crate) const ACCOUNT_00: kilt_primitives::AccountId = kilt_primitives::AccountId::new([1u8; 32]);
 
 	#[derive(Clone, Default)]
 	pub(crate) struct ExtBuilder {
