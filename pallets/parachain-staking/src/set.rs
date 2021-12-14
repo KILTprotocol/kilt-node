@@ -101,7 +101,7 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 	///
 	/// Returns
 	/// * Ok(Some(old_element)) if the new element was added and an old element
-	///   had to removed.
+	///   had to be removed.
 	/// * Ok(None) if the element was added without removing an element.
 	/// * Err(true) if the set is full and the new element has a lower rank than
 	///   the lowest element in the set.
@@ -216,6 +216,11 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 	/// Convert the set to a bounded vector.
 	pub fn into_bounded_vec(self) -> BoundedVec<T, S> {
 		self.0
+	}
+
+	/// Returns a reference to an element or None if out of bounds.
+	pub fn get(&self, index: usize) -> Option<&T> {
+		self.0.get(index)
 	}
 
 	/// Sorts from greatest to lowest.
@@ -372,7 +377,7 @@ mod tests {
 	}
 
 	#[test]
-	fn try_insert_replace() {
+	fn try_insert_replace_integer() {
 		let mut set: OrderedSet<i32, Zero> = OrderedSet::from(vec![].try_into().unwrap());
 		assert_eq!(set.try_insert_replace(10), Err(true));
 
@@ -400,6 +405,58 @@ mod tests {
 		assert_eq!(set.try_insert_replace(10), Err(false));
 		assert_eq!(set.try_insert_replace(11), Ok(Some(6)));
 		assert_eq!(set.into_bounded_vec().into_inner(), vec![11, 10, 9, 8, 7]);
+	}
+
+	#[test]
+	fn try_insert_replace_stake() {
+		let mut set: OrderedSet<StakeOf<Test>, Eight> = OrderedSet::from(
+			vec![
+				StakeOf::<Test> { owner: 1, amount: 100 },
+				StakeOf::<Test> { owner: 3, amount: 90 },
+				StakeOf::<Test> { owner: 5, amount: 80 },
+				StakeOf::<Test> { owner: 7, amount: 70 },
+				StakeOf::<Test> { owner: 8, amount: 70 },
+				StakeOf::<Test> { owner: 9, amount: 60 },
+			]
+			.try_into()
+			.unwrap(),
+		);
+		assert_eq!(
+			set.try_insert_replace(StakeOf::<Test> { owner: 1, amount: 0 }),
+			Err(false)
+		);
+		assert_eq!(
+			set.try_insert_replace(StakeOf::<Test> { owner: 7, amount: 100 }),
+			Err(false)
+		);
+		assert_eq!(
+			set.try_insert_replace(StakeOf::<Test> { owner: 7, amount: 50 }),
+			Err(false)
+		);
+		assert_eq!(
+			set.try_insert_replace(StakeOf::<Test> { owner: 8, amount: 50 }),
+			Err(false)
+		);
+		assert_eq!(
+			set.try_insert_replace(StakeOf::<Test> { owner: 2, amount: 100 }),
+			Ok(None)
+		);
+		assert_eq!(
+			set.try_insert_replace(StakeOf::<Test> { owner: 2, amount: 90 }),
+			Err(false)
+		);
+		assert_eq!(
+			set.try_insert_replace(StakeOf::<Test> { owner: 10, amount: 65 }),
+			Ok(None)
+		);
+		assert_eq!(
+			set.try_insert_replace(StakeOf::<Test> { owner: 11, amount: 60 }),
+			Err(true)
+		);
+		assert_eq!(
+			set.try_insert_replace(StakeOf::<Test> { owner: 11, amount: 100 }),
+			Ok(Some(StakeOf::<Test> { owner: 9, amount: 60 }))
+		);
 	}
 
 	#[test]
