@@ -25,7 +25,7 @@ use kilt_primitives::{
 	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use peregrine_runtime::{
-	BalancesConfig, CouncilConfig, CrowdloanContributorsConfig, GenesisConfig, InflationInfo, KiltLaunchConfig,
+	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig,
 	MinCollatorStake, ParachainInfoConfig, ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig,
 	TechnicalCommitteeConfig, VestingConfig, WASM_BINARY,
 };
@@ -199,9 +199,6 @@ fn testnet_genesis(
 				.chain(airdrop_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
 				.chain(botlabs_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
 				.collect(),
-		},
-		crowdloan_contributors: CrowdloanContributorsConfig {
-			registrar_account: TRANSFER_ACCOUNT.into(),
 		},
 		sudo: SudoConfig { key: root_key },
 		parachain_info: ParachainInfoConfig { parachain_id: id },

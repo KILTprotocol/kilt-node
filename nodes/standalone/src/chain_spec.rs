@@ -20,7 +20,7 @@
 
 use kilt_primitives::{constants::BLOCKS_PER_YEAR, AccountId, AccountPublic, Balance, BlockNumber};
 use mashnet_node_runtime::{
-	BalancesConfig, CrowdloanContributorsConfig, GenesisConfig, KiltLaunchConfig, SessionConfig, SudoConfig,
+	BalancesConfig, GenesisConfig, KiltLaunchConfig, SessionConfig, SudoConfig,
 	SystemConfig, VestingConfig, WASM_BINARY,
 };
 
@@ -263,9 +263,6 @@ fn testnet_genesis(
 				.map(|(who, amount, vesting_length, _)| (who, vesting_length * BLOCKS_PER_YEAR / 12, amount))
 				.collect(),
 			transfer_account: TRANSFER_ACCOUNT.into(),
-		},
-		crowdloan_contributors: CrowdloanContributorsConfig {
-			registrar_account: TRANSFER_ACCOUNT.into(),
 		},
 		vesting: VestingConfig { vesting: vec![] },
 	}
