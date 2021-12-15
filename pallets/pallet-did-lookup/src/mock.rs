@@ -16,13 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode};
 use frame_support::parameter_types;
-use scale_info::TypeInfo;
+use kilt_support::mock::{mock_origin, SubjectId};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
-	AccountId32,
 };
 
 use crate as pallet_did_lookup;
@@ -40,7 +38,7 @@ frame_support::construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 		DidLookup: pallet_did_lookup::{Pallet, Storage, Call, Event<T>},
-		MockOrigin: mock_origin::{Pallet, Origin},
+		MockOrigin: mock_origin::{Pallet, Origin<T>},
 	}
 );
 
@@ -104,98 +102,28 @@ impl pallet_did_lookup::Config for Test {
 	type Currency = Balances;
 	type Deposit = DidLookupDeposit;
 
-	type EnsureOrigin = mock_origin::EnsureDoubleOrigin;
-	type OriginSuccess = mock_origin::DoubleOrigin;
-	type DidIdentifier = DidIdentifier;
+	type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, SubjectId>;
+	type OriginSuccess = mock_origin::DoubleOrigin<AccountId, SubjectId>;
+	type DidIdentifier = SubjectId;
 
 	type WeightInfo = ();
 }
 
 impl mock_origin::Config for Test {
 	type Origin = Origin;
+	type AccountId = AccountId;
+	type SubjectId = SubjectId;
 }
 
-pub(crate) const ACCOUNT_00: kilt_primitives::AccountId = kilt_primitives::AccountId::new([0u8; 32]);
-pub(crate) const ACCOUNT_01: kilt_primitives::AccountId = kilt_primitives::AccountId::new([1u8; 32]);
-pub(crate) const DID_00: DidIdentifier = DidIdentifier(ACCOUNT_00);
-pub(crate) const DID_01: DidIdentifier = DidIdentifier(ACCOUNT_01);
-
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeInfo, Default)]
-pub struct DidIdentifier(AccountId32);
-
-impl From<AccountId32> for DidIdentifier {
-	fn from(acc: AccountId32) -> Self {
-		DidIdentifier(acc)
-	}
-}
-
-#[frame_support::pallet]
-#[allow(dead_code)]
-pub mod mock_origin {
-	use super::{AccountId, DidIdentifier};
-	use kilt_support::traits::CallSources;
-
-	use codec::{Decode, Encode};
-	use frame_support::traits::EnsureOrigin;
-	use scale_info::TypeInfo;
-
-	#[pallet::config]
-	pub trait Config: frame_system::Config {
-		type Origin: From<DoubleOrigin>;
-	}
-
-	#[pallet::pallet]
-	pub struct Pallet<T>(_);
-
-	#[pallet::origin]
-	pub type Origin = DoubleOrigin;
-
-	#[derive(Debug, Clone, Default, PartialEq, Eq, TypeInfo, Encode, Decode)]
-	pub struct DoubleOrigin(pub AccountId, pub DidIdentifier);
-	impl CallSources<AccountId, DidIdentifier> for DoubleOrigin {
-		fn sender(&self) -> AccountId {
-			self.0.clone()
-		}
-
-		fn subject(&self) -> DidIdentifier {
-			self.1.clone()
-		}
-	}
-
-	pub struct EnsureDoubleOrigin;
-
-	impl<OuterOrigin> EnsureOrigin<OuterOrigin> for EnsureDoubleOrigin
-	where
-		OuterOrigin: Into<Result<DoubleOrigin, OuterOrigin>> + From<DoubleOrigin>,
-	{
-		type Success = DoubleOrigin;
-
-		fn try_origin(o: OuterOrigin) -> Result<Self::Success, OuterOrigin> {
-			o.into()
-		}
-
-		#[cfg(feature = "runtime-benchmarks")]
-		fn successful_origin() -> OuterOrigin {
-			OuterOrigin::from(Default::default())
-		}
-	}
-
-	#[cfg(feature = "runtime-benchmarks")]
-	impl<OuterOrigin> kilt_support::traits::GenerateBenchmarkOrigin<OuterOrigin, AccountId, DidIdentifier>
-		for EnsureDoubleOrigin
-	where
-		OuterOrigin: Into<Result<DoubleOrigin, OuterOrigin>> + From<DoubleOrigin>,
-	{
-		fn generate_origin(sender: AccountId, subject: DidIdentifier) -> OuterOrigin {
-			OuterOrigin::from(DoubleOrigin(sender, subject))
-		}
-	}
-}
+pub(crate) const ACCOUNT_00: kilt_primitives::AccountId = kilt_primitives::AccountId::new([1u8; 32]);
+pub(crate) const ACCOUNT_01: kilt_primitives::AccountId = kilt_primitives::AccountId::new([2u8; 32]);
+pub(crate) const DID_00: SubjectId = SubjectId(ACCOUNT_00);
+pub(crate) const DID_01: SubjectId = SubjectId(ACCOUNT_01);
 
 #[derive(Clone, Default)]
 pub struct ExtBuilder {
 	balances: Vec<(AccountId, Balance)>,
-	connections: Vec<(AccountId, DidIdentifier, AccountId)>,
+	connections: Vec<(AccountId, SubjectId, AccountId)>,
 }
 
 impl ExtBuilder {
@@ -204,7 +132,7 @@ impl ExtBuilder {
 		self
 	}
 
-	pub fn with_connections(mut self, connections: Vec<(AccountId, DidIdentifier, AccountId)>) -> Self {
+	pub fn with_connections(mut self, connections: Vec<(AccountId, SubjectId, AccountId)>) -> Self {
 		self.connections = connections;
 		self
 	}

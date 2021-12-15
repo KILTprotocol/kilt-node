@@ -19,7 +19,7 @@
 use codec::Encode;
 use frame_support::{assert_noop, assert_ok};
 use kilt_primitives::BlockNumber;
-use kilt_support::deposit::Deposit;
+use kilt_support::{deposit::Deposit, mock::mock_origin};
 use sp_runtime::{
 	app_crypto::{sr25519, Pair},
 	traits::IdentifyAccount,

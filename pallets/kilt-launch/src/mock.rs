@@ -33,10 +33,10 @@ use sp_runtime::{
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
-pub const PSEUDO_1: AccountId = AccountId32::new([0u8; 32]);
-pub const PSEUDO_2: AccountId = AccountId32::new([1u8; 32]);
-pub const PSEUDO_3: AccountId = AccountId32::new([2u8; 32]);
-pub const PSEUDO_4: AccountId = AccountId32::new([3u8; 32]);
+pub const PSEUDO_1: AccountId = AccountId32::new([1u8; 32]);
+pub const PSEUDO_2: AccountId = AccountId32::new([2u8; 32]);
+pub const PSEUDO_3: AccountId = AccountId32::new([3u8; 32]);
+pub const PSEUDO_4: AccountId = AccountId32::new([4u8; 32]);
 pub const USER: AccountId = AccountId32::new([10u8; 32]);
 pub const TRANSFER_ACCOUNT: AccountId = AccountId32::new([100u8; 32]);
 

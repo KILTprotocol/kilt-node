@@ -22,6 +22,8 @@ use frame_support::traits::{Currency, ReservableCurrency};
 use sp_runtime::traits::Zero;
 
 pub mod deposit;
+#[cfg(any(feature = "runtime-benchmarks", feature = "mock"))]
+pub mod mock;
 pub mod signature;
 pub mod traits;
 
