@@ -26,7 +26,7 @@ use sp_runtime::{
 	Permill,
 };
 
-use crate::{mock::*, GratitudeConfig, ReserveAccounts};
+use crate::{mock::*, AccountIdOf, GratitudeConfig, ReserveAccounts};
 
 // #############################################################################
 // set_registrar_account
@@ -82,7 +82,7 @@ fn test_set_registrar_account_with_allowed_registrar_origin() {
 
 #[test]
 fn test_no_custom_registrar_set() {
-	let registrar = ACCOUNT_00;
+	let registrar = AccountIdOf::<Test>::default();
 	let new_registrar = ACCOUNT_01;
 
 	ExtBuilder::default().build().execute_with(|| {

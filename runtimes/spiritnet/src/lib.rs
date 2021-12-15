@@ -47,26 +47,7 @@ use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 
 use kilt_primitives::{
-	constants::{
-		self,
-		attestation::ATTESTATION_DEPOSIT,
-		delegation::{
-			DELEGATION_DEPOSIT, MAX_CHILDREN, MAX_PARENT_CHECKS, MAX_REMOVALS, MAX_REVOCATIONS,
-			MAX_SIGNATURE_BYTE_LENGTH,
-		},
-		did::{
-			DID_DEPOSIT, DID_FEE, MAX_BLOCKS_TX_VALIDITY, MAX_ENDPOINT_URLS_COUNT, MAX_KEY_AGREEMENT_KEYS,
-			MAX_NUMBER_OF_SERVICES_PER_DID, MAX_NUMBER_OF_TYPES_PER_SERVICE, MAX_NUMBER_OF_URLS_PER_SERVICE,
-			MAX_PUBLIC_KEYS_PER_DID, MAX_SERVICE_ID_LENGTH, MAX_SERVICE_TYPE_LENGTH, MAX_SERVICE_URL_LENGTH,
-			MAX_TOTAL_KEY_AGREEMENT_KEYS, MAX_URL_LENGTH,
-		},
-		governance::{
-			COOLOFF_PERIOD, COUNCIL_MOTION_DURATION, ENACTMENT_PERIOD, FAST_TRACK_VOTING_PERIOD, LAUNCH_PERIOD,
-			SPEND_PERIOD, TECHNICAL_MOTION_DURATION, VOTING_PERIOD,
-		},
-		treasury::{INITIAL_PERIOD_LENGTH, INITIAL_PERIOD_REWARD_PER_BLOCK, TREASURY_PALLET_ID},
-		KILT, MAXIMUM_BLOCK_WEIGHT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION,
-	},
+	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
 	fees::{ToAuthor, WeightToFee},
 	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier, FeeSplit,
 	Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
@@ -118,7 +99,7 @@ pub fn native_version() -> NativeVersion {
 
 // Pallet accounts of runtime
 parameter_types! {
-	pub const TreasuryPalletId: PalletId = TREASURY_PALLET_ID;
+	pub const TreasuryPalletId: PalletId = constants::treasury::TREASURY_PALLET_ID;
 }
 
 parameter_types! {
@@ -179,7 +160,7 @@ impl frame_system::Config for Runtime {
 }
 
 parameter_types! {
-	pub const MinimumPeriod: u64 = SLOT_DURATION / 2;
+	pub const MinimumPeriod: u64 = constants::SLOT_DURATION / 2;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -235,8 +216,8 @@ impl pallet_transaction_payment::Config for Runtime {
 }
 
 parameter_types! {
-	pub const ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT / 4;
-	pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT / 4;
+	pub const ReservedXcmpWeight: Weight = constants::MAXIMUM_BLOCK_WEIGHT / 4;
+	pub const ReservedDmpWeight: Weight = constants::MAXIMUM_BLOCK_WEIGHT / 4;
 }
 
 impl cumulus_pallet_parachain_system::Config for Runtime {
@@ -289,7 +270,7 @@ impl pallet_session::Config for Runtime {
 }
 
 parameter_types! {
-	pub const MinVestedTransfer: Balance = MIN_VESTED_TRANSFER_AMOUNT;
+	pub const MinVestedTransfer: Balance = constants::MIN_VESTED_TRANSFER_AMOUNT;
 }
 
 impl pallet_vesting::Config for Runtime {
@@ -333,12 +314,12 @@ impl pallet_scheduler::Config for Runtime {
 }
 
 parameter_types! {
-	pub const LaunchPeriod: BlockNumber = LAUNCH_PERIOD;
-	pub const VotingPeriod: BlockNumber = VOTING_PERIOD;
-	pub const FastTrackVotingPeriod: BlockNumber = FAST_TRACK_VOTING_PERIOD;
+	pub const LaunchPeriod: BlockNumber = constants::governance::LAUNCH_PERIOD;
+	pub const VotingPeriod: BlockNumber = constants::governance::VOTING_PERIOD;
+	pub const FastTrackVotingPeriod: BlockNumber = constants::governance::FAST_TRACK_VOTING_PERIOD;
 	pub const MinimumDeposit: Balance = KILT;
-	pub const EnactmentPeriod: BlockNumber = ENACTMENT_PERIOD;
-	pub const CooloffPeriod: BlockNumber = COOLOFF_PERIOD;
+	pub const EnactmentPeriod: BlockNumber = constants::governance::ENACTMENT_PERIOD;
+	pub const CooloffPeriod: BlockNumber = constants::governance::COOLOFF_PERIOD;
 	// One cent: $10,000 / MB
 	pub const PreimageByteDeposit: Balance = 10 * MILLI_KILT;
 	pub const InstantAllowed: bool = true;
@@ -402,8 +383,8 @@ impl pallet_democracy::Config for Runtime {
 
 parameter_types! {
 	pub const ProposalBond: Permill = Permill::from_percent(5);
-	pub const ProposalBondMinimum: Balance = 20 * KILT; // TODO: how much?
-	pub const SpendPeriod: BlockNumber = SPEND_PERIOD;
+	pub const ProposalBondMinimum: Balance = 20 * KILT;
+	pub const SpendPeriod: BlockNumber = constants::governance::SPEND_PERIOD;
 	pub const Burn: Permill = Permill::zero();
 	pub const MaxApprovals: u32 = 100;
 }
@@ -438,7 +419,7 @@ impl pallet_treasury::Config for Runtime {
 }
 
 parameter_types! {
-	pub const CouncilMotionDuration: BlockNumber = COUNCIL_MOTION_DURATION;
+	pub const CouncilMotionDuration: BlockNumber = constants::governance::COUNCIL_MOTION_DURATION;
 	pub const CouncilMaxProposals: u32 = 100;
 	pub const CouncilMaxMembers: u32 = 100;
 }
@@ -456,7 +437,7 @@ impl pallet_collective::Config<CouncilCollective> for Runtime {
 }
 
 parameter_types! {
-	pub const TechnicalMotionDuration: BlockNumber = TECHNICAL_MOTION_DURATION;
+	pub const TechnicalMotionDuration: BlockNumber = constants::governance::TECHNICAL_MOTION_DURATION;
 	pub const TechnicalMaxProposals: u32 = 100;
 	pub const TechnicalMaxMembers: u32 = 100;
 }
@@ -488,19 +469,12 @@ impl pallet_membership::Config for Runtime {
 
 parameter_types! {
 	pub const MaxDelegatedAttestations: u32 = 1000;
-	pub const AttestationDeposit: Balance = ATTESTATION_DEPOSIT;
+	pub const AttestationDeposit: Balance = constants::attestation::ATTESTATION_DEPOSIT;
 }
 
 impl attestation::Config for Runtime {
-	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
-	#[cfg(not(feature = "runtime-benchmarks"))]
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
-
-	#[cfg(feature = "runtime-benchmarks")]
-	type EnsureOrigin = EnsureSigned<DidIdentifier>;
-	#[cfg(feature = "runtime-benchmarks")]
-	type OriginSuccess = DidIdentifier;
 
 	type Event = Event;
 	type WeightInfo = weights::attestation::WeightInfo<Runtime>;
@@ -511,32 +485,27 @@ impl attestation::Config for Runtime {
 }
 
 parameter_types! {
-	pub const MaxSignatureByteLength: u16 = MAX_SIGNATURE_BYTE_LENGTH;
-	pub const MaxParentChecks: u32 = MAX_PARENT_CHECKS;
-	pub const MaxRevocations: u32 = MAX_REVOCATIONS;
-	pub const MaxRemovals: u32 = MAX_REMOVALS;
+	pub const MaxSignatureByteLength: u16 = constants::delegation::MAX_SIGNATURE_BYTE_LENGTH;
+	pub const MaxParentChecks: u32 = constants::delegation::MAX_PARENT_CHECKS;
+	pub const MaxRevocations: u32 = constants::delegation::MAX_REVOCATIONS;
+	pub const MaxRemovals: u32 = constants::delegation::MAX_REMOVALS;
 	#[derive(Clone)]
-	pub const MaxChildren: u32 = MAX_CHILDREN;
-	pub const DelegationDeposit: Balance = DELEGATION_DEPOSIT;
+	pub const MaxChildren: u32 = constants::delegation::MAX_CHILDREN;
+	pub const DelegationDeposit: Balance = constants::delegation::DELEGATION_DEPOSIT;
 }
 
 impl delegation::Config for Runtime {
 	type DelegationEntityId = DidIdentifier;
 	type DelegationNodeId = Hash;
 
-	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
-	#[cfg(not(feature = "runtime-benchmarks"))]
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type DelegationSignatureVerification = did::DidSignatureVerify<Runtime>;
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type Signature = did::DidSignature;
 
-	#[cfg(feature = "runtime-benchmarks")]
-	type EnsureOrigin = EnsureSigned<DidIdentifier>;
-	#[cfg(feature = "runtime-benchmarks")]
-	type OriginSuccess = DidIdentifier;
 	#[cfg(feature = "runtime-benchmarks")]
 	type Signature = DummySignature;
 	#[cfg(feature = "runtime-benchmarks")]
@@ -563,39 +532,32 @@ impl ctype::Config for Runtime {
 	type Fee = Fee;
 	type FeeCollector = Treasury;
 
-	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
-	#[cfg(not(feature = "runtime-benchmarks"))]
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
-
-	#[cfg(feature = "runtime-benchmarks")]
-	type EnsureOrigin = EnsureSigned<DidIdentifier>;
-	#[cfg(feature = "runtime-benchmarks")]
-	type OriginSuccess = DidIdentifier;
 
 	type Event = Event;
 	type WeightInfo = weights::ctype::WeightInfo<Runtime>;
 }
 
 parameter_types! {
-	pub const MaxNewKeyAgreementKeys: u32 = MAX_KEY_AGREEMENT_KEYS;
+	pub const MaxNewKeyAgreementKeys: u32 = constants::did::MAX_KEY_AGREEMENT_KEYS;
 	#[derive(Debug, Clone, PartialEq)]
-	pub const MaxUrlLength: u32 = MAX_URL_LENGTH;
-	pub const MaxPublicKeysPerDid: u32 = MAX_PUBLIC_KEYS_PER_DID;
+	pub const MaxUrlLength: u32 = constants::did::MAX_URL_LENGTH;
+	pub const MaxPublicKeysPerDid: u32 = constants::did::MAX_PUBLIC_KEYS_PER_DID;
 	#[derive(Debug, Clone, PartialEq)]
-	pub const MaxTotalKeyAgreementKeys: u32 = MAX_TOTAL_KEY_AGREEMENT_KEYS;
+	pub const MaxTotalKeyAgreementKeys: u32 = constants::did::MAX_TOTAL_KEY_AGREEMENT_KEYS;
 	#[derive(Debug, Clone, PartialEq)]
-	pub const MaxEndpointUrlsCount: u32 = MAX_ENDPOINT_URLS_COUNT;
+	pub const MaxEndpointUrlsCount: u32 = constants::did::MAX_ENDPOINT_URLS_COUNT;
 	// Standalone block time is half the duration of a parachain block.
-	pub const MaxBlocksTxValidity: BlockNumber = MAX_BLOCKS_TX_VALIDITY;
-	pub const DidDeposit: Balance = DID_DEPOSIT;
-	pub const DidFee: Balance = DID_FEE;
-	pub const MaxNumberOfServicesPerDid: u32 = MAX_NUMBER_OF_SERVICES_PER_DID;
-	pub const MaxServiceIdLength: u32 = MAX_SERVICE_ID_LENGTH;
-	pub const MaxServiceTypeLength: u32 = MAX_SERVICE_TYPE_LENGTH;
-	pub const MaxServiceUrlLength: u32 = MAX_SERVICE_URL_LENGTH;
-	pub const MaxNumberOfTypesPerService: u32 = MAX_NUMBER_OF_TYPES_PER_SERVICE;
-	pub const MaxNumberOfUrlsPerService: u32 = MAX_NUMBER_OF_URLS_PER_SERVICE;
+	pub const MaxBlocksTxValidity: BlockNumber = constants::did::MAX_BLOCKS_TX_VALIDITY;
+	pub const DidDeposit: Balance = constants::did::DID_DEPOSIT;
+	pub const DidFee: Balance = constants::did::DID_FEE;
+	pub const MaxNumberOfServicesPerDid: u32 = constants::did::MAX_NUMBER_OF_SERVICES_PER_DID;
+	pub const MaxServiceIdLength: u32 = constants::did::MAX_SERVICE_ID_LENGTH;
+	pub const MaxServiceTypeLength: u32 = constants::did::MAX_SERVICE_TYPE_LENGTH;
+	pub const MaxServiceUrlLength: u32 = constants::did::MAX_SERVICE_URL_LENGTH;
+	pub const MaxNumberOfTypesPerService: u32 = constants::did::MAX_NUMBER_OF_TYPES_PER_SERVICE;
+	pub const MaxNumberOfUrlsPerService: u32 = constants::did::MAX_NUMBER_OF_URLS_PER_SERVICE;
 }
 
 impl did::Config for Runtime {
@@ -660,8 +622,8 @@ impl crowdloan::Config for Runtime {
 }
 
 parameter_types! {
-	pub const InitialPeriodLength: BlockNumber = INITIAL_PERIOD_LENGTH;
-	pub const InitialPeriodReward: Balance = INITIAL_PERIOD_REWARD_PER_BLOCK;
+	pub const InitialPeriodLength: BlockNumber = constants::treasury::INITIAL_PERIOD_LENGTH;
+	pub const InitialPeriodReward: Balance = constants::treasury::INITIAL_PERIOD_REWARD_PER_BLOCK;
 }
 
 impl pallet_inflation::Config for Runtime {
@@ -703,7 +665,7 @@ parameter_types! {
 	/// Maximum number of concurrent requests to unlock unstaked balance
 	pub const MaxUnstakeRequests: u32 = 10;
 	/// The starting block number for the network rewards
-	pub const NetworkRewardStart: BlockNumber = INITIAL_PERIOD_LENGTH;
+	pub const NetworkRewardStart: BlockNumber = constants::treasury::INITIAL_PERIOD_LENGTH;
 	/// The rate in percent for the network rewards
 	pub const NetworkRewardRate: Perquintill = constants::staking::NETWORK_REWARD_RATE;
 }

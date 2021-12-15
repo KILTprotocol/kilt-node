@@ -203,9 +203,9 @@ impl ctype::Config for Test {
 }
 
 #[cfg(test)]
-pub(crate) const ACCOUNT_00: kilt_primitives::AccountId = kilt_primitives::AccountId::new([0u8; 32]);
+pub(crate) const ACCOUNT_00: kilt_primitives::AccountId = kilt_primitives::AccountId::new([1u8; 32]);
 #[cfg(test)]
-pub(crate) const ACCOUNT_01: kilt_primitives::AccountId = kilt_primitives::AccountId::new([1u8; 32]);
+pub(crate) const ACCOUNT_01: kilt_primitives::AccountId = kilt_primitives::AccountId::new([2u8; 32]);
 #[cfg(test)]
 pub(crate) const ACCOUNT_FEE: kilt_primitives::AccountId = kilt_primitives::AccountId::new([u8::MAX; 32]);
 

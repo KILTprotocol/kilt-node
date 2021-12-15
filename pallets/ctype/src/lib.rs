@@ -93,7 +93,7 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type Currency: Currency<AccountIdOf<Self>>;
 		type WeightInfo: WeightInfo;
-		type CtypeCreatorId: Parameter + Default;
+		type CtypeCreatorId: Parameter;
 		type Fee: Get<BalanceOf<Self>>;
 		type FeeCollector: OnUnbalanced<NegativeImbalanceOf<Self>>;
 	}
