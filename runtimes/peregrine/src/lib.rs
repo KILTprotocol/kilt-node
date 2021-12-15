@@ -77,7 +77,6 @@ use sp_version::NativeVersion;
 #[cfg(feature = "runtime-benchmarks")]
 use {frame_system::EnsureSigned, kilt_primitives::benchmarks::DummySignature, kilt_support::signature::AlwaysVerify};
 
-mod migrations;
 #[cfg(test)]
 mod tests;
 mod weights;
@@ -99,7 +98,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 10300,
+	spec_version: 10310,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -644,15 +643,6 @@ impl pallet_did_lookup::Config for Runtime {
 	type WeightInfo = weights::pallet_did_lookup::WeightInfo<Runtime>;
 }
 
-impl crowdloan::Config for Runtime {
-	type Currency = Balances;
-	type Vesting = Vesting;
-	type Balance = Balance;
-	type EnsureRegistrarOrigin = MoreThanHalfCouncil;
-	type Event = Event;
-	type WeightInfo = weights::crowdloan::WeightInfo<Runtime>;
-}
-
 parameter_types! {
 	pub const InitialPeriodLength: BlockNumber = INITIAL_PERIOD_LENGTH;
 	pub const InitialPeriodReward: Balance = INITIAL_PERIOD_REWARD_PER_BLOCK;
@@ -782,7 +772,7 @@ construct_runtime! {
 		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 62,
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 63,
 		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 64,
-		CrowdloanContributors: crowdloan::{Pallet, Call, Storage, Event<T>, Config<T>, ValidateUnsigned} = 65,
+		// DELETED: CrowdloanContributors = 65,
 		Inflation: pallet_inflation::{Pallet, Storage} = 66,
 		DidLookup: pallet_did_lookup::{Pallet, Call, Storage, Event<T>} = 67,
 
@@ -862,14 +852,8 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signatu
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various modules.
-pub type Executive = frame_executive::Executive<
-	Runtime,
-	Block,
-	frame_system::ChainContext<Runtime>,
-	Runtime,
-	AllPallets,
-	migrations::RemoveCrowdloanContributors,
->;
+pub type Executive =
+	frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllPallets>;
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
@@ -1004,7 +988,6 @@ impl_runtime_apis! {
 
 			// KILT
 			list_benchmark!(list, extra, attestation, Attestation);
-			list_benchmark!(list, extra, crowdloan, CrowdloanContributors);
 			list_benchmark!(list, extra, ctype, Ctype);
 			list_benchmark!(list, extra, delegation, Delegation);
 			list_benchmark!(list, extra, did, Did);
@@ -1068,7 +1051,6 @@ impl_runtime_apis! {
 			// KILT
 			add_benchmark!(params, batches, attestation, Attestation);
 			add_benchmark!(params, batches, ctype, Ctype);
-			add_benchmark!(params, batches, crowdloan, CrowdloanContributors);
 			add_benchmark!(params, batches, delegation, Delegation);
 			add_benchmark!(params, batches, did, Did);
 			add_benchmark!(params, batches, pallet_did_lookup, DidLookup);
