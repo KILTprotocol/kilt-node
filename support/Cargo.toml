@@ -8,8 +8,11 @@ version = "1.3.0"
 
 [dependencies]
 codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.3.1"}
+scale-info = {version = "1.0", default-features = false, features = ["derive"]}
+
 frame-support = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
-scale-info = { version = "1.0", default-features = false, features = ["derive"] }
+frame-system = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-core = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-runtime = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-std = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
 
@@ -22,11 +25,14 @@ mock = []
 runtime-benchmarks = [
   "sp-runtime/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
+  "frame-system/runtime-benchmarks",
 ]
 std = [
   "codec/std",
   "frame-support/std",
+  "frame-system/std",
   "scale-info/std",
+  "sp-core/std",
   "sp-runtime/std",
   "sp-std/std",
 ]

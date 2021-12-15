@@ -34,7 +34,7 @@ use sp_runtime::{
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
-pub(crate) const TREASURY_ACC: AccountId = kilt_primitives::AccountId::new([0u8; 32]);
+pub(crate) const TREASURY_ACC: AccountId = kilt_primitives::AccountId::new([1u8; 32]);
 
 frame_support::construct_runtime!(
 	pub enum Test where

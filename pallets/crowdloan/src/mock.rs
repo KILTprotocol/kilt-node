@@ -117,11 +117,11 @@ impl pallet_crowdloan::Config for Test {
 	type WeightInfo = ();
 }
 
-pub(crate) const ACCOUNT_00: TestAccountId = AccountId::new([0u8; 32]);
-pub(crate) const ACCOUNT_01: TestAccountId = AccountId::new([1u8; 32]);
-pub(crate) const ACCOUNT_02: TestAccountId = AccountId::new([2u8; 32]);
-pub(crate) const ACCOUNT_03: TestAccountId = AccountId::new([3u8; 32]);
-pub(crate) const ACCOUNT_04: TestAccountId = AccountId::new([4u8; 32]);
+pub(crate) const ACCOUNT_00: TestAccountId = AccountId::new([1u8; 32]);
+pub(crate) const ACCOUNT_01: TestAccountId = AccountId::new([2u8; 32]);
+pub(crate) const ACCOUNT_02: TestAccountId = AccountId::new([3u8; 32]);
+pub(crate) const ACCOUNT_03: TestAccountId = AccountId::new([4u8; 32]);
+pub(crate) const ACCOUNT_04: TestAccountId = AccountId::new([5u8; 32]);
 #[allow(clippy::identity_op)]
 pub(crate) const BALANCE_01: TestBalance = 1 * KILT;
 pub(crate) const BALANCE_02: TestBalance = 2 * KILT;

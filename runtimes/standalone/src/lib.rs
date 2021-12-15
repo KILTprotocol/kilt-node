@@ -32,21 +32,7 @@ use frame_system::EnsureRoot;
 use frame_system::EnsureSigned;
 
 use kilt_primitives::{
-	constants::{
-		attestation::ATTESTATION_DEPOSIT,
-		delegation::{
-			DELEGATION_DEPOSIT, MAX_CHILDREN, MAX_PARENT_CHECKS, MAX_REMOVALS, MAX_REVOCATIONS,
-			MAX_SIGNATURE_BYTE_LENGTH,
-		},
-		did::{
-			DID_DEPOSIT, DID_FEE, MAX_BLOCKS_TX_VALIDITY, MAX_ENDPOINT_URLS_COUNT, MAX_KEY_AGREEMENT_KEYS,
-			MAX_NUMBER_OF_SERVICES_PER_DID, MAX_NUMBER_OF_TYPES_PER_SERVICE, MAX_NUMBER_OF_URLS_PER_SERVICE,
-			MAX_PUBLIC_KEYS_PER_DID, MAX_SERVICE_ID_LENGTH, MAX_SERVICE_TYPE_LENGTH, MAX_SERVICE_URL_LENGTH,
-			MAX_TOTAL_KEY_AGREEMENT_KEYS, MAX_URL_LENGTH,
-		},
-		staking::MAX_CANDIDATES,
-		KILT, MICRO_KILT, MILLI_KILT, MIN_VESTED_TRANSFER_AMOUNT, SLOT_DURATION,
-	},
+	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
 	fees::ToAuthor,
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
 };
@@ -211,7 +197,7 @@ impl frame_system::Config for Runtime {
 }
 
 parameter_types! {
-	pub const MaxAuthorities: u32  = MAX_CANDIDATES;
+	pub const MaxAuthorities: u32 = constants::staking::MAX_CANDIDATES;
 }
 
 impl pallet_aura::Config for Runtime {
@@ -238,7 +224,7 @@ impl pallet_grandpa::Config for Runtime {
 }
 
 parameter_types! {
-	pub const MinimumPeriod: u64 = SLOT_DURATION / 2;
+	pub const MinimumPeriod: u64 = constants::SLOT_DURATION / 2;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -317,7 +303,7 @@ impl pallet_sudo::Config for Runtime {
 
 parameter_types! {
 	pub const MaxDelegatedAttestations: u32 = 1000;
-	pub const AttestationDeposit: Balance = ATTESTATION_DEPOSIT;
+	pub const AttestationDeposit: Balance = constants::attestation::ATTESTATION_DEPOSIT;
 }
 
 impl attestation::Config for Runtime {
@@ -331,13 +317,13 @@ impl attestation::Config for Runtime {
 }
 
 parameter_types! {
-	pub const MaxSignatureByteLength: u16 = MAX_SIGNATURE_BYTE_LENGTH;
-	pub const MaxParentChecks: u32 = MAX_PARENT_CHECKS;
-	pub const MaxRevocations: u32 = MAX_REVOCATIONS;
-	pub const MaxRemovals: u32 = MAX_REMOVALS;
+	pub const MaxSignatureByteLength: u16 = constants::delegation::MAX_SIGNATURE_BYTE_LENGTH;
+	pub const MaxParentChecks: u32 = constants::delegation::MAX_PARENT_CHECKS;
+	pub const MaxRevocations: u32 = constants::delegation::MAX_REVOCATIONS;
+	pub const MaxRemovals: u32 = constants::delegation::MAX_REMOVALS;
 	#[derive(Clone)]
-	pub const MaxChildren: u32 = MAX_CHILDREN;
-	pub const DelegationDeposit: Balance = DELEGATION_DEPOSIT;
+	pub const MaxChildren: u32 = constants::delegation::MAX_CHILDREN;
+	pub const DelegationDeposit: Balance = constants::delegation::DELEGATION_DEPOSIT;
 }
 
 impl delegation::Config for Runtime {
@@ -383,24 +369,24 @@ impl ctype::Config for Runtime {
 }
 
 parameter_types! {
-	pub const MaxNewKeyAgreementKeys: u32 = MAX_KEY_AGREEMENT_KEYS;
+	pub const MaxNewKeyAgreementKeys: u32 = constants::did::MAX_KEY_AGREEMENT_KEYS;
 	#[derive(Debug, Clone, PartialEq)]
-	pub const MaxUrlLength: u32 = MAX_URL_LENGTH;
-	pub const MaxPublicKeysPerDid: u32 = MAX_PUBLIC_KEYS_PER_DID;
+	pub const MaxUrlLength: u32 = constants::did::MAX_URL_LENGTH;
+	pub const MaxPublicKeysPerDid: u32 = constants::did::MAX_PUBLIC_KEYS_PER_DID;
 	#[derive(Debug, Clone, PartialEq)]
-	pub const MaxTotalKeyAgreementKeys: u32 = MAX_TOTAL_KEY_AGREEMENT_KEYS;
+	pub const MaxTotalKeyAgreementKeys: u32 = constants::did::MAX_TOTAL_KEY_AGREEMENT_KEYS;
 	#[derive(Debug, Clone, PartialEq)]
-	pub const MaxEndpointUrlsCount: u32 = MAX_ENDPOINT_URLS_COUNT;
+	pub const MaxEndpointUrlsCount: u32 = constants::did::MAX_ENDPOINT_URLS_COUNT;
 	// Standalone block time is half the duration of a parachain block.
-	pub const MaxBlocksTxValidity: BlockNumber = MAX_BLOCKS_TX_VALIDITY * 2;
-	pub const DidDeposit: Balance = DID_DEPOSIT;
-	pub const DidFee: Balance = DID_FEE;
-	pub const MaxNumberOfServicesPerDid: u32 = MAX_NUMBER_OF_SERVICES_PER_DID;
-	pub const MaxServiceIdLength: u32 = MAX_SERVICE_ID_LENGTH;
-	pub const MaxServiceTypeLength: u32 = MAX_SERVICE_TYPE_LENGTH;
-	pub const MaxServiceUrlLength: u32 = MAX_SERVICE_URL_LENGTH;
-	pub const MaxNumberOfTypesPerService: u32 = MAX_NUMBER_OF_TYPES_PER_SERVICE;
-	pub const MaxNumberOfUrlsPerService: u32 = MAX_NUMBER_OF_URLS_PER_SERVICE;
+	pub const MaxBlocksTxValidity: BlockNumber = constants::did::MAX_BLOCKS_TX_VALIDITY * 2;
+	pub const DidDeposit: Balance = constants::did::DID_DEPOSIT;
+	pub const DidFee: Balance = constants::did::DID_FEE;
+	pub const MaxNumberOfServicesPerDid: u32 = constants::did::MAX_NUMBER_OF_SERVICES_PER_DID;
+	pub const MaxServiceIdLength: u32 = constants::did::MAX_SERVICE_ID_LENGTH;
+	pub const MaxServiceTypeLength: u32 = constants::did::MAX_SERVICE_TYPE_LENGTH;
+	pub const MaxServiceUrlLength: u32 = constants::did::MAX_SERVICE_URL_LENGTH;
+	pub const MaxNumberOfTypesPerService: u32 = constants::did::MAX_NUMBER_OF_TYPES_PER_SERVICE;
+	pub const MaxNumberOfUrlsPerService: u32 = constants::did::MAX_NUMBER_OF_URLS_PER_SERVICE;
 }
 
 impl did::Config for Runtime {
@@ -493,7 +479,7 @@ impl pallet_authorship::Config for Runtime {
 }
 
 parameter_types! {
-	pub const MinVestedTransfer: Balance = MIN_VESTED_TRANSFER_AMOUNT;
+	pub const MinVestedTransfer: Balance = constants::MIN_VESTED_TRANSFER_AMOUNT;
 }
 
 impl pallet_vesting::Config for Runtime {
