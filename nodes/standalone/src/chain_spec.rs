@@ -20,8 +20,8 @@
 
 use kilt_primitives::{constants::BLOCKS_PER_YEAR, AccountId, AccountPublic, Balance, BlockNumber};
 use mashnet_node_runtime::{
-	BalancesConfig, GenesisConfig, KiltLaunchConfig, SessionConfig, SudoConfig,
-	SystemConfig, VestingConfig, WASM_BINARY,
+	BalancesConfig, GenesisConfig, KiltLaunchConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig,
+	WASM_BINARY,
 };
 
 use hex_literal::hex;
