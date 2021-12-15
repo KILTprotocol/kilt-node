@@ -4,7 +4,7 @@ description = "Substrate pallet issueing a pre-configured amount of tokens to th
 edition = "2018"
 name = "pallet-inflation"
 repository = "https://github.com/KILTprotocol/mashnet-node"
-version = "1.3.0"
+version = "1.3.1"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
