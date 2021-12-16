@@ -39,6 +39,7 @@ use sp_runtime::{
 
 pub mod constants;
 pub mod fees;
+pub mod pallet_id;
 
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarks;
@@ -151,14 +152,3 @@ pub type FeeSplit<R, B1, B2> = SplitFeesByRatio<R, FeeSplitRatio, B1, B2>;
 /// https://w3f-research.readthedocs.io/en/latest/polkadot/Token%20Economics.html#-2.-slow-adjusting-mechanism
 pub type SlowAdjustingFeeUpdate<R> =
 	TargetedFeeAdjustment<R, TargetBlockFullness, AdjustmentVariable, MinimumMultiplier>;
-
-/// Unique identifiers for pallets.
-pub mod pallet_id {
-	use frame_support::{parameter_types, PalletId};
-
-	parameter_types! {
-		pub const Treasury: PalletId = PalletId(*b"kilt/tsy");
-		pub const Launch: PalletId = PalletId(*b"kilt/lch");
-		pub const Gratitude: PalletId = PalletId(*b"kilt/thx");
-	}
-}
