@@ -27,7 +27,6 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use frame_system::EnsureRoot;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::EnsureSigned;
 
@@ -111,7 +110,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 10300,
+	spec_version: 10310,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -441,15 +440,6 @@ impl pallet_did_lookup::Config for Runtime {
 	type WeightInfo = ();
 }
 
-impl crowdloan::Config for Runtime {
-	type Currency = Balances;
-	type Vesting = Vesting;
-	type Balance = Balance;
-	type EnsureRegistrarOrigin = EnsureRoot<AccountId>;
-	type Event = Event;
-	type WeightInfo = ();
-}
-
 parameter_types! {
 	pub const Period: u64 = 0xFFFF_FFFF_FFFF_FFFF;
 	pub const Offset: u64 = 0xFFFF_FFFF_FFFF_FFFF;
@@ -541,7 +531,7 @@ construct_runtime!(
 		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 33,
 		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
 		Utility: pallet_utility::{Pallet, Call, Storage, Event} = 35,
-		CrowdloanContributors: crowdloan::{Pallet, Call, Storage, Event<T>, Config<T>, ValidateUnsigned} = 36,
+		// DELETED CrowdloanContributors: 36,
 	}
 );
 
@@ -768,7 +758,6 @@ impl_runtime_apis! {
 
 			list_benchmark!(list, extra, did, Did);
 			list_benchmark!(list, extra, ctype, Ctype);
-			list_benchmark!(list, extra, crowdloan, CrowdloanContributors);
 			list_benchmark!(list, extra, delegation, Delegation);
 			list_benchmark!(list, extra, attestation, Attestation);
 
@@ -816,7 +805,6 @@ impl_runtime_apis! {
 
 			add_benchmark!(params, batches, did, Did);
 			add_benchmark!(params, batches, ctype, Ctype);
-			add_benchmark!(params, batches, crowdloan, CrowdloanContributors);
 			add_benchmark!(params, batches, delegation, Delegation);
 			add_benchmark!(params, batches, attestation, Attestation);
 
