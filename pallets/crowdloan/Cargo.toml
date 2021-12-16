@@ -4,7 +4,7 @@ description = "Substrate pallet allowing to register crowdloan contributors."
 edition = "2018"
 name = "crowdloan"
 repository = "https://github.com/KILTprotocol/mashnet-node"
-version = "1.3.0"
+version = "1.3.1"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
