@@ -112,7 +112,7 @@ parameter_types! {
 }
 
 parameter_types! {
-	pub const LaunchPalletId: PalletId = PalletId(*b"kilt/thx");
+	pub const LaunchPalletId: PalletId = PalletId(*b"kilt/lch");
 }
 
 impl kilt_launch::Config for Test {
