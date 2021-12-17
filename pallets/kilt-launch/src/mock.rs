@@ -19,7 +19,7 @@
 #![allow(clippy::from_over_into)]
 
 use crate as kilt_launch;
-use frame_support::{assert_noop, assert_ok, parameter_types, traits::GenesisBuild};
+use frame_support::{assert_noop, assert_ok, parameter_types, traits::GenesisBuild, PalletId};
 use frame_system as system;
 use kilt_primitives::{constants::MIN_VESTED_TRANSFER_AMOUNT, AccountId, Balance, BlockNumber, Hash, Index};
 use pallet_balances::{BalanceLock, Locks, Reasons};
@@ -111,12 +111,17 @@ parameter_types! {
 	pub const AutoUnlockBound: u32 = 70;
 }
 
+parameter_types! {
+	pub const LaunchPalletId: PalletId = PalletId(*b"kilt/lch");
+}
+
 impl kilt_launch::Config for Test {
 	type Event = Event;
 	type MaxClaims = MaxClaims;
 	type UsableBalance = UsableBalance;
 	type AutoUnlockBound = AutoUnlockBound;
 	type WeightInfo = ();
+	type PalletId = LaunchPalletId;
 }
 
 parameter_types! {

@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{pallet as pallet_crowdloan, GratitudeConfig, ReserveAccounts};
-use frame_support::parameter_types;
+use frame_support::{parameter_types, PalletId};
 use frame_system::{EnsureRoot, EventRecord};
 use kilt_primitives::{constants::KILT, AccountId, Balance, BlockNumber, Hash, Index};
 use sp_runtime::{
@@ -108,6 +108,10 @@ impl pallet_vesting::Config for Test {
 	const MAX_VESTING_SCHEDULES: u32 = kilt_primitives::constants::MAX_VESTING_SCHEDULES;
 }
 
+parameter_types! {
+	pub const CrowdPalletId: PalletId = PalletId(*b"kilt/thx");
+}
+
 impl pallet_crowdloan::Config for Test {
 	type Currency = Balances;
 	type Vesting = Vesting;
@@ -115,6 +119,7 @@ impl pallet_crowdloan::Config for Test {
 	type EnsureRegistrarOrigin = TestOrigin;
 	type Event = Event;
 	type WeightInfo = ();
+	type PalletId = CrowdPalletId;
 }
 
 pub(crate) const ACCOUNT_00: TestAccountId = AccountId::new([1u8; 32]);

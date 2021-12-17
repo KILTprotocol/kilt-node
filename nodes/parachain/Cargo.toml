@@ -102,10 +102,6 @@ fast-gov = [
   "peregrine-runtime/fast-gov",
   "kilt-primitives/fast-gov",
 ]
-rococo-native = [
-  "polkadot-service/rococo-native",
-  "polkadot-cli/rococo-native",
-]
 runtime-benchmarks = [
   "polkadot-service/runtime-benchmarks",
   "peregrine-runtime/runtime-benchmarks",
@@ -116,8 +112,4 @@ try-runtime = [
   "node-executor",
   "spiritnet-runtime/try-runtime",
   "try-runtime-cli",
-]
-westend-native = [
-  "polkadot-service/westend-native",
-  "polkadot-cli/westend-native",
 ]

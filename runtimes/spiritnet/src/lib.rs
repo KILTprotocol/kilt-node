@@ -29,7 +29,6 @@ use frame_support::{
 	construct_runtime, parameter_types,
 	traits::Contains,
 	weights::{constants::RocksDbWeight, Weight},
-	PalletId,
 };
 use frame_system::{EnsureOneOf, EnsureRoot};
 use sp_api::impl_runtime_apis;
@@ -49,8 +48,8 @@ use sp_version::RuntimeVersion;
 use kilt_primitives::{
 	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
 	fees::{ToAuthor, WeightToFee},
-	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier, FeeSplit,
-	Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
+	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
+	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
 #[cfg(feature = "std")]
@@ -94,11 +93,6 @@ pub fn native_version() -> NativeVersion {
 		runtime_version: VERSION,
 		can_author_with: Default::default(),
 	}
-}
-
-// Pallet accounts of runtime
-parameter_types! {
-	pub const TreasuryPalletId: PalletId = constants::treasury::TREASURY_PALLET_ID;
 }
 
 parameter_types! {
@@ -294,6 +288,7 @@ impl kilt_launch::Config for Runtime {
 	type UsableBalance = UsableBalance;
 	type AutoUnlockBound = AutoUnlockBound;
 	type WeightInfo = weights::kilt_launch::WeightInfo<Runtime>;
+	type PalletId = pallet_id::Launch;
 }
 
 parameter_types! {
@@ -401,7 +396,7 @@ type MoreThanHalfCouncil = EnsureOneOf<
 >;
 
 impl pallet_treasury::Config for Runtime {
-	type PalletId = TreasuryPalletId;
+	type PalletId = pallet_id::Treasury;
 	type Currency = Balances;
 	type ApproveOrigin = ApproveOrigin;
 	type RejectOrigin = MoreThanHalfCouncil;

@@ -33,7 +33,7 @@ use frame_system::EnsureSigned;
 use kilt_primitives::{
 	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
 	fees::ToAuthor,
-	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
+	pallet_id, AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
 };
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
@@ -278,6 +278,7 @@ impl kilt_launch::Config for Runtime {
 	type UsableBalance = UsableBalance;
 	type WeightInfo = ();
 	type AutoUnlockBound = AutoUnlockBound;
+	type PalletId = pallet_id::Launch;
 }
 
 parameter_types! {

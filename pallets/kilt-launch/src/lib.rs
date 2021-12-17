@@ -128,13 +128,13 @@ pub mod pallet {
 		sp_runtime::traits::{StaticLookup, Zero},
 		storage::types::StorageMap,
 		traits::{Currency, ExistenceRequirement::AllowDeath, Get, LockIdentifier, LockableCurrency, WithdrawReasons},
-		transactional, BoundedVec,
+		transactional, BoundedVec, PalletId,
 	};
 	use frame_system::pallet_prelude::*;
 	use pallet_balances::{BalanceLock, Locks};
 	use pallet_vesting::{MaxVestingSchedulesGet, Vesting, VestingInfo};
 	use scale_info::TypeInfo;
-	use sp_runtime::traits::{CheckedDiv, Convert, SaturatedConversion, Saturating};
+	use sp_runtime::traits::{AccountIdConversion, CheckedDiv, Convert, SaturatedConversion, Saturating};
 	use sp_std::{
 		convert::{TryFrom, TryInto},
 		vec,
@@ -174,6 +174,11 @@ pub mod pallet {
 		#[pallet::constant]
 		type UsableBalance: Get<<Self as pallet_balances::Config>::Balance>;
 
+		/// The kilt launch's pallet id, used for deriving its sovereign account
+		/// ID.
+		#[pallet::constant]
+		type PalletId: Get<PalletId>;
+
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}
@@ -194,7 +199,7 @@ pub mod pallet {
 		fn default() -> Self {
 			Self {
 				balance_locks: Default::default(),
-				transfer_account: Default::default(),
+				transfer_account: Pallet::<T>::account_id(),
 				vesting: Default::default(),
 			}
 		}
@@ -636,6 +641,14 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
+		/// The account ID of the initial accounts.
+		///
+		/// This actually does computation. If you need to keep using it, then
+		/// make sure you cache the value and only call this once.
+		pub fn account_id() -> T::AccountId {
+			T::PalletId::get().into_account()
+		}
+
 		/// Remove KILT balance locks for the specified block
 		fn unlock_balance(block: T::BlockNumber) -> u32 {
 			if let Some(unlocking_balance) = <UnlockingAt<T>>::take(block) {
