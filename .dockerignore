@@ -2,7 +2,7 @@
 .github
 .gitignore
 .gitlab-ci.yml
-**/target
+**/target*
 **/*.rs.bk
 *.iml
 .vscode
