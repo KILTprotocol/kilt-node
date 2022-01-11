@@ -20,8 +20,8 @@
 
 use kilt_primitives::{constants::BLOCKS_PER_YEAR, AccountId, AccountPublic, Balance, BlockNumber};
 use mashnet_node_runtime::{
-	BalancesConfig, GenesisConfig, KiltLaunchConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig,
-	WASM_BINARY,
+	BalancesConfig, GenesisConfig, IndicesConfig, KiltLaunchConfig, SessionConfig, SudoConfig, SystemConfig,
+	VestingConfig, WASM_BINARY,
 };
 
 use hex_literal::hex;
@@ -223,8 +223,9 @@ fn testnet_genesis(
 	GenesisConfig {
 		system: SystemConfig {
 			code: wasm_binary.to_vec(),
-			changes_trie_config: Default::default(),
 		},
+		indices: IndicesConfig { indices: vec![] },
+		transaction_payment: Default::default(),
 		balances: BalancesConfig {
 			balances: endowed_accounts
 				.iter()

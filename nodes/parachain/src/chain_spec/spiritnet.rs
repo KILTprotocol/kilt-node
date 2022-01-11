@@ -29,7 +29,7 @@ use sc_telemetry::TelemetryEndpoints;
 use sp_core::{crypto::UncheckedInto, sr25519};
 use sp_runtime::traits::Zero;
 use spiritnet_runtime::{
-	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake,
+	BalancesConfig, CouncilConfig, GenesisConfig, IndicesConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake,
 	ParachainInfoConfig, ParachainStakingConfig, SessionConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig,
 	WASM_BINARY,
 };
@@ -41,9 +41,10 @@ use super::{get_properties, Extensions};
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;
 
-pub fn get_chain_spec_dev(id: ParaId) -> Result<ChainSpec, String> {
+pub fn get_chain_spec_dev() -> Result<ChainSpec, String> {
 	let properties = get_properties("KILT", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
+	let id: ParaId = 1000.into();
 
 	Ok(ChainSpec::from_genesis(
 		"KILT Local",
@@ -214,8 +215,10 @@ fn testnet_genesis(
 	GenesisConfig {
 		system: SystemConfig {
 			code: wasm_binary.to_vec(),
-			changes_trie_config: Default::default(),
 		},
+		scheduler: Default::default(),
+		indices: IndicesConfig { indices: vec![] },
+		transaction_payment: Default::default(),
 		balances: BalancesConfig {
 			balances: endowed_accounts
 				.iter()

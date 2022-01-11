@@ -25,7 +25,7 @@ use kilt_primitives::{
 	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use peregrine_runtime::{
-	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake,
+	BalancesConfig, CouncilConfig, GenesisConfig, IndicesConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake,
 	ParachainInfoConfig, ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig,
 	VestingConfig, WASM_BINARY,
 };
@@ -40,9 +40,10 @@ pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;
 
 const TRANSFER_ACCOUNT: [u8; 32] = hex!["6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c"];
 
-pub fn make_dev_spec(id: ParaId) -> Result<ChainSpec, String> {
+pub fn make_dev_spec() -> Result<ChainSpec, String> {
 	let properties = get_properties("PILT", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
+	let id: ParaId = 1000.into();
 
 	Ok(ChainSpec::from_genesis(
 		"KILT Peregrine Local",
@@ -104,9 +105,10 @@ pub fn make_dev_spec(id: ParaId) -> Result<ChainSpec, String> {
 	))
 }
 
-pub fn make_new_spec(id: ParaId) -> Result<ChainSpec, String> {
+pub fn make_new_spec() -> Result<ChainSpec, String> {
 	let properties = get_properties("PILT", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
+	let id: ParaId = 1000.into();
 
 	Ok(ChainSpec::from_genesis(
 		"KILT Peregrine Testnet",
@@ -189,8 +191,10 @@ fn testnet_genesis(
 	GenesisConfig {
 		system: SystemConfig {
 			code: wasm_binary.to_vec(),
-			changes_trie_config: Default::default(),
 		},
+		scheduler: Default::default(),
+		indices: IndicesConfig { indices: vec![] },
+		transaction_payment: Default::default(),
 		balances: BalancesConfig {
 			balances: endowed_accounts
 				.iter()
