@@ -75,7 +75,7 @@ runtime-benchmarks = [
   "ctype/runtime-benchmarks",
   "delegation/runtime-benchmarks",
   "did/runtime-benchmarks",
-  "frame-benchmarking",
+  "frame-benchmarking/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "frame-system-benchmarking",

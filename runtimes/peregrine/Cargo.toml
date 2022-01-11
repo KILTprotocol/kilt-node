@@ -43,6 +43,7 @@ sp-std = {git = "https://github.com/paritytech/substrate", default-features = fa
 sp-transaction-pool = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.13"}
 sp-version = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.13"}
 
+frame-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.13"}
 frame-executive = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.13"}
 frame-support = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.13"}
 frame-system = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.13"}
@@ -79,7 +80,6 @@ xcm-executor = {git = "https://github.com/paritytech/polkadot", default-features
 
 # Benchmarking
 cumulus-pallet-session-benchmarking = {git = "https://github.com/paritytech/cumulus", default-features = false, optional = true, branch = "polkadot-v0.9.13"}
-frame-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.13"}
 frame-system-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.13"}
 rococo-runtime = {git = "https://github.com/paritytech/polkadot", default-features = false, optional = true, branch = "release-v0.9.13"}
 
@@ -99,7 +99,7 @@ runtime-benchmarks = [
   "cumulus-pallet-session-benchmarking/runtime-benchmarks",
   "delegation/runtime-benchmarks",
   "did/runtime-benchmarks",
-  "frame-benchmarking",
+  "frame-benchmarking/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "frame-system-benchmarking",
   "frame-system/runtime-benchmarks",
