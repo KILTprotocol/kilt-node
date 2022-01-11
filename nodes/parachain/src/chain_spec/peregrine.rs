@@ -20,14 +20,14 @@
 
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
-use kilt_primitives::{
-	constants::{INFLATION_CONFIG, KILT, MAX_COLLATOR_STAKE},
-	AccountId, AuthorityId, Balance, BlockNumber,
-};
 use peregrine_runtime::{
 	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake,
 	ParachainInfoConfig, ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig,
 	VestingConfig, WASM_BINARY,
+};
+use runtime_common::{
+	constants::{INFLATION_CONFIG, KILT, MAX_COLLATOR_STAKE},
+	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use sc_service::ChainType;
 use sp_core::{crypto::UncheckedInto, sr25519};

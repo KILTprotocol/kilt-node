@@ -177,7 +177,7 @@ pub trait DidVerifiableIdentifier {
 	) -> Result<DidVerificationKey, SignatureError>;
 }
 
-impl DidVerifiableIdentifier for kilt_primitives::DidIdentifier {
+impl DidVerifiableIdentifier for runtime_common::DidIdentifier {
 	fn verify_and_recover_signature(
 		&self,
 		payload: &Payload,

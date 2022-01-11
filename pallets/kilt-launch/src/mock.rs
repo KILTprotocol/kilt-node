@@ -21,9 +21,9 @@
 use crate as kilt_launch;
 use frame_support::{assert_noop, assert_ok, parameter_types, traits::GenesisBuild, PalletId};
 use frame_system as system;
-use kilt_primitives::{constants::MIN_VESTED_TRANSFER_AMOUNT, AccountId, Balance, BlockNumber, Hash, Index};
 use pallet_balances::{BalanceLock, Locks, Reasons};
 use pallet_vesting::VestingInfo;
+use runtime_common::{constants::MIN_VESTED_TRANSFER_AMOUNT, AccountId, Balance, BlockNumber, Hash, Index};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, ConvertInto, IdentityLookup, Zero},
@@ -135,7 +135,7 @@ impl pallet_vesting::Config for Test {
 	// disable vested transfers by setting min amount to max balance
 	type MinVestedTransfer = MinVestedTransfer;
 	type WeightInfo = ();
-	const MAX_VESTING_SCHEDULES: u32 = kilt_primitives::constants::MAX_VESTING_SCHEDULES;
+	const MAX_VESTING_SCHEDULES: u32 = runtime_common::constants::MAX_VESTING_SCHEDULES;
 }
 
 pub struct ExtBuilder {

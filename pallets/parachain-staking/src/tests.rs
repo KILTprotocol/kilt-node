@@ -28,7 +28,7 @@ use pallet_balances::{BalanceLock, Error as BalancesError, Reasons};
 use pallet_session::{SessionManager, ShouldEndSession};
 use sp_runtime::{traits::Zero, Perbill, Permill, Perquintill, SaturatedConversion};
 
-use kilt_primitives::constants::BLOCKS_PER_YEAR;
+use runtime_common::constants::BLOCKS_PER_YEAR;
 
 use crate::{
 	mock::{

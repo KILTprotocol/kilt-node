@@ -13,7 +13,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 substrate-wasm-builder-runner = {version = "3.0.0"}
 
 [dev-dependencies]
-kilt-primitives = {default-features = false, path = "../../primitives"}
+runtime-common = {default-features = false, path = "../../runtimes/common"}
 kilt-support = {features = ["mock"], path = "../../support"}
 pallet-balances = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
 serde = {version = "1.0.124"}
@@ -27,7 +27,7 @@ scale-info = {version = "1.0", default-features = false, features = ["derive"]}
 serde = {optional = true, version = "1.0.124"}
 
 # Internal dependencies
-kilt-primitives = {default-features = false, optional = true, path = "../../primitives"}
+runtime-common = {default-features = false, optional = true, path = "../../runtimes/common"}
 kilt-support = {default-features = false, path = "../../support"}
 
 # Substrate dependencies
@@ -44,7 +44,7 @@ sp-std = {branch = "polkadot-v0.9.12", default-features = false, git = "https://
 [features]
 default = ["std"]
 mock = [
-  "kilt-primitives",
+  "runtime-common",
   "pallet-balances",
   "serde",
   "sp-core",
@@ -62,7 +62,7 @@ std = [
   "frame-benchmarking/std",
   "frame-support/std",
   "frame-system/std",
-  "kilt-primitives/std",
+  "runtime-common/std",
   "kilt-support/std",
   "log/std",
   "pallet-balances/std",

@@ -45,7 +45,7 @@ use sp_runtime::{
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 
-use kilt_primitives::{
+use runtime_common::{
 	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
 	fees::{ToAuthor, WeightToFee},
 	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
@@ -56,7 +56,7 @@ use kilt_primitives::{
 use sp_version::NativeVersion;
 
 #[cfg(feature = "runtime-benchmarks")]
-use {frame_system::EnsureSigned, kilt_primitives::benchmarks::DummySignature, kilt_support::signature::AlwaysVerify};
+use {frame_system::EnsureSigned, kilt_support::signature::AlwaysVerify, runtime_common::benchmarks::DummySignature};
 
 #[cfg(test)]
 mod tests;
@@ -127,7 +127,7 @@ impl frame_system::Config for Runtime {
 	/// The hashing algorithm used.
 	type Hashing = BlakeTwo256;
 	/// The header type.
-	type Header = kilt_primitives::Header;
+	type Header = runtime_common::Header;
 	/// The ubiquitous event type.
 	type Event = Event;
 	/// The ubiquitous origin type.
@@ -273,7 +273,7 @@ impl pallet_vesting::Config for Runtime {
 	// disable vested transfers by setting min amount to max balance
 	type MinVestedTransfer = MinVestedTransfer;
 	type WeightInfo = weights::pallet_vesting::WeightInfo<Runtime>;
-	const MAX_VESTING_SCHEDULES: u32 = kilt_primitives::constants::MAX_VESTING_SCHEDULES;
+	const MAX_VESTING_SCHEDULES: u32 = runtime_common::constants::MAX_VESTING_SCHEDULES;
 }
 
 parameter_types! {
@@ -691,7 +691,7 @@ impl pallet_randomness_collective_flip::Config for Runtime {}
 construct_runtime! {
 	pub enum Runtime where
 		Block = Block,
-		NodeBlock = kilt_primitives::Block,
+		NodeBlock = runtime_common::Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		// Basic stuff; balances is uncallable initially.

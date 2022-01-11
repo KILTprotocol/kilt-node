@@ -24,10 +24,10 @@ sp-runtime = {git = "https://github.com/paritytech/substrate", default-features 
 sp-std = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.12"}
 
 # benchmarking
-kilt-primitives = {path = "../../primitives", default-features = false, optional = true}
+runtime-common = {path = "../../runtimes/common", default-features = false, optional = true}
 
 [dev-dependencies]
-kilt-primitives = {path = "../../primitives", default-features = false}
+runtime-common = {path = "../../runtimes/common", default-features = false}
 sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.12"}
 sp-io = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.12"}
 
@@ -38,14 +38,14 @@ runtime-benchmarks = [
   "frame-benchmarking",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
-  "kilt-primitives",
+  "runtime-common",
 ]
 std = [
   "codec/std",
   "frame-benchmarking/std",
   "frame-support/std",
   "frame-system/std",
-  "kilt-primitives/std",
+  "runtime-common/std",
   "log/std",
   "pallet-balances/std",
   "pallet-vesting/std",

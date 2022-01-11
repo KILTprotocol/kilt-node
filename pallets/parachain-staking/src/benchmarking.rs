@@ -25,8 +25,8 @@ use frame_support::{
 	traits::{Currency, Get, OnInitialize},
 };
 use frame_system::{Pallet as System, RawOrigin};
-use kilt_primitives::constants::BLOCKS_PER_YEAR;
 use pallet_session::Pallet as Session;
+use runtime_common::constants::BLOCKS_PER_YEAR;
 use sp_runtime::{
 	traits::{One, SaturatedConversion, StaticLookup},
 	Perquintill,
@@ -628,8 +628,8 @@ benchmarks! {
 impl_benchmark_test_suite!(
 	Pallet,
 	crate::mock::ExtBuilder::default()
-		.with_balances(vec![(u64::MAX, kilt_primitives::constants::KILT)])
-		.with_collators(vec![(u64::MAX, kilt_primitives::constants::KILT)])
+		.with_balances(vec![(u64::MAX, runtime_common::constants::KILT)])
+		.with_collators(vec![(u64::MAX, runtime_common::constants::KILT)])
 		.build(),
 	crate::mock::Test,
 );

@@ -190,9 +190,9 @@ pub mod pallet {
 		BoundedVec,
 	};
 	use frame_system::pallet_prelude::*;
-	use kilt_primitives::constants::BLOCKS_PER_YEAR;
 	use pallet_balances::{BalanceLock, Locks};
 	use pallet_session::ShouldEndSession;
+	use runtime_common::constants::BLOCKS_PER_YEAR;
 	use scale_info::TypeInfo;
 	use sp_runtime::{
 		traits::{Convert, One, SaturatedConversion, Saturating, StaticLookup, Zero},

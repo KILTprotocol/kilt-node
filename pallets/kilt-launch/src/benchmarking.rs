@@ -27,9 +27,9 @@ use frame_support::{
 	traits::{Currency, Get, Hooks},
 };
 use frame_system::{Pallet as System, RawOrigin};
-use kilt_primitives::{constants::KILT, Balance};
 use pallet_balances::Locks;
 use pallet_vesting::{Vesting, VestingInfo};
+use runtime_common::{constants::KILT, Balance};
 use sp_runtime::traits::StaticLookup;
 use sp_std::convert::TryFrom;
 

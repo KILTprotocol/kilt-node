@@ -15,7 +15,7 @@ substrate-wasm-builder-runner = {version = "3.0.0"}
 [dev-dependencies]
 serde = {version = "1.0.124"}
 
-kilt-primitives = {default-features = false, path = "../../primitives"}
+runtime-common = {default-features = false, path = "../../runtimes/common"}
 
 pallet-balances = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
 pallet-vesting = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
