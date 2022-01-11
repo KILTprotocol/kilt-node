@@ -2511,22 +2511,9 @@ pub mod pallet {
 				Ok(())
 			})?;
 
-			// Handle case of collator/delegator decreasing their stake and increasing
-			// afterwards which results in amount != locked
-			//
-			// Example: if delegator has 100 staked and decreases by 30 and then increases
-			// by 20, 80 have been delegated to the collator but
-			// amount = 80, more = 30, locked = 100.
-			//
-			// This would immediately unlock 20 for the delegator
-			let amount: BalanceOf<T> = if let Some(BalanceLock { amount: locked, .. }) =
-				Locks::<T>::get(who).iter().find(|l| l.id == STAKING_ID)
-			{
-				BalanceOf::<T>::from(*locked).max(amount)
-			} else {
-				amount
-			};
-			T::Currency::set_lock(STAKING_ID, who, amount, WithdrawReasons::all());
+			// Either set a new lock or potentially extend the existing one if amount
+			// exceeds the currently locked amount
+			T::Currency::extend_lock(STAKING_ID, who, amount, WithdrawReasons::all());
 
 			Ok(unstaking_len)
 		}
