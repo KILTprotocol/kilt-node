@@ -27,7 +27,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::Contains,
+	traits::{Contains, EqualPrivilegeOnly},
 	weights::{constants::RocksDbWeight, Weight},
 };
 use frame_system::{EnsureOneOf, EnsureRoot};
@@ -305,6 +305,7 @@ impl pallet_scheduler::Config for Runtime {
 	type ScheduleOrigin = EnsureRoot<AccountId>;
 	type MaxScheduledPerBlock = MaxScheduledPerBlock;
 	type WeightInfo = weights::pallet_scheduler::WeightInfo<Runtime>;
+	type OriginPrivilegeCmp = EqualPrivilegeOnly;
 }
 
 parameter_types! {
@@ -683,6 +684,7 @@ impl parachain_staking::Config for Runtime {
 impl pallet_utility::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
+	type PalletsOrigin = OriginCaller;
 	type WeightInfo = weights::pallet_utility::WeightInfo<Runtime>;
 }
 
@@ -713,8 +715,8 @@ construct_runtime! {
 
 		// Governance stuff
 		Democracy: pallet_democracy = 30,
-		Council: pallet_collective = 31,
-		TechnicalCommittee: pallet_collective = 32,
+		Council: pallet_collective::<Instance1> = 31,
+		TechnicalCommittee: pallet_collective::<Instance2> = 32,
 		// placeholder: parachain council election = 33,
 		TechnicalMembership: pallet_membership = 34,
 		Treasury: pallet_treasury = 35,

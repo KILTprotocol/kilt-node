@@ -711,8 +711,8 @@ construct_runtime! {
 
 		// Governance stuff
 		Democracy: pallet_democracy = 30,
-		Council: pallet_collective = 31,
-		TechnicalCommittee: pallet_collective = 32,
+		Council: pallet_collective::<Instance1> = 31,
+		TechnicalCommittee: pallet_collective::<Instance2> = 32,
 		// placeholder: parachain council election = 33,
 		TechnicalMembership: pallet_membership = 34,
 		Treasury: pallet_treasury = 35,

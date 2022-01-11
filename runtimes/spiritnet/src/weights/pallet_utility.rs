@@ -60,4 +60,9 @@ impl<T: frame_system::Config> pallet_utility::WeightInfo for WeightInfo<T> {
 			// Standard Error: 2_000
 			.saturating_add((7_318_000_u64).saturating_mul(c as Weight))
 	}
+	fn dispatch_as() -> Weight {
+		(21_115_000_u64)
+			// Standard Error: 2_000
+			.saturating_add(7_318_000_u64)
+	}
 }
