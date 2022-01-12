@@ -371,7 +371,6 @@ name = "attestation"
 version = "1.3.1"
 dependencies = [
  "ctype",
- "delegation",
  "frame-benchmarking",
  "frame-support",
  "frame-system",

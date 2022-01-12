@@ -18,11 +18,10 @@
 
 use codec::{Decode, Encode};
 use ctype::CtypeHashOf;
-use delegation::DelegationNodeIdOf;
 use kilt_support::deposit::Deposit;
 use scale_info::TypeInfo;
 
-use crate::{AccountIdOf, AttesterOf, BalanceOf, Config};
+use crate::{AccountIdOf, AttesterOf, AuthorizationIdOf, BalanceOf, Config};
 
 /// An on-chain attestation written by an attester.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, TypeInfo)]
@@ -34,7 +33,7 @@ pub struct AttestationDetails<T: Config> {
 	pub attester: AttesterOf<T>,
 	/// \[OPTIONAL\] The ID of the delegation node used to authorize the
 	/// attester.
-	pub delegation_id: Option<DelegationNodeIdOf<T>>,
+	pub authorization_id: Option<AuthorizationIdOf<T>>,
 	/// The flag indicating whether the attestation has been revoked or not.
 	pub revoked: bool,
 	/// The deposit that was taken to incentivise fair use of the on chain

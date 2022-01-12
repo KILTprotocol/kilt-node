@@ -14,7 +14,7 @@ substrate-wasm-builder-runner = {version = "3.0.0"}
 
 [dev-dependencies]
 ctype = {features = ["mock"], path = "../ctype"}
-delegation = {features = ["mock"], path = "../delegation"}
+kilt-support = {features = ["mock"], path = "../../support"}
 runtime-common = {default-features = false, path = "../../runtimes/common"}
 
 pallet-balances = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
@@ -26,9 +26,8 @@ sp-keystore = {branch = "polkadot-v0.9.12", default-features = false, git = "htt
 [dependencies]
 # Internal dependencies
 ctype = {default-features = false, path = "../ctype"}
-delegation = {default-features = false, path = "../delegation"}
-runtime-common = {default-features = false, optional = true, path = "../../runtimes/common"}
 kilt-support = {default-features = false, path = "../../support"}
+runtime-common = {default-features = false, optional = true, path = "../../runtimes/common"}
 
 #External dependencies
 codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.3.1"}
@@ -37,7 +36,7 @@ frame-support = {branch = "polkadot-v0.9.12", default-features = false, git = "h
 frame-system = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
 log = {default-features = false, version = "0.4.14"}
 pallet-balances = {optional = true, branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
-scale-info = { version = "1.0", default-features = false, features = ["derive"] }
+scale-info = {version = "1.0", default-features = false, features = ["derive"]}
 serde = {optional = true, version = "1.0.124"}
 sp-core = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
 sp-io = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
@@ -56,7 +55,6 @@ mock = [
   "sp-keystore",
 ]
 runtime-benchmarks = [
-  "delegation/runtime-benchmarks",
   "frame-benchmarking",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
@@ -65,7 +63,6 @@ runtime-benchmarks = [
 std = [
   "codec/std",
   "ctype/std",
-  "delegation/std",
   "frame-support/std",
   "frame-system/std",
   "runtime-common/std",
