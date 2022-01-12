@@ -39,6 +39,7 @@
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]
 #![allow(unused_imports)]
+#![allow(clippy::unnecessary_cast)]
 
 use frame_support::{traits::Get, weights::Weight};
 use sp_std::marker::PhantomData;
@@ -47,19 +48,19 @@ use sp_std::marker::PhantomData;
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_utility::WeightInfo for WeightInfo<T> {
 	fn batch(c: u32, ) -> Weight {
-		(14_432_000 as Weight)
-			// Standard Error: 2_000
-			.saturating_add((5_270_000 as Weight).saturating_mul(c as Weight))
+		(21_717_000 as Weight)
+			// Standard Error: 3_000
+			.saturating_add((5_457_000 as Weight).saturating_mul(c as Weight))
 	}
 	fn as_derivative() -> Weight {
-		(3_306_000 as Weight)
+		(3_252_000 as Weight)
 	}
 	fn batch_all(c: u32, ) -> Weight {
-		(16_802_000 as Weight)
+		(15_270_000 as Weight)
 			// Standard Error: 2_000
-			.saturating_add((5_697_000 as Weight).saturating_mul(c as Weight))
+			.saturating_add((5_923_000 as Weight).saturating_mul(c as Weight))
 	}
 	fn dispatch_as() -> Weight {
-		(13_814_000 as Weight)
+		(13_651_000 as Weight)
 	}
 }
