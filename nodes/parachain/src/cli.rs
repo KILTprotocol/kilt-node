@@ -23,7 +23,8 @@ use structopt::StructOpt;
 pub(crate) const DEFAULT_RUNTIME: &str = "peregrine";
 
 /// Sub-commands supported by the collator.
-#[derive(Debug, StructOpt)]pub(crate) enum Subcommand {
+#[derive(Debug, StructOpt)]
+pub(crate) enum Subcommand {
 	/// Export the genesis state of the parachain.
 	#[structopt(name = "export-genesis-state")]
 	ExportGenesisState(ExportGenesisStateCommand),
