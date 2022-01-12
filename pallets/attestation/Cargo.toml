@@ -24,16 +24,16 @@ sp-io = {branch = "polkadot-v0.9.13", default-features = false, git = "https://g
 sp-keystore = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [dependencies]
-log = "0.4"
 codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.3.1"}
-scale-info = { version = "1.0", default-features = false, features = ["derive"] }
+log = "0.4"
+scale-info = {version = "1.0", default-features = false, features = ["derive"]}
 serde = {optional = true, version = "1.0.124"}
 
 # Internal dependencies
 ctype = {default-features = false, path = "../ctype"}
 delegation = {default-features = false, path = "../delegation"}
-runtime-common = {default-features = false, optional = true, path = "../../runtimes/common"}
 kilt-support = {default-features = false, path = "../../support"}
+runtime-common = {default-features = false, optional = true, path = "../../runtimes/common"}
 
 #External dependencies
 frame-benchmarking = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}

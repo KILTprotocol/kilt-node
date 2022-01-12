@@ -17,14 +17,14 @@ env_logger = {version = "0.8.3"}
 serde = {version = "1.0.124"}
 
 ctype = {features = ["mock"], path = "../ctype"}
-runtime-common = {default-features = false, path = "../../runtimes/common"}
 pallet-balances = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
+runtime-common = {default-features = false, path = "../../runtimes/common"}
 
 [dependencies]
 # Internal dependencies
 ctype = {optional = true, path = "../ctype"}
-runtime-common = {default-features = false, path = "../../runtimes/common"}
 kilt-support = {default-features = false, path = "../../support"}
+runtime-common = {default-features = false, path = "../../runtimes/common"}
 
 # External dependencies
 env_logger = {default-features = false, optional = true, version = "0.8.3"}
@@ -34,7 +34,7 @@ log = "0.4"
 codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.3.1"}
 frame-support = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
 frame-system = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
-scale-info = { version = "1.0", default-features = false, features = ["derive"] }
+scale-info = {version = "1.0", default-features = false, features = ["derive"]}
 sp-core = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-io = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-runtime = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
