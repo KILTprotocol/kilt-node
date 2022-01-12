@@ -22,7 +22,7 @@ sp-keystore = {branch = "polkadot-v0.9.13", default-features = false, git = "htt
 
 [dependencies]
 codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.3.1"}
-log = {default-features = false, version = "0.4.14"}
+log = "0.4"
 scale-info = {version = "1.0", default-features = false, features = ["derive"]}
 serde = {optional = true, version = "1.0.124"}
 
