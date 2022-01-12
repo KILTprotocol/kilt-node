@@ -37,8 +37,8 @@ where
 #[cfg(test)]
 pub mod runtime {
 	use frame_support::parameter_types;
-	use kilt_primitives::{Balance, Header, RocksDbWeight};
 	use kilt_support::mock::{mock_origin, SubjectId};
+	use runtime_common::{Balance, Header, RocksDbWeight};
 	use sp_runtime::{
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 		AccountId32,
@@ -48,7 +48,7 @@ pub mod runtime {
 
 	use super::*;
 
-	pub type TestCtypeHash = kilt_primitives::Hash;
+	pub type TestCtypeHash = runtime_common::Hash;
 	pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	pub type Block = frame_system::mocking::MockBlock<Test>;
 
@@ -75,9 +75,9 @@ pub mod runtime {
 		type Call = Call;
 		type Index = u64;
 		type BlockNumber = u64;
-		type Hash = kilt_primitives::Hash;
+		type Hash = runtime_common::Hash;
 		type Hashing = BlakeTwo256;
-		type AccountId = <<kilt_primitives::Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+		type AccountId = <<runtime_common::Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
 		type Header = Header;
 		type Event = ();
@@ -117,7 +117,7 @@ pub mod runtime {
 
 	impl mock_origin::Config for Test {
 		type Origin = Origin;
-		type AccountId = kilt_primitives::AccountId;
+		type AccountId = runtime_common::AccountId;
 		type SubjectId = SubjectId;
 	}
 
@@ -127,8 +127,8 @@ pub mod runtime {
 
 	impl Config for Test {
 		type CtypeCreatorId = SubjectId;
-		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<kilt_primitives::AccountId, SubjectId>;
-		type OriginSuccess = mock_origin::DoubleOrigin<kilt_primitives::AccountId, SubjectId>;
+		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<runtime_common::AccountId, SubjectId>;
+		type OriginSuccess = mock_origin::DoubleOrigin<runtime_common::AccountId, SubjectId>;
 		type Event = ();
 		type WeightInfo = ();
 
@@ -138,12 +138,12 @@ pub mod runtime {
 	}
 
 	pub(crate) const DID_00: SubjectId = SubjectId(AccountId32::new([1u8; 32]));
-	pub(crate) const ACCOUNT_00: kilt_primitives::AccountId = kilt_primitives::AccountId::new([1u8; 32]);
+	pub(crate) const ACCOUNT_00: runtime_common::AccountId = runtime_common::AccountId::new([1u8; 32]);
 
 	#[derive(Clone, Default)]
 	pub(crate) struct ExtBuilder {
 		ctypes_stored: Vec<(TestCtypeHash, SubjectId)>,
-		balances: Vec<(kilt_primitives::AccountId, BalanceOf<Test>)>,
+		balances: Vec<(runtime_common::AccountId, BalanceOf<Test>)>,
 	}
 
 	impl ExtBuilder {
@@ -152,7 +152,7 @@ pub mod runtime {
 			self
 		}
 
-		pub(crate) fn with_balances(mut self, balances: Vec<(kilt_primitives::AccountId, BalanceOf<Test>)>) -> Self {
+		pub(crate) fn with_balances(mut self, balances: Vec<(runtime_common::AccountId, BalanceOf<Test>)>) -> Self {
 			self.balances = balances;
 			self
 		}

@@ -97,11 +97,11 @@ pub(crate) mod runtime {
 	use std::sync::Arc;
 
 	use delegation::{mock::DelegationHierarchyInitialization, DelegationNode};
-	use kilt_primitives::constants::{attestation::ATTESTATION_DEPOSIT, delegation::DELEGATION_DEPOSIT, MILLI_KILT};
 	use kilt_support::{
 		mock::{mock_origin, SubjectId},
 		signature::EqualVerify,
 	};
+	use runtime_common::constants::{attestation::ATTESTATION_DEPOSIT, delegation::DELEGATION_DEPOSIT, MILLI_KILT};
 
 	use super::*;
 	use crate::Pallet;
@@ -110,11 +110,11 @@ pub(crate) mod runtime {
 	type Block = frame_system::mocking::MockBlock<Test>;
 
 	type TestCtypeOwner = SubjectId;
-	type TestCtypeHash = kilt_primitives::Hash;
-	type TestDelegationNodeId = kilt_primitives::Hash;
+	type TestCtypeHash = runtime_common::Hash;
+	type TestDelegationNodeId = runtime_common::Hash;
 	type TestDelegatorId = SubjectId;
-	type TestClaimHash = kilt_primitives::Hash;
-	type TestBalance = kilt_primitives::Balance;
+	type TestClaimHash = runtime_common::Hash;
+	type TestBalance = runtime_common::Balance;
 
 	frame_support::construct_runtime!(
 		pub enum Test where
@@ -141,9 +141,9 @@ pub(crate) mod runtime {
 		type Call = Call;
 		type Index = u64;
 		type BlockNumber = u64;
-		type Hash = kilt_primitives::Hash;
+		type Hash = runtime_common::Hash;
 		type Hashing = BlakeTwo256;
-		type AccountId = <<kilt_primitives::Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+		type AccountId = <<runtime_common::Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
 		type Header = Header;
 		type Event = ();
@@ -187,8 +187,8 @@ pub(crate) mod runtime {
 
 	impl ctype::Config for Test {
 		type CtypeCreatorId = TestCtypeOwner;
-		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<kilt_primitives::AccountId, Self::CtypeCreatorId>;
-		type OriginSuccess = mock_origin::DoubleOrigin<kilt_primitives::AccountId, Self::CtypeCreatorId>;
+		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<runtime_common::AccountId, Self::CtypeCreatorId>;
+		type OriginSuccess = mock_origin::DoubleOrigin<runtime_common::AccountId, Self::CtypeCreatorId>;
 		type Event = ();
 		type WeightInfo = ();
 
@@ -212,8 +212,8 @@ pub(crate) mod runtime {
 		type DelegationSignatureVerification = EqualVerify<Self::DelegationEntityId, Vec<u8>>;
 		type DelegationEntityId = TestDelegatorId;
 		type DelegationNodeId = TestDelegationNodeId;
-		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<kilt_primitives::AccountId, Self::DelegationEntityId>;
-		type OriginSuccess = mock_origin::DoubleOrigin<kilt_primitives::AccountId, Self::DelegationEntityId>;
+		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<runtime_common::AccountId, Self::DelegationEntityId>;
+		type OriginSuccess = mock_origin::DoubleOrigin<runtime_common::AccountId, Self::DelegationEntityId>;
 		type Event = ();
 		type MaxSignatureByteLength = MaxSignatureByteLength;
 		type MaxParentChecks = MaxParentChecks;
@@ -228,7 +228,7 @@ pub(crate) mod runtime {
 
 	impl mock_origin::Config for Test {
 		type Origin = Origin;
-		type AccountId = kilt_primitives::AccountId;
+		type AccountId = runtime_common::AccountId;
 		type SubjectId = SubjectId;
 	}
 
@@ -238,8 +238,8 @@ pub(crate) mod runtime {
 	}
 
 	impl Config for Test {
-		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<kilt_primitives::AccountId, AttesterOf<Self>>;
-		type OriginSuccess = mock_origin::DoubleOrigin<kilt_primitives::AccountId, AttesterOf<Self>>;
+		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<runtime_common::AccountId, AttesterOf<Self>>;
+		type OriginSuccess = mock_origin::DoubleOrigin<runtime_common::AccountId, AttesterOf<Self>>;
 		type Event = ();
 		type WeightInfo = ();
 
@@ -248,8 +248,8 @@ pub(crate) mod runtime {
 		type MaxDelegatedAttestations = MaxDelegatedAttestations;
 	}
 
-	pub(crate) const ACCOUNT_00: kilt_primitives::AccountId = kilt_primitives::AccountId::new([1u8; 32]);
-	pub(crate) const ACCOUNT_01: kilt_primitives::AccountId = kilt_primitives::AccountId::new([2u8; 32]);
+	pub(crate) const ACCOUNT_00: runtime_common::AccountId = runtime_common::AccountId::new([1u8; 32]);
+	pub(crate) const ACCOUNT_01: runtime_common::AccountId = runtime_common::AccountId::new([2u8; 32]);
 
 	pub(crate) const ALICE_SEED: [u8; 32] = [1u8; 32];
 	pub(crate) const BOB_SEED: [u8; 32] = [2u8; 32];

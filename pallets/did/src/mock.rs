@@ -25,8 +25,8 @@ use frame_support::{
 	weights::constants::RocksDbWeight,
 };
 use frame_system::EnsureSigned;
-use kilt_primitives::{constants::MICRO_KILT, AccountId, Balance};
 use pallet_balances::NegativeImbalance;
+use runtime_common::{constants::MICRO_KILT, AccountId, Balance};
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
@@ -54,11 +54,11 @@ use crate::{DidRawOrigin, EnsureDidOrigin};
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub type Block = frame_system::mocking::MockBlock<Test>;
 
-pub type TestDidIdentifier = kilt_primitives::AccountId;
+pub type TestDidIdentifier = runtime_common::AccountId;
 pub type TestKeyId = KeyIdOf<Test>;
-pub type TestBlockNumber = kilt_primitives::BlockNumber;
+pub type TestBlockNumber = runtime_common::BlockNumber;
 pub type TestCtypeOwner = TestDidIdentifier;
-pub type TestCtypeHash = kilt_primitives::Hash;
+pub type TestCtypeHash = runtime_common::Hash;
 
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -83,9 +83,9 @@ impl frame_system::Config for Test {
 	type Call = Call;
 	type Index = u64;
 	type BlockNumber = u64;
-	type Hash = kilt_primitives::Hash;
+	type Hash = runtime_common::Hash;
 	type Hashing = BlakeTwo256;
-	type AccountId = <<kilt_primitives::Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+	type AccountId = <<runtime_common::Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
 	type Event = ();
@@ -187,12 +187,12 @@ impl ctype::Config for Test {
 	#[cfg(feature = "runtime-benchmarks")]
 	type EnsureOrigin = EnsureSigned<TestDidIdentifier>;
 	#[cfg(feature = "runtime-benchmarks")]
-	type OriginSuccess = kilt_primitives::AccountId;
+	type OriginSuccess = runtime_common::AccountId;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	type EnsureOrigin = EnsureDidOrigin<TestCtypeOwner, kilt_primitives::AccountId>;
+	type EnsureOrigin = EnsureDidOrigin<TestCtypeOwner, runtime_common::AccountId>;
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	type OriginSuccess = DidRawOrigin<kilt_primitives::AccountId, TestCtypeOwner>;
+	type OriginSuccess = DidRawOrigin<runtime_common::AccountId, TestCtypeOwner>;
 
 	type CtypeCreatorId = TestCtypeOwner;
 	type Event = ();
@@ -203,11 +203,11 @@ impl ctype::Config for Test {
 }
 
 #[cfg(test)]
-pub(crate) const ACCOUNT_00: kilt_primitives::AccountId = kilt_primitives::AccountId::new([1u8; 32]);
+pub(crate) const ACCOUNT_00: runtime_common::AccountId = runtime_common::AccountId::new([1u8; 32]);
 #[cfg(test)]
-pub(crate) const ACCOUNT_01: kilt_primitives::AccountId = kilt_primitives::AccountId::new([2u8; 32]);
+pub(crate) const ACCOUNT_01: runtime_common::AccountId = runtime_common::AccountId::new([2u8; 32]);
 #[cfg(test)]
-pub(crate) const ACCOUNT_FEE: kilt_primitives::AccountId = kilt_primitives::AccountId::new([u8::MAX; 32]);
+pub(crate) const ACCOUNT_FEE: runtime_common::AccountId = runtime_common::AccountId::new([u8::MAX; 32]);
 
 const DEFAULT_AUTH_SEED: [u8; 32] = [4u8; 32];
 const ALTERNATIVE_AUTH_SEED: [u8; 32] = [40u8; 32];
@@ -394,7 +394,7 @@ impl DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 pub fn generate_test_did_call(
 	verification_key_required: DidVerificationKeyRelationship,
 	caller: TestDidIdentifier,
-	submitter: kilt_primitives::AccountId,
+	submitter: runtime_common::AccountId,
 ) -> DidAuthorizedCallOperationWithVerificationRelationship<Test> {
 	let call = match verification_key_required {
 		DidVerificationKeyRelationship::AssertionMethod => get_attestation_key_call(),
