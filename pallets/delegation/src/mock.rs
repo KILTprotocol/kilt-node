@@ -181,19 +181,19 @@ pub mod runtime {
 	};
 	use sp_std::sync::Arc;
 
-	use kilt_primitives::constants::delegation::DELEGATION_DEPOSIT;
 	use kilt_support::{
 		mock::{mock_origin, SubjectId},
 		signature::EqualVerify,
 	};
+	use runtime_common::constants::delegation::DELEGATION_DEPOSIT;
 
 	pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	pub type Block = frame_system::mocking::MockBlock<Test>;
 
-	type TestDelegationNodeId = kilt_primitives::Hash;
+	type TestDelegationNodeId = runtime_common::Hash;
 	type TestDelegateSignature = (SubjectId, Vec<u8>);
-	type TestBalance = kilt_primitives::Balance;
-	type TestCtypeHash = kilt_primitives::Hash;
+	type TestBalance = runtime_common::Balance;
+	type TestCtypeHash = runtime_common::Hash;
 
 	frame_support::construct_runtime!(
 		pub enum Test where
@@ -219,9 +219,9 @@ pub mod runtime {
 		type Call = Call;
 		type Index = u64;
 		type BlockNumber = u64;
-		type Hash = kilt_primitives::Hash;
+		type Hash = runtime_common::Hash;
 		type Hashing = BlakeTwo256;
-		type AccountId = kilt_primitives::AccountId;
+		type AccountId = runtime_common::AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
 		type Header = Header;
 		type Event = ();
@@ -261,7 +261,7 @@ pub mod runtime {
 
 	impl mock_origin::Config for Test {
 		type Origin = Origin;
-		type AccountId = kilt_primitives::AccountId;
+		type AccountId = runtime_common::AccountId;
 		type SubjectId = SubjectId;
 	}
 
@@ -271,8 +271,8 @@ pub mod runtime {
 
 	impl ctype::Config for Test {
 		type CtypeCreatorId = SubjectId;
-		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<kilt_primitives::AccountId, Self::CtypeCreatorId>;
-		type OriginSuccess = mock_origin::DoubleOrigin<kilt_primitives::AccountId, Self::CtypeCreatorId>;
+		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<runtime_common::AccountId, Self::CtypeCreatorId>;
+		type OriginSuccess = mock_origin::DoubleOrigin<runtime_common::AccountId, Self::CtypeCreatorId>;
 		type Event = ();
 		type WeightInfo = ();
 
@@ -296,8 +296,8 @@ pub mod runtime {
 		type DelegationSignatureVerification = EqualVerify<Self::DelegationEntityId, Vec<u8>>;
 		type DelegationEntityId = SubjectId;
 		type DelegationNodeId = TestDelegationNodeId;
-		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<kilt_primitives::AccountId, Self::DelegationEntityId>;
-		type OriginSuccess = mock_origin::DoubleOrigin<kilt_primitives::AccountId, Self::DelegationEntityId>;
+		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<runtime_common::AccountId, Self::DelegationEntityId>;
+		type OriginSuccess = mock_origin::DoubleOrigin<runtime_common::AccountId, Self::DelegationEntityId>;
 		type Event = ();
 		type MaxSignatureByteLength = MaxSignatureByteLength;
 		type MaxParentChecks = MaxParentChecks;
@@ -309,9 +309,9 @@ pub mod runtime {
 		type WeightInfo = ();
 	}
 
-	pub(crate) const ACCOUNT_00: kilt_primitives::AccountId = kilt_primitives::AccountId::new([1u8; 32]);
-	pub(crate) const ACCOUNT_01: kilt_primitives::AccountId = kilt_primitives::AccountId::new([2u8; 32]);
-	pub(crate) const ACCOUNT_02: kilt_primitives::AccountId = kilt_primitives::AccountId::new([3u8; 32]);
+	pub(crate) const ACCOUNT_00: runtime_common::AccountId = runtime_common::AccountId::new([1u8; 32]);
+	pub(crate) const ACCOUNT_01: runtime_common::AccountId = runtime_common::AccountId::new([2u8; 32]);
+	pub(crate) const ACCOUNT_02: runtime_common::AccountId = runtime_common::AccountId::new([3u8; 32]);
 
 	pub(crate) const ALICE_SEED: [u8; 32] = [0u8; 32];
 	pub(crate) const BOB_SEED: [u8; 32] = [1u8; 32];

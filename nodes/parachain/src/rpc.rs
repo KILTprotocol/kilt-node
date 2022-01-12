@@ -25,8 +25,8 @@
 
 use std::sync::Arc;
 
-use kilt_primitives::{AccountId, Balance, Block, Index};
 use polkadot_service::AuxStore;
+use runtime_common::{AccountId, Balance, Block, Index};
 use sc_service::Error;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;

@@ -13,7 +13,7 @@ path = "src/main.rs"
 [dependencies]
 
 # Internal dependencies
-kilt-primitives = {path = "../../primitives"}
+runtime-common = {path = "../../runtimes/common"}
 peregrine-runtime = {path = "../../runtimes/peregrine"}
 spiritnet-runtime = {path = "../../runtimes/spiritnet"}
 
@@ -100,7 +100,7 @@ substrate-build-script-utils = {git = "https://github.com/paritytech/substrate",
 default = []
 fast-gov = [
   "peregrine-runtime/fast-gov",
-  "kilt-primitives/fast-gov",
+  "runtime-common/fast-gov",
 ]
 runtime-benchmarks = [
   "polkadot-service/runtime-benchmarks",

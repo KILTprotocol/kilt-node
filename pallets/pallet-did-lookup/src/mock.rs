@@ -24,7 +24,7 @@ use sp_runtime::{
 };
 
 use crate as pallet_did_lookup;
-use kilt_primitives::{AccountId, AccountPublic, Balance, BlockHashCount, BlockNumber, Hash, Index, Signature};
+use runtime_common::{AccountId, AccountPublic, Balance, BlockHashCount, BlockNumber, Hash, Index, Signature};
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -115,8 +115,8 @@ impl mock_origin::Config for Test {
 	type SubjectId = SubjectId;
 }
 
-pub(crate) const ACCOUNT_00: kilt_primitives::AccountId = kilt_primitives::AccountId::new([1u8; 32]);
-pub(crate) const ACCOUNT_01: kilt_primitives::AccountId = kilt_primitives::AccountId::new([2u8; 32]);
+pub(crate) const ACCOUNT_00: runtime_common::AccountId = runtime_common::AccountId::new([1u8; 32]);
+pub(crate) const ACCOUNT_01: runtime_common::AccountId = runtime_common::AccountId::new([2u8; 32]);
 pub(crate) const DID_00: SubjectId = SubjectId(ACCOUNT_00);
 pub(crate) const DID_01: SubjectId = SubjectId(ACCOUNT_01);
 

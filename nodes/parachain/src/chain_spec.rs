@@ -18,7 +18,7 @@
 
 //! KILT chain specification
 
-use kilt_primitives::{AccountId, AccountPublic};
+use runtime_common::{AccountId, AccountPublic};
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
 use sc_service::Properties;
 use serde::{Deserialize, Serialize};

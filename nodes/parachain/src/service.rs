@@ -36,7 +36,7 @@ use sp_runtime::traits::BlakeTwo256;
 use std::sync::Arc;
 use substrate_prometheus_endpoint::Registry;
 
-use kilt_primitives::{AccountId, AuthorityId, Balance, BlockNumber, Index};
+use runtime_common::{AccountId, AuthorityId, Balance, BlockNumber, Index};
 
 type Header = sp_runtime::generic::Header<BlockNumber, sp_runtime::traits::BlakeTwo256>;
 pub type Block = sp_runtime::generic::Block<Header, sp_runtime::OpaqueExtrinsic>;

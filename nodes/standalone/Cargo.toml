@@ -16,7 +16,7 @@ vergen = "3.1.0"
 [dependencies]
 
 # Internal dependencies
-kilt-primitives = {path = "../../primitives"}
+runtime-common = {path = "../../runtimes/common"}
 mashnet-node-runtime = {path = "../../runtimes/standalone"}
 
 # External dependencies

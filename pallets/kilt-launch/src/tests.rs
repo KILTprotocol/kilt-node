@@ -25,9 +25,9 @@ use frame_support::{
 	assert_noop, assert_ok,
 	traits::{Currency, LockableCurrency, OnInitialize, WithdrawReasons},
 };
-use kilt_primitives::{AccountId, BlockNumber};
 use pallet_balances::{BalanceLock, Locks, Reasons};
 use pallet_vesting::{Vesting as VestingStorage, VestingInfo};
+use runtime_common::{AccountId, BlockNumber};
 use sp_runtime::traits::Zero;
 
 #[test]

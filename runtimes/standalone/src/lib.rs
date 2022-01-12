@@ -30,13 +30,13 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::EnsureSigned;
 
-use kilt_primitives::{
+use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
+use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
+use runtime_common::{
 	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
 	fees::ToAuthor,
 	pallet_id, AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
 };
-use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
-use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
@@ -289,7 +289,7 @@ parameter_types! {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
-	type OnChargeTransaction = CurrencyAdapter<Balances, kilt_primitives::fees::ToAuthor<Runtime>>;
+	type OnChargeTransaction = CurrencyAdapter<Balances, runtime_common::fees::ToAuthor<Runtime>>;
 	type TransactionByteFee = TransactionByteFee;
 	type OperationalFeeMultiplier = OperationalFeeMultiplier;
 	type WeightToFee = IdentityFee<Balance>;
@@ -333,7 +333,7 @@ impl delegation::Config for Runtime {
 	type DelegationSignatureVerification = did::DidSignatureVerify<Self>;
 
 	#[cfg(feature = "runtime-benchmarks")]
-	type Signature = kilt_primitives::benchmarks::DummySignature;
+	type Signature = runtime_common::benchmarks::DummySignature;
 	#[cfg(feature = "runtime-benchmarks")]
 	type DelegationSignatureVerification = kilt_support::signature::AlwaysVerify<AccountId, Vec<u8>, Self::Signature>;
 
@@ -359,7 +359,7 @@ parameter_types! {
 impl ctype::Config for Runtime {
 	type Currency = Balances;
 	type Fee = Fee;
-	type FeeCollector = kilt_primitives::fees::ToAuthor<Runtime>;
+	type FeeCollector = runtime_common::fees::ToAuthor<Runtime>;
 
 	type CtypeCreatorId = DidIdentifier;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
@@ -479,7 +479,7 @@ impl pallet_vesting::Config for Runtime {
 	type BlockNumberToBalance = ConvertInto;
 	// disable vested transfers by setting min amount to max balance
 	type MinVestedTransfer = MinVestedTransfer;
-	const MAX_VESTING_SCHEDULES: u32 = kilt_primitives::constants::MAX_VESTING_SCHEDULES;
+	const MAX_VESTING_SCHEDULES: u32 = runtime_common::constants::MAX_VESTING_SCHEDULES;
 	type WeightInfo = ();
 }
 

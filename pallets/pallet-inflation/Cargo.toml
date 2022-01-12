@@ -10,7 +10,7 @@ version = "1.3.1"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dev-dependencies]
-kilt-primitives = {path = "../../primitives"}
+runtime-common = {path = "../../runtimes/common"}
 
 serde = {version = "1.0.124"}
 
