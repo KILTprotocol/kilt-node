@@ -24,11 +24,15 @@
 //! tests.
 
 use ctype::CtypeHashOf;
-use frame_support::traits::Get;
+use frame_support::{dispatch::Weight, traits::Get};
 use kilt_support::deposit::Deposit;
 use sp_core::H256;
+use sp_runtime::DispatchError;
 
-use crate::{pallet::AuthorizationIdOf, AccountIdOf, AttestationDetails, AttesterOf, BalanceOf, ClaimHashOf, Config};
+use crate::{
+	pallet::AuthorizationIdOf, AccountIdOf, AttestationAccessControl, AttestationDetails, AttesterOf, BalanceOf,
+	ClaimHashOf, Config,
+};
 
 #[cfg(test)]
 pub use crate::mock::runtime::*;
@@ -64,6 +68,36 @@ where
 			owner: payer,
 			amount: <T as Config>::Deposit::get(),
 		},
+	}
+}
+
+pub struct MockAccessControl;
+impl<T> AttestationAccessControl<T> for MockAccessControl
+where
+	T: Config<AuthorizationId = <T as Config>::AttesterId>,
+{
+	fn can_attest(who: &T::AttesterId, authorization_id: &T::AuthorizationId) -> Result<Weight, DispatchError> {
+		if who == authorization_id {
+			Ok(0)
+		} else {
+			Err(DispatchError::Other("Unauthorized"))
+		}
+	}
+
+	fn can_revoke(who: &T::AttesterId, attestation: &AttestationDetails<T>) -> Result<Weight, DispatchError> {
+		if attestation.authorization_id.as_ref().map_or(false, |auth| auth == who) {
+			Ok(0)
+		} else {
+			Err(DispatchError::Other("Unauthorized"))
+		}
+	}
+
+	fn can_remove(who: &T::AttesterId, attestation: &AttestationDetails<T>) -> Result<Weight, DispatchError> {
+		if attestation.authorization_id.as_ref().map_or(false, |auth| auth == who) {
+			Ok(0)
+		} else {
+			Err(DispatchError::Other("Unauthorized"))
+		}
 	}
 }
 
@@ -195,8 +229,8 @@ pub(crate) mod runtime {
 		type Deposit = Deposit;
 		type MaxDelegatedAttestations = MaxDelegatedAttestations;
 		type AttesterId = SubjectId;
-		type AuthorizationId = ();
-		type AccessControl = ();
+		type AuthorizationId = SubjectId;
+		type AccessControl = MockAccessControl;
 	}
 
 	pub(crate) const ACCOUNT_00: runtime_common::AccountId = runtime_common::AccountId::new([1u8; 32]);
@@ -205,8 +239,8 @@ pub(crate) mod runtime {
 	pub(crate) const ALICE_SEED: [u8; 32] = [1u8; 32];
 	pub(crate) const BOB_SEED: [u8; 32] = [2u8; 32];
 
-	const DEFAULT_CLAIM_HASH_SEED: u64 = 1u64;
-	const ALTERNATIVE_CLAIM_HASH_SEED: u64 = 2u64;
+	pub const CLAIM_HASH_SEED_01: u64 = 1u64;
+	pub const CLAIM_HASH_SEED_02: u64 = 2u64;
 
 	pub fn ed25519_did_from_seed(seed: &[u8; 32]) -> SubjectId {
 		MultiSigner::from(ed25519::Pair::from_seed(seed).public())
@@ -220,12 +254,8 @@ pub(crate) mod runtime {
 			.into()
 	}
 
-	pub fn get_claim_hash(default: bool) -> TestClaimHash {
-		if default {
-			TestClaimHash::from_low_u64_be(DEFAULT_CLAIM_HASH_SEED)
-		} else {
-			TestClaimHash::from_low_u64_be(ALTERNATIVE_CLAIM_HASH_SEED)
-		}
+	pub fn claim_hash_from_seed(seed: u64) -> TestClaimHash {
+		TestClaimHash::from_low_u64_be(seed)
 	}
 
 	#[derive(Clone, Default)]

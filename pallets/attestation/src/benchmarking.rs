@@ -20,13 +20,11 @@ use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::traits::{Currency, Get};
 use frame_system::RawOrigin;
 use sp_runtime::traits::Hash;
-use sp_std::num::NonZeroU32;
 
 use kilt_support::traits::GenerateBenchmarkOrigin;
 
 use crate::*;
 
-const ONE_CHILD_PER_LEVEL: Option<NonZeroU32> = NonZeroU32::new(1);
 const SEED: u32 = 0;
 
 benchmarks! {
@@ -34,23 +32,25 @@ benchmarks! {
 		where
 		T: core::fmt::Debug,
 		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::AttesterId>,
+		T::AttesterId: Default
 	}
 
 	add {
 		let sender: T::AccountId = account("sender", 0, SEED);
+		let attester: T::AttesterId = account("attester", 0, SEED);
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
 
 		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
-		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), delegate_acc.clone());
-	}: _<T::Origin>(origin, claim_hash, ctype_hash, Some(attestation_id))
+		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
+	}: _<T::Origin>(origin, claim_hash, ctype_hash, None)
 	verify {
 		assert!(Attestations::<T>::contains_key(claim_hash));
 		assert_eq!(Pallet::<T>::attestations(claim_hash), Some(AttestationDetails {
 			ctype_hash,
-			attester: delegate_acc,
-			attestation_id: Some(attestation_id),
+			attester,
+			authorization_id: None,
 			revoked: false,
 			deposit: kilt_support::deposit::Deposit {
 				owner: sender,
@@ -60,26 +60,22 @@ benchmarks! {
 	}
 
 	revoke {
-		let d in 1 .. T::MaxParentChecks::get();
-
 		let sender: T::AccountId = account("sender", 0, SEED);
+		let attester: T::AttesterId = account("attester", 0, SEED);
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
 
 		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
-		// attest with leaf account
-		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), delegate_acc.clone());
-		Pallet::<T>::add(origin, claim_hash, ctype_hash, Some(attestation_id))?;
-		// revoke with root account, s.t. delegation tree needs to be traversed
-		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), root_acc);
-	}: _<T::Origin>(origin, claim_hash, d)
+		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
+		Pallet::<T>::add(origin.clone(), claim_hash, ctype_hash, None)?;
+	}: _<T::Origin>(origin, claim_hash)
 	verify {
 		assert!(Attestations::<T>::contains_key(claim_hash));
 		assert_eq!(Attestations::<T>::get(claim_hash), Some(AttestationDetails {
 			ctype_hash,
-			attester: delegate_acc,
-			attestation_id: Some(attestation_id),
+			attester,
+			authorization_id: None,
 			revoked: true,
 			deposit: kilt_support::deposit::Deposit {
 				owner: sender,
@@ -89,20 +85,17 @@ benchmarks! {
 	}
 
 	remove {
-		let d in 1 .. T::MaxParentChecks::get();
-
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
 
+		let attester: T::AttesterId = account("attester", 0, SEED);
 		let sender: T::AccountId = account("sender", 0, SEED);
 		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
-		// attest with leaf account
-		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), delegate_acc);
-		Pallet::<T>::add(origin, claim_hash, ctype_hash, Some(attestation_id))?;
-		// revoke with root account, s.t. delegation tree needs to be traversed
-		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, root_acc);
-	}: _<T::Origin>(origin, claim_hash, d)
+		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
+		Pallet::<T>::add(origin, claim_hash, ctype_hash, None)?;
+		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, attester);
+	}: _<T::Origin>(origin, claim_hash)
 	verify {
 		assert!(!Attestations::<T>::contains_key(claim_hash));
 	}
@@ -111,13 +104,13 @@ benchmarks! {
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
 
+		let attester: T::AttesterId = account("attester", 0, SEED);
 		let sender: T::AccountId = account("sender", 0, SEED);
 		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
-		// attest with leaf account
-		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), delegate_acc);
-		Pallet::<T>::add(origin, claim_hash, ctype_hash, Some(attestation_id))?;
-		// revoke with root account, s.t. delegation tree needs to be traversed
+		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester);
+		Pallet::<T>::add(origin, claim_hash, ctype_hash, None)?;
+		// revoke with root account
 		let origin = RawOrigin::Signed(sender);
 	}: _(origin, claim_hash)
 	verify {

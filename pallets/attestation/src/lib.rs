@@ -97,7 +97,6 @@ pub mod pallet {
 		BoundedVec,
 	};
 	use frame_system::pallet_prelude::*;
-	use sp_runtime::traits::Zero;
 	use sp_runtime::DispatchError;
 
 	use ctype::CtypeHashOf;
@@ -111,13 +110,13 @@ pub mod pallet {
 
 	impl<T: Config> AttestationAccessControl<T> for () {
 		fn can_attest(_who: &T::AttesterId, _authorization_id: &T::AuthorizationId) -> Result<Weight, DispatchError> {
-			Ok(Weight::zero())
+			Err(DispatchError::Other("Unimplemented"))
 		}
 		fn can_revoke(_who: &T::AttesterId, _attestation: &AttestationDetails<T>) -> Result<Weight, DispatchError> {
-			Ok(Weight::zero())
+			Err(DispatchError::Other("Unimplemented"))
 		}
 		fn can_remove(_who: &T::AttesterId, _attestation: &AttestationDetails<T>) -> Result<Weight, DispatchError> {
-			Ok(Weight::zero())
+			Err(DispatchError::Other("Unimplemented"))
 		}
 	}
 
@@ -147,7 +146,7 @@ pub mod pallet {
 		type WeightInfo: WeightInfo;
 
 		/// The currency that is used to reserve funds for each attestation.
-		type Currency: Currency<AccountIdOf<Self>> + ReservableCurrency<AccountIdOf<Self>>;
+		type Currency: ReservableCurrency<AccountIdOf<Self>>;
 
 		/// The deposit that is required for storing an attestation.
 		#[pallet::constant]
