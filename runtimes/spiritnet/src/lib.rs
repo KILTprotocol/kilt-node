@@ -736,7 +736,7 @@ construct_runtime! {
 		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 62,
 		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 63,
 		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 64,
-		// DELETED: CrowdloanContributors:  65,
+		// DELETED: CrowdloanContributors = 65,
 		Inflation: pallet_inflation::{Pallet, Storage} = 66,
 		DidLookup: pallet_did_lookup::{Pallet, Call, Storage, Event<T>} = 67,
 
