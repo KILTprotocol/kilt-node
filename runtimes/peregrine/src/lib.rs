@@ -692,53 +692,53 @@ construct_runtime! {
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		// Basic stuff; balances is uncallable initially.
-		System: frame_system = 0,
-		RandomnessCollectiveFlip: pallet_randomness_collective_flip = 1,
+		System: frame_system::{Pallet, Call, Config, Storage, Event<T>} = 0,
+		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Storage} = 1,
 
-		Timestamp: pallet_timestamp = 2,
-		Indices: pallet_indices = 5,
-		Balances: pallet_balances = 6,
-		TransactionPayment: pallet_transaction_payment = 7,
-		Sudo: pallet_sudo = 8,
+		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent} = 2,
+		Indices: pallet_indices::{Pallet, Call, Storage, Event<T>} = 5,
+		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>} = 6,
+		TransactionPayment: pallet_transaction_payment::{Pallet, Storage} = 7,
+		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>} = 8,
 
 		// Consensus support.
 		// The following order MUST NOT be changed: Authorship -> Staking -> Session -> Aura -> AuraExt
-		Authorship: pallet_authorship = 20,
-		ParachainStaking: parachain_staking = 21,
-		Session: pallet_session = 22,
-		Aura: pallet_aura = 23,
-		AuraExt: cumulus_pallet_aura_ext = 24,
+		Authorship: pallet_authorship::{Pallet, Call, Storage} = 20,
+		ParachainStaking: parachain_staking::{Pallet, Call, Storage, Event<T>, Config<T>} = 21,
+		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>} = 22,
+		Aura: pallet_aura::{Pallet, Config<T>} = 23,
+		AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 24,
 
 		// Governance stuff
-		Democracy: pallet_democracy = 30,
-		Council: pallet_collective::<Instance1> = 31,
-		TechnicalCommittee: pallet_collective::<Instance2> = 32,
+		Democracy: pallet_democracy::{Pallet, Call, Storage, Config<T>, Event<T>} = 30,
+		Council: pallet_collective::<Instance1>::{Pallet, Call, Storage, Origin<T>, Event<T>, Config<T>} = 31,
+		TechnicalCommittee: pallet_collective::<Instance2>::{Pallet, Call, Storage, Origin<T>, Event<T>, Config<T>} = 32,
 		// placeholder: parachain council election = 33,
-		TechnicalMembership: pallet_membership = 34,
-		Treasury: pallet_treasury = 35,
+		TechnicalMembership: pallet_membership::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
+		Treasury: pallet_treasury::{Pallet, Call, Storage, Config, Event<T>} = 35,
 
 		// Utility module.
-		Utility: pallet_utility = 40,
+		Utility: pallet_utility::{Pallet, Call, Storage, Event} = 40,
 
 		// Vesting. Usable initially, but removed once all vesting is finished.
-		Vesting: pallet_vesting = 41,
+		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 41,
 
 		// System scheduler.
-		Scheduler: pallet_scheduler = 42,
+		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 42,
 
 		// KILT Pallets. Start indices 60 to leave room
-		KiltLaunch: kilt_launch = 60,
-		Ctype: ctype = 61,
-		Attestation: attestation = 62,
-		Delegation: delegation = 63,
-		Did: did = 64,
+		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 60,
+		Ctype: ctype::{Pallet, Call, Storage, Event<T>} = 61,
+		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 62,
+		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 63,
+		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 64,
 		// DELETED: CrowdloanContributors = 65,
-		Inflation: pallet_inflation = 66,
-		DidLookup: pallet_did_lookup = 67,
+		Inflation: pallet_inflation::{Pallet, Storage} = 66,
+		DidLookup: pallet_did_lookup::{Pallet, Call, Storage, Event<T>} = 67,
 
 		// Parachains pallets. Start indices at 80 to leave room.
-		ParachainSystem: cumulus_pallet_parachain_system = 80,
-		ParachainInfo: parachain_info = 81,
+		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>, Config} = 80,
+		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 81,
 	}
 }
 
