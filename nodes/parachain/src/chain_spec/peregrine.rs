@@ -21,7 +21,7 @@
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
 use peregrine_runtime::{
-	BalancesConfig, CouncilConfig, GenesisConfig, IndicesConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake,
+	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake,
 	ParachainInfoConfig, ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig,
 	VestingConfig, WASM_BINARY,
 };
@@ -191,9 +191,6 @@ fn testnet_genesis(
 		system: SystemConfig {
 			code: wasm_binary.to_vec(),
 		},
-		scheduler: Default::default(),
-		indices: IndicesConfig { indices: vec![] },
-		transaction_payment: Default::default(),
 		balances: BalancesConfig {
 			balances: endowed_accounts
 				.iter()

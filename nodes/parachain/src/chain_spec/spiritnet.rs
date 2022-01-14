@@ -29,7 +29,7 @@ use sc_telemetry::TelemetryEndpoints;
 use sp_core::{crypto::UncheckedInto, sr25519};
 use sp_runtime::traits::Zero;
 use spiritnet_runtime::{
-	BalancesConfig, CouncilConfig, GenesisConfig, IndicesConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake,
+	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake,
 	ParachainInfoConfig, ParachainStakingConfig, SessionConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig,
 	WASM_BINARY,
 };
@@ -215,9 +215,6 @@ fn testnet_genesis(
 		system: SystemConfig {
 			code: wasm_binary.to_vec(),
 		},
-		scheduler: Default::default(),
-		indices: IndicesConfig { indices: vec![] },
-		transaction_payment: Default::default(),
 		balances: BalancesConfig {
 			balances: endowed_accounts
 				.iter()
