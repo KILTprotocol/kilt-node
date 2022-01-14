@@ -34,7 +34,7 @@ use spiritnet_runtime::{
 	WASM_BINARY,
 };
 
-use crate::chain_spec::{get_account_id_from_seed, get_from_seed, TELEMETRY_URL, DEFAULT_PARA_ID};
+use crate::chain_spec::{get_account_id_from_seed, get_from_seed, DEFAULT_PARA_ID, TELEMETRY_URL};
 
 use super::{get_properties, Extensions};
 
