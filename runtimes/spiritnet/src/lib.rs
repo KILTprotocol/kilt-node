@@ -696,7 +696,6 @@ construct_runtime! {
 		NodeBlock = runtime_common::Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
-		// Basic stuff; balances is uncallable initially.
 		System: frame_system = 0,
 		RandomnessCollectiveFlip: pallet_randomness_collective_flip = 1,
 
@@ -710,8 +709,8 @@ construct_runtime! {
 		Authorship: pallet_authorship::{Pallet, Call, Storage} = 20,
 		ParachainStaking: parachain_staking = 21,
 		Session: pallet_session = 22,
-		Aura: pallet_aura::{Pallet, Config<T>} = 23,
-		AuraExt: cumulus_pallet_aura_ext::{Pallet, Config} = 24,
+		Aura: pallet_aura = 23,
+		AuraExt: cumulus_pallet_aura_ext = 24,
 
 		// Governance stuff
 		Democracy: pallet_democracy = 30,
