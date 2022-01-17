@@ -10,7 +10,6 @@ ARG FEATURES=default
 
 COPY ./nodes /build/nodes
 COPY ./pallets /build/pallets
-COPY ./primitives /build/primitives
 COPY ./runtimes /build/runtimes
 COPY ./support /build/support
 COPY ./Cargo.lock /build/Cargo.lock
