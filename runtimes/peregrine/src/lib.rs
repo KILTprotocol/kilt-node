@@ -27,8 +27,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::EqualPrivilegeOnly,
-	traits::InstanceFilter,
+	traits::{EqualPrivilegeOnly, InstanceFilter},
 	weights::{constants::RocksDbWeight, Weight},
 };
 use frame_system::{EnsureOneOf, EnsureRoot};
@@ -756,10 +755,10 @@ impl InstanceFilter<Call> for ProxyType {
 					| Call::Council(..) | Call::TechnicalCommittee(..)
 					| Call::Treasury(..) | Call::Utility(..)
 			),
-			ProxyType::Ctype => matches!(c,	Call::Ctype(..)),
-			ProxyType::Delegation => matches!(c,	Call::Delegation(..)),
-			ProxyType::Attestation => matches!(c,	Call::Attestation(..)),
-			ProxyType::Did => matches!(c,	Call::Did(..)),
+			ProxyType::Ctype => matches!(c, Call::Ctype(..)),
+			ProxyType::Delegation => matches!(c, Call::Delegation(..)),
+			ProxyType::Attestation => matches!(c, Call::Attestation(..)),
+			ProxyType::Did => matches!(c, Call::Did(..)),
 			ProxyType::Staking => {
 				matches!(c, Call::ParachainStaking(..) | Call::Session(..) | Call::Utility(..))
 			}

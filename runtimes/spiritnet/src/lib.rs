@@ -40,8 +40,7 @@ use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, Perbill, Permill, Perquintill,
-	RuntimeDebug,
+	ApplyExtrinsicResult, Perbill, Permill, Perquintill, RuntimeDebug,
 };
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
@@ -53,7 +52,7 @@ use runtime_common::{
 	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
-use codec::{Encode, Decode, MaxEncodedLen};
+use codec::{Decode, Encode, MaxEncodedLen};
 
 use frame_support::traits::InstanceFilter;
 
@@ -763,10 +762,10 @@ impl InstanceFilter<Call> for ProxyType {
 					| Call::Council(..) | Call::TechnicalCommittee(..)
 					| Call::Treasury(..) | Call::Utility(..)
 			),
-			ProxyType::Ctype => matches!(c,	Call::Ctype(..)),
-			ProxyType::Delegation => matches!(c,	Call::Delegation(..)),
-			ProxyType::Attestation => matches!(c,	Call::Attestation(..)),
-			ProxyType::Did => matches!(c,	Call::Did(..)),
+			ProxyType::Ctype => matches!(c, Call::Ctype(..)),
+			ProxyType::Delegation => matches!(c, Call::Delegation(..)),
+			ProxyType::Attestation => matches!(c, Call::Attestation(..)),
+			ProxyType::Did => matches!(c, Call::Did(..)),
 			ProxyType::Staking => {
 				matches!(c, Call::ParachainStaking(..) | Call::Session(..) | Call::Utility(..))
 			}

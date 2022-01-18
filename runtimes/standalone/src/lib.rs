@@ -51,7 +51,7 @@ use sp_std::prelude::*;
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 
-use codec::{Encode, Decode, MaxEncodedLen};
+use codec::{Decode, Encode, MaxEncodedLen};
 
 use frame_support::traits::InstanceFilter;
 
@@ -551,10 +551,10 @@ impl InstanceFilter<Call> for ProxyType {
 				Call::Utility(..) |
 				Call::Proxy(..)
 			),
-			ProxyType::Ctype => matches!(c,	Call::Ctype(..)),
-			ProxyType::Delegation => matches!(c,	Call::Delegation(..)),
-			ProxyType::Attestation => matches!(c,	Call::Attestation(..)),
-			ProxyType::Did => matches!(c,	Call::Did(..)),
+			ProxyType::Ctype => matches!(c, Call::Ctype(..)),
+			ProxyType::Delegation => matches!(c, Call::Delegation(..)),
+			ProxyType::Attestation => matches!(c, Call::Attestation(..)),
+			ProxyType::Did => matches!(c, Call::Did(..)),
 			ProxyType::Staking => {
 				matches!(c, Call::Session(..) | Call::Utility(..))
 			}
