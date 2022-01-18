@@ -23,11 +23,14 @@
 //! other tests. Internal functions/structs can only be used in attestation
 //! tests.
 
-use ctype::CtypeHashOf;
+use codec::{Decode, Encode};
 use frame_support::{dispatch::Weight, traits::Get};
-use kilt_support::deposit::Deposit;
+use scale_info::TypeInfo;
 use sp_core::H256;
 use sp_runtime::DispatchError;
+
+use ctype::CtypeHashOf;
+use kilt_support::deposit::Deposit;
 
 use crate::{
 	pallet::AuthorizationIdOf, AccountIdOf, AttestationAccessControl, AttestationDetails, AttesterOf, BalanceOf,
@@ -71,20 +74,22 @@ where
 	}
 }
 
-pub struct MockAccessControl;
-impl<T> AttestationAccessControl<T> for MockAccessControl
+#[derive(Clone, Debug, Encode, Decode, TypeInfo, PartialEq, Eq)]
+#[scale_info(skip_type_params(T))]
+pub struct MockAccessControl<T: Config>(pub T::AttesterId);
+impl<T: Config> AttestationAccessControl<T> for MockAccessControl<T>
 where
 	T: Config<AuthorizationId = <T as Config>::AttesterId>,
 {
-	fn can_attest(who: &T::AttesterId, authorization_id: &T::AuthorizationId) -> Result<Weight, DispatchError> {
-		if who == authorization_id {
+	fn can_attest(&self, who: &T::AttesterId) -> Result<Weight, DispatchError> {
+		if who == &self.0 {
 			Ok(0)
 		} else {
 			Err(DispatchError::Other("Unauthorized"))
 		}
 	}
 
-	fn can_revoke(who: &T::AttesterId, attestation: &AttestationDetails<T>) -> Result<Weight, DispatchError> {
+	fn can_revoke(&self, who: &T::AttesterId, attestation: &AttestationDetails<T>) -> Result<Weight, DispatchError> {
 		if attestation.authorization_id.as_ref().map_or(false, |auth| auth == who) {
 			Ok(0)
 		} else {
@@ -92,12 +97,16 @@ where
 		}
 	}
 
-	fn can_remove(who: &T::AttesterId, attestation: &AttestationDetails<T>) -> Result<Weight, DispatchError> {
+	fn can_remove(&self, who: &T::AttesterId, attestation: &AttestationDetails<T>) -> Result<Weight, DispatchError> {
 		if attestation.authorization_id.as_ref().map_or(false, |auth| auth == who) {
 			Ok(0)
 		} else {
 			Err(DispatchError::Other("Unauthorized"))
 		}
+	}
+
+	fn authorization_id(&self) -> T::AuthorizationId {
+		self.0.clone()
 	}
 }
 
@@ -230,7 +239,7 @@ pub(crate) mod runtime {
 		type MaxDelegatedAttestations = MaxDelegatedAttestations;
 		type AttesterId = SubjectId;
 		type AuthorizationId = SubjectId;
-		type AccessControl = MockAccessControl;
+		type AccessControl = MockAccessControl<Self>;
 	}
 
 	pub(crate) const ACCOUNT_00: runtime_common::AccountId = runtime_common::AccountId::new([1u8; 32]);

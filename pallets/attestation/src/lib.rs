@@ -103,20 +103,38 @@ pub mod pallet {
 	use kilt_support::{deposit::Deposit, traits::CallSources};
 
 	pub trait AttestationAccessControl<T: Config> {
-		fn can_attest(who: &T::AttesterId, authorization_id: &T::AuthorizationId) -> Result<Weight, DispatchError>;
-		fn can_revoke(who: &T::AttesterId, attestation: &AttestationDetails<T>) -> Result<Weight, DispatchError>;
-		fn can_remove(who: &T::AttesterId, attestation: &AttestationDetails<T>) -> Result<Weight, DispatchError>;
+		fn can_attest(&self, who: &T::AttesterId) -> Result<Weight, DispatchError>;
+		fn can_revoke(&self, who: &T::AttesterId, attestation: &AttestationDetails<T>)
+			-> Result<Weight, DispatchError>;
+		fn can_remove(&self, who: &T::AttesterId, attestation: &AttestationDetails<T>)
+			-> Result<Weight, DispatchError>;
+		fn authorization_id(&self) -> T::AuthorizationId;
 	}
 
-	impl<T: Config> AttestationAccessControl<T> for () {
-		fn can_attest(_who: &T::AttesterId, _authorization_id: &T::AuthorizationId) -> Result<Weight, DispatchError> {
+	impl<T> AttestationAccessControl<T> for ()
+	where
+		T: Config,
+		T::AuthorizationId: Default,
+	{
+		fn can_attest(&self, _who: &T::AttesterId) -> Result<Weight, DispatchError> {
 			Err(DispatchError::Other("Unimplemented"))
 		}
-		fn can_revoke(_who: &T::AttesterId, _attestation: &AttestationDetails<T>) -> Result<Weight, DispatchError> {
+		fn can_revoke(
+			&self,
+			_who: &T::AttesterId,
+			_attestation: &AttestationDetails<T>,
+		) -> Result<Weight, DispatchError> {
 			Err(DispatchError::Other("Unimplemented"))
 		}
-		fn can_remove(_who: &T::AttesterId, _attestation: &AttestationDetails<T>) -> Result<Weight, DispatchError> {
+		fn can_remove(
+			&self,
+			_who: &T::AttesterId,
+			_attestation: &AttestationDetails<T>,
+		) -> Result<Weight, DispatchError> {
 			Err(DispatchError::Other("Unimplemented"))
+		}
+		fn authorization_id(&self) -> T::AuthorizationId {
+			Default::default()
 		}
 	}
 
@@ -161,7 +179,7 @@ pub mod pallet {
 
 		type AuthorizationId: Parameter;
 
-		type AccessControl: AttestationAccessControl<Self>;
+		type AccessControl: Parameter + AttestationAccessControl<Self>;
 	}
 
 	#[pallet::pallet]
@@ -261,7 +279,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			claim_hash: ClaimHashOf<T>,
 			ctype_hash: CtypeHashOf<T>,
-			authorization_id: Option<AuthorizationIdOf<T>>,
+			authorization: Option<T::AccessControl>,
 		) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let payer = source.sender();
@@ -278,9 +296,8 @@ pub mod pallet {
 			);
 
 			// Check for validity of the delegation node if specified.
-			if let Some(ref authorization_id) = authorization_id {
-				T::AccessControl::can_attest(&who, authorization_id)?;
-			}
+			authorization.as_ref().map(|ac| ac.can_attest(&who)).transpose()?;
+			let authorization_id = authorization.as_ref().map(|ac| ac.authorization_id());
 
 			let deposit = Pallet::<T>::reserve_deposit(payer, deposit_amount)?;
 
@@ -288,18 +305,23 @@ pub mod pallet {
 
 			log::debug!("insert Attestation");
 
+			Self::deposit_event(Event::AttestationCreated(
+				who.clone(),
+				claim_hash,
+				ctype_hash,
+				authorization_id.clone(),
+			));
 			Attestations::<T>::insert(
 				&claim_hash,
 				AttestationDetails {
 					ctype_hash,
 					attester: who.clone(),
-					authorization_id: authorization_id.clone(),
+					authorization_id,
 					revoked: false,
 					deposit,
 				},
 			);
 
-			Self::deposit_event(Event::AttestationCreated(who, claim_hash, ctype_hash, authorization_id));
 			Ok(())
 		}
 
@@ -321,7 +343,11 @@ pub mod pallet {
 		/// - Writes: Attestations, DelegatedAttestations
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::revoke())]
-		pub fn revoke(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResultWithPostInfo {
+		pub fn revoke(
+			origin: OriginFor<T>,
+			claim_hash: ClaimHashOf<T>,
+			authorization: Option<T::AccessControl>,
+		) -> DispatchResultWithPostInfo {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let who = source.subject();
 
@@ -330,7 +356,9 @@ pub mod pallet {
 			ensure!(!attestation.revoked, Error::<T>::AlreadyRevoked);
 
 			if attestation.attester != who {
-				T::AccessControl::can_revoke(&who, &attestation)?;
+				authorization
+					.ok_or(Error::<T>::Unauthorized)?
+					.can_revoke(&who, &attestation)?;
 			}
 
 			// *** No Fail beyond this point ***
@@ -367,14 +395,20 @@ pub mod pallet {
 		/// - Writes: Attestations, DelegatedAttestations
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove())]
-		pub fn remove(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResultWithPostInfo {
+		pub fn remove(
+			origin: OriginFor<T>,
+			claim_hash: ClaimHashOf<T>,
+			authorization: Option<T::AccessControl>,
+		) -> DispatchResultWithPostInfo {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let who = source.subject();
 
 			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
 			if attestation.attester != who {
-				T::AccessControl::can_remove(&who, &attestation)?;
+				authorization
+					.ok_or(Error::<T>::Unauthorized)?
+					.can_remove(&who, &attestation)?;
 			}
 
 			// *** No Fail beyond this point ***
