@@ -182,7 +182,7 @@ impl<T: frame_system::Config> parachain_staking::WeightInfo for WeightInfo<T> {
 	// Storage: Session DisabledValidators (r:1 w:1)
 	// Storage: System Digest (r:1 w:1)
 	// Storage: ParachainStaking CandidateCount (r:1 w:1)
-	fn execute_leave_candidates(n: u32, m: u32, _u: u32, ) -> Weight {
+	fn execute_leave_candidates(n: u32, m: u32 ) -> Weight {
 		(0 as Weight)
 			// Standard Error: 15_000
 			.saturating_add((4_365_000 as Weight).saturating_mul(n as Weight))

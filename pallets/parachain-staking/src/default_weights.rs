@@ -59,7 +59,7 @@ pub trait WeightInfo {
 	fn join_candidates(n: u32, m: u32, ) -> Weight;
 	fn init_leave_candidates(n: u32, m: u32, ) -> Weight;
 	fn cancel_leave_candidates(n: u32, m: u32, ) -> Weight;
-	fn execute_leave_candidates(n: u32, m: u32, u: u32, ) -> Weight;
+	fn execute_leave_candidates(n: u32, m: u32, ) -> Weight;
 	fn candidate_stake_more(n: u32, m: u32, u: u32, ) -> Weight;
 	fn candidate_stake_less(n: u32, m: u32, ) -> Weight;
 	fn join_delegators(n: u32, m: u32, ) -> Weight;
@@ -208,7 +208,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Session DisabledValidators (r:1 w:1)
 	// Storage: System Digest (r:1 w:1)
 	// Storage: ParachainStaking CandidateCount (r:1 w:1)
-	fn execute_leave_candidates(n: u32, m: u32, _u: u32, ) -> Weight {
+	fn execute_leave_candidates(n: u32, m: u32) -> Weight {
 		(0_u64)
 			// Standard Error: 15_000
 			.saturating_add((4_234_000_u64).saturating_mul(n as Weight))
@@ -433,7 +433,7 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(5_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
 	}
-	fn execute_leave_candidates(n: u32, m: u32, _u: u32, ) -> Weight {
+	fn execute_leave_candidates(n: u32, m: u32 ) -> Weight {
 		(0_u64)
 			// Standard Error: 15_000
 			.saturating_add((4_234_000_u64).saturating_mul(n as Weight))

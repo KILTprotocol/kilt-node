@@ -1217,7 +1217,6 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::execute_leave_candidates(
 			T::MaxTopCandidates::get(),
 			T::MaxDelegatorsPerCollator::get(),
-			T::MaxUnstakeRequests::get()
 		))]
 		pub fn execute_leave_candidates(
 			origin: OriginFor<T>,
@@ -1241,7 +1240,6 @@ pub mod pallet {
 			Ok(Some(<T as pallet::Config>::WeightInfo::execute_leave_candidates(
 				T::MaxTopCandidates::get(),
 				num_delegators,
-				T::MaxUnstakeRequests::get(),
 			))
 			.into())
 		}
