@@ -3568,6 +3568,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "kilt-unicks"
+version = "1.3.1"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "kilt-support",
+ "pallet-balances",
+ "parity-scale-codec",
+ "runtime-common",
+ "scale-info",
+ "sp-io",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "kusama-runtime"
 version = "0.9.13"
 source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.13#7d8f00b90cd6d87780123b3e08ca120cfb0c6e50"
