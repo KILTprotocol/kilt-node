@@ -123,6 +123,7 @@ runtime-benchmarks = [
   "pallet-treasury/runtime-benchmarks",
   "pallet-vesting/runtime-benchmarks",
   "pallet-utility/runtime-benchmarks",
+  "pallet-proxy/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
   "rococo-runtime/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
@@ -166,6 +167,7 @@ std = [
   "pallet-transaction-payment/std",
   "pallet-treasury/std",
   "pallet-vesting/std",
+  "pallet-proxy/std",
   "parachain-info/std",
   "parachain-staking/std",
   "polkadot-parachain/std",
@@ -215,5 +217,6 @@ try-runtime = [
   "pallet-treasury/try-runtime",
   "pallet-utility/try-runtime",
   "pallet-vesting/try-runtime",
+  "pallet-proxy/try-runtime",
   "parachain-staking/try-runtime",
 ]
