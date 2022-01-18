@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2021 BOTLabs GmbH
+// Copyright (C) 2019-2022 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,8 +19,8 @@
 //! KILT chain specification
 
 use mashnet_node_runtime::{
-	BalancesConfig, GenesisConfig, KiltLaunchConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig,
-	WASM_BINARY,
+	BalancesConfig, GenesisConfig, IndicesConfig, KiltLaunchConfig, SessionConfig, SudoConfig, SystemConfig,
+	VestingConfig, WASM_BINARY,
 };
 use runtime_common::{constants::BLOCKS_PER_YEAR, AccountId, AccountPublic, Balance, BlockNumber};
 
@@ -223,8 +223,9 @@ fn testnet_genesis(
 	GenesisConfig {
 		system: SystemConfig {
 			code: wasm_binary.to_vec(),
-			changes_trie_config: Default::default(),
 		},
+		indices: IndicesConfig { indices: vec![] },
+		transaction_payment: Default::default(),
 		balances: BalancesConfig {
 			balances: endowed_accounts
 				.iter()

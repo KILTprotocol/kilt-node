@@ -1,7 +1,7 @@
 [package]
 authors = ["KILT <info@kilt.io>"]
 description = "Substrate pallet issueing a pre-configured amount of tokens to the treasury."
-edition = "2018"
+edition = "2021"
 name = "pallet-inflation"
 repository = "https://github.com/KILTprotocol/mashnet-node"
 version = "1.3.1"
@@ -10,27 +10,27 @@ version = "1.3.1"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dev-dependencies]
-runtime-common = {path = "../../runtimes/common"}
-
 serde = {version = "1.0.124"}
 
-pallet-balances = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-io = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-core = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
+runtime-common = {path = "../../runtimes/common"}
+
+pallet-balances = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-core = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-io = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [dependencies]
 codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.3.1"}
-scale-info = { version = "1.0", default-features = false, features = ["derive"] }
+scale-info = {version = "1.0", default-features = false, features = ["derive"]}
 serde = {optional = true, version = "1.0.124"}
 
 # benchmarking
-frame-benchmarking = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12", default-features = false, optional = true}
+frame-benchmarking = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false, optional = true}
 
 # Substrate dependencies
-frame-support = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
-frame-system = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-runtime = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-std = {branch = "polkadot-v0.9.12", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-support = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-system = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-runtime = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-std = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [features]
 default = ["std"]

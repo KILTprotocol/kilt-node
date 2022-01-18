@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2021 BOTLabs GmbH
+// Copyright (C) 2019-2022 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,6 +18,8 @@
 
 //! KILT chain specification
 
+use cumulus_primitives_core::ParaId;
+use polkadot_primitives::v1::LOWEST_PUBLIC_ID;
 use runtime_common::{AccountId, AccountPublic};
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
 use sc_service::Properties;
@@ -29,6 +31,7 @@ pub mod peregrine;
 pub mod spiritnet;
 
 const TELEMETRY_URL: &str = "wss://telemetry-backend.kilt.io:8080/submit";
+const DEFAULT_PARA_ID: ParaId = LOWEST_PUBLIC_ID;
 
 /// Helper function to generate a crypto pair from seed
 pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {

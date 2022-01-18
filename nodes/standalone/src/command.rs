@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2021 BOTLabs GmbH
+// Copyright (C) 2019-2022 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@ use crate::{
 	service,
 };
 use mashnet_node_runtime::opaque::Block;
-use sc_cli::{ChainSpec, Role, RuntimeVersion, SubstrateCli};
+use sc_cli::{ChainSpec, RuntimeVersion, SubstrateCli};
 use sc_service::PartialComponents;
 
 #[cfg(feature = "try-runtime")]
@@ -164,13 +164,8 @@ pub fn run() -> sc_cli::Result<()> {
 			.into()),
 		None => {
 			let runner = cli.create_runner(&cli.run)?;
-			runner.run_node_until_exit(|config| async move {
-				match config.role {
-					Role::Light => service::new_light(config),
-					_ => service::new_full(config),
-				}
-				.map_err(sc_cli::Error::Service)
-			})
+			runner
+				.run_node_until_exit(|config| async move { service::new_full(config).map_err(sc_cli::Error::Service) })
 		}
 	}
 }
