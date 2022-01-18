@@ -120,12 +120,11 @@ pub(crate) mod runtime {
 	use sp_runtime::{
 		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		MultiSigner,
+		MultiSignature, MultiSigner,
 	};
 	use std::sync::Arc;
 
 	use kilt_support::mock::{mock_origin, SubjectId};
-	use runtime_common::constants::{attestation::ATTESTATION_DEPOSIT, MILLI_KILT};
 
 	use super::*;
 	use crate::Pallet;
@@ -133,9 +132,15 @@ pub(crate) mod runtime {
 	type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	type Block = frame_system::mocking::MockBlock<Test>;
 
-	type TestCtypeHash = runtime_common::Hash;
-	type TestClaimHash = runtime_common::Hash;
-	type TestBalance = runtime_common::Balance;
+	pub type Hash = sp_core::H256;
+	pub type Balance = u128;
+	pub type Signature = MultiSignature;
+	pub type AccountPublic = <Signature as Verify>::Signer;
+	pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
+
+	pub const UNIT: Balance = 10u128.pow(15);
+	pub const MILLI_UNIT: Balance = 10u128.pow(12);
+	pub const ATTESTATION_DEPOSIT: Balance = 10 * MILLI_UNIT;
 
 	frame_support::construct_runtime!(
 		pub enum Test where
@@ -161,9 +166,9 @@ pub(crate) mod runtime {
 		type Call = Call;
 		type Index = u64;
 		type BlockNumber = u64;
-		type Hash = runtime_common::Hash;
+		type Hash = Hash;
 		type Hashing = BlakeTwo256;
-		type AccountId = <<runtime_common::Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
 		type Header = Header;
 		type Event = ();
@@ -172,7 +177,7 @@ pub(crate) mod runtime {
 		type Version = ();
 
 		type PalletInfo = PalletInfo;
-		type AccountData = pallet_balances::AccountData<TestBalance>;
+		type AccountData = pallet_balances::AccountData<Balance>;
 		type OnNewAccount = ();
 		type OnKilledAccount = ();
 		type BaseCallFilter = frame_support::traits::Everything;
@@ -184,13 +189,13 @@ pub(crate) mod runtime {
 	}
 
 	parameter_types! {
-		pub const ExistentialDeposit: TestBalance = MILLI_KILT;
+		pub const ExistentialDeposit: Balance = MILLI_UNIT;
 		pub const MaxLocks: u32 = 50;
 		pub const MaxReserves: u32 = 50;
 	}
 
 	impl pallet_balances::Config for Test {
-		type Balance = TestBalance;
+		type Balance = Balance;
 		type DustRemoval = ();
 		type Event = ();
 		type ExistentialDeposit = ExistentialDeposit;
@@ -202,13 +207,13 @@ pub(crate) mod runtime {
 	}
 
 	parameter_types! {
-		pub const Fee: TestBalance = 500;
+		pub const Fee: Balance = 500;
 	}
 
 	impl ctype::Config for Test {
 		type CtypeCreatorId = SubjectId;
-		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<runtime_common::AccountId, Self::CtypeCreatorId>;
-		type OriginSuccess = mock_origin::DoubleOrigin<runtime_common::AccountId, Self::CtypeCreatorId>;
+		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, Self::CtypeCreatorId>;
+		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::CtypeCreatorId>;
 		type Event = ();
 		type WeightInfo = ();
 
@@ -219,18 +224,18 @@ pub(crate) mod runtime {
 
 	impl mock_origin::Config for Test {
 		type Origin = Origin;
-		type AccountId = runtime_common::AccountId;
+		type AccountId = AccountId;
 		type SubjectId = SubjectId;
 	}
 
 	parameter_types! {
 		pub const MaxDelegatedAttestations: u32 = 1000;
-		pub const Deposit: TestBalance = ATTESTATION_DEPOSIT;
+		pub const Deposit: Balance = ATTESTATION_DEPOSIT;
 	}
 
 	impl Config for Test {
-		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<runtime_common::AccountId, AttesterOf<Self>>;
-		type OriginSuccess = mock_origin::DoubleOrigin<runtime_common::AccountId, AttesterOf<Self>>;
+		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, AttesterOf<Self>>;
+		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, AttesterOf<Self>>;
 		type Event = ();
 		type WeightInfo = ();
 
@@ -242,8 +247,8 @@ pub(crate) mod runtime {
 		type AccessControl = MockAccessControl<Self>;
 	}
 
-	pub(crate) const ACCOUNT_00: runtime_common::AccountId = runtime_common::AccountId::new([1u8; 32]);
-	pub(crate) const ACCOUNT_01: runtime_common::AccountId = runtime_common::AccountId::new([2u8; 32]);
+	pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
+	pub(crate) const ACCOUNT_01: AccountId = AccountId::new([2u8; 32]);
 
 	pub(crate) const ALICE_SEED: [u8; 32] = [1u8; 32];
 	pub(crate) const BOB_SEED: [u8; 32] = [2u8; 32];
@@ -263,21 +268,21 @@ pub(crate) mod runtime {
 			.into()
 	}
 
-	pub fn claim_hash_from_seed(seed: u64) -> TestClaimHash {
-		TestClaimHash::from_low_u64_be(seed)
+	pub fn claim_hash_from_seed(seed: u64) -> Hash {
+		Hash::from_low_u64_be(seed)
 	}
 
 	#[derive(Clone, Default)]
 	pub struct ExtBuilder {
 		/// initial ctypes & owners
-		ctypes: Vec<(TestCtypeHash, CtypeCreatorOf<Test>)>,
+		ctypes: Vec<(CtypeHashOf<Test>, CtypeCreatorOf<Test>)>,
 		/// endowed accounts with balances
 		balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>,
-		attestations: Vec<(TestClaimHash, AttestationDetails<Test>)>,
+		attestations: Vec<(ClaimHashOf<Test>, AttestationDetails<Test>)>,
 	}
 
 	impl ExtBuilder {
-		pub fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, CtypeCreatorOf<Test>)>) -> Self {
+		pub fn with_ctypes(mut self, ctypes: Vec<(CtypeHashOf<Test>, CtypeCreatorOf<Test>)>) -> Self {
 			self.ctypes = ctypes;
 			self
 		}
@@ -287,7 +292,7 @@ pub(crate) mod runtime {
 			self
 		}
 
-		pub fn with_attestations(mut self, attestations: Vec<(TestClaimHash, AttestationDetails<Test>)>) -> Self {
+		pub fn with_attestations(mut self, attestations: Vec<(ClaimHashOf<Test>, AttestationDetails<Test>)>) -> Self {
 			self.attestations = attestations;
 			self
 		}

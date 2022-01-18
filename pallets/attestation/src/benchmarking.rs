@@ -69,7 +69,7 @@ benchmarks! {
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
 		Pallet::<T>::add(origin.clone(), claim_hash, ctype_hash, None)?;
-	}: _<T::Origin>(origin, claim_hash)
+	}: _<T::Origin>(origin, claim_hash, None)
 	verify {
 		assert!(Attestations::<T>::contains_key(claim_hash));
 		assert_eq!(Attestations::<T>::get(claim_hash), Some(AttestationDetails {
@@ -95,7 +95,7 @@ benchmarks! {
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
 		Pallet::<T>::add(origin, claim_hash, ctype_hash, None)?;
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, attester);
-	}: _<T::Origin>(origin, claim_hash)
+	}: _<T::Origin>(origin, claim_hash, None)
 	verify {
 		assert!(!Attestations::<T>::contains_key(claim_hash));
 	}
