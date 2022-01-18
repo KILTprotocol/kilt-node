@@ -51,6 +51,8 @@ pallet-transaction-payment = {branch = "polkadot-v0.9.13", default-features = fa
 pallet-transaction-payment-rpc-runtime-api = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
 pallet-utility = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
 pallet-vesting = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
+pallet-proxy = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
+
 sp-api = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-arithmetic = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-block-builder = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
