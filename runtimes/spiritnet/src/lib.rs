@@ -637,7 +637,7 @@ parameter_types! {
 	pub const MaxDelegationsPerRound: u32 = 1;
 	/// Maximum 25 delegators per collator at launch, might be increased later
 	#[derive(Debug, PartialEq)]
-	pub const MaxDelegatorsPerCollator: u32 = 25;
+	pub const MaxDelegatorsPerCollator: u32 = constants::staking::MAX_DELEGATORS_PER_COLLATOR;
 	/// Maximum 1 collator per delegator at launch, will be increased later
 	#[derive(Debug, PartialEq)]
 	pub const MaxCollatorsPerDelegator: u32 = 1;
