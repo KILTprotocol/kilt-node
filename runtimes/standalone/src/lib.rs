@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2021 BOTLabs GmbH
+// Copyright (C) 2019-2022 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -74,7 +74,7 @@ pub use delegation;
 pub use did;
 
 /// Digest item type.
-pub type DigestItem = generic::DigestItem<Hash>;
+pub type DigestItem = generic::DigestItem;
 
 pub type NegativeImbalance<T> =
 	<pallet_balances::Pallet<T> as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
@@ -486,6 +486,7 @@ impl pallet_vesting::Config for Runtime {
 impl pallet_utility::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
+	type PalletsOrigin = OriginCaller;
 	type WeightInfo = ();
 }
 
@@ -497,41 +498,41 @@ construct_runtime!(
 		NodeBlock = opaque::Block,
 		UncheckedExtrinsic = UncheckedExtrinsic
 	{
-		System: frame_system::{Pallet, Call, Config, Storage, Event<T>} = 0,
-		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Storage} = 1,
+		System: frame_system = 0,
+		RandomnessCollectiveFlip: pallet_randomness_collective_flip = 1,
 
-		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent} = 2,
-		Aura: pallet_aura::{Pallet, Config<T>, Storage} = 3,
-		Grandpa: pallet_grandpa::{Pallet, Call, Storage, Config, Event} = 4,
-		Indices: pallet_indices::{Pallet, Call, Storage, Event<T>} = 5,
-		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>} = 6,
-		TransactionPayment: pallet_transaction_payment::{Pallet, Storage} = 7,
-		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>} = 8,
+		Timestamp: pallet_timestamp = 2,
+		Aura: pallet_aura = 3,
+		Grandpa: pallet_grandpa = 4,
+		Indices: pallet_indices = 5,
+		Balances: pallet_balances = 6,
+		TransactionPayment: pallet_transaction_payment = 7,
+		Sudo: pallet_sudo = 8,
 
-		Ctype: ctype::{Pallet, Call, Storage, Event<T>} = 9,
-		Attestation: attestation::{Pallet, Call, Storage, Event<T>} = 10,
-		Delegation: delegation::{Pallet, Call, Storage, Event<T>} = 11,
-		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>} = 12,
-		DidLookup: pallet_did_lookup::{Pallet, Call, Storage, Event<T>} = 13,
+		Ctype: ctype = 9,
+		Attestation: attestation = 10,
+		Delegation: delegation = 11,
+		Did: did = 12,
+		DidLookup: pallet_did_lookup = 13,
 
-		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>} = 15,
-		Authorship: pallet_authorship::{Pallet, Call, Storage} = 16,
+		Session: pallet_session = 15,
+		Authorship: pallet_authorship = 16,
 
 		// // Governance stuff; uncallable initially.
-		// Democracy: pallet_democracy::{Module, Call, Storage, Config, Event<T>} = 25,
-		// Council: pallet_collective::<Instance1>::{Module, Call, Storage, Origin<T>, Event<T>, Config<T>} = 26,
-		// TechnicalCommittee: pallet_collective::<Instance2>::{Module, Call, Storage, Origin<T>, Event<T>, Config<T>} = 27,
-		// ElectionsPhragmen: pallet_elections_phragmen::{Module, Call, Storage, Event<T>, Config<T>} = 28,
-		// TechnicalMembership: pallet_membership::{Module, Call, Storage, Event<T>, Config<T>} = 29,
-		// Treasury: pallet_treasury::{Module, Call, Storage, Config, Event<T>} = 30,
+		// Democracy: pallet_democracy = 25,
+		// Council: pallet_collective = 26,
+		// TechnicalCommittee: pallet_collective = 27,
+		// ElectionsPhragmen: pallet_elections_phragmen = 28,
+		// TechnicalMembership: pallet_membership = 29,
+		// Treasury: pallet_treasury = 30,
 
 		// // System scheduler.
-		// Scheduler: pallet_scheduler::{Module, Call, Storage, Event<T>} = 32,
+		// Scheduler: pallet_scheduler = 32,
 
 		// Vesting. Usable initially, but removed once all vesting is finished.
-		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} = 33,
-		KiltLaunch: kilt_launch::{Pallet, Call, Storage, Event<T>, Config<T>} = 34,
-		Utility: pallet_utility::{Pallet, Call, Storage, Event} = 35,
+		Vesting: pallet_vesting = 33,
+		KiltLaunch: kilt_launch = 34,
+		Utility: pallet_utility = 35,
 		// DELETED CrowdloanContributors: 36,
 	}
 );
@@ -741,12 +742,14 @@ impl_runtime_apis! {
 			Vec<frame_benchmarking::BenchmarkList>,
 			Vec<frame_support::traits::StorageInfo>,
 		) {
-			use frame_benchmarking::{list_benchmark, Benchmarking, BenchmarkList};
+			use frame_benchmarking::{list_benchmark, baseline, Benchmarking, BenchmarkList};
 			use frame_support::traits::StorageInfoTrait;
 			use frame_system_benchmarking::Pallet as SystemBench;
+			use baseline::Pallet as BaselineBench;
 
 			let mut list = Vec::<BenchmarkList>::new();
 
+			list_benchmark!(list, extra, frame_benchmarking, BaselineBench::<Runtime>);
 			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
 			list_benchmark!(list, extra, pallet_balances, Balances);
 			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
@@ -770,10 +773,13 @@ impl_runtime_apis! {
 		fn dispatch_benchmark(
 			config: frame_benchmarking::BenchmarkConfig
 		) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
-			use frame_benchmarking::{Benchmarking, BenchmarkBatch, add_benchmark, TrackedStorageKey};
+			use frame_benchmarking::{baseline, Benchmarking, BenchmarkBatch, add_benchmark, TrackedStorageKey};
 
+			use baseline::Pallet as BaselineBench;
 			use frame_system_benchmarking::Pallet as SystemBench;
+
 			impl frame_system_benchmarking::Config for Runtime {}
+			impl baseline::Config for Runtime {}
 
 			let whitelist: Vec<TrackedStorageKey> = vec![
 				// Block Number
@@ -798,6 +804,7 @@ impl_runtime_apis! {
 			let mut batches = Vec::<BenchmarkBatch>::new();
 			let params = (&config, &whitelist);
 
+			add_benchmark!(params, batches, frame_benchmarking, BaselineBench::<Runtime>);
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);

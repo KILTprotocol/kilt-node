@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2021 BOTLabs GmbH
+// Copyright (C) 2019-2022 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,12 +20,11 @@ use crate::chain_spec;
 use std::{ops::Deref, path::PathBuf};
 use structopt::StructOpt;
 
-pub const DEFAULT_RUNTIME: &str = "peregrine";
-pub const DEFAULT_PARA_ID: &str = "2000";
+pub(crate) const DEFAULT_RUNTIME: &str = "peregrine";
 
 /// Sub-commands supported by the collator.
 #[derive(Debug, StructOpt)]
-pub enum Subcommand {
+pub(crate) enum Subcommand {
 	/// Export the genesis state of the parachain.
 	#[structopt(name = "export-genesis-state")]
 	ExportGenesisState(ExportGenesisStateCommand),
@@ -71,13 +70,13 @@ pub enum Subcommand {
 
 /// Command for building the genesis state of the parachain
 #[derive(Debug, StructOpt)]
-pub struct BuildSpecCmd {
+pub(crate) struct BuildSpecCmd {
 	#[structopt(flatten)]
-	pub inner_args: sc_cli::BuildSpecCmd,
+	pub(crate) inner_args: sc_cli::BuildSpecCmd,
 
 	/// The name of the runtime which should get executed.
 	#[structopt(long, default_value = DEFAULT_RUNTIME)]
-	pub runtime: String,
+	pub(crate) runtime: String,
 }
 
 impl Deref for BuildSpecCmd {
@@ -90,46 +89,38 @@ impl Deref for BuildSpecCmd {
 
 /// Command for exporting the genesis state of the parachain
 #[derive(Debug, StructOpt)]
-pub struct ExportGenesisStateCommand {
+pub(crate) struct ExportGenesisStateCommand {
 	/// Output file name or stdout if unspecified.
 	#[structopt(parse(from_os_str))]
-	pub output: Option<PathBuf>,
-
-	/// Id of the parachain this state is for.
-	#[structopt(long, default_value = DEFAULT_PARA_ID)]
-	pub parachain_id: u32,
+	pub(crate) output: Option<PathBuf>,
 
 	/// Write output in binary. Default is to write in hex.
 	#[structopt(short, long)]
-	pub raw: bool,
+	pub(crate) raw: bool,
 
 	/// The name of the chain for that the genesis state should be exported.
 	#[structopt(long)]
-	pub chain: Option<String>,
+	pub(crate) chain: Option<String>,
 
 	/// The name of the runtime which should get executed.
 	#[structopt(long, default_value = DEFAULT_RUNTIME)]
-	pub runtime: String,
+	pub(crate) runtime: String,
 }
 
 /// Command for exporting the genesis wasm file.
 #[derive(Debug, StructOpt)]
-pub struct ExportGenesisWasmCommand {
+pub(crate) struct ExportGenesisWasmCommand {
 	/// Output file name or stdout if unspecified.
 	#[structopt(parse(from_os_str))]
-	pub output: Option<PathBuf>,
+	pub(crate) output: Option<PathBuf>,
 
 	/// Write output in binary. Default is to write in hex.
 	#[structopt(short, long)]
-	pub raw: bool,
+	pub(crate) raw: bool,
 
 	/// The name of the chain for that the genesis wasm file should be exported.
 	#[structopt(long)]
-	pub chain: Option<String>,
-
-	/// The name of the runtime which should get executed.
-	#[structopt(long)]
-	pub runtime: Option<String>,
+	pub(crate) chain: Option<String>,
 }
 
 #[derive(Debug, StructOpt)]
@@ -138,38 +129,38 @@ pub struct ExportGenesisWasmCommand {
 	structopt::clap::AppSettings::ArgsNegateSubcommands,
 	structopt::clap::AppSettings::SubcommandsNegateReqs,
 ])]
-pub struct Cli {
+pub(crate) struct Cli {
 	#[structopt(subcommand)]
-	pub subcommand: Option<Subcommand>,
+	pub(crate) subcommand: Option<Subcommand>,
 
 	#[structopt(flatten)]
-	pub run: cumulus_client_cli::RunCmd,
+	pub(crate) run: cumulus_client_cli::RunCmd,
 
 	/// The name of the runtime which should get executed.
 	#[structopt(long, default_value = DEFAULT_RUNTIME)]
-	pub runtime: String,
+	pub(crate) runtime: String,
 
 	/// Relaychain arguments
 	#[structopt(raw = true)]
-	pub relaychain_args: Vec<String>,
+	pub(crate) relaychain_args: Vec<String>,
 }
 
 #[derive(Debug)]
-pub struct RelayChainCli {
+pub(crate) struct RelayChainCli {
 	/// The actual relay chain cli object.
-	pub base: polkadot_cli::RunCmd,
+	pub(crate) base: polkadot_cli::RunCmd,
 
 	/// Optional chain id that should be passed to the relay chain.
-	pub chain_id: Option<String>,
+	pub(crate) chain_id: Option<String>,
 
 	/// The base path that should be used by the relay chain.
-	pub base_path: Option<PathBuf>,
+	pub(crate) base_path: Option<PathBuf>,
 }
 
 impl RelayChainCli {
 	/// Parse the relay chain CLI parameters using the para chain
 	/// `Configuration`.
-	pub fn new<'a>(
+	pub(crate) fn new<'a>(
 		para_config: &sc_service::Configuration,
 		relay_chain_args: impl Iterator<Item = &'a String>,
 	) -> Self {
