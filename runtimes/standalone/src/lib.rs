@@ -548,8 +548,7 @@ impl InstanceFilter<Call> for ProxyType {
 				Call::Vesting(pallet_vesting::Call::vest{..}) |
 				Call::Vesting(pallet_vesting::Call::vest_other{..}) |
 				// Specifically omitting Vesting `vested_transfer`, and `force_vested_transfer`
-				Call::Utility(..) |
-				Call::Proxy(..)
+				Call::Utility(..)
 			),
 			ProxyType::Ctype => matches!(c, Call::Ctype(..)),
 			ProxyType::Delegation => matches!(c, Call::Delegation(..)),
