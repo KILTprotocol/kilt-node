@@ -166,7 +166,7 @@ where
 
 #[cfg(test)]
 pub mod runtime {
-	use crate::{migrations::DelegationStorageVersion, BalanceOf};
+	use crate::{migrations::DelegationStorageVersion, BalanceOf, DelegateSignatureTypeOf, DelegationNodeIdOf};
 
 	use super::*;
 
@@ -176,8 +176,8 @@ pub mod runtime {
 	use sp_keystore::{testing::KeyStore, KeystoreExt};
 	use sp_runtime::{
 		testing::Header,
-		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup},
-		MultiSigner,
+		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
+		MultiSignature, MultiSigner,
 	};
 	use sp_std::sync::Arc;
 
@@ -185,15 +185,19 @@ pub mod runtime {
 		mock::{mock_origin, SubjectId},
 		signature::EqualVerify,
 	};
-	use runtime_common::constants::delegation::DELEGATION_DEPOSIT;
 
 	pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	pub type Block = frame_system::mocking::MockBlock<Test>;
 
-	type TestDelegationNodeId = runtime_common::Hash;
-	type TestDelegateSignature = (SubjectId, Vec<u8>);
-	type TestBalance = runtime_common::Balance;
-	type TestCtypeHash = runtime_common::Hash;
+	pub type Hash = sp_core::H256;
+	pub type Balance = u128;
+	pub type Signature = MultiSignature;
+	pub type AccountPublic = <Signature as Verify>::Signer;
+	pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
+
+	pub const UNIT: Balance = 10u128.pow(15);
+	pub const MILLI_UNIT: Balance = 10u128.pow(12);
+	pub const DELEGATION_DEPOSIT: Balance = 10 * MILLI_UNIT;
 
 	frame_support::construct_runtime!(
 		pub enum Test where
@@ -219,9 +223,9 @@ pub mod runtime {
 		type Call = Call;
 		type Index = u64;
 		type BlockNumber = u64;
-		type Hash = runtime_common::Hash;
+		type Hash = Hash;
 		type Hashing = BlakeTwo256;
-		type AccountId = runtime_common::AccountId;
+		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
 		type Header = Header;
 		type Event = ();
@@ -230,7 +234,7 @@ pub mod runtime {
 		type Version = ();
 
 		type PalletInfo = PalletInfo;
-		type AccountData = pallet_balances::AccountData<TestBalance>;
+		type AccountData = pallet_balances::AccountData<Balance>;
 		type OnNewAccount = ();
 		type OnKilledAccount = ();
 		type BaseCallFilter = frame_support::traits::Everything;
@@ -242,13 +246,13 @@ pub mod runtime {
 	}
 
 	parameter_types! {
-		pub const ExistentialDeposit: TestBalance = 0;
+		pub const ExistentialDeposit: Balance = 0;
 		pub const MaxLocks: u32 = 50;
 		pub const MaxReserves: u32 = 50;
 	}
 
 	impl pallet_balances::Config for Test {
-		type Balance = TestBalance;
+		type Balance = Balance;
 		type DustRemoval = ();
 		type Event = ();
 		type ExistentialDeposit = ExistentialDeposit;
@@ -261,18 +265,18 @@ pub mod runtime {
 
 	impl mock_origin::Config for Test {
 		type Origin = Origin;
-		type AccountId = runtime_common::AccountId;
+		type AccountId = AccountId;
 		type SubjectId = SubjectId;
 	}
 
 	parameter_types! {
-		pub const Fee: TestBalance = 500;
+		pub const Fee: Balance = 500;
 	}
 
 	impl ctype::Config for Test {
 		type CtypeCreatorId = SubjectId;
-		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<runtime_common::AccountId, Self::CtypeCreatorId>;
-		type OriginSuccess = mock_origin::DoubleOrigin<runtime_common::AccountId, Self::CtypeCreatorId>;
+		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, Self::CtypeCreatorId>;
+		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::CtypeCreatorId>;
 		type Event = ();
 		type WeightInfo = ();
 
@@ -288,16 +292,16 @@ pub mod runtime {
 		pub const MaxRemovals: u32 = 5;
 		#[derive(Clone)]
 		pub const MaxChildren: u32 = 1000;
-		pub const DepositMock: TestBalance = DELEGATION_DEPOSIT;
+		pub const DepositMock: Balance = DELEGATION_DEPOSIT;
 	}
 
 	impl Config for Test {
-		type Signature = TestDelegateSignature;
+		type Signature = (SubjectId, Vec<u8>);
 		type DelegationSignatureVerification = EqualVerify<Self::DelegationEntityId, Vec<u8>>;
 		type DelegationEntityId = SubjectId;
-		type DelegationNodeId = TestDelegationNodeId;
-		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<runtime_common::AccountId, Self::DelegationEntityId>;
-		type OriginSuccess = mock_origin::DoubleOrigin<runtime_common::AccountId, Self::DelegationEntityId>;
+		type DelegationNodeId = Hash;
+		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, Self::DelegationEntityId>;
+		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::DelegationEntityId>;
 		type Event = ();
 		type MaxSignatureByteLength = MaxSignatureByteLength;
 		type MaxParentChecks = MaxParentChecks;
@@ -309,9 +313,9 @@ pub mod runtime {
 		type WeightInfo = ();
 	}
 
-	pub(crate) const ACCOUNT_00: runtime_common::AccountId = runtime_common::AccountId::new([1u8; 32]);
-	pub(crate) const ACCOUNT_01: runtime_common::AccountId = runtime_common::AccountId::new([2u8; 32]);
-	pub(crate) const ACCOUNT_02: runtime_common::AccountId = runtime_common::AccountId::new([3u8; 32]);
+	pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
+	pub(crate) const ACCOUNT_01: AccountId = AccountId::new([2u8; 32]);
+	pub(crate) const ACCOUNT_02: AccountId = AccountId::new([3u8; 32]);
 
 	pub(crate) const ALICE_SEED: [u8; 32] = [0u8; 32];
 	pub(crate) const BOB_SEED: [u8; 32] = [1u8; 32];
@@ -334,17 +338,17 @@ pub mod runtime {
 	}
 
 	pub struct DelegationCreationOperation {
-		pub delegation_id: TestDelegationNodeId,
-		pub hierarchy_id: TestDelegationNodeId,
-		pub parent_id: TestDelegationNodeId,
+		pub delegation_id: DelegationNodeIdOf<Test>,
+		pub hierarchy_id: DelegationNodeIdOf<Test>,
+		pub parent_id: DelegationNodeIdOf<Test>,
 		pub delegate: SubjectId,
 		pub permissions: Permissions,
-		pub delegate_signature: TestDelegateSignature,
+		pub delegate_signature: DelegateSignatureTypeOf<Test>,
 	}
 
 	pub fn generate_base_delegation_creation_operation(
-		delegation_id: TestDelegationNodeId,
-		delegate_signature: TestDelegateSignature,
+		delegation_id: DelegationNodeIdOf<Test>,
+		delegate_signature: DelegateSignatureTypeOf<Test>,
 		delegation_node: DelegationNode<Test>,
 	) -> DelegationCreationOperation {
 		DelegationCreationOperation {
@@ -360,29 +364,29 @@ pub mod runtime {
 	}
 
 	pub struct DelegationHierarchyRevocationOperation {
-		pub id: TestDelegationNodeId,
+		pub id: DelegationNodeIdOf<Test>,
 		pub max_children: u32,
 	}
 
 	pub fn generate_base_delegation_hierarchy_revocation_operation(
-		id: TestDelegationNodeId,
+		id: DelegationNodeIdOf<Test>,
 	) -> DelegationHierarchyRevocationOperation {
 		DelegationHierarchyRevocationOperation { id, max_children: 0u32 }
 	}
 
 	pub struct DelegationRevocationOperation {
-		pub delegation_id: TestDelegationNodeId,
+		pub delegation_id: DelegationNodeIdOf<Test>,
 		pub max_parent_checks: u32,
 		pub max_revocations: u32,
 	}
 
 	pub struct DelegationDepositClaimOperation {
-		pub delegation_id: TestDelegationNodeId,
+		pub delegation_id: DelegationNodeIdOf<Test>,
 		pub max_removals: u32,
 	}
 
 	pub fn generate_base_delegation_revocation_operation(
-		delegation_id: TestDelegationNodeId,
+		delegation_id: DelegationNodeIdOf<Test>,
 	) -> DelegationRevocationOperation {
 		DelegationRevocationOperation {
 			delegation_id,
@@ -392,7 +396,7 @@ pub mod runtime {
 	}
 
 	pub fn generate_base_delegation_deposit_claim_operation(
-		delegation_id: TestDelegationNodeId,
+		delegation_id: DelegationNodeIdOf<Test>,
 	) -> DelegationDepositClaimOperation {
 		DelegationDepositClaimOperation {
 			delegation_id,
@@ -405,9 +409,9 @@ pub mod runtime {
 		/// endowed accounts with balances
 		balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>,
 		/// initial ctypes & owners
-		ctypes: Vec<(TestCtypeHash, SubjectId)>,
+		ctypes: Vec<(CtypeHashOf<Test>, SubjectId)>,
 		delegation_hierarchies_stored: DelegationHierarchyInitialization<Test>,
-		delegations_stored: Vec<(TestDelegationNodeId, DelegationNode<Test>)>,
+		delegations_stored: Vec<(DelegationNodeIdOf<Test>, DelegationNode<Test>)>,
 		storage_version: DelegationStorageVersion,
 	}
 
@@ -425,12 +429,12 @@ pub mod runtime {
 			self
 		}
 
-		pub fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, SubjectId)>) -> Self {
+		pub fn with_ctypes(mut self, ctypes: Vec<(CtypeHashOf<Test>, SubjectId)>) -> Self {
 			self.ctypes = ctypes;
 			self
 		}
 
-		pub fn with_delegations(mut self, delegations: Vec<(TestDelegationNodeId, DelegationNode<Test>)>) -> Self {
+		pub fn with_delegations(mut self, delegations: Vec<(DelegationNodeIdOf<Test>, DelegationNode<Test>)>) -> Self {
 			self.delegations_stored = delegations;
 			self
 		}

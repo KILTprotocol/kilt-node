@@ -14,7 +14,6 @@ substrate-wasm-builder-runner = {version = "3.0.0"}
 
 [dev-dependencies]
 ctype = {features = ["mock"], path = "../ctype"}
-runtime-common = {default-features = false, path = "../../runtimes/common"}
 kilt-support = {features = ["mock"], path = "../../support"}
 
 # External dependencies
@@ -29,7 +28,6 @@ sp-keystore = {branch = "polkadot-v0.9.12", default-features = false, git = "htt
 [dependencies]
 # Internal dependencies
 ctype = {default-features = false, path = "../ctype"}
-runtime-common = {default-features = false, path = "../../runtimes/common"}
 kilt-support = {default-features = false, path = "../../support"}
 
 #External dependencies
@@ -73,7 +71,6 @@ std = [
   "ctype/std",
   "frame-support/std",
   "frame-system/std",
-  "runtime-common/std",
   "kilt-support/std",
   "log/std",
   "pallet-balances/std",
