@@ -700,8 +700,7 @@ parameter_types! {
 	pub const MaxPending: u16 = 32;
 }
 
-/// The type used
-///  to represent the kinds of proxying allowed.
+/// The type used to represent the kinds of proxying allowed.
 #[derive(
 	Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, RuntimeDebug, MaxEncodedLen, scale_info::TypeInfo,
 )]
