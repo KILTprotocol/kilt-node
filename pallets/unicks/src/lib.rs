@@ -21,7 +21,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-mod types;
+pub mod types;
 mod utils;
 
 pub use pallet::*;
@@ -37,7 +37,7 @@ pub mod pallet {
 
 	use kilt_support::{deposit::Deposit, traits::CallSources};
 
-	use crate::{types::UnickOwnership, utils::check_unick_validity};
+	use crate::types::{traits::Normalizable, UnickOwnership};
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
@@ -87,7 +87,7 @@ pub mod pallet {
 		type MaxUnickLength: Get<u32>;
 		type OriginSuccess: CallSources<AccountIdOf<Self>, DidIdentifierOf<Self>>;
 		type RegularOrigin: EnsureOrigin<Success = Self::OriginSuccess, <Self as frame_system::Config>::Origin>;
-		type Unick: Parameter + AsRef<[u8]>;
+		type Unick: Parameter + AsRef<[u8]> + Normalizable<Self::Unick>;
 	}
 
 	#[pallet::event]
@@ -134,7 +134,9 @@ pub mod pallet {
 			let payer = origin.sender();
 			let owner = origin.subject();
 
-			Self::check_claiming_preconditions(&unick, &owner, &payer)?;
+			let normalized_unick = unick.normalize();
+
+			Self::check_claiming_preconditions(&normalized_unick, &owner, &payer)?;
 
 			// No failure beyond this point
 
@@ -211,7 +213,6 @@ pub mod pallet {
 			ensure!(!Unicks::<T>::contains_key(&owner), Error::<T>::UnickAlreadyClaimed);
 			ensure!(!Owner::<T>::contains_key(&unick), Error::<T>::OwnerAlreadyExisting);
 			ensure!(!Blacklist::<T>::contains_key(&unick), Error::<T>::UnickBlacklisted);
-			check_unick_validity::<T>(unick)?;
 
 			ensure!(
 				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(

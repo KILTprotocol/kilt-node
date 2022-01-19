@@ -16,22 +16,15 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::ensure;
-use sp_runtime::DispatchError;
 use sp_std::str;
 
-use crate::{Config, Error, UnickOf};
-
-pub(crate) fn check_unick_validity<T: Config>(unick: &UnickOf<T>) -> Result<(), DispatchError> {
-	let byte_ref: &[u8] = unick.as_ref();
-	let encoded_unick = str::from_utf8(byte_ref).map_err(|_| DispatchError::from(Error::<T>::InvalidUnickFormat))?;
-
-	let is_unick_valid = encoded_unick.chars().all(|c| {
-		// TODO: Change once we reach a decision on which characters to allow
-		matches!(c, ':' | '#' | '@' | '$' | '&' | '(' | ')' | '*' | '+' | '-' | '.' | '_' | '0'..='9' | 'a'..='z' | 'A'..='Z')
-	});
-
-	ensure!(is_unick_valid, DispatchError::from(Error::<T>::InvalidUnickFormat));
-
-	Ok(())
+pub(crate) fn is_byte_array_ascii_string(input: &[u8]) -> bool {
+	if let Ok(encoded_unick) = str::from_utf8(input) {
+		encoded_unick.chars().all(|c| {
+			// TODO: Change once we reach a decision on which characters to allow
+			matches!(c, ':' | '#' | '@' | '$' | '&' | '(' | ')' | '*' | '+' | '-' | '.' | '_' | '0'..='9' | 'a'..='z' | 'A'..='Z')
+		})
+	} else {
+		false
+	}
 }

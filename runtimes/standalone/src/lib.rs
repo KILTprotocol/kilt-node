@@ -27,6 +27,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use frame_system::EnsureRoot;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::EnsureSigned;
 
@@ -72,6 +73,7 @@ pub use attestation;
 pub use ctype;
 pub use delegation;
 pub use did;
+pub use kilt_unicks;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem;
@@ -442,6 +444,23 @@ impl pallet_did_lookup::Config for Runtime {
 }
 
 parameter_types! {
+	pub const Deposit: Balance = KILT;
+	pub const MaxUnickLength: u32 = 64;
+}
+
+impl kilt_unicks::Config for Runtime {
+	type Deposit = Deposit;
+	type Currency = Balances;
+	type DidIdentifier = DidIdentifier;
+	type BlacklistOrigin = EnsureRoot<AccountId>;
+	type Event = Event;
+	type MaxUnickLength = MaxUnickLength;
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+	type RegularOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type Unick = kilt_unicks::types::Unick<Runtime, MaxUnickLength>;
+}
+
+parameter_types! {
 	pub const Period: u64 = 0xFFFF_FFFF_FFFF_FFFF;
 	pub const Offset: u64 = 0xFFFF_FFFF_FFFF_FFFF;
 }
@@ -534,6 +553,7 @@ construct_runtime!(
 		KiltLaunch: kilt_launch = 34,
 		Utility: pallet_utility = 35,
 		// DELETED CrowdloanContributors: 36,
+		Unicks: kilt_unicks = 37
 	}
 );
 

@@ -18,8 +18,43 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use sp_std::{marker::PhantomData, str};
+
 use codec::{Decode, Encode};
+use frame_support::{ensure, BoundedVec};
 use scale_info::TypeInfo;
+
+use crate::{Config, Error};
+
+pub mod traits {
+	pub trait Normalizable<Output = Self> {
+		fn normalize(&self) -> Output;
+	}
+}
+
+pub struct Unick<T, S>(BoundedVec<u8, S>, PhantomData<T>);
+
+impl<T: Config> TryFrom<Vec<u8>> for Unick<T, T::MaxUnickLength> {
+	type Error = Error<T>;
+
+	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+		let bounded_vec =
+			BoundedVec::<u8, T::MaxUnickLength>::try_from(value).map_err(|_| Self::Error::InvalidUnickFormat)?;
+		ensure!(
+			crate::utils::is_byte_array_ascii_string(&bounded_vec),
+			Self::Error::InvalidUnickFormat
+		);
+
+		Ok(Self(bounded_vec.try_into().unwrap(), PhantomData))
+	}
+}
+
+impl<T: Config> traits::Normalizable<Self> for Unick<T, T::MaxUnickLength> {
+	fn normalize(&self) -> Self {
+		let lowercase_bytes = str::from_utf8(&self.0).unwrap().to_lowercase().into_bytes();
+		Self::try_from(lowercase_bytes).unwrap()
+	}
+}
 
 #[derive(Clone, Encode, Decode, PartialEq, TypeInfo)]
 pub struct UnickOwnership<Owner, Deposit, BlockNumber> {
