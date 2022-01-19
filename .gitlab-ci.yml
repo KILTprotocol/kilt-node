@@ -99,7 +99,7 @@ build-wasm-peregrine:
 
 build-wasm-spiritnet:
   image:
-    name: paritytech/srtool:1.53.0
+    name: paritytech/srtool:1.57.0
     entrypoint: [""]
   stage: build
   only:
