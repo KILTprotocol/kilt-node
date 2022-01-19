@@ -500,12 +500,12 @@ impl pallet_randomness_collective_flip::Config for Runtime {}
 
 parameter_types! {
 	// One storage item; key size 32, value size 8; .
-	pub const ProxyDepositBase: Balance = 1 * KILT;
+	pub const ProxyDepositBase: Balance = KILT;
 	// Additional storage item size of 33 bytes.
-	pub const ProxyDepositFactor: Balance = 1 * KILT;
+	pub const ProxyDepositFactor: Balance = KILT;
 	pub const MaxProxies: u16 = 32;
-	pub const AnnouncementDepositBase: Balance = 1 * KILT;
-	pub const AnnouncementDepositFactor: Balance = 1 * KILT;
+	pub const AnnouncementDepositBase: Balance = KILT;
+	pub const AnnouncementDepositFactor: Balance = KILT;
 	pub const MaxPending: u16 = 32;
 }
 
@@ -514,14 +514,14 @@ parameter_types! {
 	Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, RuntimeDebug, MaxEncodedLen, scale_info::TypeInfo,
 )]
 pub enum ProxyType {
-	Any = 0,
-	NonTransfer = 1,
-	Staking = 3,
-	CancelProxy = 4,
-	Ctype = 5,
-	Attestation = 6,
-	Delegation = 7,
-	Did = 8,
+	Any,
+	NonTransfer,
+	Staking,
+	CancelProxy,
+	Ctype,
+	Attestation,
+	Delegation,
+	Did,
 }
 
 impl Default for ProxyType {
