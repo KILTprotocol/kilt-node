@@ -47,6 +47,11 @@ pub mod pallet {
 	pub(crate) type UnickOf<T> = <T as Config>::Unick;
 	pub(crate) type UnickOwnershipOf<T> = UnickOwnership<DidIdentifierOf<T>, Deposit<AccountIdOf<T>, BalanceOf<T>>>;
 
+	enum UnickReleaseCaller<T: Config> {
+		DepositPayer(AccountIdOf<T>),
+		UnickOwner(DidIdentifierOf<T>),
+	}
+
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::storage_version(STORAGE_VERSION)]
@@ -89,14 +94,20 @@ pub mod pallet {
 			owner: DidIdentifierOf<T>,
 			unick: UnickOf<T>,
 		},
+		UnickReleased {
+			owner: DidIdentifierOf<T>,
+			unick: UnickOf<T>,
+		},
 	}
 
 	#[pallet::error]
 	pub enum Error<T> {
 		InsufficientFunds,
 		UnickAlreadyClaimed,
+		UnickNotFound,
 		OwnerAlreadyExisting,
 		UnickBlacklisted,
+		NotAuthorized,
 	}
 
 	#[pallet::hooks]
@@ -110,28 +121,42 @@ pub mod pallet {
 			let payer = origin.sender();
 			let owner = origin.subject();
 
-			ensure!(
-				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(&payer, <T as Config>::Deposit::get()),
-				Error::<T>::InsufficientFunds
-			);
-
-			Self::check_claiming_preconditions(&unick, &owner)?;
+			Self::check_claiming_preconditions(&unick, &owner, &payer)?;
 
 			// No failure beyond this point
 
-			Self::register_unick(unick.clone(), owner.clone(), payer);
+			Self::register_unick_unsafe(unick.clone(), owner.clone(), payer);
 			Self::deposit_event(Event::<T>::UnickClaimed { owner, unick });
 
 			Ok(())
 		}
 
 		#[pallet::weight(0)]
-		pub fn release_by_owner(_origin: OriginFor<T>, _unick: UnickOf<T>) -> DispatchResult {
+		pub fn release_by_owner(origin: OriginFor<T>, unick: UnickOf<T>) -> DispatchResult {
+			let origin = T::RegularOrigin::ensure_origin(origin)?;
+			let owner = origin.subject();
+
+			Self::check_releasing_preconditions(&unick, &UnickReleaseCaller::UnickOwner(owner))?;
+
+			// No failure beyond this point
+
+			Self::unregister_unick_unsafe(&unick);
+			Self::deposit_event(Event::<T>::UnickReleased { owner, unick });
+
 			Ok(())
 		}
 
 		#[pallet::weight(0)]
-		pub fn release_by_payer(_origin: OriginFor<T>, _unick: UnickOf<T>) -> DispatchResult {
+		pub fn release_by_payer(origin: OriginFor<T>, unick: UnickOf<T>) -> DispatchResult {
+			let caller = ensure_signed(origin)?;
+
+			Self::check_releasing_preconditions(&unick, &UnickReleaseCaller::DepositPayer(caller))?;
+
+			// No failure beyond this point
+
+			let UnickOwnershipOf::<T> { owner, .. } = Self::unregister_unick_unsafe(&unick);
+			Self::deposit_event(Event::<T>::UnickReleased { owner, unick });
+
 			Ok(())
 		}
 
@@ -142,23 +167,70 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn check_claiming_preconditions(unick: &UnickOf<T>, owner: &DidIdentifierOf<T>) -> Result<(), DispatchError> {
+		fn check_claiming_preconditions(
+			unick: &UnickOf<T>,
+			owner: &DidIdentifierOf<T>,
+			deposit_payer: &AccountIdOf<T>,
+		) -> Result<(), DispatchError> {
 			ensure!(!Unicks::<T>::contains_key(&owner), Error::<T>::UnickAlreadyClaimed);
 			ensure!(!Owner::<T>::contains_key(&unick), Error::<T>::OwnerAlreadyExisting);
 			ensure!(!Blacklist::<T>::contains_key(&unick), Error::<T>::UnickBlacklisted);
+
+			ensure!(
+				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
+					deposit_payer,
+					<T as Config>::Deposit::get()
+				),
+				Error::<T>::InsufficientFunds
+			);
+
 			Ok(())
 		}
 
-		fn register_unick(unick: UnickOf<T>, owner: DidIdentifierOf<T>, deposit_payer: AccountIdOf<T>) {
+		fn register_unick_unsafe(unick: UnickOf<T>, owner: DidIdentifierOf<T>, deposit_payer: AccountIdOf<T>) {
 			let deposit = Deposit {
 				owner: deposit_payer,
 				amount: T::Deposit::get(),
 			};
 
-			CurrencyOf::<T>::reserve(&deposit.owner, deposit.amount)?;
+			// Preconditions tested beforehand. Panic if this is not
+			CurrencyOf::<T>::reserve(&deposit.owner, deposit.amount).unwrap();
 
-			Unicks::<T>::insert(&owner, unick);
+			Unicks::<T>::insert(&owner, unick.clone());
 			Owner::<T>::insert(&unick, UnickOwnershipOf::<T> { owner, deposit });
+		}
+
+		fn check_releasing_preconditions(
+			unick: &UnickOf<T>,
+			caller: &UnickReleaseCaller<T>,
+		) -> Result<(), DispatchError> {
+			let UnickOwnership { owner, deposit } = Owner::<T>::get(unick).ok_or(Error::<T>::UnickNotFound)?;
+
+			match *caller {
+				UnickReleaseCaller::DepositPayer(caller) => {
+					if caller == deposit.owner {
+						Ok(())
+					} else {
+						Err(Error::<T>::NotAuthorized.into())
+					}
+				}
+				UnickReleaseCaller::UnickOwner(caller) => {
+					if caller == owner {
+						Ok(())
+					} else {
+						Err(Error::<T>::NotAuthorized.into())
+					}
+				}
+			}
+		}
+
+		fn unregister_unick_unsafe(unick: &UnickOf<T>) -> UnickOwnershipOf<T> {
+			let unick_ownership = Owner::<T>::take(unick).unwrap();
+			Unicks::<T>::remove(&unick_ownership.owner);
+
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&unick_ownership.deposit);
+
+			unick_ownership
 		}
 	}
 }
