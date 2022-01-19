@@ -108,6 +108,10 @@ where
 	fn authorization_id(&self) -> T::AuthorizationId {
 		self.0.clone()
 	}
+
+	fn weight(&self) -> Weight {
+		0
+	}
 }
 
 /// Mocks that are only used internally

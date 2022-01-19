@@ -109,6 +109,7 @@ pub mod pallet {
 		fn can_remove(&self, who: &T::AttesterId, attestation: &AttestationDetails<T>)
 			-> Result<Weight, DispatchError>;
 		fn authorization_id(&self) -> T::AuthorizationId;
+		fn weight(&self) -> Weight;
 	}
 
 	impl<T> AttestationAccessControl<T> for ()
@@ -135,6 +136,9 @@ pub mod pallet {
 		}
 		fn authorization_id(&self) -> T::AuthorizationId {
 			Default::default()
+		}
+		fn weight(&self) -> Weight {
+			0
 		}
 	}
 
