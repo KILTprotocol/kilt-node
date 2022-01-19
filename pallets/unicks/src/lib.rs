@@ -22,6 +22,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod types;
+mod utils;
 
 pub use pallet::*;
 
@@ -36,7 +37,7 @@ pub mod pallet {
 
 	use kilt_support::{deposit::Deposit, traits::CallSources};
 
-	use crate::types::UnickOwnership;
+	use crate::{types::UnickOwnership, utils::validate_unick};
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
@@ -47,9 +48,9 @@ pub mod pallet {
 	pub(crate) type UnickOf<T> = <T as Config>::Unick;
 	pub(crate) type UnickOwnershipOf<T> = UnickOwnership<DidIdentifierOf<T>, Deposit<AccountIdOf<T>, BalanceOf<T>>>;
 
-	enum UnickReleaseCaller<T: Config> {
-		DepositPayer(AccountIdOf<T>),
-		UnickOwner(DidIdentifierOf<T>),
+	enum UnickReleaseCaller<'a, 'b, T: Config> {
+		DepositPayer(&'a AccountIdOf<T>),
+		UnickOwner(&'b DidIdentifierOf<T>),
 	}
 
 	#[pallet::pallet]
@@ -78,7 +79,7 @@ pub mod pallet {
 		type Deposit: Get<BalanceOf<Self>>;
 		type Currency: Currency<AccountIdOf<Self>> + ReservableCurrency<AccountIdOf<Self>>;
 		type DidIdentifier: Parameter + Default;
-		type FreezeOrigin: EnsureOrigin<Self::Origin>;
+		type BlacklistOrigin: EnsureOrigin<Self::Origin>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		#[pallet::constant]
 		type MaxUnickLength: Get<u32>;
@@ -98,6 +99,12 @@ pub mod pallet {
 			owner: DidIdentifierOf<T>,
 			unick: UnickOf<T>,
 		},
+		UnickBlacklisted {
+			unick: UnickOf<T>,
+		},
+		UnickUnblacklisted {
+			unick: UnickOf<T>,
+		},
 	}
 
 	#[pallet::error]
@@ -107,7 +114,10 @@ pub mod pallet {
 		UnickNotFound,
 		OwnerAlreadyExisting,
 		UnickBlacklisted,
+		UnickNotBlacklisted,
 		NotAuthorized,
+		UnickAlreadyBlacklisted,
+		InternalError,
 	}
 
 	#[pallet::hooks]
@@ -136,7 +146,7 @@ pub mod pallet {
 			let origin = T::RegularOrigin::ensure_origin(origin)?;
 			let owner = origin.subject();
 
-			Self::check_releasing_preconditions(&unick, &UnickReleaseCaller::UnickOwner(owner))?;
+			Self::check_releasing_preconditions(&unick, UnickReleaseCaller::UnickOwner(&owner))?;
 
 			// No failure beyond this point
 
@@ -150,7 +160,7 @@ pub mod pallet {
 		pub fn release_by_payer(origin: OriginFor<T>, unick: UnickOf<T>) -> DispatchResult {
 			let caller = ensure_signed(origin)?;
 
-			Self::check_releasing_preconditions(&unick, &UnickReleaseCaller::DepositPayer(caller))?;
+			Self::check_releasing_preconditions(&unick, UnickReleaseCaller::DepositPayer(&caller))?;
 
 			// No failure beyond this point
 
@@ -161,7 +171,30 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(0)]
-		pub fn blacklist(_origin: OriginFor<T>, _unick: UnickOf<T>) -> DispatchResult {
+		pub fn blacklist(origin: OriginFor<T>, unick: UnickOf<T>) -> DispatchResult {
+			T::BlacklistOrigin::ensure_origin(origin)?;
+
+			Self::check_blacklisting_preconditions(&unick)?;
+
+			// No failure beyond this point
+
+			Self::blacklist_unick_unsafe(&unick);
+			Self::deposit_event(Event::<T>::UnickBlacklisted { unick });
+
+			Ok(())
+		}
+
+		#[pallet::weight(0)]
+		pub fn unblacklist(origin: OriginFor<T>, unick: UnickOf<T>) -> DispatchResult {
+			T::BlacklistOrigin::ensure_origin(origin)?;
+
+			Self::check_unblacklisting_preconditions(&unick)?;
+
+			// No failure beyond this point
+
+			Self::unblacklist_unick_unsafe(&unick);
+			Self::deposit_event(Event::<T>::UnickUnblacklisted { unick });
+
 			Ok(())
 		}
 	}
@@ -175,6 +208,7 @@ pub mod pallet {
 			ensure!(!Unicks::<T>::contains_key(&owner), Error::<T>::UnickAlreadyClaimed);
 			ensure!(!Owner::<T>::contains_key(&unick), Error::<T>::OwnerAlreadyExisting);
 			ensure!(!Blacklist::<T>::contains_key(&unick), Error::<T>::UnickBlacklisted);
+			validate_unick::<T>(unick)?;
 
 			ensure!(
 				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
@@ -202,20 +236,20 @@ pub mod pallet {
 
 		fn check_releasing_preconditions(
 			unick: &UnickOf<T>,
-			caller: &UnickReleaseCaller<T>,
+			caller: UnickReleaseCaller<T>,
 		) -> Result<(), DispatchError> {
 			let UnickOwnership { owner, deposit } = Owner::<T>::get(unick).ok_or(Error::<T>::UnickNotFound)?;
 
-			match *caller {
+			match caller {
 				UnickReleaseCaller::DepositPayer(caller) => {
-					if caller == deposit.owner {
+					if caller == &deposit.owner {
 						Ok(())
 					} else {
 						Err(Error::<T>::NotAuthorized.into())
 					}
 				}
 				UnickReleaseCaller::UnickOwner(caller) => {
-					if caller == owner {
+					if caller == &owner {
 						Ok(())
 					} else {
 						Err(Error::<T>::NotAuthorized.into())
@@ -231,6 +265,34 @@ pub mod pallet {
 			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&unick_ownership.deposit);
 
 			unick_ownership
+		}
+
+		fn check_blacklisting_preconditions(unick: &UnickOf<T>) -> Result<(), DispatchError> {
+			ensure!(
+				Blacklist::<T>::contains_key(&unick),
+				Error::<T>::UnickAlreadyBlacklisted
+			);
+			let UnickOwnership { owner, .. } = Owner::<T>::get(unick).ok_or(Error::<T>::UnickNotFound)?;
+			ensure!(Unicks::<T>::contains_key(&owner), Error::<T>::InternalError);
+
+			Ok(())
+		}
+
+		fn blacklist_unick_unsafe(unick: &UnickOf<T>) -> UnickOwnershipOf<T> {
+			let unick_ownership = Self::unregister_unick_unsafe(unick);
+			Blacklist::<T>::insert(&unick, ());
+
+			unick_ownership
+		}
+
+		fn check_unblacklisting_preconditions(unick: &UnickOf<T>) -> Result<(), DispatchError> {
+			ensure!(Blacklist::<T>::contains_key(&unick), Error::<T>::UnickNotBlacklisted);
+
+			Ok(())
+		}
+
+		fn unblacklist_unick_unsafe(unick: &UnickOf<T>) {
+			Blacklist::<T>::remove(unick);
 		}
 	}
 }
