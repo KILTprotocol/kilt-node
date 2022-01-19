@@ -1128,6 +1128,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_treasury, Treasury);
 			add_benchmark!(params, batches, pallet_utility, Utility);
 			add_benchmark!(params, batches, pallet_vesting, Vesting);
+			add_benchmark!(params, batches, pallet_proxy, Proxy);
 
 			// KILT
 			add_benchmark!(params, batches, attestation, Attestation);
