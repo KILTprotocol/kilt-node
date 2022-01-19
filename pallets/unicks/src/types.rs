@@ -21,33 +21,8 @@
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
 
-pub mod traits {
-	pub trait TransferrableStatus {
-		fn is_transfering(&self) -> bool;
-		fn initiate_transfer(&mut self);
-	}
-}
-
 #[derive(Clone, Encode, Decode, PartialEq, TypeInfo)]
-#[repr(u8)]
-pub enum UnickStatus {
-	Owned,
-	PendingTransfer,
-}
-
-impl traits::TransferrableStatus for UnickStatus {
-	fn is_transfering(&self) -> bool {
-		matches!(self, Self::PendingTransfer)
-	}
-
-	fn initiate_transfer(&mut self) {
-		*self = Self::PendingTransfer;
-	}
-}
-
-#[derive(Clone, Encode, Decode, PartialEq, TypeInfo)]
-pub struct UnickOwnership<Owner, Status, Deposit> {
+pub struct UnickOwnership<Owner, Deposit> {
 	pub(crate) owner: Owner,
-	pub(crate) status: Status,
 	pub(crate) deposit: Deposit,
 }

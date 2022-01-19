@@ -36,14 +36,16 @@ pub mod pallet {
 
 	use kilt_support::{deposit::Deposit, traits::CallSources};
 
-	use crate::types::{traits::TransferrableStatus, UnickOwnership};
+	use crate::types::UnickOwnership;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 	pub(crate) type DidIdentifierOf<T> = <T as Config>::DidIdentifier;
 	pub(crate) type UnickOf<T> = <T as Config>::Unick;
+	pub(crate) type UnickOwnershipOf<T> = UnickOwnership<DidIdentifierOf<T>, Deposit<AccountIdOf<T>, BalanceOf<T>>>;
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
@@ -53,27 +55,22 @@ pub mod pallet {
 	// Unick -> DID
 	#[pallet::storage]
 	#[pallet::getter(fn owner)]
-	pub type Owner<T> = StorageMap<
-		_,
-		Blake2_128Concat,
-		UnickOf<T>,
-		UnickOwnership<AccountIdOf<T>, Deposit<AccountIdOf<T>, BalanceOf<T>>, <T as Config>::Status>,
-	>;
+	pub type Owner<T> = StorageMap<_, Blake2_128Concat, UnickOf<T>, UnickOwnershipOf<T>>;
 
-	// DID || Unick -> ()
+	// DID -> Unick
 	#[pallet::storage]
 	#[pallet::getter(fn unicks)]
-	pub type Unicks<T> = StorageDoubleMap<_, Twox64Concat, DidIdentifierOf<T>, Blake2_128Concat, UnickOf<T>, ()>;
+	pub type Unicks<T> = StorageMap<_, Twox64Concat, DidIdentifierOf<T>, UnickOf<T>>;
 
 	// Unick -> ()
 	#[pallet::storage]
-	#[pallet::getter(fn is_frozen)]
-	pub type Frozen<T> = StorageMap<_, Blake2_128Concat, UnickOf<T>, ()>;
+	#[pallet::getter(fn is_blacklisted)]
+	pub type Blacklist<T> = StorageMap<_, Blake2_128Concat, UnickOf<T>, ()>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		#[pallet::constant]
-		type CharacterDeposit: Get<BalanceOf<Self>>;
+		type Deposit: Get<BalanceOf<Self>>;
 		type Currency: Currency<AccountIdOf<Self>> + ReservableCurrency<AccountIdOf<Self>>;
 		type DidIdentifier: Parameter + Default;
 		type FreezeOrigin: EnsureOrigin<Self::Origin>;
@@ -83,12 +80,23 @@ pub mod pallet {
 		type OriginSuccess: CallSources<AccountIdOf<Self>, DidIdentifierOf<Self>>;
 		type RegularOrigin: EnsureOrigin<Success = Self::OriginSuccess, <Self as frame_system::Config>::Origin>;
 		type Unick: Parameter;
-		type Status: Encode + Decode + TypeInfo + TransferrableStatus;
 	}
 
 	#[pallet::event]
-	pub enum Event<T> {
-		Ok,
+	#[pallet::generate_deposit(pub(super) fn deposit_event)]
+	pub enum Event<T: Config> {
+		UnickClaimed {
+			owner: DidIdentifierOf<T>,
+			unick: UnickOf<T>,
+		},
+	}
+
+	#[pallet::error]
+	pub enum Error<T> {
+		InsufficientFunds,
+		UnickAlreadyClaimed,
+		OwnerAlreadyExisting,
+		UnickBlacklisted,
 	}
 
 	#[pallet::hooks]
@@ -97,7 +105,23 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(0)]
-		pub fn claim(_origin: OriginFor<T>, _unick: UnickOf<T>) -> DispatchResult {
+		pub fn claim(origin: OriginFor<T>, unick: UnickOf<T>) -> DispatchResult {
+			let origin = T::RegularOrigin::ensure_origin(origin)?;
+			let payer = origin.sender();
+			let owner = origin.subject();
+
+			ensure!(
+				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(&payer, <T as Config>::Deposit::get()),
+				Error::<T>::InsufficientFunds
+			);
+
+			Self::check_claiming_preconditions(&unick, &owner)?;
+
+			// No failure beyond this point
+
+			Self::register_unick(unick.clone(), owner.clone(), payer);
+			Self::deposit_event(Event::<T>::UnickClaimed { owner, unick });
+
 			Ok(())
 		}
 
@@ -112,23 +136,29 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(0)]
-		pub fn open_transfer(_origin: OriginFor<T>, _unick: UnickOf<T>) -> DispatchResult {
-			Ok(())
-		}
-
-		#[pallet::weight(0)]
-		pub fn cancel_transfer(_origin: OriginFor<T>, _unick: UnickOf<T>) -> DispatchResult {
-			Ok(())
-		}
-
-		#[pallet::weight(0)]
-		pub fn finalize_transfer(_origin: OriginFor<T>, _unick: UnickOf<T>) -> DispatchResult {
-			Ok(())
-		}
-
-		#[pallet::weight(0)]
 		pub fn blacklist(_origin: OriginFor<T>, _unick: UnickOf<T>) -> DispatchResult {
 			Ok(())
+		}
+	}
+
+	impl<T: Config> Pallet<T> {
+		fn check_claiming_preconditions(unick: &UnickOf<T>, owner: &DidIdentifierOf<T>) -> Result<(), DispatchError> {
+			ensure!(!Unicks::<T>::contains_key(&owner), Error::<T>::UnickAlreadyClaimed);
+			ensure!(!Owner::<T>::contains_key(&unick), Error::<T>::OwnerAlreadyExisting);
+			ensure!(!Blacklist::<T>::contains_key(&unick), Error::<T>::UnickBlacklisted);
+			Ok(())
+		}
+
+		fn register_unick(unick: UnickOf<T>, owner: DidIdentifierOf<T>, deposit_payer: AccountIdOf<T>) {
+			let deposit = Deposit {
+				owner: deposit_payer,
+				amount: T::Deposit::get(),
+			};
+
+			CurrencyOf::<T>::reserve(&deposit.owner, deposit.amount)?;
+
+			Unicks::<T>::insert(&owner, unick);
+			Owner::<T>::insert(&unick, UnickOwnershipOf::<T> { owner, deposit });
 		}
 	}
 }
