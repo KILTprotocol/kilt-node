@@ -22,7 +22,8 @@ use codec::{Decode, Encode};
 use scale_info::TypeInfo;
 
 #[derive(Clone, Encode, Decode, PartialEq, TypeInfo)]
-pub struct UnickOwnership<Owner, Deposit> {
+pub struct UnickOwnership<Owner, Deposit, BlockNumber> {
 	pub(crate) owner: Owner,
+	pub(crate) claimed_at: BlockNumber,
 	pub(crate) deposit: Deposit,
 }

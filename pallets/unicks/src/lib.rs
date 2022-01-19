@@ -37,16 +37,18 @@ pub mod pallet {
 
 	use kilt_support::{deposit::Deposit, traits::CallSources};
 
-	use crate::{types::UnickOwnership, utils::validate_unick};
+	use crate::{types::UnickOwnership, utils::check_unick_validity};
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+	pub(crate) type BlockNumberFor<T> = <T as frame_system::Config>::BlockNumber;
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 	pub(crate) type DidIdentifierOf<T> = <T as Config>::DidIdentifier;
 	pub(crate) type UnickOf<T> = <T as Config>::Unick;
-	pub(crate) type UnickOwnershipOf<T> = UnickOwnership<DidIdentifierOf<T>, Deposit<AccountIdOf<T>, BalanceOf<T>>>;
+	pub(crate) type UnickOwnershipOf<T> =
+		UnickOwnership<DidIdentifierOf<T>, Deposit<AccountIdOf<T>, BalanceOf<T>>, BlockNumberFor<T>>;
 
 	enum UnickReleaseCaller<'a, 'b, T: Config> {
 		DepositPayer(&'a AccountIdOf<T>),
@@ -85,7 +87,7 @@ pub mod pallet {
 		type MaxUnickLength: Get<u32>;
 		type OriginSuccess: CallSources<AccountIdOf<Self>, DidIdentifierOf<Self>>;
 		type RegularOrigin: EnsureOrigin<Success = Self::OriginSuccess, <Self as frame_system::Config>::Origin>;
-		type Unick: Parameter;
+		type Unick: Parameter + AsRef<[u8]>;
 	}
 
 	#[pallet::event]
@@ -117,6 +119,7 @@ pub mod pallet {
 		UnickNotBlacklisted,
 		NotAuthorized,
 		UnickAlreadyBlacklisted,
+		InvalidUnickFormat,
 		InternalError,
 	}
 
@@ -208,7 +211,7 @@ pub mod pallet {
 			ensure!(!Unicks::<T>::contains_key(&owner), Error::<T>::UnickAlreadyClaimed);
 			ensure!(!Owner::<T>::contains_key(&unick), Error::<T>::OwnerAlreadyExisting);
 			ensure!(!Blacklist::<T>::contains_key(&unick), Error::<T>::UnickBlacklisted);
-			validate_unick::<T>(unick)?;
+			check_unick_validity::<T>(unick)?;
 
 			ensure!(
 				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
@@ -226,19 +229,27 @@ pub mod pallet {
 				owner: deposit_payer,
 				amount: T::Deposit::get(),
 			};
+			let block_number = frame_system::Pallet::<T>::block_number();
 
 			// Preconditions tested beforehand. Panic if this is not
 			CurrencyOf::<T>::reserve(&deposit.owner, deposit.amount).unwrap();
 
 			Unicks::<T>::insert(&owner, unick.clone());
-			Owner::<T>::insert(&unick, UnickOwnershipOf::<T> { owner, deposit });
+			Owner::<T>::insert(
+				&unick,
+				UnickOwnershipOf::<T> {
+					owner,
+					claimed_at: block_number,
+					deposit,
+				},
+			);
 		}
 
 		fn check_releasing_preconditions(
 			unick: &UnickOf<T>,
 			caller: UnickReleaseCaller<T>,
 		) -> Result<(), DispatchError> {
-			let UnickOwnership { owner, deposit } = Owner::<T>::get(unick).ok_or(Error::<T>::UnickNotFound)?;
+			let UnickOwnership { owner, deposit, .. } = Owner::<T>::get(unick).ok_or(Error::<T>::UnickNotFound)?;
 
 			match caller {
 				UnickReleaseCaller::DepositPayer(caller) => {
