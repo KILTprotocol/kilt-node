@@ -694,10 +694,10 @@ parameter_types! {
 	pub const ProxyDepositBase: Balance = KILT;
 	// Additional storage item size of 33 bytes.
 	pub const ProxyDepositFactor: Balance = KILT;
-	pub const MaxProxies: u16 = 32;
+	pub const MaxProxies: u16 = constants::proxy::MAX_PROXIES;
 	pub const AnnouncementDepositBase: Balance = KILT;
 	pub const AnnouncementDepositFactor: Balance = KILT;
-	pub const MaxPending: u16 = 32;
+	pub const MaxPending: u16 = constants::proxy::MAX_PENDING;
 }
 
 /// The type used to represent the kinds of proxying allowed.
@@ -708,12 +708,8 @@ pub enum ProxyType {
 	Any,
 	NonTransfer,
 	Governance,
-	Staking,
+	ParachainStaking,
 	CancelProxy,
-	Ctype,
-	Attestation,
-	Delegation,
-	Did,
 }
 
 impl Default for ProxyType {
@@ -754,11 +750,7 @@ impl InstanceFilter<Call> for ProxyType {
 					| Call::Council(..) | Call::TechnicalCommittee(..)
 					| Call::Treasury(..) | Call::Utility(..)
 			),
-			ProxyType::Ctype => matches!(c, Call::Ctype(..)),
-			ProxyType::Delegation => matches!(c, Call::Delegation(..)),
-			ProxyType::Attestation => matches!(c, Call::Attestation(..)),
-			ProxyType::Did => matches!(c, Call::Did(..)),
-			ProxyType::Staking => {
+			ProxyType::ParachainStaking => {
 				matches!(c, Call::ParachainStaking(..) | Call::Session(..) | Call::Utility(..))
 			}
 			ProxyType::CancelProxy => {
@@ -831,7 +823,10 @@ construct_runtime! {
 
 		// System scheduler.
 		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 42,
-
+		
+		// Proxy pallet.
+		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 43,
+		
 		// KILT Pallets. Start indices 60 to leave room
 		KiltLaunch: kilt_launch = 60,
 		Ctype: ctype = 61,
@@ -846,8 +841,7 @@ construct_runtime! {
 		ParachainSystem: cumulus_pallet_parachain_system = 80,
 		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 81,
 
-		// Proxy pallet.
-		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 90,
+		
 	}
 }
 

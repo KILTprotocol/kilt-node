@@ -516,7 +516,6 @@ parameter_types! {
 pub enum ProxyType {
 	Any,
 	NonTransfer,
-	Staking,
 	CancelProxy,
 	Ctype,
 	Attestation,
@@ -554,9 +553,6 @@ impl InstanceFilter<Call> for ProxyType {
 			ProxyType::Delegation => matches!(c, Call::Delegation(..)),
 			ProxyType::Attestation => matches!(c, Call::Attestation(..)),
 			ProxyType::Did => matches!(c, Call::Did(..)),
-			ProxyType::Staking => {
-				matches!(c, Call::Session(..) | Call::Utility(..))
-			}
 			ProxyType::CancelProxy => {
 				matches!(c, Call::Proxy(pallet_proxy::Call::reject_announcement { .. }))
 			}
@@ -631,7 +627,7 @@ construct_runtime!(
 		Utility: pallet_utility = 35,
 		// DELETED CrowdloanContributors: 36,
 
-		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 40,
+		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 37,
 	}
 );
 
