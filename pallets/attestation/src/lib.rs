@@ -102,39 +102,28 @@ pub mod pallet {
 	use ctype::CtypeHashOf;
 	use kilt_support::{deposit::Deposit, traits::CallSources};
 
-	pub trait AttestationAccessControl<T: Config> {
-		fn can_attest(&self, who: &T::AttesterId) -> Result<Weight, DispatchError>;
-		fn can_revoke(&self, who: &T::AttesterId, attestation: &AttestationDetails<T>)
-			-> Result<Weight, DispatchError>;
-		fn can_remove(&self, who: &T::AttesterId, attestation: &AttestationDetails<T>)
-			-> Result<Weight, DispatchError>;
-		fn authorization_id(&self) -> T::AuthorizationId;
+	pub trait AttestationAccessControl<AttesterId, AuthorizationId, T: Config> {
+		fn can_attest(&self, who: &AttesterId) -> Result<Weight, DispatchError>;
+		fn can_revoke(&self, who: &AttesterId, attestation: &AttestationDetails<T>) -> Result<Weight, DispatchError>;
+		fn can_remove(&self, who: &AttesterId, attestation: &AttestationDetails<T>) -> Result<Weight, DispatchError>;
+		fn authorization_id(&self) -> AuthorizationId;
 		fn weight(&self) -> Weight;
 	}
 
-	impl<T> AttestationAccessControl<T> for ()
+	impl<AttesterId, AuthorizationId, T: Config> AttestationAccessControl<AttesterId, AuthorizationId, T> for ()
 	where
-		T: Config,
-		T::AuthorizationId: Default,
+		AuthorizationId: Default,
 	{
-		fn can_attest(&self, _who: &T::AttesterId) -> Result<Weight, DispatchError> {
+		fn can_attest(&self, _who: &AttesterId) -> Result<Weight, DispatchError> {
 			Err(DispatchError::Other("Unimplemented"))
 		}
-		fn can_revoke(
-			&self,
-			_who: &T::AttesterId,
-			_attestation: &AttestationDetails<T>,
-		) -> Result<Weight, DispatchError> {
+		fn can_revoke(&self, _who: &AttesterId, _attestation: &AttestationDetails<T>) -> Result<Weight, DispatchError> {
 			Err(DispatchError::Other("Unimplemented"))
 		}
-		fn can_remove(
-			&self,
-			_who: &T::AttesterId,
-			_attestation: &AttestationDetails<T>,
-		) -> Result<Weight, DispatchError> {
+		fn can_remove(&self, _who: &AttesterId, _attestation: &AttestationDetails<T>) -> Result<Weight, DispatchError> {
 			Err(DispatchError::Other("Unimplemented"))
 		}
-		fn authorization_id(&self) -> T::AuthorizationId {
+		fn authorization_id(&self) -> AuthorizationId {
 			Default::default()
 		}
 		fn weight(&self) -> Weight {
@@ -183,7 +172,7 @@ pub mod pallet {
 
 		type AuthorizationId: Parameter;
 
-		type AccessControl: Parameter + AttestationAccessControl<Self>;
+		type AccessControl: Parameter + AttestationAccessControl<Self::AttesterId, Self::AuthorizationId, Self>;
 	}
 
 	#[pallet::pallet]

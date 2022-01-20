@@ -77,7 +77,7 @@ where
 #[derive(Clone, Debug, Encode, Decode, TypeInfo, PartialEq, Eq)]
 #[scale_info(skip_type_params(T))]
 pub struct MockAccessControl<T: Config>(pub T::AttesterId);
-impl<T: Config> AttestationAccessControl<T> for MockAccessControl<T>
+impl<T> AttestationAccessControl<T::AttesterId, T::AuthorizationId, T> for MockAccessControl<T>
 where
 	T: Config<AuthorizationId = <T as Config>::AttesterId>,
 {
