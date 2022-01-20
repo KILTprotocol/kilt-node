@@ -27,6 +27,7 @@ sp-keystore = {branch = "polkadot-v0.9.12", default-features = false, git = "htt
 
 [dependencies]
 # Internal dependencies
+attestation = {default-features = false, path = "../attestation"}
 ctype = {default-features = false, path = "../ctype"}
 kilt-support = {default-features = false, path = "../../support"}
 

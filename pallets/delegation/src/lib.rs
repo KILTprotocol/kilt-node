@@ -271,6 +271,8 @@ pub mod pallet {
 		UnauthorizedRemoval,
 		/// The delegation creator is not allowed to create the delegation.
 		UnauthorizedDelegation,
+		/// The access was not granted because of an insufficient delegation.
+		AccessDenied,
 		/// Max number of revocations for delegation nodes has been reached for
 		/// the operation.
 		ExceededRevocationBounds,
@@ -937,5 +939,67 @@ impl<T: Config> Pallet<T> {
 		Self::deposit_event(Event::DelegationRemoved(delegation_node.deposit.owner, *delegation));
 		removals = removals.saturating_add(1);
 		Ok((removals, consumed_weight))
+	}
+}
+
+pub struct DelegationAc<T: Config>(DelegationNodeIdOf<T>, u32);
+impl<T> attestation::AttestationAccessControl<DelegatorIdOf<T>, DelegationNodeIdOf<T>, T> for DelegationAc<T>
+where
+	T: Config<DelegationEntityId = <T as attestation::Config>::AttesterId> + attestation::Config,
+	<T as attestation::Config>::AuthorizationId: PartialEq<DelegationNodeIdOf<T>>,
+{
+	fn can_attest(&self, who: &T::AttesterId) -> Result<Weight, DispatchError> {
+		match Pallet::<T>::is_delegating(who, &self.0, self.1)? {
+			(true, checks) => Ok(<T as Config>::WeightInfo::is_delegating(checks)),
+			_ => Err(Error::<T>::AccessDenied.into()),
+		}
+	}
+
+	fn can_revoke(
+		&self,
+		who: &T::AttesterId,
+		attestation: &attestation::AttestationDetails<T>,
+	) -> Result<Weight, DispatchError> {
+		ensure!(
+			attestation
+				.authorization_id
+				.as_ref()
+				.map(|id| id == &self.0)
+				.unwrap_or(false),
+			Error::<T>::AccessDenied
+		);
+
+		match Pallet::<T>::is_delegating(who, &self.0, self.1)? {
+			(true, checks) => Ok(<T as Config>::WeightInfo::is_delegating(checks)),
+			_ => Err(Error::<T>::AccessDenied.into()),
+		}
+	}
+
+	fn can_remove(
+		&self,
+		who: &T::AttesterId,
+		attestation: &attestation::AttestationDetails<T>,
+	) -> Result<Weight, DispatchError> {
+		ensure!(
+			attestation
+				.authorization_id
+				.as_ref()
+				.map(|id| id == &self.0)
+				.unwrap_or(false),
+			Error::<T>::AccessDenied
+		);
+
+		match Pallet::<T>::is_delegating(who, &self.0, self.1)? {
+			(true, checks) => Ok(<T as Config>::WeightInfo::is_delegating(checks)),
+			_ => Err(Error::<T>::AccessDenied.into()),
+		}
+	}
+
+	fn authorization_id(&self) -> DelegationNodeIdOf<T> {
+		self.0
+	}
+
+	fn weight(&self) -> Weight {
+		<T as Config>::WeightInfo::is_delegating(self.1)
 	}
 }
