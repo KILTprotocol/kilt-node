@@ -18,7 +18,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use sp_std::{marker::PhantomData, str};
+use sp_std::{fmt::Debug, marker::PhantomData, vec::Vec};
 
 use codec::{Decode, Encode};
 use frame_support::{ensure, BoundedVec};
@@ -26,39 +26,56 @@ use scale_info::TypeInfo;
 
 use crate::{Config, Error};
 
-pub mod traits {
-	pub trait Normalizable<Output = Self> {
-		fn normalize(&self) -> Output;
-	}
-}
+/// A KILT Unick.
+///
+/// It is bounded in size and can only contain a subset of ASCII characters.
+#[derive(Encode, Decode, TypeInfo)]
+#[scale_info(skip_type_params(T, MaxLength))]
+pub struct AsciiUnick<T, MaxLength>(BoundedVec<u8, MaxLength>, PhantomData<T>);
 
-pub struct Unick<T, S>(BoundedVec<u8, S>, PhantomData<T>);
-
-impl<T: Config> TryFrom<Vec<u8>> for Unick<T, T::MaxUnickLength> {
+impl<T: Config> TryFrom<Vec<u8>> for AsciiUnick<T, T::MaxUnickLength> {
 	type Error = Error<T>;
 
+	/// Fallible initialization from a provided byte vector if it exceeds the
+	/// maximum length or contains invalid ASCII characters.
 	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-		let bounded_vec =
-			BoundedVec::<u8, T::MaxUnickLength>::try_from(value).map_err(|_| Self::Error::InvalidUnickFormat)?;
+		let bounded_vec: BoundedVec<u8, T::MaxUnickLength> =
+			BoundedVec::try_from(value).map_err(|_| Self::Error::InvalidUnickFormat)?;
 		ensure!(
 			crate::utils::is_byte_array_ascii_string(&bounded_vec),
 			Self::Error::InvalidUnickFormat
 		);
-
-		Ok(Self(bounded_vec.try_into().unwrap(), PhantomData))
+		Ok(Self(bounded_vec, PhantomData))
 	}
 }
 
-impl<T: Config> traits::Normalizable<Self> for Unick<T, T::MaxUnickLength> {
-	fn normalize(&self) -> Self {
-		let lowercase_bytes = str::from_utf8(&self.0).unwrap().to_lowercase().into_bytes();
-		Self::try_from(lowercase_bytes).unwrap()
+impl<T: Config> Debug for AsciiUnick<T, T::MaxUnickLength> {
+	fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
+		f.debug_tuple("AsciiUnick").field(&self.0).finish()
 	}
 }
 
+// FIXME: did not find a way to automatically implement this.
+impl<T: Config> PartialEq for AsciiUnick<T, T::MaxUnickLength> {
+	fn eq(&self, other: &Self) -> bool {
+		self.0 == other.0
+	}
+}
+
+// FIXME: did not find a way to automatically implement this.
+impl<T: Config> Clone for AsciiUnick<T, T::MaxUnickLength> {
+	fn clone(&self) -> Self {
+		Self(self.0.clone(), self.1)
+	}
+}
+
+/// KILT unick ownership details.
 #[derive(Clone, Encode, Decode, PartialEq, TypeInfo)]
 pub struct UnickOwnership<Owner, Deposit, BlockNumber> {
+	/// The owner of the unick.
 	pub(crate) owner: Owner,
+	/// The block number at which the unick was claimed.
 	pub(crate) claimed_at: BlockNumber,
+	/// The deposit associated with the unick.
 	pub(crate) deposit: Deposit,
 }

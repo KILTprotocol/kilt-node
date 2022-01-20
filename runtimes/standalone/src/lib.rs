@@ -444,20 +444,19 @@ impl pallet_did_lookup::Config for Runtime {
 }
 
 parameter_types! {
-	pub const Deposit: Balance = KILT;
 	pub const MaxUnickLength: u32 = 64;
 }
 
 impl kilt_unicks::Config for Runtime {
-	type Deposit = Deposit;
-	type Currency = Balances;
-	type DidIdentifier = DidIdentifier;
 	type BlacklistOrigin = EnsureRoot<AccountId>;
+	type Currency = Balances;
+	type Deposit = Deposit;
 	type Event = Event;
 	type MaxUnickLength = MaxUnickLength;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type RegularOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
-	type Unick = kilt_unicks::types::Unick<Runtime, MaxUnickLength>;
+	type Unick = kilt_unicks::types::AsciiUnick<Runtime, MaxUnickLength>;
+	type UnickOwner = DidIdentifier;
 }
 
 parameter_types! {

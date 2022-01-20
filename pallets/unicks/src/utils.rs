@@ -18,11 +18,12 @@
 
 use sp_std::str;
 
+/// Verify that a given slice contains only allowed ASCII characters.
 pub(crate) fn is_byte_array_ascii_string(input: &[u8]) -> bool {
 	if let Ok(encoded_unick) = str::from_utf8(input) {
 		encoded_unick.chars().all(|c| {
 			// TODO: Change once we reach a decision on which characters to allow
-			matches!(c, ':' | '#' | '@' | '$' | '&' | '(' | ')' | '*' | '+' | '-' | '.' | '_' | '0'..='9' | 'a'..='z' | 'A'..='Z')
+			matches!(c, 'a'..='z' | '0'..='9' | ':' | '#' | '@' | '$' | '&' | '(' | ')' | '*' | '+' | '-' | '.' | '_')
 		})
 	} else {
 		false
