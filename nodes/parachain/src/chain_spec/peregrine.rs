@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2021 BOTLabs GmbH
+// Copyright (C) 2019-2022 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -33,14 +33,14 @@ use sc_service::ChainType;
 use sp_core::{crypto::UncheckedInto, sr25519};
 use sp_runtime::traits::Zero;
 
-use crate::chain_spec::{get_account_id_from_seed, get_from_seed, get_properties, Extensions};
+use crate::chain_spec::{get_account_id_from_seed, get_from_seed, get_properties, Extensions, DEFAULT_PARA_ID};
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;
 
 const TRANSFER_ACCOUNT: [u8; 32] = hex!["6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c"];
 
-pub fn make_dev_spec(id: ParaId) -> Result<ChainSpec, String> {
+pub fn make_dev_spec() -> Result<ChainSpec, String> {
 	let properties = get_properties("PILT", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
 
@@ -90,7 +90,7 @@ pub fn make_dev_spec(id: ParaId) -> Result<ChainSpec, String> {
 					get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
 					get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
 				],
-				id,
+				DEFAULT_PARA_ID,
 			)
 		},
 		vec![],
@@ -99,14 +99,15 @@ pub fn make_dev_spec(id: ParaId) -> Result<ChainSpec, String> {
 		Some(properties),
 		Extensions {
 			relay_chain: "rococo_local_testnet".into(),
-			para_id: id.into(),
+			para_id: DEFAULT_PARA_ID.into(),
 		},
 	))
 }
 
-pub fn make_new_spec(id: ParaId) -> Result<ChainSpec, String> {
+pub fn make_new_spec() -> Result<ChainSpec, String> {
 	let properties = get_properties("PILT", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
+	let id: ParaId = 1000.into();
 
 	Ok(ChainSpec::from_genesis(
 		"KILT Peregrine Testnet",
@@ -189,7 +190,6 @@ fn testnet_genesis(
 	GenesisConfig {
 		system: SystemConfig {
 			code: wasm_binary.to_vec(),
-			changes_trie_config: Default::default(),
 		},
 		balances: BalancesConfig {
 			balances: endowed_accounts

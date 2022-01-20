@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2021 BOTLabs GmbH
+// Copyright (C) 2019-2022 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -129,6 +129,7 @@ pub mod staking {
 	#[cfg(not(feature = "fast-gov"))]
 	pub const MAX_CANDIDATES: u32 = 75;
 
+	pub const MAX_DELEGATORS_PER_COLLATOR: u32 = 35;
 	pub const MIN_DELEGATOR_STAKE: Balance = 20 * KILT;
 
 	pub const NETWORK_REWARD_RATE: Perquintill = Perquintill::from_percent(10);
