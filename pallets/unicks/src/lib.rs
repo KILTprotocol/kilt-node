@@ -24,6 +24,9 @@
 pub mod types;
 mod utils;
 
+#[cfg(test)]
+mod mock;
+
 pub use pallet::*;
 
 #[frame_support::pallet]

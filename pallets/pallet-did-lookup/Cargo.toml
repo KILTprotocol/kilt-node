@@ -10,6 +10,7 @@ version = "1.3.1"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dev-dependencies]
+kilt-support = {features = ["mock"], path = "../../support"}
 runtime-common = {path = "../../runtimes/common"}
 
 pallet-balances = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
