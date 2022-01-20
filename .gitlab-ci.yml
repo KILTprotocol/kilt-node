@@ -79,7 +79,7 @@ build:
 
 build-wasm-peregrine:
   image:
-    name: paritytech/srtool:1.53.0
+    name: paritytech/srtool:1.57.0
     entrypoint: [""]
   stage: build
   only:
