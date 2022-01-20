@@ -44,6 +44,8 @@ fn load_spec(id: &str, runtime: &str) -> std::result::Result<Box<dyn sc_service:
 		("peregrine-new", _) => Ok(Box::new(chain_spec::peregrine::make_new_spec()?)),
 		("spiritnet-dev", _) => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_dev()?)),
 		("wilt-new", _) => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_wilt()?)),
+		("rilt-new", _) => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_rilt()?)),
+		("rilt", _) => Ok(Box::new(chain_spec::spiritnet::load_rilt_spec()?)),
 		("spiritnet", _) => Ok(Box::new(chain_spec::spiritnet::load_spiritnet_spec()?)),
 		("", "spiritnet") => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_dev()?)),
 		("", "peregrine") => Ok(Box::new(chain_spec::peregrine::make_dev_spec()?)),
