@@ -52,20 +52,16 @@ impl<T: frame_system::Config> attestation::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(6_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
-	fn revoke(d: u32, ) -> Weight {
+	fn revoke() -> Weight {
 		(37_043_000_u64)
 			// Standard Error: 45_000
-			.saturating_add((6_394_000_u64).saturating_mul(d as Weight))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(d as Weight)))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
-	fn remove(d: u32, ) -> Weight {
+	fn remove() -> Weight {
 		(64_305_000_u64)
 			// Standard Error: 41_000
-			.saturating_add((6_297_000_u64).saturating_mul(d as Weight))
 			.saturating_add(T::DbWeight::get().reads(4_u64))
-			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(d as Weight)))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	fn reclaim_deposit() -> Weight {

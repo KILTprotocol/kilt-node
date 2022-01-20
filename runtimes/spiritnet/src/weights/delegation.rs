@@ -112,4 +112,15 @@ impl<T: frame_system::Config> delegation::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().writes(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes((2 as Weight).saturating_mul(r as Weight)))
 	}
+
+	// TODO: run benchmarks
+	fn is_delegating(r: u32) -> Weight {
+		(53_370_000 as Weight)
+			// Standard Error: 126_000
+			.saturating_add((39_346_000 as Weight).saturating_mul(r as Weight))
+			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(r as Weight)))
+			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+			.saturating_add(T::DbWeight::get().writes((2 as Weight).saturating_mul(r as Weight)))
+	}
 }

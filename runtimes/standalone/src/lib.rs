@@ -314,6 +314,9 @@ impl attestation::Config for Runtime {
 	type Currency = Balances;
 	type Deposit = AttestationDeposit;
 	type MaxDelegatedAttestations = MaxDelegatedAttestations;
+	type AttesterId = DidIdentifier;
+	type AuthorizationId = ();
+	type AccessControl = ();
 }
 
 parameter_types! {

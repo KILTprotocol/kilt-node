@@ -378,7 +378,6 @@ dependencies = [
  "log",
  "pallet-balances",
  "parity-scale-codec",
- "runtime-common",
  "scale-info",
  "serde",
  "sp-core",
@@ -1419,7 +1418,6 @@ dependencies = [
  "log",
  "pallet-balances",
  "parity-scale-codec",
- "runtime-common",
  "scale-info",
  "serde",
  "sp-core",
@@ -1831,6 +1829,7 @@ dependencies = [
 name = "delegation"
 version = "1.3.1"
 dependencies = [
+ "attestation",
  "bitflags",
  "ctype",
  "env_logger 0.8.4",
@@ -1841,7 +1840,6 @@ dependencies = [
  "log",
  "pallet-balances",
  "parity-scale-codec",
- "runtime-common",
  "scale-info",
  "serde",
  "sp-core",
@@ -8538,6 +8536,7 @@ dependencies = [
 name = "runtime-common"
 version = "0.1.0"
 dependencies = [
+ "attestation",
  "frame-support",
  "frame-system",
  "pallet-authorship",
