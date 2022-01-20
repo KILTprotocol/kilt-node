@@ -143,8 +143,6 @@ pub mod pallet {
 		NotAuthorized,
 		/// A valid unick cannot be decoded from the provided input.
 		InvalidUnickFormat,
-		/// Catch-all for any internal errors.
-		InternalError,
 	}
 
 	#[pallet::hooks]
