@@ -233,6 +233,10 @@ pub fn get_chain_spec_rilt() -> Result<ChainSpec, String> {
 	))
 }
 
+pub fn load_rilt_spec() -> Result<ChainSpec, String> {
+	ChainSpec::from_json_bytes(&include_bytes!("../../res/rilt.json")[..])
+}
+
 pub fn load_spiritnet_spec() -> Result<ChainSpec, String> {
 	ChainSpec::from_json_bytes(&include_bytes!("../../res/spiritnet.json")[..])
 }
