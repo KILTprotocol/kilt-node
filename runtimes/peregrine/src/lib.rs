@@ -60,7 +60,6 @@ use runtime_common::{
 	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
-
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 
@@ -830,10 +829,10 @@ construct_runtime! {
 
 		// System scheduler.
 		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 42,
-		
+
 		// Proxy pallet.
 		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 43,
-		
+
 		// KILT Pallets. Start indices 60 to leave room
 		KiltLaunch: kilt_launch = 60,
 		Ctype: ctype = 61,
@@ -848,7 +847,7 @@ construct_runtime! {
 		ParachainSystem: cumulus_pallet_parachain_system = 80,
 		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 81,
 
-		
+
 	}
 }
 
