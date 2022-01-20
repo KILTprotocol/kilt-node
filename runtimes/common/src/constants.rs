@@ -229,6 +229,6 @@ pub mod treasury {
 }
 
 pub mod proxy {
-	pub const MAX_PROXIES: u32 = 10;
-	pub const MAX_PENDING: u32 = 10;
+	pub const MAX_PROXIES: u16 = 10;
+	pub const MAX_PENDING: u16 = 10;
 }
