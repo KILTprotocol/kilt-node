@@ -27,6 +27,9 @@ mod utils;
 #[cfg(test)]
 mod mock;
 
+#[cfg(test)]
+mod tests;
+
 pub use pallet::*;
 
 #[frame_support::pallet]
@@ -96,6 +99,9 @@ pub mod pallet {
 		type Deposit: Get<BalanceOf<Self>>;
 		/// The overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		/// The min encoded length of a unick.
+		#[pallet::constant]
+		type MinUnickLength: Get<u32>;
 		/// The max encoded length of a unick.
 		#[pallet::constant]
 		type MaxUnickLength: Get<u32>;
@@ -318,15 +324,12 @@ pub mod pallet {
 		) -> Result<UnickOf<T>, DispatchError> {
 			let unick = UnickOf::<T>::try_from(unick.into_inner()).map_err(DispatchError::from)?;
 
-			ensure!(!Unicks::<T>::contains_key(&owner), Error::<T>::UnickAlreadyClaimed);
-			ensure!(!Owner::<T>::contains_key(&unick), Error::<T>::OwnerAlreadyExisting);
+			ensure!(!Unicks::<T>::contains_key(&owner), Error::<T>::OwnerAlreadyExisting);
+			ensure!(!Owner::<T>::contains_key(&unick), Error::<T>::UnickAlreadyClaimed);
 			ensure!(!Blacklist::<T>::contains_key(&unick), Error::<T>::UnickBlacklisted);
 
 			ensure!(
-				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
-					deposit_payer,
-					<T as Config>::Deposit::get()
-				),
+				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(deposit_payer, T::Deposit::get()),
 				Error::<T>::InsufficientFunds
 			);
 
@@ -337,7 +340,7 @@ pub mod pallet {
 		/// provided account. This function must be called after
 		/// `check_claiming_preconditions` as it does not verify all the
 		/// preconditions again.
-		fn register_unick_unsafe(unick: UnickOf<T>, owner: UnickOwnerOf<T>, deposit_payer: AccountIdOf<T>) {
+		pub(crate) fn register_unick_unsafe(unick: UnickOf<T>, owner: UnickOwnerOf<T>, deposit_payer: AccountIdOf<T>) {
 			let deposit = Deposit {
 				owner: deposit_payer,
 				amount: T::Deposit::get(),
@@ -408,7 +411,7 @@ pub mod pallet {
 		/// or not.
 		fn check_blacklisting_preconditions(unick: &UnickOf<T>) -> Result<bool, DispatchError> {
 			ensure!(
-				Blacklist::<T>::contains_key(&unick),
+				!Blacklist::<T>::contains_key(&unick),
 				Error::<T>::UnickAlreadyBlacklisted
 			);
 
@@ -418,7 +421,7 @@ pub mod pallet {
 		/// Blacklist the provided unick. This function must be called after
 		/// `check_blacklisting_preconditions` as it does not verify all the
 		/// preconditions again.
-		fn blacklist_unick_unsafe(unick: &UnickOf<T>) {
+		pub(crate) fn blacklist_unick_unsafe(unick: &UnickOf<T>) {
 			Blacklist::<T>::insert(&unick, ());
 		}
 

@@ -21,7 +21,7 @@
 use sp_std::{fmt::Debug, marker::PhantomData, vec::Vec};
 
 use codec::{Decode, Encode};
-use frame_support::{ensure, BoundedVec};
+use frame_support::{ensure, sp_runtime::SaturatedConversion, traits::Get, BoundedVec};
 use scale_info::TypeInfo;
 
 use crate::{Config, Error};
@@ -31,14 +31,19 @@ use crate::{Config, Error};
 /// It is bounded in size and can only contain a subset of ASCII characters.
 #[derive(Encode, Decode, TypeInfo)]
 #[scale_info(skip_type_params(T, MaxLength))]
-pub struct AsciiUnick<T, MaxLength>(BoundedVec<u8, MaxLength>, PhantomData<T>);
+pub struct AsciiUnick<T, MaxLength>(pub(crate) BoundedVec<u8, MaxLength>, PhantomData<T>);
 
 impl<T: Config> TryFrom<Vec<u8>> for AsciiUnick<T, T::MaxUnickLength> {
 	type Error = Error<T>;
 
-	/// Fallible initialization from a provided byte vector if it exceeds the
-	/// maximum length or contains invalid ASCII characters.
+	/// Fallible initialization from a provided byte vector if it is below the
+	/// minimum or exceeds the maximum allowed length or contains invalid ASCII
+	/// characters.
 	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+		ensure!(
+			value.len() >= T::MinUnickLength::get().saturated_into(),
+			Self::Error::InvalidUnickFormat
+		);
 		let bounded_vec: BoundedVec<u8, T::MaxUnickLength> =
 			BoundedVec::try_from(value).map_err(|_| Self::Error::InvalidUnickFormat)?;
 		ensure!(
@@ -70,7 +75,7 @@ impl<T: Config> Clone for AsciiUnick<T, T::MaxUnickLength> {
 }
 
 /// KILT unick ownership details.
-#[derive(Clone, Encode, Decode, PartialEq, TypeInfo)]
+#[derive(Clone, Encode, Decode, Debug, PartialEq, TypeInfo)]
 pub struct UnickOwnership<Owner, Deposit, BlockNumber> {
 	/// The owner of the unick.
 	pub(crate) owner: Owner,

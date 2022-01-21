@@ -91,25 +91,103 @@ impl pallet_balances::Config for Test {
 	type WeightInfo = ();
 }
 
+pub(crate) type TestUnick = pallet_unicks::types::AsciiUnick<Test, MaxUnickLength>;
+pub(crate) type TestUnickOwner = SubjectId;
+pub(crate) type TestUnickPayer = AccountId;
+pub(crate) type TestRegularOrigin = mock_origin::EnsureDoubleOrigin<TestUnickPayer, TestUnickOwner>;
+pub(crate) type TestOriginSuccess = mock_origin::DoubleOrigin<TestUnickPayer, TestUnickOwner>;
+pub(crate) type TestBlacklistOrigin = EnsureRoot<AccountId>;
+
 parameter_types! {
-	pub const MaxUnickLength: u32 = 64;
-	pub const UnickDeposit: u32 = 10;
+	pub const MaxUnickLength: u32 = 32;
+	pub const MinUnickLength: u32 = 3;
+	// Easier to setup insufficient funds for deposit but still above existential deposit
+	pub const UnickDeposit: Balance = 2 * ExistentialDeposit::get();
 }
 
 impl pallet_unicks::Config for Test {
-	type BlacklistOrigin = EnsureRoot<AccountId>;
+	type BlacklistOrigin = TestBlacklistOrigin;
 	type Currency = Balances;
 	type Deposit = UnickDeposit;
 	type Event = Event;
 	type MaxUnickLength = MaxUnickLength;
-	type OriginSuccess = mock_origin::DoubleOrigin<AccountId, SubjectId>;
-	type RegularOrigin = mock_origin::EnsureDoubleOrigin<AccountId, SubjectId>;
-	type Unick = pallet_unicks::types::AsciiUnick<Test, MaxUnickLength>;
-	type UnickOwner = SubjectId;
+	type MinUnickLength = MinUnickLength;
+	type OriginSuccess = TestOriginSuccess;
+	type RegularOrigin = TestRegularOrigin;
+	type Unick = TestUnick;
+	type UnickOwner = TestUnickOwner;
 }
 
 impl mock_origin::Config for Test {
 	type Origin = Origin;
 	type AccountId = AccountId;
 	type SubjectId = SubjectId;
+}
+
+pub(crate) const ACCOUNT_00: TestUnickPayer = AccountId::new([1u8; 32]);
+pub(crate) const ACCOUNT_01: TestUnickPayer = AccountId::new([2u8; 32]);
+pub(crate) const DID_00: TestUnickOwner = SubjectId(ACCOUNT_00);
+pub(crate) const DID_01: TestUnickOwner = SubjectId(ACCOUNT_01);
+
+pub(crate) fn unick_00() -> TestUnick {
+	pallet_unicks::types::AsciiUnick::try_from(b"unick_00".to_vec()).unwrap()
+}
+pub(crate) fn unick_01() -> TestUnick {
+	pallet_unicks::types::AsciiUnick::try_from(b"unick_01".to_vec()).unwrap()
+}
+
+#[derive(Clone, Default)]
+pub struct ExtBuilder {
+	balances: Vec<(TestUnickPayer, Balance)>,
+	claimed_unicks: Vec<(TestUnickOwner, TestUnick, TestUnickPayer)>,
+	blacklisted_unicks: Vec<TestUnick>,
+}
+
+impl ExtBuilder {
+	pub fn with_balances(mut self, balances: Vec<(TestUnickPayer, Balance)>) -> Self {
+		self.balances = balances;
+		self
+	}
+
+	pub fn with_unicks(mut self, unicks: Vec<(TestUnickOwner, TestUnick, TestUnickPayer)>) -> Self {
+		self.claimed_unicks = unicks;
+		self
+	}
+
+	pub fn with_blacklisted_unicks(mut self, unicks: Vec<TestUnick>) -> Self {
+		self.blacklisted_unicks = unicks;
+		self
+	}
+
+	pub fn build(self) -> sp_io::TestExternalities {
+		let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+		pallet_balances::GenesisConfig::<Test> {
+			balances: self.balances.clone(),
+		}
+		.assimilate_storage(&mut storage)
+		.expect("assimilate should not fail");
+		let mut ext = sp_io::TestExternalities::new(storage);
+
+		ext.execute_with(|| {
+			for (owner, unick, payer) in self.claimed_unicks {
+				pallet_unicks::Pallet::<Test>::register_unick_unsafe(unick, owner, payer);
+			}
+
+			for unick in self.blacklisted_unicks {
+				assert!(pallet_unicks::Owner::<Test>::get(&unick).is_none());
+				pallet_unicks::Pallet::<Test>::blacklist_unick_unsafe(&unick);
+			}
+		});
+		ext
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	pub fn build_with_keystore(self) -> sp_io::TestExternalities {
+		let mut ext = self.build();
+
+		let keystore = sp_keystore::testing::KeyStore::new();
+		ext.register_extension(sp_keystore::KeystoreExt(std::sync::Arc::new(keystore)));
+
+		ext
+	}
 }
