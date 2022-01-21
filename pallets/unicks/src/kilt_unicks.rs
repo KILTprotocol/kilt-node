@@ -18,7 +18,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use sp_std::{fmt::Debug, marker::PhantomData, vec::Vec};
+use sp_std::{fmt::Debug, marker::PhantomData, str, vec::Vec};
 
 use codec::{Decode, Encode};
 use frame_support::{ensure, sp_runtime::SaturatedConversion, traits::Get, BoundedVec};
@@ -52,10 +52,24 @@ impl<T: Config> TryFrom<Vec<u8>> for AsciiUnick<T, T::MinUnickLength, T::MaxUnic
 		let bounded_vec: BoundedVec<u8, T::MaxUnickLength> =
 			BoundedVec::try_from(value).map_err(|_| Self::Error::InvalidUnickFormat)?;
 		ensure!(
-			crate::utils::is_byte_array_ascii_string(&bounded_vec),
+			is_byte_array_ascii_string(&bounded_vec),
 			Self::Error::InvalidUnickFormat
 		);
 		Ok(Self(bounded_vec, PhantomData, PhantomData))
+	}
+}
+
+/// Verify that a given slice contains only allowed ASCII characters.
+fn is_byte_array_ascii_string(input: &[u8]) -> bool {
+	if let Ok(encoded_unick) = str::from_utf8(input) {
+		encoded_unick.chars().all(|c| {
+			// TODO: Change once we reach a decision on which characters to allow
+			// Decision reached: minimum 3 characters, max 20, and the following characters
+			// allowed.
+			matches!(c, 'a'..='z' | '0'..='9' | '-' | '_')
+		})
+	} else {
+		false
 	}
 }
 

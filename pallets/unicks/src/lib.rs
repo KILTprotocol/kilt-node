@@ -21,8 +21,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub mod types;
-mod utils;
+pub mod kilt_unicks;
 
 #[cfg(test)]
 mod mock;
@@ -45,7 +44,7 @@ pub mod pallet {
 
 	use kilt_support::{deposit::Deposit, traits::CallSources};
 
-	use crate::types::UnickOwnership;
+	use crate::kilt_unicks::UnickOwnership;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
