@@ -179,7 +179,7 @@ pub mod pallet {
 
 			// No failure beyond this point
 
-			Self::register_unick_unsafe(decoded_unick.clone(), owner.clone(), payer);
+			Self::register_unick(decoded_unick.clone(), owner.clone(), payer);
 			Self::deposit_event(Event::<T>::UnickClaimed {
 				owner,
 				unick: decoded_unick,
@@ -210,7 +210,7 @@ pub mod pallet {
 
 			// No failure beyond this point
 
-			Self::unregister_unick_unsafe(&unick);
+			Self::unregister_unick(&unick);
 			Self::deposit_event(Event::<T>::UnickReleased { owner, unick });
 
 			Ok(())
@@ -237,7 +237,7 @@ pub mod pallet {
 
 			// No failure beyond this point
 
-			let UnickOwnershipOf::<T> { owner, .. } = Self::unregister_unick_unsafe(&unick);
+			let UnickOwnershipOf::<T> { owner, .. } = Self::unregister_unick(&unick);
 			Self::deposit_event(Event::<T>::UnickReleased { owner, unick });
 
 			Ok(())
@@ -270,10 +270,10 @@ pub mod pallet {
 			// Unregister (including returning the deposit) only if the unick was assigned
 			// to someone.
 			if Self::check_blacklisting_preconditions(&unick)? {
-				Self::unregister_unick_unsafe(&unick);
+				Self::unregister_unick(&unick);
 			}
 
-			Self::blacklist_unick_unsafe(&unick);
+			Self::blacklist_unick(&unick);
 			Self::deposit_event(Event::<T>::UnickBlacklisted { unick });
 
 			Ok(())
@@ -303,7 +303,7 @@ pub mod pallet {
 
 			// No failure beyond this point
 
-			Self::unblacklist_unick_unsafe(&unick);
+			Self::unblacklist_unick(&unick);
 			Self::deposit_event(Event::<T>::UnickUnblacklisted { unick });
 
 			Ok(())
@@ -340,7 +340,7 @@ pub mod pallet {
 		/// provided account. This function must be called after
 		/// `check_claiming_preconditions` as it does not verify all the
 		/// preconditions again.
-		pub(crate) fn register_unick_unsafe(unick: UnickOf<T>, owner: UnickOwnerOf<T>, deposit_payer: AccountIdOf<T>) {
+		pub(crate) fn register_unick(unick: UnickOf<T>, owner: UnickOwnerOf<T>, deposit_payer: AccountIdOf<T>) {
 			let deposit = Deposit {
 				owner: deposit_payer,
 				amount: T::Deposit::get(),
@@ -393,7 +393,7 @@ pub mod pallet {
 		/// payer. This function must be called after
 		/// `check_releasing_preconditions` as it does not verify all the
 		/// preconditions again.
-		fn unregister_unick_unsafe(unick: &UnickOf<T>) -> UnickOwnershipOf<T> {
+		fn unregister_unick(unick: &UnickOf<T>) -> UnickOwnershipOf<T> {
 			let unick_ownership = Owner::<T>::take(unick).unwrap();
 			Unicks::<T>::remove(&unick_ownership.owner);
 
@@ -421,7 +421,7 @@ pub mod pallet {
 		/// Blacklist the provided unick. This function must be called after
 		/// `check_blacklisting_preconditions` as it does not verify all the
 		/// preconditions again.
-		pub(crate) fn blacklist_unick_unsafe(unick: &UnickOf<T>) {
+		pub(crate) fn blacklist_unick(unick: &UnickOf<T>) {
 			Blacklist::<T>::insert(&unick, ());
 		}
 
@@ -437,7 +437,7 @@ pub mod pallet {
 		/// Unblacklist the provided unick. This function must be called after
 		/// `check_unblacklisting_preconditions` as it does not verify all the
 		/// preconditions again.
-		fn unblacklist_unick_unsafe(unick: &UnickOf<T>) {
+		fn unblacklist_unick(unick: &UnickOf<T>) {
 			Blacklist::<T>::remove(unick);
 		}
 	}
