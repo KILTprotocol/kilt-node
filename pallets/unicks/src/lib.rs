@@ -60,14 +60,6 @@ pub mod pallet {
 
 	type CurrencyOf<T> = <T as Config>::Currency;
 
-	// Internal type used to differentiate the origin of a `release` call.
-	enum UnickReleaseCaller<'a, T: Config> {
-		// The origin is an account ID that should match the deposit payer.
-		DepositPayer(&'a AccountIdOf<T>),
-		// The origin is a DID that should match the unick owner.
-		UnickOwner(&'a UnickOwnerOf<T>),
-	}
-
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::storage_version(STORAGE_VERSION)]
@@ -206,7 +198,7 @@ pub mod pallet {
 
 			let unick = UnickOf::<T>::try_from(unick.into_inner()).map_err(DispatchError::from)?;
 
-			Self::check_releasing_preconditions(&unick, UnickReleaseCaller::UnickOwner(&owner))?;
+			Self::check_releasing_preconditions_for_owner(&unick, &owner)?;
 
 			// No failure beyond this point
 
@@ -233,7 +225,7 @@ pub mod pallet {
 
 			let unick = UnickOf::<T>::try_from(unick.into_inner()).map_err(DispatchError::from)?;
 
-			Self::check_releasing_preconditions(&unick, UnickReleaseCaller::DepositPayer(&caller))?;
+			Self::check_releasing_preconditions_for_caller(&unick, &caller)?;
 
 			// No failure beyond this point
 
@@ -360,33 +352,36 @@ pub mod pallet {
 			);
 		}
 
-		/// Verify that the releasing preconditions are verified. Specifically:
+		/// Verify that the releasing preconditions for an owner are verified.
+		/// Specifically:
 		/// - The unick exists (i.e., it has been previous claimed)
-		/// - The caller is allowed to release the provided unick
-		/// 	- In case of the owner, it has to own the unick
-		/// 	- In case of the deposit payer, it has to own the deposit
-		fn check_releasing_preconditions(
+		/// - The caller owns the given unick
+		fn check_releasing_preconditions_for_owner(
 			unick: &UnickOf<T>,
-			caller: UnickReleaseCaller<T>,
+			owner: &UnickOwnerOf<T>,
 		) -> Result<(), DispatchError> {
-			let UnickOwnership { owner, deposit, .. } = Owner::<T>::get(unick).ok_or(Error::<T>::UnickNotFound)?;
+			let UnickOwnership {
+				owner: stored_owner, ..
+			} = Owner::<T>::get(unick).ok_or(Error::<T>::UnickNotFound)?;
 
-			match caller {
-				UnickReleaseCaller::DepositPayer(caller) => {
-					if caller == &deposit.owner {
-						Ok(())
-					} else {
-						Err(Error::<T>::NotAuthorized.into())
-					}
-				}
-				UnickReleaseCaller::UnickOwner(caller) => {
-					if caller == &owner {
-						Ok(())
-					} else {
-						Err(Error::<T>::NotAuthorized.into())
-					}
-				}
-			}
+			ensure!(owner == &stored_owner, Error::<T>::NotAuthorized);
+
+			Ok(())
+		}
+
+		/// Verify that the releasing preconditions for a deposit payer are
+		/// verified. Specifically:
+		/// - The unick exists (i.e., it has been previous claimed)
+		/// - The caller owns the unick's deposit
+		fn check_releasing_preconditions_for_caller(
+			unick: &UnickOf<T>,
+			caller: &AccountIdOf<T>,
+		) -> Result<(), DispatchError> {
+			let UnickOwnership { deposit, .. } = Owner::<T>::get(unick).ok_or(Error::<T>::UnickNotFound)?;
+
+			ensure!(caller == &deposit.owner, Error::<T>::NotAuthorized);
+
+			Ok(())
 		}
 
 		/// Release the provided unick and returns the deposit to the original
