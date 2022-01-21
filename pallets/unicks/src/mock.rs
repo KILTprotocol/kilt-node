@@ -21,11 +21,20 @@ use frame_system::EnsureRoot;
 use kilt_support::mock::{mock_origin, SubjectId};
 use sp_runtime::{
 	testing::Header,
-	traits::{BlakeTwo256, IdentityLookup},
+	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
+	MultiSignature,
 };
 
 use crate as pallet_unicks;
-use runtime_common::{AccountId, Balance, BlockHashCount, BlockNumber, Hash, Index};
+use crate::kilt_unicks::AsciiUnick;
+
+type Index = u64;
+type Balance = u128;
+type BlockNumber = u64;
+type Hash = sp_core::H256;
+type Signature = MultiSignature;
+type AccountPublic = <Signature as Verify>::Signer;
+type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -45,6 +54,7 @@ frame_support::construct_runtime!(
 
 parameter_types! {
 	pub const SS58Prefix: u8 = 38;
+	pub const BlockHashCount: BlockNumber = 2400;
 }
 
 impl frame_system::Config for Test {
@@ -91,7 +101,7 @@ impl pallet_balances::Config for Test {
 	type WeightInfo = ();
 }
 
-pub(crate) type TestUnick = pallet_unicks::types::AsciiUnick<Test, MinUnickLength, MaxUnickLength>;
+pub(crate) type TestUnick = AsciiUnick<Test, MinUnickLength, MaxUnickLength>;
 pub(crate) type TestUnickOwner = SubjectId;
 pub(crate) type TestUnickPayer = AccountId;
 pub(crate) type TestRegularOrigin = mock_origin::EnsureDoubleOrigin<TestUnickPayer, TestUnickOwner>;
@@ -130,10 +140,10 @@ pub(crate) const DID_00: TestUnickOwner = SubjectId(ACCOUNT_00);
 pub(crate) const DID_01: TestUnickOwner = SubjectId(ACCOUNT_01);
 
 pub(crate) fn unick_00() -> TestUnick {
-	pallet_unicks::types::AsciiUnick::try_from(b"unick_00".to_vec()).unwrap()
+	AsciiUnick::try_from(b"unick_00".to_vec()).unwrap()
 }
 pub(crate) fn unick_01() -> TestUnick {
-	pallet_unicks::types::AsciiUnick::try_from(b"unick_01".to_vec()).unwrap()
+	AsciiUnick::try_from(b"unick_01".to_vec()).unwrap()
 }
 
 #[derive(Clone, Default)]
@@ -170,12 +180,12 @@ impl ExtBuilder {
 
 		ext.execute_with(|| {
 			for (owner, unick, payer) in self.claimed_unicks {
-				pallet_unicks::Pallet::<Test>::register_unick_unsafe(unick, owner, payer);
+				pallet_unicks::Pallet::<Test>::register_unick(unick, owner, payer);
 			}
 
 			for unick in self.blacklisted_unicks {
 				assert!(pallet_unicks::Owner::<Test>::get(&unick).is_none());
-				pallet_unicks::Pallet::<Test>::blacklist_unick_unsafe(&unick);
+				pallet_unicks::Pallet::<Test>::blacklist_unick(&unick);
 			}
 		});
 		ext

@@ -108,7 +108,7 @@ pub struct UnickOwnership<Owner, Deposit, BlockNumber> {
 mod tests {
 	use sp_runtime::SaturatedConversion;
 
-	use crate::{mock::Test, types::AsciiUnick, Config};
+	use crate::{kilt_unicks::AsciiUnick, mock::Test, Config};
 
 	const MIN_LENGTH: u32 = <Test as Config>::MinUnickLength::get();
 	const MAX_LENGTH: u32 = <Test as Config>::MaxUnickLength::get();
