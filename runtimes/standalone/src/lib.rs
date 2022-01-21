@@ -444,7 +444,8 @@ impl pallet_did_lookup::Config for Runtime {
 }
 
 parameter_types! {
-	pub const MaxUnickLength: u32 = 64;
+	pub const MaxUnickLength: u32 = 32;
+	pub const MinUnickLength: u32 = 3;
 }
 
 impl kilt_unicks::Config for Runtime {
@@ -453,6 +454,7 @@ impl kilt_unicks::Config for Runtime {
 	type Deposit = Deposit;
 	type Event = Event;
 	type MaxUnickLength = MaxUnickLength;
+	type MinUnickLength = MinUnickLength;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type RegularOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type Unick = kilt_unicks::types::AsciiUnick<Runtime, MaxUnickLength>;
