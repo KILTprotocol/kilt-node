@@ -61,11 +61,11 @@ pub mod pallet {
 	type CurrencyOf<T> = <T as Config>::Currency;
 
 	// Internal type used to differentiate the origin of a `release` call.
-	enum UnickReleaseCaller<'a, 'b, T: Config> {
+	enum UnickReleaseCaller<'a, T: Config> {
 		// The origin is an account ID that should match the deposit payer.
 		DepositPayer(&'a AccountIdOf<T>),
 		// The origin is a DID that should match the unick owner.
-		UnickOwner(&'b UnickOwnerOf<T>),
+		UnickOwner(&'a UnickOwnerOf<T>),
 	}
 
 	#[pallet::pallet]
