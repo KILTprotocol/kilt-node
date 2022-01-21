@@ -457,7 +457,7 @@ impl kilt_unicks::Config for Runtime {
 	type MinUnickLength = MinUnickLength;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type RegularOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
-	type Unick = kilt_unicks::types::AsciiUnick<Runtime, MaxUnickLength>;
+	type Unick = kilt_unicks::types::AsciiUnick<Runtime, MinUnickLength, MaxUnickLength>;
 	type UnickOwner = DidIdentifier;
 }
 
