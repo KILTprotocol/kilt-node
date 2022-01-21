@@ -49,16 +49,16 @@ pub mod pallet {
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
+	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+	pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+	pub type BlockNumberFor<T> = <T as frame_system::Config>::BlockNumber;
+	pub type UnickOwnerOf<T> = <T as Config>::UnickOwner;
 	pub type UnickInput<T> = BoundedVec<u8, <T as Config>::MaxUnickLength>;
-
-	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
-	pub(crate) type BlockNumberFor<T> = <T as frame_system::Config>::BlockNumber;
-	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
-	pub(crate) type UnickOwnerOf<T> = <T as Config>::UnickOwner;
-	pub(crate) type UnickOf<T> = <T as Config>::Unick;
-	pub(crate) type UnickOwnershipOf<T> =
+	pub type UnickOf<T> = <T as Config>::Unick;
+	pub type UnickOwnershipOf<T> =
 		UnickOwnership<UnickOwnerOf<T>, Deposit<AccountIdOf<T>, BalanceOf<T>>, BlockNumberFor<T>>;
+
+	type CurrencyOf<T> = <T as Config>::Currency;
 
 	// Internal type used to differentiate the origin of a `release` call.
 	enum UnickReleaseCaller<'a, 'b, T: Config> {
