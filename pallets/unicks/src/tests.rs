@@ -308,3 +308,54 @@ fn blacklisting_unauthorized_origin() {
 		);
 	})
 }
+
+// Unick unblacklisting
+
+#[test]
+fn unblacklisting_successful() {
+	let unick_00 = unick_00();
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, 100)])
+		.with_blacklisted_unicks(vec![unick_00.clone()])
+		.build()
+		.execute_with(|| {
+			assert_ok!(Pallet::<Test>::unblacklist(RawOrigin::Root.into(), unick_00.clone().0),);
+
+			// Test that claiming is possible again
+			assert_ok!(Pallet::<Test>::claim(
+				mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
+				unick_00.clone().0,
+			));
+		})
+}
+
+#[test]
+fn unblacklisting_not_blacklisted() {
+	let unick_00 = unick_00();
+	ExtBuilder::default().build().execute_with(|| {
+		assert_noop!(
+			Pallet::<Test>::unblacklist(RawOrigin::Root.into(), unick_00.clone().0),
+			Error::<Test>::UnickNotBlacklisted
+		);
+	})
+}
+
+#[test]
+fn unblacklisting_unauthorized_origin() {
+	let unick_00 = unick_00();
+	ExtBuilder::default()
+		.with_blacklisted_unicks(vec![unick_00.clone()])
+		.build()
+		.execute_with(|| {
+			// Signer origin
+			assert_noop!(
+				Pallet::<Test>::unblacklist(RawOrigin::Signed(ACCOUNT_00).into(), unick_00.clone().0),
+				DispatchError::BadOrigin
+			);
+			// Owner origin
+			assert_noop!(
+				Pallet::<Test>::blacklist(mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(), unick_00.clone().0),
+				DispatchError::BadOrigin
+			);
+		})
+}
