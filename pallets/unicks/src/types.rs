@@ -28,12 +28,17 @@ use crate::{Config, Error};
 
 /// A KILT Unick.
 ///
-/// It is bounded in size and can only contain a subset of ASCII characters.
+/// It is bounded in size (inclusive range [MinLength, MaxLength]) and can only
+/// contain a subset of ASCII characters.
 #[derive(Encode, Decode, TypeInfo)]
-#[scale_info(skip_type_params(T, MaxLength))]
-pub struct AsciiUnick<T, MaxLength>(pub(crate) BoundedVec<u8, MaxLength>, PhantomData<T>);
+#[scale_info(skip_type_params(T, MaxLength, MinLength))]
+pub struct AsciiUnick<T, MinLength, MaxLength>(
+	pub(crate) BoundedVec<u8, MaxLength>,
+	PhantomData<T>,
+	PhantomData<MinLength>,
+);
 
-impl<T: Config> TryFrom<Vec<u8>> for AsciiUnick<T, T::MaxUnickLength> {
+impl<T: Config> TryFrom<Vec<u8>> for AsciiUnick<T, T::MinUnickLength, T::MaxUnickLength> {
 	type Error = Error<T>;
 
 	/// Fallible initialization from a provided byte vector if it is below the
@@ -50,27 +55,27 @@ impl<T: Config> TryFrom<Vec<u8>> for AsciiUnick<T, T::MaxUnickLength> {
 			crate::utils::is_byte_array_ascii_string(&bounded_vec),
 			Self::Error::InvalidUnickFormat
 		);
-		Ok(Self(bounded_vec, PhantomData))
+		Ok(Self(bounded_vec, PhantomData, PhantomData))
 	}
 }
 
-impl<T: Config> Debug for AsciiUnick<T, T::MaxUnickLength> {
+impl<T: Config> Debug for AsciiUnick<T, T::MinUnickLength, T::MaxUnickLength> {
 	fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
 		f.debug_tuple("AsciiUnick").field(&self.0).finish()
 	}
 }
 
 // FIXME: did not find a way to automatically implement this.
-impl<T: Config> PartialEq for AsciiUnick<T, T::MaxUnickLength> {
+impl<T: Config> PartialEq for AsciiUnick<T, T::MinUnickLength, T::MaxUnickLength> {
 	fn eq(&self, other: &Self) -> bool {
 		self.0 == other.0
 	}
 }
 
 // FIXME: did not find a way to automatically implement this.
-impl<T: Config> Clone for AsciiUnick<T, T::MaxUnickLength> {
+impl<T: Config> Clone for AsciiUnick<T, T::MinUnickLength, T::MaxUnickLength> {
 	fn clone(&self) -> Self {
-		Self(self.0.clone(), self.1)
+		Self(self.0.clone(), self.1, self.2)
 	}
 }
 
@@ -83,4 +88,58 @@ pub struct UnickOwnership<Owner, Deposit, BlockNumber> {
 	pub(crate) claimed_at: BlockNumber,
 	/// The deposit associated with the unick.
 	pub(crate) deposit: Deposit,
+}
+
+#[cfg(test)]
+mod tests {
+	use sp_runtime::SaturatedConversion;
+
+	use crate::{mock::Test, types::AsciiUnick, Config};
+
+	const MIN_LENGTH: u32 = <Test as Config>::MinUnickLength::get();
+	const MAX_LENGTH: u32 = <Test as Config>::MaxUnickLength::get();
+
+	#[test]
+	fn valid_unick_inputs() {
+		let valid_inputs = vec![
+			// Minimum length allowed
+			vec![b'a'; MIN_LENGTH.saturated_into()],
+			// Maximum length allowed
+			vec![b'a'; MAX_LENGTH.saturated_into()],
+			// All ASCII characters allowed
+			b"qwertyuiopasdfghjklzxcvbnm".to_vec(),
+			b"0123456789".to_vec(),
+			b"---".to_vec(),
+			b"___".to_vec(),
+		];
+
+		let invalid_inputs = vec![
+			// Empty string
+			b"".to_vec(),
+			// One less than minimum length allowed
+			vec![b'a'; MIN_LENGTH.saturated_into::<usize>() - 1usize],
+			// One more than maximum length allowed
+			vec![b'a'; MAX_LENGTH.saturated_into::<usize>() + 1usize],
+			// Invalid ASCII symbol
+			b"almostavalidunick!".to_vec(),
+			// Non-ASCII character
+			String::from("almostavalidunick😂").as_bytes().to_owned(),
+		];
+
+		for valid in valid_inputs {
+			assert!(
+				AsciiUnick::<Test, <Test as Config>::MinUnickLength, <Test as Config>::MaxUnickLength>::try_from(valid)
+					.is_ok()
+			);
+		}
+
+		for invalid in invalid_inputs {
+			assert!(
+				AsciiUnick::<Test, <Test as Config>::MinUnickLength, <Test as Config>::MaxUnickLength>::try_from(
+					invalid
+				)
+				.is_err(),
+			);
+		}
+	}
 }

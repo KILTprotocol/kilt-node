@@ -91,7 +91,7 @@ impl pallet_balances::Config for Test {
 	type WeightInfo = ();
 }
 
-pub(crate) type TestUnick = pallet_unicks::types::AsciiUnick<Test, MaxUnickLength>;
+pub(crate) type TestUnick = pallet_unicks::types::AsciiUnick<Test, MinUnickLength, MaxUnickLength>;
 pub(crate) type TestUnickOwner = SubjectId;
 pub(crate) type TestUnickPayer = AccountId;
 pub(crate) type TestRegularOrigin = mock_origin::EnsureDoubleOrigin<TestUnickPayer, TestUnickOwner>;
