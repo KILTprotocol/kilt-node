@@ -227,3 +227,13 @@ pub mod treasury {
 	const YEARLY_REWARD: Balance = 2_000_000u128 * KILT;
 	pub const INITIAL_PERIOD_REWARD_PER_BLOCK: Balance = YEARLY_REWARD / (BLOCKS_PER_YEAR as Balance);
 }
+
+pub mod unicks {
+	use crate::Balance;
+
+	use super::KILT;
+
+	pub const MIN_LENGTH: u32 = 3;
+	pub const MAX_LENGTH: u32 = 32;
+	pub const DEPOSIT: Balance = 2 * KILT;
+}

@@ -444,14 +444,15 @@ impl pallet_did_lookup::Config for Runtime {
 }
 
 parameter_types! {
-	pub const MaxUnickLength: u32 = 32;
-	pub const MinUnickLength: u32 = 3;
+	pub const UnickDeposit: Balance = constants::unicks::DEPOSIT;
+	pub const MinUnickLength: u32 = constants::unicks::MIN_LENGTH;
+	pub const MaxUnickLength: u32 = constants::unicks::MAX_LENGTH;
 }
 
 impl kilt_unicks::Config for Runtime {
 	type BlacklistOrigin = EnsureRoot<AccountId>;
 	type Currency = Balances;
-	type Deposit = Deposit;
+	type Deposit = UnickDeposit;
 	type Event = Event;
 	type MaxUnickLength = MaxUnickLength;
 	type MinUnickLength = MinUnickLength;
