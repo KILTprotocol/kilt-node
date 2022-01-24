@@ -256,6 +256,7 @@ pub(crate) mod runtime {
 
 	pub(crate) const ALICE_SEED: [u8; 32] = [1u8; 32];
 	pub(crate) const BOB_SEED: [u8; 32] = [2u8; 32];
+	pub(crate) const CHARLIE_SEED: [u8; 32] = [3u8; 32];
 
 	pub const CLAIM_HASH_SEED_01: u64 = 1u64;
 	pub const CLAIM_HASH_SEED_02: u64 = 2u64;

@@ -230,7 +230,30 @@ fn test_authorized_revoke() {
 
 #[test]
 fn test_unauthorized_revoke() {
-	todo!()
+	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+	let revoker: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let evil: AttesterOf<Test> = sr25519_did_from_seed(&CHARLIE_SEED);
+
+	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
+	let authorization_id = Some(MockAccessControl(revoker.clone()));
+	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
+	attestation.authorization_id = Some(revoker.clone());
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
+		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
+		.with_attestations(vec![(claim_hash, attestation)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Attestation::revoke(
+					DoubleOrigin(ACCOUNT_00, evil.clone()).into(),
+					claim_hash,
+					authorization_id
+				),
+				DispatchError::Other("Unauthorized")
+			);
+		});
 }
 
 #[test]
@@ -288,9 +311,33 @@ fn test_already_revoked() {
 
 #[test]
 fn test_remove() {
-	let revoker: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
-	let attestation = generate_base_attestation::<Test>(revoker.clone(), ACCOUNT_00);
+	let attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
+	let authorization_id = None;
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
+		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
+		.with_attestations(vec![(claim_hash, attestation)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(Attestation::remove(
+				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
+				claim_hash,
+				authorization_id
+			));
+			assert!(Attestation::attestations(claim_hash).is_none());
+		});
+}
+
+#[test]
+fn test_remove_authorized() {
+	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+	let revoker: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
+	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
+	attestation.authorization_id = Some(revoker.clone());
 	let authorization_id = Some(MockAccessControl(revoker.clone()));
 
 	ExtBuilder::default()
@@ -304,18 +351,33 @@ fn test_remove() {
 				claim_hash,
 				authorization_id
 			));
-			assert!(Attestation::attestations(claim_hash).is_none())
+			assert!(Attestation::attestations(claim_hash).is_none());
 		});
 }
 
 #[test]
-fn test_remove_authorized() {
-	todo!()
-}
-
-#[test]
 fn test_remove_unauthorised() {
-	todo!()
+	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+	let evil: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
+	let attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
+	let authorization_id = Some(MockAccessControl(evil.clone()));
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
+		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
+		.with_attestations(vec![(claim_hash, attestation)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Attestation::remove(
+					DoubleOrigin(ACCOUNT_00, evil.clone()).into(),
+					claim_hash,
+					authorization_id
+				),
+				attestation::Error::<Test>::Unauthorized
+			);
+		});
 }
 
 #[test]
@@ -331,7 +393,6 @@ fn test_remove_not_found() {
 		.build()
 		.execute_with(|| {
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
-
 			assert_noop!(
 				Attestation::remove(
 					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
@@ -340,7 +401,6 @@ fn test_remove_not_found() {
 				),
 				attestation::Error::<Test>::AttestationNotFound
 			);
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 		});
 }
 
@@ -349,14 +409,32 @@ fn test_remove_not_found() {
 
 #[test]
 fn test_reclaim_deposit() {
-	let deposit_owner: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
 	let attester: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
-	let attestation = generate_base_attestation::<Test>(attester, ACCOUNT_00);
+	let attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
-		.with_ctypes(vec![(attestation.ctype_hash, deposit_owner)])
+		.with_ctypes(vec![(attestation.ctype_hash, attester)])
+		.with_attestations(vec![(claim_hash, attestation)])
+		.build()
+		.execute_with(|| {
+			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
+			assert_ok!(Attestation::reclaim_deposit(Origin::signed(ACCOUNT_00), claim_hash));
+			assert!(Attestation::attestations(claim_hash).is_none());
+			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+		});
+}
+
+#[test]
+fn test_reclaim_unauthorized() {
+	let attester: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
+	let attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
+		.with_ctypes(vec![(attestation.ctype_hash, attester)])
 		.with_attestations(vec![(claim_hash, attestation)])
 		.build()
 		.execute_with(|| {
@@ -364,17 +442,23 @@ fn test_reclaim_deposit() {
 				Attestation::reclaim_deposit(Origin::signed(ACCOUNT_01), claim_hash),
 				attestation::Error::<Test>::Unauthorized,
 			);
-			assert_ok!(Attestation::reclaim_deposit(Origin::signed(ACCOUNT_00), claim_hash,));
-			assert!(Attestation::attestations(claim_hash).is_none())
 		});
 }
 
 #[test]
-fn test_reclaim_others_deposit() {
-	todo!()
-}
-
-#[test]
 fn test_reclaim_deposit_not_found() {
-	todo!()
+	let attester: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
+	let attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
+		.with_ctypes(vec![(attestation.ctype_hash, attester)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Attestation::reclaim_deposit(Origin::signed(ACCOUNT_01), claim_hash),
+				attestation::Error::<Test>::AttestationNotFound,
+			);
+		});
 }
