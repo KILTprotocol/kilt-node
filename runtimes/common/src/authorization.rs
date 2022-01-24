@@ -1,23 +1,26 @@
+use codec::{Decode, Encode};
 use frame_support::dispatch::Weight;
+use scale_info::TypeInfo;
 use sp_runtime::DispatchError;
 
 use attestation::AttestationAccessControl;
 
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub enum AuthorizationId<DelegationId> {
 	Delegation(DelegationId),
 }
 
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub enum PalletAuthorize<DelegationAc> {
 	Delegation(DelegationAc),
 }
 
-impl<T, DelegationAc, DelegationId> AttestationAccessControl<T::AttesterId, AuthorizationId<DelegationId>, T>
+impl<AttesterId, DelegationAc, DelegationId> AttestationAccessControl<AttesterId, AuthorizationId<DelegationId>>
 	for PalletAuthorize<DelegationAc>
 where
-	T: attestation::Config<AuthorizationId = AuthorizationId<DelegationId>>,
-	DelegationAc: AttestationAccessControl<T::AttesterId, DelegationId, T>,
+	DelegationAc: AttestationAccessControl<AttesterId, DelegationId>,
 {
-	fn can_attest(&self, who: &T::AttesterId) -> Result<frame_support::dispatch::Weight, DispatchError> {
+	fn can_attest(&self, who: &AttesterId) -> Result<frame_support::dispatch::Weight, DispatchError> {
 		match self {
 			PalletAuthorize::Delegation(ac) => ac.can_attest(who),
 		}
@@ -25,25 +28,27 @@ where
 
 	fn can_revoke(
 		&self,
-		who: &T::AttesterId,
-		attestation: &attestation::AttestationDetails<T>,
+		who: &AttesterId,
+		auth_id: &AuthorizationId<DelegationId>,
 	) -> Result<frame_support::dispatch::Weight, DispatchError> {
-		match self {
-			PalletAuthorize::Delegation(ac) => ac.can_revoke(who, attestation),
+		match (self, auth_id) {
+			(PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) => ac.can_revoke(who, auth_id),
+			// _ => Err(DispatchError::Other("unauthorized")),
 		}
 	}
 
 	fn can_remove(
 		&self,
-		who: &T::AttesterId,
-		attestation: &attestation::AttestationDetails<T>,
+		who: &AttesterId,
+		auth_id: &AuthorizationId<DelegationId>,
 	) -> Result<frame_support::dispatch::Weight, DispatchError> {
-		match self {
-			PalletAuthorize::Delegation(ac) => ac.can_revoke(who, attestation),
+		match (self, auth_id) {
+			(PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) => ac.can_remove(who, auth_id),
+			// _ => Err(DispatchError::Other("unauthorized")),
 		}
 	}
 
-	fn authorization_id(&self) -> T::AuthorizationId {
+	fn authorization_id(&self) -> AuthorizationId<DelegationId> {
 		match self {
 			PalletAuthorize::Delegation(ac) => AuthorizationId::Delegation(ac.authorization_id()),
 		}

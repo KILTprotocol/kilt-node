@@ -77,7 +77,7 @@ where
 #[derive(Clone, Debug, Encode, Decode, TypeInfo, PartialEq, Eq)]
 #[scale_info(skip_type_params(T))]
 pub struct MockAccessControl<T: Config>(pub T::AttesterId);
-impl<T> AttestationAccessControl<T::AttesterId, T::AuthorizationId, T> for MockAccessControl<T>
+impl<T> AttestationAccessControl<T::AttesterId, T::AuthorizationId> for MockAccessControl<T>
 where
 	T: Config<AuthorizationId = <T as Config>::AttesterId>,
 {
@@ -89,16 +89,16 @@ where
 		}
 	}
 
-	fn can_revoke(&self, who: &T::AttesterId, attestation: &AttestationDetails<T>) -> Result<Weight, DispatchError> {
-		if attestation.authorization_id.as_ref().map_or(false, |auth| auth == who) {
+	fn can_revoke(&self, who: &T::AttesterId, authorization_id: &T::AuthorizationId) -> Result<Weight, DispatchError> {
+		if authorization_id == who {
 			Ok(0)
 		} else {
 			Err(DispatchError::Other("Unauthorized"))
 		}
 	}
 
-	fn can_remove(&self, who: &T::AttesterId, attestation: &AttestationDetails<T>) -> Result<Weight, DispatchError> {
-		if attestation.authorization_id.as_ref().map_or(false, |auth| auth == who) {
+	fn can_remove(&self, who: &T::AttesterId, authorization_id: &T::AuthorizationId) -> Result<Weight, DispatchError> {
+		if authorization_id == who {
 			Ok(0)
 		} else {
 			Err(DispatchError::Other("Unauthorized"))

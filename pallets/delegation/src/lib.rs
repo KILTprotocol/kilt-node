@@ -88,6 +88,7 @@ mod tests;
 
 pub use crate::{default_weights::WeightInfo, delegation_hierarchy::*, pallet::*};
 
+use codec::{Decode, Encode};
 use frame_support::{
 	dispatch::DispatchResult,
 	ensure,
@@ -95,6 +96,7 @@ use frame_support::{
 	traits::{Get, ReservableCurrency},
 };
 use migrations::DelegationStorageVersion;
+use scale_info::TypeInfo;
 use sp_runtime::{traits::Hash, DispatchError};
 use sp_std::vec::Vec;
 
@@ -942,11 +944,11 @@ impl<T: Config> Pallet<T> {
 	}
 }
 
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct DelegationAc<T: Config>(DelegationNodeIdOf<T>, u32);
-impl<T> attestation::AttestationAccessControl<DelegatorIdOf<T>, DelegationNodeIdOf<T>, T> for DelegationAc<T>
+impl<T> attestation::AttestationAccessControl<DelegatorIdOf<T>, DelegationNodeIdOf<T>> for DelegationAc<T>
 where
 	T: Config<DelegationEntityId = <T as attestation::Config>::AttesterId> + attestation::Config,
-	<T as attestation::Config>::AuthorizationId: PartialEq<DelegationNodeIdOf<T>>,
 {
 	fn can_attest(&self, who: &T::AttesterId) -> Result<Weight, DispatchError> {
 		match Pallet::<T>::is_delegating(who, &self.0, self.1)? {
@@ -955,19 +957,8 @@ where
 		}
 	}
 
-	fn can_revoke(
-		&self,
-		who: &T::AttesterId,
-		attestation: &attestation::AttestationDetails<T>,
-	) -> Result<Weight, DispatchError> {
-		ensure!(
-			attestation
-				.authorization_id
-				.as_ref()
-				.map(|id| id == &self.0)
-				.unwrap_or(false),
-			Error::<T>::AccessDenied
-		);
+	fn can_revoke(&self, who: &T::AttesterId, auth_id: &DelegationNodeIdOf<T>) -> Result<Weight, DispatchError> {
+		ensure!(auth_id == &self.0, Error::<T>::AccessDenied);
 
 		match Pallet::<T>::is_delegating(who, &self.0, self.1)? {
 			(true, checks) => Ok(<T as Config>::WeightInfo::is_delegating(checks)),
@@ -975,19 +966,8 @@ where
 		}
 	}
 
-	fn can_remove(
-		&self,
-		who: &T::AttesterId,
-		attestation: &attestation::AttestationDetails<T>,
-	) -> Result<Weight, DispatchError> {
-		ensure!(
-			attestation
-				.authorization_id
-				.as_ref()
-				.map(|id| id == &self.0)
-				.unwrap_or(false),
-			Error::<T>::AccessDenied
-		);
+	fn can_remove(&self, who: &T::AttesterId, auth_id: &DelegationNodeIdOf<T>) -> Result<Weight, DispatchError> {
+		ensure!(auth_id == &self.0, Error::<T>::AccessDenied);
 
 		match Pallet::<T>::is_delegating(who, &self.0, self.1)? {
 			(true, checks) => Ok(<T as Config>::WeightInfo::is_delegating(checks)),

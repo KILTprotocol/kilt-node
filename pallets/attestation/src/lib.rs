@@ -90,8 +90,8 @@ pub use crate::{attestations::AttestationDetails, default_weights::WeightInfo, p
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_support::dispatch::Weight;
 	use frame_support::{
+		dispatch::Weight,
 		pallet_prelude::*,
 		traits::{Currency, Get, ReservableCurrency},
 		BoundedVec,
@@ -102,25 +102,25 @@ pub mod pallet {
 	use ctype::CtypeHashOf;
 	use kilt_support::{deposit::Deposit, traits::CallSources};
 
-	pub trait AttestationAccessControl<AttesterId, AuthorizationId, T: Config> {
+	pub trait AttestationAccessControl<AttesterId, AuthorizationId> {
 		fn can_attest(&self, who: &AttesterId) -> Result<Weight, DispatchError>;
-		fn can_revoke(&self, who: &AttesterId, attestation: &AttestationDetails<T>) -> Result<Weight, DispatchError>;
-		fn can_remove(&self, who: &AttesterId, attestation: &AttestationDetails<T>) -> Result<Weight, DispatchError>;
+		fn can_revoke(&self, who: &AttesterId, authorization_id: &AuthorizationId) -> Result<Weight, DispatchError>;
+		fn can_remove(&self, who: &AttesterId, authorization_id: &AuthorizationId) -> Result<Weight, DispatchError>;
 		fn authorization_id(&self) -> AuthorizationId;
 		fn weight(&self) -> Weight;
 	}
 
-	impl<AttesterId, AuthorizationId, T: Config> AttestationAccessControl<AttesterId, AuthorizationId, T> for ()
+	impl<AttesterId, AuthorizationId> AttestationAccessControl<AttesterId, AuthorizationId> for ()
 	where
 		AuthorizationId: Default,
 	{
 		fn can_attest(&self, _who: &AttesterId) -> Result<Weight, DispatchError> {
 			Err(DispatchError::Other("Unimplemented"))
 		}
-		fn can_revoke(&self, _who: &AttesterId, _attestation: &AttestationDetails<T>) -> Result<Weight, DispatchError> {
+		fn can_revoke(&self, _who: &AttesterId, _authorization_id: &AuthorizationId) -> Result<Weight, DispatchError> {
 			Err(DispatchError::Other("Unimplemented"))
 		}
-		fn can_remove(&self, _who: &AttesterId, _attestation: &AttestationDetails<T>) -> Result<Weight, DispatchError> {
+		fn can_remove(&self, _who: &AttesterId, _authorization_id: &AuthorizationId) -> Result<Weight, DispatchError> {
 			Err(DispatchError::Other("Unimplemented"))
 		}
 		fn authorization_id(&self) -> AuthorizationId {
@@ -172,7 +172,7 @@ pub mod pallet {
 
 		type AuthorizationId: Parameter;
 
-		type AccessControl: Parameter + AttestationAccessControl<Self::AttesterId, Self::AuthorizationId, Self>;
+		type AccessControl: Parameter + AttestationAccessControl<Self::AttesterId, Self::AuthorizationId>;
 	}
 
 	#[pallet::pallet]
@@ -349,9 +349,10 @@ pub mod pallet {
 			ensure!(!attestation.revoked, Error::<T>::AlreadyRevoked);
 
 			if attestation.attester != who {
+				let expected_auth = attestation.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
 				authorization
 					.ok_or(Error::<T>::Unauthorized)?
-					.can_revoke(&who, &attestation)?;
+					.can_revoke(&who, &expected_auth)?;
 			}
 
 			// *** No Fail beyond this point ***
@@ -399,9 +400,10 @@ pub mod pallet {
 			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
 			if attestation.attester != who {
+				let expected_auth = attestation.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
 				authorization
 					.ok_or(Error::<T>::Unauthorized)?
-					.can_remove(&who, &attestation)?;
+					.can_remove(&who, &expected_auth)?;
 			}
 
 			// *** No Fail beyond this point ***

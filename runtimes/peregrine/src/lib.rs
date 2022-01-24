@@ -45,6 +45,7 @@ use sp_runtime::{
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 
+use delegation::DelegationAc;
 use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
@@ -473,10 +474,9 @@ impl attestation::Config for Runtime {
 	type Currency = Balances;
 	type Deposit = AttestationDeposit;
 	type MaxDelegatedAttestations = MaxDelegatedAttestations;
-
 	type AttesterId = DidIdentifier;
-	type AuthorizationId = (); //AuthorizationId<DelegationAc>;
-	type AccessControl = (); //PalletAuthorize<Runtime, DelegationAc>;
+	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
+	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
 }
 
 parameter_types! {
