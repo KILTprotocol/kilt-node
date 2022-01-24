@@ -267,7 +267,10 @@ pub mod pallet {
 		///   DelegatedAttestations
 		/// - Writes: Attestations, (DelegatedAttestations)
 		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::add())]
+		#[pallet::weight(
+			<T as pallet::Config>::WeightInfo::add()
+			+ authorization.as_ref().map(|ac| ac.weight()).unwrap_or(0)
+		)]
 		pub fn add(
 			origin: OriginFor<T>,
 			claim_hash: ClaimHashOf<T>,
@@ -335,7 +338,10 @@ pub mod pallet {
 		/// - Reads per delegation step P: delegation::Delegations
 		/// - Writes: Attestations, DelegatedAttestations
 		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::revoke())]
+		#[pallet::weight(
+			<T as pallet::Config>::WeightInfo::revoke()
+			+ authorization.as_ref().map(|ac| ac.weight()).unwrap_or(0)
+		)]
 		pub fn revoke(
 			origin: OriginFor<T>,
 			claim_hash: ClaimHashOf<T>,
@@ -388,7 +394,10 @@ pub mod pallet {
 		/// - Reads per delegation step P: delegation::Delegations
 		/// - Writes: Attestations, DelegatedAttestations
 		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove())]
+		#[pallet::weight(
+			<T as pallet::Config>::WeightInfo::remove()
+			+ authorization.as_ref().map(|ac| ac.weight()).unwrap_or(0)
+		)]
 		pub fn remove(
 			origin: OriginFor<T>,
 			claim_hash: ClaimHashOf<T>,
