@@ -311,7 +311,7 @@ pub mod pallet {
 				&claim_hash,
 				AttestationDetails {
 					ctype_hash,
-					attester: who.clone(),
+					attester: who,
 					authorization_id,
 					revoked: false,
 					deposit,
@@ -358,7 +358,7 @@ pub mod pallet {
 				let expected_auth = attestation.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
 				authorization
 					.ok_or(Error::<T>::Unauthorized)?
-					.can_revoke(&who, &expected_auth)?;
+					.can_revoke(&who, expected_auth)?;
 			}
 
 			// *** No Fail beyond this point ***
@@ -412,7 +412,7 @@ pub mod pallet {
 				let expected_auth = attestation.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
 				authorization
 					.ok_or(Error::<T>::Unauthorized)?
-					.can_remove(&who, &expected_auth)?;
+					.can_remove(&who, expected_auth)?;
 			}
 
 			// *** No Fail beyond this point ***
