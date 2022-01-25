@@ -138,8 +138,12 @@ pub mod pallet {
 		UnickAlreadyBlacklisted,
 		/// The actor cannot performed the specified operation.
 		NotAuthorized,
-		/// A valid unick cannot be decoded from the provided input.
-		InvalidUnickFormat,
+		/// A unick that is too short is being claimed.
+		UnickTooShort,
+		/// A unick that is too long is being claimed.
+		UnickTooLong,
+		/// A unick that contains not allowed characters is being claimed.
+		InvalidUnickCharacter,
 	}
 
 	#[pallet::hooks]

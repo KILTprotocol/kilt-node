@@ -21,7 +21,7 @@ use frame_support::{assert_noop, assert_ok, BoundedVec};
 use frame_system::RawOrigin;
 use kilt_support::{deposit::Deposit, mock::mock_origin};
 use runtime_common::Balance;
-use sp_runtime::DispatchError;
+use sp_runtime::{traits::Zero, DispatchError};
 
 use crate::{mock::*, Blacklist, Error, Owner, Pallet, UnickOwnershipOf, Unicks};
 
@@ -38,6 +38,7 @@ fn claiming_successful() {
 			assert!(Unicks::<Test>::get(&DID_00).is_none());
 			assert!(Owner::<Test>::get(&unick_00).is_none());
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+
 			assert_ok!(Pallet::<Test>::claim(
 				mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
 				unick_00.clone().0,
@@ -83,19 +84,22 @@ fn claiming_successful() {
 
 #[test]
 fn claiming_invalid() {
-	let invalid_unicks = vec![
+	let too_short_unicks = vec![
 		// Empty unick
 		BoundedVec::try_from(b"".to_vec()).unwrap(),
 		// Single-char unick
 		BoundedVec::try_from(b"1".to_vec()).unwrap(),
 		// Two-letter unick
 		BoundedVec::try_from(b"10".to_vec()).unwrap(),
+	];
+
+	let invalid_unicks = vec![
 		// Not allowed ASCII character unick (invalid symbol)
 		BoundedVec::try_from(b"10:1".to_vec()).unwrap(),
 		// Not allowed ASCII character unick (uppercase letter)
 		BoundedVec::try_from(b"abcdE".to_vec()).unwrap(),
 		// Not allowed ASCII character unick (whitespace)
-		BoundedVec::try_from(b" ".to_vec()).unwrap(),
+		BoundedVec::try_from(b"    ".to_vec()).unwrap(),
 		// Non-ASCII character unick
 		BoundedVec::try_from(String::from("notascii😁").as_bytes().to_owned()).unwrap(),
 	];
@@ -103,11 +107,19 @@ fn claiming_invalid() {
 		.with_balances(vec![(ACCOUNT_00, 100)])
 		.build()
 		.execute_with(|| {
+			for too_short_input in too_short_unicks.iter() {
+				assert_noop!(
+					Pallet::<Test>::claim(
+						mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
+						too_short_input.clone(),
+					),
+					Error::<Test>::UnickTooShort,
+				);
+			}
 			for input in invalid_unicks.iter() {
-				println!("AAA");
 				assert_noop!(
 					Pallet::<Test>::claim(mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(), input.clone(),),
-					Error::<Test>::InvalidUnickFormat,
+					Error::<Test>::InvalidUnickCharacter,
 				);
 			}
 		})
@@ -162,7 +174,7 @@ fn releasing_by_owner_successful() {
 			assert!(Owner::<Test>::get(&unick_00).is_none());
 
 			// Test that the deposit was returned to the payer correctly.
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), 0);
+			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 			assert_eq!(Balances::free_balance(ACCOUNT_00), initial_balance);
 		})
 }
@@ -185,7 +197,7 @@ fn releasing_by_payer_successful() {
 			assert!(Owner::<Test>::get(&unick_00).is_none());
 
 			// Test that the deposit was returned to the payer correctly.
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), 0);
+			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 			assert_eq!(Balances::free_balance(ACCOUNT_00), initial_balance);
 		})
 }
@@ -269,13 +281,14 @@ fn blacklisting_successful() {
 			assert!(Owner::<Test>::get(&unick_00).is_none());
 			assert!(Blacklist::<Test>::get(&unick_00).is_some());
 
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), 0);
+			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 			assert_eq!(Balances::free_balance(ACCOUNT_00), initial_balance);
 
 			// Blacklist an unclaimed unick
 			assert_ok!(Pallet::<Test>::blacklist(RawOrigin::Root.into(), unick_01.clone().0),);
 
 			assert!(Owner::<Test>::get(&unick_01).is_none());
+			assert!(Blacklist::<Test>::get(&unick_01).is_some());
 		})
 }
 

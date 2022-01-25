@@ -32,11 +32,7 @@ use crate::{Config, Error};
 /// contain a subset of ASCII characters.
 #[derive(Encode, Decode, TypeInfo)]
 #[scale_info(skip_type_params(T, MaxLength, MinLength))]
-pub struct AsciiUnick<T, MinLength, MaxLength>(
-	pub(crate) BoundedVec<u8, MaxLength>,
-	PhantomData<T>,
-	PhantomData<MinLength>,
-);
+pub struct AsciiUnick<T, MinLength, MaxLength>(pub(crate) BoundedVec<u8, MaxLength>, PhantomData<(T, MinLength)>);
 
 impl<T: Config> TryFrom<Vec<u8>> for AsciiUnick<T, T::MinUnickLength, T::MaxUnickLength> {
 	type Error = Error<T>;
@@ -47,15 +43,15 @@ impl<T: Config> TryFrom<Vec<u8>> for AsciiUnick<T, T::MinUnickLength, T::MaxUnic
 	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
 		ensure!(
 			value.len() >= T::MinUnickLength::get().saturated_into(),
-			Self::Error::InvalidUnickFormat
+			Self::Error::UnickTooShort
 		);
 		let bounded_vec: BoundedVec<u8, T::MaxUnickLength> =
-			BoundedVec::try_from(value).map_err(|_| Self::Error::InvalidUnickFormat)?;
+			BoundedVec::try_from(value).map_err(|_| Self::Error::UnickTooLong)?;
 		ensure!(
 			is_byte_array_ascii_string(&bounded_vec),
-			Self::Error::InvalidUnickFormat
+			Self::Error::InvalidUnickCharacter
 		);
-		Ok(Self(bounded_vec, PhantomData, PhantomData))
+		Ok(Self(bounded_vec, PhantomData))
 	}
 }
 
@@ -89,7 +85,7 @@ impl<T: Config> PartialEq for AsciiUnick<T, T::MinUnickLength, T::MaxUnickLength
 // FIXME: did not find a way to automatically implement this.
 impl<T: Config> Clone for AsciiUnick<T, T::MinUnickLength, T::MaxUnickLength> {
 	fn clone(&self) -> Self {
-		Self(self.0.clone(), self.1, self.2)
+		Self(self.0.clone(), self.1)
 	}
 }
 
