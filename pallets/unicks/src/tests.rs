@@ -37,6 +37,7 @@ fn claiming_successful() {
 		.execute_with(|| {
 			assert!(Unicks::<Test>::get(&DID_00).is_none());
 			assert!(Owner::<Test>::get(&unick_00).is_none());
+			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 			assert_ok!(Pallet::<Test>::claim(
 				mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
 				unick_00.clone().0,
