@@ -32,7 +32,8 @@ benchmarks! {
 		where
 		T: core::fmt::Debug,
 		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::AttesterId>,
-		T::AttesterId: Default
+		T::AttesterId: Default,
+		T: ctype::Config<CtypeCreatorId = T::AttesterId>,
 	}
 
 	add {
@@ -41,6 +42,7 @@ benchmarks! {
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
 
+		ctype::Ctypes::<T>::insert(&ctype_hash, T::CtypeCreatorId::from(attester.clone()));
 		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
@@ -65,6 +67,7 @@ benchmarks! {
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
 
+		ctype::Ctypes::<T>::insert(&ctype_hash, T::CtypeCreatorId::from(attester.clone()));
 		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
@@ -85,11 +88,12 @@ benchmarks! {
 	}
 
 	remove {
+		let attester: T::AttesterId = account("attester", 0, SEED);
+		let sender: T::AccountId = account("sender", 0, SEED);
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
 
-		let attester: T::AttesterId = account("attester", 0, SEED);
-		let sender: T::AccountId = account("sender", 0, SEED);
+		ctype::Ctypes::<T>::insert(&ctype_hash, T::CtypeCreatorId::from(attester.clone()));
 		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
@@ -101,11 +105,12 @@ benchmarks! {
 	}
 
 	reclaim_deposit {
+		let attester: T::AttesterId = account("attester", 0, SEED);
+		let sender: T::AccountId = account("sender", 0, SEED);
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
 
-		let attester: T::AttesterId = account("attester", 0, SEED);
-		let sender: T::AccountId = account("sender", 0, SEED);
+		ctype::Ctypes::<T>::insert(&ctype_hash, T::CtypeCreatorId::from(attester.clone()));
 		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester);
