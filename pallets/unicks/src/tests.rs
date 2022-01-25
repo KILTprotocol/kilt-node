@@ -75,7 +75,7 @@ fn claiming_successful() {
 			let unick_01 = unick_01();
 			assert_noop!(
 				Pallet::<Test>::claim(mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(), unick_01.0,),
-				Error::<Test>::OwnerAlreadyExisting
+				Error::<Test>::OwnerAlreadyExists
 			);
 		})
 }

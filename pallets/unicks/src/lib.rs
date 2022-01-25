@@ -128,7 +128,7 @@ pub mod pallet {
 		/// The specified unick does not exist.
 		UnickNotFound,
 		/// The specified owner already owns a unick.
-		OwnerAlreadyExisting,
+		OwnerAlreadyExists,
 		/// The specified unick has been blacklisted and cannot be interacted
 		/// with.
 		UnickBlacklisted,
@@ -315,7 +315,7 @@ pub mod pallet {
 		) -> Result<UnickOf<T>, DispatchError> {
 			let unick = UnickOf::<T>::try_from(unick.into_inner()).map_err(DispatchError::from)?;
 
-			ensure!(!Unicks::<T>::contains_key(&owner), Error::<T>::OwnerAlreadyExisting);
+			ensure!(!Unicks::<T>::contains_key(&owner), Error::<T>::OwnerAlreadyExists);
 			ensure!(!Owner::<T>::contains_key(&unick), Error::<T>::UnickAlreadyClaimed);
 			ensure!(!Blacklist::<T>::contains_key(&unick), Error::<T>::UnickBlacklisted);
 
