@@ -114,13 +114,31 @@ impl<T: frame_system::Config> delegation::WeightInfo for WeightInfo<T> {
 	}
 
 	// TODO: run benchmarks
-	fn is_delegating(r: u32, ) -> Weight {
-		(53_098_000 as Weight)
-			// Standard Error: 75_000
-			.saturating_add((39_041_000 as Weight).saturating_mul(r as Weight))
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(r as Weight)))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes((2 as Weight).saturating_mul(r as Weight)))
+	fn can_attest(r: u32, ) -> Weight {
+		(61_171_000_u64)
+			// Standard Error: 99_000
+			.saturating_add((37_949_000_u64).saturating_mul(r as Weight))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(r as Weight)))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(r as Weight)))
+	}
+	fn can_revoke(r: u32, ) -> Weight {
+		(61_171_000_u64)
+			// Standard Error: 99_000
+			.saturating_add((37_949_000_u64).saturating_mul(r as Weight))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(r as Weight)))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(r as Weight)))
+	}
+	fn can_remove(r: u32, ) -> Weight {
+		(61_171_000_u64)
+			// Standard Error: 99_000
+			.saturating_add((37_949_000_u64).saturating_mul(r as Weight))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(r as Weight)))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(r as Weight)))
 	}
 }

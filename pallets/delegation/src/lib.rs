@@ -946,31 +946,28 @@ impl<T: Config> Pallet<T> {
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct DelegationAc<T: Config>(DelegationNodeIdOf<T>, u32);
-impl<T> attestation::AttestationAccessControl<DelegatorIdOf<T>, DelegationNodeIdOf<T>> for DelegationAc<T>
-where
-	T: Config<DelegationEntityId = <T as attestation::Config>::AttesterId> + attestation::Config,
-{
-	fn can_attest(&self, who: &T::AttesterId) -> Result<Weight, DispatchError> {
+impl<T: Config> attestation::AttestationAccessControl<DelegatorIdOf<T>, DelegationNodeIdOf<T>> for DelegationAc<T> {
+	fn can_attest(&self, who: &DelegatorIdOf<T>) -> Result<Weight, DispatchError> {
 		match Pallet::<T>::is_delegating(who, &self.0, self.1)? {
-			(true, checks) => Ok(<T as Config>::WeightInfo::is_delegating(checks)),
+			(true, checks) => Ok(<T as Config>::WeightInfo::can_attest(checks)),
 			_ => Err(Error::<T>::AccessDenied.into()),
 		}
 	}
 
-	fn can_revoke(&self, who: &T::AttesterId, auth_id: &DelegationNodeIdOf<T>) -> Result<Weight, DispatchError> {
+	fn can_revoke(&self, who: &DelegatorIdOf<T>, auth_id: &DelegationNodeIdOf<T>) -> Result<Weight, DispatchError> {
 		ensure!(auth_id == &self.0, Error::<T>::AccessDenied);
 
 		match Pallet::<T>::is_delegating(who, &self.0, self.1)? {
-			(true, checks) => Ok(<T as Config>::WeightInfo::is_delegating(checks)),
+			(true, checks) => Ok(<T as Config>::WeightInfo::can_revoke(checks)),
 			_ => Err(Error::<T>::AccessDenied.into()),
 		}
 	}
 
-	fn can_remove(&self, who: &T::AttesterId, auth_id: &DelegationNodeIdOf<T>) -> Result<Weight, DispatchError> {
+	fn can_remove(&self, who: &DelegatorIdOf<T>, auth_id: &DelegationNodeIdOf<T>) -> Result<Weight, DispatchError> {
 		ensure!(auth_id == &self.0, Error::<T>::AccessDenied);
 
 		match Pallet::<T>::is_delegating(who, &self.0, self.1)? {
-			(true, checks) => Ok(<T as Config>::WeightInfo::is_delegating(checks)),
+			(true, checks) => Ok(<T as Config>::WeightInfo::can_remove(checks)),
 			_ => Err(Error::<T>::AccessDenied.into()),
 		}
 	}
@@ -980,6 +977,8 @@ where
 	}
 
 	fn weight(&self) -> Weight {
-		<T as Config>::WeightInfo::is_delegating(self.1)
+		<T as Config>::WeightInfo::can_attest(self.1)
+			.max(<T as Config>::WeightInfo::can_revoke(self.1))
+			.max(<T as Config>::WeightInfo::can_remove(self.1))
 	}
 }

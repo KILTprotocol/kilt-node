@@ -53,7 +53,9 @@ pub trait WeightInfo {
 	fn revoke_delegation_leaf(r: u32, c: u32, ) -> Weight;
 	fn remove_delegation(r: u32, ) -> Weight;
 	fn reclaim_deposit(r: u32, ) -> Weight;
-	fn is_delegating(r: u32, ) -> Weight;
+	fn can_attest(r: u32, ) -> Weight;
+	fn can_revoke(r: u32, ) -> Weight;
+	fn can_remove(r: u32, ) -> Weight;
 }
 
 /// Weights for delegation using the Substrate node and recommended hardware.
@@ -124,7 +126,25 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(r as Weight)))
 	}
 	// TODO: run benchmarks
-	fn is_delegating(r: u32, ) -> Weight {
+	fn can_attest(r: u32, ) -> Weight {
+		(61_171_000_u64)
+			// Standard Error: 99_000
+			.saturating_add((37_949_000_u64).saturating_mul(r as Weight))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(r as Weight)))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(r as Weight)))
+	}
+	fn can_revoke(r: u32, ) -> Weight {
+		(61_171_000_u64)
+			// Standard Error: 99_000
+			.saturating_add((37_949_000_u64).saturating_mul(r as Weight))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(r as Weight)))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(r as Weight)))
+	}
+	fn can_remove(r: u32, ) -> Weight {
 		(61_171_000_u64)
 			// Standard Error: 99_000
 			.saturating_add((37_949_000_u64).saturating_mul(r as Weight))
@@ -185,14 +205,32 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
 			.saturating_add(RocksDbWeight::get().writes((2_u64).saturating_mul(r as Weight)))
 	}
-		// TODO: run benchmarks
-		fn is_delegating(r: u32, ) -> Weight {
-			(61_171_000_u64)
-				// Standard Error: 99_000
-				.saturating_add((37_949_000_u64).saturating_mul(r as Weight))
-				.saturating_add(RocksDbWeight::get().reads(2_u64))
-				.saturating_add(RocksDbWeight::get().reads((2_u64).saturating_mul(r as Weight)))
-				.saturating_add(RocksDbWeight::get().writes(2_u64))
-				.saturating_add(RocksDbWeight::get().writes((2_u64).saturating_mul(r as Weight)))
-		}
+	// TODO: run benchmarks
+	fn can_attest(r: u32, ) -> Weight {
+		(61_171_000_u64)
+			// Standard Error: 99_000
+			.saturating_add((37_949_000_u64).saturating_mul(r as Weight))
+			.saturating_add(RocksDbWeight::get().reads(2_u64))
+			.saturating_add(RocksDbWeight::get().reads((2_u64).saturating_mul(r as Weight)))
+			.saturating_add(RocksDbWeight::get().writes(2_u64))
+			.saturating_add(RocksDbWeight::get().writes((2_u64).saturating_mul(r as Weight)))
+	}
+	fn can_revoke(r: u32, ) -> Weight {
+		(61_171_000_u64)
+			// Standard Error: 99_000
+			.saturating_add((37_949_000_u64).saturating_mul(r as Weight))
+			.saturating_add(RocksDbWeight::get().reads(2_u64))
+			.saturating_add(RocksDbWeight::get().reads((2_u64).saturating_mul(r as Weight)))
+			.saturating_add(RocksDbWeight::get().writes(2_u64))
+			.saturating_add(RocksDbWeight::get().writes((2_u64).saturating_mul(r as Weight)))
+	}
+	fn can_remove(r: u32, ) -> Weight {
+		(61_171_000_u64)
+			// Standard Error: 99_000
+			.saturating_add((37_949_000_u64).saturating_mul(r as Weight))
+			.saturating_add(RocksDbWeight::get().reads(2_u64))
+			.saturating_add(RocksDbWeight::get().reads((2_u64).saturating_mul(r as Weight)))
+			.saturating_add(RocksDbWeight::get().writes(2_u64))
+			.saturating_add(RocksDbWeight::get().writes((2_u64).saturating_mul(r as Weight)))
+	}
 }
