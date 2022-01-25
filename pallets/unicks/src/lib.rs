@@ -64,7 +64,7 @@ pub mod pallet {
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
 
-	// Unick -> owner
+	// Unick -> Ownership
 	#[pallet::storage]
 	#[pallet::getter(fn owner)]
 	pub type Owner<T> = StorageMap<_, Blake2_128Concat, UnickOf<T>, UnickOwnershipOf<T>>;
