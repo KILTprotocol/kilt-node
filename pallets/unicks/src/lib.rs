@@ -21,13 +21,16 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub mod kilt_unicks;
+pub mod unick;
 
 #[cfg(test)]
 mod mock;
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
 
 pub use pallet::*;
 
@@ -44,7 +47,7 @@ pub mod pallet {
 
 	use kilt_support::{deposit::Deposit, traits::CallSources};
 
-	use crate::kilt_unicks::UnickOwnership;
+	use crate::unick::UnickOwnership;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
@@ -57,7 +60,7 @@ pub mod pallet {
 	pub type UnickOwnershipOf<T> =
 		UnickOwnership<UnickOwnerOf<T>, Deposit<AccountIdOf<T>, BalanceOf<T>>, BlockNumberFor<T>>;
 
-	type CurrencyOf<T> = <T as Config>::Currency;
+	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]

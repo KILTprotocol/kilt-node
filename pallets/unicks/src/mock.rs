@@ -26,7 +26,7 @@ use sp_runtime::{
 };
 
 use crate as pallet_unicks;
-use crate::kilt_unicks::AsciiUnick;
+use crate::unick::AsciiUnick;
 
 type Index = u64;
 type Balance = u128;

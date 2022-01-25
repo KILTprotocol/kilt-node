@@ -93,18 +93,18 @@ impl<T: Config> Clone for AsciiUnick<T, T::MinUnickLength, T::MaxUnickLength> {
 #[derive(Clone, Encode, Decode, Debug, PartialEq, TypeInfo)]
 pub struct UnickOwnership<Owner, Deposit, BlockNumber> {
 	/// The owner of the unick.
-	pub(crate) owner: Owner,
+	pub owner: Owner,
 	/// The block number at which the unick was claimed.
-	pub(crate) claimed_at: BlockNumber,
+	pub claimed_at: BlockNumber,
 	/// The deposit associated with the unick.
-	pub(crate) deposit: Deposit,
+	pub deposit: Deposit,
 }
 
 #[cfg(test)]
 mod tests {
 	use sp_runtime::SaturatedConversion;
 
-	use crate::{kilt_unicks::AsciiUnick, mock::Test, Config};
+	use crate::{mock::Test, unick::AsciiUnick, Config};
 
 	const MIN_LENGTH: u32 = <Test as Config>::MinUnickLength::get();
 	const MAX_LENGTH: u32 = <Test as Config>::MaxUnickLength::get();
