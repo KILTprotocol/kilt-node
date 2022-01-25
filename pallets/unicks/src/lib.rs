@@ -121,7 +121,7 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
-		/// The tx submitter does not have enough fund to pay for the deposit.
+		/// The tx submitter does not have enough funds to pay for the deposit.
 		InsufficientFunds,
 		/// The specified unick has already been previously claimed.
 		UnickAlreadyClaimed,
