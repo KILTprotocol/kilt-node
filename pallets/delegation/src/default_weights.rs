@@ -65,25 +65,25 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: Delegation DelegationNodes (r:0 w:1)
 	fn create_hierarchy() -> Weight {
-		(46_379_000 as Weight)
+		(46_899_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(3 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
 	// Storage: Delegation DelegationNodes (r:2 w:2)
 	// Storage: System Account (r:1 w:1)
 	fn add_delegation() -> Weight {
-		(54_088_000 as Weight)
+		(55_555_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(3 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
 	// Storage: Delegation DelegationNodes (r:1 w:1)
 	// Storage: Delegation DelegationHierarchies (r:1 w:0)
 	fn revoke_delegation_root_child(r: u32, c: u32, ) -> Weight {
-		(20_970_000 as Weight)
-			// Standard Error: 55_000
-			.saturating_add((17_347_000 as Weight).saturating_mul(r as Weight))
-			// Standard Error: 55_000
-			.saturating_add((66_000 as Weight).saturating_mul(c as Weight))
+		(22_158_000 as Weight)
+			// Standard Error: 56_000
+			.saturating_add((17_812_000 as Weight).saturating_mul(r as Weight))
+			// Standard Error: 56_000
+			.saturating_add((65_000 as Weight).saturating_mul(c as Weight))
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
 			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(r as Weight)))
 			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(r as Weight)))
@@ -91,11 +91,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Delegation DelegationNodes (r:6 w:1)
 	// Storage: Delegation DelegationHierarchies (r:1 w:0)
 	fn revoke_delegation_leaf(r: u32, c: u32, ) -> Weight {
-		(37_590_000 as Weight)
-			// Standard Error: 27_000
-			.saturating_add((65_000 as Weight).saturating_mul(r as Weight))
-			// Standard Error: 27_000
-			.saturating_add((5_529_000 as Weight).saturating_mul(c as Weight))
+		(39_004_000 as Weight)
+			// Standard Error: 31_000
+			.saturating_add((101_000 as Weight).saturating_mul(r as Weight))
+			// Standard Error: 31_000
+			.saturating_add((5_945_000 as Weight).saturating_mul(c as Weight))
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
@@ -104,9 +104,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: Delegation DelegationHierarchies (r:1 w:1)
 	fn remove_delegation(r: u32, ) -> Weight {
-		(62_289_000 as Weight)
-			// Standard Error: 69_000
-			.saturating_add((31_560_000 as Weight).saturating_mul(r as Weight))
+		(64_475_000 as Weight)
+			// Standard Error: 68_000
+			.saturating_add((32_285_000 as Weight).saturating_mul(r as Weight))
 			.saturating_add(T::DbWeight::get().reads(3 as Weight))
 			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(r as Weight)))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
@@ -116,9 +116,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: Delegation DelegationHierarchies (r:0 w:1)
 	fn reclaim_deposit(r: u32, ) -> Weight {
-		(53_477_000 as Weight)
-			// Standard Error: 79_000
-			.saturating_add((31_743_000 as Weight).saturating_mul(r as Weight))
+		(55_017_000 as Weight)
+			// Standard Error: 84_000
+			.saturating_add((32_384_000 as Weight).saturating_mul(r as Weight))
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(r as Weight)))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
@@ -126,25 +126,25 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	}
 	// Storage: Delegation DelegationNodes (r:2 w:0)
 	fn can_attest(c: u32, ) -> Weight {
-		(8_676_000 as Weight)
-			// Standard Error: 28_000
-			.saturating_add((5_522_000 as Weight).saturating_mul(c as Weight))
+		(9_002_000 as Weight)
+			// Standard Error: 26_000
+			.saturating_add((5_910_000 as Weight).saturating_mul(c as Weight))
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
 			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
 	}
 	// Storage: Delegation DelegationNodes (r:2 w:0)
 	fn can_revoke(c: u32, ) -> Weight {
-		(8_730_000 as Weight)
-			// Standard Error: 25_000
-			.saturating_add((5_519_000 as Weight).saturating_mul(c as Weight))
+		(9_119_000 as Weight)
+			// Standard Error: 36_000
+			.saturating_add((5_889_000 as Weight).saturating_mul(c as Weight))
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
 			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
 	}
 	// Storage: Delegation DelegationNodes (r:2 w:0)
 	fn can_remove(c: u32, ) -> Weight {
-		(8_897_000 as Weight)
-			// Standard Error: 28_000
-			.saturating_add((5_451_000 as Weight).saturating_mul(c as Weight))
+		(9_343_000 as Weight)
+			// Standard Error: 30_000
+			.saturating_add((5_832_000 as Weight).saturating_mul(c as Weight))
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
 			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
 	}
@@ -157,25 +157,25 @@ impl WeightInfo for () {
 	// Storage: System Account (r:1 w:1)
 	// Storage: Delegation DelegationNodes (r:0 w:1)
 	fn create_hierarchy() -> Weight {
-		(46_379_000 as Weight)
+		(46_899_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(3 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(3 as Weight))
 	}
 	// Storage: Delegation DelegationNodes (r:2 w:2)
 	// Storage: System Account (r:1 w:1)
 	fn add_delegation() -> Weight {
-		(54_088_000 as Weight)
+		(55_555_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(3 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(3 as Weight))
 	}
 	// Storage: Delegation DelegationNodes (r:1 w:1)
 	// Storage: Delegation DelegationHierarchies (r:1 w:0)
 	fn revoke_delegation_root_child(r: u32, c: u32, ) -> Weight {
-		(20_970_000 as Weight)
-			// Standard Error: 55_000
-			.saturating_add((17_347_000 as Weight).saturating_mul(r as Weight))
-			// Standard Error: 55_000
-			.saturating_add((66_000 as Weight).saturating_mul(c as Weight))
+		(22_158_000 as Weight)
+			// Standard Error: 56_000
+			.saturating_add((17_812_000 as Weight).saturating_mul(r as Weight))
+			// Standard Error: 56_000
+			.saturating_add((65_000 as Weight).saturating_mul(c as Weight))
 			.saturating_add(RocksDbWeight::get().reads(1 as Weight))
 			.saturating_add(RocksDbWeight::get().reads((1 as Weight).saturating_mul(r as Weight)))
 			.saturating_add(RocksDbWeight::get().writes((1 as Weight).saturating_mul(r as Weight)))
@@ -183,11 +183,11 @@ impl WeightInfo for () {
 	// Storage: Delegation DelegationNodes (r:6 w:1)
 	// Storage: Delegation DelegationHierarchies (r:1 w:0)
 	fn revoke_delegation_leaf(r: u32, c: u32, ) -> Weight {
-		(37_590_000 as Weight)
-			// Standard Error: 27_000
-			.saturating_add((65_000 as Weight).saturating_mul(r as Weight))
-			// Standard Error: 27_000
-			.saturating_add((5_529_000 as Weight).saturating_mul(c as Weight))
+		(39_004_000 as Weight)
+			// Standard Error: 31_000
+			.saturating_add((101_000 as Weight).saturating_mul(r as Weight))
+			// Standard Error: 31_000
+			.saturating_add((5_945_000 as Weight).saturating_mul(c as Weight))
 			.saturating_add(RocksDbWeight::get().reads(2 as Weight))
 			.saturating_add(RocksDbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
 			.saturating_add(RocksDbWeight::get().writes(1 as Weight))
@@ -196,9 +196,9 @@ impl WeightInfo for () {
 	// Storage: System Account (r:1 w:1)
 	// Storage: Delegation DelegationHierarchies (r:1 w:1)
 	fn remove_delegation(r: u32, ) -> Weight {
-		(62_289_000 as Weight)
-			// Standard Error: 69_000
-			.saturating_add((31_560_000 as Weight).saturating_mul(r as Weight))
+		(64_475_000 as Weight)
+			// Standard Error: 68_000
+			.saturating_add((32_285_000 as Weight).saturating_mul(r as Weight))
 			.saturating_add(RocksDbWeight::get().reads(3 as Weight))
 			.saturating_add(RocksDbWeight::get().reads((1 as Weight).saturating_mul(r as Weight)))
 			.saturating_add(RocksDbWeight::get().writes(3 as Weight))
@@ -208,9 +208,9 @@ impl WeightInfo for () {
 	// Storage: System Account (r:1 w:1)
 	// Storage: Delegation DelegationHierarchies (r:0 w:1)
 	fn reclaim_deposit(r: u32, ) -> Weight {
-		(53_477_000 as Weight)
-			// Standard Error: 79_000
-			.saturating_add((31_743_000 as Weight).saturating_mul(r as Weight))
+		(55_017_000 as Weight)
+			// Standard Error: 84_000
+			.saturating_add((32_384_000 as Weight).saturating_mul(r as Weight))
 			.saturating_add(RocksDbWeight::get().reads(2 as Weight))
 			.saturating_add(RocksDbWeight::get().reads((1 as Weight).saturating_mul(r as Weight)))
 			.saturating_add(RocksDbWeight::get().writes(3 as Weight))
@@ -218,25 +218,25 @@ impl WeightInfo for () {
 	}
 	// Storage: Delegation DelegationNodes (r:2 w:0)
 	fn can_attest(c: u32, ) -> Weight {
-		(8_676_000 as Weight)
-			// Standard Error: 28_000
-			.saturating_add((5_522_000 as Weight).saturating_mul(c as Weight))
+		(9_002_000 as Weight)
+			// Standard Error: 26_000
+			.saturating_add((5_910_000 as Weight).saturating_mul(c as Weight))
 			.saturating_add(RocksDbWeight::get().reads(1 as Weight))
 			.saturating_add(RocksDbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
 	}
 	// Storage: Delegation DelegationNodes (r:2 w:0)
 	fn can_revoke(c: u32, ) -> Weight {
-		(8_730_000 as Weight)
-			// Standard Error: 25_000
-			.saturating_add((5_519_000 as Weight).saturating_mul(c as Weight))
+		(9_119_000 as Weight)
+			// Standard Error: 36_000
+			.saturating_add((5_889_000 as Weight).saturating_mul(c as Weight))
 			.saturating_add(RocksDbWeight::get().reads(1 as Weight))
 			.saturating_add(RocksDbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
 	}
 	// Storage: Delegation DelegationNodes (r:2 w:0)
 	fn can_remove(c: u32, ) -> Weight {
-		(8_897_000 as Weight)
-			// Standard Error: 28_000
-			.saturating_add((5_451_000 as Weight).saturating_mul(c as Weight))
+		(9_343_000 as Weight)
+			// Standard Error: 30_000
+			.saturating_add((5_832_000 as Weight).saturating_mul(c as Weight))
 			.saturating_add(RocksDbWeight::get().reads(1 as Weight))
 			.saturating_add(RocksDbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
 	}
