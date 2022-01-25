@@ -380,7 +380,6 @@ benchmarks! {
 	}
 
 	can_attest {
-		let r in 1 .. T::MaxRevocations::get();
 		let c in 1 .. T::MaxParentChecks::get();
 
 		let sender: T::AccountId = account("sender", 0, SEED);
@@ -394,7 +393,6 @@ benchmarks! {
 	}
 
 	can_revoke {
-		let r in 1 .. T::MaxRevocations::get();
 		let c in 1 .. T::MaxParentChecks::get();
 
 		let sender: T::AccountId = account("sender", 0, SEED);
@@ -408,7 +406,6 @@ benchmarks! {
 	}
 
 	can_remove {
-		let r in 1 .. T::MaxRevocations::get();
 		let c in 1 .. T::MaxParentChecks::get();
 
 		let sender: T::AccountId = account("sender", 0, SEED);
