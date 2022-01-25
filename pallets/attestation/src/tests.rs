@@ -246,11 +246,7 @@ fn test_unauthorized_revoke() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Attestation::revoke(
-					DoubleOrigin(ACCOUNT_00, evil).into(),
-					claim_hash,
-					authorization_id
-				),
+				Attestation::revoke(DoubleOrigin(ACCOUNT_00, evil).into(), claim_hash, authorization_id),
 				DispatchError::Other("Unauthorized")
 			);
 		});
