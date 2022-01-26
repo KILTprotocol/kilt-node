@@ -41,6 +41,7 @@ pub mod pallet {
 	use codec::FullCodec;
 	use frame_support::{
 		pallet_prelude::*,
+		sp_runtime::SaturatedConversion,
 		traits::{Currency, ReservableCurrency, StorageVersion},
 		Blake2_128Concat,
 	};
@@ -172,7 +173,7 @@ pub mod pallet {
 		///   currency check + origin check
 		/// - Writes: Unicks, Owner storage entries + currency deposit reserve
 		/// # </weight>
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config>::WeightInfo::claim(unick.len().saturated_into()))]
 		pub fn claim(origin: OriginFor<T>, unick: UnickInput<T>) -> DispatchResult {
 			let origin = T::RegularOrigin::ensure_origin(origin)?;
 			let payer = origin.sender();
@@ -202,7 +203,7 @@ pub mod pallet {
 		/// - Reads: Owner storage entry + origin check
 		/// - Writes: Unicks, Owner storage entries + currency deposit release
 		/// # </weight>
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config>::WeightInfo::release_by_owner(unick.len().saturated_into()))]
 		pub fn release_by_owner(origin: OriginFor<T>, unick: UnickInput<T>) -> DispatchResult {
 			let origin = T::RegularOrigin::ensure_origin(origin)?;
 			let owner = origin.subject();
@@ -230,7 +231,7 @@ pub mod pallet {
 		/// - Reads: Owner storage entry + origin check
 		/// - Writes: Unicks, Owner storage entries + currency deposit release
 		/// # </weight>
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config>::WeightInfo::release_by_payer(unick.len().saturated_into()))]
 		pub fn release_by_payer(origin: OriginFor<T>, unick: UnickInput<T>) -> DispatchResult {
 			let caller = ensure_signed(origin)?;
 
@@ -262,7 +263,7 @@ pub mod pallet {
 		/// - Writes: Unicks, Owner, Blacklist storage entries + currency
 		///   deposit release
 		/// # </weight>
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config>::WeightInfo::blacklist(unick.len().saturated_into()))]
 		pub fn blacklist(origin: OriginFor<T>, unick: UnickInput<T>) -> DispatchResult {
 			T::BlacklistOrigin::ensure_origin(origin)?;
 
@@ -296,7 +297,7 @@ pub mod pallet {
 		/// - Reads: Blacklist storage entry + origin check
 		/// - Writes: Blacklist storage entry deposit release
 		/// # </weight>
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config>::WeightInfo::unblacklist(unick.len().saturated_into()))]
 		pub fn unblacklist(origin: OriginFor<T>, unick: UnickInput<T>) -> DispatchResult {
 			T::BlacklistOrigin::ensure_origin(origin)?;
 
