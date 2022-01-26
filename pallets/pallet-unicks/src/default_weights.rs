@@ -25,25 +25,16 @@
 // Executed Command:
 // target/release/kilt-parachain
 // benchmark
-// --chain
-// dev
-// --steps
-// --repeat
-// 20
-// --pallet
-// pallet-unicks
-// --extrinsic
-// *
-// --execution
-// wasm
-// --wasm-execution
-// compiled
-// --heap-pages
-// 4096
-// --output
-// pallets/pallet-unicks/src/default_weights.rs
-// --template
-// .maintain/weight-template.hbs
+// --chain=dev
+// --steps=50
+// --repeat=20
+// --pallet=pallet-unicks
+// --extrinsic=*
+// --execution=wasm
+// --wasm-execution=compiled
+// --heap-pages=4096
+// --output=pallets/pallet-unicks/src/default_weights.rs
+// --template=.maintain/weight-template.hbs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]
@@ -70,25 +61,29 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Unicks Blacklist (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	fn claim(n: u32, ) -> Weight {
-		(57_841_000 as Weight)
-			// Standard Error: 5_000
-			.saturating_add((5_000 as Weight).saturating_mul(n as Weight))
+		(56_927_000 as Weight)
+			// Standard Error: 3_000
+			.saturating_add((52_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
 	// Storage: Unicks Owner (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Unicks Unicks (r:0 w:1)
-	fn release_by_owner(_n: u32, ) -> Weight {
-		(46_659_000 as Weight)
+	fn release_by_owner(n: u32, ) -> Weight {
+		(46_538_000 as Weight)
+			// Standard Error: 2_000
+			.saturating_add((4_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
 	// Storage: Unicks Owner (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Unicks Unicks (r:0 w:1)
-	fn release_by_payer(_n: u32, ) -> Weight {
-		(46_568_000 as Weight)
+	fn release_by_payer(n: u32, ) -> Weight {
+		(46_765_000 as Weight)
+			// Standard Error: 3_000
+			.saturating_add((10_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
@@ -97,17 +92,17 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: Unicks Unicks (r:0 w:1)
 	fn blacklist(n: u32, ) -> Weight {
-		(50_443_000 as Weight)
-			// Standard Error: 3_000
-			.saturating_add((50_000 as Weight).saturating_mul(n as Weight))
+		(51_535_000 as Weight)
+			// Standard Error: 4_000
+			.saturating_add((27_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(T::DbWeight::get().reads(3 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}
 	// Storage: Unicks Blacklist (r:1 w:1)
 	fn unblacklist(n: u32, ) -> Weight {
-		(21_512_000 as Weight)
-			// Standard Error: 1_000
-			.saturating_add((40_000 as Weight).saturating_mul(n as Weight))
+		(21_954_000 as Weight)
+			// Standard Error: 2_000
+			.saturating_add((39_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
@@ -120,25 +115,29 @@ impl WeightInfo for () {
 	// Storage: Unicks Blacklist (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	fn claim(n: u32, ) -> Weight {
-		(57_841_000 as Weight)
-			// Standard Error: 5_000
-			.saturating_add((5_000 as Weight).saturating_mul(n as Weight))
+		(56_927_000 as Weight)
+			// Standard Error: 3_000
+			.saturating_add((52_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(RocksDbWeight::get().reads(4 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(3 as Weight))
 	}
 	// Storage: Unicks Owner (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Unicks Unicks (r:0 w:1)
-	fn release_by_owner(_n: u32, ) -> Weight {
-		(46_659_000 as Weight)
+	fn release_by_owner(n: u32, ) -> Weight {
+		(46_538_000 as Weight)
+			// Standard Error: 2_000
+			.saturating_add((4_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(RocksDbWeight::get().reads(2 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(3 as Weight))
 	}
 	// Storage: Unicks Owner (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Unicks Unicks (r:0 w:1)
-	fn release_by_payer(_n: u32, ) -> Weight {
-		(46_568_000 as Weight)
+	fn release_by_payer(n: u32, ) -> Weight {
+		(46_765_000 as Weight)
+			// Standard Error: 3_000
+			.saturating_add((10_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(RocksDbWeight::get().reads(2 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(3 as Weight))
 	}
@@ -147,17 +146,17 @@ impl WeightInfo for () {
 	// Storage: System Account (r:1 w:1)
 	// Storage: Unicks Unicks (r:0 w:1)
 	fn blacklist(n: u32, ) -> Weight {
-		(50_443_000 as Weight)
-			// Standard Error: 3_000
-			.saturating_add((50_000 as Weight).saturating_mul(n as Weight))
+		(51_535_000 as Weight)
+			// Standard Error: 4_000
+			.saturating_add((27_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(RocksDbWeight::get().reads(3 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(4 as Weight))
 	}
 	// Storage: Unicks Blacklist (r:1 w:1)
 	fn unblacklist(n: u32, ) -> Weight {
-		(21_512_000 as Weight)
-			// Standard Error: 1_000
-			.saturating_add((40_000 as Weight).saturating_mul(n as Weight))
+		(21_954_000 as Weight)
+			// Standard Error: 2_000
+			.saturating_add((39_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(RocksDbWeight::get().reads(1 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(1 as Weight))
 	}
