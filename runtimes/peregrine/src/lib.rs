@@ -609,7 +609,7 @@ parameter_types! {
 }
 
 impl pallet_unicks::Config for Runtime {
-	type BlacklistOrigin = EnsureRoot<AccountId>;
+	type BanOrigin = EnsureRoot<AccountId>;
 	type Currency = Balances;
 	type Deposit = UnickDeposit;
 	type Event = Event;

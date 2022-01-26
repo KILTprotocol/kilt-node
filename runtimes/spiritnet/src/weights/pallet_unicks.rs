@@ -49,7 +49,7 @@ pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_unicks::WeightInfo for WeightInfo<T> {
 	// Storage: Unicks Unicks (r:1 w:1)
 	// Storage: Unicks Owner (r:1 w:1)
-	// Storage: Unicks Blacklist (r:1 w:0)
+	// Storage: Unicks Banned (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	fn claim(n: u32, ) -> Weight {
 		(54_028_000 as Weight)
@@ -78,19 +78,19 @@ impl<T: frame_system::Config> pallet_unicks::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
-	// Storage: Unicks Blacklist (r:1 w:1)
+	// Storage: Unicks Banned (r:1 w:1)
 	// Storage: Unicks Owner (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Unicks Unicks (r:0 w:1)
-	fn blacklist(n: u32, ) -> Weight {
+	fn ban(n: u32, ) -> Weight {
 		(48_176_000 as Weight)
 			// Standard Error: 5_000
 			.saturating_add((31_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(T::DbWeight::get().reads(3 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}
-	// Storage: Unicks Blacklist (r:1 w:1)
-	fn unblacklist(n: u32, ) -> Weight {
+	// Storage: Unicks Banned (r:1 w:1)
+	fn unban(n: u32, ) -> Weight {
 		(20_909_000 as Weight)
 			// Standard Error: 1_000
 			.saturating_add((39_000 as Weight).saturating_mul(n as Weight))

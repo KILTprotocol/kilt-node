@@ -23,7 +23,7 @@ use kilt_support::{deposit::Deposit, mock::mock_origin};
 use runtime_common::Balance;
 use sp_runtime::{traits::Zero, DispatchError};
 
-use crate::{mock::*, Blacklist, Error, Owner, Pallet, UnickOwnershipOf, Unicks};
+use crate::{mock::*, Banned, Error, Owner, Pallet, UnickOwnershipOf, Unicks};
 
 // Unick claiming
 
@@ -126,16 +126,16 @@ fn claiming_invalid() {
 }
 
 #[test]
-fn claiming_blacklisted() {
+fn claiming_banned() {
 	let unick_00 = unick_00();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, 100)])
-		.with_blacklisted_unicks(vec![unick_00.clone()])
+		.with_banned_unicks(vec![unick_00.clone()])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
 				Pallet::<Test>::claim(mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(), unick_00.0),
-				Error::<Test>::UnickBlacklisted
+				Error::<Test>::UnickBanned
 			);
 		})
 }
@@ -244,10 +244,10 @@ fn releasing_not_authorized() {
 }
 
 #[test]
-fn releasing_blacklisted() {
+fn releasing_banned() {
 	let unick_00 = unick_00();
 	ExtBuilder::default()
-		.with_blacklisted_unicks(vec![(unick_00.clone())])
+		.with_banned_unicks(vec![(unick_00.clone())])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
@@ -255,17 +255,17 @@ fn releasing_blacklisted() {
 					mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
 					unick_00.clone().0
 				),
-				// A blacklisted unick will be removed from the map of used unicks, so it will be considered not
+				// A banned unick will be removed from the map of used unicks, so it will be considered not
 				// existing.
 				Error::<Test>::UnickNotFound
 			);
 		})
 }
 
-// Unick blacklisting
+// Unick banning
 
 #[test]
-fn blacklisting_successful() {
+fn banning_successful() {
 	let unick_00 = unick_00();
 	let unick_01 = unick_01();
 	let initial_balance = 100;
@@ -274,66 +274,66 @@ fn blacklisting_successful() {
 		.with_unicks(vec![(DID_00, unick_00.clone(), ACCOUNT_00)])
 		.build()
 		.execute_with(|| {
-			// Blacklist a claimed unick
-			assert_ok!(Pallet::<Test>::blacklist(RawOrigin::Root.into(), unick_00.clone().0),);
+			// Ban a claimed unick
+			assert_ok!(Pallet::<Test>::ban(RawOrigin::Root.into(), unick_00.clone().0),);
 
 			assert!(Unicks::<Test>::get(&DID_00).is_none());
 			assert!(Owner::<Test>::get(&unick_00).is_none());
-			assert!(Blacklist::<Test>::get(&unick_00).is_some());
+			assert!(Banned::<Test>::get(&unick_00).is_some());
 
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 			assert_eq!(Balances::free_balance(ACCOUNT_00), initial_balance);
 
-			// Blacklist an unclaimed unick
-			assert_ok!(Pallet::<Test>::blacklist(RawOrigin::Root.into(), unick_01.clone().0),);
+			// Ban an unclaimed unick
+			assert_ok!(Pallet::<Test>::ban(RawOrigin::Root.into(), unick_01.clone().0),);
 
 			assert!(Owner::<Test>::get(&unick_01).is_none());
-			assert!(Blacklist::<Test>::get(&unick_01).is_some());
+			assert!(Banned::<Test>::get(&unick_01).is_some());
 		})
 }
 
 #[test]
-fn blacklisting_already_blacklisted() {
+fn banning_already_banned() {
 	let unick_00 = unick_00();
 	ExtBuilder::default()
-		.with_blacklisted_unicks(vec![unick_00.clone()])
+		.with_banned_unicks(vec![unick_00.clone()])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Pallet::<Test>::blacklist(RawOrigin::Root.into(), unick_00.clone().0),
-				Error::<Test>::UnickAlreadyBlacklisted
+				Pallet::<Test>::ban(RawOrigin::Root.into(), unick_00.clone().0),
+				Error::<Test>::UnickAlreadyBanned
 			);
 		})
 }
 
 #[test]
-fn blacklisting_unauthorized_origin() {
+fn banning_unauthorized_origin() {
 	let unick_00 = unick_00();
 	ExtBuilder::default().build().execute_with(|| {
 		// Signer origin
 		assert_noop!(
-			Pallet::<Test>::blacklist(RawOrigin::Signed(ACCOUNT_00).into(), unick_00.clone().0),
+			Pallet::<Test>::ban(RawOrigin::Signed(ACCOUNT_00).into(), unick_00.clone().0),
 			DispatchError::BadOrigin
 		);
 		// Owner origin
 		assert_noop!(
-			Pallet::<Test>::blacklist(mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(), unick_00.clone().0),
+			Pallet::<Test>::ban(mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(), unick_00.clone().0),
 			DispatchError::BadOrigin
 		);
 	})
 }
 
-// Unick unblacklisting
+// Unick unbanning
 
 #[test]
-fn unblacklisting_successful() {
+fn unbanning_successful() {
 	let unick_00 = unick_00();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, 100)])
-		.with_blacklisted_unicks(vec![unick_00.clone()])
+		.with_banned_unicks(vec![unick_00.clone()])
 		.build()
 		.execute_with(|| {
-			assert_ok!(Pallet::<Test>::unblacklist(RawOrigin::Root.into(), unick_00.clone().0),);
+			assert_ok!(Pallet::<Test>::unban(RawOrigin::Root.into(), unick_00.clone().0),);
 
 			// Test that claiming is possible again
 			assert_ok!(Pallet::<Test>::claim(
@@ -344,31 +344,31 @@ fn unblacklisting_successful() {
 }
 
 #[test]
-fn unblacklisting_not_blacklisted() {
+fn unbanning_not_banned() {
 	let unick_00 = unick_00();
 	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
-			Pallet::<Test>::unblacklist(RawOrigin::Root.into(), unick_00.clone().0),
-			Error::<Test>::UnickNotBlacklisted
+			Pallet::<Test>::unban(RawOrigin::Root.into(), unick_00.clone().0),
+			Error::<Test>::UnickNotBanned
 		);
 	})
 }
 
 #[test]
-fn unblacklisting_unauthorized_origin() {
+fn unbanning_unauthorized_origin() {
 	let unick_00 = unick_00();
 	ExtBuilder::default()
-		.with_blacklisted_unicks(vec![unick_00.clone()])
+		.with_banned_unicks(vec![unick_00.clone()])
 		.build()
 		.execute_with(|| {
 			// Signer origin
 			assert_noop!(
-				Pallet::<Test>::unblacklist(RawOrigin::Signed(ACCOUNT_00).into(), unick_00.clone().0),
+				Pallet::<Test>::unban(RawOrigin::Signed(ACCOUNT_00).into(), unick_00.clone().0),
 				DispatchError::BadOrigin
 			);
 			// Owner origin
 			assert_noop!(
-				Pallet::<Test>::blacklist(mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(), unick_00.clone().0),
+				Pallet::<Test>::ban(mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(), unick_00.clone().0),
 				DispatchError::BadOrigin
 			);
 		})

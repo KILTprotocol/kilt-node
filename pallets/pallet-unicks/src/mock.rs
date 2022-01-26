@@ -106,7 +106,7 @@ pub(crate) type TestUnickOwner = SubjectId;
 pub(crate) type TestUnickPayer = AccountId;
 pub(crate) type TestRegularOrigin = mock_origin::EnsureDoubleOrigin<TestUnickPayer, TestUnickOwner>;
 pub(crate) type TestOriginSuccess = mock_origin::DoubleOrigin<TestUnickPayer, TestUnickOwner>;
-pub(crate) type TestBlacklistOrigin = EnsureRoot<AccountId>;
+pub(crate) type TestBanOrigin = EnsureRoot<AccountId>;
 
 parameter_types! {
 	pub const MaxUnickLength: u32 = 32;
@@ -116,7 +116,7 @@ parameter_types! {
 }
 
 impl pallet_unicks::Config for Test {
-	type BlacklistOrigin = TestBlacklistOrigin;
+	type BanOrigin = TestBanOrigin;
 	type Currency = Balances;
 	type Deposit = UnickDeposit;
 	type Event = Event;
@@ -151,7 +151,7 @@ pub(crate) fn unick_01() -> TestUnick {
 pub struct ExtBuilder {
 	balances: Vec<(TestUnickPayer, Balance)>,
 	claimed_unicks: Vec<(TestUnickOwner, TestUnick, TestUnickPayer)>,
-	blacklisted_unicks: Vec<TestUnick>,
+	banned_unicks: Vec<TestUnick>,
 }
 
 impl ExtBuilder {
@@ -165,8 +165,8 @@ impl ExtBuilder {
 		self
 	}
 
-	pub fn with_blacklisted_unicks(mut self, unicks: Vec<TestUnick>) -> Self {
-		self.blacklisted_unicks = unicks;
+	pub fn with_banned_unicks(mut self, unicks: Vec<TestUnick>) -> Self {
+		self.banned_unicks = unicks;
 		self
 	}
 
@@ -184,9 +184,9 @@ impl ExtBuilder {
 				pallet_unicks::Pallet::<Test>::register_unick(unick, owner, payer);
 			}
 
-			for unick in self.blacklisted_unicks {
+			for unick in self.banned_unicks {
 				assert!(pallet_unicks::Owner::<Test>::get(&unick).is_none());
-				pallet_unicks::Pallet::<Test>::blacklist_unick(&unick);
+				pallet_unicks::Pallet::<Test>::ban_unick(&unick);
 			}
 		});
 		ext

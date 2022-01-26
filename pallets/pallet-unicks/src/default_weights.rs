@@ -49,8 +49,8 @@ pub trait WeightInfo {
 	fn claim(n: u32, ) -> Weight;
 	fn release_by_owner(n: u32, ) -> Weight;
 	fn release_by_payer(n: u32, ) -> Weight;
-	fn blacklist(n: u32, ) -> Weight;
-	fn unblacklist(n: u32, ) -> Weight;
+	fn ban(n: u32, ) -> Weight;
+	fn unban(n: u32, ) -> Weight;
 }
 
 /// Weights for pallet_unicks using the Substrate node and recommended hardware.
@@ -58,7 +58,7 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Unicks Unicks (r:1 w:1)
 	// Storage: Unicks Owner (r:1 w:1)
-	// Storage: Unicks Blacklist (r:1 w:0)
+	// Storage: Unicks Banned (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	fn claim(n: u32, ) -> Weight {
 		(56_927_000 as Weight)
@@ -87,19 +87,19 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
-	// Storage: Unicks Blacklist (r:1 w:1)
+	// Storage: Unicks Banned (r:1 w:1)
 	// Storage: Unicks Owner (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Unicks Unicks (r:0 w:1)
-	fn blacklist(n: u32, ) -> Weight {
+	fn ban(n: u32, ) -> Weight {
 		(51_535_000 as Weight)
 			// Standard Error: 4_000
 			.saturating_add((27_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(T::DbWeight::get().reads(3 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}
-	// Storage: Unicks Blacklist (r:1 w:1)
-	fn unblacklist(n: u32, ) -> Weight {
+	// Storage: Unicks Banned (r:1 w:1)
+	fn unban(n: u32, ) -> Weight {
 		(21_954_000 as Weight)
 			// Standard Error: 2_000
 			.saturating_add((39_000 as Weight).saturating_mul(n as Weight))
@@ -112,7 +112,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 impl WeightInfo for () {
 	// Storage: Unicks Unicks (r:1 w:1)
 	// Storage: Unicks Owner (r:1 w:1)
-	// Storage: Unicks Blacklist (r:1 w:0)
+	// Storage: Unicks Banned (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	fn claim(n: u32, ) -> Weight {
 		(56_927_000 as Weight)
@@ -141,19 +141,19 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(2 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(3 as Weight))
 	}
-	// Storage: Unicks Blacklist (r:1 w:1)
+	// Storage: Unicks Banned (r:1 w:1)
 	// Storage: Unicks Owner (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Unicks Unicks (r:0 w:1)
-	fn blacklist(n: u32, ) -> Weight {
+	fn ban(n: u32, ) -> Weight {
 		(51_535_000 as Weight)
 			// Standard Error: 4_000
 			.saturating_add((27_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(RocksDbWeight::get().reads(3 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(4 as Weight))
 	}
-	// Storage: Unicks Blacklist (r:1 w:1)
-	fn unblacklist(n: u32, ) -> Weight {
+	// Storage: Unicks Banned (r:1 w:1)
+	fn unban(n: u32, ) -> Weight {
 		(21_954_000 as Weight)
 			// Standard Error: 2_000
 			.saturating_add((39_000 as Weight).saturating_mul(n as Weight))

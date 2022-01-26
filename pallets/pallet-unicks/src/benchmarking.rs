@@ -29,7 +29,7 @@ use sp_runtime::app_crypto::sr25519;
 
 use kilt_support::traits::GenerateBenchmarkOrigin;
 
-use crate::{AccountIdOf, Blacklist, Call, Config, CurrencyOf, Owner, Pallet, UnickOf, UnickOwnerOf, Unicks};
+use crate::{AccountIdOf, Banned, Call, Config, CurrencyOf, Owner, Pallet, UnickOf, UnickOwnerOf, Unicks};
 
 const CALLER_SEED: u32 = 0;
 const OWNER_SEED: u32 = 1;
@@ -49,7 +49,7 @@ benchmarks! {
 		T::AccountId: From<sr25519::Public>,
 		T::UnickOwner: From<T::AccountId>,
 		T::RegularOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::UnickOwner>,
-		T::BlacklistOrigin: EnsureOrigin<T::Origin>,
+		T::BanOrigin: EnsureOrigin<T::Origin>,
 	}
 
 	claim {
@@ -103,41 +103,41 @@ benchmarks! {
 		assert!(Owner::<T>::get(&unick).is_none());
 	}
 
-	blacklist {
+	ban {
 		let n in (T::MinUnickLength::get()) .. (T::MaxUnickLength::get());
 		let caller: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
 		let owner: UnickOwnerOf<T> = account("owner", 0, OWNER_SEED);
 		let unick_input: BoundedVec<u8, T::MaxUnickLength> = BoundedVec::try_from(generate_unick_input(n.saturated_into())).expect("BoundedVec creation should not fail.");
 		let unick_input_clone = unick_input.clone();
 		let did_origin = T::RegularOrigin::generate_origin(caller.clone(), owner.clone());
-		let blacklist_origin = RawOrigin::Root;
+		let ban_origin = RawOrigin::Root;
 
 		make_free_for_did::<T>(&caller);
 		Pallet::<T>::claim(did_origin, unick_input.clone()).expect("Should register the claimed unick.");
-	}: _(blacklist_origin, unick_input_clone)
+	}: _(ban_origin, unick_input_clone)
 	verify {
 		let unick = UnickOf::<T>::try_from(unick_input.to_vec()).unwrap();
 		assert!(Unicks::<T>::get(&owner).is_none());
 		assert!(Owner::<T>::get(&unick).is_none());
-		assert!(Blacklist::<T>::get(&unick).is_some());
+		assert!(Banned::<T>::get(&unick).is_some());
 	}
 
-	unblacklist {
+	unban {
 		let n in (T::MinUnickLength::get()) .. (T::MaxUnickLength::get());
 		let caller: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
 		let owner: UnickOwnerOf<T> = account("owner", 0, OWNER_SEED);
 		let unick_input: BoundedVec<u8, T::MaxUnickLength> = BoundedVec::try_from(generate_unick_input(n.saturated_into())).expect("BoundedVec creation should not fail.");
 		let unick_input_clone = unick_input.clone();
-		let blacklist_origin = RawOrigin::Root;
+		let ban_origin = RawOrigin::Root;
 
 		make_free_for_did::<T>(&caller);
-		Pallet::<T>::blacklist(blacklist_origin.clone().into(), unick_input.clone()).expect("Should blacklist the unick.");
-	}: _(blacklist_origin, unick_input_clone)
+		Pallet::<T>::ban(ban_origin.clone().into(), unick_input.clone()).expect("Should ban the unick.");
+	}: _(ban_origin, unick_input_clone)
 	verify {
 		let unick = UnickOf::<T>::try_from(unick_input.to_vec()).unwrap();
 		assert!(Unicks::<T>::get(&owner).is_none());
 		assert!(Owner::<T>::get(&unick).is_none());
-		assert!(Blacklist::<T>::get(&unick).is_none());
+		assert!(Banned::<T>::get(&unick).is_none());
 	}
 }
 

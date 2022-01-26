@@ -83,13 +83,13 @@ pub mod pallet {
 
 	// Unick -> ()
 	#[pallet::storage]
-	#[pallet::getter(fn is_blacklisted)]
-	pub type Blacklist<T> = StorageMap<_, Blake2_128Concat, UnickOf<T>, ()>;
+	#[pallet::getter(fn is_banned)]
+	pub type Banned<T> = StorageMap<_, Blake2_128Concat, UnickOf<T>, ()>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		/// The origin allowed to blacklist unicks.
-		type BlacklistOrigin: EnsureOrigin<Self::Origin>;
+		/// The origin allowed to ban unicks.
+		type BanOrigin: EnsureOrigin<Self::Origin>;
 		/// The currency type to reserve and release deposits.
 		type Currency: ReservableCurrency<AccountIdOf<Self>>;
 		/// The amount of KILT to deposit to claim a unick.
@@ -122,10 +122,10 @@ pub mod pallet {
 		UnickClaimed { owner: UnickOwnerOf<T>, unick: UnickOf<T> },
 		/// A unick has been released.
 		UnickReleased { owner: UnickOwnerOf<T>, unick: UnickOf<T> },
-		/// A unick has been blacklisted.
-		UnickBlacklisted { unick: UnickOf<T> },
-		/// A unick has been unblacklisted.
-		UnickUnblacklisted { unick: UnickOf<T> },
+		/// A unick has been banned.
+		UnickBanned { unick: UnickOf<T> },
+		/// A unick has been unbanned.
+		UnickUnbanned { unick: UnickOf<T> },
 	}
 
 	#[pallet::error]
@@ -138,13 +138,13 @@ pub mod pallet {
 		UnickNotFound,
 		/// The specified owner already owns a unick.
 		OwnerAlreadyExists,
-		/// The specified unick has been blacklisted and cannot be interacted
+		/// The specified unick has been banned and cannot be interacted
 		/// with.
-		UnickBlacklisted,
-		/// The specified unick is not currently blacklisted.
-		UnickNotBlacklisted,
-		/// The specified unick has already been previously blacklisted.
-		UnickAlreadyBlacklisted,
+		UnickBanned,
+		/// The specified unick is not currently banned.
+		UnickNotBanned,
+		/// The specified unick has already been previously banned.
+		UnickAlreadyBanned,
 		/// The actor cannot performed the specified operation.
 		NotAuthorized,
 		/// A unick that is too short is being claimed.
@@ -169,8 +169,8 @@ pub mod pallet {
 		///
 		/// # <weight>
 		/// Weight: O(1)
-		/// - Reads: Unicks, Owner, Blacklist storage entries + available
-		///   currency check + origin check
+		/// - Reads: Unicks, Owner, Banned storage entries + available currency
+		///   check + origin check
 		/// - Writes: Unicks, Owner storage entries + currency deposit reserve
 		/// # </weight>
 		#[pallet::weight(<T as Config>::WeightInfo::claim(unick.len().saturated_into()))]
@@ -249,27 +249,27 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Blacklist a unick.
+		/// Ban a unick.
 		///
-		/// A blacklisted unick cannot be claimed by anyone. The unick's deposit
+		/// A banned unick cannot be claimed by anyone. The unick's deposit
 		/// is returned to the original payer.
 		///
-		/// The origin must be the blacklist origin.
+		/// The origin must be the ban origin.
 		///
-		/// Emits `UnickBlacklisted` if the operation is carried out
+		/// Emits `UnickBanned` if the operation is carried out
 		/// successfully.
 		///
 		/// # <weight>
 		/// Weight: O(1)
-		/// - Reads: Blacklist, Owner, Unicks storage entries + origin check
-		/// - Writes: Unicks, Owner, Blacklist storage entries + currency
-		///   deposit release
+		/// - Reads: Banned, Owner, Unicks storage entries + origin check
+		/// - Writes: Unicks, Owner, Banned storage entries + currency deposit
+		///   release
 		/// # </weight>
-		#[pallet::weight(<T as Config>::WeightInfo::blacklist(unick.len().saturated_into()))]
-		pub fn blacklist(origin: OriginFor<T>, unick: UnickInput<T>) -> DispatchResult {
-			T::BlacklistOrigin::ensure_origin(origin)?;
+		#[pallet::weight(<T as Config>::WeightInfo::ban(unick.len().saturated_into()))]
+		pub fn ban(origin: OriginFor<T>, unick: UnickInput<T>) -> DispatchResult {
+			T::BanOrigin::ensure_origin(origin)?;
 
-			let (decoded_unick, is_claimed) = Self::check_blacklisting_preconditions(unick)?;
+			let (decoded_unick, is_claimed) = Self::check_banning_preconditions(unick)?;
 
 			// No failure beyond this point
 
@@ -277,36 +277,36 @@ pub mod pallet {
 				Self::unregister_unick(&decoded_unick);
 			}
 
-			Self::blacklist_unick(&decoded_unick);
-			Self::deposit_event(Event::<T>::UnickBlacklisted { unick: decoded_unick });
+			Self::ban_unick(&decoded_unick);
+			Self::deposit_event(Event::<T>::UnickBanned { unick: decoded_unick });
 
 			Ok(())
 		}
 
-		/// Unblacklist a unick.
+		/// Unban a unick.
 		///
 		/// Make a unick claimable again.
 		///
-		/// The origin must be the blacklist origin.
+		/// The origin must be the ban origin.
 		///
-		/// Emits `UnickUnblacklisted` if the operation is carried out
+		/// Emits `UnickUnbanned` if the operation is carried out
 		/// successfully.
 		///
 		/// # <weight>
 		/// Weight: O(1)
-		/// - Reads: Blacklist storage entry + origin check
-		/// - Writes: Blacklist storage entry deposit release
+		/// - Reads: Banned storage entry + origin check
+		/// - Writes: Banned storage entry deposit release
 		/// # </weight>
-		#[pallet::weight(<T as Config>::WeightInfo::unblacklist(unick.len().saturated_into()))]
-		pub fn unblacklist(origin: OriginFor<T>, unick: UnickInput<T>) -> DispatchResult {
-			T::BlacklistOrigin::ensure_origin(origin)?;
+		#[pallet::weight(<T as Config>::WeightInfo::unban(unick.len().saturated_into()))]
+		pub fn unban(origin: OriginFor<T>, unick: UnickInput<T>) -> DispatchResult {
+			T::BanOrigin::ensure_origin(origin)?;
 
-			let decoded_unick = Self::check_unblacklisting_preconditions(unick)?;
+			let decoded_unick = Self::check_unbanning_preconditions(unick)?;
 
 			// No failure beyond this point
 
-			Self::unblacklist_unick(&decoded_unick);
-			Self::deposit_event(Event::<T>::UnickUnblacklisted { unick: decoded_unick });
+			Self::unban_unick(&decoded_unick);
+			Self::deposit_event(Event::<T>::UnickUnbanned { unick: decoded_unick });
 
 			Ok(())
 		}
@@ -317,7 +317,7 @@ pub mod pallet {
 		/// - The unick input data can be decoded as a valid unick
 		/// - The unick does not already exist
 		/// - The owner does not already own a unick
-		/// - The unick has not been blacklisted
+		/// - The unick has not been banned
 		/// - The tx submitter has enough funds to pay the deposit
 		fn check_claiming_preconditions(
 			unick_input: UnickInput<T>,
@@ -328,7 +328,7 @@ pub mod pallet {
 
 			ensure!(!Unicks::<T>::contains_key(&owner), Error::<T>::OwnerAlreadyExists);
 			ensure!(!Owner::<T>::contains_key(&unick), Error::<T>::UnickAlreadyClaimed);
-			ensure!(!Blacklist::<T>::contains_key(&unick), Error::<T>::UnickBlacklisted);
+			ensure!(!Banned::<T>::contains_key(&unick), Error::<T>::UnickBanned);
 
 			ensure!(
 				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(deposit_payer, T::Deposit::get()),
@@ -411,51 +411,48 @@ pub mod pallet {
 			unick_ownership
 		}
 
-		/// Verify that the blacklisting preconditions are verified.
+		/// Verify that the banning preconditions are verified.
 		/// Specifically:
 		/// - The unick input data can be decoded as a valid unick
-		/// - The unick must not be already blacklisted
+		/// - The unick must not be already banned
 		///
 		/// If the preconditions are verified, return
-		/// a tuple containing the parsed unicked value and whether the unick
-		/// being blacklisted is currently assigned to someone or not.
-		fn check_blacklisting_preconditions(unick_input: UnickInput<T>) -> Result<(UnickOf<T>, bool), DispatchError> {
+		/// a tuple containing the parsed unick value and whether the unick
+		/// being banned is currently assigned to someone or not.
+		fn check_banning_preconditions(unick_input: UnickInput<T>) -> Result<(UnickOf<T>, bool), DispatchError> {
 			let unick = UnickOf::<T>::try_from(unick_input.into_inner()).map_err(DispatchError::from)?;
 
-			ensure!(
-				!Blacklist::<T>::contains_key(&unick),
-				Error::<T>::UnickAlreadyBlacklisted
-			);
+			ensure!(!Banned::<T>::contains_key(&unick), Error::<T>::UnickAlreadyBanned);
 
 			let is_claimed = Owner::<T>::contains_key(&unick);
 
 			Ok((unick, is_claimed))
 		}
 
-		/// Blacklist the provided unick. This function must be called after
-		/// `check_blacklisting_preconditions` as it does not verify all the
+		/// Ban the provided unick. This function must be called after
+		/// `check_banning_preconditions` as it does not verify all the
 		/// preconditions again.
-		pub(crate) fn blacklist_unick(unick: &UnickOf<T>) {
-			Blacklist::<T>::insert(&unick, ());
+		pub(crate) fn ban_unick(unick: &UnickOf<T>) {
+			Banned::<T>::insert(&unick, ());
 		}
 
-		/// Verify that the unblacklisting preconditions are verified.
+		/// Verify that the unbanning preconditions are verified.
 		/// Specifically:
 		/// - The unick input data can be decoded as a valid unick
-		/// - The unick must have already been blacklisted
-		fn check_unblacklisting_preconditions(unick_input: UnickInput<T>) -> Result<UnickOf<T>, DispatchError> {
+		/// - The unick must have already been banned
+		fn check_unbanning_preconditions(unick_input: UnickInput<T>) -> Result<UnickOf<T>, DispatchError> {
 			let unick = UnickOf::<T>::try_from(unick_input.into_inner()).map_err(DispatchError::from)?;
 
-			ensure!(Blacklist::<T>::contains_key(&unick), Error::<T>::UnickNotBlacklisted);
+			ensure!(Banned::<T>::contains_key(&unick), Error::<T>::UnickNotBanned);
 
 			Ok(unick)
 		}
 
-		/// Unblacklist the provided unick. This function must be called after
-		/// `check_unblacklisting_preconditions` as it does not verify all the
+		/// Unban the provided unick. This function must be called after
+		/// `check_unbanning_preconditions` as it does not verify all the
 		/// preconditions again.
-		fn unblacklist_unick(unick: &UnickOf<T>) {
-			Blacklist::<T>::remove(unick);
+		fn unban_unick(unick: &UnickOf<T>) {
+			Banned::<T>::remove(unick);
 		}
 	}
 }
