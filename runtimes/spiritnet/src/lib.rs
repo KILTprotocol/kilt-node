@@ -30,28 +30,22 @@ use frame_support::{
 	traits::{Contains, EqualPrivilegeOnly},
 	weights::{constants::RocksDbWeight, Weight},
 };
-
 use frame_system::{EnsureOneOf, EnsureRoot};
-
 use sp_api::impl_runtime_apis;
-
 use sp_core::{
 	u32_trait::{_1, _2, _3, _5},
 	OpaqueMetadata,
 };
-
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, Perbill, Permill, Perquintill, RuntimeDebug,
 };
-
 use sp_std::prelude::*;
-
 use sp_version::RuntimeVersion;
-
 use codec::{Decode, Encode, MaxEncodedLen};
+use frame_support::traits::InstanceFilter;
 
 use runtime_common::{
 	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
@@ -59,8 +53,7 @@ use runtime_common::{
 	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
 	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
-
-use frame_support::traits::InstanceFilter;
+pub use parachain_staking::InflationInfo;
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -70,12 +63,11 @@ use {frame_system::EnsureSigned, kilt_support::signature::AlwaysVerify, runtime_
 
 #[cfg(test)]
 mod tests;
-mod weights;
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
-pub use parachain_staking::InflationInfo;
+mod weights;
 
 impl_opaque_keys! {
 	pub struct SessionKeys {

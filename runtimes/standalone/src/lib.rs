@@ -27,39 +27,21 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-#[cfg(feature = "runtime-benchmarks")]
-use frame_system::EnsureSigned;
-
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
-
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
-
 use sp_api::impl_runtime_apis;
-
 use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
-
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
-
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, RuntimeDebug,
 };
-
-use sp_std::prelude::*;
-
-#[cfg(feature = "std")]
-use sp_version::NativeVersion;
-
 use sp_version::RuntimeVersion;
-
 use codec::{Decode, Encode, MaxEncodedLen};
-
 use frame_support::traits::InstanceFilter;
-
 pub use sp_runtime::{Perbill, Permill};
-
 pub use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{Currency, FindAuthor, Imbalance, KeyOwnerProofSystem, OnUnbalanced, Randomness},
@@ -69,25 +51,29 @@ pub use frame_support::{
 	},
 	ConsensusEngineId, StorageValue,
 };
-
-pub use pallet_timestamp::Call as TimestampCall;
+use sp_std::prelude::*;
 
 use runtime_common::{
 	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
 	fees::ToAuthor,
 	pallet_id, AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
 };
-
+pub use pallet_timestamp::Call as TimestampCall;
 // pub use consensus::Call as ConsensusCall;
 pub use pallet_balances::Call as BalancesCall;
-
-#[cfg(any(feature = "std", test))]
-pub use sp_runtime::BuildStorage;
-
 pub use attestation;
 pub use ctype;
 pub use delegation;
 pub use did;
+
+#[cfg(feature = "std")]
+use sp_version::NativeVersion;
+
+#[cfg(feature = "runtime-benchmarks")]
+use frame_system::EnsureSigned;
+
+#[cfg(any(feature = "std", test))]
+pub use sp_runtime::BuildStorage;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem;
