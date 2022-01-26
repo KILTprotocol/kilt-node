@@ -27,6 +27,17 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use codec::{Decode, Encode, MaxEncodedLen};
+use frame_support::traits::InstanceFilter;
+pub use frame_support::{
+	construct_runtime, parameter_types,
+	traits::{Currency, FindAuthor, Imbalance, KeyOwnerProofSystem, OnUnbalanced, Randomness},
+	weights::{
+		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
+		IdentityFee, Weight,
+	},
+	ConsensusEngineId, StorageValue,
+};
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
 use sp_api::impl_runtime_apis;
@@ -38,33 +49,22 @@ use sp_runtime::{
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, RuntimeDebug,
 };
-use sp_version::RuntimeVersion;
-use codec::{Decode, Encode, MaxEncodedLen};
-use frame_support::traits::InstanceFilter;
 pub use sp_runtime::{Perbill, Permill};
-pub use frame_support::{
-	construct_runtime, parameter_types,
-	traits::{Currency, FindAuthor, Imbalance, KeyOwnerProofSystem, OnUnbalanced, Randomness},
-	weights::{
-		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
-		IdentityFee, Weight,
-	},
-	ConsensusEngineId, StorageValue,
-};
 use sp_std::prelude::*;
+use sp_version::RuntimeVersion;
 
+pub use pallet_timestamp::Call as TimestampCall;
 use runtime_common::{
 	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
 	fees::ToAuthor,
 	pallet_id, AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
 };
-pub use pallet_timestamp::Call as TimestampCall;
 // pub use consensus::Call as ConsensusCall;
-pub use pallet_balances::Call as BalancesCall;
 pub use attestation;
 pub use ctype;
 pub use delegation;
 pub use did;
+pub use pallet_balances::Call as BalancesCall;
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;

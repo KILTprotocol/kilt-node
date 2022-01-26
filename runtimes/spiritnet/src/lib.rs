@@ -25,9 +25,10 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{Contains, EqualPrivilegeOnly},
+	traits::{Contains, EqualPrivilegeOnly, InstanceFilter},
 	weights::{constants::RocksDbWeight, Weight},
 };
 use frame_system::{EnsureOneOf, EnsureRoot};
@@ -44,16 +45,14 @@ use sp_runtime::{
 };
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
-use codec::{Decode, Encode, MaxEncodedLen};
-use frame_support::traits::InstanceFilter;
 
+pub use parachain_staking::InflationInfo;
 use runtime_common::{
 	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
 	fees::{ToAuthor, WeightToFee},
 	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
 	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
-pub use parachain_staking::InflationInfo;
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
