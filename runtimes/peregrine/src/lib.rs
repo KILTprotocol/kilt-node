@@ -740,13 +740,15 @@ impl InstanceFilter<Call> for ProxyType {
 				Call::Vesting(pallet_vesting::Call::vest{..}) |
 				Call::Vesting(pallet_vesting::Call::vest_other{..}) |
 				// Specifically omitting Vesting `vested_transfer`, and `force_vested_transfer`
-				Call::Utility(..)
+				Call::Utility(..) |
+				Call::ParachainStaking(..)
 			),
 			ProxyType::Governance => matches!(
 				c,
 				Call::Democracy(..)
 					| Call::Council(..) | Call::TechnicalCommittee(..)
 					| Call::Treasury(..) | Call::Utility(..)
+					| Call::TechnicalMembership(..)
 			),
 			ProxyType::ParachainStaking => {
 				matches!(c, Call::ParachainStaking(..) | Call::Session(..) | Call::Utility(..))
