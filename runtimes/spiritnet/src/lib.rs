@@ -624,7 +624,7 @@ impl pallet_unicks::Config for Runtime {
 	type RegularOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type Unick = pallet_unicks::unick::AsciiUnick<Runtime, MinUnickLength, MaxUnickLength>;
 	type UnickOwner = DidIdentifier;
-	type WeightInfo = ();
+	type WeightInfo = weights::pallet_unicks::WeightInfo<Runtime>;
 }
 
 parameter_types! {
