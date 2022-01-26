@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 #![cfg(feature = "runtime-benchmarks")]
 
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, vec};
 use frame_support::{
 	pallet_prelude::EnsureOrigin,
 	sp_runtime::SaturatedConversion,
@@ -39,8 +39,8 @@ fn make_free_for_did<T: Config>(account: &AccountIdOf<T>) {
 	<CurrencyOf<T> as Currency<AccountIdOf<T>>>::make_free_balance_be(account, balance);
 }
 
-fn generate_unick_input_with_max_length<T: Config>() -> BoundedVec<u8, T::MaxUnickLength> {
-	BoundedVec::<u8, T::MaxUnickLength>::try_from(vec![b'1'; T::MaxUnickLength::get().saturated_into()]).unwrap()
+fn generate_unick_input(length: usize) -> Vec<u8> {
+	vec![b'1'; length]
 }
 
 benchmarks! {
@@ -53,9 +53,10 @@ benchmarks! {
 	}
 
 	claim {
+		let n in (T::MinUnickLength::get()) .. (T::MaxUnickLength::get());
 		let caller: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
 		let owner: UnickOwnerOf<T> = account("owner", 0, OWNER_SEED);
-		let unick_input = generate_unick_input_with_max_length::<T>();
+		let unick_input: BoundedVec<u8, T::MaxUnickLength> = BoundedVec::try_from(generate_unick_input(n.saturated_into())).expect("BoundedVec creation should not fail.");
 		let unick_input_clone = unick_input.clone();
 		let origin = T::RegularOrigin::generate_origin(caller.clone(), owner.clone());
 
@@ -68,9 +69,10 @@ benchmarks! {
 	}
 
 	release_by_owner {
+		let n in (T::MinUnickLength::get()) .. (T::MaxUnickLength::get());
 		let caller: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
 		let owner: UnickOwnerOf<T> = account("owner", 0, OWNER_SEED);
-		let unick_input = generate_unick_input_with_max_length::<T>();
+		let unick_input: BoundedVec<u8, T::MaxUnickLength> = BoundedVec::try_from(generate_unick_input(n.saturated_into())).expect("BoundedVec creation should not fail.");
 		let unick_input_clone = unick_input.clone();
 		let origin = T::RegularOrigin::generate_origin(caller.clone(), owner.clone());
 
@@ -84,9 +86,10 @@ benchmarks! {
 	}
 
 	release_by_payer {
+		let n in (T::MinUnickLength::get()) .. (T::MaxUnickLength::get());
 		let caller: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
 		let owner: UnickOwnerOf<T> = account("owner", 0, OWNER_SEED);
-		let unick_input = generate_unick_input_with_max_length::<T>();
+		let unick_input: BoundedVec<u8, T::MaxUnickLength> = BoundedVec::try_from(generate_unick_input(n.saturated_into())).expect("BoundedVec creation should not fail.");
 		let unick_input_clone = unick_input.clone();
 		let did_origin = T::RegularOrigin::generate_origin(caller.clone(), owner.clone());
 		let signed_origin = RawOrigin::Signed(caller.clone());
@@ -101,9 +104,10 @@ benchmarks! {
 	}
 
 	blacklist {
+		let n in (T::MinUnickLength::get()) .. (T::MaxUnickLength::get());
 		let caller: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
 		let owner: UnickOwnerOf<T> = account("owner", 0, OWNER_SEED);
-		let unick_input = generate_unick_input_with_max_length::<T>();
+		let unick_input: BoundedVec<u8, T::MaxUnickLength> = BoundedVec::try_from(generate_unick_input(n.saturated_into())).expect("BoundedVec creation should not fail.");
 		let unick_input_clone = unick_input.clone();
 		let did_origin = T::RegularOrigin::generate_origin(caller.clone(), owner.clone());
 		let blacklist_origin = RawOrigin::Root;
@@ -119,9 +123,10 @@ benchmarks! {
 	}
 
 	unblacklist {
+		let n in (T::MinUnickLength::get()) .. (T::MaxUnickLength::get());
 		let caller: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
 		let owner: UnickOwnerOf<T> = account("owner", 0, OWNER_SEED);
-		let unick_input = generate_unick_input_with_max_length::<T>();
+		let unick_input: BoundedVec<u8, T::MaxUnickLength> = BoundedVec::try_from(generate_unick_input(n.saturated_into())).expect("BoundedVec creation should not fail.");
 		let unick_input_clone = unick_input.clone();
 		let blacklist_origin = RawOrigin::Root;
 
