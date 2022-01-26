@@ -27,7 +27,7 @@ ctype = {default-features = false, path = "../../pallets/ctype"}
 delegation = {default-features = false, path = "../../pallets/delegation"}
 did = {default-features = false, path = "../../pallets/did"}
 kilt-launch = {path = "../../pallets/kilt-launch", default-features = false}
-kilt-unicks = {path = "../../pallets/unicks", default-features = false}
+pallet-unicks = {path = "../../pallets/pallet-unicks", default-features = false}
 kilt-support = {path = "../../support", default-features = false, optional = true}
 pallet-did-lookup = {default-features = false, path = "../../pallets/pallet-did-lookup"}
 pallet-inflation = {path = "../../pallets/pallet-inflation", default-features = false}
@@ -110,7 +110,6 @@ runtime-benchmarks = [
   "runtime-common/runtime-benchmarks",
   "kilt-support",
   "kilt-support/runtime-benchmarks",
-  "kilt-unicks/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-collective/runtime-benchmarks",
   "pallet-democracy/runtime-benchmarks",
@@ -121,8 +120,9 @@ runtime-benchmarks = [
   "pallet-scheduler/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
   "pallet-treasury/runtime-benchmarks",
-  "pallet-vesting/runtime-benchmarks",
+  "pallet-unicks/runtime-benchmarks",
   "pallet-utility/runtime-benchmarks",
+  "pallet-vesting/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
   "rococo-runtime/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
@@ -146,8 +146,6 @@ std = [
   "frame-system/std",
   "frame-try-runtime/std",
   "kilt-launch/std",
-  "kilt-unicks/std",
-  "runtime-common/std",
   "log/std",
   "pallet-aura/std",
   "pallet-authorship/std",
@@ -165,11 +163,13 @@ std = [
   "pallet-transaction-payment-rpc-runtime-api/std",
   "pallet-transaction-payment/std",
   "pallet-treasury/std",
+  "pallet-unicks/std",
   "pallet-vesting/std",
   "parachain-info/std",
   "parachain-staking/std",
   "polkadot-parachain/std",
   "rococo-runtime/std",
+  "runtime-common/std",
   "scale-info/std",
   "serde",
   "sp-api/std",
@@ -199,7 +199,6 @@ try-runtime = [
   "frame-system/try-runtime",
   "frame-try-runtime",
   "kilt-launch/try-runtime",
-  "kilt-unicks/try-runtime",
   "pallet-aura/try-runtime",
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",
@@ -213,6 +212,7 @@ try-runtime = [
   "pallet-timestamp/try-runtime",
   "pallet-transaction-payment/try-runtime",
   "pallet-treasury/try-runtime",
+  "pallet-unicks/try-runtime",
   "pallet-utility/try-runtime",
   "pallet-vesting/try-runtime",
   "parachain-staking/try-runtime",

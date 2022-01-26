@@ -73,7 +73,7 @@ pub use attestation;
 pub use ctype;
 pub use delegation;
 pub use did;
-pub use kilt_unicks;
+pub use pallet_unicks;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem;
@@ -449,7 +449,7 @@ parameter_types! {
 	pub const MaxUnickLength: u32 = constants::unicks::MAX_LENGTH;
 }
 
-impl kilt_unicks::Config for Runtime {
+impl pallet_unicks::Config for Runtime {
 	type BlacklistOrigin = EnsureRoot<AccountId>;
 	type Currency = Balances;
 	type Deposit = UnickDeposit;
@@ -458,7 +458,7 @@ impl kilt_unicks::Config for Runtime {
 	type MinUnickLength = MinUnickLength;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type RegularOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
-	type Unick = kilt_unicks::unick::AsciiUnick<Runtime, MinUnickLength, MaxUnickLength>;
+	type Unick = pallet_unicks::unick::AsciiUnick<Runtime, MinUnickLength, MaxUnickLength>;
 	type UnickOwner = DidIdentifier;
 	type WeightInfo = ();
 }
@@ -556,7 +556,7 @@ construct_runtime!(
 		KiltLaunch: kilt_launch = 34,
 		Utility: pallet_utility = 35,
 		// DELETED CrowdloanContributors: 36,
-		Unicks: kilt_unicks = 37
+		Unicks: pallet_unicks = 37
 	}
 );
 

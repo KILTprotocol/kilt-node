@@ -24,7 +24,7 @@ delegation = {default-features = false, path = "../../pallets/delegation"}
 did = {default-features = false, path = "../../pallets/did"}
 kilt-launch = {default-features = false, path = "../../pallets/kilt-launch"}
 kilt-support = {path = "../../support", default-features = false, optional = true}
-kilt-unicks = {default-features = false, path = "../../pallets/unicks"}
+pallet-unicks = {default-features = false, path = "../../pallets/pallet-unicks"}
 pallet-did-lookup = {default-features = false, path = "../../pallets/pallet-did-lookup"}
 runtime-common = {path = "../../runtimes/common", default-features = false}
 
@@ -86,11 +86,11 @@ runtime-benchmarks = [
   "runtime-common/runtime-benchmarks",
   "kilt-support",
   "kilt-support/runtime-benchmarks",
-  "kilt-unicks/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-did-lookup/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
+  "pallet-unicks/runtime-benchmarks",
   "pallet-vesting/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
 ]
@@ -107,8 +107,6 @@ std = [
   "frame-system-rpc-runtime-api/std",
   "frame-try-runtime/std",
   "kilt-launch/std",
-  "kilt-unicks/std",
-  "runtime-common/std",
   "log/std",
   "pallet-aura/std",
   "pallet-authorship/std",
@@ -122,7 +120,9 @@ std = [
   "pallet-timestamp/std",
   "pallet-transaction-payment/std",
   "pallet-transaction-payment-rpc-runtime-api/std",
+  "pallet-unicks/std",
   "pallet-vesting/std",
+  "runtime-common/std",
   "scale-info/std",
   "serde",
   "sp-api/std",
@@ -150,7 +150,6 @@ try-runtime = [
   "frame-system/try-runtime",
   "frame-try-runtime",
   "kilt-launch/try-runtime",
-  "kilt-unicks/runtime-benchmarks",
   "pallet-aura/try-runtime",
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",
@@ -160,6 +159,7 @@ try-runtime = [
   "pallet-session/try-runtime",
   "pallet-sudo/try-runtime",
   "pallet-timestamp/try-runtime",
+  "pallet-unicks/runtime-benchmarks",
   "pallet-utility/try-runtime",
   "pallet-transaction-payment/try-runtime",
   "pallet-vesting/try-runtime",

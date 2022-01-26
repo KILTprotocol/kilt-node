@@ -2,7 +2,7 @@
 authors = ["KILT <info@kilt.io>"]
 description = "Unique nicknames (unicks) for KILT DIDs."
 edition = "2021"
-name = "kilt-unicks"
+name = "pallet-unicks"
 repository = "https://github.com/KILTprotocol/mashnet-node"
 version = "1.3.1"
 

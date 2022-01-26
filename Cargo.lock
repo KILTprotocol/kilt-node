@@ -3557,25 +3557,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "kilt-unicks"
-version = "1.3.1"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "kilt-support",
- "pallet-balances",
- "parity-scale-codec",
- "runtime-common",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-keystore",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "kusama-runtime"
 version = "0.9.13"
 source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.13#7d8f00b90cd6d87780123b3e08ca120cfb0c6e50"
@@ -4496,7 +4477,6 @@ dependencies = [
  "hex-literal",
  "kilt-launch",
  "kilt-support",
- "kilt-unicks",
  "log",
  "pallet-aura",
  "pallet-authorship",
@@ -4510,6 +4490,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-unicks",
  "pallet-utility",
  "pallet-vesting",
  "parity-scale-codec",
@@ -6139,6 +6120,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-unicks"
+version = "1.3.1"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "kilt-support",
+ "pallet-balances",
+ "parity-scale-codec",
+ "runtime-common",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-uniques"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.13#afb74de23dfe2994e7ce38c0870efb9734e966f7"
@@ -6555,7 +6555,6 @@ dependencies = [
  "hex-literal",
  "kilt-launch",
  "kilt-support",
- "kilt-unicks",
  "log",
  "pallet-aura",
  "pallet-authorship",
@@ -6574,6 +6573,7 @@ dependencies = [
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "pallet-treasury",
+ "pallet-unicks",
  "pallet-utility",
  "pallet-vesting",
  "parachain-info",
@@ -10756,7 +10756,6 @@ dependencies = [
  "hex-literal",
  "kilt-launch",
  "kilt-support",
- "kilt-unicks",
  "log",
  "pallet-aura",
  "pallet-authorship",
@@ -10774,6 +10773,7 @@ dependencies = [
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "pallet-treasury",
+ "pallet-unicks",
  "pallet-utility",
  "pallet-vesting",
  "parachain-info",

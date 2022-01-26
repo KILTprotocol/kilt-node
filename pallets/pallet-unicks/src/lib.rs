@@ -79,7 +79,7 @@ pub mod pallet {
 	// Owner -> Unick
 	#[pallet::storage]
 	#[pallet::getter(fn unicks)]
-	pub type Unicks<T> = StorageMap<_, Twox64Concat, UnickOwnerOf<T>, UnickOf<T>>;
+	pub type Unicks<T> = StorageMap<_, Blake2_128Concat, UnickOwnerOf<T>, UnickOf<T>>;
 
 	// Unick -> ()
 	#[pallet::storage]
@@ -208,14 +208,15 @@ pub mod pallet {
 			let origin = T::RegularOrigin::ensure_origin(origin)?;
 			let owner = origin.subject();
 
-			let unick = UnickOf::<T>::try_from(unick.into_inner()).map_err(DispatchError::from)?;
-
-			Self::check_releasing_preconditions_for_owner(&unick, &owner)?;
+			let decoded_unick = Self::check_releasing_preconditions_for_owner(unick, &owner)?;
 
 			// No failure beyond this point
 
-			Self::unregister_unick(&unick);
-			Self::deposit_event(Event::<T>::UnickReleased { owner, unick });
+			Self::unregister_unick(&decoded_unick);
+			Self::deposit_event(Event::<T>::UnickReleased {
+				owner,
+				unick: decoded_unick,
+			});
 
 			Ok(())
 		}
@@ -235,14 +236,15 @@ pub mod pallet {
 		pub fn release_by_payer(origin: OriginFor<T>, unick: UnickInput<T>) -> DispatchResult {
 			let caller = ensure_signed(origin)?;
 
-			let unick = UnickOf::<T>::try_from(unick.into_inner()).map_err(DispatchError::from)?;
-
-			Self::check_releasing_preconditions_for_caller(&unick, &caller)?;
+			let decoded_unick = Self::check_releasing_preconditions_for_caller(unick, &caller)?;
 
 			// No failure beyond this point
 
-			let UnickOwnershipOf::<T> { owner, .. } = Self::unregister_unick(&unick);
-			Self::deposit_event(Event::<T>::UnickReleased { owner, unick });
+			let UnickOwnershipOf::<T> { owner, .. } = Self::unregister_unick(&decoded_unick);
+			Self::deposit_event(Event::<T>::UnickReleased {
+				owner,
+				unick: decoded_unick,
+			});
 
 			Ok(())
 		}
@@ -267,18 +269,16 @@ pub mod pallet {
 		pub fn blacklist(origin: OriginFor<T>, unick: UnickInput<T>) -> DispatchResult {
 			T::BlacklistOrigin::ensure_origin(origin)?;
 
-			let unick = UnickOf::<T>::try_from(unick.into_inner()).map_err(DispatchError::from)?;
+			let (decoded_unick, is_claimed) = Self::check_blacklisting_preconditions(unick)?;
 
 			// No failure beyond this point
 
-			// Unregister (including returning the deposit) only if the unick was assigned
-			// to someone.
-			if Self::check_blacklisting_preconditions(&unick)? {
-				Self::unregister_unick(&unick);
+			if is_claimed {
+				Self::unregister_unick(&decoded_unick);
 			}
 
-			Self::blacklist_unick(&unick);
-			Self::deposit_event(Event::<T>::UnickBlacklisted { unick });
+			Self::blacklist_unick(&decoded_unick);
+			Self::deposit_event(Event::<T>::UnickBlacklisted { unick: decoded_unick });
 
 			Ok(())
 		}
@@ -301,14 +301,12 @@ pub mod pallet {
 		pub fn unblacklist(origin: OriginFor<T>, unick: UnickInput<T>) -> DispatchResult {
 			T::BlacklistOrigin::ensure_origin(origin)?;
 
-			let unick = UnickOf::<T>::try_from(unick.into_inner()).map_err(DispatchError::from)?;
-
-			Self::check_unblacklisting_preconditions(&unick)?;
+			let decoded_unick = Self::check_unblacklisting_preconditions(unick)?;
 
 			// No failure beyond this point
 
-			Self::unblacklist_unick(&unick);
-			Self::deposit_event(Event::<T>::UnickUnblacklisted { unick });
+			Self::unblacklist_unick(&decoded_unick);
+			Self::deposit_event(Event::<T>::UnickUnblacklisted { unick: decoded_unick });
 
 			Ok(())
 		}
@@ -322,11 +320,11 @@ pub mod pallet {
 		/// - The unick has not been blacklisted
 		/// - The tx submitter has enough funds to pay the deposit
 		fn check_claiming_preconditions(
-			unick: UnickInput<T>,
+			unick_input: UnickInput<T>,
 			owner: &UnickOwnerOf<T>,
 			deposit_payer: &AccountIdOf<T>,
 		) -> Result<UnickOf<T>, DispatchError> {
-			let unick = UnickOf::<T>::try_from(unick.into_inner()).map_err(DispatchError::from)?;
+			let unick = UnickOf::<T>::try_from(unick_input.into_inner()).map_err(DispatchError::from)?;
 
 			ensure!(!Unicks::<T>::contains_key(&owner), Error::<T>::OwnerAlreadyExists);
 			ensure!(!Owner::<T>::contains_key(&unick), Error::<T>::UnickAlreadyClaimed);
@@ -366,34 +364,38 @@ pub mod pallet {
 
 		/// Verify that the releasing preconditions for an owner are verified.
 		/// Specifically:
+		/// - The unick input data can be decoded as a valid unick
 		/// - The unick exists (i.e., it has been previous claimed)
 		/// - The caller owns the given unick
 		fn check_releasing_preconditions_for_owner(
-			unick: &UnickOf<T>,
+			unick_input: UnickInput<T>,
 			owner: &UnickOwnerOf<T>,
-		) -> Result<(), DispatchError> {
+		) -> Result<UnickOf<T>, DispatchError> {
+			let unick = UnickOf::<T>::try_from(unick_input.into_inner()).map_err(DispatchError::from)?;
 			let UnickOwnership {
 				owner: stored_owner, ..
-			} = Owner::<T>::get(unick).ok_or(Error::<T>::UnickNotFound)?;
+			} = Owner::<T>::get(&unick).ok_or(Error::<T>::UnickNotFound)?;
 
 			ensure!(owner == &stored_owner, Error::<T>::NotAuthorized);
 
-			Ok(())
+			Ok(unick)
 		}
 
 		/// Verify that the releasing preconditions for a deposit payer are
 		/// verified. Specifically:
+		/// - The unick input data can be decoded as a valid unick
 		/// - The unick exists (i.e., it has been previous claimed)
 		/// - The caller owns the unick's deposit
 		fn check_releasing_preconditions_for_caller(
-			unick: &UnickOf<T>,
+			unick_input: UnickInput<T>,
 			caller: &AccountIdOf<T>,
-		) -> Result<(), DispatchError> {
-			let UnickOwnership { deposit, .. } = Owner::<T>::get(unick).ok_or(Error::<T>::UnickNotFound)?;
+		) -> Result<UnickOf<T>, DispatchError> {
+			let unick = UnickOf::<T>::try_from(unick_input.into_inner()).map_err(DispatchError::from)?;
+			let UnickOwnership { deposit, .. } = Owner::<T>::get(&unick).ok_or(Error::<T>::UnickNotFound)?;
 
 			ensure!(caller == &deposit.owner, Error::<T>::NotAuthorized);
 
-			Ok(())
+			Ok(unick)
 		}
 
 		/// Release the provided unick and returns the deposit to the original
@@ -411,18 +413,23 @@ pub mod pallet {
 
 		/// Verify that the blacklisting preconditions are verified.
 		/// Specifically:
+		/// - The unick input data can be decoded as a valid unick
 		/// - The unick must not be already blacklisted
 		///
 		/// If the preconditions are verified, return
-		/// whether the unick being blacklisted is currently assigned to someone
-		/// or not.
-		fn check_blacklisting_preconditions(unick: &UnickOf<T>) -> Result<bool, DispatchError> {
+		/// a tuple containing the parsed unicked value and whether the unick
+		/// being blacklisted is currently assigned to someone or not.
+		fn check_blacklisting_preconditions(unick_input: UnickInput<T>) -> Result<(UnickOf<T>, bool), DispatchError> {
+			let unick = UnickOf::<T>::try_from(unick_input.into_inner()).map_err(DispatchError::from)?;
+
 			ensure!(
 				!Blacklist::<T>::contains_key(&unick),
 				Error::<T>::UnickAlreadyBlacklisted
 			);
 
-			Ok(Owner::<T>::contains_key(unick))
+			let is_claimed = Owner::<T>::contains_key(&unick);
+
+			Ok((unick, is_claimed))
 		}
 
 		/// Blacklist the provided unick. This function must be called after
@@ -434,11 +441,14 @@ pub mod pallet {
 
 		/// Verify that the unblacklisting preconditions are verified.
 		/// Specifically:
+		/// - The unick input data can be decoded as a valid unick
 		/// - The unick must have already been blacklisted
-		fn check_unblacklisting_preconditions(unick: &UnickOf<T>) -> Result<(), DispatchError> {
+		fn check_unblacklisting_preconditions(unick_input: UnickInput<T>) -> Result<UnickOf<T>, DispatchError> {
+			let unick = UnickOf::<T>::try_from(unick_input.into_inner()).map_err(DispatchError::from)?;
+
 			ensure!(Blacklist::<T>::contains_key(&unick), Error::<T>::UnickNotBlacklisted);
 
-			Ok(())
+			Ok(unick)
 		}
 
 		/// Unblacklist the provided unick. This function must be called after
