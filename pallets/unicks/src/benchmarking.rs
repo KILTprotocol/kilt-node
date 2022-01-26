@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 #![cfg(feature = "runtime-benchmarks")]
 
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, vec};
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, vec, Vec};
 use frame_support::{
 	pallet_prelude::EnsureOrigin,
 	sp_runtime::SaturatedConversion,
@@ -29,7 +29,7 @@ use sp_runtime::app_crypto::sr25519;
 
 use kilt_support::traits::GenerateBenchmarkOrigin;
 
-use crate::*;
+use crate::{AccountIdOf, Blacklist, Call, Config, CurrencyOf, Owner, Pallet, UnickOf, UnickOwnerOf, Unicks};
 
 const CALLER_SEED: u32 = 0;
 const OWNER_SEED: u32 = 1;
