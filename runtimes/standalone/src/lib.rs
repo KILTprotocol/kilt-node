@@ -460,6 +460,7 @@ impl kilt_unicks::Config for Runtime {
 	type RegularOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type Unick = kilt_unicks::unick::AsciiUnick<Runtime, MinUnickLength, MaxUnickLength>;
 	type UnickOwner = DidIdentifier;
+	type WeightInfo = ();
 }
 
 parameter_types! {

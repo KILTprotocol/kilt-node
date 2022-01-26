@@ -126,6 +126,7 @@ impl pallet_unicks::Config for Test {
 	type RegularOrigin = TestRegularOrigin;
 	type Unick = TestUnick;
 	type UnickOwner = TestUnickOwner;
+	type WeightInfo = ();
 }
 
 impl mock_origin::Config for Test {

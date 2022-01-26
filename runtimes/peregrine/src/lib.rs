@@ -619,6 +619,7 @@ impl kilt_unicks::Config for Runtime {
 	type RegularOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type Unick = kilt_unicks::unick::AsciiUnick<Runtime, MinUnickLength, MaxUnickLength>;
 	type UnickOwner = DidIdentifier;
+	type WeightInfo = ();
 }
 
 parameter_types! {
@@ -977,7 +978,7 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, kilt_launch, KiltLaunch);
 			list_benchmark!(list, extra, pallet_inflation, Inflation);
 			list_benchmark!(list, extra, parachain_staking, ParachainStaking);
-			// list_benchmark!(list, extra, kilt_unicks, Unicks);
+			list_benchmark!(list, extra, kilt_unicks, Unicks);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
 
@@ -1043,7 +1044,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, kilt_launch, KiltLaunch);
 			add_benchmark!(params, batches, pallet_inflation, Inflation);
 			add_benchmark!(params, batches, parachain_staking, ParachainStaking);
-			// add_benchmark!(params, batches, kilt_unicks, Unicks);
+			add_benchmark!(params, batches, kilt_unicks, Unicks);
 
 			// No benchmarks for these pallets
 			// add_benchmark!(params, batches, cumulus_pallet_parachain_system, ParachainSystem);

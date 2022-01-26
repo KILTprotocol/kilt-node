@@ -23,6 +23,8 @@
 
 pub mod unick;
 
+mod default_weights;
+
 #[cfg(test)]
 mod mock;
 
@@ -32,7 +34,7 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
-pub use pallet::*;
+pub use crate::{default_weights::WeightInfo, pallet::*};
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -47,6 +49,7 @@ pub mod pallet {
 
 	use kilt_support::{deposit::Deposit, traits::CallSources};
 
+	use super::WeightInfo;
 	use crate::unick::UnickOwnership;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
@@ -107,6 +110,8 @@ pub mod pallet {
 		type Unick: FullCodec + Debug + PartialEq + Clone + TypeInfo + TryFrom<Vec<u8>, Error = Error<Self>>;
 		/// The type of a unick owner.
 		type UnickOwner: Parameter + Default;
+		/// Weight information for extrinsics in this pallet.
+		type WeightInfo: WeightInfo;
 	}
 
 	#[pallet::event]
