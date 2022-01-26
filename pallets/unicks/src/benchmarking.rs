@@ -19,6 +19,7 @@
 
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
+	pallet_prelude::EnsureOrigin,
 	sp_runtime::SaturatedConversion,
 	traits::{Currency, Get},
 	BoundedVec,
@@ -38,33 +39,38 @@ fn make_free_for_did<T: Config>(account: &AccountIdOf<T>) {
 	<CurrencyOf<T> as Currency<AccountIdOf<T>>>::make_free_balance_be(account, balance);
 }
 
+fn generate_unick_input_with_max_length<T: Config>() -> BoundedVec<u8, T::MaxUnickLength> {
+	BoundedVec::<u8, T::MaxUnickLength>::try_from(vec![b'1'; T::MaxUnickLength::get().saturated_into()]).unwrap()
+}
+
 benchmarks! {
 	where_clause {
 		where
 		T::AccountId: From<sr25519::Public>,
 		T::UnickOwner: From<T::AccountId>,
 		T::RegularOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::UnickOwner>,
-		T::BlacklistOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::UnickOwner>,
+		T::BlacklistOrigin: EnsureOrigin<T::Origin>,
 	}
 
 	claim {
 		let caller: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
 		let owner: UnickOwnerOf<T> = account("owner", 0, OWNER_SEED);
-		let unick_input = BoundedVec::<u8,T::MaxUnickLength>::try_from(vec![b'1'; T::MaxUnickLength::get().saturated_into()]).unwrap();
+		let unick_input = generate_unick_input_with_max_length::<T>();
 		let unick_input_clone = unick_input.clone();
 		let origin = T::RegularOrigin::generate_origin(caller.clone(), owner.clone());
 
 		make_free_for_did::<T>(&caller);
 	}: _<T::Origin>(origin, unick_input_clone)
 	verify {
+		let unick = UnickOf::<T>::try_from(unick_input.to_vec()).unwrap();
 		assert!(Unicks::<T>::get(&owner).is_some());
-		assert!(Owner::<T>::get(&UnickOf::<T>::try_from(unick_input.to_vec()).unwrap()).is_some());
+		assert!(Owner::<T>::get(&unick).is_some());
 	}
 
 	release_by_owner {
 		let caller: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
 		let owner: UnickOwnerOf<T> = account("owner", 0, OWNER_SEED);
-		let unick_input = BoundedVec::<u8,T::MaxUnickLength>::try_from(vec![b'1'; T::MaxUnickLength::get().saturated_into()]).unwrap();
+		let unick_input = generate_unick_input_with_max_length::<T>();
 		let unick_input_clone = unick_input.clone();
 		let origin = T::RegularOrigin::generate_origin(caller.clone(), owner.clone());
 
@@ -72,14 +78,15 @@ benchmarks! {
 		Pallet::<T>::claim(origin.clone(), unick_input.clone()).expect("Should register the claimed unick.");
 	}: _<T::Origin>(origin, unick_input_clone)
 	verify {
+		let unick = UnickOf::<T>::try_from(unick_input.to_vec()).unwrap();
 		assert!(Unicks::<T>::get(&owner).is_none());
-		assert!(Owner::<T>::get(&UnickOf::<T>::try_from(unick_input.to_vec()).unwrap()).is_none());
+		assert!(Owner::<T>::get(&unick).is_none());
 	}
 
 	release_by_payer {
 		let caller: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
 		let owner: UnickOwnerOf<T> = account("owner", 0, OWNER_SEED);
-		let unick_input = BoundedVec::<u8,T::MaxUnickLength>::try_from(vec![b'1'; T::MaxUnickLength::get().saturated_into()]).unwrap();
+		let unick_input = generate_unick_input_with_max_length::<T>();
 		let unick_input_clone = unick_input.clone();
 		let did_origin = T::RegularOrigin::generate_origin(caller.clone(), owner.clone());
 		let signed_origin = RawOrigin::Signed(caller.clone());
@@ -88,21 +95,22 @@ benchmarks! {
 		Pallet::<T>::claim(did_origin, unick_input.clone()).expect("Should register the claimed unick.");
 	}: _(signed_origin, unick_input_clone)
 	verify {
+		let unick = UnickOf::<T>::try_from(unick_input.to_vec()).unwrap();
 		assert!(Unicks::<T>::get(&owner).is_none());
-		assert!(Owner::<T>::get(&UnickOf::<T>::try_from(unick_input.to_vec()).unwrap()).is_none());
+		assert!(Owner::<T>::get(&unick).is_none());
 	}
 
 	blacklist {
 		let caller: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
 		let owner: UnickOwnerOf<T> = account("owner", 0, OWNER_SEED);
-		let unick_input = BoundedVec::<u8,T::MaxUnickLength>::try_from(vec![b'1'; T::MaxUnickLength::get().saturated_into()]).unwrap();
+		let unick_input = generate_unick_input_with_max_length::<T>();
 		let unick_input_clone = unick_input.clone();
 		let did_origin = T::RegularOrigin::generate_origin(caller.clone(), owner.clone());
-		let root_origin = RawOrigin::Root;
+		let blacklist_origin = RawOrigin::Root;
 
 		make_free_for_did::<T>(&caller);
 		Pallet::<T>::claim(did_origin, unick_input.clone()).expect("Should register the claimed unick.");
-	}: _(root_origin, unick_input_clone)
+	}: _(blacklist_origin, unick_input_clone)
 	verify {
 		let unick = UnickOf::<T>::try_from(unick_input.to_vec()).unwrap();
 		assert!(Unicks::<T>::get(&owner).is_none());
@@ -113,18 +121,18 @@ benchmarks! {
 	unblacklist {
 		let caller: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
 		let owner: UnickOwnerOf<T> = account("owner", 0, OWNER_SEED);
-		let unick_input = BoundedVec::<u8,T::MaxUnickLength>::try_from(vec![b'1'; T::MaxUnickLength::get().saturated_into()]).unwrap();
+		let unick_input = generate_unick_input_with_max_length::<T>();
 		let unick_input_clone = unick_input.clone();
-		let root_origin = T::RegularOrigin::generate_origin(caller.clone(), owner.clone());
+		let blacklist_origin = RawOrigin::Root;
 
 		make_free_for_did::<T>(&caller);
-		Pallet::<T>::blacklist(root_origin.clone(), unick_input.clone()).expect("Should blacklist the unick.");
-	}: _<T::Origin>(root_origin, unick_input_clone)
+		Pallet::<T>::blacklist(blacklist_origin.clone().into(), unick_input.clone()).expect("Should blacklist the unick.");
+	}: _(blacklist_origin, unick_input_clone)
 	verify {
 		let unick = UnickOf::<T>::try_from(unick_input.to_vec()).unwrap();
 		assert!(Unicks::<T>::get(&owner).is_none());
 		assert!(Owner::<T>::get(&unick).is_none());
-		assert!(Blacklist::<T>::get(&unick).is_some());
+		assert!(Blacklist::<T>::get(&unick).is_none());
 	}
 }
 
