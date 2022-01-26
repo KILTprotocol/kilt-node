@@ -598,20 +598,16 @@ pub mod pallet {
 	/// The staking information for a candidate.
 	///
 	/// It maps from an account to its information.
+	/// Moreover, it counts the number of candidates.
 	#[pallet::storage]
 	#[pallet::getter(fn candidate_pool)]
-	pub(crate) type CandidatePool<T: Config> = StorageMap<
+	pub(crate) type CandidatePool<T: Config> = CountedStorageMap<
 		_,
 		Twox64Concat,
 		T::AccountId,
 		Candidate<T::AccountId, BalanceOf<T>, T::MaxDelegatorsPerCollator>,
 		OptionQuery,
 	>;
-
-	/// The number of candidates in the pool.
-	#[pallet::storage]
-	#[pallet::getter(fn candidate_count)]
-	pub(crate) type CandidateCount<T: Config> = StorageValue<_, u32, ValueQuery>;
 
 	/// Total funds locked to back the currently selected collators.
 	/// The sum of all collator and their delegator stakes.
@@ -1054,9 +1050,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], DelegatorState,
 		///   MaxCollatorCandidateStake, Locks, TotalCollatorStake,
 		///   TopCandidates, MaxSelectedCandidates, CandidatePool,
-		///   CandidateCount
 		/// - Writes: Locks, TotalCollatorStake, CandidatePool, TopCandidates,
-		///   CandidateCount
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::join_candidates(
 			T::MaxTopCandidates::get(),
@@ -1095,10 +1089,6 @@ pub mod pallet {
 				BalanceOf::<T>::zero(),
 			);
 			CandidatePool::<T>::insert(&sender, candidate);
-
-			CandidateCount::<T>::mutate(|count| {
-				*count = count.saturating_add(1);
-			});
 
 			Self::deposit_event(Event::JoinedCollatorCandidates(sender, stake));
 			Ok(Some(<T as pallet::Config>::WeightInfo::join_candidates(
@@ -1758,9 +1748,7 @@ pub mod pallet {
 		/// which is bounded by by `MaxCollatorsPerDelegator`.
 		/// - Reads: [Origin Account], DelegatorState, BlockNumber, Unstaking,
 		///   TopCandidates, MaxSelectedCandidates, C * CandidatePool,
-		///   CandidateCount
 		/// - Writes: Unstaking, CandidatePool, TotalCollatorStake,
-		///   CandidateCount
 		/// - Kills: DelegatorState
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::leave_delegators(
@@ -2612,7 +2600,6 @@ pub mod pallet {
 				.map(pallet_session::Pallet::<T>::disable_index);
 
 			CandidatePool::<T>::remove(&collator);
-			CandidateCount::<T>::mutate(|count| *count = count.saturating_sub(1));
 			Ok(())
 		}
 
