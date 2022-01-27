@@ -54,12 +54,12 @@ use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 
 pub use pallet_timestamp::Call as TimestampCall;
+
 use runtime_common::{
 	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
 	fees::ToAuthor,
 	pallet_id, AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
 };
-// pub use consensus::Call as ConsensusCall;
 pub use attestation;
 pub use ctype;
 pub use delegation;
