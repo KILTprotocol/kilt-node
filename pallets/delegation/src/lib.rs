@@ -73,10 +73,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
+mod access_control;
 pub mod default_weights;
 pub mod delegation_hierarchy;
 pub mod migrations;
-mod access_control;
 
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
@@ -87,10 +87,9 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
-
 pub use crate::{access_control::DelegationAc, default_weights::WeightInfo, delegation_hierarchy::*, pallet::*};
 
-use codec::{Decode, Encode};
+use codec::Encode;
 use frame_support::{
 	dispatch::DispatchResult,
 	ensure,
@@ -98,7 +97,6 @@ use frame_support::{
 	traits::{Get, ReservableCurrency},
 };
 use migrations::DelegationStorageVersion;
-use scale_info::TypeInfo;
 use sp_runtime::{traits::Hash, DispatchError};
 use sp_std::vec::Vec;
 

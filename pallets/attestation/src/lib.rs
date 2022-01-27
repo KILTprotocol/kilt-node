@@ -82,16 +82,18 @@ pub mod mock;
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
 
+mod access_control;
 #[cfg(test)]
 mod tests;
 
-pub use crate::{attestations::AttestationDetails, default_weights::WeightInfo, pallet::*};
+pub use crate::{
+	access_control::AttestationAccessControl, attestations::AttestationDetails, default_weights::WeightInfo, pallet::*,
+};
 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
 	use frame_support::{
-		dispatch::Weight,
 		pallet_prelude::*,
 		traits::{Currency, Get, ReservableCurrency},
 		BoundedVec,
@@ -101,36 +103,6 @@ pub mod pallet {
 
 	use ctype::CtypeHashOf;
 	use kilt_support::{deposit::Deposit, traits::CallSources};
-
-	pub trait AttestationAccessControl<AttesterId, AuthorizationId> {
-		fn can_attest(&self, who: &AttesterId) -> Result<Weight, DispatchError>;
-		fn can_revoke(&self, who: &AttesterId, authorization_id: &AuthorizationId) -> Result<Weight, DispatchError>;
-		fn can_remove(&self, who: &AttesterId, authorization_id: &AuthorizationId) -> Result<Weight, DispatchError>;
-		fn authorization_id(&self) -> AuthorizationId;
-		fn weight(&self) -> Weight;
-	}
-
-	impl<AttesterId, AuthorizationId> AttestationAccessControl<AttesterId, AuthorizationId> for ()
-	where
-		AuthorizationId: Default,
-	{
-		fn can_attest(&self, _who: &AttesterId) -> Result<Weight, DispatchError> {
-			Err(DispatchError::Other("Unimplemented"))
-		}
-		fn can_revoke(&self, _who: &AttesterId, _authorization_id: &AuthorizationId) -> Result<Weight, DispatchError> {
-			Err(DispatchError::Other("Unimplemented"))
-		}
-		fn can_remove(&self, _who: &AttesterId, _authorization_id: &AuthorizationId) -> Result<Weight, DispatchError> {
-			Err(DispatchError::Other("Unimplemented"))
-		}
-		fn authorization_id(&self) -> AuthorizationId {
-			Default::default()
-		}
-		fn weight(&self) -> Weight {
-			0
-		}
-	}
-
 	/// Type of a claim hash.
 	pub(crate) type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
 
