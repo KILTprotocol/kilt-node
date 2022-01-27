@@ -59,6 +59,7 @@ pallet-collective = {git = "https://github.com/paritytech/substrate", default-fe
 pallet-democracy = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.13"}
 pallet-indices = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.13"}
 pallet-membership = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.13"}
+pallet-proxy = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.13" }
 pallet-randomness-collective-flip = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.13"}
 pallet-scheduler = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.13"}
 pallet-session = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.13"}
@@ -117,6 +118,7 @@ runtime-benchmarks = [
   "pallet-indices/runtime-benchmarks",
   "pallet-inflation/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
+  "pallet-proxy/runtime-benchmarks",
   "pallet-scheduler/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
   "pallet-treasury/runtime-benchmarks",
@@ -156,6 +158,7 @@ std = [
   "pallet-indices/std",
   "pallet-inflation/std",
   "pallet-membership/std",
+  "pallet-proxy/std",
   "pallet-randomness-collective-flip/std",
   "pallet-scheduler/std",
   "pallet-session/std",
@@ -205,6 +208,7 @@ try-runtime = [
   "pallet-democracy/try-runtime",
   "pallet-indices/try-runtime",
   "pallet-membership/try-runtime",
+  "pallet-proxy/try-runtime",
   "pallet-randomness-collective-flip/try-runtime",
   "pallet-scheduler/try-runtime",
   "pallet-session/try-runtime",

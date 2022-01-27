@@ -227,3 +227,8 @@ pub mod treasury {
 	const YEARLY_REWARD: Balance = 2_000_000u128 * KILT;
 	pub const INITIAL_PERIOD_REWARD_PER_BLOCK: Balance = YEARLY_REWARD / (BLOCKS_PER_YEAR as Balance);
 }
+
+pub mod proxy {
+	pub const MAX_PROXIES: u16 = 10;
+	pub const MAX_PENDING: u16 = 10;
+}
