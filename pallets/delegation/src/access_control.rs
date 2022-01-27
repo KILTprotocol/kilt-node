@@ -21,7 +21,7 @@ use frame_support::{dispatch::Weight, ensure};
 use scale_info::TypeInfo;
 use sp_runtime::DispatchError;
 
-use crate::{Config, DelegationNodeIdOf, DelegatorIdOf, Error, Pallet, default_weights::WeightInfo};
+use crate::{default_weights::WeightInfo, Config, DelegationNodeIdOf, DelegatorIdOf, Error, Pallet};
 
 /// Controls the access to attestations.
 ///
