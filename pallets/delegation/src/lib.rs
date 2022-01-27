@@ -76,6 +76,7 @@
 pub mod default_weights;
 pub mod delegation_hierarchy;
 pub mod migrations;
+mod access_control;
 
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
@@ -86,7 +87,8 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
-pub use crate::{default_weights::WeightInfo, delegation_hierarchy::*, pallet::*};
+
+pub use crate::{access_control::DelegationAc, default_weights::WeightInfo, delegation_hierarchy::*, pallet::*};
 
 use codec::{Decode, Encode};
 use frame_support::{
@@ -941,44 +943,5 @@ impl<T: Config> Pallet<T> {
 		Self::deposit_event(Event::DelegationRemoved(delegation_node.deposit.owner, *delegation));
 		removals = removals.saturating_add(1);
 		Ok((removals, consumed_weight))
-	}
-}
-
-#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
-pub struct DelegationAc<T: Config>(DelegationNodeIdOf<T>, u32);
-impl<T: Config> attestation::AttestationAccessControl<DelegatorIdOf<T>, DelegationNodeIdOf<T>> for DelegationAc<T> {
-	fn can_attest(&self, who: &DelegatorIdOf<T>) -> Result<Weight, DispatchError> {
-		match Pallet::<T>::is_delegating(who, &self.0, self.1)? {
-			(true, checks) => Ok(<T as Config>::WeightInfo::can_attest(checks)),
-			_ => Err(Error::<T>::AccessDenied.into()),
-		}
-	}
-
-	fn can_revoke(&self, who: &DelegatorIdOf<T>, auth_id: &DelegationNodeIdOf<T>) -> Result<Weight, DispatchError> {
-		ensure!(auth_id == &self.0, Error::<T>::AccessDenied);
-
-		match Pallet::<T>::is_delegating(who, &self.0, self.1)? {
-			(true, checks) => Ok(<T as Config>::WeightInfo::can_revoke(checks)),
-			_ => Err(Error::<T>::AccessDenied.into()),
-		}
-	}
-
-	fn can_remove(&self, who: &DelegatorIdOf<T>, auth_id: &DelegationNodeIdOf<T>) -> Result<Weight, DispatchError> {
-		ensure!(auth_id == &self.0, Error::<T>::AccessDenied);
-
-		match Pallet::<T>::is_delegating(who, &self.0, self.1)? {
-			(true, checks) => Ok(<T as Config>::WeightInfo::can_remove(checks)),
-			_ => Err(Error::<T>::AccessDenied.into()),
-		}
-	}
-
-	fn authorization_id(&self) -> DelegationNodeIdOf<T> {
-		self.0
-	}
-
-	fn weight(&self) -> Weight {
-		<T as Config>::WeightInfo::can_attest(self.1)
-			.max(<T as Config>::WeightInfo::can_revoke(self.1))
-			.max(<T as Config>::WeightInfo::can_remove(self.1))
 	}
 }
