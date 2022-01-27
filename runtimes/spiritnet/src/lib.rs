@@ -25,9 +25,10 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{Contains, EqualPrivilegeOnly},
+	traits::{Contains, EqualPrivilegeOnly, InstanceFilter},
 	weights::{constants::RocksDbWeight, Weight},
 };
 use frame_system::{EnsureOneOf, EnsureRoot};
@@ -40,11 +41,12 @@ use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, Perbill, Permill, Perquintill,
+	ApplyExtrinsicResult, Perbill, Permill, Perquintill, RuntimeDebug,
 };
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 
+pub use parachain_staking::InflationInfo;
 use runtime_common::{
 	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
 	fees::{ToAuthor, WeightToFee},
@@ -60,12 +62,11 @@ use {frame_system::EnsureSigned, kilt_support::signature::AlwaysVerify, runtime_
 
 #[cfg(test)]
 mod tests;
-mod weights;
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
-pub use parachain_staking::InflationInfo;
+mod weights;
 
 impl_opaque_keys! {
 	pub struct SessionKeys {
@@ -690,6 +691,105 @@ impl pallet_utility::Config for Runtime {
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
 
+// Start of proxy pallet configuration
+
+parameter_types! {
+	// One storage item; key size 32, value size 8; .
+	pub const ProxyDepositBase: Balance = KILT;
+	// Additional storage item size of 33 bytes.
+	pub const ProxyDepositFactor: Balance = KILT;
+	pub const MaxProxies: u16 = constants::proxy::MAX_PROXIES;
+	pub const AnnouncementDepositBase: Balance = KILT;
+	pub const AnnouncementDepositFactor: Balance = KILT;
+	pub const MaxPending: u16 = constants::proxy::MAX_PENDING;
+}
+
+/// The type used to represent the kinds of proxying allowed.
+#[derive(
+	Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, RuntimeDebug, MaxEncodedLen, scale_info::TypeInfo,
+)]
+pub enum ProxyType {
+	Any,
+	NonTransfer,
+	Governance,
+	ParachainStaking,
+	CancelProxy,
+}
+
+impl Default for ProxyType {
+	fn default() -> Self {
+		Self::Any
+	}
+}
+
+impl InstanceFilter<Call> for ProxyType {
+	fn filter(&self, c: &Call) -> bool {
+		match self {
+			ProxyType::Any => true,
+			ProxyType::NonTransfer => matches!(
+				c,
+				Call::System(..) |
+				Call::Scheduler(..) |
+				Call::Timestamp(..) |
+				Call::Indices(pallet_indices::Call::claim{..}) |
+				Call::Indices(pallet_indices::Call::free{..}) |
+				Call::Indices(pallet_indices::Call::freeze{..}) |
+				// Specifically omitting Indices `transfer`, `force_transfer`
+				// Specifically omitting the entire Balances pallet
+				Call::Authorship(..) |
+				Call::Session(..) |
+				Call::Democracy(..) |
+				Call::Council(..) |
+				Call::TechnicalCommittee(..) |
+				Call::TechnicalMembership(..) |
+				Call::Treasury(..) |
+				Call::Vesting(pallet_vesting::Call::vest{..}) |
+				Call::Vesting(pallet_vesting::Call::vest_other{..}) |
+				// Specifically omitting Vesting `vested_transfer`, and `force_vested_transfer`
+				Call::Utility(..) |
+				Call::ParachainStaking(..)
+			),
+			ProxyType::Governance => matches!(
+				c,
+				Call::Democracy(..)
+					| Call::Council(..) | Call::TechnicalCommittee(..)
+					| Call::Treasury(..) | Call::Utility(..)
+					| Call::TechnicalMembership(..)
+			),
+			ProxyType::ParachainStaking => {
+				matches!(c, Call::ParachainStaking(..) | Call::Session(..) | Call::Utility(..))
+			}
+			ProxyType::CancelProxy => {
+				matches!(c, Call::Proxy(pallet_proxy::Call::reject_announcement { .. }))
+			}
+		}
+	}
+	fn is_superset(&self, o: &Self) -> bool {
+		match (self, o) {
+			(x, y) if x == y => true,
+			(ProxyType::Any, _) => true,
+			(_, ProxyType::Any) => false,
+			(ProxyType::NonTransfer, _) => true,
+			_ => false,
+		}
+	}
+}
+
+impl pallet_proxy::Config for Runtime {
+	type Event = Event;
+	type Call = Call;
+	type Currency = Balances;
+	type ProxyType = ProxyType;
+	type ProxyDepositBase = ProxyDepositBase;
+	type ProxyDepositFactor = ProxyDepositFactor;
+	type MaxProxies = MaxProxies;
+	type WeightInfo = weights::pallet_proxy::WeightInfo<Runtime>;
+	type MaxPending = MaxPending;
+	type CallHasher = BlakeTwo256;
+	type AnnouncementDepositBase = AnnouncementDepositBase;
+	type AnnouncementDepositFactor = AnnouncementDepositFactor;
+}
+
 construct_runtime! {
 	pub enum Runtime where
 		Block = Block,
@@ -728,6 +828,9 @@ construct_runtime! {
 
 		// System scheduler.
 		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 42,
+
+		// Proxy pallet
+		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 43,
 
 		// KILT Pallets. Start indices 60 to leave room
 		KiltLaunch: kilt_launch = 60,
@@ -950,6 +1053,7 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, pallet_treasury, Treasury);
 			list_benchmark!(list, extra, pallet_utility, Utility);
 			list_benchmark!(list, extra, pallet_vesting, Vesting);
+			list_benchmark!(list, extra, pallet_proxy, Proxy);
 
 			// KILT
 			list_benchmark!(list, extra, attestation, Attestation);
@@ -1015,6 +1119,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_treasury, Treasury);
 			add_benchmark!(params, batches, pallet_utility, Utility);
 			add_benchmark!(params, batches, pallet_vesting, Vesting);
+			add_benchmark!(params, batches, pallet_proxy, Proxy);
 
 			// KILT
 			add_benchmark!(params, batches, attestation, Attestation);

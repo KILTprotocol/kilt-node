@@ -27,33 +27,8 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-#[cfg(feature = "runtime-benchmarks")]
-use frame_system::EnsureSigned;
-
-use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
-use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
-use runtime_common::{
-	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
-	fees::ToAuthor,
-	pallet_id, AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
-};
-use sp_api::impl_runtime_apis;
-use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
-use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
-use sp_runtime::{
-	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys, Verify},
-	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult,
-};
-use sp_std::prelude::*;
-#[cfg(feature = "std")]
-use sp_version::NativeVersion;
-use sp_version::RuntimeVersion;
-
-// pub use consensus::Call as ConsensusCall;
-pub use pallet_balances::Call as BalancesCall;
-
+use codec::{Decode, Encode, MaxEncodedLen};
+use frame_support::traits::InstanceFilter;
 pub use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{Currency, FindAuthor, Imbalance, KeyOwnerProofSystem, OnUnbalanced, Randomness},
@@ -63,15 +38,42 @@ pub use frame_support::{
 	},
 	ConsensusEngineId, StorageValue,
 };
-pub use pallet_timestamp::Call as TimestampCall;
-#[cfg(any(feature = "std", test))]
-pub use sp_runtime::BuildStorage;
+use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
+use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
+use sp_api::impl_runtime_apis;
+use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
+use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
+use sp_runtime::{
+	create_runtime_str, generic, impl_opaque_keys,
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys, Verify},
+	transaction_validity::{TransactionSource, TransactionValidity},
+	ApplyExtrinsicResult, RuntimeDebug,
+};
 pub use sp_runtime::{Perbill, Permill};
+use sp_std::prelude::*;
+use sp_version::RuntimeVersion;
+
+pub use pallet_timestamp::Call as TimestampCall;
 
 pub use attestation;
 pub use ctype;
 pub use delegation;
 pub use did;
+pub use pallet_balances::Call as BalancesCall;
+use runtime_common::{
+	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
+	fees::ToAuthor,
+	pallet_id, AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
+};
+
+#[cfg(feature = "std")]
+use sp_version::NativeVersion;
+
+#[cfg(feature = "runtime-benchmarks")]
+use frame_system::EnsureSigned;
+
+#[cfg(any(feature = "std", test))]
+pub use sp_runtime::BuildStorage;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem;
@@ -492,6 +494,94 @@ impl pallet_utility::Config for Runtime {
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
 
+// Start of proxy pallet configuration
+
+parameter_types! {
+	// One storage item; key size 32, value size 8; .
+	pub const ProxyDepositBase: Balance = KILT;
+	// Additional storage item size of 33 bytes.
+	pub const ProxyDepositFactor: Balance = KILT;
+	pub const MaxProxies: u16 = 32;
+	pub const AnnouncementDepositBase: Balance = KILT;
+	pub const AnnouncementDepositFactor: Balance = KILT;
+	pub const MaxPending: u16 = 32;
+}
+
+/// The type used to represent the kinds of proxying allowed.
+#[derive(
+	Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, RuntimeDebug, MaxEncodedLen, scale_info::TypeInfo,
+)]
+pub enum ProxyType {
+	Any,
+	NonTransfer,
+	CancelProxy,
+	Ctype,
+	Attestation,
+	Delegation,
+	Did,
+}
+
+impl Default for ProxyType {
+	fn default() -> Self {
+		Self::Any
+	}
+}
+
+impl InstanceFilter<Call> for ProxyType {
+	fn filter(&self, c: &Call) -> bool {
+		match self {
+			ProxyType::Any => true,
+			ProxyType::NonTransfer => matches!(
+				c,
+				Call::System(..) |
+				Call::Timestamp(..) |
+				Call::Indices(pallet_indices::Call::claim{..}) |
+				Call::Indices(pallet_indices::Call::free{..}) |
+				Call::Indices(pallet_indices::Call::freeze{..}) |
+				// Specifically omitting Indices `transfer`, `force_transfer`
+				// Specifically omitting the entire Balances pallet
+				Call::Authorship(..) |
+				Call::Session(..) |
+				Call::Vesting(pallet_vesting::Call::vest{..}) |
+				Call::Vesting(pallet_vesting::Call::vest_other{..}) |
+				// Specifically omitting Vesting `vested_transfer`, and `force_vested_transfer`
+				Call::Utility(..)
+			),
+			ProxyType::Ctype => matches!(c, Call::Ctype(..)),
+			ProxyType::Delegation => matches!(c, Call::Delegation(..)),
+			ProxyType::Attestation => matches!(c, Call::Attestation(..)),
+			ProxyType::Did => matches!(c, Call::Did(..)),
+			ProxyType::CancelProxy => {
+				matches!(c, Call::Proxy(pallet_proxy::Call::reject_announcement { .. }))
+			}
+		}
+	}
+	fn is_superset(&self, o: &Self) -> bool {
+		match (self, o) {
+			(x, y) if x == y => true,
+			(ProxyType::Any, _) => true,
+			(_, ProxyType::Any) => false,
+			(ProxyType::NonTransfer, _) => true,
+			_ => false,
+		}
+	}
+}
+
+impl pallet_proxy::Config for Runtime {
+	type Event = Event;
+	type Call = Call;
+	type Currency = Balances;
+	type ProxyType = ProxyType;
+	type ProxyDepositBase = ProxyDepositBase;
+	type ProxyDepositFactor = ProxyDepositFactor;
+	type MaxProxies = MaxProxies;
+	type WeightInfo = ();
+	type MaxPending = MaxPending;
+	type CallHasher = BlakeTwo256;
+	type AnnouncementDepositBase = AnnouncementDepositBase;
+	type AnnouncementDepositFactor = AnnouncementDepositFactor;
+}
+
 construct_runtime!(
 	pub enum Runtime where
 		Block = Block,
@@ -534,6 +624,8 @@ construct_runtime!(
 		KiltLaunch: kilt_launch = 34,
 		Utility: pallet_utility = 35,
 		// DELETED CrowdloanContributors: 36,
+
+		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 37,
 	}
 );
 

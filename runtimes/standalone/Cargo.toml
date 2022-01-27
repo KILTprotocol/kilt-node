@@ -43,6 +43,7 @@ pallet-authorship = {branch = "polkadot-v0.9.13", default-features = false, git 
 pallet-balances = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
 pallet-grandpa = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
 pallet-indices = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
+pallet-proxy = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
 pallet-randomness-collective-flip = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
 pallet-session = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
 pallet-sudo = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
@@ -51,6 +52,7 @@ pallet-transaction-payment = {branch = "polkadot-v0.9.13", default-features = fa
 pallet-transaction-payment-rpc-runtime-api = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
 pallet-utility = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
 pallet-vesting = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
+
 sp-api = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-arithmetic = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-block-builder = {branch = "polkadot-v0.9.13", default-features = false, git = "https://github.com/paritytech/substrate"}
@@ -90,6 +92,7 @@ runtime-benchmarks = [
   "pallet-indices/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
   "pallet-vesting/runtime-benchmarks",
+  "pallet-proxy/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
 ]
 std = [
@@ -113,6 +116,7 @@ std = [
   "pallet-did-lookup/std",
   "pallet-grandpa/std",
   "pallet-indices/std",
+  "pallet-proxy/std",
   "pallet-randomness-collective-flip/std",
   "pallet-session/std",
   "pallet-sudo/std",
@@ -152,6 +156,7 @@ try-runtime = [
   "pallet-balances/try-runtime",
   "pallet-grandpa/try-runtime",
   "pallet-indices/try-runtime",
+  "pallet-proxy/try-runtime",
   "pallet-randomness-collective-flip/try-runtime",
   "pallet-session/try-runtime",
   "pallet-sudo/try-runtime",
