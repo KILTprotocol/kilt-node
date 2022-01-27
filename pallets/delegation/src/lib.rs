@@ -273,7 +273,7 @@ pub mod pallet {
 		UnauthorizedRemoval,
 		/// The delegation creator is not allowed to create the delegation.
 		UnauthorizedDelegation,
-		/// The access was not granted because of an insufficient delegation.
+		/// The operation wasn't allowed because of insufficient rights.
 		AccessDenied,
 		/// Max number of revocations for delegation nodes has been reached for
 		/// the operation.
