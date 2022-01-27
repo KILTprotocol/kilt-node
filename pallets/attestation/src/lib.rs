@@ -269,7 +269,7 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::weight(
 			<T as pallet::Config>::WeightInfo::add()
-			+ authorization.as_ref().map(|ac| ac.weight()).unwrap_or(0)
+			.saturating_add(authorization.as_ref().map(|ac| ac.weight()).unwrap_or(0))
 		)]
 		pub fn add(
 			origin: OriginFor<T>,
@@ -340,7 +340,7 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::weight(
 			<T as pallet::Config>::WeightInfo::revoke()
-			+ authorization.as_ref().map(|ac| ac.weight()).unwrap_or(0)
+			.saturating_add(authorization.as_ref().map(|ac| ac.weight()).unwrap_or(0))
 		)]
 		pub fn revoke(
 			origin: OriginFor<T>,
@@ -396,7 +396,7 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::weight(
 			<T as pallet::Config>::WeightInfo::remove()
-			+ authorization.as_ref().map(|ac| ac.weight()).unwrap_or(0)
+			.saturating_add(authorization.as_ref().map(|ac| ac.weight()).unwrap_or(0))
 		)]
 		pub fn remove(
 			origin: OriginFor<T>,
