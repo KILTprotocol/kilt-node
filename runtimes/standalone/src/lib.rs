@@ -55,16 +55,16 @@ use sp_version::RuntimeVersion;
 
 pub use pallet_timestamp::Call as TimestampCall;
 
-use runtime_common::{
-	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
-	fees::ToAuthor,
-	pallet_id, AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
-};
 pub use attestation;
 pub use ctype;
 pub use delegation;
 pub use did;
 pub use pallet_balances::Call as BalancesCall;
+use runtime_common::{
+	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
+	fees::ToAuthor,
+	pallet_id, AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
+};
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
