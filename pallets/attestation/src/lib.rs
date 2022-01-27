@@ -327,10 +327,10 @@ pub mod pallet {
 			ensure!(!attestation.revoked, Error::<T>::AlreadyRevoked);
 
 			if attestation.attester != who {
-				let expected_auth = attestation.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
+				let attestation_auth_id = attestation.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
 				authorization
 					.ok_or(Error::<T>::Unauthorized)?
-					.can_revoke(&who, expected_auth)?;
+					.can_revoke(&who, attestation_auth_id)?;
 			}
 
 			// *** No Fail beyond this point ***
@@ -381,10 +381,10 @@ pub mod pallet {
 			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
 			if attestation.attester != who {
-				let expected_auth = attestation.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
+				let attestation_auth_id = attestation.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
 				authorization
 					.ok_or(Error::<T>::Unauthorized)?
-					.can_remove(&who, expected_auth)?;
+					.can_remove(&who, attestation_auth_id)?;
 			}
 
 			// *** No Fail beyond this point ***
