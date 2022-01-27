@@ -20,20 +20,32 @@ use frame_support::dispatch::Weight;
 use sp_runtime::DispatchError;
 
 /// Allow for more complex schemes on who can attest, revoke and remove.
-pub trait AttestationAccessControl<AttesterId, AuthorizationId> {
+pub trait AttestationAccessControl<AttesterId, AuthorizationId, Ctype, ClaimHash> {
 	/// Decides whether the account is allowed to attest with the given
 	/// information provided by the sender (&self).
-	fn can_attest(&self, who: &AttesterId) -> Result<Weight, DispatchError>;
+	fn can_attest(&self, who: &AttesterId, ctype: &Ctype, claim: &ClaimHash) -> Result<Weight, DispatchError>;
 
 	/// Decides whether the account is allowed to revoke the attestation with
 	/// the `authorization_id` and the access information provided by the sender
 	/// (&self).
-	fn can_revoke(&self, who: &AttesterId, authorization_id: &AuthorizationId) -> Result<Weight, DispatchError>;
+	fn can_revoke(
+		&self,
+		who: &AttesterId,
+		ctype: &Ctype,
+		claim: &ClaimHash,
+		authorization_id: &AuthorizationId,
+	) -> Result<Weight, DispatchError>;
 
 	/// Decides whether the account is allowed to remove the attestation with
 	/// the `authorization_id` and the access information provided by the sender
 	/// (&self).
-	fn can_remove(&self, who: &AttesterId, authorization_id: &AuthorizationId) -> Result<Weight, DispatchError>;
+	fn can_remove(
+		&self,
+		who: &AttesterId,
+		ctype: &Ctype,
+		claim: &ClaimHash,
+		authorization_id: &AuthorizationId,
+	) -> Result<Weight, DispatchError>;
 
 	/// The authorization ID that the sender provided. This will be used for new
 	/// attestations.
@@ -46,17 +58,30 @@ pub trait AttestationAccessControl<AttesterId, AuthorizationId> {
 	fn weight(&self) -> Weight;
 }
 
-impl<AttesterId, AuthorizationId> AttestationAccessControl<AttesterId, AuthorizationId> for ()
+impl<AttesterId, AuthorizationId, Ctype, ClaimHash>
+	AttestationAccessControl<AttesterId, AuthorizationId, Ctype, ClaimHash> for ()
 where
 	AuthorizationId: Default,
 {
-	fn can_attest(&self, _who: &AttesterId) -> Result<Weight, DispatchError> {
+	fn can_attest(&self, _who: &AttesterId, ctype: &Ctype, claim: &ClaimHash) -> Result<Weight, DispatchError> {
 		Err(DispatchError::Other("Unimplemented"))
 	}
-	fn can_revoke(&self, _who: &AttesterId, _authorization_id: &AuthorizationId) -> Result<Weight, DispatchError> {
+	fn can_revoke(
+		&self,
+		_who: &AttesterId,
+		ctype: &Ctype,
+		claim: &ClaimHash,
+		_authorization_id: &AuthorizationId,
+	) -> Result<Weight, DispatchError> {
 		Err(DispatchError::Other("Unimplemented"))
 	}
-	fn can_remove(&self, _who: &AttesterId, _authorization_id: &AuthorizationId) -> Result<Weight, DispatchError> {
+	fn can_remove(
+		&self,
+		_who: &AttesterId,
+		ctype: &Ctype,
+		claim: &ClaimHash,
+		_authorization_id: &AuthorizationId,
+	) -> Result<Weight, DispatchError> {
 		Err(DispatchError::Other("Unimplemented"))
 	}
 	fn authorization_id(&self) -> AuthorizationId {

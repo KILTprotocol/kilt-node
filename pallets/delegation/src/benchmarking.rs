@@ -382,39 +382,48 @@ benchmarks! {
 	can_attest {
 		let c in 1 .. T::MaxParentChecks::get();
 
+		let ctype = Default::default();
+		let claim = Default::default();
+
 		let sender: T::AccountId = account("sender", 0, SEED);
 		let (root_acc, _, _, leaf_id) = setup_delegations::<T>(c, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
 		let root_acc: T::DelegationEntityId = root_acc.into();
 
 		let ac = DelegationAc::<T>(leaf_id, c);
 
-	}: { ac.can_attest(&root_acc).expect("Should be allowed") }
+	}: { ac.can_attest(&root_acc, &ctype, &claim).expect("Should be allowed") }
 	verify {
 	}
 
 	can_revoke {
 		let c in 1 .. T::MaxParentChecks::get();
 
+		let ctype = Default::default();
+		let claim = Default::default();
+
 		let sender: T::AccountId = account("sender", 0, SEED);
 		let (root_acc, root_id, _, leaf_id) = setup_delegations::<T>(c, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
 		let root_acc: T::DelegationEntityId = root_acc.into();
 
 		let ac = DelegationAc::<T>(leaf_id, c);
 
-	}: { ac.can_revoke(&root_acc, &leaf_id).expect("Should be allowed") }
+	}: { ac.can_revoke(&root_acc, &ctype, &claim, &leaf_id).expect("Should be allowed") }
 	verify {
 	}
 
 	can_remove {
 		let c in 1 .. T::MaxParentChecks::get();
 
+		let ctype = Default::default();
+		let claim = Default::default();
+
 		let sender: T::AccountId = account("sender", 0, SEED);
 		let (root_acc, root_id, _, leaf_id) = setup_delegations::<T>(c, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
 		let root_acc: T::DelegationEntityId = root_acc.into();
 
 		let ac = DelegationAc::<T>(leaf_id, c);
 
-	}: { ac.can_remove(&root_acc, &leaf_id).expect("Should be allowed") }
+	}: { ac.can_remove(&root_acc, &ctype, &claim, &leaf_id).expect("Should be allowed") }
 	verify {
 	}
 }

@@ -78,11 +78,17 @@ where
 #[scale_info(skip_type_params(T))]
 pub struct MockAccessControl<T: Config>(pub T::AttesterId);
 
-impl<T> AttestationAccessControl<T::AttesterId, T::AuthorizationId> for MockAccessControl<T>
+impl<T> AttestationAccessControl<T::AttesterId, T::AuthorizationId, CtypeHashOf<T>, ClaimHashOf<T>>
+	for MockAccessControl<T>
 where
 	T: Config<AuthorizationId = <T as Config>::AttesterId>,
 {
-	fn can_attest(&self, who: &T::AttesterId) -> Result<Weight, DispatchError> {
+	fn can_attest(
+		&self,
+		who: &T::AttesterId,
+		ctype: &CtypeHashOf<T>,
+		claim: &ClaimHashOf<T>,
+	) -> Result<Weight, DispatchError> {
 		if who == &self.0 {
 			Ok(0)
 		} else {
@@ -90,7 +96,13 @@ where
 		}
 	}
 
-	fn can_revoke(&self, who: &T::AttesterId, authorization_id: &T::AuthorizationId) -> Result<Weight, DispatchError> {
+	fn can_revoke(
+		&self,
+		who: &T::AttesterId,
+		ctype: &CtypeHashOf<T>,
+		claim: &ClaimHashOf<T>,
+		authorization_id: &T::AuthorizationId,
+	) -> Result<Weight, DispatchError> {
 		if authorization_id == who {
 			Ok(0)
 		} else {
@@ -98,7 +110,13 @@ where
 		}
 	}
 
-	fn can_remove(&self, who: &T::AttesterId, authorization_id: &T::AuthorizationId) -> Result<Weight, DispatchError> {
+	fn can_remove(
+		&self,
+		who: &T::AttesterId,
+		ctype: &CtypeHashOf<T>,
+		claim: &ClaimHashOf<T>,
+		authorization_id: &T::AuthorizationId,
+	) -> Result<Weight, DispatchError> {
 		if authorization_id == who {
 			Ok(0)
 		} else {

@@ -21,6 +21,9 @@ use frame_support::{dispatch::Weight, ensure};
 use scale_info::TypeInfo;
 use sp_runtime::DispatchError;
 
+use attestation::ClaimHashOf;
+use ctype::CtypeHashOf;
+
 use crate::{default_weights::WeightInfo, Config, DelegationNodeIdOf, DelegatorIdOf, Error, Pallet};
 
 /// Controls the access to attestations.
@@ -42,15 +45,29 @@ use crate::{default_weights::WeightInfo, Config, DelegationNodeIdOf, DelegatorId
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct DelegationAc<T: Config>(pub(crate) DelegationNodeIdOf<T>, pub(crate) u32);
 
-impl<T: Config> attestation::AttestationAccessControl<DelegatorIdOf<T>, DelegationNodeIdOf<T>> for DelegationAc<T> {
-	fn can_attest(&self, who: &DelegatorIdOf<T>) -> Result<Weight, DispatchError> {
+impl<T: Config>
+	attestation::AttestationAccessControl<DelegatorIdOf<T>, DelegationNodeIdOf<T>, CtypeHashOf<T>, ClaimHashOf<T>>
+	for DelegationAc<T>
+{
+	fn can_attest(
+		&self,
+		who: &DelegatorIdOf<T>,
+		ctype: &CtypeHashOf<T>,
+		claim: &ClaimHashOf<T>,
+	) -> Result<Weight, DispatchError> {
 		match Pallet::<T>::is_delegating(who, &self.0, self.1)? {
 			(true, checks) => Ok(<T as Config>::WeightInfo::can_attest(checks)),
 			_ => Err(Error::<T>::AccessDenied.into()),
 		}
 	}
 
-	fn can_revoke(&self, who: &DelegatorIdOf<T>, auth_id: &DelegationNodeIdOf<T>) -> Result<Weight, DispatchError> {
+	fn can_revoke(
+		&self,
+		who: &DelegatorIdOf<T>,
+		ctype: &CtypeHashOf<T>,
+		claim: &ClaimHashOf<T>,
+		auth_id: &DelegationNodeIdOf<T>,
+	) -> Result<Weight, DispatchError> {
 		ensure!(auth_id == &self.0, Error::<T>::AccessDenied);
 
 		match Pallet::<T>::is_delegating(who, &self.0, self.1)? {
@@ -59,7 +76,13 @@ impl<T: Config> attestation::AttestationAccessControl<DelegatorIdOf<T>, Delegati
 		}
 	}
 
-	fn can_remove(&self, who: &DelegatorIdOf<T>, auth_id: &DelegationNodeIdOf<T>) -> Result<Weight, DispatchError> {
+	fn can_remove(
+		&self,
+		who: &DelegatorIdOf<T>,
+		ctype: &CtypeHashOf<T>,
+		claim: &ClaimHashOf<T>,
+		auth_id: &DelegationNodeIdOf<T>,
+	) -> Result<Weight, DispatchError> {
 		ensure!(auth_id == &self.0, Error::<T>::AccessDenied);
 
 		match Pallet::<T>::is_delegating(who, &self.0, self.1)? {
@@ -76,5 +99,49 @@ impl<T: Config> attestation::AttestationAccessControl<DelegatorIdOf<T>, Delegati
 		<T as Config>::WeightInfo::can_attest(self.1)
 			.max(<T as Config>::WeightInfo::can_revoke(self.1))
 			.max(<T as Config>::WeightInfo::can_remove(self.1))
+	}
+}
+
+#[cfg(test)]
+mod tests {
+
+	#[test]
+	fn test_can_attest() {
+		todo!()
+	}
+
+	#[test]
+	fn test_can_attest_missing_permission() {
+		todo!()
+	}
+
+	#[test]
+	fn test_can_attest_missing_node() {
+		todo!()
+	}
+
+	#[test]
+	fn test_can_attest_wrong_ctype() {
+		todo!()
+	}
+
+	#[test]
+	fn test_can_revoke_same_node() {
+		todo!()
+	}
+
+	#[test]
+	fn test_can_revoke_parent() {
+		todo!()
+	}
+
+	#[test]
+	fn test_can_revoke_same_node_revoked() {
+		todo!()
+	}
+
+	#[test]
+	fn test_can_revoke_parent_revoked() {
+		todo!()
 	}
 }

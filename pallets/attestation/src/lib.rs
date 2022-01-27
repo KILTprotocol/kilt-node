@@ -104,7 +104,7 @@ pub mod pallet {
 	use ctype::CtypeHashOf;
 	use kilt_support::{deposit::Deposit, traits::CallSources};
 	/// Type of a claim hash.
-	pub(crate) type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
+	pub type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
 
 	/// Type of an attester identifier.
 	pub(crate) type AttesterOf<T> = <T as Config>::AttesterId;
@@ -144,7 +144,8 @@ pub mod pallet {
 
 		type AuthorizationId: Parameter;
 
-		type AccessControl: Parameter + AttestationAccessControl<Self::AttesterId, Self::AuthorizationId>;
+		type AccessControl: Parameter
+			+ AttestationAccessControl<Self::AttesterId, Self::AuthorizationId, CtypeHashOf<Self>, ClaimHashOf<Self>>;
 	}
 
 	#[pallet::pallet]
@@ -264,7 +265,10 @@ pub mod pallet {
 			);
 
 			// Check for validity of the delegation node if specified.
-			authorization.as_ref().map(|ac| ac.can_attest(&who)).transpose()?;
+			authorization
+				.as_ref()
+				.map(|ac| ac.can_attest(&who, &ctype_hash, &claim_hash))
+				.transpose()?;
 			let authorization_id = authorization.as_ref().map(|ac| ac.authorization_id());
 
 			let deposit = Pallet::<T>::reserve_deposit(payer, deposit_amount)?;
@@ -328,9 +332,12 @@ pub mod pallet {
 
 			if attestation.attester != who {
 				let attestation_auth_id = attestation.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
-				authorization
-					.ok_or(Error::<T>::Unauthorized)?
-					.can_revoke(&who, attestation_auth_id)?;
+				authorization.ok_or(Error::<T>::Unauthorized)?.can_revoke(
+					&who,
+					&attestation.ctype_hash,
+					&claim_hash,
+					attestation_auth_id,
+				)?;
 			}
 
 			// *** No Fail beyond this point ***
@@ -382,9 +389,12 @@ pub mod pallet {
 
 			if attestation.attester != who {
 				let attestation_auth_id = attestation.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
-				authorization
-					.ok_or(Error::<T>::Unauthorized)?
-					.can_remove(&who, attestation_auth_id)?;
+				authorization.ok_or(Error::<T>::Unauthorized)?.can_remove(
+					&who,
+					&attestation.ctype_hash,
+					&claim_hash,
+					attestation_auth_id,
+				)?;
 			}
 
 			// *** No Fail beyond this point ***

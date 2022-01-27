@@ -32,36 +32,47 @@ pub enum PalletAuthorize<DelegationAc> {
 	Delegation(DelegationAc),
 }
 
-impl<AttesterId, DelegationAc, DelegationId> AttestationAccessControl<AttesterId, AuthorizationId<DelegationId>>
-	for PalletAuthorize<DelegationAc>
+impl<AttesterId, DelegationAc, DelegationId, Ctype, ClaimHash>
+	AttestationAccessControl<AttesterId, AuthorizationId<DelegationId>, Ctype, ClaimHash> for PalletAuthorize<DelegationAc>
 where
-	DelegationAc: AttestationAccessControl<AttesterId, DelegationId>,
+	DelegationAc: AttestationAccessControl<AttesterId, DelegationId, Ctype, ClaimHash>,
 {
-	fn can_attest(&self, who: &AttesterId) -> Result<frame_support::dispatch::Weight, DispatchError> {
+	fn can_attest(
+		&self,
+		who: &AttesterId,
+		ctype: &Ctype,
+		claim: &ClaimHash,
+	) -> Result<frame_support::dispatch::Weight, DispatchError> {
 		match self {
-			PalletAuthorize::Delegation(ac) => ac.can_attest(who),
+			PalletAuthorize::Delegation(ac) => ac.can_attest(who, ctype, claim),
 		}
 	}
 
 	fn can_revoke(
 		&self,
 		who: &AttesterId,
+		ctype: &Ctype,
+		claim: &ClaimHash,
 		auth_id: &AuthorizationId<DelegationId>,
 	) -> Result<frame_support::dispatch::Weight, DispatchError> {
 		match (self, auth_id) {
-			(PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) => ac.can_revoke(who, auth_id),
-			// _ => Err(DispatchError::Other("unauthorized")),
+			(PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) => {
+				ac.can_revoke(who, ctype, claim, auth_id)
+			} // _ => Err(DispatchError::Other("unauthorized")),
 		}
 	}
 
 	fn can_remove(
 		&self,
 		who: &AttesterId,
+		ctype: &Ctype,
+		claim: &ClaimHash,
 		auth_id: &AuthorizationId<DelegationId>,
 	) -> Result<frame_support::dispatch::Weight, DispatchError> {
 		match (self, auth_id) {
-			(PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) => ac.can_remove(who, auth_id),
-			// _ => Err(DispatchError::Other("unauthorized")),
+			(PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) => {
+				ac.can_remove(who, ctype, claim, auth_id)
+			} // _ => Err(DispatchError::Other("unauthorized")),
 		}
 	}
 
