@@ -82,9 +82,19 @@ where
 		}
 	}
 
-	fn weight(&self) -> Weight {
+	fn can_attest_weight(&self) -> Weight {
 		match self {
-			PalletAuthorize::Delegation(ac) => ac.weight(),
+			PalletAuthorize::Delegation(ac) => ac.can_attest_weight(),
+		}
+	}
+	fn can_revoke_weight(&self) -> Weight {
+		match self {
+			PalletAuthorize::Delegation(ac) => ac.can_revoke_weight(),
+		}
+	}
+	fn can_remove_weight(&self) -> Weight {
+		match self {
+			PalletAuthorize::Delegation(ac) => ac.can_remove_weight(),
 		}
 	}
 }

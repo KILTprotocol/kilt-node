@@ -54,8 +54,20 @@ pub trait AttestationAccessControl<AttesterId, AuthorizationId, Ctype, ClaimHash
 	/// since it's not covered by the weight returned by `self.weight()`.
 	fn authorization_id(&self) -> AuthorizationId;
 
-	/// The maximum weight of `can_attest`, `can_revoke` and `can_remove`.
-	fn weight(&self) -> Weight;
+	/// The worst-case weight of `can_attest`.
+	fn can_attest_weight(&self) -> Weight {
+		0
+	}
+
+	/// The worst-case weight of `can_revoke`.
+	fn can_revoke_weight(&self) -> Weight {
+		0
+	}
+
+	/// The worst-case weight of `can_remove`.
+	fn can_remove_weight(&self) -> Weight {
+		0
+	}
 }
 
 impl<AttesterId, AuthorizationId, Ctype, ClaimHash>
@@ -63,14 +75,14 @@ impl<AttesterId, AuthorizationId, Ctype, ClaimHash>
 where
 	AuthorizationId: Default,
 {
-	fn can_attest(&self, _who: &AttesterId, ctype: &Ctype, claim: &ClaimHash) -> Result<Weight, DispatchError> {
+	fn can_attest(&self, _who: &AttesterId, _ctype: &Ctype, _claim: &ClaimHash) -> Result<Weight, DispatchError> {
 		Err(DispatchError::Other("Unimplemented"))
 	}
 	fn can_revoke(
 		&self,
 		_who: &AttesterId,
-		ctype: &Ctype,
-		claim: &ClaimHash,
+		_ctype: &Ctype,
+		_claim: &ClaimHash,
 		_authorization_id: &AuthorizationId,
 	) -> Result<Weight, DispatchError> {
 		Err(DispatchError::Other("Unimplemented"))
@@ -78,8 +90,8 @@ where
 	fn can_remove(
 		&self,
 		_who: &AttesterId,
-		ctype: &Ctype,
-		claim: &ClaimHash,
+		_ctype: &Ctype,
+		_claim: &ClaimHash,
 		_authorization_id: &AuthorizationId,
 	) -> Result<Weight, DispatchError> {
 		Err(DispatchError::Other("Unimplemented"))
@@ -87,7 +99,13 @@ where
 	fn authorization_id(&self) -> AuthorizationId {
 		Default::default()
 	}
-	fn weight(&self) -> Weight {
+	fn can_attest_weight(&self) -> Weight {
+		0
+	}
+	fn can_revoke_weight(&self) -> Weight {
+		0
+	}
+	fn can_remove_weight(&self) -> Weight {
 		0
 	}
 }

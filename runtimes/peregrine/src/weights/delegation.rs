@@ -114,14 +114,11 @@ impl<T: frame_system::Config> delegation::WeightInfo for WeightInfo<T> {
 	}
 
 	// TODO: run benchmarks
-	fn can_attest(r: u32, ) -> Weight {
+	fn can_attest( ) -> Weight {
 		(61_171_000_u64)
 			// Standard Error: 99_000
-			.saturating_add((37_949_000_u64).saturating_mul(r as Weight))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(r as Weight)))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
-			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(r as Weight)))
 	}
 	fn can_revoke(r: u32, ) -> Weight {
 		(61_171_000_u64)

@@ -86,8 +86,8 @@ where
 	fn can_attest(
 		&self,
 		who: &T::AttesterId,
-		ctype: &CtypeHashOf<T>,
-		claim: &ClaimHashOf<T>,
+		_ctype: &CtypeHashOf<T>,
+		_claim: &ClaimHashOf<T>,
 	) -> Result<Weight, DispatchError> {
 		if who == &self.0 {
 			Ok(0)
@@ -99,8 +99,8 @@ where
 	fn can_revoke(
 		&self,
 		who: &T::AttesterId,
-		ctype: &CtypeHashOf<T>,
-		claim: &ClaimHashOf<T>,
+		_ctype: &CtypeHashOf<T>,
+		_claim: &ClaimHashOf<T>,
 		authorization_id: &T::AuthorizationId,
 	) -> Result<Weight, DispatchError> {
 		if authorization_id == who {
@@ -113,8 +113,8 @@ where
 	fn can_remove(
 		&self,
 		who: &T::AttesterId,
-		ctype: &CtypeHashOf<T>,
-		claim: &ClaimHashOf<T>,
+		_ctype: &CtypeHashOf<T>,
+		_claim: &ClaimHashOf<T>,
 		authorization_id: &T::AuthorizationId,
 	) -> Result<Weight, DispatchError> {
 		if authorization_id == who {
@@ -128,7 +128,13 @@ where
 		self.0.clone()
 	}
 
-	fn weight(&self) -> Weight {
+	fn can_attest_weight(&self) -> Weight {
+		0
+	}
+	fn can_revoke_weight(&self) -> Weight {
+		0
+	}
+	fn can_remove_weight(&self) -> Weight {
 		0
 	}
 }

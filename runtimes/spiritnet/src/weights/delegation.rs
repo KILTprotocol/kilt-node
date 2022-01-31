@@ -110,12 +110,10 @@ impl<T: frame_system::Config> delegation::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(r as Weight)))
 	}
 	// Storage: Delegation DelegationNodes (r:2 w:0)
-	fn can_attest(c: u32, ) -> Weight {
+	fn can_attest( ) -> Weight {
 		(8_421_000 as Weight)
 			// Standard Error: 18_000
-			.saturating_add((5_462_000 as Weight).saturating_mul(c as Weight))
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
 	}
 	// Storage: Delegation DelegationNodes (r:2 w:0)
 	fn can_revoke(c: u32, ) -> Weight {

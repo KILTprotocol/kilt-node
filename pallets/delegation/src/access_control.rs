@@ -24,26 +24,29 @@ use sp_runtime::DispatchError;
 use attestation::ClaimHashOf;
 use ctype::CtypeHashOf;
 
-use crate::{default_weights::WeightInfo, Config, DelegationNodeIdOf, DelegatorIdOf, Error, Pallet};
+use crate::{
+	default_weights::WeightInfo, Config, DelegationHierarchies, DelegationNodeIdOf, DelegationNodes, DelegatorIdOf,
+	Error, Pallet, Permissions,
+};
 
 /// Controls the access to attestations.
 ///
-/// Can attest if all conditions are fulfilled
+/// Can attest if
 ///     * delegation node of sender is not revoked
 ///     * delegation node of sender has ATTEST permission
 ///     * the CType of the delegation root matches the CType of the attestation
 ///
-/// Can revoke if all conditions are fulfilled
-///    * sender delegation node is not revoked
+/// Can revoke attestations if
+///    * delegation node of sender is not revoked
 ///    * sender delegation node is equal to OR parent of the delegation node
 ///      stored in the attestation
 ///
-/// Can revoke if all conditions are fulfilled
-///    * sender delegation node is not revoked
-///    * sender delegation node is equal to OR parent of the delegation node
-///      stored in the attestation
+/// Can remove attestations if <the same as revoke>
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
-pub struct DelegationAc<T: Config>(pub(crate) DelegationNodeIdOf<T>, pub(crate) u32);
+pub struct DelegationAc<T: Config> {
+	pub(crate) sender_node_id: DelegationNodeIdOf<T>,
+	pub(crate) max_checks: u32,
+}
 
 impl<T: Config>
 	attestation::AttestationAccessControl<DelegatorIdOf<T>, DelegationNodeIdOf<T>, CtypeHashOf<T>, ClaimHashOf<T>>
@@ -53,24 +56,38 @@ impl<T: Config>
 		&self,
 		who: &DelegatorIdOf<T>,
 		ctype: &CtypeHashOf<T>,
-		claim: &ClaimHashOf<T>,
+		_claim: &ClaimHashOf<T>,
 	) -> Result<Weight, DispatchError> {
-		match Pallet::<T>::is_delegating(who, &self.0, self.1)? {
-			(true, checks) => Ok(<T as Config>::WeightInfo::can_attest(checks)),
-			_ => Err(Error::<T>::AccessDenied.into()),
-		}
+		let delegation_node = DelegationNodes::<T>::get(self.sender_node_id).ok_or(Error::<T>::DelegationNotFound)?;
+		let root =
+			DelegationHierarchies::<T>::get(delegation_node.hierarchy_root_id).ok_or(Error::<T>::DelegationNotFound)?;
+		ensure!(
+			// has permission
+			((delegation_node.details.permissions & Permissions::ATTEST) == Permissions::ATTEST)
+				// not revoked
+				&& !delegation_node.details.revoked
+				// is owner of delegation
+				&& &delegation_node.details.owner == who
+				// delegation matches the ctype
+				&& &root.ctype_hash == ctype,
+			Error::<T>::AccessDenied
+		);
+
+		Ok(<T as Config>::WeightInfo::can_attest())
 	}
 
 	fn can_revoke(
 		&self,
 		who: &DelegatorIdOf<T>,
-		ctype: &CtypeHashOf<T>,
-		claim: &ClaimHashOf<T>,
-		auth_id: &DelegationNodeIdOf<T>,
+		_ctype: &CtypeHashOf<T>,
+		_claim: &ClaimHashOf<T>,
+		attester_node_id: &DelegationNodeIdOf<T>,
 	) -> Result<Weight, DispatchError> {
-		ensure!(auth_id == &self.0, Error::<T>::AccessDenied);
+		// `attester_node` was supplied by the attestation pallet and is stored in the
+		// attestation. `self.sender_node` was supplied by the user. `attester_node` and
+		// `self.sender_node` can be different!
 
-		match Pallet::<T>::is_delegating(who, &self.0, self.1)? {
+		match Pallet::<T>::is_delegating(who, &attester_node_id, self.max_checks)? {
 			(true, checks) => Ok(<T as Config>::WeightInfo::can_revoke(checks)),
 			_ => Err(Error::<T>::AccessDenied.into()),
 		}
@@ -83,22 +100,23 @@ impl<T: Config>
 		claim: &ClaimHashOf<T>,
 		auth_id: &DelegationNodeIdOf<T>,
 	) -> Result<Weight, DispatchError> {
-		ensure!(auth_id == &self.0, Error::<T>::AccessDenied);
-
-		match Pallet::<T>::is_delegating(who, &self.0, self.1)? {
-			(true, checks) => Ok(<T as Config>::WeightInfo::can_remove(checks)),
-			_ => Err(Error::<T>::AccessDenied.into()),
-		}
+		self.can_revoke(who, ctype, claim, auth_id)
 	}
 
 	fn authorization_id(&self) -> DelegationNodeIdOf<T> {
-		self.0
+		self.sender_node_id
 	}
 
-	fn weight(&self) -> Weight {
-		<T as Config>::WeightInfo::can_attest(self.1)
-			.max(<T as Config>::WeightInfo::can_revoke(self.1))
-			.max(<T as Config>::WeightInfo::can_remove(self.1))
+	fn can_attest_weight(&self) -> Weight {
+		<T as Config>::WeightInfo::can_attest()
+	}
+
+	fn can_revoke_weight(&self) -> Weight {
+		<T as Config>::WeightInfo::can_revoke(self.max_checks)
+	}
+
+	fn can_remove_weight(&self) -> Weight {
+		<T as Config>::WeightInfo::can_remove(self.max_checks)
 	}
 }
 

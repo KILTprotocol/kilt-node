@@ -380,7 +380,7 @@ benchmarks! {
 	}
 
 	can_attest {
-		let c in 1 .. T::MaxParentChecks::get();
+		let c = T::MaxParentChecks::get();
 
 		let ctype = Default::default();
 		let claim = Default::default();
@@ -389,7 +389,10 @@ benchmarks! {
 		let (root_acc, _, _, leaf_id) = setup_delegations::<T>(c, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
 		let root_acc: T::DelegationEntityId = root_acc.into();
 
-		let ac = DelegationAc::<T>(leaf_id, c);
+		let ac = DelegationAc::<T>{
+			sender_node_id: leaf_id,
+			max_checks: c
+		};
 
 	}: { ac.can_attest(&root_acc, &ctype, &claim).expect("Should be allowed") }
 	verify {
@@ -405,7 +408,10 @@ benchmarks! {
 		let (root_acc, root_id, _, leaf_id) = setup_delegations::<T>(c, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
 		let root_acc: T::DelegationEntityId = root_acc.into();
 
-		let ac = DelegationAc::<T>(leaf_id, c);
+		let ac = DelegationAc::<T>{
+			sender_node_id: leaf_id,
+			max_checks: c
+		};
 
 	}: { ac.can_revoke(&root_acc, &ctype, &claim, &leaf_id).expect("Should be allowed") }
 	verify {
@@ -421,7 +427,10 @@ benchmarks! {
 		let (root_acc, root_id, _, leaf_id) = setup_delegations::<T>(c, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
 		let root_acc: T::DelegationEntityId = root_acc.into();
 
-		let ac = DelegationAc::<T>(leaf_id, c);
+		let ac = DelegationAc::<T>{
+			sender_node_id: leaf_id,
+			max_checks: c
+		};
 
 	}: { ac.can_remove(&root_acc, &ctype, &claim, &leaf_id).expect("Should be allowed") }
 	verify {

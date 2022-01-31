@@ -52,7 +52,7 @@ pub trait WeightInfo {
 	fn revoke_delegation_leaf(r: u32, c: u32, ) -> Weight;
 	fn remove_delegation(r: u32, ) -> Weight;
 	fn reclaim_deposit(r: u32, ) -> Weight;
-	fn can_attest(c: u32, ) -> Weight;
+	fn can_attest() -> Weight;
 	fn can_revoke(c: u32, ) -> Weight;
 	fn can_remove(c: u32, ) -> Weight;
 }
@@ -125,12 +125,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(r as Weight)))
 	}
 	// Storage: Delegation DelegationNodes (r:2 w:0)
-	fn can_attest(c: u32, ) -> Weight {
+	fn can_attest() -> Weight {
 		(9_002_000 as Weight)
-			// Standard Error: 26_000
-			.saturating_add((5_910_000 as Weight).saturating_mul(c as Weight))
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
+			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 	}
 	// Storage: Delegation DelegationNodes (r:2 w:0)
 	fn can_revoke(c: u32, ) -> Weight {
@@ -217,12 +214,10 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().writes((1 as Weight).saturating_mul(r as Weight)))
 	}
 	// Storage: Delegation DelegationNodes (r:2 w:0)
-	fn can_attest(c: u32, ) -> Weight {
+	fn can_attest( ) -> Weight {
 		(9_002_000 as Weight)
 			// Standard Error: 26_000
-			.saturating_add((5_910_000 as Weight).saturating_mul(c as Weight))
 			.saturating_add(RocksDbWeight::get().reads(1 as Weight))
-			.saturating_add(RocksDbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
 	}
 	// Storage: Delegation DelegationNodes (r:2 w:0)
 	fn can_revoke(c: u32, ) -> Weight {
