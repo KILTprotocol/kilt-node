@@ -286,6 +286,10 @@ pub(crate) mod runtime {
 	pub const CLAIM_HASH_SEED_01: u64 = 1u64;
 	pub const CLAIM_HASH_SEED_02: u64 = 2u64;
 
+	pub fn claim_hash_from_seed(seed: u64) -> Hash {
+		Hash::from_low_u64_be(seed)
+	}
+
 	pub fn ed25519_did_from_seed(seed: &[u8; 32]) -> SubjectId {
 		MultiSigner::from(ed25519::Pair::from_seed(seed).public())
 			.into_account()
@@ -296,10 +300,6 @@ pub(crate) mod runtime {
 		MultiSigner::from(sr25519::Pair::from_seed(seed).public())
 			.into_account()
 			.into()
-	}
-
-	pub fn claim_hash_from_seed(seed: u64) -> Hash {
-		Hash::from_low_u64_be(seed)
 	}
 
 	#[derive(Clone, Default)]

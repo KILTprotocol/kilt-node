@@ -122,25 +122,284 @@ impl<T: Config>
 
 #[cfg(test)]
 mod tests {
+	use frame_support::{assert_noop, assert_ok};
+
+	use attestation::AttestationAccessControl;
+	use ctype::mock::get_ctype_hash;
+	use kilt_support::{deposit::Deposit, mock::mock_origin::DoubleOrigin};
+
+	use super::*;
+	use crate::{mock::*, DelegationDetails, DelegationNode};
 
 	#[test]
 	fn test_can_attest() {
-		todo!()
+		let root_owner: DelegatorIdOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+		let delegate = sr25519_did_from_seed(&BOB_SEED);
+
+		let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+		let hierarchy_details = generate_base_delegation_hierarchy_details();
+		let ctype_hash = hierarchy_details.ctype_hash;
+		let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+		let parent_node = DelegationNode {
+			details: DelegationDetails {
+				owner: delegate.clone(),
+				permissions: Permissions::DELEGATE | Permissions::ATTEST,
+				revoked: false,
+			},
+			children: Default::default(),
+			hierarchy_root_id,
+			parent: Some(hierarchy_root_id),
+			deposit: Deposit {
+				owner: ACCOUNT_00,
+				amount: <Test as Config>::Deposit::get(),
+			},
+		};
+		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
+		let authorization_id = Some(DelegationAc {
+			sender_node_id: parent_id,
+			max_checks: 1,
+		});
+
+		ExtBuilder::default()
+			.with_ctypes(vec![(ctype_hash, root_owner.clone())])
+			.with_delegation_hierarchies(vec![(
+				hierarchy_root_id,
+				hierarchy_details,
+				root_owner.clone(),
+				ACCOUNT_00,
+			)])
+			.with_delegations(vec![(parent_id, parent_node)])
+			.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
+			.build()
+			.execute_with(|| {
+				assert_ok!(Attestation::add(
+					DoubleOrigin(ACCOUNT_00, delegate.clone()).into(),
+					claim_hash,
+					ctype_hash,
+					authorization_id.clone()
+				));
+				let stored_attestation =
+					Attestation::attestations(&claim_hash).expect("Attestation should be present on chain.");
+
+				assert_eq!(stored_attestation.ctype_hash, ctype_hash);
+				assert_eq!(stored_attestation.attester, delegate);
+				assert_eq!(
+					stored_attestation.authorization_id,
+					authorization_id.map(|ac| ac.authorization_id())
+				);
+				assert!(!stored_attestation.revoked);
+			});
 	}
 
 	#[test]
 	fn test_can_attest_missing_permission() {
-		todo!()
+		let root_owner: DelegatorIdOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+		let delegate = sr25519_did_from_seed(&BOB_SEED);
+
+		let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+		let hierarchy_details = generate_base_delegation_hierarchy_details();
+		let ctype_hash = hierarchy_details.ctype_hash;
+		let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+		let parent_node = DelegationNode {
+			details: DelegationDetails {
+				owner: delegate.clone(),
+				permissions: Permissions::DELEGATE,
+				revoked: false,
+			},
+			children: Default::default(),
+			hierarchy_root_id,
+			parent: Some(hierarchy_root_id),
+			deposit: Deposit {
+				owner: ACCOUNT_00,
+				amount: <Test as Config>::Deposit::get(),
+			},
+		};
+		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
+		let authorization_id = Some(DelegationAc {
+			sender_node_id: parent_id,
+			max_checks: 1,
+		});
+
+		ExtBuilder::default()
+			.with_ctypes(vec![(ctype_hash, root_owner.clone())])
+			.with_delegation_hierarchies(vec![(
+				hierarchy_root_id,
+				hierarchy_details,
+				root_owner.clone(),
+				ACCOUNT_00,
+			)])
+			.with_delegations(vec![(parent_id, parent_node)])
+			.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
+			.build()
+			.execute_with(|| {
+				assert_noop!(
+					Attestation::add(
+						DoubleOrigin(ACCOUNT_00, delegate.clone()).into(),
+						claim_hash,
+						ctype_hash,
+						authorization_id.clone()
+					),
+					Error::<Test>::AccessDenied
+				);
+			});
+	}
+
+	#[test]
+	fn test_can_attest_revoked() {
+		let root_owner: DelegatorIdOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+		let delegate = sr25519_did_from_seed(&BOB_SEED);
+
+		let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+		let hierarchy_details = generate_base_delegation_hierarchy_details();
+		let ctype_hash = hierarchy_details.ctype_hash;
+		let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+		let parent_node = DelegationNode {
+			details: DelegationDetails {
+				owner: delegate.clone(),
+				permissions: Permissions::DELEGATE | Permissions::ATTEST,
+				revoked: true,
+			},
+			children: Default::default(),
+			hierarchy_root_id,
+			parent: Some(hierarchy_root_id),
+			deposit: Deposit {
+				owner: ACCOUNT_00,
+				amount: <Test as Config>::Deposit::get(),
+			},
+		};
+		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
+		let authorization_id = Some(DelegationAc {
+			sender_node_id: parent_id,
+			max_checks: 1,
+		});
+
+		ExtBuilder::default()
+			.with_ctypes(vec![(ctype_hash, root_owner.clone())])
+			.with_delegation_hierarchies(vec![(
+				hierarchy_root_id,
+				hierarchy_details,
+				root_owner.clone(),
+				ACCOUNT_00,
+			)])
+			.with_delegations(vec![(parent_id, parent_node)])
+			.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
+			.build()
+			.execute_with(|| {
+				assert_noop!(
+					Attestation::add(
+						DoubleOrigin(ACCOUNT_00, delegate.clone()).into(),
+						claim_hash,
+						ctype_hash,
+						authorization_id.clone()
+					),
+					Error::<Test>::AccessDenied
+				);
+			});
 	}
 
 	#[test]
 	fn test_can_attest_missing_node() {
-		todo!()
+		let root_owner: DelegatorIdOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+		let delegate = sr25519_did_from_seed(&BOB_SEED);
+
+		let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+		let hierarchy_details = generate_base_delegation_hierarchy_details();
+		let ctype_hash = hierarchy_details.ctype_hash;
+		let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+		let parent_node = DelegationNode::<Test> {
+			details: DelegationDetails {
+				owner: delegate.clone(),
+				permissions: Permissions::DELEGATE | Permissions::ATTEST,
+				revoked: false,
+			},
+			children: Default::default(),
+			hierarchy_root_id,
+			parent: Some(hierarchy_root_id),
+			deposit: Deposit {
+				owner: ACCOUNT_00,
+				amount: <Test as Config>::Deposit::get(),
+			},
+		};
+		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
+		let authorization_id = Some(DelegationAc {
+			sender_node_id: parent_id,
+			max_checks: 1,
+		});
+
+		ExtBuilder::default()
+			.with_ctypes(vec![(ctype_hash, root_owner.clone())])
+			.with_delegation_hierarchies(vec![(
+				hierarchy_root_id,
+				hierarchy_details,
+				root_owner.clone(),
+				ACCOUNT_00,
+			)])
+			.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
+			.build()
+			.execute_with(|| {
+				assert_noop!(
+					Attestation::add(
+						DoubleOrigin(ACCOUNT_00, delegate.clone()).into(),
+						claim_hash,
+						ctype_hash,
+						authorization_id.clone()
+					),
+					Error::<Test>::DelegationNotFound
+				);
+			});
 	}
 
 	#[test]
 	fn test_can_attest_wrong_ctype() {
-		todo!()
+		let root_owner: DelegatorIdOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+		let delegate = sr25519_did_from_seed(&BOB_SEED);
+
+		let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+		let hierarchy_details = generate_base_delegation_hierarchy_details();
+		let ctype_hash = get_ctype_hash::<Test>(false);
+		let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+		let parent_node = DelegationNode {
+			details: DelegationDetails {
+				owner: delegate.clone(),
+				permissions: Permissions::DELEGATE | Permissions::ATTEST,
+				revoked: false,
+			},
+			children: Default::default(),
+			hierarchy_root_id,
+			parent: Some(hierarchy_root_id),
+			deposit: Deposit {
+				owner: ACCOUNT_00,
+				amount: <Test as Config>::Deposit::get(),
+			},
+		};
+		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
+		let authorization_id = Some(DelegationAc {
+			sender_node_id: parent_id,
+			max_checks: 1,
+		});
+
+		ExtBuilder::default()
+			.with_ctypes(vec![(ctype_hash, root_owner.clone())])
+			.with_delegation_hierarchies(vec![(
+				hierarchy_root_id,
+				hierarchy_details,
+				root_owner.clone(),
+				ACCOUNT_00,
+			)])
+			.with_delegations(vec![(parent_id, parent_node)])
+			.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
+			.build()
+			.execute_with(|| {
+				assert_noop!(
+					Attestation::add(
+						DoubleOrigin(ACCOUNT_00, delegate.clone()).into(),
+						claim_hash,
+						ctype_hash,
+						authorization_id.clone()
+					),
+					Error::<Test>::AccessDenied
+				);
+			});
 	}
 
 	#[test]

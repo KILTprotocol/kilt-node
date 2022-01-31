@@ -30,6 +30,9 @@ use crate::{
 	DelegatorIdOf, Permissions,
 };
 
+#[cfg(test)]
+pub use self::runtime::*;
+
 const DEFAULT_HIERARCHY_ID_SEED: u64 = 1u64;
 const ALTERNATIVE_HIERARCHY_ID_SEED: u64 = 2u64;
 
@@ -166,7 +169,7 @@ where
 
 #[cfg(test)]
 pub mod runtime {
-	use crate::{migrations::DelegationStorageVersion, BalanceOf, DelegateSignatureTypeOf, DelegationNodeIdOf};
+	use crate::{migrations::DelegationStorageVersion, BalanceOf, DelegateSignatureTypeOf, DelegationNodeIdOf, DelegationAc};
 
 	use super::*;
 
@@ -198,6 +201,7 @@ pub mod runtime {
 	pub const UNIT: Balance = 10u128.pow(15);
 	pub const MILLI_UNIT: Balance = 10u128.pow(12);
 	pub const DELEGATION_DEPOSIT: Balance = 10 * MILLI_UNIT;
+	pub const ATTESTATION_DEPOSIT: Balance = 10 * MILLI_UNIT;
 
 	frame_support::construct_runtime!(
 		pub enum Test where
@@ -206,10 +210,12 @@ pub mod runtime {
 			UncheckedExtrinsic = UncheckedExtrinsic,
 		{
 			System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-			Ctype: ctype::{Pallet, Call, Storage, Event<T>},
-			Delegation: delegation::{Pallet, Call, Storage, Event<T>},
 			Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-			MockOrigin: mock_origin::{Pallet, Origin<T>},
+
+			Attestation: attestation,
+			Ctype: ctype,
+			Delegation: delegation,
+			MockOrigin: mock_origin,
 		}
 	);
 
@@ -286,6 +292,25 @@ pub mod runtime {
 	}
 
 	parameter_types! {
+		pub const MaxDelegatedAttestations: u32 = 1000;
+		pub const Deposit: Balance = ATTESTATION_DEPOSIT;
+	}
+
+	impl attestation::Config for Test {
+		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, DelegatorIdOf<Self>>;
+		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, DelegatorIdOf<Self>>;
+		type Event = ();
+		type WeightInfo = ();
+
+		type Currency = Balances;
+		type Deposit = Deposit;
+		type MaxDelegatedAttestations = MaxDelegatedAttestations;
+		type AttesterId = SubjectId;
+		type AuthorizationId = DelegationNodeIdOf<Self>;
+		type AccessControl = DelegationAc<Self>;
+	}
+
+	parameter_types! {
 		pub const MaxSignatureByteLength: u16 = 64;
 		pub const MaxParentChecks: u32 = 5;
 		pub const MaxRevocations: u32 = 5;
@@ -321,6 +346,13 @@ pub mod runtime {
 	pub(crate) const BOB_SEED: [u8; 32] = [1u8; 32];
 	pub(crate) const CHARLIE_SEED: [u8; 32] = [2u8; 32];
 
+	pub const CLAIM_HASH_SEED_01: u64 = 1u64;
+	pub const CLAIM_HASH_SEED_02: u64 = 2u64;
+
+	pub fn claim_hash_from_seed(seed: u64) -> Hash {
+		Hash::from_low_u64_be(seed)
+	}
+
 	pub fn ed25519_did_from_seed(seed: &[u8; 32]) -> SubjectId {
 		MultiSigner::from(ed25519::Pair::from_seed(seed).public())
 			.into_account()
@@ -333,7 +365,7 @@ pub mod runtime {
 			.into()
 	}
 
-	pub(crate) fn hash_to_u8<T: Encode>(hash: T) -> Vec<u8> {
+	pub(crate) fn hash_to_u8<Hash: Encode>(hash: Hash) -> Vec<u8> {
 		hash.encode()
 	}
 
