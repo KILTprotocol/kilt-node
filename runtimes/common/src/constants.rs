@@ -228,6 +228,11 @@ pub mod treasury {
 	pub const INITIAL_PERIOD_REWARD_PER_BLOCK: Balance = YEARLY_REWARD / (BLOCKS_PER_YEAR as Balance);
 }
 
+pub mod proxy {
+	pub const MAX_PROXIES: u16 = 10;
+	pub const MAX_PENDING: u16 = 10;
+}
+
 pub mod unicks {
 	use crate::Balance;
 
