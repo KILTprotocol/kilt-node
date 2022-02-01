@@ -59,10 +59,10 @@ construct_runtime!(
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-		Authorship: pallet_authorship::{Pallet, Call, Storage, Inherent},
-		StakePallet: stake::{Pallet, Call, Storage, Config<T>, Event<T>},
-		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
 		Aura: pallet_aura::{Pallet, Storage},
+		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
+		StakePallet: stake::{Pallet, Call, Storage, Config<T>, Event<T>},
+		Authorship: pallet_authorship::{Pallet, Call, Storage, Inherent},
 	}
 );
 
@@ -364,9 +364,12 @@ pub(crate) fn roll_to(n: BlockNumber, authors: Vec<Option<AccountId>>) {
 		if let Some(Some(author)) = authors.get((System::block_number()) as usize) {
 			StakePallet::note_author(*author);
 		}
+		// TODO: Remove comments after settling on hook with coworkers
+		// <AllPalletsReversedWithSystemFirst as OnFinalize<u64>>::on_finalize(System::block_number());
 		<AllPalletsWithSystem as OnFinalize<u64>>::on_finalize(System::block_number());
 		System::set_block_number(System::block_number() + 1);
 		<AllPalletsWithSystem as OnInitialize<u64>>::on_initialize(System::block_number());
+		// <AllPalletsReversedWithSystemFirst as OnInitialize<u64>>::on_initialize(System::block_number());
 	}
 }
 
