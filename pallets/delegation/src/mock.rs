@@ -169,7 +169,9 @@ where
 
 #[cfg(test)]
 pub mod runtime {
-	use crate::{migrations::DelegationStorageVersion, BalanceOf, DelegateSignatureTypeOf, DelegationNodeIdOf, DelegationAc};
+	use crate::{
+		migrations::DelegationStorageVersion, BalanceOf, DelegateSignatureTypeOf, DelegationAc, DelegationNodeIdOf,
+	};
 
 	use super::*;
 
@@ -184,6 +186,7 @@ pub mod runtime {
 	};
 	use sp_std::sync::Arc;
 
+	use attestation::{mock::insert_attestation, AttestationDetails, ClaimHashOf};
 	use kilt_support::{
 		mock::{mock_origin, SubjectId},
 		signature::EqualVerify,
@@ -442,8 +445,9 @@ pub mod runtime {
 		balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>,
 		/// initial ctypes & owners
 		ctypes: Vec<(CtypeHashOf<Test>, SubjectId)>,
-		delegation_hierarchies_stored: DelegationHierarchyInitialization<Test>,
-		delegations_stored: Vec<(DelegationNodeIdOf<Test>, DelegationNode<Test>)>,
+		delegation_hierarchies: DelegationHierarchyInitialization<Test>,
+		delegations: Vec<(DelegationNodeIdOf<Test>, DelegationNode<Test>)>,
+		attestations: Vec<(ClaimHashOf<Test>, AttestationDetails<Test>)>,
 		storage_version: DelegationStorageVersion,
 	}
 
@@ -452,7 +456,7 @@ pub mod runtime {
 			mut self,
 			delegation_hierarchies: DelegationHierarchyInitialization<Test>,
 		) -> Self {
-			self.delegation_hierarchies_stored = delegation_hierarchies;
+			self.delegation_hierarchies = delegation_hierarchies;
 			self
 		}
 
@@ -467,7 +471,12 @@ pub mod runtime {
 		}
 
 		pub fn with_delegations(mut self, delegations: Vec<(DelegationNodeIdOf<Test>, DelegationNode<Test>)>) -> Self {
-			self.delegations_stored = delegations;
+			self.delegations = delegations;
+			self
+		}
+
+		pub fn with_attestations(mut self, attestations: Vec<(ClaimHashOf<Test>, AttestationDetails<Test>)>) -> Self {
+			self.attestations = attestations;
 			self
 		}
 
@@ -491,10 +500,15 @@ pub mod runtime {
 					ctype::Ctypes::<Test>::insert(ctype_hash, owner);
 				}
 
-				initialize_pallet(self.delegations_stored, self.delegation_hierarchies_stored);
+				initialize_pallet(self.delegations, self.delegation_hierarchies);
 
 				delegation::StorageVersion::<Test>::set(self.storage_version);
+
+				for (claim_hash, details) in self.attestations {
+					insert_attestation(claim_hash, details)
+				}
 			});
+
 
 			ext
 		}

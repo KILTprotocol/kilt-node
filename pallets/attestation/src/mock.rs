@@ -139,6 +139,19 @@ where
 	}
 }
 
+pub fn insert_attestation<T: Config>(claim_hash: ClaimHashOf<T>, details: AttestationDetails<T>) {
+	crate::Pallet::<T>::reserve_deposit(details.deposit.owner.clone(), details.deposit.amount).expect("Should have balance");
+
+	crate::Attestations::<T>::insert(&claim_hash, details.clone());
+	if let Some(delegation_id) = details.authorization_id.as_ref() {
+		crate::DelegatedAttestations::<T>::try_mutate(delegation_id, |attestations| {
+			let attestations = attestations.get_or_insert_with(Default::default);
+			attestations.try_push(claim_hash)
+		})
+		.expect("Couldn't initialise delegated attestation");
+	}
+}
+
 /// Mocks that are only used internally
 #[cfg(test)]
 pub(crate) mod runtime {
@@ -343,17 +356,7 @@ pub(crate) mod runtime {
 				}
 
 				for (claim_hash, details) in self.attestations {
-					Pallet::<Test>::reserve_deposit(details.deposit.owner.clone(), details.deposit.amount)
-						.expect("Should have balance");
-
-					crate::Attestations::<Test>::insert(&claim_hash, details.clone());
-					if let Some(delegation_id) = details.authorization_id.as_ref() {
-						crate::DelegatedAttestations::<Test>::try_mutate(delegation_id, |attestations| {
-							let attestations = attestations.get_or_insert_with(Default::default);
-							attestations.try_push(claim_hash)
-						})
-						.expect("Couldn't initialise delegated attestation");
-					}
+					insert_attestation(claim_hash, details);
 				}
 			});
 

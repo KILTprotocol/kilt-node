@@ -124,7 +124,7 @@ impl<T: Config>
 mod tests {
 	use frame_support::{assert_noop, assert_ok};
 
-	use attestation::AttestationAccessControl;
+	use attestation::{mock::generate_base_attestation, AttestationAccessControl};
 	use ctype::mock::get_ctype_hash;
 	use kilt_support::{deposit::Deposit, mock::mock_origin::DoubleOrigin};
 
@@ -155,7 +155,7 @@ mod tests {
 			},
 		};
 		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
-		let authorization_id = Some(DelegationAc {
+		let ac_info = Some(DelegationAc {
 			sender_node_id: parent_id,
 			max_checks: 1,
 		});
@@ -176,7 +176,7 @@ mod tests {
 					DoubleOrigin(ACCOUNT_00, delegate.clone()).into(),
 					claim_hash,
 					ctype_hash,
-					authorization_id.clone()
+					ac_info.clone()
 				));
 				let stored_attestation =
 					Attestation::attestations(&claim_hash).expect("Attestation should be present on chain.");
@@ -185,7 +185,7 @@ mod tests {
 				assert_eq!(stored_attestation.attester, delegate);
 				assert_eq!(
 					stored_attestation.authorization_id,
-					authorization_id.map(|ac| ac.authorization_id())
+					ac_info.map(|ac| ac.authorization_id())
 				);
 				assert!(!stored_attestation.revoked);
 			});
@@ -215,7 +215,7 @@ mod tests {
 			},
 		};
 		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
-		let authorization_id = Some(DelegationAc {
+		let ac_info = Some(DelegationAc {
 			sender_node_id: parent_id,
 			max_checks: 1,
 		});
@@ -237,7 +237,7 @@ mod tests {
 						DoubleOrigin(ACCOUNT_00, delegate.clone()).into(),
 						claim_hash,
 						ctype_hash,
-						authorization_id.clone()
+						ac_info.clone()
 					),
 					Error::<Test>::AccessDenied
 				);
@@ -268,7 +268,7 @@ mod tests {
 			},
 		};
 		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
-		let authorization_id = Some(DelegationAc {
+		let ac_info = Some(DelegationAc {
 			sender_node_id: parent_id,
 			max_checks: 1,
 		});
@@ -290,7 +290,7 @@ mod tests {
 						DoubleOrigin(ACCOUNT_00, delegate.clone()).into(),
 						claim_hash,
 						ctype_hash,
-						authorization_id.clone()
+						ac_info.clone()
 					),
 					Error::<Test>::AccessDenied
 				);
@@ -306,22 +306,8 @@ mod tests {
 		let hierarchy_details = generate_base_delegation_hierarchy_details();
 		let ctype_hash = hierarchy_details.ctype_hash;
 		let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
-		let parent_node = DelegationNode::<Test> {
-			details: DelegationDetails {
-				owner: delegate.clone(),
-				permissions: Permissions::DELEGATE | Permissions::ATTEST,
-				revoked: false,
-			},
-			children: Default::default(),
-			hierarchy_root_id,
-			parent: Some(hierarchy_root_id),
-			deposit: Deposit {
-				owner: ACCOUNT_00,
-				amount: <Test as Config>::Deposit::get(),
-			},
-		};
 		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
-		let authorization_id = Some(DelegationAc {
+		let ac_info = Some(DelegationAc {
 			sender_node_id: parent_id,
 			max_checks: 1,
 		});
@@ -342,7 +328,7 @@ mod tests {
 						DoubleOrigin(ACCOUNT_00, delegate.clone()).into(),
 						claim_hash,
 						ctype_hash,
-						authorization_id.clone()
+						ac_info.clone()
 					),
 					Error::<Test>::DelegationNotFound
 				);
@@ -373,7 +359,7 @@ mod tests {
 			},
 		};
 		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
-		let authorization_id = Some(DelegationAc {
+		let ac_info = Some(DelegationAc {
 			sender_node_id: parent_id,
 			max_checks: 1,
 		});
@@ -395,7 +381,7 @@ mod tests {
 						DoubleOrigin(ACCOUNT_00, delegate.clone()).into(),
 						claim_hash,
 						ctype_hash,
-						authorization_id.clone()
+						ac_info.clone()
 					),
 					Error::<Test>::AccessDenied
 				);
@@ -404,7 +390,55 @@ mod tests {
 
 	#[test]
 	fn test_can_revoke_same_node() {
-		todo!()
+		let root_owner: DelegatorIdOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+		let delegate = sr25519_did_from_seed(&BOB_SEED);
+
+		let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+		let hierarchy_details = generate_base_delegation_hierarchy_details();
+		let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+		let parent_node = DelegationNode {
+			details: DelegationDetails {
+				owner: delegate.clone(),
+				permissions: Permissions::DELEGATE | Permissions::ATTEST,
+				revoked: false,
+			},
+			children: Default::default(),
+			hierarchy_root_id,
+			parent: Some(hierarchy_root_id),
+			deposit: Deposit {
+				owner: ACCOUNT_00,
+				amount: <Test as Config>::Deposit::get(),
+			},
+		};
+		let ac_info = Some(DelegationAc {
+			sender_node_id: parent_id,
+			max_checks: 1,
+		});
+
+		let revoker: DelegatorIdOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
+		let mut attestation = generate_base_attestation::<Test>(revoker.clone(), ACCOUNT_00);
+		attestation.authorization_id = Some(parent_id.clone());
+
+		ExtBuilder::default()
+			.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
+			.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
+			.with_delegation_hierarchies(vec![(
+				hierarchy_root_id,
+				hierarchy_details,
+				root_owner.clone(),
+				ACCOUNT_00,
+			)])
+			.with_delegations(vec![(parent_id, parent_node)])
+			.with_attestations(vec![(claim_hash, attestation)])
+			.build()
+			.execute_with(|| {
+				assert_ok!(Attestation::revoke(
+					DoubleOrigin(ACCOUNT_00, revoker.clone()).into(),
+					claim_hash,
+					ac_info
+				));
+			});
 	}
 
 	#[test]
