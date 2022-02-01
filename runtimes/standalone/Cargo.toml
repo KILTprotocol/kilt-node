@@ -24,7 +24,7 @@ delegation = {default-features = false, path = "../../pallets/delegation"}
 did = {default-features = false, path = "../../pallets/did"}
 kilt-launch = {default-features = false, path = "../../pallets/kilt-launch"}
 kilt-support = {path = "../../support", default-features = false, optional = true}
-pallet-unicks = {default-features = false, path = "../../pallets/pallet-unicks"}
+pallet-web3-names = {default-features = false, path = "../../pallets/pallet-web3-names"}
 pallet-did-lookup = {default-features = false, path = "../../pallets/pallet-did-lookup"}
 runtime-common = {path = "../../runtimes/common", default-features = false}
 
@@ -92,7 +92,7 @@ runtime-benchmarks = [
   "pallet-did-lookup/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
-  "pallet-unicks/runtime-benchmarks",
+  "pallet-web3-names/runtime-benchmarks",
   "pallet-vesting/runtime-benchmarks",
   "pallet-proxy/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
@@ -124,7 +124,7 @@ std = [
   "pallet-timestamp/std",
   "pallet-transaction-payment/std",
   "pallet-transaction-payment-rpc-runtime-api/std",
-  "pallet-unicks/std",
+  "pallet-web3-names/std",
   "pallet-vesting/std",
   "runtime-common/std",
   "scale-info/std",
@@ -164,7 +164,7 @@ try-runtime = [
   "pallet-session/try-runtime",
   "pallet-sudo/try-runtime",
   "pallet-timestamp/try-runtime",
-  "pallet-unicks/runtime-benchmarks",
+  "pallet-web3-names/runtime-benchmarks",
   "pallet-utility/try-runtime",
   "pallet-transaction-payment/try-runtime",
   "pallet-vesting/try-runtime",

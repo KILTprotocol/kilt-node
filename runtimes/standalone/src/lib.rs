@@ -61,7 +61,7 @@ pub use ctype;
 pub use delegation;
 pub use did;
 pub use pallet_balances::Call as BalancesCall;
-pub use pallet_unicks;
+pub use pallet_web3_names;
 use runtime_common::{
 	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
 	fees::ToAuthor,
@@ -446,22 +446,22 @@ impl pallet_did_lookup::Config for Runtime {
 }
 
 parameter_types! {
-	pub const UnickDeposit: Balance = constants::unicks::DEPOSIT;
-	pub const MinUnickLength: u32 = constants::unicks::MIN_LENGTH;
-	pub const MaxUnickLength: u32 = constants::unicks::MAX_LENGTH;
+	pub const Web3NameDeposit: Balance = constants::web3_names::DEPOSIT;
+	pub const MinNameLength: u32 = constants::web3_names::MIN_LENGTH;
+	pub const MaxNameLength: u32 = constants::web3_names::MAX_LENGTH;
 }
 
-impl pallet_unicks::Config for Runtime {
+impl pallet_web3_names::Config for Runtime {
 	type BanOrigin = EnsureRoot<AccountId>;
 	type Currency = Balances;
-	type Deposit = UnickDeposit;
+	type Deposit = Web3NameDeposit;
 	type Event = Event;
-	type MaxUnickLength = MaxUnickLength;
-	type MinUnickLength = MinUnickLength;
+	type MaxNameLength = MaxNameLength;
+	type MinNameLength = MinNameLength;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type RegularOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
-	type Unick = pallet_unicks::unick::AsciiUnick<Runtime, MinUnickLength, MaxUnickLength>;
-	type UnickOwner = DidIdentifier;
+	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime, MinNameLength, MaxNameLength>;
+	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = ();
 }
 
@@ -648,7 +648,7 @@ construct_runtime!(
 		// DELETED CrowdloanContributors: 36,
 
 		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 37,
-		Unicks: pallet_unicks = 38,
+		Web3Names: pallet_web3_names = 38,
 	}
 );
 
@@ -678,7 +678,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			// DID creation is not allowed through the DID proxy.
 			Call::Did(did::Call::create { .. }) => Err(did::RelationshipDeriveError::NotCallableByDid),
 			Call::Did { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
-			Call::Unicks { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
+			Call::Web3Names { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(&calls[..]),
 			Call::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(&calls[..]),
 			#[cfg(not(feature = "runtime-benchmarks"))]

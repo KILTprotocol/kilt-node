@@ -233,7 +233,7 @@ pub mod proxy {
 	pub const MAX_PENDING: u16 = 10;
 }
 
-pub mod unicks {
+pub mod web3_names {
 	use crate::Balance;
 
 	use super::KILT;

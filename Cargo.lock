@@ -4491,9 +4491,9 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
- "pallet-unicks",
  "pallet-utility",
  "pallet-vesting",
+ "pallet-web3-names",
  "parity-scale-codec",
  "runtime-common",
  "scale-info",
@@ -6121,25 +6121,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-unicks"
-version = "1.3.1"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "kilt-support",
- "pallet-balances",
- "parity-scale-codec",
- "runtime-common",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-keystore",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-uniques"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.13#afb74de23dfe2994e7ce38c0870efb9734e966f7"
@@ -6180,6 +6161,25 @@ dependencies = [
  "log",
  "parity-scale-codec",
  "scale-info",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-web3-names"
+version = "1.3.1"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "kilt-support",
+ "pallet-balances",
+ "parity-scale-codec",
+ "runtime-common",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-keystore",
  "sp-runtime",
  "sp-std",
 ]
@@ -6575,9 +6575,9 @@ dependencies = [
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "pallet-treasury",
- "pallet-unicks",
  "pallet-utility",
  "pallet-vesting",
+ "pallet-web3-names",
  "parachain-info",
  "parachain-staking",
  "parity-scale-codec",
@@ -10776,9 +10776,9 @@ dependencies = [
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "pallet-treasury",
- "pallet-unicks",
  "pallet-utility",
  "pallet-vesting",
+ "pallet-web3-names",
  "parachain-info",
  "parachain-staking",
  "parity-scale-codec",

@@ -25,8 +25,8 @@ use sp_runtime::{
 	MultiSignature,
 };
 
-use crate as pallet_unicks;
-use crate::unick::AsciiUnick;
+use crate as pallet_web3_names;
+use crate::web3_name::AsciiWeb3Name;
 
 type Index = u64;
 type Balance = u128;
@@ -47,7 +47,7 @@ frame_support::construct_runtime!(
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-		Unicks: pallet_unicks::{Pallet, Storage, Call, Event<T>},
+		Web3Names: pallet_web3_names::{Pallet, Storage, Call, Event<T>},
 		MockOrigin: mock_origin::{Pallet, Origin<T>},
 	}
 );
@@ -101,31 +101,31 @@ impl pallet_balances::Config for Test {
 	type WeightInfo = ();
 }
 
-pub(crate) type TestUnick = AsciiUnick<Test, MinUnickLength, MaxUnickLength>;
-pub(crate) type TestUnickOwner = SubjectId;
-pub(crate) type TestUnickPayer = AccountId;
-pub(crate) type TestRegularOrigin = mock_origin::EnsureDoubleOrigin<TestUnickPayer, TestUnickOwner>;
-pub(crate) type TestOriginSuccess = mock_origin::DoubleOrigin<TestUnickPayer, TestUnickOwner>;
+pub(crate) type TestWeb3Name = AsciiWeb3Name<Test, MinNameLength, MaxNameLength>;
+pub(crate) type TestWeb3NameOwner = SubjectId;
+pub(crate) type TestWeb3NamePayer = AccountId;
+pub(crate) type TestRegularOrigin = mock_origin::EnsureDoubleOrigin<TestWeb3NamePayer, TestWeb3NameOwner>;
+pub(crate) type TestOriginSuccess = mock_origin::DoubleOrigin<TestWeb3NamePayer, TestWeb3NameOwner>;
 pub(crate) type TestBanOrigin = EnsureRoot<AccountId>;
 
 parameter_types! {
-	pub const MaxUnickLength: u32 = 32;
-	pub const MinUnickLength: u32 = 3;
+	pub const MaxNameLength: u32 = 32;
+	pub const MinNameLength: u32 = 3;
 	// Easier to setup insufficient funds for deposit but still above existential deposit
-	pub const UnickDeposit: Balance = 2 * ExistentialDeposit::get();
+	pub const Web3NameDeposit: Balance = 2 * ExistentialDeposit::get();
 }
 
-impl pallet_unicks::Config for Test {
+impl pallet_web3_names::Config for Test {
 	type BanOrigin = TestBanOrigin;
 	type Currency = Balances;
-	type Deposit = UnickDeposit;
+	type Deposit = Web3NameDeposit;
 	type Event = Event;
-	type MaxUnickLength = MaxUnickLength;
-	type MinUnickLength = MinUnickLength;
+	type MaxNameLength = MaxNameLength;
+	type MinNameLength = MinNameLength;
 	type OriginSuccess = TestOriginSuccess;
 	type RegularOrigin = TestRegularOrigin;
-	type Unick = TestUnick;
-	type UnickOwner = TestUnickOwner;
+	type Web3Name = TestWeb3Name;
+	type Web3NameOwner = TestWeb3NameOwner;
 	type WeightInfo = ();
 }
 
@@ -135,37 +135,37 @@ impl mock_origin::Config for Test {
 	type SubjectId = SubjectId;
 }
 
-pub(crate) const ACCOUNT_00: TestUnickPayer = AccountId::new([1u8; 32]);
-pub(crate) const ACCOUNT_01: TestUnickPayer = AccountId::new([2u8; 32]);
-pub(crate) const DID_00: TestUnickOwner = SubjectId(ACCOUNT_00);
-pub(crate) const DID_01: TestUnickOwner = SubjectId(ACCOUNT_01);
-pub(crate) const UNICK_00_INPUT: &[u8; 8] = b"unick_00";
-pub(crate) const UNICK_01_INPUT: &[u8; 8] = b"unick_01";
+pub(crate) const ACCOUNT_00: TestWeb3NamePayer = AccountId::new([1u8; 32]);
+pub(crate) const ACCOUNT_01: TestWeb3NamePayer = AccountId::new([2u8; 32]);
+pub(crate) const DID_00: TestWeb3NameOwner = SubjectId(ACCOUNT_00);
+pub(crate) const DID_01: TestWeb3NameOwner = SubjectId(ACCOUNT_01);
+pub(crate) const WEB3_NAME_00_INPUT: &[u8; 12] = b"web3_name_00";
+pub(crate) const WEB3_NAME_01_INPUT: &[u8; 12] = b"web3_name_01";
 
-pub(crate) fn get_unick(unick_input: &[u8; 8]) -> TestUnick {
-	AsciiUnick::try_from(unick_input.to_vec()).expect("Invalid unick input.")
+pub(crate) fn get_web3_name(web3_name_input: &[u8]) -> TestWeb3Name {
+	AsciiWeb3Name::try_from(web3_name_input.to_vec()).expect("Invalid web3 name input.")
 }
 
 #[derive(Clone, Default)]
 pub struct ExtBuilder {
-	balances: Vec<(TestUnickPayer, Balance)>,
-	claimed_unicks: Vec<(TestUnickOwner, TestUnick, TestUnickPayer)>,
-	banned_unicks: Vec<TestUnick>,
+	balances: Vec<(TestWeb3NamePayer, Balance)>,
+	claimed_web3_names: Vec<(TestWeb3NameOwner, TestWeb3Name, TestWeb3NamePayer)>,
+	banned_web3_names: Vec<TestWeb3Name>,
 }
 
 impl ExtBuilder {
-	pub fn with_balances(mut self, balances: Vec<(TestUnickPayer, Balance)>) -> Self {
+	pub fn with_balances(mut self, balances: Vec<(TestWeb3NamePayer, Balance)>) -> Self {
 		self.balances = balances;
 		self
 	}
 
-	pub fn with_unicks(mut self, unicks: Vec<(TestUnickOwner, TestUnick, TestUnickPayer)>) -> Self {
-		self.claimed_unicks = unicks;
+	pub fn with_web3_names(mut self, web3_names: Vec<(TestWeb3NameOwner, TestWeb3Name, TestWeb3NamePayer)>) -> Self {
+		self.claimed_web3_names = web3_names;
 		self
 	}
 
-	pub fn with_banned_unicks(mut self, unicks: Vec<TestUnick>) -> Self {
-		self.banned_unicks = unicks;
+	pub fn with_banned_web3_names(mut self, web3_names: Vec<TestWeb3Name>) -> Self {
+		self.banned_web3_names = web3_names;
 		self
 	}
 
@@ -179,13 +179,13 @@ impl ExtBuilder {
 		let mut ext = sp_io::TestExternalities::new(storage);
 
 		ext.execute_with(|| {
-			for (owner, unick, payer) in self.claimed_unicks {
-				pallet_unicks::Pallet::<Test>::register_unick(unick, owner, payer);
+			for (owner, web3_name, payer) in self.claimed_web3_names {
+				pallet_web3_names::Pallet::<Test>::register_web3_name(web3_name, owner, payer);
 			}
 
-			for unick in self.banned_unicks {
-				assert!(pallet_unicks::Owner::<Test>::get(&unick).is_none());
-				pallet_unicks::Pallet::<Test>::ban_unick(&unick);
+			for web3_name in self.banned_web3_names {
+				assert!(pallet_web3_names::Owner::<Test>::get(&web3_name).is_none());
+				pallet_web3_names::Pallet::<Test>::ban_web3_name(&web3_name);
 			}
 		});
 		ext
