@@ -2834,7 +2834,7 @@ fn check_null_key_error() {
 		did,
 		caller.clone(),
 	);
-	let signature = ed25519::Signature::default();
+	let signature = ed25519::Signature::from_raw([0u8; 64]);
 
 	ExtBuilder::default().build(None).execute_with(|| {
 		assert_noop!(
