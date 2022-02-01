@@ -202,7 +202,7 @@ fn testnet_genesis(
 				.chain(botlabs_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
 				.collect(),
 		},
-		sudo: SudoConfig { key: root_key },
+		sudo: SudoConfig { key: Some(root_key) },
 		parachain_info: ParachainInfoConfig { parachain_id: id },
 		kilt_launch: KiltLaunchConfig {
 			vesting: airdrop_accounts

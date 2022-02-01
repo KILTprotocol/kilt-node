@@ -254,7 +254,7 @@ fn testnet_genesis(
 		},
 		aura: Default::default(),
 		grandpa: Default::default(),
-		sudo: SudoConfig { key: root_key },
+		sudo: SudoConfig { key: Some(root_key) },
 		kilt_launch: KiltLaunchConfig {
 			balance_locks: airdrop_accounts
 				.iter()
