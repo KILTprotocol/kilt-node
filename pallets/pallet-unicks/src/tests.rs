@@ -29,7 +29,7 @@ use crate::{mock::*, Banned, Error, Owner, Pallet, UnickOwnershipOf, Unicks};
 
 #[test]
 fn claiming_successful() {
-	let unick_00 = unick_00();
+	let unick_00 = get_unick(UNICK_00_INPUT);
 	let initial_balance: Balance = 100;
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, initial_balance)])
@@ -74,7 +74,7 @@ fn claiming_successful() {
 			);
 
 			// Test that the same owner cannot claim a new unick.
-			let unick_01 = unick_01();
+			let unick_01 = get_unick(UNICK_01_INPUT);
 			assert_noop!(
 				Pallet::<Test>::claim(mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(), unick_01.0,),
 				Error::<Test>::OwnerAlreadyExists
@@ -127,7 +127,7 @@ fn claiming_invalid() {
 
 #[test]
 fn claiming_banned() {
-	let unick_00 = unick_00();
+	let unick_00 = get_unick(UNICK_00_INPUT);
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, 100)])
 		.with_banned_unicks(vec![unick_00.clone()])
@@ -142,7 +142,7 @@ fn claiming_banned() {
 
 #[test]
 fn claiming_not_enough_funds() {
-	let unick_00 = unick_00();
+	let unick_00 = get_unick(UNICK_00_INPUT);
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, UnickDeposit::get() - 1)])
 		.build()
@@ -158,7 +158,7 @@ fn claiming_not_enough_funds() {
 
 #[test]
 fn releasing_by_owner_successful() {
-	let unick_00 = unick_00();
+	let unick_00 = get_unick(UNICK_00_INPUT);
 	let initial_balance: Balance = 100;
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, initial_balance)])
@@ -181,7 +181,7 @@ fn releasing_by_owner_successful() {
 
 #[test]
 fn releasing_by_payer_successful() {
-	let unick_00 = unick_00();
+	let unick_00 = get_unick(UNICK_00_INPUT);
 	let initial_balance: Balance = 100;
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, initial_balance)])
@@ -204,7 +204,7 @@ fn releasing_by_payer_successful() {
 
 #[test]
 fn releasing_not_found() {
-	let unick_00 = unick_00();
+	let unick_00 = get_unick(UNICK_00_INPUT);
 	ExtBuilder::default().build().execute_with(|| {
 		// Fail to claim by owner
 		assert_noop!(
@@ -221,7 +221,7 @@ fn releasing_not_found() {
 
 #[test]
 fn releasing_not_authorized() {
-	let unick_00 = unick_00();
+	let unick_00 = get_unick(UNICK_00_INPUT);
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, 100)])
 		.with_unicks(vec![(DID_00, unick_00.clone(), ACCOUNT_00)])
@@ -245,7 +245,7 @@ fn releasing_not_authorized() {
 
 #[test]
 fn releasing_banned() {
-	let unick_00 = unick_00();
+	let unick_00 = get_unick(UNICK_00_INPUT);
 	ExtBuilder::default()
 		.with_banned_unicks(vec![(unick_00.clone())])
 		.build()
@@ -266,8 +266,8 @@ fn releasing_banned() {
 
 #[test]
 fn banning_successful() {
-	let unick_00 = unick_00();
-	let unick_01 = unick_01();
+	let unick_00 = get_unick(UNICK_00_INPUT);
+	let unick_01 = get_unick(UNICK_01_INPUT);
 	let initial_balance = 100;
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, initial_balance)])
@@ -294,7 +294,7 @@ fn banning_successful() {
 
 #[test]
 fn banning_already_banned() {
-	let unick_00 = unick_00();
+	let unick_00 = get_unick(UNICK_00_INPUT);
 	ExtBuilder::default()
 		.with_banned_unicks(vec![unick_00.clone()])
 		.build()
@@ -308,7 +308,7 @@ fn banning_already_banned() {
 
 #[test]
 fn banning_unauthorized_origin() {
-	let unick_00 = unick_00();
+	let unick_00 = get_unick(UNICK_00_INPUT);
 	ExtBuilder::default().build().execute_with(|| {
 		// Signer origin
 		assert_noop!(
@@ -327,7 +327,7 @@ fn banning_unauthorized_origin() {
 
 #[test]
 fn unbanning_successful() {
-	let unick_00 = unick_00();
+	let unick_00 = get_unick(UNICK_00_INPUT);
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, 100)])
 		.with_banned_unicks(vec![unick_00.clone()])
@@ -345,7 +345,7 @@ fn unbanning_successful() {
 
 #[test]
 fn unbanning_not_banned() {
-	let unick_00 = unick_00();
+	let unick_00 = get_unick(UNICK_00_INPUT);
 	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
 			Pallet::<Test>::unban(RawOrigin::Root.into(), unick_00.clone().0),
@@ -356,7 +356,7 @@ fn unbanning_not_banned() {
 
 #[test]
 fn unbanning_unauthorized_origin() {
-	let unick_00 = unick_00();
+	let unick_00 = get_unick(UNICK_00_INPUT);
 	ExtBuilder::default()
 		.with_banned_unicks(vec![unick_00.clone()])
 		.build()

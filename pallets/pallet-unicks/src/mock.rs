@@ -139,12 +139,11 @@ pub(crate) const ACCOUNT_00: TestUnickPayer = AccountId::new([1u8; 32]);
 pub(crate) const ACCOUNT_01: TestUnickPayer = AccountId::new([2u8; 32]);
 pub(crate) const DID_00: TestUnickOwner = SubjectId(ACCOUNT_00);
 pub(crate) const DID_01: TestUnickOwner = SubjectId(ACCOUNT_01);
+pub(crate) const UNICK_00_INPUT: &[u8; 8] = b"unick_00";
+pub(crate) const UNICK_01_INPUT: &[u8; 8] = b"unick_01";
 
-pub(crate) fn unick_00() -> TestUnick {
-	AsciiUnick::try_from(b"unick_00".to_vec()).unwrap()
-}
-pub(crate) fn unick_01() -> TestUnick {
-	AsciiUnick::try_from(b"unick_01".to_vec()).unwrap()
+pub(crate) fn get_unick(unick_input: &[u8; 8]) -> TestUnick {
+	AsciiUnick::try_from(unick_input.to_vec()).expect("Invalid unick input.")
 }
 
 #[derive(Clone, Default)]
