@@ -27,7 +27,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{Contains, EnsureOneOf, OnRuntimeUpgrade},
+	traits::{Contains, EnsureOneOf, OnRuntimeUpgrade, PrivilegeCmp},
 	weights::{constants::RocksDbWeight, Weight},
 };
 use frame_system::EnsureRoot;
@@ -217,7 +217,7 @@ parameter_types! {
 
 impl cumulus_pallet_parachain_system::Config for Runtime {
 	type Event = Event;
-	type OnValidationData = ();
+	type OnSystemEvent = ();
 	type SelfParaId = parachain_info::Pallet<Runtime>;
 	type OutboundXcmpMessageSource = ();
 	type DmpMessageHandler = ();
@@ -297,7 +297,6 @@ parameter_types! {
 	pub const PreimageMaxSize: u32 = 4096 * 1024;
 	// FIXME: Handle together with other deposits
 	pub const PreimageBaseDeposit: Balance = KILT;
-	pub const PreimageByteDeposit: Balance = KILT;
 }
 
 impl pallet_preimage::Config for Runtime {
@@ -399,14 +398,12 @@ impl pallet_democracy::Config for Runtime {
 	// To cancel a proposal which has been passed, 2/3 of the council must agree to
 	// it.
 	type CancellationOrigin = EnsureOneOf<
-		AccountId,
 		EnsureRoot<AccountId>,
 		pallet_collective::EnsureProportionAtLeast<_2, _3, AccountId, CouncilCollective>,
 	>;
 	// To cancel a proposal before it has been passed, the technical committee must
 	// be unanimous or Root must agree.
 	type CancelProposalOrigin = EnsureOneOf<
-		AccountId,
 		EnsureRoot<AccountId>,
 		pallet_collective::EnsureProportionAtLeast<_1, _1, AccountId, TechnicalCollective>,
 	>;
@@ -435,13 +432,11 @@ parameter_types! {
 }
 
 type ApproveOrigin = EnsureOneOf<
-	AccountId,
 	EnsureRoot<AccountId>,
 	pallet_collective::EnsureProportionAtLeast<_3, _5, AccountId, CouncilCollective>,
 >;
 
 type MoreThanHalfCouncil = EnsureOneOf<
-	AccountId,
 	EnsureRoot<AccountId>,
 	pallet_collective::EnsureProportionMoreThan<_1, _2, AccountId, CouncilCollective>,
 >;
