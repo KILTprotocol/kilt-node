@@ -254,8 +254,9 @@ pub fn run() -> Result<()> {
 			builder.with_profiling(sc_tracing::TracingReceiver::Log, "");
 			let _ = builder.init();
 
-			let block: Block =
-				generate_genesis_block(&load_spec(&params.chain.clone().unwrap_or_default(), &params.runtime)?)?;
+			let spec = load_spec(&params.chain.clone().unwrap_or_default(), &params.runtime)?;
+			let state_version = Cli::native_runtime_version(&spec).state_version();
+			let block: Block = generate_genesis_block(&spec, state_version)?;
 			let raw_header = block.header().encode();
 			let output_buf = if params.raw {
 				raw_header
@@ -294,15 +295,13 @@ pub fn run() -> Result<()> {
 		#[cfg(feature = "try-runtime")]
 		Some(Subcommand::TryRuntime(cmd)) => {
 			let runner = cli.create_runner(cmd)?;
-			runner.async_run(|config| {
-				// we don't need any of the components of new_partial, just a runtime, or a task
-				// manager to do `async_run`.
-				let registry = config.prometheus_config.as_ref().map(|cfg| &cfg.registry);
-				let task_manager = sc_service::TaskManager::new(config.tokio_handle.clone(), registry)
-					.map_err(|e| sc_cli::Error::Service(sc_service::Error::Prometheus(e)))?;
 
-				Ok((cmd.run::<Block, ExecutorDispatch>(config), task_manager))
-			})
+			// grab the task manager.
+			let registry = &runner.config().prometheus_config.as_ref().map(|cfg| &cfg.registry);
+			let task_manager = TaskManager::new(runner.config().tokio_handle.clone(), *registry)
+				.map_err(|e| format!("Error: {:?}", e))?;
+
+			runner.async_run(|config| Ok((cmd.run::<Block, ExecutorDispatch>(config), task_manager)))
 		}
 		#[cfg(not(feature = "try-runtime"))]
 		Some(Subcommand::TryRuntime) => Err("TryRuntime wasn't enabled when building the node. \
@@ -327,7 +326,9 @@ pub fn run() -> Result<()> {
 
 				let parachain_account = AccountIdConversion::<polkadot_primitives::v0::AccountId>::into_account(&id);
 
-				let block: Block = generate_genesis_block(&config.chain_spec).map_err(|e| format!("{:?}", e))?;
+				let state_version = RelayChainCli::native_runtime_version(&config.chain_spec).state_version();
+				let block: Block =
+					generate_genesis_block(&config.chain_spec, state_version).map_err(|e| format!("{:?}", e))?;
 				let genesis_state = format!("0x{:?}", HexDisplay::from(&block.header().encode()));
 
 				let tokio_handle = config.tokio_handle.clone();
@@ -420,11 +421,24 @@ impl CliConfiguration<Self> for RelayChainCli {
 		self.base.base.rpc_ws(default_listen_port)
 	}
 
-	fn prometheus_config(&self, default_listen_port: u16) -> Result<Option<PrometheusConfig>> {
-		self.base.base.prometheus_config(default_listen_port)
+	fn prometheus_config(
+		&self,
+		default_listen_port: u16,
+		chain_spec: &Box<dyn ChainSpec>,
+	) -> Result<Option<PrometheusConfig>> {
+		self.base.base.prometheus_config(default_listen_port, chain_spec)
 	}
 
-	fn init<C: SubstrateCli>(&self) -> Result<()> {
+	fn init<F>(
+		&self,
+		_support_url: &String,
+		_impl_version: &String,
+		_logger_hook: F,
+		_config: &sc_service::Configuration,
+	) -> Result<()>
+	where
+		F: FnOnce(&mut sc_cli::LoggerBuilder, &sc_service::Configuration),
+	{
 		unreachable!("PolkadotCli is never initialized; qed");
 	}
 
