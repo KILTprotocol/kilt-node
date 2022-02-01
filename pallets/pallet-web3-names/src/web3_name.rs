@@ -57,13 +57,8 @@ impl<T: Config> TryFrom<Vec<u8>> for AsciiWeb3Name<T, T::MinNameLength, T::MaxNa
 
 /// Verify that a given slice contains only allowed ASCII characters.
 fn is_byte_array_ascii_string(input: &[u8]) -> bool {
-	if let Ok(encoded_web3_name) = str::from_utf8(input) {
-		encoded_web3_name.chars().all(|c| {
-			// TODO: Change once we reach a decision on which characters to allow
-			// Decision reached: minimum 3 characters, max 20, and the following characters
-			// allowed.
-			matches!(c, 'a'..='z' | '0'..='9' | '-' | '_')
-		})
+	if let Ok(string) = str::from_utf8(input) {
+		string.chars().all(|c| matches!(c, 'a'..='z' | '0'..='9' | '-' | '_'))
 	} else {
 		false
 	}
