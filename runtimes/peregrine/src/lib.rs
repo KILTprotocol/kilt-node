@@ -27,7 +27,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{EnsureOneOf, EqualPrivilegeOnly, OnRuntimeUpgrade, PrivilegeCmp},
+	traits::{EnsureOneOf, OnRuntimeUpgrade, PrivilegeCmp},
 	weights::{constants::RocksDbWeight, Weight},
 };
 use frame_system::EnsureRoot;
@@ -307,7 +307,7 @@ impl pallet_preimage::Config for Runtime {
 parameter_types! {
 	pub MaximumSchedulerWeight: Weight = Perbill::from_percent(80) * BlockWeights::get().max_block;
 	pub const MaxScheduledPerBlock: u32 = 50;
-	pub const NoPreimagePostponement: Option<u32> = Some(10);
+	pub const NoPreimagePostponement: Option<BlockNumber> = Some(10);
 }
 
 type ScheduleOrigin = EnsureOneOf<
@@ -445,6 +445,7 @@ impl pallet_treasury::Config for Runtime {
 	type OnSlash = Treasury;
 	type ProposalBond = ProposalBond;
 	type ProposalBondMinimum = ProposalBondMinimum;
+	type ProposalBondMaximum = ();
 	type SpendPeriod = SpendPeriod;
 	type Burn = Burn;
 	type BurnDestination = ();
@@ -988,8 +989,8 @@ impl_runtime_apis! {
 	}
 
 	impl cumulus_primitives_core::CollectCollationInfo<Block> for Runtime {
-		fn collect_collation_info() -> cumulus_primitives_core::CollationInfo {
-			ParachainSystem::collect_collation_info()
+		fn collect_collation_info(header: &<Block as BlockT>::Header) -> cumulus_primitives_core::CollationInfo {
+			ParachainSystem::collect_collation_info(header)
 		}
 	}
 
