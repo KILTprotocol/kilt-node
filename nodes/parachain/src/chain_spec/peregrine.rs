@@ -96,6 +96,7 @@ pub fn make_dev_spec() -> Result<ChainSpec, String> {
 		vec![],
 		None,
 		None,
+		None,
 		Some(properties),
 		Extensions {
 			relay_chain: "rococo_local_testnet".into(),
@@ -149,6 +150,7 @@ pub fn make_new_spec() -> Result<ChainSpec, String> {
 			)
 		},
 		Vec::new(),
+		None,
 		None,
 		None,
 		Some(properties),
