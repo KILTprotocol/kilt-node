@@ -170,7 +170,6 @@ fn releasing_by_owner_successful() {
 			assert_ok!(Pallet::<Test>::release_by_owner(
 				// Submitter != deposit payer, owner == name owner
 				mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
-				web3_name_00.clone().0,
 			));
 			assert!(Names::<Test>::get(&DID_00).is_none());
 			assert!(Owner::<Test>::get(&web3_name_00).is_none());
@@ -210,15 +209,12 @@ fn releasing_not_found() {
 	ExtBuilder::default().build().execute_with(|| {
 		// Fail to claim by owner
 		assert_noop!(
-			Pallet::<Test>::release_by_owner(
-				mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
-				web3_name_00.clone().0
-			),
-			Error::<Test>::Web3NameNotFound
+			Pallet::<Test>::release_by_owner(mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),),
+			Error::<Test>::OwnerNotFound
 		);
 		// Fail to claim by payer
 		assert_noop!(
-			Pallet::<Test>::reclaim_deposit(RawOrigin::Signed(ACCOUNT_00).into(), web3_name_00.clone().0),
+			Pallet::<Test>::reclaim_deposit(RawOrigin::Signed(ACCOUNT_00).into(), web3_name_00.0),
 			Error::<Test>::Web3NameNotFound
 		);
 	})
@@ -232,14 +228,6 @@ fn releasing_not_authorized() {
 		.with_web3_names(vec![(DID_00, web3_name_00.clone(), ACCOUNT_00)])
 		.build()
 		.execute_with(|| {
-			// Fail to claim by different owner
-			assert_noop!(
-				Pallet::<Test>::release_by_owner(
-					mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
-					web3_name_00.clone().0
-				),
-				Error::<Test>::NotAuthorized
-			);
 			// Fail to claim by different payer
 			assert_noop!(
 				Pallet::<Test>::reclaim_deposit(RawOrigin::Signed(ACCOUNT_01).into(), web3_name_00.clone().0),
@@ -252,17 +240,14 @@ fn releasing_not_authorized() {
 fn releasing_banned() {
 	let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
 	ExtBuilder::default()
-		.with_banned_web3_names(vec![(web3_name_00.clone())])
+		.with_banned_web3_names(vec![(web3_name_00)])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Pallet::<Test>::release_by_owner(
-					mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
-					web3_name_00.clone().0
-				),
+				Pallet::<Test>::release_by_owner(mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),),
 				// A banned name will be removed from the map of used names, so it will be considered not
 				// existing.
-				Error::<Test>::Web3NameNotFound
+				Error::<Test>::OwnerNotFound
 			);
 		})
 }

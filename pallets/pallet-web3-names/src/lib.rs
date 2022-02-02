@@ -146,6 +146,8 @@ pub mod pallet {
 		Web3NameNotFound,
 		/// The specified owner already owns a name.
 		OwnerAlreadyExists,
+		/// The specified owner does not own any names.
+		OwnerNotFound,
 		/// The specified name has been banned and cannot be interacted
 		/// with.
 		Web3NameBanned,
@@ -211,22 +213,22 @@ pub mod pallet {
 		///
 		/// # <weight>
 		/// Weight: O(1)
-		/// - Reads: Owner storage entry + origin check
+		/// - Reads: Names storage entry + origin check
 		/// - Writes: Names, Owner storage entries + currency deposit release
 		/// # </weight>
-		#[pallet::weight(<T as Config>::WeightInfo::release_by_owner(name.len().saturated_into()))]
-		pub fn release_by_owner(origin: OriginFor<T>, name: Web3NameInput<T>) -> DispatchResult {
+		#[pallet::weight(<T as Config>::WeightInfo::release_by_owner())]
+		pub fn release_by_owner(origin: OriginFor<T>) -> DispatchResult {
 			let origin = T::OwnerOrigin::ensure_origin(origin)?;
 			let owner = origin.subject();
 
-			let decoded_name = Self::check_releasing_preconditions(name, &owner)?;
+			let owned_name = Self::check_releasing_preconditions(&owner)?;
 
 			// No failure beyond this point
 
-			Self::unregister_name(&decoded_name);
+			Self::unregister_name(&owned_name);
 			Self::deposit_event(Event::<T>::Web3NameReleased {
 				owner,
-				name: decoded_name,
+				name: owned_name,
 			});
 
 			Ok(())
@@ -376,19 +378,9 @@ pub mod pallet {
 
 		/// Verify that the releasing preconditions for an owner are verified.
 		/// Specifically:
-		/// - The name input data can be decoded as a valid name
-		/// - The name exists (i.e., it has been previous claimed)
-		/// - The caller owns the given name
-		fn check_releasing_preconditions(
-			name_input: Web3NameInput<T>,
-			owner: &Web3NameOwnerOf<T>,
-		) -> Result<Web3NameOf<T>, DispatchError> {
-			let name = Web3NameOf::<T>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
-			let Web3NameOwnership {
-				owner: stored_owner, ..
-			} = Owner::<T>::get(&name).ok_or(Error::<T>::Web3NameNotFound)?;
-
-			ensure!(owner == &stored_owner, Error::<T>::NotAuthorized);
+		/// - The owner has a previously claimed name
+		fn check_releasing_preconditions(owner: &Web3NameOwnerOf<T>) -> Result<Web3NameOf<T>, DispatchError> {
+			let name = Names::<T>::get(&owner).ok_or(Error::<T>::OwnerNotFound)?;
 
 			Ok(name)
 		}

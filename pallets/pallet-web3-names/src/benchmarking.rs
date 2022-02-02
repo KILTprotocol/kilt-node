@@ -69,16 +69,14 @@ benchmarks! {
 	}
 
 	release_by_owner {
-		let n in (T::MinNameLength::get()) .. (T::MaxNameLength::get());
 		let caller: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
 		let owner: Web3NameOwnerOf<T> = account("owner", 0, OWNER_SEED);
-		let web3_name_input: BoundedVec<u8, T::MaxNameLength> = BoundedVec::try_from(generate_web3_name_input(n.saturated_into())).expect("BoundedVec creation should not fail.");
-		let web3_name_input_clone = web3_name_input.clone();
+		let web3_name_input: BoundedVec<u8, T::MaxNameLength> = BoundedVec::try_from(generate_web3_name_input(T::MaxNameLength::get().saturated_into())).expect("BoundedVec creation should not fail.");
 		let origin = T::OwnerOrigin::generate_origin(caller.clone(), owner.clone());
 
 		make_free_for_did::<T>(&caller);
 		Pallet::<T>::claim(origin.clone(), web3_name_input.clone()).expect("Should register the claimed web3 name.");
-	}: _<T::Origin>(origin, web3_name_input_clone)
+	}: _<T::Origin>(origin)
 	verify {
 		let web3_name = Web3NameOf::<T>::try_from(web3_name_input.to_vec()).unwrap();
 		assert!(Names::<T>::get(&owner).is_none());
