@@ -28,6 +28,7 @@ use log::info;
 #[cfg(feature = "try-runtime")]
 use node_executor::ExecutorDispatch;
 use polkadot_parachain::primitives::AccountIdConversion;
+#[cfg(feature = "try-runtime")]
 use polkadot_service::TaskManager;
 use runtime_common::Block;
 use sc_cli::{
