@@ -71,9 +71,9 @@ impl sc_executor::NativeExecutionDispatch for SpiritRuntimeExecutor {
 
 /// Native Peregrine executor instance.
 
-pub struct MashRuntimeExecutor;
+pub struct PeregrineRuntimeExecutor;
 
-impl sc_executor::NativeExecutionDispatch for MashRuntimeExecutor {
+impl sc_executor::NativeExecutionDispatch for PeregrineRuntimeExecutor {
 	type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
 
 	fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {

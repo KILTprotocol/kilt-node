@@ -46,8 +46,8 @@ pub fn get_chain_spec_dev() -> Result<ChainSpec, String> {
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
 
 	Ok(ChainSpec::from_genesis(
-		"KILT Local",
-		"kilt_parachain_local_testnet",
+		"KILT Spiritnet Develop",
+		"kilt_spiritnet_dev",
 		ChainType::Local,
 		move || {
 			testnet_genesis(

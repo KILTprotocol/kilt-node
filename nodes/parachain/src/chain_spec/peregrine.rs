@@ -45,8 +45,8 @@ pub fn make_dev_spec() -> Result<ChainSpec, String> {
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
 
 	Ok(ChainSpec::from_genesis(
-		"KILT Peregrine Local",
-		"peregrine_local_testnet",
+		"KILT Peregrine Develop",
+		"kilt_peregrine_dev",
 		ChainType::Local,
 		move || {
 			testnet_genesis(
@@ -112,7 +112,7 @@ pub fn make_new_spec() -> Result<ChainSpec, String> {
 
 	Ok(ChainSpec::from_genesis(
 		"KILT Peregrine Testnet",
-		"kilt_parachain_testnet",
+		"kilt_peregrine_testnet",
 		ChainType::Live,
 		move || {
 			testnet_genesis(

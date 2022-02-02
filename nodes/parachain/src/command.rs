@@ -19,14 +19,12 @@
 use crate::{
 	chain_spec,
 	cli::{Cli, RelayChainCli, Subcommand},
-	service::{new_partial, MashRuntimeExecutor, SpiritRuntimeExecutor},
+	service::{new_partial, PeregrineRuntimeExecutor, SpiritRuntimeExecutor},
 };
 use codec::Encode;
 use cumulus_client_service::genesis::generate_genesis_block;
 use cumulus_primitives_core::ParaId;
 use log::info;
-#[cfg(feature = "try-runtime")]
-use node_executor::ExecutorDispatch;
 use polkadot_parachain::primitives::AccountIdConversion;
 #[cfg(feature = "try-runtime")]
 use polkadot_service::TaskManager;
@@ -39,6 +37,31 @@ use sc_service::config::{BasePath, PrometheusConfig};
 use sp_core::hexdisplay::HexDisplay;
 use sp_runtime::traits::Block as BlockT;
 use std::{io::Write, net::SocketAddr};
+
+trait IdentifyChain {
+	fn is_peregrine(&self) -> bool;
+	fn is_spiritnet(&self) -> bool;
+}
+
+impl IdentifyChain for dyn sc_service::ChainSpec {
+	fn is_peregrine(&self) -> bool {
+		self.id().starts_with("kilt_peregrine")
+	}
+	fn is_spiritnet(&self) -> bool {
+		self.id().starts_with("kilt_spiritnet")
+			|| self.id().starts_with("kilt_westend")
+			|| self.id().starts_with("kilt_rococo")
+	}
+}
+
+impl<T: sc_service::ChainSpec + 'static> IdentifyChain for T {
+	fn is_peregrine(&self) -> bool {
+		<dyn sc_service::ChainSpec>::is_peregrine(self)
+	}
+	fn is_spiritnet(&self) -> bool {
+		<dyn sc_service::ChainSpec>::is_spiritnet(self)
+	}
+}
 
 fn load_spec(id: &str, runtime: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
 	match (id, runtime) {
@@ -165,9 +188,9 @@ macro_rules! construct_async_run {
 				},
 			"peregrine" => {
 					runner.async_run(|$config| {
-						let $components = new_partial::<peregrine_runtime::RuntimeApi, MashRuntimeExecutor, _>(
+						let $components = new_partial::<peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, _>(
 							&$config,
-							crate::service::build_import_queue::<MashRuntimeExecutor, peregrine_runtime::RuntimeApi>,
+							crate::service::build_import_queue::<PeregrineRuntimeExecutor, peregrine_runtime::RuntimeApi>,
 						)?;
 						let task_manager = $components.task_manager;
 						{ $( $code )* }.map(|v| (v, task_manager))
@@ -241,7 +264,7 @@ pub fn run() -> Result<()> {
 			if cfg!(feature = "runtime-benchmarks") {
 				let runner = cli.create_runner(cmd)?;
 				match cli.runtime.as_str() {
-					"peregrine" => runner.sync_run(|config| cmd.run::<Block, MashRuntimeExecutor>(config)),
+					"peregrine" => runner.sync_run(|config| cmd.run::<Block, PeregrineRuntimeExecutor>(config)),
 					"spiritnet" => runner.sync_run(|config| cmd.run::<Block, SpiritRuntimeExecutor>(config)),
 					_ => Err("Unknown runtime".into()),
 				}
@@ -297,13 +320,17 @@ pub fn run() -> Result<()> {
 		#[cfg(feature = "try-runtime")]
 		Some(Subcommand::TryRuntime(cmd)) => {
 			let runner = cli.create_runner(cmd)?;
-
-			// grab the task manager.
 			let registry = &runner.config().prometheus_config.as_ref().map(|cfg| &cfg.registry);
 			let task_manager = TaskManager::new(runner.config().tokio_handle.clone(), *registry)
 				.map_err(|e| format!("Error: {:?}", e))?;
 
-			runner.async_run(|config| Ok((cmd.run::<Block, ExecutorDispatch>(config), task_manager)))
+			if runner.config().chain_spec.is_peregrine() {
+				runner.async_run(|config| Ok((cmd.run::<Block, PeregrineRuntimeExecutor>(config), task_manager)))
+			} else if runner.config().chain_spec.is_spiritnet() {
+				runner.async_run(|config| Ok((cmd.run::<Block, SpiritRuntimeExecutor>(config), task_manager)))
+			} else {
+				Err("Chain doesn't support try-runtime".into())
+			}
 		}
 		#[cfg(not(feature = "try-runtime"))]
 		Some(Subcommand::TryRuntime) => Err("TryRuntime wasn't enabled when building the node. \
@@ -346,14 +373,16 @@ pub fn run() -> Result<()> {
 				);
 
 				match cli.runtime.as_str() {
-					"peregrine" => crate::service::start_node::<MashRuntimeExecutor, peregrine_runtime::RuntimeApi>(
-						config,
-						polkadot_config,
-						id,
-					)
-					.await
-					.map(|r| r.0)
-					.map_err(Into::into),
+					"peregrine" => {
+						crate::service::start_node::<PeregrineRuntimeExecutor, peregrine_runtime::RuntimeApi>(
+							config,
+							polkadot_config,
+							id,
+						)
+						.await
+						.map(|r| r.0)
+						.map_err(Into::into)
+					}
 					"spiritnet" => crate::service::start_node::<SpiritRuntimeExecutor, spiritnet_runtime::RuntimeApi>(
 						config,
 						polkadot_config,
