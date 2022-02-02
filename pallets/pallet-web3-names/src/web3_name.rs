@@ -18,7 +18,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use sp_std::{fmt::Debug, marker::PhantomData, str, vec::Vec};
+use sp_std::{fmt::Debug, marker::PhantomData, vec::Vec};
 
 use codec::{Decode, Encode};
 use frame_support::{ensure, sp_runtime::SaturatedConversion, traits::Get, BoundedVec};
@@ -47,21 +47,16 @@ impl<T: Config> TryFrom<Vec<u8>> for AsciiWeb3Name<T, T::MinNameLength, T::MaxNa
 		);
 		let bounded_vec: BoundedVec<u8, T::MaxNameLength> =
 			BoundedVec::try_from(value).map_err(|_| Self::Error::Web3NameTooLong)?;
-		ensure!(
-			is_byte_array_ascii_string(&bounded_vec),
-			Self::Error::InvalidWeb3NameCharacter
-		);
+		ensure!(is_valid_web3_name(&bounded_vec), Self::Error::InvalidWeb3NameCharacter);
 		Ok(Self(bounded_vec, PhantomData))
 	}
 }
 
-/// Verify that a given slice contains only allowed ASCII characters.
-fn is_byte_array_ascii_string(input: &[u8]) -> bool {
-	if let Ok(string) = str::from_utf8(input) {
-		string.chars().all(|c| matches!(c, 'a'..='z' | '0'..='9' | '-' | '_'))
-	} else {
-		false
-	}
+/// Verify that a given slice can be used as a web3 name.
+fn is_valid_web3_name(input: &[u8]) -> bool {
+	input
+		.iter()
+		.all(|c| matches!(c, b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_'))
 }
 
 impl<T: Config> Debug for AsciiWeb3Name<T, T::MinNameLength, T::MaxNameLength> {
