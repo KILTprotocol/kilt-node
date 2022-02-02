@@ -95,7 +95,7 @@ pub fn generate_base_did_creation_details<T: Config>(
 
 pub fn generate_base_did_details<T>(authentication_key: DidVerificationKey) -> DidDetails<T>
 where
-	T: crate::Config,
+	T: Config,
 	<T as frame_system::Config>::AccountId: From<runtime_common::AccountId>,
 {
 	DidDetails::new(
