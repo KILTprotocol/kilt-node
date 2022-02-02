@@ -878,7 +878,7 @@ pub struct SchedulerMigrationV3;
 
 impl OnRuntimeUpgrade for SchedulerMigrationV3 {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		Scheduler::migrate_v2_to_v3()
+		Scheduler::migrate_v1_to_v3()
 	}
 
 	#[cfg(feature = "try-runtime")]
@@ -888,7 +888,15 @@ impl OnRuntimeUpgrade for SchedulerMigrationV3 {
 
 	#[cfg(feature = "try-runtime")]
 	fn post_upgrade() -> Result<(), &'static str> {
-		Scheduler::post_migrate_to_v3()
+		use frame_support::dispatch::GetStorageVersion;
+
+		Scheduler::post_migrate_to_v3()?;
+		log::info!(
+			"Scheduler migrated to version {:?}",
+			Scheduler::current_storage_version()
+		);
+
+		Ok(())
 	}
 }
 
