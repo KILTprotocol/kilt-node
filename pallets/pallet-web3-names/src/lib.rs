@@ -109,9 +109,9 @@ pub mod pallet {
 		type OriginSuccess: CallSources<AccountIdOf<Self>, Web3NameOwnerOf<Self>>;
 		/// The origin allowed to perform regular operations.
 		type RegularOrigin: EnsureOrigin<Success = Self::OriginSuccess, <Self as frame_system::Config>::Origin>;
-		/// The type of a web3 name.
+		/// The type of a name.
 		type Web3Name: FullCodec + Debug + PartialEq + Clone + TypeInfo + TryFrom<Vec<u8>, Error = Error<Self>>;
-		/// The type of a web3 name owner.
+		/// The type of a name owner.
 		type Web3NameOwner: Parameter + Default;
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
@@ -120,19 +120,19 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		/// A new web3 name has been claimed.
+		/// A new name has been claimed.
 		Web3NameClaimed {
 			owner: Web3NameOwnerOf<T>,
 			name: Web3NameOf<T>,
 		},
-		/// A web3 name has been released.
+		/// A name has been released.
 		Web3NameReleased {
 			owner: Web3NameOwnerOf<T>,
 			name: Web3NameOf<T>,
 		},
-		/// A web3 name has been banned.
+		/// A name has been banned.
 		Web3NameBanned { name: Web3NameOf<T> },
-		/// A web3 name has been unbanned.
+		/// A name has been unbanned.
 		Web3NameUnbanned { name: Web3NameOf<T> },
 	}
 
@@ -168,7 +168,7 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		/// Assign the specified web3 name to the owner as specified in the
+		/// Assign the specified name to the owner as specified in the
 		/// origin.
 		///
 		/// The name must not have already been claimed by someone else and the
@@ -189,20 +189,20 @@ pub mod pallet {
 			let payer = origin.sender();
 			let owner = origin.subject();
 
-			let decoded_web3_name = Self::check_claiming_preconditions(name, &owner, &payer)?;
+			let decoded_name = Self::check_claiming_preconditions(name, &owner, &payer)?;
 
 			// No failure beyond this point
 
-			Self::register_web3_name(decoded_web3_name.clone(), owner.clone(), payer);
+			Self::register_name(decoded_name.clone(), owner.clone(), payer);
 			Self::deposit_event(Event::<T>::Web3NameClaimed {
 				owner,
-				name: decoded_web3_name,
+				name: decoded_name,
 			});
 
 			Ok(())
 		}
 
-		/// Release the provided web3 name from its owner.
+		/// Release the provided name from its owner.
 		///
 		/// The origin must be the owner of the specified name.
 		///
@@ -219,20 +219,20 @@ pub mod pallet {
 			let origin = T::RegularOrigin::ensure_origin(origin)?;
 			let owner = origin.subject();
 
-			let decoded_web3_name = Self::check_releasing_preconditions_for_owner(name, &owner)?;
+			let decoded_name = Self::check_releasing_preconditions_for_owner(name, &owner)?;
 
 			// No failure beyond this point
 
-			Self::unregister_web3_name(&decoded_web3_name);
+			Self::unregister_name(&decoded_name);
 			Self::deposit_event(Event::<T>::Web3NameReleased {
 				owner,
-				name: decoded_web3_name,
+				name: decoded_name,
 			});
 
 			Ok(())
 		}
 
-		/// Release the provided web3 name from its owner.
+		/// Release the provided name from its owner.
 		///
 		/// The origin must be the account that paid for the name's deposit.
 		///
@@ -248,20 +248,20 @@ pub mod pallet {
 		pub fn release_by_payer(origin: OriginFor<T>, name: Web3NameInput<T>) -> DispatchResult {
 			let caller = ensure_signed(origin)?;
 
-			let decoded_web3_name = Self::check_releasing_preconditions_for_caller(name, &caller)?;
+			let decoded_name = Self::check_releasing_preconditions_for_caller(name, &caller)?;
 
 			// No failure beyond this point
 
-			let Web3OwnershipOf::<T> { owner, .. } = Self::unregister_web3_name(&decoded_web3_name);
+			let Web3OwnershipOf::<T> { owner, .. } = Self::unregister_name(&decoded_name);
 			Self::deposit_event(Event::<T>::Web3NameReleased {
 				owner,
-				name: decoded_web3_name,
+				name: decoded_name,
 			});
 
 			Ok(())
 		}
 
-		/// Ban a web3 name.
+		/// Ban a name.
 		///
 		/// A banned name cannot be claimed by anyone. The name's deposit
 		/// is returned to the original payer.
@@ -281,23 +281,21 @@ pub mod pallet {
 		pub fn ban(origin: OriginFor<T>, name: Web3NameInput<T>) -> DispatchResult {
 			T::BanOrigin::ensure_origin(origin)?;
 
-			let (decoded_web3_name, is_claimed) = Self::check_banning_preconditions(name)?;
+			let (decoded_name, is_claimed) = Self::check_banning_preconditions(name)?;
 
 			// No failure beyond this point
 
 			if is_claimed {
-				Self::unregister_web3_name(&decoded_web3_name);
+				Self::unregister_name(&decoded_name);
 			}
 
-			Self::ban_web3_name(&decoded_web3_name);
-			Self::deposit_event(Event::<T>::Web3NameBanned {
-				name: decoded_web3_name,
-			});
+			Self::ban_name(&decoded_name);
+			Self::deposit_event(Event::<T>::Web3NameBanned { name: decoded_name });
 
 			Ok(())
 		}
 
-		/// Unban a web3 name.
+		/// Unban a name.
 		///
 		/// Make a name claimable again.
 		///
@@ -315,14 +313,12 @@ pub mod pallet {
 		pub fn unban(origin: OriginFor<T>, name: Web3NameInput<T>) -> DispatchResult {
 			T::BanOrigin::ensure_origin(origin)?;
 
-			let decoded_web3_name = Self::check_unbanning_preconditions(name)?;
+			let decoded_name = Self::check_unbanning_preconditions(name)?;
 
 			// No failure beyond this point
 
-			Self::unban_web3_name(&decoded_web3_name);
-			Self::deposit_event(Event::<T>::Web3NameUnbanned {
-				name: decoded_web3_name,
-			});
+			Self::unban_name(&decoded_name);
+			Self::deposit_event(Event::<T>::Web3NameUnbanned { name: decoded_name });
 
 			Ok(())
 		}
@@ -330,7 +326,7 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T> {
 		/// Verify that the claiming preconditions are verified. Specifically:
-		/// - The name input data can be decoded as a valid web3 name
+		/// - The name input data can be decoded as a valid name
 		/// - The name does not already exist
 		/// - The owner does not already own a name
 		/// - The name has not been banned
@@ -340,32 +336,25 @@ pub mod pallet {
 			owner: &Web3NameOwnerOf<T>,
 			deposit_payer: &AccountIdOf<T>,
 		) -> Result<Web3NameOf<T>, DispatchError> {
-			let web3_name = Web3NameOf::<T>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
+			let name = Web3NameOf::<T>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
 
 			ensure!(!Names::<T>::contains_key(&owner), Error::<T>::OwnerAlreadyExists);
-			ensure!(
-				!Owner::<T>::contains_key(&web3_name),
-				Error::<T>::Web3NameAlreadyClaimed
-			);
-			ensure!(!Banned::<T>::contains_key(&web3_name), Error::<T>::Web3NameBanned);
+			ensure!(!Owner::<T>::contains_key(&name), Error::<T>::Web3NameAlreadyClaimed);
+			ensure!(!Banned::<T>::contains_key(&name), Error::<T>::Web3NameBanned);
 
 			ensure!(
 				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(deposit_payer, T::Deposit::get()),
 				Error::<T>::InsufficientFunds
 			);
 
-			Ok(web3_name)
+			Ok(name)
 		}
 
-		/// Assign a web3 name to the provided owner reserving the deposit from
+		/// Assign a name to the provided owner reserving the deposit from
 		/// the provided account. This function must be called after
 		/// `check_claiming_preconditions` as it does not verify all the
 		/// preconditions again.
-		pub(crate) fn register_web3_name(
-			name: Web3NameOf<T>,
-			owner: Web3NameOwnerOf<T>,
-			deposit_payer: AccountIdOf<T>,
-		) {
+		pub(crate) fn register_name(name: Web3NameOf<T>, owner: Web3NameOwnerOf<T>, deposit_payer: AccountIdOf<T>) {
 			let deposit = Deposit {
 				owner: deposit_payer,
 				amount: T::Deposit::get(),
@@ -394,14 +383,14 @@ pub mod pallet {
 			name_input: Web3NameInput<T>,
 			owner: &Web3NameOwnerOf<T>,
 		) -> Result<Web3NameOf<T>, DispatchError> {
-			let web3_name = Web3NameOf::<T>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
+			let name = Web3NameOf::<T>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
 			let Web3NameOwnership {
 				owner: stored_owner, ..
-			} = Owner::<T>::get(&web3_name).ok_or(Error::<T>::Web3NameNotFound)?;
+			} = Owner::<T>::get(&name).ok_or(Error::<T>::Web3NameNotFound)?;
 
 			ensure!(owner == &stored_owner, Error::<T>::NotAuthorized);
 
-			Ok(web3_name)
+			Ok(name)
 		}
 
 		/// Verify that the releasing preconditions for a deposit payer are
@@ -413,25 +402,25 @@ pub mod pallet {
 			name_input: Web3NameInput<T>,
 			caller: &AccountIdOf<T>,
 		) -> Result<Web3NameOf<T>, DispatchError> {
-			let web3_name = Web3NameOf::<T>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
-			let Web3NameOwnership { deposit, .. } = Owner::<T>::get(&web3_name).ok_or(Error::<T>::Web3NameNotFound)?;
+			let name = Web3NameOf::<T>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
+			let Web3NameOwnership { deposit, .. } = Owner::<T>::get(&name).ok_or(Error::<T>::Web3NameNotFound)?;
 
 			ensure!(caller == &deposit.owner, Error::<T>::NotAuthorized);
 
-			Ok(web3_name)
+			Ok(name)
 		}
 
-		/// Release the provided web3 name and returns the deposit to the
+		/// Release the provided name and returns the deposit to the
 		/// original payer. This function must be called after
 		/// `check_releasing_preconditions` as it does not verify all the
 		/// preconditions again.
-		fn unregister_web3_name(name: &Web3NameOf<T>) -> Web3OwnershipOf<T> {
-			let web3_name_ownership = Owner::<T>::take(name).unwrap();
-			Names::<T>::remove(&web3_name_ownership.owner);
+		fn unregister_name(name: &Web3NameOf<T>) -> Web3OwnershipOf<T> {
+			let name_ownership = Owner::<T>::take(name).unwrap();
+			Names::<T>::remove(&name_ownership.owner);
 
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&web3_name_ownership.deposit);
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&name_ownership.deposit);
 
-			web3_name_ownership
+			name_ownership
 		}
 
 		/// Verify that the banning preconditions are verified.
@@ -443,22 +432,19 @@ pub mod pallet {
 		/// a tuple containing the parsed name value and whether the name
 		/// being banned is currently assigned to someone or not.
 		fn check_banning_preconditions(name_input: Web3NameInput<T>) -> Result<(Web3NameOf<T>, bool), DispatchError> {
-			let web3_name = Web3NameOf::<T>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
+			let name = Web3NameOf::<T>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
 
-			ensure!(
-				!Banned::<T>::contains_key(&web3_name),
-				Error::<T>::Web3NameAlreadyBanned
-			);
+			ensure!(!Banned::<T>::contains_key(&name), Error::<T>::Web3NameAlreadyBanned);
 
-			let is_claimed = Owner::<T>::contains_key(&web3_name);
+			let is_claimed = Owner::<T>::contains_key(&name);
 
-			Ok((web3_name, is_claimed))
+			Ok((name, is_claimed))
 		}
 
-		/// Ban the provided web3 name. This function must be called after
+		/// Ban the provided name. This function must be called after
 		/// `check_banning_preconditions` as it does not verify all the
 		/// preconditions again.
-		pub(crate) fn ban_web3_name(name: &Web3NameOf<T>) {
+		pub(crate) fn ban_name(name: &Web3NameOf<T>) {
 			Banned::<T>::insert(&name, ());
 		}
 
@@ -467,17 +453,17 @@ pub mod pallet {
 		/// - The name input data can be decoded as a valid name
 		/// - The name must have already been banned
 		fn check_unbanning_preconditions(name_input: Web3NameInput<T>) -> Result<Web3NameOf<T>, DispatchError> {
-			let web3_name = Web3NameOf::<T>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
+			let name = Web3NameOf::<T>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
 
-			ensure!(Banned::<T>::contains_key(&web3_name), Error::<T>::Web3NameNotBanned);
+			ensure!(Banned::<T>::contains_key(&name), Error::<T>::Web3NameNotBanned);
 
-			Ok(web3_name)
+			Ok(name)
 		}
 
-		/// Unban the provided web3 name. This function must be called after
+		/// Unban the provided name. This function must be called after
 		/// `check_unbanning_preconditions` as it does not verify all the
 		/// preconditions again.
-		fn unban_web3_name(name: &Web3NameOf<T>) {
+		fn unban_name(name: &Web3NameOf<T>) {
 			Banned::<T>::remove(name);
 		}
 	}

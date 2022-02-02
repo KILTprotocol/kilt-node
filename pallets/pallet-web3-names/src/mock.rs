@@ -181,12 +181,12 @@ impl ExtBuilder {
 
 		ext.execute_with(|| {
 			for (owner, web3_name, payer) in self.claimed_web3_names {
-				pallet_web3_names::Pallet::<Test>::register_web3_name(web3_name, owner, payer);
+				pallet_web3_names::Pallet::<Test>::register_name(web3_name, owner, payer);
 			}
 
 			for web3_name in self.banned_web3_names {
 				assert!(pallet_web3_names::Owner::<Test>::get(&web3_name).is_none());
-				pallet_web3_names::Pallet::<Test>::ban_web3_name(&web3_name);
+				pallet_web3_names::Pallet::<Test>::ban_name(&web3_name);
 			}
 		});
 		ext
