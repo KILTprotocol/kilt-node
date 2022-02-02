@@ -190,7 +190,7 @@ fn releasing_by_payer_successful() {
 		.with_web3_names(vec![(DID_00, web3_name_00.clone(), ACCOUNT_00)])
 		.build()
 		.execute_with(|| {
-			assert_ok!(Pallet::<Test>::release_by_payer(
+			assert_ok!(Pallet::<Test>::reclaim_deposit(
 				// Submitter == deposit payer
 				RawOrigin::Signed(ACCOUNT_00).into(),
 				web3_name_00.clone().0,
@@ -218,7 +218,7 @@ fn releasing_not_found() {
 		);
 		// Fail to claim by payer
 		assert_noop!(
-			Pallet::<Test>::release_by_payer(RawOrigin::Signed(ACCOUNT_00).into(), web3_name_00.clone().0),
+			Pallet::<Test>::reclaim_deposit(RawOrigin::Signed(ACCOUNT_00).into(), web3_name_00.clone().0),
 			Error::<Test>::Web3NameNotFound
 		);
 	})
@@ -242,7 +242,7 @@ fn releasing_not_authorized() {
 			);
 			// Fail to claim by different payer
 			assert_noop!(
-				Pallet::<Test>::release_by_payer(RawOrigin::Signed(ACCOUNT_01).into(), web3_name_00.clone().0),
+				Pallet::<Test>::reclaim_deposit(RawOrigin::Signed(ACCOUNT_01).into(), web3_name_00.clone().0),
 				Error::<Test>::NotAuthorized
 			);
 		})

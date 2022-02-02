@@ -85,7 +85,7 @@ benchmarks! {
 		assert!(Owner::<T>::get(&web3_name).is_none());
 	}
 
-	release_by_payer {
+	reclaim_deposit {
 		let n in (T::MinNameLength::get()) .. (T::MaxNameLength::get());
 		let caller: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
 		let owner: Web3NameOwnerOf<T> = account("owner", 0, OWNER_SEED);

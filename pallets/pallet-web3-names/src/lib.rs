@@ -219,7 +219,7 @@ pub mod pallet {
 			let origin = T::RegularOrigin::ensure_origin(origin)?;
 			let owner = origin.subject();
 
-			let decoded_name = Self::check_releasing_preconditions_for_owner(name, &owner)?;
+			let decoded_name = Self::check_releasing_preconditions(name, &owner)?;
 
 			// No failure beyond this point
 
@@ -244,11 +244,11 @@ pub mod pallet {
 		/// - Reads: Owner storage entry + origin check
 		/// - Writes: Names, Owner storage entries + currency deposit release
 		/// # </weight>
-		#[pallet::weight(<T as Config>::WeightInfo::release_by_payer(name.len().saturated_into()))]
-		pub fn release_by_payer(origin: OriginFor<T>, name: Web3NameInput<T>) -> DispatchResult {
+		#[pallet::weight(<T as Config>::WeightInfo::reclaim_deposit(name.len().saturated_into()))]
+		pub fn reclaim_deposit(origin: OriginFor<T>, name: Web3NameInput<T>) -> DispatchResult {
 			let caller = ensure_signed(origin)?;
 
-			let decoded_name = Self::check_releasing_preconditions_for_caller(name, &caller)?;
+			let decoded_name = Self::check_reclaim_deposit_preconditions(name, &caller)?;
 
 			// No failure beyond this point
 
@@ -379,7 +379,7 @@ pub mod pallet {
 		/// - The name input data can be decoded as a valid name
 		/// - The name exists (i.e., it has been previous claimed)
 		/// - The caller owns the given name
-		fn check_releasing_preconditions_for_owner(
+		fn check_releasing_preconditions(
 			name_input: Web3NameInput<T>,
 			owner: &Web3NameOwnerOf<T>,
 		) -> Result<Web3NameOf<T>, DispatchError> {
@@ -398,7 +398,7 @@ pub mod pallet {
 		/// - The name input data can be decoded as a valid name
 		/// - The name exists (i.e., it has been previous claimed)
 		/// - The caller owns the name's deposit
-		fn check_releasing_preconditions_for_caller(
+		fn check_reclaim_deposit_preconditions(
 			name_input: Web3NameInput<T>,
 			caller: &AccountIdOf<T>,
 		) -> Result<Web3NameOf<T>, DispatchError> {

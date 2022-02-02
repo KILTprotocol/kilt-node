@@ -71,7 +71,7 @@ impl<T: frame_system::Config> pallet_web3_names::WeightInfo for WeightInfo<T> {
 	// Storage: Web3Names Owner (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Web3Names Names (r:0 w:1)
-	fn release_by_payer(n: u32, ) -> Weight {
+	fn reclaim_deposit(n: u32, ) -> Weight {
 		(44_488_000 as Weight)
 			// Standard Error: 2_000
 			.saturating_add((5_000 as Weight).saturating_mul(n as Weight))
