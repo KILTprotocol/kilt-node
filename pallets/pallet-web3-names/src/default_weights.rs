@@ -47,7 +47,7 @@ use sp_std::marker::PhantomData;
 /// Weight functions needed for pallet_web3_names.
 pub trait WeightInfo {
 	fn claim(n: u32, ) -> Weight;
-	fn release_by_owner(n: u32, ) -> Weight;
+	fn release_by_owner() -> Weight;
 	fn reclaim_deposit(n: u32, ) -> Weight;
 	fn ban(n: u32, ) -> Weight;
 	fn unban(n: u32, ) -> Weight;
@@ -70,10 +70,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Web3Names Owner (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Web3Names Names (r:0 w:1)
-	fn release_by_owner(n: u32, ) -> Weight {
-		(44_041_000 as Weight)
+	fn release_by_owner() -> Weight {
+		(46_538_000 as Weight)
 			// Standard Error: 2_000
-			.saturating_add((9_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
@@ -124,10 +123,9 @@ impl WeightInfo for () {
 	// Storage: Web3Names Owner (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Web3Names Names (r:0 w:1)
-	fn release_by_owner(n: u32, ) -> Weight {
-		(44_041_000 as Weight)
+	fn release_by_owner() -> Weight {
+		(46_538_000 as Weight)
 			// Standard Error: 2_000
-			.saturating_add((9_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(RocksDbWeight::get().reads(2 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(3 as Weight))
 	}

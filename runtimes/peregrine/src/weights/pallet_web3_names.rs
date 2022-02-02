@@ -61,10 +61,9 @@ impl<T: frame_system::Config> pallet_web3_names::WeightInfo for WeightInfo<T> {
 	// Storage: Web3Names Owner (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Web3Names Names (r:0 w:1)
-	fn release_by_owner(n: u32, ) -> Weight {
+	fn release_by_owner() -> Weight {
 		(43_897_000 as Weight)
 			// Standard Error: 3_000
-			.saturating_add((16_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
