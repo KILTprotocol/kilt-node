@@ -20,7 +20,6 @@ use frame_support::{assert_noop, assert_ok, BoundedVec};
 
 use frame_system::RawOrigin;
 use kilt_support::{deposit::Deposit, mock::mock_origin};
-use runtime_common::Balance;
 use sp_runtime::{traits::Zero, DispatchError};
 
 use crate::{mock::*, Banned, Error, Names, Owner, Pallet, Web3OwnershipOf};

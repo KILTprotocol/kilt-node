@@ -28,8 +28,9 @@ use sp_runtime::{
 use crate as pallet_web3_names;
 use crate::web3_name::AsciiWeb3Name;
 
+pub(crate) type Balance = u128;
+
 type Index = u64;
-type Balance = u128;
 type BlockNumber = u64;
 type Hash = sp_core::H256;
 type Signature = MultiSignature;
