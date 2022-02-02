@@ -365,11 +365,13 @@ pub(crate) fn roll_to(n: BlockNumber, authors: Vec<Option<AccountId>>) {
 			StakePallet::note_author(*author);
 		}
 		// TODO: Remove comments after settling on hook with coworkers
-		// <AllPalletsReversedWithSystemFirst as OnFinalize<u64>>::on_finalize(System::block_number());
+		// <AllPalletsReversedWithSystemFirst as
+		// OnFinalize<u64>>::on_finalize(System::block_number());
 		<AllPalletsWithSystem as OnFinalize<u64>>::on_finalize(System::block_number());
 		System::set_block_number(System::block_number() + 1);
 		<AllPalletsWithSystem as OnInitialize<u64>>::on_initialize(System::block_number());
-		// <AllPalletsReversedWithSystemFirst as OnInitialize<u64>>::on_initialize(System::block_number());
+		// <AllPalletsReversedWithSystemFirst as
+		// OnInitialize<u64>>::on_initialize(System::block_number());
 	}
 }
 
