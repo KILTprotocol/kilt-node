@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "target": "es2020",
+    "module": "commonjs"
+  },
+  "exclude": [
+    "../../scripts/node_modules", "tests"]
+}
