@@ -92,6 +92,10 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		/// The origin allowed to ban names.
 		type BanOrigin: EnsureOrigin<Self::Origin>;
+		/// The origin allowed to perform regular operations.
+		type OwnerOrigin: EnsureOrigin<Success = Self::OriginSuccess, <Self as frame_system::Config>::Origin>;
+		/// The type of origin after a successful origin check.
+		type OriginSuccess: CallSources<AccountIdOf<Self>, Web3NameOwnerOf<Self>>;
 		/// The currency type to reserve and release deposits.
 		type Currency: ReservableCurrency<AccountIdOf<Self>>;
 		/// The amount of KILT to deposit to claim a name.
@@ -105,10 +109,6 @@ pub mod pallet {
 		/// The max encoded length of a name.
 		#[pallet::constant]
 		type MaxNameLength: Get<u32>;
-		/// The type of origin after a successful origin check.
-		type OriginSuccess: CallSources<AccountIdOf<Self>, Web3NameOwnerOf<Self>>;
-		/// The origin allowed to perform regular operations.
-		type RegularOrigin: EnsureOrigin<Success = Self::OriginSuccess, <Self as frame_system::Config>::Origin>;
 		/// The type of a name.
 		type Web3Name: FullCodec + Debug + PartialEq + Clone + TypeInfo + TryFrom<Vec<u8>, Error = Error<Self>>;
 		/// The type of a name owner.
@@ -185,7 +185,7 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::weight(<T as Config>::WeightInfo::claim(name.len().saturated_into()))]
 		pub fn claim(origin: OriginFor<T>, name: Web3NameInput<T>) -> DispatchResult {
-			let origin = T::RegularOrigin::ensure_origin(origin)?;
+			let origin = T::OwnerOrigin::ensure_origin(origin)?;
 			let payer = origin.sender();
 			let owner = origin.subject();
 
@@ -216,7 +216,7 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::weight(<T as Config>::WeightInfo::release_by_owner(name.len().saturated_into()))]
 		pub fn release_by_owner(origin: OriginFor<T>, name: Web3NameInput<T>) -> DispatchResult {
-			let origin = T::RegularOrigin::ensure_origin(origin)?;
+			let origin = T::OwnerOrigin::ensure_origin(origin)?;
 			let owner = origin.subject();
 
 			let decoded_name = Self::check_releasing_preconditions(name, &owner)?;

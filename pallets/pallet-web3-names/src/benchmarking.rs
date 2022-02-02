@@ -48,7 +48,7 @@ benchmarks! {
 		where
 		T::AccountId: From<sr25519::Public>,
 		T::Web3NameOwner: From<T::AccountId>,
-		T::RegularOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::Web3NameOwner>,
+		T::OwnerOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::Web3NameOwner>,
 		T::BanOrigin: EnsureOrigin<T::Origin>,
 	}
 
@@ -58,7 +58,7 @@ benchmarks! {
 		let owner: Web3NameOwnerOf<T> = account("owner", 0, OWNER_SEED);
 		let web3_name_input: BoundedVec<u8, T::MaxNameLength> = BoundedVec::try_from(generate_web3_name_input(n.saturated_into())).expect("BoundedVec creation should not fail.");
 		let web3_name_input_clone = web3_name_input.clone();
-		let origin = T::RegularOrigin::generate_origin(caller.clone(), owner.clone());
+		let origin = T::OwnerOrigin::generate_origin(caller.clone(), owner.clone());
 
 		make_free_for_did::<T>(&caller);
 	}: _<T::Origin>(origin, web3_name_input_clone)
@@ -74,7 +74,7 @@ benchmarks! {
 		let owner: Web3NameOwnerOf<T> = account("owner", 0, OWNER_SEED);
 		let web3_name_input: BoundedVec<u8, T::MaxNameLength> = BoundedVec::try_from(generate_web3_name_input(n.saturated_into())).expect("BoundedVec creation should not fail.");
 		let web3_name_input_clone = web3_name_input.clone();
-		let origin = T::RegularOrigin::generate_origin(caller.clone(), owner.clone());
+		let origin = T::OwnerOrigin::generate_origin(caller.clone(), owner.clone());
 
 		make_free_for_did::<T>(&caller);
 		Pallet::<T>::claim(origin.clone(), web3_name_input.clone()).expect("Should register the claimed web3 name.");
@@ -91,7 +91,7 @@ benchmarks! {
 		let owner: Web3NameOwnerOf<T> = account("owner", 0, OWNER_SEED);
 		let web3_name_input: BoundedVec<u8, T::MaxNameLength> = BoundedVec::try_from(generate_web3_name_input(n.saturated_into())).expect("BoundedVec creation should not fail.");
 		let web3_name_input_clone = web3_name_input.clone();
-		let did_origin = T::RegularOrigin::generate_origin(caller.clone(), owner.clone());
+		let did_origin = T::OwnerOrigin::generate_origin(caller.clone(), owner.clone());
 		let signed_origin = RawOrigin::Signed(caller.clone());
 
 		make_free_for_did::<T>(&caller);
@@ -109,7 +109,7 @@ benchmarks! {
 		let owner: Web3NameOwnerOf<T> = account("owner", 0, OWNER_SEED);
 		let web3_name_input: BoundedVec<u8, T::MaxNameLength> = BoundedVec::try_from(generate_web3_name_input(n.saturated_into())).expect("BoundedVec creation should not fail.");
 		let web3_name_input_clone = web3_name_input.clone();
-		let did_origin = T::RegularOrigin::generate_origin(caller.clone(), owner.clone());
+		let did_origin = T::OwnerOrigin::generate_origin(caller.clone(), owner.clone());
 		let ban_origin = RawOrigin::Root;
 
 		make_free_for_did::<T>(&caller);

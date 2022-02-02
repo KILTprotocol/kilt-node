@@ -616,13 +616,13 @@ parameter_types! {
 
 impl pallet_web3_names::Config for Runtime {
 	type BanOrigin = EnsureRoot<AccountId>;
+	type OwnerOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Currency = Balances;
 	type Deposit = Web3NameDeposit;
 	type Event = Event;
 	type MaxNameLength = MaxNameLength;
 	type MinNameLength = MinNameLength;
-	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
-	type RegularOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime, MinNameLength, MaxNameLength>;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = weights::pallet_web3_names::WeightInfo<Runtime>;

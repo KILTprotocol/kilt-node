@@ -105,7 +105,7 @@ impl pallet_balances::Config for Test {
 pub(crate) type TestWeb3Name = AsciiWeb3Name<Test, MinNameLength, MaxNameLength>;
 pub(crate) type TestWeb3NameOwner = SubjectId;
 pub(crate) type TestWeb3NamePayer = AccountId;
-pub(crate) type TestRegularOrigin = mock_origin::EnsureDoubleOrigin<TestWeb3NamePayer, TestWeb3NameOwner>;
+pub(crate) type TestOwnerOrigin = mock_origin::EnsureDoubleOrigin<TestWeb3NamePayer, TestWeb3NameOwner>;
 pub(crate) type TestOriginSuccess = mock_origin::DoubleOrigin<TestWeb3NamePayer, TestWeb3NameOwner>;
 pub(crate) type TestBanOrigin = EnsureRoot<AccountId>;
 
@@ -118,13 +118,13 @@ parameter_types! {
 
 impl pallet_web3_names::Config for Test {
 	type BanOrigin = TestBanOrigin;
+	type OwnerOrigin = TestOwnerOrigin;
+	type OriginSuccess = TestOriginSuccess;
 	type Currency = Balances;
 	type Deposit = Web3NameDeposit;
 	type Event = Event;
 	type MaxNameLength = MaxNameLength;
 	type MinNameLength = MinNameLength;
-	type OriginSuccess = TestOriginSuccess;
-	type RegularOrigin = TestRegularOrigin;
 	type Web3Name = TestWeb3Name;
 	type Web3NameOwner = TestWeb3NameOwner;
 	type WeightInfo = ();
