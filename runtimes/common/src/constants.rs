@@ -232,3 +232,13 @@ pub mod proxy {
 	pub const MAX_PROXIES: u16 = 10;
 	pub const MAX_PENDING: u16 = 10;
 }
+
+pub mod web3_names {
+	use crate::Balance;
+
+	use super::KILT;
+
+	pub const MIN_LENGTH: u32 = 3;
+	pub const MAX_LENGTH: u32 = 32;
+	pub const DEPOSIT: Balance = 2 * KILT;
+}

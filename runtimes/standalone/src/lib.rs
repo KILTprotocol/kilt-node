@@ -38,6 +38,7 @@ pub use frame_support::{
 	},
 	ConsensusEngineId, StorageValue,
 };
+use frame_system::EnsureRoot;
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
 use sp_api::impl_runtime_apis;
@@ -60,6 +61,7 @@ pub use ctype;
 pub use delegation;
 pub use did;
 pub use pallet_balances::Call as BalancesCall;
+pub use pallet_web3_names;
 use runtime_common::{
 	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
 	fees::ToAuthor,
@@ -444,6 +446,26 @@ impl pallet_did_lookup::Config for Runtime {
 }
 
 parameter_types! {
+	pub const Web3NameDeposit: Balance = constants::web3_names::DEPOSIT;
+	pub const MinNameLength: u32 = constants::web3_names::MIN_LENGTH;
+	pub const MaxNameLength: u32 = constants::web3_names::MAX_LENGTH;
+}
+
+impl pallet_web3_names::Config for Runtime {
+	type BanOrigin = EnsureRoot<AccountId>;
+	type OwnerOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+	type Currency = Balances;
+	type Deposit = Web3NameDeposit;
+	type Event = Event;
+	type MaxNameLength = MaxNameLength;
+	type MinNameLength = MinNameLength;
+	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime, MinNameLength, MaxNameLength>;
+	type Web3NameOwner = DidIdentifier;
+	type WeightInfo = ();
+}
+
+parameter_types! {
 	pub const Period: u64 = 0xFFFF_FFFF_FFFF_FFFF;
 	pub const Offset: u64 = 0xFFFF_FFFF_FFFF_FFFF;
 }
@@ -626,6 +648,7 @@ construct_runtime!(
 		// DELETED CrowdloanContributors: 36,
 
 		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 37,
+		Web3Names: pallet_web3_names = 38,
 	}
 );
 
@@ -655,6 +678,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			// DID creation is not allowed through the DID proxy.
 			Call::Did(did::Call::create { .. }) => Err(did::RelationshipDeriveError::NotCallableByDid),
 			Call::Did { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
+			Call::Web3Names { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(&calls[..]),
 			Call::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(&calls[..]),
 			#[cfg(not(feature = "runtime-benchmarks"))]

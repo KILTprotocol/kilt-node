@@ -28,6 +28,7 @@ delegation = {default-features = false, path = "../../pallets/delegation"}
 did = {default-features = false, path = "../../pallets/did"}
 kilt-launch = {path = "../../pallets/kilt-launch", default-features = false}
 kilt-support = {path = "../../support", default-features = false, optional = true}
+pallet-web3-names = {default-features = false, path = "../../pallets/pallet-web3-names"}
 pallet-did-lookup = {default-features = false, path = "../../pallets/pallet-did-lookup"}
 pallet-inflation = {path = "../../pallets/pallet-inflation", default-features = false}
 parachain-staking = {default-features = false, path = "../../pallets/parachain-staking"}
@@ -108,7 +109,6 @@ runtime-benchmarks = [
   "frame-system/runtime-benchmarks",
   "hex-literal",
   "kilt-launch/runtime-benchmarks",
-  "runtime-common/runtime-benchmarks",
   "kilt-support",
   "kilt-support/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
@@ -123,9 +123,11 @@ runtime-benchmarks = [
   "pallet-timestamp/runtime-benchmarks",
   "pallet-treasury/runtime-benchmarks",
   "pallet-vesting/runtime-benchmarks",
+  "pallet-web3-names/runtime-benchmarks",
   "pallet-utility/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
   "rococo-runtime/runtime-benchmarks",
+  "runtime-common/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
 ]
 std = [
@@ -167,6 +169,7 @@ std = [
   "pallet-transaction-payment-rpc-runtime-api/std",
   "pallet-transaction-payment/std",
   "pallet-treasury/std",
+  "pallet-web3-names/std",
   "pallet-vesting/std",
   "parachain-info/std",
   "parachain-staking/std",
@@ -216,6 +219,7 @@ try-runtime = [
   "pallet-timestamp/try-runtime",
   "pallet-transaction-payment/try-runtime",
   "pallet-treasury/try-runtime",
+  "pallet-web3-names/try-runtime",
   "pallet-utility/try-runtime",
   "pallet-vesting/try-runtime",
   "parachain-staking/try-runtime",

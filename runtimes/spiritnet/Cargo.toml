@@ -27,6 +27,7 @@ ctype = {default-features = false, path = "../../pallets/ctype"}
 delegation = {default-features = false, path = "../../pallets/delegation"}
 did = {default-features = false, path = "../../pallets/did"}
 kilt-launch = {path = "../../pallets/kilt-launch", default-features = false}
+pallet-web3-names = {path = "../../pallets/pallet-web3-names", default-features = false}
 kilt-support = {path = "../../support", default-features = false, optional = true}
 pallet-did-lookup = {default-features = false, path = "../../pallets/pallet-did-lookup"}
 pallet-inflation = {path = "../../pallets/pallet-inflation", default-features = false}
@@ -121,8 +122,9 @@ runtime-benchmarks = [
   "pallet-scheduler/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
   "pallet-treasury/runtime-benchmarks",
-  "pallet-vesting/runtime-benchmarks",
+  "pallet-web3-names/runtime-benchmarks",
   "pallet-utility/runtime-benchmarks",
+  "pallet-vesting/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
   "rococo-runtime/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
@@ -146,7 +148,6 @@ std = [
   "frame-system/std",
   "frame-try-runtime/std",
   "kilt-launch/std",
-  "runtime-common/std",
   "log/std",
   "pallet-aura/std",
   "pallet-authorship/std",
@@ -165,11 +166,13 @@ std = [
   "pallet-transaction-payment-rpc-runtime-api/std",
   "pallet-transaction-payment/std",
   "pallet-treasury/std",
+  "pallet-web3-names/std",
   "pallet-vesting/std",
   "parachain-info/std",
   "parachain-staking/std",
   "polkadot-parachain/std",
   "rococo-runtime/std",
+  "runtime-common/std",
   "scale-info/std",
   "serde",
   "sp-api/std",
@@ -213,6 +216,7 @@ try-runtime = [
   "pallet-timestamp/try-runtime",
   "pallet-transaction-payment/try-runtime",
   "pallet-treasury/try-runtime",
+  "pallet-web3-names/try-runtime",
   "pallet-utility/try-runtime",
   "pallet-vesting/try-runtime",
   "parachain-staking/try-runtime",
