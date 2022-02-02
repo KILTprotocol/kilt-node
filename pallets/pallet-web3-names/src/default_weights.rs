@@ -61,28 +61,27 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Web3Names Banned (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	fn claim(n: u32, ) -> Weight {
-		(52_956_000 as Weight)
-			// Standard Error: 3_000
-			.saturating_add((46_000 as Weight).saturating_mul(n as Weight))
+		(51_814_000 as Weight)
+			// Standard Error: 2_000
+			.saturating_add((42_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
+	// Storage: Web3Names Names (r:1 w:1)
 	// Storage: Web3Names Owner (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
-	// Storage: Web3Names Names (r:0 w:1)
 	fn release_by_owner() -> Weight {
-		(46_538_000 as Weight)
-			// Standard Error: 2_000
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+		(44_267_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(3 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
 	// Storage: Web3Names Owner (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Web3Names Names (r:0 w:1)
 	fn reclaim_deposit(n: u32, ) -> Weight {
-		(44_454_000 as Weight)
+		(43_834_000 as Weight)
 			// Standard Error: 3_000
-			.saturating_add((5_000 as Weight).saturating_mul(n as Weight))
+			.saturating_add((19_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
@@ -91,15 +90,15 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: Web3Names Names (r:0 w:1)
 	fn ban(n: u32, ) -> Weight {
-		(48_151_000 as Weight)
-			// Standard Error: 4_000
-			.saturating_add((36_000 as Weight).saturating_mul(n as Weight))
+		(47_315_000 as Weight)
+			// Standard Error: 5_000
+			.saturating_add((43_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(T::DbWeight::get().reads(3 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}
 	// Storage: Web3Names Banned (r:1 w:1)
 	fn unban(n: u32, ) -> Weight {
-		(21_436_000 as Weight)
+		(20_297_000 as Weight)
 			// Standard Error: 1_000
 			.saturating_add((32_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
@@ -114,28 +113,27 @@ impl WeightInfo for () {
 	// Storage: Web3Names Banned (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	fn claim(n: u32, ) -> Weight {
-		(52_956_000 as Weight)
-			// Standard Error: 3_000
-			.saturating_add((46_000 as Weight).saturating_mul(n as Weight))
+		(51_814_000 as Weight)
+			// Standard Error: 2_000
+			.saturating_add((42_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(RocksDbWeight::get().reads(4 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(3 as Weight))
 	}
+	// Storage: Web3Names Names (r:1 w:1)
 	// Storage: Web3Names Owner (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
-	// Storage: Web3Names Names (r:0 w:1)
 	fn release_by_owner() -> Weight {
-		(46_538_000 as Weight)
-			// Standard Error: 2_000
-			.saturating_add(RocksDbWeight::get().reads(2 as Weight))
+		(44_267_000 as Weight)
+			.saturating_add(RocksDbWeight::get().reads(3 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(3 as Weight))
 	}
 	// Storage: Web3Names Owner (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Web3Names Names (r:0 w:1)
 	fn reclaim_deposit(n: u32, ) -> Weight {
-		(44_454_000 as Weight)
+		(43_834_000 as Weight)
 			// Standard Error: 3_000
-			.saturating_add((5_000 as Weight).saturating_mul(n as Weight))
+			.saturating_add((19_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(RocksDbWeight::get().reads(2 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(3 as Weight))
 	}
@@ -144,15 +142,15 @@ impl WeightInfo for () {
 	// Storage: System Account (r:1 w:1)
 	// Storage: Web3Names Names (r:0 w:1)
 	fn ban(n: u32, ) -> Weight {
-		(48_151_000 as Weight)
-			// Standard Error: 4_000
-			.saturating_add((36_000 as Weight).saturating_mul(n as Weight))
+		(47_315_000 as Weight)
+			// Standard Error: 5_000
+			.saturating_add((43_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(RocksDbWeight::get().reads(3 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(4 as Weight))
 	}
 	// Storage: Web3Names Banned (r:1 w:1)
 	fn unban(n: u32, ) -> Weight {
-		(21_436_000 as Weight)
+		(20_297_000 as Weight)
 			// Standard Error: 1_000
 			.saturating_add((32_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(RocksDbWeight::get().reads(1 as Weight))
