@@ -45,12 +45,13 @@ trait IdentifyChain {
 
 impl IdentifyChain for dyn sc_service::ChainSpec {
 	fn is_peregrine(&self) -> bool {
-		self.id().starts_with("kilt_peregrine")
+		self.id().contains("peregrine") || self.id().eq("kilt_parachain_testnet")
 	}
 	fn is_spiritnet(&self) -> bool {
-		self.id().starts_with("kilt_spiritnet")
-			|| self.id().starts_with("kilt_westend")
-			|| self.id().starts_with("kilt_rococo")
+		self.id().contains("spiritnet")
+			|| self.id().eq("kilt_westend")
+			|| self.id().eq("kilt_rococo")
+			|| self.id().eq("kilt")
 	}
 }
 
@@ -372,26 +373,26 @@ pub fn run() -> Result<()> {
 					if config.role.is_authority() { "yes" } else { "no" }
 				);
 
-				match cli.runtime.as_str() {
-					"peregrine" => {
-						crate::service::start_node::<PeregrineRuntimeExecutor, peregrine_runtime::RuntimeApi>(
-							config,
-							polkadot_config,
-							id,
-						)
-						.await
-						.map(|r| r.0)
-						.map_err(Into::into)
-					}
-					"spiritnet" => crate::service::start_node::<SpiritRuntimeExecutor, spiritnet_runtime::RuntimeApi>(
+				if config.chain_spec.is_peregrine() {
+					crate::service::start_node::<PeregrineRuntimeExecutor, peregrine_runtime::RuntimeApi>(
 						config,
 						polkadot_config,
 						id,
 					)
 					.await
 					.map(|r| r.0)
-					.map_err(Into::into),
-					_ => Err("Unknown runtime".into()),
+					.map_err(Into::into)
+				} else if config.chain_spec.is_spiritnet() {
+					crate::service::start_node::<SpiritRuntimeExecutor, spiritnet_runtime::RuntimeApi>(
+						config,
+						polkadot_config,
+						id,
+					)
+					.await
+					.map(|r| r.0)
+					.map_err(Into::into)
+				} else {
+					Err("Unknown runtime".into())
 				}
 			})
 		}
