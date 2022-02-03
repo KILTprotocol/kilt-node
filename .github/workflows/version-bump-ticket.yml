@@ -1,5 +1,8 @@
 name: Create version bump ticket
 on:
+  push:
+    branches:
+      - version-bump
   workflow_dispatch:
     inputs:
       from:
@@ -8,6 +11,16 @@ on:
       to:
         description: "Polkadot version to bump to"
         required: true
+      asignee:
+        description: 'Case is assigned to'
+        required: true
+        default: 'weichweich'
+        type: choice
+        options:
+        - weichweich
+        - wischi
+        - Diablo95
+        - trusch
 
 jobs:
   create_bump_ticket:
@@ -31,5 +44,6 @@ jobs:
         with:
           title: Update substrate/polkadot from ${{ github.event.inputs.from }} to ${{ github.event.inputs.to }}
           content-filepath: ./version-bump.md
+          assignees: ${{ github.event.inputs.asignee }}
           labels: |
-            automated issue
+            "⛓ KILT node"
