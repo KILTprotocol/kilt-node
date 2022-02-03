@@ -41,7 +41,6 @@ jobs:
         with:
           title: Update substrate/polkadot from ${{ github.event.inputs.from }} to ${{ github.event.inputs.to }}
           content-filepath: .github/ISSUE_TICKET_TEMPLATE.md
-          repository: ticket
           assignees: ${{ github.event.inputs.asignee }}
           labels: |
             ⛓ KILT node
