@@ -603,6 +603,26 @@ impl pallet_did_lookup::Config for Runtime {
 }
 
 parameter_types! {
+	pub const Web3NameDeposit: Balance = constants::web3_names::DEPOSIT;
+	pub const MinNameLength: u32 = constants::web3_names::MIN_LENGTH;
+	pub const MaxNameLength: u32 = constants::web3_names::MAX_LENGTH;
+}
+
+impl pallet_web3_names::Config for Runtime {
+	type BanOrigin = EnsureRoot<AccountId>;
+	type OwnerOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+	type Currency = Balances;
+	type Deposit = Web3NameDeposit;
+	type Event = Event;
+	type MaxNameLength = MaxNameLength;
+	type MinNameLength = MinNameLength;
+	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime, MinNameLength, MaxNameLength>;
+	type Web3NameOwner = DidIdentifier;
+	type WeightInfo = weights::pallet_web3_names::WeightInfo<Runtime>;
+}
+
+parameter_types! {
 	pub const InitialPeriodLength: BlockNumber = constants::treasury::INITIAL_PERIOD_LENGTH;
 	pub const InitialPeriodReward: Balance = constants::treasury::INITIAL_PERIOD_REWARD_PER_BLOCK;
 }
@@ -836,6 +856,7 @@ construct_runtime! {
 		// DELETED: CrowdloanContributors = 65,
 		Inflation: pallet_inflation = 66,
 		DidLookup: pallet_did_lookup = 67,
+		Web3Names: pallet_web3_names = 68,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 		ParachainSystem: cumulus_pallet_parachain_system = 80,
@@ -872,6 +893,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			// DID creation is not allowed through the DID proxy.
 			Call::Did(did::Call::create { .. }) => Err(did::RelationshipDeriveError::NotCallableByDid),
 			Call::Did { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
+			Call::Web3Names { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(&calls[..]),
 			Call::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(&calls[..]),
 			#[cfg(not(feature = "runtime-benchmarks"))]
@@ -1059,6 +1081,7 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, kilt_launch, KiltLaunch);
 			list_benchmark!(list, extra, pallet_inflation, Inflation);
 			list_benchmark!(list, extra, parachain_staking, ParachainStaking);
+			list_benchmark!(list, extra, pallet_web3_names, Web3Names);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
 
@@ -1125,6 +1148,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, kilt_launch, KiltLaunch);
 			add_benchmark!(params, batches, pallet_inflation, Inflation);
 			add_benchmark!(params, batches, parachain_staking, ParachainStaking);
+			add_benchmark!(params, batches, pallet_web3_names, Web3Names);
 
 			// No benchmarks for these pallets
 			// add_benchmark!(params, batches, cumulus_pallet_parachain_system, ParachainSystem);
