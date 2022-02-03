@@ -43,7 +43,7 @@ jobs:
         uses: peter-evans/create-issue-from-file@v3
         with:
           title: Update substrate/polkadot from ${{ github.event.inputs.from }} to ${{ github.event.inputs.to }}
-          content-filepath: ./ISSUE_TICKET_TEMPLATE.md
+          content-filepath: .github/ISSUE_TICKET_TEMPLATE.md
           assignees: ${{ github.event.inputs.asignee }}
           labels: |
             "⛓ KILT node"
