@@ -22,14 +22,13 @@ use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
 use runtime_common::{constants::KILT, AccountId, AuthorityId, Balance};
 use sc_service::ChainType;
-use sc_telemetry::TelemetryEndpoints;
 use sp_core::{crypto::UncheckedInto, sr25519};
 
 use empty_runtime::{
 	BalancesConfig, GenesisConfig, ParachainInfoConfig, SessionConfig, SudoConfig, SystemConfig, WASM_BINARY,
 };
 
-use crate::chain_spec::{get_account_id_from_seed, get_from_seed, DEFAULT_PARA_ID, TELEMETRY_URL};
+use crate::chain_spec::{get_account_id_from_seed, get_from_seed, DEFAULT_PARA_ID};
 
 use super::{get_properties, Extensions};
 
@@ -104,17 +103,17 @@ pub fn get_chain_spec_dev() -> Result<ChainSpec, String> {
 	))
 }
 
-const VOID_COL_ACC_1: [u8; 32] = hex!["e6cf13c86a5f174acba79ca361dc429d89eb704c6a407af83f30b11ab8bc5045"];
-const VOID_COL_SESSION_1: [u8; 32] = hex!["e29df39b74777495ca00cd7a316ce98c5225d7088ae924b122fe0e2e6a4b5569"];
+const VOID_COL_ACC_1: [u8; 32] = hex!["d66c57ee2e3a5003c56083cddd2601e6e84e80887e8521a3cc2d1870c37a3e39"];
+const VOID_COL_SESSION_1: [u8; 32] = hex!["26bde6c2cbd60beac843d9afd63e63e35bcee3ca1e70ee706e41213394cfed00"];
 
 pub fn get_chain_spec_void() -> Result<ChainSpec, String> {
-	let properties = get_properties("WILT", 15, 38);
+	let properties = get_properties("VOID", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
 	let id: ParaId = 2085.into();
 
 	Ok(ChainSpec::from_genesis(
-		"WILT",
-		"kilt_westend",
+		"VOID",
+		"void",
 		ChainType::Live,
 		move || {
 			testnet_genesis(
@@ -125,19 +124,12 @@ pub fn get_chain_spec_void() -> Result<ChainSpec, String> {
 				id,
 			)
 		},
-		vec![
-			"/dns4/bootnode.kilt.io/tcp/30360/p2p/12D3KooWRPR7q1Rgwurd4QGyUUbVnN4nXYNVzbLeuhFsd9eXmHJk"
-				.parse()
-				.expect("bootnode address is formatted correctly; qed"),
-			"/dns4/bootnode.kilt.io/tcp/30361/p2p/12D3KooWDAEqpTRsL76itsabbh4SeaqtCM6v9npQ8eCeqPbbuFE9"
-				.parse()
-				.expect("bootnode address is formatted correctly; qed"),
-		],
-		Some(TelemetryEndpoints::new(vec![(TELEMETRY_URL.to_string(), 0)]).expect("WILT telemetry url is valid; qed")),
+		vec![],
+		None,
 		None,
 		Some(properties),
 		Extensions {
-			relay_chain: "westend".into(),
+			relay_chain: "kusama".into(),
 			para_id: id.into(),
 		},
 	))
@@ -161,7 +153,7 @@ fn testnet_genesis(
 			code: wasm_binary.to_vec(),
 		},
 		balances: BalancesConfig {
-			balances: endowed_accounts.iter().cloned().collect(),
+			balances: endowed_accounts,
 		},
 		parachain_info: ParachainInfoConfig { parachain_id: id },
 		aura: Default::default(),
