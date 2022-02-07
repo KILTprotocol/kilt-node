@@ -19,7 +19,7 @@ substrate-build-script-utils = {git = "https://github.com/paritytech/substrate",
 peregrine-runtime = {path = "../../runtimes/peregrine"}
 runtime-common = {path = "../../runtimes/common"}
 spiritnet-runtime = {path = "../../runtimes/spiritnet"}
-empty-runtime = {path = "../../runtimes/empty"}
+void-runtime = {path = "../../runtimes/void"}
 
 # External dependencies
 codec = {package = "parity-scale-codec", version = "2.3.1"}

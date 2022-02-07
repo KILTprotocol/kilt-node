@@ -91,11 +91,11 @@ impl sc_executor::NativeExecutionDispatch for VoidRuntimeExecutor {
 	type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
 
 	fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
-		empty_runtime::api::dispatch(method, data)
+		void_runtime::api::dispatch(method, data)
 	}
 
 	fn native_version() -> sc_executor::NativeVersion {
-		empty_runtime::native_version()
+		void_runtime::native_version()
 	}
 }
 

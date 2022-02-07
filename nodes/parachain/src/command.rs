@@ -47,9 +47,9 @@ fn load_spec(id: &str, runtime: &str) -> std::result::Result<Box<dyn sc_service:
 		("rilt-new", _) => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_rilt()?)),
 		("rilt", _) => Ok(Box::new(chain_spec::spiritnet::load_rilt_spec()?)),
 		("spiritnet", _) => Ok(Box::new(chain_spec::spiritnet::load_spiritnet_spec()?)),
-		("void", _) => Ok(Box::new(chain_spec::empty::load_void_spec()?)),
-		("void-new", _) => Ok(Box::new(chain_spec::empty::get_chain_spec_void()?)),
-		("void-dev", _) => Ok(Box::new(chain_spec::empty::get_chain_spec_dev()?)),
+		("void", _) => Ok(Box::new(chain_spec::void::load_void_spec()?)),
+		("void-new", _) => Ok(Box::new(chain_spec::void::get_chain_spec_void()?)),
+		("void-dev", _) => Ok(Box::new(chain_spec::void::get_chain_spec_dev()?)),
 		("", "spiritnet") => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_dev()?)),
 		("", "peregrine") => Ok(Box::new(chain_spec::peregrine::make_dev_spec()?)),
 		(path, "spiritnet") => Ok(Box::new(chain_spec::spiritnet::ChainSpec::from_json_file(path.into())?)),
@@ -176,9 +176,9 @@ macro_rules! construct_async_run {
 				}
 			"void" => {
 				runner.async_run(|$config| {
-					let $components = new_partial::<empty_runtime::RuntimeApi, VoidRuntimeExecutor, _>(
+					let $components = new_partial::<void_runtime::RuntimeApi, VoidRuntimeExecutor, _>(
 						&$config,
-						crate::service::build_import_queue::<VoidRuntimeExecutor, empty_runtime::RuntimeApi>,
+						crate::service::build_import_queue::<VoidRuntimeExecutor, void_runtime::RuntimeApi>,
 					)?;
 					let task_manager = $components.task_manager;
 					{ $( $code )* }.map(|v| (v, task_manager))
@@ -373,7 +373,7 @@ pub fn run() -> Result<()> {
 					.await
 					.map(|r| r.0)
 					.map_err(Into::into),
-					"void" => crate::service::start_node::<VoidRuntimeExecutor, empty_runtime::RuntimeApi>(
+					"void" => crate::service::start_node::<VoidRuntimeExecutor, void_runtime::RuntimeApi>(
 						config,
 						polkadot_config,
 						id,

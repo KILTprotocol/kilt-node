@@ -204,7 +204,6 @@ parameter_types! {
 
 impl pallet_aura::Config for Runtime {
 	type AuthorityId = AuthorityId;
-	//TODO: handle disabled validators
 	type DisabledValidators = ();
 	type MaxAuthorities = MaxAuthorities;
 }

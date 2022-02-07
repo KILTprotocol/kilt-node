@@ -24,7 +24,7 @@ use runtime_common::{constants::KILT, AccountId, AuthorityId, Balance};
 use sc_service::ChainType;
 use sp_core::{crypto::UncheckedInto, sr25519};
 
-use empty_runtime::{
+use void_runtime::{
 	BalancesConfig, GenesisConfig, ParachainInfoConfig, SessionConfig, SudoConfig, SystemConfig, WASM_BINARY,
 };
 
@@ -166,7 +166,7 @@ fn testnet_genesis(
 					(
 						acc.clone(),
 						acc.clone(),
-						empty_runtime::SessionKeys { aura: key.clone() },
+						void_runtime::SessionKeys { aura: key.clone() },
 					)
 				})
 				.collect::<Vec<_>>(),

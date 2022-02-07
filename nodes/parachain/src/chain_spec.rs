@@ -27,7 +27,7 @@ use serde::{Deserialize, Serialize};
 use sp_core::{Pair, Public};
 use sp_runtime::traits::IdentifyAccount;
 
-pub mod empty;
+pub mod void;
 pub mod peregrine;
 pub mod spiritnet;
 
