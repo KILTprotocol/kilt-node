@@ -19,7 +19,7 @@
 use crate::{
 	chain_spec,
 	cli::{Cli, RelayChainCli, Subcommand},
-	service::{new_partial, MashRuntimeExecutor, SpiritRuntimeExecutor},
+	service::{new_partial, MashRuntimeExecutor, SpiritRuntimeExecutor, VoidRuntimeExecutor},
 };
 use codec::Encode;
 use cumulus_client_service::genesis::generate_genesis_block;
@@ -47,6 +47,9 @@ fn load_spec(id: &str, runtime: &str) -> std::result::Result<Box<dyn sc_service:
 		("rilt-new", _) => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_rilt()?)),
 		("rilt", _) => Ok(Box::new(chain_spec::spiritnet::load_rilt_spec()?)),
 		("spiritnet", _) => Ok(Box::new(chain_spec::spiritnet::load_spiritnet_spec()?)),
+		("void", _) => Ok(Box::new(chain_spec::empty::load_void_spec()?)),
+		("void-new", _) => Ok(Box::new(chain_spec::empty::get_chain_spec_void()?)),
+		("void-dev", _) => Ok(Box::new(chain_spec::empty::get_chain_spec_dev()?)),
 		("", "spiritnet") => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_dev()?)),
 		("", "peregrine") => Ok(Box::new(chain_spec::peregrine::make_dev_spec()?)),
 		(path, "spiritnet") => Ok(Box::new(chain_spec::spiritnet::ChainSpec::from_json_file(path.into())?)),
@@ -171,6 +174,16 @@ macro_rules! construct_async_run {
 						{ $( $code )* }.map(|v| (v, task_manager))
 					})
 				}
+			"void" => {
+				runner.async_run(|$config| {
+					let $components = new_partial::<empty_runtime::RuntimeApi, VoidRuntimeExecutor, _>(
+						&$config,
+						crate::service::build_import_queue::<VoidRuntimeExecutor, empty_runtime::RuntimeApi>,
+					)?;
+					let task_manager = $components.task_manager;
+					{ $( $code )* }.map(|v| (v, task_manager))
+				})
+			}
 			_ => panic!("unknown runtime"),
 		}
 	}}
@@ -241,6 +254,7 @@ pub fn run() -> Result<()> {
 				match cli.runtime.as_str() {
 					"peregrine" => runner.sync_run(|config| cmd.run::<Block, MashRuntimeExecutor>(config)),
 					"spiritnet" => runner.sync_run(|config| cmd.run::<Block, SpiritRuntimeExecutor>(config)),
+					"void" => runner.sync_run(|config| cmd.run::<Block, VoidRuntimeExecutor>(config)),
 					_ => Err("Unknown runtime".into()),
 				}
 			} else {
@@ -352,6 +366,14 @@ pub fn run() -> Result<()> {
 					.map(|r| r.0)
 					.map_err(Into::into),
 					"spiritnet" => crate::service::start_node::<SpiritRuntimeExecutor, spiritnet_runtime::RuntimeApi>(
+						config,
+						polkadot_config,
+						id,
+					)
+					.await
+					.map(|r| r.0)
+					.map_err(Into::into),
+					"void" => crate::service::start_node::<VoidRuntimeExecutor, empty_runtime::RuntimeApi>(
 						config,
 						polkadot_config,
 						id,
