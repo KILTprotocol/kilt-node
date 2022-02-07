@@ -27,9 +27,9 @@ use serde::{Deserialize, Serialize};
 use sp_core::{Pair, Public};
 use sp_runtime::traits::IdentifyAccount;
 
-pub mod void;
 pub mod peregrine;
 pub mod spiritnet;
+pub mod void;
 
 const TELEMETRY_URL: &str = "wss://telemetry-backend.kilt.io:8080/submit";
 const DEFAULT_PARA_ID: ParaId = LOWEST_PUBLIC_ID;
