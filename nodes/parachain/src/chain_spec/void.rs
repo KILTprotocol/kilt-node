@@ -109,7 +109,7 @@ const VOID_COL_SESSION_1: [u8; 32] = hex!["26bde6c2cbd60beac843d9afd63e63e35bcee
 pub fn get_chain_spec_void() -> Result<ChainSpec, String> {
 	let properties = get_properties("VOID", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
-	let id: ParaId = todo!();
+	let id: ParaId = 2108.into();
 
 	Ok(ChainSpec::from_genesis(
 		"VOID",
