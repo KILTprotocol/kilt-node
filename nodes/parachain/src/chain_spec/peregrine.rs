@@ -26,11 +26,11 @@ use peregrine_runtime::{
 	VestingConfig, WASM_BINARY,
 };
 use runtime_common::{
-	constants::{INFLATION_CONFIG, KILT, MAX_COLLATOR_STAKE},
+	constants::{INFLATION_CONFIG, MAX_COLLATOR_STAKE},
 	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use sc_service::ChainType;
-use sp_core::{crypto::UncheckedInto, sr25519};
+use sp_core::sr25519;
 use sp_runtime::traits::Zero;
 
 use crate::chain_spec::{get_account_id_from_seed, get_from_seed, get_properties, Extensions, DEFAULT_PARA_ID};
@@ -116,35 +116,12 @@ pub fn make_new_spec() -> Result<ChainSpec, String> {
 		move || {
 			testnet_genesis(
 				wasm,
-				vec![
-					(
-						hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].into(),
-						None,
-						10_000 * KILT,
-					),
-					(
-						hex!["b67fe6413ffe5cf91ae38a6475c37deea70a25c6c86b3dd17bb82d09efd9b350"].into(),
-						None,
-						10_000 * KILT,
-					),
-				],
+				vec![],
 				kilt_inflation_config(),
 				MAX_COLLATOR_STAKE,
 				hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].into(),
-				vec![
-					(
-						hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].into(),
-						hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].unchecked_into(),
-					),
-					(
-						hex!["b67fe6413ffe5cf91ae38a6475c37deea70a25c6c86b3dd17bb82d09efd9b350"].into(),
-						hex!["b67fe6413ffe5cf91ae38a6475c37deea70a25c6c86b3dd17bb82d09efd9b350"].unchecked_into(),
-					),
-				],
-				vec![
-					hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].into(),
-					hex!["b67fe6413ffe5cf91ae38a6475c37deea70a25c6c86b3dd17bb82d09efd9b350"].into(),
-				],
+				vec![],
+				vec![],
 				id,
 			)
 		},
