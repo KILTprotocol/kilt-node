@@ -98,6 +98,7 @@ impl frame_system::Config for Test {
 	type BlockLength = ();
 	type SS58Prefix = SS58Prefix;
 	type OnSetCode = ();
+	type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 parameter_types! {
 	pub const ExistentialDeposit: Balance = 1;
@@ -363,9 +364,9 @@ pub(crate) fn roll_to(n: BlockNumber, authors: Vec<Option<AccountId>>) {
 		if let Some(Some(author)) = authors.get((System::block_number()) as usize) {
 			StakePallet::note_author(*author);
 		}
-		<AllPallets as OnFinalize<u64>>::on_finalize(System::block_number());
+		<AllPalletsReversedWithSystemFirst as OnFinalize<u64>>::on_finalize(System::block_number());
 		System::set_block_number(System::block_number() + 1);
-		<AllPallets as OnInitialize<u64>>::on_initialize(System::block_number());
+		<AllPalletsReversedWithSystemFirst as OnInitialize<u64>>::on_initialize(System::block_number());
 	}
 }
 

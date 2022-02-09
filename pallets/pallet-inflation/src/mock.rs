@@ -76,6 +76,7 @@ impl frame_system::Config for Test {
 	type SystemWeightInfo = ();
 	type SS58Prefix = SS58Prefix;
 	type OnSetCode = ();
+	type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
 parameter_types! {
@@ -119,9 +120,9 @@ impl pallet_inflation::Config for Test {
 
 pub(crate) fn roll_to(n: BlockNumber) {
 	while System::block_number() < n {
-		<AllPallets as OnFinalize<u64>>::on_finalize(System::block_number());
+		<AllPalletsWithSystem as OnFinalize<u64>>::on_finalize(System::block_number());
 		System::set_block_number(System::block_number() + 1);
-		<AllPallets as OnInitialize<u64>>::on_initialize(System::block_number());
+		<AllPalletsWithSystem as OnInitialize<u64>>::on_initialize(System::block_number());
 	}
 }
 

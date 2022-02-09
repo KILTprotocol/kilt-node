@@ -119,7 +119,8 @@ benchmarks! {
 	where_clause {
 		where
 		T::DidIdentifier: From<AccountId>,
-		<T as frame_system::Config>::Origin: From<RawOrigin<T::DidIdentifier>>
+		<T as frame_system::Config>::Origin: From<RawOrigin<T::DidIdentifier>>,
+		<T as frame_system::Config>::AccountId: From<AccountId>,
 	}
 
 	/* create extrinsic */

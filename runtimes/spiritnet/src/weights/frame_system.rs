@@ -61,11 +61,6 @@ impl<T: frame_system::Config> frame_system::WeightInfo for WeightInfo<T> {
 		(2_062_000_u64)
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
-	fn set_changes_trie_config() -> Weight {
-		(7_869_000_u64)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
-	}
 	fn set_storage(i: u32, ) -> Weight {
 		(0_u64)
 			// Standard Error: 0
