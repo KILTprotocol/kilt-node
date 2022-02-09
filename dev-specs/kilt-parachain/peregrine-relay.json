@@ -1,6 +1,6 @@
 {
   "name": "Peregrine Relay",
-  "id": "westend_peregrine_relay",
+  "id": "westend_peregrine3_relay",
   "chainType": "Live",
   "bootNodes": [
     "/dns4/bootnode.kilt.io/tcp/30350/p2p/12D3KooWEeezCpJauUmWw3zfgEtYzhZTc5LgukQYtGTMaZfzgVfE",
@@ -14,7 +14,7 @@
       0
     ]
   ],
-  "protocolId": "dot",
+  "protocolId": "Rkilt3",
   "forkId": null,
   "properties": null,
   "forkBlocks": null,

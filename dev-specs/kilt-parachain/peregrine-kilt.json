@@ -1,6 +1,6 @@
 {
   "name": "KILT Peregrine",
-  "id": "peregrine_kilt",
+  "id": "peregrine3_kilt",
   "chainType": "Live",
   "bootNodes": [
     "/dns4/bootnode.kilt.io/tcp/30340/p2p/12D3KooWALJtiCZzcUPVsCa5f5egGfQyFhPY67kKosDw95bJqK7M",
@@ -18,7 +18,7 @@
     "tokenDecimals": 15,
     "tokenSymbol": "PILT"
   },
-  "relay_chain": "rococo_local_testnet",
+  "relay_chain": "westend_peregrine3_relay",
   "para_id": 2000,
   "consensusEngine": null,
   "codeSubstitutes": {},

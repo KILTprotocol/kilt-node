@@ -16,7 +16,8 @@ def update_spec(input: typing.Dict, base_chain="westend"):
         ],
         "chainType": "Live",
         "name": "Peregrine Relay",
-        "id": f"{base_chain}_peregrine_relay",
+        "protocolId": "Rkilt3",
+        "id": f"{base_chain}_peregrine3_relay",
         "telemetryEndpoints": [
             [
                 "/dns/telemetry-backend.kilt.io/tcp/8080/x-parity-wss/%2Fsubmit",

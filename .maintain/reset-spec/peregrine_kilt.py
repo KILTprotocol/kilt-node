@@ -13,7 +13,7 @@ def update_spec(input: typing.Dict):
         ],
         "chainType": "Live",
         "name": "KILT Peregrine",
-        "id": "peregrine_kilt",
+        "id": "peregrine3_kilt",
         "para_id": para_id,
         "protocolId": "pkilt3",
         "telemetryEndpoints": [
