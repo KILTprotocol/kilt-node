@@ -1,7 +1,7 @@
 {
   "name": "Sporran",
   "id": "sporran",
-  "chainType": "Live",
+  "chainType": "Development",
   "bootNodes": [
     "/dns4/bootnode.kilt.io/tcp/30340/p2p/12D3KooWGXaTjB6KmPHxyCx2dQLpS7p9vnXAYmprQMsVNnxYAWYa"
   ],

@@ -126,7 +126,7 @@ impl Alternative {
 				ChainSpec::from_genesis(
 					"Sporran",
 					"sporran",
-					ChainType::Live,
+					ChainType::Development,
 					move || {
 						testnet_genesis(
 							wasm_binary,
