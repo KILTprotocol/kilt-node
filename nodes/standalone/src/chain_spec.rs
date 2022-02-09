@@ -27,6 +27,7 @@ use runtime_common::{constants::BLOCKS_PER_YEAR, AccountId, AccountPublic, Balan
 use hex_literal::hex;
 
 use sc_service::{self, ChainType, Properties};
+use sc_telemetry::TelemetryEndpoints;
 use sp_consensus_aura::ed25519::AuthorityId as AuraId;
 use sp_core::{crypto::UncheckedInto, ed25519, sr25519, Pair, Public};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
@@ -48,8 +49,8 @@ pub enum Alternative {
 	Development,
 	/// Whatever the current runtime is, with simple Alice/Bob auths.
 	KiltTestnet,
-	KiltDevnet,
-	MashnetStaging,
+	/// Sporran Testnet
+	SporranTestnet,
 }
 
 /// Helper function to generate a crypto pair from seed
@@ -76,22 +77,11 @@ fn get_authority_keys_from_secret(seed: &str) -> (AccountId, AuraId, GrandpaId) 
 	)
 }
 
-/// Build a pair of public keys from a given hex string. This method will panic
-/// if the hex string is malformed.
-///
-/// public_key – the public key formatted as a hex string
-fn as_authority_key(public_key: [u8; 32]) -> (AccountId, AuraId, GrandpaId) {
-	(
-		public_key.into(),
-		public_key.unchecked_into(),
-		public_key.unchecked_into(),
-	)
-}
+const TELEMETRY_URL: &str = "wss://telemetry-backend.kilt.io:8080/submit";
 
-const DEV_AUTH_ALICE: [u8; 32] = hex!("d44da634611d9c26837e3b5114a7d460a4cb7d688119739000632ed2d3794ae9");
-const DEV_AUTH_BOB: [u8; 32] = hex!("06815321f16a5ae0fe246ee19285f8d8858fe60d5c025e060922153fcf8e54f9");
-const DEV_AUTH_CHARLIE: [u8; 32] = hex!("6d2d775fdc628134e3613a766459ccc57a29fd380cd410c91c6c79bc9c03b344");
-const DEV_FAUCET: [u8; 32] = hex!("2c9e9c40e15a2767e2d04dc1f05d824dd76d1d37bada3d7bb1d40eca29f3a4ff");
+const SPORRAN_AUTHORITY_ACC: [u8; 32] = hex!("0621f3a33afc66ab7973e3d2cdf86d30ab89aa3e717e8bb1db23a9cb1736061b");
+const SPORRAN_AUTHORITY_SESSION: [u8; 32] = hex!("3bbaa842650064362767a1d9dd8899f531c80dc42eafb9599f4df0965e4a5299");
+const SPORRAN_FAUCET: [u8; 32] = hex!("2c9e9c40e15a2767e2d04dc1f05d824dd76d1d37bada3d7bb1d40eca29f3a4ff");
 const TRANSFER_ACCOUNT: [u8; 32] = hex!("6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c");
 
 impl Alternative {
@@ -100,11 +90,11 @@ impl Alternative {
 		let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm binary not available".to_string())?;
 
 		let mut properties = Properties::new();
-		properties.insert("tokenSymbol".into(), "KILT".into());
-		properties.insert("tokenDecimals".into(), 15.into());
+		properties.insert("tokenDecimals".into(), 15_i16.into());
 
 		Ok(match self {
 			Alternative::Development => {
+				properties.insert("tokenSymbol".into(), "KILT".into());
 				ChainSpec::from_genesis(
 					"Development",
 					"development",
@@ -115,83 +105,55 @@ impl Alternative {
 							vec![get_authority_keys_from_secret("//Alice")],
 							get_account_id_from_secret::<ed25519::Public>("//Alice"),
 							vec![
-					// Dev Faucet account
-					get_account_id_from_secret::<ed25519::Public>("receive clutch item involve chaos clutch furnace arrest claw isolate okay together"),
-					get_account_id_from_secret::<ed25519::Public>("//Alice"),
-					get_account_id_from_secret::<ed25519::Public>("//Bob"),
-					get_account_id_from_secret::<sr25519::Public>("//Alice"),
-					get_account_id_from_secret::<sr25519::Public>("//Bob"),
-	],
+								// Dev Faucet account
+								get_account_id_from_secret::<ed25519::Public>("receive clutch item involve chaos clutch furnace arrest claw isolate okay together"),
+								get_account_id_from_secret::<ed25519::Public>("//Alice"),
+								get_account_id_from_secret::<ed25519::Public>("//Bob"),
+								get_account_id_from_secret::<sr25519::Public>("//Alice"),
+								get_account_id_from_secret::<sr25519::Public>("//Bob"),
+							],
 						)
 					},
 					vec![],
 					None,
 					None,
+					Some(properties),
+					None,
+				)
+			}
+			Alternative::SporranTestnet => {
+				properties.insert("tokenSymbol".into(), "SILT".into());
+				ChainSpec::from_genesis(
+					"Sporran",
+					"sporran",
+					ChainType::Development,
+					move || {
+						testnet_genesis(
+							wasm_binary,
+							vec![(
+								SPORRAN_AUTHORITY_ACC.into(),
+								SPORRAN_AUTHORITY_SESSION.unchecked_into(),
+								SPORRAN_AUTHORITY_SESSION.unchecked_into(),
+							)],
+							SPORRAN_AUTHORITY_ACC.into(),
+							vec![SPORRAN_FAUCET.into(), SPORRAN_AUTHORITY_ACC.into()],
+						)
+					},
+					vec![
+						"/dns4/bootnode.kilt.io/tcp/30340/p2p/12D3KooWGXaTjB6KmPHxyCx2dQLpS7p9vnXAYmprQMsVNnxYAWYa"
+							.parse()
+							.expect("bootnode address is formatted correctly; qed"),
+					],
+					Some(
+						TelemetryEndpoints::new(vec![(TELEMETRY_URL.to_string(), 0)])
+							.expect("WILT telemetry url is valid; qed"),
+					),
+					Some("SILT"),
 					Some(properties),
 					None,
 				)
 			}
 			Alternative::KiltTestnet => ChainSpec::from_json_bytes(&include_bytes!("../res/testnet.json")[..])?,
-			Alternative::KiltDevnet => {
-				ChainSpec::from_genesis(
-					"KILT Devnet",
-					"kilt_devnet",
-					ChainType::Live,
-					move || {
-						testnet_genesis(
-							wasm_binary,
-							// Initial Authorities
-							vec![
-								as_authority_key(DEV_AUTH_ALICE),
-								as_authority_key(DEV_AUTH_BOB),
-								as_authority_key(DEV_AUTH_CHARLIE),
-							],
-							DEV_AUTH_ALICE.into(),
-							vec![
-								DEV_FAUCET.into(),
-								DEV_AUTH_ALICE.into(),
-								DEV_AUTH_BOB.into(),
-								DEV_AUTH_CHARLIE.into(),
-							],
-						)
-					},
-					vec![],
-					None,
-					None,
-					Some(properties),
-					None,
-				)
-			}
-			Alternative::MashnetStaging => {
-				ChainSpec::from_genesis(
-					"Mashnet Staging",
-					"mashnet_staging",
-					ChainType::Live,
-					move || {
-						testnet_genesis(
-							wasm_binary,
-							// Initial Authorities
-							vec![
-								as_authority_key(DEV_AUTH_ALICE),
-								as_authority_key(DEV_AUTH_BOB),
-								as_authority_key(DEV_AUTH_CHARLIE),
-							],
-							DEV_AUTH_ALICE.into(),
-							vec![
-								DEV_FAUCET.into(),
-								DEV_AUTH_ALICE.into(),
-								DEV_AUTH_BOB.into(),
-								DEV_AUTH_CHARLIE.into(),
-							],
-						)
-					},
-					vec![],
-					None,
-					None,
-					Some(properties),
-					None,
-				)
-			}
 		})
 	}
 
@@ -199,8 +161,7 @@ impl Alternative {
 		match s {
 			"dev" => Some(Alternative::Development),
 			"kilt-testnet" => Some(Alternative::KiltTestnet),
-			"kilt-devnet" => Some(Alternative::KiltDevnet),
-			"mashnet-staging" => Some(Alternative::MashnetStaging),
+			"sporran-new" => Some(Alternative::SporranTestnet),
 			_ => None,
 		}
 	}
