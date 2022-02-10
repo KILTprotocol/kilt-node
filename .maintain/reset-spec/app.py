@@ -169,8 +169,8 @@ if __name__ == "__main__":
     if args.peregrine:
         with tempfile.TemporaryDirectory() as tmpdirname:
             make_custom_spec(
-                tmpdirname, args.image, "peregrine_dev_kilt.plain.json",
-                PERE_KILT, peregrine_kilt.update_spec, "dev", "peregrine"
+                tmpdirname, args.image, "peregrine_kilt.plain.json",
+                PERE_KILT, peregrine_kilt.update_spec, "peregrine-new", "peregrine"
             )
 
     if args.peregrine_relay:
@@ -184,7 +184,7 @@ if __name__ == "__main__":
         with tempfile.TemporaryDirectory() as tmpdirname:
             make_custom_spec(
                 tmpdirname, args.image, "peregrine_dev_kilt.plain.json",
-                PERE_DEV_KILT, peregrine_dev_kilt.update_spec, "dev", "peregrine"
+                PERE_DEV_KILT, peregrine_dev_kilt.update_spec, "peregrine-new", "peregrine"
             )
 
     if args.peregrine_relay_dev:
@@ -198,7 +198,7 @@ if __name__ == "__main__":
         with tempfile.TemporaryDirectory() as tmpdirname:
             make_custom_spec(
                 tmpdirname, args.image, "peregrine_stg.plain.json",
-                PERE_STG_KILT, peregrine_stg_kilt.update_spec, "dev", "peregrine"
+                PERE_STG_KILT, peregrine_stg_kilt.update_spec, "peregrine-new", "peregrine"
             )
 
     if args.peregrine_relay_stg:

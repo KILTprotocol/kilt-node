@@ -46,8 +46,8 @@ pub fn get_chain_spec_dev() -> Result<ChainSpec, String> {
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
 
 	Ok(ChainSpec::from_genesis(
-		"KILT Local",
-		"kilt_parachain_local_testnet",
+		"KILT Spiritnet Develop",
+		"kilt_spiritnet_dev",
 		ChainType::Local,
 		move || {
 			testnet_genesis(
@@ -115,6 +115,7 @@ pub fn get_chain_spec_dev() -> Result<ChainSpec, String> {
 		vec![],
 		None,
 		None,
+		None,
 		Some(properties),
 		Extensions {
 			relay_chain: "rococo_local_testnet".into(),
@@ -170,6 +171,7 @@ pub fn get_chain_spec_wilt() -> Result<ChainSpec, String> {
 		],
 		Some(TelemetryEndpoints::new(vec![(TELEMETRY_URL.to_string(), 0)]).expect("WILT telemetry url is valid; qed")),
 		None,
+		None,
 		Some(properties),
 		Extensions {
 			relay_chain: "westend".into(),
@@ -224,6 +226,7 @@ pub fn get_chain_spec_rilt() -> Result<ChainSpec, String> {
 				.expect("bootnode address is formatted correctly; qed"),
 		],
 		Some(TelemetryEndpoints::new(vec![(TELEMETRY_URL.to_string(), 0)]).expect("RILT telemetry url is valid; qed")),
+		None,
 		None,
 		Some(properties),
 		Extensions {

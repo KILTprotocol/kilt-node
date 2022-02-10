@@ -1049,10 +1049,12 @@ fn multiple_delegations() {
 
 			roll_to(35, vec![]);
 			assert_ok!(StakePallet::execute_leave_candidates(Origin::signed(2), 2));
-			let mut unbonding_7 = BoundedBTreeMap::new();
+			let mut unbonding_7: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
+				BoundedBTreeMap::new();
 			assert_ok!(unbonding_7.try_insert(35u64 + <Test as Config>::StakeDuration::get() as u64, 80));
 			assert_eq!(StakePallet::unstaking(7), unbonding_7);
-			let mut unbonding_11 = BoundedBTreeMap::new();
+			let mut unbonding_11: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
+				BoundedBTreeMap::new();
 			assert_ok!(unbonding_11.try_insert(35u64 + <Test as Config>::StakeDuration::get() as u64, 11));
 			assert_eq!(StakePallet::unstaking(11), unbonding_11);
 
@@ -2254,7 +2256,8 @@ fn unlock_unstaked() {
 		.build()
 		.execute_with(|| {
 			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
-			let mut unstaking = BoundedBTreeMap::new();
+			let mut unstaking: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
+				BoundedBTreeMap::new();
 			assert_ok!(unstaking.try_insert(3, 100));
 			let lock = BalanceLock {
 				id: STAKING_ID,
@@ -2311,7 +2314,8 @@ fn unlock_unstaked() {
 		.build()
 		.execute_with(|| {
 			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
-			let mut unstaking = BoundedBTreeMap::new();
+			let mut unstaking: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
+				BoundedBTreeMap::new();
 			assert_ok!(unstaking.try_insert(3, 10));
 			let mut lock = BalanceLock {
 				id: STAKING_ID,
@@ -2370,7 +2374,8 @@ fn unlock_unstaked() {
 		.build()
 		.execute_with(|| {
 			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
-			let mut unstaking = BoundedBTreeMap::new();
+			let mut unstaking: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
+				BoundedBTreeMap::new();
 			assert_ok!(unstaking.try_insert(3, 100));
 			let mut lock = BalanceLock {
 				id: STAKING_ID,
@@ -2445,7 +2450,8 @@ fn unlock_unstaked() {
 			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
 			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
 			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10),);
-			let mut unstaking = BoundedBTreeMap::new();
+			let mut unstaking: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
+				BoundedBTreeMap::new();
 			assert_ok!(unstaking.try_insert(3, 60));
 			let mut lock = BalanceLock {
 				id: STAKING_ID,
@@ -2762,7 +2768,8 @@ fn candidate_leaves() {
 
 			roll_to(15, vec![]);
 			assert_ok!(StakePallet::execute_leave_candidates(Origin::signed(13), 1));
-			let mut unstaking = BoundedBTreeMap::new();
+			let mut unstaking: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
+				BoundedBTreeMap::new();
 			assert_ok!(unstaking.try_insert(17, 100));
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(12), unstaking);

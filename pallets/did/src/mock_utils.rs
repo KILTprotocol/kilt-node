@@ -93,12 +93,16 @@ pub fn generate_base_did_creation_details<T: Config>(
 	}
 }
 
-pub fn generate_base_did_details<T: Config>(authentication_key: DidVerificationKey) -> DidDetails<T> {
+pub fn generate_base_did_details<T>(authentication_key: DidVerificationKey) -> DidDetails<T>
+where
+	T: Config,
+	<T as frame_system::Config>::AccountId: From<runtime_common::AccountId>,
+{
 	DidDetails::new(
 		authentication_key,
 		BlockNumberOf::<T>::default(),
 		Deposit {
-			owner: Default::default(),
+			owner: runtime_common::AccountId::new([0u8; 32]).into(),
 			amount: Zero::zero(),
 		},
 	)

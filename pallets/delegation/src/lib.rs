@@ -151,7 +151,7 @@ pub mod pallet {
 		type WeightInfo: WeightInfo;
 
 		/// The currency that is used to reserve funds for each delegation.
-		type Currency: Currency<AccountIdOf<Self>> + ReservableCurrency<AccountIdOf<Self>>;
+		type Currency: ReservableCurrency<AccountIdOf<Self>>;
 
 		/// The deposit that is required for storing a delegation.
 		#[pallet::constant]
@@ -182,6 +182,7 @@ pub mod pallet {
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
+	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
 	/// Contains the latest storage version deployed.

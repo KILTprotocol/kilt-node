@@ -42,7 +42,6 @@ benchmarks! {
 		T::AccountId: From<sr25519::Public>,
 		T::DidIdentifier: From<T::AccountId>,
 		T::Signature: From<sr25519::Signature>,
-		T::Signer: Default,
 		T::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::DidIdentifier>,
 	}
 
