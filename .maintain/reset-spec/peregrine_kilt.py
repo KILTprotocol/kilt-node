@@ -8,8 +8,8 @@ def update_spec(input: typing.Dict):
 
     input.update({
         "bootNodes": [
-            "/dns4/bootnode.kilt.io/tcp/30340/p2p/12D3KooWALJtiCZzcUPVsCa5f5egGfQyFhPY67kKosDw95bJqK7M",
-            "/dns4/bootnode.kilt.io/tcp/30341/p2p/12D3KooWCRgcGtFRsvqxqgysiR6Ah9SAzUNkM12Ef9sy59ZEspSQ",
+            "/dns4/eyrie-1.kilt.io/tcp/30371/p2p/12D3KooWALJtiCZzcUPVsCa5f5egGfQyFhPY67kKosDw95bJqK7M",
+            "/dns4/eyrie-2.kilt.io/tcp/30372/p2p/12D3KooWCRgcGtFRsvqxqgysiR6Ah9SAzUNkM12Ef9sy59ZEspSQ",
         ],
         "chainType": "Live",
         "name": "KILT Peregrine",
