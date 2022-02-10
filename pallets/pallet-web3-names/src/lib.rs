@@ -56,7 +56,6 @@ pub mod pallet {
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-	pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
 	pub type BlockNumberFor<T> = <T as frame_system::Config>::BlockNumber;
 	pub type Web3NameOwnerOf<T> = <T as Config>::Web3NameOwner;
 	pub type Web3NameInput<T> = BoundedVec<u8, <T as Config>::MaxNameLength>;
@@ -65,10 +64,12 @@ pub mod pallet {
 		Web3NameOwnership<Web3NameOwnerOf<T>, Deposit<AccountIdOf<T>, BalanceOf<T>>, BlockNumberFor<T>>;
 
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
+	pub type BalanceOf<T> = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::Balance;
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::storage_version(STORAGE_VERSION)]
+	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
 	/// Map of name -> ownership details.

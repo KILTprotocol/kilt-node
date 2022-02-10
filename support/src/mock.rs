@@ -49,6 +49,7 @@ pub mod mock_origin {
 	///
 	/// WARNING: This is only used for testing!
 	#[pallet::pallet]
+	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
 	/// An origin that is split into sender and subject.

@@ -117,6 +117,7 @@ impl Alternative {
 					vec![],
 					None,
 					None,
+					None,
 					Some(properties),
 					None,
 				)
@@ -146,9 +147,10 @@ impl Alternative {
 					],
 					Some(
 						TelemetryEndpoints::new(vec![(TELEMETRY_URL.to_string(), 0)])
-							.expect("WILT telemetry url is valid; qed"),
+							.expect("SILT telemetry url is valid; qed"),
 					),
 					Some("SILT"),
+					None,
 					Some(properties),
 					None,
 				)
@@ -212,7 +214,7 @@ fn testnet_genesis(
 		},
 		aura: Default::default(),
 		grandpa: Default::default(),
-		sudo: SudoConfig { key: root_key },
+		sudo: SudoConfig { key: Some(root_key) },
 		kilt_launch: KiltLaunchConfig {
 			balance_locks: airdrop_accounts
 				.iter()

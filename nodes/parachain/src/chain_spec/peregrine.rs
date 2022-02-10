@@ -45,8 +45,8 @@ pub fn make_dev_spec() -> Result<ChainSpec, String> {
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
 
 	Ok(ChainSpec::from_genesis(
-		"KILT Peregrine Local",
-		"peregrine_local_testnet",
+		"KILT Peregrine Develop",
+		"kilt_peregrine_dev",
 		ChainType::Local,
 		move || {
 			testnet_genesis(
@@ -96,6 +96,7 @@ pub fn make_dev_spec() -> Result<ChainSpec, String> {
 		vec![],
 		None,
 		None,
+		None,
 		Some(properties),
 		Extensions {
 			relay_chain: "rococo_local_testnet".into(),
@@ -111,7 +112,7 @@ pub fn make_new_spec() -> Result<ChainSpec, String> {
 
 	Ok(ChainSpec::from_genesis(
 		"KILT Peregrine Testnet",
-		"kilt_parachain_testnet",
+		"kilt_peregrine_testnet",
 		ChainType::Live,
 		move || {
 			testnet_genesis(
@@ -126,6 +127,7 @@ pub fn make_new_spec() -> Result<ChainSpec, String> {
 			)
 		},
 		Vec::new(),
+		None,
 		None,
 		None,
 		Some(properties),
@@ -177,7 +179,7 @@ fn testnet_genesis(
 				.chain(botlabs_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
 				.collect(),
 		},
-		sudo: SudoConfig { key: root_key },
+		sudo: SudoConfig { key: Some(root_key) },
 		parachain_info: ParachainInfoConfig { parachain_id: id },
 		kilt_launch: KiltLaunchConfig {
 			vesting: airdrop_accounts
