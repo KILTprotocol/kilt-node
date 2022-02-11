@@ -185,7 +185,7 @@ pub mod pallet {
 		storage::bounded_btree_map::BoundedBTreeMap,
 		traits::{
 			Currency, EstimateNextSessionRotation, Get, Imbalance, LockIdentifier, LockableCurrency, OnUnbalanced,
-			ReservableCurrency, WithdrawReasons,
+			ReservableCurrency, StorageVersion, WithdrawReasons,
 		},
 		BoundedVec,
 	};
@@ -202,7 +202,6 @@ pub mod pallet {
 	use sp_std::prelude::*;
 
 	use crate::{
-		migrations::StakingStorageVersion,
 		set::OrderedSet,
 		types::{
 			BalanceOf, Candidate, CandidateOf, CandidateStatus, DelegationCounter, Delegator, NegativeImbalanceOf,
@@ -214,9 +213,13 @@ pub mod pallet {
 	/// Kilt-specific lock for staking rewards.
 	pub(crate) const STAKING_ID: LockIdentifier = *b"kiltpstk";
 
+	/// The current storage version.
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(7);
+
 	/// Pallet for parachain staking.
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
+	#[pallet::storage_version(STORAGE_VERSION)]
 	#[pallet::without_storage_info]
 	pub struct Pallet<T>(PhantomData<T>);
 
@@ -556,13 +559,6 @@ pub mod pallet {
 			post_weight
 		}
 	}
-
-	/// True if network has been upgraded to this version.
-	/// Storage version of the pallet.
-	///
-	/// This is set to v4 for new networks.
-	#[pallet::storage]
-	pub(crate) type StorageVersion<T: Config> = StorageValue<_, StakingStorageVersion, ValueQuery>;
 
 	/// The maximum number of collator candidates selected at each round.
 	#[pallet::storage]

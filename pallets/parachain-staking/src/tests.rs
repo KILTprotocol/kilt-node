@@ -3927,8 +3927,6 @@ fn update_total_stake_no_collator_changes() {
 
 #[test]
 fn migration_to_v7_works() {
-	use frame_support::traits::PalletInfoAccess;
-
 	ExtBuilder::default()
 		.with_balances(vec![(1, 100)])
 		.with_collators(vec![(1, 100)])
