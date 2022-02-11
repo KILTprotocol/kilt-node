@@ -18,7 +18,7 @@
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
 
-/// An on-chain attestation written by an attester.
+/// An amount of balance reserved by the specified address.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, TypeInfo)]
 pub struct Deposit<Account, Balance> {
 	pub owner: Account,

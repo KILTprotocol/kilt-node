@@ -4,19 +4,18 @@ import typing
 def update_spec(input: typing.Dict):
     acc_col_1 = "5FNHPF1epsZHJC3LSGMbVJzP5ykcgursQAwPjJiNJB5eAGmW"
     acc_col_2 = "5GvFCmt5FMqV15tZUHsATAzafYvVT1HDQoRRcJq4gJ52NCHr"
-    # not an initial collator
-    acc_col_3 = "5EvVhMthVR1EHGEdDoMrhx9iqU2aJqD3gJu3q3xb68A5rjFZ"
     para_id = 2000
 
     input.update({
         "bootNodes": [
-            "/dns4/bootnode.kilt.io/tcp/30340/p2p/12D3KooWALJtiCZzcUPVsCa5f5egGfQyFhPY67kKosDw95bJqK7M",
-            "/dns4/bootnode.kilt.io/tcp/30341/p2p/12D3KooWCRgcGtFRsvqxqgysiR6Ah9SAzUNkM12Ef9sy59ZEspSQ",
+            "/dns4/eyrie-1.kilt.io/tcp/30371/p2p/12D3KooWALJtiCZzcUPVsCa5f5egGfQyFhPY67kKosDw95bJqK7M",
+            "/dns4/eyrie-2.kilt.io/tcp/30372/p2p/12D3KooWCRgcGtFRsvqxqgysiR6Ah9SAzUNkM12Ef9sy59ZEspSQ",
         ],
         "chainType": "Live",
         "name": "KILT Peregrine",
-        "id": "peregrine_kilt",
+        "id": "peregrine3_kilt",
         "para_id": para_id,
+        "protocolId": "pkilt3",
         "telemetryEndpoints": [
             [
                 "/dns/telemetry-backend.kilt.io/tcp/8080/x-parity-wss/%2Fsubmit",
@@ -53,26 +52,15 @@ def update_spec(input: typing.Dict):
             {
                 "aura": "5DMAVHz2yDhDKKUTCJH8cQTVhLZTviJvy5SQxVZjGXUC8B2o"
             }
-        ],
-        [
-            acc_col_3,
-            acc_col_3,
-            {
-                "aura": "5Dvq2MZ22wys4obTHEttjje6GxHVjJo7NQVz7VswDRRRtNwB"
-            }
         ]
     ]
-    input["genesis"]["runtime"]["balances"]["balances"] = [
+    input["genesis"]["runtime"]["balances"]["balances"] += [
         [
             acc_col_1,
             10000000000000000000000000000
         ],
         [
             acc_col_2,
-            10000000000000000000000000000
-        ],
-        [
-            acc_col_3,
             10000000000000000000000000000
         ]
     ]

@@ -3,14 +3,14 @@ authors = ["KILT <info@kilt.io>"]
 description = "Parachain parachain-staking pallet for collator delegation and selection as well as reward distribution"
 edition = "2021"
 name = "parachain-staking"
-version = "1.4.0"
+version = "1.4.1"
 
 [dev-dependencies]
-pallet-aura = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false}
-pallet-timestamp = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false}
-sp-consensus-aura = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false}
-sp-core = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false}
-sp-io = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false}
+pallet-aura = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16", default-features = false}
+pallet-timestamp = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16", default-features = false}
+sp-consensus-aura = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16", default-features = false}
+sp-core = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16", default-features = false}
+sp-io = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16", default-features = false}
 
 [dependencies]
 hex-literal = "0.3.4"
@@ -22,17 +22,17 @@ serde = {version = "1.0.124", optional = true}
 kilt-support = {default-features = false, path = "../../support"}
 runtime-common = {path = "../../runtimes/common", default-features = false}
 
-frame-support = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false}
-frame-system = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false}
-pallet-authorship = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false}
-pallet-balances = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false}
-pallet-session = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false}
-sp-runtime = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false}
-sp-staking = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false}
-sp-std = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false}
+frame-support = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16", default-features = false}
+frame-system = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16", default-features = false}
+pallet-authorship = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16", default-features = false}
+pallet-balances = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16", default-features = false}
+pallet-session = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16", default-features = false}
+sp-runtime = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16", default-features = false}
+sp-staking = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16", default-features = false}
+sp-std = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16", default-features = false}
 
 # benchmarking
-frame-benchmarking = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false, optional = true}
+frame-benchmarking = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16", default-features = false, optional = true}
 
 [features]
 default = ["std"]
