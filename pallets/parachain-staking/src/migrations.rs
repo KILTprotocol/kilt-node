@@ -30,6 +30,7 @@ pub enum StakingStorageVersion {
 	V4,     // Sort TopCandidates and parachain-stakings by amount
 	V5,     // Remove SelectedCandidates, Count Candidates
 	V6,     // Fix delegator replacement bug
+	V7,     // CountedStorageMap for CandidatePool
 }
 
 #[cfg(feature = "try-runtime")]
@@ -37,7 +38,7 @@ impl StakingStorageVersion {
 	/// The latest storage version.
 	#[allow(dead_code)]
 	fn latest() -> Self {
-		Self::V6
+		Self::V7
 	}
 }
 
@@ -51,5 +52,65 @@ impl StakingStorageVersion {
 impl Default for StakingStorageVersion {
 	fn default() -> Self {
 		Self::V6
+	}
+}
+
+pub mod v8 {
+	use super::*;
+	use crate::{CandidatePool, Config, StorageVersion};
+
+	use frame_support::{
+		generate_storage_alias,
+		pallet_prelude::Weight,
+		storage::migration::{put_storage_value, remove_storage_prefix},
+		traits::Get,
+	};
+	use log::info;
+	use sp_runtime::traits::Zero;
+
+	generate_storage_alias!(ParachainStaking, CandidateCount => Value<u32>);
+
+	pub fn pre_migrate<T: Config>() -> Result<(), &'static str> {
+		assert!(
+			!CandidateCount::get().unwrap().is_zero(),
+			"CandidateCount already migrated"
+		);
+		assert!(CandidatePool::<T>::count().is_zero(), "Candidate counter already set");
+		assert!(StorageVersion::<T>::get() == StakingStorageVersion::V6);
+
+		info!("parachain staking migration to v7 passes PRE migrate checks ✅",);
+		Ok(())
+	}
+
+	pub fn migrate<T: Config>() -> Weight {
+		let candidate_count = CandidatePool::<T>::iter().count() as u32;
+
+		remove_storage_prefix(b"ParachainStaking", b"CandidateCount", &[]);
+		CandidatePool::<T>::initialize_counter();
+		StorageVersion::<T>::put(StakingStorageVersion::V7);
+
+		info!("completed parachain staking migration to v7 ✅",);
+		T::DbWeight::get().reads_writes(candidate_count.saturating_add(2).into(), 1)
+	}
+
+	pub fn post_migrate<T: Config>() -> Result<(), &'static str> {
+		assert!(
+			CandidateCount::get().is_none(),
+			"CandidateCount should not exist anymore"
+		);
+		assert!(
+			!frame_support::migration::have_storage_value(b"StakePallet", b"CandidateCount", &[]),
+			"CandidateCount should not exist anymore"
+		);
+		assert!(
+			!CandidatePool::<T>::count().is_zero(),
+			"Candidate counter should have been set"
+		);
+		assert!(StorageVersion::<T>::get() == StakingStorageVersion::V7);
+
+		// use current_storage_version
+
+		info!("parachain staking migration to v7 passes POST migrate checks ✅",);
+		Ok(())
 	}
 }
