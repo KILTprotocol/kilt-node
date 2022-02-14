@@ -3925,21 +3925,3 @@ fn update_total_stake_no_collator_changes() {
 		});
 }
 
-#[test]
-fn migration_to_v7_works() {
-	ExtBuilder::default()
-		.with_balances(vec![(1, 100)])
-		.with_collators(vec![(1, 100)])
-		.build()
-		.execute_with(|| {
-			assert_eq!(CandidatePool::<Test>::count(), 1);
-
-			// Change to incorrect value via unhashed
-			frame_support::storage::unhashed::put(&CandidatePool::<Test>::counter_storage_final_key(), &100u32);
-			assert_eq!(CandidatePool::<Test>::count(), 100u32);
-
-			// Initialize counter
-			assert_eq!(CandidatePool::<Test>::initialize_counter(), 1);
-			assert_eq!(CandidatePool::<Test>::count(), 1);
-		})
-}
