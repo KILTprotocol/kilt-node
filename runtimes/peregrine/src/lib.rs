@@ -992,7 +992,10 @@ pub type Executive = frame_executive::Executive<
 	// Executes pallet hooks in reverse order of definition in construct_runtime
 	// If we want to switch to AllPalletsWithSystem, we need to reorder the staking pallets
 	AllPalletsReversedWithSystemFirst,
-	(SchedulerMigrationV3, ParachainStakingMigrationV7),
+	(
+		SchedulerMigrationV3,
+		parachain_staking::migrations::v7::ParachainStakingMigrationV7<Runtime>,
+	),
 >;
 
 // Migration for scheduler pallet to move from a plain Call to a CallOrHash.
@@ -1018,26 +1021,6 @@ impl OnRuntimeUpgrade for SchedulerMigrationV3 {
 			Scheduler::current_storage_version()
 		);
 		Ok(())
-	}
-}
-
-// Migration for ParachainStaking pallet to mutate CandidatePool to be
-// a CountedStorageMap and switch to new Pallet StorageVersion paradigm.
-pub struct ParachainStakingMigrationV7;
-
-impl OnRuntimeUpgrade for ParachainStakingMigrationV7 {
-	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		parachain_staking::migrations::v7::migrate::<Runtime>()
-	}
-
-	#[cfg(feature = "try-runtime")]
-	fn pre_upgrade() -> Result<(), &'static str> {
-		parachain_staking::migrations::v7::pre_migrate::<Runtime>()
-	}
-
-	#[cfg(feature = "try-runtime")]
-	fn post_upgrade() -> Result<(), &'static str> {
-		parachain_staking::migrations::v7::post_migrate::<Runtime>()
 	}
 }
 

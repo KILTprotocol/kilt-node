@@ -3924,4 +3924,3 @@ fn update_total_stake_no_collator_changes() {
 			);
 		});
 }
-

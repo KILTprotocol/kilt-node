@@ -35,80 +35,87 @@ pub enum StakingStorageVersion {
 	V6,     // Fix delegator replacement bug
 }
 
-// Migrate to new StorageVersion paradigm and CandidatePool to be
-// a CountedStorageMap
+// Migration for ParachainStaking pallet to mutate CandidatePool to be
+// a CountedStorageMap and switch to new Pallet StorageVersion paradigm.
 pub mod v7 {
 	use super::*;
 	use crate::{CandidatePool, Config, Pallet};
 
+	#[cfg(feature = "try-runtime")]
+	use frame_support::traits::GetStorageVersion;
 	use frame_support::{
 		generate_storage_alias,
-		pallet_prelude::Weight,
-		storage::migration::{have_storage_value, remove_storage_prefix},
-		traits::{Get, GetStorageVersion, StorageVersion as NewStorageVersion},
+		traits::{Get, OnRuntimeUpgrade, StorageVersion as NewStorageVersion},
+		weights::Weight,
 	};
 	use log::info;
+	#[cfg(feature = "try-runtime")]
 	use sp_runtime::traits::Zero;
+	use sp_std::marker::PhantomData;
 
 	// Get storage items into scope which are removed during this migration
 	generate_storage_alias!(ParachainStaking, CandidateCount => Value<u32>);
 	generate_storage_alias!(ParachainStaking, StorageVersion => Value<StakingStorageVersion>);
 
-	pub fn pre_migrate<T: Config>() -> Result<(), &'static str> {
-		assert!(
-			!CandidateCount::get().unwrap().is_zero(),
-			"CandidateCount already migrated"
-		);
-		assert!(CandidatePool::<T>::count().is_zero(), "Candidate counter already set");
-		assert!(StorageVersion::get() == Some(StakingStorageVersion::V6));
+	pub struct ParachainStakingMigrationV7<T: Config>(PhantomData<T>);
 
-		info!("💰 parachain staking migration to v7 passes PRE migrate checks ✅",);
-		Ok(())
-	}
+	impl<T: Config> OnRuntimeUpgrade for ParachainStakingMigrationV7<T> {
+		fn on_runtime_upgrade() -> Weight {
+			// migrate CandidateCount
+			frame_support::migration::remove_storage_prefix(b"ParachainStaking", b"CandidateCount", &[]);
+			let candidate_count = CandidatePool::<T>::initialize_counter();
 
-	pub fn migrate<T: Config>() -> Weight {
-		// migrate CandidateCount
-		remove_storage_prefix(b"ParachainStaking", b"CandidateCount", &[]);
-		let candidate_count = CandidatePool::<T>::initialize_counter();
+			// migrate StorageVersion to new paradigm
+			frame_support::migration::remove_storage_prefix(b"ParachainStaking", b"StorageVersion", &[]);
+			NewStorageVersion::new(7).put::<Pallet<T>>();
 
-		// migrate StorageVersion to new paradigm
-		remove_storage_prefix(b"ParachainStaking", b"StorageVersion", &[]);
-		NewStorageVersion::new(7).put::<Pallet<T>>();
+			info!("💰 completed parachain staking migration to v7 ✅",);
+			T::DbWeight::get().reads_writes(candidate_count.into(), candidate_count.saturating_add(3).into())
+		}
 
-		info!("💰 completed parachain staking migration to v7 ✅",);
-		T::DbWeight::get().reads_writes(candidate_count.into(), candidate_count.saturating_add(3).into())
-	}
+		#[cfg(feature = "try-runtime")]
+		fn pre_upgrade() -> Result<(), &'static str> {
+			assert!(
+				!CandidateCount::get().unwrap().is_zero(),
+				"CandidateCount already migrated"
+			);
+			assert!(CandidatePool::<T>::count().is_zero(), "Candidate counter already set");
+			assert!(StorageVersion::get() == Some(StakingStorageVersion::V6));
 
-	pub fn post_migrate<T: Config>() -> Result<(), &'static str> {
-		// check count
-		assert!(
-			CandidateCount::get().is_none(),
-			"CandidateCount should not exist anymore"
-		);
-		assert!(
-			!have_storage_value(b"StakePallet", b"CandidateCount", &[]),
-			"CandidateCount should not exist anymore"
-		);
-		assert!(
-			!CandidatePool::<T>::count().is_zero(),
-			"Candidate counter should have been set"
-		);
+			assert!(CandidatePool::<T>::initialize_counter() == CandidatePool::<T>::iter().count() as u32);
 
-		// check StorageVersion
-		assert!(
-			!have_storage_value(b"StakePallet", b"StorageVersion", &[]),
-			"Old StorageVersion should not exist anymore"
-		);
-		assert_eq!(
-			Pallet::<T>::current_storage_version(),
-			7,
-			"StorageVersion should have migrated to new paradigm"
-		);
+			info!("💰 parachain staking migration to v7 passes PRE migrate checks ✅",);
+			Ok(())
+		}
 
-		info!(
-			"💰 parachain staking migration to {:?} passes POST migrate checks ✅",
-			Pallet::<T>::current_storage_version()
-		);
-		Ok(())
+		#[cfg(feature = "try-runtime")]
+		fn post_upgrade() -> Result<(), &'static str> {
+			// check count
+			assert!(
+				!frame_support::migration::have_storage_value(b"StakePallet", b"CandidateCount", &[]),
+				"CandidateCount should not exist anymore"
+			);
+			assert!(
+				!CandidatePool::<T>::count().is_zero(),
+				"Candidate counter should have been set"
+			);
+
+			// check StorageVersion
+			assert!(
+				!frame_support::migration::have_storage_value(b"StakePallet", b"StorageVersion", &[]),
+				"Old StorageVersion should not exist anymore"
+			);
+			assert_eq!(
+				Pallet::<T>::current_storage_version(),
+				7,
+				"StorageVersion should have migrated to new paradigm"
+			);
+
+			info!(
+				"💰 parachain staking migration to {:?} passes POST migrate checks ✅",
+				Pallet::<T>::current_storage_version()
+			);
+			Ok(())
+		}
 	}
 }
