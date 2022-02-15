@@ -217,12 +217,7 @@ mod tests {
 
 		ExtBuilder::default()
 			.with_ctypes(vec![(ctype_hash, root_owner.clone())])
-			.with_delegation_hierarchies(vec![(
-				hierarchy_root_id,
-				hierarchy_details,
-				root_owner.clone(),
-				ACCOUNT_00,
-			)])
+			.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, root_owner, ACCOUNT_00)])
 			.with_delegations(vec![(parent_id, parent_node)])
 			.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 			.build()
@@ -270,12 +265,7 @@ mod tests {
 
 		ExtBuilder::default()
 			.with_ctypes(vec![(ctype_hash, root_owner.clone())])
-			.with_delegation_hierarchies(vec![(
-				hierarchy_root_id,
-				hierarchy_details,
-				root_owner.clone(),
-				ACCOUNT_00,
-			)])
+			.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, root_owner, ACCOUNT_00)])
 			.with_delegations(vec![(parent_id, parent_node)])
 			.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 			.build()
@@ -309,12 +299,7 @@ mod tests {
 
 		ExtBuilder::default()
 			.with_ctypes(vec![(ctype_hash, root_owner.clone())])
-			.with_delegation_hierarchies(vec![(
-				hierarchy_root_id,
-				hierarchy_details,
-				root_owner.clone(),
-				ACCOUNT_00,
-			)])
+			.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, root_owner, ACCOUNT_00)])
 			.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 			.build()
 			.execute_with(|| {
@@ -361,12 +346,7 @@ mod tests {
 
 		ExtBuilder::default()
 			.with_ctypes(vec![(ctype_hash, root_owner.clone())])
-			.with_delegation_hierarchies(vec![(
-				hierarchy_root_id,
-				hierarchy_details,
-				root_owner.clone(),
-				ACCOUNT_00,
-			)])
+			.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, root_owner, ACCOUNT_00)])
 			.with_delegations(vec![(parent_id, parent_node)])
 			.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 			.build()
@@ -412,17 +392,12 @@ mod tests {
 
 		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 		let mut attestation = generate_base_attestation::<Test>(delegate.clone(), ACCOUNT_00);
-		attestation.authorization_id = Some(parent_id.clone());
+		attestation.authorization_id = Some(parent_id);
 
 		ExtBuilder::default()
 			.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 			.with_ctypes(vec![(attestation.ctype_hash, delegate.clone())])
-			.with_delegation_hierarchies(vec![(
-				hierarchy_root_id,
-				hierarchy_details,
-				root_owner.clone(),
-				ACCOUNT_00,
-			)])
+			.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, root_owner, ACCOUNT_00)])
 			.with_delegations(vec![(parent_id, parent_node)])
 			.with_attestations(vec![(claim_hash, attestation)])
 			.build()
@@ -464,11 +439,11 @@ mod tests {
 
 		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 		let mut attestation = generate_base_attestation::<Test>(delegate.clone(), ACCOUNT_00);
-		attestation.authorization_id = Some(parent_id.clone());
+		attestation.authorization_id = Some(parent_id);
 
 		ExtBuilder::default()
 			.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
-			.with_ctypes(vec![(attestation.ctype_hash, delegate.clone())])
+			.with_ctypes(vec![(attestation.ctype_hash, delegate)])
 			.with_delegation_hierarchies(vec![(
 				hierarchy_root_id,
 				hierarchy_details,
@@ -516,17 +491,12 @@ mod tests {
 
 		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 		let mut attestation = generate_base_attestation::<Test>(delegate.clone(), ACCOUNT_00);
-		attestation.authorization_id = Some(parent_id.clone());
+		attestation.authorization_id = Some(parent_id);
 
 		ExtBuilder::default()
 			.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 			.with_ctypes(vec![(attestation.ctype_hash, delegate.clone())])
-			.with_delegation_hierarchies(vec![(
-				hierarchy_root_id,
-				hierarchy_details,
-				root_owner.clone(),
-				ACCOUNT_00,
-			)])
+			.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, root_owner, ACCOUNT_00)])
 			.with_delegations(vec![(parent_id, parent_node)])
 			.with_attestations(vec![(claim_hash, attestation)])
 			.build()

@@ -82,10 +82,7 @@ fn test_attest_authorized() {
 			));
 			let stored_attestation =
 				Attestation::attestations(&claim_hash).expect("Attestation should be present on chain.");
-			assert!(Attestation::external_attestations(
-				attester.clone(),
-				claim_hash
-			));
+			assert!(Attestation::external_attestations(attester.clone(), claim_hash));
 
 			assert_eq!(stored_attestation.ctype_hash, ctype);
 			assert_eq!(stored_attestation.attester, attester);
@@ -226,10 +223,7 @@ fn test_authorized_revoke() {
 			));
 			let stored_attestation =
 				Attestation::attestations(claim_hash).expect("Attestation should be present on chain.");
-			assert!(Attestation::external_attestations(
-				revoker.clone(),
-				claim_hash
-			));
+			assert!(Attestation::external_attestations(revoker.clone(), claim_hash));
 
 			assert!(stored_attestation.revoked);
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
@@ -423,7 +417,10 @@ fn test_reclaim_deposit() {
 		.execute_with(|| {
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 			assert_ok!(Attestation::reclaim_deposit(Origin::signed(ACCOUNT_00), claim_hash));
-			assert!(!Attestation::external_attestations(other_authorized.clone(), claim_hash));
+			assert!(!Attestation::external_attestations(
+				other_authorized.clone(),
+				claim_hash
+			));
 			assert!(Attestation::attestations(claim_hash).is_none());
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 		});

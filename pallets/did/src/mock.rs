@@ -431,31 +431,37 @@ pub struct ExtBuilder {
 }
 
 impl ExtBuilder {
+	#[must_use]
 	pub fn with_dids(mut self, dids: Vec<(TestDidIdentifier, DidDetails<Test>)>) -> Self {
 		self.dids_stored = dids;
 		self
 	}
 
+	#[must_use]
 	pub fn with_endpoints(mut self, endpoints: Vec<(TestDidIdentifier, Vec<DidEndpoint<Test>>)>) -> Self {
 		self.service_endpoints = endpoints;
 		self
 	}
 
+	#[must_use]
 	pub(crate) fn with_balances(mut self, balances: Vec<(AccountIdOf<Test>, Balance)>) -> Self {
 		self.balances = balances;
 		self
 	}
 
+	#[must_use]
 	pub fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, TestCtypeOwner)>) -> Self {
 		self.ctypes_stored = ctypes;
 		self
 	}
 
+	#[must_use]
 	pub fn with_deleted_dids(mut self, dids: Vec<TestDidIdentifier>) -> Self {
 		self.deleted_dids = dids;
 		self
 	}
 
+	#[must_use]
 	pub fn with_storage_version(mut self, storage_version: DidStorageVersion) -> Self {
 		self.storage_version = storage_version;
 		self

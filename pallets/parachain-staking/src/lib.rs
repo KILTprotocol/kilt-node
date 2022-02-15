@@ -1485,7 +1485,7 @@ pub mod pallet {
 			ensure!(amount >= T::MinDelegatorStake::get(), Error::<T>::NomStakeBelowMin);
 
 			// cannot be a collator candidate and delegator with same AccountId
-			ensure!(!Self::is_active_candidate(&acc).is_some(), Error::<T>::CandidateExists);
+			ensure!(Self::is_active_candidate(&acc).is_none(), Error::<T>::CandidateExists);
 			ensure!(
 				Unstaking::<T>::get(&acc).len().saturated_into::<u32>() < T::MaxUnstakeRequests::get(),
 				Error::<T>::CannotJoinBeforeUnlocking
@@ -2139,8 +2139,7 @@ pub mod pallet {
 		) -> Option<(BalanceOf<T>, BalanceOf<T>)> {
 			top_candidates
 				.get(index)
-				.map(|stake| CandidatePool::<T>::get(&stake.owner))
-				.flatten()
+				.and_then(|stake| CandidatePool::<T>::get(&stake.owner))
 				// SAFETY: the total is always more than the stake
 				.map(|state| (state.stake, state.total - state.stake))
 		}

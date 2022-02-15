@@ -298,11 +298,13 @@ pub fn assert_balance(who: AccountId, free: Balance, usable_for_fees: Balance, u
 }
 
 impl ExtBuilder {
+	#[must_use]
 	pub fn vest(mut self, vesting: Vec<(AccountId, BlockNumber, Balance)>) -> Self {
 		self.vesting = vesting;
 		self
 	}
 
+	#[must_use]
 	pub fn pseudos_vest_all(self) -> Self {
 		self.vest(vec![
 			(PSEUDO_1, 10, 10_000),
@@ -311,6 +313,7 @@ impl ExtBuilder {
 		])
 	}
 
+	#[must_use]
 	pub fn lock_balance(mut self, balance_locks: Vec<(AccountId, BlockNumber, Balance)>) -> Self {
 		self.balance_locks = balance_locks;
 		self
@@ -320,6 +323,7 @@ impl ExtBuilder {
 		self.lock_balance(vec![(PSEUDO_1, 100, 1111), (PSEUDO_2, 1337, 2222)])
 	}
 
+	#[must_use]
 	pub fn pseudos_lock_all(self) -> Self {
 		self.lock_balance(vec![
 			(PSEUDO_1, 100, 10_000),

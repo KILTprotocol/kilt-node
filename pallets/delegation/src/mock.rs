@@ -453,6 +453,7 @@ pub mod runtime {
 	}
 
 	impl ExtBuilder {
+		#[must_use]
 		pub fn with_delegation_hierarchies(
 			mut self,
 			delegation_hierarchies: DelegationHierarchyInitialization<Test>,
@@ -461,26 +462,31 @@ pub mod runtime {
 			self
 		}
 
+		#[must_use]
 		pub fn with_balances(mut self, balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>) -> Self {
 			self.balances = balances;
 			self
 		}
 
+		#[must_use]
 		pub fn with_ctypes(mut self, ctypes: Vec<(CtypeHashOf<Test>, SubjectId)>) -> Self {
 			self.ctypes = ctypes;
 			self
 		}
 
+		#[must_use]
 		pub fn with_delegations(mut self, delegations: Vec<(DelegationNodeIdOf<Test>, DelegationNode<Test>)>) -> Self {
 			self.delegations = delegations;
 			self
 		}
 
+		#[must_use]
 		pub fn with_attestations(mut self, attestations: Vec<(ClaimHashOf<Test>, AttestationDetails<Test>)>) -> Self {
 			self.attestations = attestations;
 			self
 		}
 
+		#[must_use]
 		pub fn with_storage_version(mut self, storage_version: DelegationStorageVersion) -> Self {
 			self.storage_version = storage_version;
 			self

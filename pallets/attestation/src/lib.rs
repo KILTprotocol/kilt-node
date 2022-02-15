@@ -288,12 +288,7 @@ pub mod pallet {
 				ExternalAttestations::<T>::insert(authorization_id, claim_hash, true);
 			}
 
-			Self::deposit_event(Event::AttestationCreated(
-				who,
-				claim_hash,
-				ctype_hash,
-				authorization_id,
-			));
+			Self::deposit_event(Event::AttestationCreated(who, claim_hash, ctype_hash, authorization_id));
 
 			Ok(())
 		}
