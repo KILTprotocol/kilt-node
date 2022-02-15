@@ -1001,6 +1001,7 @@ pub type Executive = frame_executive::Executive<
 		SchedulerMigrationV3,
 		delegation::migrations::v3::DelegationMigrationV3<Runtime>,
 		did::migrations::v4::DidMigrationV4<Runtime>,
+		parachain_staking::migrations::v7::ParachainStakingMigrationV7<Runtime>,
 	),
 >;
 
