@@ -45,7 +45,7 @@ pub mod v7 {
 	use frame_support::traits::GetStorageVersion;
 	use frame_support::{
 		generate_storage_alias,
-		traits::{Get, OnRuntimeUpgrade, StorageVersion as NewStorageVersion},
+		traits::{Get, OnRuntimeUpgrade, PalletInfoAccess, StorageVersion as NewStorageVersion},
 		weights::Weight,
 	};
 	use log::info;
@@ -61,16 +61,18 @@ pub mod v7 {
 
 	impl<T: Config> OnRuntimeUpgrade for ParachainStakingMigrationV7<T> {
 		fn on_runtime_upgrade() -> Weight {
+			let staking_pallet_name = Pallet::<T>::name().as_bytes();
+			
 			// migrate CandidateCount
-			frame_support::migration::remove_storage_prefix(b"ParachainStaking", b"CandidateCount", &[]);
+			frame_support::migration::remove_storage_prefix(staking_pallet_name, b"CandidateCount", &[]);
 			let candidate_count = CandidatePool::<T>::initialize_counter();
 
 			// migrate StorageVersion to new paradigm
-			frame_support::migration::remove_storage_prefix(b"ParachainStaking", b"StorageVersion", &[]);
+			frame_support::migration::remove_storage_prefix(staking_pallet_name, b"StorageVersion", &[]);
 			NewStorageVersion::new(7).put::<Pallet<T>>();
 
 			info!("💰 completed parachain staking migration to v7 ✅",);
-			T::DbWeight::get().reads_writes(candidate_count.into(), candidate_count.saturating_add(3).into())
+			T::DbWeight::get().reads_writes(candidate_count.saturating_add(1).into(), 4)
 		}
 
 		#[cfg(feature = "try-runtime")]
@@ -90,9 +92,11 @@ pub mod v7 {
 
 		#[cfg(feature = "try-runtime")]
 		fn post_upgrade() -> Result<(), &'static str> {
+			let staking_pallet_name = Pallet::<T>::name().as_bytes();
+
 			// check count
 			assert!(
-				!frame_support::migration::have_storage_value(b"StakePallet", b"CandidateCount", &[]),
+				!frame_support::migration::have_storage_value(staking_pallet_name, b"CandidateCount", &[]),
 				"CandidateCount should not exist anymore"
 			);
 			assert!(
@@ -102,7 +106,7 @@ pub mod v7 {
 
 			// check StorageVersion
 			assert!(
-				!frame_support::migration::have_storage_value(b"StakePallet", b"StorageVersion", &[]),
+				!frame_support::migration::have_storage_value(staking_pallet_name, b"StorageVersion", &[]),
 				"Old StorageVersion should not exist anymore"
 			);
 			assert_eq!(
