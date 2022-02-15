@@ -997,7 +997,10 @@ pub type Executive = frame_executive::Executive<
 	// Executes pallet hooks in reverse order of definition in construct_runtime
 	// If we want to switch to AllPalletsWithSystem, we need to reorder the staking pallets
 	AllPalletsReversedWithSystemFirst,
-	SchedulerMigrationV3,
+	(
+		SchedulerMigrationV3,
+		parachain_staking::migrations::v7::ParachainStakingMigrationV7<Runtime>,
+	),
 >;
 
 // Migration for scheduler pallet to move from a plain Call to a CallOrHash.
@@ -1022,7 +1025,6 @@ impl OnRuntimeUpgrade for SchedulerMigrationV3 {
 			"Scheduler migrated to version {:?}",
 			Scheduler::current_storage_version()
 		);
-
 		Ok(())
 	}
 }
