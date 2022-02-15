@@ -20,7 +20,7 @@
 #![allow(clippy::from_over_into)]
 
 use super::*;
-use crate::{self as stake, migrations::StakingStorageVersion, types::NegativeImbalanceOf};
+use crate::{self as stake, types::NegativeImbalanceOf};
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{Currency, GenesisBuild, OnFinalize, OnInitialize, OnUnbalanced},
@@ -226,8 +226,6 @@ pub(crate) struct ExtBuilder {
 	inflation_config: InflationInfo,
 	// blocks per round
 	blocks_per_round: BlockNumber,
-	// version of storage
-	storage_version: StakingStorageVersion,
 }
 
 impl Default for ExtBuilder {
@@ -243,7 +241,6 @@ impl Default for ExtBuilder {
 				Perquintill::from_percent(40),
 				Perquintill::from_percent(10),
 			),
-			storage_version: StakingStorageVersion::default(),
 		}
 	}
 }
@@ -343,10 +340,6 @@ impl ExtBuilder {
 					.expect("Ran into issues when setting blocks_per_round");
 			});
 		}
-
-		ext.execute_with(|| {
-			crate::StorageVersion::<Test>::set(self.storage_version);
-		});
 
 		ext.execute_with(|| System::set_block_number(1));
 		ext
