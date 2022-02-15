@@ -82,6 +82,10 @@ fn test_attest_authorized() {
 			));
 			let stored_attestation =
 				Attestation::attestations(&claim_hash).expect("Attestation should be present on chain.");
+			assert!(Attestation::external_attestations(
+				attester.clone(),
+				claim_hash
+			));
 
 			assert_eq!(stored_attestation.ctype_hash, ctype);
 			assert_eq!(stored_attestation.attester, attester);
@@ -222,6 +226,10 @@ fn test_authorized_revoke() {
 			));
 			let stored_attestation =
 				Attestation::attestations(claim_hash).expect("Attestation should be present on chain.");
+			assert!(Attestation::external_attestations(
+				revoker.clone(),
+				claim_hash
+			));
 
 			assert!(stored_attestation.revoked);
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
@@ -390,11 +398,7 @@ fn test_remove_not_found() {
 		.execute_with(|| {
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 			assert_noop!(
-				Attestation::remove(
-					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
-					claim_hash,
-					None
-				),
+				Attestation::remove(DoubleOrigin(ACCOUNT_00, attester.clone()).into(), claim_hash, None),
 				attestation::Error::<Test>::AttestationNotFound
 			);
 		});
@@ -405,6 +409,28 @@ fn test_remove_not_found() {
 
 #[test]
 fn test_reclaim_deposit() {
+	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+	let other_authorized: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
+	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
+	attestation.authorization_id = Some(other_authorized.clone());
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
+		.with_ctypes(vec![(attestation.ctype_hash, attester)])
+		.with_attestations(vec![(claim_hash, attestation)])
+		.build()
+		.execute_with(|| {
+			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
+			assert_ok!(Attestation::reclaim_deposit(Origin::signed(ACCOUNT_00), claim_hash));
+			assert!(!Attestation::external_attestations(other_authorized.clone(), claim_hash));
+			assert!(Attestation::attestations(claim_hash).is_none());
+			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+		});
+}
+
+#[test]
+fn test_reclaim_deposit_authorization() {
 	let attester: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);

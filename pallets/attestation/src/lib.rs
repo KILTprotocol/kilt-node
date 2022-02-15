@@ -94,9 +94,9 @@ pub use crate::{
 pub mod pallet {
 	use super::*;
 	use frame_support::{
+		dispatch::{DispatchResult, DispatchResultWithPostInfo},
 		pallet_prelude::*,
 		traits::{Currency, Get, ReservableCurrency},
-		BoundedVec,
 	};
 	use frame_system::pallet_prelude::*;
 	use sp_runtime::DispatchError;
@@ -168,13 +168,9 @@ pub mod pallet {
 	///
 	/// It maps from a delegation ID to a vector of claim hashes.
 	#[pallet::storage]
-	#[pallet::getter(fn delegated_attestations)]
-	pub type DelegatedAttestations<T> = StorageMap<
-		_,
-		Blake2_128Concat,
-		AuthorizationIdOf<T>,
-		BoundedVec<ClaimHashOf<T>, <T as Config>::MaxDelegatedAttestations>,
-	>;
+	#[pallet::getter(fn external_attestations)]
+	pub type ExternalAttestations<T> =
+		StorageDoubleMap<_, Twox64Concat, AuthorizationIdOf<T>, Blake2_128Concat, ClaimHashOf<T>, bool, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -278,22 +274,26 @@ pub mod pallet {
 
 			log::debug!("insert Attestation");
 
-			Self::deposit_event(Event::AttestationCreated(
-				who.clone(),
-				claim_hash,
-				ctype_hash,
-				authorization_id.clone(),
-			));
 			Attestations::<T>::insert(
 				&claim_hash,
 				AttestationDetails {
 					ctype_hash,
-					attester: who,
-					authorization_id,
+					attester: who.clone(),
+					authorization_id: authorization_id.clone(),
 					revoked: false,
 					deposit,
 				},
 			);
+			if let Some(authorization_id) = &authorization_id {
+				ExternalAttestations::<T>::insert(authorization_id, claim_hash, true);
+			}
+
+			Self::deposit_event(Event::AttestationCreated(
+				who,
+				claim_hash,
+				ctype_hash,
+				authorization_id,
+			));
 
 			Ok(())
 		}
@@ -454,6 +454,9 @@ pub mod pallet {
 		fn remove_attestation(attestation: AttestationDetails<T>, claim_hash: ClaimHashOf<T>) {
 			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&attestation.deposit);
 			Attestations::<T>::remove(&claim_hash);
+			if let Some(authorization_id) = &attestation.authorization_id {
+				ExternalAttestations::<T>::remove(authorization_id, claim_hash);
+			}
 		}
 	}
 }
