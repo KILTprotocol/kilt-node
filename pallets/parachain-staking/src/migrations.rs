@@ -62,7 +62,7 @@ pub mod v7 {
 	impl<T: Config> OnRuntimeUpgrade for ParachainStakingMigrationV7<T> {
 		fn on_runtime_upgrade() -> Weight {
 			let staking_pallet_name = Pallet::<T>::name().as_bytes();
-			
+
 			// migrate CandidateCount
 			frame_support::migration::remove_storage_prefix(staking_pallet_name, b"CandidateCount", &[]);
 			let candidate_count = CandidatePool::<T>::initialize_counter();
