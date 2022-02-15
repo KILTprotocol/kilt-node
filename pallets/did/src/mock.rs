@@ -45,8 +45,7 @@ use crate::{
 		RelationshipDeriveError,
 	},
 	service_endpoints::DidEndpoint,
-	utils as crate_utils, AccountIdOf, Config, CurrencyOf, DidBlacklist, DidEndpointsCount, DidStorageVersion, KeyIdOf,
-	ServiceEndpoints, StorageVersion,
+	utils as crate_utils, AccountIdOf, Config, CurrencyOf, DidBlacklist, DidEndpointsCount, KeyIdOf, ServiceEndpoints,
 };
 #[cfg(not(feature = "runtime-benchmarks"))]
 use crate::{DidRawOrigin, EnsureDidOrigin};
@@ -425,7 +424,6 @@ pub struct ExtBuilder {
 	dids_stored: Vec<(TestDidIdentifier, DidDetails<Test>)>,
 	service_endpoints: Vec<(TestDidIdentifier, Vec<DidEndpoint<Test>>)>,
 	deleted_dids: Vec<TestDidIdentifier>,
-	storage_version: DidStorageVersion,
 	ctypes_stored: Vec<(TestCtypeHash, TestCtypeOwner)>,
 	balances: Vec<(AccountIdOf<Test>, Balance)>,
 }
@@ -453,11 +451,6 @@ impl ExtBuilder {
 
 	pub fn with_deleted_dids(mut self, dids: Vec<TestDidIdentifier>) -> Self {
 		self.deleted_dids = dids;
-		self
-	}
-
-	pub fn with_storage_version(mut self, storage_version: DidStorageVersion) -> Self {
-		self.storage_version = storage_version;
 		self
 	}
 
@@ -493,7 +486,6 @@ impl ExtBuilder {
 				}
 				DidEndpointsCount::<Test>::insert(&did, endpoints.len().saturated_into::<u32>());
 			}
-			StorageVersion::<Test>::set(self.storage_version);
 		});
 
 		ext
