@@ -19,20 +19,13 @@
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
 
+// FIXME: Remove when migrating to v8
+// #[deprecated(note = "use the pallet's `current_storage_version()` instead")]
 /// Storage version of the delegation pallet.
 #[derive(Copy, Clone, Encode, Eq, Decode, Ord, PartialEq, PartialOrd, TypeInfo)]
 pub enum DelegationStorageVersion {
 	V1,
 	V2,
-}
-
-#[cfg(feature = "try-runtime")]
-impl DelegationStorageVersion {
-	/// The latest storage version.
-	#[allow(dead_code)]
-	fn latest() -> Self {
-		Self::V2
-	}
 }
 
 // All nodes will default to this, which is not bad, as in case the "real"
@@ -45,5 +38,65 @@ impl DelegationStorageVersion {
 impl Default for DelegationStorageVersion {
 	fn default() -> Self {
 		Self::V2
+	}
+}
+
+pub mod v3 {
+	use super::*;
+	use crate::{Config, Pallet};
+
+	#[cfg(feature = "try-runtime")]
+	use frame_support::traits::GetStorageVersion;
+
+	use frame_support::{
+		generate_storage_alias,
+		pallet_prelude::Weight,
+		traits::{Get, OnRuntimeUpgrade, PalletInfoAccess, StorageVersion as NewStorageVersion},
+	};
+	use log::info;
+	use sp_std::marker::PhantomData;
+
+	// Get storage item into scope which are removed during this migration
+	generate_storage_alias!(Delegation, StorageVersion => Value<DelegationStorageVersion>);
+
+	pub struct DelegationMigrationV3<T: Config>(PhantomData<T>);
+
+	impl<T: Config> OnRuntimeUpgrade for DelegationMigrationV3<T> {
+		#[cfg(feature = "try-runtime")]
+		fn pre_upgrade() -> Result<(), &'static str> {
+			assert!(StorageVersion::get() == Some(DelegationStorageVersion::V2));
+
+			info!("👥  Delegation pallet to v3 passes PRE migrate checks ✅",);
+			Ok(())
+		}
+
+		fn on_runtime_upgrade() -> Weight {
+			// migrate StorageVersion to new paradigm
+			frame_support::migration::remove_storage_prefix(Pallet::<T>::name().as_bytes(), b"StorageVersion", &[]);
+			NewStorageVersion::new(3).put::<Pallet<T>>();
+
+			info!("👥  completed Delegation pallet migration to v3 ✅",);
+			T::DbWeight::get().reads_writes(0, 2)
+		}
+
+		#[cfg(feature = "try-runtime")]
+		fn post_upgrade() -> Result<(), &'static str> {
+			// check StorageVersion
+			assert!(
+				!frame_support::migration::have_storage_value(Pallet::<T>::name().as_bytes(), b"StorageVersion", &[]),
+				"Old StorageVersion should not exist anymore"
+			);
+			assert_eq!(
+				Pallet::<T>::current_storage_version(),
+				3,
+				"StorageVersion should have migrated to new paradigm"
+			);
+
+			info!(
+				"👥  Delegation pallet migration to {:?} passes POST migrate checks ✅",
+				Pallet::<T>::current_storage_version()
+			);
+			Ok(())
+		}
 	}
 }
