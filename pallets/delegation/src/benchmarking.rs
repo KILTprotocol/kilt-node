@@ -386,15 +386,16 @@ benchmarks! {
 		let claim = Default::default();
 
 		let sender: T::AccountId = account("sender", 0, SEED);
-		let (root_acc, _, _, leaf_id) = setup_delegations::<T>(c, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
+		let (root_acc, _, leaf_acc, leaf_id) = setup_delegations::<T>(c, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE | Permissions::ATTEST)?;
 		let root_acc: T::DelegationEntityId = root_acc.into();
+		let leaf_acc: T::DelegationEntityId = leaf_acc.into();
 
 		let ac = DelegationAc::<T>{
 			sender_node_id: leaf_id,
 			max_checks: c
 		};
 
-	}: { ac.can_attest(&root_acc, &ctype, &claim).expect("Should be allowed") }
+	}: { ac.can_attest(&leaf_acc, &ctype, &claim).expect("Should be allowed") }
 	verify {
 	}
 
