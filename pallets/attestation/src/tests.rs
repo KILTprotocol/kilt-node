@@ -36,7 +36,7 @@ fn test_attest_successful() {
 	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let ctype_hash = get_ctype_hash::<Test>(true);
-	let authorization_id = None;
+	let authorization_info = None;
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(ctype_hash, attester.clone())])
@@ -47,7 +47,7 @@ fn test_attest_successful() {
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 				claim_hash,
 				ctype_hash,
-				authorization_id.clone()
+				authorization_info.clone()
 			));
 			let stored_attestation =
 				Attestation::attestations(&claim_hash).expect("Attestation should be present on chain.");
@@ -56,7 +56,7 @@ fn test_attest_successful() {
 			assert_eq!(stored_attestation.attester, attester);
 			assert_eq!(
 				stored_attestation.authorization_id,
-				authorization_id.map(|ac| ac.authorization_id())
+				authorization_info.map(|ac| ac.authorization_id())
 			);
 			assert!(!stored_attestation.revoked);
 		});
@@ -67,7 +67,7 @@ fn test_attest_authorized() {
 	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let ctype = get_ctype_hash::<Test>(true);
-	let authorization_id = Some(MockAccessControl(attester.clone()));
+	let authorization_info = Some(MockAccessControl(attester.clone()));
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(ctype, attester.clone())])
@@ -78,7 +78,7 @@ fn test_attest_authorized() {
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 				claim_hash,
 				ctype,
-				authorization_id.clone()
+				authorization_info.clone()
 			));
 			let stored_attestation =
 				Attestation::attestations(&claim_hash).expect("Attestation should be present on chain.");
@@ -87,7 +87,7 @@ fn test_attest_authorized() {
 			assert_eq!(stored_attestation.attester, attester);
 			assert_eq!(
 				stored_attestation.authorization_id,
-				authorization_id.map(|ac| ac.authorization_id())
+				authorization_info.map(|ac| ac.authorization_id())
 			);
 			assert!(!stored_attestation.revoked);
 		});
@@ -99,7 +99,7 @@ fn test_attest_unauthorized() {
 	let bob: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let ctype = get_ctype_hash::<Test>(true);
-	let authorization_id = Some(MockAccessControl(bob));
+	let authorization_info = Some(MockAccessControl(bob));
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(ctype, attester.clone())])
@@ -111,7 +111,7 @@ fn test_attest_unauthorized() {
 					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 					claim_hash,
 					ctype,
-					authorization_id
+					authorization_info
 				),
 				Err(DispatchError::Other("Unauthorized"))
 			);
@@ -205,7 +205,7 @@ fn test_authorized_revoke() {
 	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
 	let revoker: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
-	let authorization_id = Some(MockAccessControl(revoker.clone()));
+	let authorization_info = Some(MockAccessControl(revoker.clone()));
 	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 	attestation.authorization_id = Some(revoker.clone());
 
@@ -218,7 +218,7 @@ fn test_authorized_revoke() {
 			assert_ok!(Attestation::revoke(
 				DoubleOrigin(ACCOUNT_00, revoker.clone()).into(),
 				claim_hash,
-				authorization_id
+				authorization_info
 			));
 			let stored_attestation =
 				Attestation::attestations(claim_hash).expect("Attestation should be present on chain.");
@@ -235,7 +235,7 @@ fn test_unauthorized_revoke() {
 	let evil: AttesterOf<Test> = sr25519_did_from_seed(&CHARLIE_SEED);
 
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
-	let authorization_id = Some(MockAccessControl(revoker.clone()));
+	let authorization_info = Some(MockAccessControl(revoker.clone()));
 	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 	attestation.authorization_id = Some(revoker);
 
@@ -246,7 +246,7 @@ fn test_unauthorized_revoke() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Attestation::revoke(DoubleOrigin(ACCOUNT_00, evil).into(), claim_hash, authorization_id),
+				Attestation::revoke(DoubleOrigin(ACCOUNT_00, evil).into(), claim_hash, authorization_info),
 				DispatchError::Other("Unauthorized")
 			);
 		});
@@ -256,7 +256,7 @@ fn test_unauthorized_revoke() {
 fn test_revoke_not_found() {
 	let revoker: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
-	let authorization_id = Some(MockAccessControl(revoker.clone()));
+	let authorization_info = Some(MockAccessControl(revoker.clone()));
 	let attestation = generate_base_attestation::<Test>(revoker.clone(), ACCOUNT_00);
 
 	ExtBuilder::default()
@@ -268,7 +268,7 @@ fn test_revoke_not_found() {
 				Attestation::revoke(
 					DoubleOrigin(ACCOUNT_00, revoker.clone()).into(),
 					claim_hash,
-					authorization_id
+					authorization_info
 				),
 				attestation::Error::<Test>::AttestationNotFound
 			);
@@ -279,7 +279,7 @@ fn test_revoke_not_found() {
 fn test_already_revoked() {
 	let revoker: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
-	let authorization_id = Some(MockAccessControl(revoker.clone()));
+	let authorization_info = Some(MockAccessControl(revoker.clone()));
 
 	// Attestation already revoked
 	let mut attestation = generate_base_attestation::<Test>(revoker.clone(), ACCOUNT_00);
@@ -295,7 +295,7 @@ fn test_already_revoked() {
 				Attestation::revoke(
 					DoubleOrigin(ACCOUNT_00, revoker.clone()).into(),
 					claim_hash,
-					authorization_id
+					authorization_info
 				),
 				attestation::Error::<Test>::AlreadyRevoked
 			);
@@ -310,7 +310,7 @@ fn test_remove() {
 	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
-	let authorization_id = None;
+	let authorization_info = None;
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
@@ -321,7 +321,7 @@ fn test_remove() {
 			assert_ok!(Attestation::remove(
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 				claim_hash,
-				authorization_id
+				authorization_info
 			));
 			assert!(Attestation::attestations(claim_hash).is_none());
 		});
@@ -334,7 +334,7 @@ fn test_remove_authorized() {
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let mut attestation = generate_base_attestation::<Test>(attester, ACCOUNT_00);
 	attestation.authorization_id = Some(revoker.clone());
-	let authorization_id = Some(MockAccessControl(revoker.clone()));
+	let authorization_info = Some(MockAccessControl(revoker.clone()));
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
@@ -345,9 +345,10 @@ fn test_remove_authorized() {
 			assert_ok!(Attestation::remove(
 				DoubleOrigin(ACCOUNT_00, revoker.clone()).into(),
 				claim_hash,
-				authorization_id
+				authorization_info
 			));
 			assert!(Attestation::attestations(claim_hash).is_none());
+			assert!(!Attestation::external_attestations(revoker.clone(), claim_hash));
 		});
 }
 
@@ -357,7 +358,7 @@ fn test_remove_unauthorised() {
 	let evil: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
-	let authorization_id = Some(MockAccessControl(evil.clone()));
+	let authorization_info = Some(MockAccessControl(evil.clone()));
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
@@ -369,7 +370,7 @@ fn test_remove_unauthorised() {
 				Attestation::remove(
 					DoubleOrigin(ACCOUNT_00, evil.clone()).into(),
 					claim_hash,
-					authorization_id
+					authorization_info
 				),
 				attestation::Error::<Test>::Unauthorized
 			);
@@ -380,7 +381,6 @@ fn test_remove_unauthorised() {
 fn test_remove_not_found() {
 	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
-	let authorization_id = Some(MockAccessControl(attester.clone()));
 	let attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 
 	ExtBuilder::default()
@@ -393,7 +393,7 @@ fn test_remove_not_found() {
 				Attestation::remove(
 					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 					claim_hash,
-					authorization_id
+					None
 				),
 				attestation::Error::<Test>::AttestationNotFound
 			);
