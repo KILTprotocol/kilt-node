@@ -723,8 +723,17 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signatu
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various Pallets.
-pub type Executive =
-	frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllPalletsWithSystem>;
+pub type Executive = frame_executive::Executive<
+	Runtime,
+	Block,
+	frame_system::ChainContext<Runtime>,
+	Runtime,
+	AllPalletsWithSystem,
+	(
+		delegation::migrations::v3::DelegationMigrationV3<Runtime>,
+		did::migrations::v4::DidMigrationV4<Runtime>,
+	),
+>;
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
