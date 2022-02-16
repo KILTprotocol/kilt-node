@@ -18,7 +18,7 @@
 
 //! Helper methods for computing issuance based on inflation
 use crate::{pallet::Config, types::BalanceOf};
-use parity_scale_codec::{Decode, Encode};
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use runtime_common::constants::BLOCKS_PER_YEAR;
 use scale_info::TypeInfo;
 use sp_runtime::{traits::Saturating, Perquintill, RuntimeDebug};
@@ -31,6 +31,13 @@ use serde::{Deserialize, Serialize};
 pub struct RewardRate {
 	pub annual: Perquintill,
 	pub per_block: Perquintill,
+}
+
+impl MaxEncodedLen for RewardRate {
+	fn max_encoded_len() -> usize {
+		// Perquintill is at most u128
+		u128::max_encoded_len().saturating_add(u128::max_encoded_len())
+	}
 }
 
 /// Convert annual reward rate to per_block.
@@ -55,6 +62,13 @@ pub struct StakingInfo {
 	pub max_rate: Perquintill,
 	/// Reward rate annually and per_block.
 	pub reward_rate: RewardRate,
+}
+
+impl MaxEncodedLen for StakingInfo {
+	fn max_encoded_len() -> usize {
+		// Perquintill is at most u128
+		RewardRate::max_encoded_len().saturating_add(u128::max_encoded_len())
+	}
 }
 
 impl StakingInfo {
@@ -86,7 +100,7 @@ impl StakingInfo {
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Eq, PartialEq, Clone, Encode, Decode, Default, RuntimeDebug, TypeInfo)]
+#[derive(Eq, PartialEq, Clone, Encode, Decode, Default, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct InflationInfo {
 	pub collator: StakingInfo,
 	pub delegator: StakingInfo,
