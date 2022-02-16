@@ -85,7 +85,7 @@ pub mod pallet {
 		type OriginSuccess: CallSources<AccountIdOf<Self>, DidIdentifierOf<Self>>;
 
 		/// The identifier to which accounts can get associated.
-		type DidIdentifier: Parameter + Default;
+		type DidIdentifier: Parameter + Default + MaxEncodedLen;
 
 		/// The currency that is used to reserve funds for each did.
 		type Currency: ReservableCurrency<AccountIdOf<Self>>;
@@ -102,7 +102,6 @@ pub mod pallet {
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
-	#[pallet::without_storage_info]
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
 
