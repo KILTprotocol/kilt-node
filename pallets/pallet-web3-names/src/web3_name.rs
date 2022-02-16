@@ -20,7 +20,7 @@
 
 use sp_std::{fmt::Debug, marker::PhantomData, vec::Vec};
 
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{ensure, sp_runtime::SaturatedConversion, traits::Get, BoundedVec};
 use scale_info::TypeInfo;
 
@@ -31,8 +31,11 @@ use crate::{Config, Error};
 /// It is bounded in size (inclusive range [MinLength, MaxLength]) and can only
 /// contain a subset of ASCII characters.
 #[derive(Encode, Decode, TypeInfo)]
-#[scale_info(skip_type_params(T, MaxLength, MinLength))]
-pub struct AsciiWeb3Name<T, MinLength, MaxLength>(pub(crate) BoundedVec<u8, MaxLength>, PhantomData<(T, MinLength)>);
+#[scale_info(skip_type_params(T, MinLength, MaxLength))]
+pub struct AsciiWeb3Name<T: Config, MinLength: Get<u32>, MaxLength: Get<u32>>(
+	pub(crate) BoundedVec<u8, MaxLength>,
+	PhantomData<(T, MinLength)>,
+);
 
 impl<T: Config> TryFrom<Vec<u8>> for AsciiWeb3Name<T, T::MinNameLength, T::MaxNameLength> {
 	type Error = Error<T>;
@@ -49,6 +52,14 @@ impl<T: Config> TryFrom<Vec<u8>> for AsciiWeb3Name<T, T::MinNameLength, T::MaxNa
 			BoundedVec::try_from(value).map_err(|_| Self::Error::Web3NameTooLong)?;
 		ensure!(is_valid_web3_name(&bounded_vec), Self::Error::InvalidWeb3NameCharacter);
 		Ok(Self(bounded_vec, PhantomData))
+	}
+}
+
+// required because else T would have to impl MaxEncodedLen, e.g. TestMock and
+// Runtime
+impl<T: Config> MaxEncodedLen for AsciiWeb3Name<T, T::MinNameLength, T::MaxNameLength> {
+	fn max_encoded_len() -> usize {
+		frame_support::BoundedVec::<u8, T::MaxNameLength>::max_encoded_len()
 	}
 }
 
@@ -80,8 +91,8 @@ impl<T: Config> Clone for AsciiWeb3Name<T, T::MinNameLength, T::MaxNameLength> {
 }
 
 /// KILT web3 name ownership details.
-#[derive(Clone, Encode, Decode, Debug, PartialEq, TypeInfo)]
-pub struct Web3NameOwnership<Owner, Deposit, BlockNumber> {
+#[derive(Clone, Encode, Decode, Debug, PartialEq, TypeInfo, MaxEncodedLen)]
+pub struct Web3NameOwnership<Owner, Deposit: MaxEncodedLen, BlockNumber> {
 	/// The owner of the web3 name.
 	pub owner: Owner,
 	/// The block number at which the web3 name was claimed.
