@@ -52,7 +52,7 @@ pub mod v4 {
 	use frame_support::{
 		generate_storage_alias,
 		pallet_prelude::Weight,
-		traits::{Get, OnRuntimeUpgrade, PalletInfoAccess, StorageVersion as NewStorageVersion},
+		traits::{Get, OnRuntimeUpgrade, PalletInfoAccess},
 	};
 	use log::info;
 	use sp_std::marker::PhantomData;
@@ -67,17 +67,22 @@ pub mod v4 {
 		fn pre_upgrade() -> Result<(), &'static str> {
 			assert!(StorageVersion::get() == Some(DidStorageVersion::V3));
 
+			// no migration needed
+			assert!(
+				Pallet::<T>::current_storage_version() == 4,
+				"New StorageVersion should be set via pallet macro already"
+			);
+
 			info!("👁  DID storage migration to v4 passes PRE migrate checks ✅",);
 			Ok(())
 		}
 
 		fn on_runtime_upgrade() -> Weight {
-			// migrate StorageVersion to new paradigm
+			// remove deprecated storage versioning entry
 			frame_support::migration::remove_storage_prefix(Pallet::<T>::name().as_bytes(), b"StorageVersion", &[]);
-			NewStorageVersion::new(4).put::<Pallet<T>>();
 
 			info!("👁  completed DID storage migration to v4 ✅",);
-			T::DbWeight::get().reads_writes(0, 2)
+			T::DbWeight::get().reads_writes(0, 1)
 		}
 
 		#[cfg(feature = "try-runtime")]
@@ -86,11 +91,6 @@ pub mod v4 {
 			assert!(
 				!frame_support::migration::have_storage_value(Pallet::<T>::name().as_bytes(), b"StorageVersion", &[]),
 				"Old StorageVersion should not exist anymore"
-			);
-			assert_eq!(
-				Pallet::<T>::current_storage_version(),
-				4,
-				"StorageVersion should have migrated to new paradigm"
 			);
 
 			info!(
