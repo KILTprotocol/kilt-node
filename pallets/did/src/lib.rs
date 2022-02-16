@@ -111,7 +111,6 @@ pub use crate::{
 	pallet::*,
 	signature::DidSignatureVerify,
 };
-use migrations::DidStorageVersion;
 
 use codec::Encode;
 use frame_support::{
@@ -138,7 +137,7 @@ pub mod pallet {
 	use crate::service_endpoints::utils as service_endpoints_utils;
 	use frame_support::{
 		pallet_prelude::*,
-		traits::{Currency, ExistenceRequirement, Imbalance, ReservableCurrency},
+		traits::{Currency, ExistenceRequirement, Imbalance, ReservableCurrency, StorageVersion},
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::traits::CallSources;
@@ -153,6 +152,9 @@ pub mod pallet {
 		errors::{DidError, InputError, SignatureError, StorageError},
 		service_endpoints::{DidEndpoint, ServiceEndpointId},
 	};
+
+	/// The current storage version.
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
 
 	/// Reference to a payload of data of variable size.
 	pub type Payload = [u8];
@@ -281,6 +283,7 @@ pub mod pallet {
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
+	#[pallet::storage_version(STORAGE_VERSION)]
 	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
@@ -313,11 +316,6 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn get_deleted_did)]
 	pub(crate) type DidBlacklist<T> = StorageMap<_, Blake2_128Concat, DidIdentifierOf<T>, ()>;
-
-	/// Contains the latest storage version deployed.
-	#[pallet::storage]
-	#[pallet::getter(fn last_version_migration_used)]
-	pub(crate) type StorageVersion<T> = StorageValue<_, DidStorageVersion, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]

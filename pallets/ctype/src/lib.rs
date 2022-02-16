@@ -68,12 +68,15 @@ pub mod pallet {
 	use frame_support::{
 		pallet_prelude::*,
 		sp_runtime::traits::Hash,
-		traits::{Currency, ExistenceRequirement, OnUnbalanced, WithdrawReasons},
+		traits::{Currency, ExistenceRequirement, OnUnbalanced, StorageVersion, WithdrawReasons},
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::traits::CallSources;
 	use sp_runtime::{traits::Saturating, SaturatedConversion};
 	use sp_std::vec::Vec;
+
+	/// The current storage version.
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	/// Type of a CType hash.
 	pub type CtypeHashOf<T> = <T as frame_system::Config>::Hash;
@@ -100,6 +103,7 @@ pub mod pallet {
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
+	#[pallet::storage_version(STORAGE_VERSION)]
 	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 

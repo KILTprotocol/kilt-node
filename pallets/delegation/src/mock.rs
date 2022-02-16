@@ -166,7 +166,7 @@ where
 
 #[cfg(test)]
 pub mod runtime {
-	use crate::{migrations::DelegationStorageVersion, BalanceOf};
+	use crate::BalanceOf;
 
 	use super::*;
 
@@ -409,7 +409,6 @@ pub mod runtime {
 		ctypes: Vec<(TestCtypeHash, SubjectId)>,
 		delegation_hierarchies_stored: DelegationHierarchyInitialization<Test>,
 		delegations_stored: Vec<(TestDelegationNodeId, DelegationNode<Test>)>,
-		storage_version: DelegationStorageVersion,
 	}
 
 	impl ExtBuilder {
@@ -436,11 +435,6 @@ pub mod runtime {
 			self
 		}
 
-		pub fn with_storage_version(mut self, storage_version: DelegationStorageVersion) -> Self {
-			self.storage_version = storage_version;
-			self
-		}
-
 		pub fn build(self) -> sp_io::TestExternalities {
 			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
@@ -457,8 +451,6 @@ pub mod runtime {
 				}
 
 				initialize_pallet(self.delegations_stored, self.delegation_hierarchies_stored);
-
-				delegation::StorageVersion::<Test>::set(self.storage_version);
 			});
 
 			ext

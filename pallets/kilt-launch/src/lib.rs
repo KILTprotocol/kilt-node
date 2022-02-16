@@ -127,7 +127,10 @@ pub mod pallet {
 		pallet_prelude::*,
 		sp_runtime::traits::{StaticLookup, Zero},
 		storage::types::StorageMap,
-		traits::{Currency, ExistenceRequirement::AllowDeath, Get, LockIdentifier, LockableCurrency, WithdrawReasons},
+		traits::{
+			Currency, ExistenceRequirement::AllowDeath, Get, LockIdentifier, LockableCurrency, StorageVersion,
+			WithdrawReasons,
+		},
 		transactional, BoundedVec, PalletId,
 	};
 	use frame_system::pallet_prelude::*;
@@ -139,6 +142,9 @@ pub mod pallet {
 		convert::{TryFrom, TryInto},
 		vec,
 	};
+
+	/// The current storage version.
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	pub const KILT_LAUNCH_ID: LockIdentifier = *b"kiltlnch";
 	pub const VESTING_ID: LockIdentifier = *b"vesting ";
@@ -185,6 +191,7 @@ pub mod pallet {
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
+	#[pallet::storage_version(STORAGE_VERSION)]
 	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 

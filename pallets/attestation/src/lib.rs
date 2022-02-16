@@ -94,11 +94,14 @@ pub mod pallet {
 	use delegation::DelegationNodeIdOf;
 	use frame_support::{
 		pallet_prelude::*,
-		traits::{Currency, Get, ReservableCurrency},
+		traits::{Currency, Get, ReservableCurrency, StorageVersion},
 		BoundedVec,
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{deposit::Deposit, traits::CallSources};
+
+	/// The current storage version.
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	/// Type of a claim hash.
 	pub(crate) type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
@@ -137,6 +140,7 @@ pub mod pallet {
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
+	#[pallet::storage_version(STORAGE_VERSION)]
 	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
