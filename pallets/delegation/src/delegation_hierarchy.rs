@@ -18,7 +18,7 @@
 
 use crate::{AccountIdOf, BalanceOf, Config, DelegationNodeIdOf, DelegatorIdOf, Error};
 use bitflags::bitflags;
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
 use ctype::CtypeHashOf;
 use frame_support::{dispatch::DispatchResult, storage::bounded_btree_set::BoundedBTreeSet};
 use kilt_support::deposit::Deposit;
@@ -28,7 +28,7 @@ bitflags! {
 	/// Bitflags for permissions.
 	///
 	/// Permission bits can be combined to express multiple permissions.
-	#[derive(Encode, Decode, TypeInfo)]
+	#[derive(Encode, Decode, TypeInfo, MaxEncodedLen)]
 	pub struct Permissions: u32 {
 		/// Permission to write attestations on chain.
 		const ATTEST = 0b0000_0001;
@@ -75,6 +75,13 @@ pub struct DelegationNode<T: Config> {
 	/// The deposit that was taken to incentivise fair use of the on chain
 	/// storage.
 	pub deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
+}
+
+impl<T: Config> MaxEncodedLen for DelegationNode<T> {
+	fn max_encoded_len() -> usize {
+		// BoundedBTreeSet::<DelegationNodeIdOf<T>, T::MaxChildren>::max_encoded_len()
+		1usize
+	}
 }
 
 impl<T: Config> DelegationNode<T> {
@@ -129,7 +136,7 @@ impl<T: Config> DelegationNode<T> {
 }
 
 /// Delegation information attached to delegation nodes.
-#[derive(Clone, Debug, Encode, Decode, PartialEq, TypeInfo)]
+#[derive(Clone, Debug, Encode, Decode, PartialEq, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
 
 pub struct DelegationDetails<T: Config> {
@@ -157,8 +164,10 @@ impl<T: Config> DelegationDetails<T> {
 }
 
 /// The details associated with a delegation hierarchy.
-#[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, TypeInfo)]
+#[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
+// TODO: Check whether we should provide input
+#[codec(mel_bound())]
 
 pub struct DelegationHierarchyDetails<T: Config> {
 	/// The authorised CTYPE hash that attesters can attest using this

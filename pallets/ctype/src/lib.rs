@@ -96,7 +96,7 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type Currency: Currency<AccountIdOf<Self>>;
 		type WeightInfo: WeightInfo;
-		type CtypeCreatorId: Parameter;
+		type CtypeCreatorId: Parameter + MaxEncodedLen;
 		type Fee: Get<BalanceOf<Self>>;
 		type FeeCollector: OnUnbalanced<NegativeImbalanceOf<Self>>;
 	}
@@ -104,7 +104,6 @@ pub mod pallet {
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::storage_version(STORAGE_VERSION)]
-	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
 	#[pallet::hooks]

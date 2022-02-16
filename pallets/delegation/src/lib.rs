@@ -94,6 +94,7 @@ use frame_support::{
 	pallet_prelude::Weight,
 	traits::{Get, ReservableCurrency},
 };
+use migrations::DelegationStorageVersion;
 use sp_runtime::{traits::Hash, DispatchError};
 use sp_std::vec::Vec;
 
@@ -101,19 +102,13 @@ use sp_std::vec::Vec;
 pub mod pallet {
 
 	use super::*;
-	use frame_support::{
-		pallet_prelude::*,
-		traits::{Currency, StorageVersion},
-	};
+	use frame_support::{pallet_prelude::*, traits::Currency};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
 		signature::{SignatureVerificationError, VerifySignature},
 		traits::CallSources,
 	};
 	use scale_info::TypeInfo;
-
-	/// The current storage version.
-	const STORAGE_VERSION: StorageVersion = StorageVersion::new(3);
 
 	/// Type of a delegation node identifier.
 	pub type DelegationNodeIdOf<T> = <T as Config>::DelegationNodeId;
@@ -145,8 +140,8 @@ pub mod pallet {
 			Payload = Vec<u8>,
 			Signature = Self::Signature,
 		>;
-		type DelegationEntityId: Parameter + TypeInfo;
-		type DelegationNodeId: Parameter + Copy + AsRef<[u8]> + Eq + PartialEq + Ord + PartialOrd;
+		type DelegationEntityId: Parameter + TypeInfo + MaxEncodedLen;
+		type DelegationNodeId: Parameter + Copy + AsRef<[u8]> + Eq + PartialEq + Ord + PartialOrd + MaxEncodedLen;
 		type EnsureOrigin: EnsureOrigin<
 			Success = <Self as Config>::OriginSuccess,
 			<Self as frame_system::Config>::Origin,
@@ -187,9 +182,12 @@ pub mod pallet {
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
-	#[pallet::storage_version(STORAGE_VERSION)]
-	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
+
+	/// Contains the latest storage version deployed.
+	#[pallet::storage]
+	#[pallet::getter(fn last_version_migration_used)]
+	pub(crate) type StorageVersion<T> = StorageValue<_, DelegationStorageVersion, ValueQuery>;
 
 	/// Delegation nodes stored on chain.
 	///
