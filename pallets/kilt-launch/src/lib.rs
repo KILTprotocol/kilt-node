@@ -151,7 +151,7 @@ pub mod pallet {
 
 	#[derive(Debug, Encode, Decode, PartialEq, Eq, Clone, TypeInfo, MaxEncodedLen)]
 	#[scale_info(skip_type_params(T))]
-	#[codec(mel_bound(<T as frame_system::Config>::BlockNumber: MaxEncodedLen))]
+	#[codec(mel_bound())]
 	pub struct LockedBalance<T: Config> {
 		pub block: <T as frame_system::Config>::BlockNumber,
 		pub amount: <T as pallet_balances::Config>::Balance,

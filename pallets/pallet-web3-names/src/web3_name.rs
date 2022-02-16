@@ -30,8 +30,9 @@ use crate::{Config, Error};
 ///
 /// It is bounded in size (inclusive range [MinLength, MaxLength]) and can only
 /// contain a subset of ASCII characters.
-#[derive(Encode, Decode, TypeInfo)]
+#[derive(Encode, Decode, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T, MinLength, MaxLength))]
+#[codec(mel_bound())]
 pub struct AsciiWeb3Name<T: Config, MinLength: Get<u32>, MaxLength: Get<u32>>(
 	pub(crate) BoundedVec<u8, MaxLength>,
 	PhantomData<(T, MinLength)>,
@@ -52,14 +53,6 @@ impl<T: Config> TryFrom<Vec<u8>> for AsciiWeb3Name<T, T::MinNameLength, T::MaxNa
 			BoundedVec::try_from(value).map_err(|_| Self::Error::Web3NameTooLong)?;
 		ensure!(is_valid_web3_name(&bounded_vec), Self::Error::InvalidWeb3NameCharacter);
 		Ok(Self(bounded_vec, PhantomData))
-	}
-}
-
-// required because else T would have to impl MaxEncodedLen, e.g. TestMock and
-// Runtime
-impl<T: Config> MaxEncodedLen for AsciiWeb3Name<T, T::MinNameLength, T::MaxNameLength> {
-	fn max_encoded_len() -> usize {
-		frame_support::BoundedVec::<u8, T::MaxNameLength>::max_encoded_len()
 	}
 }
 
