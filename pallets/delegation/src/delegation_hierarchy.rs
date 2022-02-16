@@ -166,8 +166,7 @@ impl<T: Config> DelegationDetails<T> {
 /// The details associated with a delegation hierarchy.
 #[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
-// TODO: Check whether we should provide input
-#[codec(mel_bound())]
+#[codec(mel_bound(CtypeHashOf<T>: MaxEncodedLen))]
 
 pub struct DelegationHierarchyDetails<T: Config> {
 	/// The authorised CTYPE hash that attesters can attest using this
