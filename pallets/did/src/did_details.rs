@@ -231,7 +231,7 @@ impl DidVerifiableIdentifier for runtime_common::DidIdentifier {
 /// attestation keys a DID might control.
 #[derive(Clone, Debug, Decode, Encode, PartialEq, Ord, PartialOrd, Eq, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
-#[codec(mel_bound(DidPublicKey: MaxEncodedLen))]
+#[codec(mel_bound())]
 pub struct DidPublicKeyDetails<T: Config> {
 	/// A public key the DID controls.
 	pub key: DidPublicKey,
@@ -242,7 +242,7 @@ pub struct DidPublicKeyDetails<T: Config> {
 /// The details associated to a DID identity.
 #[derive(Clone, Decode, Encode, PartialEq, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
-#[codec(mel_bound(DidKeyAgreementKeySet<T>: MaxEncodedLen, DidPublicKeyMap<T>: MaxEncodedLen))]
+#[codec(mel_bound())]
 
 pub struct DidDetails<T: Config> {
 	/// The ID of the authentication key, used to authenticate DID-related

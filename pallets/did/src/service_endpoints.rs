@@ -45,7 +45,7 @@ pub(crate) type ServiceEndpointUrlEntries<T> =
 /// A single service endpoint description.
 #[derive(Clone, Decode, Encode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
-#[codec(mel_bound(ServiceEndpointId<T>: MaxEncodedLen, ServiceEndpointTypeEntries<T>: MaxEncodedLen, ServiceEndpointUrlEntries<T>: MaxEncodedLen))]
+#[codec(mel_bound())]
 pub struct DidEndpoint<T: Config> {
 	/// The ID of the service endpoint. Allows the endpoint to be queried and
 	/// resolved directly.

@@ -27,7 +27,7 @@ use crate::{AccountIdOf, AttesterOf, BalanceOf, Config};
 /// An on-chain attestation written by an attester.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
-#[codec(mel_bound(CtypeHashOf<T>: MaxEncodedLen, AttesterOf<T>: MaxEncodedLen, DelegationNodeIdOf<T>: MaxEncodedLen))]
+#[codec(mel_bound())]
 pub struct AttestationDetails<T: Config> {
 	/// The hash of the CType used for this attestation.
 	pub ctype_hash: CtypeHashOf<T>,
