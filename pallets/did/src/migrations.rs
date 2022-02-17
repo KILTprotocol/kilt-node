@@ -19,21 +19,14 @@
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
 
+// FIXME: Remove when migrating to v8
+// #[deprecated(note = "use the pallet's `current_storage_version()` instead")]
 /// Storage version of the DID pallet.
 #[derive(Copy, Clone, Encode, Eq, Decode, Ord, PartialEq, PartialOrd, TypeInfo)]
 pub enum DidStorageVersion {
 	V1,
 	V2,
 	V3,
-}
-
-#[cfg(feature = "try-runtime")]
-impl DidStorageVersion {
-	/// The latest storage version.
-	#[allow(dead_code)]
-	fn latest() -> Self {
-		Self::V3
-	}
 }
 
 // All nodes will default to this, which is not bad, as in case the "real"
@@ -45,6 +38,66 @@ impl DidStorageVersion {
 // old version anymore.
 impl Default for DidStorageVersion {
 	fn default() -> Self {
-		Self::V2
+		Self::V3
+	}
+}
+
+pub mod v4 {
+	use super::*;
+	use crate::{Config, Pallet};
+
+	#[cfg(feature = "try-runtime")]
+	use frame_support::traits::GetStorageVersion;
+
+	use frame_support::{
+		generate_storage_alias,
+		pallet_prelude::Weight,
+		traits::{Get, OnRuntimeUpgrade, PalletInfoAccess},
+	};
+	use log::info;
+	use sp_std::marker::PhantomData;
+
+	// Get storage item into scope which are removed during this migration
+	generate_storage_alias!(Did, StorageVersion => Value<DidStorageVersion>);
+
+	pub struct DidMigrationV4<T: Config>(PhantomData<T>);
+
+	impl<T: Config> OnRuntimeUpgrade for DidMigrationV4<T> {
+		#[cfg(feature = "try-runtime")]
+		fn pre_upgrade() -> Result<(), &'static str> {
+			assert!(StorageVersion::get() == Some(DidStorageVersion::V3));
+
+			// no migration needed
+			assert!(
+				Pallet::<T>::current_storage_version() == 4,
+				"New StorageVersion should be set via pallet macro already"
+			);
+
+			info!("👁  DID storage migration to v4 passes PRE migrate checks ✅",);
+			Ok(())
+		}
+
+		fn on_runtime_upgrade() -> Weight {
+			// remove deprecated storage versioning entry
+			frame_support::migration::remove_storage_prefix(Pallet::<T>::name().as_bytes(), b"StorageVersion", &[]);
+
+			info!("👁  completed DID storage migration to v4 ✅",);
+			T::DbWeight::get().reads_writes(0, 1)
+		}
+
+		#[cfg(feature = "try-runtime")]
+		fn post_upgrade() -> Result<(), &'static str> {
+			// check StorageVersion
+			assert!(
+				!frame_support::migration::have_storage_value(Pallet::<T>::name().as_bytes(), b"StorageVersion", &[]),
+				"Old StorageVersion should not exist anymore"
+			);
+
+			info!(
+				"👁  DID storage migration to {:?} passes POST migrate checks ✅",
+				Pallet::<T>::current_storage_version()
+			);
+			Ok(())
+		}
 	}
 }

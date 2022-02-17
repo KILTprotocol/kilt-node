@@ -169,9 +169,7 @@ where
 
 #[cfg(test)]
 pub mod runtime {
-	use crate::{
-		migrations::DelegationStorageVersion, BalanceOf, DelegateSignatureTypeOf, DelegationAc, DelegationNodeIdOf,
-	};
+	use crate::{BalanceOf, DelegateSignatureTypeOf, DelegationAc, DelegationNodeIdOf};
 
 	use super::*;
 
@@ -449,7 +447,6 @@ pub mod runtime {
 		delegation_hierarchies: DelegationHierarchyInitialization<Test>,
 		delegations: Vec<(DelegationNodeIdOf<Test>, DelegationNode<Test>)>,
 		attestations: Vec<(ClaimHashOf<Test>, AttestationDetails<Test>)>,
-		storage_version: DelegationStorageVersion,
 	}
 
 	impl ExtBuilder {
@@ -486,12 +483,6 @@ pub mod runtime {
 			self
 		}
 
-		#[must_use]
-		pub fn with_storage_version(mut self, storage_version: DelegationStorageVersion) -> Self {
-			self.storage_version = storage_version;
-			self
-		}
-
 		pub fn build(self) -> sp_io::TestExternalities {
 			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
@@ -508,8 +499,6 @@ pub mod runtime {
 				}
 
 				initialize_pallet(self.delegations, self.delegation_hierarchies);
-
-				delegation::StorageVersion::<Test>::set(self.storage_version);
 
 				for (claim_hash, details) in self.attestations {
 					insert_attestation(claim_hash, details)
