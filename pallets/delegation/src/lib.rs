@@ -94,7 +94,6 @@ use frame_support::{
 	pallet_prelude::Weight,
 	traits::{Get, ReservableCurrency},
 };
-use migrations::DelegationStorageVersion;
 use sp_runtime::{traits::Hash, DispatchError};
 use sp_std::vec::Vec;
 
@@ -102,7 +101,10 @@ use sp_std::vec::Vec;
 pub mod pallet {
 
 	use super::*;
-	use frame_support::{pallet_prelude::*, traits::Currency};
+	use frame_support::{
+		pallet_prelude::*,
+		traits::{Currency, StorageVersion},
+	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
 		signature::{SignatureVerificationError, VerifySignature},
@@ -187,11 +189,6 @@ pub mod pallet {
 	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
-
-	/// Contains the latest storage version deployed.
-	#[pallet::storage]
-	#[pallet::getter(fn last_version_migration_used)]
-	pub(crate) type StorageVersion<T> = StorageValue<_, DelegationStorageVersion, ValueQuery>;
 
 	/// Delegation nodes stored on chain.
 	///
