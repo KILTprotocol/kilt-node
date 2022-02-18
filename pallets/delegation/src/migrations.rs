@@ -16,13 +16,13 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
 // FIXME: Remove when migrating to v8
 // #[deprecated(note = "use the pallet's `current_storage_version()` instead")]
 /// Storage version of the delegation pallet.
-#[derive(Copy, Clone, Encode, Eq, Decode, Ord, PartialEq, PartialOrd, TypeInfo)]
+#[derive(Copy, Clone, Encode, Eq, Decode, Ord, PartialEq, PartialOrd, TypeInfo, MaxEncodedLen)]
 pub enum DelegationStorageVersion {
 	V1,
 	V2,

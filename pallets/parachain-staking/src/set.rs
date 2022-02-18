@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{traits::Get, BoundedVec, DefaultNoBound};
-use parity_scale_codec::{Decode, Encode};
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::{traits::Zero, SaturatedConversion};
 use sp_std::{
@@ -30,8 +30,9 @@ use sp_std::{
 use sp_std::{fmt, prelude::*};
 
 /// An ordered set backed by `BoundedVec`.
-#[derive(PartialEq, Eq, Encode, Decode, DefaultNoBound, Clone, TypeInfo)]
+#[derive(PartialEq, Eq, Encode, Decode, DefaultNoBound, Clone, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(S))]
+#[codec(mel_bound(T: MaxEncodedLen))]
 pub struct OrderedSet<T, S: Get<u32>>(BoundedVec<T, S>);
 
 impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {

@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
 use ctype::CtypeHashOf;
 use delegation::DelegationNodeIdOf;
 use kilt_support::deposit::Deposit;
@@ -25,8 +25,9 @@ use scale_info::TypeInfo;
 use crate::{AccountIdOf, AttesterOf, BalanceOf, Config};
 
 /// An on-chain attestation written by an attester.
-#[derive(Clone, Debug, Encode, Decode, PartialEq, TypeInfo)]
+#[derive(Clone, Debug, Encode, Decode, PartialEq, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
+#[codec(mel_bound())]
 pub struct AttestationDetails<T: Config> {
 	/// The hash of the CType used for this attestation.
 	pub ctype_hash: CtypeHashOf<T>,

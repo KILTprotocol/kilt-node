@@ -145,8 +145,8 @@ pub mod pallet {
 			Payload = Vec<u8>,
 			Signature = Self::Signature,
 		>;
-		type DelegationEntityId: Parameter + TypeInfo;
-		type DelegationNodeId: Parameter + Copy + AsRef<[u8]> + Eq + PartialEq + Ord + PartialOrd;
+		type DelegationEntityId: Parameter + TypeInfo + MaxEncodedLen;
+		type DelegationNodeId: Parameter + Copy + AsRef<[u8]> + Eq + PartialEq + Ord + PartialOrd + MaxEncodedLen;
 		type EnsureOrigin: EnsureOrigin<
 			Success = <Self as Config>::OriginSuccess,
 			<Self as frame_system::Config>::Origin,
@@ -188,7 +188,6 @@ pub mod pallet {
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::storage_version(STORAGE_VERSION)]
-	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
 	/// Delegation nodes stored on chain.
