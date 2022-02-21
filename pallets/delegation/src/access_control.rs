@@ -83,10 +83,8 @@ impl<T: Config>
 		_claim: &ClaimHashOf<T>,
 		attester_node_id: &DelegationNodeIdOf<T>,
 	) -> Result<Weight, DispatchError> {
-		// `attester_node` was supplied by the attestation pallet and is stored in the
-		// attestation. `self.sender_node` was supplied by the user. `attester_node` and
-		// `self.sender_node` can be different!
-
+		// NOTE: The node IDs of the sender (provided by the user through `who`) and attester (provided
+		// by the attestation pallet through on-chain storage) can be different!
 		match Pallet::<T>::is_delegating(who, attester_node_id, self.max_checks)? {
 			(true, checks) => Ok(<T as Config>::WeightInfo::can_revoke(checks)),
 			_ => Err(Error::<T>::AccessDenied.into()),
