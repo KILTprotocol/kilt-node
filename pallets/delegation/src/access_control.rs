@@ -185,7 +185,7 @@ mod tests {
 	}
 
 	#[test]
-	fn test_can_attest_missing_permission() {
+	fn test_cannot_attest_missing_permission() {
 		let root_owner: DelegatorIdOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
 		let delegate = sr25519_did_from_seed(&BOB_SEED);
 
