@@ -355,7 +355,7 @@ fn test_remove_authorized() {
 }
 
 #[test]
-fn test_remove_unauthorised() {
+fn test_remove_unauthorized() {
 	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
 	let evil: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
