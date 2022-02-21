@@ -168,7 +168,7 @@ where
 }
 
 #[cfg(test)]
-pub mod runtime {
+pub(crate) mod runtime {
 	use crate::{BalanceOf, DelegateSignatureTypeOf, DelegationAc, DelegationNodeIdOf};
 
 	use super::*;
@@ -190,19 +190,18 @@ pub mod runtime {
 		signature::EqualVerify,
 	};
 
-	pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
-	pub type Block = frame_system::mocking::MockBlock<Test>;
+	pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+	pub(crate) type Block = frame_system::mocking::MockBlock<Test>;
 
-	pub type Hash = sp_core::H256;
-	pub type Balance = u128;
-	pub type Signature = MultiSignature;
-	pub type AccountPublic = <Signature as Verify>::Signer;
-	pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
+	pub(crate) type Hash = sp_core::H256;
+	pub(crate) type Balance = u128;
+	pub(crate) type Signature = MultiSignature;
+	pub(crate) type AccountPublic = <Signature as Verify>::Signer;
+	pub(crate) type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
 
-	pub const UNIT: Balance = 10u128.pow(15);
-	pub const MILLI_UNIT: Balance = 10u128.pow(12);
-	pub const DELEGATION_DEPOSIT: Balance = 10 * MILLI_UNIT;
-	pub const ATTESTATION_DEPOSIT: Balance = 10 * MILLI_UNIT;
+	pub(crate) const MILLI_UNIT: Balance = 10u128.pow(12);
+	pub(crate) const DELEGATION_DEPOSIT: Balance = 10 * MILLI_UNIT;
+	pub(crate) const ATTESTATION_DEPOSIT: Balance = 10 * MILLI_UNIT;
 
 	frame_support::construct_runtime!(
 		pub enum Test where
@@ -348,20 +347,19 @@ pub mod runtime {
 	pub(crate) const BOB_SEED: [u8; 32] = [1u8; 32];
 	pub(crate) const CHARLIE_SEED: [u8; 32] = [2u8; 32];
 
-	pub const CLAIM_HASH_SEED_01: u64 = 1u64;
-	pub const CLAIM_HASH_SEED_02: u64 = 2u64;
+	pub(crate) const CLAIM_HASH_SEED_01: u64 = 1u64;
 
-	pub fn claim_hash_from_seed(seed: u64) -> Hash {
+	pub(crate) fn claim_hash_from_seed(seed: u64) -> Hash {
 		Hash::from_low_u64_be(seed)
 	}
 
-	pub fn ed25519_did_from_seed(seed: &[u8; 32]) -> SubjectId {
+	pub(crate) fn ed25519_did_from_seed(seed: &[u8; 32]) -> SubjectId {
 		MultiSigner::from(ed25519::Pair::from_seed(seed).public())
 			.into_account()
 			.into()
 	}
 
-	pub fn sr25519_did_from_seed(seed: &[u8; 32]) -> SubjectId {
+	pub(crate) fn sr25519_did_from_seed(seed: &[u8; 32]) -> SubjectId {
 		MultiSigner::from(sr25519::Pair::from_seed(seed).public())
 			.into_account()
 			.into()
@@ -371,7 +369,7 @@ pub mod runtime {
 		hash.encode()
 	}
 
-	pub struct DelegationCreationOperation {
+	pub(crate) struct DelegationCreationOperation {
 		pub delegation_id: DelegationNodeIdOf<Test>,
 		pub hierarchy_id: DelegationNodeIdOf<Test>,
 		pub parent_id: DelegationNodeIdOf<Test>,
@@ -380,7 +378,7 @@ pub mod runtime {
 		pub delegate_signature: DelegateSignatureTypeOf<Test>,
 	}
 
-	pub fn generate_base_delegation_creation_operation(
+	pub(crate) fn generate_base_delegation_creation_operation(
 		delegation_id: DelegationNodeIdOf<Test>,
 		delegate_signature: DelegateSignatureTypeOf<Test>,
 		delegation_node: DelegationNode<Test>,
@@ -397,29 +395,29 @@ pub mod runtime {
 		}
 	}
 
-	pub struct DelegationHierarchyRevocationOperation {
+	pub(crate) struct DelegationHierarchyRevocationOperation {
 		pub id: DelegationNodeIdOf<Test>,
 		pub max_children: u32,
 	}
 
-	pub fn generate_base_delegation_hierarchy_revocation_operation(
+	pub(crate) fn generate_base_delegation_hierarchy_revocation_operation(
 		id: DelegationNodeIdOf<Test>,
 	) -> DelegationHierarchyRevocationOperation {
 		DelegationHierarchyRevocationOperation { id, max_children: 0u32 }
 	}
 
-	pub struct DelegationRevocationOperation {
+	pub(crate) struct DelegationRevocationOperation {
 		pub delegation_id: DelegationNodeIdOf<Test>,
 		pub max_parent_checks: u32,
 		pub max_revocations: u32,
 	}
 
-	pub struct DelegationDepositClaimOperation {
+	pub(crate) struct DelegationDepositClaimOperation {
 		pub delegation_id: DelegationNodeIdOf<Test>,
 		pub max_removals: u32,
 	}
 
-	pub fn generate_base_delegation_revocation_operation(
+	pub(crate) fn generate_base_delegation_revocation_operation(
 		delegation_id: DelegationNodeIdOf<Test>,
 	) -> DelegationRevocationOperation {
 		DelegationRevocationOperation {
@@ -429,7 +427,7 @@ pub mod runtime {
 		}
 	}
 
-	pub fn generate_base_delegation_deposit_claim_operation(
+	pub(crate) fn generate_base_delegation_deposit_claim_operation(
 		delegation_id: DelegationNodeIdOf<Test>,
 	) -> DelegationDepositClaimOperation {
 		DelegationDepositClaimOperation {
@@ -439,7 +437,7 @@ pub mod runtime {
 	}
 
 	#[derive(Clone, Default)]
-	pub struct ExtBuilder {
+	pub(crate) struct ExtBuilder {
 		/// endowed accounts with balances
 		balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>,
 		/// initial ctypes & owners
