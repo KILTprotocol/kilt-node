@@ -32,7 +32,7 @@ use crate::{
 // add
 
 #[test]
-fn test_attest_without_auth() {
+fn test_attest_without_authorization() {
 	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let ctype_hash = get_ctype_hash::<Test>(true);

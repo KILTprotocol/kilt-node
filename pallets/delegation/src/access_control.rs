@@ -44,7 +44,7 @@ use crate::{
 /// Can remove attestations if <the same as revoke>
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct DelegationAc<T: Config> {
-	pub(crate) sender_node_id: DelegationNodeIdOf<T>,
+	pub(crate) subject_node_id: DelegationNodeIdOf<T>,
 	pub(crate) max_checks: u32,
 }
 
@@ -58,7 +58,7 @@ impl<T: Config>
 		ctype: &CtypeHashOf<T>,
 		_claim: &ClaimHashOf<T>,
 	) -> Result<Weight, DispatchError> {
-		let delegation_node = DelegationNodes::<T>::get(self.sender_node_id).ok_or(Error::<T>::DelegationNotFound)?;
+		let delegation_node = DelegationNodes::<T>::get(self.authorization_id()).ok_or(Error::<T>::DelegationNotFound)?;
 		let root =
 			DelegationHierarchies::<T>::get(delegation_node.hierarchy_root_id).ok_or(Error::<T>::DelegationNotFound)?;
 		ensure!(
@@ -102,7 +102,7 @@ impl<T: Config>
 	}
 
 	fn authorization_id(&self) -> DelegationNodeIdOf<T> {
-		self.sender_node_id
+		self.subject_node_id
 	}
 
 	fn can_attest_weight(&self) -> Weight {
@@ -154,7 +154,7 @@ mod tests {
 		};
 		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 		let ac_info = Some(DelegationAc {
-			sender_node_id: parent_id,
+			subject_node_id: parent_id,
 			max_checks: 1,
 		});
 
@@ -209,7 +209,7 @@ mod tests {
 		};
 		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 		let ac_info = Some(DelegationAc {
-			sender_node_id: parent_id,
+			subject_node_id: parent_id,
 			max_checks: 1,
 		});
 
@@ -257,7 +257,7 @@ mod tests {
 		};
 		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 		let ac_info = Some(DelegationAc {
-			sender_node_id: parent_id,
+			subject_node_id: parent_id,
 			max_checks: 1,
 		});
 
@@ -291,7 +291,7 @@ mod tests {
 		let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 		let ac_info = Some(DelegationAc {
-			sender_node_id: parent_id,
+			subject_node_id: parent_id,
 			max_checks: 1,
 		});
 
@@ -338,7 +338,7 @@ mod tests {
 		};
 		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 		let ac_info = Some(DelegationAc {
-			sender_node_id: parent_id,
+			subject_node_id: parent_id,
 			max_checks: 1,
 		});
 
@@ -384,7 +384,7 @@ mod tests {
 			},
 		};
 		let ac_info = Some(DelegationAc {
-			sender_node_id: parent_id,
+			subject_node_id: parent_id,
 			max_checks: 1,
 		});
 
@@ -431,7 +431,7 @@ mod tests {
 			},
 		};
 		let ac_info = Some(DelegationAc {
-			sender_node_id: parent_id,
+			subject_node_id: parent_id,
 			max_checks: 1,
 		});
 
@@ -483,7 +483,7 @@ mod tests {
 			},
 		};
 		let ac_info = Some(DelegationAc {
-			sender_node_id: parent_id,
+			subject_node_id: parent_id,
 			max_checks: 1,
 		});
 
