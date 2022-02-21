@@ -314,7 +314,7 @@ mod tests {
 	}
 
 	#[test]
-	fn test_can_attest_wrong_ctype() {
+	fn test_cannot_attest_wrong_ctype() {
 		let root_owner: DelegatorIdOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
 		let delegate = sr25519_did_from_seed(&BOB_SEED);
 
