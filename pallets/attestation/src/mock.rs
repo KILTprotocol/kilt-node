@@ -74,6 +74,7 @@ where
 	}
 }
 
+/// Authorize iff the subject of the origin and the provided attester id match.
 #[derive(Clone, Debug, Encode, Decode, TypeInfo, PartialEq, Eq)]
 #[scale_info(skip_type_params(T))]
 pub struct MockAccessControl<T: Config>(pub T::AttesterId);
