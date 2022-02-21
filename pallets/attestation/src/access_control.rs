@@ -55,19 +55,13 @@ pub trait AttestationAccessControl<AttesterId, AuthorizationId, Ctype, ClaimHash
 	fn authorization_id(&self) -> AuthorizationId;
 
 	/// The worst-case weight of `can_attest`.
-	fn can_attest_weight(&self) -> Weight {
-		0
-	}
+	fn can_attest_weight(&self) -> Weight;
 
 	/// The worst-case weight of `can_revoke`.
-	fn can_revoke_weight(&self) -> Weight {
-		0
-	}
+	fn can_revoke_weight(&self) -> Weight;
 
 	/// The worst-case weight of `can_remove`.
-	fn can_remove_weight(&self) -> Weight {
-		0
-	}
+	fn can_remove_weight(&self) -> Weight;
 }
 
 impl<AttesterId, AuthorizationId, Ctype, ClaimHash>
