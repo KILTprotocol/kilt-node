@@ -28,6 +28,7 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::{Decode, Encode, MaxEncodedLen};
+use delegation::DelegationAc;
 use frame_support::traits::InstanceFilter;
 pub use frame_support::{
 	construct_runtime, parameter_types,
@@ -63,6 +64,7 @@ pub use did;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_web3_names;
 use runtime_common::{
+	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
 	fees::ToAuthor,
 	pallet_id, AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
@@ -321,8 +323,8 @@ impl attestation::Config for Runtime {
 	type Deposit = AttestationDeposit;
 	type MaxDelegatedAttestations = MaxDelegatedAttestations;
 	type AttesterId = DidIdentifier;
-	type AuthorizationId = ();
-	type AccessControl = ();
+	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
+	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
 }
 
 parameter_types! {

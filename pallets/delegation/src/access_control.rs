@@ -58,7 +58,8 @@ impl<T: Config>
 		ctype: &CtypeHashOf<T>,
 		_claim: &ClaimHashOf<T>,
 	) -> Result<Weight, DispatchError> {
-		let delegation_node = DelegationNodes::<T>::get(self.authorization_id()).ok_or(Error::<T>::DelegationNotFound)?;
+		let delegation_node =
+			DelegationNodes::<T>::get(self.authorization_id()).ok_or(Error::<T>::DelegationNotFound)?;
 		let root =
 			DelegationHierarchies::<T>::get(delegation_node.hierarchy_root_id).ok_or(Error::<T>::DelegationNotFound)?;
 		ensure!(
@@ -83,8 +84,9 @@ impl<T: Config>
 		_claim: &ClaimHashOf<T>,
 		attester_node_id: &DelegationNodeIdOf<T>,
 	) -> Result<Weight, DispatchError> {
-		// NOTE: The node IDs of the sender (provided by the user through `who`) and attester (provided
-		// by the attestation pallet through on-chain storage) can be different!
+		// NOTE: The node IDs of the sender (provided by the user through `who`) and
+		// attester (provided by the attestation pallet through on-chain storage) can be
+		// different!
 		match Pallet::<T>::is_delegating(who, attester_node_id, self.max_checks)? {
 			(true, checks) => Ok(<T as Config>::WeightInfo::can_revoke(checks)),
 			_ => Err(Error::<T>::AccessDenied.into()),

@@ -391,7 +391,7 @@ benchmarks! {
 		let leaf_acc: T::DelegationEntityId = leaf_acc.into();
 
 		let ac = DelegationAc::<T>{
-			sender_node_id: leaf_id,
+			subject_node_id: leaf_id,
 			max_checks: c
 		};
 
@@ -410,7 +410,7 @@ benchmarks! {
 		let root_acc: T::DelegationEntityId = root_acc.into();
 
 		let ac = DelegationAc::<T>{
-			sender_node_id: leaf_id,
+			subject_node_id: leaf_id,
 			max_checks: c
 		};
 
@@ -429,7 +429,7 @@ benchmarks! {
 		let root_acc: T::DelegationEntityId = root_acc.into();
 
 		let ac = DelegationAc::<T>{
-			sender_node_id: leaf_id,
+			subject_node_id: leaf_id,
 			max_checks: c
 		};
 
