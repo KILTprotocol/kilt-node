@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{dispatch::Weight, ensure};
 use scale_info::TypeInfo;
 use sp_runtime::DispatchError;
@@ -42,7 +42,7 @@ use crate::{
 ///      stored in the attestation
 ///
 /// Can remove attestations if <the same as revoke>
-#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct DelegationAc<T: Config> {
 	pub(crate) subject_node_id: DelegationNodeIdOf<T>,
 	pub(crate) max_checks: u32,

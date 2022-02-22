@@ -144,9 +144,9 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxDelegatedAttestations: Get<u32>;
 
-		type AttesterId: Parameter;
+		type AttesterId: Parameter + MaxEncodedLen;
 
-		type AuthorizationId: Parameter;
+		type AuthorizationId: Parameter + MaxEncodedLen;
 
 		type AccessControl: Parameter
 			+ AttestationAccessControl<Self::AttesterId, Self::AuthorizationId, CtypeHashOf<Self>, ClaimHashOf<Self>>;
